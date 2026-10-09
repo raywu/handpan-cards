@@ -1,0 +1,14 @@
+# kills: R4-E solve ignores inherited keys and fields in a zone it does not know
+# suite: node --test --test-name-pattern ^R4.E.solve.ignores.inherited.keys.and.fields.in.a.zone.it.does.not.know$ tests/layout.test.js
+# R4-E: merge copies inherited keys.
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -504,7 +504,6 @@
+     var id;
+     var i;
+     for (id in source) {
+-      if (!Object.prototype.hasOwnProperty.call(source, id)) continue;
+       fields[id] = source[id].slice();
+     }
+     for (i = 0; i < zones.ding.length; i += 1) fields[zones.ding[i]][4] = null;

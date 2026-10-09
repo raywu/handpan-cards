@@ -1,0 +1,15 @@
+# kills: R4-E degrees names the parent index it was given when there is no such parent
+# suite: node --test --test-name-pattern ^R4.E.degrees.names.the.parent.index.it.was.given.when.there.is.no.such.parent$ tests/naming.test.js
+# R4-E: the no-parent error does not name the index.
+diff --git a/src/engine/naming.js b/src/engine/naming.js
+--- a/src/engine/naming.js
++++ b/src/engine/naming.js
+@@ -260,7 +260,7 @@
+ 
+   function degrees(pitchClasses, tonicPc, parentIndex, opts) {
+     if (!PARENTS[parentIndex]) {
+-      throw new Error("naming: no parent at index " + parentIndex);
++      throw new Error("naming: no parent at index ?");
+     }
+     var options = opts || {};
+     var noThirds = !!options.noThirds;

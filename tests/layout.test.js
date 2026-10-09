@@ -1726,3 +1726,23 @@ test("rule N: solve reads labels from its input and never from its own output", 
     }
   }
 });
+
+/* ---- R4-E: a field map is read by its own keys and known zones ---------- */
+
+test("R4-E solve ignores inherited keys and fields in a zone it does not know", () => {
+  const entry = SWEEP.find((e) => e.n === 12) || SWEEP[0];
+  const own = plain(entry.seed.fields);
+  const baseline = plain(HPE.layout.solve(own).value);
+
+  const heir = Object.create({ 77: ["Z", 9, 120, "rim", null, "77"] });
+  for (const id of Object.keys(own)) heir[id] = own[id];
+  assert.deepStrictEqual(plain(HPE.layout.solve(heir).value), baseline,
+    "an inherited field takes no seat and is not copied");
+
+  const odd = { ...own, 88: ["Q", 4, 60, "attic", null, "88"] };
+  const solvedOdd = plain(HPE.layout.solve(odd).value);
+  assert.deepStrictEqual(solvedOdd.geom, baseline.geom, "an unknown zone takes no seat");
+  assert.deepStrictEqual(solvedOdd.fields["88"], ["Q", 4, 60, "attic", null, "88"],
+    "and is carried through untouched");
+  for (const id of Object.keys(own)) assert.deepStrictEqual(solvedOdd.fields[id], baseline.fields[id]);
+});

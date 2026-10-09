@@ -1,0 +1,14 @@
+# kills: R4-E solve ignores inherited keys and fields in a zone it does not know
+# suite: node --test --test-name-pattern ^R4.E.solve.ignores.inherited.keys.and.fields.in.a.zone.it.does.not.know$ tests/layout.test.js
+# R4-E: collect walks inherited keys.
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -195,7 +195,6 @@
+     var zones = { ding: [], rim: [], inner: [], bottom: [] };
+     var id;
+     for (id in fields) {
+-      if (!Object.prototype.hasOwnProperty.call(fields, id)) continue;
+       var zone = fields[id][3];
+       if (!Object.prototype.hasOwnProperty.call(zones, zone)) continue;
+       zones[zone].push(id);

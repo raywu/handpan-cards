@@ -620,3 +620,12 @@ test("symmetricRoot prefers the tonic, else the lowest scale degree", () => {
   assert.equal(naming.symmetricRoot([1, 10], 5, [5, 7, 8, 10, 0, 1, 3]), 10);
   assert.throws(() => naming.symmetricRoot([], 0), /at least one candidate/);
 });
+
+test("R4-E symmetricRoot ranks a candidate outside the degree order after every one inside it, by distance from the tonic", () => {
+  assert.equal(naming.symmetricRoot([1, 10], 5, [5, 7]), 10, "10 is 5 above the tonic, 1 is 8");
+  assert.equal(naming.symmetricRoot([1, 7], 5, [5, 7]), 7, "a degree in the order beats one outside it");
+});
+
+test("R4-E degrees names the parent index it was given when there is no such parent", () => {
+  assert.throws(() => naming.degrees([0, 2, 4], 0, 99), /no parent at index 99/);
+});
