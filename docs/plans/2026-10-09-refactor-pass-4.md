@@ -253,10 +253,12 @@ python3 tools/decks.py && git status --short '*.pdf'   # text-equal, see stalene
 **Verify.**
 ```
 python3 tools/refresh_mutants.py --check
-node --test tests/mutation_harness.test.js tests/harness.test.js tests/shard_mutants.js
+node --test tests/mutation_harness.test.js tests/harness.test.js
 python3 -m unittest tests.test_suite_health tests.test_failure_diagnosability tests.test_readme_currency
 node tools/probe/panel_fit.js --base origin/main --font real   # verdict unchanged
 ```
+
+[corrected by lane C, 2026-10-09: the first `node --test` line originally also listed `tests/shard_mutants.js`. That file is a CLI module and exits 2 under `node --test` (on main too). It is exercised by `tests/mutation_harness.test.js`, which `require`s `partition`, `isE2ESelecting` and `loadMutants` from it, pins the shard partition, and copies it into a fixture tree to drive `MUTANT_SHARD` through the real script.]
 
 **Stop and report.** Any change to `tests/mutation_check.sh` that the five `h_*` self-patching mutants cannot re-anchor on (memory: refresh then `git apply --check` all five); a `panel-fit` verdict change.
 
@@ -283,7 +285,7 @@ node tools/probe/panel_fit.js --base origin/main --font real   # verdict unchang
 2. **Vacuous mode-S branch** of "the desktop sidebar at 1024x700 gains no new VERTICAL scroll ... modes A, B and S": `want = 0` makes `assert.ok(m.scrollH - m.clientH >= want - 1)` always true. Assert the measured overflow equals `want` within 1 for every mode (the companion `Math.abs(amy.overWithout - want) <= 1` already bites; make the first assertion the same shape).
 3. **"DR3 browser ... every stop lands inside the scrollport at 380x667"** asserts two focus names and one `inside` check on the first finer button. Make the body iterate every stop `panelStops()` returns (title unchanged, now true).
 4. **`drawer_seats.test.js` `reach()`** returns `fineToggle` nobody reads and "DR2a browser (84, report)" logs `edit.noteRow`/`edit.seatRow` which `reach()` never returns: return what the log reads, drop the unread field.
-5. **AP2-2's stub gap** (`tools/sandbox.js` has no `header`/`footer`, and must not grow - R3): a browser test that with the sheet open `header` is NOT inert and `footer` IS (real code: `querySelectorAll("header, main, footer, #settings-panel")` with `panelBackground = [main, footer, #decks]`). New mutant `r4t_inert_includes_header` against `index.html` (lane A re-anchors on rebase).
+5. **AP2-2's stub gap** (`tools/sandbox.js` has no `header`/`footer`, and must not grow - R3): a browser test that with the sheet open `header` is NOT inert and `footer` IS (real code: `querySelectorAll("header, main, footer, #settings-panel")` with `panelBackground = [main, footer, #decks]`). [corrected by lane C, 2026-10-09: the real code inerts `header` too. With the SETTINGS PANEL open the inert set is `main`, `footer#foot`, `nav#decks` (header and the panel are live). With the SHEET open it is `header`, `main`, `footer#foot`, `div#settings-panel` (`background = [...querySelectorAll("header, main, footer, #settings-panel")]`). Lane T's merged test "AP2-2 browser: ..." in `tests/e2e.test.js` asserts exactly those two sets, and `r4t_inert_includes_header` mutates the panel's set.] New mutant `r4t_inert_includes_header` against `index.html` (lane A re-anchors on rebase).
 6. ~~`tests/helpers/dump_app_render.js`: zero readers, remove.~~ **WITHDRAWN at review (R1).** `tests/test_render_agreement.py` `RenderAgreement.setUpClass` runs it by `subprocess` (line 359 at `7b4f383`) and parses its stdout for all 177 cards; it is LIVE and is the app side of preservation evidence 2.3 item 2. The claim came from a grep that excluded python; it is the example of why 2.1 step 2 enumerates `tests/` readers too before calling a HELPER dead (helpers have no production reader by construction, so for `tests/helpers/*` the reader set is the test suites).
 7. **Two-lane items**: for each `index.html` function lane 0 classes PROVEN DEAD whose only coverage is an e2e test, that e2e test is dead by rule 3 of 2.2 (every line it covers is being removed) and is removed HERE with the lane-0 row cited, before lane A removes the code. (R6) The mutant whose `# kills:` names that test moves WITH the test, in this lane's PR: "every mutant patch's `# kills:` line is actually selected by its `# suite:` command" in `tests/mutation_harness.test.js` reddens main the moment a `# kills:` names a deleted test, so lane T re-points it to a surviving test that fails on the same break, or - when the only such test is the one being removed because the code is going - replaces it one-for-one with an `r4t_` mutant against the surviving behaviour, in the same commit. Lane A then removes the code with no mutant work left on that item (its "replace one-for-one" in candidate 6 applies only to mutants T did not touch).
 8. **AP3-0** (`tests/app.test.js`) `rmSync` outside `finally` is lane A's; hand-off row.
@@ -310,7 +312,7 @@ node --test tests/drawer_seats.test.js
 | R4-A19 | Every removed e2e test has a PR-table row (removed, survivor, shared assertion, red proof) | PR |
 | R4-A20 | Mode-S branch of the 1024x700 sidebar test fails when `want` is wrong (differential probe in the PR) | PR |
 | R4-A21 | DR3 "every stop" test iterates every stop; a stop outside the scrollport fails it | mutant `r4t_dr3_stop_outside_scrollport` |
-| R4-A22 | `header` not inert / `footer` inert with the sheet open, asserted in the browser | `r4t_inert_includes_header` killed |
+| R4-A22 | with the sheet open `header`, `main`, `footer` and the settings panel are inert; with the panel open `main`, `footer` and the deck strip are, never `header`, asserted in the browser [corrected by lane C, 2026-10-09: originally "`header` not inert / `footer` inert with the sheet open"] | `r4t_inert_includes_header` killed |
 | R4-A23 | `tests/helpers/dump_app_render.js` UNCHANGED and `tests/test_render_agreement.py` green (R1); e2e FLOORS row equals CI's count; gate green, including the header-lint test with every two-lane mutant re-pointed in this lane (R6) | CI artifacts |
 
 **Depends on.** Lane 0 (map), lanes E/P/H merged (so the rebase is one).
