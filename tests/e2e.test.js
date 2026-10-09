@@ -1682,6 +1682,35 @@ function run() {
       }
     });
 
+  // AP2-2's stub gap (refactor pass 4, lane T): tools/sandbox.js has no
+  // header or footer, so the unit test "AP2-2 setInert applies each caller's
+  // own background set" sees the sheet's set as [settings-panel, main] and the
+  // panel's as [main, decks]. The real sets are header/main/footer/
+  // #settings-panel for the sheet and main/footer/#decks for the panel, and
+  // only a real DOM can say which elements actually carry `inert` in each state.
+  test("AP2-2 browser: the settings panel inerts main, footer and the deck strip but never the header; the sheet inerts the header, main, footer and the panel",
+    async () => {
+      await freshLoad();
+      const inertSet = () => b.eval(`
+        return [...document.querySelectorAll("header, main, footer, #settings-panel, #decks")]
+          .filter(el => el.inert).map(el => el.tagName.toLowerCase() + (el.id ? "#" + el.id : "")).sort();`);
+      assert.deepStrictEqual(await inertSet(), [], "something is inert before anything opens");
+
+      await openSettingsPanel();
+      assert.deepStrictEqual(await inertSet(), ["footer#foot", "main", "nav#decks"],
+        "the panel's own background is main, footer and the deck strip - not the header (the trigger lives there) and not itself");
+      await b.key("Escape", "Escape", 27);
+      await b.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: "the panel to close" });
+      assert.deepStrictEqual(await inertSet(), [], "the panel left something inert behind");
+
+      await openSheet();
+      assert.deepStrictEqual(await inertSet(), ["div#settings-panel", "footer#foot", "header", "main"],
+        "the sheet's own background is header, main, footer and the settings panel");
+      await b.key("Escape", "Escape", 27);
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet to close" });
+      assert.deepStrictEqual(await inertSet(), [], "the sheet left something inert behind");
+    });
+
   // M2, 2026-09-28 (review gap on M1, PR #153: "320 h1/trigger overlap
   // untested"). At the narrowest supported phone width the header title and
   // the settings trigger must not overlap - two hit targets sharing a pixel
@@ -1926,7 +1955,9 @@ function run() {
             // no longer scrolls; the edge test pins the exact figure.
             const mainNeeded = process.platform === "linux" ? 607.75 : 611.75;
             const want = Math.max(0, mainNeeded + hg - m.clientH);
-            assert.ok(m.scrollH - m.clientH >= want - 1, `${label}: with the Amy row the cell scrolls by at least ${want}px, got ${m.scrollH - m.clientH}px`);
+            const wantWith = Math.max(0, mainNeeded + hg + amy.cost - m.clientH);
+            assert.ok(Math.abs(m.scrollH - m.clientH - wantWith) <= 1,
+              `${label}: with the Amy row the cell scrolls by ${m.scrollH - m.clientH}px, expected ${wantWith}px`);
             assert.ok(Math.abs(amy.overWithout - want) <= 1,
               `${label}: without the Amy row the sidebar scrolls by ${amy.overWithout}px, expected ${want}px`);
             const unreachable = await b.eval(`
@@ -1938,6 +1969,8 @@ function run() {
           } else {
             // Modes A and B fit on main; the Amy row is the only thing that may
             // make them scroll, and every control stays reachable by scrolling.
+            assert.ok(Math.abs(amy.overWithout) <= 1,
+              `${label}: without the Amy row the sidebar scrolls by ${amy.overWithout}px, expected 0px`);
             const unreachable = await b.eval(`
               const p = document.getElementById("settings-panel");
               const top = p.getBoundingClientRect().top - p.scrollTop;

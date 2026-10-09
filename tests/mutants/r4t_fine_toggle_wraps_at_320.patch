@@ -1,0 +1,15 @@
+# kills: DR3 browser: at 320x568 the finer-controls toggle reads on one line, closed and open
+# suite: node --test --test-name-pattern ^DR3.browser..at.320x568.the.finer.controls.toggle.reads.on.one.line..closed.and.open$ tests/drawer_seats.test.js
+# The toggle gains 80px side padding, so its label wraps at 320px.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1029,7 +1029,7 @@
+    the press flash fills it rather than restyling the note. */
+ #scale-preview .panhit:active{fill:rgba(226,112,5,.22)}
+ #scale-fine-toggle{background:none; border:none; color:#a79d8b; cursor:pointer; align-self:flex-start;
+-  min-height:44px; padding:0 4px;
++  min-height:44px; padding:0 80px;
+   font:600 9.5px/1.5 "Nunito Sans"; letter-spacing:.13em; text-transform:uppercase}
+ /* Quiet, never a primary: auto width, so the sheet's only full-width button
+    stays #scale-generate. */

@@ -1,0 +1,14 @@
+# kills: DR2b browser: editing the scale box mid-drag cancels the gesture, drops the ghost and moves nothing
+# suite: node --test --test-name-pattern ^DR2b.browser..editing.the.scale.box.mid.drag.cancels.the.gesture..drops.the.ghost.and.moves.nothing$ tests/drawer_drag.test.js
+# syncParseState no longer cancels an in-flight gesture.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9577,7 +9577,6 @@
+  *  repainting the pan there detaches the `.panhit` the press landed on, the
+  *  click retargets to an ancestor, and the delegated handler drops the tap. */
+ function syncParseState({ paint }) {
+-  if (paint) cancelGesture();
+   const text = String(scaleBox.value || "");
+   boxOk = false;
+   if (!text.trim()) {

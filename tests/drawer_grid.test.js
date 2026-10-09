@@ -1,5 +1,5 @@
 // Lane DR1, plan section 20.16: the drawer's geometry rule (rule G), proved by
-// enumeration. Four tests, one browser. The cells are a fixed list; every
+// enumeration. Three tests, one browser. The cells are a fixed list; every
 // expectation is computed from the page's own measurements and the only pixel
 // figure held is 44 (one control). Failures name the cell and the clause.
 //
