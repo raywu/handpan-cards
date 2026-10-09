@@ -1,0 +1,14 @@
+# kills: DR3 reset returns seats, both mirrors and orientation to the default and writes Layout reset.
+# suite: node --test --test-name-pattern ^DR3.reset.returns.seats..both.mirrors.and.orientation.to.the.default.and.writes.Layout.reset.$ tests/app.test.js
+# RESET LAYOUT leaves the handpan orientation as chosen.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9372,7 +9372,6 @@ function resetLayout() {
+   layoutSeats = null;
+   mirror = false;
+   bottomHeld = false;
+-  anchor = "one";
+   seatMemo = { rim: {}, inner: {}, bottom: {} };
+   pickRef = null;
+   pickMoved = false;

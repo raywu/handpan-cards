@@ -1,0 +1,15 @@
+# kills: rule W: seat names use the drawn number on rim, inner and bottom
+# suite: node --test --test-name-pattern ^rule.W..seat.names.use.the.drawn.number.on.rim..inner.and.bottom$ tests/app.test.js
+# A seat is named by its place in the ring, not the number drawn on the plate.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9221,7 +9221,7 @@ function setRover(ref) {
+ function hitLayer() {
+   const meta = {};
+   allNotes().forEach((n, order) => {
+-    meta[n.id] = { ring: n.ring, order, label: `${n.name}, ${n.ring} seat ${n.label}, ${n.place}` };
++    meta[n.id] = { ring: n.ring, order, label: `${n.name}, ${n.ring} seat ${n.seat + 1}, ${n.place}` };
+   });
+   const p = pickedNote(), r = roverNote();
+   return { meta, picked: p ? p.id : null, rover: r ? r.id : null, flash: panFlash, arm: armId };

@@ -1,0 +1,15 @@
+# kills: rule N: solve reads labels from its input and never from its own output
+# suite: node --test --test-name-pattern ^rule.N..solve.reads.labels.from.its.input.and.never.from.its.own.output$ tests/layout.test.js
+# merge reads the label from the fields it is already overwriting.
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -520,7 +520,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+         var list = seats[ZONES[z]];
+         if (!list) continue;
+         var ids = zones[ZONES[z]];
+-        for (i = 0; i < list.length; i += 1) fields[ids[i]][5] = source[ids[list[i]]][5];
++        for (i = 0; i < list.length; i += 1) fields[ids[i]][5] = fields[ids[list[i]]][5];
+       }
+     }
+     return fields;

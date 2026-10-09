@@ -1,0 +1,15 @@
+# kills: DR3 Tab order on Add and Edit, finer controls closed and open
+# suite: node --test --test-name-pattern ^DR3.Tab.order.on.Add.and.Edit..finer.controls.closed.and.open$ tests/app.test.js
+# The disclosure toggle is missing from the sheet's Tab list.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10439,7 +10439,7 @@ sheet.addEventListener("keydown", e => {
+                  editingId ? nameBox : null,
+                  scaleBox,
+                  drawerOpen ? previewBox.querySelector('.panhit[tabindex="0"]') : null,
+-                 drawerBtn, anchorOne, anchorBetween, mirrorTop, mirrorBot, fineBtn,
++                 drawerBtn, anchorOne, anchorBetween, mirrorTop, mirrorBot,
+                  notePrev, noteNext, seatPrev, seatNext, resetBtn,
+                  editingId ? degSel : null, ...swatches.children, genBtn,
+                  editingId ? delBtn : null]

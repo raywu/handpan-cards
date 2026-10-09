@@ -1,0 +1,15 @@
+# kills: DR3 reset is enabled by a seat, by either mirror and by orientation, each alone
+# suite: node --test --test-name-pattern ^DR3.reset.is.enabled.by.a.seat..by.either.mirror.and.by.orientation..each.alone$ tests/app.test.js
+# RESET LAYOUT is enabled only when a seat has moved.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8984,7 +8984,7 @@ function paintLayout() {
+   drawerHint.hidden = !drawerOpen;
+   notePrev.disabled = noteNext.disabled = !boxOk || !ringPickable();
+   seatPrev.disabled = seatNext.disabled = !boxOk || !pickRef;
+-  resetBtn.disabled = !boxOk || !(layoutSeats || mirror || bottomMirror() || anchor !== "one");
++  resetBtn.disabled = !boxOk || !layoutSeats;
+   fineBox.hidden = !fineOpen;
+   fineBtn.disabled = !boxOk;
+   fineBtn.setAttribute("aria-expanded", String(fineOpen));
