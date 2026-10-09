@@ -1892,6 +1892,529 @@ PR #274, CI green. One blocking finding; the lane's flags (no listener outside t
 
 **Coordinator readings (for the owner).** The disclosure sits above RESET LAYOUT and takes the quiet style the reset button gives up, so the reset is the one bordered button at the foot. The disclosure does not persist past the sheet. "Everything" on Edit means the generated default, not the stored record. `CENTRED` keeps the app's existing spelling.
 
+## 20.24 Lanes PM and DR3: owner requests 1 to 7 (2026-10-08; replaces the lane block of 20.23)
+
+This section stands on its own. It replaces the lane block of 20.23; where the two differ, 20.24 governs. All anchors are names (ids, functions, constants, test titles), never line numbers. It was drafted by a planner from the prompt in the PR description of the lanes (scratchpad `plan-prompt-dr3-pm.md`), checked against the tree at `claude/scale-dr3` (e1e9a8a), reviewed by `/plan-eng-review` with a codex outside voice, and amended in 20.24.4.
+
+Requests 1 to 4 are interview 14 (20.23). Requests 5 to 7 are the owner's later message of 2026-10-08:
+5. "Let's remove full deck pdf as a print option and adjust the menu ui; consult front end skills".
+6. "remove all full deck seed PDFs currently in the repo. We can keep the full deck generator path but add a comment that it isn't being used".
+7. "In resource, add a new option called 'Handpan 101' that links to https://docs.google.com/document/d/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco/edit?usp=drivesdk".
+
+### 20.24.0 Lanes, merge order, rebase procedure
+
+| Lane | Branch | Worktree | Requests | Gate |
+|---|---|---|---|---|
+| PM | `claude/print-menu` (new, cut from main) | its own | 5, 6, 7 | CI at pushed head SHA |
+| DR3 | `claude/scale-dr3` (exists) | `.claude/worktrees/scale-dr3` | 1, 2, 3, 4 | CI at pushed head SHA, then owner private preview |
+
+Merge order: **PM first, DR3 second.** Two reasons:
+- PM has no owner gate, so it is not held up behind DR3's preview.
+- PM removes the only control that prints the legend card. That makes the `legendLines()` sentence unreachable from the UI before rule N lands (see 20.24.3).
+
+Neither lane merges anything; the coordinator merges. DR3 is not merged while PM is open. The lanes are built in parallel.
+
+After PM merges, lane DR3 does exactly this, in order:
+1. `git fetch origin`, then `git rebase origin/main` (no force-push of any shared branch; the lane's own PR branch is updated with `--force-with-lease` only).
+2. `python3 tools/inline_engine.py --check`, then `python3 tools/sync_decks.py --check`. A failure is fixed by running the tool without `--check`, never by hand-editing a generated region.
+3. `python3 tools/refresh_mutants.py` to re-anchor every mutant context, DR3's new ones included. Commit the refresh on its own.
+4. Reset its own `FLOORS` rows in `tests/suite_health.py`, and the README mutant-file and node-suite counts, from the per-file collected counts in main's CI artifacts plus DR3's own additions. It never lowers a row it does not own.
+5. Push and wait for CI at the new head SHA. Evidence gathered before the rebase is void.
+
+If the order is inverted by the coordinator, PM performs the same five steps and DR3's acceptance criterion D-A12 is re-read (see the stop conditions).
+
+---
+
+## Lane PM (requests 5, 6, 7)
+
+### PM.1 Goal and non-goals
+
+Goal: the Print group offers one PDF, the chord-only one; the three full-deck seed PDFs leave the repo; Resources gains a `HANDPAN 101` link.
+
+Non-goals:
+- No change to PDF bytes of the chord-only variant.
+- No removal of the full-deck code path (`downloadDeckPDF('full')`, `pdfFileName` `_Cards_` branch, `HPE.pdfcards.build` `variant: "full"`, `hifi.build(..., chords_only=False)`).
+- No new CLI flag on `tools/decks.py`.
+- No CLAUDE.md, plan or spec edit.
+- No drawer change.
+
+### PM.2 Behaviour rules
+
+- **PM-1.** `#settings-panel .prints` contains exactly two controls, in this order: `<button type="button" id="print-download">DOWNLOAD PDF</button>`, then `<select id="print-paper-select">`. No element in the document has the text `FULL DECK PDF` or `CHORD-ONLY PDF`. (Button copy and row: coordinator reading. The id is the planner's.)
+- **PM-2.** Activating `#print-download` by click or Enter calls `downloadDeckPDF('shop', this)` exactly once, then `closePanel()`. Two activations queued together build once.
+- **PM-3.** The downloaded file name is the one `pdfFileName(d, "shop", printPaper)` returns today: stem + `_CHORD_ONLY_` + tail + `.pdf`. Bytes for all three built-ins at Letter and A4 are identical to main's. (Coordinator reading.)
+- **PM-4.** The heading above the row reads `Print this deck`. (Coordinator reading.)
+- **PM-5.** At every `MENU_VIEWPORTS` cell and in the 240px sidebar, button and select sit on one line. Neither is under 44px tall, and neither clips its text (`scrollWidth <= clientWidth`).
+- **PM-6.** `downloadDeckPDF("full")` called directly still returns a PDF that carries the title and legend cards and is named `…_Cards_<Paper>.pdf`. No rendered control calls it.
+- **PM-7.** The first focusable child of the Resources group is `<a class="mode" id="res-handpan-101" href="https://docs.google.com/document/d/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco/edit?usp=drivesdk" target="_blank" rel="noopener" aria-label="Handpan 101 (Google Doc)">HANDPAN 101</a>`. It has no `onclick`. (Id, attributes, position: coordinator reading. Row: planner, PM.3.)
+- **PM-8.** `HANDPAN 101` is alone in its own `.modebar` row, full row width, above the three-site row. The site row keeps exactly three siblings; the Amy row keeps exactly two.
+- **PM-9.** `panelStops()` contains `#res-handpan-101` exactly once, immediately after `#print-paper-select` and immediately before `#res-handpaner`. Tab from the paper select lands on it; Shift+Tab from `#res-handpaner` lands on it. Tab from the last stop wraps to `#settings-trigger`.
+- **PM-10.** The repo root holds exactly three tracked `*.pdf` files: `CSharp_Hijaz_Orion_9_CHORD_ONLY_Letter.pdf`, `F3_Low_Pygmy_18_CHORD_ONLY_Letter.pdf`, `D_Amara_9_CHORD_ONLY_Letter.pdf`.
+- **PM-11.** `tools/decks.py` run as a script writes those three files and no other. Its `__main__` body becomes `main(out)`, called with the repo root, so a test can call `decks.main(tmp)`.
+- **PM-12.** The Python full-deck generator stays exercised: `tests/test_pdf_build.py` `JOBS` keeps all six rows and builds into a temp directory, with full page counts 3, 7, 4.
+- **PM-13.** The staleness gate (`test_committed_pdfs_match_a_fresh_build`) compares the three committed files only. The repo-untouched hash checks read the three committed files only.
+- **PM-14.** The `panel-fit` oracle passes with `REMOVED_BY_DESIGN` equal to `["modeS", "button:FULL DECK PDF", "button:CHORD-ONLY PDF"]`. No fit rule is loosened: `RES_ALLOWANCE_PX` stays 64.
+
+### PM.3 Design
+
+Existing visual system only. Print needs one CSS change: `.prints{flex-wrap:nowrap}` and `min-width:0` on its two children. Resources needs no new CSS: one more `<div class="modebar">` holding one `a.mode`, which `.modebar .mode{flex:1 1 0}` already stretches.
+
+380px wide, full-screen panel (content 352px):
+
+```
+ Print this deck
+ +--------------------------------------+ +---------+
+ |             DOWNLOAD PDF             | | LETTER v|   44px, one line
+ +--------------------------------------+ +---------+
+
+ Resources
+ +--------------------------------------------------+
+ |                    HANDPAN 101                   |   44px, own row
+ +--------------------------------------------------+
+ +---------------+ +---------------+ +--------------+
+ |   HANDPANER   | | DING & TONES  | |     HTC      |   trio, unchanged
+ +---------------+ +---------------+ +--------------+
+ +------------------------+ +-----------------------+
+ |  AMY: PROGRESSIONS     | |  AMY: BOTTOM NOTES    |   duo, unchanged
+ +------------------------+ +-----------------------+
+```
+
+- **320x568** (content 292px): same stack. Today `.prints` wraps to two lines here (three controls need about 334px, estimated). After PM it is one line. The new Resources row costs 44px + `--sp-1`, so net panel height is about flat.
+- **Sidebar** (240px, content about 200px, `(min-width:1024px) and (min-height:700px)`): `DOWNLOAD PDF` and the select share one line, about 190px needed by estimate. `HANDPAN 101` is a full-width row. The trio keeps its `flex-basis:40%` shape of 2 + 1.
+- **Landscape grid** (`max-height:520px`, `repeat(auto-fit, minmax(200px,1fr))`): the Resources column gains one 44px row + 3px. The Print column loses a line where it wrapped.
+
+Where `HANDPAN 101` sits, settled:
+- **Chosen: option (a), own full-width row.** It costs 44px + one `--sp-1` gap (48 base, 47 landscape, 50 at the >=640x700 tokens). That is inside the oracle's 64px `res-` allowance.
+- **Rejected: option (b), fourth item in the site row.** The test "TR-1: the three site links are equal in width on every line they share…" asserts `siblings === 3` and line shapes `[3]` and `[2,1]`. At 320px a quarter share is (292 - 24) / 4 = 67px, narrower than `HANDPANER` at 10.5px caps.
+- **Fallback: none that is placement-only.** If (a) fails a fit cell that removing the print line does not pay for, the lane stops and reports the cell table. Every other arrangement changes what the owner sees beyond placement.
+
+### PM.4 Ownership
+
+Owns:
+- `index.html`: the Print group markup, the Resources group markup, the `.prints` CSS rule, and comments at `downloadDeckPDF` and `pdfFileName`.
+- `src/engine/pdfcards.js` and `src/engine/pdfdeck.js`: comment only, then `python3 tools/inline_engine.py` regenerates the regions.
+- `tools/decks.py`: `main()` and a comment.
+- `tools/hifi.py`: comment at `build`'s `chords_only` default.
+- `tools/probe/panel_fit.js`: `REMOVED_BY_DESIGN` only.
+- `tests/paths.py`, `tests/test_pdf_build.py`, `tests/test_gen_deck.py` (`repo_pdf_hashes` only).
+- `tests/app.test.js` and `tests/e2e.test.js`: the tests named in PM.7 and PM.5.
+- Its mutants; `README.md` (Print bullet, the "six committed PDFs" sentence, counts); its `FLOORS` rows.
+- Deletion of the three `*_Cards_Letter.pdf` files, by `git rm` on the lane branch only.
+
+Reads only: CLAUDE.md, plans, spec, `data/decks.json`, the `const DECKS` line, everything in the drawer.
+
+"Not used" comments, exact places:
+- App, above `downloadDeckPDF`: the `'full'` variant has no control since 20.24 and is kept for tests and a future return.
+- App, in `pdfFileName`: replace "the six shipped files" with the three shipped CHORD_ONLY files; note the `_Cards_` branch is unused by the UI.
+- `src/engine/pdfcards.js`: at the `variant` full branch.
+- `src/engine/pdfdeck.js`: at `legend_lines`.
+- `tools/decks.py`: above `main()`. Full PDFs are no longer written; `hifi.build(path, deck)` still builds one.
+- `tools/hifi.py`: at `build`.
+
+Doc lines:
+- **PM fixes README**, because `tests/test_readme_currency.py` reads it: the Print bullet ("shows FULL DECK PDF and CHORD-ONLY PDF buttons … both buttons"), and "rebuilds the six committed PDFs".
+- **DOC lane fixes CLAUDE.md**: the `*.pdf` bullet ("Cards" = full deck…), "`python3 decks.py` builds all six PDFs", "rebuilding always rewrites the six PDFs", and the Menu Resources paragraph ("two `.modebar` rows"). PM lists these in its PR body for the DOC lane.
+
+### PM.5 Steps (tests first, in their own commit)
+
+**Commit 1, tests only, red.** Flat titles:
+
+| Rule | File | Title |
+|---|---|---|
+| PM-1, PM-4 | `tests/app.test.js` | `PM rule 1: the print row is DOWNLOAD PDF then the paper select, and no full-deck control is rendered` |
+| PM-2 | `tests/e2e.test.js` (rewrite in place, no new test) | `Enter on a print button runs its real click handler and does not flip the card` (title kept; asserts `variant === "shop"`) |
+| PM-2 | `tests/e2e.test.js` (rewrite) | `two taps on DOWNLOAD PDF queued together build the PDF once` |
+| PM-3 | `tests/app.test.js` | `PM rule 3: DOWNLOAD PDF names and builds the chord-only file, byte for byte what main built` (sha256 literals for 3 decks x 2 papers, captured on main; green in commit 1) |
+| PM-5 | `tests/e2e.test.js` (extend existing row test) | `every row of the settings panel is flush…` (existing title) plus a one-line and no-clip assertion for `.prints` |
+| PM-6 | `tests/app.test.js` (existing, kept) | `the emitted bytes are a PDF, and the two variants differ in length`; `the download is named the way the print pipeline names its files` |
+| PM-7, PM-8 | `tests/app.test.js` | `PM rule 7: HANDPAN 101 is the first Resources link, a Google Doc in a new tab, alone in its row` |
+| PM-9 | `tests/e2e.test.js` | via `RESOURCES` gaining `res-handpan-101` at row 0: `Tab is trapped inside the settings panel and cycles every stop…` (existing); `#seq-source-link and the Amy links are each a panel stop exactly once…` (existing) |
+| PM-10 | `tests/test_pdf_build.py` | `test_the_repo_root_holds_only_the_three_chord_only_pdfs` |
+| PM-11 | `tests/test_pdf_build.py` | `test_decks_main_writes_only_the_three_chord_only_pdfs` |
+| PM-12 | `tests/test_pdf_build.py` | existing page-count test over `JOBS` (unchanged) |
+| PM-13 | `tests/test_pdf_build.py` | `test_committed_pdfs_match_a_fresh_build` (existing; input narrowed) |
+| PM-14 | `tests/app.test.js` | the existing assertion on `pf.REMOVED_BY_DESIGN`, rewritten to the three-entry list, plus one judged cell lacking `button:FULL DECK PDF` |
+
+**Commit 2, input plumbing.** `tests/paths.py` keeps `PDFS` (six names, used as temp build names) and adds `COMMITTED = ("hijaz_print", "pygmy_print", "amara_print")`. `_repo_pdf_hashes`, `_stale_reasons(...)`'s first argument and `test_gen_deck.repo_pdf_hashes` read `{k: PDFS[k] for k in COMMITTED}`. This is how tests that read the three deleted files get their input: they stop reading them; the full variant is built fresh into temp.
+
+**Commit 3.** `git rm` the three `_Cards_Letter.pdf` files; `tools/decks.py` `main()`.
+
+**Commit 4.** Markup, CSS, comments; `tools/inline_engine.py`; `REMOVED_BY_DESIGN`.
+
+**Commit 5.** Pinned fit literals rewritten from measurement: `MAIN_NEEDED_667x375_S_FALLBACK`, the sidebar `mainNeeded` literals, and the bounce-5 band-edge table. Each changed literal gets a line in the PR's line-to-assertion table.
+
+**Commit 6.** Mutants, `tools/refresh_mutants.py`, FLOORS, README.
+
+Budget: nothing new is added to `tests/e2e.test.js`; rewrites only.
+
+### PM.6 Mutants
+
+Format for every mutant: no `index a..b` lines; a word-split `# suite:` header (dots between words); `# kills:` equal to the test title.
+
+| Mutant | Break | Kills |
+|---|---|---|
+| `pm_full_deck_button_still_rendered` | restores the `FULL DECK PDF` button | PM rule 1 title |
+| `pm_download_builds_full_variant` | `'shop'` becomes `'full'` in the onclick | PM rule 3 title |
+| `pm_prints_row_wraps` | drops `flex-wrap:nowrap` | `every row of the settings panel is flush…` |
+| `pm_handpan101_outside_tab_trap` | link loses the `res-` id prefix (`id="handpan-101"`) | `Tab is trapped inside the settings panel and cycles every stop…` |
+| `pm_handpan101_not_first` | row moved after the Amy row | PM rule 7 title |
+| `pm_handpan101_same_tab` | drops `target="_blank"` | PM rule 7 title |
+| `pm_decks_main_writes_full` | `main()` also writes a `_Cards_` file | `test_decks_main_writes_only_the_three_chord_only_pdfs` |
+| `pm_removed_by_design_too_wide` | adds `print-paper-select` to `REMOVED_BY_DESIGN` | the rewritten `REMOVED_BY_DESIGN` test |
+
+### PM.7 Existing tests and mutants that change meaning
+
+Rewrite, never delete:
+- `tests/e2e.test.js`:
+  - the `m.labels` assertion `["FULL DECK PDF", "CHORD-ONLY PDF"]` becomes `["DOWNLOAD PDF"]`;
+  - `two taps on FULL DECK PDF queued together build the PDF once` is retitled;
+  - `a built-in deck's FULL DECK PDF tap produces bytes that open as a PDF` is retitled to `DOWNLOAD PDF`;
+  - `the sidebar's FULL DECK and CHORD-ONLY buttons produce a PDF blob` becomes `the sidebar's DOWNLOAD PDF button produces a PDF blob`;
+  - the stop-list array with two empty-id print entries (`"deck-add", "", "", "print-paper-select"`) becomes `"deck-add", "print-download", "print-paper-select", "res-handpan-101", …`;
+  - `RESOURCES` gains the new id, and the row indices of the other five shift by one;
+  - `rows.length >= 4` stays true.
+- `tests/app.test.js`: `print CTA: the header carries no print controls; the settings panel carries one set for every deck` (label loop becomes the one label); the comment above the file-name test.
+- Mutants:
+  - `qe_print_button_enter_skips_closepanel`: the diff is re-cut against the `DOWNLOAD PDF` button; `# kills:` is unchanged.
+  - `e_panel_moved_into_header`: two context lines carry `FULL DECK`; refresh.
+  - `mr_prints_natural_width`, `mr_paper_select_not_centred`: re-anchor. If either no longer applies to a two-control no-wrap row, rewrite its break to the same property on the new row.
+  - Any mutant whose `# kills:` is a retitled test gets the new title.
+
+### PM.8 Verify
+
+```
+python3 tools/inline_engine.py --check && python3 tools/sync_decks.py --check
+node --test tests/app.test.js
+python3 -m unittest tests.test_pdf_build tests.test_gen_deck tests.test_readme_currency tests.test_suite_health
+node --test --test-name-pattern "PM.rule|Tab.is.trapped.inside.the.settings.panel|every.row.of.the.settings.panel" tests/e2e.test.js
+git ls-files '*.pdf'      # exactly three lines
+```
+
+No full e2e run and no `tests/mutation_check.sh` locally. The evidence is CI (all jobs, `panel-fit` on real and fallback fonts, four mutant shards) at the pushed head SHA.
+
+### PM.9 Stop and report
+
+- `panel-fit` fails any cell for a reason other than the two removed keys.
+- `DOWNLOAD PDF` clips or wraps in the sidebar or at 320px.
+- Option (a) costs more than 64px in any cell.
+- Any chord-only byte hash differs from main.
+- A test outside PM.7 reads a deleted PDF.
+- A test reads the CLAUDE.md lines listed in PM.4 (then that line moves into PM and the coordinator is told).
+- Third review FAIL (regroup rule).
+
+### PM.10 Acceptance
+
+| # | Criterion | Proof |
+|---|---|---|
+| P-A1 | One print button, `DOWNLOAD PDF`, with the select on one row | PM rule 1 test; `pm_full_deck_button_still_rendered`; `pm_prints_row_wraps` |
+| P-A2 | It builds the chord-only file, bytes as main | PM rule 3 test; `pm_download_builds_full_variant` |
+| P-A3 | Full generator kept, commented unused, still tested | the two kept `tests/app.test.js` tests; `JOBS` page counts |
+| P-A4 | Three seed PDFs gone, three stay | `test_the_repo_root_holds_only…`; `pm_decks_main_writes_full` |
+| P-A5 | `HANDPAN 101` first in Resources, own row, new tab, Google Doc label | PM rule 7 test; `pm_handpan101_not_first`; `pm_handpan101_same_tab` |
+| P-A6 | It is inside the Tab trap, once | `pm_handpan101_outside_tab_trap` |
+| P-A7 | Panel fits everywhere it fit | CI `panel-fit`; `pm_removed_by_design_too_wide` |
+| P-A8 | README says three PDFs and one button | `tests/test_readme_currency.py` green plus the PR table |
+
+---
+
+## Lane DR3 (requests 1, 2, 3, 4)
+
+### DR3.1 Goal and non-goals
+
+Goal: numbers belong to seats everywhere (**rule N**). The step buttons sit behind a disclosure. `RESET LAYOUT` is a button that returns seats, both mirrors and orientation to the default. The orientation control is renamed and leads the drawer.
+
+Non-goals:
+- No geometry or deck-data change.
+- No share-link or stored-record format change.
+- No change to built-in decks.
+- No change to `legendLines()`.
+- No drag behaviour change.
+- No new dependency.
+- No plan, spec or CLAUDE.md edit.
+
+### DR3.2 Behaviour rules
+
+**Rule N (request 1).**
+
+- **N-1.** A seat's number is the slot-5 label that `HPE.core` step 7 gave the note that sits there by default: rim and inner `"1".."n"`, bottom `"U1".."Um"`. After any seats arrangement, the note in seat *s* carries seat *s*'s label in slot 5. Slots 0 to 3 never change.
+- **N-2.** Mirrors and orientation change no label. They change where a seat is drawn; the number travels with the seat.
+- **N-3.** With no seats (absent, or a ring absent), `HPE.layout.solve` output is deep-equal to today's, and `generateDeck` output, card markup and browser PDF bytes are byte-identical to main's.
+- **N-4.** `generateDeck()` copies slot 4 **and** slot 5 from the seats solve into the built deck. The plate (`pan()`), the card number line and `HPE.pdfcards` then show the seat number with no renderer change.
+- **N-5.** `HPE.core.formatSeed`, `HPE.share.encode` and the stored record `{v, s, o}` are unchanged for a moved deck: same string as main for the same seats.
+- **N-6. Invariant.** `HPE.layout.solve` receives fresh parse output whenever seats are given. The two callers are `generateDeck()` and `solvePreviewLayout()`. `merge()` reads labels from its untouched `source` argument and writes to the copy.
+
+**Seat wording (one wording, true on all three rings).** A seat is named `{ring} seat {N}`, where `{N}` is the number the plate draws (`3`, `10`, `U1`). "of {k}" is dropped, because inner `seat 2 of 3` would contradict a drawn `10`. The ring size stays in the plate group label `Pan layout: {a} rim, {b} inner, {c} bottom notes.`
+
+- **W-1.** `.panhit` accessible name: `{name}, {ring} seat {N}, {place}`.
+- **W-2.** Row 7: `Swapped {a} and {b}. {a} is now in {ring} seat {N}, {place}.`
+- **W-3.** Row 8: `{a} stays in {ring} seat {N}.`
+- **W-4.** Row 20: `Picked up {a}, {ring} seat {N}, {place}. PREVIOUS SEAT and NEXT SEAT move it.`
+- **W-5.** Row 4, disclosure closed: `Picked up {a}. Tap or drop it on another {ring} note to swap.` Disclosure open: `Picked up {a}. Tap or drop it on another {ring} note to swap, or use PREVIOUS SEAT and NEXT SEAT.`
+
+**Drawer order (requests 2, 3, 4).** Children of `#scale-drawer`, in DOM order:
+
+- **O-1.** `.editrow` holding:
+  - `<span class="sheetlabel" id="scale-anchor-label">HANDPAN ORIENTATION</span>`;
+  - `.ctlrow role="group" aria-labelledby="scale-anchor-label"` > `.mirror`, with `#scale-anchor-one` text `1 CENTRED` and `#scale-anchor-between` text `1 + 2 SPLIT`;
+  - then `<p class="sheethint">Which note sits nearest you: note 1 alone, or notes 1 and 2 side by side.</p>`.
+
+  Ids, `aria-pressed` behaviour and the deck, stored-record and share effects are unchanged. (Owner copy, verbatim.)
+- **O-2.** The mirror row (`#scale-mirror`, `#scale-mirror-bottom`) and its hint, unchanged.
+- **O-3.** `<button type="button" id="scale-fine-toggle" aria-expanded="false" aria-controls="scale-fine">HARD TO TAP? SHOW FINER CONTROLS</button>`. (Coordinator reading.)
+- **O-4.** `<div id="scale-fine" hidden>` holding the two existing rows unchanged: `#scale-note-prev`, `#scale-note-next`, then `#scale-seat-prev`, `#scale-seat-next`.
+- **O-5.** `.ctlrow` > `<button type="button" id="scale-layout-reset" class="mode" disabled>RESET LAYOUT</button>`, full row width. (Coordinator reading.)
+- **O-6.** `#scale-drawer-hint`, last.
+
+Status rows for orientation (planner's copy): `Note 1 is centred.` and `Notes 1 and 2 are split.` `HINT_GUESS` becomes `Layout is a guess. Open ADJUST LAYOUT to move a note, change the handpan orientation, or mirror the pan.`
+
+**Disclosure.**
+
+- **F-1.** Whenever the sheet opens (Add or Edit), `#scale-fine` has `hidden`, the toggle reads `HARD TO TAP? SHOW FINER CONTROLS`, and `aria-expanded="false"`. The state is not stored anywhere. (Coordinator reading.)
+- **F-2.** Activating the toggle flips `hidden`, `aria-expanded` and the text (`HIDE FINER CONTROLS` when open). It moves neither focus nor the sheet's scroll position.
+- **F-3.** Closing it while one of the four step buttons has focus puts focus on `#scale-fine-toggle`.
+- **F-4.** The state holds across drawer close and reopen while the sheet stays open.
+- **F-5.** Closed, the four buttons have no client rects. They are absent from the sheet's Tab stops and from the accessibility tree.
+- **F-6.** The toggle is disabled exactly when `#scale-mirror` is (`!boxOk`). The four buttons keep today's enabled rules.
+- **F-7. Tab order of the sheet:** back, name (Edit), scale box, the plate's one stop (drawer open), `#scale-layout-toggle`, `#scale-anchor-one`, `#scale-anchor-between`, `#scale-mirror`, `#scale-mirror-bottom`, `#scale-fine-toggle`, [`#scale-note-prev`, `#scale-note-next`, `#scale-seat-prev`, `#scale-seat-next` when open and enabled], `#scale-layout-reset`, degree select (Edit), swatches, GENERATE, DELETE (Edit). Shift+Tab is the reverse. This answers the codex finding on the hard-coded list.
+- **F-8.** Escape with focus on `#scale-fine-toggle`: with a pick, puts the pick down; else closes the drawer and focuses `#scale-layout-toggle`. `DRAWER_ZONE` gains the toggle. This answers the codex finding on `closeDrawer()`/`inDrawerZone()`.
+- **F-9.** Rule G holds with the new order: after focus lands on any Tab stop, that stop is wholly inside the scrollport below the stuck band (walk G-c), disclosure closed and open.
+
+**Reset.**
+
+- **R-1.** `#scale-layout-reset` is enabled exactly when `boxOk` and at least one of these differs from the default: any ring's seats, `mirror`, the bottom mirror, `anchor`. The default is what a fresh Add sheet has. This answers the codex finding on `paintLayout()`.
+- **R-2.** Activating it puts down any pick, cancels a drag in flight, clears all three rings' seats, sets both mirrors and the orientation to the default, repaints the plate, writes `Layout reset.` to `#scale-drawer-status`, and focuses `#scale-layout-toggle` (the button is now disabled). The disclosure state does not change.
+- **R-3.** On Edit, reset goes to the generated default, not to the stored record. `layoutNoticeText()` then reads against `layoutBase` as today. (Coordinator reading.)
+- **R-4.** After reset, GENERATE produces a deck deep-equal to the one the same text produces on a fresh Add sheet. The stored record carries no `seats`, and `mirror`, `mirrorBottom`, `anchor` are at their defaults.
+
+### DR3.3 Design
+
+Existing system only:
+- `.sheetlabel` for `HANDPAN ORIENTATION`; `.mirror` > `.mode` pairs; `.sheethint` for helpers.
+- `RESET LAYOUT` is a `.mode` (Nunito Sans 10.5px/600 caps, 44px) with `width:100%`.
+- The disclosure takes the quiet text rule `#scale-layout-reset` has today (no border, `#a79d8b`, 9.5px/600 caps, `min-height:44px`). The selector is renamed to `#scale-fine-toggle`; `:active` and `:disabled` follow.
+- `#scale-fine:not([hidden]){display:flex; flex-direction:column; gap:var(--sp-2)}`, so `hidden` is never overridden.
+
+380px sheet, drawer open, disclosure closed:
+
+```
+ [ plate band: pan diagram + status line ]            (sticky)
+ [ ADJUST LAYOUT ^ ]
+ HANDPAN ORIENTATION
+ +------------------------+ +------------------------+
+ |       1 CENTRED        | |      1 + 2 SPLIT       |  44px
+ +------------------------+ +------------------------+
+ Which note sits nearest you: note 1 alone, or notes
+ 1 and 2 side by side.
+ +------------------------+ +------------------------+
+ |       MIRROR TOP       | |     MIRROR BOTTOM      |  44px
+ +------------------------+ +------------------------+
+ Each flips left and right. Top covers the rim and the
+ inner notes.
+ HARD TO TAP? SHOW FINER CONTROLS                        44px, text
+ +---------------------------------------------------+
+ |                   RESET LAYOUT                    |  44px
+ +---------------------------------------------------+
+ Tap a note, then tap another note in the same ring…
+```
+
+Disclosure open: its text is `HIDE FINER CONTROLS`, and between it and `RESET LAYOUT`:
+
+```
+ +------------------------+ +------------------------+
+ |     PREVIOUS NOTE      | |       NEXT NOTE        |
+ +------------------------+ +------------------------+
+ +------------------------+ +------------------------+
+ |     PREVIOUS SEAT      | |       NEXT SEAT        |
+ +------------------------+ +------------------------+
+```
+
+- **320x568:** same stack at 292px. The disclosure text is about 215px by estimate, one line. The band sticks only when the scrollport minus the band is at least 44px (rule G); otherwise it scrolls with the content.
+- **Sidebar and wide layouts:** the sheet is the same single column; nothing reflows.
+- **Landscape:** the `max-height:520px` tokens tighten gaps to 3/6/9/14; the order is the same. The closed disclosure removes two 44px rows from the default height, which is the point of request 2.
+
+### DR3.4 Ownership
+
+Owns:
+- `src/engine/layout.js`: `merge()` and its call in `solve()`; then `tools/inline_engine.py` for the region.
+- `index.html`:
+  - `#scale-drawer` markup;
+  - the CSS rules named in DR3.3;
+  - `generateDeck()` copy loop;
+  - `DRAWER_ZONE`, `paintLayout()`, `paintMirrors()`, `resetSeats()` (renamed `resetLayout()`), `resetSheetState()`;
+  - `hitLayer()`, `swapSeats()`, `pickAnnouncement()`, `pickAnchor()`;
+  - `HINT_GUESS`;
+  - the sheet `keydown` Tab list.
+- `tools/sandbox.js`: the id list gains `scale-fine-toggle` and `scale-fine`.
+- Tests: `tests/layout.test.js`, `tests/app.test.js`, `tests/drawer_seats.test.js`, `tests/drawer_grid.test.js`, `tests/drawer_drag.test.js`, the three `tests/seat_sweeps_*.test.js`, `tests/pdfcards.test.js`.
+- Its mutants, its `FLOORS` rows, the README counts.
+
+Reads only: `src/engine/core.js`, `pdfcards.js`, `pdfdeck.js`, the Print and Resources groups, `tools/hifi.py`, `data/decks.json`, plan, spec, CLAUDE.md.
+
+### DR3.5 Steps (tests first, in their own commit)
+
+Rule N cases, used by every N test:
+- **Scales:** the D3 example, D Kurd 10 and F3 Low Pygmy, as typed scale text.
+- **Orientation:** both (`one`, `between`).
+- **Mirrors:** each mirror alone and both.
+- **Swaps:** one swap and three swaps in each ring the scale has.
+
+**Commit 1, tests only.** New tests are red. Identity guards are green and must stay green.
+
+| Rule | File | Title |
+|---|---|---|
+| N-1 | `tests/layout.test.js` | `rule N: after seats, each seat keeps its number and the note sitting there carries it` |
+| N-2 | `tests/layout.test.js` | `rule N: mirrors and orientation change no label` |
+| N-3 | `tests/layout.test.js` | `rule N: with no seats every column of every field is what main solved` (pinned from main; green in commit 1) |
+| N-3 | `tests/app.test.js` | `rule N: a deck with no moved seat is byte-identical in generateDeck output, card markup and PDF` (sha256 literals from main; green in commit 1) |
+| N-4 | `tests/app.test.js` | `rule N: generateDeck gives the plate and the card number line the seat number` |
+| N-4 | `tests/pdfcards.test.js` | `rule N: the browser PDF prints the seat number on the diagram and the number line` |
+| N-5 | `tests/app.test.js` | `rule N: a moved deck's stored record and share link are the strings main wrote` |
+| N-6 | `tests/layout.test.js` | `rule N: solve reads labels from its input and never from its own output` |
+| W-1..W-4 | `tests/app.test.js` | `rule W: seat names use the drawn number on rim, inner and bottom` |
+| W-5 | `tests/app.test.js` | `rule W: the tap row names the seat buttons only while the finer controls are open` |
+| O-1..O-6 | `tests/app.test.js` | `DR3 order: orientation, mirrors, disclosure, finer rows, RESET LAYOUT, hint` |
+| O-1 | `tests/app.test.js` | `DR3 orientation: label, two options, helper and status rows read as the owner wrote them` |
+| F-1, F-4 | `tests/app.test.js` | `DR3 disclosure: closed on every sheet open, kept across a drawer close` |
+| F-2, F-3, F-6 | `tests/app.test.js` | `DR3 disclosure: toggling moves no focus, and closing under a focused step button focuses the disclosure` |
+| F-5, F-7 | `tests/app.test.js` | `DR3 Tab order on Add and Edit, finer controls closed and open` |
+| F-8 | `tests/app.test.js` | `DR3 Escape from the disclosure closes the drawer and focuses the toggle` |
+| F-5, F-7, F-9 | `tests/drawer_seats.test.js` | `DR3 browser: real Tab skips the hidden step buttons and every stop lands inside the scrollport at 380x667` |
+| R-1 | `tests/app.test.js` | `DR3 reset is enabled by a seat, by either mirror and by orientation, each alone` |
+| R-2 | `tests/app.test.js` | `DR3 reset returns seats, both mirrors and orientation to the default and writes Layout reset.` |
+| R-3, R-4 | `tests/app.test.js` | `DR3 reset on Edit gives the generated default, not the stored layout` |
+
+**Commit 2.** `merge()` writes slot 5 for reseated rings: for the ring's note *i* with seat list `list`, `fields[zone[i]][5] = source[zone[list[i]]][5]`. `generateDeck()` copies slot 5 with slot 4. `tools/inline_engine.py`.
+
+**Commit 3.** Seat wording.
+
+**Commit 4.** Markup order, copy, CSS, disclosure state (`fineOpen`, reset in `resetSheetState()`), Tab list, `DRAWER_ZONE`.
+
+**Commit 5.** `resetLayout()` and the `paintLayout()` enabled rule.
+
+**Commit 6.** Mutants, refresh, FLOORS, README.
+
+Budget: no unit file over 25s locally. Browser tests go in the three drawer files, nothing into `tests/e2e.test.js` beyond the one string fix in DR3.7. The PR carries the line-to-assertion table. A title names a rule only if the test asserts it.
+
+### DR3.6 Mutants
+
+Same format rules as PM.6.
+
+| Mutant | Break | Kills |
+|---|---|---|
+| `dr3_number_follows_the_note` | `merge()` writes no slot 5 | `rule N: after seats, each seat keeps its number…` |
+| `dr3_deck_build_copies_angle_only` | `generateDeck()` drops the slot-5 copy | `rule N: generateDeck gives the plate and the card number line the seat number` |
+| `dr3_label_read_from_output` | `merge()` reads labels from the copy it is writing | `rule N: solve reads labels from its input…` |
+| `dr3_mirror_renumbers` | label write keyed to angle order | `rule N: mirrors and orientation change no label` |
+| `dr3_seat_name_uses_ring_index` | wording uses `seat + 1` | `rule W: seat names use the drawn number…` |
+| `dr3_disclosure_open_by_default` | markup without `hidden` | `DR3 disclosure: closed on every sheet open…` |
+| `dr3_hidden_buttons_reachable_by_tab` | `#scale-fine` hidden by `visibility` instead of `hidden` | `DR3 Tab order on Add and Edit…` |
+| `dr3_tab_list_omits_disclosure` | toggle missing from the Tab list | `DR3 Tab order on Add and Edit…` |
+| `dr3_escape_on_disclosure_loses_focus` | toggle missing from `DRAWER_ZONE` | `DR3 Escape from the disclosure…` |
+| `dr3_reset_leaves_a_mirror` | bottom mirror not reset | `DR3 reset returns seats, both mirrors and orientation…` |
+| `dr3_reset_leaves_the_anchor` | `anchor` not reset | same title |
+| `dr3_reset_enabled_by_seats_only` | old `!layoutSeats` rule | `DR3 reset is enabled by a seat, by either mirror and by orientation…` |
+| `dr3_reset_returns_to_stored` | Edit reset restores `layoutBase` | `DR3 reset on Edit gives the generated default…` |
+| `dr3_orientation_below_mirrors` | old order | `DR3 order: …` |
+
+### DR3.7 Existing tests and mutants that change meaning
+
+Rewrite, never delete:
+- `tests/layout.test.js`: `solve preserves the field ids and every non-angle column` holds as written (its sweep has no seats); add "with no seats" to its title. `seats reassign the solved angles and never invent one` and `a ring's seats say which seat each of its notes takes` keep their angle assertions.
+- `tests/app.test.js`:
+  - `DR1 line 25` (`ON CENTRE pressed by default`), `DR1 line 26`, `DR1 line 27`, `DR1 line 115`, `DR2a (71)`: button names in titles and assertions become `1 CENTRED` / `1 + 2 SPLIT`.
+  - `DR1 line 131`: the label text.
+  - `DR1 rule S`: the anchor, hint and status strings.
+  - `DR2a (59, 76, 99, 116, 12): SEAT buttons follow the pick, RESET SEATS follows the seats…`: retitled to `RESET LAYOUT follows the layout`; its enabled assertions move to the R-1 test, and the SEAT-button part opens the disclosure first.
+  - `DR2a rule P (120): the Tab order of the sheet…`: superseded by the F-7 test; rewritten in place.
+  - `DR2b (16.3)`: reset wording.
+  - About 30 lines in the file assert the old strings.
+- `tests/drawer_seats.test.js`:
+  - `rim seat 3 of 8` becomes `rim seat 3`; `bottom seat 12 of 12` becomes `bottom seat U12`.
+  - `(84) …the toggle and both step rows…` is rewritten to "the toggle is inside the scrollport; with the finer controls open both step rows are reachable".
+  - `(18, 84)` likewise.
+  - `Tab order, the plate as one stop…`: new order.
+- `tests/drawer_drag.test.js`: `stays in rim seat 1 of 9.` becomes `stays in rim seat 1.`
+- `tests/seat_sweeps_keys.test.js`, `seat_sweeps_tap_add.test.js`, `seat_sweeps_tap_edit.test.js`: the row 7 and row 8 regexes take the seat's drawn label, read from the default fields.
+- `tests/e2e.test.js`: one message string, `Tab never reached BESIDE CENTRE`.
+- Mutants:
+  - `dr2a_reset_seats_leaves_focus`: keeps its break; `# kills:` follows the retitled test.
+  - `dr2a_row8_names_a_place`: re-cut on the new row 8.
+  - `dr1_anchor_not_reaching_deck`, `dr1_hint_stays_while_open`, `dr1_disabled_not_dimmed`: the last one's selector now includes `#scale-fine-toggle`.
+  - `dr2a_cross_ring_swaps`, `dr2a_only_note_is_pickable`, `dr2a_note_step_does_not_wrap`, `dr2a_put_down_always_cancelled`, `dr2b_lift_of_picked_clears_moved`, `dr2b_lift_scrolls_sheet`, `r3s_served_id_not_in_markup`: refresh contexts; update `# kills:` where a title changed.
+
+### DR3.8 Verify
+
+```
+python3 tools/inline_engine.py --check && python3 tools/sync_decks.py --check
+node --test tests/layout.test.js tests/pdfcards.test.js tests/app.test.js
+node --test tests/seat_sweeps_keys.test.js tests/seat_sweeps_tap_add.test.js tests/seat_sweeps_tap_edit.test.js
+node --test tests/drawer_seats.test.js tests/drawer_grid.test.js tests/drawer_drag.test.js
+python3 -m unittest tests.test_suite_health tests.test_readme_currency
+```
+
+No full e2e and no mutation run locally. CI at the pushed head SHA is the evidence. Then the owner gate: a private preview of the lane head, before merge.
+
+### DR3.9 Stop and report
+
+- Any no-moved-seat hash differs from main.
+- A third caller of `HPE.layout.solve` passes seats with fields that are not fresh parse output.
+- Any reader of slot 5 is found beyond `pan()`, the card number line, `HPE.pdfcards` and `tools/hifi.py`.
+- Rule G fails at any grid cell with the new order.
+- The disclosure text wraps at 320px.
+- A share link or stored record for a moved deck differs from main's string.
+- The full-deck button is still rendered on main when DR3 is ready (merge order inverted; see D-A12).
+- Third review FAIL (regroup rule).
+
+### DR3.10 Acceptance
+
+| # | Criterion | Proof |
+|---|---|---|
+| D-A1 | Seat number does not change on a swap, on plate, cards and PDF | N-1 and N-4 tests; `dr3_number_follows_the_note`; `dr3_deck_build_copies_angle_only` |
+| D-A2 | Mirrors and orientation keep numbers on seats | N-2 test; `dr3_mirror_renumbers` |
+| D-A3 | Unmoved decks byte-identical | both N-3 tests |
+| D-A4 | Formats unchanged | N-5 test |
+| D-A5 | Seat wording true on three rings | rule W test; `dr3_seat_name_uses_ring_index` |
+| D-A6 | Step buttons hidden behind the disclosure, closed by default | `dr3_disclosure_open_by_default`; `dr3_hidden_buttons_reachable_by_tab` |
+| D-A7 | Tab order and Escape correct with the disclosure | `dr3_tab_list_omits_disclosure`; `dr3_escape_on_disclosure_loses_focus` |
+| D-A8 | `RESET LAYOUT` is a button, resets everything | `dr3_reset_leaves_a_mirror`; `dr3_reset_leaves_the_anchor` |
+| D-A9 | Reset enabled by any difference | `dr3_reset_enabled_by_seats_only` |
+| D-A10 | Edit reset is the generated default | `dr3_reset_returns_to_stored` |
+| D-A11 | Orientation copy and position | order and orientation tests; `dr3_orientation_below_mirrors` |
+| D-A12 | `legendLines()` unchanged and unreachable from the UI | PM rule 1 test on main (precondition) |
+| D-A13 | Rule G holds | `tests/drawer_grid.test.js` and the DR3 browser test |
+
+### 20.24.3 `legendLines()`: recorded, not changed
+
+`legendLines()` prints `TONEFIELD NUMBERS RUN 1 - n FROM THE LOWEST [TOP ]NOTE` on the legend card. That card exists only in the full variant. After PM no control builds it, and built-in decks (the only input of `tools/decks.py`) carry no seats. So the sentence cannot be shown false through the UI, and it is left as is. If the full variant returns to the UI, the sentence is revisited then.
+
+### 20.24.4 Eng review and outside voice (2026-10-08)
+
+`/plan-eng-review` ran on 20.23 and then on this section; the owner is away, so each recommended option was taken and is recorded here.
+
+Scope: the seven requests are the owner's; nothing is added or cut. Two lanes because the print menu has no owner gate and shares no behaviour with the drawer.
+
+Codex outside voice on the 20.23 draft, five findings, all accepted:
+1. Ring-relative seat copy contradicts rule N on inner and bottom rings. Answer: the seat wording rules W-1 to W-5.
+2. `legendLines()` is false for a moved deck. Answer: 20.24.3 and the merge order.
+3. The sheet's hard-coded Tab list omits the disclosure. Answer: F-7.
+4. Escape on the disclosure loses focus unless it joins `DRAWER_ZONE`. Answer: F-8.
+5. Reset is seats-only and disabled after a mirror-only or orientation-only change. Answer: R-1, R-2.
+
+Review findings and dispositions:
+- (9/10) Rule N belongs in `merge()` plus the `generateDeck()` copy loop; every renderer reads slot 5. Verified: `merge()` builds `fields[id] = source[id].slice()` before any write, so reading labels from `source` is safe. The lane no longer owns `tools/hifi.py`, `tools/decks.py` or `pdfcards.js` (20.23 allowed them).
+- (8/10) PM-3 and the N-3 PDF guard pin sha256 literals. If the browser PDF carries a build date, the lane fixes the clock the way the existing byte tests do and says so in the PR; it does not weaken the comparison to length or text.
+- (8/10) The half-done state (preview numbers fixed, cards still travelling) gets its own mutant, `dr3_deck_build_copies_angle_only`.
+- (7/10) R-2 moves focus to `#scale-layout-toggle` because the button disables itself; this is today's behaviour for reset and stays.
+- (7/10) Planner copy the owner has not seen (`Note 1 is centred.`, `Notes 1 and 2 are split.`, the `HINT_GUESS` rewording, `DOWNLOAD PDF`, the `aria-label` of the new link) is covered by the DR3 owner gate and by the return summary.
+- Performance: none. One extra slot write per reseated note.
+- Not in scope: DESIGN.md, the iOS keyboard item and the label-ratio item in `TODOS.md` are untouched.
+
+Failure modes checked: no-move identity (N-3, two tests); mirror renumbering (N-2); stale labels from a second solve over solved output (N-6); hidden buttons reachable by keyboard (F-5); reset leaving one option behind (two mutants); the new link outside the Tab trap (mutant); a rebuilt `decks.py` recreating the deleted files (PM-11 and its mutant).
+
+Facts the planner could not verify, left to the lanes with stop conditions: all pixel estimates; the new values of the pinned fit literals; the default literals on a fresh Add sheet (read from `resetSheetState()`); whether any test reads the CLAUDE.md lines about six PDFs; whether `mr_prints_natural_width` and `mr_paper_select_not_centred` still express a break; the shape of main's CI artifacts for the FLOORS reset.
+
+Coordinator readings added by this section (owner can overturn any): `DOWNLOAD PDF` and the one-row print group; the chord-only file name kept; `HANDPAN 101` first in Resources on its own row; `{ring} seat {N}` wording without "of k"; the orientation status copy; PM merges before DR3; the three CHORD_ONLY PDFs stay.
+
 ## NOT in scope
 
 - Any change to chord ranking, voicing or sequencing: the grammar and the
