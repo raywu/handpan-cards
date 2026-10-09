@@ -1,0 +1,15 @@
+# kills: every row of the settings panel is flush: each visual line spans the row from edge to edge
+# suite: node --test --test-name-pattern every.row.of.the.settings.panel.is.flush tests/e2e.test.js
+# Lane PM. The print row may wrap again, so DOWNLOAD PDF and the paper select can fall onto two lines.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -549,7 +549,7 @@ main{overflow-x:clip}
+    panel's own .mode-sized controls, which is also what clears the 44px
+    target floor (eng review C4). No new colour: these reuse `.mode`'s own
+    surface, border and text tokens. */
+-.prints{display:flex; flex-wrap:nowrap; gap:var(--sp-2)}
++.prints{display:flex; flex-wrap:wrap; gap:var(--sp-2)}
+ .prints button, .prints select{min-width:0}
+ .prints button, .prints select{font:600 10.5px/1 "Nunito Sans";
+   letter-spacing:.08em; color:#c4bcab; background:#211d16; border:1px solid #433b2c;

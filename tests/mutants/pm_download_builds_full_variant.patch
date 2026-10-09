@@ -1,0 +1,15 @@
+# kills: PM rule 3: DOWNLOAD PDF names and builds the chord-only file, byte for byte what main built
+# suite: node --test --test-name-pattern PM.rule.3 tests/app.test.js
+# Lane PM. DOWNLOAD PDF asks for the 'full' variant, so a tap builds the full deck instead of the chord-only sheets.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1382,7 +1382,7 @@ footer.seq{row-gap:var(--sp-1)}
+   <div class="panel-group">
+     <h3 class="panel-heading">Print this deck</h3>
+     <div class="prints">
+-      <button type="button" id="print-download" onclick="downloadDeckPDF('shop', this); closePanel();">DOWNLOAD PDF</button>
++      <button type="button" id="print-download" onclick="downloadDeckPDF('full', this); closePanel();">DOWNLOAD PDF</button>
+       <!-- The paper choice keeps the panel open (design direction, "After an
+            action"): the next tap is a print button, not a new task. -->
+       <select id="print-paper-select" aria-label="Paper size" onchange="setPrintPaper(this.value)">

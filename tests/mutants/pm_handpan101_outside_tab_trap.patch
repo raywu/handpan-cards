@@ -1,0 +1,15 @@
+# kills: Tab cycles exactly the fifteen flash-card stops in the modal at every viewport class
+# suite: node --test --test-name-pattern Tab.cycles.exactly.the.fifteen.flash-card.stops tests/e2e.test.js
+# Lane PM. panelStops() leaves #res-handpan-101 out, so the new link is not a Tab stop of the panel.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10486,7 +10486,7 @@ function panelStops() {
+           ...settingsPanel.querySelectorAll(".prints button, .prints select"),
+           // Eng review amendment 1: the Resources links join the Tab trap
+           // after the print controls, in DOM order.
+-          ...settingsPanel.querySelectorAll('#settings-panel a.mode[id^="res-"]')]
++          ...settingsPanel.querySelectorAll('#settings-panel a.mode[id^="res-"]:not(#res-handpan-101)')]
+     .filter(isStop);
+ }
+ function openPanel() {

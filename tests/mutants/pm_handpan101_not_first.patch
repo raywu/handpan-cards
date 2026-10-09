@@ -1,0 +1,32 @@
+# kills: the settings panel has exactly one Resources group with its six outbound links in three rows
+# suite: node --test --test-name-pattern the.settings.panel.has.exactly.one.Resources.group tests/e2e.test.js
+# Lane PM. HANDPAN 101 moves below the three-site row, so it is no longer the first Resources link.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1407,12 +1407,6 @@ footer.seq{row-gap:var(--sp-1)}
+          three sites (class trio: equal widths above the landscape grid, two
+          equal on line one in the sidebar), row three (class duo: one line, labels wrap inside their
+          boxes) the two Amy Naylor videos. -->
+-    <div class="modebar">
+-      <a class="mode" id="res-handpan-101"
+-         href="https://docs.google.com/document/d/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco/edit?usp=drivesdk"
+-         aria-label="Handpan 101 (Google Doc)"
+-         target="_blank" rel="noopener">HANDPAN 101</a>
+-    </div>
+     <div class="modebar trio">
+       <a class="mode" id="res-handpaner" href="https://handpaner.com/"
+          target="_blank" rel="noopener">HANDPANER</a>
+@@ -1421,6 +1415,12 @@ footer.seq{row-gap:var(--sp-1)}
+       <a class="mode" id="res-trainingcards" href="https://svenkirchhofer.de/handpan-training-cards/"
+          target="_blank" rel="noopener">HTC</a>
+     </div>
++    <div class="modebar">
++      <a class="mode" id="res-handpan-101"
++         href="https://docs.google.com/document/d/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco/edit?usp=drivesdk"
++         aria-label="Handpan 101 (Google Doc)"
++         target="_blank" rel="noopener">HANDPAN 101</a>
++    </div>
+     <div class="modebar duo">
+       <a class="mode" id="res-amy-progressions" href="https://youtu.be/-BD13QhFJ-M"
+          aria-label="Amy Naylor: ten handpan chord progressions (YouTube)"
