@@ -57,7 +57,7 @@ decisions behind it.
 - **Shuffle** randomizes order. Deck and mode choices persist between visits
   (when the browser allows storage).
 - **+ ADD A SCALE** (in the settings panel, under Scales) opens the scale sheet:
-  type your pan low to high on one line, the ding in round brackets and each bottom note in square brackets where its pitch falls, e.g. `[C] (D) A C D E F G A C`. If the pan has inner notes, put a `|` before them. The line under the box counts the top, inner and bottom notes it read. Pick a palette, then GENERATE CARDS. No pan is too big; a crowded one warns that its labels print small. Scales saved before this version still open. A saved scale with an even number of rim notes now draws with its sides swapped, to match every other pan; switch MIRROR to swap them back. Regenerating the same
+  type your pan low to high on one line, the ding in round brackets and each bottom note in square brackets where its pitch falls, e.g. `[C] (D) A C D E F G A C`. If the pan has inner notes, put a `|` before them. The line under the box counts the top, inner and bottom notes it read. Pick a palette, then GENERATE CARDS. No pan is too big; a crowded one warns that its labels print small. Scales saved before this version still open. A saved scale with an even number of rim notes now draws with its sides swapped, to match every other pan; ADJUST LAYOUT, under the pan preview, opens the layout drawer, where MIRROR TOP and MIRROR BOTTOM swap them back. The drawer also holds HANDPAN ORIENTATION (`#1 CENTRED`, note 1 alone nearest you, or `#1 / #2`, notes 1 and 2 side by side), a tap-then-tap or hold-and-drag swap of two notes in one ring (a seat's number stays put, only the note moves), finer PREVIOUS/NEXT NOTE and SEAT buttons behind HARD TO TAP? SHOW FINER CONTROLS, and RESET LAYOUT, which returns notes, both mirrors and the orientation to the default. Regenerating the same
   scale replaces that deck in place. The sheet is a real page, not an overlay:
   opening it pushes `#add`, and reopening a saved one pushes `#edit-<id>`, so
   the back gesture closes the sheet instead of leaving the app. A page route
@@ -70,9 +70,12 @@ decisions behind it.
   tap to confirm. A generated deck also travels as a `#s=` link: the app opens
   one from the address bar with no account and no server, though nothing in
   the UI builds or copies that link yet.
-  A scale saved in a tab still running the previous version of the app lands under
+  Saved scales live under the storage key `hpfc.scales.v3`; the first boot of this version copies the old `hpfc.scales` list there. A scale saved in a tab still running the previous version of the app lands under
   the old storage key and does not appear in the new app; that needs a tab held
   open across an update, and reloading it fixes the tab.
+  A scale's deck id is a 32-bit hash of its notes, so two different scales can
+  in principle share an id; the app keeps one record per id, so on a collision
+  one of the two is kept. It is vanishingly rare and not guarded against.
 - **Print**: every deck - built-in and custom alike - shows one DOWNLOAD PDF
   button (the chord-only sheets) plus a Letter/A4 size picker. Tapping it does
   not open a pre-built file; the PDF is built in the browser, on the spot, by
@@ -162,7 +165,7 @@ generator all derive from it. Edit that file, then run
 `python3 tools/sync_decks.py` (re-injects it into `index.html`) and
 `python3 tools/decks.py` (rebuilds the three committed chord-only PDFs through
 `tools/hifi.py` - the print-shop artifacts under `tests/test_pdf_build.py`'s
-staleness gate, not what the app's print buttons open).
+staleness gate, not what the app's DOWNLOAD PDF button builds).
 
 Layout notes (intentional, verified against the physical instruments -
 do not "correct"):

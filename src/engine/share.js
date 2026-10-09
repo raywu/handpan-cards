@@ -31,7 +31,9 @@
  * them (scale strings are note tokens; a name is printable ASCII 0x20-0x7E per
  * spec 13), so the split is unambiguous.
  *
- *     line 0   the canonical scale string, core.formatSeed(seed)
+ *     line 0   the canonical scale string: core.formatSeed(seed) from v4,
+ *              core.formatLegacySeed(seed) in v1 to v3 (the version tag picks
+ *              the reader, never the string)
  *     line 1   the options. v1 and v2: "palette \t parent \t mirror \t name".
  *              v3: "palette \t parent \t mirror \t anchor \t name". parent is
  *              empty for "infer"; mirror is "0" or "1" (both rings alike),
@@ -60,7 +62,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // The version this build WRITES. Every version <= this one is still
   // readable: see decode step 2 (D5-4). v1 = an empty line 2, v2 = a flat layout
   // order on it, v3 = per-ring seats on it and two more facts on the options
-  // line (the mirror of each ring, the anchor).
+  // line (the mirror of each ring, the anchor), v4 = the same payload with the
+  // scale string on line 0 in the one-line grammar (v1 to v3 hold the legacy one).
   var VERSION = 4;
   var NEWEST = VERSION;   // an alias decode can still see past its own shadow
   var OLDEST = 1;         // no version 0 ever shipped
