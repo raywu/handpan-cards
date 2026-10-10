@@ -1,0 +1,22 @@
+# kills: DR3 order: hint, orientation, mirrors, disclosure, finer rows, RESET LAYOUT
+# suite: node --test --test-name-pattern ^DR3.order tests/app.test.js
+# The drawer hint goes back to being the last child of #scale-drawer, under RESET LAYOUT.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1249,7 +1249,6 @@ footer.seq{row-gap:var(--sp-1)}
+       </div>
+       <p class="sheethint" id="scale-layout-state" hidden></p>
+       <div id="scale-drawer" role="group" aria-label="Layout" hidden>
+-        <p class="sheethint" id="scale-drawer-hint" hidden></p>
+         <div class="editrow">
+           <span class="sheetlabel" id="scale-anchor-label">HANDPAN ORIENTATION</span>
+           <div class="ctlrow" role="group" aria-labelledby="scale-anchor-label">
+@@ -1285,6 +1284,7 @@ footer.seq{row-gap:var(--sp-1)}
+         <div class="ctlrow">
+           <button class="mode" type="button" id="scale-layout-reset" disabled>RESET LAYOUT</button>
+         </div>
++        <p class="sheethint" id="scale-drawer-hint" hidden></p>
+       </div>
+     </div>
+     <!-- Above the control row, so the soft keyboard never covers it. Warnings,

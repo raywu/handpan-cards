@@ -1,0 +1,15 @@
+# kills: LF F-2: #1 / #2 carries an aria-label that starts with its visible text
+# suite: node --test --test-name-pattern ^LF.F-2 tests/app.test.js
+# #scale-anchor-between loses its aria-label.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1255,7 +1255,7 @@ footer.seq{row-gap:var(--sp-1)}
+           <div class="ctlrow" role="group" aria-labelledby="scale-anchor-label">
+             <div class="mirror">
+               <button class="mode" type="button" id="scale-anchor-one" aria-pressed="true" disabled>#1 CENTRED</button>
+-              <button class="mode" type="button" id="scale-anchor-between" aria-label="#1 / #2, notes 1 and 2 either side of centre" aria-pressed="false" disabled>#1 / #2</button>
++              <button class="mode" type="button" id="scale-anchor-between" aria-pressed="false" disabled>#1 / #2</button>
+             </div>
+           </div>
+         </div>

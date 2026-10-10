@@ -1,0 +1,14 @@
+# kills: LF F-5: changing the degree select re-parses the seed with the new parent
+# suite: node --test --test-name-pattern ^LF.F-5 tests/app.test.js
+# The degree select's change listener is removed.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10448,7 +10448,6 @@ scaleBox.addEventListener("input", () => {
+ // The name is a seed option, so an unusable one is rejected by core.parseSeed
+ // through the same parse line every other input goes through.
+ nameBox.addEventListener("input", () => { nameDirty = true; resyncSheet(true); });
+-degSel.addEventListener("change", () => resyncSheet(true));
+ scaleBox.addEventListener("keydown", e => {
+   if (e.key !== "Enter" || e.isComposing) return;
+   e.preventDefault();
