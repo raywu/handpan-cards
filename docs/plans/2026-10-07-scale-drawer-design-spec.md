@@ -41,7 +41,7 @@ Closed name list. Lanes use these ids. The `app_surface_v1.json` fixture and `to
 | `scale-layout-hint` | the closed-state hint | DR1 |
 | `scale-layout-state` | the unsaved or changed notice (section 4). A child of `#scale-layout-zone`, directly after `#scale-layout-row` and before `#scale-drawer`. In the landscape two-column layout it sits in the controls column under the toggle row | DR1 (anchor and mirrors), DR2 (seats) |
 | `scale-drawer` | the disclosure region, `role="group"` | DR1 |
-| `scale-drawer-hint` | the open-state instruction. Last in the drawer | DR1 (element), DR2 (text) |
+| `scale-drawer-hint` | the open-state instruction. Last in the drawer. SUPERSEDED 2026-10-09 (lane F): the hint is the first child of `#scale-drawer`. | DR1 (element), DR2 (text) |
 | `scale-legacy-group` | wrapper, inside `#scale-drawer`, of today's ROTATE, MOVE and RESET group with its `#scale-layout-label`. Present between DR1 and DR2 only; `hidden` on Add (section 17) | DR1 (wraps), DR2 (removes) |
 | `scale-legacy-hint` | the group's own short hint (today's ROTATE and MOVE sentence). The group's `aria-describedby` names it. It is not `#scale-layout-hint`, which is the toggle row's | DR1 (renames), DR2 (removes) |
 | `scale-note-prev`, `scale-note-next` | PREVIOUS NOTE, NEXT NOTE | DR2 |
@@ -176,7 +176,7 @@ The wireframe is the DR2 build. In the DR1 build the hint reads the DR1-era sent
 | [  ON CENTRE  ] [ BESIDE CENTRE ]    |
 | On centre puts note 1 at the bottom  |
 | centre. Beside centre puts ...       |
-| Tap a note, then tap another note in |   #scale-drawer-hint, last
+| Tap a note, then tap another note in |   #scale-drawer-hint, last (SUPERSEDED 2026-10-09 (lane F): first child of `#scale-drawer`)
 | the same ring to swap them. ...      |
 |--------------------------------------|
 | [          GENERATE CARDS           ]|
@@ -313,7 +313,7 @@ All are `.mode` buttons at 44 px (existing rule), in `.ctlrow` and `.mirror` fle
 4. MIRROR TOP, MIRROR BOTTOM, with the helper below;
 5. RESET SEATS, on its own row [AD-MC 2];
 6. the `NOTE 1` label, the anchor pair and its helper;
-7. `#scale-drawer-hint`, last.
+7. `#scale-drawer-hint`, last. SUPERSEDED 2026-10-09 (lane F): the hint is the first child of `#scale-drawer`.
 
 In the DR1 build items 2 and 3 are today's ROTATE, MOVE and RESET group (Edit only), and DR2 replaces it in place with items 2, 3 and 5.
 
@@ -358,7 +358,7 @@ The default for a typed scale is ON CENTRE, always. A deck of Pygmy's scale kept
 - The amber colour is removed by the next write that is not a refusal.
 - It shows only what a write put there. It is cleared on close.
 
-**Drawer hint.** `#scale-drawer-hint`, `.sheethint`, last in the drawer. Text: `Tap a note, then tap another note in the same ring to swap them. Or hold a note and drag it.`
+**Drawer hint.** `#scale-drawer-hint`, `.sheethint`, last in the drawer. SUPERSEDED 2026-10-09 (lane F): the hint is the first child of `#scale-drawer`. Text: `Tap a note, then tap another note in the same ring to swap them. Or hold a note and drag it.`
 
 ## 10. The hit-target problem
 
@@ -939,7 +939,7 @@ Source: plan 20.16 to 20.24.6 and interview 14 (20.23), checked against `index.h
 3. `#scale-fine-toggle`, one quiet text button, `aria-expanded` and `aria-controls="scale-fine"`: closed `HARD TO TAP? SHOW FINER CONTROLS`, open `HIDE FINER CONTROLS`.
 4. `#scale-fine`, hidden until opened: PREVIOUS NOTE / NEXT NOTE and PREVIOUS SEAT / NEXT SEAT, ids and behaviour unchanged.
 5. `RESET LAYOUT` (`#scale-layout-reset`), full row.
-6. `#scale-drawer-hint`, last: `Tap a note, then tap another note in the same ring to swap them. Or hold a note and drag it.`
+6. `#scale-drawer-hint`, last. SUPERSEDED 2026-10-09 (lane F): the hint is the first child of `#scale-drawer`. `Tap a note, then tap another note in the same ring to swap them. Or hold a note and drag it.`
 
 **Disclosure.** Closed whenever the sheet opens. Opening it moves neither focus nor scroll; closing it while a step button has focus puts focus on the disclosure. It stays as set across drawer close and reopen within one sheet. Closed, the four buttons are out of the tab order and the accessibility tree. It is enabled whenever the drawer's controls are. The arrow keys, taps and drags on the plate are the same open or closed.
 

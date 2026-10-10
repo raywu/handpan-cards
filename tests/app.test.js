@@ -5480,7 +5480,10 @@ test("R4-A29 regen_card_fixture --html without a value exits non-zero with a mes
   const { spawnSync } = require("node:child_process");
   const tool = path.join(ROOT, "tools", "regen_card_fixture.js");
   const dest = path.join(ROOT, "tests", "fixtures", "card_face_v1.json");
+  const genDest = path.join(ROOT, "tests", "fixtures", "gen_face_v1.json");
   const before = fs.readFileSync(dest);
+  const mtimes = () => [dest, genDest].map((f) => fs.statSync(f).mtimeMs);
+  const mtimeBefore = mtimes();
   for (const argv of [["--html"], ["--check", "--html"], ["--html", "--check"], ["--gen", "--html"]]) {
     const r = spawnSync(process.execPath, [tool, ...argv], { encoding: "utf8" });
     const where = argv.join(" ");
@@ -5489,6 +5492,7 @@ test("R4-A29 regen_card_fixture --html without a value exits non-zero with a mes
     assert.doesNotMatch(r.stderr, /TypeError|at Object\.|node:internal/, `${where}: a message, not a stack`);
   }
   assert.ok(fs.readFileSync(dest).equals(before), "a refused invocation writes nothing");
+  assert.deepStrictEqual(mtimes(), mtimeBefore, "a refused invocation touched a fixture, even with equal bytes");
 });
 
 test("AP3-1 faceHTML is the only answer-template builder", () => {
@@ -7284,10 +7288,12 @@ test("DR2a (83, 132, 130): the DOM carries the new controls in the order of 20.2
   const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8").replace(/<!--[\s\S]*?-->/g, "");
   const order = ["scale-layout-toggle", "scale-layout-state", "scale-anchor-one", "scale-anchor-between", "scale-mirror",
     "scale-mirror-bottom", "scale-fine-toggle", "scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next",
-    "scale-layout-reset", "scale-drawer-hint"];
+    "scale-layout-reset"];
   const at = order.map((id) => html.indexOf(`id="${id}"`));
   assert.ok(at.every((x) => x >= 0), `missing: ${order.filter((_, i) => at[i] < 0)}`);
   assert.deepStrictEqual(at.slice().sort((a, b) => a - b), at, "the controls are not in the order of 20.24");
+  assert.ok(html.indexOf('id="scale-drawer-hint"') > html.indexOf('id="scale-layout-state"')
+    && html.indexOf('id="scale-drawer-hint"') < html.indexOf('id="scale-anchor-one"'), "lane F: the drawer hint comes first in the drawer");
   assert.strictEqual(dr1Markup("scale-note-prev").text, "PREVIOUS NOTE");
   assert.strictEqual(dr1Markup("scale-note-next").text, "NEXT NOTE");
   assert.strictEqual(dr1Markup("scale-seat-prev").text, "PREVIOUS SEAT");
@@ -8398,16 +8404,16 @@ const DR3_STEPS = ["scale-note-prev", "scale-note-next", "scale-seat-prev", "sca
 const dr3Fine = (app) => app.els["scale-fine-toggle"];
 const dr3Open = (app, text, edit) => { d2Open(app, text, edit); return app; };
 
-test("DR3 order: orientation, mirrors, disclosure, finer rows, RESET LAYOUT, hint", () => {
+test("DR3 order: hint, orientation, mirrors, disclosure, finer rows, RESET LAYOUT", () => {
   const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8").replace(/<!--[\s\S]*?-->/g, "");
   const drawer = html.slice(html.indexOf('id="scale-drawer"'));
-  const order = ["scale-anchor-label", "scale-anchor-one", "scale-anchor-between", "scale-mirror", "scale-mirror-bottom",
-    "scale-fine-toggle", "scale-fine", ...DR3_STEPS, "scale-layout-reset", "scale-drawer-hint"];
+  const order = ["scale-drawer-hint", "scale-anchor-label", "scale-anchor-one", "scale-anchor-between", "scale-mirror", "scale-mirror-bottom",
+    "scale-fine-toggle", "scale-fine", ...DR3_STEPS, "scale-layout-reset"];
   const at = order.map((id) => drawer.indexOf(`id="${id}"`));
   assert.ok(at.every((x) => x >= 0), `missing: ${order.filter((_, i) => at[i] < 0)}`);
   assert.deepStrictEqual(at.slice().sort((a, b) => a - b), at, "the drawer is not in the order of 20.24");
   const hint = drawer.indexOf("Which note sits nearest you");
-  assert.ok(hint > at[2] && hint < at[3], "the orientation helper sits under the two options, above the mirrors");
+  assert.ok(hint > at[3] && hint < at[4], "the orientation helper sits under the two options, above the mirrors");
   const fine = dr1Markup("scale-fine");
   assert.ok(fine.attrs.includes("hidden"), "#scale-fine ships hidden");
   const toggle = dr1Markup("scale-fine-toggle");
@@ -8579,4 +8585,99 @@ test("DR3 reset on Edit gives the generated default, not the stored layout", () 
   const saved = app.registry()[app.deckId()];
   const clean = makeCustom(boot(), DR1_PYGMY_MAKER);
   assert.deepStrictEqual(plain(saved.fields), plain(clean.fields));
+});
+
+/* ---- Lane F: drawer follow-up (docs/plans/2026-10-09-lane-f-drawer-follow-up.md) ---- */
+
+const LF_BAD_NAME = "D Kürd";
+const lfEditBadName = (text = D2_AMARA) => {
+  const app = boot();
+  openEdit(app, makeCustom(app, D2_AMARA));
+  app.els["scale-name"].value = LF_BAD_NAME;
+  app.els["scale-name"].dispatchEvent({ type: "input" });
+  if (text !== D2_AMARA) app.type(text);
+  return app;
+};
+
+test("LF F-1 (a): a non-ASCII name with a valid scale keeps ADJUST LAYOUT enabled, GENERATE disabled, the refusal naming the name", () => {
+  const app = lfEditBadName();
+  assert.strictEqual(app.els["scale-layout-toggle"].disabled, false, "a bad name disabled the drawer");
+  assert.strictEqual(app.els["scale-generate"].disabled, true);
+  assert.notStrictEqual(app.els["scale-refusal"].textContent, "");
+  assert.strictEqual(app.els["scale-box"].classList.contains("bad"), true);
+  app.els["scale-layout-toggle"].click();
+  assert.strictEqual(app.els["scale-drawer"].hidden, false, "the drawer did not open");
+});
+
+test("LF F-1 (b): a non-ASCII name with an unparseable scale still disables ADJUST LAYOUT", () => {
+  const app = lfEditBadName("(D3) zzz");
+  assert.strictEqual(app.els["scale-layout-toggle"].disabled, true);
+  assert.strictEqual(app.els["scale-generate"].disabled, true);
+});
+
+test("LF F-1 (c): the Add path ignores the name box, so nothing changes there", () => {
+  const app = boot();
+  openSheet(app);
+  app.els["scale-name"].value = LF_BAD_NAME;
+  app.els["scale-name"].dispatchEvent({ type: "input" });
+  app.type(D2_AMARA);
+  assert.strictEqual(app.els["scale-layout-toggle"].disabled, false);
+  assert.strictEqual(app.els["scale-generate"].disabled, false);
+});
+
+test("LF F-1 (d): under a bad name, a pan with no ring of two notes still says so on open", () => {
+  const app = lfEditBadName("(D3) A3");
+  assert.strictEqual(app.els["scale-layout-toggle"].disabled, false);
+  app.els["scale-layout-toggle"].click();
+  assert.strictEqual(app.els["scale-drawer-status"].textContent, DR1_STATUS.noRing);
+});
+
+test("LF F-1 (e): under a bad name, MIRROR BOTTOM tracks bottom notes as on the ok path", () => {
+  const app = lfEditBadName(W1_NONE);
+  assert.strictEqual(app.els["scale-mirror-bottom"].disabled, true);
+  app.type(W1_BOTTOM);
+  assert.strictEqual(app.els["scale-generate"].disabled, true);
+  assert.strictEqual(app.els["scale-mirror-bottom"].disabled, false, "bottom notes did not enable MIRROR BOTTOM");
+  app.type(W1_NONE);
+  assert.strictEqual(app.els["scale-mirror-bottom"].disabled, true, "removing them did not disable it");
+});
+
+test("LF F-2: #1 / #2 carries an aria-label that starts with its visible text; the visible text is unchanged", () => {
+  const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8").replace(/<!--[\s\S]*?-->/g, "");
+  const m = /<button[^>]*\bid="scale-anchor-between"[^>]*>([^<]*)<\/button>/.exec(html);
+  assert.ok(m, "no #scale-anchor-between");
+  assert.strictEqual(m[1], "#1 / #2");
+  assert.match(m[0], /\baria-label="#1 \/ #2, notes 1 and 2 either side of centre"/);
+});
+
+test("LF F-3: #scale-drawer-hint is the first thing in #scale-drawer, and carries DRAWER_HINT when the drawer opens", () => {
+  const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8").replace(/<!--[\s\S]*?-->/g, "");
+  const drawer = html.slice(html.indexOf('id="scale-drawer"'));
+  const hint = drawer.indexOf('id="scale-drawer-hint"');
+  assert.ok(hint > 0 && hint < drawer.indexOf('id="scale-anchor-label"'), "the hint does not come before the orientation row");
+  assert.ok(hint < drawer.indexOf('id="scale-layout-reset"'));
+  const app = boot();
+  d2Open(app, D2_AMARA, false);
+  assert.strictEqual(app.els["scale-drawer-hint"].hidden, false);
+  assert.strictEqual(app.els["scale-drawer-hint"].textContent, app.get("DRAWER_HINT"));
+});
+
+test("LF F-4: #scale-fine-toggle is underlined, offset .18em", () => {
+  const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+  const rule = /#scale-fine-toggle\{([^}]*)\}/.exec(html);
+  assert.ok(rule, "no #scale-fine-toggle rule");
+  assert.match(rule[1], /text-decoration:\s*underline;\s*text-underline-offset:\s*\.18em/);
+});
+
+test("LF F-5: changing the degree select re-parses the seed with the new parent", () => {
+  const app = boot();
+  openEdit(app, makeCustom(app, D2_AMARA));
+  app.get(`HPE.core.parseSeed = (function (real) {
+    return function (text, opts) { globalThis.__lastParent = opts && opts.parent; return real(text, opts); };
+  })(HPE.core.parseSeed)`);
+  const sel = app.els["scale-degrees"];
+  const next = String((Number(sel.value) + 1) % 7);
+  sel.value = next;
+  sel.dispatchEvent({ type: "change" });
+  assert.strictEqual(String(app.get("globalThis.__lastParent")), next);
 });

@@ -1030,7 +1030,8 @@ footer.seq{row-gap:var(--sp-1)}
 #scale-preview .panhit:active{fill:rgba(226,112,5,.22)}
 #scale-fine-toggle{background:none; border:none; color:#a79d8b; cursor:pointer; align-self:flex-start;
   min-height:44px; padding:0 4px;
-  font:600 9.5px/1.5 "Nunito Sans"; letter-spacing:.13em; text-transform:uppercase}
+  font:600 9.5px/1.5 "Nunito Sans"; letter-spacing:.13em; text-transform:uppercase;
+  text-decoration:underline; text-underline-offset:.18em}
 /* Quiet, never a primary: auto width, so the sheet's only full-width button
    stays #scale-generate. */
 #scale-delete-row{align-items:center}
@@ -1248,12 +1249,13 @@ footer.seq{row-gap:var(--sp-1)}
       </div>
       <p class="sheethint" id="scale-layout-state" hidden></p>
       <div id="scale-drawer" role="group" aria-label="Layout" hidden>
+        <p class="sheethint" id="scale-drawer-hint" hidden></p>
         <div class="editrow">
           <span class="sheetlabel" id="scale-anchor-label">HANDPAN ORIENTATION</span>
           <div class="ctlrow" role="group" aria-labelledby="scale-anchor-label">
             <div class="mirror">
               <button class="mode" type="button" id="scale-anchor-one" aria-pressed="true" disabled>#1 CENTRED</button>
-              <button class="mode" type="button" id="scale-anchor-between" aria-pressed="false" disabled>#1 / #2</button>
+              <button class="mode" type="button" id="scale-anchor-between" aria-label="#1 / #2, notes 1 and 2 either side of centre" aria-pressed="false" disabled>#1 / #2</button>
             </div>
           </div>
         </div>
@@ -1283,7 +1285,6 @@ footer.seq{row-gap:var(--sp-1)}
         <div class="ctlrow">
           <button class="mode" type="button" id="scale-layout-reset" disabled>RESET LAYOUT</button>
         </div>
-        <p class="sheethint" id="scale-drawer-hint" hidden></p>
       </div>
     </div>
     <!-- Above the control row, so the soft keyboard never covers it. Warnings,
@@ -9034,7 +9035,7 @@ bandPort.addEventListener("focusin", (e) => {
   if (t && t.matches && t.matches("input, textarea, select")) t.scrollIntoView({ block: "nearest", behavior: "auto" });
 });
 function hasTwoNoteRing() {
-  const res = HPE.core.parseSeed(String(scaleBox.value || ""), sheetOptions());
+  const res = HPE.core.parseSeed(String(scaleBox.value || ""), layoutOptions());
   if (!res.ok) return true;
   const n = { rim: 0, inner: 0, bottom: 0 };
   for (const f of Object.values(res.value.fields)) if (f[3] in n) n[f[3]] += 1;
@@ -9397,6 +9398,13 @@ function resetLayout() {
   drawerBtn.focus();
 }
 
+/** The sheet's options without the deck name: what the layout alone needs. */
+function layoutOptions() {
+  const o = sheetOptions();
+  delete o.name;
+  return o;
+}
+
 /** The seed options the sheet currently describes. */
 function sheetOptions() {
   const o = { palette, mirror, mirrorBottom: bottomMirror(), anchor };
@@ -9586,7 +9594,8 @@ function syncParseState({ paint }) {
     say("", "");
     return;
   }
-  const res = HPE.core.parseSeed(text, sheetOptions());
+  const opts = sheetOptions();
+  const res = HPE.core.parseSeed(text, opts);
   if (res.ok) {
     boxOk = true;
     const bottom = Object.values(res.value.fields).some((f) => f[3] === "bottom");
@@ -9602,6 +9611,23 @@ function syncParseState({ paint }) {
     if (crowded) say(crowded.reason, "warn");
     else say("", "");
   } else {
+    const second = editingId && opts.name !== undefined ? HPE.core.parseSeed(text, layoutOptions()) : null;
+    if (second && second.ok) {
+      boxOk = true;
+      const bottom = Object.values(second.value.fields).some((f) => f[3] === "bottom");
+      if (bottom !== hadBottom) { bottomHeld = false; hadBottom = bottom; }
+      noteCounts(second.value.fields);
+      paintLayout();
+      scaleBox.classList.add("bad");
+      genBtn.disabled = true;
+      if (paint) showPanPreview(second.value);
+      showRefusal(res.reason);
+      const solved = solvePreviewLayout(second.value);
+      const crowded = solved && HPE.select.smallLabels(solved.geom);
+      if (crowded) say(crowded.reason, "warn");
+      else say("", "");
+      return;
+    }
     // showRefusal() blanks the parse line rather than removing it: the CSS
     // leans on the blank too - #scale-parse:empty steps out of the row and
     // #scale-refusal takes the identical box - so a half-typed seed neither
@@ -9634,7 +9660,7 @@ function resyncSheet(paint) {
   if (refusal) {
     showRefusal(refusal);
     if (paint) {
-      const res = HPE.core.parseSeed(String(scaleBox.value || ""), sheetOptions());
+      const res = HPE.core.parseSeed(String(scaleBox.value || ""), layoutOptions());
       if (res.ok) { noteCounts(res.value.fields); paintPan(res.value, "current"); }
     }
     return;
