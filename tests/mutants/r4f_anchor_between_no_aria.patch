@@ -1,4 +1,4 @@
-# kills: LF F-2: #1 / #2 carries an aria-label that starts with its visible text
+# kills: LF F-2: #1 / #2 carries an aria-label that starts with its visible text; the visible text is unchanged
 # suite: node --test --test-name-pattern ^LF.F-2 tests/app.test.js
 # #scale-anchor-between loses its aria-label.
 diff --git a/index.html b/index.html
