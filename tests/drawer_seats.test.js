@@ -431,4 +431,18 @@ function run() {
     await frames();
     assert.match(await seatOrder(), /^C4=1 A3=2 /);
   });
+
+  test("Lane F browser: with the drawer open at scroll top the drawer hint is the first child of the drawer, and its scrollport position at 380x667 is reported", async () => {
+    await openAdd(SCALES.amara);
+    await ev(`document.querySelector("#scale-sheet .sheetbody").scrollTop = 0; return true;`);
+    await frames();
+    const m = await ev(`const h = document.getElementById("scale-drawer-hint"), body = document.querySelector("#scale-sheet .sheetbody"),
+      r = h.getBoundingClientRect(), port = body.getBoundingClientRect();
+      return { first: document.getElementById("scale-drawer").firstElementChild === h, hidden: h.hidden, text: h.textContent,
+        below: r.bottom - port.bottom, above: port.top - r.top, height: r.height };`);
+    assert.strictEqual(m.first, true, "the hint is not the first element child of the drawer");
+    assert.strictEqual(m.hidden, false);
+    assert.ok(m.text.length > 0 && m.height > 0, "the hint is empty or has no box");
+    console.log(`Lane F report, F-3 (b) at 380x667 with fallback fonts: the hint's bottom edge is ${m.below.toFixed(1)}px below the scrollport (not asserted: the plan's stop condition reports it)`);
+  });
 }

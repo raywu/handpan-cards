@@ -1,0 +1,15 @@
+# kills: LF F-1 (a): a non-ASCII name with a valid scale keeps ADJUST LAYOUT enabled, GENERATE disabled, the refusal naming the name
+# suite: node --test --test-name-pattern ^LF.F-1..a.. tests/app.test.js
+# The name-only refusal runs no second parse, so a deck name like D Kurd with an umlaut disables ADJUST LAYOUT again.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9611,7 +9611,7 @@ function syncParseState({ paint }) {
+     if (crowded) say(crowded.reason, "warn");
+     else say("", "");
+   } else {
+-    const second = editingId && opts.name !== undefined ? HPE.core.parseSeed(text, layoutOptions()) : null;
++    const second = null;
+     if (second && second.ok) {
+       boxOk = true;
+       const bottom = Object.values(second.value.fields).some((f) => f[3] === "bottom");

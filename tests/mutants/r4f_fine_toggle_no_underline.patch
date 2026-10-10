@@ -1,0 +1,16 @@
+# kills: LF F-4: #scale-fine-toggle is underlined, offset .18em
+# suite: node --test --test-name-pattern ^LF.F-4 tests/app.test.js
+# The finer-controls toggle loses its underline.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1030,8 +1030,7 @@ footer.seq{row-gap:var(--sp-1)}
+ #scale-preview .panhit:active{fill:rgba(226,112,5,.22)}
+ #scale-fine-toggle{background:none; border:none; color:#a79d8b; cursor:pointer; align-self:flex-start;
+   min-height:44px; padding:0 4px;
+-  font:600 9.5px/1.5 "Nunito Sans"; letter-spacing:.13em; text-transform:uppercase;
+-  text-decoration:underline; text-underline-offset:.18em}
++  font:600 9.5px/1.5 "Nunito Sans"; letter-spacing:.13em; text-transform:uppercase}
+ /* Quiet, never a primary: auto width, so the sheet's only full-width button
+    stays #scale-generate. */
+ #scale-delete-row{align-items:center}

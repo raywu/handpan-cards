@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8585,7 +8585,7 @@ function syncParseState({ paint }) {
+@@ -9608,7 +9608,7 @@ function syncParseState({ paint }) {
      if (paint) showPanPreview(res.value);
      const solved = solvePreviewLayout(res.value);
      const crowded = solved && HPE.select.smallLabels(solved.geom);
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +    if (false) say(crowded.reason, "warn");
      else say("", "");
    } else {
-     // showRefusal() blanks the parse line rather than removing it: the CSS
+     const second = editingId && opts.name !== undefined ? HPE.core.parseSeed(text, layoutOptions()) : null;

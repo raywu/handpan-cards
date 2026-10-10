@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8942,7 +8942,7 @@ if (typeof ResizeObserver === "function") {
+@@ -9032,7 +9032,7 @@ if (typeof ResizeObserver === "function") {
   *  rule G-c wants the whole control in the scrollport. */
  bandPort.addEventListener("focusin", (e) => {
    const t = e.target;
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +  if (t && t.matches && t.matches("input, textarea, select")) void t;
  });
  function hasTwoNoteRing() {
-   const res = HPE.core.parseSeed(String(scaleBox.value || ""), sheetOptions());
+   const res = HPE.core.parseSeed(String(scaleBox.value || ""), layoutOptions());

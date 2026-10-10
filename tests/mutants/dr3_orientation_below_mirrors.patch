@@ -1,13 +1,13 @@
-# kills: DR3 order: orientation, mirrors, disclosure, finer rows, RESET LAYOUT, hint
-# suite: node --test --test-name-pattern ^DR3.order..orientation..mirrors..disclosure..finer.rows..RESET.LAYOUT..hint$ tests/app.test.js
+# kills: DR3 order: hint, orientation, mirrors, disclosure, finer rows, RESET LAYOUT
+# suite: node --test --test-name-pattern ^DR3.order tests/app.test.js
 # The orientation block sits below the mirror rows instead of above them.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1246,6 +1246,13 @@ footer.seq{row-gap:var(--sp-1)}
-       </div>
+@@ -1250,6 +1250,13 @@ footer.seq{row-gap:var(--sp-1)}
        <p class="sheethint" id="scale-layout-state" hidden></p>
        <div id="scale-drawer" role="group" aria-label="Layout" hidden>
+         <p class="sheethint" id="scale-drawer-hint" hidden></p>
 +        <div class="ctlrow">
 +          <div class="mirror">
 +            <button class="mode" type="button" id="scale-mirror" aria-pressed="false" disabled>MIRROR TOP</button>
@@ -18,7 +18,7 @@ diff --git a/index.html b/index.html
          <div class="editrow">
            <span class="sheetlabel" id="scale-anchor-label">HANDPAN ORIENTATION</span>
            <div class="ctlrow" role="group" aria-labelledby="scale-anchor-label">
-@@ -1256,13 +1263,6 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1260,13 +1267,6 @@ footer.seq{row-gap:var(--sp-1)}
            </div>
          </div>
          <p class="sheethint">Which note sits nearest you: note 1 alone, or notes 1 and 2 side by side.</p>

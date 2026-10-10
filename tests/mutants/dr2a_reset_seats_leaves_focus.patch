@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9319,7 +9319,6 @@ function resetLayout() {
+@@ -9395,7 +9395,6 @@ function resetLayout() {
    paintLayout();
    resyncSheet(true);
    layoutStatus("Layout reset.");
 -  drawerBtn.focus();
  }
  
- /** The seed options the sheet currently describes. */
+ /** The sheet's options without the deck name: what the layout alone needs. */
