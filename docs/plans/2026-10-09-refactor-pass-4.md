@@ -253,10 +253,12 @@ python3 tools/decks.py && git status --short '*.pdf'   # text-equal, see stalene
 **Verify.**
 ```
 python3 tools/refresh_mutants.py --check
-node --test tests/mutation_harness.test.js tests/harness.test.js tests/shard_mutants.js
+node --test tests/mutation_harness.test.js tests/harness.test.js
 python3 -m unittest tests.test_suite_health tests.test_failure_diagnosability tests.test_readme_currency
 node tools/probe/panel_fit.js --base origin/main --font real   # verdict unchanged
 ```
+
+[corrected by lane C, 2026-10-09: the first `node --test` line originally also listed `tests/shard_mutants.js`. That file is a CLI module and exits 2 under `node --test` (on main too). It is exercised by `tests/mutation_harness.test.js`, which `require`s `partition`, `isE2ESelecting` and `loadMutants` from it, pins the shard partition, and copies it into a fixture tree to drive `MUTANT_SHARD` through the real script.]
 
 **Stop and report.** Any change to `tests/mutation_check.sh` that the five `h_*` self-patching mutants cannot re-anchor on (memory: refresh then `git apply --check` all five); a `panel-fit` verdict change.
 
@@ -283,7 +285,7 @@ node tools/probe/panel_fit.js --base origin/main --font real   # verdict unchang
 2. **Vacuous mode-S branch** of "the desktop sidebar at 1024x700 gains no new VERTICAL scroll ... modes A, B and S": `want = 0` makes `assert.ok(m.scrollH - m.clientH >= want - 1)` always true. Assert the measured overflow equals `want` within 1 for every mode (the companion `Math.abs(amy.overWithout - want) <= 1` already bites; make the first assertion the same shape).
 3. **"DR3 browser ... every stop lands inside the scrollport at 380x667"** asserts two focus names and one `inside` check on the first finer button. Make the body iterate every stop `panelStops()` returns (title unchanged, now true).
 4. **`drawer_seats.test.js` `reach()`** returns `fineToggle` nobody reads and "DR2a browser (84, report)" logs `edit.noteRow`/`edit.seatRow` which `reach()` never returns: return what the log reads, drop the unread field.
-5. **AP2-2's stub gap** (`tools/sandbox.js` has no `header`/`footer`, and must not grow - R3): a browser test that with the sheet open `header` is NOT inert and `footer` IS (real code: `querySelectorAll("header, main, footer, #settings-panel")` with `panelBackground = [main, footer, #decks]`). New mutant `r4t_inert_includes_header` against `index.html` (lane A re-anchors on rebase).
+5. **AP2-2's stub gap** (`tools/sandbox.js` has no `header`/`footer`, and must not grow - R3): a browser test that with the sheet open `header` is NOT inert and `footer` IS (real code: `querySelectorAll("header, main, footer, #settings-panel")` with `panelBackground = [main, footer, #decks]`). [corrected by lane C, 2026-10-09: the real code inerts `header` too. With the SETTINGS PANEL open the inert set is `main`, `footer#foot`, `nav#decks` (header and the panel are live). With the SHEET open it is `header`, `main`, `footer#foot`, `div#settings-panel` (`background = [...querySelectorAll("header, main, footer, #settings-panel")]`). Lane T's merged test "AP2-2 browser: ..." in `tests/e2e.test.js` asserts exactly those two sets, and `r4t_inert_includes_header` mutates the panel's set.] New mutant `r4t_inert_includes_header` against `index.html` (lane A re-anchors on rebase).
 6. ~~`tests/helpers/dump_app_render.js`: zero readers, remove.~~ **WITHDRAWN at review (R1).** `tests/test_render_agreement.py` `RenderAgreement.setUpClass` runs it by `subprocess` (line 359 at `7b4f383`) and parses its stdout for all 177 cards; it is LIVE and is the app side of preservation evidence 2.3 item 2. The claim came from a grep that excluded python; it is the example of why 2.1 step 2 enumerates `tests/` readers too before calling a HELPER dead (helpers have no production reader by construction, so for `tests/helpers/*` the reader set is the test suites).
 7. **Two-lane items**: for each `index.html` function lane 0 classes PROVEN DEAD whose only coverage is an e2e test, that e2e test is dead by rule 3 of 2.2 (every line it covers is being removed) and is removed HERE with the lane-0 row cited, before lane A removes the code. (R6) The mutant whose `# kills:` names that test moves WITH the test, in this lane's PR: "every mutant patch's `# kills:` line is actually selected by its `# suite:` command" in `tests/mutation_harness.test.js` reddens main the moment a `# kills:` names a deleted test, so lane T re-points it to a surviving test that fails on the same break, or - when the only such test is the one being removed because the code is going - replaces it one-for-one with an `r4t_` mutant against the surviving behaviour, in the same commit. Lane A then removes the code with no mutant work left on that item (its "replace one-for-one" in candidate 6 applies only to mutants T did not touch).
 8. **AP3-0** (`tests/app.test.js`) `rmSync` outside `finally` is lane A's; hand-off row.
@@ -310,7 +312,7 @@ node --test tests/drawer_seats.test.js
 | R4-A19 | Every removed e2e test has a PR-table row (removed, survivor, shared assertion, red proof) | PR |
 | R4-A20 | Mode-S branch of the 1024x700 sidebar test fails when `want` is wrong (differential probe in the PR) | PR |
 | R4-A21 | DR3 "every stop" test iterates every stop; a stop outside the scrollport fails it | mutant `r4t_dr3_stop_outside_scrollport` |
-| R4-A22 | `header` not inert / `footer` inert with the sheet open, asserted in the browser | `r4t_inert_includes_header` killed |
+| R4-A22 | with the sheet open `header`, `main`, `footer` and the settings panel are inert; with the panel open `main`, `footer` and the deck strip are, never `header`, asserted in the browser [corrected by lane C, 2026-10-09: originally "`header` not inert / `footer` inert with the sheet open"] | `r4t_inert_includes_header` killed |
 | R4-A23 | `tests/helpers/dump_app_render.js` UNCHANGED and `tests/test_render_agreement.py` green (R1); e2e FLOORS row equals CI's count; gate green, including the header-lint test with every two-lane mutant re-pointed in this lane (R6) | CI artifacts |
 
 **Depends on.** Lane 0 (map), lanes E/P/H merged (so the rebase is one).
@@ -488,6 +490,21 @@ The owner closed the scale-syntax-and-layout-drawer workstream with one intervie
 > Stop conditions: any change to `DRAWER_HINT` copy, to `panelStops()`, to a fixture digest, or a `drawer_*` FLOORS row falling. Non-goals: tooltips, onboarding overlays, animation, changes to the step buttons or to RESET LAYOUT.
 
 **10.6 AFK ledger confirmed.** The owner confirmed every auto-decision since the last check-in (PM before DR3; HANDPAN 101 last row; DOWNLOAD PDF overflow fix; chord-only file name; drawer wording; legendLines; planner copy; merges of #275, #276, #277; DOC scope; branch deletions; planner and PR #278 before this interview; ledger D1 to D15; Sonnet co-author trailers left). Nothing is reopened.
+
+## 11. Close-out (lane C, 2026-10-09)
+
+**Base.** Main `f328f10` (merge of PR #286), after lanes 0, E, P, H, T, A, D. Mutant corpus: 889 patches (`ls tests/mutants/*.patch | wc -l`); lane C adds, replaces and re-points none. Counts taken from the `python-results` and `js-results` artifacts of the `validate` push run on `f328f10` (run 38005725717). Its `mutation gate shard 4/4` first failed on a CLEAN baseline (`E2E-SETTLE-CEILING 1 animation(s) still running after 500ms`, e_flip_transform.patch), the known gate flake; the failed jobs were re-run at the same SHA.
+
+**FLOORS moves.** One row: `tests/mutation_harness.test.js` 53 -> 54. Every other row already equalled the artifact (`tests/harness.test.js` stays 13). README: mutant count 878 -> 889; suite counts (23 node, 14 python) were already exact.
+
+**Reviewer-nit records (facts only; no code changed here).**
+- Lane A (PR #285): the PR body lacked per-test replacement rows and an itemised mutant map; the R4-A24 table misses the `.finished.then(swipeRest, ...)` handler; it lists CSS rules "unmeasured", which is not a section 2.1 class; `#scale-msg.err, .announce.err` is LIVE via `say(res.reason, "err")`.
+- Lane D (PR #286): ENGINE-SPEC §15 says `scale-anchor-label` does not exist, but it is live markup (`index.html` `HANDPAN ORIENTATION` span, the `aria-labelledby` target) merely absent from `tools/sandbox.js` `ELEMENT_IDS`, and the §15 list omits registry ids `scale-layout-zone`, `scale-plate-band`, `scale-layout-hint`, `scale-layout-state`, `scale-preview`; the second coverage-report correction addresses a claim from PR #283's body, not the report; the PR body had no mutant reconciliation statement (count change zero); ENGINE-SPEC precedence item (1) and corner (i) are consistent but worded differently.
+- Lane T (PR #284), unscheduled: modes A/B 1024x700 Amy scroll bound only by `assertAmyScroll`; consolidation "no pair qualifies" recorded without per-candidate evidence; `r4t_dr3_stop_outside_scrollport` mutates shared `cycleTabStops` but names only the sheet test.
+- Unscheduled items (owning lanes merged): `tools/decks.py` comment rewording (would stale `r4p_title_warning_line_too_wide.patch`); `tools/validate.py:113` "one if/else" comment; `tools/regen_engine_corpus.js --fixture` TypeError; `src/engine/share.js` `seatsField` non-array ring guard; `tools/refresh_mutants.py` write mode empties `e_panel_moved_into_header.patch`; lane P `test_gen_deck.py` width-test items; harness `sharedBodyGroups` `index ` stripping and probe CLI `main` untested; `panel_fit.js:84-85` comment names only app.test.js.
+- `tests/mutation_check.sh` takes no positional arguments (it reads only environment variables such as `MUTANT_SHARD`), so passing a single patch path is silently ignored and the whole corpus runs.
+
+**Plan corrections** (owner override of "plan documents are history", 2026-10-09 check-in): the Lane H verify line and the Lane T candidate 5 / R4-A22 inert sets, each marked inline.
 
 ---
 
