@@ -11685,4 +11685,113 @@ function run() {
     edgeTest(MAIN_NEEDED_L, MAIN_GROUPS_L, isLandscape, "landscape", L_DELTA);
     edgeTest(MAIN_NEEDED_S, MAIN_GROUPS_S, isSidebar, "the sidebar");
   });
+
+  // Editable defaults (lane e2e): hide, fork and restore a built-in, at 380px.
+  const hideSelectedBuiltin = async () => {
+    await openEdit();
+    await b.click("#scale-delete");
+    await b.waitFor(`document.getElementById("scale-delete").hasAttribute("data-armed")`,
+      { label: "HIDE THIS DECK to arm" });
+    await b.click("#scale-delete");
+    await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
+      { label: "the sheet to close after the hide" });
+  };
+  const chipTexts = () => b.eval(
+    `return [...document.querySelectorAll("#decks .chip:not(#deck-add)")].map(e => e.textContent.trim());`);
+
+  test("a hidden built-in stays hidden across a reload at 380px", async () => {
+    try {
+      await freshLoad();
+      await b.setViewport(380, 780, true);
+      const meta = await decksMeta();
+      const kurd = await bootMeta(meta);
+      await hideSelectedBuiltin();
+      const before = await chipTexts();
+      assert.strictEqual(before.length, meta.length - 1, `hiding left ${before.length} chips`);
+      assert.ok(!before.some((t) => /KURD/.test(t)), `the Kurd chip is still drawn: ${JSON.stringify(before)}`);
+
+      await navigate();
+      await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`,
+        { label: "chips after reload" });
+      const after = await chipTexts();
+      assert.deepStrictEqual(after, before, "the reload changed the chip strip");
+      assert.deepStrictEqual(await b.eval(`return JSON.parse(localStorage.getItem("hpfc")).hidden;`),
+        [kurd.id], "the hidden list is not stored");
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("forking Pygmy at 380px makes chip 1 with the Pygmy name", async () => {
+    try {
+      await freshLoad();
+      await b.setViewport(380, 780, true);
+      const meta = await decksMeta();
+      const at = meta.findIndex((m) => m.id === "pygmy");
+      assert.ok(at >= 0, "there is no pygmy deck");
+      await selectDeck(at, meta);
+      await openEdit();
+      assert.strictEqual(await b.eval(`return document.getElementById("scale-generate").textContent.trim();`),
+        "FORK THIS DECK");
+      await b.click("#scale-generate");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
+        { label: "the sheet to close after the fork" });
+      const chips = await chipTexts();
+      assert.strictEqual(chips.length, meta.length + 1, `the fork left ${chips.length} chips`);
+      const want = await b.eval(`return chipLabel(DECKS.find(d => d.id === "pygmy").name);`);
+      assert.strictEqual(chips[0], want, `chip 1 reads "${chips[0]}", not the Pygmy name "${want}"`);
+      assert.ok(chips.slice(1).includes(want), "the built-in Pygmy chip is gone");
+      assert.strictEqual(await b.eval(`return document.querySelector("#decks .chip:not(#deck-add)").classList.contains("on");`),
+        true, "the fork is not the selected chip");
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("SHOW HIDDEN DECKS is absent until a deck is hidden and restores all five", async () => {
+    try {
+      await freshLoad();
+      await b.setViewport(380, 780, true);
+      const meta = await decksMeta();
+      const probe = () => b.eval(`
+        const el = document.getElementById("deck-restore");
+        return { text: el.textContent.trim(), hidden: el.hasAttribute("hidden"),
+                 stop: window.panelStops().includes(el) };`);
+      let r = await probe();
+      assert.strictEqual(r.text, "SHOW HIDDEN DECKS");
+      assert.deepStrictEqual([r.hidden, r.stop], [true, false],
+        "a fresh store shows a restore control");
+
+      await hideSelectedBuiltin();
+      await openSettingsPanel();
+      r = await probe();
+      assert.deepStrictEqual([r.hidden, r.stop], [false, true],
+        "with a deck hidden the control is not rendered as a panel stop");
+      const box = await b.eval(`
+        const el = document.getElementById("deck-restore");
+        el.scrollIntoView({ block: "nearest" });
+        const p = document.getElementById("settings-panel").getBoundingClientRect();
+        const q = el.getBoundingClientRect();
+        return { top: q.top - p.top, bottom: p.bottom - q.bottom, w: q.width, h: q.height,
+                 left: q.left - p.left, right: p.right - q.right };`);
+      assert.ok(box.w > 0 && box.h > 0, "the restore control has no box");
+      assert.ok(box.top >= 0 && box.bottom >= 0 && box.left >= 0 && box.right >= 0,
+        `#deck-restore sits outside the panel's box: ${JSON.stringify(box)}`);
+
+      await b.eval(`document.getElementById("deck-add").focus(); return true;`);
+      await b.key("Tab", "Tab", 9);
+      assert.strictEqual(await b.eval(`return document.activeElement.id;`), "deck-restore",
+        "Tab from + ADD A SCALE does not reach SHOW HIDDEN DECKS");
+
+      await b.click("#deck-restore");
+      await b.waitFor(`document.getElementById("deck-restore").hasAttribute("hidden")`,
+        { label: "the restore control to go away" });
+      assert.strictEqual((await chipTexts()).length, meta.length, "restore did not bring back every deck");
+      assert.strictEqual(await b.eval(`return JSON.parse(localStorage.getItem("hpfc")).hidden;`), undefined,
+        "the hidden list is still stored");
+      assert.strictEqual(await b.eval(`return document.activeElement.id;`), "deck-add");
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
 }

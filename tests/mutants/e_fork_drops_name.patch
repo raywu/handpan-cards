@@ -1,0 +1,14 @@
+# kills: forking Pygmy at 380px makes chip 1 with the Pygmy name
+# suite: node --test --test-name-pattern ^forking.Pygmy.at.380px.makes.chip.1.with.the.Pygmy.name$ tests/e2e.test.js
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9866,7 +9866,7 @@ function resetSheetState(edit, fork) {
+   // Everything else starts as a new scale would: palette 0, mirror off.
+   const o = !edit ? null : fork
+     ? { anchor: edit.fields["1"] && edit.fields["1"][4] !== 270 ? "between" : "one" } : edit.options;
+-  nameBox.value = edit ? edit.name : "";
++  nameBox.value = edit && !fork ? edit.name : "";
+   nameDirty = false;                                 // prefilled, not typed
+   scaleBox.value = edit ? HPE.core.formatSeed(edit.fields) : "";  // 8A: the canonical string
+   syncGrow();
