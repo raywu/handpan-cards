@@ -71,4 +71,4 @@ Cycle: 1   Wave: 2   Merged this batch: 7995390 (#291 app)
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | app | a2510001262579403 | removed | deleted (merged) | #291 | d7a3103 | 2026-10-12 (head==tip, 11/11 pass, MERGEABLE) | PASS_WITH_NITS | 0 | yes 7995390 | - | no |
-| e2e | pending | .claude/worktrees/editable-defaults-e2e | claude/editable-defaults-e2e | - | - | - | - | 0 | no | - | - |
+| e2e | a9b8139f5b325d3a4 | .claude/worktrees/editable-defaults-e2e | claude/editable-defaults-e2e | - | - | - | - | 0 | no | - | - |
