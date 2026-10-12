@@ -2145,10 +2145,13 @@ test("the layout markup exists and a built-in deck is never editable", () => {
   // conjures an element for any id asked for, so this has to read the file.
   assert.ok(!/id="scale-slots"/.test(fs.readFileSync(path.join(ROOT, "index.html"), "utf8")),
     "the slot list is still in the markup");
-  app.select("amara");
   app.clickChip("D AMARA 9");
   assert.strictEqual(app.sheetOpen(), false,
-    "a built-in chip opened the sheet, so it could be corrected");
+    "an unselected built-in chip opened the sheet, so it could be corrected");
+  app.clickChip("D AMARA 9");
+  assert.strictEqual(app.sheetOpen(), true,
+    "a selected built-in chip no longer opens the sheet in builtin mode");
+  assert.ok(!app.els.decks.children.some((c) => /✎|&#9998;|pencil/i.test(c._html || "")), "a built-in chip carries a pencil");
 });
 
 /* ------------------------------- 24. a field edit REPLACES the deck (row 73) */
@@ -2428,7 +2431,7 @@ test("an options-only edit keeps its chip index across a reload with three decks
   const three = makeCustom(app, THIRD_STRING);
   const before = chipRow(app).map((c) => c.label);
   const at = before.indexOf(two.name);
-  assert.ok(at >= 0 && at < before.indexOf(three.name), "the setup has no middle deck");
+  assert.ok(at > before.indexOf(three.name) && at < before.indexOf(one.name), "the setup has no middle deck");
 
   editOptions(app, two, undefined);        // palette + mirror only: the id cannot move
   assert.ok(app.registry()[two.id], "an options-only edit moved the id");
@@ -8680,4 +8683,228 @@ test("LF F-5: changing the degree select re-parses the seed with the new parent"
   sel.value = next;
   sel.dispatchEvent({ type: "change" });
   assert.strictEqual(String(app.get("globalThis.__lastParent")), next);
+});
+
+/* ------------------------------ 27. editable defaults: fork, hide, restore */
+//
+// docs/plans/2026-10-09-editable-defaults.md, lane app (ED-A1..A7, A13..A15).
+// Everything goes through app.run / the DOM; no new bare name is read, so
+// app_surface_v1.json stays.
+
+const PINNED_IDS = Object.values(JSON.parse(fs.readFileSync(
+  path.join(ROOT, "tests/fixtures/deck_ids_v1.json"), "utf8")).pinned);
+const BUILTIN_NAMES = ["D KURD 10", "D AMARA 10", "D AMARA 9", "C# HIJAZ 9", "F3 LOW PYGMY 18"];
+
+const labels = (app) => chipRow(app).map((c) => c.label);
+const hiddenKey = (app) => JSON.parse(app.store.hpfc || "{}").hidden;
+
+/** Tap the SELECTED built-in's chip, then DELETE twice: arm, then confirm. */
+function hideViaSheet(app, id, name) {
+  app.select(id);
+  app.clickChip(name);
+  app.els["scale-delete"].click();
+  app.els["scale-delete"].click();
+}
+
+test("editable defaults: a fresh store lists the five decks in DECKS order, hides nothing and adds no key", () => {
+  const app = boot();
+  assert.deepStrictEqual(labels(app), BUILTIN_NAMES);
+  assert.strictEqual(app.els["deck-restore"].hasAttribute("hidden"), true,
+    "the restore button is rendered on a fresh store");
+  app.select("hijaz");
+  assert.deepStrictEqual(Object.keys(JSON.parse(app.store.hpfc)).sort(),
+    ["deck", "mode", "printPaper", "tier"], "a fresh store grew an hpfc key");
+});
+
+test("editable defaults: a generated deck is chip 1 and a second pushes the first to chip 2", () => {
+  const app = boot();
+  const one = makeCustom(app);
+  assert.deepStrictEqual(labels(app), [one.name, ...BUILTIN_NAMES]);
+  const two = makeCustom(app, OTHER_STRING);
+  assert.deepStrictEqual(labels(app), [two.name, one.name, ...BUILTIN_NAMES]);
+  assert.strictEqual(chipRow(app)[0].on, true, "the new deck's chip is not the selected one");
+  const again = boot({ storage: { hpfc: app.store.hpfc, [app.get("SCALES_KEY")]: app.store[app.get("SCALES_KEY")] } });
+  assert.deepStrictEqual(labels(again), labels(app), "chip order changed across a reload");
+});
+
+test("editable defaults: hiding a built-in removes its chip, stores hidden and selects Kurd", () => {
+  const app = boot();
+  hideViaSheet(app, "amara", "D AMARA 9");
+  assert.deepStrictEqual(labels(app), BUILTIN_NAMES.filter((n) => n !== "D AMARA 9"));
+  assert.deepStrictEqual(hiddenKey(app), ["amara"]);
+  assert.strictEqual(app.deckId(), "kurd");
+  assert.strictEqual(app.sheetOpen(), false, "the sheet stayed open after the hide");
+  assert.strictEqual(app.els["deck-restore"].hasAttribute("hidden"), false, "no restore button while a deck is hidden");
+  const again = boot({ storage: { hpfc: app.store.hpfc } });
+  assert.deepStrictEqual(labels(again), labels(app), "a hidden built-in came back on reload");
+  assert.strictEqual(again.announcer().textContent, "", "a hidden deck that was not selected warned at boot");
+});
+
+test("editable defaults: hiding the selected Kurd selects the first visible deck", () => {
+  const app = boot();
+  hideViaSheet(app, "kurd", "D KURD 10");
+  assert.strictEqual(app.deckId(), "amara10");
+  assert.deepStrictEqual(hiddenKey(app), ["kurd"]);
+  assert.strictEqual(JSON.parse(app.store.hpfc).deck, "amara10");
+  assert.strictEqual(chipRow(app)[0].on, true);
+});
+
+test("editable defaults: the fifth hide with no custom deck is refused", () => {
+  const four = ["amara10", "amara", "hijaz", "pygmy"];
+  const app = boot({ storage: { hpfc: JSON.stringify({ deck: "kurd", mode: "A", hidden: four }) } });
+  assert.deepStrictEqual(labels(app), ["D KURD 10"]);
+  app.clickChip("D KURD 10");
+  app.els["scale-delete"].click();
+  app.els["scale-delete"].click();
+  assert.deepStrictEqual(labels(app), ["D KURD 10"], "the last visible deck was hidden");
+  assert.deepStrictEqual(hiddenKey(app) || four, four);
+  assert.strictEqual(app.sheetOpen(), true, "the refused hide closed the sheet");
+  assert.match(app.els["scale-msg"].textContent, /at least one deck/i);
+  assert.match(app.els["scale-msg"].className, /warn/);
+});
+
+test("editable defaults: forking each built-in keeps its id from the fixture and its name", () => {
+  BUILTIN_NAMES.forEach((name, i) => {
+    const app = boot();
+    const d = app.get("DECKS")[i];
+    app.select(d.id);
+    app.clickChip(name);
+    assert.strictEqual(app.sheetOpen(), true, `${d.id}: the selected chip did not open the sheet`);
+    assert.strictEqual(app.els["scale-generate"].textContent, "FORK THIS DECK");
+    assert.strictEqual(app.els["scale-delete"].textContent, "HIDE THIS DECK");
+    assert.strictEqual(app.els["scale-title"].textContent, name);
+    assert.strictEqual(app.els["scale-name"].value, name);
+    assert.strictEqual(app.els["scale-box"].value, app.get(`HPE.core.formatSeed(DECKS[${i}].fields)`));
+    assert.strictEqual(app.els["scale-swatches"].children[0].classList.contains("sel"), true, "palette 0");
+    assert.strictEqual(app.els["scale-anchor-between"].classList.contains("on"), d.id === "pygmy",
+      `${d.id}: wrong anchor`);
+    assert.strictEqual(app.els["scale-delete-row"].hasAttribute("hidden"), false);
+    assert.strictEqual(app.els["scale-degrees-row"].hasAttribute("hidden"), true);
+    app.els["scale-generate"].click();
+    assert.strictEqual(app.sheetOpen(), false, `${d.id}: the fork did not close the sheet`);
+    assert.strictEqual(app.deckId(), "custom:" + PINNED_IDS[i].replace("custom:", ""));
+    assert.strictEqual(app.registry()[app.deckId()].name, name);
+    assert.deepStrictEqual(labels(app), [name, ...BUILTIN_NAMES], `${d.id}: the fork is not chip 1`);
+  });
+});
+
+test("editable defaults: restoring clears hidden, deletes the key and shows five chips", () => {
+  const app = boot();
+  hideViaSheet(app, "amara", "D AMARA 9");
+  hideViaSheet(app, "hijaz", "C# HIJAZ 9");
+  assert.deepStrictEqual(hiddenKey(app), ["amara", "hijaz"]);
+  app.els["deck-restore"].click();
+  assert.deepStrictEqual(labels(app), BUILTIN_NAMES);
+  assert.strictEqual("hidden" in JSON.parse(app.store.hpfc), false, "the key survived an empty hidden list");
+  assert.strictEqual(app.els["deck-restore"].hasAttribute("hidden"), true);
+  assert.strictEqual(app.deckId(), "kurd", "restoring changed the selected deck");
+});
+
+test("editable defaults: forking a built-in twice is refused and the first fork keeps its name and palette", () => {
+  const app = boot();
+  app.select("amara");
+  app.clickChip("D AMARA 9");
+  app.els["scale-name"].value = "MY AMARA";
+  app.els["scale-name"].dispatchEvent({ type: "input" });
+  app.els["scale-swatches"].children[2].click();
+  app.els["scale-generate"].click();
+  const first = app.registry()[app.deckId()];
+  assert.strictEqual(first.name, "MY AMARA");
+  assert.strictEqual(first.options.palette, 2);
+
+  app.select("amara");
+  app.clickChip("D AMARA 9");
+  assert.strictEqual(app.els["scale-generate"].textContent, "FORK THIS DECK", "the second tap did not open the fork sheet");
+  app.els["scale-generate"].click();
+  assert.strictEqual(app.sheetOpen(), true, "the second fork closed the sheet");
+  assert.strictEqual(app.els["scale-refusal"].textContent, "Another deck already uses this scale.");
+  const kept = app.registry()[first.id];
+  assert.strictEqual(kept.name, "MY AMARA", "the second fork renamed the first");
+  assert.strictEqual(kept.options.palette, 2, "the second fork repainted the first");
+  assert.strictEqual(Object.keys(app.registry()).length, 1);
+});
+
+test("editable defaults: with five decks hidden the last custom deck cannot be deleted", () => {
+  const four = ["amara10", "amara", "hijaz", "pygmy"];
+  const app = boot({ storage: { hpfc: JSON.stringify({ deck: "kurd", mode: "A", hidden: four }) } });
+  const c = makeCustom(app);
+  hideViaSheet(app, "kurd", "D KURD 10");
+  assert.deepStrictEqual(labels(app), [c.name], "setup: one custom deck should remain");
+  app.select(c.id);
+  app.clickChip(c.name);
+  app.els["scale-delete"].click();
+  app.els["scale-delete"].click();
+  assert.deepStrictEqual(labels(app), [c.name], "the last visible deck was deleted");
+  assert.ok(app.registry()[c.id], "the registry lost the last visible deck");
+  assert.match(app.els["scale-msg"].className, /warn/);
+});
+
+test("editable defaults: deleting a custom deck with Kurd hidden selects and stores the fallback, never kurd", () => {
+  const app = boot();
+  const c = makeCustom(app);
+  hideViaSheet(app, "kurd", "D KURD 10");
+  app.select(c.id);
+  app.clickChip(c.name);
+  app.els["scale-delete"].click();
+  app.els["scale-delete"].click();
+  assert.strictEqual(app.deckId(), "amara10", "the delete fell back to the hidden Kurd");
+  assert.strictEqual(JSON.parse(app.store.hpfc).deck, "amara10");
+  assert.deepStrictEqual(labels(app), BUILTIN_NAMES.slice(1));
+});
+
+test("editable defaults: in builtin mode HIDE arms, confirms through the button and is a sheet tab stop; Back clears the mode", () => {
+  const app = boot();
+  app.clickChip("D KURD 10");
+  const del = app.els["scale-delete"];
+  assert.strictEqual(app.history.calls.at(-1).url, "#edit-kurd");
+  app.els["scale-back"].focus();
+  app.els["scale-sheet"].dispatchEvent({ type: "keydown", key: "Tab", shiftKey: true, preventDefault() {} });
+  assert.strictEqual(app.activeId(), "scale-delete", "HIDE is not the last sheet tab stop");
+  app.els["scale-back"].focus();
+  app.els["scale-sheet"].dispatchEvent({ type: "keydown", key: "Tab", shiftKey: false, preventDefault() {} });
+  assert.strictEqual(app.activeId(), "scale-name", "the name box is not the first tab stop after BACK");
+
+  del.click();
+  assert.strictEqual(del.textContent, "TAP AGAIN TO HIDE");
+  assert.deepStrictEqual(hiddenKey(app) || [], [], "one tap hid the deck");
+  app.els["scale-back"].click();
+  assert.strictEqual(app.sheetOpen(), false);
+  openSheet(app);
+  assert.strictEqual(app.els["scale-delete-row"].hasAttribute("hidden"), true);
+  del.onclick();
+  del.onclick();
+  assert.deepStrictEqual(labels(app), BUILTIN_NAMES, "a stale builtin mode hid a deck from the ADD sheet");
+  assert.strictEqual(app.els["scale-generate"].textContent, "GENERATE CARDS");
+});
+
+test("editable defaults: a stored hidden deck falls back to the first visible one with the gone warning", () => {
+  const app = boot({ storage: { hpfc: JSON.stringify({ deck: "pygmy", mode: "A", hidden: ["pygmy"] }) } });
+  assert.strictEqual(app.deckId(), "kurd");
+  assert.deepStrictEqual(labels(app), BUILTIN_NAMES.slice(0, 4));
+  assert.match(app.announcer().textContent, /That deck is gone\. Showing D KURD 10\./);
+});
+
+test("editable defaults: every built-in hidden in storage still opens a deck rather than a blank page", () => {
+  const all = ["kurd", "amara10", "amara", "hijaz", "pygmy"];
+  const app = boot({ storage: { hpfc: JSON.stringify({ deck: "kurd", mode: "A", hidden: all }) } });
+  assert.strictEqual(app.deckId(), "kurd", "a corrupt store blanked the page");
+  assert.ok(app.currentDeck().chords.length > 0);
+});
+
+test("editable defaults: hpfc.hidden keeps only built-in ids", () => {
+  const app = boot({ storage: { hpfc: JSON.stringify({ deck: "kurd", mode: "A", hidden: ["amara", "custom:zz", 7, "nope"] }) } });
+  assert.deepStrictEqual(labels(app), BUILTIN_NAMES.filter((n) => n !== "D AMARA 9"));
+  app.select("hijaz");
+  assert.deepStrictEqual(JSON.parse(app.store.hpfc).hidden, ["amara"]);
+});
+
+test("editable defaults: #deck-restore follows #deck-add, starts hidden and joins the panel stops only while rendered", () => {
+  const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+  assert.match(html, /id="deck-add"[^>]*>[^<]*<\/button>\s*<button[^>]*id="deck-restore"[^>]*\bhidden\b[^>]*>SHOW HIDDEN DECKS<\/button>/,
+    "the restore button is not right after #deck-add, hidden, with its label");
+  assert.match(html, /document\.getElementById\("deck-add"\), restoreBtn,/, "panelStops() does not list the restore button right after deck-add");
+  const app = boot();
+  assert.strictEqual(app.els["deck-restore"].hidden, true, "the restore button shows on a fresh store");
+  hideViaSheet(app, "amara", "D AMARA 9");
+  assert.ok(!app.els["deck-restore"].hidden, "the restore button stays hidden with a deck hidden");
 });
