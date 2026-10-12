@@ -8,11 +8,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4940,7 +4940,6 @@
+@@ -10120,7 +10120,6 @@ function disarmDelete() {
    /* Nothing to undo when nothing is armed, and re-deriving anyway would be
       worse than silent: this runs on every pointerdown in the sheet, so an
       unguarded disarm would re-parse the seed on taps that cancelled nothing. */
 -  if (!delArmed) return;
    delArmed = false;
-   delBtn.textContent = DEL_IDLE;
+   delBtn.textContent = builtinId ? HIDE_IDLE : DEL_IDLE;
    delBtn.removeAttribute("data-armed");

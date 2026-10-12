@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10443,7 +10443,7 @@ sheet.addEventListener("keydown", e => {
+@@ -10549,7 +10549,7 @@
                   notePrev, noteNext, seatPrev, seatNext, resetBtn,
                   editingId ? degSel : null, ...swatches.children, genBtn,
-                  editingId ? delBtn : null]
+                  editingId || builtinId ? delBtn : null]
 -    .filter(isStop);
 +    .filter((el) => !!el && !el.disabled);
    if (isHit(document.activeElement) && pickRef && lastSolved) setRover(pickRef);

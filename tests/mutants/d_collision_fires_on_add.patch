@@ -3,10 +3,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8247,7 +8247,6 @@ function runGenerate() {
-   // the next parseable input.
-   try {
-     res = generateDeck(String(scaleBox.value || ""), sheetOptions(), (seed) => {
+@@ -10033,7 +10033,6 @@ function runGenerate() {
+       // onto a taken scale is - generating over it would silently reset that
+       // deck's name, palette and mirror. ADD keeps its benign dedupe below.
+       if (builtinId && CUSTOM[HPE.core.deckId(seed.fields)]) { taken = CUSTOM[HPE.core.deckId(seed.fields)]; return { ok: false }; }
 -      if (!wasId) return null;
        const id = HPE.core.deckId(seed.fields);
        if (id === wasId || !CUSTOM[id]) return null;

@@ -5,8 +5,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -2269,7 +2269,7 @@ function setOrder() {
- const allDecks = () => [...DECKS, ...Object.values(CUSTOM)];
+@@ -8736,7 +8736,7 @@ function setOrder() {
+ const allDecks = () => [...Object.values(CUSTOM).reverse(), ...visibleDecks()];
  // [5A] chip labels are capped at 16 characters with an ellipsis.
  const CHIP_CAP = 16;
 -const chipLabel = n => (n.length > CHIP_CAP ? n.slice(0, CHIP_CAP - 1) + "…" : n);

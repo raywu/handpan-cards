@@ -7,7 +7,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -5115,7 +5115,7 @@ function disarmDelete() {
+@@ -10153,7 +10153,7 @@ function disarmDelete() {
    // used to protect is asserted from the other side, while DELETE is armed,
    // by d_arming_warning_takes_the_seed_row - the mutant that puts row 91's
    // cause back.
@@ -15,4 +15,4 @@ diff --git a/index.html b/index.html
 +  syncParseState({ paint: true });
  }
  delBtn.onclick = () => {
-   /* Belt and braces, and deliberately NOT mutant-covered (queue row 86, N6).
+   /* The deck this button acts on: the custom deck under Edit, or the built-in

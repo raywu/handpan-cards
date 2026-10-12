@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8610,7 +8610,7 @@ let panelOpen = false;
+@@ -10605,7 +10605,7 @@ let panelOpen = false;
  const desktopMQ = window.matchMedia("(min-width:1024px) and (min-height:700px)");
  function panelStops() {
    return [settingsTrigger, document.getElementById("modeA"), document.getElementById("modeB"),
 -          document.getElementById("tier-basic"), document.getElementById("tier-intermediate"),
 +          document.getElementById("tier-intermediate"),
            document.getElementById("tier-advanced"), document.getElementById("seq-source-link"),
-           document.getElementById("deck-add"),
+           document.getElementById("deck-add"), restoreBtn,
            ...settingsPanel.querySelectorAll(".prints button, .prints select"),

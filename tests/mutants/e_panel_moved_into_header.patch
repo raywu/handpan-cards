@@ -71,10 +71,12 @@
 # current element. The mutation itself is unchanged.
 # Re-cut 2026-10-05 (refactor pass 3, AP-2): the .prints tag lost its onclick; the moved copy follows it. The mutation itself is unchanged.
 # Re-cut 2026-10-08 (lane PM): the print group is one DOWNLOAD PDF button and Resources gained HANDPAN 101 as its last row; the moved copy was regenerated from the current panel. The mutation itself is unchanged.
+
+# Re-cut 2026-10-12 (lane app, editable defaults): the Scales group gained the hidden #deck-restore button after #deck-add; the moved copy was regenerated from the current panel. The mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1131,6 +1131,89 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1134,6 +1134,90 @@
    <!-- "+ Add a scale" lives in the settings panel's Scales group now (M2,
         2026-09-28); #decks holds deck chips only. -->
    <nav class="decks" id="decks"></nav>
@@ -108,6 +110,7 @@ diff --git a/index.html b/index.html
 +  <div class="panel-group" id="panel-scales-group">
 +    <h3 class="panel-heading">Scales</h3>
 +    <button class="mode" type="button" id="deck-add" aria-haspopup="dialog">+ ADD A SCALE</button>
++    <button class="mode" type="button" id="deck-restore" hidden>SHOW HIDDEN DECKS</button>
 +  </div>
 +  <div class="panel-group">
 +    <h3 class="panel-heading">Print this deck</h3>
@@ -164,7 +167,7 @@ diff --git a/index.html b/index.html
  </header>
  
  <main>
-@@ -1349,89 +1432,6 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1355,90 +1439,6 @@
       below-breakpoint, modal presentation. At >=1024x700 the trigger that
       calls openPanel() is display:none, so the panel never gains them and
       the static sidebar is correctly plain, non-modal markup. -->
@@ -198,6 +201,7 @@ diff --git a/index.html b/index.html
 -  <div class="panel-group" id="panel-scales-group">
 -    <h3 class="panel-heading">Scales</h3>
 -    <button class="mode" type="button" id="deck-add" aria-haspopup="dialog">+ ADD A SCALE</button>
+-    <button class="mode" type="button" id="deck-restore" hidden>SHOW HIDDEN DECKS</button>
 -  </div>
 -  <div class="panel-group">
 -    <h3 class="panel-heading">Print this deck</h3>

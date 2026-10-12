@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -6493,13 +6493,7 @@ const deck = () => CUSTOM[deckId] || DECKS.find(d => d.id === deckId) || DECKS[0
+@@ -7733,14 +7733,7 @@
  // settings there, so writing our two keys must not drop a sibling's.
  const save = () => {
    try {
@@ -15,6 +15,7 @@ diff --git a/index.html b/index.html
 -    next.mode = mode;
 -    next.tier = tier;
 -    next.printPaper = printPaper;
+-    if (hidden.length) next.hidden = [...hidden]; else delete next.hidden;
 -    localStorage.setItem(STORE_KEY, JSON.stringify(next));
 +    localStorage.setItem(STORE_KEY, JSON.stringify({deck: storedDeck, mode, tier, printPaper}));
    } catch (e) {}

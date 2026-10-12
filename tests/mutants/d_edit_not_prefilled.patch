@@ -3,12 +3,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9344,7 +9344,7 @@ function resetSheetState(edit) {
-   setSheetMode(!!edit);
+@@ -9868,7 +9868,7 @@ function resetSheetState(edit, fork) {
+     ? { anchor: edit.fields["1"] && edit.fields["1"][4] !== 270 ? "between" : "one" } : edit.options;
    nameBox.value = edit ? edit.name : "";
    nameDirty = false;                                 // prefilled, not typed
 -  scaleBox.value = edit ? HPE.core.formatSeed(edit.fields) : "";  // 8A: the canonical string
 +  scaleBox.value = "";
    syncGrow();
-   palette = edit ? edit.options.palette : 0;
+   palette = edit && !fork ? edit.options.palette : 0;
    buildSwatches();

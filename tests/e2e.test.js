@@ -495,7 +495,9 @@ function run() {
     assert.ok(meta.length >= 2, "need at least two decks to test switching");
 
     for (let i = 0; i < meta.length; i++) {
-      await selectDeck(i, meta);
+      // A tap on the SELECTED built-in chip opens its sheet, so the chip that
+      // is already on is checked without being tapped.
+      if (!(await chipStates())[i].on) await selectDeck(i, meta);
       assert.strictEqual(
         await countText(),
         `1 / ${meta[i].chords}`,
@@ -831,7 +833,7 @@ function run() {
 
     try {
       for (let i = 0; i < meta.length; i++) {
-        await selectDeck(i, meta);
+        if (!(await chipStates())[i].on) await selectDeck(i, meta);   // the selected built-in chip opens its sheet instead
 
         const widest = await b.eval(`
           const d = DECKS[${i}];
@@ -957,7 +959,7 @@ function run() {
     `);
 
     for (const i of [0, meta.length - 1]) {
-      await selectDeck(i, meta);
+      if (!(await chipStates())[i].on) await selectDeck(i, meta);   // the selected built-in chip opens its sheet instead
       const id = meta[i].id;
       const m = await shape();
       assert.strictEqual(m.anchors, 0, `deck ${id}: .prints still renders an <a>`);
@@ -988,7 +990,7 @@ function run() {
 
     try {
       for (const i of [0, meta.length - 1]) {
-        await selectDeck(i, meta);
+        if (!(await chipStates())[i].on) await selectDeck(i, meta);   // the selected built-in chip opens its sheet instead
         const m = await b.eval(`
           const hdr = document.querySelector("#front .hdr");
           const l = hdr.querySelector(".l");
@@ -3720,6 +3722,9 @@ function run() {
           const atEnd = box().right - last.getBoundingClientRect().right;
           const maxScroll = nav.scrollLeft;
           const on = nav.querySelector(".chip.on");
+          // A new custom deck is chip 1 and selected, so it sits at the far
+          // end from where the strip was just scrolled: bring it back first.
+          if (on) on.scrollIntoView({ block: "nearest", inline: "nearest" });
           const onR = on && on.getBoundingClientRect();
           const activeInBox = !!on && onR.left >= box().left - 1 && onR.right <= box().right + 1;
           const titleW = document.querySelector("h1").getBoundingClientRect().width;
@@ -4013,14 +4018,25 @@ function run() {
       }
 
       // And a SELECTED built-in: selected is not enough, custom is not enough.
-      await selectDeck(0, meta);
+      // A custom deck now takes chip 1, so Kurd (meta[0]) is chip 2.
+      await b.eval(`document.querySelector("#decks .chip:nth-child(2)")
+                      .scrollIntoView({ block: "nearest", inline: "nearest" }); return true;`);
+      await b.click("#decks .chip:nth-child(2)");
+      await expectCount(`1 / ${meta[0].chords}`, "Kurd selected");
       const builtin = (await chipProbe()).find((c) => c.on);
+      assert.ok(/KURD/.test(builtin.text), `chip 2 is "${builtin.text}", not Kurd`);
       assert.ok(builtin, "no chip is selected after switching to a built-in deck");
       assert.strictEqual(builtin.marked, false,
         `the selected built-in chip "${builtin.text}" carries a pencil - tapping ` +
-        "it does nothing, so the affordance would be a lie");
+        "it opens the fork sheet, not Edit, so the affordance would be a lie");
       assert.strictEqual(builtin.label, null,
         `the selected built-in chip has aria-label ${JSON.stringify(builtin.label)}`);
+      // Tapping it opens the sheet in builtin mode (fork or hide), not Edit.
+      await b.click("#decks .chip:nth-child(2)");
+      await b.waitFor(`!document.getElementById("scale-sheet").hasAttribute("hidden")`,
+        { label: "the builtin sheet to open on a selected built-in chip" });
+      assert.strictEqual(await b.eval(`return document.getElementById("scale-generate").textContent.trim();`),
+        "FORK THIS DECK", "a selected built-in chip did not open the fork sheet");
     } finally {
       await b.setViewport(900, 900, false);
     }
@@ -5042,7 +5058,7 @@ function run() {
       await generate(EDIT_SCALE);
       await generate(SIX_SCALES[2]);
       const before = await chipReport();
-      const at = before.chips.indexOf(before.on[0]) - 1;   // the FIRST custom deck
+      const at = before.chips.indexOf(before.on[0]) + 1;   // the FIRST custom deck (custom decks take chip 1)
       assert.ok(at >= 0, `no two custom chips: ${JSON.stringify(before.chips)}`);
       const target = before.chips[at];
 
@@ -5134,7 +5150,7 @@ function run() {
       const storedBefore = await b.eval(`return localStorage.getItem("hpfc.scales.v3");`);
       assert.ok(before.chips.includes("RAY'S PAN"), JSON.stringify(before.chips));
 
-      await selectChipAt(before.chips.indexOf("RAY'S PAN") - 1);   // the FIRST custom deck
+      await selectChipAt(before.chips.indexOf("RAY'S PAN") + 1);   // the FIRST custom deck, now after the newer one
       await openEdit();
       await typeScale(COLLIDE_SCALE);
       await b.click("#scale-generate");
@@ -5252,7 +5268,7 @@ function run() {
       await generate(EDIT_SCALE);
       await generate(COLLIDE_SCALE);
       const chips = await chipReport();
-      await selectChipAt(chips.chips.length - 2);   // the FIRST custom deck
+      await selectChipAt(1);   // the FIRST custom deck, now chip 2
       await openEdit();
 
       const read = () => b.eval(`
@@ -5348,7 +5364,7 @@ function run() {
       await generate(COLLIDE_SCALE);
       const before = await chipReport();
 
-      await selectChipAt(before.chips.length - 2);
+      await selectChipAt(1);
       await openEdit();
       await typeScale(COLLIDE_SCALE);
       await b.click("#scale-generate");
@@ -5391,8 +5407,8 @@ function run() {
       await generate(COLLIDE_SCALE);
       const before = await chipReport();
 
-      // EDIT_SCALE's chip: generated before COLLIDE_SCALE, so second-to-last.
-      await selectChipAt(before.chips.length - 2);
+      // EDIT_SCALE's chip: generated before COLLIDE_SCALE, so chip 2 (newest custom first).
+      await selectChipAt(1);
       await openEdit();
       await typeScale(COLLIDE_SCALE);
       await b.click("#scale-generate");
@@ -5430,7 +5446,7 @@ function run() {
       await generate(COLLIDE_SCALE);
       const before = await chipReport();
 
-      await selectChipAt(before.chips.length - 2);
+      await selectChipAt(1);
       await openEdit();
       await typeScale(COLLIDE_SCALE);
       await b.click("#scale-generate");
@@ -5679,7 +5695,7 @@ function run() {
       await generate(COLLIDE_SCALE);
       const before = await chipReport();
 
-      await selectChipAt(before.chips.length - 2);
+      await selectChipAt(1);
       await openEdit();
       await typeScale(COLLIDE_SCALE);
       await b.click("#scale-generate");
@@ -5720,7 +5736,7 @@ function run() {
       await generate(COLLIDE_SCALE);
       const before = await chipReport();
 
-      await selectChipAt(before.chips.length - 2);
+      await selectChipAt(1);
       await openEdit();
       await typeScale(COLLIDE_SCALE);
       await b.click("#scale-generate");
@@ -5759,7 +5775,7 @@ function run() {
       await generate(COLLIDE_SCALE);
       await generate(SIX_SCALES[4]);
       const before = await chipReport();
-      const at = before.chips.indexOf(before.on[0]) - 1;    // the MIDDLE custom deck
+      const at = before.chips.indexOf(before.on[0]) + 1;    // the MIDDLE custom deck (newest first)
       assert.ok(at > 0, `no three custom chips: ${JSON.stringify(before.chips)}`);
       const target = before.chips[at];
 

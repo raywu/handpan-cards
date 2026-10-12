@@ -1,0 +1,15 @@
+# kills: editable defaults: forking each built-in keeps its id from the fixture and its name
+# suite: node --test --test-name-pattern ^editable.defaults..forking.each.built.in.keeps.its.id.from.the.fixture.and.its.name$ tests/app.test.js
+# The fork sheet opens with an empty scale box instead of the built-in's scale.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9868,7 +9868,7 @@
+     ? { anchor: edit.fields["1"] && edit.fields["1"][4] !== 270 ? "between" : "one" } : edit.options;
+   nameBox.value = edit ? edit.name : "";
+   nameDirty = false;                                 // prefilled, not typed
+-  scaleBox.value = edit ? HPE.core.formatSeed(edit.fields) : "";  // 8A: the canonical string
++  scaleBox.value = edit && !fork ? HPE.core.formatSeed(edit.fields) : "";  // 8A: the canonical string
+   syncGrow();
+   palette = edit && !fork ? edit.options.palette : 0;
+   buildSwatches();
