@@ -1,0 +1,15 @@
+# kills: editable defaults: in builtin mode HIDE arms, confirms through the button and is a sheet tab stop; Back clears the mode
+# suite: node --test --test-name-pattern ^editable.defaults..in.builtin.mode.HIDE.arms..confirms.through.the.button.and.is.a.sheet.tab.stop..Back.clears.the.mode$ tests/app.test.js
+# The sheet's delete button ignores builtin mode, so HIDE THIS DECK does nothing.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10164,7 +10164,7 @@
+      neither id set through a synthetic .onclick(). In builtin mode it is NOT
+      unreachable the other way round: editingId is null there by design, so a
+      guard on editingId alone would leave HIDE inert (R6). */
+-  const target = editingId || builtinId;
++  const target = editingId;
+   if (!target) return;
+   /* Disarm BEFORE the delete, not inside it: the state must not outlive the
+      deck even when deleteDeck turns out to have nothing to remove, and the

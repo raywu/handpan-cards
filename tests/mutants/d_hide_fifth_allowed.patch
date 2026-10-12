@@ -1,0 +1,15 @@
+# kills: editable defaults: the fifth hide with no custom deck is refused
+# suite: node --test --test-name-pattern ^editable.defaults..the.fifth.hide.with.no.custom.deck.is.refused$ tests/app.test.js
+# wouldEmpty lets the last built-in be hidden, so the picker can empty.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -7758,7 +7758,7 @@
+ const hiddenDecks = () => DECKS.filter(d => hidden.includes(d.id));
+ const visibleDecks = () => DECKS.filter(d => !hidden.includes(d.id));
+ // Removing `id` (a hide, or a custom delete) must leave a deck to show.
+-const wouldEmpty = id => allDecks().every(d => d.id === id);
++const wouldEmpty = id => allDecks().every(d => d.id === id) && !isBuiltIn(id);
+ // Where the page lands when the deck on screen goes: Kurd if it is visible,
+ // else the first chip. With nothing visible at all (a corrupt store) hidden is
+ // ignored and Kurd comes back, so the page never blanks.
