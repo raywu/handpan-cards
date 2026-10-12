@@ -31,8 +31,8 @@ Players can fork any built-in deck into a custom deck, hide any built-in, restor
 ## Status
 | Lane | Current branch | State | Last verdict | Last update (UTC) |
 |---|---|---|---|---|
-| app | claude/editable-defaults-app | returned done; CI green at d7a3103; reviewer spawned | - | 2026-10-12 |
-| e2e | - | waiting on app | - | - |
+| app | merged 7995390 | done | PASS_WITH_NITS | 2026-10-12 |
+| e2e | claude/editable-defaults-e2e | spawned | - | 2026-10-12 |
 | docs | - | waiting on e2e | - | - |
 
 ## Lane app findings (report 2026-10-12, d7a3103)
@@ -45,6 +45,7 @@ Players can fork any built-in deck into a custom deck, hide any built-in, restor
 ## Review log
 | PR | Lane | Reviewer verdict | Findings | Outcome |
 |---|---|---|---|---|
+| #291 | app | PASS_WITH_NITS @d7a3103 (CI run 38319995207 success, 11/11; 5/5 mutants killed; Codex passes not run) | 12 nits, no blocking finding | merged 7995390 |
 | #290 | plan | PASS_WITH_NITS @2f6d9d6 | 9 nits | merged 24cfc3b |
 
 ## Handoff queue (append-only)
@@ -55,8 +56,19 @@ Players can fork any built-in deck into a custom deck, hide any built-in, restor
 | 3 | reviewer #290 | nits 3/5/6: lane app Verify says "ten"; section 6 item 1 omits "purpose they defeat"; ED-A16 lists `e_edit_forks_chip` | OPEN (lane docs) |
 | 4 | reviewer #290 | nit 8: no post-merge owner for a missed wrong-path test; guard is the inventory-vs-diff check | OPEN (integrator) |
 
+## Handoff queue (continued): #291 reviewer nits
+| # | Status | Owner | Item |
+|---|---|---|---|
+| 5 | OPEN | owner decision (listed on return) | All five built-ins hidden and no custom survives boot: strip empty, Kurd card shows; recovery is SHOW HIDDEN DECKS. Suggested: clear `hidden` when `allDecks()` is empty at boot. Plan line 224 ("never blanks") holds. |
+| 6 | OPEN | later lane | Fork mode with an invalid name greys the preview; name-less re-parse at `index.html` `editingId` gate should be `(editingId || builtinId)`. |
+| 7 | OPEN | lane docs (plan close-out) | PR #291 inventory row for app.test.js :2426 says "none"; `d_remember_appends` names that test (unchanged, still killed). |
+| 8 | OPEN | later lane | Pencil e2e test reaches Kurd by `nth-child(2)` not chip text (R3 wording); `/KURD/.test` before `assert.ok`; app :2141 pencil regex vacuous; e2e :5059 `at >= 0` vacuous. |
+| 9 | OPEN | later lane | Stale comments in `index.html` `buildChips` ("does nothing at all") and delete fallback ("default deck"); blank line in `e_panel_moved_into_header` header; weak `hiddenKey(app) || four` assertion. |
+| 10 | OPEN | owner (listed on return) | Two-tab last-writer-wins on `hidden` (same as deck/mode/tier); a Hijaz fork's chip is indistinguishable from Hijaz while unselected (ED-A6 by design). |
+
 ## Cycle state
-Cycle: 1   Wave: 1   Merged this batch: -
+Cycle: 1   Wave: 2   Merged this batch: 7995390 (#291 app)
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| app | a2510001262579403 | .claude/worktrees/editable-defaults-app | claude/editable-defaults-app | #291 | d7a3103 | 2026-10-12 (head==tip, 11/11 pass, MERGEABLE) | review pending | 0 | no | reviewer | - |
+| app | a2510001262579403 | removed | deleted (merged) | #291 | d7a3103 | 2026-10-12 (head==tip, 11/11 pass, MERGEABLE) | PASS_WITH_NITS | 0 | yes 7995390 | - | no |
+| e2e | pending | .claude/worktrees/editable-defaults-e2e | claude/editable-defaults-e2e | - | - | - | - | 0 | no | - | - |
