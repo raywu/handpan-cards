@@ -31,7 +31,7 @@ Players can fork any built-in deck into a custom deck, hide any built-in, restor
 ## Status
 | Lane | Current branch | State | Last verdict | Last update (UTC) |
 |---|---|---|---|---|
-| app | claude/editable-defaults-app | spawned | - | 2026-10-12 |
+| app | claude/editable-defaults-app | PR #291 open, CI running | - | 2026-10-12 |
 | e2e | - | waiting on app | - | - |
 | docs | - | waiting on e2e | - | - |
 
@@ -52,4 +52,4 @@ Players can fork any built-in deck into a custom deck, hide any built-in, restor
 Cycle: 1   Wave: 1   Merged this batch: -
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| app | a2510001262579403 | .claude/worktrees/editable-defaults-app | claude/editable-defaults-app | - | - | - | - | 0 | no | - | - |
+| app | a2510001262579403 | .claude/worktrees/editable-defaults-app | claude/editable-defaults-app | #291 | d7a3103 | unverified (lane not returned) | - | 0 | no | CI pending | - |
