@@ -32,8 +32,8 @@ Players can fork any built-in deck into a custom deck, hide any built-in, restor
 | Lane | Current branch | State | Last verdict | Last update (UTC) |
 |---|---|---|---|---|
 | app | merged 7995390 | done | PASS_WITH_NITS | 2026-10-12 |
-| e2e | claude/editable-defaults-e2e | returned done; CI green at 1822f16; reviewer spawned | - | 2026-10-12 |
-| docs | - | waiting on e2e | - | - |
+| e2e | merged 83cf646 | done | PASS_WITH_NITS | 2026-10-12 |
+| docs | claude/editable-defaults-docs | spawned | - | 2026-10-12 |
 
 ## Lane app findings (report 2026-10-12, d7a3103)
 - Sandbox stubs lack `querySelectorAll`, so the restore-button unit test asserts the `panelStops` source line plus `hidden`; the real tab-stop path is lane e2e's (R10).
@@ -46,6 +46,7 @@ Players can fork any built-in deck into a custom deck, hide any built-in, restor
 | PR | Lane | Reviewer verdict | Findings | Outcome |
 |---|---|---|---|---|
 | #291 | app | PASS_WITH_NITS @d7a3103 (CI run 38319995207 success, 11/11; 5/5 mutants killed; Codex passes not run) | 12 nits, no blocking finding | merged 7995390 |
+| #292 | e2e | PASS_WITH_NITS @1822f16 (CI run 38323312038 success, 11/11; 5/5 mutants killed; Review Army/Codex not run) | 3 nits, no blocking finding | merged 83cf646 |
 | #290 | plan | PASS_WITH_NITS @2f6d9d6 | 9 nits | merged 24cfc3b |
 
 ## Handoff queue (append-only)
@@ -66,9 +67,16 @@ Players can fork any built-in deck into a custom deck, hide any built-in, restor
 | 9 | OPEN | later lane | Stale comments in `index.html` `buildChips` ("does nothing at all") and delete fallback ("default deck"); blank line in `e_panel_moved_into_header` header; weak `hiddenKey(app) || four` assertion. |
 | 10 | OPEN | owner (listed on return) | Two-tab last-writer-wins on `hidden` (same as deck/mode/tier); a Hijaz fork's chip is indistinguishable from Hijaz while unselected (ED-A6 by design). |
 
+## Handoff queue (continued): #292 reviewer nits
+| # | Status | Owner | Item |
+|---|---|---|---|
+| 11 | OPEN | note only | ED-A11 met because `index.html` was unchanged (probe measured 0 cells); R10 in-test box/Tab assertions are the only browser proof of the hidden-deck layout. |
+| 12 | OPEN | later lane | Restore test's Tab assertion cannot distinguish the panel trap from DOM order (`#deck-restore` follows `#deck-add`); membership probe covers it. Hide test leaves Kurd hidden in storage (freshLoad clears it). |
+
 ## Cycle state
-Cycle: 1   Wave: 2   Merged this batch: 7995390 (#291 app)
+Cycle: 1   Wave: 3   Merged this batch: 7995390 (#291 app), 83cf646 (#292 e2e)
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | app | a2510001262579403 | removed | deleted (merged) | #291 | d7a3103 | 2026-10-12 (head==tip, 11/11 pass, MERGEABLE) | PASS_WITH_NITS | 0 | yes 7995390 | - | no |
-| e2e | a9b8139f5b325d3a4 | .claude/worktrees/editable-defaults-e2e | claude/editable-defaults-e2e | #292 | 1822f16 | 2026-10-12 (head==tip, 11/11 pass, MERGEABLE) | review pending | 0 | no | reviewer | - |
+| e2e | a9b8139f5b325d3a4 | removed | deleted (merged) | #292 | 1822f16 | 2026-10-12 (head==tip, 11/11 pass, MERGEABLE) | PASS_WITH_NITS | 0 | yes 83cf646 | - | no |
+| docs | pending | .claude/worktrees/editable-defaults-docs | claude/editable-defaults-docs | - | - | - | - | 0 | no | - | - |
