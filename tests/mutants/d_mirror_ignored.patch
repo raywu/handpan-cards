@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8976,7 +8976,7 @@
+@@ -9432,7 +9432,7 @@ function layoutOptions() {
  
  /** The seed options the sheet currently describes. */
  function sheetOptions() {
 -  const o = { palette, mirror, mirrorBottom: bottomMirror(), anchor };
 +  const o = { palette, mirror: false, mirrorBottom: bottomMirror(), anchor };
-   if (editingId) {
-     o.parent = Number(degSel.value);
+   if (editingId || builtinId) {
+     if (editingId) o.parent = Number(degSel.value);
      // iOS Smart Punctuation turns a typed ' or " into a curly U+2018/2019/

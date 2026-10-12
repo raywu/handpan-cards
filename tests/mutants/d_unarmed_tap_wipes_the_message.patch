@@ -10,7 +10,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4990,7 +4990,7 @@
+@@ -10186,7 +10186,7 @@ delBtn.onclick = () => {
     owner's device actually makes. The pointerdown that lands ON the button is
     not: it is the confirming tap's own first half. */
  sheet.addEventListener("pointerdown", (e) => {
@@ -18,4 +18,4 @@ diff --git a/index.html b/index.html
 +  if (e.target !== delBtn) updateParse();
  });  // disarmDelete() is a no-op unless armed, so an ordinary tap writes nothing.
  delBtn.onblur = disarmDelete;
- // The mirror is the choice the pan preview exists to make visible, so each
+ // A hide is undone in one tap and for all of them (ED-5): the hidden list is
