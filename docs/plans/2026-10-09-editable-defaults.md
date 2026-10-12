@@ -60,7 +60,7 @@ Players can fork any built-in deck into a custom deck, hide any built-in, restor
 
 ## 2. Non-goals
 
-No in-place edit of a built-in. No change to `data/decks.json`, `src/engine/`, `tools/`, committed PDFs or fixture digests. No new panel control rendered on a fresh store. No palette additions. No per-deck reset beyond hide/restore and delete.
+No in-place edit of a built-in. No change to `data/decks.json`, `src/engine/`, `tools/` (one exception, R5: the `ELEMENT_IDS` list in `tools/sandbox.js` gains `"deck-restore"`), committed PDFs or fixture digests. No new panel control rendered on a fresh store. No palette additions. No per-deck reset beyond hide/restore and delete.
 
 ## 3. Decision ledger (AFK: auto-pick the first option, record here)
 
@@ -73,37 +73,48 @@ No in-place edit of a built-in. No change to `data/decks.json`, `src/engine/`, `
 | ED-5 | Restore scope | clear all hidden; per-deck unhide list | clear all |
 | ED-6 | Fallback when the stored deck is hidden | first visible of `allDecks()` with the existing "gone" warn; silent | first visible, warn |
 
+Eng review decisions (2026-10-12, `/plan-eng-review`, recommended option auto-taken under the owner's 2026-10-12 instruction "take the AFK picks, straight to /swarm"; ED-1..ED-6 unchanged). Each row answers a verified outside-voice finding (section 7.6).
+
+| # | Decision | Options | Pick |
+|---|---|---|---|
+| R1 | Forking a scale that already has a custom deck | refuse with the existing "Another deck already uses this scale." (the row-131 guard runs on the fork path); let the create path regenerate in place (today's ADD behaviour: a renamed, repaletted fork is silently reset) | refuse |
+| R2 | Zero visible decks | one rule, `wouldEmpty(id)`: any hide OR custom delete that would leave `allDecks()` empty is refused with a warn, and one `fallbackDeck()` (Kurd if visible, else the first of `allDecks()`) serves `deleteDeck`, hide and the boot tail; keep ED-4's "fifth hide" wording and leave `deleteDeck` as is (deleting the last custom with five hidden empties the picker; a delete while Kurd is hidden stores `kurd`) | one rule (ED-4 and ED-6 are special cases of it) |
+| R3 | Re-pointing the three chip-order e2e sites | `at = indexOf(on[0]) + 1` (the OLDER custom, index 1; `e_optedit_reappends` moves it to index 0, so the mutant still dies); the same `+ 1` on the third site, "an edit onto another deck's scale is refused at 380px and both chips stay", whose `indexOf("RAY'S PAN") - 1` (RAY'S PAN is the NEWEST custom, chip 0 under newest-first) also yields -1; index 0 (the newest custom is already last in storage, so re-appending leaves it at 0 and the mutant survives) | `+ 1` |
+| R4 | Who re-points them | lane app owns those three `at`/`selectChipAt` lines in `tests/e2e.test.js` (CI runs e2e on every branch; with reversed order the old arithmetic yields -1 and the app PR cannot go green); lane e2e re-points after app merges (app PR red) | lane app |
+| R5 | `#deck-restore` in the unit sandbox | lane app owns the one `ELEMENT_IDS` entry in `tools/sandbox.js` (`getElementById` throws on an unregistered id, so `app.run` cannot boot without it); keep the `tools/` non-goal (the app lane's own Verify cannot pass) | own the one line |
+| R6 | Builtin-mode sheet state | a `builtinId` variable, set by `openEditSheet` in builtin mode and cleared where `editingId` is cleared; `delBtn.onclick` (`if (!editingId) return;`), the sheet tab stops (`editingId ? delBtn : null`) and `sheetRoute()` read `editingId \|\| builtinId`; reuse `editingId` for the built-in (breaks `editedDeck()`, which reads `CUSTOM[editingId]`, and `sheetOptions`' name/parent branch) | `builtinId` |
+
 ## 4. Lanes
 
 ### Lane app (`claude/editable-defaults-app`, `.claude/worktrees/editable-defaults-app`)
 
 **Goal.** Design 1 in the app block of `index.html` plus its unit tests and mutants.
 
-**Owns.** `index.html` outside the engine regions and the `const DECKS` line; `tests/app.test.js`; `tests/mutants/*` whose target is the app block; `tests/suite_health.py` FLOORS row for `app.test.js` (CI count only).
+**Owns.** `index.html` outside the engine regions and the `const DECKS` line; `tests/app.test.js`; `tests/mutants/*` whose target is the app block; `tests/suite_health.py` FLOORS row for `app.test.js` (CI count only); the `ELEMENT_IDS` list in `tools/sandbox.js` (R5, one entry); in `tests/e2e.test.js` ONLY the two `at = ...indexOf(before.on[0]) - 1` lines of "the replacement takes the old chip's position and keeps it across a reload" and "an options-only edit keeps its chip position across a reload at 380px", the `selectChipAt(before.chips.indexOf("RAY'S PAN") - 1)` line of "an edit onto another deck's scale is refused at 380px and both chips stay" (R3, R4), the `assert.ok(at ...)` message beside the first two and the `// the FIRST custom deck` comment on each; nothing else in that file.
 
-**Candidates.** `save()` gains `hidden` (array of strings filtered to `isBuiltIn`, written only when non-empty). New `hiddenDecks()`, `visibleDecks()`. `allDecks()` = `[...Object.values(CUSTOM).reverse(), ...visibleDecks()]`. `deck()` filters hidden ids. `buildChips`: a selected built-in chip opens `openEditSheet(d, b)` in `builtin` mode; pencil glyph stays custom-only. `setSheetMode("builtin")`, `resetSheetState` prefill from `formatSeed(d.fields)` + anchor + name (ED-2). `deleteDeck` on a built-in: hide (ED-4, ED-6). `#deck-restore` after `#deck-add`, `hidden` unless `hiddenDecks().length`; in `panelStops()`. Boot tail warn covers hidden built-ins.
+**Candidates.** `save()` gains `hidden` (array of strings filtered to `isBuiltIn`, written only when non-empty). New `hiddenDecks()`, `visibleDecks()`, `wouldEmpty(id)`, `fallbackDeck()` (R2). `allDecks()` = `[...Object.values(CUSTOM).reverse(), ...visibleDecks()]`. `deck()` filters hidden ids and falls back through `fallbackDeck()`. `buildChips`: a selected built-in chip opens `openEditSheet(d, b)` in `builtin` mode; pencil glyph stays custom-only. `setSheetMode("builtin")`; a `builtinId` state variable (R6) read by `delBtn.onclick`, the sheet tab stops and `sheetRoute()`; `resetSheetState` takes a builtin branch (built-ins carry no `options`, so it must not read `edit.options.*`) that prefills `scaleBox` from `formatSeed(d.fields)`, `anchor` from the deck, palette 0, mirror off, and `nameBox` from `d.name` (ED-2) with `sheetOptions` carrying `o.name` on the fork path. `runGenerate`'s taken guard runs on the fork path too and refuses when `CUSTOM[id]` exists (R1). `deleteDeck`: on a built-in, hide; on a custom deck, unchanged except that both paths refuse through `wouldEmpty` and select through `fallbackDeck()` (ED-4, ED-6, R2). `#deck-restore` after `#deck-add`, `hidden` unless `hiddenDecks().length`; in `panelStops()`; `"deck-restore"` added to `ELEMENT_IDS` in `tools/sandbox.js`. Boot tail warn covers hidden built-ins. The two e2e `at` lines become `indexOf(before.on[0]) + 1` and the RAY'S PAN line `indexOf("RAY'S PAN") + 1` (R3).
 
-**Rules.** Tests first. No rename of any existing test. The two tests "the layout markup exists and a built-in deck is never editable" and "a selected custom chip carries a pencil; no built-in chip ever does" keep their titles; their assertions move to "no pencil glyph on built-ins; tapping a selected built-in opens the sheet in builtin mode". New tests assert through `app.run`/DOM, never a new bare name (keeps `app_surface_v1.json`). New mutants: `d_hidden_not_filtered`, `d_custom_not_first`, `d_restore_not_rendered`, `d_fork_not_prefilled`, `d_hide_fifth_allowed`, each with a `# kills:` title verbatim.
+**Rules.** Tests first. No rename of any existing test. The two tests "the layout markup exists and a built-in deck is never editable" and "a selected custom chip carries a pencil; no built-in chip ever does" keep their titles; their assertions move to "no pencil glyph on built-ins; tapping a selected built-in opens the sheet in builtin mode". New tests assert through `app.run`/DOM, never a new bare name (keeps `app_surface_v1.json`). New mutants: `d_hidden_not_filtered`, `d_custom_not_first`, `d_restore_not_rendered`, `d_fork_not_prefilled`, `d_hide_fifth_allowed`, `d_fork_overwrites` (R1), `d_delete_last_visible` (R2), `d_builtin_hide_unwired` (R6: the `delBtn.onclick` early return ignores `builtinId`), each with a `# kills:` title verbatim. The sandbox change is the one `ELEMENT_IDS` entry and nothing else (learning sandbox-no-static-children: the sandbox never populates static markup children, so DOM-order assertions on the restore button are source-markup pins).
 
-**Verify.** `node --test tests/app.test.js`; `python3 tools/inline_engine.py --check`; `python3 tools/sync_decks.py --check`; `python3 tools/validate.py`; `node tools/boot_sim.js`; `python3 tools/refresh_mutants.py --check`.
+**Verify.** `node --test tests/app.test.js`; `python3 tools/inline_engine.py --check`; `python3 tools/sync_decks.py --check`; `python3 tools/validate.py`; `node tools/boot_sim.js`; `python3 tools/refresh_mutants.py --check`; the three re-pointed e2e tests singly with `node --test --test-name-pattern "<title>" tests/e2e.test.js` (CI's `js suites` job is the oracle for the full file).
 
-**Acceptance.** ED-A1 fresh store: chips in `DECKS` order, no restore button, `hpfc` keys unchanged. ED-A2 a generated deck is chip 1; a second is chip 1 and the first chip 2. ED-A3 hiding Amara 9 removes its chip, writes `hpfc.hidden = ["amara"]`, selects Kurd. ED-A4 hiding Kurd selects the first visible deck. ED-A5 the fifth hide with no custom deck is refused. ED-A6 a fork of each built-in has the id in `deck_ids_v1.json` and the built-in's name. ED-A7 restore clears `hidden`, deletes the key, re-renders five chips. ED-A8 all five new mutants killed; none survive.
+**Acceptance.** ED-A1 fresh store: chips in `DECKS` order, no restore button, `hpfc` keys unchanged. ED-A2 a generated deck is chip 1; a second is chip 1 and the first chip 2. ED-A3 hiding Amara 9 removes its chip, writes `hpfc.hidden = ["amara"]`, selects Kurd. ED-A4 hiding Kurd selects the first visible deck. ED-A5 the fifth hide with no custom deck is refused. ED-A6 a fork of each built-in has the id in `deck_ids_v1.json` and the built-in's name. ED-A7 restore clears `hidden`, deletes the key, re-renders five chips. ED-A8 all eight new mutants killed; none survive. ED-A13 forking a built-in twice is refused with "Another deck already uses this scale." and the first fork keeps its name and palette (R1). ED-A14 with five hidden and one custom, deleting the custom is refused and the chip stays; with Kurd hidden, deleting a custom selects and stores `fallbackDeck().id`, never `kurd` (R2). ED-A15 in builtin mode the HIDE button arms, confirms and hides through `delBtn.onclick`, and is a sheet tab stop; cancel (Back/Escape) clears `builtinId` (R6). ED-A16 the three re-pointed e2e tests green in CI at the lane head and `e_optedit_reappends`, `e_edit_forks_chip` still killed (R3, R4).
 
 **Depends on.** Nothing.
 
 ### Lane e2e (`claude/editable-defaults-e2e`, `.claude/worktrees/editable-defaults-e2e`)
 
-**Goal.** Browser proof at 380px and the two re-pointed order tests.
+**Goal.** Browser proof at 380px; the three re-pointed order sites are lane app's.
 
-**Owns.** `tests/e2e.test.js`; `tests/helpers/` e2e helpers; mutants whose `# kills:` names an e2e test; FLOORS row for `e2e.test.js`.
+**Owns.** `tests/e2e.test.js` except the three order-dependent lines lane app re-points (R4); `tests/helpers/` e2e helpers; mutants whose `# kills:` names an e2e test; FLOORS row for `e2e.test.js`.
 
-**Candidates.** Re-point "the replacement takes the old chip's position and keeps it across a reload" and "an options-only edit keeps its chip position across a reload at 380px" from `at = indexOf - 1` to index 0 (titles unchanged; `e_optedit_reappends` must still die). New: "a hidden built-in stays hidden across a reload at 380px"; "forking Pygmy at 380px makes chip 1 with the Pygmy name"; "SHOW HIDDEN DECKS is absent until a deck is hidden and restores all five".
+**Candidates.** New: "a hidden built-in stays hidden across a reload at 380px"; "forking Pygmy at 380px makes chip 1 with the Pygmy name"; "SHOW HIDDEN DECKS is absent until a deck is hidden and restores all five". (The three chip-order re-points moved to lane app under R3/R4; this lane does not touch them.)
 
 **Rules.** Run single e2e tests locally only (`CHROME_BIN`; the full suite starves the browser). CI at the head SHA is the oracle. `panel-fit` must be unchanged: no e2e fixture hides a deck before the probe runs.
 
 **Verify.** `node --test --test-name-pattern "<title>" tests/e2e.test.js` per new test; CI `e2e` and `panel fit` jobs.
 
-**Acceptance.** ED-A9 the three new tests green in CI. ED-A10 the two re-pointed tests green and `e_optedit_reappends`, `e_edit_forks_chip` still killed. ED-A11 panel-fit verdicts identical (real and fallback).
+**Acceptance.** ED-A9 the three new tests green in CI. ED-A10 `e_optedit_reappends` and `e_edit_forks_chip` still killed at this lane's head (they are re-pointed by lane app under ED-A16; this lane only proves they stayed dead). ED-A11 panel-fit verdicts identical (real and fallback).
 
 **Depends on.** Lane app merged (the tests fail red before it; merge order below).
 
@@ -133,16 +144,118 @@ No in-place edit of a built-in. No change to `data/decks.json`, `src/engine/`, `
 
 ## 6. Order of merges and why
 
-1. **app** - the behaviour; its unit tests and mutants land with it so main never reddens.
-2. **e2e** - after app, because its re-pointed order tests are red against the old `allDecks()` (test-first inside the lane; merge after the code).
+1. **app** - the behaviour; its unit tests, mutants, the sandbox id and the three re-pointed e2e order lines land with it so neither the lane PR nor main ever reddens (R4: CI runs `tests/e2e.test.js` on every branch).
+2. **e2e** - after app, because its new browser tests exercise behaviour that does not exist before app merges (test-first inside the lane; merge after the code).
 3. **docs** - describes what shipped; counts from main's artifacts once.
 
 ## 9. Lane table
 
 | Lane | Branch | Worktree | Gate |
 |---|---|---|---|
-| app | `claude/editable-defaults-app` | `.claude/worktrees/editable-defaults-app` | ED-A1..A8 |
+| app | `claude/editable-defaults-app` | `.claude/worktrees/editable-defaults-app` | ED-A1..A8, A13..A16 |
 | e2e | `claude/editable-defaults-e2e` | `.claude/worktrees/editable-defaults-e2e` | ED-A9..A11 |
 | docs | `claude/editable-defaults-docs` | `.claude/worktrees/editable-defaults-docs` | ED-A12 |
 
 Every lane: worktree isolation, tests first, independent reviewer at the verified head SHA, CI is the evidence. Review worktrees take no `node_modules` (this repo needs none).
+
+## 7. Eng review (2026-10-12, `/plan-eng-review`, medium effort, against `f07943d` on main `3bae527`)
+
+### 7.1 Scope challenge
+
+1. Problem: players cannot edit, hide or reorder the five built-ins; the owner asked for fork, hide, restore and custom-first. 2. Simplest thing: fork-and-hide over the existing custom-deck machinery; Design 2 (overlay) was rejected in section A. 3. Removable: nothing; every candidate maps to one of the four owner asks or to a verified gap (R1..R6). 4. Files: `index.html` app block, `tests/app.test.js`, `tests/e2e.test.js`, `tests/mutants/*`, `tools/sandbox.js` (one line), `tests/suite_health.py`, `README.md`, `CLAUDE.md`: eight files, no new classes, no new module, so the complexity gate does not fire. 5. Existing: the sheet, `CUSTOM`, `save()`, `deleteDeck`, the arm/disarm delete, `fromGenerated` PDFs. 6. Data model: one `hidden` array of built-in ids in `hpfc`; no migration, absent on a fresh store. 7. Reversible: restore clears `hidden`; nothing destructive to committed data. No issues found.
+
+### 7.2 Architecture
+
+Registry stays two-sided (`DECKS` literal, `CUSTOM` object) and the only new state is `hidden` plus the transient `builtinId`. The one coupling worth naming: chip order is now `reverse(CUSTOM)` then `visibleDecks()`, while `hpfc.scales.v3` stays oldest-first and `replaceScale`/`replaceRegistered` keep positions. Nothing reads chip index from storage, so the reversal is a view concern inside `allDecks()` only (`const allDecks = () => [...DECKS, ...Object.values(CUSTOM)];` is the single site). `deck()`'s chain `CUSTOM[deckId] || DECKS.find(id) || DECKS.find(DEFAULT_DECK) || DECKS[0]` gains one filter and a `fallbackDeck()` tail; the "gone" warn in the boot tail already exists (`say("That deck is gone. Showing " + deck().name + ".", "warn")`). No issues found beyond R1..R6.
+
+### 7.3 Code quality
+
+Built-ins carry no `options`, so `resetSheetState`'s `edit.options.palette` reads must sit behind the builtin branch (lane candidate). `sheetOptions` sets `o.name` only inside `if (editingId)`; the fork path needs the same normalisation for the prefilled name (ED-2) without the `parent` read. `delBtn.onclick`'s comment block (queue row 86, N6) documents that a null `editingId` click is unreachable today; R6 makes it reachable in builtin mode, so that comment is rewritten by the lane, not left to contradict the code. No issues found beyond those.
+
+### 7.4 Tests
+
+Frameworks: `node --test` for `tests/app.test.js` (DOM sandbox `tools/sandbox.js`) and `tests/e2e.test.js` (CDP, `CHROME_BIN`, CI job `js suites`); `pytest` for `tests/suite_health.py` and `tests/test_readme_currency.py`; the mutation gate (`tests/mutants/*.patch`, 894 today, four CI shards). Codepaths traced: hide -> `save()` -> `allDecks()` -> `buildChips`; fork -> `openEditSheet(builtin)` -> `runGenerate` -> guard -> `rememberScale` -> `selectDeck`; restore -> `save()` -> `buildChips`; boot with a hidden stored deck -> `deck()` -> `fallbackDeck()` -> warn.
+
+```
+                           unit (app.test.js)   e2e (380px)        mutant
+ hidden filtered/persisted     ★★★ ED-A3        ★★ reload test     d_hidden_not_filtered
+ custom first, newest first    ★★★ ED-A2        ★★ fork Pygmy      d_custom_not_first
+ restore button + clear        ★★★ ED-A7        ★★ SHOW HIDDEN     d_restore_not_rendered
+ fork prefill (name, seed)     ★★★ ED-A6        [→E2E] fork Pygmy  d_fork_not_prefilled
+ fifth hide refused            ★★★ ED-A5        -                  d_hide_fifth_allowed
+ fork collision refused (R1)   ★★★ ED-A13       -                  d_fork_overwrites
+ never-zero + fallback (R2)    ★★★ ED-A14       -                  d_delete_last_visible
+ builtin HIDE wiring (R6)      ★★★ ED-A15       [GAP] tab stop     d_builtin_hide_unwired
+ chip-order re-point (R3/R4)   -                ★★★ ED-A16         e_optedit_reappends, e_edit_forks_chip
+ panel-fit unchanged           -                ★★★ CI probe       -
+```
+
+[GAP] the sheet tab-stop order with `delBtn` present in builtin mode is asserted in the unit sandbox only (the keydown handler is pure JS); no e2e test is added for it. REGRESSION RULE: the three re-pointed order sites MUST target the older custom (`+ 1`), because the newest custom is last in storage and `e_optedit_reappends` cannot move it; a lane that writes index 0 ships a surviving mutant. Test plan artifact: `~/.gstack/projects/raywu-handpan-cards/ray-claude-editable-defaults-plan-eng-review-test-plan-20261012-141824.md`.
+
+### 7.5 Performance
+
+`allDecks()` reverses a handful of entries per `buildChips`; `visibleDecks()` filters five. Nothing on a hot path; no issues found.
+
+### 7.6 Outside voice (Codex, `gpt-6-astra`, read-only, completed)
+
+Six findings, all verified against `index.html` at `f07943d` before acceptance:
+
+1. Fork overwrites an existing custom deck: the guard reads `if (!wasId) return null;`, so the create path never vetoes, and `registerDeck` replaces in place. Section A's "forking a deck twice is refused" was false. Resolved: R1.
+2. ED-4 leaves a reachable empty picker (hide five with one custom, delete the custom) and `deleteDeck` selects `DEFAULT_DECK` even when Kurd is hidden. Resolved: R2.
+3. Re-pointing both order tests to index 0 lets `e_optedit_reappends` survive (the mutant forgets and re-appends; the newest record is already last). Resolved: R3.
+4. Lane app cannot go green before lane e2e re-points the two `at` lines (`assert.ok(at >= 0)` fails at -1). Resolved: R4. Own review found a third site Codex missed: "an edit onto another deck's scale is refused at 380px and both chips stay" selects `indexOf("RAY'S PAN") - 1`, and RAY'S PAN is the newest custom, so it is -1 too; folded into R3/R4.
+5. `tools/sandbox.js` `getElementById` throws on an id missing from `ELEMENT_IDS`, so `#deck-restore` breaks `app.run` under the `tools/` non-goal. Resolved: R5.
+6. Builtin mode with `editingId` null never reaches the hide branch (`if (!editingId) return;`) and the sheet tab stops drop `delBtn`. Resolved: R6.
+
+Codex's recommendation was "revise before implementation"; the six R rows are that revision.
+
+### 7.7 Failure modes
+
+- Stored `hpfc.hidden` holds a custom or unknown id: `save()` filters to `isBuiltIn`, reads ignore unknown ids, the key is rewritten clean on the next save.
+- `hidden` names every built-in and `hpfc.scales.v3` is empty or corrupt at boot: `restoreScales` rebuilds nothing, `allDecks()` is empty; `fallbackDeck()` returns `undefined`. Lane rule: `fallbackDeck()` ignores `hidden` when nothing is visible (it returns Kurd and the boot tail warns), so a corrupt store never blanks the page. This is the R2 rule's boot-time half and is covered by ED-A14's unit test.
+- A share link opened while the matching built-in is hidden: share links carry seeds, never built-in ids; the generated deck is custom and visible.
+- Storage denied (`throwOnStorage`): hide and restore change the session only, as every other `save()` already does.
+
+### 7.8 Worktree parallelization
+
+Lanes are sequential by dependency (app -> e2e -> docs); lane docs could start its README/CLAUDE.md prose in parallel but its counts come from main's artifacts after the two merges, so it runs last. No overlapping ownership after R4 and R5.
+
+### 7.9 NOT in scope / what already exists
+
+Not in scope: editing a built-in in place; palette additions (Kurd blue/brick and Amara 10 green/crimson stay out of `HPE.select.PALETTES`); copying `d.print` overlays onto forks (ED-1); per-deck unhide (ED-5); a "reset everything" control; any change to `data/decks.json`, `src/engine/`, fixtures or committed PDFs. Already exists and is reused untouched: the scale sheet, the arm/disarm delete, `rememberScale`/`replaceScale`/`forgetScale`, `fromGenerated` PDFs, the boot-tail "gone" warn, `panelStops()`, the `panel-fit` CI probe.
+
+### 7.10 Implementation tasks
+
+| # | Task | Lane | Depends on |
+|---|---|---|---|
+| T1 | Unit tests ED-A1..A8, A13..A15 (red) | app | - |
+| T2 | `hidden` in `save()`; `hiddenDecks`, `visibleDecks`, `wouldEmpty`, `fallbackDeck`; `allDecks` reversal; `deck()` filter | app | T1 |
+| T3 | Builtin sheet mode: `builtinId`, `setSheetMode("builtin")`, `resetSheetState` builtin branch, `sheetOptions` name on fork, `delBtn.onclick`, tab stops, `sheetRoute` | app | T2 |
+| T4 | Fork collision guard on the create path (R1); `deleteDeck` hide/refuse/fallback (R2) | app | T3 |
+| T5 | `#deck-restore` markup, CSS, `panelStops`, `ELEMENT_IDS` entry; boot tail warn | app | T2 |
+| T6 | Re-point the three e2e order lines to `+ 1` (R3/R4) | app | T2 |
+| T7 | Eight mutants with verbatim `# kills:` titles; `refresh_mutants.py --check`; FLOORS row from CI | app | T1..T6 |
+| T8 | Three new e2e tests at 380px | e2e | app merged |
+| T9 | README storage paragraph, CLAUDE.md pitfalls, counts from main's artifacts | docs | app, e2e merged |
+
+JSONL twin: `~/.gstack/projects/raywu-handpan-cards/tasks-eng-review-20261012-141824.jsonl`.
+
+### 7.11 Completion summary
+
+Six outside findings, six ledger rows, zero unresolved decisions. Lake Score 9/10: the plan now names every state variable, guard and fallback the code needs, and the one residual is the [GAP] in 7.4 (builtin tab-stop order proven in the sandbox only). Approval readiness: PASS.
+
+## GSTACK REVIEW REPORT
+
+| Review | Status | Notes |
+|---|---|---|
+| CEO | skipped | owner approved scope directly ("Go", 2026-10-12) |
+| Outside voice | completed (Codex) | 6 findings, all verified, all resolved (R1..R6) |
+| Eng | PASS | 2026-10-12, medium effort, sections 7.1-7.11 |
+| Design | not run | no new visual family; one button reuses `.mode` |
+| DX | not run | no developer-facing surface changes |
+
+OUTSIDE COVERAGE: codex, completed, 6/6 findings resolved.
+
+VERDICT: APPROVED FOR /swarm (lanes app -> e2e -> docs).
+
+NO UNRESOLVED DECISIONS
