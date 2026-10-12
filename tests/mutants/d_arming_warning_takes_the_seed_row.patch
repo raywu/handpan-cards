@@ -12,14 +12,15 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -5138,8 +5138,8 @@ delBtn.onclick = () => {
-   delBtn.textContent = DEL_ARMED;
+@@ -10174,9 +10174,9 @@
+   delBtn.textContent = builtinId ? HIDE_ARMED : DEL_ARMED;
    delBtn.setAttribute("data-armed", "");
-   const d = CUSTOM[editingId];
--  delNote.textContent =
--    "Tap again to remove " + (d ? d.name : "this deck") + ". This cannot be undone.";
-+  showRefusal(
-+    "Tap again to remove " + (d ? d.name : "this deck") + ". This cannot be undone.");
+   const d = CUSTOM[target] || DECKS.find(x => x.id === target);
+-  delNote.textContent = builtinId
++  showRefusal(builtinId
+     ? "Tap again to hide " + d.name + ". SHOW HIDDEN DECKS in the menu brings it back."
+-    : "Tap again to remove " + (d ? d.name : "this deck") + ". This cannot be undone.";
++    : "Tap again to remove " + (d ? d.name : "this deck") + ". This cannot be undone.");
  };
  /* Looking away is a decision too, and on a phone the only way to see it is the
     pointer: iOS Safari gives a <button> no focus on tap, so `blur` never fires

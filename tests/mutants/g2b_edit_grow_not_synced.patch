@@ -4,12 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9345,7 +9345,6 @@ function resetSheetState(edit) {
+@@ -9869,7 +9869,6 @@
    nameBox.value = edit ? edit.name : "";
    nameDirty = false;                                 // prefilled, not typed
    scaleBox.value = edit ? HPE.core.formatSeed(edit.fields) : "";  // 8A: the canonical string
 -  syncGrow();
-   palette = edit ? edit.options.palette : 0;
+   palette = edit && !fork ? edit.options.palette : 0;
    buildSwatches();
-   mirror = edit ? !!edit.options.mirror : false;
-
+   mirror = o ? !!o.mirror : false;

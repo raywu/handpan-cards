@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4615,7 +4615,8 @@
+@@ -9910,7 +9910,8 @@
    showSheet(opener);
    // [eng-review 2, 2A] warnings have ONE producer and were copied onto the deck
    // at generation time; the Edit sheet reads them and never rebuilds to re-derive.
@@ -14,4 +14,4 @@ diff --git a/index.html b/index.html
 +  const warned = ((again.ok ? again.value.warnings : []) || []).map(w => w.reason);
    if (warned.length) say(warned.join(" "), "warn");
  }
- /** Take the page down. The DOM half only - the route is the caller's. */
+ // The built-in path: the selected built-in's chip opens the same sheet to FORK

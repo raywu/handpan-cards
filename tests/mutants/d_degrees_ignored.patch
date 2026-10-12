@@ -3,11 +3,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8978,7 +8978,6 @@
+@@ -9434,7 +9434,6 @@
  function sheetOptions() {
    const o = { palette, mirror, mirrorBottom: bottomMirror(), anchor };
-   if (editingId) {
--    o.parent = Number(degSel.value);
+   if (editingId || builtinId) {
+-    if (editingId) o.parent = Number(degSel.value);
      // iOS Smart Punctuation turns a typed ' or " into a curly U+2018/2019/
      // U+201C/U+201D, a typed -- into an em dash U+2014, and a typed ... into
      // a single ellipsis glyph U+2026 (a pasted en dash U+2013 can also show

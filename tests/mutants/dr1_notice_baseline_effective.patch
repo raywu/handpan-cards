@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9749,8 +9749,7 @@ function resetSheetState(edit) {
-     ? edit.options.mirrorBottom : mirror);
+@@ -9894,8 +9894,7 @@
+     ? o.mirrorBottom : mirror);
    boxOk = !!edit;
    dropDrawer();
--  layoutBase = { anchor, mirror, mb: edit && typeof edit.options.mirrorBottom === "boolean"
--    ? edit.options.mirrorBottom : mirror, seats: seatsKey(layoutSeats) };
+-  layoutBase = { anchor, mirror, mb: o && typeof o.mirrorBottom === "boolean"
+-    ? o.mirrorBottom : mirror, seats: seatsKey(layoutSeats) };
 +  layoutBase = { anchor, mirror, mb: bottomMirror(), seats: seatsKey(layoutSeats) };
    paintLayout();
  }

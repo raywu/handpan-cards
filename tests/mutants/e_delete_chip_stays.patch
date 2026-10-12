@@ -3,11 +3,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4775,7 +4775,6 @@ function deleteDeck(id) {
-   if (!d) return;
-   const gone = d.name;
-   const wasSelected = deckId === id;
--  delete CUSTOM[id];
-   forgetScale(HPE.core.formatSeed(d.fields));
-   if (editingId === id) closeScaleSheet();
-   if (!wasSelected) { buildChips(); return; }
+@@ -9986,7 +9986,6 @@
+   // A built-in is hidden, never removed: DECKS is a literal the app cannot alter.
+   if (builtin) hidden.push(id);
+   else {
+-    delete CUSTOM[id];
+     forgetScale(HPE.core.formatSeed(d.fields));
+   }
+   if (editingId === id || builtinId === id) closeScaleSheet();
