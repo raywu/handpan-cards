@@ -52,4 +52,4 @@ Players can fork any built-in deck into a custom deck, hide any built-in, restor
 Cycle: 1   Wave: 1   Merged this batch: -
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| app | pending | .claude/worktrees/editable-defaults-app | claude/editable-defaults-app | - | - | - | - | 0 | no | - | - |
+| app | a2510001262579403 | .claude/worktrees/editable-defaults-app | claude/editable-defaults-app | - | - | - | - | 0 | no | - | - |
