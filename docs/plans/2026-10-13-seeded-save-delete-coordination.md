@@ -52,7 +52,7 @@ Cycle: 1   Wave: 1   Merged this batch: (none)
 
 | Lane | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on |
 |---|---|---|---|---|---|---|---|---|---|
-| app | seeded-save-delete-app | claude/seeded-save-delete-app | — | — | — | spawned 2026-10-13 from 3831299 | 0 | no | — |
+| app | seeded-save-delete-app | claude/seeded-save-delete-app | #297 | 4e9c5db | 2026-10-13 (head == branch tip, 4 commits) | CI red: mutation gate shards 1 and 2 (survivors `d_registry_ignored`, `e_fork_drops_name`); 9 other checks pass; bounced to the lane by message, no reviewer spawned | 1 | no | lane fix + CI |
 | e2e | — | claude/seeded-save-delete-e2e | — | — | — | — | 0 | no | app merge |
 | docs | — | claude/seeded-save-delete-docs | — | — | — | — | 0 | no | e2e merge |
 
