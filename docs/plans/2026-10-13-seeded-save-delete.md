@@ -1,9 +1,8 @@
 # Seeded decks: SAVE / DELETE, not FORK / HIDE
 
-Written 2026-10-13 against main `5a9c7d7` by a planning subagent, from the
-prompt in `2026-10-13-seeded-save-delete-prompt.md` plus eight reviewer
-corrections. Every fact below was read at that SHA; anchors are function and
-marker names, never line numbers.
+Written 2026-10-13 against main `5a9c7d7`, from
+`2026-10-13-seeded-save-delete-prompt.md` plus eight reviewer corrections.
+Anchors are function and marker names, never line numbers.
 
 **VERDICT: SMALL.**
 
@@ -34,31 +33,22 @@ custom scales, it should be position 1 in the scale list."
   never written, and `const DECKS` is not re-synced.
 - No `print` overlay editing; a replacement prints through
   `HPE.pdfdeck.fromGenerated` like every custom deck.
-- No palette additions to the engine. `HPE.select.PALETTES` stays at six and
-  `core.readOptions` keeps `palette <= 5` (that bound plus the palette-count
-  tests in `tests/app.test.js` and `tests/preview.test.js` make a seventh pair
-  more than one line).
+- No palette additions to the engine: a seventh pair touches
+  `core.readOptions`'s `palette <= 5` bound and the palette-count tests in
+  `tests/app.test.js` and `tests/preview.test.js`, so it is not one line.
 - No sync between browsers, no export/import; `replaces` never enters a share
-  link (`share.optionsLine` writes a fixed field list, so a shared replacement
-  arrives as a plain custom deck elsewhere).
-- No change to the create path's position-1 rule or to `rememberScale`'s
-  append.
-- No change to the `hpfc` blob's key set (`deck, mode, printPaper, tier,
-  hidden`); the one new thing is a RECORD option.
+  link (`share.optionsLine` writes a fixed field list).
+- No change to the create path's position-1 rule.
+- No new `hpfc` blob key; the one new thing is a RECORD option.
 
-## Today, in one paragraph
+## Retired
 
-`buildChips` opens `openEditSheet` for a selected custom chip and
-`openBuiltinSheet` for a selected seeded chip; the latter sets `builtinId`,
-drives `setSheetMode("builtin", name)` (FORK THIS DECK / HIDE THIS DECK, degree
-row hidden), `resetSheetState(edit, fork)` (palette 0, name prefilled), the
-`runGenerate` guard `if (builtinId && CUSTOM[deckId(seed.fields)])`,
-`sheetOptions()`'s `editingId || builtinId` name/parent read, `sheetRoute()`,
-the three Tab-stop reads, `layoutNoticeText`'s "FORK THIS DECK keeps it.",
-`disarmDelete` / `delBtn.onclick` (`HIDE_IDLE`, `HIDE_ARMED`, the hide wording
-in `delNote`), and `deleteDeck`'s `builtin ? hidden.push(id)` branch.
-`restoreBtn.onclick` clears `hidden`. All of that is retired or re-keyed on
-`isBuiltIn(editingId)` below.
+`openBuiltinSheet`, `builtinId`, `setSheetMode`'s `"builtin"` branch,
+`resetSheetState`'s `fork` argument, `HIDE_IDLE`, `HIDE_ARMED`, the hide
+wording in `delNote`, `layoutNoticeText`'s "FORK THIS DECK keeps it.", and the
+`editingId || builtinId` reads in `sheetOptions()`, `sheetRoute()` and the
+three Tab stops. `runGenerate`'s create guard and `deleteDeck`'s hidden branch
+are re-keyed on `isBuiltIn(editingId)`.
 
 ## A. Where the edited seed lives
 
@@ -73,12 +63,10 @@ keeps its meaning (seeds the player deleted). Nothing in storage changes for
 anyone who never touches a seed. Size: ~90 app lines (+ ~40 removed), human
 1.5 d / CC 3 h for lane app.
 
-**S2 - materialise all five as records at first boot.** Every store gains
-five `hpfc.scales.v3` records, `DECKS` becomes a seed source only, every
-player loses `fromBuiltin` printing (title card, credit, blurb) on day one,
-`restoreScales` and the position rule need a seeded tier, and `hidden` must be
-migrated into record deletions. ~250 lines, fixture churn, human 4 d / CC
-1.5 d. Rejected.
+**S2 - materialise all five as records at first boot.** Five records in every
+store, `DECKS` a seed source only, `fromBuiltin` printing lost for everyone on
+day one, a seeded tier in `restoreScales`, `hidden` migrated into record
+deletions. ~250 lines, fixture churn, human 4 d / CC 1.5 d. Rejected.
 
 **What a replacement loses versus its seed** (correction 4). Kurd and Amara 10
 keep R/cy (69.8/124 both ways); Amara 9 and Hijaz go 73/126 -> 69.8/124, Pygmy
@@ -134,21 +122,21 @@ DECKS in the menu brings the seeded decks back." for seeds and replacements,
 
 ## D. RESET
 
-Same element, `#deck-restore` (so `tools/sandbox.js` `ELEMENT_IDS` needs no
-line and `panelStops()` is unchanged). Label `RESET SEEDED DECKS`, armed
+Same element, `#deck-restore` (`tools/sandbox.js` `ELEMENT_IDS` already
+carries it; `panelStops()` unchanged). Label `RESET SEEDED DECKS`, armed
 `TAP AGAIN TO RESET`, `data-armed` like `delBtn`; first tap arms and `say`s
 "Tap again to restore all seeded decks. Your edits to them will be gone."
-(warn); the second tap, within the same arm (disarm on pointerdown outside the
-button, blur, and panel close), clears `hidden`, filters every record whose
-`o.replaces` is set, rebuilds `CUSTOM`, `save()`, `buildChips()`, selects
-`fallbackDeck()` if the current deck is gone, says "Seeded decks restored."
-(or "... Showing Y."), focus to `#deck-add` as today. Visibility: unhidden
-only while `hiddenDecks().length || replacements().length`, so a fresh store's
-panel is byte-identical and the `panel-fit` verdicts hold. **SD-5 scope:** (a)
-seeded edits and deletions only (recommended - the owner's "all their edits"
-is edits TO seeded decks; destroying a player's own scales is irreversible and
-not asked for); (b) everything custom too. AFK pick: (a). README keeps the
-sentence that clearing site data brings every seeded deck back.
+(warn); the second tap (disarm on pointerdown outside the button, blur, panel
+close) clears `hidden`, drops every record with `o.replaces`, rebuilds
+`CUSTOM`, `save()`, `buildChips()`, selects `fallbackDeck()` if the current
+deck is gone, says "Seeded decks restored." (or "... Showing Y."), focus to
+`#deck-add` as today. Unhidden only while `hiddenDecks().length ||
+replacements().length`, so a fresh store's panel is byte-identical and the
+`panel-fit` verdicts hold. **SD-5 scope:** (a) seeded edits and deletions only
+(recommended - "all their edits" is edits TO seeded decks; destroying a
+player's own scales is irreversible and not asked for); (b) everything custom
+too. AFK pick: (a). README keeps the sentence that clearing site data brings
+every seeded deck back.
 
 ## E. Migration
 
@@ -164,12 +152,12 @@ treats it as a plain custom deck - forward-compatible both ways.
 |---|---|---|
 | R1 | A player holding a shipped-feature fork of seeded Kurd already owns `custom:cb5fe66a`, the exact id a palette-only or options-only SAVE on seeded Kurd mints. SAVE REFUSES with today's "Another deck already uses this scale." through the re-keyed create guard, writes nothing, so neither `rememberScale`'s collapse nor `restoreScales`'s `seen` dedupe ever meets two records. | `editable defaults: saving seeded Kurd with only a palette change while its fork holds the id is refused` (rewrite of today's "forking twice" test); mutant `d_fork_overwrites` re-pointed. |
 | R2 | A replacement whose fields are later edited keeps `replaces`; if that edit lands on a seed's own id (e.g. editing the Kurd replacement back to Kurd's string) the id equals the fork id, not `kurd`, so no clash with `DECKS`. | SD-A4. |
-| R3 | `allDecks()` order feeds every "chip index" test; swapping seeds in place changes no custom index, but the pencil test reaches Kurd by `nth-child` (section 10 nit). | run the suites at the lane head; 8.3 audit. |
-| R4 | Panel height: the RESET label wraps at 380px or landscape and moves the `panel-fit` verdict. Labels are kept at 18 characters, one more than SHOW HIDDEN DECKS. | gate 4; `tools/probe/panel_fit.js` both profiles. |
-| R5 | `fromBuiltin` printing is lost on a changed SAVE only; SD-3 keeps it on an unchanged one. | `test_render_agreement` untouched; SD-A6. |
-| R6 | Mutants whose removed-lines run names `builtinId`, `HIDE_*`, `openBuiltinSheet` or "FORK THIS DECK" go `stale` in `refresh_mutants.py --check`. Named below. | gate 3. |
-| R7 | The two app-side `(editingId || builtinId)` Tab-stop reads and `sheetRoute()` simplify to `editingId`; `#edit-kurd` routing must still work. | test ":8855" retitled, mutant `d_page_edit_route_generic` unchanged. |
-| R8 | `hpfc` key pin test ("a store holding hijaz from before the default changed...") must stay green: no new blob key. | unchanged test. |
+| R3 | `allDecks()` feeds every chip-index test; swapping seeds in place moves no custom index, but the pencil test reaches Kurd by `nth-child`. | suites at the lane head; 8.3 audit. |
+| R4 | The RESET label wraps at 380px or landscape and moves the `panel-fit` verdict; labels stay at 18 characters. | gate 4, both profiles. |
+| R5 | `fromBuiltin` printing is lost on a changed SAVE only. | `test_render_agreement` untouched; SD-A3. |
+| R6 | Mutants naming retired code go `stale` in `refresh_mutants.py --check`. | gate 3. |
+| R7 | `sheetRoute()` and the Tab stops simplify to `editingId`; `#edit-kurd` must still route. | retitled DELETE-arms test; `d_page_edit_route_generic` unchanged. |
+| R8 | No new `hpfc` blob key. | the hijaz-store key pin test, unchanged. |
 
 ## Test and mutant inventory (what the old model pins)
 
@@ -214,15 +202,10 @@ edit and collision tests (`e_edit_forks_chip` anchors `runGenerate` context
 only). `d_page_close_reruns_hide` kills a generic `closeScaleSheet` test and
 is not a fork-model mutant.
 
-**Mutants expected `stale` at the lane head** (removed-lines run names retired
-code): `d_builtin_hide_unwired`, `d_fork_not_prefilled`, `d_fork_overwrites`,
-`d_hidden_not_filtered`, `d_restore_not_rendered`, `d_hide_fifth_allowed`,
-`e_fork_drops_name`, `e_hidden_not_restored_on_boot`,
-`e_restore_not_panel_stop`, `e_chip_pencil_on_builtins`,
-`e_chip_aria_uses_full_name`, plus any of the 43 patches whose text mentions
-`builtinId` / `openBuiltinSheet` / `HIDE_*` / `restoreBtn` / `hiddenDecks` /
-`visibleDecks` / `wouldEmpty` / `fallbackDeck` that `--check` reports (the
-list is in the prompt; `--check` is the oracle, not the list). Each is
+**Mutants expected `stale` at the lane head:** the eleven named above, plus
+whichever of the 43 patches mentioning `builtinId` / `openBuiltinSheet` /
+`HIDE_*` / `restoreBtn` / `hiddenDecks` / `wouldEmpty` / `fallbackDeck`
+`refresh_mutants.py --check` reports (it is the oracle, not the list). Each is
 re-anchored, never re-targeted; filenames stay.
 
 **SD-1 visible edit cue:** (a) the selected chip of ANY deck carries the
