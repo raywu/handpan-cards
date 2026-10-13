@@ -73,6 +73,10 @@ decisions behind it.
   Saved scales live under the storage key `hpfc.scales.v3`; the first boot of this version copies the old `hpfc.scales` list there. A scale saved in a tab still running the previous version of the app lands under
   the old storage key and does not appear in the new app; that needs a tab held
   open across an update, and reloading it fixes the tab.
+  Built-in decks you hide are stored as ids in the `hidden` field of the
+  single `hpfc` blob, written only while at least one deck is hidden. Clearing
+  site data brings every built-in back, and so does SHOW HIDDEN DECKS in the
+  settings panel, without clearing anything.
   A scale's deck id is a 32-bit hash of its notes, so two different scales can
   in principle share an id; the app keeps one record per id, so on a collision
   one of the two is kept. It is vanishingly rare and not guarded against.
@@ -129,7 +133,7 @@ What is covered:
 - **Browser e2e** - real Chromium: deck switching, the 3D card flip, keyboard
   and touch navigation, reload persistence, clipping at a 380px viewport, and
   the scale sheet's modality, focus handling and 44px hit areas.
-- **Mutation gate** - 894 mutant patches under `tests/mutants/`, each one a
+- **Mutation gate** - 905 mutant patches under `tests/mutants/`, each one a
   deliberate break that some test must catch. The gate is all-or-nothing: one
   survivor fails it. A test nothing can kill does not count as coverage.
 

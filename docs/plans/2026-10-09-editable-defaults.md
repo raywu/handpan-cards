@@ -353,3 +353,25 @@ OUTSIDE COVERAGE: codex, completed, 10/10 findings resolved across two passes.
 VERDICT: APPROVED FOR /swarm (lanes app -> e2e -> docs; lane app owns every existing test and mutant its changes redden or invalidate, section 8.3).
 
 NO UNRESOLVED DECISIONS
+
+## 10. Close-out (2026-10-12)
+
+Written by lane docs from the two lane reports and two reviewer verdicts; sections above are unchanged.
+
+**What shipped.** Lane app PR #291 merged at 7995390 (reviewer PASS_WITH_NITS at d7a3103, CI run 38319995207). Lane e2e PR #292 merged at 83cf646 (PASS_WITH_NITS at 1822f16, CI run 38323312038). Lane app re-pointed 17 existing tests (ED-A16), added 8 app mutants, re-anchored or re-cut 52 existing mutants (ED-A17), and moved the app FLOORS row 471 to 486. Lane e2e added 3 e2e tests and 3 e2e mutants and moved the e2e FLOORS row 284 to 287. The mutant corpus went 894 to 905; main's CI run 38324943917 at 83cf646 reports "all 905 mutants accounted for across 4 shards".
+
+**Dated notes on stale statements (2026-10-12, queue row 3 from the #290 plan review).**
+- The plan writes `hpfc.hidden`. As shipped there is no such key: hidden ids are the `hidden` field of the single `hpfc` localStorage blob, written only when non-empty.
+- The restore control label as shipped is "SHOW HIDDEN DECKS" (`#deck-restore`).
+- PR #291 inventory row for `tests/app.test.js` "an options-only edit keeps its chip index across a reload with three decks" said "none" for mutants. `d_remember_appends` names that test (unchanged, still killed). Reviewer nit 3 on #291.
+
+**OPEN owner items (not decided).**
+- All five built-ins hidden with no surviving custom deck leaves the strip empty while a Kurd card shows. Recovery is SHOW HIDDEN DECKS; the plan's "never blanks" holds.
+- Two tabs: last writer wins on `hidden`.
+- A Hijaz fork's unselected chip is indistinguishable from Hijaz's (ED-A6, by design).
+- Fork mode with an invalid name greys the preview; the `editingId` gate should be `(editingId || builtinId)`.
+- e2e test at :5059 asserts `at >= 0`, which is vacuous.
+- Stale comments in `buildChips` and the delete fallback.
+- The pencil test reaches Kurd by nth-child.
+
+Status: shipped, all three lanes merged, no unresolved decisions in the plan itself.

@@ -394,6 +394,15 @@ pitch classes (midi % 12), never stored.
   (`kurd`), not `DECKS[0]`. Picker order is the array order of
   `data/decks.json`. They are two facts. A stored deck id is always honoured;
   nothing migrates a visitor who stored `hijaz` before 2026-10-06.
+  (2026-10-12, editable defaults) A built-in can be hidden. A hidden default
+  deck falls back through `fallbackDeck()` to the first visible deck, custom
+  decks first, and a stored id of a hidden deck is NOT honoured. Hidden ids
+  live in the `hidden` field of the `hpfc` blob, written only when non-empty;
+  there is no separate `hpfc.hidden` key.
+- **Chip order is not picker order:** the strip is `allDecks()` = custom decks
+  newest first, then the visible built-ins in `data/decks.json` order. "Picker
+  order" and "chip index" are different facts; a test that picks a custom deck
+  by index targets the older custom with `+ 1`, never index 0.
 - **Boot order:** the first render must happen after the card-order array
   exists; `render()` guards against an empty order. Keep it that way.
 - **Data re-injection:** the degrees contain `deg` (U+00B0) characters; a
