@@ -48,12 +48,12 @@ SERIAL: app, then e2e, then docs. Projected cost: 3 lanes, ~6 subagent runs,
 
 ## Cycle state
 
-Cycle: 1   Wave: 1   Merged this batch: (none)
+Cycle: 1   Wave: 2   Merged this batch: 894d8f8 (#297)
 
 | Lane | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on |
 |---|---|---|---|---|---|---|---|---|---|
-| app | seeded-save-delete-app | claude/seeded-save-delete-app | #297 | f8d434c | 2026-10-13 (head == branch tip, MERGEABLE) | attempt 1 at 4e9c5db: CI red on mutation gate shards 1 and 2 (survivors `d_registry_ignored`, `e_fork_drops_name`), bounced by message, no reviewer. Lane fix pushed as f8d434c: `d_registry_ignored` re-anchored to `deck = () => DECKS.find(...) \|\| fallbackDeck()` (first attempt was a wrong-reason ReferenceError kill), `e_fork_drops_name` re-anchored to `edit.name.replace(/\d/g,"")` after the retitled e2e test's swatch click was made to take (in-page `.dot[2]` click + selected assertion). CI GREEN at f8d434c (all 11 checks); fresh reviewer spawned, worktree `review-seeded-save-delete-app`; reviewer stalled once (no verdict) and was resumed by message, attempt counter untouched (no verdict, no failure) | 1 | no | reviewer verdict |
-| e2e | — | claude/seeded-save-delete-e2e | — | — | — | — | 0 | no | app merge |
+| app | (removed) | (deleted, local + remote) | #297 | f8d434c | 2026-10-13 (head == branch tip, MERGEABLE, 11/11 pass) | attempt 1 at 4e9c5db: CI red on mutation gate shards 1 and 2 (survivors `d_registry_ignored`, `e_fork_drops_name`), bounced by message, no reviewer. Lane fix f8d434c re-anchored both (details in Review log). Reviewer PASS_WITH_NITS at f8d434c (stalled once, resumed). Finding 1 (PR body lacked the SD-A8 inventory) fixed by the integrator in the PR body from the diff (D7). | 1 | YES 894d8f8 | — |
+| e2e | seeded-save-delete-e2e | claude/seeded-save-delete-e2e | — | — | spawned 2026-10-13 from main 894d8f8 | — | 0 | no | lane return |
 | docs | — | claude/seeded-save-delete-docs | — | — | — | — | 0 | no | e2e merge |
 
 ## Review log
@@ -62,6 +62,8 @@ Cycle: 1   Wave: 1   Merged this batch: (none)
 |---|---|---|---|---|
 | #296 | plan | FAIL | F1 openShare persists the decoded seed; F2 desktop RESET disarm | fixed in 039f545 |
 | #296 | plan | PASS_WITH_NITS | N1-N4 above | merged 3831299 |
+| #297 | app | CI red at 4e9c5db (no reviewer) | mutation survivors `d_registry_ignored` (re-anchored to `deck = () => DECKS.find(...) \|\| fallbackDeck()`; first attempt was a wrong-reason ReferenceError kill) and `e_fork_drops_name` (re-anchored to `edit.name.replace(/\d/g,"")` after the retitled e2e test's swatch click was made to take) | fixed in f8d434c |
+| #297 | app | PASS_WITH_NITS at f8d434c (CI run 38454097278 success, 11/11; scope CLEAN, 78 files all owned; 5 mutants exercised, all right-reason kills except hand mutant 5, a test gap) | F1 PR body lacked the SD-A8 inventory and mutant reconciliation (fixed by the integrator in the body, D7). Nits: A6 test asserts only the in-memory registry, not the stored-scales filter (a reboot-then-assert would close it) and never asserts "Seeded decks restored."; `const seeded = Object.keys(replacements());` at RESET is unused and shadows `seeded()`; stale header comments on e_chip_pencil_on_builtins, d_hidden_not_filtered, d_builtin_hide_unwired, d_fork_overwrites; `d_replaces_not_carried` mutates the `restoreScales` call, not generateDeck's carry-back line as SD-A15 says; `d_seeded_sheet_keeps_fork_copy`'s description overstates (flips every Edit sheet); Pygmy's seeded sheet now shows "Layout changed from the default." (anchor `between`); retitled "layout markup exists" e2e test dropped its pencil assertion (covered elsewhere); `d_reset_stays_armed` pins only the pointerdown hook, not blur or closePanel. /review sub-checks NOT run: testing/maintainability/simplification specialists, Codex passes, Claude adversarial subagent (dispatched, never returned). | merged 894d8f8; nits -> Q3 |
 
 ## Queue
 
@@ -69,6 +71,7 @@ Cycle: 1   Wave: 1   Merged this batch: (none)
 |---|---|---|---|
 | Q1 | Owner, 2026-10-13: lane app stalled once after pushing #297 and was resumed by message (keep waiting, no deadline). If it stalls AGAIN, the integrator takes the two surviving mutants over on the branch directly and retires the lane; the attempt counter moves to 2. UPDATE: the lane stalled a second time AFTER handing back with the fix already pushed (f8d434c). Lane RETIRED; any further fix on #297 is the integrator's, on the branch directly. Attempt counter stays at 1 because no further failure has occurred yet. | app | RESOLVED |
 | Q2 | Owner, 2026-10-13: after the workstream is wrapped up (docs lane merged, final report given), run `/retro` and then `/persist-learnings`. | integrator | OPEN |
+| Q3 | #297 reviewer nits (Review log row), unscheduled: the A6 stored-scales gap (hand mutant survived), the missing "Seeded decks restored." assertion, the unused `seeded` const at RESET, four stale mutant header comments, two mutant descriptions that mislabel their site, Pygmy's "Layout changed from the default." copy on its seeded sheet, no committed mutant for RESET's blur/closePanel disarm paths. None blocks; owner to schedule or drop. | — | OPEN |
 
 ## AFK auto-decisions
 
@@ -79,3 +82,9 @@ Cycle: 1   Wave: 1   Merged this batch: (none)
 - D5 after the review: run the lanes serial under /swarm.
 - D6 PR #296 merged on PASS_WITH_NITS; nits N1-N4 carried into lane briefs
   rather than another plan commit (no lane is misled once the brief states them).
+- D7 #297 reviewer finding 1 (PR body lacked the SD-A8 touched-test inventory and
+  mutant reconciliation) fixed by the integrator editing the PR body from the diff
+  (14 added, 60 modified, 0 deleted; 8 app and 4 e2e retitles listed), not by
+  bouncing the lane: the reviewer had already verified the inventory against the
+  diff, the lane was retired, and the fix touches no code. Merged on
+  PASS_WITH_NITS; nits -> Q3.
