@@ -3,11 +3,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9986,7 +9986,6 @@
-   // A built-in is hidden, never removed: DECKS is a literal the app cannot alter.
+@@ -10024,7 +10024,6 @@ function deleteDeck(id) {
+   // A seeded deck is hidden, never removed: DECKS is a literal the app cannot alter.
    if (builtin) hidden.push(id);
    else {
 -    delete CUSTOM[id];
      forgetScale(HPE.core.formatSeed(d.fields));
+     if (heldSeat && !hidden.includes(heldSeat)) hidden.push(heldSeat);
    }
-   if (editingId === id || builtinId === id) closeScaleSheet();

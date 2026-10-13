@@ -1,0 +1,15 @@
+# kills: SD: a replacement outranks a hidden seed in storage
+# suite: node --test --test-name-pattern ^SD..a.replacement.outranks.a.hidden.seed.in.storage$ tests/app.test.js
+# The hidden filter runs before the replacement swap, so a hidden seed hides its replacement.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8761,7 +8761,7 @@
+   const rep = replacements();
+   const slotted = new Set(Object.values(rep));
+   return [...Object.values(CUSTOM).reverse().filter(d => !slotted.has(d)),
+-    ...DECKS.map(s => rep[s.id] || (hidden.includes(s.id) ? null : s)).filter(Boolean)];
++    ...DECKS.map(s => hidden.includes(s.id) ? null : rep[s.id] || s).filter(Boolean)];
+ };
+ // [5A] chip labels are capped at 16 characters with an ellipsis.
+ const CHIP_CAP = 16;

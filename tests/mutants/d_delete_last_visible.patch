@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7758,7 +7758,7 @@
- const hiddenDecks = () => DECKS.filter(d => hidden.includes(d.id));
- const visibleDecks = () => DECKS.filter(d => !hidden.includes(d.id));
- // Removing `id` (a hide, or a custom delete) must leave a deck to show.
+@@ -7769,7 +7769,7 @@ function replacements() {
+   return out;
+ }
+ // Removing `id` (a seeded delete, or a custom delete) must leave a deck to show.
 -const wouldEmpty = id => allDecks().every(d => d.id === id);
 +const wouldEmpty = id => allDecks().every(d => d.id === id) && isBuiltIn(id);
  // Where the page lands when the deck on screen goes: Kurd if it is visible,

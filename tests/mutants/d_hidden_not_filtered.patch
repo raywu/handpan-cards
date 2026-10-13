@@ -1,15 +1,16 @@
-# kills: editable defaults: hiding a built-in removes its chip, stores hidden and selects Kurd
-# suite: node --test --test-name-pattern ^editable.defaults..hiding.a.built.in.removes.its.chip..stores.hidden.and.selects.Kurd$ tests/app.test.js
+# kills: editable defaults: deleting a seeded deck removes its chip, stores hidden and selects Kurd
+# suite: node --test --test-name-pattern ^editable.defaults..deleting.a.seeded.deck.removes.its.chip..stores.hidden.and.selects.Kurd$ tests/app.test.js
 # The picker ignores hpfc.hidden: a hidden built-in keeps its chip.
+# The picker ignores hpfc.hidden: a deleted seeded deck keeps its chip.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7756,7 +7756,7 @@
- let hidden = Array.isArray(store.hidden)
-   ? [...new Set(store.hidden.filter(id => typeof id === "string" && isBuiltIn(id)))] : [];
- const hiddenDecks = () => DECKS.filter(d => hidden.includes(d.id));
--const visibleDecks = () => DECKS.filter(d => !hidden.includes(d.id));
-+const visibleDecks = () => DECKS.slice();
- // Removing `id` (a hide, or a custom delete) must leave a deck to show.
- const wouldEmpty = id => allDecks().every(d => d.id === id);
- // Where the page lands when the deck on screen goes: Kurd if it is visible,
+@@ -8761,7 +8761,7 @@
+   const rep = replacements();
+   const slotted = new Set(Object.values(rep));
+   return [...Object.values(CUSTOM).reverse().filter(d => !slotted.has(d)),
+-    ...DECKS.map(s => rep[s.id] || (hidden.includes(s.id) ? null : s)).filter(Boolean)];
++    ...DECKS.map(s => rep[s.id] || s).filter(Boolean)];
+ };
+ // [5A] chip labels are capped at 16 characters with an ellipsis.
+ const CHIP_CAP = 16;

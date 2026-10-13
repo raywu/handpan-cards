@@ -1,13 +1,14 @@
 # kills: deleting the SELECTED custom deck falls back to a built-in, says so, and stays gone
 # suite: node --test --test-name-pattern ^deleting.the.SELECTED.custom.deck.falls.back.to.a.built.in..says.so..and.stays.gone$ tests/app.test.js
+# Re-anchored 2026-10-13 (seeded SAVE / DELETE, lane app) against the current source. The mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9992,7 +9992,6 @@
-   if (editingId === id || builtinId === id) closeScaleSheet();
+@@ -10031,7 +10031,6 @@
+   if (editingId === id) closeScaleSheet();
    if (!wasSelected) { save(); buildChips(); return; }
    selectDeck(fallbackDeck().id);
--  say((builtin ? "Hidden " : "Removed ") + gone + ". Showing " + deck().name + ".", "warn");
+-  say("Removed " + gone + ". Showing " + deck().name + ".", "warn");
  }
  
  function runGenerate() {

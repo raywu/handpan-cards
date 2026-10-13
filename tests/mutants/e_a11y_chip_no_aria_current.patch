@@ -5,11 +5,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -3637,7 +3637,6 @@ function buildChips() {
+@@ -8779,7 +8779,6 @@ function buildChips() {
      b.className = "chip" + (d.id === deckId ? " on" : "");
      // Same rule as the mode bar: the .on colour is not state a screen reader
      // can see, so the selected chip says so out loud.
 -    if (d.id === deckId) b.setAttribute("aria-current", "true");
      b.style.setProperty("--dga", d.colors.ga);
      b.style.setProperty("--dgb", d.colors.gb);
-     // [row 218] The one chip with a SECOND action says so. A selected custom
+     // [row 218] The one chip with a SECOND action says so. The selected chip,

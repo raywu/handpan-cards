@@ -1,0 +1,15 @@
+# kills: editable defaults: RESET arms, then clears hidden and replacements and keeps custom decks
+# suite: node --test --test-name-pattern ^editable.defaults..RESET.arms..then.clears.hidden.and.replacements.and.keeps.custom.decks$ tests/app.test.js
+# RESET resets on its first tap instead of arming.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10251,7 +10251,7 @@
+   if (announce.textContent === RESET_WARNING) say("", "");
+ }
+ restoreBtn.onclick = () => {
+-  if (!resetArmed) {
++  if (false) {
+     resetArmed = true;
+     restoreBtn.textContent = RESET_ARMED;
+     restoreBtn.setAttribute("data-armed", "");

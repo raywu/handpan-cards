@@ -1,5 +1,5 @@
-# kills: a hidden built-in stays hidden across a reload at 380px
-# suite: node --test --test-name-pattern ^a.hidden.built.in.stays.hidden.across.a.reload.at.380px$ tests/e2e.test.js
+# kills: a deleted seeded deck stays gone across a reload at 380px
+# suite: node --test --test-name-pattern ^a.deleted.seeded.deck.stays.gone.across.a.reload.at.380px$ tests/e2e.test.js
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
@@ -11,4 +11,4 @@ diff --git a/index.html b/index.html
 +let hidden = false && Array.isArray(store.hidden)
    ? [...new Set(store.hidden.filter(id => typeof id === "string" && isBuiltIn(id)))] : [];
  const hiddenDecks = () => DECKS.filter(d => hidden.includes(d.id));
- const visibleDecks = () => DECKS.filter(d => !hidden.includes(d.id));
+ // Seed id -> the NEWEST custom deck whose record names it in `replaces` (the

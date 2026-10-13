@@ -2,6 +2,7 @@
 # suite: node --test --test-name-pattern ^a.generated.deck.resolves.through.deck...without.joining.the.DECKS.literal$ tests/app.test.js
 # deck() stops consulting the generated-deck registry, so a custom id silently
 # renders the first built-in deck instead.
+# Re-anchored 2026-10-13 (seeded SAVE / DELETE, lane app) against the current source. The mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
@@ -9,8 +10,8 @@ diff --git a/index.html b/index.html
  // need that). deck() resolves a custom id out of the registry; it never builds.
  const CUSTOM = Object.create(null);
  
--const deck = () => CUSTOM[deckId] || visibleDecks().find(d => d.id === deckId) || fallbackDeck();
-+const deck = () => visibleDecks().find(d => d.id === deckId) || fallbackDeck();
+-const deck = () => CUSTOM[deckId] || allDecks().find(d => d.id === deckId) || fallbackDeck();
++const deck = () => allDecks().find(d => d.id === deckId) || fallbackDeck();
  // Any deck id persists, built-in or custom: a custom deck is rebuilt at boot
  // from its saved seed, so restoring one is no longer a dangling reference.
  // READ-MODIFY-WRITE: "hpfc" is one object shared with whatever else stores

@@ -1,0 +1,15 @@
+# kills: SD: duplicate and unknown replaces targets are never unreachable
+# suite: node --test --test-name-pattern ^SD..duplicate.and.unknown.replaces.targets.are.never.unreachable$ tests/app.test.js
+# The seed-to-replacement map keeps the OLDEST record naming a seed instead of the newest.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -7764,7 +7764,7 @@
+   const out = Object.create(null);
+   for (const d of Object.values(CUSTOM)) {
+     const r = d.options && d.options.replaces;
+-    if (typeof r === "string") out[r] = d;
++    if (typeof r === "string" && !(r in out)) out[r] = d;
+   }
+   return out;
+ }

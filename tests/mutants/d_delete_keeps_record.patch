@@ -3,11 +3,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9987,7 +9987,6 @@
+@@ -10025,7 +10025,6 @@ function deleteDeck(id) {
    if (builtin) hidden.push(id);
    else {
      delete CUSTOM[id];
 -    forgetScale(HPE.core.formatSeed(d.fields));
+     if (heldSeat && !hidden.includes(heldSeat)) hidden.push(heldSeat);
    }
-   if (editingId === id || builtinId === id) closeScaleSheet();
-   if (!wasSelected) { save(); buildChips(); return; }
+   if (editingId === id) closeScaleSheet();

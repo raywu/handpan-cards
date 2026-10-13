@@ -1,15 +1,18 @@
 # kills: editable defaults: a generated deck is chip 1 and a second pushes the first to chip 2
 # suite: node --test --test-name-pattern ^editable.defaults..a.generated.deck.is.chip.1.and.a.second.pushes.the.first.to.chip.2$ tests/app.test.js
 # Custom decks are appended after the built-ins instead of taking chip 1.
+# Re-anchored 2026-10-13 (seeded SAVE / DELETE, lane app) against the current source. The mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8733,7 +8733,7 @@
- }
- // Generated decks first, newest first (the registry is oldest-first, as is the
- // stored list), then the visible built-ins in DECKS order.
--const allDecks = () => [...Object.values(CUSTOM).reverse(), ...visibleDecks()];
-+const allDecks = () => [...visibleDecks(), ...Object.values(CUSTOM)];
+@@ -8760,8 +8760,8 @@
+ const allDecks = () => {
+   const rep = replacements();
+   const slotted = new Set(Object.values(rep));
+-  return [...Object.values(CUSTOM).reverse().filter(d => !slotted.has(d)),
+-    ...DECKS.map(s => rep[s.id] || (hidden.includes(s.id) ? null : s)).filter(Boolean)];
++  return [...DECKS.map(s => rep[s.id] || (hidden.includes(s.id) ? null : s)).filter(Boolean),
++    ...Object.values(CUSTOM).filter(d => !slotted.has(d))];
+ };
  // [5A] chip labels are capped at 16 characters with an ellipsis.
  const CHIP_CAP = 16;
- const chipLabel = n => (n.length > CHIP_CAP ? n.slice(0, CHIP_CAP - 1) + "…" : n);

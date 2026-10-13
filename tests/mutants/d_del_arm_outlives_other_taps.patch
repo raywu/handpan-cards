@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10185,9 +10185,6 @@ delBtn.onclick = () => {
+@@ -10228,9 +10228,6 @@ delBtn.onclick = () => {
     that is not the button itself is the same decision, and it is one the
     owner's device actually makes. The pointerdown that lands ON the button is
     not: it is the confirming tap's own first half. */
@@ -14,5 +14,5 @@ diff --git a/index.html b/index.html
 -  if (e.target !== delBtn) disarmDelete();
 -});  // disarmDelete() is a no-op unless armed, so an ordinary tap writes nothing.
  delBtn.onblur = disarmDelete;
- // A hide is undone in one tap and for all of them (ED-5): the hidden list is
- // cleared, never edited, and the selected deck stays. The button is unrendered
+ /* RESET SEEDED DECKS undoes every seeded edit and delete at once, so like DELETE
+    it takes a second tap, and the label carries the state. The player's own

@@ -1,15 +1,16 @@
-# kills: editable defaults: in builtin mode HIDE arms, confirms through the button and is a sheet tab stop; Back clears the mode
-# suite: node --test --test-name-pattern ^editable.defaults..in.builtin.mode.HIDE.arms..confirms.through.the.button.and.is.a.sheet.tab.stop..Back.clears.the.mode$ tests/app.test.js
+# kills: editable defaults: a seeded deck's DELETE arms with TAP AGAIN TO DELETE, is a Tab stop, and Back clears it
+# suite: node --test --test-name-pattern ^editable.defaults..a.seeded.deck.s.DELETE.arms.with.TAP.AGAIN.TO.DELETE..is.a.Tab.stop..and.Back.clears.it$ tests/app.test.js
 # The sheet's delete button ignores builtin mode, so HIDE THIS DECK does nothing.
+# The sheet's delete button ignores a seeded deck, so DELETE THIS DECK does nothing on one.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10164,7 +10164,7 @@
-      neither id set through a synthetic .onclick(). In builtin mode it is NOT
-      unreachable the other way round: editingId is null there by design, so a
-      guard on editingId alone would leave HIDE inert (R6). */
--  const target = editingId || builtinId;
-+  const target = editingId;
+@@ -10205,7 +10205,7 @@
+      delRow carries `hidden` whenever setSheetMode() has run for a create, and
+      `[hidden]` is `display:none !important`, so a click can only get here with
+      no id set through a synthetic .onclick(). */
+-  const target = editingId;
++  const target = isBuiltIn(editingId) ? null : editingId;
    if (!target) return;
    /* Disarm BEFORE the delete, not inside it: the state must not outlive the
       deck even when deleteDeck turns out to have nothing to remove, and the

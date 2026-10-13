@@ -3942,7 +3942,7 @@ function run() {
     return out;
   `);
 
-  test("a selected custom chip carries a pencil; no built-in chip ever does", async () => {
+  test("the selected chip carries a pencil on every deck; no unselected chip does", async () => {
     try {
       await freshLoad();
       await b.setViewport(380, 780, true);
@@ -4017,8 +4017,8 @@ function run() {
           `an unselected chip ("${c.text}") has aria-label ${JSON.stringify(c.label)}`);
       }
 
-      // And a SELECTED built-in: selected is not enough, custom is not enough.
-      // A custom deck now takes chip 1, so Kurd (meta[0]) is chip 2.
+      // And a SELECTED seeded deck carries one too: every deck edits the same way.
+      // A custom deck takes chip 1, so Kurd (meta[0]) is chip 2.
       await b.eval(`document.querySelector("#decks .chip:nth-child(2)")
                       .scrollIntoView({ block: "nearest", inline: "nearest" }); return true;`);
       await b.click("#decks .chip:nth-child(2)");
@@ -4026,17 +4026,18 @@ function run() {
       const builtin = (await chipProbe()).find((c) => c.on);
       assert.ok(/KURD/.test(builtin.text), `chip 2 is "${builtin.text}", not Kurd`);
       assert.ok(builtin, "no chip is selected after switching to a built-in deck");
-      assert.strictEqual(builtin.marked, false,
-        `the selected built-in chip "${builtin.text}" carries a pencil - tapping ` +
-        "it opens the fork sheet, not Edit, so the affordance would be a lie");
-      assert.strictEqual(builtin.label, null,
-        `the selected built-in chip has aria-label ${JSON.stringify(builtin.label)}`);
-      // Tapping it opens the sheet in builtin mode (fork or hide), not Edit.
+      assert.strictEqual(builtin.marked, true,
+        `the selected seeded chip "${builtin.text}" has no pencil - it opens the Edit sheet`);
+      assert.ok(/^Edit .+/.test(builtin.label || ""),
+        `the selected seeded chip's aria-label is ${JSON.stringify(builtin.label)}, expected "Edit <name>"`);
+      for (const c of (await chipProbe()).filter((x) => !x.on)) {
+        assert.strictEqual(c.marked, false, `an unselected chip ("${c.text}") carries a pencil`);
+      }
       await b.click("#decks .chip:nth-child(2)");
       await b.waitFor(`!document.getElementById("scale-sheet").hasAttribute("hidden")`,
-        { label: "the builtin sheet to open on a selected built-in chip" });
+        { label: "the Edit sheet to open on a selected seeded chip" });
       assert.strictEqual(await b.eval(`return document.getElementById("scale-generate").textContent.trim();`),
-        "FORK THIS DECK", "a selected built-in chip did not open the fork sheet");
+        "SAVE CHANGES", "a selected seeded chip did not open the Edit sheet");
     } finally {
       await b.setViewport(900, 900, false);
     }
@@ -11686,28 +11687,28 @@ function run() {
     edgeTest(MAIN_NEEDED_S, MAIN_GROUPS_S, isSidebar, "the sidebar");
   });
 
-  // Editable defaults (lane e2e): hide, fork and restore a built-in, at 380px.
-  const hideSelectedBuiltin = async () => {
+  // Editable defaults (lane e2e): delete, save and reset a seeded deck, at 380px.
+  const deleteSelectedSeeded = async () => {
     await openEdit();
     await b.click("#scale-delete");
     await b.waitFor(`document.getElementById("scale-delete").hasAttribute("data-armed")`,
-      { label: "HIDE THIS DECK to arm" });
+      { label: "DELETE THIS DECK to arm" });
     await b.click("#scale-delete");
     await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
-      { label: "the sheet to close after the hide" });
+      { label: "the sheet to close after the delete" });
   };
   const chipTexts = () => b.eval(
     `return [...document.querySelectorAll("#decks .chip:not(#deck-add)")].map(e => e.textContent.trim());`);
 
-  test("a hidden built-in stays hidden across a reload at 380px", async () => {
+  test("a deleted seeded deck stays gone across a reload at 380px", async () => {
     try {
       await freshLoad();
       await b.setViewport(380, 780, true);
       const meta = await decksMeta();
       const kurd = await bootMeta(meta);
-      await hideSelectedBuiltin();
+      await deleteSelectedSeeded();
       const before = await chipTexts();
-      assert.strictEqual(before.length, meta.length - 1, `hiding left ${before.length} chips`);
+      assert.strictEqual(before.length, meta.length - 1, `deleting left ${before.length} chips`);
       assert.ok(!before.some((t) => /KURD/.test(t)), `the Kurd chip is still drawn: ${JSON.stringify(before)}`);
 
       await navigate();
@@ -11716,13 +11717,13 @@ function run() {
       const after = await chipTexts();
       assert.deepStrictEqual(after, before, "the reload changed the chip strip");
       assert.deepStrictEqual(await b.eval(`return JSON.parse(localStorage.getItem("hpfc")).hidden;`),
-        [kurd.id], "the hidden list is not stored");
+        [kurd.id], "the deleted list is not stored");
     } finally {
       await b.setViewport(900, 900, false);
     }
   });
 
-  test("forking Pygmy at 380px makes chip 1 with the Pygmy name", async () => {
+  test("saving Pygmy with a palette change at 380px replaces its chip in place with the Pygmy name", async () => {
     try {
       await freshLoad();
       await b.setViewport(380, 780, true);
@@ -11732,23 +11733,24 @@ function run() {
       await selectDeck(at, meta);
       await openEdit();
       assert.strictEqual(await b.eval(`return document.getElementById("scale-generate").textContent.trim();`),
-        "FORK THIS DECK");
+        "SAVE CHANGES");
+      await b.click("#scale-swatches > :nth-child(3)");
       await b.click("#scale-generate");
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
-        { label: "the sheet to close after the fork" });
+        { label: "the sheet to close after the save" });
       const chips = await chipTexts();
-      assert.strictEqual(chips.length, meta.length + 1, `the fork left ${chips.length} chips`);
+      assert.strictEqual(chips.length, meta.length, `the save left ${chips.length} chips`);
       const want = await b.eval(`return chipLabel(DECKS.find(d => d.id === "pygmy").name);`);
-      assert.strictEqual(chips[0], want, `chip 1 reads "${chips[0]}", not the Pygmy name "${want}"`);
-      assert.ok(chips.slice(1).includes(want), "the built-in Pygmy chip is gone");
-      assert.strictEqual(await b.eval(`return document.querySelector("#decks .chip:not(#deck-add)").classList.contains("on");`),
-        true, "the fork is not the selected chip");
+      assert.strictEqual(chips[at], want, `chip ${at + 1} reads "${chips[at]}", not the Pygmy name "${want}"`);
+      assert.strictEqual(chips.filter((t) => t === want).length, 1, "the seeded Pygmy chip is still drawn");
+      assert.strictEqual(await b.eval(`return document.querySelectorAll("#decks .chip:not(#deck-add)")[${at}].classList.contains("on");`),
+        true, "the replacement is not the selected chip");
     } finally {
       await b.setViewport(900, 900, false);
     }
   });
 
-  test("SHOW HIDDEN DECKS is absent until a deck is hidden and restores all five", async () => {
+  test("RESET SEEDED DECKS is absent until a seeded deck is edited or deleted, arms, and restores all five", async () => {
     try {
       await freshLoad();
       await b.setViewport(380, 780, true);
@@ -11758,11 +11760,11 @@ function run() {
         return { text: el.textContent.trim(), hidden: el.hasAttribute("hidden"),
                  stop: window.panelStops().includes(el) };`);
       let r = await probe();
-      assert.strictEqual(r.text, "SHOW HIDDEN DECKS");
+      assert.strictEqual(r.text, "RESET SEEDED DECKS");
       assert.deepStrictEqual([r.hidden, r.stop], [true, false],
-        "a fresh store shows a restore control");
+        "a fresh store shows a reset control");
 
-      await hideSelectedBuiltin();
+      await deleteSelectedSeeded();
       await openSettingsPanel();
       r = await probe();
       assert.deepStrictEqual([r.hidden, r.stop], [false, true],
@@ -11781,11 +11783,14 @@ function run() {
       await b.eval(`document.getElementById("deck-add").focus(); return true;`);
       await b.key("Tab", "Tab", 9);
       assert.strictEqual(await b.eval(`return document.activeElement.id;`), "deck-restore",
-        "Tab from + ADD A SCALE does not reach SHOW HIDDEN DECKS");
+        "Tab from + ADD A SCALE does not reach RESET SEEDED DECKS");
 
       await b.click("#deck-restore");
+      await b.waitFor(`document.getElementById("deck-restore").hasAttribute("data-armed")`,
+        { label: "RESET SEEDED DECKS to arm" });
+      await b.click("#deck-restore");
       await b.waitFor(`document.getElementById("deck-restore").hasAttribute("hidden")`,
-        { label: "the restore control to go away" });
+        { label: "the reset control to go away" });
       assert.strictEqual((await chipTexts()).length, meta.length, "restore did not bring back every deck");
       assert.strictEqual(await b.eval(`return JSON.parse(localStorage.getItem("hpfc")).hidden;`), undefined,
         "the hidden list is still stored");

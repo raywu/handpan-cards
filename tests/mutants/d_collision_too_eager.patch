@@ -3,8 +3,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10035,7 +10035,7 @@ function runGenerate() {
-       if (builtinId && CUSTOM[HPE.core.deckId(seed.fields)]) { taken = CUSTOM[HPE.core.deckId(seed.fields)]; return { ok: false }; }
+@@ -10081,7 +10081,7 @@ function runGenerate() {
+       if (fromSeed && CUSTOM[HPE.core.deckId(seed.fields)]) { taken = CUSTOM[HPE.core.deckId(seed.fields)]; return { ok: false }; }
        if (!wasId) return null;
        const id = HPE.core.deckId(seed.fields);
 -      if (id === wasId || !CUSTOM[id]) return null;

@@ -1,0 +1,14 @@
+# kills: SD: saving a seeded deck unchanged closes the sheet and writes nothing
+# suite: node --test --test-name-pattern ^SD..saving.a.seeded.deck.unchanged.closes.the.sheet.and.writes.nothing$ tests/app.test.js
+# An unchanged SAVE on a seeded deck mints a replacement record instead of closing.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10038,7 +10038,6 @@
+   if (genBtn.disabled) return;
+   // SAVE on a seeded deck that was not changed writes nothing: no record is
+   // minted, so the seed keeps its slot, its palette and its stored print overlay.
+-  if (seeded() && sheetKey() === seedPrefill) { closeScaleSheet(); return; }
+   const label = genBtn.textContent;
+   genBtn.textContent = editingId ? "SAVING" : "GENERATING";
+   genBtn.disabled = true;

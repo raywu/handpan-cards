@@ -1,14 +1,15 @@
 # suite: node --test --test-name-pattern ^opening.Edit.on.a.saved.long.deck.from.a.fresh.load.sizes.the.field.to.the.deck.s.text$ tests/app.test.js
 # kills: opening Edit on a saved long deck from a fresh load sizes the field to the deck's text
 # The Edit sheet fills the field without resizing it, so a long saved deck opens clipped to one row.
+# Re-anchored 2026-10-13 (seeded SAVE / DELETE, lane app) against the current source. The mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9869,7 +9869,6 @@
+@@ -9908,7 +9908,6 @@
    nameBox.value = edit ? edit.name : "";
    nameDirty = false;                                 // prefilled, not typed
    scaleBox.value = edit ? HPE.core.formatSeed(edit.fields) : "";  // 8A: the canonical string
 -  syncGrow();
-   palette = edit && !fork ? edit.options.palette : 0;
+   palette = !edit ? 0 : seeded() ? seedPalette(edit.colors) : edit.options.palette;
    buildSwatches();
    mirror = o ? !!o.mirror : false;

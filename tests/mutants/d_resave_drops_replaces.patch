@@ -1,0 +1,14 @@
+# kills: SD: re-saving a replacement keeps its seeded slot
+# suite: node --test --test-name-pattern ^SD..re.saving.a.replacement.keeps.its.seeded.slot$ tests/app.test.js
+# A re-save of a replacement does not carry its replaces option, so a field edit sends it out of the slot.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9496,7 +9496,6 @@
+     if (n && (nameDirty || kept)) o.name = n;  // validated by core.parseSeed, never here
+     // A seeded deck's SAVE mints its replacement; a replacement's own SAVE keeps the seat.
+     if (seeded()) o.replaces = editingId;
+-    else if (d && d.options && d.options.replaces) o.replaces = d.options.replaces;
+   }
+   if (layoutSeats) o.seats = JSON.parse(JSON.stringify(layoutSeats));
+   return o;

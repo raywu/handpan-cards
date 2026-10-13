@@ -1,15 +1,16 @@
 # kills: a user-typed name equal to the auto label survives a later field edit
 # suite: node --test --test-name-pattern ^a.user.typed.name.equal.to.the.auto.label.survives.a.later.field.edit$ tests/app.test.js
+# Re-anchored 2026-10-13 (seeded SAVE / DELETE, lane app) against the current source. The mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9454,7 +9454,8 @@
+@@ -9493,7 +9493,8 @@
      const d = editedDeck();
-     const kept = !!(d && d.options && d.options.name);
-     // A fork carries the name the box was prefilled with: it IS the deck's name.
--    if (n && (nameDirty || kept || builtinId)) o.name = n;  // validated by core.parseSeed, never here
+     // A seeded deck has no options, but the name the box was prefilled with IS its name.
+     const kept = !!(d && ((d.options && d.options.name) || seeded()));
+-    if (n && (nameDirty || kept)) o.name = n;  // validated by core.parseSeed, never here
 +    const auto = d ? HPE.select.autoName(d.fields, d.options.parent) : null;
 +    if (n && n !== auto) o.name = n;  // validated by core.parseSeed, never here
-   }
-   if (layoutSeats) o.seats = JSON.parse(JSON.stringify(layoutSeats));
-   return o;
+     // A seeded deck's SAVE mints its replacement; a replacement's own SAVE keeps the seat.
+     if (seeded()) o.replaces = editingId;
+     else if (d && d.options && d.options.replaces) o.replaces = d.options.replaces;

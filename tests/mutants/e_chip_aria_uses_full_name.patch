@@ -1,5 +1,5 @@
-# kills: a selected custom chip carries a pencil; no built-in chip ever does
-# suite: node --test --test-name-pattern ^a.selected.custom.chip.carries.a.pencil..no.built.in.chip.ever.does$ tests/e2e.test.js
+# kills: the selected chip carries a pencil on every deck; no unselected chip does
+# suite: node --test --test-name-pattern ^the.selected.chip.carries.a.pencil.on.every.deck..no.unselected.chip.does$ tests/e2e.test.js
 # The accessible name goes back to the FULL deck name while the chip keeps
 # rendering chipLabel(). Below CHIP_CAP the two are the same string and nothing
 # moves; past it the chip reads "MY LOW PYGMY SC..." and announces "Edit MY LOW
@@ -11,7 +11,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8768,7 +8768,7 @@ function buildChips() {
+@@ -8796,7 +8796,7 @@ function buildChips() {
        // and an accessible name built from the full one stops containing the
        // visible string - WCAG 2.5.3 Label-in-Name, which is what Voice
        // Control matches "tap <the words I can see>" against.
@@ -19,4 +19,4 @@ diff --git a/index.html b/index.html
 +      b.setAttribute("aria-label", "Edit " + d.name);
      }
      // [design-review 7A] the ALREADY-SELECTED chip is the one and only way into
-     // the sheet; every other chip just selects its deck. A custom deck opens in
+     // the sheet; every other chip just selects its deck. Seeded and custom decks

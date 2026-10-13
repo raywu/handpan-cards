@@ -1,14 +1,15 @@
-# kills: editable defaults: hiding a built-in removes its chip, stores hidden and selects Kurd
-# suite: node --test --test-name-pattern ^editable.defaults..hiding.a.built.in.removes.its.chip..stores.hidden.and.selects.Kurd$ tests/app.test.js
+# kills: editable defaults: deleting a seeded deck removes its chip, stores hidden and selects Kurd
+# suite: node --test --test-name-pattern ^editable.defaults..deleting.a.seeded.deck.removes.its.chip..stores.hidden.and.selects.Kurd$ tests/app.test.js
 # SHOW HIDDEN DECKS never appears: buildChips leaves it hidden with decks hidden.
+# RESET SEEDED DECKS never appears: buildChips leaves it hidden with a seeded deck deleted or edited.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8782,7 +8782,7 @@
+@@ -8807,7 +8807,7 @@
      if (d.id === deckId) active = b;
    }
-   // Rendered only while something is hidden: a fresh store has no such control.
--  if (hiddenDecks().length) restoreBtn.removeAttribute("hidden"); else restoreBtn.setAttribute("hidden", "");
+   // Rendered only while something is resettable: a fresh store has no such control.
+-  if (hiddenDecks().length || Object.keys(replacements()).length) restoreBtn.removeAttribute("hidden"); else restoreBtn.setAttribute("hidden", "");
 +  restoreBtn.setAttribute("hidden", "");
    // The row scrolls, so the selected chip may be off-screen after a rebuild.
    if (active && active.scrollIntoView) active.scrollIntoView({ block: "nearest", inline: "nearest" });

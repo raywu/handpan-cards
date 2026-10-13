@@ -1,14 +1,14 @@
-# kills: forking Pygmy at 380px makes chip 1 with the Pygmy name
-# suite: node --test --test-name-pattern ^forking.Pygmy.at.380px.makes.chip.1.with.the.Pygmy.name$ tests/e2e.test.js
+# kills: saving Pygmy with a palette change at 380px replaces its chip in place with the Pygmy name
+# suite: node --test --test-name-pattern ^saving.Pygmy.with.a.palette.change.at.380px.replaces.its.chip.in.place.with.the.Pygmy.name$ tests/e2e.test.js
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9866,7 +9866,7 @@ function resetSheetState(edit, fork) {
-   // Everything else starts as a new scale would: palette 0, mirror off.
-   const o = !edit ? null : fork
+@@ -9905,7 +9905,7 @@ function resetSheetState(edit) {
+   // Everything else starts as a new scale would: mirror off.
+   const o = !edit ? null : seeded()
      ? { anchor: edit.fields["1"] && edit.fields["1"][4] !== 270 ? "between" : "one" } : edit.options;
 -  nameBox.value = edit ? edit.name : "";
-+  nameBox.value = edit && !fork ? edit.name : "";
++  nameBox.value = "";
    nameDirty = false;                                 // prefilled, not typed
    scaleBox.value = edit ? HPE.core.formatSeed(edit.fields) : "";  // 8A: the canonical string
    syncGrow();

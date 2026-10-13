@@ -3,11 +3,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9990,7 +9990,6 @@
-     forgetScale(HPE.core.formatSeed(d.fields));
+@@ -10029,7 +10029,6 @@ function deleteDeck(id) {
+     if (heldSeat && !hidden.includes(heldSeat)) hidden.push(heldSeat);
    }
-   if (editingId === id || builtinId === id) closeScaleSheet();
+   if (editingId === id) closeScaleSheet();
 -  if (!wasSelected) { save(); buildChips(); return; }
    selectDeck(fallbackDeck().id);
-   say((builtin ? "Hidden " : "Removed ") + gone + ". Showing " + deck().name + ".", "warn");
+   say("Removed " + gone + ". Showing " + deck().name + ".", "warn");
  }
