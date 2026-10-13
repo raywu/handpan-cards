@@ -53,7 +53,7 @@ Cycle: 1   Wave: 2   Merged this batch: 894d8f8 (#297)
 | Lane | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on |
 |---|---|---|---|---|---|---|---|---|---|
 | app | (removed) | (deleted, local + remote) | #297 | f8d434c | 2026-10-13 (head == branch tip, MERGEABLE, 11/11 pass) | attempt 1 at 4e9c5db: CI red on mutation gate shards 1 and 2 (survivors `d_registry_ignored`, `e_fork_drops_name`), bounced by message, no reviewer. Lane fix f8d434c re-anchored both (details in Review log). Reviewer PASS_WITH_NITS at f8d434c (stalled once, resumed). Finding 1 (PR body lacked the SD-A8 inventory) fixed by the integrator in the PR body from the diff (D7). | 1 | YES 894d8f8 | — |
-| e2e | seeded-save-delete-e2e | claude/seeded-save-delete-e2e | — | — | spawned 2026-10-13 from main 894d8f8 | — | 0 | no | lane return |
+| e2e | seeded-save-delete-e2e | claude/seeded-save-delete-e2e | — | — | spawned 2026-10-13 from main 894d8f8 | stalled once with tests + 3 mutants written but uncommitted; resumed by message (third stall this session: app twice, reviewer once, e2e once; the watchdog, not the work). If it stalls again the integrator commits and pushes the worktree contents directly (Q1 pattern) | 0 | no | lane return |
 | docs | — | claude/seeded-save-delete-docs | — | — | — | — | 0 | no | e2e merge |
 
 ## Review log
