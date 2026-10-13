@@ -59,7 +59,7 @@ Players can fork any built-in deck into a custom deck, hide any built-in, restor
 | 7 | RESOLVED (#293 section 10) | lane docs (plan close-out) | PR #291 inventory row for app.test.js :2426 says "none"; `d_remember_appends` names that test (unchanged, still killed). |
 | 8 | OPEN | later lane | Pencil e2e test reaches Kurd by `nth-child(2)` not chip text (R3 wording); `/KURD/.test` before `assert.ok`; app :2141 pencil regex vacuous; e2e :5059 `at >= 0` vacuous. |
 | 9 | OPEN | later lane | Stale comments in `index.html` `buildChips` ("does nothing at all") and delete fallback ("default deck"); blank line in `e_panel_moved_into_header` header; weak `hiddenKey(app) || four` assertion. |
-| 10 | OPEN | owner (listed on return) | Two-tab last-writer-wins on `hidden` (same as deck/mode/tier); a Hijaz fork's chip is indistinguishable from Hijaz while unselected (ED-A6 by design). |
+| 10 | CLOSED (owner 2026-10-12: both as designed) | owner | Two-tab last-writer-wins on `hidden` (same as deck/mode/tier); a Hijaz fork's chip is indistinguishable from Hijaz while unselected (ED-A6 by design). |
 
 ## Handoff queue (continued): #292 reviewer nits
 | # | Status | Owner | Item |
@@ -73,7 +73,7 @@ Players can fork any built-in deck into a custom deck, hide any built-in, restor
 | 13 | OPEN | later lane (with row 9) | `index.html` comment above the hidden array still says `ids in "hpfc.hidden"`; the field lives inside the `hpfc` blob, no separate key. |
 | 14 | OPEN | later lane | `index.html` comments use "the picker" for the chip strip (hidden-array comment, `buildChips` "never emptied"); CLAUDE.md now uses "picker order" for decks.json order. Pick one word. |
 | 15 | OPEN | note only | CLAUDE.md "first visible deck, custom decks first" is `allDecks()[0]`, the newest custom; the next bullet says so. |
-| 16 | OPEN | owner (listed on return) | README never says how to hide or fork a built-in (tap the selected chip, then FORK THIS DECK or HIDE THIS DECK); not a lane candidate. |
+| 16 | RESOLVED (owner 2026-10-12: add one sentence; PR #294, branch `claude/editable-defaults-readme`) | owner | README never says how to hide or fork a built-in (tap the selected chip, then FORK THIS DECK or HIDE THIS DECK); not a lane candidate. |
 
 ## Cycle state
-Cycle: 1   CLOSED 2026-10-12   All three lanes merged: 7995390 (#291 app), 83cf646 (#292 e2e), d863556 (#293 docs). Open rows: 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 16 (3, 7, 11, 15 resolved or note-only). No live lanes, no worktrees. Full Cycle state rows in the archive doc.
+Cycle: 1   CLOSED 2026-10-12   All three lanes merged: 7995390 (#291 app), 83cf646 (#292 e2e), d863556 (#293 docs). Open rows: 1, 2, 4, 6, 8, 9, 12, 13, 14 (5, 10 closed by owner 2026-10-12; 16 -> PR #294) (3, 7, 11, 15 resolved or note-only). No live lanes, no worktrees. Full Cycle state rows in the archive doc.
