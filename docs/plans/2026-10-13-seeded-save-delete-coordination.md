@@ -52,7 +52,7 @@ Cycle: 1   Wave: 1   Merged this batch: (none)
 
 | Lane | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on |
 |---|---|---|---|---|---|---|---|---|---|
-| app | seeded-save-delete-app | claude/seeded-save-delete-app | #297 | 4e9c5db | 2026-10-13 (head == branch tip, 4 commits) | CI red: mutation gate shards 1 and 2 (survivors `d_registry_ignored`, `e_fork_drops_name`); 9 other checks pass; bounced to the lane by message, no reviewer spawned | 1 | no | lane fix + CI |
+| app | seeded-save-delete-app | claude/seeded-save-delete-app | #297 | f8d434c | 2026-10-13 (head == branch tip, MERGEABLE) | attempt 1 at 4e9c5db: CI red on mutation gate shards 1 and 2 (survivors `d_registry_ignored`, `e_fork_drops_name`), bounced by message, no reviewer. Lane fix pushed as f8d434c: `d_registry_ignored` re-anchored to `deck = () => DECKS.find(...) \|\| fallbackDeck()` (first attempt was a wrong-reason ReferenceError kill), `e_fork_drops_name` re-anchored to `edit.name.replace(/\d/g,"")` after the retitled e2e test's swatch click was made to take (in-page `.dot[2]` click + selected assertion). CI pending | 1 | no | CI at f8d434c, then reviewer |
 | e2e | — | claude/seeded-save-delete-e2e | — | — | — | — | 0 | no | app merge |
 | docs | — | claude/seeded-save-delete-docs | — | — | — | — | 0 | no | e2e merge |
 
