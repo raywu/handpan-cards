@@ -73,8 +73,10 @@ filtered by `hidden`). No code path writes both - SD-4 removes the record
 before hiding the seed - so this only decides a hand-edited or cross-build
 store, and it decides it the way `restoreScales` already does: never lose a
 record. `allDecks()` becomes: custom decks newest first,
-EXCLUDING replacements; then `visibleDecks()` with each seed whose id some
-`CUSTOM[*].options.replaces` names swapped for that replacement. `hidden`
+EXCLUDING replacements; then DECKS with each seed whose id some
+`CUSTOM[*].options.replaces` names swapped for that replacement FIRST, and
+the `hidden` filter applied AFTER the swap (`DECKS.map(swap).filter(d =>
+!hidden.includes(d.id))`, so a replacement never carries a hidden id). `hidden`
 keeps its meaning (seeds the player deleted). Nothing in storage changes for
 anyone who never touches a seed. Size: ~90 app lines (+ ~40 removed), human
 1.5 d / CC 3 h for lane app.
@@ -144,11 +146,20 @@ does NOT ride along by itself: `sheetOptions()` builds fresh options and
 adds `replaces: d.options.replaces` whenever `editedDeck()` carries one, and
 `generateDeck` ALSO inherits it from the registry entry it is about to replace
 in place (`options.replaces || (CUSTOM[id] && CUSTOM[id].options.replaces)`).
-The second line is what keeps the association when ADD or a share link lands
-on the replacement's own scale (`generateDeck`'s benign dedupe-by-id would
-otherwise rewrite the entry and, through `rememberScale`'s rewrite-at-index,
-the record, without `replaces`; Kurd would then reappear beside an ordinary
-custom deck and RESET would leave it) - outside voice, SD-A18 and SD-A19.
+The second line is what keeps the association when ADD lands on the
+replacement's own scale (`generateDeck`'s benign dedupe-by-id would otherwise
+rewrite the entry and, through `rememberScale`'s rewrite-at-index, the
+record, without `replaces`; Kurd would then reappear beside an ordinary
+custom deck and RESET would leave it). A share link needs one more change:
+`openShare` today persists the DECODED seed (`rememberScale(res.value)`),
+whose options come through `core.parseSeed`'s whitelist and
+`share.optionsLine`'s fixed field list and so can never carry `replaces`;
+the inherit term would keep the in-memory entry right for one session while
+the record at that index lost `replaces` on the next reload (PR #296
+reviewer F1). So `openShare` persists the BUILT deck, `rememberScale(seedOf(
+built.value))`, exactly as `runGenerate` does; `seedOf` reads
+`built.value.options`, which already carries the inherited `replaces` -
+outside voice and reviewer F1, SD-A18 and SD-A19.
 Validity and uniqueness: a `replaces` naming no seed is dropped at
 `generateDeck` and the deck is a plain custom (section A); when two records
 name one seed the NEWEST takes the slot and the others render in the custom
@@ -175,8 +186,13 @@ carries it; `panelStops()` unchanged). Label `RESET SEEDED DECKS`, armed
 "Tap again to restore all seeded decks. Your edits to them will be gone."
 (warn); the second tap (disarm on pointerdown outside the button, blur, panel
 close - the panel has NO pointerdown listener today and `closePanel()` disarms
-nothing, so lane app adds a `settingsPanel` pointerdown hook that disarms when
-`e.target` is not `restoreBtn`, a `blur` handler on the button, and one
+nothing, so lane app adds a DOCUMENT-level pointerdown hook that disarms when
+`e.target` is not `restoreBtn` (not a `settingsPanel` hook: on desktop the
+panel is an always-visible sidebar, `closePanel()` returns early on
+`!panelOpen`, and Safari and Firefox on macOS do not focus a button on click,
+so neither a panel-close nor a `blur` path would ever run there - PR #296
+reviewer F2; a document hook covers a card tap in every layout), a `blur`
+handler on the button, and one
 `disarmReset()` call in `closePanel()`; `disarmReset` is its own small function
 beside `disarmDelete`, never a second branch inside it, because `disarmDelete`
 re-derives SHEET state through `syncParseState`) clears `hidden`, drops every record with `o.replaces`, rebuilds
@@ -259,7 +275,7 @@ only). `d_page_close_reruns_hide` kills a generic `closeScaleSheet` test and
 is not a fork-model mutant.
 
 **Mutants expected `stale` at the lane head:** the eleven named above, plus
-whichever of the 43 patches mentioning `builtinId` / `openBuiltinSheet` /
+whichever of the ~39 patches mentioning `builtinId` / `openBuiltinSheet` /
 `HIDE_*` / `restoreBtn` / `hiddenDecks` / `wouldEmpty` / `fallbackDeck`
 `refresh_mutants.py --check` reports (it is the oracle, not the list). Each is
 re-anchored, never re-targeted; filenames stay.
@@ -349,10 +365,13 @@ Acceptance:
 - SD-A16 (eng-review R2) a store with `hidden: ["kurd"]` AND a `replaces:
   "kurd"` record shows the replacement in Kurd's slot; test "SD: a replacement
   outranks a hidden seed in storage"; mutant `d_hidden_drops_replacement`.
-- SD-A17 (eng-review R3) RESET disarms on a pointerdown elsewhere in the panel,
-  on blur, and on `closePanel()`, and a RESET tap after any of those arms
-  again rather than firing; test "SD: an armed RESET disarms on a panel tap,
-  blur and panel close, and re-arms after"; mutant `d_reset_stays_armed`.
+- SD-A17 (eng-review R3, reviewer F2) RESET disarms on a pointerdown anywhere
+  in the document outside the button (a card tap with the desktop sidebar
+  open included), on blur, and on `closePanel()`, and a RESET tap after any
+  of those arms again rather than firing; test "SD: an armed RESET disarms on
+  a tap elsewhere, blur and panel close, and re-arms after" (the tap is
+  dispatched on `main`, not inside the panel, with `panelOpen` false);
+  mutant `d_reset_stays_armed`.
 - SD-A18 (outside voice 1) a second SAVE on a replacement, options-only AND
   with a field edit, keeps `replaces` and the seeded slot across a simulated
   reboot; test "SD: re-saving a replacement keeps its seeded slot"; mutant
@@ -360,8 +379,10 @@ Acceptance:
 - SD-A19 (outside voice 2) ADD of the replacement's own scale string, and
   `openShare` of a link for it, leave the record's `replaces` in place and
   Kurd's chip absent; test "SD: ADD and a share link onto a replacement keep
-  it seeded"; mutant `d_dedupe_drops_replaces` (drops the registry-inherit
-  term in `generateDeck`).
+  it seeded", asserted AFTER a simulated reboot so the stored record is what
+  is checked; two mutants: `d_dedupe_drops_replaces` (drops the
+  registry-inherit term in `generateDeck`) and `d_share_persists_decoded`
+  (reverts `openShare` to `rememberScale(res.value)`; reviewer F1).
 - SD-A20 (outside voice 6) a store with two records naming `kurd` boots with
   the newer in Kurd's slot and the older in the custom tier, every record
   reachable; a record naming no seed is a plain custom; test "SD: duplicate
@@ -566,9 +587,9 @@ verdict is resolved rather than disputed:
 | # | Codex finding | disposition |
 |---|---|---|
 | 1 | blocker: `replaces` does not ride along on a second SAVE (`sheetOptions` rebuilds options) | ACCEPTED - section B, SD-A18 |
-| 2 | blocker: ADD or a share link onto the replacement's scale detaches it through dedupe-by-id | ACCEPTED - section B, SD-A19 |
+| 2 | blocker: ADD or a share link onto the replacement's scale detaches it through dedupe-by-id | ACCEPTED - section B, SD-A19; the PR #296 reviewer (F1) then found the share path ALSO needs `openShare` to persist the built deck, now in section B with a second mutant |
 | 3 | should-fix: unchanged-SAVE guard in the wrong lifecycle; equality list omits anchor and bottom mirror | ALREADY MOVED by R5; list extended |
-| 4 | should-fix: RESET cancellation has no wiring | ALREADY R3; re-arm case added to SD-A17 |
+| 4 | should-fix: RESET cancellation has no wiring | ALREADY R3; re-arm case added to SD-A17; the PR #296 reviewer (F2) moved the pointerdown hook from the panel to the document for the desktop sidebar |
 | 5 | should-fix: "forward-compatible both ways" overstates an old-build SAVE | ACCEPTED - section E, one README sentence |
 | 6 | should-fix: unknown or duplicate `replaces` targets undefined | ACCEPTED - section B, SD-A20 |
 | 7 | should-fix: "Updated" message cannot come from `known.has` on a first seeded SAVE | ACCEPTED - section B, third term |
@@ -662,9 +683,10 @@ with acceptance rows SD-A15..A20. Verdict SMALL stands. Ready to implement.
 | Tests | coverage map, artifact | yes | - | - | resolved |
 | Performance | 0 | - | - | - | none |
 | Outside voice | 7 (2 blockers) | yes | - | SD-A18..A20 | resolved |
+| PR #296 reviewer | F1 openShare persists the decoded seed, F2 desktop disarm gap, N1..N3 | yes | - | SD-A17, SD-A19 second mutant | resolved |
 
 OUTSIDE COVERAGE: Codex reviewed the amended plan with the verified code facts; FAIL on seven findings, all folded in.
-CROSS-MODEL: twelve findings in all, twelve resolved in the plan body, none disputed.
+CROSS-MODEL: fourteen findings in all (five own, seven Codex, two from the PR reviewer) plus three nits, all resolved in the plan body, none disputed.
 VERDICT: READY TO IMPLEMENT. Lanes app, e2e, docs, serial.
 
 NO UNRESOLVED DECISIONS
