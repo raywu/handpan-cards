@@ -11734,7 +11734,9 @@ function run() {
       await openEdit();
       assert.strictEqual(await b.eval(`return document.getElementById("scale-generate").textContent.trim();`),
         "SAVE CHANGES");
-      await b.click("#scale-swatches > :nth-child(3)");
+      await b.eval(`document.querySelectorAll("#scale-swatches .dot")[2].click(); return true;`);
+      assert.strictEqual(await b.eval(`return document.querySelectorAll("#scale-swatches .dot")[2].classList.contains("sel");`), true,
+        "the palette swatch did not take");
       await b.click("#scale-generate");
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
         { label: "the sheet to close after the save" });
