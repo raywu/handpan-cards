@@ -1,14 +1,15 @@
 # kills: an untouched Edit box still leaves an auto-named deck free to re-derive its name
 # suite: node --test --test-name-pattern ^an.untouched.Edit.box.still.leaves.an.auto.named.deck.free.to.re.derive.its.name$ tests/app.test.js
+# Re-anchored 2026-10-13 (seeded SAVE / DELETE, lane app) against the current source. The mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9454,7 +9454,7 @@
+@@ -9493,7 +9493,7 @@
      const d = editedDeck();
-     const kept = !!(d && d.options && d.options.name);
-     // A fork carries the name the box was prefilled with: it IS the deck's name.
--    if (n && (nameDirty || kept || builtinId)) o.name = n;  // validated by core.parseSeed, never here
+     // A seeded deck has no options, but the name the box was prefilled with IS its name.
+     const kept = !!(d && ((d.options && d.options.name) || seeded()));
+-    if (n && (nameDirty || kept)) o.name = n;  // validated by core.parseSeed, never here
 +    if (n) o.name = n;  // validated by core.parseSeed, never here
-   }
-   if (layoutSeats) o.seats = JSON.parse(JSON.stringify(layoutSeats));
-   return o;
+     // A seeded deck's SAVE mints its replacement; a replacement's own SAVE keeps the seat.
+     if (seeded()) o.replaces = editingId;
+     else if (d && d.options && d.options.replaces) o.replaces = d.options.replaces;

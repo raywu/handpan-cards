@@ -1,14 +1,15 @@
 # kills: Tab is trapped inside the Edit sheet and reaches every Edit control
 # suite: node --test --test-name-pattern ^Tab.is.trapped.inside.the.Edit.sheet.and.reaches.every.Edit.control$ tests/e2e.test.js
+# Re-anchored 2026-10-13 (seeded SAVE / DELETE, lane app) against the current source. The mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10547,8 +10547,7 @@
+@@ -10624,8 +10624,7 @@
                   drawerOpen ? previewBox.querySelector('.panhit[tabindex="0"]') : null,
                   drawerBtn, anchorOne, anchorBetween, mirrorTop, mirrorBot, fineBtn,
                   notePrev, noteNext, seatPrev, seatNext, resetBtn,
 -                 editingId ? degSel : null, ...swatches.children, genBtn,
--                 editingId || builtinId ? delBtn : null]
+-                 editingId ? delBtn : null]
 +                 editingId ? degSel : null, ...swatches.children, genBtn]
      .filter(isStop);
    if (isHit(document.activeElement) && pickRef && lastSolved) setRover(pickRef);

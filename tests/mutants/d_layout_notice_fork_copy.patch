@@ -1,0 +1,15 @@
+# kills: SD: the layout notice on a seeded deck names SAVE CHANGES
+# suite: node --test --test-name-pattern ^SD..the.layout.notice.on.a.seeded.deck.names.SAVE.CHANGES$ tests/app.test.js
+# The layout notice on a seeded deck still names the retired FORK THIS DECK button.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9008,7 +9008,7 @@
+   const same = anchor === layoutBase.anchor && mirror === layoutBase.mirror &&
+     (!hadBottom || bottomMirror() === layoutBase.mb) && seatsKey(layoutSeats) === layoutBase.seats;
+   let text;
+-  if (!same) text = editingId ? "Layout not saved yet. SAVE CHANGES keeps it."
++  if (!same) text = editingId ? (seeded() ? "Layout not saved yet. FORK THIS DECK keeps it." : "Layout not saved yet. SAVE CHANGES keeps it.")
+     : "Layout not saved yet. GENERATE CARDS keeps it.";
+   else {
+     const custom = layoutBase.anchor !== "one" || layoutBase.mirror || (layoutBase.mb && hadBottom) ||

@@ -1,5 +1,5 @@
-# kills: SHOW HIDDEN DECKS is absent until a deck is hidden and restores all five
-# suite: node --test --test-name-pattern ^SHOW.HIDDEN.DECKS.is.absent.until.a.deck.is.hidden.and.restores.all.five$ tests/e2e.test.js
+# kills: RESET SEEDED DECKS is absent until a seeded deck is edited or deleted, arms, and restores all five
+# suite: node --test --test-name-pattern ^RESET.SEEDED.DECKS.is.absent.until.a.seeded.deck.is.edited.or.deleted..arms..and.restores.all.five$ tests/e2e.test.js
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html

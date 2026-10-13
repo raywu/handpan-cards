@@ -1,0 +1,15 @@
+# kills: SD: ADD and a share link onto a replacement keep it seeded
+# suite: node --test --test-name-pattern ^SD..ADD.and.a.share.link.onto.a.replacement.keep.it.seeded$ tests/app.test.js
+# openShare stores the decoded link instead of the built deck, dropping the registry's replaces.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -7906,7 +7906,7 @@
+   // Generation runs ONCE per restore, here, exactly as submit does (section 11).
+   const built = generateDeck(HPE.core.formatSeed(res.value.fields), res.value.options);
+   if (!built.ok) { say(built.reason, "err"); return built; }
+-  rememberScale(seedOf(built.value));
++  rememberScale(res.value);
+   selectDeck(built.value.id);
+   return built;
+ }

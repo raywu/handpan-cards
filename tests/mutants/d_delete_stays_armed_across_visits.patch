@@ -5,11 +5,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9788,7 +9788,6 @@ if (window.visualViewport) {
-  *  hide a built-in: the name and delete rows, no degree row; `title` is the
-  *  deck's name, which is what that page is called). */
- function setSheetMode(edit, title) {
+@@ -9828,7 +9828,6 @@ if (window.visualViewport) {
+ /** Show or hide the three Edit-only rows and relabel the single primary.
+  *  `edit` is false (create) or true (Edit a seeded or a custom deck). */
+ function setSheetMode(edit) {
 -  disarmDelete();
    for (const el of [nameRow, degRow, delRow]) {
-     if (edit && !(edit === "builtin" && el === degRow)) el.removeAttribute("hidden");
+     if (edit) el.removeAttribute("hidden");
      else el.setAttribute("hidden", "");

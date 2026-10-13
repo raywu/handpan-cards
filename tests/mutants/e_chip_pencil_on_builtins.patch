@@ -1,18 +1,20 @@
-# kills: a selected custom chip carries a pencil; no built-in chip ever does
-# suite: node --test --test-name-pattern ^a.selected.custom.chip.carries.a.pencil;.no.built.in.chip.ever.does$ tests/e2e.test.js
+# kills: the selected chip carries a pencil on every deck; no unselected chip does
+# suite: node --test --test-name-pattern ^the.selected.chip.carries.a.pencil.on.every.deck..no.unselected.chip.does$ tests/e2e.test.js
 # The pencil drops its CUSTOM half and appears on any SELECTED chip, built-ins
 # included. A selected built-in does nothing at all when tapped, so the glyph
 # promises an Edit sheet that never opens - the affordance becomes a lie on
 # three of the four chips, which is worse than row 218's original silence.
+# The pencil drops its SELECTED half and appears on every chip. The glyph then promises an Edit sheet
+# that an unselected chip never opens, the lie row 218 removed.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -3647,7 +3647,7 @@ function buildChips() {
-     // text stays the deck's name - and the accessible name says it in words.
-     // Only ever on the chip that is BOTH selected and custom: row 262 is a
-     // live focus trap on any path that opens Edit from an unselected chip.
--    const editable = d.id === deckId && !!CUSTOM[d.id];
-+    const editable = d.id === deckId;
+@@ -8788,7 +8788,7 @@
+     // chip's text stays the deck's name - and the accessible name says it in
+     // words. Only ever on the chip that is selected: row 262 is a live focus
+     // trap on any path that opens Edit from an unselected chip.
+-    const editable = d.id === deckId;
++    const editable = true;
      b.innerHTML = `<span class="dot"></span>${esc(chipLabel(d.name))}`;
      if (editable) {
        b.classList.add("editable");

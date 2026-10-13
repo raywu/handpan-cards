@@ -1,13 +1,14 @@
 # kills: the Degrees select lists the parent candidates with the inferred one preselected
 # suite: node --test --test-name-pattern ^the.Degrees.select.lists.the.parent.candidates.with.the.inferred.one.preselected$ tests/app.test.js
+# Re-anchored 2026-10-13 (seeded SAVE / DELETE, lane app) against the current source. The mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9434,7 +9434,6 @@
+@@ -9473,7 +9473,6 @@
  function sheetOptions() {
    const o = { palette, mirror, mirrorBottom: bottomMirror(), anchor };
-   if (editingId || builtinId) {
--    if (editingId) o.parent = Number(degSel.value);
+   if (editingId) {
+-    o.parent = Number(degSel.value);
      // iOS Smart Punctuation turns a typed ' or " into a curly U+2018/2019/
      // U+201C/U+201D, a typed -- into an em dash U+2014, and a typed ... into
      // a single ellipsis glyph U+2026 (a pasted en dash U+2013 can also show

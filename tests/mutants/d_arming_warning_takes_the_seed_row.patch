@@ -9,16 +9,17 @@
 # the seed row any more, so there is nothing for the re-derive to repair. The
 # damage has to be reintroduced to be seen, and it has to be READ while DELETE
 # is still armed, because the disarm re-derives and would repair it first.
+# Re-anchored 2026-10-13 (seeded SAVE / DELETE, lane app) against the current source. The mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10174,9 +10174,9 @@
-   delBtn.textContent = builtinId ? HIDE_ARMED : DEL_ARMED;
-   delBtn.setAttribute("data-armed", "");
+@@ -10217,9 +10217,9 @@
    const d = CUSTOM[target] || DECKS.find(x => x.id === target);
--  delNote.textContent = builtinId
-+  showRefusal(builtinId
-     ? "Tap again to hide " + d.name + ". SHOW HIDDEN DECKS in the menu brings it back."
+   const seat = d && d.options && d.options.replaces;
+   const seatedDeck = isBuiltIn(target) || (typeof seat === "string" && replacements()[seat] === d);
+-  delNote.textContent = seatedDeck
++  showRefusal(seatedDeck
+     ? "Tap again to remove " + d.name + ". RESET SEEDED DECKS in the menu brings the seeded decks back."
 -    : "Tap again to remove " + (d ? d.name : "this deck") + ". This cannot be undone.";
 +    : "Tap again to remove " + (d ? d.name : "this deck") + ". This cannot be undone.");
  };

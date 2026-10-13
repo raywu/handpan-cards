@@ -1,0 +1,15 @@
+# kills: editable defaults: saving each seeded deck with a palette change mints the fixture id as its replacement in the seeded slot
+# suite: node --test --test-name-pattern ^editable.defaults..saving.each.seeded.deck.with.a.palette.change.mints.the.fixture.id.as.its.replacement.in.the.seeded.slot$ tests/app.test.js
+# A seeded deck's sheet keeps the retired FORK THIS DECK button copy.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9834,7 +9834,7 @@
+     else el.setAttribute("hidden", "");
+   }
+   delBtn.textContent = DEL_IDLE;
+-  genBtn.textContent = edit ? "SAVE CHANGES" : "GENERATE CARDS";
++  genBtn.textContent = edit ? (edit.options ? "SAVE CHANGES" : "FORK THIS DECK") : "GENERATE CARDS";
+   // The page is named by the title it shows (#scale-title, via
+   // aria-labelledby), so there is one string and a sighted user and a screen
+   // reader are told the same thing.

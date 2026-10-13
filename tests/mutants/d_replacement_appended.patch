@@ -1,0 +1,15 @@
+# kills: SD: a replacement takes the seeded slot across a reload and a field edit
+# suite: node --test --test-name-pattern ^SD..a.replacement.takes.the.seeded.slot.across.a.reload.and.a.field.edit$ tests/app.test.js
+# A replacement is appended after the seeded decks instead of taking its seed's slot.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8761,7 +8761,7 @@
+   const rep = replacements();
+   const slotted = new Set(Object.values(rep));
+   return [...Object.values(CUSTOM).reverse().filter(d => !slotted.has(d)),
+-    ...DECKS.map(s => rep[s.id] || (hidden.includes(s.id) ? null : s)).filter(Boolean)];
++    ...DECKS.map(s => rep[s.id] || hidden.includes(s.id) ? null : s).filter(Boolean), ...Object.values(rep)];
+ };
+ // [5A] chip labels are capped at 16 characters with an ellipsis.
+ const CHIP_CAP = 16;

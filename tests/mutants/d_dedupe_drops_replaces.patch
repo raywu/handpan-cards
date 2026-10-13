@@ -1,0 +1,15 @@
+# kills: SD: ADD and a share link onto a replacement keep it seeded
+# suite: node --test --test-name-pattern ^SD..ADD.and.a.share.link.onto.a.replacement.keep.it.seeded$ tests/app.test.js
+# generateDeck stops inheriting replaces from the registry entry it replaces, so ADD of the same string unseats it.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -7862,7 +7862,7 @@
+   // then a plain custom one.
+   const sitting = CUSTOM[built.value.id];
+   const inherited = sitting && sitting.options && sitting.options.replaces;
+-  const replaces = (options && options.replaces) || inherited;
++  const replaces = options && options.replaces;
+   if (typeof replaces === "string" && isBuiltIn(replaces)) built.value.options.replaces = replaces;
+   registerDeck(built.value);
+   return built;

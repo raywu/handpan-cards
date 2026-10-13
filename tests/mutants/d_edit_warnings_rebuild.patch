@@ -2,10 +2,11 @@
 # suite: node --test --test-name-pattern ^the.Edit.sheet.shows.deck.warnings.from.the.registry.with.no.generation.call$ tests/app.test.js
 # The Edit page re-derives the warnings by rebuilding the deck, which gives
 # them a second producer that can disagree with the one that generated it.
+# Re-anchored 2026-10-13 (seeded SAVE / DELETE, lane app) against the current source. The mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9910,7 +9910,8 @@
+@@ -9950,7 +9950,8 @@
    showSheet(opener);
    // [eng-review 2, 2A] warnings have ONE producer and were copied onto the deck
    // at generation time; the Edit sheet reads them and never rebuilds to re-derive.
@@ -14,4 +15,4 @@ diff --git a/index.html b/index.html
 +  const warned = ((again.ok ? again.value.warnings : []) || []).map(w => w.reason);
    if (warned.length) say(warned.join(" "), "warn");
  }
- // The built-in path: the selected built-in's chip opens the same sheet to FORK
+ /** Take the page down. The DOM half only - the route is the caller's. */
