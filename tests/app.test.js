@@ -2138,7 +2138,7 @@ test("Enter in the scale box submits, the same as clicking Generate", () => {
 });
 
 
-test("the layout markup exists and a built-in deck is never editable", () => {
+test("the layout markup exists and only the selected chip of any deck opens the sheet", () => {
   const app = boot();
   for (const id of LAYOUT_IDS) assert.ok(app.els[id], `#${id} is missing from the markup`);
   // The slot list is gone: the pan IS the selection now (D1). The sandbox
@@ -2150,8 +2150,7 @@ test("the layout markup exists and a built-in deck is never editable", () => {
     "an unselected built-in chip opened the sheet, so it could be corrected");
   app.clickChip("D AMARA 9");
   assert.strictEqual(app.sheetOpen(), true,
-    "a selected built-in chip no longer opens the sheet in builtin mode");
-  assert.ok(!app.els.decks.children.some((c) => /✎|&#9998;|pencil/i.test(c._html || "")), "a built-in chip carries a pencil");
+    "a selected built-in chip no longer opens the sheet");
 });
 
 /* ------------------------------- 24. a field edit REPLACES the deck (row 73) */
@@ -8727,20 +8726,20 @@ test("editable defaults: a generated deck is chip 1 and a second pushes the firs
   assert.deepStrictEqual(labels(again), labels(app), "chip order changed across a reload");
 });
 
-test("editable defaults: hiding a built-in removes its chip, stores hidden and selects Kurd", () => {
+test("editable defaults: deleting a seeded deck removes its chip, stores hidden and selects Kurd", () => {
   const app = boot();
   hideViaSheet(app, "amara", "D AMARA 9");
   assert.deepStrictEqual(labels(app), BUILTIN_NAMES.filter((n) => n !== "D AMARA 9"));
   assert.deepStrictEqual(hiddenKey(app), ["amara"]);
   assert.strictEqual(app.deckId(), "kurd");
   assert.strictEqual(app.sheetOpen(), false, "the sheet stayed open after the hide");
-  assert.strictEqual(app.els["deck-restore"].hasAttribute("hidden"), false, "no restore button while a deck is hidden");
+  assert.strictEqual(app.els["deck-restore"].hasAttribute("hidden"), false, "no reset button while a deck is deleted");
   const again = boot({ storage: { hpfc: app.store.hpfc } });
   assert.deepStrictEqual(labels(again), labels(app), "a hidden built-in came back on reload");
   assert.strictEqual(again.announcer().textContent, "", "a hidden deck that was not selected warned at boot");
 });
 
-test("editable defaults: hiding the selected Kurd selects the first visible deck", () => {
+test("editable defaults: deleting the selected Kurd selects the first visible deck", () => {
   const app = boot();
   hideViaSheet(app, "kurd", "D KURD 10");
   assert.strictEqual(app.deckId(), "amara10");
@@ -8749,7 +8748,7 @@ test("editable defaults: hiding the selected Kurd selects the first visible deck
   assert.strictEqual(chipRow(app)[0].on, true);
 });
 
-test("editable defaults: the fifth hide with no custom deck is refused", () => {
+test("editable defaults: the fifth seeded delete with no custom deck is refused", () => {
   const four = ["amara10", "amara", "hijaz", "pygmy"];
   const app = boot({ storage: { hpfc: JSON.stringify({ deck: "kurd", mode: "A", hidden: four }) } });
   assert.deepStrictEqual(labels(app), ["D KURD 10"]);
@@ -8763,64 +8762,71 @@ test("editable defaults: the fifth hide with no custom deck is refused", () => {
   assert.match(app.els["scale-msg"].className, /warn/);
 });
 
-test("editable defaults: forking each built-in keeps its id from the fixture and its name", () => {
+test("editable defaults: saving each seeded deck with a palette change mints the fixture id as its replacement in the seeded slot", () => {
+  const prefilled = [0, 0, 2, 0, 1];
   BUILTIN_NAMES.forEach((name, i) => {
     const app = boot();
     const d = app.get("DECKS")[i];
     app.select(d.id);
     app.clickChip(name);
     assert.strictEqual(app.sheetOpen(), true, `${d.id}: the selected chip did not open the sheet`);
-    assert.strictEqual(app.els["scale-generate"].textContent, "FORK THIS DECK");
-    assert.strictEqual(app.els["scale-delete"].textContent, "HIDE THIS DECK");
-    assert.strictEqual(app.els["scale-title"].textContent, name);
+    assert.strictEqual(app.els["scale-generate"].textContent, "SAVE CHANGES");
+    assert.strictEqual(app.els["scale-delete"].textContent, "DELETE THIS DECK");
+    assert.strictEqual(app.els["scale-title"].textContent, "Edit this scale");
     assert.strictEqual(app.els["scale-name"].value, name);
     assert.strictEqual(app.els["scale-box"].value, app.get(`HPE.core.formatSeed(DECKS[${i}].fields)`));
-    assert.strictEqual(app.els["scale-swatches"].children[0].classList.contains("sel"), true, "palette 0");
+    assert.strictEqual(app.els["scale-swatches"].children[prefilled[i]].classList.contains("sel"), true,
+      `${d.id}: palette ${prefilled[i]} is not prefilled`);
     assert.strictEqual(app.els["scale-anchor-between"].classList.contains("on"), d.id === "pygmy",
       `${d.id}: wrong anchor`);
     assert.strictEqual(app.els["scale-delete-row"].hasAttribute("hidden"), false);
-    assert.strictEqual(app.els["scale-degrees-row"].hasAttribute("hidden"), true);
+    assert.strictEqual(app.els["scale-degrees-row"].hasAttribute("hidden"), false, `${d.id}: no degree row`);
+    app.els["scale-swatches"].children[(prefilled[i] + 1) % 6].click();
     app.els["scale-generate"].click();
-    assert.strictEqual(app.sheetOpen(), false, `${d.id}: the fork did not close the sheet`);
+    assert.strictEqual(app.sheetOpen(), false, `${d.id}: the save did not close the sheet`);
     assert.strictEqual(app.deckId(), "custom:" + PINNED_IDS[i].replace("custom:", ""));
     assert.strictEqual(app.registry()[app.deckId()].name, name);
-    assert.deepStrictEqual(labels(app), [name, ...BUILTIN_NAMES], `${d.id}: the fork is not chip 1`);
+    assert.deepStrictEqual(labels(app), BUILTIN_NAMES, `${d.id}: the replacement left the seeded slot`);
   });
 });
 
-test("editable defaults: restoring clears hidden, deletes the key and shows five chips", () => {
+test("editable defaults: RESET arms, then clears hidden and replacements and keeps custom decks", () => {
   const app = boot();
+  const mine = makeCustom(app);
   hideViaSheet(app, "amara", "D AMARA 9");
   hideViaSheet(app, "hijaz", "C# HIJAZ 9");
+  app.select("kurd");
+  app.clickChip("D KURD 10");
+  app.els["scale-swatches"].children[3].click();
+  app.els["scale-generate"].click();
   assert.deepStrictEqual(hiddenKey(app), ["amara", "hijaz"]);
-  app.els["deck-restore"].click();
-  assert.deepStrictEqual(labels(app), BUILTIN_NAMES);
+  const reset = app.els["deck-restore"];
+  reset.click();
+  assert.strictEqual(reset.textContent, "TAP AGAIN TO RESET");
+  assert.deepStrictEqual(hiddenKey(app), ["amara", "hijaz"], "the first tap reset");
+  assert.match(app.els["scale-msg"].textContent + app.announcer().textContent, /edits to them will be gone/i);
+  reset.click();
+  assert.deepStrictEqual(labels(app), [mine.name, ...BUILTIN_NAMES]);
   assert.strictEqual("hidden" in JSON.parse(app.store.hpfc), false, "the key survived an empty hidden list");
-  assert.strictEqual(app.els["deck-restore"].hasAttribute("hidden"), true);
-  assert.strictEqual(app.deckId(), "kurd", "restoring changed the selected deck");
+  assert.strictEqual(reset.hasAttribute("hidden"), true);
+  assert.strictEqual(reset.textContent, "RESET SEEDED DECKS");
+  assert.deepStrictEqual(Object.keys(app.registry()), [mine.id], "RESET dropped a custom deck or kept a replacement");
+  assert.strictEqual(app.activeId(), "deck-add");
 });
 
-test("editable defaults: forking a built-in twice is refused and the first fork keeps its name and palette", () => {
+test("editable defaults: saving seeded Kurd with only a palette change while its fork holds the id is refused", () => {
   const app = boot();
-  app.select("amara");
-  app.clickChip("D AMARA 9");
-  app.els["scale-name"].value = "MY AMARA";
-  app.els["scale-name"].dispatchEvent({ type: "input" });
-  app.els["scale-swatches"].children[2].click();
+  const fork = app.generate(app.get("HPE.core.formatSeed(DECKS[0].fields)"), { palette: 2, name: "MY KURD" }).value;
+  assert.strictEqual(app.registry()[fork.id].name, "MY KURD");
+  app.select("kurd");
+  app.clickChip("D KURD 10");
+  app.els["scale-swatches"].children[3].click();
   app.els["scale-generate"].click();
-  const first = app.registry()[app.deckId()];
-  assert.strictEqual(first.name, "MY AMARA");
-  assert.strictEqual(first.options.palette, 2);
-
-  app.select("amara");
-  app.clickChip("D AMARA 9");
-  assert.strictEqual(app.els["scale-generate"].textContent, "FORK THIS DECK", "the second tap did not open the fork sheet");
-  app.els["scale-generate"].click();
-  assert.strictEqual(app.sheetOpen(), true, "the second fork closed the sheet");
+  assert.strictEqual(app.sheetOpen(), true, "the colliding save closed the sheet");
   assert.strictEqual(app.els["scale-refusal"].textContent, "Another deck already uses this scale.");
-  const kept = app.registry()[first.id];
-  assert.strictEqual(kept.name, "MY AMARA", "the second fork renamed the first");
-  assert.strictEqual(kept.options.palette, 2, "the second fork repainted the first");
+  const kept = app.registry()[fork.id];
+  assert.strictEqual(kept.name, "MY KURD", "the save renamed the fork");
+  assert.strictEqual(kept.options.palette, fork.options.palette, "the save repainted the fork");
   assert.strictEqual(Object.keys(app.registry()).length, 1);
 });
 
@@ -8852,28 +8858,28 @@ test("editable defaults: deleting a custom deck with Kurd hidden selects and sto
   assert.deepStrictEqual(labels(app), BUILTIN_NAMES.slice(1));
 });
 
-test("editable defaults: in builtin mode HIDE arms, confirms through the button and is a sheet tab stop; Back clears the mode", () => {
+test("editable defaults: a seeded deck's DELETE arms with TAP AGAIN TO DELETE, is a Tab stop, and Back clears it", () => {
   const app = boot();
   app.clickChip("D KURD 10");
   const del = app.els["scale-delete"];
   assert.strictEqual(app.history.calls.at(-1).url, "#edit-kurd");
   app.els["scale-back"].focus();
   app.els["scale-sheet"].dispatchEvent({ type: "keydown", key: "Tab", shiftKey: true, preventDefault() {} });
-  assert.strictEqual(app.activeId(), "scale-delete", "HIDE is not the last sheet tab stop");
+  assert.strictEqual(app.activeId(), "scale-delete", "DELETE is not the last sheet tab stop");
   app.els["scale-back"].focus();
   app.els["scale-sheet"].dispatchEvent({ type: "keydown", key: "Tab", shiftKey: false, preventDefault() {} });
   assert.strictEqual(app.activeId(), "scale-name", "the name box is not the first tab stop after BACK");
 
   del.click();
-  assert.strictEqual(del.textContent, "TAP AGAIN TO HIDE");
-  assert.deepStrictEqual(hiddenKey(app) || [], [], "one tap hid the deck");
+  assert.strictEqual(del.textContent, "TAP AGAIN TO DELETE");
+  assert.deepStrictEqual(hiddenKey(app) || [], [], "one tap deleted the deck");
   app.els["scale-back"].click();
   assert.strictEqual(app.sheetOpen(), false);
   openSheet(app);
   assert.strictEqual(app.els["scale-delete-row"].hasAttribute("hidden"), true);
   del.onclick();
   del.onclick();
-  assert.deepStrictEqual(labels(app), BUILTIN_NAMES, "a stale builtin mode hid a deck from the ADD sheet");
+  assert.deepStrictEqual(labels(app), BUILTIN_NAMES, "a stale seeded sheet deleted a deck from the ADD sheet");
   assert.strictEqual(app.els["scale-generate"].textContent, "GENERATE CARDS");
 });
 
@@ -8900,11 +8906,169 @@ test("editable defaults: hpfc.hidden keeps only built-in ids", () => {
 
 test("editable defaults: #deck-restore follows #deck-add, starts hidden and joins the panel stops only while rendered", () => {
   const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
-  assert.match(html, /id="deck-add"[^>]*>[^<]*<\/button>\s*<button[^>]*id="deck-restore"[^>]*\bhidden\b[^>]*>SHOW HIDDEN DECKS<\/button>/,
+  assert.match(html, /id="deck-add"[^>]*>[^<]*<\/button>\s*<button[^>]*id="deck-restore"[^>]*\bhidden\b[^>]*>RESET SEEDED DECKS<\/button>/,
     "the restore button is not right after #deck-add, hidden, with its label");
   assert.match(html, /document\.getElementById\("deck-add"\), restoreBtn,/, "panelStops() does not list the restore button right after deck-add");
   const app = boot();
   assert.strictEqual(app.els["deck-restore"].hidden, true, "the restore button shows on a fresh store");
   hideViaSheet(app, "amara", "D AMARA 9");
-  assert.ok(!app.els["deck-restore"].hidden, "the restore button stays hidden with a deck hidden");
+  assert.ok(!app.els["deck-restore"].hidden, "the reset button stays hidden with a deck deleted");
+});
+
+/* ------------------------------- 28. seeded decks: SAVE / DELETE, not FORK / HIDE */
+//
+// docs/plans/2026-10-13-seeded-save-delete.md, lane app (SD-A2..A6, A15..A20).
+
+const reboot = (app) => boot({ storage: { hpfc: app.store.hpfc, [app.get("SCALES_KEY")]: app.store[app.get("SCALES_KEY")] } });
+const kurdString = (app) => app.get("HPE.core.formatSeed(DECKS[0].fields)");
+const records = (app) => JSON.parse(app.store[app.get("SCALES_KEY")] || "[]");
+
+/** Open the seeded Kurd sheet, change its palette, SAVE. */
+function saveKurdRepainted(app, swatch = 3) {
+  app.select("kurd");
+  app.clickChip("D KURD 10");
+  app.els["scale-swatches"].children[swatch].click();
+  app.els["scale-generate"].click();
+  return app.registry()[app.deckId()];
+}
+
+test("SD: the layout notice on a seeded deck names SAVE CHANGES", () => {
+  const app = boot();
+  app.clickChip("D KURD 10");
+  app.els["scale-anchor-between"].click();
+  assert.strictEqual(dr1Notice(app), "Layout not saved yet. SAVE CHANGES keeps it.");
+});
+
+test("SD: saving a seeded deck unchanged closes the sheet and writes nothing", () => {
+  const app = boot();
+  const before = JSON.stringify(app.store);
+  app.clickChip("D KURD 10");
+  app.els["scale-generate"].click();
+  assert.strictEqual(app.sheetOpen(), false, "an unchanged SAVE left the sheet open");
+  assert.deepStrictEqual(app.registry(), {}, "an unchanged SAVE minted a record");
+  assert.deepStrictEqual(records(app), []);
+  assert.strictEqual(app.deckId(), "kurd");
+  assert.deepStrictEqual(labels(app), BUILTIN_NAMES);
+  assert.strictEqual(JSON.stringify(app.store), before, "an unchanged SAVE wrote to storage");
+});
+
+test("SD: a replacement takes the seeded slot across a reload and a field edit", () => {
+  const app = boot();
+  const rep = saveKurdRepainted(app);
+  assert.deepStrictEqual(labels(app), BUILTIN_NAMES, "the replacement left Kurd's slot");
+  assert.strictEqual(rep.options.replaces, "kurd");
+  assert.strictEqual(records(app)[0].o.replaces, "kurd");
+  const again = reboot(app);
+  assert.deepStrictEqual(labels(again), BUILTIN_NAMES, "the slot did not survive a reload");
+  assert.strictEqual(again.registry()[rep.id].options.replaces, "kurd");
+
+  again.select(rep.id);
+  again.clickChip("D KURD 10");
+  again.type(again.els["scale-box"].value.replace(/A3/, "A#3"));
+  again.els["scale-generate"].click();
+  assert.deepStrictEqual(labels(again), BUILTIN_NAMES, "a field edit moved the replacement out of the slot");
+  assert.deepStrictEqual(Object.keys(again.registry()).length, 1);
+  assert.deepStrictEqual(labels(reboot(again)), BUILTIN_NAMES);
+});
+
+test("SD: deleting a replacement does not bring the seed back", () => {
+  const app = boot();
+  const rep = saveKurdRepainted(app);
+  app.clickChip("D KURD 10");
+  app.els["scale-delete"].click();
+  app.els["scale-delete"].click();
+  assert.deepStrictEqual(app.registry(), {});
+  assert.deepStrictEqual(labels(app), BUILTIN_NAMES.slice(1), "deleting the replacement revived seeded Kurd");
+  assert.deepStrictEqual(hiddenKey(app), ["kurd"]);
+  assert.deepStrictEqual(labels(reboot(app)), BUILTIN_NAMES.slice(1));
+  assert.ok(rep);
+});
+
+test("SD: a replacement outranks a hidden seed in storage", () => {
+  const app = boot();
+  saveKurdRepainted(app);
+  const hpfc = JSON.parse(app.store.hpfc);
+  hpfc.hidden = ["kurd"];
+  const again = boot({ storage: { hpfc: JSON.stringify(hpfc), [app.get("SCALES_KEY")]: app.store[app.get("SCALES_KEY")] } });
+  assert.deepStrictEqual(labels(again), BUILTIN_NAMES, "a hidden seed hid its own replacement");
+});
+
+test("SD: an armed RESET disarms on a tap elsewhere, blur and panel close, and re-arms after", () => {
+  const app = boot();
+  hideViaSheet(app, "amara", "D AMARA 9");
+  const reset = app.els["deck-restore"];
+  const mainEl = app.get("document.querySelector('main')");
+  const down = (target) => app.sandbox.document.dispatchEvent({
+    type: "pointerdown", target, clientX: 10, clientY: 10, button: 0, buttons: 1,
+    preventDefault() {}, stopPropagation() {},
+  });
+  const arm = () => { reset.click(); assert.strictEqual(reset.textContent, "TAP AGAIN TO RESET"); };
+  arm();
+  down(reset);
+  assert.strictEqual(reset.textContent, "TAP AGAIN TO RESET", "the arming tap's own pointerdown disarmed it");
+  down(mainEl);
+  assert.strictEqual(reset.textContent, "RESET SEEDED DECKS", "a tap elsewhere left RESET armed");
+  arm();
+  reset.onblur();
+  assert.strictEqual(reset.textContent, "RESET SEEDED DECKS", "blur left RESET armed");
+  arm();
+  app.run("openPanel && openPanel()");
+  app.run("closePanel()");
+  assert.strictEqual(reset.textContent, "RESET SEEDED DECKS", "closing the panel left RESET armed");
+  arm();
+  assert.deepStrictEqual(hiddenKey(app), ["amara"], "re-arming reset");
+  reset.click();
+  assert.strictEqual("hidden" in JSON.parse(app.store.hpfc), false);
+});
+
+test("SD: re-saving a replacement keeps its seeded slot", () => {
+  const app = boot();
+  const rep = saveKurdRepainted(app);
+  app.clickChip("D KURD 10");
+  app.els["scale-swatches"].children[4].click();
+  app.els["scale-generate"].click();
+  assert.strictEqual(records(app).length, 1);
+  assert.strictEqual(records(app)[0].o.replaces, "kurd", "an options-only re-save dropped replaces");
+  assert.deepStrictEqual(labels(reboot(app)), BUILTIN_NAMES);
+
+  app.clickChip("D KURD 10");
+  app.type(app.els["scale-box"].value.replace(/A3/, "A#3"));
+  app.els["scale-generate"].click();
+  assert.strictEqual(records(app).length, 1);
+  assert.strictEqual(records(app)[0].o.replaces, "kurd", "a field-edit re-save dropped replaces");
+  assert.deepStrictEqual(labels(reboot(app)), BUILTIN_NAMES);
+  assert.ok(rep);
+});
+
+test("SD: ADD and a share link onto a replacement keep it seeded", () => {
+  const app = boot();
+  const rep = saveKurdRepainted(app);
+  const asAdd = (a) => { openSheet(a); a.type(kurdString(a)); a.els["scale-generate"].click(); };
+  asAdd(app);
+  assert.strictEqual(records(app).length, 1);
+  assert.strictEqual(records(app)[0].o.replaces, "kurd", "ADD of the replacement's string dropped replaces");
+  const afterAdd = labels(reboot(app));
+  assert.strictEqual(afterAdd.length, 5, "Kurd's chip came back after an ADD");
+  assert.deepStrictEqual(afterAdd.slice(1), BUILTIN_NAMES.slice(1));
+
+  const text = payload(link(app, rep.id).value);
+  openShare(app, text);
+  assert.strictEqual(records(app).length, 1);
+  assert.strictEqual(records(app)[0].o.replaces, "kurd", "a share link dropped replaces");
+  assert.strictEqual(labels(reboot(app)).length, 5, "Kurd's chip came back after a share link");
+});
+
+test("SD: duplicate and unknown replaces targets are never unreachable", () => {
+  const app = boot();
+  const rep = saveKurdRepainted(app);
+  const newer = records(app)[0];
+  const older = { v: newer.v, s: scale("builtin hijaz"), o: { ...newer.o, name: "OLDER" } };
+  const odd = { v: newer.v, s: scale("builtin amara"), o: { ...newer.o, name: "ODD", replaces: "nope" } };
+  const again = boot({ storage: { hpfc: app.store.hpfc, [app.get("SCALES_KEY")]: JSON.stringify([older, newer, odd]) } });
+  const names = labels(again);
+  assert.strictEqual(names[names.length - 5 + 0], rep.name, "the newer record is not in Kurd's slot");
+  assert.deepStrictEqual(names.slice(-4), BUILTIN_NAMES.slice(1), "the other seeds moved");
+  assert.strictEqual(names.includes("OLDER"), true, "the older duplicate is unreachable");
+  assert.strictEqual(names.includes("ODD"), true, "an unknown target is unreachable");
+  assert.strictEqual(names.filter((n) => n === "D KURD 10").length, 1, "seeded Kurd shows beside its replacement");
 });

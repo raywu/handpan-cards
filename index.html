@@ -1385,7 +1385,7 @@ footer.seq{row-gap:var(--sp-1)}
   <div class="panel-group" id="panel-scales-group">
     <h3 class="panel-heading">Scales</h3>
     <button class="mode" type="button" id="deck-add" aria-haspopup="dialog">+ ADD A SCALE</button>
-    <button class="mode" type="button" id="deck-restore" hidden>SHOW HIDDEN DECKS</button>
+    <button class="mode" type="button" id="deck-restore" hidden>RESET SEEDED DECKS</button>
   </div>
   <div class="panel-group">
     <h3 class="panel-heading">Print this deck</h3>
@@ -7726,7 +7726,7 @@ const SEQ_STYLE_COPY = {
 // need that). deck() resolves a custom id out of the registry; it never builds.
 const CUSTOM = Object.create(null);
 
-const deck = () => CUSTOM[deckId] || visibleDecks().find(d => d.id === deckId) || fallbackDeck();
+const deck = () => CUSTOM[deckId] || allDecks().find(d => d.id === deckId) || fallbackDeck();
 // Any deck id persists, built-in or custom: a custom deck is rebuilt at boot
 // from its saved seed, so restoring one is no longer a dangling reference.
 // READ-MODIFY-WRITE: "hpfc" is one object shared with whatever else stores
@@ -7756,13 +7756,25 @@ const isBuiltIn = id => DECKS.some(d => d.id === id);
 let hidden = Array.isArray(store.hidden)
   ? [...new Set(store.hidden.filter(id => typeof id === "string" && isBuiltIn(id)))] : [];
 const hiddenDecks = () => DECKS.filter(d => hidden.includes(d.id));
-const visibleDecks = () => DECKS.filter(d => !hidden.includes(d.id));
-// Removing `id` (a hide, or a custom delete) must leave a deck to show.
+// Seed id -> the NEWEST custom deck whose record names it in `replaces` (the
+// registry is oldest first, so a later entry overwrites). A replacement is an
+// ordinary custom deck that takes its seed's chip slot; any older record
+// naming the same seed stays a plain custom in the custom tier.
+function replacements() {
+  const out = Object.create(null);
+  for (const d of Object.values(CUSTOM)) {
+    const r = d.options && d.options.replaces;
+    if (typeof r === "string") out[r] = d;
+  }
+  return out;
+}
+// Removing `id` (a seeded delete, or a custom delete) must leave a deck to show.
 const wouldEmpty = id => allDecks().every(d => d.id === id);
 // Where the page lands when the deck on screen goes: Kurd if it is visible,
 // else the first chip. With nothing visible at all (a corrupt store) hidden is
 // ignored and Kurd comes back, so the page never blanks.
-const fallbackDeck = () => allDecks().find(d => d.id === DEFAULT_DECK) || allDecks()[0] ||
+const fallbackDeck = () => allDecks().find(d => d.id === DEFAULT_DECK || d === replacements()[DEFAULT_DECK]) ||
+  allDecks()[0] ||
   DECKS.find(d => d.id === DEFAULT_DECK) || DECKS[0];
 const registerDeck = d => (CUSTOM[d.id] = d);
 // Queue row 73, the owner's "edit means edit". A field edit necessarily mints a
@@ -7842,6 +7854,16 @@ function generateDeck(text, options, guard) {
     }
     built.value.options.seats = JSON.parse(JSON.stringify(wanted));
   }
+  // `replaces` is the record option that puts a custom deck in a seeded deck's
+  // chip slot. select.build and core.parseSeed both drop it, so it is carried
+  // back here from the raw argument, and from the registry entry this build is
+  // about to replace in place (an ADD or a share link onto a replacement's own
+  // scale must not detach it). A name that is no seed is dropped: the deck is
+  // then a plain custom one.
+  const sitting = CUSTOM[built.value.id];
+  const inherited = sitting && sitting.options && sitting.options.replaces;
+  const replaces = (options && options.replaces) || inherited;
+  if (typeof replaces === "string" && isBuiltIn(replaces)) built.value.options.replaces = replaces;
   registerDeck(built.value);
   return built;
 }
@@ -7884,7 +7906,7 @@ function openShare(text) {
   // Generation runs ONCE per restore, here, exactly as submit does (section 11).
   const built = generateDeck(HPE.core.formatSeed(res.value.fields), res.value.options);
   if (!built.ok) { say(built.reason, "err"); return built; }
-  rememberScale(res.value);
+  rememberScale(seedOf(built.value));
   selectDeck(built.value.id);
   return built;
 }
@@ -8732,8 +8754,15 @@ function setOrder() {
   idx = 0; flipped = false;
 }
 // Generated decks first, newest first (the registry is oldest-first, as is the
-// stored list), then the visible built-ins in DECKS order.
-const allDecks = () => [...Object.values(CUSTOM).reverse(), ...visibleDecks()];
+// stored list), then the seeded decks in DECKS order. A seed that a custom deck
+// replaces gives its slot to the replacement, hidden or not, and the custom tier
+// leaves that replacement out; a seed with no replacement is dropped when hidden.
+const allDecks = () => {
+  const rep = replacements();
+  const slotted = new Set(Object.values(rep));
+  return [...Object.values(CUSTOM).reverse().filter(d => !slotted.has(d)),
+    ...DECKS.map(s => rep[s.id] || (hidden.includes(s.id) ? null : s)).filter(Boolean)];
+};
 // [5A] chip labels are capped at 16 characters with an ellipsis.
 const CHIP_CAP = 16;
 const chipLabel = n => (n.length > CHIP_CAP ? n.slice(0, CHIP_CAP - 1) + "…" : n);
@@ -8753,14 +8782,13 @@ function buildChips() {
     if (d.id === deckId) b.setAttribute("aria-current", "true");
     b.style.setProperty("--dga", d.colors.ga);
     b.style.setProperty("--dgb", d.colors.gb);
-    // [row 218] The one chip with a SECOND action says so. A selected custom
-    // chip reopens the sheet in Edit state; a selected built-in does nothing
-    // at all, and the two were pixel-identical. The class paints a pencil
-    // through ::after - decoration, and deliberately NOT a node, so the chip's
-    // text stays the deck's name - and the accessible name says it in words.
-    // Only ever on the chip that is BOTH selected and custom: row 262 is a
-    // live focus trap on any path that opens Edit from an unselected chip.
-    const editable = d.id === deckId && !!CUSTOM[d.id];
+    // [row 218] The one chip with a SECOND action says so. The selected chip,
+    // seeded or custom, reopens the sheet in Edit state. The class paints a
+    // pencil through ::after - decoration, and deliberately NOT a node, so the
+    // chip's text stays the deck's name - and the accessible name says it in
+    // words. Only ever on the chip that is selected: row 262 is a live focus
+    // trap on any path that opens Edit from an unselected chip.
+    const editable = d.id === deckId;
     b.innerHTML = `<span class="dot"></span>${esc(chipLabel(d.name))}`;
     if (editable) {
       b.classList.add("editable");
@@ -8771,18 +8799,15 @@ function buildChips() {
       b.setAttribute("aria-label", "Edit " + chipLabel(d.name));
     }
     // [design-review 7A] the ALREADY-SELECTED chip is the one and only way into
-    // the sheet; every other chip just selects its deck. A custom deck opens in
-    // Edit state; a built-in cannot be edited, so it opens the same sheet in
-    // builtin mode (FORK THIS DECK / HIDE THIS DECK). No context menu, no long
-    // press, no swipe.
-    b.onclick = () => (d.id === deckId)
-      ? (CUSTOM[d.id] ? openEditSheet(CUSTOM[d.id], b) : openBuiltinSheet(d, b))
-      : selectDeck(d.id);
+    // the sheet; every other chip just selects its deck. Seeded and custom decks
+    // open the same Edit sheet (SAVE CHANGES / DELETE THIS DECK). No context
+    // menu, no long press, no swipe.
+    b.onclick = () => (d.id === deckId) ? openEditSheet(d, b) : selectDeck(d.id);
     nav.appendChild(b);
     if (d.id === deckId) active = b;
   }
-  // Rendered only while something is hidden: a fresh store has no such control.
-  if (hiddenDecks().length) restoreBtn.removeAttribute("hidden"); else restoreBtn.setAttribute("hidden", "");
+  // Rendered only while something is resettable: a fresh store has no such control.
+  if (hiddenDecks().length || Object.keys(replacements()).length) restoreBtn.removeAttribute("hidden"); else restoreBtn.setAttribute("hidden", "");
   // The row scrolls, so the selected chip may be off-screen after a rebuild.
   if (active && active.scrollIntoView) active.scrollIntoView({ block: "nearest", inline: "nearest" });
 }
@@ -8862,8 +8887,8 @@ const background = [...document.querySelectorAll("header, main, footer, #setting
 let palette = 0;                 // D6 index 0-5
 let mirror = false;              // MIRROR TOP: the rim and the inner ring
 let sheetOpen = false;
-let editingId = null;            // the custom deck the sheet is editing, or null
-let builtinId = null;            // the built-in the sheet is forking/hiding, or null (never both)
+let editingId = null;            // the deck the sheet is editing (seeded or custom), or null
+let seedPrefill = null;          // a seeded deck's sheet state as prefilled, to tell an unchanged SAVE
 let sheetOpener = null;          // the control focus returns to on close
 // Queue row 133: whether the user has TYPED in the name box since the sheet
 // prefilled it. String equality against the auto name cannot tell "never
@@ -8984,7 +9009,6 @@ function layoutNoticeText() {
     (!hadBottom || bottomMirror() === layoutBase.mb) && seatsKey(layoutSeats) === layoutBase.seats;
   let text;
   if (!same) text = editingId ? "Layout not saved yet. SAVE CHANGES keeps it."
-    : builtinId ? "Layout not saved yet. FORK THIS DECK keeps it."
     : "Layout not saved yet. GENERATE CARDS keeps it.";
   else {
     const custom = layoutBase.anchor !== "one" || layoutBase.mirror || (layoutBase.mb && hadBottom) ||
@@ -9173,7 +9197,21 @@ function setRingSeats(ring, next) {
   layoutSeats = Object.keys(rest).length ? rest : null;
 }
 const seatsKey = (s) => LAYOUT_RINGS.filter((r) => s && s[r]).map((r) => r + ":" + s[r].join(",")).join(";");
-const editedDeck = () => (editingId ? CUSTOM[editingId] : null) || null;
+const editedDeck = () => (editingId ? CUSTOM[editingId] || DECKS.find(d => d.id === editingId) : null) || null;
+const seeded = () => isBuiltIn(editingId);
+/** The tuple a seeded sheet is compared against to tell an unchanged SAVE. */
+const sheetKey = () => JSON.stringify([scaleBox.value, nameBox.value, palette, mirror, bottomMirror(), anchor,
+  degSel.value, seatsKey(layoutSeats)]);
+/** The parent scale a seeded deck's fields imply, as select.build would infer it. */
+function seedParent(fields) {
+  const pcs = [...new Set(Object.values(fields).map(f => HPE.core.pc(f[2])))].sort((a, b) => a - b);
+  return HPE.naming.inferParent(pcs, HPE.core.pc(fields["0"][2]));
+}
+/** The palette whose pair a seeded deck's colours equal, else 0. */
+function seedPalette(colors) {
+  const i = HPE.select.PALETTES.findIndex(p => p.root === colors.root && p.tone === colors.tone);
+  return i < 0 ? 0 : i;
+}
 /** The seats that fit the notes of `fields`, or null: a list of the wrong length
  *  would be refused by layout.solve, and a repaint must never stop on that. */
 function fitSeats(fields) {
@@ -9427,14 +9465,15 @@ function resetLayout() {
 function layoutOptions() {
   const o = sheetOptions();
   delete o.name;
+  delete o.replaces;
   return o;
 }
 
 /** The seed options the sheet currently describes. */
 function sheetOptions() {
   const o = { palette, mirror, mirrorBottom: bottomMirror(), anchor };
-  if (editingId || builtinId) {
-    if (editingId) o.parent = Number(degSel.value);
+  if (editingId) {
+    o.parent = Number(degSel.value);
     // iOS Smart Punctuation turns a typed ' or " into a curly U+2018/2019/
     // U+201C/U+201D, a typed -- into an em dash U+2014, and a typed ... into
     // a single ellipsis glyph U+2026 (a pasted en dash U+2013 can also show
@@ -9452,9 +9491,12 @@ function sheetOptions() {
     // the auto label from one who never touched the box (queue row 133). A deck
     // that already carries an EXPLICIT name keeps it either way.
     const d = editedDeck();
-    const kept = !!(d && d.options && d.options.name);
-    // A fork carries the name the box was prefilled with: it IS the deck's name.
-    if (n && (nameDirty || kept || builtinId)) o.name = n;  // validated by core.parseSeed, never here
+    // A seeded deck has no options, but the name the box was prefilled with IS its name.
+    const kept = !!(d && ((d.options && d.options.name) || seeded()));
+    if (n && (nameDirty || kept)) o.name = n;  // validated by core.parseSeed, never here
+    // A seeded deck's SAVE mints its replacement; a replacement's own SAVE keeps the seat.
+    if (seeded()) o.replaces = editingId;
+    else if (d && d.options && d.options.replaces) o.replaces = d.options.replaces;
   }
   if (layoutSeats) o.seats = JSON.parse(JSON.stringify(layoutSeats));
   return o;
@@ -9784,21 +9826,19 @@ if (window.visualViewport) {
 }
 
 /** Show or hide the three Edit-only rows and relabel the single primary.
- *  `edit` is false (create), true (Edit a custom deck) or "builtin" (fork or
- *  hide a built-in: the name and delete rows, no degree row; `title` is the
- *  deck's name, which is what that page is called). */
-function setSheetMode(edit, title) {
+ *  `edit` is false (create) or true (Edit a seeded or a custom deck). */
+function setSheetMode(edit) {
   disarmDelete();
   for (const el of [nameRow, degRow, delRow]) {
-    if (edit && !(edit === "builtin" && el === degRow)) el.removeAttribute("hidden");
+    if (edit) el.removeAttribute("hidden");
     else el.setAttribute("hidden", "");
   }
-  delBtn.textContent = edit === "builtin" ? HIDE_IDLE : DEL_IDLE;
-  genBtn.textContent = edit === "builtin" ? "FORK THIS DECK" : edit ? "SAVE CHANGES" : "GENERATE CARDS";
+  delBtn.textContent = DEL_IDLE;
+  genBtn.textContent = edit ? "SAVE CHANGES" : "GENERATE CARDS";
   // The page is named by the title it shows (#scale-title, via
   // aria-labelledby), so there is one string and a sighted user and a screen
   // reader are told the same thing.
-  titleEl.textContent = edit === "builtin" ? title : edit ? "Edit this scale" : "Add a scale";
+  titleEl.textContent = edit ? "Edit this scale" : "Add a scale";
 }
 /* ---- the page's route (D3) ----
    Add and Edit are destinations, so each is a history entry: the phone's back
@@ -9815,8 +9855,7 @@ function setSheetMode(edit, title) {
 const ADD_ROUTE  = "#add";
 const EDIT_ROUTE = "#edit-";
 function sheetRoute() {
-  const id = editingId || builtinId;
-  return id ? EDIT_ROUTE + id : ADD_ROUTE;
+  return editingId ? EDIT_ROUTE + editingId : ADD_ROUTE;
 }
 // True while OUR history entry is on the stack. Not derived from the hash: a
 // user can edit the address bar, and the question this answers is "did we push
@@ -9853,27 +9892,27 @@ function showSheet(opener) {
 /** Put every sheet field and session let in the state one open mode wants.
  *  `edit` is the deck being edited, or null for the create path, which clears
  *  identity and options so an Edit never leaks into the next "+ ADD". */
-function resetSheetState(edit, fork) {
-  editingId = edit && !fork ? edit.id : null;
-  builtinId = edit && fork ? edit.id : null;
+function resetSheetState(edit) {
+  editingId = edit ? edit.id : null;
+  seedPrefill = null;
   // A fresh session: a refusal from whatever was last edited must not leak
   // into this one (queue row 115) - showSheet() itself is not allowed to
   // clear it, since it is one of the seven non-seed callers.
   refusal = null;
-  setSheetMode(fork ? "builtin" : !!edit, edit && edit.name);
-  // A built-in carries no `options`, so a fork reads the one it has: the
+  setSheetMode(!!edit);
+  // A seeded deck carries no `options`, so its sheet reads the one it has: the
   // anchor its first rim note implies (270 is "one", Pygmy's 290 is "between").
-  // Everything else starts as a new scale would: palette 0, mirror off.
-  const o = !edit ? null : fork
+  // Everything else starts as a new scale would: mirror off.
+  const o = !edit ? null : seeded()
     ? { anchor: edit.fields["1"] && edit.fields["1"][4] !== 270 ? "between" : "one" } : edit.options;
   nameBox.value = edit ? edit.name : "";
   nameDirty = false;                                 // prefilled, not typed
   scaleBox.value = edit ? HPE.core.formatSeed(edit.fields) : "";  // 8A: the canonical string
   syncGrow();
-  palette = edit && !fork ? edit.options.palette : 0;
+  palette = !edit ? 0 : seeded() ? seedPalette(edit.colors) : edit.options.palette;
   buildSwatches();
   mirror = o ? !!o.mirror : false;
-  if (edit && !fork) buildDegrees(edit.options.parent);
+  if (edit) buildDegrees(seeded() ? seedParent(edit.fields) : edit.options.parent);
   // The correction is a seed option like the others, so Edit shows the one the
   // deck already carries and RESET is what clears it.
   layoutSeats = o && o.seats ? JSON.parse(JSON.stringify(o.seats)) : null;
@@ -9896,6 +9935,7 @@ function resetSheetState(edit, fork) {
   dropDrawer();
   layoutBase = { anchor, mirror, mb: o && typeof o.mirrorBottom === "boolean"
     ? o.mirrorBottom : mirror, seats: seatsKey(layoutSeats) };
+  if (seeded()) seedPrefill = sheetKey();
   paintLayout();
 }
 // The create path.
@@ -9903,21 +9943,15 @@ function openScaleSheet(opener) {
   resetSheetState(null);
   showSheet(opener);
 }
-// The Edit path [design-review 7A]: the SAME sheet, prefilled from the deck
-// already in the registry.
+// The Edit path [design-review 7A]: the SAME sheet, prefilled from the selected
+// deck, seeded or custom.
 function openEditSheet(d, opener) {
-  resetSheetState(d, false);
+  resetSheetState(d);
   showSheet(opener);
   // [eng-review 2, 2A] warnings have ONE producer and were copied onto the deck
   // at generation time; the Edit sheet reads them and never rebuilds to re-derive.
   const warned = (d.warnings || []).map(w => w.reason);
   if (warned.length) say(warned.join(" "), "warn");
-}
-// The built-in path: the selected built-in's chip opens the same sheet to FORK
-// it (a prefilled create, so runGenerate's duplicate guard applies) or HIDE it.
-function openBuiltinSheet(d, opener) {
-  resetSheetState(d, true);
-  showSheet(opener);
 }
 /** Take the page down. The DOM half only - the route is the caller's. */
 function hideSheet() {
@@ -9944,7 +9978,7 @@ function hideSheet() {
     sheetSurf.style.maxHeight = "";
   }
   editingId = null;
-  builtinId = null;
+  seedPrefill = null;
   dropDrawer();
   setInert(false, background);
   (sheetOpener || addChip).focus();
@@ -9976,27 +10010,35 @@ function deleteDeck(id) {
   const builtin = isBuiltIn(id);
   const d = CUSTOM[id] || (builtin ? DECKS.find(x => x.id === id) : null);
   if (!d) return;
-  // R2: the picker is never emptied by a hide or a delete.
+  // R2: the picker is never emptied by a delete.
   if (wouldEmpty(id)) {
-    say("Keep at least one deck. Add a scale before hiding or deleting " + d.name + ".", "warn");
+    say("Keep at least one deck. Add a scale before deleting " + d.name + ".", "warn");
     return;
   }
   const gone = d.name;
   const wasSelected = deckId === id;
-  // A built-in is hidden, never removed: DECKS is a literal the app cannot alter.
+  // The seed a replacement holds the slot of: deleting the replacement must not
+  // bring that seed back, so the seed joins `hidden` (RESET SEEDED DECKS undoes it).
+  const seat = d.options && d.options.replaces;
+  const heldSeat = typeof seat === "string" && replacements()[seat] === d ? seat : null;
+  // A seeded deck is hidden, never removed: DECKS is a literal the app cannot alter.
   if (builtin) hidden.push(id);
   else {
     delete CUSTOM[id];
     forgetScale(HPE.core.formatSeed(d.fields));
+    if (heldSeat && !hidden.includes(heldSeat)) hidden.push(heldSeat);
   }
-  if (editingId === id || builtinId === id) closeScaleSheet();
+  if (editingId === id) closeScaleSheet();
   if (!wasSelected) { save(); buildChips(); return; }
   selectDeck(fallbackDeck().id);
-  say((builtin ? "Hidden " : "Removed ") + gone + ". Showing " + deck().name + ".", "warn");
+  say("Removed " + gone + ". Showing " + deck().name + ".", "warn");
 }
 
 function runGenerate() {
   if (genBtn.disabled) return;
+  // SAVE on a seeded deck that was not changed writes nothing: no record is
+  // minted, so the seed keeps its slot, its palette and its stored print overlay.
+  if (seeded() && sheetKey() === seedPrefill) { closeScaleSheet(); return; }
   const label = genBtn.textContent;
   genBtn.textContent = editingId ? "SAVING" : "GENERATING";
   genBtn.disabled = true;
@@ -10010,8 +10052,11 @@ function runGenerate() {
   // Queue row 73: what the OLD record becomes is decided here, before the id
   // can move. The seed string is read now because the registry entry is gone by
   // the time storage is written.
-  const wasId = editingId;
-  const wasSeed = editedDeck() ? HPE.core.formatSeed(editedDeck().fields) : null;
+  // A seeded deck's SAVE is a create (its replacement is a new record), so it
+  // has no old record to rewrite.
+  const fromSeed = seeded();
+  const wasId = fromSeed ? null : editingId;
+  const wasSeed = !fromSeed && editedDeck() ? HPE.core.formatSeed(editedDeck().fields) : null;
   // Queue row 131, the owner's decision: an EDIT whose new fields hash to an id
   // a DIFFERENT custom deck already holds is REFUSED. Without this the deck at
   // that id is silently overwritten and its name, palette and mirror are gone.
@@ -10029,10 +10074,11 @@ function runGenerate() {
   // the next parseable input.
   try {
     res = generateDeck(String(scaleBox.value || ""), sheetOptions(), (seed) => {
-      // R1: a FORK whose scale already has a custom deck is refused as an edit
-      // onto a taken scale is - generating over it would silently reset that
-      // deck's name, palette and mirror. ADD keeps its benign dedupe below.
-      if (builtinId && CUSTOM[HPE.core.deckId(seed.fields)]) { taken = CUSTOM[HPE.core.deckId(seed.fields)]; return { ok: false }; }
+      // R1: a SAVE on a seeded deck whose scale already has a custom deck is
+      // refused as an edit onto a taken scale is - generating over it would
+      // silently reset that deck's name, palette and mirror. ADD keeps its
+      // benign dedupe below.
+      if (fromSeed && CUSTOM[HPE.core.deckId(seed.fields)]) { taken = CUSTOM[HPE.core.deckId(seed.fields)]; return { ok: false }; }
       if (!wasId) return null;
       const id = HPE.core.deckId(seed.fields);
       if (id === wasId || !CUSTOM[id]) return null;
@@ -10068,7 +10114,7 @@ function runGenerate() {
   // [eng-review 2, 2A] the warnings are read off the deck the SAME generation
   // produced; nothing is rebuilt to re-derive them.
   const warned = (d.warnings || []).map(w => w.reason);
-  let text = (replaced || known.has(d.id))
+  let text = (replaced || known.has(d.id) || fromSeed)
     ? `Updated ${d.name}` : `${d.chords.length} cards generated`;
   if (warned.length) text += " " + warned.join(" ");
 
@@ -10113,8 +10159,6 @@ genBtn.onclick = runGenerate;
    tap that gave it. */
 const DEL_IDLE = "DELETE THIS DECK";
 const DEL_ARMED = "TAP AGAIN TO DELETE";
-const HIDE_IDLE = "HIDE THIS DECK";
-const HIDE_ARMED = "TAP AGAIN TO HIDE";
 let delArmed = false;
 function disarmDelete() {
   /* Nothing to undo when nothing is armed, and re-deriving anyway would be
@@ -10122,7 +10166,7 @@ function disarmDelete() {
      unguarded disarm would re-parse the seed on taps that cancelled nothing. */
   if (!delArmed) return;
   delArmed = false;
-  delBtn.textContent = builtinId ? HIDE_IDLE : DEL_IDLE;
+  delBtn.textContent = DEL_IDLE;
   delBtn.removeAttribute("data-armed");
   // The label and the warning say the same thing, so they stop saying it
   // together - ahead of the `refusal` early-return below, which leaves the
@@ -10156,26 +10200,25 @@ function disarmDelete() {
   syncParseState({ paint: false });
 }
 delBtn.onclick = () => {
-  /* The deck this button acts on: the custom deck under Edit, or the built-in
-     the sheet is forking (builtinId, where the same button HIDES it). The
-     early return is still the belt and braces it always was for the ADD sheet:
+  /* The deck this button acts on: the one under Edit, seeded or custom. The
+     early return is the belt and braces it always was for the ADD sheet:
      delRow carries `hidden` whenever setSheetMode() has run for a create, and
      `[hidden]` is `display:none !important`, so a click can only get here with
-     neither id set through a synthetic .onclick(). In builtin mode it is NOT
-     unreachable the other way round: editingId is null there by design, so a
-     guard on editingId alone would leave HIDE inert (R6). */
-  const target = editingId || builtinId;
+     no id set through a synthetic .onclick(). */
+  const target = editingId;
   if (!target) return;
   /* Disarm BEFORE the delete, not inside it: the state must not outlive the
      deck even when deleteDeck turns out to have nothing to remove, and the
      delete's own message should be the last thing said. */
   if (delArmed) { disarmDelete(); deleteDeck(target); return; }
   delArmed = true;
-  delBtn.textContent = builtinId ? HIDE_ARMED : DEL_ARMED;
+  delBtn.textContent = DEL_ARMED;
   delBtn.setAttribute("data-armed", "");
   const d = CUSTOM[target] || DECKS.find(x => x.id === target);
-  delNote.textContent = builtinId
-    ? "Tap again to hide " + d.name + ". SHOW HIDDEN DECKS in the menu brings it back."
+  const seat = d && d.options && d.options.replaces;
+  const seatedDeck = isBuiltIn(target) || (typeof seat === "string" && replacements()[seat] === d);
+  delNote.textContent = seatedDeck
+    ? "Tap again to remove " + d.name + ". RESET SEEDED DECKS in the menu brings the seeded decks back."
     : "Tap again to remove " + (d ? d.name : "this deck") + ". This cannot be undone.";
 };
 /* Looking away is a decision too, and on a phone the only way to see it is the
@@ -10189,15 +10232,49 @@ sheet.addEventListener("pointerdown", (e) => {
   if (e.target !== delBtn) disarmDelete();
 });  // disarmDelete() is a no-op unless armed, so an ordinary tap writes nothing.
 delBtn.onblur = disarmDelete;
-// A hide is undone in one tap and for all of them (ED-5): the hidden list is
-// cleared, never edited, and the selected deck stays. The button is unrendered
-// from here on, so focus moves to the control before it in the panel.
+/* RESET SEEDED DECKS undoes every seeded edit and delete at once, so like DELETE
+   it takes a second tap, and the label carries the state. The player's own
+   scales stay: only `hidden` and the records that replace a seeded deck go. It
+   disarms on a pointerdown anywhere in the document that is not the button (a
+   desktop sidebar has no panel to close and a Safari tap focuses no button, so
+   neither close nor blur would ever fire there), on blur and on closePanel().
+   disarmReset is its own function: disarmDelete re-derives sheet state. */
+const RESET_IDLE = "RESET SEEDED DECKS";
+const RESET_ARMED = "TAP AGAIN TO RESET";
+const RESET_WARNING = "Tap again to restore all seeded decks. Your edits to them will be gone.";
+let resetArmed = false;
+function disarmReset() {
+  if (!resetArmed) return;
+  resetArmed = false;
+  restoreBtn.textContent = RESET_IDLE;
+  restoreBtn.removeAttribute("data-armed");
+  if (announce.textContent === RESET_WARNING) say("", "");
+}
 restoreBtn.onclick = () => {
+  if (!resetArmed) {
+    resetArmed = true;
+    restoreBtn.textContent = RESET_ARMED;
+    restoreBtn.setAttribute("data-armed", "");
+    say(RESET_WARNING, "warn");
+    return;
+  }
+  resetArmed = false;
+  restoreBtn.textContent = RESET_IDLE;
+  restoreBtn.removeAttribute("data-armed");
   hidden = [];
-  save();
-  buildChips();
+  const seeded = Object.keys(replacements());
+  for (const [id, d] of Object.entries(CUSTOM)) if (d.options && isBuiltIn(d.options.replaces)) delete CUSTOM[id];
+  writeScales(savedScales().filter(r => !(r && r.o && isBuiltIn(r.o.replaces))));
+  const wasSelected = deckId;
+  const stays = allDecks().some(d => d.id === wasSelected);
+  if (!stays) selectDeck(fallbackDeck().id); else { save(); buildChips(); }
+  say("Seeded decks restored." + (stays ? "" : " Showing " + deck().name + "."), "ok");
   addChip.focus();
 };
+restoreBtn.onblur = disarmReset;
+document.addEventListener("pointerdown", (e) => {
+  if (e.target !== restoreBtn) disarmReset();
+}, true);
 // The mirror is the choice the pan preview exists to make visible, so each
 // button re-solves the preview through the same parse path a keystroke uses.
 mirrorTop.onclick = () => {
@@ -10542,13 +10619,13 @@ function cycleTabStops(stops, e) {
 sheet.addEventListener("keydown", e => {
   if (e.key !== "Tab") return;
   const stops = [backBtn,
-                 editingId || builtinId ? nameBox : null,
+                 editingId ? nameBox : null,
                  scaleBox,
                  drawerOpen ? previewBox.querySelector('.panhit[tabindex="0"]') : null,
                  drawerBtn, anchorOne, anchorBetween, mirrorTop, mirrorBot, fineBtn,
                  notePrev, noteNext, seatPrev, seatNext, resetBtn,
                  editingId ? degSel : null, ...swatches.children, genBtn,
-                 editingId || builtinId ? delBtn : null]
+                 editingId ? delBtn : null]
     .filter(isStop);
   if (isHit(document.activeElement) && pickRef && lastSolved) setRover(pickRef);
   cycleTabStops(stops, e);
@@ -10633,6 +10710,7 @@ function closePanel() {
   settingsPanel.removeAttribute("role");
   settingsPanel.removeAttribute("aria-modal");
   setInert(false, panelBackground);
+  disarmReset();
   settingsTrigger.focus();
 }
 // If the viewport crosses the breakpoint while the panel is open in its
