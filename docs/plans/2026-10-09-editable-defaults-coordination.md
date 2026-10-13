@@ -41,6 +41,7 @@ Players can fork any built-in deck into a custom deck, hide any built-in, restor
 | #291 | app | PASS_WITH_NITS @d7a3103 (CI run 38319995207 success, 11/11; 5/5 mutants killed; Codex passes not run) | 12 nits, no blocking finding | merged 7995390 |
 | #292 | e2e | PASS_WITH_NITS @1822f16 (CI run 38323312038 success, 11/11; 5/5 mutants killed; Review Army/Codex not run) | 3 nits, no blocking finding | merged 83cf646 |
 | #293 | docs | PASS_WITH_NITS @0e6033c (CI run 38325929907 success, 11/11; accuracy audit vs index.html; Review Army/Codex not run, diff 37 lines) | 4 nits, no blocking finding | merged d863556 |
+| #294 | readme (row 16) | PASS @edf06e5 (CI run 38338168583 success, 11/11) | 2 nits: fork collision refusal and HIDE confirm tap not mentioned; placement | merged 314d2a3 |
 | #290 | plan | PASS_WITH_NITS @2f6d9d6 | 9 nits | merged 24cfc3b |
 
 ## Handoff queue (append-only)
@@ -73,7 +74,7 @@ Players can fork any built-in deck into a custom deck, hide any built-in, restor
 | 13 | OPEN | later lane (with row 9) | `index.html` comment above the hidden array still says `ids in "hpfc.hidden"`; the field lives inside the `hpfc` blob, no separate key. |
 | 14 | OPEN | later lane | `index.html` comments use "the picker" for the chip strip (hidden-array comment, `buildChips` "never emptied"); CLAUDE.md now uses "picker order" for decks.json order. Pick one word. |
 | 15 | OPEN | note only | CLAUDE.md "first visible deck, custom decks first" is `allDecks()[0]`, the newest custom; the next bullet says so. |
-| 16 | RESOLVED (owner 2026-10-12: add one sentence; PR #294, branch `claude/editable-defaults-readme`) | owner | README never says how to hide or fork a built-in (tap the selected chip, then FORK THIS DECK or HIDE THIS DECK); not a lane candidate. |
+| 16 | CLOSED (owner 2026-10-12: add one sentence; PR #294 PASS @edf06e5, merged 314d2a3) | owner | README never says how to hide or fork a built-in (tap the selected chip, then FORK THIS DECK or HIDE THIS DECK); not a lane candidate. |
 
 ## Cycle state
-Cycle: 1   CLOSED 2026-10-12   All three lanes merged: 7995390 (#291 app), 83cf646 (#292 e2e), d863556 (#293 docs). Open rows: 1, 2, 4, 6, 8, 9, 12, 13, 14 (5, 10 closed by owner 2026-10-12; 16 -> PR #294) (3, 7, 11, 15 resolved or note-only). No live lanes, no worktrees. Full Cycle state rows in the archive doc.
+Cycle: 1   CLOSED 2026-10-12   All three lanes merged: 7995390 (#291 app), 83cf646 (#292 e2e), d863556 (#293 docs). Open rows: 1, 2, 4, 6, 8, 9, 12, 13, 14 (5, 10 closed by owner 2026-10-12; 16 closed, #294 merged 314d2a3) (3, 7, 11, 15 resolved or note-only). No live lanes, no worktrees. Full Cycle state rows in the archive doc.
