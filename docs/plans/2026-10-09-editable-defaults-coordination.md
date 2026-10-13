@@ -33,7 +33,7 @@ Players can fork any built-in deck into a custom deck, hide any built-in, restor
 |---|---|---|---|---|
 | app | merged 7995390 | done | PASS_WITH_NITS | 2026-10-12 |
 | e2e | merged 83cf646 | done | PASS_WITH_NITS | 2026-10-12 |
-| docs | claude/editable-defaults-docs | spawned | - | 2026-10-12 |
+| docs | claude/editable-defaults-docs | returned done; CI green at 0e6033c; reviewer spawned | - | 2026-10-12 |
 
 ## Lane app findings (report 2026-10-12, d7a3103)
 - Sandbox stubs lack `querySelectorAll`, so the restore-button unit test asserts the `panelStops` source line plus `hidden`; the real tab-stop path is lane e2e's (R10).
@@ -79,4 +79,4 @@ Cycle: 1   Wave: 3   Merged this batch: 7995390 (#291 app), 83cf646 (#292 e2e)
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | app | a2510001262579403 | removed | deleted (merged) | #291 | d7a3103 | 2026-10-12 (head==tip, 11/11 pass, MERGEABLE) | PASS_WITH_NITS | 0 | yes 7995390 | - | no |
 | e2e | a9b8139f5b325d3a4 | removed | deleted (merged) | #292 | 1822f16 | 2026-10-12 (head==tip, 11/11 pass, MERGEABLE) | PASS_WITH_NITS | 0 | yes 83cf646 | - | no |
-| docs | af29d8a8493451d80 | .claude/worktrees/editable-defaults-docs | claude/editable-defaults-docs | - | - | - | - | 0 | no | - | - |
+| docs | af29d8a8493451d80 | .claude/worktrees/editable-defaults-docs | claude/editable-defaults-docs | #293 | 0e6033c | 2026-10-12 (head==tip, 11/11 pass, MERGEABLE) | review pending | 0 | no | reviewer | - |
