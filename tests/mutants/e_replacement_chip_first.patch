@@ -1,0 +1,17 @@
+# kills: SD: a replacement chip sits where its seed sat at 380px, selected and with a pencil
+# suite: node --test --test-name-pattern SD:.a.replacement.chip.sits tests/e2e.test.js
+# A replacement jumps to the front of the strip instead of taking its seed's slot.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8760,8 +8760,8 @@ function setOrder() {
+ const allDecks = () => {
+   const rep = replacements();
+   const slotted = new Set(Object.values(rep));
+-  return [...Object.values(CUSTOM).reverse().filter(d => !slotted.has(d)),
+-    ...DECKS.map(s => rep[s.id] || (hidden.includes(s.id) ? null : s)).filter(Boolean)];
++  return [...Object.values(CUSTOM).reverse(),
++    ...DECKS.map(s => rep[s.id] ? null : (hidden.includes(s.id) ? null : s)).filter(Boolean)];
+ };
+ // [5A] chip labels are capped at 16 characters with an ellipsis.
+ const CHIP_CAP = 16;
