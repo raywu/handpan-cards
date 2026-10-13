@@ -73,6 +73,8 @@ decisions behind it.
   Saved scales live under the storage key `hpfc.scales.v3`; the first boot of this version copies the old `hpfc.scales` list there. A scale saved in a tab still running the previous version of the app lands under
   the old storage key and does not appear in the new app; that needs a tab held
   open across an update, and reloading it fixes the tab.
+  Tapping a built-in deck's chip when that deck is already selected opens the
+  same sheet with FORK THIS DECK (a copy you can edit) and HIDE THIS DECK.
   Built-in decks you hide are stored as ids in the `hidden` field of the
   single `hpfc` blob, written only while at least one deck is hidden. Clearing
   site data brings every built-in back, and so does SHOW HIDDEN DECKS in the
