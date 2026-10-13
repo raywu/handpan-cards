@@ -9032,7 +9032,7 @@ test("SD: re-saving a replacement keeps its seeded slot", () => {
   assert.deepStrictEqual(labels(reboot(app)), BUILTIN_NAMES);
 
   app.clickChip("D KURD 10");
-  app.type(app.els["scale-box"].value.replace(/A3/, "A#3"));
+  app.type(app.els["scale-box"].value.replace(/C5$/, "D5"));
   app.els["scale-generate"].click();
   assert.strictEqual(records(app).length, 1);
   assert.strictEqual(records(app)[0].o.replaces, "kurd", "a field-edit re-save dropped replaces");
