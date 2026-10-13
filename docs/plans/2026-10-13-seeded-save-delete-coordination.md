@@ -68,6 +68,7 @@ Cycle: 1   Wave: 1   Merged this batch: (none)
 | # | Item | Lane | Status |
 |---|---|---|---|
 | Q1 | Owner, 2026-10-13: lane app stalled once after pushing #297 and was resumed by message (keep waiting, no deadline). If it stalls AGAIN, the integrator takes the two surviving mutants over on the branch directly and retires the lane; the attempt counter moves to 2. UPDATE: the lane stalled a second time AFTER handing back with the fix already pushed (f8d434c). Lane RETIRED; any further fix on #297 is the integrator's, on the branch directly. Attempt counter stays at 1 because no further failure has occurred yet. | app | RESOLVED |
+| Q2 | Owner, 2026-10-13: after the workstream is wrapped up (docs lane merged, final report given), run `/retro` and then `/persist-learnings`. | integrator | OPEN |
 
 ## AFK auto-decisions
 
