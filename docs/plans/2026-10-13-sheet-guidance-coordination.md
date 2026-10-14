@@ -34,7 +34,7 @@ Spawn prompts quote the plan's lane sections verbatim; see Cycle state for agent
 | Lane | Branch | State | Last verdict | Last update (UTC) |
 |---|---|---|---|---|
 | app | `claude/sheet-guidance-app` | PR #303 attempt 2 at 00f9e3b, CI green, X2 implemented as `#scale-sheet.noticed #scale-msg.warn{display:none}` (sandbox ELEMENT_IDS forbids a wrapper lookup); second reviewer running | - | 2026-10-14 |
-| docs | `claude/sheet-guidance-docs` | PR #304 at 1675ea8, CI green, awaiting review 2 | FAIL+1 | 2026-10-14 |
+| docs | `claude/sheet-guidance-docs` | PR #304 at 36c0f95 (integrator-owned after two FAILs), CI pending, review 3 next | FAIL+2 | 2026-10-14 |
 
 ## Handoff queue (append-only)
 | # | From | Ask | Status |
@@ -47,13 +47,14 @@ Spawn prompts quote the plan's lane sections verbatim; see Cycle state for agent
 | #303 | app | PASS_WITH_NITS (00f9e3b), escalation flagged | major: X2 CSS also hides the warn-tier delete refusal (deleteDeck) while a notice stands; nits: PR body stale (N-A6 bullet, 929->937, 844x390 prose), growth (d) not driven to three lines, N-A6 yielding states set `noticed` by hand, N-A5 skips keyboards at 844x390 | X3: bounced, attempt 2 (last) |
 | #303 | app | PASS_WITH_NITS (78b5e67) | no blockers; nits: no test pins the warning's return when the notice clears, `.pan` at openEditSheet and the collision branch unpinned by mutants, `r4f_f4_name_refusal_disables_drawer` omitted from the PR reconciliation, `#scale-guidance` markup comment stale after X2 | MERGED e17a52f; nits -> TODOS via lane docs |
 | #304 | docs | FAIL (7c5e924) | CLAUDE.md bullet names `#scale-refusal` the delete refusal (it holds the seed refusal; the delete refusal is in `#scale-msg`, N-A6 delete test); nits: spec ~462 over-attributes to N-A7, growth (d) uncited, two untestable sentences unmarked, undated X2 non-goal sentence, 39px note unasserted | bounced with exact sentences, attempt 1 |
+| #304 | docs | FAIL (1675ea8) | F1: spec ~462, CLAUDE.md and plan:34 said a test pins the pan warning's return (none does; sgPut toggles `noticed` by hand); F2: "growth exactly (b)(d)(e)" false since X3, a short delete refusal beside a two-line notice makes a 54px slot (the N-A6 delete test asserts it); nits: CLAUDE.md letters without a lettered list, (e) does not occur under fallback fonts at 380/390, wireframe rows overrun, TODOS "unpinned by mutants" wording | attempt cap reached; integrator took the lane over, fixes pushed as 36c0f95 |
 
 ## Cycle state
 Cycle: 1   Wave: 1   Merged this batch: -
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | app | ac8a34e4d706a13ee | sheet-guidance-app | claude/sheet-guidance-app | #303 | 78b5e67 | 2026-10-14 (CI run 38597722993 11/11 pass, headRefOid == tip) | PASS_WITH_NITS at 78b5e67 | 2 | yes, e17a52f; worktree and branch removed | - | - |
-| docs | a7b0be57d52984201 | sheet-guidance-docs | claude/sheet-guidance-docs | #304 | 1675ea8 | 2026-10-14 (CI run 38602644641 success, headRefOid == tip, four owned files only, fixed sentence confirmed in diff) | FAIL at 7c5e924, bounced; attempt 2: fresh reviewer spawned at 1675ea8 (owner 2026-10-14: run conclusion is the evidence; check-run panel fit (fallback) stuck in_progress with conclusion success) | 1 | no | - | - |
+| docs | integrator (was a7b0be57d52984201) | sheet-guidance-docs | claude/sheet-guidance-docs | #304 | 1675ea8 | 2026-10-14 (CI run 38602644641 success, headRefOid == tip, four owned files only, fixed sentence confirmed in diff) | FAIL at 7c5e924, bounced; FAIL at 1675ea8 (attempt 2, cap); integrator-owned from 36c0f95, awaiting CI then review 3 | 2 | no | - | - |
 
 ## AFK auto-decisions (this execution)
 | id | decision |
