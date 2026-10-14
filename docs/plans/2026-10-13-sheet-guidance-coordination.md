@@ -52,7 +52,7 @@ Cycle: 1   Wave: 1   Merged this batch: -
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | app | ac8a34e4d706a13ee | sheet-guidance-app | claude/sheet-guidance-app | #303 | 78b5e67 | 2026-10-14 (CI run 38597722993 11/11 pass, headRefOid == tip) | PASS_WITH_NITS at 78b5e67 | 2 | yes, e17a52f; worktree and branch removed | - | - |
-| docs | a7b0be57d52984201 | sheet-guidance-docs | claude/sheet-guidance-docs | - | - | - | spawned 2026-10-14 from main e17a52f | 0 | no | - | - |
+| docs | a7b0be57d52984201 | sheet-guidance-docs | claude/sheet-guidance-docs | #304 | 7c5e924 | 2026-10-14 (CI run 38600500450 11/11 pass, headRefOid == tip, four owned files only) | review pending (reviewer a50a275d943d42676 at 7c5e924) | 0 | no | - | - |
 
 ## AFK auto-decisions (this execution)
 | id | decision |
