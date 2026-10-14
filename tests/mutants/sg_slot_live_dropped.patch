@@ -1,0 +1,15 @@
+# kills: SG: N-A4 the notice is a polite atomic live region, #scale-msg keeps its own, the wrapper has none, nothing in the slot is focusable
+# suite: node --test --test-name-pattern ^SG:.N-A4.the.notice.is.a.polite.atomic tests/app.test.js
+# The notice loses its live region, so a screen reader never hears it once it sits outside the modal's announce path.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1341,7 +1341,7 @@
+          "SG: N-A6" in tests/e2e.test.js. -->
+     <div id="scale-guidance">
+       <div id="scale-msg" aria-live="polite"></div>
+-      <p class="sheethint" id="scale-layout-state" aria-live="polite" aria-atomic="true" hidden></p>
++      <p class="sheethint" id="scale-layout-state" hidden></p>
+     </div>
+     <button id="scale-generate" type="button" disabled>GENERATE CARDS</button>
+     <div class="editrow" id="scale-delete-row" hidden>

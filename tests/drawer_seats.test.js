@@ -175,7 +175,9 @@ function run() {
     const band = document.getElementById("scale-plate-band"), br = band.getBoundingClientRect();
     const out = (id) => Math.round((document.getElementById(id).getBoundingClientRect().bottom - sr.bottom) * 10) / 10;
     return { stuck: getComputedStyle(band).position === "sticky" && br.top - sr.top <= 0.5, plateW: document.querySelector("#scale-preview svg").getBoundingClientRect().width,
-      notice: !document.getElementById("scale-layout-state").hidden,
+      notice: !document.getElementById("scale-layout-state").hidden
+        && document.getElementById("scale-guidance").contains(document.getElementById("scale-layout-state"))
+        && !sp.contains(document.getElementById("scale-layout-state")),
       toggle: out("scale-layout-toggle") };`);
   const reachOpen = async () => {
     await ev(`const t = document.getElementById("scale-fine-toggle"); if (t.getAttribute("aria-expanded") !== "true") t.click(); return true;`);

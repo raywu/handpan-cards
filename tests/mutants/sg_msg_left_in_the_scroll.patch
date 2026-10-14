@@ -1,0 +1,22 @@
+# kills: SG: N-A2 the served markup order is .sheetbody, #scale-guidance (#scale-msg, #scale-layout-state), #scale-generate, #scale-delete-row
+# suite: node --test --test-name-pattern ^SG:.N-A2.the.served.markup.order tests/app.test.js
+# #scale-msg stays in the scroll where it used to be, so a page-state warning sits below the fold with a keyboard up.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1299,6 +1299,7 @@
+       </div>
+     </div>
+     <!-- D10: the parent-scale override. Edit path only - the create path infers. -->
++    <div id="scale-msg" aria-live="polite"></div>
+     <div class="editrow" id="scale-degrees-row" hidden>
+       <label class="sheetlabel" for="scale-degrees">DEGREES</label>
+       <select id="scale-degrees"></select>
+@@ -1340,7 +1341,6 @@
+          the controls they describe. Pinned by "SG: N-A2", "SG: N-A5" and
+          "SG: N-A6" in tests/e2e.test.js. -->
+     <div id="scale-guidance">
+-      <div id="scale-msg" aria-live="polite"></div>
+       <p class="sheethint" id="scale-layout-state" aria-live="polite" aria-atomic="true" hidden></p>
+     </div>
+     <button id="scale-generate" type="button" disabled>GENERATE CARDS</button>

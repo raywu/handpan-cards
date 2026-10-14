@@ -1,0 +1,15 @@
+# kills: SG: N-A6 the scrollport does not resize between empty, notice and one- or two-line states, grows by exactly 18px a line in the enumerated states, a warning yields to a standing notice, and the slot sits --sp-2 from both neighbours
+# suite: node --test --test-name-pattern ^SG:.N-A6.the.scrollport.does.not.resize tests/e2e.test.js
+# The slot becomes a shrinkable flex item, so a three-line message spills over the primary instead of growing the slot.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -893,7 +893,7 @@
+    three-line message spills over the button. #scale-msg drops its own 1.5em
+    floor so the wrapper owns the reservation, and justify-content:flex-end
+    bottom-aligns whichever line is lit. */
+-#scale-guidance{flex:0 0 auto; min-height:calc(2 * 1.5 * 12px); display:flex; flex-direction:column;
++#scale-guidance{flex:0 1 auto; min-height:calc(2 * 1.5 * 12px); display:flex; flex-direction:column;
+   justify-content:flex-end; margin-block:calc(var(--sp-2) - var(--sp-4))}
+ #scale-guidance #scale-msg{min-height:0}
+ #scale-guidance #scale-layout-state{font:400 12px/1.5 "Nunito Sans"; color:#c4bcab}

@@ -7,7 +7,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1287,6 +1287,7 @@
+@@ -1303,6 +1303,7 @@
        <label class="sheetlabel" for="scale-degrees">DEGREES</label>
        <select id="scale-degrees"></select>
      </div>
@@ -15,11 +15,11 @@ diff --git a/index.html b/index.html
      <!-- Inside .sheetbody, in the scroll. It used to be pinned below the
           scrollport with the primary, on the argument that everything outside
           .sheetbody is what the sheet guarantees without scrolling - so the
-@@ -1314,7 +1315,6 @@
+@@ -1330,7 +1331,6 @@
      <div class="ctlrow">
        <div id="scale-swatches" role="group" aria-label="Card palette"></div>
      </div>
 -   </div>
-     <button id="scale-generate" type="button" disabled>GENERATE CARDS</button>
-     <div class="editrow" id="scale-delete-row" hidden>
-       <button id="scale-delete" type="button">DELETE THIS DECK</button>
+     <!-- The page's messages, pinned with the primary: everything say() writes
+          (#scale-msg, a warning first) and the layout notice (#scale-layout-state,
+          nearest the button it names). Outside .sheetbody so no scroll position,
