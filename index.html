@@ -897,12 +897,13 @@ footer.seq{row-gap:var(--sp-1)}
   justify-content:flex-end; margin-block:calc(var(--sp-2) - var(--sp-4))}
 #scale-guidance #scale-msg{min-height:0}
 #scale-guidance #scale-layout-state{font:400 12px/1.5 "Nunito Sans"; color:#c4bcab}
-/* One message wins (plan N-6 alternative, owner 2026-10-14): while the notice holds text the warn
-   tier steps aside, so the slot never outgrows its two-line reserve; err and ok tiers still stack.
+/* One message wins (plan N-6 alternative, owner 2026-10-14; X3): while the notice holds text a PAN
+   warning (.pan, set by the call sites that write one) steps aside, so the slot never outgrows its
+   two-line reserve. Refusals, errors and every other warn (the delete refusal) always show.
    The aria-live copy of the warning (.announce) is a separate element and still speaks. The class is on
    #scale-sheet, not the wrapper: paintLayout() reaches the sheet through a variable the sandbox already
-   has, and say() rewrites #scale-msg's own className on every call. */
-#scale-sheet.noticed #scale-msg.warn{display:none}
+   has, and say() rewrites #scale-msg's own className on every call, which also clears .pan. */
+#scale-sheet.noticed #scale-msg.warn.pan{display:none}
 /* Landscape on a phone: 390px of height, and every pixel of chrome on the page
    comes straight off the scrolling body. The footer's breathing room above its
    own hairline is .sheetsurf's gap, already dropped to --sp-3 above; this
@@ -9702,7 +9703,7 @@ function syncParseState({ paint }) {
     if (paint) showPanPreview(res.value);
     const solved = solvePreviewLayout(res.value);
     const crowded = solved && HPE.select.smallLabels(solved.geom);
-    if (crowded) say(crowded.reason, "warn");
+    if (crowded) { say(crowded.reason, "warn"); msgLine.classList.add("pan"); }
     else say("", "");
   } else {
     const second = editingId && opts.name !== undefined ? HPE.core.parseSeed(text, layoutOptions()) : null;
@@ -9718,7 +9719,7 @@ function syncParseState({ paint }) {
       showRefusal(res.reason);
       const solved = solvePreviewLayout(second.value);
       const crowded = solved && HPE.select.smallLabels(solved.geom);
-      if (crowded) say(crowded.reason, "warn");
+      if (crowded) { say(crowded.reason, "warn"); msgLine.classList.add("pan"); }
       else say("", "");
       return;
     }
@@ -9977,7 +9978,7 @@ function openEditSheet(d, opener) {
   // [eng-review 2, 2A] warnings have ONE producer and were copied onto the deck
   // at generation time; the Edit sheet reads them and never rebuilds to re-derive.
   const warned = (d.warnings || []).map(w => w.reason);
-  if (warned.length) say(warned.join(" "), "warn");
+  if (warned.length) { say(warned.join(" "), "warn"); msgLine.classList.add("pan"); }
 }
 /** Take the page down. The DOM half only - the route is the caller's. */
 function hideSheet() {

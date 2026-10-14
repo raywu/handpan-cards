@@ -6237,11 +6237,12 @@ function run() {
    * ---------------------------------------------------------------- */
   const SG_LINE = 18;
 
-  const sgPut = ({ warn = null, note = null }) => b.eval(`
+  const sgPut = ({ warn = null, note = null, pan = true }) => b.eval(`
     say(${JSON.stringify(warn || "")}, ${warn ? '"warn"' : '""'});
     layoutNote.textContent = ${JSON.stringify(note || "")};
     layoutNote.hidden = ${note ? "false" : "true"};
     sheet.classList.toggle("noticed", ${note ? "true" : "false"});
+    ${warn && pan ? 'msgLine.classList.add("pan");' : ""}
     return true;`);
 
   const sgFit = (which, n) => b.eval(`
@@ -6449,6 +6450,9 @@ function run() {
       await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`, { label: "the chips" });
       await b.setViewport(380, 800, true);
       await openEdit();
+      await b.eval(`document.getElementById("scale-anchor-between").click(); return true;`);
+      await b.settle();
+      assert.ok((await b.eval(`return layoutNote.textContent;`)).length > 0, "the anchor tap raised no notice");
       const read = () => b.eval(`
         const slot = document.getElementById("scale-guidance").getBoundingClientRect();
         const note = document.getElementById("scale-del-note"), nr = note.getBoundingClientRect();
@@ -6461,6 +6465,15 @@ function run() {
       await b.settle();
       const refused = await read();
       assert.match(refused.msg, /Keep at least one deck/, "the delete was not refused");
+      const shown = await b.eval(`const m = document.getElementById("scale-msg"); return { d: getComputedStyle(m).display, h: m.getBoundingClientRect().height };`);
+      assert.notStrictEqual(shown.d, "none", "X3: the notice hid the delete refusal");
+      assert.ok(shown.h > 0, "X3: the delete refusal has no height");
+      const t1 = await sgFit("note", 1), w2 = await sgFit("msg", 2);
+      await sgPut({ warn: w2, note: t1, pan: false });
+      const g3 = await b.eval(`return document.getElementById("scale-guidance").getBoundingClientRect().height;`);
+      assert.ok(Math.abs(g3 - 3 * SG_LINE) < 0.5, `X3: a two-line refusal and a one-line notice made a ${g3}px slot, not ${3 * SG_LINE}`);
+      assert.notStrictEqual(await b.eval(`return getComputedStyle(msgLine).display;`), "none", "X3: a refusal yielded to the notice");
+      await b.eval(`say(${JSON.stringify(refused.msg)}, "warn"); return true;`);
       await b.click("#scale-delete");
       await b.settle();
       const rearmed = await read();
