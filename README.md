@@ -81,8 +81,8 @@ decisions behind it.
   DELETE on a seeded deck stores its id in the `hidden` field of the single
   `hpfc` blob, written only while at least one seeded deck is hidden; deleting
   a replacement hides its seed as well, and only RESET SEEDED DECKS brings it
-  back. The last remaining deck of any kind cannot be deleted. SAVE on a
-  seeded deck is refused with "Another deck already uses this scale." when
+  back. The last remaining deck of any kind cannot be deleted. A changed SAVE
+  on a seeded deck is refused with "Another deck already uses this scale." when
   a saved custom deck already holds that scale, and SAVE on a seeded deck with
   nothing changed closes the sheet and writes nothing. RESET SEEDED
   DECKS in the settings panel appears once any seeded deck is edited or
