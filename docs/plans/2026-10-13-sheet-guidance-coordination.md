@@ -33,7 +33,7 @@ Spawn prompts quote the plan's lane sections verbatim; see Cycle state for agent
 ## Status
 | Lane | Branch | State | Last verdict | Last update (UTC) |
 |---|---|---|---|---|
-| app | `claude/sheet-guidance-app` | spawning | - | 2026-10-13 |
+| app | `claude/sheet-guidance-app` | running (spawned, wave 1) | - | 2026-10-13 |
 | docs | `claude/sheet-guidance-docs` | blocked on app | - | 2026-10-13 |
 
 ## Handoff queue (append-only)
@@ -48,7 +48,7 @@ Spawn prompts quote the plan's lane sections verbatim; see Cycle state for agent
 Cycle: 1   Wave: 1   Merged this batch: -
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| app | - | sheet-guidance-app | claude/sheet-guidance-app | - | - | - | - | 0 | no | - | - |
+| app | ac8a34e4d706a13ee | sheet-guidance-app | claude/sheet-guidance-app | - | - | - | - | 0 | no | - | - |
 | docs | - | - | claude/sheet-guidance-docs | - | - | - | - | 0 | no | app | - |
 
 ## AFK auto-decisions (this execution)
