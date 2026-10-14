@@ -33,7 +33,7 @@ Spawn prompts quote the plan's lane sections verbatim; see Cycle state for agent
 ## Status
 | Lane | Branch | State | Last verdict | Last update (UTC) |
 |---|---|---|---|---|
-| app | `claude/sheet-guidance-app` | PR #303 green at 6d09230; FLOORS/README not yet moved, lane re-briefed to finish and push; reviewer at 6d09230 running, verdict will be superseded | - | 2026-10-14 |
+| app | `claude/sheet-guidance-app` | PR #303 FAIL+1 at 6d09230 (N-A7 stop: crowded 25-note seed + SMALL_LABELS warning + notice clips the seed box at kb395); bounced 2026-10-14 to implement X2 and four nits | - | 2026-10-14 |
 | docs | `claude/sheet-guidance-docs` | blocked on app | - | 2026-10-13 |
 
 ## Handoff queue (append-only)
@@ -43,15 +43,18 @@ Spawn prompts quote the plan's lane sections verbatim; see Cycle state for agent
 ## Review log
 | PR | Lane | Reviewer verdict | Findings | Outcome |
 |---|---|---|---|---|
+| #303 | app | FAIL (6d09230) | blocker: growth (a) reachable on crowded user pans, seed box clipped at kb395 where main passes; nits: drawer_drag inventory entry, N-A7 tables incomplete, FLOORS/README unmoved, N-A5 hardcoded viewports, N-A6 missing 2-line-notice state, N-A10 direct paintLayout calls | bounced, attempt 1 |
 
 ## Cycle state
 Cycle: 1   Wave: 1   Merged this batch: -
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| app | ac8a34e4d706a13ee | sheet-guidance-app | claude/sheet-guidance-app | #303 | 6d09230 | 2026-10-14 | pending (reviewer ad0517f09c80d49e5 at 6d09230; head will move) | 0 | no | - | - |
+| app | ac8a34e4d706a13ee | sheet-guidance-app | claude/sheet-guidance-app | #303 | 569865d (FLOORS/README push, superseded by bounce) | 2026-10-14 | FAIL+1 at 6d09230; bounced with owner decision X2 | 1 | no | - | - |
 | docs | - | - | claude/sheet-guidance-docs | - | - | - | - | 0 | no | app | - |
 
 ## AFK auto-decisions (this execution)
 | id | decision |
 |---|---|
 | X1 | Coord doc lives on `claude/sheet-guidance-coord` (never merges), as the seeded-save-delete workstream did. |
+
+**X2 (owner decision, 2026-10-14, check-in):** plan N-6 flips to the alternative, "one message wins": while `#scale-layout-state` holds text, the warn-tier `#scale-msg` is hidden (`#scale-guidance.noticed #scale-msg.warn{display:none}`, class toggled in `paintLayout()` beside the R8 guard); error-tier messages still stack. Growth states (a) and (c) cease to exist. The "no script change beyond R8" non-goal is extended by the owner to the class toggle. New mutant `sg_warning_not_yielding_to_notice` (937 -> 938). Lane docs amends the plan's N-6 row, growth paragraph and non-goals accordingly.
