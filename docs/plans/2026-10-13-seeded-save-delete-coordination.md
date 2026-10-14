@@ -54,7 +54,7 @@ Cycle: 1   Wave: 3   Merged this batch: 894d8f8 (#297), 0fc3852 (#298)
 |---|---|---|---|---|---|---|---|---|---|
 | app | (removed) | (deleted, local + remote) | #297 | f8d434c | 2026-10-13 (head == branch tip, MERGEABLE, 11/11 pass) | attempt 1 at 4e9c5db: CI red on mutation gate shards 1 and 2 (survivors `d_registry_ignored`, `e_fork_drops_name`), bounced by message, no reviewer. Lane fix f8d434c re-anchored both (details in Review log). Reviewer PASS_WITH_NITS at f8d434c (stalled once, resumed). Finding 1 (PR body lacked the SD-A8 inventory) fixed by the integrator in the PR body from the diff (D7). | 1 | YES 894d8f8 | — |
 | e2e | (removed) | (deleted, local + remote) | #298 | dbb802e | 2026-10-13 (head == worktree tip, MERGEABLE, 11/11 pass) | stalled once with tests + 3 mutants written but uncommitted; resumed by message (the watchdog, not the work). Returned DONE: f7ebf14 tests + 3 mutants, dbb802e FLOORS e2e 287 -> 290 from CI's count. Reviewer PASS_WITH_NITS at dbb802e. | 0 | YES 0fc3852 | — |
-| docs | seeded-save-delete-docs | claude/seeded-save-delete-docs | — | — | spawned 2026-10-13 from main 0fc3852 | — | 0 | no | lane return |
+| docs | seeded-save-delete-docs | claude/seeded-save-delete-docs | #299 | 7c018f8 | 2026-10-13 (worktree tip == PR head; CI not yet read) | PAUSED by owner (Q6) before the lane returned and before any reviewer; the lane subagent is dead after the restart. Resume: verify `gh pr view 299 --json headRefOid,state,mergeable` == 7c018f8, read `gh pr checks 299`, spawn a fresh reviewer at that SHA, record the verdict, STOP (Q6). | 0 | no | owner resume |
 
 ## Review log
 
