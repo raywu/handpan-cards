@@ -25,7 +25,7 @@ NON-goals: no change to any `layoutNoticeText()`, `say()` or refusal string; no 
 ## Sequencing
 1. Lane app (wave 1). Gate: CI green at verified head + reviewer PASS/PASS_WITH_NITS.
 2. Lane docs after app merges (wave 2). Same gate.
-3. Owner-gated, not lanes: T3 (N-4/D8 refusal placement), T4 (N-7 copy, SMALL_LABELS).
+3. Owner-gated, not lanes: T3 (N-4/D8 refusal placement), T4 (N-7 copy, SMALL_LABELS). CLOSED by owner 2026-10-14 check-in: T3 refusal stays under the field; T4 leave as is. Also 2026-10-14: #302 reviewer #3 nits (TODOS Cons + T4 name `docs/ENGINE-SPEC.md` section 2 as SOT pinned by `tests/core.test.js:118`) go to lane docs; degrees-dropdown removal runs after this workstream; AFK stays armed.
 
 ## Briefings
 Spawn prompts quote the plan's lane sections verbatim; see Cycle state for agent ids.
@@ -33,7 +33,7 @@ Spawn prompts quote the plan's lane sections verbatim; see Cycle state for agent
 ## Status
 | Lane | Branch | State | Last verdict | Last update (UTC) |
 |---|---|---|---|---|
-| app | `claude/sheet-guidance-app` | running (spawned, wave 1) | - | 2026-10-13 |
+| app | `claude/sheet-guidance-app` | PR #303 green at 6d09230; FLOORS/README not yet moved, lane re-briefed to finish and push; reviewer at 6d09230 running, verdict will be superseded | - | 2026-10-14 |
 | docs | `claude/sheet-guidance-docs` | blocked on app | - | 2026-10-13 |
 
 ## Handoff queue (append-only)
@@ -48,7 +48,7 @@ Spawn prompts quote the plan's lane sections verbatim; see Cycle state for agent
 Cycle: 1   Wave: 1   Merged this batch: -
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| app | ac8a34e4d706a13ee | sheet-guidance-app | claude/sheet-guidance-app | - | - | - | - | 0 | no | - | - |
+| app | ac8a34e4d706a13ee | sheet-guidance-app | claude/sheet-guidance-app | #303 | 6d09230 | 2026-10-14 | pending (reviewer ad0517f09c80d49e5 at 6d09230; head will move) | 0 | no | - | - |
 | docs | - | - | claude/sheet-guidance-docs | - | - | - | - | 0 | no | app | - |
 
 ## AFK auto-decisions (this execution)
