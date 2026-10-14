@@ -55,7 +55,7 @@ Plan `docs/plans/2026-10-13-seeded-save-delete-nits.md`, eng-reviewed (D14, D15;
 
 | Lane | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on |
 |---|---|---|---|---|---|---|---|---|---|
-| nits | .claude/worktrees/seeded-save-delete-nits | claude/seeded-save-delete-nits | (none yet) | 891ca66 (plan only) | - | - | 0 | no | - |
+| nits | .claude/worktrees/seeded-save-delete-nits | claude/seeded-save-delete-nits | #301 | 31aa7ee | 2026-10-13 (head == tip, CI 11/11 pass) | reviewer spawned | 0 | no | - |
 
 | Lane | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on |
 |---|---|---|---|---|---|---|---|---|---|
