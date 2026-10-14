@@ -34,7 +34,7 @@ Spawn prompts quote the plan's lane sections verbatim; see Cycle state for agent
 | Lane | Branch | State | Last verdict | Last update (UTC) |
 |---|---|---|---|---|
 | app | `claude/sheet-guidance-app` | PR #303 attempt 2 at 00f9e3b, CI green, X2 implemented as `#scale-sheet.noticed #scale-msg.warn{display:none}` (sandbox ELEMENT_IDS forbids a wrapper lookup); second reviewer running | - | 2026-10-14 |
-| docs | `claude/sheet-guidance-docs` | running (spawned from main e17a52f) | - | 2026-10-14 |
+| docs | `claude/sheet-guidance-docs` | PR #304 at 1675ea8, CI green, awaiting review 2 | FAIL+1 | 2026-10-14 |
 
 ## Handoff queue (append-only)
 | # | From | Ask | Status |
@@ -53,7 +53,7 @@ Cycle: 1   Wave: 1   Merged this batch: -
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | app | ac8a34e4d706a13ee | sheet-guidance-app | claude/sheet-guidance-app | #303 | 78b5e67 | 2026-10-14 (CI run 38597722993 11/11 pass, headRefOid == tip) | PASS_WITH_NITS at 78b5e67 | 2 | yes, e17a52f; worktree and branch removed | - | - |
-| docs | a7b0be57d52984201 | sheet-guidance-docs | claude/sheet-guidance-docs | #304 | 7c5e924 | 2026-10-14 (CI run 38600500450 11/11 pass, headRefOid == tip, four owned files only) | FAIL at 7c5e924, bounced | 1 | no | - | - |
+| docs | a7b0be57d52984201 | sheet-guidance-docs | claude/sheet-guidance-docs | #304 | 1675ea8 | 2026-10-14 (CI run 38602644641 success, headRefOid == tip, four owned files only, fixed sentence confirmed in diff) | FAIL at 7c5e924, bounced; attempt 2 awaiting fresh review at 1675ea8 | 1 | no | - | - |
 
 ## AFK auto-decisions (this execution)
 | id | decision |
