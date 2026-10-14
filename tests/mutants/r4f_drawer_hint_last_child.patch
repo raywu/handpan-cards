@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1260,7 +1260,6 @@
+@@ -1266,7 +1266,6 @@ footer.seq{row-gap:var(--sp-1)}
          <p class="sheethint" id="scale-layout-hint">Type a scale to adjust its layout.</p>
        </div>
        <div id="scale-drawer" role="group" aria-label="Layout" hidden>
@@ -12,11 +12,11 @@ diff --git a/index.html b/index.html
          <div class="editrow">
            <span class="sheetlabel" id="scale-anchor-label">HANDPAN ORIENTATION</span>
            <div class="ctlrow" role="group" aria-labelledby="scale-anchor-label">
-@@ -1296,6 +1295,7 @@
+@@ -1302,6 +1301,7 @@ footer.seq{row-gap:var(--sp-1)}
          <div class="ctlrow">
            <button class="mode" type="button" id="scale-layout-reset" disabled>RESET LAYOUT</button>
          </div>
 +        <p class="sheethint" id="scale-drawer-hint" hidden></p>
        </div>
      </div>
-     <!-- D10: the parent-scale override. Edit path only - the create path infers. -->
+     <!-- Inside .sheetbody, in the scroll. It used to be pinned below the

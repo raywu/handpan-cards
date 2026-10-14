@@ -5,11 +5,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9828,7 +9828,6 @@ if (window.visualViewport) {
- /** Show or hide the three Edit-only rows and relabel the single primary.
+@@ -9829,7 +9829,6 @@ if (window.visualViewport) {
+ /** Show or hide the two Edit-only rows and relabel the single primary.
   *  `edit` is false (create) or true (Edit a seeded or a custom deck). */
  function setSheetMode(edit) {
 -  disarmDelete();
-   for (const el of [nameRow, degRow, delRow]) {
+   for (const el of [nameRow, delRow]) {
      if (edit) el.removeAttribute("hidden");
      else el.setAttribute("hidden", "");

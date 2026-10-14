@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10622,7 +10622,7 @@ sheet.addEventListener("keydown", e => {
+@@ -10620,7 +10620,7 @@ sheet.addEventListener("keydown", e => {
                   editingId ? nameBox : null,
                   scaleBox,
                   drawerOpen ? previewBox.querySelector('.panhit[tabindex="0"]') : null,
 -                 drawerBtn, anchorOne, anchorBetween, mirrorTop, mirrorBot, fineBtn,
 +                 drawerBtn, anchorOne, anchorBetween, mirrorTop, mirrorBot,
                   notePrev, noteNext, seatPrev, seatNext, resetBtn,
-                  editingId ? degSel : null, ...swatches.children, genBtn,
+                  ...swatches.children, genBtn,
                   editingId ? delBtn : null]
