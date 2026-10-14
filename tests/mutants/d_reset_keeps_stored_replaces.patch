@@ -4,9 +4,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10264,7 +10264,7 @@ restoreBtn.onclick = () => {
+@@ -10262,7 +10262,7 @@ restoreBtn.onclick = () => {
+   restoreBtn.removeAttribute("data-armed");
    hidden = [];
-   const seeded = Object.keys(replacements());
    for (const [id, d] of Object.entries(CUSTOM)) if (d.options && isBuiltIn(d.options.replaces)) delete CUSTOM[id];
 -  writeScales(savedScales().filter(r => !(r && r.o && isBuiltIn(r.o.replaces))));
 +  writeScales(savedScales());

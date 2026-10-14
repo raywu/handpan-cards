@@ -4,7 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10263,8 +10263,8 @@
+@@ -10261,8 +10261,8 @@ restoreBtn.onclick = () => {
+   restoreBtn.textContent = RESET_IDLE;
    restoreBtn.removeAttribute("data-armed");
    hidden = [];
 -  for (const [id, d] of Object.entries(CUSTOM)) if (d.options && isBuiltIn(d.options.replaces)) delete CUSTOM[id];
