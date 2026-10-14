@@ -34,7 +34,7 @@ Spawn prompts quote the plan's lane sections verbatim (lane app: the ownership r
 | Lane | Branch | State | Last verdict | Last update (UTC) |
 |---|---|---|---|---|
 | app | `claude/remove-degrees-app` | MERGED #306 as 083f44a; worktree and branch removed | PASS_WITH_NITS | 2026-10-14 |
-| docs | `claude/remove-degrees-docs` | spawned (swarm-lane) from main 083f44a | - | 2026-10-14 |
+| docs | `claude/remove-degrees-docs` | PR #307 returned done; CI success at d24c092; reviewer spawned | pending | 2026-10-14 |
 
 ## Handoff queue (append-only)
 | # | From | Ask | Status |
@@ -51,7 +51,7 @@ Cycle: 1   Wave: 2   Merged this batch: 083f44a (#306)
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | app | a69dcfb44fde5f965 | removed | deleted | #306 | bc80445f64dd53353c7a567f6943a6eff268fc36 | 2026-10-14 run 38641641597 success | PASS_WITH_NITS (reviewer a5617f1bfd7dfb7ff) | 0 | yes 083f44a | - | - |
-| docs | (spawning) | remove-degrees-docs | claude/remove-degrees-docs (from 083f44a) | - | - | - | - | 0 | no | - | - |
+| docs | aa361bc444832b4ea | remove-degrees-docs | claude/remove-degrees-docs (from 083f44a) | #307 | d24c092256182bb7b954c40390dac278940af154 | 2026-10-14 run 38644050752 success | pending (reviewer spawned) | 0 | no | - | - |
 
 ## AFK auto-decisions (this execution)
 | id | decision |
