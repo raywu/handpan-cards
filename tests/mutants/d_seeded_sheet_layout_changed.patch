@@ -1,0 +1,15 @@
+# kills: SD: a seeded deck's sheet never reports a layout change on open
+# suite: node --test --test-name-pattern ^SD..a.seeded.deck.s.sheet.never.reports.a.layout.change.on.open$ tests/app.test.js
+# A built-in's own stored layout counts as a change from the default, so Pygmy's seeded sheet opens saying "Layout changed from the default."
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9012,7 +9012,7 @@ function layoutNoticeText() {
+   else {
+     const custom = layoutBase.anchor !== "one" || layoutBase.mirror || (layoutBase.mb && hadBottom) ||
+       layoutBase.seats !== "";
+-    text = editingId && !isBuiltIn(editingId) && custom ? "Layout changed from the default." : "";
++    text = editingId && custom ? "Layout changed from the default." : "";
+   }
+   if (editingId && storedSeats && ringCount)
+     for (const ring of LAYOUT_RINGS)

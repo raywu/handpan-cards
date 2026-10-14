@@ -1,7 +1,6 @@
 # kills: editable defaults: saving seeded Kurd with only a palette change while its fork holds the id is refused
 # suite: node --test --test-name-pattern ^editable.defaults..saving.seeded.Kurd.with.only.a.palette.change.while.its.fork.holds.the.id.is.refused$ tests/app.test.js
-# The fork guard is gone: forking the same built-in again overwrites the first fork.
-# The collision guard is gone: SAVE on a seeded deck whose scale a fork already holds overwrites that fork.
+# The collision guard is gone: SAVE on a seeded deck whose scale another deck already holds overwrites that deck.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html

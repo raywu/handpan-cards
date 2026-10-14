@@ -392,24 +392,26 @@ pitch classes (midi % 12), never stored.
 
 - **Default deck:** the cold-start deck is the `DEFAULT_DECK` constant
   (`kurd`), not `DECKS[0]`. Picker order is the array order of
-  `data/decks.json`. They are two facts. A stored deck id is always honoured;
+  `data/decks.json`. They are two facts. A stored deck id of a VISIBLE deck is always honoured;
   nothing migrates a visitor who stored `hijaz` before 2026-10-06.
   (2026-10-13, seeded SAVE / DELETE; replaces the 2026-10-12 FORK / HIDE
   model) A seeded deck is edited like a custom one: SAVE writes a custom record
   with the record option `replaces: "<seeded id>"`, DELETE adds the id to
-  `hidden`. A hidden default deck falls back through `fallbackDeck()` to its
-  own replacement if one exists, else to the first visible deck, custom decks
-  first, and a stored id of a hidden deck is NOT honoured. A stored id of a
-  replaced seed shows the replacement ONLY for the default deck (through
-  `fallbackDeck()`); any other replaced seed id falls back silently, since
-  `deck()` misses it in `allDecks()`. A replacement outranks a hidden seed.
+  `hidden`. A hidden seeded deck lands on its own replacement if one exists
+  (`deck()` consults `replacements()` before `fallbackDeck()`), else through
+  `fallbackDeck()`: the default deck (or its replacement) if visible, else the
+  first visible deck, custom decks first. A stored id of a hidden deck is NOT honoured. A stored id of a
+  replaced seed shows its replacement, whichever seed it is (`deck()` consults
+  `replacements()` before `fallbackDeck()`), and boot says "That deck is gone."
+  only when the deck shown is not that replacement. A replacement outranks a
+  hidden seed.
   Hidden ids live in the `hidden` field of the `hpfc` blob, written only when
   non-empty; there is no separate `hpfc.hidden` key. RESET SEEDED DECKS
   (`#deck-restore`) clears `hidden` and every record whose `replaces` names a
   seed (older records naming the same seed included), keeps plain custom
   decks, and moves to `fallbackDeck()` only if the selected deck is gone.
 - **Chip order is not picker order:** the strip is `allDecks()` = custom decks
-  newest first, then the five seeded slots in `data/decks.json` order. A slot
+  newest first, then the seeded decks' slots in `data/decks.json` order. A slot
   shows `replacements()[seedId]`, the newest record naming that seed in
   `replaces`, else the seed if not hidden. Older records naming the same seed
   render as plain custom decks. "Picker order" and "chip index" are different

@@ -1,0 +1,14 @@
+# kills: SD: an armed RESET disarms on a tap elsewhere, blur and panel close, and re-arms after
+# suite: node --test --test-name-pattern ^SD..an.armed.RESET.disarms.on.a.tap.elsewhere..blur.and.panel.close..and.re.arms.after$ tests/app.test.js
+# Closing the settings panel no longer disarms an armed RESET.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10710,7 +10710,6 @@ function closePanel() {
+   settingsPanel.removeAttribute("role");
+   settingsPanel.removeAttribute("aria-modal");
+   setInert(false, panelBackground);
+-  disarmReset();
+   settingsTrigger.focus();
+ }
+ // If the viewport crosses the breakpoint while the panel is open in its

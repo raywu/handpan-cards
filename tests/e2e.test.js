@@ -11877,6 +11877,8 @@ function run() {
       assert.strictEqual(await b.eval(`return JSON.parse(localStorage.getItem("hpfc")).hidden;`), undefined,
         "the hidden list is still stored");
       assert.strictEqual(await b.eval(`return document.activeElement.id;`), "deck-add");
+      assert.strictEqual(await b.eval(`return (JSON.parse(localStorage.getItem(SCALES_KEY)) || [])
+        .filter((r) => r && r.o && r.o.replaces).length;`), 0, "a stored record still names a seed after RESET");
     } finally {
       await b.setViewport(900, 900, false);
     }

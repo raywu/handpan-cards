@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10263,8 +10263,8 @@
+@@ -10261,8 +10261,8 @@ restoreBtn.onclick = () => {
+   restoreBtn.textContent = RESET_IDLE;
    restoreBtn.removeAttribute("data-armed");
    hidden = [];
-   const seeded = Object.keys(replacements());
 -  for (const [id, d] of Object.entries(CUSTOM)) if (d.options && isBuiltIn(d.options.replaces)) delete CUSTOM[id];
 -  writeScales(savedScales().filter(r => !(r && r.o && isBuiltIn(r.o.replaces))));
 +  for (const id of Object.keys(CUSTOM)) delete CUSTOM[id];

@@ -81,12 +81,20 @@ decisions behind it.
   DELETE on a seeded deck stores its id in the `hidden` field of the single
   `hpfc` blob, written only while at least one seeded deck is hidden; deleting
   a replacement hides its seed as well, and only RESET SEEDED DECKS brings it
-  back. The last remaining deck of any kind cannot be deleted. RESET SEEDED
+  back. The last remaining deck of any kind cannot be deleted. A changed SAVE
+  on a seeded deck is refused with "Another deck already uses this scale." when
+  a saved custom deck already holds that scale, and SAVE on a seeded deck with
+  nothing changed closes the sheet and writes nothing. RESET SEEDED
   DECKS in the settings panel appears once any seeded deck is edited or
   deleted; the first tap arms it with a warning that those edits will be lost,
-  the second clears `hidden` and every replacement and, if the deck on screen
-  was removed, lands on the default deck. Plain custom decks are kept.
-  Clearing site data also brings every built-in back.
+  and the armed button disarms on blur, on a tap anywhere else, and when the
+  panel closes. The second tap clears `hidden` and every replacement and, if
+  the deck on screen was removed, lands on the default deck. It clears every
+  saved edit of a seeded deck, including an older one no longer shown in the
+  seed's slot. Plain custom decks are kept.
+  A SAVE in an older build of the app rebuilds the record without `replaces`,
+  so the deck becomes a plain custom deck and the seed comes back beside it;
+  nothing else is lost. Clearing site data also brings every built-in back.
   A scale's deck id is a 32-bit hash of its notes, so two different scales can
   in principle share an id; the app keeps one record per id, so on a collision
   one of the two is kept. It is vanishingly rare and not guarded against.
@@ -143,7 +151,7 @@ What is covered:
 - **Browser e2e** - real Chromium: deck switching, the 3D card flip, keyboard
   and touch navigation, reload persistence, clipping at a 380px viewport, and
   the scale sheet's modality, focus handling and 44px hit areas.
-- **Mutation gate** - 922 mutant patches under `tests/mutants/`, each one a
+- **Mutation gate** - 929 mutant patches under `tests/mutants/`, each one a
   deliberate break that some test must catch. The gate is all-or-nothing: one
   survivor fails it. A test nothing can kill does not count as coverage.
 

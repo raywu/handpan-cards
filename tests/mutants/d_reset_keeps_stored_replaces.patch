@@ -1,0 +1,15 @@
+# kills: editable defaults: RESET arms, then clears hidden and replacements and keeps custom decks
+# suite: node --test --test-name-pattern ^editable.defaults..RESET.arms..then.clears.hidden.and.replacements.and.keeps.custom.decks$ tests/app.test.js
+# RESET clears the live registry but leaves the stored records naming a seed, so the next load brings every replacement back.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10262,7 +10262,7 @@ restoreBtn.onclick = () => {
+   restoreBtn.removeAttribute("data-armed");
+   hidden = [];
+   for (const [id, d] of Object.entries(CUSTOM)) if (d.options && isBuiltIn(d.options.replaces)) delete CUSTOM[id];
+-  writeScales(savedScales().filter(r => !(r && r.o && isBuiltIn(r.o.replaces))));
++  writeScales(savedScales());
+   const wasSelected = deckId;
+   const stays = allDecks().some(d => d.id === wasSelected);
+   if (!stays) selectDeck(fallbackDeck().id); else { save(); buildChips(); }

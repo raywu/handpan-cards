@@ -1,6 +1,6 @@
 # kills: editable defaults: saving each seeded deck with a palette change mints the fixture id as its replacement in the seeded slot
 # suite: node --test --test-name-pattern ^editable.defaults..saving.each.seeded.deck.with.a.palette.change.mints.the.fixture.id.as.its.replacement.in.the.seeded.slot$ tests/app.test.js
-# A seeded deck's sheet keeps the retired FORK THIS DECK button copy.
+# Every Edit sheet of a deck without stored options, every seeded deck included, shows the retired FORK THIS DECK copy.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html

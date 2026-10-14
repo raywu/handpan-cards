@@ -1,7 +1,6 @@
 # kills: editable defaults: deleting a seeded deck removes its chip, stores hidden and selects Kurd
 # suite: node --test --test-name-pattern ^editable.defaults..deleting.a.seeded.deck.removes.its.chip..stores.hidden.and.selects.Kurd$ tests/app.test.js
-# The picker ignores hpfc.hidden: a hidden built-in keeps its chip.
-# The picker ignores hpfc.hidden: a deleted seeded deck keeps its chip.
+# The picker ignores the stored hidden list: a deleted seeded deck keeps its chip.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html

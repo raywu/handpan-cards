@@ -3,8 +3,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7753,7 +7753,7 @@ const isBuiltIn = id => DECKS.some(d => d.id === id);
- // written only while non-empty (save()). A hidden deck is still in DECKS - the
+@@ -7752,7 +7752,7 @@ const isBuiltIn = id => DECKS.some(d => d.id === id);
+ // blob, built-in ids only, written only while non-empty (save()). A hidden deck is still in DECKS - the
  // literal is generated and never altered - it just leaves the strip, the
  // fallbacks and the picker.
 -let hidden = Array.isArray(store.hidden)
