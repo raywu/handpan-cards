@@ -1,0 +1,43 @@
+{
+  "date": "2026-10-13",
+  "window": "7d",
+  "metrics": {
+    "commits": 348,
+    "contributors": 1,
+    "prs_merged": 61,
+    "insertions": 64117,
+    "deletions": 19687,
+    "net_loc": 44430,
+    "logical_sloc_added": 55962,
+    "test_loc": 43723,
+    "test_ratio": 0.68,
+    "active_days": 6,
+    "sessions": 27,
+    "deep_sessions": 15,
+    "avg_session_minutes": 91,
+    "loc_per_session_hour": 1550,
+    "feat_pct": 0.07,
+    "fix_pct": 0.00,
+    "peak_hour": 13,
+    "ai_assisted_commits": 293
+  },
+  "authors": {
+    "Ray Wu": { "commits": 348, "insertions": 64117, "deletions": 19687, "test_ratio": 0.68, "top_area": "tests/" }
+  },
+  "streak_days": 2,
+  "user_streak_days": 2,
+  "tweetable": "Week of Oct 6: 348 commits (solo), 64.1k LOC, 68% tests, 61 PRs, peak: 1pm | Streak: 2d",
+  "test_health": {
+    "total_test_files": 23,
+    "regression_test_commits": 0,
+    "test_files_changed": 24
+  },
+  "backlog": {
+    "total_open": 5,
+    "p0_p1": 0,
+    "p2": 1,
+    "completed_this_period": 0,
+    "added_this_period": 0
+  },
+  "focus": "two beginner decks, scale grammar + layout drawer, refactor pass 4, editable defaults then seeded SAVE/DELETE (PRs #239-#299)"
+}
