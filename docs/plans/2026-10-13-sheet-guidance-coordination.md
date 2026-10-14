@@ -46,13 +46,14 @@ Spawn prompts quote the plan's lane sections verbatim; see Cycle state for agent
 | #303 | app | FAIL (6d09230) | blocker: growth (a) reachable on crowded user pans, seed box clipped at kb395 where main passes; nits: drawer_drag inventory entry, N-A7 tables incomplete, FLOORS/README unmoved, N-A5 hardcoded viewports, N-A6 missing 2-line-notice state, N-A10 direct paintLayout calls | bounced, attempt 1 |
 | #303 | app | PASS_WITH_NITS (00f9e3b), escalation flagged | major: X2 CSS also hides the warn-tier delete refusal (deleteDeck) while a notice stands; nits: PR body stale (N-A6 bullet, 929->937, 844x390 prose), growth (d) not driven to three lines, N-A6 yielding states set `noticed` by hand, N-A5 skips keyboards at 844x390 | X3: bounced, attempt 2 (last) |
 | #303 | app | PASS_WITH_NITS (78b5e67) | no blockers; nits: no test pins the warning's return when the notice clears, `.pan` at openEditSheet and the collision branch unpinned by mutants, `r4f_f4_name_refusal_disables_drawer` omitted from the PR reconciliation, `#scale-guidance` markup comment stale after X2 | MERGED e17a52f; nits -> TODOS via lane docs |
+| #304 | docs | FAIL (7c5e924) | CLAUDE.md bullet names `#scale-refusal` the delete refusal (it holds the seed refusal; the delete refusal is in `#scale-msg`, N-A6 delete test); nits: spec ~462 over-attributes to N-A7, growth (d) uncited, two untestable sentences unmarked, undated X2 non-goal sentence, 39px note unasserted | bounced with exact sentences, attempt 1 |
 
 ## Cycle state
 Cycle: 1   Wave: 1   Merged this batch: -
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | app | ac8a34e4d706a13ee | sheet-guidance-app | claude/sheet-guidance-app | #303 | 78b5e67 | 2026-10-14 (CI run 38597722993 11/11 pass, headRefOid == tip) | PASS_WITH_NITS at 78b5e67 | 2 | yes, e17a52f; worktree and branch removed | - | - |
-| docs | a7b0be57d52984201 | sheet-guidance-docs | claude/sheet-guidance-docs | #304 | 7c5e924 | 2026-10-14 (CI run 38600500450 11/11 pass, headRefOid == tip, four owned files only) | review pending (reviewer a50a275d943d42676 at 7c5e924) | 0 | no | - | - |
+| docs | a7b0be57d52984201 | sheet-guidance-docs | claude/sheet-guidance-docs | #304 | 7c5e924 | 2026-10-14 (CI run 38600500450 11/11 pass, headRefOid == tip, four owned files only) | FAIL at 7c5e924, bounced | 1 | no | - | - |
 
 ## AFK auto-decisions (this execution)
 | id | decision |
