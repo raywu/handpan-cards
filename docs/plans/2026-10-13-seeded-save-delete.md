@@ -1,5 +1,7 @@
 # Seeded decks: SAVE / DELETE, not FORK / HIDE
 
+Status: app #297 (894d8f8) and e2e #298 (0fc3852) merged; docs in PR.
+
 Written 2026-10-13 against main `5a9c7d7`, from
 `2026-10-13-seeded-save-delete-prompt.md` plus eight reviewer corrections.
 Anchors are function and marker names, never line numbers.

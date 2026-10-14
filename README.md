@@ -73,12 +73,20 @@ decisions behind it.
   Saved scales live under the storage key `hpfc.scales.v3`; the first boot of this version copies the old `hpfc.scales` list there. A scale saved in a tab still running the previous version of the app lands under
   the old storage key and does not appear in the new app; that needs a tab held
   open across an update, and reloading it fixes the tab.
-  Tapping a built-in deck's chip when that deck is already selected opens the
-  same sheet with FORK THIS DECK (a copy you can edit) and HIDE THIS DECK.
-  Built-in decks you hide are stored as ids in the `hidden` field of the
-  single `hpfc` blob, written only while at least one deck is hidden. Clearing
-  site data brings every built-in back, and so does SHOW HIDDEN DECKS in the
-  settings panel, without clearing anything.
+  A built-in (seeded) deck's selected chip carries the same pencil a custom
+  deck's does. Tapping it opens the Edit sheet with SAVE CHANGES and DELETE,
+  the same two actions a custom deck gets. SAVE writes a custom record with the
+  record option `replaces` naming the seeded id; that record shows in the
+  seed's slot of the chip strip, and the seeded data itself is never written.
+  DELETE on a seeded deck stores its id in the `hidden` field of the single
+  `hpfc` blob, written only while at least one seeded deck is hidden; deleting
+  a replacement hides its seed as well, and only RESET SEEDED DECKS brings it
+  back. The last remaining deck of any kind cannot be deleted. RESET SEEDED
+  DECKS in the settings panel appears once any seeded deck is edited or
+  deleted; the first tap arms it with a warning that those edits will be lost,
+  the second clears `hidden` and every replacement and, if the deck on screen
+  was removed, lands on the default deck. Plain custom decks are kept.
+  Clearing site data also brings every built-in back.
   A scale's deck id is a 32-bit hash of its notes, so two different scales can
   in principle share an id; the app keeps one record per id, so on a collision
   one of the two is kept. It is vanishingly rare and not guarded against.
@@ -135,7 +143,7 @@ What is covered:
 - **Browser e2e** - real Chromium: deck switching, the 3D card flip, keyboard
   and touch navigation, reload persistence, clipping at a 380px viewport, and
   the scale sheet's modality, focus handling and 44px hit areas.
-- **Mutation gate** - 905 mutant patches under `tests/mutants/`, each one a
+- **Mutation gate** - 922 mutant patches under `tests/mutants/`, each one a
   deliberate break that some test must catch. The gate is all-or-nothing: one
   survivor fails it. A test nothing can kill does not count as coverage.
 
