@@ -5,7 +5,7 @@ diff --git a/tools/sandbox.js b/tools/sandbox.js
 --- a/tools/sandbox.js
 +++ b/tools/sandbox.js
 @@ -34,7 +34,7 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next",
-   "scale-name-row", "scale-name", "scale-degrees-row", "scale-degrees",
+   "scale-name-row", "scale-name",
    "scale-delete-row", "scale-delete", "scale-del-note",
    // Phase 5 LAYOUT section, additive like the two before it.
 -  "scale-layout-reset",

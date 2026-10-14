@@ -1,0 +1,17 @@
+# kills: RD: no DEGREES row - the served markup, ELEMENT_IDS and the app script carry neither scale-degrees id, and sheetOptions writes no parent on Edit
+# suite: node --test --test-name-pattern ^RD:.no.DEGREES.row tests/app.test.js
+# The #scale-degrees-row markup (label and select) is put back without script or CSS.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1304,6 +1304,10 @@
+         </div>
+       </div>
+     </div>
++    <div class="editrow" id="scale-degrees-row" hidden>
++      <label class="sheetlabel" for="scale-degrees">DEGREES</label>
++      <select id="scale-degrees"></select>
++    </div>
+     <!-- Inside .sheetbody, in the scroll. It used to be pinned below the
+          scrollport with the primary, on the argument that everything outside
+          .sheetbody is what the sheet guarantees without scrolling - so the

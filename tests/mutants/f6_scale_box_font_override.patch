@@ -4,15 +4,16 @@
 # @media (max-height:520px) block, buried in the same comma-separated
 # selector list that already sets min-height there. iOS auto-zooms the box
 # the moment the keyboard opens on a short or landscape phone.
+# Re-anchored 2026-10-14 (remove-degrees, lane app) against the new source. The mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -895,7 +895,7 @@
+@@ -915,7 +915,7 @@
       sheet there are two of them above the fold and the box the caret lands in
       is the lower one, so four pixels each is the difference between opening at
       rest and opening already scrolled. */
--  #scale-box, #scale-name, #scale-degrees{min-height:44px; padding:9px var(--sp-3)}
-+  #scale-box, #scale-name, #scale-degrees{min-height:44px; padding:9px var(--sp-3); font-size:14px}
+-  #scale-box, #scale-name{min-height:44px; padding:9px var(--sp-3)}
++  #scale-box, #scale-name{min-height:44px; padding:9px var(--sp-3); font-size:14px}
    #scale-box-wrap::after{min-height:44px; padding:9px var(--sp-3)}
    #scale-box-wrap::after, #scale-box{max-height:calc(3 * 1.3em + 20px)}
    .sheetbody{gap:var(--sp-2)}

@@ -1,0 +1,14 @@
+# kills: RD: opening a share link that carries an explicit parent stores that parent again, after an inferred SAVE included
+# suite: node --test --test-name-pattern ^RD:.opening.a.share.link tests/app.test.js
+# openShare drops the decoded parent before generating, so a link's explicit index is no longer stored.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -7924,6 +7924,7 @@
+   const res = HPE.share.decode(String(text));
+   if (!res.ok) { say(res.reason, "err"); return res; }
+   // Generation runs ONCE per restore, here, exactly as submit does (section 11).
++  delete res.value.options.parent;
+   const built = generateDeck(HPE.core.formatSeed(res.value.fields), res.value.options);
+   if (!built.ok) { say(built.reason, "err"); return built; }
+   rememberScale(seedOf(built.value));

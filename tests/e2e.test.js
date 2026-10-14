@@ -4510,10 +4510,10 @@ function run() {
     }
   });
 
-  test("DR1 line 86: on Edit the band goes static for the name and the degrees, and not for a drawer control", async () => {
+  test("DR1 line 86: on Edit the band goes static for the name, and not for a drawer control", async () => {
     try {
       await editFreshDeckOpen();
-      for (const id of ["scale-name", "scale-degrees"]) {
+      for (const id of ["scale-name"]) {
         await b.eval(`document.getElementById(${JSON.stringify(id)}).focus(); return true;`);
         assert.strictEqual(await bandPosition(), "static", `focusing #${id} left the band sticky`);
       }
@@ -4649,7 +4649,7 @@ function run() {
       await openEdit();
 
       const st = await b.eval(`
-        const rows = ["scale-name-row", "scale-degrees-row", "scale-delete-row"]
+        const rows = ["scale-name-row", "scale-delete-row"]
           .map(id => !document.getElementById(id).hasAttribute("hidden"));
         const surf = document.getElementById("scale-sheet").firstElementChild
           .getBoundingClientRect();
@@ -4657,7 +4657,6 @@ function run() {
           rows,
           box: document.getElementById("scale-box").value,
           name: document.getElementById("scale-name").value,
-          degrees: document.getElementById("scale-degrees").options.length,
           primary: document.getElementById("scale-generate").textContent.trim(),
           del: document.getElementById("scale-delete").textContent.trim(),
           delColor: getComputedStyle(document.getElementById("scale-delete")).color,
@@ -4667,10 +4666,9 @@ function run() {
           body: { sw: document.body.scrollWidth, cw: document.body.clientWidth },
         };
       `);
-      assert.deepStrictEqual(st.rows, [true, true, true], "an Edit-only row is hidden");
+      assert.deepStrictEqual(st.rows, [true, true], "an Edit-only row is hidden");
       assert.match(st.box, /^\(D3\) /, `the Edit box reads "${st.box}"`);
       assert.ok(st.name.length > 0, "the Name field is empty");
-      assert.strictEqual(st.degrees, 11, "the Degrees select is not the 11 candidates");
       assert.strictEqual(st.primary, "SAVE CHANGES");
       assert.strictEqual(st.del, "DELETE THIS DECK");
       assert.strictEqual(st.delColor, "rgb(167, 157, 139)", "the delete link is not #a79d8b");
@@ -4730,11 +4728,44 @@ function run() {
         `Tab escaped the Edit sheet: ${JSON.stringify(seen)}`);
       const ids = new Set(seen.map(s => s.id));
       for (const id of ["scale-back",
-                        "scale-name", "scale-box", "scale-degrees", "scale-generate", "scale-delete"]) {
+                        "scale-name", "scale-box", "scale-generate", "scale-delete"]) {
         assert.ok(ids.has(id), `Tab never reached #${id}: ${JSON.stringify([...ids])}`);
       }
     } finally {
       await b.key("Escape", "Escape", 27);
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("RD: the Edit page's Tab order is BACK, name, box, ADJUST LAYOUT, swatches, SAVE CHANGES, DELETE with the drawer closed, forward and back, and no stop is a select", async () => {
+    try {
+      await editFreshDeck();
+      await b.setViewport(380, 800, true);
+      const stop = () => b.eval(`
+        const el = document.activeElement;
+        return (el && (el.id || el.getAttribute("aria-label"))) || "";`);
+      const n = await b.eval(`return document.querySelectorAll("#scale-swatches button").length;`);
+      assert.ok(n > 0, "no swatches");
+      const swatches = Array.from({ length: n }, (_, i) => `Palette ${i + 1}`);
+      const cycle = n + 6;
+      const walk = async (start, shift) => {
+        await b.eval(`document.getElementById(${JSON.stringify(start)}).focus(); return true;`);
+        const seen = [];
+        for (let i = 0; i < cycle; i++) {
+          await tabKey(shift);
+          seen.push(await stop());
+        }
+        return seen;
+      };
+      const forward = await walk("scale-back", false);
+      assert.deepStrictEqual(forward,
+        ["scale-name", "scale-box", "scale-layout-toggle", ...swatches, "scale-generate", "scale-delete", "scale-back"]);
+      const backward = await walk("scale-delete", true);
+      assert.deepStrictEqual(backward,
+        ["scale-generate", ...swatches.slice().reverse(), "scale-layout-toggle", "scale-box", "scale-name", "scale-back", "scale-delete"]);
+      assert.strictEqual(await b.eval(`return document.querySelector("#scale-sheet select");`), null,
+        "the Edit sheet still holds a select");
+    } finally {
       await b.setViewport(900, 900, false);
     }
   });

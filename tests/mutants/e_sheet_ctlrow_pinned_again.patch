@@ -4,18 +4,19 @@
 # again to make room for it. Under a real iOS keyboard there is nothing left to
 # shrink: the Edit page gives a 48px seed field a 12px scrollport, which is the
 # owner's 2026-09-17 screenshot verbatim.
+# Re-anchored 2026-10-14 (remove-degrees, lane app) against the new source. The mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1303,6 +1303,7 @@
-       <label class="sheetlabel" for="scale-degrees">DEGREES</label>
-       <select id="scale-degrees"></select>
+@@ -1304,6 +1304,7 @@
+         </div>
+       </div>
      </div>
 +   </div>
      <!-- Inside .sheetbody, in the scroll. It used to be pinned below the
           scrollport with the primary, on the argument that everything outside
           .sheetbody is what the sheet guarantees without scrolling - so the
-@@ -1330,7 +1331,6 @@
+@@ -1331,7 +1332,6 @@
      <div class="ctlrow">
        <div id="scale-swatches" role="group" aria-label="Card palette"></div>
      </div>
