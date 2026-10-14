@@ -80,12 +80,13 @@ decisions behind it.
   seed's slot of the chip strip, and the seeded data itself is never written.
   DELETE on a seeded deck stores its id in the `hidden` field of the single
   `hpfc` blob, written only while at least one seeded deck is hidden; deleting
-  a replacement brings the seed back in its slot. The last seeded deck cannot
-  be deleted while no custom deck exists. RESET SEEDED DECKS in the settings
-  panel appears once any seeded deck is edited or deleted; the first tap arms
-  it with a warning that those edits will be lost, the second clears `hidden`
-  and every replacement and lands on the default deck. Plain custom decks are
-  kept. Clearing site data also brings every built-in back.
+  a replacement hides its seed as well, and only RESET SEEDED DECKS brings it
+  back. The last remaining deck of any kind cannot be deleted. RESET SEEDED
+  DECKS in the settings panel appears once any seeded deck is edited or
+  deleted; the first tap arms it with a warning that those edits will be lost,
+  the second clears `hidden` and every replacement and, if the deck on screen
+  was removed, lands on the default deck. Plain custom decks are kept.
+  Clearing site data also brings every built-in back.
   A scale's deck id is a 32-bit hash of its notes, so two different scales can
   in principle share an id; the app keeps one record per id, so on a collision
   one of the two is kept. It is vanishingly rare and not guarded against.
