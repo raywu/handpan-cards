@@ -50,7 +50,7 @@ Spawn prompts quote the plan's lane sections verbatim; see Cycle state for agent
 Cycle: 1   Wave: 1   Merged this batch: -
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| app | ac8a34e4d706a13ee | sheet-guidance-app | claude/sheet-guidance-app | #303 | 00f9e3b | 2026-10-14 (CI 11/11 pass, headRefOid == tip) | PASS_WITH_NITS+escalation at 00f9e3b; X3 fix in progress (attempt 2 of 2) | 2 | no | - | - |
+| app | ac8a34e4d706a13ee | sheet-guidance-app | claude/sheet-guidance-app | #303 | 78b5e67 | 2026-10-14 (CI run 38597722993 11/11 pass, headRefOid == tip) | review 3 pending at 78b5e67 (X3 implemented; FLOORS unmoved, README 939) | 2 | no | - | - |
 | docs | - | - | claude/sheet-guidance-docs | - | - | - | - | 0 | no | app | - |
 
 ## AFK auto-decisions (this execution)
