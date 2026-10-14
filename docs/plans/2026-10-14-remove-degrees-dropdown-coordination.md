@@ -33,7 +33,7 @@ Spawn prompts quote the plan's lane sections verbatim (lane app: the ownership r
 ## Status
 | Lane | Branch | State | Last verdict | Last update (UTC) |
 |---|---|---|---|---|
-| app | `claude/remove-degrees-app` | spawned (swarm-lane), working | - | 2026-10-14 |
+| app | `claude/remove-degrees-app` | PR #306 returned done; CI success at bc80445; reviewer spawned | pending | 2026-10-14 |
 | docs | `claude/remove-degrees-docs` | waiting on app | - | 2026-10-14 |
 
 ## Handoff queue (append-only)
@@ -49,7 +49,7 @@ Spawn prompts quote the plan's lane sections verbatim (lane app: the ownership r
 Cycle: 1   Wave: 1   Merged this batch: -
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| app | a69dcfb44fde5f965 | remove-degrees-app | claude/remove-degrees-app | - | - | - | - | 0 | no | - | - |
+| app | a69dcfb44fde5f965 | remove-degrees-app | claude/remove-degrees-app | #306 | bc80445f64dd53353c7a567f6943a6eff268fc36 | 2026-10-14 run 38641641597 success | pending (reviewer spawned) | 0 | no | - | - |
 | docs | - | remove-degrees-docs | claude/remove-degrees-docs | - | - | - | - | 0 | no | app merge | - |
 
 ## AFK auto-decisions (this execution)
