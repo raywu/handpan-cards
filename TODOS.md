@@ -89,3 +89,22 @@ real resize, so e2e drives the whole path against the shipped file.
   - No test pins that the pan warning returns when the notice clears; assert display is not none after tapping `#scale-anchor-one` in the N-A7 crowded test.
   - The `.pan` class add at `openEditSheet` and the collision branch are unpinned by mutants.
   - The markup comment above `#scale-guidance` in `index.html` still says "a warning first" and omits the yield.
+
+## Sheet literal colours into CSS variables
+
+- **What:** the Add/Edit sheet's colours are literals in `index.html` CSS rather than tokens; move them into CSS variables, appearance-preserving, as a separate change.
+- **Why:** design review 2026-10-14 of the remove-degrees plan, pass 5 (no DESIGN.md; the plan names only existing tokens); Codex P3, decision D11.
+- **Depends on:** nothing; pairs with the "Write DESIGN.md via /design-consultation" row.
+
+## Drop the dead select:focus term of the band rule
+
+- **What:** the `.sheetbody:has(... select:focus ...)` band rule in `index.html` still names `select:focus`, and the sheet has no `<select>` since 2026-10-14 (`#print-paper-select` is outside `.sheetbody`); one-token removal.
+- **Why:** left in place by owner-style decision R-4 (the removal list was rules that NAME `#scale-degrees`); design review 2026-10-14, decision D11.
+- **Depends on:** nothing.
+
+## Share links re-store an explicit parent index
+
+- **What:** `openShare()` persists the decoded `options.parent`, so a link minted under an override re-stores that index over an inferred record (test "RD: opening a share link that carries an explicit parent stores that parent again, after an inferred SAVE included" pins it).
+- **Why:** the 2026-10-14 removal infers on every SHEET save only; links were left honoured (R-3). Owner question from eng review 2026-10-14 (E4/E5, option B), no lane. Pros of changing: "infer always" would then be literally true.
+- **Cons:** a link would no longer restore the exact deck the sender sees, a standing decision (test "a share link restores the exact deck, and options never move the id"), and the share format would carry a dead field.
+- **Depends on:** nothing.
