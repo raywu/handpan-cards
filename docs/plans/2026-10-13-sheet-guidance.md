@@ -361,8 +361,8 @@ No critical gap: every failure mode above has a named test.
 | docs | app merged | `docs/plans/2026-10-07-scale-drawer-design-spec.md`, `CLAUDE.md` |
 
 ### Implementation Tasks (eng review)
-- [ ] ET1 lane app: tests first (N-A2, N-A4, N-A5, N-A6 incl. 844x390 gaps, states (e) and refuse-then-re-arm, N-A9, N-A10; N-A7 probe base and head on Pygmy Edit), then markup, CSS incl. the `max-height:520px` override, the notice guard, five comment corrections; eight `sg_*` mutants; FLOORS and README from CI.
-- [ ] ET2 lane docs: drawer spec SUPERSEDED marks; `CLAUDE.md` pitfall bullet citing N-A2, N-A5, N-A6, N-A10.
+- [x] ET1 lane app: tests first (N-A2, N-A4, N-A5, N-A6 incl. 844x390 gaps, states (e) and refuse-then-re-arm, N-A9, N-A10; N-A7 probe base and head on Pygmy Edit), then markup, CSS incl. the `max-height:520px` override, the notice guard, five comment corrections; eight `sg_*` mutants; FLOORS and README from CI.
+- [x] ET2 lane docs: drawer spec SUPERSEDED marks; `CLAUDE.md` pitfall bullet citing N-A2, N-A5, N-A6, N-A10.
 - [ ] T3 (owner): N-4 / D8 `#scale-refusal` placement.
 - [ ] T4 (owner): N-7 copy, SMALL_LABELS next action (TODOS).
 
