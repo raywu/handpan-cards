@@ -53,7 +53,7 @@ Cycle: 1   Wave: 1   Merged this batch: -
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | app | ac8a34e4d706a13ee | sheet-guidance-app | claude/sheet-guidance-app | #303 | 78b5e67 | 2026-10-14 (CI run 38597722993 11/11 pass, headRefOid == tip) | PASS_WITH_NITS at 78b5e67 | 2 | yes, e17a52f; worktree and branch removed | - | - |
-| docs | a7b0be57d52984201 | sheet-guidance-docs | claude/sheet-guidance-docs | #304 | 1675ea8 | 2026-10-14 (CI run 38602644641 success, headRefOid == tip, four owned files only, fixed sentence confirmed in diff) | FAIL at 7c5e924, bounced; attempt 2 awaiting fresh review at 1675ea8 | 1 | no | - | - |
+| docs | a7b0be57d52984201 | sheet-guidance-docs | claude/sheet-guidance-docs | #304 | 1675ea8 | 2026-10-14 (CI run 38602644641 success, headRefOid == tip, four owned files only, fixed sentence confirmed in diff) | FAIL at 7c5e924, bounced; attempt 2: fresh reviewer spawned at 1675ea8 (owner 2026-10-14: run conclusion is the evidence; check-run panel fit (fallback) stuck in_progress with conclusion success) | 1 | no | - | - |
 
 ## AFK auto-decisions (this execution)
 | id | decision |
