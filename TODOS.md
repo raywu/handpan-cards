@@ -80,5 +80,12 @@ real resize, so e2e drives the whole path against the shipped file.
 
 - **What:** "Crowded pan: the smallest labels print at N pt, under the 3.6 pt this app treats as readable. Nothing is left out." tells the player what happened and nothing they can do. Once it sits directly above GENERATE CARDS / SAVE CHANGES (sheet guidance plan, 2026-10-13) it reads as a reason not to press the button.
 - **Why:** design review 2026-10-13 (D7): the slot's longest tenant and its only message without a next step.
-- **Cons:** the string is engine output (`src/engine/core.js` REASONS, synced into `index.html` by `tools/inline_engine.py`); the tests that read it match a prefix (`tests/select.test.js`, `tests/app.test.js`) or read REASONS live (`tests/pdfcards.test.js`, `tests/test_gen_deck.py`); no fixture or mutant carries it.
+- **Cons:** the string is engine output (`src/engine/core.js` REASONS, synced into `index.html` by `tools/inline_engine.py`); its source of truth is `docs/ENGINE-SPEC.md` section 2 ("Code enum and reason strings"), pinned by the test "REASONS is the ENGINE-SPEC section 2 table, verbatim" in `tests/core.test.js`, so changing the copy means editing the spec table first; the tests that read it match a prefix (`tests/select.test.js`, `tests/app.test.js`) or read REASONS live (`tests/pdfcards.test.js`, `tests/test_gen_deck.py`); no fixture or mutant carries it.
 - **Depends on:** the sheet guidance plan landing; owner opening N-7.
+
+## Sheet guidance follow-ups
+
+- **What:** three app-side nits from reviewer 3 on #303, recorded only (X2/X3 build):
+  - No test pins that the pan warning returns when the notice clears; assert display is not none after tapping `#scale-anchor-one` in the N-A7 crowded test.
+  - The `.pan` class add at `openEditSheet` and the collision branch are unpinned by mutants.
+  - The markup comment above `#scale-guidance` in `index.html` still says "a warning first" and omits the yield.

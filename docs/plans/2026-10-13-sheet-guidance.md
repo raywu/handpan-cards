@@ -31,6 +31,8 @@ Cost of two lines is 30px off every scrollport (36 minus the 6px the tuck gives 
 
 **Growth beyond two lines is allowed in exactly these states, and nowhere else (requirement 4).** Total text over two lines: (a) a two-line warning plus a one-line notice (a crowded pan whose layout the player has changed), (b) joined warnings (three lines) at Edit open, (c) their combinations with a notice, (d) the delete refusal with a long deck name, (e) the notice with all three ring-reset suffixes (eng review R9). Each adds 18px per line. Why acceptable: (b) and (d) happen with no finger on the scroller. (a) fires on the pointer-up that ends the first layout change (`paintLayout()` writes the notice there, never mid-drag); the scrollport shrinks 18px at its bottom edge and the content above does not move unless the body is scrolled to its maximum. When the body does not overflow (390x844, create, closed) the primary moves 18px instead: the one residual jump, crowded pans only. N-6 records the owner's alternative (one message wins) if they prefer none.
 
+**Amended 2026-10-14 (X2, X3).** Growth states (a) and (c) no longer occur: while the notice holds text a pan warning (`#scale-msg.warn.pan`) is hidden by `#scale-sheet.noticed #scale-msg.warn.pan{display:none}` and returns when the notice clears (the return has no test, see TODOS.md "Sheet guidance follow-ups"; true by `paintLayout()`'s `sheet.classList.toggle("noticed", !!note)`), so a two-line warning is never on screen beside a notice (test "SG: N-A7 the crowded 24-note pan: the real SMALL_LABELS warning (two lines) opens Edit, a tapped anchor raises the notice, the warning yields and the three-row seed box stays readable at every keyboard"). The delete refusal still shows: X3 narrows the yield to pan warnings, so the refusal and every error always show (test "SG: N-A6 the delete refusal then a re-armed DELETE: the slot keeps its height, the refusal stays up and the arming note shows beside DELETE"). Growth is now (b), (d), (e) and, since X3, the delete refusal beside a notice when the two together pass two lines (the N-A6 delete test asserts that 54px slot). The class lives on `#scale-sheet` because `tools/sandbox.js` ELEMENT_IDS lacks the wrapper (no test; see `ELEMENT_IDS` in `tools/sandbox.js`).
+
 **Design review 2026-10-13, D5 (the biggest risk both voices named).** The slot's promise is the owner's: guidance visible, never hidden by scrolling or the viewport. "Never resizes" is this plan's own stricter goal, and it holds except in the enumerated growth states, where the slot grows by exactly 18px per line and N-A6 asserts that figure rather than exempting the state. The three hard-cap remedies were rejected: clamping `#scale-msg` to two lines or collapsing a warning to its first clause hides guidance text, which is the opposite of the request; a three-line reserve costs 18px on every scrollport and leaves 3px of Edit headroom at the 395px keyboard for every player, crowded pan or not. Growth state (a) is measured under the keyboard in table D and `assertSeedBoxReadable` runs in it (N-A7). The delete refusal (d) and `#scale-del-note` CAN be on screen together (eng review R6, Codex): the refusal is written by `deleteDeck()` into `#scale-msg`, and a further DELETE tap re-arms and writes `#scale-del-note` without clearing `#scale-msg`. The note stays pinned under DELETE outside the slot, so the slot holds one message; N-A6 includes the refuse-then-re-arm sequence (slot height unchanged, note visible).
 
 ## B. Which surfaces move
@@ -60,6 +62,8 @@ Correction to the prompt: `#scale-drawer` holds TWO anonymous `.sheethint` parag
 
 **N-6 two messages stack, warning/error first, notice second (recommended; closed by the consultation).** Alternative: the notice wins and the warning is hidden while it holds; rejected because it hides guidance, which is the request's whole point.
 
+**N-6 superseded 2026-10-14 by owner decision X2: the notice wins and a PAN warning is hidden while it holds text.** The alternative rejected above was adopted. X3 (integrator decision) narrows it: only pan warnings (`#scale-msg.warn.pan`, the class added at the three pan-warning `say()` sites: `syncParseState` twice, `openEditSheet` once) yield; the delete refusal (warn tier, from `deleteDeck()`) and every error always show. The warning returns when the notice clears. Tests: "SG: N-A7 the crowded 24-note pan: the real SMALL_LABELS warning (two lines) opens Edit, a tapped anchor raises the notice, the warning yields and the three-row seed box stays readable at every keyboard" and "SG: N-A6 the scrollport does not resize between empty, notice and one- or two-line states, grows by exactly 18px a line in the enumerated states, a warning yields to a standing notice, and the slot sits --sp-2 from both neighbours".
+
 ## C. Accessibility and focus
 
 `#scale-msg` keeps its own `aria-live="polite"`. `#scale-layout-state` gains `aria-live="polite" aria-atomic="true"` (N-8, recommended; `aria-atomic` added by D6 because `layoutNoticeText()` appends " The <ring> seats were reset." suffixes and a non-atomic region may read only the appended fragment; `#scale-drawer-status` already carries it): `#scale-sheet` is `aria-modal`, so the page-level `.announce` is outside the dialog (the `#scale-refusal` comment's reason). A live region announces on a DOM change, and `paintLayout()` assigns `layoutNote.textContent` on every paint (drags, picks, parses), which replaces the text node even when the string is unchanged (eng review R8, Codex). The lane guards the assignment (`if (layoutNote.textContent !== note)`), so it speaks on first appearance and between the unsaved, changed and reset sentences, not on every drag end; N-A10 asserts it. The wrapper has no live role (nested regions announce twice). Nothing in the slot is focusable: the `sheetRoute` tab-stop list and `showSheet()`'s focus-on-open (BACK) are unaffected, and `#scale-generate` stays the only full-width primary. Contrast on the sheet ground `#1f1b15` (D6): neutral `#c4bcab` about 9:1, amber `#e3b25c` about 8.6:1, orange `#E27005` about 5.3:1; all pass AA for 12px text (4.5:1), orange is the nearest to the line.
@@ -78,6 +82,8 @@ Scrollport is `.sheetbody` `clientHeight`; footer is surface bottom minus scroll
 | 390x745 Edit | 162 -> 192 | 502 -> 472 |
 | 844x390 create | 75 -> 104 | 255 -> 226 |
 | 844x390 Edit | 128 -> 157 | 202 -> 173 |
+
+Note 2026-10-14: the two 844x390 rows above cost 29px in the prototype, which lacked the R1 landscape override; the shipped cost is 39px, scrollports 216 (create) and 163 (Edit) (figures from the lane's probe, not asserted by a test).
 
 Edit page, 390x745, keyboard up (`b.fakeKeyboard(745 - kb)`; headroom is scrollport minus the 48px seed box, which is what `assertSeedBoxReadable` needs to be non-negative):
 
@@ -129,7 +135,7 @@ All strings byte-identical. **N-7 (recommended OUT):** the consultation proposes
 | N-3 | `#scale-msg` | move into the slot (AFK pick) |
 | N-4 | `#scale-refusal`, `#scale-parse` | stay (AFK pick); owner may overturn, cost in B |
 | N-5 | `#scale-drawer-status` | stay (AFK pick) |
-| N-6 | two messages | stacked, warning first (AFK pick) |
+| N-6 | two messages | stacked, warning first (AFK pick) (superseded by X2/X3, 2026-10-14) |
 | N-7 | copy change | out (AFK pick) |
 | N-8 | notice gets `aria-live="polite" aria-atomic="true"`; notice adopts `#scale-msg`'s font and the neutral colour inside the slot | yes (AFK pick; atomic and colour from the design review, D3/D6) |
 
@@ -137,7 +143,7 @@ Design review 2026-10-13 (`/plan-design-review`, AFK auto-picks): D1 all seven p
 
 ## Lanes (/swarm)
 
-**Goal.** The notice and every page-state or error message the sheet writes stay on screen with the primary at every viewport and keyboard. **Non-goals.** No change to any `layoutNoticeText()`, `say()` or refusal string; no toasts, timers or animation; no change to the primary's label logic; no script change beyond the one-line notice guard of R8; no sticky footer; no move of `#scale-del-note`; no change to `#settings-panel`, `panelStops()` or `panel-fit`; no engine, data or fixture change; `assertSeedBoxReadable` not lowered.
+**Goal.** The notice and every page-state or error message the sheet writes stay on screen with the primary at every viewport and keyboard. **Non-goals.** No change to any `layoutNoticeText()`, `say()` or refusal string; no toasts, timers or animation; no change to the primary's label logic; no script change beyond the one-line notice guard of R8; no sticky footer; no move of `#scale-del-note`; no change to `#settings-panel`, `panelStops()` or `panel-fit`; no engine, data or fixture change; `assertSeedBoxReadable` not lowered. X2 and X3 (2026-10-14) extend the script allowance to the `noticed` toggle in `paintLayout()` and to the three `pan` class adds.
 
 **Ownership rule (after editable-defaults 8.3).** Lane app owns, in EVERY test file, EVERY EXISTING test that its behaviour changes redden or whose purpose they defeat, found by two steps rather than by a list: (1) running the suites at the lane head, and (2) because a green test on the wrong path never fails, auditing every existing test whose setup selects `#scale-msg`, `#scale-layout-state`, `.sheetbody`'s children or the served-markup order of the sheet, and re-pointing any that now pass for the wrong reason. Lane docs owns no test. Lane app's report carries a base-to-head inventory of every existing test it re-pointed or rewrote, with the reason for each.
 
@@ -187,11 +193,11 @@ VERDICT: SMALL
 
 ### Implementation Tasks
 
-- [ ] **T1 (P1, human: ~1 day / CC: ~60min)** — scale sheet — Lane app: the `#scale-guidance` slot, colour split, `aria-atomic`, growth-state measurements, N-A1..N-A10, eight `sg_*` mutants
+- [x] **T1 (P1, human: ~1 day / CC: ~60min)** — scale sheet — Lane app: the `#scale-guidance` slot, colour split, `aria-atomic`, growth-state measurements, N-A1..N-A10, eight `sg_*` mutants DONE (#303, main e17a52f)
   - Surfaced by: Pass 1, 2, 3 (D3, D4, D5, D6)
   - Files: `index.html` (markup, CSS, five comments per N-A8), `tests/app.test.js`, `tests/e2e.test.js`, `tests/drawer_seats.test.js`, `tests/mutants/sg_*`
   - Verify: `node --test --test-name-pattern 'SG|dr1|DR1|hairline' tests/app.test.js`; the named single e2e tests; CI green at the head SHA; `python3 tools/refresh_mutants.py --check`
-- [ ] **T2 (P1, human: ~2h / CC: ~15min)** — docs — Lane docs: drawer spec SUPERSEDED marks and the CLAUDE.md pitfall bullet, each sentence citing N-A2, N-A5, N-A6 and N-A10
+- [x] **T2 (P1, human: ~2h / CC: ~15min)** — docs — Lane docs: drawer spec SUPERSEDED marks and the CLAUDE.md pitfall bullet, each sentence citing N-A2, N-A5, N-A6 and N-A10 DONE (this PR, sheet guidance docs)
   - Surfaced by: Lanes section (unchanged by review)
   - Files: `docs/plans/2026-10-07-scale-drawer-design-spec.md`, `CLAUDE.md`
   - Verify: reviewer re-verifies every sentence against the named tests
@@ -201,7 +207,7 @@ VERDICT: SMALL
   - Verify: the two refusal e2e tests re-pointed; refusal rect inside the viewport at the 395px keyboard
 - [ ] **T4 (P3, human: ~1h / CC: ~10min)** — copy — Give `SMALL_LABELS` a next action
   - Surfaced by: Pass 4 (D7)
-  - Files: `src/engine/core.js` REASONS (synced into `index.html` by `tools/inline_engine.py`); the tests that read the copy match a prefix (`tests/select.test.js`, `tests/app.test.js`) or read REASONS live (`tests/pdfcards.test.js`, `tests/test_gen_deck.py`); no fixture or mutant carries the string
+  - Files: `src/engine/core.js` REASONS (synced into `index.html` by `tools/inline_engine.py`); the source of truth for the string is `docs/ENGINE-SPEC.md` section 2 ("Code enum and reason strings"), pinned by the test "REASONS is the ENGINE-SPEC section 2 table, verbatim" in `tests/core.test.js`, so changing the copy means editing the spec table first; the tests that read the copy match a prefix (`tests/select.test.js`, `tests/app.test.js`) or read REASONS live (`tests/pdfcards.test.js`, `tests/test_gen_deck.py`); no fixture or mutant carries the string
   - Verify: `python3 tools/inline_engine.py --check`, then the js and python suites
 
 _No new tasks from Pass 6 (consistency) or Pass 7 (process)._
@@ -355,8 +361,8 @@ No critical gap: every failure mode above has a named test.
 | docs | app merged | `docs/plans/2026-10-07-scale-drawer-design-spec.md`, `CLAUDE.md` |
 
 ### Implementation Tasks (eng review)
-- [ ] ET1 lane app: tests first (N-A2, N-A4, N-A5, N-A6 incl. 844x390 gaps, states (e) and refuse-then-re-arm, N-A9, N-A10; N-A7 probe base and head on Pygmy Edit), then markup, CSS incl. the `max-height:520px` override, the notice guard, five comment corrections; eight `sg_*` mutants; FLOORS and README from CI.
-- [ ] ET2 lane docs: drawer spec SUPERSEDED marks; `CLAUDE.md` pitfall bullet citing N-A2, N-A5, N-A6, N-A10.
+- [x] ET1 lane app: tests first (N-A2, N-A4, N-A5, N-A6 incl. 844x390 gaps, states (e) and refuse-then-re-arm, N-A9, N-A10; N-A7 probe base and head on Pygmy Edit), then markup, CSS incl. the `max-height:520px` override, the notice guard, five comment corrections; eight `sg_*` mutants; FLOORS and README from CI.
+- [x] ET2 lane docs: drawer spec SUPERSEDED marks; `CLAUDE.md` pitfall bullet citing N-A2, N-A5, N-A6, N-A10.
 - [ ] T3 (owner): N-4 / D8 `#scale-refusal` placement.
 - [ ] T4 (owner): N-7 copy, SMALL_LABELS next action (TODOS).
 
