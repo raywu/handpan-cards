@@ -44,12 +44,13 @@ Spawn prompts quote the plan's lane sections verbatim; see Cycle state for agent
 | PR | Lane | Reviewer verdict | Findings | Outcome |
 |---|---|---|---|---|
 | #303 | app | FAIL (6d09230) | blocker: growth (a) reachable on crowded user pans, seed box clipped at kb395 where main passes; nits: drawer_drag inventory entry, N-A7 tables incomplete, FLOORS/README unmoved, N-A5 hardcoded viewports, N-A6 missing 2-line-notice state, N-A10 direct paintLayout calls | bounced, attempt 1 |
+| #303 | app | PASS_WITH_NITS (00f9e3b), escalation flagged | major: X2 CSS also hides the warn-tier delete refusal (deleteDeck) while a notice stands; nits: PR body stale (N-A6 bullet, 929->937, 844x390 prose), growth (d) not driven to three lines, N-A6 yielding states set `noticed` by hand, N-A5 skips keyboards at 844x390 | X3: bounced, attempt 2 (last) |
 
 ## Cycle state
 Cycle: 1   Wave: 1   Merged this batch: -
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| app | ac8a34e4d706a13ee | sheet-guidance-app | claude/sheet-guidance-app | #303 | 00f9e3b | 2026-10-14 (CI 11/11 pass, headRefOid == tip) | review 2 pending (reviewer a08e45433b163287b at 00f9e3b) | 1 | no | - | - |
+| app | ac8a34e4d706a13ee | sheet-guidance-app | claude/sheet-guidance-app | #303 | 00f9e3b | 2026-10-14 (CI 11/11 pass, headRefOid == tip) | PASS_WITH_NITS+escalation at 00f9e3b; X3 fix in progress (attempt 2 of 2) | 2 | no | - | - |
 | docs | - | - | claude/sheet-guidance-docs | - | - | - | - | 0 | no | app | - |
 
 ## AFK auto-decisions (this execution)
@@ -58,3 +59,5 @@ Cycle: 1   Wave: 1   Merged this batch: -
 | X1 | Coord doc lives on `claude/sheet-guidance-coord` (never merges), as the seeded-save-delete workstream did. |
 
 **X2 (owner decision, 2026-10-14, check-in):** plan N-6 flips to the alternative, "one message wins": while `#scale-layout-state` holds text, the warn-tier `#scale-msg` is hidden (`#scale-guidance.noticed #scale-msg.warn{display:none}`, class toggled in `paintLayout()` beside the R8 guard); error-tier messages still stack. Growth states (a) and (c) cease to exist. The "no script change beyond R8" non-goal is extended by the owner to the class toggle. New mutant `sg_warning_not_yielding_to_notice` (937 -> 938). Lane docs amends the plan's N-6 row, growth paragraph and non-goals accordingly.
+
+**X3 (integrator AFK auto-decision, 2026-10-14, after review 2 of #303):** the reviewer asked the owner to see one finding before merge: `#scale-sheet.noticed #scale-msg.warn{display:none}` hides every warn-tier message, and `deleteDeck()` sends the delete refusal ("Keep at least one deck...") at warn tier, so under a standing notice a player taps DELETE and sees nothing. Options: (A) bounce once more so ONLY pan warnings yield (a `pan` class added at each pan-warning `say()` call site, selector narrowed to `.warn.pan`, refusals and errors always show, e2e assertion + mutant `sg_refusal_yields_to_notice`, count 939); (B) merge and queue. Picked (A): the owner's X2 words were "it replaces the pan warning in the slot", not refusals, and the original request is that guidance is never hidden; (B) would ship hidden guidance. Attempt 2 is the cap; a third FAIL regroups per the AFK rule. Implementation note: the class lives on `#scale-sheet`, not `#scale-guidance`, because `tools/sandbox.js` ELEMENT_IDS lacks the wrapper (the X2 text above predates that).
