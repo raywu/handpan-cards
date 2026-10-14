@@ -75,3 +75,10 @@ real resize, so e2e drives the whole path against the shipped file.
 - **What:** decide a floor or a drop rule for the bottom octave digit.
 - **Why:** the owner excluded it from the small-labels warning (2026-10-06), so nothing reports it.
 - **Depends on:** the scale-syntax plan landing.
+
+## SMALL_LABELS has no next action
+
+- **What:** "Crowded pan: the smallest labels print at N pt, under the 3.6 pt this app treats as readable. Nothing is left out." tells the player what happened and nothing they can do. Once it sits directly above GENERATE CARDS / SAVE CHANGES (sheet guidance plan, 2026-10-13) it reads as a reason not to press the button.
+- **Why:** design review 2026-10-13 (D7): the slot's longest tenant and its only message without a next step.
+- **Cons:** the string is engine output (`src/engine/core.js` REASONS, synced into `index.html` by `tools/inline_engine.py`); the tests that read it match a prefix (`tests/select.test.js`, `tests/app.test.js`) or read REASONS live (`tests/pdfcards.test.js`, `tests/test_gen_deck.py`); no fixture or mutant carries it.
+- **Depends on:** the sheet guidance plan landing; owner opening N-7.
