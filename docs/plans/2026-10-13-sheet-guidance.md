@@ -139,7 +139,7 @@ Design review 2026-10-13 (`/plan-design-review`, AFK auto-picks): D1 all seven p
 
 **Goal.** The notice and every page-state or error message the sheet writes stay on screen with the primary at every viewport and keyboard. **Non-goals.** No change to any `layoutNoticeText()`, `say()` or refusal string; no toasts, timers or animation; no change to the primary's label logic; no script change beyond the one-line notice guard of R8; no sticky footer; no move of `#scale-del-note`; no change to `#settings-panel`, `panelStops()` or `panel-fit`; no engine, data or fixture change; `assertSeedBoxReadable` not lowered.
 
-**Ownership rule (editable-defaults 8.3, verbatim).** Lane app owns, in EVERY test file, EVERY EXISTING test that its behaviour changes (B1..B5) redden or whose purpose they defeat, found by two steps rather than by a list: (1) running the suites at the lane head, and (2) because a green test on the wrong path never fails (the five collision tests), auditing every existing test whose setup selects a chip by index or `chips.length` arithmetic, taps a chip that is already on, scrolls the strip before reading `.chip.on`, or reads `sheetState().primaries` (R9). Bounds: no test is renamed or deleted (so every `# kills:` and `# suite:` header stays true verbatim); every mutant whose `# kills:` names a touched test must still die (the mutant may be re-anchored, never re-targeted to another test); a touched test keeps its purpose (its assertions move to the new behaviour, as the pencil test already does; the five collision tests keep testing the EDIT path by selecting the older custom); the lane report carries a base-to-head inventory of every touched test (title, file:line, what moved, the mutants that name it), which the reviewer verifies against the diff. Lane app ALSO owns every existing MUTANT, whatever its target, that its source changes invalidate (`refresh_mutants.py --check` red at the lane head because the removed-lines run no longer exists verbatim): the run is rewritten against the lane head so the mutant demonstrates the same defect and still dies (R7; `e_panel_moved_into_header` is the known one). Lane e2e owns only the NEW tests it adds plus the new mutants that name them. R3 and R4 stay as the known list, now a FLOOR of what lane app touches, not a boundary; section 8.2 is the current floor (seventeen tests, two files) and ED-A17 the mutant floor.
+**Ownership rule (after editable-defaults 8.3).** Lane app owns, in EVERY test file, EVERY EXISTING test that its behaviour changes redden or whose purpose they defeat, found by two steps rather than by a list: (1) running the suites at the lane head, and (2) because a green test on the wrong path never fails, auditing every existing test whose setup selects `#scale-msg`, `#scale-layout-state`, `.sheetbody`'s children or the served-markup order of the sheet, and re-pointing any that now pass for the wrong reason. Lane docs owns no test.
 
 (Here "lane app" is this plan's lane app, and the e2e tests it adds are its own: there is no separate e2e lane.)
 
@@ -154,7 +154,7 @@ Design review 2026-10-13 (`/plan-design-review`, AFK auto-picks): D1 all seven p
 - N-A5: visibility proof of E row 1. Proof: new e2e test.
 - N-A6: no-resize proof of E row 2 and the enumerated growth, and the slot's top and bottom gaps equal to the computed `--sp-2` at 380x800 AND 844x390 (eng review R1: the landscape media query changes `.sheetsurf`'s gap). Proof: new e2e test.
 - N-A7: "with a real keyboard up, the seed box is not clipped by the sheet's own scroller" green unchanged, and `assertSeedBoxReadable` also asserted in growth state (a) at every `KEYBOARDS` entry on Edit; ALSO probed, base and head, on the Pygmy Edit page, whose seed wraps to three rows (`#scale-box` max-height is 3 x 1.3em + 26px = 88.4px, not the 48px table D assumes; eng review R5, Codex): the lane reports visible/height per `KEYBOARDS` entry for both commits. A state that already fails on main is reported as pre-existing, not fixed and not hidden; one that passes on main and fails at the head is a stop; both tables in D reproduced in the lane report from a probe.
-- N-A8: stale `#scale-msg` markup comment replaced by one stating where the messages live and why; the `#scale-parse` CSS comment's "runGenerate()'s duplicate-scale refusal" sentence corrected (refusals go through `showRefusal()`); the `showRefusal()` comment's "#scale-msg sits below the pan" corrected (eng review R3).
+- N-A8: stale `#scale-msg` markup comment replaced by one stating where the messages live and why; the `#scale-parse` CSS comment's "runGenerate()'s duplicate-scale refusal" sentence corrected (refusals go through `showRefusal()`); the `showRefusal()` comment's "#scale-msg sits below the pan" corrected (eng review R3); the `#scale-refusal` markup comment's "#scale-msg keeps that job, below the pan" (index.html:1219) and the `#scale-parse` CSS comment's closing "#scale-msg is back below the pan" sentence (index.html:823) corrected too (review nit, five comments in all).
 - N-A10: a repeated `paintLayout()` with an unchanged notice performs no childList mutation on `#scale-layout-state` (MutationObserver in e2e, zero records across ten drag-end paints with the same text), and a changed notice performs exactly one. Proof: new e2e test (R8).
 - N-A9: inside the slot the notice computes to `#c4bcab` and `#scale-msg.warn` to `#e3b25c` (D3). Proof: new e2e assertion in N-A5's test.
 **New mutants (`# kills:` names the new test).** `sg_notice_back_in_the_scroll` (notice returned to `#scale-layout-zone`; kills N-A2 and N-A5), `sg_msg_left_in_the_scroll` (kills N-A2), `sg_slot_reserved_height_dropped` (`min-height:36px` removed; kills N-A6), `sg_slot_shrinks` (`flex:0 0 auto` dropped; kills N-A6's growth case), `sg_slot_live_dropped` (notice `aria-live` removed; kills N-A4), `sg_slot_below_primary` (kills N-A2), `sg_notice_amber_in_slot` (the colour rule dropped; kills N-A9), `sg_notice_rewritten_every_paint` (the textContent guard dropped; kills N-A10). Mutant count never drops.
@@ -187,7 +187,7 @@ VERDICT: SMALL
 
 ### Implementation Tasks
 
-- [ ] **T1 (P1, human: ~1 day / CC: ~60min)** — scale sheet — Lane app: the `#scale-guidance` slot, colour split, `aria-atomic`, growth-state measurements, N-A1..N-A9, seven `sg_*` mutants
+- [ ] **T1 (P1, human: ~1 day / CC: ~60min)** — scale sheet — Lane app: the `#scale-guidance` slot, colour split, `aria-atomic`, growth-state measurements, N-A1..N-A10, eight `sg_*` mutants
   - Surfaced by: Pass 1, 2, 3 (D3, D4, D5, D6)
   - Files: `index.html` (markup, CSS, two comments), `tests/app.test.js`, `tests/e2e.test.js`, `tests/drawer_seats.test.js`, `tests/mutants/sg_*`
   - Verify: `node --test --test-name-pattern 'SG|dr1|DR1|hairline' tests/app.test.js`; the named single e2e tests; CI green at the head SHA; `python3 tools/refresh_mutants.py --check`
@@ -241,7 +241,7 @@ Outside voices: Codex completed (4 findings), Claude design subagent 7/10
 3. **Deletion?** None available: both elements already exist; the change is position, not count. The `.sheetbody` hairline rule, the `:empty` rules and `say()` stay.
 4. **Reuse?** Yes: the slot reuses `#scale-msg`'s font and colours and the notice keeps `.sheethint` outside the slot's override; no new component family.
 5. **Speculative parts?** The enumerated growth states (two messages, three lines) are driven by real producers (`openEditSheet` writes a warning while the notice stands), not by hypothetical copy. The 36px reservation is derived, not guessed.
-6. **Over-testing?** Seven mutants for nine acceptance items, each mutant naming one test; no mutant tests the same removal twice. Proportionate.
+6. **Over-testing?** Eight mutants for ten acceptance items, each mutant naming one test; no mutant tests the same removal twice. Proportionate.
 7. **Complexity gate (8+ files: `index.html`, three test files, seven mutants, `suite_health.py`, README, the drawer spec, `CLAUDE.md`).** D2 fired (below). The smaller arrangement would be one lane and no docs lane; the original two-lane shape stands because the docs lane edits files whose claims a reviewer must verify against merged code (feedback_docs_lane_cites_tests), which needs the app merge first.
 
 ### Findings
@@ -265,7 +265,7 @@ Coverage of the change, by producer:
 producer                       -> surface              -> test that sees the new position
 layoutNoticeText()/paintLayout -> #scale-layout-state  -> dr1Notice tests, S_NOTICE, DR2a order (re-pointed), N-A2, N-A5
 say() warn/ok (openEditSheet)  -> #scale-msg           -> "a pan warning on the Edit open does not move the pan" (re-pointed), N-A6 growth (a)
-say() err (save refusals)      -> #scale-msg.err       -> N-A6 (one-line err state), N-A9 colour
+say() err (openShare only, sheet closed) -> #scale-msg.err -> unexercised in the sheet (D4); N-A9 colour only
 showRefusal()/showParse()      -> #scale-refusal/parse -> UNCHANGED (stay in .sheetbody, N-4)
 viewport/keyboard              -> whole slot           -> N-A5 (FOLD_VIEWPORTS x KEYBOARDS x scrollTop 0/max), N-A7, hairline test (re-pointed)
                                                           landscape 844x390 gap: N-A6 (added, R1)
@@ -277,18 +277,18 @@ REGRESSION RULE: a test that goes red at the lane head is re-pointed to the new 
 
 **Section 4, Performance**
 
-Nothing measurable: one extra flex item, no script change, no layout thrash (the slot reserves its height, so message changes do not resize the scrollport; that is the point, and N-A6 asserts it).
+Nothing measurable: one extra flex item, one string comparison per paint (R8), no layout thrash (the slot reserves its height, so message changes do not resize the scrollport; that is the point, and N-A6 asserts it).
 
-### Decision ledger (eng review)
+### Decision ledger (eng review; E-numbered so they never collide with the design review's D1-D10)
 
 - **R1 (from F1):** adopt the landscape margin override and the 844x390 gap assertion. Plan text in A and N-A6 updated below. Recorded as an eng-review remedy, not a new owner decision.
 - **R2 (F2, F3):** wording corrections in E and the lane's "Reads only" line.
 - **R3 (F4):** N-A8 names three comments.
 - **R4 (N-A6 fallback-font note):** no plan change; note recorded.
-- **D1 (AFK auto-pick):** `/office-hours` prerequisite skipped; the owner stated the problem and the scope.
-- **D2 (AFK auto-pick, complexity gate):** Original arrangement (lane app then lane docs) over a single lane. Reason: the docs lane's sentences must be verified against MERGED code by a fresh reviewer (feedback_docs_lane_cites_tests); folding them into the app lane makes the same reviewer verify both and has cost two FAILs before (#299, #301).
-- **D3 (AFK auto-pick, TODOS):** B, skip: nothing new to add; "SMALL_LABELS has no next action" already covers the only follow-up the review surfaced.
-- **D4 (AFK auto-pick, Next steps):** C, ready to implement via `/swarm` with the lane text above.
+- **E1 (AFK auto-pick):** `/office-hours` prerequisite skipped; the owner stated the problem and the scope.
+- **E2 (AFK auto-pick, complexity gate):** Original arrangement (lane app then lane docs) over a single lane. Reason: the docs lane's sentences must be verified against MERGED code by a fresh reviewer (feedback_docs_lane_cites_tests); folding them into the app lane makes the same reviewer verify both and has cost two FAILs before (#299, #301).
+- **E3 (AFK auto-pick, TODOS):** B, skip: nothing new to add; "SMALL_LABELS has no next action" already covers the only follow-up the review surfaced.
+- **E4 (AFK auto-pick, Next steps):** C, ready to implement via `/swarm` with the lane text above.
 
 ### Outside voice (Codex, gpt-6-astra, read-only, `codex exec`, 2026-10-13)
 
@@ -313,7 +313,7 @@ VERDICT: REVISE — The plan underestimates supported content heights and relies
 - R9 (Codex MEDIUM 4): `LAYOUT_RINGS` 9180 is three rings; the longest notice is three lines at 380px and becomes growth state (e).
 Codex found nothing in the SB-2 exclusion, the listed test re-points, or the `hidden`/`:empty`/specificity handling, which agrees with Section 2.
 
-- **D5 (AFK auto-pick, cross-model):** adopt all five Codex findings as R5-R9.
+- **E5 (AFK auto-pick, cross-model):** adopt all five Codex findings as R5-R9.
 
 Approval readiness: PASS
 
