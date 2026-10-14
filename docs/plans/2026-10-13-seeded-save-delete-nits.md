@@ -188,11 +188,12 @@ first, then the change.
 Every sentence below cites the test that proves it (memory
 `feedback_docs_lane_cites_tests`); the reviewer diffs claims against tests.
 
-10. README: SAVE on a seeded deck is refused when another deck already holds
-    that scale, with the message "Another deck already uses this scale."
+10. README: SAVE on a seeded deck is refused when a saved custom deck already
+    holds that scale (the guard is `fromSeed && CUSTOM[...]`; another seeded
+    deck's scale does not refuse), with the message "Another deck already uses this scale."
     (test: `grep -n "Another deck already uses" tests/app.test.js`; if no test
     asserts it on a SEEDED deck, add one first).
-11. README: SAVE with nothing changed closes the sheet and writes nothing
+11. README: SAVE on a seeded deck with nothing changed closes the sheet and writes nothing
     (test "SD: saving a seeded deck unchanged closes the sheet and writes
     nothing").
 12. README: an armed RESET disarms on blur, on a tap anywhere else, and when

@@ -397,8 +397,9 @@ pitch classes (midi % 12), never stored.
   (2026-10-13, seeded SAVE / DELETE; replaces the 2026-10-12 FORK / HIDE
   model) A seeded deck is edited like a custom one: SAVE writes a custom record
   with the record option `replaces: "<seeded id>"`, DELETE adds the id to
-  `hidden`. A hidden default deck falls back through `fallbackDeck()` to its
-  own replacement if one exists, else to the first visible deck, custom decks
+  `hidden`. A hidden seeded deck lands on its own replacement if one exists
+  (`deck()` consults `replacements()` first; `fallbackDeck()` does the same for
+  the default deck), else to the first visible deck, custom decks
   first, and a stored id of a hidden deck is NOT honoured. A stored id of a
   replaced seed shows its replacement, whichever seed it is (`deck()` consults
   `replacements()` before `fallbackDeck()`), and boot says "That deck is gone."

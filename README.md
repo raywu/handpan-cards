@@ -83,8 +83,8 @@ decisions behind it.
   a replacement hides its seed as well, and only RESET SEEDED DECKS brings it
   back. The last remaining deck of any kind cannot be deleted. SAVE on a
   seeded deck is refused with "Another deck already uses this scale." when
-  another deck already holds that scale, and SAVE with nothing changed closes
-  the sheet and writes nothing. RESET SEEDED
+  a saved custom deck already holds that scale, and SAVE on a seeded deck with
+  nothing changed closes the sheet and writes nothing. RESET SEEDED
   DECKS in the settings panel appears once any seeded deck is edited or
   deleted; the first tap arms it with a warning that those edits will be lost,
   and the armed button disarms on blur, on a tap anywhere else, and when the
