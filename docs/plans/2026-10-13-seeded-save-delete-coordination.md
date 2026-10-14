@@ -55,7 +55,7 @@ Plan `docs/plans/2026-10-13-seeded-save-delete-nits.md`, eng-reviewed (D14, D15;
 
 | Lane | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on |
 |---|---|---|---|---|---|---|---|---|---|
-| nits | .claude/worktrees/seeded-save-delete-nits | claude/seeded-save-delete-nits | #301 | 31aa7ee | 2026-10-13 (head == tip, CI 11/11 pass) | FAIL+1 (README refusal sentence over-reaches: code refuses only when a CUSTOM deck holds the scale; nits N1-N4) | 1 | no | lane fix, fresh re-review |
+| nits | .claude/worktrees/seeded-save-delete-nits | claude/seeded-save-delete-nits | #301 | fcd96c3 | 2026-10-13 (head == tip, CI 11/11 pass; fix docs-only, 3 files) | FAIL+1 at 31aa7ee; fresh reviewer spawned at fcd96c3 | 1 | no | re-review |
 
 | Lane | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on |
 |---|---|---|---|---|---|---|---|---|---|
