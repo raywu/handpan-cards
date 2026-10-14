@@ -394,15 +394,23 @@ pitch classes (midi % 12), never stored.
   (`kurd`), not `DECKS[0]`. Picker order is the array order of
   `data/decks.json`. They are two facts. A stored deck id is always honoured;
   nothing migrates a visitor who stored `hijaz` before 2026-10-06.
-  (2026-10-12, editable defaults) A built-in can be hidden. A hidden default
-  deck falls back through `fallbackDeck()` to the first visible deck, custom
-  decks first, and a stored id of a hidden deck is NOT honoured. Hidden ids
-  live in the `hidden` field of the `hpfc` blob, written only when non-empty;
-  there is no separate `hpfc.hidden` key.
+  (2026-10-13, seeded SAVE / DELETE; replaces the 2026-10-12 FORK / HIDE
+  model) A seeded deck is edited like a custom one: SAVE writes a custom record
+  with the record option `replaces: "<seeded id>"`, DELETE adds the id to
+  `hidden`. A hidden default deck falls back through `fallbackDeck()` to the
+  first visible deck, custom decks first, and a stored id of a hidden deck is
+  NOT honoured; a stored id whose seed has a replacement shows the replacement,
+  and a replacement outranks a hidden seed. Hidden ids live in the `hidden`
+  field of the `hpfc` blob, written only when non-empty; there is no separate
+  `hpfc.hidden` key. RESET SEEDED DECKS (`#deck-restore`) clears `hidden` and
+  every record with `replaces`, keeps plain custom decks.
 - **Chip order is not picker order:** the strip is `allDecks()` = custom decks
-  newest first, then the visible built-ins in `data/decks.json` order. "Picker
-  order" and "chip index" are different facts; a test that picks a custom deck
-  by index targets the older custom with `+ 1`, never index 0.
+  newest first, then the five seeded slots in `data/decks.json` order. A slot
+  shows `replacements()[seedId]`, the newest record naming that seed in
+  `replaces`, else the seed if not hidden. Older records naming the same seed
+  render as plain custom decks. "Picker order" and "chip index" are different
+  facts; a test that picks a custom deck by index targets the older custom with
+  `+ 1`, never index 0.
 - **Boot order:** the first render must happen after the card-order array
   exists; `render()` guards against an empty order. Keep it that way.
 - **Data re-injection:** the degrees contain `deg` (U+00B0) characters; a
