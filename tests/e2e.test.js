@@ -11801,4 +11801,116 @@ function run() {
       await b.setViewport(900, 900, false);
     }
   });
+
+  test("SD: the selected seeded chip's pencil opens the sheet with SAVE CHANGES at 380px", async () => {
+    try {
+      await freshLoad();
+      await b.setViewport(380, 780, true);
+      const kurd = await bootMeta();
+      const chip = await b.eval(`
+        const el = document.querySelector("#decks .chip.on");
+        return { editable: el.classList.contains("editable"), label: el.getAttribute("aria-label"),
+                 glyph: getComputedStyle(el, "::after").content };`);
+      assert.strictEqual(chip.editable, true, `the selected seeded chip (${kurd.id}) has no edit cue`);
+      assert.ok(/\u270E/.test(chip.glyph), `the seeded chip's ::after draws ${JSON.stringify(chip.glyph)}, not a pencil`);
+      assert.ok(/^Edit .+/.test(chip.label || ""), `the seeded chip's aria-label is ${JSON.stringify(chip.label)}`);
+
+      await openEdit();
+      const sheet = await b.eval(`
+        const vis = id => !document.getElementById(id).hasAttribute("hidden");
+        return { save: document.getElementById("scale-generate").textContent.trim(),
+                 del: document.getElementById("scale-delete").textContent.trim(),
+                 delShown: vis("scale-delete"),
+                 text: document.getElementById("scale-sheet").textContent };`);
+      assert.strictEqual(sheet.save, "SAVE CHANGES");
+      assert.strictEqual(sheet.delShown, true, "a seeded deck's sheet shows no DELETE control");
+      assert.ok(/DELETE THIS DECK/.test(sheet.del), `the delete control reads ${JSON.stringify(sheet.del)}`);
+      assert.ok(!/FORK THIS DECK|HIDE THIS DECK|SHOW HIDDEN DECKS/.test(sheet.text),
+        "the seeded sheet still carries the fork / hide copy");
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("SD: RESET arms, then restores all five at 380px and focuses #deck-add", async () => {
+    try {
+      await freshLoad();
+      await b.setViewport(380, 780, true);
+      const meta = await decksMeta();
+      const seeded = await b.eval(`return DECKS.map(d => chipLabel(d.name));`);
+      await deleteSelectedSeeded();
+
+      const texts = await chipTexts();
+      const want = seeded[meta.findIndex((m) => m.id === "pygmy")];
+      const at = texts.indexOf(want);
+      assert.ok(at >= 0, `no Pygmy chip in ${JSON.stringify(texts)}`);
+      await b.eval(`document.querySelectorAll("#decks .chip:not(#deck-add)")[${at}]
+                      .scrollIntoView({ block: "nearest", inline: "nearest" }); return true;`);
+      await b.click(`#decks .chip:nth-child(${at + 1})`);
+      await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)")[${at}].classList.contains("on")`,
+        { label: "the Pygmy chip to be selected" });
+      await openEdit();
+      await b.eval(`document.querySelectorAll("#scale-swatches .dot")[2].click(); return true;`);
+      assert.strictEqual(await b.eval(`return document.querySelectorAll("#scale-swatches .dot")[2].classList.contains("sel");`), true,
+        "the palette swatch did not take");
+      await b.click("#scale-generate");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
+        { label: "the sheet to close after the save" });
+      assert.strictEqual(await b.eval(`return Object.keys(replacements()).length;`), 1, "the save left no replacement");
+
+      await openSettingsPanel();
+      await b.click("#deck-restore");
+      const armed = await b.eval(`
+        const el = document.getElementById("deck-restore");
+        return { text: el.textContent.trim(), armed: el.hasAttribute("data-armed"), hidden: el.hasAttribute("hidden"),
+                 stored: JSON.parse(localStorage.getItem("hpfc")).hidden, reps: Object.keys(replacements()).length };`);
+      assert.deepStrictEqual([armed.text, armed.armed, armed.hidden], ["TAP AGAIN TO RESET", true, false],
+        "the first tap did not arm RESET");
+      assert.strictEqual(armed.stored.length, 1, "the first tap already changed the stored hidden list");
+      assert.strictEqual(armed.reps, 1, "the first tap already dropped the replacement");
+
+      await b.click("#deck-restore");
+      await b.waitFor(`document.getElementById("deck-restore").hasAttribute("hidden")`,
+        { label: "the reset control to go away" });
+      assert.deepStrictEqual(await chipTexts(), seeded, "RESET did not restore the five seeded chips in order");
+      assert.strictEqual(await b.eval(`return Object.keys(replacements()).length;`), 0, "a replacement survived RESET");
+      assert.strictEqual(await b.eval(`return JSON.parse(localStorage.getItem("hpfc")).hidden;`), undefined,
+        "the hidden list is still stored");
+      assert.strictEqual(await b.eval(`return document.activeElement.id;`), "deck-add");
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("SD: a replacement chip sits where its seed sat at 380px, selected and with a pencil", async () => {
+    try {
+      await freshLoad();
+      await b.setViewport(380, 780, true);
+      const meta = await decksMeta();
+      const at = meta.findIndex((m) => m.id === "hijaz");
+      assert.ok(at > 0, "there is no hijaz deck past the first slot");
+      await selectDeck(at, meta);
+      await openEdit();
+      await b.eval(`document.querySelectorAll("#scale-swatches .dot")[2].click(); return true;`);
+      assert.strictEqual(await b.eval(`return document.querySelectorAll("#scale-swatches .dot")[2].classList.contains("sel");`), true,
+        "the palette swatch did not take");
+      await b.click("#scale-generate");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
+        { label: "the sheet to close after the save" });
+      const probe = await b.eval(`
+        const chips = [...document.querySelectorAll("#decks .chip:not(#deck-add)")];
+        const el = chips[${at}];
+        return { n: chips.length, text: el.textContent.trim(), on: el.classList.contains("on"),
+                 editable: el.classList.contains("editable"), onCount: chips.filter(c => c.classList.contains("on")).length,
+                 want: chipLabel(DECKS.find(d => d.id === "hijaz").name),
+                 replacement: replacements().hijaz !== undefined };`);
+      assert.strictEqual(probe.replacement, true, "no replacement was minted for Hijaz");
+      assert.strictEqual(probe.n, meta.length, `the save left ${probe.n} chips`);
+      assert.strictEqual(probe.text, probe.want, `chip ${at + 1} reads "${probe.text}", not the Hijaz name`);
+      assert.deepStrictEqual([probe.on, probe.editable, probe.onCount], [true, true, 1],
+        "the replacement chip is not the one selected chip with a pencil");
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
 }

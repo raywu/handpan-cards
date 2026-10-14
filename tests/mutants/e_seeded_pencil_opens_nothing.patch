@@ -1,0 +1,15 @@
+# kills: SD: the selected seeded chip's pencil opens the sheet with SAVE CHANGES at 380px
+# suite: node --test --test-name-pattern SD:.the.selected.seeded.chip tests/e2e.test.js
+# Tapping the selected seeded chip no longer opens the Edit sheet.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8802,7 +8802,7 @@ function buildChips() {
+     // the sheet; every other chip just selects its deck. Seeded and custom decks
+     // open the same Edit sheet (SAVE CHANGES / DELETE THIS DECK). No context
+     // menu, no long press, no swipe.
+-    b.onclick = () => (d.id === deckId) ? openEditSheet(d, b) : selectDeck(d.id);
++    b.onclick = () => (d.id === deckId && !isBuiltIn(d.id)) ? openEditSheet(d, b) : selectDeck(d.id);
+     nav.appendChild(b);
+     if (d.id === deckId) active = b;
+   }

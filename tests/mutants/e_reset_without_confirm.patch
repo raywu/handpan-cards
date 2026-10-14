@@ -1,0 +1,15 @@
+# kills: SD: RESET arms, then restores all five at 380px and focuses #deck-add
+# suite: node --test --test-name-pattern SD:.RESET.arms tests/e2e.test.js
+# RESET SEEDED DECKS restores on the first tap, with no confirm and no warning.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10251,7 +10251,7 @@ function disarmReset() {
+   if (announce.textContent === RESET_WARNING) say("", "");
+ }
+ restoreBtn.onclick = () => {
+-  if (!resetArmed) {
++  if (false) {
+     resetArmed = true;
+     restoreBtn.textContent = RESET_ARMED;
+     restoreBtn.setAttribute("data-armed", "");
