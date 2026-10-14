@@ -1,0 +1,15 @@
+# kills: SG: N-A10 repeated paints with an unchanged notice mutate nothing in #scale-layout-state, a changed notice mutates it once
+# suite: node --test --test-name-pattern ^SG:.N-A10 tests/e2e.test.js
+# paintLayout() assigns the notice on every paint again, so a live region re-announces an unchanged sentence on every drag.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9074,7 +9074,7 @@
+   fineBtn.textContent = fineOpen ? "HIDE FINER CONTROLS" : "HARD TO TAP? SHOW FINER CONTROLS";
+   layoutZone.classList.toggle("open", drawerOpen);
+   const note = layoutNoticeText();
+-  if (layoutNote.textContent !== note) layoutNote.textContent = note;
++  layoutNote.textContent = note;
+   layoutNote.hidden = !note;
+   syncBand();
+ }

@@ -6291,6 +6291,32 @@ const dr1Open = (app, text = W1_NONE) => {
   return app.els;
 };
 const DR1_HTML = fs.readFileSync(path.join(ROOT, "index.html"), "utf8").replace(/<!--[\s\S]*?-->/g, "");
+/* Sheet guidance (plan docs/plans/2026-10-13-sheet-guidance.md, lane app). The
+   sandbox's _markupParent links only ids in ELEMENT_IDS, and the wrapper is
+   deliberately not one (the app never looks it up), so the structure is read
+   from the served markup string with a depth walk, the way the DR2a order
+   test reads it. */
+const SG_HTML = fs.readFileSync(path.join(ROOT, "index.html"), "utf8")
+  .replace(/<!--[\s\S]*?-->/g, "").replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/g, "");
+const sgSpan = (open) => {
+  const start = SG_HTML.indexOf(open);
+  assert.ok(start >= 0, `no ${open} in the markup`);
+  let depth = 0;
+  for (const m of SG_HTML.slice(start).matchAll(/<(\/?)div\b[^>]*>/g)) {
+    depth += m[1] ? -1 : 1;
+    if (depth === 0) return { start, end: start + m.index + m[0].length, html: SG_HTML.slice(start, start + m.index + m[0].length) };
+  }
+  throw new assert.AssertionError({ message: `${open} is never closed` });
+};
+/* N-A1: every notice string is read THROUGH the slot. dr1Notice and the S_NOTICE
+   table read the element by reference, which is blind to where it sits, so
+   they assert the position on every read. */
+const sgNoticeInSlot = () => {
+  const slot = sgSpan('<div id="scale-guidance"');
+  const at = SG_HTML.indexOf('id="scale-layout-state"');
+  assert.ok(at > slot.start && at < slot.end, "the notice is read from outside #scale-guidance");
+};
+
 /** The shipped markup of one element: its opening tag attributes and inner text. */
 const dr1Markup = (id) => {
   const m = new RegExp(`<(\\w+)([^>]*)\\bid="${id}"([^>]*)>([\\s\\S]*?)</\\1>`).exec(DR1_HTML);
@@ -6300,7 +6326,7 @@ const dr1Markup = (id) => {
     attr: (k) => { const a = new RegExp(`\\b${k}="([^"]*)"`).exec(attrs); return a ? a[1] : null; } };
 };
 const dr1Toggle = (app) => app.els["scale-layout-toggle"];
-const dr1Notice = (app) => (app.els["scale-layout-state"].hidden ? "" : app.els["scale-layout-state"].textContent);
+const dr1Notice = (app) => (sgNoticeInSlot(), app.els["scale-layout-state"].hidden ? "" : app.els["scale-layout-state"].textContent);
 const dr1Tabs = (app, from, n) => {
   app.els[from].focus();
   const seen = [];
@@ -6615,6 +6641,8 @@ test("DR1 line 33: a SMALL_LABELS warning is in #scale-msg once and nowhere in t
   }
   let n = app.els["scale-msg"];
   for (; n; n = n._markupParent) assert.notStrictEqual(n, app.els["scale-drawer"], "#scale-msg is inside the drawer");
+  const slot = sgSpan('<div id="scale-guidance"');
+  assert.ok(SG_HTML.indexOf('id="scale-msg"') > slot.start && SG_HTML.indexOf('id="scale-msg"') < slot.end, "#scale-msg is not in the slot");
 });
 
 test("DR1 line 81: the status line is in the band after the plate, hidden while closed, polite and atomic", () => {
@@ -6869,6 +6897,7 @@ test("DR1 rule S: notice, toggle, switches, anchors and hint match spec 16 for e
       const bad = (what, want, got) => { if (want !== got) misses.push(`${label} @ ${step}: ${what} wanted ${JSON.stringify(want)}, got ${JSON.stringify(got)}`); };
       const differs = M.anchor !== kept.anchor || M.mirror !== kept.mirror || (M.hasBottom && M.mb !== kept.mb);
       const custom = kept.anchor !== "one" || kept.mirror || (kept.mb && M.hasBottom);
+      sgNoticeInSlot();
       bad("notice", S_NOTICE[sheet][differs][custom], els["scale-layout-state"].hidden ? "" : els["scale-layout-state"].textContent);
       bad("toggle enabled", M.valid || M.open || app.activeId() === "scale-layout-toggle", !els["scale-layout-toggle"].disabled);
       bad("toggle aria-disabled", !M.valid && !M.open && app.activeId() === "scale-layout-toggle" ? "true" : null, els["scale-layout-toggle"].getAttribute("aria-disabled"));
@@ -7288,14 +7317,16 @@ test("DR2a item 7 (121): closing the drawer over a scale that does not parse lea
 
 test("DR2a (83, 132, 130): the DOM carries the new controls in the order of 20.24, the old group is gone, the closed hint is LAYOUT_HINT", () => {
   const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8").replace(/<!--[\s\S]*?-->/g, "");
-  const order = ["scale-layout-toggle", "scale-layout-state", "scale-anchor-one", "scale-anchor-between", "scale-mirror",
+  const order = ["scale-layout-toggle", "scale-anchor-one", "scale-anchor-between", "scale-mirror",
     "scale-mirror-bottom", "scale-fine-toggle", "scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next",
     "scale-layout-reset"];
   const at = order.map((id) => html.indexOf(`id="${id}"`));
   assert.ok(at.every((x) => x >= 0), `missing: ${order.filter((_, i) => at[i] < 0)}`);
   assert.deepStrictEqual(at.slice().sort((a, b) => a - b), at, "the controls are not in the order of 20.24");
-  assert.ok(html.indexOf('id="scale-drawer-hint"') > html.indexOf('id="scale-layout-state"')
+  assert.ok(html.indexOf('id="scale-drawer-hint"') > html.indexOf('id="scale-drawer"')
     && html.indexOf('id="scale-drawer-hint"') < html.indexOf('id="scale-anchor-one"'), "lane F: the drawer hint comes first in the drawer");
+  assert.ok(html.indexOf('id="scale-layout-state"') > html.indexOf('class="sheetbody"')
+    && html.indexOf('id="scale-layout-state"') < html.indexOf('id="scale-generate"'), "sheet guidance: the notice sits after .sheetbody and before the primary, in #scale-guidance, not among the layout controls");
   assert.strictEqual(dr1Markup("scale-note-prev").text, "PREVIOUS NOTE");
   assert.strictEqual(dr1Markup("scale-note-next").text, "NEXT NOTE");
   assert.strictEqual(dr1Markup("scale-seat-prev").text, "PREVIOUS SEAT");
@@ -9137,4 +9168,44 @@ test("SD: duplicate and unknown replaces targets are never unreachable", () => {
   assert.strictEqual(names.includes("OLDER"), true, "the older duplicate is unreachable");
   assert.strictEqual(names.includes("ODD"), true, "an unknown target is unreachable");
   assert.strictEqual(names.filter((n) => n === "D KURD 10").length, 1, "seeded Kurd shows beside its replacement");
+});
+
+test("SG: N-A2 the served markup order is .sheetbody, #scale-guidance (#scale-msg, #scale-layout-state), #scale-generate, #scale-delete-row", () => {
+  const body = sgSpan('<div class="sheetbody"');
+  const slot = sgSpan('<div id="scale-guidance"');
+  const at = (id) => SG_HTML.indexOf(`id="${id}"`);
+  assert.ok(slot.start >= body.end, "#scale-guidance opens inside .sheetbody");
+  assert.ok(at("scale-msg") > slot.start && at("scale-msg") < slot.end, "#scale-msg is outside #scale-guidance");
+  assert.ok(at("scale-layout-state") > slot.start && at("scale-layout-state") < slot.end, "#scale-layout-state is outside #scale-guidance");
+  assert.ok(at("scale-msg") < at("scale-layout-state"), "the warning does not come first in the slot");
+  assert.ok(at("scale-generate") > slot.end, "#scale-generate is not after the slot");
+  assert.ok(at("scale-delete-row") > at("scale-generate"), "#scale-delete-row is not after the primary");
+  assert.deepStrictEqual([...slot.html.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]),
+    ["scale-guidance", "scale-msg", "scale-layout-state"], "the slot holds something besides the two messages");
+  for (const id of ["scale-msg", "scale-layout-state"]) {
+    const drawer = sgSpan('<div id="scale-drawer"');
+    assert.ok(at(id) < drawer.start || at(id) > drawer.end, `#${id} is inside #scale-drawer`);
+    assert.ok(at(id) > body.end, `#${id} is inside .sheetbody, in the scroll`);
+  }
+});
+
+test("SG: N-A3 no served id is removed and the wrapper is markup-only", () => {
+  const { ELEMENT_IDS } = require("../tools/sandbox.js");
+  for (const id of ["scale-msg", "scale-layout-state", "scale-refusal", "scale-parse", "scale-drawer-status", "scale-del-note", "scale-generate", "scale-delete-row"])
+    assert.ok(SG_HTML.includes(`id="${id}"`), `#${id} is gone from the markup`);
+  assert.ok(ELEMENT_IDS.includes("scale-msg") && ELEMENT_IDS.includes("scale-layout-state"));
+  assert.ok(!ELEMENT_IDS.includes("scale-guidance"), "the wrapper was added to ELEMENT_IDS, which SB-2 would fail for want of a lookup");
+  const app = boot();
+  assert.ok(!("scale-guidance" in app.els), "the app looks the wrapper up");
+});
+
+test("SG: N-A4 the notice is a polite atomic live region, #scale-msg keeps its own, the wrapper has none, nothing in the slot is focusable", () => {
+  const notice = dr1Markup("scale-layout-state");
+  assert.strictEqual(notice.attr("aria-live"), "polite");
+  assert.strictEqual(notice.attr("aria-atomic"), "true");
+  assert.strictEqual(dr1Markup("scale-msg").attr("aria-live"), "polite");
+  const slot = sgSpan('<div id="scale-guidance"');
+  const wrapperTag = /^<div[^>]*>/.exec(slot.html)[0];
+  assert.doesNotMatch(wrapperTag, /aria-|role=|tabindex/, "the wrapper carries a live or ARIA role (nested regions announce twice)");
+  assert.doesNotMatch(slot.html, /<(button|a|input|select|textarea)\b|tabindex=/i, "something in the slot is focusable");
 });

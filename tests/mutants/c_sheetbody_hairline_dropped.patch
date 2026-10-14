@@ -6,12 +6,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -513,7 +513,7 @@ button.nav:active{background:#2e281e}
+@@ -886,7 +886,7 @@
     the file's only border-top. The boundary it describes is .sheetbody's own
     edge, so that is where it belongs: moving a child across it cannot unhook it
     again. Pinned by "a hairline divides the pinned footer from the scroll". */
 -.sheetbody{border-bottom:1px solid #332c22}
 +.sheetbody{}
- /* Landscape on a phone: 390px of height, and every pixel of chrome on the page
-    comes straight off the scrolling body. The footer's breathing room above its
-    own hairline is .sheetsurf's gap, already dropped to --sp-3 above; this
+ /* The pinned message slot between the scrollport and the primary. The reserve
+    is two 12px/1.5 lines (36px); the negative margin trims the surface's two
+    --sp-4 gaps to --sp-2. flex:0 0 auto is load-bearing: as a shrinkable item a

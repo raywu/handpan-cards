@@ -9,10 +9,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -500,7 +500,7 @@ button.nav:active{background:#2e281e}
-    26.59px under the finger, and put #scale-layout-row's bottom at 785.69
+@@ -823,7 +823,7 @@
     against a 780px viewport - below the fold, the exact cost this row exists
-    to avoid. #scale-msg is back below the pan and never enters this row. */
+    to avoid. #scale-msg lives in #scale-guidance, below the scroll, and never
+    enters this row. */
 -#scale-parse:empty, #scale-refusal:empty{display:none}
 +#scale-refusal:empty{display:none}
  /* The pan mock sits on a light plate because the pan is drawn in card ink -

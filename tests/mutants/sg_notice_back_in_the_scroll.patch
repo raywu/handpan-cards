@@ -1,0 +1,22 @@
+# kills: SG: N-A2 the served markup order is .sheetbody, #scale-guidance (#scale-msg, #scale-layout-state), #scale-generate, #scale-delete-row
+# suite: node --test --test-name-pattern ^SG:.N-A2.the.served.markup.order tests/app.test.js
+# The layout notice goes back into #scale-layout-zone, in the scroll, so a stuck band or a keyboard can hide it.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1259,6 +1259,7 @@
+                 aria-expanded="false" aria-controls="scale-drawer" disabled>ADJUST LAYOUT<span aria-hidden="true">×</span></button>
+         <p class="sheethint" id="scale-layout-hint">Type a scale to adjust its layout.</p>
+       </div>
++      <p class="sheethint" id="scale-layout-state" hidden></p>
+       <div id="scale-drawer" role="group" aria-label="Layout" hidden>
+         <p class="sheethint" id="scale-drawer-hint" hidden></p>
+         <div class="editrow">
+@@ -1341,7 +1342,6 @@
+          "SG: N-A6" in tests/e2e.test.js. -->
+     <div id="scale-guidance">
+       <div id="scale-msg" aria-live="polite"></div>
+-      <p class="sheethint" id="scale-layout-state" aria-live="polite" aria-atomic="true" hidden></p>
+     </div>
+     <button id="scale-generate" type="button" disabled>GENERATE CARDS</button>
+     <div class="editrow" id="scale-delete-row" hidden>

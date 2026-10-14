@@ -1,0 +1,15 @@
+# kills: SG: N-A2 and N-A9 in the live DOM: both messages are children of #scale-guidance, a child of the surface after .sheetbody; the notice is neutral and a warning amber
+# suite: node --test --test-name-pattern ^SG:.N-A2.and.N-A9 tests/e2e.test.js
+# The slot's colour rule is dropped, so the notice falls back to the amber the warning owns.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -896,7 +896,7 @@
+ #scale-guidance{flex:0 0 auto; min-height:calc(2 * 1.5 * 12px); display:flex; flex-direction:column;
+   justify-content:flex-end; margin-block:calc(var(--sp-2) - var(--sp-4))}
+ #scale-guidance #scale-msg{min-height:0}
+-#scale-guidance #scale-layout-state{font:400 12px/1.5 "Nunito Sans"; color:#c4bcab}
++#scale-guidance #scale-layout-state{font:400 12px/1.5 "Nunito Sans"}
+ /* Landscape on a phone: 390px of height, and every pixel of chrome on the page
+    comes straight off the scrolling body. The footer's breathing room above its
+    own hairline is .sheetsurf's gap, already dropped to --sp-3 above; this

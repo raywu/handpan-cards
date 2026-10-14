@@ -5223,6 +5223,8 @@ function run() {
           viewportH: window.innerHeight,
           msg: document.getElementById("scale-msg").textContent.trim(),
           msgTop: document.getElementById("scale-msg").getBoundingClientRect().top,
+          inSlot: document.getElementById("scale-guidance").contains(document.getElementById("scale-msg")),
+          portBottom: document.querySelector(".sheetbody").getBoundingClientRect().bottom,
           refusal: document.getElementById("scale-refusal").textContent.trim(),
           parse: document.getElementById("scale-parse").textContent.trim(),
         };
@@ -5239,6 +5241,9 @@ function run() {
       assert.ok(warned.msgTop >= warned.panTop,
         `the warning's top is ${warned.msgTop.toFixed(1)}px, above the pan at ` +
         `${warned.panTop.toFixed(1)}px - it is sharing the seed's row`);
+      assert.ok(warned.inSlot && warned.msgTop >= warned.portBottom - 0.5,
+        `the warning is not in the pinned guidance slot below the scrollport (inSlot ${warned.inSlot}, ` +
+        `top ${warned.msgTop.toFixed(1)}px, scrollport bottom ${warned.portBottom.toFixed(1)}px)`);
       assert.ok(warned.rowBottom <= warned.viewportH,
         `#scale-layout-row's bottom is ${warned.rowBottom.toFixed(1)}px against a ` +
         `${warned.viewportH}px viewport - the LAYOUT row is below the fold`);
@@ -6218,6 +6223,297 @@ function run() {
     }
   });
 
+  /* ---------------------------------------------------------------- *
+   * Sheet guidance (docs/plans/2026-10-13-sheet-guidance.md, lane app)
+   *
+   * #scale-guidance sits between .sheetbody and the primary and holds
+   * #scale-msg then #scale-layout-state, so the notice and every page-state
+   * message stay on screen with SAVE CHANGES whatever the scroll, viewport or
+   * keyboard. Strings are never asserted here (the dr1Notice and S_NOTICE
+   * tests own them); these read GEOMETRY. Line counts are MEASURED, not
+   * assumed from a string length: CI serves fallback fonts, where a string
+   * wraps differently, and the line height (12px x 1.5 = 18px) is the only
+   * figure that does not move.
+   * ---------------------------------------------------------------- */
+  const SG_LINE = 18;
+
+  const sgPut = ({ warn = null, note = null }) => b.eval(`
+    say(${JSON.stringify(warn || "")}, ${warn ? '"warn"' : '""'});
+    layoutNote.textContent = ${JSON.stringify(note || "")};
+    layoutNote.hidden = ${note ? "false" : "true"};
+    return true;`);
+
+  const sgFit = (which, n) => b.eval(`
+    const el = ${which === "msg" ? "msgLine" : "layoutNote"};
+    const w = "Keep every note you can reach on the pan before you press the button below".split(" ");
+    const wasHidden = el.hidden; el.hidden = false;
+    let t = "";
+    for (let i = 0; i < 120; i += 1) {
+      t += (i ? " " : "") + w[i % w.length];
+      el.textContent = t;
+      if (el.getBoundingClientRect().height >= ${n * SG_LINE} - 0.5) break;
+    }
+    el.textContent = ""; el.hidden = wasHidden;
+    return t;`);
+
+  const sgGeometry = () => b.eval(`
+    const surf = document.querySelector(".sheetsurf");
+    const body = surf.querySelector(".sheetbody");
+    const slot = document.getElementById("scale-guidance");
+    const gen = document.getElementById("scale-generate");
+    const probe = document.createElement("div");
+    probe.style.cssText = "position:absolute;visibility:hidden;width:var(--sp-2)";
+    document.body.append(probe);
+    const sp2 = probe.getBoundingClientRect().width; probe.remove();
+    const bb = body.getBoundingClientRect(), sr = slot.getBoundingClientRect(), gr = gen.getBoundingClientRect();
+    const h = (el) => el.hidden || !el.textContent ? 0 : el.getBoundingClientRect().height;
+    return { port: body.clientHeight, slotH: sr.height, gapTop: sr.top - bb.bottom, gapBottom: gr.top - sr.bottom,
+      sp2, msgH: h(document.getElementById("scale-msg")), noteH: h(document.getElementById("scale-layout-state")),
+      genTop: gr.top };`);
+
+  const sgEditBig = async () => {
+    await freshLoad();
+    await b.setViewport(380, 800, true);
+    await generate(BIG_SCALE);
+  };
+
+  test("SG: N-A2 and N-A9 in the live DOM: both messages are children of #scale-guidance, a child of the surface after .sheetbody; the notice is neutral and a warning amber", async () => {
+    try {
+      await freshLoad();
+      await b.setViewport(380, 800, true);
+      await generate(EDIT_SCALE);
+      await openEdit();
+      const m = await b.eval(`
+        const surf = document.querySelector(".sheetsurf");
+        const slot = document.getElementById("scale-guidance");
+        const msg = document.getElementById("scale-msg"), note = document.getElementById("scale-layout-state");
+        say("Looks fine.", "warn"); layoutNote.textContent = "x"; layoutNote.hidden = false;
+        return {
+          slotParent: slot.parentElement === surf,
+          order: [...surf.children].map((c) => c.id || c.className),
+          kids: [...slot.children].map((c) => c.id),
+          msgParent: msg.parentElement.id, noteParent: note.parentElement.id,
+          inBody: !!slot.closest(".sheetbody"), inDrawer: !!slot.closest("#scale-drawer"),
+          noteColor: getComputedStyle(note).color, warnColor: getComputedStyle(msg).color,
+          noteFont: getComputedStyle(note).fontFamily + "|" + getComputedStyle(note).fontSize + "|" + getComputedStyle(note).lineHeight,
+          msgFont: getComputedStyle(msg).fontFamily + "|" + getComputedStyle(msg).fontSize + "|" + getComputedStyle(msg).lineHeight,
+          live: [msg.getAttribute("aria-live"), note.getAttribute("aria-live"), note.getAttribute("aria-atomic"), slot.getAttribute("aria-live")],
+        };`);
+      assert.ok(m.slotParent, "#scale-guidance is not a direct child of the sheet surface");
+      assert.deepStrictEqual(m.order, ["sheethead", "sheetbody", "scale-guidance", "scale-generate", "scale-delete-row"],
+        `the surface order is ${m.order}`);
+      assert.deepStrictEqual(m.kids, ["scale-msg", "scale-layout-state"]);
+      assert.strictEqual(m.msgParent, "scale-guidance");
+      assert.strictEqual(m.noteParent, "scale-guidance");
+      assert.strictEqual(m.inBody || m.inDrawer, false, "the slot is inside the scroll or the drawer");
+      assert.strictEqual(m.noteColor, "rgb(196, 188, 171)", "N-A9: the notice is not the sheet's neutral #c4bcab inside the slot");
+      assert.strictEqual(m.warnColor, "rgb(227, 178, 92)", "N-A9: #scale-msg.warn is not amber #e3b25c");
+      assert.strictEqual(m.noteFont, m.msgFont, "the notice and the message do not share one type system in the slot");
+      assert.deepStrictEqual(m.live, ["polite", "polite", "true", null]);
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("SG: N-A5 the notice and a warning are inside the viewport, the surface and above the primary at every fold viewport and keyboard, create and Edit, drawer open and closed, scrolled to the top and to the end", async () => {
+    const configs = [[380, 800, 0], [390, 844, 0], [390, 745, 0], [844, 390, 0], [390, 745, 336], [390, 745, 365], [390, 745, 395]];
+    const noteRect = () => b.eval(`
+      const surf = document.querySelector(".sheetsurf"), body = surf.querySelector(".sheetbody");
+      const sr = surf.getBoundingClientRect(), gen = document.getElementById("scale-generate").getBoundingClientRect();
+      const vv = window.visualViewport, kbTop = vv.offsetTop + vv.height;
+      const out = {};
+      for (const id of ["scale-msg", "scale-layout-state"]) {
+        const el = document.getElementById(id), r = el.getBoundingClientRect();
+        const shown = !el.hidden && el.textContent.length > 0;
+        const hit = shown ? document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2) : null;
+        out[id] = { shown, top: r.top, bottom: r.bottom, left: r.left, right: r.right,
+          hits: !shown || (hit && (hit === el || el.contains(hit))), hit: hit && (hit.id || hit.className || hit.tagName) };
+      }
+      return { out, surfTop: sr.top, surfBottom: sr.bottom, genTop: gen.top, vw: window.innerWidth, vh: window.innerHeight, kbTop };`);
+    const assertOnScreen = (m, where) => {
+      for (const [id, r] of Object.entries(m.out)) {
+        assert.ok(r.shown, `${where}: #${id} is not showing, so this proves nothing`);
+        assert.ok(r.top >= -0.5 && r.bottom <= m.vh + 0.5 && r.bottom <= m.kbTop + 0.5,
+          `${where}: #${id} is outside the viewport (top ${r.top.toFixed(1)}, bottom ${r.bottom.toFixed(1)}, viewport ${m.vh}, keyboard line ${m.kbTop})`);
+        assert.ok(r.top >= m.surfTop - 0.5 && r.bottom <= m.surfBottom + 0.5, `${where}: #${id} is clipped by the surface`);
+        assert.ok(r.left >= -0.5 && r.right <= m.vw + 0.5, `${where}: #${id} runs off the side`);
+        assert.ok(r.bottom <= m.genTop + 0.5, `${where}: #${id} overlaps or sits below the primary (${r.bottom.toFixed(1)} > ${m.genTop.toFixed(1)})`);
+        assert.ok(r.hits, `${where}: #${id} is covered by "${r.hit}"`);
+      }
+    };
+    try {
+      await sgEditBig();
+      for (const [w, h, kb] of configs) {
+        for (const page of ["create", "edit"]) {
+          await b.setViewport(w, h, true);
+          if (page === "create") {
+            await openSheet();
+            await typeScale(BIG_SCALE);
+            await b.waitFor(`!document.getElementById("scale-preview").hasAttribute("hidden")`, { label: "the preview" });
+          } else await openEdit();
+          await b.eval(`document.getElementById("scale-anchor-between").click(); return true;`);
+          await b.settle();
+          if (kb) {
+            await b.eval(`document.getElementById("scale-box").focus(); return true;`);
+            await b.fakeKeyboard(h - kb);
+          }
+          await b.eval(`say("Crowded pan. Labels are drawn smaller.", "warn");
+            if (layoutNote.hidden || !layoutNote.textContent) { layoutNote.textContent = "Notice."; layoutNote.hidden = false; }
+            return true;`);
+          for (const drawer of [false, true]) {
+            const open = await b.eval(`return !document.getElementById("scale-drawer").hidden;`);
+            if (open !== drawer) {
+              await b.eval(`document.getElementById("scale-layout-toggle").click(); return true;`);
+              await b.settle();
+            }
+            for (const end of [false, true]) {
+              await b.eval(`const s = document.querySelector(".sheetbody"); s.scrollTop = ${end ? "s.scrollHeight" : "0"}; return true;`);
+              await b.settle();
+              const m = await noteRect();
+              assertOnScreen(m, `${page} page at ${w}x${h}${kb ? ` with a ${kb}px keyboard` : ""}, drawer ${drawer ? "open" : "closed"}, scrolled to the ${end ? "end" : "top"}`);
+            }
+          }
+          if (kb) await b.clearKeyboard();
+          await b.eval(`document.getElementById("scale-back").click(); return true;`);
+          await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet to close" });
+        }
+      }
+    } finally {
+      await b.clearKeyboard();
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("SG: N-A6 the scrollport does not resize between empty, notice and one- or two-line states, grows by exactly 18px a line in the enumerated states, and the slot sits --sp-2 from both neighbours", async () => {
+    try {
+      await sgEditBig();
+      for (const [w, h] of [[380, 800], [844, 390], [390, 745]]) {
+        await b.setViewport(w, h, true);
+        await openEdit();
+        await sgPut({});
+        const base = await sgGeometry();
+        const where = `Edit at ${w}x${h}`;
+        const t1 = await sgFit("note", 1), t3 = await sgFit("note", 3);
+        const w1 = await sgFit("msg", 1), w2 = await sgFit("msg", 2), w3 = await sgFit("msg", 3);
+        const check = async (label, state, lines) => {
+          await sgPut(state);
+          const g = await sgGeometry();
+          const reserve = 2 * SG_LINE;
+          const want = Math.max(reserve, g.msgH + g.noteH);
+          assert.strictEqual(Math.round((g.msgH + g.noteH) / SG_LINE), lines, `${where}, ${label}: measured ${(g.msgH + g.noteH) / SG_LINE} lines, expected ${lines}`);
+          assert.ok(Math.abs(g.slotH - want) < 0.5, `${where}, ${label}: the slot is ${g.slotH}px, expected ${want}px`);
+          assert.ok(Math.abs(g.port - (base.port - (want - reserve))) < 0.5,
+            `${where}, ${label}: the scrollport is ${g.port}px, expected ${base.port - (want - reserve)}px (empty ${base.port}px)`);
+          assert.ok(Math.abs(g.gapTop - g.sp2) < 0.5, `${where}, ${label}: the gap above the slot is ${g.gapTop}px, --sp-2 is ${g.sp2}px`);
+          assert.ok(Math.abs(g.gapBottom - g.sp2) < 0.5, `${where}, ${label}: the gap below the slot is ${g.gapBottom}px, --sp-2 is ${g.sp2}px`);
+          return g;
+        };
+        assert.ok(Math.abs(base.slotH - 2 * SG_LINE) < 0.5, `${where}: the empty slot is ${base.slotH}px, not the 36px reserve`);
+        await check("empty", {}, 0);
+        await check("notice, one line", { note: t1 }, 1);
+        await check("warning, one line", { warn: w1 }, 1);
+        await check("warning, two lines", { warn: w2 }, 2);
+        await check("warning one line plus notice one line", { warn: w1, note: t1 }, 2);
+        const cleared = await check("cleared again", {}, 0);
+        assert.strictEqual(cleared.port, base.port, `${where}: the scrollport did not come back after clearing`);
+        await check("(a) warning two lines plus notice one line", { warn: w2, note: t1 }, 3);
+        await check("(b) joined warnings, three lines", { warn: w3 }, 3);
+        await check("(c) three-line warning plus notice", { warn: w3, note: t1 }, 4);
+        await check("(e) the notice with all three ring suffixes, three lines", { note: t3 }, 3);
+        await sgPut({});
+        await b.key("Escape", "Escape", 27);
+        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the Edit sheet to close" });
+      }
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("SG: N-A6 the delete refusal then a re-armed DELETE: the slot keeps its height, the refusal stays up and the arming note shows beside DELETE", async () => {
+    try {
+      await freshLoad();
+      await b.eval(`localStorage.setItem("hpfc", ${JSON.stringify(JSON.stringify({ deck: "kurd", mode: "A", hidden: ["amara10", "amara", "hijaz", "pygmy"] }))}); return true;`);
+      await navigate();
+      await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`, { label: "the chips" });
+      await b.setViewport(380, 800, true);
+      await openEdit();
+      const read = () => b.eval(`
+        const slot = document.getElementById("scale-guidance").getBoundingClientRect();
+        const note = document.getElementById("scale-del-note"), nr = note.getBoundingClientRect();
+        return { slotH: slot.height, msg: document.getElementById("scale-msg").textContent,
+          msgBottom: document.getElementById("scale-msg").getBoundingClientRect().bottom,
+          note: note.textContent, noteTop: nr.top, noteBottom: nr.bottom, vh: window.innerHeight };`);
+      const idle = await read();
+      await b.click("#scale-delete");
+      await b.click("#scale-delete");
+      await b.settle();
+      const refused = await read();
+      assert.match(refused.msg, /Keep at least one deck/, "the delete was not refused");
+      await b.click("#scale-delete");
+      await b.settle();
+      const rearmed = await read();
+      assert.match(rearmed.msg, /Keep at least one deck/, "re-arming wiped the refusal");
+      assert.ok(rearmed.note.length > 0, "re-arming wrote no note beside DELETE");
+      assert.ok(Math.abs(rearmed.slotH - refused.slotH) < 0.5, `the slot went ${refused.slotH}px to ${rearmed.slotH}px on the re-arm`);
+      assert.ok(refused.slotH >= idle.slotH - 0.5);
+      assert.ok(rearmed.noteTop >= 0 && rearmed.noteBottom <= rearmed.vh + 0.5, "the arming note is off screen");
+      assert.ok(rearmed.msgBottom <= rearmed.vh, "the refusal is off screen");
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("SG: N-A7 the seed box stays readable with growth state (a) up, at every real-keyboard height on Edit", async () => {
+    try {
+      await freshLoad();
+      await b.setViewport(390, 745, true);
+      await generate(EDIT_SCALE);
+      await openEdit();
+      await b.click("#scale-box");
+      assert.ok(await b.eval(`return !!document.getElementById("scale-guidance");`), "there is no #scale-guidance slot, so growth state (a) is not the pinned one");
+      const w2 = await sgFit("msg", 2), t1 = await sgFit("note", 1);
+      await sgPut({ warn: w2, note: t1 });
+      for (const kb of KEYBOARDS) {
+        await b.fakeKeyboard(745 - kb);
+        assertSeedBoxReadable(await seedBoxVisibility(), `growth state (a), the Edit page with a ${kb}px keyboard`);
+      }
+      await b.clearKeyboard();
+      await b.key("Escape", "Escape", 27);
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the Edit page to close" });
+    } finally {
+      await b.clearKeyboard();
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("SG: N-A10 repeated paints with an unchanged notice mutate nothing in #scale-layout-state, a changed notice mutates it once", async () => {
+    try {
+      await freshLoad();
+      await b.setViewport(380, 800, true);
+      await generate(EDIT_SCALE);
+      await openEdit();
+      const r = await b.eval(`
+        const note = document.getElementById("scale-layout-state");
+        const mo = new MutationObserver(() => {});
+        mo.observe(note, { childList: true, characterData: true, subtree: true });
+        const count = () => mo.takeRecords().length;
+        document.getElementById("scale-anchor-between").click();
+        const first = { text: note.textContent, records: count() };
+        for (let i = 0; i < 10; i += 1) paintLayout();
+        const repeated = count();
+        document.getElementById("scale-anchor-one").click();
+        const changed = { text: note.textContent, records: count() };
+        mo.disconnect();
+        return { first, repeated, changed };`);
+      assert.ok(r.first.text.length > 0, "the first change raised no notice, so this measures nothing");
+      assert.strictEqual(r.first.records, 1, `a new notice mutated #scale-layout-state ${r.first.records} times`);
+      assert.strictEqual(r.repeated, 0, `ten paints with the same notice mutated #scale-layout-state ${r.repeated} times (a live region would re-announce each)`);
+      assert.strictEqual(r.changed.records, 1, `a changed notice mutated #scale-layout-state ${r.changed.records} times`);
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
   /* Reads what applyKbOffset actually wrote onto the sheet surface, plus the
    * two viewport numbers it computed them from. Returning the inputs beside
    * the outputs is what lets the assertions DERIVE their expectations instead
@@ -6495,15 +6791,20 @@ function run() {
         const cs = getComputedStyle(body);
         return {
           next: body.nextElementSibling && body.nextElementSibling.id,
+          after: body.nextElementSibling && body.nextElementSibling.nextElementSibling
+            && body.nextElementSibling.nextElementSibling.id,
           style: cs.borderBottomStyle,
           w: cs.borderBottomStyle === "none" ? 0 : parseFloat(cs.borderBottomWidth),
           color: cs.borderBottomColor,
           bg: getComputedStyle(document.querySelector(".sheetsurf")).backgroundColor,
         };
       `);
-      assert.strictEqual(m.next, "scale-generate",
-        "the primary is no longer the first thing below the scrollport, so this "
+      assert.strictEqual(m.next, "scale-guidance",
+        "the guidance slot is no longer the first thing below the scrollport, so this "
         + "test is measuring the wrong boundary");
+      assert.strictEqual(m.after, "scale-generate",
+        "the primary is no longer directly below the guidance slot, so the footer "
+        + "this hairline divides is not the slot plus the primary");
       assert.ok(m.w >= 1,
         `the scrollport's bottom edge draws no rule (${m.style} ${m.w}px), so nothing `
         + "says the footer below it does not scroll");

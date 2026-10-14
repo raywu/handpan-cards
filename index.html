@@ -816,11 +816,13 @@ footer.seq{row-gap:var(--sp-1)}
    The exclusivity has to be STRUCTURAL, not a coincidence of call order.
    The first cut of this shared the row with #scale-msg, the sheet's general
    message area, and two of its other callers write while the parse line is
-   full: openEditSheet()'s pan warnings, and runGenerate()'s duplicate-scale
-   refusal on a seed that parsed fine. Both took two rows, stepped the pan
+   full: openEditSheet()'s pan warnings, and (in that first cut) the
+   duplicate-scale refusal on a seed that parsed fine; refusals now go
+   through showRefusal(), and runGenerate() only clears #scale-msg. Both took two rows, stepped the pan
    26.59px under the finger, and put #scale-layout-row's bottom at 785.69
    against a 780px viewport - below the fold, the exact cost this row exists
-   to avoid. #scale-msg is back below the pan and never enters this row. */
+   to avoid. #scale-msg lives in #scale-guidance, below the scroll, and never
+   enters this row. */
 #scale-parse:empty, #scale-refusal:empty{display:none}
 /* The pan mock sits on a light plate because the pan is drawn in card ink -
    black rim, #242424 labels - and the sheet surface is dark. Capped so the
@@ -885,6 +887,16 @@ footer.seq{row-gap:var(--sp-1)}
    edge, so that is where it belongs: moving a child across it cannot unhook it
    again. Pinned by "a hairline divides the pinned footer from the scroll". */
 .sheetbody{border-bottom:1px solid #332c22}
+/* The pinned message slot between the scrollport and the primary. The reserve
+   is two 12px/1.5 lines (36px); the negative margin trims the surface's two
+   --sp-4 gaps to --sp-2. flex:0 0 auto is load-bearing: as a shrinkable item a
+   three-line message spills over the button. #scale-msg drops its own 1.5em
+   floor so the wrapper owns the reservation, and justify-content:flex-end
+   bottom-aligns whichever line is lit. */
+#scale-guidance{flex:0 0 auto; min-height:calc(2 * 1.5 * 12px); display:flex; flex-direction:column;
+  justify-content:flex-end; margin-block:calc(var(--sp-2) - var(--sp-4))}
+#scale-guidance #scale-msg{min-height:0}
+#scale-guidance #scale-layout-state{font:400 12px/1.5 "Nunito Sans"; color:#c4bcab}
 /* Landscape on a phone: 390px of height, and every pixel of chrome on the page
    comes straight off the scrolling body. The footer's breathing room above its
    own hairline is .sheetsurf's gap, already dropped to --sp-3 above; this
@@ -901,6 +913,7 @@ footer.seq{row-gap:var(--sp-1)}
   #scale-box-wrap::after, #scale-box{max-height:calc(3 * 1.3em + 20px)}
   .sheetbody{gap:var(--sp-2)}
   .sheetsurf{gap:var(--sp-3); padding-top:var(--sp-2)}
+  #scale-guidance{margin-block:calc(var(--sp-2) - var(--sp-3))}
   /* A 390px-tall viewport leaves the body a couple of hundred px, and the
      plate is now always in the flow rather than only after a valid parse, so
      at 300px it would be most of the scrollport. The pan stays readable at 120px - it is a
@@ -1216,7 +1229,7 @@ footer.seq{row-gap:var(--sp-1)}
            retypes a seed whose reason they never saw. It belongs directly
            under the field it is about, inside the same .fieldrow group.
            This element carries SEED REFUSALS ONLY - it is not the sheet's
-           message area. #scale-msg keeps that job, below the pan, because a
+           message area. #scale-msg keeps that job, in #scale-guidance below the scroll, because a
            warning or a success notice is not about the field and must not
            compete for this row. Refusals never go through say(): sharing one
            reserved line with the parse line only works while exactly one of
@@ -1246,7 +1259,6 @@ footer.seq{row-gap:var(--sp-1)}
                 aria-expanded="false" aria-controls="scale-drawer" disabled>ADJUST LAYOUT<span aria-hidden="true">×</span></button>
         <p class="sheethint" id="scale-layout-hint">Type a scale to adjust its layout.</p>
       </div>
-      <p class="sheethint" id="scale-layout-state" hidden></p>
       <div id="scale-drawer" role="group" aria-label="Layout" hidden>
         <p class="sheethint" id="scale-drawer-hint" hidden></p>
         <div class="editrow">
@@ -1286,10 +1298,6 @@ footer.seq{row-gap:var(--sp-1)}
         </div>
       </div>
     </div>
-    <!-- Above the control row, so the soft keyboard never covers it. Warnings,
-         success notices and deck-gone messages - everything say() writes.
-         Seed refusals go to #scale-refusal up in the .fieldrow instead. -->
-    <div id="scale-msg" aria-live="polite"></div>
     <!-- D10: the parent-scale override. Edit path only - the create path infers. -->
     <div class="editrow" id="scale-degrees-row" hidden>
       <label class="sheetlabel" for="scale-degrees">DEGREES</label>
@@ -1323,6 +1331,18 @@ footer.seq{row-gap:var(--sp-1)}
       <div id="scale-swatches" role="group" aria-label="Card palette"></div>
     </div>
    </div>
+    <!-- The page's messages, pinned with the primary: everything say() writes
+         (#scale-msg, a warning first) and the layout notice (#scale-layout-state,
+         nearest the button it names). Outside .sheetbody so no scroll position,
+         drawer state or soft keyboard puts them out of sight. Two lines are
+         reserved; the enumerated states that need more grow it by 18px a line.
+         Seed refusals, the parse line, the drawer status and the hints stay by
+         the controls they describe. Pinned by "SG: N-A2", "SG: N-A5" and
+         "SG: N-A6" in tests/e2e.test.js. -->
+    <div id="scale-guidance">
+      <div id="scale-msg" aria-live="polite"></div>
+      <p class="sheethint" id="scale-layout-state" aria-live="polite" aria-atomic="true" hidden></p>
+    </div>
     <button id="scale-generate" type="button" disabled>GENERATE CARDS</button>
     <div class="editrow" id="scale-delete-row" hidden>
       <button id="scale-delete" type="button">DELETE THIS DECK</button>
@@ -8940,8 +8960,8 @@ function showRefusal(text) {
 
 /** The one adapter from a result/warning reason to a message tier. Warnings,
  *  success notices and deck-gone messages only - a SEED REFUSAL goes to
- *  showRefusal() instead, because #scale-msg sits below the pan and a refusal
- *  there is below the fold on an iPhone 14 with the keyboard up. */
+ *  showRefusal() instead, because a refusal belongs directly under the seed
+ *  field it is about, not down in #scale-guidance by the primary. */
 function say(text, tier) {
   for (const el of [msgLine, announce]) {
     el.className = (el === announce ? "announce" : "") + (tier ? " " + tier : "");
@@ -9054,7 +9074,7 @@ function paintLayout() {
   fineBtn.textContent = fineOpen ? "HIDE FINER CONTROLS" : "HARD TO TAP? SHOW FINER CONTROLS";
   layoutZone.classList.toggle("open", drawerOpen);
   const note = layoutNoticeText();
-  layoutNote.textContent = note;
+  if (layoutNote.textContent !== note) layoutNote.textContent = note;
   layoutNote.hidden = !note;
   syncBand();
 }
