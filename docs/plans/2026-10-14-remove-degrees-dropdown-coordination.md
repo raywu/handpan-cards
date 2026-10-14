@@ -34,7 +34,7 @@ Spawn prompts quote the plan's lane sections verbatim (lane app: the ownership r
 | Lane | Branch | State | Last verdict | Last update (UTC) |
 |---|---|---|---|---|
 | app | `claude/remove-degrees-app` | MERGED #306 as 083f44a; worktree and branch removed | PASS_WITH_NITS | 2026-10-14 |
-| docs | `claude/remove-degrees-docs` | PR #307 returned done; CI success at d24c092; reviewer spawned | pending | 2026-10-14 |
+| docs | `claude/remove-degrees-docs` | MERGED #307 as 2e25d38; worktree and branch removed | PASS | 2026-10-14 |
 
 ## Handoff queue (append-only)
 | # | From | Ask | Status |
@@ -43,20 +43,22 @@ Spawn prompts quote the plan's lane sections verbatim (lane app: the ownership r
 ## Review log
 | PR | Lane | Reviewer verdict | Findings | Outcome |
 |---|---|---|---|---|
+| #307 | docs | PASS (d24c092; CI run 38644050752 success; six owned files, 41+/20-, every mark verbatim and every cited test and code claim re-verified) | none; nits Q9 | MERGED 2e25d38 |
 | #306 | app | PASS_WITH_NITS (bc80445; CI run 38641641597 success; 24 files all inside the ownership row; 5 mutants applied and killed; adversarial claude + codex passes, no findings) | no findings; nits Q6-Q8 | MERGED 083f44a |
 | #305 | plan | PASS_WITH_NITS (0e37efd) | no findings; nits: plan:19 misquotes the share round-trip test's parent list (it loops [null, 0, 1, 5, 9, 10]); plan:3 "adds only the prompt file" is stale; RD-T2 `openEdit(makeCustom(app))` should be `openEdit(app, makeCustom(app))`; the four section E sentences are hard-wrapped in the docs (single-line grep misses them); lane briefs should cite `select.build`, not lines | MERGED 5cae8c1; nits carried into the lane briefs and Q1-Q5 |
 
 ## Cycle state
-Cycle: 1   Wave: 2   Merged this batch: 083f44a (#306)
+Cycle: 1   Wave: 2   Merged this batch: 083f44a (#306), 2e25d38 (#307)   WORKSTREAM COMPLETE 2026-10-14
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | app | a69dcfb44fde5f965 | removed | deleted | #306 | bc80445f64dd53353c7a567f6943a6eff268fc36 | 2026-10-14 run 38641641597 success | PASS_WITH_NITS (reviewer a5617f1bfd7dfb7ff) | 0 | yes 083f44a | - | - |
-| docs | aa361bc444832b4ea | remove-degrees-docs | claude/remove-degrees-docs (from 083f44a) | #307 | d24c092256182bb7b954c40390dac278940af154 | 2026-10-14 run 38644050752 success | pending (reviewer spawned) | 0 | no | - | - |
+| docs | aa361bc444832b4ea | removed | deleted | #307 | d24c092256182bb7b954c40390dac278940af154 | 2026-10-14 run 38644050752 success | PASS (reviewer a79f66b50e6cebe2e) | 0 | yes 2e25d38 | - | - |
 
 ## AFK auto-decisions (this execution)
 | id | decision |
 |---|---|
 | X1 | Coord doc lives on `claude/remove-degrees-dropdown-coord` (never merges), as the previous two workstreams did. |
+| X3 | #307 merged under the AFK grant on reviewer PASS at d24c092; the workstream is COMPLETE and this doc is closed. T7 (should share links infer too?) is the one owner question, recorded in TODOS.md. |
 | X2 | #306 merged under the AFK grant on PASS_WITH_NITS; the three nits are Q6-Q8, not blockers. FLOORS rows (app 501 / e2e 297) and README count 939 left as the lane left them: CI suite health green, README inside the band (gate 6 allows). |
 
 ## Queue (post-merge nits, not scheduled)
@@ -70,3 +72,4 @@ Cycle: 1   Wave: 2   Merged this batch: 083f44a (#306)
 | Q6 | #306 review | RD-T4 mints the share link at runtime with the app's `link()` instead of a captured string (as "rule N" does); an encoder change dropping parent on both sides would pass; `tests/share.test.js` covers the encoder | OPEN |
 | Q7 | #306 review | RD-T2 asserts collected parents `== null`, plan said `=== undefined`; a regression writing `o.parent = null` on Edit passes (engine infers either way) | OPEN |
 | Q8 | #306 review | the RD-A10 screenshot is a scratchpad path in the PR body, not an attachment; the integrator inspected it and sent it to the owner | OPEN |
+| Q9 | #307 review | cosmetic: the SCALE_ENGINE_PLAN ledger 3A mark follows the list item with no separating punctuation (verbatim per section E); the CLAUDE.md `options.parent` line is the only bullet in App data model; the TODOS E5 row keeps \"Pros of changing\" inside Why | OPEN |
