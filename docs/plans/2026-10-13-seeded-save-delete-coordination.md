@@ -50,6 +50,13 @@ SERIAL: app, then e2e, then docs. Projected cost: 3 lanes, ~6 subagent runs,
 
 Cycle: 1   Wave: 3   Merged this batch: 894d8f8 (#297), 0fc3852 (#298), ed74b51 (#299). WORKSTREAM COMPLETE 2026-10-13.
 
+Cycle: 2 (nits lane, owner 2026-10-13 "One nits lane now")   Wave: 4   Merged this batch: de4c32d (#300 retro snapshot)
+Plan `docs/plans/2026-10-13-seeded-save-delete-nits.md`, eng-reviewed (D14, D15; Codex 4/8 confirmed), committed 891ca66 on the lane branch.
+
+| Lane | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on |
+|---|---|---|---|---|---|---|---|---|---|
+| nits | .claude/worktrees/seeded-save-delete-nits | claude/seeded-save-delete-nits | (none yet) | 891ca66 (plan only) | - | - | 0 | no | - |
+
 | Lane | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on |
 |---|---|---|---|---|---|---|---|---|---|
 | app | (removed) | (deleted, local + remote) | #297 | f8d434c | 2026-10-13 (head == branch tip, MERGEABLE, 11/11 pass) | attempt 1 at 4e9c5db: CI red on mutation gate shards 1 and 2 (survivors `d_registry_ignored`, `e_fork_drops_name`), bounced by message, no reviewer. Lane fix f8d434c re-anchored both (details in Review log). Reviewer PASS_WITH_NITS at f8d434c (stalled once, resumed). Finding 1 (PR body lacked the SD-A8 inventory) fixed by the integrator in the PR body from the diff (D7). | 1 | YES 894d8f8 | — |
