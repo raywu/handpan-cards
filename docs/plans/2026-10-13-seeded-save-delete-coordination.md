@@ -55,7 +55,7 @@ Plan `docs/plans/2026-10-13-seeded-save-delete-nits.md`, eng-reviewed (D14, D15;
 
 | Lane | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on |
 |---|---|---|---|---|---|---|---|---|---|
-| nits | .claude/worktrees/seeded-save-delete-nits | claude/seeded-save-delete-nits | #301 | fcd96c3 | 2026-10-13 (head == tip, CI 11/11 pass) | FAIL+2 (CLAUDE.md hidden-seed fallback sentence over-reaches; `deck()` order misdescribed) | 2 | no | lane fix (last bounce), fresh re-review; a third FAIL regroups per AFK rule |
+| nits | .claude/worktrees/seeded-save-delete-nits | claude/seeded-save-delete-nits | #301 | 3ff3f8d | 2026-10-13 (head == tip, CI 11/11 pass; fix CLAUDE.md + README only) | FAIL+2; third fresh reviewer spawned at 3ff3f8d | 2 | no | re-review |
 
 | Lane | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on |
 |---|---|---|---|---|---|---|---|---|---|
