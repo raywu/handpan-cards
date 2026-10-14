@@ -33,7 +33,7 @@ Spawn prompts quote the plan's lane sections verbatim; see Cycle state for agent
 ## Status
 | Lane | Branch | State | Last verdict | Last update (UTC) |
 |---|---|---|---|---|
-| app | `claude/sheet-guidance-app` | PR #303 FAIL+1 at 6d09230 (N-A7 stop: crowded 25-note seed + SMALL_LABELS warning + notice clips the seed box at kb395); bounced 2026-10-14 to implement X2 and four nits | - | 2026-10-14 |
+| app | `claude/sheet-guidance-app` | PR #303 attempt 2 at 00f9e3b, CI green, X2 implemented as `#scale-sheet.noticed #scale-msg.warn{display:none}` (sandbox ELEMENT_IDS forbids a wrapper lookup); second reviewer running | - | 2026-10-14 |
 | docs | `claude/sheet-guidance-docs` | blocked on app | - | 2026-10-13 |
 
 ## Handoff queue (append-only)
@@ -49,7 +49,7 @@ Spawn prompts quote the plan's lane sections verbatim; see Cycle state for agent
 Cycle: 1   Wave: 1   Merged this batch: -
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| app | ac8a34e4d706a13ee | sheet-guidance-app | claude/sheet-guidance-app | #303 | 569865d (FLOORS/README push, superseded by bounce) | 2026-10-14 | FAIL+1 at 6d09230; bounced with owner decision X2 | 1 | no | - | - |
+| app | ac8a34e4d706a13ee | sheet-guidance-app | claude/sheet-guidance-app | #303 | 00f9e3b | 2026-10-14 (CI 11/11 pass, headRefOid == tip) | review 2 pending (reviewer a08e45433b163287b at 00f9e3b) | 1 | no | - | - |
 | docs | - | - | claude/sheet-guidance-docs | - | - | - | - | 0 | no | app | - |
 
 ## AFK auto-decisions (this execution)
