@@ -108,9 +108,9 @@ The lane reproduces these from its probe (N-A7) and `assertSeedBoxReadable` runs
 | Scrollport resizes on a message change (requirement 4) | `a_msg_row_not_shared` family cover the seed row only | N-A6: `clientHeight` identical across empty, 1-line, 2-line notice and warning states, and exactly +18 per extra line in the enumerated growth states |
 | "a hairline divides the pinned footer from the scroll" asserts `.sheetbody`'s next sibling is `scale-generate` | that test | re-pointed: the sibling is `scale-guidance`, whose next sibling is `scale-generate` |
 | DR1 line 33 `_markupParent` walk, the DR2a order array (begins `scale-layout-toggle`, `scale-layout-state`) | those tests | re-pointed; notice order asserted against the slot |
-| `ELEMENT_IDS`: SB-2 demands every served id be looked up by `getElementById` | SB-2 | the wrapper is markup-only and NOT added: the app never looks it up, and an `ELEMENT_IDS` entry without a lookup is what fails SB-2 (an extra markup id fails nothing); `tools/sandbox.js` links `_markupParent` only to ancestors whose id is in `ELEMENT_IDS` (line 363), so the sandbox cannot see the wrapper at all; N-A2 is asserted from the served markup string, as the DR2a order test does, and from the browser DOM in N-A5 (eng review R7, Codex). Every existing id survives |
+| `ELEMENT_IDS`: SB-2 demands every served id be looked up by `getElementById` | SB-2 | the wrapper is markup-only and NOT added: the app never looks it up, and an `ELEMENT_IDS` entry without a lookup is what fails SB-2 (an extra markup id fails nothing); `tools/sandbox.js` links `_markupParent` only to ancestors whose id is in `ELEMENT_IDS` (line 364), so the sandbox cannot see the wrapper at all; N-A2 is asserted from the served markup string, as the DR2a order test does, and from the browser DOM in N-A5 (eng review R7, Codex). Every existing id survives |
 | `primaryFold` reads `#scale-generate` and `.sheetbody`'s last child only | fold tests | unaffected; stated, not assumed |
-| DR2a browser (84) "with and without the notice" and the pan-does-not-move tests rest on the notice and `#scale-msg` being in the scroll | those tests | re-pointed by the app lane (8.3) |
+| DR2a browser (84) "with and without the notice" and the pan-does-not-move tests rest on the notice and `#scale-msg` being in the scroll | those tests | re-pointed by the app lane (editable-defaults 8.3) |
 | CI wrap counts differ under fallback fonts | n/a | N-A6 asserts with strings that stay at or under two lines at fallback metrics, and takes the 3-line state from a measured line count, not a fixed string length |
 | `panel-fit` | n/a | cannot move: `#settings-panel` is a body-level sibling of the sheet; verdicts unchanged |
 | `app_surface_v1` | n/a | checked: the fixture carries none of `scale-msg`, `scale-layout-state` or the notice strings (0 matches); no digest moves, nor `pan_render_v1`, `card_face_v1`, `engine_corpus_v1` |
@@ -139,7 +139,7 @@ Design review 2026-10-13 (`/plan-design-review`, AFK auto-picks): D1 all seven p
 
 **Goal.** The notice and every page-state or error message the sheet writes stay on screen with the primary at every viewport and keyboard. **Non-goals.** No change to any `layoutNoticeText()`, `say()` or refusal string; no toasts, timers or animation; no change to the primary's label logic; no script change beyond the one-line notice guard of R8; no sticky footer; no move of `#scale-del-note`; no change to `#settings-panel`, `panelStops()` or `panel-fit`; no engine, data or fixture change; `assertSeedBoxReadable` not lowered.
 
-**Ownership rule (after editable-defaults 8.3).** Lane app owns, in EVERY test file, EVERY EXISTING test that its behaviour changes redden or whose purpose they defeat, found by two steps rather than by a list: (1) running the suites at the lane head, and (2) because a green test on the wrong path never fails, auditing every existing test whose setup selects `#scale-msg`, `#scale-layout-state`, `.sheetbody`'s children or the served-markup order of the sheet, and re-pointing any that now pass for the wrong reason. Lane docs owns no test.
+**Ownership rule (after editable-defaults 8.3).** Lane app owns, in EVERY test file, EVERY EXISTING test that its behaviour changes redden or whose purpose they defeat, found by two steps rather than by a list: (1) running the suites at the lane head, and (2) because a green test on the wrong path never fails, auditing every existing test whose setup selects `#scale-msg`, `#scale-layout-state`, `.sheetbody`'s children or the served-markup order of the sheet, and re-pointing any that now pass for the wrong reason. Lane docs owns no test. Lane app's report carries a base-to-head inventory of every existing test it re-pointed or rewrote, with the reason for each.
 
 (Here "lane app" is this plan's lane app, and the e2e tests it adds are its own: there is no separate e2e lane.)
 
@@ -162,7 +162,7 @@ Design review 2026-10-13 (`/plan-design-review`, AFK auto-picks): D1 all seven p
 **Stop.** Any need to change a string, an engine file, a fixture or `#settings-panel`; a re-pointed test that must lose its purpose; a fourth `.sheetsurf` child beyond the wrapper.
 
 ### Lane docs (after app merges; `claude/sheet-guidance-docs`)
-**Owns.** `docs/plans/2026-10-07-scale-drawer-design-spec.md` (the lines that place `#scale-layout-state`, `#scale-msg` and the wireframe lines for them, each marked "SUPERSEDED 2026-10-13 (this plan)" in the house style, never rewritten); `CLAUDE.md` (one bullet under "Known pitfalls": the page's messages live in `#scale-guidance` except the refusal, parse line, status and hints, which stay by their controls, with the reserved two lines and the enumerated growth states; each sentence cites a test by name: N-A2, N-A5, N-A6). **Reads only.** Everything else.
+**Owns.** `docs/plans/2026-10-07-scale-drawer-design-spec.md` (the lines that place `#scale-layout-state`, `#scale-msg` and the wireframe lines for them, each marked "SUPERSEDED 2026-10-13 (this plan)" in the house style, never rewritten); `CLAUDE.md` (one bullet under "Known pitfalls": the page's messages live in `#scale-guidance` except the refusal, parse line, status and hints, which stay by their controls, with the reserved two lines and the enumerated growth states; each sentence cites a test by name: N-A2, N-A5, N-A6 and N-A10). **Reads only.** Everything else.
 
 ### Standing gates (refactor-pass-4 section 5, verbatim)
 1. CI green at a head SHA verified against the local tip (`gh pr view <n> --json state,headRefOid`).
@@ -189,9 +189,9 @@ VERDICT: SMALL
 
 - [ ] **T1 (P1, human: ~1 day / CC: ~60min)** — scale sheet — Lane app: the `#scale-guidance` slot, colour split, `aria-atomic`, growth-state measurements, N-A1..N-A10, eight `sg_*` mutants
   - Surfaced by: Pass 1, 2, 3 (D3, D4, D5, D6)
-  - Files: `index.html` (markup, CSS, two comments), `tests/app.test.js`, `tests/e2e.test.js`, `tests/drawer_seats.test.js`, `tests/mutants/sg_*`
+  - Files: `index.html` (markup, CSS, five comments per N-A8), `tests/app.test.js`, `tests/e2e.test.js`, `tests/drawer_seats.test.js`, `tests/mutants/sg_*`
   - Verify: `node --test --test-name-pattern 'SG|dr1|DR1|hairline' tests/app.test.js`; the named single e2e tests; CI green at the head SHA; `python3 tools/refresh_mutants.py --check`
-- [ ] **T2 (P1, human: ~2h / CC: ~15min)** — docs — Lane docs: drawer spec SUPERSEDED marks and the CLAUDE.md pitfall bullet, each sentence citing N-A2, N-A5, N-A6
+- [ ] **T2 (P1, human: ~2h / CC: ~15min)** — docs — Lane docs: drawer spec SUPERSEDED marks and the CLAUDE.md pitfall bullet, each sentence citing N-A2, N-A5, N-A6 and N-A10
   - Surfaced by: Lanes section (unchanged by review)
   - Files: `docs/plans/2026-10-07-scale-drawer-design-spec.md`, `CLAUDE.md`
   - Verify: reviewer re-verifies every sentence against the named tests
@@ -201,8 +201,8 @@ VERDICT: SMALL
   - Verify: the two refusal e2e tests re-pointed; refusal rect inside the viewport at the 395px keyboard
 - [ ] **T4 (P3, human: ~1h / CC: ~10min)** — copy — Give `SMALL_LABELS` a next action
   - Surfaced by: Pass 4 (D7)
-  - Files: `src/engine/*.js` REASONS, `tests/fixtures/engine_corpus_v1.json`, the `dr1Notice`/`S_NOTICE` tests
-  - Verify: `tools/regen_engine_corpus.js --check` after the change
+  - Files: `src/engine/core.js` REASONS (synced into `index.html` by `tools/inline_engine.py`); the tests that read the copy match a prefix (`tests/select.test.js`, `tests/app.test.js`) or read REASONS live (`tests/pdfcards.test.js`, `tests/test_gen_deck.py`); no fixture or mutant carries the string
+  - Verify: `python3 tools/inline_engine.py --check`, then the js and python suites
 
 _No new tasks from Pass 6 (consistency) or Pass 7 (process)._
 
@@ -242,7 +242,7 @@ Outside voices: Codex completed (4 findings), Claude design subagent 7/10
 4. **Reuse?** Yes: the slot reuses `#scale-msg`'s font and colours and the notice keeps `.sheethint` outside the slot's override; no new component family.
 5. **Speculative parts?** The enumerated growth states (two messages, three lines) are driven by real producers (`openEditSheet` writes a warning while the notice stands), not by hypothetical copy. The 36px reservation is derived, not guessed.
 6. **Over-testing?** Eight mutants for ten acceptance items, each mutant naming one test; no mutant tests the same removal twice. Proportionate.
-7. **Complexity gate (8+ files: `index.html`, three test files, seven mutants, `suite_health.py`, README, the drawer spec, `CLAUDE.md`).** D2 fired (below). The smaller arrangement would be one lane and no docs lane; the original two-lane shape stands because the docs lane edits files whose claims a reviewer must verify against merged code (feedback_docs_lane_cites_tests), which needs the app merge first.
+7. **Complexity gate (8+ files: `index.html`, three test files, eight mutants, `suite_health.py`, README, the drawer spec, `CLAUDE.md`).** D2 fired (below). The smaller arrangement would be one lane and no docs lane; the original two-lane shape stands because the docs lane edits files whose claims a reviewer must verify against merged code (feedback_docs_lane_cites_tests), which needs the app merge first.
 
 ### Findings
 
@@ -254,7 +254,7 @@ Outside voices: Codex completed (4 findings), Claude design subagent 7/10
 
 **Section 2, Code quality**
 
-- `[LOW] (confidence: 8/10) index.html:8943 — a third stale comment.` N-A8 names two (the markup comment above `#scale-msg` and the `#scale-parse` CSS comment); the `showRefusal()` comment also says "#scale-msg sits below the pan". **Remedy (R3):** N-A8 covers all three.
+- `[LOW] (confidence: 8/10) index.html:8943 — a third stale comment.` N-A8 names two (the markup comment above `#scale-msg` and the `#scale-parse` CSS comment); the `showRefusal()` comment also says "#scale-msg sits below the pan". **Remedy (R3):** N-A8 covers all three; the second plan review raised it to five (index.html:1219 and :823).
 - Checked and clean: `say()` (8945) writes by reference and does not care where `msgLine` sits; no `scrollIntoView` call targets `#scale-msg` or the notice (9083, 9102-9103 target the input, the layout zone and the drawer button); `#scale-guidance #scale-layout-state` (two ids) out-specifies both `#scale-layout-state{color}` (989) and `.sheethint`, and sets no `display`, so the `hidden` attribute keeps working; the `.sheetbody` hairline stays above the slot; `#scale-del-note`'s `:empty{display:none}` is untouched. The `_markupParent` walk in `tools/sandbox.js` (89) follows the served markup but links only ids in `ELEMENT_IDS` (363), so the wrapper is invisible to the sandbox (corrected by Codex, R7; the DR1 line-33 walk still passes because `#scale-msg`'s linked parent becomes `#scale-sheet`, which is not the drawer).
 
 **Section 3, Tests**
@@ -265,7 +265,7 @@ Coverage of the change, by producer:
 producer                       -> surface              -> test that sees the new position
 layoutNoticeText()/paintLayout -> #scale-layout-state  -> dr1Notice tests, S_NOTICE, DR2a order (re-pointed), N-A2, N-A5
 say() warn/ok (openEditSheet)  -> #scale-msg           -> "a pan warning on the Edit open does not move the pan" (re-pointed), N-A6 growth (a)
-say() err (openShare only, sheet closed) -> #scale-msg.err -> unexercised in the sheet (D4); N-A9 colour only
+say() err (openShare only, sheet closed) -> #scale-msg.err -> unexercised in the sheet (D4); no acceptance item asserts `.err`
 showRefusal()/showParse()      -> #scale-refusal/parse -> UNCHANGED (stay in .sheetbody, N-4)
 viewport/keyboard              -> whole slot           -> N-A5 (FOLD_VIEWPORTS x KEYBOARDS x scrollTop 0/max), N-A7, hairline test (re-pointed)
                                                           landscape 844x390 gap: N-A6 (added, R1)
@@ -283,7 +283,7 @@ Nothing measurable: one extra flex item, one string comparison per paint (R8), n
 
 - **R1 (from F1):** adopt the landscape margin override and the 844x390 gap assertion. Plan text in A and N-A6 updated below. Recorded as an eng-review remedy, not a new owner decision.
 - **R2 (F2, F3):** wording corrections in E and the lane's "Reads only" line.
-- **R3 (F4):** N-A8 names three comments.
+- **R3 (F4):** N-A8 names three comments; raised to five by the second plan review.
 - **R4 (N-A6 fallback-font note):** no plan change; note recorded.
 - **E1 (AFK auto-pick):** `/office-hours` prerequisite skipped; the owner stated the problem and the scope.
 - **E2 (AFK auto-pick, complexity gate):** Original arrangement (lane app then lane docs) over a single lane. Reason: the docs lane's sentences must be verified against MERGED code by a fresh reviewer (feedback_docs_lane_cites_tests); folding them into the app lane makes the same reviewer verify both and has cost two FAILs before (#299, #301).
@@ -329,7 +329,7 @@ Approval readiness: PASS
   .sheethead
   .sheetbody (scrolls; hairline at its foot)   <- #scale-parse, #scale-refusal, pan, drawer, degrees, swatches
   #scale-guidance (flex:0 0 auto; min-height 36px; margin-block tucks to --sp-2 at every breakpoint, R1)
-      #scale-msg            (say(): warn/ok/err)
+      #scale-msg            (say(): warn/ok/empty in the sheet, D4)
       #scale-layout-state   (notice; aria-live polite atomic; textContent guarded, R8)
   #scale-generate (SAVE CHANGES / GENERATE CARDS)
   #scale-delete-row (#scale-del-note stays here)
@@ -355,8 +355,8 @@ No critical gap: every failure mode above has a named test.
 | docs | app merged | `docs/plans/2026-10-07-scale-drawer-design-spec.md`, `CLAUDE.md` |
 
 ### Implementation Tasks (eng review)
-- [ ] E1 lane app: tests first (N-A2, N-A4, N-A5, N-A6 incl. 844x390 gaps, states (e) and refuse-then-re-arm, N-A9, N-A10; N-A7 probe base and head on Pygmy Edit), then markup, CSS incl. the `max-height:520px` override, the notice guard, three comment corrections; eight `sg_*` mutants; FLOORS and README from CI.
-- [ ] E2 lane docs: drawer spec SUPERSEDED marks; `CLAUDE.md` pitfall bullet citing N-A2, N-A5, N-A6, N-A10.
+- [ ] ET1 lane app: tests first (N-A2, N-A4, N-A5, N-A6 incl. 844x390 gaps, states (e) and refuse-then-re-arm, N-A9, N-A10; N-A7 probe base and head on Pygmy Edit), then markup, CSS incl. the `max-height:520px` override, the notice guard, five comment corrections; eight `sg_*` mutants; FLOORS and README from CI.
+- [ ] ET2 lane docs: drawer spec SUPERSEDED marks; `CLAUDE.md` pitfall bullet citing N-A2, N-A5, N-A6, N-A10.
 - [ ] T3 (owner): N-4 / D8 `#scale-refusal` placement.
 - [ ] T4 (owner): N-7 copy, SMALL_LABELS next action (TODOS).
 
