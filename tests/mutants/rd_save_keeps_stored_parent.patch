@@ -1,0 +1,14 @@
+# kills: RD: a record stored with a non-inferred parent is displayed with it and re-saved from Edit with the inferred one
+# suite: node --test --test-name-pattern ^RD:.a.record.stored.with.a.non-inferred.parent tests/app.test.js
+# SAVE from Edit keeps the stored parent index again (the R-1(b) behaviour), so an override survives the save.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9475,6 +9475,7 @@
+ function sheetOptions() {
+   const o = { palette, mirror, mirrorBottom: bottomMirror(), anchor };
+   if (editingId) {
++    { const d = editedDeck(); if (d && d.options && d.options.parent != null) o.parent = d.options.parent; }
+     // iOS Smart Punctuation turns a typed ' or " into a curly U+2018/2019/
+     // U+201C/U+201D, a typed -- into an em dash U+2014, and a typed ... into
+     // a single ellipsis glyph U+2026 (a pasted en dash U+2013 can also show

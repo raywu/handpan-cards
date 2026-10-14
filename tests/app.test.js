@@ -1495,7 +1495,7 @@ function spyBuild(app) {
   return () => app.get("__buildCalls");
 }
 
-const editRowsShown = (app) => ["scale-name-row", "scale-degrees-row", "scale-delete-row"]
+const editRowsShown = (app) => ["scale-name-row", "scale-delete-row"]
   .map((id) => !app.els[id].hasAttribute("hidden"));
 
 test("tapping the already-selected custom chip opens the sheet in Edit state, prefilled", () => {
@@ -1515,7 +1515,7 @@ test("tapping the already-selected custom chip opens the sheet in Edit state, pr
     `HPE.core.formatSeed(CUSTOM[${JSON.stringify(d.id)}].fields)`),
     "the Edit box is not prefilled with formatSeed(fields)");
   assert.strictEqual(app.els["scale-name"].value, d.name, "the Name field is not prefilled");
-  assert.deepStrictEqual(editRowsShown(app), [true, true, true],
+  assert.deepStrictEqual(editRowsShown(app), [true, true],
     "an Edit-only row is still hidden");
   assert.strictEqual(app.els["scale-generate"].textContent, "SAVE CHANGES");
   assert.strictEqual(app.els["scale-generate"].disabled, false,
@@ -1535,34 +1535,10 @@ test("+ ADD after an Edit opens a clean create sheet, never the edited deck's se
 
   openSheet(app);
   assert.strictEqual(app.els["scale-box"].value, "", "the create box kept the edited seed");
-  assert.deepStrictEqual(editRowsShown(app), [false, false, false],
+  assert.deepStrictEqual(editRowsShown(app), [false, false],
     "an Edit-only row is visible on the create path");
   assert.strictEqual(app.els["scale-generate"].textContent, "GENERATE CARDS");
   assert.strictEqual(app.els["scale-generate"].disabled, true);
-});
-
-test("the Degrees select lists the parent candidates with the inferred one preselected", () => {
-  const app = boot();
-  const d = makeCustom(app);
-  app.select(d.id);
-  app.clickChip(d.name);
-
-  const parents = arr(app.get("HPE.naming.PARENTS")).map((p) => p.name);
-  const opts = app.els["scale-degrees"].children;
-  assert.deepStrictEqual(opts.map((o) => o.value), parents.map((_, i) => String(i)),
-    "the Degrees select does not carry the fixed parent list order");
-  assert.deepStrictEqual(opts.map((o) => o.textContent), parents);
-  assert.strictEqual(app.els["scale-degrees"].value, String(d.options.parent),
-    "the inferred parent is not preselected");
-
-  // D10: the override is the parent INDEX, and it relabels the degrees.
-  const other = d.options.parent === 0 ? 1 : 0;
-  app.els["scale-degrees"].value = String(other);
-  app.els["scale-generate"].click();
-  const after = app.registry()[d.id];
-  assert.strictEqual(after.options.parent, other, "the Degrees choice did not reach the deck");
-  assert.notDeepStrictEqual(after.degrees, d.degrees,
-    "a different parent produced identical degree labels");
 });
 
 test("the Edit sheet shows deck.warnings from the registry with no generation call", () => {
@@ -1602,7 +1578,6 @@ test("changing only an option keeps the deck id and moves the share URL", () => 
   app.clickChip(d.name);
   app.els["scale-swatches"].children[3].click();
   app.els["scale-mirror"].click();
-  app.els["scale-degrees"].value = String(d.options.parent === 0 ? 1 : 0);
   app.els["scale-name"].value = "MY PAN";
   app.els["scale-name"].dispatchEvent({ type: "input" });
   app.els["scale-generate"].click();
@@ -3384,14 +3359,13 @@ test("the page routes do not shadow a share URL", () => {
  * zooming IS what queue row 87 is about: the visual viewport shrinks, and
  * applyKbOffset() cannot tell that shrink from a keyboard. The page's answer
  * is to make NO claim while the scale is up - which is only safe if the page
- * never raises the scale itself. That is this test: all three of the sheet's
- * focusable controls are pinned at 16px, so every scale > 1 is two deliberate
+ * never raises the scale itself. That is this test: both of the sheet's
+ * text inputs are pinned at 16px, so every scale > 1 is two deliberate
  * fingers. Dropping any of them to 15px hands the fix off at exactly the
  * moment the keyboard opens, and no headless test would otherwise see it.
- * #scale-degrees is a <select> rather than a text input, but iOS auto-zooms a
- * focused select on the same rule, and it declares its size through the `font`
- * shorthand - hence the two patterns. Asserted against the CSS text because
- * the sandbox stubs the DOM and has no layout engine.
+ * The `font` shorthand is read as well as `font-size` - hence the two patterns.
+ * Asserted against the CSS text because the sandbox stubs the DOM and has no
+ * layout engine.
  *
  * Q16: this used to take only the FIRST rule with a font size and only a
  * STANDALONE `#sel{...}` rule at that, so an override buried in a
@@ -3419,7 +3393,7 @@ test("the sheet's text inputs stay at 16px in every rule that sets their size, m
     const m = /font-size:\s*([\d.]+)px/.exec(body) || /\bfont:[^;]*?\b([\d.]+)px\b/.exec(body);
     return m ? Number(m[1]) : null;
   };
-  for (const sel of ["#scale-box", "#scale-name", "#scale-degrees"]) {
+  for (const sel of ["#scale-box", "#scale-name"]) {
     const hits = rules.filter((r) => r.selectors.includes(sel));
     assert.ok(hits.length, `no CSS rule for ${sel}`);
     const sizes = hits.map((r) => sizeOf(r.body)).filter((s) => s !== null);
@@ -8702,19 +8676,6 @@ test("LF F-4: #scale-fine-toggle is underlined, offset .18em", () => {
   assert.match(rule[1], /text-decoration:\s*underline;\s*text-underline-offset:\s*\.18em/);
 });
 
-test("LF F-5: changing the degree select re-parses the seed with the new parent", () => {
-  const app = boot();
-  openEdit(app, makeCustom(app, D2_AMARA));
-  app.get(`HPE.core.parseSeed = (function (real) {
-    return function (text, opts) { globalThis.__lastParent = opts && opts.parent; return real(text, opts); };
-  })(HPE.core.parseSeed)`);
-  const sel = app.els["scale-degrees"];
-  const next = String((Number(sel.value) + 1) % 7);
-  sel.value = next;
-  sel.dispatchEvent({ type: "change" });
-  assert.strictEqual(String(app.get("globalThis.__lastParent")), next);
-});
-
 /* ------------------------------ 27. editable defaults: fork, hide, restore */
 //
 // docs/plans/2026-10-09-editable-defaults.md, lane app (ED-A1..A7, A13..A15).
@@ -8811,7 +8772,6 @@ test("editable defaults: saving each seeded deck with a palette change mints the
     assert.strictEqual(app.els["scale-anchor-between"].classList.contains("on"), d.id === "pygmy",
       `${d.id}: wrong anchor`);
     assert.strictEqual(app.els["scale-delete-row"].hasAttribute("hidden"), false);
-    assert.strictEqual(app.els["scale-degrees-row"].hasAttribute("hidden"), false, `${d.id}: no degree row`);
     app.els["scale-swatches"].children[(prefilled[i] + 1) % 6].click();
     app.els["scale-generate"].click();
     assert.strictEqual(app.sheetOpen(), false, `${d.id}: the save did not close the sheet`);
@@ -9208,4 +9168,99 @@ test("SG: N-A4 the notice is a polite atomic live region, #scale-msg keeps its o
   const wrapperTag = /^<div[^>]*>/.exec(slot.html)[0];
   assert.doesNotMatch(wrapperTag, /aria-|role=|tabindex/, "the wrapper carries a live or ARIA role (nested regions announce twice)");
   assert.doesNotMatch(slot.html, /<(button|a|input|select|textarea)\b|tabindex=/i, "something in the slot is focusable");
+});
+
+/* ------------------------------ 29. remove the DEGREES dropdown, infer the parent always */
+//
+// docs/plans/2026-10-14-remove-degrees-dropdown.md, lane app (RD-A1..A6).
+
+const RD_STRING = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
+const rdRecord = (app, o) => ({ v: app.get("SHARE_VERSION"), s: RD_STRING, o });
+const rdBoot = (o) => {
+  const probe = boot();
+  return boot({ storage: { [probe.get("SCALES_KEY")]: JSON.stringify([rdRecord(probe, o)]) } });
+};
+
+test("RD: a record stored with a non-inferred parent is displayed with it and re-saved from Edit with the inferred one", () => {
+  const app = rdBoot({ palette: 0, parent: 2 });
+  const id = Object.keys(app.registry()).find((k) => k.startsWith("custom:"));
+  assert.strictEqual(app.registry()[id].options.parent, 2, "the stored index is not displayed");
+  assert.strictEqual(app.registry()[id].degrees["7"], "IV");
+
+  openEdit(app, app.registry()[id]);
+  app.els["scale-generate"].click();
+  const after = app.registry()[id];
+  assert.strictEqual(after.options.parent, 1, "SAVE kept the stored parent");
+  assert.strictEqual(after.degrees["7"], "iv");
+  assert.strictEqual(records(app)[0].o.parent, 1);
+  assert.strictEqual(app.deckId(), id, "the id moved");
+  assert.strictEqual(app.announcer().textContent, "Updated D AEOLIAN 9");
+
+  const named = rdBoot({ palette: 0, parent: 2, name: "RAY'S PAN" });
+  const nid = Object.keys(named.registry()).find((k) => k.startsWith("custom:"));
+  openEdit(named, named.registry()[nid]);
+  named.els["scale-generate"].click();
+  const kept = named.registry()[nid];
+  assert.strictEqual(named.deckId(), nid);
+  assert.strictEqual(kept.options.parent, 1, "an options-only SAVE kept the stored parent");
+  assert.strictEqual(kept.degrees["7"], "iv");
+  assert.strictEqual(kept.options.name, "RAY'S PAN");
+  assert.strictEqual(named.announcer().textContent, "Updated RAY'S PAN");
+});
+
+test("RD: no DEGREES row - the served markup, ELEMENT_IDS and the app script carry neither scale-degrees id, and sheetOptions writes no parent on Edit", () => {
+  const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+  // prefix match by design: a future scale-degrees-* id trips these too
+  assert.ok(!html.includes('id="scale-degrees'), "a scale-degrees id is served");
+  assert.ok(!html.includes('for="scale-degrees'), "an orphan label names scale-degrees");
+  const script = html.slice(html.indexOf("const DECKS"));
+  assert.ok(!script.includes('getElementById("scale-degrees'), "the app still looks a degrees id up");
+  assert.ok(!html.includes("#scale-degrees"), "a CSS selector still names #scale-degrees");
+
+  const body = html.slice(html.indexOf('<div class="sheetbody"'), html.indexOf('id="scale-guidance"'))
+    .replace(/<!--[\s\S]*?-->/g, "");
+  assert.deepStrictEqual([...body.matchAll(/class="editrow"(?: id="([^"]+)")?/g)].map((m) => m[1]),
+    ["scale-name-row", "scale-layout-row", undefined],
+    "an .editrow other than the name row and the layout zone's own two is in .sheetbody");
+  assert.match(body, /<\/div>\s*<\/div>\s*<div class="ctlrow">\s*<div id="scale-swatches"/,
+    "the swatches do not directly follow #scale-layout-zone");
+
+  const { ELEMENT_IDS } = require("../tools/sandbox.js");
+  assert.ok(!ELEMENT_IDS.includes("scale-degrees-row") && !ELEMENT_IDS.includes("scale-degrees"));
+
+  const app = boot();
+  openEdit(app, makeCustom(app));
+  assert.deepStrictEqual(editRowsShown(app), [true, true]);
+  app.get(`globalThis.__parents = [];
+    HPE.core.parseSeed = (function (real) {
+      return function (text, opts) { if (opts !== undefined) globalThis.__parents.push(opts.parent); return real(text, opts); };
+    })(HPE.core.parseSeed)`);
+  const seen = () => plain(app.get("globalThis.__parents"));
+  app.get("resyncSheet(true)");
+  assert.ok(seen().length > 0, "resyncSheet parsed with no options");
+  assert.ok(seen().every((p) => p == null), "resyncSheet sent a parent");
+  app.get("globalThis.__parents = []");
+  app.els["scale-generate"].click();
+  assert.ok(seen().length > 0, "SAVE parsed with no options");
+  assert.ok(seen().every((p) => p == null), "SAVE sent a parent");
+});
+
+test("RD: opening a share link that carries an explicit parent stores that parent again, after an inferred SAVE included", () => {
+  const maker = boot();
+  const made = maker.generate(RD_STRING, { palette: 0, parent: 2 });
+  assert.strictEqual(made.ok, true, made.reason);
+  const text = payload(link(maker, made.value.id).value);
+
+  const app = rdBoot({ palette: 0, parent: 2 });
+  const id = made.value.id;
+  openEdit(app, app.registry()[id]);
+  app.els["scale-generate"].click();
+  assert.strictEqual(records(app)[0].o.parent, 1);
+  assert.strictEqual(app.registry()[id].degrees["7"], "iv");
+
+  const res = openShare(app, text);
+  assert.strictEqual(res.ok, true, res.reason);
+  assert.strictEqual(records(app).length, 1, "a second record appeared");
+  assert.strictEqual(records(app)[0].o.parent, 2, "the link's parent was not stored again");
+  assert.strictEqual(app.registry()[id].degrees["7"], "IV");
 });

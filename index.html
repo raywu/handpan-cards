@@ -915,7 +915,7 @@ footer.seq{row-gap:var(--sp-1)}
      sheet there are two of them above the fold and the box the caret lands in
      is the lower one, so four pixels each is the difference between opening at
      rest and opening already scrolled. */
-  #scale-box, #scale-name, #scale-degrees{min-height:44px; padding:9px var(--sp-3)}
+  #scale-box, #scale-name{min-height:44px; padding:9px var(--sp-3)}
   #scale-box-wrap::after{min-height:44px; padding:9px var(--sp-3)}
   #scale-box-wrap::after, #scale-box{max-height:calc(3 * 1.3em + 20px)}
   .sheetbody{gap:var(--sp-2)}
@@ -971,10 +971,9 @@ footer.seq{row-gap:var(--sp-1)}
    the create sheet and the Edit sheet; SAVE CHANGES reuses #scale-generate so
    there is never a second primary button on the surface. */
 .editrow{display:flex; flex-direction:column; gap:var(--sp-1)}
-#scale-name, #scale-degrees{width:100%; min-height:48px; padding:12px var(--sp-3); color:#eae6df;
+#scale-name{width:100%; min-height:48px; padding:12px var(--sp-3); color:#eae6df;
   background:#151310; border:1px solid #433b2c; border-radius:8px}
 #scale-name{font-family:Bitter, serif; font-weight:400; font-size:16px}
-#scale-degrees{font:400 16px/1.2 "Nunito Sans"}
 /* ---- LAYOUT correction (Phase 5, moved onto the pan in Stage 3). Every
    control here is a SECONDARY: the sheet's only full-width primary stays
    #scale-generate. The PAN is the selection and a single tab stop; its arrow
@@ -1304,11 +1303,6 @@ footer.seq{row-gap:var(--sp-1)}
           <button class="mode" type="button" id="scale-layout-reset" disabled>RESET LAYOUT</button>
         </div>
       </div>
-    </div>
-    <!-- D10: the parent-scale override. Edit path only - the create path infers. -->
-    <div class="editrow" id="scale-degrees-row" hidden>
-      <label class="sheetlabel" for="scale-degrees">DEGREES</label>
-      <select id="scale-degrees"></select>
     </div>
     <!-- Inside .sheetbody, in the scroll. It used to be pinned below the
          scrollport with the primary, on the argument that everything outside
@@ -8869,12 +8863,10 @@ const restoreBtn = document.getElementById("deck-restore");
 // lands on open; titleEl is the page's accessible name, not decoration.
 const backBtn   = document.getElementById("scale-back");
 const titleEl   = document.getElementById("scale-title");
-// Edit state (Phase 4). The same sheet, three extra rows and a relabelled
+// Edit state (Phase 4). The same sheet, two extra rows and a relabelled
 // primary - never a second sheet and never a second primary button.
 const nameRow   = document.getElementById("scale-name-row");
 const nameBox   = document.getElementById("scale-name");
-const degRow    = document.getElementById("scale-degrees-row");
-const degSel    = document.getElementById("scale-degrees");
 const delRow    = document.getElementById("scale-delete-row");
 const delNote   = document.getElementById("scale-del-note");
 const delBtn    = document.getElementById("scale-delete");
@@ -9181,18 +9173,6 @@ function parseLineText(fields) {
   return line;
 }
 
-/** The D10 parent candidates, in the engine's FIXED list order (section 10). */
-function buildDegrees(selected) {
-  degSel.innerHTML = "";
-  HPE.naming.PARENTS.forEach((p, i) => {
-    const o = document.createElement("option");
-    o.value = String(i);
-    o.textContent = p.name;        // text position, so nothing is interpolated
-    degSel.appendChild(o);
-  });
-  degSel.value = String(selected);
-}
-
 /* ---- the seat editor (Lane DR2a) ----
  * The generated layout is a GUESS; this is how it is corrected. The only edit is
  * a SWAP of two notes of one ring, and every path reaches it through the same
@@ -9228,12 +9208,7 @@ const editedDeck = () => (editingId ? CUSTOM[editingId] || DECKS.find(d => d.id 
 const seeded = () => isBuiltIn(editingId);
 /** The tuple a seeded sheet is compared against to tell an unchanged SAVE. */
 const sheetKey = () => JSON.stringify([scaleBox.value, nameBox.value, palette, mirror, bottomMirror(), anchor,
-  degSel.value, seatsKey(layoutSeats)]);
-/** The parent scale a seeded deck's fields imply, as select.build would infer it. */
-function seedParent(fields) {
-  const pcs = [...new Set(Object.values(fields).map(f => HPE.core.pc(f[2])))].sort((a, b) => a - b);
-  return HPE.naming.inferParent(pcs, HPE.core.pc(fields["0"][2]));
-}
+  seatsKey(layoutSeats)]);
 /** The palette whose pair a seeded deck's colours equal, else 0. */
 function seedPalette(colors) {
   const i = HPE.select.PALETTES.findIndex(p => p.root === colors.root && p.tone === colors.tone);
@@ -9500,7 +9475,6 @@ function layoutOptions() {
 function sheetOptions() {
   const o = { palette, mirror, mirrorBottom: bottomMirror(), anchor };
   if (editingId) {
-    o.parent = Number(degSel.value);
     // iOS Smart Punctuation turns a typed ' or " into a curly U+2018/2019/
     // U+201C/U+201D, a typed -- into an em dash U+2014, and a typed ... into
     // a single ellipsis glyph U+2026 (a pasted en dash U+2013 can also show
@@ -9852,11 +9826,11 @@ if (window.visualViewport) {
   window.visualViewport.addEventListener("scroll", applyKbOffset);
 }
 
-/** Show or hide the three Edit-only rows and relabel the single primary.
+/** Show or hide the two Edit-only rows and relabel the single primary.
  *  `edit` is false (create) or true (Edit a seeded or a custom deck). */
 function setSheetMode(edit) {
   disarmDelete();
-  for (const el of [nameRow, degRow, delRow]) {
+  for (const el of [nameRow, delRow]) {
     if (edit) el.removeAttribute("hidden");
     else el.setAttribute("hidden", "");
   }
@@ -9939,7 +9913,6 @@ function resetSheetState(edit) {
   palette = !edit ? 0 : seeded() ? seedPalette(edit.colors) : edit.options.palette;
   buildSwatches();
   mirror = o ? !!o.mirror : false;
-  if (edit) buildDegrees(seeded() ? seedParent(edit.fields) : edit.options.parent);
   // The correction is a seed option like the others, so Edit shows the one the
   // deck already carries and RESET is what clears it.
   layoutSeats = o && o.seats ? JSON.parse(JSON.stringify(o.seats)) : null;
@@ -10617,7 +10590,6 @@ scaleBox.addEventListener("input", () => {
 // The name is a seed option, so an unusable one is rejected by core.parseSeed
 // through the same parse line every other input goes through.
 nameBox.addEventListener("input", () => { nameDirty = true; resyncSheet(true); });
-degSel.addEventListener("change", () => resyncSheet(true));
 scaleBox.addEventListener("keydown", e => {
   if (e.key !== "Enter" || e.isComposing) return;
   e.preventDefault();
@@ -10650,7 +10622,7 @@ sheet.addEventListener("keydown", e => {
                  drawerOpen ? previewBox.querySelector('.panhit[tabindex="0"]') : null,
                  drawerBtn, anchorOne, anchorBetween, mirrorTop, mirrorBot, fineBtn,
                  notePrev, noteNext, seatPrev, seatNext, resetBtn,
-                 editingId ? degSel : null, ...swatches.children, genBtn,
+                 ...swatches.children, genBtn,
                  editingId ? delBtn : null]
     .filter(isStop);
   if (isHit(document.activeElement) && pickRef && lastSolved) setRover(pickRef);
