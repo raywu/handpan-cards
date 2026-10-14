@@ -897,6 +897,12 @@ footer.seq{row-gap:var(--sp-1)}
   justify-content:flex-end; margin-block:calc(var(--sp-2) - var(--sp-4))}
 #scale-guidance #scale-msg{min-height:0}
 #scale-guidance #scale-layout-state{font:400 12px/1.5 "Nunito Sans"; color:#c4bcab}
+/* One message wins (plan N-6 alternative, owner 2026-10-14): while the notice holds text the warn
+   tier steps aside, so the slot never outgrows its two-line reserve; err and ok tiers still stack.
+   The aria-live copy of the warning (.announce) is a separate element and still speaks. The class is on
+   #scale-sheet, not the wrapper: paintLayout() reaches the sheet through a variable the sandbox already
+   has, and say() rewrites #scale-msg's own className on every call. */
+#scale-sheet.noticed #scale-msg.warn{display:none}
 /* Landscape on a phone: 390px of height, and every pixel of chrome on the page
    comes straight off the scrolling body. The footer's breathing room above its
    own hairline is .sheetsurf's gap, already dropped to --sp-3 above; this
@@ -9076,6 +9082,7 @@ function paintLayout() {
   const note = layoutNoticeText();
   if (layoutNote.textContent !== note) layoutNote.textContent = note;
   layoutNote.hidden = !note;
+  sheet.classList.toggle("noticed", !!note);
   syncBand();
 }
 /** Rule G-a, G-b, G-e: the band sticks only while the scrollport keeps room

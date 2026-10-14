@@ -1,4 +1,4 @@
-# kills: SG: N-A10 repeated paints with an unchanged notice mutate nothing in #scale-layout-state, a changed notice mutates it once
+# kills: SG: N-A10 repeated paints (ten real drawer-toggle clicks) with an unchanged notice mutate nothing in #scale-layout-state, a changed notice mutates it once
 # suite: node --test --test-name-pattern ^SG:.N-A10 tests/e2e.test.js
 # paintLayout() assigns the notice on every paint again, so a live region re-announces an unchanged sentence on every drag.
 diff --git a/index.html b/index.html

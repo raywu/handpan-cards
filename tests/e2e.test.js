@@ -6241,6 +6241,7 @@ function run() {
     say(${JSON.stringify(warn || "")}, ${warn ? '"warn"' : '""'});
     layoutNote.textContent = ${JSON.stringify(note || "")};
     layoutNote.hidden = ${note ? "false" : "true"};
+    sheet.classList.toggle("noticed", ${note ? "true" : "false"});
     return true;`);
 
   const sgFit = (which, n) => b.eval(`
@@ -6316,13 +6317,17 @@ function run() {
   });
 
   test("SG: N-A5 the notice and a warning are inside the viewport, the surface and above the primary at every fold viewport and keyboard, create and Edit, drawer open and closed, scrolled to the top and to the end", async () => {
-    const configs = [[380, 800, 0], [390, 844, 0], [390, 745, 0], [844, 390, 0], [390, 745, 336], [390, 745, 365], [390, 745, 395]];
-    const noteRect = () => b.eval(`
+    const configs = [];
+    for (const [w, h] of FOLD_VIEWPORTS) {
+      configs.push([w, h, 0]);
+      for (const kb of KEYBOARDS) if (h - kb >= 300) configs.push([w, h, kb]);
+    }
+    const noteRect = (ids) => b.eval(`
       const surf = document.querySelector(".sheetsurf"), body = surf.querySelector(".sheetbody");
       const sr = surf.getBoundingClientRect(), gen = document.getElementById("scale-generate").getBoundingClientRect();
       const vv = window.visualViewport, kbTop = vv.offsetTop + vv.height;
       const out = {};
-      for (const id of ["scale-msg", "scale-layout-state"]) {
+      for (const id of ${JSON.stringify(ids)}) {
         const el = document.getElementById(id), r = el.getBoundingClientRect();
         const shown = !el.hidden && el.textContent.length > 0;
         const hit = shown ? document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2) : null;
@@ -6357,9 +6362,8 @@ function run() {
             await b.eval(`document.getElementById("scale-box").focus(); return true;`);
             await b.fakeKeyboard(h - kb);
           }
-          await b.eval(`say("Crowded pan. Labels are drawn smaller.", "warn");
-            if (layoutNote.hidden || !layoutNote.textContent) { layoutNote.textContent = "Notice."; layoutNote.hidden = false; }
-            return true;`);
+          const realNote = await b.eval(`return layoutNote.textContent;`);
+          assert.ok(realNote.length > 0, "the anchor tap raised no notice");
           for (const drawer of [false, true]) {
             const open = await b.eval(`return !document.getElementById("scale-drawer").hidden;`);
             if (open !== drawer) {
@@ -6369,8 +6373,13 @@ function run() {
             for (const end of [false, true]) {
               await b.eval(`const s = document.querySelector(".sheetbody"); s.scrollTop = ${end ? "s.scrollHeight" : "0"}; return true;`);
               await b.settle();
-              const m = await noteRect();
-              assertOnScreen(m, `${page} page at ${w}x${h}${kb ? ` with a ${kb}px keyboard` : ""}, drawer ${drawer ? "open" : "closed"}, scrolled to the ${end ? "end" : "top"}`);
+              for (const [label, state, ids] of [
+                ["notice", { note: realNote }, ["scale-layout-state"]],
+                ["warning", { warn: "Crowded pan. Labels are drawn smaller." }, ["scale-msg"]],
+              ]) {
+                await sgPut(state);
+                assertOnScreen(await noteRect(ids), `the ${label} on the ${page} page at ${w}x${h}${kb ? ` with a ${kb}px keyboard` : ""}, drawer ${drawer ? "open" : "closed"}, scrolled to the ${end ? "end" : "top"}`);
+              }
             }
           }
           if (kb) await b.clearKeyboard();
@@ -6384,7 +6393,7 @@ function run() {
     }
   });
 
-  test("SG: N-A6 the scrollport does not resize between empty, notice and one- or two-line states, grows by exactly 18px a line in the enumerated states, and the slot sits --sp-2 from both neighbours", async () => {
+  test("SG: N-A6 the scrollport does not resize between empty, notice and one- or two-line states, grows by exactly 18px a line in the enumerated states, a warning yields to a standing notice, and the slot sits --sp-2 from both neighbours", async () => {
     try {
       await sgEditBig();
       for (const [w, h] of [[380, 800], [844, 390], [390, 745]]) {
@@ -6393,10 +6402,12 @@ function run() {
         await sgPut({});
         const base = await sgGeometry();
         const where = `Edit at ${w}x${h}`;
-        const t1 = await sgFit("note", 1), t3 = await sgFit("note", 3);
+        const t1 = await sgFit("note", 1), t2 = await sgFit("note", 2), t3 = await sgFit("note", 3);
         const w1 = await sgFit("msg", 1), w2 = await sgFit("msg", 2), w3 = await sgFit("msg", 3);
-        const check = async (label, state, lines) => {
+        const check = async (label, state, lines, warnHidden = false) => {
           await sgPut(state);
+          const display = await b.eval(`return getComputedStyle(msgLine).display;`);
+          assert.strictEqual(display === "none", warnHidden, `${where}, ${label}: #scale-msg display is ${display}, expected ${warnHidden ? "none (one message wins)" : "shown"}`);
           const g = await sgGeometry();
           const reserve = 2 * SG_LINE;
           const want = Math.max(reserve, g.msgH + g.noteH);
@@ -6413,12 +6424,13 @@ function run() {
         await check("notice, one line", { note: t1 }, 1);
         await check("warning, one line", { warn: w1 }, 1);
         await check("warning, two lines", { warn: w2 }, 2);
-        await check("warning one line plus notice one line", { warn: w1, note: t1 }, 2);
+        await check("notice, two lines", { note: t2 }, 2);
+        await check("warning one line plus notice one line: the warning yields", { warn: w1, note: t1 }, 1, true);
         const cleared = await check("cleared again", {}, 0);
         assert.strictEqual(cleared.port, base.port, `${where}: the scrollport did not come back after clearing`);
-        await check("(a) warning two lines plus notice one line", { warn: w2, note: t1 }, 3);
+        await check("(a) two-line warning plus notice: the warning yields, the slot does not grow", { warn: w2, note: t1 }, 1, true);
         await check("(b) joined warnings, three lines", { warn: w3 }, 3);
-        await check("(c) three-line warning plus notice", { warn: w3, note: t1 }, 4);
+        await check("(c) three-line warning plus notice: the warning yields, the slot does not grow", { warn: w3, note: t1 }, 1, true);
         await check("(e) the notice with all three ring suffixes, three lines", { note: t3 }, 3);
         await sgPut({});
         await b.key("Escape", "Escape", 27);
@@ -6463,19 +6475,22 @@ function run() {
     }
   });
 
-  test("SG: N-A7 the seed box stays readable with growth state (a) up, at every real-keyboard height on Edit", async () => {
+  test("SG: N-A7 the seed box stays readable with a two-line warning and a notice both pending, at every real-keyboard height on Edit (the warning yields, no growth)", async () => {
     try {
       await freshLoad();
       await b.setViewport(390, 745, true);
       await generate(EDIT_SCALE);
       await openEdit();
       await b.click("#scale-box");
-      assert.ok(await b.eval(`return !!document.getElementById("scale-guidance");`), "there is no #scale-guidance slot, so growth state (a) is not the pinned one");
+      assert.ok(await b.eval(`return !!document.getElementById("scale-guidance");`), "there is no #scale-guidance slot");
       const w2 = await sgFit("msg", 2), t1 = await sgFit("note", 1);
       await sgPut({ warn: w2, note: t1 });
+      const g = await sgGeometry();
+      assert.ok(Math.abs(g.slotH - 2 * SG_LINE) < 0.5, `the slot grew to ${g.slotH}px with a warning and a notice`);
+      assert.strictEqual(await b.eval(`return getComputedStyle(msgLine).display;`), "none", "the warning did not yield to the notice");
       for (const kb of KEYBOARDS) {
         await b.fakeKeyboard(745 - kb);
-        assertSeedBoxReadable(await seedBoxVisibility(), `growth state (a), the Edit page with a ${kb}px keyboard`);
+        assertSeedBoxReadable(await seedBoxVisibility(), `warning plus notice, the Edit page with a ${kb}px keyboard`);
       }
       await b.clearKeyboard();
       await b.key("Escape", "Escape", 27);
@@ -6486,25 +6501,69 @@ function run() {
     }
   });
 
-  test("SG: N-A10 repeated paints with an unchanged notice mutate nothing in #scale-layout-state, a changed notice mutates it once", async () => {
+  test("SG: N-A7 the crowded 24-note pan: the real SMALL_LABELS warning (two lines) opens Edit, a tapped anchor raises the notice, the warning yields and the three-row seed box stays readable at every keyboard", async () => {
+    const CROWDED = "(C3) D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5 F5 G5 A5 B5 C6 D6 E6 F6";
+    try {
+      await freshLoad();
+      await b.setViewport(390, 745, true);
+      await generate(CROWDED);
+      await openEdit();
+      const opened = await b.eval(`return { text: msgLine.textContent, cls: msgLine.className, display: getComputedStyle(msgLine).display, h: msgLine.getBoundingClientRect().height };`);
+      assert.match(opened.text, /^Crowded pan/, `Edit opened with "${opened.text}", not the SMALL_LABELS warning`);
+      assert.notStrictEqual(opened.display, "none", "the warning is hidden before any notice exists");
+      assert.ok(Math.abs(opened.h - 2 * SG_LINE) < 0.5, `the warning is ${opened.h / SG_LINE} lines, the reviewer's repro needs two`);
+      await b.eval(`document.getElementById("scale-anchor-between").click(); return true;`);
+      await b.settle();
+      const noticed = await b.eval(`return { note: layoutNote.textContent, noticed: sheet.classList.contains("noticed"), display: getComputedStyle(msgLine).display, slot: document.getElementById("scale-guidance").getBoundingClientRect().height };`);
+      assert.ok(noticed.note.length > 0, "the anchor tap raised no notice");
+      assert.ok(noticed.noticed, "paintLayout did not mark the sheet noticed");
+      assert.strictEqual(noticed.display, "none", "the SMALL_LABELS warning did not yield to the notice");
+      assert.ok(Math.abs(noticed.slot - 2 * SG_LINE) < 0.5, `the slot is ${noticed.slot}px, not the two-line reserve`);
+      await b.click("#scale-box");
+      for (const kb of KEYBOARDS) {
+        await b.fakeKeyboard(745 - kb);
+        const m = await seedBoxVisibility();
+        assert.ok(m.h > 60, `the seed box is ${m.h}px tall, so it did not wrap to three rows`);
+        assertSeedBoxReadable(m, `the crowded pan on the Edit page with a ${kb}px keyboard`);
+      }
+      await b.clearKeyboard();
+      await b.key("Escape", "Escape", 27);
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the Edit page to close" });
+    } finally {
+      await b.clearKeyboard();
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("SG: N-A10 repeated paints (ten real drawer-toggle clicks) with an unchanged notice mutate nothing in #scale-layout-state, a changed notice mutates it once", async () => {
     try {
       await freshLoad();
       await b.setViewport(380, 800, true);
       await generate(EDIT_SCALE);
       await openEdit();
-      const r = await b.eval(`
+      await b.eval(`
         const note = document.getElementById("scale-layout-state");
-        const mo = new MutationObserver(() => {});
-        mo.observe(note, { childList: true, characterData: true, subtree: true });
-        const count = () => mo.takeRecords().length;
-        document.getElementById("scale-anchor-between").click();
-        const first = { text: note.textContent, records: count() };
-        for (let i = 0; i < 10; i += 1) paintLayout();
-        const repeated = count();
-        document.getElementById("scale-anchor-one").click();
-        const changed = { text: note.textContent, records: count() };
-        mo.disconnect();
-        return { first, repeated, changed };`);
+        window.__sgRecs = 0;
+        window.__sgMo = new MutationObserver((list) => { window.__sgRecs += list.length; });
+        window.__sgMo.observe(note, { childList: true, characterData: true, subtree: true });
+        window.__sgPaints = 0;
+        const orig = paintLayout;
+        paintLayout = function () { window.__sgPaints += 1; return orig.apply(this, arguments); };
+        return true;`);
+      const count = () => b.eval(`const n = window.__sgRecs + window.__sgMo.takeRecords().length; window.__sgRecs = 0; return n;`);
+      await b.eval(`document.getElementById("scale-anchor-between").click(); return true;`);
+      const first = { text: await b.eval(`return layoutNote.textContent;`), records: await count() };
+      const before = await b.eval(`return window.__sgPaints;`);
+      await b.eval(`document.getElementById("scale-layout-toggle").scrollIntoView({ block: "center" }); return true;`);
+      for (let i = 0; i < 10; i += 1) await b.click("#scale-layout-toggle");
+      const paints = (await b.eval(`return window.__sgPaints;`)) - before;
+      const repeated = await count();
+      await b.eval(`document.getElementById("scale-anchor-one").click(); return true;`);
+      const changed = { text: await b.eval(`return layoutNote.textContent;`), records: await count() };
+      await b.eval(`window.__sgMo.disconnect(); return true;`);
+      const r = { first, repeated, changed, paints };
+      assert.ok(r.paints >= 10, `only ${r.paints} paints ran across ten real toggle clicks, so the unchanged-paint count proves nothing`);
+      assert.notStrictEqual(r.changed.text, r.first.text, "the changed notice has the same text as the previous one, so the one-record count proves nothing");
       assert.ok(r.first.text.length > 0, "the first change raised no notice, so this measures nothing");
       assert.strictEqual(r.first.records, 1, `a new notice mutated #scale-layout-state ${r.first.records} times`);
       assert.strictEqual(r.repeated, 0, `ten paints with the same notice mutated #scale-layout-state ${r.repeated} times (a live region would re-announce each)`);
