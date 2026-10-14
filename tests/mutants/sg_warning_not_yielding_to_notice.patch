@@ -1,4 +1,4 @@
-# kills:  SG: N-A7 the crowded 24-note pan: the real SMALL_LABELS warning (two lines) opens Edit, a tapped anchor raises the notice, the warning yields and the three-row seed box stays readable at every keyboard
+# kills: SG: N-A7 the crowded 24-note pan: the real SMALL_LABELS warning (two lines) opens Edit, a tapped anchor raises the notice, the warning yields and the three-row seed box stays readable at every keyboard
 # suite: node --test --test-name-pattern ^SG:.N-A7.the.crowded tests/e2e.test.js
 # A pan warning no longer steps aside for a standing notice, so a two-line SMALL_LABELS warning plus the notice grows the slot and the seed box is clipped under the keyboard.
 --- a/index.html
