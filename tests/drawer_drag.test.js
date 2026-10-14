@@ -270,13 +270,15 @@ function run() {
     await ev(`document.querySelector("#scale-preview .panhit[aria-pressed='true']").dispatchEvent(new MouseEvent("click", { bubbles: true })); return true;`);
     await sleep(450);
     await ev(`document.querySelector("#scale-preview .panhit[aria-pressed='true']").dispatchEvent(new MouseEvent("click", { bubbles: true })); return true;`);
-    await mouseDrag(rim[1], bottom);
+    const again = await plate();
+    const rimNow = again.filter((n) => n.ring === "rim"), bottomNow = again.find((n) => n.ring === "bottom");
+    await mouseDrag(rimNow[1], bottomNow);
     assert.strictEqual(await status(), `Not moved. ${rim[1].name} moves only within the rim.`);
     assert.strictEqual(await ev(`return document.getElementById("scale-drawer-status").classList.contains("warn");`), true);
     const ding = await ev(`const r = document.querySelector("#scale-preview svg").getBoundingClientRect(); return { x: (r.left + r.right) / 2, y: (r.top + r.bottom) / 2 };`);
     const vp = await ev(`return { x: innerWidth - 2, y: 2 };`);
     for (const at of [ding, vp]) {
-      await mouseDrag(rim[2], at);
+      await mouseDrag((await plate()).filter((n) => n.ring === "rim")[2], at);
       assert.strictEqual(await status(), `Not moved. Drop ${rim[2].name} on another rim note to swap.`);
       assert.strictEqual(await pickedName(), null);
     }
