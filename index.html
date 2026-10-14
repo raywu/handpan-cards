@@ -193,11 +193,10 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
   font:600 11px/1 "Nunito Sans"; letter-spacing:.09em; color:#d5cec2; background:#272219;
   cursor:pointer; position:relative; white-space:nowrap;
 }
-/* The pencil on a SELECTED CUSTOM chip (queue row 218). A second tap on that
-   one chip is the only way into the Edit sheet, and until now a selected
-   custom chip looked exactly like a selected built-in, which does nothing
-   when tapped - so the owner had to guess. The glyph says which chip has a
-   second action.
+/* The pencil on the SELECTED chip (queue row 218), seeded decks included since
+   SAVE / DELETE. A second tap on that one chip is the only way into the Edit
+   sheet, so the glyph says which chip has a second action; an unselected chip
+   never carries it.
    It is generated CONTENT on the chip, not an element: the chip is already a
    44px target with an onclick that does exactly this, so a child would only
    add a smaller target inside the pill - and, as a real node, it would put
@@ -7726,7 +7725,7 @@ const SEQ_STYLE_COPY = {
 // need that). deck() resolves a custom id out of the registry; it never builds.
 const CUSTOM = Object.create(null);
 
-const deck = () => CUSTOM[deckId] || allDecks().find(d => d.id === deckId) || fallbackDeck();
+const deck = () => CUSTOM[deckId] || allDecks().find(d => d.id === deckId) || replacements()[deckId] || fallbackDeck();
 // Any deck id persists, built-in or custom: a custom deck is rebuilt at boot
 // from its saved seed, so restoring one is no longer a dangling reference.
 // READ-MODIFY-WRITE: "hpfc" is one object shared with whatever else stores
@@ -7749,8 +7748,8 @@ const save = () => {
 // (ENGINE-SPEC section 11). generateDeck returns the engine's result shape
 // unchanged: {ok:true, value, warnings} or {ok:false, code, reason}.
 const isBuiltIn = id => DECKS.some(d => d.id === id);
-// Built-ins the player has hidden: ids in "hpfc.hidden", built-in ids only,
-// written only while non-empty (save()). A hidden deck is still in DECKS - the
+// Built-ins the player has hidden: ids in the `hidden` field of the one "hpfc"
+// blob, built-in ids only, written only while non-empty (save()). A hidden deck is still in DECKS - the
 // literal is generated and never altered - it just leaves the strip, the
 // fallbacks and the picker.
 let hidden = Array.isArray(store.hidden)
@@ -9013,7 +9012,7 @@ function layoutNoticeText() {
   else {
     const custom = layoutBase.anchor !== "one" || layoutBase.mirror || (layoutBase.mb && hadBottom) ||
       layoutBase.seats !== "";
-    text = editingId && custom ? "Layout changed from the default." : "";
+    text = editingId && !isBuiltIn(editingId) && custom ? "Layout changed from the default." : "";
   }
   if (editingId && storedSeats && ringCount)
     for (const ring of LAYOUT_RINGS)
@@ -10262,7 +10261,6 @@ restoreBtn.onclick = () => {
   restoreBtn.textContent = RESET_IDLE;
   restoreBtn.removeAttribute("data-armed");
   hidden = [];
-  const seeded = Object.keys(replacements());
   for (const [id, d] of Object.entries(CUSTOM)) if (d.options && isBuiltIn(d.options.replaces)) delete CUSTOM[id];
   writeScales(savedScales().filter(r => !(r && r.o && isBuiltIn(r.o.replaces))));
   const wasSelected = deckId;
@@ -11191,7 +11189,8 @@ deckId = deck().id; storedDeck = deckId; setOrder(); buildChips(); setMode(mode)
 // renamed deck and falls back SILENTLY, as it always has. A missing custom: id
 // means the user's own saved scale is gone - deleted, or dropped as corrupt -
 // and a silent switch would look like the app lost their deck, so say so.
-if (wantedDeck !== deckId && (wantedDeck.indexOf("custom:") === 0 || hidden.includes(wantedDeck)))
+if (wantedDeck !== deckId && !(replacements()[wantedDeck] && replacements()[wantedDeck].id === deckId) &&
+    (wantedDeck.indexOf("custom:") === 0 || hidden.includes(wantedDeck)))
   say("That deck is gone. Showing " + deck().name + ".", "warn");
 // A page route in the address bar at boot is a RELOAD of a page, or a link
 // someone pasted. Neither reopens it: #edit-<id> names a deck this session may
