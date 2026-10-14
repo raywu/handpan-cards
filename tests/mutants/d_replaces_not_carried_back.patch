@@ -1,0 +1,14 @@
+# kills: SD: a replacement takes the seeded slot across a reload and a field edit
+# suite: node --test --test-name-pattern ^SD..a.replacement.takes.the.seeded.slot.across.a.reload.and.a.field.edit$ tests/app.test.js
+# generateDeck stops carrying replaces back onto the built deck, so a field edit mints a plain custom deck that leaves the seeded slot.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -7862,7 +7862,6 @@ function generateDeck(text, options, guard) {
+   const sitting = CUSTOM[built.value.id];
+   const inherited = sitting && sitting.options && sitting.options.replaces;
+   const replaces = (options && options.replaces) || inherited;
+-  if (typeof replaces === "string" && isBuiltIn(replaces)) built.value.options.replaces = replaces;
+   registerDeck(built.value);
+   return built;
+ }

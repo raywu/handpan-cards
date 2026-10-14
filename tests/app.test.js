@@ -8812,6 +8812,8 @@ test("editable defaults: RESET arms, then clears hidden and replacements and kee
   assert.strictEqual(reset.textContent, "RESET SEEDED DECKS");
   assert.deepStrictEqual(Object.keys(app.registry()), [mine.id], "RESET dropped a custom deck or kept a replacement");
   assert.strictEqual(app.activeId(), "deck-add");
+  assert.strictEqual(app.announcer().textContent, "Seeded decks restored. Showing D KURD 10.");
+  assert.deepStrictEqual(records(app).filter(r => r.o && r.o.replaces), [], "RESET left a stored record naming a seed");
 });
 
 test("editable defaults: saving seeded Kurd with only a palette change while its fork holds the id is refused", () => {
@@ -9019,6 +9021,70 @@ test("SD: an armed RESET disarms on a tap elsewhere, blur and panel close, and r
   assert.deepStrictEqual(hiddenKey(app), ["amara"], "re-arming reset");
   reset.click();
   assert.strictEqual("hidden" in JSON.parse(app.store.hpfc), false);
+});
+
+test("SD: two records naming one seed: the newest holds the slot, deleting it promotes the older, RESET clears both", () => {
+  const probe = boot();
+  const rec = (str, name, palette) => ({ v: probe.get("SHARE_VERSION"), s: str, o: { name, palette, replaces: "kurd" } });
+  const again = boot({ storage: { [probe.get("SCALES_KEY")]: JSON.stringify([
+    rec(kurdString(probe).replace(/C5$/, "D5"), "OLDER KURD", 2),
+    rec(kurdString(probe).replace(/A3/, "Ab3"), "NEWER KURD", 3),
+  ]) } });
+  const [older, newer] = Object.values(again.registry());
+  assert.deepStrictEqual([older.name, newer.name], ["OLDER KURD", "NEWER KURD"]);
+  assert.deepStrictEqual(records(again).map((r) => r.o.replaces), ["kurd", "kurd"]);
+  assert.deepStrictEqual(labels(again), ["OLDER KURD", ...BUILTIN_NAMES.map((n) => (n === "D KURD 10" ? "NEWER KURD" : n))],
+    "the newer record did not take Kurd's slot with the older in the custom tier");
+  assert.ok(again.registry()[older.id] && again.registry()[newer.id]);
+
+  again.select(newer.id);
+  again.clickChip("NEWER KURD");
+  again.els["scale-delete"].click();
+  again.els["scale-delete"].click();
+  assert.deepStrictEqual(labels(again), BUILTIN_NAMES.map((n) => (n === "D KURD 10" ? "OLDER KURD" : n)),
+    "deleting the newer record did not promote the older into Kurd's slot");
+  assert.strictEqual(Object.keys(again.registry()).includes(newer.id), false);
+
+  const reset = again.els["deck-restore"];
+  assert.strictEqual(reset.hasAttribute("hidden"), false, "RESET is unavailable while a replacement is stored");
+  reset.click();
+  reset.click();
+  assert.deepStrictEqual(labels(again), BUILTIN_NAMES);
+  assert.deepStrictEqual(again.registry(), {}, "RESET kept an older same-seed record");
+  assert.deepStrictEqual(records(again), [], "RESET left an older same-seed record in storage");
+});
+
+test("SD: a seed both hidden and replaced boots onto its replacement without a warning", () => {
+  const probe = boot();
+  const rec = (str, o) => ({ v: probe.get("SHARE_VERSION"), s: str, o });
+  const hijazString = probe.get("HPE.core.formatSeed(DECKS[3].fields)");
+  const boots = (blob, list) => boot({ storage: {
+    hpfc: JSON.stringify({ mode: "A", ...blob }), [probe.get("SCALES_KEY")]: JSON.stringify(list) } });
+
+  const kurd = boots({ deck: "kurd", hidden: ["kurd"] }, [rec(kurdString(probe).replace(/C5$/, "D5"), { name: "KURD REP", palette: 2, replaces: "kurd" })]);
+  assert.strictEqual(kurd.registry()[kurd.deckId()].name, "KURD REP", "(a) a hidden, replaced Kurd did not boot onto its replacement");
+  assert.strictEqual(kurd.announcer().textContent, "", "(a) the boot said the deck was gone");
+
+  const hijaz = boots({ deck: "hijaz", hidden: ["hijaz", "kurd"] }, [
+    rec(hijazString.replace(/B4$/, "C5"), { name: "HIJAZ REP", palette: 2, replaces: "hijaz" }),
+    rec(kurdString(probe).replace(/C5$/, "D5"), { name: "LATER CUSTOM", palette: 3 }),
+  ]);
+  assert.strictEqual(labels(hijaz)[0], "LATER CUSTOM", "(b) the replacement is first in chip order, so the case proves nothing");
+  assert.strictEqual(hijaz.registry()[hijaz.deckId()].name, "HIJAZ REP", "(b) a hidden, replaced Hijaz landed elsewhere");
+  assert.strictEqual(hijaz.announcer().textContent, "", "(b) the boot said the deck was gone");
+
+  const bare = boots({ deck: "kurd", hidden: ["kurd"] }, []);
+  assert.match(bare.announcer().textContent, /^That deck is gone\. Showing /, "(c) a hidden seed with no replacement stayed silent");
+});
+
+test("SD: a seeded deck's sheet never reports a layout change on open", () => {
+  BUILTIN_NAMES.forEach((name, i) => {
+    const app = boot();
+    app.select(app.get("DECKS")[i].id);
+    app.clickChip(name);
+    assert.strictEqual(app.sheetOpen(), true, `${name}: the sheet did not open`);
+    assert.strictEqual(dr1Notice(app), "", `${name}: a seeded sheet reported a layout change on open`);
+  });
 });
 
 test("SD: re-saving a replacement keeps its seeded slot", () => {

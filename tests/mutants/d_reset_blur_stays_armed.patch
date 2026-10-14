@@ -1,0 +1,14 @@
+# kills: SD: an armed RESET disarms on a tap elsewhere, blur and panel close, and re-arms after
+# suite: node --test --test-name-pattern ^SD..an.armed.RESET.disarms.on.a.tap.elsewhere..blur.and.panel.close..and.re.arms.after$ tests/app.test.js
+# The RESET button no longer disarms on blur.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10271,7 +10271,6 @@ restoreBtn.onclick = () => {
+   say("Seeded decks restored." + (stays ? "" : " Showing " + deck().name + "."), "ok");
+   addChip.focus();
+ };
+-restoreBtn.onblur = disarmReset;
+ document.addEventListener("pointerdown", (e) => {
+   if (e.target !== restoreBtn) disarmReset();
+ }, true);
