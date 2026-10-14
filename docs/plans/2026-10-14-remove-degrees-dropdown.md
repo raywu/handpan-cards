@@ -33,8 +33,10 @@ Then "Afk". AFK auto-pick D1 (memory `queued-remove-degrees-dropdown`): no stron
 | R-1 | a custom record stored with a non-inferred `options.parent` is opened in Edit and saved again | (a) SAVE always re-infers: `sheetOptions()` writes no parent, the stored index is dropped at that save and the degree labels (and the auto name, when the box is untouched and the record has no explicit `options.name`) may change at that save. (b) SAVE preserves the stored index unless the fields changed: `sheetOptions()` copies `editedDeck().options.parent` through when `formatSeed` of the parsed box equals the stored `s`; no label ever changes without a field edit, at the cost of an invisible option the UI can neither see nor clear, and of a second `sheetOptions()` branch to test | **(a)** (AFK pick): it is the owner's words, "infer parent always", and (b) keeps alive the one thing the owner said nobody wants. Displayed records and links are unaffected either way (requirement 3) |
 | R-2 | `seedParent()` | remove with the dropdown / keep | **remove** (AFK pick): its one caller is the `buildDegrees` call in `openEditSheet()`; no test, fixture or mutant names it (`app_surface_v1` has no entry) |
 | R-3 | share links and stored records carrying an explicit index | keep decoding and displaying with that index / strip on load | **keep** (AFK pick): the format and the engine are untouched; the only producer of a non-inferred index is gone, so the field decays naturally. Already asserted: `tests/share.test.js` "parent survives the round trip on its own, null included" and "encode's checksum is pinned against a captured payload with every option set (Q18)" (parent 3); `tests/app.test.js` "rule N: a moved deck's stored record and share link are the strings main wrote" (stored `o.parent: 1`, fixed link string) and "DR1 rule S ..." (boots Edit from a stored record with `parent: 1`) |
-| R-4 | the `select:focus` term of the band's `:has()` rule, dead once the sheet has no `<select>` (`#print-paper-select` is outside `.sheetbody`) | leave / drop the term | **leave** (AFK pick): it names no id, nothing reads it, and the prompt's removal list is rules that NAME `#scale-degrees`. Dropping it is a one-token nit for a later pass |
+| R-4 | the `select:focus` term of the band's `:has()` rule, dead once the sheet has no `<select>` (`#print-paper-select` is outside `.sheetbody`) | leave / drop the term | **leave** (AFK pick): it names no id, nothing reads it, and the prompt's removal list is rules that NAME `#scale-degrees`. Dropping it is a one-token nit for a later pass (TODOS row, design review D11) |
 | R-5 | titles of the two tests whose subject is the dropdown itself | retitle in place / replace with new tests | **replace** (AFK pick): "the Degrees select lists the parent candidates with the inferred one preselected" and "LF F-5: changing the degree select re-parses the seed with the new parent" have no purpose left; each is replaced by a named test below and its mutant by a named mutant, same commit. Every other touched test keeps its title (seeded-save-delete amendment: retitles allowed, deletions never without a replacement) |
+| R-6 | the inferred parent is no longer visible anywhere on the sheet: the select was the only surface that named the mode ("AEOLIAN"); the parse line reports field counts only | surface it in the parse line or the name placeholder / leave it to the card header and the auto name | **leave** (design review D5, AFK pick): the card header's degree labels and the auto deck name are the only places the parent appears; adding a line is a copy change (non-goal) for a value the owner said nobody wants to steer. Written down so it is not rediscovered as a bug |
+| R-7 | a record stored under an override is relabelled at its next SAVE (R-1a) with no in-app announcement | (a) silent by design: the first SAVE is the migration; the only signal that exists, the post-save toast `Updated <name>`, is pinned by RD-T1 (it reveals the change only on an auto-named record). (b) a one-shot notice in `#scale-guidance` before SAVE ("Saving will relabel the degrees from Dorian to Aeolian") with its own clearing and stacking rules, test and mutant | **(a)** (design review D5, AFK pick): the affected population is whoever used the dropdown on a tie pan, the one case found; (b) is a copy change (non-goal), a new guidance state beside the sheet-guidance rules just merged, and a notice about a control that no longer exists. The card header `.deg` labels show the result at once |
 
 ## C. Behaviour after the change
 
@@ -42,8 +44,8 @@ Then "Afk". AFK auto-pick D1 (memory `queued-remove-degrees-dropdown`): no stron
 - **Edit of a custom deck:** the sheet shows name and delete rows only; SAVE (always regenerates, "saving from the Edit sheet regenerates exactly once (13A)") writes `options.parent` = the inferred index. A record saved under an override takes the inferred labels at that save (R-1a); its explicit `options.name`, if any, is kept (`sheetOptions()`'s `kept` rule; "a user-typed name equal to the auto label survives a later field edit"); an auto-named record is renamed by `select.autoName(fields, inferred)` ("a field edit keeps the edited deck selected and renames its chip from the new fields" is the existing proof that an untouched box yields the auto name).
 - **Edit of a seeded deck:** `seedParent(edit.fields)` preselected the inferred index, so SAVE wrote the index the engine infers anyway; the replacement records of "editable defaults: saving each seeded deck with a palette change mints the fixture id as its replacement in the seeded slot" are byte-identical before and after. `sheetKey()` loses `degSel.value`; nothing else on the sheet can set the parent, so a changed sheet cannot read as unchanged; "SD: saving a seeded deck unchanged closes the sheet and writes nothing" stays green (mutant `d_unchanged_save_writes_record`).
 - **Display of stored records and links with an explicit index:** unchanged (R-3). The deck id never depends on options (D14).
-- **Keyboard:** the Edit Tab order is BACK, name, box, (drawer controls when open), swatches, SAVE CHANGES, DELETE. `degRow`, `degSel`, the listener and the stop go in the same change: a dangling `const degSel = document.getElementById(...)` would be `null` and `degSel.addEventListener` would throw at boot (the sandbox stubs only `ELEMENT_IDS`, and SB-2 fails an id that is served but never looked up).
-- **Layout:** one 48px row (44px in the landscape block) leaves `.sheetbody`'s scroll on Edit. No pinned row changes, so the footer, the `#scale-guidance` reserve and the keyboard budget measured in `docs/plans/2026-10-13-sheet-guidance.md` D are unchanged; the Edit page scrolls less. Not re-measured (risk register).
+- **Keyboard:** the Edit Tab order with the drawer CLOSED is BACK, name, box, ADJUST LAYOUT (`#scale-layout-toggle`, always a stop), swatches, SAVE CHANGES, DELETE; with the drawer OPEN the plate and the drawer controls sit between the box and the swatches in the order "DR3 Tab order on Add and Edit, finer controls closed and open" (`tests/app.test.js`) asserts, unchanged. The stop list loses exactly one entry (`editingId ? degSel : null`, between `resetBtn` and the swatches); forward and Shift+Tab traversal are both asserted (design review D6; the first draft's "box, swatches" omitted the toggle). `degRow`, `degSel`, the listener and the stop go in the same change: a dangling `const degSel = document.getElementById(...)` would be `null` and `degSel.addEventListener` would throw at boot (the sandbox stubs only `ELEMENT_IDS`, and SB-2 fails an id that is served but never looked up).
+- **Layout:** the whole labelled group leaves `.sheetbody`'s scroll on Edit: the `.editrow` (its DEGREES label, its `--sp-1` internal gap and the 48px select, 44px in the landscape block) and one `--sp-3` inter-group gap (`--sp-2` in the landscape block), both supplied by `.sheetbody`'s flex `gap`, so no spacer or margin rule is left behind. After the change the swatches `.ctlrow` is the next element sibling of `#scale-layout-zone` inside `.sheetbody` at the standard group gap; preview sizing, input sizes and the footer hierarchy are untouched (design review D8). No pinned row changes, so the footer, the `#scale-guidance` reserve and the keyboard budget measured in `docs/plans/2026-10-13-sheet-guidance.md` D are unchanged; the Edit page scrolls less. Not re-measured (risk register).
 
 ## D. Test and mutant inventory (verified at b6d8bee; titles, ids and functions only)
 
@@ -61,12 +63,12 @@ Then "Afk". AFK auto-pick D1 (memory `queued-remove-degrees-dropdown`): no stron
 | "DR1 line 86: on Edit the band goes static for the name and the degrees, and not for a drawer control" | e2e.test.js | focuses `scale-name` and `scale-degrees` | RETITLED "DR1 line 86: on Edit the band goes static for the name, and not for a drawer control"; the loop keeps `scale-name` only (no mutant names it) |
 | "the selected custom chip reopens the sheet in Edit state, prefilled, at 380px" | e2e.test.js | `rows` over three ids, `degrees: ...options.length` asserted 11 | `rows` over two ids, `[true, true]`; the `degrees` read and its assertion go; title kept (`e_edit_delete_full_width` still dies) |
 | "Tab is trapped inside the Edit sheet and reaches every Edit control" | e2e.test.js | expects `scale-degrees` among the stops | expected set drops `scale-degrees`; title kept; `e_edit_tab_skips_delete` (edits the stop-list lines that include `editingId ? degSel : null`) is RE-ANCHORED and still dies |
-| "DR3 Tab order on Add and Edit, finer controls closed and open" | e2e.test.js | does not name `scale-degrees` | UNAFFECTED by assertion; its mutants are context-stale (below) |
+| "DR3 Tab order on Add and Edit, finer controls closed and open" | app.test.js (sandbox; the first draft said e2e.test.js) | does not name `scale-degrees`; asserts the drawer-OPEN order name, box, plate, toggle, anchors, mirrors, fine, steps, reset, forward and Shift+Tab | UNAFFECTED by assertion; its mutants are context-stale (below) |
 
 **New tests (lane app).**
-- **RD-T1** (app.test.js) "RD: a record stored with a non-inferred parent is displayed with it and re-saved from Edit with the inferred one" - boot with storage `[{ v: 4, s: "(D3) A3 C4 D4 E4 F4 G4 A4 C5", o: { palette: 0, parent: 2 } }]`; before any edit `registry()[id].options.parent === 2` and `degrees["7"] === "IV"` (requirement 3, R-3); `openEdit`, click `#scale-generate`; after: `options.parent === 1`, `degrees["7"] === "iv"`, `records(app)[0].o.parent === 1`, id unchanged. Under R-1(b) this test's second half would instead assert `=== 2`; the lane implements (a).
-- **RD-T2** (app.test.js) "RD: no DEGREES row - the served markup, ELEMENT_IDS and the app script carry neither scale-degrees id, and sheetOptions writes no parent on Edit" - over the served `index.html` string: no `id="scale-degrees-row"`, no `id="scale-degrees"`, no `getElementById("scale-degrees` in the app script after `const DECKS`, no `#scale-degrees` in any CSS selector; `require("../tools/sandbox.js").ELEMENT_IDS` includes neither id; `boot()` then `openEdit(makeCustom(app))`: `editRowsShown(app)` is `[true, true]`, and a `parseSeed` spy (the LF F-5 pattern) sees `opts.parent === undefined` on the Edit path's `resyncSheet` and on SAVE.
-- **RD-T3** (e2e.test.js, single test, runs locally with `--test-name-pattern`) "RD: the Edit page's Tab order is BACK, name, box, swatches, SAVE CHANGES, DELETE with the drawer closed, and no stop is a select" - the ordered id list from `editFreshDeck()` with the drawer closed, and `document.querySelector("#scale-sheet select") === null`.
+- **RD-T1** (app.test.js) "RD: a record stored with a non-inferred parent is displayed with it and re-saved from Edit with the inferred one" - boot with storage `[{ v: 4, s: "(D3) A3 C4 D4 E4 F4 G4 A4 C5", o: { palette: 0, parent: 2 } }]`; before any edit `registry()[id].options.parent === 2` and `degrees["7"] === "IV"` (requirement 3, R-3); `openEdit`, click `#scale-generate`; after: `options.parent === 1`, `degrees["7"] === "iv"`, `records(app)[0].o.parent === 1`, id unchanged, and the post-save message reads `Updated D AEOLIAN 9` (the auto name followed the inferred parent; the one signal R-7 relies on). A second case in the same test: the same record with `o.name: "RAY'S PAN"`, opened in Edit and saved with nothing touched (the options-only edit: id unchanged, replaced in place): `options.parent === 1`, `degrees["7"] === "iv"`, `options.name === "RAY'S PAN"`, message `Updated RAY'S PAN`. Under R-1(b) this test's second half would instead assert `=== 2`; the lane implements (a).
+- **RD-T2** (app.test.js) "RD: no DEGREES row - the served markup, ELEMENT_IDS and the app script carry neither scale-degrees id, and sheetOptions writes no parent on Edit" - over the served `index.html` string: no `id="scale-degrees-row"`, no `id="scale-degrees"`, no `for="scale-degrees"`, no `getElementById("scale-degrees` in the app script after `const DECKS` (a prefix match by design: a future `scale-degrees-*` id would also trip it, say so in the test comment), no `#scale-degrees` in any CSS selector; in `.sheetbody`'s markup the element after `#scale-layout-zone` (comments and whitespace skipped) is the `.ctlrow` holding `#scale-swatches`, and no `.editrow` other than `#scale-name-row` remains; `require("../tools/sandbox.js").ELEMENT_IDS` includes neither id; `boot()` then `openEdit(makeCustom(app))`: `editRowsShown(app)` is `[true, true]`, and a `parseSeed` spy (the LF F-5 pattern) sees `opts.parent === undefined` on the Edit path's `resyncSheet` and on SAVE.
+- **RD-T3** (e2e.test.js, single test, runs locally with `--test-name-pattern`) "RD: the Edit page's Tab order is BACK, name, box, ADJUST LAYOUT, swatches, SAVE CHANGES, DELETE with the drawer closed, forward and back, and no stop is a select" - from `editFreshDeckOpen()` with the drawer closed, at 380x800: the ordered id list of one forward cycle from `#scale-back` is `scale-name, scale-box, scale-layout-toggle, <the swatch buttons in DOM order>, scale-generate, scale-delete`, the Shift+Tab cycle from `#scale-delete` is its reverse, and `document.querySelector("#scale-sheet select") === null`. The drawer-open order is DR3's (sandbox) and is not repeated here.
 
 **Mutants.** Count 939 at b6d8bee (README states 939). Two are defeated, three are added: count 940, never lower.
 
@@ -142,23 +144,25 @@ Amendment for this workstream (as in seeded-save-delete): "B1..B5", "R9", "the f
 
 **Acceptance (proofs).**
 - RD-A1 the row and the select are absent from the served markup, from `ELEMENT_IDS` and from every `getElementById` call and CSS selector in the app block; SB-2 green. Proof: RD-T2; mutants `rd_degrees_row_restored`, `rd_element_ids_serve_degrees`.
-- RD-A2 the Edit page's Tab order is BACK, name, box, (drawer controls when open), swatches, SAVE CHANGES, DELETE with no gap and no select. Proof: RD-T3; "Tab is trapped inside the Edit sheet and reaches every Edit control" re-pointed, `e_edit_tab_skips_delete` re-anchored and killing; "DR3 Tab order on Add and Edit, finer controls closed and open" green unchanged.
+- RD-A2 the Edit page's Tab order with the drawer closed is BACK, name, box, ADJUST LAYOUT, swatches, SAVE CHANGES, DELETE, forward and back, with no gap and no select; with the drawer open the DR3 order holds unchanged. Proof: RD-T3; "Tab is trapped inside the Edit sheet and reaches every Edit control" re-pointed, `e_edit_tab_skips_delete` re-anchored and killing; "DR3 Tab order on Add and Edit, finer controls closed and open" green unchanged.
 - RD-A3 SAVE on a custom deck writes the inferred parent and relabels (R-1a); a record with an explicit index displays with it until then. Proof: RD-T1; mutant `rd_save_keeps_stored_parent`.
 - RD-A4 a seeded SAVE with nothing changed is still reported unchanged. Proof: "SD: saving a seeded deck unchanged closes the sheet and writes nothing" green, `d_unchanged_save_writes_record` killing.
-- RD-A5 the 380px Edit page shows the name and delete rows, SAVE CHANGES and DELETE THIS DECK unchanged. Proof: "the selected custom chip reopens the sheet in Edit state, prefilled, at 380px" re-pointed (`rows` of two), `e_edit_delete_full_width` killing.
+- RD-A5 the 380px Edit page shows the name and delete rows, SAVE CHANGES and DELETE THIS DECK unchanged; the swatches follow the layout zone at the standard group gap with no leftover spacer (section C "Layout"). Proof: "the selected custom chip reopens the sheet in Edit state, prefilled, at 380px" re-pointed (`rows` of two), `e_edit_delete_full_width` killing; RD-T2's sibling assertion; RD-A10's probe (drawer closed and open).
 - RD-A6 the create path is unchanged: "+ ADD after an Edit opens a clean create sheet, never the edited deck's seed" (two rows hidden), "a share link restores the exact deck, and options never move the id", "consuming a share link runs select.build exactly once" green unchanged.
 - RD-A7 seeded replacements unchanged: "editable defaults: saving each seeded deck with a palette change mints the fixture id as its replacement in the seeded slot" green with the degrees assertion removed; `deck_ids_v1` untouched.
 - RD-A8 every retitled or replaced test's `# kills:` header true verbatim; `python3 tools/refresh_mutants.py --check` green; count 940 (939 + 3 - 2), reconciled in the PR body (added, replaced `old -> new`, re-anchored, each named).
 - RD-A9 no fixture digest moved (`app_surface_v1`, `pan_render_v1`, `card_face_v1`, `deck_ids_v1`, `engine_corpus_v1`); `inline_engine.py --check`, `sync_decks.py --check`, `validate.py`, `boot_sim.js` green; `panel-fit` verdicts unchanged.
-- RD-A10 the lane report carries the base-to-head inventory of every touched test and mutant (section D is the floor) and the Edit-page `.sheetbody` `scrollHeight` at 380x800 before and after, read from one probe, as a note (not asserted).
+- RD-A10 the lane report carries the base-to-head inventory of every touched test and mutant (section D is the floor) and the Edit-page `.sheetbody` `scrollHeight` at 380x800 before and after, drawer closed and drawer open, read from one probe, as a note (not asserted), together with one 380x800 screenshot of the Edit page after the change with the drawer closed, attached to the PR for the reviewer's eye (design review D8).
 
 **Verify.** `node --test --test-name-pattern 'RD:|SD:|SB-2|editable defaults|Edit state|16px|share link|changing only an option' tests/app.test.js`; `node --test --test-name-pattern 'RD:|Tab is trapped|DR1 line 86|DR3 Tab order|reopens the sheet in Edit state' tests/e2e.test.js` (single patterns, never the full e2e suite; `CHROME_BIN` set); `python3 tools/refresh_mutants.py --check`; `./tests/mutation_check.sh` restricted to the `rd_*`, `d_edit_*`, `d_add_keeps_edit_seed`, `d_fork_not_prefilled`, `d_seeded_sheet_keeps_fork_copy`, `e_edit_*`, `f6_*`, `r3s_*` and every re-anchored patch; CI at the head SHA is the evidence.
+
+**Reviewer brief.** Quotes the amendment paragraph above verbatim (the two REPLACED tests and the one RETITLED test are permitted by it); without that sentence the ownership rule's "no test is renamed or deleted" reads as a violation (memory: reviewer brief quotes the plan verbatim).
 
 **Stop.** Any need to touch `src/engine/`, `share.js`'s format, `data/decks.json`, a fixture digest, `#settings-panel` or a string elsewhere on the sheet; a touched test that must lose its purpose; any mutant that would be deleted without a named replacement; RD-T1 needing R-1(b) to pass (escalate, do not switch).
 
 ### Lane docs (after app merges; `claude/remove-degrees-docs`, worktree `.claude/worktrees/remove-degrees-docs`)
 
-**Owns.** `docs/SCALE_ENGINE_PLAN.md`, `docs/ENGINE-SPEC.md`, `docs/plans/2026-10-07-scale-drawer-design-spec.md`, `CLAUDE.md`: exactly the marks in section E, each appended verbatim, nothing rewritten or deleted; this plan's own ledger ticked. **Reads only.** Everything else; no test, mutant or code. Brief: section E verbatim plus the test titles behind every claim (standing rule after #299/#301/#304: a docs claim the code contradicts is a FAIL; the reviewer re-verifies every sentence against main at the app lane's merge SHA).
+**Owns.** `docs/SCALE_ENGINE_PLAN.md`, `docs/ENGINE-SPEC.md`, `docs/plans/2026-10-07-scale-drawer-design-spec.md`, `CLAUDE.md`: exactly the marks in section E, each appended verbatim, nothing rewritten or deleted; this plan's own ledger ticked; `TODOS.md`: the two rows of "Design review 2026-10-14" below (sheet colours into CSS variables; the dead `select:focus` term), appended as new sections in the file's house style. **Reads only.** Everything else; no test, mutant or code. Brief: section E verbatim plus the test titles behind every claim (standing rule after #299/#301/#304: a docs claim the code contradicts is a FAIL; the reviewer re-verifies every sentence against main at the app lane's merge SHA).
 
 ### Standing gates (refactor-pass-4 section 5, verbatim)
 
@@ -172,6 +176,89 @@ Amendment for this workstream (as in seeded-save-delete): "B1..B5", "R9", "the f
 
 **Estimates.** app ~half a day human / ~40 min CC plus CI; docs ~1 h human / ~10 min CC.
 
-**Prompt facts corrected at this SHA.** (a) No `:focus-within` rule and no CSS rule names `#scale-degrees` for the band; the band rule is `.sheetbody:has(... select:focus ...)` and is left alone (R-4). (b) Twelve existing mutants beyond the two named carry the removed or neighbouring lines (`e_edit_tab_skips_delete` in its +/- lines, eleven in context); they are lane app's by the ownership rule. (c) The harness files a non-applying patch under `SURVIVORS` with the label `stale`; the gate outcome is the failure the prompt describes. (d) `editRowsShown` has a second caller, "+ ADD after an Edit opens a clean create sheet, never the edited deck's seed". (e) The e2e 380px Edit test also asserts the select's option count (11), not only the row.
+**Prompt facts corrected at this SHA.** (a) No `:focus-within` rule and no CSS rule names `#scale-degrees` for the band; the band rule is `.sheetbody:has(... select:focus ...)` and is left alone (R-4). (b) Twelve existing mutants beyond the two named carry the removed or neighbouring lines (`e_edit_tab_skips_delete` in its +/- lines, eleven in context); they are lane app's by the ownership rule. (c) The harness files a non-applying patch under `SURVIVORS` with the label `stale`; the gate outcome is the failure the prompt describes. (d) `editRowsShown` has a second caller, "+ ADD after an Edit opens a clean create sheet, never the edited deck's seed". (e) The e2e 380px Edit test also asserts the select's option count (11), not only the row. (f) "DR3 Tab order on Add and Edit, finer controls closed and open" is a sandbox test in `tests/app.test.js`, and with the drawer closed the sheet's Tab order still stops on ADJUST LAYOUT (`#scale-layout-toggle`); the first draft placed the test in e2e and omitted the stop (design review D6).
+
+## Design review 2026-10-14 (`/plan-design-review`, AFK auto-picks)
+
+D1 all seven passes; D2 outside voices run (Codex and a Claude design subagent, both read-only against b6d8bee); D3 no-OpenAI-key mockup fallback (no mockups; the surface is a row removal on an existing dark sheet); D4 Pass 1: the Edit page hierarchy recorded below, no finding; D5 Pass 2: the SAVE-time relabel stays silent (R-7) and the unseen parent stays unseen (R-6), the toast is pinned in RD-T1 and an explicit-name case added; D6 Pass 3: keyboard contract corrected (ADJUST LAYOUT is a stop with the drawer closed; DR3 is a sandbox test), RD-T3, RD-A2 and section C rewritten, forward and reverse traversal asserted; D7 Pass 4: OPERATE classification, no hard rejection, litmus below; D8 Pass 5: no `DESIGN.md` (gap carried from the 2026-10-13 review, TODOS row "Write DESIGN.md via /design-consultation" stands), the visual contract written into section C "Layout", RD-T2's sibling assertion and RD-A10's probe and screenshot; D9 Pass 6: RD-T2 also rejects an orphan `for="scale-degrees"` label and names its prefix match; the reviewer brief quotes the retitle amendment; D10 Pass 7: no unresolved decision; D11 TODOS: two rows proposed and accepted for lane docs (sheet literal colours into CSS variables, Codex P3, appearance-preserving, separate change; drop the dead `select:focus` term of the band rule, R-4).
+
+**Pass 1 - Edit page at 380px, before and after.**
+
+```
+BEFORE (b6d8bee)                      AFTER
+.sheethead  < BACK   Edit this scale  .sheethead  < BACK   Edit this scale
+.sheetbody (scrolls)                  .sheetbody (scrolls)
+  DECK NAME   [ D AEOLIAN 9       ]     DECK NAME   [ D AEOLIAN 9       ]
+  SCALE       [ (D3) A3 C4 ...    ]     SCALE       [ (D3) A3 C4 ...    ]
+              parse line                            parse line
+  #scale-layout-zone  [ADJUST LAYOUT]   #scale-layout-zone  [ADJUST LAYOUT]
+  DEGREES     [ AEOLIAN         v ]     (gone, with its label and gap)
+  .ctlrow     o o o o o  swatches       .ctlrow     o o o o o  swatches
+#scale-guidance (reserved, 2 lines)   #scale-guidance (reserved, 2 lines)
+[ SAVE CHANGES ]        (pinned)      [ SAVE CHANGES ]        (pinned)
+DELETE THIS DECK        (pinned)      DELETE THIS DECK        (pinned)
+```
+
+Identity, content, correction, decoration, actions: the order is right and nothing moves. The only loss is the mode name (R-6).
+
+**Pass 2 - states.**
+
+| feature | loading | empty | error | success | partial |
+|---|---|---|---|---|---|
+| Edit open (custom, stored inferred parent) | n/a (sync) | n/a | unchanged | name, box, drawer, swatches; no DEGREES row | n/a |
+| Edit open (custom, stored override) | n/a | n/a | unchanged | same page; labels on the card still the override's (R-3); the parent is not shown (R-6) | n/a |
+| SAVE (fields changed) | button disabled during generate, unchanged | n/a | seed refusal unchanged | `Updated <name>`; parent inferred | n/a |
+| SAVE (options-only, stored override) | same | n/a | n/a | `Updated <name>`; labels relabelled silently (R-7), explicit name kept | n/a |
+| SAVE (seeded, nothing changed) | same | n/a | n/a | sheet closes, nothing written (RD-A4) | n/a |
+| BACK / Escape | n/a | n/a | n/a | stored record untouched (existing) | n/a |
+
+**Pass 3 - journey, a former dropdown user.**
+
+| step | user does | user feels | plan specifies? |
+|---|---|---|---|
+| 1 | opens Edit on a deck saved under Dorian | row gone; nothing explains it | yes: R-6, R-7 (no announcement) |
+| 2 | changes the palette, taps SAVE CHANGES | toast `Updated <name>`; the card header's `IV` is now `iv` | yes: RD-T1 both cases |
+| 3 | looks for a way back to Dorian | none; the override is gone by owner decision | yes: goal, R-1a |
+| 4 | opens an old share link minted under Dorian | labels still Dorian | yes: R-3 |
+| 5 | keyboard user tabs through Edit, drawer closed | BACK, name, box, ADJUST LAYOUT, swatches, SAVE, DELETE | yes: RD-T3 (after D6) |
+
+**Pass 4 - AI slop.** Classification OPERATE (a form inside a utility sheet). Hard rejections: none apply. Litmus: brand unmistakable YES (handpan preview, scale notation); one anchor YES (the preview; SAVE as the action); scannable YES; one job per section YES; cards necessary NO (none used); motion improves hierarchy NO (none added); premium without shadows YES. Nothing is added, so nothing to reject.
+
+**Pass 5 - design system.** No `DESIGN.md`. The plan names only existing tokens: `.editrow`, `.sheetlabel`, `.ctlrow`, `--sp-1`/`--sp-2`/`--sp-3`, the 44/48px rows, 16px inputs, Nunito Sans. Codex P3 (the sheet's literal colours) is real and pre-dates this change: TODOS row, not this lane.
+
+**Pass 6 - responsive and accessibility.** 380px is the test width (RD-A5, RD-T3 at 380x800); the landscape `max-height:520px` block loses the id from its shared list; Tab order and focus are asserted both ways; no orphan label; the dialog's `aria-labelledby` and the pinned footer are untouched.
+
+**Pass 7 - unresolved decisions.** None.
+
+**NOT in scope** (owner-visible, so nobody expects it): a notice announcing the relabel (R-7); a readout of the inferred mode on the sheet (R-6); a migration of stored records (R-3); the sheet's colour tokens (TODOS); the dead `select:focus` term (TODOS); any change to `#settings-panel`.
+
+**What already exists** (reused, not rebuilt): the `select.build` inference on the create path; the `Updated <name>` toast; the seeded unchanged-save check; `isStop`'s filtering of the Tab list; `.sheetbody`'s flex gap; SB-2 and the `ELEMENT_IDS` contract; the DR3 drawer-open Tab test; the sheet-guidance geometry tests as upper bounds.
+
+**Implementation tasks added by this review** (all lane app unless marked): (1) RD-T3 asserts the toggle stop and both directions; (2) RD-T1 asserts the toast text and gains the explicit-name case; (3) RD-T2 rejects `for="scale-degrees"`, asserts the layout-zone/swatches sibling and names its prefix match; (4) RD-A10 gains the drawer-open probe and one 380x800 screenshot; (5) section C "Layout" is the visual contract the reviewer checks; (6) lane docs: two TODOS rows; (7) integrator: the reviewer brief quotes the retitle amendment.
+
+```
+DESIGN REVIEW COMPLETE
+Overall: 9/10 (lowest of passes 1-6; initial 8/10 before D5, D6, D8)
+Pass 1 IA 9 | Pass 2 states 9 | Pass 3 journey 9 | Pass 4 slop 10 | Pass 5 system 9 | Pass 6 responsive/a11y 9
+Decisions made: 11 (all AFK auto-picks)   Unresolved: 0
+Outside voices: codex (REVISE: P1 relabel notice -> R-7 silent by design; P2 keyboard -> D6 adopted; P2 visual contract -> D8 adopted; P3 colours -> TODOS), claude subagent (no critical findings; R-6, R-7, toast assertion, options-only case, reviewer-brief amendment -> all adopted)
+```
 
 VERDICT: SMALL
+
+
+## GSTACK REVIEW REPORT
+
+| Review | Status | Score | Decisions | Unresolved |
+|---|---|---|---|---|
+| CEO | not run (SMALL verdict; owner request verbatim) | - | - | - |
+| Outside voices | completed (codex + in-host claude subagent) | - | - | - |
+| Eng | pending (`/plan-eng-review` next) | - | - | - |
+| Design | complete 2026-10-14 | 9/10 (from 8/10) | 11 | 0 |
+| DX | not run | - | - | - |
+
+OUTSIDE COVERAGE: design voices completed (codex + in-host subagent); eng voices pending.
+
+VERDICT: plan approved for `/plan-eng-review`; every design finding is in the plan (R-6, R-7, section C, RD-T1..T3, RD-A2, RD-A5, RD-A10, lane docs TODOS rows).
+
+NO UNRESOLVED DECISIONS
