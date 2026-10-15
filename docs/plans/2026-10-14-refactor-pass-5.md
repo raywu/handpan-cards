@@ -37,7 +37,7 @@ I re-measured every prompt fact at `2e25d38`.
   - The corpus holds 941 patches (`ls tests/mutants | wc -l`). README.md line 154 says 939 (`grep -n 'mutant patches' README.md`). CI's four shard reports at `2e25d38` list 941 in all.
   - Run 38645736393 wall time is 620 s, which is 10 min 20 s (22:10:17 to 22:20:37). The prompt says "about 10.5 minutes", which is within rounding.
   - `js suites` ran 535 s (8 min 55 s).
-  - Shard run times: shard 1 is 598 s, shard 2 is 598 s, shard 4 is 567 s and shard 3 is 329 s. `python suites` ran 62 s.
+  - Shard run times: shard 1 is 608 s, shard 2 is 598 s, shard 4 is 567 s and shard 3 is 329 s. `python suites` ran 62 s.
   - Shards 1, 2 and 4 end within 42 s of each other (22:19:44 to 22:20:26).
   - Job dependencies: `suite health` needs `[python-tests, js-tests]` and `mutation gate` needs `mutation-gate-shard` (`grep -n 'needs:' .github/workflows/validate.yml`).
   - The window base is `85d9114` (`git log -60 --no-merges --format=%h 2e25d38 -- index.html src tools tests | tail -1`).
@@ -334,7 +334,7 @@ The slowest mutants, in seconds (each figure includes a first-seen suite baselin
 | sq_medium_sample_removed | 37 |
 | h_probe_orphans_its_process_tree | 35 |
 
-The `drawer_grid` "DR1 rule G" mutants run a full grid sweep. That is work, not a fixed wait. A time-balanced split would average about 523 s per shard, about 75 s under shard 1's 598 s. The saving is capped by `js suites` ending at 535 s, so the wall saving is about 60 to 75 s. It comes from no fixed wait, so it is DEFER (P5-2).
+The `drawer_grid` "DR1 rule G" mutants run a full grid sweep. That is work, not a fixed wait. A time-balanced split would average about 523 s per shard, about 85 s under shard 1's 608 s. The saving is capped by `js suites` ending at 535 s, so the wall saving is about 60 to 75 s. It comes from no fixed wait, so it is DEFER (P5-2).
 
 **Per-file local times, non-`E2E_FILES` suites.** The script is `$S/time_units.sh`, with `CHROME_BIN` set and the skip line grepped (0 skips in every row). Commands: `/usr/bin/time -p node --test tests/<file>.test.js` and `/usr/bin/time -p python3 -m unittest tests.<module>`. These are LOCAL figures.
 
@@ -589,7 +589,7 @@ Downloaded with `gh run download 38645736393 -n js-results|python-results|mutant
 
 Sums: CI 1445, FLOORS 1443.
 
-**python-results:** `by_module` equals every python FLOORS row, sum 248. FLOORS sums came from `python3 -c "import sys; sys.path.insert(0,'tests'); import suite_health as s; ..."`, which gives js 1443, py 248 over 37 rows.
+**python-results:** `by_module` equals every python FLOORS row, sum 248. FLOORS sums came from `python3 -c "import sys; sys.path.insert(0,'tests'); import suite_health as s; F=s.FLOORS; print(len(F), sum(v for k,v in F.items() if k.endswith('.js')), sum(v for k,v in F.items() if k.endswith('.py')))"`, which prints `37 1443 248`, i.e. js 1443, py 248 over 37 rows.
 
 **Mutant shard reports:** 941 patches across the four `mutant-shard-*.txt` files.
 
@@ -808,6 +808,7 @@ These are not lanes; see section 10.
 - **Verdict:** owner-gated, because it is a behaviour decision.
 
 **G-3**
+- **Class:** REFACTOR (visible pixel).
 - **Target:** a bottom-shell octave-digit floor (TODOS).
 - **Measured cost:** 3.2 pt on dense generated pans (TODOS).
 - **Change:** floor or drop.
@@ -816,6 +817,7 @@ These are not lanes; see section 10.
 - **Verdict:** owner-gated, because it changes a visible pixel.
 
 **G-4**
+- **Class:** REFACTOR (visible copy).
 - **Target:** SMALL_LABELS copy with a next action (TODOS).
 - **Measured cost:** a design review finding.
 - **Change:** new REASONS copy plus an ENGINE-SPEC table edit.
@@ -860,7 +862,7 @@ Pitfalls every lane carries:
 
 1. **Test first.** Add `test_forced_cluster_oracle_ignores_field_order` to `VoicingTest`. It holds a literal deck dict, the output of `node tools/gen_deck.js --legacy "(C3) G3 B3 D4 E4 G4 B4 | Bb2 B3 D4"` cut to the fields plus one chord: Em7 `fields [4, 1, 2, 3]`, `roots [4]`. Write it literally in the test, with no subprocess. The test runs `self.test_forced_tones_cluster_below_root()` twice under `unittest.mock.patch(__name__ + ".decks", ...)`: once with the fields in engine order and once with the bottom fields first. It edits no existing test body.
    - Acceptance: the new test is RED at the lane's first commit, which holds the test only, with the failure "unforced card: tone below the root". Every other test in the module is green.
-   - Verify: `python3 -m unittest -k test_forced_cluster_oracle_ignores_field_order tests.test_deck_data; test $? -ne 0 && python3 -m unittest -k test_forced_tones_cluster_below_root tests.test_deck_data`
+   - Verify: `S=$(mktemp -d); python3 -m unittest tests.test_deck_data > $S/r1.log 2>&1; grep -qx 'FAILED (failures=1)' $S/r1.log && grep -q '^FAIL: test_forced_cluster_oracle_ignores_field_order' $S/r1.log && grep -q 'unforced card: tone below the root' $S/r1.log`
 2. **The fix.** In `_check_cluster`, change `key=midi` inside the `forced = any(...)` expression to `key=lambda g: (midi(g), zone(g) != "bottom")`. Nothing else in that method changes.
    - Acceptance: the new test is green, and all 28 tests in `tests.test_deck_data` are green.
    - Verify: `python3 -m unittest tests.test_deck_data`
@@ -894,7 +896,7 @@ Pitfalls every lane carries:
   - No `tests/CONTRACT.md` edit: P5-12 is DEFER.
 - **Owned files:** `README.md` (the "N mutant patches" sentence only) and `tests/suite_health.py` (FLOORS values only).
 
-**Steps:**
+**Steps:** run every step's commands in one shell, in order, after `SCRATCH=$(mktemp -d)`; step 1 sets `M` and `id`.
 
 1. **Read main's CI.** Let `M` be the merge commit of the `oracle` PR on `main`. Find its run: `id=$(gh run list --workflow validate.yml --commit $M --json databaseId,conclusion -q '.[]|select(.conclusion=="success")|.databaseId' | head -1)`. Download `js-results`, `python-results` and the four `mutant-shard-report-N` artifacts to scratch.
    - Acceptance: the run concluded success, and the six artifacts are present.
