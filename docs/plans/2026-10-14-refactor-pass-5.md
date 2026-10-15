@@ -204,7 +204,7 @@ N=25 node $S/fnlen.js src/engine/<module>.js "  "
 
 These are 23 named functions; the script's remaining two rows were regex artifacts (`select.anyField`/`nonDing` inner arrows) and are omitted.
 
-Of the long functions, only `runGenerate` has any churn (3). Every other one has churn 0 or below 3.
+Among the top 25, `runGenerate`, `resetSheetState` and `sheetOptions` have churn 3; `syncParseState`, `buildChips`, `disarmDelete`, `hideSheet` and `paintLayout` have 2; the rest have 0 or 1 (4.1 function-churn command, per name). None reaches 5, so none is a hotspot.
 
 ### 4.3 Duplication (step 3)
 
@@ -652,7 +652,7 @@ Fields per row: class / target / measured cost (command) / change / risk / pinni
 - **Target:** `runGenerate` in `index.html`.
 - **Measured cost:** 90 lines, churn 3 of 60 (4.1, 4.2).
 - **Change:** split the refusal, preview and commit branches.
-- **Risk:** high. It is the add/edit primary path, with about 30 mutants anchored in it.
+- **Risk:** high. It is the add/edit primary path, with 16 mutants anchored in it (`grep -l '^@@.*function runGenerate' tests/mutants/*.patch | wc -l`).
 - **Pinning test:** the existing "DR2b (rule R drag row): a drag under a standing runGenerate() refusal redraws the plate and keeps the refusal" and the SG tests.
 - **Verdict:** DEFER. Churn is 3, below 5.
 
