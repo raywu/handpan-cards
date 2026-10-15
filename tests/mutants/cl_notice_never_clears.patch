@@ -1,0 +1,15 @@
+# kills: SG: N-A7 the crowded 24-note pan: the real SMALL_LABELS warning (two lines) opens Edit, a tapped anchor raises the notice, the warning yields and the three-row seed box stays readable at every keyboard
+# suite: node --test --test-name-pattern ^SG:.N-A7.the.crowded tests/e2e.test.js
+# paintLayout only ever adds the noticed mark, so a pan warning never returns after the notice clears.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9090,7 +9090,7 @@ function paintLayout() {
+   const note = layoutNoticeText();
+   if (layoutNote.textContent !== note) layoutNote.textContent = note;
+   layoutNote.hidden = !note;
+-  sheet.classList.toggle("noticed", !!note);
++  if (note) sheet.classList.add("noticed");
+   syncBand();
+ }
+ /** Rule G-a, G-b, G-e: the band sticks only while the scrollport keeps room

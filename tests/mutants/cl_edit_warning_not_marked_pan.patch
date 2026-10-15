@@ -1,0 +1,15 @@
+# kills: SG: N-A7 the crowded 24-note pan: the real SMALL_LABELS warning (two lines) opens Edit, a tapped anchor raises the notice, the warning yields and the three-row seed box stays readable at every keyboard
+# suite: node --test --test-name-pattern ^SG:.N-A7.the.crowded tests/e2e.test.js
+# openEditSheet shows its warning without the .pan class.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9966,7 +9966,7 @@ function openEditSheet(d, opener) {
+   // [eng-review 2, 2A] warnings have ONE producer and were copied onto the deck
+   // at generation time; the Edit sheet reads them and never rebuilds to re-derive.
+   const warned = (d.warnings || []).map(w => w.reason);
+-  if (warned.length) { say(warned.join(" "), "warn"); msgLine.classList.add("pan"); }
++  if (warned.length) { say(warned.join(" "), "warn"); }
+ }
+ /** Take the page down. The DOM half only - the route is the caller's. */
+ function hideSheet() {
