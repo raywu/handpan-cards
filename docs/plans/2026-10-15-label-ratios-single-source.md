@@ -190,7 +190,7 @@ Further greps:
 - **Proto, before re-anchoring.** `python3 tools/refresh_mutants.py --check` lists:
   - 3 UNFIXABLE: `c_octave_digit_shrunk_under_the_floor`, `h_pdfcards_label_ratio_flat`, `r_num_size_app_fudge`;
   - 6 mechanically refreshable: `l0_id_hashed_from_canonical_string` and `u_palette_hashed_into_deckid` (core.js context near `HPE.core = {`), `r4a_label_size_drops_the_inflation`, `r4a_label_size_name_ratio_doubled`, `r4e_pdfcards_label_ratio_not_exported` and `r4e_pdfcards_label_size_not_exported`.
-- **Proto, after the re-anchors in section 6.** `refresh_mutants.py --check` exits 0. Each of these 16 was applied and its `# suite:` run, and all were killed: the 11, `c_bottom_label_stored_figure`, `l0`, `u`, and the 2 new mutants.
+- **Proto, after the re-anchors in section 6.** `refresh_mutants.py --check` exits 0. Each of these 16 was applied and its `# suite:` run, and all were killed: the 11, `c_bottom_label_stored_figure`, `l0`, `u`, and the first 2 new mutants. The third, `lr_core_rule_swaps_ding_and_note`, was added after the eng review and is verified by Lane A's step 8 loop.
 - **Unaffected.** `ap3_panfield_ignores_sets` matches only through its hunk header. It, `c_label_density_reintroduced`, `c_num_outgrows_the_name`, `g_bottom_octave_counted` and `c_bottom_label_stored_figure` are not flagged by `--check`. `c_num_outgrows_the_name` carries hifi.py literal context lines, which a2 does not change; they shift by 4 lines, which is offset only (`refresh_mutants.py --check` on the proto does not list it).
 
 ### 4.5 FLOORS, README, docs
@@ -259,7 +259,7 @@ So (a1) must change 7 files' load lists, covering all 16 group-1 lines: layout.t
 | JS literals before → after | 13 → 6 (pdfcards) | 13 → 6 (core.js) | 13 → 6 | 13 → 0 hand-written | 13 → 6 |
 | Python literals before → after | 7 → 6 | 7 → 6 | 7 → 0 | 7 → 0 hand-written | 7 → 6 |
 | Files touched | pdfcards, layout, index.html, hifi, test_render_agreement, plus 7 load-list files | core, pdfcards, layout, index.html, hifi, test_render_agreement | a2's set plus a hifi reader | new JSON, new or extended sync tool, generated regions | new module, inline_engine `MODULES`, index.html, loaders |
-| Mutants re-anchored or replaced | 2 rewritten (`c_octave_digit_shrunk_under_the_floor`, `r_num_size_app_fudge`), 5 refreshed (`h_pdfcards_label_ratio_flat`, `r4a_label_size_drops_the_inflation`, `r4a_label_size_name_ratio_doubled`, `r4e_pdfcards_label_ratio_not_exported`, `r4e_pdfcards_label_size_not_exported`) by `refresh_mutants.py --check` on a scratch build; 0 on load-list lines (`grep -lE '^[- ].*(loadEngine\(|FULL_ENGINE_MODULES =)' tests/mutants/*.patch` is empty) | 3 rewritten (`c_octave_digit_shrunk_under_the_floor`, `h_pdfcards_label_ratio_flat`, `r_num_size_app_fudge`), 6 refreshed (`l0_id_hashed_from_canonical_string`, `u_palette_hashed_into_deckid`, `r4a_label_size_drops_the_inflation`, `r4a_label_size_name_ratio_doubled`, `r4e_pdfcards_label_ratio_not_exported`, `r4e_pdfcards_label_size_not_exported`), 2 new; 942 → 944 | a2's plus `c_num_outgrows_the_name` | a2's set plus `c_num_outgrows_the_name` (its hifi literal context lines become generated), by the removed/context grep against the a2 diff, plus new mutants for the sync tool | a2's set minus `l0_id_hashed_from_canonical_string` and `u_palette_hashed_into_deckid` (core.js untouched), by the same grep; 0 on `MODULES` or `loadEngine` lines (`grep -lE '^[- ].*(MODULES|loadEngine\()' tests/mutants/*.patch` is empty) |
+| Mutants re-anchored or replaced | 2 rewritten (`c_octave_digit_shrunk_under_the_floor`, `r_num_size_app_fudge`), 5 refreshed (`h_pdfcards_label_ratio_flat`, `r4a_label_size_drops_the_inflation`, `r4a_label_size_name_ratio_doubled`, `r4e_pdfcards_label_ratio_not_exported`, `r4e_pdfcards_label_size_not_exported`) by `refresh_mutants.py --check` on a scratch build; 0 on load-list lines (`grep -lE '^[- ].*(loadEngine\(|FULL_ENGINE_MODULES =)' tests/mutants/*.patch` is empty) | 3 rewritten (`c_octave_digit_shrunk_under_the_floor`, `h_pdfcards_label_ratio_flat`, `r_num_size_app_fudge`), 6 refreshed (`l0_id_hashed_from_canonical_string`, `u_palette_hashed_into_deckid`, `r4a_label_size_drops_the_inflation`, `r4a_label_size_name_ratio_doubled`, `r4e_pdfcards_label_ratio_not_exported`, `r4e_pdfcards_label_size_not_exported`), 3 new; 942 → 945 | a2's plus `c_num_outgrows_the_name` | a2's set plus `c_num_outgrows_the_name` (its hifi literal context lines become generated), by the removed/context grep against the a2 diff, plus new mutants for the sync tool | a2's set minus `l0_id_hashed_from_canonical_string` and `u_palette_hashed_into_deckid` (core.js untouched), by the same grep; 0 on `MODULES` or `loadEngine` lines (`grep -lE '^[- ].*(MODULES|loadEngine\()' tests/mutants/*.patch` is empty) |
 | Test bodies that must change | 7 load lists, plus the a2 set | `test_the_diagram_label_rule_carries_the_same_constants` re-pointed to core.js and made STRICTER (adds `OCTAVE_RATIO`); one new test | the constant pin becomes a tautology | sync `--check` tests | every loader list |
 | Load-order risk | **breaks 16 group-1 callers** (measured, 4.6) | none: every caller loads core; pdfcards reads at call time | as a2: none (JS side is a2's) | as a2 for consumers, plus the generated-region order | new module position |
 | `test_print.py` SPEC copy | keep | **keep**: a spec oracle, not duplication. No stronger oracle replaces it, because test_render_agreement compares the renderers to each other and not to the spec. | keep | keep | keep |
@@ -286,7 +286,7 @@ Two lanes: one code lane, then the reconcile lane. Splitting Python from JS woul
 - **Owned files:**
   - code and tests: `src/engine/core.js`, `src/engine/pdfcards.js`, `src/engine/layout.js`, `index.html` (engine regions via `inline_engine.py`, plus the app block by the `const labelSize = HPE.pdfcards.labelSize` line and `function panLabel`), `tools/hifi.py`, `tests/test_render_agreement.py`;
   - mutants re-anchored: `tests/mutants/c_octave_digit_shrunk_under_the_floor.patch`, `h_pdfcards_label_ratio_flat.patch`, `r_num_size_app_fudge.patch`, `l0_id_hashed_from_canonical_string.patch`, `u_palette_hashed_into_deckid.patch`, `r4a_label_size_drops_the_inflation.patch`, `r4a_label_size_name_ratio_doubled.patch`, `r4e_pdfcards_label_ratio_not_exported.patch`, `r4e_pdfcards_label_size_not_exported.patch`;
-  - new mutants: `tests/mutants/lr_core_octave_ratio_drifts.patch`, `tests/mutants/lr_layout_floor_rewrites_a_literal.patch`. The `lr_` prefix is unused (`ls tests/mutants | grep -c '^lr_'` gives 0). The existing `g1_*` prefix belongs to an older grammar lane and is avoided.
+  - new mutants: `tests/mutants/lr_core_octave_ratio_drifts.patch`, `tests/mutants/lr_layout_floor_rewrites_a_literal.patch`, `tests/mutants/lr_core_rule_swaps_ding_and_note.patch`. The `lr_` prefix is unused (`ls tests/mutants | grep -c '^lr_'` gives 0). The existing `g1_*` prefix belongs to an older grammar lane and is avoided.
 - **Pinning tests** (all green at `7ef7fda`):
   - `tests/test_render_agreement.py` `test_diagram_label_sizes_agree`, `test_diagram_number_sizes_agree` and `test_the_diagram_label_rule_carries_the_same_constants`;
   - `tests/test_print.py` `LabelSizeRuleTest` (all methods, including `test_no_label_falls_below_the_print_floor` and `test_numbers_are_drawn_by_the_rule_too`);
@@ -297,7 +297,7 @@ Two lanes: one code lane, then the reconcile lane. Splitting Python from JS woul
   - `tests/app.test.js` "the card render still matches the committed digest of every built-in card" and "DR1 line 40: the pan drawn with interactive off is byte-identical to the shipped output for all five built-in decks";
   - `tests/test_pdf_build.py` `test_committed_pdfs_match_a_fresh_build`.
 - **New test:** `test_each_label_rule_number_is_written_once_per_language` (in `PdfEmitterGeometryTest`). It is RED at `7ef7fda` and killed by `lr_layout_floor_rewrites_a_literal`.
-- **Mutant delta:** +2 (942 → 944).
+- **Mutant delta:** +3 (942 → 945).
 - **FLOORS delta:** `tests/test_render_agreement.py` +1 test (26 → 27), set by Lane R from CI. No new test file, so no new FLOORS row and no README suite-count change.
 
 Steps (TDD order). The verify commands run from `/Users/ray/Projects/handpan-cards/.claude/worktrees/g1-one-source`.
@@ -343,16 +343,17 @@ Steps (TDD order). The verify commands run from `/Users/ray/Projects/handpan-car
      - `c_octave_digit_shrunk_under_the_floor`: hifi `note_text`'s `c.setFont(font, size * OCTAVE_RATIO)` → `size * 0.40`.
      - `h_pdfcards_label_ratio_flat`: remove the `if (zone === "ding") return rule().LABEL_RATIO_DING;` and `if (zone === "bottom") return rule().LABEL_RATIO_BNOTE;` lines, so every zone gets the rim ratio.
      - `r_num_size_app_fudge`: the app's `const numSize = HPE.pdfcards.numSize;` → `const numSize = (rNote) => HPE.pdfcards.numSize(rNote) * 1.1;`.
-   - Add the two new mutants:
+   - Add the three new mutants:
      - `lr_core_octave_ratio_drifts`: core.js `var OCTAVE_RATIO = 0.66;` → `0.6`; `# kills: test_the_diagram_label_rule_carries_the_same_constants`.
      - `lr_layout_floor_rewrites_a_literal`: in `labelFloor`, `var PRINT_NUM_RATIO = rule.NUM_RATIO;` → `var PRINT_NUM_RATIO = 0.64;`; `# kills: test_each_label_rule_number_is_written_once_per_language`. This break draws the same, so only the guard sees it.
+     - `lr_core_rule_swaps_ding_and_note`: in core.js `LABEL_RULE`, `LABEL_RATIO_DING: LABEL_RATIO_DING` → `LABEL_RATIO_DING: LABEL_RATIO_NOTE`; `# kills: the label rule is r x ratio per zone, and the number takes no 1.05` (`tests/pdfcards.test.js`). The `var`s stay intact, so the constant pin cannot see this break; only a reader of the object can.
    - The `# suite:` lines take the CONTRACT form, with no quotes:
      - `python3 -m unittest -k <test> tests.test_render_agreement`
      - `node --test --test-name-pattern ^...$ tests/<file>.test.js`, with `.` for spaces.
-   - Accept: `--check` green, 944 files, and every mutant in the loop below killed: the 3 rewritten, the 2 new, the 4 `r4a_`/`r4e_` refreshed, `l0_id_hashed_from_canonical_string`, `u_palette_hashed_into_deckid`, and the five with unchanged anchors `c_bottom_label_stored_figure`, `ap3_panfield_ignores_sets`, `c_label_density_reintroduced`, `c_num_outgrows_the_name`, `g_bottom_octave_counted`. On the proto all 16 were killed by hand (4.4).
-   - Verify: `python3 tools/refresh_mutants.py --check && test "$(ls tests/mutants | wc -l | tr -d ' ')" = 944`, then the loop below on a clean, committed tree. `tests/mutation_check.sh` takes no name filter (only `MUTANT_SHARD`), so each patch is applied by hand. A patch that edits `src/engine/*.js` is checked by the module-loading suites named in its `# suite:` line, the way the harness checks it.
+   - Accept: `--check` green, 945 files, and every mutant in the loop below killed: the 3 rewritten, the 3 new, the 4 `r4a_`/`r4e_` refreshed, `l0_id_hashed_from_canonical_string`, `u_palette_hashed_into_deckid`, and the five with unchanged anchors `c_bottom_label_stored_figure`, `ap3_panfield_ignores_sets`, `c_label_density_reintroduced`, `c_num_outgrows_the_name`, `g_bottom_octave_counted`. On the proto 16 of these 17 were killed by hand (4.4); `lr_core_rule_swaps_ding_and_note` is first run here.
+   - Verify: `python3 tools/refresh_mutants.py --check && test "$(ls tests/mutants | wc -l | tr -d ' ')" = 945`, then the loop below on a clean, committed tree. `tests/mutation_check.sh` takes no name filter (only `MUTANT_SHARD`), so each patch is applied by hand. A patch that edits `src/engine/*.js` is checked by the module-loading suites named in its `# suite:` line, the way the harness checks it.
      ```
-     for m in c_octave_digit_shrunk_under_the_floor h_pdfcards_label_ratio_flat r_num_size_app_fudge lr_core_octave_ratio_drifts lr_layout_floor_rewrites_a_literal r4a_label_size_drops_the_inflation r4a_label_size_name_ratio_doubled r4e_pdfcards_label_ratio_not_exported r4e_pdfcards_label_size_not_exported l0_id_hashed_from_canonical_string u_palette_hashed_into_deckid c_bottom_label_stored_figure ap3_panfield_ignores_sets c_label_density_reintroduced c_num_outgrows_the_name g_bottom_octave_counted; do
+     for m in c_octave_digit_shrunk_under_the_floor h_pdfcards_label_ratio_flat r_num_size_app_fudge lr_core_octave_ratio_drifts lr_layout_floor_rewrites_a_literal lr_core_rule_swaps_ding_and_note r4a_label_size_drops_the_inflation r4a_label_size_name_ratio_doubled r4e_pdfcards_label_ratio_not_exported r4e_pdfcards_label_size_not_exported l0_id_hashed_from_canonical_string u_palette_hashed_into_deckid c_bottom_label_stored_figure ap3_panfield_ignores_sets c_label_density_reintroduced c_num_outgrows_the_name g_bottom_octave_counted; do
        p=tests/mutants/$m.patch; git apply "$p" || exit 1
        PYTHONDONTWRITEBYTECODE=1 sh -c "$(grep -m1 '^# suite:' "$p" | sed 's/^# suite:[[:space:]]*//')" >/dev/null 2>&1; rc=$?
        git apply -R "$p"; [ $rc -ne 0 ] || { echo "SURVIVED $m"; exit 1; }
@@ -361,7 +362,7 @@ Steps (TDD order). The verify commands run from `/Users/ray/Projects/handpan-car
      CI's full gate then covers every unchanged mutant.
 9. **Full local smoke, then CI.**
    - Accept: CI `validate` at the verified head SHA concluded success, including the mutation gate and suite health.
-   - Verify: `python3 tools/validate.py && python3 -m unittest discover -s tests -p 'test_*.py' && node --test tests/*.test.js`, then push. `gh pr view <pr> --json state,headRefOid,mergeable` (re-query once if the head lags), and `gh run watch` then `gh run list --commit <full sha> --workflow validate --json conclusion`. Return in the same turn; never end the turn waiting.
+   - Verify: `python3 tools/validate.py && python3 -m unittest discover -s tests -p 'test_*.py' && env -u CHROME_BIN node --test tests/*.test.js`, then push. The browser suites skip without `CHROME_BIN`; CI's `validate` run is the e2e oracle. `gh pr view <pr> --json state,headRefOid,mergeable` (re-query once if the head lags), and `gh run watch` then `gh run list --commit <full sha> --workflow validate --json conclusion`. Return in the same turn; never end the turn waiting.
 
 ### Lane R: `claude/g1-reconcile`, wave 2
 
@@ -379,7 +380,7 @@ Steps (run from `/Users/ray/Projects/handpan-cards/.claude/worktrees/g1-reconcil
    - the mutant total as `cat "$D"/mutant-shard-report-*/mutant-shard-*.txt | wc -l`;
    - the `test_render_agreement.py` count as `by_module["tests.test_render_agreement"]` in python-results.json.
 
-   Accept: two integers recorded in the PR body with the run id. Expected values are 944 and 27.
+   Accept: two integers recorded in the PR body with the run id. Expected values are 945 and 27.
 
    Verify: `gh run list --commit <Lane A merge sha, full 40 characters> --workflow validate --json databaseId,headSha,conclusion` (conclusion success), then with `D=$(mktemp -d)`: `gh run download <id> -n python-results -D "$D"` and `gh run download <id> -p 'mutant-shard-report-*' -D "$D"`.
 2. **README.** "942 mutant patches" becomes the CI figure.
@@ -391,7 +392,7 @@ Steps (run from `/Users/ray/Projects/handpan-cards/.claude/worktrees/g1-reconcil
 4. **TODOS.** Delete the "Diagram label ratios are held three times" row; it is resolved by Lane A's guard test.
    - Accept: the row is gone.
    - Verify: `grep -c 'Diagram label ratios are held three times' TODOS.md | grep -qx 0 && python3 -m unittest -k test_each_label_rule_number_is_written_once_per_language tests.test_render_agreement`
-5. **CLAUDE.md.** Replace "The constants live twice - `tools/hifi.py` (`LABEL_RATIO_*`, `NUM_RATIO`) and `pan()` in `index.html` -" with: "The constants are written once per language - `HPE.core.LABEL_RULE` in `src/engine/core.js` (read by `pdfcards.js`, by `layout.js`'s `labelFloor` and by `pan()` in `index.html`) and `tools/hifi.py` (`LABEL_RATIO_*`, `NUM_RATIO`, `OCTAVE_RATIO`, `LABEL_WIDTH_RATIO`) - `tests/test_render_agreement.py` `test_the_diagram_label_rule_carries_the_same_constants` pins the two copies equal and `test_each_label_rule_number_is_written_once_per_language` fails on any second copy; and `tests/test_render_agreement.py` pins the two renderers ...". The rest of the sentence is kept unchanged. Add no file:digit refs.
+5. **CLAUDE.md.** Replace "The constants live twice - `tools/hifi.py` (`LABEL_RATIO_*`, `NUM_RATIO`) and `pan()` in `index.html` -" with: "The constants are written once per language - `HPE.core.LABEL_RULE` in `src/engine/core.js` (read by `pdfcards.js`, by `layout.js`'s `labelFloor`, and by the app block of `index.html`, which takes `labelSize` and `numSize` from `HPE.pdfcards` and `OCTAVE_RATIO` from `HPE.core.LABEL_RULE`) and `tools/hifi.py` (`LABEL_RATIO_*`, `NUM_RATIO`, `OCTAVE_RATIO`, `LABEL_WIDTH_RATIO`) - `tests/test_render_agreement.py` `test_the_diagram_label_rule_carries_the_same_constants` pins the two copies equal and `test_each_label_rule_number_is_written_once_per_language` fails on any second copy; and `tests/test_render_agreement.py` pins the two renderers ...". The rest of the sentence is kept unchanged. Add no file:digit refs.
    - Accept: both cited tests green; the line-ref ratchet green.
    - Verify: `python3 -m unittest -k test_the_diagram_label_rule_carries_the_same_constants -k test_each_label_rule_number_is_written_once_per_language tests.test_render_agreement && python3 -m unittest tests.test_readme_currency`
 6. **CI.**
@@ -470,6 +471,7 @@ No proposal changes a visible pixel. The app's `.62em` note-line subscript is no
 - **`tests/coverage_merge.test.js`'s `LABEL_SIZE` source-line fixture.** It is unchanged because Lane A keeps that line byte-identical.
 - **The six figures in Lane A's new `test_each_label_rule_number_is_written_once_per_language`** (`0.70875`, `0.80325`, `0.8232`, `1.47`, `0.64`, `0.66`). They are the guard's search keys, not a seventh source, and test files do not count. A changed value at the source makes the guard count 0 for the old figure and fail, so the list cannot drift silently (`lr_core_octave_ratio_drifts` shows this for 0.66).
 - **Two docstrings that name copies:** `tests/test_pdf_parity.py:358` ("the engine's own copy") and `tests/test_render_agreement.py:680` ("third copy", about the no-shrink rule). Their tests stay correct; the wording is history and no lane rewrites it, to keep Lane A's diff to the change itself.
+- **`tools/*.js`** is outside the guard's scope, as the request defines JS; none of those files holds a label figure at `7ef7fda`.
 
 ## 12. Risk register
 
@@ -482,7 +484,7 @@ No proposal changes a visible pixel. The app's `.62em` note-line subscript is no
 | A | a second JS or Python literal creeps back | none today | `test_each_label_rule_number_is_written_once_per_language` (killed by `lr_layout_floor_rewrites_a_literal`) | |
 | A | JS and Python copies drift | `test_the_diagram_label_rule_carries_the_same_constants`, made stricter with `OCTAVE_RATIO` | `lr_core_octave_ratio_drifts` proves the octave arm | |
 | A | a mutant re-anchored to the wrong reason, or a stale anchor | `refresh_mutants.py --check`, mutation gate | - | |
-| A | the guard test's regex counts an unrelated future `0.64` or `0.66` in the app block or an engine module, and goes red | the guard test itself, with an explicit message per figure | - (accepted: a new use names the constant instead) | |
+| A | the guard test's regex counts an unrelated future `0.64` or `0.66` in the app block or an engine module, and goes red | the guard test itself, with an explicit message per figure | - (accepted: a new use names the constant instead; a leading-dot literal such as `.64` evades the count, and review catches it) | |
 | A | a new comment adds a file:digit line ref | `test_stale_line_refs_in_comments_match_the_allowlist_exactly` | - | |
 | A | total | | | **1**: the mutant re-anchors and the guard-test scope are the likeliest reviewer findings |
 | R | a doc sentence claims something the code contradicts (#299 and #301 precedent) | the cited tests; the reviewer re-verifies every sentence | - | |
@@ -503,7 +505,7 @@ Projection: N = 2 lanes. X = 2 × 2 + 2 × 2 = 8 subagent runs. Y = 2 + 2 = 4 CI
 | 4 | The recommendation meets the request with no sync step and no new cross-language read | 1 | a2: JS 6 literals, Python 6, pinned; proto green |
 | 5 | No file in two lanes of one wave; every src/engine lane owns index.html | 1 | Lane A owns index.html; Lane R is in wave 2 and owns no code |
 | 6 | Every step has an acceptance criterion and a verify command | 1 | A1-A9, R1-R6 |
-| 7 | Every moved-target mutant named with its re-anchor; deltas sum | 1 | 3 rewritten, 6 refreshed, 2 new; +2 + 0 = 944 |
+| 7 | Every moved-target mutant named with its re-anchor; deltas sum | 1 | 3 rewritten, 6 refreshed, 3 new; +3 + 0 = 945 |
 | 8 | Every lane names a pinning test green on main, or a new one RED against a committed mutant | 1 | Lane A pin list and the guard test (RED at `7ef7fda`, `lr_layout_floor_rewrites_a_literal`); Lane R cites test_readme_currency and suite_health |
 | 9 | Sections 2, 10 and 11 cover every non-goal, owner-gated item and left copy | 1 | 2 (all prompt non-goals), 10 (b, c, d), 11 (every test literal from 4.3, the solver ratios, `.62em`) |
 | 10 | VERDICT counts match sections 5, 6 and 10; X and Y follow the rule | 1 | N=2, a2, K=3, bounces 2, so X=8 and Y=4 |
