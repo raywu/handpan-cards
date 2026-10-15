@@ -326,9 +326,15 @@ changing the solver or the seed, never by hand.
   (names, octave digits and index numbers). Today's smallest glyph is the
   octave on Pygmy's bottom shell at **3.87 pt**; the smallest note name is
   Pygmy's bottom shell at **5.87 pt**.
-  The constants live twice - `tools/hifi.py` (`LABEL_RATIO_*`, `NUM_RATIO`)
-  and `pan()` in `index.html` - and `tests/test_render_agreement.py` pins the
-  two renderers to the same drawn sizes, names and numbers alike, **per
+  The constants are written once per language - `HPE.core.LABEL_RULE` in
+  `src/engine/core.js` (read by `pdfcards.js`, by `layout.js`'s `labelFloor`,
+  and by the app block of `index.html`, which takes `labelSize` and `numSize`
+  from `HPE.pdfcards` and `OCTAVE_RATIO` from `HPE.core.LABEL_RULE`) and
+  `tools/hifi.py` (`LABEL_RATIO_*`, `NUM_RATIO`, `OCTAVE_RATIO`,
+  `LABEL_WIDTH_RATIO`) - `tests/test_render_agreement.py`
+  `test_the_diagram_label_rule_carries_the_same_constants` pins the two copies
+  equal and `test_each_label_rule_number_is_written_once_per_language` fails on
+  any second copy; and `tests/test_render_agreement.py` pins the two renderers to the same drawn sizes, names and numbers alike, **per
   field**, and asserts the no-shrink baseline PER RENDERER (print vs `f_*`,
   app vs `f_* x 1.05`) on the sizes they actually emit. A single baseline
   there is a tautology that a 5% app-side shrink passes straight through.
