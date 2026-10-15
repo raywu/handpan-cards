@@ -450,7 +450,8 @@ class VoicingTest(unittest.TestCase):
         # instance above the root AND its highest lower instance is on the TOP
         # shell. A bottom-shell-only tone takes its bottom field, forces nothing.
         forced = any(not instances(f, below=False)
-                     and zone(max(instances(f, True), key=midi)) != "bottom"
+                     and zone(max(instances(f, True),
+                              key=lambda g: (midi(g), zone(g) != "bottom"))) != "bottom"
                      for f in others)
         for f in others:
             lower, upper = instances(f, True), instances(f, False)
