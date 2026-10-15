@@ -768,9 +768,9 @@ Fields per row: class / target / measured cost (command) / change / risk / pinni
 
 **P5-18**
 - **Class:** REFACTOR.
-- **Target:** the dead `select:focus` term of the `.sheetbody:has(...)` band rule (TODOS).
-- **Measured cost:** none. Two tokens, one in each of the two `.sheetbody:has(...)` rules (index.html:1012, index.html:1016), and neither rule is among coverage's 8 unused rules.
-- **Change:** delete the token.
+- **Target:** the dead `select:focus` terms of the two `.sheetbody:has(...)` band rules (TODOS).
+- **Measured cost:** none. Two tokens, one in each of the two `.sheetbody:has(...)` rules (`grep -n 'sheetbody:has(.*select:focus' index.html`), and neither rule is among coverage's 8 unused rules.
+- **Change:** delete both tokens.
 - **Risk:** low.
 - **Pinning test:** DR1 band tests.
 - **Verdict:** DROP. The benefit is aesthetic.
@@ -865,16 +865,16 @@ Pitfalls every lane carries:
 2. **The fix.** In `_check_cluster`, change `key=midi` inside the `forced = any(...)` expression to `key=lambda g: (midi(g), zone(g) != "bottom")`. Nothing else in that method changes.
    - Acceptance: the new test is green, and all 28 tests in `tests.test_deck_data` are green.
    - Verify: `S=$(mktemp -d); python3 -m unittest tests.test_deck_data > $S/r2.log 2>&1; tail -1 $S/r2.log | grep -qx OK && grep -q '^Ran 28 tests' $S/r2.log && python3 -m unittest tests.test_deck_data.VoicingTest.test_forced_cluster_oracle_ignores_field_order`
-3. **The killing mutant.** Create `tests/mutants/ro_oracle_zone_tie_break_dropped.patch`. Generate its body by reverting step 2 on the committed tree and running `git diff -- tests/test_deck_data.py`, then strip the `index` line. Headers:
+3. **The killing mutant.** Create `tests/mutants/ro_oracle_zone_tie_break_dropped.patch`. Generate its body by reverting step 2 in the working tree of the committed fix, running `git diff -- tests/test_deck_data.py > tests/mutants/ro_oracle_zone_tie_break_dropped.patch`, stripping the `index` line, and then restoring the fix with `git checkout -- tests/test_deck_data.py`. The tree must equal the step 2 commit before the verify runs. Headers:
    - `# kills: test_forced_cluster_oracle_ignores_field_order`
    - `# suite: python3 -m unittest -k test_forced_cluster_oracle_ignores_field_order tests.test_deck_data`
    - Acceptance: the patch applies cleanly, the named test fails under it and passes after reverse-apply, and the harness lint passes.
-   - Verify: `P=tests/mutants/ro_oracle_zone_tie_break_dropped.patch; git apply --check $P && git apply $P && { python3 -m unittest -k test_forced_cluster_oracle_ignores_field_order tests.test_deck_data; rc=$?; git apply -R $P; test $rc -ne 0; } && ! grep -q '^index ' $P && node --test --test-name-pattern 'no.mutant.patch|every.mutant.patch|FU-6|N=4.shard.partition' tests/mutation_harness.test.js`
+   - Verify: `P=tests/mutants/ro_oracle_zone_tie_break_dropped.patch; git apply --check $P && git apply $P && { python3 -m unittest -k test_forced_cluster_oracle_ignores_field_order tests.test_deck_data; rc=$?; git apply -R $P; test $rc -ne 0; } && git diff --quiet -- tests/test_deck_data.py && python3 -m unittest -k test_forced_cluster_oracle_ignores_field_order tests.test_deck_data && ! grep -q '^index ' $P && node --test --test-name-pattern 'no.mutant.patch|every.mutant.patch|FU-6|N=4.shard.partition' tests/mutation_harness.test.js`
 4. **Retire the TODOS row.** Delete the subsection "Python oracle lacks a tie-break when a pitch appears in two zones" from `TODOS.md`. The `## Scale engine` heading stays, because the `labelShape` row remains under it.
    - Acceptance: that heading text is gone, the `## Scale engine` heading and the subsection "layout.test.js infers every zone's label shape from one ding label" remain, and the README currency suite stays green.
    - Verify: `! grep -q 'Python oracle lacks a tie-break' TODOS.md && grep -qx '## Scale engine' TODOS.md && grep -q "^### layout.test.js infers every zone's label shape from one ding label" TODOS.md && python3 -m unittest tests.test_readme_currency`
-5. **Regression evidence, section 3 steps 1 to 5, locally.**
-   - Acceptance: all green.
+5. **Regression evidence, section 3 steps 1 to 4, locally, as far as a local run can show them.**
+   - Acceptance: all green. This command does not run the mutation gate or suite health: `refresh_mutants.py --check` proves the corpus applies, not that it is killed. Section 3 steps 4 (kill) and 5 are read from CI in step 6, where the mutation gate must kill both `b_cluster_forced_only` and the new mutant and `suite health` must be green.
    - Verify: `python3 tools/inline_engine.py --check && python3 tools/sync_decks.py --check && git diff --quiet main -- data/decks.json index.html tools tests/fixtures && python3 -m unittest tests.test_render_agreement tests.test_pdf_build && python3 tools/refresh_mutants.py --check`
 6. **Push and open a PR.** CI is the oracle.
    - Acceptance: `validate` at the head SHA concluded success, and that SHA equals `headRefOid`.
@@ -888,7 +888,7 @@ Pitfalls every lane carries:
 
 - **Branch:** `claude/refactor-5-reconcile`.
 - **Worktree:** `.claude/worktrees/refactor-5-reconcile`, cut from `main` after the `oracle` merge.
-- **Goal:** README.md's mutant count and every `tests/suite_health.py` FLOORS row equal main's CI artifacts at the `oracle` merge commit.
+- **Goal:** README.md's mutant count and every `tests/suite_health.py` FLOORS row equal main's CI artifacts at the lane's base commit, which contains the `oracle` merge.
 - **Non-goals:**
   - No test, mutant, source or workflow edit.
   - No row lowered.
@@ -897,12 +897,12 @@ Pitfalls every lane carries:
 
 **Steps:** run every step's commands in one shell, in order, after `SCRATCH=$(mktemp -d)`; step 1 sets `M` and `id`.
 
-1. **Read main's CI.** Let `M` be the merge commit of the `oracle` PR on `main`: `M=$(gh pr list --head claude/refactor-5-oracle --state merged --json mergeCommit -q '.[0].mergeCommit.oid')`. Find its run: `id=$(gh run list --workflow validate.yml --commit $M --json databaseId,conclusion -q '.[]|select(.conclusion=="success")|.databaseId' | head -1)`. Download `js-results`, `python-results` and the four `mutant-shard-report-N` artifacts to scratch.
-   - Acceptance: the run concluded success, and the six artifacts are present.
-   - Verify: `test -n "$id" && for a in js-results python-results mutant-shard-report-1 mutant-shard-report-2 mutant-shard-report-3 mutant-shard-report-4; do gh run download $id -n $a -D $SCRATCH/$a || exit 1; done`
+1. **Read main's CI at the lane's base.** Let `M` be the commit the lane was cut from, which is `main` at or after the `oracle` merge: `M=$(git merge-base HEAD origin/main)`. It must contain the `oracle` merge: `git merge-base --is-ancestor $(gh pr list --head claude/refactor-5-oracle --state merged --json mergeCommit -q '.[0].mergeCommit.oid') $M`. Reading the base, not the `oracle` merge, is what absorbs any interleaved merge: a later PR's raised rows and added mutants are already in `M`'s artifacts. Find its run: `id=$(gh run list --workflow validate.yml --commit $M --json databaseId,conclusion -q '.[]|select(.conclusion=="success")|.databaseId' | head -1)`. Download `js-results`, `python-results` and the four `mutant-shard-report-N` artifacts to scratch.
+   - Acceptance: `M` contains the `oracle` merge, its run concluded success, and the six artifacts are present.
+   - Verify: `test -n "$id" && (for a in js-results python-results mutant-shard-report-1 mutant-shard-report-2 mutant-shard-report-3 mutant-shard-report-4; do gh run download $id -n $a -D $SCRATCH/$a || false; done)` (the subshell and `|| false` stop the loop on a failed download without closing the shell).
 2. **Set FLOORS from the artifacts.** For every FLOORS row, set the value to the CI total for that file: `js-results.json` `.files[path].total` or `python-results.json` `.by_module`. Projected changes: `tests/app.test.js` 501 to 502, `tests/e2e.test.js` 297 to 298, `tests/test_deck_data.py` 27 to 28. Every other row is unchanged.
-   - Acceptance: each row equals CI, none falls, and suite health is green.
-   - Verify: `python3 -c "import json,sys; sys.path.insert(0,'tests'); import suite_health as s; js=json.load(open('$SCRATCH/js-results/js-results.json'))['files']; py=json.load(open('$SCRATCH/python-results/python-results.json'))['by_module']; bad=[k for k,v in s.FLOORS.items() if v != (js[k]['total'] if k.endswith('.js') else py['tests.'+k[6:-3]])]; print(bad); sys.exit(1 if bad else 0)" && python3 -m unittest tests.test_suite_health`
+   - Acceptance: each row equals CI, no row is below its value at `M`, and suite health is green. Suite health checks only `ran >= floor`, so it cannot see a lowered row; the first command does.
+   - Verify: `git show "${M}:tests/suite_health.py" > $SCRATCH/base_suite_health.py && python3 -c "import sys,importlib.util as u; sys.path.insert(0,'tests'); import suite_health as h; sp=u.spec_from_file_location('b','$SCRATCH/base_suite_health.py'); b=u.module_from_spec(sp); sp.loader.exec_module(b); low=[k for k,v in b.FLOORS.items() if h.FLOORS.get(k,-1) < v]; print(low); sys.exit(1 if low else 0)" && python3 -c "import json,sys; sys.path.insert(0,'tests'); import suite_health as s; js=json.load(open('$SCRATCH/js-results/js-results.json'))['files']; py=json.load(open('$SCRATCH/python-results/python-results.json'))['by_module']; bad=[k for k,v in s.FLOORS.items() if v != (js[k]['total'] if k.endswith('.js') else py['tests.'+k[6:-3]])]; print(bad); sys.exit(1 if bad else 0)" && python3 -m unittest tests.test_suite_health`
 3. **Set the README mutant count.** Set the "N mutant patches" sentence to the count across the four shard reports, projected at 942.
    - Acceptance: the README number equals the shard-report total and equals `ls tests/mutants/*.patch | wc -l` on the lane head.
    - Verify: `n=$(cat $SCRATCH/mutant-shard-report-*/mutant-shard-*.txt | grep -c '\.patch$'); grep -q "$n mutant patches" README.md && test "$n" -eq "$(ls tests/mutants/*.patch | wc -l | tr -d ' ')" && python3 -m unittest tests.test_readme_currency`
@@ -1000,7 +1000,7 @@ AFK auto-picks the recommendation. Each recommendation is the conservative optio
   - P5-15 (stale markup comment)
   - P5-16 (unshown mutant gap)
   - P5-17 (literal colours: aesthetic, pixel risk)
-  - P5-18 (dead `select:focus` token)
+  - P5-18 (dead `select:focus` tokens)
   - P5-19 (no flakes)
 - **Owner-gated:** G-1 to G-4 (section 10).
 - **Other TODOS rows, not refactors or test improvements:**
@@ -1015,7 +1015,7 @@ AFK auto-picks the recommendation. Each recommendation is the conservative optio
 | lane | what could regress | existing test that catches it | new test that must | expected bounces |
 |---|---|---|---|---|
 | `oracle` | (1) The tie-break flips a verdict on a shipped deck. (2) The mock leaks `decks` into other tests. (3) The mutant body carries an `index` line or a stale hunk. | (1) `test_forced_tones_cluster_below_root` and its mutant b_cluster_forced_only; the full `tests.test_deck_data` run. (2) Every other `test_deck_data` test, since `patch` is a context manager. (3) "no mutant patch carries a blob header it cannot keep true" and "every mutant patch applies to the tree it will run against". | `test_forced_cluster_oracle_ignores_field_order`, killed by `ro_oracle_zone_tie_break_dropped.patch` | 1 |
-| `reconcile` | (1) A row is set by hand rather than from CI. (2) A row is lowered. (3) The README count is stale against an interleaved merge. | (1, 2) `suite health` at the head, and the verify command in step 2. (3) `tests.test_readme_currency` and the step 3 cross-check against `ls tests/mutants`. | none (no new test) | 0 |
+| `reconcile` | (1) A row is set by hand rather than from CI. (2) A row is lowered. (3) The README count is stale against an interleaved merge. | (1) `suite health` at the head and the CI-equality command in step 2. (2) The step 2 base comparison against `M`'s FLOORS, since suite health cannot see a lowered row. (3) `tests.test_readme_currency` and the step 3 cross-check against `ls tests/mutants`. | none (no new test) | 0 |
 
 ## 13. Not measured, and why
 
@@ -1039,3 +1039,128 @@ AFK auto-picks the recommendation. Each recommendation is the conservative optio
 | 10 | The VERDICT counts match; X and Y follow the formula | 1 | X = 2 x 2 + 2 x 1 = 6; Y = 2 + 1 + 0 = 3. |
 
 VERDICT: 2 lanes, 1 DO candidates, 4 owner-gated proposals, projected 6 subagent runs and 3 CI runs
+
+## Eng review (2026-10-15, `/plan-eng-review`)
+
+Target: this plan at `1c97942`. Report file: this plan. AFK is armed, so every decision below is an auto-pick of the recommended option, recorded here.
+
+### Scope Challenge
+
+- Existing code reused: `VoicingTest._check_cluster` and `test_forced_tones_cluster_below_root` (the new test calls the existing method under `unittest.mock.patch` of the module's `decks()`, which `tests/test_deck_data.py:238` resolves at call time); CI's `js-results`, `python-results` and `mutant-shard-report-N` artifacts for reconcile. Nothing is rebuilt.
+- Minimum change: one expression, one test, one mutant, one TODOS subsection, then a numbers-only reconcile. Five files, no new class or service. The complexity gate does not trip.
+- Search check: no new architectural pattern, so no search.
+- TODOS: the `oracle` lane retires "Python oracle lacks a tie-break when a pitch appears in two zones" (TODOS.md:42). No new TODO.
+- Distribution: no new artifact.
+- Result: scope accepted as-is.
+
+### 1. Architecture
+
+- **E1 (P2, confidence 9, Codex and confirmed).** Reconcile step 1 read CI at the `oracle` merge commit, while section 6 claimed interleaved merges are absorbed. A PR merging between `oracle` and the reconcile cut that raises a FLOORS row would have its row lowered to the older total, and `suite health` (`ran >= floor`) would accept it. Fixed: `M` is now the lane's base (`git merge-base HEAD origin/main`), must contain the `oracle` merge (`git merge-base --is-ancestor`), and step 2 adds a base comparison that fails on any row below `M`'s value. Smoke-tested on this branch: prints `[]`, exit 0.
+
+### 2. Code quality
+
+- **E2 (P2, confidence 10, Codex).** Oracle step 3 generated the mutant by reverting the fix and never restored it, so the verify's `git apply --check` would fail against an already-reverted tree. Fixed: the step restores with `git checkout -- tests/test_deck_data.py`, writes to an explicit path, and the verify now re-runs the test green after the reverse-apply and checks the tree is clean.
+- **E3 (P2, confidence 10, this review).** Under zsh, the lane shell on this machine, `git show $M:tests/...` applies the `:t` modifier to `$M` and fails (`ambiguous argument 'HEADests/suite_health.py'`, reproduced). Fixed: `"${M}:tests/suite_health.py"`.
+- **E4 (P3, confidence 10, plan scorer nit).** `|| exit 1` inside the reconcile download loop would close an interactive lane shell. Fixed: the loop runs in a subshell with `|| false`.
+- **E6 (P3, confidence 10, plan scorer nit).** P5-18 named one token in singular in Target, Change and section 11, and cited line numbers. Fixed: plural, with a grep anchor in place of line numbers.
+
+### 3. Test review
+
+Framework: python `unittest` and `node --test` (CLAUDE.md, Print pipeline and Coverage).
+
+```
+_check_cluster(ch, rm, others, ...)
+  forced = any(no upper instance AND zone(max(lower, key=(midi, zone!="bottom"))) != "bottom")
+     |-- tie on MIDI across zones -> top shell wins   [new test, both field orders]
+     |-- no tie (every shipped deck)                   [existing test, b_cluster_forced_only]
+  for f in others:
+     |-- not forced, upper exists -> tone above root   [existing]
+     |-- not forced, bottom-only  -> highest lower, bottom zone [existing]
+     |-- forced, extension        -> nearest upper     [existing]
+     '-- forced, chord tone       -> highest lower     [existing]
+```
+
+- New path: the MIDI tie-break. Covered both ways by `test_forced_cluster_oracle_ignores_field_order`, and its removal is killed by `ro_oracle_zone_tie_break_dropped.patch`.
+- **E5 (P3, confidence 9, Codex).** Oracle step 5 claimed section 3 steps 1 to 5 locally, but its command runs neither the mutation gate nor suite health; `refresh_mutants.py --check` proves patches apply, not that they are killed. Fixed: the acceptance now scopes the local run and names the CI reads in step 6 (`b_cluster_forced_only` and the new mutant killed, suite health green).
+- Gaps left: none. QA test plan artifact: not written; neither lane changes user-visible behaviour.
+
+### 4. Performance
+
+No issues found. The lanes add one python test (milliseconds) and one mutant (one python suite run per shard pass).
+
+### Outside voice
+
+Codex (`codex exec`, read-only, high effort), completed. Three findings, all accepted as E1, E2 and E5 above. Its recommendation: "revise before execution", which this review did.
+
+### Decision ledger
+
+| id | finding | options | auto-pick (AFK) | state |
+|---|---|---|---|---|
+| E1 | reconcile reads a stale baseline | (A) read CI at the lane base and add a no-lower check (recommended); (B) keep the `oracle` merge commit and forbid interleaved merges | A: the gate becomes true by construction, not by scheduling | approved, applied |
+| E2 | mutant generation leaves the fix reverted | (A) restore and re-verify green (recommended); (B) leave as written | A: the written verify cannot pass otherwise | approved, applied |
+| E3 | zsh `:t` modifier on `$M:tests` | (A) brace the variable (recommended); (B) require bash | A: one-character fix, shell-agnostic | approved, applied |
+| E4 | `exit 1` closes the shell | (A) subshell with `|| false` (recommended); (B) leave | A | approved, applied |
+| E5 | local step overclaims the gates | (A) scope the claim and point at CI (recommended); (B) run the full mutation gate locally | A: memory says the full local gate starves the machine; CI is the oracle | approved, applied |
+| E6 | P5-18 singular wording and line refs | (A) fix wording (recommended); (B) leave | A | approved, applied |
+
+Approval readiness: PASS (E1 to E6, AFK auto-decisions under the global AFK grant, recorded above).
+
+### NOT in scope
+
+- Plan scorer nit: the 4.8 download shorthand is descriptive, and reconcile step 1 carries the runnable form.
+- Plan scorer nit: P5-13 may also omit `tests/helpers/*.js`; P5-13 is DEFER and the claim was not verified, so it is left for that pass.
+- Plan scorer nit: the 1627 vs 1693 test-title gap in section 4 is unexplained; no verdict depends on it.
+
+### What already exists
+
+The oracle (`tests/test_deck_data.py:417`), the engine's top-shell-first tie-break it is aligned to, the mutation harness lint, and CI's per-file result artifacts. All are reused.
+
+### Failure modes
+
+| path | failure | test | handling | silent? |
+|---|---|---|---|---|
+| tie-break | flips a shipped verdict | `test_forced_tones_cluster_below_root` | lane step 2 acceptance | no |
+| mock | leaks `decks` | the other 27 module tests | `patch` is a context manager | no |
+| reconcile | lowers a row | step 2 base comparison | verify fails | no |
+
+Critical gaps: 0.
+
+### Worktree parallelization
+
+Sequential implementation, no parallelization opportunity: `reconcile` must read CI that includes `oracle`'s merge.
+
+### Implementation Tasks
+
+- [ ] **T1 (P1, human: ~2h / CC: ~20min)** - lane `oracle` - tie-break, test, mutant, TODOS row. Surfaced by: DO P5-1, E2, E5. Files: `tests/test_deck_data.py`, `tests/mutants/ro_oracle_zone_tie_break_dropped.patch`, `TODOS.md`. Verify: section 6 `oracle` steps 1 to 6.
+- [ ] **T2 (P1, human: ~1h / CC: ~10min)** - lane `reconcile` - README count and FLOORS from CI at the lane base. Surfaced by: E1, E3, E4. Files: `README.md`, `tests/suite_health.py`. Verify: section 6 `reconcile` steps 1 to 4.
+
+### Completion summary
+
+- Step 0: Scope Challenge - scope accepted as-is
+- Architecture Review: 1 issue found
+- Code Quality Review: 4 issues found
+- Test Review: diagram produced, 1 gap identified
+- Performance Review: 0 issues found
+- NOT in scope: written
+- What already exists: written
+- TODOS.md updates: 0 items proposed
+- Failure modes: 0 critical gaps flagged
+- Unresolved decisions: 0 in this review
+- Outside voice: codex, completed
+- Parallelization: 2 lanes, 0 parallel / 2 sequential
+- Lake Score: N/A
+
+## GSTACK REVIEW REPORT
+
+| Review | Trigger | Why | Runs | Status | Findings |
+|--------|---------|-----|------|--------|----------|
+| CEO Review | `/plan-ceo-review` | Scope & strategy | 0 | not run | - |
+| Outside Review | codex, in `/plan-eng-review` | Independent 2nd opinion | 1 | completed | 3 findings, 3 applied |
+| Eng Review | `/plan-eng-review` | Architecture & tests (required) | 1 | ISSUES OPEN (all resolved in plan) | 6 issues, 0 critical gaps |
+| Design Review | `/plan-design-review` | UI/UX gaps | 0 | not run | - |
+| DX Review | `/plan-devex-review` | Developer experience gaps | 0 | not run | - |
+
+- **OUTSIDE COVERAGE:** codex, plan-review phase, completed, 3 findings, all applied.
+- **VERDICT:** ENG reviewed; all six findings applied in the plan, none open. Ready to implement on the owner's go.
+
+NO UNRESOLVED DECISIONS
