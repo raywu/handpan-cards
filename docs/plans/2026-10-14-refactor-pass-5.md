@@ -334,7 +334,7 @@ The slowest mutants, in seconds (each figure includes a first-seen suite baselin
 | sq_medium_sample_removed | 37 |
 | h_probe_orphans_its_process_tree | 35 |
 
-The `drawer_grid` "DR1 rule G" mutants run a full grid sweep. That is work, not a fixed wait. A time-balanced split would average about 523 s per shard, about 85 s under shard 1's 608 s. The saving is capped by `js suites` ending at 535 s, so the wall saving is about 60 to 75 s. It comes from no fixed wait, so it is DEFER (P5-2).
+The `drawer_grid` "DR1 rule G" mutants run a full grid sweep. That is work, not a fixed wait. A time-balanced split would average about 526 s per shard ((608+598+567+329)/4 = 525.5 s, from the shard job times above), about 82 s under shard 1's 608 s. The saving is capped by `js suites` ending at 535 s, so the wall saving is about 60 to 75 s. It comes from no fixed wait, so it is DEFER (P5-2).
 
 **Per-file local times, non-`E2E_FILES` suites.** The script is `$S/time_units.sh`, with `CHROME_BIN` set and the skip line grepped (0 skips in every row). Commands: `/usr/bin/time -p node --test tests/<file>.test.js` and `/usr/bin/time -p python3 -m unittest tests.<module>`. These are LOCAL figures.
 
@@ -453,7 +453,7 @@ gh run list --workflow validate.yml --limit 60 --json databaseId,headSha,conclus
 | 19 | e2e.test.js | the desktop sidebar at 1024x700 gains no new VERTICAL scroll from the Resources group, in modes A, B and S | STRONG | scroll-height bound per mode |
 | 20 | layout.test.js | solve never changes a zone | STRONG | g_zone_rewritten |
 | 21 | harness.test.js | settle() returns promptly when no animation is running | STRONG | qe_settle_ignores_quiet_animations |
-| 22 | coverage_merge.test.js | scripts run without a filename are listed as unattributed and never counted for a shipped file | STRONG | exact unattributed listing; the whole-file suite runs under r4cov_* mutants |
+| 22 | coverage_merge.test.js | scripts run without a filename are listed as unattributed and never counted for a shipped file | STRONG | exact unattributed listing (reasoning; no mutant's `# kills:` names this test: `grep -l 'scripts run without a filename' tests/mutants/*` is empty) |
 | 23 | core.test.js | a name option is trimmed of leading and trailing whitespace (Q25) | STRONG | f1b_read_options_trim_dropped |
 | 24 | app.test.js | a hit target reaches 44px, never undercuts its own note, and never laps a neighbour | STRONG | d_panhit_undercuts_its_note |
 | 25 | test_fixture_integrity.py | test_shape_and_card_counts | STRONG | literal version 8, 5 decks and 177 cards |
@@ -474,7 +474,7 @@ gh run list --workflow validate.yml --limit 60 --json databaseId,headSha,conclus
 | 40 | e2e.test.js | card swipe (wheel): a second gesture after the 160ms gap advances again | STRONG | sw_wheel_gap_too_long |
 | 41 | layout.test.js | every name the app draws fits inside the field it labels | **WEAK** | shown in scratch; patch below. Bottom labels are modelled with the ding's shape (TODOS "layout.test.js infers every zone's label shape from one ding label") |
 
-**Counts:** 41 sampled: 39 STRONG (21 by mutant: rows 2, 3, 11, 16, 18, 20, 21, 22, 23, 24, 26, 27, 29, 30, 32, 34, 35, 36, 37, 38, 40; 18 by reasoning: rows 1, 4, 5, 6, 7, 8, 9, 10, 13, 14, 15, 17, 19, 25, 28, 31, 33, 39; counted from this table's evidence column), 2 WEAK, 0 TAUTOLOGY, 0 DUPLICATE. Neither WEAK test's subject is a hotspot: row 12's subject `paintLayout` has churn 2, and row 41's subject `pan` has churn 0. So both rows are DEFER (P5-4, P5-5).
+**Counts:** 41 sampled: 39 STRONG (20 by mutant: rows 2, 3, 11, 16, 18, 20, 21, 23, 24, 26, 27, 29, 30, 32, 34, 35, 36, 37, 38, 40; 19 by reasoning: rows 1, 4, 5, 6, 7, 8, 9, 10, 13, 14, 15, 17, 19, 22, 25, 28, 31, 33, 39; counted from this table's evidence column), 2 WEAK, 0 TAUTOLOGY, 0 DUPLICATE. Neither WEAK test's subject is a hotspot: row 12's subject `paintLayout` has churn 2, and row 41's subject `pan` has churn 0. So both rows are DEFER (P5-4, P5-5).
 
 **WEAK evidence 1 (row 12).** Setup: `git worktree add --detach $S/weak 2e25d38`, then apply the break below. The run was:
 
@@ -659,7 +659,7 @@ Fields per row: class / target / measured cost (command) / change / risk / pinni
 **P5-7**
 - **Class:** TEST-SPEED.
 - **Target:** the `drawer_grid` "DR1 rule G grid" sweep and its 9 mutants.
-- **Measured cost:** 46 to 108 s per mutant, about 520 s of shard time (4.5).
+- **Measured cost:** 3 to 108 s per mutant (seven of the nine take 46 to 108 s; dr1g_band_not_observed 4 s, dr1g_body_not_observed 3 s), about 520 s of shard time in all (`python3 $S/top.py $S/shard_*.log | grep -E 'dr1g|dr1_landscape'`, 4.5).
 - **Change:** fail fast at the first bad cell inside the sweep.
 - **Risk:** medium. It would change an existing test body, which needs equivalence shown on 9 mutants.
 - **Pinning test:** the three `drawer_grid` tests.
