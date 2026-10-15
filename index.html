@@ -2796,28 +2796,24 @@ HPE.pdfcards = (function () {
 
   function noteW(name, octv, font, size) {
     return stringWidth(name, font, size) +
-           stringWidth(String(octv), font, size * 0.66);
+           stringWidth(String(octv), font, size * rule().OCTAVE_RATIO);
   }
 
   // ---- diagram label sizing (tools/hifi.py's label_ratio/label_size/num_size/fit_note) ----
   // One rule sizes every glyph the pan draws, in both outputs. See CLAUDE.md
   // under "Diagram label rule" for where the three ratios come from and why
   // the index number takes no 1.05.
-  var LABEL_RATIO_DING = 0.70875;
-  var LABEL_RATIO_NOTE = 0.80325;
-  var LABEL_RATIO_BNOTE = 0.8232;
-  var NUM_RATIO = 0.64;
-  var LABEL_WIDTH_RATIO = 1.47;
+  function rule() { return core().LABEL_RULE; }
 
   function labelRatio(zone) {
-    if (zone === "ding") return LABEL_RATIO_DING;
-    if (zone === "bottom") return LABEL_RATIO_BNOTE;
-    return LABEL_RATIO_NOTE;
+    if (zone === "ding") return rule().LABEL_RATIO_DING;
+    if (zone === "bottom") return rule().LABEL_RATIO_BNOTE;
+    return rule().LABEL_RATIO_NOTE;
   }
 
   function labelSize(r, zone) { return r * labelRatio(zone); }
 
-  function numSize(rNote) { return rNote * NUM_RATIO; }
+  function numSize(rNote) { return rNote * rule().NUM_RATIO; }
 
   function fitNote(name, octv, font, size, maxw) {
     while (size > 2.5 && noteW(name, octv, font, size) > maxw) size -= 0.1;
@@ -2830,7 +2826,7 @@ HPE.pdfcards = (function () {
     c.setFillColor(color || BLACK);
     c.setFont(font, size);
     c.drawString(x, y, name);
-    c.setFont(font, size * 0.66);
+    c.setFont(font, size * rule().OCTAVE_RATIO);
     c.drawString(x + stringWidth(name, font, size), y - size * 0.20,
                  String(octv));
     return w;
@@ -3013,7 +3009,7 @@ HPE.pdfcards = (function () {
         var dy = R * (g.ding_dy || 0.0);
         drawRing(c, cx, cy - dy, rr0, state(i, false));
         var fs0 = fitNote(nm, ov, "Label", labelSize(rr0, zone),
-                          rr0 * LABEL_WIDTH_RATIO);
+                          rr0 * rule().LABEL_WIDTH_RATIO);
         noteText(c, cx, cy - dy - rr0 * 0.30, nm, ov, "Label", fs0, INK);
         return;
       }
@@ -3023,7 +3019,7 @@ HPE.pdfcards = (function () {
       var px = cx + orb * Math.cos(a), py = cy + orb * Math.sin(a);
       drawRing(c, px, py, rr, state(i, zone === "bottom"));
       var fs = fitNote(nm, ov, "Label", labelSize(rr, zone),
-                       rr * LABEL_WIDTH_RATIO);
+                       rr * rule().LABEL_WIDTH_RATIO);
       noteText(c, px, py - rr * 0.30, nm, ov, "Label", fs, INK);
       if (numbers) {
         var nr, col, fnt;
@@ -3306,6 +3302,7 @@ HPE.pdfcards = (function () {
     CARD_WARNINGS: CARD_WARNINGS,
     labelRatio: labelRatio,
     labelSize: labelSize,
+    numSize: numSize,
     // exported for the port's own unit tests, not for the app
     _internal: {
       Canvas: Canvas, tracked: tracked,
@@ -4254,7 +4251,23 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return "custom:" + fnv1a32(identitySeed(seedOrFields));
   }
 
+  var LABEL_RATIO_DING = 0.70875;
+  var LABEL_RATIO_NOTE = 0.80325;
+  var LABEL_RATIO_BNOTE = 0.8232;
+  var NUM_RATIO = 0.64;
+  var OCTAVE_RATIO = 0.66;
+  var LABEL_WIDTH_RATIO = 1.47;
+  var LABEL_RULE = Object.freeze({
+    LABEL_RATIO_DING: LABEL_RATIO_DING,
+    LABEL_RATIO_NOTE: LABEL_RATIO_NOTE,
+    LABEL_RATIO_BNOTE: LABEL_RATIO_BNOTE,
+    NUM_RATIO: NUM_RATIO,
+    OCTAVE_RATIO: OCTAVE_RATIO,
+    LABEL_WIDTH_RATIO: LABEL_WIDTH_RATIO
+  });
+
   HPE.core = {
+    LABEL_RULE: LABEL_RULE,
     parseSeed: parseSeed,
     parseLegacySeed: parseLegacySeed,
     formatSeed: formatSeed,
@@ -4661,14 +4674,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   /* The legibility floor (A16, D15): print scale is R = round(PRINT_HALF /
    * ext, 1) points, and a label under LABEL_FLOOR_PT is crowded. The ratios
-   * are tools/hifi.py's LABEL_RATIO_NOTE, LABEL_RATIO_BNOTE and NUM_RATIO,
-   * pinned to them by tests/test_pdf_parity.py. */
+   * are HPE.core.LABEL_RULE's, read at call time in labelFloor, and
+   * tests/test_pdf_parity.py pins them to tools/hifi.py. */
   var PRINT_HALF = 74;
   var LABEL_FLOOR_PT = 3.6;
-  var PRINT_NOTE_RATIO = 0.80325;
-  var PRINT_BNOTE_RATIO = 0.8232;
-  var PRINT_NUM_RATIO = 0.64;
-  var PRINT_OCTAVE_RATIO = 0.66;
 
   var R_NOTE_MAX = 0.19;      /* hijaz / amara literal                       */
   var R_BNOTE_MAX = 0.1188;   /* pygmy literal                               */
@@ -5070,6 +5079,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
    * name. The bottom octave digit is excluded (D15). A pan with nothing to
    * label has no floor; it reports PRINT_HALF, far above LABEL_FLOOR_PT. */
   function labelFloor(geom) {
+    var rule = HPE.core.LABEL_RULE;
+    var PRINT_NOTE_RATIO = rule.LABEL_RATIO_NOTE;
+    var PRINT_BNOTE_RATIO = rule.LABEL_RATIO_BNOTE;
+    var PRINT_NUM_RATIO = rule.NUM_RATIO;
+    var PRINT_OCTAVE_RATIO = rule.OCTAVE_RATIO;
     var R = round(PRINT_HALF / geom.ext, 1);
     var sizes = [];
     if (geom.r_note > 0) {
@@ -8171,8 +8185,8 @@ const escA = s => esc(s).replace(/"/g, "&quot;");
    Safe above the solver's budget because in the app the field circle itself
    bounds a name; ext comes from f_num on generated decks only. */
 const labelSize = HPE.pdfcards.labelSize;
-const NUM_RATIO = 0.64;
-function numSize(rNote) { return rNote * NUM_RATIO; }
+const numSize = HPE.pdfcards.numSize;
+const OCTAVE_RATIO = HPE.core.LABEL_RULE.OCTAVE_RATIO;
 
 /* pan()'s two per-field emitters, hoisted so pan() is the loop only. `sets` is
  * chordSets()'s {blue, green}; C is the deck's colours. */
@@ -8192,7 +8206,7 @@ function panField(sets, C, x, y, r, id, isBottom) {
 function panLabel(x, y, name, oct, fs, col) {
   return `<text x="${x}" y="${y + fs*0.34}" text-anchor="middle" fill="${col}"
       font-family="Nunito Sans, sans-serif" font-size="${fs}">${esc(name)}<tspan
-      font-size="${fs*0.66}" dy="${fs*0.18}">${oct}</tspan></text>`;
+      font-size="${fs*OCTAVE_RATIO}" dy="${fs*0.18}">${oct}</tspan></text>`;
 }
 /* ---------------- SVG pan ---------------- */
 /* The scale page selects a note by TAPPING THE PAN, so pan() can emit an

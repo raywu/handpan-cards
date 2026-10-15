@@ -1,0 +1,16 @@
+# kills: the label rule is r x ratio per zone, and the number takes no 1.05
+# suite: node --test --test-name-pattern ^the.label.rule.is.r.x.ratio.per.zone,.and.the.number.takes.no.1.05$ tests/pdfcards.test.js
+# LABEL_RULE hands the ding the rim ratio. The vars stay intact, so the
+# constant pin cannot see it; only a reader of the object can.
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -941,7 +941,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   var OCTAVE_RATIO = 0.66;
+   var LABEL_WIDTH_RATIO = 1.47;
+   var LABEL_RULE = Object.freeze({
+-    LABEL_RATIO_DING: LABEL_RATIO_DING,
++    LABEL_RATIO_DING: LABEL_RATIO_NOTE,
+     LABEL_RATIO_NOTE: LABEL_RATIO_NOTE,
+     LABEL_RATIO_BNOTE: LABEL_RATIO_BNOTE,
+     NUM_RATIO: NUM_RATIO,

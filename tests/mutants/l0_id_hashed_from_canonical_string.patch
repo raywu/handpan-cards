@@ -3,7 +3,7 @@
 diff --git a/src/engine/core.js b/src/engine/core.js
 --- a/src/engine/core.js
 +++ b/src/engine/core.js
-@@ -620,7 +620,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -931,7 +931,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
    // D14: a pure function of identitySeed - notes, octaves, zones and order. The
    // options are never hashed, so renaming or recolouring keeps the id.
    function deckId(seedOrFields) {
@@ -11,4 +11,4 @@ diff --git a/src/engine/core.js b/src/engine/core.js
 +    return "custom:" + fnv1a32(formatSeed(fieldsOf(seedOrFields)));
    }
  
-   HPE.core = {
+   var LABEL_RATIO_DING = 0.70875;

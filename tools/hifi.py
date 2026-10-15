@@ -63,14 +63,18 @@ def fit(text, font, size, maxw, track=0.0, floor=3.6):
     return size
 
 
+OCTAVE_RATIO = 0.66
+
+
 def note_w(name, octv, font, size):
     return (pdfmetrics.stringWidth(name, font, size)
-            + pdfmetrics.stringWidth(str(octv), font, size * 0.66))
+            + pdfmetrics.stringWidth(str(octv), font, size * OCTAVE_RATIO))
 
 
 # ---- diagram label sizing -------------------------------------------------
 # ONE rule sizes every glyph the pan draws, in BOTH outputs: the same
-# constants and the same arithmetic live in `pan()` in index.html.
+# constants and the same arithmetic live in `HPE.core.LABEL_RULE` in
+# src/engine/core.js, pinned to this copy by tests/test_render_agreement.py.
 #
 #   name   = r * LABEL_RATIO[zone]
 #   number = r_note * NUM_RATIO
@@ -112,8 +116,8 @@ def note_w(name, octv, font, size):
 # "Where the ratios come from, and what actually changed".
 #
 # Drawing over the solver's budget for the field circle is safe because
-# (1) ring clearance is computed from f_num alone (src/engine/layout.js
-# 288-302), so a name's size cannot reach it; and (2) fit_note auto-shrinks
+# (1) ring clearance is computed from f_num alone (the reach/ext block in
+# layout.js `solve()`), so a name's size cannot reach it; and (2) fit_note auto-shrinks
 # any label that genuinely overflows its field, and it does not fire on any
 # card in the corpus even after the growth - that is the headroom being spent.
 LABEL_RATIO_DING = 0.70875   # name inside the ding          (0.675 x 1.05)
@@ -167,7 +171,7 @@ def note_text(c, x, y, name, octv, font, size, color=black, centre=True):
     c.setFillColor(color)
     c.setFont(font, size)
     c.drawString(x, y, name)
-    c.setFont(font, size * 0.66)
+    c.setFont(font, size * OCTAVE_RATIO)
     c.drawString(x + pdfmetrics.stringWidth(name, font, size), y - size * 0.20, str(octv))
     return w
 

@@ -679,21 +679,55 @@ class PdfEmitterGeometryTest(unittest.TestCase):
     def test_the_diagram_label_rule_carries_the_same_constants(self):
         """The no-shrink rule, third copy.
 
-        These five are the whole of the label rule, and CLAUDE.md fixes the
+        These six are the whole of the label rule, and CLAUDE.md fixes the
         baseline they are measured against. The parity test would catch a
         changed ratio as a wall of moved glyphs; this catches it as one line.
         """
-        with open(os.path.join(paths.ROOT, "src", "engine", "pdfcards.js"),
+        with open(os.path.join(paths.ROOT, "src", "engine", "core.js"),
                   encoding="utf-8") as fh:
             src = fh.read()
         for name, want in (("LABEL_RATIO_DING", hifi.LABEL_RATIO_DING),
                            ("LABEL_RATIO_NOTE", hifi.LABEL_RATIO_NOTE),
                            ("LABEL_RATIO_BNOTE", hifi.LABEL_RATIO_BNOTE),
                            ("NUM_RATIO", hifi.NUM_RATIO),
+                           ("OCTAVE_RATIO", hifi.OCTAVE_RATIO),
                            ("LABEL_WIDTH_RATIO", hifi.LABEL_WIDTH_RATIO)):
             m = re.search(r"var %s = ([\d.]+);" % name, src)
-            self.assertIsNotNone(m, "%s is gone from pdfcards.js" % name)
+            self.assertIsNotNone(m, "%s is gone from core.js" % name)
             self.assertEqual(float(m.group(1)), want, name)
+
+    def test_each_label_rule_number_is_written_once_per_language(self):
+        """The label rule's six figures are literals once in JS, once in Python."""
+        import glob
+        figs = ("0.70875", "0.80325", "0.8232", "1.47", "0.64", "0.66")
+        skip = re.compile(r"\s*(#|\*|//|/\*)")
+
+        def count(texts):
+            found = {f: 0 for f in figs}
+            for text in texts:
+                for line in text.splitlines():
+                    if skip.match(line) or "F_NUM_RATIO" in line:
+                        continue
+                    for f in figs:
+                        found[f] += len(re.findall(
+                            r"(?<![0-9.])%s(?![0-9])" % re.escape(f), line))
+            return found
+
+        def read(path):
+            with open(path, encoding="utf-8") as fh:
+                return fh.read()
+
+        js = [read(p) for p in sorted(glob.glob(
+            os.path.join(paths.ROOT, "src", "engine", "*.js")))]
+        html = read(os.path.join(paths.ROOT, "index.html"))
+        js.append(re.sub(r"<!-- engine:(\w+) begin.*?<!-- engine:\1 end -->",
+                         "", html, flags=re.S))
+        py = [read(p) for p in sorted(glob.glob(
+            os.path.join(paths.ROOT, "tools", "*.py")))]
+        for lang, found in (("JS", count(js)), ("Python", count(py))):
+            for f in figs:
+                self.assertEqual(found[f], 1,
+                                 "%s writes %s %d times" % (lang, f, found[f]))
 
 
 if __name__ == "__main__":

@@ -1,0 +1,16 @@
+# kills: test_the_diagram_label_rule_carries_the_same_constants
+# suite: python3 -m unittest -k test_the_diagram_label_rule_carries_the_same_constants tests.test_render_agreement
+# The octave ratio in core.js drifts from hifi.py's OCTAVE_RATIO. Only the
+# cross-language constant pin sees it once the arms are six.
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -938,7 +938,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   var LABEL_RATIO_NOTE = 0.80325;
+   var LABEL_RATIO_BNOTE = 0.8232;
+   var NUM_RATIO = 0.64;
+-  var OCTAVE_RATIO = 0.66;
++  var OCTAVE_RATIO = 0.6;
+   var LABEL_WIDTH_RATIO = 1.47;
+   var LABEL_RULE = Object.freeze({
+     LABEL_RATIO_DING: LABEL_RATIO_DING,
