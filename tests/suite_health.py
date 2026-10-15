@@ -34,7 +34,7 @@ from tests import paths  # noqa: E402
 # path -> minimum number of tests that must RUN in that file.
 FLOORS = {
     # python
-    "tests/test_deck_data.py": 27,
+    "tests/test_deck_data.py": 28,
     "tests/test_pdf_build.py": 13,
     "tests/test_gen_deck.py": 31,
     "tests/test_print.py": 44,
@@ -49,11 +49,11 @@ FLOORS = {
     "tests/test_pdf_parity.py": 13,
     "tests/test_icons.py": 4,
     # node
-    "tests/app.test.js": 501,
+    "tests/app.test.js": 502,
     "tests/seat_sweeps_tap_add.test.js": 3,
     "tests/seat_sweeps_tap_edit.test.js": 3,
     "tests/seat_sweeps_keys.test.js": 4,
-    "tests/e2e.test.js": 297,
+    "tests/e2e.test.js": 298,
     "tests/harness.test.js": 13,
     "tests/drawer_grid.test.js": 3,
     "tests/drawer_seats.test.js": 29,
