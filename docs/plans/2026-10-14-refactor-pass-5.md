@@ -865,7 +865,7 @@ Pitfalls every lane carries:
    - Verify: `S=$(mktemp -d); python3 -m unittest tests.test_deck_data > $S/r1.log 2>&1; grep -qx 'FAILED (failures=1)' $S/r1.log && grep -q '^FAIL: test_forced_cluster_oracle_ignores_field_order' $S/r1.log && grep -q 'unforced card: tone below the root' $S/r1.log`
 2. **The fix.** In `_check_cluster`, change `key=midi` inside the `forced = any(...)` expression to `key=lambda g: (midi(g), zone(g) != "bottom")`. Nothing else in that method changes.
    - Acceptance: the new test is green, and all 28 tests in `tests.test_deck_data` are green.
-   - Verify: `S=$(mktemp -d); python3 -m unittest -v tests.test_deck_data > $S/r2.log 2>&1; tail -1 $S/r2.log | grep -qx OK && grep -q '^Ran 28 tests' $S/r2.log && grep -qE '^test_forced_cluster_oracle_ignores_field_order .*\.\.\. ok$' $S/r2.log`
+   - Verify: `S=$(mktemp -d); python3 -m unittest tests.test_deck_data > $S/r2.log 2>&1; tail -1 $S/r2.log | grep -qx OK && grep -q '^Ran 28 tests' $S/r2.log && python3 -m unittest tests.test_deck_data.VoicingTest.test_forced_cluster_oracle_ignores_field_order`
 3. **The killing mutant.** Create `tests/mutants/ro_oracle_zone_tie_break_dropped.patch`. Generate its body by reverting step 2 on the committed tree and running `git diff -- tests/test_deck_data.py`, then strip the `index` line. Headers:
    - `# kills: test_forced_cluster_oracle_ignores_field_order`
    - `# suite: python3 -m unittest -k test_forced_cluster_oracle_ignores_field_order tests.test_deck_data`
@@ -898,7 +898,7 @@ Pitfalls every lane carries:
 
 **Steps:** run every step's commands in one shell, in order, after `SCRATCH=$(mktemp -d)`; step 1 sets `M` and `id`.
 
-1. **Read main's CI.** Let `M` be the merge commit of the `oracle` PR on `main`. Find its run: `id=$(gh run list --workflow validate.yml --commit $M --json databaseId,conclusion -q '.[]|select(.conclusion=="success")|.databaseId' | head -1)`. Download `js-results`, `python-results` and the four `mutant-shard-report-N` artifacts to scratch.
+1. **Read main's CI.** Let `M` be the merge commit of the `oracle` PR on `main`: `M=$(gh pr list --head claude/refactor-5-oracle --state merged --json mergeCommit -q '.[0].mergeCommit.oid')`. Find its run: `id=$(gh run list --workflow validate.yml --commit $M --json databaseId,conclusion -q '.[]|select(.conclusion=="success")|.databaseId' | head -1)`. Download `js-results`, `python-results` and the four `mutant-shard-report-N` artifacts to scratch.
    - Acceptance: the run concluded success, and the six artifacts are present.
    - Verify: `test -n "$id" && for a in js-results python-results mutant-shard-report-1 mutant-shard-report-2 mutant-shard-report-3 mutant-shard-report-4; do gh run download $id -n $a -D $SCRATCH/$a || exit 1; done`
 2. **Set FLOORS from the artifacts.** For every FLOORS row, set the value to the CI total for that file: `js-results.json` `.files[path].total` or `python-results.json` `.by_module`. Projected changes: `tests/app.test.js` 501 to 502, `tests/e2e.test.js` 297 to 298, `tests/test_deck_data.py` 27 to 28. Every other row is unchanged.
