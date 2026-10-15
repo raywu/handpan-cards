@@ -21,6 +21,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 try:  # discovered as tests.test_deck_data from the repo root
     from tests import paths
@@ -387,6 +388,34 @@ class VoicingTest(unittest.TestCase):
                 with self.subTest(deck=deck["id"], card=ch["main"] + ch["sup"]):
                     self._check_cluster(ch, rm, others, card, midi, instances, zone)
 
+    def test_forced_cluster_oracle_ignores_field_order(self):
+        """The cluster oracle's verdict does not depend on the order of a
+        deck's `fields` map. Em7 clusters G3 B3 D4 below E4; B3 and D4 each
+        exist on both shells at one MIDI number, and the top-shell field must
+        win the tie wherever the bottom fields sit in the map."""
+        top = {
+            "0": ["C", 3, 48, "ding", None, "Ding"],
+            "1": ["G", 3, 55, "rim", 270, "1"],
+            "2": ["B", 3, 59, "rim", 210, "2"],
+            "3": ["D", 4, 62, "rim", 330, "3"],
+            "4": ["E", 4, 64, "rim", 150, "4"],
+            "5": ["G", 4, 67, "rim", 30, "5"],
+            "6": ["B", 4, 71, "rim", 90, "6"],
+        }
+        bottom = {
+            "101": ["Bb", 2, 46, "bottom", 330, "U1"],
+            "102": ["B", 3, 59, "bottom", 210, "U2"],
+            "103": ["D", 4, 62, "bottom", 90, "U3"],
+        }
+        chord = {"main": "Em", "sup": "7", "subtitle": "E MINOR 7",
+                 "fields": [4, 1, 2, 3], "roots": [4]}
+        for order, fields in (("engine order", {**top, **bottom}),
+                              ("bottom first", {**bottom, **top})):
+            deck = {"id": "tie", "fields": fields, "chords": [chord]}
+            with self.subTest(order=order):
+                with mock.patch(__name__ + ".decks", lambda: [deck]):
+                    self.test_forced_tones_cluster_below_root()
+
     @staticmethod
     def extension_intervals(symbol):
         """Semitone intervals the chord SYMBOL implies as extensions.
@@ -421,7 +450,8 @@ class VoicingTest(unittest.TestCase):
         # instance above the root AND its highest lower instance is on the TOP
         # shell. A bottom-shell-only tone takes its bottom field, forces nothing.
         forced = any(not instances(f, below=False)
-                     and zone(max(instances(f, True), key=midi)) != "bottom"
+                     and zone(max(instances(f, True),
+                              key=lambda g: (midi(g), zone(g) != "bottom"))) != "bottom"
                      for f in others)
         for f in others:
             lower, upper = instances(f, True), instances(f, False)
