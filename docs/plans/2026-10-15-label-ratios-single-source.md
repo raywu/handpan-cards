@@ -117,7 +117,7 @@ Every command below runs from `/Users/ray/Projects/handpan-cards/.claude/worktre
 
 ### 4.1 Literal copies
 
-`grep -rnE '0\.70875|0\.80325|0\.8232\b|\b1\.47\b|_RATIO = 0\.64|NUM_RATIO = 0\.64' src tools index.html` returns 25 lines:
+`grep -rnE '0\.70875|0\.80325|0\.8232\b|\b1\.47\b|_RATIO = 0\.64|NUM_RATIO = 0\.64' src tools index.html` returns 24 lines:
 
 - **layout.js:** 64, 65, 66, and 77 (the `F_NUM_RATIO` solver line, out of scope).
 - **pdfcards.js:** 149-153.
@@ -156,20 +156,20 @@ The pin grep `grep -n 'LABEL_RATIO\|NUM_RATIO\|OCTAVE_RATIO\|LABEL_WIDTH\|labelR
 
 | hits | class |
 |---|---|
-| test_pdf_parity.py:358 (docstring), 366 (`HPE.layout.labelFloor` call), 378-381 (`hifi.label_size`/`num_size` and its own `0.66`) | **pin**: LabelFloorTest `test_label_floor_uses_the_print_pipelines_ratios` |
+| test_pdf_parity.py:358 (docstring), 366 (`HPE.layout.labelFloor` call), 378, 379 and 381 (`hifi.label_size`/`num_size` and its own `0.66`) | **pin**: LabelFloorTest `test_label_floor_uses_the_print_pipelines_ratios` |
 | test_print.py:48-52 (`SPEC_*`), 62-72 (`spec_label_ratio`/`spec_label_size` helpers), 633, 635, 647, 762, 780 (SPEC uses) | **oracle**: deliberate spec copy, kept |
 | test_print.py:673, 680, 681, 685, 718, 730, 731, 738, 749 (by-name `hifi.label_size`/`num_size` reads and SPEC_OCTAVE products) | **pin**: LabelSizeRuleTest |
 | test_render_agreement.py:193, 195, 224, 411, 420-422, 425, 426, 453, 487 | **incidental**: substring hits on the per-field `label_sizes`/`labelSizes` drawn-size map; 411 is `test_diagram_label_sizes_agree`, regression step 2 |
 | test_render_agreement.py:689-693 | **pin**: `test_the_diagram_label_rule_carries_the_same_constants` |
 | coverage_merge.test.js:141 (`LABEL_SIZE` source-line fixture) | **pin** on pdfcards.js source text |
-| coverage_merge.test.js:155, 164, 169, 172, 175, 178, 179, 185, 189, 196, 200, 204, 209, 213, 217, 218, 224, 225, 229, 230, 238, 242, 252, 255, 260 (24 lines) | **incidental**: `"labelSize"` used as a function name in synthetic coverage records |
+| coverage_merge.test.js:155, 164, 169, 172, 175, 178, 179, 185, 189, 196, 200, 204, 209, 213, 217, 218, 224, 225, 229, 230, 238, 242, 252, 255, 260 (25 lines) | **incidental**: `"labelSize"` used as a function name in synthetic coverage records |
 | pdfcards.test.js:71-75 | **oracle**: product test "the label rule is r x ratio per zone, and the number takes no 1.05" |
 | pdfcards.test.js:581, 592, 594, 595 | **incidental**: local `numSize` variable for the note line |
 | pdfcards.test.js:601-610 | **pin and oracle**: "the label rule is public: HPE.pdfcards.labelRatio and labelSize match the internal figures" |
 | select.test.js:505 | **pin**: by-name `layout.labelFloor` |
 | layout.test.js:636, 640 | **incidental**: comment |
 | layout.test.js:716, 717, 725, 740, 742 | **pin**: "every name the app draws fits inside the field it labels" reads the app's top-level `labelSize`/`numSize` |
-| layout.test.js:1344 (comment), 1354 (test title) | **incidental** |
+| layout.test.js:1344 (comment), 1354 and 1375 (test titles) | **incidental** |
 | layout.test.js:1346, 1376 | **pin**: by-name `HPE.layout.labelFloor` |
 
 Further greps:
@@ -247,9 +247,9 @@ So (a1) must change 7 files' load lists, covering all 16 group-1 lines: layout.t
 - **Constant pin.** `test_the_diagram_label_rule_carries_the_same_constants` becomes a tautology, because hifi would then hold whatever it parsed.
 - **New dependency.** The print pipeline gains a runtime read of a JS source file.
 
-**Option (c): JSON plus a sync step.** Not prototyped; owner-gated. Literals after: 1 (JSON), plus generated copies. It adds a new sync tool or mode and a new generated region in core.js or hifi.py.
+**Option (c): JSON plus a sync step.** Not prototyped; owner-gated. Literals after: 1 (JSON), plus generated copies. It adds a new sync tool or mode and a new generated region in core.js or hifi.py. Mutants by name: see the section 5 row, measured by the removed/context grep.
 
-**Option (d): a new engine module `labels.js`.** Not prototyped; owner-gated. Literal counts are the same as a2. It is a new `MODULES` entry, a new generated region in index.html, and every `loadEngine` list (48 lines, `grep -rnE 'loadEngine\(' tests tools | wc -l`) must name it, or it must be loaded implicitly.
+**Option (d): a new engine module `labels.js`.** Not prototyped; owner-gated. Literal counts are the same as a2. It is a new `MODULES` entry, a new generated region in index.html, and every `loadEngine` list (48 lines, `grep -rnE 'loadEngine\(' tests tools | wc -l`) must name it, or it must be loaded implicitly. Mutants by name: see the section 5 row, measured by the removed/context grep.
 
 ## 5. Options
 
@@ -258,9 +258,9 @@ So (a1) must change 7 files' load lists, covering all 16 group-1 lines: layout.t
 | JS literals before → after | 13 → 6 (pdfcards) | 13 → 6 (core.js) | 13 → 6 | 13 → 0 hand-written | 13 → 6 |
 | Python literals before → after | 7 → 6 | 7 → 6 | 7 → 0 | 7 → 0 hand-written | 7 → 6 |
 | Files touched | pdfcards, layout, index.html, hifi, test_render_agreement, plus 7 load-list files | core, pdfcards, layout, index.html, hifi, test_render_agreement | a2's set plus a hifi reader | new JSON, new or extended sync tool, generated regions | new module, inline_engine `MODULES`, index.html, loaders |
-| Mutants re-anchored or replaced | at least the a2 set plus the load-list-line mutants (not enumerated: not recommended) | 3 rewritten (`c_octave_digit_shrunk_under_the_floor`, `h_pdfcards_label_ratio_flat`, `r_num_size_app_fudge`), 6 refreshed (`l0_id_hashed_from_canonical_string`, `u_palette_hashed_into_deckid`, `r4a_label_size_drops_the_inflation`, `r4a_label_size_name_ratio_doubled`, `r4e_pdfcards_label_ratio_not_exported`, `r4e_pdfcards_label_size_not_exported`), 2 new; 942 → 944 | a2's plus `c_num_outgrows_the_name` | unmeasured, large | unmeasured, large |
+| Mutants re-anchored or replaced | 2 rewritten (`c_octave_digit_shrunk_under_the_floor`, `r_num_size_app_fudge`), 5 refreshed (`h_pdfcards_label_ratio_flat`, `r4a_label_size_drops_the_inflation`, `r4a_label_size_name_ratio_doubled`, `r4e_pdfcards_label_ratio_not_exported`, `r4e_pdfcards_label_size_not_exported`) by `refresh_mutants.py --check` on a scratch build; 0 on load-list lines (`grep -lE '^[- ].*(loadEngine\(|FULL_ENGINE_MODULES =)' tests/mutants/*.patch` is empty) | 3 rewritten (`c_octave_digit_shrunk_under_the_floor`, `h_pdfcards_label_ratio_flat`, `r_num_size_app_fudge`), 6 refreshed (`l0_id_hashed_from_canonical_string`, `u_palette_hashed_into_deckid`, `r4a_label_size_drops_the_inflation`, `r4a_label_size_name_ratio_doubled`, `r4e_pdfcards_label_ratio_not_exported`, `r4e_pdfcards_label_size_not_exported`), 2 new; 942 → 944 | a2's plus `c_num_outgrows_the_name` | a2's set plus `c_num_outgrows_the_name` (its hifi literal context lines become generated), by the removed/context grep against the a2 diff, plus new mutants for the sync tool | a2's set minus `l0_id_hashed_from_canonical_string` and `u_palette_hashed_into_deckid` (core.js untouched), by the same grep; 0 on `MODULES` or `loadEngine` lines (`grep -lE '^[- ].*(MODULES|loadEngine\()' tests/mutants/*.patch` is empty) |
 | Test bodies that must change | 7 load lists, plus the a2 set | `test_the_diagram_label_rule_carries_the_same_constants` re-pointed to core.js and made STRICTER (adds `OCTAVE_RATIO`); one new test | the constant pin becomes a tautology | sync `--check` tests | every loader list |
-| Load-order risk | **breaks 16 group-1 callers** (measured, 4.6) | none: every caller loads core; pdfcards reads at call time | n/a | n/a | new module position |
+| Load-order risk | **breaks 16 group-1 callers** (measured, 4.6) | none: every caller loads core; pdfcards reads at call time | as a2: none (JS side is a2's) | as a2 for consumers, plus the generated-region order | new module position |
 | `test_print.py` SPEC copy | keep | **keep**: a spec oracle, not duplication. No stronger oracle replaces it, because test_render_agreement compares the renderers to each other and not to the spec. | keep | keep | keep |
 | Sync step or cross-language read | no | **no** | new cross-language read | **new sync step** | **new generated region** |
 | Meets the request | yes | **yes** | owner-gated | owner-gated | owner-gated |
@@ -335,7 +335,7 @@ Steps (TDD order). The verify commands run from `/Users/ray/Projects/handpan-car
    - Verify: `python3 tools/inline_engine.py --check && python3 tools/sync_decks.py --check && node --test tests/app.test.js tests/layout.test.js && node tools/regen_pan_fixture.js && git diff --stat -- tests/fixtures data | wc -l | grep -qx 0`
 7. **Stale comment in hifi.** Rewrite the hifi comment under `# ---- diagram label sizing` so it says the JS copy is `HPE.core.LABEL_RULE` in `src/engine/core.js`, pinned by `tests/test_render_agreement.py`. No file:digit refs.
    - Accept: the guard test from step 2 is now GREEN, and the counting command prints 12 lines.
-   - Verify: save section 1's command block (without its `cd` line) as `$SCRATCH/g1count.sh`, then `python3 -m unittest tests.test_render_agreement tests.test_readme_currency && bash $SCRATCH/g1count.sh | wc -l | grep -qx 12`
+   - Verify: save section 1's command block (without its `cd` line) as `/tmp/g1count.sh`, then `python3 -m unittest tests.test_render_agreement tests.test_readme_currency && bash /tmp/g1count.sh | wc -l | grep -qx 12`
 8. **Mutants.**
    - Run `python3 tools/refresh_mutants.py` (it refreshes the 6 mechanical ones) on a committed tree.
    - Rewrite the 3 UNFIXABLE ones one-for-one, keeping each one's `# kills:` and `# suite:` headers and stripping `index` lines:
@@ -348,7 +348,7 @@ Steps (TDD order). The verify commands run from `/Users/ray/Projects/handpan-car
    - The `# suite:` lines take the CONTRACT form, with no quotes:
      - `python3 -m unittest -k <test> tests.test_render_agreement`
      - `node --test --test-name-pattern ^...$ tests/<file>.test.js`, with `.` for spaces.
-   - Accept: `--check` green, 944 files, and each of the 11 named plus `c_bottom_label_stored_figure`, `l0_id_hashed_from_canonical_string`, `u_palette_hashed_into_deckid`, `ap3_panfield_ignores_sets`, `c_label_density_reintroduced`, `c_num_outgrows_the_name` and `g_bottom_octave_counted` killed. All were killed on the proto except the four unchanged ones, which CI's gate covers.
+   - Accept: `--check` green, 944 files, and each of the 11 named plus `c_bottom_label_stored_figure`, `l0_id_hashed_from_canonical_string`, `u_palette_hashed_into_deckid`, `ap3_panfield_ignores_sets`, `c_label_density_reintroduced`, `c_num_outgrows_the_name` and `g_bottom_octave_counted` killed. On the proto, the 11 named and `c_bottom_label_stored_figure` were killed by hand; `ap3_panfield_ignores_sets`, `c_label_density_reintroduced`, `c_num_outgrows_the_name` and `g_bottom_octave_counted` are unchanged and CI's gate covers them.
    - Verify: `python3 tools/refresh_mutants.py --check && ls tests/mutants | wc -l | grep -qx 944`, then the loop below on a clean, committed tree. `tests/mutation_check.sh` takes no name filter (only `MUTANT_SHARD`), so each patch is applied by hand. A patch that edits `src/engine/*.js` is checked by the module-loading suites named in its `# suite:` line, the way the harness checks it.
      ```
      for m in c_octave_digit_shrunk_under_the_floor h_pdfcards_label_ratio_flat r_num_size_app_fudge lr_core_octave_ratio_drifts lr_layout_floor_rewrites_a_literal r4a_label_size_drops_the_inflation r4a_label_size_name_ratio_doubled r4e_pdfcards_label_ratio_not_exported r4e_pdfcards_label_size_not_exported l0_id_hashed_from_canonical_string u_palette_hashed_into_deckid; do
@@ -380,7 +380,7 @@ Steps (run from `/Users/ray/Projects/handpan-cards/.claude/worktrees/g1-reconcil
 
    Accept: two integers recorded in the PR body with the run id. Expected values are 944 and 27.
 
-   Verify: `gh run list --branch main --workflow validate --limit 1 --json databaseId,headSha,conclusion` and `gh run download <id> -n python-results -D /tmp/g1r` (scratch dir).
+   Verify: `gh run list --branch main --workflow validate --limit 1 --json databaseId,headSha,conclusion` and `gh run download <id> -n python-results -D /tmp/g1r` and `gh run download <id> -p 'mutant-shard-report-*' -D /tmp/g1r` (scratch dir).
 2. **README.** "942 mutant patches" becomes the CI figure.
    - Accept: test green.
    - Verify: `python3 -m unittest -k test_the_mutant_count_is_stated_within_a_lane_of_the_truth tests.test_readme_currency`
