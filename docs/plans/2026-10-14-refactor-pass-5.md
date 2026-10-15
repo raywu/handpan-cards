@@ -669,7 +669,7 @@ Fields per row: class / target / measured cost (command) / change / risk / pinni
 **P5-8**
 - **Class:** TEST-SPEED.
 - **Target:** `tests/sequence.test.js`.
-- **Measured cost:** 50.11 s LOCAL, the slowest non-browser file, in the `js suites` job, which ends 73 s before shard 1 (4.5).
+- **Measured cost:** 50.11 s LOCAL, the slowest non-browser file, in the `js suites` job, which ends 74 s before shard 1 (4.5).
 - **Change:** shrink sampling corpora.
 - **Risk:** medium, since it weakens sampling.
 - **Pinning test:** "every sampled sequence is a MEDIUM sequence".
@@ -719,6 +719,15 @@ Fields per row: class / target / measured cost (command) / change / risk / pinni
 - **Risk:** low.
 - **Pinning test:** new.
 - **Verdict:** DEFER. Unverified whether this is a real gap or a tracer limit.
+
+**P5-20**
+- **Class:** TEST-SPEED.
+- **Target:** e2e and harness fixed sleeps (all at most 450 ms) and the harness 60 s and 15 s bail timers.
+- **Measured cost:** about 5.3 s of literal waits per pass; the bail timers are never paid green (4.5).
+- **Change:** none.
+- **Risk:** none.
+- **Pinning test:** none.
+- **Verdict:** DEFER. There is nothing at or above 30 s on the critical path, so it cannot be DO, and a TEST-SPEED row with a measured cost is DEFER.
 
 ### DROP
 
@@ -775,15 +784,6 @@ Fields per row: class / target / measured cost (command) / change / risk / pinni
 - **Risk:** none.
 - **Pinning test:** none.
 - **Verdict:** DROP. No flake evidence.
-
-**P5-20**
-- **Class:** TEST-SPEED.
-- **Target:** e2e and harness fixed sleeps (all at most 450 ms) and the harness 60 s and 15 s bail timers.
-- **Measured cost:** about 5.3 s of literal waits per pass; the bail timers are never paid green (4.5).
-- **Change:** none.
-- **Risk:** none.
-- **Pinning test:** none.
-- **Verdict:** DROP. There is nothing at or above 30 s on the critical path.
 
 ### Owner-gated
 
@@ -872,8 +872,8 @@ Pitfalls every lane carries:
    - Acceptance: the patch applies cleanly, the named test fails under it and passes after reverse-apply, and the harness lint passes.
    - Verify: `P=tests/mutants/ro_oracle_zone_tie_break_dropped.patch; git apply --check $P && git apply $P && { python3 -m unittest -k test_forced_cluster_oracle_ignores_field_order tests.test_deck_data; rc=$?; git apply -R $P; test $rc -ne 0; } && ! grep -q '^index ' $P && node --test --test-name-pattern 'no.mutant.patch|every.mutant.patch|FU-6|N=4.shard.partition' tests/mutation_harness.test.js`
 4. **Retire the TODOS row.** Delete the subsection "Python oracle lacks a tie-break when a pitch appears in two zones" from `TODOS.md`. The `## Scale engine` heading stays, because the `labelShape` row remains under it.
-   - Acceptance: that heading text is gone, and the README currency suite stays green.
-   - Verify: `! grep -q 'Python oracle lacks a tie-break' TODOS.md && python3 -m unittest tests.test_readme_currency`
+   - Acceptance: that heading text is gone, the `## Scale engine` heading and the subsection "layout.test.js infers every zone's label shape from one ding label" remain, and the README currency suite stays green.
+   - Verify: `! grep -q 'Python oracle lacks a tie-break' TODOS.md && grep -qx '## Scale engine' TODOS.md && grep -q "^### layout.test.js infers every zone's label shape from one ding label" TODOS.md && python3 -m unittest tests.test_readme_currency`
 5. **Regression evidence, section 3 steps 1 to 5, locally.**
    - Acceptance: all green.
    - Verify: `python3 tools/inline_engine.py --check && python3 tools/sync_decks.py --check && git diff --quiet main -- data/decks.json index.html tools tests/fixtures && python3 -m unittest tests.test_render_agreement tests.test_pdf_build && python3 tools/refresh_mutants.py --check`
@@ -995,6 +995,7 @@ AFK auto-picks the recommendation. Each recommendation is the conservative optio
   - P5-11 (e2e setup duplication): below bars.
   - P5-12 (CONTRACT rule 4 and "six PDFs"): no DO bar. It is the first item for any future docs lane.
   - P5-13 (never-loaded tools): possibly a tracer limit.
+  - P5-20 (sub-second waits, about 5.3 s): not on the critical path.
 - **DROP:**
   - P5-14 (long functions nobody touches)
   - P5-15 (stale markup comment)
@@ -1002,7 +1003,6 @@ AFK auto-picks the recommendation. Each recommendation is the conservative optio
   - P5-17 (literal colours: aesthetic, pixel risk)
   - P5-18 (dead `select:focus` token)
   - P5-19 (no flakes)
-  - P5-20 (sub-second waits)
 - **Owner-gated:** G-1 to G-4 (section 10).
 - **Other TODOS rows, not refactors or test improvements:**
   - "Write DESIGN.md via /design-consultation" is design documentation with no measured cost.
