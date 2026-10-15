@@ -8,7 +8,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1304,6 +1304,7 @@
+@@ -1304,6 +1304,7 @@ footer.seq{row-gap:var(--sp-1)}
          </div>
        </div>
      </div>
@@ -16,11 +16,11 @@ diff --git a/index.html b/index.html
      <!-- Inside .sheetbody, in the scroll. It used to be pinned below the
           scrollport with the primary, on the argument that everything outside
           .sheetbody is what the sheet guarantees without scrolling - so the
-@@ -1331,7 +1332,6 @@
+@@ -1331,7 +1332,6 @@ footer.seq{row-gap:var(--sp-1)}
      <div class="ctlrow">
        <div id="scale-swatches" role="group" aria-label="Card palette"></div>
      </div>
 -   </div>
      <!-- The page's messages, pinned with the primary: everything say() writes
-          (#scale-msg, a warning first) and the layout notice (#scale-layout-state,
-          nearest the button it names). Outside .sheetbody so no scroll position,
+          (#scale-msg) and the layout notice (#scale-layout-state, nearest the
+          button it names); a pan warning yields to the notice while the notice

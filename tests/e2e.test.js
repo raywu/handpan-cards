@@ -6556,6 +6556,7 @@ function run() {
       assert.match(opened.text, /^Crowded pan/, `Edit opened with "${opened.text}", not the SMALL_LABELS warning`);
       assert.notStrictEqual(opened.display, "none", "the warning is hidden before any notice exists");
       assert.ok(Math.abs(opened.h - 2 * SG_LINE) < 0.5, `the warning is ${opened.h / SG_LINE} lines, the reviewer's repro needs two`);
+      assert.match(opened.cls, /\bpan\b/, "openEditSheet did not mark its warning .pan");
       await b.eval(`document.getElementById("scale-anchor-between").click(); return true;`);
       await b.settle();
       const noticed = await b.eval(`return { note: layoutNote.textContent, noticed: sheet.classList.contains("noticed"), display: getComputedStyle(msgLine).display, slot: document.getElementById("scale-guidance").getBoundingClientRect().height };`);
@@ -6571,6 +6572,13 @@ function run() {
         assertSeedBoxReadable(m, `the crowded pan on the Edit page with a ${kb}px keyboard`);
       }
       await b.clearKeyboard();
+      await b.eval(`document.getElementById("scale-anchor-one").click(); return true;`);
+      await b.settle();
+      const cleared = await b.eval(`return { note: layoutNote.textContent, noticed: sheet.classList.contains("noticed"), display: getComputedStyle(msgLine).display, text: msgLine.textContent };`);
+      assert.strictEqual(cleared.note, "", "returning to the default anchor left a layout notice");
+      assert.strictEqual(cleared.noticed, false, "paintLayout did not clear the sheet's noticed mark");
+      assert.notStrictEqual(cleared.display, "none", "the SMALL_LABELS warning did not return once the notice cleared");
+      assert.match(cleared.text, /^Crowded pan/, `the warning line reads "${cleared.text}" after the notice cleared`);
       await b.key("Escape", "Escape", 27);
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the Edit page to close" });
     } finally {

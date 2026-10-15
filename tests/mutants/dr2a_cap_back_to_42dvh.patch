@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -988,7 +988,7 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1008,7 +1008,7 @@ footer.seq{row-gap:var(--sp-1)}
  #scale-layout-state{color:#e3b25c}
  #scale-layout-zone.open #scale-plate-band{position:sticky; top:0; z-index:2; background:#1f1b15;
    padding-bottom:var(--sp-1)}
 -#scale-layout-zone.open #scale-preview{max-width:min(300px, 39dvh)}
 +#scale-layout-zone.open #scale-preview{max-width:min(300px, 42dvh)}
- .sheetbody:has(input:focus, textarea:focus, select:focus, #scale-swatches button:focus)
+ .sheetbody:has(input:focus, textarea:focus, #scale-swatches button:focus)
    #scale-layout-zone.open #scale-plate-band{position:static}
  #scale-layout-zone.open.nostick #scale-plate-band{position:static}
