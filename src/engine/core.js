@@ -934,7 +934,23 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return "custom:" + fnv1a32(identitySeed(seedOrFields));
   }
 
+  var LABEL_RATIO_DING = 0.70875;
+  var LABEL_RATIO_NOTE = 0.80325;
+  var LABEL_RATIO_BNOTE = 0.8232;
+  var NUM_RATIO = 0.64;
+  var OCTAVE_RATIO = 0.66;
+  var LABEL_WIDTH_RATIO = 1.47;
+  var LABEL_RULE = Object.freeze({
+    LABEL_RATIO_DING: LABEL_RATIO_DING,
+    LABEL_RATIO_NOTE: LABEL_RATIO_NOTE,
+    LABEL_RATIO_BNOTE: LABEL_RATIO_BNOTE,
+    NUM_RATIO: NUM_RATIO,
+    OCTAVE_RATIO: OCTAVE_RATIO,
+    LABEL_WIDTH_RATIO: LABEL_WIDTH_RATIO
+  });
+
   HPE.core = {
+    LABEL_RULE: LABEL_RULE,
     parseSeed: parseSeed,
     parseLegacySeed: parseLegacySeed,
     formatSeed: formatSeed,

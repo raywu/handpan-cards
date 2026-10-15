@@ -139,28 +139,24 @@ HPE.pdfcards = (function () {
 
   function noteW(name, octv, font, size) {
     return stringWidth(name, font, size) +
-           stringWidth(String(octv), font, size * 0.66);
+           stringWidth(String(octv), font, size * rule().OCTAVE_RATIO);
   }
 
   // ---- diagram label sizing (tools/hifi.py's label_ratio/label_size/num_size/fit_note) ----
   // One rule sizes every glyph the pan draws, in both outputs. See CLAUDE.md
   // under "Diagram label rule" for where the three ratios come from and why
   // the index number takes no 1.05.
-  var LABEL_RATIO_DING = 0.70875;
-  var LABEL_RATIO_NOTE = 0.80325;
-  var LABEL_RATIO_BNOTE = 0.8232;
-  var NUM_RATIO = 0.64;
-  var LABEL_WIDTH_RATIO = 1.47;
+  function rule() { return core().LABEL_RULE; }
 
   function labelRatio(zone) {
-    if (zone === "ding") return LABEL_RATIO_DING;
-    if (zone === "bottom") return LABEL_RATIO_BNOTE;
-    return LABEL_RATIO_NOTE;
+    if (zone === "ding") return rule().LABEL_RATIO_DING;
+    if (zone === "bottom") return rule().LABEL_RATIO_BNOTE;
+    return rule().LABEL_RATIO_NOTE;
   }
 
   function labelSize(r, zone) { return r * labelRatio(zone); }
 
-  function numSize(rNote) { return rNote * NUM_RATIO; }
+  function numSize(rNote) { return rNote * rule().NUM_RATIO; }
 
   function fitNote(name, octv, font, size, maxw) {
     while (size > 2.5 && noteW(name, octv, font, size) > maxw) size -= 0.1;
@@ -173,7 +169,7 @@ HPE.pdfcards = (function () {
     c.setFillColor(color || BLACK);
     c.setFont(font, size);
     c.drawString(x, y, name);
-    c.setFont(font, size * 0.66);
+    c.setFont(font, size * rule().OCTAVE_RATIO);
     c.drawString(x + stringWidth(name, font, size), y - size * 0.20,
                  String(octv));
     return w;
@@ -356,7 +352,7 @@ HPE.pdfcards = (function () {
         var dy = R * (g.ding_dy || 0.0);
         drawRing(c, cx, cy - dy, rr0, state(i, false));
         var fs0 = fitNote(nm, ov, "Label", labelSize(rr0, zone),
-                          rr0 * LABEL_WIDTH_RATIO);
+                          rr0 * rule().LABEL_WIDTH_RATIO);
         noteText(c, cx, cy - dy - rr0 * 0.30, nm, ov, "Label", fs0, INK);
         return;
       }
@@ -366,7 +362,7 @@ HPE.pdfcards = (function () {
       var px = cx + orb * Math.cos(a), py = cy + orb * Math.sin(a);
       drawRing(c, px, py, rr, state(i, zone === "bottom"));
       var fs = fitNote(nm, ov, "Label", labelSize(rr, zone),
-                       rr * LABEL_WIDTH_RATIO);
+                       rr * rule().LABEL_WIDTH_RATIO);
       noteText(c, px, py - rr * 0.30, nm, ov, "Label", fs, INK);
       if (numbers) {
         var nr, col, fnt;
@@ -649,6 +645,7 @@ HPE.pdfcards = (function () {
     CARD_WARNINGS: CARD_WARNINGS,
     labelRatio: labelRatio,
     labelSize: labelSize,
+    numSize: numSize,
     // exported for the port's own unit tests, not for the app
     _internal: {
       Canvas: Canvas, tracked: tracked,

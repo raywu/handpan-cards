@@ -57,14 +57,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   /* The legibility floor (A16, D15): print scale is R = round(PRINT_HALF /
    * ext, 1) points, and a label under LABEL_FLOOR_PT is crowded. The ratios
-   * are tools/hifi.py's LABEL_RATIO_NOTE, LABEL_RATIO_BNOTE and NUM_RATIO,
-   * pinned to them by tests/test_pdf_parity.py. */
+   * are HPE.core.LABEL_RULE's, read at call time in labelFloor, and
+   * tests/test_pdf_parity.py pins them to tools/hifi.py. */
   var PRINT_HALF = 74;
   var LABEL_FLOOR_PT = 3.6;
-  var PRINT_NOTE_RATIO = 0.80325;
-  var PRINT_BNOTE_RATIO = 0.8232;
-  var PRINT_NUM_RATIO = 0.64;
-  var PRINT_OCTAVE_RATIO = 0.66;
 
   var R_NOTE_MAX = 0.19;      /* hijaz / amara literal                       */
   var R_BNOTE_MAX = 0.1188;   /* pygmy literal                               */
@@ -466,6 +462,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
    * name. The bottom octave digit is excluded (D15). A pan with nothing to
    * label has no floor; it reports PRINT_HALF, far above LABEL_FLOOR_PT. */
   function labelFloor(geom) {
+    var rule = HPE.core.LABEL_RULE;
+    var PRINT_NOTE_RATIO = rule.LABEL_RATIO_NOTE;
+    var PRINT_BNOTE_RATIO = rule.LABEL_RATIO_BNOTE;
+    var PRINT_NUM_RATIO = rule.NUM_RATIO;
+    var PRINT_OCTAVE_RATIO = rule.OCTAVE_RATIO;
     var R = round(PRINT_HALF / geom.ext, 1);
     var sizes = [];
     if (geom.r_note > 0) {

@@ -679,20 +679,21 @@ class PdfEmitterGeometryTest(unittest.TestCase):
     def test_the_diagram_label_rule_carries_the_same_constants(self):
         """The no-shrink rule, third copy.
 
-        These five are the whole of the label rule, and CLAUDE.md fixes the
+        These six are the whole of the label rule, and CLAUDE.md fixes the
         baseline they are measured against. The parity test would catch a
         changed ratio as a wall of moved glyphs; this catches it as one line.
         """
-        with open(os.path.join(paths.ROOT, "src", "engine", "pdfcards.js"),
+        with open(os.path.join(paths.ROOT, "src", "engine", "core.js"),
                   encoding="utf-8") as fh:
             src = fh.read()
         for name, want in (("LABEL_RATIO_DING", hifi.LABEL_RATIO_DING),
                            ("LABEL_RATIO_NOTE", hifi.LABEL_RATIO_NOTE),
                            ("LABEL_RATIO_BNOTE", hifi.LABEL_RATIO_BNOTE),
                            ("NUM_RATIO", hifi.NUM_RATIO),
+                           ("OCTAVE_RATIO", hifi.OCTAVE_RATIO),
                            ("LABEL_WIDTH_RATIO", hifi.LABEL_WIDTH_RATIO)):
             m = re.search(r"var %s = ([\d.]+);" % name, src)
-            self.assertIsNotNone(m, "%s is gone from pdfcards.js" % name)
+            self.assertIsNotNone(m, "%s is gone from core.js" % name)
             self.assertEqual(float(m.group(1)), want, name)
 
     def test_each_label_rule_number_is_written_once_per_language(self):
