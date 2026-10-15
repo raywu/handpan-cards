@@ -475,7 +475,7 @@ gh run list --workflow validate.yml --limit 60 --json databaseId,headSha,conclus
 | 40 | e2e.test.js | card swipe (wheel): a second gesture after the 160ms gap advances again | STRONG | sw_wheel_gap_too_long |
 | 41 | layout.test.js | every name the app draws fits inside the field it labels | **WEAK** | shown in scratch; patch below. Bottom labels are modelled with the ding's shape (TODOS "layout.test.js infers every zone's label shape from one ding label") |
 
-**Counts:** 41 sampled: 39 STRONG (22 by mutant, 17 by reasoning), 2 WEAK, 0 TAUTOLOGY, 0 DUPLICATE. Neither WEAK test's subject is a hotspot: row 12's subject `paintLayout` has churn 2, and row 41's subject `pan` has churn 0. So both rows are DEFER (P5-4, P5-5).
+**Counts:** 41 sampled: 39 STRONG (21 by mutant: rows 2, 3, 11, 16, 18, 20, 21, 22, 23, 24, 26, 27, 29, 30, 32, 34, 35, 36, 37, 38, 40; 18 by reasoning: rows 1, 4, 5, 6, 7, 8, 9, 10, 13, 14, 15, 17, 19, 25, 28, 31, 33, 39; counted from this table's evidence column), 2 WEAK, 0 TAUTOLOGY, 0 DUPLICATE. Neither WEAK test's subject is a hotspot: row 12's subject `paintLayout` has churn 2, and row 41's subject `pan` has churn 0. So both rows are DEFER (P5-4, P5-5).
 
 **WEAK evidence 1 (row 12).** Setup: `git worktree add --detach $S/weak 2e25d38`, then apply the break below. The run was:
 
@@ -687,7 +687,7 @@ Fields per row: class / target / measured cost (command) / change / risk / pinni
 **P5-10**
 - **Class:** TEST-STRENGTHEN.
 - **Target:** engine uncovered ranges: select 12, voicing 9, sequence 7, pdfcards 6, share `utf8String` 5, core `validate` 2.
-- **Measured cost:** 42 uncovered ranges (4.4); engine churn is 0.
+- **Measured cost:** 41 uncovered ranges (4.4); engine churn is 0.
 - **Change:** add branch tests.
 - **Risk:** low.
 - **Pinning test:** new, per branch.
@@ -865,12 +865,12 @@ Pitfalls every lane carries:
    - Verify: `S=$(mktemp -d); python3 -m unittest tests.test_deck_data > $S/r1.log 2>&1; grep -qx 'FAILED (failures=1)' $S/r1.log && grep -q '^FAIL: test_forced_cluster_oracle_ignores_field_order' $S/r1.log && grep -q 'unforced card: tone below the root' $S/r1.log`
 2. **The fix.** In `_check_cluster`, change `key=midi` inside the `forced = any(...)` expression to `key=lambda g: (midi(g), zone(g) != "bottom")`. Nothing else in that method changes.
    - Acceptance: the new test is green, and all 28 tests in `tests.test_deck_data` are green.
-   - Verify: `python3 -m unittest tests.test_deck_data`
+   - Verify: `S=$(mktemp -d); python3 -m unittest -v tests.test_deck_data > $S/r2.log 2>&1; tail -1 $S/r2.log | grep -qx OK && grep -q '^Ran 28 tests' $S/r2.log && grep -qE '^test_forced_cluster_oracle_ignores_field_order .*\.\.\. ok$' $S/r2.log`
 3. **The killing mutant.** Create `tests/mutants/ro_oracle_zone_tie_break_dropped.patch`. Generate its body by reverting step 2 on the committed tree and running `git diff -- tests/test_deck_data.py`, then strip the `index` line. Headers:
    - `# kills: test_forced_cluster_oracle_ignores_field_order`
    - `# suite: python3 -m unittest -k test_forced_cluster_oracle_ignores_field_order tests.test_deck_data`
    - Acceptance: the patch applies cleanly, the named test fails under it and passes after reverse-apply, and the harness lint passes.
-   - Verify: `P=tests/mutants/ro_oracle_zone_tie_break_dropped.patch; git apply --check $P && git apply $P && { python3 -m unittest -k test_forced_cluster_oracle_ignores_field_order tests.test_deck_data; rc=$?; git apply -R $P; test $rc -ne 0; } && ! grep -q '^index ' $P && node --test --test-name-pattern 'no.mutant.patch.carries.a.blob.header|every.mutant.patch.applies' tests/mutation_harness.test.js`
+   - Verify: `P=tests/mutants/ro_oracle_zone_tie_break_dropped.patch; git apply --check $P && git apply $P && { python3 -m unittest -k test_forced_cluster_oracle_ignores_field_order tests.test_deck_data; rc=$?; git apply -R $P; test $rc -ne 0; } && ! grep -q '^index ' $P && node --test --test-name-pattern 'no.mutant.patch|every.mutant.patch|FU-6|N=4.shard.partition' tests/mutation_harness.test.js`
 4. **Retire the TODOS row.** Delete the subsection "Python oracle lacks a tie-break when a pitch appears in two zones" from `TODOS.md`. The `## Scale engine` heading stays, because the `labelShape` row remains under it.
    - Acceptance: that heading text is gone, and the README currency suite stays green.
    - Verify: `! grep -q 'Python oracle lacks a tie-break' TODOS.md && python3 -m unittest tests.test_readme_currency`
