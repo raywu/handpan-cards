@@ -107,7 +107,7 @@ Counted per figure:
 3. **Pinning tests and new tests.** Every pinning test named in the lane is green on `main` before the change and at the head after. Every new test is shown RED against a deliberate break, committed as a mutant in `tests/mutants/` whose `# kills:` names it (CONTRACT rule 3).
 4. **Mutation gate.** It is green at the head SHA, the corpus count does not fall, and `python3 tools/refresh_mutants.py --check` is green.
 5. **Suite health.** `tests/suite_health.py` is green at the head, and no FLOORS row is lowered.
-6. **CI.** CI's `validate` run at the PR's verified head SHA concluded success (`gh run list --commit <sha> --workflow validate --json conclusion`).
+6. **CI.** CI's `validate` run at the PR's verified head SHA concluded success (`gh run list --commit <full sha> --workflow validate --json conclusion`).
 
 No lane renames or deletes a test. No lane edits an existing test's assertion except to make it stricter or equivalent, with equivalence shown by the same mutants still killing it.
 
@@ -142,7 +142,7 @@ The section 1 counting command returns 20 lines at `7ef7fda` and 12 on the proto
 
 ### 4.2 Load order and loaders
 
-- **`tools/inline_engine.py` `MODULES`:** fontdata, pdf, pdfdeck, pdfcards, core, voicing, layout, naming, select, share, sequence. pdfcards loads before core, so pdfcards must read `HPE.core` at call time. It already has `function core() { return HPE.core; }` (`grep -c 'core()' src/engine/pdfcards.js` gives 6 uses before the change).
+- **`tools/inline_engine.py` `MODULES`:** fontdata, pdf, pdfdeck, pdfcards, core, voicing, layout, naming, select, share, sequence. pdfcards loads before core, so pdfcards must read `HPE.core` at call time. It already has `function core() { return HPE.core; }` (`grep -c 'core()' src/engine/pdfcards.js` gives 6 lines before the change, the definition included).
 - **`grep -n 'HPE.core' src/engine/layout.js`:** `fieldsOf` and `badNote` already read `HPE.core` at call time.
 - **Layout without pdfcards.** `grep -rnE 'loadEngine\(|FULL_ENGINE_MODULES = ' tests tools | grep layout | grep -vE 'pdfcards.(,|\])' | wc -l` gives **21**. They fall into the two groups exactly as the prompt lists them:
   - **Group 1 (reach `labelFloor`), 16 lines:** layout.test.js:21, test_pdf_parity.py:365, select.test.js:27, sequence.test.js:422, 1224 and 1280 (`FULL_ENGINE_MODULES`, passed at 1293, 2163, 2207 and 2264), the eight pdfcards.test.js lines, gen_deck.js:132 and regen_engine_corpus.js:41.
@@ -186,7 +186,7 @@ Further greps:
 - `ls tests/mutants | wc -l` gives **942**.
 - `python3 tools/refresh_mutants.py --check` at `7ef7fda` exits 0.
 - `grep -lE 'PRINT_NOTE_RATIO|LABEL_RATIO|NUM_RATIO|labelRatio|label_ratio|size \* 0\.66|fs\*0\.66' tests/mutants/*` gives **11**, the eleven the prompt names. `c_bottom_label_stored_figure`'s removed line is hifi.py's `fs = fit_note(nm, ov, "Label", label_size(rr, zone),` call.
-- **Recommended change.** The removed and context lines it changes, grepped against every patch's `-` and ` ` lines, hit five patches: `c_octave_digit_shrunk_under_the_floor` (hifi `size * 0.66`), `h_pdfcards_label_ratio_flat`, `r4a_label_size_drops_the_inflation`, `r4a_label_size_name_ratio_doubled` and `r_num_size_app_fudge`.
+- **Recommended change.** On the proto, `R="${TMPDIR:-/tmp}/g1removed.txt"; git diff 7ef7fda HEAD -- src tools index.html tests/test_render_agreement.py | grep -E '^-[^-]' | sed 's/^-//' | grep -v '^[[:space:]]*$' | sort -u > "$R"; for p in tests/mutants/*.patch; do grep -E '^[- ]' "$p" | grep -v '^---' | sed 's/^.//' | grep -qxFf "$R" && basename "$p" .patch; done` prints five patches: `c_octave_digit_shrunk_under_the_floor` (hifi `size * 0.66`), `h_pdfcards_label_ratio_flat`, `r4a_label_size_drops_the_inflation`, `r4a_label_size_name_ratio_doubled` and `r_num_size_app_fudge`.
 - **Proto, before re-anchoring.** `python3 tools/refresh_mutants.py --check` lists:
   - 3 UNFIXABLE: `c_octave_digit_shrunk_under_the_floor`, `h_pdfcards_label_ratio_flat`, `r_num_size_app_fudge`;
   - 6 mechanically refreshable: `l0_id_hashed_from_canonical_string` and `u_palette_hashed_into_deckid` (core.js context near `HPE.core = {`), `r4a_label_size_drops_the_inflation`, `r4a_label_size_name_ratio_doubled`, `r4e_pdfcards_label_ratio_not_exported` and `r4e_pdfcards_label_size_not_exported`.
@@ -226,7 +226,7 @@ Further greps:
 
 **Option (a1): layout and the app read `HPE.pdfcards`; pdfcards keeps the literals.** I measured it in a scratch worktree at `7ef7fda`, with `labelFloor` reading `HPE.pdfcards` at call time and `numSize` exported.
 
-| suite | result |
+| suite (`node --test tests/<file>`, `python3 -m unittest tests.<module>`) | result |
 |---|---|
 | layout.test.js | 4 fail |
 | select.test.js | 46 fail |
@@ -361,13 +361,13 @@ Steps (TDD order). The verify commands run from `/Users/ray/Projects/handpan-car
      CI's full gate then covers every unchanged mutant.
 9. **Full local smoke, then CI.**
    - Accept: CI `validate` at the verified head SHA concluded success, including the mutation gate and suite health.
-   - Verify: `python3 tools/validate.py && python3 -m unittest discover -s tests -p 'test_*.py' && node --test tests/*.test.js`, then push. `gh pr view <pr> --json state,headRefOid,mergeable` (re-query once if the head lags), and `gh run watch` then `gh run list --commit <sha> --workflow validate --json conclusion`. Return in the same turn; never end the turn waiting.
+   - Verify: `python3 tools/validate.py && python3 -m unittest discover -s tests -p 'test_*.py' && node --test tests/*.test.js`, then push. `gh pr view <pr> --json state,headRefOid,mergeable` (re-query once if the head lags), and `gh run watch` then `gh run list --commit <full sha> --workflow validate --json conclusion`. Return in the same turn; never end the turn waiting.
 
 ### Lane R: `claude/g1-reconcile`, wave 2
 
 - **Worktree:** `.claude/worktrees/g1-reconcile`, from `origin/main` after Lane A merges.
 - **Goal:** the docs and counts state the new truth, each with the test that proves it.
-- **Non-goals:** any code, test, mutant or fixture edit.
+- **Non-goals:** any code, test, mutant or fixture edit, except the `test_render_agreement` FLOORS row in `tests/suite_health.py` that step 3 sets from CI.
 - **Owned files:** `README.md`, `tests/suite_health.py` (the FLOORS row only), `TODOS.md`, `CLAUDE.md`.
 - **Pinning tests** (green on main before): `tests/test_readme_currency.py` `test_the_mutant_count_is_stated_within_a_lane_of_the_truth` and `test_stale_line_refs_in_comments_match_the_allowlist_exactly`; `tests/suite_health.py`; `test_the_diagram_label_rule_carries_the_same_constants`; `test_each_label_rule_number_is_written_once_per_language`.
 - **Mutant delta:** 0.
@@ -381,7 +381,7 @@ Steps (run from `/Users/ray/Projects/handpan-cards/.claude/worktrees/g1-reconcil
 
    Accept: two integers recorded in the PR body with the run id. Expected values are 944 and 27.
 
-   Verify: `gh run list --commit <Lane A merge sha> --workflow validate --json databaseId,headSha,conclusion` (conclusion success), then with `D=$(mktemp -d)`: `gh run download <id> -n python-results -D "$D"` and `gh run download <id> -p 'mutant-shard-report-*' -D "$D"`.
+   Verify: `gh run list --commit <Lane A merge sha, full 40 characters> --workflow validate --json databaseId,headSha,conclusion` (conclusion success), then with `D=$(mktemp -d)`: `gh run download <id> -n python-results -D "$D"` and `gh run download <id> -p 'mutant-shard-report-*' -D "$D"`.
 2. **README.** "942 mutant patches" becomes the CI figure.
    - Accept: test green.
    - Verify: `python3 -m unittest -k test_the_mutant_count_is_stated_within_a_lane_of_the_truth tests.test_readme_currency`
@@ -409,7 +409,7 @@ No file is in two lanes, and no wave has two lanes.
 
 Every lane must satisfy all of the following before merge:
 
-- **CI.** CI `validate` concluded success at a head SHA verified against the local tip. Gate on `gh run list --commit <sha> --workflow validate --json conclusion`, not on `gh pr checks` buckets, because a check-run can sit `in_progress` with conclusion success.
+- **CI.** CI `validate` concluded success at a head SHA verified against the local tip. Gate on `gh run list --commit <full sha> --workflow validate --json conclusion`, not on `gh pr checks` buckets, because a check-run can sit `in_progress` with conclusion success.
 - **Review.** An independent `swarm-reviewer` returned PASS or PASS_WITH_NITS at that same SHA. A FAIL is fixed and re-reviewed by a fresh reviewer.
 - **Gates.** The mutation gate and suite health are green at that SHA. A lone survivor on an unrelated diff is rerun at the same SHA first.
 - **Ownership.** No ownership violation: the diff touches only the lane's owned files.
@@ -468,6 +468,8 @@ No proposal changes a visible pixel. The app's `.62em` note-line subscript is no
 - **The app's note-line subscript `.notesline sub{font-size:.62em}`.** It is a different figure from print's 0.66. Unifying it would move app pixels, which is a visual change for the owner and not part of a pure refactor.
 - **The generated engine-region copies in `index.html`.** They are generated; `inline_engine.py --check` and validate check 4 guard them.
 - **`tests/coverage_merge.test.js`'s `LABEL_SIZE` source-line fixture.** It is unchanged because Lane A keeps that line byte-identical.
+- **The six figures in Lane A's new `test_each_label_rule_number_is_written_once_per_language`** (`0.70875`, `0.80325`, `0.8232`, `1.47`, `0.64`, `0.66`). They are the guard's search keys, not a seventh source, and test files do not count. A changed value at the source makes the guard count 0 for the old figure and fail, so the list cannot drift silently (`lr_core_octave_ratio_drifts` shows this for 0.66).
+- **Two docstrings that name copies:** `tests/test_pdf_parity.py:358` ("the engine's own copy") and `tests/test_render_agreement.py:680` ("third copy", about the no-shrink rule). Their tests stay correct; the wording is history and no lane rewrites it, to keep Lane A's diff to the change itself.
 
 ## 12. Risk register
 
