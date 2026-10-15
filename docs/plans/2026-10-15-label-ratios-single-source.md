@@ -198,9 +198,9 @@ Further greps:
 - **README.** `grep -n 'mutant patches' README.md` gives line 154, "942 mutant patches".
 - **CLAUDE.md.** `grep -n 'The constants live twice' CLAUDE.md` gives 329. The sentence says the constants live in hifi.py and `pan()` in index.html. It was already inexact at `7ef7fda`, because the JS copy sat in pdfcards.js and layout.js, not `pan()`.
 - **TODOS.md.** `grep -n 'Diagram label ratios are held three times' TODOS.md` gives 54 (row 54-59). Rows are retired by deletion; see the `b06eb3d` "TODOS: retire the cluster-oracle tie-break row" precedent.
-- **Stale comment.** `grep -n 'index.html' tools/hifi.py` gives hifi.py:72 (proto 77), "the same constants and the same arithmetic live in `pan()` in index.html". It goes stale and Lane A rewrites it.
+- **Stale comment.** `grep -n 'index.html' tools/hifi.py` gives hifi.py:73 (proto 77), "the same constants and the same arithmetic live in `pan()` in index.html". It goes stale and Lane A rewrites it.
 - **No CLAUDE.md test.** `grep -rn 'CLAUDE.md' tests/*.py tests/*.js` hits only comments. No test parses CLAUDE.md's label sentence, so Lane R's sentence is proved by the code tests it cites.
-- **Origins.** `grep -n 'G-1' docs/plans/2026-10-14-refactor-pass-5.md` gives 211, 791, 963 (the proposal) and 1005. `grep -n -i 'label ratio' docs/plans/2026-10-06-scale-syntax-and-layout-drawer.md` gives 2458, "Unifying the label ratios into one source (TODOS; risk 8 stands)".
+- **Origins.** `grep -n 'G-1' docs/plans/2026-10-14-refactor-pass-5.md` gives 211, 791, 963 (the proposal), 1005 and 1038 (pass 5's self-score row). `grep -n -i 'label ratio' docs/plans/2026-10-06-scale-syntax-and-layout-drawer.md` gives 572 (a reads-only list), 2458, "Unifying the label ratios into one source (TODOS; risk 8 stands)", and 2558 (the AD-ER-9 row that filed the TODOS entry).
 
 ### 4.6 Per-option measurements
 
@@ -211,7 +211,7 @@ Further greps:
   - `node --test tests/layout.test.js tests/select.test.js tests/pdfcards.test.js tests/sequence.test.js tests/share.test.js tests/core.test.js tests/pdf_builtin.test.js tests/coverage_merge.test.js` gives **408 pass, 0 fail**.
   - `node --test tests/app.test.js` gives **502 pass, 0 fail**.
 - **Python:**
-  - `python3 -m unittest tests.test_render_agreement tests.test_print tests.test_pdf_parity tests.test_gen_deck` gives **Ran 114, OK**.
+  - `python3 -m unittest tests.test_render_agreement tests.test_print tests.test_pdf_parity tests.test_gen_deck` gives **Ran 115, OK** (114 at `7ef7fda` plus the guard test).
   - `python3 -m unittest discover -s tests -p 'test_*.py'` gives **Ran 250, OK**.
   - `python3 -m unittest tests.test_pdf_build` gives OK.
 - **Tools and generated outputs:**
@@ -243,7 +243,7 @@ So (a1) must change 7 files' load lists, covering all 16 group-1 lines: layout.t
 **Option (b): hifi.py reads the JS source at import.** Not prototyped, because it is owner-gated.
 
 - **Literals after:** JS 6 (with a2's move), Python 0.
-- **Files:** hifi.py plus a regex reader, and every hifi-literal mutant. By the removed/context grep that is `c_num_outgrows_the_name`, `c_octave_digit_shrunk_under_the_floor` and `h_pdfcards_label_ratio_flat`.
+- **Files:** hifi.py plus a regex reader, and every hifi-literal mutant. By the removed/context grep, beyond a2's set, that is `c_num_outgrows_the_name` (and `c_label_density_reintroduced` if `label_ratio`'s return lines change).
 - **Constant pin.** `test_the_diagram_label_rule_carries_the_same_constants` becomes a tautology, because hifi would then hold whatever it parsed.
 - **New dependency.** The print pipeline gains a runtime read of a JS source file.
 
@@ -319,7 +319,7 @@ Steps (TDD order). The verify commands run from `/Users/ray/Projects/handpan-car
    - Add `numSize: numSize,` to the public export after `labelSize`, and keep it under `_internal`.
    - Leave the line `function labelSize(r, zone) { return r * labelRatio(zone); }` byte-identical, so the `coverage_merge.test.js` fixture needs no edit.
    - Accept: the pdfcards tests are green.
-   - Verify: `node --test tests/pdfcards.test.js tests/pdf_builtin.test.js tests/coverage_merge.test.js`
+   - Verify: `python3 tools/inline_engine.py && node --test tests/pdfcards.test.js tests/pdf_builtin.test.js tests/coverage_merge.test.js`
 5. **layout reads core.**
    - Delete `PRINT_NOTE_RATIO`, `PRINT_BNOTE_RATIO`, `PRINT_NUM_RATIO` and `PRINT_OCTAVE_RATIO` from module scope.
    - At the top of `labelFloor(geom)`, bind `var rule = HPE.core.LABEL_RULE;` and the four same-named locals from it. That keeps every `sizes.push` line byte-identical, so `g_bottom_octave_counted` and `c_label_density_reintroduced` keep their anchors.
@@ -348,12 +348,12 @@ Steps (TDD order). The verify commands run from `/Users/ray/Projects/handpan-car
    - The `# suite:` lines take the CONTRACT form, with no quotes:
      - `python3 -m unittest -k <test> tests.test_render_agreement`
      - `node --test --test-name-pattern ^...$ tests/<file>.test.js`, with `.` for spaces.
-   - Accept: `--check` green, 944 files, and each of the 11 named plus `c_bottom_label_stored_figure`, `l0_id_hashed_from_canonical_string`, `u_palette_hashed_into_deckid`, `ap3_panfield_ignores_sets`, `c_label_density_reintroduced`, `c_num_outgrows_the_name` and `g_bottom_octave_counted` killed. On the proto, the 11 named and `c_bottom_label_stored_figure` were killed by hand; `ap3_panfield_ignores_sets`, `c_label_density_reintroduced`, `c_num_outgrows_the_name` and `g_bottom_octave_counted` are unchanged and CI's gate covers them.
+   - Accept: `--check` green, 944 files, and every mutant in the loop below killed: the 3 rewritten, the 2 new, the 4 `r4a_`/`r4e_` refreshed, `l0_id_hashed_from_canonical_string`, `u_palette_hashed_into_deckid`, and the five with unchanged anchors `c_bottom_label_stored_figure`, `ap3_panfield_ignores_sets`, `c_label_density_reintroduced`, `c_num_outgrows_the_name`, `g_bottom_octave_counted`. On the proto all 16 were killed by hand (4.4).
    - Verify: `python3 tools/refresh_mutants.py --check && ls tests/mutants | wc -l | grep -qx 944`, then the loop below on a clean, committed tree. `tests/mutation_check.sh` takes no name filter (only `MUTANT_SHARD`), so each patch is applied by hand. A patch that edits `src/engine/*.js` is checked by the module-loading suites named in its `# suite:` line, the way the harness checks it.
      ```
-     for m in c_octave_digit_shrunk_under_the_floor h_pdfcards_label_ratio_flat r_num_size_app_fudge lr_core_octave_ratio_drifts lr_layout_floor_rewrites_a_literal r4a_label_size_drops_the_inflation r4a_label_size_name_ratio_doubled r4e_pdfcards_label_ratio_not_exported r4e_pdfcards_label_size_not_exported l0_id_hashed_from_canonical_string u_palette_hashed_into_deckid; do
+     for m in c_octave_digit_shrunk_under_the_floor h_pdfcards_label_ratio_flat r_num_size_app_fudge lr_core_octave_ratio_drifts lr_layout_floor_rewrites_a_literal r4a_label_size_drops_the_inflation r4a_label_size_name_ratio_doubled r4e_pdfcards_label_ratio_not_exported r4e_pdfcards_label_size_not_exported l0_id_hashed_from_canonical_string u_palette_hashed_into_deckid c_bottom_label_stored_figure ap3_panfield_ignores_sets c_label_density_reintroduced c_num_outgrows_the_name g_bottom_octave_counted; do
        p=tests/mutants/$m.patch; git apply "$p" || exit 1
-       sh -c "$(grep -m1 '^# suite:' "$p" | sed 's/^# suite:[[:space:]]*//')" >/dev/null 2>&1; rc=$?
+       PYTHONDONTWRITEBYTECODE=1 sh -c "$(grep -m1 '^# suite:' "$p" | sed 's/^# suite:[[:space:]]*//')" >/dev/null 2>&1; rc=$?
        git apply -R "$p"; [ $rc -ne 0 ] || { echo "SURVIVED $m"; exit 1; }
      done; git diff --quiet
      ```
@@ -444,7 +444,7 @@ Pitfalls that bind every lane and reviewer:
      - The print pipeline gains a runtime dependency on the text of `src/engine/core.js`, a new non-test cross-language read.
      - `test_the_diagram_label_rule_carries_the_same_constants` becomes a tautology, so the cross-language pin is lost rather than gained.
      - A regex parse error in a JS file breaks `python3 tools/decks.py`.
-     - `c_num_outgrows_the_name`, `c_octave_digit_shrunk_under_the_floor` and `h_pdfcards_label_ratio_flat` must be re-anchored on top of a2's set.
+     - `c_num_outgrows_the_name` must be re-anchored on top of a2's set.
    - It does not reduce the JS count further than a2.
 2. **(c) A JSON source plus a sync step** that writes both languages' constants.
    - *Benefit:* one hand-written literal set in total.
