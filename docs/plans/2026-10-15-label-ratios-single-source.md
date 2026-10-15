@@ -132,7 +132,7 @@ The two octave greps:
 Other figures confirmed at `7ef7fda`:
 
 - **Note line.** `note_text(... "Notes" ...)` is at hifi.py:244, and `noteText(... "Notes" ...)` is at pdfcards.js:255 (`sed -n 253,257p src/engine/pdfcards.js`).
-- **hifi.py readers.** `label_ratio`, `label_size` and `num_size` are at hifi.py:138-153. `fit_note(... LABEL_WIDTH_RATIO)` is at hifi.py:330-331 and 339-340.
+- **hifi.py readers.** `label_ratio`, `label_size` and `num_size` are at hifi.py:138-153. `fit_note(... LABEL_WIDTH_RATIO)` continuation lines are at hifi.py:331 and 340.
 - **pdfcards.js.** `labelRatio` is at 155, `labelSize` at 161 and `numSize` at 163. `LABEL_WIDTH_RATIO` is used at 359 and 369. The exports at 644-657 make `labelRatio` and `labelSize` public, and `numSize` appears only under `_internal`.
 - **App block.** `index.html` 8173-8175 reads `const labelSize = HPE.pdfcards.labelSize; const NUM_RATIO = 0.64; function numSize(rNote) { return rNote * NUM_RATIO; }`.
 - **Engine region markers in index.html.** pdfcards is 2656-3318, core 3319-4280 and layout 4603-5169.
@@ -234,7 +234,7 @@ Further greps:
 | pdfcards.test.js | 16 fail |
 | core.test.js | 1 fail (ET-1, through regen_engine_corpus.js) |
 | test_pdf_parity LabelFloorTest | fail |
-| test_gen_deck | 16 failures and 6 errors |
+| test_gen_deck | 16 failures and 3 to 6 errors (the count depends on the scratch build) |
 | `node tools/gen_deck.js ...` | exit 1 |
 | `node tools/regen_engine_corpus.js --check` | exit 1 |
 | share.test.js, app.test.js | 0 fail |
