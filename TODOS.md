@@ -56,6 +56,7 @@ real resize, so e2e drives the whole path against the shipped file.
 - **What:** decide a floor or a drop rule for the bottom octave digit.
 - **Why:** the owner excluded it from the small-labels warning (2026-10-06), so nothing reports it.
 - **Depends on:** the scale-syntax plan landing.
+- Decided 2026-10-15 (owner): leave.
 
 ## SMALL_LABELS has no next action
 
@@ -63,13 +64,7 @@ real resize, so e2e drives the whole path against the shipped file.
 - **Why:** design review 2026-10-13 (D7): the slot's longest tenant and its only message without a next step.
 - **Cons:** the string is engine output (`src/engine/core.js` REASONS, synced into `index.html` by `tools/inline_engine.py`); its source of truth is `docs/ENGINE-SPEC.md` section 2 ("Code enum and reason strings"), pinned by the test "REASONS is the ENGINE-SPEC section 2 table, verbatim" in `tests/core.test.js`, so changing the copy means editing the spec table first; the tests that read it match a prefix (`tests/select.test.js`, `tests/app.test.js`) or read REASONS live (`tests/pdfcards.test.js`, `tests/test_gen_deck.py`); no fixture or mutant carries it.
 - **Depends on:** the sheet guidance plan landing; owner opening N-7.
-
-## Sheet guidance follow-ups
-
-- **What:** three app-side nits from reviewer 3 on #303, recorded only (X2/X3 build):
-  - No test pins that the pan warning returns when the notice clears; assert display is not none after tapping `#scale-anchor-one` in the N-A7 crowded test.
-  - The `.pan` class add at `openEditSheet` and the collision branch are unpinned by mutants.
-  - The markup comment above `#scale-guidance` in `index.html` still says "a warning first" and omits the yield.
+- Decided 2026-10-15 (owner): leave.
 
 ## Sheet literal colours into CSS variables
 
@@ -77,15 +72,10 @@ real resize, so e2e drives the whole path against the shipped file.
 - **Why:** design review 2026-10-14 of the remove-degrees plan, pass 5 (no DESIGN.md; the plan names only existing tokens); Codex P3, decision D11.
 - **Depends on:** nothing; pairs with the "Write DESIGN.md via /design-consultation" row.
 
-## Drop the dead select:focus term of the band rule
-
-- **What:** the `.sheetbody:has(... select:focus ...)` band rule in `index.html` still names `select:focus`, and the sheet has no `<select>` since 2026-10-14 (`#print-paper-select` is outside `.sheetbody`); one-token removal.
-- **Why:** left in place by owner-style decision R-4 (the removal list was rules that NAME `#scale-degrees`); design review 2026-10-14, decision D11.
-- **Depends on:** nothing.
-
 ## Share links re-store an explicit parent index
 
 - **What:** `openShare()` persists the decoded `options.parent`, so a link minted under an override re-stores that index over an inferred record (test "RD: opening a share link that carries an explicit parent stores that parent again, after an inferred SAVE included" pins it).
 - **Why:** the 2026-10-14 removal infers on every SHEET save only; links were left honoured (R-3). Owner question from eng review 2026-10-14 (E4/E5, option B), no lane. Pros of changing: "infer always" would then be literally true.
 - **Cons:** a link would no longer restore the exact deck the sender sees, a standing decision (test "a share link restores the exact deck, and options never move the id"), and the share format would carry a dead field.
 - **Depends on:** nothing.
+- Decided 2026-10-15 (owner): keep as is.
