@@ -681,7 +681,7 @@ Fields per row: class / target / measured cost (command) / change / risk / pinni
 - **Change:** add tests that drive placeholder failure, touch cancel and animation rejection.
 - **Risk:** low.
 - **Pinning test:** new, one per function.
-- **Verdict:** DEFER. Pass 4's `-coverage` doc classed these as LIVE, unexecuted; no input has changed and there is no DO bar.
+- **Verdict:** DEFER. Pass 4's `-coverage` doc classed the first two as LIVE, unexecuted branch and the `springBack` handler as LIVE, defensive; no input has changed and there is no DO bar.
 
 **P5-10**
 - **Class:** TEST-STRENGTHEN.
@@ -712,7 +712,7 @@ Fields per row: class / target / measured cost (command) / change / risk / pinni
 
 **P5-13**
 - **Class:** HARNESS.
-- **Target:** never-loaded tools: `tools/boot_sim.js`, `tools/regen_pan_fixture.js`, `tools/refresh_mutants.py`, `tools/regen_data_mutants.py`; plus `tools/sandbox.js` with 22 zero functions.
+- **Target:** never-loaded tools: `tools/boot_sim.js`, `tools/regen_pan_fixture.js`, `tools/refresh_mutants.py`, `tools/regen_data_mutants.py`, and `tools/validate.py` (1 of 9 defs executed); plus `tools/sandbox.js` with 22 zero functions.
 - **Measured cost:** zero coverage under the coverage run (4.4).
 - **Change:** confirm which are subprocess-only, and add direct tests where they are not.
 - **Risk:** low.
@@ -769,7 +769,7 @@ Fields per row: class / target / measured cost (command) / change / risk / pinni
 **P5-18**
 - **Class:** REFACTOR.
 - **Target:** the dead `select:focus` term of the `.sheetbody:has(...)` band rule (TODOS).
-- **Measured cost:** none. One token, and not in coverage's 8 unused rules.
+- **Measured cost:** none. Two tokens, one in each of the two `.sheetbody:has(...)` rules (index.html:1012, index.html:1016), and neither rule is among coverage's 8 unused rules.
 - **Change:** delete the token.
 - **Risk:** low.
 - **Pinning test:** DR1 band tests.
@@ -974,7 +974,7 @@ AFK auto-picks the recommendation. Each recommendation is the conservative optio
 **G-3. A floor or drop rule for the bottom-shell octave digit.**
 - TODOS records 3.2 pt on dense generated pans, below the 3.6 pt the pipeline treats as readable. The owner excluded it from SMALL_LABELS on 2026-10-06.
 - Benefit: legibility on dense pans.
-- Cost: a visible-pixel change in both renderers, plus re-pinning `test_no_label_falls_below_the_print_floor` and the render-agreement sizes.
+- Cost: a visible-pixel change in both renderers, on dense generated pans only. No built-in glyph moves: the smallest is Pygmy's bottom octave digit at 3.87 pt, and `test_no_label_falls_below_the_print_floor` (over `ALL_DECKS`) and the render-agreement sizes (`DECK_BY_ID`) cover the five built-ins only, so neither needs re-pinning. The rule needs a new test over a dense generated pan.
 
 **G-4. SMALL_LABELS copy with a next action.**
 - Benefit: from design review D7 (2026-10-13), the slot's longest message would gain an action.
