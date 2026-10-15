@@ -381,7 +381,7 @@ That gives 91 lines:
 | tests/harness.test.js | 11 |
 | tests/mutation_harness.test.js | 2 (both in comments) |
 
-Literal browser waits, from `grep -oE '(sleep|waitElapsed)\(\s*[0-9_]+'`:
+Literal browser waits, from `git grep -h -oE '(sleep|waitElapsed)\(\s*[0-9_]+' 2e25d38 -- tests/e2e.test.js tests/drawer_drag.test.js tests/harness.test.js tests/helpers | sort | uniq -c`:
 
 | wait | count |
 |---|---|
@@ -395,15 +395,14 @@ Literal browser waits, from `grep -oE '(sleep|waitElapsed)\(\s*[0-9_]+'`:
 | `sleep(200)` | 1 |
 | `waitElapsed(180)` | 1 |
 | `waitElapsed(150)` | 1 |
-| `sleep(100)` | 9 |
+| `sleep(100)` | 7 |
 | `sleep(60)` | 1 |
 | `sleep(50)` | 1 |
 | `sleep(30)` | 1 |
 | `sleep(8)` | 3 |
-| `sleep(0)` | 5 |
 | `waitElapsed(0)` | 1 |
 
-Together they come to about 5.3 s per full pass.
+Together they come to 5064 ms, about 5.1 s per full pass. (The same pattern over all of tests/ also hits tests/test_suite_health.py: two time.sleep(100) in fake grandchild processes and five time.sleep(0.05 to 0.3) polls, which are not browser waits.)
 
 The longer values are not paid in a green run, so they are not waits:
 
@@ -723,7 +722,7 @@ Fields per row: class / target / measured cost (command) / change / risk / pinni
 **P5-20**
 - **Class:** TEST-SPEED.
 - **Target:** e2e and harness fixed sleeps (all at most 450 ms) and the harness 60 s and 15 s bail timers.
-- **Measured cost:** about 5.3 s of literal waits per pass; the bail timers are never paid green (4.5).
+- **Measured cost:** about 5.1 s of literal browser waits per pass; the bail timers are never paid green (4.5).
 - **Change:** none.
 - **Risk:** none.
 - **Pinning test:** none.
@@ -995,7 +994,7 @@ AFK auto-picks the recommendation. Each recommendation is the conservative optio
   - P5-11 (e2e setup duplication): below bars.
   - P5-12 (CONTRACT rule 4 and "six PDFs"): no DO bar. It is the first item for any future docs lane.
   - P5-13 (never-loaded tools): possibly a tracer limit.
-  - P5-20 (sub-second waits, about 5.3 s): not on the critical path.
+  - P5-20 (sub-second waits, about 5.1 s): not on the critical path.
 - **DROP:**
   - P5-14 (long functions nobody touches)
   - P5-15 (stale markup comment)
