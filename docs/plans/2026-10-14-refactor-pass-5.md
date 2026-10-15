@@ -204,7 +204,7 @@ N=25 node $S/fnlen.js src/engine/<module>.js "  "
 
 These are 23 named functions; the script's remaining two rows were regex artifacts (`select.anyField`/`nonDing` inner arrows) and are omitted.
 
-Among the top 25, `runGenerate`, `resetSheetState` and `sheetOptions` have churn 3; `syncParseState`, `buildChips`, `disarmDelete`, `hideSheet` and `paintLayout` have 2; the rest have 0 or 1 (4.1 function-churn command, per name). None reaches 5, so none is a hotspot.
+Among the top 25, `runGenerate`, `resetSheetState` and `sheetOptions` have churn 3; `syncParseState`, `buildChips`, `disarmDelete`, `hideSheet`, `paintLayout` and `deleteDeck` (1274d29, addc39f) have 2; the rest have 0 or 1 (4.1 function-churn command, per name). None reaches 5, so none is a hotspot.
 
 ### 4.3 Duplication (step 3)
 
@@ -239,7 +239,7 @@ jq -r '.files|to_entries[]|[.key,(.value.zeroFunctions|length),(.value.browserOn
 - the `gestureCancel` arrow in the touch-drag press handler;
 - the `springBack` `.finished.then(..., () => {})` rejection handler.
 
-Pass 4's `-coverage` doc already classed all three as "LIVE, unexecuted branch". No input has changed since, so they are not re-opened.
+Pass 4's `-coverage` doc already classed the first two as "LIVE, unexecuted branch" and the `springBack` handler as "LIVE, defensive". No input has changed since, so they are not re-opened.
 
 **Engine uncovered ranges:**
 
@@ -249,7 +249,7 @@ Pass 4's `-coverage` doc already classed all three as "LIVE, unexecuted branch".
 | voicing.js | 9 |
 | sequence.js | 7 |
 | pdfcards.js | 6 |
-| share.js | 5 (in `utf8String`) |
+| share.js | 5 (4 in `utf8String`, 1 in `zoneCounts`) |
 | core.js | 2 (in `validate`) |
 | layout.js | 1 |
 | pdf.js | 1 |
@@ -658,9 +658,9 @@ Fields per row: class / target / measured cost (command) / change / risk / pinni
 
 **P5-7**
 - **Class:** TEST-SPEED.
-- **Target:** the `drawer_grid` "DR1 rule G grid" sweep and its 9 mutants.
+- **Target:** the three `drawer_grid` tests ("DR1 rule G grid", "DR1 rule G boundary walk", "DR1 rule G by resize") and their 9 mutants (4, 3 and 2 by `# kills:`).
 - **Measured cost:** 3 to 108 s per mutant (seven of the nine take 46 to 108 s; dr1g_band_not_observed 4 s, dr1g_body_not_observed 3 s), about 520 s of shard time in all (`python3 $S/top.py $S/shard_*.log | grep -E 'dr1g|dr1_landscape'`, 4.5).
-- **Change:** fail fast at the first bad cell inside the sweep.
+- **Change:** fail fast at the first bad cell inside each of the three sweeps.
 - **Risk:** medium. It would change an existing test body, which needs equivalence shown on 9 mutants.
 - **Pinning test:** the three `drawer_grid` tests.
 - **Verdict:** DEFER. This is sweep work, not a fixed wait.
@@ -685,7 +685,7 @@ Fields per row: class / target / measured cost (command) / change / risk / pinni
 
 **P5-10**
 - **Class:** TEST-STRENGTHEN.
-- **Target:** engine uncovered ranges: select 12, voicing 9, sequence 7, pdfcards 6, share `utf8String` 5, core `validate` 2.
+- **Target:** engine uncovered ranges: select 12, voicing 9, sequence 7, pdfcards 6, share 5 (4 `utf8String`, 1 `zoneCounts`), core `validate` 2.
 - **Measured cost:** 41 uncovered ranges (4.4); engine churn is 0.
 - **Change:** add branch tests.
 - **Risk:** low.
