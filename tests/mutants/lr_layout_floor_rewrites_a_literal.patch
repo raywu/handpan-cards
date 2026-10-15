@@ -1,0 +1,16 @@
+# kills: test_each_label_rule_number_is_written_once_per_language
+# suite: python3 -m unittest -k test_each_label_rule_number_is_written_once_per_language tests.test_render_agreement
+# labelFloor writes the number ratio as a literal again. It draws the same,
+# so only the one-source guard sees the second copy.
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -465,7 +465,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     var rule = HPE.core.LABEL_RULE;
+     var PRINT_NOTE_RATIO = rule.LABEL_RATIO_NOTE;
+     var PRINT_BNOTE_RATIO = rule.LABEL_RATIO_BNOTE;
+-    var PRINT_NUM_RATIO = rule.NUM_RATIO;
++    var PRINT_NUM_RATIO = 0.64;
+     var PRINT_OCTAVE_RATIO = rule.OCTAVE_RATIO;
+     var R = round(PRINT_HALF / geom.ext, 1);
+     var sizes = [];

@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8112,7 +8112,7 @@ const escA = s => esc(s).replace(/"/g, "&quot;");
+@@ -8185,7 +8185,7 @@ const escA = s => esc(s).replace(/"/g, "&quot;");
+    Safe above the solver's budget because in the app the field circle itself
     bounds a name; ext comes from f_num on generated decks only. */
  const labelSize = HPE.pdfcards.labelSize;
- const NUM_RATIO = 0.64;
--function numSize(rNote) { return rNote * NUM_RATIO; }
-+function numSize(rNote) { return rNote * NUM_RATIO * 1.1; }
+-const numSize = HPE.pdfcards.numSize;
++const numSize = (rNote) => HPE.pdfcards.numSize(rNote) * 1.1;
+ const OCTAVE_RATIO = HPE.core.LABEL_RULE.OCTAVE_RATIO;
  
  /* pan()'s two per-field emitters, hoisted so pan() is the loop only. `sets` is
-  * chordSets()'s {blue, green}; C is the deck's colours. */

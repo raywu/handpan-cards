@@ -5,11 +5,11 @@
 diff --git a/tools/hifi.py b/tools/hifi.py
 --- a/tools/hifi.py
 +++ b/tools/hifi.py
-@@ -150,7 +150,7 @@ def note_text(c, x, y, name, octv, font, size, color=black, centre=True):
+@@ -171,7 +171,7 @@ def note_text(c, x, y, name, octv, font, size, color=black, centre=True):
      c.setFillColor(color)
      c.setFont(font, size)
      c.drawString(x, y, name)
--    c.setFont(font, size * 0.66)
+-    c.setFont(font, size * OCTAVE_RATIO)
 +    c.setFont(font, size * 0.40)
      c.drawString(x + pdfmetrics.stringWidth(name, font, size), y - size * 0.20, str(octv))
      return w

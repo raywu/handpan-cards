@@ -7,12 +7,12 @@
 diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
 --- a/src/engine/pdfcards.js
 +++ b/src/engine/pdfcards.js
-@@ -144,8 +144,6 @@ HPE.pdfcards = (function () {
-   var LABEL_WIDTH_RATIO = 1.47;
+@@ -149,8 +149,6 @@ HPE.pdfcards = (function () {
+   function rule() { return core().LABEL_RULE; }
  
    function labelRatio(zone) {
--    if (zone === "ding") return LABEL_RATIO_DING;
--    if (zone === "bottom") return LABEL_RATIO_BNOTE;
-     return LABEL_RATIO_NOTE;
+-    if (zone === "ding") return rule().LABEL_RATIO_DING;
+-    if (zone === "bottom") return rule().LABEL_RATIO_BNOTE;
+     return rule().LABEL_RATIO_NOTE;
    }
  
