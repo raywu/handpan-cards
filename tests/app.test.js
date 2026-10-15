@@ -8614,6 +8614,9 @@ test("LF F-1 (a): a non-ASCII name with a valid scale keeps ADJUST LAYOUT enable
   assert.strictEqual(app.els["scale-box"].classList.contains("bad"), true);
   app.els["scale-layout-toggle"].click();
   assert.strictEqual(app.els["scale-drawer"].hidden, false, "the drawer did not open");
+  const crowded = lfEditBadName(CROWDED);
+  assert.match(crowded.els["scale-msg"].textContent, /^Crowded pan/, "the crowded seed under a refused name raised no warning");
+  assert.strictEqual(crowded.els["scale-msg"].classList.contains("pan"), true, "the name-refusal branch did not mark its warning .pan");
 });
 
 test("LF F-1 (b): a non-ASCII name with an unparseable scale still disables ADJUST LAYOUT", () => {

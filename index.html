@@ -1009,11 +1009,11 @@ footer.seq{row-gap:var(--sp-1)}
 #scale-layout-zone.open #scale-plate-band{position:sticky; top:0; z-index:2; background:#1f1b15;
   padding-bottom:var(--sp-1)}
 #scale-layout-zone.open #scale-preview{max-width:min(300px, 39dvh)}
-.sheetbody:has(input:focus, textarea:focus, select:focus, #scale-swatches button:focus)
+.sheetbody:has(input:focus, textarea:focus, #scale-swatches button:focus)
   #scale-layout-zone.open #scale-plate-band{position:static}
 #scale-layout-zone.open.nostick #scale-plate-band{position:static}
 .sheetbody{scroll-padding-top:var(--plate-band-h, 0px)}
-.sheetbody:has(input:focus, textarea:focus, select:focus, #scale-swatches button:focus){scroll-padding-top:0}
+.sheetbody:has(input:focus, textarea:focus, #scale-swatches button:focus){scroll-padding-top:0}
 @media (min-width:640px) and (min-height:700px){
   #scale-layout-zone.open #scale-preview{max-width:340px}
 }
@@ -1333,8 +1333,9 @@ footer.seq{row-gap:var(--sp-1)}
     </div>
    </div>
     <!-- The page's messages, pinned with the primary: everything say() writes
-         (#scale-msg, a warning first) and the layout notice (#scale-layout-state,
-         nearest the button it names). Outside .sheetbody so no scroll position,
+         (#scale-msg) and the layout notice (#scale-layout-state, nearest the
+         button it names); a pan warning yields to the notice while the notice
+         holds text. Outside .sheetbody so no scroll position,
          drawer state or soft keyboard puts them out of sight. Two lines are
          reserved; the enumerated states that need more grow it by 18px a line.
          Seed refusals, the parse line, the drawer status and the hints stay by
