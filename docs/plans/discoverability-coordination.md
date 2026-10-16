@@ -146,13 +146,14 @@ Spawned only after the section 5 trigger, cold, from this file. W5 owns `tools/g
 
 ### Cycle state
 ```
-Cycle: 1   Wave: 1c   Merged this batch: 880f054 (#319 W3), 2b7dadc (#320 W2), 6aa98c2 (#321 W1), f3901b3 (#322 W4). WAVE 1 COMPLETE 2026-10-16. Next: share-URL SU-A, then SU-D
+Cycle: 1   Wave: 1c   Merged this batch: 880f054 (#319 W3), 2b7dadc (#320 W2), 6aa98c2 (#321 W1), f3901b3 (#322 W4). WAVE 1 COMPLETE 2026-10-16. SU-A spawned 2026-10-16 (base f3901b3, reviewer budget 5, brief: share-url plan Briefing SU-A + gate-0 anchors + nits N0-N3 + row 18 EEA fix); SU-D after SU-A merges (budget 10). Share-url lanes run in this same swarm and this doc, by owner decision (third check-in)
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | W2 | ae60696a3b5621171 | released | discoverability/w2-harness (deleted) | #320 | 459bb76 | 2026-10-16 (CI 38963573972 success, 11 checks) | PASS_WITH_NITS | 0 | yes (main 2b7dadc) | nothing | no |
 | W1 | aae6253dabaf29952 | released | discoverability/w1-head-copy-ga (deleted) | #321 | c5edc61 | 2026-10-16 (CI 38970061893 success, 11 checks; first run at 5e6d25e failed on the kills-line lint + a shard-3 browser flake, fixed in c5edc61) | PASS_WITH_NITS | 0 | yes (main 6aa98c2) | nothing | no |
 | W3 | af6af65e9d198cd2e | released | discoverability/w3-site-files (deleted) | #319 | 7ad5ba9 | 2026-10-16 (CI 38961099995 success, 11 checks) | PASS_WITH_NITS | 0 | yes (main 880f054) | nothing | no |
 | W4 | a73559635b9c83956 | /Users/ray/Projects/handpan-cards/.claude/worktrees/agent-a73559635b9c83956 | discoverability/w4-docs-counts | #322 | bfea238 | 2026-10-16 (CI 38978260599 success) | PASS_WITH_NITS (after FAIL+2) | 2 | f3901b3 | nothing | released |
+| SU-A | a742bd8d5dbeb4ef7 | (Agent worktree, isolation: worktree) | share-url/su-a-app | pending | pending | pending | pending | 0 | no | nothing | live |
 ```
 
 Owner check-in 2026-10-16 (third): start share-URL execution (SU-A then SU-D) right after W4 merges, same swarm; row 18 privacy copy folded into SU-A; row 19 closed (keep); GA4 property, Measurement ID swap PR and DNS TXT after W4 merges.
