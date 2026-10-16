@@ -476,7 +476,7 @@ Print spec, measured from the commercial original at 300dpi: card
 page 1 (instruct printers: 100% / Actual Size; verify the bar with a ruler).
 If deck data changes: edit `data/decks.json` - the ONE canonical copy - then
 run `python3 tools/sync_decks.py` to re-inject it into `index.html`, edit the
-card counts in `#about` in `index.html` (checked by the about-section test
+deck names and card counts in `#about` in `index.html` (checked by the about-section test
 "the about section names every built-in deck with its card count from
 data/decks.json and the value line"), and
 `python3 tools/decks.py` to rebuild the PDFs. App and print cannot diverge:
@@ -567,18 +567,21 @@ stated here. Tests are in `tests/app.test.js` unless a file is named.
   inject"); no event parameter is a string over 40 characters or names a
   `custom:` id ("no event param is a string over 40 characters or names a
   custom: id"). The seven events are `deck_select`, `deck_route`, `scale_create`,
-  `card_flip`, `progression_view`, `pdf_download`, `share_open`; the other six
-  each have a test in the "discoverability: analytics events" describe, with two
-  exceptions: `deck_route` is proven in the "discoverability: deck route"
-  describe and `share_open` by "a valid share link tracks share_open with no
-  params".
+  `card_flip`, `progression_view`, `pdf_download`, `share_open`; all but
+  `deck_route` have a test in the "discoverability: analytics events" describe
+  (`share_open`'s is "a valid share link tracks share_open with no params"),
+  and `deck_route` is proven in the "discoverability: deck route" describe by
+  "a routed boot queues config before deck_route".
 - **Consent regions.** An inline, inert head script queues two
   `gtag("consent","default")` calls before `js` and `config`: open default
   (`analytics_storage` granted, ad storage denied) and a region-scoped denial
   of 32 EEA/UK/CH codes ("consent defaults come first, in order, and config
   follows them").
 - **Swapping the real measurement id (owner action, plan section 10).** Replace
-  the one `GA_MEASUREMENT_ID` literal in `index.html`. Swapping the real
+  the one `GA_MEASUREMENT_ID` literal in `index.html`, and leave the
+  `G-XXXXXXXXXX` comparison inside `analyticsAllowed()` alone: a blanket
+  find-and-replace of the placeholder would make the predicate false everywhere.
+  Swapping the real
   measurement id also changes the loader tests' anchor: `tests/app.test.js`
   rewrites the placeholder with `INDEX_HTML().replace('const GA_MEASUREMENT_ID =
   "G-XXXXXXXXXX";', ...)` at three sites, so the same PR must update that replace
@@ -586,7 +589,10 @@ stated here. Tests are in `tests/app.test.js` unless a file is named.
   constant"; "the loader appends the gtag script on a real host with a real id,
   and only then"; "analyticsAllowed is false for the placeholder id: no gtag
   script, no config, no event"; "consent defaults come first, in order, and
-  config follows them"; "a routed boot queues config before deck_route". Then
+  config follows them"; "a routed boot queues config before deck_route". The
+  fourth copy of the literal is the `includes` assertion in "the placeholder id
+  is the shipped constant" (`tests/app.test.js`), which must be updated to the
+  real id in the same PR. Then
   `./tests/run.sh`, PR, ordinary merge.
   The custom definitions (`deck_kind`, `deck_id`, `mode`, `tier`, `paper`,
   `has_bottom`; metric `note_count`) are registered in GA Admin by the owner;
