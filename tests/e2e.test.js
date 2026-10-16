@@ -8771,7 +8771,7 @@ function run() {
     // D2 re-plan step 4 (owner's five-button design, §4.2a): five mutually
     // exclusive practice buttons. There is no #modeS and no disabled state.
     const FLASH_STOPS = ["settings-trigger", "modeA", "modeB", "tier-basic", "tier-intermediate",
-      "tier-advanced", "deck-add", "print-download", "print-paper-select", ...RES_IDS];
+      "tier-advanced", "deck-add", "share-copy", "print-download", "print-paper-select", ...RES_IDS];
     const PROG_STOPS = [...FLASH_STOPS.slice(0, 6), "seq-source-link", ...FLASH_STOPS.slice(6)];
     const MODAL_VIEWPORTS = [[320, 568, true], [768, 1024, true], [568, 320, true], [683, 330, true], [844, 390, true]];
     const pressedFive = () => b.eval(`return ["modeA", "modeB", "tier-basic", "tier-intermediate", "tier-advanced"]
@@ -12204,8 +12204,11 @@ function run() {
 
       await b.eval(`document.getElementById("deck-add").focus(); return true;`);
       await b.key("Tab", "Tab", 9);
+      assert.strictEqual(await b.eval(`return document.activeElement.id;`), "share-copy",
+        "Tab from + ADD A SCALE does not reach COPY LINK");
+      await b.key("Tab", "Tab", 9);
       assert.strictEqual(await b.eval(`return document.activeElement.id;`), "deck-restore",
-        "Tab from + ADD A SCALE does not reach RESET SEEDED DECKS");
+        "Tab from COPY LINK does not reach RESET SEEDED DECKS");
 
       await b.click("#deck-restore");
       await b.waitFor(`document.getElementById("deck-restore").hasAttribute("data-armed")`,
