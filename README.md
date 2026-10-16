@@ -154,9 +154,21 @@ What is covered:
 - **Browser e2e** - real Chromium: deck switching, the 3D card flip, keyboard
   and touch navigation, reload persistence, clipping at a 380px viewport, and
   the scale sheet's modality, focus handling and 44px hit areas.
-- **Mutation gate** - 948 mutant patches under `tests/mutants/`, each one a
+- **Mutation gate** - 981 mutant patches under `tests/mutants/`, each one a
   deliberate break that some test must catch. The gate is all-or-nothing: one
   survivor fails it. A test nothing can kill does not count as coverage.
+
+**Discoverability.** `robots.txt`, `sitemap.xml` and an empty `.nojekyll` sit at
+the repo root, which GitHub Pages serves as the site root; the sitemap lists
+exactly the site root (`tests/test_site_files.py`:
+`test_sitemap_lists_exactly_the_site_root`, `test_robots_names_the_absolute_sitemap`).
+A `#deck=<slug>` link opens a built-in deck (`tests/app.test.js` "every slug
+opens its built-in deck, persists it, and leaves a clean address"), and the
+about section below the card names every deck with its card count ("the about
+section names every built-in deck with its card count from data/decks.json and
+the value line"). GA4 stays off until the real measurement id replaces the
+placeholder ("the placeholder id is the shipped constant"); see CLAUDE.md,
+"Discoverability".
 
 That is 23 node suites (`tests/*.test.js`) and 15 python suites
 (`tests/test_*.py`), plus `tests/suite_health.py`, which holds a per-file floor

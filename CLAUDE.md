@@ -497,6 +497,113 @@ Refactor pass 4 (`docs/plans/2026-10-09-refactor-pass-4.md`) used it to
 separate dead code from unreached-but-live code; its report is
 `docs/plans/2026-10-09-refactor-pass-4-coverage.md`.
 
+## Discoverability (2026-10-16, PRs #319-#321; plan `docs/plans/2026-10-16-discoverability.md`)
+
+Every sentence names the test that proves it; a behaviour with no test is not
+stated here. Tests are in `tests/app.test.js` unless a file is named.
+
+- **Deck route.** `#deck=<slug>` opens a built-in deck; the five slugs map to
+  the seeded ids (`kurd`, `amara10`, `amara`, `pygmy`, `hijaz`) in `DECK_SLUGS`.
+  Proved by "every slug opens its built-in deck, persists it, and leaves a clean
+  address". The route is consumed with `replaceState`, never `pushState` ("the
+  route is consumed with replaceState, never pushState"), beats the stored deck
+  ("a route beats the stored deck"), and an unknown slug, a `custom:` id or an
+  empty slug fall back silently and lose the hash ("an unknown slug, a custom id
+  and an empty slug fall back silently and lose the hash"). A share link is
+  untouched by it ("a share link is untouched by the route"). An edited seed
+  shows its replacement with no warning ("an edited seed shows its replacement,
+  with no warning"); a deleted one falls back to the default deck and says so
+  ("a deleted seed falls back to the default deck and says the deck is gone").
+  In-page links fire `hashchange`, not a boot: "hashchange to a deck link selects
+  that deck and clears the hash", "hashchange resolves an edited seed to its
+  replacement and a deleted seed to a warning", "hashchange ignores the other
+  routes". In a real browser: `tests/e2e.test.js` "a #deck= link opens that deck
+  at 380px and the address bar loses the hash" and "clicking an about-section
+  deck link on / switches the deck without a reload".
+- **About section.** `<section id="about">` sits after `#app` and before the
+  sheet, and `#app` wraps header, main, footer and the live region ("#app wraps
+  header, main, footer and the live region in that order, and #about follows it
+  before the sheet"). `#about` is in both inert lists (`panelBackground` and the
+  sheet's `background`) and `#app` is in neither, because `#app` holds the
+  settings trigger ("#about is in both inert lists and #app in neither"). Its
+  text names every built-in deck with its card count from `data/decks.json`, the
+  value line, the Celtic Minor equivalence, the custom-scale and Google
+  Analytics sentences, and a three-step list ("the about section names every
+  built-in deck with its card count from data/decks.json and the value line");
+  it links every deck by slug ("the about section links every built-in deck by
+  its slug"). It is below the first screen with no horizontal scroll at 380px
+  (`tests/e2e.test.js` "the about section is visible below the card at 380px
+  with no horizontal scroll") and the card keeps its origin/main size
+  ("the card keeps its origin/main size with the about section below the first
+  screen"). Its screen rules sit before `@media print{`
+  (`tests/test_render_agreement.py::test_print_block_is_last_in_the_style_element`).
+  Card counts in the about text come from the data, so a deck change needs no
+  edit here.
+- **Structured data.** One `application/ld+json` WebApplication block; it states
+  only what the page shows: name equals the `<h1>`, description equals the meta
+  description, no rating or review, and the about section says "free" ("the
+  JSON-LD block parses and states only what the page shows"). The harness skips
+  any `<script>` whose type is not JavaScript, so the block never runs ("boot
+  skips a script whose type is not JavaScript", `tests/harness.test.js`).
+- **Analytics (GA4).** `GA_MEASUREMENT_ID` is one constant, shipped as the
+  placeholder `G-XXXXXXXXXX` ("the placeholder id is the shipped constant").
+  `analyticsAllowed()` is false for a `file:` page, `localhost`, `127.0.0.1`,
+  `[::1]`, `navigator.webdriver` and the placeholder ("analyticsAllowed is false
+  for <label>: no gtag script, no config, no event", one test per predicate);
+  the loader appends the gtag script only on a real host with a real id ("the
+  loader appends the gtag script on a real host with a real id, and only then").
+  `page_location` carries no hash, so a `#s=` share payload never reaches GA
+  ("page_location carries no hash, so a share payload never reaches GA").
+  `config` is queued before any event, including on a boot with a share link or a
+  routed boot ("config is queued before any event on a boot with a share link",
+  "a routed boot queues config before deck_route"); `track` pushes nothing when
+  the loader did not inject ("track pushes nothing when the loader did not
+  inject"); no event parameter is a string over 40 characters or names a
+  `custom:` id ("no event param is a string over 40 characters or names a
+  custom: id"). The seven events are `deck_select`, `deck_route`, `scale_create`,
+  `card_flip`, `progression_view`, `pdf_download`, `share_open`; the first six
+  each have a test in the "discoverability: analytics events" describe, and
+  `deck_route` is pinned by "a routed boot queues config before deck_route".
+- **Consent regions.** An inline, inert head script queues two
+  `gtag("consent","default")` calls before `js` and `config`: open default
+  (`analytics_storage` granted, ad storage denied) and a region-scoped denial
+  of 32 EEA/UK/CH codes ("consent defaults come first, in order, and config
+  follows them").
+- **Swapping the real measurement id (owner action, plan section 10).** Replace
+  the one `GA_MEASUREMENT_ID` literal in `index.html`. "the placeholder id is
+  the shipped constant" then fails by design and is rewritten for the new
+  literal in the same PR; the loader tests supply their own id
+  (`REAL_ID`), so they are unaffected. Then `./tests/run.sh`, PR, ordinary merge.
+  The custom definitions (`deck_kind`, `deck_id`, `mode`, `tier`, `paper`,
+  `has_bottom`; metric `note_count`) are registered in GA Admin by the owner;
+  no test sees that.
+- **E2E host block.** A full boot sends zero requests to googletagmanager.com and
+  google-analytics.com (`tests/e2e.test.js` "a full boot sends zero requests to
+  googletagmanager.com and google-analytics.com"), and `analyticsAllowed()` is
+  false in the harness ("analyticsAllowed() is false in the harness and the boot
+  sends zero analytics requests"). The e2e launch hides classic scrollbars so
+  `innerWidth` equals `documentElement.clientWidth` ("the e2e launch hides
+  classic scrollbars: innerWidth equals documentElement.clientWidth on a page
+  taller than the viewport"); the F-18 test "panel fit measures the same panel
+  with and without a classic scrollbar" re-enables the scrollbar for its own
+  measurement.
+- **Sandbox surface** (`tools/sandbox.js`, `tests/harness.test.js`): the sandbox
+  reports `navigator.webdriver` true unless told otherwise ("the sandbox reports
+  navigator.webdriver true unless told otherwise"), its document has a head that
+  records appended children ("the sandbox document has a head that records
+  appended children"), its location exposes protocol and hostname ("the sandbox
+  location exposes protocol and hostname"), it can dispatch `hashchange` ("the
+  sandbox can dispatch hashchange to window listeners"), and `boot` takes an
+  html string in place of the file ("boot takes an html string in place of the
+  file").
+- **Site files.** `robots.txt`, `sitemap.xml` and an empty `.nojekyll` sit at the
+  repo root, which Pages serves as the site root. `tests/test_site_files.py`:
+  `test_robots_allows_everything` (it asserts `User-agent: *` and `Allow: /`,
+  not the absence of `Disallow`), `test_robots_names_the_absolute_sitemap`,
+  `test_sitemap_locs_are_absolute_clean_urls`,
+  `test_sitemap_lists_exactly_the_site_root`,
+  `test_no_lastmod_and_nojekyll_is_empty`.
+
 ## Hosting facts (checked against GitHub docs)
 
 - Pages is free for public repos; private-repo Pages needs Pro/Team, and the
