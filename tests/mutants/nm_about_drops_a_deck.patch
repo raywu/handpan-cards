@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1230,7 +1230,6 @@ footer.seq{row-gap:var(--sp-1)}
-     <li>D Kurd 10: 49 chord cards</li>
-     <li>D Amara 10: 29 chord cards</li>
-     <li>D Amara 9: 27 chord cards</li>
--    <li>F3 Low Pygmy 18: 53 chord cards</li>
-     <li>C# Hijaz 9: 19 chord cards</li>
+@@ -1261,7 +1261,6 @@ footer.seq{row-gap:var(--sp-1)}
+     <li><a href="#deck=d-kurd-10">D Kurd 10: 49 chord cards</a></li>
+     <li><a href="#deck=d-amara-10">D Amara 10: 29 chord cards</a></li>
+     <li><a href="#deck=d-amara-9">D Amara 9: 27 chord cards</a></li>
+-    <li><a href="#deck=f-low-pygmy-18">F3 Low Pygmy 18: 53 chord cards</a></li>
+     <li><a href="#deck=c-sharp-hijaz-9">C# Hijaz 9: 19 chord cards</a></li>
    </ul>
    <p>D Amara is also sold as Celtic Minor.</p>

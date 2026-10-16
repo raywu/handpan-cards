@@ -5,11 +5,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8689,6 +8689,7 @@ function syncTierUI() {
+@@ -10859,6 +10859,7 @@ function syncTierUI() {
  // `prev` is empty: a tier switch must never reject a sequence merely because
  // the previous tier dealt the same chords.
  function setTier(t) {
 +  if (t === tier) return;
    tier = t; seq = null;
+   track("progression_view", { tier: t });
    if (mode === "S") setOrder();
-   setMode("S");

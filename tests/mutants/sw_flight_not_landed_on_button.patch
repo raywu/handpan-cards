@@ -10,11 +10,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8445,7 +8445,6 @@ document.addEventListener("click", e => {
+@@ -11274,7 +11274,6 @@ document.addEventListener("click", e => {
    // its release speed. A click that didn't come from a drag (eatClick
    // false) still lands a live flight, same as before.
    if (eatClick) { setEatClick(false); e.stopPropagation(); e.preventDefault(); return; }
 -  land();
  }, true);
  
- /* ---------------- go ---------------- */
+ /* ---------------- analytics ---------------- */

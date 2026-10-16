@@ -11,5 +11,5 @@ diff --git a/index.html b/index.html
 -  return Object.prototype.hasOwnProperty.call(DECK_SLUGS, slug) ? DECK_SLUGS[slug] : null;
 +  return Object.prototype.hasOwnProperty.call(DECK_SLUGS, slug) ? DECK_SLUGS[slug] : (slug.indexOf("custom:") === 0 ? slug : null);
  }
- // Two fallbacks, deliberately different. An unknown BUILT-IN id is a stale or
- // renamed deck and falls back SILENTLY, as it always has. A missing custom: id
+ // An in-page link (the about section) changes the hash without a reload, so no
+ // boot code runs. selectDeck gets the id deck() returns for the mapped seed,

@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11355,11 +11355,10 @@ sheet.setAttribute("hidden", ""); buildSwatches(); paintLayout(); resyncSheet(tr
+@@ -11349,11 +11349,10 @@ sheet.setAttribute("hidden", ""); buildSwatches(); paintLayout(); resyncSheet(tr
  // looks for it.
  restoreScales();
  const routedDeck = routedDeckId();
@@ -16,5 +16,5 @@ diff --git a/index.html b/index.html
 -// deck once keeps it, so the visitor does not land on the old one tomorrow.
 +deckId = deck().id; storedDeck = routedDeck ? visitorDeck : deckId; setOrder(); buildChips(); setMode(mode);
  if (routedDeck) track("deck_route", { deck_id: routedDeck });
- warnIfDeckGone(wantedDeck);
- // A page route in the address bar at boot is a RELOAD of a page, or a link
+ // Two fallbacks, deliberately different. An unknown BUILT-IN id is a stale or
+ // renamed deck and falls back SILENTLY, as it always has. A missing custom: id

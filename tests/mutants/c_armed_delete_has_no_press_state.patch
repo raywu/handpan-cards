@@ -14,11 +14,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -930,7 +930,6 @@
+@@ -1144,7 +1144,6 @@ footer.seq{row-gap:var(--sp-1)}
     the file - so without this the armed button is the only control on the page
     that does not answer a press. Confirming a delete is the press that most
     needs the acknowledgement. */
 -#scale-delete[data-armed]:active{color:#eae6df}
-
- /* ---- print (R1, 2026-09-29) -----------------------------------------------
-    Forces print colour adjustment, clears the page background and padding for
+ 
+ /* ---- the first screen and the about section (discoverability W1, plan D20) ----
+    #app holds header, main, footer and the live region and is exactly as tall

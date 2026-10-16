@@ -7,9 +7,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7571,4 +7571,4 @@
+@@ -11375,7 +11375,7 @@ if (location.hash === ADD_ROUTE || location.hash.indexOf(EDIT_ROUTE) === 0)
+ // followed it. "#s=" is disjoint from the page routes above, so the two reads
  // never see each other's hash.
  else if (location.hash.indexOf(SHARE_PREFIX) === 0)
 -  openShare(location.hash.slice(SHARE_PREFIX.length));
 +  void 0;
- </script>
+ // A deck link is consumed once, like the page routes: replaceState, so the
+ // clean URL is not an entry of its own and Back leaves the page.
+ else if (location.hash.indexOf(DECK_ROUTE) === 0)
