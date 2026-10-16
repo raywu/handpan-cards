@@ -95,7 +95,7 @@ Spawned only after the section 5 trigger, cold, from this file. W5 owns `tools/g
 | Lane | Current branch | State | Last update (UTC) | Last verdict |
 |---|---|---|---|---|
 | W1 | | unspawned | | |
-| W2 | `discoverability/w2-harness` | working (no PR yet) | 2026-10-16 | |
+| W2 | `discoverability/w2-harness` | PR #320 at 459bb76, CI green, reviewer spawned | 2026-10-16 | |
 | W3 | `discoverability/w3-site-files` | MERGED #319 (main 880f054) | 2026-10-16 | PASS_WITH_NITS |
 | W4 | | unspawned | | |
 
