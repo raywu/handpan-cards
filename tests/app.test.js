@@ -3918,24 +3918,27 @@ function linkHref(html, rel, extra = "") {
   return m[1];
 }
 
-test("the visible name is one string: title, h1, og:title and twitter:title", () => {
+const POSITIONING_TITLE = "Handpan Chords: Custom Scale Chord and Progression Practice";
+
+test("the title is the positioning string; og:title and twitter:title equal it; the h1 is the app name", () => {
   const html = headHtml();
   const title = /<title>([^<]*)<\/title>/.exec(html);
   assert.ok(title, "no <title>");
   const h1 = /<h1>([^<]*)<\/h1>/.exec(html);
   assert.ok(h1, "no <h1>");
-  assert.strictEqual(title[1], "Handpan Chords");
-  assert.strictEqual(h1[1], title[1], "the h1 differs from the tab title");
+  assert.strictEqual(title[1], POSITIONING_TITLE);
+  assert.strictEqual(h1[1], "Handpan Chords");
   assert.strictEqual(metaContent(html, "property", "og:title"), title[1]);
   assert.strictEqual(metaContent(html, "name", "twitter:title"), title[1]);
 });
 
-test("the description says progressions early, equals og:description and fits 120..160", () => {
+test("the description says free and progressions early, equals og:description and fits 120..155", () => {
   const html = headHtml();
   const desc = metaContent(html, "name", "description");
   assert.strictEqual(metaContent(html, "property", "og:description"), desc);
-  assert.ok(desc.length >= 120 && desc.length <= 160,
-    `description is ${desc.length} characters, outside 120..160`);
+  assert.ok(desc.length >= 120 && desc.length <= 155,
+    `description is ${desc.length} characters, outside 120..155`);
+  assert.ok(/\bfree\b/i.test(desc), "the description does not say free");
   const cut = desc.slice(0, 110);
   assert.ok(/progressions/.test(cut),
     `"progressions" is not inside the first 110 characters: ${JSON.stringify(cut)}`);
