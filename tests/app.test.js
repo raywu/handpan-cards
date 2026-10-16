@@ -9270,3 +9270,59 @@ test("RD: opening a share link that carries an explicit parent stores that paren
   assert.strictEqual(records(app)[0].o.parent, 2, "the link's parent was not stored again");
   assert.strictEqual(app.registry()[id].degrees["7"], "IV");
 });
+
+/* ---------------------------------------------------------------- discoverability */
+
+const INDEX_HTML = () => fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+const BUILTIN_DECKS = () => JSON.parse(fs.readFileSync(path.join(ROOT, "data", "decks.json"), "utf8"));
+const VALUE_LINE = "A free chord and progression practice tool for your own handpan scale.";
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+function aboutHtml() {
+  const m = /<section id="about"[^>]*>([\s\S]*?)<\/section>/.exec(INDEX_HTML());
+  assert.ok(m, 'no <section id="about"> in index.html');
+  return m[1];
+}
+
+const textOf = (html) => html.replace(/<[^>]*>/g, " ").replace(/&amp;/g, "&").replace(/\s+/g, " ").trim();
+
+describe("discoverability", () => {
+  test("the about section names every built-in deck with its card count from data/decks.json and the value line", () => {
+    const text = textOf(aboutHtml());
+    assert.ok(text.includes(VALUE_LINE), "the value line is missing from the about section");
+    for (const d of BUILTIN_DECKS()) {
+      const re = new RegExp(`${escapeRe(d.name)}[:,]? ${d.chords.length} chord cards`, "i");
+      assert.ok(re.test(text), `${d.name} with ${d.chords.length} chord cards is not in the about section`);
+    }
+    assert.ok(/D Amara is also sold as Celtic Minor/.test(text), "the Celtic Minor equivalence is missing");
+    assert.ok(/A custom scale lives only in your browser/.test(text), "the custom scale sentence is missing");
+    assert.ok(/Google Analytics/.test(text), "the privacy sentence is missing");
+    const steps = (/<ol[^>]*>([\s\S]*?)<\/ol>/.exec(aboutHtml()) || [])[1] || "";
+    assert.strictEqual((steps.match(/<li\b/g) || []).length, 3, "the how-it-works list is not three steps");
+  });
+
+  test("#about is in both inert lists and #app in neither", () => {
+    const html = INDEX_HTML();
+    const panel = /const panelBackground = \[([\s\S]*?)\]\.filter\(Boolean\);/.exec(html);
+    assert.ok(panel, "panelBackground not found");
+    const sheet = /const background = \[([^\n]*)\];/.exec(html);
+    assert.ok(sheet, "the sheet's background list not found");
+    assert.ok(/#about/.test(panel[1]), "#about is not in panelBackground");
+    assert.ok(/#about/.test(sheet[1]), "#about is not in the sheet's background");
+    assert.ok(!/#app|"app"/.test(panel[1]), "#app is in panelBackground (it holds the settings trigger)");
+    assert.ok(!/#app|"app"/.test(sheet[1]), "#app is in the sheet's background");
+  });
+
+  test("#app wraps header, main, footer and the live region in that order, and #about follows it before the sheet", () => {
+    const html = INDEX_HTML();
+    const body = html.slice(html.indexOf("<body>"));
+    const order = ['<div id="app">', "<header>", "<main>", '<footer id="foot">', 'class="announce"',
+      '</div>\n\n<section id="about"', 'id="scale-sheet"'];
+    let at = -1;
+    for (const s of order) {
+      const i = body.indexOf(s, at + 1);
+      assert.ok(i > at, `${s} is missing or out of order`);
+      at = i;
+    }
+  });
+});

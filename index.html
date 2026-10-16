@@ -1115,6 +1115,26 @@ footer.seq{row-gap:var(--sp-1)}
    needs the acknowledgement. */
 #scale-delete[data-armed]:active{color:#eae6df}
 
+/* ---- the first screen and the about section (discoverability W1, plan D20) ----
+   #app holds header, main, footer and the live region and is exactly as tall
+   as the body's content box (height:100%, with the dvh floor body itself has),
+   so the card is the size it was before #about existed; #about overflows below
+   it and the document scrolls to it. A fourth flex child of body would have
+   SHRUNK the card (main is flex:1 inside a height:100% body). #about starts at
+   least 12px below the body's bottom padding, so none of its text lands in the
+   4px frame band. Both rules sit BEFORE the print block (it must stay last). */
+#app{flex:none; width:100%; height:100%; display:flex; flex-direction:column; align-items:center;
+  min-height:calc(100dvh - max(10px, env(safe-area-inset-top)) - max(12px, env(safe-area-inset-bottom)))}
+#about{flex:none; width:100%; max-width:520px; margin-top:24px; padding:0 4px 48px;
+  color:#c4bcab; font:400 14px/1.6 "Nunito Sans", system-ui, sans-serif; user-select:text; -webkit-user-select:text}
+#about h2{margin:0 0 8px; font:400 22px/1.2 "Marcellus", serif; color:#eae6df}
+#about h3{margin:20px 0 6px; font:600 11px/1.4 "Nunito Sans"; letter-spacing:.13em;
+  text-transform:uppercase; color:#a79d8b}
+#about p{margin:0 0 8px}
+#about ol, #about ul{margin:0; padding-left:20px}
+#about li{margin:0 0 4px}
+#about a{color:#eae6df}
+
 /* ---- print (R1, 2026-09-29) -----------------------------------------------
    Forces print colour adjustment, clears the page background and padding for
    paper, and resets .scene's swipe transform so a card mid-flight never
@@ -1136,10 +1156,13 @@ footer.seq{row-gap:var(--sp-1)}
      on paper; left in, it shifts every page by the device's insets. */
   body{margin:0; padding:0; background:#fff; display:block}
   .scene{transform:none!important}
+  #app{display:block; height:auto; min-height:0}
+  #about{display:none}
 }
 </style>
 </head>
 <body>
+<div id="app">
 <header>
   <div class="hrow">
     <span class="hspacer" aria-hidden="true"></span>
@@ -1191,6 +1214,31 @@ footer.seq{row-gap:var(--sp-1)}
      sheet makes inert, so a success message announced as the sheet closes is
      still read out. -->
 <div class="announce" role="status" aria-live="polite"></div>
+</div>
+
+<section id="about" aria-labelledby="about-title">
+  <h2 id="about-title">About Handpan Chords</h2>
+  <p>A free chord and progression practice tool for your own handpan scale.</p>
+  <h3>How it works</h3>
+  <ol>
+    <li>Pick a built-in deck, or type your own scale.</li>
+    <li>Flip a card to see the chord lit on the pan.</li>
+    <li>Open the settings menu and switch to Chord progression for a sequence to play.</li>
+  </ol>
+  <h3>Built-in decks</h3>
+  <ul>
+    <li>D Kurd 10: 49 chord cards</li>
+    <li>D Amara 10: 29 chord cards</li>
+    <li>D Amara 9: 27 chord cards</li>
+    <li>F3 Low Pygmy 18: 53 chord cards</li>
+    <li>C# Hijaz 9: 19 chord cards</li>
+  </ul>
+  <p>D Amara is also sold as Celtic Minor.</p>
+  <h3>Your own scale</h3>
+  <p>Type any scale and the app generates its chords. A custom scale lives only in your browser.</p>
+  <h3>Privacy</h3>
+  <p>Your scales never leave your browser. The site counts anonymous visits and feature use with Google Analytics, without cookies in the EU, the UK and Switzerland.</p>
+</section>
 
 <div id="scale-sheet" role="dialog" aria-modal="true" aria-labelledby="scale-title" hidden>
   <div class="sheetsurf">
@@ -8915,7 +8963,7 @@ announce.className = "announce";
 // 2026-09-28): the mode buttons moved out of <header> into that body-level
 // sibling, so without it here they would sit outside every landmark this
 // list inerts and stay reachable behind the modal sheet.
-const background = [...document.querySelectorAll("header, main, footer, #settings-panel")];
+const background = [...document.querySelectorAll("header, main, footer, #settings-panel, #about")];
 
 let palette = 0;                 // D6 index 0-5
 let mirror = false;              // MIRROR TOP: the rim and the inner ring
@@ -10684,7 +10732,7 @@ const settingsScrim   = document.getElementById("settings-scrim");
 // inert the trigger along with it and the panel could never be closed by a
 // second tap on it.
 const panelBackground = [document.querySelector("main"), document.querySelector("footer"),
-                          document.getElementById("decks")].filter(Boolean);
+                          document.getElementById("decks"), document.querySelector("#about")].filter(Boolean);
 let panelOpen = false;
 // M3 (desktop sidebar, 2026-09-28): the same breakpoint the CSS media query
 // above uses. Below it the panel is the modal drawer M1 built - role="dialog",

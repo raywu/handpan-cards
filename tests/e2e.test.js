@@ -9327,7 +9327,10 @@ function run() {
           const after = await b.eval(`return {
             header: ${rectsOf("header")},
             footer: ${rectsOf("footer")},
-            scrollHeight: document.scrollingElement.scrollHeight,
+            app: (() => {
+              const a = document.getElementById("app");
+              return { h: a.getBoundingClientRect().height, scrollHeight: a.scrollHeight, clientHeight: a.clientHeight };
+            })(),
             innerHeight: window.innerHeight,
             styleBottom: document.getElementById("seq-style").getBoundingClientRect().bottom,
           };`);
@@ -9343,8 +9346,10 @@ function run() {
           const maxGrowth = after.innerHeight > 520 ? 70 : 10;
           assert.ok(growth <= maxGrowth,
             `${w}x${h} footer grew by ${growth}px switching to S, budget ${maxGrowth}px`);
-          assert.ok(after.scrollHeight <= after.innerHeight + 0.5,
-            `${w}x${h} the page scrolls in mode S: scrollHeight ${after.scrollHeight} > innerHeight ${after.innerHeight}`);
+          assert.ok(after.app.h <= after.innerHeight + 0.5,
+            `${w}x${h} #app is taller than the first screen in mode S: ${after.app.h} > innerHeight ${after.innerHeight}`);
+          assert.ok(after.app.scrollHeight <= after.app.clientHeight + 0.5,
+            `${w}x${h} #app's contents overflow it in mode S: scrollHeight ${after.app.scrollHeight} > clientHeight ${after.app.clientHeight}`);
           assert.ok(after.styleBottom <= after.innerHeight + 0.5,
             `${w}x${h} #seq-style's bottom (${after.styleBottom}) is past innerHeight (${after.innerHeight})`);
           await assertCardFits(`at ${w}x${h} in mode S`);
@@ -10608,7 +10613,7 @@ function run() {
           await b.eval(`window.__pcOnce = 0; document.getElementById("card").addEventListener("pointercancel", () => { window.__pcOnce++; }, { once: true }); return true;`);
           if (h > w) {
             // CHROME_BUDGET fits every viewport with no page overflow by design
-            // (untouched here), so there would be nothing to scroll without a
+            // within #app (untouched here), so there would be nothing to scroll without a
             // forced spacer even if scrolling were still possible here.
             // An absolutely-positioned spacer, not body.style.minHeight: main
             // is a flex:1 child of body, so raising body's min-height used to
@@ -12380,6 +12385,69 @@ function run() {
           assert.strictEqual(m.cw, 900, `${where}: documentElement.clientWidth`);
           assert.strictEqual(m.iw, m.cw, `${where}: no scrollbar takes layout width`);
         } finally { await cb.close(); }
+      }
+    });
+  });
+
+  describe("discoverability", () => {
+    // .scene rect measured on origin/main (2b7dadc, before #app and #about
+    // existed) with the e2e launch (fallback fonts, scrollbars hidden) at
+    // these viewports, desktop emulation (mobile: false). The wrapper and the
+    // section below the first screen must not move the card (plan D20).
+    const ORIGIN_SCENE = {
+      "380x780": { width: 334.390625, height: 461.78125, left: 22.796875, top: 166.265625 },
+      "320x568": { width: 247.890625, height: 342.328125, left: 36.046875, top: 120 },
+      "1024x700": { width: 321.984375, height: 444.65625, left: 351, top: 134.828125 },
+    };
+    const VIEWPORTS = { "380x780": [380, 780], "320x568": [320, 568], "1024x700": [1024, 700] };
+
+    test("the about section is visible below the card at 380px with no horizontal scroll", async () => {
+      await freshLoad();
+      await b.setViewport(380, 780, false);
+      try {
+        await b.settle();
+        await b.eval(`document.getElementById("about").scrollIntoView(); return true;`);
+        await b.settle();
+        const m = await b.eval(`
+          const a = document.getElementById("about");
+          const r = a.getBoundingClientRect();
+          return { width: r.width, display: getComputedStyle(a).display, sw: document.body.scrollWidth,
+                   cw: document.body.clientWidth, dsw: document.documentElement.scrollWidth,
+                   dcw: document.documentElement.clientWidth };
+        `);
+        assert.ok(m.width > 0, `#about has no width: ${m.width}`);
+        assert.notStrictEqual(m.display, "none", "#about is display:none");
+        assert.ok(m.sw <= m.cw + 1, `the page scrolls horizontally at 380px (${m.sw} > ${m.cw})`);
+        assert.ok(m.dsw <= m.dcw + 1, `the document scrolls horizontally at 380px (${m.dsw} > ${m.dcw})`);
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("the card keeps its origin/main size with the about section below the first screen", async () => {
+      await freshLoad();
+      try {
+        for (const [key, [w, h]] of Object.entries(VIEWPORTS)) {
+          await b.setViewport(w, h, false);
+          await b.settle();
+          const got = await b.eval(`
+            const r = document.querySelector(".scene").getBoundingClientRect();
+            return { width: r.width, height: r.height, left: r.left, top: r.top,
+                     aboutTop: document.getElementById("about").getBoundingClientRect().top,
+                     scrollHeight: document.scrollingElement.scrollHeight, innerHeight: innerHeight };
+          `);
+          const base = ORIGIN_SCENE[key];
+          for (const prop of ["width", "height", "left", "top"]) {
+            assert.ok(Math.abs(got[prop] - base[prop]) <= 1,
+              `${key} .scene ${prop}: got ${got[prop]}, origin/main ${base[prop]}`);
+          }
+          assert.ok(got.scrollHeight > got.innerHeight,
+            `${key}: the page does not scroll past the first screen (${got.scrollHeight} <= ${got.innerHeight})`);
+          assert.ok(got.aboutTop >= got.innerHeight,
+            `${key}: #about starts at ${got.aboutTop}, inside the first screen (${got.innerHeight}); the 4px frame band would show its text`);
+        }
+      } finally {
+        await b.setViewport(900, 900, false);
       }
     });
   });
