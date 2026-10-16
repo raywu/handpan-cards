@@ -119,8 +119,8 @@ Spawned only after the section 5 trigger, cold, from this file. W5 owns `tools/g
 | 15 | review of #320, nit N8 | the `Network.requestWillBeSent` handler in the analytics-hosts e2e test stays registered on the shared browser for the rest of the file; nothing else uses that method today. | OPEN (unscheduled) |
 | 16 | review of #320, nit N9 | sandbox.js error "no inline <script> found in index.html" is misleading when `opts.html` is given or every script is non-JS. | OPEN (unscheduled) |
 | 17 | review of #321, nit N1 | `#app` CSS uses `height:max(100%, calc(100dvh - safe-area insets))` rather than the brief's literal `height:100%` (commit ea5287e); mirrors body's dvh floor; card-size pins pass. Record, no change wanted. | OPEN (unscheduled) |
-| 18 | review of #321, nit N2 | the #about privacy sentence says "EU, UK and Switzerland" while the regional consent default also covers IS, LI, NO (the EEA); behaviour is a superset of the wording. Candidate copy fix: "the EEA, the UK and Switzerland". | OPEN (unscheduled) |
-| 19 | review of #321, nit N3 | `scale_create` (runGenerate) also fires on an Edit save, not only a new create; the plan anchor reads "sheet's submit", so within spec. Owner may want an `edit` param or a separate event later. | OPEN (unscheduled) |
+| 18 | review of #321, nit N2 | the #about privacy sentence says "EU, UK and Switzerland" while the regional consent default also covers IS, LI, NO (the EEA); behaviour is a superset of the wording. Candidate copy fix: "the EEA, the UK and Switzerland". Owner 2026-10-16: fix it, fold into SU-A's brief (or a nits lane). | OPEN (scheduled: SU-A) |
+| 19 | review of #321, nit N3 | `scale_create` (runGenerate) also fires on an Edit save, not only a new create; the plan anchor reads "sheet's submit", so within spec. Owner 2026-10-16: keep as is. | CLOSED |
 | 20 | review of #321, nit N4 | `deck_select` also fires on non-user fallbacks (deleteDeck's reselect); matches the plan's literal anchor (selectDeck). | OPEN (unscheduled) |
 | 21 | review of #321, nit N5 | tests/e2e.test.js discoverability describe: the `b.on("Network.requestWillBeSent")` handler is never removed (same shape as row 15). | OPEN (unscheduled) |
 | 22 | review of #321, nit N6 (low confidence) | a typed `#deck=` URL while the modal Add/Edit sheet is open: the hashchange listener changes the deck and replaceStates under the open routed sheet; a later close calls history.back() onto the `#add` entry with the sheet already closed. Unreachable via the about links (inert under the sheet). | OPEN (unscheduled) |
@@ -145,3 +145,4 @@ Cycle: 1   Wave: 1c   Merged this batch: 880f054 (#319 W3), 2b7dadc (#320 W2), 6
 | W4 | a73559635b9c83956 | /Users/ray/Projects/handpan-cards/.claude/worktrees/agent-a73559635b9c83956 | discoverability/w4-docs-counts | | | | spawned 2026-10-16 | 0 | no | nothing | yes |
 ```
 
+Owner check-in 2026-10-16 (third): start share-URL execution (SU-A then SU-D) right after W4 merges, same swarm; row 18 privacy copy folded into SU-A; row 19 closed (keep); GA4 property, Measurement ID swap PR and DNS TXT after W4 merges.
