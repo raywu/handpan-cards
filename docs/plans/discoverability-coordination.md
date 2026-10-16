@@ -95,9 +95,9 @@ Spawned only after the section 5 trigger, cold, from this file. W5 owns `tools/g
 | Lane | Current branch | State | Last update (UTC) | Last verdict |
 |---|---|---|---|---|
 | W2 | `discoverability/w2-harness` | MERGED #320 (main 2b7dadc) | 2026-10-16 | PASS_WITH_NITS |
-| W1 | `discoverability/w1-head-copy-ga` | PR #321 at c5edc61, CI green, reviewer spawned | 2026-10-16 | |
+| W1 | `discoverability/w1-head-copy-ga` | MERGED #321 (main 6aa98c2) | 2026-10-16 | PASS_WITH_NITS |
 | W3 | `discoverability/w3-site-files` | MERGED #319 (main 880f054) | 2026-10-16 | PASS_WITH_NITS |
-| W4 | | unspawned | | |
+| W4 | `discoverability/w4-docs-counts` | spawning (W1 and W3 merged) | 2026-10-16 | |
 
 ### Handoff queue (append-only)
 | # | From | Ask | Status |
@@ -118,6 +118,12 @@ Spawned only after the section 5 trigger, cold, from this file. W5 owns `tools/g
 | 14 | review of #320, nit N7 | `tests/mutants/ex_exception_listener_dropped.patch` was re-anchored (hunk header + one context line) outside W2's ownership letter; mechanical, still killed in CI; recorded only. | OPEN (unscheduled) |
 | 15 | review of #320, nit N8 | the `Network.requestWillBeSent` handler in the analytics-hosts e2e test stays registered on the shared browser for the rest of the file; nothing else uses that method today. | OPEN (unscheduled) |
 | 16 | review of #320, nit N9 | sandbox.js error "no inline <script> found in index.html" is misleading when `opts.html` is given or every script is non-JS. | OPEN (unscheduled) |
+| 17 | review of #321, nit N1 | `#app` CSS uses `height:max(100%, calc(100dvh - safe-area insets))` rather than the brief's literal `height:100%` (commit ea5287e); mirrors body's dvh floor; card-size pins pass. Record, no change wanted. | OPEN (unscheduled) |
+| 18 | review of #321, nit N2 | the #about privacy sentence says "EU, UK and Switzerland" while the regional consent default also covers IS, LI, NO (the EEA); behaviour is a superset of the wording. Candidate copy fix: "the EEA, the UK and Switzerland". | OPEN (unscheduled) |
+| 19 | review of #321, nit N3 | `scale_create` (runGenerate) also fires on an Edit save, not only a new create; the plan anchor reads "sheet's submit", so within spec. Owner may want an `edit` param or a separate event later. | OPEN (unscheduled) |
+| 20 | review of #321, nit N4 | `deck_select` also fires on non-user fallbacks (deleteDeck's reselect); matches the plan's literal anchor (selectDeck). | OPEN (unscheduled) |
+| 21 | review of #321, nit N5 | tests/e2e.test.js discoverability describe: the `b.on("Network.requestWillBeSent")` handler is never removed (same shape as row 15). | OPEN (unscheduled) |
+| 22 | review of #321, nit N6 (low confidence) | a typed `#deck=` URL while the modal Add/Edit sheet is open: the hashchange listener changes the deck and replaceStates under the open routed sheet; a later close calls history.back() onto the `#add` entry with the sheet already closed. Unreachable via the about links (inert under the sheet). | OPEN (unscheduled) |
 
 ### Review log
 | PR | Lane | Reviewer verdict | Findings | Outcome |
@@ -126,14 +132,15 @@ Spawned only after the section 5 trigger, cold, from this file. W5 owns `tools/g
 | 317 | plan | review 3 FAIL at 8f99567 | D20 scrollbar: the about section makes the document overflow, the harness draws a classic 15px scrollbar, three existing tests outside W1's rights go red | regroup subplan applied (section 15): W2 step 4 hides scrollbars in `launch()`; D20 amended to wrap the live region |
 | 319 | W3 | PASS_WITH_NITS at 7ad5ba9 (CI 38961099995 success; 5 reviewer probes, 4 killed, 1 survived = nit 1) | nits: robots test does not forbid `Disallow` (row 6); `ds_sitemap_fragment` killed by a different assertion than stated (row 7); README mutant count left to W4, correct | merged 2026-10-16 as main 880f054; worktree and branch released |
 | 320 | W2 | PASS_WITH_NITS at 459bb76 (CI 38963573972) | none | merged 2b7dadc; nits N1-N9 queued as rows 8-16 |
+| 321 | W1 | PASS_WITH_NITS at c5edc61 (CI 38970061893); 5/5 mutants killed; 17 re-anchored foreign patches audited clean (16 context-only, m2 line change confirmed same kill) | none | merged 6aa98c2; nits N1-N6 queued as rows 17-22 |
 
 ### Cycle state
 ```
-Cycle: 1   Wave: 1b   Merged this batch: 880f054 (#319 W3), 2b7dadc (#320 W2)
+Cycle: 1   Wave: 1c   Merged this batch: 880f054 (#319 W3), 2b7dadc (#320 W2), 6aa98c2 (#321 W1)
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | W2 | ae60696a3b5621171 | released | discoverability/w2-harness (deleted) | #320 | 459bb76 | 2026-10-16 (CI 38963573972 success, 11 checks) | PASS_WITH_NITS | 0 | yes (main 2b7dadc) | nothing | no |
-| W1 | aae6253dabaf29952 | /Users/ray/Projects/handpan-cards/.claude/worktrees/agent-aae6253dabaf29952 | discoverability/w1-head-copy-ga | #321 | c5edc61 | 2026-10-16 (CI 38970061893 success, 11 checks; first run at 5e6d25e failed on the kills-line lint + a shard-3 browser flake, fixed in c5edc61) | reviewer spawned | 0 | no | nothing | yes |
+| W1 | aae6253dabaf29952 | released | discoverability/w1-head-copy-ga (deleted) | #321 | c5edc61 | 2026-10-16 (CI 38970061893 success, 11 checks; first run at 5e6d25e failed on the kills-line lint + a shard-3 browser flake, fixed in c5edc61) | PASS_WITH_NITS | 0 | yes (main 6aa98c2) | nothing | no |
 | W3 | af6af65e9d198cd2e | released | discoverability/w3-site-files (deleted) | #319 | 7ad5ba9 | 2026-10-16 (CI 38961099995 success, 11 checks) | PASS_WITH_NITS | 0 | yes (main 880f054) | nothing | no |
 | W4 | | | discoverability/w4-docs-counts | | | | | 0 | no | W1 and W3 merge | |
 ```
