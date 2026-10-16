@@ -97,7 +97,7 @@ Spawned only after the section 5 trigger, cold, from this file. W5 owns `tools/g
 | W2 | `discoverability/w2-harness` | MERGED #320 (main 2b7dadc) | 2026-10-16 | PASS_WITH_NITS |
 | W1 | `discoverability/w1-head-copy-ga` | MERGED #321 (main 6aa98c2) | 2026-10-16 | PASS_WITH_NITS |
 | W3 | `discoverability/w3-site-files` | MERGED #319 (main 880f054) | 2026-10-16 | PASS_WITH_NITS |
-| W4 | `discoverability/w4-docs-counts` | PR #322 attempt-2 fix at bfea238, CI green, reviewer 3 spawned | 2026-10-16 | FAIL+2 (fixed, under review) |
+| W4 | `discoverability/w4-docs-counts` | MERGED #322 as f3901b3 | 2026-10-16 | PASS_WITH_NITS |
 
 ### Handoff queue (append-only)
 | # | From | Ask | Status |
@@ -127,6 +127,10 @@ Spawned only after the section 5 trigger, cold, from this file. W5 owns `tools/g
 | 23 | W4 report | `tests/suite_health.py` FLOORS row for harness.test.js is 13 against CI's 19 (W2's row, outside W4's rights). Raise with the next lane that owns suite_health.py. | OPEN (unscheduled) |
 | 24 | review of #322, nit N1 | a test for the default deck versus a stored deck id on a routed boot is missing. | OPEN (unscheduled) |
 | 25 | review of #322, nit N4 | the inline head script (consent defaults before gtag) has no test of its own. | OPEN (unscheduled) |
+| 26 | review of #322, nit N1 | CLAUDE.md print-pipeline sentence (~line 478): after the inserted `#about` clause, "and `python3 tools/decks.py` to rebuild the PDFs" lost its verb "run". | OPEN (unscheduled) |
+| 27 | review of #322, nit N2 | CLAUDE.md Discoverability preamble says tests are in app.test.js unless a file is named; several e2e titles carry no file (about-link click, card size, the E2E host block bullet). | OPEN (unscheduled) |
+| 28 | review of #322, nit N3 | swap procedure counts "the placeholder id is the shipped constant" among the tests fixed by the replace anchor; it fails on its own `includes` literal (the next sentence covers it). | OPEN (unscheduled) |
+| 29 | review of #322, nit N4 | "GA_MEASUREMENT_ID is one constant" cites a test that checks only `includes`, not uniqueness; "one test per predicate" is loose (three host labels share one predicate line). | OPEN (unscheduled) |
 
 ### Review log
 | PR | Lane | Reviewer verdict | Findings | Outcome |
@@ -138,16 +142,17 @@ Spawned only after the section 5 trigger, cold, from this file. W5 owns `tools/g
 | 321 | W1 | PASS_WITH_NITS at c5edc61 (CI 38970061893); 5/5 mutants killed; 17 re-anchored foreign patches audited clean (16 context-only, m2 line change confirmed same kill) | none | merged 6aa98c2; nits N1-N6 queued as rows 17-22 |
 | 322 | W4 | FAIL at 506e722 (reviewer a25afa179e9af94fa; CI 38973637201 success; counts 981 mutants / app 538 / e2e 305 / 23 node / 15 python verified; ownership PASS) | F1: the GA id swap procedure fails as written (five app tests anchor on the placeholder literal via INDEX_HTML().replace, reproduced); F2: about card counts are literals in #about, not read from data; F3: deck_route and share_open tests are not in the analytics-events describe; nits N1-N6 | bounced to the lane 2026-10-16 with exact fix sentences (attempt 1 of 2); fresh reviewer after CI at the new head |
 | 322 | W4 | review 2 FAIL at 6acb627 (reviewer aaa1b2df7b8a27772; CI 38976505767 success; 47 cited test names all exist; counts and FLOORS re-verified from main run 38972092634; ownership clean) | F1: the rewritten events sentence lists `share_open` as outside the analytics-events describe, but its test (app.test.js:9496) is inside it (9429-9528); only `deck_route` is outside. The false clause came from the integrator's review-1 bounce text. Nits N1 (fourth placeholder literal at app.test.js:9369 is an `includes` assertion, not a replace site), N2 (leave the predicate comparison alone), N3 (deck renames also break the about test), N4 (reviewer process: download artifacts into a fresh dir) | bounced 2026-10-16 with the reviewer's exact sentence plus N1-N3 (attempt 2 of 2); a third FAIL triggers the AFK regroup rule |
+| 322 | W4 | review 3 PASS_WITH_NITS at bfea238 (reviewer a0e7217f5ba81973a; CI 38978260599 success; every quoted title grepped; counts 981 / 23 / 15 / app 538 / e2e 305 from a fresh main artifact download; ownership clean) | none blocking; nits N1-N4 queued as rows 26-29 | merged 2026-10-16 as main f3901b3; worktree and branch released |
 
 ### Cycle state
 ```
-Cycle: 1   Wave: 1c   Merged this batch: 880f054 (#319 W3), 2b7dadc (#320 W2), 6aa98c2 (#321 W1)
+Cycle: 1   Wave: 1c   Merged this batch: 880f054 (#319 W3), 2b7dadc (#320 W2), 6aa98c2 (#321 W1), f3901b3 (#322 W4). WAVE 1 COMPLETE 2026-10-16. Next: share-URL SU-A, then SU-D
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | W2 | ae60696a3b5621171 | released | discoverability/w2-harness (deleted) | #320 | 459bb76 | 2026-10-16 (CI 38963573972 success, 11 checks) | PASS_WITH_NITS | 0 | yes (main 2b7dadc) | nothing | no |
 | W1 | aae6253dabaf29952 | released | discoverability/w1-head-copy-ga (deleted) | #321 | c5edc61 | 2026-10-16 (CI 38970061893 success, 11 checks; first run at 5e6d25e failed on the kills-line lint + a shard-3 browser flake, fixed in c5edc61) | PASS_WITH_NITS | 0 | yes (main 6aa98c2) | nothing | no |
 | W3 | af6af65e9d198cd2e | released | discoverability/w3-site-files (deleted) | #319 | 7ad5ba9 | 2026-10-16 (CI 38961099995 success, 11 checks) | PASS_WITH_NITS | 0 | yes (main 880f054) | nothing | no |
-| W4 | a73559635b9c83956 | /Users/ray/Projects/handpan-cards/.claude/worktrees/agent-a73559635b9c83956 | discoverability/w4-docs-counts | #322 | bfea238 | 2026-10-16 (CI 38978260599 success) | FAIL+2 (506e722, 6acb627); fix at bfea238, reviewer 3 spawned (budget 10) | 2 | no | nothing | yes |
+| W4 | a73559635b9c83956 | /Users/ray/Projects/handpan-cards/.claude/worktrees/agent-a73559635b9c83956 | discoverability/w4-docs-counts | #322 | bfea238 | 2026-10-16 (CI 38978260599 success) | PASS_WITH_NITS (after FAIL+2) | 2 | f3901b3 | nothing | released |
 ```
 
 Owner check-in 2026-10-16 (third): start share-URL execution (SU-A then SU-D) right after W4 merges, same swarm; row 18 privacy copy folded into SU-A; row 19 closed (keep); GA4 property, Measurement ID swap PR and DNS TXT after W4 merges.
