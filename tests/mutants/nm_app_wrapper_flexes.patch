@@ -9,8 +9,8 @@ diff --git a/index.html b/index.html
     SHRUNK the card (main is flex:1 inside a height:100% body). #about starts at
     least 12px below the body's bottom padding, so none of its text lands in the
     4px frame band. Both rules sit BEFORE the print block (it must stay last). */
--#app{flex:none; width:100%; height:100%; display:flex; flex-direction:column; align-items:center;
-+#app{flex:1; width:100%; height:100%; display:flex; flex-direction:column; align-items:center;
-   min-height:calc(100dvh - max(10px, env(safe-area-inset-top)) - max(12px, env(safe-area-inset-bottom)))}
+-#app{flex:none; width:100%; min-height:0; display:flex; flex-direction:column; align-items:center;
++#app{flex:1; width:100%; min-height:0; display:flex; flex-direction:column; align-items:center;
+   height:max(100%, calc(100dvh - max(10px, env(safe-area-inset-top)) - max(12px, env(safe-area-inset-bottom))))}
  #about{flex:none; width:100%; max-width:520px; margin-top:24px; padding:0 4px 48px;
    color:#c4bcab; font:400 14px/1.6 "Nunito Sans", system-ui, sans-serif; user-select:text; -webkit-user-select:text}
