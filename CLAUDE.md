@@ -58,11 +58,16 @@ no committed PDF; the app builds theirs in the browser.
 
 ## Hard constraints
 
-- **Single-file app.** No bundlers, no frameworks, no external JS. Additions
+- **Single-file app.** No bundlers, no frameworks, and exactly one external
+  script, GA4 gtag.js, appended at runtime by `loadAnalytics()` after
+  `analyticsAllowed()`; nothing else external. Additions
   (PWA manifest/service worker are acceptable as sibling files) must keep
   `index.html` independently functional. `index.html` IS the shipped artifact:
   GitHub Pages serves the committed bytes, so there is nothing between the repo
-  and the browser and no `<script src>` may appear in it.
+  and the browser and no `<script src>` appears in the committed bytes (the
+  gtag script is created at runtime, never written into the file;
+  `tests/app.test.js` "index.html carries the whole engine inline, with no
+  external script" keeps asserting it).
 - **The engine regions in `index.html` are GENERATED.** Everything between
   `<!-- engine:<name> begin -->` and `<!-- engine:<name> end -->` is a verbatim copy of
   `src/engine/<name>.js`. Never hand-edit inside a region: change the module,
