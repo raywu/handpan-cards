@@ -607,4 +607,51 @@ function run() {
     b.eval = async () => { throw new Error("boom"); };
     await assert.rejects(b.waitFor("x", { timeout: 60, label: "L" }), /timed out waiting for L.*last error: .*boom/);
   });
+
+  /* ------------------------------------------------------------------ *
+   * tools/sandbox.js gaps the discoverability work needs (plan section 9, W2).
+   * ------------------------------------------------------------------ */
+
+  const sandbox = require("../tools/sandbox.js");
+  const INDEX_HTML = () => fs.readFileSync(sandbox.APP, "utf8");
+
+  test("boot skips a script whose type is not JavaScript", () => {
+    const html = INDEX_HTML().replace("</head>", `<script type="application/ld+json">{"a":1}</script></head>`);
+    assert.doesNotThrow(() => sandbox.boot({ html }));
+  });
+
+  test("the sandbox reports navigator.webdriver true unless told otherwise", () => {
+    assert.strictEqual(sandbox.boot({}).get("navigator.webdriver"), true);
+    assert.strictEqual(sandbox.boot({ webdriver: false }).get("navigator.webdriver"), false);
+  });
+
+  test("the sandbox document has a head that records appended children", () => {
+    const app = sandbox.boot({});
+    const head = app.sandbox.document.head;
+    assert.ok(head, "document.head exists");
+    const el = app.sandbox.document.createElement("script");
+    head.appendChild(el);
+    assert.strictEqual(app.head.children.length, 1);
+    assert.strictEqual(app.head.children[0], el);
+  });
+
+  test("the sandbox location exposes protocol and hostname", () => {
+    const f = sandbox.boot({ href: "file:///x/index.html" }).location;
+    assert.deepStrictEqual([f.protocol, f.hostname], ["file:", ""]);
+    const h = sandbox.boot({ href: "http://localhost:8000/" }).location;
+    assert.deepStrictEqual([h.protocol, h.hostname], ["http:", "localhost"]);
+  });
+
+  test("the sandbox can dispatch hashchange to window listeners", () => {
+    const html = INDEX_HTML().replace("</body>", `<script>window.__hc = []; window.addEventListener("hashchange", () => window.__hc.push(location.hash));</script></body>`);
+    const app = sandbox.boot({ html });
+    app.hashchange("#x");
+    assert.deepStrictEqual(JSON.parse(app.get("JSON.stringify(window.__hc)")), ["#x"]);
+  });
+
+  test("boot takes an html string in place of the file", () => {
+    assert.throws(() => sandbox.boot({ html: "<html></html>" }), /no inline <script>/);
+    const html = INDEX_HTML().replace("</body>", "<script>window.__marker = 42;</script></body>");
+    assert.strictEqual(sandbox.boot({ html }).get("window.__marker"), 42);
+  });
 }

@@ -205,6 +205,8 @@ function makeLocation(href) {
     get hash() { return state.url.hash; },
     set hash(v) { state.url.hash = v; },
     get origin() { return state.url.origin; },
+    get protocol() { return state.url.protocol; },
+    get hostname() { return state.url.hostname; },
     get pathname() { return state.url.pathname; },
     set pathname(v) { state.url.pathname = v; },
     toString() { return state.url.href; },
@@ -220,12 +222,20 @@ function makeLocation(href) {
  *   href           - initial location (default "https://example.test/index.html")
  *   userAgent      - navigator.userAgent (default a desktop Chrome string)
  *   maxTouchPoints - navigator.maxTouchPoints (default 0)
+ *   webdriver      - navigator.webdriver (default true, as under automation)
+ *   html           - boot this markup instead of reading index.html
  */
 function boot(opts = {}) {
-  const html = fs.readFileSync(APP, "utf8");
+  const html = opts.html !== undefined ? String(opts.html) : fs.readFileSync(APP, "utf8");
   // Every inline block, in document order; <script src=...> is skipped (the app
   // is single-file by contract, so there should never be one).
-  const blockMatches = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)];
+  // A script whose type is not JavaScript (application/ld+json, a template) is data.
+  const isJs = (m) => {
+    const t = /\btype\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i.exec(m[0].slice(0, m[0].indexOf(">") + 1));
+    const v = t ? (t[1] ?? t[2] ?? t[3]).trim().toLowerCase() : "";
+    return v === "" || v === "text/javascript" || v === "module";
+  };
+  const blockMatches = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)].filter(isJs);
   const blocks = blockMatches.map((m) => m[1]);
   if (!blocks.length) throw new Error("no inline <script> found in index.html");
   // Run the blocks as ONE script whose character offsets equal index.html's own:
@@ -375,6 +385,7 @@ function boot(opts = {}) {
   }
   const store = { ...(opts.storage || {}) };
   const docEl = makeElement("root", "html");
+  const headEl = makeElement("head", "head");
 
   // Each boot gets its own Math so stubbing random cannot leak across tests.
   const mathStub = Object.create(Math);
@@ -478,6 +489,7 @@ function boot(opts = {}) {
       querySelector: (sel) => queryAll(sel)[0] || null,
       querySelectorAll: (sel) => queryAll(sel),
       documentElement: docEl,
+      head: headEl,
       get body() { return docEl; },
       addEventListener(t, fn) { (this._l = this._l || {}), (this._l[t] = this._l[t] || []).push(fn); },
       removeEventListener() {},
@@ -510,6 +522,7 @@ function boot(opts = {}) {
         ? "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36"
         : opts.userAgent,
       maxTouchPoints: opts.maxTouchPoints === undefined ? 0 : opts.maxTouchPoints,
+      webdriver: opts.webdriver === undefined ? true : opts.webdriver,
     },
     // M3 (desktop sidebar, 2026-09-28): the app reads window.matchMedia once,
     // at boot, to gate the settings panel's modal wiring to below the
@@ -584,7 +597,7 @@ function boot(opts = {}) {
   }
 
   return {
-    els, store, sandbox, created, location, history, blocks, flushTimers, advance, plate,
+    els, store, sandbox, created, head: headEl, location, history, blocks, flushTimers, advance, plate,
     /** Evaluate an expression inside the app's scope. */
     get: (expr) => vm.runInContext(expr, sandbox),
     run: (stmt) => vm.runInContext(stmt, sandbox),
@@ -671,6 +684,10 @@ function boot(opts = {}) {
     /** Press the browser's Back button. Fires the app's popstate listeners; the
      *  stub keeps no entry stack, so what a test asserts is what the app does
      *  in response - it must take the page down and NOT pop anything itself. */
+    hashchange: (newHash) => {
+      location.hash = newHash;
+      for (const fn of winListeners.hashchange || []) fn({ type: "hashchange" });
+    },
     popstate: () => {
       for (const fn of winListeners.popstate || []) fn({ type: "popstate", state: history.state });
     },
