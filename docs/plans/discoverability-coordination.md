@@ -120,7 +120,7 @@ Cycle: 1   Wave: 1a   Merged this batch: none
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | W2 | ae60696a3b5621171 | .claude/worktrees/agent-ae60696a3b5621171 | discoverability/w2-harness | | | | | 0 | no | nothing | yes |
-| W3 | af6af65e9d198cd2e | .claude/worktrees/agent-af6af65e9d198cd2e | discoverability/w3-site-files | #319 | 7ad5ba9 (lane-reported, unverified) | | | 0 | no | nothing | yes |
+| W3 | af6af65e9d198cd2e | .claude/worktrees/agent-af6af65e9d198cd2e | discoverability/w3-site-files | #319 | 7ad5ba9 | 2026-10-16 (CI 38961099995 success, 11 checks) | reviewer spawned | 0 | no | nothing | yes |
 | W1 | | | discoverability/w1-head-copy-ga | | | | | 0 | no | W2 merge | |
 | W4 | | | discoverability/w4-docs-counts | | | | | 0 | no | W1 and W3 merge | |
 ```
