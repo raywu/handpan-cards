@@ -9326,3 +9326,32 @@ describe("discoverability", () => {
     }
   });
 });
+
+describe("discoverability: structured data", () => {
+  const ldBlock = () => {
+    const html = INDEX_HTML();
+    const blocks = html.match(/<script type="application\/ld\+json">[\s\S]*?<\/script>/g) || [];
+    assert.strictEqual(blocks.length, 1, "expected exactly one JSON-LD block");
+    return JSON.parse(blocks[0].replace(/^<script[^>]*>/, "").replace(/<\/script>$/, ""));
+  };
+
+  test("the JSON-LD block parses and states only what the page shows", () => {
+    const html = INDEX_HTML();
+    const ld = ldBlock();
+    assert.strictEqual(ld["@context"], "https://schema.org");
+    assert.strictEqual(ld["@type"], "WebApplication");
+    assert.strictEqual(ld.url, "https://handpan.raywu.org/");
+    assert.strictEqual(ld.applicationCategory, "MusicApplication");
+    assert.strictEqual(ld.operatingSystem, "Any");
+    assert.strictEqual(ld.browserRequirements, "Requires JavaScript");
+    assert.strictEqual(ld.isAccessibleForFree, true);
+    assert.deepStrictEqual(ld.offers, { "@type": "Offer", price: "0", priceCurrency: "USD" });
+    assert.strictEqual(ld.featureList, "Chord flashcards; chord progressions; custom scale input; printable PDF");
+    assert.ok(!("aggregateRating" in ld) && !("review" in ld), "a rating or review is marked up but never shown");
+    assert.ok(!/aggregateRating|"review"/.test(html), "a rating or review appears in the page");
+    const h1 = /<h1>([^<]*)<\/h1>/.exec(html)[1];
+    assert.strictEqual(ld.name, h1, "name differs from the h1");
+    assert.strictEqual(ld.description, metaContent(html, "name", "description"), "description differs from the meta description");
+    assert.ok(/\bfree\b/i.test(textOf(aboutHtml())), "isAccessibleForFree is marked up but the about section does not say free");
+  });
+});

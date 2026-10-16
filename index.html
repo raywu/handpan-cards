@@ -31,6 +31,25 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Handpan Chords: Custom Scale Chord and Progression Practice">
 <meta name="twitter:image" content="https://handpan.raywu.org/og.png">
+<!-- Structured data (discoverability plan section 6): states only what the page
+     shows. No rating or review markup, so it earns no rich result; it is a
+     machine-readable statement of name, price and purpose. Pinned by
+     tests/app.test.js "the JSON-LD block parses and states only what the page shows". -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Handpan Chords",
+  "url": "https://handpan.raywu.org/",
+  "description": "Chord flashcards and progressions for your handpan scale, free and without an account. Type any scale to generate its chords, or pick a built-in deck.",
+  "applicationCategory": "MusicApplication",
+  "operatingSystem": "Any",
+  "browserRequirements": "Requires JavaScript",
+  "isAccessibleForFree": true,
+  "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
+  "featureList": "Chord flashcards; chord progressions; custom scale input; printable PDF"
+}
+</script>
 <!-- The favicon is the D Amara deck's Dm card in the app's root/tone colours
      (root teal, tones amber) on the --table ground, lighting the three
      voicing fields only (not the ding and A3 the pitch-class rule adds). This
