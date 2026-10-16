@@ -139,9 +139,12 @@ What is covered:
   3x3 page grid, and the tonefield drawing recipe.
 - **App logic** - highlighting derivation, chord-spelling order, navigation and
   wrap, shuffle, and the localStorage guards, booted headless from `index.html`.
-- **App vs print agreement** - the two renderers are independent
-  implementations of the same conventions (and use opposite y-axis signs), so
-  all 177 cards are compared on position, highlight state, note order and badge.
+- **App vs print agreement** - the app (which takes `labelSize` and `numSize`
+  from `src/engine/pdfcards.js`) is compared against `tools/hifi.py`; the two
+  share no code and use opposite y-axis signs, so all 177 cards are compared on
+  position, highlight state, note order and badge (`test_highlighting_agrees`;
+  the shared label constants are pinned equal by
+  `test_the_diagram_label_rule_carries_the_same_constants`).
 - **The scale engine** - each module under `src/engine/` has its own node
   suite: chord selection and ranking, voicing, naming, the layout solver swept
   over N=5..19 pans, and share-URL round trips.
@@ -151,7 +154,7 @@ What is covered:
 - **Browser e2e** - real Chromium: deck switching, the 3D card flip, keyboard
   and touch navigation, reload persistence, clipping at a 380px viewport, and
   the scale sheet's modality, focus handling and 44px hit areas.
-- **Mutation gate** - 945 mutant patches under `tests/mutants/`, each one a
+- **Mutation gate** - 948 mutant patches under `tests/mutants/`, each one a
   deliberate break that some test must catch. The gate is all-or-nothing: one
   survivor fails it. A test nothing can kill does not count as coverage.
 
