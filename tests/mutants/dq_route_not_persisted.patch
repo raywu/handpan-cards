@@ -1,0 +1,20 @@
+# kills: every slug opens its built-in deck, persists it, and leaves a clean address
+# suite: node --test --test-name-pattern ^every.slug.opens.its.built-in.deck tests/app.test.js
+# A routed visit is shown but the stored deck stays the old one, so the visitor lands on it tomorrow and the link reads as broken.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11355,11 +11355,10 @@ sheet.setAttribute("hidden", ""); buildSwatches(); paintLayout(); resyncSheet(tr
+ // looks for it.
+ restoreScales();
+ const routedDeck = routedDeckId();
++const visitorDeck = deckId;
+ if (routedDeck) deckId = routedDeck;
+ const wantedDeck = deckId;
+-deckId = deck().id; storedDeck = deckId; setOrder(); buildChips(); setMode(mode);
+-// setMode() above saved the routed deck, as a chip tap does: a link that opens a
+-// deck once keeps it, so the visitor does not land on the old one tomorrow.
++deckId = deck().id; storedDeck = routedDeck ? visitorDeck : deckId; setOrder(); buildChips(); setMode(mode);
+ if (routedDeck) track("deck_route", { deck_id: routedDeck });
+ warnIfDeckGone(wantedDeck);
+ // A page route in the address bar at boot is a RELOAD of a page, or a link
