@@ -95,8 +95,8 @@ Spawned only after the section 5 trigger, cold, from this file. W5 owns `tools/g
 | Lane | Current branch | State | Last update (UTC) | Last verdict |
 |---|---|---|---|---|
 | W1 | | unspawned | | |
-| W2 | | unspawned | | |
-| W3 | | unspawned | | |
+| W2 | `discoverability/w2-harness` | working (no PR yet) | 2026-10-16 | |
+| W3 | `discoverability/w3-site-files` | MERGED #319 (main 880f054) | 2026-10-16 | PASS_WITH_NITS |
 | W4 | | unspawned | | |
 
 ### Handoff queue (append-only)
@@ -107,20 +107,23 @@ Spawned only after the section 5 trigger, cold, from this file. W5 owns `tools/g
 | 3 | review 4 of #317, nit N2 | body has 12px bottom padding, so `#about` starts at innerHeight-12; if W1 zeroes `#about`'s top spacing its glyphs land in the bottom 4px band and the nine "outer 4px frame is table-coloured" e2e tests (outside W1's rights) go red. W1 gives `#about` at least 12px top padding or margin AND its card-size test asserts `#about`'s `getBoundingClientRect().top >= innerHeight` at the three viewports. Goes into W1's spawn brief verbatim. | OPEN (W1 brief) |
 | 4 | review 4 of #317, nit N3 | the mode-S rewrite adds a new `evaluate` for the `#app` metrics (rect height, scrollHeight, clientHeight), not only a changed assertion line; still the ONE assertion change section 4 names. Goes into W1's spawn brief. | OPEN (W1 brief) |
 | 5 | review 4 of #317, nit N4 | product side effect, no action: the top 12px of the transparent `#about` box sits inside the first screen and is invisible. Recorded for the owner. | CLOSED (cosmetic, accepted under AFK) |
+| 6 | review of #319 (W3), nit 1 | `tests/test_site_files.py` `test_robots_allows_everything` checks that `User-agent: *` and `Allow: /` are present but not that nothing blocks crawling: a `Disallow: /` line for Googlebot survives all five tests. Shipped robots.txt is correct. A no-`Disallow` or exact-content assertion would close it. Unscheduled; a later docs/nits lane. | OPEN (unscheduled) |
+| 7 | review of #319 (W3), nit 2 | `ds_sitemap_fragment.patch` (`#deck=kurd` loc) is killed by the trailing-slash assertion, not by `assertNotIn("#", loc)`; the `#` assertion has no committed mutant of its own (reviewer probe `https://handpan.raywu.org/#/` shows it does fire). Unscheduled. | OPEN (unscheduled) |
 
 ### Review log
 | PR | Lane | Reviewer verdict | Findings | Outcome |
 |---|---|---|---|---|
 | 317 | plan | review 1 FAIL at 4013dd5; review 2 FAIL at a3f37d5; review 3 FAIL at 8f99567; review 4 PASS_WITH_NITS at 84ddd74 (nits N1-N4, queue rows 2-5) | merged 2026-10-16 as main 2110b0e |
 | 317 | plan | review 3 FAIL at 8f99567 | D20 scrollbar: the about section makes the document overflow, the harness draws a classic 15px scrollbar, three existing tests outside W1's rights go red | regroup subplan applied (section 15): W2 step 4 hides scrollbars in `launch()`; D20 amended to wrap the live region |
+| 319 | W3 | PASS_WITH_NITS at 7ad5ba9 (CI 38961099995 success; 5 reviewer probes, 4 killed, 1 survived = nit 1) | nits: robots test does not forbid `Disallow` (row 6); `ds_sitemap_fragment` killed by a different assertion than stated (row 7); README mutant count left to W4, correct | merged 2026-10-16 as main 880f054; worktree and branch released |
 
 ### Cycle state
 ```
-Cycle: 1   Wave: 1a   Merged this batch: none
+Cycle: 1   Wave: 1a   Merged this batch: 880f054 (#319 W3)
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | W2 | ae60696a3b5621171 | .claude/worktrees/agent-ae60696a3b5621171 | discoverability/w2-harness | | | | | 0 | no | nothing | yes |
-| W3 | af6af65e9d198cd2e | .claude/worktrees/agent-af6af65e9d198cd2e | discoverability/w3-site-files | #319 | 7ad5ba9 | 2026-10-16 (CI 38961099995 success, 11 checks) | reviewer spawned | 0 | no | nothing | yes |
+| W3 | af6af65e9d198cd2e | released | discoverability/w3-site-files (deleted) | #319 | 7ad5ba9 | 2026-10-16 (CI 38961099995 success, 11 checks) | PASS_WITH_NITS | 0 | yes (main 880f054) | nothing | no |
 | W1 | | | discoverability/w1-head-copy-ga | | | | | 0 | no | W2 merge | |
 | W4 | | | discoverability/w4-docs-counts | | | | | 0 | no | W1 and W3 merge | |
 ```
