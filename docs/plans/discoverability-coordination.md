@@ -97,7 +97,7 @@ Spawned only after the section 5 trigger, cold, from this file. W5 owns `tools/g
 | W2 | `discoverability/w2-harness` | MERGED #320 (main 2b7dadc) | 2026-10-16 | PASS_WITH_NITS |
 | W1 | `discoverability/w1-head-copy-ga` | MERGED #321 (main 6aa98c2) | 2026-10-16 | PASS_WITH_NITS |
 | W3 | `discoverability/w3-site-files` | MERGED #319 (main 880f054) | 2026-10-16 | PASS_WITH_NITS |
-| W4 | `discoverability/w4-docs-counts` | spawning (W1 and W3 merged) | 2026-10-16 | |
+| W4 | `discoverability/w4-docs-counts` | PR #322 at 506e722, CI green, reviewer spawned (budget 10) | 2026-10-16 | |
 
 ### Handoff queue (append-only)
 | # | From | Ask | Status |
@@ -124,6 +124,7 @@ Spawned only after the section 5 trigger, cold, from this file. W5 owns `tools/g
 | 20 | review of #321, nit N4 | `deck_select` also fires on non-user fallbacks (deleteDeck's reselect); matches the plan's literal anchor (selectDeck). | OPEN (unscheduled) |
 | 21 | review of #321, nit N5 | tests/e2e.test.js discoverability describe: the `b.on("Network.requestWillBeSent")` handler is never removed (same shape as row 15). | OPEN (unscheduled) |
 | 22 | review of #321, nit N6 (low confidence) | a typed `#deck=` URL while the modal Add/Edit sheet is open: the hashchange listener changes the deck and replaceStates under the open routed sheet; a later close calls history.back() onto the `#add` entry with the sheet already closed. Unreachable via the about links (inert under the sheet). | OPEN (unscheduled) |
+| 23 | W4 report | `tests/suite_health.py` FLOORS row for harness.test.js is 13 against CI's 19 (W2's row, outside W4's rights). Raise with the next lane that owns suite_health.py. | OPEN (unscheduled) |
 
 ### Review log
 | PR | Lane | Reviewer verdict | Findings | Outcome |
@@ -142,7 +143,7 @@ Cycle: 1   Wave: 1c   Merged this batch: 880f054 (#319 W3), 2b7dadc (#320 W2), 6
 | W2 | ae60696a3b5621171 | released | discoverability/w2-harness (deleted) | #320 | 459bb76 | 2026-10-16 (CI 38963573972 success, 11 checks) | PASS_WITH_NITS | 0 | yes (main 2b7dadc) | nothing | no |
 | W1 | aae6253dabaf29952 | released | discoverability/w1-head-copy-ga (deleted) | #321 | c5edc61 | 2026-10-16 (CI 38970061893 success, 11 checks; first run at 5e6d25e failed on the kills-line lint + a shard-3 browser flake, fixed in c5edc61) | PASS_WITH_NITS | 0 | yes (main 6aa98c2) | nothing | no |
 | W3 | af6af65e9d198cd2e | released | discoverability/w3-site-files (deleted) | #319 | 7ad5ba9 | 2026-10-16 (CI 38961099995 success, 11 checks) | PASS_WITH_NITS | 0 | yes (main 880f054) | nothing | no |
-| W4 | a73559635b9c83956 | /Users/ray/Projects/handpan-cards/.claude/worktrees/agent-a73559635b9c83956 | discoverability/w4-docs-counts | | | | spawned 2026-10-16 | 0 | no | nothing | yes |
+| W4 | a73559635b9c83956 | /Users/ray/Projects/handpan-cards/.claude/worktrees/agent-a73559635b9c83956 | discoverability/w4-docs-counts | #322 | 506e722 | 2026-10-16 (CI 38973637201 success, 11 checks) | reviewer spawned | 0 | no | nothing | yes |
 ```
 
 Owner check-in 2026-10-16 (third): start share-URL execution (SU-A then SU-D) right after W4 merges, same swarm; row 18 privacy copy folded into SU-A; row 19 closed (keep); GA4 property, Measurement ID swap PR and DNS TXT after W4 merges.
