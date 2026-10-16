@@ -8022,6 +8022,7 @@ function openShare(text) {
   if (!built.ok) { say(built.reason, "err"); return built; }
   rememberScale(seedOf(built.value));
   selectDeck(built.value.id);
+  track("share_open");
   return built;
 }
 
@@ -8197,6 +8198,7 @@ function selectDeck(id) {
   deckId = id;
   storedDeck = id;
   save(); setOrder(); buildChips(); render();
+  track("deck_select", isBuiltIn(id) ? { deck_kind: "seeded", deck_id: id } : { deck_kind: "custom" });
   if (rehome) {
     const chip = document.querySelector("#decks .chip.on");
     if (chip) chip.focus();
@@ -8608,6 +8610,7 @@ function downloadDeckPDF(variant, btn) {
     // (and Chrome's own download machinery) reads the URL after this function
     // returns, and revoking early cancels the download with no diagnostic.
     setTimeout(() => URL.revokeObjectURL(url), 60000);
+    track("pdf_download", { paper: printPaper, deck_kind: deckKind(d) });
   } finally {
     setTimeout(() => { rowButtons.forEach(b => { b.disabled = false; }); }, 0);
   }
@@ -10199,6 +10202,8 @@ function runGenerate() {
     return;
   }
   const d = res.value;
+  track("scale_create", { note_count: Object.keys(d.fields).length,
+    has_bottom: Object.values(d.fields).some(f => f[3] === "bottom") ? 1 : 0 });
   // "Edit means edit" (queue row 73). D14 could not keep the id across a field
   // change, so the deck is REPLACED instead: the old entry leaves the registry
   // and the new one takes its chip position. An options-only edit never gets
@@ -10728,7 +10733,7 @@ const card = document.getElementById("card");
 // §8 E3: with order emptied (an unsupported deck in mode S), stepping or
 // flipping must throw nothing and change nothing - render() itself already
 // draws the message in that state (renderSeqEmpty above).
-function flip() { if (!order.length) return; flipped = !flipped; render(); }
+function flip() { if (!order.length) return; flipped = !flipped; render(); track("card_flip", { mode }); }
 function step(dir) {
   if (!order.length) return;
   idx = (idx + dir + order.length) % order.length;
@@ -10855,6 +10860,7 @@ function syncTierUI() {
 // the previous tier dealt the same chords.
 function setTier(t) {
   tier = t; seq = null;
+  track("progression_view", { tier: t });
   if (mode === "S") setOrder();
   setMode("S");
   closePanel();
@@ -11297,6 +11303,9 @@ function loadAnalytics() {
 function track(name, params) {
   if (analyticsLoaded) gtag("event", name, params || {});
 }
+// A custom deck's id hashes its scale and its name is free text, so only a
+// built-in id is ever sent; a custom deck is just "custom".
+const deckKind = (d) => isBuiltIn(d.id) ? "seeded" : "custom";
 
 /* ---------------- go ---------------- */
 loadAnalytics();

@@ -9425,3 +9425,104 @@ describe("discoverability: analytics loader", () => {
     assert.ok(cfg >= 0 && (ev === -1 || ev > cfg), JSON.stringify(names));
   });
 });
+
+describe("discoverability: analytics events", () => {
+  const REAL_ID = "G-TEST123456";
+  const bootEv = (opts = {}) => {
+    const html = INDEX_HTML().replace('const GA_MEASUREMENT_ID = "G-XXXXXXXXXX";', 'const GA_MEASUREMENT_ID = "' + REAL_ID + '";');
+    return boot({ html, webdriver: false, href: "https://example.test/index.html", ...opts });
+  };
+  const events = (app) => JSON.parse(JSON.stringify(Array.from(app.get("window.dataLayer"))))
+    .filter((e) => e[0] === "event").map((e) => ({ name: e[1], params: e[2] }));
+  const since = (app, n) => events(app).slice(n);
+
+  test("selectDeck tracks deck_select with the seeded id", () => {
+    const app = bootEv();
+    const n = events(app).length;
+    app.run('selectDeck("pygmy")');
+    assert.deepStrictEqual(since(app, n), [{ name: "deck_select", params: { deck_kind: "seeded", deck_id: "pygmy" } }]);
+  });
+
+  test("selecting a custom deck tracks deck_kind custom and no deck_id", () => {
+    const app = bootEv();
+    openSheet(app);
+    app.type(AMARA_STRING);
+    const n = events(app).length;
+    app.els["scale-generate"].click();
+    const evs = since(app, n);
+    const sel = evs.filter((e) => e.name === "deck_select");
+    assert.ok(sel.length >= 1);
+    for (const e of sel) assert.deepStrictEqual(e.params, { deck_kind: "custom" });
+  });
+
+  test("generating a scale tracks scale_create with a note count and has_bottom as 1 or 0", () => {
+    const app = bootEv();
+    openSheet(app);
+    app.type(AMARA_STRING);
+    const n = events(app).length;
+    app.els["scale-generate"].click();
+    const created = since(app, n).filter((e) => e.name === "scale_create");
+    assert.strictEqual(created.length, 1);
+    assert.strictEqual(typeof created[0].params.note_count, "number");
+    assert.ok(created[0].params.note_count >= 8);
+    assert.ok([0, 1].includes(created[0].params.has_bottom));
+  });
+
+  test("flip tracks card_flip with the mode", () => {
+    const app = bootEv();
+    const n = events(app).length;
+    app.run("flip()");
+    assert.deepStrictEqual(since(app, n), [{ name: "card_flip", params: { mode: app.get("mode") } }]);
+  });
+
+  test("setTier tracks progression_view with the tier", () => {
+    const app = bootEv();
+    const n = events(app).length;
+    app.run('setTier("advanced")');
+    const pv = since(app, n).filter((e) => e.name === "progression_view");
+    assert.deepStrictEqual(pv, [{ name: "progression_view", params: { tier: "advanced" } }]);
+  });
+
+  test("downloadDeckPDF tracks pdf_download with paper and deck_kind", () => {
+    const app = bootEv();
+    const n = events(app).length;
+    app.run('downloadDeckPDF("shop")');
+    const pd = since(app, n).filter((e) => e.name === "pdf_download");
+    assert.strictEqual(pd.length, 1);
+    assert.deepStrictEqual(Object.keys(pd[0].params).sort(), ["deck_kind", "paper"]);
+    assert.strictEqual(pd[0].params.deck_kind, "seeded");
+  });
+
+  test("a valid share link tracks share_open with no params", () => {
+    const app = bootEv();
+    const seed = plain(app.get(`HPE.core.parseSeed(${JSON.stringify(AMARA_STRING)}, {})`));
+    const link = plain(app.get(`HPE.share.encode(${JSON.stringify({ fields: seed.value.fields, options: seed.value.options })})`)).value;
+    const n = events(app).length;
+    app.run("openShare(" + JSON.stringify(link) + ")");
+    const so = since(app, n).filter((e) => e.name === "share_open");
+    assert.deepStrictEqual(so, [{ name: "share_open", params: {} }]);
+  });
+
+  test("track pushes nothing when the loader did not inject", () => {
+    const app = boot({ webdriver: true });
+    app.run('selectDeck("pygmy"); flip(); setTier("basic");');
+    assert.deepStrictEqual(events(app), []);
+  });
+
+  test("no event param is a string over 40 characters or names a custom: id", () => {
+    const app = bootEv();
+    openSheet(app);
+    app.type(AMARA_STRING);
+    app.els["scale-generate"].click();
+    app.run('flip(); setTier("basic"); downloadDeckPDF("shop"); selectDeck("hijaz");');
+    const all = events(app);
+    assert.ok(all.length >= 5);
+    for (const e of all) {
+      assert.ok(/^[A-Za-z0-9_]{1,40}$/.test(e.name), e.name);
+      assert.ok(Object.keys(e.params).length < 25);
+      for (const v of Object.values(e.params)) {
+        if (typeof v === "string") assert.ok(v.length <= 40 && !v.includes("custom:"), e.name + " " + v);
+      }
+    }
+  });
+});
