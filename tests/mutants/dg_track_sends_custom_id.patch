@@ -1,0 +1,15 @@
+# kills: selecting a custom deck tracks deck_kind custom and no deck_id
+# suite: node --test --test-name-pattern ^selecting.a.custom.deck.tracks tests/app.test.js
+# A custom deck id (a hash of the visitor's scale) is sent to Google as deck_id.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8198,7 +8198,7 @@ function selectDeck(id) {
+   deckId = id;
+   storedDeck = id;
+   save(); setOrder(); buildChips(); render();
+-  track("deck_select", isBuiltIn(id) ? { deck_kind: "seeded", deck_id: id } : { deck_kind: "custom" });
++  track("deck_select", { deck_kind: isBuiltIn(id) ? "seeded" : "custom", deck_id: id });
+   if (rehome) {
+     const chip = document.querySelector("#decks .chip.on");
+     if (chip) chip.focus();
