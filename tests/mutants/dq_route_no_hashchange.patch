@@ -1,0 +1,15 @@
+# kills: hashchange to a deck link selects that deck and clears the hash
+# suite: node --test --test-name-pattern ^hashchange.to.a.deck.link tests/app.test.js
+# An in-page deck link changes the hash and nothing listens, so the about-section links do nothing.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11331,7 +11331,7 @@ function warnIfDeckGone(wanted) {
+ // boot code runs. selectDeck gets the id deck() returns for the mapped seed,
+ // never the raw seed id: a replaced or hidden seed id would be stored as is and
+ // light no chip.
+-window.addEventListener("hashchange", () => {
++window.addEventListener("hashchange_off", () => {
+   if (location.hash.indexOf(DECK_ROUTE) !== 0) return;
+   const routed = routedDeckId();
+   if (routed) {

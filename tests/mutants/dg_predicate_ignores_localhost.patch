@@ -1,0 +1,14 @@
+# kills: analyticsAllowed is false for localhost: no gtag script, no config, no event
+# suite: node --test --test-name-pattern ^analyticsAllowed.is.false.for.localhost tests/app.test.js
+# Local servers (every e2e run, every developer) count as visitors.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11280,7 +11280,6 @@ let analyticsLoaded = false;
+ // placeholder id: those boots must send nothing.
+ function analyticsAllowed() {
+   if (location.protocol === "file:") return false;
+-  if (["localhost", "127.0.0.1", "[::1]"].includes(location.hostname)) return false;
+   if (navigator.webdriver) return false;
+   return GA_MEASUREMENT_ID !== "G-XXXXXXXXXX";
+ }

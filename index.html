@@ -18,19 +18,50 @@
      autofill) before the app's own CSS has painted anything. -->
 <meta name="theme-color" content="#1a1815">
 <meta name="color-scheme" content="dark">
-<title>Handpan Chords</title>
-<meta name="description" content="Learn handpan chords and play chord progressions in your scale. Flashcards show each chord lit on your pan: drill it, then connect chords into progressions.">
+<title>Handpan Chords: Custom Scale Chord and Progression Practice</title>
+<meta name="description" content="Chord flashcards and progressions for your handpan scale, free and without an account. Type any scale to generate its chords, or pick a built-in deck.">
 <link rel="canonical" href="https://handpan.raywu.org/">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://handpan.raywu.org/">
-<meta property="og:title" content="Handpan Chords">
-<meta property="og:description" content="Learn handpan chords and play chord progressions in your scale. Flashcards show each chord lit on your pan: drill it, then connect chords into progressions.">
+<meta property="og:title" content="Handpan Chords: Custom Scale Chord and Progression Practice">
+<meta property="og:description" content="Chord flashcards and progressions for your handpan scale, free and without an account. Type any scale to generate its chords, or pick a built-in deck.">
 <meta property="og:image" content="https://handpan.raywu.org/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Handpan Chords">
+<meta name="twitter:title" content="Handpan Chords: Custom Scale Chord and Progression Practice">
 <meta name="twitter:image" content="https://handpan.raywu.org/og.png">
+<!-- Structured data (discoverability plan section 6): states only what the page
+     shows. No rating or review markup, so it earns no rich result; it is a
+     machine-readable statement of name, price and purpose. Pinned by
+     tests/app.test.js "the JSON-LD block parses and states only what the page shows". -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Handpan Chords",
+  "url": "https://handpan.raywu.org/",
+  "description": "Chord flashcards and progressions for your handpan scale, free and without an account. Type any scale to generate its chords, or pick a built-in deck.",
+  "applicationCategory": "MusicApplication",
+  "operatingSystem": "Any",
+  "browserRequirements": "Requires JavaScript",
+  "isAccessibleForFree": true,
+  "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
+  "featureList": "Chord flashcards; chord progressions; custom scale input; printable PDF"
+}
+</script>
+<!-- Analytics consent defaults (discoverability plan section 7). Inline and inert: it
+     only fills window.dataLayer, so no network request exists until loadAnalytics()
+     appends the gtag script. The defaults must precede config; the region-scoped
+     denial (EEA, UK, CH) wins over the open default for visitors there. -->
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag() { window.dataLayer.push(arguments); }
+gtag("consent", "default", {ad_storage: "denied", ad_user_data: "denied", ad_personalization: "denied", analytics_storage: "granted"});
+gtag("consent", "default", {ad_storage: "denied", ad_user_data: "denied", ad_personalization: "denied", analytics_storage: "denied",
+  region: ["AT","BE","BG","HR","CY","CZ","DK","EE","FI","FR","DE","GR","HU","IE","IT","LV","LT","LU","MT","NL","PL","PT","RO","SK","SI","ES","SE","IS","LI","NO","GB","CH"]});
+gtag("js", new Date());
+</script>
 <!-- The favicon is the D Amara deck's Dm card in the app's root/tone colours
      (root teal, tones amber) on the --table ground, lighting the three
      voicing fields only (not the ding and A3 the pitch-class rule adds). This
@@ -1115,6 +1146,26 @@ footer.seq{row-gap:var(--sp-1)}
    needs the acknowledgement. */
 #scale-delete[data-armed]:active{color:#eae6df}
 
+/* ---- the first screen and the about section (discoverability W1, plan D20) ----
+   #app holds header, main, footer and the live region and is exactly as tall
+   as the body's content box (100%, floored at 100dvh less the padding as body's own min-height is),
+   so the card is the size it was before #about existed; #about overflows below
+   it and the document scrolls to it. A fourth flex child of body would have
+   SHRUNK the card (main is flex:1 inside a height:100% body). #about starts at
+   least 12px below the body's bottom padding, so none of its text lands in the
+   4px frame band. Both rules sit BEFORE the print block (it must stay last). */
+#app{flex:none; width:100%; min-height:0; display:flex; flex-direction:column; align-items:center;
+  height:max(100%, calc(100dvh - max(10px, env(safe-area-inset-top)) - max(12px, env(safe-area-inset-bottom))))}
+#about{flex:none; width:100%; max-width:520px; margin-top:24px; padding:0 4px 48px;
+  color:#c4bcab; font:400 14px/1.6 "Nunito Sans", system-ui, sans-serif; user-select:text; -webkit-user-select:text}
+#about h2{margin:0 0 8px; font:400 22px/1.2 "Marcellus", serif; color:#eae6df}
+#about h3{margin:20px 0 6px; font:600 11px/1.4 "Nunito Sans"; letter-spacing:.13em;
+  text-transform:uppercase; color:#a79d8b}
+#about p{margin:0 0 8px}
+#about ol, #about ul{margin:0; padding-left:20px}
+#about li{margin:0 0 4px}
+#about a{color:#eae6df}
+
 /* ---- print (R1, 2026-09-29) -----------------------------------------------
    Forces print colour adjustment, clears the page background and padding for
    paper, and resets .scene's swipe transform so a card mid-flight never
@@ -1136,10 +1187,13 @@ footer.seq{row-gap:var(--sp-1)}
      on paper; left in, it shifts every page by the device's insets. */
   body{margin:0; padding:0; background:#fff; display:block}
   .scene{transform:none!important}
+  #app{display:block; height:auto}
+  #about{display:none}
 }
 </style>
 </head>
 <body>
+<div id="app">
 <header>
   <div class="hrow">
     <span class="hspacer" aria-hidden="true"></span>
@@ -1191,6 +1245,31 @@ footer.seq{row-gap:var(--sp-1)}
      sheet makes inert, so a success message announced as the sheet closes is
      still read out. -->
 <div class="announce" role="status" aria-live="polite"></div>
+</div>
+
+<section id="about" aria-labelledby="about-title">
+  <h2 id="about-title">About Handpan Chords</h2>
+  <p>A free chord and progression practice tool for your own handpan scale.</p>
+  <h3>How it works</h3>
+  <ol>
+    <li>Pick a built-in deck, or type your own scale.</li>
+    <li>Flip a card to see the chord lit on the pan.</li>
+    <li>Open the settings menu and switch to Chord progression for a sequence to play.</li>
+  </ol>
+  <h3>Built-in decks</h3>
+  <ul>
+    <li><a href="#deck=d-kurd-10">D Kurd 10: 49 chord cards</a></li>
+    <li><a href="#deck=d-amara-10">D Amara 10: 29 chord cards</a></li>
+    <li><a href="#deck=d-amara-9">D Amara 9: 27 chord cards</a></li>
+    <li><a href="#deck=f-low-pygmy-18">F3 Low Pygmy 18: 53 chord cards</a></li>
+    <li><a href="#deck=c-sharp-hijaz-9">C# Hijaz 9: 19 chord cards</a></li>
+  </ul>
+  <p>D Amara is also sold as Celtic Minor.</p>
+  <h3>Your own scale</h3>
+  <p>Type any scale and the app generates its chords. A custom scale lives only in your browser.</p>
+  <h3>Privacy</h3>
+  <p>Your scales never leave your browser. The site counts anonymous visits and feature use with Google Analytics, without cookies in the EU, the UK and Switzerland.</p>
+</section>
 
 <div id="scale-sheet" role="dialog" aria-modal="true" aria-labelledby="scale-title" hidden>
   <div class="sheetsurf">
@@ -7943,6 +8022,7 @@ function openShare(text) {
   if (!built.ok) { say(built.reason, "err"); return built; }
   rememberScale(seedOf(built.value));
   selectDeck(built.value.id);
+  track("share_open");
   return built;
 }
 
@@ -8118,6 +8198,7 @@ function selectDeck(id) {
   deckId = id;
   storedDeck = id;
   save(); setOrder(); buildChips(); render();
+  track("deck_select", isBuiltIn(id) ? { deck_kind: "seeded", deck_id: id } : { deck_kind: "custom" });
   if (rehome) {
     const chip = document.querySelector("#decks .chip.on");
     if (chip) chip.focus();
@@ -8529,6 +8610,7 @@ function downloadDeckPDF(variant, btn) {
     // (and Chrome's own download machinery) reads the URL after this function
     // returns, and revoking early cancels the download with no diagnostic.
     setTimeout(() => URL.revokeObjectURL(url), 60000);
+    track("pdf_download", { paper: printPaper, deck_kind: deckKind(d) });
   } finally {
     setTimeout(() => { rowButtons.forEach(b => { b.disabled = false; }); }, 0);
   }
@@ -8915,7 +8997,7 @@ announce.className = "announce";
 // 2026-09-28): the mode buttons moved out of <header> into that body-level
 // sibling, so without it here they would sit outside every landmark this
 // list inerts and stay reachable behind the modal sheet.
-const background = [...document.querySelectorAll("header, main, footer, #settings-panel")];
+const background = [...document.querySelectorAll("header, main, footer, #settings-panel, #about")];
 
 let palette = 0;                 // D6 index 0-5
 let mirror = false;              // MIRROR TOP: the rim and the inner ring
@@ -10120,6 +10202,8 @@ function runGenerate() {
     return;
   }
   const d = res.value;
+  track("scale_create", { note_count: Object.keys(d.fields).length,
+    has_bottom: Object.values(d.fields).some(f => f[3] === "bottom") ? 1 : 0 });
   // "Edit means edit" (queue row 73). D14 could not keep the id across a field
   // change, so the deck is REPLACED instead: the old entry leaves the registry
   // and the new one takes its chip position. An options-only edit never gets
@@ -10649,7 +10733,7 @@ const card = document.getElementById("card");
 // §8 E3: with order emptied (an unsupported deck in mode S), stepping or
 // flipping must throw nothing and change nothing - render() itself already
 // draws the message in that state (renderSeqEmpty above).
-function flip() { if (!order.length) return; flipped = !flipped; render(); }
+function flip() { if (!order.length) return; flipped = !flipped; render(); track("card_flip", { mode }); }
 function step(dir) {
   if (!order.length) return;
   idx = (idx + dir + order.length) % order.length;
@@ -10684,7 +10768,7 @@ const settingsScrim   = document.getElementById("settings-scrim");
 // inert the trigger along with it and the panel could never be closed by a
 // second tap on it.
 const panelBackground = [document.querySelector("main"), document.querySelector("footer"),
-                          document.getElementById("decks")].filter(Boolean);
+                          document.getElementById("decks"), document.querySelector("#about")].filter(Boolean);
 let panelOpen = false;
 // M3 (desktop sidebar, 2026-09-28): the same breakpoint the CSS media query
 // above uses. Below it the panel is the modal drawer M1 built - role="dialog",
@@ -10776,6 +10860,7 @@ function syncTierUI() {
 // the previous tier dealt the same chords.
 function setTier(t) {
   tier = t; seq = null;
+  track("progression_view", { tier: t });
   if (mode === "S") setOrder();
   setMode("S");
   closePanel();
@@ -11192,14 +11277,84 @@ document.addEventListener("click", e => {
   land();
 }, true);
 
+/* ---------------- analytics ---------------- */
+// One named constant; the placeholder disables the loader until the owner swaps
+// in the real measurement id.
+const GA_MEASUREMENT_ID = "G-XXXXXXXXXX";
+let analyticsLoaded = false;
+// Never from a file, a local server or an automated browser, and never with the
+// placeholder id: those boots must send nothing.
+function analyticsAllowed() {
+  if (location.protocol === "file:") return false;
+  if (["localhost", "127.0.0.1", "[::1]"].includes(location.hostname)) return false;
+  if (navigator.webdriver) return false;
+  return GA_MEASUREMENT_ID !== "G-XXXXXXXXXX";
+}
+// page_location omits the hash: a #s= payload is a free-text scale string.
+function loadAnalytics() {
+  if (!analyticsAllowed()) return;
+  const el = document.createElement("script");
+  el.async = true;
+  el.src = "https://www.googletagmanager.com/gtag/js?id=" + GA_MEASUREMENT_ID;
+  document.head.appendChild(el);
+  gtag("config", GA_MEASUREMENT_ID, {page_location: location.origin + location.pathname});
+  analyticsLoaded = true;
+}
+function track(name, params) {
+  if (analyticsLoaded) gtag("event", name, params || {});
+}
+// A custom deck's id hashes its scale and its name is free text, so only a
+// built-in id is ever sent; a custom deck is just "custom".
+const deckKind = (d) => isBuiltIn(d.id) ? "seeded" : "custom";
+
+/* ---------------- deck route ---------------- */
+// "#deck=<slug>" opens a built-in deck from a link (a post, a landing page, the
+// about section). Slugs are the stable public names; the values are the seed ids.
+// A custom: id is never a value, and an unknown slug changes nothing.
+const DECK_ROUTE = "#deck=";
+const DECK_SLUGS = {"d-kurd-10": "kurd", "d-amara-10": "amara10", "d-amara-9": "amara", "f-low-pygmy-18": "pygmy", "c-sharp-hijaz-9": "hijaz"};
+function routedDeckId() {
+  if (location.hash.indexOf(DECK_ROUTE) !== 0) return null;
+  const slug = location.hash.slice(DECK_ROUTE.length);
+  return Object.prototype.hasOwnProperty.call(DECK_SLUGS, slug) ? DECK_SLUGS[slug] : null;
+}
+// An in-page link (the about section) changes the hash without a reload, so no
+// boot code runs. selectDeck gets the id deck() returns for the mapped seed,
+// never the raw seed id: a replaced or hidden seed id would be stored as is and
+// light no chip.
+window.addEventListener("hashchange", () => {
+  if (location.hash.indexOf(DECK_ROUTE) !== 0) return;
+  const routed = routedDeckId();
+  if (routed) {
+    const before = deckId;
+    deckId = routed;
+    const shown = deck().id;
+    deckId = before;
+    selectDeck(shown);
+    deckId = shown;
+    // The same "gone" test the boot makes: a routed seed that is hidden shows the
+    // fallback and says so; one that shows its replacement does not.
+    if (routed !== shown && !(replacements()[routed] && replacements()[routed].id === shown) && hidden.includes(routed))
+      say("That deck is gone. Showing " + deck().name + ".", "warn");
+    track("deck_route", { deck_id: routed });
+  }
+  history.replaceState(null, "", location.pathname + location.search);
+});
+
 /* ---------------- go ---------------- */
+loadAnalytics();
 sheet.setAttribute("hidden", ""); buildSwatches(); paintLayout(); resyncSheet(true);
 // Saved scales are rebuilt BEFORE the stored deck id is resolved, so a custom
 // deck that was selected last session is in the registry by the time deck()
 // looks for it.
 restoreScales();
+const routedDeck = routedDeckId();
+if (routedDeck) deckId = routedDeck;
 const wantedDeck = deckId;
 deckId = deck().id; storedDeck = deckId; setOrder(); buildChips(); setMode(mode);
+// setMode() above saved the routed deck, as a chip tap does: a link that opens a
+// deck once keeps it, so the visitor does not land on the old one tomorrow.
+if (routedDeck) track("deck_route", { deck_id: routedDeck });
 // Two fallbacks, deliberately different. An unknown BUILT-IN id is a stale or
 // renamed deck and falls back SILENTLY, as it always has. A missing custom: id
 // means the user's own saved scale is gone - deleted, or dropped as corrupt -
@@ -11221,6 +11376,10 @@ if (location.hash === ADD_ROUTE || location.hash.indexOf(EDIT_ROUTE) === 0)
 // never see each other's hash.
 else if (location.hash.indexOf(SHARE_PREFIX) === 0)
   openShare(location.hash.slice(SHARE_PREFIX.length));
+// A deck link is consumed once, like the page routes: replaceState, so the
+// clean URL is not an entry of its own and Back leaves the page.
+else if (location.hash.indexOf(DECK_ROUTE) === 0)
+  history.replaceState(null, "", location.pathname + location.search);
 </script>
 </body>
 </html>

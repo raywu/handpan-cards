@@ -1,0 +1,14 @@
+# kills: the about section names every built-in deck with its card count from data/decks.json and the value line
+# suite: node --test --test-name-pattern ^the.about.section.names.every.built-in.deck tests/app.test.js
+# One built-in deck leaves the about section, so the page no longer names it.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1261,7 +1261,6 @@ footer.seq{row-gap:var(--sp-1)}
+     <li><a href="#deck=d-kurd-10">D Kurd 10: 49 chord cards</a></li>
+     <li><a href="#deck=d-amara-10">D Amara 10: 29 chord cards</a></li>
+     <li><a href="#deck=d-amara-9">D Amara 9: 27 chord cards</a></li>
+-    <li><a href="#deck=f-low-pygmy-18">F3 Low Pygmy 18: 53 chord cards</a></li>
+     <li><a href="#deck=c-sharp-hijaz-9">C# Hijaz 9: 19 chord cards</a></li>
+   </ul>
+   <p>D Amara is also sold as Celtic Minor.</p>

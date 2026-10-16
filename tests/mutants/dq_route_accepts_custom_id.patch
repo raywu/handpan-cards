@@ -1,0 +1,15 @@
+# kills: an unknown slug, a custom id and an empty slug fall back silently and lose the hash
+# suite: node --test --test-name-pattern ^an.unknown.slug..a.custom.id tests/app.test.js
+# A custom: id in the hash is honoured, so a link can name a visitor's private deck.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11316,7 +11316,7 @@ const DECK_SLUGS = {"d-kurd-10": "kurd", "d-amara-10": "amara10", "d-amara-9": "
+ function routedDeckId() {
+   if (location.hash.indexOf(DECK_ROUTE) !== 0) return null;
+   const slug = location.hash.slice(DECK_ROUTE.length);
+-  return Object.prototype.hasOwnProperty.call(DECK_SLUGS, slug) ? DECK_SLUGS[slug] : null;
++  return Object.prototype.hasOwnProperty.call(DECK_SLUGS, slug) ? DECK_SLUGS[slug] : (slug.indexOf("custom:") === 0 ? slug : null);
+ }
+ // An in-page link (the about section) changes the hash without a reload, so no
+ // boot code runs. selectDeck gets the id deck() returns for the mapped seed,

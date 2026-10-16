@@ -1,0 +1,15 @@
+# kills: flip tracks card_flip with the mode
+# suite: node --test --test-name-pattern ^flip.tracks.card_flip tests/app.test.js
+# The practice loop (card flips) is no longer measured.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10733,7 +10733,7 @@ const card = document.getElementById("card");
+ // §8 E3: with order emptied (an unsupported deck in mode S), stepping or
+ // flipping must throw nothing and change nothing - render() itself already
+ // draws the message in that state (renderSeqEmpty above).
+-function flip() { if (!order.length) return; flipped = !flipped; render(); track("card_flip", { mode }); }
++function flip() { if (!order.length) return; flipped = !flipped; render(); }
+ function step(dir) {
+   if (!order.length) return;
+   idx = (idx + dir + order.length) % order.length;

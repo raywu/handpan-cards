@@ -3918,24 +3918,27 @@ function linkHref(html, rel, extra = "") {
   return m[1];
 }
 
-test("the visible name is one string: title, h1, og:title and twitter:title", () => {
+const POSITIONING_TITLE = "Handpan Chords: Custom Scale Chord and Progression Practice";
+
+test("the title is the positioning string; og:title and twitter:title equal it; the h1 is the app name", () => {
   const html = headHtml();
   const title = /<title>([^<]*)<\/title>/.exec(html);
   assert.ok(title, "no <title>");
   const h1 = /<h1>([^<]*)<\/h1>/.exec(html);
   assert.ok(h1, "no <h1>");
-  assert.strictEqual(title[1], "Handpan Chords");
-  assert.strictEqual(h1[1], title[1], "the h1 differs from the tab title");
+  assert.strictEqual(title[1], POSITIONING_TITLE);
+  assert.strictEqual(h1[1], "Handpan Chords");
   assert.strictEqual(metaContent(html, "property", "og:title"), title[1]);
   assert.strictEqual(metaContent(html, "name", "twitter:title"), title[1]);
 });
 
-test("the description says progressions early, equals og:description and fits 120..160", () => {
+test("the description says free and progressions early, equals og:description and fits 120..155", () => {
   const html = headHtml();
   const desc = metaContent(html, "name", "description");
   assert.strictEqual(metaContent(html, "property", "og:description"), desc);
-  assert.ok(desc.length >= 120 && desc.length <= 160,
-    `description is ${desc.length} characters, outside 120..160`);
+  assert.ok(desc.length >= 120 && desc.length <= 155,
+    `description is ${desc.length} characters, outside 120..155`);
+  assert.ok(/\bfree\b/i.test(desc), "the description does not say free");
   const cut = desc.slice(0, 110);
   assert.ok(/progressions/.test(cut),
     `"progressions" is not inside the first 110 characters: ${JSON.stringify(cut)}`);
@@ -9266,4 +9269,374 @@ test("RD: opening a share link that carries an explicit parent stores that paren
   assert.strictEqual(records(app).length, 1, "a second record appeared");
   assert.strictEqual(records(app)[0].o.parent, 2, "the link's parent was not stored again");
   assert.strictEqual(app.registry()[id].degrees["7"], "IV");
+});
+
+/* ---------------------------------------------------------------- discoverability */
+
+const INDEX_HTML = () => fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+const BUILTIN_DECKS = () => JSON.parse(fs.readFileSync(path.join(ROOT, "data", "decks.json"), "utf8"));
+const VALUE_LINE = "A free chord and progression practice tool for your own handpan scale.";
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+function aboutHtml() {
+  const m = /<section id="about"[^>]*>([\s\S]*?)<\/section>/.exec(INDEX_HTML());
+  assert.ok(m, 'no <section id="about"> in index.html');
+  return m[1];
+}
+
+const textOf = (html) => html.replace(/<[^>]*>/g, " ").replace(/&amp;/g, "&").replace(/\s+/g, " ").trim();
+
+describe("discoverability", () => {
+  test("the about section names every built-in deck with its card count from data/decks.json and the value line", () => {
+    const text = textOf(aboutHtml());
+    assert.ok(text.includes(VALUE_LINE), "the value line is missing from the about section");
+    for (const d of BUILTIN_DECKS()) {
+      const re = new RegExp(`${escapeRe(d.name)}[:,]? ${d.chords.length} chord cards`, "i");
+      assert.ok(re.test(text), `${d.name} with ${d.chords.length} chord cards is not in the about section`);
+    }
+    assert.ok(/D Amara is also sold as Celtic Minor/.test(text), "the Celtic Minor equivalence is missing");
+    assert.ok(/A custom scale lives only in your browser/.test(text), "the custom scale sentence is missing");
+    assert.ok(/Google Analytics/.test(text), "the privacy sentence is missing");
+    const steps = (/<ol[^>]*>([\s\S]*?)<\/ol>/.exec(aboutHtml()) || [])[1] || "";
+    assert.strictEqual((steps.match(/<li\b/g) || []).length, 3, "the how-it-works list is not three steps");
+  });
+
+  test("#about is in both inert lists and #app in neither", () => {
+    const html = INDEX_HTML();
+    const panel = /const panelBackground = \[([\s\S]*?)\]\.filter\(Boolean\);/.exec(html);
+    assert.ok(panel, "panelBackground not found");
+    const sheet = /const background = \[([^\n]*)\];/.exec(html);
+    assert.ok(sheet, "the sheet's background list not found");
+    assert.ok(/#about/.test(panel[1]), "#about is not in panelBackground");
+    assert.ok(/#about/.test(sheet[1]), "#about is not in the sheet's background");
+    assert.ok(!/#app|"app"/.test(panel[1]), "#app is in panelBackground (it holds the settings trigger)");
+    assert.ok(!/#app|"app"/.test(sheet[1]), "#app is in the sheet's background");
+  });
+
+  test("#app wraps header, main, footer and the live region in that order, and #about follows it before the sheet", () => {
+    const html = INDEX_HTML();
+    const body = html.slice(html.indexOf("<body>"));
+    const order = ['<div id="app">', "<header>", "<main>", '<footer id="foot">', 'class="announce"',
+      '</div>\n\n<section id="about"', 'id="scale-sheet"'];
+    let at = -1;
+    for (const s of order) {
+      const i = body.indexOf(s, at + 1);
+      assert.ok(i > at, `${s} is missing or out of order`);
+      at = i;
+    }
+  });
+});
+
+describe("discoverability: structured data", () => {
+  const ldBlock = () => {
+    const html = INDEX_HTML();
+    const blocks = html.match(/<script type="application\/ld\+json">[\s\S]*?<\/script>/g) || [];
+    assert.strictEqual(blocks.length, 1, "expected exactly one JSON-LD block");
+    return JSON.parse(blocks[0].replace(/^<script[^>]*>/, "").replace(/<\/script>$/, ""));
+  };
+
+  test("the JSON-LD block parses and states only what the page shows", () => {
+    const html = INDEX_HTML();
+    const ld = ldBlock();
+    assert.strictEqual(ld["@context"], "https://schema.org");
+    assert.strictEqual(ld["@type"], "WebApplication");
+    assert.strictEqual(ld.url, "https://handpan.raywu.org/");
+    assert.strictEqual(ld.applicationCategory, "MusicApplication");
+    assert.strictEqual(ld.operatingSystem, "Any");
+    assert.strictEqual(ld.browserRequirements, "Requires JavaScript");
+    assert.strictEqual(ld.isAccessibleForFree, true);
+    assert.deepStrictEqual(ld.offers, { "@type": "Offer", price: "0", priceCurrency: "USD" });
+    assert.strictEqual(ld.featureList, "Chord flashcards; chord progressions; custom scale input; printable PDF");
+    assert.ok(!("aggregateRating" in ld) && !("review" in ld), "a rating or review is marked up but never shown");
+    assert.ok(!/aggregateRating|"review"/.test(html), "a rating or review appears in the page");
+    const h1 = /<h1>([^<]*)<\/h1>/.exec(html)[1];
+    assert.strictEqual(ld.name, h1, "name differs from the h1");
+    assert.strictEqual(ld.description, metaContent(html, "name", "description"), "description differs from the meta description");
+    assert.ok(/\bfree\b/i.test(textOf(aboutHtml())), "isAccessibleForFree is marked up but the about section does not say free");
+  });
+});
+
+describe("discoverability: analytics loader", () => {
+  const REAL_ID = "G-TEST123456";
+  const bootGa = (opts = {}) => {
+    const html = INDEX_HTML().replace('const GA_MEASUREMENT_ID = "G-XXXXXXXXXX";', 'const GA_MEASUREMENT_ID = "' + (opts.id || REAL_ID) + '";');
+    return boot({ html, webdriver: false, href: "https://example.test/index.html", ...opts.boot });
+  };
+  const gtagScripts = (app) => app.head.children.filter((c) => /googletagmanager\.com\/gtag\/js/.test(c.src || ""));
+  const queue = (app) => JSON.parse(JSON.stringify(Array.from(app.get("window.dataLayer"))));
+
+  test("the placeholder id is the shipped constant", () => {
+    assert.ok(INDEX_HTML().includes('const GA_MEASUREMENT_ID = "G-XXXXXXXXXX";'));
+  });
+
+  test("the loader appends the gtag script on a real host with a real id, and only then", () => {
+    const app = bootGa();
+    const s = gtagScripts(app);
+    assert.strictEqual(s.length, 1);
+    assert.strictEqual(s[0].src, "https://www.googletagmanager.com/gtag/js?id=" + REAL_ID);
+    assert.strictEqual(s[0].async, true);
+  });
+
+  const noInject = [
+    ["a file: page", { boot: { href: "file:///x/index.html" } }],
+    ["localhost", { boot: { href: "http://localhost:8000/index.html" } }],
+    ["127.0.0.1", { boot: { href: "http://127.0.0.1:8000/index.html" } }],
+    ["[::1]", { boot: { href: "http://[::1]:8000/index.html" } }],
+    ["an automated browser", { boot: { webdriver: true } }],
+    ["the placeholder id", { id: "G-XXXXXXXXXX" }],
+  ];
+  for (const [label, opts] of noInject) {
+    test(`analyticsAllowed is false for ${label}: no gtag script, no config, no event`, () => {
+      const app = bootGa(opts);
+      assert.strictEqual(gtagScripts(app).length, 0);
+      assert.ok(!queue(app).some((e) => e[0] === "config"), "config queued");
+      assert.strictEqual(app.get("analyticsAllowed()"), false);
+    });
+  }
+
+  test("consent defaults come first, in order, and config follows them", () => {
+    const q = queue(bootGa());
+    const heads = q.map((e) => e[0] + (e[0] === "js" || !e[1] ? "" : ":" + e[1]));
+    assert.deepStrictEqual(heads.slice(0, 4), ["consent:default", "consent:default", "js", "config:" + REAL_ID]);
+    const [open, eea] = [q[0][2], q[1][2]];
+    for (const c of [open, eea]) {
+      assert.strictEqual(c.ad_storage, "denied");
+      assert.strictEqual(c.ad_user_data, "denied");
+      assert.strictEqual(c.ad_personalization, "denied");
+    }
+    assert.strictEqual(open.analytics_storage, "granted");
+    assert.ok(!("region" in open));
+    assert.strictEqual(eea.analytics_storage, "denied");
+    assert.strictEqual(eea.region.length, 32);
+    for (const c of ["DE", "FR", "GB", "CH", "IS", "LI", "NO", "ES", "SE"]) assert.ok(eea.region.includes(c), c);
+  });
+
+  test("page_location carries no hash, so a share payload never reaches GA", () => {
+    const app = bootGa({ boot: { href: "https://example.test/index.html#s=SECRET" } });
+    const cfg = queue(app).find((e) => e[0] === "config");
+    assert.strictEqual(cfg[2].page_location, "https://example.test/index.html");
+    assert.ok(!JSON.stringify(queue(app)).includes("SECRET"));
+  });
+
+  test("config is queued before any event on a boot with a share link", () => {
+    const app = bootGa({ boot: { href: "https://example.test/index.html#s=zzz" } });
+    const names = queue(app).map((e) => e[0] + (e[0] === "event" ? ":" + e[1] : ""));
+    const cfg = names.indexOf("config"), ev = names.findIndex((n) => /^event:/.test(n));
+    assert.ok(cfg >= 0 && (ev === -1 || ev > cfg), JSON.stringify(names));
+  });
+});
+
+describe("discoverability: analytics events", () => {
+  const REAL_ID = "G-TEST123456";
+  const bootEv = (opts = {}) => {
+    const html = INDEX_HTML().replace('const GA_MEASUREMENT_ID = "G-XXXXXXXXXX";', 'const GA_MEASUREMENT_ID = "' + REAL_ID + '";');
+    return boot({ html, webdriver: false, href: "https://example.test/index.html", ...opts });
+  };
+  const events = (app) => JSON.parse(JSON.stringify(Array.from(app.get("window.dataLayer"))))
+    .filter((e) => e[0] === "event").map((e) => ({ name: e[1], params: e[2] }));
+  const since = (app, n) => events(app).slice(n);
+
+  test("selectDeck tracks deck_select with the seeded id", () => {
+    const app = bootEv();
+    const n = events(app).length;
+    app.run('selectDeck("pygmy")');
+    assert.deepStrictEqual(since(app, n), [{ name: "deck_select", params: { deck_kind: "seeded", deck_id: "pygmy" } }]);
+  });
+
+  test("selecting a custom deck tracks deck_kind custom and no deck_id", () => {
+    const app = bootEv();
+    openSheet(app);
+    app.type(AMARA_STRING);
+    const n = events(app).length;
+    app.els["scale-generate"].click();
+    const evs = since(app, n);
+    const sel = evs.filter((e) => e.name === "deck_select");
+    assert.ok(sel.length >= 1);
+    for (const e of sel) assert.deepStrictEqual(e.params, { deck_kind: "custom" });
+  });
+
+  test("generating a scale tracks scale_create with a note count and has_bottom as 1 or 0", () => {
+    const app = bootEv();
+    openSheet(app);
+    app.type(AMARA_STRING);
+    const n = events(app).length;
+    app.els["scale-generate"].click();
+    const created = since(app, n).filter((e) => e.name === "scale_create");
+    assert.strictEqual(created.length, 1);
+    assert.strictEqual(typeof created[0].params.note_count, "number");
+    assert.ok(created[0].params.note_count >= 8);
+    assert.ok([0, 1].includes(created[0].params.has_bottom));
+  });
+
+  test("flip tracks card_flip with the mode", () => {
+    const app = bootEv();
+    const n = events(app).length;
+    app.run("flip()");
+    assert.deepStrictEqual(since(app, n), [{ name: "card_flip", params: { mode: app.get("mode") } }]);
+  });
+
+  test("setTier tracks progression_view with the tier", () => {
+    const app = bootEv();
+    const n = events(app).length;
+    app.run('setTier("advanced")');
+    const pv = since(app, n).filter((e) => e.name === "progression_view");
+    assert.deepStrictEqual(pv, [{ name: "progression_view", params: { tier: "advanced" } }]);
+  });
+
+  test("downloadDeckPDF tracks pdf_download with paper and deck_kind", () => {
+    const app = bootEv();
+    const n = events(app).length;
+    app.run('downloadDeckPDF("shop")');
+    const pd = since(app, n).filter((e) => e.name === "pdf_download");
+    assert.strictEqual(pd.length, 1);
+    assert.deepStrictEqual(Object.keys(pd[0].params).sort(), ["deck_kind", "paper"]);
+    assert.strictEqual(pd[0].params.deck_kind, "seeded");
+  });
+
+  test("a valid share link tracks share_open with no params", () => {
+    const app = bootEv();
+    const seed = plain(app.get(`HPE.core.parseSeed(${JSON.stringify(AMARA_STRING)}, {})`));
+    const link = plain(app.get(`HPE.share.encode(${JSON.stringify({ fields: seed.value.fields, options: seed.value.options })})`)).value;
+    const n = events(app).length;
+    app.run("openShare(" + JSON.stringify(link) + ")");
+    const so = since(app, n).filter((e) => e.name === "share_open");
+    assert.deepStrictEqual(so, [{ name: "share_open", params: {} }]);
+  });
+
+  test("track pushes nothing when the loader did not inject", () => {
+    const app = boot({ webdriver: true });
+    app.run('selectDeck("pygmy"); flip(); setTier("basic");');
+    assert.deepStrictEqual(events(app), []);
+  });
+
+  test("no event param is a string over 40 characters or names a custom: id", () => {
+    const app = bootEv();
+    openSheet(app);
+    app.type(AMARA_STRING);
+    app.els["scale-generate"].click();
+    app.run('flip(); setTier("basic"); downloadDeckPDF("shop"); selectDeck("hijaz");');
+    const all = events(app);
+    assert.ok(all.length >= 5);
+    for (const e of all) {
+      assert.ok(/^[A-Za-z0-9_]{1,40}$/.test(e.name), e.name);
+      assert.ok(Object.keys(e.params).length < 25);
+      for (const v of Object.values(e.params)) {
+        if (typeof v === "string") assert.ok(v.length <= 40 && !v.includes("custom:"), e.name + " " + v);
+      }
+    }
+  });
+});
+
+describe("discoverability: deck route", () => {
+  const REAL_ID = "G-TEST123456";
+  const SLUGS = { "d-kurd-10": "kurd", "d-amara-10": "amara10", "d-amara-9": "amara", "f-low-pygmy-18": "pygmy", "c-sharp-hijaz-9": "hijaz" };
+  const at = (hash, opts = {}) => boot({ href: "https://example.test/index.html" + hash, ...opts });
+  const stored = (app) => JSON.parse(app.store.hpfc || "{}");
+  const replaceCalls = (app) => app.history.calls.filter((c) => c.type === "replace");
+  const editedSeed = (seed, name) => {
+    const probe = boot();
+    const base = probe.get("HPE.core.formatSeed(DECKS.find((d) => d.id === " + JSON.stringify(seed) + ").fields)");
+    const alt = seed === "pygmy" ? base : base.replace(/C5$/, "D5");
+    return { [probe.get("SCALES_KEY")]: JSON.stringify([{ v: probe.get("SHARE_VERSION"), s: alt, o: { name, palette: 3, replaces: seed } }]) };
+  };
+
+  test("every slug opens its built-in deck, persists it, and leaves a clean address", () => {
+    for (const [slug, id] of Object.entries(SLUGS)) {
+      const app = at("#deck=" + slug, { storage: { hpfc: JSON.stringify({ deck: "kurd", mode: "A" }) } });
+      assert.strictEqual(app.deckId(), id, slug);
+      assert.strictEqual(stored(app).deck, id, slug + " was not persisted");
+      assert.strictEqual(app.location.hash, "", slug + " left the hash");
+      assert.strictEqual(app.location.pathname, "/index.html");
+    }
+  });
+
+  test("the route is consumed with replaceState, never pushState", () => {
+    const app = at("#deck=f-low-pygmy-18");
+    assert.deepStrictEqual(app.history.calls.filter((c) => c.type === "push"), []);
+    assert.strictEqual(replaceCalls(app).length, 1);
+    assert.strictEqual(replaceCalls(app)[0].url, "/index.html");
+  });
+
+  test("a route beats the stored deck", () => {
+    const app = at("#deck=c-sharp-hijaz-9", { storage: { hpfc: JSON.stringify({ deck: "pygmy", mode: "A" }) } });
+    assert.strictEqual(app.deckId(), "hijaz");
+  });
+
+  test("an edited seed shows its replacement, with no warning", () => {
+    const storage = editedSeed("amara", "MY AMARA");
+    const app = at("#deck=d-amara-9", { storage });
+    assert.match(app.deckId(), /^custom:/);
+    assert.strictEqual(app.registry()[app.deckId()].options.replaces, "amara");
+    assert.doesNotMatch(app.announcer().textContent || "", /That deck is gone/);
+  });
+
+  test("a deleted seed falls back to the default deck and says the deck is gone", () => {
+    const app = at("#deck=f-low-pygmy-18", { storage: { hpfc: JSON.stringify({ deck: "kurd", mode: "A", hidden: ["pygmy"] }) } });
+    assert.strictEqual(app.deckId(), "kurd");
+    assert.match(app.announcer().textContent, /^That deck is gone\. Showing D KURD 10\./);
+  });
+
+  test("an unknown slug, a custom id and an empty slug fall back silently and lose the hash", () => {
+    for (const h of ["#deck=nope", "#deck=custom:abc", "#deck="]) {
+      const app = at(h, { storage: { hpfc: JSON.stringify({ deck: "amara", mode: "A" }) } });
+      assert.strictEqual(app.deckId(), "amara", h);
+      assert.strictEqual(app.location.hash, "", h);
+      assert.doesNotMatch(app.announcer().textContent || "", /gone/, h);
+    }
+  });
+
+  test("a share link is untouched by the route", () => {
+    const app = at("#s=zzz");
+    assert.strictEqual(app.location.hash, "#s=zzz");
+    assert.deepStrictEqual(replaceCalls(app), []);
+  });
+
+  test("hashchange to a deck link selects that deck and clears the hash", () => {
+    const app = at("", { storage: { hpfc: JSON.stringify({ deck: "kurd", mode: "A" }) } });
+    app.hashchange("#deck=f-low-pygmy-18");
+    assert.strictEqual(app.deckId(), "pygmy");
+    assert.strictEqual(stored(app).deck, "pygmy");
+    assert.strictEqual(app.location.hash, "");
+    assert.deepStrictEqual(app.history.calls.filter((c) => c.type === "push"), []);
+  });
+
+  test("hashchange resolves an edited seed to its replacement and a deleted seed to a warning", () => {
+    const edited = at("", { storage: editedSeed("amara", "MY AMARA") });
+    edited.hashchange("#deck=d-amara-9");
+    assert.match(edited.deckId(), /^custom:/);
+    assert.strictEqual(edited.location.hash, "");
+    const gone = at("", { storage: { hpfc: JSON.stringify({ deck: "kurd", mode: "A", hidden: ["pygmy"] }) } });
+    gone.hashchange("#deck=f-low-pygmy-18");
+    assert.strictEqual(gone.deckId(), "kurd");
+    assert.match(gone.announcer().textContent, /^That deck is gone\./);
+    assert.strictEqual(gone.location.hash, "");
+  });
+
+  test("hashchange ignores the other routes", () => {
+    for (const h of ["#add", "#edit-x", "#s=abc", "#something"]) {
+      const app = at("", { storage: { hpfc: JSON.stringify({ deck: "amara", mode: "A" }) } });
+      const before = app.history.calls.length;
+      app.hashchange(h);
+      assert.strictEqual(app.deckId(), "amara", h);
+      assert.strictEqual(app.history.calls.length, before, h + " touched history");
+    }
+  });
+
+  test("a routed boot queues config before deck_route", () => {
+    const html = INDEX_HTML().replace('const GA_MEASUREMENT_ID = "G-XXXXXXXXXX";', 'const GA_MEASUREMENT_ID = "' + REAL_ID + '";');
+    const app = boot({ html, webdriver: false, href: "https://example.test/index.html#deck=d-kurd-10" });
+    const q = JSON.parse(JSON.stringify(Array.from(app.get("window.dataLayer"))));
+    const names = q.map((e) => e[0] === "js" ? "js" : e[0] + ":" + e[1]);
+    assert.deepStrictEqual(names.slice(0, 5), ["consent:default", "consent:default", "js", "config:" + REAL_ID, "event:deck_route"]);
+    assert.deepStrictEqual(q[4][2], { deck_id: "kurd" });
+  });
+
+  test("the about section links every built-in deck by its slug", () => {
+    const html = aboutHtml();
+    for (const d of BUILTIN_DECKS()) {
+      const slug = Object.keys(SLUGS).find((s) => SLUGS[s] === d.id);
+      assert.ok(slug, d.id + " has no slug");
+      assert.ok(html.includes('href="#deck=' + slug + '"'), slug + " link missing");
+    }
+  });
 });

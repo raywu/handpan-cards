@@ -8,16 +8,17 @@
 # Context refreshed 2026-09-29 (M3, desktop sidebar): the line count above
 # this mutation shifted (a new CSS media block and its comment). The
 # mutation itself - dropping #decks from panelBackground - is byte-identical.
+# Context refreshed 2026-10-16 (discoverability W1): panelBackground gained #about,
+# so the removed line now carries it too; dropping #decks is still the whole mutation.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7673,8 +7673,7 @@ const settingsScrim   = document.getElementById("settings-scrim");
- // tap, OR the trigger) lives inside the header. Inerting the header would
+@@ -10768,7 +10768,7 @@ const settingsScrim   = document.getElementById("settings-scrim");
  // inert the trigger along with it and the panel could never be closed by a
  // second tap on it.
--const panelBackground = [document.querySelector("main"), document.querySelector("footer"),
--                          document.getElementById("decks")].filter(Boolean);
-+const panelBackground = [document.querySelector("main"), document.querySelector("footer")].filter(Boolean);
+ const panelBackground = [document.querySelector("main"), document.querySelector("footer"),
+-                          document.getElementById("decks"), document.querySelector("#about")].filter(Boolean);
++                          document.querySelector("#about")].filter(Boolean);
  let panelOpen = false;
  // M3 (desktop sidebar, 2026-09-28): the same breakpoint the CSS media query
  // above uses. Below it the panel is the modal drawer M1 built - role="dialog",
