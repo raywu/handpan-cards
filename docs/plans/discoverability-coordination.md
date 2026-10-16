@@ -97,7 +97,7 @@ Spawned only after the section 5 trigger, cold, from this file. W5 owns `tools/g
 | W2 | `discoverability/w2-harness` | MERGED #320 (main 2b7dadc) | 2026-10-16 | PASS_WITH_NITS |
 | W1 | `discoverability/w1-head-copy-ga` | MERGED #321 (main 6aa98c2) | 2026-10-16 | PASS_WITH_NITS |
 | W3 | `discoverability/w3-site-files` | MERGED #319 (main 880f054) | 2026-10-16 | PASS_WITH_NITS |
-| W4 | `discoverability/w4-docs-counts` | PR #322 at 506e722, CI green, reviewer FAIL (F1-F3 doc claims), bounced attempt 1 | 2026-10-16 | FAIL+1 |
+| W4 | `discoverability/w4-docs-counts` | PR #322 fix at 6acb627, CI green, reviewer 2 spawned | 2026-10-16 | FAIL+1 (bounced, fixed) |
 
 ### Handoff queue (append-only)
 | # | From | Ask | Status |
@@ -146,7 +146,7 @@ Cycle: 1   Wave: 1c   Merged this batch: 880f054 (#319 W3), 2b7dadc (#320 W2), 6
 | W2 | ae60696a3b5621171 | released | discoverability/w2-harness (deleted) | #320 | 459bb76 | 2026-10-16 (CI 38963573972 success, 11 checks) | PASS_WITH_NITS | 0 | yes (main 2b7dadc) | nothing | no |
 | W1 | aae6253dabaf29952 | released | discoverability/w1-head-copy-ga (deleted) | #321 | c5edc61 | 2026-10-16 (CI 38970061893 success, 11 checks; first run at 5e6d25e failed on the kills-line lint + a shard-3 browser flake, fixed in c5edc61) | PASS_WITH_NITS | 0 | yes (main 6aa98c2) | nothing | no |
 | W3 | af6af65e9d198cd2e | released | discoverability/w3-site-files (deleted) | #319 | 7ad5ba9 | 2026-10-16 (CI 38961099995 success, 11 checks) | PASS_WITH_NITS | 0 | yes (main 880f054) | nothing | no |
-| W4 | a73559635b9c83956 | /Users/ray/Projects/handpan-cards/.claude/worktrees/agent-a73559635b9c83956 | discoverability/w4-docs-counts | #322 | 506e722 | 2026-10-16 (CI 38973637201 success, 11 checks) | FAIL+1 (bounced, awaiting new head) | 1 | no | nothing | yes |
+| W4 | a73559635b9c83956 | /Users/ray/Projects/handpan-cards/.claude/worktrees/agent-a73559635b9c83956 | discoverability/w4-docs-counts | #322 | 6acb627 | 2026-10-16 (CI 38976505767 success) | FAIL+1 at 506e722; fix at 6acb627, reviewer 2 spawned (budget 10) | 1 | no | nothing | yes |
 ```
 
 Owner check-in 2026-10-16 (third): start share-URL execution (SU-A then SU-D) right after W4 merges, same swarm; row 18 privacy copy folded into SU-A; row 19 closed (keep); GA4 property, Measurement ID swap PR and DNS TXT after W4 merges.
