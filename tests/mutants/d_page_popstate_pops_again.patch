@@ -5,9 +5,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4648,8 +4648,7 @@
- // gone, so this only takes the page down.
+@@ -10117,8 +10117,7 @@ let pendingPop = false;
  window.addEventListener("popstate", () => {
+   if (pendingPop) { pendingPop = false; syncRoute(); return; }
    if (!sheetOpen) return;
 -  sheetRouted = false;
 -  hideSheet();

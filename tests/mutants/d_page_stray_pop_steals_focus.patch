@@ -7,10 +7,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4647,7 +4647,6 @@
- // The browser's way out: the back gesture, or a swipe. The entry is already
+@@ -10116,7 +10116,6 @@ let pendingPop = false;
  // gone, so this only takes the page down.
  window.addEventListener("popstate", () => {
+   if (pendingPop) { pendingPop = false; syncRoute(); return; }
 -  if (!sheetOpen) return;
    sheetRouted = false;
    hideSheet();

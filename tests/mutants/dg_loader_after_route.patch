@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11348,7 +11348,6 @@ window.addEventListener("hashchange", () => {
+@@ -11418,7 +11418,6 @@ window.addEventListener("hashchange", () => {
  });
  
  /* ---------------- go ---------------- */
@@ -12,10 +12,10 @@ diff --git a/index.html b/index.html
  sheet.setAttribute("hidden", ""); buildSwatches(); paintLayout(); resyncSheet(true);
  // Saved scales are rebuilt BEFORE the stored deck id is resolved, so a custom
  // deck that was selected last session is in the registry by the time deck()
-@@ -11378,6 +11377,7 @@ else if (location.hash.indexOf(SHARE_PREFIX) === 0)
- // clean URL is not an entry of its own and Back leaves the page.
- else if (location.hash.indexOf(DECK_ROUTE) === 0)
-   history.replaceState(null, "", location.pathname + location.search);
+@@ -11454,6 +11453,7 @@ if (location.hash.indexOf(SHARE_PREFIX) === 0)
+ bootStored = null;
+ syncRoute();
+ booted = true;
 +loadAnalytics();
  </script>
  </body>

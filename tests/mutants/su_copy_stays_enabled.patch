@@ -1,0 +1,15 @@
+# kills: SU: an over-cap custom deck disables COPY LINK with the refusal as its title and leaves the bare path
+# suite: node --test --test-name-pattern ^SU:.an.over.cap.custom.deck tests/app.test.js
+# COPY LINK is never disabled, so a refused deck copies a bare path.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11361,7 +11361,7 @@ function syncRoute() {
+   const want = location.pathname + location.search + route;
+   if (location.pathname + location.search + location.hash !== want) history.replaceState(history.state, "", want);
+   const refused = route === "";
+-  shareCopy.disabled = refused;
++  shareCopy.disabled = false;
+   shareCopy.title = refused ? reason : "";
+   if (refused && !routeRefused && (booted || announce.textContent === "")) say(reason, "warn");
+   routeRefused = refused;

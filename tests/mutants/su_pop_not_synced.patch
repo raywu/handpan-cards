@@ -1,0 +1,15 @@
+# kills: SU: SAVE with a new name keeps the id and writes a new #s= code at the pop
+# suite: node --test --test-name-pattern ^SU:.SAVE.with.a.new.name tests/app.test.js
+# The pop that follows the sheet close no longer re-syncs the bar.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10115,7 +10115,7 @@ let pendingPop = false;
+ // The browser's way out: the back gesture, or a swipe. The entry is already
+ // gone, so this only takes the page down.
+ window.addEventListener("popstate", () => {
+-  if (pendingPop) { pendingPop = false; syncRoute(); return; }
++  if (pendingPop) { pendingPop = false; return; }
+   if (!sheetOpen) return;
+   sheetRouted = false;
+   hideSheet();

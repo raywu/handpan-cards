@@ -1,0 +1,14 @@
+# kills: SU: tapping three chips writes three replaceState hashes and no pushState
+# suite: node --test --test-name-pattern ^SU:.tapping.three.chips tests/app.test.js
+# selectDeck stops syncing the bar, so a chip tap leaves the old deck's link.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8212,7 +8212,6 @@ function selectDeck(id) {
+   deckId = id;
+   storedDeck = id;
+   save(); setOrder(); buildChips(); render();
+-  syncRoute();
+   track("deck_select", isBuiltIn(id) ? { deck_kind: "seeded", deck_id: id } : { deck_kind: "custom" });
+   if (rehome) {
+     const chip = document.querySelector("#decks .chip.on");

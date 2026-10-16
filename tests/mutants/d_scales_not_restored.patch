@@ -5,11 +5,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11347,7 +11347,6 @@ sheet.setAttribute("hidden", ""); buildSwatches(); paintLayout(); resyncSheet(tr
+@@ -11423,7 +11423,6 @@ sheet.setAttribute("hidden", ""); buildSwatches(); paintLayout(); resyncSheet(tr
  // Saved scales are rebuilt BEFORE the stored deck id is resolved, so a custom
  // deck that was selected last session is in the registry by the time deck()
  // looks for it.
 -restoreScales();
  const routedDeck = routedDeckId();
+ bootStored = typeof store.deck === "string" ? store.deck : null;
  if (routedDeck) deckId = routedDeck;
- const wantedDeck = deckId;

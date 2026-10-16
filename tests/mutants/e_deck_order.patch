@@ -7,12 +7,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8197,7 +8197,7 @@ function selectDeck(id) {
+@@ -8211,7 +8211,7 @@ function selectDeck(id) {
        !!(a.closest && a.closest("#decks")));
    deckId = id;
    storedDeck = id;
 -  save(); setOrder(); buildChips(); render();
 +  save(); buildChips(); render();
+   syncRoute();
    track("deck_select", isBuiltIn(id) ? { deck_kind: "seeded", deck_id: id } : { deck_kind: "custom" });
    if (rehome) {
-     const chip = document.querySelector("#decks .chip.on");

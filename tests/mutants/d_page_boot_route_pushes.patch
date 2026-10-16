@@ -6,12 +6,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4875,7 +4875,7 @@
- // pushState, or the clean URL becomes an entry of its own and back returns to
- // the route that was just rejected.
- if (location.hash === ADD_ROUTE || location.hash.indexOf(EDIT_ROUTE) === 0)
--  history.replaceState(null, "", location.pathname + location.search);
-+  history.pushState(null, "", location.pathname + location.search);
- // A share link in the address bar is consumed once, at boot, through the same
- // single entry point; it wins over the stored deck because the user just
- // followed it. "#s=" is disjoint from the page routes above, so the two reads
+@@ -11359,7 +11359,7 @@ function syncRoute() {
+   if (sheetOpen) return;
+   const { route, reason } = routeInfo(deck());
+   const want = location.pathname + location.search + route;
+-  if (location.pathname + location.search + location.hash !== want) history.replaceState(history.state, "", want);
++  if (location.pathname + location.search + location.hash !== want) history.pushState(history.state, "", want);
+   const refused = route === "";
+   shareCopy.disabled = refused;
+   shareCopy.title = refused ? reason : "";

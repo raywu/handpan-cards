@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10710,7 +10710,6 @@ function closePanel() {
+@@ -10829,7 +10829,6 @@ function closePanel() {
    settingsPanel.removeAttribute("role");
    settingsPanel.removeAttribute("aria-modal");
    setInert(false, panelBackground);
 -  disarmReset();
+   shareUrl.setAttribute("hidden", "");
    settingsTrigger.focus();
  }
- // If the viewport crosses the breakpoint while the panel is open in its

@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -6972,7 +6972,7 @@ const SHARE_PREFIX = "#s=";
+@@ -8017,7 +8017,7 @@ function shareCode(d) {
  function shareLink(d) {
-   const res = HPE.share.encode(seedOf(d));
+   const res = shareCode(d);
    return res.ok
 -    ? { ok: true, value: location.origin + location.pathname + SHARE_PREFIX + res.value }
 +    ? { ok: true, value: location.origin + SHARE_PREFIX + res.value }
      : res;
  }
- // The app's ONE entry point for an untrusted share string. It rejects rather
+ // Set by the go block while it boots: the deck the visitor had selected before
