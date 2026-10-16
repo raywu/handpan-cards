@@ -11358,7 +11358,9 @@ const routedDeck = routedDeckId();
 if (routedDeck) deckId = routedDeck;
 const wantedDeck = deckId;
 deckId = deck().id; storedDeck = deckId; setOrder(); buildChips(); setMode(mode);
-if (routedDeck) { save(); track("deck_route", { deck_id: routedDeck }); }
+// setMode() above saved the routed deck, as a chip tap does: a link that opens a
+// deck once keeps it, so the visitor does not land on the old one tomorrow.
+if (routedDeck) track("deck_route", { deck_id: routedDeck });
 warnIfDeckGone(wantedDeck);
 // A page route in the address bar at boot is a RELOAD of a page, or a link
 // someone pasted. Neither reopens it: #edit-<id> names a deck this session may

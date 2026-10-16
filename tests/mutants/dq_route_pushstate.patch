@@ -1,0 +1,15 @@
+# kills: the route is consumed with replaceState, never pushState
+# suite: node --test --test-name-pattern ^the.route.is.consumed.with.replaceState tests/app.test.js
+# The clean URL becomes a history entry of its own and Back returns to the rejected route.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11377,7 +11377,7 @@ else if (location.hash.indexOf(SHARE_PREFIX) === 0)
+ // A deck link is consumed once, like the page routes: replaceState, so the
+ // clean URL is not an entry of its own and Back leaves the page.
+ else if (location.hash.indexOf(DECK_ROUTE) === 0)
+-  history.replaceState(null, "", location.pathname + location.search);
++  history.pushState(null, "", location.pathname + location.search);
+ </script>
+ </body>
+ </html>

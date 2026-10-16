@@ -1,0 +1,22 @@
+# kills: a routed boot queues config before deck_route
+# suite: node --test --test-name-pattern ^a.routed.boot.queues.config tests/app.test.js
+# loadAnalytics() runs after the hash branches, so deck_route and a boot-time share_open are queued before config and dropped by track().
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11348,7 +11348,6 @@ window.addEventListener("hashchange", () => {
+ });
+ 
+ /* ---------------- go ---------------- */
+-loadAnalytics();
+ sheet.setAttribute("hidden", ""); buildSwatches(); paintLayout(); resyncSheet(true);
+ // Saved scales are rebuilt BEFORE the stored deck id is resolved, so a custom
+ // deck that was selected last session is in the registry by the time deck()
+@@ -11378,6 +11377,7 @@ else if (location.hash.indexOf(SHARE_PREFIX) === 0)
+ // clean URL is not an entry of its own and Back leaves the page.
+ else if (location.hash.indexOf(DECK_ROUTE) === 0)
+   history.replaceState(null, "", location.pathname + location.search);
++loadAnalytics();
+ </script>
+ </body>
+ </html>
