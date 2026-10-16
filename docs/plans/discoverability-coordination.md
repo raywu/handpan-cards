@@ -94,7 +94,6 @@ Spawned only after the section 5 trigger, cold, from this file. W5 owns `tools/g
 ### Status
 | Lane | Current branch | State | Last update (UTC) | Last verdict |
 |---|---|---|---|---|
-| W1 | | unspawned | | |
 | W2 | `discoverability/w2-harness` | MERGED #320 (main 2b7dadc) | 2026-10-16 | PASS_WITH_NITS |
 | W1 | `discoverability/w1-head-copy-ga` | spawned 2026-10-16 (working) | 2026-10-16 | |
 | W3 | `discoverability/w3-site-files` | MERGED #319 (main 880f054) | 2026-10-16 | PASS_WITH_NITS |
@@ -136,7 +135,6 @@ Cycle: 1   Wave: 1b   Merged this batch: 880f054 (#319 W3), 2b7dadc (#320 W2)
 | W2 | ae60696a3b5621171 | released | discoverability/w2-harness (deleted) | #320 | 459bb76 | 2026-10-16 (CI 38963573972 success, 11 checks) | PASS_WITH_NITS | 0 | yes (main 2b7dadc) | nothing | no |
 | W1 | aae6253dabaf29952 | /Users/ray/Projects/handpan-cards/.claude/worktrees/agent-aae6253dabaf29952 | discoverability/w1-head-copy-ga | | | | | 0 | no | nothing | yes |
 | W3 | af6af65e9d198cd2e | released | discoverability/w3-site-files (deleted) | #319 | 7ad5ba9 | 2026-10-16 (CI 38961099995 success, 11 checks) | PASS_WITH_NITS | 0 | yes (main 880f054) | nothing | no |
-| W1 | | | discoverability/w1-head-copy-ga | | | | | 0 | no | W2 merge | |
 | W4 | | | discoverability/w4-docs-counts | | | | | 0 | no | W1 and W3 merge | |
 ```
 
