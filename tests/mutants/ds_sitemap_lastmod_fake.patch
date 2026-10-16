@@ -1,0 +1,13 @@
+# kills: test_no_lastmod_and_nojekyll_is_empty
+# suite: python3 -m unittest -k test_no_lastmod_and_nojekyll_is_empty tests.test_site_files
+# A hard-coded lastmod that nothing keeps accurate.
+diff --git a/sitemap.xml b/sitemap.xml
+--- a/sitemap.xml
++++ b/sitemap.xml
+@@ -2,5 +2,6 @@
+ <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+   <url>
+     <loc>https://handpan.raywu.org/</loc>
++    <lastmod>2026-10-16</lastmod>
+   </url>
+ </urlset>

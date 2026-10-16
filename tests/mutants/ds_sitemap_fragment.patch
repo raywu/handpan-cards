@@ -1,0 +1,14 @@
+# kills: test_sitemap_locs_are_absolute_clean_urls
+# suite: python3 -m unittest -k test_sitemap_locs_are_absolute_clean_urls tests.test_site_files
+# A sitemap loc carries a #deck= fragment; crawlers drop fragments, so it is a duplicate of the root.
+diff --git a/sitemap.xml b/sitemap.xml
+--- a/sitemap.xml
++++ b/sitemap.xml
+@@ -1,6 +1,6 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+   <url>
+-    <loc>https://handpan.raywu.org/</loc>
++    <loc>https://handpan.raywu.org/#deck=kurd</loc>
+   </url>
+ </urlset>
