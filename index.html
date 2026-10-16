@@ -11318,15 +11318,6 @@ function routedDeckId() {
   const slug = location.hash.slice(DECK_ROUTE.length);
   return Object.prototype.hasOwnProperty.call(DECK_SLUGS, slug) ? DECK_SLUGS[slug] : null;
 }
-// Two fallbacks, deliberately different. An unknown BUILT-IN id is a stale or
-// renamed deck and falls back SILENTLY, as it always has. A missing custom: id
-// means the user's own saved scale is gone - deleted, or dropped as corrupt -
-// and a silent switch would look like the app lost their deck, so say so.
-function warnIfDeckGone(wanted) {
-  if (wanted !== deckId && !(replacements()[wanted] && replacements()[wanted].id === deckId) &&
-      (wanted.indexOf("custom:") === 0 || hidden.includes(wanted)))
-    say("That deck is gone. Showing " + deck().name + ".", "warn");
-}
 // An in-page link (the about section) changes the hash without a reload, so no
 // boot code runs. selectDeck gets the id deck() returns for the mapped seed,
 // never the raw seed id: a replaced or hidden seed id would be stored as is and
@@ -11341,7 +11332,10 @@ window.addEventListener("hashchange", () => {
     deckId = before;
     selectDeck(shown);
     deckId = shown;
-    warnIfDeckGone(routed);
+    // The same "gone" test the boot makes: a routed seed that is hidden shows the
+    // fallback and says so; one that shows its replacement does not.
+    if (routed !== shown && !(replacements()[routed] && replacements()[routed].id === shown) && hidden.includes(routed))
+      say("That deck is gone. Showing " + deck().name + ".", "warn");
     track("deck_route", { deck_id: routed });
   }
   history.replaceState(null, "", location.pathname + location.search);
@@ -11361,7 +11355,13 @@ deckId = deck().id; storedDeck = deckId; setOrder(); buildChips(); setMode(mode)
 // setMode() above saved the routed deck, as a chip tap does: a link that opens a
 // deck once keeps it, so the visitor does not land on the old one tomorrow.
 if (routedDeck) track("deck_route", { deck_id: routedDeck });
-warnIfDeckGone(wantedDeck);
+// Two fallbacks, deliberately different. An unknown BUILT-IN id is a stale or
+// renamed deck and falls back SILENTLY, as it always has. A missing custom: id
+// means the user's own saved scale is gone - deleted, or dropped as corrupt -
+// and a silent switch would look like the app lost their deck, so say so.
+if (wantedDeck !== deckId && !(replacements()[wantedDeck] && replacements()[wantedDeck].id === deckId) &&
+    (wantedDeck.indexOf("custom:") === 0 || hidden.includes(wantedDeck)))
+  say("That deck is gone. Showing " + deck().name + ".", "warn");
 // A page route in the address bar at boot is a RELOAD of a page, or a link
 // someone pasted. Neither reopens it: #edit-<id> names a deck this session may
 // not have, and a page restored with no entry behind it is one the back
