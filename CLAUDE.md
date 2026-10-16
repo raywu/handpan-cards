@@ -475,7 +475,10 @@ Print spec, measured from the commercial original at 300dpi: card
 12.2/9.4 pt, crop marks at all card edges, 2.00-inch calibration bar on
 page 1 (instruct printers: 100% / Actual Size; verify the bar with a ruler).
 If deck data changes: edit `data/decks.json` - the ONE canonical copy - then
-run `python3 tools/sync_decks.py` to re-inject it into `index.html`, and
+run `python3 tools/sync_decks.py` to re-inject it into `index.html`, edit the
+card counts in `#about` in `index.html` (checked by the about-section test
+"the about section names every built-in deck with its card count from
+data/decks.json and the value line"), and
 `python3 tools/decks.py` to rebuild the PDFs. App and print cannot diverge:
 both read the same file. `tools/validate.py` check 1 fails if `index.html`
 is stale, check 1b if the print adapter drifts.
@@ -537,12 +540,15 @@ stated here. Tests are in `tests/app.test.js` unless a file is named.
   ("the card keeps its origin/main size with the about section below the first
   screen"). Its screen rules sit before `@media print{`
   (`tests/test_render_agreement.py::test_print_block_is_last_in_the_style_element`).
-  Card counts in the about text come from the data, so a deck change needs no
-  edit here.
+  The card counts in the about text are literals in `#about` (`index.html`, the
+  deck list); the test "the about section names every built-in deck with its
+  card count from data/decks.json and the value line" (`tests/app.test.js`)
+  checks them against `data/decks.json`, so a deck-data change must also edit
+  `#about`.
 - **Structured data.** One `application/ld+json` WebApplication block; it states
   only what the page shows: name equals the `<h1>`, description equals the meta
   description, no rating or review, and the about section says "free" ("the
-  JSON-LD block parses and states only what the page shows"). The harness skips
+  JSON-LD block parses and states only what the page shows"). The sandbox skips
   any `<script>` whose type is not JavaScript, so the block never runs ("boot
   skips a script whose type is not JavaScript", `tests/harness.test.js`).
 - **Analytics (GA4).** `GA_MEASUREMENT_ID` is one constant, shipped as the
@@ -561,19 +567,27 @@ stated here. Tests are in `tests/app.test.js` unless a file is named.
   inject"); no event parameter is a string over 40 characters or names a
   `custom:` id ("no event param is a string over 40 characters or names a
   custom: id"). The seven events are `deck_select`, `deck_route`, `scale_create`,
-  `card_flip`, `progression_view`, `pdf_download`, `share_open`; the first six
-  each have a test in the "discoverability: analytics events" describe, and
-  `deck_route` is pinned by "a routed boot queues config before deck_route".
+  `card_flip`, `progression_view`, `pdf_download`, `share_open`; the other six
+  each have a test in the "discoverability: analytics events" describe, with two
+  exceptions: `deck_route` is proven in the "discoverability: deck route"
+  describe and `share_open` by "a valid share link tracks share_open with no
+  params".
 - **Consent regions.** An inline, inert head script queues two
   `gtag("consent","default")` calls before `js` and `config`: open default
   (`analytics_storage` granted, ad storage denied) and a region-scoped denial
   of 32 EEA/UK/CH codes ("consent defaults come first, in order, and config
   follows them").
 - **Swapping the real measurement id (owner action, plan section 10).** Replace
-  the one `GA_MEASUREMENT_ID` literal in `index.html`. "the placeholder id is
-  the shipped constant" then fails by design and is rewritten for the new
-  literal in the same PR; the loader tests supply their own id
-  (`REAL_ID`), so they are unaffected. Then `./tests/run.sh`, PR, ordinary merge.
+  the one `GA_MEASUREMENT_ID` literal in `index.html`. Swapping the real
+  measurement id also changes the loader tests' anchor: `tests/app.test.js`
+  rewrites the placeholder with `INDEX_HTML().replace('const GA_MEASUREMENT_ID =
+  "G-XXXXXXXXXX";', ...)` at three sites, so the same PR must update that replace
+  anchor, or these five tests go red: "the placeholder id is the shipped
+  constant"; "the loader appends the gtag script on a real host with a real id,
+  and only then"; "analyticsAllowed is false for the placeholder id: no gtag
+  script, no config, no event"; "consent defaults come first, in order, and
+  config follows them"; "a routed boot queues config before deck_route". Then
+  `./tests/run.sh`, PR, ordinary merge.
   The custom definitions (`deck_kind`, `deck_id`, `mode`, `tier`, `paper`,
   `has_bottom`; metric `note_count`) are registered in GA Admin by the owner;
   no test sees that.

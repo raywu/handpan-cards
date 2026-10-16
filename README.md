@@ -167,7 +167,8 @@ opens its built-in deck, persists it, and leaves a clean address"), and the
 about section below the card names every deck with its card count ("the about
 section names every built-in deck with its card count from data/decks.json and
 the value line"). GA4 stays off until the real measurement id replaces the
-placeholder ("the placeholder id is the shipped constant"); see CLAUDE.md,
+placeholder ("the placeholder id is the shipped constant", "analyticsAllowed is
+false for the placeholder id: no gtag script, no config, no event"); see CLAUDE.md,
 "Discoverability".
 
 That is 23 node suites (`tests/*.test.js`) and 15 python suites
