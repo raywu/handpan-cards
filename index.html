@@ -1117,14 +1117,14 @@ footer.seq{row-gap:var(--sp-1)}
 
 /* ---- the first screen and the about section (discoverability W1, plan D20) ----
    #app holds header, main, footer and the live region and is exactly as tall
-   as the body's content box (height:100%, with the dvh floor body itself has),
+   as the body's content box (100%, floored at 100dvh less the padding as body's own min-height is),
    so the card is the size it was before #about existed; #about overflows below
    it and the document scrolls to it. A fourth flex child of body would have
    SHRUNK the card (main is flex:1 inside a height:100% body). #about starts at
    least 12px below the body's bottom padding, so none of its text lands in the
    4px frame band. Both rules sit BEFORE the print block (it must stay last). */
-#app{flex:none; width:100%; height:100%; display:flex; flex-direction:column; align-items:center;
-  min-height:calc(100dvh - max(10px, env(safe-area-inset-top)) - max(12px, env(safe-area-inset-bottom)))}
+#app{flex:none; width:100%; min-height:0; display:flex; flex-direction:column; align-items:center;
+  height:max(100%, calc(100dvh - max(10px, env(safe-area-inset-top)) - max(12px, env(safe-area-inset-bottom))))}
 #about{flex:none; width:100%; max-width:520px; margin-top:24px; padding:0 4px 48px;
   color:#c4bcab; font:400 14px/1.6 "Nunito Sans", system-ui, sans-serif; user-select:text; -webkit-user-select:text}
 #about h2{margin:0 0 8px; font:400 22px/1.2 "Marcellus", serif; color:#eae6df}
@@ -1156,7 +1156,7 @@ footer.seq{row-gap:var(--sp-1)}
      on paper; left in, it shifts every page by the device's insets. */
   body{margin:0; padding:0; background:#fff; display:block}
   .scene{transform:none!important}
-  #app{display:block; height:auto; min-height:0}
+  #app{display:block; height:auto}
   #about{display:none}
 }
 </style>
