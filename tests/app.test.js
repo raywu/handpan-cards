@@ -9386,7 +9386,7 @@ describe("discoverability: analytics loader", () => {
     ["the placeholder id", { id: "G-XXXXXXXXXX" }],
   ];
   for (const [label, opts] of noInject) {
-    test("analyticsAllowed is false for " + label + ": no gtag script, no config, no event", () => {
+    test(`analyticsAllowed is false for ${label}: no gtag script, no config, no event`, () => {
       const app = bootGa(opts);
       assert.strictEqual(gtagScripts(app).length, 0);
       assert.ok(!queue(app).some((e) => e[0] === "config"), "config queued");
