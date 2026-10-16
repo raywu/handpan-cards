@@ -1,0 +1,11 @@
+# kills: test_robots_names_the_absolute_sitemap
+# suite: python3 -m unittest -k test_robots_names_the_absolute_sitemap tests.test_site_files
+# robots.txt stops naming the sitemap, so crawlers must guess its address.
+diff --git a/robots.txt b/robots.txt
+--- a/robots.txt
++++ b/robots.txt
+@@ -1,4 +1,2 @@
+ User-agent: *
+ Allow: /
+-
+-Sitemap: https://handpan.raywu.org/sitemap.xml
