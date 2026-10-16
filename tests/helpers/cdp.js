@@ -110,6 +110,11 @@ function installReaper() {
 // on() keeps one handler per method and the e2e describes launch their own
 // instances. Drained by takeExceptions().
 const EXCEPTIONS = [];
+// Analytics hosts no test boot may reach (discoverability plan section 9, W2).
+// analyticsAllowed() in the app already refuses under automation; this is the
+// second fence, and launch() exposes the list as browser.blockedUrls.
+const ANALYTICS_PATTERNS = ["*googletagmanager.com*", "*google-analytics.com*"];
+const FONT_PATTERNS = ["*fonts.googleapis.com*", "*fonts.gstatic.com*"];
 function takeExceptions() {
   return EXCEPTIONS.splice(0, EXCEPTIONS.length);
 }
@@ -601,6 +606,10 @@ class Browser {
     ].join("\n");
     const body = Buffer.from(css, "utf8").toString("base64");
     this.on("Fetch.requestPaused", async (params) => {
+      if (/googletagmanager\.com|google-analytics\.com/.test(params.request.url)) {
+        await this.send("Fetch.failRequest", { requestId: params.requestId, errorReason: "BlockedByClient" });
+        return;
+      }
       if (!/fonts\.googleapis\.com/.test(params.request.url)) {
         await this.send("Fetch.continueRequest", { requestId: params.requestId });
         return;
@@ -613,8 +622,9 @@ class Browser {
       });
     });
     await this.send("Fetch.enable", {
-      patterns: [{ urlPattern: "*fonts.googleapis.com*" }, { urlPattern: "*fonts.gstatic.com*" }],
+      patterns: [...FONT_PATTERNS, ...ANALYTICS_PATTERNS].map((urlPattern) => ({ urlPattern })),
     });
+    this.blockedUrls = [...FONT_PATTERNS, ...ANALYTICS_PATTERNS];
   }
 }
 
@@ -699,6 +709,9 @@ async function launchOnce(opts = {}) {
     });
     await b.send("Page.enable");
     await b.send("Runtime.enable");
+    // F-18, plan section 15: classic scrollbars take layout width on Linux CI and
+    // on a Mac with a mouse; the harness measures the page, not the scrollbar.
+    await b.send("Emulation.setScrollbarsHidden", { hidden: true });
     await maybeEnableCoverage(b);
     if (opts.realFonts) {
       // Reviewer FAIL #3: serve the real TTFs instead of blocking - see
@@ -711,7 +724,8 @@ async function launchOnce(opts = {}) {
       // metrics - pass { realFonts: true } to launch() for tests that need
       // real layout instead.
       await b.send("Network.enable");
-      await b.send("Network.setBlockedURLs", { urls: ["*fonts.googleapis.com*", "*fonts.gstatic.com*"] });
+      b.blockedUrls = [...FONT_PATTERNS, ...ANALYTICS_PATTERNS];
+      await b.send("Network.setBlockedURLs", { urls: b.blockedUrls });
     }
     return b;
   } catch (err) {

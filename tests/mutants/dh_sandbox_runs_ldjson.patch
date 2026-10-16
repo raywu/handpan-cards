@@ -1,0 +1,15 @@
+# kills: boot skips a script whose type is not JavaScript
+# suite: node --test --test-name-pattern boot.skips.a.script.whose.type.is.not.JavaScript tests/harness.test.js
+# Discoverability W2: boot runs every inline script regardless of type.
+diff --git a/tools/sandbox.js b/tools/sandbox.js
+--- a/tools/sandbox.js
++++ b/tools/sandbox.js
+@@ -235,7 +235,7 @@ function boot(opts = {}) {
+     const v = t ? (t[1] ?? t[2] ?? t[3]).trim().toLowerCase() : "";
+     return v === "" || v === "text/javascript" || v === "module";
+   };
+-  const blockMatches = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)].filter(isJs);
++  const blockMatches = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)];
+   const blocks = blockMatches.map((m) => m[1]);
+   if (!blocks.length) throw new Error("no inline <script> found in index.html");
+   // Run the blocks as ONE script whose character offsets equal index.html's own:

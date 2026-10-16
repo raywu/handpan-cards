@@ -1,0 +1,14 @@
+# kills: the e2e launch hides classic scrollbars: innerWidth equals documentElement.clientWidth on a page taller than the viewport
+# suite: node --test --test-name-pattern ^the.e2e.launch.hides.classic.scrollbars tests/e2e.test.js
+# Discoverability W2: the launch no longer hides classic scrollbars.
+diff --git a/tests/helpers/cdp.js b/tests/helpers/cdp.js
+--- a/tests/helpers/cdp.js
++++ b/tests/helpers/cdp.js
+@@ -711,7 +711,6 @@ async function launchOnce(opts = {}) {
+     await b.send("Runtime.enable");
+     // F-18, plan section 15: classic scrollbars take layout width on Linux CI and
+     // on a Mac with a mouse; the harness measures the page, not the scrollbar.
+-    await b.send("Emulation.setScrollbarsHidden", { hidden: true });
+     await maybeEnableCoverage(b);
+     if (opts.realFonts) {
+       // Reviewer FAIL #3: serve the real TTFs instead of blocking - see

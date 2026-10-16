@@ -11925,6 +11925,9 @@ function run() {
       const cb = await launch({});
       assert.ok(cb);
       try {
+        // The launch hides the root scrollbar; this test measures panel_fit.js's OWN
+        // neutralisation, so put the scrollbar back first.
+        await cb.send("Emulation.setScrollbarsHidden", { hidden: false });
         await pf.prepareBrowser(cb, URL);
         const css = `#settings-panel::-webkit-scrollbar{width:15px}`;
         const vectors = {};
@@ -12326,5 +12329,58 @@ function run() {
     } finally {
       await b.setViewport(900, 900, false);
     }
+  });
+
+  describe("analytics hosts", () => {
+    const HOSTS = [/googletagmanager\.com/, /google-analytics\.com/];
+    const PATTERNS = ["*googletagmanager.com*", "*google-analytics.com*"];
+
+    async function recordBoot(cb, load) {
+      const urls = [];
+      cb.on("Network.requestWillBeSent", (p) => { urls.push(p.request.url); });
+      await cb.send("Network.enable");
+      await load();
+      return urls;
+    }
+    function assertClean(urls, where) {
+      const bad = urls.filter((u) => HOSTS.some((h) => h.test(u)));
+      assert.deepStrictEqual(bad, [], `${where}: a test boot sent analytics requests`);
+    }
+
+    test("a full boot sends zero requests to googletagmanager.com and google-analytics.com", async () => {
+      const urls = await recordBoot(b, freshLoad);
+      assert.ok(urls.length > 0, "the recorder saw the boot's requests");
+      assertClean(urls, "default launch");
+      for (const p of PATTERNS) assert.ok(b.blockedUrls.includes(p), `launch() blocks ${p}`);
+
+      const cb = await launch({ realFonts: true });
+      try {
+        const real = await recordBoot(cb, async () => {
+          await cb.send("Page.navigate", { url: URL });
+          await cb.waitFor(APP_READY_EXPR, { label: "app ready (realFonts)" });
+        });
+        assert.ok(real.length > 0, "the recorder saw the realFonts boot's requests");
+        assertClean(real, "realFonts launch");
+        for (const p of PATTERNS) assert.ok(cb.blockedUrls.includes(p), `realFonts launch() blocks ${p}`);
+      } finally { await cb.close(); }
+    });
+  });
+
+  describe("harness scrollbars", () => {
+    test("the e2e launch hides classic scrollbars: innerWidth equals documentElement.clientWidth on a page taller than the viewport", async () => {
+      for (const opts of [{}, { realFonts: true }]) {
+        const cb = await launch(opts);
+        try {
+          await cb.setViewport(900, 900, false);
+          await cb.send("Page.navigate", { url: "data:text/html,<!doctype html><body style='height:5000px'></body>" });
+          await cb.waitFor('document.readyState === "complete" && document.body.offsetHeight === 5000', { label: "tall page" });
+          const m = await cb.eval(`return { iw: innerWidth, cw: document.documentElement.clientWidth };`);
+          const where = JSON.stringify(opts);
+          assert.strictEqual(m.iw, 900, `${where}: innerWidth`);
+          assert.strictEqual(m.cw, 900, `${where}: documentElement.clientWidth`);
+          assert.strictEqual(m.iw, m.cw, `${where}: no scrollbar takes layout width`);
+        } finally { await cb.close(); }
+      }
+    });
   });
 }

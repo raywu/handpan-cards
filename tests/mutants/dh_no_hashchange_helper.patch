@@ -1,0 +1,15 @@
+# kills: the sandbox can dispatch hashchange to window listeners
+# suite: node --test --test-name-pattern the.sandbox.can.dispatch.hashchange tests/harness.test.js
+# Discoverability W2: the hashchange helper reaches no listener.
+diff --git a/tools/sandbox.js b/tools/sandbox.js
+--- a/tools/sandbox.js
++++ b/tools/sandbox.js
+@@ -686,7 +686,7 @@ function boot(opts = {}) {
+      *  in response - it must take the page down and NOT pop anything itself. */
+     hashchange: (newHash) => {
+       location.hash = newHash;
+-      for (const fn of winListeners.hashchange || []) fn({ type: "hashchange" });
++      
+     },
+     popstate: () => {
+       for (const fn of winListeners.popstate || []) fn({ type: "popstate", state: history.state });
