@@ -9526,3 +9526,117 @@ describe("discoverability: analytics events", () => {
     }
   });
 });
+
+describe("discoverability: deck route", () => {
+  const REAL_ID = "G-TEST123456";
+  const SLUGS = { "d-kurd-10": "kurd", "d-amara-10": "amara10", "d-amara-9": "amara", "f-low-pygmy-18": "pygmy", "c-sharp-hijaz-9": "hijaz" };
+  const at = (hash, opts = {}) => boot({ href: "https://example.test/index.html" + hash, ...opts });
+  const stored = (app) => JSON.parse(app.store.hpfc || "{}");
+  const replaceCalls = (app) => app.history.calls.filter((c) => c.type === "replace");
+  const editedSeed = (seed, name) => {
+    const probe = boot();
+    const base = probe.get("HPE.core.formatSeed(DECKS.find((d) => d.id === " + JSON.stringify(seed) + ").fields)");
+    const alt = seed === "pygmy" ? base : base.replace(/C5$/, "D5");
+    return { [probe.get("SCALES_KEY")]: JSON.stringify([{ v: probe.get("SHARE_VERSION"), s: alt, o: { name, palette: 3, replaces: seed } }]) };
+  };
+
+  test("every slug opens its built-in deck, persists it, and leaves a clean address", () => {
+    for (const [slug, id] of Object.entries(SLUGS)) {
+      const app = at("#deck=" + slug, { storage: { hpfc: JSON.stringify({ deck: "kurd", mode: "A" }) } });
+      assert.strictEqual(app.deckId(), id, slug);
+      assert.strictEqual(stored(app).deck, id, slug + " was not persisted");
+      assert.strictEqual(app.location.hash, "", slug + " left the hash");
+      assert.strictEqual(app.location.pathname, "/index.html");
+    }
+  });
+
+  test("the route is consumed with replaceState, never pushState", () => {
+    const app = at("#deck=f-low-pygmy-18");
+    assert.deepStrictEqual(app.history.calls.filter((c) => c.type === "push"), []);
+    assert.strictEqual(replaceCalls(app).length, 1);
+    assert.strictEqual(replaceCalls(app)[0].url, "/index.html");
+  });
+
+  test("a route beats the stored deck", () => {
+    const app = at("#deck=c-sharp-hijaz-9", { storage: { hpfc: JSON.stringify({ deck: "pygmy", mode: "A" }) } });
+    assert.strictEqual(app.deckId(), "hijaz");
+  });
+
+  test("an edited seed shows its replacement, with no warning", () => {
+    const storage = editedSeed("amara", "MY AMARA");
+    const app = at("#deck=d-amara-9", { storage });
+    assert.match(app.deckId(), /^custom:/);
+    assert.strictEqual(app.registry()[app.deckId()].options.replaces, "amara");
+    assert.doesNotMatch(app.announcer().textContent || "", /That deck is gone/);
+  });
+
+  test("a deleted seed falls back to the default deck and says the deck is gone", () => {
+    const app = at("#deck=f-low-pygmy-18", { storage: { hpfc: JSON.stringify({ deck: "kurd", mode: "A", hidden: ["pygmy"] }) } });
+    assert.strictEqual(app.deckId(), "kurd");
+    assert.match(app.announcer().textContent, /^That deck is gone\. Showing D KURD 10\./);
+  });
+
+  test("an unknown slug, a custom id and an empty slug fall back silently and lose the hash", () => {
+    for (const h of ["#deck=nope", "#deck=custom:abc", "#deck="]) {
+      const app = at(h, { storage: { hpfc: JSON.stringify({ deck: "amara", mode: "A" }) } });
+      assert.strictEqual(app.deckId(), "amara", h);
+      assert.strictEqual(app.location.hash, "", h);
+      assert.doesNotMatch(app.announcer().textContent || "", /gone/, h);
+    }
+  });
+
+  test("a share link is untouched by the route", () => {
+    const app = at("#s=zzz");
+    assert.strictEqual(app.location.hash, "#s=zzz");
+    assert.deepStrictEqual(replaceCalls(app), []);
+  });
+
+  test("hashchange to a deck link selects that deck and clears the hash", () => {
+    const app = at("", { storage: { hpfc: JSON.stringify({ deck: "kurd", mode: "A" }) } });
+    app.hashchange("#deck=f-low-pygmy-18");
+    assert.strictEqual(app.deckId(), "pygmy");
+    assert.strictEqual(stored(app).deck, "pygmy");
+    assert.strictEqual(app.location.hash, "");
+    assert.deepStrictEqual(app.history.calls.filter((c) => c.type === "push"), []);
+  });
+
+  test("hashchange resolves an edited seed to its replacement and a deleted seed to a warning", () => {
+    const edited = at("", { storage: editedSeed("amara", "MY AMARA") });
+    edited.hashchange("#deck=d-amara-9");
+    assert.match(edited.deckId(), /^custom:/);
+    assert.strictEqual(edited.location.hash, "");
+    const gone = at("", { storage: { hpfc: JSON.stringify({ deck: "kurd", mode: "A", hidden: ["pygmy"] }) } });
+    gone.hashchange("#deck=f-low-pygmy-18");
+    assert.strictEqual(gone.deckId(), "kurd");
+    assert.match(gone.announcer().textContent, /^That deck is gone\./);
+    assert.strictEqual(gone.location.hash, "");
+  });
+
+  test("hashchange ignores the other routes", () => {
+    for (const h of ["#add", "#edit-x", "#s=abc", "#something"]) {
+      const app = at("", { storage: { hpfc: JSON.stringify({ deck: "amara", mode: "A" }) } });
+      const before = app.history.calls.length;
+      app.hashchange(h);
+      assert.strictEqual(app.deckId(), "amara", h);
+      assert.strictEqual(app.history.calls.length, before, h + " touched history");
+    }
+  });
+
+  test("a routed boot queues config before deck_route", () => {
+    const html = INDEX_HTML().replace('const GA_MEASUREMENT_ID = "G-XXXXXXXXXX";', 'const GA_MEASUREMENT_ID = "' + REAL_ID + '";');
+    const app = boot({ html, webdriver: false, href: "https://example.test/index.html#deck=d-kurd-10" });
+    const q = JSON.parse(JSON.stringify(Array.from(app.get("window.dataLayer"))));
+    const names = q.map((e) => e[0] === "js" ? "js" : e[0] + ":" + e[1]);
+    assert.deepStrictEqual(names.slice(0, 5), ["consent:default", "consent:default", "js", "config:" + REAL_ID, "event:deck_route"]);
+    assert.deepStrictEqual(q[4][2], { deck_id: "kurd" });
+  });
+
+  test("the about section links every built-in deck by its slug", () => {
+    const html = aboutHtml();
+    for (const d of BUILTIN_DECKS()) {
+      const slug = Object.keys(SLUGS).find((s) => SLUGS[s] === d.id);
+      assert.ok(slug, d.id + " has no slug");
+      assert.ok(html.includes('href="#deck=' + slug + '"'), slug + " link missing");
+    }
+  });
+});

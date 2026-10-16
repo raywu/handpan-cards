@@ -12469,5 +12469,51 @@ function run() {
       assert.strictEqual(m.consent, 2, "the inline consent defaults still ran");
       assert.deepStrictEqual(urls.filter((u) => /googletagmanager\.com|google-analytics\.com/.test(u)), []);
     });
+
+    test("a #deck= link opens that deck at 380px and the address bar loses the hash", async () => {
+      await freshLoad();
+      await b.setViewport(380, 780, false);
+      try {
+        await navigate(URL + "?r=route#deck=f-low-pygmy-18");
+        await b.settle();
+        const m = await b.eval(`
+          const chip = document.querySelector("#decks .chip.on");
+          let stored = null;
+          try { stored = JSON.parse(localStorage.getItem("hpfc")).deck; } catch (e) {}
+          return { hash: location.hash, search: location.search, chip: chip ? chip.textContent : null, stored,
+                   sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth };
+        `);
+        assert.strictEqual(m.hash, "");
+        assert.strictEqual(m.search, "?r=route");
+        assert.match(m.chip, /pygmy/i);
+        assert.strictEqual(m.stored, "pygmy");
+        assert.ok(m.sw <= m.cw + 1, "horizontal overflow at 380px");
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("clicking an about-section deck link on / switches the deck without a reload", async () => {
+      await freshLoad();
+      await b.setViewport(380, 780, false);
+      try {
+        await b.eval(`window.__noReload = true; document.querySelector('#about a[href="#deck=c-sharp-hijaz-9"]').scrollIntoView({ block: "center" }); return true;`);
+        await b.settle();
+        await b.click('#about a[href="#deck=c-sharp-hijaz-9"]');
+        await b.waitFor(`/hijaz/i.test((document.querySelector("#decks .chip.on") || {}).textContent || "")`, { label: "Hijaz chip on" });
+        const m = await b.eval(`
+          let stored = null;
+          try { stored = JSON.parse(localStorage.getItem("hpfc")).deck; } catch (e) {}
+          return { hash: location.hash, kept: window.__noReload === true, stored,
+                   navs: performance.getEntriesByType("navigation").length };
+        `);
+        assert.strictEqual(m.hash, "");
+        assert.strictEqual(m.kept, true, "the page reloaded");
+        assert.strictEqual(m.navs, 1);
+        assert.strictEqual(m.stored, "hijaz");
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
   });
 }
