@@ -12470,7 +12470,7 @@ function run() {
       assert.deepStrictEqual(urls.filter((u) => /googletagmanager\.com|google-analytics\.com/.test(u)), []);
     });
 
-    test("a #deck= link opens that deck at 380px and the address bar loses the hash", async () => {
+    test("a #deck= link opens that deck at 380px and the address bar keeps the deck's own route", async () => {
       await freshLoad();
       await b.setViewport(380, 780, false);
       try {
@@ -12483,7 +12483,7 @@ function run() {
           return { hash: location.hash, search: location.search, chip: chip ? chip.textContent : null, stored,
                    sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth };
         `);
-        assert.strictEqual(m.hash, "");
+        assert.strictEqual(m.hash, "#deck=f-low-pygmy-18");
         assert.strictEqual(m.search, "?r=route");
         assert.match(m.chip, /pygmy/i);
         assert.strictEqual(m.stored, "pygmy");
@@ -12507,13 +12507,53 @@ function run() {
           return { hash: location.hash, kept: window.__noReload === true, stored,
                    navs: performance.getEntriesByType("navigation").length };
         `);
-        assert.strictEqual(m.hash, "");
+        assert.strictEqual(m.hash, "#deck=c-sharp-hijaz-9");
         assert.strictEqual(m.kept, true, "the page reloaded");
         assert.strictEqual(m.navs, 1);
         assert.strictEqual(m.stored, "hijaz");
       } finally {
         await b.setViewport(900, 900, false);
       }
+    });
+  });
+
+  describe("share url", () => {
+    const hash = () => b.eval(`return location.hash`);
+    const chipOn = () => b.eval(`return (document.querySelector("#decks .chip.on") || {}).textContent || ""`);
+
+    test("a hashless boot writes the deck route and adds no history entry", async () => {
+      await freshLoad();
+      await b.settle();
+      assert.match(await hash(), /^#deck=/);
+      const len = await b.eval(`return history.length`);
+      await b.eval(`document.querySelectorAll("#decks .chip")[1].click(); return true`);
+      await b.settle();
+      assert.match(await hash(), /^#deck=/);
+      assert.strictEqual(await b.eval(`return history.length`), len, "chip taps push no entry");
+    });
+
+    test("a #s= link boots a custom deck, keeps a #s= bar, and COPY LINK is live", async () => {
+      const code = "4A4GpAI11Co13D214D215D216D217D211D213DGem2J49CGan2GenB30iCYmpB3GiDImsB3SxEmgT2O_m";
+      await freshLoad();
+      await navigate(URL + "?r=s#s=" + code);
+      await b.settle();
+      assert.match(await hash(), /^#s=/);
+      assert.strictEqual(await b.eval(`return document.getElementById("share-copy").disabled`), false);
+      await b.eval(`location.hash = "#deck=c-sharp-hijaz-9"; return true`);
+      await b.waitFor(`/hijaz/i.test((document.querySelector("#decks .chip.on") || {}).textContent || "")`, { label: "Hijaz on" });
+      assert.strictEqual(await hash(), "#deck=c-sharp-hijaz-9");
+    });
+
+    test("Back and Forward between routes leave the bar on the deck shown", async () => {
+      await freshLoad();
+      await b.eval(`location.hash = "#deck=c-sharp-hijaz-9"; return true`);
+      await b.waitFor(`/hijaz/i.test((document.querySelector("#decks .chip.on") || {}).textContent || "")`, { label: "Hijaz on" });
+      await b.eval(`location.hash = "#deck=f-low-pygmy-18"; return true`);
+      await b.waitFor(`/pygmy/i.test((document.querySelector("#decks .chip.on") || {}).textContent || "")`, { label: "Pygmy on" });
+      await b.eval(`history.back(); return true`);
+      await b.settle();
+      assert.ok(/hijaz/i.test(await chipOn()) || /^#deck=/.test(await hash()));
+      assert.match(await hash(), /^#deck=/);
     });
   });
 }
