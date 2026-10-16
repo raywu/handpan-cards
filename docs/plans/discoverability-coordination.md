@@ -122,7 +122,7 @@ Spawned only after the section 5 trigger, cold, from this file. W5 owns `tools/g
 Cycle: 1   Wave: 1a   Merged this batch: 880f054 (#319 W3)
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| W2 | ae60696a3b5621171 | .claude/worktrees/agent-ae60696a3b5621171 | discoverability/w2-harness | | | | | 0 | no | nothing | yes |
+| W2 | ae60696a3b5621171 | .claude/worktrees/agent-ae60696a3b5621171 | discoverability/w2-harness | #320 | 459bb76 | 2026-10-16 (CI 38963573972 success, 11 checks) | reviewer spawned | 0 | no | nothing | yes |
 | W3 | af6af65e9d198cd2e | released | discoverability/w3-site-files (deleted) | #319 | 7ad5ba9 | 2026-10-16 (CI 38961099995 success, 11 checks) | PASS_WITH_NITS | 0 | yes (main 880f054) | nothing | no |
 | W1 | | | discoverability/w1-head-copy-ga | | | | | 0 | no | W2 merge | |
 | W4 | | | discoverability/w4-docs-counts | | | | | 0 | no | W1 and W3 merge | |
