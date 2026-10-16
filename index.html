@@ -50,6 +50,18 @@
   "featureList": "Chord flashcards; chord progressions; custom scale input; printable PDF"
 }
 </script>
+<!-- Analytics consent defaults (discoverability plan section 7). Inline and inert: it
+     only fills window.dataLayer, so no network request exists until loadAnalytics()
+     appends the gtag script. The defaults must precede config; the region-scoped
+     denial (EEA, UK, CH) wins over the open default for visitors there. -->
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag() { window.dataLayer.push(arguments); }
+gtag("consent", "default", {ad_storage: "denied", ad_user_data: "denied", ad_personalization: "denied", analytics_storage: "granted"});
+gtag("consent", "default", {ad_storage: "denied", ad_user_data: "denied", ad_personalization: "denied", analytics_storage: "denied",
+  region: ["AT","BE","BG","HR","CY","CZ","DK","EE","FI","FR","DE","GR","HU","IE","IT","LV","LT","LU","MT","NL","PL","PT","RO","SK","SI","ES","SE","IS","LI","NO","GB","CH"]});
+gtag("js", new Date());
+</script>
 <!-- The favicon is the D Amara deck's Dm card in the app's root/tone colours
      (root teal, tones amber) on the --table ground, lighting the three
      voicing fields only (not the ding and A3 the pitch-class rule adds). This
@@ -11259,7 +11271,35 @@ document.addEventListener("click", e => {
   land();
 }, true);
 
+/* ---------------- analytics ---------------- */
+// One named constant; the placeholder disables the loader until the owner swaps
+// in the real measurement id.
+const GA_MEASUREMENT_ID = "G-XXXXXXXXXX";
+let analyticsLoaded = false;
+// Never from a file, a local server or an automated browser, and never with the
+// placeholder id: those boots must send nothing.
+function analyticsAllowed() {
+  if (location.protocol === "file:") return false;
+  if (["localhost", "127.0.0.1", "[::1]"].includes(location.hostname)) return false;
+  if (navigator.webdriver) return false;
+  return GA_MEASUREMENT_ID !== "G-XXXXXXXXXX";
+}
+// page_location omits the hash: a #s= payload is a free-text scale string.
+function loadAnalytics() {
+  if (!analyticsAllowed()) return;
+  const el = document.createElement("script");
+  el.async = true;
+  el.src = "https://www.googletagmanager.com/gtag/js?id=" + GA_MEASUREMENT_ID;
+  document.head.appendChild(el);
+  gtag("config", GA_MEASUREMENT_ID, {page_location: location.origin + location.pathname});
+  analyticsLoaded = true;
+}
+function track(name, params) {
+  if (analyticsLoaded) gtag("event", name, params || {});
+}
+
 /* ---------------- go ---------------- */
+loadAnalytics();
 sheet.setAttribute("hidden", ""); buildSwatches(); paintLayout(); resyncSheet(true);
 // Saved scales are rebuilt BEFORE the stored deck id is resolved, so a custom
 // deck that was selected last session is in the registry by the time deck()

@@ -9355,3 +9355,73 @@ describe("discoverability: structured data", () => {
     assert.ok(/\bfree\b/i.test(textOf(aboutHtml())), "isAccessibleForFree is marked up but the about section does not say free");
   });
 });
+
+describe("discoverability: analytics loader", () => {
+  const REAL_ID = "G-TEST123456";
+  const bootGa = (opts = {}) => {
+    const html = INDEX_HTML().replace('const GA_MEASUREMENT_ID = "G-XXXXXXXXXX";', 'const GA_MEASUREMENT_ID = "' + (opts.id || REAL_ID) + '";');
+    return boot({ html, webdriver: false, href: "https://example.test/index.html", ...opts.boot });
+  };
+  const gtagScripts = (app) => app.head.children.filter((c) => /googletagmanager\.com\/gtag\/js/.test(c.src || ""));
+  const queue = (app) => JSON.parse(JSON.stringify(Array.from(app.get("window.dataLayer"))));
+
+  test("the placeholder id is the shipped constant", () => {
+    assert.ok(INDEX_HTML().includes('const GA_MEASUREMENT_ID = "G-XXXXXXXXXX";'));
+  });
+
+  test("the loader appends the gtag script on a real host with a real id, and only then", () => {
+    const app = bootGa();
+    const s = gtagScripts(app);
+    assert.strictEqual(s.length, 1);
+    assert.strictEqual(s[0].src, "https://www.googletagmanager.com/gtag/js?id=" + REAL_ID);
+    assert.strictEqual(s[0].async, true);
+  });
+
+  const noInject = [
+    ["a file: page", { boot: { href: "file:///x/index.html" } }],
+    ["localhost", { boot: { href: "http://localhost:8000/index.html" } }],
+    ["127.0.0.1", { boot: { href: "http://127.0.0.1:8000/index.html" } }],
+    ["[::1]", { boot: { href: "http://[::1]:8000/index.html" } }],
+    ["an automated browser", { boot: { webdriver: true } }],
+    ["the placeholder id", { id: "G-XXXXXXXXXX" }],
+  ];
+  for (const [label, opts] of noInject) {
+    test("analyticsAllowed is false for " + label + ": no gtag script, no config, no event", () => {
+      const app = bootGa(opts);
+      assert.strictEqual(gtagScripts(app).length, 0);
+      assert.ok(!queue(app).some((e) => e[0] === "config"), "config queued");
+      assert.strictEqual(app.get("analyticsAllowed()"), false);
+    });
+  }
+
+  test("consent defaults come first, in order, and config follows them", () => {
+    const q = queue(bootGa());
+    const heads = q.map((e) => e[0] + (e[0] === "js" || !e[1] ? "" : ":" + e[1]));
+    assert.deepStrictEqual(heads.slice(0, 4), ["consent:default", "consent:default", "js", "config:" + REAL_ID]);
+    const [open, eea] = [q[0][2], q[1][2]];
+    for (const c of [open, eea]) {
+      assert.strictEqual(c.ad_storage, "denied");
+      assert.strictEqual(c.ad_user_data, "denied");
+      assert.strictEqual(c.ad_personalization, "denied");
+    }
+    assert.strictEqual(open.analytics_storage, "granted");
+    assert.ok(!("region" in open));
+    assert.strictEqual(eea.analytics_storage, "denied");
+    assert.strictEqual(eea.region.length, 32);
+    for (const c of ["DE", "FR", "GB", "CH", "IS", "LI", "NO", "ES", "SE"]) assert.ok(eea.region.includes(c), c);
+  });
+
+  test("page_location carries no hash, so a share payload never reaches GA", () => {
+    const app = bootGa({ boot: { href: "https://example.test/index.html#s=SECRET" } });
+    const cfg = queue(app).find((e) => e[0] === "config");
+    assert.strictEqual(cfg[2].page_location, "https://example.test/index.html");
+    assert.ok(!JSON.stringify(queue(app)).includes("SECRET"));
+  });
+
+  test("config is queued before any event on a boot with a share link", () => {
+    const app = bootGa({ boot: { href: "https://example.test/index.html#s=zzz" } });
+    const names = queue(app).map((e) => e[0] + (e[0] === "event" ? ":" + e[1] : ""));
+    const cfg = names.indexOf("config"), ev = names.findIndex((n) => /^event:/.test(n));
+    assert.ok(cfg >= 0 && (ev === -1 || ev > cfg), JSON.stringify(names));
+  });
+});

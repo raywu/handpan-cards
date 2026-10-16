@@ -12450,5 +12450,24 @@ function run() {
         await b.setViewport(900, 900, false);
       }
     });
+
+    test("analyticsAllowed() is false in the harness and the boot sends zero analytics requests", async () => {
+      const urls = [];
+      b.on("Network.requestWillBeSent", (p) => { urls.push(p.request.url); });
+      await b.send("Network.enable");
+      await freshLoad();
+      const m = await b.eval(`
+        return { allowed: analyticsAllowed(), host: location.hostname,
+                 scripts: [...document.head.querySelectorAll("script[src]")].map((s) => s.src),
+                 config: window.dataLayer.some((e) => e[0] === "config"),
+                 consent: window.dataLayer.filter((e) => e[0] === "consent").length };
+      `);
+      assert.strictEqual(m.host, "127.0.0.1");
+      assert.strictEqual(m.allowed, false);
+      assert.deepStrictEqual(m.scripts, []);
+      assert.strictEqual(m.config, false);
+      assert.strictEqual(m.consent, 2, "the inline consent defaults still ran");
+      assert.deepStrictEqual(urls.filter((u) => /googletagmanager\.com|google-analytics\.com/.test(u)), []);
+    });
   });
 }
