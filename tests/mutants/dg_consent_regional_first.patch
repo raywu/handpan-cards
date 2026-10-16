@@ -1,0 +1,17 @@
+# kills: consent defaults come first, in order, and config follows them
+# suite: node --test --test-name-pattern ^consent.defaults.come.first tests/app.test.js
+# The region-scoped denial is declared before the open default; the order the plan pins (S8) is lost.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -57,9 +57,9 @@
+ <script>
+ window.dataLayer = window.dataLayer || [];
+ function gtag() { window.dataLayer.push(arguments); }
+-gtag("consent", "default", {ad_storage: "denied", ad_user_data: "denied", ad_personalization: "denied", analytics_storage: "granted"});
+ gtag("consent", "default", {ad_storage: "denied", ad_user_data: "denied", ad_personalization: "denied", analytics_storage: "denied",
+   region: ["AT","BE","BG","HR","CY","CZ","DK","EE","FI","FR","DE","GR","HU","IE","IT","LV","LT","LU","MT","NL","PL","PT","RO","SK","SI","ES","SE","IS","LI","NO","GB","CH"]});
++gtag("consent", "default", {ad_storage: "denied", ad_user_data: "denied", ad_personalization: "denied", analytics_storage: "granted"});
+ gtag("js", new Date());
+ </script>
+ <!-- The favicon is the D Amara deck's Dm card in the app's root/tone colours

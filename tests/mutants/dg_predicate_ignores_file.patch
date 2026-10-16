@@ -1,0 +1,14 @@
+# kills: analyticsAllowed is false for a file: page: no gtag script, no config, no event
+# suite: node --test --test-name-pattern ^analyticsAllowed.is.false.for.a.file..page tests/app.test.js
+# A file: page loads the analytics script, so opening the app from disk phones home.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11279,7 +11279,6 @@ let analyticsLoaded = false;
+ // Never from a file, a local server or an automated browser, and never with the
+ // placeholder id: those boots must send nothing.
+ function analyticsAllowed() {
+-  if (location.protocol === "file:") return false;
+   if (["localhost", "127.0.0.1", "[::1]"].includes(location.hostname)) return false;
+   if (navigator.webdriver) return false;
+   return GA_MEASUREMENT_ID !== "G-XXXXXXXXXX";

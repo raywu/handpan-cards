@@ -1,0 +1,15 @@
+# kills: page_location carries no hash, so a share payload never reaches GA
+# suite: node --test --test-name-pattern ^page_location.carries.no.hash tests/app.test.js
+# A #s= scale string reaches Google as part of the page URL.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11291,7 +11291,7 @@ function loadAnalytics() {
+   el.async = true;
+   el.src = "https://www.googletagmanager.com/gtag/js?id=" + GA_MEASUREMENT_ID;
+   document.head.appendChild(el);
+-  gtag("config", GA_MEASUREMENT_ID, {page_location: location.origin + location.pathname});
++  gtag("config", GA_MEASUREMENT_ID, {page_location: location.href});
+   analyticsLoaded = true;
+ }
+ function track(name, params) {

@@ -1,0 +1,14 @@
+# kills: analyticsAllowed is false for an automated browser: no gtag script, no config, no event
+# suite: node --test --test-name-pattern ^analyticsAllowed.is.false.for.an.automated.browser tests/app.test.js
+# Automated browsers (CI, crawlers that set webdriver) send hits.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11281,7 +11281,6 @@ let analyticsLoaded = false;
+ function analyticsAllowed() {
+   if (location.protocol === "file:") return false;
+   if (["localhost", "127.0.0.1", "[::1]"].includes(location.hostname)) return false;
+-  if (navigator.webdriver) return false;
+   return GA_MEASUREMENT_ID !== "G-XXXXXXXXXX";
+ }
+ // page_location omits the hash: a #s= payload is a free-text scale string.
