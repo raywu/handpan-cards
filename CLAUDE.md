@@ -335,9 +335,9 @@ changing the solver or the seed, never by hand.
   `test_the_diagram_label_rule_carries_the_same_constants` pins the two copies
   equal and `test_each_label_rule_number_is_written_once_per_language` fails on
   a second copy written with the same spelling, outside lines whose first
-  non-blank character is `#`, `*`, `//` or `/*` (comment lines, but also every
-  CSS `#id` rule in `index.html`) and lines naming `F_NUM_RATIO`, in the files
-  it scans (`src/engine/*.js`, `index.html` outside engine regions,
+  non-blank character is `#`, `*`, `//` or `/*` (comment lines, but also
+  every CSS `#id` rule in `index.html`) and lines naming `F_NUM_RATIO`, in the
+  files it scans (`src/engine/*.js`, `index.html` outside engine regions,
   `tools/*.py`); a `.66` or `0.640` would pass; and `tests/test_render_agreement.py` pins the two renderers to the same drawn sizes, names and numbers alike, **per
   field**, and asserts the no-shrink baseline PER RENDERER (print vs `f_*`,
   app vs `f_* x 1.05`) on the sizes they actually emit. A single baseline
