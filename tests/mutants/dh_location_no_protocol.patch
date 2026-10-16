@@ -1,0 +1,14 @@
+# kills: the sandbox location exposes protocol and hostname
+# suite: node --test --test-name-pattern the.sandbox.location.exposes.protocol tests/harness.test.js
+# Discoverability W2: location has no protocol getter.
+diff --git a/tools/sandbox.js b/tools/sandbox.js
+--- a/tools/sandbox.js
++++ b/tools/sandbox.js
+@@ -205,7 +205,6 @@ function makeLocation(href) {
+     get hash() { return state.url.hash; },
+     set hash(v) { state.url.hash = v; },
+     get origin() { return state.url.origin; },
+-    get protocol() { return state.url.protocol; },
+     get hostname() { return state.url.hostname; },
+     get pathname() { return state.url.pathname; },
+     set pathname(v) { state.url.pathname = v; },

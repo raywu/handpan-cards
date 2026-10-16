@@ -1,0 +1,15 @@
+# kills: boot takes an html string in place of the file
+# suite: node --test --test-name-pattern boot.takes.an.html.string tests/harness.test.js
+# Discoverability W2: boot reads the file whatever html it is given.
+diff --git a/tools/sandbox.js b/tools/sandbox.js
+--- a/tools/sandbox.js
++++ b/tools/sandbox.js
+@@ -226,7 +226,7 @@ function makeLocation(href) {
+  *   html           - boot this markup instead of reading index.html
+  */
+ function boot(opts = {}) {
+-  const html = opts.html !== undefined ? String(opts.html) : fs.readFileSync(APP, "utf8");
++  const html = fs.readFileSync(APP, "utf8");
+   // Every inline block, in document order; <script src=...> is skipped (the app
+   // is single-file by contract, so there should never be one).
+   // A script whose type is not JavaScript (application/ld+json, a template) is data.

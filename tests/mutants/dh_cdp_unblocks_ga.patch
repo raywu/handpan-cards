@@ -1,0 +1,15 @@
+# kills: a full boot sends zero requests to googletagmanager.com and google-analytics.com
+# suite: node --test --test-name-pattern ^a.full.boot.sends.zero.requests.to.googletagmanager tests/e2e.test.js
+# Discoverability W2: the launch blocks no analytics host.
+diff --git a/tests/helpers/cdp.js b/tests/helpers/cdp.js
+--- a/tests/helpers/cdp.js
++++ b/tests/helpers/cdp.js
+@@ -113,7 +113,7 @@ const EXCEPTIONS = [];
+ // Analytics hosts no test boot may reach (discoverability plan section 9, W2).
+ // analyticsAllowed() in the app already refuses under automation; this is the
+ // second fence, and launch() exposes the list as browser.blockedUrls.
+-const ANALYTICS_PATTERNS = ["*googletagmanager.com*", "*google-analytics.com*"];
++const ANALYTICS_PATTERNS = [];
+ const FONT_PATTERNS = ["*fonts.googleapis.com*", "*fonts.gstatic.com*"];
+ function takeExceptions() {
+   return EXCEPTIONS.splice(0, EXCEPTIONS.length);
