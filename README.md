@@ -170,7 +170,10 @@ exactly the site root (`tests/test_site_files.py`:
 `test_sitemap_lists_exactly_the_site_root`, `test_robots_names_the_absolute_sitemap`).
 A `#deck=<slug>` link opens a built-in deck (`tests/app.test.js` "every slug
 opens its built-in deck, persists it, and leaves a clean address"), and the
-about section below the card names every deck with its card count ("the about
+about section, an overlay opened by the ABOUT row of the settings menu whose text
+stays in the served HTML ("AO: the about section ships hidden as a dialog, in
+place after #app, with every existing sentence"), names every deck with its
+card count ("the about
 section names every built-in deck with its card count from data/decks.json and
 the value line"). GA4 loads only on a real host with a non-placeholder measurement id ("the shipped
 index.html boots unmodified on a real host and loads gtag with the shipped id");

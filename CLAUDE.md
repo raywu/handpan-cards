@@ -373,8 +373,21 @@ changing the solver or the seed, never by hand.
   labels wrap inside their boxes), then `HANDPAN 101` alone (2026-10-08, lane PM:
   a Google Doc link, `#res-handpan-101`, full width, the last panel stop, so no
   earlier control moved). They are links only, never on a deck or card,
-  and join `panelStops()` through `a.mode[id^="res-"]`. The CI `panel-fit`
-  oracle allows `res-*` controls 64px of growth and nothing else. Every panel control centres its label, wrapped or not
+  and join `panelStops()` through `a.mode[id^="res-"]`. A fourth row follows
+  (2026-10-17, owner gate G1, About lane O): `ABOUT`, a `<button id="about-open">`
+  (not a link) alone in a plain full-width `.modebar`, the last Resources row and
+  the last panel stop ("AO: ABOUT is the last panel stop, a full-width button
+  alone in the last Resources row"; "PM rule 7: HANDPAN 101 is the last Resources
+  link, a Google Doc in a new tab, alone in its row" asserts four rows and that
+  the fourth holds ABOUT and no link). It opens the About overlay (see "About
+  section"). The CI `panel-fit` oracle allows `res-*` controls 64px of growth
+  ("panel fit: the Resources allowance is 64, owed only for a res- control the base
+  lacks") and the new `about-open` control a one-off 52px
+  (`ABOUT_ALLOWANCE_PX` in `tools/probe/panel_fit.js`), owed only while the base
+  lacks that control ("panel fit: the About-row allowance is 52, owed only for an
+  about-open control the base lacks"), which moves no existing control ("panel
+  fit rule 2: the About-row allowance does not move any existing control");
+  nothing else earns growth (the 24px `HEADING_ALLOWANCE_PX` for `#panel-prog-heading` is dormant, since the base has the heading). Every panel control centres its label, wrapped or not
   (`#settings-panel .mode`, and the paper select's value).
 - **Card copy is English-only.** The bilingual German/English subtitles
   inherited from the reference deck (DUR/MOLL/VERMINDERT etc.) were
@@ -573,34 +586,82 @@ card-size and host-block titles below are in `tests/e2e.test.js`.
   route), "hashchange resolves an edited seed to its
   replacement and a deleted seed to a warning", "hashchange ignores the other
   routes". In a real browser: `tests/e2e.test.js` "a #deck= link opens that deck
-  at 380px and the address bar keeps the deck's own route" and "clicking an about-section
-  deck link on / switches the deck without a reload".
-- **About section.** `<section id="about">` sits after `#app` and before the
-  sheet, and `#app` wraps header, main, footer and the live region ("#app wraps
-  header, main, footer and the live region in that order, and #about follows it
-  before the sheet"). `#about` is in both inert lists (`panelBackground` and the
-  sheet's `background`) and `#app` is in neither, because `#app` holds the
-  settings trigger ("#about is in both inert lists and #app in neither"). Its
-  text names every built-in deck with its card count from `data/decks.json`, the
-  value line, the Celtic Minor equivalence, the custom-scale and Google
-  Analytics sentences, and a three-step list ("the about section names every
-  built-in deck with its card count from data/decks.json and the value line");
-  it links every deck by slug ("the about section links every built-in deck by
-  its slug"). It is below the first screen with no horizontal scroll at 380px
-  (`tests/e2e.test.js` "the about section is visible below the card at 380px
-  with no horizontal scroll") and the card keeps its origin/main size
-  (`tests/e2e.test.js` "the card keeps its origin/main size with the about section below the first
-  screen"). Its screen rules sit before `@media print{`
+  at 380px and the address bar keeps the deck's own route" and "clicking a deck link
+  inside the open About switches the deck without a reload". Links inside About go
+  through `aboutLink()`, not the `hashchange` listener (see "About section").
+- **About section (an overlay since 2026-10-17, PR #340; plan `docs/plans/2026-10-17-about-off-main.md`).**
+  `<section id="about">` stays in the served HTML of `/`, after `#app` and before
+  the sheet, and ships `hidden` as a `role="dialog"` `aria-modal="true"` named by
+  `#about-title`; it renders only while the overlay is open ("AO: the about section
+  ships hidden as a dialog, in place after #app, with every existing sentence").
+  The text is crawlable but is not on the practice screen ("the about section is
+  not rendered on / and its text is in the served HTML", `tests/e2e.test.js`), and
+  the card keeps its origin/main size and position ("the card keeps its origin/main
+  size and position with About off the first screen", `tests/e2e.test.js`). `#app`
+  still wraps header, main, footer and the live region, and `#about` follows it
+  before the sheet ("#app wraps header, main, footer and the live region in that
+  order, and #about follows it before the sheet"); `#about` is in both inert lists
+  and `#app` in neither, because `#app` holds the settings trigger ("#about is in
+  both inert lists and #app in neither"). Its text names every built-in deck with
+  its card count from `data/decks.json`, the value line, the Celtic Minor
+  equivalence, the custom-scale and Google Analytics sentences, and a three-step
+  list ("the about section names every built-in deck with its card count from
+  data/decks.json and the value line"); it links every deck by slug ("the about
+  section links every built-in deck by its slug"). It ends with a Contact heading
+  and a plain `mailto:handpan@raywu.org` link, G6 ("AO: About ends with a Contact
+  heading and a mailto link to handpan@raywu.org"); the address is not in the
+  JSON-LD (G7; no test, true by the `application/ld+json` block carrying no
+  `email`). Its screen rules sit before `@media print{`
   (`tests/test_render_agreement.py::test_print_block_is_last_in_the_style_element`).
   The card counts in the about text are literals in `#about` (`index.html`, the
   deck list); the test "the about section names every built-in deck with its
   card count from data/decks.json and the value line" (`tests/app.test.js`)
   checks them against `data/decks.json`, so a deck-data change must also edit
   `#about`.
+  **Opening and leaving (owner gates G1-G3).** The ABOUT row of the panel's
+  Resources group (`#about-open`) closes the menu, pushes ONE `#about` history
+  entry, makes `#app` and the panel inert and focuses `#about-close` ("AO: ABOUT
+  closes the panel, pushes one #about entry, inerts #app and the panel, and
+  focuses the exit, and a resize after close writes nothing"). The `← BACK`
+  button (`#about-close`, accessible name "Back to the practice screen"), Escape
+  and a popstate each close it, consume the `#about` entry and leave the settings
+  menu CLOSED, with focus on the settings trigger ("AO: the exit control, Escape
+  and a popstate each close About, consume the #about entry and focus the settings
+  trigger"); in a real browser (tests/e2e.test.js), "AO: at 380px the exit control restores the deck, card, flip state, mode and scroll, with focus on the settings trigger", "AO: at 380px Back closes About and one more Back leaves the page's history as it was before ABOUT" and "AO: at 380px Escape closes About and arrow keys never step the card while it is open"; at 1280px focus returns to ABOUT ("AO: at 1280x800 the sidebar's ABOUT opens About and closing returns focus to ABOUT", tests/e2e.test.js). Closing a
+  closed About pops nothing ("AO: closing About when it is already closed pops
+  nothing"). `syncRoute()` and `hashchange` write nothing while it is open ("AO:
+  syncRoute and hashchange write nothing while About is open"); a fragment
+  navigation while open closes About and leaves the destination for `hashchange`
+  ("AO: a fragment navigation while About is open closes About and leaves the
+  destination hash for hashchange"). A reload or pasted `/#about` shows the app,
+  not About, and the bar is rewritten to the deck's route (G3: "AO: a boot on
+  #about leaves About closed and ends on the deck's route"; a Forward traversal
+  onto `#about` does the same: "AO: a Forward traversal onto #about leaves About
+  closed and rewrites the bar"). In tests/e2e.test.js: the page behind does not scroll ("AO: the page behind About does not scroll, at 380x800 and 844x390"); About scrolls itself with its exit visible and 44px non-overlapping link targets ("AO: About scrolls with its exit visible, non-overlapping 44px link targets and no horizontal scroll at 380x800, 844x390 and 1280x800"); it has no transition or animation ("AO: About has no transition or animation with and without prefers-reduced-motion").
+  **Deck links inside About** go through `aboutLink()`, which shares
+  `routeToDeck()` with the `hashchange` listener (the listener still serves typed
+  and external fragments). A link to another deck replaces the `#about` entry with
+  the deck's route and selects it, so one Back returns to the previous deck ("AO:
+  a #deck= link inside About replaces the #about entry with the deck's route and
+  selects the deck"; at 380px "AO: at 380px a #deck= link inside About switches deck and one Back returns to the previous deck", tests/e2e.test.js); a link to the deck already
+  shown closes About like the exit control ("AO: a #deck= link to the deck
+  already shown closes About like the exit control"); with a custom deck showing,
+  "an about link clicked while a custom deck shows switches the deck and the bar"
+  (`tests/e2e.test.js`).
+  **Supersessions** (of `docs/plans/2026-10-16-discoverability.md`): the plan's
+  section 4 ban on `display:none` (S13) is replaced, because the text stays in the
+  served HTML in its original position and renders only while open; D10 (position)
+  stands for the markup and the served order is unchanged; D20 (the `#app`
+  wrapper) stands and the card-size test still pins it, but its reason (About as
+  a fourth flex child of `body`) is gone; D21 (in-page `#deck=` links): the `hashchange` listener stands for typed and external fragments, and links inside About go through `aboutLink()` (see above); D22 (classic scrollbars) is moot because
+  the page no longer scrolls to About.
 - **Structured data.** One `application/ld+json` WebApplication block; it states
   only what the page shows: name equals the `<h1>`, description equals the meta
-  description, no rating or review, and the about section says "free" ("the
-  JSON-LD block parses and states only what the page shows"). The sandbox skips
+  description, no rating or review, and the about section, now behind the
+  ABOUT row rather than on the page, still says "free" (owner gate G5: keep
+  `isAccessibleForFree` and `offers`; "the JSON-LD block parses and states only
+  what the page shows" asserts `isAccessibleForFree` true and that the about text
+  says free; this replaces the earlier "visible" claim). The sandbox skips
   any `<script>` whose type is not JavaScript, so the block never runs ("boot
   skips a script whose type is not JavaScript", `tests/harness.test.js`).
 - **Analytics (GA4).** `GA_MEASUREMENT_ID` is one constant, shipped as the
@@ -629,7 +690,9 @@ card-size and host-block titles below are in `tests/e2e.test.js`.
   and `deck_route` is proven in the "discoverability: deck route" describe by
   "a routed boot queues config before deck_route". An eighth event,
   `share_copy`, carries no id, name or code ("SU: COPY LINK tracks share_copy
-  with no id, name or code"); a reload of the stored deck fires neither
+  with no id, name or code"), and a ninth, `about_open` (owner gate G4, 2026-10-17),
+  fires when ABOUT opens the overlay and carries no params ("AO: opening About
+  tracks about_open with no params"); a reload of the stored deck fires neither
   `share_open` nor `deck_route`, while a route that differs from the stored
   selection does ("SU: a reload of the stored deck fires no share_open and no
   deck_route; a route that differs from the stored selection fires it"), and
