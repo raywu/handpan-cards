@@ -10571,6 +10571,7 @@ describe("IM: import text on the sheet", () => {
   test("IM: INSUFFICIENT shows one line, writes nothing to #scale-box and offers no preset", () => {
     const app = boot();
     openSheet(app);
+    showImport(app);
     app.type("[C3] D3");
     app.click(app.els["import-open"]);
     app.els["import-text"].value = NAME_ONLY;
