@@ -54,7 +54,15 @@ no committed PDF; the app builds theirs in the browser.
   regions of `index.html`. A SYNC STEP, NOT A BUILD STEP: see "Hard
   constraints".
 
-**Scale strings.** One ascending line: `[C] [D] (E) [F#] B D E | F# G`. Round brackets (or a trailing slash, or a `|` straight after the note) mark the ding; square brackets mark a bottom note at its pitch position; a `|` after the top notes starts the inner notes. Strings written before 2026-10 used `/` for inner notes and `|` for a bottom list; they are read only by `HPE.core.parseLegacySeed`, chosen by the version tag on a stored record or share link (3 or lower), never by looking at the string. The deck id hashes `identitySeed`, not the canonical string, so no id moved.
+**Scale strings.** One ascending line: `[C] [D] (E) [F#] B D E | F# G`. Round brackets (or a trailing slash, or a `|` straight after the note) mark the ding; square brackets mark a bottom note at its pitch position; a `|` after the top notes starts the inner notes. Strings written before 2026-10 used `/` for inner notes and `|` for a bottom list; they are read only by `HPE.core.parseLegacySeed`, and a share link picks that reader by its version byte, never by looking at the string (`tests/share.test.js` "decode chooses its scale-line reader from the version", "a version 3 link with a bar opens with bottom notes"). Every frozen legacy string keeps its deck id (`tests/core.test.js` "every frozen legacy string keeps its deck id").
+
+**Share link v5 (2026-10-17, lanes E and I; plan `docs/plans/2026-10-17-share-readable.md`).** Every sentence names its test in `tests/share.test.js` unless a file is named.
+- Shape: `5/<scale>/<name>/<options...>/<check>`, e.g. `#s=5/(D3)_A3_Bb3_C4_D4_E4_F4_G4_A4_C5/D+KURD+10/9fcd07`. The app writes wire version 5 and keeps stored records at 4 ("SV: this app writes wire version 5 and keeps records at 4"); the five built-in decks' links are pinned ("SV: the five built-in decks' v5 links are pinned").
+- Scale segment: `formatSeed` order with `_` for a space, `s` for a sharp, `u` before a bottom note and `-` for the inner bar; a typed name is percent-encoded with `+` for a space, and an untyped one is `*` plus the auto label, which is ignored on receipt ("SV: the auto label is ignored on receipt and lies outside the checksum", "SV: a link with percent-encoded parens or underscores opens; an escaped * or + is refused").
+- Options appear only when they differ from the default and in one fixed order, so each deck has one spelling ("SV: every option has one spelling and a default writes nothing"); an unknown, duplicated or out-of-order option is `BAD_NOTE` ("SV: an unknown, duplicated or out-of-order option is BAD_NOTE").
+- Check: six lowercase hex characters over the decoded meaning, exact-compared ("SV: the check segment is an exact 6-character lowercase string; an uppercased, 5- or 7-character check is BAD_NOTE"); a structural refusal is `BAD_NOTE` on the whole link and a `parseSeed` refusal keeps its own code ("SV: every v5 structural refusal is badNote of the whole link; a parseSeed refusal keeps its own code and reason").
+- Version byte: `5` not followed by `/` is `BAD_NOTE` and 6 or above is `NEEDS_NEWER_APP` ("SV: a 5 not followed by / is BAD_NOTE, and 6 or above is NEEDS_NEWER_APP"); an app pinned at v4 answers `NEEDS_NEWER_APP` to a v5 link ("SV: a v5 link is NEEDS_NEWER_APP to an app pinned at v4"); the v1 to v4 readers still decode ("a v1 link emitted by an older app still decodes here, deck unchanged").
+- Record-version split: the wire version and the stored-record version are two constants, `HPE.share.VERSION` (5) and `HPE.share.RECORD_VERSION` (4), and the app's `SHARE_VERSION` follows the record one, so a v5 boot rewrites no stored deck (app.test.js "SV: stored records keep v 4 after a v5 boot"). A v4 `#s=` boot imports once and the bar ends on the v5 code through one `replaceState` (app.test.js "SV: a v4 #s= boot imports once and ends with the v5 code in the bar through one replaceState"; e2e.test.js "SV: a v4 link opens, the bar ends on v5, and Back leaves the page"), and a hashchange to the v4 spelling of the deck shown rewrites the bar and imports nothing (app.test.js "SV: a hashchange to the v4 spelling of the deck shown rewrites the bar to v5 and imports nothing").
 
 ## Hard constraints
 
@@ -502,17 +510,24 @@ pitch classes (midi % 12), never stored.
   hash changes nothing"); a second `syncRoute()` writes nothing
   ("SU: syncRoute is idempotent"). An edited seed shares as a plain custom deck:
   the code carries no `replaces`, so the receiver gets a custom deck, not an edited seed ("SU: an edited seed shares as a custom deck").
-  `#share-copy` (COPY LINK) is disabled, never hidden, when the engine refuses
-  the code (S5): its `title` is the refusal and the bar keeps the bare path
-  ("SU: an over-cap custom deck disables COPY LINK with the refusal as its
-  title and leaves the bare path"); it leaves `panelStops()` while disabled
-  ("SU: COPY LINK joins panelStops after + ADD A SCALE and leaves it while
-  disabled"). It copies `location.href`, never a fresh encode, and falls back
-  to `navigator.share`, then to the readonly `#share-url` input ("SU: COPY LINK
-  falls back to navigator.share when the clipboard rejects", "SU: COPY LINK
-  reveals the readonly input when both are absent"); a dismissed share sheet
-  says nothing ("SU: COPY LINK says nothing when the share sheet is
-  dismissed").
+  **Share icon (2026-10-17, lane I).** COPY LINK left the settings panel: `#share-copy` is a button
+  labelled "Copy link" with an inline SVG glyph and no external asset, and it is the header's first control, in the cell
+  that was the empty spacer (app.test.js "SI: #share-copy is the header's first control, a button labelled Copy link with an inline SVG and no external asset";
+  the glyph is two rotated stadiums, "SI: the glyph is two rotated stadiums at stroke-width 2.4"). The Scales group holds
+  + ADD A SCALE alone and no share control ("SI: the Scales group holds + ADD A SCALE alone in a full-width row and no share control"),
+  and `panelStops()` holds neither share control in either state ("SI: panelStops holds neither share control, in either state").
+  At 380x780 it is a 44px target in the header's left cell and the title stays centred (`tests/e2e.test.js` "SI: the share icon is a 44px target in the header's left cell at 380x780 and the title stays centred").
+  An open drawer inerts it ("SI: panelBackground holds #share-copy, so an open drawer inerts it"), so does an open About
+  ("SI: while About is open the share icon is inert under #app and not a stop"), and the print block hides `#share-copy` and `#share-url`
+  ("SI: the print block hides #share-copy and #share-url").
+  `#share-copy` is disabled, never hidden, when the engine refuses the code (S5): its `title` is the refusal and the bar keeps the bare path
+  ("SU: an over-cap custom deck disables COPY LINK with the refusal as its title and leaves the bare path"). It copies `location.href`, never a fresh encode
+  ("SU: COPY LINK copies location.href and announces LINK COPIED"; a second copy clears the message line first, "SI: a second COPY LINK clears the message line before writing LINK COPIED again"),
+  and falls back to `navigator.share` ("SU: COPY LINK falls back to navigator.share when the clipboard rejects"), then to the readonly `#share-url` input
+  ("SU: COPY LINK reveals the readonly input when both are absent"), which is positioned out of flow ("SI: a revealed #share-url is positioned out of flow";
+  `tests/e2e.test.js` "SI: a revealed #share-url does not move the card at 380x780", "SI: a revealed #share-url hides on blur, on Escape and when the scale sheet opens, and the chips are hit-testable again")
+  and is hidden by a deck change ("SU: a deck change hides a revealed #share-url so it never keeps the old deck's link"). A dismissed share sheet
+  says nothing ("SU: COPY LINK says nothing when the share sheet is dismissed").
 
 ## Print pipeline (tools/)
 
