@@ -116,6 +116,8 @@ const EXCEPTIONS = [];
 const ANALYTICS_PATTERNS = ["*googletagmanager.com*", "*google-analytics.com*"];
 const FONT_PATTERNS = ["*fonts.googleapis.com*", "*fonts.gstatic.com*"];
 const blockList = () => [...FONT_PATTERNS, ...ANALYTICS_PATTERNS];
+const matchesAnalytics = (url) =>
+  ANALYTICS_PATTERNS.some((p) => url.includes(p.replace(/\*/g, "")));
 function takeExceptions() {
   return EXCEPTIONS.splice(0, EXCEPTIONS.length);
 }
@@ -610,7 +612,7 @@ class Browser {
     ].join("\n");
     const body = Buffer.from(css, "utf8").toString("base64");
     this.on("Fetch.requestPaused", async (params) => {
-      if (/googletagmanager\.com|google-analytics\.com/.test(params.request.url)) {
+      if (matchesAnalytics(params.request.url)) {
         await this.send("Fetch.failRequest", { requestId: params.requestId, errorReason: "BlockedByClient" });
         return;
       }
