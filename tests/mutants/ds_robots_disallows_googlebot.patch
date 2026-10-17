@@ -1,0 +1,14 @@
+# kills: test_robots_allows_everything
+# suite: python3 -m unittest -k test_robots_allows_everything tests.test_site_files
+# robots.txt blocks Googlebot while still allowing everyone else.
+diff --git a/robots.txt b/robots.txt
+--- a/robots.txt
++++ b/robots.txt
+@@ -1,4 +1,7 @@
+ User-agent: *
+ Allow: /
+ 
++User-agent: Googlebot
++Disallow: /
++
+ Sitemap: https://handpan.raywu.org/sitemap.xml

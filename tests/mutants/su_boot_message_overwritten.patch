@@ -1,0 +1,15 @@
+# kills: SU: a boot message is not replaced by a refused-link warning
+# suite: node --test --test-name-pattern ^SU:.a.boot.message.is.not.replaced tests/app.test.js
+# A refused-link warning replaces the boot message, since the booted test is always true.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11369,7 +11369,7 @@ function syncRoute() {
+   const refused = route === "";
+   shareCopy.disabled = refused;
+   shareCopy.title = refused ? reason : "";
+-  if (refused && !routeRefused && (booted || announce.textContent === "")) say(reason, "warn");
++  if (refused && !routeRefused && true) say(reason, "warn");
+   routeRefused = refused;
+ }
+ function copyLink() {

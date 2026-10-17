@@ -4,12 +4,12 @@
 diff --git a/tools/sandbox.js b/tools/sandbox.js
 --- a/tools/sandbox.js
 +++ b/tools/sandbox.js
-@@ -235,7 +235,7 @@ function boot(opts = {}) {
+@@ -242,7 +242,7 @@ function boot(opts = {}) {
      const v = t ? (t[1] ?? t[2] ?? t[3]).trim().toLowerCase() : "";
-     return v === "" || v === "text/javascript" || v === "module";
+     return v === "" || v === "module" || JS_TYPES.has(v);
    };
 -  const blockMatches = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)].filter(isJs);
 +  const blockMatches = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)];
    const blocks = blockMatches.map((m) => m[1]);
-   if (!blocks.length) throw new Error("no inline <script> found in index.html");
-   // Run the blocks as ONE script whose character offsets equal index.html's own:
+   if (!blocks.length) {
+     throw new Error(`no inline <script> found in ${opts.html !== undefined ? "the html option" : "index.html"} (a script whose type is not JavaScript is skipped)`);

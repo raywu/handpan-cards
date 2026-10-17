@@ -4,9 +4,9 @@
 diff --git a/tools/sandbox.js b/tools/sandbox.js
 --- a/tools/sandbox.js
 +++ b/tools/sandbox.js
-@@ -226,7 +226,7 @@ function makeLocation(href) {
-  *   html           - boot this markup instead of reading index.html
-  */
+@@ -233,7 +233,7 @@ const JS_TYPES = new Set([
+ ]);
+ 
  function boot(opts = {}) {
 -  const html = opts.html !== undefined ? String(opts.html) : fs.readFileSync(APP, "utf8");
 +  const html = fs.readFileSync(APP, "utf8");

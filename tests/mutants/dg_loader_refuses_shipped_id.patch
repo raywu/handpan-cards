@@ -1,0 +1,15 @@
+# kills: the shipped index.html boots unmodified on a real host and loads gtag with the shipped id
+# suite: node --test --test-name-pattern ^the.shipped.index.html.boots.unmodified tests/app.test.js
+# analyticsAllowed refuses the shipped measurement id, so production analytics would be off.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11312,7 +11312,7 @@ function analyticsAllowed() {
+   if (location.protocol === "file:") return false;
+   if (["localhost", "127.0.0.1", "[::1]"].includes(location.hostname)) return false;
+   if (navigator.webdriver) return false;
+-  return GA_MEASUREMENT_ID !== "G-XXXXXXXXXX";
++  return GA_MEASUREMENT_ID !== "G-XXXXXXXXXX" && GA_MEASUREMENT_ID !== "G-QTYWB2HSSV";
+ }
+ // page_location omits the hash: a #s= payload is a free-text scale string.
+ function loadAnalytics() {

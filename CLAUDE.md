@@ -457,7 +457,7 @@ pitch classes (midi % 12), never stored.
   major has two root-coloured fields (C4 + C5)" (one card); and `tests.test_print`
   `test_state_selects_root_or_tone_colour_but_never_both` (the ring states).
 
-- **The address bar is always a link to the deck shown (share URL, 2026-10-16,
+- **While no sheet is open the address bar is a link to the deck shown (share URL, 2026-10-16,
   #323).** One function, `routeInfo(d)`, decides the text (`routeFor` wraps it) (`#s=<code>` for a
   custom deck, `#deck=<slug>` for a seeded one) and one, `syncRoute()`, writes
   it with `replaceState` and never `pushState` ("SU: tapping three chips writes
@@ -468,7 +468,7 @@ pitch classes (midi % 12), never stored.
   #deck=d-kurd-10"), the end of the boot (a hashless boot, a consumed `#s=` or a
   refused one: "SU: a hashless boot on a stored custom deck ends with its #s= in
   the bar", "SU: a refused #s= at boot says the engine reason and the bar ends
-  on the stored deck's route"), the `popstate` listener, and the `hashchange` listener itself, which calls `syncRoute()` after a `#s=` import or refusal and at the end of its `#deck=` branch, so an unknown or refused hash is rewritten to the shown deck's route (no test isolates these two calls). The `popstate` write exists because `closeScaleSheet()` calls `history.back()`, which is asynchronous: a
+  on the stored deck's route"), the `popstate` listener, and the `hashchange` listener itself, which calls `syncRoute()` after a `#s=` import or refusal and at the end of its `#deck=` branch, so an unknown `#deck=` slug or a refused `#s=` is rewritten to the shown deck's route ("SU: a hashchange to an unknown #deck= slug rewrites the bar to the shown deck's route", "SU: a hashchange to a refused #s= rewrites the bar to the shown deck's route"). The `popstate` write exists because `closeScaleSheet()` calls `history.back()`, which is asynchronous: a
   `replaceState` issued straight after it lands on the entry about to be
   popped and the traversal restores the pre-sheet URL, so the pop is the first
   moment the restored entry is current and the listener syncs there ("SU: SAVE
@@ -523,7 +523,7 @@ run `python3 tools/sync_decks.py` to re-inject it into `index.html`, edit the
 deck names and card counts in `#about` in `index.html` (checked by the about-section test
 "the about section names every built-in deck with its card count from
 data/decks.json and the value line"), and
-`python3 tools/decks.py` to rebuild the PDFs. App and print cannot diverge:
+run `python3 tools/decks.py` to rebuild the PDFs. App and print cannot diverge:
 both read the same file. `tools/validate.py` check 1 fails if `index.html`
 is stale, check 1b if the print adapter drifts.
 Then run `python3 tools/regen_data_mutants.py` on a clean tree: the data
@@ -547,13 +547,16 @@ separate dead code from unreached-but-live code; its report is
 ## Discoverability (2026-10-16, PRs #319-#321; plan `docs/plans/2026-10-16-discoverability.md`)
 
 Every sentence names the test that proves it; a behaviour with no test is not
-stated here. Tests are in `tests/app.test.js` unless a file is named.
+stated here. Tests are in `tests/app.test.js` unless a file is named; the
+card-size and host-block titles below are in `tests/e2e.test.js`.
 
 - **Deck route.** `#deck=<slug>` opens a built-in deck; the five slugs map to
   the seeded ids (`kurd`, `amara10`, `amara`, `pygmy`, `hijaz`) in `DECK_SLUGS`.
   Proved by "every slug opens its built-in deck, persists it, and leaves a clean
-  address". The route is consumed with `replaceState`, never `pushState` ("the
-  route is consumed with replaceState, never pushState"), beats the stored deck
+  address". The route is consumed without `pushState`, and a bar that already
+  holds the canonical route is not rewritten at all while a non-canonical one is
+  rewritten once with `replaceState` ("the route is consumed with replaceState,
+  never pushState"), beats the stored deck
   ("a route beats the stored deck"), and an unknown slug, a `custom:` id or an
   empty slug fall back silently ("an unknown slug, a custom id and an empty slug
   fall back silently and lose the hash"; the name predates the share URL, and the
@@ -586,7 +589,7 @@ stated here. Tests are in `tests/app.test.js` unless a file is named.
   its slug"). It is below the first screen with no horizontal scroll at 380px
   (`tests/e2e.test.js` "the about section is visible below the card at 380px
   with no horizontal scroll") and the card keeps its origin/main size
-  ("the card keeps its origin/main size with the about section below the first
+  (`tests/e2e.test.js` "the card keeps its origin/main size with the about section below the first
   screen"). Its screen rules sit before `@media print{`
   (`tests/test_render_agreement.py::test_print_block_is_last_in_the_style_element`).
   The card counts in the about text are literals in `#about` (`index.html`, the
@@ -601,12 +604,14 @@ stated here. Tests are in `tests/app.test.js` unless a file is named.
   any `<script>` whose type is not JavaScript, so the block never runs ("boot
   skips a script whose type is not JavaScript", `tests/harness.test.js`).
 - **Analytics (GA4).** `GA_MEASUREMENT_ID` is one constant, shipped as the
-  real id `G-QTYWB2HSSV` (swapped by #324, 2026-10-16; "the placeholder id is
-  the shipped constant", whose name predates the swap and whose `includes`
-  literal now asserts the real id). `analyticsAllowed()` still compares against
+  real id `G-QTYWB2HSSV` (swapped by #324, 2026-10-16; "the shipped measurement
+  id is G-QTYWB2HSSV" asserts the id and that the literal appears once, and "the
+  shipped index.html boots unmodified on a real host and loads gtag with the
+  shipped id" proves the loader accepts it). `analyticsAllowed()` still compares against
   `G-XXXXXXXXXX`, so the placeholder stays a disabling value. It is false for a `file:` page, `localhost`, `127.0.0.1`,
   `[::1]`, `navigator.webdriver` and the placeholder ("analyticsAllowed is false
-  for <label>: no gtag script, no config, no event", one test per predicate);
+  for <label>: no gtag script, no config, no event", one test per condition; the three host
+  names are separate tests over one predicate line);
   the loader appends the gtag script only on a real host with a real id ("the
   loader appends the gtag script on a real host with a real id, and only then").
   `page_location` carries no hash, so a `#s=` share payload never reaches GA
@@ -638,13 +643,10 @@ stated here. Tests are in `tests/app.test.js` unless a file is named.
 - **Changing the measurement id (done once, #324).** A future change replaces
   the one `GA_MEASUREMENT_ID` literal in `index.html`, never the
   `G-XXXXXXXXXX` comparison inside `analyticsAllowed()`, and in the same PR the
-  four `INDEX_HTML().replace('const GA_MEASUREMENT_ID = "<id>";', ...)` anchors
-  in `tests/app.test.js` and the `includes` literal in "the placeholder id is
-  the shipped constant"; otherwise these five tests go red: that one; "the
-  loader appends the gtag script on a real host with a real id, and only then";
-  "analyticsAllowed is false for the placeholder id: no gtag script, no config,
-  no event"; "consent defaults come first, in order, and config follows them";
-  "a routed boot queues config before deck_route".
+  one `SHIPPED_GA_ID` constant in `tests/app.test.js`, which `withGaId` and "the
+  shipped measurement id is G-QTYWB2HSSV" both read. Left stale, every test that
+  builds a page through `withGaId` goes red, because the helper asserts the
+  literal is in `index.html`.
   The custom definitions (`deck_kind`, `deck_id`, `mode`, `tier`, `paper`,
   `has_bottom`; metric `note_count`) are registered in GA Admin by the owner;
   no test sees that.

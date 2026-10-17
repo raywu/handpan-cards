@@ -1,0 +1,14 @@
+# kills: SU: a hashchange to an unknown #deck= slug rewrites the bar to the shown deck's route
+# suite: node --test --test-name-pattern ^SU:.a.hashchange.to.an.unknown tests/app.test.js
+# The hashchange listener no longer syncs the bar after an unknown #deck= slug.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11421,7 +11421,6 @@ window.addEventListener("hashchange", () => {
+       say("That deck is gone. Showing " + deck().name + ".", "warn");
+     track("deck_route", { deck_id: routed });
+   }
+-  syncRoute();
+ });
+ 
+ /* ---------------- go ---------------- */

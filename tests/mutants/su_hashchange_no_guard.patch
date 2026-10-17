@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11393,7 +11393,6 @@ shareCopy.onclick = copyLink;
- // never the raw seed id: a replaced or hidden seed id would be stored as is and
+@@ -11400,7 +11400,6 @@ shareCopy.onclick = copyLink;
  // light no chip.
  window.addEventListener("hashchange", () => {
+   if (sheetOpen) return;
 -  if (location.hash === routeFor(deck())) return;
    if (location.hash.indexOf(SHARE_PREFIX) === 0) {
      openShare(location.hash.slice(SHARE_PREFIX.length));

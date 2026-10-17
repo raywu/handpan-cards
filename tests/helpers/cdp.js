@@ -115,6 +115,7 @@ const EXCEPTIONS = [];
 // second fence, and launch() exposes the list as browser.blockedUrls.
 const ANALYTICS_PATTERNS = ["*googletagmanager.com*", "*google-analytics.com*"];
 const FONT_PATTERNS = ["*fonts.googleapis.com*", "*fonts.gstatic.com*"];
+const blockList = () => [...FONT_PATTERNS, ...ANALYTICS_PATTERNS];
 function takeExceptions() {
   return EXCEPTIONS.splice(0, EXCEPTIONS.length);
 }
@@ -296,6 +297,9 @@ class Browser {
   // per method is kept - callers that need more can dispatch internally.
   on(method, handler) {
     this.eventHandlers.set(method, handler);
+  }
+  off(method) {
+    this.eventHandlers.delete(method);
   }
   send(method, params = {}, useSession = true) {
     if (this.coverage) {
@@ -621,10 +625,9 @@ class Browser {
         body,
       });
     });
-    await this.send("Fetch.enable", {
-      patterns: [...FONT_PATTERNS, ...ANALYTICS_PATTERNS].map((urlPattern) => ({ urlPattern })),
-    });
-    this.blockedUrls = [...FONT_PATTERNS, ...ANALYTICS_PATTERNS];
+    const blocked = blockList();
+    await this.send("Fetch.enable", { patterns: blocked.map((urlPattern) => ({ urlPattern })) });
+    this.blockedUrls = blocked;
   }
 }
 
@@ -711,6 +714,8 @@ async function launchOnce(opts = {}) {
     await b.send("Runtime.enable");
     // F-18, plan section 15: classic scrollbars take layout width on Linux CI and
     // on a Mac with a mouse; the harness measures the page, not the scrollbar.
+    // Per target: this applies to the one target launch() just created and
+    // attached, so every launch() sets it again for its own fresh target.
     await b.send("Emulation.setScrollbarsHidden", { hidden: true });
     await maybeEnableCoverage(b);
     if (opts.realFonts) {
@@ -724,7 +729,7 @@ async function launchOnce(opts = {}) {
       // metrics - pass { realFonts: true } to launch() for tests that need
       // real layout instead.
       await b.send("Network.enable");
-      b.blockedUrls = [...FONT_PATTERNS, ...ANALYTICS_PATTERNS];
+      b.blockedUrls = blockList();
       await b.send("Network.setBlockedURLs", { urls: b.blockedUrls });
     }
     return b;

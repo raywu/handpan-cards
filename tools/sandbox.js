@@ -227,19 +227,26 @@ function makeLocation(href) {
  *   webdriver      - navigator.webdriver (default true, as under automation)
  *   html           - boot this markup instead of reading index.html
  */
+const JS_TYPES = new Set([
+  "text/javascript", "application/javascript", "application/x-javascript", "text/ecmascript",
+  "application/ecmascript", "text/jscript", "text/livescript", "text/x-javascript", "text/x-ecmascript",
+]);
+
 function boot(opts = {}) {
   const html = opts.html !== undefined ? String(opts.html) : fs.readFileSync(APP, "utf8");
   // Every inline block, in document order; <script src=...> is skipped (the app
   // is single-file by contract, so there should never be one).
   // A script whose type is not JavaScript (application/ld+json, a template) is data.
   const isJs = (m) => {
-    const t = /\btype\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i.exec(m[0].slice(0, m[0].indexOf(">") + 1));
+    const t = /(?:^|\s)type\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i.exec(m[0].slice(0, m[0].indexOf(">") + 1));
     const v = t ? (t[1] ?? t[2] ?? t[3]).trim().toLowerCase() : "";
-    return v === "" || v === "text/javascript" || v === "module";
+    return v === "" || v === "module" || JS_TYPES.has(v);
   };
   const blockMatches = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)].filter(isJs);
   const blocks = blockMatches.map((m) => m[1]);
-  if (!blocks.length) throw new Error("no inline <script> found in index.html");
+  if (!blocks.length) {
+    throw new Error(`no inline <script> found in ${opts.html !== undefined ? "the html option" : "index.html"} (a script whose type is not JavaScript is skipped)`);
+  }
   // Run the blocks as ONE script whose character offsets equal index.html's own:
   // every character outside a kept block is blanked to a space (newlines kept),
   // so line/column in stack traces and in node's coverage mapper (which lays V8's
@@ -683,13 +690,19 @@ function boot(opts = {}) {
     sheetOpen: () => !els["scale-sheet"].hasAttribute("hidden"),
     /** The practice-screen live region the success message is announced in. */
     announcer: () => sandbox.document.querySelector(".announce"),
+    /** Set the hash and fire the app's hashchange listeners, as the browser does
+     *  when the hash actually changes: a hash equal to the current one fires
+     *  nothing unless opts.force is set (a listener re-entered with the hash it
+     *  already shows), and the event carries oldURL and newURL. */
+    hashchange: (newHash, opts = {}) => {
+      const oldURL = location.href;
+      location.hash = newHash;
+      if (location.href === oldURL && !opts.force) return;
+      for (const fn of winListeners.hashchange || []) fn({ type: "hashchange", oldURL, newURL: location.href });
+    },
     /** Press the browser's Back button. Fires the app's popstate listeners; the
      *  stub keeps no entry stack, so what a test asserts is what the app does
      *  in response - it must take the page down and NOT pop anything itself. */
-    hashchange: (newHash) => {
-      location.hash = newHash;
-      for (const fn of winListeners.hashchange || []) fn({ type: "hashchange" });
-    },
     popstate: () => {
       for (const fn of winListeners.popstate || []) fn({ type: "popstate", state: history.state });
     },
