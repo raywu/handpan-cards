@@ -1,0 +1,15 @@
+# kills: IM: a CONFIRM needs a tick before USE enables, and unticking disables it again
+# suite: node --test --test-name-pattern ^IM:.a.CONFIRM.needs.a.tick tests/app.test.js
+# Lane B. USE enables without any CONFIRM being ticked.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10534,7 +10534,7 @@
+ function paintImportUse() {
+   const r = importRes;
+   const ready = !!r && r.status === "REVIEW" &&
+-    r.flags.filter(importNeedsTick).every(f => importTicked.has(f.code));
++    r.flags.filter(importNeedsTick).every(() => true);
+   importUseBtn.disabled = !ready;
+ }
+ function paintImportBody() {

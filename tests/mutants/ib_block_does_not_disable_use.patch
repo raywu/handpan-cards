@@ -1,0 +1,15 @@
+# kills: IM: any BLOCK disables USE, and a click on it writes nothing
+# suite: node --test --test-name-pattern ^IM:.any.BLOCK.disables.USE tests/app.test.js
+# Lane B. A NEEDS_INPUT list (a BLOCK) no longer disables USE.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10533,7 +10533,7 @@
+ function importNeedsTick(f) { return f.level === "CONFIRM"; }
+ function paintImportUse() {
+   const r = importRes;
+-  const ready = !!r && r.status === "REVIEW" &&
++  const ready = !!r && r.status !== "INSUFFICIENT" &&
+     r.flags.filter(importNeedsTick).every(f => importTicked.has(f.code));
+   importUseBtn.disabled = !ready;
+ }

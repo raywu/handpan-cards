@@ -7390,7 +7390,7 @@ test("DR3 Tab order on Add and Edit, finer controls closed and open", () => {
         if (here === "scale-back") break;
         seen.push(here);
       }
-      const want = [edit ? "scale-name" : null, "scale-box", "plate", "scale-layout-toggle", "scale-anchor-one",
+      const want = [edit ? "scale-name" : null, "scale-box", "import-open", "plate", "scale-layout-toggle", "scale-anchor-one",
         "scale-anchor-between", "scale-mirror", "scale-mirror-bottom", "scale-fine-toggle",
         ...(open ? ["scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next"] : []),
         "scale-layout-reset"].filter((x) => x !== null);
@@ -9580,9 +9580,32 @@ describe("discoverability: analytics events", () => {
     assert.deepStrictEqual(events(app), []);
   });
 
+  test("IM: importing tracks one scale_import per IMPORT with the status only and no pasted text", () => {
+    const app = bootEv();
+    openSheet(app);
+    app.click(app.els["import-open"]);
+    const n = events(app).length;
+    const secret = "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 Bottom: C3";
+    app.els["import-text"].value = secret;
+    app.click(app.els["import-run"]);
+    app.els["import-ding"].value = "0";
+    app.els["import-ding"].dispatchEvent({ type: "change" });
+    assert.deepStrictEqual(since(app, n), [{ name: "scale_import", params: { status: "REVIEW" } }]);
+    app.els["import-text"].value = "D Kurd 10";
+    app.click(app.els["import-run"]);
+    app.els["import-text"].value = "Ding: D Top: E F G Bb";
+    app.click(app.els["import-run"]);
+    assert.deepStrictEqual(since(app, n).map((e) => e.params.status), ["REVIEW", "INSUFFICIENT", "NEEDS_INPUT"]);
+    assert.ok(!JSON.stringify(since(app, n)).includes("A3"));
+  });
+
   test("no event param is a string over 40 characters or names a custom: id", async () => {
     const app = bootEv();
     openSheet(app);
+    app.click(app.els["import-open"]);
+    app.els["import-text"].value = "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 Bottom: C3";
+    app.click(app.els["import-run"]);
+    assert.ok(events(app).some((e) => e.name === "scale_import"), "no scale_import event to check");
     app.type(AMARA_STRING);
     app.els["scale-generate"].click();
     app.sandbox.navigator.clipboard = { writeText: async () => {} };
@@ -10332,5 +10355,236 @@ describe("about overlay", () => {
     app.run("closeAbout()");
     assert.strictEqual(app.history.calls.length, n, "closing a closed About wrote to history");
     assert.strictEqual(app.activeId(), parked, "closing a closed About moved focus");
+  });
+});
+
+/* ------------------------------------------------ IM: import text (scale-import lane B) */
+
+describe("IM: import text on the sheet", () => {
+  const CLEAN = "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 Bottom: C3";
+  const CUE = "Notes: D3 A3 Bb3 C4 D4 E4 F4 G4 A4";
+  const OCTAVELESS = "Ding: D Top: A Bb C D E F G A Bottom: C";
+  const REFUSED = "Ding: D Top: E F G Bb";
+  const NO_CUE_REVIEW = "Ding: C Top: G A E Eb F";
+  const TWO_DINGS = "Ding: D3 Ding: E3 Top: A3 B3 C4";
+  const NAME_ONLY = "D Kurd 10";
+
+  const run = (app, text) => {
+    openSheet(app);
+    app.click(app.els["import-open"]);
+    app.els["import-text"].value = text;
+    app.click(app.els["import-run"]);
+    return app.els;
+  };
+  const rows = (app) => app.els["import-rows"].children.map((li) => li.textContent);
+  const lis = (app) => app.els["import-flags"].children;
+  const codes = (app) => lis(app).map((li) => li.getAttribute("data-code"));
+  const tickBox = (app, code) => lis(app).find((x) => x.getAttribute("data-code") === code).children[0].children[0];
+  const tick = (app, code, on = true) => {
+    const box = tickBox(app, code);
+    box.checked = on;
+    box.dispatchEvent({ type: "change" });
+    return box;
+  };
+  const pick = (app, i) => {
+    app.els["import-ding"].value = String(i);
+    app.els["import-ding"].dispatchEvent({ type: "change" });
+  };
+  const engine = (app, text, opts) => JSON.parse(app.get(
+    `JSON.stringify((() => { const r = HPE.importer.interpret(${JSON.stringify(text)}${opts ? ", " + JSON.stringify(opts) : ""});` +
+    ` return { status: r.status, flags: r.flags.map(f => [f.code, f.level]), seed: HPE.importer.serialise(r), notes: r.notes.map(n => n.note) }; })())`));
+  const shown = (app) => lis(app).map((li) => [li.getAttribute("data-code"), li.className.toUpperCase()]);
+  const tabs = (app, n) => {
+    const seen = [];
+    for (let i = 0; i < n; i += 1) {
+      app.els["scale-sheet"].dispatchEvent({ type: "keydown", key: "Tab", shiftKey: false, preventDefault() {} });
+      seen.push(app.activeId());
+    }
+    return seen;
+  };
+
+  test("IM: USE writes exactly serialise(r) into #scale-box, fires input, and the parse line matches typing it", () => {
+    const app = boot();
+    run(app, CLEAN);
+    const want = engine(app, CLEAN).seed;
+    assert.ok(want.length > 0);
+    assert.strictEqual(app.els["import-use"].disabled, false);
+    app.click(app.els["import-use"]);
+    assert.strictEqual(app.els["scale-box"].value, want);
+    const typed = boot();
+    openSheet(typed);
+    typed.type(want);
+    assert.ok(app.els["scale-parse"].textContent.length > 0, "input never fired: the parse line is empty");
+    assert.strictEqual(app.els["scale-parse"].textContent, typed.els["scale-parse"].textContent);
+    assert.strictEqual(app.els["scale-generate"].disabled, typed.els["scale-generate"].disabled);
+  });
+
+  test("IM: any BLOCK disables USE, and a click on it writes nothing", () => {
+    const app = boot();
+    run(app, REFUSED);
+    assert.strictEqual(engine(app, REFUSED).status, "NEEDS_INPUT");
+    assert.strictEqual(app.els["import-use"].disabled, true);
+    tick(app, "NO_OCTAVE");
+    assert.strictEqual(app.els["import-use"].disabled, true, "a tick lifted a BLOCK");
+    app.click(app.els["import-use"]);
+    assert.strictEqual(app.els["scale-box"].value, "");
+  });
+
+  test("IM: a CONFIRM needs a tick before USE enables, and unticking disables it again", () => {
+    const app = boot();
+    run(app, NO_CUE_REVIEW);
+    assert.deepStrictEqual(codes(app), ["NO_OCTAVE"]);
+    assert.strictEqual(app.els["import-use"].disabled, true);
+    tick(app, "NO_OCTAVE");
+    assert.strictEqual(app.els["import-use"].disabled, false);
+    tick(app, "NO_OCTAVE", false);
+    assert.strictEqual(app.els["import-use"].disabled, true);
+  });
+
+  test("IM: a DING_CUE CONFIRM is satisfied by a tick or by a picked ding", () => {
+    const ticked = boot();
+    run(ticked, CUE);
+    assert.deepStrictEqual(codes(ticked), ["DING_CUE"]);
+    assert.strictEqual(ticked.els["import-use"].disabled, true);
+    tick(ticked, "DING_CUE");
+    assert.strictEqual(ticked.els["import-use"].disabled, false);
+    const picked = boot();
+    run(picked, CUE);
+    pick(picked, 2);
+    assert.deepStrictEqual(codes(picked), []);
+    assert.strictEqual(picked.els["import-use"].disabled, false);
+    picked.click(picked.els["import-use"]);
+    assert.strictEqual(picked.els["scale-box"].value, engine(picked, CUE, { ding: 2 }).seed);
+  });
+
+  test("IM: picking a ding on the Ding: D Top: E F G Bb fixture leaves the picker enabled and the flag set equals interpret(text, {ding: i})", () => {
+    const app = boot();
+    run(app, REFUSED);
+    assert.deepStrictEqual(codes(app), ["PROVISIONAL_REFUSED", "NO_OCTAVE"]);
+    for (let i = 0; i < 5; i += 1) {
+      pick(app, i);
+      assert.notStrictEqual(app.els["import-ding"].disabled, true, "the picker was disabled at ding " + i);
+      assert.strictEqual(app.els["import-review"].hidden, false);
+      assert.deepStrictEqual(shown(app), engine(app, REFUSED, { ding: i }).flags, "flag set at ding " + i);
+      assert.strictEqual(app.els["import-use"].disabled, true, "USE opened under a BLOCK at ding " + i);
+    }
+    pick(app, "");
+    assert.deepStrictEqual(shown(app), engine(app, REFUSED).flags);
+  });
+
+  test("IM: a picked ding refreshes every inferred octave and clears the NO_OCTAVE tick", () => {
+    const app = boot();
+    run(app, OCTAVELESS);
+    tick(app, "NO_OCTAVE");
+    assert.strictEqual(app.els["import-use"].disabled, false);
+    pick(app, 1);
+    const want = engine(app, OCTAVELESS, { ding: 1 });
+    assert.strictEqual(tickBox(app, "NO_OCTAVE").checked, false, "the NO_OCTAVE tick survived a pick");
+    assert.strictEqual(app.els["import-use"].disabled, true);
+    const got = rows(app);
+    want.notes.forEach((n, i) => assert.ok(got[i].includes("  " + n + "  "), `row ${i} should show ${n}: ${got[i]}`));
+    tick(app, "NO_OCTAVE");
+    app.click(app.els["import-use"]);
+    assert.strictEqual(app.els["scale-box"].value, want.seed);
+  });
+
+  test("IM: a picked ding clears CONFLICTING_DING", () => {
+    const app = boot();
+    run(app, TWO_DINGS);
+    assert.deepStrictEqual(codes(app), ["CONFLICTING_DING"]);
+    assert.strictEqual(app.els["import-use"].disabled, true);
+    pick(app, 1);
+    assert.deepStrictEqual(codes(app), []);
+    assert.strictEqual(app.els["import-use"].disabled, false);
+    app.click(app.els["import-use"]);
+    assert.strictEqual(app.els["scale-box"].value, engine(app, TWO_DINGS, { ding: 1 }).seed);
+  });
+
+  test("IM: the ding picker shows on every NEEDS_INPUT or REVIEW list, including a REVIEW list with no DING_CUE", () => {
+    for (const text of [NO_CUE_REVIEW, CUE, REFUSED, TWO_DINGS, CLEAN]) {
+      const app = boot();
+      run(app, text);
+      assert.strictEqual(app.els["import-review"].getClientRects().length, 1, text);
+      assert.strictEqual(app.els["import-ding"].getClientRects().length, 1, "picker hidden for " + text);
+      assert.strictEqual(app.els["import-ding"].children.length, engine(app, text).notes.length + 1);
+    }
+    const app = boot();
+    run(app, NO_CUE_REVIEW);
+    assert.ok(!codes(app).includes("DING_CUE"));
+  });
+
+  test("IM: a NO_OCTAVE row marks each inferred octave, and an inferred bottom row says its placement is a guess", () => {
+    const app = boot();
+    run(app, OCTAVELESS);
+    const got = rows(app);
+    assert.strictEqual(got.length, 10);
+    got.slice(0, 9).forEach((t) => assert.ok(t.includes("octave inferred") && !t.includes("guess"), t));
+    assert.ok(got[9].includes("octave inferred") && got[9].includes("bottom placement is a guess"), got[9]);
+    const fixed = boot();
+    run(fixed, CLEAN);
+    rows(fixed).forEach((t) => assert.ok(!t.includes("inferred"), t));
+  });
+
+  test("IM: INSUFFICIENT shows one line, writes nothing to #scale-box and offers no preset", () => {
+    const app = boot();
+    openSheet(app);
+    app.type("[C3] D3");
+    app.click(app.els["import-open"]);
+    app.els["import-text"].value = NAME_ONLY;
+    app.click(app.els["import-run"]);
+    assert.strictEqual(app.els["import-status"].textContent,
+      "No note list found. Image-only specs can't be read; type the notes below.");
+    assert.strictEqual(app.els["import-review"].getClientRects().length, 0);
+    assert.strictEqual(app.els["import-use"].disabled, true);
+    assert.strictEqual(app.els["scale-box"].value, "[C3] D3");
+    assert.strictEqual(app.els["import-rows"].children.length, 0);
+    assert.strictEqual(app.els["import-flags"].children.length, 0);
+  });
+
+  test("IM: opening the sheet again drops the old paste and review", () => {
+    const app = boot();
+    run(app, CLEAN);
+    app.click(app.els["scale-back"]);
+    openSheet(app);
+    assert.strictEqual(app.els["import-area"].hidden, true);
+    assert.strictEqual(app.els["import-text"].value, "");
+    assert.strictEqual(app.els["import-result"].hidden, true);
+    assert.strictEqual(app.els["import-open"].getAttribute("aria-expanded"), "false");
+  });
+
+  test("IM: the import controls join the sheet's focus order, in visual order, only while shown", () => {
+    const app = boot();
+    run(app, NO_CUE_REVIEW);
+    const seen = tabs(app, 40);
+    const order = ["scale-box", "import-open", "import-text", "import-run", "import-tick-NO_OCTAVE", "import-ding"];
+    let at = -1;
+    for (const id of order) {
+      const next = seen.indexOf(id, at + 1);
+      assert.ok(next > at, `${id} missing or out of order in ${seen.slice(0, 12)}`);
+      at = next;
+    }
+    assert.ok(!seen.includes("import-use"), "a disabled USE took a Tab stop");
+    tick(app, "NO_OCTAVE");
+    assert.ok(tabs(app, 40).includes("import-use"), "an enabled USE is not a Tab stop");
+    const closed = boot();
+    openSheet(closed);
+    const cl = tabs(closed, 40);
+    assert.ok(cl.includes("import-open"));
+    assert.ok(!cl.includes("import-text") && !cl.includes("import-run"), "a hidden paste area took a Tab stop");
+  });
+
+  test("IM: importing makes no fetch and sends no beacon", () => {
+    const app = boot();
+    let calls = 0;
+    app.sandbox.fetch = () => { calls += 1; return Promise.reject(new Error("no")); };
+    app.sandbox.XMLHttpRequest = function () { calls += 1; };
+    app.sandbox.navigator.sendBeacon = () => { calls += 1; return true; };
+    run(app, CLEAN);
+    pick(app, 0);
+    app.click(app.els["import-use"]);
+    assert.strictEqual(calls, 0);
+    const src = require("node:fs").readFileSync(require("node:path").join(__dirname, "..", "index.html"), "utf8");
+    const block = src.slice(src.indexOf("/* ---------------- import text"), src.indexOf("/** Put every sheet field"));
+    assert.ok(block.length > 500 && !/fetch\(|XMLHttpRequest|sendBeacon|new Image|WebSocket/.test(block));
   });
 });

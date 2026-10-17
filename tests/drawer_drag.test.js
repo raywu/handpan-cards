@@ -234,7 +234,7 @@ function run() {
     assert.ok(max > 40, "the sheet does not scroll at 380x390, so the case is not exercised");
     let lifted = 0;
     for (const focused of [false, true]) {
-      for (const frac of [0, 0.5, 1]) {
+      for (const frac of Array.from({ length: 17 }, (_, i) => i / 16)) {
         await ev(`${body}.scrollTop = ${Math.round(max * frac)}; return true;`);
         await sleep(300);
         const band = await ev(`const r = document.getElementById("scale-plate-band").getBoundingClientRect(); const s = document.querySelector("#scale-sheet .sheetbody").getBoundingClientRect(); return { top: Math.max(r.top, s.top), bottom: Math.min(r.bottom, s.bottom) };`);

@@ -4500,11 +4500,11 @@ function run() {
         await (open ? editFreshDeckOpen() : editFreshDeck());
         await b.eval(`document.getElementById("scale-box").focus(); return true;`);
         const seen = [];
-        for (let i = 0; i < (open ? 2 : 1); i += 1) {
+        for (let i = 0; i < (open ? 3 : 2); i += 1) {
           await b.key("Tab", "Tab", 9);
           seen.push(await b.eval(`return document.activeElement.id || document.activeElement.getAttribute("class");`));
         }
-        assert.deepStrictEqual(seen, open ? ["panhit", "scale-layout-toggle"] : ["scale-layout-toggle"],
+        assert.deepStrictEqual(seen, open ? ["import-open", "panhit", "scale-layout-toggle"] : ["import-open", "scale-layout-toggle"],
           `drawer ${open ? "open" : "closed"}`);
       }
     } finally {
@@ -4749,7 +4749,7 @@ function run() {
       const n = await b.eval(`return document.querySelectorAll("#scale-swatches button").length;`);
       assert.ok(n > 0, "no swatches");
       const swatches = Array.from({ length: n }, (_, i) => `Palette ${i + 1}`);
-      const cycle = n + 6;
+      const cycle = n + 7;
       const walk = async (start, shift) => {
         await b.eval(`document.getElementById(${JSON.stringify(start)}).focus(); return true;`);
         const seen = [];
@@ -4761,11 +4761,11 @@ function run() {
       };
       const forward = await walk("scale-back", false);
       assert.deepStrictEqual(forward,
-        ["scale-name", "scale-box", "scale-layout-toggle", ...swatches, "scale-generate", "scale-delete", "scale-back"]);
+        ["scale-name", "scale-box", "import-open", "scale-layout-toggle", ...swatches, "scale-generate", "scale-delete", "scale-back"]);
       const backward = await walk("scale-delete", true);
       assert.deepStrictEqual(backward,
-        ["scale-generate", ...swatches.slice().reverse(), "scale-layout-toggle", "scale-box", "scale-name", "scale-back", "scale-delete"]);
-      assert.strictEqual(await b.eval(`return document.querySelector("#scale-sheet select");`), null,
+        ["scale-generate", ...swatches.slice().reverse(), "scale-layout-toggle", "import-open", "scale-box", "scale-name", "scale-back", "scale-delete"]);
+      assert.strictEqual(await b.eval(`return document.querySelector("#scale-sheet select:not(#import-ding)");`), null,
         "the Edit sheet still holds a select");
     } finally {
       await b.setViewport(900, 900, false);
@@ -12346,6 +12346,84 @@ function run() {
     } finally {
       await b.setViewport(900, 900, false);
     }
+  });
+
+  describe("import text on the sheet", () => {
+    const REVIEW = "Ding: C Top: G A E Eb F";
+    const runImport = async (text) => {
+      await b.eval(`document.getElementById("import-open").click(); return true;`);
+      await b.eval(`const t = document.getElementById("import-text"); t.value = ${JSON.stringify(text)}; return true;`);
+      await b.eval(`document.getElementById("import-run").click(); return true;`);
+      await b.waitFor(`!document.getElementById("import-result").hidden`, { label: "the import result" });
+    };
+
+    test("IM: at 380x780 and 320x568 an open import with a result has no horizontal scroll, runs off no side, and leaves the guidance slot and the primary where they were", async () => {
+      try {
+        for (const [w, h] of [[380, 780], [320, 568]]) {
+          await freshLoad();
+          await b.setViewport(w, h, true);
+          await openSheet();
+          const before = await b.eval(`
+            const g = document.getElementById("scale-guidance").getBoundingClientRect();
+            return { gh: g.height, gen: document.getElementById("scale-generate").getBoundingClientRect().bottom };`);
+          await runImport(REVIEW);
+          await b.settle();
+          const m = await b.eval(`
+            const vw = innerWidth, out = [];
+            for (const id of ["import-open", "import-area", "import-text", "import-run", "import-result", "import-rows", "import-flags", "import-ding", "import-use"]) {
+              const el = document.getElementById(id), r = el.getBoundingClientRect();
+              if (!el.hidden && r.width > 0 && (r.left < -0.5 || r.right > vw + 0.5)) out.push(id);
+            }
+            const body = document.querySelector(".sheetbody");
+            const g = document.getElementById("scale-guidance").getBoundingClientRect();
+            const gen = document.getElementById("scale-generate").getBoundingClientRect();
+            return { off: out, doc: document.documentElement.scrollWidth, vw, bodyW: body.scrollWidth, bodyC: body.clientWidth,
+              gh: g.height, genBottom: gen.bottom, vh: innerHeight, tick: !!document.getElementById("import-tick-NO_OCTAVE") };`);
+          const where = `${w}x${h}`;
+          assert.ok(m.tick, `${where}: the result showed no CONFIRM row, so this proves nothing`);
+          assert.deepStrictEqual(m.off, [], `${where}: controls run off the side`);
+          assert.ok(m.doc <= m.vw, `${where}: the page scrolls horizontally (${m.doc} > ${m.vw})`);
+          assert.ok(m.bodyW <= m.bodyC, `${where}: the sheet body scrolls horizontally`);
+          assert.strictEqual(m.gh, before.gh, `${where}: the guidance slot resized`);
+          assert.strictEqual(m.genBottom, before.gen, `${where}: the primary moved`);
+          assert.ok(m.genBottom <= m.vh + 0.5, `${where}: the primary left the viewport`);
+          await b.eval(`document.getElementById("scale-back").click(); return true;`);
+          await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet to close" });
+        }
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("IM: real Tab keys walk scale-box, then IMPORT TEXT, and an open area adds the paste box and IMPORT", async () => {
+      await freshLoad();
+      await openSheet();
+      await b.eval(`document.getElementById("scale-box").focus(); return true;`);
+      await b.key("Tab", "Tab", 9);
+      assert.strictEqual(await activeId(), "import-open");
+      await b.eval(`document.getElementById("import-open").click(); return true;`);
+      await b.eval(`document.getElementById("import-open").focus(); return true;`);
+      await b.key("Tab", "Tab", 9);
+      assert.strictEqual(await activeId(), "import-text");
+      await b.key("Tab", "Tab", 9);
+      assert.strictEqual(await activeId(), "import-run");
+    });
+
+    test("IM: an import sends zero network requests", async () => {
+      await freshLoad();
+      await openSheet();
+      const urls = [];
+      b.on("Network.requestWillBeSent", (p) => { urls.push(p.request.url); });
+      try {
+        await b.send("Network.enable");
+        await runImport("Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 Bottom: C3");
+        await b.eval(`const s = document.getElementById("import-ding"); s.value = "1"; s.dispatchEvent(new Event("change", { bubbles: true })); return true;`);
+        await b.eval(`document.getElementById("import-use").click(); return true;`);
+        await b.settle();
+        assert.ok((await b.eval(`return document.getElementById("scale-box").value;`)).length > 0, "USE wrote nothing, so this proves nothing");
+      } finally { b.off("Network.requestWillBeSent"); }
+      assert.deepStrictEqual(urls, [], "an import sent requests");
+    });
   });
 
   describe("analytics hosts", () => {
