@@ -642,11 +642,15 @@ card-size and host-block titles below are in `tests/e2e.test.js`.
   follows them").
 - **Changing the measurement id (done once, #324).** A future change replaces
   the one `GA_MEASUREMENT_ID` literal in `index.html`, never the
-  `G-XXXXXXXXXX` comparison inside `analyticsAllowed()`, and in the same PR the
-  one `SHIPPED_GA_ID` constant in `tests/app.test.js`, which `withGaId` and "the
-  shipped measurement id is G-QTYWB2HSSV" both read. Left stale, every test that
-  builds a page through `withGaId` goes red, because the helper asserts the
-  literal is in `index.html`.
+  `G-XXXXXXXXXX` comparison inside `analyticsAllowed()`, and in the same PR
+  edits three more places: the one `SHIPPED_GA_ID` constant in
+  `tests/app.test.js`, which `withGaId` reads; the title and count regex of the
+  test "the shipped measurement id is G-QTYWB2HSSV" in `tests/app.test.js`,
+  which spell the id out; and `tests/mutants/dg_loader_refuses_shipped_id.patch`,
+  whose added line spells it out. Left stale, every test that builds a page
+  through `withGaId` goes red, because the helper asserts the literal is in
+  `index.html`, and the named test and the mutant fail loudly rather than
+  silently.
   The custom definitions (`deck_kind`, `deck_id`, `mode`, `tier`, `paper`,
   `has_bottom`; metric `note_count`) are registered in GA Admin by the owner;
   no test sees that.
