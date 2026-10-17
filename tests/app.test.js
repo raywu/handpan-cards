@@ -9745,6 +9745,24 @@ describe("discoverability: deck route", () => {
     assert.deepStrictEqual(q[4][2], { deck_id: "kurd" });
   });
 
+  test("a hashchange to a deck link tracks deck_route with the routed id", () => {
+    const app = at("", { html: withGaId(REAL_ID), webdriver: false, storage: { hpfc: JSON.stringify({ deck: "kurd", mode: "A" }) } });
+    const routes = () => JSON.parse(JSON.stringify(Array.from(app.get("window.dataLayer")))).filter((e) => e[0] === "event" && e[1] === "deck_route");
+    const before = routes().length;
+    app.hashchange("#deck=f-low-pygmy-18");
+    const added = routes().slice(before);
+    assert.strictEqual(added.length, 1);
+    assert.deepStrictEqual(added[0][2], { deck_id: "pygmy" });
+  });
+
+  test("hashchange to a hidden seed that has a replacement shows the replacement with no gone warning", () => {
+    const app = at("", { storage: { ...editedSeed("amara", "MY AMARA"), hpfc: JSON.stringify({ deck: "kurd", mode: "A", hidden: ["amara"] }) } });
+    app.hashchange("#deck=d-amara-9");
+    assert.match(app.deckId(), /^custom:/);
+    assert.match(app.location.hash, /^#s=/);
+    assert.doesNotMatch(app.announcer().textContent, /gone/);
+  });
+
   test("the about section links every built-in deck by its slug", () => {
     const html = aboutHtml();
     for (const d of BUILTIN_DECKS()) {
@@ -10438,7 +10456,7 @@ describe("about overlay", () => {
     openAboutFrom(app);
     app.run("const __q = document.querySelector.bind(document); document.querySelector = (s) => (s === '.abouthead' ? { offsetHeight: 91 } : __q(s));");
     assert.notStrictEqual(headVar(app), "91px", "the head height was already 91px, so a resize proves nothing");
-    assert.strictEqual(app.get("window.__w.resize.length"), 1, "no resize listener registered");
+    assert.strictEqual(app.get("(window.__w.resize || []).length"), 1, "no resize listener registered");
     app.run("window.__w.resize.forEach((f) => f({ type: 'resize' }))");
     assert.strictEqual(headVar(app), "91px");
   });
