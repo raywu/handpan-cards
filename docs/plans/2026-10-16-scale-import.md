@@ -538,14 +538,17 @@ first, against fixtures captured from real text.
     field count = `Object.keys(parseSeed(serialise(r)).value.fields).length`.
   - `interpret(t, {ding: i})` matches `interpret(r)`, where `r` is the
     relabelled text: note i written first under `Ding:`, then every other
-    note under `Top:` in source order. "Matches" compares `status`, the flag
+    note under its own source role (`Top:`, the inner bar, or `Bottom:`),
+    with any displaced ding written under `Top:` in source order; on the
+    synthetic fixture every other note is a top note. "Matches" compares `status`, the flag
     codes minus DING_CUE and CONFLICTING_DING, each role entry's `note`,
     `inferred` and `guess`, and `serialise()` of both; spans are excluded,
     because the two texts differ. Test on the unlabelled synthetic fixture
     `Notes: D E F G Bb`, which raises DING_CUE, NO_OCTAVE and
     PROVISIONAL_REFUSED; picking G clears PROVISIONAL_REFUSED, since
     `(G) D E F Bb` is accepted.
-  - On the Sanango fixture `D3 F#3) G A B`, which raises CONFLICTING_DING,
+  - On the Sanango D Ashakiran Medusa 12 fixture (captured text beginning
+    `D3 F#3) G A B`), which raises CONFLICTING_DING,
     `interpret(t, {ding: 0})` raises no CONFLICTING_DING and no DING_CUE.
   - The Yatao serialisation `=== "[B2] (D3) [E3] F#3 [G#3] A3 [B3] C#4 D4
     [E4] F#4 G#4 A4 [B4] C#5 D5 [E5] F#5"`.
