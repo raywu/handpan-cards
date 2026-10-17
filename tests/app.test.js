@@ -10456,7 +10456,7 @@ describe("about overlay", () => {
     openAboutFrom(app);
     app.run("const __q = document.querySelector.bind(document); document.querySelector = (s) => (s === '.abouthead' ? { offsetHeight: 91 } : __q(s));");
     assert.notStrictEqual(headVar(app), "91px", "the head height was already 91px, so a resize proves nothing");
-    assert.strictEqual(app.get("window.__w.resize.length"), 1, "no resize listener registered");
+    assert.strictEqual(app.get("(window.__w.resize || []).length"), 1, "no resize listener registered");
     app.run("window.__w.resize.forEach((f) => f({ type: 'resize' }))");
     assert.strictEqual(headVar(app), "91px");
   });
