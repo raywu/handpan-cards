@@ -1,6 +1,6 @@
 # Plan: human-readable share links, and COPY LINK as an on-page share icon (2026-10-17)
 
-Status: PLAN ONLY. Nothing here is built. Base: `origin/main` at `ebd997f`, refreshed from `e158f06`. The commits between touch only `CLAUDE.md`, `README.md`, a plan doc, `tests/harness.test.js`, `tests/helpers/cdp.js` and two `dh_*` mutants, and no engine or app code, so P1 to P11 stand. Every count and check recorded below was re-run at `ebd997f` and is unchanged.
+Status: PLAN ONLY. Nothing here is built. Base: `origin/main` at `a4309bd`. Since `ebd997f`, A1 (#338) added the `importer` engine module and its tests, and the About plan merged (#331). Neither touches `share.js`, `select.js`, `copyLink` or the panel, so P1 to P11 stand. Every count and check below was re-run at `a4309bd`.
 Owner brief 2026-10-17 (binding), plus the coordinator's scope addition of the same day (the share icon).
 
 Every measurement below comes from a probe run against `origin/main`:
@@ -278,7 +278,7 @@ The analytics hash rule is untouched. The gtag `config` still sends `location.or
 - Lanes E and I touch `panelStops()`, the header, the `hashchange` listener and both test files. So wave 1 starts only after About lane O AND About lane D have merged, and never in the same wave as either of them. Lane D owns `CLAUDE.md` and README.md lines, both of which our lanes also edit.
 - Lane I's brief is written against the post-About `panelStops()`. The `about-open` entry stays last; lane I removes only `share-copy` and `share-url`.
 
-**Dependency on scale import (PR #329 plan)**
+**Dependency on scale import (`docs/plans/2026-10-16-scale-import.md`, merged in #329; A1 merged as #338 at a4309bd; lane B pending)**
 - Its lane B owns the `index.html` app JS, `tests/app.test.js` and `tests/e2e.test.js`. Its lane A1 owns README.md's engine-module and suite-count sentences and adds mutants, which moves the README mutant count.
 - Our lanes therefore never share a wave with scale import lane A1 or B.
 - Their relative order is owner gate G9.
@@ -314,8 +314,8 @@ The analytics hash rule is untouched. The gtag `config` still sends `location.or
    - `python3 tools/validate.py`
    - `node tools/regen_engine_corpus.js --check`
 
-   All four were recorded clean on `origin/main` `ebd997f`.
-4. **Every mutant patch applies.** `python3 tools/refresh_mutants.py --check` must print "all mutant patches apply cleanly; nothing to refresh" (recorded on `ebd997f`).
+   All four were recorded clean on `origin/main` `a4309bd`.
+4. **Every mutant patch applies.** `python3 tools/refresh_mutants.py --check` must print "all mutant patches apply cleanly; nothing to refresh" (recorded on `a4309bd`).
 5. **A lane that changes an engine module** commits the module, the `inline_engine.py` output and any corpus regen in ONE commit.
 6. **The operator merges.**
 
@@ -413,6 +413,7 @@ The analytics hash rule is untouched. The gtag `config` still sends `location.or
 - "the share version guard rejects a newer payload with NEEDS_NEWER_APP". It runs the record path, where 5 is still above 4.
 - every "SU:" test
 - "page_location carries no hash, so a share payload never reaches GA"
+- `tests/e2e.test.js` "a #s= link boots a custom deck, keeps a #s= bar, and COPY LINK is live". Its v4 literal still decodes, and it asserts `^#s=` and `disabled===false`.
 
 **Mutants**
 - New `sv_*` patches:
@@ -438,10 +439,10 @@ The analytics hash rule is untouched. The gtag `config` still sends `location.or
 - Run `python3 tools/refresh_mutants.py`, then `--check`.
 - **Writer mutants.** Rewrite against the v5 writer: `s_share_order_dropped`, `r4e_share_options_default_invented`, `s3_share_anchor_dropped`, `r4e_share_seats_only_rim_written`, `h_options_dropped`, `r4e_share_encode_cap_unchecked`. The patch count must not fall.
 - Hand-edit the `# suite:` header of every patch whose killing test was retitled (the two Q18 tests, "this app writes wire version 4"). Use `.` wildcards, never quotes.
-- Every re-pointed mutant updates its `# kills:` line along with its `# suite:` line, and both use `.` wildcards.
+- Every re-pointed mutant updates its `# kills:` line along with its `# suite:` line. Only the `# suite:` line uses `.` wildcards; `# kills:` is the plain title.
 - Set the README mutant count, and the FLOORS rows for `tests/share.test.js` (73 today), `tests/app.test.js` and `tests/e2e.test.js`, from CI's run artifacts at the head SHA, not from arithmetic.
 
-**Verify.** One command, recorded on `origin/main` `ebd997f` as 73 pass and 34 pass:
+**Verify.** One command, recorded on `origin/main` `a4309bd` as 73 pass and 34 pass:
 
 ```
 node --test tests/share.test.js && node --test --test-name-pattern "SU: |share version|newer share string|S3: seats|SV: " tests/app.test.js
@@ -458,7 +459,7 @@ Also run the four sync and corpus checks of gate 3, and the one new e2e test on 
 
 **Owns.** Column I of 4.2.
 
-**Objective.** Section 6: the icon, the move and the fallback. `#share-copy` and `#share-url` keep their ids, so `tools/sandbox.js` `ELEMENT_IDS`, which already lists both, needs no change.
+**Objective.** Section 6: the icon, the move and the fallback. `#share-copy` and `#share-url` keep their ids, so `tools/sandbox.js` `ELEMENT_IDS`, which already lists both, needs no change. `copyLink`'s `done()` clears, tracks, then writes in a `setTimeout(..., 0)`, which tests drain with `app.flushTimers()`. The sandbox already queues `setTimeout`, so it needs no change.
 
 **TDD order.** Write every test below first, and watch each fail on `origin/main` for the stated reason.
 
@@ -473,37 +474,44 @@ Also run the four sync and corpus checks of gate 3, and the one new e2e test on 
   - "SI: the share icon is a 44px target in the header's left cell at 380x780 and the title stays centred"
   - "SI: a revealed #share-url does not move the card at 380x780"
   - "SI: a revealed #share-url hides on blur, on Escape and when the scale sheet opens, and the chips are hit-testable again". After each hide, `document.elementFromPoint` at a chip's centre returns that chip.
-- "SI: a second COPY LINK clears the message line before writing LINK COPIED again". The clear lives in `copyLink`'s `done()`, not in `say()`. It records every `textContent` write to `#announce` over two clicks, awaiting one frame after each, and expects `["", "LINK COPIED", "", "LINK COPIED"]`. A `say()` from elsewhere (a `#scale-msg` keystroke message) writes once, with no clear.
+- "SI: a second COPY LINK clears the message line before writing LINK COPIED again". The clear lives in `copyLink`'s `done()`, not in `say()`. It records writes by wrapping `app.announcer()`'s `textContent` with `Object.defineProperty`. It clicks `share-copy` twice, and after each click runs `await flush(); app.flushTimers();`. It expects `["", "LINK COPIED", "", "LINK COPIED"]`. A `say()` from elsewhere (a `#scale-msg` keystroke message) writes once, with no clear.
 - Before merging, the lane takes a 1x screenshot of the icon at 380x780 and checks that the glyph reads as a link (6.3).
 
 **Acceptance: tests changed (and why)**
 - "SU: COPY LINK joins panelStops after + ADD A SCALE and leaves it while disabled" is retitled "SU: COPY LINK is not a panel stop, enabled or disabled". It asserts `!stops(app).includes("share-copy")` in both states, because the control left the panel. No mutant names its old title (grep of `tests/mutants/` for "COPY.LINK.joins", 0 hits).
-- "SU: COPY LINK reveals the readonly input when both are absent". It now asserts that `share-url` is in neither `panelStops()` state, since the input moved out of the panel. The title is kept.
+- "SU: COPY LINK reveals the readonly input when both are absent". It drops `openPanel()`/`closePanel()`. It asserts `!stops(app).includes("share-url")` before the click and after the reveal, then dispatches `{type:"blur"}` on the input and asserts `hasAttribute("hidden")`. `closePanel()`'s `shareUrl.setAttribute("hidden","")` line stays. Lane I binds the hide with `shareUrl.addEventListener("blur", ...)`; the sandbox's `dispatchEvent` runs only listeners added that way. The title is kept.
 - "editable defaults: #deck-restore follows #deck-add, starts hidden and joins the panel stops only while rendered". The title stays true. Its two regexes become:
   - `id="deck-add"[^>]*>[^<]*<\/button>\s*<\/div>\s*<button[^>]*id="deck-restore"...`
   - `document.getElementById("deck-add"), restoreBtn,`
 - "panel fit rule 2: a control the base renders and the candidate lacks fails unless it is removed by design". Its `deepStrictEqual(pf.REMOVED_BY_DESIGN, ...)` gains `"share-copy"`.
+- "SU: COPY LINK copies location.href and announces LINK COPIED" and "SU: COPY LINK falls back to navigator.share when the clipboard rejects": insert `app.flushTimers();` directly after the `await flush();` that precedes the `app.announcer()` assertion. Assertions unchanged. The write is deferred.
+- "AP2-2 setInert applies each caller's own background set":
+  - append `"share-copy"` as the last entry of the `ids("panelBackground")` expectation;
+  - insert it into the sorted post-`openPanel` inert array;
+  - read both arrays from the test on the lane's base (About O adds `"about"`), not from this plan;
+  - `ap2_panel_inerts_the_sheet_set` must still be killed.
 - `tests/e2e.test.js`:
   - In `assertCardFits`, `LANDSCAPE_CONTROLS` gains `"#share-copy"`. The icon is always-on landscape chrome, which the card must not cover.
   - In "the mode buttons and Shuffle are 44px tall and steal nothing from their neighbours", `resting` gains `"#share-copy"`.
-  - On Lane I's base (About lane O merged), 'seventeen flash-card' becomes 'sixteen flash-card' and 'eighteen progression' becomes 'seventeen progression'. `FLASH_STOPS` / `PROG_STOPS` lose `share-copy` (17→16, 18→17). About lane O adds `about-open` to `FLASH_STOPS` and renames today's "sixteen flash-card" and "seventeen progression" titles to seventeen and eighteen (`docs/plans/2026-10-17-about-off-main.md` on `claude/about-off-main-plan`). `PROG_STOPS` is built from `FLASH_STOPS`, so it follows.
+  - On Lane I's base (About lane O merged), 'seventeen flash-card' becomes 'sixteen flash-card' and 'eighteen progression' becomes 'seventeen progression'. `FLASH_STOPS` / `PROG_STOPS` lose `share-copy` (17→16, 18→17). About lane O adds `about-open` to `FLASH_STOPS` and renames today's "sixteen flash-card" and "seventeen progression" titles to seventeen and eighteen (`docs/plans/2026-10-17-about-off-main.md` on `origin/main` (merged in #331 at 27cad4a)). `PROG_STOPS` is built from `FLASH_STOPS`, so it follows.
   - The lane re-counts `FLASH_STOPS` and `PROG_STOPS` on its actual base before renaming anything, and renames from the counts it finds, not from this plan's numbers. "the sidebar's native Tab order is the panel's DOM order" reads `FLASH_STOPS.slice(1)` and `PROG_STOPS.slice(1)`, so it follows with no edit and keeps its title.
   - In "RESET SEEDED DECKS is absent until a seeded deck is edited or deleted, arms, and restores all five", Tab from `#deck-add` lands on `deck-restore`. The `share-copy` step between them goes.
   - "edge 9: a real COPY LINK click puts location.href, query included, on the clipboard" clicks the header `#share-copy` without opening the panel.
   - "edge 10: COPY LINK is a 44px target inside the panel at 320px and 380px with no horizontal overflow" becomes "edge 10: COPY LINK is a 44px target in the header at 320px and 380px with no horizontal overflow". It no longer opens the panel, and it drops the clause that pins its top to `#deck-add`'s. No mutant names it.
-- **Mutant headers to re-point.** Headers are word-split, so they use `.` wildcards, never quotes. Re-point the `# kills:` and `# suite:` lines of `pm_handpan101_outside_tab_trap` and `uid_panelstops_misses_tier` to `Tab.cycles.exactly.the.sixteen.flash-card.stops` and `Tab.cycles.exactly.the.seventeen.progression.stops`.
+- **Mutant headers to re-point.** `# suite:` headers are word-split, so they use `.` wildcards, never quotes.
+  - `# kills:` of `pm_handpan101_outside_tab_trap` is the plain title 'Tab cycles exactly the sixteen flash-card stops in the modal at every viewport class'.
+  - `# kills:` of `uid_panelstops_misses_tier` is 'Tab cycles exactly the seventeen progression stops in the modal at every viewport class'.
+  - Both keep their existing `# suite:` command and change only the pattern word: `node --test --test-name-pattern Tab.cycles.exactly.the.<count>.flash-card.stops tests/e2e.test.js` (and `.progression.stops`), where `<count>` is the re-counted number.
   - `e_restore_not_panel_stop` names the RESET SEEDED DECKS title, which is kept, so its header stays.
   - No patch names "edge 9", "edge 10" or "the sidebar's native Tab order".
 
 **Acceptance: untouched, and run**
-- These pass unchanged, because ids, `copyLink()`'s chain and `track` are unchanged:
+- These pass unchanged; `track` stays synchronous in `done()` and ids are kept:
   - "SU: an over-cap custom deck disables COPY LINK with the refusal as its title and leaves the bare path"
-  - "SU: COPY LINK copies location.href and announces LINK COPIED"
-  - "SU: COPY LINK falls back to navigator.share when the clipboard rejects"
   - "SU: COPY LINK says nothing when the share sheet is dismissed"
-  - "SU: COPY LINK tracks share_copy with no id, name or code"
+  - "SU: COPY LINK tracks share_copy with no id, name or code" (`track` is synchronous)
   - "SU: a deck change hides a revealed #share-url so it never keeps the old deck's link"
-  - "no event param is a string over 40 characters or names a custom: id"
+  - "no event param is a string over 40 characters or names a custom: id" (`track` is synchronous)
   - "#about is in both inert lists and #app in neither". Its regexes still hold, because `#share-copy` is added by id.
 - `tests/e2e.test.js` "the header and footer stay inside their pixel budget, so the card keeps its size" and "the card keeps its origin/main size with the about section below the first screen" (in whatever form About lane O leaves it). Both are unchanged for the reasons given in 6.7.
 
@@ -515,6 +523,7 @@ Also run the four sync and corpus checks of gate 3, and the one new e2e test on 
   - `si_icon_unlabelled`
   - `si_share_url_in_flow`
   - `si_icon_hidden_when_refused`
+  - `si_repeat_copy_not_cleared`: `done()` drops `say("", "")`. `# kills:` SI: a second COPY LINK clears the message line before writing LINK COPIED again. `# suite: node --test --test-name-pattern ^SI..a.second.COPY.LINK.clears.the.message.line tests/app.test.js`. The README count and FLOORS still come from CI artifacts (one more patch).
 - **Expected to go stale:**
   - `su_copy_hidden_when_refused`, `su_copy_stays_enabled`, `su_copy_reencodes`, `su_abort_not_silent`, `su_share_copy_sends_id`, `su_share_url_stays_after_deck_change`
   - `e_restore_not_panel_stop`, `e_panel_moved_into_header`, `e_target_chrome_eats_card`, `e_menu_keys_leak_to_card`
@@ -522,16 +531,17 @@ Also run the four sync and corpus checks of gate 3, and the one new e2e test on 
   - `mr_stops_omit_amy`, `pm_handpan101_outside_tab_trap`, `qr_res_link_not_a_stop`, `uid_panelstops_misses_tier`
   - `pm_removed_by_design_too_wide`
   - `d_reset_close_stays_armed`
+  - `m2_panel_background_misses_decks`, `r4t_inert_includes_header` (both patch the `panelBackground` line). `python3 tools/refresh_mutants.py --check` is authoritative, and any patch it names is re-anchored by grepping its removed line.
 - Refresh, then `--check`. Rewrite against a stabler anchor where the tool cannot re-anchor.
 - Set the README mutant count and FLOORS rows from CI artifacts.
 
-**Verify.** One command, recorded on `origin/main` `ebd997f` as 11 pass:
+**Verify.** One command, recorded on `origin/main` `a4309bd` as 13 pass:
 
 ```
-node --test --test-name-pattern "COPY LINK|share_copy|share-url|panelStops|panel stops|removed by design|inert lists|SI: " tests/app.test.js
+node --test --test-name-pattern "COPY LINK|share_copy|share-url|panelStops|panel stops|removed by design|inert lists|SI: |AP2-2 setInert|no event param" tests/app.test.js
 ```
 
-Also run `node tools/probe/panel_fit.js --base origin/main --font both` and the two new e2e tests one at a time.
+Also run `node tools/probe/panel_fit.js --base origin/main --font both` and the two new e2e tests one at a time, and `node --test --test-name-pattern "DR1 line 114" tests/app.test.js` as the drain-precedent smoke.
 
 **Non-goals.** The plan non-goals, plus:
 - no change to `share.js`, `syncRoute` or `routeInfo`;
@@ -660,13 +670,15 @@ Landscape phone, 844 x 390, `@media (max-height:520px)`. Inside it, `.hrow{displ
 
 ```
 +------------------------------------------------------------------------------+
-| ( D KURD 10 )( D AMARA 10 )( D AMARA 9 )( C# HIJ...  >               [@] [=] |
+| ( D KURD 10 )( D AMARA 10 )( D AMARA 9 )( C# HIJAZ 9 )( F3 LOW P...> [@] [=] |
 |                        +---------+                                           |
 |                        |  card   |                                           |
 |                        +---------+                                           |
 |  <-      3 / 49     SHUFFLE: OFF     ->                                      |
 +------------------------------------------------------------------------------+
 ```
+
+The strip (`.decks{flex:1 1 auto; min-width:0}`) fills up to one 9px gap before `[@]`. That gap is `--sp-3`, which is 9px only under `max-height:520px`.
 
 Desktop, at least 1024 x 700. `#settings-trigger` is `display:none`, and the panel is the sidebar.
 - The grid keeps its two 44px columns, so the icon sits in the left cell, the right cell stays empty, and the title stays centred.
@@ -708,18 +720,18 @@ Desktop, at least 1024 x 700. `#settings-trigger` is `display:none`, and the pan
 
 ### 6.4 Feedback, motion, print
 
-- **Tap feedback.** `copyLink()`'s outcomes do not change; only `done()` gains the clear below.
+- **Tap feedback.** `copyLink()`'s outcomes do not change; only `done()` changes: it clears, tracks, then writes in a `setTimeout(..., 0)` (below).
   - Its `say("LINK COPIED","ok")` writes the `.announce` row (`role="status"`, `aria-live="polite"`), which is visible under the footer on every layout.
   - Its outcomes are LINK SHARED, SELECT THE LINK AND COPY IT, and silence on a dismissed share sheet.
   - The glyph does not swap to a tick. A timed swap would add state and motion for a message the live region already gives.
   - The accessible name stays "Copy link" in every state; only `disabled` and `title` change.
-  - **Repeat copies.** `say()` today writes over the old text without clearing it, so a second LINK COPIED changes nothing. Lane I makes `copyLink`'s `done()` clear the message line and `#announce` before it writes, so a repeat copy is announced again. `say()` itself is unchanged, so `#scale-msg` is not re-announced on every keystroke. No `say()` text changes. The write of the new text runs in a `requestAnimationFrame` after the clear, so assistive tech sees two separate mutations. The SI test awaits one frame before reading the record.
+  - **Repeat copies.** `say()` today writes over the old text without clearing it, so a second LINK COPIED changes nothing. Lane I makes `copyLink`'s `done()` clear the message line and the `.announce` live region (`announce` in index.html, `app.announcer()` in tests) before it writes, so a repeat copy is announced again. `say()` itself is unchanged, so `#scale-msg` is not re-announced on every keystroke. No `say()` text changes. `done(text, method)` runs `say("", "")`, then `track("share_copy", { deck_kind, method })` synchronously, then `setTimeout(() => { if (announce.textContent === "") say(text, "ok"); }, 0)` (the `layoutStatus()` pattern). The guard keeps a later `say()` from being overwritten. Tests drain the write with `app.flushTimers()` after `await flush()`.
 - **Reduced motion.** Nothing animates. `.mode:active` is an instant background change, not a transition, so `prefers-reduced-motion` needs no rule.
 - **Print.** Add `#share-copy, #share-url{display:none}` INSIDE the existing `@media print{` block. It must remain the last block in the `<style>` element, per `tests/test_render_agreement.py::test_print_block_is_last_in_the_style_element`.
 
 ### 6.5 The move, exactly
 
-1. **`#share-copy`** leaves the Scales `.modebar duo` and replaces `.hspacer` in `.hrow`. The id is kept, so these keep working: the `shareCopy` const, `syncRoute()`'s `disabled`/`title` writes, `shareCopy.onclick = copyLink`, `ELEMENT_IDS`, and every SU test.
+1. **`#share-copy`** leaves the Scales `.modebar duo` and replaces `.hspacer` in `.hrow`. The id is kept, so these keep working: the `shareCopy` const, `syncRoute()`'s `disabled`/`title` writes, `shareCopy.onclick = copyLink` and `ELEMENT_IDS`. The SU tests that change are listed in 4.5.
 2. **The Scales row.** `<div class="modebar duo">` becomes `<div class="modebar">` holding only `#deck-add`. `.modebar .mode{flex:1 1 0}` makes it full width, the same pattern as the HANDPAN 101 row before About. The `#deck-restore` button below it does not change (G10).
 3. **`#share-url`** moves out of the panel and directly after `.hrow` inside `<header>`. It stays `readonly hidden aria-label="Share link"` and is styled:
 
@@ -738,7 +750,7 @@ Desktop, at least 1024 x 700. `#settings-trigger` is `display:none`, and the pan
    - The deck-change hide is unchanged.
    - No `header` rule in `index.html` sets `position` today, so `position:relative` is needed.
 4. **`panelStops()`** drops `document.getElementById("share-copy"), document.getElementById("share-url")`. The list reads `..., document.getElementById("deck-add"), restoreBtn, ...prints..., ...res- links, about-open` (the last item is About's). On the page, the icon is the first header Tab stop, before `#settings-trigger`. A disabled button leaves the Tab order natively.
-5. **`panelBackground`** gains `document.getElementById("share-copy")`. Below 1024 x 700 the drawer is modal, so the icon must be inert under it, like the deck strip. The header is still not inerted whole, because it holds the trigger. The sheet's `background` already covers it, since it lists `header`.
+5. **`panelBackground`** gains `document.getElementById("share-copy")`. `document.getElementById("share-copy")` is appended after `document.querySelector("#about")`, inside `[...].filter(Boolean)`. Below 1024 x 700 the drawer is modal, so the icon must be inert under it, like the deck strip. The header is still not inerted whole, because it holds the trigger. The sheet's `background` already covers it, since it lists `header`.
 6. **Disabled (S5).**
    - Add `#share-copy:disabled{opacity:.5; cursor:default}`.
    - It is disabled, never hidden, with the refusal as its `title`. `syncRoute()` still says the refusal once on the transition, and it stays in the message line until the next `say()`, so touch users, who never see a tooltip, can still read it.
@@ -783,7 +795,7 @@ Desktop, at least 1024 x 700. `#settings-trigger` is `display:none`, and the pan
 4. **A future `formatSeed` change alters the token order.** That would change v5 spellings. Mitigation: SV pins the five decks' literals, so such a change goes red and needs a version bump.
 5. **A link with escaped parens imports once, then canonicalises.** This is intended. On a later hashchange, the same-deck short circuit prevents a re-import.
 6. **The landscape strip loses 44px plus a gap.** More chips scroll out of view, though no card change follows. Not measured.
-7. **About lane O is still in review.** Section 6.5's `panelStops()` text assumes its `about-open` tail. If #331 changes course, lane I's brief edits only the `share-*` entries, which is unaffected.
+7. **The About plan merged (#331). Lane O is not yet merged (no PR open), so Lane I re-counts on its actual base.** Section 6.5's `panelStops()` text assumes its `about-open` tail. If #331 changes course, lane I's brief edits only the `share-*` entries, which is unaffected.
 
 ### Rejected alternatives
 
@@ -801,7 +813,7 @@ Desktop, at least 1024 x 700. `#settings-trigger` is `display:none`, and the pan
 - Transport behaviour on `+`, `)`, `*`, `_` and `encodeURI`-style double-encoding (risks 1 to 3, P10's premise).
 - Android Linkify's URL pattern stopping at `[ ] |` (G1), recalled from memory and not read from source.
 - `title` tooltips on disabled buttons across desktop browsers (6.5.6).
-- Whether a clear followed by a write one animation frame later in `copyLink`'s `done()` makes every screen reader announce a repeat LINK COPIED (6.4).
+- [unverified] Whether a clear followed by a `setTimeout(..., 0)` write in `copyLink`'s `done()` makes every screen reader announce a repeat LINK COPIED (6.4).
 - Whether the 6.3 glyph reads as a link at 1x; Lane I's screenshot is the check.
 - The landscape chip-strip width lost (risk 6), not measured.
 - No e2e test was run for this plan, and no screenshot of the icon was taken. The wireframes are derived from the CSS rules cited, not rendered.
@@ -836,9 +848,10 @@ The rubric is restated each round. Each row is 0 to 10.
 
 | Round 3, B1: stop counts ignored About lane O | Counts taken on About's base: seventeen/eighteen become sixteen/seventeen; `# kills:` and `# suite:` re-pointed; the lane re-counts on its actual base first | 4.5 |
 | Round 3, eng nits 1 to 4 | Six writer mutants named; mirror and seats tests moved to the v5 writer group (ten reader tests); `# kills:` rule; the clear scoped to `copyLink`'s `done()` | 4.4, 4.5, 6.4 |
-| Round 3, design nits 1 to 4 | `#share-url` keeps its base declarations and loses `margin-top`; `stroke-width` 2.4; the clear-then-write split by a frame; landscape wireframe redrawn | 6.1, 6.2, 6.3, 6.4, 6.5 |
+| Round 3, design nits 1 to 4 | `#share-url` keeps its base declarations and loses `margin-top`; `stroke-width` 2.4; the clear-then-write split by `setTimeout(..., 0)` (round 4); landscape wireframe redrawn | 6.1, 6.2, 6.3, 6.4, 6.5 |
+| Round 4, eng B1 + nits 1-3 | rAF replaced by the `layoutStatus` setTimeout-0 pattern; `.announce`, not `#announce`; two SU tests drain with `app.flushTimers()`; AP2-2 setInert, m2_/r4t_ mutants and `si_repeat_copy_not_cleared` added; plain `# kills:` titles; landscape strip fills to `[@]`; base a4309bd |
 
-Every row re-scored 10 after rounds 2 and 3. The two items the repo cannot settle are in the unverified list.
+Every row re-scored 10 after rounds 2 to 4. The two items the repo cannot settle are in the unverified list.
 
 ### Adversarial pass: the five likeliest ways a lane fails review or CI, and the fix in this plan
 
