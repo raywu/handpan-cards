@@ -278,7 +278,7 @@ The analytics hash rule is untouched. The gtag `config` still sends `location.or
 - Lanes E and I touch `panelStops()`, the header, the `hashchange` listener and both test files. So wave 1 starts only after About lane O AND About lane D have merged, and never in the same wave as either of them. Lane D owns `CLAUDE.md` and README.md lines, both of which our lanes also edit.
 - Lane I's brief is written against the post-About `panelStops()`. The `about-open` entry stays last; lane I removes only `share-copy` and `share-url`.
 
-**Dependency on scale import (`docs/plans/2026-10-16-scale-import.md`, merged in #329; A1 merged as #338 at a4309bd; lane B pending)**
+**Dependency on scale import (`docs/plans/2026-10-16-scale-import.md`, merged in #327, amended through #337; A1 merged as #338 at a4309bd; lane B pending)**
 - Its lane B owns the `index.html` app JS, `tests/app.test.js` and `tests/e2e.test.js`. Its lane A1 owns README.md's engine-module and suite-count sentences and adds mutants, which moves the README mutant count.
 - Our lanes therefore never share a wave with scale import lane A1 or B.
 - Their relative order is owner gate G9.
@@ -795,7 +795,7 @@ Desktop, at least 1024 x 700. `#settings-trigger` is `display:none`, and the pan
 4. **A future `formatSeed` change alters the token order.** That would change v5 spellings. Mitigation: SV pins the five decks' literals, so such a change goes red and needs a version bump.
 5. **A link with escaped parens imports once, then canonicalises.** This is intended. On a later hashchange, the same-deck short circuit prevents a re-import.
 6. **The landscape strip loses 44px plus a gap.** More chips scroll out of view, though no card change follows. Not measured.
-7. **The About plan merged (#331). Lane O is not yet merged (no PR open), so Lane I re-counts on its actual base.** Section 6.5's `panelStops()` text assumes its `about-open` tail. If #331 changes course, lane I's brief edits only the `share-*` entries, which is unaffected.
+7. **The About plan merged (#331). Lane O (#340) is not yet merged, so Lane I re-counts on its actual base.** Section 6.5's `panelStops()` text assumes its `about-open` tail. If #331 changes course, lane I's brief edits only the `share-*` entries, which is unaffected.
 
 ### Rejected alternatives
 
