@@ -26,8 +26,8 @@ diff --git a/index.html b/index.html
     pins this against measured numbers. assertCardFits CANNOT: it derives its
     expectation from the current main height, so it moves with the regression.
     ------------------------------------------------------------------------ */
--header{width:100%; max-width:520px; text-align:center; margin-bottom:var(--sp-3)}
-+header{width:100%; max-width:520px; text-align:center; margin-bottom:20px}
+-header{position:relative; width:100%; max-width:520px; text-align:center; margin-bottom:var(--sp-3)}
++header{position:relative; width:100%; max-width:520px; text-align:center; margin-bottom:20px}
  /* The h1 row: a 44px|1fr|44px grid so the title stays optically centred once
     a 44px settings trigger sits beside it. The spacer is the trigger's mirror
     image, not decoration for its own sake - without it the title drifts right

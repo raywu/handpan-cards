@@ -8,8 +8,8 @@ diff --git a/index.html b/index.html
  function copyLink() {
    const href = location.href;
    const deck_kind = deckKind(deck());
--  const done = (text, method) => { say(text, "ok"); track("share_copy", { deck_kind, method }); };
-+  const done = (text, method) => { say(text, "ok"); track("share_copy", { deck_kind, method, deck_id: deck().id }); };
+-    track("share_copy", { deck_kind, method });
++    track("share_copy", { deck_kind, method, deck_id: deck().id });
    const reveal = () => {
      shareUrl.value = href;
      shareUrl.removeAttribute("hidden");

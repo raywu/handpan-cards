@@ -177,14 +177,17 @@ body{
    pins this against measured numbers. assertCardFits CANNOT: it derives its
    expectation from the current main height, so it moves with the regression.
    ------------------------------------------------------------------------ */
-header{width:100%; max-width:520px; text-align:center; margin-bottom:var(--sp-3)}
+header{position:relative; width:100%; max-width:520px; text-align:center; margin-bottom:var(--sp-3)}
 /* The h1 row: a 44px|1fr|44px grid so the title stays optically centred once
    a 44px settings trigger sits beside it. The spacer is the trigger's mirror
    image, not decoration for its own sake - without it the title drifts right
    by half the trigger's width. */
 .hrow{display:grid; grid-template-columns:44px 1fr 44px; align-items:center;
   gap:var(--sp-2); margin-bottom:var(--sp-2)}
-.hspacer{width:44px; height:44px}
+#share-copy{width:44px; height:44px; padding:0; flex:none}
+#share-copy svg{display:block; margin:0 auto}
+#share-copy:disabled{opacity:.5; cursor:default}
+#share-copy:disabled:active{background:#211d16}
 h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27px);
    letter-spacing:.04em; margin:0; color:#f4f0e8}
 /* The settings trigger: styled as .mode (below), sized to the 44px target
@@ -293,7 +296,9 @@ a.mode{text-decoration:none}
 /* The two Amy links share ONE row on every viewport, wrapping their labels
    inside the link box (menu-resources AD7); no other row takes this class. */
 .modebar.duo{flex-wrap:nowrap}
-#share-url{box-sizing:border-box; width:100%; min-height:44px; margin-top:var(--sp-2); padding:0 10px; font:inherit; font-size:16px}
+#share-url{box-sizing:border-box; width:100%; min-height:44px; padding:0 10px; font:inherit; font-size:16px;
+  position:absolute; left:0; right:0; top:44px; z-index:29;
+  background:#211d16; border:1px solid #433b2c; border-radius:8px; color:#eae6df}
 #share-url[hidden]{display:none}
 .modebar.duo .mode{min-width:0; padding-inline:6px; line-height:1.25}
 /* The three site links split their row equally; the padding trim lets HANDPANER
@@ -476,9 +481,8 @@ a.mode{text-decoration:none}
      so dissolve the grid and let the trigger join the header's own flex row
      as the last item, after the deck strip (menu-shell, 2026-09-28). */
   .hrow{display:contents}
-  .hspacer{display:none}
   .decks{order:1}
-  #settings-trigger{order:2; flex:0 0 auto}
+  #settings-trigger, #share-copy{order:2; flex:0 0 auto}
 }
 main{flex:1; display:flex; align-items:center; justify-content:center; width:100%; min-height:0}
 /* swipe: the drag moves .scene, never .card - .card's transform is the flip.
@@ -1221,6 +1225,7 @@ html.about-open{overflow:hidden}
   .scene{transform:none!important}
   #app{display:block; height:auto}
   #about{display:none}
+  #share-copy, #share-url{display:none}
 }
 </style>
 </head>
@@ -1228,13 +1233,23 @@ html.about-open{overflow:hidden}
 <div id="app">
 <header>
   <div class="hrow">
-    <span class="hspacer" aria-hidden="true"></span>
+    <button id="share-copy" type="button" class="mode" aria-label="Copy link">
+      <svg class="glyph-link" viewBox="0 0 24 24" width="20" height="20"
+           aria-hidden="true" focusable="false">
+        <g transform="rotate(-45 12 12)" fill="none" stroke="currentColor"
+           stroke-width="2.4" stroke-linecap="round">
+          <rect x="2" y="8" width="12" height="8" rx="4"/>
+          <rect x="10" y="8" width="12" height="8" rx="4"/>
+        </g>
+      </svg>
+    </button>
     <h1>Handpan Chords</h1>
     <button id="settings-trigger" type="button" class="mode" aria-haspopup="dialog"
             aria-expanded="false" aria-controls="settings-panel" aria-label="Settings">
       <span class="glyph" aria-hidden="true"></span>
     </button>
   </div>
+  <input type="text" id="share-url" readonly hidden aria-label="Share link">
   <!-- "+ Add a scale" lives in the settings panel's Scales group now (M2,
        2026-09-28); #decks holds deck chips only. -->
   <nav class="decks" id="decks"></nav>
@@ -1548,11 +1563,9 @@ html.about-open{overflow:hidden}
        and it still names what the control does. -->
   <div class="panel-group" id="panel-scales-group">
     <h3 class="panel-heading">Scales</h3>
-    <div class="modebar duo">
+    <div class="modebar">
       <button class="mode" type="button" id="deck-add" aria-haspopup="dialog">+ ADD A SCALE</button>
-      <button class="mode" type="button" id="share-copy">COPY LINK</button>
     </div>
-    <input type="text" id="share-url" readonly hidden aria-label="Share link">
     <button class="mode" type="button" id="deck-restore" hidden>RESET SEEDED DECKS</button>
   </div>
   <div class="panel-group">
@@ -10910,6 +10923,7 @@ function resetSheetState(edit) {
 }
 // The create path.
 function openScaleSheet(opener) {
+  shareUrl.setAttribute("hidden", "");
   resetSheetState(null);
   showSheet(opener);
 }
@@ -11648,7 +11662,8 @@ const settingsScrim   = document.getElementById("settings-scrim");
 // inert the trigger along with it and the panel could never be closed by a
 // second tap on it.
 const panelBackground = [document.querySelector("main"), document.querySelector("footer"),
-                          document.getElementById("decks"), document.querySelector("#about")].filter(Boolean);
+                          document.getElementById("decks"), document.querySelector("#about"),
+                          document.getElementById("share-copy")].filter(Boolean);
 let panelOpen = false;
 // M3 (desktop sidebar, 2026-09-28): the same breakpoint the CSS media query
 // above uses. Below it the panel is the modal drawer M1 built - role="dialog",
@@ -11661,7 +11676,7 @@ function panelStops() {
   return [settingsTrigger, document.getElementById("modeA"), document.getElementById("modeB"),
           document.getElementById("tier-basic"), document.getElementById("tier-intermediate"),
           document.getElementById("tier-advanced"), document.getElementById("seq-source-link"),
-          document.getElementById("deck-add"), document.getElementById("share-copy"), document.getElementById("share-url"), restoreBtn,
+          document.getElementById("deck-add"), restoreBtn,
           ...settingsPanel.querySelectorAll(".prints button, .prints select"),
           // Eng review amendment 1: the Resources links join the Tab trap
           // after the print controls, in DOM order.
@@ -12316,7 +12331,11 @@ function syncRoute() {
 function copyLink() {
   const href = location.href;
   const deck_kind = deckKind(deck());
-  const done = (text, method) => { say(text, "ok"); track("share_copy", { deck_kind, method }); };
+  const done = (text, method) => {
+    say("", "");
+    track("share_copy", { deck_kind, method });
+    setTimeout(() => { if (announce.textContent === "") say(text, "ok"); }, 0);
+  };
   const reveal = () => {
     shareUrl.value = href;
     shareUrl.removeAttribute("hidden");
@@ -12335,6 +12354,10 @@ function copyLink() {
     .then(() => done("LINK COPIED", "clipboard"), share);
 }
 shareCopy.onclick = copyLink;
+shareUrl.addEventListener("blur", () => shareUrl.setAttribute("hidden", ""));
+shareUrl.addEventListener("keydown", e => {
+  if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); shareUrl.setAttribute("hidden", ""); shareCopy.focus(); }
+});
 // An in-page link (the about section) changes the hash without a reload, so no
 // boot code runs. selectDeck gets the id deck() returns for the mapped seed,
 // never the raw seed id: a replaced or hidden seed id would be stored as is and
