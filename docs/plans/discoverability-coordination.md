@@ -165,7 +165,7 @@ Cycle: 1   Wave: 1c   Merged this batch: 880f054 (#319 W3), 2b7dadc (#320 W2), 6
 | W3 | af6af65e9d198cd2e | released | discoverability/w3-site-files (deleted) | #319 | 7ad5ba9 | 2026-10-16 (CI 38961099995 success, 11 checks) | PASS_WITH_NITS | 0 | yes (main 880f054) | nothing | no |
 | W4 | a73559635b9c83956 | /Users/ray/Projects/handpan-cards/.claude/worktrees/agent-a73559635b9c83956 | discoverability/w4-docs-counts | #322 | bfea238 | 2026-10-16 (CI 38978260599 success) | PASS_WITH_NITS (after FAIL+2) | 2 | f3901b3 | nothing | released |
 | SU-A | a742bd8d5dbeb4ef7 | released | share-url/su-a-app (deleted) | #323 | 6e363f2 | 17:12 | PASS_WITH_NITS (review 2) | 1 | yes, 9f557e6 | nothing | released |
-| GA-SWAP | a0f6ec5e1b7570687 | (Agent worktree, isolation: worktree) | discoverability/ga-swap | - | - | - | working | 0 | no | nothing | live |
+| GA-SWAP | a0f6ec5e1b7570687 | (Agent worktree, isolation: worktree) | discoverability/ga-swap | #324 | 615d519 | gh pr view + run 38986682099 success | reviewing (reviewer abda865cee9392fc0) | 0 | no | nothing | live |
 ```
 
 Owner check-in 2026-10-16 (third): start share-URL execution (SU-A then SU-D) right after W4 merges, same swarm; row 18 privacy copy folded into SU-A; row 19 closed (keep); GA4 property, Measurement ID swap PR and DNS TXT after W4 merges.
