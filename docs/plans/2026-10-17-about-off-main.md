@@ -16,7 +16,7 @@ Code is cited by function, marker or test title, never by line number.
 
 - `<section id="about">` keeps its position in the markup and every word of its copy.
 - It gains `hidden`, `role="dialog"`, `aria-modal="true"`, a sticky exit row and a Contact line.
-- Only a new `ABOUT` button (`#about-open`) opens it. The button sits beside HANDPAN 101 in the last Resources row.
+- Only a new `ABOUT` button (`#about-open`) opens it. The button has its own full-width row at the end of the settings panel, after the HANDPAN 101 row (owner, G1, 2026-10-17).
 - Opening About pushes one `#about` history entry. The exit control, Escape and Back each consume that entry and return the app untouched.
 
 Why A:
@@ -24,12 +24,12 @@ Why A:
 - **It reuses a pattern that already works.** The scale sheet already does this with `showSheet`, `closeScaleSheet`, `pendingPop`, the `popstate` listener, `setInert` and `cycleTabStops` [V].
 - **`#deck=` links still switch decks in place, without a reload.** Option B loses this.
 - **There is no new file.** Nothing changes in the sitemap, and nothing risks the single-file constraint.
-- **The ABOUT button does not grow the panel.** I probed this exact markup and stop order with `node tools/probe/panel_fit.js --base origin/main --font both --workers 2`. It printed "panel fit: PASS" for real and fallback fonts. No rule failed, and no viewport where the base fits made the candidate overflow [O].
+- **The ABOUT row grows the panel by 47 to 50px, and one scoped oracle allowance admits it.** I probed this exact markup and stop order with `node tools/probe/panel_fit.js --base origin/main --font both --workers 2` (section 4, "Panel fit") [O].
 
 The alternatives are B (a static `about.html` page) and C (A plus that page). Both are compared in section 3. C stays open as a later owner gate (G8).
 
 **Confidence**
-- High on UX and testability. The pattern exists in the repo and the panel fit was measured.
+- High on UX and testability. The pattern exists in the repo, and the panel growth was measured over every cell the oracle measures.
 - Medium on SEO. No primary Google source mentions a full-screen overlay. The claim that it ranks like the visible section rests on the analogy with accordions and tabs [A].
 
 ## 2. SEO findings (primary Google sources only, accessed 2026-10-17)
@@ -85,9 +85,9 @@ The alternatives are B (a static `about.html` page) and C (A plus that page). Bo
 | Focus and inert | `setInert([#app, #settings-panel])`. Focus goes to the exit control, then back to the trigger | Browser default | As A |
 | `#deck=` links | Switch in place by replacing the `#about` entry | `/#deck=...` does a full boot (the routed boot works) | Both paths |
 | Print | Unchanged (`@media print` keeps `#about{display:none}`) | A second page to style | As A |
-| Analytics | Optional `about_open` event (G4) | Needs a GA loader on a second page, or none | Both |
+| Analytics | `about_open` event, no params (G4) | Needs a GA loader on a second page, or none | Both |
 | Single-file constraint | Kept; no new file | A sibling file is allowed, but it duplicates CSS and fonts | As B |
-| Tests changed | 7 existing tests changed, 20 added, 3 sandbox ids | Site-file tests, a new test file for the page, the About tests moved | Both sets |
+| Tests changed | 8 existing tests changed, 22 added, 3 sandbox ids, one scoped oracle allowance | Site-file tests, a new test file for the page, the About tests moved | Both sets |
 | Size | One implementation lane plus a docs lane | Two lanes plus site files | Three lanes |
 
 **Rejected for now**
@@ -125,6 +125,7 @@ Only one lane is in flight at a time, because the work does not split by file. `
 |---|---|---|
 | `index.html`: About CSS, `#about` markup, the last Resources row, About JS, the `syncRoute` and `hashchange` guards, the `popstate` branch, the `document` keydown branch | owns | - |
 | `tools/sandbox.js` (`ELEMENT_IDS` only) | owns | - |
+| `tools/probe/panel_fit.js` (the About-row allowance only) | owns | - |
 | `tests/app.test.js`, `tests/e2e.test.js` | owns | - |
 | `tests/mutants/`: new `ao_*` patches, the rewrite of `nm_about_hidden.patch`, refreshes, two header edits | owns | - |
 | `tests/suite_health.py` (only the FLOORS rows for `tests/app.test.js` and `tests/e2e.test.js`) | owns | - |
@@ -146,7 +147,7 @@ Only one lane is in flight at a time, because the work does not split by file. `
 
 **Owns:** the rows marked "Lane O" in the ownership table.
 
-**Objective:** build what sections 4 and 6 of this plan describe, with the owner gates as decided. Until the owner answers, use the "Default while unanswered" column of section 5 (the recommended options, except G4).
+**Objective:** build what sections 4 and 6 of this plan describe, with the owner gates as decided in section 5 (all eight decided by the owner, 2026-10-17).
 
 **TDD order.** Write every test listed below first. Watch each one fail on `origin/main` for the stated reason. Then implement.
 
@@ -159,8 +160,9 @@ Only one lane is in flight at a time, because the work does not split by file. `
    - `#about-close` carries aria-label "Back to the practice screen", the same name as `#scale-back`, so its accessible name contains its visible label BACK [V: the `#scale-back` markup].
    - After the Privacy paragraph, add `<h3>Contact</h3><p><a href="mailto:handpan@raywu.org">handpan@raywu.org</a></p>`.
 2. **Menu.**
-   - The HANDPAN 101 row `<div class="modebar">` becomes `<div class="modebar duo">`.
-   - Add `<button class="mode" type="button" id="about-open" aria-haspopup="dialog">ABOUT</button>` after `#res-handpan-101`.
+   - The HANDPAN 101 row is unchanged.
+   - After it, as the last row of the Resources group, add `<div class="modebar"><button class="mode" type="button" id="about-open" aria-haspopup="dialog">ABOUT</button></div>`. A plain `.modebar` with one child is full width, like the HANDPAN 101 row.
+   - Update the Resources comment above the rows to name the fourth row.
    - `panelStops()` appends `document.getElementById("about-open")` after the `res-` links. This is the order that was probed.
    - ABOUT's stop is defined as "last, after the res- links", independent of share-copy. The readable-share-v5 plan moves COPY LINK out of `#settings-panel` to a main-page share icon. Whichever of the two plans merges second re-counts FLASH_STOPS/PROG_STOPS, the sixteen/seventeen titles and the suite headers of `pm_handpan101_outside_tab_trap` and `uid_panelstops_misses_tier`.
 3. **CSS** (placed before `@media print{`, which must stay last).
@@ -182,7 +184,7 @@ Only one lane is in flight at a time, because the work does not split by file. `
      - calls `setInert(true, [#app, #settings-panel])` and adds `html.about-open`
      - calls `pushState({ about: true }, "", ABOUT_ROUTE)`
      - sets `scrollTop = 0` and focuses `#about-close`
-     - calls `track("about_open")` if G4 is yes
+     - calls `track("about_open")` with no params (G4)
    - `hideAbout()` reverses those steps. It calls `syncRoute()` after clearing `aboutOpen`, so a COPY LINK outside the panel (readable-share v5) is refreshed on close. It then focuses `settingsTrigger`, or `#about-open` when `desktopMQ.matches`, because the trigger is `display:none` on desktop.
    - BACK, Back and Escape return to the practice screen with the deck, card, mode and scroll position unchanged and the settings menu closed, as `+ ADD A SCALE` does. Focus goes to the settings trigger (or to `#about-open` in the desktop sidebar, which stays open).
    - `closeAbout()` calls `hideAbout()`, sets `pendingPop = true` and calls `history.back()`, exactly like `closeScaleSheet()`.
@@ -205,6 +207,11 @@ Only one lane is in flight at a time, because the work does not split by file. `
    - Every other key returns, so no arrow key reaches the card.
 7. **Boot.** No change. `#about` is not a deck route, so the existing boot `syncRoute()` replaces it (G3).
 8. **Sandbox.** In `tools/sandbox.js`, add `about`, `about-open` and `about-close` to `ELEMENT_IDS`, because `getElementById` throws on unknown ids.
+9. **Panel-fit oracle** (`tools/probe/panel_fit.js`, beside `RES_ALLOWANCE_PX`). The ABOUT row does not fit the existing oracle, so this is the smallest change that admits it (see "Panel fit" below).
+   - Add `const ABOUT_ALLOWANCE_PX = 52;` and `aboutAllowance(baseControls, candControls)`, which returns 52 only when the candidate has `about-open` and the base lacks it. Export both.
+   - Rule 1 adds it to the fit bound beside `resA`.
+   - Rule 3 uses `b.needed + aboutA` as the bound for the key `about-open` only, as it does `resA` for `res-` keys.
+   - Rule 2 and every other control are judged exactly as before. The allowance expires once main has the row.
 
 **Acceptance: tests added to `tests/app.test.js`** (new describe "about overlay")
 1. "AO: the about section ships hidden as a dialog, in place after #app, with every existing sentence"
@@ -216,8 +223,10 @@ Only one lane is in flight at a time, because the work does not split by file. `
 7. "AO: a boot on #about leaves About closed and ends on the deck's route"
 8. "AO: a Forward traversal onto #about leaves About closed and rewrites the bar"
 9. "AO: About ends with a Contact heading and a mailto link to handpan@raywu.org"
-10. "AO: ABOUT is the last panel stop, a button beside HANDPAN 101 in a duo row"
-11. "AO: opening About tracks about_open with no params" (only if G4 is yes)
+10. "AO: ABOUT is the last panel stop, a full-width button alone in the last Resources row"
+11. "AO: opening About tracks about_open with no params" (G4, owner 2026-10-17: it asserts one `about_open` event and that the event carries no params)
+12. "panel fit: the About-row allowance is 52, owed only for an about-open control the base lacks"
+13. "panel fit rule 1 and rule 3: a new about-open earns the About-row allowance and nothing else does"
 
 AO app tests 5 and 6 call `aboutLink(href)` directly. The click delegation and preventDefault path is covered only by AO e2e 5, and the lane's reviewer brief says so. The reason is that the sandbox `queryAll` cannot see anchor nodes.
 
@@ -232,7 +241,7 @@ AO app tests 5 and 6 call `aboutLink(href)` directly. The click delegation and p
 8. "AO: About has no transition or animation with and without prefers-reduced-motion"
 9. "AO: at 1280x800 the sidebar's ABOUT opens About and closing returns focus to ABOUT"
 
-**Acceptance: tests changed (7)**
+**Acceptance: tests changed (8)**
 1. e2e "the about section is visible below the card at 380px with no horizontal scroll" becomes "the about section is not rendered on / and its text is in the served HTML". Its only mutant, `nm_about_hidden`, is rewritten (see Mutants below).
 2. e2e "the card keeps its origin/main size with the about section below the first screen" becomes "the card keeps its origin/main size and position with About off the first screen".
    - The `ORIGIN_SCENE` pins stay. The `scrollHeight > innerHeight` check and the `#about` top check go.
@@ -240,10 +249,11 @@ AO app tests 5 and 6 call `aboutLink(href)` directly. The click delegation and p
 3. e2e "clicking an about-section deck link on / switches the deck without a reload" becomes "clicking a deck link inside the open About switches the deck without a reload".
 4. e2e `FLASH_STOPS` gains `"about-open"` after `...RES_IDS`. So "Tab cycles exactly the sixteen flash-card stops in the modal at every viewport class" becomes "...seventeen...".
 5. For the same reason, "Tab cycles exactly the seventeen progression stops in the modal at every viewport class" becomes "...eighteen...".
-6. app "PM rule 7: HANDPAN 101 is the last Resources link, a Google Doc in a new tab, alone in its row" becomes "...the only link in its row". Its assertions already count `<a` tags and stay green. Its mutant's suite pattern `PM.rule.7` still matches.
+6. app "PM rule 7: HANDPAN 101 is the last Resources link, a Google Doc in a new tab, alone in its row" keeps its title, which stays true. Its "three modebar rows" assertion becomes four rows, and a new assertion says the fourth row holds `#about-open` and no `<a`. Its mutant's suite pattern `PM.rule.7` still matches.
 7. Changed: `AP2-2 setInert applies each caller's own background set`. Adding `about` to the sandbox ELEMENT_IDS makes `#about` resolve, so the expected `background` ids become ['settings-panel','about','main'] and `panelBackground` ids gain 'about'. The inert-set expectations after openScaleSheet()/openPanel() gain 'about' likewise. Re-run tests/mutants/ap2_panel_inerts_the_sheet_set.patch to confirm it is still killed. The engineering review proved that AP2-2 goes red when `about` is added to ELEMENT_IDS. The title does not change.
+8. e2e "the settings panel has exactly one Resources group with its six outbound links in three rows" keeps its title, because four mutant headers anchor it with `^...$`. Its `rowSizes` expectation becomes `[3, 2, 1, 0]`, with the message "three link rows, then the ABOUT row with no link".
 
-**Acceptance: tests that stay untouched and green (17)**
+**Acceptance: tests that stay untouched and green (16)**
 - app:
   - "#about is in both inert lists and #app in neither"
   - "#app wraps header, main, footer and the live region in that order, and #about follows it before the sheet"
@@ -256,7 +266,6 @@ AO app tests 5 and 6 call `aboutLink(href)` directly. The click delegation and p
 - e2e:
   - "Tab is trapped inside the settings panel and cycles every stop, wrapping both ways"
   - "the sidebar's native Tab order is the panel's DOM order"
-  - "the settings panel has exactly one Resources group with its six outbound links in three rows"
   - "a #deck= link opens that deck at 380px and the address bar keeps the deck's own route"
   - "Back and Forward between two deck routes show each deck in turn"
   - "main, footer and the deck strip are inert and aria-hidden while the settings panel is open, and restored on close"
@@ -264,6 +273,21 @@ AO app tests 5 and 6 call `aboutLink(href)` directly. The click delegation and p
 - python:
   - `tests/test_site_files.py` (all five tests, counted as one entry)
   - `tests/test_render_agreement.py::test_print_block_is_last_in_the_style_element`
+
+**Panel fit** [O: macOS Chrome, `--font both`, every cell the oracle measures: 2673 width x height rows x 3 modes per font]
+- Measured growth of the ABOUT row, candidate `needed` minus base `needed`, identical for real and fallback fonts:
+  - 47px in the h320-520 band
+  - 48px in the h521-699 band
+  - 50px at h700 and above (mode S, 640-1025 wide, and the sidebar widths)
+  - the largest shortfall at a threshold height is 50.1px (1024x712 mode S real, 1024x707 fallback)
+- Unmodified oracle: FAIL. Rule 1 fails 9356 cells (real) and 9600 (fallback); rule 3 fails 4447 and 4505.
+- 50px is inside the 64px Resources allowance in size, but that allowance does not apply: `isRes` matches only `res-` ids, and CLAUDE.md says it admits `res-*` controls "and nothing else". So the row does NOT fit the oracle as it stands.
+- With the allowance applied to `about-open` (a local experiment, reverted): PASS at 49, 50, 51, 52 and 64; FAIL at 48 (398 cells per font, 640x700 S, 708 / 658 / 700), 47, 46 and 45.
+- The change is item 9 above. 52 is the measured 50px plus 2px for Linux font rounding, as AD7 set 64 over a measured 60.4. The row is a 44px button plus a gap, which is why both font modes measure the same.
+- Rejected: renaming the button `res-about` to ride the 64px allowance. It mislabels an in-app view as an outbound resource (D8) and grants 14px more than the row needs.
+- Tests that pin the new limit, in `tests/app.test.js` beside "panel fit: the Resources allowance is 64, owed only for a res- control the base lacks":
+  - "panel fit: the About-row allowance is 52, owed only for an about-open control the base lacks"
+  - "panel fit rule 1 and rule 3: a new about-open earns the About-row allowance and nothing else does"
 
 **Mutants**
 
@@ -284,7 +308,9 @@ New patches:
 - `ao_transition_added`
 - `ao_contact_not_mailto`
 - `ao_open_not_a_stop`
-- `ao_open_untracked` (only if G4 is yes)
+- `ao_open_untracked`
+- `ao_fit_about_allowance_grown` (52 becomes 64)
+- `ao_fit_about_allowance_ungated` (the allowance is owed whether or not the base has the row)
 
 Rewrite `nm_about_hidden.patch` in place. It now drops `hidden` from the section and kills AO app test 1. The patch count does not fall, so the README mutant-count band test stays green.
 
@@ -306,17 +332,18 @@ Then run `python3 tools/refresh_mutants.py`, followed by `python3 tools/refresh_
   - `dq_route_no_hashchange`
   - `su_popstate_sync_unconditional`
   - `su_pop_not_synced`
+  - `mr_fit_res_allowance_ungated`, `mr_fit_res_allowance_grown` and `r4h_judge_rule1_never_fires`, whose hunks sit beside the edited allowance lines in `tools/probe/panel_fit.js`
 - If the tool cannot re-anchor a patch, rewrite that patch against a more stable anchor.
 
 **FLOORS** (`tests/suite_health.py`)
 - Raise only the `tests/app.test.js` row (561 today) and the `tests/e2e.test.js` row (314 today).
-- Set each from the executed-test count that CI reports for that file in the lane's own run artifacts at the head SHA, not from the old row plus the number of tests added. The rows drift under parallel lanes. Expect roughly 572 and 323 if G4 is yes.
+- Set each from the executed-test count that CI reports for that file in the lane's own run artifacts at the head SHA, not from the old row plus the number of tests added. The rows drift under parallel lanes. Expect roughly 574 and 323.
 
 **Verify**
 - The one Verify command is `node --test --test-name-pattern "AO: |about|PM rule 7" tests/app.test.js`. It starts on `origin/main` [O: 6 tests, 6 pass].
 - Run e2e tests locally one at a time (single tests start on `origin/main` [O]).
 - Verify also runs each new AO e2e title singly with CHROME_BIN set. CI at the head SHA is the evidence for the e2e suite.
-- Also run `node tools/probe/panel_fit.js --base origin/main --font both`.
+- Also run `node tools/probe/panel_fit.js --base origin/main --font both`. It must print "panel fit: PASS" with the allowance in place.
 - CI at the head SHA is the evidence.
 
 **Non-goals.** The plan non-goals, plus:
@@ -338,8 +365,9 @@ Then run `python3 tools/refresh_mutants.py`, followed by `python3 tools/refresh_
 
 **Objective**
 - Rewrite CLAUDE.md "Discoverability" > "About section" to describe the overlay.
-- Add ABOUT to the "Menu Resources" bullet.
-- Add `about_open` to the Analytics bullet if G4 is yes.
+- Add ABOUT and its own fourth row to the "Menu Resources" bullet.
+- Add `about_open` to the Analytics bullet.
+- In "Menu Resources", replace "The CI `panel-fit` oracle allows `res-*` controls 64px of growth and nothing else" with a sentence that also names the 52px About-row allowance and its two tests.
 - Restate the supersessions listed below.
 - Update README's About sentence.
 - Add a dated supersession note at the top of the discoverability plan.
@@ -381,16 +409,18 @@ Then run `python3 tools/refresh_mutants.py`, followed by `python3 tools/refresh_
 
 ## 5. Owner gates
 
-| Gate | Question | Options | Recommended | Default while unanswered |
+Every gate is decided (owner, 2026-10-17).
+
+| Gate | Question | Options | Recommended | Decision |
 |---|---|---|---|---|
-| G1 | Menu placement and label | `ABOUT` beside HANDPAN 101 in the last Resources row (probed, zero growth) / its own row at the end of the panel (unmeasured, adds a row) / a header button (costs first-screen space) | Beside HANDPAN 101, labelled `ABOUT` | Recommended. Note for the owner (an AFK default, not a new gate): closing About leaves the settings menu closed, as `+ ADD A SCALE` does |
-| G2 | Exit control | `← BACK` (matches `#scale-back`) / `CLOSE` / an X icon | `← BACK`, with aria-label "Back to the practice screen" (as `#scale-back`) | Recommended. The same note applies: BACK, Back and Escape return to the practice screen with the menu closed |
-| G3 | Reload or pasted `/#about` | Show the app and rewrite the bar to the deck route (as `#add` does) / reopen About at boot | Show the app | Recommended |
-| G4 | Analytics | `about_open` with no params / no event | `about_open` (once About is hidden, it is the only signal that About is read) | No event until answered |
-| G5 | "free" in the JSON-LD | Keep `isAccessibleForFree` and `offers` (the fact is one tap away, and no rich result is at stake, E11) / drop both | Keep | Keep |
-| G6 | Spam protection for the address | Plain `mailto:` in the served HTML / assembled by JS (invisible to crawlers and no-JS readers) / entity-encoded (cosmetic) | Plain `mailto:` | Plain |
-| G7 | Address in the JSON-LD | No (WebApplication has no email property unless a Person or Organization entity is added; no SEO gain) / add `author.email` | No | No |
-| G8 | Static About page (Option C) | Defer to the landing-page wave / build now | Defer | Defer |
+| G1 | Menu placement and label | `ABOUT` beside HANDPAN 101 in the last Resources row (probed, zero growth) / its own row at the end of the panel / a header button (costs first-screen space) | Beside HANDPAN 101, labelled `ABOUT` | **Decided (owner, 2026-10-17): its own full-width row at the end of the panel, labelled `ABOUT`.** It grows the panel 47-50px and needs the 52px About-row allowance (section 4, "Panel fit"). Note: closing About leaves the settings menu closed, as `+ ADD A SCALE` does |
+| G2 | Exit control | `← BACK` (matches `#scale-back`) / `CLOSE` / an X icon | `← BACK`, with aria-label "Back to the practice screen" (as `#scale-back`) | **Decided (owner, 2026-10-17): as recommended.** BACK, Back and Escape all return to the practice screen with the menu closed |
+| G3 | Reload or pasted `/#about` | Show the app and rewrite the bar to the deck route (as `#add` does) / reopen About at boot | Show the app | **Decided (owner, 2026-10-17): show the app** |
+| G4 | Analytics | `about_open` with no params / no event | `about_open` (once About is hidden, it is the only signal that About is read) | **Decided (owner, 2026-10-17): add `about_open` with no params**, pinned by AO app test 11 and `ao_open_untracked` |
+| G5 | "free" in the JSON-LD | Keep `isAccessibleForFree` and `offers` (the fact is one tap away, and no rich result is at stake, E11) / drop both | Keep | **Decided (owner, 2026-10-17): keep** |
+| G6 | Spam protection for the address | Plain `mailto:` in the served HTML / assembled by JS (invisible to crawlers and no-JS readers) / entity-encoded (cosmetic) | Plain `mailto:` | **Decided (owner, 2026-10-17): plain `mailto:`** |
+| G7 | Address in the JSON-LD | No (WebApplication has no email property unless a Person or Organization entity is added; no SEO gain) / add `author.email` | No | **Decided (owner, 2026-10-17): no** |
+| G8 | Static About page (Option C) | Defer to the landing-page wave / build now | Defer | **Decided (owner, 2026-10-17): defer** |
 
 **Copy note.** `ABOUT`, `← BACK`, "Back to the practice screen" (reused from `#scale-back`) and the "Contact" heading are control labels, plus a heading that the owner brief's Contact line implies. No other copy changes.
 
@@ -414,6 +444,16 @@ Then run `python3 tools/refresh_mutants.py`, followed by `python3 tools/refresh_
 | CONTACT                            |
 | handpan@raywu.org                  |  mailto link
 +------------------------------------+   16px side gutters; scrolls inside
+```
+
+380x800 settings panel, foot of the Resources group (closed About):
+```
+| RESOURCES                          |
+| [HANDPANER] [HANDPAN.CO] [HTC]     |  trio, unchanged
+| [AMY: PROGRESSIONS][AMY: BOTTOM ..]|  duo, unchanged
+| [         HANDPAN 101            ] |  full width, unchanged
+| [            ABOUT               ] |  NEW own row, full width, last stop
++------------------------------------+
 ```
 
 844x390 landscape phone:
@@ -463,8 +503,9 @@ Then run `python3 tools/refresh_mutants.py`, followed by `python3 tools/refresh_
 - Focus returns to the settings trigger. On desktop, where the trigger is hidden and the sidebar stays open, it returns to ABOUT.
 
 **Menu row**
-- `.modebar.duo` holds HANDPAN 101 (a link that opens a new tab) and ABOUT (a button with `aria-haspopup="dialog"`).
-- The two have equal widths and stay on one line at every width (probed).
+- ABOUT has its own plain `.modebar` row, the last row of the Resources group and the last thing in the panel. It is full width, like HANDPAN 101 above it.
+- It is a button with `aria-haspopup="dialog"`, class `mode`, and the panel's centred label.
+- The HANDPAN 101 row is unchanged.
 - ABOUT is the only Resources control that opens a view inside the app rather than an external link. Its label carries no outbound cue, unlike the `res-*` links.
 
 ## 7. Risks, rejected alternatives, what would change this, unverified claims
@@ -484,14 +525,14 @@ Then run `python3 tools/refresh_mutants.py`, followed by `python3 tools/refresh_
 **What would change the recommendation**
 - A primary Google statement that content in an overlay or modal is discounted would favour C.
 - An owner request for an indexable About URL would also favour C.
-- A panel-fit failure in CI would mean switching to G1's own-row option, plus an allowance in the panel-fit oracle.
+- A CI panel-fit failure on Linux at more than 52px would mean re-measuring there and raising the About-row allowance to the CI figure, with the pinning test changed in the same commit.
 
 **Claims not verified, and why**
 - **How Google weighs text hidden until a tap.** No primary source covers overlays. The accordion analogy is [A].
 - **`routeDeck()`.** The task brief and the discoverability plan both name it, but it does not exist on `origin/main`. The real code is `routedDeckId()` plus the deck branch of the `hashchange` listener.
 - **Real devices and assistive technology.** Real iOS Safari, Android Chrome and screen readers were not tested. The harness is Chrome with emulated viewports.
-- **Fonts in the panel-fit probe.** The probe ran with macOS fonts. The CI `panel-fit` job on Linux is the evidence.
-- **The FLOORS figures 572 and 323.** They assume the test list above lands as written.
+- **Fonts in the panel-fit probe.** The 47-50px growth was measured with macOS fonts. The CI `panel-fit` job on Linux is the evidence. Both font modes measured the same growth here, so a large Linux difference is unlikely [A].
+- **The FLOORS figures 574 and 323.** They assume the test list above lands as written.
 
 ## 8. Quality score
 
@@ -511,9 +552,9 @@ Then run `python3 tools/refresh_mutants.py`, followed by `python3 tools/refresh_
 | Repo accuracy | 10 | Every function, test title and mutant was grepped on `origin/main`; `routeDeck()` is flagged as absent. The first draft missed AP2-2 and the `popstate` guard position; both review findings are now fixed in the plan |
 | Owner fidelity | 10 | Each brief item maps to a spec line and a test: exit, Back, Escape, focus, scroll, `#deck=`, reload, `syncRoute`, motion, 380px and landscape, Contact |
 | UX completeness | 10 | Three wireframes; exit control, tokens, targets, scroll, motion, keyboard and screen reader, menu row |
-| Testability | 10 | 20 named new tests, 7 changed and 17 named as untouched; the one Verify command was observed starting; the click-delegation path the sandbox cannot see is assigned to AO e2e 5 |
+| Testability | 10 | 22 named new tests, 8 changed and 16 named as untouched; the one Verify command was observed starting; the click-delegation path the sandbox cannot see is assigned to AO e2e 5 |
 | Swarm shape | 10 | Two lanes, one in flight, disjoint ownership, briefs that can be lifted verbatim |
-| Regression safety | 10 | Stale mutants named, patch count kept, FLOORS rows set, panel-fit probed PASS with both fonts |
+| Regression safety | 10 | Stale mutants named, patch count kept, FLOORS rows set; the own-row growth measured in every oracle cell with both fonts, the oracle FAIL stated, and the one scoped allowance that admits it bracketed (49 passes, 48 fails) and pinned by two tests and two mutants |
 | Design quality | 10 | Reuses the sheet surface, the `.sheethead` layout, `#scale-back`'s accessible name, `.mode` and the sheet's history pattern; no new tokens. The first draft's overlapping link targets and inset-shrunk column were fixed after the design review |
-| Decisions | 10 | Eight gates, each with a recommendation and a default; every supersession has a replacement rule |
+| Decisions | 10 | Eight gates, all decided by the owner on 2026-10-17 and recorded with the recommendation they answered; every supersession has a replacement rule |
 | Concision | 10 | One recommendation, one table per question, no restated background |
