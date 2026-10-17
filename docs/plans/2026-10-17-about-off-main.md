@@ -87,7 +87,7 @@ The alternatives are B (a static `about.html` page) and C (A plus that page). Bo
 | Print | Unchanged (`@media print` keeps `#about{display:none}`) | A second page to style | As A |
 | Analytics | Optional `about_open` event (G4) | Needs a GA loader on a second page, or none | Both |
 | Single-file constraint | Kept; no new file | A sibling file is allowed, but it duplicates CSS and fonts | As B |
-| Tests changed | 6 existing tests changed, 20 added, 3 sandbox ids | Site-file tests, a new test file for the page, the About tests moved | Both sets |
+| Tests changed | 7 existing tests changed, 20 added, 3 sandbox ids | Site-file tests, a new test file for the page, the About tests moved | Both sets |
 | Size | One implementation lane plus a docs lane | Two lanes plus site files | Three lanes |
 
 **Rejected for now**
@@ -155,16 +155,22 @@ Only one lane is in flight at a time, because the work does not split by file. `
 1. **Markup.**
    - Add `role="dialog" aria-modal="true" hidden` to `<section id="about" aria-labelledby="about-title">`.
    - Keep the section's opening tag right after `#app`'s closing `</div>`. The test "#app wraps header, main, footer..." asserts that literal.
-   - As the section's first child, add `<div class="abouthead"><button type="button" class="mode" id="about-close" aria-label="Close About">&larr; BACK</button></div>`.
+   - As the section's first child, add `<div class="abouthead">`. It holds `<button type="button" class="mode" id="about-close" aria-label="Back to the practice screen">&larr; BACK</button>` followed by the existing `<h2 id="about-title">`, which moves into it.
+   - `#about-close` carries aria-label "Back to the practice screen", the same name as `#scale-back`, so its accessible name contains its visible label BACK [V: the `#scale-back` markup].
    - After the Privacy paragraph, add `<h3>Contact</h3><p><a href="mailto:handpan@raywu.org">handpan@raywu.org</a></p>`.
 2. **Menu.**
    - The HANDPAN 101 row `<div class="modebar">` becomes `<div class="modebar duo">`.
    - Add `<button class="mode" type="button" id="about-open" aria-haspopup="dialog">ABOUT</button>` after `#res-handpan-101`.
    - `panelStops()` appends `document.getElementById("about-open")` after the `res-` links. This is the order that was probed.
+   - ABOUT's stop is defined as "last, after the res- links", independent of share-copy. The readable-share-v5 plan moves COPY LINK out of `#settings-panel` to a main-page share icon. Whichever of the two plans merges second re-counts FLASH_STOPS/PROG_STOPS, the sixteen/seventeen titles and the suite headers of `pm_handpan101_outside_tab_trap` and `uid_panelstops_misses_tier`.
 3. **CSS** (placed before `@media print{`, which must stay last).
    - `#about` becomes `position:fixed; inset:0; z-index:50; overflow-y:auto; overscroll-behavior:contain; background:#1f1b15`.
-   - Its inline padding is `max(16px, calc((100% - 520px) / 2))`, plus the left and right safe-area insets.
-   - `.abouthead` is `position:sticky; top:0`, on the same background, with the top safe-area inset.
+   - z-index 50 sits above the mobile panel (41), the desktop sidebar (20) and the sheet (30), and below the pan ghost (60) [V: the z-index values in `index.html`].
+   - Inline padding is `max(calc(16px + env(safe-area-inset-left)), calc((100% - 520px) / 2))` (and `-right` on the right), so the insets set the minimum and never shrink the 520px column.
+   - `.abouthead` is `position:sticky; top:0; display:flex; align-items:center; gap:var(--sp-3)`, on the same background. It holds `#about-close` followed by the `<h2>`, matching `.sheethead`, so the title stays visible while the body scrolls.
+   - `.abouthead` has `padding-top:max(var(--sp-3), env(safe-area-inset-top))`, and `#about` has `scroll-padding-top` equal to the header's height, so BACK's focus ring is fully visible and Tab never parks a link under the header.
+   - `#about ul a, #about a[href^="mailto:"]{display:flex; align-items:center; min-height:44px}` gives each About link a 44px target that does not overlap its neighbours. Padding on an inline link is not used.
+   - `#about a` keeps its default underline. Link and body text differ by about 1.5:1 in contrast, so the underline is the only cue that something is a link.
    - Add `html.about-open{overflow:hidden}`.
    - Leave the typography unchanged. Add no `transition` and no `animation`.
    - Leave the print block's `#about{display:none}` unchanged.
@@ -177,20 +183,25 @@ Only one lane is in flight at a time, because the work does not split by file. `
      - calls `pushState({ about: true }, "", ABOUT_ROUTE)`
      - sets `scrollTop = 0` and focuses `#about-close`
      - calls `track("about_open")` if G4 is yes
-   - `hideAbout()` reverses those steps. It then focuses `settingsTrigger`, or `#about-open` when `desktopMQ.matches`, because the trigger is `display:none` on desktop.
+   - `hideAbout()` reverses those steps. It calls `syncRoute()` after clearing `aboutOpen`, so a COPY LINK outside the panel (readable-share v5) is refreshed on close. It then focuses `settingsTrigger`, or `#about-open` when `desktopMQ.matches`, because the trigger is `display:none` on desktop.
+   - BACK, Back and Escape return to the practice screen with the deck, card, mode and scroll position unchanged and the settings menu closed, as `+ ADD A SCALE` does. Focus goes to the settings trigger (or to `#about-open` in the desktop sidebar, which stays open).
    - `closeAbout()` calls `hideAbout()`, sets `pendingPop = true` and calls `history.back()`, exactly like `closeScaleSheet()`.
 5. **Routing.**
    - `syncRoute()` and the `hashchange` listener return early while `aboutOpen` is true. Put each guard beside the existing `sheetOpen` guard.
    - The `popstate` listener closes an open About after its `pendingPop` branch. It calls `hideAbout()` and does not call `back()` a second time.
    - When About is closed and the hash is `ABOUT_ROUTE` (a Forward traversal onto a stale entry), the `popstate` listener calls `syncRoute()`.
+   - Insert both About branches immediately after the `pendingPop` branch and BEFORE `if (!sheetOpen) return;`, so they run while no sheet is open.
+   - The hashchange `aboutOpen` guard is defensive (popstate closes About first on a real traversal). An AO app test (4) asserts it via the sandbox `hashchange()` helper with `aboutOpen` forced true.
    - Extract the deck branch of the `hashchange` listener into `routeToDeck(routed)`, which returns the id of the deck shown. The listener and `aboutLink(href)` both call it.
    - A click on `#about a[href^="#deck="]` calls `preventDefault()` and then `aboutLink(href)`.
    - `aboutLink(href)` first resolves the link to a deck id. Compare resolved ids, not route strings.
      - If it is the deck already shown, call `closeAbout()`.
      - Otherwise call `hideAbout()`, then `replaceState(null, "", href)`, then `routeToDeck`, then `syncRoute()`.
+     - When the link's slug resolves through `fallbackDeck()` (a hidden seed with no replacement), route it through the different-deck path so the "That deck is gone." warning still fires.
 6. **Keyboard.** In the `document` keydown handler, add an `if (aboutOpen)` block before `if (sheetOpen)`.
    - Escape calls `closeAbout()`.
    - Tab runs `cycleTabStops(aboutStops(), e)`.
+   - Define `aboutStops()` as [#about-close, the five `#deck=` anchors, the mailto anchor] in DOM order, filtered by `isStop`. Tab and Shift+Tab cycle it through `cycleTabStops`.
    - Every other key returns, so no arrow key reaches the card.
 7. **Boot.** No change. `#about` is not a deck route, so the existing boot `syncRoute()` replaces it (G3).
 8. **Sandbox.** In `tools/sandbox.js`, add `about`, `about-open` and `about-close` to `ELEMENT_IDS`, because `getElementById` throws on unknown ids.
@@ -208,6 +219,8 @@ Only one lane is in flight at a time, because the work does not split by file. `
 10. "AO: ABOUT is the last panel stop, a button beside HANDPAN 101 in a duo row"
 11. "AO: opening About tracks about_open with no params" (only if G4 is yes)
 
+AO app tests 5 and 6 call `aboutLink(href)` directly. The click delegation and preventDefault path is covered only by AO e2e 5, and the lane's reviewer brief says so. The reason is that the sandbox `queryAll` cannot see anchor nodes.
+
 **Acceptance: tests added to `tests/e2e.test.js`** (new describe "about overlay"; 380x800 unless another size is named)
 1. "AO: at 380px ABOUT opens a full-screen About, the panel is closed, the app is inert and covered, and focus is on the exit"
 2. "AO: at 380px the exit control restores the deck, card, flip state, mode and scroll, with focus on the settings trigger"
@@ -215,11 +228,11 @@ Only one lane is in flight at a time, because the work does not split by file. `
 4. "AO: at 380px Escape closes About and arrow keys never step the card while it is open"
 5. "AO: at 380px a #deck= link inside About switches deck and one Back returns to the previous deck"
 6. "AO: the page behind About does not scroll, at 380x800 and 844x390"
-7. "AO: About scrolls with its exit visible, 44px link targets and no horizontal scroll at 380x800, 844x390 and 1280x800"
+7. "AO: About scrolls with its exit visible, non-overlapping 44px link targets and no horizontal scroll at 380x800, 844x390 and 1280x800". It measures the mailto link as well as the five deck links, and asserts that no two link rects overlap.
 8. "AO: About has no transition or animation with and without prefers-reduced-motion"
 9. "AO: at 1280x800 the sidebar's ABOUT opens About and closing returns focus to ABOUT"
 
-**Acceptance: tests changed (6)**
+**Acceptance: tests changed (7)**
 1. e2e "the about section is visible below the card at 380px with no horizontal scroll" becomes "the about section is not rendered on / and its text is in the served HTML". Its only mutant, `nm_about_hidden`, is rewritten (see Mutants below).
 2. e2e "the card keeps its origin/main size with the about section below the first screen" becomes "the card keeps its origin/main size and position with About off the first screen".
    - The `ORIGIN_SCENE` pins stay. The `scrollHeight > innerHeight` check and the `#about` top check go.
@@ -228,6 +241,7 @@ Only one lane is in flight at a time, because the work does not split by file. `
 4. e2e `FLASH_STOPS` gains `"about-open"` after `...RES_IDS`. So "Tab cycles exactly the sixteen flash-card stops in the modal at every viewport class" becomes "...seventeen...".
 5. For the same reason, "Tab cycles exactly the seventeen progression stops in the modal at every viewport class" becomes "...eighteen...".
 6. app "PM rule 7: HANDPAN 101 is the last Resources link, a Google Doc in a new tab, alone in its row" becomes "...the only link in its row". Its assertions already count `<a` tags and stay green. Its mutant's suite pattern `PM.rule.7` still matches.
+7. Changed: `AP2-2 setInert applies each caller's own background set`. Adding `about` to the sandbox ELEMENT_IDS makes `#about` resolve, so the expected `background` ids become ['settings-panel','about','main'] and `panelBackground` ids gain 'about'. The inert-set expectations after openScaleSheet()/openPanel() gain 'about' likewise. Re-run tests/mutants/ap2_panel_inerts_the_sheet_set.patch to confirm it is still killed. The engineering review proved that AP2-2 goes red when `about` is added to ELEMENT_IDS. The title does not change.
 
 **Acceptance: tests that stay untouched and green (17)**
 - app:
@@ -301,6 +315,7 @@ Then run `python3 tools/refresh_mutants.py`, followed by `python3 tools/refresh_
 **Verify**
 - The one Verify command is `node --test --test-name-pattern "AO: |about|PM rule 7" tests/app.test.js`. It starts on `origin/main` [O: 6 tests, 6 pass].
 - Run e2e tests locally one at a time (single tests start on `origin/main` [O]).
+- Verify also runs each new AO e2e title singly with CHROME_BIN set. CI at the head SHA is the evidence for the e2e suite.
 - Also run `node tools/probe/panel_fit.js --base origin/main --font both`.
 - CI at the head SHA is the evidence.
 
@@ -314,6 +329,7 @@ Then run `python3 tools/refresh_mutants.py`, followed by `python3 tools/refresh_
 - Run `/review` read-and-report only, with every Bash call prefixed `OPENCLAW_SESSION=1`.
 - Read CI's run conclusion at that SHA.
 - Mutant budget: 5, because the lane changes the harness (`tools/sandbox.js`). Spend it on the history paths: the same-deck link, Forward onto `#about`, and Back after a deck link.
+- AO app tests 5 and 6 call `aboutLink(href)` directly. The click delegation and preventDefault path is covered only by AO e2e 5, so judge that path by AO e2e 5 at the head SHA.
 - A FAIL needs a concrete failure scenario.
 
 ### Lane D brief: `claude/about-docs` (wave 2, after lane O merges)
@@ -367,8 +383,8 @@ Then run `python3 tools/refresh_mutants.py`, followed by `python3 tools/refresh_
 
 | Gate | Question | Options | Recommended | Default while unanswered |
 |---|---|---|---|---|
-| G1 | Menu placement and label | `ABOUT` beside HANDPAN 101 in the last Resources row (probed, zero growth) / its own row at the end of the panel (unmeasured, adds a row) / a header button (costs first-screen space) | Beside HANDPAN 101, labelled `ABOUT` | Recommended |
-| G2 | Exit control | `← BACK` (matches `#scale-back`) / `CLOSE` / an X icon | `← BACK`, with aria-label "Close About" | Recommended |
+| G1 | Menu placement and label | `ABOUT` beside HANDPAN 101 in the last Resources row (probed, zero growth) / its own row at the end of the panel (unmeasured, adds a row) / a header button (costs first-screen space) | Beside HANDPAN 101, labelled `ABOUT` | Recommended. Note for the owner (an AFK default, not a new gate): closing About leaves the settings menu closed, as `+ ADD A SCALE` does |
+| G2 | Exit control | `← BACK` (matches `#scale-back`) / `CLOSE` / an X icon | `← BACK`, with aria-label "Back to the practice screen" (as `#scale-back`) | Recommended. The same note applies: BACK, Back and Escape return to the practice screen with the menu closed |
 | G3 | Reload or pasted `/#about` | Show the app and rewrite the bar to the deck route (as `#add` does) / reopen About at boot | Show the app | Recommended |
 | G4 | Analytics | `about_open` with no params / no event | `about_open` (once About is hidden, it is the only signal that About is read) | No event until answered |
 | G5 | "free" in the JSON-LD | Keep `isAccessibleForFree` and `offers` (the fact is one tap away, and no rich result is at stake, E11) / drop both | Keep | Keep |
@@ -376,7 +392,7 @@ Then run `python3 tools/refresh_mutants.py`, followed by `python3 tools/refresh_
 | G7 | Address in the JSON-LD | No (WebApplication has no email property unless a Person or Organization entity is added; no SEO gain) / add `author.email` | No | No |
 | G8 | Static About page (Option C) | Defer to the landing-page wave / build now | Defer | Defer |
 
-**Copy note.** `ABOUT`, `← BACK`, "Close About" and the "Contact" heading are control labels, plus a heading that the owner brief's Contact line implies. No other copy changes.
+**Copy note.** `ABOUT`, `← BACK`, "Back to the practice screen" (reused from `#scale-back`) and the "Contact" heading are control labels, plus a heading that the owner brief's Contact line implies. No other copy changes.
 
 ## 6. UX and design spec
 
@@ -385,9 +401,9 @@ Then run `python3 tools/refresh_mutants.py`, followed by `python3 tools/refresh_
 380x800 portrait, About open (the app behind is covered and inert):
 ```
 +------------------------------------+
-| [<- BACK]                          |  sticky row, 44px target, top inset
+| [<- BACK]  About Handpan Chords    |  sticky .abouthead: flex, gap --sp-3,
+|                                    |  44px BACK + Marcellus 22px, top inset
 |------------------------------------|
-| About Handpan Chords               |  Marcellus 22px
 | A free chord and progression ...   |  Nunito Sans 14/1.6, #c4bcab
 | HOW IT WORKS                       |  600 11px caps, #a79d8b
 | 1. Pick a built-in deck ...        |
@@ -403,15 +419,16 @@ Then run `python3 tools/refresh_mutants.py`, followed by `python3 tools/refresh_
 844x390 landscape phone:
 - The same column, at `max-width:520px`, centred.
 - Safe-area insets on the left and right.
-- The sticky row stays on screen, and the body scrolls inside `#about`.
+- The sticky row (BACK and the title) stays on screen, and the body scrolls inside `#about`.
 
 1280x800 desktop:
-- The overlay covers the sidebar too. Its z-index of 50 sits above the panel (41), the scrim (40) and the trigger (42).
-- The 520px column is centred, with `BACK` at its top left.
+- The overlay covers the sidebar too. z-index 50 sits above the mobile panel (41), the desktop sidebar (20) and the sheet (30), and below the pan ghost (60).
+- The 520px column is centred, with `BACK` and the title on one row at its top left.
 
 **Exit control**
 - `#about-close`, with class `mode`: border `#433b2c`, background `#211d16`, `600 10.5px` Nunito Sans, `min-height:44px`.
-- It sits in a sticky `.abouthead`, so it is always visible.
+- It sits in a sticky `.abouthead` beside the title, matching `.sheethead`, so both stay visible.
+- Its accessible name is "Back to the practice screen", as on `#scale-back`.
 - Escape and Back do the same thing as the button.
 
 **Tokens and fonts**
@@ -421,7 +438,12 @@ Then run `python3 tools/refresh_mutants.py`, followed by `python3 tools/refresh_
 - Bitter is not used, because About has no note lines.
 - No new colours.
 
-**Targets.** `#about-open`, `#about-close` and the deck-list links are at least 44px tall. The deck-list links get there through `padding-block` (AO e2e 7).
+**Targets**
+- `#about-open`, `#about-close`, the five deck-list links and the mailto link are at least 44px tall.
+- The links get there through `display:flex; align-items:center; min-height:44px`. Padding on an inline link is not used, because in the design review's render it made neighbouring targets overlap.
+- AO e2e 7 measures all six links and asserts that no two link rects overlap.
+
+**Links.** `#about a` keeps its default underline. Link and body text differ by about 1.5:1 in contrast, so the underline is the only cue that something is a link.
 
 **Scroll**
 - `html.about-open{overflow:hidden}` locks the page behind.
@@ -436,17 +458,22 @@ Then run `python3 tools/refresh_mutants.py`, followed by `python3 tools/refresh_
 - Tab cycles through BACK, the deck links and the mailto link.
 - Escape closes About.
 - The background is `inert` and `aria-hidden`.
-- On close, focus returns to the settings trigger. On desktop, where the trigger is hidden, it returns to ABOUT.
+- Tab order is `aboutStops()`: BACK, the five deck links, then the mailto link, in DOM order. `scroll-padding-top` keeps a focused link clear of the sticky header.
+- On close, the deck, card, mode and scroll are unchanged and the settings menu is closed, as `+ ADD A SCALE` does.
+- Focus returns to the settings trigger. On desktop, where the trigger is hidden and the sidebar stays open, it returns to ABOUT.
 
 **Menu row**
 - `.modebar.duo` holds HANDPAN 101 (a link that opens a new tab) and ABOUT (a button with `aria-haspopup="dialog"`).
 - The two have equal widths and stay on one line at every width (probed).
+- ABOUT is the only Resources control that opens a view inside the app rather than an external link. Its label carries no outbound cue, unlike the `res-*` links.
 
 ## 7. Risks, rejected alternatives, what would change this, unverified claims
 
 **Risks**
 - **Google could discount text that is hidden when the page renders [A].** Mitigation: the served text is unchanged, and E1 and E2 allow toggled content.
 - **A Forward traversal onto a stale `#about` entry could strand the address bar.** AO app test 8 covers this. The `#add` sheet has the same pitfall today, and it is out of scope here.
+- **Accepted: one Back press can be a no-op.** After Forward onto a stale #about, or a reload of #about, the replaced entry duplicates its predecessor, so one Back press is a visible no-op. AO e2e 3 asserts the shown deck and the bar, not history.length.
+- **Merge order with readable-share v5.** That plan moves COPY LINK out of `#settings-panel`. Whichever plan merges second re-counts the panel stops, titles and suite headers (implementation step 2).
 - **iOS Safari may handle the scroll lock differently from Chrome [A].** The app is inert and covered, so a leaked scroll is invisible and is undone on close.
 
 **Rejected alternatives**
@@ -468,24 +495,25 @@ Then run `python3 tools/refresh_mutants.py`, followed by `python3 tools/refresh_
 
 ## 8. Quality score
 
-**Adversarial pass: the five likeliest ways a lane fails, and the fix in this plan**
+**Adversarial pass: the six likeliest ways a lane fails, and the fix in this plan**
 1. **A same-deck link leaves a duplicate entry and needs a double Back.** Fix: compare resolved ids, not route strings. AO app test 6 and the `ao_same_deck_link_replaces` mutant pin it.
 2. **The rewritten `nm_about_hidden` or a renamed test leaves a mutant that selects zero tests, which shows up as a false survivor.** Fix: keep title prefixes, hand-edit the `sixteen` and `seventeen` headers, and use `.` wildcards.
 3. **A new `getElementById` call throws in the sandbox.** Fix: implementation step 8 adds the three ids to `ELEMENT_IDS`.
 4. **Focus is lost on close on desktop, where the trigger is `display:none`.** Fix: the `desktopMQ` branch in `hideAbout()`, tested by AO e2e 9.
 5. **The `#app wraps...` literal breaks if the section's opening tag moves.** Fix: step 1 keeps the tag right after `</div>\n\n`, and the app test "#app wraps ..." stays untouched.
+6. **The About `popstate` branches sit after `if (!sheetOpen) return;` and never run.** Fix: step 5 places them before that guard (eng review N2).
 
 **Rubric** (restated for this score; every row must reach 10/10)
 
 | Row | Score | Evidence |
 |---|---|---|
 | Evidence | 10 | Eleven primary Google quotes with URLs and marks; every [A] is named |
-| Repo accuracy | 10 | Every function, test title and mutant was grepped on `origin/main`; `routeDeck()` is flagged as absent |
+| Repo accuracy | 10 | Every function, test title and mutant was grepped on `origin/main`; `routeDeck()` is flagged as absent. The first draft missed AP2-2 and the `popstate` guard position; both review findings are now fixed in the plan |
 | Owner fidelity | 10 | Each brief item maps to a spec line and a test: exit, Back, Escape, focus, scroll, `#deck=`, reload, `syncRoute`, motion, 380px and landscape, Contact |
 | UX completeness | 10 | Three wireframes; exit control, tokens, targets, scroll, motion, keyboard and screen reader, menu row |
-| Testability | 10 | 20 named new tests, 6 changed and 17 named as untouched; the one Verify command was observed starting |
+| Testability | 10 | 20 named new tests, 7 changed and 17 named as untouched; the one Verify command was observed starting; the click-delegation path the sandbox cannot see is assigned to AO e2e 5 |
 | Swarm shape | 10 | Two lanes, one in flight, disjoint ownership, briefs that can be lifted verbatim |
 | Regression safety | 10 | Stale mutants named, patch count kept, FLOORS rows set, panel-fit probed PASS with both fonts |
-| Design quality | 10 | Reuses the sheet surface, `.mode` and the sheet's history pattern; no new tokens |
+| Design quality | 10 | Reuses the sheet surface, the `.sheethead` layout, `#scale-back`'s accessible name, `.mode` and the sheet's history pattern; no new tokens. The first draft's overlapping link targets and inset-shrunk column were fixed after the design review |
 | Decisions | 10 | Eight gates, each with a recommendation and a default; every supersession has a replacement rule |
 | Concision | 10 | One recommendation, one table per question, no restated background |
