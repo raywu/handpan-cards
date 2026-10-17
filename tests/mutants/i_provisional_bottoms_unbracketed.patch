@@ -1,0 +1,16 @@
+# kills: octaveless sources: the provisional string, hand-written octaves, roles and guesses
+# suite: node --test --test-name-pattern ^octaveless.sources..the.provisional.string..hand.written.octaves..roles.and.guesses$ tests/import.test.js
+# The provisional string writes bottom notes bare instead of [X], so parseSeed
+# reads them as top notes and the octaves handed back are the wrong ones.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -169,7 +169,7 @@
+     tops.forEach(function (n) { parts.push(n.name); });
+     if (inner.length) parts.push("|");
+     inner.forEach(function (n) { parts.push(n.name); });
+-    bottoms.forEach(function (n) { parts.push("[" + n.name + "]"); });
++    bottoms.forEach(function (n) { parts.push(n.name); });
+     return parts.join(" ");
+   }
+ 

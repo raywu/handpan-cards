@@ -1,0 +1,1248 @@
+{
+ "version": 1,
+ "note": "Captured spec lines only, never fetched at test time. Expected values for group 'octaveless' are written by hand from the source.",
+ "cases": [
+  {
+   "id": "yatao-yataopan-d-aegean-11-ember",
+   "group": "yatao-line",
+   "title": "YataoPan D Aegean 11 Ember",
+   "text": "Notes: D3 - F#3, A3, C#4, D4, F#4, G#4, A4, C#5, D5, F#5",
+   "source": {
+    "url": "https://yataoshop.com/products/yataopan-d-aegean-11-ember.json",
+    "captured": "2026-10-16"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [
+     "COUNT_OK",
+     "DING_CUE"
+    ],
+    "serialised": "(D3) F#3 A3 C#4 D4 F#4 G#4 A4 C#5 D5 F#5",
+    "fields": 11
+   }
+  },
+  {
+   "id": "yatao-yataopan-d-aegean-18-ember",
+   "group": "yatao-line",
+   "title": "YataoPan D Aegean 18 Ember",
+   "text": "Notes: D3 - F#3, A3, C#4, D4, F#4, G#4, A4, C#5, D5, F#5 Bottom Side Notes: B2, E3, G#3, B3, E4, B4, E5",
+   "source": {
+    "url": "https://yataoshop.com/products/yataopan-d-aegean-18-ember.json",
+    "captured": "2026-10-16"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [
+     "COUNT_OK",
+     "DING_CUE"
+    ],
+    "serialised": "[B2] (D3) [E3] F#3 [G#3] A3 [B3] C#4 D4 [E4] F#4 G#4 A4 [B4] C#5 D5 [E5] F#5",
+    "fields": 18
+   }
+  },
+  {
+   "id": "yatao-mag-f-2-minor-16",
+   "group": "yatao-line",
+   "title": "MAG F#2 minor 16",
+   "text": "Notes Top Side : F#2 / F#3, G#3, A3, B3, C#4, D4, E4, F#4 Notes Bottom Side : C#3, D3, E3, G#4, A4, B4 C#5",
+   "source": {
+    "url": "https://yataoshop.com/products/mag-f-2-minor-16.json",
+    "captured": "2026-10-16"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [
+     "COUNT_OK",
+     "DING_CUE"
+    ],
+    "serialised": "(F#2) [C#3] [D3] [E3] F#3 G#3 A3 B3 C#4 D4 E4 F#4 [G#4] [A4] [B4] [C#5]",
+    "fields": 16
+   }
+  },
+  {
+   "id": "yatao-mag-c-anaziska-14",
+   "group": "yatao-line",
+   "title": "MAG C# Annaziska 14",
+   "text": "Notes Top Side : C #3 / G#3, A3, B3, C #4, D#4, E4, F#4, G#4, B4 Notes Bottom Side : E3, F#3, A4, C#5",
+   "source": {
+    "url": "https://yataoshop.com/products/mag-c-anaziska-14.json",
+    "captured": "2026-10-16"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [
+     "COUNT_OK",
+     "DING_CUE",
+     "SPACE_IN_NOTE"
+    ],
+    "serialised": "(C#3) [E3] [F#3] G#3 A3 B3 C#4 D#4 E4 F#4 G#4 [A4] B4 [C#5]",
+    "fields": 14
+   }
+  },
+  {
+   "id": "yatao-handpan-bag-softbag-shells",
+   "group": "yatao-line",
+   "title": "Handpan Bag Softbag + Shells",
+   "text": "Note : This bag is not recommended for air travel.",
+   "source": {
+    "url": "https://yataoshop.com/products/handpan-bag-softbag-shells.json",
+    "captured": "2026-10-16"
+   },
+   "expect": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "yatao-yataopan-e-amara-13-ember",
+   "group": "yatao-line",
+   "title": "YataoPan E Amara 13 Ember",
+   "text": "Notes: E3 - B3, D4, E4, F#4, G4, A4, B4, D5, E5, F#5, G5, A5",
+   "source": {
+    "url": "https://yataoshop.com/products/yataopan-e-amara-13-ember.json",
+    "captured": "2026-10-16"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [
+     "COUNT_OK",
+     "DING_CUE"
+    ],
+    "serialised": "(E3) B3 D4 E4 F#4 G4 A4 B4 D5 E5 F#5 G5 A5",
+    "fields": 13
+   }
+  },
+  {
+   "id": "yatao-yataopan-d-kurd-17",
+   "group": "yatao-line",
+   "title": "YataoPan D Kurd 17",
+   "text": "Notes : D3 – A3, Bb3, C4, D4, E4, F4, G4, A4, C5, D5, E5, F5 Bottom Side Notes : Bb2, C3, F3, G3",
+   "source": {
+    "url": "https://yataoshop.com/products/yataopan-d-kurd-17.json",
+    "captured": "2026-10-16"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [
+     "COUNT_OK",
+     "DING_CUE"
+    ],
+    "serialised": "[Bb2] [C3] (D3) [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5 E5 F5",
+    "fields": 17
+   }
+  },
+  {
+   "id": "yatao-yataopan-d-kurd-11-mini",
+   "group": "yatao-line",
+   "title": "YataoPan D Kurd 11 Mini",
+   "text": "Notes: D3 - A3, Bb3, C4, D4, E4, F4, G4, A4 Bottom Side Notes: F3, G3",
+   "source": {
+    "url": "https://yataoshop.com/products/yataopan-d-kurd-11-mini.json",
+    "captured": "2026-10-16"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [
+     "COUNT_OK",
+     "DING_CUE"
+    ],
+    "serialised": "(D3) [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "fields": 11
+   }
+  },
+  {
+   "id": "yatao-yataopan-d-kurd-11-mini-handpan-fundamentals-bundle",
+   "group": "yatao-line",
+   "title": "YataoPan D Kurd 11 Mini + Handpan Fundamentals Online Course Bundle",
+   "text": "Notes : D3 - A3, Bb3, C4, D4, E4, F4, G4, A4 Bottom Side Notes: F3, G3",
+   "source": {
+    "url": "https://yataoshop.com/products/yataopan-d-kurd-11-mini-handpan-fundamentals-bundle.json",
+    "captured": "2026-10-16"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [
+     "COUNT_OK",
+     "DING_CUE"
+    ],
+    "serialised": "(D3) [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "fields": 11
+   }
+  },
+  {
+   "id": "yatao-handpan-yataopan-d-kurd-10-ember",
+   "group": "yatao-line",
+   "title": "YataoPan D Kurd 11 Ember",
+   "text": "Notes: D3 - A3, Bb3, C4, D4, E4, F4, G4, A4, C5, D5",
+   "source": {
+    "url": "https://yataoshop.com/products/handpan-yataopan-d-kurd-10-ember.json",
+    "captured": "2026-10-16"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [
+     "COUNT_OK",
+     "DING_CUE"
+    ],
+    "serialised": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5",
+    "fields": 11
+   }
+  },
+  {
+   "id": "yatao-yataopan-d-kurd-10-ember-handpan-fundamentals-bundle",
+   "group": "yatao-line",
+   "title": "YataoPan D Kurd 11 Ember + Handpan Fundamentals Online Course Bundle",
+   "text": "Notes : D3 - A3, Bb3, C4, D4, E4, F4, G4, A4, C5, D5",
+   "source": {
+    "url": "https://yataoshop.com/products/yataopan-d-kurd-10-ember-handpan-fundamentals-bundle.json",
+    "captured": "2026-10-16"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [
+     "COUNT_OK",
+     "DING_CUE"
+    ],
+    "serialised": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5",
+    "fields": 11
+   }
+  },
+  {
+   "id": "yatao-yataopan-d-aegean-13",
+   "group": "yatao-line",
+   "title": "YataoPan D Aegean 13",
+   "text": "Notes: D3 – F#3, A3, C#4, D4, F#4, G#4, A4, C#5, D5 Bottom Side Notes: B2, E3, G#3",
+   "source": {
+    "url": "https://yataoshop.com/products/yataopan-d-aegean-13.json",
+    "captured": "2026-10-16"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [
+     "COUNT_OK",
+     "DING_CUE"
+    ],
+    "serialised": "[B2] (D3) [E3] F#3 [G#3] A3 C#4 D4 F#4 G#4 A4 C#5 D5",
+    "fields": 13
+   }
+  },
+  {
+   "id": "yatao-yataopan-d-kurd-13-d-kurd-scale-course-bundle",
+   "group": "yatao-line",
+   "title": "YataoPan D Kurd 13 + D Kurd Scale Course Bundle",
+   "text": "Notes : D3 - A3, Bb3, C4, D4, E4, F4, G4, A4, C5, D5 Bottom Side Notes: F3, G3",
+   "source": {
+    "url": "https://yataoshop.com/products/yataopan-d-kurd-13-d-kurd-scale-course-bundle.json",
+    "captured": "2026-10-16"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [
+     "COUNT_OK",
+     "DING_CUE"
+    ],
+    "serialised": "(D3) [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5",
+    "fields": 13
+   }
+  },
+  {
+   "id": "yatao-handpan-yataopan-d-kurd-13",
+   "group": "yatao-line",
+   "title": "YataoPan D Kurd 13",
+   "text": "Notes: D3 - A3, Bb3, C4, D4, E4, F4, G4, A4, C5, D5 Bottom Side Notes: F3, G3",
+   "source": {
+    "url": "https://yataoshop.com/products/handpan-yataopan-d-kurd-13.json",
+    "captured": "2026-10-16"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [
+     "COUNT_OK",
+     "DING_CUE"
+    ],
+    "serialised": "(D3) [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5",
+    "fields": 13
+   }
+  },
+  {
+   "id": "yatao-handpan-yataopan-e-ashakiran-17",
+   "group": "yatao-line",
+   "title": "YataoPan E Ashakiran 17",
+   "text": "Notes : E3 - A3, B3, C#4, D#4, E4, F#4, G#4, B4, C#5, D#5, E5 Bottom Notes : B2, C#3, F#3, G#3, A4",
+   "source": {
+    "url": "https://yataoshop.com/products/handpan-yataopan-e-ashakiran-17.json",
+    "captured": "2026-10-16"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [
+     "COUNT_OK",
+     "DING_CUE"
+    ],
+    "serialised": "[B2] [C#3] (E3) [F#3] [G#3] A3 B3 C#4 D#4 E4 F#4 G#4 [A4] B4 C#5 D#5 E5",
+    "fields": 17
+   }
+  },
+  {
+   "id": "yatao-handpan-yataopan-d-aegean-18",
+   "group": "yatao-line",
+   "title": "YataoPan D Aegean 18",
+   "text": "Notes Top Side : D3, F#3, A3, C#4, D4, F#4, G#4, A4, C#5, D5, F#5 Notes Bottom Side : B2, E3, G#3, B3, E4, B4, E5",
+   "source": {
+    "url": "https://yataoshop.com/products/handpan-yataopan-d-aegean-18.json",
+    "captured": "2026-10-16"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [
+     "COUNT_OK",
+     "DING_CUE"
+    ],
+    "serialised": "[B2] (D3) [E3] F#3 [G#3] A3 [B3] C#4 D4 [E4] F#4 G#4 A4 [B4] C#5 D5 [E5] F#5",
+    "fields": 18
+   }
+  },
+  {
+   "id": "yatao-mag-tongue-drum-d-kurd-10",
+   "group": "yatao-line",
+   "title": "MAG Tongue Drum D Kurd 10",
+   "text": "Notes : D3 - A3, Bb3, C4, D4, E4, F4, G4, A4, C5",
+   "source": {
+    "url": "https://yataoshop.com/products/mag-tongue-drum-d-kurd-10.json",
+    "captured": "2026-10-16"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [
+     "COUNT_OK",
+     "DING_CUE"
+    ],
+    "serialised": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5",
+    "fields": 10
+   }
+  },
+  {
+   "id": "yatao-yataopan-d-kurd-13-handpan-fundamentals-bundle",
+   "group": "yatao-line",
+   "title": "YataoPan D Kurd 13 + Handpan Fundamentals Online Course Bundle",
+   "text": "Notes : D3 - A3, Bb3, C4, D4, E4, F4, G4, A4, C5 Bottom Side Notes: F3, G3, D5",
+   "source": {
+    "url": "https://yataoshop.com/products/yataopan-d-kurd-13-handpan-fundamentals-bundle.json",
+    "captured": "2026-10-16"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [
+     "COUNT_OK",
+     "DING_CUE"
+    ],
+    "serialised": "(D3) [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5 [D5]",
+    "fields": 13
+   }
+  },
+  {
+   "id": "yatao-handpan-yataopan-d-kurd-13-ember",
+   "group": "yatao-line",
+   "title": "YataoPan D Kurd 13 Ember",
+   "text": "Notes : D3 - A3, Bb3, C4, D4, E4, F4, G4, A4, C5, D5 Bottom Side Notes : F3, G3",
+   "source": {
+    "url": "https://yataoshop.com/products/handpan-yataopan-d-kurd-13-ember.json",
+    "captured": "2026-10-16"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [
+     "COUNT_OK",
+     "DING_CUE"
+    ],
+    "serialised": "(D3) [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5",
+    "fields": 13
+   }
+  },
+  {
+   "id": "yatao-handpan-bag-yatao-softbag",
+   "group": "yatao-line",
+   "title": "Handpan Bag Yatao Softbag",
+   "text": "Note: This bag is not recommended for air travel. Plus, it comes included when you purchase a handpan from our shop!",
+   "source": {
+    "url": "https://yataoshop.com/products/handpan-bag-yatao-softbag.json",
+    "captured": "2026-10-16"
+   },
+   "expect": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "yatao-handpan-ayasa-d-kurd",
+   "group": "yatao-line",
+   "title": "Ayasa D Kurd 12",
+   "text": "Notes : D3 - (F3, G3), A3, Bb3, C4, D4, E4, F4, G4, A4, C5",
+   "source": {
+    "url": "https://yataoshop.com/products/handpan-ayasa-d-kurd.json",
+    "captured": "2026-10-16"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "COUNT_OK",
+     "DING_CUE",
+     "UNDECLARED_PARENS"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "yatao-handpan-bag-namana",
+   "group": "yatao-line",
+   "title": "Handpan Bag Namana Softcase",
+   "text": "Note: This bag is not recommended for air travel.",
+   "source": {
+    "url": "https://yataoshop.com/products/handpan-bag-namana.json",
+    "captured": "2026-10-16"
+   },
+   "expect": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "yatao-d-aegean-18-page",
+   "group": "row",
+   "title": "YataoPan D Aegean 18",
+   "text": "Scale\n: Aegean\nKey\n: F# lydian mode\nNotes Top Side\n: D3, F#3, A3, C#4, D4, F#4, G#4, A4, C#5, D5, F#5\nNotes Bottom Side\n: B2, E3, G#3, B3, E4, B4, E5\nMaterial\n: Stainless Steel\nStandard Pitch\n: 440 Hz /432 Hz\nDiameter\n: 53 cm",
+   "source": {
+    "url": "https://yataoshop.com/products/handpan-yataopan-d-aegean-18",
+    "captured": "2026-10-16",
+    "note": "technical-details lines of the rendered page, labels and values on separate lines"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [
+     "COUNT_OK",
+     "DING_CUE"
+    ],
+    "serialised": "[B2] (D3) [E3] F#3 [G#3] A3 [B3] C#4 D4 [E4] F#4 G#4 A4 [B4] C#5 D5 [E5] F#5",
+    "fields": 18,
+    "roles": {
+     "ding": "D3",
+     "top": [
+      "F#3",
+      "A3",
+      "C#4",
+      "D4",
+      "F#4",
+      "G#4",
+      "A4",
+      "C#5",
+      "D5",
+      "F#5"
+     ],
+     "bottom": [
+      "B2",
+      "E3",
+      "G#3",
+      "B3",
+      "E4",
+      "B4",
+      "E5"
+     ],
+     "inner": []
+    },
+    "flagNotes": {
+     "DING_CUE": [
+      0
+     ]
+    }
+   }
+  },
+  {
+   "id": "description",
+   "group": "row",
+   "title": "",
+   "text": "D3 ding, A3 Bb3 C4 D4 E4 F4 G4 A4 top, C3 bottom",
+   "source": {
+    "synthetic": true,
+    "note": "the owner prompt's description (plan section 4.3)"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [],
+    "serialised": "[C3] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "fields": 10,
+    "roles": {
+     "ding": "D3",
+     "top": [
+      "A3",
+      "Bb3",
+      "C4",
+      "D4",
+      "E4",
+      "F4",
+      "G4",
+      "A4"
+     ],
+     "bottom": [
+      "C3"
+     ],
+     "inner": []
+    }
+   }
+  },
+  {
+   "id": "description-labelled",
+   "group": "row",
+   "title": "",
+   "text": "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 Bottom: C3",
+   "source": {
+    "synthetic": true,
+    "note": "the owner prompt's description, labelled form (plan section 4.4)"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [],
+    "serialised": "[C3] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "fields": 10,
+    "roles": {
+     "ding": "D3",
+     "top": [
+      "A3",
+      "Bb3",
+      "C4",
+      "D4",
+      "E4",
+      "F4",
+      "G4",
+      "A4"
+     ],
+     "bottom": [
+      "C3"
+     ],
+     "inner": []
+    }
+   }
+  },
+  {
+   "id": "name-only",
+   "group": "row",
+   "title": "D Kurd 10",
+   "text": "D Kurd 10",
+   "source": {
+    "synthetic": true,
+    "note": "plan section 4.4"
+   },
+   "expect": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "image-only",
+   "group": "row",
+   "title": "YataoPan E Amara 15",
+   "text": "",
+   "source": {
+    "synthetic": true,
+    "note": "an image-only listing has no text: the Yatao survey lists such products with no spec line"
+   },
+   "expect": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "ayasa-pygmy-21",
+   "group": "row",
+   "title": "F# Low Pygmy 21 - Ember Steel - 440Hz",
+   "text": "The F# Low Pygmy is one of our favourite models of extended scales. It is a pentatonic scale on the top side of the instrument, meaning there are only 5 different notes. This creates a certain mood which sounds very ethereal and at the same time comforting.",
+   "source": {
+    "url": "https://ayasainstruments.com/products/fis-low-pygmy-21-ember-steel",
+    "captured": "2026-10-16",
+    "note": "first prose lines only"
+   },
+   "expect": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "yatao-without-e5",
+   "group": "row",
+   "title": "YataoPan D Aegean 18",
+   "text": "Notes Top Side : D3, F#3, A3, C#4, D4, F#4, G#4, A4, C#5, D5, F#5 Notes Bottom Side : B2, E3, G#3, B3, E4, B4",
+   "source": {
+    "url": "https://yataoshop.com/products/handpan-yataopan-d-aegean-18.json",
+    "captured": "2026-10-16",
+    "note": "spec line with E5 removed (plan section 4.4)"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "COUNT_MISMATCH",
+     "DING_CUE"
+    ],
+    "serialised": "",
+    "fields": null,
+    "flagFields": {
+     "COUNT_MISMATCH": {
+      "title": 18,
+      "listed": 17
+     }
+    }
+   }
+  },
+  {
+   "id": "sela-sehp401",
+   "group": "row",
+   "title": "Sela SEHP401 Nomo Handpan D Kurd 9 +3",
+   "text": "Tones: D3/ (C3) (F3) (G3) A3, Bb3 - C4 - D4 - E4 - F4 - G4 - A4",
+   "source": {
+    "note": "URL not recorded by the 2026-10-16 investigation; text transcribed from plan section 3.2 (kirstein.de returns 403 to curl); captured 2026-10-16"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "COUNT_OK",
+     "DING_CUE",
+     "UNDECLARED_PARENS"
+    ],
+    "serialised": "",
+    "fields": null,
+    "parens": [
+     "C3",
+     "F3",
+     "G3"
+    ],
+    "flagNotes": {
+     "UNDECLARED_PARENS": [
+      1,
+      2,
+      3
+     ],
+     "DING_CUE": [
+      0
+     ]
+    }
+   }
+  },
+  {
+   "id": "sela-sehp400",
+   "group": "row",
+   "title": "Sela SEHP400 Nomo Handpan D Kurd 9",
+   "text": "Tones: D3 / A3 - Bb3 - C4 - D4 - E4 - F4 - G4 - A4",
+   "source": {
+    "note": "URL not recorded by the 2026-10-16 investigation; text transcribed from plan section 3.1: only the opening 'D3 / A3 - Bb3 ...' was recorded; the rest is reconstructed from the SEHP401 list, so this is partly synthetic"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [
+     "COUNT_OK",
+     "DING_CUE"
+    ],
+    "serialised": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "fields": 9
+   }
+  },
+  {
+   "id": "sanango-d-aegean-17",
+   "group": "row",
+   "title": "D Aegean 17 Notas",
+   "text": "Top: D3) F#3 A3 C#4 D4 F#4 G#4 A4 C#5 D5 F#5 Bottom: B2 E3 G#3 B3 E4 B4 E5",
+   "source": {
+    "note": "URL not recorded by the 2026-10-16 investigation; text transcribed from plan section 3.2 (carrd page); captured 2026-10-16"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [
+     "COUNT_EXCL_DING",
+     "DING_CUE"
+    ],
+    "serialised": "[B2] (D3) [E3] F#3 [G#3] A3 [B3] C#4 D4 [E4] F#4 G#4 A4 [B4] C#5 D5 [E5] F#5",
+    "fields": 18
+   }
+  },
+  {
+   "id": "sanango-e-amara-16",
+   "group": "row",
+   "title": "E Amara 16 notes",
+   "text": "Top: E3) B3 D4 E4 F#4 G4 A4 B4 D5 E5 F#5 Bottom: C3 D3 G3 A3 C4",
+   "source": {
+    "note": "URL not recorded by the 2026-10-16 investigation; text transcribed from plan section 3.2 (carrd page); captured 2026-10-16"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [
+     "COUNT_OK",
+     "DING_CUE"
+    ],
+    "serialised": "[C3] [D3] (E3) [G3] [A3] B3 [C4] D4 E4 F#4 G4 A4 B4 D5 E5 F#5",
+    "fields": 16
+   }
+  },
+  {
+   "id": "sanango-medusa-12",
+   "group": "row",
+   "title": "D Ashakiran Medusa 12 Notes",
+   "text": "Top: D3 F#3) G A B C# D E F# A B Bottom: E3",
+   "source": {
+    "note": "URL not recorded by the 2026-10-16 investigation; text transcribed from plan section 3.2 (carrd page); captured 2026-10-16"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "CONFLICTING_DING",
+     "COUNT_OK",
+     "NO_OCTAVE"
+    ],
+    "serialised": "",
+    "fields": null,
+    "flagNotes": {
+     "CONFLICTING_DING": [
+      0,
+      1
+     ]
+    }
+   }
+  },
+  {
+   "id": "sanango-c-harmonic-minor-16",
+   "group": "row",
+   "title": "C Harmonic Minor 16 Notes",
+   "text": "Top: C3) G3 Ab3 B3 D4 E4 Eb4 F4 G4 C5 Bottom: Eb3 F3 Ab4 B3 D5 Eb5",
+   "source": {
+    "note": "URL not recorded by the 2026-10-16 investigation; text transcribed from plan section 3.2 (carrd page); captured 2026-10-16"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [
+     "COUNT_OK",
+     "DING_CUE",
+     "DUPLICATE_PITCH",
+     "SOURCE_NOT_ASCENDING"
+    ],
+    "serialised": "(C3) [Eb3] [F3] G3 Ab3 [B3] B3 D4 Eb4 E4 F4 G4 [Ab4] C5 [D5] [Eb5]",
+    "fields": 16,
+    "flagNotes": {
+     "DUPLICATE_PITCH": [
+      3,
+      13
+     ],
+     "SOURCE_NOT_ASCENDING": [
+      5,
+      6,
+      12,
+      13
+     ]
+    }
+   }
+  },
+  {
+   "id": "yatao-c-ashakiran-15-octaveless",
+   "group": "octaveless",
+   "title": "YataoPan C Ashakiran 15",
+   "text": "Notes: C - F, G, A, B, C, D, E, G Bottom Notes: D, E, F, A, B, C",
+   "source": {
+    "url": "https://yataoshop.com/products/handpan-yataopan-c-ashakiran-15.json",
+    "captured": "2026-10-16"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [
+     "COUNT_OK",
+     "DING_CUE",
+     "NO_OCTAVE"
+    ],
+    "provisional": "(C) F G A B C D E G [D] [E] [F] [A] [B] [C]",
+    "serialised": "(C3) F3 G3 A3 B3 C4 D4 E4 G4 [D5] [E5] [F5] [A5] [B5] [C6]",
+    "fields": 15,
+    "sourceNotes": [
+     [
+      "C",
+      "ding"
+     ],
+     [
+      "F",
+      "top"
+     ],
+     [
+      "G",
+      "top"
+     ],
+     [
+      "A",
+      "top"
+     ],
+     [
+      "B",
+      "top"
+     ],
+     [
+      "C",
+      "top"
+     ],
+     [
+      "D",
+      "top"
+     ],
+     [
+      "E",
+      "top"
+     ],
+     [
+      "G",
+      "top"
+     ],
+     [
+      "D",
+      "bottom"
+     ],
+     [
+      "E",
+      "bottom"
+     ],
+     [
+      "F",
+      "bottom"
+     ],
+     [
+      "A",
+      "bottom"
+     ],
+     [
+      "B",
+      "bottom"
+     ],
+     [
+      "C",
+      "bottom"
+     ]
+    ],
+    "inferred": [
+     "C3",
+     "F3",
+     "G3",
+     "A3",
+     "B3",
+     "C4",
+     "D4",
+     "E4",
+     "G4",
+     "D5",
+     "E5",
+     "F5",
+     "A5",
+     "B5",
+     "C6"
+    ],
+    "guessed": [
+     "D5",
+     "E5",
+     "F5",
+     "A5",
+     "B5",
+     "C6"
+    ]
+   }
+  },
+  {
+   "id": "yatao-c-ashakiran-17-octaveless",
+   "group": "octaveless",
+   "title": "YataoPan C Ashakiran 17 Ember",
+   "text": "Notes : C - F, G, A, B, C, D, E, G Bottom Notes : D, E, F, A, B, C, D, E",
+   "source": {
+    "url": "https://yataoshop.com/products/handpan-yataopan-c-ashakiran-17-ember.json",
+    "captured": "2026-10-16"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [
+     "COUNT_OK",
+     "DING_CUE",
+     "NO_OCTAVE"
+    ],
+    "provisional": "(C) F G A B C D E G [D] [E] [F] [A] [B] [C] [D] [E]",
+    "serialised": "(C3) F3 G3 A3 B3 C4 D4 E4 G4 [D5] [E5] [F5] [A5] [B5] [C6] [D6] [E6]",
+    "fields": 17,
+    "sourceNotes": [
+     [
+      "C",
+      "ding"
+     ],
+     [
+      "F",
+      "top"
+     ],
+     [
+      "G",
+      "top"
+     ],
+     [
+      "A",
+      "top"
+     ],
+     [
+      "B",
+      "top"
+     ],
+     [
+      "C",
+      "top"
+     ],
+     [
+      "D",
+      "top"
+     ],
+     [
+      "E",
+      "top"
+     ],
+     [
+      "G",
+      "top"
+     ],
+     [
+      "D",
+      "bottom"
+     ],
+     [
+      "E",
+      "bottom"
+     ],
+     [
+      "F",
+      "bottom"
+     ],
+     [
+      "A",
+      "bottom"
+     ],
+     [
+      "B",
+      "bottom"
+     ],
+     [
+      "C",
+      "bottom"
+     ],
+     [
+      "D",
+      "bottom"
+     ],
+     [
+      "E",
+      "bottom"
+     ]
+    ],
+    "inferred": [
+     "C3",
+     "F3",
+     "G3",
+     "A3",
+     "B3",
+     "C4",
+     "D4",
+     "E4",
+     "G4",
+     "D5",
+     "E5",
+     "F5",
+     "A5",
+     "B5",
+     "C6",
+     "D6",
+     "E6"
+    ],
+    "guessed": [
+     "D5",
+     "E5",
+     "F5",
+     "A5",
+     "B5",
+     "C6",
+     "D6",
+     "E6"
+    ]
+   }
+  },
+  {
+   "id": "yatao-d-ashakiran-15-octaveless",
+   "group": "octaveless",
+   "title": "YataoPan D Ashakiran 15",
+   "text": "Notes: D - G, A, B, C#, D, E, F#, A, B Bottom Notes: E, F#, G, C#, D",
+   "source": {
+    "url": "https://yataoshop.com/products/handpan-yataopan-d-ashakiran-15.json",
+    "captured": "2026-10-16"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [
+     "COUNT_OK",
+     "DING_CUE",
+     "NO_OCTAVE"
+    ],
+    "provisional": "(D) G A B C# D E F# A B [E] [F#] [G] [C#] [D]",
+    "serialised": "(D3) G3 A3 B3 C#4 D4 E4 F#4 A4 B4 [E5] [F#5] [G5] [C#6] [D6]",
+    "fields": 15,
+    "sourceNotes": [
+     [
+      "D",
+      "ding"
+     ],
+     [
+      "G",
+      "top"
+     ],
+     [
+      "A",
+      "top"
+     ],
+     [
+      "B",
+      "top"
+     ],
+     [
+      "C#",
+      "top"
+     ],
+     [
+      "D",
+      "top"
+     ],
+     [
+      "E",
+      "top"
+     ],
+     [
+      "F#",
+      "top"
+     ],
+     [
+      "A",
+      "top"
+     ],
+     [
+      "B",
+      "top"
+     ],
+     [
+      "E",
+      "bottom"
+     ],
+     [
+      "F#",
+      "bottom"
+     ],
+     [
+      "G",
+      "bottom"
+     ],
+     [
+      "C#",
+      "bottom"
+     ],
+     [
+      "D",
+      "bottom"
+     ]
+    ],
+    "inferred": [
+     "D3",
+     "G3",
+     "A3",
+     "B3",
+     "C#4",
+     "D4",
+     "E4",
+     "F#4",
+     "A4",
+     "B4",
+     "E5",
+     "F#5",
+     "G5",
+     "C#6",
+     "D6"
+    ],
+    "guessed": [
+     "E5",
+     "F#5",
+     "G5",
+     "C#6",
+     "D6"
+    ]
+   }
+  },
+  {
+   "id": "synthetic-descending",
+   "group": "octaveless",
+   "title": "",
+   "text": "Ding: C Top: G A E Eb F",
+   "source": {
+    "synthetic": true,
+    "note": "top notes written so that the inferred octaves must climb (plan Lane A1 acceptance)"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [
+     "NO_OCTAVE"
+    ],
+    "provisional": "(C) G A E Eb F",
+    "serialised": "(C3) G3 A3 E4 Eb5 F5",
+    "fields": 6,
+    "sourceNotes": [
+     [
+      "C",
+      "ding"
+     ],
+     [
+      "G",
+      "top"
+     ],
+     [
+      "A",
+      "top"
+     ],
+     [
+      "E",
+      "top"
+     ],
+     [
+      "Eb",
+      "top"
+     ],
+     [
+      "F",
+      "top"
+     ]
+    ],
+    "inferred": [
+     "C3",
+     "G3",
+     "A3",
+     "E4",
+     "Eb5",
+     "F5"
+    ],
+    "guessed": [],
+    "noOctaveNotes": [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5
+    ]
+   }
+  },
+  {
+   "id": "synthetic-labelled-refused",
+   "group": "refused",
+   "title": "",
+   "text": "Ding: D Top: E F G Bb",
+   "source": {
+    "synthetic": true,
+    "note": "provisional string (D) E F G Bb is refused NO_FIFTH"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "NO_OCTAVE",
+     "PROVISIONAL_REFUSED"
+    ],
+    "provisional": "(D) E F G Bb",
+    "refusalCode": "NO_FIFTH",
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-unlabelled-ding",
+   "group": "refused",
+   "title": "",
+   "text": "Notes: D E F G Bb",
+   "source": {
+    "synthetic": true,
+    "note": "unlabelled ding; DING_CUE, NO_OCTAVE and PROVISIONAL_REFUSED all rise; picking G clears the refusal"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "DING_CUE",
+     "NO_OCTAVE",
+     "PROVISIONAL_REFUSED"
+    ],
+    "provisional": "(D) E F G Bb",
+    "refusalCode": "NO_FIFTH",
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-pasted-provisional",
+   "group": "parens",
+   "title": "",
+   "text": "Notes: (D) E F G Bb",
+   "source": {
+    "synthetic": true,
+    "note": "the provisional literal pasted: its parentheses are UNDECLARED_PARENS, never a ding"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "NO_OCTAVE",
+     "UNDECLARED_PARENS"
+    ],
+    "serialised": "",
+    "fields": null,
+    "parens": [
+     "D"
+    ]
+   }
+  },
+  {
+   "id": "synthetic-mixed-bottom-below",
+   "group": "refused",
+   "title": "",
+   "text": "Ding: D3 Top: A3 C4 Bottom: C3 F",
+   "source": {
+    "synthetic": true,
+    "note": "a mixed source whose octaved bottom sits below the tops is refused fail-closed (G6)"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "NO_OCTAVE",
+     "PROVISIONAL_REFUSED"
+    ],
+    "provisional": "(D3) A3 C4 [C3] [F]",
+    "refusalCode": "NOTE_OUT_OF_ORDER",
+    "serialised": "",
+    "fields": null
+   }
+  }
+ ]
+}

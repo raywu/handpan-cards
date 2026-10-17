@@ -1,0 +1,16 @@
+# kills: source order flags: out-of-order and repeated pitches are confirmations, not refusals
+# suite: node --test --test-name-pattern ^source.order.flags..out.of.order.and.repeated.pitches.are.confirmations..not.refusals$ tests/import.test.js
+# DUPLICATE_PITCH needs three copies of a pitch instead of two, so the
+# repeated B3 in the Harmonic Minor line goes unreported.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -283,7 +283,7 @@
+     });
+     var repeated = [];
+     Object.keys(byPitch).forEach(function (k) {
+-      if (byPitch[k].length > 1) repeated = repeated.concat(byPitch[k]);
++      if (byPitch[k].length > 2) repeated = repeated.concat(byPitch[k]);
+     });
+     if (repeated.length) flag("DUPLICATE_PITCH", { notes: repeated.sort(function (a, b) { return a - b; }) });
+ 

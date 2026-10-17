@@ -1,0 +1,17 @@
+# kills: count flags: OK, excluding the ding, and a mismatch that blocks
+# suite: node --test --test-name-pattern ^count.flags..OK..excluding.the.ding..and.a.mismatch.that.blocks$ tests/import.test.js
+# A title one more than the list stops reading as COUNT_EXCL_DING: the check
+# moves from total - 1 to total - 2, so a Sanango line that omits the ding
+# from its count is called a mismatch and blocks.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -258,7 +258,7 @@
+     var total = notes.length;
+     if (titleCount !== null) {
+       if (titleCount === total) flag("COUNT_OK");
+-      else if (titleCount === total - 1) flag("COUNT_EXCL_DING");
++      else if (titleCount === total - 2) flag("COUNT_EXCL_DING");
+       else flag("COUNT_MISMATCH", { title: titleCount, listed: total });
+     }
+ 

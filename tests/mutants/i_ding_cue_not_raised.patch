@@ -1,0 +1,17 @@
+# kills: the Yatao D Aegean 18 line gives the exact scale string, with the ding cue
+# suite: node --test --test-name-pattern ^the.Yatao.D.Aegean.18.line.gives.the.exact.scale.string..with.the.ding.cue$ tests/import.test.js
+# The first top note is taken as the ding without raising DING_CUE, so a ding
+# that no label declared reaches REVIEW with nothing for the owner to confirm.
+# The string is still right; only the cue notices.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -237,8 +237,6 @@
+         flag("CONFLICTING_DING", { notes: indices([firstTop].concat(bad)) });
+       } else {
+         ding = firstTop;
+-        flag("DING_CUE", { notes: [ding.index],
+-                           cue: firstTop.closeMark ? "mark" : firstTop.sep ? "separator" : "first" });
+       }
+     }
+ 
