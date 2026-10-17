@@ -70,7 +70,7 @@ decisions behind it.
   pencil on the chip marks it. DELETE removes the deck and asks for a second
   tap to confirm. A generated deck also travels as a `#s=` link: the app opens
   one from the address bar with no account and no server. While no sheet is open, the address bar is a link to the deck shown (`#s=<code>` for a custom deck,
-  `#deck=<slug>` for a built-in one), written with `replaceState` so it adds no history entry ("SU: tapping three chips writes three replaceState hashes and no pushState"), and the share icon at the left of the header (`#share-copy`, labelled "Copy link") copies it and says
+  `#deck=<slug>` for a built-in one), written with `replaceState` so it adds no history entry ("SU: tapping three chips writes three replaceState hashes and no pushState"), and the share icon at the left of the header (beside the menu button on a landscape phone) (`#share-copy`, labelled "Copy link") copies it and says
   LINK COPIED. A pan too big for the link format disables the icon and leaves
   the bare address. The link is readable, e.g. `#s=5/(D3)_A3_Bb3_C4_D4_E4_F4_G4_A4_C5/D+KURD+10/9fcd07`: the scale, the name and any non-default option, then a checksum. Tests: "SU: a hashless boot on the default deck ends with
   #deck=d-kurd-10", "SU: COPY LINK copies location.href and announces LINK
