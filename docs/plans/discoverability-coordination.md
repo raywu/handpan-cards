@@ -180,7 +180,7 @@ Cycle: 1   Wave: 1c   Merged this batch: 880f054 (#319 W3), 2b7dadc (#320 W2), 6
 | SU-A | a742bd8d5dbeb4ef7 | released | share-url/su-a-app (deleted) | #323 | 6e363f2 | 17:12 | PASS_WITH_NITS (review 2) | 1 | yes, 9f557e6 | nothing | released |
 | GA-SWAP | a0f6ec5e1b7570687 | released | discoverability/ga-swap (deleted) | #324 | 615d519 | gh pr view + run 38986682099 success | PASS_WITH_NITS | 0 | 0f9abdc | nothing | released |
 | SU-D | a5af2348671baf6ac | released | share-url/su-d-docs (deleted) | #325 | dd0833c | gh pr view + run 38989888630 success | PASS_WITH_NITS (review 2) | 1 | yes, 8c96e39 | nothing | released |
-| NITS | a94a2acbafed285b2 | (Agent worktree, isolation: worktree) | discoverability/nits | - | - | - | working | 0 | no | nothing | live |
+| NITS | a94a2acbafed285b2 | (Agent worktree, isolation: worktree) | discoverability/nits | #326 | bf42f53 | gh pr view + run 38993252523 success | reviewing (fresh reviewer, budget 10) | 0 | no | nothing | live |
 ```
 
 Owner check-in 2026-10-16 (third): start share-URL execution (SU-A then SU-D) right after W4 merges, same swarm; row 18 privacy copy folded into SU-A; row 19 closed (keep); GA4 property, Measurement ID swap PR and DNS TXT after W4 merges.
