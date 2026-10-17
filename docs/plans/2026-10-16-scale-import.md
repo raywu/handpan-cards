@@ -781,3 +781,11 @@ first, against fixtures captured from real text.
 - Real users' paste habits and coverage beyond these three sources are
   unmeasured.
 - Whether non-Shopify makers can be fetched through a proxy is untested.
+
+## A1n amendments (2026-10-17, as shipped in #339)
+
+- The after-list scan (`readsAsNoteAfter`) blocks with AMBIGUOUS_NOTE on a later token that reads as a note: an octaved note that is not the reference pitch, a note with a space between letter and accidental (`Spare: C #4`, the `JOINED` clause), a glued run (`GLUED = /^(?:[A-Ha-h](?:#|b)?(?:-1|[0-9])){2,}$/`), or a run of two octaveless letters. It runs through unknown `Word:` keys and ends at the next recognised label, where the list body ends.
+- Joiners: any single token that is not a letter, digit or `.`, plus `and` and `or` (`/^(?:[^A-Za-z0-9.]|and|or)$/i`), continue a run; `.` breaks it. After a `Key:` value only `, / - &`, `and` and `or` keep the key exemption; any other joiner ends it.
+- Reference pitch: `REFERENCE = /^A4 *(?:=|at\b)? *[0-9]{3}(?![0-9])/`, that is A4 followed by an optional '=' or 'at' and a three-digit frequency.
+- Remaining silent classes, all pre-existing and queued: a single octaveless letter under an unknown label; a space or subscript between letter and octave; a note fused with x/s/digits; letters after a Key: value across a line break; an octaveless German H after the list (`Underside: H C`).
+- Accepted false blocks (fail closed): synthetic-accepted-block-pitch-in-parens, synthetic-accepted-block-paper-size, synthetic-accepted-block-octaved-model, synthetic-accepted-block-range and synthetic-accepted-block-key-list (fixture group "accepted-block"), plus prose such as `Grade "A" or "B" steel` and a key list whose other joiner leaves two letters in a run (`Keys: C • D • E` blocks; `Keys: C • D` and `Keys: C, D • E` stay REVIEW, because the first letter after the other joiner starts a new run).

@@ -692,7 +692,11 @@ card-size and host-block titles below are in `tests/e2e.test.js`.
   `share_copy`, carries no id, name or code ("SU: COPY LINK tracks share_copy
   with no id, name or code"), and a ninth, `about_open` (owner gate G4, 2026-10-17),
   fires when ABOUT opens the overlay and carries no params ("AO: opening About
-  tracks about_open with no params"); a reload of the stored deck fires neither
+  tracks about_open with no params"), and a tenth, `scale_import`, fires once per
+  IMPORT and carries `{status}` only, never the pasted text ("IM: importing tracks
+  one scale_import per IMPORT with the status only and no pasted text"; the test
+  "no event param is a string over 40 characters or names a custom: id" now runs
+  an import first and asserts a `scale_import` event exists); a reload of the stored deck fires neither
   `share_open` nor `deck_route`, while a route that differs from the stored
   selection does ("SU: a reload of the stored deck fires no share_open and no
   deck_route; a route that differs from the stored selection fires it"), and
@@ -743,6 +747,39 @@ card-size and host-block titles below are in `tests/e2e.test.js`.
   `test_sitemap_locs_are_absolute_clean_urls`,
   `test_sitemap_lists_exactly_the_site_root`,
   `test_no_lastmod_and_nojekyll_is_empty`.
+
+## Scale import (2026-10-17, PRs #338, #339, #342; plan `docs/plans/2026-10-16-scale-import.md`)
+
+Every sentence names its test. `tests/import.test.js` titles are unprefixed; "IM:" titles are in
+`tests/app.test.js` unless `tests/e2e.test.js` is named.
+
+- **Engine.** `HPE.importer.interpret(text, opts)` and `serialise(r)` live in `src/engine/importer.js` (no test; true by `src/engine/importer.js`'s exports).
+  Status is INSUFFICIENT (no note list, nothing serialised), NEEDS_INPUT (any BLOCK flag) or REVIEW
+  (CONFIRM and INFO only); the status follows the worst flag level ("status follows the worst flag
+  level"; "prose with no note list is INSUFFICIENT with NO_NOTE_LIST"; "INSUFFICIENT and NEEDS_INPUT
+  results write no string"). A picked ding is `interpret(text, {ding: i})`, equal to writing the `Ding:`
+  label ("opts.ding relabel equivalence: every pick on a bare list equals writing the Ding: label";
+  app test "IM: picking a ding on the Ding: D Top: E F G Bb fixture leaves the picker enabled and the flag set equals interpret(text, {ding: i})").
+- **After-list scan.** A later token that reads as a note blocks rather than dropping notes silently
+  ("a later section under a label the importer does not know blocks: its notes are never dropped";
+  "a list cut short by a token that is not a note blocks while a later token still reads as a note");
+  product prose and a reference pitch after the list stay REVIEW ("spec lines and product prose after
+  the list stay REVIEW: Key values, model names and scale names"; "a reference pitch after the list
+  (A4 = 440 Hz, A4 at 440, A4 432 Hz) is not a later note, in prose or under a Word: key"); the
+  accepted false blocks fail closed ("accepted false blocks: an octaved note or a run of key letters
+  in prose after the list blocks (fail closed)").
+- **Sheet.** IMPORT TEXT opens a paste box and IMPORT runs `interpret` (no test; true by `runImport` and the `#import-open` click handler). USE writes exactly `serialise(r)`
+  into `#scale-box` and fires `input` ("IM: USE writes exactly serialise(r) into #scale-box, fires
+  input, and the parse line matches typing it"). Any BLOCK disables USE ("IM: any BLOCK disables USE,
+  and a click on it writes nothing"); a CONFIRM needs a tick ("IM: a CONFIRM needs a tick before USE
+  enables, and unticking disables it again"). A picked ding re-runs `interpret` and clears the
+  NO_OCTAVE tick ("IM: a picked ding refreshes every inferred octave and clears the NO_OCTAVE tick").
+  INSUFFICIENT writes nothing ("IM: INSUFFICIENT shows one line, writes nothing to #scale-box and
+  offers no preset"). The controls join the focus order only while shown ("IM: the import controls
+  join the sheet's focus order, in visual order, only while shown"; `tests/e2e.test.js` "IM: real Tab
+  keys walk scale-box, then IMPORT TEXT, and an open area adds the paste box and IMPORT").
+- **No network.** "IM: importing makes no fetch and sends no beacon"; `tests/e2e.test.js` "IM: an
+  import sends zero network requests".
 
 ## Hosting facts (checked against GitHub docs)
 
