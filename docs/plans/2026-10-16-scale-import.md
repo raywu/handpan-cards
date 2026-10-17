@@ -40,7 +40,8 @@ How it works:
    blocks the import:
    - a first note taken as the ding, or a separator after it,
    - brackets,
-   - missing octaves,
+   - missing octaves (confirmed, with the inferred octaves shown; G6, owner
+     2026-10-17),
    - a count that disagrees with the title.
 4. It writes the result in `formatSeed` order. `HPE.core.parseSeed` stays the
    only target validator.
@@ -67,9 +68,8 @@ How it works:
   - Jev as a tie-breaker between roles (G3).
 - Rejected: an LLM for extraction, a parser per manufacturer as the primary
   design, and image or OCR input (out of scope).
-- **Presets:** a scale *name* such as "D Kurd 10" is reported as insufficient.
-  When it matches a built-in deck, the importer may *offer* that deck without
-  filling in any notes (G4).
+- **Presets:** a scale *name* such as "D Kurd 10" is reported as insufficient,
+  and no built-in deck is offered (G4, owner 2026-10-17: no).
 
 **Confidence:**
 - High that this is the simplest defensible design.
@@ -78,7 +78,8 @@ How it works:
 
 **Main uncertainty:** no maker in the sample *declares* its notation. Every
 ding cue found was structural. So for most real imports, the "verify
-equivalence" requirement comes down to one tap: the user confirms the ding.
+equivalence" requirement comes down to the user confirming the ding, plus
+ticking the inferred octaves when the source wrote none (G6).
 The design accepts this rather than hiding it.
 
 ---
@@ -235,7 +236,7 @@ lines**.
 |---|---|---|
 | REVIEW, count matches title (incl. ding) | 17 | labelled top/bottom lists; ding = first note (CONFIRM) |
 | REVIEW, `SPACE_IN_NOTE` | 1 | MAG "C #3" joined, flagged |
-| NEEDS_INPUT, `NO_OCTAVE` | 3 | C Ashakiran 15/17, D Ashakiran 15 list pitch classes only |
+| NEEDS_INPUT, `NO_OCTAVE` | 3 | C Ashakiran 15/17, D Ashakiran 15 list pitch classes only. Prototype result; under G6 (2026-10-17) these become REVIEW with a NO_OCTAVE CONFIRM (section 4.4) |
 | NEEDS_INPUT, `UNDECLARED_PARENS` | 1 | Ayasa D Kurd 12 sold by Yatao: `D3 - (F3, G3), A3 …`; the count implies bottom notes, but the page never says so |
 | INSUFFICIENT | 3 | bags and accessories |
 
@@ -349,9 +350,10 @@ Source: <https://docs.typesafe.ai/introduction> and linked pages.
   messages.
   - A cheap win is better refusal hints for the raw-paste mistakes above:
     commas, ♯/♭, lowercase, and a name with no notes.
-  - It can ship alone (lane A2).
-- **Presets:** the built-in decks already are curated presets.
-  - Matching a pasted name to a built-in name ("D Kurd 10") may *offer* the
+  - It can ship alone (lane A2, DEFERRED by owner 2026-10-17).
+- **Presets** (superseded by G4, owner 2026-10-17: no offer; kept as the
+  record of the option): the built-in decks already are curated presets.
+  - Matching a pasted name to a built-in name ("D Kurd 10") could *offer* the
     built-in deck.
   - It must not fill in notes: a maker's "D Kurd 10" can differ from ours.
     The two listings of Yatao's own D Kurd 13 already disagree.
@@ -393,7 +395,7 @@ The paste baseline has none of these concerns.
 | Check | Mechanism |
 |---|---|
 | Source fidelity | Every extracted note keeps its source span (offset, original text). The review list shows the source fragment beside each role. The note count is checked against the title count, both including and excluding the ding; a mismatch either way is BLOCK |
-| Semantic correctness | Roles come only from explicit labels or role words. Undeclared cues are CONFIRM (first note as ding; separator after the first note) or BLOCK (brackets, conflicting ding marks, missing octaves) |
+| Semantic correctness | Roles come only from explicit labels or role words. Undeclared cues are CONFIRM (first note as ding; separator after the first note) or BLOCK (brackets, conflicting ding marks). Missing octaves are CONFIRM `NO_OCTAVE` with the inferred octaves shown (G6) |
 | Target correctness | Serialise in `formatSeed` order, then run `parseSeed`. Its refusals show through the existing `#scale-refusal`, unchanged |
 
 ### 4.2 Flag codes (from the prototype; names are suggestions)
@@ -402,7 +404,6 @@ The paste baseline has none of these concerns.
 |---|---|---|
 | BLOCK | NO_NOTE_LIST | no labelled list, or only a name ("D Kurd 10", Ayasa Pygmy 21, image-only pages) |
 | BLOCK | UNDECLARED_PARENS | brackets the source never defines |
-| BLOCK | NO_OCTAVE | any note without an octave. Our parser *would* infer octaves, but that is inferring missing pitch information (G6) |
 | BLOCK | CONFLICTING_DING | a ding mark not on the first note, or two ding cues |
 | BLOCK | COUNT_MISMATCH | the title count is neither the listed total nor the total minus 1 |
 | CONFIRM | DING_CUE | ding taken from a structural cue, not the word "ding" |
@@ -410,7 +411,11 @@ The paste baseline has none of these concerns.
 | CONFIRM | SPACE_IN_NOTE | "C #3" joined into "C#3" |
 | CONFIRM | SOURCE_NOT_ASCENDING | the source order is not by pitch (it may be a typo) |
 | CONFIRM | DUPLICATE_PITCH | one pitch listed twice (new; not in the prototype) |
+| CONFIRM | NO_OCTAVE | a note without an octave. Its octave is `parseSeed`'s inference (`scaleInfer`), never the importer's own; the review list marks each inferred octave and the flag names them (G6, owner 2026-10-17) |
 | INFO | COUNT_OK | the title count equals the listed total including the ding |
+
+Status follows the flags: INSUFFICIENT when NO_NOTE_LIST is raised;
+otherwise NEEDS_INPUT while any BLOCK stands; otherwise REVIEW.
 
 Enharmonics:
 - ♯/♭ normalise to `#`/`b`. Spelling is kept as written: E# stays E#, and our
@@ -431,11 +436,13 @@ Enharmonics:
 2. IMPORT runs `HPE.importer.interpret(text)`. Then:
    - **INSUFFICIENT**: one line, e.g. "No note list found. Image-only specs
      can't be read; type the notes below." Nothing is written to
-     `#scale-box`. When the text matches a built-in deck name, a link to
-     `#deck=<slug>` is offered (if G4 is approved).
+     `#scale-box`. No built-in deck is offered for a name-only paste (G4,
+     owner 2026-10-17: no).
    - **NEEDS_INPUT / REVIEW**: a compact review list with one row per note:
      role, note and source fragment. Each flag is a line. A CONFIRM blocks
-     USE until it is ticked, or the user picks another ding from the notes.
+     USE until it is ticked. A DING_CUE CONFIRM is satisfied by a tick or a
+     picked ding; a picked ding re-runs the inference, refreshes every
+     inferred octave and clears the NO_OCTAVE tick.
      A BLOCK leaves USE disabled and keeps the paste visible.
 3. USE writes the serialised string to `#scale-box` and dispatches `input`.
    From there the existing parse line, refusal, preview, layout drawer,
@@ -446,16 +453,17 @@ The user's own description takes the same path. "D3 ding, A3 Bb3 C4 D4 E4 F4
 G4 A4 top, C3 bottom" gives `[C3] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4`, with the
 ding labelled, so INFO only [V].
 
-### 4.4 Representative cases (prototype results) [V]
+### 4.4 Representative cases (prototype results [V], plus planned rows from the 2026-10-17 gate decisions)
 
 | Case | Result | Meets expectation |
 |---|---|---|
 | Yatao D Aegean 18 (`.json` text or a whole-page paste) | 18 notes exact, the prompt's string; DING_CUE CONFIRM; COUNT_OK | yes. The ding role is undeclared, so it is confirmed rather than asserted |
 | "D3 ding, A3 Bb3 C4 D4 E4 F4 G4 A4 top, C3 bottom" | `[C3] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4`, 10 fields | yes |
 | Labelled form "Ding: D3 Top: … Bottom: C3" | same | yes |
-| "D Kurd 10" | INSUFFICIENT, NO_NOTE_LIST | yes; preset offer gated (G4) |
+| "D Kurd 10" | INSUFFICIENT, NO_NOTE_LIST | yes; no preset offer (G4: no) |
 | Same punctuation, two meanings (Sela `(C3)` = bottom vs our `(D3)` = ding; Ayasa-at-Yatao parens) | UNDECLARED_PARENS BLOCK; nothing is serialised | yes. Neither meaning is assumed |
-| Undocumented notation (Sanango `D3 F#3) G A …`) | CONFLICTING_DING + NO_OCTAVE BLOCK | yes |
+| Undocumented notation (Sanango `D3 F#3) G A …`) | CONFLICTING_DING BLOCK, plus NO_OCTAVE CONFIRM; nothing is serialised while the BLOCK stands | yes |
+| Octaveless list (C Ashakiran 15/17, D Ashakiran 15) | NO_OCTAVE CONFIRM listing each inferred octave, plus DING_CUE CONFIRM where the ding is unlabelled; REVIEW | yes. Inference is `parseSeed`'s, shown and confirmed, never silent |
 | Name and count, no pitch list (Ayasa F# Low Pygmy 21) | INSUFFICIENT | yes |
 | Image-only spec | INSUFFICIENT; manual entry message | yes. No OCR |
 | 18-note title, 17 listed (Yatao without E5) | COUNT_MISMATCH BLOCK ("title says 18, text lists 17") | yes; no note is invented |
@@ -511,18 +519,45 @@ first, against fixtures captured from real text.
   - The Yatao serialisation `=== "[B2] (D3) [E3] F#3 [G#3] A3 [B3] C#4 D4
     [E4] F#4 G#4 A4 [B4] C#5 D5 [E5] F#5"`.
   - **No fixture yields a serialised string whose pitch multiset differs
-    from the source's.** Assert it per fixture.
+    from the source's.** Assert it per fixture. For a note the source wrote
+    without an octave, compare pitch class only, and assert its octave
+    equals the one `parseSeed` infers for the provisional string built in the
+    fixed order of G6.
+  - Each octaveless fixture records, written by hand from the source and
+    never regenerated from importer output, its provisional string, its exact
+    serialised string (C Ashakiran 15: `(C3) F3 G3 A3 B3 C4 D4 E4 G4 [D5]
+    [E5] [F5] [A5] [B5] [C6]`), each note's role and source span, the
+    NO_OCTAVE flag and the inferred notes.
+  - An octaveless source whose top notes descend (e.g. `(C) G A E Eb F`) has
+    a fixture asserting its exact serialised string and that every lifted
+    note is listed as inferred; SOURCE_NOT_ASCENDING cannot fire without
+    octaves, so the review list is the only guard.
+  - A provisional string that `parseSeed` refuses yields NEEDS_INPUT with the
+    refusal reason and no serialised string.
   - Parentheses without a cited profile never get a role.
   - `serialise` output for every REVIEW fixture is a fixed point of
     `formatSeed(parseSeed(x).value) === x`.
 - **Verify:** `node --test tests/import.test.js && python3
   tools/inline_engine.py --check && python3 tools/validate.py && bash
   tests/run.sh node && python3 -m unittest tests.test_readme_currency`
-- **G6 until the owner decides:** A1 ships the conservative branch of G6 (BLOCK on `NO_OCTAVE`); relaxing it is a later change. (Integrator auto-decision under AFK, 2026-10-16: the non-destructive branch, reversible.)
-- **Non-goals:** UI, fetch, profiles with real data, octave inference, any
-  change to `parseSeed`, `formatSeed` or `REASONS`.
+- **G6 (owner, 2026-10-17: infer, then confirm):** `NO_OCTAVE` is a CONFIRM.
+  The importer builds one provisional string from the source's roles in a
+  fixed order: the ding, the top notes in source order, `|` and the inner
+  notes, then each bottom note as `[X]` in source order, keeping every octave
+  the source wrote. It takes every missing octave from `parseSeed` on that
+  string and serialises them explicitly, so the box shows the octaves the
+  user ticked. Bottom-note placement is the importer's only structural
+  choice; each inferred bottom octave is flagged as a guess in its review
+  row. If `parseSeed` refuses the provisional string, the status is
+  NEEDS_INPUT with the refusal shown and nothing is serialised.
+  (Placement order: integrator default under AFK, 2026-10-17, bottoms
+  appended; the owner may change it, see G6a.)
+  This supersedes the 2026-10-16 interim BLOCK.
+- **Non-goals:** UI, fetch, profiles with real data, an octave inference of
+  the importer's own (it reuses `parseSeed`'s), any change to `parseSeed`,
+  `formatSeed` or `REASONS`.
 
-### Lane A2: refusal hints for raw paste (optional, independent)
+### Lane A2: refusal hints for raw paste (DEFERRED by owner, 2026-10-17; not in this release)
 
 - **Owns:**
   - `src/engine/core.js` `REASONS` alternates only, and the BAD_NOTE alternate
@@ -572,7 +607,10 @@ first, against fixtures captured from real text.
   - USE writes exactly `HPE.importer.serialise(r)` into `#scale-box` and
     fires `input`, so the parse line matches what typing it would show.
   - BLOCK disables USE.
-  - CONFIRM needs a tick, or a picked ding.
+  - CONFIRM needs a tick; a DING_CUE CONFIRM is also satisfied by a picked
+    ding, which re-runs the inference, refreshes every inferred octave and
+    clears the NO_OCTAVE tick.
+  - A NO_OCTAVE review row marks each inferred octave as inferred.
   - INSUFFICIENT writes nothing to `#scale-box`.
   - Manual entry and every existing sheet test pass unchanged.
   - At 380px: no horizontal scroll, and the sheet-guidance N-A5/N-A6
@@ -581,8 +619,8 @@ first, against fixtures captured from real text.
   - No `fetch` and no new external request: e2e "a full boot sends zero
     requests…" still holds, plus a new assertion that an import sends zero
     requests.
-  - Analytics, if any: one `scale_import` event with `{status}` only, no
-    text. Adding `scale_import` is an owner gate; if approved, Lane B adds it to the 'discoverability: analytics events' describe and to 'no event param is a string over 40 characters or names a custom: id', and Lane C updates the CLAUDE.md event list.
+  - Analytics: one `scale_import` event with `{status}` only, no text (G7,
+    owner 2026-10-17: yes). Lane B adds it to the 'discoverability: analytics events' describe and to 'no event param is a string over 40 characters or names a custom: id', and Lane C updates the CLAUDE.md event list.
 - **Verify:** `node --test tests/app.test.js && node --test tests/e2e.test.js
   && python3 tools/validate.py && python3 tools/refresh_mutants.py --check
   && node --test tests/mutation_harness.test.js tests/drawer_grid.test.js
@@ -591,8 +629,8 @@ first, against fixtures captured from real text.
   tests/seat_sweeps_tap_edit.test.js`
 - **Non-goals:**
   - URL fields;
-  - deck naming on create (G5);
-  - preset offers (G4);
+  - deck naming on create (G5: no, auto-naming stays);
+  - preset offers (G4: no);
   - editing the layout drawer;
   - editing shared `.mode` or `#settings-panel` rules: the CI panel-fit oracle
     diffs the panel against base.
@@ -602,7 +640,9 @@ first, against fixtures captured from real text.
 - **Owns:** `CLAUDE.md` (a short "Scale import" bullet that names its tests),
   `README.md` (usage line only; the module list and suite counts are A1's), and the `#about` copy only if the owner wants it
   mentioned.
-- **Acceptance:** every sentence cites a test.
+- **Acceptance:** every sentence cites a test. CLAUDE.md's analytics event
+  list under "Discoverability" gains `scale_import` (`{status}` only, G7),
+  citing Lane B's test.
 - **Verify:** reviewer re-reads each cited test.
 - **Non-goals:** code.
 
@@ -636,22 +676,25 @@ first, against fixtures captured from real text.
    D Kurd 13 role conflict) pass through when the note list itself is
    internally consistent. Fidelity to the source is the most the importer can
    promise, and the review list says where each note came from.
-4. **Octave BLOCK may feel strict.** Three of 25 Yatao lines and Sanango
-   Medusa have no octaves. Gate G6 decides.
+4. **Inferred octaves can be wrong.** Three of 25 Yatao lines and Sanango
+   Medusa have no octaves; `scaleInfer` puts the ding at octave 3 and ascends
+   from there. The owner chose CONFIRM over BLOCK (G6); the review list shows
+   each inferred octave so the tick is informed, and the box stays editable.
 5. **Mutation-gate and FLOORS upkeep** for a new module (see the repo
    memory). Budget for it in A1.
 
-### Validation gates (owner decisions, not taken here)
+### Validation gates (owner decisions, all taken 2026-10-17)
 
-| Gate | Question | Evidence so far |
-|---|---|---|
-| G1 | Allow the app's first non-GA network request: a direct, user-triggered fetch of Shopify product `.json`? | CORS-open on two Shopify hosts [O]; privacy cost: visitor IP to the shop |
-| G2 | Run a proxy or worker (persistent infrastructure, abuse controls) for non-Shopify pages? | carrd has no CORS; kirstein.de 403 to curl [O] |
-| G3 | Any model call (Jev or LLM), which needs G2 plus key custody? | Jev picks only, $0.042 per million input tokens (docs); LLM rejected |
-| G4 | Offer a built-in deck when the pasted text is only a matching name? | owner removed presets in 2026-09; a maker's "D Kurd 10" may differ |
-| G5 | Carry the product name into the deck name on create? | `sheetOptions()` 9590 names new decks automatically |
-| G6 | Octaveless lists: BLOCK (recommended), or allow `parseSeed`'s inference with a CONFIRM? | inference is "inferring missing pitch information" under the prompt's scope |
-| G7 | Add a `scale_import` analytics event with `{status}` only? | the Lane B acceptance text; no event is added without it |
+| Gate | Question | Evidence so far | Decision |
+|---|---|---|---|
+| G1 | Allow the app's first non-GA network request: a direct, user-triggered fetch of Shopify product `.json`? | CORS-open on two Shopify hosts [O]; privacy cost: visitor IP to the shop | not now: paste only, no fetch |
+| G2 | Run a proxy or worker (persistent infrastructure, abuse controls) for non-Shopify pages? | carrd has no CORS; kirstein.de 403 to curl [O] | no |
+| G3 | Any model call (Jev or LLM), which needs G2 plus key custody? | Jev picks only, $0.042 per million input tokens (docs); LLM rejected | no |
+| G4 | Offer a built-in deck when the pasted text is only a matching name? | owner removed presets in 2026-09; a maker's "D Kurd 10" may differ | no: report INSUFFICIENT |
+| G5 | Carry the product name into the deck name on create? | `sheetOptions()` 9590 names new decks automatically | no: auto-naming stays |
+| G6 | Octaveless lists: BLOCK (recommended), or allow `parseSeed`'s inference with a CONFIRM? | inference is "inferring missing pitch information" under the prompt's scope | infer, then CONFIRM |
+| G6a | Where octaveless bottom notes sit in the provisional string (their position decides their octave) | `scaleInfer` climbs through bottoms in string order: `(D) A C [F]` gives F4, `(D) [F] A C` F3 | integrator default (AFK): appended after tops and inner notes, each flagged as a guess; owner may change |
+| G7 | Add a `scale_import` analytics event with `{status}` only? | the Lane B acceptance text; no event is added without it | yes, `{status}` only |
 
 ### Rejected alternatives
 
@@ -668,12 +711,10 @@ first, against fixtures captured from real text.
 ### What would change the recommendation
 
 - A maker publishes a notation legend: add a cited profile (E4).
-- Owner approves G1: add E1 for Shopify URLs. Paste stays the baseline.
+- Owner approves G1 later: add E1 for Shopify URLs. Paste stays the baseline.
 - Field data shows most users' sources are unlabelled prose without
   structure: revisit G3, with model output still span-checked against the
   source.
-- Owner relaxes G6: replace the octave BLOCK with a CONFIRM that shows the
-  inferred octaves.
 
 ### Not verified
 
