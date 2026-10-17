@@ -9755,6 +9755,14 @@ describe("discoverability: deck route", () => {
     assert.deepStrictEqual(added[0][2], { deck_id: "pygmy" });
   });
 
+  test("hashchange to a hidden seed that has a replacement shows the replacement with no gone warning", () => {
+    const app = at("", { storage: { ...editedSeed("amara", "MY AMARA"), hpfc: JSON.stringify({ deck: "kurd", mode: "A", hidden: ["amara"] }) } });
+    app.hashchange("#deck=d-amara-9");
+    assert.match(app.deckId(), /^custom:/);
+    assert.match(app.location.hash, /^#s=/);
+    assert.doesNotMatch(app.announcer().textContent, /gone/);
+  });
+
   test("the about section links every built-in deck by its slug", () => {
     const html = aboutHtml();
     for (const d of BUILTIN_DECKS()) {
