@@ -1,0 +1,15 @@
+# kills: every fixture: status, flag codes, serialised string and field count match
+# suite: node --test --test-name-pattern ^every.fixture..status..flag.codes..serialised.string.and.field.count.match$ tests/import.test.js
+# serialise never writes the bar before the inner notes, so they become top notes.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -371,7 +371,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     var out = [];
+     var barred = false;
+     line.forEach(function (e) {
+-      if (e.inner && !barred) { out.push("|"); barred = true; }
++      if (e.inner && !barred) { barred = true; }
+       out.push(e.text);
+     });
+     var text = out.join(" ");

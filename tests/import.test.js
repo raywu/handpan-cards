@@ -107,7 +107,7 @@ test("pitch multiset: serialised fields equal the notes read off the source text
     assert.deepEqual(norm(names), norm(listed), c.id);
     if (!octaveless) {
       const written = (c.text.replace(/([A-G]) #/g, "$1#").match(/[A-G][#b]?-?\d/g) || []).sort();
-      assert.deepEqual([...new Set(names)].sort(), [...new Set(written)].sort(), c.id + " vs text");
+      assert.deepEqual([...names].sort(), [...written].sort(), c.id + " vs text");
     }
   }
 });
@@ -157,6 +157,7 @@ test("a provisional string parseSeed refuses blocks the result with parseSeed's 
     assert.equal(direct.ok, false, id);
     assert.equal(f.refusal.code, direct.code, id);
     assert.equal(f.refusal.reason, direct.reason, id);
+    assert.deepEqual(f.refusal, { code: direct.code, reason: direct.reason }, id + " refusal shape");
   }
 });
 
@@ -223,6 +224,28 @@ test("a picked ding clears DING_CUE and CONFLICTING_DING and lets the string thr
   assert.equal(r.status, "REVIEW");
   assert.deepEqual(codes(r), ["NO_OCTAVE"]);
   assert.equal(importer.serialise(r), "(G3) D4 E4 F4 Bb4");
+});
+
+test("a picked ding on a note after the first moves to the front: same string as the labelled form", () => {
+  const picked = importer.serialise(importer.interpret("Ding: D Top: E F G Bb", { ding: 3 }));
+  assert.equal(picked, "(G3) D4 E4 F4 Bb4");
+  assert.equal(picked, importer.serialise(importer.interpret("Ding: G Top: D E F Bb")));
+});
+
+test("an inner note below the highest top note blocks with INNER_BELOW_TOP and writes no string", () => {
+  const r = run(byId("synthetic-inner-below-top"));
+  assert.equal(r.status, "NEEDS_INPUT");
+  assert.equal(flagOf(r, "INNER_BELOW_TOP").level, "BLOCK");
+  assert.equal(importer.serialise(r), "");
+});
+
+test("a list cut short by a token that is not a note blocks while a later token still reads as a note", () => {
+  for (const c of fixture.cases.filter((x) => x.group === "truncated")) {
+    const r = run(c);
+    assert.equal(r.status, "NEEDS_INPUT", c.id);
+    assert.ok(flagOf(r, "AMBIGUOUS_NOTE"), c.id);
+    assert.equal(importer.serialise(r), "", c.id);
+  }
 });
 
 function entries(r) {

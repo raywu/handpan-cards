@@ -1243,6 +1243,208 @@
     "serialised": "",
     "fields": null
    }
+  },
+  {
+   "id": "synthetic-truncated-stray-e",
+   "group": "truncated",
+   "title": "",
+   "text": "Ding: D3 Top: A3 Bb3 C4 D4 e E4 F4 G4 A4",
+   "source": {
+    "synthetic": true,
+    "note": "a lowercase e stops the list; later notes must not be dropped silently"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-truncated-lowercase",
+   "group": "truncated",
+   "title": "",
+   "text": "Ding: D Top: A bb c d e f g a",
+   "source": {
+    "synthetic": true,
+    "note": "a lowercase list: every token is ambiguous, none is read as a note"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "NO_OCTAVE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-truncated-or",
+   "group": "truncated",
+   "title": "",
+   "text": "Ding: D3 Top: A3 Bb3 C4 Bottom: C3 or F3",
+   "source": {
+    "synthetic": true,
+    "note": "the word or stops the bottom list before F3"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-truncated-plus",
+   "group": "truncated",
+   "title": "",
+   "text": "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 + C5",
+   "source": {
+    "synthetic": true,
+    "note": "a plus sign stops the list before C5"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-inner-below-top",
+   "group": "inner-below",
+   "title": "",
+   "text": "Notes: D3 - A3 Bb3 C4 D4 E4 F4 G4 A4, C5 Inner: B4",
+   "source": {
+    "synthetic": true,
+    "note": "inner note B4 sits below the top note C5"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "DING_CUE",
+     "INNER_BELOW_TOP"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-stray-close-paren",
+   "group": "ding-mark",
+   "title": "",
+   "text": "Ding: D3 Top: A3) Bb3 C4 D4 E4 F4 G4 A4",
+   "source": {
+    "synthetic": true,
+    "note": "a close mark on a top note contradicts the labelled ding"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "CONFLICTING_DING"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-octaveless-inner",
+   "group": "octaveless",
+   "title": "",
+   "text": "Ding: D Top: A C D E F G A C Inner: E F",
+   "source": {
+    "synthetic": true,
+    "note": "octaveless inner notes: inferred octaves continue above the top notes (parseSeed's inference, plan 4.2)"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [
+     "NO_OCTAVE"
+    ],
+    "provisional": "(D) A C D E F G A C | E F",
+    "serialised": "(D3) A3 C4 D4 E4 F4 G4 A4 C5 | E5 F5",
+    "fields": 11,
+    "sourceNotes": [
+     [
+      "D",
+      "ding"
+     ],
+     [
+      "A",
+      "top"
+     ],
+     [
+      "C",
+      "top"
+     ],
+     [
+      "D",
+      "top"
+     ],
+     [
+      "E",
+      "top"
+     ],
+     [
+      "F",
+      "top"
+     ],
+     [
+      "G",
+      "top"
+     ],
+     [
+      "A",
+      "top"
+     ],
+     [
+      "C",
+      "top"
+     ],
+     [
+      "E",
+      "inner"
+     ],
+     [
+      "F",
+      "inner"
+     ]
+    ],
+    "inferred": [
+     "D3",
+     "A3",
+     "C4",
+     "D4",
+     "E4",
+     "F4",
+     "G4",
+     "A4",
+     "C5",
+     "E5",
+     "F5"
+    ],
+    "guessed": [],
+    "noOctaveNotes": [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10
+    ]
+   }
   }
  ]
 }

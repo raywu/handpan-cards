@@ -24,7 +24,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // Flags leave interpret() in this order.
   var FLAG_ORDER = [
     ["NO_NOTE_LIST", BLOCK], ["UNDECLARED_PARENS", BLOCK], ["CONFLICTING_DING", BLOCK],
-    ["AMBIGUOUS_NOTE", BLOCK], ["COUNT_MISMATCH", BLOCK], ["PROVISIONAL_REFUSED", BLOCK],
+    ["AMBIGUOUS_NOTE", BLOCK], ["INNER_BELOW_TOP", BLOCK], ["COUNT_MISMATCH", BLOCK], ["PROVISIONAL_REFUSED", BLOCK],
     ["DING_CUE", CONFIRM], ["COUNT_EXCL_DING", CONFIRM], ["SPACE_IN_NOTE", CONFIRM],
     ["SOURCE_NOT_ASCENDING", CONFIRM], ["DUPLICATE_PITCH", CONFIRM], ["NO_OCTAVE", CONFIRM],
     ["COUNT_OK", INFO]
@@ -32,6 +32,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   var NOTE_UP = /^([A-G])(#|b)?(-1|[0-9])?$/;
   var NOTE_ODD = /^(?:[a-h](?:#|b)?(?:-1|[0-9])|[a-h]#|H(?:#|b)?[0-9]?)$/;
+  var NOTE_LIKE = /^[A-Ga-g](#|b)?(-1|[0-9])?$/;
   var JOINED = /^([A-G]) (#|b)(-1|[0-9])/;
   var TOKEN = /([A-G]) (?:#|b)(?:-1|[0-9])|[A-Za-z][A-Za-z0-9#]*(?:-1(?![0-9]))?|[()\/\-,]|\S/g;
   var SKIPPED = /^(?:and|&|\.|;)$/i;
@@ -64,6 +65,18 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   function spanOf(original, start, end) {
     return { start: start, end: end, text: original.slice(start, end) };
+  }
+
+  // True when any token after the one just read still reads as a note, so a
+  // list cut short never drops notes without a flag.
+  function readsAsNoteAfter(re, body) {
+    var rest = new RegExp(TOKEN.source, "g");
+    var m;
+    rest.lastIndex = re.lastIndex;
+    while ((m = rest.exec(body))) {
+      if (JOINED.test(m[0]) || NOTE_LIKE.test(m[0])) return true;
+    }
+    return false;
   }
 
   // The notes of one list body, with the punctuation that follows each. Reading
@@ -111,6 +124,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       if (tok === ",") { immediate = false; continue; }
       if (NOTE_ODD.test(tok)) { odd.push(tok); immediate = false; continue; }
       if (SKIPPED.test(tok)) continue;
+      if (readsAsNoteAfter(re, body)) odd.push(tok);
       break;
     }
     return { role: role, notes: notes, odd: odd };
@@ -254,6 +268,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var tops = notes.filter(function (n) { return n.assigned === "top"; });
     var inner = notes.filter(function (n) { return n.assigned === "inner"; });
     var bottoms = notes.filter(function (n) { return n.assigned === "bottom"; });
+
+    var topMax = Math.max.apply(null, tops.map(function (n) { return n.midi === null ? -Infinity : n.midi; }));
+    var innerMin = Math.min.apply(null, inner.map(function (n) { return n.midi === null ? Infinity : n.midi; }));
+    if (innerMin < topMax) {
+      flag("INNER_BELOW_TOP", { notes: indices(inner.filter(function (n) { return n.midi !== null && n.midi < topMax; })) });
+    }
 
     var total = notes.length;
     if (titleCount !== null) {

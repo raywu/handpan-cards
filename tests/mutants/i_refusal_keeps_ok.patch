@@ -1,0 +1,15 @@
+# kills: a provisional string parseSeed refuses blocks the result with parseSeed's own refusal
+# suite: node --test --test-name-pattern ^a.provisional.string.parseSeed.refuses.blocks.the.result.with.parseSeed.s.own.refusal$ tests/import.test.js
+# The PROVISIONAL_REFUSED flag carries parseSeed's whole result, including its ok key, instead of just code and reason.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -316,7 +316,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     if (bare.length && !blocked) {
+       var parsed = core().parseSeed(provisionalString(ding, tops, inner, bottoms));
+       if (!parsed.ok) {
+-        flag("PROVISIONAL_REFUSED", { refusal: { code: parsed.code, reason: parsed.reason } });
++        flag("PROVISIONAL_REFUSED", { refusal: parsed });
+       } else {
+         var fields = parsed.value.fields;
+         var nameOf = function (id) { return fields[id][0] + fields[id][1]; };
