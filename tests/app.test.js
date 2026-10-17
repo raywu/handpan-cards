@@ -9357,10 +9357,12 @@ describe("discoverability", () => {
     const text = textOf(aboutHtml());
     assert.ok(text.includes(VALUE_LINE), "the value line is missing from the about section");
     for (const d of BUILTIN_DECKS()) {
-      const re = new RegExp(`${escapeRe(d.name)}[:,]? ${d.chords.length} chord cards`, "i");
+      const celtic = /^D Amara/i.test(d.name) ? escapeRe(" (D Celtic)") : "";
+      const re = new RegExp(`${escapeRe(d.name)}${celtic}[:,]? ${d.chords.length} chord cards`, "i");
       assert.ok(re.test(text), `${d.name} with ${d.chords.length} chord cards is not in the about section`);
     }
-    assert.ok(/D Amara is also sold as Celtic Minor/.test(text), "the Celtic Minor equivalence is missing");
+    assert.strictEqual((text.match(/\(D Celtic\)/g) || []).length, 2, "the D Celtic name is not on exactly both D Amara decks");
+    assert.ok(!/Celtic Minor/.test(text), "the Celtic Minor sentence is still in the about section");
     assert.ok(/A custom scale lives only in your browser/.test(text), "the custom scale sentence is missing");
     assert.ok(/Google Analytics/.test(text), "the privacy sentence is missing");
     assert.ok(/without cookies in the EEA, the UK and Switzerland/.test(text), "the privacy sentence does not name the EEA");
@@ -10402,9 +10404,11 @@ describe("about overlay", () => {
     const text = textOf(inner);
     assert.ok(text.includes(VALUE_LINE));
     for (const d of BUILTIN_DECKS()) {
-      assert.ok(new RegExp(`${escapeRe(d.name)}[:,]? ${d.chords.length} chord cards`, "i").test(text), d.name);
+      const celtic = /^D Amara/i.test(d.name) ? escapeRe(" (D Celtic)") : "";
+      assert.ok(new RegExp(`${escapeRe(d.name)}${celtic}[:,]? ${d.chords.length} chord cards`, "i").test(text), d.name);
     }
-    assert.ok(/D Amara is also sold as Celtic Minor/.test(text));
+    assert.ok(!/Celtic Minor/.test(text));
+    assert.ok(/D Amara 10 \(D Celtic\): 29 chord cards/.test(text) && /D Amara 9 \(D Celtic\): 27 chord cards/.test(text));
     assert.ok(/A custom scale lives only in your browser/.test(text));
     assert.ok(/without cookies in the EEA, the UK and Switzerland/.test(text));
     const app = boot();
