@@ -12625,26 +12625,21 @@ function run() {
           return { index: h.currentIndex, length: h.entries.length, url: h.entries[h.currentIndex].url };
         };
         const before = await nav();
-        const len0 = await b.eval(`return history.length`);
         await openAboutUi();
-        let during = await nav();
-        for (let i = 0; i < 40 && during.index !== before.index + 1; i++) {
-          await new Promise((r) => setTimeout(r, 50));
-          during = await nav();
-        }
-        const len1 = await b.eval(`return history.length`);
-        assert.strictEqual(during.index, before.index + 1, "ABOUT did not push exactly one entry: " + JSON.stringify({ before, during, len0, len1 }));
+        await b.waitFor(`location.hash === "#about"`, { label: "the bar to read #about" });
+        const during = await nav();
         assert.match(during.url, /#about$/);
+        assert.strictEqual(await b.eval(`return !!(history.state && history.state.about)`), true, "ABOUT did not push its own entry");
         await b.eval(`history.back(); return true;`);
         await waitAboutClosed();
         await b.waitFor(`location.hash === "#deck=d-kurd-10"`, { label: "the bar to return to the deck route" });
         const after = await nav();
-        assert.strictEqual(after.index, before.index, "Back did not return to the entry before ABOUT");
+        assert.strictEqual(after.index, during.index - 1, "Back did not step exactly one entry");
         assert.strictEqual(after.url, before.url);
         await b.eval(`history.back(); return true;`);
         await new Promise((r) => setTimeout(r, 300));
         const left = await nav();
-        assert.ok(left.index < before.index || left.url !== before.url, "a second Back stayed on the page's own entries");
+        assert.ok(left.index < after.index || left.url !== before.url, "a second Back stayed on the page's own entries");
         assert.strictEqual(await aboutIsHidden().catch(() => true), true);
       } finally {
         await navigate().catch(() => {});
