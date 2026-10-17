@@ -799,6 +799,17 @@ Every sentence names its test. `tests/import.test.js` titles are unprefixed; "IM
 - **No network.** "IM: importing makes no fetch and sends no beacon"; `tests/e2e.test.js` "IM: an
   import sends zero network requests".
 
+## DEV environment (2026-10-17; plan `docs/plans/2026-10-17-dev-env.md`, lane C)
+
+Every sentence names its test or says "(no test; true by <file>)".
+
+- **URL.** DEV is https://handpan-cards-dev.pages.dev/, built from the `dev` branch only (no test; true by the Cloudflare Pages project settings, which no file in the repo records). The overlay lives on `claude/dev-overlay` and makes three changes: the GA measurement id is the `G-XXXXXXXXXX` placeholder, the import row is unhidden, and a `_headers` file sends `X-Robots-Tag: noindex` (no test; true by `claude/dev-overlay`). `claude/dev-overlay` is never PR'd to `main` and never deleted, and `dev` is never PR'd to `main` (no test; true by the plan's branch model). `main` carries no `_headers` (no test; true by `git ls-tree origin/main _headers`).
+- **Production is unaffected.** The overlay's two `index.html` lines are pinned on `main` by the tests that assert the shipped id and the hidden import row (see "Discoverability" and "Scale import"), so a stray overlay commit cannot reach `main` green (`tests/app.test.js` "the shipped measurement id is G-QTYWB2HSSV", "IM: the import row ships hidden: #import-row carries the hidden attribute in the served markup and IMPORT TEXT is not in the sheet's focus order").
+- **CI runs only on pull requests into `main`.** The `pull_request` trigger carries `branches: [main]`, so a PR into `dev` runs nothing (`tests/test_ci_scope.py` `test_pull_requests_run_ci_only_against_main`).
+- **Doc-only PRs skip every job and still conclude success.** Doc-only means every changed path is under `docs/plans/` or `docs/prompts/` (`tests.test_ci_scope` `test_a_plans_or_prompts_only_change_skips_ci`); `README.md`, `CLAUDE.md` and `docs/ENGINE-SPEC.md` are read by tests and always run CI (`test_every_doc_a_test_reads_runs_ci`); an empty change list runs CI (`test_an_empty_change_list_runs_ci`). Every job other than `changes` waits on that verdict (`test_every_job_but_changes_waits_for_the_doc_only_verdict`). The verdict comes from `tools/ci_scope.py`, fed `git diff --no-renames --name-only HEAD^1 HEAD` by the `changes` job.
+- **The merge gate reads only the `validate` run conclusion** at the head SHA (`gh run list --commit <sha> --workflow validate.yml`). A vendor check (Cloudflare) is never required and its colour neither blocks nor passes a merge (no test; true by `.github/workflows/validate.yml`, which has no vendor job).
+- **Branch cleanup** confirms `gh pr list --head <b> --base main --state merged` first: a merged PR into `dev` does not mean the lane landed on `main` (no test; true by the plan's merge gates).
+
 ## Hosting facts (checked against GitHub docs)
 
 - Pages is free for public repos; private-repo Pages needs Pro/Team, and the

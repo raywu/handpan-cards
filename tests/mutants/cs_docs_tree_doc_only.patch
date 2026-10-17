@@ -1,0 +1,14 @@
+# kills: test_every_doc_a_test_reads_runs_ci
+# suite: python3 -m unittest -k test_every_doc_a_test_reads_runs_ci tests.test_ci_scope
+# All of docs/ counts as doc-only, so a change to docs/ENGINE-SPEC.md skips the tests that read it.
+diff --git a/tools/ci_scope.py b/tools/ci_scope.py
+--- a/tools/ci_scope.py
++++ b/tools/ci_scope.py
+@@ -1,6 +1,6 @@
+ import sys
+ 
+-DOC_ONLY = ("docs/plans/", "docs/prompts/")
++DOC_ONLY = ("docs/",)
+ 
+ 
+ def code_changed(paths):
