@@ -1,5 +1,5 @@
 # kills: decode propagates a rejected OPTION rather than repairing it
-# suite: node --test --test-name-pattern ^decode.propagates.a.rejected.OPTION.rather.than.repairing.it$ tests/tests/share.test.js
+# suite: node --test --test-name-pattern ^decode.propagates.a.rejected.OPTION.rather.than.repairing.it$ tests/share.test.js
 # decode: a rejected seed OPTION must be propagated, not silently replaced by the defaults
 diff --git a/src/engine/share.js b/src/engine/share.js
 --- a/src/engine/share.js

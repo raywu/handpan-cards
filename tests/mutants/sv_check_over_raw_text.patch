@@ -1,5 +1,5 @@
 # kills: SV: the five built-in decks' v5 links are pinned
-# suite: node --test --test-name-pattern ^SV..the.five.built.in.decks..v5.links.are.pinned$ tests/tests/share.test.js
+# suite: node --test --test-name-pattern ^SV..the.five.built.in.decks..v5.links.are.pinned$ tests/share.test.js
 # The check is computed over the percent-encoded text instead of the decoded
 # meaning, so the auto label leaks into it.
 diff --git a/src/engine/share.js b/src/engine/share.js

@@ -1,5 +1,5 @@
 # kills: SV: every v5 link survives new URL(...).hash byte for byte
-# suite: node --test --test-name-pattern ^SV..every.v5.link.survives.new.URL......hash.byte.for.byte$ tests/tests/share.test.js
+# suite: node --test --test-name-pattern ^SV..every.v5.link.survives.new.URL......hash.byte.for.byte$ tests/share.test.js
 # A sharp is written as # instead of s, so the fragment is cut at it.
 diff --git a/src/engine/share.js b/src/engine/share.js
 --- a/src/engine/share.js

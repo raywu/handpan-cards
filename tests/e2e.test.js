@@ -13040,11 +13040,12 @@ function run() {
       await b.settle();
       await waitHash(v5, "the bar to be rewritten to the v5 code");
       const during = await nav();
-      assert.strictEqual(during.index, before.index + 1, "the rewrite added a history entry");
+      assert.ok(during.url.includes("?r=sv"), "the link's own page is not current");
       await b.eval(`history.back(); return true`);
       await new Promise((r) => setTimeout(r, 500));
       const left = await nav();
-      assert.strictEqual(left.index, before.index, "Back did not leave the link's page");
+      assert.strictEqual(left.index, during.index - 1, "the rewrite added a history entry");
+      assert.ok(!left.url.includes("?r=sv"), "Back did not leave the link's page");
     });
 
     test("an about link clicked while a custom deck shows switches the deck and the bar", async () => {

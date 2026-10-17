@@ -1,5 +1,5 @@
 # kills: flipping any single character of a valid string is rejected
-# suite: node --test --test-name-pattern ^flipping.any.single.character.of.a.valid.string.is.rejected$ tests/tests/share.test.js
+# suite: node --test --test-name-pattern ^flipping.any.single.character.of.a.valid.string.is.rejected$ tests/share.test.js
 # decode: the integrity check must reject a flipped character anywhere in the string
 diff --git a/src/engine/share.js b/src/engine/share.js
 --- a/src/engine/share.js

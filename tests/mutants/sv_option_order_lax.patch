@@ -1,5 +1,5 @@
 # kills: SV: an unknown, duplicated or out-of-order option is BAD_NOTE
-# suite: node --test --test-name-pattern ^SV..an.unknown..duplicated.or.out.of.order.option.is.BAD_NOTE$ tests/tests/share.test.js
+# suite: node --test --test-name-pattern ^SV..an.unknown..duplicated.or.out.of.order.option.is.BAD_NOTE$ tests/share.test.js
 # Option order is not enforced on receipt.
 diff --git a/src/engine/share.js b/src/engine/share.js
 --- a/src/engine/share.js

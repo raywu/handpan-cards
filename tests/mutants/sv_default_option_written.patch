@@ -1,5 +1,5 @@
 # kills: SV: every option has one spelling and a default writes nothing
-# suite: node --test --test-name-pattern ^SV..every.option.has.one.spelling.and.a.default.writes.nothing$ tests/tests/share.test.js
+# suite: node --test --test-name-pattern ^SV..every.option.has.one.spelling.and.a.default.writes.nothing$ tests/share.test.js
 # The default palette is written as palette-1.
 diff --git a/src/engine/share.js b/src/engine/share.js
 --- a/src/engine/share.js
