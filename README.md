@@ -160,7 +160,7 @@ What is covered:
 - **Browser e2e** - real Chromium: deck switching, the 3D card flip, keyboard
   and touch navigation, reload persistence, clipping at a 380px viewport, and
   the scale sheet's modality, focus handling and 44px hit areas.
-- **Mutation gate** - 1089 mutant patches under `tests/mutants/`, each one a
+- **Mutation gate** - 1094 mutant patches under `tests/mutants/`, each one a
   deliberate break that some test must catch. The gate is all-or-nothing: one
   survivor fails it. A test nothing can kill does not count as coverage.
 
@@ -184,9 +184,13 @@ false for the placeholder id: no gtag script, no config, no event"), as do a
 no event"); see CLAUDE.md,
 "Discoverability".
 
-That is 24 node suites (`tests/*.test.js`) and 15 python suites
+That is 24 node suites (`tests/*.test.js`) and 16 python suites
 (`tests/test_*.py`), plus `tests/suite_health.py`, which holds a per-file floor
 on the number of tests collected so a suite cannot quietly stop running.
+
+CI runs on pull requests into `main` and on pushes to `main`, never on a PR into `dev`, and a PR that changes only
+`docs/plans/` or `docs/prompts/` skips every job; see CLAUDE.md, "DEV
+environment".
 
 `tests/CONTRACT.md` is the binding guide for adding tests, including the traps
 that have already cost a debugging cycle.

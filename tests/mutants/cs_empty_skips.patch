@@ -1,0 +1,15 @@
+# kills: test_an_empty_change_list_runs_ci
+# suite: python3 -m unittest -k test_an_empty_change_list_runs_ci tests.test_ci_scope
+# An empty change list reports no code change, so a diff that failed to list files skips CI.
+diff --git a/tools/ci_scope.py b/tools/ci_scope.py
+--- a/tools/ci_scope.py
++++ b/tools/ci_scope.py
+@@ -5,7 +5,7 @@ DOC_ONLY = ("docs/plans/", "docs/prompts/")
+ 
+ def code_changed(paths):
+     paths = [p.strip() for p in paths if p.strip()]
+-    return not paths or any(not p.startswith(DOC_ONLY) for p in paths)
++    return any(not p.startswith(DOC_ONLY) for p in paths)
+ 
+ 
+ if __name__ == "__main__":

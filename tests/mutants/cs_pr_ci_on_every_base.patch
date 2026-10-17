@@ -1,0 +1,14 @@
+# kills: test_pull_requests_run_ci_only_against_main
+# suite: python3 -m unittest -k test_pull_requests_run_ci_only_against_main tests.test_ci_scope
+# pull_request has no branches filter, so a PR into dev runs CI against the overlay.
+diff --git a/.github/workflows/validate.yml b/.github/workflows/validate.yml
+--- a/.github/workflows/validate.yml
++++ b/.github/workflows/validate.yml
+@@ -4,7 +4,6 @@ on:
+   push:
+     branches: [main]
+   pull_request:
+-    branches: [main]
+ 
+ jobs:
+   changes:
