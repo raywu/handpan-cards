@@ -1,0 +1,15 @@
+# kills: hashchange to a hidden seed that has a replacement shows the replacement with no gone warning
+# suite: node --test --test-name-pattern ^hashchange.to.a.hidden.seed.that.has.a.replacement tests/app.test.js
+# routeToDeck warns that a deck is gone for a hidden seed even when its replacement is shown.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12376,7 +12376,7 @@ function routeToDeck(routed) {
+   deckId = shown;
+   // The same "gone" test the boot makes: a routed seed that is hidden shows the
+   // fallback and says so; one that shows its replacement does not.
+-  if (routed !== shown && !(replacements()[routed] && replacements()[routed].id === shown) && hidden.includes(routed))
++  if (routed !== shown && hidden.includes(routed))
+     say("That deck is gone. Showing " + deck().name + ".", "warn");
+   track("deck_route", { deck_id: routed });
+   return shown;

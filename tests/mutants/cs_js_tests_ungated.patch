@@ -1,0 +1,14 @@
+# kills: test_every_job_but_changes_waits_for_the_doc_only_verdict
+# suite: python3 -m unittest -k test_every_job_but_changes_waits_for_the_doc_only_verdict tests.test_ci_scope
+# js-tests runs on every PR, so the doc-only verdict no longer gates it.
+diff --git a/.github/workflows/validate.yml b/.github/workflows/validate.yml
+--- a/.github/workflows/validate.yml
++++ b/.github/workflows/validate.yml
+@@ -87,7 +87,6 @@ jobs:
+   js-tests:
+     name: js suites (unit + e2e)
+     needs: changes
+-    if: needs.changes.outputs.code == 'true'
+     runs-on: ubuntu-latest
+     steps:
+       - uses: actions/checkout@v4

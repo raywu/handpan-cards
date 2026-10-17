@@ -1,0 +1,14 @@
+# kills: test_a_plans_or_prompts_only_change_skips_ci
+# suite: python3 -m unittest -k test_a_plans_or_prompts_only_change_skips_ci tests.test_ci_scope
+# docs/prompts/ no longer counts as doc-only, so a prompts-only PR runs all of CI.
+diff --git a/tools/ci_scope.py b/tools/ci_scope.py
+--- a/tools/ci_scope.py
++++ b/tools/ci_scope.py
+@@ -1,6 +1,6 @@
+ import sys
+ 
+-DOC_ONLY = ("docs/plans/", "docs/prompts/")
++DOC_ONLY = ("docs/plans/",)
+ 
+ 
+ def code_changed(paths):
