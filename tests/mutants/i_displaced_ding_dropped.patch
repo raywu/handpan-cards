@@ -1,0 +1,15 @@
+# kills: a picked ding on a note after the first moves to the front: same string as the labelled form
+# suite: node --test --test-name-pattern ^a.picked.ding.on.a.note.after.the.first.moves.to.the.front..same.string.as.the.labelled.form$ tests/import.test.js
+# A ding label on a note that is not the picked ding no longer demotes that note to a top note, so the displaced ding silently vanishes from the string.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -259,7 +259,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     notes.forEach(function (n) {
+       if (n === ding) n.assigned = "ding";
+       else if (n.paren) n.assigned = "unknown";
+-      else n.assigned = n.role === "ding" ? "top" : n.role;
++      else n.assigned = n.role;
+     });
+     var unknown = notes.filter(function (n) { return n.assigned === "unknown"; });
+     if (unknown.length) flag("UNDECLARED_PARENS", { notes: indices(unknown) });

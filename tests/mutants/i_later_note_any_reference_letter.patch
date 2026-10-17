@@ -1,0 +1,15 @@
+# kills: a later section under a label the importer does not know blocks: its notes are never dropped
+# suite: node --test --test-name-pattern ^a.later.section.under.a.label tests/import.test.js
+# Any octaved note followed by a frequency reads as a reference pitch, so Extra: C5 432 Hz is dropped silently.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -37,7 +37,7 @@
+   var JOINED = /^([A-G]) (#|b)(-1|[0-9])/;
+   var TOKEN = /([A-G]) (?:#|b)(?:-1|[0-9])|[A-Za-z][A-Za-z0-9#]*(?:-1(?![0-9]))?|[()\/\-,]|\S/g;
+   var SKIPPED = /^(?:and|&|\.|;)$/i;
+-  var REFERENCE = /^A4 *(?:=|at\b)? *[0-9]{3}(?![0-9])/;
++  var REFERENCE = /^[A-H][0-9] *(?:=|at\b)? *[0-9]{3}(?![0-9])/;
+   var GLUED = /^(?:[A-Ha-h](?:#|b)?(?:-1|[0-9])){2,}$/;
+ 
+   var LABEL = new RegExp(

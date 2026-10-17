@@ -1,0 +1,15 @@
+# kills: a reference pitch after the list (A4 = 440 Hz, A4 at 440, A4 432 Hz) is not a later note, in prose or under a Word: key
+# suite: node --test --test-name-pattern ^a.reference.pitch.after.the.list tests/import.test.js
+# A reference pitch counts as a later note and blocks the list.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -86,7 +86,7 @@
+     while ((m = rest.exec(body))) {
+       tok = m[0];
+       if (JOINED.test(tok) || OCTAVED.test(tok) || GLUED.test(tok)) {
+-        if (!REFERENCE.test(tok + body.slice(rest.lastIndex))) return true;
++        return true;
+       } else if (NOTE_LIKE.test(tok)) {
+         run = key ? 0 : run + 1;
+         if (run >= 2) return true;

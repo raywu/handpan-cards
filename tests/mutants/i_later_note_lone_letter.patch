@@ -1,0 +1,15 @@
+# kills: prose after the note list never reads as a later note: the nine product-page tails stay REVIEW
+# suite: node --test --test-name-pattern ^prose.after.the.note.list tests/import.test.js
+# A lone letter counts as a later note, so prose tails block.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -89,7 +89,7 @@
+         if (!REFERENCE.test(tok + body.slice(rest.lastIndex))) return true;
+       } else if (NOTE_LIKE.test(tok)) {
+         run = key ? 0 : run + 1;
+-        if (run >= 2) return true;
++        if (run >= 1) return true;
+       } else if (tok === ":") {
+         key = /^keys?$/i.test(prev);
+       } else if (!/^(?:[^A-Za-z0-9.]|and|or)$/i.test(tok)) {

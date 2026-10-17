@@ -105,9 +105,9 @@ test("pitch multiset: serialised fields equal the notes read off the source text
     const octaveless = c.group === "octaveless";
     const norm = (a) => a.map((n) => (octaveless ? pc(n) : n)).sort();
     assert.deepEqual(norm(names), norm(listed), c.id);
-    if (!octaveless) {
+    if (!octaveless && c.group !== "mixed-octave" && c.group !== "reference-pitch") {
       const written = (c.text.replace(/([A-G]) #/g, "$1#").match(/[A-G][#b]?-?\d/g) || []).sort();
-      assert.deepEqual([...new Set(names)].sort(), [...new Set(written)].sort(), c.id + " vs text");
+      assert.deepEqual([...names].sort(), [...written].sort(), c.id + " vs text");
     }
   }
 });
@@ -157,6 +157,7 @@ test("a provisional string parseSeed refuses blocks the result with parseSeed's 
     assert.equal(direct.ok, false, id);
     assert.equal(f.refusal.code, direct.code, id);
     assert.equal(f.refusal.reason, direct.reason, id);
+    assert.deepEqual(f.refusal, { code: direct.code, reason: direct.reason }, id + " refusal shape");
   }
 });
 
@@ -223,6 +224,99 @@ test("a picked ding clears DING_CUE and CONFLICTING_DING and lets the string thr
   assert.equal(r.status, "REVIEW");
   assert.deepEqual(codes(r), ["NO_OCTAVE"]);
   assert.equal(importer.serialise(r), "(G3) D4 E4 F4 Bb4");
+});
+
+test("a picked ding on a note after the first moves to the front: same string as the labelled form", () => {
+  const picked = importer.serialise(importer.interpret("Ding: D Top: E F G Bb", { ding: 3 }));
+  assert.equal(picked, "(G3) D4 E4 F4 Bb4");
+  assert.equal(picked, importer.serialise(importer.interpret("Ding: G Top: D E F Bb")));
+});
+
+test("an inner note below the highest top note blocks with INNER_BELOW_TOP and writes no string", () => {
+  const r = run(byId("synthetic-inner-below-top"));
+  assert.equal(r.status, "NEEDS_INPUT");
+  assert.equal(flagOf(r, "INNER_BELOW_TOP").level, "BLOCK");
+  assert.equal(importer.serialise(r), "");
+});
+
+test("prose after the note list never reads as a later note: the nine product-page tails stay REVIEW", () => {
+  const tails = fixture.cases.filter((x) => x.group === "prose-tail");
+  assert.equal(tails.length, 9);
+  for (const c of tails) {
+    const r = run(c);
+    assert.equal(r.status, "REVIEW", c.id);
+    assert.equal(flagOf(r, "AMBIGUOUS_NOTE"), undefined, c.id);
+    assert.ok(importer.serialise(r).startsWith("(D3) A3 Bb3 C4 D4 E4 F4 G4 A4"), c.id);
+  }
+});
+
+test("a whole Yatao page with its Key line after the bottom list reads the same 18 notes as the page itself", () => {
+  const r = run(byId("synthetic-yatao-key-after-list"));
+  assert.equal(r.status, "REVIEW");
+  assert.equal(flagOf(r, "AMBIGUOUS_NOTE"), undefined);
+  assert.equal(importer.serialise(r), importer.serialise(run(byId("yatao-d-aegean-18-page"))));
+});
+
+test("a reference pitch after the list (A4 = 440 Hz, A4 at 440, A4 432 Hz) is not a later note, in prose or under a Word: key", () => {
+  const refs = fixture.cases.filter((x) => x.group === "reference-pitch");
+  assert.equal(refs.length, 5);
+  for (const c of refs) {
+    const r = run(c);
+    assert.equal(r.status, "REVIEW", c.id);
+    assert.equal(flagOf(r, "AMBIGUOUS_NOTE"), undefined, c.id);
+    assert.equal(importer.serialise(r), "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4", c.id);
+  }
+});
+
+test("a later section under a label the importer does not know blocks: its notes are never dropped", () => {
+  const rows = fixture.cases.filter((x) => x.group === "unrecognised-section");
+  assert.equal(rows.length, 24);
+  for (const c of rows) {
+    const r = run(c);
+    assert.equal(r.status, "NEEDS_INPUT", c.id);
+    assert.equal(flagOf(r, "AMBIGUOUS_NOTE").level, "BLOCK", c.id);
+    assert.equal(importer.serialise(r), "", c.id);
+  }
+});
+
+test("spec lines and product prose after the list stay REVIEW: Key values, model names and scale names", () => {
+  const rows = fixture.cases.filter((x) => x.group === "spec-tail");
+  assert.equal(rows.length, 8);
+  for (const c of rows) {
+    const r = run(c);
+    assert.equal(r.status, "REVIEW", c.id);
+    assert.equal(flagOf(r, "AMBIGUOUS_NOTE"), undefined, c.id);
+    assert.equal(importer.serialise(r), "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4", c.id);
+  }
+});
+
+test("accepted false blocks: an octaved note or a run of key letters in prose after the list blocks (fail closed)", () => {
+  const rows = fixture.cases.filter((x) => x.group === "accepted-block");
+  assert.equal(rows.length, 5);
+  for (const c of rows) {
+    const r = run(c);
+    assert.equal(r.status, "NEEDS_INPUT", c.id);
+    assert.ok(flagOf(r, "AMBIGUOUS_NOTE"), c.id);
+    assert.equal(importer.serialise(r), "", c.id);
+  }
+});
+
+test("octaved tops with octaveless inner notes: the inner octaves climb above the tops", () => {
+  const c = byId("synthetic-mixed-octave-inner");
+  const r = run(c);
+  assert.equal(importer.serialise(r), "(D3) A3 C4 D4 E4 F4 G4 A4 C5 | E5 F5");
+  assert.deepEqual(r.roles.inner.map((e) => [e.note, !!e.inferred]), [["E5", true], ["F5", true]]);
+});
+
+test("a list cut short by a token that is not a note blocks while a later token still reads as a note", () => {
+  const rows = fixture.cases.filter((x) => x.group === "truncated");
+  assert.equal(rows.length, 18);
+  for (const c of rows) {
+    const r = run(c);
+    assert.equal(r.status, "NEEDS_INPUT", c.id);
+    assert.ok(flagOf(r, "AMBIGUOUS_NOTE"), c.id);
+    assert.equal(importer.serialise(r), "", c.id);
+  }
 });
 
 function entries(r) {

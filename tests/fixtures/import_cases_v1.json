@@ -1243,6 +1243,1415 @@
     "serialised": "",
     "fields": null
    }
+  },
+  {
+   "id": "synthetic-truncated-stray-e",
+   "group": "truncated",
+   "title": "",
+   "text": "Ding: D3 Top: A3 Bb3 C4 D4 e E4 F4 G4 A4",
+   "source": {
+    "synthetic": true,
+    "note": "a lowercase e stops the list; later notes must not be dropped silently"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-truncated-lowercase",
+   "group": "truncated",
+   "title": "",
+   "text": "Ding: D Top: A bb c d e f g a",
+   "source": {
+    "synthetic": true,
+    "note": "a lowercase list: every token is ambiguous, none is read as a note"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "NO_OCTAVE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-truncated-or",
+   "group": "truncated",
+   "title": "",
+   "text": "Ding: D3 Top: A3 Bb3 C4 Bottom: C3 or F3",
+   "source": {
+    "synthetic": true,
+    "note": "the word or stops the bottom list before F3"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-truncated-plus",
+   "group": "truncated",
+   "title": "",
+   "text": "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 + C5",
+   "source": {
+    "synthetic": true,
+    "note": "a plus sign stops the list before C5"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-inner-below-top",
+   "group": "inner-below",
+   "title": "",
+   "text": "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4, C5 Inner: B4",
+   "source": {
+    "synthetic": true,
+    "note": "inner note B4 sits below the top note C5"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "INNER_BELOW_TOP"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-stray-close-paren",
+   "group": "ding-mark",
+   "title": "",
+   "text": "Ding: D3 Top: A3) Bb3 C4 D4 E4 F4 G4 A4",
+   "source": {
+    "synthetic": true,
+    "note": "a close mark on a top note contradicts the labelled ding"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "CONFLICTING_DING"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-octaveless-inner",
+   "group": "octaveless",
+   "title": "",
+   "text": "Ding: D Top: A C D E F G A C Inner: E F",
+   "source": {
+    "synthetic": true,
+    "note": "octaveless inner notes: inferred octaves continue above the top notes (parseSeed's inference, plan 4.2)"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [
+     "NO_OCTAVE"
+    ],
+    "provisional": "(D) A C D E F G A C | E F",
+    "serialised": "(D3) A3 C4 D4 E4 F4 G4 A4 C5 | E5 F5",
+    "fields": 11,
+    "sourceNotes": [
+     [
+      "D",
+      "ding"
+     ],
+     [
+      "A",
+      "top"
+     ],
+     [
+      "C",
+      "top"
+     ],
+     [
+      "D",
+      "top"
+     ],
+     [
+      "E",
+      "top"
+     ],
+     [
+      "F",
+      "top"
+     ],
+     [
+      "G",
+      "top"
+     ],
+     [
+      "A",
+      "top"
+     ],
+     [
+      "C",
+      "top"
+     ],
+     [
+      "E",
+      "inner"
+     ],
+     [
+      "F",
+      "inner"
+     ]
+    ],
+    "inferred": [
+     "D3",
+     "A3",
+     "C4",
+     "D4",
+     "E4",
+     "F4",
+     "G4",
+     "A4",
+     "C5",
+     "E5",
+     "F5"
+    ],
+    "guessed": [],
+    "noOctaveNotes": [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10
+    ]
+   }
+  },
+  {
+   "id": "synthetic-prose-tail-handmade",
+   "group": "prose-tail",
+   "title": "",
+   "text": "Notes: D3 A3 Bb3 C4 D4 E4 F4 G4 A4 C5 Handmade in Spain by a small team",
+   "source": {
+    "synthetic": true,
+    "note": "product prose after the note list must not read as a later note"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE"
+    ],
+    "serialised": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-prose-tail-perfect",
+   "group": "prose-tail",
+   "title": "",
+   "text": "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4\nPerfect for a beginner.",
+   "source": {
+    "synthetic": true,
+    "note": "product prose after the note list must not read as a later note"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [],
+    "serialised": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-prose-tail-comes-with",
+   "group": "prose-tail",
+   "title": "",
+   "text": "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4. Comes with a soft case.",
+   "source": {
+    "synthetic": true,
+    "note": "product prose after the note list must not read as a later note"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [],
+    "serialised": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-prose-tail-tuned",
+   "group": "prose-tail",
+   "title": "",
+   "text": "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 - tuned at 432 Hz by a master",
+   "source": {
+    "synthetic": true,
+    "note": "product prose after the note list must not read as a later note"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [],
+    "serialised": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-prose-tail-digit",
+   "group": "prose-tail",
+   "title": "",
+   "text": "Notes: D3 A3 Bb3 C4 D4 E4 F4 G4 A4 C5 (10 notes), comes in a padded bag",
+   "source": {
+    "synthetic": true,
+    "note": "product prose after the note list must not read as a later note"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE"
+    ],
+    "serialised": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-truncated-gap",
+   "group": "truncated",
+   "title": "",
+   "text": "Ding: D3 Top: A3 Bb3 C4 or maybe D4 E4",
+   "source": {
+    "synthetic": true,
+    "note": "two words sit between the stop and the next note"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-mixed-octave-inner",
+   "group": "mixed-octave",
+   "title": "",
+   "text": "Ding: D3 Top: A3 C4 D4 E4 F4 G4 A4 C5 Inner: E F",
+   "source": {
+    "synthetic": true,
+    "note": "octaved tops, octaveless inner notes: the inner octaves climb above the tops"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [
+     "NO_OCTAVE"
+    ],
+    "serialised": "(D3) A3 C4 D4 E4 F4 G4 A4 C5 | E5 F5",
+    "fields": 11
+   }
+  },
+  {
+   "id": "synthetic-prose-tail-article",
+   "group": "prose-tail",
+   "title": "",
+   "text": "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4\nEach pan ships tuned. A padded soft case is included with every handpan.",
+   "source": {
+    "synthetic": true,
+    "note": "a capital article A is not a note"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [],
+    "serialised": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-prose-tail-key-name",
+   "group": "prose-tail",
+   "title": "",
+   "text": "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 Tuned by Ayasa. Also available in E minor.",
+   "source": {
+    "synthetic": true,
+    "note": "a key name E without an octave is not a note"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [],
+    "serialised": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-prose-tail-related",
+   "group": "prose-tail",
+   "title": "",
+   "text": "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4\nYou may also like\nYatao D Kurd 10 Handpan\nYatao E Amara 9 Handpan",
+   "source": {
+    "synthetic": true,
+    "note": "related-product names carry lone capital note letters"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [],
+    "serialised": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-reference-pitch",
+   "group": "reference-pitch",
+   "title": "",
+   "text": "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 tuned to A4 = 440 Hz. Reference: A4 432 Hz",
+   "source": {
+    "synthetic": true,
+    "note": "a reference pitch A4 = 440 or A4 432 is not a note"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [],
+    "serialised": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-prose-tail-grade",
+   "group": "prose-tail",
+   "title": "",
+   "text": "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 in Grade A. D Kurd scale",
+   "source": {
+    "synthetic": true,
+    "note": "a full stop breaks a run of lone note letters"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [],
+    "serialised": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-truncated-lowercase-octave",
+   "group": "truncated",
+   "title": "",
+   "text": "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 with c5",
+   "source": {
+    "synthetic": true,
+    "note": "a lone lowercase note with an octave still reads as a note"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-truncated-h-note",
+   "group": "truncated",
+   "title": "",
+   "text": "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 then H4",
+   "source": {
+    "synthetic": true,
+    "note": "an H note with an octave still reads as a note"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-yatao-key-after-list",
+   "group": "prose-tail-page",
+   "title": "YataoPan D Aegean 18",
+   "text": "Scale\n: Aegean\nNotes Top Side\n: D3, F#3, A3, C#4, D4, F#4, G#4, A4, C#5, D5, F#5\nNotes Bottom Side\n: B2, E3, G#3, B3, E4, B4, E5\nKey\n: F# lydian mode\nMaterial\n: Stainless Steel\nStandard Pitch\n: 440 Hz /432 Hz\nDiameter\n: 53 cm",
+   "source": {
+    "synthetic": true,
+    "note": "the Yatao page with its Key line moved after the bottom list"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [
+     "COUNT_OK",
+     "DING_CUE"
+    ],
+    "serialised": "[B2] (D3) [E3] F#3 [G#3] A3 [B3] C#4 D4 [E4] F#4 G#4 A4 [B4] C#5 D5 [E5] F#5",
+    "fields": 18,
+    "roles": {
+     "ding": "D3",
+     "top": [
+      "F#3",
+      "A3",
+      "C#4",
+      "D4",
+      "F#4",
+      "G#4",
+      "A4",
+      "C#5",
+      "D5",
+      "F#5"
+     ],
+     "bottom": [
+      "B2",
+      "E3",
+      "G#3",
+      "B3",
+      "E4",
+      "B4",
+      "E5"
+     ],
+     "inner": []
+    },
+    "flagNotes": {
+     "DING_CUE": [
+      0
+     ]
+    }
+   }
+  },
+  {
+   "id": "synthetic-unrecognised-bottom-side",
+   "group": "unrecognised-section",
+   "title": "",
+   "text": "Ding: D3\nTop: A3 Bb3 C4 D4 E4 F4 G4 A4\nBottom side: F3 G3",
+   "source": {
+    "synthetic": true,
+    "note": "PR #339 review 3: a section label the importer does not know (Bottom side:) still has notes after it"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-unrecognised-mutants",
+   "group": "unrecognised-section",
+   "title": "",
+   "text": "Ding: D3\nNotes: A3 Bb3 C4 D4 E4 F4 G4 A4\nMutants: F3 G3",
+   "source": {
+    "synthetic": true,
+    "note": "PR #339 review 3: Mutants: is not a label the importer knows"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-unrecognised-label-with-parens",
+   "group": "unrecognised-section",
+   "title": "",
+   "text": "Ding: D3\nTop notes: A3 Bb3 C4 D4 E4 F4 G4 A4\nBottom notes (mutants): F3 G3",
+   "source": {
+    "synthetic": true,
+    "note": "PR #339 review 3: a bracketed word inside the label hides it from LABEL"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-unrecognised-midline-key",
+   "group": "unrecognised-section",
+   "title": "",
+   "text": "Ding: D3 Top: A3 Bb3 C4 extra: D4 E4",
+   "source": {
+    "synthetic": true,
+    "note": "PR #339 review 3: an unknown key on the same line as the list"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-unrecognised-octaveless",
+   "group": "unrecognised-section",
+   "title": "",
+   "text": "Ding: D\nTop: A Bb C D E F G A\nBottom side: F G",
+   "source": {
+    "synthetic": true,
+    "note": "PR #339 review 3: octaveless notes under an unknown label count as a run of two"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "NO_OCTAVE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-unrecognised-octaveless-and",
+   "group": "unrecognised-section",
+   "title": "",
+   "text": "Ding: D\nTop: A Bb C D E F G A\nUnderside: F and G",
+   "source": {
+    "synthetic": true,
+    "note": "and joins two octaveless notes into a run"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "NO_OCTAVE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-unrecognised-after-key-value",
+   "group": "unrecognised-section",
+   "title": "",
+   "text": "Ding: D3\nTop: A3 Bb3 C4 D4 E4 F4 G4 A4\nKey: D minor, bottom F G",
+   "source": {
+    "synthetic": true,
+    "note": "the Key: exemption ends at the first word that is not a note"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-unrecognised-note-then-number",
+   "group": "unrecognised-section",
+   "title": "",
+   "text": "Ding: D3\nTop: A3 Bb3 C4 D4 E4 F4 G4 A4\nExtra: C5 432 Hz",
+   "source": {
+    "synthetic": true,
+    "note": "only an A can be a reference pitch: C5 followed by a number is a note"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-unrecognised-lone-a",
+   "group": "unrecognised-section",
+   "title": "",
+   "text": "Ding: D3\nTop: A3 Bb3 C4 D4 E4 F4 G4 A4\nUnderside: A2",
+   "source": {
+    "synthetic": true,
+    "note": "an A with no value after it is a note, not a reference pitch"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-spec-tail-keys",
+   "group": "spec-tail",
+   "title": "",
+   "text": "Ding: D3\nTop: A3 Bb3 C4 D4 E4 F4 G4 A4\nKeys: C and D",
+   "source": {
+    "synthetic": true,
+    "note": "PR #339 review 3: the letters straight after a Key: label are key names"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [],
+    "serialised": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-spec-tail-also-available",
+   "group": "spec-tail",
+   "title": "",
+   "text": "Ding: D3\nTop: A3 Bb3 C4 D4 E4 F4 G4 A4\nAlso available as D Kurd 10 or E Amara 9",
+   "source": {
+    "synthetic": true,
+    "note": "PR #339 review 3: scale names in prose"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [],
+    "serialised": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-spec-tail-weight-model",
+   "group": "spec-tail",
+   "title": "",
+   "text": "Ding: D3\nTop: A3 Bb3 C4 D4 E4 F4 G4 A4\nWeight: 9 kg. Model: D Kurd 10 / E Amara 9",
+   "source": {
+    "synthetic": true,
+    "note": "PR #339 review 3: spec keys after the list"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [],
+    "serialised": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-spec-tail-may-also-like",
+   "group": "spec-tail",
+   "title": "",
+   "text": "Ding: D3\nTop: A3 Bb3 C4 D4 E4 F4 G4 A4\nYou may also like: C# Hijaz 9, Ab Pygmy 9",
+   "source": {
+    "synthetic": true,
+    "note": "PR #339 review 3: related products"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [],
+    "serialised": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-spec-tail-tuned-a-bare",
+   "group": "spec-tail",
+   "title": "",
+   "text": "Ding: D3\nTop: A3 Bb3 C4 D4 E4 F4 G4 A4\nTuned to A = 440 Hz",
+   "source": {
+    "synthetic": true,
+    "note": "PR #339 review 3: a reference pitch with no octave"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [],
+    "serialised": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-spec-tail-model-code",
+   "group": "spec-tail",
+   "title": "",
+   "text": "Ding: D3\nTop: A3 Bb3 C4 D4 E4 F4 G4 A4\nSela SEHP400 Nomo Handpan D Kurd 9",
+   "source": {
+    "synthetic": true,
+    "note": "a model code with digits is one token, never a note"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [],
+    "serialised": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-spec-tail-key-minor",
+   "group": "spec-tail",
+   "title": "",
+   "text": "Ding: D3\nTop: A3 Bb3 C4 D4 E4 F4 G4 A4\nKey: D minor",
+   "source": {
+    "synthetic": true,
+    "note": "a Key: value"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [],
+    "serialised": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-reference-pitch-joined",
+   "group": "reference-pitch",
+   "title": "",
+   "text": "Ding: D3\nTop: A3 Bb3 C4 D4 E4 F4 G4 A4\ntuned at A4=432Hz",
+   "source": {
+    "synthetic": true,
+    "note": "PR #339 review 3: A4=432Hz"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [],
+    "serialised": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-reference-pitch-hz",
+   "group": "reference-pitch",
+   "title": "",
+   "text": "Ding: D3\nTop: A3 Bb3 C4 D4 E4 F4 G4 A4\nTuning: A4 440Hz",
+   "source": {
+    "synthetic": true,
+    "note": "A4 followed by a number"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [],
+    "serialised": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-reference-pitch-at",
+   "group": "reference-pitch",
+   "title": "",
+   "text": "Ding: D3\nTop: A3 Bb3 C4 D4 E4 F4 G4 A4\nTuned to A4 at 440 Hz",
+   "source": {
+    "synthetic": true,
+    "note": "A4 at 440"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [],
+    "serialised": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-reference-pitch-labelled",
+   "group": "reference-pitch",
+   "title": "",
+   "text": "Ding: D3\nTop: A3 Bb3 C4 D4 E4 F4 G4 A4\nReference pitch: A4 = 440 Hz",
+   "source": {
+    "synthetic": true,
+    "note": "a reference pitch under its own key"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [],
+    "serialised": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-accepted-block-range",
+   "group": "accepted-block",
+   "title": "",
+   "text": "Ding: D3\nTop: A3 Bb3 C4 D4 E4 F4 G4 A4\nRange: D3 to A4",
+   "source": {
+    "synthetic": true,
+    "note": "accepted cost: an octaved note in prose blocks (fail closed)"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-accepted-block-paper-size",
+   "group": "accepted-block",
+   "title": "",
+   "text": "Ding: D3\nTop: A3 Bb3 C4 D4 E4 F4 G4 A4\nComes with an A4 printed booklet",
+   "source": {
+    "synthetic": true,
+    "note": "accepted cost: A4 the paper size reads as a note"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-accepted-block-octaved-model",
+   "group": "accepted-block",
+   "title": "",
+   "text": "Ding: D3\nTop: A3 Bb3 C4 D4 E4 F4 G4 A4\nYou may also like: MAG F#2 minor 16",
+   "source": {
+    "synthetic": true,
+    "note": "accepted cost: a product name with an octaved note"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-accepted-block-pitch-in-parens",
+   "group": "accepted-block",
+   "title": "",
+   "text": "Ding: D3\nTop: A3 Bb3 C4 D4 E4 F4 G4 A4\ntuned at 432 Hz (A4)",
+   "source": {
+    "synthetic": true,
+    "note": "accepted cost: a reference pitch written after its value"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-accepted-block-key-list",
+   "group": "accepted-block",
+   "title": "",
+   "text": "Ding: D3\nTop: A3 Bb3 C4 D4 E4 F4 G4 A4\nAvailable in C, D, E and F",
+   "source": {
+    "synthetic": true,
+    "note": "accepted cost: two key letters in a row read as a run"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-truncated-star",
+   "group": "truncated",
+   "title": "",
+   "text": "Ding: D3 Top: A3 Bb3 C4 D4 * E4 F4 G4 A4",
+   "source": {
+    "synthetic": true,
+    "note": "PR #339 review 3 must-block probe"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-truncated-bang",
+   "group": "truncated",
+   "title": "",
+   "text": "Ding: D3 Top: A3 Bb3 C4 D4 ! E4 F4 G4 A4",
+   "source": {
+    "synthetic": true,
+    "note": "PR #339 review 3 must-block probe"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-truncated-quoted",
+   "group": "truncated",
+   "title": "",
+   "text": "Ding: D3 Top: A3 Bb3 C4 D4 \"E4\" F4 G4 A4",
+   "source": {
+    "synthetic": true,
+    "note": "PR #339 review 3 must-block probe"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-truncated-x-bottom",
+   "group": "truncated",
+   "title": "",
+   "text": "Ding: D3\nTop: A3 Bb3 C4 D4 E4 F4 G4 A4\nBottom: C3 x F3 G3",
+   "source": {
+    "synthetic": true,
+    "note": "PR #339 review 3 must-block probe"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-truncated-plus-optional",
+   "group": "truncated",
+   "title": "",
+   "text": "Ding: D3\nTop: A3 Bb3 C4 D4 E4 F4 G4 A4 + optional C5 D5",
+   "source": {
+    "synthetic": true,
+    "note": "PR #339 review 3 must-block probe"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-truncated-bar",
+   "group": "truncated",
+   "title": "",
+   "text": "Ding: D3\nTop: A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5",
+   "source": {
+    "synthetic": true,
+    "note": "PR #339 review 3 must-block probe"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-truncated-bracket",
+   "group": "truncated",
+   "title": "",
+   "text": "Ding: D3\nTop: A3 Bb3 C4 D4 E4 F4 G4 A4 [C5]",
+   "source": {
+    "synthetic": true,
+    "note": "PR #339 review 3 must-block probe"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-truncated-clause-x",
+   "group": "truncated",
+   "title": "",
+   "text": "D3 ding, A3 Bb3 C4 x D4 E4 top",
+   "source": {
+    "synthetic": true,
+    "note": "PR #339 review 3 must-block probe"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-truncated-glued-top",
+   "group": "truncated",
+   "title": "",
+   "text": "Ding: D3\nTop: A3 Bb3 C4 D4E4F4G4A4",
+   "source": {
+    "synthetic": true,
+    "note": "notes glued together without spaces are never dropped"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-truncated-glued-after",
+   "group": "truncated",
+   "title": "",
+   "text": "Ding: D3\nTop: A3 Bb3 C4 D4 E4 F4 G4 A4C5",
+   "source": {
+    "synthetic": true,
+    "note": "a note glued to the last note of the list"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-unrecognised-glued",
+   "group": "unrecognised-section",
+   "title": "",
+   "text": "Ding: D3\nTop: A3 Bb3 C4 D4 E4 F4 G4 A4\nBottom side: F3G3",
+   "source": {
+    "synthetic": true,
+    "note": "glued notes under an unknown label"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-unrecognised-glued-sharp",
+   "group": "unrecognised-section",
+   "title": "",
+   "text": "Ding: D3\nTop: A3 Bb3 C4 D4 E4 F4 G4 A4\nBottom side: F#3G#3",
+   "source": {
+    "synthetic": true,
+    "note": "glued sharps under an unknown label"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-unrecognised-joiner-semicolon",
+   "group": "unrecognised-section",
+   "title": "",
+   "text": "Ding: D\nTop: A Bb C D E F G A\nBottom side: F; G",
+   "source": {
+    "synthetic": true,
+    "note": "a joiner between two octaveless notes keeps the run"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "NO_OCTAVE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-unrecognised-joiner-bar",
+   "group": "unrecognised-section",
+   "title": "",
+   "text": "Ding: D\nTop: A Bb C D E F G A\nBottom side: F | G",
+   "source": {
+    "synthetic": true,
+    "note": "a joiner between two octaveless notes keeps the run"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "NO_OCTAVE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-unrecognised-joiner-or",
+   "group": "unrecognised-section",
+   "title": "",
+   "text": "Ding: D\nTop: A Bb C D E F G A\nBottom side: F or G",
+   "source": {
+    "synthetic": true,
+    "note": "a joiner between two octaveless notes keeps the run"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "NO_OCTAVE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-unrecognised-joiner-comma",
+   "group": "unrecognised-section",
+   "title": "",
+   "text": "Ding: D\nTop: A Bb C D E F G A\nBottom side: F, G",
+   "source": {
+    "synthetic": true,
+    "note": "a joiner between two octaveless notes keeps the run"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "NO_OCTAVE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-unrecognised-joiner-slash",
+   "group": "unrecognised-section",
+   "title": "",
+   "text": "Ding: D\nTop: A Bb C D E F G A\nBottom side: F/G",
+   "source": {
+    "synthetic": true,
+    "note": "a joiner between two octaveless notes keeps the run"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "NO_OCTAVE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-unrecognised-lone-a-prose",
+   "group": "unrecognised-section",
+   "title": "",
+   "text": "Ding: D3\nTop: A3 Bb3 C4 D4 E4 F4 G4 A4\nUnderside: A2 3 more notes",
+   "source": {
+    "synthetic": true,
+    "note": "an A with a one-digit number after it is a note, not a reference pitch"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-spec-tail-weight-keys",
+   "group": "spec-tail",
+   "title": "",
+   "text": "Ding: D3\nTop: A3 Bb3 C4 D4 E4 F4 G4 A4\nWeight: 5 kg\nKeys: C and D",
+   "source": {
+    "synthetic": true,
+    "note": "a Key: value after another spec line"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [],
+    "serialised": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-unrecognised-a4-no-frequency",
+   "group": "unrecognised-section",
+   "title": "",
+   "text": "Ding: D3\nTop: A3 Bb3 C4 D4 E4 F4 G4 A4\nUnderside: A4 3 more notes",
+   "source": {
+    "synthetic": true,
+    "note": "A4 without a three-digit frequency is a note, not a reference pitch"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-truncated-bullet-list",
+   "group": "truncated",
+   "title": "",
+   "text": "Ding: D\nTop: A • Bb • C • D • E • F • G • A",
+   "source": {
+    "synthetic": true,
+    "note": "bullets between the notes of a list never drop notes"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "NO_OCTAVE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-unrecognised-joiner-bullet",
+   "group": "unrecognised-section",
+   "title": "",
+   "text": "Ding: D\nTop: A Bb C D E F G A\nBottom side: F • G",
+   "source": {
+    "synthetic": true,
+    "note": "a bullet between two octaveless notes keeps the run"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "NO_OCTAVE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-unrecognised-joiner-middle-dot",
+   "group": "unrecognised-section",
+   "title": "",
+   "text": "Ding: D\nTop: A Bb C D E F G A\nBottom side: F · G",
+   "source": {
+    "synthetic": true,
+    "note": "a middle dot between two octaveless notes keeps the run"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "NO_OCTAVE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-unrecognised-joiner-plus",
+   "group": "unrecognised-section",
+   "title": "",
+   "text": "Ding: D\nTop: A Bb C D E F G A\nBottom side: F + G",
+   "source": {
+    "synthetic": true,
+    "note": "a plus between two octaveless notes keeps the run"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "NO_OCTAVE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-unrecognised-a4-four-digits",
+   "group": "unrecognised-section",
+   "title": "",
+   "text": "Ding: D3\nTop: A3 Bb3 C4 D4 E4 F4 G4 A4\nUnderside: A4 4400 tuned",
+   "source": {
+    "synthetic": true,
+    "note": "A4 followed by four digits is not a three-digit frequency, so it is a note"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-unrecognised-key-bullet",
+   "group": "unrecognised-section",
+   "title": "",
+   "text": "Ding: D3\nTop: A3 Bb3 C4 D4 E4 F4 G4 A4\nKey: D • F G",
+   "source": {
+    "synthetic": true,
+    "note": "a bullet ends the Key exemption, so the letters after it count as a run"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-unrecognised-underside-f-sharp-3",
+   "group": "unrecognised-section",
+   "title": "",
+   "text": "Ding: D3\nTop: A3 Bb3 C4 D4 E4 F4 G4 A4\nUnderside: F #3",
+   "source": {
+    "synthetic": true,
+    "note": "a note spelled F #3 across a gap still reads as a note"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
   }
  ]
 }
