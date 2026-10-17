@@ -406,6 +406,7 @@ The paste baseline has none of these concerns.
 | BLOCK | UNDECLARED_PARENS | brackets the source never defines |
 | BLOCK | CONFLICTING_DING | a ding mark not on the first note, or two ding cues |
 | BLOCK | COUNT_MISMATCH | the title count is neither the listed total nor the total minus 1 |
+| BLOCK | PROVISIONAL_REFUSED | `parseSeed` refuses the provisional string built for missing octaves (G6); the refusal reason is shown and nothing is serialised |
 | CONFIRM | DING_CUE | ding taken from a structural cue, not the word "ding" |
 | CONFIRM | COUNT_EXCL_DING | the title count equals the total minus 1 |
 | CONFIRM | SPACE_IN_NOTE | "C #3" joined into "C#3" |
@@ -463,7 +464,7 @@ ding labelled, so INFO only [V].
 | "D Kurd 10" | INSUFFICIENT, NO_NOTE_LIST | yes; no preset offer (G4: no) |
 | Same punctuation, two meanings (Sela `(C3)` = bottom vs our `(D3)` = ding; Ayasa-at-Yatao parens) | UNDECLARED_PARENS BLOCK; nothing is serialised | yes. Neither meaning is assumed |
 | Undocumented notation (Sanango `D3 F#3) G A …`) | CONFLICTING_DING BLOCK, plus NO_OCTAVE CONFIRM; nothing is serialised while the BLOCK stands | yes |
-| Octaveless list (C Ashakiran 15/17, D Ashakiran 15) | NO_OCTAVE CONFIRM listing each inferred octave, plus DING_CUE CONFIRM where the ding is unlabelled; REVIEW | yes. Inference is `parseSeed`'s, shown and confirmed, never silent |
+| Octaveless list (C Ashakiran 15/17, D Ashakiran 15) | NO_OCTAVE CONFIRM listing each inferred octave, plus DING_CUE CONFIRM where the ding is unlabelled; COUNT_OK (15 = 9+6, 17 = 9+8, 15 = 10+5); REVIEW | yes. Inference is `parseSeed`'s, shown and confirmed, never silent |
 | Name and count, no pitch list (Ayasa F# Low Pygmy 21) | INSUFFICIENT | yes |
 | Image-only spec | INSUFFICIENT; manual entry message | yes. No OCR |
 | 18-note title, 17 listed (Yatao without E5) | COUNT_MISMATCH BLOCK ("title says 18, text lists 17") | yes; no note is invented |
@@ -529,11 +530,17 @@ first, against fixtures captured from real text.
     [E5] [F5] [A5] [B5] [C6]`), each note's role and source span, the
     NO_OCTAVE flag and the inferred notes.
   - An octaveless source whose top notes descend (e.g. `(C) G A E Eb F`) has
-    a fixture asserting its exact serialised string and that every lifted
-    note is listed as inferred; SOURCE_NOT_ASCENDING cannot fire without
+    a synthetic fixture (marked synthetic: no source URL or capture date)
+    asserting its exact serialised string, `(C3) G3 A3 E4 Eb5 F5`, and that
+    NO_OCTAVE lists every note; SOURCE_NOT_ASCENDING cannot fire without
     octaves, so the review list is the only guard.
   - A provisional string that `parseSeed` refuses yields NEEDS_INPUT with the
-    refusal reason and no serialised string.
+    PROVISIONAL_REFUSED BLOCK flag, the refusal reason and no serialised
+    string (fixture: `(D) E F G Bb`, refused NO_FIFTH).
+  - A source that writes every octave builds no provisional string: the
+    exact Yatao and description assertions hold unchanged.
+  - Each inferred bottom note carries a `guess` bit in the result; tops,
+    inner notes and the ding never do.
   - Parentheses without a cited profile never get a role.
   - `serialise` output for every REVIEW fixture is a fixed point of
     `formatSeed(parseSeed(x).value) === x`.
@@ -541,7 +548,8 @@ first, against fixtures captured from real text.
   tools/inline_engine.py --check && python3 tools/validate.py && bash
   tests/run.sh node && python3 -m unittest tests.test_readme_currency`
 - **G6 (owner, 2026-10-17: infer, then confirm):** `NO_OCTAVE` is a CONFIRM.
-  The importer builds one provisional string from the source's roles in a
+  Only when the source omits at least one octave, the importer builds one
+  provisional string from the source's roles in a
   fixed order: the ding, the top notes in source order, `|` and the inner
   notes, then each bottom note as `[X]` in source order, keeping every octave
   the source wrote. It takes every missing octave from `parseSeed` on that
@@ -549,8 +557,9 @@ first, against fixtures captured from real text.
   user ticked. Bottom-note placement is the importer's only structural
   choice; each inferred bottom octave is flagged as a guess in its review
   row. If `parseSeed` refuses the provisional string, the status is
-  NEEDS_INPUT with the refusal shown and nothing is serialised.
-  (Placement order: integrator default under AFK, 2026-10-17, bottoms
+  NEEDS_INPUT with the PROVISIONAL_REFUSED BLOCK shown and nothing is
+  serialised. A mixed source whose octaved bottoms sit below its tops can be
+  refused this way (fail-closed); the user types it by hand. (Placement order: integrator default under AFK, 2026-10-17, bottoms
   appended; the owner may change it, see G6a.)
   This supersedes the 2026-10-16 interim BLOCK.
 - **Non-goals:** UI, fetch, profiles with real data, an octave inference of
@@ -610,7 +619,8 @@ first, against fixtures captured from real text.
   - CONFIRM needs a tick; a DING_CUE CONFIRM is also satisfied by a picked
     ding, which re-runs the inference, refreshes every inferred octave and
     clears the NO_OCTAVE tick.
-  - A NO_OCTAVE review row marks each inferred octave as inferred.
+  - A NO_OCTAVE review row marks each inferred octave as inferred, and an
+    inferred bottom octave's row says its placement is a guess.
   - INSUFFICIENT writes nothing to `#scale-box`.
   - Manual entry and every existing sheet test pass unchanged.
   - At 380px: no horizontal scroll, and the sheet-guidance N-A5/N-A6
@@ -693,7 +703,7 @@ first, against fixtures captured from real text.
 | G4 | Offer a built-in deck when the pasted text is only a matching name? | owner removed presets in 2026-09; a maker's "D Kurd 10" may differ | no: report INSUFFICIENT |
 | G5 | Carry the product name into the deck name on create? | `sheetOptions()` 9590 names new decks automatically | no: auto-naming stays |
 | G6 | Octaveless lists: BLOCK (recommended), or allow `parseSeed`'s inference with a CONFIRM? | inference is "inferring missing pitch information" under the prompt's scope | infer, then CONFIRM |
-| G6a | Where octaveless bottom notes sit in the provisional string (their position decides their octave) | `scaleInfer` climbs through bottoms in string order: `(D) A C [F]` gives F4, `(D) [F] A C` F3 | integrator default (AFK): appended after tops and inner notes, each flagged as a guess; owner may change |
+| G6a | Where octaveless bottom notes sit in the provisional string (their position decides their octave) | `scaleInfer` climbs through bottoms in string order: `(D) A C [F]` gives F4, `(D) [F] A C` F3. No placement reproduces an interleaved shell: Ayasa's octaved C Ashakiran 17 lists bottoms D3 E3 F4 A4 B4 C5 D5 E5, while appended inference puts the same pitch classes at D5-C6 (D6/E6 on the 17 Ember), 1-2 octaves high, which is why each is flagged as a guess | integrator default (AFK): appended after tops and inner notes, each flagged as a guess; owner may change |
 | G7 | Add a `scale_import` analytics event with `{status}` only? | the Lane B acceptance text; no event is added without it | yes, `{status}` only |
 
 ### Rejected alternatives
