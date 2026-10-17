@@ -1,0 +1,15 @@
+# kills: AO: the About content box is at least min(520, viewport - 32)px wide at 380x800 and 1280x800
+# suite: node --test --test-name-pattern ^AO:.the.About.content.box tests/e2e.test.js
+# Lane O. The fixed overlay keeps max-width:520px, so the inline padding shrinks the column.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1158,7 +1158,7 @@
+    (it must stay last). */
+ #app{flex:none; width:100%; min-height:0; display:flex; flex-direction:column; align-items:center;
+   height:max(100%, calc(100dvh - max(10px, env(safe-area-inset-top)) - max(12px, env(safe-area-inset-bottom))))}
+-#about{position:fixed; inset:0; z-index:50; overflow-y:auto; overscroll-behavior:contain; background:#1f1b15;
++#about{position:fixed; inset:0; max-width:520px; z-index:50; overflow-y:auto; overscroll-behavior:contain; background:#1f1b15;
+   padding:0 max(calc(16px + env(safe-area-inset-right)), calc((100% - 520px) / 2)) max(48px, calc(var(--sp-4) + env(safe-area-inset-bottom))) max(calc(16px + env(safe-area-inset-left)), calc((100% - 520px) / 2));
+   scroll-padding-top:var(--about-head-h, 0px);
+   color:#c4bcab; font:400 14px/1.6 "Nunito Sans", system-ui, sans-serif; user-select:text; -webkit-user-select:text}

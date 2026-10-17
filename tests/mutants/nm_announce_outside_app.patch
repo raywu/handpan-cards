@@ -1,11 +1,11 @@
-# kills: the card keeps its origin/main size with the about section below the first screen
+# kills: the card keeps its origin/main size and position with About off the first screen
 # suite: node --test --test-name-pattern ^the.card.keeps.its.origin.main.size tests/e2e.test.js
 # The wrapper closes above the live region again: its 28.67px goes to main
 # and the card moves down (plan section 15 finding 2).
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1213,8 +1213,8 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1255,8 +1255,8 @@
  <!-- The practice-screen live region. It is a sibling of the landmarks the
       sheet makes inert, so a success message announced as the sheet closes is
       still read out. -->
@@ -13,5 +13,5 @@ diff --git a/index.html b/index.html
  </div>
 +<div class="announce" role="status" aria-live="polite"></div>
  
- <section id="about" aria-labelledby="about-title">
-   <h2 id="about-title">About Handpan Chords</h2>
+ <section id="about" aria-labelledby="about-title" role="dialog" aria-modal="true" hidden>
+   <div class="abouthead">

@@ -1,16 +1,15 @@
-# kills: the card keeps its origin/main size with the about section below the first screen
+# kills: the card keeps its origin/main size and position with About off the first screen
 # suite: node --test --test-name-pattern ^the.card.keeps.its.origin.main.size tests/e2e.test.js
-# #app flexes to fill what #about leaves, so the card shrinks to make room
-# for the section below the first screen.
+# The app wrapper reserves 29px below the card again (the room About used to take), so the card shrinks.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1123,7 +1123,7 @@ footer.seq{row-gap:var(--sp-1)}
-    SHRUNK the card (main is flex:1 inside a height:100% body). #about starts at
-    least 12px below the body's bottom padding, so none of its text lands in the
-    4px frame band. Both rules sit BEFORE the print block (it must stay last). */
+@@ -1156,7 +1156,7 @@
+    The 520px measure comes only from the inline padding, so the fixed overlay
+    fills the viewport at every width. Both rules sit BEFORE the print block
+    (it must stay last). */
 -#app{flex:none; width:100%; min-height:0; display:flex; flex-direction:column; align-items:center;
-+#app{flex:1; width:100%; min-height:0; display:flex; flex-direction:column; align-items:center;
++#app{flex:none; width:100%; min-height:0; padding-bottom:29px; display:flex; flex-direction:column; align-items:center;
    height:max(100%, calc(100dvh - max(10px, env(safe-area-inset-top)) - max(12px, env(safe-area-inset-bottom))))}
- #about{flex:none; width:100%; max-width:520px; margin-top:24px; padding:0 4px 48px;
-   color:#c4bcab; font:400 14px/1.6 "Nunito Sans", system-ui, sans-serif; user-select:text; -webkit-user-select:text}
+ #about{position:fixed; inset:0; z-index:50; overflow-y:auto; overscroll-behavior:contain; background:#1f1b15;
+   padding:0 max(calc(16px + env(safe-area-inset-right)), calc((100% - 520px) / 2)) max(48px, calc(var(--sp-4) + env(safe-area-inset-bottom))) max(calc(16px + env(safe-area-inset-left)), calc((100% - 520px) / 2));

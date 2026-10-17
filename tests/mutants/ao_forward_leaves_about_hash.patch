@@ -1,0 +1,14 @@
+# kills: AO: a Forward traversal onto #about leaves About closed and rewrites the bar
+# suite: node --test --test-name-pattern ^AO:.a.Forward.traversal.onto.#about tests/app.test.js
+# Lane O. A Forward traversal onto a stale #about entry leaves #about in the bar.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10135,7 +10135,6 @@
+ window.addEventListener("popstate", () => {
+   if (pendingPop) { pendingPop = false; syncRoute(); return; }
+   if (aboutOpen) { hideAbout(); return; }
+-  if (location.hash === ABOUT_ROUTE) { syncRoute(); return; }
+   if (!sheetOpen) return;
+   sheetRouted = false;
+   hideSheet();

@@ -1,0 +1,15 @@
+# kills: panel fit: the About-row allowance is 52, owed only for an about-open control the base lacks
+# suite: node --test --test-name-pattern panel.fit:.the.About-row.allowance.is.52 tests/app.test.js
+# Lane O. The About-row allowance is owed even when the base already has the row.
+diff --git a/tools/probe/panel_fit.js b/tools/probe/panel_fit.js
+--- a/tools/probe/panel_fit.js
++++ b/tools/probe/panel_fit.js
+@@ -72,7 +72,7 @@
+ // rule 3, never rule 2, and it expires when the base has the row.
+ const ABOUT_ALLOWANCE_PX = 52;
+ function aboutAllowance(baseControls, candControls) {
+-  return "about-open" in candControls && !("about-open" in baseControls) ? ABOUT_ALLOWANCE_PX : 0;
++  return "about-open" in candControls ? ABOUT_ALLOWANCE_PX : 0;
+ }
+ 
+ const REAL_FACES = [["Marcellus", "400"], ["Bitter", "400"], ["Bitter", "700"],

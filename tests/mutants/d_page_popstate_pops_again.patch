@@ -5,9 +5,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10117,8 +10117,7 @@ let pendingPop = false;
- window.addEventListener("popstate", () => {
-   if (pendingPop) { pendingPop = false; syncRoute(); return; }
+@@ -10137,8 +10137,7 @@
+   if (aboutOpen) { hideAbout(); return; }
+   if (location.hash === ABOUT_ROUTE) { syncRoute(); return; }
    if (!sheetOpen) return;
 -  sheetRouted = false;
 -  hideSheet();

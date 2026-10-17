@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11421,7 +11421,6 @@ window.addEventListener("hashchange", () => {
-       say("That deck is gone. Showing " + deck().name + ".", "warn");
-     track("deck_route", { deck_id: routed });
+@@ -11526,7 +11526,6 @@
    }
+   if (location.hash.indexOf(DECK_ROUTE) !== 0) return;
+   routeToDeck(routedDeckId());
 -  syncRoute();
  });
  

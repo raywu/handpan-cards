@@ -1,0 +1,15 @@
+# kills: AO: the page behind About does not scroll, at 380x800 and 844x390
+# suite: node --test --test-name-pattern ^AO:.the.page.behind.About tests/e2e.test.js
+# Lane O. The page behind About is scrollable.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1175,7 +1175,7 @@
+ #about li{margin:0 0 4px}
+ #about a{color:#eae6df}
+ #about ul a, #about a[href^="mailto:"]{display:flex; align-items:center; min-height:44px}
+-html.about-open{overflow:hidden}
++html.about-open{overflow:auto}
+ 
+ /* ---- print (R1, 2026-09-29) -----------------------------------------------
+    Forces print colour adjustment, clears the page background and padding for

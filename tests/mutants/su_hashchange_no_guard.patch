@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11400,7 +11400,6 @@ shareCopy.onclick = copyLink;
- // light no chip.
+@@ -11518,7 +11518,6 @@ function routeToDeck(routed) {
+ }
  window.addEventListener("hashchange", () => {
-   if (sheetOpen) return;
+   if (sheetOpen || aboutOpen) return;
 -  if (location.hash === routeFor(deck())) return;
    if (location.hash.indexOf(SHARE_PREFIX) === 0) {
      openShare(location.hash.slice(SHARE_PREFIX.length));

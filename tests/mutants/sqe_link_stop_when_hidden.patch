@@ -15,10 +15,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8828,7 +8828,7 @@ function panelStops() {
-           // Eng review amendment 1: the Resources links join the Tab trap
+@@ -10829,7 +10829,7 @@
            // after the print controls, in DOM order.
-           ...settingsPanel.querySelectorAll('#settings-panel a.mode[id^="res-"]')]
+           ...settingsPanel.querySelectorAll('#settings-panel a.mode[id^="res-"]'),
+           document.getElementById("about-open")]
 -    .filter(isStop);
 +    .filter(el => el && !el.disabled);
  }

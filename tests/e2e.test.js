@@ -1368,13 +1368,14 @@ function run() {
 
   // AD7: the panel with and without the Amy row, so a cell that scrolls is
   // asserted against what main (no Amy row) does there, on this platform and
-  // these fonts: cost is the Resources group's growth, overWith / overWithout
+  // these fonts (the ABOUT row is hidden with it): cost is the Resources group's growth, overWith / overWithout
   // the panel's scroll amount in each state.
   const AMY_ROW_JS = `(() => {
     const row = document.getElementById("res-amy-progressions").parentElement;
     const g = row.closest(".panel-group"), p = document.getElementById("settings-panel");
     const read = () => ({ over: p.scrollHeight - p.clientHeight, g: g.getBoundingClientRect().height });
-    const w = read(); row.style.display = "none"; const wo = read(); row.style.display = "";
+    const ab = document.getElementById("about-open").parentElement;
+    const w = read(); row.style.display = "none"; ab.style.display = "none"; const wo = read(); row.style.display = ""; ab.style.display = "";
     return { cost: w.g - wo.g, overWith: w.over, overWithout: wo.over };
   })()`;
   // The Amy row's own contribution to the scroll, within 1px: it adds between
@@ -1803,11 +1804,11 @@ function run() {
               assert.ok(Math.abs(amy.overWithout - want) <= 1,
                 `${label}: without the Amy row the panel scrolls by ${amy.overWithout}px, expected main's spare used up plus H + g = ${want}px`);
               assert.ok(m.scrollH - m.clientH > 0, `${label}: the cell must really scroll (two-sided)`);
-              assert.deepStrictEqual(m.offscreen.filter((id) => !id.startsWith("res-")), [],
-                `${label}: only the Resources links may be below the fold`);
+              assert.deepStrictEqual(m.offscreen.filter((id) => !id.startsWith("res-") && id !== "about-open"), [],
+                `${label}: only the Resources links and ABOUT may be below the fold`);
             } else if (newlyScrolls) {
-              assert.deepStrictEqual(m.offscreen.filter((id) => !id.startsWith("res-")), [],
-                `${label}: only the Resources links may be below the fold once the Amy row makes the panel scroll`);
+              assert.deepStrictEqual(m.offscreen.filter((id) => !id.startsWith("res-") && id !== "about-open"), [],
+                `${label}: only the Resources links and ABOUT may be below the fold once the Amy row makes the panel scroll`);
             } else {
               assert.ok(m.scrollH <= m.clientH + 1,
                 `${label}: panel content (${m.scrollH}px) overflows its own box (${m.clientH}px) vertically`);
@@ -1856,7 +1857,7 @@ function run() {
       };
     `);
     assert.strictEqual(m.headingCount, 1, "expected exactly one Resources heading");
-    assert.deepStrictEqual(m.rowSizes, [3, 2, 1], "expected three rows holding three, two then one links");
+    assert.deepStrictEqual(m.rowSizes, [3, 2, 1, 0], "three link rows, then the ABOUT row with no link");
     assert.strictEqual(m.links.length, 6, `expected 6 links in the Resources group, got ${JSON.stringify(m.links)}`);
     m.links.forEach((link, i) => {
       const expected = RESOURCES[i];
@@ -8494,7 +8495,7 @@ function run() {
             assert.deepStrictEqual(m.reach, [], `${label}: a control lies beyond the scrollable height`);
             if (m.amy.overWithout <= 1) {
               assert.deepStrictEqual(m.off.filter((id) => !id.startsWith("res-")), [],
-                `${label}: only the Resources links may be below the fold once the Amy row makes the cell scroll`);
+                `${label}: only the Resources links and ABOUT may be below the fold once the Amy row makes the cell scroll`);
             }
           } else {
             assert.deepStrictEqual(m.off, [], `${label}: controls offscreen: ${JSON.stringify(m.off)}`);
@@ -8772,7 +8773,8 @@ function run() {
     // D2 re-plan step 4 (owner's five-button design, §4.2a): five mutually
     // exclusive practice buttons. There is no #modeS and no disabled state.
     const FLASH_STOPS = ["settings-trigger", "modeA", "modeB", "tier-basic", "tier-intermediate",
-      "tier-advanced", "deck-add", "share-copy", "print-download", "print-paper-select", ...RES_IDS];
+      "tier-advanced", "deck-add", "share-copy", "print-download", "print-paper-select", ...RES_IDS,
+      "about-open"];
     const PROG_STOPS = [...FLASH_STOPS.slice(0, 6), "seq-source-link", ...FLASH_STOPS.slice(6)];
     const MODAL_VIEWPORTS = [[320, 568, true], [768, 1024, true], [568, 320, true], [683, 330, true], [844, 390, true]];
     const pressedFive = () => b.eval(`return ["modeA", "modeB", "tier-basic", "tier-intermediate", "tier-advanced"]
@@ -8795,7 +8797,7 @@ function run() {
       return { fwd: seen.map((x) => x.id || ""), back: back.map((x) => x.id || "") };
     }
 
-    test("Tab cycles exactly the sixteen flash-card stops in the modal at every viewport class", async () => {
+    test("Tab cycles exactly the seventeen flash-card stops in the modal at every viewport class", async () => {
       for (const [w, h, m] of MODAL_VIEWPORTS) {
         await freshLoad();
         await b.setViewport(w, h, m);
@@ -8818,7 +8820,7 @@ function run() {
       await b.setViewport(900, 900, false);
     });
 
-    test("Tab cycles exactly the seventeen progression stops in the modal at every viewport class", async () => {
+    test("Tab cycles exactly the eighteen progression stops in the modal at every viewport class", async () => {
       for (const [w, h, m] of MODAL_VIEWPORTS) {
         await freshLoad();
         await b.setViewport(w, h, m);
@@ -12072,8 +12074,13 @@ function run() {
           const got = await br.eval(`
             return ["A", "B", "S"].map((m) => {
               const c = window.__pf.one(m);
+              const ar = document.getElementById("about-open").parentElement;
+              ar.style.display = "none";
+              const neededNoAbout = window.__pf.one(m).needed;
+              ar.style.display = "";
+              window.__pf.one(m);
               const ph = document.getElementById("panel-prog-heading");
-              return { needed: c.needed,
+              return { needed: c.needed, neededNoAbout,
                 groups: [...document.querySelectorAll("#settings-panel > .panel-group")].map((g) => g.getBoundingClientRect().height),
                 mt: ph ? parseFloat(getComputedStyle(ph).marginTop) : null,
                 sp1: parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--sp-1")),
@@ -12092,11 +12099,12 @@ function run() {
             const wantG = groups[tableKey(fm)][key][i];
             const dPrint = wantG[1] - wantG[2];
             const dRes = 44 + g.sp1;
-            const dPm = delta ? PM_NEEDED_L[tableKey(fm)][key][i] : dPrint + dRes;
+            const dAbout = 44 + g.sp1;
+            const dPm = (delta ? PM_NEEDED_L[tableKey(fm)][key][i] : dPrint + dRes) + (delta ? g.needed - g.neededNoAbout : dAbout);
             assert.ok(Math.abs(g.needed - (want[i] + d * g.hg + amyNeeded + dPm)) <= 0.5,
               `${where}: needed ${g.needed}px, expected main ${want[i]} + ${d ? "H + g = " + g.hg : "0"} + the Amy row ${amyNeeded} + PM ${dPm}`);
             assert.ok(Math.abs(g.groups[0] - (wantG[0] + g.hg)) <= 0.5, `${where}: the first group is ${g.groups[0]}px, expected main ${wantG[0]} + ${g.hg}`);
-            const plus = [0, 0, dPrint, amyRes + dRes];
+            const plus = [0, 0, dPrint, amyRes + dRes + dAbout];
             for (let k = 1; k < 4; k++) assert.ok(Math.abs(g.groups[k] - (wantG[k] + plus[k])) <= 0.5, `${where}: group ${k} is ${g.groups[k]}px, main has ${wantG[k]}px plus ${plus[k]}`);
           });
         }
@@ -12407,30 +12415,30 @@ function run() {
     };
     const VIEWPORTS = { "380x780": [380, 780], "320x568": [320, 568], "1024x700": [1024, 700] };
 
-    test("the about section is visible below the card at 380px with no horizontal scroll", async () => {
+    test("the about section is not rendered on / and its text is in the served HTML", async () => {
       await freshLoad();
       await b.setViewport(380, 780, false);
       try {
         await b.settle();
-        await b.eval(`document.getElementById("about").scrollIntoView(); return true;`);
-        await b.settle();
         const m = await b.eval(`
           const a = document.getElementById("about");
           const r = a.getBoundingClientRect();
-          return { width: r.width, display: getComputedStyle(a).display, sw: document.body.scrollWidth,
-                   cw: document.body.clientWidth, dsw: document.documentElement.scrollWidth,
-                   dcw: document.documentElement.clientWidth };
+          return fetch(location.href.split("#")[0]).then((res) => res.text()).then((served) => ({
+                   width: r.width, display: getComputedStyle(a).display, hidden: a.hidden,
+                   served: /id="about"/.test(served) && /Celtic Minor/.test(served),
+                   dsw: document.documentElement.scrollWidth, dcw: document.documentElement.clientWidth }));
         `);
-        assert.ok(m.width > 0, `#about has no width: ${m.width}`);
-        assert.notStrictEqual(m.display, "none", "#about is display:none");
-        assert.ok(m.sw <= m.cw + 1, `the page scrolls horizontally at 380px (${m.sw} > ${m.cw})`);
+        assert.strictEqual(m.hidden, true, "#about is not hidden on /");
+        assert.strictEqual(m.display, "none", "#about is rendered on /");
+        assert.strictEqual(m.width, 0);
+        assert.strictEqual(m.served, true, "the About text is not in the served HTML");
         assert.ok(m.dsw <= m.dcw + 1, `the document scrolls horizontally at 380px (${m.dsw} > ${m.dcw})`);
       } finally {
         await b.setViewport(900, 900, false);
       }
     });
 
-    test("the card keeps its origin/main size with the about section below the first screen", async () => {
+    test("the card keeps its origin/main size and position with About off the first screen", async () => {
       await freshLoad();
       try {
         for (const [key, [w, h]] of Object.entries(VIEWPORTS)) {
@@ -12438,19 +12446,13 @@ function run() {
           await b.settle();
           const got = await b.eval(`
             const r = document.querySelector(".scene").getBoundingClientRect();
-            return { width: r.width, height: r.height, left: r.left, top: r.top,
-                     aboutTop: document.getElementById("about").getBoundingClientRect().top,
-                     scrollHeight: document.scrollingElement.scrollHeight, innerHeight: innerHeight };
+            return { width: r.width, height: r.height, left: r.left, top: r.top };
           `);
           const base = ORIGIN_SCENE[key];
           for (const prop of ["width", "height", "left", "top"]) {
             assert.ok(Math.abs(got[prop] - base[prop]) <= 1,
               `${key} .scene ${prop}: got ${got[prop]}, origin/main ${base[prop]}`);
           }
-          assert.ok(got.scrollHeight > got.innerHeight,
-            `${key}: the page does not scroll past the first screen (${got.scrollHeight} <= ${got.innerHeight})`);
-          assert.ok(got.aboutTop >= got.innerHeight,
-            `${key}: #about starts at ${got.aboutTop}, inside the first screen (${got.innerHeight}); the 4px frame band would show its text`);
         }
       } finally {
         await b.setViewport(900, 900, false);
@@ -12501,10 +12503,13 @@ function run() {
       }
     });
 
-    test("clicking an about-section deck link on / switches the deck without a reload", async () => {
+    test("clicking a deck link inside the open About switches the deck without a reload", async () => {
       await freshLoad();
       await b.setViewport(380, 780, false);
       try {
+        await openSettingsPanel();
+        await b.click("#about-open");
+        await b.waitFor(`document.getElementById("about").hidden === false`, { label: "About to open" });
         await b.eval(`window.__noReload = true; document.querySelector('#about a[href="#deck=c-sharp-hijaz-9"]').scrollIntoView({ block: "center" }); return true;`);
         await b.settle();
         await b.click('#about a[href="#deck=c-sharp-hijaz-9"]');
@@ -12521,6 +12526,297 @@ function run() {
         assert.strictEqual(m.stored, "hijaz");
       } finally {
         await b.setViewport(900, 900, false);
+      }
+    });
+  });
+
+  describe("about overlay", () => {
+    const chipOnText = () => b.eval(`return (document.querySelector("#decks .chip.on") || {}).textContent || ""`);
+    const aboutIsHidden = () => b.eval(`return document.getElementById("about").hidden`);
+    const activeId = () => b.eval(`return document.activeElement ? document.activeElement.id : ""`);
+    async function openAboutUi() {
+      await openSettingsPanel();
+      await b.eval(`document.getElementById("about-open").scrollIntoView({ block: "center" }); return true;`);
+      await b.settle();
+      await b.click("#about-open");
+      await b.waitFor(`document.getElementById("about").hidden === false`, { label: "About to open" });
+      await b.settle();
+    }
+    async function waitAboutClosed() {
+      await b.waitFor(`document.getElementById("about").hidden === true`, { label: "About to close" });
+      await b.settle();
+    }
+
+    test("AO: at 380px ABOUT opens a full-screen About, the panel is closed, the app is inert and covered, and focus is on the exit", async () => {
+      await freshLoad();
+      await b.setViewport(380, 800, false);
+      try {
+        await b.settle();
+        await openAboutUi();
+        const m = await b.eval(`
+          const a = document.getElementById("about");
+          const r = a.getBoundingClientRect();
+          const top = document.elementFromPoint(innerWidth / 2, innerHeight / 2);
+          const app = document.getElementById("app");
+          return { rect: [r.left, r.top, r.width, r.height], iw: innerWidth, ih: innerHeight,
+                   panelHidden: document.getElementById("settings-panel").hidden,
+                   covered: !!top && a.contains(top), appInert: app.inert, appAria: app.getAttribute("aria-hidden"),
+                   role: a.getAttribute("role"), modal: a.getAttribute("aria-modal"),
+                   active: document.activeElement.id, hash: location.hash,
+                   htmlClass: document.documentElement.classList.contains("about-open") };
+        `);
+        assert.deepStrictEqual(m.rect, [0, 0, m.iw, m.ih], "About is not full screen");
+        assert.strictEqual(m.panelHidden, true, "the settings panel is still open");
+        assert.strictEqual(m.covered, true, "something covers About at the centre");
+        assert.strictEqual(m.appInert, true);
+        assert.strictEqual(m.appAria, "true");
+        assert.strictEqual(m.role, "dialog");
+        assert.strictEqual(m.modal, "true");
+        assert.strictEqual(m.active, "about-close");
+        assert.strictEqual(m.hash, "#about");
+        assert.strictEqual(m.htmlClass, true);
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("AO: at 380px the exit control restores the deck, card, flip state, mode and scroll, with focus on the settings trigger", async () => {
+      await freshLoad();
+      await b.setViewport(380, 800, false);
+      try {
+        await b.settle();
+        await b.eval(`location.hash = "#deck=c-sharp-hijaz-9"; return true;`);
+        await b.waitFor(`/hijaz/i.test((document.querySelector("#decks .chip.on") || {}).textContent || "")`, { label: "Hijaz on" });
+        await openSettingsPanel();
+        await b.click("#modeB");
+        await b.waitFor(`document.getElementById("modeB").getAttribute("aria-pressed") === "true"`, { label: "mode B" });
+        await b.key("ArrowRight", "ArrowRight", 39);
+        await b.settle();
+        await b.click("#card");
+        await b.waitFor(`document.getElementById("card").classList.contains("flip")`, { label: "card flipped" });
+        await b.settle();
+        const snap = () => b.eval(`
+          return { chip: (document.querySelector("#decks .chip.on") || {}).textContent, count: document.getElementById("count").textContent,
+                   flip: document.getElementById("card").classList.contains("flip"),
+                   mode: document.getElementById("modeB").getAttribute("aria-pressed"),
+                   scrollY: window.scrollY, hash: location.hash };
+        `);
+        const before = await snap();
+        await openAboutUi();
+        await b.click("#about-close");
+        await waitAboutClosed();
+        const after = await snap();
+        assert.deepStrictEqual(after, before, "the app state changed across About");
+        assert.strictEqual(await activeId(), "settings-trigger");
+        assert.strictEqual(await b.eval(`return document.getElementById("settings-panel").hidden`), true);
+        assert.strictEqual(await b.eval(`return document.getElementById("app").inert`), false);
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("AO: at 380px Back closes About and one more Back leaves the page's history as it was before ABOUT", async () => {
+      await freshLoad();
+      await b.setViewport(380, 800, false);
+      try {
+        await b.settle();
+        const nav = async () => {
+          const h = await b.send("Page.getNavigationHistory");
+          return { index: h.currentIndex, length: h.entries.length, url: h.entries[h.currentIndex].url };
+        };
+        const before = await nav();
+        await openAboutUi();
+        await b.waitFor(`location.hash === "#about"`, { label: "the bar to read #about" });
+        const during = await nav();
+        assert.match(during.url, /#about$/);
+        assert.strictEqual(await b.eval(`return !!(history.state && history.state.about)`), true, "ABOUT did not push its own entry");
+        await b.eval(`history.back(); return true;`);
+        await waitAboutClosed();
+        await b.waitFor(`location.hash === "#deck=d-kurd-10"`, { label: "the bar to return to the deck route" });
+        const after = await nav();
+        assert.strictEqual(after.index, during.index - 1, "Back did not step exactly one entry");
+        assert.strictEqual(after.url, before.url);
+        await b.eval(`history.back(); return true;`);
+        await new Promise((r) => setTimeout(r, 300));
+        const left = await nav();
+        assert.ok(left.index < after.index || left.url !== before.url, "a second Back stayed on the page's own entries");
+        assert.strictEqual(await aboutIsHidden().catch(() => true), true);
+      } finally {
+        await navigate().catch(() => {});
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("AO: at 380px Escape closes About and arrow keys never step the card while it is open", async () => {
+      await freshLoad();
+      await b.setViewport(380, 800, false);
+      try {
+        await b.settle();
+        const count = () => b.eval(`return document.getElementById("count").textContent`);
+        const c0 = await count();
+        await openAboutUi();
+        await b.key("ArrowRight", "ArrowRight", 39);
+        await b.key("ArrowLeft", "ArrowLeft", 37);
+        await b.settle();
+        assert.strictEqual(await count(), c0, "an arrow key stepped the card under About");
+        await b.key("Escape", "Escape", 27);
+        await waitAboutClosed();
+        assert.strictEqual(await activeId(), "settings-trigger");
+        assert.strictEqual(await count(), c0);
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("AO: at 380px a #deck= link inside About switches deck and one Back returns to the previous deck", async () => {
+      await freshLoad();
+      await b.setViewport(380, 800, false);
+      try {
+        await b.settle();
+        assert.match(await chipOnText(), /kurd/i);
+        await openAboutUi();
+        const sel = '#about a[href="#deck=c-sharp-hijaz-9"]';
+        await b.eval(`document.querySelector('${sel}').scrollIntoView({ block: "center" }); return true;`);
+        await b.settle();
+        await b.click(sel);
+        await b.waitFor(`/hijaz/i.test((document.querySelector("#decks .chip.on") || {}).textContent || "")`, { label: "Hijaz on" });
+        await waitAboutClosed();
+        assert.strictEqual(await b.eval(`return location.hash`), "#deck=c-sharp-hijaz-9");
+        await b.eval(`history.back(); return true;`);
+        await b.waitFor(`/kurd/i.test((document.querySelector("#decks .chip.on") || {}).textContent || "")`, { label: "Kurd back on" });
+        await new Promise((r) => setTimeout(r, 300));
+        assert.strictEqual(await b.eval(`return location.hash`), "#deck=d-kurd-10");
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("AO: the page behind About does not scroll, at 380x800 and 844x390", async () => {
+      for (const [w, h] of [[380, 800], [844, 390]]) {
+        await freshLoad();
+        await b.setViewport(w, h, false);
+        try {
+          await b.settle();
+          await openAboutUi();
+          const m = await b.eval(`
+            const before = window.scrollY;
+            window.scrollTo(0, 9999);
+            return { overflow: getComputedStyle(document.documentElement).overflow, before, after: window.scrollY };
+          `);
+          assert.strictEqual(m.overflow, "hidden", `${w}x${h}: the page is scrollable under About`);
+          assert.strictEqual(m.after, m.before, `${w}x${h}: the page scrolled under About`);
+        } finally {
+          await b.setViewport(900, 900, false);
+        }
+      }
+    });
+
+    test("AO: About scrolls with its exit visible, non-overlapping 44px link targets and no horizontal scroll at 380x800, 844x390 and 1280x800", async () => {
+      for (const [w, h] of [[380, 800], [844, 390], [1280, 800]]) {
+        await freshLoad();
+        await b.setViewport(w, h, false);
+        try {
+          await b.settle();
+          await openAboutUi();
+          const m = await b.eval(`
+            const a = document.getElementById("about");
+            a.scrollTop = a.scrollHeight;
+            const close = document.getElementById("about-close").getBoundingClientRect();
+            const links = [...a.querySelectorAll('ul a, a[href^="mailto:"]')].map((l) => {
+              const r = l.getBoundingClientRect();
+              const range = document.createRange(); range.selectNodeContents(l);
+              const t = range.getBoundingClientRect();
+              return { top: r.top, bottom: r.bottom, left: r.left, right: r.right, h: r.height,
+                       textMid: (t.top + t.bottom) / 2, rowMid: (r.top + r.bottom) / 2 };
+            });
+            return { close: [close.top, close.bottom], ih: innerHeight, links, scrolled: a.scrollTop > 0 || a.scrollHeight <= a.clientHeight,
+                     sw: a.scrollWidth, cw: a.clientWidth,
+                     dsw: document.documentElement.scrollWidth, dcw: document.documentElement.clientWidth };
+          `);
+          const where = `${w}x${h}`;
+          assert.ok(m.close[0] >= 0 && m.close[1] <= m.ih, `${where}: the exit control is off screen when scrolled to the end`);
+          assert.strictEqual(m.links.length, 6, `${where}: five deck links and the mailto link`);
+          for (const l of m.links) {
+            assert.ok(l.h >= 44, `${where}: a link target is ${l.h}px tall`);
+            assert.ok(Math.abs(l.textMid - l.rowMid) <= 2, `${where}: link text is ${l.textMid - l.rowMid}px off its row centre`);
+          }
+          const sorted = m.links.slice().sort((x, y) => x.top - y.top);
+          for (let i = 1; i < sorted.length; i++) {
+            assert.ok(sorted[i].top >= sorted[i - 1].bottom - 0.5, `${where}: link rects overlap`);
+          }
+          assert.ok(m.sw <= m.cw + 1, `${where}: About scrolls horizontally`);
+          assert.ok(m.dsw <= m.dcw + 1, `${where}: the document scrolls horizontally`);
+        } finally {
+          await b.setViewport(900, 900, false);
+        }
+      }
+    });
+
+    test("AO: About has no transition or animation with and without prefers-reduced-motion", async () => {
+      await freshLoad();
+      await b.setViewport(380, 800, false);
+      try {
+        await b.settle();
+        await openAboutUi();
+        const probe = () => b.eval(`
+          const a = document.getElementById("about");
+          const els = [a, a.querySelector(".abouthead"), document.getElementById("about-close"), ...a.querySelectorAll("a")];
+          return { anims: document.getAnimations().length,
+                   css: els.map((e) => { const c = getComputedStyle(e);
+                     return [c.transitionDuration, c.transitionProperty, c.animationName, c.animationDuration]; }) };
+        `);
+        const check = (m, label) => {
+          assert.strictEqual(m.anims, 0, `${label}: a running animation`);
+          for (const [td, , an] of m.css) {
+            assert.ok(/^(0s)(, 0s)*$/.test(td), `${label}: transition-duration ${td}`);
+            assert.strictEqual(an, "none", `${label}: animation-name ${an}`);
+          }
+        };
+        check(await probe(), "default motion");
+        try {
+          await b.send("Emulation.setEmulatedMedia", { media: "", features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
+          check(await probe(), "reduced motion");
+        } finally {
+          await b.send("Emulation.setEmulatedMedia", { media: "", features: [] });
+        }
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("AO: at 1280x800 the sidebar's ABOUT opens About and closing returns focus to ABOUT", async () => {
+      await freshLoad();
+      await b.setViewport(1280, 800, false);
+      try {
+        await b.settle();
+        await b.click("#about-open");
+        await b.waitFor(`document.getElementById("about").hidden === false`, { label: "About to open" });
+        assert.strictEqual(await activeId(), "about-close");
+        await b.click("#about-close");
+        await waitAboutClosed();
+        assert.strictEqual(await activeId(), "about-open");
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("AO: the About content box is at least min(520, viewport - 32)px wide at 380x800 and 1280x800", async () => {
+      for (const [w, h] of [[380, 800], [1280, 800]]) {
+        await freshLoad();
+        await b.setViewport(w, h, false);
+        try {
+          await b.settle();
+          await openAboutUi();
+          const m = await b.eval(`
+            const a = document.getElementById("about");
+            const c = getComputedStyle(a);
+            return { box: a.clientWidth - parseFloat(c.paddingLeft) - parseFloat(c.paddingRight), iw: innerWidth };
+          `);
+          const want = Math.min(520, m.iw - 32);
+          assert.ok(m.box >= want - 0.5, `${w}x${h}: the content box is ${m.box}px, wanted at least ${want}`);
+        } finally {
+          await b.setViewport(900, 900, false);
+        }
       }
     });
   });
@@ -12657,6 +12953,9 @@ function run() {
       await generate(SIX_SCALES[1]);
       await b.settle();
       assert.match(await hash(), /^#s=/);
+      await openSettingsPanel();
+      await b.click("#about-open");
+      await b.waitFor(`document.getElementById("about").hidden === false`, { label: "About to open" });
       await b.eval(`window.__noReload = true; document.querySelector('#about a[href="${HIJAZ}"]').scrollIntoView({ block: "center" }); return true;`);
       await b.settle();
       await b.click(`#about a[href="${HIJAZ}"]`);

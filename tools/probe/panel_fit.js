@@ -66,6 +66,15 @@ function resAllowance(baseControls, candControls) {
   return added ? RES_ALLOWANCE_PX : 0;
 }
 
+// The About row (about-off-main, owner gate G1) is its own full-width row at the
+// end of the panel and grows it 47-50 px (measured, both font modes). Same shape
+// as the Resources allowance, for the one `about-open` control only: rule 1 and
+// rule 3, never rule 2, and it expires when the base has the row.
+const ABOUT_ALLOWANCE_PX = 52;
+function aboutAllowance(baseControls, candControls) {
+  return "about-open" in candControls && !("about-open" in baseControls) ? ABOUT_ALLOWANCE_PX : 0;
+}
+
 const REAL_FACES = [["Marcellus", "400"], ["Bitter", "400"], ["Bitter", "700"],
   ["Nunito Sans", "400"], ["Nunito Sans", "600"]];
 
@@ -88,9 +97,10 @@ function judgeCell({ base: b, cand: c, refRendered, od8FailBaseOverflow = OD8_FA
   const avail = c.avail;
   const baseFits = b.needed <= b.avail + FIT_TOL;
   const resA = resAllowance(b.controls, c.controls);
+  const aboutA = aboutAllowance(b.controls, c.controls);
 
   // 1 fit
-  if (c.needed > Math.max(b.needed + allowance + resA, avail) + FIT_TOL) {
+  if (c.needed > Math.max(b.needed + allowance + resA + aboutA, avail) + FIT_TOL) {
     out.rule1.fail.push(offender(id, `${c.needed.toFixed(1)} / ${b.needed.toFixed(1)} / ${avail.toFixed(1)}`));
   }
 
@@ -108,7 +118,7 @@ function judgeCell({ base: b, cand: c, refRendered, od8FailBaseOverflow = OD8_FA
         if (baseFits || od8FailBaseOverflow) out.rule2.fail.push(o);
         else out.rule2.reported.push(o);
       }
-    } else if (cc.rendered && cc.bottom > Math.max(avail, isRes(key) ? b.needed + resA : 0) + CTRL_TOL) {
+    } else if (cc.rendered && cc.bottom > Math.max(avail, isRes(key) ? b.needed + resA : key === "about-open" ? b.needed + aboutA : 0) + CTRL_TOL) {
       // 3 new control
       const o = offender(id, `${key} bottom ${cc.bottom.toFixed(1)} vs avail ${avail.toFixed(1)}`);
       (baseFits ? out.rule3.fail : out.rule3.reported).push(o);
@@ -811,7 +821,7 @@ async function main(argv) {
 }
 
 module.exports = {
-  OD8_FAIL_BASE_OVERFLOW, REMOVED_BY_DESIGN, HEADING_ALLOWANCE_PX, ALLOWANCE_EXEMPT, headingAllowance, RES_ALLOWANCE_PX, resAllowance, thresholdCell,
+  OD8_FAIL_BASE_OVERFLOW, REMOVED_BY_DESIGN, HEADING_ALLOWANCE_PX, ALLOWANCE_EXEMPT, headingAllowance, RES_ALLOWANCE_PX, resAllowance, ABOUT_ALLOWANCE_PX, aboutAllowance, thresholdCell,
   overflowViewports, gutterMessage, neutraliseScrollbars, prepareBrowser, failed, PanelFitError, judgeCell, vectorsEqual, vectorOf, assertRunComplete,
   tallyJudgement, tallyGutter, invarianceWidths, checkFontMode, WALK_FN, parseCondition, edgeStarts, rawEdges, bands, sheetDisposition, checkRuleKind,
   MEASURE_SRC, Root, readRoot,

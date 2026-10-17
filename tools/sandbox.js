@@ -59,7 +59,7 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", 
   // group (they replaced "modeS" and the Difficulty group).
   "tier-basic", "tier-intermediate", "tier-advanced",
   // Share URL lane SU-A: the COPY LINK control and its readonly fallback input.
-  "share-copy", "share-url"];
+  "share-copy", "share-url", "about", "about-open", "about-close"];
 
 /** Copy a value out of the vm realm, so assert.deepStrictEqual can compare it. */
 const plain = (v) => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
