@@ -12347,8 +12347,10 @@ function run() {
     async function recordBoot(cb, load) {
       const urls = [];
       cb.on("Network.requestWillBeSent", (p) => { urls.push(p.request.url); });
-      await cb.send("Network.enable");
-      await load();
+      try {
+        await cb.send("Network.enable");
+        await load();
+      } finally { cb.off("Network.requestWillBeSent"); }
       return urls;
     }
     function assertClean(urls, where) {
@@ -12458,8 +12460,10 @@ function run() {
     test("analyticsAllowed() is false in the harness and the boot sends zero analytics requests", async () => {
       const urls = [];
       b.on("Network.requestWillBeSent", (p) => { urls.push(p.request.url); });
-      await b.send("Network.enable");
-      await freshLoad();
+      try {
+        await b.send("Network.enable");
+        await freshLoad();
+      } finally { b.off("Network.requestWillBeSent"); }
       const m = await b.eval(`
         return { allowed: analyticsAllowed(), host: location.hostname,
                  scripts: [...document.head.querySelectorAll("script[src]")].map((s) => s.src),

@@ -5,7 +5,7 @@
 // do not drive a real page the way every e2e journey does, and an 8k-line
 // file made them easy to lose track of.
 //
-// Like tests/e2e.test.js, this whole suite skips with a printed reason if no
+// Like tests/e2e.test.js, the browser-driving tests skip with a printed reason if no
 // Chromium binary is present (CONTRACT: ./tests/run.sh must work anywhere) -
 // several of these tests launch a real (or stand-in) browser subprocess.
 
@@ -607,58 +607,105 @@ function run() {
     b.eval = async () => { throw new Error("boom"); };
     await assert.rejects(b.waitFor("x", { timeout: 60, label: "L" }), /timed out waiting for L.*last error: .*boom/);
   });
-
-  /* ------------------------------------------------------------------ *
-   * tools/sandbox.js gaps the discoverability work needs (plan section 9, W2).
-   * ------------------------------------------------------------------ */
-
-  const sandbox = require("../tools/sandbox.js");
-  const INDEX_HTML = () => fs.readFileSync(sandbox.APP, "utf8");
-
-  test("boot skips a script whose type is not JavaScript", () => {
-    const html = INDEX_HTML().replace("</head>", `<script type="application/ld+json">{"a":1}</script></head>`);
-    assert.doesNotThrow(() => sandbox.boot({ html }));
-  });
-
-  test("the sandbox reports navigator.webdriver true unless told otherwise", () => {
-    assert.strictEqual(sandbox.boot({}).get("navigator.webdriver"), true);
-    assert.strictEqual(sandbox.boot({ webdriver: false }).get("navigator.webdriver"), false);
-  });
-
-  test("the sandbox document has a head that records appended children", () => {
-    const app = sandbox.boot({});
-    const head = app.sandbox.document.head;
-    assert.ok(head, "document.head exists");
-    const el = app.sandbox.document.createElement("script");
-    head.appendChild(el);
-    assert.strictEqual(app.head.children.length, 1);
-    assert.strictEqual(app.head.children[0], el);
-  });
-
-  test("the sandbox location exposes protocol and hostname", () => {
-    const f = sandbox.boot({ href: "file:///x/index.html" }).location;
-    assert.deepStrictEqual([f.protocol, f.hostname], ["file:", ""]);
-    const h = sandbox.boot({ href: "http://localhost:8000/" }).location;
-    assert.deepStrictEqual([h.protocol, h.hostname], ["http:", "localhost"]);
-  });
-
-  test("the sandbox can dispatch hashchange to window listeners", () => {
-    const html = INDEX_HTML().replace("</body>", `<script>window.__hc = []; window.addEventListener("hashchange", () => window.__hc.push(location.hash));</script></body>`);
-    const app = sandbox.boot({ html });
-    app.hashchange("#x");
-    assert.deepStrictEqual(JSON.parse(app.get("JSON.stringify(window.__hc)")), ["#x"]);
-  });
-
-  test("boot takes an html string in place of the file", () => {
-    assert.throws(() => sandbox.boot({ html: "<html></html>" }), /no inline <script>/);
-    const html = INDEX_HTML().replace("</body>", "<script>window.__marker = 42;</script></body>");
-    assert.strictEqual(sandbox.boot({ html }).get("window.__marker"), 42);
-  });
-
-  test("stub elements have select()", () => {
-    const app = sandbox.boot({});
-    assert.strictEqual(typeof app.els["share-url"].select, "function");
-    assert.doesNotThrow(() => app.els["share-url"].select());
-    assert.ok(app.els["share-copy"]);
-  });
 }
+
+/* ------------------------------------------------------------------ *
+ * tools/sandbox.js gaps the discoverability work needs (plan section 9, W2).
+ * ------------------------------------------------------------------ */
+
+const sandbox = require("../tools/sandbox.js");
+const INDEX_HTML = () => fs.readFileSync(sandbox.APP, "utf8");
+
+test("boot skips a script whose type is not JavaScript", () => {
+  const html = INDEX_HTML().replace("</head>", `<script type="application/ld+json">{"a":1}</script></head>`);
+  assert.doesNotThrow(() => sandbox.boot({ html }));
+});
+
+test("the sandbox reports navigator.webdriver true unless told otherwise", () => {
+  assert.strictEqual(sandbox.boot({}).get("navigator.webdriver"), true);
+  assert.strictEqual(sandbox.boot({ webdriver: false }).get("navigator.webdriver"), false);
+});
+
+test("the sandbox document has a head that records appended children", () => {
+  const app = sandbox.boot({});
+  const head = app.sandbox.document.head;
+  assert.ok(head, "document.head exists");
+  const el = app.sandbox.document.createElement("script");
+  head.appendChild(el);
+  assert.strictEqual(app.head.children.length, 1);
+  assert.strictEqual(app.head.children[0], el);
+});
+
+test("the sandbox location exposes protocol and hostname", () => {
+  const f = sandbox.boot({ href: "file:///x/index.html" }).location;
+  assert.deepStrictEqual([f.protocol, f.hostname], ["file:", ""]);
+  const h = sandbox.boot({ href: "http://localhost:8000/" }).location;
+  assert.deepStrictEqual([h.protocol, h.hostname], ["http:", "localhost"]);
+});
+
+test("the sandbox can dispatch hashchange to window listeners", () => {
+  const html = INDEX_HTML().replace("</body>", `<script>window.__hc = []; window.addEventListener("hashchange", () => window.__hc.push(location.hash));</script></body>`);
+  const app = sandbox.boot({ html });
+  app.hashchange("#x");
+  assert.deepStrictEqual(JSON.parse(app.get("JSON.stringify(window.__hc)")), ["#x"]);
+});
+
+test("boot takes an html string in place of the file", () => {
+  assert.throws(() => sandbox.boot({ html: "<html></html>" }), /no inline <script>/);
+  const html = INDEX_HTML().replace("</body>", "<script>window.__marker = 42;</script></body>");
+  assert.strictEqual(sandbox.boot({ html }).get("window.__marker"), 42);
+});
+
+test("stub elements have select()", () => {
+  const app = sandbox.boot({});
+  assert.strictEqual(typeof app.els["share-url"].select, "function");
+  assert.doesNotThrow(() => app.els["share-url"].select());
+  assert.ok(app.els["share-copy"]);
+});
+
+test("boot reads type as an attribute and runs every JavaScript MIME type", () => {
+  const ran = (tag) => {
+    const html = INDEX_HTML().replace("</body>", `${tag}</body>`);
+    return sandbox.boot({ html }).get("window.__ran");
+  };
+  assert.strictEqual(ran(`<script data-type="x">window.__ran = 1;</script>`), 1, "data-type is not type");
+  assert.strictEqual(ran(`<script type="application/javascript">window.__ran = 2;</script>`), 2);
+  assert.strictEqual(ran(`<script type="text/ecmascript">window.__ran = 3;</script>`), 3);
+  assert.strictEqual(ran(`<script type="application/ld+json">window.__ran = 4;</script>`), undefined);
+});
+
+test("boot names the html option when it has no JavaScript block", () => {
+  assert.throws(() => sandbox.boot({ html: `<script type="application/ld+json">{}</script>` }), /the html option/);
+});
+
+test("the sandbox hashchange fires only on a real change and carries oldURL and newURL", () => {
+  const html = INDEX_HTML().replace("</body>", `<script>window.__hc = []; window.addEventListener("hashchange", (e) => window.__hc.push([e.oldURL, e.newURL]));</script></body>`);
+  const app = sandbox.boot({ html });
+  app.hashchange("#a");
+  const seen = () => JSON.parse(app.get("JSON.stringify(window.__hc)"));
+  const before = seen().length;
+  app.hashchange("#a");
+  assert.strictEqual(seen().length, before, "the same hash fires nothing");
+  app.hashchange("#b");
+  assert.deepStrictEqual(seen().slice(before), [["https://example.test/index.html#a", "https://example.test/index.html#b"]]);
+});
+
+test("Browser.off removes the one handler on() kept for a method", () => {
+  const b = Object.create(Browser.prototype);
+  b.eventHandlers = new Map();
+  b.on("X.y", () => {});
+  assert.ok(b.eventHandlers.has("X.y"));
+  b.off("X.y");
+  assert.strictEqual(b.eventHandlers.has("X.y"), false);
+});
+
+test("enableRealFonts sends the same block list it reports as blockedUrls", async () => {
+  const b = Object.create(Browser.prototype);
+  b.eventHandlers = new Map();
+  const sent = [];
+  b.send = async (method, params) => { sent.push([method, params]); };
+  await b.enableRealFonts();
+  const fetchEnable = sent.find(([m]) => m === "Fetch.enable");
+  assert.deepStrictEqual(fetchEnable[1].patterns.map((p) => p.urlPattern), b.blockedUrls);
+  assert.ok(b.blockedUrls.some((u) => /googletagmanager/.test(u)) && b.blockedUrls.some((u) => /google-analytics/.test(u)));
+});
