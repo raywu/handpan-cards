@@ -1,0 +1,16 @@
+# kills: guess is set only on bottoms whose octave was inferred
+# suite: node --test --test-name-pattern ^guess.is.set.only.on.bottoms.whose.octave.was.inferred$ tests/import.test.js
+# Every inferred note, ding and tops included, carries guess, so the sheet
+# would mark octaves it read from parseSeed's own ascending rule as guesses.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -313,7 +313,7 @@
+       if (!n.octave && octaves[n.index] !== undefined) {
+         e.note = octaves[n.index];
+         e.inferred = true;
+-        if (guessable) e.guess = true;
++        e.guess = true;
+       }
+       return e;
+     }

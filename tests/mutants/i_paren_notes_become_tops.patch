@@ -1,0 +1,16 @@
+# kills: UNDECLARED_PARENS: parenthesised notes get no role and nothing is serialised
+# suite: node --test --test-name-pattern ^UNDECLARED.PARENS..parenthesised.notes.get.no.role.and.nothing.is.serialised$ tests/import.test.js
+# A parenthesised note is given the top role instead of staying unassigned, so
+# a ( ) the source never declared as a ding is read as part of the scale.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -244,7 +244,7 @@
+ 
+     notes.forEach(function (n) {
+       if (n === ding) n.assigned = "ding";
+-      else if (n.paren) n.assigned = "unknown";
++      else if (n.paren) n.assigned = "top";
+       else n.assigned = n.role === "ding" ? "top" : n.role;
+     });
+     var unknown = notes.filter(function (n) { return n.assigned === "unknown"; });

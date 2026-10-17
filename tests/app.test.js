@@ -549,7 +549,7 @@ test("index.html carries the whole engine inline, with no external script", () =
 
   const app = boot();
   const HPE = app.get("HPE");
-  for (const mod of ["fontdata", "pdf", "pdfdeck", "pdfcards", "core", "voicing",
+  for (const mod of ["fontdata", "pdf", "pdfdeck", "pdfcards", "core", "importer", "voicing",
                      "layout", "naming", "select", "share", "sequence"]) {
     assert.strictEqual(typeof HPE[mod], "object", `HPE.${mod} missing from the app`);
   }
@@ -560,7 +560,7 @@ test("index.html carries the whole engine inline, with no external script", () =
   // appended last.
   const order = [...html.matchAll(/<!-- engine:(\w+) begin/g)].map((m) => m[1]);
   assert.deepStrictEqual(order, ["fontdata", "pdf", "pdfdeck", "pdfcards", "core",
-                                 "voicing", "layout", "naming", "select",
+                                 "importer", "voicing", "layout", "naming", "select",
                                  "share", "sequence"]);
   // share is the app's share surface: encode, decode and the version it guards.
   const share = app.get("HPE.share");
