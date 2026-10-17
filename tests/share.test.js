@@ -1478,6 +1478,16 @@ test("SV: an unknown, duplicated or out-of-order option is BAD_NOTE", () => {
   }
 });
 
+test("SV: a v5 link whose second character is not a slash is refused with the documented BAD_NOTE", () => {
+  const link = forge5("(D3)_A3_C4_D4_E4_F4_G4_A4_C5", "*x", []);
+  assert.equal(share.decode(link).ok, true, "the control opens");
+  for (const second of ["x", "-", "_", "5"]) {
+    const bent = "5" + second + link.slice(1);
+    const r = reject(bent);
+    assert.equal(r.reason, specReason("BAD_NOTE").split("<X>").join(bent.slice(0, 12)), bent);
+  }
+});
+
 test("SV: a link with percent-encoded parens or underscores opens; an escaped * or + is refused", () => {
   const [, , , , auto, named] = V5_BUILTINS[0];
   const base = decoded(auto);

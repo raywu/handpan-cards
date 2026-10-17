@@ -1,0 +1,15 @@
+# kills: SI: a second COPY LINK clears the message line before writing LINK COPIED again
+# suite: node --test --test-name-pattern ^SI:.a.second.COPY.LINK.clears tests/app.test.js
+# copyLink writes LINK COPIED in the same tick as the clear instead of after the deferred timer.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12339,7 +12339,7 @@ function copyLink() {
+   const done = (text, method) => {
+     say("", "");
+     track("share_copy", { deck_kind, method });
+-    setTimeout(() => { if (announce.textContent === "") say(text, "ok"); }, 0);
++    say(text, "ok");
+   };
+   const reveal = () => {
+     shareUrl.value = href;

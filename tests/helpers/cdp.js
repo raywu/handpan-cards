@@ -771,4 +771,4 @@ async function launch(opts = {}) {
 // Browser is exported for tests/harness.test.js's self-tests of settle() and
 // waitFor(); APP_READY_EXPR for tests/e2e.test.js's boot-readiness waits. e2e
 // journeys otherwise only get a Browser instance from launch().
-module.exports = { launch, findBrowser, Browser, APP_READY_EXPR, maybeEnableCoverage, takeExceptions, peekExceptions, expectUncaught, assertNoUncaught };
+module.exports = { launch, findBrowser, Browser, ANALYTICS_PATTERNS, APP_READY_EXPR, maybeEnableCoverage, takeExceptions, peekExceptions, expectUncaught, assertNoUncaught };

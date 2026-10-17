@@ -329,8 +329,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     if (label === null) return badNote(seed);
     var typed = opts.name !== undefined && opts.name !== null && String(opts.name) !== "";
     var scale = scaleSegment(seed.fields);
-    var segs = ["5", scale, typed ? percentEncode(String(opts.name)) : "*" + percentEncode(label)];
-    var meaning = ["5", scale, typed ? String(opts.name) : FIELD_SEP];
+    var segs = [String(VERSION), scale, typed ? percentEncode(String(opts.name)) : "*" + percentEncode(label)];
+    var meaning = [String(VERSION), scale, typed ? String(opts.name) : FIELD_SEP];
     function option(text) {
       segs.push(text);
       meaning.push(text);
@@ -540,9 +540,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   function decodeSeed(text, carry) {
     if (typeof text !== "string") return badNote(text);
 
-    // D5-4. The two version gates below are written against VERSION - and from
-    // here VERSION means the version being READ, clamped to the newest this
-    // build understands. Deliberately shadowing the module's VERSION (the one
+    // D5-4. The two version gates below serve the packed versions 1 to 4 (a v5
+    // link leaves for decodeReadable straight after them) and are written
+    // against VERSION - and from here VERSION means the version being READ,
+    // clamped to the newest this build understands. Deliberately shadowing the module's VERSION (the one
     // encode WRITES): it leaves both gates reading exactly as they did in v1
     // while making every version this build knows decodable, so a v1 link
     // still opens in a v2 app and only a genuinely NEWER one is refused.

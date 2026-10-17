@@ -1,0 +1,15 @@
+# kills: SI: at 844x390 #share-copy sits right of the deck strip and directly beside #settings-trigger
+# suite: node --test --test-name-pattern ^SI:.at.844x390 tests/e2e.test.js
+# #share-copy leaves the landscape order:2 rule, so it sorts before the deck strip.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -482,7 +482,7 @@ a.mode{text-decoration:none}
+      as the last item, after the deck strip (menu-shell, 2026-09-28). */
+   .hrow{display:contents}
+   .decks{order:1}
+-  #settings-trigger, #share-copy{order:2; flex:0 0 auto}
++  #settings-trigger{order:2; flex:0 0 auto}
+ }
+ main{flex:1; display:flex; align-items:center; justify-content:center; width:100%; min-height:0}
+ /* swipe: the drag moves .scene, never .card - .card's transform is the flip.

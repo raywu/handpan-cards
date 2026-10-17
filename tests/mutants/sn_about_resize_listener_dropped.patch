@@ -1,0 +1,15 @@
+# kills: AO: a dispatched resize while About is open updates --about-head-h
+# suite: node --test --test-name-pattern ^AO:.a.dispatched.resize.while tests/app.test.js
+# The resize listener that keeps --about-head-h current is removed.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11728,7 +11728,7 @@ function syncAboutHead() {
+   const head = document.querySelector(".abouthead");
+   document.documentElement.style.setProperty("--about-head-h", (head ? head.offsetHeight : 0) + "px");
+ }
+-window.addEventListener("resize", syncAboutHead);
++
+ function aboutStops() {
+   return [aboutCloseBtn, ...document.querySelectorAll('#about a[href^="#deck="], #about a[href^="mailto:"]')].filter(isStop);
+ }

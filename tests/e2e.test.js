@@ -17,7 +17,7 @@ const assert = require("node:assert");
 const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
-const { launch, findBrowser, APP_READY_EXPR, peekExceptions, expectUncaught, assertNoUncaught } = require("./helpers/cdp.js");
+const { launch, findBrowser, ANALYTICS_PATTERNS, APP_READY_EXPR, peekExceptions, expectUncaught, assertNoUncaught } = require("./helpers/cdp.js");
 
 const REPO = path.resolve(__dirname, "..");
 // Loopback only, and by default port 0 - the OS hands out a free port, so two
@@ -12445,24 +12445,29 @@ function run() {
   });
 
   describe("analytics hosts", () => {
-    const HOSTS = [/googletagmanager\.com/, /google-analytics\.com/];
-    const PATTERNS = ["*googletagmanager.com*", "*google-analytics.com*"];
+    const PATTERNS = ANALYTICS_PATTERNS;
+    const HOSTS = PATTERNS.map((p) => p.replace(/\*/g, ""));
 
     async function recordBoot(cb, load) {
       const urls = [];
-      cb.on("Network.requestWillBeSent", (p) => { urls.push(p.request.url); });
+      const byId = new Map();
+      const failed = [];
+      cb.on("Network.requestWillBeSent", (p) => { urls.push(p.request.url); byId.set(p.requestId, p.request.url); });
+      cb.on("Network.loadingFailed", (p) => { failed.push(byId.get(p.requestId)); });
       try {
         await cb.send("Network.enable");
         await load();
-      } finally { cb.off("Network.requestWillBeSent"); }
+      } finally { cb.off("Network.requestWillBeSent"); cb.off("Network.loadingFailed"); }
+      urls.failed = failed;
       return urls;
     }
     function assertClean(urls, where) {
-      const bad = urls.filter((u) => HOSTS.some((h) => h.test(u)));
+      const bad = urls.filter((u) => HOSTS.some((h) => u.includes(h)));
       assert.deepStrictEqual(bad, [], `${where}: a test boot sent analytics requests`);
     }
 
     test("a full boot sends zero requests to googletagmanager.com and google-analytics.com", async () => {
+      assert.deepStrictEqual(HOSTS, ["googletagmanager.com", "google-analytics.com"], "the block list no longer names both analytics hosts");
       const urls = await recordBoot(b, freshLoad);
       assert.ok(urls.length > 0, "the recorder saw the boot's requests");
       assertClean(urls, "default launch");
@@ -12476,6 +12481,9 @@ function run() {
         });
         assert.ok(real.length > 0, "the recorder saw the realFonts boot's requests");
         assertClean(real, "realFonts launch");
+        const fontUrls = real.filter((u) => /fonts\.googleapis\.com/.test(u));
+        assert.ok(fontUrls.length > 0, "the realFonts boot requested the font stylesheet, so the next check proves something");
+        assert.deepStrictEqual(real.failed.filter((u) => /fonts\.googleapis\.com/.test(u || "")), [], "the analytics block failed a font request");
         for (const p of PATTERNS) assert.ok(cb.blockedUrls.includes(p), `realFonts launch() blocks ${p}`);
       } finally { await cb.close(); }
     });
@@ -12718,13 +12726,17 @@ function run() {
         await b.settle();
         const nav = async () => {
           const h = await b.send("Page.getNavigationHistory");
-          return { index: h.currentIndex, length: h.entries.length, url: h.entries[h.currentIndex].url };
+          return { index: h.currentIndex, length: h.entries.length, url: h.entries[h.currentIndex].url,
+                   ids: h.entries.map((e) => e.id), currentId: h.entries[h.currentIndex].id };
         };
         const before = await nav();
         await openAboutUi();
         await b.waitFor(`location.hash === "#about"`, { label: "the bar to read #about" });
         const during = await nav();
         assert.match(during.url, /#about$/);
+        const fresh = during.ids.filter((id) => !before.ids.includes(id));
+        assert.deepStrictEqual(fresh, [during.currentId], "ABOUT did not push exactly one new entry, the current one");
+        assert.ok(during.ids.includes(before.currentId), "ABOUT dropped the entry it was opened from");
         assert.strictEqual(await b.eval(`return !!(history.state && history.state.about)`), true, "ABOUT did not push its own entry");
         await b.eval(`history.back(); return true;`);
         await waitAboutClosed();
@@ -13057,6 +13069,71 @@ function run() {
       await b.waitFor(`!document.getElementById("share-url").hidden`, { label: "#share-url to be revealed" });
     };
 
+    test("SI: at 844x390 #share-copy sits right of the deck strip and directly beside #settings-trigger", async () => {
+      await freshLoad();
+      try {
+        await b.setViewport(844, 390, true);
+        await b.settle();
+        const m = await b.eval(`
+          const r = (s) => { const q = document.querySelector(s).getBoundingClientRect(); return { l: q.left, r: q.right, t: q.top, b: q.bottom }; };
+          return { decks: r("#decks"), share: r("#share-copy"), trig: r("#settings-trigger"),
+                   order: getComputedStyle(document.getElementById("share-copy")).order };
+        `);
+        assert.strictEqual(m.order, "2");
+        assert.ok(m.decks.r <= m.share.l + 1, `the icon is left of the strip's end: ${m.decks.r} vs ${m.share.l}`);
+        assert.ok(m.share.r <= m.trig.l + 1, "the icon is not left of the settings trigger");
+        assert.ok(m.trig.l - m.share.r <= 16, `something sits between the icon and the trigger: ${m.trig.l - m.share.r}px`);
+        assert.ok(Math.abs(m.share.t - m.trig.t) <= 4, "the icon is not on the trigger's row");
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("SI: when #share-copy becomes disabled while focused the app moves no focus and the browser drops it to the body", async () => {
+      await freshLoad();
+      await generate(SIX_SCALES[1]);
+      await b.settle();
+      await b.eval(`document.getElementById("share-copy").focus(); return true;`);
+      assert.strictEqual(await b.eval(`return document.activeElement.id`), "share-copy");
+      await b.eval(`window.__enc = HPE.share.encode;
+        HPE.share.encode = () => ({ ok: false, code: "OVER", reason: "Too big to share." });
+        syncRoute(); return true;`);
+      try {
+        await b.settle();
+        assert.strictEqual(await b.eval(`return document.getElementById("share-copy").disabled`), true);
+        assert.strictEqual(await b.eval(`return document.activeElement === document.body`), true,
+          "focus did not land on the body; the app or the browser changed what it does");
+      } finally {
+        await b.eval(`HPE.share.encode = window.__enc; syncRoute(); return true;`);
+      }
+    });
+
+    test("SI: while About is open #share-copy has an inert ancestor and a click at its position copies nothing", async () => {
+      await freshLoad();
+      await b.setViewport(380, 800, false);
+      try {
+        await b.settle();
+        await b.eval(`window.__copied = 0;
+          Object.defineProperty(navigator, "clipboard", { value: { writeText: async () => { window.__copied += 1; } }, configurable: true });
+          return true;`);
+        await openSettingsPanel();
+        await b.eval(`document.getElementById("about-open").scrollIntoView({ block: "center" }); return true;`);
+        await b.settle();
+        await b.click("#about-open");
+        await b.waitFor(`document.getElementById("about").hidden === false`, { label: "About to open" });
+        await b.settle();
+        assert.strictEqual(await b.eval(`return !!document.getElementById("share-copy").closest("[inert]")`), true, "no inert ancestor");
+        assert.strictEqual(await b.eval(`const r = document.getElementById("share-copy").getBoundingClientRect();
+          const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+          return !!(hit && hit.closest("#share-copy"))`), false, "the icon is hit-testable under About");
+        await b.click("#share-copy");
+        await b.settle();
+        assert.strictEqual(await b.eval(`return window.__copied`), 0, "a click copied the link under About");
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
     test("SI: a revealed #share-url does not move the card at 380x780", async () => {
       await freshLoad();
       try {
@@ -13129,7 +13206,6 @@ function run() {
       };
       await freshLoad();
       await b.settle();
-      const before = await nav();
       await navigate(URL + "?r=sv#s=" + v4);
       await b.settle();
       await waitHash(v5, "the bar to be rewritten to the v5 code");

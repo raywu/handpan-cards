@@ -1,0 +1,14 @@
+# kills: SI: opening the create sheet hides a revealed #share-url
+# suite: node --test --test-name-pattern ^SI:.opening.the.create.sheet.hides tests/app.test.js
+# openScaleSheet no longer hides a revealed #share-url.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10927,7 +10927,6 @@ function resetSheetState(edit) {
+ }
+ // The create path.
+ function openScaleSheet(opener) {
+-  shareUrl.setAttribute("hidden", "");
+   resetSheetState(null);
+   showSheet(opener);
+ }
