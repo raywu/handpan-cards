@@ -387,7 +387,7 @@ changing the solver or the seed, never by hand.
   lacks that control ("panel fit: the About-row allowance is 52, owed only for an
   about-open control the base lacks"), which moves no existing control ("panel
   fit rule 2: the About-row allowance does not move any existing control");
-  nothing else earns growth. Every panel control centres its label, wrapped or not
+  nothing else earns growth (the 24px `HEADING_ALLOWANCE_PX` for `#panel-prog-heading` is dormant, since the base has the heading). Every panel control centres its label, wrapped or not
   (`#settings-panel .mode`, and the paper select's value).
 - **Card copy is English-only.** The bilingual German/English subtitles
   inherited from the reference deck (DUR/MOLL/VERMINDERT etc.) were
@@ -627,12 +627,7 @@ card-size and host-block titles below are in `tests/e2e.test.js`.
   and a popstate each close it, consume the `#about` entry and leave the settings
   menu CLOSED, with focus on the settings trigger ("AO: the exit control, Escape
   and a popstate each close About, consume the #about entry and focus the settings
-  trigger"); at 380px, "AO: at 380px the exit control restores the deck, card,
-  flip state, mode and scroll, with focus on the settings trigger", "AO: at 380px
-  Back closes About and one more Back leaves the page's history as it was before
-  ABOUT" and "AO: at 380px Escape closes About and arrow keys never step the card
-  while it is open"; at 1280px focus returns to ABOUT ("AO: at 1280x800 the
-  sidebar's ABOUT opens About and closing returns focus to ABOUT"). Closing a
+  trigger"); in a real browser (tests/e2e.test.js), "AO: at 380px the exit control restores the deck, card, flip state, mode and scroll, with focus on the settings trigger", "AO: at 380px Back closes About and one more Back leaves the page's history as it was before ABOUT" and "AO: at 380px Escape closes About and arrow keys never step the card while it is open"; at 1280px focus returns to ABOUT ("AO: at 1280x800 the sidebar's ABOUT opens About and closing returns focus to ABOUT", tests/e2e.test.js). Closing a
   closed About pops nothing ("AO: closing About when it is already closed pops
   nothing"). `syncRoute()` and `hashchange` write nothing while it is open ("AO:
   syncRoute and hashchange write nothing while About is open"); a fragment
@@ -642,20 +637,13 @@ card-size and host-block titles below are in `tests/e2e.test.js`.
   not About, and the bar is rewritten to the deck's route (G3: "AO: a boot on
   #about leaves About closed and ends on the deck's route"; a Forward traversal
   onto `#about` does the same: "AO: a Forward traversal onto #about leaves About
-  closed and rewrites the bar"). The page behind does not scroll ("AO: the page
-  behind About does not scroll, at 380x800 and 844x390"); About scrolls itself
-  with its exit visible and 44px non-overlapping link targets ("AO: About
-  scrolls with its exit visible, non-overlapping 44px link targets and no
-  horizontal scroll at 380x800, 844x390 and 1280x800"); it has no transition or
-  animation ("AO: About has no transition or animation with and without
-  prefers-reduced-motion").
+  closed and rewrites the bar"). In tests/e2e.test.js: the page behind does not scroll ("AO: the page behind About does not scroll, at 380x800 and 844x390"); About scrolls itself with its exit visible and 44px non-overlapping link targets ("AO: About scrolls with its exit visible, non-overlapping 44px link targets and no horizontal scroll at 380x800, 844x390 and 1280x800"); it has no transition or animation ("AO: About has no transition or animation with and without prefers-reduced-motion").
   **Deck links inside About** go through `aboutLink()`, which shares
   `routeToDeck()` with the `hashchange` listener (the listener still serves typed
   and external fragments). A link to another deck replaces the `#about` entry with
   the deck's route and selects it, so one Back returns to the previous deck ("AO:
   a #deck= link inside About replaces the #about entry with the deck's route and
-  selects the deck"; at 380px "AO: at 380px a #deck= link inside About switches
-  deck and one Back returns to the previous deck"); a link to the deck already
+  selects the deck"; at 380px "AO: at 380px a #deck= link inside About switches deck and one Back returns to the previous deck", tests/e2e.test.js); a link to the deck already
   shown closes About like the exit control ("AO: a #deck= link to the deck
   already shown closes About like the exit control"); with a custom deck showing,
   "an about link clicked while a custom deck shows switches the deck and the bar"
@@ -665,7 +653,7 @@ card-size and host-block titles below are in `tests/e2e.test.js`.
   served HTML in its original position and renders only while open; D10 (position)
   stands for the markup and the served order is unchanged; D20 (the `#app`
   wrapper) stands and the card-size test still pins it, but its reason (About as
-  a fourth flex child of `body`) is gone; D22 (classic scrollbars) is moot because
+  a fourth flex child of `body`) is gone; D21 (in-page `#deck=` links): the `hashchange` listener stands for typed and external fragments, and links inside About go through `aboutLink()` (see above); D22 (classic scrollbars) is moot because
   the page no longer scrolls to About.
 - **Structured data.** One `application/ld+json` WebApplication block; it states
   only what the page shows: name equals the `<h1>`, description equals the meta
