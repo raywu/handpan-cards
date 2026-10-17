@@ -537,6 +537,8 @@ first, against fixtures captured from real text.
   b"), lowercase, or a word ("Kurd is not a note" already exists).
 - **Acceptance:** each new alternate is asserted, and all existing grammar
   fixtures are unchanged.
+  - Every `e.g.` in a new alternate is itself a string that parses
+    (`tests/scale.test.js` 'every e.g. in REASONS parses').
 - **Verify:** `node --test tests/scale.test.js && node --test tests/core.test.js && python3
   tools/inline_engine.py --check`
 - **Non-goals:**
@@ -556,7 +558,15 @@ first, against fixtures captured from real text.
     wiring;
   - `tools/sandbox.js` `ELEMENT_IDS`;
   - `tests/app.test.js`, `tests/e2e.test.js`;
-  - their FLOORS and mutant rows.
+  - their FLOORS and mutant rows;
+  - the refresh of any existing `tests/mutants/*.patch` that its `index.html`
+    edits stale or make non-unique, whichever suite the patch kills: run
+    `python3 tools/refresh_mutants.py`, then `--check`. Placing the controls
+    straight after the `#scale-refusal` fieldrow stales
+    `a_seed_refusal_below_the_pan.patch`;
+  - edits to those drawer and seat-sweep suites only where the new sheet
+    controls force an assumption (Tab count, sheet height) to move, each
+    called out in the PR.
 - **Objective:** section 4.3.
 - **Acceptance:**
   - USE writes exactly `HPE.importer.serialise(r)` into `#scale-box` and
@@ -574,12 +584,18 @@ first, against fixtures captured from real text.
   - Analytics, if any: one `scale_import` event with `{status}` only, no
     text. Adding `scale_import` is an owner gate; if approved, Lane B adds it to the 'discoverability: analytics events' describe and to 'no event param is a string over 40 characters or names a custom: id', and Lane C updates the CLAUDE.md event list.
 - **Verify:** `node --test tests/app.test.js && node --test tests/e2e.test.js
-  && python3 tools/validate.py`
+  && python3 tools/validate.py && python3 tools/refresh_mutants.py --check
+  && node --test tests/mutation_harness.test.js tests/drawer_grid.test.js
+  tests/drawer_seats.test.js tests/drawer_drag.test.js
+  tests/seat_sweeps_keys.test.js tests/seat_sweeps_tap_add.test.js
+  tests/seat_sweeps_tap_edit.test.js`
 - **Non-goals:**
   - URL fields;
   - deck naming on create (G5);
   - preset offers (G4);
-  - editing the layout drawer.
+  - editing the layout drawer;
+  - editing shared `.mode` or `#settings-panel` rules: the CI panel-fit oracle
+    diffs the panel against base.
 
 ### Lane C: docs (after B)
 
@@ -635,6 +651,7 @@ first, against fixtures captured from real text.
 | G4 | Offer a built-in deck when the pasted text is only a matching name? | owner removed presets in 2026-09; a maker's "D Kurd 10" may differ |
 | G5 | Carry the product name into the deck name on create? | `sheetOptions()` 9590 names new decks automatically |
 | G6 | Octaveless lists: BLOCK (recommended), or allow `parseSeed`'s inference with a CONFIRM? | inference is "inferring missing pitch information" under the prompt's scope |
+| G7 | Add a `scale_import` analytics event with `{status}` only? | the Lane B acceptance text; no event is added without it |
 
 ### Rejected alternatives
 
