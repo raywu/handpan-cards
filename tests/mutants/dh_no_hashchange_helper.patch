@@ -4,10 +4,10 @@
 diff --git a/tools/sandbox.js b/tools/sandbox.js
 --- a/tools/sandbox.js
 +++ b/tools/sandbox.js
-@@ -697,7 +697,6 @@ function boot(opts = {}) {
+@@ -698,7 +698,6 @@ function boot(opts = {}) {
        const oldURL = location.href;
        location.hash = newHash;
-       if (location.href === oldURL) return;
+       if (location.href === oldURL && !opts.force) return;
 -      for (const fn of winListeners.hashchange || []) fn({ type: "hashchange", oldURL, newURL: location.href });
      },
      /** Press the browser's Back button. Fires the app's popstate listeners; the
