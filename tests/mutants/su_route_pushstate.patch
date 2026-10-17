@@ -1,8 +1,6 @@
-# kills: booting on a page route opens nothing and leaves a clean hash
-# suite: node --test --test-name-pattern ^booting.on.a.page.route.opens.nothing.and.leaves.a.clean.hash$ tests/app.test.js
-# The boot cleanup pushes the clean URL instead of replacing it, so the
-# rejected route stays an entry behind it and the first back press returns to
-# the route just refused.
+# kills: SU: tapping three chips writes three replaceState hashes and no pushState
+# suite: node --test --test-name-pattern ^SU:.tapping.three.chips tests/app.test.js
+# syncRoute pushes instead of replacing, so every chip tap adds a history entry (edge 1).
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html

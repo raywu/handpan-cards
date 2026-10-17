@@ -1,0 +1,16 @@
+# kills: a pop that follows a fragment navigation leaves the destination hash alone
+# suite: node --test --test-name-pattern ^a.pop.that.follows.a.fragment.navigation tests/app.test.js
+# Every pop syncs, not only the sheet-close pop, so Back/Forward and about links lose their destination (outside voice C1).
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10115,7 +10115,8 @@ let pendingPop = false;
+ // The browser's way out: the back gesture, or a swipe. The entry is already
+ // gone, so this only takes the page down.
+ window.addEventListener("popstate", () => {
+-  if (pendingPop) { pendingPop = false; syncRoute(); return; }
++  syncRoute();
++  if (pendingPop) { pendingPop = false; return; }
+   if (!sheetOpen) return;
+   sheetRouted = false;
+   hideSheet();

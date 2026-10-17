@@ -3301,6 +3301,19 @@ test("a pop with no page open is not an invitation to close something", () => {
   assert.strictEqual(app.history.calls.length, callsBefore, "a stray pop wrote to history");
 });
 
+test("a pop that follows a fragment navigation leaves the destination hash alone", () => {
+  // Back/Forward between two routes (or an about link) fires popstate BEFORE
+  // hashchange, with the destination already in the bar and a different deck on
+  // screen. Only a sheet-close pop (pendingPop) may sync; any other pop that did
+  // would overwrite the destination with the deck still shown.
+  const app = boot();
+  const callsBefore = app.history.calls.length;
+  app.location.href = app.location.href.replace(/#.*$/, "") + "#deck=c-sharp-hijaz-9";
+  app.popstate();
+  assert.strictEqual(app.location.hash, "#deck=c-sharp-hijaz-9", "a stray pop rewrote the destination hash");
+  assert.strictEqual(app.history.calls.length, callsBefore, "a stray pop wrote to history");
+});
+
 test("closing a page that is already closed changes nothing", () => {
   // closeScaleSheet() is reachable from BACK, from Escape and from a save that
   // finishes, so a double call is a live possibility rather than a contrived
@@ -9512,11 +9525,14 @@ describe("discoverability: analytics events", () => {
     assert.deepStrictEqual(events(app), []);
   });
 
-  test("no event param is a string over 40 characters or names a custom: id", () => {
+  test("no event param is a string over 40 characters or names a custom: id", async () => {
     const app = bootEv();
     openSheet(app);
     app.type(AMARA_STRING);
     app.els["scale-generate"].click();
+    app.sandbox.navigator.clipboard = { writeText: async () => {} };
+    app.els["share-copy"].click();
+    await new Promise((r) => setImmediate(r));
     app.run('flip(); setTier("basic"); downloadDeckPDF("shop"); selectDeck("hijaz");');
     const all = events(app);
     assert.ok(all.length >= 5);
