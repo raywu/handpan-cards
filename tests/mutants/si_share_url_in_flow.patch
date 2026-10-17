@@ -1,0 +1,15 @@
+# kills: SI: a revealed #share-url is positioned out of flow
+# suite: node --test --test-name-pattern ^SI:.a.revealed.#share-url.is.positioned tests/app.test.js
+# The revealed field goes back into the flow and pushes the card down.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -297,7 +297,7 @@ a.mode{text-decoration:none}
+    inside the link box (menu-resources AD7); no other row takes this class. */
+ .modebar.duo{flex-wrap:nowrap}
+ #share-url{box-sizing:border-box; width:100%; min-height:44px; padding:0 10px; font:inherit; font-size:16px;
+-  position:absolute; left:0; right:0; top:44px; z-index:29;
++  position:static; left:0; right:0; top:44px; z-index:29;
+   background:#211d16; border:1px solid #433b2c; border-radius:8px; color:#eae6df}
+ #share-url[hidden]{display:none}
+ .modebar.duo .mode{min-width:0; padding-inline:6px; line-height:1.25}

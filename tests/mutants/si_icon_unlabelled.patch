@@ -1,0 +1,15 @@
+# kills: SI: #share-copy is the header's first control, a button labelled Copy link with an inline SVG and no external asset
+# suite: node --test --test-name-pattern ^SI:.#share-copy.is.the.header tests/app.test.js
+# The icon button loses its accessible name.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1233,7 +1233,7 @@ html.about-open{overflow:hidden}
+ <div id="app">
+ <header>
+   <div class="hrow">
+-    <button id="share-copy" type="button" class="mode" aria-label="Copy link">
++    <button id="share-copy" type="button" class="mode">
+       <svg class="glyph-link" viewBox="0 0 24 24" width="20" height="20"
+            aria-hidden="true" focusable="false">
+         <g transform="rotate(-45 12 12)" fill="none" stroke="currentColor"

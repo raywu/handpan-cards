@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11369,7 +11369,7 @@ function syncRoute() {
- function copyLink() {
-   const href = location.href;
+@@ -12333,7 +12333,7 @@ function copyLink() {
    const deck_kind = deckKind(deck());
+   const done = (text, method) => {
+     say("", "");
 -    track("share_copy", { deck_kind, method });
 +    track("share_copy", { deck_kind, method, deck_id: deck().id });
+     setTimeout(() => { if (announce.textContent === "") say(text, "ok"); }, 0);
+   };
    const reveal = () => {
-     shareUrl.value = href;
-     shareUrl.removeAttribute("hidden");

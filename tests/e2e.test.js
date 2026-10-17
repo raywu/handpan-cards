@@ -3145,7 +3145,7 @@ function run() {
   // panel's own landscape-fit tests below. Lane M2, 2026-09-28: "+ Add a
   // scale" (#deck-add) moved into that same panel and is covered there too -
   // it is not part of the always-on chrome this matrix is about.
-  const LANDSCAPE_CONTROLS = ["#settings-trigger", ".shuffle", ".count", "#prev", "#next"];
+  const LANDSCAPE_CONTROLS = ["#share-copy", "#settings-trigger", ".shuffle", ".count", "#prev", "#next"];
 
   // One reading of the whole page: where every control's centre actually
   // hit-tests, where the card sits relative to its container, and how big
@@ -3505,7 +3505,7 @@ function run() {
         // The three under-sized controls, plus the ones that already pass:
         // a min-height that swallows a neighbour is the row-214 bug again.
         const resting = await probeTargets(
-          ["#shuffle", "#prev", "#next", "#decks .chip"]);
+          ["#shuffle", "#prev", "#next", "#decks .chip", "#share-copy"]);
         await openSettingsPanel();
         // #deck-add ("+ Add a scale", M2, 2026-09-28) lives in the panel now,
         // so it is measured here, with the panel open, alongside the other
@@ -8773,7 +8773,7 @@ function run() {
     // D2 re-plan step 4 (owner's five-button design, §4.2a): five mutually
     // exclusive practice buttons. There is no #modeS and no disabled state.
     const FLASH_STOPS = ["settings-trigger", "modeA", "modeB", "tier-basic", "tier-intermediate",
-      "tier-advanced", "deck-add", "share-copy", "print-download", "print-paper-select", ...RES_IDS,
+      "tier-advanced", "deck-add", "print-download", "print-paper-select", ...RES_IDS,
       "about-open"];
     const PROG_STOPS = [...FLASH_STOPS.slice(0, 6), "seq-source-link", ...FLASH_STOPS.slice(6)];
     const MODAL_VIEWPORTS = [[320, 568, true], [768, 1024, true], [568, 320, true], [683, 330, true], [844, 390, true]];
@@ -8797,7 +8797,7 @@ function run() {
       return { fwd: seen.map((x) => x.id || ""), back: back.map((x) => x.id || "") };
     }
 
-    test("Tab cycles exactly the seventeen flash-card stops in the modal at every viewport class", async () => {
+    test("Tab cycles exactly the sixteen flash-card stops in the modal at every viewport class", async () => {
       for (const [w, h, m] of MODAL_VIEWPORTS) {
         await freshLoad();
         await b.setViewport(w, h, m);
@@ -8820,7 +8820,7 @@ function run() {
       await b.setViewport(900, 900, false);
     });
 
-    test("Tab cycles exactly the eighteen progression stops in the modal at every viewport class", async () => {
+    test("Tab cycles exactly the seventeen progression stops in the modal at every viewport class", async () => {
       for (const [w, h, m] of MODAL_VIEWPORTS) {
         await freshLoad();
         await b.setViewport(w, h, m);
@@ -12213,11 +12213,8 @@ function run() {
 
       await b.eval(`document.getElementById("deck-add").focus(); return true;`);
       await b.key("Tab", "Tab", 9);
-      assert.strictEqual(await b.eval(`return document.activeElement.id;`), "share-copy",
-        "Tab from + ADD A SCALE does not reach COPY LINK");
-      await b.key("Tab", "Tab", 9);
       assert.strictEqual(await b.eval(`return document.activeElement.id;`), "deck-restore",
-        "Tab from COPY LINK does not reach RESET SEEDED DECKS");
+        "Tab from + ADD A SCALE does not reach RESET SEEDED DECKS");
 
       await b.click("#deck-restore");
       await b.waitFor(`document.getElementById("deck-restore").hasAttribute("data-armed")`,
@@ -12983,7 +12980,6 @@ function run() {
       await freshLoad();
       await navigate(URL + "?share=x");
       await b.settle();
-      await openSettingsPanel();
       await b.click("#share-copy");
       await b.waitFor(`/LINK COPIED/.test(document.getElementById("announce") ? document.getElementById("announce").textContent : document.body.textContent)`,
         { label: "LINK COPIED to be announced" });
@@ -12992,26 +12988,103 @@ function run() {
       assert.ok(m.clip.includes("?share=x#deck="), m.clip);
     });
 
-    test("edge 10: COPY LINK is a 44px target inside the panel at 320px and 380px with no horizontal overflow", async () => {
+    test("edge 10: COPY LINK is a 44px target in the header at 320px and 380px with no horizontal overflow", async () => {
       await freshLoad();
       try {
         for (const [w, h] of [[320, 568], [380, 700]]) {
           await b.setViewport(w, h, true);
           await b.settle();
-          await openSettingsPanel();
           const m = await b.eval(`
             const r = document.getElementById("share-copy").getBoundingClientRect();
-            const a = document.getElementById("deck-add").getBoundingClientRect();
-            return { h: r.height, left: r.left, right: r.right, vw: innerWidth, top: r.top, atop: a.top,
+            return { h: r.height, w: r.width, left: r.left, right: r.right, vw: innerWidth,
                      sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth };
           `);
-          assert.ok(m.h >= 44, `${w}px: COPY LINK is ${m.h}px tall`);
+          assert.ok(m.h >= 44 && m.w >= 44, `${w}px: COPY LINK is ${m.w}x${m.h}`);
           assert.ok(m.left >= 0 && m.right <= m.vw, `${w}px: COPY LINK leaves the viewport: ${m.left}..${m.right} of ${m.vw}`);
           assert.ok(m.sw <= m.cw + 1, `horizontal overflow at ${w}px`);
-          assert.ok(Math.abs(m.top - m.atop) <= 1, `${w}px: COPY LINK top ${m.top} is not the top of #deck-add ${m.atop}`);
-          await b.eval(`document.getElementById("settings-scrim")?.click(); return true;`).catch(() => {});
-          await b.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: "panel closes" });
         }
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("SI: the share icon is a 44px target in the header's left cell at 380x780 and the title stays centred", async () => {
+      await freshLoad();
+      try {
+        await b.setViewport(380, 780, true);
+        await b.settle();
+        const m = await b.eval(`
+          const r = (s) => document.querySelector(s).getBoundingClientRect();
+          const i = r("#share-copy"), h = r("h1"), row = r(".hrow");
+          const hit = document.elementFromPoint(i.left + i.width / 2, i.top + i.height / 2);
+          return { iw: i.width, ih: i.height, il: i.left - row.left, hc: h.left + h.width / 2,
+                   rc: row.left + row.width / 2, hit: !!(hit && hit.closest("#share-copy")) };
+        `);
+        assert.ok(m.iw === 44 && m.ih === 44, `icon is ${m.iw}x${m.ih}`);
+        assert.ok(Math.abs(m.il) <= 1, `icon is not in the left cell: ${m.il}`);
+        assert.ok(Math.abs(m.hc - m.rc) <= 1, `title is off centre: ${m.hc} vs ${m.rc}`);
+        assert.strictEqual(m.hit, true);
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    const revealShareUrl = async () => {
+      await b.eval(`Object.defineProperty(navigator, "clipboard", { value: undefined, configurable: true });
+        Object.defineProperty(navigator, "share", { value: undefined, configurable: true }); return true;`);
+      await b.click("#share-copy");
+      await b.waitFor(`!document.getElementById("share-url").hidden`, { label: "#share-url to be revealed" });
+    };
+
+    test("SI: a revealed #share-url does not move the card at 380x780", async () => {
+      await freshLoad();
+      try {
+        await b.setViewport(380, 780, true);
+        await b.settle();
+        const rects = () => b.eval(`
+          const o = {};
+          for (const s of ["header", "main", ".scene", "footer"]) {
+            const r = document.querySelector(s).getBoundingClientRect();
+            o[s] = [r.left, r.top, r.width, r.height].map((n) => +n.toFixed(2));
+          }
+          return o;`);
+        const before = await rects();
+        await revealShareUrl();
+        const field = await b.eval(`const r = document.getElementById("share-url").getBoundingClientRect();
+          return { top: r.top, h: r.height, pos: getComputedStyle(document.getElementById("share-url")).position };`);
+        assert.strictEqual(field.pos, "absolute");
+        assert.ok(field.h >= 44, `field is ${field.h}px tall`);
+        assert.deepStrictEqual(await rects(), before, "a reveal moved the page");
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("SI: a revealed #share-url hides on blur, on Escape and when the scale sheet opens, and the chips are hit-testable again", async () => {
+      await freshLoad();
+      try {
+        await b.setViewport(380, 780, true);
+        await b.settle();
+        const chipHit = () => b.eval(`
+          const c = document.querySelector("#decks .chip");
+          const r = c.getBoundingClientRect();
+          const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+          return hit === c || c.contains(hit);`);
+        const hidden = () => b.eval(`return document.getElementById("share-url").hidden`);
+        await revealShareUrl();
+        await b.eval(`document.getElementById("share-url").blur(); return true;`);
+        assert.strictEqual(await hidden(), true, "blur did not hide");
+        assert.strictEqual(await chipHit(), true, "chip not hit-testable after blur");
+        await revealShareUrl();
+        await b.key("Escape", "Escape", 27);
+        assert.strictEqual(await hidden(), true, "Escape did not hide");
+        assert.strictEqual(await chipHit(), true, "chip not hit-testable after Escape");
+        await revealShareUrl();
+        await b.eval(`openScaleSheet(document.getElementById("settings-trigger")); return true;`);
+        assert.strictEqual(await hidden(), true, "opening the sheet did not hide");
+        await b.eval(`closeScaleSheet(); return true;`);
+        await b.settle();
+        assert.strictEqual(await chipHit(), true, "chip not hit-testable after the sheet");
       } finally {
         await b.setViewport(900, 900, false);
       }
