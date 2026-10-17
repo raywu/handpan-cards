@@ -1,0 +1,14 @@
+# kills: IM: USE writes exactly serialise(r) into #scale-box, fires input, and the parse line matches typing it
+# suite: node --test --test-name-pattern ^IM:.USE.writes.exactly tests/app.test.js
+# Lane B. useImport never writes the serialised seed into #scale-box.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10629,7 +10629,6 @@
+   if (importUseBtn.disabled || !importRes) return;
+   const seed = HPE.importer.serialise(importRes);
+   if (!seed) return;
+-  scaleBox.value = seed;
+   scaleBox.dispatchEvent(typeof Event === "function" ? new Event("input", { bubbles: true }) : { type: "input" });
+   setImportOpen(false);
+   importRes = null;

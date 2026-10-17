@@ -1,0 +1,14 @@
+# kills: IM: INSUFFICIENT shows one line, writes nothing to #scale-box and offers no preset
+# suite: node --test --test-name-pattern ^IM:.INSUFFICIENT.shows.one.line tests/app.test.js
+# Lane B. An INSUFFICIENT result copies the pasted text into #scale-box.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10587,6 +10587,7 @@
+   if (!r) return;
+   if (r.status === "INSUFFICIENT") {
+     importStatus.textContent = IMPORT_INSUFFICIENT;
++    scaleBox.value = importSource;
+     importReview.hidden = true;
+     importUseBtn.disabled = true;
+     return;

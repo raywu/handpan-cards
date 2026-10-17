@@ -1,0 +1,15 @@
+# kills: IM: a NO_OCTAVE row marks each inferred octave, and an inferred bottom row says its placement is a guess
+# suite: node --test --test-name-pattern ^IM:.a.NO_OCTAVE.row.marks tests/app.test.js
+# Lane B. An inferred bottom row never says its placement is a guess.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10546,7 +10546,7 @@
+     const e = importRoleOf(r, i);
+     const li = document.createElement("li");
+     let text = n.role.toUpperCase() + "  " + n.note + "  from '" + n.span.text + "'";
+-    if (e && e.inferred) text += "  (octave inferred" + (e.guess ? "; bottom placement is a guess" : "") + ")";
++    if (e && e.inferred) text += "  (octave inferred" + "" + ")";
+     li.textContent = text;
+     importRowsEl.appendChild(li);
+   });
