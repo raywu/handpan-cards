@@ -148,7 +148,7 @@ What is covered:
 - **App vs print agreement** - the app (which takes `labelSize` and `numSize`
   from `src/engine/pdfcards.js`) is compared against `tools/hifi.py`; the two
   share no code and use opposite y-axis signs, so all 177 cards are compared on
-  position, highlight state, note order and badge (`test_highlighting_agrees`;
+  position, highlight state, note order and badge (`test_tonefield_positions_agree`, `test_highlighting_agrees`, `test_drawn_note_line_agrees` and `test_drawn_bottom_note_badge_agrees`;
   the shared label constants are pinned equal by
   `test_the_diagram_label_rule_carries_the_same_constants`).
 - **The scale engine** - each module under `src/engine/` has its own node
