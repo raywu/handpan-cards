@@ -1,4 +1,4 @@
-# kills: a #deck= link to the deck already shown closes About like the exit control
+# kills: AO: a #deck= link to the deck already shown closes About like the exit control
 # suite: node --test --test-name-pattern ^AO:.a.#deck=.link.to.the.deck.already.shown tests/app.test.js
 # Lane O. A link to the deck already shown takes the replace path instead of closing About.
 diff --git a/index.html b/index.html

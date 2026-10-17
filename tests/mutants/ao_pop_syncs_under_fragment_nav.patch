@@ -1,4 +1,4 @@
-# kills: a fragment navigation while About is open closes About and leaves the destination hash for hashchange
+# kills: AO: a fragment navigation while About is open closes About and leaves the destination hash for hashchange
 # suite: node --test --test-name-pattern ^AO:.a.fragment.navigation.while.About.is.open tests/app.test.js
 # Lane O. hideAbout() syncs the route, so the About-open popstate overwrites a typed destination.
 diff --git a/index.html b/index.html

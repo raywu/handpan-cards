@@ -1,4 +1,4 @@
-# kills: a Forward traversal onto #about leaves About closed and rewrites the bar
+# kills: AO: a Forward traversal onto #about leaves About closed and rewrites the bar
 # suite: node --test --test-name-pattern ^AO:.a.Forward.traversal.onto.#about tests/app.test.js
 # Lane O. A Forward traversal onto a stale #about entry leaves #about in the bar.
 diff --git a/index.html b/index.html

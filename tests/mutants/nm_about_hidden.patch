@@ -1,4 +1,4 @@
-# kills: the about section ships hidden as a dialog, in place after #app, with every existing sentence
+# kills: AO: the about section ships hidden as a dialog, in place after #app, with every existing sentence
 # suite: node --test --test-name-pattern ^AO:.the.about.section.ships.hidden tests/app.test.js
 # The about section ships without the hidden attribute, so it renders over the page at boot (plan S13: no hidden copy is the old rule; the overlay now ships hidden).
 diff --git a/index.html b/index.html

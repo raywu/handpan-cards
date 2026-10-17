@@ -12074,8 +12074,13 @@ function run() {
           const got = await br.eval(`
             return ["A", "B", "S"].map((m) => {
               const c = window.__pf.one(m);
+              const ar = document.getElementById("about-open").parentElement;
+              ar.style.display = "none";
+              const neededNoAbout = window.__pf.one(m).needed;
+              ar.style.display = "";
+              window.__pf.one(m);
               const ph = document.getElementById("panel-prog-heading");
-              return { needed: c.needed,
+              return { needed: c.needed, neededNoAbout,
                 groups: [...document.querySelectorAll("#settings-panel > .panel-group")].map((g) => g.getBoundingClientRect().height),
                 mt: ph ? parseFloat(getComputedStyle(ph).marginTop) : null,
                 sp1: parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--sp-1")),
@@ -12094,11 +12099,12 @@ function run() {
             const wantG = groups[tableKey(fm)][key][i];
             const dPrint = wantG[1] - wantG[2];
             const dRes = 44 + g.sp1;
-            const dPm = delta ? PM_NEEDED_L[tableKey(fm)][key][i] : dPrint + dRes;
+            const dAbout = 44 + g.sp1;
+            const dPm = (delta ? PM_NEEDED_L[tableKey(fm)][key][i] : dPrint + dRes) + (delta ? g.needed - g.neededNoAbout : dAbout);
             assert.ok(Math.abs(g.needed - (want[i] + d * g.hg + amyNeeded + dPm)) <= 0.5,
               `${where}: needed ${g.needed}px, expected main ${want[i]} + ${d ? "H + g = " + g.hg : "0"} + the Amy row ${amyNeeded} + PM ${dPm}`);
             assert.ok(Math.abs(g.groups[0] - (wantG[0] + g.hg)) <= 0.5, `${where}: the first group is ${g.groups[0]}px, expected main ${wantG[0]} + ${g.hg}`);
-            const plus = [0, 0, dPrint, amyRes + dRes];
+            const plus = [0, 0, dPrint, amyRes + dRes + dAbout];
             for (let k = 1; k < 4; k++) assert.ok(Math.abs(g.groups[k] - (wantG[k] + plus[k])) <= 0.5, `${where}: group ${k} is ${g.groups[k]}px, main has ${wantG[k]}px plus ${plus[k]}`);
           });
         }
@@ -12620,7 +12626,11 @@ function run() {
         };
         const before = await nav();
         await openAboutUi();
-        const during = await nav();
+        let during = await nav();
+        for (let i = 0; i < 40 && during.index !== before.index + 1; i++) {
+          await new Promise((r) => setTimeout(r, 50));
+          during = await nav();
+        }
         assert.strictEqual(during.index, before.index + 1, "ABOUT did not push exactly one entry");
         assert.match(during.url, /#about$/);
         await b.eval(`history.back(); return true;`);

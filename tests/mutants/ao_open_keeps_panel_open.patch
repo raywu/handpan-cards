@@ -1,4 +1,4 @@
-# kills: ABOUT closes the panel, pushes one #about entry, inerts #app and the panel, and focuses the exit
+# kills: AO: ABOUT closes the panel, pushes one #about entry, inerts #app and the panel, and focuses the exit, and a resize after close writes nothing
 # suite: node --test --test-name-pattern ^AO:.ABOUT.closes.the.panel tests/app.test.js
 # Lane O. openAbout() no longer closes the settings menu, so it stays open under the dialog.
 diff --git a/index.html b/index.html

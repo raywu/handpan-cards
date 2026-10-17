@@ -1,4 +1,4 @@
-# kills: syncRoute and hashchange write nothing while About is open
+# kills: AO: syncRoute and hashchange write nothing while About is open
 # suite: node --test --test-name-pattern ^AO:.syncRoute.and.hashchange.write.nothing tests/app.test.js
 # Lane O. syncRoute() writes the deck route over #about while About is open.
 diff --git a/index.html b/index.html

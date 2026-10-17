@@ -1,4 +1,4 @@
-# kills: ABOUT is the last panel stop, a full-width button alone in the last Resources row
+# kills: AO: ABOUT is the last panel stop, a full-width button alone in the last Resources row
 # suite: node --test --test-name-pattern ^AO:.ABOUT.is.the.last.panel.stop tests/app.test.js
 # Lane O. panelStops() leaves #about-open out of the Tab trap.
 diff --git a/index.html b/index.html

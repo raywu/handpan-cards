@@ -1,4 +1,4 @@
-# kills: closing About when it is already closed pops nothing
+# kills: AO: closing About when it is already closed pops nothing
 # suite: node --test --test-name-pattern ^AO:.closing.About.when.it.is.already.closed tests/app.test.js
 # Lane O. closeAbout() pops a history entry even when About is closed.
 diff --git a/index.html b/index.html

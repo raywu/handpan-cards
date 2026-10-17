@@ -1,4 +1,4 @@
-# kills: opening About tracks about_open with no params
+# kills: AO: opening About tracks about_open with no params
 # suite: node --test --test-name-pattern ^AO:.opening.About.tracks.about_open tests/app.test.js
 # Lane O. openAbout() sends no about_open event.
 diff --git a/index.html b/index.html
