@@ -87,7 +87,7 @@ The alternatives are B (a static `about.html` page) and C (A plus that page). Bo
 | Print | Unchanged (`@media print` keeps `#about{display:none}`) | A second page to style | As A |
 | Analytics | `about_open` event, no params (G4) | Needs a GA loader on a second page, or none | Both |
 | Single-file constraint | Kept; no new file | A sibling file is allowed, but it duplicates CSS and fonts | As B |
-| Tests changed | 8 existing tests changed, 22 added, 3 sandbox ids, one scoped oracle allowance | Site-file tests, a new test file for the page, the About tests moved | Both sets |
+| Tests changed | 8 existing tests changed, 25 added, 3 sandbox ids, one scoped oracle allowance | Site-file tests, a new test file for the page, the About tests moved | Both sets |
 | Size | One implementation lane plus a docs lane | Two lanes plus site files | Three lanes |
 
 **Rejected for now**
@@ -113,6 +113,8 @@ The alternatives are B (a static `about.html` page) and C (A plus that page). Bo
 | 2 | D: docs | `claude/about-docs` | 1 |
 
 Only one lane is in flight at a time, because the work does not split by file. `index.html`, `tests/app.test.js` and `tests/e2e.test.js` all change together, and TDD keeps each test in the lane that makes it pass.
+
+**Sequencing with other plans.** Scale-import lane B never runs in the same wave as About lane O (both own index.html app JS, ELEMENT_IDS, app/e2e tests and their FLOORS rows); lane A1 may run beside O since it touches only the engine region, its two module lists and its own FLOORS row, and whichever of O and A1 merges second resets FLOORS from its own CI artifacts; share v5 starts after O and D (PR #335 §4.1).
 
 **Cost**
 - Two author runs and two reviewer runs.
@@ -166,11 +168,15 @@ Only one lane is in flight at a time, because the work does not split by file. `
    - `panelStops()` appends `document.getElementById("about-open")` after the `res-` links. This is the order that was probed.
    - ABOUT's stop is defined as "last, after the res- links", independent of share-copy. The readable-share-v5 plan moves COPY LINK out of `#settings-panel` to a main-page share icon. Whichever of the two plans merges second re-counts FLASH_STOPS/PROG_STOPS, the sixteen/seventeen titles and the suite headers of `pm_handpan101_outside_tab_trap` and `uid_panelstops_misses_tier`.
 3. **CSS** (placed before `@media print{`, which must stay last).
+   - Replace the existing `#about` rule's `flex:none`, `width:100%`, `max-width:520px`, `margin-top:24px` and `padding:0 4px 48px` (keep `color`, `font`, `user-select` and `-webkit-user-select`), so the fixed overlay fills the viewport at every width. The 520px measure comes only from the inline padding below (design re-review F1).
    - `#about` becomes `position:fixed; inset:0; z-index:50; overflow-y:auto; overscroll-behavior:contain; background:#1f1b15`.
+   - `#about{padding-bottom:max(48px, calc(var(--sp-4) + env(safe-area-inset-bottom)))}` (design re-review F2).
    - z-index 50 sits above the mobile panel (41), the desktop sidebar (20) and the sheet (30), and below the pan ghost (60) [V: the z-index values in `index.html`].
    - Inline padding is `max(calc(16px + env(safe-area-inset-left)), calc((100% - 520px) / 2))` (and `-right` on the right), so the insets set the minimum and never shrink the 520px column.
    - `.abouthead` is `position:sticky; top:0; display:flex; align-items:center; gap:var(--sp-3)`, on the same background. It holds `#about-close` followed by the `<h2>`, matching `.sheethead`, so the title stays visible while the body scrolls.
-   - `.abouthead` has `padding-top:max(var(--sp-3), env(safe-area-inset-top))`, and `#about` has `scroll-padding-top` equal to the header's height, so BACK's focus ring is fully visible and Tab never parks a link under the header.
+   - `.abouthead` has `padding-top:max(var(--sp-3), env(safe-area-inset-top))` and `padding-bottom:var(--sp-3)` on the `#1f1b15` background, and `.abouthead h2{margin:0}` cancels the `#about h2` bottom margin inside the header (design re-review F4).
+   - `#about{scroll-padding-top:var(--about-head-h, 0px)}`, where `--about-head-h` is written by `openAbout()` (JS step 4), mirroring `.sheetbody{scroll-padding-top:var(--plate-band-h, 0px)}` and `syncBand()` (design re-review F3). BACK's focus ring stays fully visible and Tab never parks a link under the header.
+   - The 44px link rows deliberately loosen the deck list and the Contact gap. `#about h3 + ul` and `#about h3 + p` keep `margin-top:0`, so the heading-to-row gap is only the row's own centring (design re-review F6).
    - `#about ul a, #about a[href^="mailto:"]{display:flex; align-items:center; min-height:44px}` gives each About link a 44px target that does not overlap its neighbours. Padding on an inline link is not used.
    - `#about a` keeps its default underline. Link and body text differ by about 1.5:1 in contrast, so the underline is the only cue that something is a link.
    - Add `html.about-open{overflow:hidden}`.
@@ -185,12 +191,14 @@ Only one lane is in flight at a time, because the work does not split by file. `
      - calls `pushState({ about: true }, "", ABOUT_ROUTE)`
      - sets `scrollTop = 0` and focuses `#about-close`
      - calls `track("about_open")` with no params (G4)
-   - `hideAbout()` reverses those steps. It calls `syncRoute()` after clearing `aboutOpen`, so a COPY LINK outside the panel (readable-share v5) is refreshed on close. It then focuses `settingsTrigger`, or `#about-open` when `desktopMQ.matches`, because the trigger is `display:none` on desktop.
+   - `openAbout()` also writes `--about-head-h` on `document.documentElement` from `.abouthead.offsetHeight`, and rewrites it on `resize` while About is open, mirroring how `syncBand()` writes `--plate-band-h` for `.sheetbody` (CSS step 3 reads it).
+   - `hideAbout()` reverses those steps and then focuses `settingsTrigger`, or `#about-open` when `desktopMQ.matches`, because the trigger is `display:none` on desktop.
+   - **`hideAbout()` does not call `syncRoute()`** (eng re-review F1). The `popstate` listener syncs only under `pendingPop`, because a fragment navigation fires `popstate` before `hashchange` (test "a pop that follows a fragment navigation leaves the destination hash alone"). A `syncRoute()` inside `hideAbout()` would run on the pop of a typed `#deck=c-sharp-hijaz-9` or a pasted `#s=` while About is open, overwrite that destination with the deck still shown, and the `hashchange` listener's idempotence guard (`location.hash === routeFor(deck())`) would then drop it. The two exits that change the bar sync on their own: `closeAbout()` through the existing `pendingPop` sync at its pop, and `aboutLink()` through its own `syncRoute()`. Nothing else can change the deck while About is open, so a COPY LINK outside the panel (readable-share v5) has nothing to refresh on any other close.
    - BACK, Back and Escape return to the practice screen with the deck, card, mode and scroll position unchanged and the settings menu closed, as `+ ADD A SCALE` does. Focus goes to the settings trigger (or to `#about-open` in the desktop sidebar, which stays open).
-   - `closeAbout()` calls `hideAbout()`, sets `pendingPop = true` and calls `history.back()`, exactly like `closeScaleSheet()`.
+   - `closeAbout()` calls `hideAbout()`, sets `pendingPop = true` and calls `history.back()`, exactly like `closeScaleSheet()`. The bar is synced by the `popstate` listener's existing `pendingPop` branch at that pop, not by `hideAbout()`.
 5. **Routing.**
    - `syncRoute()` and the `hashchange` listener return early while `aboutOpen` is true. Put each guard beside the existing `sheetOpen` guard.
-   - The `popstate` listener closes an open About after its `pendingPop` branch. It calls `hideAbout()` and does not call `back()` a second time.
+   - The `popstate` listener closes an open About after its `pendingPop` branch. That branch calls `hideAbout()` only: no `syncRoute()` and no second `back()`. On a plain Back the restored hash is already the shown deck's route, so the following `hashchange` is a no-op; on a typed or pasted fragment, the following `hashchange` (no longer guarded, because `aboutOpen` is now false) routes the destination. AO app test 14 pins this.
    - When About is closed and the hash is `ABOUT_ROUTE` (a Forward traversal onto a stale entry), the `popstate` listener calls `syncRoute()`.
    - Insert both About branches immediately after the `pendingPop` branch and BEFORE `if (!sheetOpen) return;`, so they run while no sheet is open.
    - The hashchange `aboutOpen` guard is defensive (popstate closes About first on a real traversal). An AO app test (4) asserts it via the sandbox `hashchange()` helper with `aboutOpen` forced true.
@@ -227,6 +235,10 @@ Only one lane is in flight at a time, because the work does not split by file. `
 11. "AO: opening About tracks about_open with no params" (G4, owner 2026-10-17: it asserts one `about_open` event and that the event carries no params)
 12. "panel fit: the About-row allowance is 52, owed only for an about-open control the base lacks"
 13. "panel fit rule 1 and rule 3: a new about-open earns the About-row allowance and nothing else does"
+14. "AO: a fragment navigation while About is open closes About and leaves the destination hash for hashchange" (eng re-review F1). With About open, set the location to `#deck=c-sharp-hijaz-9`, call `popstate()`, and assert About is closed, the hash is unchanged and no history call was made; then call `hashchange()` and assert Hijaz is shown. It sits beside "a pop that follows a fragment navigation leaves the destination hash alone", which it extends to the About-open case.
+15. "panel fit rule 2: the About-row allowance does not move any existing control" (eng re-review N2), mirroring "panel fit rule 2: the Resources allowance does not move any existing control".
+
+Tests 12, 13 and 15 go in the "panel fit judge" describe of `tests/app.test.js`, beside the three `res-` rule tests ("panel fit rule 1: a new res- control earns the Resources allowance and nothing else does", "panel fit rule 3: a new res- control may sit below avail within the Resources allowance, any other new control may not", "panel fit rule 2: the Resources allowance does not move any existing control") and "panel fit: the Resources allowance is 64, owed only for a res- control the base lacks". Test 13 covers rule 1 and rule 3 in one title; test 15 covers rule 2.
 
 AO app tests 5 and 6 call `aboutLink(href)` directly. The click delegation and preventDefault path is covered only by AO e2e 5, and the lane's reviewer brief says so. The reason is that the sandbox `queryAll` cannot see anchor nodes.
 
@@ -240,6 +252,7 @@ AO app tests 5 and 6 call `aboutLink(href)` directly. The click delegation and p
 7. "AO: About scrolls with its exit visible, non-overlapping 44px link targets and no horizontal scroll at 380x800, 844x390 and 1280x800". It measures the mailto link as well as the five deck links, and asserts that no two link rects overlap.
 8. "AO: About has no transition or animation with and without prefers-reduced-motion"
 9. "AO: at 1280x800 the sidebar's ABOUT opens About and closing returns focus to ABOUT"
+10. "AO: the About content box is at least min(520, viewport - 32)px wide at 380x800 and 1280x800" (design re-review F1). It measures `#about`'s content box (client width less computed inline padding) and asserts it is at least `min(520, innerWidth - 32)`, so a leftover `max-width:520px` on the fixed overlay, which would let the inline padding shrink the column below 520 at 1280, goes red.
 
 **Acceptance: tests changed (8)**
 1. e2e "the about section is visible below the card at 380px with no horizontal scroll" becomes "the about section is not rendered on / and its text is in the served HTML". Its only mutant, `nm_about_hidden`, is rewritten (see Mutants below).
@@ -288,6 +301,7 @@ AO app tests 5 and 6 call `aboutLink(href)` directly. The click delegation and p
 - Tests that pin the new limit, in `tests/app.test.js` beside "panel fit: the Resources allowance is 64, owed only for a res- control the base lacks":
   - "panel fit: the About-row allowance is 52, owed only for an about-open control the base lacks"
   - "panel fit rule 1 and rule 3: a new about-open earns the About-row allowance and nothing else does"
+  - "panel fit rule 2: the About-row allowance does not move any existing control"
 
 **Mutants**
 
@@ -311,6 +325,10 @@ New patches:
 - `ao_open_untracked`
 - `ao_fit_about_allowance_grown` (52 becomes 64)
 - `ao_fit_about_allowance_ungated` (the allowance is owed whether or not the base has the row)
+- `ao_fit_about_allowance_all_controls` (rule 3 gives every new key `b.needed + aboutA`, not only `about-open`; killed by AO app test 13), mirroring `mr_fit_res_allowance_all_controls`
+- `ao_fit_about_allowance_on_rule_2` (rule 2 adds `aboutA`; killed by AO app test 15), mirroring `mr_fit_res_allowance_on_rule_2`
+- `ao_pop_syncs_under_fragment_nav` (`hideAbout()` calls `syncRoute()`, so the About-open `popstate` branch overwrites a typed destination; killed by AO app test 14)
+- `ao_about_width_capped` (the `#about` rule keeps `max-width:520px`; killed by AO e2e 10)
 
 Rewrite `nm_about_hidden.patch` in place. It now drops `hidden` from the section and kills AO app test 1. The patch count does not fall, so the README mutant-count band test stays green.
 
@@ -332,15 +350,16 @@ Then run `python3 tools/refresh_mutants.py`, followed by `python3 tools/refresh_
   - `dq_route_no_hashchange`
   - `su_popstate_sync_unconditional`
   - `su_pop_not_synced`
-  - `mr_fit_res_allowance_ungated`, `mr_fit_res_allowance_grown` and `r4h_judge_rule1_never_fires`, whose hunks sit beside the edited allowance lines in `tools/probe/panel_fit.js`
+  - `mr_fit_res_allowance_ungated`, `mr_fit_res_allowance_grown`, `mr_fit_res_allowance_all_controls`, `mr_fit_res_allowance_on_rule_2` and `r4h_judge_rule1_never_fires`, whose hunks sit beside the edited allowance lines and the rule 2 and rule 3 conditions in `judgeCell` in `tools/probe/panel_fit.js`
 - If the tool cannot re-anchor a patch, rewrite that patch against a more stable anchor.
 
 **FLOORS** (`tests/suite_health.py`)
 - Raise only the `tests/app.test.js` row (561 today) and the `tests/e2e.test.js` row (314 today).
-- Set each from the executed-test count that CI reports for that file in the lane's own run artifacts at the head SHA, not from the old row plus the number of tests added. The rows drift under parallel lanes. Expect roughly 574 and 323.
+- Set each from the executed-test count that CI reports for that file in the lane's own run artifacts at the head SHA, not from the old row plus the number of tests added. The rows drift under parallel lanes. Expect roughly 576 (561 + 15) and 324 (314 + 10).
+- If scale-import lane A1 merges between lane O's branch point and its merge, whichever of O and A1 merges second resets FLOORS from its own CI artifacts (section 7, "Sequencing with other plans").
 
 **Verify**
-- The one Verify command is `node --test --test-name-pattern "AO: |about|PM rule 7" tests/app.test.js`. It starts on `origin/main` [O: 6 tests, 6 pass].
+- The one Verify command is `node --test --test-name-pattern "AO: |about|About-row|PM rule 7" tests/app.test.js`. It starts on `origin/main` [O: 6 tests, 6 pass]. `About-row` selects the three panel-fit tests, whose titles capitalise About.
 - Run e2e tests locally one at a time (single tests start on `origin/main` [O]).
 - Verify also runs each new AO e2e title singly with CHROME_BIN set. CI at the head SHA is the evidence for the e2e suite.
 - Also run `node tools/probe/panel_fit.js --base origin/main --font both`. It must print "panel fit: PASS" with the allowance in place.
@@ -457,7 +476,7 @@ Every gate is decided (owner, 2026-10-17).
 ```
 
 844x390 landscape phone:
-- The same column, at `max-width:520px`, centred.
+- The same 520px column, centred by the inline padding (the overlay itself has no `max-width`).
 - Safe-area insets on the left and right.
 - The sticky row (BACK and the title) stays on screen, and the body scrolls inside `#about`.
 
@@ -506,7 +525,7 @@ Every gate is decided (owner, 2026-10-17).
 - ABOUT has its own plain `.modebar` row, the last row of the Resources group and the last thing in the panel. It is full width, like HANDPAN 101 above it.
 - It is a button with `aria-haspopup="dialog"`, class `mode`, and the panel's centred label.
 - The HANDPAN 101 row is unchanged.
-- ABOUT is the only Resources control that opens a view inside the app rather than an external link. Its label carries no outbound cue, unlike the `res-*` links.
+- No Resources control carries a visible outbound cue; ABOUT differs from the res-* links only by aria-haspopup="dialog" and opening in place.
 
 ## 7. Risks, rejected alternatives, what would change this, unverified claims
 
@@ -515,6 +534,8 @@ Every gate is decided (owner, 2026-10-17).
 - **A Forward traversal onto a stale `#about` entry could strand the address bar.** AO app test 8 covers this. The `#add` sheet has the same pitfall today, and it is out of scope here.
 - **Accepted: one Back press can be a no-op.** After Forward onto a stale #about, or a reload of #about, the replaced entry duplicates its predecessor, so one Back press is a visible no-op. AO e2e 3 asserts the shown deck and the bar, not history.length.
 - **Merge order with readable-share v5.** That plan moves COPY LINK out of `#settings-panel`. Whichever plan merges second re-counts the panel stops, titles and suite headers (implementation step 2).
+- **Sequencing with scale import and share v5.** Scale-import lane B never runs in the same wave as About lane O (both own index.html app JS, ELEMENT_IDS, app/e2e tests and their FLOORS rows); lane A1 may run beside O since it touches only the engine region, its two module lists and its own FLOORS row, and whichever of O and A1 merges second resets FLOORS from its own CI artifacts; share v5 starts after O and D (PR #335 §4.1).
+- **A sync on the About-open pop would eat a typed fragment.** `hideAbout()` therefore never calls `syncRoute()` (implementation step 4); AO app test 14 and `ao_pop_syncs_under_fragment_nav` pin it.
 - **iOS Safari may handle the scroll lock differently from Chrome [A].** The app is inert and covered, so a leaked scroll is invisible and is undone on close.
 
 **Rejected alternatives**
@@ -532,29 +553,30 @@ Every gate is decided (owner, 2026-10-17).
 - **`routeDeck()`.** The task brief and the discoverability plan both name it, but it does not exist on `origin/main`. The real code is `routedDeckId()` plus the deck branch of the `hashchange` listener.
 - **Real devices and assistive technology.** Real iOS Safari, Android Chrome and screen readers were not tested. The harness is Chrome with emulated viewports.
 - **Fonts in the panel-fit probe.** The 47-50px growth was measured with macOS fonts. The CI `panel-fit` job on Linux is the evidence. Both font modes measured the same growth here, so a large Linux difference is unlikely [A].
-- **The FLOORS figures 574 and 323.** They assume the test list above lands as written.
+- **The FLOORS figures 576 and 324.** They assume the test list above lands as written and no other lane moves the rows first.
 
 ## 8. Quality score
 
-**Adversarial pass: the six likeliest ways a lane fails, and the fix in this plan**
+**Adversarial pass: the seven likeliest ways a lane fails, and the fix in this plan**
 1. **A same-deck link leaves a duplicate entry and needs a double Back.** Fix: compare resolved ids, not route strings. AO app test 6 and the `ao_same_deck_link_replaces` mutant pin it.
 2. **The rewritten `nm_about_hidden` or a renamed test leaves a mutant that selects zero tests, which shows up as a false survivor.** Fix: keep title prefixes, hand-edit the `sixteen` and `seventeen` headers, and use `.` wildcards.
 3. **A new `getElementById` call throws in the sandbox.** Fix: implementation step 8 adds the three ids to `ELEMENT_IDS`.
 4. **Focus is lost on close on desktop, where the trigger is `display:none`.** Fix: the `desktopMQ` branch in `hideAbout()`, tested by AO e2e 9.
 5. **The `#app wraps...` literal breaks if the section's opening tag moves.** Fix: step 1 keeps the tag right after `</div>\n\n`, and the app test "#app wraps ..." stays untouched.
 6. **The About `popstate` branches sit after `if (!sheetOpen) return;` and never run.** Fix: step 5 places them before that guard (eng review N2).
+7. **A `syncRoute()` in `hideAbout()` overwrites a typed or pasted fragment on the pop that precedes its `hashchange`.** Fix: `hideAbout()` never syncs; `closeAbout()` relies on the `pendingPop` sync and `aboutLink()` syncs itself (eng re-review F1). AO app test 14 and `ao_pop_syncs_under_fragment_nav` pin it.
 
 **Rubric** (restated for this score; every row must reach 10/10)
 
 | Row | Score | Evidence |
 |---|---|---|
 | Evidence | 10 | Eleven primary Google quotes with URLs and marks; every [A] is named |
-| Repo accuracy | 10 | Every function, test title and mutant was grepped on `origin/main`; `routeDeck()` is flagged as absent. The first draft missed AP2-2 and the `popstate` guard position; both review findings are now fixed in the plan |
+| Repo accuracy | 10 | Every function, test title and mutant was grepped on `origin/main`; `routeDeck()` is flagged as absent. The first draft missed AP2-2 and the `popstate` guard position, and the second had `hideAbout()` breaking the `pendingPop`-only sync invariant; all three review findings are now fixed in the plan |
 | Owner fidelity | 10 | Each brief item maps to a spec line and a test: exit, Back, Escape, focus, scroll, `#deck=`, reload, `syncRoute`, motion, 380px and landscape, Contact |
 | UX completeness | 10 | Three wireframes; exit control, tokens, targets, scroll, motion, keyboard and screen reader, menu row |
-| Testability | 10 | 22 named new tests, 8 changed and 16 named as untouched; the one Verify command was observed starting; the click-delegation path the sandbox cannot see is assigned to AO e2e 5 |
-| Swarm shape | 10 | Two lanes, one in flight, disjoint ownership, briefs that can be lifted verbatim |
-| Regression safety | 10 | Stale mutants named, patch count kept, FLOORS rows set; the own-row growth measured in every oracle cell with both fonts, the oracle FAIL stated, and the one scoped allowance that admits it bracketed (49 passes, 48 fails) and pinned by two tests and two mutants |
-| Design quality | 10 | Reuses the sheet surface, the `.sheethead` layout, `#scale-back`'s accessible name, `.mode` and the sheet's history pattern; no new tokens. The first draft's overlapping link targets and inset-shrunk column were fixed after the design review |
+| Testability | 10 | 25 named new tests (15 app, 10 e2e), 21 new mutants, 8 changed and 16 named as untouched; the one Verify command was observed starting; the click-delegation path the sandbox cannot see is assigned to AO e2e 5 |
+| Swarm shape | 10 | Two lanes, one in flight, disjoint ownership, briefs that can be lifted verbatim; wave rules against scale-import lanes A1 and B and share v5 stated |
+| Regression safety | 10 | Stale mutants named, patch count kept, FLOORS rows set; the own-row growth measured in every oracle cell with both fonts, the oracle FAIL stated, and the one scoped allowance that admits it bracketed (49 passes, 48 fails) and pinned by three tests and four mutants, mirroring the four `mr_fit_res_allowance_*` mutants |
+| Design quality | 10 | Reuses the sheet surface, the `.sheethead` layout, `#scale-back`'s accessible name, `.mode` and the sheet's history pattern; no new tokens. The first draft's overlapping link targets and inset-shrunk column were fixed after the design review; the re-review's full-width overlay (pinned by AO e2e 10), bottom safe-area padding, measured header scroll padding, header spacing and list rhythm are specified |
 | Decisions | 10 | Eight gates, all decided by the owner on 2026-10-17 and recorded with the recommendation they answered; every supersession has a replacement rule |
 | Concision | 10 | One recommendation, one table per question, no restated background |
