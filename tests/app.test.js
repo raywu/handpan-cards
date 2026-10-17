@@ -9375,14 +9375,14 @@ describe("discoverability: structured data", () => {
 describe("discoverability: analytics loader", () => {
   const REAL_ID = "G-TEST123456";
   const bootGa = (opts = {}) => {
-    const html = INDEX_HTML().replace('const GA_MEASUREMENT_ID = "G-XXXXXXXXXX";', 'const GA_MEASUREMENT_ID = "' + (opts.id || REAL_ID) + '";');
+    const html = INDEX_HTML().replace('const GA_MEASUREMENT_ID = "G-QTYWB2HSSV";', 'const GA_MEASUREMENT_ID = "' + (opts.id || REAL_ID) + '";');
     return boot({ html, webdriver: false, href: "https://example.test/index.html", ...opts.boot });
   };
   const gtagScripts = (app) => app.head.children.filter((c) => /googletagmanager\.com\/gtag\/js/.test(c.src || ""));
   const queue = (app) => JSON.parse(JSON.stringify(Array.from(app.get("window.dataLayer"))));
 
   test("the placeholder id is the shipped constant", () => {
-    assert.ok(INDEX_HTML().includes('const GA_MEASUREMENT_ID = "G-XXXXXXXXXX";'));
+    assert.ok(INDEX_HTML().includes('const GA_MEASUREMENT_ID = "G-QTYWB2HSSV";'));
   });
 
   test("the loader appends the gtag script on a real host with a real id, and only then", () => {
@@ -9445,7 +9445,7 @@ describe("discoverability: analytics loader", () => {
 describe("discoverability: analytics events", () => {
   const REAL_ID = "G-TEST123456";
   const bootEv = (opts = {}) => {
-    const html = INDEX_HTML().replace('const GA_MEASUREMENT_ID = "G-XXXXXXXXXX";', 'const GA_MEASUREMENT_ID = "' + REAL_ID + '";');
+    const html = INDEX_HTML().replace('const GA_MEASUREMENT_ID = "G-QTYWB2HSSV";', 'const GA_MEASUREMENT_ID = "' + REAL_ID + '";');
     return boot({ html, webdriver: false, href: "https://example.test/index.html", ...opts });
   };
   const events = (app) => JSON.parse(JSON.stringify(Array.from(app.get("window.dataLayer"))))
@@ -9649,7 +9649,7 @@ describe("discoverability: deck route", () => {
   });
 
   test("a routed boot queues config before deck_route", () => {
-    const html = INDEX_HTML().replace('const GA_MEASUREMENT_ID = "G-XXXXXXXXXX";', 'const GA_MEASUREMENT_ID = "' + REAL_ID + '";');
+    const html = INDEX_HTML().replace('const GA_MEASUREMENT_ID = "G-QTYWB2HSSV";', 'const GA_MEASUREMENT_ID = "' + REAL_ID + '";');
     const app = boot({ html, webdriver: false, href: "https://example.test/index.html#deck=d-kurd-10" });
     const q = JSON.parse(JSON.stringify(Array.from(app.get("window.dataLayer"))));
     const names = q.map((e) => e[0] === "js" ? "js" : e[0] + ":" + e[1]);
@@ -9681,7 +9681,7 @@ describe("share url", () => {
     plain(app.get("HPE.share.decode(" + JSON.stringify(hash.slice(3)) + ")"));
   const storageOf = (app) => ({ hpfc: app.store.hpfc, [app.get("SCALES_KEY")]: app.store[app.get("SCALES_KEY")] });
   const bootGA = (opts = {}) => {
-    const html = INDEX_HTML().replace('const GA_MEASUREMENT_ID = "G-XXXXXXXXXX";', 'const GA_MEASUREMENT_ID = "' + REAL_ID + '";');
+    const html = INDEX_HTML().replace('const GA_MEASUREMENT_ID = "G-QTYWB2HSSV";', 'const GA_MEASUREMENT_ID = "' + REAL_ID + '";');
     return boot({ html, webdriver: false, href: PAGE, ...opts });
   };
   const gaEvents = (app) => JSON.parse(JSON.stringify(Array.from(app.get("window.dataLayer"))))
