@@ -9757,6 +9757,17 @@ describe("discoverability: deck route", () => {
     assert.deepStrictEqual(added[0][2], { deck_id: "pygmy" });
   });
 
+  test("a hashchange to an edited seed's link tracks deck_route with the seed id, not the replacement's", () => {
+    const app = at("", { html: withGaId(REAL_ID), webdriver: false, storage: { ...editedSeed("amara", "MY AMARA"), hpfc: JSON.stringify({ deck: "kurd", mode: "A", hidden: ["amara"] }) } });
+    const routes = () => JSON.parse(JSON.stringify(Array.from(app.get("window.dataLayer")))).filter((e) => e[0] === "event" && e[1] === "deck_route");
+    const before = routes().length;
+    app.hashchange("#deck=d-amara-9");
+    const added = routes().slice(before);
+    assert.strictEqual(added.length, 1);
+    assert.deepStrictEqual(added[0][2], { deck_id: "amara" });
+    assert.match(app.deckId(), /^custom:/);
+  });
+
   test("hashchange to a hidden seed that has a replacement shows the replacement with no gone warning", () => {
     const app = at("", { storage: { ...editedSeed("amara", "MY AMARA"), hpfc: JSON.stringify({ deck: "kurd", mode: "A", hidden: ["amara"] }) } });
     app.hashchange("#deck=d-amara-9");
@@ -10387,6 +10398,7 @@ describe("about overlay", () => {
     const priv = /<h3>Privacy<\/h3>\s*<p>([^<]*)<\/p>/.exec(aboutHtml());
     assert.ok(priv, "the Privacy paragraph is missing");
     assert.ok(textOf(priv[0]).includes(PRIVACY), "the Privacy paragraph does not say scales stay here and how to share one");
+    assert.ok(textOf(priv[0]).includes("The site counts anonymous visits and feature use with Google Analytics, without cookies in the EEA, the UK and Switzerland."), "the Privacy paragraph does not state its Google Analytics sentence");
     const own = /<h3>Your own scale<\/h3>\s*<p>([^<]*)<\/p>/.exec(aboutHtml());
     assert.ok(own, "the Your own scale paragraph is missing");
     assert.strictEqual(textOf(own[1]).trim(), "Type any scale and the app generates its chords.");

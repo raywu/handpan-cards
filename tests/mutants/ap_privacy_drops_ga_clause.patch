@@ -1,0 +1,15 @@
+# kills: AO: About's Privacy paragraph says scales stay on this device and how to share one with the link icon
+# suite: node --test --test-name-pattern Privacy.paragraph tests/app.test.js
+# The Privacy paragraph drops the clause that says the site counts anonymous visits and feature use.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1318,7 +1318,7 @@ html.about-open{overflow:hidden}
+   <h3>Your own scale</h3>
+   <p>Type any scale and the app generates its chords.</p>
+   <h3>Privacy</h3>
+-  <p>Your scales stay in this browser on this device. Nothing is published, and no one else can see them. To use a scale on another device or send it to a friend, tap the link icon at the top of the screen and share the link. Opening it adds the scale to that browser, and it stays there. The site counts anonymous visits and feature use with Google Analytics, without cookies in the EEA, the UK and Switzerland.</p>
++  <p>Your scales stay in this browser on this device. Nothing is published, and no one else can see them. To use a scale on another device or send it to a friend, tap the link icon at the top of the screen and share the link. Opening it adds the scale to that browser, and it stays there. Google Analytics, without cookies in the EEA, the UK and Switzerland.</p>
+   <h3>Contact</h3>
+   <p><a href="mailto:handpan@raywu.org">handpan@raywu.org</a></p>
+ </section>
