@@ -712,3 +712,20 @@ test("enableRealFonts sends the same block list it reports as blockedUrls", asyn
   assert.deepStrictEqual(fetchEnable[1].patterns.map((p) => p.urlPattern), b.blockedUrls);
   assert.ok(b.blockedUrls.some((u) => /googletagmanager/.test(u)) && b.blockedUrls.some((u) => /google-analytics/.test(u)));
 });
+
+test("the Fetch.requestPaused handler fails a request to every ANALYTICS_PATTERNS host", async () => {
+  const b = Object.create(Browser.prototype);
+  b.eventHandlers = new Map();
+  const sent = [];
+  b.send = async (method, params) => { sent.push([method, params]); };
+  await b.enableRealFonts();
+  const analytics = b.blockedUrls.filter((u) => /googletagmanager|google-analytics/.test(u));
+  assert.strictEqual(analytics.length, 2);
+  const handler = b.eventHandlers.get("Fetch.requestPaused");
+  for (const pattern of analytics) {
+    sent.length = 0;
+    const url = "https://" + pattern.replace(/\*/g, "") + "/g/collect?v=2";
+    await handler({ requestId: "r1", request: { url } });
+    assert.deepStrictEqual(sent, [["Fetch.failRequest", { requestId: "r1", errorReason: "BlockedByClient" }]], pattern);
+  }
+});
