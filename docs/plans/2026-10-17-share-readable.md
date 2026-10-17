@@ -292,7 +292,7 @@ The analytics hash rule is untouched. The gtag `config` still sends `location.or
 | `src/engine/share.js`, `src/engine/select.js` (`deckName` export only) | owns | - | - |
 | `index.html` engine regions `share` and `select` (written by `tools/inline_engine.py` only) | owns | - | - |
 | `index.html` app JS: `SHARE_VERSION` declaration; the `#s=` branch of the `hashchange` listener | owns | - | - |
-| `index.html` header markup (`.hrow`), header CSS, the Scales `.modebar`, `#share-url` and its hide listeners, `openScaleSheet()`'s hide of it, `say()`'s clear, `panelStops()`, `panelBackground`, `copyLink()`'s reveal, the print block | - | owns | - |
+| `index.html` header markup (`.hrow`), header CSS, the Scales `.modebar`, `#share-url` and its hide listeners, `openScaleSheet()`'s hide of it, `copyLink`'s `done()` clear, `panelStops()`, `panelBackground`, `copyLink()`'s reveal, the print block | - | owns | - |
 | `tests/share.test.js` | owns | - | - |
 | `tests/app.test.js`, `tests/e2e.test.js` | owns (wave 1) | owns (wave 2) | - |
 | `tools/probe/panel_fit.js` (`REMOVED_BY_DESIGN` only) | - | owns | - |
@@ -368,9 +368,7 @@ The analytics hash rule is untouched. The gtag `config` still sends `location.or
 
   Their literals become decode goldens, which decode to the expected seed. They are retitled "decode still opens the captured v4 minimal payload (Q18)" and "decode still opens the captured v4 payload with every option set (Q18)", because v4 is no longer written.
 - "this app writes wire version 4" becomes "this app writes wire version 5". The version moved.
-- Every test that derives a v1 to v4 payload through `payloadOf` switches to a pinned v4 golden link or `forgePayload(4, [formatSeed(f), <v4 options line>, <seats>])`. Once `encode` writes v5, `payloadOf` would read v5 text as packed alphabet: refusal tests would pass vacuously and acceptance tests would fail. A grep for `payloadOf(` in `tests/share.test.js` finds fourteen calling tests. Twelve test the v4 READER (and v1 to v3 forged from it), which stays:
-  - "the one-ring mirror letters are exactly t and b on the options line"
-  - "per-ring seats ride on line 2 as rim;inner;bottom"
+- Every test that derives a v1 to v4 payload through `payloadOf` switches to a pinned v4 golden link or `forgePayload(4, [formatSeed(f), <v4 options line>, <seats>])`. Once `encode` writes v5, `payloadOf` would read v5 text as packed alphabet: refusal tests would pass vacuously and acceptance tests would fail. A grep for `payloadOf(` in `tests/share.test.js` finds fourteen calling tests. Ten test the v4 READER (and v1 to v3 forged from it), which stays:
   - "R4-E decode refuses a payload of two or four lines"
   - "R4-E decode refuses an options line with the wrong number of fields, a palette or parent that is not a count"
   - "a v3 options line with an unknown mirror or anchor character is refused"
@@ -381,7 +379,9 @@ The analytics hash rule is untouched. The gtag `config` still sends `location.or
   - "a v2 link with a v3-shaped line 2 or a malformed order is corrupt"
   - "decode chooses its scale-line reader from the version". Its `link` becomes a v4 golden, so "a version 4 link is read by the new grammar" still holds. It gains a v5 link that also records `["current"]`.
   - "a version 3 link with a bar opens with bottom notes"
-- The other two `payloadOf` callers test the WRITER, so they assert the v5 options segment instead. Titles are kept, so `s3_share_anchor_dropped` and `r4e_share_seats_only_rim_written` keep their `# suite:` headers:
+- The other four `payloadOf` callers test the WRITER, so they assert v5 option segments instead, spelled as in 2.1's grammar and 3.2's table. Titles are kept, so the rewritten writer mutants that name them still select them:
+  - "the one-ring mirror letters are exactly t and b on the options line": a both-ring mirror writes `mirror`, a top-only mirror writes `mirror-top`, a bottom-only mirror writes `mirror-bottom`, and no mirror writes no mirror segment.
+  - "per-ring seats ride on line 2 as rim;inner;bottom": unmoved seats write no `seats-` segment; moved rim and bottom seats write `seats-<rim>;;<bottom>` (comma lists, the inner list empty), and the scale and other option segments are unchanged.
   - "the anchor travels on the options line and round-trips": a default link carries no `between` segment, and an `anchor: "between"` link carries exactly one.
   - "R4-E a 120-note pan with the rim, inner and bottom rings all reversed fits the cap and keeps every ring": the `seats-` segment holds three `;`-separated lists, of 60, 30 and 29 seats.
 - "R4-E decode refuses a version byte outside the alphabet and a body character outside it, even under a valid check" slices `encoded(...)` as a packed string without calling `payloadOf`. It switches to a v4 golden, because it tests the v4 reader's alphabet.
@@ -436,8 +436,9 @@ The analytics hash rule is untouched. The gtag `config` still sends `location.or
   - `d_replaces_not_carried`
   - `qa_scale_record_drops_options`
 - Run `python3 tools/refresh_mutants.py`, then `--check`.
-- **Writer mutants.** `r4e_share_seats_only_rim_written`, `r4e_share_options_default_invented` and `r4e_share_encode_cap_unchecked` mutate the deleted packed writer. Rewrite each against its v5 equivalent: seats written for the rim only, a default option written, and the encode cap removed. The patch count must not fall.
+- **Writer mutants.** Rewrite against the v5 writer: `s_share_order_dropped`, `r4e_share_options_default_invented`, `s3_share_anchor_dropped`, `r4e_share_seats_only_rim_written`, `h_options_dropped`, `r4e_share_encode_cap_unchecked`. The patch count must not fall.
 - Hand-edit the `# suite:` header of every patch whose killing test was retitled (the two Q18 tests, "this app writes wire version 4"). Use `.` wildcards, never quotes.
+- Every re-pointed mutant updates its `# kills:` line along with its `# suite:` line, and both use `.` wildcards.
 - Set the README mutant count, and the FLOORS rows for `tests/share.test.js` (73 today), `tests/app.test.js` and `tests/e2e.test.js`, from CI's run artifacts at the head SHA, not from arithmetic.
 
 **Verify.** One command, recorded on `origin/main` `ebd997f` as 73 pass and 34 pass:
@@ -472,7 +473,7 @@ Also run the four sync and corpus checks of gate 3, and the one new e2e test on 
   - "SI: the share icon is a 44px target in the header's left cell at 380x780 and the title stays centred"
   - "SI: a revealed #share-url does not move the card at 380x780"
   - "SI: a revealed #share-url hides on blur, on Escape and when the scale sheet opens, and the chips are hit-testable again". After each hide, `document.elementFromPoint` at a chip's centre returns that chip.
-- "SI: a second COPY LINK clears the message line before writing LINK COPIED again". It records every `textContent` write to `#announce` over two clicks and expects `["", "LINK COPIED", "", "LINK COPIED"]`.
+- "SI: a second COPY LINK clears the message line before writing LINK COPIED again". The clear lives in `copyLink`'s `done()`, not in `say()`. It records every `textContent` write to `#announce` over two clicks, awaiting one frame after each, and expects `["", "LINK COPIED", "", "LINK COPIED"]`. A `say()` from elsewhere (a `#scale-msg` keystroke message) writes once, with no clear.
 - Before merging, the lane takes a 1x screenshot of the icon at 380x780 and checks that the glyph reads as a link (6.3).
 
 **Acceptance: tests changed (and why)**
@@ -485,13 +486,12 @@ Also run the four sync and corpus checks of gate 3, and the one new e2e test on 
 - `tests/e2e.test.js`:
   - In `assertCardFits`, `LANDSCAPE_CONTROLS` gains `"#share-copy"`. The icon is always-on landscape chrome, which the card must not cover.
   - In "the mode buttons and Shuffle are 44px tall and steal nothing from their neighbours", `resting` gains `"#share-copy"`.
-  - `FLASH_STOPS` drops `"share-copy"`. "Tab cycles exactly the sixteen flash-card stops in the modal at every viewport class" becomes "...the fifteen flash-card stops...", and "Tab cycles exactly the seventeen progression stops in the modal at every viewport class" becomes "...the sixteen progression stops...". `PROG_STOPS` is built from `FLASH_STOPS`, so it follows. "the sidebar's native Tab order is the panel's DOM order" reads `FLASH_STOPS.slice(1)` and `PROG_STOPS.slice(1)`, so it follows with no edit and keeps its title.
+  - On Lane I's base (About lane O merged), 'seventeen flash-card' becomes 'sixteen flash-card' and 'eighteen progression' becomes 'seventeen progression'. `FLASH_STOPS` / `PROG_STOPS` lose `share-copy` (17→16, 18→17). About lane O adds `about-open` to `FLASH_STOPS` and renames today's "sixteen flash-card" and "seventeen progression" titles to seventeen and eighteen (`docs/plans/2026-10-17-about-off-main.md` on `claude/about-off-main-plan`). `PROG_STOPS` is built from `FLASH_STOPS`, so it follows.
+  - The lane re-counts `FLASH_STOPS` and `PROG_STOPS` on its actual base before renaming anything, and renames from the counts it finds, not from this plan's numbers. "the sidebar's native Tab order is the panel's DOM order" reads `FLASH_STOPS.slice(1)` and `PROG_STOPS.slice(1)`, so it follows with no edit and keeps its title.
   - In "RESET SEEDED DECKS is absent until a seeded deck is edited or deleted, arms, and restores all five", Tab from `#deck-add` lands on `deck-restore`. The `share-copy` step between them goes.
   - "edge 9: a real COPY LINK click puts location.href, query included, on the clipboard" clicks the header `#share-copy` without opening the panel.
   - "edge 10: COPY LINK is a 44px target inside the panel at 320px and 380px with no horizontal overflow" becomes "edge 10: COPY LINK is a 44px target in the header at 320px and 380px with no horizontal overflow". It no longer opens the panel, and it drops the clause that pins its top to `#deck-add`'s. No mutant names it.
-- **Mutant headers to re-point.** Headers are word-split, so they use `.` wildcards, never quotes:
-  - `pm_handpan101_outside_tab_trap`: `Tab.cycles.exactly.the.sixteen.flash-card.stops` becomes `Tab.cycles.exactly.the.fifteen.flash-card.stops`.
-  - `uid_panelstops_misses_tier`: `Tab.cycles.exactly.the.seventeen.progression.stops` becomes `Tab.cycles.exactly.the.sixteen.progression.stops`.
+- **Mutant headers to re-point.** Headers are word-split, so they use `.` wildcards, never quotes. Re-point the `# kills:` and `# suite:` lines of `pm_handpan101_outside_tab_trap` and `uid_panelstops_misses_tier` to `Tab.cycles.exactly.the.sixteen.flash-card.stops` and `Tab.cycles.exactly.the.seventeen.progression.stops`.
   - `e_restore_not_panel_stop` names the RESET SEEDED DECKS title, which is kept, so its header stays.
   - No patch names "edge 9", "edge 10" or "the sidebar's native Tab order".
 
@@ -625,7 +625,7 @@ The `frontend-design` skill was applied under a brief that pins the visual syste
 | Focus | `2px solid #e3b25c`, offset 2px | global `:focus-visible` |
 | Disabled | `opacity:.5; cursor:default` | the `#scale-drawer .mode:disabled` values |
 | Target | 44 x 44 | `#settings-trigger` |
-| Line weight | 2px stroke in a 20px box | matches the trigger's 18 x 2px bars |
+| Line weight | `stroke-width` 2.4 in a 24-unit viewBox drawn at 20px (renders 2px) | matches the trigger's 18 x 2px bars |
 
 **Type.** No text renders in the control; its name is `aria-label`. LINK COPIED appears in the existing `.announce` row, set in Nunito Sans, as today.
 
@@ -656,10 +656,11 @@ Landscape phone, 844 x 390, `@media (max-height:520px)`. Inside it, `.hrow{displ
 - The chip strip (`flex:1 1 auto; min-width:0`) gives up 44px plus one gap and keeps scrolling. The gap is the landscape header's existing `gap:var(--sp-3)`, which is 9px under `max-height:520px`.
 - Landscape Tab order (icon, trigger, chips) differs from visual order (chips, icon, trigger). This is accepted: `#settings-trigger` already does the same on main, where `.hrow` precedes `.decks` in the DOM and `order` puts it after them on screen.
 - The row height is set by 44px controls either way.
+- `[@] [=]` ends at the right border, with one 9px gap (the single space) between the two controls.
 
 ```
 +------------------------------------------------------------------------------+
-| ( D KURD 10 )( D AMARA 10 )( D AMARA 9 )( C# HIJ...  >   [@] [=]             |
+| ( D KURD 10 )( D AMARA 10 )( D AMARA 9 )( C# HIJ...  >               [@] [=] |
 |                        +---------+                                           |
 |                        |  card   |                                           |
 |                        +---------+                                           |
@@ -691,7 +692,7 @@ Desktop, at least 1024 x 700. `#settings-trigger` is `display:none`, and the pan
   <svg class="glyph-link" viewBox="0 0 24 24" width="20" height="20"
        aria-hidden="true" focusable="false">
     <g transform="rotate(-45 12 12)" fill="none" stroke="currentColor"
-       stroke-width="2" stroke-linecap="round">
+       stroke-width="2.4" stroke-linecap="round">
       <rect x="2" y="8" width="12" height="8" rx="4"/>
       <rect x="10" y="8" width="12" height="8" rx="4"/>
     </g>
@@ -699,7 +700,7 @@ Desktop, at least 1024 x 700. `#settings-trigger` is `display:none`, and the pan
 </button>
 ```
 
-- **The glyph.** It is our own drawing: two 12 x 8 stadiums (`rx` 4, stroke 2), overlapping by 4 units and rotated -45 degrees about the centre. Lane I checks a 1x screenshot before merging. There is no icon font, no sprite and no external file, which matches the CSS-drawn hamburger.
+- **The glyph.** It is our own drawing: two 12 x 8 stadiums (`rx` 4, `stroke-width="2.4"`, which renders 2px at 20px), overlapping by 4 units and rotated -45 degrees about the centre. Lane I checks a 1x screenshot before merging. There is no icon font, no sprite and no external file, which matches the CSS-drawn hamburger.
 - **Sizing.** `#share-copy{width:44px; height:44px; padding:0; flex:none}`. This is the trigger's own sizing, minus its z-index. The icon must NOT sit above the scrim, which is why 6.5 inerts it.
 - **The accessible name.** It is "Copy link", the action and not the glyph. That echoes the LINK COPIED confirmation, so the action keeps one name through the flow.
 - **No `title` while enabled.** A tooltip would only repeat the name, and S5 reserves `title` for the refusal.
@@ -707,12 +708,12 @@ Desktop, at least 1024 x 700. `#settings-trigger` is `display:none`, and the pan
 
 ### 6.4 Feedback, motion, print
 
-- **Tap feedback.** `copyLink()` does not change.
+- **Tap feedback.** `copyLink()`'s outcomes do not change; only `done()` gains the clear below.
   - Its `say("LINK COPIED","ok")` writes the `.announce` row (`role="status"`, `aria-live="polite"`), which is visible under the footer on every layout.
   - Its outcomes are LINK SHARED, SELECT THE LINK AND COPY IT, and silence on a dismissed share sheet.
   - The glyph does not swap to a tick. A timed swap would add state and motion for a message the live region already gives.
   - The accessible name stays "Copy link" in every state; only `disabled` and `title` change.
-  - **Repeat copies.** `say()` today writes over the old text without clearing it, so a second LINK COPIED changes nothing. Lane I makes `say()` clear the message line and `#announce` before it writes, so a repeat copy is announced again. No `say()` text changes.
+  - **Repeat copies.** `say()` today writes over the old text without clearing it, so a second LINK COPIED changes nothing. Lane I makes `copyLink`'s `done()` clear the message line and `#announce` before it writes, so a repeat copy is announced again. `say()` itself is unchanged, so `#scale-msg` is not re-announced on every keystroke. No `say()` text changes. The write of the new text runs in a `requestAnimationFrame` after the clear, so assistive tech sees two separate mutations. The SI test awaits one frame before reading the record.
 - **Reduced motion.** Nothing animates. `.mode:active` is an instant background change, not a transition, so `prefers-reduced-motion` needs no rule.
 - **Print.** Add `#share-copy, #share-url{display:none}` INSIDE the existing `@media print{` block. It must remain the last block in the `<style>` element, per `tests/test_render_agreement.py::test_print_block_is_last_in_the_style_element`.
 
@@ -727,6 +728,8 @@ Desktop, at least 1024 x 700. `#settings-trigger` is `display:none`, and the pan
    #share-url{position:absolute; left:0; right:0; top:44px; z-index:29;
      background:#211d16; border:1px solid #433b2c; border-radius:8px; color:#eae6df}
    ```
+
+   These declarations are added to the existing `#share-url` rule, which keeps `box-sizing`, `width:100%`, `min-height:44px`, `padding:0 10px` and `font-size:16px` (16px stops iOS from zooming on focus). Its `margin-top:var(--sp-2)` is removed, so the field's top edge is exactly 44px. `#share-url[hidden]{display:none}` stays.
 
    - It reuses `.mode`'s surface (`#211d16`), hairline (1px `#433b2c`) and radius (8px). Its text is `#eae6df`, the body text colour, not `.mode`'s `#c4bcab`, because it shows a link to read.
    - It hides on `blur`, on Escape and when `openScaleSheet()` runs. Its z-index 29 keeps it under `#scale-sheet` (30). Revealed, it overlays the chip strip, and the hide on blur hands the chips back (the SI `elementFromPoint` test).
@@ -798,7 +801,7 @@ Desktop, at least 1024 x 700. `#settings-trigger` is `display:none`, and the pan
 - Transport behaviour on `+`, `)`, `*`, `_` and `encodeURI`-style double-encoding (risks 1 to 3, P10's premise).
 - Android Linkify's URL pattern stopping at `[ ] |` (G1), recalled from memory and not read from source.
 - `title` tooltips on disabled buttons across desktop browsers (6.5.6).
-- Whether a same-task clear-then-write in `say()` makes every screen reader announce a repeat LINK COPIED (6.4).
+- Whether a clear followed by a write one animation frame later in `copyLink`'s `done()` makes every screen reader announce a repeat LINK COPIED (6.4).
 - Whether the 6.3 glyph reads as a link at 1x; Lane I's screenshot is the check.
 - The landscape chip-strip width lost (risk 6), not measured.
 - No e2e test was run for this plan, and no screenshot of the icon was taken. The wireframes are derived from the CSS rules cited, not rendered.
@@ -824,14 +827,18 @@ The rubric is restated each round. Each row is 0 to 10.
 
 | Finding | Fix | Where |
 |---|---|---|
-| E1: the untouched list held tests that forge v1 to v4 through `payloadOf` | All fourteen `payloadOf` callers listed: twelve move to a v4 golden or `forgePayload(4, ...)`, two assert the v5 options segment; the Q4 UTF-8 test, found in the same sweep, reads the v5 name segment | 4.4 |
+| E1: the untouched list held tests that forge v1 to v4 through `payloadOf` | All fourteen `payloadOf` callers listed: ten move to a v4 golden or `forgePayload(4, ...)`, four assert v5 option segments (round 3); the Q4 UTF-8 test, found in the same sweep, reads the v5 name segment | 4.4 |
 | E2: rule N's share half pins a v4 literal | Record half kept (`v: 4`), share half takes the v5 literal | 4.4 |
-| E3: e2e stops and mutant headers | `FLASH_STOPS`, fifteen/sixteen, the RESET Tab step, edge 9, edge 10 (also found), two `# suite:` re-points | 4.5 |
+| E3: e2e stops and mutant headers | `FLASH_STOPS`, sixteen/seventeen (on About lane O's seventeen/eighteen base; round 3), the RESET Tab step, edge 9, edge 10 (also found), two `# kills:` and `# suite:` re-points | 4.5 |
 | N1 to N6 | `engineAtVersion`, exact check compare (BAD_NOTE: there is no `BAD_CHECKSUM`), `badNote(text)` refusals, the `formatSeed` inverse, `deckName`'s null guard, base `ebd997f`, the third-section rationale | 2.1, 2.2, 3.1, 4.4 |
 | Design blocker: a revealed `#share-url` covered the chips above everything | z-index 29, hides on blur, Escape and sheet open, `elementFromPoint` test | 6.5, 4.5, G8 |
-| Design nits 1 to 8 | Styling, `--sp-3` gap, Tab order, disabled refusal, panel coverage at 1024 x 700, 12 x 8 glyph, fixed accessible name, `say()` clear with a test | 6.2 to 6.6, 4.5 |
+| Design nits 1 to 8 | Styling, `--sp-3` gap, Tab order, disabled refusal, panel coverage at 1024 x 700, 12 x 8 glyph, fixed accessible name, a clear in `copyLink`'s `done()` (round 3: not in `say()`) with a test | 6.2 to 6.6, 4.5 |
 
-Every row re-scored 10 after round 2. The two items the repo cannot settle are in the unverified list.
+| Round 3, B1: stop counts ignored About lane O | Counts taken on About's base: seventeen/eighteen become sixteen/seventeen; `# kills:` and `# suite:` re-pointed; the lane re-counts on its actual base first | 4.5 |
+| Round 3, eng nits 1 to 4 | Six writer mutants named; mirror and seats tests moved to the v5 writer group (ten reader tests); `# kills:` rule; the clear scoped to `copyLink`'s `done()` | 4.4, 4.5, 6.4 |
+| Round 3, design nits 1 to 4 | `#share-url` keeps its base declarations and loses `margin-top`; `stroke-width` 2.4; the clear-then-write split by a frame; landscape wireframe redrawn | 6.1, 6.2, 6.3, 6.4, 6.5 |
+
+Every row re-scored 10 after rounds 2 and 3. The two items the repo cannot settle are in the unverified list.
 
 ### Adversarial pass: the five likeliest ways a lane fails review or CI, and the fix in this plan
 
