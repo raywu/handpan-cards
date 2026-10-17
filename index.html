@@ -902,6 +902,7 @@ footer.seq{row-gap:var(--sp-1)}
 #scale-refusal.err{color:#E27005}
 /* Import (lane B): the quiet control, the paste area and the review list reuse
    .mode, .sheetlabel and .sheethint; nothing here touches a shared rule. */
+#import-row[hidden]{display:none}
 #import-open{align-self:flex-start}
 #import-area:not([hidden]), #import-result:not([hidden]), #import-review:not([hidden]){
   display:flex; flex-direction:column; gap:var(--sp-2)}
@@ -1365,7 +1366,7 @@ html.about-open{overflow:hidden}
          HPE.importer, shown role by role for the user to confirm, and only then
          written into #scale-box through the same input event typing fires. No
          network, no preset: a name-only paste is INSUFFICIENT. -->
-    <div class="fieldrow" id="import-row">
+    <div class="fieldrow" id="import-row" hidden>
       <button class="mode" type="button" id="import-open" aria-expanded="false"
               aria-controls="import-area">IMPORT TEXT</button>
       <div id="import-area" hidden>
@@ -10689,6 +10690,7 @@ function showSheet(opener) {
 // user confirm. Nothing here guesses a note, fetches a page or keeps the text:
 // USE hands the engine's own serialise() to #scale-box and fires the same input
 // event typing fires, so the parse line, refusal, preview and SAVE are unchanged.
+const importRow     = document.getElementById("import-row");
 const importOpenBtn = document.getElementById("import-open");
 const importArea    = document.getElementById("import-area");
 const importTextBox = document.getElementById("import-text");
@@ -11597,7 +11599,7 @@ sheet.addEventListener("keydown", e => {
   const stops = [backBtn,
                  editingId ? nameBox : null,
                  scaleBox,
-                 importOpenBtn, importTextBox, importRunBtn, ...importTicks, importDingSel, importUseBtn,
+                 ...(importRow.hidden ? [] : [importOpenBtn, importTextBox, importRunBtn, ...importTicks, importDingSel, importUseBtn]),
                  drawerOpen ? previewBox.querySelector('.panhit[tabindex="0"]') : null,
                  drawerBtn, anchorOne, anchorBetween, mirrorTop, mirrorBot, fineBtn,
                  notePrev, noteNext, seatPrev, seatNext, resetBtn,

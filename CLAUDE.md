@@ -768,6 +768,7 @@ Every sentence names its test. `tests/import.test.js` titles are unprefixed; "IM
   (A4 = 440 Hz, A4 at 440, A4 432 Hz) is not a later note, in prose or under a Word: key"); the
   accepted false blocks fail closed ("accepted false blocks: an octaved note or a run of key letters
   in prose after the list blocks (fail closed)").
+- **Hidden (2026-10-17 hotfix, owner: keep developing it).** The import row ships `hidden`; the IM tests un-hide it before exercising it ("IM: the import row ships hidden: #import-row carries the hidden attribute in the served markup and IMPORT TEXT is not in the sheet's focus order"; `tests/e2e.test.js` "IM: at 380px the Add sheet shows no IMPORT TEXT control").
 - **Sheet.** IMPORT TEXT opens a paste box and IMPORT runs `interpret` (no test; true by `runImport` and the `#import-open` click handler). USE writes exactly `serialise(r)`
   into `#scale-box` and fires `input` ("IM: USE writes exactly serialise(r) into #scale-box, fires
   input, and the parse line matches typing it"). Any BLOCK disables USE ("IM: any BLOCK disables USE,

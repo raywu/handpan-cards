@@ -61,7 +61,7 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", 
   // Share URL lane SU-A: the COPY LINK control and its readonly fallback input.
   "share-copy", "share-url", "about", "about-open", "about-close",
   // Scale-import lane B: the IMPORT TEXT control, its paste area and review list.
-  "import-open", "import-area", "import-text", "import-run", "import-result", "import-status",
+  "import-row", "import-open", "import-area", "import-text", "import-run", "import-result", "import-status",
   "import-review", "import-rows", "import-flags", "import-ding", "import-use"];
 
 /** Copy a value out of the vm realm, so assert.deepStrictEqual can compare it. */
