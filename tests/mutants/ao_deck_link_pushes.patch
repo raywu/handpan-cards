@@ -1,0 +1,15 @@
+# kills: a #deck= link inside About replaces the #about entry with the deck's route and selects the deck
+# suite: node --test --test-name-pattern ^AO:.a.#deck=.link.inside.About.replaces tests/app.test.js
+# Lane O. A deck link inside About pushes a new entry instead of replacing the #about one.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10920,7 +10920,7 @@
+     if (resolved === deck().id && (resolved === routed || replaced)) { closeAbout(); return; }
+   }
+   hideAbout();
+-  history.replaceState(null, "", href);
++  history.pushState(null, "", href);
+   routeToDeck(routed);
+   syncRoute();
+ }

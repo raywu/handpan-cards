@@ -1,16 +1,15 @@
-# kills: the about section is visible below the card at 380px with no horizontal scroll
-# suite: node --test --test-name-pattern ^the.about.section.is.visible tests/e2e.test.js
-# The about section is display:none: a curl still sees the text, a visitor
-# and a crawler rendering the page do not (plan S13: no hidden copy).
+# kills: the about section ships hidden as a dialog, in place after #app, with every existing sentence
+# suite: node --test --test-name-pattern ^AO:.the.about.section.ships.hidden tests/app.test.js
+# The about section ships without the hidden attribute, so it renders over the page at boot (plan S13: no hidden copy is the old rule; the overlay now ships hidden).
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1125,7 +1125,7 @@ footer.seq{row-gap:var(--sp-1)}
-    4px frame band. Both rules sit BEFORE the print block (it must stay last). */
- #app{flex:none; width:100%; min-height:0; display:flex; flex-direction:column; align-items:center;
-   height:max(100%, calc(100dvh - max(10px, env(safe-area-inset-top)) - max(12px, env(safe-area-inset-bottom))))}
--#about{flex:none; width:100%; max-width:520px; margin-top:24px; padding:0 4px 48px;
-+#about{display:none; flex:none; width:100%; max-width:520px; margin-top:24px; padding:0 4px 48px;
-   color:#c4bcab; font:400 14px/1.6 "Nunito Sans", system-ui, sans-serif; user-select:text; -webkit-user-select:text}
- #about h2{margin:0 0 8px; font:400 22px/1.2 "Marcellus", serif; color:#eae6df}
- #about h3{margin:20px 0 6px; font:600 11px/1.4 "Nunito Sans"; letter-spacing:.13em;
+@@ -1258,7 +1258,7 @@
+ <div class="announce" role="status" aria-live="polite"></div>
+ </div>
+ 
+-<section id="about" aria-labelledby="about-title" role="dialog" aria-modal="true" hidden>
++<section id="about" aria-labelledby="about-title" role="dialog" aria-modal="true">
+   <div class="abouthead">
+     <button type="button" class="mode" id="about-close" aria-label="Back to the practice screen">&larr; BACK</button>
+     <h2 id="about-title">About Handpan Chords</h2>

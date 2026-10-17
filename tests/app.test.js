@@ -3651,11 +3651,13 @@ test("PM rule 7: HANDPAN 101 is the last Resources link, a Google Doc in a new t
   assert.ok(!/onclick/.test(first), "a link click must not close the panel");
   assert.match(first, />HANDPAN 101<\/a>/);
   const rows = [...group.matchAll(/<div class="modebar([^"]*)">([\s\S]*?)<\/div>/g)];
-  assert.strictEqual(rows.length, 3, "three modebar rows");
+  assert.strictEqual(rows.length, 4, "four modebar rows");
   assert.strictEqual((rows[0][2].match(/<a\b/g) || []).length, 3, "the site row keeps three siblings");
   assert.strictEqual((rows[1][2].match(/<a\b/g) || []).length, 2, "the Amy row keeps two");
   assert.strictEqual((rows[2][2].match(/<a\b/g) || []).length, 1, "HANDPAN 101 is alone in its row");
   assert.ok(rows[2][2].includes("res-handpan-101"));
+  assert.ok(rows[3][2].includes('id="about-open"'), "the fourth row holds ABOUT");
+  assert.ok(!/<a\b/.test(rows[3][2]), "the ABOUT row holds no link");
 });
 
 /* D-3's type guard on printPaper must reject a TRUTHY but invalid stored
@@ -4860,6 +4862,40 @@ describe("panel fit judge", () => {
     assert.strictEqual(judge(b, c(540)).rule2.fail.length, 1);
   });
 
+  test("panel fit: the About-row allowance is 52, owed only for an about-open control the base lacks", () => {
+    assert.strictEqual(pf.ABOUT_ALLOWANCE_PX, 52);
+    const keys = (...k) => Object.fromEntries(k.map((x) => [x, ctl(100)]));
+    assert.strictEqual(pf.aboutAllowance(keys("res-a"), keys("res-a", "about-open")), 52, "a new about-open key");
+    assert.strictEqual(pf.aboutAllowance(keys("res-a"), keys("res-a")), 0, "no new key");
+    assert.strictEqual(pf.aboutAllowance(keys("res-a"), keys("res-a", "res-b", "deck-add2")), 0, "other new controls earn nothing");
+    assert.strictEqual(pf.aboutAllowance(keys("about-open"), keys("about-open")), 0, "the allowance expires once main has the row");
+  });
+
+  test("panel fit rule 1 and rule 3: a new about-open earns the About-row allowance and nothing else does", () => {
+    const b = cell({ needed: 500, avail: 500 });
+    const withAbout = (needed) => judge(b, withControl(cell({ needed, avail: 500 }), "about-open", ctl(400))).rule1.fail.length;
+    assert.strictEqual(withAbout(553), 0, "base + 52 + the 1px tolerance");
+    assert.strictEqual(withAbout(554), 1, "one pixel beyond");
+    assert.strictEqual(judge(b, withControl(cell({ needed: 520, avail: 500 }), "tier-basic", ctl(400))).rule1.fail.length, 1, "a new non-about control earns no allowance");
+    assert.strictEqual(judge(b, cell({ needed: 520, avail: 500 })).rule1.fail.length, 1, "no new control at all");
+    const about = (bottom) => judge(b, withControl(cell({ needed: 550, avail: 500 }), "about-open", ctl(bottom))).rule3.fail.length;
+    assert.strictEqual(about(500.5), 0, "inside avail");
+    assert.strictEqual(about(550), 0, "below avail, inside the allowance");
+    assert.strictEqual(about(552.5), 0, "base needed + 52 + the 0.5 tolerance");
+    assert.strictEqual(about(552.6), 1, "past the allowance");
+    assert.strictEqual(judge(b, withControl(cell({ needed: 550, avail: 500 }), "tier-basic", ctl(501))).rule3.fail.length, 1, "a non-about new control below avail still fails");
+    const both = withControl(withControl(cell({ needed: 550, avail: 500 }), "about-open", ctl(540)), "tier-basic", ctl(540));
+    assert.strictEqual(judge(b, both).rule3.fail.length, 1, "with about-open present, the other new control is still judged exactly");
+  });
+
+  test("panel fit rule 2: the About-row allowance does not move any existing control", () => {
+    const b = withControl(cell(), "deck-add", ctl(500));
+    const c = (bottom) => withControl(withControl(cell(), "about-open", ctl(400)), "deck-add", ctl(bottom));
+    assert.strictEqual(judge(b, c(500.5)).rule2.fail.length, 0);
+    assert.strictEqual(judge(b, c(500.6)).rule2.fail.length, 1, "deck-add gets no About-row allowance");
+    assert.strictEqual(judge(b, c(540)).rule2.fail.length, 1);
+  });
+
   test("panel fit: the threshold cell is the lowest height in the band where the base fits", () => {
     const b = cell({ needed: 373.8, avail: 320 });
     const c = cell({ needed: 395.8, avail: 320, overflowX: { panel: 0, doc: 0 } });
@@ -5369,19 +5405,19 @@ test("AP2-2 setInert applies each caller's own background set", () => {
   const app = boot({ layout: true });
   const ids = (expr) => plain(app.get(`${expr}.map(e => e.id)`));
   const inertIds = () => plain(app.get(`[...new Set([...background, ...panelBackground])].filter(e => e.inert).map(e => e.id)`));
-  assert.deepStrictEqual(ids("background"), ["settings-panel", "main"], "the sheet's set");
-  assert.deepStrictEqual(ids("panelBackground"), ["main", "decks"], "the panel's set");
+  assert.deepStrictEqual(ids("background"), ["settings-panel", "about", "main"], "the sheet's set");
+  assert.deepStrictEqual(ids("panelBackground"), ["main", "decks", "about"], "the panel's set");
   assert.deepStrictEqual(inertIds(), []);
 
   app.run("openScaleSheet()");
-  assert.deepStrictEqual(inertIds().sort(), ["main", "settings-panel"], "the sheet inerts its own set only");
+  assert.deepStrictEqual(inertIds().sort(), ["about", "main", "settings-panel"], "the sheet inerts its own set only");
   assert.strictEqual(app.get("background[0].getAttribute('aria-hidden')"), "true");
   app.run("closeScaleSheet()");
   assert.deepStrictEqual(inertIds(), [], "closing the sheet frees exactly what it took");
   assert.strictEqual(app.get("background[0].getAttribute('aria-hidden')"), null);
 
   app.run("openPanel()");
-  assert.deepStrictEqual(inertIds().sort(), ["decks", "main"], "the panel inerts its own set only");
+  assert.deepStrictEqual(inertIds().sort(), ["about", "decks", "main"], "the panel inerts its own set only");
   assert.strictEqual(app.get("panelBackground[1].getAttribute('aria-hidden')"), "true");
   app.run("closePanel()");
   assert.deepStrictEqual(inertIds(), []);
@@ -10096,5 +10132,205 @@ describe("share url: edges", () => {
     assert.strictEqual(app.deckId(), "kurd");
     assert.strictEqual(app.location.hash, "#deck=d-kurd-10");
     assert.strictEqual(replaces(app).length, before + 1);
+  });
+});
+
+/* ---------------------------------------------------------------- about overlay */
+
+describe("about overlay", () => {
+  const REAL_ID = "G-TEST123456";
+  const pushes = (app) => app.history.calls.filter((c) => c.type === "push");
+  const backs = (app) => app.history.calls.filter((c) => c.type === "back");
+  const openAboutFrom = (app) => { app.run("openPanel()"); app.els["about-open"].click(); };
+  const headVar = (app) => app.cssVar("--about-head-h");
+  const events = (app) => JSON.parse(JSON.stringify(Array.from(app.get("window.dataLayer"))))
+    .filter((e) => e[0] === "event").map((e) => ({ name: e[1], params: e[2] }));
+
+  test("AO: the about section ships hidden as a dialog, in place after #app, with every existing sentence", () => {
+    const html = INDEX_HTML();
+    const open = /<section id="about"[^>]*>/.exec(html);
+    assert.ok(open, "no about section");
+    assert.match(open[0], /\baria-labelledby="about-title"/);
+    assert.match(open[0], /\brole="dialog"/);
+    assert.match(open[0], /\baria-modal="true"/);
+    assert.match(open[0], /\bhidden\b/, "the about section does not ship hidden");
+    assert.ok(html.includes('</div>\n\n<section id="about"'), "#about no longer follows #app");
+    const inner = aboutHtml();
+    assert.match(inner, /^\s*<div class="abouthead">\s*<button type="button" class="mode" id="about-close" aria-label="Back to the practice screen">&larr; BACK<\/button>\s*<h2 id="about-title">About Handpan Chords<\/h2>\s*<\/div>/,
+      "the sticky header holds the exit control then the title");
+    const text = textOf(inner);
+    assert.ok(text.includes(VALUE_LINE));
+    for (const d of BUILTIN_DECKS()) {
+      assert.ok(new RegExp(`${escapeRe(d.name)}[:,]? ${d.chords.length} chord cards`, "i").test(text), d.name);
+    }
+    assert.ok(/D Amara is also sold as Celtic Minor/.test(text));
+    assert.ok(/A custom scale lives only in your browser/.test(text));
+    assert.ok(/without cookies in the EEA, the UK and Switzerland/.test(text));
+    const app = boot();
+    assert.strictEqual(app.els.about.hidden, true, "About is open at boot");
+  });
+
+  test("AO: ABOUT closes the panel, pushes one #about entry, inerts #app and the panel, and focuses the exit, and a resize after close writes nothing", () => {
+    const app = boot();
+    app.run("openPanel()");
+    assert.strictEqual(app.get("panelOpen"), true);
+    const before = pushes(app).length;
+    app.els["about-open"].click();
+    assert.strictEqual(app.get("panelOpen"), false, "the settings menu stayed open");
+    assert.strictEqual(app.els.about.hidden, false, "About did not open");
+    assert.strictEqual(app.get("aboutOpen"), true);
+    const added = pushes(app).slice(before);
+    assert.strictEqual(added.length, 1, "ABOUT did not push exactly one entry");
+    assert.strictEqual(added[0].url, "#about");
+    assert.deepStrictEqual(plain(added[0].state), { about: true });
+    assert.strictEqual(app.location.hash, "#about");
+    assert.strictEqual(app.els["settings-panel"].inert, true, "the panel is not inert");
+    assert.strictEqual(app.els["settings-panel"].getAttribute("aria-hidden"), "true");
+    assert.strictEqual(app.get("document.documentElement.classList.contains('about-open')"), true);
+    assert.strictEqual(app.activeId(), "about-close");
+    assert.notStrictEqual(headVar(app), undefined, "--about-head-h was not written on open");
+    app.run("closeAbout()");
+    app.run("document.documentElement.style.setProperty('--about-head-h', '7px')");
+    app.run("syncAboutHead()");
+    assert.strictEqual(headVar(app), "7px", "a resize after close wrote --about-head-h");
+  });
+
+  test("AO: the exit control, Escape and a popstate each close About, consume the #about entry and focus the settings trigger", () => {
+    const closed = (app) => {
+      assert.strictEqual(app.els.about.hidden, true);
+      assert.strictEqual(app.get("aboutOpen"), false);
+      assert.strictEqual(app.els["settings-panel"].inert, false);
+      assert.strictEqual(app.get("document.documentElement.classList.contains('about-open')"), false);
+      assert.strictEqual(app.activeId(), "settings-trigger");
+      assert.strictEqual(app.get("panelOpen"), false, "the settings menu reopened");
+    };
+    for (const way of ["exit", "escape"]) {
+      const app = boot();
+      openAboutFrom(app);
+      const b0 = backs(app).length;
+      if (way === "exit") app.els["about-close"].click(); else app.keydown("Escape");
+      closed(app);
+      assert.strictEqual(backs(app).length, b0 + 1, way + " did not pop its own entry");
+      app.popstate();
+      assert.strictEqual(app.location.hash, "#deck=d-kurd-10", way + " left the bar off the deck's route");
+    }
+    const app = boot();
+    openAboutFrom(app);
+    const b0 = backs(app).length;
+    app.location.hash = "";
+    app.popstate();
+    closed(app);
+    assert.strictEqual(backs(app).length, b0, "a popstate popped a second entry");
+  });
+
+  test("AO: syncRoute and hashchange write nothing while About is open", () => {
+    const app = boot();
+    openAboutFrom(app);
+    const n = app.history.calls.length;
+    app.run("syncRoute()");
+    assert.strictEqual(app.history.calls.length, n, "syncRoute wrote under About");
+    assert.strictEqual(app.location.hash, "#about");
+    app.hashchange("#deck=c-sharp-hijaz-9");
+    assert.strictEqual(app.deckId(), "kurd", "a hashchange routed under About");
+    assert.strictEqual(app.history.calls.length, n);
+    assert.strictEqual(app.location.hash, "#deck=c-sharp-hijaz-9");
+  });
+
+  test("AO: a #deck= link inside About replaces the #about entry with the deck's route and selects the deck", () => {
+    const app = boot();
+    openAboutFrom(app);
+    const n = app.history.calls.length;
+    app.run("aboutLink('#deck=f-low-pygmy-18')");
+    const added = app.history.calls.slice(n);
+    assert.strictEqual(added.some((c) => c.type === "push"), false, "the link pushed an entry");
+    assert.strictEqual(added.some((c) => c.type === "back"), false, "the link popped an entry");
+    assert.ok(added.some((c) => c.type === "replace" && c.url === "#deck=f-low-pygmy-18"), "no replace to the deck route");
+    assert.strictEqual(app.deckId(), "pygmy");
+    assert.strictEqual(app.location.hash, "#deck=f-low-pygmy-18");
+    assert.strictEqual(app.els.about.hidden, true);
+    assert.strictEqual(app.get("aboutOpen"), false);
+    assert.strictEqual(app.els["settings-panel"].inert, false);
+  });
+
+  test("AO: a #deck= link to the deck already shown closes About like the exit control", () => {
+    const app = boot();
+    openAboutFrom(app);
+    const n = app.history.calls.length;
+    app.run("aboutLink('#deck=d-kurd-10')");
+    const added = app.history.calls.slice(n);
+    assert.deepStrictEqual(added.map((c) => c.type), ["back"], "a same-deck link did not just pop its own entry");
+    assert.strictEqual(app.els.about.hidden, true);
+    assert.strictEqual(app.activeId(), "settings-trigger");
+    assert.strictEqual(app.deckId(), "kurd");
+    const gone = boot({ storage: { hpfc: JSON.stringify({ deck: "kurd", mode: "A", hidden: ["pygmy"] }) } });
+    openAboutFrom(gone);
+    gone.run("aboutLink('#deck=f-low-pygmy-18')");
+    assert.match(gone.announcer().textContent, /^That deck is gone\./, "a fallback link lost its warning");
+  });
+
+  test("AO: a boot on #about leaves About closed and ends on the deck's route", () => {
+    const app = boot({ href: "https://example.test/index.html#about" });
+    assert.strictEqual(app.els.about.hidden, true);
+    assert.strictEqual(app.get("aboutOpen"), false);
+    assert.strictEqual(app.location.hash, "#deck=d-kurd-10");
+    assert.deepStrictEqual(pushes(app), []);
+  });
+
+  test("AO: a Forward traversal onto #about leaves About closed and rewrites the bar", () => {
+    const app = boot();
+    const n = app.history.calls.length;
+    app.location.hash = "#about";
+    app.popstate();
+    assert.strictEqual(app.els.about.hidden, true);
+    assert.strictEqual(app.location.hash, "#deck=d-kurd-10");
+    assert.deepStrictEqual(app.history.calls.slice(n).map((c) => c.type), ["replace"]);
+  });
+
+  test("AO: About ends with a Contact heading and a mailto link to handpan@raywu.org", () => {
+    const inner = aboutHtml();
+    assert.match(inner, /<h3>Privacy<\/h3>\s*<p>[^<]*<\/p>\s*<h3>Contact<\/h3>\s*<p><a href="mailto:handpan@raywu\.org">handpan@raywu\.org<\/a><\/p>\s*$/);
+  });
+
+  test("AO: ABOUT is the last panel stop, a full-width button alone in the last Resources row", () => {
+    const panel = pmPanel();
+    const group = panel.slice(panel.indexOf('<h3 class="panel-heading">Resources</h3>'));
+    const rows = [...group.matchAll(/<div class="modebar([^"]*)">([\s\S]*?)<\/div>/g)];
+    const last = rows[rows.length - 1];
+    assert.strictEqual(last[1], "", "the ABOUT row is a plain modebar, full width");
+    assert.match(last[2], /^\s*<button class="mode" type="button" id="about-open" aria-haspopup="dialog">ABOUT<\/button>\s*$/);
+    assert.ok(group.lastIndexOf('id="about-open"') > group.lastIndexOf("res-handpan-101"), "ABOUT is not after HANDPAN 101");
+    const fn = INDEX_HTML().match(/function panelStops\(\) \{[\s\S]*?\.filter\(isStop\);/);
+    assert.ok(fn, "panelStops not found");
+    assert.match(fn[0], /res-"\]'\),\s*document\.getElementById\("about-open"\)\]\s*\.filter\(isStop\);$/, "about-open is not the last panel stop");
+  });
+
+  test("AO: opening About tracks about_open with no params", () => {
+    const app = boot({ html: withGaId(REAL_ID), webdriver: false });
+    const n = events(app).length;
+    openAboutFrom(app);
+    assert.deepStrictEqual(events(app).slice(n), [{ name: "about_open", params: {} }]);
+  });
+
+  test("AO: a fragment navigation while About is open closes About and leaves the destination hash for hashchange", () => {
+    const app = boot();
+    openAboutFrom(app);
+    app.location.href = app.location.href.replace(/#.*$/, "") + "#deck=c-sharp-hijaz-9";
+    const callsBefore = app.history.calls.length;
+    app.popstate();
+    assert.strictEqual(app.get("aboutOpen"), false, "the pop did not close About");
+    assert.strictEqual(app.location.hash, "#deck=c-sharp-hijaz-9", "the pop rewrote the destination");
+    assert.strictEqual(app.history.calls.length, callsBefore, "the pop wrote to history");
+    app.hashchange("#deck=c-sharp-hijaz-9", { force: true });
+    assert.strictEqual(app.deckId(), "hijaz");
+  });
+
+  test("AO: closing About when it is already closed pops nothing", () => {
+    const app = boot();
+    app.run("document.getElementById('modeA').focus()");
+    const parked = app.activeId();
+    const n = app.history.calls.length;
+    app.run("closeAbout()");
+    assert.strictEqual(app.history.calls.length, n, "closing a closed About wrote to history");
+    assert.strictEqual(app.activeId(), parked, "closing a closed About moved focus");
   });
 });

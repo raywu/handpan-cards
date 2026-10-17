@@ -1,0 +1,15 @@
+# kills: About ends with a Contact heading and a mailto link to handpan@raywu.org
+# suite: node --test --test-name-pattern ^AO:.About.ends.with.a.Contact.heading tests/app.test.js
+# Lane O. The Contact address is not a mailto link.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1284,7 +1284,7 @@
+   <h3>Privacy</h3>
+   <p>Your scales never leave your browser. The site counts anonymous visits and feature use with Google Analytics, without cookies in the EEA, the UK and Switzerland.</p>
+   <h3>Contact</h3>
+-  <p><a href="mailto:handpan@raywu.org">handpan@raywu.org</a></p>
++  <p><a href="https://raywu.org">handpan@raywu.org</a></p>
+ </section>
+ 
+ <div id="scale-sheet" role="dialog" aria-modal="true" aria-labelledby="scale-title" hidden>

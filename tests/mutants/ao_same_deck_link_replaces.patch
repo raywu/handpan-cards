@@ -1,0 +1,15 @@
+# kills: a #deck= link to the deck already shown closes About like the exit control
+# suite: node --test --test-name-pattern ^AO:.a.#deck=.link.to.the.deck.already.shown tests/app.test.js
+# Lane O. A link to the deck already shown takes the replace path instead of closing About.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10917,7 +10917,7 @@
+     const resolved = deck().id;
+     deckId = before;
+     const replaced = !!replacements()[routed] && replacements()[routed].id === resolved;
+-    if (resolved === deck().id && (resolved === routed || replaced)) { closeAbout(); return; }
++    if (false && resolved === deck().id && (resolved === routed || replaced)) { closeAbout(); return; }
+   }
+   hideAbout();
+   history.replaceState(null, "", href);

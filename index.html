@@ -1148,25 +1148,34 @@ footer.seq{row-gap:var(--sp-1)}
    needs the acknowledgement. */
 #scale-delete[data-armed]:active{color:#eae6df}
 
-/* ---- the first screen and the about section (discoverability W1, plan D20) ----
+/* ---- the first screen and the about overlay (about-off-main plan, lane O) ----
    #app holds header, main, footer and the live region and is exactly as tall
-   as the body's content box (100%, floored at 100dvh less the padding as body's own min-height is),
-   so the card is the size it was before #about existed; #about overflows below
-   it and the document scrolls to it. A fourth flex child of body would have
-   SHRUNK the card (main is flex:1 inside a height:100% body). #about starts at
-   least 12px below the body's bottom padding, so none of its text lands in the
-   4px frame band. Both rules sit BEFORE the print block (it must stay last). */
+   as the body's content box (100%, floored at 100dvh less the padding as body's own min-height is).
+   About is a full-screen dialog opened from the menu: fixed, above the mobile
+   panel (41), the sidebar (20) and the sheet (30), below the pan ghost (60).
+   The 520px measure comes only from the inline padding, so the fixed overlay
+   fills the viewport at every width. Both rules sit BEFORE the print block
+   (it must stay last). */
 #app{flex:none; width:100%; min-height:0; display:flex; flex-direction:column; align-items:center;
   height:max(100%, calc(100dvh - max(10px, env(safe-area-inset-top)) - max(12px, env(safe-area-inset-bottom))))}
-#about{flex:none; width:100%; max-width:520px; margin-top:24px; padding:0 4px 48px;
+#about{position:fixed; inset:0; z-index:50; overflow-y:auto; overscroll-behavior:contain; background:#1f1b15;
+  padding:0 max(calc(16px + env(safe-area-inset-right)), calc((100% - 520px) / 2)) max(48px, calc(var(--sp-4) + env(safe-area-inset-bottom))) max(calc(16px + env(safe-area-inset-left)), calc((100% - 520px) / 2));
+  scroll-padding-top:var(--about-head-h, 0px);
   color:#c4bcab; font:400 14px/1.6 "Nunito Sans", system-ui, sans-serif; user-select:text; -webkit-user-select:text}
+#about[hidden]{display:none}
+.abouthead{position:sticky; top:0; display:flex; align-items:center; gap:var(--sp-3); background:#1f1b15;
+  padding-top:max(var(--sp-3), env(safe-area-inset-top)); padding-bottom:var(--sp-3)}
 #about h2{margin:0 0 8px; font:400 22px/1.2 "Marcellus", serif; color:#eae6df}
+#about .abouthead h2{margin:0}
 #about h3{margin:20px 0 6px; font:600 11px/1.4 "Nunito Sans"; letter-spacing:.13em;
   text-transform:uppercase; color:#a79d8b}
+#about h3 + ul, #about h3 + p{margin-top:0}
 #about p{margin:0 0 8px}
 #about ol, #about ul{margin:0; padding-left:20px}
 #about li{margin:0 0 4px}
 #about a{color:#eae6df}
+#about ul a, #about a[href^="mailto:"]{display:flex; align-items:center; min-height:44px}
+html.about-open{overflow:hidden}
 
 /* ---- print (R1, 2026-09-29) -----------------------------------------------
    Forces print colour adjustment, clears the page background and padding for
@@ -1249,8 +1258,11 @@ footer.seq{row-gap:var(--sp-1)}
 <div class="announce" role="status" aria-live="polite"></div>
 </div>
 
-<section id="about" aria-labelledby="about-title">
-  <h2 id="about-title">About Handpan Chords</h2>
+<section id="about" aria-labelledby="about-title" role="dialog" aria-modal="true" hidden>
+  <div class="abouthead">
+    <button type="button" class="mode" id="about-close" aria-label="Back to the practice screen">&larr; BACK</button>
+    <h2 id="about-title">About Handpan Chords</h2>
+  </div>
   <p>A free chord and progression practice tool for your own handpan scale.</p>
   <h3>How it works</h3>
   <ol>
@@ -1271,6 +1283,8 @@ footer.seq{row-gap:var(--sp-1)}
   <p>Type any scale and the app generates its chords. A custom scale lives only in your browser.</p>
   <h3>Privacy</h3>
   <p>Your scales never leave your browser. The site counts anonymous visits and feature use with Google Analytics, without cookies in the EEA, the UK and Switzerland.</p>
+  <h3>Contact</h3>
+  <p><a href="mailto:handpan@raywu.org">handpan@raywu.org</a></p>
 </section>
 
 <div id="scale-sheet" role="dialog" aria-modal="true" aria-labelledby="scale-title" hidden>
@@ -1507,7 +1521,7 @@ footer.seq{row-gap:var(--sp-1)}
   </div>
   <!-- Resources (docs/plans/2026-10-01-resources-menu.md, eng review
        amendments 1-7; docs/plans/2026-10-05-menu-resources-amy.md): six
-       outbound links in three rows, styled as .mode (no new colour
+       outbound links in three rows plus a fourth row holding the ABOUT button, styled as .mode (no new colour
        or typeface, N15). They deliberately carry no onclick - a link click
        must NOT call closePanel() (amendment 3), unlike the print buttons
        above: the user comes back from the new tab to the still-open menu.
@@ -1520,7 +1534,8 @@ footer.seq{row-gap:var(--sp-1)}
          the three sites (class trio: equal widths above the landscape grid, two
          equal on line one in the sidebar), row two (class duo: one line, labels wrap inside their
          boxes) the two Amy Naylor videos, row three HANDPAN 101 alone (2026-10-08,
-         full width, LAST so no existing control moves down). -->
+         full width, so no existing control moves down), row four the ABOUT button
+         (an in-app view, not an outbound link: no href, no res- id). -->
     <div class="modebar trio">
       <a class="mode" id="res-handpaner" href="https://handpaner.com/"
          target="_blank" rel="noopener">HANDPANER</a>
@@ -1542,6 +1557,9 @@ footer.seq{row-gap:var(--sp-1)}
          href="https://docs.google.com/document/d/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco/edit?usp=drivesdk"
          aria-label="Handpan 101 (Google Doc)"
          target="_blank" rel="noopener">HANDPAN 101</a>
+    </div>
+    <div class="modebar">
+      <button class="mode" type="button" id="about-open" aria-haspopup="dialog">ABOUT</button>
     </div>
   </div>
 </div>
@@ -10116,6 +10134,8 @@ let pendingPop = false;
 // gone, so this only takes the page down.
 window.addEventListener("popstate", () => {
   if (pendingPop) { pendingPop = false; syncRoute(); return; }
+  if (aboutOpen) { hideAbout(); return; }
+  if (location.hash === ABOUT_ROUTE) { syncRoute(); return; }
   if (!sheetOpen) return;
   sheetRouted = false;
   hideSheet();
@@ -10807,7 +10827,8 @@ function panelStops() {
           ...settingsPanel.querySelectorAll(".prints button, .prints select"),
           // Eng review amendment 1: the Resources links join the Tab trap
           // after the print controls, in DOM order.
-          ...settingsPanel.querySelectorAll('#settings-panel a.mode[id^="res-"]')]
+          ...settingsPanel.querySelectorAll('#settings-panel a.mode[id^="res-"]'),
+          document.getElementById("about-open")]
     .filter(isStop);
 }
 function openPanel() {
@@ -10833,6 +10854,83 @@ function closePanel() {
   shareUrl.setAttribute("hidden", "");
   settingsTrigger.focus();
 }
+/* ---------------- about overlay ---------------- */
+// About is a full-screen dialog opened from the menu. It pushes one "#about"
+// entry like the sheet's page route; hideAbout() is the DOM half only and never
+// syncs the bar (a fragment navigation fires popstate BEFORE hashchange, so a
+// sync here would overwrite the destination the hashchange is about to route).
+const ABOUT_ROUTE = "#about";
+let aboutOpen = false;
+const aboutSection = document.getElementById("about");
+const aboutOpenBtn = document.getElementById("about-open");
+const aboutCloseBtn = document.getElementById("about-close");
+const aboutBackground = () => [document.querySelector("#app"), settingsPanel].filter(Boolean);
+function syncAboutHead() {
+  if (!aboutOpen) return;
+  const head = document.querySelector(".abouthead");
+  document.documentElement.style.setProperty("--about-head-h", (head ? head.offsetHeight : 0) + "px");
+}
+window.addEventListener("resize", syncAboutHead);
+function aboutStops() {
+  return [aboutCloseBtn, ...document.querySelectorAll('#about a[href^="#deck="], #about a[href^="mailto:"]')].filter(isStop);
+}
+function openAbout() {
+  closePanel();
+  aboutSection.removeAttribute("hidden");
+  aboutOpen = true;
+  setInert(true, aboutBackground());
+  document.documentElement.classList.add("about-open");
+  history.pushState({ about: true }, "", ABOUT_ROUTE);
+  aboutSection.scrollTop = 0;
+  syncAboutHead();
+  aboutCloseBtn.focus();
+  track("about_open");
+}
+function hideAbout() {
+  aboutSection.setAttribute("hidden", "");
+  aboutOpen = false;
+  setInert(false, aboutBackground());
+  document.documentElement.classList.remove("about-open");
+  (desktopMQ.matches ? aboutOpenBtn : settingsTrigger).focus();
+}
+// The app's own way out: BACK, Escape, or a link to the deck already shown.
+// It pops the entry openAbout() pushed; the popstate listener's pendingPop
+// branch syncs the bar at that pop.
+function closeAbout() {
+  if (!aboutOpen) return;
+  hideAbout();
+  pendingPop = true;
+  history.back();
+}
+aboutOpenBtn.onclick = openAbout;
+aboutCloseBtn.onclick = closeAbout;
+// A #deck= link inside About: the deck already shown closes About like BACK;
+// any other replaces the #about entry with the deck's route, so one Back
+// returns to the previous deck. A link that only resolves to the shown deck
+// through the fallback takes the other path so its "gone" warning still fires.
+function aboutLink(href) {
+  const slug = href.slice(DECK_ROUTE.length);
+  const routed = Object.prototype.hasOwnProperty.call(DECK_SLUGS, slug) ? DECK_SLUGS[slug] : null;
+  if (routed) {
+    const before = deckId;
+    deckId = routed;
+    const resolved = deck().id;
+    deckId = before;
+    const replaced = !!replacements()[routed] && replacements()[routed].id === resolved;
+    if (resolved === deck().id && (resolved === routed || replaced)) { closeAbout(); return; }
+  }
+  hideAbout();
+  history.replaceState(null, "", href);
+  routeToDeck(routed);
+  syncRoute();
+}
+aboutSection.addEventListener("click", e => {
+  const a = e.target && e.target.closest ? e.target.closest('a[href^="#deck="]') : null;
+  if (!a) return;
+  e.preventDefault();
+  aboutLink(a.getAttribute("href"));
+});
+
 // If the viewport crosses the breakpoint while the panel is open in its
 // modal, below-breakpoint presentation, shed the modal state so the page
 // underneath is never left inert on desktop (and the reverse: if it then
@@ -10930,6 +11028,11 @@ function setMode(m) {
   render();
 }
 document.addEventListener("keydown", e => {
+  if (aboutOpen) {
+    if (e.key === "Escape") { e.preventDefault(); closeAbout(); }
+    else if (e.key === "Tab") cycleTabStops(aboutStops(), e);
+    return;
+  }
   // While the sheet is open it owns the keyboard: Escape closes it, and an
   // arrow key is cursor movement inside the box, never a card step.
   if (sheetOpen) {
@@ -11359,7 +11462,7 @@ const routeFor = d => routeInfo(d).route;
 let routeRefused = false;
 let booted = false;
 function syncRoute() {
-  if (sheetOpen) return;
+  if (sheetOpen || aboutOpen) return;
   const { route, reason } = routeInfo(deck());
   const want = location.pathname + location.search + route;
   if (location.pathname + location.search + location.hash !== want) {
@@ -11398,8 +11501,23 @@ shareCopy.onclick = copyLink;
 // boot code runs. selectDeck gets the id deck() returns for the mapped seed,
 // never the raw seed id: a replaced or hidden seed id would be stored as is and
 // light no chip.
+function routeToDeck(routed) {
+  if (!routed) return null;
+  const before = deckId;
+  deckId = routed;
+  const shown = deck().id;
+  deckId = before;
+  selectDeck(shown);
+  deckId = shown;
+  // The same "gone" test the boot makes: a routed seed that is hidden shows the
+  // fallback and says so; one that shows its replacement does not.
+  if (routed !== shown && !(replacements()[routed] && replacements()[routed].id === shown) && hidden.includes(routed))
+    say("That deck is gone. Showing " + deck().name + ".", "warn");
+  track("deck_route", { deck_id: routed });
+  return shown;
+}
 window.addEventListener("hashchange", () => {
-  if (sheetOpen) return;
+  if (sheetOpen || aboutOpen) return;
   if (location.hash === routeFor(deck())) return;
   if (location.hash.indexOf(SHARE_PREFIX) === 0) {
     openShare(location.hash.slice(SHARE_PREFIX.length));
@@ -11407,20 +11525,7 @@ window.addEventListener("hashchange", () => {
     return;
   }
   if (location.hash.indexOf(DECK_ROUTE) !== 0) return;
-  const routed = routedDeckId();
-  if (routed) {
-    const before = deckId;
-    deckId = routed;
-    const shown = deck().id;
-    deckId = before;
-    selectDeck(shown);
-    deckId = shown;
-    // The same "gone" test the boot makes: a routed seed that is hidden shows the
-    // fallback and says so; one that shows its replacement does not.
-    if (routed !== shown && !(replacements()[routed] && replacements()[routed].id === shown) && hidden.includes(routed))
-      say("That deck is gone. Showing " + deck().name + ".", "warn");
-    track("deck_route", { deck_id: routed });
-  }
+  routeToDeck(routedDeckId());
   syncRoute();
 });
 

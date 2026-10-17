@@ -1,0 +1,14 @@
+# kills: ABOUT closes the panel, pushes one #about entry, inerts #app and the panel, and focuses the exit
+# suite: node --test --test-name-pattern ^AO:.ABOUT.closes.the.panel tests/app.test.js
+# Lane O. openAbout() no longer closes the settings menu, so it stays open under the dialog.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10875,7 +10875,6 @@
+   return [aboutCloseBtn, ...document.querySelectorAll('#about a[href^="#deck="], #about a[href^="mailto:"]')].filter(isStop);
+ }
+ function openAbout() {
+-  closePanel();
+   aboutSection.removeAttribute("hidden");
+   aboutOpen = true;
+   setInert(true, aboutBackground());

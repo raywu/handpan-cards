@@ -1,0 +1,14 @@
+# kills: the exit control, Escape and a popstate each close About, consume the #about entry and focus the settings trigger, and a resize after close writes nothing
+# suite: node --test --test-name-pattern ^AO:.the.exit.control.Escape.and.a.popstate tests/app.test.js
+# Lane O. hideAbout() does not return focus to the settings trigger.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10891,7 +10891,6 @@
+   aboutOpen = false;
+   setInert(false, aboutBackground());
+   document.documentElement.classList.remove("about-open");
+-  (desktopMQ.matches ? aboutOpenBtn : settingsTrigger).focus();
+ }
+ // The app's own way out: BACK, Escape, or a link to the deck already shown.
+ // It pops the entry openAbout() pushed; the popstate listener's pendingPop

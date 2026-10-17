@@ -1,0 +1,14 @@
+# kills: ABOUT closes the panel, pushes one #about entry, inerts #app and the panel, and focuses the exit
+# suite: node --test --test-name-pattern ^AO:.ABOUT.closes.the.panel tests/app.test.js
+# Lane O. openAbout() leaves focus where it was, on the inerted background.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10883,7 +10883,6 @@
+   history.pushState({ about: true }, "", ABOUT_ROUTE);
+   aboutSection.scrollTop = 0;
+   syncAboutHead();
+-  aboutCloseBtn.focus();
+   track("about_open");
+ }
+ function hideAbout() {

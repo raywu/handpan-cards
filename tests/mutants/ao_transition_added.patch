@@ -1,0 +1,15 @@
+# kills: AO: About has no transition or animation with and without prefers-reduced-motion
+# suite: node --test --test-name-pattern ^AO:.About.has.no.transition tests/e2e.test.js
+# Lane O. The About overlay fades.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1160,7 +1160,7 @@
+   height:max(100%, calc(100dvh - max(10px, env(safe-area-inset-top)) - max(12px, env(safe-area-inset-bottom))))}
+ #about{position:fixed; inset:0; z-index:50; overflow-y:auto; overscroll-behavior:contain; background:#1f1b15;
+   padding:0 max(calc(16px + env(safe-area-inset-right)), calc((100% - 520px) / 2)) max(48px, calc(var(--sp-4) + env(safe-area-inset-bottom))) max(calc(16px + env(safe-area-inset-left)), calc((100% - 520px) / 2));
+-  scroll-padding-top:var(--about-head-h, 0px);
++  scroll-padding-top:var(--about-head-h, 0px); transition:opacity .2s;
+   color:#c4bcab; font:400 14px/1.6 "Nunito Sans", system-ui, sans-serif; user-select:text; -webkit-user-select:text}
+ #about[hidden]{display:none}
+ .abouthead{position:sticky; top:0; display:flex; align-items:center; gap:var(--sp-3); background:#1f1b15;

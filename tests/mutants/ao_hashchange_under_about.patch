@@ -1,0 +1,15 @@
+# kills: syncRoute and hashchange write nothing while About is open
+# suite: node --test --test-name-pattern ^AO:.syncRoute.and.hashchange.write.nothing tests/app.test.js
+# Lane O. The hashchange listener routes while About is open.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11517,7 +11517,7 @@
+   return shown;
+ }
+ window.addEventListener("hashchange", () => {
+-  if (sheetOpen || aboutOpen) return;
++  if (sheetOpen) return;
+   if (location.hash === routeFor(deck())) return;
+   if (location.hash.indexOf(SHARE_PREFIX) === 0) {
+     openShare(location.hash.slice(SHARE_PREFIX.length));

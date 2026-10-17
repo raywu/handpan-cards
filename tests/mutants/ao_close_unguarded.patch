@@ -1,0 +1,14 @@
+# kills: closing About when it is already closed pops nothing
+# suite: node --test --test-name-pattern ^AO:.closing.About.when.it.is.already.closed tests/app.test.js
+# Lane O. closeAbout() pops a history entry even when About is closed.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10897,7 +10897,6 @@
+ // It pops the entry openAbout() pushed; the popstate listener's pendingPop
+ // branch syncs the bar at that pop.
+ function closeAbout() {
+-  if (!aboutOpen) return;
+   hideAbout();
+   pendingPop = true;
+   history.back();
