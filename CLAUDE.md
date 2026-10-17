@@ -403,7 +403,7 @@ Zones: `ding | rim | inner | bottom`. `chords[].fields` is the canonical
 voicing in spelling order; highlighting is DERIVED at render time from
 pitch classes (midi % 12), never stored.
 
-- `options.parent` on every deck saved from the sheet (create or Edit) is the engine's INFERRED index since 2026-10-14 (`sheetOptions()` writes no parent; `select.build` resolves it). An explicit index is honoured when it arrives in an older stored record or a share link; opening such a link stores that index again (`openShare` persists what it decodes, test "RD: opening a share link that carries an explicit parent stores that parent again, after an inferred SAVE included"), and the next SAVE from Edit replaces it with the inferred one (test "RD: a record stored with a non-inferred parent is displayed with it and re-saved from Edit with the inferred one"). The Edit page has no DEGREES control (test "RD: no DEGREES row - the served markup, ELEMENT_IDS and the app script carry neither scale-degrees id, and sheetOptions writes no parent on Edit").
+- `options.parent` on every deck saved from the sheet (create or Edit) is the engine's INFERRED index since 2026-10-14 (`sheetOptions()` writes no parent; `select.build` resolves it). An explicit index is honoured when it arrives in an older stored record or a share link; opening such a link stores that index again (`openShare` persists what it decodes, test "RD: opening a share link that carries an explicit parent stores that parent again, after an inferred SAVE included"), and the next SAVE from Edit replaces it with the inferred one (test "RD: a record stored with a non-inferred parent is displayed with it and re-saved from Edit with the inferred one"). The Edit page has no DEGREES control (test "RD: no DEGREES row - the served markup, ELEMENT_IDS and the app script carry neither scale-degrees id, and sheetOptions writes no parent on Edit"). A share code written to the address bar by `syncRoute()` is the same code `shareLink` returns, because both read `shareCode(d)` and neither re-encodes ("SU: COPY LINK copies location.href and announces LINK COPIED").
 
 ## Known pitfalls (hit during the session)
 
@@ -456,6 +456,53 @@ pitch classes (midi % 12), never stored.
   lit fields on every card, not which); `tests/app.test.js` "chordSets: Amara C
   major has two root-coloured fields (C4 + C5)" (one card); and `tests.test_print`
   `test_state_selects_root_or_tone_colour_but_never_both` (the ring states).
+
+- **The address bar is always a link to the deck shown (share URL, 2026-10-16,
+  #323).** One function, `routeFor(d)`, decides the text (`#s=<code>` for a
+  custom deck, `#deck=<slug>` for a seeded one) and one, `syncRoute()`, writes
+  it with `replaceState` and never `pushState` ("SU: tapping three chips writes
+  three replaceState hashes and no pushState"; `tests/e2e.test.js` "edge 1:
+  three chip taps rewrite the bar each time and add no history entry"). It
+  writes from three sites: the end of `selectDeck` (chip taps, SAVE, DELETE,
+  RESET SEEDED DECKS: "SU: DELETE of the shown custom deck writes the fallback
+  deck's route", "SU: RESET SEEDED DECKS while showing Kurd's replacement writes
+  #deck=d-kurd-10"), the end of the boot (a hashless boot, a consumed `#s=` or a
+  refused one: "SU: a hashless boot on a stored custom deck ends with its #s= in
+  the bar", "SU: a refused #s= at boot says the engine reason and the bar ends
+  on the stored deck's route"), and the `popstate` listener. The third exists
+  because `closeScaleSheet()` calls `history.back()`, which is asynchronous: a
+  `replaceState` issued straight after it lands on the entry about to be
+  popped and the traversal restores the pre-sheet URL, so the pop is the first
+  moment the restored entry is current and the listener syncs there ("SU: SAVE
+  with a new name keeps the id and writes a new #s= code at the pop", "SU: SAVE
+  with new fields writes the new id's code and the lit chip agrees";
+  `tests/e2e.test.js` "edge 4: SAVE with new fields rewrites the bar to the new
+  code and nothing re-imports the old one"). That sync runs only while
+  `pendingPop` is set, because a fragment navigation also fires `popstate`
+  (before `hashchange`) and an unconditional sync would overwrite its
+  destination ("a pop that follows a fragment navigation leaves the destination
+  hash alone"; `tests/e2e.test.js` "Back and Forward between two deck routes
+  show each deck in turn"). The `hashchange` listener opens with an idempotence
+  guard (`location.hash === routeFor(deck())`), so the app's own writes and
+  the pop back to the canonical hash re-route nothing ("SU: a hashchange to the
+  hash already shown is a no-op", "SU: a hashchange to a #s= code imports it
+  once and a second identical hashchange is a no-op"; `tests/e2e.test.js` "edge
+  8: the app's own writes fire no hashchange, and a hashchange to the shown
+  hash changes nothing"); a second `syncRoute()` writes and announces nothing
+  ("SU: syncRoute is idempotent"). An edited seed shares as a plain custom deck:
+  the code carries no `replaces`, so the receiver gets a custom deck with the
+  same name, not an edited seed ("SU: an edited seed shares as a custom deck").
+  `#share-copy` (COPY LINK) is disabled, never hidden, when the engine refuses
+  the code (S5): its `title` is the refusal and the bar keeps the bare path
+  ("SU: an over-cap custom deck disables COPY LINK with the refusal as its
+  title and leaves the bare path"); it leaves `panelStops()` while disabled
+  ("SU: COPY LINK joins panelStops after + ADD A SCALE and leaves it while
+  disabled"). It copies `location.href`, never a fresh encode, and falls back
+  to `navigator.share`, then to the readonly `#share-url` input ("SU: COPY LINK
+  falls back to navigator.share when the clipboard rejects", "SU: COPY LINK
+  reveals the readonly input when both are absent"); a dismissed share sheet
+  says nothing ("SU: COPY LINK says nothing when the share sheet is
+  dismissed").
 
 ## Print pipeline (tools/)
 
@@ -511,17 +558,22 @@ stated here. Tests are in `tests/app.test.js` unless a file is named.
   address". The route is consumed with `replaceState`, never `pushState` ("the
   route is consumed with replaceState, never pushState"), beats the stored deck
   ("a route beats the stored deck"), and an unknown slug, a `custom:` id or an
-  empty slug fall back silently and lose the hash ("an unknown slug, a custom id
-  and an empty slug fall back silently and lose the hash"). A share link is
-  untouched by it ("a share link is untouched by the route"). An edited seed
+  empty slug fall back silently ("an unknown slug, a custom id and an empty slug
+  fall back silently and lose the hash"; the name predates the share URL, and the
+  test now asserts the bar ends on the shown deck's own route, e.g.
+  `#deck=d-amara-9`). The bar is canonical: a hashless boot on the
+  default deck ends with `#deck=d-kurd-10` ("SU: a hashless boot on the default
+  deck ends with #deck=d-kurd-10"). A share link is untouched by the route
+  parser ("a share link is untouched by the route"). An edited seed
   shows its replacement with no warning ("an edited seed shows its replacement,
   with no warning"); a deleted one falls back to the default deck and says so
   ("a deleted seed falls back to the default deck and says the deck is gone").
   In-page links fire `hashchange`, not a boot: "hashchange to a deck link selects
-  that deck and clears the hash", "hashchange resolves an edited seed to its
+  that deck and clears the hash" (it asserts the bar holds the deck's canonical
+  route), "hashchange resolves an edited seed to its
   replacement and a deleted seed to a warning", "hashchange ignores the other
   routes". In a real browser: `tests/e2e.test.js` "a #deck= link opens that deck
-  at 380px and the address bar loses the hash" and "clicking an about-section
+  at 380px and the address bar keeps the deck's own route" and "clicking an about-section
   deck link on / switches the deck without a reload".
 - **About section.** `<section id="about">` sits after `#app` and before the
   sheet, and `#app` wraps header, main, footer and the live region ("#app wraps
@@ -552,8 +604,10 @@ stated here. Tests are in `tests/app.test.js` unless a file is named.
   any `<script>` whose type is not JavaScript, so the block never runs ("boot
   skips a script whose type is not JavaScript", `tests/harness.test.js`).
 - **Analytics (GA4).** `GA_MEASUREMENT_ID` is one constant, shipped as the
-  placeholder `G-XXXXXXXXXX` ("the placeholder id is the shipped constant").
-  `analyticsAllowed()` is false for a `file:` page, `localhost`, `127.0.0.1`,
+  real id `G-QTYWB2HSSV` (swapped by #324, 2026-10-16; "the placeholder id is
+  the shipped constant", whose name predates the swap and whose `includes`
+  literal now asserts the real id). `analyticsAllowed()` still compares against
+  `G-XXXXXXXXXX`, so the placeholder stays a disabling value. It is false for a `file:` page, `localhost`, `127.0.0.1`,
   `[::1]`, `navigator.webdriver` and the placeholder ("analyticsAllowed is false
   for <label>: no gtag script, no config, no event", one test per predicate);
   the loader appends the gtag script only on a real host with a real id ("the
@@ -571,29 +625,29 @@ stated here. Tests are in `tests/app.test.js` unless a file is named.
   `deck_route` have a test in the "discoverability: analytics events" describe
   (`share_open`'s is "a valid share link tracks share_open with no params"),
   and `deck_route` is proven in the "discoverability: deck route" describe by
-  "a routed boot queues config before deck_route".
+  "a routed boot queues config before deck_route". An eighth event,
+  `share_copy`, carries no id, name or code ("SU: COPY LINK tracks share_copy
+  with no id, name or code"); a reload of the stored deck fires neither
+  `share_open` nor `deck_route`, while a route that differs from the stored
+  selection does ("SU: a reload of the stored deck fires no share_open and no
+  deck_route; a route that differs from the stored selection fires it"), and
+  `page_location` stays hash-free on a custom-deck boot ("SU: page_location
+  carries no hash on a custom-deck boot or a #s= boot").
 - **Consent regions.** An inline, inert head script queues two
   `gtag("consent","default")` calls before `js` and `config`: open default
   (`analytics_storage` granted, ad storage denied) and a region-scoped denial
   of 32 EEA/UK/CH codes ("consent defaults come first, in order, and config
   follows them").
-- **Swapping the real measurement id (owner action, plan section 10).** Replace
-  the one `GA_MEASUREMENT_ID` literal in `index.html`, and leave the
-  `G-XXXXXXXXXX` comparison inside `analyticsAllowed()` alone: a blanket
-  find-and-replace of the placeholder would make the predicate false everywhere.
-  Swapping the real
-  measurement id also changes the loader tests' anchor: `tests/app.test.js`
-  rewrites the placeholder with `INDEX_HTML().replace('const GA_MEASUREMENT_ID =
-  "G-XXXXXXXXXX";', ...)` at three sites, so the same PR must update that replace
-  anchor, or these five tests go red: "the placeholder id is the shipped
-  constant"; "the loader appends the gtag script on a real host with a real id,
-  and only then"; "analyticsAllowed is false for the placeholder id: no gtag
-  script, no config, no event"; "consent defaults come first, in order, and
-  config follows them"; "a routed boot queues config before deck_route". The
-  fourth copy of the literal is the `includes` assertion in "the placeholder id
-  is the shipped constant" (`tests/app.test.js`), which must be updated to the
-  real id in the same PR. Then
-  `./tests/run.sh`, PR, ordinary merge.
+- **Changing the measurement id (done once, #324).** A future change replaces
+  the one `GA_MEASUREMENT_ID` literal in `index.html`, never the
+  `G-XXXXXXXXXX` comparison inside `analyticsAllowed()`, and in the same PR the
+  four `INDEX_HTML().replace('const GA_MEASUREMENT_ID = "<id>";', ...)` anchors
+  in `tests/app.test.js` and the `includes` literal in "the placeholder id is
+  the shipped constant"; otherwise these five tests go red: that one; "the
+  loader appends the gtag script on a real host with a real id, and only then";
+  "analyticsAllowed is false for the placeholder id: no gtag script, no config,
+  no event"; "consent defaults come first, in order, and config follows them";
+  "a routed boot queues config before deck_route".
   The custom definitions (`deck_kind`, `deck_id`, `mode`, `tier`, `paper`,
   `has_bottom`; metric `note_count`) are registered in GA Admin by the owner;
   no test sees that.

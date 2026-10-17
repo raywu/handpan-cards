@@ -68,8 +68,15 @@ decisions behind it.
   sheet with its name and notes filled in - that is the one way in, and the
   pencil on the chip marks it. DELETE removes the deck and asks for a second
   tap to confirm. A generated deck also travels as a `#s=` link: the app opens
-  one from the address bar with no account and no server, though nothing in
-  the UI builds or copies that link yet.
+  one from the address bar with no account and no server. The address bar is
+  always a link to the deck shown (`#s=<code>` for a custom deck,
+  `#deck=<slug>` for a built-in one), written with `replaceState` so it adds no
+  history entry, and COPY LINK in the menu's Scales group copies it and says
+  LINK COPIED. A pan too big for the link format disables COPY LINK and leaves
+  the bare address. Tests: "SU: a hashless boot on the default deck ends with
+  #deck=d-kurd-10", "SU: COPY LINK copies location.href and announces LINK
+  COPIED", "SU: an over-cap custom deck disables COPY LINK with the refusal as
+  its title and leaves the bare path" in `tests/app.test.js`.
   Saved scales live under the storage key `hpfc.scales.v3`; the first boot of this version copies the old `hpfc.scales` list there. A scale saved in a tab still running the previous version of the app lands under
   the old storage key and does not appear in the new app; that needs a tab held
   open across an update, and reloading it fixes the tab.
@@ -154,7 +161,7 @@ What is covered:
 - **Browser e2e** - real Chromium: deck switching, the 3D card flip, keyboard
   and touch navigation, reload persistence, clipping at a 380px viewport, and
   the scale sheet's modality, focus handling and 44px hit areas.
-- **Mutation gate** - 981 mutant patches under `tests/mutants/`, each one a
+- **Mutation gate** - 993 mutant patches under `tests/mutants/`, each one a
   deliberate break that some test must catch. The gate is all-or-nothing: one
   survivor fails it. A test nothing can kill does not count as coverage.
 
