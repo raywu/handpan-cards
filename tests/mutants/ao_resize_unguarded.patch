@@ -1,5 +1,5 @@
-# kills: the exit control, Escape and a popstate each close About, consume the #about entry and focus the settings trigger, and a resize after close writes nothing
-# suite: node --test --test-name-pattern ^AO:.the.exit.control.Escape.and.a.popstate tests/app.test.js
+# kills: AO: ABOUT closes the panel, pushes one #about entry, inerts #app and the panel, and focuses the exit, and a resize after close writes nothing
+# suite: node --test --test-name-pattern ^AO:.ABOUT.closes.the.panel tests/app.test.js
 # Lane O. A resize after close still writes --about-head-h.
 diff --git a/index.html b/index.html
 --- a/index.html

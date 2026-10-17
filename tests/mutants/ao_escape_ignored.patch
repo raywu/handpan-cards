@@ -1,5 +1,5 @@
 # kills: the exit control, Escape and a popstate each close About, consume the #about entry and focus the settings trigger, and a resize after close writes nothing
-# suite: node --test --test-name-pattern ^AO:.the.exit.control.Escape.and.a.popstate tests/app.test.js
+# suite: node --test --test-name-pattern ^AO:.the.exit.control..Escape.and.a.popstate tests/app.test.js
 # Lane O. Escape does nothing while About is open.
 diff --git a/index.html b/index.html
 --- a/index.html
