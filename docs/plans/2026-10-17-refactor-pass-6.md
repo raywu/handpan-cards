@@ -220,9 +220,9 @@ No function in scope was found long enough to matter by itself. No size-only can
 
 ### 4.3 Duplication (step 3)
 
-1. **The `hashchange` listener and boot hold the same "gone" predicate.**
-   - The predicate is `routed !== shown && !(replacements()[routed] && replacements()[routed].id === shown) && hidden.includes(routed)`.
-   - It sits in `routeToDeck` and inline in the boot (`grep -n 'hidden.includes(routed)' index.html`).
+1. **The `hashchange` listener and boot hold parallel "gone" predicates.**
+   - `routeToDeck`'s is `routed !== shown && !(replacements()[routed] && replacements()[routed].id === shown) && hidden.includes(routed)`, its only hit (`grep -n 'hidden.includes(routed)' index.html`).
+   - The boot holds a parallel predicate over `wantedDeck` with a `custom:` clause (`grep -n 'hidden.includes(wantedDeck)' index.html`).
    - Commit `54c7f01` ("Keep the boot's gone-warning inline so other lanes' mutants stay anchored") reverted an extracted `warnIfDeckGone` on purpose. See P6-8.
 2. **FNV-1a is written twice.** `fnv1a` in `src/engine/share.js` feeds both `checksum` and `checkHex`, and `fnv1a32` sits in `src/engine/core.js` (`grep -n 'function fnv1a' src/engine/*.js`). The within-module split that the #344 nit named is already one function. The cross-module copy is P6-6.
 3. **`tools/sandbox.js` `ELEMENT_IDS` is a hand list of served ids.**
@@ -365,7 +365,7 @@ Memory files are under `/Users/ray/.claude/projects/-Users-ray-Projects-handpan-
 | #345 nits 1 to 6 | Pinned by #348's `sn_share_icon_order_dropped_e2e`, `sn_copy_announce_sync`, `sn_create_sheet_keeps_share_url` and `sn_edit_sheet_keeps_share_url`, and by the tests "SI: when #share-copy becomes disabled while focused ...", "SI: while About is open #share-copy has an inert ancestor ..." and "SI: at 844x390 #share-copy sits right of the deck strip ..." | CLOSE, done by #348 |
 | #345 nit 7, the revealed field covers the top of the card | Accepted at review; any change is a pixel change | CLOSE; reopening needs the owner |
 | #347 nits | #348's body names #347 among the nits it closes (`gh pr view 348 --json body`) | CLOSE, done by #348 |
-| #348 N1, CLAUDE.md "goes stale" | Still true (`grep -n 'goes stale without' CLAUDE.md`). The mutant still applies, and its added line refuses only the old id, so it survives (`cat tests/mutants/dg_loader_refuses_shipped_id.patch`) | **FOLD, lane `docs` step 1** |
+| #348 N1, CLAUDE.md "goes stale" | Still true (`grep -n 'the mutant goes stale' CLAUDE.md`). The mutant still applies, and its added line refuses only the old id, so it survives (`cat tests/mutants/dg_loader_refuses_shipped_id.patch`) | **FOLD, lane `docs` step 1** |
 | #348 N2, the AO resize test TypeErrors under its mutant | Still true: `app.get("window.__w.resize.length")` is undefined `.length` when no listener exists (`grep -n 'window.__w.resize' tests/app.test.js`; `head -12 tests/mutants/sn_about_resize_listener_dropped.patch`) | **FOLD, lane `tests` step 4** |
 | #348 N3, `["5", scale]` to `String(VERSION)` | Contradicted (0.1 item 1) | CLOSE |
 | #348 N4, the #348 PR body | PR history | CLOSE |
@@ -595,7 +595,7 @@ This commit holds the test only.
 - Verify:
 
   ```
-  node --test --test-name-pattern '^hashchange to a deck link tracks deck_route with the routed id$' tests/app.test.js > $S/t1.log 2>&1; grep -q '^# pass 1$' $S/t1.log && grep -q '^# fail 0$' $S/t1.log && node --test tests/app.test.js > $S/a1.log 2>&1; grep -q '^# pass 619$' $S/a1.log && grep -q '^# fail 0$' $S/a1.log
+  node --test --test-reporter=tap --test-name-pattern '^hashchange to a deck link tracks deck_route with the routed id$' tests/app.test.js > $S/t1.log 2>&1; grep -qE '^ *ok [0-9]+ - hashchange to a deck link tracks deck_route with the routed id$' $S/t1.log && grep -q '^# fail 0$' $S/t1.log && node --test --test-reporter=tap tests/app.test.js > $S/a1.log 2>&1; grep -q '^# pass 619$' $S/a1.log && grep -q '^# fail 0$' $S/a1.log
   ```
 
 **Step 2. Test first, W2.**
@@ -613,14 +613,14 @@ This commit holds the test only.
 - Verify:
 
   ```
-  node --test --test-name-pattern '^hashchange to a hidden seed that has a replacement' tests/app.test.js > $S/t2.log 2>&1; grep -q '^# pass 1$' $S/t2.log && grep -q '^# fail 0$' $S/t2.log && node --test tests/app.test.js > $S/a2.log 2>&1; grep -q '^# pass 620$' $S/a2.log && grep -q '^# fail 0$' $S/a2.log
+  node --test --test-reporter=tap --test-name-pattern '^hashchange to a hidden seed that has a replacement' tests/app.test.js > $S/t2.log 2>&1; grep -qE '^ *ok [0-9]+ - hashchange to a hidden seed that has a replacement shows the replacement with no gone warning$' $S/t2.log && grep -q '^# fail 0$' $S/t2.log && node --test --test-reporter=tap tests/app.test.js > $S/a2.log 2>&1; grep -q '^# pass 620$' $S/a2.log && grep -q '^# fail 0$' $S/a2.log
   ```
 
 **Step 3. The two killing mutants.**
 
 The body of each mutant is the W1 or W2 hunk from 4.6. Make it like this:
 
-1. Apply the break to `index.html` in the working tree. Find the line with `grep -n 'track("deck_route", { deck_id: routed });' index.html` or `grep -n 'hidden.includes(routed))' index.html` and choose the `routeToDeck` occurrence, never the boot's.
+1. Apply the break to `index.html` in the working tree. Find the line with `grep -n 'track("deck_route", { deck_id: routed });' index.html` or `grep -n 'hidden.includes(routed))' index.html`. Both greps match only `routeToDeck`; the boot's parallel predicate is over `wantedDeck` (`grep -n 'hidden.includes(wantedDeck)' index.html`) and is not touched.
 2. Run `git diff -- index.html > <patch>`.
 3. Strip the `index` line.
 4. Restore with `git checkout -- index.html`.
@@ -654,11 +654,11 @@ A third `#` line in each says what the mutant breaks.
 - Verify:
 
   ```
-  P=tests/mutants/sn_about_resize_listener_dropped.patch; node --test --test-name-pattern '^AO:.a.dispatched.resize.while' tests/app.test.js > $S/n2a.log 2>&1; grep -q '^# fail 0$' $S/n2a.log && git apply $P && { node --test --test-name-pattern '^AO:.a.dispatched.resize.while' tests/app.test.js > $S/n2b.log 2>&1; git apply -R $P; } && grep -q 'no resize listener registered' $S/n2b.log && ! grep -q TypeError $S/n2b.log && git diff --quiet origin/main -- index.html
+  P=tests/mutants/sn_about_resize_listener_dropped.patch; node --test --test-reporter=tap --test-name-pattern '^AO:.a.dispatched.resize.while' tests/app.test.js > $S/n2a.log 2>&1; grep -q '^# fail 0$' $S/n2a.log && git apply $P && { node --test --test-reporter=tap --test-name-pattern '^AO:.a.dispatched.resize.while' tests/app.test.js > $S/n2b.log 2>&1; git apply -R $P; } && grep -q 'no resize listener registered' $S/n2b.log && ! grep -q TypeError $S/n2b.log && git diff --quiet origin/main -- index.html
   ```
 
 **Step 5. Pass-5 O4, a mutant for the `byMidiDescending` top-shell tie-break.**
-- Make `tests/mutants/p6_voicing_top_tie_break_flipped.patch` from the working-tree edit `return a.top ? -1 : 1;` to `return a.top ? 1 : -1;` inside `byMidiDescending` in `src/engine/voicing.js`. Find it with `grep -n 'return a.top ? -1 : 1;' src/engine/voicing.js`.
+- Make `tests/mutants/p6_voicing_top_tie_break_flipped.patch` from the working-tree edit `return a.top ? -1 : 1;` to `return a.top ? 1 : -1;` inside `byMidiDescending` in `src/engine/voicing.js`. `return a.top ? -1 : 1;` also appears in `byMidiAscending`, so never edit it globally: edit only the line right after `return b.midi - a.midi;` (`grep -n -A1 'return b.midi - a.midi;' src/engine/voicing.js`). The patch has exactly one hunk (`test "$(grep -c '^@@' $P)" -eq 1`).
 - Then run `git diff -- src/engine/voicing.js > <patch>`, strip the `index` line, and run `git checkout -- src/engine/voicing.js`.
 - Headers:
   - `# kills: INTERMEDIATE deals a register-labelled anchor`
@@ -671,7 +671,7 @@ A third `#` line in each says what the mutant breaks.
 - Verify:
 
   ```
-  P=tests/mutants/p6_voicing_top_tie_break_flipped.patch; git apply --check $P && git apply $P && { node --test --test-name-pattern '^INTERMEDIATE.deals.a.register-labelled.anchor$' tests/sequence.test.js; rc=$?; git apply -R $P; test $rc -ne 0; } && git diff --quiet origin/main -- src/engine/voicing.js && node --test --test-name-pattern '^INTERMEDIATE.deals.a.register-labelled.anchor$' tests/sequence.test.js && ! grep -q '^index ' $P && node --test --test-name-pattern 'no.mutant.patch|every.mutant.patch|FU-6|N=4.shard.partition' tests/mutation_harness.test.js
+  P=tests/mutants/p6_voicing_top_tie_break_flipped.patch; git apply --check $P && git apply $P && { node --test --test-name-pattern '^INTERMEDIATE.deals.a.register-labelled.anchor$' tests/sequence.test.js; rc=$?; git apply -R $P; test $rc -ne 0; } && git diff --quiet origin/main -- src/engine/voicing.js && node --test --test-name-pattern '^INTERMEDIATE.deals.a.register-labelled.anchor$' tests/sequence.test.js && test "$(grep -c '^@@' $P)" -eq 1 && ! grep -q '^index ' $P && node --test --test-name-pattern 'no.mutant.patch|every.mutant.patch|FU-6|N=4.shard.partition' tests/mutation_harness.test.js
   ```
 
 **Step 6. Regression evidence, section 3 steps 1 to 4, as far as a local run shows them.**
@@ -709,13 +709,26 @@ A third `#` line in each says what the mutant breaks.
 
 **Step 1. #348 N1.**
 - File: `CLAUDE.md`, "Changing the measurement id".
-- Replace: `the mutant goes stale without a test failing and is caught only by the mutation gate (\`tests/mutation_check.sh\`).`
-- With: `the mutant still applies, but its added line refuses only the old id, so the named test stays green under it and \`tests/mutation_check.sh\` reports it as survived ("did NOT fail").`
+- Replace these three lines, which wrap in CLAUDE.md exactly so (a one-string replace will not match):
+
+  ```
+  `index.html`, and the named test goes red with them; the mutant goes stale
+  without a test failing and is caught only by the mutation gate
+  (`tests/mutation_check.sh`).
+  ```
+- With these lines; the fragment `reports it as survived ("did NOT fail")` must stay on one line:
+
+  ```
+  `index.html`, and the named test goes red with them; the mutant still
+  applies, but its added line refuses only the old id, so the named test
+  stays green under it and `tests/mutation_check.sh`
+  reports it as survived ("did NOT fail").
+  ```
 - Evidence:
   - `cat tests/mutants/dg_loader_refuses_shipped_id.patch` shows the added line spelling `G-QTYWB2HSSV`;
   - `grep -n 'did NOT fail' tests/mutation_check.sh` shows the survivor line.
 - Acceptance: the old clause is gone and the new one is present.
-- Verify: `grep -qF 'reports it as survived ("did NOT fail")' CLAUDE.md && ! grep -qF 'goes stale without a test failing' CLAUDE.md`
+- Verify: `grep -qF 'reports it as survived ("did NOT fail")' CLAUDE.md && ! grep -qF 'the mutant goes stale' CLAUDE.md`
 
 **Step 2. Sheet guidance Q1.**
 - Replace: `and (d) by the test "SG: N-A6 the delete refusal then a re-armed DELETE: the slot keeps its height, the refusal stays up and the arming note shows beside DELETE".`
