@@ -1564,6 +1564,171 @@
     "serialised": "(D3) A3 C4 D4 E4 F4 G4 A4 C5 | E5 F5",
     "fields": 11
    }
+  },
+  {
+   "id": "synthetic-prose-tail-article",
+   "group": "prose-tail",
+   "title": "",
+   "text": "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4\nEach pan ships tuned. A padded soft case is included with every handpan.",
+   "source": {
+    "synthetic": true,
+    "note": "a capital article A is not a note"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [],
+    "serialised": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-prose-tail-key-name",
+   "group": "prose-tail",
+   "title": "",
+   "text": "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 Tuned by Ayasa. Also available in E minor.",
+   "source": {
+    "synthetic": true,
+    "note": "a key name E without an octave is not a note"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [],
+    "serialised": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-prose-tail-related",
+   "group": "prose-tail",
+   "title": "",
+   "text": "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4\nYou may also like\nYatao D Kurd 10 Handpan\nYatao E Amara 9 Handpan",
+   "source": {
+    "synthetic": true,
+    "note": "related-product names carry lone capital note letters"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [],
+    "serialised": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-reference-pitch",
+   "group": "reference-pitch",
+   "title": "",
+   "text": "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 tuned to A4 = 440 Hz. Reference: A4 432 Hz",
+   "source": {
+    "synthetic": true,
+    "note": "a reference pitch A4 = 440 is not a note, and a Word: key ends the scan"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [],
+    "serialised": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-prose-tail-grade",
+   "group": "prose-tail",
+   "title": "",
+   "text": "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 in Grade A. D Kurd scale",
+   "source": {
+    "synthetic": true,
+    "note": "a full stop breaks a run of lone note letters"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [],
+    "serialised": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-truncated-lowercase-octave",
+   "group": "truncated",
+   "title": "",
+   "text": "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 with c5",
+   "source": {
+    "synthetic": true,
+    "note": "a lone lowercase note with an octave still reads as a note"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-truncated-h-note",
+   "group": "truncated",
+   "title": "",
+   "text": "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 then H4",
+   "source": {
+    "synthetic": true,
+    "note": "an H note with an octave still reads as a note"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-yatao-key-after-list",
+   "group": "prose-tail-page",
+   "title": "YataoPan D Aegean 18",
+   "text": "Scale\n: Aegean\nNotes Top Side\n: D3, F#3, A3, C#4, D4, F#4, G#4, A4, C#5, D5, F#5\nNotes Bottom Side\n: B2, E3, G#3, B3, E4, B4, E5\nKey\n: F# lydian mode\nMaterial\n: Stainless Steel\nStandard Pitch\n: 440 Hz /432 Hz\nDiameter\n: 53 cm",
+   "source": {
+    "synthetic": true,
+    "note": "the Yatao page with its Key line moved after the bottom list"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [
+     "COUNT_OK",
+     "DING_CUE"
+    ],
+    "serialised": "[B2] (D3) [E3] F#3 [G#3] A3 [B3] C#4 D4 [E4] F#4 G#4 A4 [B4] C#5 D5 [E5] F#5",
+    "fields": 18,
+    "roles": {
+     "ding": "D3",
+     "top": [
+      "F#3",
+      "A3",
+      "C#4",
+      "D4",
+      "F#4",
+      "G#4",
+      "A4",
+      "C#5",
+      "D5",
+      "F#5"
+     ],
+     "bottom": [
+      "B2",
+      "E3",
+      "G#3",
+      "B3",
+      "E4",
+      "B4",
+      "E5"
+     ],
+     "inner": []
+    },
+    "flagNotes": {
+     "DING_CUE": [
+      0
+     ]
+    }
+   }
   }
  ]
 }

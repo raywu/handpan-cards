@@ -32,7 +32,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   var NOTE_UP = /^([A-G])(#|b)?(-1|[0-9])?$/;
   var NOTE_ODD = /^(?:[a-h](?:#|b)?(?:-1|[0-9])|[a-h]#|H(?:#|b)?[0-9]?)$/;
-  var NOTE_LIKE = /^[A-Ga-g](#|b)?(-1|[0-9])?$/;
+  var NOTE_LIKE = /^[A-Ga-g](#|b)?$/;
+  var OCTAVED = /^[A-Ha-h](#|b)?(-1|[0-9])$/;
   var JOINED = /^([A-G]) (#|b)(-1|[0-9])/;
   var TOKEN = /([A-G]) (?:#|b)(?:-1|[0-9])|[A-Za-z][A-Za-z0-9#]*(?:-1(?![0-9]))?|[()\/\-,]|\S/g;
   var SKIPPED = /^(?:and|&|\.|;)$/i;
@@ -67,8 +68,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return { start: start, end: end, text: original.slice(start, end) };
   }
 
-  // True when any token after the one just read still reads as a note, so a
-  // list cut short never drops notes without a flag.
+  // True when a later token still reads as a note, so a list cut short never
+  // drops notes without a flag. A note with an octave counts alone; letters
+  // without one count only as a run of two. The scan ends at the next "Word:"
+  // key, and a reference pitch ("A4 = 440") is not a note.
   function readsAsNoteAfter(re, body) {
     var rest = new RegExp(TOKEN.source, "g");
     var m;
@@ -76,11 +79,14 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var run = 0;
     while ((m = rest.exec(body))) {
       var tok = m[0];
-      if (JOINED.test(tok) || NOTE_UP.test(tok)) return true;
-      if (NOTE_LIKE.test(tok)) {
+      if (tok === ":") return false;
+      if (JOINED.test(tok) || OCTAVED.test(tok)) {
+        if (!/^ *=/.test(body.slice(rest.lastIndex))) return true;
+        run = 0;
+      } else if (NOTE_LIKE.test(tok)) {
         run += 1;
         if (run >= 2) return true;
-      } else if (!/^[,\/\-]$/.test(tok) && !SKIPPED.test(tok)) {
+      } else if (!/^(?:[,\/\-&]|and)$/i.test(tok)) {
         run = 0;
       }
     }

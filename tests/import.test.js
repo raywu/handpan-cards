@@ -105,7 +105,7 @@ test("pitch multiset: serialised fields equal the notes read off the source text
     const octaveless = c.group === "octaveless";
     const norm = (a) => a.map((n) => (octaveless ? pc(n) : n)).sort();
     assert.deepEqual(norm(names), norm(listed), c.id);
-    if (!octaveless && c.group !== "mixed-octave") {
+    if (!octaveless && c.group !== "mixed-octave" && c.group !== "reference-pitch") {
       const written = (c.text.replace(/([A-G]) #/g, "$1#").match(/[A-G][#b]?-?\d/g) || []).sort();
       assert.deepEqual([...names].sort(), [...written].sort(), c.id + " vs text");
     }
@@ -239,15 +239,29 @@ test("an inner note below the highest top note blocks with INNER_BELOW_TOP and w
   assert.equal(importer.serialise(r), "");
 });
 
-test("prose after the note list never reads as a later note: the five product-page tails stay REVIEW", () => {
+test("prose after the note list never reads as a later note: the nine product-page tails stay REVIEW", () => {
   const tails = fixture.cases.filter((x) => x.group === "prose-tail");
-  assert.equal(tails.length, 5);
+  assert.equal(tails.length, 9);
   for (const c of tails) {
     const r = run(c);
     assert.equal(r.status, "REVIEW", c.id);
     assert.equal(flagOf(r, "AMBIGUOUS_NOTE"), undefined, c.id);
     assert.ok(importer.serialise(r).startsWith("(D3) A3 Bb3 C4 D4 E4 F4 G4 A4"), c.id);
   }
+});
+
+test("a whole Yatao page with its Key line after the bottom list reads the same 18 notes as the page itself", () => {
+  const r = run(byId("synthetic-yatao-key-after-list"));
+  assert.equal(r.status, "REVIEW");
+  assert.equal(flagOf(r, "AMBIGUOUS_NOTE"), undefined);
+  assert.equal(importer.serialise(r), importer.serialise(run(byId("yatao-d-aegean-18-page"))));
+});
+
+test("a reference pitch after the list (A4 = 440 Hz) is not a later note, and a Word: key ends the scan", () => {
+  const r = run(byId("synthetic-reference-pitch"));
+  assert.equal(r.status, "REVIEW");
+  assert.equal(flagOf(r, "AMBIGUOUS_NOTE"), undefined);
+  assert.equal(importer.serialise(r), "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4");
 });
 
 test("octaved tops with octaveless inner notes: the inner octaves climb above the tops", () => {
