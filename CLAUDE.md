@@ -54,7 +54,7 @@ no committed PDF; the app builds theirs in the browser.
   regions of `index.html`. A SYNC STEP, NOT A BUILD STEP: see "Hard
   constraints".
 
-**Scale strings.** One ascending line: `[C] [D] (E) [F#] B D E | F# G`. Round brackets (or a trailing slash, or a `|` straight after the note) mark the ding; square brackets mark a bottom note at its pitch position; a `|` after the top notes starts the inner notes. Strings written before 2026-10 used `/` for inner notes and `|` for a bottom list; they are read only by `HPE.core.parseLegacySeed`, and a share link picks that reader by its version byte, never by looking at the string (`tests/share.test.js` "decode chooses its scale-line reader from the version", "a version 3 link with a bar opens with bottom notes"). Every frozen legacy string keeps its deck id (`tests/core.test.js` "every frozen legacy string keeps its deck id").
+**Scale strings.** One ascending line: `[C] [D] (E) [F#] B D E | F# G`. Round brackets (or a trailing slash, or a `|` straight after the note) mark the ding; square brackets mark a bottom note at its pitch position; a `|` after the top notes starts the inner notes. Strings written before 2026-10 used `/` for inner notes and `|` for a bottom list; they are read only by `HPE.core.parseLegacySeed`, and the reader is chosen by the version tag on a stored record or share link, never by looking at the string (`tests/share.test.js` "decode chooses its scale-line reader from the version", "a version 3 link with a bar opens with bottom notes"; for a stored record, `tests/app.test.js` "the boot rewrite of a legacy record with a hundred and one top notes keeps every note"). Every frozen legacy string keeps its deck id (`tests/core.test.js` "every frozen legacy string keeps its deck id").
 
 **Share link v5 (2026-10-17, lanes E and I; plan `docs/plans/2026-10-17-share-readable.md`).** Every sentence names its test in `tests/share.test.js` unless a file is named.
 - Shape: `5/<scale>/<name>/<options...>/<check>`, e.g. `#s=5/(D3)_A3_Bb3_C4_D4_E4_F4_G4_A4_C5/D+KURD+10/9fcd07`. The app writes wire version 5 and keeps stored records at 4 ("SV: this app writes wire version 5 and keeps records at 4"); the five built-in decks' links are pinned ("SV: the five built-in decks' v5 links are pinned").
@@ -520,13 +520,13 @@ pitch classes (midi % 12), never stored.
   An open drawer inerts it ("SI: panelBackground holds #share-copy, so an open drawer inerts it"), so does an open About
   ("SI: while About is open the share icon is inert under #app and not a stop"), and the print block hides `#share-copy` and `#share-url`
   ("SI: the print block hides #share-copy and #share-url").
-  `#share-copy` is disabled, never hidden, when the engine refuses the code (S5): its `title` is the refusal and the bar keeps the bare path
+  `#share-copy` stays on screen, disabled rather than hidden, when the engine refuses the code (S5): its `title` is the refusal and the bar keeps the bare path
   ("SU: an over-cap custom deck disables COPY LINK with the refusal as its title and leaves the bare path"). It copies `location.href`, never a fresh encode
   ("SU: COPY LINK copies location.href and announces LINK COPIED"; a second copy clears the message line first, "SI: a second COPY LINK clears the message line before writing LINK COPIED again"),
   and falls back to `navigator.share` ("SU: COPY LINK falls back to navigator.share when the clipboard rejects"), then to the readonly `#share-url` input
   ("SU: COPY LINK reveals the readonly input when both are absent"), which is positioned out of flow ("SI: a revealed #share-url is positioned out of flow";
   `tests/e2e.test.js` "SI: a revealed #share-url does not move the card at 380x780", "SI: a revealed #share-url hides on blur, on Escape and when the scale sheet opens, and the chips are hit-testable again")
-  and is hidden by a deck change ("SU: a deck change hides a revealed #share-url so it never keeps the old deck's link"). A dismissed share sheet
+  and is hidden by a deck change ("SU: a deck change hides a revealed #share-url so it never keeps the old deck's link") and by opening either sheet, with no blur needed ("SI: opening the create sheet hides a revealed #share-url", "SI: opening the Edit sheet hides a revealed #share-url without a blur event"). At 844x390 the icon sits right of the deck strip beside the settings trigger (`tests/e2e.test.js` "SI: at 844x390 #share-copy sits right of the deck strip and directly beside #settings-trigger"). Its LINK COPIED line is written only after a deferred tick ("SI: a second COPY LINK clears the message line before writing LINK COPIED again"). While About is open it has an inert ancestor and a click at its position copies nothing (`tests/e2e.test.js` "SI: while About is open #share-copy has an inert ancestor and a click at its position copies nothing"). When it becomes disabled while focused the app moves no focus and the browser drops it to the body (`tests/e2e.test.js` "SI: when #share-copy becomes disabled while focused the app moves no focus and the browser drops it to the body"). A dismissed share sheet
   says nothing ("SU: COPY LINK says nothing when the share sheet is dismissed").
 
 ## Print pipeline (tools/)
@@ -625,8 +625,9 @@ card-size and host-block titles below are in `tests/e2e.test.js`.
   section links every built-in deck by its slug"). It ends with a Contact heading
   and a plain `mailto:handpan@raywu.org` link, G6 ("AO: About ends with a Contact
   heading and a mailto link to handpan@raywu.org"); the address is not in the
-  JSON-LD (G7; no test, true by the `application/ld+json` block carrying no
-  `email`). Its screen rules sit before `@media print{`
+  JSON-LD (G7; "the JSON-LD block parses and states only what the page shows"
+  asserts the `application/ld+json` block carries no `email`, `mailto:` or
+  `@raywu.org`). Its screen rules sit before `@media print{`
   (`tests/test_render_agreement.py::test_print_block_is_last_in_the_style_element`).
   The card counts in the about text are literals in `#about` (`index.html`, the
   deck list); the test "the about section names every built-in deck with its
@@ -642,7 +643,7 @@ card-size and host-block titles below are in `tests/e2e.test.js`.
   and a popstate each close it, consume the `#about` entry and leave the settings
   menu CLOSED, with focus on the settings trigger ("AO: the exit control, Escape
   and a popstate each close About, consume the #about entry and focus the settings
-  trigger"); in a real browser (tests/e2e.test.js), "AO: at 380px the exit control restores the deck, card, flip state, mode and scroll, with focus on the settings trigger", "AO: at 380px Back closes About and one more Back leaves the page's history as it was before ABOUT" and "AO: at 380px Escape closes About and arrow keys never step the card while it is open"; at 1280px focus returns to ABOUT ("AO: at 1280x800 the sidebar's ABOUT opens About and closing returns focus to ABOUT", tests/e2e.test.js). Closing a
+  trigger"); in a real browser (`tests/e2e.test.js`), "AO: at 380px the exit control restores the deck, card, flip state, mode and scroll, with focus on the settings trigger", "AO: at 380px Back closes About and one more Back leaves the page's history as it was before ABOUT" and "AO: at 380px Escape closes About and arrow keys never step the card while it is open"; at 1280px focus returns to ABOUT ("AO: at 1280x800 the sidebar's ABOUT opens About and closing returns focus to ABOUT", `tests/e2e.test.js`). Closing a
   closed About pops nothing ("AO: closing About when it is already closed pops
   nothing"). `syncRoute()` and `hashchange` write nothing while it is open ("AO:
   syncRoute and hashchange write nothing while About is open"); a fragment
@@ -652,13 +653,13 @@ card-size and host-block titles below are in `tests/e2e.test.js`.
   not About, and the bar is rewritten to the deck's route (G3: "AO: a boot on
   #about leaves About closed and ends on the deck's route"; a Forward traversal
   onto `#about` does the same: "AO: a Forward traversal onto #about leaves About
-  closed and rewrites the bar"). In tests/e2e.test.js: the page behind does not scroll ("AO: the page behind About does not scroll, at 380x800 and 844x390"); About scrolls itself with its exit visible and 44px non-overlapping link targets ("AO: About scrolls with its exit visible, non-overlapping 44px link targets and no horizontal scroll at 380x800, 844x390 and 1280x800"); it has no transition or animation ("AO: About has no transition or animation with and without prefers-reduced-motion").
+  closed and rewrites the bar"). In `tests/e2e.test.js`: the page behind does not scroll ("AO: the page behind About does not scroll, at 380x800 and 844x390"); About scrolls itself with its exit visible and 44px non-overlapping link targets ("AO: About scrolls with its exit visible, non-overlapping 44px link targets and no horizontal scroll at 380x800, 844x390 and 1280x800"); it has no transition or animation ("AO: About has no transition or animation with and without prefers-reduced-motion").
   **Deck links inside About** go through `aboutLink()`, which shares
   `routeToDeck()` with the `hashchange` listener (the listener still serves typed
   and external fragments). A link to another deck replaces the `#about` entry with
   the deck's route and selects it, so one Back returns to the previous deck ("AO:
   a #deck= link inside About replaces the #about entry with the deck's route and
-  selects the deck"; at 380px "AO: at 380px a #deck= link inside About switches deck and one Back returns to the previous deck", tests/e2e.test.js); a link to the deck already
+  selects the deck"; at 380px "AO: at 380px a #deck= link inside About switches deck and one Back returns to the previous deck", `tests/e2e.test.js`); a link to the deck already
   shown closes About like the exit control ("AO: a #deck= link to the deck
   already shown closes About like the exit control"); with a custom deck showing,
   "an about link clicked while a custom deck shows switches the deck and the bar"
@@ -731,8 +732,9 @@ card-size and host-block titles below are in `tests/e2e.test.js`.
   which spell the id out; and `tests/mutants/dg_loader_refuses_shipped_id.patch`,
   whose added line spells it out. Left stale, every test that builds a page
   through `withGaId` goes red, because the helper asserts the literal is in
-  `index.html`, and the named test and the mutant fail loudly rather than
-  silently.
+  `index.html`, and the named test goes red with them; the mutant goes stale
+  without a test failing and is caught only by the mutation gate
+  (`tests/mutation_check.sh`).
   The custom definitions (`deck_kind`, `deck_id`, `mode`, `tier`, `paper`,
   `has_bottom`; metric `note_count`) are registered in GA Admin by the owner;
   no test sees that.

@@ -1,0 +1,15 @@
+# kills: AO: a #deck= link to a replaced seed whose replacement is the shown deck closes About like the exit control
+# suite: node --test --test-name-pattern ^AO:.a.#deck=.link.to.a.replaced.seed tests/app.test.js
+# aboutLink drops the || replaced branch, so a link to a replaced seed no longer closes About.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11775,7 +11775,7 @@ function aboutLink(href) {
+     const resolved = deck().id;
+     deckId = before;
+     const replaced = !!replacements()[routed] && replacements()[routed].id === resolved;
+-    if (resolved === deck().id && (resolved === routed || replaced)) { closeAbout(); return; }
++    if (resolved === deck().id && (resolved === routed)) { closeAbout(); return; }
+   }
+   hideAbout();
+   history.replaceState(null, "", href);

@@ -160,7 +160,7 @@ What is covered:
 - **Browser e2e** - real Chromium: deck switching, the 3D card flip, keyboard
   and touch navigation, reload persistence, clipping at a 380px viewport, and
   the scale sheet's modality, focus handling and 44px hit areas.
-- **Mutation gate** - 1077 mutant patches under `tests/mutants/`, each one a
+- **Mutation gate** - 1086 mutant patches under `tests/mutants/`, each one a
   deliberate break that some test must catch. The gate is all-or-nothing: one
   survivor fails it. A test nothing can kill does not count as coverage.
 
@@ -178,7 +178,10 @@ section names every built-in deck with its card count from data/decks.json and
 the value line"). GA4 loads only on a real host with a non-placeholder measurement id ("the shipped
 index.html boots unmodified on a real host and loads gtag with the shipped id");
 the placeholder `G-XXXXXXXXXX` stays a disabling value ("analyticsAllowed is
-false for the placeholder id: no gtag script, no config, no event"); see CLAUDE.md,
+false for the placeholder id: no gtag script, no config, no event"), as do a
+`file:` page, `localhost`, `127.0.0.1`, `[::1]` and `navigator.webdriver`
+("analyticsAllowed is false for an automated browser: no gtag script, no config,
+no event"); see CLAUDE.md,
 "Discoverability".
 
 That is 24 node suites (`tests/*.test.js`) and 15 python suites

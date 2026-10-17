@@ -1,0 +1,14 @@
+# kills: SI: opening the Edit sheet hides a revealed #share-url without a blur event
+# suite: node --test --test-name-pattern ^SI:.opening.the.Edit.sheet.hides tests/app.test.js
+# openEditSheet no longer hides a revealed #share-url, leaving it to a blur.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10934,7 +10934,6 @@ function openScaleSheet(opener) {
+ // The Edit path [design-review 7A]: the SAME sheet, prefilled from the selected
+ // deck, seeded or custom.
+ function openEditSheet(d, opener) {
+-  shareUrl.setAttribute("hidden", "");
+   resetSheetState(d);
+   showSheet(opener);
+   // [eng-review 2, 2A] warnings have ONE producer and were copied onto the deck

@@ -1,0 +1,14 @@
+# kills: the JSON-LD block parses and states only what the page shows
+# suite: node --test --test-name-pattern ^the.JSON-LD.block.parses tests/app.test.js
+# The JSON-LD block gains an email property (owner gate G7 forbids it).
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -45,6 +45,7 @@
+   "applicationCategory": "MusicApplication",
+   "operatingSystem": "Any",
+   "browserRequirements": "Requires JavaScript",
++  "email": "handpan@raywu.org",
+   "isAccessibleForFree": true,
+   "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
+   "featureList": "Chord flashcards; chord progressions; custom scale input; printable PDF"

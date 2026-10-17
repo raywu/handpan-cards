@@ -9415,6 +9415,8 @@ describe("discoverability: structured data", () => {
     assert.deepStrictEqual(ld.offers, { "@type": "Offer", price: "0", priceCurrency: "USD" });
     assert.strictEqual(ld.featureList, "Chord flashcards; chord progressions; custom scale input; printable PDF");
     assert.ok(!("aggregateRating" in ld) && !("review" in ld), "a rating or review is marked up but never shown");
+    const block = (html.match(/<script type="application\/ld\+json">[\s\S]*?<\/script>/) || [""])[0];
+    assert.ok(!/"email"|@raywu\.org|mailto:/i.test(block), "the JSON-LD block carries an email address (G7)");
     assert.ok(!/aggregateRating|"review"/.test(html), "a rating or review appears in the page");
     const h1 = /<h1>([^<]*)<\/h1>/.exec(html)[1];
     assert.strictEqual(ld.name, h1, "name differs from the h1");
@@ -10071,12 +10073,40 @@ describe("share url", () => {
     for (let i = 0; i < 2; i++) {
       app.els["share-copy"].click();
       await flush();
+      assert.strictEqual(writes.filter((w) => w === "LINK COPIED").length, i, "the announcement was written before the deferred tick");
+      assert.strictEqual(writes[writes.length - 1], "", "the line was not cleared before the tick");
       app.flushTimers();
     }
     assert.deepStrictEqual(writes, ["", "LINK COPIED", "", "LINK COPIED"]);
     writes.length = 0;
     app.run('say("hello", "ok")');
     assert.deepStrictEqual(writes, ["hello"], "say() itself writes once, with no clear");
+  });
+
+  const revealedShareUrl = () => {
+    const app = boot();
+    delete app.sandbox.navigator.clipboard;
+    delete app.sandbox.navigator.share;
+    app.els["share-copy"].click();
+    assert.strictEqual(app.els["share-url"].hasAttribute("hidden"), false, "the control did not reveal #share-url");
+    return app;
+  };
+
+  test("SI: opening the create sheet hides a revealed #share-url", () => {
+    const app = revealedShareUrl();
+    app.run("openScaleSheet(document.getElementById('deck-add'))");
+    assert.strictEqual(app.sheetOpen(), true);
+    assert.strictEqual(app.els["share-url"].hasAttribute("hidden"), true);
+  });
+
+  test("SI: opening the Edit sheet hides a revealed #share-url without a blur event", () => {
+    const app = revealedShareUrl();
+    let blurs = 0;
+    app.els["share-url"].addEventListener("blur", () => { blurs += 1; });
+    app.run("openEditSheet(deck(), document.getElementById('deck-add'))");
+    assert.strictEqual(app.sheetOpen(), true);
+    assert.strictEqual(blurs, 0, "a blur event fired, so this proves nothing about the explicit hide");
+    assert.strictEqual(app.els["share-url"].hasAttribute("hidden"), true);
   });
 
   test("SI: while About is open the share icon is inert under #app and not a stop", () => {
@@ -10145,6 +10175,9 @@ describe("share icon", () => {
     const btn = /<button\b[^>]*id="share-copy"[^>]*>([\s\S]*?)<\/button>/.exec(header);
     assert.ok(btn, "#share-copy is not in the header");
     assert.ok(header.indexOf('id="share-copy"') < header.indexOf('id="settings-trigger"'), "the icon is not before the trigger");
+    const ahead = header.slice(0, header.indexOf(btn[0]));
+    assert.ok(!/<(button|a|input|select|textarea)\b|tabindex=/i.test(ahead), "a focusable control precedes #share-copy in the header");
+    assert.ok(header.indexOf('id="share-copy"') < header.indexOf("<h1"), "the icon is not before the title");
     assert.ok(!/class="hspacer"/.test(header), "the spacer is still there");
     assert.match(btn[0], /aria-label="Copy link"/);
     assert.match(btn[0], /type="button"/);
@@ -10376,6 +10409,50 @@ describe("about overlay", () => {
     app.run("document.documentElement.style.setProperty('--about-head-h', '7px')");
     app.run("syncAboutHead()");
     assert.strictEqual(headVar(app), "7px", "a resize after close wrote --about-head-h");
+  });
+
+  test("AO: a #deck= link to a replaced seed whose replacement is the shown deck closes About like the exit control", () => {
+    const probe = boot();
+    const base = probe.get("HPE.core.formatSeed(DECKS.find((d) => d.id === \"amara\").fields)");
+    const storage = {
+      hpfc: JSON.stringify({ deck: "amara", mode: "A" }),
+      [probe.get("SCALES_KEY")]: JSON.stringify([{ v: probe.get("SHARE_VERSION"), s: base.replace(/C5$/, "D5"), o: { name: "MY AMARA", palette: 3, replaces: "amara" } }]),
+    };
+    const app = boot({ storage });
+    assert.match(app.deckId(), /^custom:/, "the replacement is not the shown deck");
+    openAboutFrom(app);
+    const n = app.history.calls.length;
+    app.run("aboutLink('#deck=d-amara-9')");
+    assert.deepStrictEqual(app.history.calls.slice(n).map((c) => c.type), ["back"], "a link to the replaced seed did not just pop its own entry");
+    assert.strictEqual(app.els.about.hidden, true);
+    assert.strictEqual(app.activeId(), "settings-trigger");
+    assert.match(app.deckId(), /^custom:/);
+    assert.doesNotMatch(app.announcer().textContent || "", /That deck is gone/);
+  });
+
+  test("AO: a dispatched resize while About is open updates --about-head-h", () => {
+    const html = INDEX_HTML().replace("<head>",
+      "<head><script>window.__w = {}; const __a = window.addEventListener; " +
+      "window.addEventListener = function (t, f) { (window.__w[t] = window.__w[t] || []).push(f); return __a.apply(this, arguments); };</script>");
+    const app = boot({ html });
+    openAboutFrom(app);
+    app.run("const __q = document.querySelector.bind(document); document.querySelector = (s) => (s === '.abouthead' ? { offsetHeight: 91 } : __q(s));");
+    assert.notStrictEqual(headVar(app), "91px", "the head height was already 91px, so a resize proves nothing");
+    assert.strictEqual(app.get("window.__w.resize.length"), 1, "no resize listener registered");
+    app.run("window.__w.resize.forEach((f) => f({ type: 'resize' }))");
+    assert.strictEqual(headVar(app), "91px");
+  });
+
+  test("AO: a click on a deck link inside About is default-prevented and goes through aboutLink", () => {
+    const app = boot();
+    openAboutFrom(app);
+    app.run("globalThis.__links = []; const __al = aboutLink; aboutLink = (h) => { __links.push(h); return __al(h); };");
+    const link = { closest: (sel) => (sel === 'a[href^="#deck="]' ? link : null), getAttribute: () => "#deck=f-low-pygmy-18" };
+    const ev = app.click(app.els.about, { target: link });
+    assert.strictEqual(ev.defaultPrevented, true, "the click was not default-prevented, so the browser would also navigate");
+    assert.deepStrictEqual(Array.from(app.get("__links")), ["#deck=f-low-pygmy-18"]);
+    assert.strictEqual(app.deckId(), "pygmy");
+    assert.strictEqual(app.els.about.hidden, true);
   });
 
   test("AO: the exit control, Escape and a popstate each close About, consume the #about entry and focus the settings trigger", () => {
