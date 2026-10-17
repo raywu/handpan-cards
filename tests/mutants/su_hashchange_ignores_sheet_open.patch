@@ -1,5 +1,5 @@
 # kills: SU: a typed #deck= route while the Add/Edit sheet is open changes neither the deck nor history
-# suite: node --test --test-name-pattern ^SU:.a.typed.deck tests/app.test.js
+# suite: node --test --test-name-pattern ^SU:.a.typed..deck tests/app.test.js
 # The hashchange listener acts on a typed route while the Add/Edit sheet is open.
 diff --git a/index.html b/index.html
 --- a/index.html
