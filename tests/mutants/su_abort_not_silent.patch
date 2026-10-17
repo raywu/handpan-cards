@@ -1,0 +1,15 @@
+# kills: SU: COPY LINK says nothing when the share sheet is dismissed
+# suite: node --test --test-name-pattern ^SU:.COPY.LINK.says.nothing tests/app.test.js
+# A dismissed share sheet reveals the input as if it had failed.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11381,7 +11381,7 @@ function copyLink() {
+   const share = () => {
+     if (!navigator.share) { reveal(); return; }
+     Promise.resolve().then(() => navigator.share({ url: href }))
+-      .then(() => done("LINK SHARED", "share"), e => { if (!e || e.name !== "AbortError") reveal(); });
++      .then(() => done("LINK SHARED", "share"), e => { reveal(); });
+   };
+   if (!navigator.clipboard || !navigator.clipboard.writeText) { share(); return; }
+   Promise.resolve().then(() => navigator.clipboard.writeText(href))

@@ -23,8 +23,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10713,33 +10713,6 @@ function closePanel() {
-   disarmReset();
+@@ -10833,33 +10833,6 @@ function closePanel() {
+   shareUrl.setAttribute("hidden", "");
    settingsTrigger.focus();
  }
 -// If the viewport crosses the breakpoint while the panel is open in its

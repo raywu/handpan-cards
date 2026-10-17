@@ -57,7 +57,9 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", 
   "seq-style", "seq-style-name", "seq-style-tip", "foot",
   // sequence-difficulty D2: the three tier buttons of the five-button Practice
   // group (they replaced "modeS" and the Difficulty group).
-  "tier-basic", "tier-intermediate", "tier-advanced"];
+  "tier-basic", "tier-intermediate", "tier-advanced",
+  // Share URL lane SU-A: the COPY LINK control and its readonly fallback input.
+  "share-copy", "share-url"];
 
 /** Copy a value out of the vm realm, so assert.deepStrictEqual can compare it. */
 const plain = (v) => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
@@ -134,7 +136,7 @@ function makeElement(id, tag = "div") {
     },
     // focus() is rebound per boot (see bindFocus) so document.activeElement
     // tracks it; the standalone default keeps makeElement usable on its own.
-    focus() {}, blur() {},
+    focus() {}, blur() {}, select() {},
     // No-op: jsdom-less stub has no scroll container or layout, so there is
     // nothing to scroll. renderSeqRail() (D-12) calls this unconditionally
     // on every render in sequence mode; without a stub it throws.

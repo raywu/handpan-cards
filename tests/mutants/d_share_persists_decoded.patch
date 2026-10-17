@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8020,7 +8020,7 @@ function openShare(text) {
+@@ -8034,7 +8034,7 @@ function openShare(text) {
    // Generation runs ONCE per restore, here, exactly as submit does (section 11).
    const built = generateDeck(HPE.core.formatSeed(res.value.fields), res.value.options);
    if (!built.ok) { say(built.reason, "err"); return built; }
 -  rememberScale(seedOf(built.value));
 +  rememberScale(res.value);
    selectDeck(built.value.id);
-   track("share_open");
+   if (built.value.id !== bootStored) track("share_open");
    return built;

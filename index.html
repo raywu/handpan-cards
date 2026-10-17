@@ -293,6 +293,8 @@ a.mode{text-decoration:none}
 /* The two Amy links share ONE row on every viewport, wrapping their labels
    inside the link box (menu-resources AD7); no other row takes this class. */
 .modebar.duo{flex-wrap:nowrap}
+#share-url{box-sizing:border-box; width:100%; min-height:44px; margin-top:var(--sp-2); padding:0 10px; font:inherit; font-size:16px}
+#share-url[hidden]{display:none}
 .modebar.duo .mode{min-width:0; padding-inline:6px; line-height:1.25}
 /* The three site links split their row equally; the padding trim lets HANDPANER
    shrink to a third without ever going under its own content (no min-width:0).
@@ -1268,7 +1270,7 @@ footer.seq{row-gap:var(--sp-1)}
   <h3>Your own scale</h3>
   <p>Type any scale and the app generates its chords. A custom scale lives only in your browser.</p>
   <h3>Privacy</h3>
-  <p>Your scales never leave your browser. The site counts anonymous visits and feature use with Google Analytics, without cookies in the EU, the UK and Switzerland.</p>
+  <p>Your scales never leave your browser. The site counts anonymous visits and feature use with Google Analytics, without cookies in the EEA, the UK and Switzerland.</p>
 </section>
 
 <div id="scale-sheet" role="dialog" aria-modal="true" aria-labelledby="scale-title" hidden>
@@ -1484,7 +1486,11 @@ footer.seq{row-gap:var(--sp-1)}
        and it still names what the control does. -->
   <div class="panel-group" id="panel-scales-group">
     <h3 class="panel-heading">Scales</h3>
-    <button class="mode" type="button" id="deck-add" aria-haspopup="dialog">+ ADD A SCALE</button>
+    <div class="modebar duo">
+      <button class="mode" type="button" id="deck-add" aria-haspopup="dialog">+ ADD A SCALE</button>
+      <button class="mode" type="button" id="share-copy">COPY LINK</button>
+    </div>
+    <input type="text" id="share-url" readonly hidden aria-label="Share link">
     <button class="mode" type="button" id="deck-restore" hidden>RESET SEEDED DECKS</button>
   </div>
   <div class="panel-group">
@@ -8004,12 +8010,20 @@ function checkShareVersion(v) {
 // renders NEW cards once the engine improves.
 const seedOf = d => ({ fields: d.fields, options: d.options });
 const SHARE_PREFIX = "#s=";
+// The one place the engine is asked for a code: {ok, value: code} or its refusal.
+function shareCode(d) {
+  return HPE.share.encode(seedOf(d));
+}
 function shareLink(d) {
-  const res = HPE.share.encode(seedOf(d));
+  const res = shareCode(d);
   return res.ok
     ? { ok: true, value: location.origin + location.pathname + SHARE_PREFIX + res.value }
     : res;
 }
+// Set by the go block while it boots: the deck the visitor had selected before
+// this page load read its route. A route that names that same deck is a reload
+// or a restored tab, not an arrival, so it fires no share_open / deck_route.
+let bootStored = null;
 // The app's ONE entry point for an untrusted share string. It rejects rather
 // than repairs (the single validator is core.parseSeed, reached through
 // share.decode) and surfaces the engine's own reason verbatim - nothing here
@@ -8022,7 +8036,7 @@ function openShare(text) {
   if (!built.ok) { say(built.reason, "err"); return built; }
   rememberScale(seedOf(built.value));
   selectDeck(built.value.id);
-  track("share_open");
+  if (built.value.id !== bootStored) track("share_open");
   return built;
 }
 
@@ -8198,6 +8212,7 @@ function selectDeck(id) {
   deckId = id;
   storedDeck = id;
   save(); setOrder(); buildChips(); render();
+  syncRoute();
   track("deck_select", isBuiltIn(id) ? { deck_kind: "seeded", deck_id: id } : { deck_kind: "custom" });
   if (rehome) {
     const chip = document.querySelector("#decks .chip.on");
@@ -8956,6 +8971,9 @@ const swatches  = document.getElementById("scale-swatches");
 const genBtn    = document.getElementById("scale-generate");
 const addChip   = document.getElementById("deck-add");
 const restoreBtn = document.getElementById("deck-restore");
+const shareCopy = document.getElementById("share-copy");
+const shareUrl = document.getElementById("share-url");
+shareUrl.setAttribute("hidden", "");
 // The page header (Stage 2). backBtn is the page's way out AND where focus
 // lands on open; titleEl is the page's accessible name, not decoration.
 const backBtn   = document.getElementById("scale-back");
@@ -10089,11 +10107,15 @@ function closeScaleSheet() {
   const routed = sheetRouted;
   sheetRouted = false;
   hideSheet();
-  if (routed) history.back();
+  if (routed) { pendingPop = true; history.back(); }
 }
+// history.back() answers with a popstate later; the entry it restores is the
+// pre-sheet URL, so syncRoute() runs at that pop, not before it.
+let pendingPop = false;
 // The browser's way out: the back gesture, or a swipe. The entry is already
 // gone, so this only takes the page down.
 window.addEventListener("popstate", () => {
+  if (pendingPop) { pendingPop = false; syncRoute(); return; }
   if (!sheetOpen) return;
   sheetRouted = false;
   hideSheet();
@@ -10781,7 +10803,7 @@ function panelStops() {
   return [settingsTrigger, document.getElementById("modeA"), document.getElementById("modeB"),
           document.getElementById("tier-basic"), document.getElementById("tier-intermediate"),
           document.getElementById("tier-advanced"), document.getElementById("seq-source-link"),
-          document.getElementById("deck-add"), restoreBtn,
+          document.getElementById("deck-add"), document.getElementById("share-copy"), document.getElementById("share-url"), restoreBtn,
           ...settingsPanel.querySelectorAll(".prints button, .prints select"),
           // Eng review amendment 1: the Resources links join the Tab trap
           // after the print controls, in DOM order.
@@ -10808,6 +10830,7 @@ function closePanel() {
   settingsPanel.removeAttribute("aria-modal");
   setInert(false, panelBackground);
   disarmReset();
+  shareUrl.setAttribute("hidden", "");
   settingsTrigger.focus();
 }
 // If the viewport crosses the breakpoint while the panel is open in its
@@ -11318,11 +11341,64 @@ function routedDeckId() {
   const slug = location.hash.slice(DECK_ROUTE.length);
   return Object.prototype.hasOwnProperty.call(DECK_SLUGS, slug) ? DECK_SLUGS[slug] : null;
 }
+// The address bar is always a link to the deck shown: "#s=<code>" for a custom
+// deck, "#deck=<slug>" for a seeded one, the bare path when the engine refuses
+// the code. Every write is replaceState, and syncRoute() is the only writer.
+function routeInfo(d) {
+  if (isBuiltIn(d.id)) {
+    const slug = Object.keys(DECK_SLUGS).find(k => DECK_SLUGS[k] === d.id);
+    return { route: slug ? DECK_ROUTE + slug : "", reason: "" };
+  }
+  const code = shareCode(d);
+  return code.ok ? { route: SHARE_PREFIX + code.value, reason: "" } : { route: "", reason: code.reason };
+}
+const routeFor = d => routeInfo(d).route;
+let routeRefused = false;
+let booted = false;
+function syncRoute() {
+  if (sheetOpen) return;
+  const { route, reason } = routeInfo(deck());
+  const want = location.pathname + location.search + route;
+  if (location.pathname + location.search + location.hash !== want) history.replaceState(history.state, "", want);
+  const refused = route === "";
+  shareCopy.disabled = refused;
+  shareCopy.title = refused ? reason : "";
+  if (refused && !routeRefused && (booted || announce.textContent === "")) say(reason, "warn");
+  routeRefused = refused;
+}
+function copyLink() {
+  const href = location.href;
+  const deck_kind = deckKind(deck());
+  const done = (text, method) => { say(text, "ok"); track("share_copy", { deck_kind, method }); };
+  const reveal = () => {
+    shareUrl.value = href;
+    shareUrl.removeAttribute("hidden");
+    shareUrl.focus();
+    shareUrl.select();
+    say("SELECT THE LINK AND COPY IT", "warn");
+    track("share_copy", { deck_kind, method: "select" });
+  };
+  const share = () => {
+    if (!navigator.share) { reveal(); return; }
+    Promise.resolve().then(() => navigator.share({ url: href }))
+      .then(() => done("LINK SHARED", "share"), e => { if (!e || e.name !== "AbortError") reveal(); });
+  };
+  if (!navigator.clipboard || !navigator.clipboard.writeText) { share(); return; }
+  Promise.resolve().then(() => navigator.clipboard.writeText(href))
+    .then(() => done("LINK COPIED", "clipboard"), share);
+}
+shareCopy.onclick = copyLink;
 // An in-page link (the about section) changes the hash without a reload, so no
 // boot code runs. selectDeck gets the id deck() returns for the mapped seed,
 // never the raw seed id: a replaced or hidden seed id would be stored as is and
 // light no chip.
 window.addEventListener("hashchange", () => {
+  if (location.hash === routeFor(deck())) return;
+  if (location.hash.indexOf(SHARE_PREFIX) === 0) {
+    openShare(location.hash.slice(SHARE_PREFIX.length));
+    syncRoute();
+    return;
+  }
   if (location.hash.indexOf(DECK_ROUTE) !== 0) return;
   const routed = routedDeckId();
   if (routed) {
@@ -11338,7 +11414,7 @@ window.addEventListener("hashchange", () => {
       say("That deck is gone. Showing " + deck().name + ".", "warn");
     track("deck_route", { deck_id: routed });
   }
-  history.replaceState(null, "", location.pathname + location.search);
+  syncRoute();
 });
 
 /* ---------------- go ---------------- */
@@ -11349,12 +11425,13 @@ sheet.setAttribute("hidden", ""); buildSwatches(); paintLayout(); resyncSheet(tr
 // looks for it.
 restoreScales();
 const routedDeck = routedDeckId();
+bootStored = typeof store.deck === "string" ? store.deck : null;
 if (routedDeck) deckId = routedDeck;
 const wantedDeck = deckId;
 deckId = deck().id; storedDeck = deckId; setOrder(); buildChips(); setMode(mode);
 // setMode() above saved the routed deck, as a chip tap does: a link that opens a
 // deck once keeps it, so the visitor does not land on the old one tomorrow.
-if (routedDeck) track("deck_route", { deck_id: routedDeck });
+if (routedDeck && routedDeck !== bootStored) track("deck_route", { deck_id: routedDeck });
 // Two fallbacks, deliberately different. An unknown BUILT-IN id is a stale or
 // renamed deck and falls back SILENTLY, as it always has. A missing custom: id
 // means the user's own saved scale is gone - deleted, or dropped as corrupt -
@@ -11365,21 +11442,18 @@ if (wantedDeck !== deckId && !(replacements()[wantedDeck] && replacements()[want
 // A page route in the address bar at boot is a RELOAD of a page, or a link
 // someone pasted. Neither reopens it: #edit-<id> names a deck this session may
 // not have, and a page restored with no entry behind it is one the back
-// gesture cannot leave. So the route is replaced away - replaceState, not
-// pushState, or the clean URL becomes an entry of its own and back returns to
-// the route that was just rejected.
-if (location.hash === ADD_ROUTE || location.hash.indexOf(EDIT_ROUTE) === 0)
-  history.replaceState(null, "", location.pathname + location.search);
+// gesture cannot leave. Nothing reads it; the syncRoute() below replaces it
+// with the shown deck's route - replaceState, not pushState, or the route that
+// was just rejected would stay an entry of its own.
 // A share link in the address bar is consumed once, at boot, through the same
 // single entry point; it wins over the stored deck because the user just
-// followed it. "#s=" is disjoint from the page routes above, so the two reads
-// never see each other's hash.
-else if (location.hash.indexOf(SHARE_PREFIX) === 0)
+// followed it. "#s=" is disjoint from the page routes, so the reads never see
+// each other's hash. A deck link was read above, by routedDeckId().
+if (location.hash.indexOf(SHARE_PREFIX) === 0)
   openShare(location.hash.slice(SHARE_PREFIX.length));
-// A deck link is consumed once, like the page routes: replaceState, so the
-// clean URL is not an entry of its own and Back leaves the page.
-else if (location.hash.indexOf(DECK_ROUTE) === 0)
-  history.replaceState(null, "", location.pathname + location.search);
+bootStored = null;
+syncRoute();
+booted = true;
 </script>
 </body>
 </html>

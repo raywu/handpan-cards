@@ -2718,9 +2718,10 @@ function run() {
   /* Q1: the share-URL inbound flow (the location.hash SHARE_PREFIX branch at boot in index.html) had no e2e test -
      openShare() itself is unit-tested against the sandbox (app.test.js), but
      the sandbox never navigates, so a boot-order regression on a real
-     `location.hash` would stay green everywhere else. There is no
-     `hashchange` path (Q30), so a FRESH navigation is the only reachable
-     case; an in-tab hash paste is a behaviour gap, not a test gap.
+     `location.hash` would stay green everywhere else. This test takes the
+     FRESH-navigation path (a real boot on the link); the in-tab path, a
+     `hashchange` to a `#s=` code, goes through the same openShare() and is
+     covered in describe("share url") below.
      The link is built through the app's own shareLink(), never hand-encoded
      here, so the wire format is exercised exactly as a real share does it. */
   test("a fresh navigation to a share link shows the deck, count and a lit field", async () => {
@@ -2745,8 +2746,8 @@ function run() {
       await b.eval(`try { localStorage.clear(); } catch (e) {} return true;`).catch(() => {});
       // A hash-only change from the SAME document is an in-page fragment
       // navigation in Chrome - no Page.loadEventFired, no fresh boot. A cache-
-      // busting query forces a REAL navigation, which is the only case (Q30:
-      // there is no hashchange listener) openShare() ever runs for.
+      // busting query forces a REAL navigation, so this test covers the boot
+      // path of openShare(); the hashchange path has its own test below.
       await navigate(`${URL}?share=${Date.now()}${hash}`);
       await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`, {
         label: "deck chips to be built after the share link boots",
@@ -8771,7 +8772,7 @@ function run() {
     // D2 re-plan step 4 (owner's five-button design, §4.2a): five mutually
     // exclusive practice buttons. There is no #modeS and no disabled state.
     const FLASH_STOPS = ["settings-trigger", "modeA", "modeB", "tier-basic", "tier-intermediate",
-      "tier-advanced", "deck-add", "print-download", "print-paper-select", ...RES_IDS];
+      "tier-advanced", "deck-add", "share-copy", "print-download", "print-paper-select", ...RES_IDS];
     const PROG_STOPS = [...FLASH_STOPS.slice(0, 6), "seq-source-link", ...FLASH_STOPS.slice(6)];
     const MODAL_VIEWPORTS = [[320, 568, true], [768, 1024, true], [568, 320, true], [683, 330, true], [844, 390, true]];
     const pressedFive = () => b.eval(`return ["modeA", "modeB", "tier-basic", "tier-intermediate", "tier-advanced"]
@@ -12204,8 +12205,11 @@ function run() {
 
       await b.eval(`document.getElementById("deck-add").focus(); return true;`);
       await b.key("Tab", "Tab", 9);
+      assert.strictEqual(await b.eval(`return document.activeElement.id;`), "share-copy",
+        "Tab from + ADD A SCALE does not reach COPY LINK");
+      await b.key("Tab", "Tab", 9);
       assert.strictEqual(await b.eval(`return document.activeElement.id;`), "deck-restore",
-        "Tab from + ADD A SCALE does not reach RESET SEEDED DECKS");
+        "Tab from COPY LINK does not reach RESET SEEDED DECKS");
 
       await b.click("#deck-restore");
       await b.waitFor(`document.getElementById("deck-restore").hasAttribute("data-armed")`,
@@ -12470,7 +12474,7 @@ function run() {
       assert.deepStrictEqual(urls.filter((u) => /googletagmanager\.com|google-analytics\.com/.test(u)), []);
     });
 
-    test("a #deck= link opens that deck at 380px and the address bar loses the hash", async () => {
+    test("a #deck= link opens that deck at 380px and the address bar keeps the deck's own route", async () => {
       await freshLoad();
       await b.setViewport(380, 780, false);
       try {
@@ -12483,7 +12487,7 @@ function run() {
           return { hash: location.hash, search: location.search, chip: chip ? chip.textContent : null, stored,
                    sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth };
         `);
-        assert.strictEqual(m.hash, "");
+        assert.strictEqual(m.hash, "#deck=f-low-pygmy-18");
         assert.strictEqual(m.search, "?r=route");
         assert.match(m.chip, /pygmy/i);
         assert.strictEqual(m.stored, "pygmy");
@@ -12507,13 +12511,169 @@ function run() {
           return { hash: location.hash, kept: window.__noReload === true, stored,
                    navs: performance.getEntriesByType("navigation").length };
         `);
-        assert.strictEqual(m.hash, "");
+        assert.strictEqual(m.hash, "#deck=c-sharp-hijaz-9");
         assert.strictEqual(m.kept, true, "the page reloaded");
         assert.strictEqual(m.navs, 1);
         assert.strictEqual(m.stored, "hijaz");
       } finally {
         await b.setViewport(900, 900, false);
       }
+    });
+  });
+
+  describe("share url", () => {
+    const hash = () => b.eval(`return location.hash`);
+    const href = () => b.eval(`return location.href`);
+    const chipOn = () => b.eval(`return (document.querySelector("#decks .chip.on") || {}).textContent || ""`);
+    const waitHash = (h, label) => b.waitFor(`location.hash === ${JSON.stringify(h)}`, { label });
+    const HIJAZ = "#deck=c-sharp-hijaz-9";
+    const PYGMY = "#deck=f-low-pygmy-18";
+    const waitChip = (re, label) => b.waitFor(`${re}.test((document.querySelector("#decks .chip.on") || {}).textContent || "")`, { label });
+
+    test("edge 1: three chip taps rewrite the bar each time and add no history entry", async () => {
+      await freshLoad();
+      await b.settle();
+      const len = await b.eval(`return history.length`);
+      const seen = [await hash()];
+      for (const i of [1, 2, 3]) {
+        await b.eval(`document.querySelectorAll("#decks .chip:not(#deck-add)")[${i}].click(); return true`);
+        await b.settle();
+        const h = await hash();
+        assert.match(h, /^#deck=/);
+        assert.notStrictEqual(h, seen[seen.length - 1], `tap ${i} left the previous deck's route`);
+        seen.push(h);
+      }
+      assert.strictEqual(await b.eval(`return history.length`), len, "chip taps pushed history entries");
+    });
+
+    test("edge 2: opening ADD from a custom deck and going BACK lands on the same #s= bar", async () => {
+      await freshLoad();
+      await generate(SIX_SCALES[1]);
+      await b.settle();
+      const pre = await href();
+      assert.match(await hash(), /^#s=/);
+      const id = await b.eval(`return deckId`);
+      await openSheet();
+      assert.strictEqual(await hash(), "#add");
+      await b.click("#scale-back");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet to close" });
+      await b.waitFor(`location.href === ${JSON.stringify(pre)}`, { label: "the bar to return to the custom deck's link" });
+      assert.strictEqual(await b.eval(`return deckId`), id);
+    });
+
+    test("edge 4: SAVE with new fields rewrites the bar to the new code and nothing re-imports the old one", async () => {
+      await freshLoad();
+      await generate(SIX_SCALES[1]);
+      await b.settle();
+      const before = await b.eval(`return { hash: location.hash, id: deckId, chips: document.querySelectorAll("#decks .chip:not(#deck-add)").length }`);
+      assert.match(before.hash, /^#s=/);
+      await b.eval(`window.__hc = 0; window.addEventListener("hashchange", () => { window.__hc++; }); return true`);
+      await b.click("#decks .chip.on");
+      await b.waitFor(`!document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the Edit sheet to open" });
+      await saveFields(SIX_SCALES[1] + " D5");
+      await b.waitFor(`location.hash !== ${JSON.stringify(before.hash)} && location.hash.indexOf("#s=") === 0`, { label: "the bar to carry the new code" });
+      await b.settle();
+      await new Promise((r) => setTimeout(r, 300));
+      const after = await b.eval(`return { hash: location.hash, id: deckId, chips: document.querySelectorAll("#decks .chip:not(#deck-add)").length,
+        want: "#s=" + shareCode(CUSTOM[deckId]).value }`);
+      assert.notStrictEqual(after.id, before.id, "the new fields did not give the deck a new id");
+      assert.strictEqual(after.hash, after.want, "the bar does not carry the shown deck's own code");
+      assert.strictEqual(after.chips, before.chips, "a stale hashchange re-imported the old deck as a second chip");
+      assert.notStrictEqual(after.hash, before.hash);
+    });
+
+    test("edge 8: the app's own writes fire no hashchange, and a hashchange to the shown hash changes nothing", async () => {
+      await freshLoad();
+      await b.settle();
+      await b.eval(`window.__hc = 0; window.addEventListener("hashchange", () => { window.__hc++; }); return true`);
+      for (const i of [1, 2, 3]) {
+        await b.eval(`document.querySelectorAll("#decks .chip:not(#deck-add)")[${i}].click(); return true`);
+        await b.settle();
+      }
+      assert.strictEqual(await b.eval(`return window.__hc`), 0, "replaceState fired hashchange");
+      const shown = await b.eval(`return { hash: location.hash, chip: document.querySelector("#decks .chip.on").textContent }`);
+      await b.eval(`window.dispatchEvent(new HashChangeEvent("hashchange")); return true`);
+      await b.settle();
+      const again = await b.eval(`return { hash: location.hash, chip: document.querySelector("#decks .chip.on").textContent }`);
+      assert.deepStrictEqual(again, shown);
+    });
+
+    test("edge 9: a real COPY LINK click puts location.href, query included, on the clipboard", async () => {
+      const origin = await b.eval(`return location.origin`);
+      await b.send("Browser.grantPermissions", { permissions: ["clipboardReadWrite", "clipboardSanitizedWrite"], origin });
+      await freshLoad();
+      await navigate(URL + "?share=x");
+      await b.settle();
+      await openSettingsPanel();
+      await b.click("#share-copy");
+      await b.waitFor(`/LINK COPIED/.test(document.getElementById("announce") ? document.getElementById("announce").textContent : document.body.textContent)`,
+        { label: "LINK COPIED to be announced" });
+      const m = await b.eval(`return navigator.clipboard.readText().then((t) => ({ clip: t, href: location.href }))`);
+      assert.strictEqual(m.clip, m.href);
+      assert.ok(m.clip.includes("?share=x#deck="), m.clip);
+    });
+
+    test("edge 10: COPY LINK is a 44px target inside the panel at 320px with no horizontal overflow", async () => {
+      await freshLoad();
+      await b.setViewport(320, 568, true);
+      try {
+        await b.settle();
+        await openSettingsPanel();
+        const m = await b.eval(`
+          const r = document.getElementById("share-copy").getBoundingClientRect();
+          const a = document.getElementById("deck-add").getBoundingClientRect();
+          return { h: r.height, left: r.left, right: r.right, vw: innerWidth, ah: a.height,
+                   sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth };
+        `);
+        assert.ok(m.h >= 44, `COPY LINK is ${m.h}px tall`);
+        assert.ok(m.left >= 0 && m.right <= m.vw, `COPY LINK leaves the viewport: ${m.left}..${m.right} of ${m.vw}`);
+        assert.ok(m.sw <= m.cw + 1, "horizontal overflow at 320px");
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("a #s= link boots a custom deck, keeps a #s= bar, and COPY LINK is live", async () => {
+      const code = "4A4GpAI11Co13D214D215D216D217D211D213DGem2J49CGan2GenB30iCYmpB3GiDImsB3SxEmgT2O_m";
+      await freshLoad();
+      await navigate(URL + "?r=s#s=" + code);
+      await b.settle();
+      assert.match(await hash(), /^#s=/);
+      assert.strictEqual(await b.eval(`return document.getElementById("share-copy").disabled`), false);
+    });
+
+    test("an about link clicked while a custom deck shows switches the deck and the bar", async () => {
+      await freshLoad();
+      await generate(SIX_SCALES[1]);
+      await b.settle();
+      assert.match(await hash(), /^#s=/);
+      await b.eval(`window.__noReload = true; document.querySelector('#about a[href="${HIJAZ}"]').scrollIntoView({ block: "center" }); return true;`);
+      await b.settle();
+      await b.click(`#about a[href="${HIJAZ}"]`);
+      await waitChip(/hijaz/i, "Hijaz chip on");
+      await waitHash(HIJAZ, "the bar to name Hijaz");
+      await new Promise((r) => setTimeout(r, 300));
+      assert.strictEqual(await hash(), HIJAZ, "the bar slid back to the old custom deck");
+      assert.match(await chipOn(), /hijaz/i);
+      assert.strictEqual(await b.eval(`return window.__noReload === true`), true, "the page reloaded");
+    });
+
+    test("Back and Forward between two deck routes show each deck in turn", async () => {
+      await freshLoad();
+      await b.eval(`location.hash = ${JSON.stringify(HIJAZ)}; return true`);
+      await waitChip(/hijaz/i, "Hijaz on");
+      await b.eval(`location.hash = ${JSON.stringify(PYGMY)}; return true`);
+      await waitChip(/pygmy/i, "Pygmy on");
+      await b.eval(`history.back(); return true`);
+      await waitChip(/hijaz/i, "Hijaz on after Back");
+      await new Promise((r) => setTimeout(r, 300));
+      assert.strictEqual(await hash(), HIJAZ);
+      assert.match(await chipOn(), /hijaz/i);
+      await b.eval(`history.forward(); return true`);
+      await waitChip(/pygmy/i, "Pygmy on after Forward");
+      await new Promise((r) => setTimeout(r, 300));
+      assert.strictEqual(await hash(), PYGMY);
+      assert.match(await chipOn(), /pygmy/i);
     });
   });
 }

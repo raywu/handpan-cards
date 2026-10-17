@@ -1,0 +1,24 @@
+# kills: SU: a reload of the stored deck fires no share_open and no deck_route; a route that differs from the stored selection fires it
+# suite: node --test --test-name-pattern ^SU:.a.reload.of.the.stored.deck tests/app.test.js
+# The S8 flag is dropped, so a reload fires both share_open and deck_route.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8036,7 +8036,7 @@ function openShare(text) {
+   if (!built.ok) { say(built.reason, "err"); return built; }
+   rememberScale(seedOf(built.value));
+   selectDeck(built.value.id);
+-  if (built.value.id !== bootStored) track("share_open");
++  track("share_open");
+   return built;
+ }
+ 
+@@ -11431,7 +11431,7 @@ const wantedDeck = deckId;
+ deckId = deck().id; storedDeck = deckId; setOrder(); buildChips(); setMode(mode);
+ // setMode() above saved the routed deck, as a chip tap does: a link that opens a
+ // deck once keeps it, so the visitor does not land on the old one tomorrow.
+-if (routedDeck && routedDeck !== bootStored) track("deck_route", { deck_id: routedDeck });
++if (routedDeck) track("deck_route", { deck_id: routedDeck });
+ // Two fallbacks, deliberately different. An unknown BUILT-IN id is a stale or
+ // renamed deck and falls back SILENTLY, as it always has. A missing custom: id
+ // means the user's own saved scale is gone - deleted, or dropped as corrupt -

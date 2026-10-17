@@ -1,0 +1,14 @@
+# kills: SU: a hashchange to the hash already shown is a no-op
+# suite: node --test --test-name-pattern ^SU:.a.hashchange.to.the.hash tests/app.test.js
+# The hashchange idempotence guard is gone, so the app's own replaceState echo re-imports.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11393,7 +11393,6 @@ shareCopy.onclick = copyLink;
+ // never the raw seed id: a replaced or hidden seed id would be stored as is and
+ // light no chip.
+ window.addEventListener("hashchange", () => {
+-  if (location.hash === routeFor(deck())) return;
+   if (location.hash.indexOf(SHARE_PREFIX) === 0) {
+     openShare(location.hash.slice(SHARE_PREFIX.length));
+     syncRoute();

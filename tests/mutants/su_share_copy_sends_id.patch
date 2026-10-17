@@ -1,0 +1,15 @@
+# kills: no event param is a string over 40 characters or names a custom: id
+# suite: node --test --test-name-pattern ^no.event.param.is.a.string tests/app.test.js
+# share_copy carries the deck id, which for a custom deck names a custom: id.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11369,7 +11369,7 @@ function syncRoute() {
+ function copyLink() {
+   const href = location.href;
+   const deck_kind = deckKind(deck());
+-  const done = (text, method) => { say(text, "ok"); track("share_copy", { deck_kind, method }); };
++  const done = (text, method) => { say(text, "ok"); track("share_copy", { deck_kind, method, deck_id: deck().id }); };
+   const reveal = () => {
+     shareUrl.value = href;
+     shareUrl.removeAttribute("hidden");

@@ -654,4 +654,11 @@ function run() {
     const html = INDEX_HTML().replace("</body>", "<script>window.__marker = 42;</script></body>");
     assert.strictEqual(sandbox.boot({ html }).get("window.__marker"), 42);
   });
+
+  test("stub elements have select()", () => {
+    const app = sandbox.boot({});
+    assert.strictEqual(typeof app.els["share-url"].select, "function");
+    assert.doesNotThrow(() => app.els["share-url"].select());
+    assert.ok(app.els["share-copy"]);
+  });
 }

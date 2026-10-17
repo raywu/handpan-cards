@@ -1,0 +1,15 @@
+# kills: SU: COPY LINK copies location.href and announces LINK COPIED
+# suite: node --test --test-name-pattern ^SU:.COPY.LINK.copies.location.href tests/app.test.js
+# COPY LINK re-encodes the deck and drops the page's query (edge 9).
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11367,7 +11367,7 @@ function syncRoute() {
+   routeRefused = refused;
+ }
+ function copyLink() {
+-  const href = location.href;
++  const href = shareLink(deck()).value;
+   const deck_kind = deckKind(deck());
+   const done = (text, method) => { say(text, "ok"); track("share_copy", { deck_kind, method }); };
+   const reveal = () => {

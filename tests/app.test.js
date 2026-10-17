@@ -3246,7 +3246,7 @@ const pushes = (app) => app.history.calls.filter((c) => c.type === "push");
 
 test("opening ADD pushes its own route and closing pops it", () => {
   const app = boot();
-  assert.strictEqual(ROUTE(app), "", "the app boots with a hash it never set");
+  assert.strictEqual(ROUTE(app), "#deck=d-kurd-10", "the app boots with the route of the deck it shows");
   openSheet(app);
   assert.deepStrictEqual(pushes(app).map((c) => c.url), ["#add"],
     "opening the Add page did not push exactly one route");
@@ -3288,6 +3288,7 @@ test("a pop with no page open is not an invitation to close something", () => {
   // Where focus is BEFORE the stray pop, so the assertion below is about what
   // the pop did rather than about where boot happens to leave focus.
   const focusBefore = app.activeId();
+  const callsBefore = app.history.calls.length;
   app.popstate();
   assert.strictEqual(app.sheetOpen(), false);
   assert.strictEqual(app.deckId(), deckBefore, "a stray pop moved the practice screen");
@@ -3297,6 +3298,20 @@ test("a pop with no page open is not an invitation to close something", () => {
   // was actually on. Asserting only sheetOpen() leaves that invisible.
   assert.strictEqual(app.activeId(), focusBefore,
     "a stray pop stole focus - the popstate listener ran with no page open");
+  assert.strictEqual(app.history.calls.length, callsBefore, "a stray pop wrote to history");
+});
+
+test("a pop that follows a fragment navigation leaves the destination hash alone", () => {
+  // Back/Forward between two routes (or an about link) fires popstate BEFORE
+  // hashchange, with the destination already in the bar and a different deck on
+  // screen. Only a sheet-close pop (pendingPop) may sync; any other pop that did
+  // would overwrite the destination with the deck still shown.
+  const app = boot();
+  const callsBefore = app.history.calls.length;
+  app.location.href = app.location.href.replace(/#.*$/, "") + "#deck=c-sharp-hijaz-9";
+  app.popstate();
+  assert.strictEqual(app.location.hash, "#deck=c-sharp-hijaz-9", "a stray pop rewrote the destination hash");
+  assert.strictEqual(app.history.calls.length, callsBefore, "a stray pop wrote to history");
 });
 
 test("closing a page that is already closed changes nothing", () => {
@@ -3335,7 +3350,7 @@ test("booting on a page route opens nothing and leaves a clean hash", () => {
     const app = boot({ href: "https://example.test/index.html" + hash });
     assert.strictEqual(app.sheetOpen(), false,
       `booting on ${hash} opened a page for a deck this session never had`);
-    assert.strictEqual(ROUTE(app), "",
+    assert.strictEqual(ROUTE(app), "#deck=d-kurd-10",
       `booting on ${hash} left the route in the address bar: reloading is now ` +
       "a page that cannot be backed out of");
     assert.deepStrictEqual(app.history.calls.map((c) => c.type), ["replace"],
@@ -8905,9 +8920,9 @@ test("editable defaults: hpfc.hidden keeps only built-in ids", () => {
 
 test("editable defaults: #deck-restore follows #deck-add, starts hidden and joins the panel stops only while rendered", () => {
   const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
-  assert.match(html, /id="deck-add"[^>]*>[^<]*<\/button>\s*<button[^>]*id="deck-restore"[^>]*\bhidden\b[^>]*>RESET SEEDED DECKS<\/button>/,
-    "the restore button is not right after #deck-add, hidden, with its label");
-  assert.match(html, /document\.getElementById\("deck-add"\), restoreBtn,/, "panelStops() does not list the restore button right after deck-add");
+  assert.match(html, /id="share-copy"[^>]*>[^<]*<\/button>\s*<\/div>\s*<input[^>]*id="share-url"[^>]*>\s*<button[^>]*id="deck-restore"[^>]*\bhidden\b[^>]*>RESET SEEDED DECKS<\/button>/,
+    "the restore button is not right after the COPY LINK row, hidden, with its label");
+  assert.match(html, /document\.getElementById\("share-copy"\), document\.getElementById\("share-url"\), restoreBtn,/, "panelStops() does not list the restore button right after the share controls");
   const app = boot();
   assert.strictEqual(app.els["deck-restore"].hidden, true, "the restore button shows on a fresh store");
   hideViaSheet(app, "amara", "D AMARA 9");
@@ -9297,6 +9312,7 @@ describe("discoverability", () => {
     assert.ok(/D Amara is also sold as Celtic Minor/.test(text), "the Celtic Minor equivalence is missing");
     assert.ok(/A custom scale lives only in your browser/.test(text), "the custom scale sentence is missing");
     assert.ok(/Google Analytics/.test(text), "the privacy sentence is missing");
+    assert.ok(/without cookies in the EEA, the UK and Switzerland/.test(text), "the privacy sentence does not name the EEA");
     const steps = (/<ol[^>]*>([\s\S]*?)<\/ol>/.exec(aboutHtml()) || [])[1] || "";
     assert.strictEqual((steps.match(/<li\b/g) || []).length, 3, "the how-it-works list is not three steps");
   });
@@ -9509,11 +9525,14 @@ describe("discoverability: analytics events", () => {
     assert.deepStrictEqual(events(app), []);
   });
 
-  test("no event param is a string over 40 characters or names a custom: id", () => {
+  test("no event param is a string over 40 characters or names a custom: id", async () => {
     const app = bootEv();
     openSheet(app);
     app.type(AMARA_STRING);
     app.els["scale-generate"].click();
+    app.sandbox.navigator.clipboard = { writeText: async () => {} };
+    app.els["share-copy"].click();
+    await new Promise((r) => setImmediate(r));
     app.run('flip(); setTier("basic"); downloadDeckPDF("shop"); selectDeck("hijaz");');
     const all = events(app);
     assert.ok(all.length >= 5);
@@ -9545,7 +9564,7 @@ describe("discoverability: deck route", () => {
       const app = at("#deck=" + slug, { storage: { hpfc: JSON.stringify({ deck: "kurd", mode: "A" }) } });
       assert.strictEqual(app.deckId(), id, slug);
       assert.strictEqual(stored(app).deck, id, slug + " was not persisted");
-      assert.strictEqual(app.location.hash, "", slug + " left the hash");
+      assert.strictEqual(app.location.hash, "#deck=" + slug, slug + " left the wrong hash");
       assert.strictEqual(app.location.pathname, "/index.html");
     }
   });
@@ -9553,8 +9572,12 @@ describe("discoverability: deck route", () => {
   test("the route is consumed with replaceState, never pushState", () => {
     const app = at("#deck=f-low-pygmy-18");
     assert.deepStrictEqual(app.history.calls.filter((c) => c.type === "push"), []);
-    assert.strictEqual(replaceCalls(app).length, 1);
-    assert.strictEqual(replaceCalls(app)[0].url, "/index.html");
+    assert.deepStrictEqual(replaceCalls(app), [], "a bar that already holds the canonical route was rewritten");
+    assert.strictEqual(app.location.hash, "#deck=f-low-pygmy-18");
+    const odd = at("#deck=nope");
+    assert.deepStrictEqual(odd.history.calls.filter((c) => c.type === "push"), []);
+    assert.strictEqual(replaceCalls(odd).length, 1);
+    assert.strictEqual(replaceCalls(odd)[0].url, "/index.html#deck=d-kurd-10");
   });
 
   test("a route beats the stored deck", () => {
@@ -9580,15 +9603,18 @@ describe("discoverability: deck route", () => {
     for (const h of ["#deck=nope", "#deck=custom:abc", "#deck="]) {
       const app = at(h, { storage: { hpfc: JSON.stringify({ deck: "amara", mode: "A" }) } });
       assert.strictEqual(app.deckId(), "amara", h);
-      assert.strictEqual(app.location.hash, "", h);
+      assert.strictEqual(app.location.hash, "#deck=d-amara-9", h);
       assert.doesNotMatch(app.announcer().textContent || "", /gone/, h);
     }
   });
 
   test("a share link is untouched by the route", () => {
-    const app = at("#s=zzz");
-    assert.strictEqual(app.location.hash, "#s=zzz");
-    assert.deepStrictEqual(replaceCalls(app), []);
+    const probe = boot();
+    const d = makeCustom(probe);
+    const hash = "#s=" + payload(link(probe, d.id).value);
+    const app = at(hash);
+    assert.strictEqual(app.deckId(), d.id);
+    assert.strictEqual(app.location.hash, hash);
   });
 
   test("hashchange to a deck link selects that deck and clears the hash", () => {
@@ -9596,7 +9622,7 @@ describe("discoverability: deck route", () => {
     app.hashchange("#deck=f-low-pygmy-18");
     assert.strictEqual(app.deckId(), "pygmy");
     assert.strictEqual(stored(app).deck, "pygmy");
-    assert.strictEqual(app.location.hash, "");
+    assert.strictEqual(app.location.hash, "#deck=f-low-pygmy-18");
     assert.deepStrictEqual(app.history.calls.filter((c) => c.type === "push"), []);
   });
 
@@ -9604,16 +9630,16 @@ describe("discoverability: deck route", () => {
     const edited = at("", { storage: editedSeed("amara", "MY AMARA") });
     edited.hashchange("#deck=d-amara-9");
     assert.match(edited.deckId(), /^custom:/);
-    assert.strictEqual(edited.location.hash, "");
+    assert.match(edited.location.hash, /^#s=/);
     const gone = at("", { storage: { hpfc: JSON.stringify({ deck: "kurd", mode: "A", hidden: ["pygmy"] }) } });
     gone.hashchange("#deck=f-low-pygmy-18");
     assert.strictEqual(gone.deckId(), "kurd");
     assert.match(gone.announcer().textContent, /^That deck is gone\./);
-    assert.strictEqual(gone.location.hash, "");
+    assert.strictEqual(gone.location.hash, "#deck=d-kurd-10");
   });
 
   test("hashchange ignores the other routes", () => {
-    for (const h of ["#add", "#edit-x", "#s=abc", "#something"]) {
+    for (const h of ["#add", "#edit-x", "#something"]) {
       const app = at("", { storage: { hpfc: JSON.stringify({ deck: "amara", mode: "A" }) } });
       const before = app.history.calls.length;
       app.hashchange(h);
@@ -9638,5 +9664,315 @@ describe("discoverability: deck route", () => {
       assert.ok(slug, d.id + " has no slug");
       assert.ok(html.includes('href="#deck=' + slug + '"'), slug + " link missing");
     }
+  });
+});
+
+/* ------------------------------------------------ share url (SU-A) */
+// docs/plans/2026-10-16-share-url.md: the address bar is always a link to the
+// deck shown, written only with replaceState.
+
+describe("share url", () => {
+  const REAL_ID = "G-TEST123456";
+  const PAGE = "https://example.test/index.html";
+  const flush = () => new Promise((r) => setImmediate(r));
+  const replaces = (app) => app.history.calls.filter((c) => c.type === "replace");
+  const backs = (app) => app.history.calls.filter((c) => c.type === "back");
+  const decodeHash = (app, hash) =>
+    plain(app.get("HPE.share.decode(" + JSON.stringify(hash.slice(3)) + ")"));
+  const storageOf = (app) => ({ hpfc: app.store.hpfc, [app.get("SCALES_KEY")]: app.store[app.get("SCALES_KEY")] });
+  const bootGA = (opts = {}) => {
+    const html = INDEX_HTML().replace('const GA_MEASUREMENT_ID = "G-XXXXXXXXXX";', 'const GA_MEASUREMENT_ID = "' + REAL_ID + '";');
+    return boot({ html, webdriver: false, href: PAGE, ...opts });
+  };
+  const gaEvents = (app) => JSON.parse(JSON.stringify(Array.from(app.get("window.dataLayer"))))
+    .filter((e) => e[0] === "event").map((e) => e[1]);
+  // The stub element has no querySelectorAll, which panelStops() reads for the
+  // print controls and the Resources links; the share controls need neither.
+  const stops = (app) => {
+    app.run("settingsPanel.querySelectorAll = () => []");
+    return app.get("panelStops().map((e) => e.id)");
+  };
+  const customShown = () => {
+    const first = boot();
+    const d = makeCustom(first);
+    return { first, d, app: boot({ storage: storageOf(first), href: PAGE }) };
+  };
+
+  test("SU: tapping three chips writes three replaceState hashes and no pushState", () => {
+    const app = boot();
+    const n = replaces(app).length;
+    for (const name of ["D AMARA 10", "D AMARA 9", "F3 LOW PYGMY 18"]) app.clickChip(name);
+    assert.deepStrictEqual(pushes(app), []);
+    const made = replaces(app).slice(n).map((c) => c.url);
+    assert.deepStrictEqual(made, [
+      "/index.html#deck=d-amara-10", "/index.html#deck=d-amara-9", "/index.html#deck=f-low-pygmy-18"]);
+  });
+
+  test("SU: opening ADD from a #s= bar pushes #add and the pop restores #s= with the deck unchanged", () => {
+    const { d, app } = customShown();
+    const pre = app.location.href;
+    assert.match(app.location.hash, /^#s=/);
+    openSheet(app);
+    assert.strictEqual(ROUTE(app), "#add");
+    app.els["scale-back"].click();
+    assert.strictEqual(backs(app).length, 1);
+    app.location.href = pre;
+    app.popstate();
+    assert.strictEqual(app.location.href, pre);
+    assert.strictEqual(app.deckId(), d.id);
+    assert.strictEqual(backs(app).length, 1);
+  });
+
+  test("SU: SAVE with a new name keeps the id and writes a new #s= code at the pop", () => {
+    const { d, app } = customShown();
+    const pre = app.location.href;
+    openEdit(app, d);
+    app.els["scale-name"].value = "NEW NAME";
+    app.els["scale-name"].dispatchEvent({ type: "input" });
+    app.els["scale-generate"].click();
+    assert.strictEqual(app.deckId(), d.id);
+    app.location.href = pre;
+    const n = app.history.calls.length;
+    app.popstate();
+    const after = app.history.calls.slice(n);
+    assert.strictEqual(after.length, 1, "the pop did not write the new code");
+    assert.strictEqual(after[0].type, "replace");
+    const dec = decodeHash(app, app.location.hash);
+    assert.strictEqual(dec.ok, true);
+    assert.strictEqual(dec.value.options.name, "NEW NAME");
+  });
+
+  test("SU: SAVE with new fields writes the new id's code and the lit chip agrees", () => {
+    const { d, app } = customShown();
+    const pre = app.location.href;
+    openEdit(app, d);
+    app.type(scale("builtin hijaz"));
+    app.els["scale-generate"].click();
+    assert.notStrictEqual(app.deckId(), d.id);
+    app.location.href = pre;
+    app.popstate();
+    const dec = decodeHash(app, app.location.hash);
+    assert.strictEqual(dec.ok, true);
+    assert.strictEqual(app.get("HPE.core.deckId(" + JSON.stringify(dec.value.fields) + ")"), app.deckId());
+    const on = chipRow(app).filter((c) => c.on);
+    assert.strictEqual(on.length, 1);
+    assert.strictEqual(on[0].label, app.registry()[app.deckId()].name);
+  });
+
+  test("SU: DELETE of the shown custom deck writes the fallback deck's route", () => {
+    const { d, app } = customShown();
+    openEdit(app, d);
+    app.els["scale-delete"].click();
+    app.els["scale-delete"].click();
+    assert.strictEqual(app.deckId(), app.get("fallbackDeck().id"));
+    assert.strictEqual(app.location.hash, "#deck=d-kurd-10");
+  });
+
+  test("SU: a hashless boot on a stored custom deck ends with its #s= in the bar", () => {
+    const { d, app } = customShown();
+    assert.strictEqual(app.deckId(), d.id);
+    const last = replaces(app).pop();
+    assert.ok(last && last.url.startsWith("/index.html#s="), JSON.stringify(last));
+    assert.strictEqual(app.location.hash, "#s=" + payload(link(app, d.id).value));
+  });
+
+  test("SU: a hashless boot on the default deck ends with #deck=d-kurd-10", () => {
+    const app = boot();
+    assert.strictEqual(replaces(app).pop().url, "/index.html#deck=d-kurd-10");
+  });
+
+  test("SU: a refused #s= at boot says the engine reason and the bar ends on the stored deck's route", () => {
+    const app = boot({ href: PAGE + "#s=zzz" });
+    const reason = plain(app.get('HPE.share.decode("zzz")')).reason;
+    assert.ok(reason);
+    assert.strictEqual(app.announcer().textContent, reason);
+    assert.strictEqual(app.location.hash, "#deck=d-kurd-10");
+  });
+
+  test("SU: a hashchange to the hash already shown is a no-op", () => {
+    const app = bootGA();
+    const calls = app.history.calls.length;
+    const events = gaEvents(app).length;
+    const chips = app.els.decks.children.slice();
+    app.hashchange(app.location.hash);
+    assert.strictEqual(app.history.calls.length, calls);
+    assert.strictEqual(gaEvents(app).length, events);
+    assert.deepStrictEqual(app.els.decks.children, chips);
+    assert.strictEqual(app.deckId(), "kurd");
+  });
+
+  test("SU: a hashchange to a #s= code imports it once and a second identical hashchange is a no-op", () => {
+    const first = boot();
+    const d = makeCustom(first);
+    const hash = "#s=" + payload(link(first, d.id).value);
+    const app = bootGA();
+    assert.strictEqual(app.deckId(), "kurd");
+    app.hashchange(hash);
+    assert.strictEqual(app.deckId(), d.id);
+    assert.strictEqual(app.location.hash, hash);
+    assert.strictEqual(gaEvents(app).filter((e) => e === "share_open").length, 1);
+    const calls = app.history.calls.length;
+    app.hashchange(hash);
+    assert.strictEqual(app.history.calls.length, calls);
+    assert.strictEqual(gaEvents(app).filter((e) => e === "share_open").length, 1);
+  });
+
+  test("SU: syncRoute is idempotent", () => {
+    const app = boot();
+    app.clickChip("D AMARA 9");
+    const n = app.history.calls.length;
+    app.run("syncRoute(); syncRoute();");
+    assert.strictEqual(app.history.calls.length, n);
+    app.location.hash = "#nope";
+    app.run("syncRoute(); syncRoute();");
+    assert.strictEqual(app.history.calls.length, n + 1);
+    assert.strictEqual(app.location.hash, "#deck=d-amara-9");
+  });
+
+  test("SU: RESET SEEDED DECKS while showing Kurd's replacement writes #deck=d-kurd-10", () => {
+    const app = boot();
+    saveKurdRepainted(app);
+    assert.match(app.location.hash, /^#s=/);
+    app.els["deck-restore"].click();
+    app.els["deck-restore"].click();
+    assert.strictEqual(app.deckId(), "kurd");
+    assert.strictEqual(app.location.hash, "#deck=d-kurd-10");
+  });
+
+  test("SU: an edited seed shares as a custom deck", () => {
+    const app = boot();
+    const rep = saveKurdRepainted(app);
+    assert.strictEqual(rep.options.replaces, "kurd");
+    assert.match(app.location.hash, /^#s=/);
+    assert.strictEqual(decodeHash(app, app.location.hash).ok, true);
+    const fresh = boot({ href: PAGE + app.location.hash });
+    const shown = fresh.registry()[fresh.deckId()];
+    assert.ok(shown, "the link did not open a custom deck");
+    assert.strictEqual(shown.options.replaces, undefined);
+  });
+
+  test("SU: an over-cap custom deck disables COPY LINK with the refusal as its title and leaves the bare path", () => {
+    const { app } = customShown();
+    const reason = "Too big to share.";
+    app.run(`globalThis.__enc = HPE.share.encode;
+      HPE.share.encode = () => ({ ok: false, code: "OVER", reason: ${JSON.stringify(reason)} });`);
+    try {
+      app.run("syncRoute()");
+      assert.strictEqual(app.els["share-copy"].disabled, true);
+      assert.strictEqual(app.els["share-copy"].title, reason);
+      assert.strictEqual(app.location.hash, "");
+      assert.strictEqual(app.announcer().textContent, reason);
+      assert.match(app.announcer().className, /warn/);
+      app.run("say('', ''); syncRoute()");
+      assert.strictEqual(app.announcer().textContent, "", "the refusal was announced twice");
+    } finally {
+      app.run("HPE.share.encode = globalThis.__enc");
+    }
+    app.run("syncRoute()");
+    assert.strictEqual(app.els["share-copy"].disabled, false);
+    assert.match(app.location.hash, /^#s=/);
+  });
+
+  test("SU: COPY LINK copies location.href and announces LINK COPIED", async () => {
+    const app = boot({ href: PAGE + "?share=x" });
+    const written = [];
+    app.sandbox.navigator.clipboard = { writeText: async (t) => { written.push(t); } };
+    app.els["share-copy"].click();
+    await flush();
+    assert.deepStrictEqual(written, [app.location.href]);
+    assert.ok(written[0].includes("?share=x#deck=d-kurd-10"), written[0]);
+    assert.strictEqual(app.announcer().textContent, "LINK COPIED");
+    assert.strictEqual(app.els["share-url"].hasAttribute("hidden"), true);
+  });
+
+  test("SU: COPY LINK falls back to navigator.share when the clipboard rejects", async () => {
+    const app = boot();
+    const shared = [];
+    app.sandbox.navigator.clipboard = { writeText: async () => { throw new Error("denied"); } };
+    app.sandbox.navigator.share = async (o) => { shared.push(o); };
+    app.els["share-copy"].click();
+    await flush();
+    assert.deepStrictEqual(plain(shared), [{ url: app.location.href }]);
+    assert.strictEqual(app.announcer().textContent, "LINK SHARED");
+  });
+
+  test("SU: COPY LINK reveals the readonly input when both are absent", async () => {
+    const app = boot();
+    app.run("openPanel()");
+    delete app.sandbox.navigator.clipboard;
+    delete app.sandbox.navigator.share;
+    const input = app.els["share-url"];
+    assert.ok(!stops(app).includes("share-url"));
+    let selects = 0;
+    input.select = () => { selects++; };
+    app.els["share-copy"].click();
+    await flush();
+    assert.strictEqual(input.hasAttribute("hidden"), false);
+    assert.strictEqual(input.value, app.location.href);
+    assert.strictEqual(app.activeId(), "share-url");
+    assert.strictEqual(selects, 1);
+    assert.strictEqual(app.announcer().textContent, "SELECT THE LINK AND COPY IT");
+    assert.ok(stops(app).includes("share-url"));
+    app.run("closePanel()");
+    assert.strictEqual(input.hasAttribute("hidden"), true);
+  });
+
+  test("SU: COPY LINK says nothing when the share sheet is dismissed", async () => {
+    const app = boot();
+    delete app.sandbox.navigator.clipboard;
+    app.sandbox.navigator.share = async () => { const e = new Error("x"); e.name = "AbortError"; throw e; };
+    const before = app.announcer().textContent;
+    app.els["share-copy"].click();
+    await flush();
+    assert.strictEqual(app.announcer().textContent, before);
+    assert.strictEqual(app.els["share-url"].hasAttribute("hidden"), true);
+  });
+
+  test("SU: COPY LINK joins panelStops after + ADD A SCALE and leaves it while disabled", () => {
+    const app = boot();
+    app.run("openPanel()");
+    const ids = () => stops(app);
+    const list = ids();
+    assert.strictEqual(list[list.indexOf("deck-add") + 1], "share-copy");
+    app.els["share-copy"].disabled = true;
+    assert.ok(!ids().includes("share-copy"));
+  });
+
+  test("SU: COPY LINK tracks share_copy with no id, name or code", async () => {
+    const app = bootGA();
+    app.sandbox.navigator.clipboard = { writeText: async () => {} };
+    app.els["share-copy"].click();
+    await flush();
+    const q = JSON.parse(JSON.stringify(Array.from(app.get("window.dataLayer"))));
+    const ev = q.filter((e) => e[0] === "event" && e[1] === "share_copy");
+    assert.deepStrictEqual(ev.map((e) => e[2]), [{ deck_kind: "seeded", method: "clipboard" }]);
+  });
+
+  test("SU: page_location carries no hash on a custom-deck boot or a #s= boot", () => {
+    const first = boot();
+    const d = makeCustom(first);
+    const hash = "#s=" + payload(link(first, d.id).value);
+    for (const href of [PAGE, PAGE + hash]) {
+      const app = bootGA({ storage: storageOf(first), href });
+      const cfg = JSON.parse(JSON.stringify(Array.from(app.get("window.dataLayer")))).find((e) => e[0] === "config");
+      assert.ok(cfg, "no config entry");
+      assert.ok(!cfg[2].page_location.includes("#"), cfg[2].page_location);
+    }
+  });
+
+  test("SU: a reload of the stored deck fires no share_open and no deck_route; a route that differs from the stored selection fires it", () => {
+    const first = bootGA();
+    const d = makeCustom(first);
+    const hash = "#s=" + payload(link(first, d.id).value);
+    const again = bootGA({ storage: storageOf(first), href: PAGE + hash });
+    assert.deepStrictEqual(gaEvents(again).filter((e) => e === "share_open" || e === "deck_route"), []);
+    const other = bootGA({ storage: { hpfc: JSON.stringify({ deck: "kurd", mode: "A" }), [first.get("SCALES_KEY")]: first.store[first.get("SCALES_KEY")] }, href: PAGE + hash });
+    assert.deepStrictEqual(gaEvents(other).filter((e) => e === "share_open"), ["share_open"]);
+
+    const stored = { hpfc: JSON.stringify({ deck: "pygmy", mode: "A" }) };
+    const sameSeed = bootGA({ storage: stored, href: PAGE + "#deck=f-low-pygmy-18" });
+    assert.deepStrictEqual(gaEvents(sameSeed).filter((e) => e === "deck_route"), []);
+    const otherSeed = bootGA({ storage: stored, href: PAGE + "#deck=d-amara-9" });
+    assert.deepStrictEqual(gaEvents(otherSeed).filter((e) => e === "deck_route"), ["deck_route"]);
   });
 });

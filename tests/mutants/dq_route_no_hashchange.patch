@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11331,7 +11331,7 @@ function warnIfDeckGone(wanted) {
+@@ -11392,7 +11392,7 @@ shareCopy.onclick = copyLink;
  // boot code runs. selectDeck gets the id deck() returns for the mapped seed,
  // never the raw seed id: a replaced or hidden seed id would be stored as is and
  // light no chip.
 -window.addEventListener("hashchange", () => {
 +window.addEventListener("hashchange_off", () => {
-   if (location.hash.indexOf(DECK_ROUTE) !== 0) return;
-   const routed = routedDeckId();
-   if (routed) {
+   if (location.hash === routeFor(deck())) return;
+   if (location.hash.indexOf(SHARE_PREFIX) === 0) {
+     openShare(location.hash.slice(SHARE_PREFIX.length));
