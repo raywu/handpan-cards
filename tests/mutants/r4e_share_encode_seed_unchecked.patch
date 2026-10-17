@@ -4,11 +4,11 @@
 diff --git a/src/engine/share.js b/src/engine/share.js
 --- a/src/engine/share.js
 +++ b/src/engine/share.js
-@@ -310,7 +310,6 @@
+@@ -321,7 +321,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
    // one validator is core.parseSeed (spec 1, "input validation lives only in
    // core.parseSeed"), and decode runs it again on the far side.
    function encode(seed) {
 -    if (!seed || typeof seed !== "object" || !seed.fields) return badNote(seed);
-     var payload = HPE.core.formatSeed(seed.fields) + SEP +
-                   optionsLine(seed.options) + SEP +
-                   seatsField((seed.options || {}).seats);  // line 2: the layout delta.
+     var opts = seed.options || {};
+     // HPE.select is read here and nowhere else on the write path: decode, and
+     // an app pinned to an older wire version, never need it.

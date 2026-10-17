@@ -13026,6 +13026,28 @@ function run() {
       assert.strictEqual(await b.eval(`return document.getElementById("share-copy").disabled`), false);
     });
 
+    test("SV: a v4 link opens, the bar ends on v5, and Back leaves the page", async () => {
+      const v4 = "4A4GpAI11Co13D214D215D216D217D211D213DGem2J49CGan2GenB30iCYmpB3GiDImsB3SxEmgT2O_m";
+      const v5 = "#s=5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/parent-aeolian/mirror/between/seats-1,0,2,3,4,5,6,7;;/975b6c";
+      const nav = async () => {
+        const h = await b.send("Page.getNavigationHistory");
+        return { index: h.currentIndex, url: h.entries[h.currentIndex].url };
+      };
+      await freshLoad();
+      await b.settle();
+      const before = await nav();
+      await navigate(URL + "?r=sv#s=" + v4);
+      await b.settle();
+      await waitHash(v5, "the bar to be rewritten to the v5 code");
+      const during = await nav();
+      assert.ok(during.url.includes("?r=sv"), "the link's own page is not current");
+      await b.eval(`history.back(); return true`);
+      await new Promise((r) => setTimeout(r, 500));
+      const left = await nav();
+      assert.strictEqual(left.index, during.index - 1, "the rewrite added a history entry");
+      assert.ok(!left.url.includes("?r=sv"), "Back did not leave the link's page");
+    });
+
     test("an about link clicked while a custom deck shows switches the deck and the bar", async () => {
       await freshLoad();
       await generate(SIX_SCALES[1]);

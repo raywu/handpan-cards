@@ -1,16 +1,16 @@
-# suite: node --test --test-name-pattern ^decode.propagates.parseSeed.s.own.code.for.an.invalid.seed$ tests/share.test.js
 # kills: decode propagates parseSeed's own code for an invalid seed
+# suite: node --test --test-name-pattern ^decode.propagates.parseSeed.s.own.code.for.an.invalid.seed$ tests/share.test.js
 # decode: a payload parseSeed refuses must be rejected, never repaired into an ok result
 diff --git a/src/engine/share.js b/src/engine/share.js
 --- a/src/engine/share.js
 +++ b/src/engine/share.js
-@@ -369,7 +369,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
- 
-     // 5. The same validator the text box uses. It rejects, never repairs, so
-     //    its code and reason are propagated unchanged.
--    return scaleLineReader(version)(lines[0], options);
-+    var seed = scaleLineReader(version)(lines[0], options);
+@@ -497,7 +497,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       if (at <= rank) return badNote(text);
+       rank = at;
+     }
+-    return HPE.core.parseSeed(scaleString(scale), options);
++    var seed = HPE.core.parseSeed(scaleString(scale), options);
 +    return seed.ok ? seed : ok({ fields: {}, options: options });
    }
  
-   HPE.share = {
+   /* ---- decode ----------------------------------------------------------- */

@@ -524,6 +524,23 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return name;
   }
 
+  // The label build() gives a seed: the typed name, else autoName of the
+  // explicit or inferred parent. null where autoName would throw (an explicit
+  // parent outside PARENTS, or a seed with no ding).
+  function deckName(seed) {
+    var fields = seed && seed.fields;
+    if (!fields || !fields["0"]) return null;
+    var opts = seed.options || {};
+    if (opts.name) return opts.name;
+    var parent = opts.parent;
+    if (parent === undefined || parent === null) {
+      parent = naming().inferParent(pcsWhere(fields, anyField), pc(fields["0"][2]));
+    } else if (!naming().PARENTS[parent]) {
+      return null;
+    }
+    return autoName(fields, parent);
+  }
+
   /* ---- section 11: build -------------------------------------------------- */
 
   function build(seed) {
@@ -598,6 +615,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     voice: voice,
     noThirds: noThirds,
     autoName: autoName,
+    deckName: deckName,
     PALETTES: PALETTES
   };
 })(HPE);

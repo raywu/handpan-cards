@@ -4,7 +4,7 @@
 diff --git a/src/engine/share.js b/src/engine/share.js
 --- a/src/engine/share.js
 +++ b/src/engine/share.js
-@@ -260,7 +260,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -556,7 +556,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
      // 2. The version byte.
      var version = INDEX[text.charAt(0)];
      if (version === undefined) return badNote(text);
@@ -12,4 +12,4 @@ diff --git a/src/engine/share.js b/src/engine/share.js
 +    if (version >= VERSION) return err("NEEDS_NEWER_APP", {});
      if (version !== VERSION) return badNote(text);
  
-     // 3. Integrity, before the payload is looked at.
+     // v5 is a readable path, not the packed alphabet: its own reader and check.

@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11517,7 +11517,7 @@
+@@ -12355,7 +12355,7 @@ function routeToDeck(routed) {
    return shown;
  }
  window.addEventListener("hashchange", () => {
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +  if (sheetOpen) return;
    if (location.hash === routeFor(deck())) return;
    if (location.hash.indexOf(SHARE_PREFIX) === 0) {
-     openShare(location.hash.slice(SHARE_PREFIX.length));
+     const code = location.hash.slice(SHARE_PREFIX.length);

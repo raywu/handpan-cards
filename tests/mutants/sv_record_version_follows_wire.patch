@@ -1,0 +1,15 @@
+# kills: SV: this app writes wire version 5 and keeps records at 4
+# suite: node --test --test-name-pattern ^SV..this.app.writes.wire.version.5.and.keeps.records.at.4$ tests/share.test.js
+# The record version follows the wire version, so every stored id moves.
+diff --git a/src/engine/share.js b/src/engine/share.js
+--- a/src/engine/share.js
++++ b/src/engine/share.js
+@@ -83,7 +83,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   var VERSION = 5;
+   // What a stored record carries. Records keep the v4 shape (formatSeed plus
+   // options), so the wire version moves alone.
+-  var RECORD_VERSION = 4;
++  var RECORD_VERSION = VERSION;
+   var NEWEST = VERSION;   // an alias decode can still see past its own shadow
+   var OLDEST = 1;         // no version 0 ever shipped
+ 

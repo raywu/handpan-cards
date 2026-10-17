@@ -21,7 +21,7 @@ const path = require("node:path");
 const { loadEngine } = require("./helpers/engine.js");
 
 const ROOT = path.join(__dirname, "..");
-const HPE = loadEngine(["core", "layout", "share"]);
+const HPE = loadEngine(["core", "voicing", "layout", "naming", "select", "share"]);
 const core = HPE.core;
 const share = HPE.share;
 
@@ -123,16 +123,18 @@ test("the three golden maker strings round-trip through encode/decode", () => {
 // scratch directory; not computed here), so any future change to the
 // checksum mixing - including the one this file's f1b_share_checksum_shift
 // mutant makes - changes the tail of these strings and fails the pin.
-test("encode's checksum is pinned against a captured minimal payload (Q18)", () => {
+test("the v4 reader's checksum is pinned against a captured minimal link (Q18)", () => {
   const seed = parsed("(C3) G3");
-  assert.equal(encoded(seed), "4A4CpAI17Cmem2Gam2J092WIpeFI0");
+  assert.deepStrictEqual(decoded("4A4CpAI17Cmem2Gam2J092WIpeFI0"), seed);
+  assert.equal(v4Link(seed), "4A4CpAI17Cmem2Gam2J092WIpeFI0");
 });
 
-test("encode's checksum is pinned against a captured payload with every option set (Q18)", () => {
+test("the v4 reader's checksum is pinned against a captured link with every option set (Q18)", () => {
   const seed = parsed("(D3) A3 C4 D4 E4 F4 G4 A4 C5",
     { palette: 2, parent: 3, mirror: true, name: "Test Deck" });
-  assert.equal(encoded(seed),
-    "4A4GpAI11Co13D214D215D216D217D211D213DGeo2JC9CGam2LHbStGWH6LZQmeFYxq1W");
+  const link = "4A4GpAI11Co13D214D215D216D217D211D213DGeo2JC9CGam2LHbStGWH6LZQmeFYxq1W";
+  assert.deepStrictEqual(decoded(link), seed);
+  assert.equal(v4Link(seed), link);
 });
 
 /* ---------------------------------------------------------------------- */
@@ -419,17 +421,16 @@ test("a 2-, 3- and 4-byte UTF-8 character each round-trip through encode's byte 
     seed.options = seed.options || {};
     seed.options.name = name;
     const str = encoded(seed);
-    const bytes = refFromAlphabet(str.slice(1, str.length - 6));
-    const text = refUtf8String(bytes);
-    assert.ok(text !== null, `${label}: reference decode failed`);
-    const recoveredName = text.split("\n")[1].split("\t")[4];
-    assert.equal(recoveredName, name, `${label}: name did not survive the byte pipeline`);
-
-    // Host-realm ground truth, independent of both share.js and the
-    // reference re-implementation above (Q4 / F2).
-    const expected = Array.from(Buffer.from(name, "utf8"));
-    assert.ok(containsSubsequence(bytes, expected),
-      `${label}: encode's real byte stream does not contain the host's own UTF-8 encoding of the name`);
+    const segment = str.split("/")[2];
+    // Host-realm ground truth, independent of share.js: the segment is the
+    // name's UTF-8 bytes, every one outside the unreserved set as upper-case %XX.
+    const expected = Array.from(Buffer.from(name, "utf8"))
+      .map(b => (b < 0x80 && /[A-Za-z0-9\-._~]/.test(String.fromCharCode(b)))
+        ? String.fromCharCode(b)
+        : "%" + b.toString(16).toUpperCase().padStart(2, "0"))
+      .join("");
+    assert.equal(segment, expected, `${label}: the name segment is not the host's escaping of its UTF-8 bytes`);
+    assert.equal(decodeURIComponent(segment), name, `${label}: the escapes do not decode to the name`);
   }
 });
 
@@ -599,6 +600,9 @@ test("decode propagates a rejected OPTION rather than repairing it", () => {
   const r = share.decode(encoded(seed));
   assert.equal(r.ok, false);
   assert.equal(r.code, "BAD_NOTE");
+  const v4 = share.decode(v4Link(seed));
+  assert.equal(v4.ok, false);
+  assert.equal(v4.code, "BAD_NOTE");
 });
 
 /* ---------------------------------------------------------------------- */
@@ -653,7 +657,7 @@ test("the payload's third section is where the layout delta goes", () => {
   assert.match(doc, /layout delta/i,
     "share.js does not document the reserved layout-delta section");
   const seed = parsed(BASE);
-  const str = encoded(seed);
+  const str = v4Link(seed);
   const r = share.decode(str);
   assert.equal(r.ok, true);
   // Nothing but the reserved section may be empty-extensible: the string is a
@@ -789,6 +793,24 @@ function forgePayload(version, lines) {
   }
   if (bits > 0) check += VERSION_CHARS.charAt((acc << (6 - bits)) & 0x3f);
   return head + check;
+}
+
+/** The three lines the v4 writer put in a payload, for a seed (the v4 writer is gone; the reader is not). */
+function v4Lines(seed) {
+  const o = seed.options || {};
+  const mirrorTop = !!o.mirror;
+  const mirrorBottom = o.mirrorBottom === undefined ? !!o.mirror : !!o.mirrorBottom;
+  const mirror = mirrorTop === mirrorBottom ? (mirrorTop ? "1" : "0") : (mirrorTop ? "t" : "b");
+  const options = [o.palette || 0, o.parent === undefined || o.parent === null ? "" : o.parent,
+    mirror, o.anchor === "between" ? "1" : "0", o.name || ""].join("\t");
+  const s = o.seats || {};
+  const seats = ["rim", "inner", "bottom"].map(r => (s[r] || []).join(","));
+  return [core.formatSeed(seed.fields), options, seats.every(x => x === "") ? "" : seats.join(";")];
+}
+
+/** What the retired v4 writer produced for a seed. */
+function v4Link(seed) {
+  return forgePayload(4, v4Lines(seed));
 }
 
 const PYGMY = "(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5";
@@ -965,26 +987,24 @@ test("an explicit mirrorBottom equal to the top value normalises away", () => {
 });
 
 test("the one-ring mirror letters are exactly t and b on the options line", () => {
-  const line = o => payloadOf(encoded(parsed(PYGMY, o)))[1].split("\t");
-  assert.equal(line({})[2], "0");
-  assert.equal(line({ mirror: true })[2], "1");
-  assert.equal(line({ mirror: true, mirrorBottom: false })[2], "t");
-  assert.equal(line({ mirrorBottom: true })[2], "b");
+  const opts = o => encoded(parsed(PYGMY, o)).split("/").slice(3, -1).filter(x => x.startsWith("mirror"));
+  assert.deepEqual(opts({}), []);
+  assert.deepEqual(opts({ mirror: true }), ["mirror"]);
+  assert.deepEqual(opts({ mirror: true, mirrorBottom: false }), ["mirror-top"]);
+  assert.deepEqual(opts({ mirrorBottom: true }), ["mirror-bottom"]);
 });
 
 test("the anchor travels on the options line and round-trips", () => {
-  const plain = payloadOf(encoded(parsed(PYGMY)))[1].split("\t");
-  const between = payloadOf(encoded(parsed(PYGMY, { anchor: "between" })))[1].split("\t");
-  assert.equal(plain.length, 5);
-  assert.equal(plain[3], "0");
-  assert.equal(between[3], "1");
+  const between = o => encoded(parsed(PYGMY, o)).split("/").slice(3, -1).filter(x => x === "between");
+  assert.deepEqual(between({}), []);
+  assert.deepEqual(between({ anchor: "between" }), ["between"]);
   const back = decoded(encoded(parsed(PYGMY, { anchor: "between" })));
   assert.equal(back.options.anchor, "between");
   assert.equal("anchor" in decoded(encoded(parsed(PYGMY))).options, false);
 });
 
 test("a v3 options line with an unknown mirror or anchor character is refused", () => {
-  const payload = payloadOf(encoded(parsed(BASE, { name: "n" })));
+  const payload = payloadOf(v4Link(parsed(BASE, { name: "n" })));
   for (const [mirror, anchor] of [["x", "0"], ["T", "0"], ["", "0"], ["0", "2"],
                                   ["0", ""], ["0", "b"], ["01", "0"]]) {
     const line1 = ["0", "", mirror, anchor, "n"].join("\t");
@@ -993,7 +1013,7 @@ test("a v3 options line with an unknown mirror or anchor character is refused", 
 });
 
 test("a v1 or v2 options line cannot carry a one-ring mirror letter", () => {
-  const payload = payloadOf(encoded(parsed(BASE)));
+  const payload = payloadOf(v4Link(parsed(BASE)));
   for (const version of [1, 2]) {
     for (const mirror of ["t", "b"]) {
       reject(forgePayload(version, [payload[0], ["0", "", mirror, "n"].join("\t"), ""]));
@@ -1034,7 +1054,7 @@ test("a seat list for a ring the pan does not have is rejected", () => {
 });
 
 test("a malformed seats FIELD is refused, never repaired", () => {
-  const payload = payloadOf(encoded(parsed(BASE)));
+  const payload = payloadOf(v4Link(parsed(BASE)));
   for (const delta of ["x;;", "-1;;", "1.5;;", "0,1", ";;;", ";;", ";", ",;;",
                        "0,;;", "7,6,5,4,3,2,1,0", "7,6,5,4,3,2,1,0;;;"]) {
     reject(forgePayload(3, [payload[0], payload[1], delta]));
@@ -1097,22 +1117,20 @@ test("a link over the cap is refused on length alone", () => {
 
 test("per-ring seats ride on line 2 as rim;inner;bottom", () => {
   const seed = parsed(PYGMY, { palette: 3, parent: 7, mirror: true, name: "Pan" });
-  const plain = payloadOf(encoded(seed));
+  const plain = encoded(seed).split("/");
   const seats = { rim: reversedSeats(seed).rim, bottom: rotatedSeats(seed, 1).bottom };
-  const moved = payloadOf(encoded(withSeats(seed, seats)));
+  const moved = encoded(withSeats(seed, seats)).split("/");
 
-  assert.equal(plain.length, 3);
-  assert.equal(moved.length, 3);
-  assert.equal(moved[0], plain[0], "seats touched the scale line");
-  assert.equal(moved[1], plain[1], "seats widened the OPTIONS line");
-  assert.equal(plain[1].split("\t").length, 5);
-  assert.equal(plain[2], "", "absent seats wrote something on line 2");
-  assert.equal(moved[2], `${seats.rim.join(",")};;${seats.bottom.join(",")}`);
+  assert.equal(plain.some(x => x.startsWith("seats-")), false, "absent seats wrote a segment");
+  assert.equal(moved.length, plain.length + 1);
+  assert.equal(moved[1], plain[1], "seats touched the scale segment");
+  assert.deepEqual(moved.slice(2, -2), plain.slice(2, -1), "seats changed another segment");
+  assert.equal(moved[moved.length - 2], `seats-${seats.rim.join(",")};;${seats.bottom.join(",")}`);
 });
 
-test("this app writes wire version 4", () => {
-  assert.equal(share.VERSION, 4);
-  assert.equal(encoded(parsed(BASE)).charAt(0), "4");
+test("this app writes wire version 5", () => {
+  assert.equal(share.VERSION, 5);
+  assert.equal(encoded(parsed(BASE)).charAt(0), "5");
   assert.equal(encoded(parsed(BASE)).charAt(0), VERSION_CHARS.charAt(share.VERSION));
 });
 
@@ -1149,7 +1167,7 @@ test("a v2 flat order that crosses rings is refused", () => {
   const swapAcross = identity(n);
   swapAcross[0] = 16;
   swapAcross[16] = 0;
-  const payload = payloadOf(encoded(seed));
+  const payload = payloadOf(v4Link(seed));
   payload[0] = core.formatLegacySeed(seed);
   const r = reject(forgePayload(2, [payload[0], payload[1].split("\t")
     .filter((_, i) => i !== 3).join("\t"), swapAcross.join(",")]));
@@ -1161,13 +1179,13 @@ test("a v2 flat order that crosses rings is refused", () => {
 
 test("a v1 link carrying anything on line 2 is a corrupt payload", () => {
   const seed = parsed(BASE);
-  const payload = payloadOf(encoded(seed));
+  const payload = payloadOf(v4Link(seed));
   const oldOptions = payload[1].split("\t").filter((_, i) => i !== 3).join("\t");
   reject(forgePayload(1, [payload[0], oldOptions, identity(8).reverse().join(",")]));
 });
 
 test("a v2 link with a v3-shaped line 2 or a malformed order is corrupt", () => {
-  const payload = payloadOf(encoded(parsed(BASE)));
+  const payload = payloadOf(v4Link(parsed(BASE)));
   const oldOptions = payload[1].split("\t").filter((_, i) => i !== 3).join("\t");
   reject(forgePayload(2, [payload[0], oldOptions, "7,6,5,4,3,2,1,0;;"]));
   reject(forgePayload(2, [payload[0], oldOptions, "x"]));
@@ -1213,7 +1231,8 @@ test("a version byte BELOW the oldest format is a corrupt payload", () => {
 
 test("decode chooses its scale-line reader from the version", () => {
   const seed = core.parseSeed("(D3) A3 C4 D4 E4 F4 G4 A4 C5").value;
-  const link = share.encode(seed).value;
+  const link = v4Link(seed);
+  const v5 = share.encode(seed).value;
   const v3 = forgePayload(3, [core.formatLegacySeed(seed), ...payloadOf(link).slice(1)]);
   const realLegacy = core.parseLegacySeed;
   const realSeed = core.parseSeed;
@@ -1223,6 +1242,9 @@ test("decode chooses its scale-line reader from the version", () => {
   try {
     assert.equal(share.decode(link).ok, true);
     assert.deepEqual(calls, ["current"], "a version 4 link is read by the new grammar");
+    calls.length = 0;
+    assert.equal(share.decode(v5).ok, true);
+    assert.deepEqual(calls, ["current"], "a version 5 link is read by the new grammar");
     calls.length = 0;
     assert.equal(share.decode(v3).ok, true);
     assert.deepEqual(calls, ["legacy"], "a version 3 link is read by the legacy grammar");
@@ -1234,7 +1256,7 @@ test("decode chooses its scale-line reader from the version", () => {
 
 test("a version 3 link with a bar opens with bottom notes", () => {
   const old = core.parseLegacySeed("(D3) A3 C4 D4 E4 F4 G4 A4 C5 | C3 Eb3").value;
-  const link = share.encode(core.parseSeed("(D3) A3 C4 D4 E4 F4 G4 A4 C5").value).value;
+  const link = v4Link(core.parseSeed("(D3) A3 C4 D4 E4 F4 G4 A4 C5").value);
   const v3 = forgePayload(3, [core.formatLegacySeed(old), ...payloadOf(link).slice(1)]);
   const res = share.decode(v3);
   assert.equal(res.ok, true);
@@ -1250,7 +1272,7 @@ const R4E_SEED = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
 const sealed = (head) => head + refChecksum(head);
 
 test("R4-E decode refuses a version byte outside the alphabet and a body character outside it, even under a valid check", () => {
-  const link = encoded(parsed(R4E_SEED));
+  const link = v4Link(parsed(R4E_SEED));
   assert.equal(share.decode("~" + link.slice(1)).ok, false, "a version byte that is not in the alphabet");
   assert.equal(share.decode("~" + link.slice(1)).code, "BAD_NOTE");
   const head = link.slice(0, link.length - 6);
@@ -1263,7 +1285,7 @@ test("R4-E decode refuses a version byte outside the alphabet and a body charact
 });
 
 test("R4-E decode refuses a payload of two or four lines", () => {
-  const lines = payloadOf(encoded(parsed(R4E_SEED)));
+  const lines = payloadOf(v4Link(parsed(R4E_SEED)));
   assert.equal(lines.length, 3);
   assert.equal(share.decode(forgePayload(4, lines.slice(0, 2))).ok, false);
   assert.equal(share.decode(forgePayload(4, lines.concat(["x"]))).ok, false);
@@ -1271,7 +1293,7 @@ test("R4-E decode refuses a payload of two or four lines", () => {
 });
 
 test("R4-E decode refuses an options line with the wrong number of fields, a palette or parent that is not a count", () => {
-  const lines = payloadOf(encoded(parsed(R4E_SEED)));
+  const lines = payloadOf(v4Link(parsed(R4E_SEED)));
   const parts = lines[1].split("\t");
   assert.equal(parts.length, 5);
   const without = (line1) => share.decode(forgePayload(4, [lines[0], line1, lines[2]]));
@@ -1315,7 +1337,315 @@ test("R4-E a 120-note pan with the rim, inner and bottom rings all reversed fits
   });
   assert.equal(r.ok, true, r.reason);
   assert.ok(r.value.length <= share.CAPS.payload, `${r.value.length} chars`);
-  const lineTwo = payloadOf(r.value)[2].split(";");
+  const seatsSeg = r.value.split("/").find(seg => seg.startsWith("seats-"));
+  assert.ok(seatsSeg, "the link carries a seats option");
+  const lineTwo = seatsSeg.slice(6).split(";");
   assert.equal(lineTwo.length, 3, "one list per ring");
   assert.deepEqual(lineTwo.map((s) => s.split(",").length), [60, 30, 29]);
+});
+
+/* ---------------------------------------------------------------------- */
+/* SV: the v5 readable link (plan 2026-10-17-share-readable, sections 2-3) */
+/* ---------------------------------------------------------------------- */
+
+// Test-side reference for the v5 checksum and for forging links, written
+// without reading anything back out of share.js.
+function fnv24(text) {
+  let hash = 0x811c9dc5;
+  for (const byte of Buffer.from(text, "utf8")) {
+    hash = (hash ^ byte) >>> 0;
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return (hash >>> 8).toString(16).padStart(6, "0");
+}
+
+// scale: the scale segment as written; name: "*label" or a typed name with no
+// escapes; options: option segments as written. All plain ASCII, so the
+// decoded text is the written text apart from "+" in a name.
+function forge5(scale, name, options, check) {
+  const typed = name.startsWith("*") ? "\t" : name.split("+").join(" ");
+  const text = ["5", scale, typed].concat(options).join("\n");
+  return ["5", scale, name].concat(options, [check === undefined ? fnv24(text) : check]).join("/");
+}
+
+const KURD_SCALE = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5";
+const AMARA10_SCALE = "(D3) A3 C4 D4 E4 F4 G4 A4 C5 D5";
+const AMARA_SCALE = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
+const HIJAZ_SCALE = "(C#3) G#3 B3 C#4 D4 F4 F#4 G#4 B4";
+const PYGMY_SCALE = "[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]";
+
+const V5_BUILTINS = [
+  ["kurd", KURD_SCALE, {}, "D KURD 10",
+    "5/(D3)_A3_Bb3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+10/66d9eb",
+    "5/(D3)_A3_Bb3_C4_D4_E4_F4_G4_A4_C5/D+KURD+10/9fcd07"],
+  ["amara10", AMARA10_SCALE, {}, "D AMARA 10",
+    "5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5_D5/*D+AEOLIAN+10/91ba85",
+    "5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5_D5/D+AMARA+10/6ceb44"],
+  ["amara", AMARA_SCALE, {}, "D AMARA 9",
+    "5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/f0daf4",
+    "5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/D+AMARA+9/704d91"],
+  ["hijaz", HIJAZ_SCALE, {}, "C# HIJAZ 9",
+    "5/(Cs3)_Gs3_B3_Cs4_D4_F4_Fs4_Gs4_B4/*C%23+HIJAZ+9/fe4d19",
+    "5/(Cs3)_Gs3_B3_Cs4_D4_F4_Fs4_Gs4_B4/C%23+HIJAZ+9/bc0a48"],
+  ["pygmy", PYGMY_SCALE, { anchor: "between" }, "F3 LOW PYGMY 18",
+    "5/uC3_uDb3_uEb3_(F3)_G3_Ab3_uBb3_C4_uDb4_Eb4_F4_G4_Ab4_C5_Eb5_-_F5_G5_uAb5/*F+AEOLIAN+12/between/78c615",
+    "5/uC3_uDb3_uEb3_(F3)_G3_Ab3_uBb3_C4_uDb4_Eb4_F4_G4_Ab4_C5_Eb5_-_F5_G5_uAb5/F3+LOW+PYGMY+18/between/514b59"],
+];
+
+const seedNew = (str, options) => {
+  const r = core.parseSeed(str, options);
+  assert.equal(r.ok, true, `expected ${str} to parse, got ${r.code}`);
+  return host(r.value);
+};
+
+const segsOf = (link) => link.split("/");
+const optionSegs = (link) => segsOf(link).slice(3, -1);
+
+test("SV: this app writes wire version 5 and keeps records at 4", () => {
+  assert.equal(share.VERSION, 5);
+  assert.equal(share.RECORD_VERSION, 4);
+  assert.ok(encoded(parsed(BASE)).startsWith("5/"));
+});
+
+test("SV: the five built-in decks' v5 links are pinned", () => {
+  for (const [id, scale, options, label, auto, named] of V5_BUILTINS) {
+    const plain = seedNew(scale, options);
+    assert.equal(encoded(plain), auto, `${id} auto link`);
+    assert.deepStrictEqual(decoded(auto), plain, `${id} auto link decodes`);
+    const typed = seedNew(scale, Object.assign({ name: label }, options));
+    assert.equal(encoded(typed), named, `${id} named link`);
+    assert.deepStrictEqual(decoded(named), typed, `${id} named link decodes`);
+  }
+});
+
+test("SV: every option has one spelling and a default writes nothing", () => {
+  const plain = encoded(seedNew(AMARA_SCALE));
+  assert.equal(segsOf(plain).length, 4, "a default seed writes version, scale, name and check only");
+  for (let palette = 0; palette <= 5; palette += 1) {
+    const link = encoded(seedNew(AMARA_SCALE, { palette }));
+    assert.deepEqual(optionSegs(link), palette === 0 ? [] : [`palette-${palette + 1}`]);
+    assert.equal(decoded(link).options.palette, palette);
+  }
+  const slugs = ["ionian", "aeolian", "dorian", "phrygian", "lydian", "mixolydian",
+                 "locrian", "harmonic-minor", "melodic-minor", "phrygian-dominant",
+                 "harmonic-major"];
+  slugs.forEach((slug, parent) => {
+    const link = encoded(seedNew(AMARA_SCALE, { parent }));
+    assert.deepEqual(optionSegs(link), [`parent-${slug}`]);
+    assert.equal(decoded(link).options.parent, parent);
+  });
+  assert.deepEqual(optionSegs(encoded(seedNew(AMARA_SCALE, { parent: null }))), []);
+  const mirrors = [
+    [{ mirror: true }, ["mirror"]],
+    [{ mirror: true, mirrorBottom: false }, ["mirror-top"]],
+    [{ mirror: false, mirrorBottom: true }, ["mirror-bottom"]],
+    [{ mirror: false, mirrorBottom: false }, []],
+  ];
+  for (const [options, want] of mirrors) {
+    const seed = seedNew(AMARA_SCALE, options);
+    const link = encoded(seed);
+    assert.deepEqual(optionSegs(link), want, JSON.stringify(options));
+    assert.deepEqual(HPE.layout.resolveMirrors({}, decoded(link).options),
+      HPE.layout.resolveMirrors({}, seed.options));
+  }
+  assert.deepEqual(optionSegs(encoded(seedNew(AMARA_SCALE, { anchor: "between" }))), ["between"]);
+  assert.equal(decoded(encoded(seedNew(AMARA_SCALE, { anchor: "between" }))).options.anchor, "between");
+  assert.deepEqual(optionSegs(encoded(seedNew(AMARA_SCALE, { anchor: "one" }))), []);
+  const seed = seedNew(AMARA_SCALE);
+  const moved = encoded(withSeats(seed, { rim: identity(8).reverse() }));
+  assert.deepEqual(optionSegs(moved), ["seats-7,6,5,4,3,2,1,0;;"]);
+  assert.deepStrictEqual(decoded(moved).options.seats, { rim: identity(8).reverse() });
+  const every = encoded(withSeats(seedNew(AMARA_SCALE, {
+    palette: 2, parent: 9, mirror: true, mirrorBottom: false, anchor: "between",
+    name: "My Hijaz" }), { rim: identity(8).reverse() }));
+  assert.deepEqual(optionSegs(every), ["palette-3", "parent-phrygian-dominant",
+    "mirror-top", "between", "seats-7,6,5,4,3,2,1,0;;"]);
+});
+
+test("SV: an unknown, duplicated or out-of-order option is BAD_NOTE", () => {
+  const scale = "(D3)_A3_C4_D4_E4_F4_G4_A4_C5";
+  const control = forge5(scale, "*x", ["palette-3", "between"]);
+  assert.equal(share.decode(control).ok, true, "the in-order control opens");
+  const bads = [
+    ["palette-1"], ["palette-7"], ["palette-03"], ["wobble"], ["Between"], ["parent-"],
+    ["parent-nope"], ["mirror-both"], ["seats-"], ["seats-;;"], ["seats-1,0;;;"],
+    ["between", "between"], ["palette-3", "palette-3"], ["mirror", "mirror-top"],
+    ["between", "palette-3"], ["mirror", "palette-3"], ["parent-dorian", "palette-3"],
+    ["seats-7,6,5,4,3,2,1,0;;", "between"],
+  ];
+  for (const options of bads) {
+    reject(forge5(scale, "*x", options));
+  }
+});
+
+test("SV: a link with percent-encoded parens or underscores opens; an escaped * or + is refused", () => {
+  const [, , , , auto, named] = V5_BUILTINS[0];
+  const base = decoded(auto);
+  assert.deepStrictEqual(decoded(auto.replace("(D3)", "%28D3%29")), base);
+  assert.deepStrictEqual(decoded(auto.split("_").join("%5F")), base);
+  const typed = decoded(named);
+  assert.deepStrictEqual(decoded(named.replace("KURD", "KUR%44")), typed);
+  assert.deepStrictEqual(decoded(named.split("+").join("%20")).options.name, "D KURD 10");
+  reject(auto.replace("/*D", "/%2AD"));
+  reject(named.split("+").join("%2B"));
+  for (const bad of ["%", "%2", "%G0", "%2g", "%e9", "%2a"]) {
+    reject(forge5("(D3)_A3_C4_D4_E4_F4_G4_A4_C5", "x" + bad, []));
+  }
+});
+
+test("SV: the auto label is ignored on receipt and lies outside the checksum", () => {
+  const [, , , , auto] = V5_BUILTINS[0];
+  const base = decoded(auto);
+  for (const label of ["whatever", "", "%ZZ", "D%2BAEOLIAN", "a b"]) {
+    assert.deepStrictEqual(decoded(auto.replace("D+AEOLIAN+10", label)), base, label);
+  }
+  const [, , , , hijaz] = V5_BUILTINS[3];
+  assert.deepStrictEqual(decoded(hijaz.replace("%23", "%2523")), decoded(hijaz));
+  assert.equal(decoded(auto).options.name, "");
+  const typed = V5_BUILTINS[0][5];
+  const name = typed.split("/")[2];
+  for (let i = 0; i < name.length; i += 1) {
+    const swap = name.charAt(i) === "A" ? "B" : "A";
+    const broken = typed.replace("/" + name + "/", "/" + name.slice(0, i) + swap + name.slice(i + 1) + "/");
+    assert.equal(share.decode(broken).ok, false, `a flip in a typed name at ${i} was accepted`);
+  }
+});
+
+test("SV: a 5 not followed by / is BAD_NOTE, and 6 or above is NEEDS_NEWER_APP", () => {
+  const rest = V5_BUILTINS[0][4].slice(2);
+  for (const second of ["A", "x", "-", "5", "0", "%", "\\"]) {
+    const r = reject("5" + second + rest);
+    assert.equal(r.code, "BAD_NOTE");
+  }
+  reject("5" + rest);
+  for (const version of ["6", "7", "9", "A", "z", "_"]) {
+    const r = share.decode(version + "/" + rest);
+    assert.equal(r.ok, false);
+    assert.equal(r.code, "NEEDS_NEWER_APP", version);
+  }
+});
+
+test("SV: a v5 link is NEEDS_NEWER_APP to an app pinned at v4", () => {
+  for (const [, , , , auto, named] of V5_BUILTINS) {
+    for (const link of [auto, named]) {
+      const r = engineAtVersion(4).decode(link);
+      assert.equal(r.ok, false);
+      assert.equal(r.code, "NEEDS_NEWER_APP");
+      assert.equal(r.reason, specReason("NEEDS_NEWER_APP"));
+    }
+  }
+});
+
+test("SV: the check segment is an exact 6-character lowercase string; an uppercased, 5- or 7-character check is BAD_NOTE", () => {
+  const scale = "(D3)_A3_C4_D4_E4_F4_G4_A4_C5";
+  const good = forge5(scale, "*x", []);
+  assert.equal(share.decode(good).ok, true);
+  const check = good.slice(good.lastIndexOf("/") + 1);
+  const head = good.slice(0, good.lastIndexOf("/") + 1);
+  assert.match(check, /^[0-9a-f]{6}$/);
+  const upper = check.toUpperCase();
+  const flipped = /[a-f]/.test(check) ? upper : check.replace(/[0-9]/, "a");
+  for (const bad of [flipped, check.slice(1), check + "0", check + "a", "", "------", "0x" + check.slice(2)]) {
+    reject(head + bad);
+  }
+});
+
+test("SV: every v5 structural refusal is badNote of the whole link; a parseSeed refusal keeps its own code and reason", () => {
+  const scale = "(D3)_A3_C4_D4_E4_F4_G4_A4_C5";
+  const structural = [
+    "5/", "5/x", "5/x/y", "5//*x/" + fnv24("5\n\n\t"),
+    forge5(scale, "*x", ["between", "between"]),
+    forge5(scale, "*x", [], "000000"),
+    forge5(scale, "x%", []),
+    forge5(scale, "", []),
+    forge5(scale, "x/y", []),
+  ];
+  for (const link of structural) {
+    const r = share.decode(link);
+    assert.equal(r.ok, false, link);
+    assert.deepStrictEqual(host(r), host(core.badNote(link)), link);
+  }
+  const link = forge5("(D3)_C4_A3_D4", "*x", []);
+  const refusal = core.parseSeed("(D3) C4 A3 D4", { palette: 0, parent: null, mirror: false, name: "" });
+  assert.equal(refusal.ok, false);
+  const r = share.decode(link);
+  assert.equal(r.ok, false);
+  assert.equal(r.code, refusal.code);
+  assert.equal(r.reason, refusal.reason);
+  assert.notEqual(r.code, "BAD_NOTE");
+});
+
+test("SV: deckName never throws, and an out-of-range parent makes encode return BAD_NOTE", () => {
+  const seed = seedNew(AMARA_SCALE);
+  const deckName = HPE.select.deckName;
+  assert.equal(typeof deckName, "function");
+  assert.equal(deckName({ fields: seed.fields }), "D AEOLIAN 9", "a seed with no options");
+  assert.equal(deckName(seed), "D AEOLIAN 9");
+  assert.equal(deckName(Object.assign({}, seed, { options: { name: "Mine" } })), "Mine");
+  for (const parent of [11, -1, 1.5, 100, "x", NaN]) {
+    const bad = host(seed);
+    bad.options.parent = parent;
+    assert.doesNotThrow(() => deckName(bad), String(parent));
+    assert.equal(deckName(bad), null, String(parent));
+    const r = share.encode(bad);
+    assert.equal(r.ok, false);
+    assert.equal(r.code, "BAD_NOTE");
+  }
+  for (const odd of [undefined, null, 5, "x", {}, { fields: {} }]) {
+    assert.doesNotThrow(() => deckName(odd));
+  }
+});
+
+test("SV: every v5 link survives new URL(...).hash byte for byte", () => {
+  const links = [];
+  for (const [, , , , auto, named] of V5_BUILTINS) links.push(auto, named);
+  const p9 = withSeats(seedNew(HIJAZ_SCALE, {
+    palette: 2, parent: 9, mirror: true, mirrorBottom: false, anchor: "between",
+    name: "My Hijaz" }), { rim: [1, 0, 2, 3, 4, 5, 6, 7] });
+  links.push(encoded(p9));
+  assert.equal(links[links.length - 1],
+    "5/(Cs3)_Gs3_B3_Cs4_D4_F4_Fs4_Gs4_B4/My+Hijaz/palette-3/parent-phrygian-dominant/mirror-top/between/seats-1,0,2,3,4,5,6,7;;/e3049a");
+  assert.equal(links.length, 11);
+  for (const link of links) {
+    assert.equal(new URL("https://example.test/#s=" + link).hash, "#s=" + link);
+    assert.equal(share.decode(link).ok, true, link);
+  }
+  assert.equal(core.deckId(share.decode(links[0]).value), core.deckId(seedNew(KURD_SCALE)));
+});
+
+test("SV: deckName equals build's name for every corpus seed", () => {
+  let checked = 0;
+  for (const row of OK_ROWS) {
+    for (const options of [undefined, { name: "Typed" }, { parent: 3 }, { parent: 0, palette: 2 }]) {
+      const seed = parsed(row.string, options);
+      const built = HPE.select.build(seed);
+      if (!built.ok) continue;
+      assert.equal(HPE.select.deckName(seed), built.value.name, `${row.name} ${JSON.stringify(options)}`);
+      checked += 1;
+    }
+  }
+  assert.ok(checked >= 10, "the corpus loop checked nothing");
+});
+
+test("SV: the 120-note worst case fits the cap", () => {
+  const letters = ["C", "D", "E", "F", "G", "A", "B"];
+  const fields = {};
+  const zones = ["ding"].concat(Array(60).fill("rim"), Array(30).fill("inner"), Array(29).fill("bottom"));
+  zones.forEach((zone, i) => {
+    const letter = letters[i % 7];
+    const octave = 1 + Math.floor(i / 7);
+    fields[String(i)] = [letter, octave, 12 * (octave + 1) + (i % 7) * 2, zone, null, letter];
+  });
+  const ring = (from, count) => Array.from({ length: count }, (_, i) => from + count - 1 - i);
+  const seats = { rim: ring(1, 60), inner: ring(61, 30), bottom: ring(91, 29) };
+  const r = share.encode({
+    fields,
+    options: { palette: 5, parent: 10, mirror: true, mirrorBottom: false, anchor: "between",
+               name: "/".repeat(40), seats },
+  });
+  assert.equal(r.ok, true, r.reason);
+  assert.ok(r.value.length <= share.CAPS.payload, `${r.value.length} chars`);
+  assert.ok(r.value.includes("/" + "%2F".repeat(40) + "/"), "the worst-case name is 40 escapes");
+  const seg = optionSegs(r.value).find(s => s.startsWith("seats-"));
+  assert.deepEqual(seg.slice(6).split(";").map(s => s.split(",").length), [60, 30, 29]);
 });

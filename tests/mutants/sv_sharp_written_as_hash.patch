@@ -1,0 +1,15 @@
+# kills: SV: every v5 link survives new URL(...).hash byte for byte
+# suite: node --test --test-name-pattern ^SV..every.v5.link.survives.new.URL......hash.byte.for.byte$ tests/share.test.js
+# A sharp is written as # instead of s, so the fragment is cut at it.
+diff --git a/src/engine/share.js b/src/engine/share.js
+--- a/src/engine/share.js
++++ b/src/engine/share.js
+@@ -406,7 +406,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       var t = tokens[i];
+       if (t === "|") tokens[i] = "-";
+       else if (t.charAt(0) === "[") tokens[i] = "u" + t.slice(1, -1).split("#").join("s");
+-      else tokens[i] = t.split("#").join("s");
++      else tokens[i] = t;
+     }
+     return tokens.join("_");
+   }

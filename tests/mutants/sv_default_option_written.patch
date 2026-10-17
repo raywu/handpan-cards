@@ -1,0 +1,15 @@
+# kills: SV: every option has one spelling and a default writes nothing
+# suite: node --test --test-name-pattern ^SV..every.option.has.one.spelling.and.a.default.writes.nothing$ tests/share.test.js
+# The default palette is written as palette-1.
+diff --git a/src/engine/share.js b/src/engine/share.js
+--- a/src/engine/share.js
++++ b/src/engine/share.js
+@@ -335,7 +335,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       segs.push(text);
+       meaning.push(text);
+     }
+-    if (opts.palette) option("palette-" + (opts.palette + 1));
++    if (opts.palette !== undefined) option("palette-" + (opts.palette + 1));
+     if (opts.parent !== undefined && opts.parent !== null) option("parent-" + parentSlug(opts.parent));
+     var mirrors = HPE.layout.resolveMirrors({}, opts);
+     if (mirrors.top && mirrors.bottom) option("mirror");
