@@ -68,9 +68,8 @@ How it works:
   - Jev as a tie-breaker between roles (G3).
 - Rejected: an LLM for extraction, a parser per manufacturer as the primary
   design, and image or OCR input (out of scope).
-- **Presets:** a scale *name* such as "D Kurd 10" is reported as insufficient.
-  When it matches a built-in deck, the importer may *offer* that deck without
-  filling in any notes (G4).
+- **Presets:** a scale *name* such as "D Kurd 10" is reported as insufficient,
+  and no built-in deck is offered (G4, owner 2026-10-17: no).
 
 **Confidence:**
 - High that this is the simplest defensible design.
@@ -79,7 +78,8 @@ How it works:
 
 **Main uncertainty:** no maker in the sample *declares* its notation. Every
 ding cue found was structural. So for most real imports, the "verify
-equivalence" requirement comes down to one tap: the user confirms the ding.
+equivalence" requirement comes down to the user confirming the ding, plus
+ticking the inferred octaves when the source wrote none (G6).
 The design accepts this rather than hiding it.
 
 ---
@@ -350,9 +350,10 @@ Source: <https://docs.typesafe.ai/introduction> and linked pages.
   messages.
   - A cheap win is better refusal hints for the raw-paste mistakes above:
     commas, ♯/♭, lowercase, and a name with no notes.
-  - It can ship alone (lane A2).
-- **Presets:** the built-in decks already are curated presets.
-  - Matching a pasted name to a built-in name ("D Kurd 10") may *offer* the
+  - It can ship alone (lane A2, DEFERRED by owner 2026-10-17).
+- **Presets** (superseded by G4, owner 2026-10-17: no offer; kept as the
+  record of the option): the built-in decks already are curated presets.
+  - Matching a pasted name to a built-in name ("D Kurd 10") could *offer* the
     built-in deck.
   - It must not fill in notes: a maker's "D Kurd 10" can differ from ours.
     The two listings of Yatao's own D Kurd 13 already disagree.
@@ -439,7 +440,9 @@ Enharmonics:
      owner 2026-10-17: no).
    - **NEEDS_INPUT / REVIEW**: a compact review list with one row per note:
      role, note and source fragment. Each flag is a line. A CONFIRM blocks
-     USE until it is ticked, or the user picks another ding from the notes.
+     USE until it is ticked. A DING_CUE CONFIRM is satisfied by a tick or a
+     picked ding; a picked ding re-runs the inference, refreshes every
+     inferred octave and clears the NO_OCTAVE tick.
      A BLOCK leaves USE disabled and keeps the paste visible.
 3. USE writes the serialised string to `#scale-box` and dispatches `input`.
    From there the existing parse line, refusal, preview, layout drawer,
@@ -450,7 +453,7 @@ The user's own description takes the same path. "D3 ding, A3 Bb3 C4 D4 E4 F4
 G4 A4 top, C3 bottom" gives `[C3] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4`, with the
 ding labelled, so INFO only [V].
 
-### 4.4 Representative cases (prototype results) [V]
+### 4.4 Representative cases (prototype results [V], plus planned rows from the 2026-10-17 gate decisions)
 
 | Case | Result | Meets expectation |
 |---|---|---|
@@ -518,10 +521,19 @@ first, against fixtures captured from real text.
   - **No fixture yields a serialised string whose pitch multiset differs
     from the source's.** Assert it per fixture. For a note the source wrote
     without an octave, compare pitch class only, and assert its octave
-    equals the one `parseSeed` infers for the octaveless string (the importer
-    never computes an octave of its own).
-  - Each octaveless fixture (the three Ashakiran lines) records its exact
-    serialised string, the NO_OCTAVE flag and the list of inferred notes.
+    equals the one `parseSeed` infers for the provisional string built in the
+    fixed order of G6.
+  - Each octaveless fixture records, written by hand from the source and
+    never regenerated from importer output, its provisional string, its exact
+    serialised string (C Ashakiran 15: `(C3) F3 G3 A3 B3 C4 D4 E4 G4 [D5]
+    [E5] [F5] [A5] [B5] [C6]`), each note's role and source span, the
+    NO_OCTAVE flag and the inferred notes.
+  - An octaveless source whose top notes descend (e.g. `(C) G A E Eb F`) has
+    a fixture asserting its exact serialised string and that every lifted
+    note is listed as inferred; SOURCE_NOT_ASCENDING cannot fire without
+    octaves, so the review list is the only guard.
+  - A provisional string that `parseSeed` refuses yields NEEDS_INPUT with the
+    refusal reason and no serialised string.
   - Parentheses without a cited profile never get a role.
   - `serialise` output for every REVIEW fixture is a fixed point of
     `formatSeed(parseSeed(x).value) === x`.
@@ -529,8 +541,17 @@ first, against fixtures captured from real text.
   tools/inline_engine.py --check && python3 tools/validate.py && bash
   tests/run.sh node && python3 -m unittest tests.test_readme_currency`
 - **G6 (owner, 2026-10-17: infer, then confirm):** `NO_OCTAVE` is a CONFIRM.
-  The importer takes the octaves from `parseSeed` on the octaveless string and
-  serialises them explicitly, so the box shows the octaves the user ticked.
+  The importer builds one provisional string from the source's roles in a
+  fixed order: the ding, the top notes in source order, `|` and the inner
+  notes, then each bottom note as `[X]` in source order, keeping every octave
+  the source wrote. It takes every missing octave from `parseSeed` on that
+  string and serialises them explicitly, so the box shows the octaves the
+  user ticked. Bottom-note placement is the importer's only structural
+  choice; each inferred bottom octave is flagged as a guess in its review
+  row. If `parseSeed` refuses the provisional string, the status is
+  NEEDS_INPUT with the refusal shown and nothing is serialised.
+  (Placement order: integrator default under AFK, 2026-10-17, bottoms
+  appended; the owner may change it, see G6a.)
   This supersedes the 2026-10-16 interim BLOCK.
 - **Non-goals:** UI, fetch, profiles with real data, an octave inference of
   the importer's own (it reuses `parseSeed`'s), any change to `parseSeed`,
@@ -586,7 +607,9 @@ first, against fixtures captured from real text.
   - USE writes exactly `HPE.importer.serialise(r)` into `#scale-box` and
     fires `input`, so the parse line matches what typing it would show.
   - BLOCK disables USE.
-  - CONFIRM needs a tick, or a picked ding.
+  - CONFIRM needs a tick; a DING_CUE CONFIRM is also satisfied by a picked
+    ding, which re-runs the inference, refreshes every inferred octave and
+    clears the NO_OCTAVE tick.
   - A NO_OCTAVE review row marks each inferred octave as inferred.
   - INSUFFICIENT writes nothing to `#scale-box`.
   - Manual entry and every existing sheet test pass unchanged.
@@ -617,7 +640,9 @@ first, against fixtures captured from real text.
 - **Owns:** `CLAUDE.md` (a short "Scale import" bullet that names its tests),
   `README.md` (usage line only; the module list and suite counts are A1's), and the `#about` copy only if the owner wants it
   mentioned.
-- **Acceptance:** every sentence cites a test.
+- **Acceptance:** every sentence cites a test. CLAUDE.md's analytics event
+  list under "Discoverability" gains `scale_import` (`{status}` only, G7),
+  citing Lane B's test.
 - **Verify:** reviewer re-reads each cited test.
 - **Non-goals:** code.
 
@@ -668,6 +693,7 @@ first, against fixtures captured from real text.
 | G4 | Offer a built-in deck when the pasted text is only a matching name? | owner removed presets in 2026-09; a maker's "D Kurd 10" may differ | no: report INSUFFICIENT |
 | G5 | Carry the product name into the deck name on create? | `sheetOptions()` 9590 names new decks automatically | no: auto-naming stays |
 | G6 | Octaveless lists: BLOCK (recommended), or allow `parseSeed`'s inference with a CONFIRM? | inference is "inferring missing pitch information" under the prompt's scope | infer, then CONFIRM |
+| G6a | Where octaveless bottom notes sit in the provisional string (their position decides their octave) | `scaleInfer` climbs through bottoms in string order: `(D) A C [F]` gives F4, `(D) [F] A C` F3 | integrator default (AFK): appended after tops and inner notes, each flagged as a guess; owner may change |
 | G7 | Add a `scale_import` analytics event with `{status}` only? | the Lane B acceptance text; no event is added without it | yes, `{status}` only |
 
 ### Rejected alternatives
