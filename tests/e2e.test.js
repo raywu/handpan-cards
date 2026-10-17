@@ -12467,6 +12467,7 @@ function run() {
     }
 
     test("a full boot sends zero requests to googletagmanager.com and google-analytics.com", async () => {
+      assert.deepStrictEqual(HOSTS, ["googletagmanager.com", "google-analytics.com"], "the block list no longer names both analytics hosts");
       const urls = await recordBoot(b, freshLoad);
       assert.ok(urls.length > 0, "the recorder saw the boot's requests");
       assertClean(urls, "default launch");
