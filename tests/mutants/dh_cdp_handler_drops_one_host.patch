@@ -1,0 +1,16 @@
+# kills: the Fetch.requestPaused handler fails a request to every ANALYTICS_PATTERNS host
+# suite: node --test --test-name-pattern ^the.Fetch.requestPaused.handler.fails tests/harness.test.js
+# Row 49: the handler's matcher covers only the first ANALYTICS_PATTERNS host,
+# so google-analytics.com stays in blockedUrls but its request is not failed.
+diff --git a/tests/helpers/cdp.js b/tests/helpers/cdp.js
+--- a/tests/helpers/cdp.js
++++ b/tests/helpers/cdp.js
+@@ -117,7 +117,7 @@ const ANALYTICS_PATTERNS = ["*googletagmanager.com*", "*google-analytics.com*"];
+ const FONT_PATTERNS = ["*fonts.googleapis.com*", "*fonts.gstatic.com*"];
+ const blockList = () => [...FONT_PATTERNS, ...ANALYTICS_PATTERNS];
+ const matchesAnalytics = (url) =>
+-  ANALYTICS_PATTERNS.some((p) => url.includes(p.replace(/\*/g, "")));
++  ANALYTICS_PATTERNS.slice(0, 1).some((p) => url.includes(p.replace(/\*/g, "")));
+ function takeExceptions() {
+   return EXCEPTIONS.splice(0, EXCEPTIONS.length);
+ }

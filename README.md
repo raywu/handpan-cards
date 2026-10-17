@@ -171,7 +171,7 @@ A `#deck=<slug>` link opens a built-in deck (`tests/app.test.js` "every slug
 opens its built-in deck, persists it, and leaves a clean address"), and the
 about section below the card names every deck with its card count ("the about
 section names every built-in deck with its card count from data/decks.json and
-the value line"). GA4 loads only on a real host with the shipped measurement id ("the shipped
+the value line"). GA4 loads only on a real host with a non-placeholder measurement id ("the shipped
 index.html boots unmodified on a real host and loads gtag with the shipped id");
 the placeholder `G-XXXXXXXXXX` stays a disabling value ("analyticsAllowed is
 false for the placeholder id: no gtag script, no config, no event"); see CLAUDE.md,

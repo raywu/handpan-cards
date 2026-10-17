@@ -12,4 +12,4 @@ diff --git a/tests/helpers/cdp.js b/tests/helpers/cdp.js
 +const ANALYTICS_PATTERNS = [];
  const FONT_PATTERNS = ["*fonts.googleapis.com*", "*fonts.gstatic.com*"];
  const blockList = () => [...FONT_PATTERNS, ...ANALYTICS_PATTERNS];
- function takeExceptions() {
+ const matchesAnalytics = (url) =>
