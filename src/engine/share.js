@@ -13,7 +13,22 @@
  * bytes are hand-rolled so the engine runs identically in a browser and in a
  * node:vm realm.
  *
- * WIRE FORMAT
+ * WIRE FORMAT, v5 (what this build WRITES): a readable path.
+ *
+ *     5/<scale>/<name>[/<option>...]/<check>
+ *
+ *   scale   core.formatSeed with "_" for a space, "s" for "#", "u" for a
+ *           bottom note's brackets and "-" for the inner bar.
+ *   name    a typed name percent-encoded ("+" for a space), or "*" and the
+ *           generated label, which a reader ignores.
+ *   option  in this order, each only when not the default: palette-N,
+ *           parent-<mode>, mirror | mirror-top | mirror-bottom, between,
+ *           seats-<rim>;<inner>;<bottom>.
+ *   check   six lowercase hex: the top 24 bits of a 32-bit FNV-1a over the
+ *           DECODED meaning (version, scale, name or a tab, each option)
+ *           joined by "\n". The auto label is outside it.
+ *
+ * Versions 1 to 4 are still READ. Their wire format was:
  *
  *     share = VERSION_CHAR + BODY + CHECK
  *
@@ -63,8 +78,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // readable: see decode step 2 (D5-4). v1 = an empty line 2, v2 = a flat layout
   // order on it, v3 = per-ring seats on it and two more facts on the options
   // line (the mirror of each ring, the anchor), v4 = the same payload with the
-  // scale string on line 0 in the one-line grammar (v1 to v3 hold the legacy one).
-  var VERSION = 4;
+  // scale string on line 0 in the one-line grammar (v1 to v3 hold the legacy
+  // one), v5 = the readable path in the header.
+  var VERSION = 5;
+  // What a stored record carries. Records keep the v4 shape (formatSeed plus
+  // options), so the wire version moves alone.
+  var RECORD_VERSION = 4;
   var NEWEST = VERSION;   // an alias decode can still see past its own shadow
   var OLDEST = 1;         // no version 0 ever shipped
 
@@ -178,7 +197,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   // FNV-1a, 32 bit, over the UTF-8 bytes of the guarded text. Same construction
   // as core.deckId's hash; here it is an integrity check, not an identity.
-  function checksum(text) {
+  function fnv1a(text) {
     var hash = 0x811c9dc5;
     var bytes = utf8Bytes(text);
     for (var i = 0; i < bytes.length; i += 1) {
@@ -186,8 +205,18 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       hash = (((hash & 0xffff) * 0x01000193) +
               ((((hash >>> 16) * 0x01000193) & 0xffff) << 16)) >>> 0;
     }
+    return hash;
+  }
+
+  function checksum(text) {
+    var hash = fnv1a(text);
     return toAlphabet([(hash >>> 24) & 0xff, (hash >>> 16) & 0xff,
                        (hash >>> 8) & 0xff, hash & 0xff]);
+  }
+
+  // v5: the top 24 bits of the same hash, six lowercase hex characters.
+  function checkHex(text) {
+    return ("000000" + (fnv1a(text) >>> 8).toString(16)).slice(-6);
   }
 
   /* ---- the payload ------------------------------------------------------ */
@@ -212,24 +241,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       }
     }
     return any ? parts.join(";") : "";
-  }
-
-  function optionsLine(options) {
-    var opts = options || {};
-    var palette = opts.palette === undefined || opts.palette === null
-      ? 0 : opts.palette;
-    var parent = opts.parent === undefined || opts.parent === null
-      ? "" : opts.parent;
-    var mirrors = HPE.layout.resolveMirrors({}, opts);
-    var mirror = mirrors.top === mirrors.bottom ? (mirrors.top ? "1" : "0")
-      : (mirrors.top ? "t" : "b");
-    var anchor = opts.anchor === "between" ? "1" : "0";
-    var name = opts.name === undefined || opts.name === null ? "" : opts.name;
-    // `name` stays LAST and ALONE at the end of this line: the correction rides
-    // on line 2, not here, so the one user-controlled free-text field never
-    // gains a neighbour (D5-3).
-    return String(palette) + FIELD_SEP + String(parent) + FIELD_SEP + mirror +
-           FIELD_SEP + anchor + FIELD_SEP + String(name);
   }
 
   var UINT_RE = /^[0-9]{1,3}$/;
@@ -311,14 +322,182 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // core.parseSeed"), and decode runs it again on the far side.
   function encode(seed) {
     if (!seed || typeof seed !== "object" || !seed.fields) return badNote(seed);
-    var payload = HPE.core.formatSeed(seed.fields) + SEP +
-                  optionsLine(seed.options) + SEP +
-                  seatsField((seed.options || {}).seats);  // line 2: the layout delta.
-    var body = toAlphabet(utf8Bytes(payload));
-    var head = ALPHABET.charAt(VERSION) + body;
-    var out = head + checksum(head);
+    var opts = seed.options || {};
+    // HPE.select is read here and nowhere else on the write path: decode, and
+    // an app pinned to an older wire version, never need it.
+    var label = HPE.select.deckName(seed);
+    if (label === null) return badNote(seed);
+    var typed = opts.name !== undefined && opts.name !== null && String(opts.name) !== "";
+    var scale = scaleSegment(seed.fields);
+    var segs = ["5", scale, typed ? percentEncode(String(opts.name)) : "*" + percentEncode(label)];
+    var meaning = ["5", scale, typed ? String(opts.name) : FIELD_SEP];
+    function option(text) {
+      segs.push(text);
+      meaning.push(text);
+    }
+    if (opts.palette) option("palette-" + (opts.palette + 1));
+    if (opts.parent !== undefined && opts.parent !== null) option("parent-" + parentSlug(opts.parent));
+    var mirrors = HPE.layout.resolveMirrors({}, opts);
+    if (mirrors.top && mirrors.bottom) option("mirror");
+    else if (mirrors.top) option("mirror-top");
+    else if (mirrors.bottom) option("mirror-bottom");
+    if (opts.anchor === "between") option("between");
+    var seats = seatsField(opts.seats);
+    if (seats !== "") option("seats-" + seats);
+    segs.push(checkHex(meaning.join(SEP)));
+    var out = segs.join("/");
     if (out.length > CAPS.payload) return badNote(out);
     return ok(out);
+  }
+
+  /* ---- v5 text ---------------------------------------------------------- */
+
+  var HEX_DIGITS = "0123456789ABCDEF";
+  var UNRESERVED_RE = /^[A-Za-z0-9\-._~]$/;
+  var TYPED_RE = /^[A-Za-z0-9\-._~+%]+$/;
+  var PALETTE_RE = /^palette-([2-6])$/;
+  var PARENT_RE = /^parent-(.+)$/;
+
+  // By hand over the UTF-8 bytes: unreserved characters stay, a space is "+",
+  // everything else is %XX in upper-case hex.
+  function percentEncode(str) {
+    var bytes = utf8Bytes(str);
+    var out = "";
+    for (var i = 0; i < bytes.length; i += 1) {
+      var b = bytes[i];
+      if (b === 0x20) out += "+";
+      else if (b < 0x80 && UNRESERVED_RE.test(String.fromCharCode(b))) {
+        out += String.fromCharCode(b);
+      } else {
+        out += "%" + HEX_DIGITS.charAt(b >> 4) + HEX_DIGITS.charAt(b & 15);
+      }
+    }
+    return out;
+  }
+
+  // null for a malformed escape, a raw non-ASCII character or bytes that are
+  // not UTF-8. `plus` reads "+" as a space (names only).
+  function percentDecode(seg, plus) {
+    var bytes = [];
+    for (var i = 0; i < seg.length; i += 1) {
+      var c = seg.charCodeAt(i);
+      if (c === 0x25) {
+        var hi = HEX_DIGITS.indexOf(seg.charAt(i + 1));
+        var lo = HEX_DIGITS.indexOf(seg.charAt(i + 2));
+        if (i + 2 >= seg.length || hi < 0 || lo < 0) return null;
+        bytes.push(hi * 16 + lo);
+        i += 2;
+      } else if (c === 0x2b && plus) {
+        bytes.push(0x20);
+      } else if (c < 0x80) {
+        bytes.push(c);
+      } else {
+        return null;
+      }
+    }
+    return utf8String(bytes);
+  }
+
+  // core.formatSeed <-> the link's scale segment. Total inverses: only the
+  // characters swapped here change, every other one is copied.
+  function scaleSegment(fields) {
+    var tokens = HPE.core.formatSeed(fields).split(" ");
+    for (var i = 0; i < tokens.length; i += 1) {
+      var t = tokens[i];
+      if (t === "|") tokens[i] = "-";
+      else if (t.charAt(0) === "[") tokens[i] = "u" + t.slice(1, -1).split("#").join("s");
+      else tokens[i] = t.split("#").join("s");
+    }
+    return tokens.join("_");
+  }
+
+  function scaleString(segment) {
+    var tokens = segment.split("_");
+    for (var i = 0; i < tokens.length; i += 1) {
+      var t = tokens[i];
+      if (t === "-") tokens[i] = "|";
+      else if (t.charAt(0) === "u") tokens[i] = "[" + t.slice(1).split("s").join("#") + "]";
+      else tokens[i] = t.split("s").join("#");
+    }
+    return tokens.join(" ");
+  }
+
+  function parentSlug(index) {
+    return HPE.naming.PARENTS[index].name.toLowerCase().split(" ").join("-");
+  }
+
+  var OPTION_ORDER = { palette: 0, parent: 1, mirror: 2, between: 3, seats: 4 };
+
+  // Every structural refusal is badNote of the whole link; what
+  // core.parseSeed says about the scale comes back unchanged.
+  function decodeReadable(text, carry) {
+    if (text.charAt(1) !== "/") return badNote(text);
+    var segs = text.split("/");
+    if (segs.length < 4) return badNote(text);
+    var scale = percentDecode(segs[1], false);
+    if (scale === null || scale === "") return badNote(text);
+    var nameSeg = segs[2];
+    var meaning = ["5", scale];
+    var name = "";
+    if (nameSeg.charAt(0) === "*") {
+      meaning.push(FIELD_SEP);
+    } else {
+      if (!TYPED_RE.test(nameSeg)) return badNote(text);
+      name = percentDecode(nameSeg, true);
+      if (name === null || name === "") return badNote(text);
+      meaning.push(name);
+    }
+    var texts = [];
+    for (var i = 3; i < segs.length - 1; i += 1) {
+      var decoded = percentDecode(segs[i], false);
+      if (decoded === null) return badNote(text);
+      texts.push(decoded);
+      meaning.push(decoded);
+    }
+    if (segs[segs.length - 1] !== checkHex(meaning.join(SEP))) return badNote(text);
+
+    var options = { palette: 0, parent: null, mirror: false, name: name };
+    var rank = -1;
+    for (var k = 0; k < texts.length; k += 1) {
+      var o = texts[k];
+      var at;
+      var m;
+      if ((m = PALETTE_RE.exec(o))) {
+        at = OPTION_ORDER.palette;
+        options.palette = Number(m[1]) - 1;
+      } else if ((m = PARENT_RE.exec(o))) {
+        at = OPTION_ORDER.parent;
+        var found = -1;
+        for (var p = 0; p < HPE.naming.PARENTS.length; p += 1) {
+          if (parentSlug(p) === m[1]) found = p;
+        }
+        if (found < 0) return badNote(text);
+        options.parent = found;
+      } else if (o === "mirror") {
+        at = OPTION_ORDER.mirror;
+        options.mirror = true;
+      } else if (o === "mirror-top") {
+        at = OPTION_ORDER.mirror;
+        options.mirror = true;
+        options.mirrorBottom = false;
+      } else if (o === "mirror-bottom") {
+        at = OPTION_ORDER.mirror;
+        options.mirrorBottom = true;
+      } else if (o === "between") {
+        at = OPTION_ORDER.between;
+        options.anchor = "between";
+      } else if (o.slice(0, 6) === "seats-") {
+        at = OPTION_ORDER.seats;
+        var delta = readDeltaLine(o.slice(6), 3);
+        if (!delta) return badNote(text);
+        carry.delta = delta;
+      } else {
+        return badNote(text);
+      }
+      if (at <= rank) return badNote(text);
+      rank = at;
+    }
+    return HPE.core.parseSeed(scaleString(scale), options);
   }
 
   /* ---- decode ----------------------------------------------------------- */
@@ -380,6 +559,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     if (version > VERSION) return err("NEEDS_NEWER_APP", {});
     if (version !== VERSION) return badNote(text);
 
+    // v5 is a readable path, not the packed alphabet: its own reader and check.
+    if (version >= 5) return decodeReadable(text, carry);
+
     // 3. Integrity, before the payload is looked at.
     var head = text.slice(0, text.length - CHECK_LEN);
     if (text.slice(text.length - CHECK_LEN) !== checksum(head)) {
@@ -413,6 +595,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     encode: encode,
     decode: decode,
     VERSION: VERSION,
+    RECORD_VERSION: RECORD_VERSION,
     CAPS: CAPS
   };
 })(HPE);

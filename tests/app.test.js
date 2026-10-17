@@ -1239,16 +1239,16 @@ function openShare(app, text) {
 
 /* ------------------------------------------------ 17. one version constant */
 
-test("the app's share version IS the engine's, not a second copy of the number", () => {
+test("the app's record version IS the engine's, not a second copy of the number", () => {
   const app = boot();
-  assert.strictEqual(app.get("SHARE_VERSION"), app.get("HPE.share.VERSION"),
-    "SHARE_VERSION and HPE.share.VERSION have diverged");
+  assert.strictEqual(app.get("SHARE_VERSION"), app.get("HPE.share.RECORD_VERSION"),
+    "SHARE_VERSION and HPE.share.RECORD_VERSION have diverged");
   // Equal values are not enough: a restated literal is equal today and wrong
   // the day either side is bumped, so the app must DERIVE the constant.
   const src = appScript(app);
   const decl = /\bSHARE_VERSION\s*=\s*([^;\n]+)/.exec(src);
   assert.ok(decl, "the app no longer declares SHARE_VERSION");
-  assert.match(decl[1], /HPE\.share\.VERSION/,
+  assert.match(decl[1], /HPE\.share\.RECORD_VERSION/,
     `SHARE_VERSION is restated as "${decl[1].trim()}" instead of read from the engine`);
 });
 
@@ -1283,7 +1283,7 @@ test("a newer share string reaches the user as section 2's NEEDS_NEWER_APP sente
   // is spelled out here rather than read out of the engine (CONTRACT rule 2).
   const VERSION_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
                         "abcdefghijklmnopqrstuvwxyz-_";
-  const newer = VERSION_CHARS.charAt(app.get("SHARE_VERSION") + 1) +
+  const newer = VERSION_CHARS.charAt(app.get("HPE.share.VERSION") + 1) +
                 payload(url.value).slice(1);
   const res = openShare(app, newer);
   assert.strictEqual(res.ok, false);
@@ -5652,7 +5652,7 @@ test("S3: seats, anchor and a one-ring mirror travel through a share link and re
   assert.strictEqual(made.ok, true, made.reason);
   const url = link(app, made.value.id);
   assert.strictEqual(url.ok, true, url.reason);
-  assert.strictEqual(payload(url.value).charAt(0), "4");
+  assert.strictEqual(payload(url.value).charAt(0), "5");
 
   const other = boot();
   const opened = openShare(other, payload(url.value));
@@ -8397,7 +8397,7 @@ test("rule N matrix: every scale, anchor, mirror and swap count keeps each ring'
   }
 });
 
-test("rule N: a moved deck's stored record and share link are the strings main wrote", () => {
+test("rule N: a moved deck's stored record is the string main wrote and its share link is the v5 string", () => {
   const app = boot();
   const made = app.generate(DR3_D3, { seats: DR3_SWAPPED, anchor: "between", mirror: true });
   assert.strictEqual(made.ok, true, made.reason);
@@ -8407,7 +8407,7 @@ test("rule N: a moved deck's stored record and share link are the strings main w
     o: { palette: 0, mirror: true, mirrorBottom: true, anchor: "between", parent: 1, seats: DR3_SWAPPED },
   }]);
   assert.strictEqual(plain(app.get(`shareLink(${expr})`)).value,
-    "https://example.test/index.html#s=4A4GpAI11Co13D214D215D216D217D211D213DGem2J49CGan2GenB30iCYmpB3GiDImsB3SxEmgT2O_m");
+    "https://example.test/index.html#s=5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/parent-aeolian/mirror/between/seats-1,0,2,3,4,5,6,7;;/975b6c");
   assert.strictEqual(app.get(`HPE.core.formatSeed(${expr}.fields)`), DR3_D3);
 });
 
@@ -9905,6 +9905,40 @@ describe("share url", () => {
     app.run("syncRoute(); syncRoute();");
     assert.strictEqual(app.history.calls.length, n + 1);
     assert.strictEqual(app.location.hash, "#deck=d-amara-9");
+  });
+
+  // The v4 spelling of D Amara 9 with the rim seats moved, a mirror, the
+  // between anchor and parent 1: the string main wrote for it (rule N).
+  const V4_MOVED = "4A4GpAI11Co13D214D215D216D217D211D213DGem2J49CGan2GenB30iCYmpB3GiDImsB3SxEmgT2O_m";
+  const V5_MOVED = "5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/parent-aeolian/mirror/between/seats-1,0,2,3,4,5,6,7;;/975b6c";
+
+  test("SV: a v4 #s= boot imports once and ends with the v5 code in the bar through one replaceState", () => {
+    const app = bootGA({ href: PAGE + "#s=" + V4_MOVED });
+    assert.strictEqual(app.location.hash, "#s=" + V5_MOVED);
+    assert.strictEqual(gaEvents(app).filter((e) => e === "share_open").length, 1);
+    assert.deepStrictEqual(app.history.calls.map((c) => c.type), ["replace"]);
+    assert.strictEqual(app.deckId(), plain(app.get("HPE.core.deckId(HPE.core.parseSeed(" + JSON.stringify(DR3_D3) + ", {}).value.fields)")));
+  });
+
+  test("SV: a hashchange to the v4 spelling of the deck shown rewrites the bar to v5 and imports nothing", () => {
+    const app = bootGA({ href: PAGE + "#s=" + V4_MOVED });
+    const saved = plain(app.get("savedScales()"));
+    const events = gaEvents(app).length;
+    const calls = app.history.calls.length;
+    app.hashchange("#s=" + V4_MOVED);
+    assert.strictEqual(app.location.hash, "#s=" + V5_MOVED);
+    assert.deepStrictEqual(app.history.calls.slice(calls).map((c) => c.type), ["replace"]);
+    assert.deepStrictEqual(plain(app.get("savedScales()")), saved);
+    assert.strictEqual(gaEvents(app).length, events);
+  });
+
+  test("SV: stored records keep v 4 after a v5 boot", () => {
+    const app = bootGA({ href: PAGE + "#s=" + V4_MOVED });
+    const saved = plain(app.get("savedScales()"));
+    assert.strictEqual(saved.length, 1);
+    assert.strictEqual(saved[0].v, 4);
+    assert.strictEqual(app.get("HPE.share.RECORD_VERSION"), 4);
+    assert.strictEqual(app.get("SHARE_VERSION"), 4);
   });
 
   test("SU: RESET SEEDED DECKS while showing Kurd's replacement writes #deck=d-kurd-10", () => {
