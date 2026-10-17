@@ -13,7 +13,7 @@ const { test } = require("node:test");
 const assert = require("node:assert");
 const fs = require("node:fs");
 const path = require("node:path");
-const { launch, findBrowser, Browser, takeExceptions } = require("./helpers/cdp.js");
+const { launch, findBrowser, Browser, ANALYTICS_PATTERNS, takeExceptions } = require("./helpers/cdp.js");
 
 const REPO = path.resolve(__dirname, "..");
 
@@ -728,4 +728,15 @@ test("the Fetch.requestPaused handler fails a request to every ANALYTICS_PATTERN
     await handler({ requestId: "r1", request: { url } });
     assert.deepStrictEqual(sent, [["Fetch.failRequest", { requestId: "r1", errorReason: "BlockedByClient" }]], pattern);
   }
+  sent.length = 0;
+  await handler({ requestId: "r2", request: { url: "https://fonts.googleapis.com/css2?family=Marcellus" } });
+  assert.deepStrictEqual(sent.map(([m]) => m), ["Fetch.fulfillRequest"], "a font request is served, not failed");
+  sent.length = 0;
+  await handler({ requestId: "r3", request: { url: "https://example.test/index.html" } });
+  assert.deepStrictEqual(sent.map(([m]) => m), ["Fetch.continueRequest"], "any other request continues");
+});
+
+test("every ANALYTICS_PATTERNS entry is a *literal* glob, the only shape matchesAnalytics reads", () => {
+  assert.ok(ANALYTICS_PATTERNS.length >= 2);
+  for (const p of ANALYTICS_PATTERNS) assert.match(p, /^\*[^*?\[\]]+\*$/, p);
 });

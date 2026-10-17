@@ -1,0 +1,15 @@
+# kills: SV: a v5 link whose second character is not a slash is refused with the documented BAD_NOTE
+# suite: node --test --test-name-pattern ^SV:.a.v5.link.whose.second.character.is.not.a.slash tests/share.test.js
+# decodeReadable no longer checks the character after the 5, so 5x/<scale>/<name>/<check> opens.
+diff --git a/src/engine/share.js b/src/engine/share.js
+--- a/src/engine/share.js
++++ b/src/engine/share.js
+@@ -431,7 +431,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   // Every structural refusal is badNote of the whole link; what
+   // core.parseSeed says about the scale comes back unchanged.
+   function decodeReadable(text, carry) {
+-    if (text.charAt(1) !== "/") return badNote(text);
++
+     var segs = text.split("/");
+     if (segs.length < 4) return badNote(text);
+     var scale = percentDecode(segs[1], false);

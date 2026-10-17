@@ -10934,6 +10934,7 @@ function openScaleSheet(opener) {
 // The Edit path [design-review 7A]: the SAME sheet, prefilled from the selected
 // deck, seeded or custom.
 function openEditSheet(d, opener) {
+  shareUrl.setAttribute("hidden", "");
   resetSheetState(d);
   showSheet(opener);
   // [eng-review 2, 2A] warnings have ONE producer and were copied onto the deck
