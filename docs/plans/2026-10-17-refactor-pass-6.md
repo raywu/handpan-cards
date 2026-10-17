@@ -521,8 +521,8 @@ Fields per row: class / target / measured cost (command) / change / risk / pinni
 
 **P6-8**
 - **Class:** REFACTOR.
-- **Target:** the "gone" predicate, duplicated in `routeToDeck` and the boot (4.3).
-- **Measured cost:** one duplicated line.
+- **Target:** parallel "gone" predicates in `routeToDeck` and the boot (4.3).
+- **Measured cost:** two parallel lines.
 - **Change:** extract a helper.
 - **Risk:** it re-breaks the mutant anchors that `54c7f01` protected.
 - **Pinning test:** "a deleted seed falls back to the default deck and says the deck is gone".

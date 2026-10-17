@@ -9363,7 +9363,7 @@ describe("discoverability", () => {
     }
     assert.strictEqual((text.match(/\(D Celtic\)/g) || []).length, 2, "the D Celtic name is not on exactly both D Amara decks");
     assert.ok(!/Celtic Minor/.test(text), "the Celtic Minor sentence is still in the about section");
-    assert.ok(/A custom scale lives only in your browser/.test(text), "the custom scale sentence is missing");
+    assert.ok(/<h3>Privacy<\/h3>\s*<p>[^<]*Your scales stay in this browser on this device\./.test(aboutHtml()), "the privacy sentence is missing");
     assert.ok(/Google Analytics/.test(text), "the privacy sentence is missing");
     assert.ok(/without cookies in the EEA, the UK and Switzerland/.test(text), "the privacy sentence does not name the EEA");
     const steps = (/<ol[^>]*>([\s\S]*?)<\/ol>/.exec(aboutHtml()) || [])[1] || "";
@@ -10382,11 +10382,16 @@ describe("about overlay", () => {
   const events = (app) => JSON.parse(JSON.stringify(Array.from(app.get("window.dataLayer"))))
     .filter((e) => e[0] === "event").map((e) => ({ name: e[1], params: e[2] }));
 
-  test("AO: About says a share link opens the same pan in another browser and adds it to that browser's decks", () => {
-    const SENTENCE = "To share it, tap the link icon at the top of the screen and send the link: it opens the same pan, with the same notes and layout, in any browser, and adds it to that browser's decks.";
-    const para = /<p>[^<]*A custom scale lives only in your browser\.[^<]*<\/p>/.exec(aboutHtml());
-    assert.ok(para, "the custom-scale paragraph is missing");
-    assert.ok(textOf(para[0]).includes(SENTENCE), "the share sentence is not in the custom-scale paragraph");
+  test("AO: About's Privacy paragraph says scales stay on this device and how to share one with the link icon", () => {
+    const PRIVACY = "Your scales stay in this browser on this device. Nothing is published, and no one else can see them. To use a scale on another device or send it to a friend, tap the link icon at the top of the screen and share the link. Opening it adds the scale to that browser, and it stays there.";
+    const priv = /<h3>Privacy<\/h3>\s*<p>([^<]*)<\/p>/.exec(aboutHtml());
+    assert.ok(priv, "the Privacy paragraph is missing");
+    assert.ok(textOf(priv[0]).includes(PRIVACY), "the Privacy paragraph does not say scales stay here and how to share one");
+    const own = /<h3>Your own scale<\/h3>\s*<p>([^<]*)<\/p>/.exec(aboutHtml());
+    assert.ok(own, "the Your own scale paragraph is missing");
+    assert.strictEqual(textOf(own[1]).trim(), "Type any scale and the app generates its chords.");
+    const text = textOf(aboutHtml());
+    assert.ok(!/lives only in your browser/.test(text) && !/never leave your browser/.test(text));
   });
 
   test("AO: the about section ships hidden as a dialog, in place after #app, with every existing sentence", () => {
@@ -10409,7 +10414,7 @@ describe("about overlay", () => {
     }
     assert.ok(!/Celtic Minor/.test(text));
     assert.ok(/D Amara 10 \(D Celtic\): 29 chord cards/.test(text) && /D Amara 9 \(D Celtic\): 27 chord cards/.test(text));
-    assert.ok(/A custom scale lives only in your browser/.test(text));
+    assert.ok(/<h3>Privacy<\/h3>\s*<p>[^<]*Your scales stay in this browser on this device\./.test(inner));
     assert.ok(/without cookies in the EEA, the UK and Switzerland/.test(text));
     const app = boot();
     assert.strictEqual(app.els.about.hidden, true, "About is open at boot");
