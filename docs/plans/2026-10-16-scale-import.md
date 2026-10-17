@@ -486,6 +486,7 @@ first, against fixtures captured from real text.
   - `tests/fixtures/import_cases_v1.json` (new)
   - the FLOORS row in `tests/suite_health.py` for the new test file
   - new mutants under `tests/mutants/`
+  - `README.md`'s engine-module sentence (README.md:26-34: add `src/engine/importer.js` and change 'eleven' to 'twelve') and its suite count (README.md:180: '23 node suites' becomes 24), which `tests/test_readme_currency.py` pins by glob. importer.js cites symbol anchors, never `file:line`.
   - the two engine-module lists in `tests/app.test.js` "index.html carries the whole engine inline, with no external script" (the `HPE[mod]` loop and the region-order `deepStrictEqual`), which gain `importer` after `core`; Lane B owns the rest of that file and starts after A1 merges.
 - **Objective:** `interpret(text) -> {status, roles:{ding, top[], bottom[],
   inner[]}, spans, flags[], total, titleCount}` and `serialise(result) ->
@@ -516,7 +517,8 @@ first, against fixtures captured from real text.
     `formatSeed(parseSeed(x).value) === x`.
 - **Verify:** `node --test tests/import.test.js && python3
   tools/inline_engine.py --check && python3 tools/validate.py && bash
-  tests/run.sh node`
+  tests/run.sh node && python3 -m unittest tests.test_readme_currency`
+- **G6 until the owner decides:** A1 ships the conservative branch of G6 (BLOCK on `NO_OCTAVE`); relaxing it is a later change. (Integrator auto-decision under AFK, 2026-10-16: the non-destructive branch, reversible.)
 - **Non-goals:** UI, fetch, profiles with real data, octave inference, any
   change to `parseSeed`, `formatSeed` or `REASONS`.
 
@@ -582,7 +584,7 @@ first, against fixtures captured from real text.
 ### Lane C: docs (after B)
 
 - **Owns:** `CLAUDE.md` (a short "Scale import" bullet that names its tests),
-  `README.md` (usage line), and the `#about` copy only if the owner wants it
+  `README.md` (usage line only; the module list and suite counts are A1's), and the `#about` copy only if the owner wants it
   mentioned.
 - **Acceptance:** every sentence cites a test.
 - **Verify:** reviewer re-reads each cited test.
