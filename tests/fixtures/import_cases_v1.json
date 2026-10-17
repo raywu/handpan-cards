@@ -2522,6 +2522,100 @@
     "serialised": "",
     "fields": null
    }
+  },
+  {
+   "id": "synthetic-truncated-bullet-list",
+   "group": "truncated",
+   "title": "",
+   "text": "Ding: D\nTop: A • Bb • C • D • E • F • G • A",
+   "source": {
+    "synthetic": true,
+    "note": "bullets between the notes of a list never drop notes"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "NO_OCTAVE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-unrecognised-joiner-bullet",
+   "group": "unrecognised-section",
+   "title": "",
+   "text": "Ding: D\nTop: A Bb C D E F G A\nBottom side: F • G",
+   "source": {
+    "synthetic": true,
+    "note": "a bullet between two octaveless notes keeps the run"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "NO_OCTAVE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-unrecognised-joiner-middle-dot",
+   "group": "unrecognised-section",
+   "title": "",
+   "text": "Ding: D\nTop: A Bb C D E F G A\nBottom side: F · G",
+   "source": {
+    "synthetic": true,
+    "note": "a middle dot between two octaveless notes keeps the run"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "NO_OCTAVE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-unrecognised-joiner-plus",
+   "group": "unrecognised-section",
+   "title": "",
+   "text": "Ding: D\nTop: A Bb C D E F G A\nBottom side: F + G",
+   "source": {
+    "synthetic": true,
+    "note": "a plus between two octaveless notes keeps the run"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "NO_OCTAVE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-unrecognised-a4-four-digits",
+   "group": "unrecognised-section",
+   "title": "",
+   "text": "Ding: D3\nTop: A3 Bb3 C4 D4 E4 F4 G4 A4\nUnderside: A4 4400 tuned",
+   "source": {
+    "synthetic": true,
+    "note": "A4 followed by four digits is not a three-digit frequency, so it is a note"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
   }
  ]
 }

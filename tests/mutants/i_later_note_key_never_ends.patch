@@ -6,7 +6,7 @@ diff --git a/src/engine/importer.js b/src/engine/importer.js
 +++ b/src/engine/importer.js
 @@ -94,7 +94,6 @@
          key = /^keys?$/i.test(prev);
-       } else if (!/^(?:[,\/\-&;|+\u00b7]|and|or)$/i.test(tok)) {
+       } else if (!/^(?:[^A-Za-z0-9.]|and|or)$/i.test(tok)) {
          run = 0;
 -        key = false;
        }

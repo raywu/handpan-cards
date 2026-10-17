@@ -4473,7 +4473,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         if (run >= 2) return true;
       } else if (tok === ":") {
         key = /^keys?$/i.test(prev);
-      } else if (!/^(?:[,\/\-&;|+\u00b7]|and|or)$/i.test(tok)) {
+      } else if (!/^(?:[^A-Za-z0-9.]|and|or)$/i.test(tok)) {
         run = 0;
         key = false;
       }

@@ -270,7 +270,7 @@ test("a reference pitch after the list (A4 = 440 Hz, A4 at 440, A4 432 Hz) is no
 
 test("a later section under a label the importer does not know blocks: its notes are never dropped", () => {
   const rows = fixture.cases.filter((x) => x.group === "unrecognised-section");
-  assert.equal(rows.length, 18);
+  assert.equal(rows.length, 22);
   for (const c of rows) {
     const r = run(c);
     assert.equal(r.status, "NEEDS_INPUT", c.id);
