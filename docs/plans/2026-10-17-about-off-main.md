@@ -296,7 +296,7 @@ Then run `python3 tools/refresh_mutants.py`, followed by `python3 tools/refresh_
 
 **FLOORS** (`tests/suite_health.py`)
 - Raise only the `tests/app.test.js` row (561 today) and the `tests/e2e.test.js` row (314 today).
-- Raise each by the number of tests the lane adds. Expect 572 and 323 if G4 is yes.
+- Set each from the executed-test count that CI reports for that file in the lane's own run artifacts at the head SHA, not from the old row plus the number of tests added. The rows drift under parallel lanes. Expect roughly 572 and 323 if G4 is yes.
 
 **Verify**
 - The one Verify command is `node --test --test-name-pattern "AO: |about|PM rule 7" tests/app.test.js`. It starts on `origin/main` [O: 6 tests, 6 pass].
