@@ -12529,7 +12529,7 @@ function run() {
           const r = a.getBoundingClientRect();
           return fetch(location.href.split("#")[0]).then((res) => res.text()).then((served) => ({
                    width: r.width, display: getComputedStyle(a).display, hidden: a.hidden,
-                   served: /id="about"/.test(served) && /Celtic Minor/.test(served),
+                   served: /id="about"/.test(served) && /D Celtic/.test(served),
                    dsw: document.documentElement.scrollWidth, dcw: document.documentElement.clientWidth }));
         `);
         assert.strictEqual(m.hidden, true, "#about is not hidden on /");

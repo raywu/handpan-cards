@@ -9357,10 +9357,12 @@ describe("discoverability", () => {
     const text = textOf(aboutHtml());
     assert.ok(text.includes(VALUE_LINE), "the value line is missing from the about section");
     for (const d of BUILTIN_DECKS()) {
-      const re = new RegExp(`${escapeRe(d.name)}[:,]? ${d.chords.length} chord cards`, "i");
+      const celtic = /^D Amara/i.test(d.name) ? escapeRe(" (D Celtic)") : "";
+      const re = new RegExp(`${escapeRe(d.name)}${celtic}[:,]? ${d.chords.length} chord cards`, "i");
       assert.ok(re.test(text), `${d.name} with ${d.chords.length} chord cards is not in the about section`);
     }
-    assert.ok(/D Amara is also sold as Celtic Minor/.test(text), "the Celtic Minor equivalence is missing");
+    assert.strictEqual((text.match(/\(D Celtic\)/g) || []).length, 2, "the D Celtic name is not on exactly both D Amara decks");
+    assert.ok(!/Celtic Minor/.test(text), "the Celtic Minor sentence is still in the about section");
     assert.ok(/A custom scale lives only in your browser/.test(text), "the custom scale sentence is missing");
     assert.ok(/Google Analytics/.test(text), "the privacy sentence is missing");
     assert.ok(/without cookies in the EEA, the UK and Switzerland/.test(text), "the privacy sentence does not name the EEA");
@@ -10380,6 +10382,13 @@ describe("about overlay", () => {
   const events = (app) => JSON.parse(JSON.stringify(Array.from(app.get("window.dataLayer"))))
     .filter((e) => e[0] === "event").map((e) => ({ name: e[1], params: e[2] }));
 
+  test("AO: About says a share link opens the same pan in another browser and adds it to that browser's decks", () => {
+    const SENTENCE = "To share it, tap the link icon at the top of the screen and send the link: it opens the same pan, with the same notes and layout, in any browser, and adds it to that browser's decks.";
+    const para = /<p>[^<]*A custom scale lives only in your browser\.[^<]*<\/p>/.exec(aboutHtml());
+    assert.ok(para, "the custom-scale paragraph is missing");
+    assert.ok(textOf(para[0]).includes(SENTENCE), "the share sentence is not in the custom-scale paragraph");
+  });
+
   test("AO: the about section ships hidden as a dialog, in place after #app, with every existing sentence", () => {
     const html = INDEX_HTML();
     const open = /<section id="about"[^>]*>/.exec(html);
@@ -10395,9 +10404,11 @@ describe("about overlay", () => {
     const text = textOf(inner);
     assert.ok(text.includes(VALUE_LINE));
     for (const d of BUILTIN_DECKS()) {
-      assert.ok(new RegExp(`${escapeRe(d.name)}[:,]? ${d.chords.length} chord cards`, "i").test(text), d.name);
+      const celtic = /^D Amara/i.test(d.name) ? escapeRe(" (D Celtic)") : "";
+      assert.ok(new RegExp(`${escapeRe(d.name)}${celtic}[:,]? ${d.chords.length} chord cards`, "i").test(text), d.name);
     }
-    assert.ok(/D Amara is also sold as Celtic Minor/.test(text));
+    assert.ok(!/Celtic Minor/.test(text));
+    assert.ok(/D Amara 10 \(D Celtic\): 29 chord cards/.test(text) && /D Amara 9 \(D Celtic\): 27 chord cards/.test(text));
     assert.ok(/A custom scale lives only in your browser/.test(text));
     assert.ok(/without cookies in the EEA, the UK and Switzerland/.test(text));
     const app = boot();
