@@ -913,6 +913,11 @@ function openSheet(app) {
   return app.els;
 }
 
+/** The import row ships hidden (2026-10-17 hotfix); the IM tests un-hide it. */
+function showImport(app) {
+  app.els["import-row"].hidden = false;
+}
+
 test("the deck row opens with a + ADD chip that opens the page, focusing BACK", () => {
   const app = boot();
   const row = chipRow(app);
@@ -7379,6 +7384,7 @@ test("DR3 Tab order on Add and Edit, finer controls closed and open", () => {
     for (const open of [false, true]) {
       const app = boot();
       d2Open(app, DR1_PYGMY_MAKER, edit);
+      showImport(app);
       if (open) app.els["scale-fine-toggle"].click();
       d2Tap(app, "G3");
       app.els["scale-seat-next"].click();
@@ -9583,6 +9589,7 @@ describe("discoverability: analytics events", () => {
   test("IM: importing tracks one scale_import per IMPORT with the status only and no pasted text", () => {
     const app = bootEv();
     openSheet(app);
+    showImport(app);
     app.click(app.els["import-open"]);
     const n = events(app).length;
     const secret = "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 Bottom: C3";
@@ -9602,6 +9609,7 @@ describe("discoverability: analytics events", () => {
   test("no event param is a string over 40 characters or names a custom: id", async () => {
     const app = bootEv();
     openSheet(app);
+    showImport(app);
     app.click(app.els["import-open"]);
     app.els["import-text"].value = "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 Bottom: C3";
     app.click(app.els["import-run"]);
@@ -10405,6 +10413,7 @@ describe("IM: import text on the sheet", () => {
 
   const run = (app, text) => {
     openSheet(app);
+    showImport(app);
     app.click(app.els["import-open"]);
     app.els["import-text"].value = text;
     app.click(app.els["import-run"]);
@@ -10562,6 +10571,7 @@ describe("IM: import text on the sheet", () => {
   test("IM: INSUFFICIENT shows one line, writes nothing to #scale-box and offers no preset", () => {
     const app = boot();
     openSheet(app);
+    showImport(app);
     app.type("[C3] D3");
     app.click(app.els["import-open"]);
     app.els["import-text"].value = NAME_ONLY;
@@ -10586,6 +10596,21 @@ describe("IM: import text on the sheet", () => {
     assert.strictEqual(app.els["import-open"].getAttribute("aria-expanded"), "false");
   });
 
+  test("IM: the import row ships hidden: #import-row carries the hidden attribute in the served markup and IMPORT TEXT is not in the sheet's focus order", () => {
+    const src = require("node:fs").readFileSync(require("node:path").join(__dirname, "..", "index.html"), "utf8");
+    assert.match(src, /<div class="fieldrow" id="import-row" hidden>/);
+    assert.match(src, /#import-row\[hidden\]\s*\{\s*display:\s*none/);
+    const app = boot();
+    openSheet(app);
+    assert.strictEqual(app.els["import-row"].hidden, true);
+    assert.strictEqual(app.els["import-open"].getClientRects().length, 0);
+    const seen = tabs(app, 40);
+    for (const id of ["import-open", "import-text", "import-run", "import-use"]) {
+      assert.ok(!seen.includes(id), `${id} is in the focus order of a sheet whose import row is hidden`);
+    }
+    assert.ok(seen.includes("scale-box"));
+  });
+
   test("IM: the import controls join the sheet's focus order, in visual order, only while shown", () => {
     const app = boot();
     run(app, NO_CUE_REVIEW);
@@ -10602,6 +10627,7 @@ describe("IM: import text on the sheet", () => {
     assert.ok(tabs(app, 40).includes("import-use"), "an enabled USE is not a Tab stop");
     const closed = boot();
     openSheet(closed);
+    showImport(closed);
     const cl = tabs(closed, 40);
     assert.ok(cl.includes("import-open"));
     assert.ok(!cl.includes("import-text") && !cl.includes("import-run"), "a hidden paste area took a Tab stop");

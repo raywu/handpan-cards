@@ -8,7 +8,7 @@ diff --git a/index.html b/index.html
    const stops = [backBtn,
                   editingId ? nameBox : null,
                   scaleBox,
--                 importOpenBtn, importTextBox, importRunBtn, ...importTicks, importDingSel, importUseBtn,
+-                 ...(importRow.hidden ? [] : [importOpenBtn, importTextBox, importRunBtn, ...importTicks, importDingSel, importUseBtn]),
                   drawerOpen ? previewBox.querySelector('.panhit[tabindex="0"]') : null,
                   drawerBtn, anchorOne, anchorBetween, mirrorTop, mirrorBot, fineBtn,
                   notePrev, noteNext, seatPrev, seatNext, resetBtn,

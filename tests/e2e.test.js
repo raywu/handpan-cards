@@ -2377,6 +2377,9 @@ function run() {
       { label: "the scale sheet to open" });
   };
 
+  // The import row ships hidden (2026-10-17 hotfix); the IM tests un-hide it.
+  const showImport = () => b.eval(`document.getElementById("import-row").hidden = false; return true;`);
+
   // Typing character by character through CDP is slow and the app listens for
   // `input`, so a value plus a real input event is the same journey.
   const typeScale = (s) =>
@@ -4498,6 +4501,7 @@ function run() {
     try {
       for (const open of [false, true]) {
         await (open ? editFreshDeckOpen() : editFreshDeck());
+        await showImport();
         await b.eval(`document.getElementById("scale-box").focus(); return true;`);
         const seen = [];
         for (let i = 0; i < (open ? 3 : 2); i += 1) {
@@ -4742,6 +4746,7 @@ function run() {
   test("RD: the Edit page's Tab order is BACK, name, box, ADJUST LAYOUT, swatches, SAVE CHANGES, DELETE with the drawer closed, forward and back, and no stop is a select", async () => {
     try {
       await editFreshDeck();
+      await showImport();
       await b.setViewport(380, 800, true);
       const stop = () => b.eval(`
         const el = document.activeElement;
@@ -12351,6 +12356,7 @@ function run() {
   describe("import text on the sheet", () => {
     const REVIEW = "Ding: C Top: G A E Eb F";
     const runImport = async (text) => {
+      await showImport();
       await b.eval(`document.getElementById("import-open").click(); return true;`);
       await b.eval(`const t = document.getElementById("import-text"); t.value = ${JSON.stringify(text)}; return true;`);
       await b.eval(`document.getElementById("import-run").click(); return true;`);
@@ -12395,9 +12401,24 @@ function run() {
       }
     });
 
+    test("IM: at 380px the Add sheet shows no IMPORT TEXT control", async () => {
+      try {
+        await freshLoad();
+        await b.setViewport(380, 780, true);
+        await openSheet();
+        const m = await b.eval(`
+          const el = document.getElementById("import-open"), r = el.getBoundingClientRect();
+          return { rects: el.getClientRects().length, w: r.width, h: r.height, hidden: document.getElementById("import-row").hidden };`);
+        assert.deepStrictEqual(m, { rects: 0, w: 0, h: 0, hidden: true });
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
     test("IM: real Tab keys walk scale-box, then IMPORT TEXT, and an open area adds the paste box and IMPORT", async () => {
       await freshLoad();
       await openSheet();
+      await showImport();
       await b.eval(`document.getElementById("scale-box").focus(); return true;`);
       await b.key("Tab", "Tab", 9);
       assert.strictEqual(await activeId(), "import-open");
