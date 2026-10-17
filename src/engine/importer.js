@@ -73,8 +73,16 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var rest = new RegExp(TOKEN.source, "g");
     var m;
     rest.lastIndex = re.lastIndex;
+    var run = 0;
     while ((m = rest.exec(body))) {
-      if (JOINED.test(m[0]) || NOTE_LIKE.test(m[0])) return true;
+      var tok = m[0];
+      if (JOINED.test(tok) || NOTE_UP.test(tok)) return true;
+      if (NOTE_LIKE.test(tok)) {
+        run += 1;
+        if (run >= 2) return true;
+      } else if (!/^[,\/\-]$/.test(tok) && !SKIPPED.test(tok)) {
+        run = 0;
+      }
     }
     return false;
   }

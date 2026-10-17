@@ -105,7 +105,7 @@ test("pitch multiset: serialised fields equal the notes read off the source text
     const octaveless = c.group === "octaveless";
     const norm = (a) => a.map((n) => (octaveless ? pc(n) : n)).sort();
     assert.deepEqual(norm(names), norm(listed), c.id);
-    if (!octaveless) {
+    if (!octaveless && c.group !== "mixed-octave") {
       const written = (c.text.replace(/([A-G]) #/g, "$1#").match(/[A-G][#b]?-?\d/g) || []).sort();
       assert.deepEqual([...names].sort(), [...written].sort(), c.id + " vs text");
     }
@@ -237,6 +237,24 @@ test("an inner note below the highest top note blocks with INNER_BELOW_TOP and w
   assert.equal(r.status, "NEEDS_INPUT");
   assert.equal(flagOf(r, "INNER_BELOW_TOP").level, "BLOCK");
   assert.equal(importer.serialise(r), "");
+});
+
+test("prose after the note list never reads as a later note: the five product-page tails stay REVIEW", () => {
+  const tails = fixture.cases.filter((x) => x.group === "prose-tail");
+  assert.equal(tails.length, 5);
+  for (const c of tails) {
+    const r = run(c);
+    assert.equal(r.status, "REVIEW", c.id);
+    assert.equal(flagOf(r, "AMBIGUOUS_NOTE"), undefined, c.id);
+    assert.ok(importer.serialise(r).startsWith("(D3) A3 Bb3 C4 D4 E4 F4 G4 A4"), c.id);
+  }
+});
+
+test("octaved tops with octaveless inner notes: the inner octaves climb above the tops", () => {
+  const c = byId("synthetic-mixed-octave-inner");
+  const r = run(c);
+  assert.equal(importer.serialise(r), "(D3) A3 C4 D4 E4 F4 G4 A4 C5 | E5 F5");
+  assert.deepEqual(r.roles.inner.map((e) => [e.note, !!e.inferred]), [["E5", true], ["F5", true]]);
 });
 
 test("a list cut short by a token that is not a note blocks while a later token still reads as a note", () => {

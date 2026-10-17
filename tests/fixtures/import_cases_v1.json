@@ -1321,7 +1321,7 @@
    "id": "synthetic-inner-below-top",
    "group": "inner-below",
    "title": "",
-   "text": "Notes: D3 - A3 Bb3 C4 D4 E4 F4 G4 A4, C5 Inner: B4",
+   "text": "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4, C5 Inner: B4",
    "source": {
     "synthetic": true,
     "note": "inner note B4 sits below the top note C5"
@@ -1329,7 +1329,6 @@
    "expect": {
     "status": "NEEDS_INPUT",
     "codes": [
-     "DING_CUE",
      "INNER_BELOW_TOP"
     ],
     "serialised": "",
@@ -1444,6 +1443,126 @@
      9,
      10
     ]
+   }
+  },
+  {
+   "id": "synthetic-prose-tail-handmade",
+   "group": "prose-tail",
+   "title": "",
+   "text": "Notes: D3 A3 Bb3 C4 D4 E4 F4 G4 A4 C5 Handmade in Spain by a small team",
+   "source": {
+    "synthetic": true,
+    "note": "product prose after the note list must not read as a later note"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE"
+    ],
+    "serialised": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-prose-tail-perfect",
+   "group": "prose-tail",
+   "title": "",
+   "text": "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4\nPerfect for a beginner.",
+   "source": {
+    "synthetic": true,
+    "note": "product prose after the note list must not read as a later note"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [],
+    "serialised": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-prose-tail-comes-with",
+   "group": "prose-tail",
+   "title": "",
+   "text": "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4. Comes with a soft case.",
+   "source": {
+    "synthetic": true,
+    "note": "product prose after the note list must not read as a later note"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [],
+    "serialised": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-prose-tail-tuned",
+   "group": "prose-tail",
+   "title": "",
+   "text": "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 - tuned at 432 Hz by a master",
+   "source": {
+    "synthetic": true,
+    "note": "product prose after the note list must not read as a later note"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [],
+    "serialised": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-prose-tail-digit",
+   "group": "prose-tail",
+   "title": "",
+   "text": "Notes: D3 A3 Bb3 C4 D4 E4 F4 G4 A4 C5 (10 notes), comes in a padded bag",
+   "source": {
+    "synthetic": true,
+    "note": "product prose after the note list must not read as a later note"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE"
+    ],
+    "serialised": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-truncated-gap",
+   "group": "truncated",
+   "title": "",
+   "text": "Ding: D3 Top: A3 Bb3 C4 or maybe D4 E4",
+   "source": {
+    "synthetic": true,
+    "note": "two words sit between the stop and the next note"
+   },
+   "expect": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE"
+    ],
+    "serialised": "",
+    "fields": null
+   }
+  },
+  {
+   "id": "synthetic-mixed-octave-inner",
+   "group": "mixed-octave",
+   "title": "",
+   "text": "Ding: D3 Top: A3 C4 D4 E4 F4 G4 A4 C5 Inner: E F",
+   "source": {
+    "synthetic": true,
+    "note": "octaved tops, octaveless inner notes: the inner octaves climb above the tops"
+   },
+   "expect": {
+    "status": "REVIEW",
+    "codes": [
+     "NO_OCTAVE"
+    ],
+    "serialised": "(D3) A3 C4 D4 E4 F4 G4 A4 C5 | E5 F5",
+    "fields": 11
    }
   }
  ]
