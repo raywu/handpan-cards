@@ -396,7 +396,7 @@ The paste baseline has none of these concerns.
 |---|---|
 | Source fidelity | Every extracted note keeps its source span (offset, original text). The review list shows the source fragment beside each role. The note count is checked against the title count, both including and excluding the ding; a mismatch either way is BLOCK |
 | Semantic correctness | Roles come only from explicit labels or role words. Undeclared cues are CONFIRM (first note as ding; separator after the first note) or BLOCK (brackets, conflicting ding marks). Missing octaves are CONFIRM `NO_OCTAVE` with the inferred octaves shown (G6) |
-| Target correctness | Serialise in `formatSeed` order, then run `parseSeed`. Its refusals show through the existing `#scale-refusal`, unchanged |
+| Target correctness | Serialise in `formatSeed` order, then run `parseSeed`. Its refusals show through the existing `#scale-refusal`, unchanged. The one earlier path: a refused provisional string (G6) shows its reason in the review list as PROVISIONAL_REFUSED, before USE |
 
 ### 4.2 Flag codes (from the prototype; names are suggestions)
 
@@ -443,7 +443,9 @@ Enharmonics:
      role, note and source fragment. Each flag is a line. A CONFIRM blocks
      USE until it is ticked. A DING_CUE CONFIRM is satisfied by a tick or a
      picked ding; a picked ding re-runs the inference, refreshes every
-     inferred octave and clears the NO_OCTAVE tick.
+     inferred octave and clears the NO_OCTAVE tick. It also rebuilds the
+     provisional string, so it can raise or clear PROVISIONAL_REFUSED; the
+     ding pick stays usable while that BLOCK stands.
      A BLOCK leaves USE disabled and keeps the paste visible.
 3. USE writes the serialised string to `#scale-box` and dispatches `input`.
    From there the existing parse line, refusal, preview, layout drawer,
@@ -498,7 +500,9 @@ first, against fixtures captured from real text.
   - `README.md`'s engine-module sentence (README.md:26-34: add `src/engine/importer.js` and change 'eleven' to 'twelve') and its suite count (README.md:180: '23 node suites' becomes 24), which `tests/test_readme_currency.py` pins by glob. importer.js cites symbol anchors, never `file:line`.
   - the two engine-module lists in `tests/app.test.js` "index.html carries the whole engine inline, with no external script" (the `HPE[mod]` loop and the region-order `deepStrictEqual`), which gain `importer` after `core`; Lane B owns the rest of that file and starts after A1 merges.
 - **Objective:** `interpret(text) -> {status, roles:{ding, top[], bottom[],
-  inner[]}, spans, flags[], total, titleCount}` and `serialise(result) ->
+  inner[]}, spans, flags[], total, titleCount}`, where each flag is
+  `{code, reason?}` (`reason` carries a PROVISIONAL_REFUSED refusal) and each
+  inferred bottom note carries `guess: true` and `serialise(result) ->
   string`. Both are pure, with no DOM and no network.
 - **Fixtures:**
   - the Yatao D Aegean 18 `body_html` text;
@@ -529,14 +533,18 @@ first, against fixtures captured from real text.
     serialised string (C Ashakiran 15: `(C3) F3 G3 A3 B3 C4 D4 E4 G4 [D5]
     [E5] [F5] [A5] [B5] [C6]`), each note's role and source span, the
     NO_OCTAVE flag and the inferred notes.
-  - An octaveless source whose top notes descend (e.g. `(C) G A E Eb F`) has
-    a synthetic fixture (marked synthetic: no source URL or capture date)
-    asserting its exact serialised string, `(C3) G3 A3 E4 Eb5 F5`, and that
+  - An octaveless source whose top notes descend (source text
+    `Ding: C. Top: G A E Eb F`, whose provisional string is
+    `(C) G A E Eb F`) has a synthetic fixture (marked synthetic: no source
+    URL or capture date) asserting its exact serialised string, `(C3) G3 A3 E4 Eb5 F5`, and that
     NO_OCTAVE lists every note; SOURCE_NOT_ASCENDING cannot fire without
     octaves, so the review list is the only guard.
   - A provisional string that `parseSeed` refuses yields NEEDS_INPUT with the
     PROVISIONAL_REFUSED BLOCK flag, the refusal reason and no serialised
-    string (fixture: `(D) E F G Bb`, refused NO_FIFTH).
+    string (fixture: source text `Ding: D. Top: E F G Bb`, provisional
+    string `(D) E F G Bb`, refused NO_FIFTH). Both fixture literals in our
+    grammar are provisional strings, never pasted source: pasted, their
+    parentheses are UNDECLARED_PARENS.
   - A source that writes every octave builds no provisional string: the
     exact Yatao and description assertions hold unchanged.
   - Each inferred bottom note carries a `guess` bit in the result; tops,
@@ -618,7 +626,11 @@ first, against fixtures captured from real text.
   - BLOCK disables USE.
   - CONFIRM needs a tick; a DING_CUE CONFIRM is also satisfied by a picked
     ding, which re-runs the inference, refreshes every inferred octave and
-    clears the NO_OCTAVE tick.
+    clears the NO_OCTAVE tick. It also rebuilds the provisional string and
+    recomputes PROVISIONAL_REFUSED from it; the ding pick stays usable while
+    that BLOCK stands (test: on the `Ding: D. Top: E F G Bb` fixture, picking
+    a ding leaves the picker enabled and the flag set equals a fresh
+    `interpret` of the re-picked source).
   - A NO_OCTAVE review row marks each inferred octave as inferred, and an
     inferred bottom octave's row says its placement is a guess.
   - INSUFFICIENT writes nothing to `#scale-box`.
