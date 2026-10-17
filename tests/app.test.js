@@ -4631,7 +4631,7 @@ describe("panel fit judge", () => {
     delete candOver.controls["deck-add"];
     assert.strictEqual(judge(baseOver, candOver).rule2.fail.length, 1, "a base that overflows does not excuse it");
     assert.strictEqual(judge(cell(), withControl(cell(), "deck-add", { exists: false, rendered: false, disabled: false, bottom: 0 })).rule2.fail.length, 1, "exists:false counts as lacking");
-    assert.deepStrictEqual(pf.REMOVED_BY_DESIGN, ["modeS", "button:FULL DECK PDF", "button:CHORD-ONLY PDF"]);
+    assert.deepStrictEqual(pf.REMOVED_BY_DESIGN, ["modeS", "button:FULL DECK PDF", "button:CHORD-ONLY PDF", "share-copy"]);
     const noS = judge(cell(), lacks("modeS"));
     assert.strictEqual(noS.rule2.fail.length, 0, "modeS is removed by design");
     assert.strictEqual(noS.rule2.reported.length, 0);
@@ -5411,7 +5411,7 @@ test("AP2-2 setInert applies each caller's own background set", () => {
   const ids = (expr) => plain(app.get(`${expr}.map(e => e.id)`));
   const inertIds = () => plain(app.get(`[...new Set([...background, ...panelBackground])].filter(e => e.inert).map(e => e.id)`));
   assert.deepStrictEqual(ids("background"), ["settings-panel", "about", "main"], "the sheet's set");
-  assert.deepStrictEqual(ids("panelBackground"), ["main", "decks", "about"], "the panel's set");
+  assert.deepStrictEqual(ids("panelBackground"), ["main", "decks", "about", "share-copy"], "the panel's set");
   assert.deepStrictEqual(inertIds(), []);
 
   app.run("openScaleSheet()");
@@ -5422,7 +5422,7 @@ test("AP2-2 setInert applies each caller's own background set", () => {
   assert.strictEqual(app.get("background[0].getAttribute('aria-hidden')"), null);
 
   app.run("openPanel()");
-  assert.deepStrictEqual(inertIds().sort(), ["about", "decks", "main"], "the panel inerts its own set only");
+  assert.deepStrictEqual(inertIds().sort(), ["about", "decks", "main", "share-copy"], "the panel inerts its own set only");
   assert.strictEqual(app.get("panelBackground[1].getAttribute('aria-hidden')"), "true");
   app.run("closePanel()");
   assert.deepStrictEqual(inertIds(), []);
@@ -8962,9 +8962,9 @@ test("editable defaults: hpfc.hidden keeps only built-in ids", () => {
 
 test("editable defaults: #deck-restore follows #deck-add, starts hidden and joins the panel stops only while rendered", () => {
   const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
-  assert.match(html, /id="share-copy"[^>]*>[^<]*<\/button>\s*<\/div>\s*<input[^>]*id="share-url"[^>]*>\s*<button[^>]*id="deck-restore"[^>]*\bhidden\b[^>]*>RESET SEEDED DECKS<\/button>/,
-    "the restore button is not right after the COPY LINK row, hidden, with its label");
-  assert.match(html, /document\.getElementById\("share-copy"\), document\.getElementById\("share-url"\), restoreBtn,/, "panelStops() does not list the restore button right after the share controls");
+  assert.match(html, /id="deck-add"[^>]*>[^<]*<\/button>\s*<\/div>\s*<button[^>]*id="deck-restore"[^>]*\bhidden\b[^>]*>RESET SEEDED DECKS<\/button>/,
+    "the restore button is not right after the Scales row, hidden, with its label");
+  assert.match(html, /document\.getElementById\("deck-add"\), restoreBtn,/, "panelStops() does not list the restore button right after + ADD A SCALE");
   const app = boot();
   assert.strictEqual(app.els["deck-restore"].hidden, true, "the restore button shows on a fresh store");
   hideViaSheet(app, "amara", "D AMARA 9");
@@ -9999,6 +9999,7 @@ describe("share url", () => {
     app.sandbox.navigator.clipboard = { writeText: async (t) => { written.push(t); } };
     app.els["share-copy"].click();
     await flush();
+    app.flushTimers();
     assert.deepStrictEqual(written, [app.location.href]);
     assert.ok(written[0].includes("?share=x#deck=d-kurd-10"), written[0]);
     assert.strictEqual(app.announcer().textContent, "LINK COPIED");
@@ -10012,13 +10013,13 @@ describe("share url", () => {
     app.sandbox.navigator.share = async (o) => { shared.push(o); };
     app.els["share-copy"].click();
     await flush();
+    app.flushTimers();
     assert.deepStrictEqual(plain(shared), [{ url: app.location.href }]);
     assert.strictEqual(app.announcer().textContent, "LINK SHARED");
   });
 
   test("SU: COPY LINK reveals the readonly input when both are absent", async () => {
     const app = boot();
-    app.run("openPanel()");
     delete app.sandbox.navigator.clipboard;
     delete app.sandbox.navigator.share;
     const input = app.els["share-url"];
@@ -10032,8 +10033,8 @@ describe("share url", () => {
     assert.strictEqual(app.activeId(), "share-url");
     assert.strictEqual(selects, 1);
     assert.strictEqual(app.announcer().textContent, "SELECT THE LINK AND COPY IT");
-    assert.ok(stops(app).includes("share-url"));
-    app.run("closePanel()");
+    assert.ok(!stops(app).includes("share-url"));
+    input.dispatchEvent({ type: "blur" });
     assert.strictEqual(input.hasAttribute("hidden"), true);
   });
 
@@ -10048,14 +10049,46 @@ describe("share url", () => {
     assert.strictEqual(app.els["share-url"].hasAttribute("hidden"), true);
   });
 
-  test("SU: COPY LINK joins panelStops after + ADD A SCALE and leaves it while disabled", () => {
+  test("SU: COPY LINK is not a panel stop, enabled or disabled", () => {
     const app = boot();
     app.run("openPanel()");
-    const ids = () => stops(app);
-    const list = ids();
-    assert.strictEqual(list[list.indexOf("deck-add") + 1], "share-copy");
+    assert.ok(!stops(app).includes("share-copy"));
     app.els["share-copy"].disabled = true;
-    assert.ok(!ids().includes("share-copy"));
+    assert.ok(!stops(app).includes("share-copy"));
+  });
+
+  test("SI: a second COPY LINK clears the message line before writing LINK COPIED again", async () => {
+    const app = boot();
+    app.sandbox.navigator.clipboard = { writeText: async () => {} };
+    const el = app.announcer();
+    const writes = [];
+    let text = el.textContent;
+    Object.defineProperty(el, "textContent", {
+      get: () => text,
+      set: (v) => { text = v; writes.push(v); },
+      configurable: true,
+    });
+    for (let i = 0; i < 2; i++) {
+      app.els["share-copy"].click();
+      await flush();
+      app.flushTimers();
+    }
+    assert.deepStrictEqual(writes, ["", "LINK COPIED", "", "LINK COPIED"]);
+    writes.length = 0;
+    app.run('say("hello", "ok")');
+    assert.deepStrictEqual(writes, ["hello"], "say() itself writes once, with no clear");
+  });
+
+  test("SI: while About is open the share icon is inert under #app and not a stop", () => {
+    const h = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    const body = h.slice(h.indexOf("<body>"));
+    assert.ok(body.indexOf('<div id="app">') >= 0 && body.indexOf('<div id="app">') < body.indexOf('id="share-copy"') &&
+      body.indexOf('id="share-copy"') < body.indexOf('<section id="about"'), "the icon is not inside #app");
+    assert.match(h, /const aboutBackground = \(\) => \[document\.querySelector\("#app"\)/);
+    const app = boot();
+    app.run("openAbout()");
+    assert.strictEqual(app.get("aboutOpen"), true);
+    assert.ok(!app.get("aboutStops().map(e => e.id)").includes("share-copy"));
   });
 
   test("SU: COPY LINK tracks share_copy with no id, name or code", async () => {
@@ -10094,6 +10127,91 @@ describe("share url", () => {
     assert.deepStrictEqual(gaEvents(sameSeed).filter((e) => e === "deck_route"), []);
     const otherSeed = bootGA({ storage: stored, href: PAGE + "#deck=d-amara-9" });
     assert.deepStrictEqual(gaEvents(otherSeed).filter((e) => e === "deck_route"), ["deck_route"]);
+  });
+});
+
+describe("share icon", () => {
+  const html = () => fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+  const css = () => { const h = html(); return h.slice(h.indexOf("<style>"), h.indexOf("</style>")); };
+  const rule = (src, sel) => {
+    const at = src.indexOf("\n" + sel + "{");
+    if (at < 0) return null;
+    return src.slice(at, src.indexOf("}", at));
+  };
+
+  test("SI: #share-copy is the header's first control, a button labelled Copy link with an inline SVG and no external asset", () => {
+    const h = html();
+    const header = h.slice(h.indexOf("<header>"), h.indexOf("</header>"));
+    const btn = /<button\b[^>]*id="share-copy"[^>]*>([\s\S]*?)<\/button>/.exec(header);
+    assert.ok(btn, "#share-copy is not in the header");
+    assert.ok(header.indexOf('id="share-copy"') < header.indexOf('id="settings-trigger"'), "the icon is not before the trigger");
+    assert.ok(!/class="hspacer"/.test(header), "the spacer is still there");
+    assert.match(btn[0], /aria-label="Copy link"/);
+    assert.match(btn[0], /type="button"/);
+    assert.match(btn[1], /<svg\b[^>]*aria-hidden="true"/);
+    assert.ok(!/<img|href=|src=|url\(/.test(btn[1]), "an external asset");
+    assert.ok(!/\btitle=/.test(btn[0]), "an enabled icon carries no title");
+    assert.ok(!/COPY LINK/.test(btn[0]), "visible text in the icon");
+  });
+
+  test("SI: the Scales group holds + ADD A SCALE alone in a full-width row and no share control", () => {
+    const h = html();
+    const g = h.slice(h.indexOf('id="panel-scales-group"'));
+    const group = g.slice(0, g.indexOf('<div class="panel-group">'));
+    assert.match(group, /<div class="modebar">\s*<button[^>]*id="deck-add"[^>]*>\+ ADD A SCALE<\/button>\s*<\/div>/);
+    assert.ok(!/share-copy|share-url|COPY LINK/.test(group));
+  });
+
+  test("SI: panelStops holds neither share control, in either state", async () => {
+    const app = boot();
+    delete app.sandbox.navigator.clipboard;
+    delete app.sandbox.navigator.share;
+    app.run("settingsPanel.querySelectorAll = () => []");
+    const ids = () => app.get("panelStops().map((e) => e.id)");
+    for (const open of [false, true]) {
+      if (open) app.run("openPanel()");
+      assert.ok(!ids().includes("share-copy") && !ids().includes("share-url"));
+    }
+    app.els["share-copy"].click();
+    await new Promise((r) => setImmediate(r));
+    assert.strictEqual(app.els["share-url"].hasAttribute("hidden"), false);
+    assert.ok(!ids().includes("share-url"));
+    app.els["share-copy"].disabled = true;
+    assert.ok(!ids().includes("share-copy"));
+  });
+
+  test("SI: panelBackground holds #share-copy, so an open drawer inerts it", () => {
+    const app = boot({ layout: true });
+    assert.ok(app.get('panelBackground.some(e => e.id === "share-copy")'));
+    app.run("openPanel()");
+    assert.strictEqual(app.get('document.getElementById("share-copy").inert'), true);
+    app.run("closePanel()");
+    assert.ok(!app.get('document.getElementById("share-copy").inert'));
+  });
+
+  test("SI: the print block hides #share-copy and #share-url", () => {
+    const c = css();
+    const block = c.slice(c.lastIndexOf("@media print{"));
+    assert.match(block, /#share-copy,\s*#share-url\{display:none\}/);
+  });
+
+  test("SI: a revealed #share-url is positioned out of flow", () => {
+    const c = css();
+    const r = rule(c, "#share-url");
+    assert.ok(r, "no #share-url rule");
+    assert.match(r, /position:absolute/);
+    assert.match(r, /top:44px/);
+    assert.match(r, /z-index:29/);
+    assert.ok(!/margin-top/.test(r), "margin-top is still there");
+    assert.match(r, /min-height:44px/);
+    assert.match(r, /font-size:16px/);
+    assert.match(rule(c, "header") || "", /position:relative/);
+    assert.match(rule(c, "#share-copy:disabled") || "", /opacity:\.5/);
+    assert.match(rule(c, "#share-copy:disabled:active") || "", /background:#211d16/);
+  });
+
+  test("SI: the glyph is two rotated stadiums at stroke-width 2.4", () => {
+    assert.match(html(), /<g transform="rotate\(-45 12 12\)"[^>]*stroke-width="2\.4"/);
   });
 });
 

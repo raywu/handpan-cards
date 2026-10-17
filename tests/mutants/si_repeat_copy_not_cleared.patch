@@ -1,0 +1,14 @@
+# kills: SI: a second COPY LINK clears the message line before writing LINK COPIED again
+# suite: node --test --test-name-pattern ^SI:.a.second.COPY.LINK tests/app.test.js
+# done() no longer clears the message line first, so a repeat copy mutates nothing visible.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12332,7 +12332,6 @@ function copyLink() {
+   const href = location.href;
+   const deck_kind = deckKind(deck());
+   const done = (text, method) => {
+-    say("", "");
+     track("share_copy", { deck_kind, method });
+     setTimeout(() => { if (announce.textContent === "") say(text, "ok"); }, 0);
+   };

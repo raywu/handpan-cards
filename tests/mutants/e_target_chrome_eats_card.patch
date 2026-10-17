@@ -21,13 +21,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -123,12 +123,12 @@
-    tests/e2e.test.js "the header and footer stay inside their pixel budget"
+@@ -177,13 +177,13 @@ body{
     pins this against measured numbers. assertCardFits CANNOT: it derives its
     expectation from the current main height, so it moves with the regression.
     ------------------------------------------------------------------------ */
--header{width:100%; max-width:520px; text-align:center; margin-bottom:var(--sp-3)}
-+header{width:100%; max-width:520px; text-align:center; margin-bottom:20px}
+-header{position:relative; width:100%; max-width:520px; text-align:center; margin-bottom:var(--sp-3)}
++header{position:relative; width:100%; max-width:520px; text-align:center; margin-bottom:20px}
  /* The h1 row: a 44px|1fr|44px grid so the title stays optically centred once
     a 44px settings trigger sits beside it. The spacer is the trigger's mirror
     image, not decoration for its own sake - without it the title drifts right
@@ -35,8 +34,11 @@ diff --git a/index.html b/index.html
  .hrow{display:grid; grid-template-columns:44px 1fr 44px; align-items:center;
 -  gap:var(--sp-2); margin-bottom:var(--sp-2)}
 +  gap:var(--sp-2); margin-bottom:16px}
- .hspacer{width:44px; height:44px}
-@@ -512,6 +512,6 @@
+ #share-copy{width:44px; height:44px; padding:0; flex:none}
+ #share-copy svg{display:block; margin:0 auto}
+ #share-copy:disabled{opacity:.5; cursor:default}
+@@ -633,7 +633,7 @@ main{overflow-x:clip}
+    span (row-auto) has already bumped the cursor forward past row 1. .mid
     carries no box of its own (display:contents): it is markup grouping only,
     so its children (.count, .shuffle) participate in this grid directly. */
 -footer{width:100%; max-width:520px; margin-top:var(--sp-3);

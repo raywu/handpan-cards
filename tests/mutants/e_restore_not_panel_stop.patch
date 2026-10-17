@@ -7,8 +7,8 @@ diff --git a/index.html b/index.html
    return [settingsTrigger, document.getElementById("modeA"), document.getElementById("modeB"),
            document.getElementById("tier-basic"), document.getElementById("tier-intermediate"),
            document.getElementById("tier-advanced"), document.getElementById("seq-source-link"),
--          document.getElementById("deck-add"), document.getElementById("share-copy"), document.getElementById("share-url"), restoreBtn,
-+          document.getElementById("deck-add"), document.getElementById("share-copy"), document.getElementById("share-url"),
+-          document.getElementById("deck-add"), restoreBtn,
++          document.getElementById("deck-add"),
            ...settingsPanel.querySelectorAll(".prints button, .prints select"),
            // Eng review amendment 1: the Resources links join the Tab trap
            // after the print controls, in DOM order.
