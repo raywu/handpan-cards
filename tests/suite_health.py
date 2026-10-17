@@ -50,7 +50,7 @@ FLOORS = {
     "tests/test_icons.py": 4,
     "tests/test_site_files.py": 5,
     # node
-    "tests/app.test.js": 618,
+    "tests/app.test.js": 620,
     "tests/seat_sweeps_tap_add.test.js": 3,
     "tests/seat_sweeps_tap_edit.test.js": 3,
     "tests/seat_sweeps_keys.test.js": 4,
