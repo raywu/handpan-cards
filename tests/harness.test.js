@@ -686,8 +686,11 @@ test("the sandbox hashchange fires only on a real change and carries oldURL and 
   const before = seen().length;
   app.hashchange("#a");
   assert.strictEqual(seen().length, before, "the same hash fires nothing");
+  app.hashchange("#a", { force: true });
+  assert.strictEqual(seen().length, before + 1, "force fires the listeners on the same hash");
+  const forced = seen().length;
   app.hashchange("#b");
-  assert.deepStrictEqual(seen().slice(before), [["https://example.test/index.html#a", "https://example.test/index.html#b"]]);
+  assert.deepStrictEqual(seen().slice(forced), [["https://example.test/index.html#a", "https://example.test/index.html#b"]]);
 });
 
 test("Browser.off removes the one handler on() kept for a method", () => {

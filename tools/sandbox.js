@@ -692,11 +692,12 @@ function boot(opts = {}) {
     announcer: () => sandbox.document.querySelector(".announce"),
     /** Set the hash and fire the app's hashchange listeners, as the browser does
      *  when the hash actually changes: a hash equal to the current one fires
-     *  nothing, and the event carries oldURL and newURL. */
-    hashchange: (newHash) => {
+     *  nothing unless opts.force is set (a listener re-entered with the hash it
+     *  already shows), and the event carries oldURL and newURL. */
+    hashchange: (newHash, opts = {}) => {
       const oldURL = location.href;
       location.hash = newHash;
-      if (location.href === oldURL) return;
+      if (location.href === oldURL && !opts.force) return;
       for (const fn of winListeners.hashchange || []) fn({ type: "hashchange", oldURL, newURL: location.href });
     },
     /** Press the browser's Back button. Fires the app's popstate listeners; the

@@ -9813,7 +9813,7 @@ describe("share url", () => {
     const calls = app.history.calls.length;
     const events = gaEvents(app).length;
     const chips = app.els.decks.children.slice();
-    app.hashchange(app.location.hash);
+    app.hashchange(app.location.hash, { force: true });
     assert.strictEqual(app.history.calls.length, calls);
     assert.strictEqual(gaEvents(app).length, events);
     assert.deepStrictEqual(app.els.decks.children, chips);
@@ -9831,7 +9831,7 @@ describe("share url", () => {
     assert.strictEqual(app.location.hash, hash);
     assert.strictEqual(gaEvents(app).filter((e) => e === "share_open").length, 1);
     const calls = app.history.calls.length;
-    app.hashchange(hash);
+    app.hashchange(hash, { force: true });
     assert.strictEqual(app.history.calls.length, calls);
     assert.strictEqual(gaEvents(app).filter((e) => e === "share_open").length, 1);
   });
