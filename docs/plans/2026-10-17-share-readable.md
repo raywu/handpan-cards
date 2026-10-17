@@ -1,6 +1,6 @@
 # Plan: human-readable share links, and COPY LINK as an on-page share icon (2026-10-17)
 
-Status: PLAN ONLY. Nothing here is built. Base: `origin/main` at `e158f06`.
+Status: PLAN ONLY. Nothing here is built. Base: `origin/main` at `ebd997f`, refreshed from `e158f06`. The commits between touch only `CLAUDE.md`, `README.md`, a plan doc, `tests/harness.test.js`, `tests/helpers/cdp.js` and two `dh_*` mutants, and no engine or app code, so P1 to P11 stand. Every count and check recorded below was re-run at `ebd997f` and is unchanged.
 Owner brief 2026-10-17 (binding), plus the coordinator's scope addition of the same day (the share icon).
 
 Every measurement below comes from a probe run against `origin/main`:
@@ -93,9 +93,14 @@ check   = 6 lowercase hex
 6. Map the scale tokens back to a scale string and call `core.parseSeed`.
 7. Re-attach the seats through `HPE.layout.readSeats`, exactly as `decode` does for v3 and v4.
 
+**Refusals.** Every v5 structural refusal (the `5/` shape, the segment layout, a malformed escape, an option, the checksum, the seats) returns `badNote(text)` on the whole link, exactly as v4's `decodeSeed` does (share.js's `badNote` wraps `HPE.core.badNote`). Two refusals are not structural and pass through unchanged, as in v4: `NEEDS_NEWER_APP` from the version gate, and whatever `core.parseSeed` returns.
+
+**Scale tokens.** The v5 scale segment is a total, verbatim inverse of `core.formatSeed`: `[X]` and `uX`, `#` and `s`, `|` and `-`, a space and `_` swap, and every other character is copied, so every segment maps to exactly one scale string. share.js validates no scale token. The mapped string goes to `core.parseSeed`, whose code and reason come back unchanged ("decode propagates parseSeed's own code for an invalid seed" keeps pinning that). A lone `-` is the bar, while a `-1` octave (`SCALE_NOTE_RE` allows it) stays inside its own `_`-separated note token, so the two never meet.
+
 ### 2.2 Checksum (Q2)
 
 - **Algorithm.** The top 24 bits of 32-bit FNV-1a, written as 6 lowercase hex characters.
+- **Comparison.** The check segment is compared as an exact 6-character lowercase string. Any other byte, an uppercase hex digit included, fails the check. The refusal is `BAD_NOTE` through `badNote(text)`, as v4's checksum failure is: share.js has no `BAD_CHECKSUM` code, and the closed enum that "share answers only with codes from the closed section 2 enum" pins does not grow.
 - **What it covers.** The DECODED meaning, joined by `\n`:
   - the version;
   - the percent-decoded scale segment;
@@ -171,6 +176,7 @@ check   = 6 lowercase hex
 - The sender writes `*` and then the default generated name. Nothing else is invented.
 - The new export `HPE.select.deckName(seed)` produces the label, using `options.name ||` the same `autoName(fields, options.parent ?? inferParent(...))` expression that `select.build` uses.
 - Lane E's test pins `deckName(seed) === build(seed).value.name` for every seed in the engine corpus.
+- **`deckName` never throws.** `autoName` reads `naming().PARENTS[parentIndex].display`, which throws a TypeError for an index outside `PARENTS` (11 entries, 0 to 10, the range `core.readOptions` accepts). So `deckName` returns `null` for an explicit `options.parent` outside 0 to 10 instead of calling `autoName`, and `encode` turns that `null` into `badNote(seed)`: an out-of-range parent makes `encode` return `BAD_NOTE`.
 - P7: the longest label shape is 13 characters ("C# PHRYGIAN 2") plus at most 3 count digits. That stays under `NAME_MAX` 16, so the non-ASCII ellipsis that `autoName` appends past 16 is never written.
 
 **What the receiver does with `*`**
@@ -286,7 +292,7 @@ The analytics hash rule is untouched. The gtag `config` still sends `location.or
 | `src/engine/share.js`, `src/engine/select.js` (`deckName` export only) | owns | - | - |
 | `index.html` engine regions `share` and `select` (written by `tools/inline_engine.py` only) | owns | - | - |
 | `index.html` app JS: `SHARE_VERSION` declaration; the `#s=` branch of the `hashchange` listener | owns | - | - |
-| `index.html` header markup (`.hrow`), header CSS, the Scales `.modebar`, `#share-url`, `panelStops()`, `panelBackground`, `copyLink()`'s reveal, the print block | - | owns | - |
+| `index.html` header markup (`.hrow`), header CSS, the Scales `.modebar`, `#share-url` and its hide listeners, `openScaleSheet()`'s hide of it, `say()`'s clear, `panelStops()`, `panelBackground`, `copyLink()`'s reveal, the print block | - | owns | - |
 | `tests/share.test.js` | owns | - | - |
 | `tests/app.test.js`, `tests/e2e.test.js` | owns (wave 1) | owns (wave 2) | - |
 | `tools/probe/panel_fit.js` (`REMOVED_BY_DESIGN` only) | - | owns | - |
@@ -308,8 +314,8 @@ The analytics hash rule is untouched. The gtag `config` still sends `location.or
    - `python3 tools/validate.py`
    - `node tools/regen_engine_corpus.js --check`
 
-   All four were recorded clean on `origin/main` `e158f06`.
-4. **Every mutant patch applies.** `python3 tools/refresh_mutants.py --check` must print "all mutant patches apply cleanly; nothing to refresh" (recorded on `e158f06`).
+   All four were recorded clean on `origin/main` `ebd997f`.
+4. **Every mutant patch applies.** `python3 tools/refresh_mutants.py --check` must print "all mutant patches apply cleanly; nothing to refresh" (recorded on `ebd997f`).
 5. **A lane that changes an engine module** commits the module, the `inline_engine.py` output and any corpus regen in ONE commit.
 6. **The operator merges.**
 
@@ -323,11 +329,11 @@ The analytics hash rule is untouched. The gtag `config` still sends `location.or
 
 **Implementation (anchors, not lines)**
 1. `share.js`:
-   - Set `var VERSION = 5;` and keep the declaration shape, because `pinnedShare` in `tests/share.test.js` rewrites it by regex.
+   - Set `var VERSION = 5;` and keep the declaration shape, because `engineAtVersion(version)` in `tests/share.test.js` rewrites it with the regex `/var VERSION = \d+;/`. `var RECORD_VERSION = 4;` does not match that regex, so the helper still pins only the wire version.
    - Add `var RECORD_VERSION = 4;` and export it beside `VERSION` and `CAPS`.
 2. A v5 writer and reader. `decode` dispatches on the version character, sending 1 to 4 to the existing packed reader unchanged.
 3. The packed WRITER becomes dead code: `optionsLine` as written, the body encoding in `encode`, and the writer side of `seatsField`. Delete it. Keep every READER function.
-4. `select.js` exports `deckName(seed)` (3.1). `share.js` reads it lazily through `HPE.select`, matching how `select.js` reaches `layout()` and `naming()`.
+4. `select.js` exports `deckName(seed)` (3.1). `share.js` reads it lazily through `HPE.select`, matching how `select.js` reaches `layout()` and `naming()`, and only inside `encode`. Nothing at load time and nothing in `decode` touches `HPE.select`, and `decodeSeed`'s version gate runs before the `5/` check. So `engineAtVersion(4)`, which loads only `core.js`, `layout.js` and the rewritten `share.js`, still answers `NEEDS_NEWER_APP` to a v5 link with no `select.js`.
 5. App changes:
    - `const SHARE_VERSION = HPE.share.RECORD_VERSION;`
    - The `hashchange` `#s=` branch gets the same-deck short circuit (3.4).
@@ -341,7 +347,10 @@ The analytics hash rule is untouched. The gtag `config` still sends `location.or
   - "SV: a link with percent-encoded parens or underscores opens; an escaped * or + is refused". This is P8.
   - "SV: the auto label is ignored on receipt and lies outside the checksum". P10 and P11, conditional on G3 (a).
   - "SV: a 5 not followed by / is BAD_NOTE, and 6 or above is NEEDS_NEWER_APP".
-  - "SV: a v5 link is NEEDS_NEWER_APP to an app pinned at v4". It uses `pinnedShare(4)`.
+  - "SV: a v5 link is NEEDS_NEWER_APP to an app pinned at v4". It uses the existing helper `engineAtVersion(4)`.
+  - "SV: the check segment is an exact 6-character lowercase string; an uppercased, 5- or 7-character check is BAD_NOTE"
+  - "SV: every v5 structural refusal is badNote of the whole link; a parseSeed refusal keeps its own code and reason"
+  - "SV: deckName never throws, and an out-of-range parent makes encode return BAD_NOTE"
   - "SV: every v5 link survives new URL(...).hash byte for byte".
   - "SV: deckName equals build's name for every corpus seed".
   - "SV: the 120-note worst case fits the cap". This is P6.
@@ -359,17 +368,30 @@ The analytics hash rule is untouched. The gtag `config` still sends `location.or
 
   Their literals become decode goldens, which decode to the expected seed. They are retitled "decode still opens the captured v4 minimal payload (Q18)" and "decode still opens the captured v4 payload with every option set (Q18)", because v4 is no longer written.
 - "this app writes wire version 4" becomes "this app writes wire version 5". The version moved.
-- Each of these reads v4 lines through `payloadOf(encoded(...))`. They switch to `forgePayload(4, ...)`, because they test the v4 READER, which stays:
-  - "the payload's third section is where the layout delta goes"
+- Every test that derives a v1 to v4 payload through `payloadOf` switches to a pinned v4 golden link or `forgePayload(4, [formatSeed(f), <v4 options line>, <seats>])`. Once `encode` writes v5, `payloadOf` would read v5 text as packed alphabet: refusal tests would pass vacuously and acceptance tests would fail. A grep for `payloadOf(` in `tests/share.test.js` finds fourteen calling tests. Twelve test the v4 READER (and v1 to v3 forged from it), which stays:
   - "the one-ring mirror letters are exactly t and b on the options line"
   - "per-ring seats ride on line 2 as rim;inner;bottom"
-  - "R4-E decode refuses a version byte outside the alphabet and a body character outside it, even under a valid check"
   - "R4-E decode refuses a payload of two or four lines"
   - "R4-E decode refuses an options line with the wrong number of fields, a palette or parent that is not a count"
+  - "a v3 options line with an unknown mirror or anchor character is refused"
+  - "a v1 or v2 options line cannot carry a one-ring mirror letter"
+  - "a malformed seats FIELD is refused, never repaired"
+  - "a v2 flat order that crosses rings is refused"
+  - "a v1 link carrying anything on line 2 is a corrupt payload"
+  - "a v2 link with a v3-shaped line 2 or a malformed order is corrupt"
+  - "decode chooses its scale-line reader from the version". Its `link` becomes a v4 golden, so "a version 4 link is read by the new grammar" still holds. It gains a v5 link that also records `["current"]`.
+  - "a version 3 link with a bar opens with bottom notes"
+- The other two `payloadOf` callers test the WRITER, so they assert the v5 options segment instead. Titles are kept, so `s3_share_anchor_dropped` and `r4e_share_seats_only_rim_written` keep their `# suite:` headers:
+  - "the anchor travels on the options line and round-trips": a default link carries no `between` segment, and an `anchor: "between"` link carries exactly one.
+  - "R4-E a 120-note pan with the rim, inner and bottom rings all reversed fits the cap and keeps every ring": the `seats-` segment holds three `;`-separated lists, of 60, 30 and 29 seats.
+- "R4-E decode refuses a version byte outside the alphabet and a body character outside it, even under a valid check" slices `encoded(...)` as a packed string without calling `payloadOf`. It switches to a v4 golden, because it tests the v4 reader's alphabet.
+- "a 2-, 3- and 4-byte UTF-8 character each round-trip through encode's byte pipeline (Q4)" reads `encoded(...)` through `refFromAlphabet` and takes line 1's name field, so it breaks the same way, although it calls no `payloadOf`. It now reads the v5 name segment and asserts that its `%XX` escapes are the host's UTF-8 bytes of the name, in uppercase hex. The title is kept.
+- "the payload's third section is where the layout delta goes" does not call `payloadOf`. It round-trips `encoded(seed)` and refuses `str + "AAAAAA"`. Under v5 that append fails on the v5 check segment and never reaches a packed third section, so the test would pass while testing nothing it names. Its round-trip and append clauses run on `forgePayload(4, [formatSeed(f), <v4 options line>, ""])` instead, which keeps them on the packed shape. Its assertion that share.js documents the layout-delta section stays, because that comment sits with the kept reader.
 - `tests/app.test.js` changes:
   - "the app's share version IS the engine's, not a second copy of the number" now asserts `SHARE_VERSION === HPE.share.RECORD_VERSION`, and that the declaration reads `HPE.share.RECORD_VERSION`, because records decouple from the wire.
   - "a newer share string reaches the user as section 2's NEEDS_NEWER_APP sentence" bumps from `HPE.share.VERSION + 1`, not `SHARE_VERSION + 1`. As written today it would build "5" plus a v5 tail, which is a valid v5 link.
   - "S3: seats, anchor and a one-ring mirror travel through a share link and rebuild the same pan" now expects `payload(url.value)` to start with `"5/"`, not `"4"`. The version moved.
+  - "rule N: a moved deck's stored record and share link are the strings main wrote" keeps its record half (`v: 4`, `RECORD_VERSION`). Its `shareLink` half takes the v5 literal Lane E's encoder writes for that deck.
 
 **Acceptance: tests that stay untouched.** The lane runs each of these, and a failure means STOP and report:
 - "flipping any single character of a valid string is rejected". Its seed has a typed name, so P4 applies.
@@ -381,7 +403,13 @@ The analytics hash rule is untouched. The gtag `config` still sends `location.or
 - "share answers only with codes from the closed section 2 enum"
 - "the module references no host encoder or compression API"
 - "R4-E encode refuses a value that is not a seed, writes a seed with no options as the defaults, and refuses an over-cap link"
-- every v1, v2 and v3 test from "a v1 link emitted by an older app still decodes here, deck unchanged" through "a version 3 link with a bar opens with bottom notes"
+- the v1, v2 and v3 tests that read goldens or only the version character:
+  - "a v1 link emitted by an older app still decodes here, deck unchanged"
+  - "a v2 link emitted by an older app still decodes here, deck unchanged"
+  - "a v2 flat order is converted to per-ring seats on decode"
+  - "a v3 link is NEEDS_NEWER_APP to an app pinned at v2 or v1". Its `encoded(...)` is now v5, still above 1 and 2.
+  - "a v2 link is NEEDS_NEWER_APP to an app pinned at v1"
+  - "a version byte BELOW the oldest format is a corrupt payload"
 - "the share version guard rejects a newer payload with NEEDS_NEWER_APP". It runs the record path, where 5 is still above 4.
 - every "SU:" test
 - "page_location carries no hash, so a share payload never reaches GA"
@@ -412,7 +440,7 @@ The analytics hash rule is untouched. The gtag `config` still sends `location.or
 - Hand-edit the `# suite:` header of every patch whose killing test was retitled (the two Q18 tests, "this app writes wire version 4"). Use `.` wildcards, never quotes.
 - Set the README mutant count, and the FLOORS rows for `tests/share.test.js` (73 today), `tests/app.test.js` and `tests/e2e.test.js`, from CI's run artifacts at the head SHA, not from arithmetic.
 
-**Verify.** One command, recorded on `origin/main` `e158f06` as 73 pass and 34 pass:
+**Verify.** One command, recorded on `origin/main` `ebd997f` as 73 pass and 34 pass:
 
 ```
 node --test tests/share.test.js && node --test --test-name-pattern "SU: |share version|newer share string|S3: seats|SV: " tests/app.test.js
@@ -443,6 +471,9 @@ Also run the four sync and corpus checks of gate 3, and the one new e2e test on 
 - `tests/e2e.test.js`:
   - "SI: the share icon is a 44px target in the header's left cell at 380x780 and the title stays centred"
   - "SI: a revealed #share-url does not move the card at 380x780"
+  - "SI: a revealed #share-url hides on blur, on Escape and when the scale sheet opens, and the chips are hit-testable again". After each hide, `document.elementFromPoint` at a chip's centre returns that chip.
+- "SI: a second COPY LINK clears the message line before writing LINK COPIED again". It records every `textContent` write to `#announce` over two clicks and expects `["", "LINK COPIED", "", "LINK COPIED"]`.
+- Before merging, the lane takes a 1x screenshot of the icon at 380x780 and checks that the glyph reads as a link (6.3).
 
 **Acceptance: tests changed (and why)**
 - "SU: COPY LINK joins panelStops after + ADD A SCALE and leaves it while disabled" is retitled "SU: COPY LINK is not a panel stop, enabled or disabled". It asserts `!stops(app).includes("share-copy")` in both states, because the control left the panel. No mutant names its old title (grep of `tests/mutants/` for "COPY.LINK.joins", 0 hits).
@@ -454,6 +485,15 @@ Also run the four sync and corpus checks of gate 3, and the one new e2e test on 
 - `tests/e2e.test.js`:
   - In `assertCardFits`, `LANDSCAPE_CONTROLS` gains `"#share-copy"`. The icon is always-on landscape chrome, which the card must not cover.
   - In "the mode buttons and Shuffle are 44px tall and steal nothing from their neighbours", `resting` gains `"#share-copy"`.
+  - `FLASH_STOPS` drops `"share-copy"`. "Tab cycles exactly the sixteen flash-card stops in the modal at every viewport class" becomes "...the fifteen flash-card stops...", and "Tab cycles exactly the seventeen progression stops in the modal at every viewport class" becomes "...the sixteen progression stops...". `PROG_STOPS` is built from `FLASH_STOPS`, so it follows. "the sidebar's native Tab order is the panel's DOM order" reads `FLASH_STOPS.slice(1)` and `PROG_STOPS.slice(1)`, so it follows with no edit and keeps its title.
+  - In "RESET SEEDED DECKS is absent until a seeded deck is edited or deleted, arms, and restores all five", Tab from `#deck-add` lands on `deck-restore`. The `share-copy` step between them goes.
+  - "edge 9: a real COPY LINK click puts location.href, query included, on the clipboard" clicks the header `#share-copy` without opening the panel.
+  - "edge 10: COPY LINK is a 44px target inside the panel at 320px and 380px with no horizontal overflow" becomes "edge 10: COPY LINK is a 44px target in the header at 320px and 380px with no horizontal overflow". It no longer opens the panel, and it drops the clause that pins its top to `#deck-add`'s. No mutant names it.
+- **Mutant headers to re-point.** Headers are word-split, so they use `.` wildcards, never quotes:
+  - `pm_handpan101_outside_tab_trap`: `Tab.cycles.exactly.the.sixteen.flash-card.stops` becomes `Tab.cycles.exactly.the.fifteen.flash-card.stops`.
+  - `uid_panelstops_misses_tier`: `Tab.cycles.exactly.the.seventeen.progression.stops` becomes `Tab.cycles.exactly.the.sixteen.progression.stops`.
+  - `e_restore_not_panel_stop` names the RESET SEEDED DECKS title, which is kept, so its header stays.
+  - No patch names "edge 9", "edge 10" or "the sidebar's native Tab order".
 
 **Acceptance: untouched, and run**
 - These pass unchanged, because ids, `copyLink()`'s chain and `track` are unchanged:
@@ -485,7 +525,7 @@ Also run the four sync and corpus checks of gate 3, and the one new e2e test on 
 - Refresh, then `--check`. Rewrite against a stabler anchor where the tool cannot re-anchor.
 - Set the README mutant count and FLOORS rows from CI artifacts.
 
-**Verify.** One command, recorded on `origin/main` `e158f06` as 11 pass:
+**Verify.** One command, recorded on `origin/main` `ebd997f` as 11 pass:
 
 ```
 node --test --test-name-pattern "COPY LINK|share_copy|share-url|panelStops|panel stops|removed by design|inert lists|SI: " tests/app.test.js
@@ -564,7 +604,7 @@ Also run `node tools/probe/panel_fit.js --base origin/main --font both` and the 
 | G5 | Option spelling | (a) words: `palette-3` (1-based, as the UI's "Palette N"), `parent-harmonic-minor`, `mirror-top`, `between`; (b) numbers: `p2`, `m9` | (a) | P9 shows (a) | (a) |
 | G6 | Share icon placement | (a) the header's left cell (`.hspacer`) at every width; (b) right of the title, beside the menu (grid 88/1fr/88); (c) in the footer beside the counter; (d) on the card face | (a) | 6.2: (a) uses an existing 44px cell. (b) costs the title 44px at 320px wide, where an e2e test already guards the title-trigger overlap. (c) crowds a footer budget the e2e chrome test pins. (d) breaks "print controls are never on a card face" | (a) |
 | G7 | Glyph | (a) a chain link; (b) three connected nodes; (c) a box with an up arrow | (a) | 6.3: the control copies a link first and says LINK COPIED. (c) means the system share sheet, which is the fallback here. (b) reads as social sharing | (a) |
-| G8 | Where `#share-url` reveals when clipboard and share are both missing | (a) an out-of-flow overlay under the header row; (b) open the drawer and reveal it inside; (c) drop the input and only say the link | (a) | 6.5: (a) moves nothing. (b) opens a panel the user did not ask for. (c) leaves no way to copy | (a) |
+| G8 | Where `#share-url` reveals when clipboard and share are both missing | (a) an out-of-flow overlay under the header row, z-index 29 below `#scale-sheet` (30), hidden on blur, on Escape and when `openScaleSheet()` runs; (b) open the drawer and reveal it inside; (c) drop the input and only say the link | (a) | 6.5: (a) moves nothing, and its hides hand the chips back. (b) opens a panel the user did not ask for. (c) leaves no way to copy | (a) |
 | G9 | Order against scale import | (a) after scale import lanes A1 and B merge; (b) before them | (a) | Both workstreams own `tests/app.test.js` and the README mutant count (4.1). The scale-import gates were decided first | (a) |
 | G10 | The Scales row after the move | (a) + ADD A SCALE alone, full width; (b) + ADD A SCALE beside RESET SEEDED DECKS in a duo row | (a) | RESET is `hidden` unless a seed is edited or deleted, so (b) leaves a half-empty row most of the time | (a) |
 
@@ -613,7 +653,8 @@ Portrait, 380 x 780. The icon replaces `<span class="hspacer">`, cell for cell. 
 
 Landscape phone, 844 x 390, `@media (max-height:520px)`. Inside it, `.hrow{display:contents}` already dissolves the grid and `.hspacer{display:none}` removes the spacer.
 - The icon becomes a flex item of the header row with `order:2` and `flex:0 0 auto`, the trigger's own rule. DOM order puts it immediately before the trigger.
-- The chip strip (`flex:1 1 auto; min-width:0`) gives up 44px plus one `--sp-2` gap and keeps scrolling.
+- The chip strip (`flex:1 1 auto; min-width:0`) gives up 44px plus one gap and keeps scrolling. The gap is the landscape header's existing `gap:var(--sp-3)`, which is 9px under `max-height:520px`.
+- Landscape Tab order (icon, trigger, chips) differs from visual order (chips, icon, trigger). This is accepted: `#settings-trigger` already does the same on main, where `.hrow` precedes `.decks` in the DOM and `order` puts it after them on screen.
 - The row height is set by 44px controls either way.
 
 ```
@@ -629,6 +670,7 @@ Landscape phone, 844 x 390, `@media (max-height:520px)`. Inside it, `.hrow{displ
 Desktop, at least 1024 x 700. `#settings-trigger` is `display:none`, and the panel is the sidebar.
 - The grid keeps its two 44px columns, so the icon sits in the left cell, the right cell stays empty, and the title stays centred.
 - The icon is the only share control on the page, just as on phones.
+- **Panel coverage.** Below 1024 x 700 an open panel covers the icon completely: the panel is `position:fixed; inset:0` at z-index 41, above the scrim (40), and the icon is inert under it (6.5.5). At 1024 x 700 and up, the sidebar (z-index 20) sits beside the header, so the icon stays visible and live.
 
 ```
 +------------------------------------------------------------+-------------+
@@ -650,14 +692,14 @@ Desktop, at least 1024 x 700. `#settings-trigger` is `display:none`, and the pan
        aria-hidden="true" focusable="false">
     <g transform="rotate(-45 12 12)" fill="none" stroke="currentColor"
        stroke-width="2" stroke-linecap="round">
-      <rect x="3" y="9" width="10" height="6" rx="3"/>
-      <rect x="11" y="9" width="10" height="6" rx="3"/>
+      <rect x="2" y="8" width="12" height="8" rx="4"/>
+      <rect x="10" y="8" width="12" height="8" rx="4"/>
     </g>
   </svg>
 </button>
 ```
 
-- **The glyph.** It is our own drawing: two stadium links, overlapping by 2px and tilted -45 degrees. There is no icon font, no sprite and no external file, which matches the CSS-drawn hamburger.
+- **The glyph.** It is our own drawing: two 12 x 8 stadiums (`rx` 4, stroke 2), overlapping by 4 units and rotated -45 degrees about the centre. Lane I checks a 1x screenshot before merging. There is no icon font, no sprite and no external file, which matches the CSS-drawn hamburger.
 - **Sizing.** `#share-copy{width:44px; height:44px; padding:0; flex:none}`. This is the trigger's own sizing, minus its z-index. The icon must NOT sit above the scrim, which is why 6.5 inerts it.
 - **The accessible name.** It is "Copy link", the action and not the glyph. That echoes the LINK COPIED confirmation, so the action keeps one name through the flow.
 - **No `title` while enabled.** A tooltip would only repeat the name, and S5 reserves `title` for the refusal.
@@ -669,6 +711,8 @@ Desktop, at least 1024 x 700. `#settings-trigger` is `display:none`, and the pan
   - Its `say("LINK COPIED","ok")` writes the `.announce` row (`role="status"`, `aria-live="polite"`), which is visible under the footer on every layout.
   - Its outcomes are LINK SHARED, SELECT THE LINK AND COPY IT, and silence on a dismissed share sheet.
   - The glyph does not swap to a tick. A timed swap would add state and motion for a message the live region already gives.
+  - The accessible name stays "Copy link" in every state; only `disabled` and `title` change.
+  - **Repeat copies.** `say()` today writes over the old text without clearing it, so a second LINK COPIED changes nothing. Lane I makes `say()` clear the message line and `#announce` before it writes, so a repeat copy is announced again. No `say()` text changes.
 - **Reduced motion.** Nothing animates. `.mode:active` is an instant background change, not a transition, so `prefers-reduced-motion` needs no rule.
 - **Print.** Add `#share-copy, #share-url{display:none}` INSIDE the existing `@media print{` block. It must remain the last block in the `<style>` element, per `tests/test_render_agreement.py::test_print_block_is_last_in_the_style_element`.
 
@@ -680,19 +724,21 @@ Desktop, at least 1024 x 700. `#settings-trigger` is `display:none`, and the pan
 
    ```css
    header{position:relative}
-   #share-url{position:absolute; left:0; right:0; top:44px; z-index:41}
+   #share-url{position:absolute; left:0; right:0; top:44px; z-index:29;
+     background:#211d16; border:1px solid #433b2c; border-radius:8px; color:#eae6df}
    ```
 
-   - It reuses `.mode`'s surface and hairline.
+   - It reuses `.mode`'s surface (`#211d16`), hairline (1px `#433b2c`) and radius (8px). Its text is `#eae6df`, the body text colour, not `.mode`'s `#c4bcab`, because it shows a link to read.
+   - It hides on `blur`, on Escape and when `openScaleSheet()` runs. Its z-index 29 keeps it under `#scale-sheet` (30). Revealed, it overlays the chip strip, and the hide on blur hands the chips back (the SI `elementFromPoint` test).
    - Out of flow, a reveal moves nothing (G8).
    - `copyLink()`'s `reveal()` already focuses and selects it.
    - The deck-change hide is unchanged.
-   - [unverified] whether `header` already establishes a containing block; the lane checks before adding `position:relative`.
+   - No `header` rule in `index.html` sets `position` today, so `position:relative` is needed.
 4. **`panelStops()`** drops `document.getElementById("share-copy"), document.getElementById("share-url")`. The list reads `..., document.getElementById("deck-add"), restoreBtn, ...prints..., ...res- links, about-open` (the last item is About's). On the page, the icon is the first header Tab stop, before `#settings-trigger`. A disabled button leaves the Tab order natively.
 5. **`panelBackground`** gains `document.getElementById("share-copy")`. Below 1024 x 700 the drawer is modal, so the icon must be inert under it, like the deck strip. The header is still not inerted whole, because it holds the trigger. The sheet's `background` already covers it, since it lists `header`.
 6. **Disabled (S5).**
    - Add `#share-copy:disabled{opacity:.5; cursor:default}`.
-   - It is disabled, never hidden, with the refusal as its `title`. `syncRoute()` still says the refusal once on the transition, so touch users, who never see a tooltip, still hear it.
+   - It is disabled, never hidden, with the refusal as its `title`. `syncRoute()` still says the refusal once on the transition, and it stays in the message line until the next `say()`, so touch users, who never see a tooltip, can still read it.
    - [unverified] whether a `title` on a disabled button shows on hover in every desktop browser. The said refusal is the guaranteed channel.
 7. **Analytics.** `share_copy` stays the same event with `{deck_kind, method}`: no id, no name and no code. "SU: COPY LINK tracks share_copy with no id, name or code" stays untouched.
 
@@ -705,7 +751,7 @@ Desktop, at least 1024 x 700. `#settings-trigger` is `display:none`, and the pan
 | Pressed | `#2e281e` | same | - |
 | Disabled (S5) | opacity .5 | `title` = the engine's refusal, said once | not a stop |
 | Drawer open (below 1024 x 700) | under the scrim, inert | hidden from AT | not a stop |
-| Sheet open | inert with the header | - | not a stop |
+| Sheet open | inert with the header; a revealed `#share-url` hides | - | not a stop |
 | Print | `display:none` | - | - |
 
 ### 6.7 Panel-fit and card-size verdicts
@@ -752,7 +798,8 @@ Desktop, at least 1024 x 700. `#settings-trigger` is `display:none`, and the pan
 - Transport behaviour on `+`, `)`, `*`, `_` and `encodeURI`-style double-encoding (risks 1 to 3, P10's premise).
 - Android Linkify's URL pattern stopping at `[ ] |` (G1), recalled from memory and not read from source.
 - `title` tooltips on disabled buttons across desktop browsers (6.5.6).
-- Whether `header` already has a positioned containing block (6.5.3).
+- Whether a same-task clear-then-write in `say()` makes every screen reader announce a repeat LINK COPIED (6.4).
+- Whether the 6.3 glyph reads as a link at 1x; Lane I's screenshot is the check.
 - The landscape chip-strip width lost (risk 6), not measured.
 - No e2e test was run for this plan, and no screenshot of the icon was taken. The wireframes are derived from the CSS rules cited, not rendered.
 
@@ -773,6 +820,19 @@ The rubric is restated each round. Each row is 0 to 10.
 | Decisions | 9 | Ten gates, each with options, evidence and a default; nothing decided that is the owner's | 10 |
 | Concision | 8 | Prose cut to tables, and briefs liftable verbatim | 10 |
 
+### Round 2: eng and design review FAILs (2026-10-17)
+
+| Finding | Fix | Where |
+|---|---|---|
+| E1: the untouched list held tests that forge v1 to v4 through `payloadOf` | All fourteen `payloadOf` callers listed: twelve move to a v4 golden or `forgePayload(4, ...)`, two assert the v5 options segment; the Q4 UTF-8 test, found in the same sweep, reads the v5 name segment | 4.4 |
+| E2: rule N's share half pins a v4 literal | Record half kept (`v: 4`), share half takes the v5 literal | 4.4 |
+| E3: e2e stops and mutant headers | `FLASH_STOPS`, fifteen/sixteen, the RESET Tab step, edge 9, edge 10 (also found), two `# suite:` re-points | 4.5 |
+| N1 to N6 | `engineAtVersion`, exact check compare (BAD_NOTE: there is no `BAD_CHECKSUM`), `badNote(text)` refusals, the `formatSeed` inverse, `deckName`'s null guard, base `ebd997f`, the third-section rationale | 2.1, 2.2, 3.1, 4.4 |
+| Design blocker: a revealed `#share-url` covered the chips above everything | z-index 29, hides on blur, Escape and sheet open, `elementFromPoint` test | 6.5, 4.5, G8 |
+| Design nits 1 to 8 | Styling, `--sp-3` gap, Tab order, disabled refusal, panel coverage at 1024 x 700, 12 x 8 glyph, fixed accessible name, `say()` clear with a test | 6.2 to 6.6, 4.5 |
+
+Every row re-scored 10 after round 2. The two items the repo cannot settle are in the unverified list.
+
 ### Adversarial pass: the five likeliest ways a lane fails review or CI, and the fix in this plan
 
 1. **Lane E bumps `SHARE_VERSION` with the wire version and silently migrates stored records.**
@@ -787,7 +847,7 @@ The rubric is restated each round. Each row is 0 to 10.
    - Fix: the loader change is listed first among the changed tests.
    - `share.js` reads `HPE.select` lazily, as `select.js` does `layout()`.
 4. **Lane I's icon lands above the scrim or stays reachable under the modal drawer.** That fails a reviewer's 380px keyboard walk.
-   - Fix: there is no z-index on `#share-copy`, it joins `panelBackground` (6.5.5), and the test "SI: panelBackground holds #share-copy..." plus `si_icon_not_inert_under_drawer` pin it.
+   - Fix: there is no z-index on `#share-copy`, it joins `panelBackground` (6.5.5), and the test "SI: panelBackground holds #share-copy..." plus `si_icon_not_inert_under_drawer` pin it. `#share-url` takes z-index 29, under the sheet (30) and the scrim (40), and hides on blur, Escape and sheet open, so it never covers the chips or a modal.
 5. **The panel-fit CI job fails on the removed control, or the lane rebases onto About and collides in `panelStops()`.**
    - Fix: `REMOVED_BY_DESIGN` and its pin are in lane I's ownership and acceptance.
    - Wave 1 cannot start before About lanes O and D merge (4.1).
