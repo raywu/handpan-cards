@@ -12625,13 +12625,15 @@ function run() {
           return { index: h.currentIndex, length: h.entries.length, url: h.entries[h.currentIndex].url };
         };
         const before = await nav();
+        const len0 = await b.eval(`return history.length`);
         await openAboutUi();
         let during = await nav();
         for (let i = 0; i < 40 && during.index !== before.index + 1; i++) {
           await new Promise((r) => setTimeout(r, 50));
           during = await nav();
         }
-        assert.strictEqual(during.index, before.index + 1, "ABOUT did not push exactly one entry");
+        const len1 = await b.eval(`return history.length`);
+        assert.strictEqual(during.index, before.index + 1, "ABOUT did not push exactly one entry: " + JSON.stringify({ before, during, len0, len1 }));
         assert.match(during.url, /#about$/);
         await b.eval(`history.back(); return true;`);
         await waitAboutClosed();
