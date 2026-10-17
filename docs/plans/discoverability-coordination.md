@@ -174,7 +174,7 @@ Cycle: 1   Wave: 1c   Merged this batch: 880f054 (#319 W3), 2b7dadc (#320 W2), 6
 | W4 | a73559635b9c83956 | /Users/ray/Projects/handpan-cards/.claude/worktrees/agent-a73559635b9c83956 | discoverability/w4-docs-counts | #322 | bfea238 | 2026-10-16 (CI 38978260599 success) | PASS_WITH_NITS (after FAIL+2) | 2 | f3901b3 | nothing | released |
 | SU-A | a742bd8d5dbeb4ef7 | released | share-url/su-a-app (deleted) | #323 | 6e363f2 | 17:12 | PASS_WITH_NITS (review 2) | 1 | yes, 9f557e6 | nothing | released |
 | GA-SWAP | a0f6ec5e1b7570687 | released | discoverability/ga-swap (deleted) | #324 | 615d519 | gh pr view + run 38986682099 success | PASS_WITH_NITS | 0 | 0f9abdc | nothing | released |
-| SU-D | a5af2348671baf6ac | (Agent worktree, isolation: worktree) | share-url/su-d-docs | #325 | 5ae187d | gh pr view + run 38988282688 success | FAIL (review 1), bounced; fixing | 1 | no | nothing | live |
+| SU-D | a5af2348671baf6ac | (Agent worktree, isolation: worktree) | share-url/su-d-docs | #325 | dd0833c | gh pr view + run 38989888630 success | reviewing (review 2, fresh reviewer adf45457a30b404f9, budget 10) | 1 | no | nothing | live |
 ```
 
 Owner check-in 2026-10-16 (third): start share-URL execution (SU-A then SU-D) right after W4 merges, same swarm; row 18 privacy copy folded into SU-A; row 19 closed (keep); GA4 property, Measurement ID swap PR and DNS TXT after W4 merges.
