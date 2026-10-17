@@ -21,6 +21,8 @@ class SiteFilesTest(unittest.TestCase):
         lines = [l.strip() for l in read("robots.txt").splitlines()]
         self.assertIn("User-agent: *", lines)
         self.assertIn("Allow: /", lines)
+        blocking = [l for l in lines if l.lower().startswith("disallow:") and l.split(":", 1)[1].strip()]
+        self.assertEqual(blocking, [])
 
     def test_robots_names_the_absolute_sitemap(self):
         lines = [l.strip() for l in read("robots.txt").splitlines()]
