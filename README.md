@@ -68,10 +68,8 @@ decisions behind it.
   sheet with its name and notes filled in - that is the one way in, and the
   pencil on the chip marks it. DELETE removes the deck and asks for a second
   tap to confirm. A generated deck also travels as a `#s=` link: the app opens
-  one from the address bar with no account and no server. The address bar is
-  always a link to the deck shown (`#s=<code>` for a custom deck,
-  `#deck=<slug>` for a built-in one), written with `replaceState` so it adds no
-  history entry, and COPY LINK in the menu's Scales group copies it and says
+  one from the address bar with no account and no server. While no sheet is open, the address bar is a link to the deck shown (`#s=<code>` for a custom deck,
+  `#deck=<slug>` for a built-in one), written with `replaceState` so it adds no history entry ("SU: tapping three chips writes three replaceState hashes and no pushState"), and COPY LINK in the menu's Scales group copies it and says
   LINK COPIED. A pan too big for the link format disables COPY LINK and leaves
   the bare address. Tests: "SU: a hashless boot on the default deck ends with
   #deck=d-kurd-10", "SU: COPY LINK copies location.href and announces LINK

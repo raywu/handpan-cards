@@ -403,7 +403,7 @@ Zones: `ding | rim | inner | bottom`. `chords[].fields` is the canonical
 voicing in spelling order; highlighting is DERIVED at render time from
 pitch classes (midi % 12), never stored.
 
-- `options.parent` on every deck saved from the sheet (create or Edit) is the engine's INFERRED index since 2026-10-14 (`sheetOptions()` writes no parent; `select.build` resolves it). An explicit index is honoured when it arrives in an older stored record or a share link; opening such a link stores that index again (`openShare` persists what it decodes, test "RD: opening a share link that carries an explicit parent stores that parent again, after an inferred SAVE included"), and the next SAVE from Edit replaces it with the inferred one (test "RD: a record stored with a non-inferred parent is displayed with it and re-saved from Edit with the inferred one"). The Edit page has no DEGREES control (test "RD: no DEGREES row - the served markup, ELEMENT_IDS and the app script carry neither scale-degrees id, and sheetOptions writes no parent on Edit"). A share code written to the address bar by `syncRoute()` is the same code `shareLink` returns, because both read `shareCode(d)` and neither re-encodes ("SU: COPY LINK copies location.href and announces LINK COPIED").
+- `options.parent` on every deck saved from the sheet (create or Edit) is the engine's INFERRED index since 2026-10-14 (`sheetOptions()` writes no parent; `select.build` resolves it). An explicit index is honoured when it arrives in an older stored record or a share link; opening such a link stores that index again (`openShare` persists what it decodes, test "RD: opening a share link that carries an explicit parent stores that parent again, after an inferred SAVE included"), and the next SAVE from Edit replaces it with the inferred one (test "RD: a record stored with a non-inferred parent is displayed with it and re-saved from Edit with the inferred one"). The Edit page has no DEGREES control (test "RD: no DEGREES row - the served markup, ELEMENT_IDS and the app script carry neither scale-degrees id, and sheetOptions writes no parent on Edit"). A share code written to the address bar by `syncRoute()` is the same code `shareLink` returns, because both read `shareCode(d)` and neither re-encodes ("SU: a hashless boot on a stored custom deck ends with its #s= in the bar").
 
 ## Known pitfalls (hit during the session)
 
@@ -458,19 +458,17 @@ pitch classes (midi % 12), never stored.
   `test_state_selects_root_or_tone_colour_but_never_both` (the ring states).
 
 - **The address bar is always a link to the deck shown (share URL, 2026-10-16,
-  #323).** One function, `routeFor(d)`, decides the text (`#s=<code>` for a
+  #323).** One function, `routeInfo(d)`, decides the text (`routeFor` wraps it) (`#s=<code>` for a
   custom deck, `#deck=<slug>` for a seeded one) and one, `syncRoute()`, writes
   it with `replaceState` and never `pushState` ("SU: tapping three chips writes
   three replaceState hashes and no pushState"; `tests/e2e.test.js` "edge 1:
-  three chip taps rewrite the bar each time and add no history entry"). It
-  writes from three sites: the end of `selectDeck` (chip taps, SAVE, DELETE,
+  three chip taps rewrite the bar each time and add no history entry"). It writes from four places: the end of `selectDeck` (chip taps, SAVE, DELETE,
   RESET SEEDED DECKS: "SU: DELETE of the shown custom deck writes the fallback
   deck's route", "SU: RESET SEEDED DECKS while showing Kurd's replacement writes
   #deck=d-kurd-10"), the end of the boot (a hashless boot, a consumed `#s=` or a
   refused one: "SU: a hashless boot on a stored custom deck ends with its #s= in
   the bar", "SU: a refused #s= at boot says the engine reason and the bar ends
-  on the stored deck's route"), and the `popstate` listener. The third exists
-  because `closeScaleSheet()` calls `history.back()`, which is asynchronous: a
+  on the stored deck's route"), the `popstate` listener, and the `hashchange` listener itself, which calls `syncRoute()` after a `#s=` import or refusal and at the end of its `#deck=` branch, so an unknown or refused hash is rewritten to the shown deck's route (no test isolates these two calls). The `popstate` write exists because `closeScaleSheet()` calls `history.back()`, which is asynchronous: a
   `replaceState` issued straight after it lands on the entry about to be
   popped and the traversal restores the pre-sheet URL, so the pop is the first
   moment the restored entry is current and the listener syncs there ("SU: SAVE
@@ -488,10 +486,9 @@ pitch classes (midi % 12), never stored.
   hash already shown is a no-op", "SU: a hashchange to a #s= code imports it
   once and a second identical hashchange is a no-op"; `tests/e2e.test.js` "edge
   8: the app's own writes fire no hashchange, and a hashchange to the shown
-  hash changes nothing"); a second `syncRoute()` writes and announces nothing
+  hash changes nothing"); a second `syncRoute()` writes nothing
   ("SU: syncRoute is idempotent"). An edited seed shares as a plain custom deck:
-  the code carries no `replaces`, so the receiver gets a custom deck with the
-  same name, not an edited seed ("SU: an edited seed shares as a custom deck").
+  the code carries no `replaces`, so the receiver gets a custom deck, not an edited seed ("SU: an edited seed shares as a custom deck").
   `#share-copy` (COPY LINK) is disabled, never hidden, when the engine refuses
   the code (S5): its `title` is the refusal and the bar keeps the bare path
   ("SU: an over-cap custom deck disables COPY LINK with the refusal as its
