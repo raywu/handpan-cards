@@ -1,18 +1,18 @@
 # kills: test_total_card_count_matches_the_deck_data
 # suite: python3 -m unittest -k test_total_card_count_matches_the_deck_data tests.test_readme_currency
-# The README total put back to its pre-2026-09-18 value (96 -> 59). Nothing
+# The README total put back to its pre-2026-09-18 value (177 -> 59). Nothing
 # else on the page changes and no code is touched, so only the currency check
 # sees it - which is the point: a README nobody asserts on is a README that
 # goes stale.
 diff --git a/README.md b/README.md
 --- a/README.md
 +++ b/README.md
-@@ -16,7 +16,7 @@ two ever drift.
+@@ -18,7 +18,7 @@ Chord flashcards and chord progressions for handpan scales. It runs in the brows
+ - C# Hijaz 9: 19 cards
+ - F3 Low Pygmy 18: 53 cards
  
- Decks included: D Kurd 10, 49 cards (blue/brick); D Amara 10, 29 cards
- (green/crimson); D Amara 9, 27 cards (teal/amber); C# Hijaz 9, 19 cards
--(pink/orange); F3 Low Pygmy 18, 53 cards (purple/gold). 177 cards total,
-+(pink/orange); F3 Low Pygmy 18, 53 cards (purple/gold). 59 cards total,
- with the same diagrams, voicings, pitch-class highlighting, and typography as
- the printed sets. The visual design (Marcellus / Bitter / Nunito Sans,
- single-colour root-frame borders, per-deck palettes) is original to this
+-177 cards total. D Kurd 10 opens first.
++59 cards total. D Kurd 10 opens first.
+ 
+ ## Your own scale
+ 
