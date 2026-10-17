@@ -10380,6 +10380,13 @@ describe("about overlay", () => {
   const events = (app) => JSON.parse(JSON.stringify(Array.from(app.get("window.dataLayer"))))
     .filter((e) => e[0] === "event").map((e) => ({ name: e[1], params: e[2] }));
 
+  test("AO: About says a share link opens the same pan in another browser and adds it to that browser's decks", () => {
+    const SENTENCE = "To share it, tap the link icon at the top of the screen and send the link: it opens the same pan, with the same notes and layout, in any browser, and adds it to that browser's decks.";
+    const para = /<p>[^<]*A custom scale lives only in your browser\.[^<]*<\/p>/.exec(aboutHtml());
+    assert.ok(para, "the custom-scale paragraph is missing");
+    assert.ok(textOf(para[0]).includes(SENTENCE), "the share sentence is not in the custom-scale paragraph");
+  });
+
   test("AO: the about section ships hidden as a dialog, in place after #app, with every existing sentence", () => {
     const html = INDEX_HTML();
     const open = /<section id="about"[^>]*>/.exec(html);

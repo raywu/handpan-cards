@@ -618,7 +618,7 @@ card-size and host-block titles below are in `tests/e2e.test.js`.
   and `#app` in neither, because `#app` holds the settings trigger ("#about is in
   both inert lists and #app in neither"). Its text names every built-in deck with
   its card count from `data/decks.json`, the value line, the Celtic Minor
-  equivalence, the custom-scale and Google Analytics sentences, and a three-step
+  equivalence, the custom-scale and Google Analytics sentences, the share-link sentence ("AO: About says a share link opens the same pan in another browser and adds it to that browser's decks"), and a three-step
   list ("the about section names every built-in deck with its card count from
   data/decks.json and the value line"); it links every deck by slug ("the about
   section links every built-in deck by its slug"). It ends with a Contact heading
