@@ -504,13 +504,18 @@ first, against fixtures captured from real text.
   - `README.md`'s engine-module sentence (README.md:26-34: add `src/engine/importer.js` and change 'eleven' to 'twelve') and its suite count (README.md:180: '23 node suites' becomes 24), which `tests/test_readme_currency.py` pins by glob. importer.js cites symbol anchors, never `file:line`.
   - the two engine-module lists in `tests/app.test.js` "index.html carries the whole engine inline, with no external script" (the `HPE[mod]` loop and the region-order `deepStrictEqual`), which gain `importer` after `core`; Lane B owns the rest of that file and starts after A1 merges.
 - **Objective:** `interpret(text, opts?) -> {status, roles:{ding, top[],
-  bottom[], inner[]}, spans, flags[], total, titleCount}`, where `opts.ding`
+  bottom[], inner[]}, flags[], total, titleCount}`, where `opts.ding`
   is the index of the source note the user picked as the ding; with it set,
+  the picked note becomes the ding and any note a source cue had made the
+  ding (a labelled ding, or Sanango's other cue) becomes a top note in source
+  order (`Ding: D Top: E F G Bb` with G picked gives `(G) D E F Bb`);
   neither DING_CUE nor CONFLICTING_DING is raised and the provisional string,
   the inferred octaves and PROVISIONAL_REFUSED are recomputed for that ding.
   Each `roles.*` entry is `{note, span, inferred?, guess?}`. Each flag is
   `{code, notes?, refusal?}`: `notes` lists the indices of the notes it
-  concerns, and `refusal` is `parseSeed`'s `{code, reason}` verbatim on
+  concerns, and `refusal` is the `code` and `reason` of `parseSeed`'s
+  `{ok:false, code, reason}` (built by `err()` in `src/engine/core.js`),
+  copied verbatim without `ok`, on
   PROVISIONAL_REFUSED. Each inferred bottom note carries `guess: true`.
   Separately, `serialise(result) -> string`. Both are pure, with no DOM and
   no network.
@@ -531,11 +536,17 @@ first, against fixtures captured from real text.
   - Every row of section 4.4 holds as an exact assertion: the status, the
     flag codes, the serialised string where one exists, and the
     field count = `Object.keys(parseSeed(serialise(r)).value.fields).length`.
-  - `interpret(t, {ding: i})` equals the result for the same notes with note
-    i labelled as the ding, minus DING_CUE and CONFLICTING_DING (test on the
-    unlabelled synthetic fixture `Notes: D E F G Bb`, which raises DING_CUE,
-    NO_OCTAVE and PROVISIONAL_REFUSED; picking G clears PROVISIONAL_REFUSED,
-    since `(G) D E F Bb` is accepted).
+  - `interpret(t, {ding: i})` matches `interpret(r)`, where `r` is the
+    relabelled text: note i written first under `Ding:`, then every other
+    note under `Top:` in source order. "Matches" compares `status`, the flag
+    codes minus DING_CUE and CONFLICTING_DING, each role entry's `note`,
+    `inferred` and `guess`, and `serialise()` of both; spans are excluded,
+    because the two texts differ. Test on the unlabelled synthetic fixture
+    `Notes: D E F G Bb`, which raises DING_CUE, NO_OCTAVE and
+    PROVISIONAL_REFUSED; picking G clears PROVISIONAL_REFUSED, since
+    `(G) D E F Bb` is accepted.
+  - On the Sanango fixture `D3 F#3) G A B`, which raises CONFLICTING_DING,
+    `interpret(t, {ding: 0})` raises no CONFLICTING_DING and no DING_CUE.
   - The Yatao serialisation `=== "[B2] (D3) [E3] F#3 [G#3] A3 [B3] C#4 D4
     [E4] F#4 G#4 A4 [B4] C#5 D5 [E5] F#5"`.
   - **No fixture yields a serialised string whose pitch multiset differs
@@ -646,6 +657,8 @@ first, against fixtures captured from real text.
     that BLOCK stands (test: on the `Ding: D Top: E F G Bb` fixture, picking
     a ding leaves the picker enabled and the flag set equals
     `interpret(text, {ding: i})` for the picked note i).
+  - The ding picker is shown on a REVIEW list that raises no DING_CUE (test:
+    the `Ding: C Top: G A E Eb F` fixture shows the picker).
   - A NO_OCTAVE review row marks each inferred octave as inferred, and an
     inferred bottom octave's row says its placement is a guess.
   - INSUFFICIENT writes nothing to `#scale-box`.
@@ -731,6 +744,7 @@ first, against fixtures captured from real text.
 | G5 | Carry the product name into the deck name on create? | `sheetOptions()` 9590 names new decks automatically | no: auto-naming stays |
 | G6 | Octaveless lists: BLOCK (recommended), or allow `parseSeed`'s inference with a CONFIRM? | inference is "inferring missing pitch information" under the prompt's scope | infer, then CONFIRM |
 | G6a | Where octaveless bottom notes sit in the provisional string (their position decides their octave) | `scaleInfer` climbs through bottoms in string order: `(D) A C [F]` gives F4, `(D) [F] A C` F3. No placement reproduces an interleaved shell: Ayasa's octaved C Ashakiran 17 lists bottoms D3 E3 F4 A4 B4 C5 D5 E5, while appended inference puts the same pitch classes at D5-C6 (D6/E6 on the 17 Ember), 1-2 octaves high, which is why each is flagged as a guess | integrator default (AFK): appended after tops and inner notes, each flagged as a guess; owner may change |
+| G6b | Does a picked ding clear CONFLICTING_DING? | the pick replaces every ding cue in the source (4.3) | owner 2026-10-17: yes, the pick wins |
 | G7 | Add a `scale_import` analytics event with `{status}` only? | the Lane B acceptance text; no event is added without it | yes, `{status}` only |
 
 ### Rejected alternatives
