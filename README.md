@@ -188,7 +188,7 @@ That is 24 node suites (`tests/*.test.js`) and 16 python suites
 (`tests/test_*.py`), plus `tests/suite_health.py`, which holds a per-file floor
 on the number of tests collected so a suite cannot quietly stop running.
 
-CI runs only on pull requests into `main`, and a PR that changes only
+CI runs on pull requests into `main` and on pushes to `main`, never on a PR into `dev`, and a PR that changes only
 `docs/plans/` or `docs/prompts/` skips every job; see CLAUDE.md, "DEV
 environment".
 
