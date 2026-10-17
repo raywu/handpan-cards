@@ -12,4 +12,4 @@ diff --git a/src/engine/importer.js b/src/engine/importer.js
 +      } else if (!/^(?:[,\/\-&;|+·]|and|or)$/i.test(tok)) {
          run = 0;
          key = false;
-       }
+       } else if (!/^(?:[,\/\-&]|and|or)$/i.test(tok)) key = false;

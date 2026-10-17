@@ -270,7 +270,7 @@ test("a reference pitch after the list (A4 = 440 Hz, A4 at 440, A4 432 Hz) is no
 
 test("a later section under a label the importer does not know blocks: its notes are never dropped", () => {
   const rows = fixture.cases.filter((x) => x.group === "unrecognised-section");
-  assert.equal(rows.length, 22);
+  assert.equal(rows.length, 24);
   for (const c of rows) {
     const r = run(c);
     assert.equal(r.status, "NEEDS_INPUT", c.id);
@@ -309,7 +309,9 @@ test("octaved tops with octaveless inner notes: the inner octaves climb above th
 });
 
 test("a list cut short by a token that is not a note blocks while a later token still reads as a note", () => {
-  for (const c of fixture.cases.filter((x) => x.group === "truncated")) {
+  const rows = fixture.cases.filter((x) => x.group === "truncated");
+  assert.equal(rows.length, 18);
+  for (const c of rows) {
     const r = run(c);
     assert.equal(r.status, "NEEDS_INPUT", c.id);
     assert.ok(flagOf(r, "AMBIGUOUS_NOTE"), c.id);

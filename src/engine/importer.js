@@ -95,7 +95,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       } else if (!/^(?:[^A-Za-z0-9.]|and|or)$/i.test(tok)) {
         run = 0;
         key = false;
-      }
+      } else if (!/^(?:[,\/\-&]|and|or)$/i.test(tok)) key = false;
       prev = tok;
     }
     return false;
