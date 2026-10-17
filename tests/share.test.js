@@ -600,6 +600,9 @@ test("decode propagates a rejected OPTION rather than repairing it", () => {
   const r = share.decode(encoded(seed));
   assert.equal(r.ok, false);
   assert.equal(r.code, "BAD_NOTE");
+  const v4 = share.decode(v4Link(seed));
+  assert.equal(v4.ok, false);
+  assert.equal(v4.code, "BAD_NOTE");
 });
 
 /* ---------------------------------------------------------------------- */
