@@ -1,0 +1,15 @@
+# kills: a list cut short by a token that is not a note blocks while a later token still reads as a note
+# suite: node --test --test-name-pattern ^a.list.cut.short.by.a.token tests/import.test.js
+# A glued run of notes ending the list is not noticed, so D4E4F4G4A4 is dropped silently.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -146,7 +146,7 @@
+       if (tok === ",") { immediate = false; continue; }
+       if (NOTE_ODD.test(tok)) { odd.push(tok); immediate = false; continue; }
+       if (SKIPPED.test(tok)) continue;
+-      if (GLUED.test(tok) || readsAsNoteAfter(re, body, tok)) odd.push(tok);
++      if (readsAsNoteAfter(re, body, tok)) odd.push(tok);
+       break;
+     }
+     return { role: role, notes: notes, odd: odd };

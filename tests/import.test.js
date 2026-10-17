@@ -257,11 +257,48 @@ test("a whole Yatao page with its Key line after the bottom list reads the same 
   assert.equal(importer.serialise(r), importer.serialise(run(byId("yatao-d-aegean-18-page"))));
 });
 
-test("a reference pitch after the list (A4 = 440 Hz) is not a later note, and a Word: key ends the scan", () => {
-  const r = run(byId("synthetic-reference-pitch"));
-  assert.equal(r.status, "REVIEW");
-  assert.equal(flagOf(r, "AMBIGUOUS_NOTE"), undefined);
-  assert.equal(importer.serialise(r), "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4");
+test("a reference pitch after the list (A4 = 440 Hz, A4 at 440, A4 432 Hz) is not a later note, in prose or under a Word: key", () => {
+  const refs = fixture.cases.filter((x) => x.group === "reference-pitch");
+  assert.equal(refs.length, 5);
+  for (const c of refs) {
+    const r = run(c);
+    assert.equal(r.status, "REVIEW", c.id);
+    assert.equal(flagOf(r, "AMBIGUOUS_NOTE"), undefined, c.id);
+    assert.equal(importer.serialise(r), "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4", c.id);
+  }
+});
+
+test("a later section under a label the importer does not know blocks: its notes are never dropped", () => {
+  const rows = fixture.cases.filter((x) => x.group === "unrecognised-section");
+  assert.equal(rows.length, 18);
+  for (const c of rows) {
+    const r = run(c);
+    assert.equal(r.status, "NEEDS_INPUT", c.id);
+    assert.equal(flagOf(r, "AMBIGUOUS_NOTE").level, "BLOCK", c.id);
+    assert.equal(importer.serialise(r), "", c.id);
+  }
+});
+
+test("spec lines and product prose after the list stay REVIEW: Key values, model names and scale names", () => {
+  const rows = fixture.cases.filter((x) => x.group === "spec-tail");
+  assert.equal(rows.length, 8);
+  for (const c of rows) {
+    const r = run(c);
+    assert.equal(r.status, "REVIEW", c.id);
+    assert.equal(flagOf(r, "AMBIGUOUS_NOTE"), undefined, c.id);
+    assert.equal(importer.serialise(r), "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4", c.id);
+  }
+});
+
+test("accepted false blocks: an octaved note or a run of key letters in prose after the list blocks (fail closed)", () => {
+  const rows = fixture.cases.filter((x) => x.group === "accepted-block");
+  assert.equal(rows.length, 5);
+  for (const c of rows) {
+    const r = run(c);
+    assert.equal(r.status, "NEEDS_INPUT", c.id);
+    assert.ok(flagOf(r, "AMBIGUOUS_NOTE"), c.id);
+    assert.equal(importer.serialise(r), "", c.id);
+  }
 });
 
 test("octaved tops with octaveless inner notes: the inner octaves climb above the tops", () => {

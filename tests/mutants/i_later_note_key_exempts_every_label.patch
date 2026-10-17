@@ -1,0 +1,15 @@
+# kills: a later section under a label the importer does not know blocks: its notes are never dropped
+# suite: node --test --test-name-pattern ^a.later.section.under.a.label tests/import.test.js
+# Every label exempts the letters after it, so Bottom side: F G is dropped silently.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -91,7 +91,7 @@
+         run = key ? 0 : run + 1;
+         if (run >= 2) return true;
+       } else if (tok === ":") {
+-        key = /^keys?$/i.test(prev);
++        key = true;
+       } else if (!/^(?:[,\/\-&;|+\u00b7]|and|or)$/i.test(tok)) {
+         run = 0;
+         key = false;

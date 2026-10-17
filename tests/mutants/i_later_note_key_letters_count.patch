@@ -1,0 +1,15 @@
+# kills: spec lines and product prose after the list stay REVIEW: Key values, model names and scale names
+# suite: node --test --test-name-pattern ^spec.lines.and.product.prose tests/import.test.js
+# Letters after Key: count as a run, so Keys: C and D blocks.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -88,7 +88,7 @@
+       if (JOINED.test(tok) || OCTAVED.test(tok) || GLUED.test(tok)) {
+         if (!REFERENCE.test(tok + body.slice(rest.lastIndex))) return true;
+       } else if (NOTE_LIKE.test(tok)) {
+-        run = key ? 0 : run + 1;
++        run = run + 1;
+         if (run >= 2) return true;
+       } else if (tok === ":") {
+         key = /^keys?$/i.test(prev);

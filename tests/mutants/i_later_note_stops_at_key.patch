@@ -1,0 +1,14 @@
+# kills: a later section under a label the importer does not know blocks: its notes are never dropped
+# suite: node --test --test-name-pattern ^a.later.section.under.a.label tests/import.test.js
+# A colon ends the scan again, so a later section under an unknown label is dropped silently.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -85,6 +85,7 @@
+     rest.lastIndex = re.lastIndex;
+     while ((m = rest.exec(body))) {
+       tok = m[0];
++      if (tok === ":") return false;
+       if (JOINED.test(tok) || OCTAVED.test(tok) || GLUED.test(tok)) {
+         if (!REFERENCE.test(tok + body.slice(rest.lastIndex))) return true;
+       } else if (NOTE_LIKE.test(tok)) {

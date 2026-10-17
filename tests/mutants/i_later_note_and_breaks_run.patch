@@ -1,0 +1,15 @@
+# kills: a later section under a label the importer does not know blocks: its notes are never dropped
+# suite: node --test --test-name-pattern ^a.later.section.under.a.label tests/import.test.js
+# and breaks a run of letters, so Underside: F and G is dropped silently.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -92,7 +92,7 @@
+         if (run >= 2) return true;
+       } else if (tok === ":") {
+         key = /^keys?$/i.test(prev);
+-      } else if (!/^(?:[,\/\-&;|+\u00b7]|and|or)$/i.test(tok)) {
++      } else if (!/^(?:[,\/\-&;|+\u00b7]|or)$/i.test(tok)) {
+         run = 0;
+         key = false;
+       }

@@ -1,15 +1,15 @@
 # kills: prose after the note list never reads as a later note: the nine product-page tails stay REVIEW
-# suite: node --test --test-name-pattern ^prose.after.the.note.list.never.reads.as.a.later.note tests/import.test.js
-# A lone note letter without an octave counts as a later note, so a key name in product prose blocks the list.
+# suite: node --test --test-name-pattern ^prose.after.the.note.list tests/import.test.js
+# A lone letter counts as a later note, so prose tails block.
 diff --git a/src/engine/importer.js b/src/engine/importer.js
 --- a/src/engine/importer.js
 +++ b/src/engine/importer.js
-@@ -85,7 +85,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-         run = 0;
+@@ -89,7 +89,7 @@
+         if (!REFERENCE.test(tok + body.slice(rest.lastIndex))) return true;
        } else if (NOTE_LIKE.test(tok)) {
-         run += 1;
+         run = key ? 0 : run + 1;
 -        if (run >= 2) return true;
 +        if (run >= 1) return true;
-       } else if (!/^(?:[,\/\-&]|and)$/i.test(tok)) {
-         run = 0;
-       }
+       } else if (tok === ":") {
+         key = /^keys?$/i.test(prev);
+       } else if (!/^(?:[,\/\-&;|+\u00b7]|and|or)$/i.test(tok)) {

@@ -37,6 +37,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   var JOINED = /^([A-G]) (#|b)(-1|[0-9])/;
   var TOKEN = /([A-G]) (?:#|b)(?:-1|[0-9])|[A-Za-z][A-Za-z0-9#]*(?:-1(?![0-9]))?|[()\/\-,]|\S/g;
   var SKIPPED = /^(?:and|&|\.|;)$/i;
+  var REFERENCE = /^A4 *(?:=|at\b)? *[0-9]{3}(?![0-9])/;
+  var GLUED = /^(?:[A-Ha-h](?:#|b)?(?:-1|[0-9])){2,}$/;
 
   var LABEL = new RegExp(
     "\\b(?:(Ding)|(Inner(?:\\s*Notes)?)|(Notes\\s*Bottom\\s*Side|Bottom\\s*Side\\s*Notes|Bottom\\s*Notes|Bottom)" +
@@ -68,27 +70,33 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return { start: start, end: end, text: original.slice(start, end) };
   }
 
-  // True when a later token still reads as a note, so a list cut short never
-  // drops notes without a flag. A note with an octave counts alone; letters
-  // without one count only as a run of two. The scan ends at the next "Word:"
-  // key, and a reference pitch ("A4 = 440") is not a note.
-  function readsAsNoteAfter(re, body) {
+  // True when a token after the one that ended the list still reads as a note,
+  // so a list cut short never drops notes without a flag. The scan runs to the
+  // next recognised label, through any other "Word:" key. A note with an octave
+  // counts alone, unless it is the reference pitch (A4 followed by an optional
+  // "=" or "at" and a three-digit frequency); letters without one count only
+  // as a run of two, and not straight after a "Key:" label.
+  function readsAsNoteAfter(re, body, tok) {
     var rest = new RegExp(TOKEN.source, "g");
     var m;
-    rest.lastIndex = re.lastIndex;
+    var prev = tok;
+    var key = false;
     var run = 0;
+    rest.lastIndex = re.lastIndex;
     while ((m = rest.exec(body))) {
-      var tok = m[0];
-      if (tok === ":") return false;
-      if (JOINED.test(tok) || OCTAVED.test(tok)) {
-        if (!/^ *=/.test(body.slice(rest.lastIndex))) return true;
-        run = 0;
+      tok = m[0];
+      if (JOINED.test(tok) || OCTAVED.test(tok) || GLUED.test(tok)) {
+        if (!REFERENCE.test(tok + body.slice(rest.lastIndex))) return true;
       } else if (NOTE_LIKE.test(tok)) {
-        run += 1;
+        run = key ? 0 : run + 1;
         if (run >= 2) return true;
-      } else if (!/^(?:[,\/\-&]|and)$/i.test(tok)) {
+      } else if (tok === ":") {
+        key = /^keys?$/i.test(prev);
+      } else if (!/^(?:[,\/\-&;|+\u00b7]|and|or)$/i.test(tok)) {
         run = 0;
+        key = false;
       }
+      prev = tok;
     }
     return false;
   }
@@ -138,7 +146,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       if (tok === ",") { immediate = false; continue; }
       if (NOTE_ODD.test(tok)) { odd.push(tok); immediate = false; continue; }
       if (SKIPPED.test(tok)) continue;
-      if (readsAsNoteAfter(re, body)) odd.push(tok);
+      if (GLUED.test(tok) || readsAsNoteAfter(re, body, tok)) odd.push(tok);
       break;
     }
     return { role: role, notes: notes, odd: odd };
