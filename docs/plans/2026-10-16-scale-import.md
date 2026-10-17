@@ -155,7 +155,7 @@ is derived from `midi % 12`.
   `tools/validate.py` check 4 catches drift.
 - No `<script src>` may appear in the committed bytes. Any network call would
   be the app's first `fetch()`.
-- `tests/app.test.js` asserts there is no external script.
+- `tests/app.test.js` asserts there is no external script, and pins the engine region order, so a new module must be added to that list.
 - Tests and CI:
   - `node --test tests/<file>.test.js`; `tests/run.sh`.
   - CI runs `validate.py`, `boot_sim.js`, `refresh_mutants.py --check`,
@@ -484,8 +484,9 @@ first, against fixtures captured from real text.
     by the tool only
   - `tests/import.test.js` (new)
   - `tests/fixtures/import_cases_v1.json` (new)
-  - the FLOORS row in `tools/suite_health.py` for the new test file
+  - the FLOORS row in `tests/suite_health.py` for the new test file
   - new mutants under `tests/mutants/`
+  - the two engine-module lists in `tests/app.test.js` "index.html carries the whole engine inline, with no external script" (the `HPE[mod]` loop and the region-order `deepStrictEqual`), which gain `importer` after `core`; Lane B owns the rest of that file and starts after A1 merges.
 - **Objective:** `interpret(text) -> {status, roles:{ding, top[], bottom[],
   inner[]}, spans, flags[], total, titleCount}` and `serialise(result) ->
   string`. Both are pure, with no DOM and no network.
@@ -500,11 +501,12 @@ first, against fixtures captured from real text.
   - Yatao without E5.
 
   Store them as captured text with the source URL and the capture date,
-  never fetched at test time.
+  never fetched at test time. Fixtures store only the spec lines needed for
+  each case, with source URL and capture date, not whole page bodies.
 - **Acceptance:**
   - Every row of section 4.4 holds as an exact assertion: the status, the
     flag codes, the serialised string where one exists, and the
-    `parseSeed(serialise(r))` field count.
+    field count = `Object.keys(parseSeed(serialise(r)).value.fields).length`.
   - The Yatao serialisation `=== "[B2] (D3) [E3] F#3 [G#3] A3 [B3] C#4 D4
     [E4] F#4 G#4 A4 [B4] C#5 D5 [E5] F#5"`.
   - **No fixture yields a serialised string whose pitch multiset differs
@@ -526,12 +528,14 @@ first, against fixtures captured from real text.
   - its region regenerated in `index.html`;
   - `tests/scale.test.js`;
   - `tests/fixtures/scale_grammar_v1.json`.
+
+  Lane A2 also owns tests/core.test.js (the SECTION9 BAD_NOTE alternates) and the docs/ENGINE-SPEC.md section 2 alternate-sentences table, because 'REASONS is the ENGINE-SPEC section 2 table, verbatim' deep-equals core.REASONS against both; its verify command adds `node --test tests/core.test.js`, and it owns its FLOORS and mutant rows.
 - **Objective:** when a raw maker string is typed straight into the box,
   BAD_NOTE says why: commas ("separate notes with spaces"), ♯/♭ ("use # and
   b"), lowercase, or a word ("Kurd is not a note" already exists).
 - **Acceptance:** each new alternate is asserted, and all existing grammar
   fixtures are unchanged.
-- **Verify:** `node --test tests/scale.test.js && python3
+- **Verify:** `node --test tests/scale.test.js && node --test tests/core.test.js && python3
   tools/inline_engine.py --check`
 - **Non-goals:**
   - accepting any new syntax;
@@ -566,7 +570,7 @@ first, against fixtures captured from real text.
     requests…" still holds, plus a new assertion that an import sends zero
     requests.
   - Analytics, if any: one `scale_import` event with `{status}` only, no
-    text.
+    text. Adding `scale_import` is an owner gate; if approved, Lane B adds it to the 'discoverability: analytics events' describe and to 'no event param is a string over 40 characters or names a custom: id', and Lane C updates the CLAUDE.md event list.
 - **Verify:** `node --test tests/app.test.js && node --test tests/e2e.test.js
   && python3 tools/validate.py`
 - **Non-goals:**
