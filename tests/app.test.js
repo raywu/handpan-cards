@@ -9745,7 +9745,7 @@ describe("discoverability: deck route", () => {
     assert.deepStrictEqual(q[4][2], { deck_id: "kurd" });
   });
 
-  test("hashchange to a deck link tracks deck_route with the routed id", () => {
+  test("a hashchange to a deck link tracks deck_route with the routed id", () => {
     const app = at("", { html: withGaId(REAL_ID), webdriver: false, storage: { hpfc: JSON.stringify({ deck: "kurd", mode: "A" }) } });
     const routes = () => JSON.parse(JSON.stringify(Array.from(app.get("window.dataLayer")))).filter((e) => e[0] === "event" && e[1] === "deck_route");
     const before = routes().length;

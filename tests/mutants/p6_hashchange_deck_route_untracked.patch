@@ -1,0 +1,15 @@
+# kills: a hashchange to a deck link tracks deck_route with the routed id
+# suite: node --test --test-name-pattern ^a.hashchange.to.a.deck.link.tracks.deck_route tests/app.test.js
+# routeToDeck no longer sends the deck_route event, so a hashchange or about link goes untracked.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12378,7 +12378,7 @@ function routeToDeck(routed) {
+   // fallback and says so; one that shows its replacement does not.
+   if (routed !== shown && !(replacements()[routed] && replacements()[routed].id === shown) && hidden.includes(routed))
+     say("That deck is gone. Showing " + deck().name + ".", "warn");
+-  track("deck_route", { deck_id: routed });
++
+   return shown;
+ }
+ window.addEventListener("hashchange", () => {
