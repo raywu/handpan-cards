@@ -8795,7 +8795,7 @@ function run() {
       return { fwd: seen.map((x) => x.id || ""), back: back.map((x) => x.id || "") };
     }
 
-    test("Tab cycles exactly the fifteen flash-card stops in the modal at every viewport class", async () => {
+    test("Tab cycles exactly the sixteen flash-card stops in the modal at every viewport class", async () => {
       for (const [w, h, m] of MODAL_VIEWPORTS) {
         await freshLoad();
         await b.setViewport(w, h, m);
@@ -8818,7 +8818,7 @@ function run() {
       await b.setViewport(900, 900, false);
     });
 
-    test("Tab cycles exactly the sixteen progression stops in the modal at every viewport class", async () => {
+    test("Tab cycles exactly the seventeen progression stops in the modal at every viewport class", async () => {
       for (const [w, h, m] of MODAL_VIEWPORTS) {
         await freshLoad();
         await b.setViewport(w, h, m);
@@ -12548,6 +12548,7 @@ function run() {
         seen.push(h);
       }
       assert.strictEqual(await b.eval(`return history.length`), len, "chip taps pushed history entries");
+      assert.strictEqual(await hash(), await b.eval(`return routeFor(deck())`), "the bar is not the shown deck's route");
     });
 
     test("edge 2: opening ADD from a custom deck and going BACK lands on the same #s= bar", async () => {
@@ -12617,21 +12618,26 @@ function run() {
       assert.ok(m.clip.includes("?share=x#deck="), m.clip);
     });
 
-    test("edge 10: COPY LINK is a 44px target inside the panel at 320px with no horizontal overflow", async () => {
+    test("edge 10: COPY LINK is a 44px target inside the panel at 320px and 380px with no horizontal overflow", async () => {
       await freshLoad();
-      await b.setViewport(320, 568, true);
       try {
-        await b.settle();
-        await openSettingsPanel();
-        const m = await b.eval(`
-          const r = document.getElementById("share-copy").getBoundingClientRect();
-          const a = document.getElementById("deck-add").getBoundingClientRect();
-          return { h: r.height, left: r.left, right: r.right, vw: innerWidth, ah: a.height,
-                   sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth };
-        `);
-        assert.ok(m.h >= 44, `COPY LINK is ${m.h}px tall`);
-        assert.ok(m.left >= 0 && m.right <= m.vw, `COPY LINK leaves the viewport: ${m.left}..${m.right} of ${m.vw}`);
-        assert.ok(m.sw <= m.cw + 1, "horizontal overflow at 320px");
+        for (const [w, h] of [[320, 568], [380, 700]]) {
+          await b.setViewport(w, h, true);
+          await b.settle();
+          await openSettingsPanel();
+          const m = await b.eval(`
+            const r = document.getElementById("share-copy").getBoundingClientRect();
+            const a = document.getElementById("deck-add").getBoundingClientRect();
+            return { h: r.height, left: r.left, right: r.right, vw: innerWidth, top: r.top, atop: a.top,
+                     sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth };
+          `);
+          assert.ok(m.h >= 44, `${w}px: COPY LINK is ${m.h}px tall`);
+          assert.ok(m.left >= 0 && m.right <= m.vw, `${w}px: COPY LINK leaves the viewport: ${m.left}..${m.right} of ${m.vw}`);
+          assert.ok(m.sw <= m.cw + 1, `horizontal overflow at ${w}px`);
+          assert.ok(Math.abs(m.top - m.atop) <= 1, `${w}px: COPY LINK top ${m.top} is not the top of #deck-add ${m.atop}`);
+          await b.eval(`document.getElementById("settings-scrim")?.click(); return true;`).catch(() => {});
+          await b.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: "panel closes" });
+        }
       } finally {
         await b.setViewport(900, 900, false);
       }

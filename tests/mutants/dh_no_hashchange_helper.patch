@@ -4,12 +4,11 @@
 diff --git a/tools/sandbox.js b/tools/sandbox.js
 --- a/tools/sandbox.js
 +++ b/tools/sandbox.js
-@@ -686,7 +686,7 @@ function boot(opts = {}) {
-      *  in response - it must take the page down and NOT pop anything itself. */
-     hashchange: (newHash) => {
+@@ -697,7 +697,6 @@ function boot(opts = {}) {
+       const oldURL = location.href;
        location.hash = newHash;
--      for (const fn of winListeners.hashchange || []) fn({ type: "hashchange" });
-+      
+       if (location.href === oldURL) return;
+-      for (const fn of winListeners.hashchange || []) fn({ type: "hashchange", oldURL, newURL: location.href });
      },
-     popstate: () => {
-       for (const fn of winListeners.popstate || []) fn({ type: "popstate", state: history.state });
+     /** Press the browser's Back button. Fires the app's popstate listeners; the
+      *  stub keeps no entry stack, so what a test asserts is what the app does

@@ -4,10 +4,10 @@
 diff --git a/tests/helpers/cdp.js b/tests/helpers/cdp.js
 --- a/tests/helpers/cdp.js
 +++ b/tests/helpers/cdp.js
-@@ -711,7 +711,6 @@ async function launchOnce(opts = {}) {
-     await b.send("Runtime.enable");
-     // F-18, plan section 15: classic scrollbars take layout width on Linux CI and
+@@ -716,7 +716,6 @@ async function launchOnce(opts = {}) {
      // on a Mac with a mouse; the harness measures the page, not the scrollbar.
+     // Per target: this applies to the one target launch() just created and
+     // attached, so every launch() sets it again for its own fresh target.
 -    await b.send("Emulation.setScrollbarsHidden", { hidden: true });
      await maybeEnableCoverage(b);
      if (opts.realFonts) {

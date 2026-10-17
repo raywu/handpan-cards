@@ -1,0 +1,14 @@
+# kills: SU: following a link to the custom deck shown at boot after switching away tracks share_open
+# suite: node --test --test-name-pattern ^SU:.following.a.link.to.the.custom.deck tests/app.test.js
+# bootStored is never cleared, so a link to the deck stored at boot never counts as an arrival.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11458,7 +11458,6 @@ if (wantedDeck !== deckId && !(replacements()[wantedDeck] && replacements()[want
+ // each other's hash. A deck link was read above, by routedDeckId().
+ if (location.hash.indexOf(SHARE_PREFIX) === 0)
+   openShare(location.hash.slice(SHARE_PREFIX.length));
+-bootStored = null;
+ syncRoute();
+ booted = true;
+ </script>

@@ -159,7 +159,7 @@ What is covered:
 - **Browser e2e** - real Chromium: deck switching, the 3D card flip, keyboard
   and touch navigation, reload persistence, clipping at a 380px viewport, and
   the scale sheet's modality, focus handling and 44px hit areas.
-- **Mutation gate** - 993 mutant patches under `tests/mutants/`, each one a
+- **Mutation gate** - 1002 mutant patches under `tests/mutants/`, each one a
   deliberate break that some test must catch. The gate is all-or-nothing: one
   survivor fails it. A test nothing can kill does not count as coverage.
 
@@ -171,8 +171,9 @@ A `#deck=<slug>` link opens a built-in deck (`tests/app.test.js` "every slug
 opens its built-in deck, persists it, and leaves a clean address"), and the
 about section below the card names every deck with its card count ("the about
 section names every built-in deck with its card count from data/decks.json and
-the value line"). GA4 stays off until the real measurement id replaces the
-placeholder ("the placeholder id is the shipped constant", "analyticsAllowed is
+the value line"). GA4 loads only on a real host with the shipped measurement id ("the shipped
+index.html boots unmodified on a real host and loads gtag with the shipped id");
+the placeholder `G-XXXXXXXXXX` stays a disabling value ("analyticsAllowed is
 false for the placeholder id: no gtag script, no config, no event"); see CLAUDE.md,
 "Discoverability".
 

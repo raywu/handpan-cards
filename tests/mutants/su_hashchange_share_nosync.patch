@@ -1,0 +1,14 @@
+# kills: SU: a hashchange to a refused #s= rewrites the bar to the shown deck's route
+# suite: node --test --test-name-pattern ^SU:.a.hashchange.to.a.refused tests/app.test.js
+# The hashchange listener no longer syncs the bar after a #s= it refused.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11403,7 +11403,6 @@ window.addEventListener("hashchange", () => {
+   if (location.hash === routeFor(deck())) return;
+   if (location.hash.indexOf(SHARE_PREFIX) === 0) {
+     openShare(location.hash.slice(SHARE_PREFIX.length));
+-    syncRoute();
+     return;
+   }
+   if (location.hash.indexOf(DECK_ROUTE) !== 0) return;
