@@ -9745,6 +9745,16 @@ describe("discoverability: deck route", () => {
     assert.deepStrictEqual(q[4][2], { deck_id: "kurd" });
   });
 
+  test("hashchange to a deck link tracks deck_route with the routed id", () => {
+    const app = at("", { html: withGaId(REAL_ID), webdriver: false, storage: { hpfc: JSON.stringify({ deck: "kurd", mode: "A" }) } });
+    const routes = () => JSON.parse(JSON.stringify(Array.from(app.get("window.dataLayer")))).filter((e) => e[0] === "event" && e[1] === "deck_route");
+    const before = routes().length;
+    app.hashchange("#deck=f-low-pygmy-18");
+    const added = routes().slice(before);
+    assert.strictEqual(added.length, 1);
+    assert.deepStrictEqual(added[0][2], { deck_id: "pygmy" });
+  });
+
   test("the about section links every built-in deck by its slug", () => {
     const html = aboutHtml();
     for (const d of BUILTIN_DECKS()) {
