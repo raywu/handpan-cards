@@ -9289,6 +9289,15 @@ test("RD: opening a share link that carries an explicit parent stores that paren
 /* ---------------------------------------------------------------- discoverability */
 
 const INDEX_HTML = () => fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+const SHIPPED_GA_ID = "G-QTYWB2HSSV";
+const GA_LITERAL = 'const GA_MEASUREMENT_ID = "' + SHIPPED_GA_ID + '";';
+// The shipped page with another measurement id. It throws when the literal is
+// not there, so a stale anchor can never leave the real id in a "test id" boot.
+const withGaId = (id) => {
+  const html = INDEX_HTML();
+  assert.ok(html.includes(GA_LITERAL), "the GA_MEASUREMENT_ID literal is not in index.html");
+  return html.replace(GA_LITERAL, 'const GA_MEASUREMENT_ID = "' + id + '";');
+};
 const BUILTIN_DECKS = () => JSON.parse(fs.readFileSync(path.join(ROOT, "data", "decks.json"), "utf8"));
 const VALUE_LINE = "A free chord and progression practice tool for your own handpan scale.";
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -9375,14 +9384,24 @@ describe("discoverability: structured data", () => {
 describe("discoverability: analytics loader", () => {
   const REAL_ID = "G-TEST123456";
   const bootGa = (opts = {}) => {
-    const html = INDEX_HTML().replace('const GA_MEASUREMENT_ID = "G-QTYWB2HSSV";', 'const GA_MEASUREMENT_ID = "' + (opts.id || REAL_ID) + '";');
+    const html = withGaId(opts.id || REAL_ID);
     return boot({ html, webdriver: false, href: "https://example.test/index.html", ...opts.boot });
   };
   const gtagScripts = (app) => app.head.children.filter((c) => /googletagmanager\.com\/gtag\/js/.test(c.src || ""));
   const queue = (app) => JSON.parse(JSON.stringify(Array.from(app.get("window.dataLayer"))));
 
-  test("the placeholder id is the shipped constant", () => {
-    assert.ok(INDEX_HTML().includes('const GA_MEASUREMENT_ID = "G-QTYWB2HSSV";'));
+  test("the shipped measurement id is G-QTYWB2HSSV", () => {
+    assert.ok(INDEX_HTML().includes(GA_LITERAL));
+    assert.strictEqual((INDEX_HTML().match(/G-QTYWB2HSSV/g) || []).length, 1, "the id appears once");
+  });
+
+  test("the shipped index.html boots unmodified on a real host and loads gtag with the shipped id", () => {
+    const app = boot({ webdriver: false, href: "https://example.test/index.html" });
+    assert.strictEqual(app.get("analyticsAllowed()"), true);
+    const s = gtagScripts(app);
+    assert.strictEqual(s.length, 1);
+    assert.strictEqual(s[0].src, "https://www.googletagmanager.com/gtag/js?id=" + SHIPPED_GA_ID);
+    assert.ok(queue(app).some((e) => e[0] === "config" && e[1] === SHIPPED_GA_ID));
   });
 
   test("the loader appends the gtag script on a real host with a real id, and only then", () => {
@@ -9445,7 +9464,7 @@ describe("discoverability: analytics loader", () => {
 describe("discoverability: analytics events", () => {
   const REAL_ID = "G-TEST123456";
   const bootEv = (opts = {}) => {
-    const html = INDEX_HTML().replace('const GA_MEASUREMENT_ID = "G-QTYWB2HSSV";', 'const GA_MEASUREMENT_ID = "' + REAL_ID + '";');
+    const html = withGaId(REAL_ID);
     return boot({ html, webdriver: false, href: "https://example.test/index.html", ...opts });
   };
   const events = (app) => JSON.parse(JSON.stringify(Array.from(app.get("window.dataLayer"))))
@@ -9649,7 +9668,7 @@ describe("discoverability: deck route", () => {
   });
 
   test("a routed boot queues config before deck_route", () => {
-    const html = INDEX_HTML().replace('const GA_MEASUREMENT_ID = "G-QTYWB2HSSV";', 'const GA_MEASUREMENT_ID = "' + REAL_ID + '";');
+    const html = withGaId(REAL_ID);
     const app = boot({ html, webdriver: false, href: "https://example.test/index.html#deck=d-kurd-10" });
     const q = JSON.parse(JSON.stringify(Array.from(app.get("window.dataLayer"))));
     const names = q.map((e) => e[0] === "js" ? "js" : e[0] + ":" + e[1]);
@@ -9681,7 +9700,7 @@ describe("share url", () => {
     plain(app.get("HPE.share.decode(" + JSON.stringify(hash.slice(3)) + ")"));
   const storageOf = (app) => ({ hpfc: app.store.hpfc, [app.get("SCALES_KEY")]: app.store[app.get("SCALES_KEY")] });
   const bootGA = (opts = {}) => {
-    const html = INDEX_HTML().replace('const GA_MEASUREMENT_ID = "G-QTYWB2HSSV";', 'const GA_MEASUREMENT_ID = "' + REAL_ID + '";');
+    const html = withGaId(REAL_ID);
     return boot({ html, webdriver: false, href: PAGE, ...opts });
   };
   const gaEvents = (app) => JSON.parse(JSON.stringify(Array.from(app.get("window.dataLayer"))))
@@ -9974,5 +9993,108 @@ describe("share url", () => {
     assert.deepStrictEqual(gaEvents(sameSeed).filter((e) => e === "deck_route"), []);
     const otherSeed = bootGA({ storage: stored, href: PAGE + "#deck=d-amara-9" });
     assert.deepStrictEqual(gaEvents(otherSeed).filter((e) => e === "deck_route"), ["deck_route"]);
+  });
+});
+
+describe("share url: edges", () => {
+  const PAGE = "https://example.test/index.html";
+  const REAL_ID = "G-TEST123456";
+  const bootGA = (opts = {}) =>
+    boot({ html: withGaId(REAL_ID), webdriver: false, href: PAGE, ...opts });
+  const gaEvents = (app) => JSON.parse(JSON.stringify(Array.from(app.get("window.dataLayer"))))
+    .filter((e) => e[0] === "event").map((e) => e[1]);
+  const replaces = (app) => app.history.calls.filter((c) => c.type === "replace");
+  const storageOf = (app) => ({ hpfc: app.store.hpfc, [app.get("SCALES_KEY")]: app.store[app.get("SCALES_KEY")] });
+
+  test("SU: a typed #deck= route while the Add/Edit sheet is open changes neither the deck nor history", () => {
+    const app = boot();
+    openSheet(app);
+    assert.strictEqual(app.sheetOpen(), true);
+    const calls = app.history.calls.length;
+    app.hashchange("#deck=f-low-pygmy-18");
+    assert.strictEqual(app.deckId(), "kurd");
+    assert.strictEqual(app.history.calls.length, calls, "history was written under the open sheet");
+    assert.strictEqual(app.sheetOpen(), true);
+  });
+
+  test("SU: a routed boot to the default deck beats a different stored deck and persists it", () => {
+    const app = boot({
+      href: PAGE + "#deck=d-kurd-10",
+      storage: { hpfc: JSON.stringify({ deck: "pygmy", mode: "A" }) },
+    });
+    assert.strictEqual(app.deckId(), "kurd");
+    assert.strictEqual(JSON.parse(app.store.hpfc).deck, "kurd");
+    assert.strictEqual(app.location.hash, "#deck=d-kurd-10");
+  });
+
+  test("SU: the inline head script alone queues two consent defaults and js, and no config", () => {
+    const head = /<script>\s*(window\.dataLayer = [\s\S]*?)<\/script>/.exec(INDEX_HTML());
+    assert.ok(head, "the inline head script is not in index.html");
+    const app = boot({ html: `<script>${head[1]}</script><script>window.__marker = 1;</script>`, webdriver: false });
+    const q = JSON.parse(JSON.stringify(Array.from(app.get("window.dataLayer"))));
+    assert.deepStrictEqual(q.map((e) => e[0] + (e[0] === "consent" ? ":" + e[1] : "")), ["consent:default", "consent:default", "js"]);
+    assert.strictEqual(q[0][2].analytics_storage, "granted");
+    assert.strictEqual(q[1][2].analytics_storage, "denied");
+    assert.strictEqual(q[1][2].region.length, 32);
+    assert.strictEqual(app.head.children.length, 0, "the head script appended a node");
+  });
+
+  test("SU: a boot message is not replaced by a refused-link warning", () => {
+    const first = boot();
+    makeCustom(first);
+    const storage = {
+      hpfc: JSON.stringify({ deck: "kurd", mode: "A", hidden: ["kurd"] }),
+      [first.get("SCALES_KEY")]: first.store[first.get("SCALES_KEY")],
+    };
+    const html = INDEX_HTML().replace("var CAPS = { payload: 4096 };", "var CAPS = { payload: 40 };");
+    assert.notStrictEqual(html, INDEX_HTML(), "the share cap literal moved");
+    const app = boot({ html, href: PAGE, storage });
+    assert.match(app.deckId(), /^custom:/);
+    assert.strictEqual(app.els["share-copy"].disabled, true, "the custom deck's code was not refused");
+    assert.match(app.announcer().textContent, /^That deck is gone\./);
+  });
+
+  test("SU: following a link to the custom deck shown at boot after switching away tracks share_open", () => {
+    const first = boot();
+    makeCustom(first);
+    const hash = first.location.hash;
+    assert.match(hash, /^#s=/);
+    const app = bootGA({ storage: storageOf(first) });
+    assert.match(app.deckId(), /^custom:/);
+    app.run('selectDeck("kurd")');
+    assert.strictEqual(app.deckId(), "kurd");
+    assert.deepStrictEqual(gaEvents(app).filter((e) => e === "share_open"), []);
+    app.hashchange(hash);
+    assert.match(app.deckId(), /^custom:/);
+    assert.deepStrictEqual(gaEvents(app).filter((e) => e === "share_open"), ["share_open"]);
+  });
+
+  test("SU: a deck change hides a revealed #share-url so it never keeps the old deck's link", () => {
+    const app = boot();
+    delete app.sandbox.navigator.clipboard;
+    delete app.sandbox.navigator.share;
+    app.els["share-copy"].click();
+    assert.strictEqual(app.els["share-url"].hasAttribute("hidden"), false);
+    assert.strictEqual(app.els["share-url"].value, PAGE + "#deck=d-kurd-10");
+    app.run('selectDeck("pygmy")');
+    assert.strictEqual(app.els["share-url"].hasAttribute("hidden"), true);
+  });
+
+  test("SU: a hashchange to an unknown #deck= slug rewrites the bar to the shown deck's route", () => {
+    const app = boot();
+    const before = replaces(app).length;
+    app.hashchange("#deck=nope");
+    assert.strictEqual(app.deckId(), "kurd");
+    assert.strictEqual(app.location.hash, "#deck=d-kurd-10");
+    assert.strictEqual(replaces(app).length, before + 1);
+  });
+
+  test("SU: a hashchange to a refused #s= rewrites the bar to the shown deck's route", () => {
+    const app = boot();
+    const before = replaces(app).length;
+    app.hashchange("#s=zzz");
+    assert.strictEqual(app.deckId(), "kurd");
+    assert.strictEqual(app.location.hash, "#deck=d-kurd-10");
+    assert.strictEqual(replaces(app).length, before + 1);
   });
 });
