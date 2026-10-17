@@ -6,9 +6,9 @@ Chord flashcards and chord progressions for handpan scales. It runs in the brows
 
 - Tap a card to flip it. Swipe or use the arrow buttons or keys to move. SHUFFLE randomises the order.
 - NAME → NOTES shows the chord name, then the notes. NOTES → NAME shows the lit pan, and you name the chord.
-- A card shows the pan diagram with every field of the chord's pitch classes lit: the root in one colour, the other tones in another. Below it are the notes and field numbers, in order from the root.
+- A card shows the pan with every field of the chord's pitch classes lit, the root in one colour and the other tones in another. Below it are the notes and field numbers, in order from the root.
 - The Chord progression group in the menu (EASY, MEDIUM, HARD) gives a loop of 2 to 6 chords to play.
-- The browser remembers your deck, mode and paper size.
+- The browser remembers your deck, mode, progression tier and paper size.
 
 ## Decks
 
@@ -22,9 +22,9 @@ Chord flashcards and chord progressions for handpan scales. It runs in the brows
 
 ## Your own scale
 
-- Menu, then + ADD A SCALE. Type the notes low to high on one line: the ding in round brackets, bottom notes in square brackets, and a `|` before any inner notes. Example: `[C] (D) A C D E F G A C`. Then GENERATE CARDS.
+- Menu, then + ADD A SCALE. Type the notes low to high on one line: the ding in round brackets, bottom notes in square brackets, a `|` before inner notes. Example: `[C] (D) A C D E F G A C`. Then GENERATE CARDS.
 - ADJUST LAYOUT under the preview mirrors or reorders fields to match your pan.
-- Tap the selected deck's chip (it has a pencil) to edit or delete it. Built-in decks can be edited the same way, and RESET SEEDED DECKS brings them back.
+- Tap the selected deck's chip (it has a pencil) to edit or delete it. You can edit built-in decks the same way; RESET SEEDED DECKS brings them back.
 - Scales stay in this browser. The link icon in the header copies a link that opens the deck on any device.
 - A deck id comes from a 32-bit hash of its notes. Two different scales can share an id, and then only one is kept.
 
@@ -47,7 +47,7 @@ Open `index.html` from disk, or run `tools/preview.sh` to serve it at `http://lo
 - The `<!-- engine:... -->` regions of `index.html` are copies of `src/engine/*.js`. `python3 tools/inline_engine.py` rewrites them.
 - The `const DECKS` line is rewritten from `data/decks.json` by `python3 tools/sync_decks.py`.
 - Do not edit either by hand. Both tools take `--check`, and `python3 tools/validate.py` fails if either drifts.
-- To fork, set `GA_MEASUREMENT_ID` in `index.html` to `G-XXXXXXXXXX` (this disables analytics) or your own id. Replace `CNAME`, the canonical and og URLs in `index.html`, `robots.txt` and `sitemap.xml`.
+- To fork, set `GA_MEASUREMENT_ID` in `index.html` to `G-XXXXXXXXXX` (this disables analytics) or your own id. Replace `CNAME`, the canonical and og URLs in `index.html`, `robots.txt` and `sitemap.xml`. Tests and mutants pin the domain and the id, so update them too.
 
 The engine is twelve modules under `src/engine/`:
 
@@ -84,4 +84,4 @@ More to read: `CLAUDE.md` (rules, verified layouts, design system, hosting), `te
 
 MIT, see `LICENSE`.
 
-The fonts in `tools/fonts/`, the subsets built from them in `src/engine/fontdata.js`, and the copies of that font data inlined in `index.html` and embedded in the committed PDFs are under the SIL Open Font License 1.1. See the `OFL-*.txt` files in `tools/fonts/`.
+The SIL Open Font License 1.1 covers the fonts in `tools/fonts/` and the subsets in `src/engine/fontdata.js`. It also covers their copies in `index.html` and the committed PDFs. See the `OFL-*.txt` files in `tools/fonts/`.
