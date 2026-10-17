@@ -1,0 +1,16 @@
+# kills: SV: the five built-in decks' v5 links are pinned
+# suite: node --test --test-name-pattern ^SV..the.five.built.in.decks..v5.links.are.pinned$ tests/tests/share.test.js
+# The check is computed over the percent-encoded text instead of the decoded
+# meaning, so the auto label leaks into it.
+diff --git a/src/engine/share.js b/src/engine/share.js
+--- a/src/engine/share.js
++++ b/src/engine/share.js
+@@ -344,7 +344,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     if (opts.anchor === "between") option("between");
+     var seats = seatsField(opts.seats);
+     if (seats !== "") option("seats-" + seats);
+-    segs.push(checkHex(meaning.join(SEP)));
++    segs.push(checkHex(segs.join(SEP)));
+     var out = segs.join("/");
+     if (out.length > CAPS.payload) return badNote(out);
+     return ok(out);

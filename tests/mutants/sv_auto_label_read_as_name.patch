@@ -1,0 +1,14 @@
+# kills: SV: the auto label is ignored on receipt and lies outside the checksum
+# suite: node --test --test-name-pattern ^SV..the.auto.label.is.ignored.on.receipt.and.lies.outside.the.checksum$ tests/tests/share.test.js
+# A starred name segment is read as a typed name on receipt.
+diff --git a/src/engine/share.js b/src/engine/share.js
+--- a/src/engine/share.js
++++ b/src/engine/share.js
+@@ -440,6 +440,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     var meaning = ["5", scale];
+     var name = "";
+     if (nameSeg.charAt(0) === "*") {
++      name = percentDecode(nameSeg.slice(1), true);
+       meaning.push(FIELD_SEP);
+     } else {
+       if (!TYPED_RE.test(nameSeg)) return badNote(text);

@@ -1,15 +1,14 @@
-# suite: node --test --test-name-pattern ^flipping.any.single.character.of.a.valid.string.is.rejected$ tests/share.test.js
 # kills: flipping any single character of a valid string is rejected
+# suite: node --test --test-name-pattern ^flipping.any.single.character.of.a.valid.string.is.rejected$ tests/tests/share.test.js
 # decode: the integrity check must reject a flipped character anywhere in the string
 diff --git a/src/engine/share.js b/src/engine/share.js
 --- a/src/engine/share.js
 +++ b/src/engine/share.js
-@@ -265,7 +265,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
- 
-     // 3. Integrity, before the payload is looked at.
-     var head = text.slice(0, text.length - CHECK_LEN);
--    if (text.slice(text.length - CHECK_LEN) !== checksum(head)) {
-+    if (false) {
-       return badNote(text);
+@@ -454,7 +454,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       texts.push(decoded);
+       meaning.push(decoded);
      }
+-    if (segs[segs.length - 1] !== checkHex(meaning.join(SEP))) return badNote(text);
  
+     var options = { palette: 0, parent: null, mirror: false, name: name };
+     var rank = -1;

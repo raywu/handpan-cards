@@ -1,15 +1,15 @@
-# kills: the app's share version IS the engine's, not a second copy of the number
-# suite: node --test --test-name-pattern ^the.app.s.share.version.IS.the.engine.s..not.a.second.copy.of.the.number$ tests/app.test.js
-# The app restates the share version as a literal instead of reading the
-# engine's. Equal today; the day either side is bumped every link breaks.
+# kills: the app's record version IS the engine's, not a second copy of the number
+# suite: node --test --test-name-pattern ^the.app.s.record.version.IS.the.engine.s..not.a.second.copy.of.the.number$ tests/app.test.js
+# The app restates the record version as a literal instead of reading the
+# engine's. Equal today; the day either side is bumped every record breaks.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -2424,7 +2424,7 @@ function generateDeck(text, options) {
+@@ -8670,7 +8670,7 @@ function generateDeck(text, options, guard) {
  // ONE version number, the engine's. Restating it here as a literal would go
  // silently wrong the day either side is bumped, and every existing link would
  // break, so it is DERIVED and never re-declared.
--const SHARE_VERSION = HPE.share.VERSION;
+-const SHARE_VERSION = HPE.share.RECORD_VERSION;
 +const SHARE_VERSION = 1;
  const engineErr = code => ({ ok: false, code, reason: HPE.core.REASONS[code].reason });
  // A thin guard over an ALREADY-DECODED numeric version - HPE.share.decode does
