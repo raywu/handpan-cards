@@ -35,7 +35,7 @@ no committed PDF; the app builds theirs in the browser.
   line and `tools/decks.py`'s deck dicts are both derived from it.
 - `index.html` - the app. Deck data is embedded as `const DECKS = [...]`, a
   GENERATED copy of `data/decks.json` written by `tools/sync_decks.py`.
-- `README.md` - usage, hosting, layout provenance notes.
+- `README.md` - what the app does, the decks, printing, how to clone and test, and the license. Hosting and layout provenance live in this file, not there.
 - `*_CHORD_ONLY_Letter.pdf` - the three committed print outputs (Hijaz, Pygmy,
   Amara 9): chord cards only, for the print shop. There is no committed
   full-deck ("Cards") PDF and the app offers none (2026-10-08, lane PM); the
