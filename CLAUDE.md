@@ -753,12 +753,13 @@ card-size and host-block titles below are in `tests/e2e.test.js`.
 Every sentence names its test. `tests/import.test.js` titles are unprefixed; "IM:" titles are in
 `tests/app.test.js` unless `tests/e2e.test.js` is named.
 
-- **Engine.** `HPE.importer.interpret(text, opts)` and `serialise(r)` live in `src/engine/importer.js`.
+- **Engine.** `HPE.importer.interpret(text, opts)` and `serialise(r)` live in `src/engine/importer.js` (no test; true by `src/engine/importer.js`'s exports).
   Status is INSUFFICIENT (no note list, nothing serialised), NEEDS_INPUT (any BLOCK flag) or REVIEW
   (CONFIRM and INFO only); the status follows the worst flag level ("status follows the worst flag
   level"; "prose with no note list is INSUFFICIENT with NO_NOTE_LIST"; "INSUFFICIENT and NEEDS_INPUT
   results write no string"). A picked ding is `interpret(text, {ding: i})`, equal to writing the `Ding:`
-  label ("opts.ding relabel equivalence: every pick on a bare list equals writing the Ding: label").
+  label ("opts.ding relabel equivalence: every pick on a bare list equals writing the Ding: label";
+  app test "IM: picking a ding on the Ding: D Top: E F G Bb fixture leaves the picker enabled and the flag set equals interpret(text, {ding: i})").
 - **After-list scan.** A later token that reads as a note blocks rather than dropping notes silently
   ("a later section under a label the importer does not know blocks: its notes are never dropped";
   "a list cut short by a token that is not a note blocks while a later token still reads as a note");
@@ -767,7 +768,7 @@ Every sentence names its test. `tests/import.test.js` titles are unprefixed; "IM
   (A4 = 440 Hz, A4 at 440, A4 432 Hz) is not a later note, in prose or under a Word: key"); the
   accepted false blocks fail closed ("accepted false blocks: an octaved note or a run of key letters
   in prose after the list blocks (fail closed)").
-- **Sheet.** IMPORT TEXT opens a paste box and IMPORT runs `interpret`. USE writes exactly `serialise(r)`
+- **Sheet.** IMPORT TEXT opens a paste box and IMPORT runs `interpret` (no test; true by `runImport` and the `#import-open` click handler). USE writes exactly `serialise(r)`
   into `#scale-box` and fires `input` ("IM: USE writes exactly serialise(r) into #scale-box, fires
   input, and the parse line matches typing it"). Any BLOCK disables USE ("IM: any BLOCK disables USE,
   and a click on it writes nothing"); a CONFIRM needs a tick ("IM: a CONFIRM needs a tick before USE
