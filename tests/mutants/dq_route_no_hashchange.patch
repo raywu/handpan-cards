@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11398,7 +11398,7 @@ shareCopy.onclick = copyLink;
- // boot code runs. selectDeck gets the id deck() returns for the mapped seed,
- // never the raw seed id: a replaced or hidden seed id would be stored as is and
- // light no chip.
+@@ -11516,7 +11516,7 @@ function routeToDeck(routed) {
+   track("deck_route", { deck_id: routed });
+   return shown;
+ }
 -window.addEventListener("hashchange", () => {
 +window.addEventListener("hashchange_off", () => {
-   if (sheetOpen) return;
+   if (sheetOpen || aboutOpen) return;
    if (location.hash === routeFor(deck())) return;
    if (location.hash.indexOf(SHARE_PREFIX) === 0) {

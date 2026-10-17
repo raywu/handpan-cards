@@ -6,9 +6,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1409,7 +1409,7 @@ footer.seq{row-gap:var(--sp-1)}
-          boxes) the two Amy Naylor videos, row three HANDPAN 101 alone (2026-10-08,
-          full width, LAST so no existing control moves down). -->
+@@ -1537,7 +1537,7 @@ html.about-open{overflow:hidden}
+          full width, so no existing control moves down), row four the ABOUT button
+          (an in-app view, not an outbound link: no href, no res- id). -->
      <div class="modebar trio">
 -      <a class="mode" id="res-handpaner" href="https://handpaner.com/"
 +      <a class="mode" id="res-handpaner" href="https://handpaner.com"

@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1408,6 +1408,12 @@ footer.seq{row-gap:var(--sp-1)}
-          equal on line one in the sidebar), row two (class duo: one line, labels wrap inside their
+@@ -1536,6 +1536,12 @@
           boxes) the two Amy Naylor videos, row three HANDPAN 101 alone (2026-10-08,
-          full width, LAST so no existing control moves down). -->
+          full width, so no existing control moves down), row four the ABOUT button
+          (an in-app view, not an outbound link: no href, no res- id). -->
 +    <div class="modebar">
 +      <a class="mode" id="res-handpan-101"
 +         href="https://docs.google.com/document/d/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco/edit?usp=drivesdk"
@@ -17,16 +17,16 @@ diff --git a/index.html b/index.html
      <div class="modebar trio">
        <a class="mode" id="res-handpaner" href="https://handpaner.com/"
           target="_blank" rel="noopener">HANDPANER</a>
-@@ -1424,12 +1430,6 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1551,12 +1557,6 @@
+       <a class="mode" id="res-amy-bottom" href="https://youtu.be/0hMIUnA5-OI"
           aria-label="Amy Naylor: more interesting chords with bottom notes (YouTube)"
           target="_blank" rel="noopener">AMY: BOTTOM NOTES</a>
-     </div>
+-    </div>
 -    <div class="modebar">
 -      <a class="mode" id="res-handpan-101"
 -         href="https://docs.google.com/document/d/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco/edit?usp=drivesdk"
 -         aria-label="Handpan 101 (Google Doc)"
 -         target="_blank" rel="noopener">HANDPAN 101</a>
--    </div>
-   </div>
- </div>
- 
+     </div>
+     <div class="modebar">
+       <button class="mode" type="button" id="about-open" aria-haspopup="dialog">ABOUT</button>

@@ -23,10 +23,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10833,33 +10833,6 @@ function closePanel() {
-   shareUrl.setAttribute("hidden", "");
-   settingsTrigger.focus();
- }
+@@ -10931,33 +10931,6 @@ aboutSection.addEventListener("click", e => {
+   aboutLink(a.getAttribute("href"));
+ });
+ 
 -// If the viewport crosses the breakpoint while the panel is open in its
 -// modal, below-breakpoint presentation, shed the modal state so the page
 -// underneath is never left inert on desktop (and the reverse: if it then

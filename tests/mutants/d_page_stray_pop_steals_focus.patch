@@ -7,10 +7,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10116,7 +10116,6 @@ let pendingPop = false;
- // gone, so this only takes the page down.
- window.addEventListener("popstate", () => {
+@@ -10136,7 +10136,6 @@
    if (pendingPop) { pendingPop = false; syncRoute(); return; }
+   if (aboutOpen) { hideAbout(); return; }
+   if (location.hash === ABOUT_ROUTE) { syncRoute(); return; }
 -  if (!sheetOpen) return;
    sheetRouted = false;
    hideSheet();
