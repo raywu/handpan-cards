@@ -4,10 +4,10 @@
 diff --git a/src/engine/importer.js b/src/engine/importer.js
 --- a/src/engine/importer.js
 +++ b/src/engine/importer.js
-@@ -45,7 +45,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -44,7 +44,7 @@
+   var EDGE_R = "(?![A-Za-z0-9#\\u00c0-\\u017f])";
    var RUN = new RegExp("(?:" + EDGE_L + PITCH_SRC + EDGE_R + "[\\s,\\-\\/\\u00b7|()]*){5,}", "g");
    var PITCH = new RegExp(EDGE_L + PITCH_SRC + EDGE_R, "g");
-   var STRICT = new RegExp(EDGE_L + "(?:[A-G](?:#|b)?(?:-1|[0-9])|(?:Do|R[e\\u00e9]|Mi|Fa|Sol|La|Si)(?:#|b)?[0-9])" + EDGE_R, "g");
 -  var NARROW_OVER = 2000;
 +  var NARROW_OVER = 20000;
    var WINDOW_CHARS = 1200;

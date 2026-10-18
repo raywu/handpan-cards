@@ -44,7 +44,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   var EDGE_R = "(?![A-Za-z0-9#\\u00c0-\\u017f])";
   var RUN = new RegExp("(?:" + EDGE_L + PITCH_SRC + EDGE_R + "[\\s,\\-\\/\\u00b7|()]*){5,}", "g");
   var PITCH = new RegExp(EDGE_L + PITCH_SRC + EDGE_R, "g");
-  var STRICT = new RegExp(EDGE_L + "(?:[A-G](?:#|b)?(?:-1|[0-9])|(?:Do|R[e\\u00e9]|Mi|Fa|Sol|La|Si)(?:#|b)?[0-9])" + EDGE_R, "g");
   var NARROW_OVER = 2000;
   var WINDOW_CHARS = 1200;
   var SKIPPED = /^(?:and|&|\.|;)$/i;
@@ -277,7 +276,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return parts.join(" ");
   }
 
-  function interpret(raw, opts) {
+  function read(raw, opts, narrow) {
     opts = opts || {};
     var full = String(raw);
     var base = 0;
@@ -289,12 +288,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       for (var k in extra) if (Object.prototype.hasOwnProperty.call(extra, k)) f[k] = extra[k];
       return f;
     }
-    // A long text is read only in its densest-pitch window, widened to whole
-    // lines over every labelled list in the text, or every clause list when it
-    // has none. A spread wider than NARROW_OVER, a run of five or more notes
-    // outside the window, or any octaved note outside it that is not a
-    // reference pitch, blocks, so narrowing never hides a note.
-    if (full.length > NARROW_OVER) {
+    // With narrow set, a long text is read only in its densest-pitch window,
+    // widened to whole lines over every labelled list in the text, or every
+    // clause list when it has none. A spread wider than NARROW_OVER or a run of
+    // five or more notes outside the window blocks; interpret() then checks
+    // any REVIEW against the whole text.
+    if (narrow && full.length > NARROW_OVER) {
       var w = windowOf(full);
       var whole = normalise(full);
       var spread = labelledLists(whole, full).filter(function (l) { return l.notes.length; });
@@ -318,14 +317,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         var end = rm.index + rm[0].replace(/[\s,\-\/\u00b7|()]+$/, "").length;
         if (rm.index < w.start || end > w.end) outside += 1;
       }
-      var strays = 0;
-      var sr = new RegExp(STRICT.source, "g");
-      var sm;
-      while ((sm = sr.exec(whole))) {
-        if ((sm.index < w.start || sm.index + sm[0].length > w.end) && !REFERENCE.test(whole.slice(sm.index))) strays += 1;
-      }
       if (outside) flag("CONFLICTING_LIST", { runs: outside });
-      else if (strays) flag("CONFLICTING_LIST", { notes: strays });
       base = w.start;
       original = full.slice(w.start, w.end);
     }
@@ -543,6 +535,23 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       return { note: inferred ? octaves[n.index] : n.name, span: n.span, role: n.assigned };
     });
     return finish(roles, listing, total);
+  }
+
+  // A narrowed REVIEW stands only when the same reader, over the whole text,
+  // gives the same status, string and flags. Any difference BLOCKs, so
+  // narrowing can only keep the whole-text reading or refuse.
+  function readingOf(r) {
+    return JSON.stringify([r.status, serialise(r), r.flags]);
+  }
+
+  function interpret(raw, opts) {
+    var narrowed = read(raw, opts, true);
+    if (narrowed.status !== "REVIEW" || String(raw).length <= NARROW_OVER) return narrowed;
+    var whole = read(raw, opts, false);
+    if (readingOf(whole) === readingOf(narrowed)) return narrowed;
+    narrowed.flags.unshift({ code: "CONFLICTING_LIST", wide: true, level: BLOCK });
+    narrowed.status = "NEEDS_INPUT";
+    return narrowed;
   }
 
   // The canonical line for a REVIEW result, or "" when nothing may be written.

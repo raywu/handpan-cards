@@ -4,12 +4,12 @@
 diff --git a/src/engine/importer.js b/src/engine/importer.js
 --- a/src/engine/importer.js
 +++ b/src/engine/importer.js
-@@ -324,7 +324,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-       while ((sm = sr.exec(whole))) {
-         if ((sm.index < w.start || sm.index + sm[0].length > w.end) && !REFERENCE.test(whole.slice(sm.index))) strays += 1;
+@@ -317,7 +317,7 @@
+         var end = rm.index + rm[0].replace(/[\s,\-\/\u00b7|()]+$/, "").length;
+         if (rm.index < w.start || end > w.end) outside += 1;
        }
 -      if (outside) flag("CONFLICTING_LIST", { runs: outside });
 +      if (false) flag("CONFLICTING_LIST", { runs: outside });
-       else if (strays) flag("CONFLICTING_LIST", { notes: strays });
        base = w.start;
        original = full.slice(w.start, w.end);
+     }

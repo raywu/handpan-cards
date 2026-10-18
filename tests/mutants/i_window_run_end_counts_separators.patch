@@ -4,7 +4,7 @@
 diff --git a/src/engine/importer.js b/src/engine/importer.js
 --- a/src/engine/importer.js
 +++ b/src/engine/importer.js
-@@ -315,7 +315,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -314,7 +314,7 @@
        var rr = new RegExp(RUN.source, "g");
        var rm;
        while ((rm = rr.exec(whole))) {
@@ -12,4 +12,4 @@ diff --git a/src/engine/importer.js b/src/engine/importer.js
 +        var end = rm.index + rm[0].length;
          if (rm.index < w.start || end > w.end) outside += 1;
        }
-       var strays = 0;
+       if (outside) flag("CONFLICTING_LIST", { runs: outside });

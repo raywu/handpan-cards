@@ -1,0 +1,15 @@
+# kills: narrowing check: a seeded fuzz of long texts reads each one as its compact form or blocks
+# suite: node --test --test-name-pattern ^narrowing.check:.a.seeded.fuzz tests/import.test.js
+# interpret returns the narrowed read without checking it against the whole text, so a role clause outside the window is dropped silently.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -546,7 +546,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+ 
+   function interpret(raw, opts) {
+     var narrowed = read(raw, opts, true);
+-    if (narrowed.status !== "REVIEW" || String(raw).length <= NARROW_OVER) return narrowed;
++    return narrowed;
+     var whole = read(raw, opts, false);
+     if (readingOf(whole) === readingOf(narrowed)) return narrowed;
+     narrowed.flags.unshift({ code: "CONFLICTING_LIST", wide: true, level: BLOCK });

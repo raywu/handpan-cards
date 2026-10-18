@@ -458,12 +458,79 @@ test("battiloro window: a run of five or more notes outside the kept window bloc
   const r = interpret(stray);
   assert.equal(r.status, "NEEDS_INPUT");
   assert.equal(flagOf(r, "CONFLICTING_LIST").level, "BLOCK");
+  assert.equal(flagOf(r, "CONFLICTING_LIST").runs, 1);
   assert.equal(importer.serialise(r), "");
   const later = interpret(longPage("", "Newer listing: C D E F G A B"));
   assert.equal(later.status, "NEEDS_INPUT");
   assert.equal(flagOf(later, "CONFLICTING_LIST").level, "BLOCK");
+  assert.equal(flagOf(later, "CONFLICTING_LIST").runs, 1);
   const four = interpret(longPage("Older listing: C D E F"));
   assert.equal(flagOf(four, "CONFLICTING_LIST"), undefined);
+});
+
+const NARROW_FILL = (i) => "The pan sounds warm and clear, hand made with care in the shop, number " + i + ".";
+
+test("narrowing check: a role clause outside the kept window blocks rather than being dropped", () => {
+  const filler = Array.from({ length: 30 }, (_, i) => NARROW_FILL(i));
+  const page = (top, extra) => [top, ...filler.slice(0, 8), extra, ...filler, "This is a D minor scale."].join("\n");
+  for (const extra of ["C and D top.", "F and G inner.", "C and F on the bottom."]) {
+    const text = page("D3 ding, A3 Bb3 C4 D4 E4 F4 G4 A4 top.", extra);
+    assert.ok(text.length > 2000);
+    const r = interpret(text);
+    assert.equal(r.status, "NEEDS_INPUT", extra);
+    assert.deepEqual(r.flags.map((f) => f.code), ["CONFLICTING_LIST"], extra);
+    assert.equal(flagOf(r, "CONFLICTING_LIST").wide, true, extra);
+    assert.equal(importer.serialise(r), "", extra);
+  }
+  const octaveless = interpret(page("D ding, A Bb C D E F G A top.", "C and D top."));
+  assert.equal(octaveless.status, "NEEDS_INPUT");
+  assert.deepEqual(octaveless.flags.map((f) => f.code), ["CONFLICTING_LIST", "NO_OCTAVE"]);
+  const agreed = interpret(page("D3 ding, A3 Bb3 C4 D4 E4 F4 G4 A4 top.", "C5 and D5 top.").replace("\nThis is a D minor scale.", ""));
+  assert.equal(agreed.status, "REVIEW");
+  assert.equal(importer.serialise(agreed), "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5");
+});
+
+test("narrowing check: a seeded fuzz of long texts reads each one as its compact form or blocks", () => {
+  const LISTS = [
+    ["Ding: D3", "Top: A3 Bb3 C4 D4 E4 F4 G4 A4", "Bottom: C3 F3"],
+    ["D3 ding, A3 Bb3 C4 D4 E4 F4 G4 A4 top."],
+    ["D ding, A Bb C D E F G A top."],
+    ["Notes: D3 / A3 Bb3 C4 D4 E4 F4 G4 A4 C5"],
+    ["Ding: D", "Top: A Bb C D E F G A"],
+    ["Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5", "Inner: D5 E5", "Ding: D3"],
+  ];
+  const PROSE = [
+    "C and D top.", "F and G inner.", "C and F on the bottom.", "C5 and D5 top.", "C3 and F3 on the bottom.",
+    "A perfect gift for beginners.", "This is a D minor scale.", "A4 = 440 Hz", "Tuned to A4 at 432.", "Key: D",
+    "Ding: D", "Note: A", "Bottom: c3 f3", "Older listing: C D E F G A B", "Also in C and D.", "E4", "G",
+    "Top: A grade", "Sol La Si", "F3 Low Pygmy", "Bb3, C4", "Inner: none", "Nine notes in all.",
+  ];
+  let s = 2026;
+  const rnd = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+  const pick = (a) => a[Math.floor(rnd() * a.length)];
+  const reading = (r) => [r.status, importer.serialise(r), r.flags.map((f) => f.code).join()].join(" | ");
+  for (let i = 0; i < 3000; i += 1) {
+    const blocks = pick(LISTS).slice();
+    const extra = Math.floor(rnd() * 3);
+    for (let k = 0; k < extra; k += 1) blocks.splice(Math.floor(rnd() * (blocks.length + 1)), 0, pick(PROSE));
+    const long = [];
+    const compact = [];
+    let n = 0;
+    blocks.forEach((line) => {
+      const fill = Math.floor(rnd() * 30);
+      if (fill) compact.push(NARROW_FILL(0));
+      for (let f = 0; f < fill; f += 1) long.push(NARROW_FILL(n++));
+      long.push(line);
+      compact.push(line);
+    });
+    while (long.join("\n").length <= 2000) long.push(NARROW_FILL(n++));
+    if (compact[compact.length - 1] !== NARROW_FILL(0)) compact.push(NARROW_FILL(0));
+    const short = compact.join("\n");
+    assert.ok(short.length <= 2000);
+    const r = interpret(long.join("\n"));
+    if (r.status !== "REVIEW") { assert.equal(importer.serialise(r), ""); continue; }
+    assert.equal(reading(r), reading(interpret(short)), short);
+  }
 });
 
 test("a text of 2,000 characters or fewer is not narrowed: a stray run of five notes beside the list is not a window block", () => {
