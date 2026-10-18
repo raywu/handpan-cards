@@ -1,5 +1,5 @@
 {
- "about": "Import v2 gold set (Phase 1, section A). Each case: the URL, the date read, the verbatim source span, what a TEXT tier should return (expected.status, expected.textSeed), the true pan where the page states it (expected.seed; null when the page does not settle it), the vision reading for image-only pages (expected.visionSeed), and the reasoning. Spans are quoted verbatim; '...' marks an elision. Scores do not count until the owner spot-checks this file (O6).",
+ "about": "Import v2 gold set (Phase 1, section A). Each case: the URL, the date read, the verbatim source span, what a TEXT tier should return (expected.status, expected.textSeed), the true pan where the page states it (expected.seed; null when the page does not settle it), the vision reading for image-only pages (expected.visionSeed), and the reasoning. Spans are quoted verbatim but kept short: the pitch line or lines plus the few words needed to read them (labels, the ding marker); '...' marks an elision. They are kept short because GitHub Pages serves every committed file, docs/plans included, publicly (owner decision 2026-10-18). Scores do not count until the owner spot-checks this file (O6).",
  "readAt": "2026-10-17",
  "ownerSpotCheck": "PENDING",
  "cases": [
@@ -14,7 +14,7 @@
    "url": "https://yataoshop.com/products/handpan-mag-d-kurd-17",
    "title": "MAG D Kurd 17",
    "readAt": "2026-10-17",
-   "span": "Scale : Kurd\nKey : D minor\nTop side notes : D3, A3, Bb3, C4, D4, E4, F4, G4, A4, C5, D5\nBottom side notes : Bb2, C3, E3, F3, G3, E5",
+   "span": "Top side notes : D3, A3, Bb3, C4, D4, E4, F4, G4, A4, C5, D5\nBottom side notes : Bb2, C3, E3, F3, G3, E5",
    "expected": {
     "status": "REVIEW",
     "textSeed": "[Bb2] [C3] (D3) [E3] [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5 [E5]",
@@ -33,7 +33,7 @@
    "url": "https://yataoshop.com/products/yataopan-d-kurd-17",
    "title": "YataoPan D Kurd 17",
    "readAt": "2026-10-17",
-   "span": "Scale : Kurd\nKey : D Minor\nTop Side Notes : D3 – A3, Bb3, C4, D4, E4, F4, G4, A4, C5, D5, E5, F5\nBottom Side Notes : Bb2, C3, F3, G3",
+   "span": "Top Side Notes : D3 – A3, Bb3, C4, D4, E4, F4, G4, A4, C5, D5, E5, F5\nBottom Side Notes : Bb2, C3, F3, G3",
    "expected": {
     "status": "REVIEW",
     "textSeed": "[Bb2] [C3] (D3) [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5 E5 F5",
@@ -52,7 +52,7 @@
    "url": "https://yataoshop.com/products/mudra-g-minor-17",
    "title": "Mudra G Minor 17",
    "readAt": "2026-10-17",
-   "span": "Scale : Minor\nKey : G Minor\nTop side notes : G2, G3, A3, Bb3, C4, D4, Eb4, F4, G4\nBottom side notes : D3, Eb3, A4, C5, D5, Eb5, F5, G5",
+   "span": "Top side notes : G2, G3, A3, Bb3, C4, D4, Eb4, F4, G4\nBottom side notes : D3, Eb3, A4, C5, D5, Eb5, F5, G5",
    "expected": {
     "status": "REVIEW",
     "textSeed": "(G2) [D3] [Eb3] G3 A3 Bb3 C4 D4 Eb4 F4 G4 [A4] [C5] [D5] [Eb5] [F5] [G5]",
@@ -71,7 +71,7 @@
    "url": "https://yataoshop.com/products/mag-f-2-minor-16",
    "title": "MAG F#2 minor 16",
    "readAt": "2026-10-17",
-   "span": "Scale : Minor\nKey: F# minor\nNotes Top Side : F#2 / F#3, G#3, A3, B3, C#4, D4, E4, F#4\nNotes Bottom Side : C#3, D3, E3, G#4, A4, B4 C#5",
+   "span": "Notes Top Side : F#2 / F#3, G#3, A3, B3, C#4, D4, E4, F#4\nNotes Bottom Side : C#3, D3, E3, G#4, A4, B4 C#5",
    "expected": {
     "status": "REVIEW",
     "textSeed": "(F#2) [C#3] [D3] [E3] F#3 G#3 A3 B3 C#4 D4 E4 F#4 [G#4] [A4] [B4] [C#5]",
@@ -90,7 +90,7 @@
    "url": "https://yataoshop.com/products/handpan-yataopan-c-ashakiran-15",
    "title": "YataoPan C Ashakiran 15",
    "readAt": "2026-10-17",
-   "span": "Scale: Ashakiran\nKey: C Major\nTop Notes: C - F, G, A, B, C, D, E, G\nBottom Notes: D, E, F, A, B, C",
+   "span": "Top Notes: C - F, G, A, B, C, D, E, G\nBottom Notes: D, E, F, A, B, C",
    "expected": {
     "status": "NEEDS_INPUT",
     "textSeed": null,
@@ -109,7 +109,7 @@
    "url": "https://yataoshop.com/products/handpan-ayasa-d-kurd",
    "title": "Ayasa D Kurd 12",
    "readAt": "2026-10-17",
-   "span": "Scale : Kurd\nKey : D Minor\nNotes : D3 - (F3, G3), A3, Bb3, C4, D4, E4, F4, G4, A4, C5",
+   "span": "Notes : D3 - (F3, G3), A3, Bb3, C4, D4, E4, F4, G4, A4, C5",
    "expected": {
     "status": "REVIEW",
     "textSeed": "(D3) [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5",
@@ -128,7 +128,7 @@
    "url": "https://yataoshop.com/products/handpan-yataopan-d-aegean-18",
    "title": "YataoPan D Aegean 18",
    "readAt": "2026-10-17",
-   "span": "Scale : Aegean\nKey : F# lydian mode\nNotes Top Side : D3, F#3, A3, C#4, D4, F#4, G#4, A4, C#5, D5, F#5\nNotes Bottom Side : B2, E3, G#3, B3, E4, B4, E5",
+   "span": "Notes Top Side : D3, F#3, A3, C#4, D4, F#4, G#4, A4, C#5, D5, F#5\nNotes Bottom Side : B2, E3, G#3, B3, E4, B4, E5",
    "expected": {
     "status": "REVIEW",
     "textSeed": "[B2] (D3) [E3] F#3 [G#3] A3 [B3] C#4 D4 [E4] F#4 G#4 A4 [B4] C#5 D5 [E5] F#5",
@@ -166,7 +166,7 @@
    "url": "https://sanangohandpan-en.carrd.co/",
    "title": "Sanango Handpan English",
    "readAt": "2026-10-17",
-   "span": "E Amara 16 notes Top: E3) B3 D4 E4 F#4 G4 A4 B4 D5 E5 F#5 Bottom: C3 D3 G3 A3 C4 1600€ + VAT C Ashakiran 11 Notes Top: C3) F3 G3 A3 B3 C4 D4 E4 G4 Bottom: D3 E3",
+   "span": "E Amara 16 notes Top: E3) B3 D4 E4 F#4 G4 A4 B4 D5 E5 F#5 Bottom: C3 D3 G3 A3 C4 ... C Ashakiran 11 Notes Top: C3) F3 G3 A3 B3 C4 D4 E4 G4 Bottom: D3 E3",
    "expected": {
     "status": "NEEDS_INPUT",
     "textSeed": null,
@@ -223,7 +223,7 @@
    "url": "https://www.thomannmusic.com/sela_sehp202_harmony_d_amara_111.htm",
    "title": "Sela SEHP202 Harmony D Amara 11+1",
    "readAt": "2026-10-17",
-   "span": "Key: D Amara 11+1 Notes: D3/ A3 (Bb3), C4, D4, E4, F4, G4, A4, C5, D5, E5 Extended range with two bottom notes Professionally tuned A = 442 Hz",
+   "span": "Notes: D3/ A3 (Bb3), C4, D4, E4, F4, G4, A4, C5, D5, E5 Extended range with two bottom notes",
    "expected": {
     "status": "NEEDS_INPUT",
     "textSeed": null,
@@ -242,7 +242,7 @@
    "url": "https://sound-sculpture.de/products/leaf-soundsculptures-c-minor-hexatonic-14",
    "title": "Leaf Soundsculptures C Minor Hexatonic 14",
    "readAt": "2026-10-17",
-   "span": "Hauptnote C3 Skala Minor Noten C/(D)(Eb)F G Ab (B) C D Eb F G (Ab) (C) Anzahl Noten 14",
+   "span": "Hauptnote C3 ... Noten C/(D)(Eb)F G Ab (B) C D Eb F G (Ab) (C) Anzahl Noten 14",
    "expected": {
     "status": "REVIEW",
     "textSeed": "(C3) [D3] [Eb3] F3 G3 Ab3 [B3] C4 D4 Eb4 F4 G4 [Ab4] [C5]",
@@ -261,7 +261,7 @@
    "url": "https://sound-sculpture.de/products/sew-f3-low-pygmy-11",
    "title": "Sew F3-Low Pygmy 11",
    "readAt": "2026-10-17",
-   "span": "Hauptnote F3 Skala Low Pygmy Noten F3 / G3 G#3 C4 D#4 F4 G4 G#4 C5 (D#5) (F5) Anzahl Noten 11",
+   "span": "Hauptnote F3 ... Noten F3 / G3 G#3 C4 D#4 F4 G4 G#4 C5 (D#5) (F5) Anzahl Noten 11",
    "expected": {
     "status": "REVIEW",
     "textSeed": "(F3) G3 G#3 C4 D#4 F4 G4 G#4 C5 [D#5] [F5]",
@@ -280,7 +280,7 @@
    "url": "https://sound-sculpture.de/products/satya-eb-la-sirena-16",
    "title": "Satya Eb La Sirena 16",
    "readAt": "2026-10-17",
-   "span": "Hauptnote Eb Skala La Sirena Noten (Db3) Eb3 (F3) Gb3 (Ab3) Bb3 C4 Db4 Eb4 F4 Gb4 (Ab4) Bb4 (C5 Db5 Eb5) Anzahl Noten 16",
+   "span": "Hauptnote Eb ... Noten (Db3) Eb3 (F3) Gb3 (Ab3) Bb3 C4 Db4 Eb4 F4 Gb4 (Ab4) Bb4 (C5 Db5 Eb5) Anzahl Noten 16",
    "expected": {
     "status": "REVIEW",
     "textSeed": "[Db3] (Eb3) [F3] Gb3 [Ab3] Bb3 C4 Db4 Eb4 F4 Gb4 [Ab4] Bb4 [C5] [Db5] [Eb5]",
@@ -299,7 +299,7 @@
    "url": "https://sound-sculpture.de/en/products/pantheon-steel-halo-equinox-12",
    "title": "Pantheon Steel Halo Equinox 12",
    "readAt": "2026-10-17",
-   "span": "Main note E Scale Equinox Notes E G B C D E F# G B C D E Number of notes 12",
+   "span": "Main note E ... Notes E G B C D E F# G B C D E Number of notes 12",
    "expected": {
     "status": "REVIEW",
     "textSeed": "(E3) G3 B3 C4 D4 E4 F#4 G4 B4 C5 D5 E5",
@@ -358,7 +358,7 @@
    "url": "https://www.thomann.co.uk/thomann_sonority_handpan_d_kurd_440hz.htm",
    "title": "Thomann Sonority Handpan D-Kurd 440Hz",
    "readAt": "2026-10-17",
-   "span": "Key: D Kurd Notes: D3/A3, Bb3, C4, D4, E4, F4, G4, A4, C5 Material: Stainless steel",
+   "span": "Notes: D3/A3, Bb3, C4, D4, E4, F4, G4, A4, C5",
    "expected": {
     "status": "REVIEW",
     "textSeed": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5",
@@ -377,7 +377,7 @@
    "url": "https://engadinemusic.com.au/products/mano-percussion-9-note-handpan",
    "title": "Mano Percussion 9 Note Handpan",
    "readAt": "2026-10-17",
-   "span": "Hand crafted 22” stainless steel construction in D Kurd tuning - A3, Bb3, D4, F4, A4, G4, E4, C4 and D3 Ding note.",
+   "span": "... D Kurd tuning - A3, Bb3, D4, F4, A4, G4, E4, C4 and D3 Ding note.",
    "expected": {
     "status": "REVIEW",
     "textSeed": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
@@ -396,7 +396,7 @@
    "url": "https://www.boullard.ch/en/category/drums-percussion/percussion/handpan/",
    "title": "Handpan - Boullard Musique",
    "readAt": "2026-10-17",
-   "span": "SELA D Kurd 9 (440 Hz) D3/ A3, Bb3, C4, D4, E4, F4, G4, A4 In stock In stock 799.– ... Rav Vast RAV Moon Pygmy D3 G3 A3 A#3 D4 F4 G4 A4 C5 D In stock ... SELA Melody Tongue Drum 10 '' D Akebono Navy Blue (SE 371) D3 E3 F3 A3 A#3 D4 E4 F4 Chine D",
+   "span": "SELA D Kurd 9 (440 Hz) D3/ A3, Bb3, C4, D4, E4, F4, G4, A4 ... RAV Moon Pygmy D3 G3 A3 A#3 D4 F4 G4 A4 C5 D ... SELA Melody Tongue Drum 10 '' D Akebono ... D3 E3 F3 A3 A#3 D4 E4 F4",
    "expected": {
     "status": "NEEDS_INPUT",
     "textSeed": null,
@@ -415,7 +415,7 @@
    "url": "https://www.amazon.com/dp/B09MVYV8W6",
    "title": "ASTEMAN Handpan in D Minor, 432hz, 22 Inches with 10 Notes",
    "readAt": "2026-10-17",
-   "span": "Hand drum in D Minor 10 notes, including 1 center note and 9 tone (D3/A3/bB3/C4/D4/E4/F4/G4/A4/C5).",
+   "span": "... 10 notes, including 1 center note and 9 tone (D3/A3/bB3/C4/D4/E4/F4/G4/A4/C5).",
    "expected": {
     "status": "REVIEW",
     "textSeed": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5",
@@ -434,7 +434,7 @@
    "url": "https://www.amazon.com/dp/B0GFDMBLH5",
    "title": "Kalopho 22 Inches Handpan Drum, 432Hz 9 Notes D Minor Kurd",
    "readAt": "2026-10-17",
-   "span": "Hand pan drums for adults feature 9 precisely tuned notes (D3, A3, C4, E4, G4, A4, F4, D4, Bb3) in the D Minor Kurd scale.",
+   "span": "... 9 precisely tuned notes (D3, A3, C4, E4, G4, A4, F4, D4, Bb3) ...",
    "expected": {
     "status": "REVIEW",
     "textSeed": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
@@ -473,7 +473,7 @@
    "url": "https://yataoshop.com/products/yataopan-e2-pygmy-17",
    "title": "YataoPan E2 Pygmy 17",
    "readAt": "2026-10-17",
-   "span": "Scale : Low Pygmy\nKey : E2 Minor\nTop side notes : E2 – E3, F#3, G3, B3, D4, E4, F#4, G4\nBottom side notes : B2, D3, A3, C4, B4, C5, D5, E5",
+   "span": "Top side notes : E2 – E3, F#3, G3, B3, D4, E4, F#4, G4\nBottom side notes : B2, D3, A3, C4, B4, C5, D5, E5",
    "expected": {
     "status": "REVIEW",
     "textSeed": "(E2) [B2] [D3] E3 F#3 G3 [A3] B3 [C4] D4 E4 F#4 G4 [B4] [C5] [D5] [E5]",
@@ -492,7 +492,7 @@
    "url": "https://yataoshop.com/products/yataopan-a2-amara-432-hz",
    "title": "YataoPan A2 Amara",
    "readAt": "2026-10-17",
-   "span": "Scale : A Minor\nNotes (Top Side) : A2 – E3, G3, A3, B3, C4, D4, E4, G4\nMaterial : Stainless Steel\nStandard Pitch : Available in 440 Hz or 432 Hz\nAdditional Notes\nThough the patina may fade or change over time, this doesn't impact the sound or tuning of the instrument.",
+   "span": "Notes (Top Side) : A2 – E3, G3, A3, B3, C4, D4, E4, G4",
    "expected": {
     "status": "REVIEW",
     "textSeed": "(A2) E3 G3 A3 B3 C4 D4 E4 G4",
@@ -511,7 +511,7 @@
    "url": "https://yataoshop.com/products/handpan-yataopan-f-low-pygmy-19",
    "title": "YataoPan F# low pygmy 19",
    "readAt": "2026-10-17",
-   "span": "Scale : F# Minor\nNotes (Top Side) : F#3, G#3, A3, C#4, E4, F#4, G#4, A4, C#5, E5, F#5, G#5\nNotes (Bottom Side) : D3, E3, B3, D4, B4, D5, A5",
+   "span": "Notes (Top Side) : F#3, G#3, A3, C#4, E4, F#4, G#4, A4, C#5, E5, F#5, G#5\nNotes (Bottom Side) : D3, E3, B3, D4, B4, D5, A5",
    "expected": {
     "status": "REVIEW",
     "textSeed": "[D3] [E3] (F#3) G#3 A3 [B3] C#4 [D4] E4 F#4 G#4 A4 [B4] C#5 [D5] E5 F#5 G#5 [A5]",
@@ -530,7 +530,7 @@
    "url": "https://www.thomannmusic.com/sela_sehp203_harmony_d_kurd_93.htm",
    "title": "Sela SEHP203 Harmony D Kurd 9+3",
    "readAt": "2026-10-17",
-   "span": "Key: D Kurd 9+3\nNotes: D3 / (C3) (F3) (G3) A3, Bb3, C4, D4, E4, F4, G4, A4",
+   "span": "Notes: D3 / (C3) (F3) (G3) A3, Bb3, C4, D4, E4, F4, G4, A4",
    "expected": {
     "status": "REVIEW",
     "textSeed": "[C3] (D3) [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4",
@@ -549,7 +549,7 @@
    "url": "https://www.thomann.fr/sela_sehp203_harmony_d_kurd_93.htm",
    "title": "Sela SEHP203 Harmony D Kurd 9+3",
    "readAt": "2026-10-17",
-   "span": "Gamme Kurd en Ré 9+3\nNotes: Ré3 / (Do3) (Fa3) (Sol3) La3, Sib3, Do4, Ré4, Mi4, Fa4, Sol4, La4\nGamme tonale étendue avec 3 bottom notes",
+   "span": "Notes: Ré3 / (Do3) (Fa3) (Sol3) La3, Sib3, Do4, Ré4, Mi4, Fa4, Sol4, La4\n... avec 3 bottom notes",
    "expected": {
     "status": "REVIEW",
     "textSeed": "[C3] (D3) [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4",
@@ -568,7 +568,7 @@
    "url": "https://www.thomann.it/sela_sehp203_harmony_d_kurd_93.htm",
    "title": "Sela SEHP203 Harmony D Kurd 9+3",
    "readAt": "2026-10-17",
-   "span": "Scala: D Kurd 9+3\nNote: Re3 / (Do3) (Fa3) (Sol3) La3, Sib3, Do4, Re4, Mi4, Fa4, Sol4, La4",
+   "span": "Note: Re3 / (Do3) (Fa3) (Sol3) La3, Sib3, Do4, Re4, Mi4, Fa4, Sol4, La4",
    "expected": {
     "status": "REVIEW",
     "textSeed": "[C3] (D3) [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4",
@@ -587,7 +587,7 @@
    "url": "https://www.thomannmusic.com/startone_handpan_d_kurd_a440hz_cd.htm",
    "title": "Startone Handpan D Kurd A=440Hz CD",
    "readAt": "2026-10-17",
-   "span": "D-Kurd\nNine notes: D / A, B, C, D, E, F, G, A",
+   "span": "Nine notes: D / A, B, C, D, E, F, G, A",
    "expected": {
     "status": "REVIEW",
     "textSeed": "(D3) A3 B3 C4 D4 E4 F4 G4 A4",
@@ -606,7 +606,7 @@
    "url": "https://www.thomannmusic.com/startone_handpan_d_celtic_a432hz_cd.htm",
    "title": "Startone Handpan D-Celtic/Amara 432 CD",
    "readAt": "2026-10-17",
-   "span": "Key: D Celtic\nNine notes: D / A, C, D, E, F, G, A, C",
+   "span": "Nine notes: D / A, C, D, E, F, G, A, C",
    "expected": {
     "status": "REVIEW",
     "textSeed": "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
@@ -625,7 +625,7 @@
    "url": "https://sunreed.com/products/products-zen-handpan-9-note-432hz-d-minor-zen-wanderlust-handpan-ivory-veil",
    "title": "9-Note 432Hz D Minor Zen Wanderlust Handpan Ivory Veil",
    "readAt": "2026-10-17",
-   "span": "The central D3 anchors the instrument, while the surrounding notes create a field that feels both grounded and gently uplifting.\nNotes: D3, A3, A#3, C4, D4, E4, F4, G4, A4",
+   "span": "The central D3 anchors the instrument ...\nNotes: D3, A3, A#3, C4, D4, E4, F4, G4, A4",
    "expected": {
     "status": "REVIEW",
     "textSeed": "(D3) A3 A#3 C4 D4 E4 F4 G4 A4",
@@ -644,7 +644,7 @@
    "url": "https://www.amazon.com/dp/B0H8R3P9XN",
    "title": "ALIENPAN Handpan Drum, Pro Series, AISI 430, D Minor Kurd, 440 Hz, 10 Notes",
    "readAt": "2026-10-17",
-   "span": "EASY TO PLAY D KURD 10: This 22-inch D Kurd 10 handpan (D3–A3, Bb3, C4, D4, E4, F4, G4, A4, C5) features",
+   "span": "... D Kurd 10 handpan (D3–A3, Bb3, C4, D4, E4, F4, G4, A4, C5) ...",
    "expected": {
     "status": "REVIEW",
     "textSeed": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5",
@@ -663,7 +663,7 @@
    "url": "https://www.amazon.com/dp/B092QMYNKT",
    "title": "GLADFRESIT Handpan Drum 22inch in D Kurd Minor",
    "readAt": "2026-10-17",
-   "span": "HANDPAN Specifications: Gold Handpan Steel Drum 22 Inch D minor 9Notes: D3-A3-Bb3-C4-D4-E4-F4-G4-A4.",
+   "span": "... D minor 9Notes: D3-A3-Bb3-C4-D4-E4-F4-G4-A4.",
    "expected": {
     "status": "REVIEW",
     "textSeed": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
@@ -682,7 +682,7 @@
    "url": "https://www.boullard.ch/en/product/drums-percussion/percussion/handpan/202749-battiloro-arianrod-moon-series-celtic-d-minor-432hz/",
    "title": "Battiloro Arianrohd, Moon Series, Celtic D minor, 432Hz",
    "readAt": "2026-10-17",
-   "span": "D A C D E F G A C\n· Notes : D A C D E F G A C D\n· Range : D\n· Adjustments : 432 Hz",
+   "span": "D A C D E F G A C\n· Notes : D A C D E F G A C D",
    "expected": {
     "status": "NEEDS_INPUT",
     "textSeed": null,
@@ -720,7 +720,7 @@
    "url": "https://maginstruments.com/?p=10036",
    "title": "Uncovering the D Kurd Handpan Scale - MAG Instruments",
    "readAt": "2026-10-17",
-   "span": "The D refers to the root note, the lowest, central note of the instrument (called the Ding)\nDing (center): D3\nOuter circle : A3 – Bb3 – C4 – D4 – E4 – F4 – G4 – A4\nThe note that gives D Kurd its distinctive edge is the Bb (B-flat).",
+   "span": "Ding (center): D3\nOuter circle : A3 – Bb3 – C4 – D4 – E4 – F4 – G4 – A4",
    "expected": {
     "status": "REVIEW",
     "textSeed": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
@@ -739,7 +739,7 @@
    "url": "https://davidyoungs.net/halo/",
    "title": "Halo – David Youngs",
    "readAt": "2026-10-17",
-   "span": "having selected the 'Xiao Xiong Diao (XXD) scale for the instrument.\nThe notes of the XXD Scale Halo are:\n(C) F G Ab C D Eb F G",
+   "span": "The notes of the XXD Scale Halo are:\n(C) F G Ab C D Eb F G",
    "expected": {
     "status": "NEEDS_INPUT",
     "textSeed": null,
