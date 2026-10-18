@@ -1,0 +1,7 @@
+tests/import.test.js | # tests 36 # pass 33 # fail 3 
+  FAIL: every fixture: status, flag codes, serialised string and field count match
+  FAIL: C Ashakiran 15 octaveless line gives the plan's hand-written string
+  FAIL: UNDECLARED_PARENS: parenthesised notes get no role and nothing is serialised
+tests/app.test.js | # tests 622 # pass 621 # fail 1 
+  FAIL: IM: a picked ding refreshes every inferred octave and clears the NO_OCTAVE tick
+  FAIL: IM: import text on the sheet

@@ -1,0 +1,770 @@
+{
+ "about": "Import v2 gold set (Phase 1, section A). Each case: the URL, the date read, the verbatim source span, what a TEXT tier should return (expected.status, expected.textSeed), the true pan where the page states it (expected.seed; null when the page does not settle it), the vision reading for image-only pages (expected.visionSeed), and the reasoning. Spans are quoted verbatim but kept short: the pitch line or lines plus the few words needed to read them (labels, the ding marker); '...' marks an elision. They are kept short because GitHub Pages serves every committed file, docs/plans included, publicly (owner decision 2026-10-17). Scores do not count until the owner spot-checks this file (O6).",
+ "readAt": "2026-10-17",
+ "ownerSpotCheck": "DONE 2026-10-17: 7 of 8 Correct (ss-leaf-c-minor-14, sanango-d-kurd-15, boullard-battiloro-celtic-contradictory, engadine-mano-9-prose, thomann-startone-d-kurd-octaveless, yatao-a2-amara-9, sunreed-zen-d-minor-9); blog-pantheon-halo-xxd WRONG, corrected to REVIEW (owner: the scale is spelled out as '(C) F G Ab C D Eb F G')",
+ "cases": [
+  {
+   "id": "yatao-mag-d-kurd-17",
+   "maker": "MAG",
+   "seller": "Yatao",
+   "region": "EU",
+   "lang": "en",
+   "platform": "shopify",
+   "category": "structured",
+   "url": "https://yataoshop.com/products/handpan-mag-d-kurd-17",
+   "title": "MAG D Kurd 17",
+   "readAt": "2026-10-17",
+   "span": "Top side notes : D3, A3, Bb3, C4, D4, E4, F4, G4, A4, C5, D5\nBottom side notes : Bb2, C3, E3, F3, G3, E5",
+   "expected": {
+    "status": "REVIEW",
+    "textSeed": "[Bb2] [C3] (D3) [E3] [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5 [E5]",
+    "seed": "[Bb2] [C3] (D3) [E3] [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5 [E5]"
+   },
+   "reasoning": "Labelled top and bottom lists. Yatao's template puts the ding first in the top list (its sister pages say 'the deep D3 ding'). 11 top + 6 bottom = 17, the title count. In-sample: the v1 importer was tuned on Yatao lines."
+  },
+  {
+   "id": "yatao-yataopan-d-kurd-17",
+   "maker": "Yatao",
+   "seller": "Yatao",
+   "region": "Asia",
+   "lang": "en",
+   "platform": "shopify",
+   "category": "structured",
+   "url": "https://yataoshop.com/products/yataopan-d-kurd-17",
+   "title": "YataoPan D Kurd 17",
+   "readAt": "2026-10-17",
+   "span": "Top Side Notes : D3 – A3, Bb3, C4, D4, E4, F4, G4, A4, C5, D5, E5, F5\nBottom Side Notes : Bb2, C3, F3, G3",
+   "expected": {
+    "status": "REVIEW",
+    "textSeed": "[Bb2] [C3] (D3) [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5 E5 F5",
+    "seed": "[Bb2] [C3] (D3) [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5 E5 F5"
+   },
+   "reasoning": "Dash after the first note marks the ding (page prose: 'the deep D3 ding'). 13 top + 4 bottom = 17. PAGE-MODE TRAP: the page prose names 'Bb2, C3, F3, and G3 on the bottom side' and 'climbs to a bright F5' BEFORE the list, so a whole-page read meets partial pitch lists first. In-sample for the span."
+  },
+  {
+   "id": "yatao-mudra-g2-minor-17",
+   "maker": "Mudra",
+   "seller": "Yatao",
+   "region": "Asia",
+   "lang": "en",
+   "platform": "shopify",
+   "category": "structured",
+   "url": "https://yataoshop.com/products/mudra-g-minor-17",
+   "title": "Mudra G Minor 17",
+   "readAt": "2026-10-17",
+   "span": "Top side notes : G2, G3, A3, Bb3, C4, D4, Eb4, F4, G4\nBottom side notes : D3, Eb3, A4, C5, D5, Eb5, F5, G5",
+   "expected": {
+    "status": "REVIEW",
+    "textSeed": "(G2) [D3] [Eb3] G3 A3 Bb3 C4 D4 Eb4 F4 G4 [A4] [C5] [D5] [Eb5] [F5] [G5]",
+    "seed": "(G2) [D3] [Eb3] G3 A3 Bb3 C4 D4 Eb4 F4 G4 [A4] [C5] [D5] [Eb5] [F5] [G5]"
+   },
+   "reasoning": "Ding G2 is the first top note (page: 'central G2 ding to the lowest side note (G3)'). The title says G, the list says G2: the title must not override the octave. Bottom notes sit at pitch position, two of them below the lowest top note. Maker region: Mudra is listed by Yatao as a Chinese workshop line (UNVERIFIED)."
+  },
+  {
+   "id": "yatao-mag-fs2-minor-16",
+   "maker": "MAG",
+   "seller": "Yatao",
+   "region": "EU",
+   "lang": "en",
+   "platform": "shopify",
+   "category": "structured",
+   "url": "https://yataoshop.com/products/mag-f-2-minor-16",
+   "title": "MAG F#2 minor 16",
+   "readAt": "2026-10-17",
+   "span": "Notes Top Side : F#2 / F#3, G#3, A3, B3, C#4, D4, E4, F#4\nNotes Bottom Side : C#3, D3, E3, G#4, A4, B4 C#5",
+   "expected": {
+    "status": "REVIEW",
+    "textSeed": "(F#2) [C#3] [D3] [E3] F#3 G#3 A3 B3 C#4 D4 E4 F#4 [G#4] [A4] [B4] [C#5]",
+    "seed": "(F#2) [C#3] [D3] [E3] F#3 G#3 A3 B3 C#4 D4 E4 F#4 [G#4] [A4] [B4] [C#5]"
+   },
+   "reasoning": "Slash after the first note marks the ding. 'B4 C#5' has a missing comma, which must not merge or drop a note. 8 top + 7 bottom + ding = 16."
+  },
+  {
+   "id": "yatao-c-ashakiran-15",
+   "maker": "Yatao",
+   "seller": "Yatao",
+   "region": "Asia",
+   "lang": "en",
+   "platform": "shopify",
+   "category": "octaveless",
+   "url": "https://yataoshop.com/products/handpan-yataopan-c-ashakiran-15",
+   "title": "YataoPan C Ashakiran 15",
+   "readAt": "2026-10-17",
+   "span": "Top Notes: C - F, G, A, B, C, D, E, G\nBottom Notes: D, E, F, A, B, C",
+   "expected": {
+    "status": "NEEDS_INPUT",
+    "textSeed": null,
+    "seed": null
+   },
+   "reasoning": "No octaves anywhere. The top list can be inferred ascending from the ding, but six octaveless bottom notes have no pitch position: D and E could sit below or above the ding, F/A/B/C could be in either octave. The honest answer is to ask; any REVIEW line is a guess. Truth is not published on the page, so no seed (P coverage n/a)."
+  },
+  {
+   "id": "yatao-ayasa-d-kurd-12",
+   "maker": "Ayasa",
+   "seller": "Yatao",
+   "region": "Asia",
+   "lang": "en",
+   "platform": "shopify",
+   "category": "structured",
+   "url": "https://yataoshop.com/products/handpan-ayasa-d-kurd",
+   "title": "Ayasa D Kurd 12",
+   "readAt": "2026-10-17",
+   "span": "Notes : D3 - (F3, G3), A3, Bb3, C4, D4, E4, F4, G4, A4, C5",
+   "expected": {
+    "status": "REVIEW",
+    "textSeed": "(D3) [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5",
+    "seed": "(D3) [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5"
+   },
+   "reasoning": "Parentheses around F3 G3 are undeclared on the page. 9 plain notes + 2 parenthesised + ding = 12, the title count, and an Ayasa D Kurd 12 is a 10-note Kurd with two bottom notes, so the parens mean bottom. A tier that reads them as bottom must raise a CONFIRM, since the page never says so. Ayasa is a Chinese maker (UNVERIFIED)."
+  },
+  {
+   "id": "yatao-d-aegean-18",
+   "maker": "Yatao",
+   "seller": "Yatao",
+   "region": "Asia",
+   "lang": "en",
+   "platform": "shopify",
+   "category": "structured",
+   "url": "https://yataoshop.com/products/handpan-yataopan-d-aegean-18",
+   "title": "YataoPan D Aegean 18",
+   "readAt": "2026-10-17",
+   "span": "Notes Top Side : D3, F#3, A3, C#4, D4, F#4, G#4, A4, C#5, D5, F#5\nNotes Bottom Side : B2, E3, G#3, B3, E4, B4, E5",
+   "expected": {
+    "status": "REVIEW",
+    "textSeed": "[B2] (D3) [E3] F#3 [G#3] A3 [B3] C#4 D4 [E4] F#4 G#4 A4 [B4] C#5 D5 [E5] F#5",
+    "seed": "[B2] (D3) [E3] F#3 [G#3] A3 [B3] C#4 D4 [E4] F#4 G#4 A4 [B4] C#5 D5 [E5] F#5"
+   },
+   "reasoning": "DISTRACTOR: 'Key : F# lydian mode' names F#, not the D3 ding. The ding is the first top note by the template. 11 top + 7 bottom = 18."
+  },
+  {
+   "id": "ayasa-d-kurd-13",
+   "maker": "Ayasa",
+   "seller": "Ayasa",
+   "region": "Asia",
+   "lang": "en",
+   "platform": "shopify",
+   "category": "name-only",
+   "url": "https://ayasainstruments.com/products/d-kurd-13-ember-steel",
+   "title": "D Kurd 13 Handpan · Ember Steel · Ayasa Instruments",
+   "readAt": "2026-10-17",
+   "span": "D Kurd 13",
+   "expected": {
+    "status": "INSUFFICIENT",
+    "textSeed": null,
+    "seed": null
+   },
+   "reasoning": "Ayasa's own site gives the model name and prose only: no pitch in the text, the products.json body, or the photos (checked 2026-10-17). O10: a bare scale name stays INSUFFICIENT. TRAP for a model tier: it 'knows' a D Kurd and would invent pitches; the span check must refuse them because none occurs in the source."
+  },
+  {
+   "id": "sanango-page-multi",
+   "maker": "Sanango",
+   "seller": "Sanango",
+   "region": "EU",
+   "lang": "en",
+   "platform": "carrd",
+   "category": "multi-model",
+   "url": "https://sanangohandpan-en.carrd.co/",
+   "title": "Sanango Handpan English",
+   "readAt": "2026-10-17",
+   "span": "E Amara 16 notes Top: E3) B3 D4 E4 F#4 G4 A4 B4 D5 E5 F#5 Bottom: C3 D3 G3 A3 C4 ... C Ashakiran 11 Notes Top: C3) F3 G3 A3 B3 C4 D4 E4 G4 Bottom: D3 E3",
+   "expected": {
+    "status": "NEEDS_INPUT",
+    "textSeed": null,
+    "seed": null
+   },
+   "reasoning": "One page lists six models. A whole-page import cannot know which pan the user means; it must ask (pick a model) rather than serialise the first list. The span quotes two adjacent models to show the shape."
+  },
+  {
+   "id": "sanango-e-amara-16",
+   "maker": "Sanango",
+   "seller": "Sanango",
+   "region": "EU",
+   "lang": "en",
+   "platform": "carrd",
+   "category": "structured",
+   "url": "https://sanangohandpan-en.carrd.co/",
+   "title": "E Amara 16",
+   "readAt": "2026-10-17",
+   "span": "E Amara 16 notes Top: E3) B3 D4 E4 F#4 G4 A4 B4 D5 E5 F#5 Bottom: C3 D3 G3 A3 C4",
+   "expected": {
+    "status": "REVIEW",
+    "textSeed": "[C3] [D3] (E3) [G3] [A3] B3 [C4] D4 E4 F#4 G4 A4 B4 D5 E5 F#5",
+    "seed": "[C3] [D3] (E3) [G3] [A3] B3 [C4] D4 E4 F#4 G4 A4 B4 D5 E5 F#5"
+   },
+   "reasoning": "The paste a user makes after picking the model. 'E3)' is a stray closing bracket on the ding, used on every Sanango model. 11 top + 5 bottom = 16. The price follows the list on the page."
+  },
+  {
+   "id": "sanango-d-kurd-15",
+   "maker": "Sanango",
+   "seller": "Sanango",
+   "region": "EU",
+   "lang": "es",
+   "platform": "carrd",
+   "category": "structured",
+   "url": "https://sanangohandpan-en.carrd.co/",
+   "title": "D Kurd 15",
+   "readAt": "2026-10-17",
+   "span": "D Kurd 15 Notas Top: D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5 Bottom: C3 E3 G3 F3",
+   "expected": {
+    "status": "REVIEW",
+    "textSeed": "[C3] (D3) [E3] [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5",
+    "seed": "[C3] (D3) [E3] [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5"
+   },
+   "reasoning": "Spanish 'Notas' label; bottom list out of pitch order (G3 before F3), which must be sorted, not dropped. 11 + 4 = 15."
+  },
+  {
+   "id": "sela-sehp202-d-amara-11-1",
+   "maker": "Sela",
+   "seller": "Thomann",
+   "region": "EU",
+   "lang": "en",
+   "platform": "custom",
+   "category": "contradictory",
+   "url": "https://www.thomannmusic.com/sela_sehp202_harmony_d_amara_111.htm",
+   "title": "Sela SEHP202 Harmony D Amara 11+1",
+   "readAt": "2026-10-17",
+   "span": "Notes: D3/ A3 (Bb3), C4, D4, E4, F4, G4, A4, C5, D5, E5 Extended range with two bottom notes",
+   "expected": {
+    "status": "NEEDS_INPUT",
+    "textSeed": null,
+    "seed": "(D3) A3 [Bb3] C4 D4 E4 F4 G4 A4 C5 D5 E5"
+   },
+   "reasoning": "The list shows ONE parenthesised note and the next line says 'two bottom notes'; '11+1' fits one. The page contradicts itself, so a text tier must ask. The seed is the most likely pan (one Bb3 bottom), recorded for P coverage only and marked inferred. 'A = 442 Hz' is a reference pitch, not a note."
+  },
+  {
+   "id": "ss-leaf-c-minor-14",
+   "maker": "Leaf Soundsculptures",
+   "seller": "Sound Sculpture",
+   "region": "EU",
+   "lang": "de",
+   "platform": "shopify",
+   "category": "octaveless",
+   "url": "https://sound-sculpture.de/products/leaf-soundsculptures-c-minor-hexatonic-14",
+   "title": "Leaf Soundsculptures C Minor Hexatonic 14",
+   "readAt": "2026-10-17",
+   "span": "Hauptnote C3 ... Noten C/(D)(Eb)F G Ab (B) C D Eb F G (Ab) (C) Anzahl Noten 14",
+   "expected": {
+    "status": "REVIEW",
+    "textSeed": "(C3) [D3] [Eb3] F3 G3 Ab3 [B3] C4 D4 Eb4 F4 G4 [Ab4] [C5]",
+    "seed": "(C3) [D3] [Eb3] F3 G3 Ab3 [B3] C4 D4 Eb4 F4 G4 [Ab4] [C5]"
+   },
+   "reasoning": "German. 'Hauptnote C3' gives the ding octave; the list uses handpaner-style notation: ding then '/', octaveless ascending, '(X)' = bottom note at pitch position (the site's convention on every product). Octaves follow by ascending inference; 14 tokens = 'Anzahl Noten 14'. The bracket meaning is a site convention, so a tier that applies it must CONFIRM."
+  },
+  {
+   "id": "ss-sew-f3-low-pygmy-11",
+   "maker": "Sew",
+   "seller": "Sound Sculpture",
+   "region": "Asia",
+   "lang": "de",
+   "platform": "shopify",
+   "category": "structured",
+   "url": "https://sound-sculpture.de/products/sew-f3-low-pygmy-11",
+   "title": "Sew F3-Low Pygmy 11",
+   "readAt": "2026-10-17",
+   "span": "Hauptnote F3 ... Noten F3 / G3 G#3 C4 D#4 F4 G4 G#4 C5 (D#5) (F5) Anzahl Noten 11",
+   "expected": {
+    "status": "REVIEW",
+    "textSeed": "(F3) G3 G#3 C4 D#4 F4 G4 G#4 C5 [D#5] [F5]",
+    "seed": "(F3) G3 G#3 C4 D#4 F4 G4 G#4 C5 [D#5] [F5]"
+   },
+   "reasoning": "German. Sharps spelled for a flat-key scale (G#, D#) must be kept, not respelled. Parenthesised high notes are bottom notes by the site convention. 11 = 'Anzahl Noten 11'. Sew region UNVERIFIED (listed as Asia on a hunch; owner to correct)."
+  },
+  {
+   "id": "ss-satya-eb-la-sirena-16",
+   "maker": "Satya",
+   "seller": "Sound Sculpture",
+   "region": "EU",
+   "lang": "de",
+   "platform": "shopify",
+   "category": "structured",
+   "url": "https://sound-sculpture.de/products/satya-eb-la-sirena-16",
+   "title": "Satya Eb La Sirena 16",
+   "readAt": "2026-10-17",
+   "span": "Hauptnote Eb ... Noten (Db3) Eb3 (F3) Gb3 (Ab3) Bb3 C4 Db4 Eb4 F4 Gb4 (Ab4) Bb4 (C5 Db5 Eb5) Anzahl Noten 16",
+   "expected": {
+    "status": "REVIEW",
+    "textSeed": "[Db3] (Eb3) [F3] Gb3 [Ab3] Bb3 C4 Db4 Eb4 F4 Gb4 [Ab4] Bb4 [C5] [Db5] [Eb5]",
+    "seed": "[Db3] (Eb3) [F3] Gb3 [Ab3] Bb3 C4 Db4 Eb4 F4 Gb4 [Ab4] Bb4 [C5] [Db5] [Eb5]"
+   },
+   "reasoning": "German. The ding is not first: 'Hauptnote Eb' names it and the first token is a bottom Db3. One bracket group holds three bottom notes '(C5 Db5 Eb5)'. 16 tokens = 'Anzahl Noten 16'."
+  },
+  {
+   "id": "ss-pantheon-halo-equinox-12",
+   "maker": "Pantheon Steel",
+   "seller": "Sound Sculpture",
+   "region": "US",
+   "lang": "en",
+   "platform": "shopify",
+   "category": "octaveless",
+   "url": "https://sound-sculpture.de/en/products/pantheon-steel-halo-equinox-12",
+   "title": "Pantheon Steel Halo Equinox 12",
+   "readAt": "2026-10-17",
+   "span": "Main note E ... Notes E G B C D E F# G B C D E Number of notes 12",
+   "expected": {
+    "status": "REVIEW",
+    "textSeed": "(E3) G3 B3 C4 D4 E4 F#4 G4 B4 C5 D5 E5",
+    "seed": "(E3) G3 B3 C4 D4 E4 F#4 G4 B4 C5 D5 E5"
+   },
+   "reasoning": "US maker. No octave anywhere: the line is octaves-by-inference (parseSeed default, ding at octave 3) and must carry NO_OCTAVE CONFIRM. The page says the Halo+ has no central ding ('The Ding or the lowest note ... is on the outer circle'), so 'ding' here means the lowest note. Octave 3 for E is UNVERIFIED against the maker."
+  },
+  {
+   "id": "idm-celtic-mineur-9",
+   "maker": "Instruments du Monde",
+   "seller": "Instruments du Monde",
+   "region": "EU",
+   "lang": "fr",
+   "platform": "shopify",
+   "category": "image-only",
+   "url": "https://instruments-du-monde.com/products/handpan-celtic-mineur",
+   "title": "Handpan Celtic Mineur",
+   "readAt": "2026-10-17",
+   "span": "[image] Diagramme-handpan-re-Celtic-mineur-9-notes.jpg: '9 NOTES RÉ CELTIC MINEUR', fields D3 (centre), A3, C4, D4, E4, F4, G4, A4, C5",
+   "expected": {
+    "status": "INSUFFICIENT",
+    "textSeed": null,
+    "seed": "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+    "visionSeed": "(D3) A3 C4 D4 E4 F4 G4 A4 C5"
+   },
+   "reasoning": "French. No pitch in the page text; the notes are only in per-key diagram images (do, do diese, re, mi, si), one per variant. Text tiers must say INSUFFICIENT. A vision tier must also know WHICH variant: the seed is the 're' (D) diagram, read by eye on 2026-10-17."
+  },
+  {
+   "id": "idm-hijaz-9",
+   "maker": "Instruments du Monde",
+   "seller": "Instruments du Monde",
+   "region": "EU",
+   "lang": "fr",
+   "platform": "shopify",
+   "category": "image-only",
+   "url": "https://instruments-du-monde.com/products/handpan-hijaz",
+   "title": "Handpan Hijaz",
+   "readAt": "2026-10-17",
+   "span": "[image] Diagramme-handpan-re-Hijaz-9-notes.jpg: '9 NOTES RÉ HIJAZ', fields D3 (centre), bE4, #F4, G4, A4, bB4, C5, D5, bB5",
+   "expected": {
+    "status": "INSUFFICIENT",
+    "textSeed": null,
+    "seed": "(D3) Eb4 F#4 G4 A4 Bb4 C5 D5 Bb5",
+    "visionSeed": "(D3) Eb4 F#4 G4 A4 Bb4 C5 D5 Bb5"
+   },
+   "reasoning": "French. Image-only, six key variants. The diagram writes accidentals BEFORE the letter ('bE4', '#F4', 'bB5'): a vision tier that reads 'bE4' as 'B' or 'E4' produces a wrong-but-valid pan. Read by eye 2026-10-17."
+  },
+  {
+   "id": "thomann-sonority-d-kurd-10",
+   "maker": "Thomann",
+   "seller": "Thomann",
+   "region": "EU",
+   "lang": "en",
+   "platform": "custom",
+   "category": "structured",
+   "url": "https://www.thomann.co.uk/thomann_sonority_handpan_d_kurd_440hz.htm",
+   "title": "Thomann Sonority Handpan D-Kurd 440Hz",
+   "readAt": "2026-10-17",
+   "span": "Notes: D3/A3, Bb3, C4, D4, E4, F4, G4, A4, C5",
+   "expected": {
+    "status": "REVIEW",
+    "textSeed": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5",
+    "seed": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5"
+   },
+   "reasoning": "Thomann's house template, the same ding-then-slash form handpaner uses. Non-Shopify. The span was read from a category listing tile ('Start 360 Handpan'), so the product page itself still has to be probed. Thomann often bot-blocks a datacentre fetch."
+  },
+  {
+   "id": "engadine-mano-9-prose",
+   "maker": "Mano Percussion",
+   "seller": "Engadine Music",
+   "region": "Oceania",
+   "lang": "en",
+   "platform": "shopify",
+   "category": "prose-only",
+   "url": "https://engadinemusic.com.au/products/mano-percussion-9-note-handpan",
+   "title": "Mano Percussion 9 Note Handpan",
+   "readAt": "2026-10-17",
+   "span": "... D Kurd tuning - A3, Bb3, D4, F4, A4, G4, E4, C4 and D3 Ding note.",
+   "expected": {
+    "status": "REVIEW",
+    "textSeed": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "seed": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4"
+   },
+   "reasoning": "PROSE: the pitches sit in one sentence, out of pitch order. The ding comes LAST and is named by the word 'Ding'. Sorting to pitch order is safe because every note carries an octave. A tier that treats the first note as the ding returns (A3) ..., a wrong-but-valid pan."
+  },
+  {
+   "id": "boullard-listing-multi",
+   "maker": "Sela",
+   "seller": "Boullard Musique",
+   "region": "EU",
+   "lang": "en",
+   "platform": "custom",
+   "category": "multi-model",
+   "url": "https://www.boullard.ch/en/category/drums-percussion/percussion/handpan/",
+   "title": "Handpan - Boullard Musique",
+   "readAt": "2026-10-17",
+   "span": "SELA D Kurd 9 (440 Hz) D3/ A3, Bb3, C4, D4, E4, F4, G4, A4 ... RAV Moon Pygmy D3 G3 A3 A#3 D4 F4 G4 A4 C5 D ... SELA Melody Tongue Drum 10 '' D Akebono ... D3 E3 F3 A3 A#3 D4 E4 F4",
+   "expected": {
+    "status": "NEEDS_INPUT",
+    "textSeed": null,
+    "seed": null
+   },
+   "reasoning": "A Swiss category page lists handpans and tongue drums side by side, each with its own note list. A whole-page import must ask which product, never serialise the first list. Tongue drums are not handpans, so a model tier must not pick one."
+  },
+  {
+   "id": "amazon-asteman-d-minor-10",
+   "maker": "Asteman",
+   "seller": "Amazon",
+   "region": "Asia",
+   "lang": "en",
+   "platform": "amazon",
+   "category": "prose-only",
+   "url": "https://www.amazon.com/dp/B09MVYV8W6",
+   "title": "ASTEMAN Handpan in D Minor, 432hz, 22 Inches with 10 Notes",
+   "readAt": "2026-10-17",
+   "span": "... 10 notes, including 1 center note and 9 tone (D3/A3/bB3/C4/D4/E4/F4/G4/A4/C5).",
+   "expected": {
+    "status": "REVIEW",
+    "textSeed": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5",
+    "seed": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5"
+   },
+   "reasoning": "PROSE inside an Amazon bullet. 'bB3' is a PREFIX flat, Bb3. Slashes separate all ten notes, so here a slash does NOT mark the ding; 'including 1 center note' and the lowest note do. Chinese-made budget pan (region UNVERIFIED). Amazon blocks datacentre fetches, so acquisition is the open question."
+  },
+  {
+   "id": "amazon-kalopho-d-kurd-9",
+   "maker": "Kalopho",
+   "seller": "Amazon",
+   "region": "Asia",
+   "lang": "en",
+   "platform": "amazon",
+   "category": "prose-only",
+   "url": "https://www.amazon.com/dp/B0GFDMBLH5",
+   "title": "Kalopho 22 Inches Handpan Drum, 432Hz 9 Notes D Minor Kurd",
+   "readAt": "2026-10-17",
+   "span": "... 9 precisely tuned notes (D3, A3, C4, E4, G4, A4, F4, D4, Bb3) ...",
+   "expected": {
+    "status": "REVIEW",
+    "textSeed": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "seed": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4"
+   },
+   "reasoning": "PROSE, in scrambled order (Bb3 comes last). There is no ding marker: the ding is the lowest note, D3, which is also first in the list, and a tier must CONFIRM it. Nine notes, matching the title's 9."
+  },
+  {
+   "id": "amazon-lomuty-d-kurd-10",
+   "maker": "Lomuty",
+   "seller": "Amazon",
+   "region": "Asia",
+   "lang": "en",
+   "platform": "amazon",
+   "category": "image-only",
+   "url": "https://www.amazon.com/dp/B0F9YBKH3Z",
+   "title": "LOMUTY Handpan Drum 19 Inch for Beginners 10 Notes, D Minor Kurd 432Hz",
+   "readAt": "2026-10-17",
+   "span": "[image] 81DqkAd6IeL._AC_SL1500_.jpg: 'Low-to-High \"Z\" Wrap-Around Distribution' diagram, fields D3 DING, 1 A3, 2 Bb3, 3 C4, 4 D4, 5 E4, 6 F4, 7 G4, 8 A4, 9 C5",
+   "expected": {
+    "status": "INSUFFICIENT",
+    "textSeed": null,
+    "seed": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5",
+    "visionSeed": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5"
+   },
+   "reasoning": "The text says only 'D Minor Kurd' and '10 Notes'. That is a scale name, so O10 keeps it INSUFFICIENT. The pitches are in one of eight gallery images, read by eye on 2026-10-17. A vision tier must find the one diagram among seven lifestyle photos."
+  },
+  {
+   "id": "yatao-e2-pygmy-17",
+   "maker": "Yatao",
+   "seller": "Yatao",
+   "region": "Asia",
+   "lang": "en",
+   "platform": "shopify",
+   "category": "structured",
+   "url": "https://yataoshop.com/products/yataopan-e2-pygmy-17",
+   "title": "YataoPan E2 Pygmy 17",
+   "readAt": "2026-10-17",
+   "span": "Top side notes : E2 – E3, F#3, G3, B3, D4, E4, F#4, G4\nBottom side notes : B2, D3, A3, C4, B4, C5, D5, E5",
+   "expected": {
+    "status": "REVIEW",
+    "textSeed": "(E2) [B2] [D3] E3 F#3 G3 [A3] B3 [C4] D4 E4 F#4 G4 [B4] [C5] [D5] [E5]",
+    "seed": "(E2) [B2] [D3] E3 F#3 G3 [A3] B3 [C4] D4 E4 F#4 G4 [B4] [C5] [D5] [E5]"
+   },
+   "reasoning": "Dash marks the ding E2. Eight bottom notes, interleaved by pitch through the whole range. 9 + 8 = 17. In-sample (Yatao)."
+  },
+  {
+   "id": "yatao-a2-amara-9",
+   "maker": "Yatao",
+   "seller": "Yatao",
+   "region": "Asia",
+   "lang": "en",
+   "platform": "shopify",
+   "category": "distractor",
+   "url": "https://yataoshop.com/products/yataopan-a2-amara-432-hz",
+   "title": "YataoPan A2 Amara",
+   "readAt": "2026-10-17",
+   "span": "Notes (Top Side) : A2 – E3, G3, A3, B3, C4, D4, E4, G4",
+   "expected": {
+    "status": "REVIEW",
+    "textSeed": "(A2) E3 G3 A3 B3 C4 D4 E4 G4",
+    "seed": "(A2) E3 G3 A3 B3 C4 D4 E4 G4"
+   },
+   "reasoning": "DISTRACTOR: 'Additional Notes' is a care-instructions heading, not a note list, and '440 Hz or 432 Hz' is a reference pitch. Neither may add a field or block. The page prose repeats 'A2 ding' many times above the list. The title carries no note count."
+  },
+  {
+   "id": "yatao-fs-low-pygmy-19",
+   "maker": "Yatao",
+   "seller": "Yatao",
+   "region": "Asia",
+   "lang": "en",
+   "platform": "shopify",
+   "category": "structured",
+   "url": "https://yataoshop.com/products/handpan-yataopan-f-low-pygmy-19",
+   "title": "YataoPan F# low pygmy 19",
+   "readAt": "2026-10-17",
+   "span": "Notes (Top Side) : F#3, G#3, A3, C#4, E4, F#4, G#4, A4, C#5, E5, F#5, G#5\nNotes (Bottom Side) : D3, E3, B3, D4, B4, D5, A5",
+   "expected": {
+    "status": "REVIEW",
+    "textSeed": "[D3] [E3] (F#3) G#3 A3 [B3] C#4 [D4] E4 F#4 G#4 A4 [B4] C#5 [D5] E5 F#5 G#5 [A5]",
+    "seed": "[D3] [E3] (F#3) G#3 A3 [B3] C#4 [D4] E4 F#4 G#4 A4 [B4] C#5 [D5] E5 F#5 G#5 [A5]"
+   },
+   "reasoning": "No dash: nothing marks the ding. It is the first top note, F#3, which matches the title's F#. Two bottom notes lie BELOW the ding. 12 + 7 = 19. Choosing the first top note as ding must raise a CONFIRM."
+  },
+  {
+   "id": "thomann-sela-sehp203-d-kurd-9-3-en",
+   "maker": "Sela",
+   "seller": "Thomann",
+   "region": "EU",
+   "lang": "en",
+   "platform": "custom",
+   "category": "structured",
+   "url": "https://www.thomannmusic.com/sela_sehp203_harmony_d_kurd_93.htm",
+   "title": "Sela SEHP203 Harmony D Kurd 9+3",
+   "readAt": "2026-10-17",
+   "span": "Notes: D3 / (C3) (F3) (G3) A3, Bb3, C4, D4, E4, F4, G4, A4",
+   "expected": {
+    "status": "REVIEW",
+    "textSeed": "[C3] (D3) [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "seed": "[C3] (D3) [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4"
+   },
+   "reasoning": "Sela's Thomann template: the ding comes before '/', and the parenthesised notes are bottom notes ('9+3', and the FR page says '3 bottom notes'). The bracket meaning is implicit on this page, so it needs a CONFIRM. 1 + 3 + 8 = 12."
+  },
+  {
+   "id": "thomann-sela-sehp203-d-kurd-9-3-fr",
+   "maker": "Sela",
+   "seller": "Thomann",
+   "region": "EU",
+   "lang": "fr",
+   "platform": "custom",
+   "category": "structured",
+   "url": "https://www.thomann.fr/sela_sehp203_harmony_d_kurd_93.htm",
+   "title": "Sela SEHP203 Harmony D Kurd 9+3",
+   "readAt": "2026-10-17",
+   "span": "Notes: Ré3 / (Do3) (Fa3) (Sol3) La3, Sib3, Do4, Ré4, Mi4, Fa4, Sol4, La4\n... avec 3 bottom notes",
+   "expected": {
+    "status": "REVIEW",
+    "textSeed": "[C3] (D3) [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "seed": "[C3] (D3) [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4"
+   },
+   "reasoning": "FRENCH SOLFEGE with octaves (Ré3, Sib3). The pitches are the same as the EN page. A tier that reads only letter names finds nothing; one that translates Ré→D, Sib→Bb finds the same pan. Here the page itself says '3 bottom notes'."
+  },
+  {
+   "id": "thomann-sela-sehp203-d-kurd-9-3-it",
+   "maker": "Sela",
+   "seller": "Thomann",
+   "region": "EU",
+   "lang": "it",
+   "platform": "custom",
+   "category": "structured",
+   "url": "https://www.thomann.it/sela_sehp203_harmony_d_kurd_93.htm",
+   "title": "Sela SEHP203 Harmony D Kurd 9+3",
+   "readAt": "2026-10-17",
+   "span": "Note: Re3 / (Do3) (Fa3) (Sol3) La3, Sib3, Do4, Re4, Mi4, Fa4, Sol4, La4",
+   "expected": {
+    "status": "REVIEW",
+    "textSeed": "[C3] (D3) [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "seed": "[C3] (D3) [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4"
+   },
+   "reasoning": "ITALIAN SOLFEGE: 'Re' has no accent, and the label 'Note:' is singular. Same pan as the EN page. The bottom-note meaning of the parens is implicit ('9+3'), so CONFIRM."
+  },
+  {
+   "id": "thomann-startone-d-kurd-octaveless",
+   "maker": "Startone",
+   "seller": "Thomann",
+   "region": "EU",
+   "lang": "en",
+   "platform": "custom",
+   "category": "contradictory",
+   "url": "https://www.thomannmusic.com/startone_handpan_d_kurd_a440hz_cd.htm",
+   "title": "Startone Handpan D Kurd A=440Hz CD",
+   "readAt": "2026-10-17",
+   "span": "Nine notes: D / A, B, C, D, E, F, G, A",
+   "expected": {
+    "status": "REVIEW",
+    "textSeed": "(D3) A3 B3 C4 D4 E4 F4 G4 A4",
+    "seed": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4"
+   },
+   "reasoning": "SOURCE ERROR: the list says B where every D Kurd has Bb (the French page repeats it as 'Si'). A faithful text tier returns B3 and is graded exact against textSeed. The true pan (seed) has Bb3. No tier may 'correct' it from the scale name, because the span check forbids a Bb that is not in the source. This is why the preview always needs the user's eye (O9). Octaveless: NO_OCTAVE CONFIRM."
+  },
+  {
+   "id": "thomann-startone-d-celtic-octaveless",
+   "maker": "Startone",
+   "seller": "Thomann",
+   "region": "EU",
+   "lang": "en",
+   "platform": "custom",
+   "category": "octaveless",
+   "url": "https://www.thomannmusic.com/startone_handpan_d_celtic_a432hz_cd.htm",
+   "title": "Startone Handpan D-Celtic/Amara 432 CD",
+   "readAt": "2026-10-17",
+   "span": "Nine notes: D / A, C, D, E, F, G, A, C",
+   "expected": {
+    "status": "REVIEW",
+    "textSeed": "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+    "seed": "(D3) A3 C4 D4 E4 F4 G4 A4 C5"
+   },
+   "reasoning": "Octaveless with a ding before '/'. Ascending inference from D3 gives the standard D Celtic 9, with a NO_OCTAVE CONFIRM."
+  },
+  {
+   "id": "sunreed-zen-d-minor-9",
+   "maker": "Sunreed",
+   "seller": "Sunreed",
+   "region": "US",
+   "lang": "en",
+   "platform": "shopify",
+   "category": "structured",
+   "url": "https://sunreed.com/products/products-zen-handpan-9-note-432hz-d-minor-zen-wanderlust-handpan-ivory-veil",
+   "title": "9-Note 432Hz D Minor Zen Wanderlust Handpan Ivory Veil",
+   "readAt": "2026-10-17",
+   "span": "The central D3 anchors the instrument ...\nNotes: D3, A3, A#3, C4, D4, E4, F4, G4, A4",
+   "expected": {
+    "status": "REVIEW",
+    "textSeed": "(D3) A3 A#3 C4 D4 E4 F4 G4 A4",
+    "seed": "(D3) A3 A#3 C4 D4 E4 F4 G4 A4"
+   },
+   "reasoning": "US seller. A D Kurd spelled with A# instead of Bb: the spelling must be kept (the engine keeps spellings). The ding is first in the list; the prose 'central D3' supports it. The page names no maker, so the workshop is UNVERIFIED."
+  },
+  {
+   "id": "amazon-alienpan-d-kurd-10",
+   "maker": "Alienpan",
+   "seller": "Amazon",
+   "region": "Asia",
+   "lang": "en",
+   "platform": "amazon",
+   "category": "prose-only",
+   "url": "https://www.amazon.com/dp/B0H8R3P9XN",
+   "title": "ALIENPAN Handpan Drum, Pro Series, AISI 430, D Minor Kurd, 440 Hz, 10 Notes",
+   "readAt": "2026-10-17",
+   "span": "... D Kurd 10 handpan (D3–A3, Bb3, C4, D4, E4, F4, G4, A4, C5) ...",
+   "expected": {
+    "status": "REVIEW",
+    "textSeed": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5",
+    "seed": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5"
+   },
+   "reasoning": "PROSE: the list sits in parentheses inside a marketing sentence. An en dash after D3 marks the ding. The 'D KURD 10' heading is a name plus a count, not a note. Region UNVERIFIED (Chinese-made per listing style)."
+  },
+  {
+   "id": "amazon-gladfresit-d-minor-9",
+   "maker": "Gladfresit",
+   "seller": "Amazon",
+   "region": "Asia",
+   "lang": "en",
+   "platform": "amazon",
+   "category": "structured",
+   "url": "https://www.amazon.com/dp/B092QMYNKT",
+   "title": "GLADFRESIT Handpan Drum 22inch in D Kurd Minor",
+   "readAt": "2026-10-17",
+   "span": "... D minor 9Notes: D3-A3-Bb3-C4-D4-E4-F4-G4-A4.",
+   "expected": {
+    "status": "REVIEW",
+    "textSeed": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "seed": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4"
+   },
+   "reasoning": "Hyphens join every note, so a hyphen does not mark a ding here (unlike Yatao's 'D3 – A3'). The label is fused as '9Notes:'. The ding is the lowest and first note. '22 Inch' must not read as a note."
+  },
+  {
+   "id": "boullard-battiloro-celtic-contradictory",
+   "maker": "Battiloro",
+   "seller": "Boullard Musique",
+   "region": "EU",
+   "lang": "en",
+   "platform": "custom",
+   "category": "contradictory",
+   "url": "https://www.boullard.ch/en/product/drums-percussion/percussion/handpan/202749-battiloro-arianrod-moon-series-celtic-d-minor-432hz/",
+   "title": "Battiloro Arianrohd, Moon Series, Celtic D minor, 432Hz",
+   "readAt": "2026-10-17",
+   "span": "D A C D E F G A C\n· Notes : D A C D E F G A C D",
+   "expected": {
+    "status": "NEEDS_INPUT",
+    "textSeed": null,
+    "seed": null
+   },
+   "reasoning": "Octaveless, and the page's two lists disagree: 9 notes in the header and 10 in the spec row (a trailing D). A text tier must ask rather than pick one. The true pan is not settled by the page."
+  },
+  {
+   "id": "boullard-zaora-d-ashakiran-16",
+   "maker": "Zaora",
+   "seller": "Boullard Musique",
+   "region": "EU",
+   "lang": "en",
+   "platform": "custom",
+   "category": "octaveless",
+   "url": "https://www.boullard.ch/en/product/drums-percussion/percussion/handpan/200275-zaora-d-ashakiran-16-notes-ember-steel-d-e-f-gabc-def-g-ab-c-d-e/",
+   "title": "Zaora Ashakiran 16 Notes D (E)",
+   "readAt": "2026-10-17",
+   "span": "· Notes : D (E)(F#) G A B C# D E F# (G) A B (C#)(D)(E)",
+   "expected": {
+    "status": "NEEDS_INPUT",
+    "textSeed": null,
+    "seed": null
+   },
+   "reasoning": "Octaveless with parenthesised notes that are presumably bottom notes. The page never says so, and with no octaves (E) and (F#) could sit either side of the ding. Same shape as the Leaf case, but this page has no 'Hauptnote' and no bracket convention, so a text tier must ask."
+  },
+  {
+   "id": "mag-blog-d-kurd",
+   "maker": "MAG",
+   "seller": "MAG",
+   "region": "EU",
+   "lang": "en",
+   "platform": "wordpress",
+   "category": "structured",
+   "url": "https://maginstruments.com/?p=10036",
+   "title": "Uncovering the D Kurd Handpan Scale - MAG Instruments",
+   "readAt": "2026-10-17",
+   "span": "Ding (center): D3\nOuter circle : A3 – Bb3 – C4 – D4 – E4 – F4 – G4 – A4",
+   "expected": {
+    "status": "REVIEW",
+    "textSeed": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "seed": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4"
+   },
+   "reasoning": "An article, not a product page. Labelled 'Ding (center)' and 'Outer circle'. The prose after the list names 'Bb' bare, which is not a later note list, and 'The D' is a root name. Neither may block."
+  },
+  {
+   "id": "blog-pantheon-halo-xxd",
+   "maker": "Pantheon Steel",
+   "seller": "David Youngs (blog)",
+   "region": "US",
+   "lang": "en",
+   "platform": "wordpress",
+   "category": "octaveless",
+   "url": "https://davidyoungs.net/halo/",
+   "title": "Halo – David Youngs",
+   "readAt": "2026-10-17",
+   "span": "The notes of the XXD Scale Halo are:\n(C) F G Ab C D Eb F G",
+   "expected": {
+    "status": "REVIEW",
+    "textSeed": "(C3) F3 G3 Ab3 C4 D4 Eb4 F4 G4",
+    "seed": "(C3) F3 G3 Ab3 C4 D4 Eb4 F4 G4"
+   },
+   "reasoning": "OWNER CORRECTION (spot-check, 2026-10-17): the scale is spelled out in the text as '(C) F G Ab C D Eb F G', so this is a REVIEW case, not NEEDS_INPUT. Here the round brackets mark the DING, the engine's own reading; the {parens: 'bottom'} option (D-A) must NOT be applied, or the pan loses its ding. Octaveless: ascending inference from C3 with a NO_OCTAVE CONFIRM, as on the other octaveless REVIEW cases. The pan's true octaves are UNVERIFIED."
+  },
+  {
+   "id": "snd-f-aeolian-10-name-only",
+   "maker": "SND Handpan",
+   "seller": "SND Handpan",
+   "region": "Asia",
+   "lang": "ko",
+   "platform": "imweb",
+   "category": "name-only",
+   "url": "https://handpanen.imweb.me/shop/?idx=71",
+   "title": "F Aeolain 10 : Snd Handpan",
+   "readAt": "2026-10-17",
+   "span": "F Aeolain 10",
+   "expected": {
+    "status": "INSUFFICIENT",
+    "textSeed": null,
+    "seed": null
+   },
+   "reasoning": "A Korean maker on a Korean site builder. The product name ('Aeolain' sic) is the only scale information; 7 of about 30 images were checked and none shows a chart. O10: INSUFFICIENT. A model must not expand 'F Aeolian 10' into pitches."
+  }
+ ]
+}
