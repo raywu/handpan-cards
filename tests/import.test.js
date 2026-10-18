@@ -495,7 +495,7 @@ test("window cut: an unlabelled list the window cuts blocks and writes nothing",
     const text = leadPage(width).replace("Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5 Bottom: C3 F3 G3", "D3 A3 Bb3 C4 D4 E4 F4 G4 A4 C5");
     assert.ok(text.length > 2000);
     const r = interpret(text);
-    assert.ok(r.flags.some((f) => f.code === "CONFLICTING_LIST"), String(width));
+    assert.equal(flagOf(r, "CONFLICTING_LIST").runs, 1, String(width));
     assert.equal(importer.serialise(r), "", String(width));
   }
 });
@@ -620,7 +620,7 @@ test("window widening: labelled lists spread wider than 2,000 characters block",
   assert.ok(text.length > 2000 && text.indexOf("Bottom:") > 2000);
   const r = interpret(text);
   assert.equal(r.status, "NEEDS_INPUT");
-  assert.ok(flagOf(r, "CONFLICTING_LIST"));
+  assert.ok(flagOf(r, "CONFLICTING_LIST").spread > 2000);
 });
 
 test("windowOf picks the first of two equally dense lines", () => {
