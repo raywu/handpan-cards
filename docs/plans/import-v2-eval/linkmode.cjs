@@ -1,8 +1,10 @@
 // Link-mode and select-all estimates on today's engine (plan 2026-10-17-import-v2, 2 and 7).
 // link: the Shopify body only if it holds 5 strict (N1) pitch tokens, else the page text;
-//   an 8,000-char window on the densest line; 422 NO_TEXT under 5 strict tokens; then the
-//   1,200-char window inside it, with the P1-1 scan (a run of 5 note tokens outside the
-//   kept window blocks); then interpret.
+//   an 8,000-char window on the densest line; 422 NO_TEXT unless the window holds ONE run
+//   of 5 strict tokens (regroup 2026-10-17: the shipped rule asks for one run, not a count);
+//   then the 1,200-char window inside it, with the P1-1 scan (a run of 5 note tokens
+//   outside the kept window blocks) on texts over 2,000 characters only, as L1 (f) ships it;
+//   then interpret. census.cjs supersedes this file for every figure the regroup cites.
 // window1200scan: tier0's window mode (same source choice) plus the P1-1 scan.
 // selectall: the whole no-JS page text, 1,200-char window, P1-1 scan.
 // Usage: node linkmode.cjs <gold.json> <cacheDir> <repoRoot> <out.json>
@@ -13,6 +15,7 @@ const E = loadEngine(["core", "importer"]);
 const gold = JSON.parse(fs.readFileSync(goldPath, "utf8"));
 const PITCH = /(?<![A-Za-z0-9])[A-G](?:#|b|♯|♭)?(?:-1|[0-9])?(?![A-Za-z0-9])/g;
 const STRICT = /(?<![A-Za-z0-9À-ſ])(?:[A-G](?:#|b|♯|♭)?[0-9]|(?:Do|R[ée]|Mi|Fa|Sol|La|Si)(?:#|b|♯|♭)?[0-9])(?![A-Za-z0-9])/g;
+const STRICT_RUN = /(?:(?<![A-Za-z0-9À-ſ])(?:[A-G](?:#|b|♯|♭)?[0-9]|(?:Do|R[ée]|Mi|Fa|Sol|La|Si)(?:#|b|♯|♭)?[0-9])(?![A-Za-z0-9])[\s,\-\/·|()]*){5,}/;
 const RUN = /(?:(?<![A-Za-z0-9])[A-G](?:#|b)?(?:[0-9])?(?![A-Za-z0-9])[\s,\-\/·|()]*){5,}/g;
 function classify(c, r, line) {
   const want = c.expected.status;
@@ -45,7 +48,7 @@ function win1200(text) {
   const end = start + lines.slice(lo, best + 4).join("\n").slice(0, 1200).length;
   return { start, end };
 }
-const outsideRun = (text, s, e) => [...text.matchAll(RUN)].some((m) => m.index + m[0].length <= s || m.index >= e);
+const outsideRun = (text, s, e) => text.length > 2000 && [...text.matchAll(RUN)].some((m) => m.index + m[0].length <= s || m.index >= e);
 const run = (c, t) => {
   const r = JSON.parse(JSON.stringify(E.importer.interpret(t, { title: c.title })));
   return classify(c, r, E.importer.serialise(r));
@@ -61,7 +64,7 @@ for (const c of gold.cases) {
   const head = c.title ? c.title + "\n" : "";
   const a = win8k(text), wa = text.slice(a.start, a.end);
   let o1;
-  if ((wa.match(STRICT) || []).length < 5) o1 = "422";
+  if (!STRICT_RUN.test(wa)) o1 = "422";
   else {
     const w = win1200(wa), ww = wa.slice(w.start, w.end);
     o1 = outsideRun(wa, w.start, w.end) ? (c.expected.status === "NEEDS_INPUT" ? "correct-block" : "blocked-scan") : run(c, head + ww);

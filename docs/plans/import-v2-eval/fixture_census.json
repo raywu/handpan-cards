@@ -1,0 +1,122 @@
+{
+ "cases": 117,
+ "flipped": 5,
+ "flips": [
+  {
+   "id": "yatao-c-ashakiran-15-octaveless",
+   "group": "octaveless",
+   "text": "Notes: C - F, G, A, B, C, D, E, G Bottom Notes: D, E, F, A, B, C",
+   "want": {
+    "status": "REVIEW",
+    "codes": [
+     "COUNT_OK",
+     "DING_CUE",
+     "NO_OCTAVE"
+    ],
+    "serialised": "(C3) F3 G3 A3 B3 C4 D4 E4 G4 [D5] [E5] [F5] [A5] [B5] [C6]"
+   },
+   "got": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "BOTTOM_NO_OCTAVE",
+     "COUNT_OK",
+     "DING_CUE",
+     "NO_OCTAVE"
+    ],
+    "serialised": ""
+   }
+  },
+  {
+   "id": "yatao-c-ashakiran-17-octaveless",
+   "group": "octaveless",
+   "text": "Notes : C - F, G, A, B, C, D, E, G Bottom Notes : D, E, F, A, B, C, D, E",
+   "want": {
+    "status": "REVIEW",
+    "codes": [
+     "COUNT_OK",
+     "DING_CUE",
+     "NO_OCTAVE"
+    ],
+    "serialised": "(C3) F3 G3 A3 B3 C4 D4 E4 G4 [D5] [E5] [F5] [A5] [B5] [C6] [D6] [E6]"
+   },
+   "got": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "BOTTOM_NO_OCTAVE",
+     "COUNT_OK",
+     "DING_CUE",
+     "NO_OCTAVE"
+    ],
+    "serialised": ""
+   }
+  },
+  {
+   "id": "yatao-d-ashakiran-15-octaveless",
+   "group": "octaveless",
+   "text": "Notes: D - G, A, B, C#, D, E, F#, A, B Bottom Notes: E, F#, G, C#, D",
+   "want": {
+    "status": "REVIEW",
+    "codes": [
+     "COUNT_OK",
+     "DING_CUE",
+     "NO_OCTAVE"
+    ],
+    "serialised": "(D3) G3 A3 B3 C#4 D4 E4 F#4 A4 B4 [E5] [F#5] [G5] [C#6] [D6]"
+   },
+   "got": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "BOTTOM_NO_OCTAVE",
+     "COUNT_OK",
+     "DING_CUE",
+     "NO_OCTAVE"
+    ],
+    "serialised": ""
+   }
+  },
+  {
+   "id": "synthetic-pasted-provisional",
+   "group": "parens",
+   "text": "Notes: (D) E F G Bb",
+   "want": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "NO_OCTAVE",
+     "UNDECLARED_PARENS"
+    ],
+    "serialised": ""
+   },
+   "got": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "DING_CUE",
+     "NO_OCTAVE",
+     "PROVISIONAL_REFUSED"
+    ],
+    "serialised": ""
+   }
+  },
+  {
+   "id": "synthetic-mixed-bottom-below",
+   "group": "refused",
+   "text": "Ding: D3 Top: A3 C4 Bottom: C3 F",
+   "want": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "NO_OCTAVE",
+     "PROVISIONAL_REFUSED"
+    ],
+    "serialised": ""
+   },
+   "got": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "BOTTOM_NO_OCTAVE",
+     "NO_OCTAVE",
+     "PROVISIONAL_REFUSED"
+    ],
+    "serialised": ""
+   }
+  }
+ ]
+}

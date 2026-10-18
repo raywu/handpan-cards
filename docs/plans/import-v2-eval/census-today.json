@@ -1,0 +1,2403 @@
+{
+ "engine": "087a4a8",
+ "totals": {
+  "paste": {
+   "exact": 12,
+   "wrong-but-valid": 2,
+   "blocked": 2,
+   "correct-insufficient": 5,
+   "correct-block": 3,
+   "insufficient": 16
+  },
+  "window": {
+   "exact": 5,
+   "blocked": 9,
+   "wrong-but-valid": 1,
+   "correct-insufficient": 5,
+   "correct-block": 4,
+   "insufficient": 16
+  },
+  "selectall": {
+   "exact": 4,
+   "blocked": 10,
+   "wrong-but-valid": 1,
+   "correct-insufficient": 5,
+   "correct-block": 4,
+   "insufficient": 16
+  },
+  "link": {
+   "422": 5,
+   "exact": 5,
+   "blocked": 9,
+   "wrong-but-valid": 1,
+   "correct-block": 4,
+   "insufficient": 16
+  },
+  "selectall20k": {
+   "exact": 4,
+   "blocked": 10,
+   "wrong-but-valid": 1,
+   "correct-insufficient": 5,
+   "correct-block": 4,
+   "insufficient": 16
+  },
+  "link20k": {
+   "422": 5,
+   "exact": 5,
+   "blocked": 9,
+   "wrong-but-valid": 1,
+   "correct-block": 4,
+   "insufficient": 16
+  }
+ },
+ "rows": [
+  {
+   "id": "yatao-mag-d-kurd-17",
+   "want": "REVIEW",
+   "paste": {
+    "outcome": "exact",
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "[Bb2] [C3] (D3) [E3] [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5 [E5]"
+   },
+   "window": {
+    "outcome": "exact",
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "[Bb2] [C3] (D3) [E3] [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5 [E5]"
+   },
+   "selectall": {
+    "outcome": "exact",
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "[Bb2] [C3] (D3) [E3] [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5 [E5]"
+   },
+   "link": {
+    "outcome": "exact",
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "[Bb2] [C3] (D3) [E3] [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5 [E5]",
+    "pass": "strict"
+   },
+   "selectall20k": {
+    "outcome": "exact",
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "[Bb2] [C3] (D3) [E3] [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5 [E5]"
+   },
+   "link20k": {
+    "outcome": "exact",
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "[Bb2] [C3] (D3) [E3] [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5 [E5]",
+    "pass": "strict"
+   }
+  },
+  {
+   "id": "yatao-yataopan-d-kurd-17",
+   "want": "REVIEW",
+   "paste": {
+    "outcome": "exact",
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "[Bb2] [C3] (D3) [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5 E5 F5"
+   },
+   "window": {
+    "outcome": "exact",
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "[Bb2] [C3] (D3) [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5 E5 F5"
+   },
+   "selectall": {
+    "outcome": "exact",
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "[Bb2] [C3] (D3) [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5 E5 F5"
+   },
+   "link": {
+    "outcome": "exact",
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "[Bb2] [C3] (D3) [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5 E5 F5",
+    "pass": "strict"
+   },
+   "selectall20k": {
+    "outcome": "exact",
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "[Bb2] [C3] (D3) [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5 E5 F5"
+   },
+   "link20k": {
+    "outcome": "exact",
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "[Bb2] [C3] (D3) [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5 E5 F5",
+    "pass": "strict"
+   }
+  },
+  {
+   "id": "yatao-mudra-g2-minor-17",
+   "want": "REVIEW",
+   "paste": {
+    "outcome": "exact",
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "(G2) [D3] [Eb3] G3 A3 Bb3 C4 D4 Eb4 F4 G4 [A4] [C5] [D5] [Eb5] [F5] [G5]"
+   },
+   "window": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": ""
+   },
+   "selectall": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": ""
+   },
+   "link": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "",
+    "pass": "strict"
+   },
+   "selectall20k": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": ""
+   },
+   "link20k": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "",
+    "pass": "strict"
+   }
+  },
+  {
+   "id": "yatao-mag-fs2-minor-16",
+   "want": "REVIEW",
+   "paste": {
+    "outcome": "exact",
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "(F#2) [C#3] [D3] [E3] F#3 G#3 A3 B3 C#4 D4 E4 F#4 [G#4] [A4] [B4] [C#5]"
+   },
+   "window": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": ""
+   },
+   "selectall": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": ""
+   },
+   "link": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "",
+    "pass": "strict"
+   },
+   "selectall20k": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": ""
+   },
+   "link20k": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "",
+    "pass": "strict"
+   }
+  },
+  {
+   "id": "yatao-c-ashakiran-15",
+   "want": "NEEDS_INPUT",
+   "paste": {
+    "outcome": "wrong-but-valid",
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "NO_OCTAVE",
+     "COUNT_OK"
+    ],
+    "line": "(C3) F3 G3 A3 B3 C4 D4 E4 G4 [D5] [E5] [F5] [A5] [B5] [C6]"
+   },
+   "window": {
+    "outcome": "wrong-but-valid",
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "NO_OCTAVE",
+     "COUNT_OK"
+    ],
+    "line": "(C3) F3 G3 A3 B3 C4 D4 E4 G4 [D5] [E5] [F5] [A5] [B5] [C6]"
+   },
+   "selectall": {
+    "outcome": "wrong-but-valid",
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "NO_OCTAVE",
+     "COUNT_OK"
+    ],
+    "line": "(C3) F3 G3 A3 B3 C4 D4 E4 G4 [D5] [E5] [F5] [A5] [B5] [C6]"
+   },
+   "link": {
+    "outcome": "wrong-but-valid",
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "NO_OCTAVE",
+     "COUNT_OK"
+    ],
+    "line": "(C3) F3 G3 A3 B3 C4 D4 E4 G4 [D5] [E5] [F5] [A5] [B5] [C6]",
+    "pass": "label"
+   },
+   "selectall20k": {
+    "outcome": "wrong-but-valid",
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "NO_OCTAVE",
+     "COUNT_OK"
+    ],
+    "line": "(C3) F3 G3 A3 B3 C4 D4 E4 G4 [D5] [E5] [F5] [A5] [B5] [C6]"
+   },
+   "link20k": {
+    "outcome": "wrong-but-valid",
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "NO_OCTAVE",
+     "COUNT_OK"
+    ],
+    "line": "(C3) F3 G3 A3 B3 C4 D4 E4 G4 [D5] [E5] [F5] [A5] [B5] [C6]",
+    "pass": "label"
+   }
+  },
+  {
+   "id": "yatao-ayasa-d-kurd-12",
+   "want": "REVIEW",
+   "paste": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "UNDECLARED_PARENS",
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": ""
+   },
+   "window": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "UNDECLARED_PARENS",
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": ""
+   },
+   "selectall": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "UNDECLARED_PARENS",
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": ""
+   },
+   "link": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "UNDECLARED_PARENS",
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "",
+    "pass": "strict"
+   },
+   "selectall20k": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "UNDECLARED_PARENS",
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": ""
+   },
+   "link20k": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "UNDECLARED_PARENS",
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "",
+    "pass": "strict"
+   }
+  },
+  {
+   "id": "yatao-d-aegean-18",
+   "want": "REVIEW",
+   "paste": {
+    "outcome": "exact",
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "[B2] (D3) [E3] F#3 [G#3] A3 [B3] C#4 D4 [E4] F#4 G#4 A4 [B4] C#5 D5 [E5] F#5"
+   },
+   "window": {
+    "outcome": "exact",
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "[B2] (D3) [E3] F#3 [G#3] A3 [B3] C#4 D4 [E4] F#4 G#4 A4 [B4] C#5 D5 [E5] F#5"
+   },
+   "selectall": {
+    "outcome": "exact",
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "[B2] (D3) [E3] F#3 [G#3] A3 [B3] C#4 D4 [E4] F#4 G#4 A4 [B4] C#5 D5 [E5] F#5"
+   },
+   "link": {
+    "outcome": "exact",
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "[B2] (D3) [E3] F#3 [G#3] A3 [B3] C#4 D4 [E4] F#4 G#4 A4 [B4] C#5 D5 [E5] F#5",
+    "pass": "strict"
+   },
+   "selectall20k": {
+    "outcome": "exact",
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "[B2] (D3) [E3] F#3 [G#3] A3 [B3] C#4 D4 [E4] F#4 G#4 A4 [B4] C#5 D5 [E5] F#5"
+   },
+   "link20k": {
+    "outcome": "exact",
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "[B2] (D3) [E3] F#3 [G#3] A3 [B3] C#4 D4 [E4] F#4 G#4 A4 [B4] C#5 D5 [E5] F#5",
+    "pass": "strict"
+   }
+  },
+  {
+   "id": "ayasa-d-kurd-13",
+   "want": "INSUFFICIENT",
+   "paste": {
+    "outcome": "correct-insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "window": {
+    "outcome": "correct-insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "selectall": {
+    "outcome": "correct-insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "link": {
+    "outcome": "422"
+   },
+   "selectall20k": {
+    "outcome": "correct-insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "link20k": {
+    "outcome": "422"
+   }
+  },
+  {
+   "id": "sanango-page-multi",
+   "want": "NEEDS_INPUT",
+   "paste": {
+    "outcome": "correct-block",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "CONFLICTING_DING",
+     "DUPLICATE_PITCH",
+     "NO_OCTAVE"
+    ],
+    "line": ""
+   },
+   "window": {
+    "outcome": "correct-block",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "CONFLICTING_DING",
+     "AMBIGUOUS_NOTE",
+     "SOURCE_NOT_ASCENDING",
+     "DUPLICATE_PITCH",
+     "NO_OCTAVE"
+    ],
+    "line": ""
+   },
+   "selectall": {
+    "outcome": "correct-block",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "CONFLICTING_DING",
+     "AMBIGUOUS_NOTE",
+     "SOURCE_NOT_ASCENDING",
+     "DUPLICATE_PITCH",
+     "NO_OCTAVE"
+    ],
+    "line": ""
+   },
+   "link": {
+    "outcome": "correct-block",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "CONFLICTING_DING",
+     "AMBIGUOUS_NOTE",
+     "SOURCE_NOT_ASCENDING",
+     "DUPLICATE_PITCH",
+     "NO_OCTAVE"
+    ],
+    "line": "",
+    "pass": "strict"
+   },
+   "selectall20k": {
+    "outcome": "correct-block",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "CONFLICTING_DING",
+     "AMBIGUOUS_NOTE",
+     "SOURCE_NOT_ASCENDING",
+     "DUPLICATE_PITCH",
+     "NO_OCTAVE"
+    ],
+    "line": ""
+   },
+   "link20k": {
+    "outcome": "correct-block",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "CONFLICTING_DING",
+     "AMBIGUOUS_NOTE",
+     "SOURCE_NOT_ASCENDING",
+     "DUPLICATE_PITCH",
+     "NO_OCTAVE"
+    ],
+    "line": "",
+    "pass": "strict"
+   }
+  },
+  {
+   "id": "sanango-e-amara-16",
+   "want": "REVIEW",
+   "paste": {
+    "outcome": "exact",
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "[C3] [D3] (E3) [G3] [A3] B3 [C4] D4 E4 F#4 G4 A4 B4 D5 E5 F#5"
+   },
+   "window": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "CONFLICTING_DING",
+     "AMBIGUOUS_NOTE",
+     "COUNT_MISMATCH",
+     "SOURCE_NOT_ASCENDING",
+     "DUPLICATE_PITCH",
+     "NO_OCTAVE"
+    ],
+    "line": ""
+   },
+   "selectall": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "CONFLICTING_DING",
+     "AMBIGUOUS_NOTE",
+     "COUNT_MISMATCH",
+     "SOURCE_NOT_ASCENDING",
+     "DUPLICATE_PITCH",
+     "NO_OCTAVE"
+    ],
+    "line": ""
+   },
+   "link": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "CONFLICTING_DING",
+     "AMBIGUOUS_NOTE",
+     "COUNT_MISMATCH",
+     "SOURCE_NOT_ASCENDING",
+     "DUPLICATE_PITCH",
+     "NO_OCTAVE"
+    ],
+    "line": "",
+    "pass": "strict"
+   },
+   "selectall20k": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "CONFLICTING_DING",
+     "AMBIGUOUS_NOTE",
+     "COUNT_MISMATCH",
+     "SOURCE_NOT_ASCENDING",
+     "DUPLICATE_PITCH",
+     "NO_OCTAVE"
+    ],
+    "line": ""
+   },
+   "link20k": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "CONFLICTING_DING",
+     "AMBIGUOUS_NOTE",
+     "COUNT_MISMATCH",
+     "SOURCE_NOT_ASCENDING",
+     "DUPLICATE_PITCH",
+     "NO_OCTAVE"
+    ],
+    "line": "",
+    "pass": "strict"
+   }
+  },
+  {
+   "id": "sanango-d-kurd-15",
+   "want": "REVIEW",
+   "paste": {
+    "outcome": "exact",
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "SOURCE_NOT_ASCENDING",
+     "COUNT_OK"
+    ],
+    "line": "[C3] (D3) [E3] [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5"
+   },
+   "window": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "CONFLICTING_DING",
+     "AMBIGUOUS_NOTE",
+     "COUNT_MISMATCH",
+     "SOURCE_NOT_ASCENDING",
+     "DUPLICATE_PITCH",
+     "NO_OCTAVE"
+    ],
+    "line": ""
+   },
+   "selectall": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "CONFLICTING_DING",
+     "AMBIGUOUS_NOTE",
+     "COUNT_MISMATCH",
+     "SOURCE_NOT_ASCENDING",
+     "DUPLICATE_PITCH",
+     "NO_OCTAVE"
+    ],
+    "line": ""
+   },
+   "link": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "CONFLICTING_DING",
+     "AMBIGUOUS_NOTE",
+     "COUNT_MISMATCH",
+     "SOURCE_NOT_ASCENDING",
+     "DUPLICATE_PITCH",
+     "NO_OCTAVE"
+    ],
+    "line": "",
+    "pass": "strict"
+   },
+   "selectall20k": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "CONFLICTING_DING",
+     "AMBIGUOUS_NOTE",
+     "COUNT_MISMATCH",
+     "SOURCE_NOT_ASCENDING",
+     "DUPLICATE_PITCH",
+     "NO_OCTAVE"
+    ],
+    "line": ""
+   },
+   "link20k": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "CONFLICTING_DING",
+     "AMBIGUOUS_NOTE",
+     "COUNT_MISMATCH",
+     "SOURCE_NOT_ASCENDING",
+     "DUPLICATE_PITCH",
+     "NO_OCTAVE"
+    ],
+    "line": "",
+    "pass": "strict"
+   }
+  },
+  {
+   "id": "sela-sehp202-d-amara-11-1",
+   "want": "NEEDS_INPUT",
+   "paste": {
+    "outcome": "correct-block",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "UNDECLARED_PARENS",
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": ""
+   },
+   "window": {
+    "outcome": "correct-block",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "UNDECLARED_PARENS",
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": ""
+   },
+   "selectall": {
+    "outcome": "correct-block",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "UNDECLARED_PARENS",
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": ""
+   },
+   "link": {
+    "outcome": "correct-block",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "UNDECLARED_PARENS",
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "",
+    "pass": "strict"
+   },
+   "selectall20k": {
+    "outcome": "correct-block",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "UNDECLARED_PARENS",
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": ""
+   },
+   "link20k": {
+    "outcome": "correct-block",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "UNDECLARED_PARENS",
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "",
+    "pass": "strict"
+   }
+  },
+  {
+   "id": "ss-leaf-c-minor-14",
+   "want": "REVIEW",
+   "paste": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "window": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "selectall": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "link": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "pass": "label"
+   },
+   "selectall20k": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "link20k": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "pass": "label"
+   }
+  },
+  {
+   "id": "ss-sew-f3-low-pygmy-11",
+   "want": "REVIEW",
+   "paste": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "window": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "selectall": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "link": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "pass": "strict"
+   },
+   "selectall20k": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "link20k": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "pass": "strict"
+   }
+  },
+  {
+   "id": "ss-satya-eb-la-sirena-16",
+   "want": "REVIEW",
+   "paste": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "window": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "selectall": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "link": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "pass": "strict"
+   },
+   "selectall20k": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "link20k": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "pass": "strict"
+   }
+  },
+  {
+   "id": "ss-pantheon-halo-equinox-12",
+   "want": "REVIEW",
+   "paste": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "window": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "selectall": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "link": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "pass": "label"
+   },
+   "selectall20k": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "link20k": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "pass": "label"
+   }
+  },
+  {
+   "id": "idm-celtic-mineur-9",
+   "want": "INSUFFICIENT",
+   "paste": {
+    "outcome": "correct-insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "window": {
+    "outcome": "correct-insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "selectall": {
+    "outcome": "correct-insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "link": {
+    "outcome": "422"
+   },
+   "selectall20k": {
+    "outcome": "correct-insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "link20k": {
+    "outcome": "422"
+   }
+  },
+  {
+   "id": "idm-hijaz-9",
+   "want": "INSUFFICIENT",
+   "paste": {
+    "outcome": "correct-insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "window": {
+    "outcome": "correct-insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "selectall": {
+    "outcome": "correct-insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "link": {
+    "outcome": "422"
+   },
+   "selectall20k": {
+    "outcome": "correct-insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "link20k": {
+    "outcome": "422"
+   }
+  },
+  {
+   "id": "thomann-sonority-d-kurd-10",
+   "want": "REVIEW",
+   "paste": {
+    "outcome": "exact",
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE"
+    ],
+    "line": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5"
+   },
+   "window": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "DING_CUE"
+    ],
+    "line": ""
+   },
+   "selectall": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "DING_CUE"
+    ],
+    "line": ""
+   },
+   "link": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "DING_CUE"
+    ],
+    "line": "",
+    "pass": "strict"
+   },
+   "selectall20k": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "DING_CUE"
+    ],
+    "line": ""
+   },
+   "link20k": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "DING_CUE"
+    ],
+    "line": "",
+    "pass": "strict"
+   }
+  },
+  {
+   "id": "engadine-mano-9-prose",
+   "want": "REVIEW",
+   "paste": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "window": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "selectall": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "link": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "pass": "strict"
+   },
+   "selectall20k": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "link20k": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "pass": "strict"
+   }
+  },
+  {
+   "id": "boullard-listing-multi",
+   "want": "NEEDS_INPUT",
+   "paste": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "window": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "selectall": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "link": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "pass": "strict"
+   },
+   "selectall20k": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "link20k": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "pass": "strict"
+   }
+  },
+  {
+   "id": "amazon-asteman-d-minor-10",
+   "want": "REVIEW",
+   "paste": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "window": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "selectall": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "link": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "pass": "strict"
+   },
+   "selectall20k": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "link20k": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "pass": "strict"
+   }
+  },
+  {
+   "id": "amazon-kalopho-d-kurd-9",
+   "want": "REVIEW",
+   "paste": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "window": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "selectall": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "link": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "pass": "strict"
+   },
+   "selectall20k": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "link20k": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "pass": "strict"
+   }
+  },
+  {
+   "id": "amazon-lomuty-d-kurd-10",
+   "want": "INSUFFICIENT",
+   "paste": {
+    "outcome": "correct-insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "window": {
+    "outcome": "correct-insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "selectall": {
+    "outcome": "correct-insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "link": {
+    "outcome": "422"
+   },
+   "selectall20k": {
+    "outcome": "correct-insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "link20k": {
+    "outcome": "422"
+   }
+  },
+  {
+   "id": "yatao-e2-pygmy-17",
+   "want": "REVIEW",
+   "paste": {
+    "outcome": "exact",
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "(E2) [B2] [D3] E3 F#3 G3 [A3] B3 [C4] D4 E4 F#4 G4 [B4] [C5] [D5] [E5]"
+   },
+   "window": {
+    "outcome": "exact",
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "(E2) [B2] [D3] E3 F#3 G3 [A3] B3 [C4] D4 E4 F#4 G4 [B4] [C5] [D5] [E5]"
+   },
+   "selectall": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": ""
+   },
+   "link": {
+    "outcome": "exact",
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "(E2) [B2] [D3] E3 F#3 G3 [A3] B3 [C4] D4 E4 F#4 G4 [B4] [C5] [D5] [E5]",
+    "pass": "strict"
+   },
+   "selectall20k": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": ""
+   },
+   "link20k": {
+    "outcome": "exact",
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "(E2) [B2] [D3] E3 F#3 G3 [A3] B3 [C4] D4 E4 F#4 G4 [B4] [C5] [D5] [E5]",
+    "pass": "strict"
+   }
+  },
+  {
+   "id": "yatao-a2-amara-9",
+   "want": "REVIEW",
+   "paste": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "window": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "selectall": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "link": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "pass": "strict"
+   },
+   "selectall20k": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "link20k": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "pass": "strict"
+   }
+  },
+  {
+   "id": "yatao-fs-low-pygmy-19",
+   "want": "REVIEW",
+   "paste": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "window": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "selectall": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "link": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "pass": "strict"
+   },
+   "selectall20k": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "link20k": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "pass": "strict"
+   }
+  },
+  {
+   "id": "thomann-sela-sehp203-d-kurd-9-3-en",
+   "want": "REVIEW",
+   "paste": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "UNDECLARED_PARENS",
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": ""
+   },
+   "window": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "UNDECLARED_PARENS",
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": ""
+   },
+   "selectall": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "UNDECLARED_PARENS",
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": ""
+   },
+   "link": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "UNDECLARED_PARENS",
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "",
+    "pass": "strict"
+   },
+   "selectall20k": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "UNDECLARED_PARENS",
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": ""
+   },
+   "link20k": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "UNDECLARED_PARENS",
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "",
+    "pass": "strict"
+   }
+  },
+  {
+   "id": "thomann-sela-sehp203-d-kurd-9-3-fr",
+   "want": "REVIEW",
+   "paste": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "window": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "selectall": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "link": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "pass": "strict"
+   },
+   "selectall20k": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "link20k": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "pass": "strict"
+   }
+  },
+  {
+   "id": "thomann-sela-sehp203-d-kurd-9-3-it",
+   "want": "REVIEW",
+   "paste": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "window": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "selectall": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "link": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "pass": "strict"
+   },
+   "selectall20k": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "link20k": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "pass": "strict"
+   }
+  },
+  {
+   "id": "thomann-startone-d-kurd-octaveless",
+   "want": "REVIEW",
+   "paste": {
+    "outcome": "exact",
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "NO_OCTAVE"
+    ],
+    "line": "(D3) A3 B3 C4 D4 E4 F4 G4 A4"
+   },
+   "window": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "NO_OCTAVE"
+    ],
+    "line": ""
+   },
+   "selectall": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "NO_OCTAVE"
+    ],
+    "line": ""
+   },
+   "link": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "NO_OCTAVE"
+    ],
+    "line": "",
+    "pass": "label"
+   },
+   "selectall20k": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "NO_OCTAVE"
+    ],
+    "line": ""
+   },
+   "link20k": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "NO_OCTAVE"
+    ],
+    "line": "",
+    "pass": "label"
+   }
+  },
+  {
+   "id": "thomann-startone-d-celtic-octaveless",
+   "want": "REVIEW",
+   "paste": {
+    "outcome": "exact",
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "NO_OCTAVE"
+    ],
+    "line": "(D3) A3 C4 D4 E4 F4 G4 A4 C5"
+   },
+   "window": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "NO_OCTAVE"
+    ],
+    "line": ""
+   },
+   "selectall": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "NO_OCTAVE"
+    ],
+    "line": ""
+   },
+   "link": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "NO_OCTAVE"
+    ],
+    "line": "",
+    "pass": "label"
+   },
+   "selectall20k": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "NO_OCTAVE"
+    ],
+    "line": ""
+   },
+   "link20k": {
+    "outcome": "blocked",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "NO_OCTAVE"
+    ],
+    "line": "",
+    "pass": "label"
+   }
+  },
+  {
+   "id": "sunreed-zen-d-minor-9",
+   "want": "REVIEW",
+   "paste": {
+    "outcome": "exact",
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "(D3) A3 A#3 C4 D4 E4 F4 G4 A4"
+   },
+   "window": {
+    "outcome": "exact",
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "(D3) A3 A#3 C4 D4 E4 F4 G4 A4"
+   },
+   "selectall": {
+    "outcome": "exact",
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "(D3) A3 A#3 C4 D4 E4 F4 G4 A4"
+   },
+   "link": {
+    "outcome": "exact",
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "(D3) A3 A#3 C4 D4 E4 F4 G4 A4",
+    "pass": "strict"
+   },
+   "selectall20k": {
+    "outcome": "exact",
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "(D3) A3 A#3 C4 D4 E4 F4 G4 A4"
+   },
+   "link20k": {
+    "outcome": "exact",
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "(D3) A3 A#3 C4 D4 E4 F4 G4 A4",
+    "pass": "strict"
+   }
+  },
+  {
+   "id": "amazon-alienpan-d-kurd-10",
+   "want": "REVIEW",
+   "paste": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "window": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "selectall": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "link": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "pass": "strict"
+   },
+   "selectall20k": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "link20k": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "pass": "strict"
+   }
+  },
+  {
+   "id": "amazon-gladfresit-d-minor-9",
+   "want": "REVIEW",
+   "paste": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "window": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "selectall": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "link": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "pass": "strict"
+   },
+   "selectall20k": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "link20k": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "pass": "strict"
+   }
+  },
+  {
+   "id": "boullard-battiloro-celtic-contradictory",
+   "want": "NEEDS_INPUT",
+   "paste": {
+    "outcome": "wrong-but-valid",
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "NO_OCTAVE"
+    ],
+    "line": "(D3) A3 C4 D4 E4 F4 G4 A4 C5 D5"
+   },
+   "window": {
+    "outcome": "correct-block",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "NO_OCTAVE"
+    ],
+    "line": ""
+   },
+   "selectall": {
+    "outcome": "correct-block",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "NO_OCTAVE"
+    ],
+    "line": ""
+   },
+   "link": {
+    "outcome": "correct-block",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "NO_OCTAVE"
+    ],
+    "line": "",
+    "pass": "label"
+   },
+   "selectall20k": {
+    "outcome": "correct-block",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "NO_OCTAVE"
+    ],
+    "line": ""
+   },
+   "link20k": {
+    "outcome": "correct-block",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "NO_OCTAVE"
+    ],
+    "line": "",
+    "pass": "label"
+   }
+  },
+  {
+   "id": "boullard-zaora-d-ashakiran-16",
+   "want": "NEEDS_INPUT",
+   "paste": {
+    "outcome": "correct-block",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "UNDECLARED_PARENS",
+     "DING_CUE",
+     "NO_OCTAVE",
+     "COUNT_OK"
+    ],
+    "line": ""
+   },
+   "window": {
+    "outcome": "correct-block",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "UNDECLARED_PARENS",
+     "AMBIGUOUS_NOTE",
+     "COUNT_MISMATCH",
+     "DING_CUE",
+     "NO_OCTAVE"
+    ],
+    "line": ""
+   },
+   "selectall": {
+    "outcome": "correct-block",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "UNDECLARED_PARENS",
+     "AMBIGUOUS_NOTE",
+     "COUNT_MISMATCH",
+     "DING_CUE",
+     "NO_OCTAVE"
+    ],
+    "line": ""
+   },
+   "link": {
+    "outcome": "correct-block",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "UNDECLARED_PARENS",
+     "AMBIGUOUS_NOTE",
+     "COUNT_MISMATCH",
+     "DING_CUE",
+     "NO_OCTAVE"
+    ],
+    "line": "",
+    "pass": "label"
+   },
+   "selectall20k": {
+    "outcome": "correct-block",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "UNDECLARED_PARENS",
+     "AMBIGUOUS_NOTE",
+     "COUNT_MISMATCH",
+     "DING_CUE",
+     "NO_OCTAVE"
+    ],
+    "line": ""
+   },
+   "link20k": {
+    "outcome": "correct-block",
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "UNDECLARED_PARENS",
+     "AMBIGUOUS_NOTE",
+     "COUNT_MISMATCH",
+     "DING_CUE",
+     "NO_OCTAVE"
+    ],
+    "line": "",
+    "pass": "label"
+   }
+  },
+  {
+   "id": "mag-blog-d-kurd",
+   "want": "REVIEW",
+   "paste": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "window": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "selectall": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "link": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "pass": "strict"
+   },
+   "selectall20k": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "link20k": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "pass": "strict"
+   }
+  },
+  {
+   "id": "blog-pantheon-halo-xxd",
+   "want": "REVIEW",
+   "paste": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "window": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "selectall": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "link": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "pass": "label"
+   },
+   "selectall20k": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "link20k": {
+    "outcome": "insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "pass": "label"
+   }
+  },
+  {
+   "id": "snd-f-aeolian-10-name-only",
+   "want": "INSUFFICIENT",
+   "paste": {
+    "outcome": "correct-insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "window": {
+    "outcome": "correct-insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "selectall": {
+    "outcome": "correct-insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "link": {
+    "outcome": "422"
+   },
+   "selectall20k": {
+    "outcome": "correct-insufficient",
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": ""
+   },
+   "link20k": {
+    "outcome": "422"
+   }
+  }
+ ]
+}

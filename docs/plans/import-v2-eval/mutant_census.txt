@@ -1,0 +1,39 @@
+i_count_excl_ding_off_by_one.patch | killed
+i_descending_check_inverted.patch | killed
+i_ding_cue_not_raised.patch | killed
+i_displaced_ding_dropped.patch | stale (does not apply)
+i_duplicate_needs_three.patch | killed
+i_guess_on_every_inferred_note.patch | killed
+i_inner_bar_dropped.patch | baseline red (rc 1): no kill
+i_inner_before_tops.patch | killed
+i_later_note_and_breaks_run.patch | killed
+i_later_note_any_reference_letter.patch | stale (does not apply)
+i_later_note_bullet_joiner.patch | killed
+i_later_note_glued_ignored.patch | killed
+i_later_note_key_bullet_resets.patch | killed
+i_later_note_key_exempts_every_label.patch | killed
+i_later_note_key_letters_count.patch | stale (does not apply)
+i_later_note_key_never_ends.patch | killed
+i_later_note_lone_letter.patch | killed
+i_later_note_reference_pitch.patch | stale (does not apply)
+i_later_note_reference_without_value.patch | stale (does not apply)
+i_later_note_stops_at_key.patch | stale (does not apply)
+i_paren_notes_become_tops.patch | stale (does not apply)
+i_pdfcards_bottom_ring_colour.patch | killed
+i_provisional_bottoms_unbracketed.patch | killed
+i_refusal_keeps_ok.patch | stale (does not apply)
+ib_block_does_not_disable_use.patch | killed
+ib_bottom_guess_unmarked.patch | killed
+ib_confirm_needs_no_tick.patch | killed
+ib_import_controls_not_tab_stops.patch | killed
+ib_import_row_not_hidden_e2e.patch | skipped (e2e)
+ib_import_row_not_hidden.patch | killed
+ib_inferred_octave_unmarked.patch | killed
+ib_insufficient_shows_review.patch | killed
+ib_insufficient_writes_box.patch | killed
+ib_pick_keeps_inference.patch | killed
+ib_pick_keeps_octave_tick.patch | baseline red (rc 1): no kill
+ib_picker_needs_ding_cue.patch | killed
+ib_scale_import_untracked.patch | killed
+ib_use_fires_no_input.patch | killed
+ib_use_writes_nothing.patch | killed

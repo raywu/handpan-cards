@@ -2,28 +2,27 @@
  "engineBase": "087a4a8",
  "modes": {
   "link": {
-   "422": 13,
+   "422": 14,
    "exact": 7,
-   "blocked": 3,
+   "blocked": 5,
    "correct-block": 3,
-   "blocked-scan": 2,
-   "insufficient": 12
+   "insufficient": 11
   },
   "window1200scan": {
    "exact": 9,
-   "blocked": 3,
+   "blocked": 5,
    "correct-block": 6,
    "correct-insufficient": 5,
-   "blocked-scan": 3,
-   "insufficient": 14
+   "insufficient": 14,
+   "blocked-scan": 1
   },
   "selectall": {
-   "blocked": 9,
+   "blocked": 11,
    "correct-block": 6,
    "correct-insufficient": 5,
-   "blocked-scan": 3,
    "insufficient": 14,
-   "exact": 3
+   "exact": 3,
+   "blocked-scan": 1
   }
  },
  "cases": [
@@ -93,16 +92,16 @@
   {
    "id": "sanango-e-amara-16",
    "want": "REVIEW",
-   "link": "blocked-scan",
-   "window1200scan": "blocked-scan",
-   "selectall": "blocked-scan"
+   "link": "blocked",
+   "window1200scan": "blocked",
+   "selectall": "blocked"
   },
   {
    "id": "sanango-d-kurd-15",
    "want": "REVIEW",
-   "link": "blocked-scan",
-   "window1200scan": "blocked-scan",
-   "selectall": "blocked-scan"
+   "link": "blocked",
+   "window1200scan": "blocked",
+   "selectall": "blocked"
   },
   {
    "id": "sela-sehp202-d-amara-11-1",
@@ -289,7 +288,7 @@
   {
    "id": "mag-blog-d-kurd",
    "want": "REVIEW",
-   "link": "insufficient",
+   "link": "422",
    "window1200scan": "insufficient",
    "selectall": "insufficient"
   },
