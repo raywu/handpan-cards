@@ -294,7 +294,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       var rr = new RegExp(RUN.source, "g");
       var rm;
       while ((rm = rr.exec(whole))) {
-        if (rm.index + rm[0].length <= w.start || rm.index >= w.end) outside += 1;
+        if (rm.index < w.start || rm.index + rm[0].length > w.end) outside += 1;
       }
       if (outside) flag("CONFLICTING_LIST", { runs: outside });
       base = w.start;
