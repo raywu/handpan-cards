@@ -1,0 +1,892 @@
+{
+ "ranAt": "2026-10-18T00:16:32.952Z",
+ "totals": {
+  "paste": {
+   "exact": 12,
+   "wrong-but-valid": 2,
+   "blocked": 2,
+   "correct-insufficient": 5,
+   "correct-block": 3,
+   "insufficient": 16
+  },
+  "page": {
+   "exact": 5,
+   "blocked": 9,
+   "wrong-but-valid": 1,
+   "correct-insufficient": 5,
+   "correct-block": 4,
+   "insufficient": 16
+  }
+ },
+ "rows": [
+  {
+   "id": "yatao-mag-d-kurd-17",
+   "category": "structured",
+   "paste": {
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "[Bb2] [C3] (D3) [E3] [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5 [E5]",
+    "outcome": "exact"
+   },
+   "page": {
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "[Bb2] [C3] (D3) [E3] [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5 [E5]",
+    "outcome": "exact"
+   }
+  },
+  {
+   "id": "yatao-yataopan-d-kurd-17",
+   "category": "structured",
+   "paste": {
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "[Bb2] [C3] (D3) [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5 E5 F5",
+    "outcome": "exact"
+   },
+   "page": {
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "[Bb2] [C3] (D3) [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5 E5 F5",
+    "outcome": "exact"
+   }
+  },
+  {
+   "id": "yatao-mudra-g2-minor-17",
+   "category": "structured",
+   "paste": {
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "(G2) [D3] [Eb3] G3 A3 Bb3 C4 D4 Eb4 F4 G4 [A4] [C5] [D5] [Eb5] [F5] [G5]",
+    "outcome": "exact"
+   },
+   "page": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "",
+    "outcome": "blocked"
+   }
+  },
+  {
+   "id": "yatao-mag-fs2-minor-16",
+   "category": "structured",
+   "paste": {
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "(F#2) [C#3] [D3] [E3] F#3 G#3 A3 B3 C#4 D4 E4 F#4 [G#4] [A4] [B4] [C#5]",
+    "outcome": "exact"
+   },
+   "page": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "",
+    "outcome": "blocked"
+   }
+  },
+  {
+   "id": "yatao-c-ashakiran-15",
+   "category": "octaveless",
+   "paste": {
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "NO_OCTAVE",
+     "COUNT_OK"
+    ],
+    "line": "(C3) F3 G3 A3 B3 C4 D4 E4 G4 [D5] [E5] [F5] [A5] [B5] [C6]",
+    "outcome": "wrong-but-valid"
+   },
+   "page": {
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "NO_OCTAVE",
+     "COUNT_OK"
+    ],
+    "line": "(C3) F3 G3 A3 B3 C4 D4 E4 G4 [D5] [E5] [F5] [A5] [B5] [C6]",
+    "outcome": "wrong-but-valid"
+   }
+  },
+  {
+   "id": "yatao-ayasa-d-kurd-12",
+   "category": "structured",
+   "paste": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "UNDECLARED_PARENS",
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "",
+    "outcome": "blocked"
+   },
+   "page": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "UNDECLARED_PARENS",
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "",
+    "outcome": "blocked"
+   }
+  },
+  {
+   "id": "yatao-d-aegean-18",
+   "category": "structured",
+   "paste": {
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "[B2] (D3) [E3] F#3 [G#3] A3 [B3] C#4 D4 [E4] F#4 G#4 A4 [B4] C#5 D5 [E5] F#5",
+    "outcome": "exact"
+   },
+   "page": {
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "[B2] (D3) [E3] F#3 [G#3] A3 [B3] C#4 D4 [E4] F#4 G#4 A4 [B4] C#5 D5 [E5] F#5",
+    "outcome": "exact"
+   }
+  },
+  {
+   "id": "ayasa-d-kurd-13",
+   "category": "name-only",
+   "paste": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "correct-insufficient"
+   },
+   "page": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "correct-insufficient"
+   }
+  },
+  {
+   "id": "sanango-page-multi",
+   "category": "multi-model",
+   "paste": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "CONFLICTING_DING",
+     "DUPLICATE_PITCH"
+    ],
+    "line": "",
+    "outcome": "correct-block"
+   },
+   "page": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "CONFLICTING_DING",
+     "AMBIGUOUS_NOTE",
+     "SOURCE_NOT_ASCENDING",
+     "DUPLICATE_PITCH",
+     "NO_OCTAVE"
+    ],
+    "line": "",
+    "outcome": "correct-block"
+   }
+  },
+  {
+   "id": "sanango-e-amara-16",
+   "category": "structured",
+   "paste": {
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "[C3] [D3] (E3) [G3] [A3] B3 [C4] D4 E4 F#4 G4 A4 B4 D5 E5 F#5",
+    "outcome": "exact"
+   },
+   "page": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "CONFLICTING_DING",
+     "AMBIGUOUS_NOTE",
+     "COUNT_MISMATCH",
+     "SOURCE_NOT_ASCENDING",
+     "DUPLICATE_PITCH",
+     "NO_OCTAVE"
+    ],
+    "line": "",
+    "outcome": "blocked"
+   }
+  },
+  {
+   "id": "sanango-d-kurd-15",
+   "category": "structured",
+   "paste": {
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "SOURCE_NOT_ASCENDING",
+     "COUNT_OK"
+    ],
+    "line": "[C3] (D3) [E3] [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5",
+    "outcome": "exact"
+   },
+   "page": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "CONFLICTING_DING",
+     "AMBIGUOUS_NOTE",
+     "COUNT_MISMATCH",
+     "SOURCE_NOT_ASCENDING",
+     "DUPLICATE_PITCH",
+     "NO_OCTAVE"
+    ],
+    "line": "",
+    "outcome": "blocked"
+   }
+  },
+  {
+   "id": "sela-sehp202-d-amara-11-1",
+   "category": "contradictory",
+   "paste": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "UNDECLARED_PARENS",
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "",
+    "outcome": "correct-block"
+   },
+   "page": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "UNDECLARED_PARENS",
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "",
+    "outcome": "correct-block"
+   }
+  },
+  {
+   "id": "ss-leaf-c-minor-14",
+   "category": "octaveless",
+   "paste": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
+   },
+   "page": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
+   }
+  },
+  {
+   "id": "ss-sew-f3-low-pygmy-11",
+   "category": "structured",
+   "paste": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
+   },
+   "page": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
+   }
+  },
+  {
+   "id": "ss-satya-eb-la-sirena-16",
+   "category": "structured",
+   "paste": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
+   },
+   "page": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
+   }
+  },
+  {
+   "id": "ss-pantheon-halo-equinox-12",
+   "category": "octaveless",
+   "paste": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
+   },
+   "page": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
+   }
+  },
+  {
+   "id": "idm-celtic-mineur-9",
+   "category": "image-only",
+   "paste": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "correct-insufficient"
+   },
+   "page": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "correct-insufficient"
+   }
+  },
+  {
+   "id": "idm-hijaz-9",
+   "category": "image-only",
+   "paste": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "correct-insufficient"
+   },
+   "page": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "correct-insufficient"
+   }
+  },
+  {
+   "id": "thomann-sonority-d-kurd-10",
+   "category": "structured",
+   "paste": {
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE"
+    ],
+    "line": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5",
+    "outcome": "exact"
+   },
+   "page": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "DING_CUE"
+    ],
+    "line": "",
+    "outcome": "blocked"
+   }
+  },
+  {
+   "id": "engadine-mano-9-prose",
+   "category": "prose-only",
+   "paste": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
+   },
+   "page": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
+   }
+  },
+  {
+   "id": "boullard-listing-multi",
+   "category": "multi-model",
+   "paste": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
+   },
+   "page": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
+   }
+  },
+  {
+   "id": "amazon-asteman-d-minor-10",
+   "category": "prose-only",
+   "paste": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
+   },
+   "page": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
+   }
+  },
+  {
+   "id": "amazon-kalopho-d-kurd-9",
+   "category": "prose-only",
+   "paste": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
+   },
+   "page": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
+   }
+  },
+  {
+   "id": "amazon-lomuty-d-kurd-10",
+   "category": "image-only",
+   "paste": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "correct-insufficient"
+   },
+   "page": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "correct-insufficient"
+   }
+  },
+  {
+   "id": "yatao-e2-pygmy-17",
+   "category": "structured",
+   "paste": {
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "(E2) [B2] [D3] E3 F#3 G3 [A3] B3 [C4] D4 E4 F#4 G4 [B4] [C5] [D5] [E5]",
+    "outcome": "exact"
+   },
+   "page": {
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "(E2) [B2] [D3] E3 F#3 G3 [A3] B3 [C4] D4 E4 F#4 G4 [B4] [C5] [D5] [E5]",
+    "outcome": "exact"
+   }
+  },
+  {
+   "id": "yatao-a2-amara-9",
+   "category": "distractor",
+   "paste": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
+   },
+   "page": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
+   }
+  },
+  {
+   "id": "yatao-fs-low-pygmy-19",
+   "category": "structured",
+   "paste": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
+   },
+   "page": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
+   }
+  },
+  {
+   "id": "thomann-sela-sehp203-d-kurd-9-3-en",
+   "category": "structured",
+   "paste": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "UNDECLARED_PARENS",
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "",
+    "outcome": "blocked"
+   },
+   "page": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "UNDECLARED_PARENS",
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "",
+    "outcome": "blocked"
+   }
+  },
+  {
+   "id": "thomann-sela-sehp203-d-kurd-9-3-fr",
+   "category": "structured",
+   "paste": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
+   },
+   "page": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
+   }
+  },
+  {
+   "id": "thomann-sela-sehp203-d-kurd-9-3-it",
+   "category": "structured",
+   "paste": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
+   },
+   "page": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
+   }
+  },
+  {
+   "id": "thomann-startone-d-kurd-octaveless",
+   "category": "contradictory",
+   "paste": {
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "NO_OCTAVE"
+    ],
+    "line": "(D3) A3 B3 C4 D4 E4 F4 G4 A4",
+    "outcome": "exact"
+   },
+   "page": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "NO_OCTAVE"
+    ],
+    "line": "",
+    "outcome": "blocked"
+   }
+  },
+  {
+   "id": "thomann-startone-d-celtic-octaveless",
+   "category": "octaveless",
+   "paste": {
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "NO_OCTAVE"
+    ],
+    "line": "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+    "outcome": "exact"
+   },
+   "page": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "NO_OCTAVE"
+    ],
+    "line": "",
+    "outcome": "blocked"
+   }
+  },
+  {
+   "id": "sunreed-zen-d-minor-9",
+   "category": "structured",
+   "paste": {
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "(D3) A3 A#3 C4 D4 E4 F4 G4 A4",
+    "outcome": "exact"
+   },
+   "page": {
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "(D3) A3 A#3 C4 D4 E4 F4 G4 A4",
+    "outcome": "exact"
+   }
+  },
+  {
+   "id": "amazon-alienpan-d-kurd-10",
+   "category": "prose-only",
+   "paste": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
+   },
+   "page": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
+   }
+  },
+  {
+   "id": "amazon-gladfresit-d-minor-9",
+   "category": "structured",
+   "paste": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
+   },
+   "page": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
+   }
+  },
+  {
+   "id": "boullard-battiloro-celtic-contradictory",
+   "category": "contradictory",
+   "paste": {
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "NO_OCTAVE"
+    ],
+    "line": "(D3) A3 C4 D4 E4 F4 G4 A4 C5 D5",
+    "outcome": "wrong-but-valid"
+   },
+   "page": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "NO_OCTAVE"
+    ],
+    "line": "",
+    "outcome": "correct-block"
+   }
+  },
+  {
+   "id": "boullard-zaora-d-ashakiran-16",
+   "category": "octaveless",
+   "paste": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "UNDECLARED_PARENS",
+     "DING_CUE",
+     "NO_OCTAVE",
+     "COUNT_OK"
+    ],
+    "line": "",
+    "outcome": "correct-block"
+   },
+   "page": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "UNDECLARED_PARENS",
+     "AMBIGUOUS_NOTE",
+     "COUNT_MISMATCH",
+     "DING_CUE",
+     "NO_OCTAVE"
+    ],
+    "line": "",
+    "outcome": "correct-block"
+   }
+  },
+  {
+   "id": "mag-blog-d-kurd",
+   "category": "structured",
+   "paste": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
+   },
+   "page": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
+   }
+  },
+  {
+   "id": "blog-pantheon-halo-xxd",
+   "category": "octaveless",
+   "paste": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
+   },
+   "page": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
+   }
+  },
+  {
+   "id": "snd-f-aeolian-10-name-only",
+   "category": "name-only",
+   "paste": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "correct-insufficient"
+   },
+   "page": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "correct-insufficient"
+   }
+  }
+ ]
+}
