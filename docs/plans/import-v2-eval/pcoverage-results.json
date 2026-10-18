@@ -1,0 +1,272 @@
+{
+ "ranAt": "2026-10-18T02:39:42.036Z",
+ "catalogEntries": 77,
+ "totals": {
+  "pc-only": 15,
+  "n/a": 7,
+  "none": 1,
+  "near": 7,
+  "exact": 10
+ },
+ "rows": [
+  {
+   "id": "yatao-mag-d-kurd-17",
+   "notes": 17,
+   "bottoms": 6,
+   "coverage": "pc-only",
+   "entry": "Amarakurd mini"
+  },
+  {
+   "id": "yatao-yataopan-d-kurd-17",
+   "notes": 17,
+   "bottoms": 4,
+   "coverage": "pc-only",
+   "entry": "Amarakurd mini"
+  },
+  {
+   "id": "yatao-mudra-g2-minor-17",
+   "notes": 17,
+   "bottoms": 8,
+   "coverage": "pc-only",
+   "entry": "Amarakurd mini"
+  },
+  {
+   "id": "yatao-mag-fs2-minor-16",
+   "notes": 16,
+   "bottoms": 7,
+   "coverage": "pc-only",
+   "entry": "Amarakurd mini"
+  },
+  {
+   "id": "yatao-c-ashakiran-15",
+   "coverage": "n/a"
+  },
+  {
+   "id": "yatao-ayasa-d-kurd-12",
+   "notes": 12,
+   "bottoms": 2,
+   "coverage": "pc-only",
+   "entry": "Amarakurd mini"
+  },
+  {
+   "id": "yatao-d-aegean-18",
+   "notes": 18,
+   "bottoms": 7,
+   "coverage": "none",
+   "entry": null
+  },
+  {
+   "id": "ayasa-d-kurd-13",
+   "coverage": "n/a"
+  },
+  {
+   "id": "sanango-page-multi",
+   "coverage": "n/a"
+  },
+  {
+   "id": "sanango-e-amara-16",
+   "notes": 16,
+   "bottoms": 5,
+   "coverage": "pc-only",
+   "entry": "Amarakurd mini"
+  },
+  {
+   "id": "sanango-d-kurd-15",
+   "notes": 15,
+   "bottoms": 4,
+   "coverage": "pc-only",
+   "entry": "Amarakurd mini"
+  },
+  {
+   "id": "sela-sehp202-d-amara-11-1",
+   "notes": 12,
+   "bottoms": 1,
+   "coverage": "pc-only",
+   "entry": "Amarakurd mini"
+  },
+  {
+   "id": "ss-leaf-c-minor-14",
+   "notes": 14,
+   "bottoms": 5,
+   "coverage": "near",
+   "entry": "Minor"
+  },
+  {
+   "id": "ss-sew-f3-low-pygmy-11",
+   "notes": 11,
+   "bottoms": 2,
+   "coverage": "near",
+   "entry": "Low Pygmy"
+  },
+  {
+   "id": "ss-satya-eb-la-sirena-16",
+   "notes": 16,
+   "bottoms": 7,
+   "coverage": "near",
+   "entry": "La Sirena"
+  },
+  {
+   "id": "ss-pantheon-halo-equinox-12",
+   "notes": 12,
+   "bottoms": 0,
+   "coverage": "pc-only",
+   "entry": "Equinox"
+  },
+  {
+   "id": "idm-celtic-mineur-9",
+   "notes": 9,
+   "bottoms": 0,
+   "coverage": "exact",
+   "entry": "Amara"
+  },
+  {
+   "id": "idm-hijaz-9",
+   "notes": 9,
+   "bottoms": 0,
+   "coverage": "pc-only",
+   "entry": "Harmonic minor"
+  },
+  {
+   "id": "thomann-sonority-d-kurd-10",
+   "notes": 10,
+   "bottoms": 0,
+   "coverage": "pc-only",
+   "entry": "Amarakurd mini"
+  },
+  {
+   "id": "engadine-mano-9-prose",
+   "notes": 9,
+   "bottoms": 0,
+   "coverage": "exact",
+   "entry": "Kurd"
+  },
+  {
+   "id": "boullard-listing-multi",
+   "coverage": "n/a"
+  },
+  {
+   "id": "amazon-asteman-d-minor-10",
+   "notes": 10,
+   "bottoms": 0,
+   "coverage": "pc-only",
+   "entry": "Amarakurd mini"
+  },
+  {
+   "id": "amazon-kalopho-d-kurd-9",
+   "notes": 9,
+   "bottoms": 0,
+   "coverage": "exact",
+   "entry": "Kurd"
+  },
+  {
+   "id": "amazon-lomuty-d-kurd-10",
+   "notes": 10,
+   "bottoms": 0,
+   "coverage": "pc-only",
+   "entry": "Amarakurd mini"
+  },
+  {
+   "id": "yatao-e2-pygmy-17",
+   "notes": 17,
+   "bottoms": 8,
+   "coverage": "near",
+   "entry": "Low Pygmy Octave"
+  },
+  {
+   "id": "yatao-a2-amara-9",
+   "notes": 9,
+   "bottoms": 0,
+   "coverage": "exact",
+   "entry": "Amara"
+  },
+  {
+   "id": "yatao-fs-low-pygmy-19",
+   "notes": 19,
+   "bottoms": 7,
+   "coverage": "pc-only",
+   "entry": "Amarakurd mini"
+  },
+  {
+   "id": "thomann-sela-sehp203-d-kurd-9-3-en",
+   "notes": 12,
+   "bottoms": 3,
+   "coverage": "near",
+   "entry": "Kurd"
+  },
+  {
+   "id": "thomann-sela-sehp203-d-kurd-9-3-fr",
+   "notes": 12,
+   "bottoms": 3,
+   "coverage": "near",
+   "entry": "Kurd"
+  },
+  {
+   "id": "thomann-sela-sehp203-d-kurd-9-3-it",
+   "notes": 12,
+   "bottoms": 3,
+   "coverage": "near",
+   "entry": "Kurd"
+  },
+  {
+   "id": "thomann-startone-d-kurd-octaveless",
+   "notes": 9,
+   "bottoms": 0,
+   "coverage": "exact",
+   "entry": "Kurd"
+  },
+  {
+   "id": "thomann-startone-d-celtic-octaveless",
+   "notes": 9,
+   "bottoms": 0,
+   "coverage": "exact",
+   "entry": "Amara"
+  },
+  {
+   "id": "sunreed-zen-d-minor-9",
+   "notes": 9,
+   "bottoms": 0,
+   "coverage": "exact",
+   "entry": "Kurd"
+  },
+  {
+   "id": "amazon-alienpan-d-kurd-10",
+   "notes": 10,
+   "bottoms": 0,
+   "coverage": "pc-only",
+   "entry": "Amarakurd mini"
+  },
+  {
+   "id": "amazon-gladfresit-d-minor-9",
+   "notes": 9,
+   "bottoms": 0,
+   "coverage": "exact",
+   "entry": "Kurd"
+  },
+  {
+   "id": "boullard-battiloro-celtic-contradictory",
+   "coverage": "n/a"
+  },
+  {
+   "id": "boullard-zaora-d-ashakiran-16",
+   "coverage": "n/a"
+  },
+  {
+   "id": "mag-blog-d-kurd",
+   "notes": 9,
+   "bottoms": 0,
+   "coverage": "exact",
+   "entry": "Kurd"
+  },
+  {
+   "id": "blog-pantheon-halo-xxd",
+   "notes": 9,
+   "bottoms": 0,
+   "coverage": "exact",
+   "entry": "Minor"
+  },
+  {
+   "id": "snd-f-aeolian-10-name-only",
+   "coverage": "n/a"
+  }
+ ]
+}

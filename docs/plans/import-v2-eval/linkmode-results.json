@@ -1,0 +1,310 @@
+{
+ "engineBase": "087a4a8",
+ "modes": {
+  "link": {
+   "422": 14,
+   "exact": 7,
+   "blocked": 5,
+   "correct-block": 3,
+   "insufficient": 11
+  },
+  "window1200scan": {
+   "exact": 9,
+   "blocked": 5,
+   "correct-block": 6,
+   "correct-insufficient": 5,
+   "insufficient": 14,
+   "blocked-scan": 1
+  },
+  "selectall": {
+   "blocked": 11,
+   "correct-block": 6,
+   "correct-insufficient": 5,
+   "insufficient": 14,
+   "exact": 3,
+   "blocked-scan": 1
+  }
+ },
+ "cases": [
+  {
+   "id": "yatao-mag-d-kurd-17",
+   "want": "REVIEW",
+   "link": "exact",
+   "window1200scan": "exact",
+   "selectall": "blocked"
+  },
+  {
+   "id": "yatao-yataopan-d-kurd-17",
+   "want": "REVIEW",
+   "link": "exact",
+   "window1200scan": "exact",
+   "selectall": "blocked"
+  },
+  {
+   "id": "yatao-mudra-g2-minor-17",
+   "want": "REVIEW",
+   "link": "exact",
+   "window1200scan": "exact",
+   "selectall": "blocked"
+  },
+  {
+   "id": "yatao-mag-fs2-minor-16",
+   "want": "REVIEW",
+   "link": "blocked",
+   "window1200scan": "blocked",
+   "selectall": "blocked"
+  },
+  {
+   "id": "yatao-c-ashakiran-15",
+   "want": "NEEDS_INPUT",
+   "link": "422",
+   "window1200scan": "correct-block",
+   "selectall": "correct-block"
+  },
+  {
+   "id": "yatao-ayasa-d-kurd-12",
+   "want": "REVIEW",
+   "link": "blocked",
+   "window1200scan": "blocked",
+   "selectall": "blocked"
+  },
+  {
+   "id": "yatao-d-aegean-18",
+   "want": "REVIEW",
+   "link": "exact",
+   "window1200scan": "exact",
+   "selectall": "blocked"
+  },
+  {
+   "id": "ayasa-d-kurd-13",
+   "want": "INSUFFICIENT",
+   "link": "422",
+   "window1200scan": "correct-insufficient",
+   "selectall": "correct-insufficient"
+  },
+  {
+   "id": "sanango-page-multi",
+   "want": "NEEDS_INPUT",
+   "link": "correct-block",
+   "window1200scan": "correct-block",
+   "selectall": "correct-block"
+  },
+  {
+   "id": "sanango-e-amara-16",
+   "want": "REVIEW",
+   "link": "blocked",
+   "window1200scan": "blocked",
+   "selectall": "blocked"
+  },
+  {
+   "id": "sanango-d-kurd-15",
+   "want": "REVIEW",
+   "link": "blocked",
+   "window1200scan": "blocked",
+   "selectall": "blocked"
+  },
+  {
+   "id": "sela-sehp202-d-amara-11-1",
+   "want": "NEEDS_INPUT",
+   "link": "correct-block",
+   "window1200scan": "correct-block",
+   "selectall": "correct-block"
+  },
+  {
+   "id": "ss-leaf-c-minor-14",
+   "want": "REVIEW",
+   "link": "422",
+   "window1200scan": "insufficient",
+   "selectall": "insufficient"
+  },
+  {
+   "id": "ss-sew-f3-low-pygmy-11",
+   "want": "REVIEW",
+   "link": "insufficient",
+   "window1200scan": "insufficient",
+   "selectall": "insufficient"
+  },
+  {
+   "id": "ss-satya-eb-la-sirena-16",
+   "want": "REVIEW",
+   "link": "insufficient",
+   "window1200scan": "insufficient",
+   "selectall": "insufficient"
+  },
+  {
+   "id": "ss-pantheon-halo-equinox-12",
+   "want": "REVIEW",
+   "link": "422",
+   "window1200scan": "insufficient",
+   "selectall": "insufficient"
+  },
+  {
+   "id": "idm-celtic-mineur-9",
+   "want": "INSUFFICIENT",
+   "link": "422",
+   "window1200scan": "correct-insufficient",
+   "selectall": "correct-insufficient"
+  },
+  {
+   "id": "idm-hijaz-9",
+   "want": "INSUFFICIENT",
+   "link": "422",
+   "window1200scan": "correct-insufficient",
+   "selectall": "correct-insufficient"
+  },
+  {
+   "id": "thomann-sonority-d-kurd-10",
+   "want": "REVIEW",
+   "link": "exact",
+   "window1200scan": "exact",
+   "selectall": "exact"
+  },
+  {
+   "id": "engadine-mano-9-prose",
+   "want": "REVIEW",
+   "link": "insufficient",
+   "window1200scan": "insufficient",
+   "selectall": "insufficient"
+  },
+  {
+   "id": "boullard-listing-multi",
+   "want": "NEEDS_INPUT",
+   "link": "correct-block",
+   "window1200scan": "correct-block",
+   "selectall": "correct-block"
+  },
+  {
+   "id": "amazon-asteman-d-minor-10",
+   "want": "REVIEW",
+   "link": "insufficient",
+   "window1200scan": "insufficient",
+   "selectall": "insufficient"
+  },
+  {
+   "id": "amazon-kalopho-d-kurd-9",
+   "want": "REVIEW",
+   "link": "insufficient",
+   "window1200scan": "insufficient",
+   "selectall": "insufficient"
+  },
+  {
+   "id": "amazon-lomuty-d-kurd-10",
+   "want": "INSUFFICIENT",
+   "link": "422",
+   "window1200scan": "correct-insufficient",
+   "selectall": "correct-insufficient"
+  },
+  {
+   "id": "yatao-e2-pygmy-17",
+   "want": "REVIEW",
+   "link": "exact",
+   "window1200scan": "exact",
+   "selectall": "blocked"
+  },
+  {
+   "id": "yatao-a2-amara-9",
+   "want": "REVIEW",
+   "link": "insufficient",
+   "window1200scan": "insufficient",
+   "selectall": "insufficient"
+  },
+  {
+   "id": "yatao-fs-low-pygmy-19",
+   "want": "REVIEW",
+   "link": "insufficient",
+   "window1200scan": "insufficient",
+   "selectall": "insufficient"
+  },
+  {
+   "id": "thomann-sela-sehp203-d-kurd-9-3-en",
+   "want": "REVIEW",
+   "link": "blocked",
+   "window1200scan": "blocked",
+   "selectall": "blocked"
+  },
+  {
+   "id": "thomann-sela-sehp203-d-kurd-9-3-fr",
+   "want": "REVIEW",
+   "link": "insufficient",
+   "window1200scan": "insufficient",
+   "selectall": "insufficient"
+  },
+  {
+   "id": "thomann-sela-sehp203-d-kurd-9-3-it",
+   "want": "REVIEW",
+   "link": "insufficient",
+   "window1200scan": "insufficient",
+   "selectall": "insufficient"
+  },
+  {
+   "id": "thomann-startone-d-kurd-octaveless",
+   "want": "REVIEW",
+   "link": "422",
+   "window1200scan": "exact",
+   "selectall": "exact"
+  },
+  {
+   "id": "thomann-startone-d-celtic-octaveless",
+   "want": "REVIEW",
+   "link": "422",
+   "window1200scan": "exact",
+   "selectall": "exact"
+  },
+  {
+   "id": "sunreed-zen-d-minor-9",
+   "want": "REVIEW",
+   "link": "exact",
+   "window1200scan": "exact",
+   "selectall": "blocked"
+  },
+  {
+   "id": "amazon-alienpan-d-kurd-10",
+   "want": "REVIEW",
+   "link": "insufficient",
+   "window1200scan": "insufficient",
+   "selectall": "insufficient"
+  },
+  {
+   "id": "amazon-gladfresit-d-minor-9",
+   "want": "REVIEW",
+   "link": "insufficient",
+   "window1200scan": "insufficient",
+   "selectall": "insufficient"
+  },
+  {
+   "id": "boullard-battiloro-celtic-contradictory",
+   "want": "NEEDS_INPUT",
+   "link": "422",
+   "window1200scan": "correct-block",
+   "selectall": "correct-block"
+  },
+  {
+   "id": "boullard-zaora-d-ashakiran-16",
+   "want": "NEEDS_INPUT",
+   "link": "422",
+   "window1200scan": "correct-block",
+   "selectall": "correct-block"
+  },
+  {
+   "id": "mag-blog-d-kurd",
+   "want": "REVIEW",
+   "link": "422",
+   "window1200scan": "insufficient",
+   "selectall": "insufficient"
+  },
+  {
+   "id": "blog-pantheon-halo-xxd",
+   "want": "REVIEW",
+   "link": "422",
+   "window1200scan": "blocked-scan",
+   "selectall": "blocked-scan"
+  },
+  {
+   "id": "snd-f-aeolian-10-name-only",
+   "want": "INSUFFICIENT",
+   "link": "422",
+   "window1200scan": "correct-insufficient",
+   "selectall": "correct-insufficient"
+  }
+ ]
+}
