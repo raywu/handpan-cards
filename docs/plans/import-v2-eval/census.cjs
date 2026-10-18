@@ -17,8 +17,11 @@
 //              20,000-character slice centred on its densest-pitch line, which
 //              is what the L3 replay reads. The Shopify body is kept whole.
 // parens:"bottom" is passed on the 8 ids of L1 (h) in every mode.
-// The label list is L1's label list (LABEL and BARE_LABEL in the prototype);
-// separators include the en and em dash. The JSON-LD description is not modelled: the cache holds no parsed JSON-LD.
+// The label rule is the prototype's, exactly (l1-prototype.patch:34-43):
+// LABEL is case-insensitive and needs a colon; BARE_LABEL (Hauptnote, Main
+// note, Noten, Notes) is case-sensitive, has no colon, and needs whitespace
+// before the run. The run of octaveless letters after either is case-sensitive.
+// Separators include the en and em dash. The JSON-LD description is not modelled: the cache holds no parsed JSON-LD.
 //   git apply docs/plans/import-v2-eval/l1-prototype.patch
 //   CENSUS_ENGINE=l1-prototype node docs/plans/import-v2-eval/census.cjs \
 //     docs/plans/import-v2-gold.json <cacheDir> . docs/plans/import-v2-eval/census-l1.json
@@ -38,8 +41,26 @@ const L = "(?<![A-Za-z0-9\\u00c0-\\u017f])", R = "(?![A-Za-z0-9#\\u00c0-\\u017f]
 const STRICT_TOK = L + "(?:[A-G](?:#|b|\\u266f|\\u266d)?[0-9]|(?:Do|R[e\\u00e9]|Mi|Fa|Sol|La|Si)(?:#|b|\\u266f|\\u266d)?[0-9])" + R;
 const BARE_TOK = L + "[A-G](?:#|b|\\u266f|\\u266d)?" + R;
 const STRICT_RUN = new RegExp("(?:" + STRICT_TOK + SEP + "){5,}", "g");
-const LABEL_RUN = new RegExp("\\b(?:Ding(?:\\s*\\((?:center|centre)\\))?|Inner(?:\\s*Notes)?|Bottom(?:\\s*(?:Side\\s*)?Notes)?|Top(?:\\s*(?:Side\\s*)?Notes)?" +
-  "|Tones|Notes?(?:\\s*\\(\\s*(?:Top|Bottom)\\s*Side\\s*\\))?|Notas|Noten|Hauptnote|Outer\\s*circle|notes\\b[^:\\n]{0,40}\\bare)\\s*:?\\s*\\(?((?:" + BARE_TOK + SEP + "){5,})", "gi");
+const LABEL = new RegExp("(?:\\b|(?<=[0-9]))(?:Ding(?:\\s*\\((?:center|centre)\\))?|Inner(?:\\s*Notes)?" +
+  "|Notes\\s*\\(\\s*Bottom\\s*Side\\s*\\)|Notes\\s*Bottom\\s*Side|Bottom\\s*Side\\s*Notes|Bottom\\s*Notes|Bottom" +
+  "|Notes\\s*\\(\\s*Top\\s*Side\\s*\\)|Notes\\s*Top\\s*Side|Top\\s*Side\\s*Notes|Top\\s*Notes|Top|Tones|Notes?|Notas" +
+  "|Outer\\s*circle|notes\\b[^:]{0,40}\\bare)\\s*:\\s*", "gi");
+const BARE_LABEL = new RegExp("\\b(?:Hauptnote|Main note|Noten|Notes)\\s+", "g");
+const RUN_AFTER = new RegExp("\\(?((?:" + BARE_TOK + SEP + "){5,})", "y");
+function labelRuns(text) {
+  const out = [];
+  for (const re of [LABEL, BARE_LABEL]) {
+    re.lastIndex = 0;
+    let m;
+    while ((m = re.exec(text))) {
+      if (m[0].length === 0) { re.lastIndex++; continue; }
+      RUN_AFTER.lastIndex = re.lastIndex;
+      const r = RUN_AFTER.exec(text);
+      if (r) out.push({ at: m.index, len: m[0].length + r[0].length, run: r[1] });
+    }
+  }
+  return out;
+}
 const STRICT_ONE = new RegExp(STRICT_TOK, "g");
 function classify(c, r, line) {
   const want = c.expected.status;
@@ -59,7 +80,7 @@ function run(c, text) {
 }
 function extractWindow(text) {
   const runs = [...text.matchAll(STRICT_RUN)].map((m) => ({ at: m.index, len: m[0].length, n: (m[0].match(STRICT_ONE) || []).length, why: "strict" }))
-    .concat([...text.matchAll(LABEL_RUN)].map((m) => ({ at: m.index, len: m[0].length, n: (m[1].match(new RegExp(BARE_TOK, "g")) || []).length, why: "label" })));
+    .concat(labelRuns(text).map((m) => ({ at: m.at, len: m.len, n: (m.run.match(new RegExp(BARE_TOK, "g")) || []).length, why: "label" })));
   if (!runs.length) return null;
   const best = runs.reduce((a, b) => (b.n > a.n ? b : a));
   const mid = best.at + Math.floor(best.len / 2);
