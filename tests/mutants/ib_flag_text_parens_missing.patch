@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10952,7 +10952,6 @@ const IMPORT_FLAG_TEXT = {
+@@ -10946,7 +10946,6 @@ const IMPORT_FLAG_TEXT = {
      : f.tops ? "Two top note lists were found. Paste only the list for your pan."
      : f.earlier ? "An earlier list in the text reads differently. Paste only the list for your pan."
      : "The text holds more than one note list. Paste only the list for your pan.",

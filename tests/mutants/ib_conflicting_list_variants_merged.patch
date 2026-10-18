@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10949,7 +10949,7 @@ const IMPORT_FLAG_TEXT = {
+@@ -10943,7 +10943,7 @@ const IMPORT_FLAG_TEXT = {
    DUPLICATE_PITCH: (r, f) => "The same pitch is listed twice: " + importNames(r, f) + ".",
    BOTTOM_NO_OCTAVE: (r, f) => "Bottom notes " + importNames(r, f) + " have no octave, so their pitch is unknown. Type the notes with octaves.",
    CONFLICTING_LIST: (r, f) => f.wide ? "Reading the whole text gives a different list than the one found. Paste only the list for your pan."

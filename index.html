@@ -916,7 +916,7 @@ footer.seq{row-gap:var(--sp-1)}
   font-family:Bitter, serif; font-weight:400; font-size:16px; line-height:1.3}
 #import-text{resize:none}
 #import-ding{min-height:44px}
-#import-run, #import-use, #import-parens{width:100%}
+#import-run, #import-use{width:100%}
 #import-use:disabled{opacity:.5; cursor:default}
 #import-rows, #import-flags{list-style:none; margin:0; padding:0; display:flex; flex-direction:column;
   gap:var(--sp-1); font:400 12px/1.5 "Nunito Sans"; color:#c4bcab; overflow-wrap:anywhere}
@@ -1394,7 +1394,6 @@ html.about-open{overflow:hidden}
           <div id="import-review" hidden>
             <ul id="import-rows"></ul>
             <ul id="import-flags"></ul>
-            <button class="mode" type="button" id="import-parens" hidden>PARENTHESES MEAN BOTTOM NOTES</button>
             <div id="import-ding-row">
               <label class="sheetlabel" for="import-ding">DING</label>
               <select id="import-ding"></select>
@@ -10922,21 +10921,16 @@ const importRowsEl  = document.getElementById("import-rows");
 const importFlagsEl = document.getElementById("import-flags");
 const importDingSel = document.getElementById("import-ding");
 const importUseBtn  = document.getElementById("import-use");
-const importParensBtn = document.getElementById("import-parens");
 const IMPORT_INSUFFICIENT = "No note list found. Image-only specs can't be read; type the notes below.";
 let importSource = "";
 let importRes = null;
-const IMPORT_URL_ONLY = "Links are not read yet. Open the page and paste the notes.";
-const IMPORT_URL = /https?:\/\//i;
 let importPick = null;
-let importParens = false;
-let importUrlOnly = false;
 let importTicks = [];
 const importTicked = new Set();
 const importNames = (r, f) => (f.notes || []).map(i => r.notes[i] ? r.notes[i].note : "?").join(", ");
 const IMPORT_FLAG_TEXT = {
   NO_NOTE_LIST: () => IMPORT_INSUFFICIENT,
-  UNDECLARED_PARENS: (r, f) => "Brackets around " + importNames(r, f) + " are not defined by the source. If they mean bottom notes, tap PARENTHESES MEAN BOTTOM NOTES. Otherwise pick the ding below or type the notes.",
+  UNDECLARED_PARENS: (r, f) => "Brackets around " + importNames(r, f) + " are not defined by the source. Pick the ding below or type the notes.",
   CONFLICTING_DING: (r, f) => "More than one ding cue: " + importNames(r, f) + ". Pick the ding below.",
   AMBIGUOUS_NOTE: (r, f) => "Unclear note spelling: " + (f.tokens || []).join(", ") + ". Type the notes instead.",
   INNER_BELOW_TOP: (r, f) => "Inner notes " + importNames(r, f) + " sit below the top notes.",
@@ -11013,7 +11007,6 @@ function paintImportBody() {
   importStatus.textContent = r.status === "REVIEW"
     ? "Check each note, tick what needs confirming, then USE."
     : "Resolve the blocks below before USE.";
-  importParensBtn.hidden = !r.flags.some(f => f.code === "UNDECLARED_PARENS");
   paintImportUse();
 }
 function paintImport() {
@@ -11021,7 +11014,7 @@ function paintImport() {
   importResult.hidden = !r;
   if (!r) return;
   if (r.status === "INSUFFICIENT") {
-    importStatus.textContent = importUrlOnly ? IMPORT_URL_ONLY : IMPORT_INSUFFICIENT;
+    importStatus.textContent = IMPORT_INSUFFICIENT;
     importReview.hidden = true;
     importUseBtn.disabled = true;
     return;
@@ -11043,20 +11036,12 @@ function buildImportPicker() {
   });
   importDingSel.value = "";
 }
-function importOpts() {
-  const o = {};
-  if (importPick !== null) o.ding = importPick;
-  if (importParens) o.parens = "bottom";
-  return Object.keys(o).length ? o : undefined;
-}
 function runImport() {
   importSource = String(importTextBox.value || "");
   importPick = null;
-  importParens = false;
   importTicked.clear();
   importRes = HPE.importer.interpret(importSource);
-  importUrlOnly = importRes.status === "INSUFFICIENT" && IMPORT_URL.test(importSource);
-  track("scale_import", { status: importUrlOnly ? "URL_ONLY" : importRes.status, source: "paste" });
+  track("scale_import", { status: importRes.status });
   if (importRes.status !== "INSUFFICIENT") buildImportPicker();
   paintImport();
 }
@@ -11065,16 +11050,8 @@ function pickImportDing() {
   const v = importDingSel.value;
   importPick = v === "" ? null : Number(v);
   importTicked.delete("NO_OCTAVE");
-  importRes = HPE.importer.interpret(importSource, importOpts());
+  importRes = HPE.importer.interpret(importSource, importPick === null ? undefined : { ding: importPick });
   paintImport();
-}
-function tapImportParens() {
-  if (!importRes || importRes.status === "INSUFFICIENT") return;
-  importParens = true;
-  importTicked.delete("NO_OCTAVE");
-  importRes = HPE.importer.interpret(importSource, importOpts());
-  paintImport();
-  importDingSel.focus();
 }
 function useImport() {
   if (importUseBtn.disabled || !importRes) return;
@@ -11096,8 +11073,6 @@ function resetImport() {
   importSource = "";
   importRes = null;
   importPick = null;
-  importParens = false;
-  importUrlOnly = false;
   importTicked.clear();
   setImportOpen(false);
   paintImport();
@@ -11109,7 +11084,6 @@ importOpenBtn.addEventListener("click", () => {
 });
 importRunBtn.addEventListener("click", runImport);
 importDingSel.addEventListener("change", pickImportDing);
-importParensBtn.addEventListener("click", tapImportParens);
 importUseBtn.addEventListener("click", useImport);
 
 /** Put every sheet field and session let in the state one open mode wants.
@@ -11852,7 +11826,7 @@ sheet.addEventListener("keydown", e => {
   const stops = [backBtn,
                  editingId ? nameBox : null,
                  scaleBox,
-                 ...(importRow.hidden ? [] : [importOpenBtn, importTextBox, importRunBtn, ...importTicks, importParensBtn, importDingSel, importUseBtn]),
+                 ...(importRow.hidden ? [] : [importOpenBtn, importTextBox, importRunBtn, ...importTicks, importDingSel, importUseBtn]),
                  drawerOpen ? previewBox.querySelector('.panhit[tabindex="0"]') : null,
                  drawerBtn, anchorOne, anchorBetween, mirrorTop, mirrorBot, fineBtn,
                  notePrev, noteNext, seatPrev, seatNext, resetBtn,

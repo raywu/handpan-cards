@@ -9590,9 +9590,10 @@ describe("discoverability: analytics events", () => {
     assert.deepStrictEqual(events(app), []);
   });
 
-  test("IM: importing tracks one scale_import per IMPORT with the status and source paste, and no pasted text or URL", () => {
+  test("IM: importing tracks one scale_import per IMPORT with the status only and no pasted text", () => {
     const app = bootEv();
     openSheet(app);
+    showImport(app);
     app.click(app.els["import-open"]);
     const n = events(app).length;
     const secret = "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 Bottom: C3";
@@ -9600,20 +9601,13 @@ describe("discoverability: analytics events", () => {
     app.click(app.els["import-run"]);
     app.els["import-ding"].value = "0";
     app.els["import-ding"].dispatchEvent({ type: "change" });
-    assert.deepStrictEqual(since(app, n), [{ name: "scale_import", params: { status: "REVIEW", source: "paste" } }]);
+    assert.deepStrictEqual(since(app, n), [{ name: "scale_import", params: { status: "REVIEW" } }]);
     app.els["import-text"].value = "D Kurd 10";
     app.click(app.els["import-run"]);
     app.els["import-text"].value = "Ding: D Top: E F G Bb";
     app.click(app.els["import-run"]);
-    app.els["import-text"].value = "See https://example.com/secret-pan for the notes";
-    app.click(app.els["import-run"]);
-    app.els["import-text"].value = "https://example.com/pan\n" + secret;
-    app.click(app.els["import-run"]);
-    assert.deepStrictEqual(since(app, n).map((e) => e.params.status), ["REVIEW", "INSUFFICIENT", "NEEDS_INPUT", "URL_ONLY", "REVIEW"]);
-    since(app, n).forEach((e) => assert.deepStrictEqual(Object.keys(e.params).sort(), ["source", "status"]));
-    assert.ok(since(app, n).every((e) => e.params.source === "paste"));
+    assert.deepStrictEqual(since(app, n).map((e) => e.params.status), ["REVIEW", "INSUFFICIENT", "NEEDS_INPUT"]);
     assert.ok(!JSON.stringify(since(app, n)).includes("A3"));
-    assert.ok(!JSON.stringify(since(app, n)).includes("example.com"));
   });
 
   test("no event param is a string over 40 characters or names a custom: id", async () => {
@@ -10845,6 +10839,31 @@ describe("IM: import text on the sheet", () => {
     assert.strictEqual(app.els["import-open"].getAttribute("aria-expanded"), "false");
   });
 
+  test("IM: every code in the engine's FLAG_ORDER has an IMPORT_FLAG_TEXT line, and the L1 codes read in plain English", () => {
+    const src = require("node:fs").readFileSync(require("node:path").join(__dirname, "..", "src", "engine", "importer.js"), "utf8");
+    const order = src.slice(src.indexOf("var FLAG_ORDER"), src.indexOf("];", src.indexOf("var FLAG_ORDER")));
+    const all = [...order.matchAll(/\["([A-Z_]+)",/g)].map((m) => m[1]);
+    assert.ok(all.length >= 17, "FLAG_ORDER was not found in the engine source: " + all.length);
+    const app = boot();
+    openSheet(app);
+    const missing = JSON.parse(app.get("JSON.stringify(" + JSON.stringify(all) + ".filter(c => !IMPORT_FLAG_TEXT[c]))"));
+    assert.deepStrictEqual(missing, []);
+    const line = (code, f) => app.get(
+      "(() => { importRes = { notes: [{ note: 'C3' }, { note: 'D3' }], total: 9, roles: {} };" +
+      " return importFlagLine(" + JSON.stringify(Object.assign({ code }, f)) + "); })()");
+    for (const [code, f] of [["BOTTOM_NO_OCTAVE", { notes: [0, 1] }], ["CONFLICTING_LIST", { runs: 2 }],
+      ["CONFLICTING_LIST", { wide: true }], ["CONFLICTING_LIST", { tops: true }],
+      ["CONFLICTING_LIST", { spread: 3000 }], ["CONFLICTING_LIST", { earlier: true }],
+      ["PARENS_AS_BOTTOM", { notes: [0, 1] }]]) {
+      const t = line(code, f);
+      assert.ok(t && t !== code && !/[A-Z]{2,}_[A-Z]{2,}/.test(t), code + " " + JSON.stringify(f) + " shows " + t);
+      assert.match(t, /^[A-Z]/);
+      assert.match(t, /\.$/);
+    }
+    const variants = new Set(["runs", "wide", "tops"].map((k, i) => line("CONFLICTING_LIST", { [k]: k === "runs" ? 2 : true })));
+    assert.strictEqual(variants.size, 3, "the CONFLICTING_LIST variants share one line");
+  });
+
   test("IM: the import row ships hidden: #import-row carries the hidden attribute in the served markup and IMPORT TEXT is not in the sheet's focus order", () => {
     const src = require("node:fs").readFileSync(require("node:path").join(__dirname, "..", "index.html"), "utf8");
     assert.match(src, /<div class="fieldrow" id="import-row" hidden>/);
@@ -10880,119 +10899,6 @@ describe("IM: import text on the sheet", () => {
     const cl = tabs(closed, 40);
     assert.ok(cl.includes("import-open"));
     assert.ok(!cl.includes("import-text") && !cl.includes("import-run"), "a hidden paste area took a Tab stop");
-  });
-
-  const URL_LINE = "Links are not read yet. Open the page and paste the notes.";
-  const PARENS = "Notes : D3 - (F3, G3), A3, Bb3, C4, D4, E4, F4, G4, A4, C5";
-  const HALO = "The notes of the XXD Scale Halo are:\n(C) F G Ab C D Eb F G";
-
-  test("IM: a paste with an http(s) URL that interpret finds INSUFFICIENT shows the links line and writes nothing; a URL beside a readable list imports as usual", () => {
-    for (const text of ["https://example.com/pan-spec", "Spec at http://shop.example/kurd10 - D Kurd 10", "Read https://example.com/x"]) {
-      const app = boot();
-      openSheet(app);
-      app.type("[C3] D3");
-      app.click(app.els["import-open"]);
-      app.els["import-text"].value = text;
-      app.click(app.els["import-run"]);
-      assert.strictEqual(app.els["import-status"].textContent, URL_LINE, text);
-      assert.strictEqual(app.els["import-review"].getClientRects().length, 0);
-      assert.strictEqual(app.els["import-use"].disabled, true);
-      assert.strictEqual(app.els["scale-box"].value, "[C3] D3");
-    }
-    const mixed = boot();
-    run(mixed, "https://example.com/pan\n" + CLEAN);
-    assert.notStrictEqual(mixed.els["import-status"].textContent, URL_LINE);
-    assert.strictEqual(mixed.els["import-use"].disabled, false);
-    const plain = boot();
-    run(plain, NAME_ONLY);
-    assert.strictEqual(plain.els["import-status"].textContent,
-      "No note list found. Image-only specs can't be read; type the notes below.");
-  });
-
-  const parensBtn = (app) => app.els["import-parens"];
-  const parensShown = (app) => !parensBtn(app).hidden && parensBtn(app).getClientRects().length > 0;
-
-  test("IM: the parentheses tap is offered only when UNDECLARED_PARENS is raised, and not on the Halo text", () => {
-    const app = boot();
-    run(app, PARENS);
-    assert.ok(codes(app).includes("UNDECLARED_PARENS"));
-    assert.ok(parensShown(app), "the tap is missing under UNDECLARED_PARENS");
-    for (const text of [CLEAN, CUE, HALO, REFUSED, NAME_ONLY]) {
-      const other = boot();
-      run(other, text);
-      assert.ok(!parensShown(other), "the tap was offered on " + JSON.stringify(text));
-    }
-    const halo = boot();
-    run(halo, HALO);
-    assert.ok(!codes(halo).includes("UNDECLARED_PARENS"));
-  });
-
-  test("IM: tapping the parentheses choice re-runs interpret with {parens: bottom}, and the PARENS_AS_BOTTOM tick then gates USE", () => {
-    const app = boot();
-    run(app, PARENS);
-    assert.strictEqual(app.els["import-use"].disabled, true);
-    app.click(parensBtn(app));
-    const want = engine(app, PARENS, { parens: "bottom" });
-    assert.deepStrictEqual(shown(app), want.flags);
-    assert.ok(codes(app).includes("PARENS_AS_BOTTOM"));
-    assert.ok(!codes(app).includes("UNDECLARED_PARENS"));
-    assert.ok(!parensShown(app), "the tap stays offered once UNDECLARED_PARENS is gone");
-    assert.strictEqual(app.els["import-use"].disabled, true);
-    if (codes(app).includes("DING_CUE")) tick(app, "DING_CUE");
-    assert.strictEqual(app.els["import-use"].disabled, true, "USE opened without the PARENS_AS_BOTTOM tick");
-    tick(app, "PARENS_AS_BOTTOM");
-    assert.strictEqual(app.els["import-use"].disabled, false);
-    app.click(app.els["import-use"]);
-    assert.strictEqual(app.els["scale-box"].value, want.seed);
-    assert.ok(want.seed.includes("[F3]") && want.seed.includes("[G3]"));
-  });
-
-  test("IM: a ding pick after the parentheses tap keeps the option, and a new IMPORT forgets it", () => {
-    const app = boot();
-    run(app, PARENS);
-    app.click(parensBtn(app));
-    pick(app, 0);
-    assert.deepStrictEqual(shown(app), engine(app, PARENS, { parens: "bottom", ding: 0 }).flags);
-    app.click(app.els["import-run"]);
-    assert.ok(codes(app).includes("UNDECLARED_PARENS"));
-    assert.ok(parensShown(app));
-    pick(app, 0);
-    assert.deepStrictEqual(shown(app), engine(app, PARENS, { ding: 0 }).flags);
-  });
-
-  test("IM: the parentheses tap joins the focus order only while shown, between the paste controls and the ding picker", () => {
-    const app = boot();
-    run(app, PARENS);
-    const seen = tabs(app, 40);
-    assert.ok(seen.indexOf("import-parens") > seen.indexOf("import-run"));
-    assert.ok(seen.indexOf("import-parens") < seen.indexOf("import-ding"));
-    app.click(parensBtn(app));
-    assert.ok(!tabs(app, 40).includes("import-parens"));
-  });
-
-  test("IM: every code in the engine's FLAG_ORDER has an IMPORT_FLAG_TEXT line, and the L1 codes read in plain English", () => {
-    const src = require("node:fs").readFileSync(require("node:path").join(__dirname, "..", "src", "engine", "importer.js"), "utf8");
-    const order = src.slice(src.indexOf("var FLAG_ORDER"), src.indexOf("];", src.indexOf("var FLAG_ORDER")));
-    const all = [...order.matchAll(/\["([A-Z_]+)",/g)].map((m) => m[1]);
-    assert.ok(all.length >= 17, "FLAG_ORDER was not found in the engine source: " + all.length);
-    const app = boot();
-    openSheet(app);
-    const missing = JSON.parse(app.get("JSON.stringify(" + JSON.stringify(all) + ".filter(c => !IMPORT_FLAG_TEXT[c]))"));
-    assert.deepStrictEqual(missing, []);
-    const line = (code, f) => app.get(
-      "(() => { importRes = { notes: [{ note: 'C3' }, { note: 'D3' }], total: 9, roles: {} };" +
-      " return importFlagLine(" + JSON.stringify(Object.assign({ code }, f)) + "); })()");
-    for (const [code, f] of [["BOTTOM_NO_OCTAVE", { notes: [0, 1] }], ["CONFLICTING_LIST", { runs: 2 }],
-      ["CONFLICTING_LIST", { wide: true }], ["CONFLICTING_LIST", { tops: true }],
-      ["CONFLICTING_LIST", { spread: 3000 }], ["CONFLICTING_LIST", { earlier: true }],
-      ["PARENS_AS_BOTTOM", { notes: [0, 1] }]]) {
-      const t = line(code, f);
-      assert.ok(t && t !== code && !/[A-Z]{2,}_[A-Z]{2,}/.test(t), code + " " + JSON.stringify(f) + " shows " + t);
-      assert.match(t, /^[A-Z]/);
-      assert.match(t, /\.$/);
-    }
-    const variants = new Set(["runs", "wide", "tops"].map((k, i) => line("CONFLICTING_LIST", { [k]: k === "runs" ? 2 : true })));
-    assert.strictEqual(variants.size, 3, "the CONFLICTING_LIST variants share one line");
   });
 
   test("IM: importing makes no fetch and sends no beacon", () => {

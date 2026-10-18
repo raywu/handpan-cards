@@ -4,12 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11852,7 +11852,7 @@ sheet.addEventListener("keydown", e => {
+@@ -11396,7 +11396,6 @@
    const stops = [backBtn,
                   editingId ? nameBox : null,
                   scaleBox,
--                 ...(importRow.hidden ? [] : [importOpenBtn, importTextBox, importRunBtn, ...importTicks, importParensBtn, importDingSel, importUseBtn]),
-+                 ...(importRow.hidden ? [] : []),
+-                 ...(importRow.hidden ? [] : [importOpenBtn, importTextBox, importRunBtn, ...importTicks, importDingSel, importUseBtn]),
                   drawerOpen ? previewBox.querySelector('.panhit[tabindex="0"]') : null,
                   drawerBtn, anchorOne, anchorBetween, mirrorTop, mirrorBot, fineBtn,
                   notePrev, noteNext, seatPrev, seatNext, resetBtn,

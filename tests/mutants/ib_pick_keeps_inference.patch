@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11065,7 +11065,7 @@ function pickImportDing() {
+@@ -10622,7 +10622,7 @@
    const v = importDingSel.value;
    importPick = v === "" ? null : Number(v);
    importTicked.delete("NO_OCTAVE");
--  importRes = HPE.importer.interpret(importSource, importOpts());
+-  importRes = HPE.importer.interpret(importSource, importPick === null ? undefined : { ding: importPick });
 +  importRes = HPE.importer.interpret(importSource);
    paintImport();
  }
- function tapImportParens() {
+ function useImport() {
