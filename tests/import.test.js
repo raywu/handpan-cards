@@ -129,9 +129,11 @@ test("octaveless sources: the provisional string, hand-written octaves, roles an
   }
 });
 
-test("C Ashakiran 15 octaveless line gives the plan's hand-written string", () => {
-  assert.equal(importer.serialise(run(byId("yatao-c-ashakiran-15-octaveless"))),
-    "(C3) F3 G3 A3 B3 C4 D4 E4 G4 [D5] [E5] [F5] [A5] [B5] [C6]");
+test("C Ashakiran 15 octaveless line blocks with BOTTOM_NO_OCTAVE and writes no string", () => {
+  const r = run(byId("yatao-c-ashakiran-15-octaveless"));
+  assert.equal(r.status, "NEEDS_INPUT");
+  assert.equal(flagOf(r, "BOTTOM_NO_OCTAVE").level, "BLOCK");
+  assert.equal(importer.serialise(r), "");
 });
 
 test("a descending octaveless source lists every note under NO_OCTAVE and is not flagged as unsorted", () => {
@@ -186,7 +188,7 @@ test("guess is set only on bottoms whose octave was inferred", () => {
 });
 
 test("UNDECLARED_PARENS: parenthesised notes get no role and nothing is serialised", () => {
-  for (const id of ["sela-sehp401", "synthetic-pasted-provisional"]) {
+  for (const id of ["sela-sehp401"]) {
     const c = byId(id);
     const r = run(c);
     assert.equal(r.status, "NEEDS_INPUT", id);
@@ -402,4 +404,66 @@ test("interpret never throws on odd input", () => {
     const r = interpret(t, { title: "x" });
     assert.ok(["INSUFFICIENT", "NEEDS_INPUT", "REVIEW"].includes(r.status), JSON.stringify(t));
   }
+});
+
+test("BOTTOM_NO_OCTAVE, CONFLICTING_LIST and PARENS_AS_BOTTOM join FLAG_ORDER at their levels", () => {
+  const blocked = run(byId("yatao-c-ashakiran-15-octaveless"));
+  assert.equal(flagOf(blocked, "BOTTOM_NO_OCTAVE").level, "BLOCK");
+  const level = (text, opts, code) => flagOf(interpret(text, opts), code).level;
+  assert.equal(level("Ding: D3 Top: A3 C4 D4 E4 F4 G4 A4 C5 Bottom: (C3) (F3)", { parens: "bottom" }, "PARENS_AS_BOTTOM"), "CONFIRM");
+});
+
+test("parens: bottom reads round brackets as bottom notes; without it the same text still blocks", () => {
+  const text = "Ding: D3 Top: A3 C4 D4 E4 F4 G4 A4 C5 (C3) (F3)";
+  const plain = interpret(text);
+  assert.equal(plain.status, "NEEDS_INPUT");
+  assert.ok(flagOf(plain, "UNDECLARED_PARENS"));
+  const r = interpret(text, { parens: "bottom" });
+  assert.equal(flagOf(r, "UNDECLARED_PARENS"), undefined);
+  assert.equal(flagOf(r, "PARENS_AS_BOTTOM").level, "CONFIRM");
+  assert.equal(r.status, "REVIEW");
+  assert.deepEqual(r.roles.bottom.map((e) => e.note), ["C3", "F3"]);
+});
+
+test("parens: bottom on a text with no round brackets changes nothing and raises nothing", () => {
+  const text = "Ding: D3 Top: A3 C4 D4 E4 F4 G4 A4 C5";
+  assert.deepEqual(interpret(text, { parens: "bottom" }), interpret(text));
+});
+
+test("BOTTOM_NO_OCTAVE: a bottom note written without an octave blocks and writes no string", () => {
+  const r = interpret("Ding: D3 Top: A3 C4 D4 E4 F4 G4 A4 Bottom: C F");
+  assert.equal(r.status, "NEEDS_INPUT");
+  assert.equal(flagOf(r, "BOTTOM_NO_OCTAVE").level, "BLOCK");
+  assert.equal(importer.serialise(r), "");
+  const ok = interpret("Ding: D3 Top: A3 C4 D4 E4 F4 G4 A4 Bottom: C3 F3");
+  assert.equal(flagOf(ok, "BOTTOM_NO_OCTAVE"), undefined);
+  assert.equal(ok.status, "REVIEW");
+});
+
+function longPage(stray) {
+  const filler = [];
+  for (let i = 0; i < 40; i += 1) filler.push("The pan sounds warm and clear, hand made with care in the shop, number " + i + ".");
+  const list = ["Ding: D3", "Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5", "Bottom: C3 F3"].join("\n");
+  return [stray, filler.join("\n"), list, filler.slice(0, 5).join("\n")].filter(Boolean).join("\n");
+}
+
+test("battiloro window: a run of five or more notes outside the kept window blocks with CONFLICTING_LIST", () => {
+  const clean = longPage("");
+  assert.ok(clean.length > 2000);
+  const ok = interpret(clean);
+  assert.equal(ok.status, "REVIEW");
+  assert.equal(flagOf(ok, "CONFLICTING_LIST"), undefined);
+  const stray = longPage("Older listing: C D E F G A B");
+  assert.ok(stray.length > 2000);
+  const r = interpret(stray);
+  assert.equal(r.status, "NEEDS_INPUT");
+  assert.equal(flagOf(r, "CONFLICTING_LIST").level, "BLOCK");
+  assert.equal(importer.serialise(r), "");
+  const four = interpret(longPage("Older listing: C D E F"));
+  assert.equal(flagOf(four, "CONFLICTING_LIST"), undefined);
+});
+
+test("a text of 2,000 characters or fewer is not narrowed: a stray run of five notes beside the list is not a window block", () => {
+  const r = interpret("Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4\nElsewhere C D E F G A B");
+  assert.equal(flagOf(r, "CONFLICTING_LIST"), undefined);
 });

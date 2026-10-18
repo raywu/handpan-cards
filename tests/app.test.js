@@ -10647,6 +10647,7 @@ describe("IM: import text on the sheet", () => {
   const CLEAN = "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 Bottom: C3";
   const CUE = "Notes: D3 A3 Bb3 C4 D4 E4 F4 G4 A4";
   const OCTAVELESS = "Ding: D Top: A Bb C D E F G A Bottom: C";
+  const PICK_OCTAVELESS = "Ding: D Top: A Bb C D E F G A Bottom: C6";
   const REFUSED = "Ding: D Top: E F G Bb";
   const NO_CUE_REVIEW = "Ding: C Top: G A E Eb F";
   const TWO_DINGS = "Ding: D3 Ding: E3 Top: A3 B3 C4";
@@ -10758,11 +10759,12 @@ describe("IM: import text on the sheet", () => {
 
   test("IM: a picked ding refreshes every inferred octave and clears the NO_OCTAVE tick", () => {
     const app = boot();
-    run(app, OCTAVELESS);
+    run(app, PICK_OCTAVELESS);
     tick(app, "NO_OCTAVE");
     assert.strictEqual(app.els["import-use"].disabled, false);
     pick(app, 1);
-    const want = engine(app, OCTAVELESS, { ding: 1 });
+    const want = engine(app, PICK_OCTAVELESS, { ding: 1 });
+    assert.strictEqual(want.seed, "(A3) D4 Bb4 C5 D5 E5 F5 G5 A5 [C6]");
     assert.strictEqual(tickBox(app, "NO_OCTAVE").checked, false, "the NO_OCTAVE tick survived a pick");
     assert.strictEqual(app.els["import-use"].disabled, true);
     const got = rows(app);
