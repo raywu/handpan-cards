@@ -1,4 +1,4 @@
-# kills: window invariant: pitch-like prose outside the lists never lets a long text drop a note; it reads as its short form or blocks
+# kills: pitch-like prose outside the lists never lets a long text drop a note; it reads as its short form or blocks
 # suite: node --test --test-name-pattern pitch.like.prose tests/import.test.js
 # An octaved note outside the window no longer blocks, so a short clause bottom list is dropped.
 diff --git a/src/engine/importer.js b/src/engine/importer.js

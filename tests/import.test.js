@@ -536,7 +536,7 @@ test("window invariant: a long text reads as its short form or blocks, over ever
   }
 });
 
-test("window invariant: pitch-like prose outside the lists never lets a long text drop a note; it reads as its short form or blocks", () => {
+test("pitch-like prose outside the lists never lets a long text drop a note; it reads as its short form or blocks", () => {
   const spec = ["Material: steel", "Weight: five kilos", "Size: wide", "Shipping: free", "Bag: included", "Warranty: two years"];
   const shapes = {
     labelled: ["Ding: D3", "Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5", ...spec, "Bottom: C3 F3 G3"],
