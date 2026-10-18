@@ -493,11 +493,11 @@ for (const width of [195, 196]) {
 test("windowOf picks the first of two equally dense lines", () => {
   const filler = [];
   for (let i = 0; i < 30; i += 1) filler.push("The pan sounds warm and clear, hand made with care in the shop, number " + i + ".");
-  const a = "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4";
-  const b = "Ding: D3 Top: A3 B3 C4 D4 E4 F4 G4";
+  const a = "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 Bottom: C F";
+  const b = "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 Bottom: C3 F3";
   const text = [a, filler.join("\n"), b, filler.join("\n")].join("\n");
   assert.ok(text.length > 2000);
   const r = interpret(text);
   assert.ok(flagOf(r, "CONFLICTING_LIST"));
-  assert.equal(importer.serialise(r), "");
+  assert.ok(flagOf(r, "BOTTOM_NO_OCTAVE"));
 });

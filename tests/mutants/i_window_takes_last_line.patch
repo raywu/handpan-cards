@@ -1,0 +1,15 @@
+# kills: windowOf picks the first of two equally dense lines
+# suite: node --test --test-name-pattern ^windowOf.picks tests/import.test.js
+# windowOf takes the last highest-scoring line instead of the first.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -246,7 +246,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       return score.slice(Math.max(0, i - 3), i + 4).reduce(function (a, b) { return a + b; }, 0);
+     };
+     var best = 0;
+-    for (var i = 0; i < lines.length; i += 1) if (sum(i) > sum(best)) best = i;
++    for (var i = 0; i < lines.length; i += 1) if (sum(i) >= sum(best)) best = i;
+     var lo = Math.max(0, best - 3);
+     var start = 0;
+     for (var j = 0; j < lo; j += 1) start += lines[j].length + 1;

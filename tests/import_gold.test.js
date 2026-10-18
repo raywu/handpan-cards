@@ -85,11 +85,13 @@ test("L1 (b): parens bottom clears UNDECLARED_PARENS and raises PARENS_AS_BOTTOM
   assert.ok(flagOf(read(byId("yatao-ayasa-d-kurd-12"), true), "PARENS_AS_BOTTOM"));
 });
 
-test("L1 (b): on blog-pantheon-halo-xxd parens bottom deep-equals the reading without it", () => {
-  const c = byId("blog-pantheon-halo-xxd");
-  assert.deepEqual(importer.interpret(textOf(c), { title: c.title, parens: "bottom" }),
-    importer.interpret(textOf(c), { title: c.title }));
-});
+for (const id of ["blog-pantheon-halo-xxd", "ss-pantheon-halo-equinox-12"]) {
+  test("L1 (b): on " + id + " parens bottom deep-equals the reading without it", () => {
+    const c = byId(id);
+    assert.deepEqual(importer.interpret(textOf(c), { title: c.title, parens: "bottom" }),
+      importer.interpret(textOf(c), { title: c.title }));
+  });
+}
 
 test("L1 (c): yatao-c-ashakiran-15 gives BOTTOM_NO_OCTAVE (BLOCK) and boullard-battiloro gives CONFLICTING_LIST (BLOCK)", () => {
   const a = read(byId("yatao-c-ashakiran-15"), true);

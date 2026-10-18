@@ -1,0 +1,15 @@
+# kills: window cut: a single-line list after 195-char prose lines is never serialised truncated
+# suite: node --test --test-name-pattern ^window.cut tests/import.test.js
+# A run that crosses the window boundary is not counted, so a list cut by the window is read truncated.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -294,7 +294,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       var rr = new RegExp(RUN.source, "g");
+       var rm;
+       while ((rm = rr.exec(whole))) {
+-        if (rm.index < w.start || rm.index + rm[0].length > w.end) outside += 1;
++        if (rm.index + rm[0].length <= w.start || rm.index >= w.end) outside += 1;
+       }
+       if (outside) flag("CONFLICTING_LIST", { runs: outside });
+       base = w.start;

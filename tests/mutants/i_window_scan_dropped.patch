@@ -6,7 +6,7 @@ diff --git a/src/engine/importer.js b/src/engine/importer.js
 +++ b/src/engine/importer.js
 @@ -296,7 +296,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
        while ((rm = rr.exec(whole))) {
-         if (rm.index + rm[0].length <= w.start || rm.index >= w.end) outside += 1;
+         if (rm.index < w.start || rm.index + rm[0].length > w.end) outside += 1;
        }
 -      if (outside) flag("CONFLICTING_LIST", { runs: outside });
 +      if (false) flag("CONFLICTING_LIST", { runs: outside });
