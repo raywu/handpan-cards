@@ -789,7 +789,7 @@ test("windowOf picks the first of two equally dense lines", () => {
   assert.ok(flagOf(r, "BOTTOM_NO_OCTAVE"));
 });
 
-test("a weak label with exactly four notes after it is prose, not a list", () => {
+test("exactly four notes after a weak label are prose, not a list", () => {
   const r = interpret("Note: D3 A3 C4 D4");
   assert.equal(r.status, "INSUFFICIENT");
   assert.equal(importer.serialise(r), "");

@@ -1,5 +1,5 @@
-# kills: a weak label with exactly four notes after it is prose, not a list
-# suite: node --test --test-name-pattern ^a.weak.label.with.exactly.four tests/import.test.js
+# kills: exactly four notes after a weak label are prose, not a list
+# suite: node --test --test-name-pattern ^exactly.four.notes.after.a.weak tests/import.test.js
 # Lane L1b (pin M1). The weak-label threshold drops to four, so a four-note Note: line is read as a list.
 diff --git a/src/engine/importer.js b/src/engine/importer.js
 --- a/src/engine/importer.js
