@@ -440,11 +440,11 @@ test("BOTTOM_NO_OCTAVE: a bottom note written without an octave blocks and write
   assert.equal(ok.status, "REVIEW");
 });
 
-function longPage(stray) {
+function longPage(stray, after) {
   const filler = [];
   for (let i = 0; i < 40; i += 1) filler.push("The pan sounds warm and clear, hand made with care in the shop, number " + i + ".");
   const list = ["Ding: D3", "Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5", "Bottom: C3 F3"].join("\n");
-  return [stray, filler.join("\n"), list, filler.slice(0, 5).join("\n")].filter(Boolean).join("\n");
+  return [stray, filler.join("\n"), list, filler.join("\n"), after].filter(Boolean).join("\n");
 }
 
 test("battiloro window: a run of five or more notes outside the kept window blocks with CONFLICTING_LIST", () => {
@@ -459,6 +459,9 @@ test("battiloro window: a run of five or more notes outside the kept window bloc
   assert.equal(r.status, "NEEDS_INPUT");
   assert.equal(flagOf(r, "CONFLICTING_LIST").level, "BLOCK");
   assert.equal(importer.serialise(r), "");
+  const later = interpret(longPage("", "Newer listing: C D E F G A B"));
+  assert.equal(later.status, "NEEDS_INPUT");
+  assert.equal(flagOf(later, "CONFLICTING_LIST").level, "BLOCK");
   const four = interpret(longPage("Older listing: C D E F"));
   assert.equal(flagOf(four, "CONFLICTING_LIST"), undefined);
 });
