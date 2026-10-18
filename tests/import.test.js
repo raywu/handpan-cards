@@ -536,6 +536,44 @@ test("window invariant: a long text reads as its short form or blocks, over ever
   }
 });
 
+test("window invariant: pitch-like prose outside the lists never lets a long text drop a note; it reads as its short form or blocks", () => {
+  const spec = ["Material: steel", "Weight: five kilos", "Size: wide", "Shipping: free", "Bag: included", "Warranty: two years"];
+  const shapes = {
+    labelled: ["Ding: D3", "Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5", ...spec, "Bottom: C3 F3 G3"],
+    clause: ["D3 ding, A3 Bb3 C4 D4 E4 F4 G4 A4 top.", ...spec, "C3 and F3 on the bottom."],
+    clauseFirst: ["C3 and F3 on the bottom.", ...spec, "D3 ding, A3 Bb3 C4 D4 E4 F4 G4 A4 top."],
+  };
+  const pitchy = ["A perfect gift for beginners.", "This is a D minor scale.", "Tuned around D4.", "Model E5 edition.", "Free shipping, A grade steel.", "Size C or D available.", "A bag and A stand come with it."];
+  for (const [name, lines] of Object.entries(shapes)) {
+    const short = interpret(lines.join("\n"));
+    const want = [short.status, short.flags.map((f) => f.code).join(), importer.serialise(short)];
+    for (const line of pitchy) {
+      for (const where of ["lead", "tail"]) {
+        const body = where === "lead" ? [line, ...TAIL, ...lines] : [...lines, ...TAIL, line];
+        const text = body.join("\n");
+        const r = interpret(text);
+        const got = [r.status, r.flags.map((f) => f.code).join(), importer.serialise(r)];
+        const id = [name, line, where].join(" | ");
+        assert.ok(text.length > 2000, id);
+        if (r.status === "REVIEW") assert.deepEqual(got, want, id);
+        else assert.equal(got[2], "", id);
+      }
+    }
+  }
+});
+
+test("a reference pitch on the line after a list is not a list note", () => {
+  const r = interpret("Ding: F3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5\nand A4 = 440 Hz tuning.");
+  assert.equal(r.status, "REVIEW");
+  assert.equal(importer.serialise(r), "(F3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5");
+  const long = interpret(["Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5 Bottom: C3 F3 G3", ...TAIL, "Tuned to A4 = 440 Hz."].join("\n"));
+  assert.equal(long.status, "REVIEW");
+  assert.equal(importer.serialise(long), FULL_SEED);
+  const far = interpret(["Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5 Bottom: C3 F3 G3", ...TAIL, ...TAIL, ...TAIL, "Tuned to A4 = 440 Hz."].join("\n"));
+  assert.equal(far.status, "REVIEW");
+  assert.equal(importer.serialise(far), FULL_SEED);
+});
+
 test("window widening: a labelled spread of exactly 2,000 characters is read, and 2,001 blocks", () => {
   const spreadOf = (n) => {
     const head = "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5";
