@@ -132,7 +132,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     while ((m = re.exec(body))) {
       var tok = m[0];
       var start = from + m.index;
-      if (REFERENCE.test(body.slice(m.index))) break;
+      if (REFERENCE.test(body.slice(m.index))) {
+        if (readsAsNoteAfter(re, body, tok)) odd.push(tok);
+        break;
+      }
       var joined = JOINED.exec(tok);
       var sol = SOLFEGE.exec(tok);
       if (joined || sol || NOTE_UP.test(tok)) {
@@ -179,23 +182,33 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     while ((m = re.exec(text))) {
       var role = null;
       for (var g = 1; g < LABEL_ROLES.length; g += 1) if (m[g] !== undefined) role = LABEL_ROLES[g];
-      marks.push({ role: role, from: m.index + m[0].length, at: m.index });
+      // "Note:" and "notes ... are:" also open prose, so they label a list
+      // only when a run of notes follows.
+      var weak = m[4] !== undefined && /^note$|are$/i.test(m[4]);
+      marks.push({ role: role, from: m.index + m[0].length, at: m.index, weak: weak });
     }
     var bare = new RegExp(BARE_LABEL.source, "g");
     while ((m = bare.exec(text))) {
       var at = m.index;
       if (marks.some(function (k) { return at >= k.at && at < k.from; })) continue;
-      marks.push({ role: m[1] !== undefined ? "ding" : "top", from: at + m[0].length, at: at });
+      var ding = m[1] !== undefined;
+      marks.push({ role: ding ? "ding" : "top", from: at + m[0].length, at: at, weak: !ding, bare: ding });
     }
     marks.sort(function (a, b) { return a.at - b.at; });
-    var lists = [];
-    marks.forEach(function (mark, i) {
-      var to = i + 1 < marks.length ? marks[i + 1].at : text.length;
-      var list = readList(text, mark.from, to, mark.role, original);
-      list.at = mark.at;
-      if (list.notes.length || list.odd.length) lists.push(list);
-    });
-    return lists;
+    for (;;) {
+      var lists = [];
+      var prose = -1;
+      marks.forEach(function (mark, i) {
+        var to = i + 1 < marks.length ? marks[i + 1].at : text.length;
+        var list = readList(text, mark.from, to, mark.role, original);
+        if (mark.weak && list.notes.length < 5 && prose < 0) prose = i;
+        list.at = mark.at;
+        if (mark.bare) list.notes.forEach(function (n) { n.bareLabel = true; });
+        if (list.notes.length || list.odd.length) lists.push(list);
+      });
+      if (prose < 0) return lists;
+      marks.splice(prose, 1);
+    }
   }
 
   // "D3 ding, A3 Bb3 top, C3 bottom": a role word closes each comma clause.
@@ -351,6 +364,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     });
     if (!notes.length) return insufficient();
     if (odd.length) flag("AMBIGUOUS_NOTE", { tokens: odd });
+    // Two labelled top lists are two readings of the rim, so neither wins.
+    if (labelled && lists.filter(function (l) { return l.role === "top" && l.notes.length; }).length > 1) {
+      flag("CONFLICTING_LIST", { tops: true });
+    }
 
     // A ding label restated as the first note of the next list ("Hauptnote C3
     // ... Noten C/ ...") is one note, not two; the restatement lends the ding
@@ -367,7 +384,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       });
       var same = nextTop && pcOf(nextTop.name) !== null && pcOf(nextTop.name) === pcOf(dl.name) &&
         (!hasOctave(dl.name) || !hasOctave(nextTop.name) || nextTop.name === dl.name) &&
-        (nextTop.sep === "/" || !hasOctave(dl.name));
+        (nextTop.sep === "/" || !!dl.bareLabel && (hasOctave(dl.name) || !hasOctave(nextTop.name) ||
+          midiOf(nextTop.name) < 60));
       if (same) {
         if (!hasOctave(dl.name) && hasOctave(nextTop.name)) dl.name = nextTop.name;
         notes.splice(notes.indexOf(nextTop), 1);
@@ -375,9 +393,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
           var at = list.notes.indexOf(nextTop);
           if (at >= 0) list.notes.splice(at, 1);
         });
-      } else if (nextTop && (nextTop.sep === "/" || nextTop.closeMark)) {
-        // A slash- or bracket-marked ding in the list that the label does not
-        // restate is a second ding, so neither wins.
+      } else if (nextTop && (dl.bareLabel || nextTop.sep === "/" || nextTop.closeMark)) {
+        // A spec-row ding the list does not restate, or a slash- or
+        // bracket-marked ding in the list, is a second ding, so neither wins.
         dingClash = [dl, nextTop];
       }
     }

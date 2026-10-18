@@ -1,5 +1,5 @@
 # kills: a Main note or Hauptnote line that disagrees with a slash-marked ding blocks with CONFLICTING_DING
-# suite: node --test --test-name-pattern ^a.Main.note.or.Hauptnote tests/import.test.js
+# suite: node --test --test-name-pattern ^a.Main.note.or.Hauptnote.line.that.disagrees tests/import.test.js
 # a label ding that the list does not restate silently beats a slash-marked ding instead of raising CONFLICTING_DING.
 diff --git a/src/engine/importer.js b/src/engine/importer.js
 --- a/src/engine/importer.js

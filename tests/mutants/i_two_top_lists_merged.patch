@@ -1,0 +1,15 @@
+# kills: two labelled top lists are two readings of the rim and block with CONFLICTING_LIST
+# suite: node --test --test-name-pattern ^two.labelled.top.lists tests/import.test.js
+# two labelled top lists are merged into one rim instead of blocking.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -365,7 +365,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     if (!notes.length) return insufficient();
+     if (odd.length) flag("AMBIGUOUS_NOTE", { tokens: odd });
+     // Two labelled top lists are two readings of the rim, so neither wins.
+-    if (labelled && lists.filter(function (l) { return l.role === "top" && l.notes.length; }).length > 1) {
++    if (labelled && lists.filter(function (l) { return l.role === "top" && l.notes.length; }).length > 2) {
+       flag("CONFLICTING_LIST", { tops: true });
+     }
+ 

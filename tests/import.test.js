@@ -228,6 +228,7 @@ test("a Main note or Hauptnote line that disagrees with a slash-marked ding bloc
     "Hauptnote C3 wird mitgeliefert\n" + list,
     list + "\nMain note C3 version also available.",
     "Notes: D / A Bb C D E F G A C\nMain note A grade",
+    "Main note C3\nNotes: D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
   ]) {
     const r = interpret(t);
     assert.equal(r.status, "NEEDS_INPUT", t);
@@ -237,6 +238,68 @@ test("a Main note or Hauptnote line that disagrees with a slash-marked ding bloc
   const agree = interpret("Main note D3\n" + list);
   assert.equal(importer.serialise(agree), "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4");
   assert.equal(flagOf(agree, "CONFLICTING_DING"), undefined);
+});
+
+test("a weak label (Note:, notes ... are:, a bare Notes) with fewer than five notes after it is prose, never a list", () => {
+  const list = "Ding: D3\nTop: A3 Bb3 C4 D4 E4 F4 G4 A4";
+  const want = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4";
+  for (const t of [
+    "Please note: E3 bottom optional\n" + list,
+    list + "\nBottom note: C3",
+    list + "\nAdditional note: C5 (+150 EUR)",
+    list + "\nLowest note: C3",
+    list + "\nNote: C5 can be added on request.",
+    list + "\nOther notes are: C5 D5",
+    list + "\nNotes C5 and D5 can be added",
+    "Note: F3 Low Pygmy is our bestseller.\nNotes: D3 / A3 Bb3 C4 D4 E4 F4 G4 A4",
+  ]) {
+    const r = interpret(t);
+    const out = importer.serialise(r);
+    assert.ok(out === "" || out === want, t + " -> " + out);
+  }
+  assert.equal(importer.serialise(interpret("Note: Re3 / La3 Sib3 Do4 Re4 Mi4 Fa4")), "(D3) A3 Bb3 C4 D4 E4 F4");
+});
+
+test("a Main note or Hauptnote line that the next list does not restate blocks, slash or not", () => {
+  for (const t of [
+    "Main note C3 version also available.\nNotes: D3 A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "Hauptnote C3 wird mitgeliefert\nNotes: D3, A3, Bb3, C4, D4, E4, F4, G4, A4",
+    "Notes: D3 A3 Bb3 C4 D4 E4 F4 G4 A4\nHauptnote C3 wird mitgeliefert",
+    "Main note D4\nNotes: D3 A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "Ding\tC3\nHauptnote C\nNotes\tC4 D4 E4 G4 A4 C5",
+  ]) {
+    const r = interpret(t);
+    assert.equal(r.status, "NEEDS_INPUT", t);
+    assert.ok(flagOf(r, "CONFLICTING_DING"), t);
+  }
+  const same = interpret("Main note D3\nNotes: D3 A3 Bb3 C4 D4 E4 F4 G4 A4");
+  assert.equal(importer.serialise(same), "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4");
+  assert.equal(flagOf(same, "DUPLICATE_PITCH"), undefined);
+  assert.equal(importer.serialise(interpret("Hauptnote D\nNoten D3 A3 Bb3 C4 D4 E4 F4")), "(D3) A3 Bb3 C4 D4 E4 F4");
+});
+
+test("a Ding: label with no octave is not merged into an octaved first top note", () => {
+  assert.equal(importer.serialise(interpret("Ding: D\nTop: D4 E4 F4 G4 A4 C5")), "(D3) D4 E4 F4 G4 A4 C5");
+  assert.equal(importer.serialise(interpret("Ding: C\nTop: C4 D4 E4 G4 A4 C5")), "(C3) C4 D4 E4 G4 A4 C5");
+});
+
+test("a reference pitch inside a list that notes still follow blocks instead of cutting the list", () => {
+  const r = interpret("Ding: D3\nTop:\n- A3\n- Bb3\n- C4\n- D4\n- E4\n- F4\nA4 440\n- G4\n- A4\n- C5");
+  assert.equal(r.status, "NEEDS_INPUT");
+  assert.ok(flagOf(r, "AMBIGUOUS_NOTE"));
+  assert.equal(importer.serialise(interpret("Ding: D3\nTop: A3 Bb3 C4 D4 E4 F4 G4 A4\nA4 440")),
+    "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4");
+});
+
+test("two labelled top lists are two readings of the rim and block with CONFLICTING_LIST", () => {
+  for (const t of [
+    "Ding: C#3\nOuter circle: G#3 - B3 - C#4 - D4 - F4 - F#4 - G#4 - B4\nTop: D3 shell",
+    "Ding: F3\nOuter circle: G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5\nBottom: C3 Db3\nNotes: D3 version shipped by default.",
+  ]) {
+    const r = interpret(t);
+    assert.equal(r.status, "NEEDS_INPUT", t);
+    assert.ok(flagOf(r, "CONFLICTING_LIST"), t);
+  }
 });
 
 test("a picked ding clears DING_CUE and CONFLICTING_DING and lets the string through", () => {

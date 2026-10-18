@@ -1,0 +1,15 @@
+# kills: a Ding: label with no octave is not merged into an octaved first top note
+# suite: node --test --test-name-pattern ^a.Ding..label.with.no.octave tests/import.test.js
+# an octaveless Ding: label merges into an octaved first top note of the same letter and drops that top note.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -384,7 +384,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       });
+       var same = nextTop && pcOf(nextTop.name) !== null && pcOf(nextTop.name) === pcOf(dl.name) &&
+         (!hasOctave(dl.name) || !hasOctave(nextTop.name) || nextTop.name === dl.name) &&
+-        (nextTop.sep === "/" || !!dl.bareLabel && (hasOctave(dl.name) || !hasOctave(nextTop.name) ||
++        (nextTop.sep === "/" || !hasOctave(dl.name) || !!dl.bareLabel && (hasOctave(dl.name) || !hasOctave(nextTop.name) ||
+           midiOf(nextTop.name) < 60));
+       if (same) {
+         if (!hasOctave(dl.name) && hasOctave(nextTop.name)) dl.name = nextTop.name;
