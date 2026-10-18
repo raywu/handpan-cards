@@ -1,15 +1,15 @@
-# kills: IM: the import row ships shown: #import-row carries no hidden attribute in the served markup and IMPORT TEXT is in the sheet's focus order
-# suite: node --test --test-name-pattern ^IM:.the.import.row.ships.shown tests/app.test.js
-# Lane L1b. The import row ships hidden again, so IMPORT TEXT leaves production.
+# kills: IM: at 380px the Add sheet shows no IMPORT TEXT control
+# suite: node --test --test-name-pattern ^IM:.at.380px.the.Add.sheet.shows.no tests/e2e.test.js
+# Hotfix lane H. The import row loses its hidden attribute, so IMPORT TEXT shows again in a real browser.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1380,7 +1380,7 @@ html.about-open{overflow:hidden}
+@@ -1366,7 +1366,7 @@
           HPE.importer, shown role by role for the user to confirm, and only then
           written into #scale-box through the same input event typing fires. No
           network, no preset: a name-only paste is INSUFFICIENT. -->
--    <div class="fieldrow" id="import-row">
-+    <div class="fieldrow" id="import-row" hidden>
+-    <div class="fieldrow" id="import-row" hidden>
++    <div class="fieldrow" id="import-row">
        <button class="mode" type="button" id="import-open" aria-expanded="false"
                aria-controls="import-area">IMPORT TEXT</button>
        <div id="import-area" hidden>

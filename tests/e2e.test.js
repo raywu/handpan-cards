@@ -12398,11 +12398,26 @@ function run() {
       }
     });
 
-    test("IM: at 380px the Add sheet shows the IMPORT TEXT control, with no horizontal scroll and the primary in view, before and after a parentheses result", async () => {
+    test("IM: at 380px the Add sheet shows no IMPORT TEXT control", async () => {
       try {
         await freshLoad();
         await b.setViewport(380, 780, true);
         await openSheet();
+        const m = await b.eval(`
+          const el = document.getElementById("import-open"), r = el.getBoundingClientRect();
+          return { rects: el.getClientRects().length, w: r.width, h: r.height, hidden: document.getElementById("import-row").hidden };`);
+        assert.deepStrictEqual(m, { rects: 0, w: 0, h: 0, hidden: true });
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("IM: at 380px the Add sheet with the row unhidden shows the IMPORT TEXT control, with no horizontal scroll and the primary in view, before and after a parentheses result", async () => {
+      try {
+        await freshLoad();
+        await b.setViewport(380, 780, true);
+        await openSheet();
+        await b.eval(`document.getElementById("import-row").hidden = false; return true;`);
         const m = await b.eval(`
           const el = document.getElementById("import-open"), r = el.getBoundingClientRect();
           const gen = document.getElementById("scale-generate").getBoundingClientRect();

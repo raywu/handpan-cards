@@ -10845,15 +10845,18 @@ describe("IM: import text on the sheet", () => {
     assert.strictEqual(app.els["import-open"].getAttribute("aria-expanded"), "false");
   });
 
-  test("IM: the import row ships shown: #import-row carries no hidden attribute in the served markup and IMPORT TEXT is in the sheet's focus order", () => {
+  test("IM: the import row ships hidden: #import-row carries the hidden attribute in the served markup and IMPORT TEXT is not in the sheet's focus order", () => {
     const src = require("node:fs").readFileSync(require("node:path").join(__dirname, "..", "index.html"), "utf8");
-    assert.match(src, /<div class="fieldrow" id="import-row">/);
-    assert.doesNotMatch(src, /id="import-row"[^>]*hidden/);
+    assert.match(src, /<div class="fieldrow" id="import-row" hidden>/);
+    assert.match(src, /#import-row\[hidden\]\s*\{\s*display:\s*none/);
     const app = boot();
     openSheet(app);
-    assert.strictEqual(app.els["import-row"].hidden, false);
+    assert.strictEqual(app.els["import-row"].hidden, true);
+    assert.strictEqual(app.els["import-open"].getClientRects().length, 0);
     const seen = tabs(app, 40);
-    assert.ok(seen.includes("import-open"), "IMPORT TEXT is missing from the focus order of the shipped sheet");
+    for (const id of ["import-open", "import-text", "import-run", "import-use"]) {
+      assert.ok(!seen.includes(id), `${id} is in the focus order of a sheet whose import row is hidden`);
+    }
     assert.ok(seen.includes("scale-box"));
   });
 
