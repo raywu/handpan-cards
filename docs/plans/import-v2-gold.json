@@ -1,7 +1,7 @@
 {
  "about": "Import v2 gold set (Phase 1, section A). Each case: the URL, the date read, the verbatim source span, what a TEXT tier should return (expected.status, expected.textSeed), the true pan where the page states it (expected.seed; null when the page does not settle it), the vision reading for image-only pages (expected.visionSeed), and the reasoning. Spans are quoted verbatim but kept short: the pitch line or lines plus the few words needed to read them (labels, the ding marker); '...' marks an elision. They are kept short because GitHub Pages serves every committed file, docs/plans included, publicly (owner decision 2026-10-17). Scores do not count until the owner spot-checks this file (O6).",
  "readAt": "2026-10-17",
- "ownerSpotCheck": "PENDING",
+ "ownerSpotCheck": "DONE 2026-10-17: 7 of 8 Correct (ss-leaf-c-minor-14, sanango-d-kurd-15, boullard-battiloro-celtic-contradictory, engadine-mano-9-prose, thomann-startone-d-kurd-octaveless, yatao-a2-amara-9, sunreed-zen-d-minor-9); blog-pantheon-halo-xxd WRONG, corrected to REVIEW (owner: the scale is spelled out as '(C) F G Ab C D Eb F G')",
  "cases": [
   {
    "id": "yatao-mag-d-kurd-17",
@@ -741,11 +741,11 @@
    "readAt": "2026-10-17",
    "span": "The notes of the XXD Scale Halo are:\n(C) F G Ab C D Eb F G",
    "expected": {
-    "status": "NEEDS_INPUT",
-    "textSeed": null,
-    "seed": null
+    "status": "REVIEW",
+    "textSeed": "(C3) F3 G3 Ab3 C4 D4 Eb4 F4 G4",
+    "seed": "(C3) F3 G3 Ab3 C4 D4 Eb4 F4 G4"
    },
-   "reasoning": "CONVENTION CLASH: here the parentheses mark the DING. On Sound Sculpture and Sela pages they mark BOTTOM notes. A tier that learned 'parens = bottom' builds a pan with no ding and a bottom C. Octaveless, and the page states no octave, so ask. The pan's octaves are UNVERIFIED."
+   "reasoning": "OWNER CORRECTION (spot-check, 2026-10-17): the scale is spelled out in the text as '(C) F G Ab C D Eb F G', so this is a REVIEW case, not NEEDS_INPUT. Here the round brackets mark the DING, the engine's own reading; the {parens: 'bottom'} option (D-A) must NOT be applied, or the pan loses its ding. Octaveless: ascending inference from C3 with a NO_OCTAVE CONFIRM, as on the other octaveless REVIEW cases. The pan's true octaves are UNVERIFIED."
   },
   {
    "id": "snd-f-aeolian-10-name-only",

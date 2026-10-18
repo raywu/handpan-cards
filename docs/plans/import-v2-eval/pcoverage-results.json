@@ -1,12 +1,12 @@
 {
- "ranAt": "2026-10-18T00:21:37.126Z",
+ "ranAt": "2026-10-18T02:39:42.036Z",
  "catalogEntries": 77,
  "totals": {
   "pc-only": 15,
-  "n/a": 8,
+  "n/a": 7,
   "none": 1,
   "near": 7,
-  "exact": 9
+  "exact": 10
  },
  "rows": [
   {
@@ -259,7 +259,10 @@
   },
   {
    "id": "blog-pantheon-halo-xxd",
-   "coverage": "n/a"
+   "notes": 9,
+   "bottoms": 0,
+   "coverage": "exact",
+   "entry": "Minor"
   },
   {
    "id": "snd-f-aeolian-10-name-only",

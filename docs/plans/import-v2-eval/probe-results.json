@@ -794,7 +794,10 @@
    "shopify": false,
    "jsonLdProduct": 0,
    "jsonLdHasPitch": false,
-   "robotsAllows": true
+   "robotsAllows": true,
+   "pitchesInNoJsText": true,
+   "spanInNoJsText": true,
+   "spanFieldsRecomputed": "2026-10-17, offline from the cached text (same textSha256) with probe.mjs's own expressions, after the owner's spot-check made this a REVIEW case; no page was re-fetched"
   },
   {
    "id": "snd-f-aeolian-10-name-only",
