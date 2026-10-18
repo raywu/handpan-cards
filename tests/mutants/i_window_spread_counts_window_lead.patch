@@ -1,0 +1,17 @@
+# kills: window invariant: a long text reads as its short form or blocks, over every list shape, padding width and position
+# suite: node --test --test-name-pattern ^window.invariant tests/import.test.js
+# The spread counts the density window's lead lines, so wide lead prose blocks a short labelled list.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -294,8 +294,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       var whole = normalise(full);
+       var spread = labelledLists(whole, full).filter(function (l) { return l.notes.length; });
+       if (spread.length) {
+-        var lo = spread[0].at;
+-        var hi = 0;
++        var lo = Math.min(w.start, spread[0].at);
++        var hi = w.end;
+         spread.forEach(function (l) { hi = Math.max(hi, l.notes[l.notes.length - 1].span.end); });
+         lo = lo > 0 ? full.lastIndexOf("\n", lo - 1) + 1 : 0;
+         hi = full.indexOf("\n", hi);

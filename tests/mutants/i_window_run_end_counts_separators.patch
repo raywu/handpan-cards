@@ -1,0 +1,15 @@
+# kills: window invariant: a long text reads as its short form or blocks, over every list shape, padding width and position
+# suite: node --test --test-name-pattern ^window.invariant tests/import.test.js
+# The outside test counts a run's trailing separators, so a list ending its line inside the window blocks.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -307,7 +307,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       var rr = new RegExp(RUN.source, "g");
+       var rm;
+       while ((rm = rr.exec(whole))) {
+-        var end = rm.index + rm[0].replace(/[\s,\-\/\u00b7|()]+$/, "").length;
++        var end = rm.index + rm[0].length;
+         if (rm.index < w.start || end > w.end) outside += 1;
+       }
+       if (outside) flag("CONFLICTING_LIST", { runs: outside });

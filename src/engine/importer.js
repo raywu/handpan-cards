@@ -294,8 +294,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       var whole = normalise(full);
       var spread = labelledLists(whole, full).filter(function (l) { return l.notes.length; });
       if (spread.length) {
-        var lo = Math.min(w.start, spread[0].at);
-        var hi = w.end;
+        var lo = spread[0].at;
+        var hi = 0;
         spread.forEach(function (l) { hi = Math.max(hi, l.notes[l.notes.length - 1].span.end); });
         lo = lo > 0 ? full.lastIndexOf("\n", lo - 1) + 1 : 0;
         hi = full.indexOf("\n", hi);
@@ -307,7 +307,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       var rr = new RegExp(RUN.source, "g");
       var rm;
       while ((rm = rr.exec(whole))) {
-        if (rm.index < w.start || rm.index + rm[0].length > w.end) outside += 1;
+        var end = rm.index + rm[0].replace(/[\s,\-\/\u00b7|()]+$/, "").length;
+        if (rm.index < w.start || end > w.end) outside += 1;
       }
       if (outside) flag("CONFLICTING_LIST", { runs: outside });
       base = w.start;

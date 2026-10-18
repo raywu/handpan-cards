@@ -500,6 +500,58 @@ test("window cut: an unlabelled list the window cuts blocks and writes nothing",
   }
 });
 
+test("window invariant: a long text reads as its short form or blocks, over every list shape, padding width and position", () => {
+  const spec = ["Material: steel", "Weight: five kilos", "Size: wide", "Shipping: free", "Bag: included", "Warranty: two years"];
+  const shapes = {
+    bare: ["Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5"],
+    dot: ["Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5."],
+    bottom: ["Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5 Bottom: C3 F3 G3"],
+    pygmy: ["Ding: F3", "Top: G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5", "Inner: F5 G5", ...spec, "Bottom: C3 Db3 Eb3 Bb3 Db4 Ab5"],
+    multi: ["Ding: D3", "Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5", ...spec, "Bottom:", "C3,", "F3,", "G3."],
+  };
+  for (let k = 1; k <= 7; k += 1) {
+    shapes["below" + k] = ["Ding: D3", "Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5", ...spec.concat(spec).slice(0, k - 1), "Bottom: C3 F3 G3 E3 B2"];
+  }
+  const tail = TAIL.concat(TAIL).slice(0, 30);
+  for (const [name, lines] of Object.entries(shapes)) {
+    for (const sep of ["\n", "\r\n"]) {
+      const short = interpret(lines.join(sep));
+      const want = [short.status, short.flags.map((f) => f.code).join(), importer.serialise(short)];
+      for (const p of [0, 2, 6]) {
+        for (let w = 40; w <= 900; w += 13) {
+          const lead = [];
+          for (let i = 0; i < p; i += 1) lead.push(("Lead " + i + " ").padEnd(w - 1, "x") + ".");
+          const text = lead.concat(lines, tail).join(sep);
+          const r = interpret(text);
+          const id = [name, JSON.stringify(sep), p, w].join(" ");
+          assert.ok(text.length > 2000, id);
+          assert.deepEqual([r.status, r.flags.map((f) => f.code).join(), importer.serialise(r)], want, id);
+        }
+      }
+    }
+  }
+});
+
+test("window widening: a labelled spread of exactly 2,000 characters is read, and 2,001 blocks", () => {
+  const spreadOf = (n) => {
+    const head = "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5";
+    const last = "Bottom: C3 F3 G3";
+    let left = n - head.length - last.length - 1;
+    const fill = [];
+    while (left > 81) { fill.push("x".repeat(80)); left -= 81; }
+    fill.push("x".repeat(left - 1));
+    const body = [head, ...fill, last].join("\n");
+    assert.equal(body.length, n);
+    return body + "\n" + TAIL.join("\n");
+  };
+  const at = interpret(spreadOf(2000));
+  assert.equal(at.status, "REVIEW");
+  assert.equal(importer.serialise(at), FULL_SEED);
+  const over = interpret(spreadOf(2001));
+  assert.equal(over.status, "NEEDS_INPUT");
+  assert.ok(over.flags.some((f) => f.code === "CONFLICTING_LIST" && f.spread === 2001));
+});
+
 const FULL_SEED = "[C3] (D3) [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5";
 const TAIL = Array.from({ length: 25 }, (_, i) => "The pan sounds warm and clear, hand made with care in the shop, number " + i + ".");
 
