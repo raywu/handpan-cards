@@ -4853,9 +4853,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
           var at = list.notes.indexOf(nextTop);
           if (at >= 0) list.notes.splice(at, 1);
         });
-      } else if (nextTop && (dl.bareLabel || nextTop.sep === "/" || nextTop.closeMark)) {
-        // A spec-row ding the list does not restate, or a slash- or
-        // bracket-marked ding in the list, is a second ding, so neither wins.
+      } else if (nextTop && (dl.bareLabel || nextTop.sep === "/")) {
+        // A spec-row ding the list does not restate, or a slash-marked ding
+        // in the list, is a second ding, so neither wins until one is picked.
         dingClash = [dl, nextTop];
       }
     }
@@ -4873,7 +4873,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     }
 
     notes.forEach(function (n, i) { n.index = i; n.octave = hasOctave(n.name); n.midi = midiOf(n.name); });
-    if (dingClash) flag("CONFLICTING_DING", { notes: dingClash.map(function (n) { return n.index; }) });
+    var pickable = typeof opts.ding === "number" && opts.ding >= 0 && opts.ding < notes.length;
+    if (dingClash && !pickable) flag("CONFLICTING_DING", { notes: dingClash.map(function (n) { return n.index; }) });
 
     // Who is the ding?
     var labelDings = notes.filter(function (n) { return n.role === "ding" && !n.paren; });
@@ -4883,7 +4884,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       firstTop = list.notes[0];
       return true;
     });
-    var pickable = typeof opts.ding === "number" && opts.ding >= 0 && opts.ding < notes.length;
     var ding = null;
     var stray = notes.filter(function (n) { return n.closeMark; });
     function indices(list) { return list.map(function (n) { return n.index; }); }

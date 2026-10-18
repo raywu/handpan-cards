@@ -257,6 +257,7 @@ test("a weak label (Note:, notes ... are:, a bare Notes) with fewer than five no
     const out = importer.serialise(r);
     assert.ok(out === "" || out === want, t + " -> " + out);
   }
+  assert.equal(importer.serialise(interpret("Note: F3 Low Pygmy is our bestseller.\nNotes: D3 / A3 Bb3 C4 D4 E4 F4 G4 A4")), want);
   assert.equal(importer.serialise(interpret("Note: Re3 / La3 Sib3 Do4 Re4 Mi4 Fa4")), "(D3) A3 Bb3 C4 D4 E4 F4");
 });
 
@@ -307,6 +308,11 @@ test("a picked ding clears DING_CUE and CONFLICTING_DING and lets the string thr
   assert.equal(r.status, "REVIEW");
   assert.deepEqual(codes(r), ["NO_OCTAVE"]);
   assert.equal(importer.serialise(r), "(G3) D4 E4 F4 Bb4");
+  for (const t of ["Main note C3\nNotes: D3 / A3 Bb3 C4 D4 E4 F4 G4 A4", "Main note C3 version also available.\nNotes: D3 A3 Bb3 C4 D4 E4 F4 G4 A4"]) {
+    const picked = interpret(t, { ding: 0 });
+    assert.equal(picked.status, "REVIEW", t);
+    assert.equal(importer.serialise(picked), "(C3) D3 A3 Bb3 C4 D4 E4 F4 G4 A4", t);
+  }
 });
 
 test("a picked ding on a note after the first moves to the front: same string as the labelled form", () => {

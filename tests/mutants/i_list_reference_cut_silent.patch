@@ -4,11 +4,12 @@
 diff --git a/src/engine/importer.js b/src/engine/importer.js
 --- a/src/engine/importer.js
 +++ b/src/engine/importer.js
-@@ -133,7 +133,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -133,7 +133,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
        var tok = m[0];
        var start = from + m.index;
        if (REFERENCE.test(body.slice(m.index))) {
 -        if (readsAsNoteAfter(re, body, tok)) odd.push(tok);
++
          break;
        }
        var joined = JOINED.exec(tok);

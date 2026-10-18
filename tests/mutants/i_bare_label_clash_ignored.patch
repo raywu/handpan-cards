@@ -1,6 +1,6 @@
 # kills: a Main note or Hauptnote line that the next list does not restate blocks, slash or not
 # suite: node --test --test-name-pattern ^a.Main.note.or.Hauptnote.line.that.the tests/import.test.js
-# a spec-row ding that the list does not restate is ignored unless the list's ding is slash- or bracket-marked.
+# a spec-row ding that the list does not restate is ignored unless the list's ding is slash-marked.
 diff --git a/src/engine/importer.js b/src/engine/importer.js
 --- a/src/engine/importer.js
 +++ b/src/engine/importer.js
@@ -8,8 +8,8 @@ diff --git a/src/engine/importer.js b/src/engine/importer.js
            var at = list.notes.indexOf(nextTop);
            if (at >= 0) list.notes.splice(at, 1);
          });
--      } else if (nextTop && (dl.bareLabel || nextTop.sep === "/" || nextTop.closeMark)) {
-+      } else if (nextTop && (nextTop.sep === "/" || nextTop.closeMark)) {
-         // A spec-row ding the list does not restate, or a slash- or
-         // bracket-marked ding in the list, is a second ding, so neither wins.
+-      } else if (nextTop && (dl.bareLabel || nextTop.sep === "/")) {
++      } else if (nextTop && (nextTop.sep === "/")) {
+         // A spec-row ding the list does not restate, or a slash-marked ding
+         // in the list, is a second ding, so neither wins until one is picked.
          dingClash = [dl, nextTop];
