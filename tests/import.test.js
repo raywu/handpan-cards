@@ -500,7 +500,7 @@ test("window cut: an unlabelled list the window cuts blocks and writes nothing",
   }
 });
 
-test("window invariant: a long text reads as its short form or blocks, over every list shape, padding width and position", () => {
+test("window invariant: a long text reads as its short form or blocks, over every list shape, labelled or clause, padding width and position", () => {
   const spec = ["Material: steel", "Weight: five kilos", "Size: wide", "Shipping: free", "Bag: included", "Warranty: two years"];
   const shapes = {
     bare: ["Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5"],
@@ -511,6 +511,10 @@ test("window invariant: a long text reads as its short form or blocks, over ever
   };
   for (let k = 1; k <= 7; k += 1) {
     shapes["below" + k] = ["Ding: D3", "Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5", ...spec.concat(spec).slice(0, k - 1), "Bottom: C3 F3 G3 E3 B2"];
+  }
+  shapes.clause = ["D3 ding, A3 Bb3 C4 D4 E4 F4 G4 A4 top, C3 F3 bottom."];
+  for (const k of [0, 1, 4, 8]) {
+    shapes["clause" + k] = ["D3 ding, A3 Bb3 C4 D4 E4 F4 G4 A4 top.", ...spec.concat(spec).slice(0, k), "C3 and F3 on the bottom."];
   }
   const tail = TAIL.concat(TAIL).slice(0, 30);
   for (const [name, lines] of Object.entries(shapes)) {

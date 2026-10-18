@@ -1,4 +1,4 @@
-# kills: window invariant: a long text reads as its short form or blocks, over every list shape, padding width and position
+# kills: window invariant: a long text reads as its short form or blocks, over every list shape, labelled or clause, padding width and position
 # suite: node --test --test-name-pattern ^window.invariant tests/import.test.js
 # The outside test counts a run's trailing separators, so a list ending its line inside the window blocks.
 diff --git a/src/engine/importer.js b/src/engine/importer.js

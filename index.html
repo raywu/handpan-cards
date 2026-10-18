@@ -4672,6 +4672,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       list.notes.forEach(function (n) {
         n.span = spanOf(original, m.index + n.span.start, m.index + n.span.end);
       });
+      list.at = m.index;
+      list.end = m.index + clause.length;
       lists.push(list);
     }
     return lists;
@@ -4746,17 +4748,20 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       return f;
     }
     // A long text is read only in its densest-pitch window, widened to whole
-    // lines over every labelled list in the text. A labelled spread wider than
-    // NARROW_OVER, or a run of five or more notes outside the window, blocks,
-    // so narrowing never hides a note.
+    // lines over every labelled list in the text, or every clause list when it
+    // has none. A spread wider than NARROW_OVER, or a run of five or more notes
+    // outside the window, blocks, so narrowing never hides a note.
     if (full.length > NARROW_OVER) {
       var w = windowOf(full);
       var whole = normalise(full);
       var spread = labelledLists(whole, full).filter(function (l) { return l.notes.length; });
+      if (!spread.length) spread = clauseLists(whole, full) || [];
       if (spread.length) {
         var lo = spread[0].at;
         var hi = 0;
-        spread.forEach(function (l) { hi = Math.max(hi, l.notes[l.notes.length - 1].span.end); });
+        spread.forEach(function (l) {
+          hi = Math.max(hi, l.end !== undefined ? l.end : l.notes[l.notes.length - 1].span.end);
+        });
         lo = lo > 0 ? full.lastIndexOf("\n", lo - 1) + 1 : 0;
         hi = full.indexOf("\n", hi);
         if (hi < 0) hi = full.length;
