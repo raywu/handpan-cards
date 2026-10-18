@@ -1,5 +1,5 @@
 {
- "ranAt": "2026-10-18T00:43:15.621Z",
+ "ranAt": "2026-10-18T02:04:41.586Z",
  "totals": {
   "paste": {
    "exact": 12,
@@ -15,6 +15,14 @@
    "wrong-but-valid": 1,
    "correct-insufficient": 5,
    "correct-block": 4,
+   "insufficient": 16
+  },
+  "window": {
+   "exact": 9,
+   "blocked": 5,
+   "wrong-but-valid": 2,
+   "correct-insufficient": 5,
+   "correct-block": 3,
    "insufficient": 16
   }
  },
@@ -39,6 +47,15 @@
     ],
     "line": "[Bb2] [C3] (D3) [E3] [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5 [E5]",
     "outcome": "exact"
+   },
+   "window": {
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "[Bb2] [C3] (D3) [E3] [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5 [E5]",
+    "outcome": "exact"
    }
   },
   {
@@ -54,6 +71,15 @@
     "outcome": "exact"
    },
    "page": {
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "[Bb2] [C3] (D3) [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5 E5 F5",
+    "outcome": "exact"
+   },
+   "window": {
     "status": "REVIEW",
     "codes": [
      "DING_CUE",
@@ -84,6 +110,15 @@
     ],
     "line": "",
     "outcome": "blocked"
+   },
+   "window": {
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "(G2) [D3] [Eb3] G3 A3 Bb3 C4 D4 Eb4 F4 G4 [A4] [C5] [D5] [Eb5] [F5] [G5]",
+    "outcome": "exact"
    }
   },
   {
@@ -99,6 +134,16 @@
     "outcome": "exact"
    },
    "page": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "AMBIGUOUS_NOTE",
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "",
+    "outcome": "blocked"
+   },
+   "window": {
     "status": "NEEDS_INPUT",
     "codes": [
      "AMBIGUOUS_NOTE",
@@ -131,6 +176,16 @@
     ],
     "line": "(C3) F3 G3 A3 B3 C4 D4 E4 G4 [D5] [E5] [F5] [A5] [B5] [C6]",
     "outcome": "wrong-but-valid"
+   },
+   "window": {
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "NO_OCTAVE",
+     "COUNT_OK"
+    ],
+    "line": "(C3) F3 G3 A3 B3 C4 D4 E4 G4 [D5] [E5] [F5] [A5] [B5] [C6]",
+    "outcome": "wrong-but-valid"
    }
   },
   {
@@ -147,6 +202,16 @@
     "outcome": "blocked"
    },
    "page": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "UNDECLARED_PARENS",
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "",
+    "outcome": "blocked"
+   },
+   "window": {
     "status": "NEEDS_INPUT",
     "codes": [
      "UNDECLARED_PARENS",
@@ -177,6 +242,15 @@
     ],
     "line": "[B2] (D3) [E3] F#3 [G#3] A3 [B3] C#4 D4 [E4] F#4 G#4 A4 [B4] C#5 D5 [E5] F#5",
     "outcome": "exact"
+   },
+   "window": {
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "[B2] (D3) [E3] F#3 [G#3] A3 [B3] C#4 D4 [E4] F#4 G#4 A4 [B4] C#5 D5 [E5] F#5",
+    "outcome": "exact"
    }
   },
   {
@@ -191,6 +265,14 @@
     "outcome": "correct-insufficient"
    },
    "page": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "correct-insufficient"
+   },
+   "window": {
     "status": "INSUFFICIENT",
     "codes": [
      "NO_NOTE_LIST"
@@ -223,6 +305,15 @@
     ],
     "line": "",
     "outcome": "correct-block"
+   },
+   "window": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "CONFLICTING_DING",
+     "DUPLICATE_PITCH"
+    ],
+    "line": "",
+    "outcome": "correct-block"
    }
   },
   {
@@ -246,6 +337,16 @@
      "SOURCE_NOT_ASCENDING",
      "DUPLICATE_PITCH",
      "NO_OCTAVE"
+    ],
+    "line": "",
+    "outcome": "blocked"
+   },
+   "window": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "CONFLICTING_DING",
+     "COUNT_MISMATCH",
+     "DUPLICATE_PITCH"
     ],
     "line": "",
     "outcome": "blocked"
@@ -276,6 +377,16 @@
     ],
     "line": "",
     "outcome": "blocked"
+   },
+   "window": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "CONFLICTING_DING",
+     "COUNT_MISMATCH",
+     "DUPLICATE_PITCH"
+    ],
+    "line": "",
+    "outcome": "blocked"
    }
   },
   {
@@ -301,6 +412,16 @@
     ],
     "line": "",
     "outcome": "correct-block"
+   },
+   "window": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "UNDECLARED_PARENS",
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "",
+    "outcome": "correct-block"
    }
   },
   {
@@ -315,6 +436,14 @@
     "outcome": "insufficient"
    },
    "page": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
+   },
+   "window": {
     "status": "INSUFFICIENT",
     "codes": [
      "NO_NOTE_LIST"
@@ -341,6 +470,14 @@
     ],
     "line": "",
     "outcome": "insufficient"
+   },
+   "window": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
    }
   },
   {
@@ -355,6 +492,14 @@
     "outcome": "insufficient"
    },
    "page": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
+   },
+   "window": {
     "status": "INSUFFICIENT",
     "codes": [
      "NO_NOTE_LIST"
@@ -381,6 +526,14 @@
     ],
     "line": "",
     "outcome": "insufficient"
+   },
+   "window": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
    }
   },
   {
@@ -401,6 +554,14 @@
     ],
     "line": "",
     "outcome": "correct-insufficient"
+   },
+   "window": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "correct-insufficient"
    }
   },
   {
@@ -415,6 +576,14 @@
     "outcome": "correct-insufficient"
    },
    "page": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "correct-insufficient"
+   },
+   "window": {
     "status": "INSUFFICIENT",
     "codes": [
      "NO_NOTE_LIST"
@@ -442,6 +611,14 @@
     ],
     "line": "",
     "outcome": "blocked"
+   },
+   "window": {
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE"
+    ],
+    "line": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5",
+    "outcome": "exact"
    }
   },
   {
@@ -456,6 +633,14 @@
     "outcome": "insufficient"
    },
    "page": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
+   },
+   "window": {
     "status": "INSUFFICIENT",
     "codes": [
      "NO_NOTE_LIST"
@@ -482,6 +667,14 @@
     ],
     "line": "",
     "outcome": "insufficient"
+   },
+   "window": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
    }
   },
   {
@@ -496,6 +689,14 @@
     "outcome": "insufficient"
    },
    "page": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
+   },
+   "window": {
     "status": "INSUFFICIENT",
     "codes": [
      "NO_NOTE_LIST"
@@ -522,6 +723,14 @@
     ],
     "line": "",
     "outcome": "insufficient"
+   },
+   "window": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
    }
   },
   {
@@ -536,6 +745,14 @@
     "outcome": "correct-insufficient"
    },
    "page": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "correct-insufficient"
+   },
+   "window": {
     "status": "INSUFFICIENT",
     "codes": [
      "NO_NOTE_LIST"
@@ -564,6 +781,15 @@
     ],
     "line": "(E2) [B2] [D3] E3 F#3 G3 [A3] B3 [C4] D4 E4 F#4 G4 [B4] [C5] [D5] [E5]",
     "outcome": "exact"
+   },
+   "window": {
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "(E2) [B2] [D3] E3 F#3 G3 [A3] B3 [C4] D4 E4 F#4 G4 [B4] [C5] [D5] [E5]",
+    "outcome": "exact"
    }
   },
   {
@@ -584,6 +810,14 @@
     ],
     "line": "",
     "outcome": "insufficient"
+   },
+   "window": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
    }
   },
   {
@@ -598,6 +832,14 @@
     "outcome": "insufficient"
    },
    "page": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
+   },
+   "window": {
     "status": "INSUFFICIENT",
     "codes": [
      "NO_NOTE_LIST"
@@ -629,6 +871,16 @@
     ],
     "line": "",
     "outcome": "blocked"
+   },
+   "window": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "UNDECLARED_PARENS",
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "",
+    "outcome": "blocked"
    }
   },
   {
@@ -649,6 +901,14 @@
     ],
     "line": "",
     "outcome": "insufficient"
+   },
+   "window": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
    }
   },
   {
@@ -663,6 +923,14 @@
     "outcome": "insufficient"
    },
    "page": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
+   },
+   "window": {
     "status": "INSUFFICIENT",
     "codes": [
      "NO_NOTE_LIST"
@@ -692,6 +960,15 @@
     ],
     "line": "",
     "outcome": "blocked"
+   },
+   "window": {
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "NO_OCTAVE"
+    ],
+    "line": "(D3) A3 B3 C4 D4 E4 F4 G4 A4",
+    "outcome": "exact"
    }
   },
   {
@@ -715,6 +992,15 @@
     ],
     "line": "",
     "outcome": "blocked"
+   },
+   "window": {
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "NO_OCTAVE"
+    ],
+    "line": "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+    "outcome": "exact"
    }
   },
   {
@@ -730,6 +1016,15 @@
     "outcome": "exact"
    },
    "page": {
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "COUNT_OK"
+    ],
+    "line": "(D3) A3 A#3 C4 D4 E4 F4 G4 A4",
+    "outcome": "exact"
+   },
+   "window": {
     "status": "REVIEW",
     "codes": [
      "DING_CUE",
@@ -757,6 +1052,14 @@
     ],
     "line": "",
     "outcome": "insufficient"
+   },
+   "window": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
    }
   },
   {
@@ -771,6 +1074,14 @@
     "outcome": "insufficient"
    },
    "page": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
+   },
+   "window": {
     "status": "INSUFFICIENT",
     "codes": [
      "NO_NOTE_LIST"
@@ -800,6 +1111,15 @@
     ],
     "line": "",
     "outcome": "correct-block"
+   },
+   "window": {
+    "status": "REVIEW",
+    "codes": [
+     "DING_CUE",
+     "NO_OCTAVE"
+    ],
+    "line": "(D3) A3 C4 D4 E4 F4 G4 A4 C5 D5",
+    "outcome": "wrong-but-valid"
    }
   },
   {
@@ -827,6 +1147,17 @@
     ],
     "line": "",
     "outcome": "correct-block"
+   },
+   "window": {
+    "status": "NEEDS_INPUT",
+    "codes": [
+     "UNDECLARED_PARENS",
+     "DING_CUE",
+     "NO_OCTAVE",
+     "COUNT_OK"
+    ],
+    "line": "",
+    "outcome": "correct-block"
    }
   },
   {
@@ -841,6 +1172,14 @@
     "outcome": "insufficient"
    },
    "page": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
+   },
+   "window": {
     "status": "INSUFFICIENT",
     "codes": [
      "NO_NOTE_LIST"
@@ -867,6 +1206,14 @@
     ],
     "line": "",
     "outcome": "insufficient"
+   },
+   "window": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "insufficient"
    }
   },
   {
@@ -881,6 +1228,14 @@
     "outcome": "correct-insufficient"
    },
    "page": {
+    "status": "INSUFFICIENT",
+    "codes": [
+     "NO_NOTE_LIST"
+    ],
+    "line": "",
+    "outcome": "correct-insufficient"
+   },
+   "window": {
     "status": "INSUFFICIENT",
     "codes": [
      "NO_NOTE_LIST"

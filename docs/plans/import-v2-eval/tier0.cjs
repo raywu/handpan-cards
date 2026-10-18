@@ -2,7 +2,10 @@
 // Runs the shipped HPE.importer.interpret over every gold case in two modes:
 //   paste: the verbatim source span (what a user would copy from the page);
 //   page:  the whole no-JS page text the probe saved (what a proxy would pass),
-//          preferring the Shopify .json body text when the probe got one.
+//          preferring the Shopify .json body text when the probe got one;
+//   window: the title plus the densest-pitch window of the page text
+//          (windowOf below), the narrowing section 4.2 asks the proxy and the
+//          local page-mode paste to apply.
 // A REVIEW result is what the user can USE after ticking its CONFIRMs, so a
 // REVIEW whose serialised line differs from the expectation is WRONG-BUT-VALID.
 //
@@ -34,6 +37,22 @@ function run(c, text) {
   return { status: r.status, codes: r.flags.map((f) => f.code), line, outcome: classify(c, r, line) };
 }
 
+// Densest-pitch window: score every line by its pitch tokens, take the best
+// line and its neighbours (3 either side), at most 1,200 characters.
+const PITCH = /(?<![A-Za-z0-9])[A-G](?:#|b|\u266f|\u266d)?(?:-1|[0-9])?(?![A-Za-z0-9])/g;
+function windowOf(text) {
+  if (text == null) return null;
+  const lines = text.split(/\r?\n/);
+  const score = lines.map((l) => (l.match(PITCH) || []).length);
+  let best = 0;
+  for (let i = 0; i < lines.length; i++) {
+    const s = score.slice(Math.max(0, i - 3), i + 4).reduce((a, b) => a + b, 0);
+    const b = score.slice(Math.max(0, best - 3), best + 4).reduce((a, b2) => a + b2, 0);
+    if (s > b) best = i;
+  }
+  return lines.slice(Math.max(0, best - 3), best + 4).join("\n").slice(0, 1200);
+}
+
 const rows = [];
 for (const c of gold.cases) {
   const read = (suffix) => {
@@ -42,17 +61,19 @@ for (const c of gold.cases) {
   };
   const page = read(".shopify.txt") ?? read(".txt");
   rows.push({ id: c.id, category: c.category, paste: run(c, c.span ? (c.title ? c.title + "\n" : "") + c.span : null),
-              page: run(c, page) });
+              page: run(c, page),
+              window: run(c, page == null ? null : (c.title ? c.title + "\n" : "") + windowOf(page)) });
 }
 const tally = (mode) => rows.reduce((t, r) => {
   const k = r[mode] ? r[mode].outcome : "no-text";
   t[k] = (t[k] || 0) + 1;
   return t;
 }, {});
-const out = { ranAt: new Date().toISOString(), totals: { paste: tally("paste"), page: tally("page") }, rows };
+const out = { ranAt: new Date().toISOString(), totals: { paste: tally("paste"), page: tally("page"), window: tally("window") }, rows };
 fs.writeFileSync(outPath, JSON.stringify(out, null, 1) + "\n");
 console.log(JSON.stringify(out.totals, null, 1));
 for (const r of rows) {
   console.log([r.id, r.category, r.paste && r.paste.outcome, r.paste && r.paste.codes.join(","),
-               r.page && r.page.outcome, r.page && r.page.codes.join(",")].join(" | "));
+               r.page && r.page.outcome, r.page && r.page.codes.join(","),
+               r.window && r.window.outcome].join(" | "));
 }
