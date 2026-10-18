@@ -479,16 +479,16 @@ function leadPage(width) {
   return prose.join("\n") + "\nDing: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5 Bottom: C3 F3 G3\n" + tail.join("\n");
 }
 
-for (const width of [195, 196]) {
-  test("window cut: a single-line list after " + width + "-char prose lines is never serialised truncated", () => {
+test("window cut: a single-line list after 195 and 196 char prose lines is never serialised truncated", () => {
+  for (const width of [195, 196]) {
     const text = leadPage(width);
     assert.ok(text.length > 2000);
     const r = interpret(text);
     const seed = importer.serialise(r);
-    assert.ok(r.status === "NEEDS_INPUT" || seed === "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5 [C3] [F3] [G3]", r.status + " " + seed);
+    assert.ok(r.status === "NEEDS_INPUT" || seed === "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5 [C3] [F3] [G3]", width + " " + r.status + " " + seed);
     if (r.status === "NEEDS_INPUT") assert.ok(flagOf(r, "CONFLICTING_LIST"));
-  });
-}
+  }
+});
 
 test("windowOf picks the first of two equally dense lines", () => {
   const filler = [];
