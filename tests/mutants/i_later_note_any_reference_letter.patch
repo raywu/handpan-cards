@@ -4,9 +4,9 @@
 diff --git a/src/engine/importer.js b/src/engine/importer.js
 --- a/src/engine/importer.js
 +++ b/src/engine/importer.js
-@@ -37,7 +37,7 @@
-   var JOINED = /^([A-G]) (#|b)(-1|[0-9])/;
-   var TOKEN = /([A-G]) (?:#|b)(?:-1|[0-9])|[A-Za-z][A-Za-z0-9#]*(?:-1(?![0-9]))?|[()\/\-,]|\S/g;
+@@ -47,7 +47,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   var NARROW_OVER = 2000;
+   var WINDOW_CHARS = 1200;
    var SKIPPED = /^(?:and|&|\.|;)$/i;
 -  var REFERENCE = /^A4 *(?:=|at\b)? *[0-9]{3}(?![0-9])/;
 +  var REFERENCE = /^[A-H][0-9] *(?:=|at\b)? *[0-9]{3}(?![0-9])/;

@@ -4,9 +4,9 @@
 diff --git a/src/engine/importer.js b/src/engine/importer.js
 --- a/src/engine/importer.js
 +++ b/src/engine/importer.js
-@@ -316,7 +316,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -482,7 +482,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
      if (bare.length && !blocked) {
-       var parsed = core().parseSeed(provisionalString(ding, tops, inner, bottoms));
+       var parsed = core().parseSeed(inlined.length ? inlineString(ding) : provisionalString(ding, tops, inner, bottoms));
        if (!parsed.ok) {
 -        flag("PROVISIONAL_REFUSED", { refusal: { code: parsed.code, reason: parsed.reason } });
 +        flag("PROVISIONAL_REFUSED", { refusal: parsed });

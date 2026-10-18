@@ -5,12 +5,12 @@
 diff --git a/src/engine/importer.js b/src/engine/importer.js
 --- a/src/engine/importer.js
 +++ b/src/engine/importer.js
-@@ -244,7 +244,7 @@
- 
+@@ -411,7 +411,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
      notes.forEach(function (n) {
        if (n === ding) n.assigned = "ding";
+       else if (n.paren && parensBottom) { n.assigned = "bottom"; n.inline = true; }
 -      else if (n.paren) n.assigned = "unknown";
 +      else if (n.paren) n.assigned = "top";
        else n.assigned = n.role === "ding" ? "top" : n.role;
      });
-     var unknown = notes.filter(function (n) { return n.assigned === "unknown"; });
+     var inlined = notes.filter(function (n) { return n.inline; });

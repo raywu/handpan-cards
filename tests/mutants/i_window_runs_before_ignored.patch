@@ -1,0 +1,15 @@
+# kills: battiloro window: a run of five or more notes outside the kept window blocks with CONFLICTING_LIST
+# suite: node --test --test-name-pattern ^battiloro.window tests/import.test.js
+# A run that lies before the kept window is not counted, so only runs after it block.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -294,7 +294,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       var rr = new RegExp(RUN.source, "g");
+       var rm;
+       while ((rm = rr.exec(whole))) {
+-        if (rm.index + rm[0].length <= w.start || rm.index >= w.end) outside += 1;
++        if (rm.index >= w.end) outside += 1;
+       }
+       if (outside) flag("CONFLICTING_LIST", { runs: outside });
+       base = w.start;

@@ -4,12 +4,12 @@
 diff --git a/src/engine/importer.js b/src/engine/importer.js
 --- a/src/engine/importer.js
 +++ b/src/engine/importer.js
-@@ -259,7 +259,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-     notes.forEach(function (n) {
+@@ -412,7 +412,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
        if (n === ding) n.assigned = "ding";
+       else if (n.paren && parensBottom) { n.assigned = "bottom"; n.inline = true; }
        else if (n.paren) n.assigned = "unknown";
 -      else n.assigned = n.role === "ding" ? "top" : n.role;
 +      else n.assigned = n.role;
      });
-     var unknown = notes.filter(function (n) { return n.assigned === "unknown"; });
-     if (unknown.length) flag("UNDECLARED_PARENS", { notes: indices(unknown) });
+     var inlined = notes.filter(function (n) { return n.inline; });
+     if (inlined.length) flag("PARENS_AS_BOTTOM", { notes: indices(inlined) });

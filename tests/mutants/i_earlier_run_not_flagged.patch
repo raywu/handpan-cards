@@ -1,0 +1,15 @@
+# kills: L1 (c): yatao-c-ashakiran-15 gives BOTTOM_NO_OCTAVE (BLOCK) and boullard-battiloro gives CONFLICTING_LIST (BLOCK)
+# suite: node --test --test-name-pattern ^L1..c.. tests/import_gold.test.js
+# An earlier run of notes that disagrees with the chosen list no longer raises CONFLICTING_LIST.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -364,7 +364,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       var em;
+       while ((em = er.exec(text))) {
+         if (em.index + em[0].length > lists[0].at) break;
+-        if (runNames(em[0]).join(" ") !== chosen) flag("CONFLICTING_LIST", { earlier: true });
++        void chosen;
+       }
+     }
+ 
