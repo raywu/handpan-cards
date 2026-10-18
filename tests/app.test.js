@@ -9607,7 +9607,9 @@ describe("discoverability: analytics events", () => {
     app.click(app.els["import-run"]);
     app.els["import-text"].value = "See https://example.com/secret-pan for the notes";
     app.click(app.els["import-run"]);
-    assert.deepStrictEqual(since(app, n).map((e) => e.params.status), ["REVIEW", "INSUFFICIENT", "NEEDS_INPUT", "URL_ONLY"]);
+    app.els["import-text"].value = "https://example.com/pan\n" + secret;
+    app.click(app.els["import-run"]);
+    assert.deepStrictEqual(since(app, n).map((e) => e.params.status), ["REVIEW", "INSUFFICIENT", "NEEDS_INPUT", "URL_ONLY", "REVIEW"]);
     since(app, n).forEach((e) => assert.deepStrictEqual(Object.keys(e.params).sort(), ["source", "status"]));
     assert.ok(since(app, n).every((e) => e.params.source === "paste"));
     assert.ok(!JSON.stringify(since(app, n)).includes("A3"));
@@ -10951,6 +10953,8 @@ describe("IM: import text on the sheet", () => {
     app.click(app.els["import-run"]);
     assert.ok(codes(app).includes("UNDECLARED_PARENS"));
     assert.ok(parensShown(app));
+    pick(app, 0);
+    assert.deepStrictEqual(shown(app), engine(app, PARENS, { ding: 0 }).flags);
   });
 
   test("IM: the parentheses tap joins the focus order only while shown, between the paste controls and the ding picker", () => {

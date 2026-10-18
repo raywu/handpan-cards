@@ -1,0 +1,14 @@
+# kills: IM: every code in the engine's FLAG_ORDER has an IMPORT_FLAG_TEXT line, and the L1 codes read in plain English
+# suite: node --test --test-name-pattern ^IM:.every.code.in.the.engine tests/app.test.js
+# Lane L1b. PARENS_AS_BOTTOM has no user-facing line.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10952,7 +10952,6 @@ const IMPORT_FLAG_TEXT = {
+     : f.tops ? "Two top note lists were found. Paste only the list for your pan."
+     : f.earlier ? "An earlier list in the text reads differently. Paste only the list for your pan."
+     : "The text holds more than one note list. Paste only the list for your pan.",
+-  PARENS_AS_BOTTOM: (r, f) => "Reading the brackets as bottom notes: " + importNames(r, f) + ". Tick to accept, or type the notes.",
+   NO_OCTAVE: (r, f) => "No octave in the source. Inferred: " + importNames(r, f) + ". Bottom notes are a guess.",
+   COUNT_OK: (r) => "The title count matches the " + r.total + " notes listed."
+ };

@@ -788,3 +788,35 @@ test("windowOf picks the first of two equally dense lines", () => {
   assert.ok(flagOf(r, "CONFLICTING_LIST"));
   assert.ok(flagOf(r, "BOTTOM_NO_OCTAVE"));
 });
+
+test("a weak label with exactly four notes after it is prose, not a list", () => {
+  const r = interpret("Note: D3 A3 C4 D4");
+  assert.equal(r.status, "INSUFFICIENT");
+  assert.equal(importer.serialise(r), "");
+});
+
+test("a top note that repeats the ding at its own octave is a duplicate, not a restatement", () => {
+  const r = interpret("Ding: D3 Top: D3 A3 Bb3 C4 D4 E4 F4 G4 A4");
+  assert.equal(r.status, "REVIEW");
+  assert.ok(flagOf(r, "DUPLICATE_PITCH"));
+  const bare = interpret("Ding: D Top: D3 A3 Bb3 C4 E4 F4 G4 A4 C5");
+  assert.equal(bare.status, "NEEDS_INPUT");
+  assert.ok(flagOf(bare, "PROVISIONAL_REFUSED"));
+});
+
+test("parens:bottom reads the parenthesised notes after the ding as bottoms", () => {
+  const r = interpret("Notes: (D3) A3 Bb3 (C4) D4 E4 F4 G4 A4 C5", { parens: "bottom" });
+  assert.equal(r.status, "REVIEW");
+  assert.equal(importer.serialise(r), "(D3) A3 Bb3 [C4] D4 E4 F4 G4 A4 C5");
+});
+
+test("reader: a weak label before ordinary words is prose, not notes", () => {
+  const list = "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4";
+  for (const t of ["Note: B-grade finish", "Note: E-mail us", "Note: A hard case is included", "Notes A and E are brighter."]) {
+    assert.equal(interpret(t).status, "INSUFFICIENT", t);
+    assert.equal(importer.serialise(interpret(t + "\n" + list)), "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4", t);
+  }
+  for (const t of ["Note: B-grade finish", "Note: E-mail us", "Note: A hard case is included"]) {
+    assert.equal(importer.serialise(interpret(list + "\n" + t)), "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4", t);
+  }
+});

@@ -1,0 +1,15 @@
+# kills: IM: a paste with an http(s) URL that interpret finds INSUFFICIENT shows the links line and writes nothing; a URL beside a readable list imports as usual
+# suite: node --test --test-name-pattern ^IM:.a.paste.with.an.http tests/app.test.js
+# Lane L1b. A URL-only paste is shown as the plain no-note-list line.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11055,7 +11055,7 @@ function runImport() {
+   importParens = false;
+   importTicked.clear();
+   importRes = HPE.importer.interpret(importSource);
+-  importUrlOnly = importRes.status === "INSUFFICIENT" && IMPORT_URL.test(importSource);
++  importUrlOnly = false;
+   track("scale_import", { status: importUrlOnly ? "URL_ONLY" : importRes.status, source: "paste" });
+   if (importRes.status !== "INSUFFICIENT") buildImportPicker();
+   paintImport();

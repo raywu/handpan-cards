@@ -1,0 +1,15 @@
+# kills: a weak label with exactly four notes after it is prose, not a list
+# suite: node --test --test-name-pattern ^a.weak.label.with.exactly.four tests/import.test.js
+# Lane L1b (pin M1). The weak-label threshold drops to four, so a four-note Note: line is read as a list.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -201,7 +201,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       marks.forEach(function (mark, i) {
+         var to = i + 1 < marks.length ? marks[i + 1].at : text.length;
+         var list = readList(text, mark.from, to, mark.role, original);
+-        if (mark.weak && list.notes.length < 5 && prose < 0) prose = i;
++        if (mark.weak && list.notes.length < 4 && prose < 0) prose = i;
+         list.at = mark.at;
+         if (mark.bare) list.notes.forEach(function (n) { n.bareLabel = true; });
+         if (list.notes.length || list.odd.length) lists.push(list);

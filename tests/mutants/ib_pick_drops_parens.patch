@@ -1,0 +1,15 @@
+# kills: IM: a ding pick after the parentheses tap keeps the option, and a new IMPORT forgets it
+# suite: node --test --test-name-pattern ^IM:.a.ding.pick.after.the.parentheses.tap tests/app.test.js
+# Lane L1b. A ding pick after the tap re-runs interpret without the parens option.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11065,7 +11065,7 @@ function pickImportDing() {
+   const v = importDingSel.value;
+   importPick = v === "" ? null : Number(v);
+   importTicked.delete("NO_OCTAVE");
+-  importRes = HPE.importer.interpret(importSource, importOpts());
++  importRes = HPE.importer.interpret(importSource, importPick === null ? undefined : { ding: importPick });
+   paintImport();
+ }
+ function tapImportParens() {

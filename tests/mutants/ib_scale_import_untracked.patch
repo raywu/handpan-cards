@@ -1,14 +1,14 @@
-# kills: IM: importing tracks one scale_import per IMPORT with the status only and no pasted text
+# kills: IM: importing tracks one scale_import per IMPORT with the status and source paste, and no pasted text or URL
 # suite: node --test --test-name-pattern ^IM:.importing.tracks.one.scale_import tests/app.test.js
-# Lane B. IMPORT sends no scale_import event.
+# Lane L1b. IMPORT sends no scale_import event.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10613,7 +10613,6 @@
-   importPick = null;
+@@ -11056,7 +11056,6 @@ function runImport() {
    importTicked.clear();
    importRes = HPE.importer.interpret(importSource);
--  track("scale_import", { status: importRes.status });
+   importUrlOnly = importRes.status === "INSUFFICIENT" && IMPORT_URL.test(importSource);
+-  track("scale_import", { status: importUrlOnly ? "URL_ONLY" : importRes.status, source: "paste" });
    if (importRes.status !== "INSUFFICIENT") buildImportPicker();
    paintImport();
  }
