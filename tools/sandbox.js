@@ -62,7 +62,7 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", 
   "share-copy", "share-url", "about", "about-open", "about-close",
   // Scale-import lane B: the IMPORT TEXT control, its paste area and review list.
   "import-row", "import-open", "import-area", "import-text", "import-run", "import-result", "import-status",
-  "import-review", "import-rows", "import-flags", "import-ding", "import-use"];
+  "import-review", "import-rows", "import-flags", "import-ding", "import-use", "import-parens"];
 
 /** Copy a value out of the vm realm, so assert.deepStrictEqual can compare it. */
 const plain = (v) => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));

@@ -12398,15 +12398,36 @@ function run() {
       }
     });
 
-    test("IM: at 380px the Add sheet shows no IMPORT TEXT control", async () => {
+    test("IM: at 380px the Add sheet shows the IMPORT TEXT control, with no horizontal scroll and the primary in view, before and after a parentheses result", async () => {
       try {
         await freshLoad();
         await b.setViewport(380, 780, true);
         await openSheet();
         const m = await b.eval(`
           const el = document.getElementById("import-open"), r = el.getBoundingClientRect();
-          return { rects: el.getClientRects().length, w: r.width, h: r.height, hidden: document.getElementById("import-row").hidden };`);
-        assert.deepStrictEqual(m, { rects: 0, w: 0, h: 0, hidden: true });
+          const gen = document.getElementById("scale-generate").getBoundingClientRect();
+          return { rects: el.getClientRects().length, w: r.width, h: r.height, hidden: document.getElementById("import-row").hidden,
+            doc: document.documentElement.scrollWidth, vw: innerWidth, genBottom: gen.bottom, vh: innerHeight };`);
+        assert.strictEqual(m.rects > 0 && m.w > 0 && m.h >= 44 && !m.hidden, true, "IMPORT TEXT is not shown as a 44px target: " + JSON.stringify(m));
+        assert.ok(m.doc <= m.vw, "the page scrolls horizontally with the row shown");
+        assert.ok(m.genBottom <= m.vh + 0.5, "the primary left the viewport with the row shown");
+        await b.eval(`document.getElementById("import-open").click(); return true;`);
+        await b.eval(`document.getElementById("import-text").value = "Notes : D3 - (F3, G3), A3, Bb3, C4, D4, E4, F4, G4, A4, C5"; return true;`);
+        await b.eval(`document.getElementById("import-run").click(); return true;`);
+        await b.waitFor(`!document.getElementById("import-result").hidden`, { label: "the import result" });
+        await b.settle();
+        const p = await b.eval(`
+          const t = document.getElementById("import-parens"), r = t.getBoundingClientRect();
+          const body = document.querySelector(".sheetbody");
+          const gen = document.getElementById("scale-generate").getBoundingClientRect();
+          return { shown: t.getClientRects().length > 0, h: r.height, left: r.left, right: r.right, vw: innerWidth,
+            doc: document.documentElement.scrollWidth, bodyW: body.scrollWidth, bodyC: body.clientWidth,
+            genBottom: gen.bottom, vh: innerHeight };`);
+        assert.ok(p.shown, "the parentheses tap is not shown under UNDECLARED_PARENS");
+        assert.ok(p.h >= 44, "the parentheses tap is under 44px: " + p.h);
+        assert.ok(p.left >= -0.5 && p.right <= p.vw + 0.5, "the parentheses tap runs off the side");
+        assert.ok(p.doc <= p.vw && p.bodyW <= p.bodyC, "the sheet scrolls horizontally with the tap shown");
+        assert.ok(p.genBottom <= p.vh + 0.5, "the primary left the viewport with the tap shown");
       } finally {
         await b.setViewport(900, 900, false);
       }
