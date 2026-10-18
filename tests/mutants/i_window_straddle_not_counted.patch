@@ -1,5 +1,5 @@
-# kills: window cut: a single-line list after 195 and 196 char prose lines is never serialised truncated
-# suite: node --test --test-name-pattern ^window.cut tests/import.test.js
+# kills: window cut: an unlabelled list the window cuts blocks and writes nothing
+# suite: node --test --test-name-pattern ^window.cut:.an.unlabelled tests/import.test.js
 # A run that crosses the window boundary is not counted, so a list cut by the window is read truncated.
 diff --git a/src/engine/importer.js b/src/engine/importer.js
 --- a/src/engine/importer.js

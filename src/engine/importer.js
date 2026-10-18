@@ -285,11 +285,24 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       for (var k in extra) if (Object.prototype.hasOwnProperty.call(extra, k)) f[k] = extra[k];
       return f;
     }
-    // A long text is read only in its densest-pitch window, and a run of five
-    // or more notes outside that window blocks, so narrowing never hides one.
+    // A long text is read only in its densest-pitch window, widened to whole
+    // lines over every labelled list in the text. A labelled spread wider than
+    // NARROW_OVER, or a run of five or more notes outside the window, blocks,
+    // so narrowing never hides a note.
     if (full.length > NARROW_OVER) {
       var w = windowOf(full);
       var whole = normalise(full);
+      var spread = labelledLists(whole, full).filter(function (l) { return l.notes.length; });
+      if (spread.length) {
+        var lo = Math.min(w.start, spread[0].at);
+        var hi = w.end;
+        spread.forEach(function (l) { hi = Math.max(hi, l.notes[l.notes.length - 1].span.end); });
+        lo = lo > 0 ? full.lastIndexOf("\n", lo - 1) + 1 : 0;
+        hi = full.indexOf("\n", hi);
+        if (hi < 0) hi = full.length;
+        if (hi - lo <= NARROW_OVER) w = { start: Math.min(w.start, lo), end: Math.max(w.end, hi) };
+        else flag("CONFLICTING_LIST", { spread: hi - lo });
+      }
       var outside = 0;
       var rr = new RegExp(RUN.source, "g");
       var rm;

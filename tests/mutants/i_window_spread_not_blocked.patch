@@ -1,0 +1,15 @@
+# kills: window widening: labelled lists spread wider than 2,000 characters block
+# suite: node --test --test-name-pattern ^window.widening:.labelled tests/import.test.js
+# A labelled spread wider than NARROW_OVER raises no flag, so the far list is dropped silently.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -301,7 +301,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+         hi = full.indexOf("\n", hi);
+         if (hi < 0) hi = full.length;
+         if (hi - lo <= NARROW_OVER) w = { start: Math.min(w.start, lo), end: Math.max(w.end, hi) };
+-        else flag("CONFLICTING_LIST", { spread: hi - lo });
++        else {}
+       }
+       var outside = 0;
+       var rr = new RegExp(RUN.source, "g");

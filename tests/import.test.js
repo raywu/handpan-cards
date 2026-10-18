@@ -485,9 +485,48 @@ test("window cut: a single-line list after 195 and 196 char prose lines is never
     assert.ok(text.length > 2000);
     const r = interpret(text);
     const seed = importer.serialise(r);
-    assert.ok(r.status === "NEEDS_INPUT" || seed === "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5 [C3] [F3] [G3]", width + " " + r.status + " " + seed);
-    if (r.status === "NEEDS_INPUT") assert.ok(flagOf(r, "CONFLICTING_LIST"));
+    assert.equal(r.status, "REVIEW", String(width));
+    assert.equal(seed, FULL_SEED, String(width));
   }
+});
+
+test("window cut: an unlabelled list the window cuts blocks and writes nothing", () => {
+  for (const width of [195, 196]) {
+    const text = leadPage(width).replace("Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5 Bottom: C3 F3 G3", "D3 A3 Bb3 C4 D4 E4 F4 G4 A4 C5");
+    assert.ok(text.length > 2000);
+    const r = interpret(text);
+    assert.ok(r.flags.some((f) => f.code === "CONFLICTING_LIST"), String(width));
+    assert.equal(importer.serialise(r), "", String(width));
+  }
+});
+
+const FULL_SEED = "[C3] (D3) [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5";
+const TAIL = Array.from({ length: 25 }, (_, i) => "The pan sounds warm and clear, hand made with care in the shop, number " + i + ".");
+
+test("window widening: a long text reads every labelled list whole, as its short form does", () => {
+  const cut = (w) => ["Lead 0 ".padEnd(w, "x") + ".", "Lead 1 ".padEnd(w, "x") + ".",
+    "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5 Bottom: C3 F3 G3", ...TAIL].join("\n");
+  const table = ["Ding: D3", "Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5", "Material: steel", "Weight: 5 kg",
+    "Size: 53 cm", "Shipping: free", "Bag: included", "Warranty: two years", "Bottom: C3 F3 G3"];
+  const early = ["Ding: D3", "Material: steel", "Weight: 5 kg", "Size: 53 cm", "Shipping: free",
+    "Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5", "Bottom: C3 F3 G3", "Tuned to A4 at 440 Hz.", "A bag and A stand come with it."];
+  const cases = [570, 572, 573].map((w) => ["bottom cut " + w, cut(w)])
+    .concat([["bottom row 7 lines down", table], ["ding row before the window", early]]
+      .map(([k, lines]) => [k, lines.concat(TAIL).join("\n")]));
+  for (const [label, text] of cases) {
+    assert.ok(text.length > 2000, label);
+    const r = interpret(text);
+    assert.equal(r.status, "REVIEW", label);
+    assert.equal(importer.serialise(r), FULL_SEED, label);
+  }
+});
+
+test("window widening: labelled lists spread wider than 2,000 characters block", () => {
+  const text = ["Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5", ...TAIL, ...TAIL, "Bottom: C3 F3 G3"].join("\n");
+  assert.ok(text.length > 2000 && text.indexOf("Bottom:") > 2000);
+  const r = interpret(text);
+  assert.equal(r.status, "NEEDS_INPUT");
+  assert.ok(flagOf(r, "CONFLICTING_LIST"));
 });
 
 test("windowOf picks the first of two equally dense lines", () => {
