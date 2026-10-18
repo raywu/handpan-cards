@@ -1,0 +1,15 @@
+# kills: parens:bottom reads the parenthesised notes after the ding as bottoms
+# suite: node --test --test-name-pattern ^parens:bottom.reads.the.parenthesised tests/import.test.js
+# Lane L1b (pin M5). The leading-paren ding test counts parens across every group of the list.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -436,7 +436,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+         ding = labelDings[0];
+       }
+     } else if (firstTop && firstTop.paren && notes.filter(function (n) {
+-      return n.paren && n.list === firstTop.list && n.group === firstTop.group;
++      return n.paren && n.list === firstTop.list;
+     }).length === 1) {
+       // A leading parenthesised note before the list is the ding (D-G, Halo).
+       ding = firstTop;

@@ -1,0 +1,16 @@
+# kills: a top note that repeats the ding at its own octave is a duplicate, not a restatement
+# suite: node --test --test-name-pattern ^a.top.note.that.repeats.the.ding tests/import.test.js
+# Lane L1b (pin M2). Any top note with the ding's pitch class is dropped as a restatement.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -384,8 +384,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       });
+       var same = nextTop && pcOf(nextTop.name) !== null && pcOf(nextTop.name) === pcOf(dl.name) &&
+         (!hasOctave(dl.name) || !hasOctave(nextTop.name) || nextTop.name === dl.name) &&
+-        (nextTop.sep === "/" || !!dl.bareLabel && (hasOctave(dl.name) || !hasOctave(nextTop.name) ||
+-          midiOf(nextTop.name) < 60));
++        true;
+       if (same) {
+         if (!hasOctave(dl.name) && hasOctave(nextTop.name)) dl.name = nextTop.name;
+         notes.splice(notes.indexOf(nextTop), 1);

@@ -10929,6 +10929,7 @@ let importTicks = [];
 const importTicked = new Set();
 const importNames = (r, f) => (f.notes || []).map(i => r.notes[i] ? r.notes[i].note : "?").join(", ");
 const IMPORT_FLAG_TEXT = {
+  NO_NOTE_LIST: () => IMPORT_INSUFFICIENT,
   UNDECLARED_PARENS: (r, f) => "Brackets around " + importNames(r, f) + " are not defined by the source. Pick the ding below or type the notes.",
   CONFLICTING_DING: (r, f) => "More than one ding cue: " + importNames(r, f) + ". Pick the ding below.",
   AMBIGUOUS_NOTE: (r, f) => "Unclear note spelling: " + (f.tokens || []).join(", ") + ". Type the notes instead.",
@@ -10940,12 +10941,17 @@ const IMPORT_FLAG_TEXT = {
   SPACE_IN_NOTE: (r, f) => "Joined a spaced note: " + importNames(r, f) + ".",
   SOURCE_NOT_ASCENDING: (r, f) => "The source is not in pitch order at " + importNames(r, f) + ". It may be a typo.",
   DUPLICATE_PITCH: (r, f) => "The same pitch is listed twice: " + importNames(r, f) + ".",
+  BOTTOM_NO_OCTAVE: (r, f) => "Bottom notes " + importNames(r, f) + " have no octave, so their pitch is unknown. Type the notes with octaves.",
+  CONFLICTING_LIST: (r, f) => f.wide ? "Reading the whole text gives a different list than the one found. Paste only the list for your pan."
+    : f.tops ? "Two top note lists were found. Paste only the list for your pan."
+    : f.earlier ? "An earlier list in the text reads differently. Paste only the list for your pan."
+    : "The text holds more than one note list. Paste only the list for your pan.",
+  PARENS_AS_BOTTOM: (r, f) => "Reading the brackets as bottom notes: " + importNames(r, f) + ". Tick to accept, or type the notes.",
   NO_OCTAVE: (r, f) => "No octave in the source. Inferred: " + importNames(r, f) + ". Bottom notes are a guess.",
   COUNT_OK: (r) => "The title count matches the " + r.total + " notes listed."
 };
 function importFlagLine(f) {
-  const make = IMPORT_FLAG_TEXT[f.code];
-  return make ? make(importRes, f) : f.code;
+  return IMPORT_FLAG_TEXT[f.code](importRes, f);
 }
 function importRoleOf(r, i) {
   const hit = [r.roles.ding].concat(r.roles.top, r.roles.bottom, r.roles.inner)

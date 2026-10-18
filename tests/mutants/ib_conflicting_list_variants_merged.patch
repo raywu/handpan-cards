@@ -1,0 +1,15 @@
+# kills: IM: every code in the engine's FLAG_ORDER has an IMPORT_FLAG_TEXT line, and the L1 codes read in plain English
+# suite: node --test --test-name-pattern ^IM:.every.code.in.the.engine tests/app.test.js
+# Lane L1b. The two-top-lists variant reads like the generic CONFLICTING_LIST line.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10943,7 +10943,7 @@ const IMPORT_FLAG_TEXT = {
+   DUPLICATE_PITCH: (r, f) => "The same pitch is listed twice: " + importNames(r, f) + ".",
+   BOTTOM_NO_OCTAVE: (r, f) => "Bottom notes " + importNames(r, f) + " have no octave, so their pitch is unknown. Type the notes with octaves.",
+   CONFLICTING_LIST: (r, f) => f.wide ? "Reading the whole text gives a different list than the one found. Paste only the list for your pan."
+-    : f.tops ? "Two top note lists were found. Paste only the list for your pan."
++    : f.tops ? "The text holds more than one note list. Paste only the list for your pan."
+     : f.earlier ? "An earlier list in the text reads differently. Paste only the list for your pan."
+     : "The text holds more than one note list. Paste only the list for your pan.",
+   PARENS_AS_BOTTOM: (r, f) => "Reading the brackets as bottom notes: " + importNames(r, f) + ". Tick to accept, or type the notes.",

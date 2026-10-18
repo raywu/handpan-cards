@@ -10839,6 +10839,31 @@ describe("IM: import text on the sheet", () => {
     assert.strictEqual(app.els["import-open"].getAttribute("aria-expanded"), "false");
   });
 
+  test("IM: every code in the engine's FLAG_ORDER has an IMPORT_FLAG_TEXT line, and the L1 codes read in plain English", () => {
+    const src = require("node:fs").readFileSync(require("node:path").join(__dirname, "..", "src", "engine", "importer.js"), "utf8");
+    const order = src.slice(src.indexOf("var FLAG_ORDER"), src.indexOf("];", src.indexOf("var FLAG_ORDER")));
+    const all = [...order.matchAll(/\["([A-Z_]+)",/g)].map((m) => m[1]);
+    assert.ok(all.length >= 17, "FLAG_ORDER was not found in the engine source: " + all.length);
+    const app = boot();
+    openSheet(app);
+    const missing = JSON.parse(app.get("JSON.stringify(" + JSON.stringify(all) + ".filter(c => !IMPORT_FLAG_TEXT[c]))"));
+    assert.deepStrictEqual(missing, []);
+    const line = (code, f) => app.get(
+      "(() => { importRes = { notes: [{ note: 'C3' }, { note: 'D3' }], total: 9, roles: {} };" +
+      " return importFlagLine(" + JSON.stringify(Object.assign({ code }, f)) + "); })()");
+    for (const [code, f] of [["BOTTOM_NO_OCTAVE", { notes: [0, 1] }], ["CONFLICTING_LIST", { runs: 2 }],
+      ["CONFLICTING_LIST", { wide: true }], ["CONFLICTING_LIST", { tops: true }],
+      ["CONFLICTING_LIST", { spread: 3000 }], ["CONFLICTING_LIST", { earlier: true }],
+      ["PARENS_AS_BOTTOM", { notes: [0, 1] }]]) {
+      const t = line(code, f);
+      assert.ok(t && t !== code && !/[A-Z]{2,}_[A-Z]{2,}/.test(t), code + " " + JSON.stringify(f) + " shows " + t);
+      assert.match(t, /^[A-Z]/);
+      assert.match(t, /\.$/);
+    }
+    const variants = new Set(["runs", "wide", "tops"].map((k, i) => line("CONFLICTING_LIST", { [k]: k === "runs" ? 2 : true })));
+    assert.strictEqual(variants.size, 3, "the CONFLICTING_LIST variants share one line");
+  });
+
   test("IM: the import row ships hidden: #import-row carries the hidden attribute in the served markup and IMPORT TEXT is not in the sheet's focus order", () => {
     const src = require("node:fs").readFileSync(require("node:path").join(__dirname, "..", "index.html"), "utf8");
     assert.match(src, /<div class="fieldrow" id="import-row" hidden>/);
