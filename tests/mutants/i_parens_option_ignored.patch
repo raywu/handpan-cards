@@ -1,0 +1,15 @@
+# kills: parens: bottom reads round brackets as bottom notes; without it the same text still blocks
+# suite: node --test --test-name-pattern ^parens..bottom.reads tests/import.test.js
+# The parens option is ignored, so round brackets stay undeclared and the block is never lifted.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -407,7 +407,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       }
+     }
+ 
+-    var parensBottom = opts.parens === "bottom";
++    var parensBottom = false;
+     notes.forEach(function (n) {
+       if (n === ding) n.assigned = "ding";
+       else if (n.paren && parensBottom) { n.assigned = "bottom"; n.inline = true; }

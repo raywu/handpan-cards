@@ -1,0 +1,336 @@
+{
+ "version": 1,
+ "source": "docs/plans/import-v2-gold.json",
+ "parensBottom": [
+  "yatao-ayasa-d-kurd-12",
+  "thomann-sela-sehp203-d-kurd-9-3-en",
+  "thomann-sela-sehp203-d-kurd-9-3-fr",
+  "thomann-sela-sehp203-d-kurd-9-3-it",
+  "ss-leaf-c-minor-14",
+  "ss-sew-f3-low-pygmy-11",
+  "ss-satya-eb-la-sirena-16",
+  "ss-pantheon-halo-equinox-12"
+ ],
+ "cases": [
+  {
+   "id": "yatao-mag-d-kurd-17",
+   "category": "structured",
+   "title": "MAG D Kurd 17",
+   "span": "Top side notes : D3, A3, Bb3, C4, D4, E4, F4, G4, A4, C5, D5\nBottom side notes : Bb2, C3, E3, F3, G3, E5",
+   "status": "REVIEW",
+   "textSeed": "[Bb2] [C3] (D3) [E3] [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5 [E5]"
+  },
+  {
+   "id": "yatao-yataopan-d-kurd-17",
+   "category": "structured",
+   "title": "YataoPan D Kurd 17",
+   "span": "Top Side Notes : D3 – A3, Bb3, C4, D4, E4, F4, G4, A4, C5, D5, E5, F5\nBottom Side Notes : Bb2, C3, F3, G3",
+   "status": "REVIEW",
+   "textSeed": "[Bb2] [C3] (D3) [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5 E5 F5"
+  },
+  {
+   "id": "yatao-mudra-g2-minor-17",
+   "category": "structured",
+   "title": "Mudra G Minor 17",
+   "span": "Top side notes : G2, G3, A3, Bb3, C4, D4, Eb4, F4, G4\nBottom side notes : D3, Eb3, A4, C5, D5, Eb5, F5, G5",
+   "status": "REVIEW",
+   "textSeed": "(G2) [D3] [Eb3] G3 A3 Bb3 C4 D4 Eb4 F4 G4 [A4] [C5] [D5] [Eb5] [F5] [G5]"
+  },
+  {
+   "id": "yatao-mag-fs2-minor-16",
+   "category": "structured",
+   "title": "MAG F#2 minor 16",
+   "span": "Notes Top Side : F#2 / F#3, G#3, A3, B3, C#4, D4, E4, F#4\nNotes Bottom Side : C#3, D3, E3, G#4, A4, B4 C#5",
+   "status": "REVIEW",
+   "textSeed": "(F#2) [C#3] [D3] [E3] F#3 G#3 A3 B3 C#4 D4 E4 F#4 [G#4] [A4] [B4] [C#5]"
+  },
+  {
+   "id": "yatao-c-ashakiran-15",
+   "category": "octaveless",
+   "title": "YataoPan C Ashakiran 15",
+   "span": "Top Notes: C - F, G, A, B, C, D, E, G\nBottom Notes: D, E, F, A, B, C",
+   "status": "NEEDS_INPUT",
+   "textSeed": null
+  },
+  {
+   "id": "yatao-ayasa-d-kurd-12",
+   "category": "structured",
+   "title": "Ayasa D Kurd 12",
+   "span": "Notes : D3 - (F3, G3), A3, Bb3, C4, D4, E4, F4, G4, A4, C5",
+   "status": "REVIEW",
+   "textSeed": "(D3) [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5"
+  },
+  {
+   "id": "yatao-d-aegean-18",
+   "category": "structured",
+   "title": "YataoPan D Aegean 18",
+   "span": "Notes Top Side : D3, F#3, A3, C#4, D4, F#4, G#4, A4, C#5, D5, F#5\nNotes Bottom Side : B2, E3, G#3, B3, E4, B4, E5",
+   "status": "REVIEW",
+   "textSeed": "[B2] (D3) [E3] F#3 [G#3] A3 [B3] C#4 D4 [E4] F#4 G#4 A4 [B4] C#5 D5 [E5] F#5"
+  },
+  {
+   "id": "ayasa-d-kurd-13",
+   "category": "name-only",
+   "title": "D Kurd 13 Handpan · Ember Steel · Ayasa Instruments",
+   "span": "D Kurd 13",
+   "status": "INSUFFICIENT",
+   "textSeed": null
+  },
+  {
+   "id": "sanango-page-multi",
+   "category": "multi-model",
+   "title": "Sanango Handpan English",
+   "span": "E Amara 16 notes Top: E3) B3 D4 E4 F#4 G4 A4 B4 D5 E5 F#5 Bottom: C3 D3 G3 A3 C4 ... C Ashakiran 11 Notes Top: C3) F3 G3 A3 B3 C4 D4 E4 G4 Bottom: D3 E3",
+   "status": "NEEDS_INPUT",
+   "textSeed": null
+  },
+  {
+   "id": "sanango-e-amara-16",
+   "category": "structured",
+   "title": "E Amara 16",
+   "span": "E Amara 16 notes Top: E3) B3 D4 E4 F#4 G4 A4 B4 D5 E5 F#5 Bottom: C3 D3 G3 A3 C4",
+   "status": "REVIEW",
+   "textSeed": "[C3] [D3] (E3) [G3] [A3] B3 [C4] D4 E4 F#4 G4 A4 B4 D5 E5 F#5"
+  },
+  {
+   "id": "sanango-d-kurd-15",
+   "category": "structured",
+   "title": "D Kurd 15",
+   "span": "D Kurd 15 Notas Top: D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5 Bottom: C3 E3 G3 F3",
+   "status": "REVIEW",
+   "textSeed": "[C3] (D3) [E3] [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5"
+  },
+  {
+   "id": "sela-sehp202-d-amara-11-1",
+   "category": "contradictory",
+   "title": "Sela SEHP202 Harmony D Amara 11+1",
+   "span": "Notes: D3/ A3 (Bb3), C4, D4, E4, F4, G4, A4, C5, D5, E5 Extended range with two bottom notes",
+   "status": "NEEDS_INPUT",
+   "textSeed": null
+  },
+  {
+   "id": "ss-leaf-c-minor-14",
+   "category": "octaveless",
+   "title": "Leaf Soundsculptures C Minor Hexatonic 14",
+   "span": "Hauptnote C3 ... Noten C/(D)(Eb)F G Ab (B) C D Eb F G (Ab) (C) Anzahl Noten 14",
+   "status": "REVIEW",
+   "textSeed": "(C3) [D3] [Eb3] F3 G3 Ab3 [B3] C4 D4 Eb4 F4 G4 [Ab4] [C5]"
+  },
+  {
+   "id": "ss-sew-f3-low-pygmy-11",
+   "category": "structured",
+   "title": "Sew F3-Low Pygmy 11",
+   "span": "Hauptnote F3 ... Noten F3 / G3 G#3 C4 D#4 F4 G4 G#4 C5 (D#5) (F5) Anzahl Noten 11",
+   "status": "REVIEW",
+   "textSeed": "(F3) G3 G#3 C4 D#4 F4 G4 G#4 C5 [D#5] [F5]"
+  },
+  {
+   "id": "ss-satya-eb-la-sirena-16",
+   "category": "structured",
+   "title": "Satya Eb La Sirena 16",
+   "span": "Hauptnote Eb ... Noten (Db3) Eb3 (F3) Gb3 (Ab3) Bb3 C4 Db4 Eb4 F4 Gb4 (Ab4) Bb4 (C5 Db5 Eb5) Anzahl Noten 16",
+   "status": "REVIEW",
+   "textSeed": "[Db3] (Eb3) [F3] Gb3 [Ab3] Bb3 C4 Db4 Eb4 F4 Gb4 [Ab4] Bb4 [C5] [Db5] [Eb5]"
+  },
+  {
+   "id": "ss-pantheon-halo-equinox-12",
+   "category": "octaveless",
+   "title": "Pantheon Steel Halo Equinox 12",
+   "span": "Main note E ... Notes E G B C D E F# G B C D E Number of notes 12",
+   "status": "REVIEW",
+   "textSeed": "(E3) G3 B3 C4 D4 E4 F#4 G4 B4 C5 D5 E5"
+  },
+  {
+   "id": "idm-celtic-mineur-9",
+   "category": "image-only",
+   "title": "Handpan Celtic Mineur",
+   "span": "[image] Diagramme-handpan-re-Celtic-mineur-9-notes.jpg: '9 NOTES RÉ CELTIC MINEUR', fields D3 (centre), A3, C4, D4, E4, F4, G4, A4, C5",
+   "status": "INSUFFICIENT",
+   "textSeed": null
+  },
+  {
+   "id": "idm-hijaz-9",
+   "category": "image-only",
+   "title": "Handpan Hijaz",
+   "span": "[image] Diagramme-handpan-re-Hijaz-9-notes.jpg: '9 NOTES RÉ HIJAZ', fields D3 (centre), bE4, #F4, G4, A4, bB4, C5, D5, bB5",
+   "status": "INSUFFICIENT",
+   "textSeed": null
+  },
+  {
+   "id": "thomann-sonority-d-kurd-10",
+   "category": "structured",
+   "title": "Thomann Sonority Handpan D-Kurd 440Hz",
+   "span": "Notes: D3/A3, Bb3, C4, D4, E4, F4, G4, A4, C5",
+   "status": "REVIEW",
+   "textSeed": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5"
+  },
+  {
+   "id": "engadine-mano-9-prose",
+   "category": "prose-only",
+   "title": "Mano Percussion 9 Note Handpan",
+   "span": "... D Kurd tuning - A3, Bb3, D4, F4, A4, G4, E4, C4 and D3 Ding note.",
+   "status": "REVIEW",
+   "textSeed": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4"
+  },
+  {
+   "id": "boullard-listing-multi",
+   "category": "multi-model",
+   "title": "Handpan - Boullard Musique",
+   "span": "SELA D Kurd 9 (440 Hz) D3/ A3, Bb3, C4, D4, E4, F4, G4, A4 ... RAV Moon Pygmy D3 G3 A3 A#3 D4 F4 G4 A4 C5 D ... SELA Melody Tongue Drum 10 '' D Akebono ... D3 E3 F3 A3 A#3 D4 E4 F4",
+   "status": "NEEDS_INPUT",
+   "textSeed": null
+  },
+  {
+   "id": "amazon-asteman-d-minor-10",
+   "category": "prose-only",
+   "title": "ASTEMAN Handpan in D Minor, 432hz, 22 Inches with 10 Notes",
+   "span": "... 10 notes, including 1 center note and 9 tone (D3/A3/bB3/C4/D4/E4/F4/G4/A4/C5).",
+   "status": "REVIEW",
+   "textSeed": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5"
+  },
+  {
+   "id": "amazon-kalopho-d-kurd-9",
+   "category": "prose-only",
+   "title": "Kalopho 22 Inches Handpan Drum, 432Hz 9 Notes D Minor Kurd",
+   "span": "... 9 precisely tuned notes (D3, A3, C4, E4, G4, A4, F4, D4, Bb3) ...",
+   "status": "REVIEW",
+   "textSeed": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4"
+  },
+  {
+   "id": "amazon-lomuty-d-kurd-10",
+   "category": "image-only",
+   "title": "LOMUTY Handpan Drum 19 Inch for Beginners 10 Notes, D Minor Kurd 432Hz",
+   "span": "[image] 81DqkAd6IeL._AC_SL1500_.jpg: 'Low-to-High \"Z\" Wrap-Around Distribution' diagram, fields D3 DING, 1 A3, 2 Bb3, 3 C4, 4 D4, 5 E4, 6 F4, 7 G4, 8 A4, 9 C5",
+   "status": "INSUFFICIENT",
+   "textSeed": null
+  },
+  {
+   "id": "yatao-e2-pygmy-17",
+   "category": "structured",
+   "title": "YataoPan E2 Pygmy 17",
+   "span": "Top side notes : E2 – E3, F#3, G3, B3, D4, E4, F#4, G4\nBottom side notes : B2, D3, A3, C4, B4, C5, D5, E5",
+   "status": "REVIEW",
+   "textSeed": "(E2) [B2] [D3] E3 F#3 G3 [A3] B3 [C4] D4 E4 F#4 G4 [B4] [C5] [D5] [E5]"
+  },
+  {
+   "id": "yatao-a2-amara-9",
+   "category": "distractor",
+   "title": "YataoPan A2 Amara",
+   "span": "Notes (Top Side) : A2 – E3, G3, A3, B3, C4, D4, E4, G4",
+   "status": "REVIEW",
+   "textSeed": "(A2) E3 G3 A3 B3 C4 D4 E4 G4"
+  },
+  {
+   "id": "yatao-fs-low-pygmy-19",
+   "category": "structured",
+   "title": "YataoPan F# low pygmy 19",
+   "span": "Notes (Top Side) : F#3, G#3, A3, C#4, E4, F#4, G#4, A4, C#5, E5, F#5, G#5\nNotes (Bottom Side) : D3, E3, B3, D4, B4, D5, A5",
+   "status": "REVIEW",
+   "textSeed": "[D3] [E3] (F#3) G#3 A3 [B3] C#4 [D4] E4 F#4 G#4 A4 [B4] C#5 [D5] E5 F#5 G#5 [A5]"
+  },
+  {
+   "id": "thomann-sela-sehp203-d-kurd-9-3-en",
+   "category": "structured",
+   "title": "Sela SEHP203 Harmony D Kurd 9+3",
+   "span": "Notes: D3 / (C3) (F3) (G3) A3, Bb3, C4, D4, E4, F4, G4, A4",
+   "status": "REVIEW",
+   "textSeed": "[C3] (D3) [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4"
+  },
+  {
+   "id": "thomann-sela-sehp203-d-kurd-9-3-fr",
+   "category": "structured",
+   "title": "Sela SEHP203 Harmony D Kurd 9+3",
+   "span": "Notes: Ré3 / (Do3) (Fa3) (Sol3) La3, Sib3, Do4, Ré4, Mi4, Fa4, Sol4, La4\n... avec 3 bottom notes",
+   "status": "REVIEW",
+   "textSeed": "[C3] (D3) [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4"
+  },
+  {
+   "id": "thomann-sela-sehp203-d-kurd-9-3-it",
+   "category": "structured",
+   "title": "Sela SEHP203 Harmony D Kurd 9+3",
+   "span": "Note: Re3 / (Do3) (Fa3) (Sol3) La3, Sib3, Do4, Re4, Mi4, Fa4, Sol4, La4",
+   "status": "REVIEW",
+   "textSeed": "[C3] (D3) [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4"
+  },
+  {
+   "id": "thomann-startone-d-kurd-octaveless",
+   "category": "contradictory",
+   "title": "Startone Handpan D Kurd A=440Hz CD",
+   "span": "Nine notes: D / A, B, C, D, E, F, G, A",
+   "status": "REVIEW",
+   "textSeed": "(D3) A3 B3 C4 D4 E4 F4 G4 A4"
+  },
+  {
+   "id": "thomann-startone-d-celtic-octaveless",
+   "category": "octaveless",
+   "title": "Startone Handpan D-Celtic/Amara 432 CD",
+   "span": "Nine notes: D / A, C, D, E, F, G, A, C",
+   "status": "REVIEW",
+   "textSeed": "(D3) A3 C4 D4 E4 F4 G4 A4 C5"
+  },
+  {
+   "id": "sunreed-zen-d-minor-9",
+   "category": "structured",
+   "title": "9-Note 432Hz D Minor Zen Wanderlust Handpan Ivory Veil",
+   "span": "The central D3 anchors the instrument ...\nNotes: D3, A3, A#3, C4, D4, E4, F4, G4, A4",
+   "status": "REVIEW",
+   "textSeed": "(D3) A3 A#3 C4 D4 E4 F4 G4 A4"
+  },
+  {
+   "id": "amazon-alienpan-d-kurd-10",
+   "category": "prose-only",
+   "title": "ALIENPAN Handpan Drum, Pro Series, AISI 430, D Minor Kurd, 440 Hz, 10 Notes",
+   "span": "... D Kurd 10 handpan (D3–A3, Bb3, C4, D4, E4, F4, G4, A4, C5) ...",
+   "status": "REVIEW",
+   "textSeed": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5"
+  },
+  {
+   "id": "amazon-gladfresit-d-minor-9",
+   "category": "structured",
+   "title": "GLADFRESIT Handpan Drum 22inch in D Kurd Minor",
+   "span": "... D minor 9Notes: D3-A3-Bb3-C4-D4-E4-F4-G4-A4.",
+   "status": "REVIEW",
+   "textSeed": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4"
+  },
+  {
+   "id": "boullard-battiloro-celtic-contradictory",
+   "category": "contradictory",
+   "title": "Battiloro Arianrohd, Moon Series, Celtic D minor, 432Hz",
+   "span": "D A C D E F G A C\n· Notes : D A C D E F G A C D",
+   "status": "NEEDS_INPUT",
+   "textSeed": null
+  },
+  {
+   "id": "boullard-zaora-d-ashakiran-16",
+   "category": "octaveless",
+   "title": "Zaora Ashakiran 16 Notes D (E)",
+   "span": "· Notes : D (E)(F#) G A B C# D E F# (G) A B (C#)(D)(E)",
+   "status": "NEEDS_INPUT",
+   "textSeed": null
+  },
+  {
+   "id": "mag-blog-d-kurd",
+   "category": "structured",
+   "title": "Uncovering the D Kurd Handpan Scale - MAG Instruments",
+   "span": "Ding (center): D3\nOuter circle : A3 – Bb3 – C4 – D4 – E4 – F4 – G4 – A4",
+   "status": "REVIEW",
+   "textSeed": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4"
+  },
+  {
+   "id": "blog-pantheon-halo-xxd",
+   "category": "octaveless",
+   "title": "Halo – David Youngs",
+   "span": "The notes of the XXD Scale Halo are:\n(C) F G Ab C D Eb F G",
+   "status": "REVIEW",
+   "textSeed": "(C3) F3 G3 Ab3 C4 D4 Eb4 F4 G4"
+  },
+  {
+   "id": "snd-f-aeolian-10-name-only",
+   "category": "name-only",
+   "title": "F Aeolain 10 : Snd Handpan",
+   "span": "F Aeolain 10",
+   "status": "INSUFFICIENT",
+   "textSeed": null
+  }
+ ]
+}

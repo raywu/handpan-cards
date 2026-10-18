@@ -4,10 +4,10 @@
 diff --git a/src/engine/importer.js b/src/engine/importer.js
 --- a/src/engine/importer.js
 +++ b/src/engine/importer.js
-@@ -86,7 +86,7 @@
+@@ -101,7 +101,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
      while ((m = rest.exec(body))) {
        tok = m[0];
-       if (JOINED.test(tok) || OCTAVED.test(tok) || GLUED.test(tok)) {
+       if (JOINED.test(tok) || OCTAVED.test(tok) || GLUED.test(tok) || SOLFEGE.test(tok)) {
 -        if (!REFERENCE.test(tok + body.slice(rest.lastIndex))) return true;
 +        return true;
        } else if (NOTE_LIKE.test(tok)) {

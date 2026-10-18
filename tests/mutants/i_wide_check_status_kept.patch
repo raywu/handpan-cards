@@ -1,0 +1,15 @@
+# kills: narrowing check: a role clause outside the kept window blocks rather than being dropped
+# suite: node --test --test-name-pattern ^narrowing.check:.a.role.clause tests/import.test.js
+# A narrowed read that disagrees with the whole text gets CONFLICTING_LIST but keeps REVIEW.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -550,7 +550,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     var whole = read(raw, opts, false);
+     if (readingOf(whole) === readingOf(narrowed)) return narrowed;
+     narrowed.flags.unshift({ code: "CONFLICTING_LIST", wide: true, level: BLOCK });
+-    narrowed.status = "NEEDS_INPUT";
++
+     return narrowed;
+   }
+ 

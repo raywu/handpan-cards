@@ -1,0 +1,15 @@
+# kills: a Main note or Hauptnote line that disagrees with a slash-marked ding blocks with CONFLICTING_DING
+# suite: node --test --test-name-pattern ^a.Main.note.or.Hauptnote.line.that.disagrees tests/import.test.js
+# a label ding that the list does not restate silently beats a slash-marked ding instead of raising CONFLICTING_DING.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -414,7 +414,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+ 
+     notes.forEach(function (n, i) { n.index = i; n.octave = hasOctave(n.name); n.midi = midiOf(n.name); });
+     var pickable = typeof opts.ding === "number" && opts.ding >= 0 && opts.ding < notes.length;
+-    if (dingClash && !pickable) flag("CONFLICTING_DING", { notes: dingClash.map(function (n) { return n.index; }) });
++    if (false) flag("CONFLICTING_DING", { notes: dingClash.map(function (n) { return n.index; }) });
+ 
+     // Who is the ding?
+     var labelDings = notes.filter(function (n) { return n.role === "ding" && !n.paren; });

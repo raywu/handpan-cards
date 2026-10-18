@@ -25,7 +25,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   var FLAG_ORDER = [
     ["NO_NOTE_LIST", BLOCK], ["UNDECLARED_PARENS", BLOCK], ["CONFLICTING_DING", BLOCK],
     ["AMBIGUOUS_NOTE", BLOCK], ["INNER_BELOW_TOP", BLOCK], ["COUNT_MISMATCH", BLOCK], ["PROVISIONAL_REFUSED", BLOCK],
-    ["DING_CUE", CONFIRM], ["COUNT_EXCL_DING", CONFIRM], ["SPACE_IN_NOTE", CONFIRM],
+    ["BOTTOM_NO_OCTAVE", BLOCK], ["CONFLICTING_LIST", BLOCK],
+    ["DING_CUE", CONFIRM], ["PARENS_AS_BOTTOM", CONFIRM], ["COUNT_EXCL_DING", CONFIRM], ["SPACE_IN_NOTE", CONFIRM],
     ["SOURCE_NOT_ASCENDING", CONFIRM], ["DUPLICATE_PITCH", CONFIRM], ["NO_OCTAVE", CONFIRM],
     ["COUNT_OK", INFO]
   ];
@@ -35,14 +36,28 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   var NOTE_LIKE = /^[A-Ga-g](#|b)?$/;
   var OCTAVED = /^[A-Ha-h](#|b)?(-1|[0-9])$/;
   var JOINED = /^([A-G]) (#|b)(-1|[0-9])/;
-  var TOKEN = /([A-G]) (?:#|b)(?:-1|[0-9])|[A-Za-z][A-Za-z0-9#]*(?:-1(?![0-9]))?|[()\/\-,]|\S/g;
+  var TOKEN = /([A-G]) (?:#|b)(?:-1|[0-9])|Ré(?:#|b)?(?:-1|[0-9])|[A-Za-z][A-Za-z0-9#]*(?:-1(?![0-9]))?|[()\/\-,]|\S/g;
+  var SOLFEGE = /^(Do|R[eé]|Mi|Fa|Sol|La|Si)(#|b)?(-1|[0-9])$/;
+  var SOLFEGE_LETTER = { Do: "C", Re: "D", "Ré": "D", Mi: "E", Fa: "F", Sol: "G", La: "A", Si: "B" };
+  var PITCH_SRC = "(?:[A-G](?:#|b)?(?:-1|[0-9])?|(?:Do|R[e\\u00e9]|Mi|Fa|Sol|La|Si)(?:#|b)?[0-9])";
+  var EDGE_L = "(?<![A-Za-z0-9\\u00c0-\\u017f])";
+  var EDGE_R = "(?![A-Za-z0-9#\\u00c0-\\u017f])";
+  var RUN = new RegExp("(?:" + EDGE_L + PITCH_SRC + EDGE_R + "[\\s,\\-\\/\\u00b7|()]*){5,}", "g");
+  var PITCH = new RegExp(EDGE_L + PITCH_SRC + EDGE_R, "g");
+  var NARROW_OVER = 2000;
+  var WINDOW_CHARS = 1200;
   var SKIPPED = /^(?:and|&|\.|;)$/i;
   var REFERENCE = /^A4 *(?:=|at\b)? *[0-9]{3}(?![0-9])/;
   var GLUED = /^(?:[A-Ha-h](?:#|b)?(?:-1|[0-9])){2,}$/;
 
   var LABEL = new RegExp(
-    "\\b(?:(Ding)|(Inner(?:\\s*Notes)?)|(Notes\\s*Bottom\\s*Side|Bottom\\s*Side\\s*Notes|Bottom\\s*Notes|Bottom)" +
-    "|(Notes\\s*Top\\s*Side|Top\\s*Side\\s*Notes|Top\\s*Notes|Top|Tones|Notes|Notas))\\s*:", "gi");
+    "(?:\\b|(?<=[0-9]))(?:(Ding(?:\\s*\\((?:center|centre)\\))?)|(Inner(?:\\s*Notes)?)" +
+    "|(Notes\\s*\\(\\s*Bottom\\s*Side\\s*\\)|Notes\\s*Bottom\\s*Side|Bottom\\s*Side\\s*Notes|Bottom\\s*Notes|Bottom)" +
+    "|(Notes\\s*\\(\\s*Top\\s*Side\\s*\\)|Notes\\s*Top\\s*Side|Top\\s*Side\\s*Notes|Top\\s*Notes|Top|Tones|Notes?|Notas" +
+    "|Outer\\s*circle|notes\\b[^:]{0,40}\\bare))\\s*:", "gi");
+  // Colon-less spec-row labels count only when a note follows straight away,
+  // so "Anzahl Noten 14" and "Number of notes 12" are not labels.
+  var BARE_LABEL = new RegExp("\\b(?:(Hauptnote|Main note)|(Noten|Notes))(?=\\s+\\(?" + PITCH_SRC + EDGE_R + ")", "g");
   var LABEL_ROLES = [null, "ding", "inner", "bottom", "top"];
 
   function core() { return HPE.core; }
@@ -85,7 +100,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     rest.lastIndex = re.lastIndex;
     while ((m = rest.exec(body))) {
       tok = m[0];
-      if (JOINED.test(tok) || OCTAVED.test(tok) || GLUED.test(tok)) {
+      if (JOINED.test(tok) || OCTAVED.test(tok) || GLUED.test(tok) || SOLFEGE.test(tok)) {
         if (!REFERENCE.test(tok + body.slice(rest.lastIndex))) return true;
       } else if (NOTE_LIKE.test(tok)) {
         run = key ? 0 : run + 1;
@@ -111,17 +126,25 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var depth = 0;
     var last = null;
     var immediate = false;
+    var group = 0;
     var re = new RegExp(TOKEN.source, "g");
     var m;
     while ((m = re.exec(body))) {
       var tok = m[0];
       var start = from + m.index;
+      if (REFERENCE.test(body.slice(m.index))) {
+        if (readsAsNoteAfter(re, body, tok)) odd.push(tok);
+        break;
+      }
       var joined = JOINED.exec(tok);
-      if (joined || NOTE_UP.test(tok)) {
+      var sol = SOLFEGE.exec(tok);
+      if (joined || sol || NOTE_UP.test(tok)) {
         last = {
-          name: joined ? joined[1] + joined[2] + joined[3] : tok,
+          name: joined ? joined[1] + joined[2] + joined[3] :
+            sol ? SOLFEGE_LETTER[sol[1]] + (sol[2] || "") + sol[3] : tok,
           joined: !!joined,
           paren: depth > 0,
+          group: depth > 0 ? group : 0,
           role: role,
           span: spanOf(original, start, start + tok.length),
           closeMark: false,
@@ -131,7 +154,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         immediate = true;
         continue;
       }
-      if (tok === "(") { depth += 1; immediate = false; continue; }
+      if (tok === "(") { if (!depth) group += 1; depth += 1; immediate = false; continue; }
       if (tok === ")") {
         if (depth > 0) depth -= 1;
         else if (last && immediate) last.closeMark = true;
@@ -159,15 +182,33 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     while ((m = re.exec(text))) {
       var role = null;
       for (var g = 1; g < LABEL_ROLES.length; g += 1) if (m[g] !== undefined) role = LABEL_ROLES[g];
-      marks.push({ role: role, from: m.index + m[0].length, at: m.index });
+      // "Note:" and "notes ... are:" also open prose, so they label a list
+      // only when a run of notes follows.
+      var weak = m[4] !== undefined && /^note$|are$/i.test(m[4]);
+      marks.push({ role: role, from: m.index + m[0].length, at: m.index, weak: weak });
     }
-    var lists = [];
-    marks.forEach(function (mark, i) {
-      var to = i + 1 < marks.length ? marks[i + 1].at : text.length;
-      var list = readList(text, mark.from, to, mark.role, original);
-      if (list.notes.length || list.odd.length) lists.push(list);
-    });
-    return lists;
+    var bare = new RegExp(BARE_LABEL.source, "g");
+    while ((m = bare.exec(text))) {
+      var at = m.index;
+      if (marks.some(function (k) { return at >= k.at && at < k.from; })) continue;
+      var ding = m[1] !== undefined;
+      marks.push({ role: ding ? "ding" : "top", from: at + m[0].length, at: at, weak: !ding, bare: ding });
+    }
+    marks.sort(function (a, b) { return a.at - b.at; });
+    for (;;) {
+      var lists = [];
+      var prose = -1;
+      marks.forEach(function (mark, i) {
+        var to = i + 1 < marks.length ? marks[i + 1].at : text.length;
+        var list = readList(text, mark.from, to, mark.role, original);
+        if (mark.weak && list.notes.length < 5 && prose < 0) prose = i;
+        list.at = mark.at;
+        if (mark.bare) list.notes.forEach(function (n) { n.bareLabel = true; });
+        if (list.notes.length || list.odd.length) lists.push(list);
+      });
+      if (prose < 0) return lists;
+      marks.splice(prose, 1);
+    }
   }
 
   // "D3 ding, A3 Bb3 top, C3 bottom": a role word closes each comma clause.
@@ -185,9 +226,48 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       list.notes.forEach(function (n) {
         n.span = spanOf(original, m.index + n.span.start, m.index + n.span.end);
       });
+      list.at = m.index;
+      list.end = m.index + clause.length;
       lists.push(list);
     }
     return lists;
+  }
+
+  function letters(name) {
+    return name.replace(/(-1|[0-9])$/, "");
+  }
+
+  function pcOf(name) {
+    var m = NOTE_UP.exec(name);
+    return m ? core().midiFromName(m[1], m[2] || "", 4) % 12 : null;
+  }
+
+  function runNames(run) {
+    var out = [];
+    var re = new RegExp(PITCH.source, "g");
+    var m;
+    while ((m = re.exec(run))) {
+      var sol = SOLFEGE.exec(m[0]);
+      out.push(letters(sol ? SOLFEGE_LETTER[sol[1]] + (sol[2] || "") + sol[3] : m[0]));
+    }
+    return out;
+  }
+
+  // tier0's densest-pitch window: the best line and 3 either side, at most
+  // WINDOW_CHARS characters, solfege pitches scored too.
+  function windowOf(raw) {
+    var lines = raw.split("\n");
+    var score = lines.map(function (l) { return (normalise(l).match(new RegExp(PITCH.source, "g")) || []).length; });
+    var sum = function (i) {
+      return score.slice(Math.max(0, i - 3), i + 4).reduce(function (a, b) { return a + b; }, 0);
+    };
+    var best = 0;
+    for (var i = 0; i < lines.length; i += 1) if (sum(i) > sum(best)) best = i;
+    var lo = Math.max(0, best - 3);
+    var start = 0;
+    for (var j = 0; j < lo; j += 1) start += lines[j].length + 1;
+    var body = lines.slice(lo, best + 4).join("\n").slice(0, WINDOW_CHARS);
+    return { start: start, end: start + body.length };
   }
 
   function titleCountOf(title) {
@@ -209,10 +289,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return parts.join(" ");
   }
 
-  function interpret(raw, opts) {
+  function read(raw, opts, narrow) {
     opts = opts || {};
-    var original = String(raw);
-    var text = normalise(original);
+    var full = String(raw);
+    var base = 0;
+    var original = full;
     var titleCount = titleCountOf(opts.title);
     var flags = {};
     function flag(code, extra) {
@@ -220,6 +301,40 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       for (var k in extra) if (Object.prototype.hasOwnProperty.call(extra, k)) f[k] = extra[k];
       return f;
     }
+    // With narrow set, a long text is read only in its densest-pitch window,
+    // widened to whole lines over every labelled list in the text, or every
+    // clause list when it has none. A spread wider than NARROW_OVER or a run of
+    // five or more notes outside the window blocks; interpret() then checks
+    // any REVIEW against the whole text.
+    if (narrow && full.length > NARROW_OVER) {
+      var w = windowOf(full);
+      var whole = normalise(full);
+      var spread = labelledLists(whole, full).filter(function (l) { return l.notes.length; });
+      if (!spread.length) spread = clauseLists(whole, full) || [];
+      if (spread.length) {
+        var lo = spread[0].at;
+        var hi = 0;
+        spread.forEach(function (l) {
+          hi = Math.max(hi, l.end !== undefined ? l.end : l.notes[l.notes.length - 1].span.end);
+        });
+        lo = lo > 0 ? full.lastIndexOf("\n", lo - 1) + 1 : 0;
+        hi = full.indexOf("\n", hi);
+        if (hi < 0) hi = full.length;
+        if (hi - lo <= NARROW_OVER) w = { start: Math.min(w.start, lo), end: Math.max(w.end, hi) };
+        else flag("CONFLICTING_LIST", { spread: hi - lo });
+      }
+      var outside = 0;
+      var rr = new RegExp(RUN.source, "g");
+      var rm;
+      while ((rm = rr.exec(whole))) {
+        var end = rm.index + rm[0].replace(/[\s,\-\/\u00b7|()]+$/, "").length;
+        if (rm.index < w.start || end > w.end) outside += 1;
+      }
+      if (outside) flag("CONFLICTING_LIST", { runs: outside });
+      base = w.start;
+      original = full.slice(w.start, w.end);
+    }
+    var text = normalise(original);
     function finish(roles, notes, total) {
       var out = [];
       FLAG_ORDER.forEach(function (pair) {
@@ -235,17 +350,71 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     }
 
     var lists = labelledLists(text, original);
+    var labelled = lists.length > 0;
     if (!lists.length) lists = clauseLists(text, original) || [];
     var odd = [];
     var notes = [];
     lists.forEach(function (list, li) {
       odd = odd.concat(list.odd);
-      list.notes.forEach(function (n) { n.list = li; notes.push(n); });
+      list.notes.forEach(function (n) {
+        n.list = li;
+        if (base) n.span = spanOf(full, base + n.span.start, base + n.span.end);
+        notes.push(n);
+      });
     });
     if (!notes.length) return insufficient();
     if (odd.length) flag("AMBIGUOUS_NOTE", { tokens: odd });
+    // Two labelled top lists are two readings of the rim, so neither wins.
+    if (labelled && lists.filter(function (l) { return l.role === "top" && l.notes.length; }).length > 1) {
+      flag("CONFLICTING_LIST", { tops: true });
+    }
+
+    // A ding label restated as the first note of the next list ("Hauptnote C3
+    // ... Noten C/ ...") is one note, not two; the restatement lends the ding
+    // its octave when the label printed none.
+    var dingLabels = notes.filter(function (n) { return n.role === "ding" && !n.paren; });
+    var dingClash = null;
+    if (dingLabels.length === 1) {
+      var dl = dingLabels[0];
+      var nextTop = null;
+      lists.some(function (list) {
+        if (list.role !== "top" || list.notes.indexOf(dl) >= 0) return false;
+        nextTop = list.notes.filter(function (n) { return !n.paren; })[0] || null;
+        return true;
+      });
+      var same = nextTop && pcOf(nextTop.name) !== null && pcOf(nextTop.name) === pcOf(dl.name) &&
+        (!hasOctave(dl.name) || !hasOctave(nextTop.name) || nextTop.name === dl.name) &&
+        (nextTop.sep === "/" || !!dl.bareLabel && (hasOctave(dl.name) || !hasOctave(nextTop.name) ||
+          midiOf(nextTop.name) < 60));
+      if (same) {
+        if (!hasOctave(dl.name) && hasOctave(nextTop.name)) dl.name = nextTop.name;
+        notes.splice(notes.indexOf(nextTop), 1);
+        lists.forEach(function (list) {
+          var at = list.notes.indexOf(nextTop);
+          if (at >= 0) list.notes.splice(at, 1);
+        });
+      } else if (nextTop && (dl.bareLabel || nextTop.sep === "/")) {
+        // A spec-row ding the list does not restate, or a slash-marked ding
+        // in the list, is a second ding, so neither wins until one is picked.
+        dingClash = [dl, nextTop];
+      }
+    }
+
+    // An earlier run of five or more notes that disagrees with the chosen
+    // lists blocks (boullard-battiloro).
+    if (labelled) {
+      var chosen = notes.map(function (n) { return letters(n.name); }).join(" ");
+      var er = new RegExp(RUN.source, "g");
+      var em;
+      while ((em = er.exec(text))) {
+        if (em.index + em[0].length > lists[0].at) break;
+        if (runNames(em[0]).join(" ") !== chosen) flag("CONFLICTING_LIST", { earlier: true });
+      }
+    }
 
     notes.forEach(function (n, i) { n.index = i; n.octave = hasOctave(n.name); n.midi = midiOf(n.name); });
+    var pickable = typeof opts.ding === "number" && opts.ding >= 0 && opts.ding < notes.length;
+    if (dingClash && !pickable) flag("CONFLICTING_DING", { notes: dingClash.map(function (n) { return n.index; }) });
 
     // Who is the ding?
     var labelDings = notes.filter(function (n) { return n.role === "ding" && !n.paren; });
@@ -255,7 +424,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       firstTop = list.notes[0];
       return true;
     });
-    var pickable = typeof opts.ding === "number" && opts.ding >= 0 && opts.ding < notes.length;
     var ding = null;
     var stray = notes.filter(function (n) { return n.closeMark; });
     function indices(list) { return list.map(function (n) { return n.index; }); }
@@ -267,6 +435,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       } else {
         ding = labelDings[0];
       }
+    } else if (firstTop && firstTop.paren && notes.filter(function (n) {
+      return n.paren && n.list === firstTop.list && n.group === firstTop.group;
+    }).length === 1) {
+      // A leading parenthesised note before the list is the ding (D-G, Halo).
+      ding = firstTop;
+      flag("DING_CUE", { notes: [ding.index], cue: "parens" });
     } else if (firstTop && !firstTop.paren) {
       var bad = stray.filter(function (n) { return n !== firstTop; });
       if (bad.length) {
@@ -278,11 +452,15 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       }
     }
 
+    var parensBottom = opts.parens === "bottom";
     notes.forEach(function (n) {
       if (n === ding) n.assigned = "ding";
+      else if (n.paren && parensBottom) { n.assigned = "bottom"; n.inline = true; }
       else if (n.paren) n.assigned = "unknown";
       else n.assigned = n.role === "ding" ? "top" : n.role;
     });
+    var inlined = notes.filter(function (n) { return n.inline; });
+    if (inlined.length) flag("PARENS_AS_BOTTOM", { notes: indices(inlined) });
     var unknown = notes.filter(function (n) { return n.assigned === "unknown"; });
     if (unknown.length) flag("UNDECLARED_PARENS", { notes: indices(unknown) });
     if (!ding && !flags.CONFLICTING_DING && !unknown.length) return insufficient();
@@ -331,12 +509,23 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
     var bare = notes.filter(function (n) { return n.assigned !== "unknown" && !n.octave; });
     if (bare.length) flag("NO_OCTAVE", { notes: indices(bare) });
+    var lowBare = bottoms.filter(function (n) { return !n.octave && !n.inline; });
+    if (lowBare.length) flag("BOTTOM_NO_OCTAVE", { notes: indices(lowBare) });
 
     var blocked = !ding || flags.UNDECLARED_PARENS || flags.CONFLICTING_DING || flags.COUNT_MISMATCH ||
                   flags.AMBIGUOUS_NOTE;
     var octaves = {};
+    // With parens read as bottoms, each sits at its own place in the source line.
+    function inlineString(d) {
+      var parts = ["(" + d.name + ")"];
+      notes.forEach(function (n) {
+        if (n === d) return;
+        parts.push(n.assigned === "bottom" ? "[" + n.name + "]" : n.name);
+      });
+      return parts.join(" ");
+    }
     if (bare.length && !blocked) {
-      var parsed = core().parseSeed(provisionalString(ding, tops, inner, bottoms));
+      var parsed = core().parseSeed(inlined.length ? inlineString(ding) : provisionalString(ding, tops, inner, bottoms));
       if (!parsed.ok) {
         flag("PROVISIONAL_REFUSED", { refusal: { code: parsed.code, reason: parsed.reason } });
       } else {
@@ -362,7 +551,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var roles = {
       ding: ding ? make(ding, false) : null,
       top: tops.map(function (n) { return make(n, false); }),
-      bottom: bottoms.map(function (n) { return make(n, true); }),
+      bottom: bottoms.map(function (n) { return make(n, !n.inline); }),
       inner: inner.map(function (n) { return make(n, false); })
     };
     var listing = notes.map(function (n) {
@@ -370,6 +559,23 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       return { note: inferred ? octaves[n.index] : n.name, span: n.span, role: n.assigned };
     });
     return finish(roles, listing, total);
+  }
+
+  // A narrowed REVIEW stands only when the same reader, over the whole text,
+  // gives the same status, string and flags. Any difference BLOCKs, so
+  // narrowing can only keep the whole-text reading or refuse.
+  function readingOf(r) {
+    return JSON.stringify([r.status, serialise(r), r.flags]);
+  }
+
+  function interpret(raw, opts) {
+    var narrowed = read(raw, opts, true);
+    if (narrowed.status !== "REVIEW" || String(raw).length <= NARROW_OVER) return narrowed;
+    var whole = read(raw, opts, false);
+    if (readingOf(whole) === readingOf(narrowed)) return narrowed;
+    narrowed.flags.unshift({ code: "CONFLICTING_LIST", wide: true, level: BLOCK });
+    narrowed.status = "NEEDS_INPUT";
+    return narrowed;
   }
 
   // The canonical line for a REVIEW result, or "" when nothing may be written.

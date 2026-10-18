@@ -1,0 +1,15 @@
+# kills: window cut: an unlabelled list the window cuts blocks and writes nothing
+# suite: node --test --test-name-pattern ^window.cut:.an.unlabelled tests/import.test.js
+# A run that crosses the window boundary is not counted, so a list cut by the window is read truncated.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -315,7 +315,7 @@
+       var rm;
+       while ((rm = rr.exec(whole))) {
+         var end = rm.index + rm[0].replace(/[\s,\-\/\u00b7|()]+$/, "").length;
+-        if (rm.index < w.start || end > w.end) outside += 1;
++        if (end <= w.start || rm.index >= w.end) outside += 1;
+       }
+       if (outside) flag("CONFLICTING_LIST", { runs: outside });
+       base = w.start;

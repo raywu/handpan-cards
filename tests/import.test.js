@@ -129,9 +129,11 @@ test("octaveless sources: the provisional string, hand-written octaves, roles an
   }
 });
 
-test("C Ashakiran 15 octaveless line gives the plan's hand-written string", () => {
-  assert.equal(importer.serialise(run(byId("yatao-c-ashakiran-15-octaveless"))),
-    "(C3) F3 G3 A3 B3 C4 D4 E4 G4 [D5] [E5] [F5] [A5] [B5] [C6]");
+test("C Ashakiran 15 octaveless line blocks with BOTTOM_NO_OCTAVE and writes no string", () => {
+  const r = run(byId("yatao-c-ashakiran-15-octaveless"));
+  assert.equal(r.status, "NEEDS_INPUT");
+  assert.equal(flagOf(r, "BOTTOM_NO_OCTAVE").level, "BLOCK");
+  assert.equal(importer.serialise(r), "");
 });
 
 test("a descending octaveless source lists every note under NO_OCTAVE and is not flagged as unsorted", () => {
@@ -186,7 +188,7 @@ test("guess is set only on bottoms whose octave was inferred", () => {
 });
 
 test("UNDECLARED_PARENS: parenthesised notes get no role and nothing is serialised", () => {
-  for (const id of ["sela-sehp401", "synthetic-pasted-provisional"]) {
+  for (const id of ["sela-sehp401"]) {
     const c = byId(id);
     const r = run(c);
     assert.equal(r.status, "NEEDS_INPUT", id);
@@ -219,11 +221,98 @@ test("conflicting dings: Medusa asks, and a pick of note 0 resolves it to a refu
   assert.equal(importer.serialise(p), "");
 });
 
+test("a Main note or Hauptnote line that disagrees with a slash-marked ding blocks with CONFLICTING_DING", () => {
+  const list = "Notes: D3 / A3 Bb3 C4 D4 E4 F4 G4 A4";
+  for (const t of [
+    "Main note C3\n" + list,
+    "Hauptnote C3 wird mitgeliefert\n" + list,
+    list + "\nMain note C3 version also available.",
+    "Notes: D / A Bb C D E F G A C\nMain note A grade",
+    "Main note C3\nNotes: D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
+  ]) {
+    const r = interpret(t);
+    assert.equal(r.status, "NEEDS_INPUT", t);
+    assert.ok(flagOf(r, "CONFLICTING_DING"), t);
+    assert.equal(importer.serialise(r), "", t);
+  }
+  const agree = interpret("Main note D3\n" + list);
+  assert.equal(importer.serialise(agree), "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4");
+  assert.equal(flagOf(agree, "CONFLICTING_DING"), undefined);
+});
+
+test("a weak label (Note:, notes ... are:, a bare Notes) with fewer than five notes after it is prose, never a list", () => {
+  const list = "Ding: D3\nTop: A3 Bb3 C4 D4 E4 F4 G4 A4";
+  const want = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4";
+  for (const t of [
+    "Please note: E3 bottom optional\n" + list,
+    list + "\nBottom note: C3",
+    list + "\nAdditional note: C5 (+150 EUR)",
+    list + "\nLowest note: C3",
+    list + "\nNote: C5 can be added on request.",
+    list + "\nOther notes are: C5 D5",
+    list + "\nNotes C5 and D5 can be added",
+    "Note: F3 Low Pygmy is our bestseller.\nNotes: D3 / A3 Bb3 C4 D4 E4 F4 G4 A4",
+  ]) {
+    const r = interpret(t);
+    const out = importer.serialise(r);
+    assert.ok(out === "" || out === want, t + " -> " + out);
+  }
+  assert.equal(importer.serialise(interpret("Note: F3 Low Pygmy is our bestseller.\nNotes: D3 / A3 Bb3 C4 D4 E4 F4 G4 A4")), want);
+  assert.equal(importer.serialise(interpret("Note: Re3 / La3 Sib3 Do4 Re4 Mi4 Fa4")), "(D3) A3 Bb3 C4 D4 E4 F4");
+});
+
+test("a Main note or Hauptnote line that the next list does not restate blocks, slash or not", () => {
+  for (const t of [
+    "Main note C3 version also available.\nNotes: D3 A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "Hauptnote C3 wird mitgeliefert\nNotes: D3, A3, Bb3, C4, D4, E4, F4, G4, A4",
+    "Notes: D3 A3 Bb3 C4 D4 E4 F4 G4 A4\nHauptnote C3 wird mitgeliefert",
+    "Main note D4\nNotes: D3 A3 Bb3 C4 D4 E4 F4 G4 A4",
+    "Ding\tC3\nHauptnote C\nNotes\tC4 D4 E4 G4 A4 C5",
+  ]) {
+    const r = interpret(t);
+    assert.equal(r.status, "NEEDS_INPUT", t);
+    assert.ok(flagOf(r, "CONFLICTING_DING"), t);
+  }
+  const same = interpret("Main note D3\nNotes: D3 A3 Bb3 C4 D4 E4 F4 G4 A4");
+  assert.equal(importer.serialise(same), "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4");
+  assert.equal(flagOf(same, "DUPLICATE_PITCH"), undefined);
+  assert.equal(importer.serialise(interpret("Hauptnote D\nNoten D3 A3 Bb3 C4 D4 E4 F4")), "(D3) A3 Bb3 C4 D4 E4 F4");
+});
+
+test("a Ding: label with no octave is not merged into an octaved first top note", () => {
+  assert.equal(importer.serialise(interpret("Ding: D\nTop: D4 E4 F4 G4 A4 C5")), "(D3) D4 E4 F4 G4 A4 C5");
+  assert.equal(importer.serialise(interpret("Ding: C\nTop: C4 D4 E4 G4 A4 C5")), "(C3) C4 D4 E4 G4 A4 C5");
+});
+
+test("a reference pitch inside a list that notes still follow blocks instead of cutting the list", () => {
+  const r = interpret("Ding: D3\nTop:\n- A3\n- Bb3\n- C4\n- D4\n- E4\n- F4\nA4 440\n- G4\n- A4\n- C5");
+  assert.equal(r.status, "NEEDS_INPUT");
+  assert.ok(flagOf(r, "AMBIGUOUS_NOTE"));
+  assert.equal(importer.serialise(interpret("Ding: D3\nTop: A3 Bb3 C4 D4 E4 F4 G4 A4\nA4 440")),
+    "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4");
+});
+
+test("two labelled top lists are two readings of the rim and block with CONFLICTING_LIST", () => {
+  for (const t of [
+    "Ding: C#3\nOuter circle: G#3 - B3 - C#4 - D4 - F4 - F#4 - G#4 - B4\nTop: D3 shell",
+    "Ding: F3\nOuter circle: G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5\nBottom: C3 Db3\nNotes: D3 version shipped by default.",
+  ]) {
+    const r = interpret(t);
+    assert.equal(r.status, "NEEDS_INPUT", t);
+    assert.ok(flagOf(r, "CONFLICTING_LIST"), t);
+  }
+});
+
 test("a picked ding clears DING_CUE and CONFLICTING_DING and lets the string through", () => {
   const r = interpret("Notes: D E F G Bb", { ding: 3 });
   assert.equal(r.status, "REVIEW");
   assert.deepEqual(codes(r), ["NO_OCTAVE"]);
   assert.equal(importer.serialise(r), "(G3) D4 E4 F4 Bb4");
+  for (const t of ["Main note C3\nNotes: D3 / A3 Bb3 C4 D4 E4 F4 G4 A4", "Main note C3 version also available.\nNotes: D3 A3 Bb3 C4 D4 E4 F4 G4 A4"]) {
+    const picked = interpret(t, { ding: 0 });
+    assert.equal(picked.status, "REVIEW", t);
+    assert.equal(importer.serialise(picked), "(C3) D3 A3 Bb3 C4 D4 E4 F4 G4 A4", t);
+  }
 });
 
 test("a picked ding on a note after the first moves to the front: same string as the labelled form", () => {
@@ -402,4 +491,300 @@ test("interpret never throws on odd input", () => {
     const r = interpret(t, { title: "x" });
     assert.ok(["INSUFFICIENT", "NEEDS_INPUT", "REVIEW"].includes(r.status), JSON.stringify(t));
   }
+});
+
+test("BOTTOM_NO_OCTAVE, CONFLICTING_LIST and PARENS_AS_BOTTOM join FLAG_ORDER at their levels", () => {
+  const blocked = run(byId("yatao-c-ashakiran-15-octaveless"));
+  assert.equal(flagOf(blocked, "BOTTOM_NO_OCTAVE").level, "BLOCK");
+  const level = (text, opts, code) => flagOf(interpret(text, opts), code).level;
+  assert.equal(level("Ding: D3 Top: A3 C4 D4 E4 F4 G4 A4 C5 Bottom: (C3) (F3)", { parens: "bottom" }, "PARENS_AS_BOTTOM"), "CONFIRM");
+});
+
+test("parens: bottom reads round brackets as bottom notes; without it the same text still blocks", () => {
+  const text = "Ding: D3 Top: A3 C4 D4 E4 F4 G4 A4 C5 (C3) (F3)";
+  const plain = interpret(text);
+  assert.equal(plain.status, "NEEDS_INPUT");
+  assert.ok(flagOf(plain, "UNDECLARED_PARENS"));
+  const r = interpret(text, { parens: "bottom" });
+  assert.equal(flagOf(r, "UNDECLARED_PARENS"), undefined);
+  assert.equal(flagOf(r, "PARENS_AS_BOTTOM").level, "CONFIRM");
+  assert.equal(r.status, "REVIEW");
+  assert.deepEqual(r.roles.bottom.map((e) => e.note), ["C3", "F3"]);
+});
+
+test("parens: bottom on a text with no round brackets changes nothing and raises nothing", () => {
+  const text = "Ding: D3 Top: A3 C4 D4 E4 F4 G4 A4 C5";
+  assert.deepEqual(interpret(text, { parens: "bottom" }), interpret(text));
+});
+
+test("BOTTOM_NO_OCTAVE: a bottom note written without an octave blocks and writes no string", () => {
+  const r = interpret("Ding: D3 Top: A3 C4 D4 E4 F4 G4 A4 Bottom: C F");
+  assert.equal(r.status, "NEEDS_INPUT");
+  assert.equal(flagOf(r, "BOTTOM_NO_OCTAVE").level, "BLOCK");
+  assert.equal(importer.serialise(r), "");
+  const ok = interpret("Ding: D3 Top: A3 C4 D4 E4 F4 G4 A4 Bottom: C3 F3");
+  assert.equal(flagOf(ok, "BOTTOM_NO_OCTAVE"), undefined);
+  assert.equal(ok.status, "REVIEW");
+});
+
+function longPage(stray, after) {
+  const filler = [];
+  for (let i = 0; i < 40; i += 1) filler.push("The pan sounds warm and clear, hand made with care in the shop, number " + i + ".");
+  const list = ["Ding: D3", "Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5", "Bottom: C3 F3"].join("\n");
+  return [stray, filler.join("\n"), list, filler.join("\n"), after].filter(Boolean).join("\n");
+}
+
+test("battiloro window: a run of five or more notes outside the kept window blocks with CONFLICTING_LIST", () => {
+  const clean = longPage("");
+  assert.ok(clean.length > 2000);
+  const ok = interpret(clean);
+  assert.equal(ok.status, "REVIEW");
+  assert.equal(flagOf(ok, "CONFLICTING_LIST"), undefined);
+  const stray = longPage("Older listing: C D E F G A B");
+  assert.ok(stray.length > 2000);
+  const r = interpret(stray);
+  assert.equal(r.status, "NEEDS_INPUT");
+  assert.equal(flagOf(r, "CONFLICTING_LIST").level, "BLOCK");
+  assert.equal(flagOf(r, "CONFLICTING_LIST").runs, 1);
+  assert.equal(importer.serialise(r), "");
+  const later = interpret(longPage("", "Newer listing: C D E F G A B"));
+  assert.equal(later.status, "NEEDS_INPUT");
+  assert.equal(flagOf(later, "CONFLICTING_LIST").level, "BLOCK");
+  assert.equal(flagOf(later, "CONFLICTING_LIST").runs, 1);
+  const four = interpret(longPage("Older listing: C D E F"));
+  assert.equal(flagOf(four, "CONFLICTING_LIST"), undefined);
+});
+
+const NARROW_FILL = (i) => "The pan sounds warm and clear, hand made with care in the shop, number " + i + ".";
+
+test("narrowing check: a role clause outside the kept window blocks rather than being dropped", () => {
+  const filler = Array.from({ length: 30 }, (_, i) => NARROW_FILL(i));
+  const page = (top, extra) => [top, ...filler.slice(0, 8), extra, ...filler, "This is a D minor scale."].join("\n");
+  for (const extra of ["C and D top.", "F and G inner.", "C and F on the bottom."]) {
+    const text = page("D3 ding, A3 Bb3 C4 D4 E4 F4 G4 A4 top.", extra);
+    assert.ok(text.length > 2000);
+    const r = interpret(text);
+    assert.equal(r.status, "NEEDS_INPUT", extra);
+    assert.deepEqual(r.flags.map((f) => f.code), ["CONFLICTING_LIST"], extra);
+    assert.equal(flagOf(r, "CONFLICTING_LIST").wide, true, extra);
+    assert.equal(importer.serialise(r), "", extra);
+  }
+  const octaveless = interpret(page("D ding, A Bb C D E F G A top.", "C and D top."));
+  assert.equal(octaveless.status, "NEEDS_INPUT");
+  assert.deepEqual(octaveless.flags.map((f) => f.code), ["CONFLICTING_LIST", "NO_OCTAVE"]);
+  const agreed = interpret(page("D3 ding, A3 Bb3 C4 D4 E4 F4 G4 A4 top.", "C5 and D5 top.").replace("\nThis is a D minor scale.", ""));
+  assert.equal(agreed.status, "REVIEW");
+  assert.equal(importer.serialise(agreed), "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5");
+});
+
+test("narrowing check: a seeded fuzz of long texts reads each one as its compact form or blocks", () => {
+  const LISTS = [
+    ["Ding: D3", "Top: A3 Bb3 C4 D4 E4 F4 G4 A4", "Bottom: C3 F3"],
+    ["D3 ding, A3 Bb3 C4 D4 E4 F4 G4 A4 top."],
+    ["D ding, A Bb C D E F G A top."],
+    ["Notes: D3 / A3 Bb3 C4 D4 E4 F4 G4 A4 C5"],
+    ["Ding: D", "Top: A Bb C D E F G A"],
+    ["Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5", "Inner: D5 E5", "Ding: D3"],
+  ];
+  const PROSE = [
+    "C and D top.", "F and G inner.", "C and F on the bottom.", "C5 and D5 top.", "C3 and F3 on the bottom.",
+    "A perfect gift for beginners.", "This is a D minor scale.", "A4 = 440 Hz", "Tuned to A4 at 432.", "Key: D",
+    "Ding: D", "Note: A", "Bottom: c3 f3", "Older listing: C D E F G A B", "Also in C and D.", "E4", "G",
+    "Top: A grade", "Sol La Si", "F3 Low Pygmy", "Bb3, C4", "Inner: none", "Nine notes in all.",
+  ];
+  let s = 2026;
+  const rnd = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+  const pick = (a) => a[Math.floor(rnd() * a.length)];
+  const reading = (r) => [r.status, importer.serialise(r), r.flags.map((f) => f.code).join()].join(" | ");
+  for (let i = 0; i < 3000; i += 1) {
+    const blocks = pick(LISTS).slice();
+    const extra = Math.floor(rnd() * 3);
+    for (let k = 0; k < extra; k += 1) blocks.splice(Math.floor(rnd() * (blocks.length + 1)), 0, pick(PROSE));
+    const long = [];
+    const compact = [];
+    let n = 0;
+    blocks.forEach((line) => {
+      const fill = Math.floor(rnd() * 30);
+      if (fill) compact.push(NARROW_FILL(0));
+      for (let f = 0; f < fill; f += 1) long.push(NARROW_FILL(n++));
+      long.push(line);
+      compact.push(line);
+    });
+    while (long.join("\n").length <= 2000) long.push(NARROW_FILL(n++));
+    if (compact[compact.length - 1] !== NARROW_FILL(0)) compact.push(NARROW_FILL(0));
+    const short = compact.join("\n");
+    assert.ok(short.length <= 2000);
+    const r = interpret(long.join("\n"));
+    if (r.status !== "REVIEW") { assert.equal(importer.serialise(r), ""); continue; }
+    assert.equal(reading(r), reading(interpret(short)), short);
+  }
+});
+
+test("a text of 2,000 characters or fewer is not narrowed: a stray run of five notes beside the list is not a window block", () => {
+  const r = interpret("Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4\nElsewhere C D E F G A B");
+  assert.equal(flagOf(r, "CONFLICTING_LIST"), undefined);
+});
+
+function leadPage(width) {
+  const prose = [];
+  for (let i = 0; i < 6; i += 1) prose.push(("Lead " + i + " ").padEnd(width - 1, "x") + ".");
+  const tail = [];
+  for (let i = 0; i < 20; i += 1) tail.push("The pan sounds warm and clear, hand made with care in the shop, number " + i + ".");
+  return prose.join("\n") + "\nDing: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5 Bottom: C3 F3 G3\n" + tail.join("\n");
+}
+
+test("window cut: a single-line list after 195 and 196 char prose lines is never serialised truncated", () => {
+  for (const width of [195, 196]) {
+    const text = leadPage(width);
+    assert.ok(text.length > 2000);
+    const r = interpret(text);
+    const seed = importer.serialise(r);
+    assert.equal(r.status, "REVIEW", String(width));
+    assert.equal(seed, FULL_SEED, String(width));
+  }
+});
+
+test("window cut: an unlabelled list the window cuts blocks and writes nothing", () => {
+  for (const width of [195, 196]) {
+    const text = leadPage(width).replace("Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5 Bottom: C3 F3 G3", "D3 A3 Bb3 C4 D4 E4 F4 G4 A4 C5");
+    assert.ok(text.length > 2000);
+    const r = interpret(text);
+    assert.equal(flagOf(r, "CONFLICTING_LIST").runs, 1, String(width));
+    assert.equal(importer.serialise(r), "", String(width));
+  }
+});
+
+test("window invariant: a long text reads as its short form or blocks, over every list shape, labelled or clause, padding width and position", () => {
+  const spec = ["Material: steel", "Weight: five kilos", "Size: wide", "Shipping: free", "Bag: included", "Warranty: two years"];
+  const shapes = {
+    bare: ["Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5"],
+    dot: ["Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5."],
+    bottom: ["Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5 Bottom: C3 F3 G3"],
+    pygmy: ["Ding: F3", "Top: G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5", "Inner: F5 G5", ...spec, "Bottom: C3 Db3 Eb3 Bb3 Db4 Ab5"],
+    multi: ["Ding: D3", "Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5", ...spec, "Bottom:", "C3,", "F3,", "G3."],
+  };
+  for (let k = 1; k <= 7; k += 1) {
+    shapes["below" + k] = ["Ding: D3", "Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5", ...spec.concat(spec).slice(0, k - 1), "Bottom: C3 F3 G3 E3 B2"];
+  }
+  shapes.clause = ["D3 ding, A3 Bb3 C4 D4 E4 F4 G4 A4 top, C3 F3 bottom."];
+  for (const k of [0, 1, 4, 8]) {
+    shapes["clause" + k] = ["D3 ding, A3 Bb3 C4 D4 E4 F4 G4 A4 top.", ...spec.concat(spec).slice(0, k), "C3 and F3 on the bottom."];
+  }
+  const tail = TAIL.concat(TAIL).slice(0, 30);
+  for (const [name, lines] of Object.entries(shapes)) {
+    for (const sep of ["\n", "\r\n"]) {
+      const short = interpret(lines.join(sep));
+      const want = [short.status, short.flags.map((f) => f.code).join(), importer.serialise(short)];
+      for (const p of [0, 2, 6]) {
+        for (let w = 40; w <= 900; w += 13) {
+          const lead = [];
+          for (let i = 0; i < p; i += 1) lead.push(("Lead " + i + " ").padEnd(w - 1, "x") + ".");
+          const text = lead.concat(lines, tail).join(sep);
+          const r = interpret(text);
+          const id = [name, JSON.stringify(sep), p, w].join(" ");
+          assert.ok(text.length > 2000, id);
+          assert.deepEqual([r.status, r.flags.map((f) => f.code).join(), importer.serialise(r)], want, id);
+        }
+      }
+    }
+  }
+});
+
+test("pitch-like prose outside the lists never lets a long text drop a note; it reads as its short form or blocks", () => {
+  const spec = ["Material: steel", "Weight: five kilos", "Size: wide", "Shipping: free", "Bag: included", "Warranty: two years"];
+  const shapes = {
+    labelled: ["Ding: D3", "Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5", ...spec, "Bottom: C3 F3 G3"],
+    clause: ["D3 ding, A3 Bb3 C4 D4 E4 F4 G4 A4 top.", ...spec, "C3 and F3 on the bottom."],
+    clauseFirst: ["C3 and F3 on the bottom.", ...spec, "D3 ding, A3 Bb3 C4 D4 E4 F4 G4 A4 top."],
+  };
+  const pitchy = ["A perfect gift for beginners.", "This is a D minor scale.", "Tuned around D4.", "Model E5 edition.", "Free shipping, A grade steel.", "Size C or D available.", "A bag and A stand come with it."];
+  for (const [name, lines] of Object.entries(shapes)) {
+    const short = interpret(lines.join("\n"));
+    const want = [short.status, short.flags.map((f) => f.code).join(), importer.serialise(short)];
+    for (const line of pitchy) {
+      for (const where of ["lead", "tail"]) {
+        const body = where === "lead" ? [line, ...TAIL, ...lines] : [...lines, ...TAIL, line];
+        const text = body.join("\n");
+        const r = interpret(text);
+        const got = [r.status, r.flags.map((f) => f.code).join(), importer.serialise(r)];
+        const id = [name, line, where].join(" | ");
+        assert.ok(text.length > 2000, id);
+        if (r.status === "REVIEW") assert.deepEqual(got, want, id);
+        else assert.equal(got[2], "", id);
+      }
+    }
+  }
+});
+
+test("a reference pitch on the line after a list is not a list note", () => {
+  const r = interpret("Ding: F3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5\nand A4 = 440 Hz tuning.");
+  assert.equal(r.status, "REVIEW");
+  assert.equal(importer.serialise(r), "(F3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5");
+  const long = interpret(["Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5 Bottom: C3 F3 G3", ...TAIL, "Tuned to A4 = 440 Hz."].join("\n"));
+  assert.equal(long.status, "REVIEW");
+  assert.equal(importer.serialise(long), FULL_SEED);
+  const far = interpret(["Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5 Bottom: C3 F3 G3", ...TAIL, ...TAIL, ...TAIL, "Tuned to A4 = 440 Hz."].join("\n"));
+  assert.equal(far.status, "REVIEW");
+  assert.equal(importer.serialise(far), FULL_SEED);
+});
+
+test("window widening: a labelled spread of exactly 2,000 characters is read, and 2,001 blocks", () => {
+  const spreadOf = (n) => {
+    const head = "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5";
+    const last = "Bottom: C3 F3 G3";
+    let left = n - head.length - last.length - 1;
+    const fill = [];
+    while (left > 81) { fill.push("x".repeat(80)); left -= 81; }
+    fill.push("x".repeat(left - 1));
+    const body = [head, ...fill, last].join("\n");
+    assert.equal(body.length, n);
+    return body + "\n" + TAIL.join("\n");
+  };
+  const at = interpret(spreadOf(2000));
+  assert.equal(at.status, "REVIEW");
+  assert.equal(importer.serialise(at), FULL_SEED);
+  const over = interpret(spreadOf(2001));
+  assert.equal(over.status, "NEEDS_INPUT");
+  assert.ok(over.flags.some((f) => f.code === "CONFLICTING_LIST" && f.spread === 2001));
+});
+
+const FULL_SEED = "[C3] (D3) [F3] [G3] A3 Bb3 C4 D4 E4 F4 G4 A4 C5";
+const TAIL = Array.from({ length: 25 }, (_, i) => "The pan sounds warm and clear, hand made with care in the shop, number " + i + ".");
+
+test("window widening: a long text reads every labelled list whole, as its short form does", () => {
+  const cut = (w) => ["Lead 0 ".padEnd(w, "x") + ".", "Lead 1 ".padEnd(w, "x") + ".",
+    "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5 Bottom: C3 F3 G3", ...TAIL].join("\n");
+  const table = ["Ding: D3", "Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5", "Material: steel", "Weight: 5 kg",
+    "Size: 53 cm", "Shipping: free", "Bag: included", "Warranty: two years", "Bottom: C3 F3 G3"];
+  const early = ["Ding: D3", "Material: steel", "Weight: 5 kg", "Size: 53 cm", "Shipping: free",
+    "Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5", "Bottom: C3 F3 G3", "Tuned to A4 at 440 Hz.", "A bag and A stand come with it."];
+  const cases = [570, 572, 573].map((w) => ["bottom cut " + w, cut(w)])
+    .concat([["bottom row 7 lines down", table], ["ding row before the window", early]]
+      .map(([k, lines]) => [k, lines.concat(TAIL).join("\n")]));
+  for (const [label, text] of cases) {
+    assert.ok(text.length > 2000, label);
+    const r = interpret(text);
+    assert.equal(r.status, "REVIEW", label);
+    assert.equal(importer.serialise(r), FULL_SEED, label);
+  }
+});
+
+test("window widening: labelled lists spread wider than 2,000 characters block", () => {
+  const text = ["Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5", ...TAIL, ...TAIL, "Bottom: C3 F3 G3"].join("\n");
+  assert.ok(text.length > 2000 && text.indexOf("Bottom:") > 2000);
+  const r = interpret(text);
+  assert.equal(r.status, "NEEDS_INPUT");
+  assert.ok(flagOf(r, "CONFLICTING_LIST").spread > 2000);
+});
+
+test("windowOf picks the first of two equally dense lines", () => {
+  const filler = [];
+  for (let i = 0; i < 30; i += 1) filler.push("The pan sounds warm and clear, hand made with care in the shop, number " + i + ".");
+  const a = "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 Bottom: C F";
+  const b = "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 Bottom: C3 F3";
+  const text = [a, filler.join("\n"), b, filler.join("\n")].join("\n");
+  assert.ok(text.length > 2000);
+  const r = interpret(text);
+  assert.ok(flagOf(r, "CONFLICTING_LIST"));
+  assert.ok(flagOf(r, "BOTTOM_NO_OCTAVE"));
 });
