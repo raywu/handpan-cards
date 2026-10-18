@@ -221,6 +221,24 @@ test("conflicting dings: Medusa asks, and a pick of note 0 resolves it to a refu
   assert.equal(importer.serialise(p), "");
 });
 
+test("a Main note or Hauptnote line that disagrees with a slash-marked ding blocks with CONFLICTING_DING", () => {
+  const list = "Notes: D3 / A3 Bb3 C4 D4 E4 F4 G4 A4";
+  for (const t of [
+    "Main note C3\n" + list,
+    "Hauptnote C3 wird mitgeliefert\n" + list,
+    list + "\nMain note C3 version also available.",
+    "Notes: D / A Bb C D E F G A C\nMain note A grade",
+  ]) {
+    const r = interpret(t);
+    assert.equal(r.status, "NEEDS_INPUT", t);
+    assert.ok(flagOf(r, "CONFLICTING_DING"), t);
+    assert.equal(importer.serialise(r), "", t);
+  }
+  const agree = interpret("Main note D3\n" + list);
+  assert.equal(importer.serialise(agree), "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4");
+  assert.equal(flagOf(agree, "CONFLICTING_DING"), undefined);
+});
+
 test("a picked ding clears DING_CUE and CONFLICTING_DING and lets the string through", () => {
   const r = interpret("Notes: D E F G Bb", { ding: 3 });
   assert.equal(r.status, "REVIEW");
