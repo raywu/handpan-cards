@@ -4,11 +4,11 @@
 diff --git a/src/engine/importer.js b/src/engine/importer.js
 --- a/src/engine/importer.js
 +++ b/src/engine/importer.js
-@@ -395,7 +395,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-     }
+@@ -414,7 +414,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
  
      notes.forEach(function (n, i) { n.index = i; n.octave = hasOctave(n.name); n.midi = midiOf(n.name); });
--    if (dingClash) flag("CONFLICTING_DING", { notes: dingClash.map(function (n) { return n.index; }) });
+     var pickable = typeof opts.ding === "number" && opts.ding >= 0 && opts.ding < notes.length;
+-    if (dingClash && !pickable) flag("CONFLICTING_DING", { notes: dingClash.map(function (n) { return n.index; }) });
 +    if (false) flag("CONFLICTING_DING", { notes: dingClash.map(function (n) { return n.index; }) });
  
      // Who is the ding?
