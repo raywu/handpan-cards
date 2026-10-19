@@ -1,0 +1,15 @@
+# kills: IH: compose of each built-in's decomposed fields equals formatSeed of that deck, Pygmy included
+# suite: node --test --test-name-pattern ^IH:.compose.of.each.built.in.s.decomposed tests/import.test.js
+# Only the first inner note reaches the line, so a deck with two inner notes does not round-trip.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -827,7 +827,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       var roles = {
+         ding: { note: ding.name },
+         top: top.map(function (x) { return { note: x }; }),
+-        inner: inner.map(function (x) { return { note: x }; }),
++        inner: inner.slice(0, 1).map(function (x) { return { note: x }; }),
+         bottom: bottom.names.map(function (x) { return { note: x }; })
+       };
+       var line = serialise({ status: "REVIEW", roles: roles });

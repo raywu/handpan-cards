@@ -1,0 +1,15 @@
+# kills: IH: compose steps a later octaveless bottom past the ding's midi: under ding D3, bottoms C D read C3 D4
+# suite: node --test --test-name-pattern ^IH:.compose.steps.a.later.octaveless tests/import.test.js
+# A later guess that lands on the ding's pitch stays there.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -739,7 +739,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       if (guess) {
+         octave = below === null ? ding.octave : composeAbove(n, below);
+         var at = composeMidi(n, octave);
+-        if (at === ding.midi) octave += below === null ? -1 : 1;
++        if (at === ding.midi) octave += below === null ? -1 : 0;
+       }
+       var midi = composeMidi(n, octave);
+       var name = composeNamed(n, octave);
