@@ -1,0 +1,15 @@
+# suite: node --test --test-name-pattern ^IB..an.inner.note.on.any.rim.pitch.is.NOTE_REPEATED$ tests/core.test.js
+# kills: IB: an inner note on any rim pitch is NOTE_REPEATED
+# The rim repeat check looks only at the highest rim note, so an inner note on a lower rim pitch parses.
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -726,7 +726,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+         rimNotes[mm] = note;
+       } else {
+         if (restarts && mm <= ding.midi) return scaleOrder(note, ding, "ding");
+-        if (rimNotes[mm]) return scaleRepeated(note, rimNotes[mm]);
++        if (rimNotes[mm] === lastRim) return scaleRepeated(note, rimNotes[mm]);
+         if (lastInner && mm <= lastInner.midi) return scaleRepeated(note, lastInner);
+         lastInner = note;
+       }
