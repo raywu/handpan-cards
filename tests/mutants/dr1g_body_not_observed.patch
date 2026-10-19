@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10436,8 +10436,6 @@ function syncBand() {
+@@ -10437,8 +10437,6 @@
  const bandPort = document.querySelector(".sheetbody") || plateBand;
  if (typeof ResizeObserver === "function") {
    const bandWatch = new ResizeObserver(syncBand);
@@ -13,11 +13,11 @@ diff --git a/index.html b/index.html
  }
  /** A native focus scrolls a text control only far enough to show its caret;
   *  rule G-c wants the whole control in the scrollport. */
-@@ -11170,7 +11168,6 @@ function applyKbOffset() {
-   setSheetClass("kbup", !zoomed && vv.height < window.innerHeight - 80);
+@@ -11205,7 +11203,6 @@
    setSheetClass("short", high > 0 && high < 560);
    setSheetClass("side", high > 0 && high < 420);
+   setSheetClass("tiny", kb && high > 0 && high < 200);
 -  syncBand();
+   if (e && e.type === "scroll") return;
    const at = document.activeElement;
    if (at && at.matches && at.matches("input, textarea") && at.scrollIntoView) at.scrollIntoView({ block: "nearest", behavior: "auto" });
- }

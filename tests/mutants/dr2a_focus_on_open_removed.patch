@@ -4,11 +4,11 @@ Opening the drawer no longer moves focus to the first pickable note.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8995,7 +8995,6 @@ function openDrawer() {
+@@ -10473,7 +10473,6 @@ function openDrawer() {
    drawerStatus.textContent = "";
    drawerStatus.classList.remove("warn");
    paintLayout();
 -  focusFirstNext = true;
    repaintPlate();
+   keepToggle(at);
    layoutZone.scrollIntoView({ block: "nearest", behavior: "auto" });
-   drawerBtn.scrollIntoView({ block: "nearest", behavior: "auto" });

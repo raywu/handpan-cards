@@ -1,0 +1,15 @@
+# kills: KB: F4 with the drawer open at 320x568 the per-viewport floor of options shows under the pan (160px where the viewport allows) and the plate is at least 140px
+# suite: node --test --test-name-pattern ^KB..F4.with.the.drawer.open.at.320x568.the.per.viewport.floor.* tests/e2e.test.js
+# The open-drawer plate is capped at 90px. The plate-width assertion kills it; the tap tests check occlusion, not size.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1053,7 +1053,7 @@
+ .scalestage > #scale-plate-band{position:sticky; top:0; z-index:2; background:#1f1b15;
+   padding-bottom:var(--sp-1)}
+ .scalestage #scale-preview{width:clamp(110px, calc(100cqh - 260px), 300px); max-width:none}
+-.sheetbody:has(#scale-layout-zone.open) #scale-preview{width:100%; max-width:min(300px, 31dvh)}
++.sheetbody:has(#scale-layout-zone.open) #scale-preview{width:100%; max-width:min(300px, 90px)}
+ .sheetbody:has(#scale-layout-zone.open):has(input:focus, textarea:focus, #scale-swatches button:focus)
+   #scale-plate-band{position:static}
+ .sheetbody:has(#scale-layout-zone.nostick) #scale-plate-band{position:static}
