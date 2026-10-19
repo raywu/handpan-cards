@@ -5,8 +5,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11996,7 +11996,7 @@ function renderFieldMessages(r, values, editing, shown) {
-     const text = r.errors[k] || (k === "bottom" ? r.info.bottom : null);
+@@ -12097,7 +12097,7 @@ function renderFieldMessages(r, values, editing, shown) {
+     const text = r.errors[k] || r.info[k];
      if (!text) continue;
      const kind = r.errors[k] ? "error" : "info";
 -    if (editing === null) out[k] = { text, kind };

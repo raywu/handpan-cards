@@ -1,0 +1,15 @@
+# kills: IB: a guessed inner octave is named under TOP INNER NOTES in the slot
+# suite: node --test --test-name-pattern ^IB:.a.guessed.inner.octave tests/app.test.js
+# Only the bottom field shows its info message.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12094,7 +12094,7 @@ function renderFieldMessages(r, values, editing, shown) {
+   const out = {};
+   for (const k of FIELD_KEYS) {
+     if (!values[k].trim()) continue;
+-    const text = r.errors[k] || r.info[k];
++    const text = r.errors[k] || (k === "bottom" ? r.info[k] : null);
+     if (!text) continue;
+     const kind = r.errors[k] ? "error" : "info";
+     if (editing === null) out[k] = { text, kind };

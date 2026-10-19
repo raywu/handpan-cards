@@ -4564,6 +4564,44 @@ function run() {
     }
   });
 
+  test("IB: at 380px a dip pan typed in the fields previews, generates and opens from its share link", async () => {
+    try {
+      await diOpenAdd(380, 780);
+      const setField = (id, v) => b.eval(`
+        const el = document.getElementById(${JSON.stringify(id)});
+        el.focus(); el.value = ${JSON.stringify(v)};
+        el.dispatchEvent(new Event("input", { bubbles: true }));
+        return true;`);
+      await setField("scale-ding", "D3");
+      await setField("scale-top", "A3 C4 D4 E4");
+      await setField("scale-inner", "B3");
+      await b.eval(`document.getElementById("scale-inner").blur(); return true;`);
+      await b.settle();
+      const m = await b.eval(`return {
+        slot: document.getElementById("scale-field-msg").textContent,
+        box: document.getElementById("scale-box").value,
+        pan: !!document.querySelector("#scale-preview circle"),
+        gen: document.getElementById("scale-generate").disabled };`);
+      assert.strictEqual(m.slot, "TOP INNER NOTES: B3 sits below the top notes. Check it on the pan picture.");
+      assert.strictEqual(m.box, "(D3) A3 C4 D4 E4 | B3");
+      assert.ok(m.pan, "no pan preview");
+      assert.strictEqual(m.gen, false);
+      await b.click("#scale-generate");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet to close after Generate" });
+      const shared = await b.eval(`const d = CUSTOM[deckId]; const res = shareLink(d);
+        return { ok: res.ok, url: res.ok ? res.value : null, chords: d.chords.length };`);
+      assert.strictEqual(shared.ok, true);
+      const hash = shared.url.slice(shared.url.indexOf("#s="));
+      await b.eval(`try { localStorage.clear(); } catch (e) {} return true;`).catch(() => {});
+      await navigate(`${URL}?share=${Date.now()}${hash}`);
+      await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`, { label: "chips after the share link boots" });
+      const after = await b.eval(`return (document.getElementById("count").textContent || "").trim();`);
+      assert.strictEqual(after, `1 / ${shared.chords}`);
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
   test("DI: the passive path's input text is at least 7:1 and its label at least 4.5:1 against the sheet", async () => {
     try {
       await diOpenAdd(380, 780);
