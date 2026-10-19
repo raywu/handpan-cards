@@ -1095,3 +1095,10 @@ test("IX: an unlabelled line after a ding label is never dropped: the long-page 
   assert.ok(r.notes.every((n) => n.role !== "dropped"));
   assert.equal(importer.serialise(r), "");
 });
+
+test("IX: a dropped cue leaves no trace in the inferred octaves: Ding: D Ding: C Top: A Bb C D E F G A (G) with ding 0 and parens as bottom", () => {
+  const r = interpret("Ding: D Ding: C Top: A Bb C D E F G A (G)", { ding: 0, parens: "bottom" });
+  assert.equal(r.status, "REVIEW");
+  assert.deepEqual(flagOf(r, "DING_CUE_DROPPED").notes, [1]);
+  assert.equal(importer.serialise(r), "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 [G5]");
+});

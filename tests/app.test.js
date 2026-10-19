@@ -10868,6 +10868,28 @@ describe("IM: import text on the sheet", () => {
     assert.strictEqual(variants.size, 3, "the CONFLICTING_LIST variants share one line");
   });
 
+  test("IM: the six ding-pick flags read as their copy, and SEED_REFUSED shows no parseSeed reason", () => {
+    const app = boot();
+    openSheet(app);
+    const line = (code, f) => app.get(
+      "(() => { importRes = { notes: [{ note: 'C3' }, { note: 'D3' }], total: 2, roles: {} };" +
+      " return importFlagLine(" + JSON.stringify(Object.assign({ code }, f)) + "); })()");
+    assert.strictEqual(line("DING_CUE_DROPPED", { notes: [0], ding: 1 }),
+      "C3 was given as the ding but you picked D3, so C3 is left out. Tick to accept, or pick another ding below.");
+    assert.strictEqual(line("DING_CUE_DROPPED", { notes: [0, 1], ding: 1 }),
+      "C3 and D3 were given as the ding but you picked D3, so they are left out. Tick to accept, or pick another ding below.");
+    assert.strictEqual(line("DING_CLAUSE_MANY", { notes: [0, 1] }),
+      "The ding is given as C3, D3. A handpan has one ding: type the notes in the box above.");
+    assert.strictEqual(line("DING_NOT_LOWEST", { notes: [0], ding: 1 }),
+      "C3 sit below the ding (D3). Pick a lower ding below, or type the notes in the box above.");
+    assert.strictEqual(line("DING_ON_BOTTOM", { ding: 0 }),
+      "C3 is a bottom note. The ding is on the top shell: pick another ding below.");
+    assert.strictEqual(line("REPEATED_IN_SHELL", { notes: [0] }),
+      "C3 is listed twice. Type the notes in the box above with the second one corrected or removed.");
+    assert.strictEqual(line("SEED_REFUSED", { refusal: { code: "NO_FIFTH", reason: "REASON-SENTINEL" } }),
+      "These notes do not make a playable scale with that ding. Pick another ding or fix the notes in the scale box above.");
+  });
+
   test("IM: the import row ships hidden: #import-row carries the hidden attribute in the served markup and IMPORT TEXT is not in the sheet's focus order", () => {
     const src = require("node:fs").readFileSync(require("node:path").join(__dirname, "..", "index.html"), "utf8");
     assert.match(src, /<div class="fieldrow" id="import-row" hidden>/);

@@ -1,0 +1,15 @@
+# kills: IX: every result's flags are in FLAG_ORDER order
+# suite: node --test --test-name-pattern ^IX..every.result.s.flags.are.in.FLAG_ORDER tests/import.test.js
+# The guard appends SEED_REFUSED to the flag list instead of inserting it at its FLAG_ORDER rank.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -604,7 +604,7 @@
+     var rank = function (c) { for (var i = 0; i < FLAG_ORDER.length; i++) if (FLAG_ORDER[i][0] === c) return i; return -1; };
+     var at = 0;
+     while (at < r.flags.length && rank(r.flags[at].code) < rank("SEED_REFUSED")) at++;
+-    r.flags.splice(at, 0, f);
++    r.flags.push(f);
+     r.status = "NEEDS_INPUT";
+     return r;
+   }

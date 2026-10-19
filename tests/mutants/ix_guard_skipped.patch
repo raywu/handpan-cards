@@ -1,0 +1,15 @@
+# kills: IX: the SEED_REFUSED guard blocks a picked ding with no fifth above it: Ding: D3 Ding: E3 Top: A3 B3 C4 with ding 2
+# suite: node --test --test-name-pattern ^IX..the.SEED_REFUSED.guard.blocks tests/import.test.js
+# interpret skips its guard, so a REVIEW result whose line parseSeed refuses reaches the sheet.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -610,7 +610,7 @@
+   }
+ 
+   function interpret(raw, opts) {
+-    return guard(interpretRaw(raw, opts));
++    return interpretRaw(raw, opts);
+   }
+ 
+   function interpretRaw(raw, opts) {

@@ -4,12 +4,12 @@
 diff --git a/src/engine/importer.js b/src/engine/importer.js
 --- a/src/engine/importer.js
 +++ b/src/engine/importer.js
-@@ -465,7 +465,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-     var bare = notes.filter(function (n) { return n.assigned !== "unknown" && !n.octave; });
+@@ -537,7 +537,7 @@
+     var bare = notes.filter(function (n) { return n.assigned !== "unknown" && n.assigned !== "dropped" && !n.octave; });
      if (bare.length) flag("NO_OCTAVE", { notes: indices(bare) });
      var lowBare = bottoms.filter(function (n) { return !n.octave && !n.inline; });
 -    if (lowBare.length) flag("BOTTOM_NO_OCTAVE", { notes: indices(lowBare) });
 +    if (false) flag("BOTTOM_NO_OCTAVE", { notes: indices(lowBare) });
  
      var blocked = !ding || flags.UNDECLARED_PARENS || flags.CONFLICTING_DING || flags.COUNT_MISMATCH ||
-                   flags.AMBIGUOUS_NOTE;
+                   flags.AMBIGUOUS_NOTE || flags.DING_NOT_LOWEST || flags.REPEATED_IN_SHELL || flags.DING_ON_BOTTOM || flags.DING_CLAUSE_MANY;

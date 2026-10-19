@@ -1,0 +1,15 @@
+# kills: IM: every code in the engine's FLAG_ORDER has an IMPORT_FLAG_TEXT line, and the L1 codes read in plain English
+# suite: node --test --test-name-pattern ^IM..every.code tests/app.test.js
+# The DING_CLAUSE_MANY line is missing from IMPORT_FLAG_TEXT, so the sheet throws on a multi-note ding clause.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10988,7 +10988,7 @@
+     const pick = r.notes[f.ding] ? r.notes[f.ding].note : "?";
+     return names + (one ? " was" : " were") + " given as the ding but you picked " + pick + ", so " + (one ? names + " is" : "they are") + " left out. Tick to accept, or pick another ding below.";
+   },
+-  DING_CLAUSE_MANY: (r, f) => "The ding is given as " + importNames(r, f) + ". A handpan has one ding: type the notes in the box above.",
++  DING_CLAUSE_MANY_X: (r, f) => "The ding is given as " + importNames(r, f) + ". A handpan has one ding: type the notes in the box above.",
+   DING_NOT_LOWEST: (r, f) => importNames(r, f) + " sit below the ding (" + (r.notes[f.ding] ? r.notes[f.ding].note : "?") + "). Pick a lower ding below, or type the notes in the box above.",
+   DING_ON_BOTTOM: (r, f) => (r.notes[f.ding] ? r.notes[f.ding].note : "?") + " is a bottom note. The ding is on the top shell: pick another ding below.",
+   REPEATED_IN_SHELL: (r, f) => importNames(r, f) + " is listed twice. Type the notes in the box above with the second one corrected or removed.",
