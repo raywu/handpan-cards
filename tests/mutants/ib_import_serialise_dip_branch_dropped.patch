@@ -1,0 +1,15 @@
+# kills: IB: serialise writes a dip as rim, bar, inner and equals formatSeed
+# suite: node --test --test-name-pattern ^IB..serialise.writes.a.dip tests/import.test.js
+# serialise never takes the dip branch, so rim notes above the lowest inner note move into the inner ring.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -648,7 +648,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       if (e.inner) innerMin = Math.min(innerMin, e.midi);
+       else if (e.rank === 2) rimMax = Math.max(rimMax, e.midi);
+     });
+-    if (innerMin < rimMax) {
++    if (false && innerMin < rimMax) {
+       line.filter(function (e) { return !e.inner; }).sort(byPitch).forEach(function (e) { out.push(e.text); });
+       out.push("|");
+       line.filter(function (e) { return e.inner; }).sort(byPitch).forEach(function (e) { out.push(e.text); });

@@ -4,13 +4,12 @@
 diff --git a/src/engine/core.js b/src/engine/core.js
 --- a/src/engine/core.js
 +++ b/src/engine/core.js
-@@ -716,7 +716,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-                                       (prev === ding ? "ding" : undefined));
+@@ -715,7 +715,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+         return scaleOrder(note, prev, prev === ding ? "ding" : undefined);
        }
        if (entry.zone === "bottom") {
 -        if (lastBottom && mm <= lastBottom.midi) return scaleRepeated(note, lastBottom);
 +        if (lastBottom && mm < lastBottom.midi) return scaleRepeated(note, lastBottom);
          if (mm <= ding.midi) return scaleOrder(note, ding, "ding");
          lastBottom = note;
-       } else {
-
+       } else if (entry.zone === "rim") {

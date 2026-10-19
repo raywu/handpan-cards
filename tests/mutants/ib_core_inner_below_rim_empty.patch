@@ -1,0 +1,15 @@
+# suite: node --test --test-name-pattern ^IB..innerBelowRim.names.the.inner.notes.under.the.highest.rim.note,.and.none.on.the.five.built-ins$ tests/core.test.js
+# kills: IB: innerBelowRim names the inner notes under the highest rim note, and none on the five built-ins
+# innerBelowRim reports no dip.
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -795,7 +795,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     ids.top.forEach(function (id) {
+       if (fields[id][3] === "inner" && fields[id][2] < highest) names.push(fields[id][0] + fields[id][1]);
+     });
+-    return names;
++    return [];
+   }
+ 
+   // The canonical string: every note by pitch, a bottom note ahead of the ding
