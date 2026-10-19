@@ -10949,8 +10949,8 @@ describe("DI: dual input", () => {
     assert.strictEqual(app.get("fieldsStale"), false);
     assert.strictEqual(app.get("lineStale"), false);
   };
-  for (const [label, open] of [["Add", () => { const a = openAdd(); fillAmara(a); return a; }], ["Edit", () => openBuiltin("amara")]]) {
-    test("DI: SL a field focus after a refused line rebuilds the line from the fields, clears the refusal and enables GENERATE (" + label + ")", () => {
+  for (const open of [() => { const a = openAdd(); fillAmara(a); return a; }, () => openBuiltin("amara")]) {
+    test("DI: SL a field focus after a refused line rebuilds the line from the fields, clears the refusal and enables GENERATE", () => {
       const app = open();
       lineType(app, "(D3) A3 X");
       assert.strictEqual(app.get("fieldsStale"), true);

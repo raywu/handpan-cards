@@ -1,4 +1,4 @@
-# kills: DI: SL a field focus after a refused line rebuilds the line from the fields
+# kills: DI: SL a field focus after a refused line rebuilds the line from the fields, clears the refusal and enables GENERATE
 # suite: node --test --test-name-pattern ^DI:.SL.a.field.focus.after.a.refused.line.rebuilds tests/app.test.js
 # Mutant di_sl_focus_bypasses_mirroring.
 diff --git a/index.html b/index.html
