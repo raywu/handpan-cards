@@ -1,15 +1,15 @@
 # kills: KB2b: a swipe that starts on a field inside the pin window scrolls like one on the flank, and a later keyboard focus does not restore the pre-drag scroll
 # suite: node --test --test-name-pattern ^KB2b..a.swipe.that.starts tests/e2e.test.js
-# A drag that starts on a field neither releases the pin nor drops the snapshot.
+# Neither a drag past the slop nor a pointercancel drops the pin or the snapshot.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10504,7 +10504,7 @@ sheet.addEventListener("touchstart", (e) => {
- sheet.addEventListener("touchmove", (e) => {
-   const p = e.touches && e.touches[0];
-   if (!touchFrom || !p) return;
--  if (Math.hypot(p.clientX - touchFrom.x, p.clientY - touchFrom.y) > 8) { dropTap(); touchFrom = null; }
-+  if (Math.hypot(p.clientX - touchFrom.x, p.clientY - touchFrom.y) > 8) { touchFrom = null; }
- }, { passive: true, capture: true });
- sheet.addEventListener("pointercancel", dropTap, true);
- sheet.addEventListener("wheel", releasePin, { passive: true });
+@@ -10494,7 +10494,7 @@ sheet.addEventListener("pointerdown", (e) => {
+   tapSnap = onField ? { at: Date.now(), body: bandPort.scrollTop, surf: sheetSurf ? sheetSurf.scrollTop : 0 } : null;
+   if (!onField) releasePin();
+ }, true);
+-const dropTap = () => { scrollPin = null; tapSnap = null; };
++const dropTap = () => {};
+ let touchFrom = null;
+ sheet.addEventListener("touchstart", (e) => {
+   const t = e.target, p = e.touches && e.touches[0];
