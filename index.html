@@ -11972,7 +11972,8 @@ scaleBox.addEventListener("keydown", e => {
 });
 /* ---- Dual input (plan docs/plans/2026-10-18-dual-input.md) ----
    Four note fields and the scale line write the same scale. inputPath names the
-   active one; the other mirrors it and is never rewritten by a mere focus.
+   active one; the other mirrors it and is never rewritten by a mere focus, except
+   that a focus on a field while the fields are stale rebuilds the line from them.
    Fields to line goes through HPE.importer.compose, line to fields through
    parseSeed, so neither side owns a grammar of its own. */
 const FIELD_KEYS = ["ding", "top", "inner", "bottom"];
@@ -12069,6 +12070,10 @@ function fieldsInput(k) {
   const r = HPE.importer.compose(values);
   const wasStale = lineStale;
   paintFields(values, false, r);
+  followFields(r, wasStale);
+  paintPassive();
+}
+function followFields(r, wasStale) {
   if (r.empty) {
     lineStale = false;
     if (scaleBox.value !== "") writeLine("");
@@ -12083,7 +12088,6 @@ function fieldsInput(k) {
     genBtn.disabled = true;
     showParse("");
   }
-  paintPassive();
 }
 function lineInput() {
   inputPath = "line";
@@ -12119,6 +12123,14 @@ function pathFocus(path) {
   if (inputPath === path) return;
   inputPath = path;
   const values = fieldValues();
+  if (path === "fields" && fieldsStale) {
+    fieldsStale = false;
+    const r = HPE.importer.compose(values);
+    paintFields(values, false, r);
+    followFields(r, true);
+    paintPassive();
+    return;
+  }
   paintFields(values, false);
   paintPassive();
   if (path === "line" && lineStale) resyncSheet(false);
