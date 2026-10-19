@@ -1,14 +1,23 @@
 # kills: DR1 rule G by resize: open on Edit, rotate in either direction, and the band and padding follow
 # suite: node --test --test-name-pattern ^DR1.rule.G.by.resize.* tests/drawer_grid.test.js
-# The sheet body is not observed, so a keyboard shrinking the scrollport leaves the stuck state stale (rule G-e).
+# The sheet body is not observed, so a keyboard shrinking the scrollport leaves the stuck state stale (rule G-e). Widened 2026-10-19 (dual input, lane H2b'): the keyboard offset now also calls syncBand, so the missing observer alone is equivalent; the keyboard offset and the plate band's own observer keep the stuck state fresh in every scenario the suite can build, so the mutant drops the body observer, the plate-band observer and the keyboard-path call together.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8936,7 +8936,6 @@ const bandPort = document.querySelector(".sheetbody") || plateBand;
+@@ -10436,8 +10436,6 @@ function syncBand() {
+ const bandPort = document.querySelector(".sheetbody") || plateBand;
  if (typeof ResizeObserver === "function") {
    const bandWatch = new ResizeObserver(syncBand);
-   bandWatch.observe(plateBand);
+-  bandWatch.observe(plateBand);
 -  bandWatch.observe(bandPort);
  }
  /** A native focus scrolls a text control only far enough to show its caret;
   *  rule G-c wants the whole control in the scrollport. */
+@@ -11170,7 +11168,6 @@ function applyKbOffset() {
+   setSheetClass("kbup", !zoomed && vv.height < window.innerHeight - 80);
+   setSheetClass("short", high > 0 && high < 560);
+   setSheetClass("side", high > 0 && high < 420);
+-  syncBand();
+   const at = document.activeElement;
+   if (at && at.matches && at.matches("input, textarea") && at.scrollIntoView) at.scrollIntoView({ block: "nearest", behavior: "auto" });
+ }
