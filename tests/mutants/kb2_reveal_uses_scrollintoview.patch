@@ -1,0 +1,17 @@
+# kills: KB2: at 393 wide with the keyboard up, tapping each note field in turn moves no field that was already fully visible before the tap
+# suite: node --test --test-name-pattern ^KB2..at.393.wide.with.the.keyboard.up tests/e2e.test.js
+# revealField goes back to scrollIntoView, which scrolls every ancestor (and on iOS the visual viewport) and, with the tap pin gone too, leaves iOS's own focus scroll standing.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10452,9 +10452,8 @@ bandPort.addEventListener("focusin", (e) => {
+   if (snap) {
+     bandPort.scrollTop = snap.body;
+     if (sheetSurf) sheetSurf.scrollTop = snap.surf;
+-    scrollPin = { until: Date.now() + PIN_MS, body: 0, surf: 0 };
+   }
+-  revealField(t);
++  t.scrollIntoView({ block: "nearest", behavior: "auto" });
+ });
+ /** Bring a focused field into view by scrolling only the scrollers inside the
+  *  sheet, the least distance, and not at all when it is whole in view.

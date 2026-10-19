@@ -1,0 +1,15 @@
+# kills: KB2: at 393 wide with the keyboard up, tapping each note field in turn moves no field that was already fully visible before the tap
+# suite: node --test --test-name-pattern ^KB2..(at.393.wide|a.partly.hidden) tests/e2e.test.js
+# The tap snapshot is not taken, so iOS's own focus scroll after the focus event is left standing.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10447,7 +10447,7 @@ if (typeof ResizeObserver === "function") {
+ bandPort.addEventListener("focusin", (e) => {
+   const t = e.target;
+   if (!(t && t.matches && t.matches("input, textarea, select"))) return;
+-  const snap = tapSnap && Date.now() - tapSnap.at < 1000 ? tapSnap : null;
++  const snap = null;
+   tapSnap = null;
+   if (snap) {
+     bandPort.scrollTop = snap.body;
