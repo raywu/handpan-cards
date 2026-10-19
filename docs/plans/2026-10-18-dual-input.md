@@ -1,17 +1,33 @@
 # Plan: dual-path scale input (four fields by default, the line kept)
 
-Status: draft for `/plan-eng-review`, owner answers folded in (2026-10-18, section 7). Base: origin/dev b153406. Chosen design: candidate C6, which is the owner's pick C5 with the "Line: ..." caption dropped (owner decision Q7; `D/rubric.md`, `D/mocks/C6.html`, `D/mocks/measure-C6.json`, `D/pub/compare.html.new`). "Candidate C5" and "candidate C6" name designs; "#374's C5" and "#374's C6" name #374's label and placeholder copy, an unrelated numbering.
+Status: draft for `/plan-eng-review`, owner answers folded in (2026-10-18, section 7). Base: `claude/dual-input-base` e722c96 (revision 2026-10-19; this plan was first written against origin/dev b153406). Chosen design: candidate C6, which is the owner's pick C5 with the "Line: ..." caption dropped (owner decision Q7; `D/rubric.md`, `D/mocks/C6.html`, `D/mocks/measure-C6.json`, `D/pub/compare.html.new`). "Candidate C5" and "candidate C6" name designs; "#374's C5" and "#374's C6" name #374's label and placeholder copy, an unrelated numbering.
 
 D = the scratchpad folder `dual-input`; H = the scratchpad folder `import-helper` (#374, `H/subplan-v13.md`).
+
+## Revision 2026-10-19
+
+Amended for the new base `claude/dual-input-base` e722c96: dev minus the DEV overlay, that is lanes E #377, T #379 and C #381 merged on top of l1b 5a5f7f0. The owner decisions of 2026-10-19 are binding. Changes:
+- R1. Base and branch points. H1 branches from `claude/dual-input-base` (e722c96); each later lane branches from the previous lane's head (Status line, section 4).
+- R2. Counts re-taken from the files at e722c96, where README:77 is 1164 and FLOORS are app 633, e2e 336, import 84. After H1: README:77 1182, import 102. After H2a: 1149, app 607, e2e 331. After H2b': 1180, app 629, e2e 340 (sections 4 and 8). All arithmetic; CI governs.
+- R3. H1 takes lane T's nit N1: one engine test and one mutant on DING_NOT_LOWEST's `<`. H1 now adds 18 tests and 18 `ih_e_*` mutants. Compose still applies to `importer.js` at e722c96 with no conflict (section 4, H1).
+- R4. H2a's removal list, acceptance grep and Verify are re-taken at e722c96 and written out in full in section 4. They now also remove lane E/T/C's UI work: the copy rendering, CONFIRM ticks and ding-picker flag copy, 26 app tests, 5 e2e tests and 33 app mutants (18 `ib_*`, 12 `ic_*`, 3 `ix_*`). The importer engine stays: `src/engine/importer.js`, its tests, the 57 `i_*` and the 16 engine `ix_*` mutants.
+- R5. Lane C's copy nits are retired with the UI copy H2a deletes, not fixed: DUPLICATE_PITCH "B3, B3"; the CONFLICTING_DING comma join; NO_OCTAVE without octaves; CONFIRM lines with no action word.
+- R6. The L1 DEV e2e of the paste UI is done (2026-10-19, PASS, at dev 2f51721), so Q10's dev-merge wait is satisfied (G-C, section 4, H0a, section 5, Q10).
+- R7. Main merges of #370, #372, #377, #379 and #381 are held until dual input is DEV e2e validated and the owner says merge. Main merge order: #370, #372, #377, #379, #381, H1, H2a, H2b', H3' (G-F', section 5).
+- R8. H0a syncs H2a onto dev, which also carries the lane E/T/C UI; taking H2a's side removes that UI from dev too (section 4, H0a).
+- R9. H3' also retires the CLAUDE.md "Scale import" sentences that lanes E and C added citing deleted IM: and IC: tests (section 4, H3').
+- R10. The import-fix plan's section 7 line 510 is ignored (owner, 2026-10-19).
+
+Everything else is unchanged.
 
 ## 0. What this plan does to #374
 
 This plan amends #374 (`H/subplan-v13.md`, v13). Where the two disagree, this plan wins.
 
 **Survives unchanged.**
-- Lane H1, engine `HPE.importer.compose` (#374 2.5 and its H1 lane): the 17 tests E1 to E17, the 17 `ih_e_*` mutants, its Verify block and its acceptance, word for word.
-- Lane H2a, removing the paste UI (#374 section 3 and its H2a lane): its removal list, acceptance grep, FLOORS rows (607 and 331) and README:77 (1132), word for word.
-- H0a, the dev sync that stands in for H2a's CONFLICTING PR D.
+- Lane H1, engine `HPE.importer.compose` (#374 2.5 and its H1 lane): the 17 tests E1 to E17, the 17 `ih_e_*` mutants, its Verify block and its acceptance, word for word, plus N1 and the e722c96 counts (revision 2026-10-19, section 4).
+- Lane H2a, removing the paste UI (#374 section 3 and its H2a lane): its order and non-goals. Its removal list, acceptance grep, Verify, FLOORS rows and README:77 are re-taken at e722c96 in section 4 (revision 2026-10-19).
+- H0a, the dev sync that stands in for H2a's CONFLICTING PR D (it now also drops the lane E/T/C UI from dev; section 4).
 - The owner copy M1 to M19 (#374 2.10), including M2 "Use letter names, like D A Bb.", M3 "BB is not a note: write B-flat as Bb.", and M10, M14 and M18 "<X> is lower than <P>: list low to high.".
 - The bottom-octave rule (#374 2.5, E4, E16, E17): a guessed octave is shown in M16 and written explicit in the line.
 - Owner answers Q1 (lowercase accepted, letters only, octave guessed and shown), Q3 (prefill from `#scale-box` when it parses), T2, T3 and rounds 3 and 4 (`H/owner-answers.md`).
@@ -38,15 +54,15 @@ This plan amends #374 (`H/subplan-v13.md`, v13). Where the two disagree, this pl
 - No change to the behaviour of `parseSeed`, `formatSeed`, `interpret` or `serialise`, or to the layout solver, deck data, diagram geometry, share link format (v5) or stored record format (v4).
 - No layout options (anchor, mirror, mirror bottom, seats, palette) in the fields: they stay in the drawer and swatches.
 - No change to GENERATE CARDS, SAVE or DELETE beyond the stale-line rule (section 2.3).
-- No revert of L1's engine work: `src/engine/importer.js`, its region, `tests/import.test.js`, `tests/import_gold.test.js` and the 57 `i_*` mutants all stay.
+- No revert of L1's engine work: `src/engine/importer.js`, its region, `tests/import.test.js`, `tests/import_gold.test.js`, the 57 `i_*` mutants and the 16 engine `ix_*` mutants all stay.
 
 **Standing gates.**
 - G-A. Lanes merge to `dev` first. Main PRs stay open until the owner says merge (memory "Dev first, never merge to main").
 - G-B. Main merge gate: the `validate` run conclusion is green at the verified head SHA (`gh run list --commit <sha> --workflow validate.yml`), and a fresh independent reviewer returns PASS or PASS_WITH_NITS at that SHA.
-- G-C. Dev gate (CLAUDE.md "DEV environment", lane flow D2): PR D to `dev` merges when its head SHA has a green `validate` run on PR M, D is not CONFLICTING, and the L1 DEV e2e of the paste UI has run (owner decision Q10; section 5).
+- G-C. Dev gate (CLAUDE.md "DEV environment", lane flow D2): PR D to `dev` merges when its head SHA has a green `validate` run on PR M, and D is not CONFLICTING. Q10's wait for the L1 DEV e2e of the paste UI is satisfied: it ran and passed on 2026-10-19 at dev 2f51721 (section 5).
 - G-D. `python3 tools/inline_engine.py --check` and `python3 tools/sync_decks.py --check` are clean, and `python3 tools/validate.py` is green.
 - G-E. The mutation gate is green. README:77 and the `tests/suite_health.py` FLOORS rows are set from the previous lane's CI artifacts (memory "FLOORS rows lag the CI count").
-- G-F'. No main merge of H2a, H2b' or H3' before the section 6 DEV e2e passes, including the real-phone pass, AND the owner says merge. The paste-import row stays hidden on prod throughout: `#import-row` keeps `hidden` on main until H2a deletes it, and H2a reaches main only under G-F' (memory "Import hidden until DEV-proven"). The fields ship visible; they are held back by the open main PR, not by a hidden attribute (owner decision Q9).
+- G-F'. No main merge of #370, #372, #377, #379, #381, H1, H2a, H2b' or H3' (owner, 2026-10-19) before the section 6 DEV e2e passes, including the real-phone pass, AND the owner says merge. The paste-import row stays hidden on prod throughout: `#import-row` keeps `hidden` on main until H2a deletes it, and H2a reaches main only under G-F' (memory "Import hidden until DEV-proven"). The fields ship visible; they are held back by the open main PR, not by a hidden attribute (owner decision Q9).
 
 ## 2. Interaction spec (candidate C6)
 
@@ -220,20 +236,146 @@ All numbers were measured in Chrome through `tests/helpers/cdp.js` with real fon
 
 The lanes run serially: H1, then H2a, then H2b', then H3'. H0a is an integrator step. They are serial for the reason #374 gave: H1, H2a and H2b' all touch README:77 and FLOORS, and H2a and H2b' own the same app block and test files. Each lane:
 - opens PR M to main (it stays open, G-A and G-F');
-- opens PR D to dev, merged under G-C, which includes the wait for the L1 DEV e2e (except H2a, whose PR D is superseded by H0a);
+- opens PR D to dev, merged under G-C, whose L1 DEV e2e wait is satisfied (except H2a, whose PR D is superseded by H0a);
 - works in a `claude/dual-input-<lane>` worktree, tests first.
 
-Branches follow #374 section 5: H1 from `claude/import-v2-l1b` (5a5f7f0), each later lane from the previous lane's head.
+Branches: H1 from `claude/dual-input-base` (e722c96), each later lane from the previous lane's head. Each PR M to main then carries only lane commits on top of the held #370, #372, #377, #379 and #381 stack.
 
 Each patch header is `# kills: <title>` and `# suite: node --test --test-name-pattern ^DI:.<words-with-dots> tests/<file>`, with `.` wildcards and no quotes (memory "Mutant `# suite:` headers are word-split"), and no `index` lines (memory "Mutant patches reject index lines").
 
-### H1: engine `compose` (unchanged from #374)
+### H1: engine `compose` (#374, plus N1)
 
-Owner files, the 17 tests E1 to E17, the 17 `ih_e_*` mutants, acceptance and Verify are exactly #374's "H1: engine `compose`". Expected README:77 is 1149, and the `tests/import.test.js` row 80 (arithmetic; CI's artifact governs).
+Owner files, the 17 tests E1 to E17, the 17 `ih_e_*` mutants, acceptance and Verify are exactly #374's "H1: engine `compose`", with these changes (revision 2026-10-19):
+- **N1** (lane T nit, folded here because H1 is the first lane that owns `tests/import.test.js`). One more test and one more mutant:
+  - test "IH: N1 DING_NOT_LOWEST names only notes strictly below the ding: Ding: D3 Top: D3 A3 Bb3 C4 D4 is NEEDS_INPUT with REPEATED_IN_SHELL alone";
+  - mutant `ih_e_n1_ding_not_lowest_counts_unison`, which turns `n.midi < ding.midi` into `n.midi <= ding.midi` in the `under` filter that raises DING_NOT_LOWEST (its one comparison in `src/engine/importer.js`), with `# suite: node --test --test-name-pattern ^IH:.N1 tests/import.test.js`.
+  - Probed at e722c96: the fixture gives NEEDS_INPUT with REPEATED_IN_SHELL alone, and under the mutant DING_NOT_LOWEST and REPEATED_IN_SHELL, so the test kills it.
+- So H1 adds 18 tests and 18 `ih_e_*` patches. In Verify, the count check reads `-eq 18`, and the `git apply --check` loop runs over `tests/mutants/i_*.patch tests/mutants/ix_*.patch`. That is 57 plus 19 at e722c96: the 3 app `ix_*` still apply until H2a deletes them. Acceptance's "all 57 `i_*` patches still `git apply --check` and stay killed" covers the 19 `ix_*` too.
+- **Compose against e722c96.** Lanes E and T changed `src/engine/importer.js` by 57 lines added and 12 removed since 5a5f7f0. None of it touches what compose uses:
+  - the export object `HPE.importer = { interpret: interpret, serialise: serialise }` is unchanged, so adding `compose: compose` to it does not conflict;
+  - `serialise` is unchanged apart from its comment;
+  - `interpret` now wraps `interpretRaw` in `guard` (SEED_REFUSED), and compose calls neither.
+  The one constraint: compose's private helpers must not reuse the new names `guard` and `interpretRaw`. No fix is needed.
+- Expected README:77 is 1182 (1164 plus 18), and the `tests/import.test.js` row 102 (84 plus 18). Arithmetic; CI governs.
 
-### H2a: remove the paste UI (unchanged from #374)
+### H2a: remove the paste UI (re-taken at e722c96; the importer engine stays)
 
-Owner files, acceptance and Verify are exactly #374's "H2a". Expected README:77 is 1132, and the FLOORS rows 607 (`tests/app.test.js`) and 331 (`tests/e2e.test.js`).
+#374 section 3 took its inventory at b153406. Lanes E, T and C then added UI on top: the copy rendering, CONFIRM ticks, the ding-pick flag copy, and their tests and mutants. The owner retired that UI work on 2026-10-19 (their engine tests and mutants stay), so H2a removes it with the rest. This list replaces #374's section 3 lists and its H2a Owns, Acceptance and Verify. #374's "Tests first" order, non-goals and its rule to run Verify in the lane worktree, never on a dev checkout, all stand.
+
+How it was enumerated, at e722c96, by reading rather than one grep (memory "Enumerate callers, do not grep for them"):
+- every hit of `import-`, `importRow`, `showImport`, `scale_import`, `IMPORT_` and `I[MC]: ` was read across `index.html`, `tools/` and `tests/`;
+- every identifier the import block declares was traced to its callers outside the block;
+- each mutant was classified by its `+++` target and its `# kills:` title.
+
+**index.html, outside engine regions:**
+- CSS: the block from the comment `/* Import (lane B)` through the `#import-ding-row` rule. It holds `#import-row[hidden]`, `#import-open`, `#import-area`, `#import-result`, `#import-review`, `#import-text`, `#import-ding`, `#import-run`, `#import-use`, `#import-use:disabled`, `#import-rows`, `#import-flags` and its `.block`, `.confirm`, `label` and `input` rules.
+- Markup: the "Import (scale-import lane B)" comment and `<div class="fieldrow" id="import-row" hidden>`. It holds the 11 looked-up ids `import-open`, `import-area`, `import-text`, `import-run`, `import-result`, `import-status`, `import-review`, `import-rows`, `import-flags`, `import-ding` and `import-use`, the markup-only `import-ding-row`, and the dynamic `import-tick-<code>` boxes.
+- The whole app block headed `/* ---------------- import text (scale-import lane B) ---------------- */`:
+  - the 12 element consts: `importRow`, `importOpenBtn`, `importArea`, `importTextBox`, `importRunBtn`, `importResult`, `importStatus`, `importReview`, `importRowsEl`, `importFlagsEl`, `importDingSel`, `importUseBtn`;
+  - `IMPORT_INSUFFICIENT`, plus lane C's `IMPORT_LINKS_NOT_OPENED` and `IMPORT_LEAD`;
+  - the state: `importSource`, `importRes`, `importPick`, `importTicks` and `importTicked`;
+  - lane C's helpers: `importNameList`, `importNames`, `importJoinAnd`, `importUnique`, `importPitchClass`, `importTicksShown`, `importAccept`;
+  - `IMPORT_FLAG_TEXT`, all 23 codes, including the lines lanes E and C added;
+  - the functions:
+    - `importInsufficientLine`, `importFlagLine`, `importRoleOf`, `importNeedsTick`;
+    - `paintImportUse`, `paintImportBody` (and the tick `change` listener it adds), `paintImport`;
+    - `buildImportPicker`, `runImport` (with `track("scale_import", ...)`), `pickImportDing`, `useImport`, `setImportOpen`, `resetImport`;
+  - the four listeners: `importOpenBtn` click, `importRunBtn` click, `importDingSel` change, `importUseBtn` click.
+- The two callers outside that block:
+  - `resetImport();` in `resetSheetState`;
+  - the `...(importRow.hidden ? [] : [importOpenBtn, importTextBox, importRunBtn, ...importTicks, importDingSel, importUseBtn])` stops in the sheet Tab trap.
+
+**tools/sandbox.js ELEMENT_IDS:** the 12 import ids and their comment line.
+
+**tests/app.test.js: 26 tests deleted, 2 rewritten.**
+- In describe "discoverability: analytics events": "IM: importing tracks one scale_import per IMPORT with the status only and no pasted text".
+- Describe "IM: import text on the sheet", with its setup and its 16 tests: #374's 15, plus lane E's "IM: the six ding-pick flags read as their copy, and SEED_REFUSED shows no parseSeed reason".
+- Describe "IC: import copy" (lane C), with its setup and its 9 tests:
+  - "IC: C1 BOTTOM_NO_OCTAVE names pitch classes, not guessed octaves";
+  - "IC: C2 NO_OCTAVE names the notes that lack an octave";
+  - "IC: C3 INSUFFICIENT points to the box above and mentions images nowhere";
+  - "IC: C4 UNDECLARED_PARENS tells the user to type the line in the box above with the bracket rules";
+  - "IC: C5 no flag line starts with BLOCK: or CONFIRM:, and the status lines never say blocks";
+  - "IC: every IMPORT_FLAG_TEXT line that tells the user to type says the box above, and every line about notes names them";
+  - "IC: A2 a list reads 'A and B' or 'A, B and C', and a repeated note is named once";
+  - "IC: CONFIRM ticks under SEED_REFUSED";
+  - "IC: a re-pick clears every CONFIRM tick, so USE needs a fresh confirmation".
+- The helper `function showImport(app)`.
+- Rewritten as #374 section 3 says:
+  - "DR3 Tab order on Add and Edit, finer controls closed and open" drops `showImport(app)` and `"import-open"`;
+  - "no event param is a string over 40 characters or names a custom: id" drops its import step and its `scale_import` assertion.
+
+**tests/e2e.test.js: 5 tests deleted, 2 rewritten.**
+- Describe "import text on the sheet", with its `REVIEW` and `runImport` helpers and its 5 tests: #374's 4, plus lane C's "IC: at 380px a ticked import never shows a parseSeed refusal under the box".
+- The describe-scope `const showImport`.
+- Rewritten as #374 section 3 says:
+  - "DR1 focus order: on Edit the plate is a tab stop only while the drawer is open, and comes before the toggle" drops `showImport()` and `"import-open"`;
+  - "RD: the Edit page's Tab order is BACK, name, box, ADJUST LAYOUT, swatches, SAVE CHANGES, DELETE with the drawer closed, forward and back, and no stop is a select" drops `showImport()` and `"import-open"`, and `select:not(#import-ding)` becomes `select`.
+
+**Mutants: 33 deleted.** Each patches `index.html` app code, and each `# kills:` names a test deleted above.
+- All 18 `ib_*`: #374's 17, plus `ib_ticks_shown_under_seed_refused`.
+- All 12 `ic_*`:
+  - `ic_a2_join_comma`, `ic_a2_repeat_not_unique`;
+  - `ic_c1_bottom_octaves_guessed`, `ic_c2_no_octave_old_copy`;
+  - `ic_c3_insufficient_below`, `ic_c3_url_sentence_missing`, `ic_c4_parens_old_copy`;
+  - `ic_c5_level_prefix`, `ic_c5_status_blocks`;
+  - `ic_repick_keeps_ticks`, `ic_table_notes_unnamed`, `ic_table_type_below`.
+- The 3 `ix_*` that patch `IMPORT_FLAG_TEXT`: `ix_cue_dropped_text_missing`, `ix_ding_clause_text_missing`, `ix_seed_refused_reason_shown`.
+
+**Mutants re-anchored, not deleted:** the same three as #374: `a_seed_refusal_below_the_pan`, `d_sheet_focus_stays`, `dr3_tab_list_omits_disclosure`. At e722c96 they are still the only kept patches with import text in their context. #374's re-anchor rules apply: a stable anchor, the reviewer reads the failing assertion, no `index` lines, and `# suite:` headers use `.` wildcards and no quotes.
+
+**Kept:**
+- `src/engine/importer.js` and the `engine:importer` region;
+- `tests/import.test.js`, with lanes E and T's IX: engine tests;
+- `tests/import_gold.test.js` and `tools/regen_import_gold.js`;
+- the 57 `i_*` patches;
+- the 16 engine `ix_*` patches, each patching `src/engine/importer.js` with its suite in `tests/import.test.js`:
+  - `ix_cross_shell_repeat_blocks`, `ix_ding_clause_drop_wide`, `ix_ding_clause_many_skipped`;
+  - `ix_ding_not_lowest_pick_only`, `ix_ding_not_lowest_skipped`, `ix_ding_on_bottom_skipped`;
+  - `ix_dropped_cue_kept_as_top`, `ix_dropped_cue_serialised`, `ix_guard_skipped`;
+  - `ix_property_sweep_pick_skipped`, `ix_repeat_in_shell_confirm`, `ix_seed_refused_appended`;
+  - `ix_t_dropped_cue_counted_bare`, `ix_t_dropped_cue_in_pitch_check`;
+  - `ix_t_not_lowest_inner_skipped`, `ix_t_stray_mark_not_contested`.
+
+**Owns:**
+- `index.html` outside engine regions and the DECKS line, for removals only (the list above);
+- the `tests/app.test.js` and `tests/e2e.test.js` deletions and the H2a half of the four rewrites above;
+- `tools/sandbox.js` ELEMENT_IDS: removing the 12 import ids;
+- deleting the 33 patches, and re-anchoring the three;
+- `tests/suite_health.py` rows `"tests/app.test.js"` (633 at e722c96) and `"tests/e2e.test.js"` (336), lowered to 607 and 331. These are this lane's own rows, lowered for a deliberate removal, so #374's note on tests/CONTRACT.md (eng-review-v4 N-2) stands;
+- README:77 (after H1's number).
+
+**Acceptance:**
+- the 26 app and 5 e2e tests, the "IM: import text on the sheet" and "IC: import copy" describes, the e2e "import text on the sheet" describe and both `showImport` helpers are gone;
+- every other test passes, and "no event param is a string over 40 characters or names a custom: id" still runs, without its `scale_import` assertion;
+- `grep -rnE 'import-|showImport|importRow|scale_import|IMPORT_' index.html tests tools | grep -v 'import-v2\|import-fix'` prints nothing. The allowed hits are the kept `import-v2` gold paths and the `docs/plans/2026-10-18-import-fix.md` comment in `tests/import.test.js`;
+- `grep -nE 'I[MC]: ' tests/app.test.js tests/e2e.test.js` prints nothing;
+- no `ib_*` or `ic_*` patch remains and none of the three app `ix_*` patches exists, so `ls tests/mutants/ix_*.patch | wc -l` is 16;
+- the three re-anchored patches each make their suite fail, for the reason the reviewer reads in the failing assertion;
+- all 57 `i_*`, 16 `ix_*` and 18 `ih_e_*` patches still `git apply --check`;
+- `#import-row` is absent from the served markup and nothing replaces it yet;
+- FLOORS and README:77 equal CI's counts. Expected README:77 is 1149 (1182 minus 33), with the rows 607 (633 minus 26) and 331 (336 minus 5). Arithmetic; CI governs.
+
+**Verify:**
+
+```
+export CHROME_BIN
+bash <<'VERIFY'
+test -x "$CHROME_BIN" || { echo "set CHROME_BIN to a Chromium binary"; exit 1; }
+node --test tests/app.test.js tests/harness.test.js tests/import.test.js tests/import_gold.test.js \
+ && CHROME_BIN="$CHROME_BIN" node --test --test-name-pattern '^DR1.focus|^RD:.the.Edit.page' tests/e2e.test.js \
+ && python3 tools/inline_engine.py --check && python3 tools/sync_decks.py --check && python3 tools/validate.py \
+ && test -z "$(grep -rnE 'import-|showImport|importRow|scale_import|IMPORT_' index.html tests tools | grep -v 'import-v2\|import-fix')" \
+ && test -z "$(grep -nE 'I[MC]: ' tests/app.test.js tests/e2e.test.js)" \
+ && test -z "$(ls tests/mutants/ib_*.patch tests/mutants/ic_*.patch 2>/dev/null)" \
+ && test $(ls tests/mutants/ix_*.patch | wc -l) -eq 16 && LOG=$(mktemp) \
+ && { for p in tests/mutants/i_*.patch tests/mutants/ix_*.patch tests/mutants/ih_e_*.patch; do git apply --check "$p" || echo "STALE $p"; done; \
+      for p in tests/mutants/a_seed_refusal_below_the_pan.patch tests/mutants/d_sheet_focus_stays.patch tests/mutants/dr3_tab_list_omits_disclosure.patch; do cmd=; git apply --check "$p" || { echo "NOAPPLY $p"; continue; }; git apply "$p"; cmd=$(grep -m1 '^# suite:' "$p" | sed 's/^# suite:[[:space:]]*//'); if CHROME_BIN="$CHROME_BIN" $cmd >/dev/null 2>&1 </dev/null; then echo "SURVIVED $p"; fi; git apply -R "$p"; done; } 2>&1 | tee "$LOG" \
+ && ! grep -q 'SURVIVED\|NOAPPLY\|STALE' "$LOG"
+VERIFY
+```
+
+CI `validate` at the verified head SHA is the evidence.
 
 ### H2b': dual input (replaces #374 H2b)
 
@@ -304,8 +446,8 @@ The E1 and E2 floors (130 and 212) sit 6px under the candidate C6 macOS figures 
   - e2e "SG: N-A6 the scrollport does not resize between empty, notice and one- or two-line states, ...": gains the field-message state.
   Any other test the lane edits is listed in the PR with the reason.
 - SB-2 is green with the 13 new ids;
-- all 57 `i_*` and 17 `ih_e_*` patches still `git apply --check`;
-- FLOORS and README:77 equal CI's counts. Expected README:77 is 1163 (1132 plus 31), and the rows 629 and 340 (607 plus 22 and 331 plus 9; arithmetic, CI's artifact governs).
+- all 57 `i_*`, 16 `ix_*` and 18 `ih_e_*` patches still `git apply --check`;
+- FLOORS and README:77 equal CI's counts. Expected README:77 is 1180 (1149 plus 31), and the rows 629 and 340 (607 plus 22 and 331 plus 9; arithmetic, CI's artifact governs).
 
 **Verify** (in the lane worktree, never on a dev checkout: dev's overlay fails app tests, #374 eng-review-v8 N-8):
 
@@ -318,7 +460,7 @@ node --test tests/app.test.js tests/harness.test.js tests/import.test.js \
  && CHROME_BIN="$CHROME_BIN" node --test tests/drawer_grid.test.js tests/drawer_seats.test.js tests/drawer_drag.test.js \
  && python3 tools/inline_engine.py --check && python3 tools/sync_decks.py --check && python3 tools/validate.py \
  && test $(ls tests/mutants/di_*.patch | wc -l) -eq 31 && LOG=$(mktemp) \
- && { for p in tests/mutants/i_*.patch tests/mutants/ih_e_*.patch; do git apply --check "$p" || echo "STALE $p"; done; \
+ && { for p in tests/mutants/i_*.patch tests/mutants/ix_*.patch tests/mutants/ih_e_*.patch; do git apply --check "$p" || echo "STALE $p"; done; \
       for p in tests/mutants/di_*.patch; do cmd=; git apply --check "$p" || { echo "NOAPPLY $p"; continue; }; git apply "$p"; cmd=$(grep -m1 '^# suite:' "$p" | sed 's/^# suite:[[:space:]]*//'); if CHROME_BIN="$CHROME_BIN" $cmd >/dev/null 2>&1 </dev/null; then echo "SURVIVED $p"; fi; git apply -R "$p"; done; } 2>&1 | tee "$LOG" \
  && ! grep -q 'SURVIVED\|NOAPPLY\|STALE' "$LOG"
 VERIFY
@@ -346,9 +488,10 @@ The local run is a smoke test. The full e2e suite starves the browser here (memo
 - "Known pitfalls": the sheet guidance bullet gains the field-message slot (citing DI-A15 and the extended N-A6).
 - "DEV environment": the overlay's import-row un-hide is gone (H0a), and the production-pin sentence no longer cites the deleted "IM: the import row ships hidden: ..." test.
 - "Scale strings": one sentence saying the fields compose the same line (citing DI-A4 and E3).
+- "Scale import", lanes E and C's sentences (revision 2026-10-19): lane C's flag-copy sentences (they cite "IC: C1" to "IC: C5", "IC: every IMPORT_FLAG_TEXT line ..." and "IC: A2 ...") are removed; in lane E's "Ding-pick flags (lane E)" bullet, the SEED_REFUSED sentence keeps its IX: citation and loses its IM: citation and its CONFIRM-tick clause; the "Sheet" clause citing "IC: a re-pick clears every CONFIRM tick, ..." goes with the picker. The IX: engine sentences stay.
 - "Discoverability", analytics bullet: the tenth event `scale_import` is removed (it no longer fires after H2a), and the sentence on "no event param is a string over 40 characters or names a custom: id" no longer says it runs an import first.
 
-**Acceptance:** every sentence names an existing test title or says "(no test; true by <file>)". `grep -n '"IM: ' CLAUDE.md` prints nothing.
+**Acceptance:** every sentence names an existing test title or says "(no test; true by <file>)". `grep -n '"IM: ' CLAUDE.md` and `grep -n '"IC: ' CLAUDE.md` print nothing.
 
 **Verify:** #374's H3 Verify block, with `IH: ` replaced by `DI: ` in the title regex and a second pass for `IH: compose`.
 
@@ -356,21 +499,17 @@ The local run is a smoke test. The full e2e suite starves the browser here (memo
 
 ### H0a: dev sync (unchanged from #374)
 
-`claude/dev-sync-h2a` from origin/dev; merge H2a's verified head and take H2a's side for the whole import block; keep the GA placeholder and `_headers`. It merges under the dev-sync grant once H2a's PR M is green and the L1 DEV e2e of the paste UI has run (Q10), and H2a's PR D is closed as superseded.
+`claude/dev-sync-h2a` from origin/dev; merge H2a's verified head and take H2a's side for the whole import block; keep the GA placeholder and `_headers`. Dev also carries the lane E/T/C UI (#377, #379, #381). H2a deletes it, so taking H2a's side removes it from dev too, along with its IM: and IC: tests and its `ib_*`, `ic_*` and app `ix_*` mutants (revision 2026-10-19). It merges under the dev-sync grant once H2a's PR M is green, and H2a's PR D is closed as superseded. Q10's wait is satisfied: the L1 DEV e2e passed on 2026-10-19 at dev 2f51721.
 
 ## 5. Sequencing against in-flight work
 
-- **#370 (L1) and #372 (L1b)**: open to main, owner-gated; L1b is on dev (#373, b153406). Main merge order: #370, #372, H1, H2a, H2b', H3'.
-- **#374** (the helper plan PR): close it as superseded by this plan once it is reviewed, or amend it to point here. Its H1, H2a and H0a text is reused by reference (section 0).
-- **The pending L1 DEV e2e** exercises the paste UI on DEV. H0a removes that UI from dev, so H0a must not merge before that e2e has run (owner decision Q10). Lane builds may start in parallel; every dev merge of this plan waits for that e2e.
+- **#370 (L1), #372 (L1b), #377 (lane E), #379 (lane T) and #381 (lane C)**: open to main and HELD until dual input is DEV e2e validated (section 6) and the owner says merge (owner, 2026-10-19). All five are on dev; `claude/dual-input-base` (e722c96) is dev minus the overlay. Main merge order: #370, #372, #377, #379, #381, H1, H2a, H2b', H3'.
+- **#374** (the helper plan PR): close it as superseded by this plan once it is reviewed, or amend it to point here. Its H1, H2a and H0a text is reused by reference (section 0), with the e722c96 changes in section 4.
+- **The L1 DEV e2e** of the paste UI is DONE: 2026-10-19, PASS, at dev 2f51721. Q10's wait is satisfied, so H0a and every dev merge of this plan may proceed under G-C.
 
-**Can start before the L1 DEV e2e passes:**
-- H1 built, reviewed and green on PR M, without a dev merge (Q10: dev merges wait, even though H1 is engine-only);
-- H2a built, reviewed and green on PR M, without a dev merge;
-- H2b' built in its worktree from H2a's head, reviewed and green on PR M, without a dev merge;
-- H3' drafted.
+**Now unblocked:** H1, H2a, H2b' and H3', in that order, each built, reviewed and green on PR M; each PR D merges to dev under G-C. H0a stands in for H2a's PR D, and H2b' PR D also needs H0a on dev.
 
-**Cannot start before it:** every dev merge (H1's PR D, H0a, H2b' PR D, which also needs H0a's dev); the section 6 DEV e2e; any main merge (which also needs the owner's word, Q9).
+**Still held:** every main merge (the five PRs above and every lane here) until the section 6 DEV e2e passes and the owner says merge (G-F', Q9).
 
 ## 6. DEV e2e checklist (phone-first)
 
@@ -433,7 +572,7 @@ Viewports, in this order: 380x780, 320x568, 844x390, 1280x800. At each:
 - Q7. Drop the "Line: ..." caption under the pan (the owner overrode the recommendation to keep it). The pan grows from 194 to 218px at 380 and stays 136px at 320. What now carries confirmation: the pan, live, while typing; the dimmed line row, struck through with its "Not updated" note when stale, when scrolled to; and M16 in the slot for a guessed bottom octave.
 - Q8. Accept 8px median, 7px minimum, pan labels at 320 with the keyboard up; P-6 checks it on a phone.
 - Q9. The main PRs stay open (G-F') until the owner says merge: no flag, no un-hide lane. Dev only until then.
-- Q10. Run the L1 DEV e2e of the paste UI before H0a removes it from dev. Lane builds may start in parallel; every dev merge waits for that e2e (section 5).
+- Q10. Run the L1 DEV e2e of the paste UI before H0a removes it from dev. Lane builds may start in parallel; every dev merge waits for that e2e (section 5). Done: the L1 DEV e2e passed on 2026-10-19 at dev 2f51721 (revision 2026-10-19).
 
 **Open owner questions (from the plan review, 2026-10-18).**
 - OQ-1. In the `side` layout (844x390, and keyboard-up phones under 420px tall) the field labels drop to 8.5px. Q8 accepted 8px pan labels, not field labels. Recommended: accept, with P-7 also checking the labels are readable; the alternative is to measure the stage with 10px labels before H2b' starts.
@@ -448,13 +587,13 @@ Viewports, in this order: 380x780, 320x568, 844x390, 1280x800. At each:
 ## 8. Self-check
 
 - **Counts.**
-  - H1: 17 tests, 17 mutants.
-  - H2a: minus 16 app tests, minus 4 e2e tests, minus 17 mutants.
+  - H1: 18 tests, 18 mutants (E1 to E17, plus N1).
+  - H2a: minus 26 app tests, minus 5 e2e tests, minus 33 mutants (re-taken at e722c96).
   - H2b': 22 app tests, 9 e2e tests, 31 mutants, 13 ELEMENT_IDS. An earlier draft's `#scale-mirror` caption, its test (then numbered A21) and its mutant `di_mirror_caption_stale_text` were removed by Q7; today's A21 is the line-spelling test.
-  - README:77: 1132 at b153406, 1149 after H1, 1132 after H2a, 1163 after H2b'.
-  - FLOORS at b153406: app 623, e2e 335, import 63. After H2b': app 629, e2e 340, import 80.
+  - README:77: 1164 at e722c96, 1182 after H1, 1149 after H2a, 1180 after H2b'.
+  - FLOORS at e722c96: app 633, e2e 336, import 84. After H1: import 102. After H2a: app 607, e2e 331. After H2b': app 629, e2e 340, import 102.
   - All of these are arithmetic; CI's artifacts and counts at the head SHA govern.
-- **Cited existing test titles, checked in `wt/tests` at b153406:**
+- **Cited existing test titles, checked in `wt/tests` at b153406 and again at e722c96:**
   - "SB-2 every served id is in the markup and is looked up by the app";
   - "DR1 line 34: ...", "DR1 line 35: ...", "DR1 lines 36 and 88: ...";
   - "SG: N-A6 the scrollport does not resize between empty, notice and one- or two-line states, ...";
