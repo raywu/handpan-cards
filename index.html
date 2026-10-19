@@ -10592,6 +10592,8 @@ function parseLineText(fields) {
   for (const [key, label] of [["rim", "Top"], ["inner", "Inner"], ["bottom", "Bottom"]]) {
     if (shells[key].length) line += " " + label + " " + names(shells[key]) + ".";
   }
+  const low = HPE.core.innerBelowRim(fields);
+  if (low.length) line += " " + low.join(", ") + (low.length > 1 ? " are" : " is") + " below the top notes: check the pan picture.";
   return line;
 }
 
@@ -12092,7 +12094,7 @@ function renderFieldMessages(r, values, editing, shown) {
   const out = {};
   for (const k of FIELD_KEYS) {
     if (!values[k].trim()) continue;
-    const text = r.errors[k] || (k === "bottom" ? r.info.bottom : null);
+    const text = r.errors[k] || r.info[k];
     if (!text) continue;
     const kind = r.errors[k] ? "error" : "info";
     if (editing === null) out[k] = { text, kind };
