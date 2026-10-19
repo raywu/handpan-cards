@@ -1,0 +1,15 @@
+# kills: IX: a stray close mark in a contested read is kept as the picked ding and the label cue is dropped
+# suite: node --test --test-name-pattern=a.stray.close.mark.in.a.contested tests/import.test.js
+# A stray close mark beside one label ding no longer marks the read contested, so the pick drops no cue.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -429,7 +429,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     var ding = null;
+     var stray = notes.filter(function (n) { return n.closeMark; });
+     function indices(list) { return list.map(function (n) { return n.index; }); }
+-    if (labelDings.length > 1 || (labelDings.length && stray.length)) contested = true;
++    if (labelDings.length > 1) contested = true;
+     if (pickable) {
+       ding = notes[opts.ding];
+     } else if (labelDings.length) {
