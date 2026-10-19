@@ -1,0 +1,15 @@
+# kills: IB: the parse line names an inner note below the top notes on the line path
+# suite: node --test --test-name-pattern ^IB:.the.parse.line.names tests/app.test.js
+# The advisory says is for a plural list.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10593,7 +10593,7 @@ function parseLineText(fields) {
+     if (shells[key].length) line += " " + label + " " + names(shells[key]) + ".";
+   }
+   const low = HPE.core.innerBelowRim(fields);
+-  if (low.length) line += " " + low.join(", ") + (low.length > 1 ? " are" : " is") + " below the top notes: check the pan picture.";
++  if (low.length) line += " " + low.join(", ") + " is" + " below the top notes: check the pan picture.";
+   return line;
+ }
+ 
