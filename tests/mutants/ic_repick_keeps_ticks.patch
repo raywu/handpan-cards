@@ -1,0 +1,15 @@
+# kills: IC: a re-pick clears every CONFIRM tick, so USE needs a fresh confirmation
+# suite: node --test --test-name-pattern ^IC:.a.re.pick tests/app.test.js
+# A re-pick clears only the NO_OCTAVE tick.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11125,7 +11125,7 @@ function pickImportDing() {
+   if (!importRes || importRes.status === "INSUFFICIENT") return;
+   const v = importDingSel.value;
+   importPick = v === "" ? null : Number(v);
+-  importTicked.clear();
++  importTicked.delete("NO_OCTAVE");
+   importRes = HPE.importer.interpret(importSource, importPick === null ? undefined : { ding: importPick });
+   paintImport();
+ }

@@ -10966,46 +10966,66 @@ const importRowsEl  = document.getElementById("import-rows");
 const importFlagsEl = document.getElementById("import-flags");
 const importDingSel = document.getElementById("import-ding");
 const importUseBtn  = document.getElementById("import-use");
-const IMPORT_INSUFFICIENT = "No note list found. Image-only specs can't be read; type the notes below.";
+const IMPORT_INSUFFICIENT = "No note list found. Type the notes in the box above.";
+const IMPORT_LINKS_NOT_OPENED = "Links are not opened. Open the page, copy its note list and paste it here.";
+const IMPORT_LEAD = { BLOCK: "Fix: ", CONFIRM: "Check: ", INFO: "Note: " };
 let importSource = "";
 let importRes = null;
 let importPick = null;
 let importTicks = [];
 const importTicked = new Set();
-const importNames = (r, f) => (f.notes || []).map(i => r.notes[i] ? r.notes[i].note : "?").join(", ");
+const importNameList = (r, f) => (f.notes || []).map(i => r.notes[i] ? r.notes[i].note : "?");
+const importNames = (r, f) => importNameList(r, f).join(", ");
+const importJoinAnd = (a) => a.length < 2 ? a.join("") : a.slice(0, -1).join(", ") + " and " + a[a.length - 1];
+const importUnique = (a) => a.filter((x, i) => a.indexOf(x) === i);
+const importPitchClass = (n) => n.replace(/-?[0-9]+$/, "");
+const importTicksShown = (r) => !r.flags.some(f => f.code === "SEED_REFUSED");
+const importAccept = (r, rest) => importTicksShown(r) ? "Tick to accept, or " + rest : rest.charAt(0).toUpperCase() + rest.slice(1);
 const IMPORT_FLAG_TEXT = {
-  NO_NOTE_LIST: () => IMPORT_INSUFFICIENT,
-  UNDECLARED_PARENS: (r, f) => "Brackets around " + importNames(r, f) + " are not defined by the source. Pick the ding below or type the notes.",
+  NO_NOTE_LIST: () => importInsufficientLine(),
+  UNDECLARED_PARENS: (r, f) => "Brackets around " + importNames(r, f) + " are not explained by the source. Type the notes in the box above: round brackets mark the ding, square brackets mark bottom notes.",
   CONFLICTING_DING: (r, f) => "More than one ding cue: " + importNames(r, f) + ". Pick the ding below.",
-  AMBIGUOUS_NOTE: (r, f) => "Unclear note spelling: " + (f.tokens || []).join(", ") + ". Type the notes instead.",
-  INNER_BELOW_TOP: (r, f) => "Inner notes " + importNames(r, f) + " sit below the top notes.",
-  COUNT_MISMATCH: (r, f) => "The title says " + f.title + " notes but the text lists " + f.listed + ".",
-  PROVISIONAL_REFUSED: (r, f) => "The octaves cannot be inferred: " + (f.refusal && f.refusal.reason || "refused") + " Pick the ding below or type the notes.",
-  DING_CUE: (r, f) => "The source never says which note is the ding. Taking " + importNames(r, f) + " (" + (f.cue === "mark" ? "marked" : f.cue === "separator" ? "set apart" : "listed first") + "). Tick to accept, or pick the ding below.",
+  AMBIGUOUS_NOTE: (r, f) => "Unclear note spelling: " + (f.tokens || []).join(", ") + ". Type the notes in the box above.",
+  INNER_BELOW_TOP: (r, f) => "Inner notes " + importNames(r, f) + " sit below the top notes. Type the notes in the box above with the inner notes after the top notes.",
+  COUNT_MISMATCH: (r, f) => "The title says " + f.title + " notes but the text lists " + f.listed + ". Check the list, or type the notes in the box above.",
+  PROVISIONAL_REFUSED: (r, f) => "The octaves cannot be inferred: " + (f.refusal && f.refusal.reason || "refused") + " Pick the ding below or type the notes in the box above.",
+  DING_CUE: (r, f) => "The source never says which note is the ding. Taking " + importNames(r, f) + " (" + (f.cue === "mark" ? "marked" : f.cue === "separator" ? "set apart" : "listed first") + "). " + importAccept(r, "pick the ding below."),
   DING_CUE_DROPPED: (r, f) => {
     const one = (f.notes || []).length === 1;
-    const names = (f.notes || []).map(i => r.notes[i] ? r.notes[i].note : "?").join(" and ");
+    const names = importJoinAnd(importNameList(r, f));
     const pick = r.notes[f.ding] ? r.notes[f.ding].note : "?";
-    return names + (one ? " was" : " were") + " given as the ding but you picked " + pick + ", so " + (one ? names + " is" : "they are") + " left out. Tick to accept, or pick another ding below.";
+    return names + (one ? " was" : " were") + " given as the ding but you picked " + pick + ", so " + (one ? names + " is" : "they are") + " left out. " + importAccept(r, "pick another ding below.");
   },
-  DING_CLAUSE_MANY: (r, f) => "The ding is given as " + importNames(r, f) + ". A handpan has one ding: type the notes in the box above.",
-  DING_NOT_LOWEST: (r, f) => importNames(r, f) + " sit below the ding (" + (r.notes[f.ding] ? r.notes[f.ding].note : "?") + "). Pick a lower ding below, or type the notes in the box above.",
+  DING_CLAUSE_MANY: (r, f) => "The ding is given as " + importJoinAnd(importNameList(r, f)) + ". A handpan has one ding: type the notes in the box above.",
+  DING_NOT_LOWEST: (r, f) => importJoinAnd(importNameList(r, f)) + ((f.notes || []).length === 1 ? " sits" : " sit") + " below the ding (" + (r.notes[f.ding] ? r.notes[f.ding].note : "?") + "). Pick a lower ding below, or type the notes in the box above.",
   DING_ON_BOTTOM: (r, f) => (r.notes[f.ding] ? r.notes[f.ding].note : "?") + " is a bottom note. The ding is on the top shell: pick another ding below.",
-  REPEATED_IN_SHELL: (r, f) => importNames(r, f) + " is listed twice. Type the notes in the box above with the second one corrected or removed.",
+  REPEATED_IN_SHELL: (r, f) => {
+    const names = importUnique(importNameList(r, f));
+    return importJoinAnd(names) + (names.length === 1 ? " is" : " are") + " listed twice. Type the notes in the box above with the second one corrected or removed.";
+  },
   SEED_REFUSED: () => "These notes do not make a playable scale with that ding. Pick another ding or fix the notes in the scale box above.",
   COUNT_EXCL_DING: (r) => "The title count is " + (r.total - 1) + ", one fewer than the " + r.total + " notes listed: it leaves the ding out.",
   SPACE_IN_NOTE: (r, f) => "Joined a spaced note: " + importNames(r, f) + ".",
   SOURCE_NOT_ASCENDING: (r, f) => "The source is not in pitch order at " + importNames(r, f) + ". It may be a typo.",
   DUPLICATE_PITCH: (r, f) => "The same pitch is listed twice: " + importNames(r, f) + ".",
-  BOTTOM_NO_OCTAVE: (r, f) => "Bottom notes " + importNames(r, f) + " have no octave, so their pitch is unknown. Type the notes with octaves.",
+  BOTTOM_NO_OCTAVE: (r, f) => "Bottom notes " + importNameList(r, f).map(importPitchClass).join(", ") + " have no octave, so their pitch is unknown. Type the notes with octaves in the box above.",
   CONFLICTING_LIST: (r, f) => f.wide ? "Reading the whole text gives a different list than the one found. Paste only the list for your pan."
     : f.tops ? "Two top note lists were found. Paste only the list for your pan."
     : f.earlier ? "An earlier list in the text reads differently. Paste only the list for your pan."
     : "The text holds more than one note list. Paste only the list for your pan.",
-  PARENS_AS_BOTTOM: (r, f) => "Reading the brackets as bottom notes: " + importNames(r, f) + ". Tick to accept, or type the notes.",
-  NO_OCTAVE: (r, f) => "No octave in the source. Inferred: " + importNames(r, f) + ". Bottom notes are a guess.",
+  PARENS_AS_BOTTOM: (r, f) => "Reading the brackets as bottom notes: " + importNames(r, f) + ". " + importAccept(r, "type the notes in the box above."),
+  NO_OCTAVE: (r, f) => {
+    const listed = f.notes || [];
+    const every = r.notes.every((n, i) => n.role === "unknown" || n.role === "dropped" || listed.indexOf(i) >= 0);
+    const guess = listed.some(i => r.notes[i] && r.notes[i].role === "bottom");
+    const lead = every ? "The source gives no octaves." : "The source gives no octave for " + importNameList(r, f).map(importPitchClass).join(", ") + ".";
+    return lead + " Inferred: " + importNames(r, f) + "." + (guess ? " Bottom notes are a guess." : "");
+  },
   COUNT_OK: (r) => "The title count matches the " + r.total + " notes listed."
 };
+function importInsufficientLine() {
+  return /https?:\/\//i.test(importSource) ? IMPORT_INSUFFICIENT + " " + IMPORT_LINKS_NOT_OPENED : IMPORT_INSUFFICIENT;
+}
 function importFlagLine(f) {
   return IMPORT_FLAG_TEXT[f.code](importRes, f);
 }
@@ -11036,10 +11056,10 @@ function paintImportBody() {
   });
   r.flags.forEach(f => {
     const li = document.createElement("li");
-    const text = f.level + ": " + importFlagLine(f);
+    const text = IMPORT_LEAD[f.level] + importFlagLine(f);
     li.className = f.level.toLowerCase();
     li.setAttribute("data-code", f.code);
-    if (importNeedsTick(f)) {
+    if (importNeedsTick(f) && importTicksShown(r)) {
       const label = document.createElement("label");
       const box = document.createElement("input");
       box.type = "checkbox";
@@ -11061,8 +11081,8 @@ function paintImportBody() {
     importFlagsEl.appendChild(li);
   });
   importStatus.textContent = r.status === "REVIEW"
-    ? "Check each note, tick what needs confirming, then USE."
-    : "Resolve the blocks below before USE.";
+    ? "Check each note and tick what needs confirming, then USE."
+    : "Fix the notes listed below, or type them in the box above.";
   paintImportUse();
 }
 function paintImport() {
@@ -11070,7 +11090,7 @@ function paintImport() {
   importResult.hidden = !r;
   if (!r) return;
   if (r.status === "INSUFFICIENT") {
-    importStatus.textContent = IMPORT_INSUFFICIENT;
+    importStatus.textContent = importInsufficientLine();
     importReview.hidden = true;
     importUseBtn.disabled = true;
     return;
@@ -11105,7 +11125,7 @@ function pickImportDing() {
   if (!importRes || importRes.status === "INSUFFICIENT") return;
   const v = importDingSel.value;
   importPick = v === "" ? null : Number(v);
-  importTicked.delete("NO_OCTAVE");
+  importTicked.clear();
   importRes = HPE.importer.interpret(importSource, importPick === null ? undefined : { ding: importPick });
   paintImport();
 }

@@ -10824,7 +10824,7 @@ describe("IM: import text on the sheet", () => {
     app.els["import-text"].value = NAME_ONLY;
     app.click(app.els["import-run"]);
     assert.strictEqual(app.els["import-status"].textContent,
-      "No note list found. Image-only specs can't be read; type the notes below.");
+      "No note list found. Type the notes in the box above.");
     assert.strictEqual(app.els["import-review"].getClientRects().length, 0);
     assert.strictEqual(app.els["import-use"].disabled, true);
     assert.strictEqual(app.els["scale-box"].value, "[C3] D3");
@@ -10853,7 +10853,7 @@ describe("IM: import text on the sheet", () => {
     const missing = JSON.parse(app.get("JSON.stringify(" + JSON.stringify(all) + ".filter(c => !IMPORT_FLAG_TEXT[c]))"));
     assert.deepStrictEqual(missing, []);
     const line = (code, f) => app.get(
-      "(() => { importRes = { notes: [{ note: 'C3' }, { note: 'D3' }], total: 9, roles: {} };" +
+      "(() => { importRes = { notes: [{ note: 'C3' }, { note: 'D3' }], total: 9, roles: {}, flags: [] };" +
       " return importFlagLine(" + JSON.stringify(Object.assign({ code }, f)) + "); })()");
     for (const [code, f] of [["BOTTOM_NO_OCTAVE", { notes: [0, 1] }], ["CONFLICTING_LIST", { runs: 2 }],
       ["CONFLICTING_LIST", { wide: true }], ["CONFLICTING_LIST", { tops: true }],
@@ -10872,16 +10872,16 @@ describe("IM: import text on the sheet", () => {
     const app = boot();
     openSheet(app);
     const line = (code, f) => app.get(
-      "(() => { importRes = { notes: [{ note: 'C3' }, { note: 'D3' }], total: 2, roles: {} };" +
+      "(() => { importRes = { notes: [{ note: 'C3' }, { note: 'D3' }], total: 2, roles: {}, flags: [] };" +
       " return importFlagLine(" + JSON.stringify(Object.assign({ code }, f)) + "); })()");
     assert.strictEqual(line("DING_CUE_DROPPED", { notes: [0], ding: 1 }),
       "C3 was given as the ding but you picked D3, so C3 is left out. Tick to accept, or pick another ding below.");
     assert.strictEqual(line("DING_CUE_DROPPED", { notes: [0, 1], ding: 1 }),
       "C3 and D3 were given as the ding but you picked D3, so they are left out. Tick to accept, or pick another ding below.");
     assert.strictEqual(line("DING_CLAUSE_MANY", { notes: [0, 1] }),
-      "The ding is given as C3, D3. A handpan has one ding: type the notes in the box above.");
+      "The ding is given as C3 and D3. A handpan has one ding: type the notes in the box above.");
     assert.strictEqual(line("DING_NOT_LOWEST", { notes: [0], ding: 1 }),
-      "C3 sit below the ding (D3). Pick a lower ding below, or type the notes in the box above.");
+      "C3 sits below the ding (D3). Pick a lower ding below, or type the notes in the box above.");
     assert.strictEqual(line("DING_ON_BOTTOM", { ding: 0 }),
       "C3 is a bottom note. The ding is on the top shell: pick another ding below.");
     assert.strictEqual(line("REPEATED_IN_SHELL", { notes: [0] }),
@@ -10940,5 +10940,177 @@ describe("IM: import text on the sheet", () => {
     const src = require("node:fs").readFileSync(require("node:path").join(__dirname, "..", "index.html"), "utf8");
     const block = src.slice(src.indexOf("/* ---------------- import text"), src.indexOf("/** Put every sheet field"));
     assert.ok(block.length > 500 && !/fetch\(|XMLHttpRequest|sendBeacon|new Image|WebSocket/.test(block));
+  });
+});
+
+/* ------------------------------------------------ IC: import copy (import-fix lane C) */
+
+describe("IC: import copy", () => {
+  const ASHAKIRAN = "Notes: C - F, G, A, B, C, D, E, G Bottom Notes: D, E, F, A, B, C";
+  const C2_TEXT = "Ding: D3 Top: A3 Bb3 C D4 E4 F4 G4 A4";
+  const ALL_BARE = "Ding: C Top: G A E Eb F";
+  const BRACKETS = "Notes: (D3) A3 (C4) (F4) G4";
+  const TWO_DINGS = "Ding: D3 Ding: E3 Top: A3 B3 C4";
+  const CLEAN = "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 Bottom: C3";
+  const CUE = "Notes: D3 A3 Bb3 C4 D4 E4 F4 G4 A4";
+  const REFUSED = "Ding: D Top: E F G Bb";
+
+  const run = (text) => {
+    const app = boot();
+    openSheet(app);
+    showImport(app);
+    app.click(app.els["import-open"]);
+    app.els["import-text"].value = text;
+    app.click(app.els["import-run"]);
+    return app;
+  };
+  const pick = (app, i) => {
+    app.els["import-ding"].value = String(i);
+    app.els["import-ding"].dispatchEvent({ type: "change" });
+  };
+  const lis = (app) => app.els["import-flags"].children;
+  const li = (app, code) => lis(app).find((x) => x.getAttribute("data-code") === code);
+  const lineText = (x) => (x.children.length ? x.children[0].children[1].textContent : x.textContent);
+  const textOf = (app, code) => lineText(li(app, code));
+  const tickBox = (app, code) => li(app, code).children[0].children[0];
+  const tick = (app, code) => {
+    const box = tickBox(app, code);
+    box.checked = true;
+    box.dispatchEvent({ type: "change" });
+  };
+  const flagLine = (app, notes, code, f) => app.get(
+    "(() => { importRes = { notes: " + JSON.stringify(notes.map(([note, role]) => ({ note, role }))) +
+    ", total: " + notes.length + ", roles: {}, flags: [] };" +
+    " return importFlagLine(" + JSON.stringify(Object.assign({ code }, f)) + "); })()");
+
+  test("IC: C1 BOTTOM_NO_OCTAVE names pitch classes, not guessed octaves", () => {
+    const app = run(ASHAKIRAN);
+    assert.strictEqual(textOf(app, "BOTTOM_NO_OCTAVE"),
+      "Fix: Bottom notes D, E, F, A, B, C have no octave, so their pitch is unknown. Type the notes with octaves in the box above.");
+  });
+
+  test("IC: C2 NO_OCTAVE names the notes that lack an octave", () => {
+    const some = run(C2_TEXT);
+    assert.strictEqual(textOf(some, "NO_OCTAVE"), "Check: The source gives no octave for C. Inferred: C4.");
+    const all = run(ALL_BARE);
+    const inferred = JSON.parse(all.get(
+      "JSON.stringify(HPE.importer.interpret(" + JSON.stringify(ALL_BARE) + ").notes.map(n => n.note))"));
+    assert.strictEqual(textOf(all, "NO_OCTAVE"), "Check: The source gives no octaves. Inferred: " + inferred.join(", ") + ".");
+    assert.ok(!/bottom/i.test(textOf(all, "NO_OCTAVE")));
+    const withBottom = run("Ding: D Top: A Bb C D E F G A Bottom: C");
+    assert.match(textOf(withBottom, "NO_OCTAVE"), /^Check: The source gives no octaves\. Inferred: .*\. Bottom notes are a guess\.$/);
+    const mixed = run("Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 Bottom: C");
+    assert.match(textOf(mixed, "NO_OCTAVE"), /^Check: The source gives no octave for C\. Inferred: C[0-9]\. Bottom notes are a guess\.$/);
+  });
+
+  test("IC: C3 INSUFFICIENT points to the box above and mentions images nowhere", () => {
+    const name = run("D Kurd 10");
+    assert.strictEqual(name.els["import-status"].textContent, "No note list found. Type the notes in the box above.");
+    const url = run("https://example.com/products/d-kurd-10");
+    assert.strictEqual(url.els["import-status"].textContent,
+      "No note list found. Type the notes in the box above. Links are not opened. Open the page, copy its note list and paste it here.");
+    for (const app of [name, url]) assert.ok(!/image|below/i.test(app.els["import-status"].textContent));
+  });
+
+  test("IC: C4 UNDECLARED_PARENS tells the user to type the line in the box above with the bracket rules", () => {
+    const app = run(BRACKETS);
+    assert.strictEqual(textOf(app, "UNDECLARED_PARENS"),
+      "Fix: Brackets around C4, F4 are not explained by the source. Type the notes in the box above: round brackets mark the ding, square brackets mark bottom notes.");
+  });
+
+  test("IC: C5 no flag line starts with BLOCK: or CONFIRM:, and the status lines never say blocks", () => {
+    const lead = { block: "Fix: ", confirm: "Check: ", info: "Note: " };
+    let seen = 0;
+    for (const text of [REFUSED, CUE, CLEAN, ALL_BARE, BRACKETS, TWO_DINGS, ASHAKIRAN]) {
+      const app = run(text);
+      for (const x of lis(app)) {
+        seen += 1;
+        assert.ok(!/^(BLOCK|CONFIRM|INFO):/.test(lineText(x)), lineText(x));
+        assert.ok(lineText(x).startsWith(lead[x.className]), x.className + ": " + lineText(x));
+      }
+      assert.ok(!/block/i.test(app.els["import-status"].textContent));
+    }
+    assert.ok(seen >= 8);
+    assert.strictEqual(run(REFUSED).els["import-status"].textContent, "Fix the notes listed below, or type them in the box above.");
+    assert.strictEqual(run(CUE).els["import-status"].textContent, "Check each note and tick what needs confirming, then USE.");
+  });
+
+  test("IC: every IMPORT_FLAG_TEXT line that tells the user to type says the box above, and every line about notes names them", () => {
+    const app = boot();
+    openSheet(app);
+    const notes = [["C3", "ding"], ["D3", "top"], ["Eb3", "top"], ["F3", "bottom"]];
+    const names = (f) => (f.notes || []).map((i) => notes[i][0]);
+    const cases = [
+      ["NO_NOTE_LIST", {}], ["UNDECLARED_PARENS", { notes: [1, 2] }], ["CONFLICTING_DING", { notes: [0, 1] }],
+      ["AMBIGUOUS_NOTE", { tokens: ["h4"] }], ["INNER_BELOW_TOP", { notes: [1] }],
+      ["COUNT_MISMATCH", { title: 9, listed: 4 }], ["PROVISIONAL_REFUSED", { refusal: { reason: "No fifth." } }],
+      ["DING_CUE", { notes: [0], cue: "mark" }], ["DING_CUE_DROPPED", { notes: [0, 1], ding: 2 }],
+      ["DING_CLAUSE_MANY", { notes: [0, 1, 2] }], ["DING_NOT_LOWEST", { notes: [0, 1], ding: 2 }],
+      ["DING_ON_BOTTOM", { ding: 3 }], ["REPEATED_IN_SHELL", { notes: [1, 2] }], ["SEED_REFUSED", { refusal: { reason: "R" } }],
+      ["COUNT_EXCL_DING", {}], ["SPACE_IN_NOTE", { notes: [1] }], ["SOURCE_NOT_ASCENDING", { notes: [2] }],
+      ["DUPLICATE_PITCH", { notes: [1, 3] }], ["BOTTOM_NO_OCTAVE", { notes: [3] }],
+      ["CONFLICTING_LIST", { wide: true }], ["PARENS_AS_BOTTOM", { notes: [3] }], ["NO_OCTAVE", { notes: [1, 2] }],
+      ["COUNT_OK", {}]
+    ];
+    const src = require("node:fs").readFileSync(require("node:path").join(__dirname, "..", "src", "engine", "importer.js"), "utf8");
+    const order = src.slice(src.indexOf("var FLAG_ORDER"), src.indexOf("];", src.indexOf("var FLAG_ORDER")));
+    const all = [...order.matchAll(/\["([A-Z_]+)",/g)].map((m) => m[1]);
+    assert.deepStrictEqual(all.filter((c) => !cases.some(([k]) => k === c)), [], "a code has no fixture");
+    for (const [code, f] of cases) {
+      const text = flagLine(app, notes, code, f);
+      for (const sentence of text.split(/(?<=\.|:)\s+/)) {
+        const bare = sentence.replace(/\bsits? below\b/g, "");
+        if (/\btype\b/i.test(sentence)) {
+          assert.ok(!/\btype\b[^.:]*\bbelow\b/i.test(bare) && /box above/.test(sentence), code + ": " + sentence);
+        }
+        if (/below/i.test(bare)) assert.ok(/\bpick\b/i.test(sentence), code + ": " + sentence);
+      }
+      for (const n of names(f)) {
+        const want = code === "BOTTOM_NO_OCTAVE" ? n.replace(/[0-9]+$/, "") : n;
+        assert.ok(text.includes(want), code + " should name " + want + ": " + text);
+      }
+    }
+  });
+
+  test("IC: A2 a list reads 'A and B' or 'A, B and C', and a repeated note is named once", () => {
+    const app = boot();
+    openSheet(app);
+    const notes = [["D3", "ding"], ["E3", "top"], ["F3", "top"], ["D3", "top"]];
+    assert.strictEqual(flagLine(app, notes, "DING_CLAUSE_MANY", { notes: [0, 1] }),
+      "The ding is given as D3 and E3. A handpan has one ding: type the notes in the box above.");
+    assert.strictEqual(flagLine(app, notes, "DING_CLAUSE_MANY", { notes: [0, 1, 2] }),
+      "The ding is given as D3, E3 and F3. A handpan has one ding: type the notes in the box above.");
+    assert.strictEqual(flagLine(app, notes, "REPEATED_IN_SHELL", { notes: [0, 3] }),
+      "D3 is listed twice. Type the notes in the box above with the second one corrected or removed.");
+    assert.strictEqual(flagLine(app, notes, "REPEATED_IN_SHELL", { notes: [0, 1, 2, 3] }),
+      "D3, E3 and F3 are listed twice. Type the notes in the box above with the second one corrected or removed.");
+  });
+
+  test("IC: CONFIRM ticks under SEED_REFUSED", () => {
+    const app = run(TWO_DINGS);
+    pick(app, 2);
+    const codes = lis(app).map((x) => x.getAttribute("data-code"));
+    assert.ok(codes.includes("SEED_REFUSED") && codes.includes("DING_CUE_DROPPED"), codes.join());
+    const dropped = li(app, "DING_CUE_DROPPED");
+    assert.strictEqual(dropped.children.length, 0, "a checkbox was drawn under a BLOCK that USE cannot pass");
+    assert.ok(dropped.textContent.startsWith("Check: "));
+    assert.ok(!/tick/i.test(dropped.textContent), dropped.textContent);
+    assert.strictEqual(app.els["import-use"].disabled, true);
+    pick(app, 1);
+    assert.strictEqual(li(app, "DING_CUE_DROPPED").children.length, 1, "no tick once the SEED_REFUSED block is gone");
+  });
+
+  test("IC: a re-pick clears every CONFIRM tick, so USE needs a fresh confirmation", () => {
+    const app = run(TWO_DINGS);
+    pick(app, 0);
+    assert.match(textOf(app, "DING_CUE_DROPPED"), /E3 was given as the ding/);
+    tick(app, "DING_CUE_DROPPED");
+    assert.strictEqual(app.els["import-use"].disabled, false);
+    pick(app, 1);
+    assert.match(textOf(app, "DING_CUE_DROPPED"), /D3 was given as the ding/);
+    assert.strictEqual(tickBox(app, "DING_CUE_DROPPED").checked, false, "the old tick confirmed a different note");
+    assert.strictEqual(app.els["import-use"].disabled, true);
+    app.click(app.els["import-use"]);
+    assert.strictEqual(app.els["scale-box"].value, "");
   });
 });

@@ -1,0 +1,15 @@
+# kills: IC: C5 no flag line starts with BLOCK: or CONFIRM:, and the status lines never say blocks
+# suite: node --test --test-name-pattern ^IC:.C5 tests/app.test.js
+# The flag line leads with the level word again.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11056,7 +11056,7 @@ function paintImportBody() {
+   });
+   r.flags.forEach(f => {
+     const li = document.createElement("li");
+-    const text = IMPORT_LEAD[f.level] + importFlagLine(f);
++    const text = f.level + ": " + importFlagLine(f);
+     li.className = f.level.toLowerCase();
+     li.setAttribute("data-code", f.code);
+     if (importNeedsTick(f) && importTicksShown(r)) {

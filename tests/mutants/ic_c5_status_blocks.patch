@@ -1,0 +1,15 @@
+# kills: IC: C5 no flag line starts with BLOCK: or CONFIRM:, and the status lines never say blocks
+# suite: node --test --test-name-pattern ^IC:.C5 tests/app.test.js
+# The NEEDS_INPUT status says blocks again.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11082,7 +11082,7 @@ function paintImportBody() {
+   });
+   importStatus.textContent = r.status === "REVIEW"
+     ? "Check each note and tick what needs confirming, then USE."
+-    : "Fix the notes listed below, or type them in the box above.";
++    : "Resolve the blocks below before USE.";
+   paintImportUse();
+ }
+ function paintImport() {

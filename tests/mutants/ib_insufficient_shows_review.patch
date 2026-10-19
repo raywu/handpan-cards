@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10790,7 +10790,7 @@
+@@ -11091,7 +11091,7 @@ function paintImport() {
    if (!r) return;
    if (r.status === "INSUFFICIENT") {
-     importStatus.textContent = IMPORT_INSUFFICIENT;
+     importStatus.textContent = importInsufficientLine();
 -    importReview.hidden = true;
 +    importReview.hidden = false;
      importUseBtn.disabled = true;
