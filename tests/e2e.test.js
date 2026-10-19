@@ -7464,6 +7464,110 @@ function run() {
     }
   });
 
+  /* ---- KB2b: the tap pin lets go of a drag, a close, and keeps the tiny column ---- */
+  const kb2bSurf = () => b.eval(`
+    const surf = document.querySelector("#scale-sheet .sheetsurf");
+    const o = { surf: surf.scrollTop, vvh: window.visualViewport.height, fields: {} };
+    for (const id of ${JSON.stringify(KB_FIELDS)}) { const r = document.getElementById(id).getBoundingClientRect(); o.fields[id] = { top: r.top, bottom: r.bottom, left: r.left, right: r.right }; }
+    return o;`);
+  const kb2bWhole = (r, vvh) => r.top >= 1 && r.bottom <= vvh - 1;
+  const kb2bTinyOpen = async (w, h, vv) => {
+    await kbOpenAdd(w, h);
+    await kb2Tap("scale-ding");
+    await b.fakeKeyboard(vv);
+    await kbSettle();
+    const cls = await b.eval(`return [...document.getElementById("scale-sheet").classList];`);
+    assert.ok(cls.includes("tiny"), `${w}x${h} vv ${vv}: not tiny (${cls})`);
+  };
+
+  test("KB2b: a swipe that starts on a field inside the pin window scrolls like one on the flank, and a later keyboard focus does not restore the pre-drag scroll", async () => {
+    try {
+      for (const [w, h, vv] of [[844, 390, 180]]) {
+        await kb2bTinyOpen(w, h, vv);
+        await kb2Tap("scale-ding");
+        const tap = await b.eval(`const r = document.getElementById("scale-top").getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+        const t0 = Date.now() / 1000;
+        await kb2Touch("touchStart", [[tap.x, tap.y]], t0);
+        await kb2Touch("touchEnd", [], t0 + 0.04);
+        await new Promise((r) => setTimeout(r, 60));
+        const before = await kb2bSurf();
+        const from = Object.values(before.fields).map((f) => ({ x: (f.left + f.right) / 2, y: (f.top + f.bottom) / 2 })).filter((p) => p.y > 60 && p.y < before.vvh - 10)[0];
+        assert.ok(from, `no field centre to start on in ${JSON.stringify(before)}`);
+        const t1 = Date.now() / 1000;
+        await kb2Touch("touchStart", [[from.x, from.y]], t1);
+        for (let i = 1; i <= 8; i++) await kb2Touch("touchMove", [[from.x, from.y - (60 * i) / 8]], t1 + i * 0.016);
+        await kb2Touch("touchEnd", [], t1 + 0.15);
+        await new Promise((r) => setTimeout(r, 100));
+        const after = await kb2bSurf();
+        assert.ok(after.surf - before.surf >= 40, `${w}x${h} vv ${vv}: a 60px swipe from a field inside the pin window scrolled ${after.surf - before.surf}px`);
+        const next = KB_FIELDS.find((id) => kb2bWhole(after.fields[id], after.vvh));
+        assert.ok(next, `no field whole in view after the swipe ${JSON.stringify(after)}`);
+        await b.eval(`document.getElementById(${JSON.stringify(next)}).focus(); return true;`);
+        await new Promise((r) => setTimeout(r, 100));
+        const focused = await kb2bSurf();
+        assert.ok(focused.surf >= after.surf - 1, `${w}x${h}: a keyboard focus within a second of the swipe put the scroll back ${after.surf} -> ${focused.surf}`);
+        await b.clearKeyboard();
+      }
+    } finally {
+      await b.clearKeyboard();
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("KB2b: closing the sheet drops the tap pin and the tap snapshot", async () => {
+    try {
+      await kb2bTinyOpen(844, 390, 180);
+      const tap = await b.eval(`const r = document.getElementById("scale-top").getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+      const t0 = Date.now() / 1000;
+      await kb2Touch("touchStart", [[tap.x, tap.y]], t0);
+      await kb2Touch("touchEnd", [], t0 + 0.04);
+      await new Promise((r) => setTimeout(r, 60));
+      assert.strictEqual(await b.eval(`return scrollPin !== null;`), true, "the tap did not set the pin, so this proves nothing");
+      await b.eval(`tapSnap = { at: Date.now(), body: 5, surf: 5 }; closeScaleSheet(); return true;`);
+      assert.deepStrictEqual(await b.eval(`return [scrollPin, tapSnap];`), [null, null]);
+    } finally {
+      await b.clearKeyboard();
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("KB2b: in tiny mode a tap on a field that is whole in view moves the sheet scroller not at all while iOS nudges it", async () => {
+    try {
+      await kb2bTinyOpen(852, 393, 193);
+      await b.eval(`
+        document.addEventListener("focusin", () => {
+          setTimeout(() => { document.querySelector("#scale-sheet .sheetsurf").scrollTop += 37; }, 30);
+        }, true);
+        return true;`);
+      const before = await kb2bSurf();
+      const focused = await b.eval(`return document.activeElement.id;`);
+      const id = KB_FIELDS.find((f) => f !== focused && kb2bWhole(before.fields[f], before.vvh));
+      assert.ok(id, `no other field whole in view ${JSON.stringify(before)}`);
+      await kb2Tap(id);
+      const after = await kb2bSurf();
+      assert.strictEqual(await b.eval(`return document.activeElement.id;`), id);
+      assert.ok(Math.abs(after.surf - before.surf) <= 1, `tapping ${id} moved the tiny scroller ${before.surf} -> ${after.surf}`);
+    } finally {
+      await b.clearKeyboard();
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("KB2b: the tiny column is centred and 520px wide at 852x393 and 844x390", async () => {
+    try {
+      for (const [w, h, vv] of [[852, 393, 193], [844, 390, 180]]) {
+        await kb2bTinyOpen(w, h, vv);
+        const g = await b.eval(`const r = document.querySelector("#scale-sheet .sheetbody").getBoundingClientRect(); const pad = parseFloat(getComputedStyle(document.querySelector("#scale-sheet .sheetsurf")).paddingLeft); return { left: r.left, right: r.right, pad, w: innerWidth };`);
+        assert.ok(Math.abs(g.left - (g.w - g.right)) <= 1.5, `${w}x${h}: column not centred ${JSON.stringify(g)}`);
+        assert.ok(g.right - g.left <= 520 && g.right - g.left >= 480, `${w}x${h}: column ${g.right - g.left}px wide, the shipped rule keeps it inside the 520px measure ${JSON.stringify(g)}`);
+        await b.clearKeyboard();
+      }
+    } finally {
+      await b.clearKeyboard();
+      await b.setViewport(900, 900, false);
+    }
+  });
+
   /* ---- F4: ADJUST LAYOUT keeps its place and the pan stays tappable ---- */
   const F4_VIEWPORTS = [[390, 669], [390, 745], [380, 780], [320, 568]];
   const f4OpenEdit = async (w, h, slug) => {

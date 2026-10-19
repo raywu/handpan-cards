@@ -10490,13 +10490,23 @@ const holdPin = () => {
 const releasePin = () => { scrollPin = null; };
 sheet.addEventListener("pointerdown", (e) => {
   const t = e.target;
-  tapSnap = t && t.matches && t.matches("input, textarea, select")
-    ? { at: Date.now(), body: bandPort.scrollTop, surf: sheetSurf ? sheetSurf.scrollTop : 0 } : null;
+  const onField = t && t.matches && t.matches("input, textarea, select");
+  tapSnap = onField ? { at: Date.now(), body: bandPort.scrollTop, surf: sheetSurf ? sheetSurf.scrollTop : 0 } : null;
+  if (!onField) releasePin();
 }, true);
+const dropTap = () => { scrollPin = null; tapSnap = null; };
+let touchFrom = null;
 sheet.addEventListener("touchstart", (e) => {
-  const t = e.target;
+  const t = e.target, p = e.touches && e.touches[0];
+  touchFrom = p ? { x: p.clientX, y: p.clientY } : null;
   if (!(t && t.matches && t.matches("input, textarea, select"))) releasePin();
 }, { passive: true, capture: true });
+sheet.addEventListener("touchmove", (e) => {
+  const p = e.touches && e.touches[0];
+  if (!touchFrom || !p) return;
+  if (Math.hypot(p.clientX - touchFrom.x, p.clientY - touchFrom.y) > 8) { dropTap(); touchFrom = null; }
+}, { passive: true, capture: true });
+sheet.addEventListener("pointercancel", dropTap, true);
 sheet.addEventListener("wheel", releasePin, { passive: true });
 bandPort.addEventListener("scroll", holdPin);
 if (sheetSurf) sheetSurf.addEventListener("scroll", holdPin);
@@ -11429,6 +11439,8 @@ function hideSheet() {
     sheetSurf.style.maxHeight = "";
   }
   for (const c of ["kbup", "short", "side", "tiny"]) setSheetClass(c, false);
+  scrollPin = null;
+  tapSnap = null;
   editingId = null;
   seedPrefill = null;
   dropDrawer();
