@@ -10735,11 +10735,11 @@ describe("IM: import text on the sheet", () => {
     assert.strictEqual(ticked.els["import-use"].disabled, false);
     const picked = boot();
     run(picked, CUE);
-    pick(picked, 2);
+    pick(picked, 0);
     assert.deepStrictEqual(codes(picked), []);
     assert.strictEqual(picked.els["import-use"].disabled, false);
     picked.click(picked.els["import-use"]);
-    assert.strictEqual(picked.els["scale-box"].value, engine(picked, CUE, { ding: 2 }).seed);
+    assert.strictEqual(picked.els["scale-box"].value, engine(picked, CUE, { ding: 0 }).seed);
   });
 
   test("IM: picking a ding on the Ding: D Top: E F G Bb fixture leaves the picker enabled and the flag set equals interpret(text, {ding: i})", () => {
@@ -10780,10 +10780,14 @@ describe("IM: import text on the sheet", () => {
     assert.deepStrictEqual(codes(app), ["CONFLICTING_DING"]);
     assert.strictEqual(app.els["import-use"].disabled, true);
     pick(app, 1);
-    assert.deepStrictEqual(codes(app), []);
+    assert.deepStrictEqual(codes(app), ["DING_CUE_DROPPED"]);
+    assert.strictEqual(app.els["import-use"].disabled, true);
+    tick(app, "DING_CUE_DROPPED");
     assert.strictEqual(app.els["import-use"].disabled, false);
     app.click(app.els["import-use"]);
-    assert.strictEqual(app.els["scale-box"].value, engine(app, TWO_DINGS, { ding: 1 }).seed);
+    const written = app.els["scale-box"].value;
+    assert.strictEqual(written, engine(app, TWO_DINGS, { ding: 1 }).seed);
+    assert.strictEqual(app.get(`HPE.core.parseSeed(${JSON.stringify(written)}).ok`), true);
   });
 
   test("IM: the ding picker shows on every NEEDS_INPUT or REVIEW list, including a REVIEW list with no DING_CUE", () => {

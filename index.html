@@ -4483,12 +4483,13 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   // Flags leave interpret() in this order.
   var FLAG_ORDER = [
-    ["NO_NOTE_LIST", BLOCK], ["UNDECLARED_PARENS", BLOCK], ["CONFLICTING_DING", BLOCK],
+    ["NO_NOTE_LIST", BLOCK], ["UNDECLARED_PARENS", BLOCK], ["CONFLICTING_DING", BLOCK], ["DING_CLAUSE_MANY", BLOCK], ["DING_NOT_LOWEST", BLOCK],
+    ["DING_ON_BOTTOM", BLOCK], ["REPEATED_IN_SHELL", BLOCK],
     ["AMBIGUOUS_NOTE", BLOCK], ["INNER_BELOW_TOP", BLOCK], ["COUNT_MISMATCH", BLOCK], ["PROVISIONAL_REFUSED", BLOCK],
-    ["BOTTOM_NO_OCTAVE", BLOCK], ["CONFLICTING_LIST", BLOCK],
+    ["BOTTOM_NO_OCTAVE", BLOCK], ["CONFLICTING_LIST", BLOCK], ["SEED_REFUSED", BLOCK],
     ["DING_CUE", CONFIRM], ["PARENS_AS_BOTTOM", CONFIRM], ["COUNT_EXCL_DING", CONFIRM], ["SPACE_IN_NOTE", CONFIRM],
     ["SOURCE_NOT_ASCENDING", CONFIRM], ["DUPLICATE_PITCH", CONFIRM], ["NO_OCTAVE", CONFIRM],
-    ["COUNT_OK", INFO]
+    ["DING_CUE_DROPPED", CONFIRM], ["COUNT_OK", INFO]
   ];
 
   var NOTE_UP = /^([A-G])(#|b)?(-1|[0-9])?$/;
@@ -4875,6 +4876,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     notes.forEach(function (n, i) { n.index = i; n.octave = hasOctave(n.name); n.midi = midiOf(n.name); });
     var pickable = typeof opts.ding === "number" && opts.ding >= 0 && opts.ding < notes.length;
     if (dingClash && !pickable) flag("CONFLICTING_DING", { notes: dingClash.map(function (n) { return n.index; }) });
+    var contested = !!dingClash;
 
     // Who is the ding?
     var labelDings = notes.filter(function (n) { return n.role === "ding" && !n.paren; });
@@ -4887,6 +4889,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var ding = null;
     var stray = notes.filter(function (n) { return n.closeMark; });
     function indices(list) { return list.map(function (n) { return n.index; }); }
+    if (labelDings.length > 1 || (labelDings.length && stray.length)) contested = true;
     if (pickable) {
       ding = notes[opts.ding];
     } else if (labelDings.length) {
@@ -4912,13 +4915,25 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       }
     }
 
+    // One note per ding label is the cue; a label clause holding more than
+    // one note keeps a block under any pick.
+    var clauses = {};
+    labelDings.forEach(function (n) { (clauses[n.list] = clauses[n.list] || []).push(n); });
+    var crowded = [];
+    Object.keys(clauses).forEach(function (k) { if (clauses[k].length > 1) crowded = crowded.concat(clauses[k]); });
+    if (pickable && crowded.length) flag("DING_CLAUSE_MANY", { notes: indices(crowded) });
+
     var parensBottom = opts.parens === "bottom";
     notes.forEach(function (n) {
       if (n === ding) n.assigned = "ding";
+      else if (pickable && contested && n.role === "ding" && !n.paren && clauses[n.list].length === 1) n.assigned = "dropped";
       else if (n.paren && parensBottom) { n.assigned = "bottom"; n.inline = true; }
       else if (n.paren) n.assigned = "unknown";
       else n.assigned = n.role === "ding" ? "top" : n.role;
     });
+    var dropped = notes.filter(function (n) { return n.assigned === "dropped"; });
+    if (dropped.length) flag("DING_CUE_DROPPED", { notes: indices(dropped), ding: ding.index });
+    if (pickable && ding.role === "bottom") flag("DING_ON_BOTTOM", { ding: ding.index });
     var inlined = notes.filter(function (n) { return n.inline; });
     if (inlined.length) flag("PARENS_AS_BOTTOM", { notes: indices(inlined) });
     var unknown = notes.filter(function (n) { return n.assigned === "unknown"; });
@@ -4933,6 +4948,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var innerMin = Math.min.apply(null, inner.map(function (n) { return n.midi === null ? Infinity : n.midi; }));
     if (innerMin < topMax) {
       flag("INNER_BELOW_TOP", { notes: indices(inner.filter(function (n) { return n.midi !== null && n.midi < topMax; })) });
+    }
+
+    if (ding && ding.midi !== null && !flags.CONFLICTING_DING) {
+      var under = tops.concat(inner).filter(function (n) { return n.midi !== null && n.midi < ding.midi; });
+      if (under.length) flag("DING_NOT_LOWEST", { notes: indices(under), ding: ding.index });
     }
 
     var total = notes.length;
@@ -4958,28 +4978,35 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
     var byPitch = {};
     notes.forEach(function (n) {
-      if (n.assigned === "unknown" || n.midi === null) return;
-      (byPitch[n.midi] = byPitch[n.midi] || []).push(n.index);
+      if (n.assigned === "unknown" || n.assigned === "dropped" || n.midi === null) return;
+      var shell = n.assigned === "bottom" ? "b" : "t";
+      (byPitch[n.midi] = byPitch[n.midi] || { t: [], b: [] })[shell].push(n.index);
     });
     var repeated = [];
+    var sameShell = [];
     Object.keys(byPitch).forEach(function (k) {
-      if (byPitch[k].length > 1) repeated = repeated.concat(byPitch[k]);
+      var g = byPitch[k];
+      if (g.t.length > 1) sameShell = sameShell.concat(g.t);
+      if (g.b.length > 1) sameShell = sameShell.concat(g.b);
+      if (g.t.length && g.b.length) repeated = repeated.concat(g.t, g.b);
     });
-    if (repeated.length) flag("DUPLICATE_PITCH", { notes: repeated.sort(function (a, b) { return a - b; }) });
+    var num = function (a, b) { return a - b; };
+    if (sameShell.length && !flags.CONFLICTING_DING) flag("REPEATED_IN_SHELL", { notes: sameShell.sort(num) });
+    if (repeated.length) flag("DUPLICATE_PITCH", { notes: repeated.sort(num) });
 
-    var bare = notes.filter(function (n) { return n.assigned !== "unknown" && !n.octave; });
+    var bare = notes.filter(function (n) { return n.assigned !== "unknown" && n.assigned !== "dropped" && !n.octave; });
     if (bare.length) flag("NO_OCTAVE", { notes: indices(bare) });
     var lowBare = bottoms.filter(function (n) { return !n.octave && !n.inline; });
     if (lowBare.length) flag("BOTTOM_NO_OCTAVE", { notes: indices(lowBare) });
 
     var blocked = !ding || flags.UNDECLARED_PARENS || flags.CONFLICTING_DING || flags.COUNT_MISMATCH ||
-                  flags.AMBIGUOUS_NOTE;
+                  flags.AMBIGUOUS_NOTE || flags.DING_NOT_LOWEST || flags.REPEATED_IN_SHELL || flags.DING_ON_BOTTOM || flags.DING_CLAUSE_MANY;
     var octaves = {};
     // With parens read as bottoms, each sits at its own place in the source line.
     function inlineString(d) {
       var parts = ["(" + d.name + ")"];
       notes.forEach(function (n) {
-        if (n === d) return;
+        if (n === d || n.assigned === "dropped") return;
         parts.push(n.assigned === "bottom" ? "[" + n.name + "]" : n.name);
       });
       return parts.join(" ");
@@ -5028,7 +5055,25 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return JSON.stringify([r.status, serialise(r), r.flags]);
   }
 
+  function guard(r) {
+    if (r.status !== "REVIEW") return r;
+    var line = serialise(r);
+    var parsed = line ? core().parseSeed(line) : { ok: false, code: "EMPTY", reason: "" };
+    if (parsed.ok) return r;
+    var f = { code: "SEED_REFUSED", refusal: { code: parsed.code, reason: parsed.reason }, level: BLOCK };
+    var rank = function (c) { for (var i = 0; i < FLAG_ORDER.length; i++) if (FLAG_ORDER[i][0] === c) return i; return -1; };
+    var at = 0;
+    while (at < r.flags.length && rank(r.flags[at].code) < rank("SEED_REFUSED")) at++;
+    r.flags.splice(at, 0, f);
+    r.status = "NEEDS_INPUT";
+    return r;
+  }
+
   function interpret(raw, opts) {
+    return guard(interpretRaw(raw, opts));
+  }
+
+  function interpretRaw(raw, opts) {
     var narrowed = read(raw, opts, true);
     if (narrowed.status !== "REVIEW" || String(raw).length <= NARROW_OVER) return narrowed;
     var whole = read(raw, opts, false);
@@ -5039,8 +5084,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   }
 
   // The canonical line for a REVIEW result, or "" when nothing may be written.
-  // A string parseSeed refuses is still returned: its refusal belongs to the
-  // sheet's own #scale-refusal.
+  // interpret() never returns a REVIEW result whose line parseSeed refuses: its
+  // guard turns that into NEEDS_INPUT with SEED_REFUSED.
   function serialise(result) {
     if (!result || result.status !== "REVIEW" || !result.roles.ding) return "";
     var line = [];
@@ -10948,6 +10993,17 @@ const IMPORT_FLAG_TEXT = {
     : "The text holds more than one note list. Paste only the list for your pan.",
   PARENS_AS_BOTTOM: (r, f) => "Reading the brackets as bottom notes: " + importNames(r, f) + ". Tick to accept, or type the notes.",
   NO_OCTAVE: (r, f) => "No octave in the source. Inferred: " + importNames(r, f) + ". Bottom notes are a guess.",
+  DING_CUE_DROPPED: (r, f) => {
+    const one = (f.notes || []).length === 1;
+    const names = (f.notes || []).map(i => r.notes[i] ? r.notes[i].note : "?").join(" and ");
+    const pick = r.notes[f.ding] ? r.notes[f.ding].note : "?";
+    return names + (one ? " was" : " were") + " given as the ding but you picked " + pick + ", so " + (one ? names + " is" : "they are") + " left out. Tick to accept, or pick another ding below.";
+  },
+  DING_CLAUSE_MANY: (r, f) => "The ding is given as " + importNames(r, f) + ". A handpan has one ding: type the notes in the box above.",
+  DING_NOT_LOWEST: (r, f) => importNames(r, f) + " sit below the ding (" + (r.notes[f.ding] ? r.notes[f.ding].note : "?") + "). Pick a lower ding below, or type the notes in the box above.",
+  DING_ON_BOTTOM: (r, f) => (r.notes[f.ding] ? r.notes[f.ding].note : "?") + " is a bottom note. The ding is on the top shell: pick another ding below.",
+  REPEATED_IN_SHELL: (r, f) => importNames(r, f) + " is listed twice. Type the notes in the box above with the second one corrected or removed.",
+  SEED_REFUSED: () => "These notes do not make a playable scale with that ding. Pick another ding or fix the notes in the scale box above.",
   COUNT_OK: (r) => "The title count matches the " + r.total + " notes listed."
 };
 function importFlagLine(f) {

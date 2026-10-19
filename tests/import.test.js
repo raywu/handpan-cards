@@ -107,7 +107,9 @@ test("octaveless sources: the provisional string, hand-written octaves, roles an
     const r = run(c);
     const x = c.expect;
     assert.ok(flagOf(r, "NO_OCTAVE"), c.id);
-    assert.deepEqual(provisionalOf(c), [x.provisional], c.id + " provisional");
+    const seen = provisionalOf(c);
+    assert.equal(seen[0], x.provisional, c.id + " provisional");
+    assert.ok(seen.slice(1).every((line) => line === importer.serialise(r)), c.id + " only the guard calls parseSeed after it, on serialise(r)");
     assert.deepEqual(r.notes.map((n) => [pc(n.note), n.role]), x.sourceNotes, c.id + " roles");
     const held = [r.roles.ding, ...r.roles.top, ...r.roles.inner, ...r.roles.bottom];
     assert.deepEqual(held.map((e) => e.note).sort(), [...x.inferred].sort(), c.id + " inferred");
@@ -163,7 +165,7 @@ test("a source with every octave written never builds a provisional string", () 
     const before = calls.length;
     const r = plain(spy.importer.interpret(c.text, { title: c.title }));
     assert.equal(flagOf(r, "NO_OCTAVE"), undefined, c.id);
-    assert.equal(calls.length, before, c.id + " called parseSeed");
+    assert.ok(calls.slice(before).every((line) => line === importer.serialise(r)), c.id + " parseSeed saw a line other than serialise(r)");
   }
 });
 
@@ -1026,12 +1028,12 @@ test("IX: a pitch repeated across shells stays a DUPLICATE_PITCH CONFIRM and wri
 test("IX: a pick above other top or inner notes blocks with DING_NOT_LOWEST naming them", () => {
   const cue = interpret(B1, { ding: 3 });
   assert.equal(cue.status, "NEEDS_INPUT");
-  assert.deepEqual(flagOf(cue, "DING_NOT_LOWEST").notes, [0, 1, 2]);
+  assert.deepEqual(flagOf(cue, "DING_NOT_LOWEST").notes, [1, 2]);
   assert.equal(flagOf(cue, "DING_NOT_LOWEST").ding, 3);
   assert.equal(importer.serialise(cue), "");
   const inner = interpret("Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 Inner: C5 D5", { ding: 9 });
   assert.equal(inner.status, "NEEDS_INPUT");
-  assert.deepEqual(flagOf(inner, "DING_NOT_LOWEST").notes, [0, 1, 2, 3, 4, 5, 6, 7, 8, 10]);
+  assert.deepEqual(flagOf(inner, "DING_NOT_LOWEST").notes, [0, 1, 2, 3, 4, 5, 6, 7, 8]);
   assert.equal(importer.serialise(inner), "");
 });
 
@@ -1068,12 +1070,7 @@ test("IX: the SEED_REFUSED guard blocks a picked ding with no fifth above it: Di
 
 test("IX: the SEED_REFUSED guard turns any refused REVIEW into NEEDS_INPUT", () => {
   const stub = loadEngine(["core", "importer"]);
-  const real = stub.core.parseSeed;
-  let calls = 0;
-  stub.core.parseSeed = function (x) {
-    calls += 1;
-    return calls === 1 ? { ok: false, code: "STUB_REFUSAL", reason: "stub" } : real.apply(this, arguments);
-  };
+  stub.core.parseSeed = function () { return { ok: false, code: "STUB_REFUSAL", reason: "stub" }; };
   const r = plain(stub.importer.interpret("Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4"));
   assert.equal(r.status, "NEEDS_INPUT");
   assert.deepEqual(flagOf(r, "SEED_REFUSED").refusal, { code: "STUB_REFUSAL", reason: "stub" });
