@@ -538,6 +538,8 @@ All four are one line at 844x390 (335px).
 
 **Recommend (a).** The name then says what a press does. Lane L's lip tests assert the name.
 
+**Owner answers (2026-10-19, round 1).** D1 (a) full labels, wrap. D2 (a) keep the text toggle. D10 (a) visual Tab order. D11 REVISED by owner: no note is focused or armed on open ("adjust layout has other adjustments, and not just note ... let user decide what to do"); focus goes to the layer's title (tabindex=-1 heading), the next Tab reaches the first control. This retires the "first pickable note" focus in DR2a (18, 96) and KB F4 and their mutants, which lane P rewrites. D12 (a) pinned. D15 (a) 520px, one column. D6 pending: owner is comparing both in a playground (https://claude.ai/artifact/B5LTHm8KuUuXzBH9cZ3Ziw). D3-D5, D7-D9, D13, D14, D16-D18 open; D16 likely moot under the revised D11, since the focused title announces the layer.
+
 ## 6. Lanes
 
 **Split decision: SERIALIZED** (stacked branches), not parallel by region. The reasons:
