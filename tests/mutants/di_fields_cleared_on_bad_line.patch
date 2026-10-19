@@ -1,0 +1,15 @@
+# kills: DI: typing a line that does not parse leaves the fields as they were and marks them Not updated
+# suite: node --test --test-name-pattern ^DI:.typing.a.line.that.does.not.parse tests/app.test.js
+# Mutant di_fields_cleared_on_bad_line.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12088,7 +12088,7 @@ function lineInput() {
+     if (res.ok) {
+       writeFieldValues(decomposeFields(res.value.fields));
+       fieldsStale = false;
+-    } else fieldsStale = true;
++    } else { fieldsStale = true; writeFieldValues(null); }
+   }
+   const values = fieldValues();
+   paintFields(values, false);

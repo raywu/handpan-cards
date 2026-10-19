@@ -168,7 +168,8 @@ function run() {
 
   const stickBand = async () => {
     await ev(`document.activeElement && document.activeElement.blur(); const sp = document.querySelector("#scale-sheet .sheetbody"); const band = document.getElementById("scale-plate-band");
-      sp.scrollTop = 0; for (let y = 0; y <= sp.scrollHeight; y += 1) { sp.scrollTop = y; if (band.getBoundingClientRect().top - sp.getBoundingClientRect().top <= 0.5) break; } return true;`);
+      sp.scrollTop = 0; for (let y = 0; y <= sp.scrollHeight; y += 1) { sp.scrollTop = y; if (band.getBoundingClientRect().top - sp.getBoundingClientRect().top <= 0.5) break; }
+      const tg = document.getElementById("scale-layout-toggle"); const over = tg.getBoundingClientRect().bottom - sp.getBoundingClientRect().bottom; if (over > 0) sp.scrollTop += over; return true;`);
     await frames();
   };
   const reach = () => ev(`const sp = document.querySelector("#scale-sheet .sheetbody"), sr = sp.getBoundingClientRect();

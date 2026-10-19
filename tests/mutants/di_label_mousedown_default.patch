@@ -1,0 +1,14 @@
+# kills: DI: a mousedown on a field label is prevented and focuses its field
+# suite: node --test --test-name-pattern ^DI:.a.mousedown.on.a.field.label tests/app.test.js
+# Mutant di_label_mousedown_default.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12130,7 +12130,6 @@ FIELD_KEYS.forEach((k, i) => {
+     if (next) fieldEls[next].focus(); else el.blur();
+   });
+   fieldLabels[k].addEventListener("mousedown", (e) => {
+-    e.preventDefault();
+     el.focus();
+   });
+ });

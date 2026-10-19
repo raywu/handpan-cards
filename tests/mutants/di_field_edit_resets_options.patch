@@ -1,0 +1,14 @@
+# kills: DI: palette, anchor, mirror, mirror bottom and seats survive a field edit and a line edit
+# suite: node --test --test-name-pattern ^DI:.palette tests/app.test.js
+# Mutant di_field_edit_resets_options.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12054,6 +12054,7 @@ function writeLine(text) {
+ }
+ function fieldsInput(k) {
+   inputPath = "fields";
++  mirror = false;
+   fieldEditing = k;
+   fieldsStale = false;
+   const values = fieldValues();

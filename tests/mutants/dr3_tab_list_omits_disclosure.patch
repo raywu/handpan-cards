@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11832,7 +11832,7 @@
-                  editingId ? nameBox : null,
+@@ -12162,7 +12162,7 @@ sheet.addEventListener("keydown", e => {
+                  fieldEls.ding, fieldEls.top, fieldEls.inner, fieldEls.bottom,
                   scaleBox,
                   drawerOpen ? previewBox.querySelector('.panhit[tabindex="0"]') : null,
 -                 drawerBtn, anchorOne, anchorBetween, mirrorTop, mirrorBot, fineBtn,

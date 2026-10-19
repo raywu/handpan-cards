@@ -1,15 +1,15 @@
 # kills: DR2b browser (F1, 93): at 820x1180 with the keyboard up (offsetTop 0) a mouse drag keeps the ghost on its hit point and arms the seat under it
 # suite: node --test --test-name-pattern ^DR2b.browser..F1..93...at.820x1180.with.the.keyboard.up..offsetTop.0..a.mouse.drag.keeps.the.ghost.on.its.hit.point.and.arms.the.seat.under.it$ tests/drawer_drag.test.js
 # The arm repaint is no longer held at the sheet body's scroll position, so the plate moves under the finger during a drag.
+# Reworked 2026-10-19 (dual input, lane H2b'): the pan band is now the first thing in the scroller and sticks, so a repaint cannot move the plate under the finger in any cell this suite builds and the scroll-keeping mutant became equivalent. The mutant now drops the arm repaint, so the armed seat is never painted.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10207,7 +10207,7 @@ function keepScroll(fn) {
+@@ -11793,7 +11793,6 @@ function keepScroll(fn) {
  function setArm(id) {
    if (id === armId) return;
    armId = id;
 -  keepScroll(repaintPlate);
-+  repaintPlate();
  }
  /** Where a hit point lands: the nearest same-ring target that contains it,
   *  else a note of another ring, else nothing. */

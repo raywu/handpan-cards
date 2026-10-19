@@ -7,12 +7,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -411,7 +411,7 @@
+@@ -766,7 +766,7 @@ footer.seq{row-gap:var(--sp-1)}
     between a label and the control it names - and the structure is unchanged
     apart from the height: header, scroll, reserved footer. */
  .sheetsurf{width:100%; max-width:520px; background:#1f1b15;
 -  height:100dvh; max-height:100dvh; overflow-y:auto; overscroll-behavior:contain;
 +  overscroll-behavior:contain;
    padding:var(--sp-3) var(--sp-4) max(var(--sp-4), env(safe-area-inset-bottom));
-   display:flex; flex-direction:column; gap:var(--sp-4)}
- /* The header row: BACK, then the page title. Outside .sheetbody like the
+   display:flex; flex-direction:column; gap:var(--sp-4);
+   container:surf / size}

@@ -11,7 +11,10 @@
 //        stuck band (a stop taller than its room: its top is in view below it)
 //   G-d  keyboard up: a focused text field shows as much open as closed
 //   G-e  G-a and G-b are recomputed when the scrollport or the band resizes
-//   G-f  the toggle is in view after the drawer opens
+//   G-f  the toggle is in view after the drawer opens; when opening moved focus
+//        onto a note of a static plate (keyboard), the plate's top and that
+//        note are in view instead (review F2: the fields sit between the plate
+//        and the toggle, so no scroll position shows both)
 //   G-layout  the landscape two-column layout keeps the padding at 0
 //   G-floor  a scrollport under 44 px is held to G-a, G-b and G-d only
 
@@ -258,12 +261,20 @@ function run() {
               for (const kb of KEYBOARDS) for (const f of fields) closed[kb + f] = await kbReading(f, kb, h, ch(f));
             }
             await openDrawerNow();
-            const open = await ev(`return { toggle: __d.at(document.getElementById("scale-layout-toggle")), st: __d.state() };`);
+            const open = await ev(`const a = document.activeElement, p = document.getElementById("scale-preview");
+              const onPlate = !!a && p.contains(a) && getComputedStyle(document.getElementById("scale-plate-band")).position === "static";
+              return { toggle: __d.at(document.getElementById("scale-layout-toggle")), st: __d.state(),
+                onPlate, note: onPlate ? __d.at(a) : null, plate: onPlate ? __d.at(p) : null };`);
             const floor = open.st.room < ONE_CONTROL;
             if (floor) floorCells.push(cell);
             const stuck = checkAB(fail, open.st);
             if (!open.st.twoCol && !floor) stuckSeen[sheet][stuck ? "yes" : "no"] += 1;
-            if (!floor) checkC((c, d) => fail(c === "G-c" ? "G-f" : c, d), open.toggle);
+            if (!floor && !open.onPlate) checkC((c, d) => fail(c === "G-c" ? "G-f" : c, d), open.toggle);
+            if (!floor && open.onPlate) {
+              const p = open.plate, n = open.note;
+              if (p.vis < Math.min(p.h, p.st.room) - 0.5) fail("G-f", `the plate shows ${p.vis} of ${Math.min(p.h, p.st.room).toFixed(1)}px with focus on #${n.id} (top ${p.top.toFixed(1)}, scrollport ${p.st.spTop.toFixed(1)} to ${p.st.spBottom.toFixed(1)})`);
+              if (n.vis < n.h - 1) fail("G-f", `focused #${n.id} shows ${n.vis} of ${n.h.toFixed(1)}px`);
+            }
             if (!floor) await tabWalk(fail);
             if (h >= 553) {
               for (const kb of KEYBOARDS) for (const f of fields) {

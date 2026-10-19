@@ -1,0 +1,25 @@
+# kills: DI: with the drawer open at 844x390 the plate stays beside the drawer controls at 220px, and at 380x780 above them
+# Plan wording: DI: with the drawer open at 844x390 the plate stays beside the drawer controls at 220px
+# suite: node --test --test-name-pattern ^DI:.with.the.drawer.open tests/e2e.test.js
+# Mutant di_e_drawer_band_lost.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1117,7 +1117,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+   #scale-sheet .sheetbody:has(#scale-layout-zone.open) > :not(.scalestage){grid-column:2}
+   #scale-sheet .sheetbody:has(#scale-layout-zone.open) .scalecol{grid-column:2; margin-bottom:var(--sp-3)}
+   #scale-sheet .sheetbody:has(#scale-layout-zone.open) > :not(.scalestage):not(:last-child){margin-bottom:var(--sp-3)}
+-  #scale-sheet .sheetbody:has(#scale-layout-zone.open) #scale-preview{width:clamp(150px, calc(100dvh - 170px), 232px); max-width:none}
++  #scale-sheet .sheetbody:has(#scale-layout-zone.open) #scale-preview{width:clamp(100px, calc(100dvh - 290px), 232px); max-width:none}
+ }
+ @container surf (min-width:600px){
+   /* The band sits beside the controls here, not over them: nothing to pad for. */
+@@ -1129,7 +1129,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+   #scale-sheet .sheetbody:has(#scale-layout-zone.open) > :not(.scalestage){grid-column:2}
+   #scale-sheet .sheetbody:has(#scale-layout-zone.open) .scalecol{grid-column:2; margin-bottom:var(--sp-3)}
+   #scale-sheet .sheetbody:has(#scale-layout-zone.open) > :not(.scalestage):not(:last-child){margin-bottom:var(--sp-3)}
+-  #scale-sheet .sheetbody:has(#scale-layout-zone.open) #scale-preview{width:clamp(150px, calc(100dvh - 170px), 232px); max-width:none}
++  #scale-sheet .sheetbody:has(#scale-layout-zone.open) #scale-preview{width:clamp(100px, calc(100dvh - 290px), 232px); max-width:none}
+ }
+ /* The selection ring is drawn in the SVG (pan(), .pansel) rather than in CSS:
+    it has to sit on ONE note at the radius that note was drawn at, which is a

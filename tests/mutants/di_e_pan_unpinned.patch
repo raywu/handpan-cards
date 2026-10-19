@@ -1,0 +1,16 @@
+# kills: DI: at 320x568 with a 260px keyboard each field typed in stays fully in view with at least 130px of pan in view and the sheet head hidden, and BACK shows again once the keyboard closes
+# Plan wording: DI: at 320x568 with a 260px keyboard ... pan in view
+# suite: node --test --test-name-pattern ^DI:.at.320x568.with.a.260px tests/e2e.test.js
+# Mutant di_e_pan_unpinned.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1050,7 +1050,7 @@ footer.seq{row-gap:var(--sp-1)}
+    the drawer's own state. */
+ .scalestage{display:flex; flex-direction:column; gap:var(--sp-3)}
+ .scalecol{display:flex; flex-direction:column; gap:var(--sp-3); min-width:0}
+-.scalestage > #scale-plate-band{position:sticky; top:0; z-index:2; background:#1f1b15;
++.scalestage > #scale-plate-band{position:static; top:0; z-index:2; background:#1f1b15;
+   padding-bottom:var(--sp-1)}
+ .scalestage #scale-preview{width:clamp(110px, calc(100cqh - 260px), 300px); max-width:none}
+ .sheetbody:has(#scale-layout-zone.open) #scale-preview{width:100%; max-width:min(300px, 39dvh)}
