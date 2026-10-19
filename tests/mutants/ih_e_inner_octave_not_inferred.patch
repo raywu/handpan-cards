@@ -1,0 +1,15 @@
+# kills: IH: compose infers rim and inner octaves exactly as parseSeed does for the same line
+# suite: node --test --test-name-pattern ^IH:.compose.infers.rim.and.inner tests/import.test.js
+# Inner notes are inferred upward from the ding instead of from the highest top note.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -796,7 +796,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       out.notes.top = top;
+       if (read.inner.notes.length && !out.errors.inner) {
+         var high = top[top.length - 1];
+-        var upper = composeStage("(" + ding.name + ") " + top.join(" ") + " | ", read.inner.notes, topMidi, "inner", high);
++        var upper = composeStage("(" + ding.name + ") " + top.join(" ") + " | ", read.inner.notes, ding.midi, "inner", high);
+         if (upper.error) out.errors.inner = upper.error;
+         else inner = upper.names;
+       } else if (!out.errors.inner) inner = [];

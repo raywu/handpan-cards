@@ -1,0 +1,15 @@
+# kills: IH: compose refuses an uppercase second B: BB3 gives "BB is not a note: write B-flat as Bb." and EB gives "EB is not a note: write E-flat as Eb."
+# suite: node --test --test-name-pattern ^IH:.compose.refuses.an.uppercase.second tests/import.test.js
+# An uppercase second B no longer gets its own message and falls to the generic not-a-note line.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -656,7 +656,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   // line. Each field is read alone; later fields are checked only against
+   // earlier ones that read cleanly, so one slip produces one message.
+   var COMPOSE_SOLFEGE = /^(?:do|r[eé]|mi|fa|sol|la|si|ti)(?:#|b|♯|♭)?(?:-1|[0-9])?$/i;
+-  var COMPOSE_UPPER_B = /^([A-Ga-g])B(?:-1|[0-9])?$/;
++  var COMPOSE_UPPER_B = /^([A-Ga-g])B(?:-1|[0-9])?\u0000$/;
+   var COMPOSE_NOTE = /^([A-G])(#|b)?(-1|[0-9])?$/;
+   var COMPOSE_BARRED = /[()\[\]|]/;
+   var COMPOSE_FIELDS = ["ding", "top", "inner", "bottom"];

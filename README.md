@@ -52,7 +52,7 @@ Open `index.html` from disk, or run `tools/preview.sh` to serve it at `http://lo
 The engine is twelve modules under `src/engine/`:
 
 - `src/engine/core.js`: note parsing and pitch classes
-- `src/engine/importer.js`: product text to a scale string
+- `src/engine/importer.js`: product text, or the helper's four fields, to a scale string
 - `src/engine/voicing.js`: the cluster and spelling rules
 - `src/engine/naming.js`: chord symbols and subtitles
 - `src/engine/select.js`: which chords a pan gets, and in what order
@@ -74,7 +74,7 @@ Tests:
     python3 tests/suite_health.py   # per-file test-count floors
     ./tests/run.sh mutants          # mutation gate (slow)
 
-There are 25 node suites and 16 python suites. The mutation gate applies 1164 mutant patches from `tests/mutants/`, and a test must fail under each one. It edits the tree in place and refuses to start on uncommitted changes to a file a patch touches, `README.md` among them, so commit first.
+There are 25 node suites and 16 python suites. The mutation gate applies 1182 mutant patches from `tests/mutants/`, and a test must fail under each one. It edits the tree in place and refuses to start on uncommitted changes to a file a patch touches, `README.md` among them, so commit first.
 
 CI runs on pull requests into `main` and on pushes to `main`. A PR that changes only `docs/plans/` or `docs/prompts/` skips every job.
 

@@ -1,0 +1,15 @@
+# kills: IH: N1 DING_NOT_LOWEST names only notes strictly below the ding: Ding: D3 Top: D3 A3 Bb3 C4 D4 is NEEDS_INPUT with REPEATED_IN_SHELL alone
+# suite: node --test --test-name-pattern ^IH:.N1 tests/import.test.js
+# DING_NOT_LOWEST counts a top note equal to the ding as below it.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -491,7 +491,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     }
+ 
+     if (ding && ding.midi !== null && !flags.CONFLICTING_DING) {
+-      var under = tops.concat(inner).filter(function (n) { return n.midi !== null && n.midi < ding.midi; });
++      var under = tops.concat(inner).filter(function (n) { return n.midi !== null && n.midi <= ding.midi; });
+       if (under.length) flag("DING_NOT_LOWEST", { notes: indices(under), ding: ding.index });
+     }
+ 
