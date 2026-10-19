@@ -13,4 +13,4 @@ diff --git a/index.html b/index.html
 +.scalestage > #scale-plate-band{position:static; top:0; z-index:2; background:#1f1b15;
    padding-bottom:var(--sp-1)}
  .scalestage #scale-preview{width:clamp(110px, calc(100cqh - 260px), 300px); max-width:none}
- .sheetbody:has(#scale-layout-zone.open) #scale-preview{width:100%; max-width:min(300px, 27dvh)}
+ .sheetbody:has(#scale-layout-zone.open) #scale-preview{width:100%; max-width:min(300px, 31dvh)}

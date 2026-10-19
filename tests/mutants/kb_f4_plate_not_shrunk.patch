@@ -1,5 +1,5 @@
-# kills: KB: F4 with the drawer open at 390x669 at least 160px of options show under the pan and the plate is at least 140px
-# suite: node --test --test-name-pattern ^KB..F4.with.the.drawer.open.at.390x669.at.least.160px.* tests/e2e.test.js
+# kills: KB: F4 with the drawer open at 390x669 the per-viewport floor of options shows under the pan (160px where the viewport allows) and the plate is at least 140px
+# suite: node --test --test-name-pattern ^KB..F4.with.the.drawer.open.at.390x669.the.per.viewport.floor.* tests/e2e.test.js
 # The open-drawer plate goes back to the 39dvh cap, so fewer than 160px of options show under the pan.
 diff --git a/index.html b/index.html
 --- a/index.html

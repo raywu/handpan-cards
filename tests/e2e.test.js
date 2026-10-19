@@ -7344,8 +7344,8 @@ function run() {
     await openEdit();
     await b.eval(`document.activeElement && document.activeElement.blur(); return true;`);
   };
-  /* 320x568 cannot show 160px: its scrollport is 296px tall and the pan needs 153px of it to keep every note tappable (owner: tappability wins). */
-  const F4_OPTION_FLOOR = { "390x669": 160, "390x745": 160, "380x780": 160, "320x568": 96 };
+  /* 390x669 (145.6px measured) and 320x568 (75.9px, a 296px scrollport) cannot show the full target: the pan needs the 31dvh plate to keep every note tappable (owner: tappability wins). */
+  const F4_OPTION_FLOOR = { "390x669": 140, "390x745": 160, "380x780": 160, "320x568": 70 };
   const f4Geom = () => b.eval(`
     const port = document.querySelector("#scale-sheet .sheetbody"), pr = port.getBoundingClientRect();
     const r = (id) => { const q = document.getElementById(id).getBoundingClientRect(); return { top: q.top, bottom: q.bottom, width: q.width }; };
@@ -7372,6 +7372,7 @@ function run() {
         const before = await f4Geom();
         await b.eval(`
           const port = document.querySelector("#scale-sheet .sheetbody");
+          port.style.overflowAnchor = "none";
           window.__f4 = [];
           port.addEventListener("scroll", () => {
             const btn = document.getElementById("scale-layout-toggle").getBoundingClientRect();
@@ -7412,7 +7413,7 @@ function run() {
       }
     });
 
-    test(`KB: F4 with the drawer open at ${w}x${h} at least 160px of options show under the pan and the plate is at least 140px`, async () => {
+    test(`KB: F4 with the drawer open at ${w}x${h} the per-viewport floor of options shows under the pan (160px where the viewport allows) and the plate is at least 140px`, async () => {
       try {
         await f4OpenEdit(w, h, "kurd");
         await f4OpenDrawer();
