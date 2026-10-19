@@ -1,0 +1,15 @@
+# suite: node --test --test-name-pattern ^IB..an.inner.note.below.the.top.notes.parses,.keeps.its.zone.and.numbers.after.the.rim$ tests/core.test.js
+# kills: IB: an inner note below the top notes parses, keeps its zone and numbers after the rim
+# The first inner note is checked against the note before it again, so a dip is refused.
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -711,7 +711,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       if (bad) return bad;
+       var restarts = entry.zone === "inner" && !seenInner;
+       if (entry.zone === "inner") seenInner = true;
+-      if (mm < prev.midi && !restarts) {
++      if (mm < prev.midi) {
+         return scaleOrder(note, prev, prev === ding ? "ding" : undefined);
+       }
+       if (entry.zone === "bottom") {

@@ -4,10 +4,10 @@
 diff --git a/src/engine/importer.js b/src/engine/importer.js
 --- a/src/engine/importer.js
 +++ b/src/engine/importer.js
-@@ -709,7 +709,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-       var name = composeNamed(n, octave);
+@@ -724,7 +724,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
        if (!composeFits(midi)) return { names: names, error: composeRange(name) };
        names.push(name);
+       if (n.octave === null) guessed.push(name);
 -      var parsed = core().parseSeed(head + names.join(" "));
 +      var parsed = { ok: true };
        if (!parsed.ok && parsed.code !== "NO_FIFTH") {
