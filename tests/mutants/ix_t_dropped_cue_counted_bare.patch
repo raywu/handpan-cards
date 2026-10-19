@@ -1,0 +1,15 @@
+# kills: IX: a dropped ding cue is not counted as a bare note
+# suite: node --test --test-name-pattern=a.dropped.ding.cue.is.not.counted tests/import.test.js
+# A dropped cue is counted in the bare list, so an unpicked octave-less cue raises NO_OCTAVE.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -534,7 +534,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     if (sameShell.length && !flags.CONFLICTING_DING) flag("REPEATED_IN_SHELL", { notes: sameShell.sort(num) });
+     if (repeated.length) flag("DUPLICATE_PITCH", { notes: repeated.sort(num) });
+ 
+-    var bare = notes.filter(function (n) { return n.assigned !== "unknown" && n.assigned !== "dropped" && !n.octave; });
++    var bare = notes.filter(function (n) { return n.assigned !== "unknown" && !n.octave; });
+     if (bare.length) flag("NO_OCTAVE", { notes: indices(bare) });
+     var lowBare = bottoms.filter(function (n) { return !n.octave && !n.inline; });
+     if (lowBare.length) flag("BOTTOM_NO_OCTAVE", { notes: indices(lowBare) });

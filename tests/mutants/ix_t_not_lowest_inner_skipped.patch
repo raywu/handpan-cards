@@ -1,0 +1,15 @@
+# kills: IX: DING_NOT_LOWEST names exactly the notes below the picked ding
+# suite: node --test --test-name-pattern=DING_NOT_LOWEST.names.exactly tests/import.test.js
+# A pick that excludes the inner shell from the below-ding filter misses inner notes lower than the ding.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -491,7 +491,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     }
+ 
+     if (ding && ding.midi !== null && !flags.CONFLICTING_DING) {
+-      var under = tops.concat(inner).filter(function (n) { return n.midi !== null && n.midi < ding.midi; });
++      var under = tops.filter(function (n) { return n.midi !== null && n.midi < ding.midi; });
+       if (under.length) flag("DING_NOT_LOWEST", { notes: indices(under), ding: ding.index });
+     }
+ 
