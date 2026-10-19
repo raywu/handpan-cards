@@ -463,3 +463,9 @@ Viewports, in this order: 380x780, 320x568, 844x390, 1280x800. At each:
   The E3 title is #374's (new in H1). Every DI: title is new and listed in section 4.
 - **Measured, not claimed.** Every number in section 3 comes from the files it names. The drawer-open stage after D-9, the real-keyboard behaviour and the Linux CI font figures are stated as unmeasured.
 - **Style.** No em dashes and no emojis. Anchors are cited, not line numbers, except README:77, which the repo itself names by line.
+
+## Owner answers to OQ-1 to OQ-3 (2026-10-18)
+
+- OQ-1: accept 8.5px field labels in the side layout; P-7 adds a readability check on a real device.
+- OQ-2: no new event.
+- OQ-3: placeholders are #374 C6 example, split by field.
