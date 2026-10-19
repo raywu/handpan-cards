@@ -1,0 +1,14 @@
+# kills: IH: compose of four blank fields is empty, not ok, and carries no errors
+# suite: node --test --test-name-pattern ^IH:.compose.of.four.blank.fields tests/import.test.js
+# Four blank fields fall through to the per-field checks and report errors.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -767,7 +767,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     COMPOSE_FIELDS.forEach(function (f) { read[f] = composeRead(fields[f]); });
+     if (COMPOSE_FIELDS.every(function (f) { return !read[f].error && !read[f].notes.length; })) {
+       out.empty = true;
+-      return out;
+     }
+     COMPOSE_FIELDS.forEach(function (f) { out.errors[f] = read[f].error; });
+ 

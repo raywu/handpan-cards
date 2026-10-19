@@ -4,6 +4,7 @@
 // hand in that fixture; the pitch checks below are computed independently of
 // the importer by reading the notes straight off the source text.
 const test = require("node:test");
+const { describe } = test;
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -1133,4 +1134,214 @@ test("IX: a dropped ding cue is not checked for a repeated pitch", () => {
   assert.equal(r.status, "REVIEW");
   assert.equal(flagOf(r, "REPEATED_IN_SHELL"), undefined);
   assert.equal(importer.serialise(r), "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4");
+});
+
+test("IH: N1 DING_NOT_LOWEST names only notes strictly below the ding: Ding: D3 Top: D3 A3 Bb3 C4 D4 is NEEDS_INPUT with REPEATED_IN_SHELL alone", () => {
+  const r = interpret("Ding: D3 Top: D3 A3 Bb3 C4 D4");
+  assert.equal(r.status, "NEEDS_INPUT");
+  assert.deepEqual(codes(r), ["REPEATED_IN_SHELL"]);
+});
+
+describe("IH: compose", () => {
+  const compose = (f) => plain(importer.compose(Object.assign({ ding: "", top: "", inner: "", bottom: "" }, f)));
+  const RIM8 = "A Bb C D E F G A";
+  const lineOf = (s) => core.formatSeed(core.parseSeed(s).value.fields);
+  const unclean = (r, f) => assert.ok(!r.ok && r.errors[f] !== null, f + " carries an error");
+
+  test("IH: compose infers rim and inner octaves exactly as parseSeed does for the same line", () => {
+    const r = compose({ ding: "D3", top: RIM8, inner: "C D" });
+    const line = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5";
+    assert.ok(r.ok);
+    assert.equal(r.line, lineOf(line));
+    assert.deepEqual(r.seed, plain(core.parseSeed(line).value));
+    assert.deepEqual(r.notes.top, ["A3", "Bb3", "C4", "D4", "E4", "F4", "G4", "A4"]);
+    assert.deepEqual(r.notes.inner, ["C5", "D5"]);
+    assert.deepEqual(r.notes.ding, ["D3"]);
+  });
+
+  test("IH: compose places bottoms through serialise, after the bar when they sit above an inner note and before a ding of the same pitch", () => {
+    const high = compose({ ding: "F3", top: "G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5", inner: "F5 G5", bottom: "Ab5" });
+    assert.ok(high.ok);
+    assert.match(high.line, / \| F5 G5 \[Ab5\]$/);
+    const tie = compose({ ding: "D3", top: "A3", bottom: "D3" });
+    assert.ok(tie.ok);
+    assert.equal(tie.line, "[D3] (D3) A3");
+  });
+
+  test("IH: compose of each built-in's decomposed fields equals formatSeed of that deck, Pygmy included", () => {
+    const decks = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "decks.json"), "utf8"));
+    assert.equal(decks.length, 5);
+    for (const d of decks) {
+      const ids = Object.keys(d.fields).map(Number).sort((a, b) => a - b);
+      const names = (zone) => ids.filter((i) => d.fields[i][3] === zone).map((i) => d.fields[i][0] + d.fields[i][1]).join(" ");
+      const r = compose({ ding: names("ding"), top: names("rim"), inner: names("inner"), bottom: names("bottom") });
+      assert.ok(r.ok, d.id + " composes");
+      assert.equal(r.line, core.formatSeed(d.fields), d.id);
+      assert.deepEqual(r.guessed, [], d.id + " guesses nothing");
+    }
+  });
+
+  test("IH: compose guesses the first octaveless bottom in the ding's octave, an octave down when it names the ding, and lists it in guessed, and Db under ding C#3 reads Db2", () => {
+    const a = compose({ ding: "D3", top: "A3", bottom: "Bb" });
+    assert.deepEqual(a.guessed, ["Bb3"]);
+    assert.deepEqual(a.notes.bottom, ["Bb3"]);
+    const same = compose({ ding: "D3", top: "A3", bottom: "D" });
+    assert.deepEqual(same.guessed, ["D2"]);
+    assert.equal(same.line, "[D2] (D3) A3");
+    const enharmonic = compose({ ding: "C#3", top: "G#3", bottom: "Db" });
+    assert.deepEqual(enharmonic.guessed, ["Db2"]);
+    assert.ok(enharmonic.ok);
+  });
+
+  test("IH: compose keeps a typed bottom octave, lists no guess for it, and sets info only when something was guessed", () => {
+    const typed = compose({ ding: "D3", top: "A3", bottom: "C3 Eb3" });
+    assert.ok(typed.ok);
+    assert.deepEqual(typed.guessed, []);
+    assert.equal(typed.info.bottom, null);
+    const mixed = compose({ ding: "D3", top: "A3", bottom: "C3 Eb" });
+    assert.deepEqual(mixed.guessed, ["Eb3"]);
+    assert.equal(mixed.info.bottom, "Octaves guessed: Eb3. Type an octave to change a guess.");
+    const two = compose({ ding: "D3", top: "A3", bottom: "C Eb" });
+    assert.deepEqual(two.guessed, ["C3", "Eb3"]);
+    assert.equal(two.info.bottom, "Octaves guessed: C3, Eb3. Type an octave to change a guess.");
+  });
+
+  test("IH: compose reads lowercase notes: a3, bb3 and eb read as A3, Bb3 and Eb", () => {
+    const r = compose({ ding: "d3", top: "a3 bb3 c4 d4 e4 f4 g4 a4", bottom: "eb" });
+    assert.ok(r.ok);
+    assert.deepEqual(r.notes.top, ["A3", "Bb3", "C4", "D4", "E4", "F4", "G4", "A4"]);
+    assert.deepEqual(r.notes.bottom, ["Eb3"]);
+    assert.equal(r.line, "(D3) [Eb3] A3 Bb3 C4 D4 E4 F4 G4 A4");
+  });
+
+  test("IH: compose refuses an uppercase second B: BB3 gives \"BB is not a note: write B-flat as Bb.\" and EB gives \"EB is not a note: write E-flat as Eb.\"", () => {
+    const bb = compose({ ding: "D3", top: "A3 BB3" });
+    assert.equal(bb.errors.top, "BB is not a note: write B-flat as Bb.");
+    assert.equal(bb.ok, false);
+    const eb = compose({ ding: "D3", top: "A3", bottom: "EB" });
+    assert.equal(eb.errors.bottom, "EB is not a note: write E-flat as Eb.");
+    const b = compose({ ding: "D3", top: "A B" });
+    assert.ok(b.ok);
+    assert.deepEqual(b.notes.top, ["A3", "B3"]);
+  });
+
+  test("IH: compose refuses solfege with \"Use letter names, like D A Bb.\"", () => {
+    const top = compose({ ding: "D3", top: "Re Mi" });
+    assert.equal(top.errors.top, "Use letter names, like D A Bb.");
+    const ding = compose({ ding: "Sol" });
+    assert.equal(ding.errors.ding, "Use letter names, like D A Bb.");
+    const bottom = compose({ ding: "D3", top: "A3", bottom: "Do3" });
+    assert.equal(bottom.errors.bottom, "Use letter names, like D A Bb.");
+  });
+
+  test("IH: compose reads # b ♯ ♭ and splits on spaces, commas, semicolons and line breaks", () => {
+    const r = compose({ ding: "D3", top: "A♭3 B♭3,  C4;D4\nE4\tF♯4 G#4" });
+    assert.deepEqual(r.notes.top, ["Ab3", "Bb3", "C4", "D4", "E4", "F#4", "G#4"]);
+    assert.equal(r.errors.top, null);
+    const flat = compose({ ding: "D♭3", top: "A♭3" });
+    assert.deepEqual(flat.notes.ding, ["Db3"]);
+  });
+
+  test("IH: compose refuses brackets and bars typed into a field", () => {
+    const msg = "Type notes only: the line is written for you.";
+    assert.equal(compose({ ding: "D3", top: "[A3] Bb3" }).errors.top, msg);
+    assert.equal(compose({ ding: "(D3)", top: "A3" }).errors.ding, msg);
+    assert.equal(compose({ ding: "D3", top: "A3 Bb3 C4", inner: "| D5" }).errors.inner, msg);
+    assert.equal(compose({ ding: "D3", top: "A3", bottom: "(C3)" }).errors.bottom, msg);
+  });
+
+  test("IH: compose stages its parse: a top order error is under TOP with \"X is lower than Y: list low to high.\", a top note below the ding says so, a top pitch repeated in INNER is NOTE_REPEATED under INNER, and an octaveless inner Bb over top C4 reads Bb4", () => {
+    const order = compose({ ding: "D3", top: "A3 Bb3 G3" });
+    assert.equal(order.errors.top, "G3 is lower than Bb3: list low to high.");
+    assert.equal(order.errors.ding, null);
+    assert.equal(order.errors.inner, null);
+    const below = compose({ ding: "D3", top: "C3 A3" });
+    assert.equal(below.errors.top, "C3 is not above the ding, D3.");
+    const repeat = compose({ ding: "D3", top: "A3 Bb3 C4", inner: "C4" });
+    assert.equal(repeat.errors.inner, "C4 is already in the top or inner notes.");
+    assert.equal(repeat.errors.top, null);
+    const lower = compose({ ding: "D3", top: "A3 Bb3 C4", inner: "Bb3" });
+    assert.equal(lower.errors.inner, "Bb3 is below the highest top note, C4.");
+    const later = compose({ ding: "D3", top: "A3 Bb3 C4", inner: "D5 C5" });
+    assert.equal(later.errors.inner, "C5 is lower than D5: list low to high.");
+    const bare = compose({ ding: "D3", top: "A3 Bb3 C4", inner: "Bb" });
+    assert.equal(bare.errors.inner, null);
+    assert.deepEqual(bare.notes.inner, ["Bb4"]);
+    assert.ok(bare.ok);
+  });
+
+  test("IH: compose puts NO_FIFTH under DING and never NO_FIFTH under TOP while a prefix is staged, and reports no NO_FIFTH while TOP is empty (DING F3 alone carries no DING error)", () => {
+    const alone = compose({ ding: "F3" });
+    assert.equal(alone.errors.ding, null);
+    assert.equal(alone.errors.top, "Enter the top notes, low to high.");
+    const none = compose({ ding: "F3", top: "G3 Ab3" });
+    assert.equal(none.errors.ding, "No fifth above the ding F3: add C to the top notes, or check the ding.");
+    assert.equal(none.errors.top, null);
+    assert.equal(none.ok, false);
+    assert.equal(none.line, "");
+    const order = compose({ ding: "D3", top: "Bb3 G3" });
+    assert.equal(order.errors.top, "G3 is lower than Bb3: list low to high.");
+    assert.equal(order.errors.ding, null);
+    const inner = compose({ ding: "F3", top: "G3 Ab3", inner: "Bb4" });
+    assert.equal(inner.errors.inner, null);
+    assert.match(inner.errors.ding, /^No fifth above the ding F3/);
+    const fixed = compose({ ding: "F3", top: "G3 Ab3", inner: "C5" });
+    assert.ok(fixed.ok);
+  });
+
+  test("IH: compose refuses bottoms out of order with \"X is lower than Y: list low to high.\", refuses a repeated bottom, and accepts a bottom copy of a rim pitch", () => {
+    const order = compose({ ding: "D3", top: "A3", bottom: "Eb3 C3" });
+    assert.equal(order.errors.bottom, "C3 is lower than Eb3: list low to high.");
+    assert.equal(order.ok, false);
+    const repeat = compose({ ding: "D3", top: "A3", bottom: "C3 C3" });
+    assert.equal(repeat.errors.bottom, "C3 is already in the bottom notes.");
+    const typedLow = compose({ ding: "D3", top: "A3", bottom: "C Eb2" });
+    assert.equal(typedLow.errors.bottom, "Eb2 is lower than C3: list low to high.");
+    const copy = compose({ ding: "D3", top: "A3 Bb3", bottom: "A3" });
+    assert.ok(copy.ok);
+    assert.equal(copy.line, "(D3) [A3] A3 Bb3");
+  });
+
+  test("IH: compose refuses notes outside C-1 to G9 in each field, and an octaveless bottom whose guess falls outside that range", () => {
+    const msg = (x) => x + " is outside C-1 to G9.";
+    assert.equal(compose({ ding: "D3", top: "A3 Ab9" }).errors.top, msg("Ab9"));
+    assert.equal(compose({ ding: "Ab9" }).errors.ding, msg("Ab9"));
+    assert.equal(compose({ ding: "D3", top: "A3 Bb3 C4", inner: "B9" }).errors.inner, msg("B9"));
+    assert.equal(compose({ ding: "D3", top: "A3", bottom: "Cb-1" }).errors.bottom, msg("Cb-1"));
+    assert.equal(compose({ ding: "D3", top: "G9 A" }).errors.top, msg("A9"));
+    const fit = "A has no octave that fits: type one.";
+    assert.equal(compose({ ding: "G9", bottom: "A" }).errors.bottom, fit);
+    assert.equal(compose({ ding: "D3", top: "A3", bottom: "G9 A" }).errors.bottom, fit);
+    assert.ok(compose({ ding: "Cb4", top: "Gb4", bottom: "G9" }).ok);
+  });
+
+  test("IH: compose of four blank fields is empty, not ok, and carries no errors", () => {
+    for (const r of [compose({}), compose({ ding: " ", top: "\n", inner: ",", bottom: ";" })]) {
+      assert.equal(r.empty, true);
+      assert.equal(r.ok, false);
+      assert.deepEqual(r.errors, { ding: null, top: null, inner: null, bottom: null });
+      assert.equal(r.line, "");
+      assert.deepEqual(r.guessed, []);
+    }
+    assert.equal(compose({ ding: "D3" }).empty, false);
+    assert.equal(compose({ bottom: "C3" }).empty, false);
+    assert.equal(compose({ bottom: "C3" }).errors.ding, "Enter the ding, like D3.");
+  });
+
+  test("IH: compose steps each later octaveless bottom to the lowest octave above the one before it, so Pygmy's octaveless bottoms read C3 Db3 Eb3 Bb3 Db4 Ab4", () => {
+    const r = compose({ ding: "F3", top: "G Ab C Eb F G Ab C Eb", inner: "F G", bottom: "C Db Eb Bb Db Ab" });
+    assert.ok(r.ok);
+    assert.deepEqual(r.guessed, ["C3", "Db3", "Eb3", "Bb3", "Db4", "Ab4"]);
+    assert.deepEqual(r.notes.bottom, ["C3", "Db3", "Eb3", "Bb3", "Db4", "Ab4"]);
+    assert.equal(r.line, lineOf("[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 [Ab4] Ab4 C5 Eb5 | F5 G5"));
+    assert.equal(r.info.bottom, "Octaves guessed: C3, Db3, Eb3, Bb3, Db4, Ab4. Type an octave to change a guess.");
+  });
+
+  test("IH: compose steps a later octaveless bottom past the ding's midi: under ding D3, bottoms C D read C3 D4", () => {
+    const r = compose({ ding: "D3", top: "A3", bottom: "C D" });
+    assert.ok(r.ok);
+    assert.deepEqual(r.guessed, ["C3", "D4"]);
+    assert.equal(r.line, lineOf("[C3] (D3) A3 [D4]"));
+    assert.deepEqual(r.notes.bottom, ["C3", "D4"]);
+  });
 });

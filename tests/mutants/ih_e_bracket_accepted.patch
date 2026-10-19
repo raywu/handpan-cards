@@ -1,0 +1,15 @@
+# kills: IH: compose refuses brackets and bars typed into a field
+# suite: node --test --test-name-pattern ^IH:.compose.refuses.brackets.and.bars tests/import.test.js
+# Brackets and parentheses are no longer refused up front; only a bar is.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -658,7 +658,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   var COMPOSE_SOLFEGE = /^(?:do|r[eé]|mi|fa|sol|la|si|ti)(?:#|b|♯|♭)?(?:-1|[0-9])?$/i;
+   var COMPOSE_UPPER_B = /^([A-Ga-g])B(?:-1|[0-9])?$/;
+   var COMPOSE_NOTE = /^([A-G])(#|b)?(-1|[0-9])?$/;
+-  var COMPOSE_BARRED = /[()\[\]|]/;
++  var COMPOSE_BARRED = /[|]/;
+   var COMPOSE_FIELDS = ["ding", "top", "inner", "bottom"];
+   var COMPOSE_LOW = -1;
+   var COMPOSE_HIGH = 10;
