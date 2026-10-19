@@ -7280,23 +7280,21 @@ function run() {
     }
   });
 
-  test("KB: a visualViewport scroll event does not call scrollIntoView", async () => {
+  test("KB: a visualViewport scroll event does not reveal the focused field, a resize does", async () => {
     try {
       await kbOpenAdd(390, 745);
       await kbFocus("scale-top");
       await b.fakeKeyboard(369);
       await kbSettle();
-      await b.eval(`
-        window.__siv = 0;
-        const o = Element.prototype.scrollIntoView;
-        Element.prototype.scrollIntoView = function (...a) { window.__siv += 1; return o.apply(this, a); };
-        window.__sivRestore = () => { Element.prototype.scrollIntoView = o; };
-        return true;`);
+      const topOf = () => b.eval(`const r = document.getElementById("scale-top").getBoundingClientRect(); return { top: r.top, scroll: document.querySelector("#scale-sheet .sheetbody").scrollTop };`);
+      await b.eval(`const body = document.querySelector("#scale-sheet .sheetbody"); body.scrollTop = body.scrollHeight; return true;`);
+      await kbSettle();
+      const hidden = await topOf();
+      assert.ok(hidden.top < 0, `the focused field is still in view (${hidden.top}), so this proves nothing`);
       await b.eval(`window.visualViewport.dispatchEvent(new Event("scroll")); return true;`);
-      assert.strictEqual(await b.eval(`return window.__siv;`), 0, "a visualViewport scroll event called scrollIntoView");
+      assert.strictEqual((await topOf()).scroll, hidden.scroll, "a visualViewport scroll event revealed the focused field");
       await b.eval(`window.visualViewport.dispatchEvent(new Event("resize")); return true;`);
-      assert.ok(await b.eval(`return window.__siv;`) >= 1, "a resize no longer calls scrollIntoView, so the spy proves nothing");
-      await b.eval(`window.__sivRestore(); return true;`);
+      assert.ok((await topOf()).top >= -1, "a resize no longer reveals the focused field, so the scroll half proves nothing");
     } finally {
       await b.clearKeyboard();
       await b.setViewport(900, 900, false);
@@ -7328,6 +7326,140 @@ function run() {
       const m = await kbState("scale-top");
       assert.ok(!m.classes.includes("kbup"), `kbup rose with no text field focused (${m.classes})`);
     } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  /* ---------------------------------------------------------------- *
+   * Lane KB2: the landscape keyboard-up sheet scrolls by touch anywhere
+   * across the screen, and moving focus between the note fields moves
+   * nothing that is already whole in view. iOS's own focus scroll is
+   * emulated by a document focusin listener that nudges .sheetbody a
+   * moment later, even when the field was visible.
+   * ---------------------------------------------------------------- */
+  const kb2Touch = async (type, pts, t) => b.send("Input.dispatchTouchEvent", { type, touchPoints: pts.map(([x, y]) => ({ x, y, radiusX: 4, radiusY: 4, force: 1, id: 1 })), timestamp: t });
+  const kb2Swipe = async (x, y0, dy) => {
+    const t0 = Date.now() / 1000;
+    await kb2Touch("touchStart", [[x, y0]], t0);
+    for (let i = 1; i <= 8; i++) await kb2Touch("touchMove", [[x, y0 + (dy * i) / 8]], t0 + i * 0.016);
+    await kb2Touch("touchEnd", [], t0 + 0.15);
+    await new Promise((r) => setTimeout(r, 450));
+  };
+  const kb2Tap = async (id) => {
+    const p = await b.eval(`const r = document.getElementById(${JSON.stringify(id)}).getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+    const t0 = Date.now() / 1000;
+    await kb2Touch("touchStart", [[p.x, p.y]], t0);
+    await kb2Touch("touchEnd", [], t0 + 0.05);
+    await new Promise((r) => setTimeout(r, 700));
+  };
+  const kb2Scene = () => b.eval(`
+    const q = (e) => { const r = e.getBoundingClientRect(); return { top: r.top, bottom: r.bottom }; };
+    const o = { fields: {} };
+    for (const id of ${JSON.stringify(KB_FIELDS)}) o.fields[id] = q(document.getElementById(id));
+    const body = document.querySelector("#scale-sheet .sheetbody");
+    o.body = q(body); o.bodyTop = body.scrollTop; o.vvh = window.visualViewport.height;
+    o.surfTop = document.querySelector("#scale-sheet .sheetsurf").scrollTop;
+    o.gen = q(document.getElementById("scale-generate"));
+    return o;`);
+  const kb2Watch = () => b.eval(`
+    window.__kb2Scrolls = 0;
+    document.addEventListener("scroll", () => { window.__kb2Scrolls += 1; }, true);
+    return true;`);
+  const kb2IosNative = () => b.eval(`
+    document.addEventListener("focusin", () => {
+      setTimeout(() => { const body = document.querySelector("#scale-sheet .sheetbody"); body.scrollTop += 37; }, 30);
+    }, true);
+    return true;`);
+  const kb2Whole = (r, s) => r.top >= s.body.top - 1 && r.bottom <= s.body.bottom + 1 && r.top >= -1 && r.bottom <= s.vvh + 1;
+
+  test("KB2: with the keyboard up and a note field focused in landscape, a touch swipe anywhere on the sheet scrolls it until GENERATE is fully visible, and back to DING", async () => {
+    try {
+      for (const [w, h, vv] of [[852, 393, 193], [844, 390, 190]]) {
+        await kbOpenAdd(w, h);
+        await kb2Tap("scale-top");
+        await b.fakeKeyboard(vv);
+        await kbSettle();
+        let s = await kb2Scene();
+        const cls = await b.eval(`return [...document.getElementById("scale-sheet").classList];`);
+        assert.ok(cls.includes("tiny"), `${w}x${h}: not tiny (${cls})`);
+        for (const x of [40, w / 2, w - 40]) {
+          for (let i = 0; i < 8 && !(s.gen.bottom <= s.vvh + 1); i++) {
+            await kb2Swipe(x, Math.round(vv * 0.8), -90);
+            s = await kb2Scene();
+          }
+          assert.ok(s.gen.top >= -1 && s.gen.bottom <= s.vvh + 1, `${w}x${h} swipe at x=${x}: GENERATE not reachable ${JSON.stringify(s.gen)} in ${s.vvh}`);
+          for (let i = 0; i < 8 && !(s.fields["scale-ding"].top >= -1); i++) {
+            await kb2Swipe(x, Math.round(vv * 0.2), 90);
+            s = await kb2Scene();
+          }
+          assert.ok(s.fields["scale-ding"].top >= -1 && s.fields["scale-ding"].bottom <= s.vvh + 1, `${w}x${h} swipe at x=${x}: DING not reachable again ${JSON.stringify(s.fields["scale-ding"])}`);
+        }
+        await b.clearKeyboard();
+      }
+    } finally {
+      await b.clearKeyboard();
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  const KB2_VIEWPORTS = [[393, 659, 361], [393, 852, 361]];
+  const kb2Setup = async (w, h, vv, ios) => {
+    await kbOpenAdd(w, h);
+    await kb2Tap("scale-ding");
+    await b.fakeKeyboard(vv);
+    await kbSettle();
+    await kb2Watch();
+    if (ios) await kb2IosNative();
+  };
+
+  test("KB2: at 393 wide with the keyboard up, tapping each note field in turn moves no field that was already fully visible before the tap", async () => {
+    try {
+      for (const [w, h, vv] of KB2_VIEWPORTS) {
+        for (const ios of [false, true]) {
+          await kb2Setup(w, h, vv, ios);
+          const order = ["scale-top", "scale-inner", "scale-bottom", "scale-top", "scale-ding", "scale-inner", "scale-ding", "scale-bottom", "scale-ding"];
+          for (const id of order) {
+            const before = await kb2Scene();
+            const moved0 = await b.eval(`return window.__kb2Scrolls;`);
+            await kb2Tap(id);
+            const after = await kb2Scene();
+            const ctx = `${w}x${h} vv ${vv} ios-native ${ios}, tap ${id}`;
+            assert.strictEqual(await b.eval(`return document.activeElement.id;`), id, `${ctx}: the tap did not focus the field`);
+            if (kb2Whole(before.fields[id], before)) {
+              for (const f of KB_FIELDS) {
+                assert.ok(Math.abs(after.fields[f].top - before.fields[f].top) <= 1, `${ctx}: ${f} moved ${before.fields[f].top} -> ${after.fields[f].top} though ${id} was whole in view`);
+              }
+              if (!ios) assert.strictEqual(await b.eval(`return window.__kb2Scrolls;`), moved0, `${ctx}: a scroll event fired though ${id} was whole in view`);
+            }
+            assert.ok(kb2Whole(after.fields[id], after), `${ctx}: the tapped field is not whole in view ${JSON.stringify(after.fields[id])} in body ${JSON.stringify(after.body)}`);
+          }
+          await b.clearKeyboard();
+        }
+      }
+    } finally {
+      await b.clearKeyboard();
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("KB2: a partly hidden note field is revealed with the minimal scroll", async () => {
+    try {
+      for (const [w, h, vv] of KB2_VIEWPORTS) {
+        for (const ios of [false, true]) {
+          await kb2Setup(w, h, vv, ios);
+          const before = await kb2Scene();
+          const hidden = before.fields["scale-bottom"].bottom - before.body.bottom;
+          assert.ok(hidden > 2, `${w}x${h}: BOTTOM is not partly hidden to begin with (${hidden}), so this proves nothing`);
+          await kb2Tap("scale-bottom");
+          const after = await kb2Scene();
+          const ctx = `${w}x${h} ios-native ${ios}`;
+          assert.ok(Math.abs(after.fields["scale-bottom"].bottom - after.body.bottom) <= 2, `${ctx}: BOTTOM ends ${after.fields["scale-bottom"].bottom} against the scroller edge ${after.body.bottom}`);
+          assert.ok(Math.abs(after.bodyTop - before.bodyTop - hidden) <= 2, `${ctx}: scrolled ${after.bodyTop - before.bodyTop}, the minimum is ${hidden}`);
+          await b.clearKeyboard();
+        }
+      }
+    } finally {
+      await b.clearKeyboard();
       await b.setViewport(900, 900, false);
     }
   });
