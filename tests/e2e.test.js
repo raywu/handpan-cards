@@ -4583,6 +4583,23 @@ function run() {
         return { plate: R("scale-preview").width, bandRight: R("scale-plate-band").right, ctlLeft: R("scale-layout-toggle").left };`);
       assert.ok(Math.abs(wide.plate - 220) <= 1, `the plate is ${wide.plate}px, not 220`);
       assert.ok(wide.ctlLeft >= wide.bandRight - 1, `the controls are not beside the plate: ${JSON.stringify(wide)}`);
+      const plateInView = () => b.eval(`
+        const port = document.querySelector("#scale-sheet .sheetbody").getBoundingClientRect();
+        const r = document.getElementById("scale-preview").getBoundingClientRect();
+        return { top: r.top, bottom: r.bottom, portTop: port.top, portBottom: port.bottom,
+                 focus: document.activeElement && document.activeElement.className };`);
+      const fully = (m, what) => {
+        const shown = Math.min(m.bottom, m.portBottom) - Math.max(m.top, m.portTop);
+        const want = Math.min(m.bottom - m.top, m.portBottom - m.portTop);
+        assert.ok(shown >= want - 0.5,
+          `${what}: the plate is not as fully inside the scroller as it can be: ${JSON.stringify(m)}`);
+      };
+      fully(await plateInView(), "Add at 844x390, drawer opened by a real click");
+      await freshLoad();
+      await b.setViewport(844, 390, true);
+      await openEdit();
+      await openDrawer();
+      fully(await plateInView(), "Edit Kurd at 844x390, drawer opened by a real click");
       await addWithDrawer(380, 780);
       const tall = await b.eval(`
         const sp = document.querySelector("#scale-sheet .sheetbody"); sp.scrollTop = 0;
