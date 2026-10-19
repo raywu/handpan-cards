@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12109,6 +12109,7 @@ function paintFieldsOpen() {
+@@ -12122,6 +12122,7 @@ function paintFieldsOpen() {
  function pathFocus(path) {
    if (inputPath === path) return;
    inputPath = path;
 +  if (path === "line") { const q = HPE.core.parseSeed(String(scaleBox.value || "")); if (q.ok) scaleBox.value = HPE.core.formatSeed(q.value.fields); }
    const values = fieldValues();
-   paintFields(values, false);
-   paintPassive();
+   if (path === "fields" && fieldsStale) {
+     fieldsStale = false;

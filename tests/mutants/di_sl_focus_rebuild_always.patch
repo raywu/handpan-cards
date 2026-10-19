@@ -1,0 +1,15 @@
+# kills: DI: SL a field focus after a valid line rewrites nothing
+# suite: node --test --test-name-pattern ^DI:.SL.a.field.focus.after.a.valid.line.rewrites.nothing tests/app.test.js
+# Mutant di_sl_focus_rebuild_always.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12123,7 +12123,7 @@
+   if (inputPath === path) return;
+   inputPath = path;
+   const values = fieldValues();
+-  if (path === "fields" && fieldsStale) {
++  if (path === "fields") {
+     fieldsStale = false;
+     const r = HPE.importer.compose(values);
+     paintFields(values, false, r);

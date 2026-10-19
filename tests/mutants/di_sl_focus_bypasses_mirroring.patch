@@ -1,0 +1,15 @@
+# kills: DI: SL a field focus after a refused line rebuilds the line from the fields, clears the refusal and enables GENERATE
+# suite: node --test --test-name-pattern ^DI:.SL.a.field.focus.after.a.refused.line.rebuilds tests/app.test.js
+# Mutant di_sl_focus_bypasses_mirroring.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12080,7 +12080,7 @@
+     else if (wasStale) resyncSheet(true);
+   } else if (r.ok) {
+     lineStale = false;
+-    if (scaleBox.value !== r.line) writeLine(r.line);
++    if (scaleBox.value !== r.line) { scaleBox.value = r.line; fireInput(scaleBox); }
+     else if (wasStale) resyncSheet(true);
+   } else {
+     lineStale = true;

@@ -12,11 +12,13 @@ diff --git a/index.html b/index.html
  }
  function writeLine(text) {
    mirroring = true;
-@@ -12071,7 +12070,6 @@ function fieldsInput(k) {
+@@ -12086,8 +12086,7 @@ function followFields(r, wasStale) {
    } else {
      lineStale = true;
      holdPanPreview();
 -    genBtn.disabled = true;
-     showParse("");
+-    showParse("");
++    showParse("");
    }
-   paintPassive();
+ }
+ function lineInput() {

@@ -4477,6 +4477,33 @@ function run() {
     }
   });
 
+  test("DI: SL at 380x780 a real tap on DING after a refused line rebuilds the line and enables GENERATE", async () => {
+    try {
+      await diOpenAdd(380, 780);
+      await b.click("#scale-ding");
+      await b.send("Input.insertText", { text: "D3" });
+      await b.click("#scale-top");
+      await b.send("Input.insertText", { text: "A3 C4 D4 E4 F4 G4 A4 C5" });
+      await b.click("#scale-box");
+      await b.eval(`document.getElementById("scale-box").select(); return true;`);
+      await b.send("Input.insertText", { text: "(D3) A3 X" });
+      const mid = await b.eval(`return { gen: document.getElementById("scale-generate").disabled, ref: document.getElementById("scale-refusal").textContent };`);
+      assert.strictEqual(mid.gen, true);
+      assert.notStrictEqual(mid.ref, "");
+      await b.eval(`document.getElementById("scale-ding").scrollIntoView({ block: "center" }); return true;`);
+      await b.click("#scale-ding");
+      await b.settle();
+      const after = await b.eval(`return { box: document.getElementById("scale-box").value, ref: document.getElementById("scale-refusal").textContent,
+        gen: document.getElementById("scale-generate").disabled, active: document.activeElement.id };`);
+      assert.strictEqual(after.box, "(D3) A3 C4 D4 E4 F4 G4 A4 C5");
+      assert.strictEqual(after.ref, "");
+      assert.strictEqual(after.gen, false);
+      assert.strictEqual(after.active, "scale-ding");
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
   test("DI: at 1280x800 the Edit sheet shows the pan beside the four fields and DING without scrolling", async () => {
     try {
       await freshLoad();

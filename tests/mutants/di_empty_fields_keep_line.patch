@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12062,7 +12062,7 @@ function fieldsInput(k) {
-   paintFields(values, false, r);
+@@ -12076,7 +12076,7 @@ function fieldsInput(k) {
+ function followFields(r, wasStale) {
    if (r.empty) {
      lineStale = false;
 -    if (scaleBox.value !== "") writeLine("");
