@@ -6,12 +6,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10481,7 +10481,7 @@ function showSheet(opener) {
+@@ -11090,7 +11090,7 @@
    // to BACK. A button, so no keyboard opens; a real tab stop, so it does not
    // need a tabindex that outlives the page; and first in reading order, so Tab
    // from there walks the page the way it looks.
 -  backBtn.focus();
 +  scaleBox.focus();
  }
- /* ---------------- import text (scale-import lane B) ---------------- */
- // HPE.importer reads the paste; this block only shows what it found and lets the
+ /** Put every sheet field and session let in the state one open mode wants.
+  *  `edit` is the deck being edited, or null for the create path, which clears
