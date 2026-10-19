@@ -10647,7 +10647,7 @@ describe("DI: dual input", () => {
     const order = ["scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box"].map(at);
     assert.ok(order.every((n) => n > 0), "an id is missing from the markup");
     assert.deepStrictEqual(order.slice().sort((a, b) => a - b), order, "the fields are not in order before #scale-box");
-    const labels = { ding: "DING", top: "TOP RIM NOTES, LOW TO HIGH", inner: "TOP INNER NOTES (OPTIONAL)", bottom: "BOTTOM NOTES (OPTIONAL)" };
+    const labels = { ding: "DING", top: "TOP RIM NOTES, LOW TO HIGH", inner: "TOP INNER NOTES, LOW TO HIGH (OPTIONAL)", bottom: "BOTTOM NOTES, LOW TO HIGH (OPTIONAL)" };
     for (const k of FIELDS) {
       const tag = h.match(new RegExp(`<input[^>]*id="scale-${k}"[^>]*>`))[0];
       assert.match(tag, /type="text"/, k);
@@ -10842,6 +10842,48 @@ describe("DI: dual input", () => {
     fieldSettle(app, "bottom");
     assert.strictEqual(el(app, "scale-field-msg").textContent,
       "BOTTOM NOTES: Octaves guessed: C3, Eb3. Type an octave to change a guess.");
+  });
+
+  test("IB: the INNER and BOTTOM labels say LOW TO HIGH", () => {
+    const h = src();
+    assert.match(h, /id="scale-inner-label"[^>]*>TOP INNER NOTES, LOW TO HIGH \(OPTIONAL\)</);
+    assert.match(h, /id="scale-bottom-label"[^>]*>BOTTOM NOTES, LOW TO HIGH \(OPTIONAL\)</);
+  });
+
+  test("IB: a guessed inner octave is named under TOP INNER NOTES in the slot", () => {
+    const app = openAdd();
+    fieldType(app, "ding", "D3");
+    fieldType(app, "top", "A3 C4 D4 E4");
+    fieldType(app, "inner", "F G");
+    fieldSettle(app, "inner");
+    assert.strictEqual(el(app, "scale-field-msg").textContent,
+      "TOP INNER NOTES: Octaves guessed: F4, G4. An inner note can sit below the top notes: type its octave to put it there.");
+  });
+
+  test("IB: an inner note typed below the top notes generates a deck, and the slot names it", () => {
+    const app = openAdd();
+    fieldType(app, "ding", "D3");
+    fieldType(app, "top", "A3 C4 D4 E4");
+    fieldType(app, "inner", "B3");
+    fieldSettle(app, "inner");
+    assert.strictEqual(el(app, "scale-box").value, "(D3) A3 C4 D4 E4 | B3");
+    assert.strictEqual(el(app, "scale-field-msg").textContent,
+      "TOP INNER NOTES: B3 sits below the top notes. Check it on the pan picture.");
+    assert.strictEqual(el(app, "scale-generate").disabled, false);
+    const n = Object.keys(app.registry()).length;
+    el(app, "scale-generate").click();
+    assert.strictEqual(Object.keys(app.registry()).length, n + 1, "the dip pan did not generate");
+  });
+
+  test("IB: the parse line names an inner note below the top notes on the line path", () => {
+    const app = openAdd();
+    lineType(app, "(D3) A3 C4 D4 E4 | B3");
+    assert.match(el(app, "scale-parse").textContent, /Inner B3\. B3 is below the top notes: check the pan picture\.$/);
+    lineType(app, "(D3) A3 C4 D4 E4 | G3 B3");
+    assert.match(el(app, "scale-parse").textContent, /Inner G3 B3\. G3, B3 are below the top notes: check the pan picture\.$/);
+    lineType(app, "(D3) A3 C4 D4 E4 | F5");
+    assert.doesNotMatch(el(app, "scale-parse").textContent, /below the top notes/);
+    assert.strictEqual(el(app, "scale-field-msg").textContent, "");
   });
 
   test("DI: the slot shows the first shown message in visual order prefixed by its field's short name, and #scale-msg yields while it holds text", () => {
