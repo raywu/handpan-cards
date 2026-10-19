@@ -10945,6 +10945,82 @@ describe("DI: dual input", () => {
     assert.strictEqual(el(app, "scale-box").value, AMARA_LINE);
   });
 
+  const noFlags = (app) => {
+    assert.strictEqual(app.get("fieldsStale"), false);
+    assert.strictEqual(app.get("lineStale"), false);
+  };
+  for (const open of [() => { const a = openAdd(); fillAmara(a); return a; }, () => openBuiltin("amara")]) {
+    test("DI: SL a field focus after a refused line rebuilds the line from the fields, clears the refusal and enables GENERATE", () => {
+      const app = open();
+      lineType(app, "(D3) A3 X");
+      assert.strictEqual(app.get("fieldsStale"), true);
+      assert.notStrictEqual(el(app, "scale-refusal").textContent, "");
+      assert.strictEqual(el(app, "scale-generate").disabled, true);
+      const fields = fieldTexts(app);
+      const line = app.get("HPE.importer.compose(fieldValues()).line");
+      fire(app, "scale-ding", "focus");
+      assert.strictEqual(el(app, "scale-box").value, line);
+      assert.strictEqual(el(app, "scale-refusal").textContent, "");
+      assert.notStrictEqual(el(app, "scale-parse").textContent, "");
+      assert.strictEqual(cls(app, "scale-box", "bad"), false);
+      assert.strictEqual(cls(app, "scale-box", "stale"), false);
+      assert.strictEqual(el(app, "scale-generate").disabled, false);
+      assert.deepStrictEqual(fieldTexts(app), fields);
+      assert.strictEqual(app.get("inputPath"), "fields");
+      assert.strictEqual(cls(app, "scale-fields", "passive"), false);
+      assert.strictEqual(cls(app, "scale-fields", "stale"), false);
+      assert.strictEqual(cls(app, "scale-box", "passive"), true);
+      assert.match(el(app, "scale-line-note").textContent, /^Follows the notes above/);
+      noFlags(app);
+    });
+  }
+
+  test("DI: SL a field focus after a valid line rewrites nothing", () => {
+    const app = openAdd();
+    fillAmara(app);
+    const odd = "(D3)  A3 C4   D4 E4 F4 G4 A4 C5";
+    lineType(app, odd);
+    let inputs = 0;
+    el(app, "scale-box").addEventListener("input", () => { inputs += 1; });
+    fire(app, "scale-ding", "focus");
+    assert.strictEqual(el(app, "scale-box").value, odd);
+    assert.strictEqual(inputs, 0);
+  });
+
+  test("DI: SL a field focus after a refused line whose fields do not compose keeps the line stale and GENERATE disabled", () => {
+    const app = openAdd();
+    fillAmara(app);
+    fieldType(app, "top", "A3 C4 BB");
+    fieldSettle(app, "top");
+    assert.strictEqual(app.get("lineStale"), true);
+    lineType(app, "(D3) A3 X");
+    assert.strictEqual(app.get("fieldsStale"), true);
+    assert.strictEqual(app.get("lineStale"), false);
+    const fields = fieldTexts(app);
+    fire(app, "scale-ding", "focus");
+    assert.strictEqual(app.get("lineStale"), true);
+    assert.strictEqual(app.get("fieldsStale"), false);
+    assert.strictEqual(el(app, "scale-box").value, "(D3) A3 X");
+    assert.strictEqual(cls(app, "scale-box", "stale"), true);
+    assert.strictEqual(el(app, "scale-refusal").textContent, "");
+    assert.strictEqual(el(app, "scale-line-note").textContent, "Not updated: the notes above have a problem.");
+    assert.match(el(app, "scale-field-msg").textContent, /TOP RIM NOTES/);
+    assert.strictEqual(el(app, "scale-generate").disabled, true);
+    assert.deepStrictEqual(fieldTexts(app), fields);
+  });
+
+  test("DI: SL a field focus with empty fields after a refused line empties the line", () => {
+    const app = openAdd();
+    lineType(app, "X");
+    assert.strictEqual(app.get("fieldsStale"), true);
+    fire(app, "scale-ding", "focus");
+    assert.strictEqual(el(app, "scale-box").value, "");
+    assert.strictEqual(el(app, "scale-refusal").textContent, "");
+    assert.match(el(app, "scale-parse").textContent, /^Type every note low to high on one line\./);
+    assert.strictEqual(el(app, "scale-generate").disabled, true);
+    noFlags(app);
+  });
+
   test("DI: SAVE from Edit after a field edit stores the same record as typing the composed line", () => {
     const viaFields = boot();
     const d = makeCustom(viaFields);

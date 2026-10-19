@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12054,12 +12054,12 @@ function writeLine(text) {
+@@ -12064,12 +12064,12 @@ function writeLine(text) {
  }
  function fieldsInput(k) {
    inputPath = "fields";
@@ -17,6 +17,6 @@ diff --git a/index.html b/index.html
    const wasStale = lineStale;
 -  paintFields(values, false, r);
 +  paintFields(values, true, r);
-   if (r.empty) {
-     lineStale = false;
-     if (scaleBox.value !== "") writeLine("");
+   followFields(r, wasStale);
+   paintPassive();
+ }

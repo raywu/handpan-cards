@@ -1,0 +1,15 @@
+# kills: DI: SL a field focus after a refused line whose fields do not compose keeps the line stale and GENERATE disabled
+# suite: node --test --test-name-pattern ^DI:.SL.a.field.focus.after.a.refused.line.whose.fields tests/app.test.js
+# Mutant di_sl_focus_bad_fields_not_stale.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12083,7 +12083,7 @@
+     if (scaleBox.value !== r.line) writeLine(r.line);
+     else if (wasStale) resyncSheet(true);
+   } else {
+-    lineStale = true;
++    lineStale = false;
+     holdPanPreview();
+     genBtn.disabled = true;
+     showParse("");
