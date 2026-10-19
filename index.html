@@ -904,28 +904,6 @@ footer.seq{row-gap:var(--sp-1)}
   font-size:12px; line-height:1.55; color:#c4bcab; overflow-wrap:anywhere;
   margin-top:calc(var(--sp-2) - var(--sp-1)); min-height:1.55em}
 #scale-refusal.err{color:#E27005}
-/* Import (lane B): the quiet control, the paste area and the review list reuse
-   .mode, .sheetlabel and .sheethint; nothing here touches a shared rule. */
-#import-row[hidden]{display:none}
-#import-open{align-self:flex-start}
-#import-area:not([hidden]), #import-result:not([hidden]), #import-review:not([hidden]){
-  display:flex; flex-direction:column; gap:var(--sp-2)}
-#import-area{min-width:0}
-#import-text, #import-ding{width:100%; min-width:0; box-sizing:border-box; padding:12px var(--sp-3);
-  color:#eae6df; background:#151310; border:1px solid #433b2c; border-radius:8px;
-  font-family:Bitter, serif; font-weight:400; font-size:16px; line-height:1.3}
-#import-text{resize:none}
-#import-ding{min-height:44px}
-#import-run, #import-use{width:100%}
-#import-use:disabled{opacity:.5; cursor:default}
-#import-rows, #import-flags{list-style:none; margin:0; padding:0; display:flex; flex-direction:column;
-  gap:var(--sp-1); font:400 12px/1.5 "Nunito Sans"; color:#c4bcab; overflow-wrap:anywhere}
-#import-rows b{font-weight:700; letter-spacing:.08em; color:#eae6df}
-#import-flags .block{color:#E27005}
-#import-flags .confirm{color:#e3b25c}
-#import-flags label{display:flex; align-items:center; gap:var(--sp-2); min-height:44px; cursor:pointer}
-#import-flags input{width:20px; height:20px; flex:0 0 auto; margin:0}
-#import-ding-row{display:flex; flex-direction:column; gap:var(--sp-1)}
 #scale-msg{font:400 12px/1.5 "Nunito Sans"; min-height:1.5em; color:#c4bcab;
   overflow-wrap:anywhere}
 #scale-msg.err, .announce.err{color:#E27005}
@@ -1375,33 +1353,6 @@ html.about-open{overflow:hidden}
            its own aria-live because #scale-sheet is aria-modal, which puts
            the page-level .announce outside the dialog and out of reach. -->
       <div id="scale-refusal" aria-live="polite"></div>
-    </div>
-    <!-- Import (scale-import lane B): a pasted maker's note list is read by
-         HPE.importer, shown role by role for the user to confirm, and only then
-         written into #scale-box through the same input event typing fires. No
-         network, no preset: a name-only paste is INSUFFICIENT. -->
-    <div class="fieldrow" id="import-row">
-      <button class="mode" type="button" id="import-open" aria-expanded="false"
-              aria-controls="import-area">IMPORT TEXT</button>
-      <div id="import-area" hidden>
-        <label class="sheetlabel" for="import-text">PASTE THE MAKER'S NOTE LIST</label>
-        <textarea id="import-text" rows="4" autocapitalize="off" autocorrect="off"
-                  autocomplete="off" spellcheck="false"
-                  placeholder="Ding: D3  Top: A3 Bb3 C4 D4 E4 F4 G4 A4  Bottom: C3"></textarea>
-        <button class="mode" type="button" id="import-run">IMPORT</button>
-        <div id="import-result" hidden>
-          <p class="sheethint" id="import-status" aria-live="polite"></p>
-          <div id="import-review" hidden>
-            <ul id="import-rows"></ul>
-            <ul id="import-flags"></ul>
-            <div id="import-ding-row">
-              <label class="sheetlabel" for="import-ding">DING</label>
-              <select id="import-ding"></select>
-            </div>
-            <button class="mode" type="button" id="import-use" disabled>USE</button>
-          </div>
-        </div>
-      </div>
     </div>
     <!-- The pan mock: where the notes actually land - ding, rim zig-zag, inner
          pair, dashed bottom ring in x-ray view - drawn by the SAME pan()
@@ -11141,226 +11092,12 @@ function showSheet(opener) {
   // from there walks the page the way it looks.
   backBtn.focus();
 }
-/* ---------------- import text (scale-import lane B) ---------------- */
-// HPE.importer reads the paste; this block only shows what it found and lets the
-// user confirm. Nothing here guesses a note, fetches a page or keeps the text:
-// USE hands the engine's own serialise() to #scale-box and fires the same input
-// event typing fires, so the parse line, refusal, preview and SAVE are unchanged.
-const importRow     = document.getElementById("import-row");
-const importOpenBtn = document.getElementById("import-open");
-const importArea    = document.getElementById("import-area");
-const importTextBox = document.getElementById("import-text");
-const importRunBtn  = document.getElementById("import-run");
-const importResult  = document.getElementById("import-result");
-const importStatus  = document.getElementById("import-status");
-const importReview  = document.getElementById("import-review");
-const importRowsEl  = document.getElementById("import-rows");
-const importFlagsEl = document.getElementById("import-flags");
-const importDingSel = document.getElementById("import-ding");
-const importUseBtn  = document.getElementById("import-use");
-const IMPORT_INSUFFICIENT = "No note list found. Type the notes in the box above.";
-const IMPORT_LINKS_NOT_OPENED = "Links are not opened. Open the page, copy its note list and paste it here.";
-const IMPORT_LEAD = { BLOCK: "Fix: ", CONFIRM: "Check: ", INFO: "Note: " };
-let importSource = "";
-let importRes = null;
-let importPick = null;
-let importTicks = [];
-const importTicked = new Set();
-const importNameList = (r, f) => (f.notes || []).map(i => r.notes[i] ? r.notes[i].note : "?");
-const importNames = (r, f) => importNameList(r, f).join(", ");
-const importJoinAnd = (a) => a.length < 2 ? a.join("") : a.slice(0, -1).join(", ") + " and " + a[a.length - 1];
-const importUnique = (a) => a.filter((x, i) => a.indexOf(x) === i);
-const importPitchClass = (n) => n.replace(/-?[0-9]+$/, "");
-const importTicksShown = (r) => !r.flags.some(f => f.code === "SEED_REFUSED");
-const importAccept = (r, rest) => importTicksShown(r) ? "Tick to accept, or " + rest : rest.charAt(0).toUpperCase() + rest.slice(1);
-const IMPORT_FLAG_TEXT = {
-  NO_NOTE_LIST: () => importInsufficientLine(),
-  UNDECLARED_PARENS: (r, f) => "Brackets around " + importNames(r, f) + " are not explained by the source. Type the notes in the box above: round brackets mark the ding, square brackets mark bottom notes.",
-  CONFLICTING_DING: (r, f) => "More than one ding cue: " + importNames(r, f) + ". Pick the ding below.",
-  AMBIGUOUS_NOTE: (r, f) => "Unclear note spelling: " + (f.tokens || []).join(", ") + ". Type the notes in the box above.",
-  INNER_BELOW_TOP: (r, f) => "Inner notes " + importNames(r, f) + " sit below the top notes. Type the notes in the box above with the inner notes after the top notes.",
-  COUNT_MISMATCH: (r, f) => "The title says " + f.title + " notes but the text lists " + f.listed + ". Check the list, or type the notes in the box above.",
-  PROVISIONAL_REFUSED: (r, f) => "The octaves cannot be inferred: " + (f.refusal && f.refusal.reason || "refused") + " Pick the ding below or type the notes in the box above.",
-  DING_CUE: (r, f) => "The source never says which note is the ding. Taking " + importNames(r, f) + " (" + (f.cue === "mark" ? "marked" : f.cue === "separator" ? "set apart" : "listed first") + "). " + importAccept(r, "pick the ding below."),
-  DING_CUE_DROPPED: (r, f) => {
-    const one = (f.notes || []).length === 1;
-    const names = importJoinAnd(importNameList(r, f));
-    const pick = r.notes[f.ding] ? r.notes[f.ding].note : "?";
-    return names + (one ? " was" : " were") + " given as the ding but you picked " + pick + ", so " + (one ? names + " is" : "they are") + " left out. " + importAccept(r, "pick another ding below.");
-  },
-  DING_CLAUSE_MANY: (r, f) => "The ding is given as " + importJoinAnd(importNameList(r, f)) + ". A handpan has one ding: type the notes in the box above.",
-  DING_NOT_LOWEST: (r, f) => importJoinAnd(importNameList(r, f)) + ((f.notes || []).length === 1 ? " sits" : " sit") + " below the ding (" + (r.notes[f.ding] ? r.notes[f.ding].note : "?") + "). Pick a lower ding below, or type the notes in the box above.",
-  DING_ON_BOTTOM: (r, f) => (r.notes[f.ding] ? r.notes[f.ding].note : "?") + " is a bottom note. The ding is on the top shell: pick another ding below.",
-  REPEATED_IN_SHELL: (r, f) => {
-    const names = importUnique(importNameList(r, f));
-    return importJoinAnd(names) + (names.length === 1 ? " is" : " are") + " listed twice. Type the notes in the box above with the second one corrected or removed.";
-  },
-  SEED_REFUSED: () => "These notes do not make a playable scale with that ding. Pick another ding or fix the notes in the scale box above.",
-  COUNT_EXCL_DING: (r) => "The title count is " + (r.total - 1) + ", one fewer than the " + r.total + " notes listed: it leaves the ding out.",
-  SPACE_IN_NOTE: (r, f) => "Joined a spaced note: " + importNames(r, f) + ".",
-  SOURCE_NOT_ASCENDING: (r, f) => "The source is not in pitch order at " + importNames(r, f) + ". It may be a typo.",
-  DUPLICATE_PITCH: (r, f) => "The same pitch is listed twice: " + importNames(r, f) + ".",
-  BOTTOM_NO_OCTAVE: (r, f) => "Bottom notes " + importNameList(r, f).map(importPitchClass).join(", ") + " have no octave, so their pitch is unknown. Type the notes with octaves in the box above.",
-  CONFLICTING_LIST: (r, f) => f.wide ? "Reading the whole text gives a different list than the one found. Paste only the list for your pan."
-    : f.tops ? "Two top note lists were found. Paste only the list for your pan."
-    : f.earlier ? "An earlier list in the text reads differently. Paste only the list for your pan."
-    : "The text holds more than one note list. Paste only the list for your pan.",
-  PARENS_AS_BOTTOM: (r, f) => "Reading the brackets as bottom notes: " + importNames(r, f) + ". " + importAccept(r, "type the notes in the box above."),
-  NO_OCTAVE: (r, f) => {
-    const listed = f.notes || [];
-    const every = r.notes.every((n, i) => n.role === "unknown" || n.role === "dropped" || listed.indexOf(i) >= 0);
-    const guess = listed.some(i => r.notes[i] && r.notes[i].role === "bottom");
-    const lead = every ? "The source gives no octaves." : "The source gives no octave for " + importNameList(r, f).map(importPitchClass).join(", ") + ".";
-    return lead + " Inferred: " + importNames(r, f) + "." + (guess ? " Bottom notes are a guess." : "");
-  },
-  COUNT_OK: (r) => "The title count matches the " + r.total + " notes listed."
-};
-function importInsufficientLine() {
-  return /https?:\/\//i.test(importSource) ? IMPORT_INSUFFICIENT + " " + IMPORT_LINKS_NOT_OPENED : IMPORT_INSUFFICIENT;
-}
-function importFlagLine(f) {
-  return IMPORT_FLAG_TEXT[f.code](importRes, f);
-}
-function importRoleOf(r, i) {
-  const hit = [r.roles.ding].concat(r.roles.top, r.roles.bottom, r.roles.inner)
-    .filter(Boolean).find(e => e.index === i);
-  return hit || null;
-}
-function importNeedsTick(f) { return f.level === "CONFIRM"; }
-function paintImportUse() {
-  const r = importRes;
-  const ready = !!r && r.status === "REVIEW" &&
-    r.flags.filter(importNeedsTick).every(f => importTicked.has(f.code));
-  importUseBtn.disabled = !ready;
-}
-function paintImportBody() {
-  const r = importRes;
-  importRowsEl.textContent = "";
-  importFlagsEl.textContent = "";
-  importTicks = [];
-  r.notes.forEach((n, i) => {
-    const e = importRoleOf(r, i);
-    const li = document.createElement("li");
-    let text = n.role.toUpperCase() + "  " + n.note + "  from '" + n.span.text + "'";
-    if (e && e.inferred) text += "  (octave inferred" + (e.guess ? "; bottom placement is a guess" : "") + ")";
-    li.textContent = text;
-    importRowsEl.appendChild(li);
-  });
-  r.flags.forEach(f => {
-    const li = document.createElement("li");
-    const text = IMPORT_LEAD[f.level] + importFlagLine(f);
-    li.className = f.level.toLowerCase();
-    li.setAttribute("data-code", f.code);
-    if (importNeedsTick(f) && importTicksShown(r)) {
-      const label = document.createElement("label");
-      const box = document.createElement("input");
-      box.type = "checkbox";
-      box.id = "import-tick-" + f.code;
-      box.checked = importTicked.has(f.code);
-      box.addEventListener("change", () => {
-        if (box.checked) importTicked.add(f.code); else importTicked.delete(f.code);
-        paintImportUse();
-      });
-      const span = document.createElement("span");
-      span.textContent = text;
-      label.appendChild(box);
-      label.appendChild(span);
-      li.appendChild(label);
-      importTicks.push(box);
-    } else {
-      li.textContent = text;
-    }
-    importFlagsEl.appendChild(li);
-  });
-  importStatus.textContent = r.status === "REVIEW"
-    ? "Check each note and tick what needs confirming, then USE."
-    : "Fix the notes listed below, or type them in the box above.";
-  paintImportUse();
-}
-function paintImport() {
-  const r = importRes;
-  importResult.hidden = !r;
-  if (!r) return;
-  if (r.status === "INSUFFICIENT") {
-    importStatus.textContent = importInsufficientLine();
-    importReview.hidden = true;
-    importUseBtn.disabled = true;
-    return;
-  }
-  importReview.hidden = false;
-  paintImportBody();
-}
-function buildImportPicker() {
-  importDingSel.textContent = "";
-  const none = document.createElement("option");
-  none.value = "";
-  none.textContent = "As the source says";
-  importDingSel.appendChild(none);
-  importRes.notes.forEach((n, i) => {
-    const o = document.createElement("option");
-    o.value = String(i);
-    o.textContent = (i + 1) + ". " + n.span.text;
-    importDingSel.appendChild(o);
-  });
-  importDingSel.value = "";
-}
-function runImport() {
-  importSource = String(importTextBox.value || "");
-  importPick = null;
-  importTicked.clear();
-  importRes = HPE.importer.interpret(importSource);
-  track("scale_import", { status: importRes.status });
-  if (importRes.status !== "INSUFFICIENT") buildImportPicker();
-  paintImport();
-}
-function pickImportDing() {
-  if (!importRes || importRes.status === "INSUFFICIENT") return;
-  const v = importDingSel.value;
-  importPick = v === "" ? null : Number(v);
-  importTicked.clear();
-  importRes = HPE.importer.interpret(importSource, importPick === null ? undefined : { ding: importPick });
-  paintImport();
-}
-function useImport() {
-  if (importUseBtn.disabled || !importRes) return;
-  const seed = HPE.importer.serialise(importRes);
-  if (!seed) return;
-  scaleBox.value = seed;
-  scaleBox.dispatchEvent(typeof Event === "function" ? new Event("input", { bubbles: true }) : { type: "input" });
-  setImportOpen(false);
-  importRes = null;
-  paintImport();
-  importOpenBtn.focus();
-}
-function setImportOpen(on) {
-  importArea.hidden = !on;
-  importOpenBtn.setAttribute("aria-expanded", on ? "true" : "false");
-}
-function resetImport() {
-  importTextBox.value = "";
-  importSource = "";
-  importRes = null;
-  importPick = null;
-  importTicked.clear();
-  setImportOpen(false);
-  paintImport();
-}
-importOpenBtn.addEventListener("click", () => {
-  const on = importArea.hidden;
-  setImportOpen(on);
-  if (on) importTextBox.focus();
-});
-importRunBtn.addEventListener("click", runImport);
-importDingSel.addEventListener("change", pickImportDing);
-importUseBtn.addEventListener("click", useImport);
-
 /** Put every sheet field and session let in the state one open mode wants.
  *  `edit` is the deck being edited, or null for the create path, which clears
  *  identity and options so an Edit never leaks into the next "+ ADD". */
 function resetSheetState(edit) {
   editingId = edit ? edit.id : null;
   seedPrefill = null;
-  resetImport();
   // A fresh session: a refusal from whatever was last edited must not leak
   // into this one (queue row 115) - showSheet() itself is not allowed to
   // clear it, since it is one of the seven non-seed callers.
@@ -12094,7 +11831,6 @@ sheet.addEventListener("keydown", e => {
   const stops = [backBtn,
                  editingId ? nameBox : null,
                  scaleBox,
-                 ...(importRow.hidden ? [] : [importOpenBtn, importTextBox, importRunBtn, ...importTicks, importDingSel, importUseBtn]),
                  drawerOpen ? previewBox.querySelector('.panhit[tabindex="0"]') : null,
                  drawerBtn, anchorOne, anchorBetween, mirrorTop, mirrorBot, fineBtn,
                  notePrev, noteNext, seatPrev, seatNext, resetBtn,
