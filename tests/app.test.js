@@ -6158,12 +6158,12 @@ test("typing the old inner mark shows the slash sentence", () => {
   assert.strictEqual(app.els["scale-refusal"].textContent, app.get("HPE.core.REASONS.BAD_NOTE.alternates.slash"));
 });
 
-test("typing an old bottom list with octaves shows the afterBar sentence", () => {
+test("typing an old bottom list with octaves below the ding shows the ding sentence", () => {
   const app = boot();
   openSheet(app);
   app.type("(D3) A3 C4 D4 | C3 E3");
-  const alt = app.get("HPE.core.REASONS.NOTE_OUT_OF_ORDER.alternates.afterBar");
-  const want = alt.split("<A>").join("C3").split("<B>").join("D4");
+  const alt = app.get("HPE.core.REASONS.NOTE_OUT_OF_ORDER.alternates.ding");
+  const want = alt.split("<A>").join("C3").split("<B>").join("D3");
   assert.strictEqual(app.els["scale-refusal"].textContent, want);
 });
 

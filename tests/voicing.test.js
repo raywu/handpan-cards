@@ -615,3 +615,31 @@ test("R4-E isLegal refuses no ids, an id the deck lacks, and a voicing the chord
   assert.strictEqual(V.isLegal(amara.fields, d5.fields.concat(dm.fields.slice(1, 2)), [0, 7]), false,
     "a power chord of three notes");
 });
+
+test("IB: a dip deck builds and every chord passes the voicing invariants", () => {
+  const core = HPE.core;
+  const parsed = core.parseSeed("(D3) A3 C4 D4 E4 F4 G4 | B3 C5 E5");
+  assert.ok(parsed.ok);
+  const fields = plain(parsed.value.fields);
+  assert.ok(core.innerBelowRim(fields).length > 0, "the pan is a dip");
+  const playable = new Set();
+  for (const k of Object.keys(fields)) if (fields[k][3] !== "ding") playable.add(pc(fields[k][2]));
+  let voicings = 0;
+  for (const rootPc of playable) {
+    for (const suffix of Object.keys(QUALITIES)) {
+      const ivs = QUALITIES[suffix].intervals;
+      for (const ids of V.candidates(fields, rootPc, ivs)) {
+        voicings += 1;
+        assert.ok(V.isLegal(fields, ids, ivs), `${rootPc} ${suffix} ${ids.join(",")}`);
+        const seen = new Set();
+        for (const id of ids) {
+          assert.notStrictEqual(fields[String(id)][3], "ding");
+          const p = pc(fields[String(id)][2]);
+          assert.ok(!seen.has(p));
+          seen.add(p);
+        }
+      }
+    }
+  }
+  assert.ok(voicings > 20, `only ${voicings} voicings`);
+});
