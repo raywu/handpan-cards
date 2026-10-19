@@ -652,8 +652,200 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return parsed.ok ? core().formatSeed(parsed.value.fields) : text;
   }
 
+  // compose(): the four helper fields (ding, top, inner, bottom) to one scale
+  // line. Each field is read alone; later fields are checked only against
+  // earlier ones that read cleanly, so one slip produces one message.
+  var COMPOSE_SOLFEGE = /^(?:do|r[eé]|mi|fa|sol|la|si|ti)(?:#|b|♯|♭)?(?:-1|[0-9])?$/i;
+  var COMPOSE_UPPER_B = /^([A-Ga-g])B(?:-1|[0-9])?$/;
+  var COMPOSE_NOTE = /^([A-G])(#|b)?(-1|[0-9])?$/;
+  var COMPOSE_BARRED = /[()\[\]|]/;
+  var COMPOSE_FIELDS = ["ding", "top", "inner", "bottom"];
+  var COMPOSE_LOW = -1;
+  var COMPOSE_HIGH = 10;
+
+  function composeRange(x) { return x + " is outside C-1 to G9."; }
+  function composeLower(x, p) { return x + " is lower than " + p + ": list low to high."; }
+
+  function composeMidi(n, octave) { return core().midiFromName(n.letter, n.acc, octave); }
+  function composeFits(midi) { return midi >= 0 && midi <= 127; }
+  function composeNamed(n, octave) { return n.letter + n.acc + octave; }
+
+  function composeRead(text) {
+    var tokens = String(text === undefined || text === null ? "" : text).trim().split(/[\s,;]+/)
+      .filter(function (t) { return t !== ""; });
+    var notes = [];
+    for (var i = 0; i < tokens.length; i++) {
+      var t = tokens[i];
+      if (COMPOSE_BARRED.test(t)) return { notes: [], error: "Type notes only: the line is written for you." };
+      if (COMPOSE_SOLFEGE.test(t)) return { notes: [], error: "Use letter names, like D A Bb." };
+      var upper = COMPOSE_UPPER_B.exec(t);
+      if (upper) {
+        var l = upper[1].toUpperCase();
+        return { notes: [], error: l + "B is not a note: write " + l + "-flat as " + l + "b." };
+      }
+      var m = COMPOSE_NOTE.exec(t.replace(/♯/g, "#").replace(/♭/g, "b").replace(/^./, function (c) { return c.toUpperCase(); }));
+      if (!m) return { notes: [], error: "\"" + t + "\" is not a note: try C, F# or Bb." };
+      var n = { letter: m[1], acc: m[2] || "", octave: m[3] === undefined ? null : Number(m[3]) };
+      if (n.octave !== null && !composeFits(composeMidi(n, n.octave))) {
+        return { notes: [], error: composeRange(composeNamed(n, n.octave)) };
+      }
+      notes.push(n);
+    }
+    return { notes: notes, error: null };
+  }
+
+  // The lowest octave that puts the note strictly above `below` (a midi number).
+  function composeAbove(n, below) {
+    for (var o = COMPOSE_LOW; o < COMPOSE_HIGH; o++) if (composeMidi(n, o) > below) return o;
+    return COMPOSE_HIGH;
+  }
+
+  function composeStage(head, notes, below, field, anchorName) {
+    var names = [];
+    for (var k = 0; k < notes.length; k++) {
+      var n = notes[k];
+      var octave = n.octave === null ? composeAbove(n, below) : n.octave;
+      var midi = composeMidi(n, octave);
+      var name = composeNamed(n, octave);
+      if (!composeFits(midi)) return { names: names, error: composeRange(name) };
+      names.push(name);
+      var parsed = core().parseSeed(head + names.join(" "));
+      if (!parsed.ok && parsed.code !== "NO_FIFTH") {
+        names.pop();
+        var before = k ? names[k - 1] : null;
+        var error = parsed.reason;
+        if (parsed.code === "NOTE_OUT_OF_RANGE") error = composeRange(name);
+        else if (parsed.code === "NOTE_REPEATED") error = name + " is already in the top or inner notes.";
+        else if (parsed.code === "NOTE_OUT_OF_ORDER") {
+          if (before) error = composeLower(name, before);
+          else if (field === "top") error = name + " is not above the ding, " + anchorName + ".";
+          else error = name + " is below the highest top note, " + anchorName + ".";
+        }
+        return { names: names, error: error };
+      }
+      below = midi;
+    }
+    return { names: names, last: below, error: null };
+  }
+
+  function composeBottoms(notes, ding) {
+    var names = [];
+    var guessed = [];
+    var below = null;
+    for (var i = 0; i < notes.length; i++) {
+      var n = notes[i];
+      var octave = n.octave;
+      var guess = octave === null;
+      if (guess) {
+        octave = below === null ? ding.octave : composeAbove(n, below);
+        var at = composeMidi(n, octave);
+        if (at === ding.midi) octave += below === null ? -1 : 1;
+      }
+      var midi = composeMidi(n, octave);
+      var name = composeNamed(n, octave);
+      if (octave < COMPOSE_LOW || octave > COMPOSE_HIGH || !composeFits(midi)) {
+        return { names: [], guessed: [], error: n.letter + n.acc + " has no octave that fits: type one." };
+      }
+      if (below !== null && midi === below) return { names: [], guessed: [], error: name + " is already in the bottom notes." };
+      if (below !== null && midi < below) return { names: [], guessed: [], error: composeLower(name, names[i - 1]) };
+      names.push(name);
+      if (guess) guessed.push(name);
+      below = midi;
+    }
+    return { names: names, guessed: guessed, error: null };
+  }
+
+  function compose(fields) {
+    fields = fields || {};
+    var out = {
+      ok: false, empty: false, line: "", seed: null,
+      errors: { ding: null, top: null, inner: null, bottom: null },
+      info: { bottom: null }, guessed: [],
+      notes: { ding: [], top: [], inner: [], bottom: [] }
+    };
+    var read = {};
+    COMPOSE_FIELDS.forEach(function (f) { read[f] = composeRead(fields[f]); });
+    if (COMPOSE_FIELDS.every(function (f) { return !read[f].error && !read[f].notes.length; })) {
+      out.empty = true;
+      return out;
+    }
+    COMPOSE_FIELDS.forEach(function (f) { out.errors[f] = read[f].error; });
+
+    var ding = null;
+    if (!out.errors.ding) {
+      if (!read.ding.notes.length) out.errors.ding = "Enter the ding, like D3.";
+      else if (read.ding.notes.length > 1) out.errors.ding = "Enter one note for the ding.";
+      else {
+        var d = read.ding.notes[0];
+        var dOctave = d.octave === null ? 3 : d.octave;
+        ding = { letter: d.letter, acc: d.acc, octave: dOctave, name: composeNamed(d, dOctave), midi: composeMidi(d, dOctave) };
+        out.notes.ding = [ding.name];
+      }
+    }
+
+    var top = null;
+    var topMidi = null;
+    var inner = null;
+    if (!out.errors.top && !read.top.notes.length) out.errors.top = "Enter the top notes, low to high.";
+    if (ding && !out.errors.top) {
+      var staged = composeStage("(" + ding.name + ") ", read.top.notes, ding.midi, "top", ding.name);
+      if (staged.error) out.errors.top = staged.error;
+      else { top = staged.names; topMidi = staged.last; }
+    }
+    if (top) {
+      out.notes.top = top;
+      if (read.inner.notes.length && !out.errors.inner) {
+        var high = top[top.length - 1];
+        var upper = composeStage("(" + ding.name + ") " + top.join(" ") + " | ", read.inner.notes, topMidi, "inner", high);
+        if (upper.error) out.errors.inner = upper.error;
+        else inner = upper.names;
+      } else if (!out.errors.inner) inner = [];
+    }
+    if (inner) {
+      out.notes.inner = inner;
+      var full = core().parseSeed("(" + ding.name + ") " + top.join(" ") + (inner.length ? " | " + inner.join(" ") : ""));
+      if (!full.ok && full.code === "NO_FIFTH") {
+        out.errors.ding = "No fifth above the ding " + ding.name + ": add " + core().fifthName(ding.letter, ding.acc) + " to the top notes, or check the ding.";
+      } else if (!full.ok) out.errors.top = full.reason;
+    }
+
+    var bottom = null;
+    if (ding && !out.errors.bottom) {
+      var placed = composeBottoms(read.bottom.notes, ding);
+      if (placed.error) out.errors.bottom = placed.error;
+      else bottom = placed;
+    }
+    if (bottom) {
+      out.notes.bottom = bottom.names;
+      out.guessed = bottom.guessed;
+      if (bottom.guessed.length) {
+        out.info.bottom = "Octaves guessed: " + bottom.guessed.join(", ") + ". Type an octave to change a guess.";
+      }
+    }
+
+    if (ding && top && inner && bottom && COMPOSE_FIELDS.every(function (f) { return !out.errors[f]; })) {
+      var roles = {
+        ding: { note: ding.name },
+        top: top.map(function (x) { return { note: x }; }),
+        inner: inner.map(function (x) { return { note: x }; }),
+        bottom: bottom.names.map(function (x) { return { note: x }; })
+      };
+      var line = serialise({ status: "REVIEW", roles: roles });
+      var parsed = core().parseSeed(line);
+      if (parsed.ok) {
+        out.ok = true;
+        out.line = line;
+        out.seed = parsed.value;
+      } else {
+        out.errors.bottom = parsed.reason;
+      }
+    }
+    return out;
+  }
+
   HPE.importer = {
     interpret: interpret,
-    serialise: serialise
+    serialise: serialise,
+    compose: compose
   };
 })(HPE);
