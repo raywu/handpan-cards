@@ -7390,7 +7390,7 @@ test("DR3 Tab order on Add and Edit, finer controls closed and open", () => {
         if (here === "scale-back") break;
         seen.push(here);
       }
-      const want = [edit ? "scale-name" : null, "scale-box", "plate", "scale-layout-toggle", "scale-anchor-one",
+      const want = [edit ? "scale-name" : null, "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box", "plate", "scale-layout-toggle", "scale-anchor-one",
         "scale-anchor-between", "scale-mirror", "scale-mirror-bottom", "scale-fine-toggle",
         ...(open ? ["scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next"] : []),
         "scale-layout-reset"].filter((x) => x !== null);
@@ -9187,18 +9187,20 @@ test("SD: duplicate and unknown replaces targets are never unreachable", () => {
   assert.strictEqual(names.filter((n) => n === "D KURD 10").length, 1, "seeded Kurd shows beside its replacement");
 });
 
-test("SG: N-A2 the served markup order is .sheetbody, #scale-guidance (#scale-msg, #scale-layout-state), #scale-generate, #scale-delete-row", () => {
+test("SG: N-A2 the served markup order is .sheetbody, #scale-guidance (#scale-field-msg, #scale-msg, #scale-layout-state), #scale-generate, #scale-delete-row", () => {
   const body = sgSpan('<div class="sheetbody"');
   const slot = sgSpan('<div id="scale-guidance"');
   const at = (id) => SG_HTML.indexOf(`id="${id}"`);
   assert.ok(slot.start >= body.end, "#scale-guidance opens inside .sheetbody");
   assert.ok(at("scale-msg") > slot.start && at("scale-msg") < slot.end, "#scale-msg is outside #scale-guidance");
   assert.ok(at("scale-layout-state") > slot.start && at("scale-layout-state") < slot.end, "#scale-layout-state is outside #scale-guidance");
+  assert.ok(at("scale-field-msg") > slot.start && at("scale-field-msg") < slot.end, "#scale-field-msg is outside #scale-guidance");
+  assert.ok(at("scale-field-msg") < at("scale-msg"), "the field message does not come first in the slot");
   assert.ok(at("scale-msg") < at("scale-layout-state"), "the warning does not come first in the slot");
   assert.ok(at("scale-generate") > slot.end, "#scale-generate is not after the slot");
   assert.ok(at("scale-delete-row") > at("scale-generate"), "#scale-delete-row is not after the primary");
   assert.deepStrictEqual([...slot.html.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]),
-    ["scale-guidance", "scale-msg", "scale-layout-state"], "the slot holds something besides the two messages");
+    ["scale-guidance", "scale-field-msg", "scale-msg", "scale-layout-state"], "the slot holds something besides the three messages");
   for (const id of ["scale-msg", "scale-layout-state"]) {
     const drawer = sgSpan('<div id="scale-drawer"');
     assert.ok(at(id) < drawer.start || at(id) > drawer.end, `#${id} is inside #scale-drawer`);
@@ -10607,5 +10609,349 @@ describe("about overlay", () => {
     app.run("closeAbout()");
     assert.strictEqual(app.history.calls.length, n, "closing a closed About wrote to history");
     assert.strictEqual(app.activeId(), parked, "closing a closed About moved focus");
+  });
+});
+
+describe("DI: dual input", () => {
+  const FIELDS = ["ding", "top", "inner", "bottom"];
+  const AMARA_LINE = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
+  const el = (app, id) => app.els[id];
+  const fire = (app, id, type) => el(app, id).dispatchEvent({ type });
+  const fieldType = (app, k, text) => {
+    fire(app, "scale-" + k, "focus");
+    el(app, "scale-" + k).value = text;
+    fire(app, "scale-" + k, "input");
+  };
+  const fieldSettle = (app, k) => fire(app, "scale-" + k, "blur");
+  const lineType = (app, text) => {
+    fire(app, "scale-box", "focus");
+    el(app, "scale-box").value = text;
+    fire(app, "scale-box", "input");
+  };
+  const fieldTexts = (app) => FIELDS.map((k) => el(app, "scale-" + k).value);
+  const cls = (app, id, c) => el(app, id).classList.contains(c);
+  const openAdd = () => { const app = boot(); app.els["deck-add"].click(); return app; };
+  const openBuiltin = (id) => {
+    const app = boot();
+    app.select(id);
+    app.run("openEditSheet(deck(), document.getElementById('deck-add'))");
+    return app;
+  };
+  const AMARA_FIELDS = { ding: "D3", top: "A3 C4 D4 E4 F4 G4 A4 C5" };
+  const fillAmara = (app) => { fieldType(app, "ding", AMARA_FIELDS.ding); fieldType(app, "top", AMARA_FIELDS.top); };
+  const src = () => fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+
+  test("DI: the sheet serves DING, TOP RIM NOTES, TOP INNER NOTES and BOTTOM NOTES in that order before #scale-box, each a text input with autocapitalize off, enterkeyhint next and BOTTOM done", () => {
+    const h = src();
+    const at = (id) => h.indexOf(`id="${id}"`);
+    const order = ["scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box"].map(at);
+    assert.ok(order.every((n) => n > 0), "an id is missing from the markup");
+    assert.deepStrictEqual(order.slice().sort((a, b) => a - b), order, "the fields are not in order before #scale-box");
+    const labels = { ding: "DING", top: "TOP RIM NOTES, LOW TO HIGH", inner: "TOP INNER NOTES (OPTIONAL)", bottom: "BOTTOM NOTES (OPTIONAL)" };
+    for (const k of FIELDS) {
+      const tag = h.match(new RegExp(`<input[^>]*id="scale-${k}"[^>]*>`))[0];
+      assert.match(tag, /type="text"/, k);
+      assert.match(tag, /autocapitalize="off"/, k);
+      assert.match(tag, /autocorrect="off"/, k);
+      assert.match(tag, /spellcheck="false"/, k);
+      assert.match(tag, new RegExp(`enterkeyhint="${k === "bottom" ? "done" : "next"}"`), k);
+      assert.match(tag, /aria-describedby="scale-field-msg"/, k);
+      assert.match(h, new RegExp(`id="scale-${k}-label"[^>]*>${labels[k].replace(/[()]/g, "\\$&")}<`), k);
+    }
+  });
+
+  test("DI: Add opens with the four fields empty, the fields path active, #scale-box empty and BACK focused", () => {
+    const app = openAdd();
+    assert.deepStrictEqual(fieldTexts(app), ["", "", "", ""]);
+    assert.strictEqual(el(app, "scale-box").value, "");
+    assert.strictEqual(app.get("inputPath"), "fields");
+    assert.strictEqual(cls(app, "scale-fields", "passive"), false);
+    assert.strictEqual(cls(app, "scale-box", "passive"), true);
+    assert.strictEqual(app.activeId(), "scale-back");
+  });
+
+  test("DI: Edit of each built-in fills the four fields with that deck's notes by zone with explicit octaves, and #scale-box holds formatSeed of the deck", () => {
+    for (const id of ["kurd", "amara10", "amara", "pygmy", "hijaz"]) {
+      const app = openBuiltin(id);
+      const fields = app.get("deck().fields");
+      const expect = { ding: [], rim: [], inner: [], bottom: [] };
+      Object.keys(fields).sort((a, b) => fields[a][2] - fields[b][2]).forEach((n) => expect[fields[n][3]].push(fields[n][0] + fields[n][1]));
+      assert.deepStrictEqual(fieldTexts(app),
+        [expect.ding.join(" "), expect.rim.join(" "), expect.inner.join(" "), expect.bottom.join(" ")], id);
+      assert.strictEqual(el(app, "scale-box").value, app.get("HPE.core.formatSeed(deck().fields)"), id);
+      assert.ok(/\d/.test(fieldTexts(app)[1]), `${id}: octaves are explicit`);
+      assert.strictEqual(app.get("inputPath"), "fields", id);
+      assert.strictEqual(app.get("lineStale || fieldsStale"), false, id);
+    }
+  });
+
+  test("DI: typing in the fields writes compose's line into #scale-box through one input event, the parse line and the pan match typing that line, and the field typed in keeps its text as typed", () => {
+    const app = openAdd();
+    let inputs = 0;
+    el(app, "scale-box").addEventListener("input", () => { inputs += 1; });
+    fieldType(app, "ding", "D3");
+    const before = inputs;
+    fieldType(app, "top", "a3 c4  d4 e4 f4 g4 a4 c5");
+    assert.strictEqual(inputs - before, 1, "one input event on the box");
+    assert.strictEqual(el(app, "scale-box").value, AMARA_LINE);
+    assert.strictEqual(el(app, "scale-top").value, "a3 c4  d4 e4 f4 g4 a4 c5", "the field typed in was rewritten");
+    const typed = boot(); typed.els["deck-add"].click(); typed.type(AMARA_LINE);
+    assert.strictEqual(el(app, "scale-parse").textContent, el(typed, "scale-parse").textContent);
+    assert.strictEqual(app.get("boxOk"), true);
+    assert.strictEqual(app.get("JSON.stringify(lastSolved && lastSolved.geom)"), typed.get("JSON.stringify(lastSolved && lastSolved.geom)"));
+  });
+
+  test("DI: clearing every field clears #scale-box", () => {
+    const app = openAdd();
+    fillAmara(app);
+    assert.strictEqual(el(app, "scale-box").value, AMARA_LINE);
+    fieldType(app, "top", "");
+    fieldType(app, "ding", "");
+    assert.strictEqual(el(app, "scale-box").value, "");
+    assert.strictEqual(el(app, "scale-generate").disabled, true);
+    assert.strictEqual(app.get("lineStale"), false);
+  });
+
+  test("DI: a field error keeps #scale-box at its last good line, marks it Not updated, holds the pan and disables GENERATE CARDS", () => {
+    const app = openAdd();
+    fillAmara(app);
+    const geom = app.get("JSON.stringify(lastSolved && lastSolved.geom)");
+    fieldType(app, "top", "A3 C4 X4");
+    assert.strictEqual(el(app, "scale-box").value, AMARA_LINE);
+    assert.strictEqual(app.get("lineStale"), true);
+    assert.match(el(app, "scale-line-note").textContent, /^Not updated/);
+    assert.strictEqual(cls(app, "scale-box", "stale"), true);
+    assert.strictEqual(el(app, "scale-generate").disabled, true);
+    assert.strictEqual(app.get("JSON.stringify(lastSolved && lastSolved.geom)"), geom, "the pan changed");
+  });
+
+  test("DI: fixing the field error rewrites the line and clears the stale mark", () => {
+    const app = openAdd();
+    fillAmara(app);
+    fieldType(app, "top", "A3 C4 X4");
+    fieldType(app, "top", "A3 C4 D4");
+    assert.strictEqual(el(app, "scale-box").value, "(D3) A3 C4 D4");
+    assert.strictEqual(app.get("lineStale"), false);
+    assert.strictEqual(cls(app, "scale-box", "stale"), false);
+    assert.doesNotMatch(el(app, "scale-line-note").textContent, /Not updated/);
+    assert.strictEqual(el(app, "scale-generate").disabled, false);
+    fieldType(app, "top", "A3 C4 X4");
+    fieldType(app, "top", "A3 C4 D4");
+    assert.strictEqual(el(app, "scale-generate").disabled, false, "an unchanged line left GENERATE disabled");
+  });
+
+  test("DI: typing a line that parses rewrites the four fields by zone with explicit octaves", () => {
+    const app = openAdd();
+    lineType(app, "[C3] (F3) G3 Ab3 C4 Eb4 | F5 G5");
+    assert.deepStrictEqual(fieldTexts(app), ["F3", "G3 Ab3 C4 Eb4", "F5 G5", "C3"]);
+    assert.strictEqual(app.get("fieldsStale"), false);
+    assert.strictEqual(app.get("inputPath"), "line");
+  });
+
+  test("DI: typing a line that does not parse leaves the fields as they were and marks them Not updated", () => {
+    const app = openAdd();
+    fillAmara(app);
+    const before = fieldTexts(app);
+    lineType(app, "(D3) A3 C4 zz");
+    assert.deepStrictEqual(fieldTexts(app), before);
+    assert.strictEqual(app.get("fieldsStale"), true);
+    assert.match(el(app, "scale-fields-note").textContent, /^Not updated/);
+    assert.strictEqual(cls(app, "scale-fields", "stale"), true);
+  });
+
+  test("DI: focusing a field or #scale-box switches the active path and rewrites neither path", () => {
+    const app = openAdd();
+    fillAmara(app);
+    lineType(app, "(D3)  A3 C4   D4 E4 F4 G4 A4 C5");
+    const box = el(app, "scale-box").value;
+    const fields = fieldTexts(app);
+    fire(app, "scale-top", "focus");
+    assert.strictEqual(app.get("inputPath"), "fields");
+    fire(app, "scale-box", "focus");
+    assert.strictEqual(app.get("inputPath"), "line");
+    fire(app, "scale-ding", "focus");
+    assert.strictEqual(el(app, "scale-box").value, box, "focus rewrote the line");
+    assert.deepStrictEqual(fieldTexts(app), fields, "focus rewrote the fields");
+  });
+
+  test("DI: only the passive path carries the passive class and its caption", () => {
+    const app = openAdd();
+    fillAmara(app);
+    const state = () => [cls(app, "scale-fields", "passive"), cls(app, "scale-box", "passive"),
+      el(app, "scale-fields-note").textContent, el(app, "scale-line-note").textContent];
+    let s = state();
+    assert.deepStrictEqual(s.slice(0, 2), [false, true]);
+    assert.strictEqual(s[2], "");
+    assert.match(s[3], /^Follows the notes above/);
+    fire(app, "scale-box", "focus");
+    s = state();
+    assert.deepStrictEqual(s.slice(0, 2), [true, false]);
+    assert.match(s[2], /^Follows the line below/);
+    assert.strictEqual(s[3], "");
+  });
+
+  test("DI: GENERATE CARDS follows the active path: a stale line never generates, and a line that parses generates while the fields are stale", () => {
+    const app = openAdd();
+    fillAmara(app);
+    fieldType(app, "top", "A3 C4 X4");
+    assert.strictEqual(el(app, "scale-generate").disabled, true);
+    const n = Object.keys(app.registry()).length;
+    el(app, "scale-generate").click();
+    assert.strictEqual(Object.keys(app.registry()).length, n, "a stale line generated");
+    fieldType(app, "top", "zz");
+    assert.strictEqual(app.get("lineStale"), true);
+    lineType(app, "(D3) A3 C4 D4 E4 F4 G4 A4 C5");
+    assert.strictEqual(app.get("lineStale"), false);
+    assert.strictEqual(el(app, "scale-generate").disabled, false);
+    lineType(app, "(D3) A3 C4 zz");
+    assert.strictEqual(el(app, "scale-generate").disabled, true);
+    lineType(app, "(D3) A3 C4 D4 E4 F4 G4 A4 C5");
+    fieldType(app, "top", "zz");
+    lineType(app, "(D3) A3 C4 D4 E4 F4 G4 A4 C5");
+    assert.strictEqual(app.get("fieldsStale"), false);
+    el(app, "scale-generate").click();
+    assert.strictEqual(Object.keys(app.registry()).length, n + 1, "a line that parses did not generate");
+  });
+
+  test("DI: palette, anchor, mirror, mirror bottom and seats survive a field edit and a line edit", () => {
+    const app = openAdd();
+    fillAmara(app);
+    el(app, "scale-swatches").children[3].click();
+    el(app, "scale-mirror").click();
+    el(app, "scale-anchor-between").click();
+    const read = () => app.get("JSON.stringify([palette, mirror, bottomMirror(), anchor, layoutSeats])");
+    const before = read();
+    fieldType(app, "top", "A3 C4 D4 E4 F4 G4 A4");
+    assert.strictEqual(read(), before, "a field edit reset an option");
+    lineType(app, "(D3) A3 C4 D4 E4 F4 G4");
+    assert.strictEqual(read(), before, "a line edit reset an option");
+  });
+
+  test("DI: a guessed bottom octave is written explicit in the line and named by M16 in the slot", () => {
+    const app = openAdd();
+    fieldType(app, "ding", "D3");
+    fieldType(app, "top", "A3 C4 D4 E4");
+    fieldType(app, "bottom", "C Eb");
+    assert.strictEqual(el(app, "scale-box").value, "[C3] (D3) [Eb3] A3 C4 D4 E4");
+    fieldSettle(app, "bottom");
+    assert.strictEqual(el(app, "scale-field-msg").textContent,
+      "BOTTOM NOTES: Octaves guessed: C3, Eb3. Type an octave to change a guess.");
+  });
+
+  test("DI: the slot shows the first shown message in visual order prefixed by its field's short name, and #scale-msg yields while it holds text", () => {
+    const app = openAdd();
+    fieldType(app, "ding", "Q9");
+    fieldType(app, "top", "A3 C4 zz");
+    fieldSettle(app, "top");
+    fieldSettle(app, "ding");
+    const text = el(app, "scale-field-msg").textContent;
+    assert.match(text, /^DING: /, "the first field in visual order that shows a message leads");
+    assert.strictEqual(el(app, "scale-msg").style.display, "none");
+    fieldType(app, "ding", "D3");
+    fieldSettle(app, "ding");
+    assert.match(el(app, "scale-field-msg").textContent, /^TOP RIM NOTES: /);
+    fieldType(app, "top", "A3 C4 D4");
+    fieldSettle(app, "top");
+    assert.strictEqual(el(app, "scale-field-msg").textContent, "");
+    assert.notStrictEqual(el(app, "scale-msg").style.display, "none");
+  });
+
+  test("DI: a field message joins only at settle: nothing while a field is typed in, the message at its blur", () => {
+    const app = openAdd();
+    fieldType(app, "ding", "D3");
+    fieldType(app, "top", "A3 C4 zz");
+    assert.strictEqual(el(app, "scale-field-msg").textContent, "");
+    assert.strictEqual(cls(app, "scale-top", "bad"), false);
+    fieldSettle(app, "top");
+    assert.match(el(app, "scale-field-msg").textContent, /^TOP RIM NOTES: /);
+    assert.strictEqual(cls(app, "scale-top", "bad"), true);
+    assert.strictEqual(el(app, "scale-top").getAttribute("aria-invalid"), "true");
+  });
+
+  test("DI: a settled new message is announced once through #scale-fields-live on a deferred tick, and the open paint announces nothing", () => {
+    const edit = openBuiltin("pygmy");
+    edit.flushTimers();
+    assert.strictEqual(el(edit, "scale-fields-live").textContent, "", "the open paint announced");
+    const app = openAdd();
+    fieldType(app, "ding", "D3");
+    fieldType(app, "top", "A3 C4 zz");
+    app.flushTimers();
+    assert.strictEqual(el(app, "scale-fields-live").textContent, "", "announced while editing");
+    fieldSettle(app, "top");
+    assert.strictEqual(el(app, "scale-fields-live").textContent, "", "announced before the deferred tick");
+    app.flushTimers();
+    const said = el(app, "scale-fields-live").textContent;
+    assert.ok(said.length > 0, "nothing announced");
+    fieldSettle(app, "top");
+    app.flushTimers();
+    assert.strictEqual(el(app, "scale-fields-live").textContent, said, "the same message was announced twice");
+  });
+
+  test("DI: Enter in DING, TOP and INNER moves to the next field, and Enter in BOTTOM blurs it", () => {
+    const app = openAdd();
+    const seq = ["ding", "top", "inner", "bottom"];
+    for (let i = 0; i < 3; i += 1) {
+      const f = el(app, "scale-" + seq[i]);
+      f.focus();
+      const ev = app.press(f, "Enter");
+      assert.strictEqual(app.activeId(), "scale-" + seq[i + 1]);
+      assert.notStrictEqual(ev && ev.defaultPrevented, false, "Enter was not prevented");
+    }
+    el(app, "scale-bottom").focus();
+    app.press(el(app, "scale-bottom"), "Enter");
+    assert.notStrictEqual(app.activeId(), "scale-bottom");
+    assert.strictEqual(Object.keys(app.registry()).length, 0, "Enter submitted the sheet");
+  });
+
+  test("DI: a mousedown on a field label is prevented and focuses its field", () => {
+    const app = openAdd();
+    for (const k of FIELDS) {
+      let prevented = false;
+      el(app, `scale-${k}-label`).dispatchEvent({ type: "mousedown", preventDefault() { prevented = true; } });
+      assert.strictEqual(prevented, true, k);
+      assert.strictEqual(app.activeId(), "scale-" + k, k);
+    }
+  });
+
+  test("DI: the sheet's Tab order is BACK, the deck name on Edit, DING, TOP, INNER, BOTTOM, then #scale-box and the existing stops", () => {
+    const walk = (app, n) => {
+      const seen = [];
+      for (let i = 0; i < n; i += 1) { app.press(el(app, app.activeId() || "scale-back"), "Tab"); seen.push(app.activeId()); }
+      return seen;
+    };
+    const add = openAdd();
+    el(add, "scale-back").focus();
+    assert.deepStrictEqual(walk(add, 5), ["scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box"]);
+    const edit = openBuiltin("amara");
+    el(edit, "scale-back").focus();
+    assert.deepStrictEqual(walk(edit, 6), ["scale-name", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box"]);
+  });
+
+  test("DI: a typed line keeps its spelling until a field edit rewrites it canonically", () => {
+    const app = openAdd();
+    const odd = "(D3)   A3 C4  D4 E4 F4 G4 A4 C5";
+    lineType(app, odd);
+    fire(app, "scale-ding", "focus");
+    fire(app, "scale-box", "focus");
+    fire(app, "scale-top", "focus");
+    assert.strictEqual(el(app, "scale-box").value, odd);
+    fieldType(app, "top", AMARA_FIELDS.top + " ");
+    assert.strictEqual(el(app, "scale-box").value, AMARA_LINE);
+  });
+
+  test("DI: SAVE from Edit after a field edit stores the same record as typing the composed line", () => {
+    const viaFields = boot();
+    const d = makeCustom(viaFields);
+    openEdit(viaFields, d);
+    fieldType(viaFields, "top", "A3 C4 D4 E4 F4 G4 A4");
+    el(viaFields, "scale-generate").click();
+    const viaLine = boot();
+    const d2 = makeCustom(viaLine);
+    openEdit(viaLine, d2);
+    viaLine.type(el(viaFields, "scale-box").value || viaFields.get("deck().id && HPE.core.formatSeed(deck().fields)"));
+    el(viaLine, "scale-generate").click();
+    const a = viaFields.registry(), b = viaLine.registry();
+    assert.deepStrictEqual(Object.values(a).map((r) => r.fields), Object.values(b).map((r) => r.fields));
+    assert.deepStrictEqual(Object.values(a).map((r) => r.options), Object.values(b).map((r) => r.options));
   });
 });

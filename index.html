@@ -768,7 +768,8 @@ footer.seq{row-gap:var(--sp-1)}
 .sheetsurf{width:100%; max-width:520px; background:#1f1b15;
   height:100dvh; max-height:100dvh; overflow-y:auto; overscroll-behavior:contain;
   padding:var(--sp-3) var(--sp-4) max(var(--sp-4), env(safe-area-inset-bottom));
-  display:flex; flex-direction:column; gap:var(--sp-4)}
+  display:flex; flex-direction:column; gap:var(--sp-4);
+  container:surf / size}
 /* The header row: BACK, then the page title. Outside .sheetbody like the
    footer, so the way out of the page is never scrolled off the top - which is
    the drawer's grab handle replaced by something that does a job. */
@@ -1043,24 +1044,92 @@ footer.seq{row-gap:var(--sp-1)}
 #scale-drawer-status{font:400 12px/1.5 Bitter, serif; color:#c4bcab; min-height:3em; text-align:center}
 #scale-drawer-status.warn{color:#e3b25c}
 #scale-layout-state{color:#e3b25c}
-#scale-layout-zone.open #scale-plate-band{position:sticky; top:0; z-index:2; background:#1f1b15;
+/* Dual input: the plate band lives in .scalestage, above the note fields, and
+   is sticky at all times, so the pan stays in view while a field is typed in
+   (plan section 3). With the drawer open it keeps its older rules, now keyed to
+   the drawer's own state. */
+.scalestage{display:flex; flex-direction:column; gap:var(--sp-3)}
+.scalecol{display:flex; flex-direction:column; gap:var(--sp-3); min-width:0}
+.scalestage > #scale-plate-band{position:sticky; top:0; z-index:2; background:#1f1b15;
   padding-bottom:var(--sp-1)}
-#scale-layout-zone.open #scale-preview{max-width:min(300px, 39dvh)}
-.sheetbody:has(input:focus, textarea:focus, #scale-swatches button:focus)
-  #scale-layout-zone.open #scale-plate-band{position:static}
-#scale-layout-zone.open.nostick #scale-plate-band{position:static}
+.scalestage #scale-preview{width:clamp(110px, calc(100cqh - 260px), 300px); max-width:none}
+.sheetbody:has(#scale-layout-zone.open) #scale-preview{width:100%; max-width:min(300px, 39dvh)}
+.sheetbody:has(#scale-layout-zone.open):has(input:focus, textarea:focus, #scale-swatches button:focus)
+  #scale-plate-band{position:static}
+.sheetbody:has(#scale-layout-zone.nostick) #scale-plate-band{position:static}
 .sheetbody{scroll-padding-top:var(--plate-band-h, 0px)}
-.sheetbody:has(input:focus, textarea:focus, #scale-swatches button:focus){scroll-padding-top:0}
+.sheetbody:has(#scale-layout-zone.open):has(input:focus, textarea:focus, #scale-swatches button:focus){scroll-padding-top:0}
 @media (min-width:640px) and (min-height:700px){
-  #scale-layout-zone.open #scale-preview{max-width:340px}
+  .sheetbody:has(#scale-layout-zone.open) #scale-preview{max-width:340px}
 }
+/* The four note fields and the scale line. */
+#scale-fields{display:flex; flex-direction:column; gap:var(--sp-2)}
+#scale-fields .fieldrow{gap:0}
+#scale-fields input{width:100%; min-height:44px; padding:9px var(--sp-3); box-sizing:border-box; color:#eae6df;
+  background:#151310; border:1px solid #433b2c; border-radius:8px; font:400 16px/1.3 Bitter, serif}
+#scale-fields input::placeholder, #scale-box::placeholder{color:#6f675a}
+#scale-fields input.bad{border-color:#E27005}
+#scale-field-msg{margin:0; font:400 12px/1.5 "Nunito Sans"; color:#e3b25c}
+#scale-field-msg.info{color:#c4bcab}
+#scale-field-msg.stale{color:#a79d8b}
+#scale-field-msg:empty{display:none}
+#scale-fields-note:empty, #scale-line-note:empty{display:none}
+#scale-fields-note, #scale-line-note{color:#a79d8b}
+/* The passive path: a read-only look that stays tappable, text kept legible. */
+#scale-fields.passive input, #scale-box.passive{color:#b3aa98; background:transparent; border-style:dashed; border-color:#4a4233}
+#scale-fields.stale input, #scale-box.stale{text-decoration:line-through; text-decoration-color:#e3b25c}
+#scale-fields.stale #scale-fields-note, #scale-box-wrap.passive ~ #scale-line-note.stale{color:#e3b25c}
+#scale-box-wrap.passive ~ #scale-parse{display:none}
+#scale-sheet.short .sheetsurf{padding:var(--sp-2) var(--sp-3) var(--sp-2); gap:var(--sp-2)}
+#scale-sheet.short #scale-guidance{margin-block:0}
+#scale-sheet.short #scale-generate{min-height:44px}
+#scale-sheet.short #scale-box, #scale-sheet.short #scale-box-wrap::after{min-height:44px; padding:9px var(--sp-3)}
+#scale-sheet.short .sheetbody{gap:var(--sp-2)}
+#scale-sheet.short #scale-label-2{display:none}
+#scale-sheet.kbup.side .sheethead{display:none}
+/* The app's settings trigger paints over the open sheet; it has no job there. */
+body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+@container surf (min-width:600px){
+  .scalestage{display:grid; grid-template-columns:auto minmax(0,1fr); column-gap:var(--sp-4); align-items:start}
+  .scalestage > #scale-plate-band{padding-bottom:0}
+  .scalestage #scale-preview{width:clamp(200px, calc(100cqh - 306px), 300px)}
+  .sheetbody{scroll-padding-top:0}
+}
+#scale-sheet.side .scalestage{display:grid; grid-template-columns:auto minmax(0,1fr); column-gap:var(--sp-2); align-items:start}
+#scale-sheet.side .scalestage > #scale-plate-band{padding-bottom:0}
+#scale-sheet.side .scalestage #scale-preview{width:min(calc(100cqh - 172px), 46cqw); padding:4px}
+#scale-sheet.kbup.side .scalestage #scale-preview{width:min(calc(100cqh - 120px), 50cqw)}
+#scale-sheet.side #scale-fields .sheetlabel, #scale-sheet.side .scalecol > .fieldrow > .sheetlabel{font-size:8.5px; letter-spacing:.1em}
+#scale-sheet.side #scale-fields-head{display:none}
+#scale-sheet.side .sheetbody:not(:has(#scale-layout-zone.open)){scroll-padding-top:0}
+#scale-sheet.side .sheetbody:has(#scale-layout-zone.open) #scale-box{min-height:110px}
+/* Drawer open: the stage dissolves into the body, so the band's sticky box is the
+   whole scroll and the plate stays in view above the drawer. */
+#scale-sheet .sheetbody:has(#scale-layout-zone.open) .scalestage{display:contents}
 @media (max-height:520px) and (min-width:560px){
   /* The band sits beside the controls here, not over them: nothing to pad for. */
   .sheetbody{scroll-padding-top:0}
-  #scale-layout-zone.open{display:grid; grid-template-columns:auto 1fr; column-gap:var(--sp-3)}
-  #scale-layout-zone.open #scale-plate-band{grid-column:1; grid-row:1 / span 4; align-self:start}
-  #scale-layout-zone.open > :not(#scale-plate-band){grid-column:2}
-  #scale-layout-zone.open #scale-preview{width:clamp(150px, calc(100dvh - 170px), 232px); max-width:none}
+  #scale-sheet .sheetbody:has(#scale-layout-zone.open){display:grid; grid-template-columns:auto 1fr; column-gap:var(--sp-3); row-gap:0; align-content:start}
+  #scale-sheet .sheetbody:has(#scale-layout-zone.open) .scalestage{display:contents}
+  #scale-sheet .sheetbody:has(#scale-layout-zone.open) #scale-plate-band{grid-column:1; grid-row:1 / span 30; align-self:start}
+  #scale-sheet .sheetbody:has(#scale-layout-zone.open) #scale-plate-band #scale-drawer-status{width:0; min-width:100%}
+  #scale-sheet .sheetbody:has(#scale-layout-zone.open):has(.panhit:focus) #scale-plate-band{position:static}
+  #scale-sheet .sheetbody:has(#scale-layout-zone.open) > :not(.scalestage){grid-column:2}
+  #scale-sheet .sheetbody:has(#scale-layout-zone.open) .scalecol{grid-column:2; margin-bottom:var(--sp-3)}
+  #scale-sheet .sheetbody:has(#scale-layout-zone.open) > :not(.scalestage):not(:last-child){margin-bottom:var(--sp-3)}
+  #scale-sheet .sheetbody:has(#scale-layout-zone.open) #scale-preview{width:clamp(150px, calc(100dvh - 170px), 232px); max-width:none}
+}
+@container surf (min-width:600px){
+  /* The band sits beside the controls here, not over them: nothing to pad for. */
+  .sheetbody{scroll-padding-top:0}
+  #scale-sheet .sheetbody:has(#scale-layout-zone.open){display:grid; grid-template-columns:auto 1fr; column-gap:var(--sp-3); row-gap:0; align-content:start}
+  #scale-sheet .sheetbody:has(#scale-layout-zone.open) .scalestage{display:contents}
+  #scale-sheet .sheetbody:has(#scale-layout-zone.open) #scale-plate-band{grid-column:1; grid-row:1 / span 30; align-self:start}
+  #scale-sheet .sheetbody:has(#scale-layout-zone.open) #scale-plate-band #scale-drawer-status{width:0; min-width:100%}
+  #scale-sheet .sheetbody:has(#scale-layout-zone.open) > :not(.scalestage){grid-column:2}
+  #scale-sheet .sheetbody:has(#scale-layout-zone.open) .scalecol{grid-column:2; margin-bottom:var(--sp-3)}
+  #scale-sheet .sheetbody:has(#scale-layout-zone.open) > :not(.scalestage):not(:last-child){margin-bottom:var(--sp-3)}
+  #scale-sheet .sheetbody:has(#scale-layout-zone.open) #scale-preview{width:clamp(150px, calc(100dvh - 170px), 232px); max-width:none}
 }
 /* The selection ring is drawn in the SVG (pan(), .pansel) rather than in CSS:
    it has to sit on ONE note at the radius that note was drawn at, which is a
@@ -1329,6 +1398,43 @@ html.about-open{overflow:hidden}
          options"), this label, this placeholder and PARSE_HINT are the ONLY
          teaching of the seed grammar there is - keep all three saying the same
          thing, and keep the placeholder a seed that actually parses. -->
+    <div class="scalestage">
+    <div id="scale-plate-band">
+      <div id="scale-preview" role="img"
+           aria-label="Preview of where the notes sit on the pan" hidden></div>
+      <div id="scale-drawer-status" aria-live="polite" aria-atomic="true" hidden></div>
+    </div>
+    <div class="scalecol">
+    <!-- Dual input: four note fields are the default way to write the scale and
+         the line below is the alternative. Each mirrors the other (compose and
+         parseSeed); focusing one dims the other. One variable, inputPath, says
+         which is active. The live region is the last child so the order the
+         SG: N-A2 tests pin is untouched. -->
+    <div id="scale-fields" role="group" aria-labelledby="scale-fields-head">
+      <p class="sheetlabel" id="scale-fields-head">YOUR SCALE, NOTE BY NOTE</p>
+      <div class="fieldrow">
+        <label class="sheetlabel" id="scale-ding-label" for="scale-ding">DING</label>
+        <input id="scale-ding" type="text" placeholder="D3" autocapitalize="off" autocorrect="off"
+               autocomplete="off" spellcheck="false" enterkeyhint="next" aria-describedby="scale-field-msg">
+      </div>
+      <div class="fieldrow">
+        <label class="sheetlabel" id="scale-top-label" for="scale-top">TOP RIM NOTES, LOW TO HIGH</label>
+        <input id="scale-top" type="text" placeholder="A Bb C D E F G A" autocapitalize="off" autocorrect="off"
+               autocomplete="off" spellcheck="false" enterkeyhint="next" aria-describedby="scale-field-msg">
+      </div>
+      <div class="fieldrow">
+        <label class="sheetlabel" id="scale-inner-label" for="scale-inner">TOP INNER NOTES (OPTIONAL)</label>
+        <input id="scale-inner" type="text" placeholder="C5 D5" autocapitalize="off" autocorrect="off"
+               autocomplete="off" spellcheck="false" enterkeyhint="next" aria-describedby="scale-field-msg">
+      </div>
+      <div class="fieldrow">
+        <label class="sheetlabel" id="scale-bottom-label" for="scale-bottom">BOTTOM NOTES (OPTIONAL)</label>
+        <input id="scale-bottom" type="text" placeholder="C3 Eb3" autocapitalize="off" autocorrect="off"
+               autocomplete="off" spellcheck="false" enterkeyhint="done" aria-describedby="scale-field-msg">
+      </div>
+      <p class="sheethint" id="scale-fields-note"></p>
+      <p class="sr-only" id="scale-fields-live" aria-live="polite"></p>
+    </div>
     <div class="fieldrow">
       <label class="sheetlabel" for="scale-box">SCALE: (DING) TOP NOTES | OPTIONAL INNER NOTES</label>
       <span class="sheetlabel" id="scale-label-2">[NOTE] = A BOTTOM NOTE, WRITTEN WHERE ITS PITCH FALLS</span>
@@ -1353,6 +1459,9 @@ html.about-open{overflow:hidden}
            its own aria-live because #scale-sheet is aria-modal, which puts
            the page-level .announce outside the dialog and out of reach. -->
       <div id="scale-refusal" aria-live="polite"></div>
+      <p class="sheethint" id="scale-line-note"></p>
+    </div>
+    </div>
     </div>
     <!-- The pan mock: where the notes actually land - ding, rim zig-zag, inner
          pair, dashed bottom ring in x-ray view - drawn by the SAME pan()
@@ -1364,11 +1473,6 @@ html.about-open{overflow:hidden}
          pan() renderer the cards use, with no chord chosen, so what is
          previewed cannot drift from what GENERATE CARDS produces. -->
     <div id="scale-layout-zone">
-      <div id="scale-plate-band">
-        <div id="scale-preview" role="img"
-             aria-label="Preview of where the notes sit on the pan" hidden></div>
-        <div id="scale-drawer-status" aria-live="polite" aria-atomic="true" hidden></div>
-      </div>
       <div class="editrow" id="scale-layout-row">
         <button class="mode" type="button" id="scale-layout-toggle" aria-label="Adjust layout"
                 aria-expanded="false" aria-controls="scale-drawer" disabled>ADJUST LAYOUT<span aria-hidden="true">×</span></button>
@@ -1451,6 +1555,7 @@ html.about-open{overflow:hidden}
          the controls they describe. Pinned by "SG: N-A2", "SG: N-A5" and
          "SG: N-A6" in tests/e2e.test.js. -->
     <div id="scale-guidance">
+      <p id="scale-field-msg"></p>
       <div id="scale-msg" aria-live="polite"></div>
       <p class="sheethint" id="scale-layout-state" aria-live="polite" aria-atomic="true" hidden></p>
     </div>
@@ -10084,6 +10189,25 @@ const fineBox   = document.getElementById("scale-fine");
 // Lane DR1: the layout drawer shell.
 const layoutZone = document.getElementById("scale-layout-zone");
 const plateBand  = document.getElementById("scale-plate-band");
+// Dual input: four note fields beside the scale line. Literal lookups, one per
+// id, so a renamed id fails the SB-2 test rather than a dynamic string.
+const fieldsGroup = document.getElementById("scale-fields");
+const fieldEls = {
+  ding: document.getElementById("scale-ding"),
+  top: document.getElementById("scale-top"),
+  inner: document.getElementById("scale-inner"),
+  bottom: document.getElementById("scale-bottom"),
+};
+const fieldLabels = {
+  ding: document.getElementById("scale-ding-label"),
+  top: document.getElementById("scale-top-label"),
+  inner: document.getElementById("scale-inner-label"),
+  bottom: document.getElementById("scale-bottom-label"),
+};
+const fieldMsg = document.getElementById("scale-field-msg");
+const fieldsLive = document.getElementById("scale-fields-live");
+const fieldsNote = document.getElementById("scale-fields-note");
+const lineNote = document.getElementById("scale-line-note");
 const drawerBtn  = document.getElementById("scale-layout-toggle");
 const layoutHint = document.getElementById("scale-layout-hint");
 const layoutNote = document.getElementById("scale-layout-state");
@@ -10133,6 +10257,17 @@ let anchor = "one";
 let bottomHeld = false;
 let hadBottom = false;
 let boxOk = false;
+// Dual input state (plan 2.2, 2.5). inputPath says which of the two inputs is
+// the active one; the other follows it. A flag marks a passive path that could
+// not follow. `mirroring` is true only around the app's own write to #scale-box.
+let inputPath = "fields";
+let lineStale = false;
+let fieldsStale = false;
+let mirroring = false;
+let fieldEditing = null;
+let fieldShown = {};
+let liveTimer = null;
+let bandPad = "";
 
 /* The seed row has exactly TWO writers, and each blanks the other. That is
    what makes #scale-parse and #scale-refusal mutually exclusive - and the
@@ -10286,11 +10421,14 @@ function paintLayout() {
 const BAND_MIN_ROOM = 44;
 function syncBand() {
   const high = (el) => (el.getBoundingClientRect ? el.getBoundingClientRect().height : el.offsetHeight) || 0;
-  const band = drawerOpen ? high(plateBand) : 0;
+  const wide = (el) => (el.getBoundingClientRect ? el.getBoundingClientRect().width : el.offsetWidth) || 0;
+  const band = high(plateBand);
   const port = bandPort.clientHeight > 0 ? high(bandPort) : 0;
-  const stuck = drawerOpen && !(port > 0 && port - band < BAND_MIN_ROOM);
-  layoutZone.classList.toggle("nostick", drawerOpen && !stuck);
-  document.documentElement.style.setProperty("--plate-band-h", (stuck ? band : 0) + "px");
+  const beside = wide(plateBand) > 0 && wide(bandPort) > 0 && wide(plateBand) < wide(bandPort) * 0.75;
+  const stuck = !beside && !(port > 0 && port - band < BAND_MIN_ROOM);
+  layoutZone.classList.toggle("nostick", !beside && !stuck);
+  const pad = (stuck ? band : 0) + "px";
+  if (bandPad !== pad) { bandPad = pad; document.documentElement.style.setProperty("--plate-band-h", pad); }
 }
 const bandPort = document.querySelector(".sheetbody") || plateBand;
 if (typeof ResizeObserver === "function") {
@@ -10875,7 +11013,7 @@ function syncParseState({ paint }) {
     paintLayout();
     showParse(parseLineText(res.value.fields));
     scaleBox.classList.remove("bad");
-    genBtn.disabled = false;
+    genBtn.disabled = inputPath === "fields" && lineStale;
     if (paint) showPanPreview(res.value);
     const solved = solvePreviewLayout(res.value);
     const crowded = solved && HPE.select.smallLabels(solved.geom);
@@ -11022,6 +11160,19 @@ function applyKbOffset() {
   const m = cap > 0 ? `${cap}px` : "";
   if (sheetSurf.style.transform !== t) sheetSurf.style.transform = t;
   if (sheetSurf.style.maxHeight !== m) sheetSurf.style.maxHeight = m;
+  /* Layout classes for the dual-input sheet, written only on change: the
+   * keyboard is up (the zoom branch above reads as no keyboard), and the
+   * surface is short or very short. Read after the cap is written, once. */
+  const high = sheetSurf.clientHeight;
+  setSheetClass("kbup", !zoomed && vv.height < window.innerHeight - 80);
+  setSheetClass("short", high > 0 && high < 560);
+  setSheetClass("side", high > 0 && high < 420);
+  syncBand();
+  const at = document.activeElement;
+  if (at && at.matches && at.matches("input, textarea") && at.scrollIntoView) at.scrollIntoView({ block: "nearest", behavior: "auto" });
+}
+function setSheetClass(name, on) {
+  if (sheet.classList.contains(name) !== on) sheet.classList.toggle(name, on);
 }
 if (window.visualViewport) {
   window.visualViewport.addEventListener("resize", applyKbOffset);
@@ -11111,6 +11262,7 @@ function resetSheetState(edit) {
   nameBox.value = edit ? edit.name : "";
   nameDirty = false;                                 // prefilled, not typed
   scaleBox.value = edit ? HPE.core.formatSeed(edit.fields) : "";  // 8A: the canonical string
+  writeFieldValues(edit ? decomposeFields(edit.fields) : null);
   syncGrow();
   palette = !edit ? 0 : seeded() ? seedPalette(edit.colors) : edit.options.palette;
   buildSwatches();
@@ -11139,6 +11291,7 @@ function resetSheetState(edit) {
     ? o.mirrorBottom : mirror, seats: seatsKey(layoutSeats) };
   if (seeded()) seedPrefill = sheetKey();
   paintLayout();
+  paintFieldsOpen();
 }
 // The create path.
 function openScaleSheet(opener) {
@@ -11181,6 +11334,7 @@ function hideSheet() {
     sheetSurf.style.transform = "";
     sheetSurf.style.maxHeight = "";
   }
+  for (const c of ["kbup", "short", "side"]) setSheetClass(c, false);
   editingId = null;
   seedPrefill = null;
   dropDrawer();
@@ -11807,6 +11961,181 @@ scaleBox.addEventListener("keydown", e => {
   e.preventDefault();
   runGenerate();
 });
+/* ---- Dual input (plan docs/plans/2026-10-18-dual-input.md) ----
+   Four note fields and the scale line write the same scale. inputPath names the
+   active one; the other mirrors it and is never rewritten by a mere focus.
+   Fields to line goes through HPE.importer.compose, line to fields through
+   parseSeed, so neither side owns a grammar of its own. */
+const FIELD_KEYS = ["ding", "top", "inner", "bottom"];
+const FIELD_SHORT = { ding: "DING", top: "TOP RIM NOTES", inner: "TOP INNER NOTES", bottom: "BOTTOM NOTES" };
+function fireInput(el) {
+  el.dispatchEvent(typeof Event === "function" ? new Event("input", { bubbles: true }) : { type: "input" });
+}
+function fieldValues() {
+  const v = {};
+  for (const k of FIELD_KEYS) v[k] = String(fieldEls[k].value || "");
+  return v;
+}
+function writeFieldValues(v) {
+  for (const k of FIELD_KEYS) fieldEls[k].value = v ? v[k] || "" : "";
+}
+/** The four field texts a parsed scale reads as: by zone, in pitch order, every
+ *  note with its octave. */
+function decomposeFields(fields) {
+  const zone = { ding: [], rim: [], inner: [], bottom: [] };
+  Object.keys(fields).sort((a, b) => fields[a][2] - fields[b][2])
+    .forEach((id) => zone[fields[id][3]].push(fields[id][0] + fields[id][1]));
+  return { ding: zone.ding.join(" "), top: zone.rim.join(" "), inner: zone.inner.join(" "), bottom: zone.bottom.join(" ") };
+}
+/** Pure. Which message each field shows: settled shows every eligible message,
+ *  typing keeps only what was already shown and adds nothing (R1-R3). */
+function renderFieldMessages(r, values, editing, shown) {
+  const out = {};
+  for (const k of FIELD_KEYS) {
+    if (!values[k].trim()) continue;
+    const text = r.errors[k] || (k === "bottom" ? r.info.bottom : null);
+    if (!text) continue;
+    const kind = r.errors[k] ? "error" : "info";
+    if (editing === null) out[k] = { text, kind };
+    else if (shown[k] && shown[k].kind === kind) out[k] = { text: shown[k].text, kind, stale: shown[k].text !== text };
+  }
+  return out;
+}
+function announceFields(texts) {
+  if (!texts.length) return;
+  clearTimeout(liveTimer);
+  fieldsLive.textContent = "";
+  liveTimer = setTimeout(() => { fieldsLive.textContent = texts.join(" "); }, 0);
+}
+/** Paint the messages and the error marks from the settle-only render. */
+function paintFields(values, announceNew, composed) {
+  const next = inputPath === "line" ? {} : renderFieldMessages(composed || HPE.importer.compose(values), values, fieldEditing, fieldShown);
+  for (const k of FIELD_KEYS) {
+    const bad = !!(next[k] && next[k].kind === "error");
+    fieldEls[k].classList.toggle("bad", bad);
+    fieldEls[k].setAttribute("aria-invalid", bad ? "true" : "false");
+  }
+  const first = FIELD_KEYS.find((k) => next[k] && next[k].kind === "error") || FIELD_KEYS.find((k) => next[k]);
+  const text = first ? FIELD_SHORT[first] + ": " + next[first].text : "";
+  if (fieldMsg.textContent !== text) fieldMsg.textContent = text;
+  fieldMsg.classList.toggle("info", !!first && next[first].kind === "info");
+  fieldMsg.classList.toggle("stale", !!first && !!next[first].stale);
+  msgLine.style.display = text ? "none" : "";
+  if (announceNew) {
+    announceFields(FIELD_KEYS.filter((k) => next[k] && (!fieldShown[k] || fieldShown[k].text !== next[k].text))
+      .map((k) => next[k].text));
+  }
+  fieldShown = next;
+  syncBand();
+}
+function paintPassive() {
+  const onFields = inputPath === "fields";
+  fieldsGroup.classList.toggle("passive", !onFields);
+  fieldsGroup.classList.toggle("stale", !onFields && fieldsStale);
+  scaleBox.classList.toggle("passive", onFields);
+  scaleWrap.classList.toggle("passive", onFields);
+  scaleBox.classList.toggle("stale", onFields && lineStale);
+  lineNote.textContent = onFields
+    ? (lineStale ? "Not updated: the notes above have a problem." : "Follows the notes above. Tap to type the line instead.")
+    : "";
+  fieldsNote.textContent = !onFields
+    ? (fieldsStale ? "Not updated: the line below does not read as a scale yet." : "Follows the line below. Tap a field to type notes instead.")
+    : "";
+  if (onFields && lineStale) genBtn.disabled = true;
+}
+function writeLine(text) {
+  mirroring = true;
+  try {
+    scaleBox.value = text;
+    fireInput(scaleBox);
+  } finally {
+    mirroring = false;
+  }
+}
+function fieldsInput(k) {
+  inputPath = "fields";
+  fieldEditing = k;
+  fieldsStale = false;
+  const values = fieldValues();
+  const r = HPE.importer.compose(values);
+  const wasStale = lineStale;
+  paintFields(values, false, r);
+  if (r.empty) {
+    lineStale = false;
+    if (scaleBox.value !== "") writeLine("");
+    else if (wasStale) resyncSheet(true);
+  } else if (r.ok) {
+    lineStale = false;
+    if (scaleBox.value !== r.line) writeLine(r.line);
+    else if (wasStale) resyncSheet(true);
+  } else {
+    lineStale = true;
+    holdPanPreview();
+    genBtn.disabled = true;
+    showParse("");
+  }
+  paintPassive();
+}
+function lineInput() {
+  inputPath = "line";
+  lineStale = false;
+  const text = String(scaleBox.value || "");
+  if (!text.trim()) {
+    writeFieldValues(null);
+    fieldsStale = false;
+  } else {
+    const res = HPE.core.parseSeed(text);
+    if (res.ok) {
+      writeFieldValues(decomposeFields(res.value.fields));
+      fieldsStale = false;
+    } else fieldsStale = true;
+  }
+  const values = fieldValues();
+  paintFields(values, false);
+  paintPassive();
+}
+/** The open paint: no message animates in and nothing is announced. */
+function paintFieldsOpen() {
+  inputPath = "fields";
+  lineStale = false;
+  fieldsStale = false;
+  mirroring = false;
+  fieldEditing = null;
+  fieldShown = {};
+  const values = fieldValues();
+  paintFields(values, false);
+  paintPassive();
+}
+function pathFocus(path) {
+  if (inputPath === path) return;
+  inputPath = path;
+  const values = fieldValues();
+  paintFields(values, false);
+  paintPassive();
+  if (path === "line" && lineStale) resyncSheet(false);
+}
+FIELD_KEYS.forEach((k, i) => {
+  const el = fieldEls[k];
+  el.addEventListener("input", () => fieldsInput(k));
+  el.addEventListener("focus", () => pathFocus("fields"));
+  el.addEventListener("blur", () => {
+    fieldEditing = null;
+    const values = fieldValues();
+    paintFields(values, true);
+  });
+  el.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" || e.isComposing) return;
+    e.preventDefault();
+    const next = FIELD_KEYS[i + 1];
+    if (next) fieldEls[next].focus(); else el.blur();
+  });
+  fieldLabels[k].addEventListener("mousedown", (e) => {
+    e.preventDefault();
+    el.focus();
+  });
+});
+scaleBox.addEventListener("input", () => { if (!mirroring) lineInput(); });
+scaleBox.addEventListener("focus", () => pathFocus("line"));
 // Shared by every modal Tab trap (the sheet below, the settings panel
 // further down): wrap-around cycling through a caller-built stop list, the
 // one piece of the two traps' keydown handlers that was byte-for-byte
@@ -11830,6 +12159,7 @@ sheet.addEventListener("keydown", e => {
   if (e.key !== "Tab") return;
   const stops = [backBtn,
                  editingId ? nameBox : null,
+                 fieldEls.ding, fieldEls.top, fieldEls.inner, fieldEls.bottom,
                  scaleBox,
                  drawerOpen ? previewBox.querySelector('.panhit[tabindex="0"]') : null,
                  drawerBtn, anchorOne, anchorBetween, mirrorTop, mirrorBot, fineBtn,
