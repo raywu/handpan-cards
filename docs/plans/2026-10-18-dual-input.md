@@ -17,6 +17,7 @@ Amended for the new base `claude/dual-input-base` e722c96: dev minus the DEV ove
 - R8. H0a syncs H2a onto dev, which also carries the lane E/T/C UI; taking H2a's side removes that UI from dev too (section 4, H0a).
 - R9. H3' also retires the CLAUDE.md "Scale import" sentences that lanes E and C added citing deleted IM: and IC: tests (section 4, H3').
 - R10. Out of scope here: the import-fix plan (`docs/plans/2026-10-18-import-fix.md`) section 7, B1, says "Picking A3 shows DING_NOT_LOWEST naming C3 and D3, and USE is disabled." Under that plan's D-1 the unpicked Main note cue C3 is dropped, so the app names D3 only and reports C3 as DING_CUE_DROPPED; the owner accepted the app (2026-10-19). H2a deletes that UI, so this plan does not touch it; the import-fix plan line is corrected when that plan is next edited.
+- Eng review 2026-10-19 (APPROVE_WITH_CHANGES) folded in: H2a's second acceptance grep and the two e2e Tab-loop bounds (required); nits: the N1 test body calls the file's `interpret` wrapper and asserts `codes(r)`, as the other import tests do; H2a also removes the IM/IC banner comments and the `showImport` doc comments in both test files, and tools/sandbox.js closes its array with `"about-close"];`; reviewers diff each PR M against the previous lane's head, not main; accepted gap: between H2a reaching dev and H3' landing, CLAUDE.md cites deleted IM:/IC: tests (no test reads them).
 - Integrator decision (AFK, 2026-10-19): the N1 test keeps its "IH: N1" title and the mutant its `ih_e_` prefix, so H1's `^IH:` suite headers and its one mutant family hold.
 
 Everything else is unchanged.
@@ -310,8 +311,8 @@ How it was enumerated, at e722c96, by reading rather than one grep (memory "Enum
 - Describe "import text on the sheet", with its `REVIEW` and `runImport` helpers and its 5 tests: #374's 4, plus lane C's "IC: at 380px a ticked import never shows a parseSeed refusal under the box".
 - The describe-scope `const showImport`.
 - Rewritten as #374 section 3 says:
-  - "DR1 focus order: on Edit the plate is a tab stop only while the drawer is open, and comes before the toggle" drops `showImport()` and `"import-open"`;
-  - "RD: the Edit page's Tab order is BACK, name, box, ADJUST LAYOUT, swatches, SAVE CHANGES, DELETE with the drawer closed, forward and back, and no stop is a select" drops `showImport()` and `"import-open"`, and `select:not(#import-ding)` becomes `select`.
+  - "DR1 focus order: on Edit the plate is a tab stop only while the drawer is open, and comes before the toggle" drops `showImport()` and `"import-open"`, and its loop bound `i < (open ? 3 : 2)` becomes `i < (open ? 2 : 1)`;
+  - "RD: the Edit page's Tab order is BACK, name, box, ADJUST LAYOUT, swatches, SAVE CHANGES, DELETE with the drawer closed, forward and back, and no stop is a select" drops `showImport()` and `"import-open"`, `select:not(#import-ding)` becomes `select`, and `const cycle = n + 7` becomes `const cycle = n + 6`.
 
 **Mutants: 33 deleted.** Each patches `index.html` app code, and each `# kills:` names a test deleted above.
 - All 18 `ib_*`: #374's 17, plus `ib_ticks_shown_under_seed_refused`.
@@ -351,6 +352,7 @@ How it was enumerated, at e722c96, by reading rather than one grep (memory "Enum
 - every other test passes, and "no event param is a string over 40 characters or names a custom: id" still runs, without its `scale_import` assertion;
 - `grep -rnE 'import-|showImport|importRow|scale_import|IMPORT_' index.html tests tools | grep -v 'import-v2\|import-fix'` prints nothing. The allowed hits are the kept `import-v2` gold paths and the `docs/plans/2026-10-18-import-fix.md` comment in `tests/import.test.js`;
 - `grep -nE 'I[MC]: ' tests/app.test.js tests/e2e.test.js` prints nothing;
+- `grep -nE 'import[A-Z]|[a-z]Import|IMPORT' index.html tests/app.test.js tests/e2e.test.js tools/sandbox.js` prints nothing (it catches a leftover `importUnique`, `resetImport` or `paintImport` that the first grep misses; tests/import.test.js is left out because it keeps `importCorpus`);
 - no `ib_*` or `ic_*` patch remains and none of the three app `ix_*` patches exists, so `ls tests/mutants/ix_*.patch | wc -l` is 16;
 - the three re-anchored patches each make their suite fail, for the reason the reviewer reads in the failing assertion;
 - all 57 `i_*`, 16 `ix_*` and 18 `ih_e_*` patches still `git apply --check`;
@@ -368,6 +370,7 @@ node --test tests/app.test.js tests/harness.test.js tests/import.test.js tests/i
  && python3 tools/inline_engine.py --check && python3 tools/sync_decks.py --check && python3 tools/validate.py \
  && test -z "$(grep -rnE 'import-|showImport|importRow|scale_import|IMPORT_' index.html tests tools | grep -v 'import-v2\|import-fix')" \
  && test -z "$(grep -nE 'I[MC]: ' tests/app.test.js tests/e2e.test.js)" \
+ && test -z "$(grep -nE 'import[A-Z]|[a-z]Import|IMPORT' index.html tests/app.test.js tests/e2e.test.js tools/sandbox.js)" \
  && test -z "$(ls tests/mutants/ib_*.patch tests/mutants/ic_*.patch 2>/dev/null)" \
  && test $(ls tests/mutants/ix_*.patch | wc -l) -eq 16 && LOG=$(mktemp) \
  && { for p in tests/mutants/i_*.patch tests/mutants/ix_*.patch tests/mutants/ih_e_*.patch; do git apply --check "$p" || echo "STALE $p"; done; \
