@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10946,7 +10946,6 @@ const IMPORT_FLAG_TEXT = {
+@@ -11013,7 +11013,6 @@ const IMPORT_FLAG_TEXT = {
      : f.tops ? "Two top note lists were found. Paste only the list for your pan."
      : f.earlier ? "An earlier list in the text reads differently. Paste only the list for your pan."
      : "The text holds more than one note list. Paste only the list for your pan.",
--  PARENS_AS_BOTTOM: (r, f) => "Reading the brackets as bottom notes: " + importNames(r, f) + ". Tick to accept, or type the notes.",
-   NO_OCTAVE: (r, f) => "No octave in the source. Inferred: " + importNames(r, f) + ". Bottom notes are a guess.",
-   COUNT_OK: (r) => "The title count matches the " + r.total + " notes listed."
- };
+-  PARENS_AS_BOTTOM: (r, f) => "Reading the brackets as bottom notes: " + importNames(r, f) + ". " + importAccept(r, "type the notes in the box above."),
+   NO_OCTAVE: (r, f) => {
+     const listed = f.notes || [];
+     const every = r.notes.every((n, i) => n.role === "unknown" || n.role === "dropped" || listed.indexOf(i) >= 0);

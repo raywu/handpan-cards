@@ -12442,6 +12442,27 @@ function run() {
       } finally { b.off("Network.requestWillBeSent"); }
       assert.deepStrictEqual(urls, [], "an import sent requests");
     });
+
+    test("IC: at 380px a ticked import never shows a parseSeed refusal under the box", async () => {
+      try {
+        await freshLoad();
+        await b.setViewport(380, 780, true);
+        await openSheet();
+        await runImport("Notes: D3 A3 Bb3 C4 D4 E4 F4 G4 A4");
+        await b.eval(`const t = document.querySelector("#import-flags input[type=checkbox]"); t.checked = true; t.dispatchEvent(new Event("change", { bubbles: true })); return true;`);
+        await b.eval(`document.getElementById("import-use").click(); return true;`);
+        await b.settle();
+        const m = await b.eval(`return { box: document.getElementById("scale-box").value, refusal: document.getElementById("scale-refusal").textContent.trim() };`);
+        assert.ok(m.box.length > 0, "USE wrote nothing, so this proves nothing");
+        assert.strictEqual(m.refusal, "", "a ticked import left a refusal under the box");
+        await b.eval(`document.getElementById("scale-box").value = ""; return true;`);
+        await runImport("Ding: D Top: E F G Bb");
+        const use = await b.eval(`return document.getElementById("import-use").disabled;`);
+        assert.strictEqual(use, true, "USE was enabled on a refused import");
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
   });
 
   describe("analytics hosts", () => {

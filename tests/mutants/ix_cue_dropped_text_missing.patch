@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10982,7 +10982,7 @@
-   COUNT_MISMATCH: (r, f) => "The title says " + f.title + " notes but the text lists " + f.listed + ".",
-   PROVISIONAL_REFUSED: (r, f) => "The octaves cannot be inferred: " + (f.refusal && f.refusal.reason || "refused") + " Pick the ding below or type the notes.",
-   DING_CUE: (r, f) => "The source never says which note is the ding. Taking " + importNames(r, f) + " (" + (f.cue === "mark" ? "marked" : f.cue === "separator" ? "set apart" : "listed first") + "). Tick to accept, or pick the ding below.",
+@@ -10990,7 +10990,7 @@ const IMPORT_FLAG_TEXT = {
+   COUNT_MISMATCH: (r, f) => "The title says " + f.title + " notes but the text lists " + f.listed + ". Check the list, or type the notes in the box above.",
+   PROVISIONAL_REFUSED: (r, f) => "The octaves cannot be inferred: " + (f.refusal && f.refusal.reason || "refused") + " Pick the ding below or type the notes in the box above.",
+   DING_CUE: (r, f) => "The source never says which note is the ding. Taking " + importNames(r, f) + " (" + (f.cue === "mark" ? "marked" : f.cue === "separator" ? "set apart" : "listed first") + "). " + importAccept(r, "pick the ding below."),
 -  DING_CUE_DROPPED: (r, f) => {
 +  DING_CUE_DROPPED_X: (r, f) => {
      const one = (f.notes || []).length === 1;
-     const names = (f.notes || []).map(i => r.notes[i] ? r.notes[i].note : "?").join(" and ");
+     const names = importJoinAnd(importNameList(r, f));
      const pick = r.notes[f.ding] ? r.notes[f.ding].note : "?";
