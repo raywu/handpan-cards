@@ -1,0 +1,15 @@
+# kills: KB2b: in tiny mode a tap on a field that is whole in view moves the sheet scroller not at all while iOS nudges it
+# suite: node --test --test-name-pattern ^KB2b..in.tiny.mode tests/e2e.test.js
+# The tiny sheet scroller no longer holds the tap pin, so iOS's nudge of it stands.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10509,7 +10509,7 @@ sheet.addEventListener("touchmove", (e) => {
+ sheet.addEventListener("pointercancel", dropTap, true);
+ sheet.addEventListener("wheel", releasePin, { passive: true });
+ bandPort.addEventListener("scroll", holdPin);
+-if (sheetSurf) sheetSurf.addEventListener("scroll", holdPin);
++
+ function hasTwoNoteRing() {
+   const res = HPE.core.parseSeed(String(scaleBox.value || ""), layoutOptions());
+   if (!res.ok) return true;
