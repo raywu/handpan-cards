@@ -1088,6 +1088,8 @@ footer.seq{row-gap:var(--sp-1)}
 #scale-sheet.short #scale-label-2{display:none}
 #scale-sheet.kbup.side .sheethead{display:none}
 #scale-sheet.tiny .sheetbody{flex:0 0 auto; overflow:visible}
+/* The scroller spans the screen, so a swipe on the flanks beside the 520px column scrolls it too. */
+#scale-sheet.tiny .sheetsurf{max-width:none; padding-inline:max(var(--sp-3), calc((100% - 520px) / 2 + var(--sp-3)))}
 /* The app's settings trigger paints over the open sheet; it has no job there. */
 body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 @container surf (min-width:600px){
@@ -10503,8 +10505,60 @@ if (typeof ResizeObserver === "function") {
  *  rule G-c wants the whole control in the scrollport. */
 bandPort.addEventListener("focusin", (e) => {
   const t = e.target;
-  if (t && t.matches && t.matches("input, textarea, select")) t.scrollIntoView({ block: "nearest", behavior: "auto" });
+  if (!(t && t.matches && t.matches("input, textarea, select"))) return;
+  const snap = tapSnap && Date.now() - tapSnap.at < 1000 ? tapSnap : null;
+  tapSnap = null;
+  if (snap) {
+    bandPort.scrollTop = snap.body;
+    if (sheetSurf) sheetSurf.scrollTop = snap.surf;
+    scrollPin = { until: Date.now() + PIN_MS, body: 0, surf: 0 };
+  }
+  revealField(t);
 });
+/** Bring a focused field into view by scrolling only the scrollers inside the
+ *  sheet, the least distance, and not at all when it is whole in view.
+ *  scrollIntoView would also scroll every other ancestor and, on iOS, the
+ *  visual viewport, on top of the browser's own focus scroll. */
+function revealField(t) {
+  if (!t || !t.getBoundingClientRect || !window.getComputedStyle) return;
+  for (let el = t.parentElement; el && el !== sheet; el = el.parentElement) {
+    if (!(el.scrollHeight > el.clientHeight)) continue;
+    const css = getComputedStyle(el);
+    if (css.overflowY !== "auto" && css.overflowY !== "scroll") continue;
+    const edge = el.getBoundingClientRect().top + (el.clientTop || 0);
+    const f = t.getBoundingClientRect();
+    const up = f.top - (edge + (parseFloat(css.scrollPaddingTop) || 0));
+    const down = f.bottom - (edge + el.clientHeight);
+    if (up < 0) el.scrollTop += up;
+    else if (down > 0) el.scrollTop += Math.min(down, up);
+  }
+  if (scrollPin && Date.now() < scrollPin.until) { scrollPin.body = bandPort.scrollTop; scrollPin.surf = sheetSurf ? sheetSurf.scrollTop : 0; }
+}
+/** iOS scrolls the container itself when a tapped field gets focus, by an
+ *  amount of its own choosing and after the focus event. A tap remembers where
+ *  both scrollers stood, and for PIN_MS after the focus any scroll that is not
+ *  the finger's puts them back where revealField left them. A new touch or a
+ *  wheel turn hands the scroll back to the reader. */
+const PIN_MS = 600;
+let tapSnap = null, scrollPin = null;
+const holdPin = () => {
+  if (!scrollPin || Date.now() > scrollPin.until) return;
+  if (bandPort.scrollTop !== scrollPin.body) bandPort.scrollTop = scrollPin.body;
+  if (sheetSurf && sheetSurf.scrollTop !== scrollPin.surf) sheetSurf.scrollTop = scrollPin.surf;
+};
+const releasePin = () => { scrollPin = null; };
+sheet.addEventListener("pointerdown", (e) => {
+  const t = e.target;
+  tapSnap = t && t.matches && t.matches("input, textarea, select")
+    ? { at: Date.now(), body: bandPort.scrollTop, surf: sheetSurf ? sheetSurf.scrollTop : 0 } : null;
+}, true);
+sheet.addEventListener("touchstart", (e) => {
+  const t = e.target;
+  if (!(t && t.matches && t.matches("input, textarea, select"))) releasePin();
+}, { passive: true, capture: true });
+sheet.addEventListener("wheel", releasePin, { passive: true });
+bandPort.addEventListener("scroll", holdPin);
+if (sheetSurf) sheetSurf.addEventListener("scroll", holdPin);
 function hasTwoNoteRing() {
   const res = HPE.core.parseSeed(String(scaleBox.value || ""), layoutOptions());
   if (!res.ok) return true;
@@ -11267,7 +11321,7 @@ function applyKbOffset(e) {
   syncBand();
   if (e && e.type === "scroll") return;
   const at = document.activeElement;
-  if (at && at.matches && at.matches("input, textarea") && at.scrollIntoView) at.scrollIntoView({ block: "nearest", behavior: "auto" });
+  if (at && at.matches && at.matches("input, textarea")) revealField(at);
 }
 let kbBase = 0, kbBaseW = 0;
 function setSheetClass(name, on) {

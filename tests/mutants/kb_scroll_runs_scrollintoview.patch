@@ -1,15 +1,14 @@
-# kills: KB: a visualViewport scroll event does not call scrollIntoView
-# suite: node --test --test-name-pattern ^KB..a.visualViewport.scroll.event.does.not.call.scrollIntoView$ tests/e2e.test.js
-# The scroll-event early return goes, so a visualViewport scroll calls scrollIntoView on the focused
-# field and can re-fire the event that called it.
+# kills: KB: a visualViewport scroll event does not reveal the focused field, a resize does
+# suite: node --test --test-name-pattern ^KB..a.visualViewport.scroll.event.does.not.reveal tests/e2e.test.js
+# The scroll-event early return goes, so a visualViewport scroll reveals the focused field and can re-fire the event that called it.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11206,7 +11206,6 @@
+@@ -11260,7 +11260,6 @@ function applyKbOffset(e) {
    setSheetClass("side", high > 0 && high < 420);
    setSheetClass("tiny", kb && high > 0 && high < 200);
    syncBand();
 -  if (e && e.type === "scroll") return;
    const at = document.activeElement;
-   if (at && at.matches && at.matches("input, textarea") && at.scrollIntoView) at.scrollIntoView({ block: "nearest", behavior: "auto" });
+   if (at && at.matches && at.matches("input, textarea")) revealField(at);
  }

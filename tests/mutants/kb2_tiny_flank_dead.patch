@@ -1,0 +1,14 @@
+# kills: KB2: with the keyboard up and a note field focused in landscape, a touch swipe anywhere on the sheet scrolls it until GENERATE is fully visible, and back to DING
+# suite: node --test --test-name-pattern ^KB2..with.the.keyboard.up.and.a.note.field.focused.in.landscape tests/e2e.test.js
+# The tiny scroller is back to the 520px column, so a swipe on the flanks beside it scrolls nothing.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1089,7 +1089,6 @@ footer.seq{row-gap:var(--sp-1)}
+ #scale-sheet.kbup.side .sheethead{display:none}
+ #scale-sheet.tiny .sheetbody{flex:0 0 auto; overflow:visible}
+ /* The scroller spans the screen, so a swipe on the flanks beside the 520px column scrolls it too. */
+-#scale-sheet.tiny .sheetsurf{max-width:none; padding-inline:max(var(--sp-3), calc((100% - 520px) / 2 + var(--sp-3)))}
+ /* The app's settings trigger paints over the open sheet; it has no job there. */
+ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+ @container surf (min-width:600px){
