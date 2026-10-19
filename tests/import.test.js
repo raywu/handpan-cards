@@ -1102,3 +1102,35 @@ test("IX: a dropped cue leaves no trace in the inferred octaves: Ding: D Ding: C
   assert.deepEqual(flagOf(r, "DING_CUE_DROPPED").notes, [1]);
   assert.equal(importer.serialise(r), "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 [G5]");
 });
+
+test("IX: DING_NOT_LOWEST names exactly the notes below the picked ding", () => {
+  const cue = interpret("Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4", { ding: 3 });
+  assert.equal(cue.status, "NEEDS_INPUT");
+  assert.deepEqual(flagOf(cue, "DING_NOT_LOWEST").notes, [0, 1, 2]);
+  const inner = interpret("Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4, C5 Inner: B4", { ding: 9 });
+  assert.equal(inner.status, "NEEDS_INPUT");
+  assert.deepEqual(flagOf(inner, "DING_NOT_LOWEST").notes, [0, 1, 2, 3, 4, 5, 6, 7, 8, 10]);
+  assert.equal(importer.serialise(inner), "");
+});
+
+test("IX: a stray close mark in a contested read is kept as the picked ding and the label cue is dropped", () => {
+  const r = interpret("Ding: D3\nTop: A3) Bb3 C4 D4 E4 F4 G4 A4", { ding: 1 });
+  assert.equal(r.status, "REVIEW");
+  assert.equal(importer.serialise(r), "(A3) Bb3 C4 D4 E4 F4 G4 A4");
+  assert.deepEqual(flagOf(r, "DING_CUE_DROPPED").notes, [0]);
+});
+
+test("IX: a dropped ding cue is not counted as a bare note", () => {
+  const r = interpret("Ding: D3 Ding: E\nTop: A3 Bb3 C4 D4 E4 F4 G4 A4", { ding: 0 });
+  assert.equal(r.status, "REVIEW");
+  assert.deepEqual(flagOf(r, "DING_CUE_DROPPED").notes, [1]);
+  assert.equal(flagOf(r, "NO_OCTAVE"), undefined);
+  assert.equal(importer.serialise(r), "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4");
+});
+
+test("IX: a dropped ding cue is not checked for a repeated pitch", () => {
+  const r = interpret("Ding: D3\nDing: A3\nTop: A3 Bb3 C4 D4 E4 F4 G4 A4", { ding: 0 });
+  assert.equal(r.status, "REVIEW");
+  assert.equal(flagOf(r, "REPEATED_IN_SHELL"), undefined);
+  assert.equal(importer.serialise(r), "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4");
+});
