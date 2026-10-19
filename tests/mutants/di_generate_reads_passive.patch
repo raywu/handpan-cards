@@ -1,0 +1,15 @@
+# kills: DI: GENERATE CARDS follows the active path: a stale line never generates, and a line that parses generates while the fields are stale
+# suite: node --test --test-name-pattern ^DI:.GENERATE.CARDS.follows tests/app.test.js
+# Mutant di_generate_reads_passive.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11013,7 +11013,7 @@ function syncParseState({ paint }) {
+     paintLayout();
+     showParse(parseLineText(res.value.fields));
+     scaleBox.classList.remove("bad");
+-    genBtn.disabled = inputPath === "fields" && lineStale;
++    genBtn.disabled = fieldsStale;
+     if (paint) showPanPreview(res.value);
+     const solved = solvePreviewLayout(res.value);
+     const crowded = solved && HPE.select.smallLabels(solved.geom);

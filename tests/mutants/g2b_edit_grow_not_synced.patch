@@ -5,10 +5,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9908,7 +9908,6 @@
-   nameBox.value = edit ? edit.name : "";
+@@ -11263,7 +11263,6 @@ function resetSheetState(edit) {
    nameDirty = false;                                 // prefilled, not typed
    scaleBox.value = edit ? HPE.core.formatSeed(edit.fields) : "";  // 8A: the canonical string
+   writeFieldValues(edit ? decomposeFields(edit.fields) : null);
 -  syncGrow();
    palette = !edit ? 0 : seeded() ? seedPalette(edit.colors) : edit.options.palette;
    buildSwatches();

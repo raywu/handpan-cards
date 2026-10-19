@@ -1,0 +1,15 @@
+# kills: DI: the settings trigger is neither visible nor hit-testable while the scale sheet is open
+# suite: node --test --test-name-pattern ^DI:.the.settings.trigger.is.neither tests/e2e.test.js
+# Mutant di_e_trigger_visible.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1088,7 +1088,7 @@ footer.seq{row-gap:var(--sp-1)}
+ #scale-sheet.short #scale-label-2{display:none}
+ #scale-sheet.kbup.side .sheethead{display:none}
+ /* The app's settings trigger paints over the open sheet; it has no job there. */
+-body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
++body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:visible}
+ @container surf (min-width:600px){
+   .scalestage{display:grid; grid-template-columns:auto minmax(0,1fr); column-gap:var(--sp-4); align-items:start}
+   .scalestage > #scale-plate-band{padding-bottom:0}

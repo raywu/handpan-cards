@@ -1,0 +1,15 @@
+# kills: DI: clearing every field clears #scale-box
+# suite: node --test --test-name-pattern ^DI:.clearing.every.field.clears tests/app.test.js
+# Mutant di_empty_fields_keep_line.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12062,7 +12062,7 @@ function fieldsInput(k) {
+   paintFields(values, false, r);
+   if (r.empty) {
+     lineStale = false;
+-    if (scaleBox.value !== "") writeLine("");
++    if (false) writeLine("");
+     else if (wasStale) resyncSheet(true);
+   } else if (r.ok) {
+     lineStale = false;

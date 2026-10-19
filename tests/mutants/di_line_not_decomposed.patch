@@ -1,0 +1,14 @@
+# kills: DI: typing a line that parses rewrites the four fields by zone with explicit octaves
+# suite: node --test --test-name-pattern ^DI:.typing.a.line.that.parses tests/app.test.js
+# Mutant di_line_not_decomposed.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12086,7 +12086,6 @@ function lineInput() {
+   } else {
+     const res = HPE.core.parseSeed(text);
+     if (res.ok) {
+-      writeFieldValues(decomposeFields(res.value.fields));
+       fieldsStale = false;
+     } else fieldsStale = true;
+   }

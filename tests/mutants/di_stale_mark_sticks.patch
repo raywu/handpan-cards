@@ -1,0 +1,14 @@
+# kills: DI: fixing the field error rewrites the line and clears the stale mark
+# suite: node --test --test-name-pattern ^DI:.fixing.the.field.error tests/app.test.js
+# Mutant di_stale_mark_sticks.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12065,7 +12065,6 @@ function fieldsInput(k) {
+     if (scaleBox.value !== "") writeLine("");
+     else if (wasStale) resyncSheet(true);
+   } else if (r.ok) {
+-    lineStale = false;
+     if (scaleBox.value !== r.line) writeLine(r.line);
+     else if (wasStale) resyncSheet(true);
+   } else {

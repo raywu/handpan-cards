@@ -1,0 +1,15 @@
+# kills: DI: Enter in DING, TOP and INNER moves to the next field, and Enter in BOTTOM blurs it
+# suite: node --test --test-name-pattern ^DI:.Enter.in.DING tests/app.test.js
+# Mutant di_enter_submits.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12127,7 +12127,7 @@ FIELD_KEYS.forEach((k, i) => {
+     if (e.key !== "Enter" || e.isComposing) return;
+     e.preventDefault();
+     const next = FIELD_KEYS[i + 1];
+-    if (next) fieldEls[next].focus(); else el.blur();
++    if (next) fieldEls[next].focus(); else runGenerate();
+   });
+   fieldLabels[k].addEventListener("mousedown", (e) => {
+     e.preventDefault();

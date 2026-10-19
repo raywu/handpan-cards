@@ -1,10 +1,11 @@
-# kills: SG: N-A2 the served markup order is .sheetbody, #scale-guidance (#scale-msg, #scale-layout-state), #scale-generate, #scale-delete-row
+# kills: SG: N-A2 the served markup order is .sheetbody, #scale-guidance (#scale-field-msg, #scale-msg, #scale-layout-state), #scale-generate, #scale-delete-row
+# Plan wording: SG: N-A2 the served markup order is .sheetbody, #scale-guidance (#scale-msg, #scale-layout-state), #scale-generate, #scale-delete-row
 # suite: node --test --test-name-pattern ^SG:.N-A2.the.served.markup.order tests/app.test.js
 # The layout notice goes back into #scale-layout-zone, in the scroll, so a stuck band or a keyboard can hide it.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1259,6 +1259,7 @@
+@@ -1478,6 +1478,7 @@ html.about-open{overflow:hidden}
                  aria-expanded="false" aria-controls="scale-drawer" disabled>ADJUST LAYOUT<span aria-hidden="true">×</span></button>
          <p class="sheethint" id="scale-layout-hint">Type a scale to adjust its layout.</p>
        </div>
@@ -12,9 +13,9 @@ diff --git a/index.html b/index.html
        <div id="scale-drawer" role="group" aria-label="Layout" hidden>
          <p class="sheethint" id="scale-drawer-hint" hidden></p>
          <div class="editrow">
-@@ -1341,7 +1342,6 @@
-          "SG: N-A6" in tests/e2e.test.js. -->
+@@ -1557,7 +1558,6 @@ html.about-open{overflow:hidden}
      <div id="scale-guidance">
+       <p id="scale-field-msg"></p>
        <div id="scale-msg" aria-live="polite"></div>
 -      <p class="sheethint" id="scale-layout-state" aria-live="polite" aria-atomic="true" hidden></p>
      </div>

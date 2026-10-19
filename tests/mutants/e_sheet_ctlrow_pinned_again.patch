@@ -4,19 +4,20 @@
 # again to make room for it. Under a real iOS keyboard there is nothing left to
 # shrink: the Edit page gives a 48px seed field a 12px scrollport, which is the
 # owner's 2026-09-17 screenshot verbatim.
+# Widened 2026-10-19 (dual input, lane H2b'): the layout zone and the palette row both go back into the pinned footer, because with the pan above the fields the palette row alone no longer starves the scroller.
 # Re-anchored 2026-10-14 (remove-degrees, lane app) against the new source. The mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1304,6 +1304,7 @@ footer.seq{row-gap:var(--sp-1)}
-         </div>
-       </div>
+@@ -1466,6 +1466,7 @@ html.about-open{overflow:hidden}
+     </div>
+     </div>
      </div>
 +   </div>
-     <!-- Inside .sheetbody, in the scroll. It used to be pinned below the
-          scrollport with the primary, on the argument that everything outside
-          .sheetbody is what the sheet guarantees without scrolling - so the
-@@ -1331,7 +1332,6 @@ footer.seq{row-gap:var(--sp-1)}
+     <!-- The pan mock: where the notes actually land - ding, rim zig-zag, inner
+          pair, dashed bottom ring in x-ray view - drawn by the SAME pan()
+          renderer the cards use, with no chord chosen, so what is previewed
+@@ -1547,7 +1548,6 @@ html.about-open{overflow:hidden}
      <div class="ctlrow">
        <div id="scale-swatches" role="group" aria-label="Card palette"></div>
      </div>

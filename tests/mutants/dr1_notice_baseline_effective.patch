@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9933,8 +9933,7 @@ function resetSheetState(edit) {
+@@ -11287,8 +11287,7 @@ function resetSheetState(edit) {
      ? o.mirrorBottom : mirror);
    boxOk = !!edit;
    dropDrawer();
@@ -14,4 +14,4 @@ diff --git a/index.html b/index.html
 +  layoutBase = { anchor, mirror, mb: bottomMirror(), seats: seatsKey(layoutSeats) };
    if (seeded()) seedPrefill = sheetKey();
    paintLayout();
- }
+   paintFieldsOpen();

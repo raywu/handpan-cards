@@ -1,0 +1,14 @@
+# kills: DI: focusing a field or #scale-box switches the active path and rewrites neither path
+# suite: node --test --test-name-pattern ^DI:.focusing.a.field.or tests/app.test.js
+# Mutant di_focus_rewrites_box.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12109,6 +12109,7 @@ function paintFieldsOpen() {
+ function pathFocus(path) {
+   if (inputPath === path) return;
+   inputPath = path;
++  if (path === "line") { const q = HPE.core.parseSeed(String(scaleBox.value || "")); if (q.ok) writeFieldValues(decomposeFields(q.value.fields)); }
+   const values = fieldValues();
+   paintFields(values, false);
+   paintPassive();

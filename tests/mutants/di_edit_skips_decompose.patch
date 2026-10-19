@@ -1,0 +1,15 @@
+# kills: DI: Edit of each built-in fills the four fields with that deck's notes by zone with explicit octaves, and #scale-box holds formatSeed of the deck
+# suite: node --test --test-name-pattern ^DI:.Edit.of.each.built.in.fills tests/app.test.js
+# Mutant di_edit_skips_decompose.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11262,7 +11262,7 @@ function resetSheetState(edit) {
+   nameBox.value = edit ? edit.name : "";
+   nameDirty = false;                                 // prefilled, not typed
+   scaleBox.value = edit ? HPE.core.formatSeed(edit.fields) : "";  // 8A: the canonical string
+-  writeFieldValues(edit ? decomposeFields(edit.fields) : null);
++  writeFieldValues(null);
+   syncGrow();
+   palette = !edit ? 0 : seeded() ? seedPalette(edit.colors) : edit.options.palette;
+   buildSwatches();
