@@ -373,11 +373,11 @@ function run() {
     try {
       await generateDeck(SCALES.n19);
       for (const w of WIDTHS) {
-        await openCell(w, 480, "edit", SCALES.n19);
+        await openCell(w, 400, "edit", SCALES.n19);
         await openDrawerNow();
         const seen = { yes: 0, no: 0 };
         let oneColumn = true;
-        for (let h = 480; h <= 640; h++) {
+        for (let h = 400; h <= 640; h++) {
           await b.setViewport(w, h, true);
           await frames();
           const st = await ev(`return __d.state();`);

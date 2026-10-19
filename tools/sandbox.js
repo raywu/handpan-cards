@@ -307,7 +307,7 @@ function boot(opts = {}) {
         return { left: x - r, right: x + r, top: y - r, bottom: y + r, width: 2 * r, height: 2 * r };
       };
       n.closest = (sel) => (/(^|,\s*)\.panhit/.test(String(sel)) ? n : null);
-      n.focus = () => { focusState.active = n; preview.dispatchEvent({ type: "focusin", target: n }); };
+      n.focus = (opts) => { n.focusOpts = opts; focusState.active = n; preview.dispatchEvent({ type: "focusin", target: n }); };
       return n;
     });
     return hitCache.nodes;

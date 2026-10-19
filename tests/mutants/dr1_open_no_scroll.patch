@@ -5,10 +5,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10462,7 +10462,6 @@ function openDrawer() {
-   paintLayout();
+@@ -10476,7 +10476,6 @@ function openDrawer() {
    focusFirstNext = true;
    repaintPlate();
+   keepToggle(at);
 -  layoutZone.scrollIntoView({ block: "nearest", behavior: "auto" });
    drawerBtn.scrollIntoView({ block: "nearest", behavior: "auto" });
    const note = document.activeElement;
