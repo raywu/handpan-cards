@@ -10772,6 +10772,11 @@ describe("DI: dual input", () => {
     fire(app, "scale-ding", "focus");
     assert.strictEqual(el(app, "scale-box").value, box, "focus rewrote the line");
     assert.deepStrictEqual(fieldTexts(app), fields, "focus rewrote the fields");
+    fieldType(app, "top", "A3  C4 D4 E4 F4 G4 A4 C5");
+    const typed = fieldTexts(app);
+    fire(app, "scale-box", "focus");
+    fire(app, "scale-ding", "focus");
+    assert.deepStrictEqual(fieldTexts(app), typed, "focus rewrote the fields as typed");
   });
 
   test("DI: only the passive path carries the passive class and its caption", () => {
@@ -10806,6 +10811,7 @@ describe("DI: dual input", () => {
     lineType(app, "(D3) A3 C4 zz");
     assert.strictEqual(el(app, "scale-generate").disabled, true);
     lineType(app, "(D3) A3 C4 D4 E4 F4 G4 A4 C5");
+    assert.strictEqual(el(app, "scale-generate").disabled, false, "a line that parses stayed disabled while the fields were stale");
     fieldType(app, "top", "zz");
     lineType(app, "(D3) A3 C4 D4 E4 F4 G4 A4 C5");
     assert.strictEqual(app.get("fieldsStale"), false);

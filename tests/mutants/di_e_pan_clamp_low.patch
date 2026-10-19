@@ -1,0 +1,15 @@
+# kills: DI: at 380x780 with a 260px keyboard ... at least 212px of pan
+# suite: node --test --test-name-pattern ^DI:.at.380x780.with.a.260px tests/e2e.test.js
+# Mutant di_e_pan_clamp_low.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1052,7 +1052,7 @@ footer.seq{row-gap:var(--sp-1)}
+ .scalecol{display:flex; flex-direction:column; gap:var(--sp-3); min-width:0}
+ .scalestage > #scale-plate-band{position:sticky; top:0; z-index:2; background:#1f1b15;
+   padding-bottom:var(--sp-1)}
+-.scalestage #scale-preview{width:clamp(110px, calc(100cqh - 260px), 300px); max-width:none}
++.scalestage #scale-preview{width:clamp(60px, calc(100cqh - 260px), 100px); max-width:none}
+ .sheetbody:has(#scale-layout-zone.open) #scale-preview{width:100%; max-width:min(300px, 39dvh)}
+ .sheetbody:has(#scale-layout-zone.open):has(input:focus, textarea:focus, #scale-swatches button:focus)
+   #scale-plate-band{position:static}

@@ -1,0 +1,40 @@
+# kills: DI: the sheet serves DING, TOP RIM NOTES, TOP INNER NOTES and BOTTOM NOTES in that order before #scale-box
+# suite: node --test --test-name-pattern ^DI:.the.sheet.serves.DING tests/app.test.js
+# Mutant di_fields_after_box.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1410,6 +1410,16 @@ html.about-open{overflow:hidden}
+          parseSeed); focusing one dims the other. One variable, inputPath, says
+          which is active. The live region is the last child so the order the
+          SG: N-A2 tests pin is untouched. -->
++    <div class="fieldrow">
++      <label class="sheetlabel" for="scale-box">SCALE: (DING) TOP NOTES | OPTIONAL INNER NOTES</label>
++      <span class="sheetlabel" id="scale-label-2">[NOTE] = A BOTTOM NOTE, WRITTEN WHERE ITS PITCH FALLS</span>
++      <div id="scale-box-wrap" data-grow="[C] [D] (E) [F#] [G] [A] B [C] D E F# G A B [C] D E | F# G A">
++        <textarea id="scale-box" rows="1" wrap="soft" autocapitalize="off" autocorrect="off"
++                  autocomplete="off" spellcheck="false" enterkeyhint="go"
++                  aria-describedby="scale-label-2"
++                  placeholder="[C] [D] (E) [F#] [G] [A] B [C] D E F# G A B [C] D E | F# G A"></textarea>
++      </div>
++      <div id="scale-parse"></div>
+     <div id="scale-fields" role="group" aria-labelledby="scale-fields-head">
+       <p class="sheetlabel" id="scale-fields-head">YOUR SCALE, NOTE BY NOTE</p>
+       <div class="fieldrow">
+@@ -1435,16 +1445,6 @@ html.about-open{overflow:hidden}
+       <p class="sheethint" id="scale-fields-note"></p>
+       <p class="sr-only" id="scale-fields-live" aria-live="polite"></p>
+     </div>
+-    <div class="fieldrow">
+-      <label class="sheetlabel" for="scale-box">SCALE: (DING) TOP NOTES | OPTIONAL INNER NOTES</label>
+-      <span class="sheetlabel" id="scale-label-2">[NOTE] = A BOTTOM NOTE, WRITTEN WHERE ITS PITCH FALLS</span>
+-      <div id="scale-box-wrap" data-grow="[C] [D] (E) [F#] [G] [A] B [C] D E F# G A B [C] D E | F# G A">
+-        <textarea id="scale-box" rows="1" wrap="soft" autocapitalize="off" autocorrect="off"
+-                  autocomplete="off" spellcheck="false" enterkeyhint="go"
+-                  aria-describedby="scale-label-2"
+-                  placeholder="[C] [D] (E) [F#] [G] [A] B [C] D E F# G A B [C] D E | F# G A"></textarea>
+-      </div>
+-      <div id="scale-parse"></div>
+       <!-- Owner feedback, 2026-09-21: a refusal rendered below the pan is
+            below the fold on an iPhone 14 with the keyboard up, so the user
+            retypes a seed whose reason they never saw. It belongs directly

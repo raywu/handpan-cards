@@ -4,12 +4,13 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1339,11 +1339,11 @@
+@@ -1554,12 +1554,12 @@ html.about-open{overflow:hidden}
           Seed refusals, the parse line, the drawer status and the hints stay by
           the controls they describe. Pinned by "SG: N-A2", "SG: N-A5" and
           "SG: N-A6" in tests/e2e.test.js. -->
 +    <button id="scale-generate" type="button" disabled>GENERATE CARDS</button>
      <div id="scale-guidance">
+       <p id="scale-field-msg"></p>
        <div id="scale-msg" aria-live="polite"></div>
        <p class="sheethint" id="scale-layout-state" aria-live="polite" aria-atomic="true" hidden></p>
      </div>

@@ -1,0 +1,21 @@
+# kills: DI: a settled new message is announced once through #scale-fields-live on a deferred tick
+# suite: node --test --test-name-pattern ^DI:.a.settled.new.message tests/app.test.js
+# Mutant di_announce_while_editing.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12054,12 +12054,12 @@ function writeLine(text) {
+ }
+ function fieldsInput(k) {
+   inputPath = "fields";
+-  fieldEditing = k;
++  fieldEditing = null;
+   fieldsStale = false;
+   const values = fieldValues();
+   const r = HPE.importer.compose(values);
+   const wasStale = lineStale;
+-  paintFields(values, false, r);
++  paintFields(values, true, r);
+   if (r.empty) {
+     lineStale = false;
+     if (scaleBox.value !== "") writeLine("");

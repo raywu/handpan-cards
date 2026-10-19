@@ -1,0 +1,30 @@
+# kills: DI: with the keyboard up the TOP error is fully in view in the slot
+# suite: node --test --test-name-pattern ^DI:.with.the.keyboard.up tests/e2e.test.js
+# Mutant di_e_slot_in_scroller.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1410,6 +1410,11 @@ html.about-open{overflow:hidden}
+          parseSeed); focusing one dims the other. One variable, inputPath, says
+          which is active. The live region is the last child so the order the
+          SG: N-A2 tests pin is untouched. -->
++    <div id="scale-guidance">
++      <p id="scale-field-msg"></p>
++      <div id="scale-msg" aria-live="polite"></div>
++      <p class="sheethint" id="scale-layout-state" aria-live="polite" aria-atomic="true" hidden></p>
++    </div>
+     <div id="scale-fields" role="group" aria-labelledby="scale-fields-head">
+       <p class="sheetlabel" id="scale-fields-head">YOUR SCALE, NOTE BY NOTE</p>
+       <div class="fieldrow">
+@@ -1554,11 +1559,6 @@ html.about-open{overflow:hidden}
+          Seed refusals, the parse line, the drawer status and the hints stay by
+          the controls they describe. Pinned by "SG: N-A2", "SG: N-A5" and
+          "SG: N-A6" in tests/e2e.test.js. -->
+-    <div id="scale-guidance">
+-      <p id="scale-field-msg"></p>
+-      <div id="scale-msg" aria-live="polite"></div>
+-      <p class="sheethint" id="scale-layout-state" aria-live="polite" aria-atomic="true" hidden></p>
+-    </div>
+     <button id="scale-generate" type="button" disabled>GENERATE CARDS</button>
+     <div class="editrow" id="scale-delete-row" hidden>
+       <button id="scale-delete" type="button">DELETE THIS DECK</button>

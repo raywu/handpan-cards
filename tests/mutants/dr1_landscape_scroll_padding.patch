@@ -6,12 +6,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -999,7 +999,7 @@ footer.seq{row-gap:var(--sp-1)}
- }
+@@ -1108,7 +1108,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+ #scale-sheet .sheetbody:has(#scale-layout-zone.open) .scalestage{display:contents}
  @media (max-height:520px) and (min-width:560px){
    /* The band sits beside the controls here, not over them: nothing to pad for. */
 -  .sheetbody{scroll-padding-top:0}
-+  .sheetbody{scroll-padding-top:var(--plate-band-h, 0px)}
-   #scale-layout-zone.open{display:grid; grid-template-columns:auto 1fr; column-gap:var(--sp-3)}
-   #scale-layout-zone.open #scale-plate-band{grid-column:1; grid-row:1 / span 4; align-self:start}
-   #scale-layout-zone.open > :not(#scale-plate-band){grid-column:2}
++  .sheetbody{scroll-padding-top:240px}
+   #scale-sheet .sheetbody:has(#scale-layout-zone.open){display:grid; grid-template-columns:auto 1fr; column-gap:var(--sp-3); row-gap:0; align-content:start}
+   #scale-sheet .sheetbody:has(#scale-layout-zone.open) .scalestage{display:contents}
+   #scale-sheet .sheetbody:has(#scale-layout-zone.open) #scale-plate-band{grid-column:1; grid-row:1 / span 30; align-self:start}

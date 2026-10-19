@@ -1,0 +1,14 @@
+# kills: DI: the sheet's Tab order is BACK, the deck name on Edit, DING, TOP, INNER, BOTTOM, then #scale-box and the existing stops
+# suite: node --test --test-name-pattern ^DI:.the.sheet.s.Tab.order tests/app.test.js
+# Mutant di_tab_skips_fields.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12159,7 +12159,6 @@ sheet.addEventListener("keydown", e => {
+   if (e.key !== "Tab") return;
+   const stops = [backBtn,
+                  editingId ? nameBox : null,
+-                 fieldEls.ding, fieldEls.top, fieldEls.inner, fieldEls.bottom,
+                  scaleBox,
+                  drawerOpen ? previewBox.querySelector('.panhit[tabindex="0"]') : null,
+                  drawerBtn, anchorOne, anchorBetween, mirrorTop, mirrorBot, fineBtn,

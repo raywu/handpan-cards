@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1304,6 +1304,7 @@
+@@ -1517,6 +1517,7 @@ html.about-open{overflow:hidden}
          </div>
        </div>
      </div>
@@ -13,10 +13,10 @@ diff --git a/index.html b/index.html
      <!-- Inside .sheetbody, in the scroll. It used to be pinned below the
           scrollport with the primary, on the argument that everything outside
           .sheetbody is what the sheet guarantees without scrolling - so the
-@@ -1341,7 +1342,6 @@
-          the controls they describe. Pinned by "SG: N-A2", "SG: N-A5" and
+@@ -1556,7 +1557,6 @@ html.about-open{overflow:hidden}
           "SG: N-A6" in tests/e2e.test.js. -->
      <div id="scale-guidance">
+       <p id="scale-field-msg"></p>
 -      <div id="scale-msg" aria-live="polite"></div>
        <p class="sheethint" id="scale-layout-state" aria-live="polite" aria-atomic="true" hidden></p>
      </div>

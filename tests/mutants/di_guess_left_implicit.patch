@@ -1,0 +1,15 @@
+# kills: DI: a guessed bottom octave is written explicit in the line and named by M16 in the slot
+# suite: node --test --test-name-pattern ^DI:.a.guessed.bottom.octave tests/app.test.js
+# Mutant di_guess_left_implicit.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12066,7 +12066,7 @@ function fieldsInput(k) {
+     else if (wasStale) resyncSheet(true);
+   } else if (r.ok) {
+     lineStale = false;
+-    if (scaleBox.value !== r.line) writeLine(r.line);
++    if (scaleBox.value !== r.line) writeLine(r.line.replace(/\[([A-G][b#]?)\d\]/g, "[$1]"));
+     else if (wasStale) resyncSheet(true);
+   } else {
+     lineStale = true;

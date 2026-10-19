@@ -1,0 +1,15 @@
+# kills: DI: only the passive path carries the passive class and its caption
+# suite: node --test --test-name-pattern ^DI:.only.the.passive.path tests/app.test.js
+# Mutant di_both_paths_active.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12030,7 +12030,7 @@ function paintFields(values, announceNew, composed) {
+ }
+ function paintPassive() {
+   const onFields = inputPath === "fields";
+-  fieldsGroup.classList.toggle("passive", !onFields);
++  fieldsGroup.classList.toggle("passive", false);
+   fieldsGroup.classList.toggle("stale", !onFields && fieldsStale);
+   scaleBox.classList.toggle("passive", onFields);
+   scaleWrap.classList.toggle("passive", onFields);

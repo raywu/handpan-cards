@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7956,7 +7956,7 @@ function applyKbOffset() {
+@@ -11157,7 +11157,7 @@ function applyKbOffset() {
     * as well, which fires at frame rate while a zoomed page is panned, and each
     * unconditional style write forces a style recalc for no reason. */
    const t = off > 0 ? `translateY(-${off}px)` : "";
@@ -13,4 +13,4 @@ diff --git a/index.html b/index.html
 +  const m = "";
    if (sheetSurf.style.transform !== t) sheetSurf.style.transform = t;
    if (sheetSurf.style.maxHeight !== m) sheetSurf.style.maxHeight = m;
- }
+   /* Layout classes for the dual-input sheet, written only on change: the

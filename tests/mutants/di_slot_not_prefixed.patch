@@ -1,0 +1,15 @@
+# kills: DI: the slot shows the first shown message in visual order prefixed by its field's short name
+# suite: node --test --test-name-pattern ^DI:.the.slot.shows.the.first tests/app.test.js
+# Mutant di_slot_not_prefixed.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12016,7 +12016,7 @@ function paintFields(values, announceNew, composed) {
+     fieldEls[k].setAttribute("aria-invalid", bad ? "true" : "false");
+   }
+   const first = FIELD_KEYS.find((k) => next[k] && next[k].kind === "error") || FIELD_KEYS.find((k) => next[k]);
+-  const text = first ? FIELD_SHORT[first] + ": " + next[first].text : "";
++  const text = first ? next[first].text : "";
+   if (fieldMsg.textContent !== text) fieldMsg.textContent = text;
+   fieldMsg.classList.toggle("info", !!first && next[first].kind === "info");
+   fieldMsg.classList.toggle("stale", !!first && !!next[first].stale);

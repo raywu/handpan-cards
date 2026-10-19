@@ -4407,7 +4407,9 @@ function run() {
   const diVisible = (id) => b.eval(`
     const el = document.getElementById(${JSON.stringify(id)}), r = el.getBoundingClientRect();
     const sp = document.querySelector("#scale-sheet .sheetbody").getBoundingClientRect();
-    const vv = window.visualViewport, bottom = Math.min(sp.bottom, vv.offsetTop + vv.height), top = Math.max(sp.top, vv.offsetTop);
+    const vv = window.visualViewport, bottom = Math.min(sp.bottom, vv.offsetTop + vv.height);
+    const band = document.getElementById("scale-plate-band"), under = ${JSON.stringify(id)} !== "scale-preview" && getComputedStyle(band).position === "sticky" && r.left < band.getBoundingClientRect().right - 1 ? band.getBoundingClientRect().bottom : 0;
+    const top = Math.max(sp.top, vv.offsetTop, under);
     return { h: r.height, vis: Math.max(0, Math.min(r.bottom, bottom) - Math.max(r.top, top)) };`);
   const diPan = () => diVisible("scale-preview");
   const diHeadHidden = () => b.eval(`return getComputedStyle(document.querySelector("#scale-sheet .sheethead")).display === "none" ||
