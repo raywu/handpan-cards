@@ -4,11 +4,12 @@
 diff --git a/src/engine/importer.js b/src/engine/importer.js
 --- a/src/engine/importer.js
 +++ b/src/engine/importer.js
-@@ -796,7 +796,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -811,7 +811,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     if (top) {
        out.notes.top = top;
        if (read.inner.notes.length && !out.errors.inner) {
 -        var upper = composeStage("(" + ding.name + ") " + top.join(" ") + " | ", read.inner.notes, topMidi, "inner", ding.name);
 +        var upper = composeStage("(" + ding.name + ") " + top.join(" ") + " | ", read.inner.notes, ding.midi, "inner", ding.name);
          if (upper.error) out.errors.inner = upper.error;
-         else inner = upper.names;
+         else { inner = upper.names; innerGuessed = upper.guessed; }
        } else if (!out.errors.inner) inner = [];

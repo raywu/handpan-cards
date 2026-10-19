@@ -1,0 +1,15 @@
+# kills: IB: compose says an inner note at or below the ding is not above the ding
+# suite: node --test --test-name-pattern ^IB..compose.says.an.inner.note.at.or.below.the.ding tests/import.test.js
+# An inner note at or below the ding gets the old top-note sentence.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -734,7 +734,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+         else if (parsed.code === "NOTE_OUT_OF_ORDER") {
+           if (before) error = composeLower(name, before);
+           else if (field === "top") error = name + " is not above the ding, " + anchorName + ".";
+-          else error = name + " is not above the ding, " + anchorName + ".";
++          else error = name + " is below the highest top note, " + anchorName + ".";
+         }
+         return { names: names, error: error };
+       }

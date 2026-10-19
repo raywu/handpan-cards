@@ -1,0 +1,15 @@
+# kills: IB: an inner note below the highest top note is a CONFIRM and serialises rim, bar, inner
+# suite: node --test --test-name-pattern ^IB..an.inner.note.below.the.highest.top.note tests/import.test.js
+# INNER_BELOW_TOP blocks again, so a dip import writes no string.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -25,7 +25,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   var FLAG_ORDER = [
+     ["NO_NOTE_LIST", BLOCK], ["UNDECLARED_PARENS", BLOCK], ["CONFLICTING_DING", BLOCK], ["DING_CLAUSE_MANY", BLOCK], ["DING_NOT_LOWEST", BLOCK],
+     ["DING_ON_BOTTOM", BLOCK], ["REPEATED_IN_SHELL", BLOCK],
+-    ["AMBIGUOUS_NOTE", BLOCK], ["INNER_BELOW_TOP", INFO], ["COUNT_MISMATCH", BLOCK], ["PROVISIONAL_REFUSED", BLOCK],
++    ["AMBIGUOUS_NOTE", BLOCK], ["INNER_BELOW_TOP", BLOCK], ["COUNT_MISMATCH", BLOCK], ["PROVISIONAL_REFUSED", BLOCK],
+     ["BOTTOM_NO_OCTAVE", BLOCK], ["CONFLICTING_LIST", BLOCK], ["SEED_REFUSED", BLOCK],
+     ["DING_CUE", CONFIRM], ["PARENS_AS_BOTTOM", CONFIRM], ["COUNT_EXCL_DING", CONFIRM], ["SPACE_IN_NOTE", CONFIRM],
+     ["SOURCE_NOT_ASCENDING", CONFIRM], ["DUPLICATE_PITCH", CONFIRM], ["NO_OCTAVE", CONFIRM],
