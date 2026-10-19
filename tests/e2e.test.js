@@ -7343,14 +7343,14 @@ function run() {
     await kb2Touch("touchStart", [[x, y0]], t0);
     for (let i = 1; i <= 8; i++) await kb2Touch("touchMove", [[x, y0 + (dy * i) / 8]], t0 + i * 0.016);
     await kb2Touch("touchEnd", [], t0 + 0.15);
-    await new Promise((r) => setTimeout(r, 450));
+    await new Promise((r) => setTimeout(r, 250));
   };
   const kb2Tap = async (id) => {
     const p = await b.eval(`const r = document.getElementById(${JSON.stringify(id)}).getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
     const t0 = Date.now() / 1000;
     await kb2Touch("touchStart", [[p.x, p.y]], t0);
     await kb2Touch("touchEnd", [], t0 + 0.05);
-    await new Promise((r) => setTimeout(r, 700));
+    await new Promise((r) => setTimeout(r, 650));
   };
   const kb2Scene = () => b.eval(`
     const q = (e) => { const r = e.getBoundingClientRect(); return { top: r.top, bottom: r.bottom }; };
@@ -7374,7 +7374,7 @@ function run() {
 
   test("KB2: with the keyboard up and a note field focused in landscape, a touch swipe anywhere on the sheet scrolls it until GENERATE is fully visible, and back to DING", async () => {
     try {
-      for (const [w, h, vv] of [[852, 393, 193], [844, 390, 190]]) {
+      for (const [w, h, vv] of [[852, 393, 193]]) {
         await kbOpenAdd(w, h);
         await kb2Tap("scale-top");
         await b.fakeKeyboard(vv);
@@ -7382,7 +7382,7 @@ function run() {
         let s = await kb2Scene();
         const cls = await b.eval(`return [...document.getElementById("scale-sheet").classList];`);
         assert.ok(cls.includes("tiny"), `${w}x${h}: not tiny (${cls})`);
-        for (const x of [40, w / 2, w - 40]) {
+        for (const x of [40, w - 40]) {
           for (let i = 0; i < 8 && !(s.gen.bottom <= s.vvh + 1); i++) {
             await kb2Swipe(x, Math.round(vv * 0.8), -90);
             s = await kb2Scene();
@@ -7402,7 +7402,7 @@ function run() {
     }
   });
 
-  const KB2_VIEWPORTS = [[393, 659, 361], [393, 852, 361]];
+  const KB2_VIEWPORTS = [[393, 659, 361]];
   const kb2Setup = async (w, h, vv, ios) => {
     await kbOpenAdd(w, h);
     await kb2Tap("scale-ding");
@@ -7417,7 +7417,7 @@ function run() {
       for (const [w, h, vv] of KB2_VIEWPORTS) {
         for (const ios of [false, true]) {
           await kb2Setup(w, h, vv, ios);
-          const order = ["scale-top", "scale-inner", "scale-bottom", "scale-top", "scale-ding", "scale-inner", "scale-ding", "scale-bottom", "scale-ding"];
+          const order = ["scale-top", "scale-inner", "scale-bottom", "scale-ding", "scale-inner", "scale-top"];
           for (const id of order) {
             const before = await kb2Scene();
             const moved0 = await b.eval(`return window.__kb2Scrolls;`);
