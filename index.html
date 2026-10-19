@@ -1429,12 +1429,12 @@ html.about-open{overflow:hidden}
                autocomplete="off" spellcheck="false" enterkeyhint="next" aria-describedby="scale-field-msg">
       </div>
       <div class="fieldrow">
-        <label class="sheetlabel" id="scale-inner-label" for="scale-inner">TOP INNER NOTES (OPTIONAL)</label>
+        <label class="sheetlabel" id="scale-inner-label" for="scale-inner">TOP INNER NOTES, LOW TO HIGH (OPTIONAL)</label>
         <input id="scale-inner" type="text" placeholder="C5 D5" autocapitalize="off" autocorrect="off"
                autocomplete="off" spellcheck="false" enterkeyhint="next" aria-describedby="scale-field-msg">
       </div>
       <div class="fieldrow">
-        <label class="sheetlabel" id="scale-bottom-label" for="scale-bottom">BOTTOM NOTES (OPTIONAL)</label>
+        <label class="sheetlabel" id="scale-bottom-label" for="scale-bottom">BOTTOM NOTES, LOW TO HIGH (OPTIONAL)</label>
         <input id="scale-bottom" type="text" placeholder="C3 Eb3" autocapitalize="off" autocorrect="off"
                autocomplete="off" spellcheck="false" enterkeyhint="done" aria-describedby="scale-field-msg">
       </div>
@@ -10646,6 +10646,8 @@ function parseLineText(fields) {
   for (const [key, label] of [["rim", "Top"], ["inner", "Inner"], ["bottom", "Bottom"]]) {
     if (shells[key].length) line += " " + label + " " + names(shells[key]) + ".";
   }
+  const low = HPE.core.innerBelowRim(fields);
+  if (low.length) line += " " + low.join(", ") + (low.length > 1 ? " are" : " is") + " below the top notes: check the pan picture.";
   return line;
 }
 
@@ -12147,7 +12149,7 @@ function renderFieldMessages(r, values, editing, shown) {
   const out = {};
   for (const k of FIELD_KEYS) {
     if (!values[k].trim()) continue;
-    const text = r.errors[k] || (k === "bottom" ? r.info.bottom : null);
+    const text = r.errors[k] || r.info[k];
     if (!text) continue;
     const kind = r.errors[k] ? "error" : "info";
     if (editing === null) out[k] = { text, kind };
