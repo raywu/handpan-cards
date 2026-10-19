@@ -7337,10 +7337,12 @@ function run() {
   const f4OpenEdit = async (w, h, slug) => {
     await freshLoad();
     await b.setViewport(w, h, true);
+    const route = { kurd: "d-kurd-10", pygmy: "f-low-pygmy-18" }[slug];
     if (slug !== "kurd") {
-      await b.eval(`location.hash = "#deck=${slug}"; return true;`);
+      await b.eval(`location.hash = "#deck=${route}"; return true;`);
       await kbSettle();
     }
+    assert.strictEqual(await b.eval(`return location.hash;`), "#deck=" + route, `the ${slug} deck is not the one shown`);
     await openEdit();
     await b.eval(`document.activeElement && document.activeElement.blur(); return true;`);
   };
@@ -7364,7 +7366,7 @@ function run() {
   };
 
   for (const [w, h] of F4_VIEWPORTS) {
-    test(`KB: F4 at ${w}x${h} a tap on ADJUST LAYOUT from a scrolled Edit Kurd keeps the toggle in place and unfurls the options under it`, async () => {
+    test(`KB: F4 at ${w}x${h} a tap on ADJUST LAYOUT from a scrolled Edit Kurd keeps the toggle in place or just under the band and opens the drawer below it`, async () => {
       try {
         await f4OpenEdit(w, h, "kurd");
         await f4ScrollToToggle();
@@ -7433,7 +7435,7 @@ function run() {
           await f4OpenEdit(w, h, slug);
           await f4OpenDrawer();
           const n = await b.eval(`return document.querySelectorAll("#scale-preview .panhit").length;`);
-          assert.ok(n >= 9, `only ${n} notes on the plate`);
+          assert.strictEqual(n, slug === "pygmy" ? 17 : 9, `${n} notes on the ${slug} plate`);
           for (let i = 0; i < n; i += 1) {
             const c = await b.eval(`
               const h = document.querySelectorAll("#scale-preview .panhit")[${i}];
@@ -7443,7 +7445,7 @@ function run() {
               return { x, y, field: h.getAttribute("data-field"), hit: top === h, topField: top && top.getAttribute && top.getAttribute("data-field"), topTag: top && (top.id || top.tagName) };`);
             assert.ok(c.hit, `note ${i} (field ${c.field}) at ${w}x${h} is covered by ${c.topTag} (field ${c.topField})`);
             await clickPoint(c.x, c.y);
-            const pressed = await b.eval(`return document.querySelectorAll("#scale-preview .panhit")[${i}].getAttribute("aria-pressed");`);
+            const pressed = await b.eval(`return document.querySelector("#scale-preview .panhit[data-field='${c.field}']").getAttribute("aria-pressed");`);
             assert.strictEqual(pressed, "true", `a tap at the centre of note ${i} (field ${c.field}) did not pick it`);
             await b.key("Escape", "Escape", 27);
           }
