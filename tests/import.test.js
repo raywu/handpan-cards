@@ -1261,7 +1261,7 @@ describe("IH: compose", () => {
     assert.equal(repeat.errors.inner, "C4 is already in the top or inner notes.");
     assert.equal(repeat.errors.top, null);
     const lower = compose({ ding: "D3", top: "A3 Bb3 C4", inner: "Bb3" });
-    assert.equal(lower.errors.inner, "Bb3 is below the highest top note, C4.");
+    assert.equal(lower.errors.inner, "Bb3 is already in the top or inner notes.");
     const later = compose({ ding: "D3", top: "A3 Bb3 C4", inner: "D5 C5" });
     assert.equal(later.errors.inner, "C5 is lower than D5: list low to high.");
     const bare = compose({ ding: "D3", top: "A3 Bb3 C4", inner: "Bb" });
