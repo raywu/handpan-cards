@@ -4614,6 +4614,58 @@ function run() {
     }
   });
 
+  test("DI: a drawer opened by Tab and Enter at 844x390 shows the plate from the scroller top and keeps the focused note in view (review F2)", async () => {
+    const enter = async () => {
+      for (const type of ["rawKeyDown", "char", "keyUp"]) {
+        await b.send("Input.dispatchKeyEvent", { type, key: "Enter", code: "Enter",
+          ...(type === "char" ? { text: "\r", unmodifiedText: "\r" } : {}),
+          windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
+      }
+    };
+    const openByKeyboard = async (what) => {
+      await b.eval(`document.getElementById("scale-back").focus(); return true;`);
+      for (let n = 0; n < 40; n++) {
+        await b.key("Tab", "Tab", 9);
+        if (await b.eval(`return document.activeElement.id === "scale-layout-toggle";`)) break;
+      }
+      assert.strictEqual(await b.eval(`return document.activeElement.id;`), "scale-layout-toggle",
+        `${what}: Tab never reached ADJUST LAYOUT`);
+      await enter();
+      await b.waitFor(`!document.getElementById("scale-drawer").hidden`, { label: `${what}: the drawer to open` });
+      await waitElapsed(500);
+      const m = await b.eval(`
+        const port = document.querySelector("#scale-sheet .sheetbody").getBoundingClientRect();
+        const r = document.getElementById("scale-preview").getBoundingClientRect();
+        const a = document.activeElement, f = a.getBoundingClientRect();
+        return { top: r.top, bottom: r.bottom, portTop: port.top, portBottom: port.bottom,
+                 note: !!a.closest("#scale-preview"), fTop: f.top, fBottom: f.bottom };`);
+      const shown = Math.min(m.bottom, m.portBottom) - Math.max(m.top, m.portTop);
+      const want = Math.min(m.bottom - m.top, m.portBottom - m.portTop);
+      assert.ok(shown >= want - 0.5, `${what}: the plate is not as fully inside the scroller as it can be: ${JSON.stringify(m)}`);
+      assert.ok(m.note, `${what}: focus did not land on a note: ${JSON.stringify(m)}`);
+      assert.ok(m.fTop >= m.portTop - 0.5 && m.fBottom <= m.portBottom + 0.5,
+        `${what}: the focused note is outside the scroller: ${JSON.stringify(m)}`);
+    };
+    try {
+      await freshLoad();
+      await b.setViewport(844, 390, true);
+      await openEdit();
+      await openByKeyboard("Edit Kurd at 844x390");
+      await freshLoad();
+      await b.setViewport(844, 390, true);
+      await navigate(URL + "?r=f2#deck=f-low-pygmy-18");
+      await openEdit();
+      await openByKeyboard("Edit Pygmy at 844x390");
+      await freshLoad();
+      await b.setViewport(844, 390, true);
+      await openSheet();
+      await typeScale("(D3) A3 C4 D4 E4 F4 G4 A4 C5");
+      await openByKeyboard("Add at 844x390 with a typed scale");
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
   test("DR1 line 37: every drawer control is at least 44px tall and the drawer does not overflow sideways at 380", async () => {
     try {
       await addWithDrawer(380, 780);
