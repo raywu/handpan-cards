@@ -1,0 +1,15 @@
+# kills: IM: the six ding-pick flags read as their copy, and SEED_REFUSED shows no parseSeed reason
+# suite: node --test --test-name-pattern ^IM..the.six.ding.pick.flags tests/app.test.js
+# The SEED_REFUSED line appends parseSeed's reason, which the plan keeps out of the sheet.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10992,7 +10992,7 @@
+   DING_NOT_LOWEST: (r, f) => importNames(r, f) + " sit below the ding (" + (r.notes[f.ding] ? r.notes[f.ding].note : "?") + "). Pick a lower ding below, or type the notes in the box above.",
+   DING_ON_BOTTOM: (r, f) => (r.notes[f.ding] ? r.notes[f.ding].note : "?") + " is a bottom note. The ding is on the top shell: pick another ding below.",
+   REPEATED_IN_SHELL: (r, f) => importNames(r, f) + " is listed twice. Type the notes in the box above with the second one corrected or removed.",
+-  SEED_REFUSED: () => "These notes do not make a playable scale with that ding. Pick another ding or fix the notes in the scale box above.",
++  SEED_REFUSED: (r, f) => "These notes do not make a playable scale with that ding. Pick another ding or fix the notes in the scale box above. " + f.refusal.reason,
+   COUNT_EXCL_DING: (r) => "The title count is " + (r.total - 1) + ", one fewer than the " + r.total + " notes listed: it leaves the ding out.",
+   SPACE_IN_NOTE: (r, f) => "Joined a spaced note: " + importNames(r, f) + ".",
+   SOURCE_NOT_ASCENDING: (r, f) => "The source is not in pitch order at " + importNames(r, f) + ". It may be a typo.",

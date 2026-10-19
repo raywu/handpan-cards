@@ -5,12 +5,12 @@
 diff --git a/src/engine/importer.js b/src/engine/importer.js
 --- a/src/engine/importer.js
 +++ b/src/engine/importer.js
-@@ -283,7 +283,7 @@
+@@ -528,7 +528,7 @@
+       var g = byPitch[k];
+       if (g.t.length > 1) sameShell = sameShell.concat(g.t);
+       if (g.b.length > 1) sameShell = sameShell.concat(g.b);
+-      if (g.t.length && g.b.length) repeated = repeated.concat(g.t, g.b);
++      if (g.t.length + g.b.length > 2 && g.t.length && g.b.length) repeated = repeated.concat(g.t, g.b);
      });
-     var repeated = [];
-     Object.keys(byPitch).forEach(function (k) {
--      if (byPitch[k].length > 1) repeated = repeated.concat(byPitch[k]);
-+      if (byPitch[k].length > 2) repeated = repeated.concat(byPitch[k]);
-     });
-     if (repeated.length) flag("DUPLICATE_PITCH", { notes: repeated.sort(function (a, b) { return a - b; }) });
- 
+     var num = function (a, b) { return a - b; };
+     if (sameShell.length && !flags.CONFLICTING_DING) flag("REPEATED_IN_SHELL", { notes: sameShell.sort(num) });

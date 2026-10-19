@@ -10735,11 +10735,11 @@ describe("IM: import text on the sheet", () => {
     assert.strictEqual(ticked.els["import-use"].disabled, false);
     const picked = boot();
     run(picked, CUE);
-    pick(picked, 2);
+    pick(picked, 0);
     assert.deepStrictEqual(codes(picked), []);
     assert.strictEqual(picked.els["import-use"].disabled, false);
     picked.click(picked.els["import-use"]);
-    assert.strictEqual(picked.els["scale-box"].value, engine(picked, CUE, { ding: 2 }).seed);
+    assert.strictEqual(picked.els["scale-box"].value, engine(picked, CUE, { ding: 0 }).seed);
   });
 
   test("IM: picking a ding on the Ding: D Top: E F G Bb fixture leaves the picker enabled and the flag set equals interpret(text, {ding: i})", () => {
@@ -10780,10 +10780,14 @@ describe("IM: import text on the sheet", () => {
     assert.deepStrictEqual(codes(app), ["CONFLICTING_DING"]);
     assert.strictEqual(app.els["import-use"].disabled, true);
     pick(app, 1);
-    assert.deepStrictEqual(codes(app), []);
+    assert.deepStrictEqual(codes(app), ["DING_CUE_DROPPED"]);
+    assert.strictEqual(app.els["import-use"].disabled, true);
+    tick(app, "DING_CUE_DROPPED");
     assert.strictEqual(app.els["import-use"].disabled, false);
     app.click(app.els["import-use"]);
-    assert.strictEqual(app.els["scale-box"].value, engine(app, TWO_DINGS, { ding: 1 }).seed);
+    const written = app.els["scale-box"].value;
+    assert.strictEqual(written, engine(app, TWO_DINGS, { ding: 1 }).seed);
+    assert.strictEqual(app.get(`HPE.core.parseSeed(${JSON.stringify(written)}).ok`), true);
   });
 
   test("IM: the ding picker shows on every NEEDS_INPUT or REVIEW list, including a REVIEW list with no DING_CUE", () => {
@@ -10862,6 +10866,28 @@ describe("IM: import text on the sheet", () => {
     }
     const variants = new Set(["runs", "wide", "tops"].map((k, i) => line("CONFLICTING_LIST", { [k]: k === "runs" ? 2 : true })));
     assert.strictEqual(variants.size, 3, "the CONFLICTING_LIST variants share one line");
+  });
+
+  test("IM: the six ding-pick flags read as their copy, and SEED_REFUSED shows no parseSeed reason", () => {
+    const app = boot();
+    openSheet(app);
+    const line = (code, f) => app.get(
+      "(() => { importRes = { notes: [{ note: 'C3' }, { note: 'D3' }], total: 2, roles: {} };" +
+      " return importFlagLine(" + JSON.stringify(Object.assign({ code }, f)) + "); })()");
+    assert.strictEqual(line("DING_CUE_DROPPED", { notes: [0], ding: 1 }),
+      "C3 was given as the ding but you picked D3, so C3 is left out. Tick to accept, or pick another ding below.");
+    assert.strictEqual(line("DING_CUE_DROPPED", { notes: [0, 1], ding: 1 }),
+      "C3 and D3 were given as the ding but you picked D3, so they are left out. Tick to accept, or pick another ding below.");
+    assert.strictEqual(line("DING_CLAUSE_MANY", { notes: [0, 1] }),
+      "The ding is given as C3, D3. A handpan has one ding: type the notes in the box above.");
+    assert.strictEqual(line("DING_NOT_LOWEST", { notes: [0], ding: 1 }),
+      "C3 sit below the ding (D3). Pick a lower ding below, or type the notes in the box above.");
+    assert.strictEqual(line("DING_ON_BOTTOM", { ding: 0 }),
+      "C3 is a bottom note. The ding is on the top shell: pick another ding below.");
+    assert.strictEqual(line("REPEATED_IN_SHELL", { notes: [0] }),
+      "C3 is listed twice. Type the notes in the box above with the second one corrected or removed.");
+    assert.strictEqual(line("SEED_REFUSED", { refusal: { code: "NO_FIFTH", reason: "REASON-SENTINEL" } }),
+      "These notes do not make a playable scale with that ding. Pick another ding or fix the notes in the scale box above.");
   });
 
   test("IM: the import row ships hidden: #import-row carries the hidden attribute in the served markup and IMPORT TEXT is not in the sheet's focus order", () => {

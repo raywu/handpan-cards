@@ -1,0 +1,15 @@
+# kills: every REVIEW string the sheet can reach, every ding pick included, is a fixed point of formatSeed(parseSeed(x))
+# suite: node --test --test-name-pattern ^every.REVIEW.string tests/import.test.js
+# The guard is skipped for a picked ding only, which a no-pick sweep cannot see.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -610,7 +610,7 @@
+   }
+ 
+   function interpret(raw, opts) {
+-    return guard(interpretRaw(raw, opts));
++    return opts && typeof opts.ding === "number" ? interpretRaw(raw, opts) : guard(interpretRaw(raw, opts));
+   }
+ 
+   function interpretRaw(raw, opts) {

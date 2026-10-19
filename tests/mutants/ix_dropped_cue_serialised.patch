@@ -1,0 +1,15 @@
+# kills: IX: a dropped cue leaves no trace in the inferred octaves: Ding: D Ding: C Top: A Bb C D E F G A (G) with ding 0 and parens as bottom
+# suite: node --test --test-name-pattern ^IX..a.dropped.cue.leaves.no.trace tests/import.test.js
+# The provisional octave string keeps a dropped cue, so inferred octaves and the written line disagree with the notes kept.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -546,7 +546,7 @@
+     function inlineString(d) {
+       var parts = ["(" + d.name + ")"];
+       notes.forEach(function (n) {
+-        if (n === d || n.assigned === "dropped") return;
++        if (n === d) return;
+         parts.push(n.assigned === "bottom" ? "[" + n.name + "]" : n.name);
+       });
+       return parts.join(" ");

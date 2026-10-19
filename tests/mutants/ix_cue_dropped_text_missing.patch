@@ -1,0 +1,15 @@
+# kills: IM: every code in the engine's FLAG_ORDER has an IMPORT_FLAG_TEXT line, and the L1 codes read in plain English
+# suite: node --test --test-name-pattern ^IM..every.code tests/app.test.js
+# The DING_CUE_DROPPED line is missing from IMPORT_FLAG_TEXT, so the sheet throws on a dropped cue.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10982,7 +10982,7 @@
+   COUNT_MISMATCH: (r, f) => "The title says " + f.title + " notes but the text lists " + f.listed + ".",
+   PROVISIONAL_REFUSED: (r, f) => "The octaves cannot be inferred: " + (f.refusal && f.refusal.reason || "refused") + " Pick the ding below or type the notes.",
+   DING_CUE: (r, f) => "The source never says which note is the ding. Taking " + importNames(r, f) + " (" + (f.cue === "mark" ? "marked" : f.cue === "separator" ? "set apart" : "listed first") + "). Tick to accept, or pick the ding below.",
+-  DING_CUE_DROPPED: (r, f) => {
++  DING_CUE_DROPPED_X: (r, f) => {
+     const one = (f.notes || []).length === 1;
+     const names = (f.notes || []).map(i => r.notes[i] ? r.notes[i].note : "?").join(" and ");
+     const pick = r.notes[f.ding] ? r.notes[f.ding].note : "?";

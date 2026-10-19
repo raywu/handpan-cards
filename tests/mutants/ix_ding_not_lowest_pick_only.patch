@@ -1,0 +1,15 @@
+# kills: IX: a labelled ding above a top note blocks with no pick: Ding: D3 Top: C3 A3 Bb3 C4 D4 is NEEDS_INPUT DING_NOT_LOWEST
+# suite: node --test --test-name-pattern ^IX..a.labelled.ding.above tests/import.test.js
+# DING_NOT_LOWEST needs a pick again, so a labelled ding above the rim passes without one.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -490,7 +490,7 @@
+       flag("INNER_BELOW_TOP", { notes: indices(inner.filter(function (n) { return n.midi !== null && n.midi < topMax; })) });
+     }
+ 
+-    if (ding && ding.midi !== null && !flags.CONFLICTING_DING) {
++    if (pickable && ding && ding.midi !== null && !flags.CONFLICTING_DING) {
+       var under = tops.concat(inner).filter(function (n) { return n.midi !== null && n.midi < ding.midi; });
+       if (under.length) flag("DING_NOT_LOWEST", { notes: indices(under), ding: ding.index });
+     }

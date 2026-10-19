@@ -1,0 +1,15 @@
+# kills: IX: a picked bottom note blocks with DING_ON_BOTTOM
+# suite: node --test --test-name-pattern ^IX..a.picked.bottom.note tests/import.test.js
+# A picked bottom note raises no DING_ON_BOTTOM, so the ding moves to the top shell unannounced.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -473,7 +473,7 @@
+     });
+     var dropped = notes.filter(function (n) { return n.assigned === "dropped"; });
+     if (dropped.length) flag("DING_CUE_DROPPED", { notes: indices(dropped), ding: ding.index });
+-    if (pickable && ding.role === "bottom") flag("DING_ON_BOTTOM", { ding: ding.index });
++    if (false) flag("DING_ON_BOTTOM", { ding: ding.index });
+     var inlined = notes.filter(function (n) { return n.inline; });
+     if (inlined.length) flag("PARENS_AS_BOTTOM", { notes: indices(inlined) });
+     var unknown = notes.filter(function (n) { return n.assigned === "unknown"; });

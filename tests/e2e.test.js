@@ -12435,7 +12435,7 @@ function run() {
       try {
         await b.send("Network.enable");
         await runImport("Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 Bottom: C3");
-        await b.eval(`const s = document.getElementById("import-ding"); s.value = "1"; s.dispatchEvent(new Event("change", { bubbles: true })); return true;`);
+        await b.eval(`const s = document.getElementById("import-ding"); s.value = "0"; s.dispatchEvent(new Event("change", { bubbles: true })); return true;`);
         await b.eval(`document.getElementById("import-use").click(); return true;`);
         await b.settle();
         assert.ok((await b.eval(`return document.getElementById("scale-box").value;`)).length > 0, "USE wrote nothing, so this proves nothing");

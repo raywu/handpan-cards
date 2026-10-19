@@ -1,0 +1,15 @@
+# kills: IX: a pitch repeated in one shell blocks with REPEATED_IN_SHELL and writes nothing
+# suite: node --test --test-name-pattern ^IX..a.pitch.repeated.in.one.shell tests/import.test.js
+# A pitch repeated within one shell is only the DUPLICATE_PITCH confirmation, so a line parseSeed refuses can reach REVIEW.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -531,7 +531,7 @@
+       if (g.t.length && g.b.length) repeated = repeated.concat(g.t, g.b);
+     });
+     var num = function (a, b) { return a - b; };
+-    if (sameShell.length && !flags.CONFLICTING_DING) flag("REPEATED_IN_SHELL", { notes: sameShell.sort(num) });
++    if (sameShell.length && !flags.CONFLICTING_DING) repeated = repeated.concat(sameShell);
+     if (repeated.length) flag("DUPLICATE_PITCH", { notes: repeated.sort(num) });
+ 
+     var bare = notes.filter(function (n) { return n.assigned !== "unknown" && n.assigned !== "dropped" && !n.octave; });

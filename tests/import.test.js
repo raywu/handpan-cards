@@ -84,16 +84,6 @@ test("the rendered Yatao page (labels and values on separate lines) gives the sa
   assert.equal(importer.serialise(run(page)), byId("yatao-handpan-yataopan-d-aegean-18").expect.serialised);
 });
 
-test("every REVIEW string is a fixed point of formatSeed(parseSeed(x))", () => {
-  for (const c of fixture.cases) {
-    const s = importer.serialise(run(c));
-    if (!s) continue;
-    const p = core.parseSeed(s);
-    assert.ok(p.ok, c.id);
-    assert.equal(core.formatSeed(p.value), s, c.id);
-  }
-});
-
 test("pitch multiset: serialised fields equal the notes read off the source text", () => {
   for (const c of fixture.cases) {
     const r = run(c);
@@ -117,7 +107,9 @@ test("octaveless sources: the provisional string, hand-written octaves, roles an
     const r = run(c);
     const x = c.expect;
     assert.ok(flagOf(r, "NO_OCTAVE"), c.id);
-    assert.deepEqual(provisionalOf(c), [x.provisional], c.id + " provisional");
+    const seen = provisionalOf(c);
+    assert.equal(seen[0], x.provisional, c.id + " provisional");
+    assert.ok(seen.slice(1).every((line) => line === importer.serialise(r)), c.id + " only the guard calls parseSeed after it, on serialise(r)");
     assert.deepEqual(r.notes.map((n) => [pc(n.note), n.role]), x.sourceNotes, c.id + " roles");
     const held = [r.roles.ding, ...r.roles.top, ...r.roles.inner, ...r.roles.bottom];
     assert.deepEqual(held.map((e) => e.note).sort(), [...x.inferred].sort(), c.id + " inferred");
@@ -173,7 +165,7 @@ test("a source with every octave written never builds a provisional string", () 
     const before = calls.length;
     const r = plain(spy.importer.interpret(c.text, { title: c.title }));
     assert.equal(flagOf(r, "NO_OCTAVE"), undefined, c.id);
-    assert.equal(calls.length, before, c.id + " called parseSeed");
+    assert.ok(calls.slice(before).every((line) => line === importer.serialise(r)), c.id + " parseSeed saw a line other than serialise(r)");
   }
 });
 
@@ -577,29 +569,30 @@ test("narrowing check: a role clause outside the kept window blocks rather than 
   assert.equal(importer.serialise(agreed), "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5");
 });
 
-test("narrowing check: a seeded fuzz of long texts reads each one as its compact form or blocks", () => {
-  const LISTS = [
-    ["Ding: D3", "Top: A3 Bb3 C4 D4 E4 F4 G4 A4", "Bottom: C3 F3"],
-    ["D3 ding, A3 Bb3 C4 D4 E4 F4 G4 A4 top."],
-    ["D ding, A Bb C D E F G A top."],
-    ["Notes: D3 / A3 Bb3 C4 D4 E4 F4 G4 A4 C5"],
-    ["Ding: D", "Top: A Bb C D E F G A"],
-    ["Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5", "Inner: D5 E5", "Ding: D3"],
-  ];
-  const PROSE = [
-    "C and D top.", "F and G inner.", "C and F on the bottom.", "C5 and D5 top.", "C3 and F3 on the bottom.",
-    "A perfect gift for beginners.", "This is a D minor scale.", "A4 = 440 Hz", "Tuned to A4 at 432.", "Key: D",
-    "Ding: D", "Note: A", "Bottom: c3 f3", "Older listing: C D E F G A B", "Also in C and D.", "E4", "G",
-    "Top: A grade", "Sol La Si", "F3 Low Pygmy", "Bb3, C4", "Inner: none", "Nine notes in all.",
-  ];
+const FUZZ_LISTS = [
+  ["Ding: D3", "Top: A3 Bb3 C4 D4 E4 F4 G4 A4", "Bottom: C3 F3"],
+  ["D3 ding, A3 Bb3 C4 D4 E4 F4 G4 A4 top."],
+  ["D ding, A Bb C D E F G A top."],
+  ["Notes: D3 / A3 Bb3 C4 D4 E4 F4 G4 A4 C5"],
+  ["Ding: D", "Top: A Bb C D E F G A"],
+  ["Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5", "Inner: D5 E5", "Ding: D3"],
+];
+const FUZZ_PROSE = [
+  "C and D top.", "F and G inner.", "C and F on the bottom.", "C5 and D5 top.", "C3 and F3 on the bottom.",
+  "A perfect gift for beginners.", "This is a D minor scale.", "A4 = 440 Hz", "Tuned to A4 at 432.", "Key: D",
+  "Ding: D", "Note: A", "Bottom: c3 f3", "Older listing: C D E F G A B", "Also in C and D.", "E4", "G",
+  "Top: A grade", "Sol La Si", "F3 Low Pygmy", "Bb3, C4", "Inner: none", "Nine notes in all.",
+];
+
+function fuzzPages(count) {
   let s = 2026;
   const rnd = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
   const pick = (a) => a[Math.floor(rnd() * a.length)];
-  const reading = (r) => [r.status, importer.serialise(r), r.flags.map((f) => f.code).join()].join(" | ");
-  for (let i = 0; i < 3000; i += 1) {
-    const blocks = pick(LISTS).slice();
+  const pages = [];
+  for (let i = 0; i < count; i += 1) {
+    const blocks = pick(FUZZ_LISTS).slice();
     const extra = Math.floor(rnd() * 3);
-    for (let k = 0; k < extra; k += 1) blocks.splice(Math.floor(rnd() * (blocks.length + 1)), 0, pick(PROSE));
+    for (let k = 0; k < extra; k += 1) blocks.splice(Math.floor(rnd() * (blocks.length + 1)), 0, pick(FUZZ_PROSE));
     const long = [];
     const compact = [];
     let n = 0;
@@ -612,11 +605,18 @@ test("narrowing check: a seeded fuzz of long texts reads each one as its compact
     });
     while (long.join("\n").length <= 2000) long.push(NARROW_FILL(n++));
     if (compact[compact.length - 1] !== NARROW_FILL(0)) compact.push(NARROW_FILL(0));
-    const short = compact.join("\n");
-    assert.ok(short.length <= 2000);
-    const r = interpret(long.join("\n"));
+    pages.push({ long: long.join("\n"), short: compact.join("\n") });
+  }
+  return pages;
+}
+
+test("narrowing check: a seeded fuzz of long texts reads each one as its compact form or blocks", () => {
+  const reading = (r) => [r.status, importer.serialise(r), r.flags.map((f) => f.code).join()].join(" | ");
+  for (const page of fuzzPages(3000)) {
+    assert.ok(page.short.length <= 2000);
+    const r = interpret(page.long);
     if (r.status !== "REVIEW") { assert.equal(importer.serialise(r), ""); continue; }
-    assert.equal(reading(r), reading(interpret(short)), short);
+    assert.equal(reading(r), reading(interpret(page.short)), page.short);
   }
 });
 
@@ -795,10 +795,10 @@ test("exactly four notes after a weak label are prose, not a list", () => {
   assert.equal(importer.serialise(r), "");
 });
 
-test("a top note that repeats the ding at its own octave is a duplicate, not a restatement", () => {
+test("a top note that repeats the ding at its own octave is a REPEATED_IN_SHELL block, not a restatement", () => {
   const r = interpret("Ding: D3 Top: D3 A3 Bb3 C4 D4 E4 F4 G4 A4");
-  assert.equal(r.status, "REVIEW");
-  assert.ok(flagOf(r, "DUPLICATE_PITCH"));
+  assert.equal(r.status, "NEEDS_INPUT");
+  assert.ok(flagOf(r, "REPEATED_IN_SHELL"));
   const bare = interpret("Ding: D Top: D3 A3 Bb3 C4 E4 F4 G4 A4 C5");
   assert.equal(bare.status, "NEEDS_INPUT");
   assert.ok(flagOf(bare, "PROVISIONAL_REFUSED"));
@@ -819,4 +819,286 @@ test("reader: a weak label before ordinary words is prose, not notes", () => {
   for (const t of ["Note: B-grade finish", "Note: E-mail us", "Note: A hard case is included"]) {
     assert.equal(importer.serialise(interpret(list + "\n" + t)), "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4", t);
   }
+});
+
+// Import fix, lane E (docs/plans/2026-10-18-import-fix.md, E-1 and E-2).
+const goldFixture = JSON.parse(
+  fs.readFileSync(path.join(ROOT, "tests", "fixtures", "import_gold_v1.json"), "utf8"));
+
+function synthTexts() {
+  const out = new Set();
+  const scales = [
+    { ding: "D3", top: ["A3", "Bb3", "C4", "D4", "E4", "F4", "G4", "A4"], bottom: ["Bb2", "C3", "E3", "F3", "G3"], inner: ["C5", "D5"] },
+    { ding: "C#3", top: ["G#3", "B3", "C#4", "D4", "F4", "F#4", "G#4", "B4"], bottom: ["F#2", "A2"], inner: ["C#5"] },
+    { ding: "F3", top: ["G3", "Ab3", "C4", "Eb4", "F4", "G4", "Ab4", "C5", "Eb5"], bottom: ["C3", "Db3", "Eb3", "Bb3", "Db4"], inner: ["F5", "G5"] },
+    { ding: "E3", top: ["B3", "D4", "E4", "F#4", "G4", "A4", "B4", "D5"], bottom: ["C3", "D3", "G3"], inner: [] },
+  ];
+  const below = { D3: ["C3", "A2", "Bb2"], "C#3": ["B2", "G#2"], F3: ["Eb3", "C3"], E3: ["D3", "B2"] };
+  const labels = [
+    ["Ding: ", " Top: ", " Bottom: ", " Inner: "],
+    ["Ding: ", "\nTop: ", "\nBottom: ", "\nInner: "],
+    ["Main note ", "\nNotes: ", "\nBottom notes: ", "\nInner notes: "],
+  ];
+  const seps = [" ", ", ", " - "];
+  const bare = (a) => a.map((n) => n.replace(/-?\d$/, ""));
+  for (const sc of scales) for (const L of labels) for (const sep of seps) {
+    const base = (d = sc.ding, t = sc.top, b = sc.bottom, i = sc.inner) => {
+      let x = L[0] + d + L[1] + t.join(sep);
+      if (b.length) x += L[2] + b.join(sep);
+      if (i.length) x += L[3] + i.join(sep);
+      out.add(x);
+    };
+    base();
+    base(sc.ding, sc.top, [], []);
+    for (const n of below[sc.ding]) {
+      base(sc.ding, [n, ...sc.top]);
+      base(sc.ding, [...sc.top.slice(0, 2), n, ...sc.top.slice(2)], [], []);
+    }
+    base(sc.top[1], sc.top, [], []);
+    base(sc.ding, [sc.ding, ...sc.top]);
+    base(sc.bottom[0], sc.top);
+    base(sc.ding, sc.top, [...sc.bottom, sc.ding]);
+    for (let k = 0; k < sc.top.length; k++) base(sc.ding, [...sc.top.slice(0, k + 1), sc.top[k], ...sc.top.slice(k + 1)]);
+    if (sc.bottom.length) base(sc.ding, sc.top, [...sc.bottom, sc.bottom[0]]);
+    if (sc.inner.length) base(sc.ding, sc.top, sc.bottom, [...sc.inner, sc.inner[0]]);
+    if (sc.bottom.length) base(sc.ding, sc.top, [...sc.bottom, sc.top[2]]);
+    base(sc.ding, sc.top, sc.bottom, [sc.top[1]]);
+    out.add("Ding: " + sc.ding + " Ding: " + sc.top[0] + " Top: " + sc.top.slice(1).join(sep));
+    out.add("Ding: " + sc.top[0] + " Ding: " + sc.ding + " Top: " + sc.top.slice(1).join(sep));
+    out.add("Main note " + below[sc.ding][0] + "\nNotes: " + sc.ding + " / " + sc.top.join(sep));
+    out.add("Hauptnote " + sc.top[3] + "\nNoten " + sc.ding + " / " + sc.top.join(sep));
+    base(sc.ding + sep + sc.top[0], sc.top.slice(1));
+    base(sc.ding + sep + below[sc.ding][0], sc.top);
+    base(sc.ding + sep + sc.top[1] + sep + sc.top[2], sc.top);
+    out.add(L[1].trim() + " " + sc.top.join(sep) + "\nDing: " + sc.ding + "\n" + sc.top.slice(1, 3).join(sep));
+    out.add("Ding: " + sc.ding + sep + sc.top[0] + " Ding: " + sc.top[1] + " Top: " + sc.top.slice(2).join(sep));
+    base(sc.ding, bare(sc.top), [], []);
+    base(sc.ding, sc.top, bare(sc.bottom), []);
+    base(sc.ding, [...sc.top.slice(0, 3), bare([sc.top[3]])[0], ...sc.top.slice(4)], [], []);
+  }
+  return [...out];
+}
+
+const FINDING_TEXTS = [
+  "Main note C3\nNotes: D3 / A3 Bb3 C4 D4 E4 F4 G4 A4",
+  "Hauptnote C3\nNoten D3 / A3 Bb3 C4 D4 E4 F4 G4 A4",
+  "Ding: D3 Ding: E3 Top: A3 B3 C4",
+  "Ding: D3 Top: A3 A3 C4 D4 E4 F4",
+  "Ding: D3 Top: D3 A3 Bb3 C4 D4 E4 F4 G4 A4",
+  "Ding: D3 Top: A3 Bb3 C D4 E4 F4 G4 A4",
+  "Notes: (D3) A3 (C4) (F4) G4",
+  "Ding: D3 Top: C3 A3 Bb3 C4 D4",
+  "Ding: D3 Top: F#3 A3 C#4 Bottom: Bb2",
+  "Ding: D3 E3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4",
+  "Ding: F3\nOuter circle: G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5\nBottom: C3 Db3\nNotes: D3 version shipped by default.",
+  ["Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5", "Inner: D5 E5", "Ding: D3", "Bb3, C4"].join("\n"),
+];
+
+let corpusCache = null;
+function importCorpus() {
+  if (corpusCache) return corpusCache;
+  const texts = new Set();
+  fixture.cases.forEach((c) => texts.add(c.text));
+  goldFixture.cases.forEach((c) => texts.add(c.span));
+  FINDING_TEXTS.forEach((t) => texts.add(t));
+  synthTexts().forEach((t) => texts.add(t));
+  fuzzPages(3000).forEach((pg) => texts.add(pg.short));
+  corpusCache = [...texts];
+  return corpusCache;
+}
+
+function eachReachable(visit) {
+  for (const text of importCorpus()) {
+    const base = importer.interpret(text);
+    visit(text, undefined, base);
+    for (let i = 0; i < base.notes.length; i += 1) visit(text, i, importer.interpret(text, { ding: i }));
+  }
+}
+
+const flagOrderCodes = () => {
+  const src = fs.readFileSync(path.join(ROOT, "src", "engine", "importer.js"), "utf8");
+  const at = src.indexOf("var FLAG_ORDER");
+  return [...src.slice(at, src.indexOf("];", at)).matchAll(/\["([A-Z_]+)",/g)].map((m) => m[1]);
+};
+
+test("every REVIEW string the sheet can reach, every ding pick included, is a fixed point of formatSeed(parseSeed(x))", () => {
+  const bad = [];
+  let reviews = 0;
+  eachReachable((text, pick, r) => {
+    if (r.status !== "REVIEW") return;
+    reviews += 1;
+    const seed = importer.serialise(r);
+    const p = seed ? core.parseSeed(seed) : { ok: false, code: "EMPTY" };
+    const fixed = p.ok && core.formatSeed(p.value) === seed;
+    if (!fixed && bad.length < 10) bad.push({ text, pick, seed, code: p.code || "NOT_A_FIXED_POINT" });
+  });
+  assert.ok(reviews > 1000, "the corpus produced REVIEW results: " + reviews);
+  assert.deepEqual(bad, []);
+});
+
+test("IX: every result's flags are in FLAG_ORDER order", () => {
+  const order = flagOrderCodes();
+  const bad = [];
+  eachReachable((text, pick, r) => {
+    const ranks = r.flags.map((f) => order.indexOf(f.code));
+    const sorted = ranks.every((x, i) => x >= 0 && (i === 0 || ranks[i - 1] <= x));
+    if (!sorted && bad.length < 10) bad.push({ text, pick, flags: r.flags.map((f) => f.code) });
+  });
+  assert.deepEqual(bad, []);
+});
+
+test("IX: SEED_REFUSED fires only on a picked ding with no perfect fifth above it", () => {
+  assert.ok(flagOrderCodes().includes("SEED_REFUSED"), "FLAG_ORDER holds SEED_REFUSED");
+  const bad = [];
+  let fired = 0;
+  eachReachable((text, pick, r) => {
+    const f = r.flags.find((x) => x.code === "SEED_REFUSED");
+    if (!f) return;
+    fired += 1;
+    const ok = pick !== undefined && f.refusal.code === "NO_FIFTH" && r.status === "NEEDS_INPUT" && importer.serialise(r) === "";
+    if (!ok && bad.length < 10) bad.push({ text, pick, refusal: f.refusal, status: r.status });
+  });
+  assert.ok(fired > 0, "the guard fires on the corpus");
+  assert.deepEqual(bad, []);
+});
+
+const seedOf = (t, o) => importer.serialise(importer.interpret(t, o));
+const B1 = "Main note C3\nNotes: D3 / A3 Bb3 C4 D4 E4 F4 G4 A4";
+const B1_HAUPT = "Hauptnote C3\nNoten D3 / A3 Bb3 C4 D4 E4 F4 G4 A4";
+const flagCodes = (r) => r.flags.map((f) => f.code);
+
+test("IX: picking the list ding on a Main note clash drops the cue: (D3) A3 Bb3 C4 D4 E4 F4 G4 A4 with DING_CUE_DROPPED [0]", () => {
+  for (const t of [B1, B1_HAUPT]) {
+    const r = interpret(t, { ding: 1 });
+    assert.equal(r.status, "REVIEW", t);
+    assert.equal(seedOf(t, { ding: 1 }), "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4", t);
+    assert.deepEqual(flagOf(r, "DING_CUE_DROPPED").notes, [0], t);
+    assert.equal(flagOf(r, "DING_CUE_DROPPED").ding, 1, t);
+    assert.equal(flagOf(r, "DING_CUE_DROPPED").level, "CONFIRM", t);
+  }
+});
+
+test("IX: picking the Main note cue keeps the list ding as a top note: (C3) D3 A3 Bb3 ...", () => {
+  const r = interpret(B1, { ding: 0 });
+  assert.equal(r.status, "REVIEW");
+  assert.equal(importer.serialise(r), "(C3) D3 A3 Bb3 C4 D4 E4 F4 G4 A4");
+  assert.equal(flagOf(r, "DING_CUE_DROPPED"), undefined);
+  assert.equal(flagOf(r, "DING_NOT_LOWEST"), undefined);
+});
+
+test("IX: TWO_DINGS: each pick writes (D3) or (E3) A3 B3 C4 with the other cue dropped", () => {
+  const t = "Ding: D3 Ding: E3 Top: A3 B3 C4";
+  const d = interpret(t, { ding: 0 });
+  assert.equal(importer.serialise(d), "(D3) A3 B3 C4");
+  assert.deepEqual(flagOf(d, "DING_CUE_DROPPED").notes, [1]);
+  const e = interpret(t, { ding: 1 });
+  assert.equal(importer.serialise(e), "(E3) A3 B3 C4");
+  assert.deepEqual(flagOf(e, "DING_CUE_DROPPED").notes, [0]);
+});
+
+test("IX: one note per ding label is the cue: Ding: D3 Ding: E3 Top: A3 B3 C4 pick 0 drops E3 only", () => {
+  const r = interpret("Ding: D3 Ding: E3 Top: A3 B3 C4", { ding: 0 });
+  assert.equal(r.status, "REVIEW");
+  assert.equal(importer.serialise(r), "(D3) A3 B3 C4");
+  assert.deepEqual(flagOf(r, "DING_CUE_DROPPED").notes, [1]);
+});
+
+test("IX: a pitch repeated in one shell blocks with REPEATED_IN_SHELL and writes nothing", () => {
+  const b2 = interpret("Ding: D3 Top: A3 A3 C4 D4 E4 F4");
+  assert.equal(b2.status, "NEEDS_INPUT");
+  assert.deepEqual(flagOf(b2, "REPEATED_IN_SHELL").notes, [1, 2]);
+  assert.equal(flagOf(b2, "REPEATED_IN_SHELL").level, "BLOCK");
+  assert.equal(importer.serialise(b2), "");
+  const copy = interpret("Ding: D3 Top: D3 A3 Bb3 C4 D4 E4 F4 G4 A4");
+  assert.equal(copy.status, "NEEDS_INPUT");
+  assert.deepEqual(flagOf(copy, "REPEATED_IN_SHELL").notes, [0, 1]);
+  assert.equal(importer.serialise(copy), "");
+});
+
+test("IX: a pitch repeated across shells stays a DUPLICATE_PITCH CONFIRM and writes a line parseSeed accepts", () => {
+  const r = run(byId("sanango-c-harmonic-minor-16"));
+  const f = flagOf(r, "DUPLICATE_PITCH");
+  assert.deepEqual(f.notes, [3, 13]);
+  assert.equal(f.level, "CONFIRM");
+  assert.equal(flagOf(r, "REPEATED_IN_SHELL"), undefined);
+  assert.equal(r.status, "REVIEW");
+  assert.ok(core.parseSeed(importer.serialise(r)).ok);
+});
+
+test("IX: a pick above other top or inner notes blocks with DING_NOT_LOWEST naming them", () => {
+  const cue = interpret(B1, { ding: 3 });
+  assert.equal(cue.status, "NEEDS_INPUT");
+  assert.deepEqual(flagOf(cue, "DING_NOT_LOWEST").notes, [1, 2]);
+  assert.equal(flagOf(cue, "DING_NOT_LOWEST").ding, 3);
+  assert.equal(importer.serialise(cue), "");
+  const inner = interpret("Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 Inner: C5 D5", { ding: 9 });
+  assert.equal(inner.status, "NEEDS_INPUT");
+  assert.deepEqual(flagOf(inner, "DING_NOT_LOWEST").notes, [0, 1, 2, 3, 4, 5, 6, 7, 8]);
+  assert.equal(importer.serialise(inner), "");
+});
+
+test("IX: a labelled ding above a top note blocks with no pick: Ding: D3 Top: C3 A3 Bb3 C4 D4 is NEEDS_INPUT DING_NOT_LOWEST", () => {
+  const r = interpret("Ding: D3 Top: C3 A3 Bb3 C4 D4");
+  assert.equal(r.status, "NEEDS_INPUT");
+  const f = flagOf(r, "DING_NOT_LOWEST");
+  assert.deepEqual(f.notes.map((i) => r.notes[i].note), ["C3"]);
+  assert.equal(importer.serialise(r), "");
+});
+
+test("IX: D-10 a prose D3 after a second list blocks with DING_NOT_LOWEST and CONFLICTING_LIST", () => {
+  const r = interpret("Ding: F3\nOuter circle: G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5\nBottom: C3 Db3\nNotes: D3 version shipped by default.");
+  assert.equal(r.status, "NEEDS_INPUT");
+  assert.deepEqual(flagCodes(r), ["DING_NOT_LOWEST", "CONFLICTING_LIST"]);
+});
+
+test("IX: a picked bottom note blocks with DING_ON_BOTTOM", () => {
+  const r = interpret("Ding: D3 Top: F#3 A3 C#4 Bottom: Bb2", { ding: 4 });
+  assert.equal(r.status, "NEEDS_INPUT");
+  assert.deepEqual(flagOf(r, "DING_ON_BOTTOM"), { code: "DING_ON_BOTTOM", level: "BLOCK", ding: 4 });
+  assert.equal(importer.serialise(r), "");
+});
+
+test("IX: the SEED_REFUSED guard blocks a picked ding with no fifth above it: Ding: D3 Ding: E3 Top: A3 B3 C4 with ding 2", () => {
+  const r = interpret("Ding: D3 Ding: E3 Top: A3 B3 C4", { ding: 2 });
+  assert.equal(r.status, "NEEDS_INPUT");
+  assert.equal(flagOf(r, "SEED_REFUSED").refusal.code, "NO_FIFTH");
+  assert.equal(flagOf(r, "SEED_REFUSED").level, "BLOCK");
+  const seen = flagCodes(r);
+  assert.ok(seen.indexOf("SEED_REFUSED") < seen.indexOf("DING_CUE_DROPPED"), seen.join());
+  assert.equal(importer.serialise(r), "");
+});
+
+test("IX: the SEED_REFUSED guard turns any refused REVIEW into NEEDS_INPUT", () => {
+  const stub = loadEngine(["core", "importer"]);
+  stub.core.parseSeed = function () { return { ok: false, code: "STUB_REFUSAL", reason: "stub" }; };
+  const r = plain(stub.importer.interpret("Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4"));
+  assert.equal(r.status, "NEEDS_INPUT");
+  assert.deepEqual(flagOf(r, "SEED_REFUSED").refusal, { code: "STUB_REFUSAL", reason: "stub" });
+});
+
+test("IX: a ding label holding two notes blocks under any pick: Ding: D3 E3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 pick 0 is NEEDS_INPUT DING_CLAUSE_MANY", () => {
+  const t = "Ding: D3 E3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4";
+  const r = interpret(t, { ding: 0 });
+  assert.equal(r.status, "NEEDS_INPUT");
+  assert.deepEqual(flagCodes(r), ["DING_CLAUSE_MANY"]);
+  assert.deepEqual(flagOf(r, "DING_CLAUSE_MANY").notes, [0, 1]);
+  assert.ok(r.notes.every((n) => n.role !== "dropped"));
+  assert.equal(importer.serialise(r), "");
+  assert.deepEqual(flagOf(interpret(t), "CONFLICTING_DING").notes, [0, 1]);
+});
+
+test("IX: an unlabelled line after a ding label is never dropped: the long-page Ding: D3 then Bb3, C4 with ding 11", () => {
+  const page = ["Top: A3 Bb3 C4 D4 E4 F4 G4 A4 C5", "Inner: D5 E5", "Ding: D3", "Bb3, C4"].join("\n");
+  const r = interpret(page, { ding: 11 });
+  assert.equal(r.status, "NEEDS_INPUT");
+  assert.deepEqual(flagOf(r, "DING_CLAUSE_MANY").notes, [11, 12, 13]);
+  assert.ok(r.notes.every((n) => n.role !== "dropped"));
+  assert.equal(importer.serialise(r), "");
+});
+
+test("IX: a dropped cue leaves no trace in the inferred octaves: Ding: D Ding: C Top: A Bb C D E F G A (G) with ding 0 and parens as bottom", () => {
+  const r = interpret("Ding: D Ding: C Top: A Bb C D E F G A (G)", { ding: 0, parens: "bottom" });
+  assert.equal(r.status, "REVIEW");
+  assert.deepEqual(flagOf(r, "DING_CUE_DROPPED").notes, [1]);
+  assert.equal(importer.serialise(r), "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 [G5]");
 });

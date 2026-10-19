@@ -4,8 +4,8 @@
 diff --git a/src/engine/importer.js b/src/engine/importer.js
 --- a/src/engine/importer.js
 +++ b/src/engine/importer.js
-@@ -547,7 +547,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-   function interpret(raw, opts) {
+@@ -616,7 +616,7 @@
+   function interpretRaw(raw, opts) {
      var narrowed = read(raw, opts, true);
      if (narrowed.status !== "REVIEW" || String(raw).length <= NARROW_OVER) return narrowed;
 -    var whole = read(raw, opts, false);

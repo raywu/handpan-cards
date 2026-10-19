@@ -1,0 +1,15 @@
+# kills: IX: a ding label holding two notes blocks under any pick: Ding: D3 E3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 pick 0 is NEEDS_INPUT DING_CLAUSE_MANY
+# suite: node --test --test-name-pattern ^IX..a.ding.label.holding.two.notes tests/import.test.js
+# DING_CLAUSE_MANY is never raised, so a two-note ding clause reads as REVIEW under a pick.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -461,7 +461,7 @@
+     labelDings.forEach(function (n) { (clauses[n.list] = clauses[n.list] || []).push(n); });
+     var crowded = [];
+     Object.keys(clauses).forEach(function (k) { if (clauses[k].length > 1) crowded = crowded.concat(clauses[k]); });
+-    if (pickable && crowded.length) flag("DING_CLAUSE_MANY", { notes: indices(crowded) });
++    if (false) flag("DING_CLAUSE_MANY", { notes: indices(crowded) });
+ 
+     var parensBottom = opts.parens === "bottom";
+     notes.forEach(function (n) {

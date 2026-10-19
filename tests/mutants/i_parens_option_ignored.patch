@@ -4,12 +4,12 @@
 diff --git a/src/engine/importer.js b/src/engine/importer.js
 --- a/src/engine/importer.js
 +++ b/src/engine/importer.js
-@@ -407,7 +407,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-       }
-     }
+@@ -463,7 +463,7 @@
+     Object.keys(clauses).forEach(function (k) { if (clauses[k].length > 1) crowded = crowded.concat(clauses[k]); });
+     if (pickable && crowded.length) flag("DING_CLAUSE_MANY", { notes: indices(crowded) });
  
 -    var parensBottom = opts.parens === "bottom";
 +    var parensBottom = false;
      notes.forEach(function (n) {
        if (n === ding) n.assigned = "ding";
-       else if (n.paren && parensBottom) { n.assigned = "bottom"; n.inline = true; }
+       else if (pickable && contested && n.role === "ding" && !n.paren && clauses[n.list].length === 1) n.assigned = "dropped";

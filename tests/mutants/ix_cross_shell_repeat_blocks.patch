@@ -1,0 +1,15 @@
+# kills: IX: a pitch repeated across shells stays a DUPLICATE_PITCH CONFIRM and writes a line parseSeed accepts
+# suite: node --test --test-name-pattern ^IX..a.pitch.repeated.across.shells tests/import.test.js
+# A pitch repeated across the top and bottom shells blocks as REPEATED_IN_SHELL instead of staying a confirmation.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -528,7 +528,7 @@
+       var g = byPitch[k];
+       if (g.t.length > 1) sameShell = sameShell.concat(g.t);
+       if (g.b.length > 1) sameShell = sameShell.concat(g.b);
+-      if (g.t.length && g.b.length) repeated = repeated.concat(g.t, g.b);
++      if (g.t.length && g.b.length) sameShell = sameShell.concat(g.t, g.b);
+     });
+     var num = function (a, b) { return a - b; };
+     if (sameShell.length && !flags.CONFLICTING_DING) flag("REPEATED_IN_SHELL", { notes: sameShell.sort(num) });

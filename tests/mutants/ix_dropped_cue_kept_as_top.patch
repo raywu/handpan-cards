@@ -1,0 +1,15 @@
+# kills: IX: picking the list ding on a Main note clash drops the cue: (D3) A3 Bb3 C4 D4 E4 F4 G4 A4 with DING_CUE_DROPPED [0]
+# suite: node --test --test-name-pattern ^IX..picking.the.list.ding tests/import.test.js
+# A label-ding cue that a pick displaces is kept as a top note instead of dropped, so the line carries two dings' worth of notes.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -466,7 +466,7 @@
+     var parensBottom = opts.parens === "bottom";
+     notes.forEach(function (n) {
+       if (n === ding) n.assigned = "ding";
+-      else if (pickable && contested && n.role === "ding" && !n.paren && clauses[n.list].length === 1) n.assigned = "dropped";
++      else if (pickable && contested && n.role === "ding" && !n.paren && clauses[n.list].length === 1) n.assigned = "top";
+       else if (n.paren && parensBottom) { n.assigned = "bottom"; n.inline = true; }
+       else if (n.paren) n.assigned = "unknown";
+       else n.assigned = n.role === "ding" ? "top" : n.role;
