@@ -314,11 +314,32 @@ test("a picked ding on a note after the first moves to the front: same string as
   assert.equal(picked, importer.serialise(importer.interpret("Ding: G Top: D E F Bb")));
 });
 
-test("an inner note below the highest top note blocks with INNER_BELOW_TOP and writes no string", () => {
+test("IB: an inner note below the highest top note is a CONFIRM and serialises rim, bar, inner", () => {
   const r = run(byId("synthetic-inner-below-top"));
-  assert.equal(r.status, "NEEDS_INPUT");
-  assert.equal(flagOf(r, "INNER_BELOW_TOP").level, "BLOCK");
-  assert.equal(importer.serialise(r), "");
+  assert.equal(r.status, "REVIEW");
+  assert.equal(flagOf(r, "INNER_BELOW_TOP").level, "INFO");
+  assert.equal(importer.serialise(r), "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5 | B4");
+});
+
+test("IB: the INNER_BELOW_TOP notes equal innerBelowRim of the serialised deck", () => {
+  const r = run(byId("synthetic-inner-below-top"));
+  const names = flagOf(r, "INNER_BELOW_TOP").notes.map((i) => r.notes[i].note);
+  assert.ok(names.length > 0);
+  assert.deepEqual(names, plain(core.innerBelowRim(core.parseSeed(importer.serialise(r)).value.fields)));
+});
+
+test("IB: serialise writes a dip as rim, bar, inner and equals formatSeed", () => {
+  const roles = {
+    ding: { note: "D3" },
+    top: ["A3", "Bb3", "C4", "D4", "E4"].map((note) => ({ note })),
+    inner: ["B3", "F4"].map((note) => ({ note })),
+    bottom: [{ note: "C3" }]
+  };
+  const line = importer.serialise({ status: "REVIEW", roles });
+  assert.equal(line, "[C3] (D3) A3 Bb3 C4 D4 E4 | B3 F4");
+  assert.equal(line, core.formatSeed(core.parseSeed(line).value.fields));
+  const bare = importer.serialise({ status: "REVIEW", roles: { ...roles, bottom: [] } });
+  assert.equal(bare, "(D3) A3 Bb3 C4 D4 E4 | B3 F4");
 });
 
 test("prose after the note list never reads as a later note: the nine product-page tails stay REVIEW", () => {
@@ -1262,12 +1283,53 @@ describe("IH: compose", () => {
     assert.equal(repeat.errors.top, null);
     const lower = compose({ ding: "D3", top: "A3 Bb3 C4", inner: "Bb3" });
     assert.equal(lower.errors.inner, "Bb3 is already in the top or inner notes.");
+    const dip = compose({ ding: "D3", top: "A3 Bb3 C4", inner: "B3" });
+    assert.equal(dip.errors.inner, null);
+    assert.ok(dip.ok);
     const later = compose({ ding: "D3", top: "A3 Bb3 C4", inner: "D5 C5" });
     assert.equal(later.errors.inner, "C5 is lower than D5: list low to high.");
     const bare = compose({ ding: "D3", top: "A3 Bb3 C4", inner: "Bb" });
     assert.equal(bare.errors.inner, null);
     assert.deepEqual(bare.notes.inner, ["Bb4"]);
     assert.ok(bare.ok);
+  });
+
+  test("IB: compose accepts an inner note typed below the top notes and writes rim, bar, inner", () => {
+    const r = compose({ ding: "D3", top: "A3 Bb3 C4 D4 E4", inner: "B3 F4" });
+    assert.ok(r.ok);
+    assert.equal(r.errors.inner, null);
+    assert.equal(r.line, "(D3) A3 Bb3 C4 D4 E4 | B3 F4");
+    assert.deepEqual(r.notes.top, ["A3", "Bb3", "C4", "D4", "E4"]);
+    assert.deepEqual(r.notes.inner, ["B3", "F4"]);
+  });
+
+  test("IB: compose keeps every top note on the rim when an inner note sits below it", () => {
+    assert.equal(compose({ ding: "D3", top: "A3 Bb3 C4 D4 E4", inner: "B3 F4" }).line, "(D3) A3 Bb3 C4 D4 E4 | B3 F4");
+    assert.equal(compose({ ding: "D3", top: "A3 C4", inner: "B3" }).line, "(D3) A3 C4 | B3");
+  });
+
+  test("IB: compose names a guessed inner octave in info.inner and says how to put a note lower", () => {
+    const r = compose({ ding: "D3", top: RIM8, inner: "C D" });
+    assert.equal(r.info.inner, "Octaves guessed: C5, D5. An inner note can sit below the top notes: type its octave to put it there.");
+    const typed = compose({ ding: "D3", top: RIM8, inner: "C5 D5" });
+    assert.equal(typed.info.inner, null);
+    assert.equal(compose({ ding: "D3", top: RIM8 }).info.inner, null);
+  });
+
+  test("IB: compose names an inner note below the top notes in info.inner", () => {
+    const r = compose({ ding: "D3", top: "A3 C4 D4 E4", inner: "B3" });
+    assert.equal(r.info.inner, "B3 sits below the top notes. Check it on the pan picture.");
+    const both = compose({ ding: "D3", top: "A3 C4 D4 E4", inner: "B3 F" });
+    assert.equal(both.info.inner, "Octaves guessed: F4. An inner note can sit below the top notes: type its octave to put it there. B3 sits below the top notes. Check it on the pan picture.");
+    assert.equal(compose({ ding: "D3", top: "A3 C4", inner: "D5" }).info.inner, null);
+  });
+
+  test("IB: compose says an inner note at or below the ding is not above the ding", () => {
+    const r = compose({ ding: "D3", top: "A3 C4 D4 E4", inner: "C3" });
+    assert.equal(r.errors.inner, "C3 is not above the ding, D3.");
+    assert.equal(r.ok, false);
+    const same = compose({ ding: "D3", top: "A3 C4 D4 E4", inner: "D3" });
+    assert.equal(same.errors.inner, "D3 is not above the ding, D3.");
   });
 
   test("IH: compose puts NO_FIFTH under DING and never NO_FIFTH under TOP while a prefix is staged, and reports no NO_FIFTH while TOP is empty (DING F3 alone carries no DING error)", () => {

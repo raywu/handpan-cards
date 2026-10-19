@@ -8,8 +8,8 @@ diff --git a/src/engine/importer.js b/src/engine/importer.js
      var out = [];
      var barred = false;
      line.forEach(function (e) {
--      if (e.inner && !barred) { out.push("|"); barred = true; }
-+      if (e.inner && !barred) { barred = true; }
+-        if (e.inner && !barred) { out.push("|"); barred = true; }
++        if (e.inner && !barred) { barred = true; }
        out.push(e.text);
      });
      var text = out.join(" ");
