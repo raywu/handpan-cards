@@ -1,0 +1,16 @@
+# kills: KB: with no text field focused, a taller visible area seen earlier does not raise kbup
+# suite: node --test --test-name-pattern ^KB..with.no.text.field.focused.* tests/e2e.test.js
+# The kbBase term no longer needs a focused text field, so a collapsed browser toolbar (a taller visible
+# area seen earlier) reads as a keyboard.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11187,7 +11187,7 @@
+   if (!zoomed) kbBase = Math.max(kbBase, vv.height);
+   const focused = document.activeElement;
+   const textFocused = !!(focused && focused.matches && focused.matches("input, textarea"));
+-  const kb = !zoomed && (vv.height < layoutH - 80 || (textFocused && vv.height < kbBase - 80));
++  const kb = !zoomed && (vv.height < layoutH - 80 || vv.height < kbBase - 80);
+   const off = zoomed ? 0 : kbOffset(layoutH, vv.height, vv.offsetTop);
+   const cap = zoomed ? 0 : kbCap(layoutH, vv.height);
+   /* Written only on change: this handler is bound to visualViewport's `scroll`

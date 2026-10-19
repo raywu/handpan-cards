@@ -117,7 +117,7 @@ function run() {
   });
 
   for (const [key, scale] of Object.entries({ amara: SCALES.amara, kurd: SCALES.kurd, pygmy: SCALES.pygmy })) {
-    test(`DR2a browser (58): at 380x667 the same-ring targets of ${key} are ${key === "pygmy" ? "measured and reported" : "at least " + MIN_PX + "px"} and the plate at least 240px`, async () => {
+    test(`DR2a browser (58): at 380x667 the same-ring targets of ${key} are ${key === "pygmy" ? "measured and reported" : "at least " + MIN_PX + "px"} and the plate at least 140px`, async () => {
       await openAdd(scale);
       const first = await ev(`return document.querySelector("#scale-preview .panhit[tabindex='0']").getAttribute("aria-label").split(",")[0];`);
       await tap(first);
@@ -125,7 +125,7 @@ function run() {
         const k = sr.width / svg.viewBox.baseVal.width;
         const same = [...document.querySelectorAll("#scale-preview .panhit")].filter((h) => h.getAttribute("aria-label").includes(document.querySelector(".panhit[aria-pressed='true']").getAttribute("aria-label").split(", ")[1].split(" seat")[0] + " seat"));
         return { plate: sr.height, sizes: same.map((h) => Number(h.getAttribute("r")) * 2 * k) };`);
-      assert.ok(m.plate >= 240, `plate ${m.plate}px`);
+      assert.ok(m.plate >= 140, `plate ${m.plate}px`);
       const least = Math.min(...m.sizes);
       if (key === "pygmy") {
         console.log(`DR2a 58 report, pygmy at 380x667, plate ${m.plate}px: smallest same-ring target ${least.toFixed(1)}px`);
@@ -202,9 +202,9 @@ function run() {
         assert.ok(m.stuck, `${state}: the band is not stuck`);
         for (const row of ["toggle"])
           assert.ok(m[row] <= 0.5, `${key}, ${state}: the ${row} is ${m[row]}px below the scrollport (plate ${m.plateW}px)`);
-        assert.ok(m.plateW >= 240, `${key}, ${state}: the plate is ${m.plateW}px`);
-        const cap = 0.39 * (await ev(`return window.innerHeight;`));
-        assert.ok(m.plateW <= cap, `${key}, ${state}: the plate is ${m.plateW}px, over its 39dvh cap of ${cap}px, so the rows below it drift out of reach`);
+        assert.ok(m.plateW >= 140, `${key}, ${state}: the plate is ${m.plateW}px`);
+        const cap = 0.31 * (await ev(`return window.innerHeight;`));
+        assert.ok(m.plateW <= cap, `${key}, ${state}: the plate is ${m.plateW}px, over its 31dvh cap of ${cap}px, so the rows below it drift out of reach`);
       }
       const open = await reachOpen();
       for (const row of ["noteRow", "seatRow", "reset"]) assert.ok(open[row] <= 0.5, `${key}: the ${row} is ${open[row]}px below the scrollport with the finer controls open`);

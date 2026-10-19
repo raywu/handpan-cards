@@ -1,0 +1,16 @@
+# kills: KB: applyKbOffset reads the sheet's own height when it has one and innerHeight otherwise
+# suite: node --test --test-name-pattern ^KB..applyKbOffset.reads.the.sheet.s.own.height.* tests/app.test.js
+# The keyboard-free baseline is window.innerHeight again, so a keyboard model that moves innerHeight
+# (or a sheet whose own height differs) decides the lift and cap from the wrong height.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11181,7 +11181,7 @@
+    * resizes shrinks the sheet, so kbBase (the tallest visible area seen at this
+    * width) covers that model, and only while a text field is focused. The
+    * sandbox stub has no clientHeight/Width and falls back. */
+-  const layoutH = sheet.clientHeight || window.innerHeight;
++  const layoutH = window.innerHeight;
+   const layoutW = sheet.clientWidth || window.innerWidth;
+   if (layoutW !== kbBaseW) { kbBaseW = layoutW; kbBase = 0; }
+   if (!zoomed) kbBase = Math.max(kbBase, vv.height);

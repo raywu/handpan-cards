@@ -1,0 +1,16 @@
+# kills: KB: F4 opening the drawer focuses the first note with preventScroll
+# suite: node --test --test-name-pattern ^KB..F4.opening.the.drawer.focuses.the.first.note.with.preventScroll$ tests/app.test.js
+# The first note takes focus without preventScroll, so the browser scrolls the sheet to it when the
+# drawer opens (and on the put-down path, which shares the branch).
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10956,7 +10956,7 @@
+     if (focusFirstNext) {
+       focusFirstNext = false;
+       const first = allNotes().find((n) => n.k >= 2) || allNotes()[0];
+-      if (first) { setRover({ ring: first.ring, i: first.i }); focusRef(first, { preventScroll: true }); }
++      if (first) { setRover({ ring: first.ring, i: first.i }); focusRef(first); }
+     } else if (prev) focusRef(prev);
+   }
+   return true;

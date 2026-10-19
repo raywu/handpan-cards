@@ -1,0 +1,15 @@
+# kills: KB: a rotation resets the keyboard baseline
+# suite: node --test --test-name-pattern ^KB..a.rotation.resets.the.keyboard.baseline$ tests/e2e.test.js
+# A width change no longer resets kbBase, so the portrait baseline outlives a rotation and the landscape
+# sheet reads as keyboard-up.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11183,7 +11183,6 @@
+    * sandbox stub has no clientHeight/Width and falls back. */
+   const layoutH = sheet.clientHeight || window.innerHeight;
+   const layoutW = sheet.clientWidth || window.innerWidth;
+-  if (layoutW !== kbBaseW) { kbBaseW = layoutW; kbBase = 0; }
+   if (!zoomed) kbBase = Math.max(kbBase, vv.height);
+   const focused = document.activeElement;
+   const textFocused = !!(focused && focused.matches && focused.matches("input, textarea"));

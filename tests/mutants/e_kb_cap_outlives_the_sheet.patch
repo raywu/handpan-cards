@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11330,10 +11330,7 @@ function hideSheet() {
+@@ -11370,10 +11370,7 @@ function hideSheet() {
    // be left behind (queue row 88): applyKbOffset() writes transform and
    // maxHeight together, so the teardown has to undo them together or the two
    // halves drift apart the moment anything else learns to call hideSheet().
@@ -15,6 +15,6 @@ diff --git a/index.html b/index.html
 -    sheetSurf.style.maxHeight = "";
 -  }
 +  if (sheetSurf) sheetSurf.style.transform = "";
-   for (const c of ["kbup", "short", "side"]) setSheetClass(c, false);
+   for (const c of ["kbup", "short", "side", "tiny"]) setSheetClass(c, false);
    editingId = null;
    seedPrefill = null;
