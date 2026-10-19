@@ -1053,7 +1053,7 @@ footer.seq{row-gap:var(--sp-1)}
 .scalestage > #scale-plate-band{position:sticky; top:0; z-index:2; background:#1f1b15;
   padding-bottom:var(--sp-1)}
 .scalestage #scale-preview{width:clamp(110px, calc(100cqh - 260px), 300px); max-width:none}
-.sheetbody:has(#scale-layout-zone.open) #scale-preview{width:100%; max-width:min(300px, 39dvh)}
+.sheetbody:has(#scale-layout-zone.open) #scale-preview{width:100%; max-width:min(300px, 27dvh)}
 .sheetbody:has(#scale-layout-zone.open):has(input:focus, textarea:focus, #scale-swatches button:focus)
   #scale-plate-band{position:static}
 .sheetbody:has(#scale-layout-zone.nostick) #scale-plate-band{position:static}
@@ -1087,6 +1087,7 @@ footer.seq{row-gap:var(--sp-1)}
 #scale-sheet.short .sheetbody{gap:var(--sp-2)}
 #scale-sheet.short #scale-label-2{display:none}
 #scale-sheet.kbup.side .sheethead{display:none}
+#scale-sheet.tiny .sheetbody{flex:0 0 auto; overflow:visible}
 /* The app's settings trigger paints over the open sheet; it has no job there. */
 body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 @container surf (min-width:600px){
@@ -10452,8 +10453,20 @@ function hasTwoNoteRing() {
   for (const f of Object.values(res.value.fields)) if (f[3] in n) n[f[3]] += 1;
   return Object.values(n).some((c) => c >= 2);
 }
+const edgeOf = (el, side) => (el.getBoundingClientRect ? el.getBoundingClientRect()[side] : 0);
+/** Put the toggle back where the tap found it, unless the sticky band would
+ *  cover it; then just below the band, or up far enough to show the options. */
+function keepToggle(at) {
+  bandPort.scrollTop += edgeOf(drawerBtn, "top") - at;
+  const room = edgeOf(bandPort, "top") + (parseFloat(bandPad) || 0);
+  const top = edgeOf(drawerBtn, "top");
+  const over = edgeOf(drawerBox, "bottom") - edgeOf(bandPort, "bottom");
+  if (top < room) bandPort.scrollTop -= room - top;
+  else if (over > 0) bandPort.scrollTop += Math.min(over, top - room);
+}
 function openDrawer() {
   if (!boxOk || drawerOpen) return;
+  const at = edgeOf(drawerBtn, "top");
   drawerOpen = true;
   drawerPaused = false;
   previewBox.addEventListener("touchmove", plateTouchMove, { passive: false });
@@ -10462,6 +10475,7 @@ function openDrawer() {
   paintLayout();
   focusFirstNext = true;
   repaintPlate();
+  keepToggle(at);
   layoutZone.scrollIntoView({ block: "nearest", behavior: "auto" });
   drawerBtn.scrollIntoView({ block: "nearest", behavior: "auto" });
   const note = document.activeElement;
@@ -10628,9 +10642,9 @@ function hitFor(ref) {
   const n = noteAt(ref);
   return n ? hitNodes().find((h) => h.getAttribute("data-field") === n.id) || null : null;
 }
-function focusRef(ref) {
+function focusRef(ref, opts) {
   const h = hitFor(ref);
-  if (h) h.focus();
+  if (h) h.focus(opts);
   return !!h;
 }
 /** The single Tab stop of the plate: the note the arrows last stood on. */
@@ -10942,7 +10956,7 @@ function paintPan(seed, state) {
     if (focusFirstNext) {
       focusFirstNext = false;
       const first = allNotes().find((n) => n.k >= 2) || allNotes()[0];
-      if (first) { setRover({ ring: first.ring, i: first.i }); focusRef(first); }
+      if (first) { setRover({ ring: first.ring, i: first.i }); focusRef(first, { preventScroll: true }); }
     } else if (prev) focusRef(prev);
   }
   return true;
@@ -11129,7 +11143,7 @@ function kbCap(innerHeight, vvHeight) {
   if (innerHeight - vvHeight <= 0) return 0;
   return Math.max(0, Math.round(vvHeight - 8));
 }
-function applyKbOffset() {
+function applyKbOffset(e) {
   const vv = window.visualViewport;
   /* Gated on sheetOpen as well as on the two objects. The listeners below are
    * bound for the life of the page and never removed, so without this a
@@ -11160,8 +11174,22 @@ function applyKbOffset() {
    * The tolerance is for scales that do not land exactly on 1 coming back from
    * a pinch; a sub-percent residue is not a zoom. */
   const zoomed = vv.scale > 1.01;
-  const off = zoomed ? 0 : kbOffset(window.innerHeight, vv.height, vv.offsetTop);
-  const cap = zoomed ? 0 : kbCap(window.innerHeight, vv.height);
+  /* The keyboard-free baseline is the sheet's own height, not innerHeight:
+   * #scale-sheet is position:fixed; inset:0, so it is the layout viewport's
+   * height and does not depend on the cap or translate written below. iOS can
+   * move innerHeight with the keyboard. Only a layout viewport that itself
+   * resizes shrinks the sheet, so kbBase (the tallest visible area seen at this
+   * width) covers that model, and only while a text field is focused. The
+   * sandbox stub has no clientHeight/Width and falls back. */
+  const layoutH = sheet.clientHeight || window.innerHeight;
+  const layoutW = sheet.clientWidth || window.innerWidth;
+  if (layoutW !== kbBaseW) { kbBaseW = layoutW; kbBase = 0; }
+  if (!zoomed) kbBase = Math.max(kbBase, vv.height);
+  const focused = document.activeElement;
+  const textFocused = !!(focused && focused.matches && focused.matches("input, textarea"));
+  const kb = !zoomed && (vv.height < layoutH - 80 || (textFocused && vv.height < kbBase - 80));
+  const off = zoomed ? 0 : kbOffset(layoutH, vv.height, vv.offsetTop);
+  const cap = zoomed ? 0 : kbCap(layoutH, vv.height);
   /* Written only on change: this handler is bound to visualViewport's `scroll`
    * as well, which fires at frame rate while a zoomed page is panned, and each
    * unconditional style write forces a style recalc for no reason. */
@@ -11173,13 +11201,16 @@ function applyKbOffset() {
    * keyboard is up (the zoom branch above reads as no keyboard), and the
    * surface is short or very short. Read after the cap is written, once. */
   const high = sheetSurf.clientHeight;
-  setSheetClass("kbup", !zoomed && vv.height < window.innerHeight - 80);
+  setSheetClass("kbup", kb);
   setSheetClass("short", high > 0 && high < 560);
   setSheetClass("side", high > 0 && high < 420);
+  setSheetClass("tiny", kb && high > 0 && high < 200);
   syncBand();
+  if (e && e.type === "scroll") return;
   const at = document.activeElement;
   if (at && at.matches && at.matches("input, textarea") && at.scrollIntoView) at.scrollIntoView({ block: "nearest", behavior: "auto" });
 }
+let kbBase = 0, kbBaseW = 0;
 function setSheetClass(name, on) {
   if (sheet.classList.contains(name) !== on) sheet.classList.toggle(name, on);
 }
@@ -11343,7 +11374,7 @@ function hideSheet() {
     sheetSurf.style.transform = "";
     sheetSurf.style.maxHeight = "";
   }
-  for (const c of ["kbup", "short", "side"]) setSheetClass(c, false);
+  for (const c of ["kbup", "short", "side", "tiny"]) setSheetClass(c, false);
   editingId = null;
   seedPrefill = null;
   dropDrawer();

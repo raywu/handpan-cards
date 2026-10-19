@@ -10961,3 +10961,48 @@ describe("DI: dual input", () => {
     assert.deepStrictEqual(Object.values(a).map((r) => r.options), Object.values(b).map((r) => r.options));
   });
 });
+
+test("KB: applyKbOffset reads the sheet's own height when it has one and innerHeight otherwise", () => {
+  const app = boot({ layout: true, innerHeight: 800, visualViewport: { height: 400, offsetTop: 0, scale: 1 } });
+  const surf = app.els["scale-sheet"].firstElementChild;
+  app.els["scale-sheet"].clientHeight = 500;
+  app.run("openScaleSheet()");
+  assert.strictEqual(surf.style.transform, "translateY(-100px)", "the lift was measured from innerHeight, not the sheet");
+  assert.strictEqual(surf.style.maxHeight, "392px");
+  app.run("closeScaleSheet()");
+  const bare = boot({ layout: true, innerHeight: 800, visualViewport: { height: 400, offsetTop: 0, scale: 1 } });
+  bare.run("openScaleSheet()");
+  assert.strictEqual(bare.els["scale-sheet"].firstElementChild.style.transform, "translateY(-400px)",
+    "with no sheet height the lift must fall back to innerHeight");
+});
+
+test("KB: hideSheet clears tiny", () => {
+  const app = boot({ layout: true });
+  app.run("openScaleSheet()");
+  app.els["scale-sheet"].classList.add("tiny");
+  app.run("closeScaleSheet()");
+  assert.strictEqual(app.els["scale-sheet"].classList.contains("tiny"), false, "hideSheet left tiny on a closed sheet");
+});
+
+test("KB: F4 the put-down focus path passes preventScroll", () => {
+  const app = boot();
+  const to = { rim: 5, inner: 2, bottom: 3 };
+  d2Open(app, d2Build({ rim: 3, inner: 3, bottom: 3 }).text, false);
+  d2Tap(app, "E3"); d2Tap(app, "F3");
+  d2Tap(app, d2Build({ rim: 3, inner: 3, bottom: 3 }).names.inner[0]); d2Tap(app, d2Build({ rim: 3, inner: 3, bottom: 3 }).names.inner[1]);
+  d2Tap(app, "G3");
+  app.type(d2Build(to).text);
+  assert.strictEqual(d2Pick(app), null, "the pick was not put down, so this proves nothing");
+  assert.ok(app.activeHit() !== null, "focus did not return to a note");
+  assert.deepStrictEqual(plain(app.get("document.activeElement.focusOpts")), { preventScroll: true },
+    "the put-down focus scrolled the sheet");
+});
+
+test("KB: F4 opening the drawer focuses the first note with preventScroll", () => {
+  const app = boot();
+  openSheet(app);
+  app.type(D2_AMARA);
+  app.els["scale-layout-toggle"].click();
+  assert.ok(app.activeHit() !== null, "opening the drawer did not focus a note");
+  assert.deepStrictEqual(plain(app.get("document.activeElement.focusOpts")), { preventScroll: true });
+});
