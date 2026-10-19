@@ -1,4 +1,5 @@
-# kills: DI: the slot shows the first shown message in visual order prefixed by its field's short name
+# kills: DI: the slot shows the first shown message in visual order prefixed by its field's short name, and #scale-msg yields while it holds text
+# Plan wording: DI: the slot shows the first shown message in visual order prefixed by its field's short name
 # suite: node --test --test-name-pattern ^DI:.the.slot.shows.the.first tests/app.test.js
 # Mutant di_slot_not_prefixed.
 diff --git a/index.html b/index.html

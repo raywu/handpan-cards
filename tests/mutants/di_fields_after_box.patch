@@ -1,4 +1,5 @@
-# kills: DI: the sheet serves DING, TOP RIM NOTES, TOP INNER NOTES and BOTTOM NOTES in that order before #scale-box
+# kills: DI: the sheet serves DING, TOP RIM NOTES, TOP INNER NOTES and BOTTOM NOTES in that order before #scale-box, each a text input with autocapitalize off, enterkeyhint next and BOTTOM done
+# Plan wording: DI: the sheet serves DING, TOP RIM NOTES, TOP INNER NOTES and BOTTOM NOTES in that order before #scale-box
 # suite: node --test --test-name-pattern ^DI:.the.sheet.serves.DING tests/app.test.js
 # Mutant di_fields_after_box.
 diff --git a/index.html b/index.html

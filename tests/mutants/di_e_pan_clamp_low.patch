@@ -1,4 +1,5 @@
-# kills: DI: at 380x780 with a 260px keyboard ... at least 212px of pan
+# kills: DI: at 380x780 with a 260px keyboard each field typed in stays fully in view with at least 212px of pan in view
+# Plan wording: DI: at 380x780 with a 260px keyboard ... at least 212px of pan
 # suite: node --test --test-name-pattern ^DI:.at.380x780.with.a.260px tests/e2e.test.js
 # Mutant di_e_pan_clamp_low.
 diff --git a/index.html b/index.html

@@ -1,4 +1,5 @@
-# kills: SG: N-A2 the served markup order is .sheetbody, #scale-guidance (#scale-msg, #scale-layout-state), #scale-generate, #scale-delete-row
+# kills: SG: N-A2 the served markup order is .sheetbody, #scale-guidance (#scale-field-msg, #scale-msg, #scale-layout-state), #scale-generate, #scale-delete-row
+# Plan wording: SG: N-A2 the served markup order is .sheetbody, #scale-guidance (#scale-msg, #scale-layout-state), #scale-generate, #scale-delete-row
 # suite: node --test --test-name-pattern ^SG:.N-A2.the.served.markup.order tests/app.test.js
 # The layout notice goes back into #scale-layout-zone, in the scroll, so a stuck band or a keyboard can hide it.
 diff --git a/index.html b/index.html

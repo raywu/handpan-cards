@@ -1,4 +1,5 @@
-# kills: DI: at 1280x800 the Edit sheet shows the pan beside the four fields
+# kills: DI: at 1280x800 the Edit sheet shows the pan beside the four fields and DING without scrolling
+# Plan wording: DI: at 1280x800 the Edit sheet shows the pan beside the four fields
 # suite: node --test --test-name-pattern ^DI:.at.1280x800.the.Edit.sheet tests/e2e.test.js
 # Mutant di_e_no_wide_grid.
 diff --git a/index.html b/index.html

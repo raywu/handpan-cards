@@ -1095,6 +1095,9 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
   .scalestage #scale-preview{width:clamp(200px, calc(100cqh - 306px), 300px)}
   .sheetbody{scroll-padding-top:0}
 }
+@media (min-width:640px) and (min-height:700px){
+  .scalestage #scale-preview{width:clamp(200px, calc(100cqh - 306px), 340px)}
+}
 #scale-sheet.side .scalestage{display:grid; grid-template-columns:auto minmax(0,1fr); column-gap:var(--sp-2); align-items:start}
 #scale-sheet.side .scalestage > #scale-plate-band{padding-bottom:0}
 #scale-sheet.side .scalestage #scale-preview{width:min(calc(100cqh - 172px), 46cqw); padding:4px}

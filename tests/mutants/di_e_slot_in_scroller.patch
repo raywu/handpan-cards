@@ -1,4 +1,5 @@
-# kills: DI: with the keyboard up the TOP error is fully in view in the slot
+# kills: DI: with the keyboard up at 320x568 and 380x780 the TOP error is fully in view in the slot
+# Plan wording: DI: with the keyboard up the TOP error is fully in view in the slot
 # suite: node --test --test-name-pattern ^DI:.with.the.keyboard.up tests/e2e.test.js
 # Mutant di_e_slot_in_scroller.
 diff --git a/index.html b/index.html

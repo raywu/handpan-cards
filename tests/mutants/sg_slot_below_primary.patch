@@ -1,4 +1,5 @@
-# kills: SG: N-A2 the served markup order is .sheetbody, #scale-guidance (#scale-msg, #scale-layout-state), #scale-generate, #scale-delete-row
+# kills: SG: N-A2 the served markup order is .sheetbody, #scale-guidance (#scale-field-msg, #scale-msg, #scale-layout-state), #scale-generate, #scale-delete-row
+# Plan wording: SG: N-A2 the served markup order is .sheetbody, #scale-guidance (#scale-msg, #scale-layout-state), #scale-generate, #scale-delete-row
 # suite: node --test --test-name-pattern ^SG:.N-A2.the.served.markup.order tests/app.test.js
 # The slot is placed under the primary, away from the button the notice names.
 diff --git a/index.html b/index.html

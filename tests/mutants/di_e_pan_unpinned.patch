@@ -1,4 +1,5 @@
-# kills: DI: at 320x568 with a 260px keyboard ... pan in view
+# kills: DI: at 320x568 with a 260px keyboard each field typed in stays fully in view with at least 130px of pan in view and the sheet head hidden, and BACK shows again once the keyboard closes
+# Plan wording: DI: at 320x568 with a 260px keyboard ... pan in view
 # suite: node --test --test-name-pattern ^DI:.at.320x568.with.a.260px tests/e2e.test.js
 # Mutant di_e_pan_unpinned.
 diff --git a/index.html b/index.html

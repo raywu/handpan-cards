@@ -1,4 +1,5 @@
-# kills: DI: a settled new message is announced once through #scale-fields-live on a deferred tick
+# kills: DI: a settled new message is announced once through #scale-fields-live on a deferred tick, and the open paint announces nothing
+# Plan wording: DI: a settled new message is announced once through #scale-fields-live on a deferred tick
 # suite: node --test --test-name-pattern ^DI:.a.settled.new.message tests/app.test.js
 # Mutant di_announce_while_editing.
 diff --git a/index.html b/index.html

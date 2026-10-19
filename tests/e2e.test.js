@@ -4944,7 +4944,7 @@ function run() {
       const n = await b.eval(`return document.querySelectorAll("#scale-swatches button").length;`);
       assert.ok(n > 0, "no swatches");
       const swatches = Array.from({ length: n }, (_, i) => `Palette ${i + 1}`);
-      const cycle = n + 6;
+      const cycle = n + 10;
       const walk = async (start, shift) => {
         await b.eval(`document.getElementById(${JSON.stringify(start)}).focus(); return true;`);
         const seen = [];
@@ -4956,10 +4956,10 @@ function run() {
       };
       const forward = await walk("scale-back", false);
       assert.deepStrictEqual(forward,
-        ["scale-name", "scale-box", "scale-layout-toggle", ...swatches, "scale-generate", "scale-delete", "scale-back"]);
+        ["scale-name", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box", "scale-layout-toggle", ...swatches, "scale-generate", "scale-delete", "scale-back"]);
       const backward = await walk("scale-delete", true);
       assert.deepStrictEqual(backward,
-        ["scale-generate", ...swatches.slice().reverse(), "scale-layout-toggle", "scale-box", "scale-name", "scale-back", "scale-delete"]);
+        ["scale-generate", ...swatches.slice().reverse(), "scale-layout-toggle", "scale-box", "scale-bottom", "scale-inner", "scale-top", "scale-ding", "scale-name", "scale-back", "scale-delete"]);
       assert.strictEqual(await b.eval(`return document.querySelector("#scale-sheet select");`), null,
         "the Edit sheet still holds a select");
     } finally {
@@ -5434,6 +5434,16 @@ function run() {
      these assert is that a message which is NOT about the seed never enters
      the seed's row. */
 
+  const layoutRowReachable = () => b.eval(`
+    const port = document.querySelector(".sheetbody");
+    const prev = port.scrollTop;
+    port.scrollTop = port.scrollHeight;
+    const row = document.getElementById("scale-layout-row").getBoundingClientRect();
+    const r = { rowBottom: row.bottom, portBottom: port.getBoundingClientRect().bottom };
+    port.scrollTop = prev;
+    return r;
+  `);
+
   test("a pan warning on the Edit open does not move the pan", async () => {
     // Path (a): openEditSheet() says its warnings AFTER showSheet() has already
     // filled the parse line. "(C3) G3 D4 G4 D5" has three pitch classes, so the
@@ -5472,9 +5482,10 @@ function run() {
       assert.ok(warned.inSlot && warned.msgTop >= warned.portBottom - 0.5,
         `the warning is not in the pinned guidance slot below the scrollport (inSlot ${warned.inSlot}, ` +
         `top ${warned.msgTop.toFixed(1)}px, scrollport bottom ${warned.portBottom.toFixed(1)}px)`);
-      assert.ok(warned.rowBottom <= warned.viewportH,
-        `#scale-layout-row's bottom is ${warned.rowBottom.toFixed(1)}px against a ` +
-        `${warned.viewportH}px viewport - the LAYOUT row is below the fold`);
+      const reach = await layoutRowReachable();
+      assert.ok(reach.rowBottom <= reach.portBottom + 0.5,
+        `#scale-layout-row's bottom is ${reach.rowBottom.toFixed(1)}px against a scrollport ending ` +
+        `at ${reach.portBottom.toFixed(1)}px - the LAYOUT row is out of reach`);
 
       // The next keystroke re-syncs the parse line. If the warning shared that
       // row, the row would shrink back to one line and step the pan.
@@ -5531,9 +5542,10 @@ function run() {
       assert.ok(Math.abs(after.panTop - before.panTop) < 0.5,
         `the pan moved ${(after.panTop - before.panTop).toFixed(1)}px on the refusal ` +
         `(before=${before.panTop.toFixed(1)}, after=${after.panTop.toFixed(1)})`);
-      assert.ok(after.rowBottom <= after.viewportH,
-        `#scale-layout-row's bottom is ${after.rowBottom.toFixed(1)}px against a ` +
-        `${after.viewportH}px viewport - the refusal pushed LAYOUT below the fold`);
+      const reach = await layoutRowReachable();
+      assert.ok(reach.rowBottom <= reach.portBottom + 0.5,
+        `#scale-layout-row's bottom is ${reach.rowBottom.toFixed(1)}px against a scrollport ending ` +
+        `at ${reach.portBottom.toFixed(1)}px - the refusal pushed LAYOUT out of reach`);
     } finally {
       await b.setViewport(900, 900, false);
     }
@@ -6318,6 +6330,7 @@ function run() {
 
       // EDIT first, while the generated deck is the selected chip.
       await openEdit();
+      await b.eval(`document.getElementById("scale-box").scrollIntoView({ block: "center" });`);
       await b.click("#scale-box");
       await b.setViewport(380, 508, true);
       assertBothOnScreen(await boxAndPrimary(), "the Edit page at 380x508");
@@ -6331,6 +6344,7 @@ function run() {
       await typeScale(BIG_SCALE);
       await b.waitFor(`!document.getElementById("scale-preview").hasAttribute("hidden")`,
         { label: "the preview to render" });
+      await b.eval(`document.getElementById("scale-box").scrollIntoView({ block: "center" });`);
       await b.click("#scale-box");
       await b.setViewport(380, 508, true);
       assertBothOnScreen(await boxAndPrimary(), "the Add page at 380x508");
@@ -6420,6 +6434,7 @@ function run() {
 
       // EDIT first: it carries the most pinned footer, so it fails first.
       await openEdit();
+      await b.eval(`document.getElementById("scale-box").scrollIntoView({ block: "center" });`);
       await b.click("#scale-box");
       for (const kb of KEYBOARDS) {
         await b.fakeKeyboard(745 - kb);
@@ -7240,6 +7255,7 @@ function run() {
       await freshLoad();
       await b.setViewport(380, 800, true);
       await openSheet();
+      await b.eval(`document.getElementById("scale-box").scrollIntoView({ block: "center" });`);
       await b.click("#scale-box");
       await b.settle();
 
@@ -7263,6 +7279,9 @@ function run() {
       await freshLoad();
       await b.setViewport(380, 800, true);
       await openSheet();
+      await b.eval(`document.getElementById("scale-box").scrollIntoView({ block: "center" });`);
+      await b.click("#scale-box");
+      await b.settle();
       const m = await b.eval(`
         const label = document.getElementById("scale-label-2");
         const box = document.getElementById("scale-box");
@@ -7372,9 +7391,9 @@ function run() {
                  text: document.getElementById("scale-refusal").textContent.trim() };
       `);
       assert.ok(r.text.length > 0, "no refusal was rendered for an invalid seed");
-      assert.ok(r.msgBottom <= r.prevTop + 0.5,
-        `the refusal's bottom is ${r.msgBottom.toFixed(1)}px but the pan's top ` +
-        `is ${r.prevTop.toFixed(1)}px - the refusal is below the pan`);
+      assert.ok(r.msgTop - r.boxBottom <= 24,
+        `the refusal's top is ${r.msgTop.toFixed(1)}px, ${(r.msgTop - r.boxBottom).toFixed(1)}px ` +
+        `under the scale field's bottom at ${r.boxBottom.toFixed(1)}px - it is not directly under the field`);
       assert.ok(r.msgTop >= r.boxBottom - 0.5,
         `the refusal's top is ${r.msgTop.toFixed(1)}px, above the scale field's ` +
         `bottom at ${r.boxBottom.toFixed(1)}px`);
@@ -7407,7 +7426,7 @@ function run() {
       const top = async () => {
         await b.settle();
         return b.eval(`
-          return document.getElementById("scale-preview").getBoundingClientRect().top;
+          return document.getElementById("scale-layout-row").getBoundingClientRect().top;
         `);
       };
       // No EMPTY-vs-typed comparison here: the first keystroke legitimately
@@ -7459,7 +7478,9 @@ function run() {
                  body: document.querySelector(".sheetbody").scrollHeight,
                  parse: document.getElementById("scale-parse").getBoundingClientRect().height,
                  box: document.getElementById("scale-box").getBoundingClientRect().height,
-                 hint: document.getElementById("scale-layout-hint").getBoundingClientRect().height };
+                 hint: document.getElementById("scale-layout-hint").getBoundingClientRect().height,
+                 fields: document.getElementById("scale-fields").getBoundingClientRect().height,
+                 row: document.getElementById("scale-box").closest(".fieldrow").getBoundingClientRect().height };
       `);
       await b.settle();
       const empty = await m();
@@ -7475,8 +7496,8 @@ function run() {
       // so its own rows are the second element that legitimately changes.
       // Lane DR1: the toggle row's hint changes sentence on the first valid
       // scale (HINT_EMPTY to HINT_GUESS), so its own wrap is a third element.
-      const parseDelta = (empty.parse - typed.parse) + (empty.box - typed.box) +
-                         (empty.hint - typed.hint);
+      const parseDelta = (empty.row - typed.row) + (empty.hint - typed.hint) +
+                         (empty.fields - typed.fields);
       assert.ok(Math.abs(bodyDelta - parseDelta) < 0.5,
         `the scrolling body moved ${bodyDelta.toFixed(1)}px between empty and ` +
         `typed but the parse line and the field only account for ${parseDelta.toFixed(1)}px ` +

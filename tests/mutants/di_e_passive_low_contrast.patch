@@ -1,4 +1,5 @@
-# kills: DI: the passive path's input text is at least 7:1
+# kills: DI: the passive path's input text is at least 7:1 and its label at least 4.5:1 against the sheet
+# Plan wording: DI: the passive path's input text is at least 7:1
 # suite: node --test --test-name-pattern ^DI:.the.passive.path.s.input tests/e2e.test.js
 # Mutant di_e_passive_low_contrast.
 diff --git a/index.html b/index.html

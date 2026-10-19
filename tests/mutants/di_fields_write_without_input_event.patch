@@ -1,4 +1,5 @@
-# kills: DI: typing in the fields writes compose's line into #scale-box through one input event
+# kills: DI: typing in the fields writes compose's line into #scale-box through one input event, the parse line and the pan match typing that line, and the field typed in keeps its text as typed
+# Plan wording: DI: typing in the fields writes compose's line into #scale-box through one input event
 # suite: node --test --test-name-pattern ^DI:.typing.in.the.fields.writes tests/app.test.js
 # Mutant di_fields_write_without_input_event.
 diff --git a/index.html b/index.html

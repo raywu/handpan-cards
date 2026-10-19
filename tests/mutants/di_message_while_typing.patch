@@ -1,4 +1,5 @@
-# kills: DI: a field message joins only at settle
+# kills: DI: a field message joins only at settle: nothing while a field is typed in, the message at its blur
+# Plan wording: DI: a field message joins only at settle
 # suite: node --test --test-name-pattern ^DI:.a.field.message.joins.only tests/app.test.js
 # Mutant di_message_while_typing.
 diff --git a/index.html b/index.html

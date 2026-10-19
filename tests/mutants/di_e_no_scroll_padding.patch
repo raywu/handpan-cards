@@ -1,4 +1,5 @@
-# kills: DI: keyboard before focus and focus before keyboard ... fully in view
+# kills: DI: keyboard before focus and focus before keyboard both leave the focused field fully in view at 320x568 and 380x780
+# Plan wording: DI: keyboard before focus and focus before keyboard ... fully in view
 # suite: node --test --test-name-pattern ^DI:.keyboard.before.focus tests/e2e.test.js
 # Mutant di_e_no_scroll_padding.
 diff --git a/index.html b/index.html

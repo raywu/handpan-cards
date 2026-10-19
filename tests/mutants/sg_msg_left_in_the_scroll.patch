@@ -1,4 +1,5 @@
-# kills: SG: N-A2 the served markup order is .sheetbody, #scale-guidance (#scale-msg, #scale-layout-state), #scale-generate, #scale-delete-row
+# kills: SG: N-A2 the served markup order is .sheetbody, #scale-guidance (#scale-field-msg, #scale-msg, #scale-layout-state), #scale-generate, #scale-delete-row
+# Plan wording: SG: N-A2 the served markup order is .sheetbody, #scale-guidance (#scale-msg, #scale-layout-state), #scale-generate, #scale-delete-row
 # suite: node --test --test-name-pattern ^SG:.N-A2.the.served.markup.order tests/app.test.js
 # #scale-msg stays in the scroll where it used to be, so a page-state warning sits below the fold with a keyboard up.
 # Re-anchored 2026-10-14 (remove-degrees, lane app) against the new source. The mutation itself is unchanged.

@@ -1,4 +1,5 @@
-# kills: DI: with the drawer open at 844x390 the plate stays beside the drawer controls at 220px
+# kills: DI: with the drawer open at 844x390 the plate stays beside the drawer controls at 220px, and at 380x780 above them
+# Plan wording: DI: with the drawer open at 844x390 the plate stays beside the drawer controls at 220px
 # suite: node --test --test-name-pattern ^DI:.with.the.drawer.open tests/e2e.test.js
 # Mutant di_e_drawer_band_lost.
 diff --git a/index.html b/index.html
