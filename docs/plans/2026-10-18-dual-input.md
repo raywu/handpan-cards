@@ -16,7 +16,8 @@ Amended for the new base `claude/dual-input-base` e722c96: dev minus the DEV ove
 - R7. Main merges of #370, #372, #377, #379 and #381 are held until dual input is DEV e2e validated and the owner says merge. Main merge order: #370, #372, #377, #379, #381, H1, H2a, H2b', H3' (G-F', section 5).
 - R8. H0a syncs H2a onto dev, which also carries the lane E/T/C UI; taking H2a's side removes that UI from dev too (section 4, H0a).
 - R9. H3' also retires the CLAUDE.md "Scale import" sentences that lanes E and C added citing deleted IM: and IC: tests (section 4, H3').
-- R10. The import-fix plan's section 7 line 510 is ignored (owner, 2026-10-19).
+- R10. Out of scope here: the import-fix plan (`docs/plans/2026-10-18-import-fix.md`) section 7, B1, says "Picking A3 shows DING_NOT_LOWEST naming C3 and D3, and USE is disabled." Under that plan's D-1 the unpicked Main note cue C3 is dropped, so the app names D3 only and reports C3 as DING_CUE_DROPPED; the owner accepted the app (2026-10-19). H2a deletes that UI, so this plan does not touch it; the import-fix plan line is corrected when that plan is next edited.
+- Integrator decision (AFK, 2026-10-19): the N1 test keeps its "IH: N1" title and the mutant its `ih_e_` prefix, so H1's `^IH:` suite headers and its one mutant family hold.
 
 Everything else is unchanged.
 
