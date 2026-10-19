@@ -11,6 +11,6 @@ diff --git a/index.html b/index.html
    repaintPlate();
 -  layoutZone.scrollIntoView({ block: "nearest", behavior: "auto" });
 -  drawerBtn.scrollIntoView({ block: "nearest", behavior: "auto" });
-   if (!hasTwoNoteRing()) layoutStatus("This pan has no ring with two notes, so there is nothing to rearrange.");
- }
- /** Close the drawer. Focus follows only when it was inside the zone, or the
+   const note = document.activeElement;
+   if (window.getComputedStyle && getComputedStyle(plateBand).position === "static" &&
+       note && note.closest && note.closest("#scale-preview")) {
