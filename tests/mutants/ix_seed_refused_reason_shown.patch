@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10992,7 +10992,7 @@
-   DING_NOT_LOWEST: (r, f) => importNames(r, f) + " sit below the ding (" + (r.notes[f.ding] ? r.notes[f.ding].note : "?") + "). Pick a lower ding below, or type the notes in the box above.",
-   DING_ON_BOTTOM: (r, f) => (r.notes[f.ding] ? r.notes[f.ding].note : "?") + " is a bottom note. The ding is on the top shell: pick another ding below.",
-   REPEATED_IN_SHELL: (r, f) => importNames(r, f) + " is listed twice. Type the notes in the box above with the second one corrected or removed.",
+@@ -11003,7 +11003,7 @@ const IMPORT_FLAG_TEXT = {
+     const names = importUnique(importNameList(r, f));
+     return importJoinAnd(names) + (names.length === 1 ? " is" : " are") + " listed twice. Type the notes in the box above with the second one corrected or removed.";
+   },
 -  SEED_REFUSED: () => "These notes do not make a playable scale with that ding. Pick another ding or fix the notes in the scale box above.",
 +  SEED_REFUSED: (r, f) => "These notes do not make a playable scale with that ding. Pick another ding or fix the notes in the scale box above. " + f.refusal.reason,
    COUNT_EXCL_DING: (r) => "The title count is " + (r.total - 1) + ", one fewer than the " + r.total + " notes listed: it leaves the ding out.",

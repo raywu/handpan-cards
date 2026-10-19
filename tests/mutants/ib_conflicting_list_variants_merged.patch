@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10943,7 +10943,7 @@ const IMPORT_FLAG_TEXT = {
+@@ -11010,7 +11010,7 @@ const IMPORT_FLAG_TEXT = {
    DUPLICATE_PITCH: (r, f) => "The same pitch is listed twice: " + importNames(r, f) + ".",
-   BOTTOM_NO_OCTAVE: (r, f) => "Bottom notes " + importNames(r, f) + " have no octave, so their pitch is unknown. Type the notes with octaves.",
+   BOTTOM_NO_OCTAVE: (r, f) => "Bottom notes " + importNameList(r, f).map(importPitchClass).join(", ") + " have no octave, so their pitch is unknown. Type the notes with octaves in the box above.",
    CONFLICTING_LIST: (r, f) => f.wide ? "Reading the whole text gives a different list than the one found. Paste only the list for your pan."
 -    : f.tops ? "Two top note lists were found. Paste only the list for your pan."
 +    : f.tops ? "The text holds more than one note list. Paste only the list for your pan."
      : f.earlier ? "An earlier list in the text reads differently. Paste only the list for your pan."
      : "The text holds more than one note list. Paste only the list for your pan.",
-   PARENS_AS_BOTTOM: (r, f) => "Reading the brackets as bottom notes: " + importNames(r, f) + ". Tick to accept, or type the notes.",
+   PARENS_AS_BOTTOM: (r, f) => "Reading the brackets as bottom notes: " + importNames(r, f) + ". " + importAccept(r, "type the notes in the box above."),

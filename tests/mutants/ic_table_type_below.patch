@@ -1,0 +1,15 @@
+# kills: IC: every IMPORT_FLAG_TEXT line that tells the user to type says the box above, and every line about notes names them
+# suite: node --test --test-name-pattern ^IC:.every.IMPORT_FLAG_TEXT tests/app.test.js
+# AMBIGUOUS_NOTE tells the user to type the notes below.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10985,7 +10985,7 @@ const IMPORT_FLAG_TEXT = {
+   NO_NOTE_LIST: () => importInsufficientLine(),
+   UNDECLARED_PARENS: (r, f) => "Brackets around " + importNames(r, f) + " are not explained by the source. Type the notes in the box above: round brackets mark the ding, square brackets mark bottom notes.",
+   CONFLICTING_DING: (r, f) => "More than one ding cue: " + importNames(r, f) + ". Pick the ding below.",
+-  AMBIGUOUS_NOTE: (r, f) => "Unclear note spelling: " + (f.tokens || []).join(", ") + ". Type the notes in the box above.",
++  AMBIGUOUS_NOTE: (r, f) => "Unclear note spelling: " + (f.tokens || []).join(", ") + ". Type the notes below.",
+   INNER_BELOW_TOP: (r, f) => "Inner notes " + importNames(r, f) + " sit below the top notes. Type the notes in the box above with the inner notes after the top notes.",
+   COUNT_MISMATCH: (r, f) => "The title says " + f.title + " notes but the text lists " + f.listed + ". Check the list, or type the notes in the box above.",
+   PROVISIONAL_REFUSED: (r, f) => "The octaves cannot be inferred: " + (f.refusal && f.refusal.reason || "refused") + " Pick the ding below or type the notes in the box above.",
