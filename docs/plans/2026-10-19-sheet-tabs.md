@@ -1,6 +1,6 @@
 # Scale / Layout tabs for the Add/Edit sheet (2026-10-19)
 
-Subplan. Base: `origin/dev` (d375f8a, "Merge #409 dev-sync-ux-p"; includes lane P).
+Subplan. Code reference: `origin/dev` (d375f8a, includes lane P). Lane base: lane P's head branch `claude/dual-input-ux-p` (PR #408), never `origin/dev`, which carries `claude/dev-overlay` (`_headers`, commits 619201e / c0cc1fc) - see section 6 (review fold E1).
 Sources, cited by section or anchor: repo `CLAUDE.md`; `docs/plans/2026-10-19-dual-input-sheet-ux.md`
 (on `origin/claude/dual-input-ux-plan`, "ux plan"), sections 1-3, 3.4 (lane L) and its "Lane L
 subplan record" Q1-Q10, lane P, sections 6-7; `docs/plans/2026-10-18-dual-input.md` (on
@@ -40,7 +40,7 @@ notes that the sheet places below the ding: D3 with "g a b c" gives G2 A2 B2 C3.
 |---|---|---|---|
 | S1 | P: a small pan (`#scale-sheet:not(.adjusting) #scale-preview{width:clamp(88px, 30cqw, 160px)}`) sits in `#scale-pancol` beside `.scalecol` in the `.scalestage` grid | **Replaced** | The Scale tab draws no pan. `.scalestage` becomes one column, and the fields take the full content width. |
 | S2 | P: tapping the pan or ADJUST LAYOUT (`#scale-layout-toggle`) calls `showAdjust()`, which pushes `{scalePage:true, adjust:true}` and calls `enterAdjust()` (full-screen Adjust with `#scale-adjust-head` and BACK `#scale-adjust-back`) | **Replaced** | No Adjust overlay. The Layout tab replaces it. `showAdjust`, `enterAdjust`, `hideAdjust`, `closeAdjust`, `pendingAdjustPop`, `closeAfterAdjustPop`, the `adjust` history-state branch of the popstate listener, the `adjusting` class, and the `#scale-adjust-head` / `#scale-adjust-back` / `#scale-adjust-title` markup are removed. `ELEMENT_IDS` drops the three adjust ids. |
-| S3 | P: LARGE pan `clamp(160px, min(100cqw, calc(100cqh - var(--adj-reserve))), 480px)` with `--adj-reserve:232px` (72px in the wide container block) | **Kept, re-keyed** | The same clamp sizes the pan on the Layout tab. The selector becomes `#scale-sheet[data-tab="layout"] #scale-preview`, and `--adj-reserve` is re-measured for the tab strip and footer (section 3.6). |
+| S3 | P: LARGE pan `clamp(160px, min(100cqw, calc(100cqh - var(--adj-reserve))), 480px)` with `--adj-reserve:232px` (72px in the wide container block) | **Kept, re-keyed** | The same clamp sizes the pan on the Layout tab. EVERY `#scale-sheet.adjusting` selector on dev is re-keyed to `#scale-sheet[data-tab="layout"]` or deleted: the preview clamp, the landscape `@media (orientation:landscape) and (max-height:500px)` `.sheetsurf{max-width:none}` rule, and the whole `@container surf (min-width:600px) and (min-aspect-ratio:1/1)` block (`--adj-reserve:72px`, the two-column `.sheetbody` grid, `#scale-pancol` placement re-targeted to `#scale-plate-band`, the drawer-status width rule). The `display:none` list that hid the Scale controls under `.adjusting` is deleted (tabpanel `hidden` does that job). Acceptance: `grep -c adjusting index.html` is 0. `--adj-reserve` is re-measured for the tab strip and footer (section 3.6). |
 | S4 | P D11 (revised): on entering Adjust, focus goes to `#scale-adjust-title` | **Replaced** | On a tab switch, focus goes to the tab that was activated (section 3.3). On NEXT, focus goes to `#scale-tab-layout`. |
 | S5 | P: the drawer (`#scale-drawer`) opens only inside Adjust; `openDrawer()` returns early if `!boxOk` | **Modified** | The drawer controls live permanently in the Layout panel and are never `hidden`. While the scale is empty or invalid they are `disabled` (section 3.5). `#scale-layout-toggle` is removed, and `drawerOpen` reads "Layout tab selected and `boxOk`". |
 | S6 | P: ADJUST LAYOUT row with hint "Type a scale to adjust its layout." (`#scale-layout-hint`) | **Modified** | `#scale-layout-hint` moves to the top of the Layout panel. It shows the same sentence while the scale is empty or invalid, and is hidden while the scale is valid. |
@@ -98,13 +98,11 @@ notes that the sheet places below the ding: D3 with "g a b c" gives G2 A2 B2 C3.
 - **New ids:** `scale-tabs`, `scale-tab-scale`, `scale-tab-layout`, `scale-panel-scale`,
   `scale-panel-layout`, `scale-or`, `scale-next`.
 - **Lane L ids, first built here:** `scale-foot`, `scale-footclip`, `scale-footslide`, `scale-lip`.
-- **`tools/sandbox.js` `ELEMENT_IDS`:** add `"scale-tabs", "scale-tab-scale", "scale-tab-layout",
-  "scale-panel-scale", "scale-panel-layout", "scale-or", "scale-next", "scale-foot", "scale-footclip",
-  "scale-footslide", "scale-lip"`. Remove `"scale-layout-toggle", "scale-adjust-back",
+- **`tools/sandbox.js` `ELEMENT_IDS`:** add only ids the app looks up: `"scale-tabs", "scale-tab-scale",
+  "scale-tab-layout", "scale-panel-scale", "scale-panel-layout", "scale-next", "scale-foot",
+  "scale-footslide", "scale-lip"`. `scale-or` and `scale-footclip` are markup-only. Remove `"scale-layout-toggle", "scale-adjust-back",
   "scale-adjust-title", "scale-adjust-head", "scale-pancol", "scale-layout-row"` (only those present on
-  dev). The sheet-guidance rule "no served id is removed" (test "SG: N-A3 no served id is removed and
-  the wrapper is markup-only") lists ids by name; if any removed id is in its list, section 5.3
-  rewrites that test with a reason.
+  dev).
 
 ### 3.2 O2: the OR rule
 
@@ -203,8 +201,7 @@ When `!boxOk`:
 - GENERATE CARDS or SAVE CHANGES is disabled.
 - Focus stays on the tab.
 
-When `boxOk` turns true while the user is on Layout (it cannot, since inputs live on Scale), nothing
-special happens. When the user returns to Layout after fixing the scale, the controls are enabled and
+When the user returns to Layout after fixing the scale, the controls are enabled and
 the hint is hidden.
 
 ### 3.6 Pan size on the Layout tab (A5)
@@ -229,11 +226,13 @@ Lane T's E2E test (section 5) measures the real values and must hold the "bigger
 | 320x568 | 276 | 88 | 276 | min(276, 568-300=268) = **268** |
 | 380x780 | 336 | 101 | 336 | min(336, 480) = **336** |
 | 393x852 | 349 | 105 | 349 | min(349, 552) = **349** |
-| 844x390 | 476 (max-width lifted to none under landscape <=500px high, as P) | 148 | ~290-318 | wide block: min(800, 390-132=258) = **258**, floor 160 |
-| 1280x800 | 476 (520 cap) | 160 | 480 | wide block: min(476, 668) = **476** |
+| 844x390 | 800 (max-width:none under the landscape rule, re-keyed per S3) | 148 | 318 | wide block: min(800, 390-132) = **258** |
+| 1280x800 | 621 (`.sheetsurf{max-width:clamp(520px, 52vw, 680px)}` = 665, minus 44 padding) | 160 | 480 | wide block (621 >= 600, landscape): min(621, 800-132, 480 cap) = **480**; lane T measures it |
 
-The Layout pan is 1.8x to 3.3x P's small pan at every viewport. At 320x568 it is 8px under P's Adjust
-pan because of the tab strip. That is accepted: Adjust hid the CTA, and the Layout tab keeps it.
+The Layout pan is 1.7x to 3.3x P's small pan at every viewport. It is under P's Adjust pan at two
+viewports, because the tab strip and the kept footer take height Adjust hid:
+- 320x568: 268 vs 276 (8px).
+- 844x390: 258 vs 318 (60px). Open question Q2 offers a fix (tab strip moved into the left column in the wide block).
 
 ### 3.7 O4: the lip on the tabbed footer
 
@@ -329,6 +328,7 @@ for i = n down to 1:
 then, left to right:
   if m_i == m_j for some j < i:  error "<name> is already in the bottom notes."   (existing)
   else if m_i < m_{i-1}:         error composeLower(b_i, b_{i-1}) "X is lower than P: list low to high." (existing)
+range floor: if no midi >= 0 of b_i's pitch class lies below limit -> existing "<name> has no octave that fits: type one." (review fold E5)
 info: "Octaves guessed: <placed unoctaved notes>. Type an octave to change a guess."  (existing text)
 ```
 
@@ -379,7 +379,15 @@ The rule is confined to the sheet path, in `src/engine/importer.js`:
    - The sheet's line handlers call it before `HPE.core.parseSeed`. These are the `scaleBox` input path
      in `index.html` (the `parseSeed(String(scaleBox.value || ""), layoutOptions())` call sites inside
      the sheet's parse, layout and generate handlers).
-   - Share decode, boot, records and `interpret` (the import row) do not call it.
+   - Share decode, boot and records do not call it. The import row's USE writes `serialise(r)`, which is
+     always octaved, so the hook is a no-op on it.
+3. **One reader (review fold E2).** Every sheet read of `scaleBox.value` goes through one
+   `sheetLine()` = `HPE.importer.placeLineBottoms(String(scaleBox.value || ""))`. Callers, enumerated by
+   reading `index.html` on origin/dev (not by grep alone; memory "Enumerate callers, do not grep"):
+   `hasTwoNoteRing()`; `syncParseState()`; `resyncSheet()`; `runGenerate()`'s `generateDeck(...)` call
+   (GENERATE CARDS and SAVE CHANGES); `lineInput()` and the line-to-fields mirror; `sheetKey` keeps the
+   raw value (dirty check). Writers (`resetSheetState`, `writeLine`) are untouched. `generateDeck` itself
+   is unchanged. A fence test fails on any `scaleBox.value` read outside `sheetLine` and `sheetKey`.
 
 Because this is an engine-module change:
 - run `python3 tools/inline_engine.py`;
@@ -396,7 +404,7 @@ These live in `tests/import.test.js`, and lane E rewrites each in the same PR wi
   below F3, ascending), so they are **unchanged**. Lane E confirms they pass untouched and does not edit
   them if so.
 - The test asserting `r.info.bottom` = "Octaves guessed: C3, Db3, Eb3, Bb3, Db4, Ab4. ..." (Pygmy with
-  unoctaved bottoms) **changes**. The old upward build gave Bb3 Db4 Ab4 above the ding. Under O1 every
+  unoctaved bottoms) is **retired** and replaced by "O1: Pygmy's octaveless bottoms C Db Eb Bb Db Ab under F3 place right to left as C1 Db1 Eb1 Bb1 Db2 Ab2" (asserts guessed, notes.bottom, line and info). The owner confirms the musically odd result in Q3 and phone step 12. The old upward build gave Bb3 Db4 Ab4 above the ding. Under O1 every
   unoctaved note goes below F3, so the run ends below F3 and the expected value is rewritten from 4.1
   (right to left: Ab < F3 → Ab2; Db < Ab2 → Db2; Bb < Db2 → Bb1; Eb < Bb1 → Eb1; Db < Eb1 →
   Db1; C < Db1 → C1), giving "Octaves guessed: C1, Db1, Eb1, Bb1, Db2, Ab2.". The test title is kept;
@@ -424,7 +432,8 @@ in `tests/e2e.test.js`. Prefixes: `O1:` (engine and sheet placement), `TB:` (tab
 - "O1: a typed list that does not ascend after placement refuses with composeLower: D3 g A3 c says C3 is lower than A3"
 - "O1: a placed note equal to a typed one refuses as a repeat: D3 A2 a says A2 is already in the bottom notes"
 - "O1: Pygmy's bottoms typed with octaves are unchanged: F3 C3 Db3 Eb3 Bb3 Db4 Ab5"
-- "O1: placeLineBottoms gives unoctaved bracketed notes their O1 octave and leaves octaved ones and a ding-less line unchanged"
+- "O1: a note with no instance below its limit refuses: D3 c C0 says C has no octave that fits: type one"
+- "O1: placeLineBottoms handles (D3), D3/ and D3| ding spellings and returns a line with an unoctaved ding unchanged"
 - "O1: core.parseSeed still places an unoctaved bracketed note by nearestToDing" — pins the A2 confinement: `(D3) [g] A3` through `parseSeed` alone still reads G3.
 
 ### 5.2 Sandbox (`tests/app.test.js`)
@@ -442,15 +451,19 @@ in `tests/e2e.test.js`. Prefixes: `O1:` (engine and sheet placement), `TB:` (tab
 - "TB: the sheet Tab order on each tab and flow is the section 3.3 list filtered by isStop"
 - "TB: the Adjust overlay is gone: no showAdjust, no adjust history state, no #scale-adjust-head, #scale-layout-toggle or adjusting class, and a pan tap on Layout opens nothing" — the lane P retirement test.
 - "TB: #scale-field-msg shows on Scale only, #scale-layout-state on Layout only, and #scale-guidance keeps its SG order and two-line reserve on both"
-- "TB: ELEMENT_IDS carries the seven tab, OR and NEXT ids and the four lip ids, and none of the retired adjust ids"
+- "TB: ELEMENT_IDS carries scale-tabs, scale-tab-scale, scale-tab-layout, scale-panel-scale, scale-panel-layout, scale-next, scale-foot, scale-footslide and scale-lip, and none of the retired adjust ids"
+- "O1: GENERATE CARDS and SAVE CHANGES from a line (D3) [g] A3 C4 store G2, equal to the parse line"
+- "O1: no sheet code reads scaleBox.value outside sheetLine and sheetKey"
+- "TB: switching to Layout with #scale-box focused and the keyboard up ends kbup and shows the tab strip"
 - "OR: #scale-or sits between #scale-fields and the scale line, is a separator named or, and is not a Tab stop"
 - "LP: the lip's aria-label names the visible primary: Show NEXT, Show GENERATE CARDS, Show SAVE CHANGES"
 - "LP: a tab switch or NEXT clears lipshut with lipnow and re-baselines the scroll"
 - "LP: while lipshut the footer stops are replaced by #scale-lip in the Tab order on both tabs"
-- Lane L's A1-A19 sandbox titles (ux plan section 8) are carried verbatim. Each title that names "GENERATE CARDS" as the primary is re-run once per primary (NEXT, GENERATE CARDS, SAVE CHANGES) by its existing loop.
+- Lane L was never built: dev has no `uxl_*` mutant and no `#scale-lip`. Lane T2 AUTHORS lane L's A1-A19 sandbox tests from ux plan section 8, titles verbatim. Each title that names "GENERATE CARDS" as the primary is re-run once per primary (NEXT, GENERATE CARDS, SAVE CHANGES) by its existing loop.
 
 ### 5.3 Real Chrome (`tests/e2e.test.js`)
 - "TB: at 320x568, 380x780, 393x852, 844x390 and 1280x800 the Layout pan is wider than the old small pan clamp(88px, 30cqw, 160px) and at least the section 3.6 width minus 2px"
+- "TB: at 844x390 the Layout tab's .sheetsurf is wider than 600px, the wide container block applies and the pan is at least 256px"
 - "TB: at 380x780 the four note fields and the scale line take the full content width on the Scale tab"
 - "TB: at 380x780 Add: type a scale, NEXT, adjust anchor, GENERATE CARDS opens the deck, and one Back from the deck leaves no sheet entry"
 - "TB: at 380x780 Edit: SAVE CHANGES from the Layout tab saves and the bar ends on the deck's route"
@@ -459,7 +472,7 @@ in `tests/e2e.test.js`. Prefixes: `O1:` (engine and sheet placement), `TB:` (tab
 - "LP: at 380x780 scrolling the Scale panel collapses the footer to the lip and a tap on the lip restores NEXT"
 - "LP: the lip slide takes 180ms and is instant under prefers-reduced-motion; tab switches have no transition"
 - "TB: at 380x780 with the keyboard up the head and tab strip hide and the footer stays above the keyboard"
-- Lane L's E1-E12 titles are carried verbatim, re-based on the tabbed footer.
+- Lane T2 authors lane L's E1-E12 e2e tests from ux plan section 8, titles verbatim, re-based on the tabbed footer.
 
 **Retired or rewritten (each with a reason, never weakened silently):**
 - Lane P's tests asserting the small pan beside the fields, `showAdjust` / `enterAdjust` /
@@ -468,8 +481,6 @@ in `tests/e2e.test.js`. Prefixes: `O1:` (engine and sheet placement), `TB:` (tab
   - Reason: S1, S2, S4. Retired for P's DEV-only behaviour, which never reaches main.
   - Their replacements are the TB tests above. The lane removes them by exact title and lists each
     retired title in its PR body.
-- "SG: N-A3 no served id is removed and the wrapper is markup-only": if its list contains a retired id,
-  that id is removed from the list with reason S2 / S5. The rest of the assertion is kept.
 - DI 2.4 Tab-order tests that list `drawerBtn`: rewritten to the 3.3 lists (S12).
 
 ### 5.4 Mutants (`tests/mutants/`, no `index` lines, `.`-wildcard `# suite:`)
@@ -490,7 +501,11 @@ in `tests/e2e.test.js`. Prefixes: `O1:` (engine and sheet placement), `TB:` (tab
 | `lp_label_fixed.patch` | lip label always "Show GENERATE CARDS" | LP: the lip's aria-label names the visible primary: Show NEXT, Show GENERATE CARDS, Show SAVE CHANGES | `LP:.the.lip.s.aria.label` |
 | `lp_tab_keeps_lipshut.patch` | a tab switch leaves `lipshut` | LP: a tab switch or NEXT clears lipshut with lipnow and re-baselines the scroll | `LP:.a.tab.switch.or.NEXT` |
 
-Lane L's `uxl_*` mutants are carried, re-anchored on the lane T code.
+Lane T2 authors lane L's `uxl_*` mutant table from ux plan section 8 (none exist on dev), anchored on its own code. Added rows:
+
+| `o1_generate_skips_prepass.patch` | `runGenerate` passes raw `scaleBox.value` to `generateDeck` | O1: GENERATE CARDS and SAVE CHANGES from a line (D3) [g] A3 C4 store G2, equal to the parse line | `O1:.GENERATE.CARDS.and.SAVE` |
+| `o1_no_range_floor.patch` | placement drops the midi >= 0 floor | O1: a note with no instance below its limit refuses: D3 c C0 says C has no octave that fits: type one | `O1:.a.note.with.no.instance` |
+| `tb_landscape_unlifted.patch` | the landscape max-width:none rule left on `.adjusting` | TB: at 844x390 the Layout tab's .sheetsurf is wider than 600px, the wide container block applies and the pan is at least 256px | `TB:.at.844x390` |
 
 ## 6. Lanes (/swarm)
 
@@ -498,7 +513,7 @@ Lane L's `uxl_*` mutants are carried, re-anchored on the lane T code.
 engine is a separate file-ownership boundary.
 
 ### Lane E: engine O1
-- **Base:** origin/dev. Branch `claude/sheet-tabs-e`.
+- **Base:** `origin/claude/dual-input-ux-p` (lane P head, PR #408). Branch `claude/sheet-tabs-e`.
 - **Owns:** `src/engine/importer.js`; the `<!-- engine:importer -->` region of `index.html`, written
   only by `tools/inline_engine.py`; `tests/import.test.js`;
   `tests/fixtures/engine_corpus_v1.json` (regen only); `tests/mutants/o1_bottom_left_to_right.patch`,
@@ -513,8 +528,8 @@ engine is a separate file-ownership boundary.
   ```
 - **Non-goals:** no `index.html` edit outside the engine region, no `core.js` or `share.js` edit, no UI.
 
-### Lane T: tabs, OR, lip and the sheet O1 hook (after lane E is on dev)
-- **Base:** origin/dev after lane E's dev merge. Branch `claude/sheet-tabs-t`.
+### Lane T1: tabs, OR and the sheet O1 hook (then T2: the lip), serial
+- **Base:** lane E's head. Branch `claude/sheet-tabs-t1`. Lane T2 (`claude/sheet-tabs-t2`) bases on T1's head and owns only the lip: `#scale-foot`/`#scale-footclip`/`#scale-footslide`/`#scale-lip` markup, CSS and JS, the authored lane L A1-A19 / E1-E12 tests and `uxl_*` mutants, and the LP tests and mutants. T1 owns everything else listed below. Lane T2's M PR carries lane P's net code minus Adjust and supersedes #408.
 - **Owns:** `index.html` outside engine regions and outside the DECKS line; `tools/sandbox.js`
   (ELEMENT_IDS); `tests/app.test.js`; `tests/e2e.test.js`; `tools/probe/panel_fit.js` only if the
   sheet change moves a panel control (expected: no change); `tests/mutants/tb_*`, `lp_*`,
@@ -534,9 +549,10 @@ engine is a separate file-ownership boundary.
 - **Non-goals:** no engine edit, no `data/decks.json` edit, no share/route/record change, no
   `#import-row` unhide, no About / settings / card change.
 
-Lanes are serial (T depends on E's `placeLineBottoms`). There is no parallel `index.html` lane.
+Lanes are serial E -> T1 -> T2 (T1 depends on `placeLineBottoms`; T1 and T2 share `index.html`). There is no parallel `index.html` lane.
 
 ### 6.4 Gates (owner's dev-first rule)
+0. Before opening M: `git diff origin/main...HEAD --name-only` lists no `_headers`, and `git log origin/main..HEAD` contains no `claude/dev-overlay` commit (619201e, c0cc1fc).
 1. Each lane opens PR M into `main`, which is **HELD** and never merged without the owner's explicit
    go. The integrator opens PR D from the same head into `dev`.
 2. PR D merges (`gh pr merge <D> --merge`) only when:
@@ -564,6 +580,7 @@ Lanes are serial (T depends on E's `placeLineBottoms`). There is no parallel `in
 8. **Edit the deck from step 5.** SAVE CHANGES shows on both tabs. Change a note, switch to Layout, SAVE.
 9. **Rotate to landscape.** The Layout pan is about 258px, and the tabs still fit.
 10. **Settings > Accessibility > Reduce Motion on.** The lip and tab switches are instant.
+12. Add a scale with ding F3 and bottoms `C Db Eb Bb Db Ab` (no octaves). They read `C1 Db1 Eb1 Bb1 Db2 Ab2`; say whether that is acceptable (Q3).
 11. Open the Pygmy deck's Edit. Its bottom notes `C3 Db3 Eb3 Bb3 Db4 Ab5` are unchanged.
 
 ## 7. Open questions (real forks only, recommendation first)
@@ -575,6 +592,14 @@ unoctaved bottom note?**
 - (b) Yes, change `core.nearestToDing` too. This rewrites what some old links decode to and can move a
   legacy deck id.
 
+**Q2. At 844x390 the Layout pan is 258px against Adjust's 318px.**
+- **Recommended: (a)** in the wide container block, the tab strip moves into the left column beside the plate, recovering its 60px of height (pan about 318px).
+- (b) Accept 258px.
+
+**Q3. Octaveless bottoms that wrap far below the ding** (F3 with `C Db Eb Bb Db Ab` gives C1 Db1 Eb1 Bb1 Db2 Ab2, musically odd).
+- **Recommended: (a)** accept: O1 as written, and the guessed-octaves info tells the user to type octaves.
+- (b) Refuse a list that would place any note more than an octave below the ding, asking for octaves.
+
 Everything else is decided above:
 - tab switches push no history;
 - Back from Layout closes the sheet;
@@ -582,16 +607,15 @@ Everything else is decided above:
 - the Layout tab is the only place the pan draws;
 - the lip is kept from L.
 
-## Appendix: self-check (R1-R8)
+## Appendix: self-check (R1-R8, after the review fold)
 
 | line | score | evidence |
 |---|---|---|
-| R1 Owner fidelity | 10 | O1 (both inputs, per A1), O2 OR rule, O3 two tabs with NEXT / GENERATE / SAVE CHANGES and an always-tappable Layout, O4 lip folded in, P DEV-only and #408 closed; nothing else added (accessibility, history and lip mechanics are delivery per A3). |
-| R2 Grounding | 10 | Every current-code claim names an id or function on origin/dev (`composeBottoms`, `nearestToDing`, `formatSeed`, `showAdjust`, `closeScaleSheet`, `#scale-guidance`, `ELEMENT_IDS`); new ids are listed as new. |
-| R3 State completeness | 10 | Section 3.8 defines every flow x tab x state x keyboard cell, plus the 3.3 CTA table and focus rules. |
-| R4 Constraint safety | 10 | `core.js`, share, DECKS and deck data are untouched; engine regions are changed only through `inline_engine.py`; the history model keeps one sheet entry with `pendingPop` / `syncRoute`. |
-| R5 Testability | 10 | Every behaviour has a verbatim title; 13 mutants cover each risky branch, each with one `# kills:` and a `.`-wildcard suite; retirements are named with reasons. |
-| R6 Swarm shape | 10 | Two lanes split on the engine / `index.html` boundary, serialised with the reason given, each with owns, acceptance, verify and non-goals; the dev-first gates and phone steps are included. |
-| R7 Design quality | 10 | Existing tokens and `.mode`; 44px targets; 320 and 380 covered by tests; the Layout pan is 1.8-3.3x the small pan (3.6); the OR rule is the panel's only full-width rule. |
-| R8 Decisiveness | 10 | One real fork (legacy compatibility), with a recommendation; the rest is decided with rationale. |
-EOF'
+| R1 Owner fidelity | 9 | O1-O4 delivered; Q2 and Q3 surface two owner-visible consequences rather than deciding them. |
+| R2 Grounding | 9 | Ids, selectors, callers and branch names checked on origin/dev and PR #408; 1280x800 pan is computed and left to lane T to measure. |
+| R3 State completeness | 9 | 3.8 covers every cell; landscape answer depends on Q2. |
+| R4 Constraint safety | 9 | core.js and share untouched, overlay excluded by the 6.4 step-0 check; lane base on #408 branch. |
+| R5 Testability | 9 | Verbatim titles plus fence and range-floor tests; lane L tests are authored from the ux plan, not yet written. |
+| R6 Swarm shape | 9 | E -> T1 -> T2 serial with owns, verify and gates; serial cost accepted because index.html cannot split. |
+| R7 Design quality | 8 | Existing tokens and .mode; pan is 1.7-3.3x the small pan but under Adjust at 320 and 844 (disclosed, Q2). |
+| R8 Decisiveness | 9 | Three forks, each with a recommendation. |
