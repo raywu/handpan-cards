@@ -11924,3 +11924,61 @@ describe("UX: the footer lip", () => {
     }
   });
 });
+
+describe("PH: phone-check fixes", () => {
+  const plateLabels = (app) =>
+    [...app.els["scale-preview"].innerHTML.matchAll(/<text[^>]*>([^<]*)</g)].map((m) => m[1]).join("|");
+
+  test("PH: the empty sheet draws the pan the four field placeholders compose, not the old example", () => {
+    const app = boot();
+    app.els["deck-add"].click();
+    const example = plateLabels(app);
+    const values = {};
+    for (const k of ["ding", "top", "inner", "bottom"]) values[k] = app.els[`scale-${k}`].placeholder;
+    const compose = require("./helpers/engine.js").loadEngine(["core", "importer"]).importer.compose;
+    const r = compose(values);
+    assert.ok(r.ok, "the placeholders do not compose");
+    app.type(r.line);
+    assert.strictEqual(example, plateLabels(app), "the example is not the composed placeholder seed");
+    assert.ok(!example.startsWith("E|"), "the old example (ding E) is still drawn");
+  });
+
+  test("PH: the example plate carries .example beside .stale, a held plate carries .stale alone", () => {
+    const app = boot();
+    app.els["deck-add"].click();
+    const p = app.els["scale-preview"];
+    assert.ok(p.classList.contains("stale") && p.classList.contains("example"));
+    assert.strictEqual(p.getAttribute("aria-label"), "Example pan for the placeholder seed");
+    app.type("(D3) A3 C4 D4");
+    assert.ok(!p.classList.contains("stale") && !p.classList.contains("example"));
+    app.type("(D3) A3 C4 zzz");
+    assert.ok(p.classList.contains("stale") && !p.classList.contains("example"), "a held plate looks like the example");
+  });
+
+  test("PH: the CTA is a sibling right after the plate inside the band, not in the flow above it", () => {
+    const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    const from = html.indexOf('id="scale-panel-layout"');
+    const band = html.indexOf('<div id="scale-plate-band">');
+    assert.ok(from > 0 && band > from);
+    assert.ok(!html.slice(from, band).includes('id="scale-layout-hint"'), "the hint is still above the plate");
+    const inBand = html.slice(band);
+    const iPrev = inBand.indexOf('id="scale-preview"');
+    const iHint = inBand.indexOf('id="scale-layout-hint"');
+    assert.ok(iPrev > 0 && iHint > iPrev && iHint < inBand.indexOf('id="scale-drawer-status"'),
+      "the hint does not follow the plate inside the band");
+  });
+
+  test("PH: the tabs are not .mode buttons and keep .on, roles and ids", () => {
+    const app = boot();
+    app.els["deck-add"].click();
+    const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    for (const id of ["scale-tab-scale", "scale-tab-layout"]) {
+      const tag = html.match(new RegExp(`<button[^>]*id="${id}"[^>]*>`))[0];
+      assert.ok(!/class="[^"]*\bmode\b/.test(tag), `#${id} is still a .mode button`);
+      assert.ok(tag.includes('role="tab"'));
+    }
+    app.click(app.els["scale-tab-layout"]);
+    assert.ok(app.els["scale-tab-layout"].classList.contains("on"));
+    assert.ok(!app.els["scale-tab-scale"].classList.contains("on"));
+  });
+});
