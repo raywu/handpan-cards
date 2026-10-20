@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1057,7 +1057,7 @@
+@@ -1105,7 +1105,7 @@ footer.seq{row-gap:var(--sp-1)}
  }
  @container surf (min-width:600px) and (min-aspect-ratio:1/1){
    #scale-preview{--adj-reserve:72px}
 -  #scale-sheet[data-tab="layout"] .sheetbody{display:grid; grid-template-columns:auto 1fr; column-gap:var(--sp-3); row-gap:0; align-content:start}
 +  #scale-sheet[data-tab="layout"] .sheetbody{display:block; grid-template-columns:auto 1fr; column-gap:var(--sp-3); row-gap:0; align-content:start}
    #scale-sheet[data-tab="layout"] #scale-panel-layout{display:contents}
-   #scale-sheet[data-tab="layout"] #scale-plate-band{grid-column:1; grid-row:1 / span 30; align-self:start; position:static}
-   #scale-sheet[data-tab="layout"] #scale-tabs, #scale-sheet[data-tab="layout"] #scale-layout-hint,
+   #scale-sheet[data-tab="layout"] #scale-plate-band{grid-column:1; grid-row:1 / span 30; align-self:start; position:relative}
+   #scale-sheet[data-tab="layout"] #scale-tabs,

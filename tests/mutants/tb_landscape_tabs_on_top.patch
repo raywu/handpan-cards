@@ -4,13 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1060,7 +1060,8 @@
+@@ -1108,7 +1108,7 @@ footer.seq{row-gap:var(--sp-1)}
    #scale-sheet[data-tab="layout"] .sheetbody{display:grid; grid-template-columns:auto 1fr; column-gap:var(--sp-3); row-gap:0; align-content:start}
    #scale-sheet[data-tab="layout"] #scale-panel-layout{display:contents}
-   #scale-sheet[data-tab="layout"] #scale-plate-band{grid-column:1; grid-row:1 / span 30; align-self:start; position:static}
--  #scale-sheet[data-tab="layout"] #scale-tabs, #scale-sheet[data-tab="layout"] #scale-layout-hint,
+   #scale-sheet[data-tab="layout"] #scale-plate-band{grid-column:1; grid-row:1 / span 30; align-self:start; position:relative}
+-  #scale-sheet[data-tab="layout"] #scale-tabs,
 +  #scale-sheet[data-tab="layout"] #scale-tabs{grid-column:1 / -1; grid-row:1}
-+  #scale-sheet[data-tab="layout"] #scale-layout-hint,
    #scale-sheet[data-tab="layout"] #scale-layout-zone{grid-column:2}
-   #scale-sheet[data-tab="layout"] #scale-layout-hint, #scale-sheet[data-tab="layout"] #scale-layout-zone{margin-top:var(--sp-3)}
+   #scale-sheet[data-tab="layout"] #scale-layout-zone{margin-top:var(--sp-3)}
    #scale-plate-band #scale-drawer-status{width:0; min-width:100%}

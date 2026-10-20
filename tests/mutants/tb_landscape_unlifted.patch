@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1053,7 +1053,6 @@
- .sheetbody:has(#scale-layout-zone.nostick) #scale-plate-band{position:static}
+@@ -1101,7 +1101,6 @@ footer.seq{row-gap:var(--sp-1)}
+ #scale-plate-band #scale-layout-hint[hidden]{display:none}
  .sheetbody{scroll-padding-top:var(--plate-band-h, 0px)}
  @media (orientation:landscape) and (max-height:500px){
 -  #scale-sheet[data-tab="layout"] .sheetsurf{max-width:none}

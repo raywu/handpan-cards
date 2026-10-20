@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1049,6 +1049,7 @@
+@@ -1093,6 +1093,7 @@ footer.seq{row-gap:var(--sp-1)}
  #scale-or span{font:600 9.5px/1.5 "Nunito Sans"; letter-spacing:.13em; color:#a79d8b; text-transform:uppercase}
  #scale-preview{--adj-reserve:232px;
    width:clamp(160px, min(100cqw, calc(100cqh - var(--adj-reserve))), 480px)}
 +#scale-preview .panhit[data-ring="bottom"]{pointer-events:none}
  #scale-plate-band{position:sticky; top:0; z-index:2; background:#1f1b15; padding-bottom:var(--sp-1)}
- .sheetbody:has(#scale-layout-zone.nostick) #scale-plate-band{position:static}
- .sheetbody{scroll-padding-top:var(--plate-band-h, 0px)}
+ .sheetbody:has(#scale-layout-zone.nostick) #scale-plate-band{position:relative}
+ #scale-plate-band #scale-layout-hint{position:absolute; left:50%; top:calc((100% - var(--sp-1)) / 2);

@@ -6,9 +6,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1064,7 +1064,7 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1112,7 +1112,7 @@ footer.seq{row-gap:var(--sp-1)}
    #scale-sheet[data-tab="layout"] #scale-layout-zone{grid-column:2}
-   #scale-sheet[data-tab="layout"] #scale-layout-hint, #scale-sheet[data-tab="layout"] #scale-layout-zone{margin-top:var(--sp-3)}
+   #scale-sheet[data-tab="layout"] #scale-layout-zone{margin-top:var(--sp-3)}
    #scale-plate-band #scale-drawer-status{width:0; min-width:100%}
 -  .sheetbody{scroll-padding-top:0}
 +  .sheetbody{scroll-padding-top:240px}
