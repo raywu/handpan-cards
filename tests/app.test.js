@@ -11620,6 +11620,8 @@ describe("UX: the footer lip", () => {
     scrollTo(a, -30);
     scrollTo(a, -60);
     assert.strictEqual(state(a), OPEN);
+    scrollTo(a, 0);
+    assert.strictEqual(state(a), OPEN, "coming back from below zero is not a scroll down");
     scrollTo(a, 1100);
     assert.strictEqual(state(a), OPEN, "the clamped end leaves too little to scroll");
   });
@@ -11788,6 +11790,18 @@ describe("UX: the footer lip", () => {
     scrollTo(c, 270);
     c.els["scale-footslide"].dispatchEvent({ type: "transitionend", target: c.els["scale-foot"], propertyName: "transform" });
     assert.strictEqual(state(c), "lipped/open", "a transitionend from another element is ignored");
+    const d = collapsed(lipApp(), "d");
+    d.advance(300);
+    scrollTo(d, 270);
+    d.advance(50);
+    scrollTo(d, 400);
+    d.advance(50);
+    scrollTo(d, 370);
+    assert.strictEqual(state(d), "lipped/open", "restoring again");
+    d.advance(120);
+    assert.strictEqual(state(d), "lipped/open", "the first restore's timer fired and did nothing");
+    d.advance(100);
+    assert.strictEqual(state(d), OPEN, "the second restore's own timer ended it");
   });
 
   test("UX: a reversal mid-slide retargets the slide and never changes the layout classes", () => {

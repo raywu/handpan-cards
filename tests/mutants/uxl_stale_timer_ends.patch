@@ -4,7 +4,23 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10692,7 +10692,7 @@ function restoreLip() {
+@@ -10653,7 +10653,6 @@ function lipHandOff() {
+ function collapseLip() {
+   if (!sheetOpen) return;
+   lipAcc = 0;
+-  clearTimeout(lipTimer);
+   lipGen += 1;
+   if (isLipped()) { sheet.classList.add("lipshut"); lipSettled = false; return; }
+   const open = lipRead();
+@@ -10673,7 +10672,6 @@ function collapseLip() {
+ function restoreLip() {
+   if (!sheetOpen || !isLipped() || !isLipShut()) return;
+   lipAcc = 0;
+-  clearTimeout(lipTimer);
+   lipGen += 1;
+   if (lipSettled) {
+     sheet.classList.add("lipnow");
+@@ -10692,7 +10690,7 @@ function restoreLip() {
    lipTimer = setTimeout(() => endOpening(gen), LIP_END_MS);
  }
  function endOpening(gen) {

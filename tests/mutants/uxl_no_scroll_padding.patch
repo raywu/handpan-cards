@@ -1,5 +1,5 @@
-# kills: UX: with the keyboard up the lip and the focused field are on screen
-# suite: node --test --test-name-pattern UX:.with.the.keyboard.up.the.lip.and.the.focused.field.are.on.screen tests/e2e.test.js
+# kills: KB2: a partly hidden note field is revealed with the minimal scroll
+# suite: node --test --test-name-pattern ^KB2:.a.partly.hidden tests/e2e.test.js
 # uxl_no_scroll_padding
 diff --git a/index.html b/index.html
 --- a/index.html
