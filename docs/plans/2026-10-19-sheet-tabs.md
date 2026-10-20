@@ -887,7 +887,13 @@ amended O1).
 
 Open item for the owner, not a fork (3.4, review 6): the base hides `#scale-msg` whenever `#scale-field-msg` has text, so with an inferred bottom the pan `say()` warnings never show on Layout (nor on the base's Adjust). Pre-existing; accepted as out of scope for this plan by the integrator (AFK). A later lane can route pan warnings around that line.
 
-No open questions remain. TB-A1 was replaced by the owner's decision of 2026-10-19 (4.1: no ding skip, a non-blocking duplicate warning). AFK decision TB-A2 (3.6) is still for the owner to confirm.
+No open questions remain. TB-A1 was replaced by the owner's decision of 2026-10-19 (4.1: no ding skip, a non-blocking duplicate warning).
+
+**Owner decisions 2026-10-20 (plan READY at 3cc5f7e, four questions, all answered):**
+- TB-A2 (3.6) CONFIRMED: the Layout pan keeps 306px at 844x390 and the scroller reaches its lower 70px by scrolling; no landscape-only shrink.
+- "Pan bigger" CONFIRMED as "never smaller than Adjust": the Layout pan equals today's Adjust pan at every viewport (276/336/349/306/480). No decision to exceed Adjust.
+- The pre-existing hidden pan-warning gap (above) stays OUT OF SCOPE; filed as a follow-up nit, not folded into T1.
+- GO for lane E, then T1 and T2 serially, on base origin/claude/dual-input-ux-p (715c029), each gated by 6.4 and merged to dev only; main PRs held.
 
 Everything else is decided above:
 - tab switches push no history;
