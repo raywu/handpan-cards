@@ -43,7 +43,7 @@ notes that the sheet places below the ding: D3 with "g a b c" gives G2 A2 B2 C3.
 | S3 | P: LARGE pan `clamp(160px, min(100cqw, calc(100cqh - var(--adj-reserve))), 480px)` with `--adj-reserve:232px` (72px in the wide container block) | **Kept, re-keyed** | The same clamp sizes the pan on the Layout tab. EVERY `#scale-sheet.adjusting` selector on dev is re-keyed to `#scale-sheet[data-tab="layout"]` or deleted: the preview clamp, the landscape `@media (orientation:landscape) and (max-height:500px)` `.sheetsurf{max-width:none}` rule, and the whole `@container surf (min-width:600px) and (min-aspect-ratio:1/1)` block (`--adj-reserve:72px`, the two-column `.sheetbody` grid, `#scale-pancol` placement re-targeted to `#scale-plate-band`, the drawer-status width rule). The `display:none` list that hid the Scale controls under `.adjusting` is deleted (tabpanel `hidden` does that job). Acceptance: `grep -c adjusting index.html` is 0. `--adj-reserve` keeps P's values, 232px and 72px in the wide block, so the Layout pan equals P's Adjust pan (section 3.6). `#scale-tabs` takes `grid-column:2; grid-row:1` in that block (3.1). |
 | S4 | P D11 (revised): on entering Adjust, focus goes to `#scale-adjust-title` | **Replaced** | On a tab switch, focus goes to the tab that was activated (section 3.3). On NEXT, focus goes to `#scale-tab-layout`. |
 | S5 | P: the drawer (`#scale-drawer`) opens only inside Adjust; `openDrawer()` returns early if `!boxOk` | **Modified** | The drawer controls live permanently in the Layout panel and are never `hidden`. While the scale is empty or invalid they are `disabled` (section 3.5). `#scale-layout-toggle` is removed, and `drawerOpen` reads "Layout tab selected and `boxOk`". |
-| S6 | P: ADJUST LAYOUT row with hint "Type a scale to adjust its layout." (`#scale-layout-hint`) | **Modified** | `#scale-layout-hint` moves to the top of the Layout panel. It shows the same sentence while the scale is empty or invalid, and is hidden while the scale is valid. |
+| S6 | P: ADJUST LAYOUT row with hint "Type a scale to adjust its layout." (`HINT_EMPTY`) and, once the scale parses, "Layout is a guess. Open ADJUST LAYOUT to move a note, change the handpan orientation, or mirror the pan." (`HINT_GUESS`, `#scale-layout-hint`) | **Modified** | `#scale-layout-hint` moves to the top of the Layout panel. It shows the empty sentence while the scale is empty or invalid, and is hidden while the scale is valid. `HINT_GUESS` ("Layout is a guess. Open ADJUST LAYOUT ...") is retired: it names a control the plan removes, and the hint is hidden while the scale is valid. The `tests/app.test.js` tests that assert it are rewritten to assert that no hint shows on a valid scale (4.4). |
 | S7 | L 3.4: lip markup `#scale-foot > #scale-footclip > #scale-footslide` (`#scale-generate`, `#scale-delete-row`) plus `#scale-lip` | **Modified** | Same markup. `#scale-footslide` also holds `#scale-next`. The lip's aria-label names the primary currently shown: "Show NEXT", "Show GENERATE CARDS" or "Show SAVE CHANGES". |
 | S8 | L 3.4 motion and geometry: 4px grabber row + 1px #332c22 hairline, 36x4 #a79d8b pill, 25px invisible tap zone, 180ms `cubic-bezier(.3,0,.2,1)` FLIP slide, classes `lipped`/`lipshut`/`lipnow`, reduced motion instant | **Kept** | Unchanged. |
 | S9 | L 3.4 scroll rule: 24px hysteresis, 150ms user window, `lipQuietUntil`, end restore at `t >= M-1`, range-change re-baseline, guard `M-t > E`, suspended while `kbup`; swipe 16px; `scroll-padding-bottom` 21px | **Kept, per panel** | The rule reads the scroll position of the selected panel's scroller (`.sheetbody` is one scroller). A tab switch counts as a range change: it re-baselines and restores the full footer (section 3.7). |
@@ -99,6 +99,10 @@ notes that the sheet places below the ding: D3 with "g a b c" gives G2 A2 B2 C3.
   above the drawer; the plate band is `grid-column:1`.
 - **Removed ids:** `#scale-pancol`, `#scale-layout-row`, `#scale-layout-toggle`, `#scale-adjust-head`,
   `#scale-adjust-back`, `#scale-adjust-title`.
+- **Kept behind a renamed lookup:** the sticky plate band (DR1 rule G: `syncBand`, `BAND_MIN_ROOM` 44,
+  `bandWatch`, `nostick`) stays as it is on the base, with `panCol` read from `#scale-plate-band` instead of
+  `#scale-pancol` and `bandPort` still `.sheetbody`. Its `tests/drawer_grid.test.js` tests open the Layout tab
+  where they clicked `#scale-layout-toggle` (lane T1, section 6).
 - **New ids:** `scale-tabs`, `scale-tab-scale`, `scale-tab-layout`, `scale-panel-scale`,
   `scale-panel-layout`, `scale-or`, `scale-next`.
 - **Lane L ids, first built here:** `scale-foot`, `scale-footclip`, `scale-footslide`, `scale-lip`.
@@ -156,6 +160,8 @@ notes that the sheet places below the ding: D3 with "g a b c" gives G2 A2 B2 C3.
   resets to the top on a switch.
 - **On NEXT:** select Layout and focus `#scale-tab-layout`. The screen-reader user hears
   "Layout, tab, selected", then Tab moves into the panel.
+- **On RESET LAYOUT:** focus moves to `#scale-tab-layout` (on the base it moved to `#scale-layout-toggle`,
+  because RESET LAYOUT may disable itself; the Layout tab is the nearest stop that never disables).
 - **Tab order, Scale tab:**
   `[backBtn, selectedTab, nameBox (Edit), ding, top, inner, bottom, scaleBox, ...swatches, primary, delBtn (Edit)]`.
   `primary` is `#scale-next` in Add and `#scale-generate` in Edit.
@@ -239,7 +245,9 @@ scrollbars):
 | 844x390 | 826 x 378 (side padding 9px under `max-height:520px`; `max-width:none` from the landscape rule, re-keyed per S3) | 160 | 306 (378 - 72) | **306** | 304 |
 | 1280x800 | 610 x 752 | 160 | 480 (cap) | **480** | 478 |
 
-The Layout pan is never smaller than the Adjust pan, and it is 1.9x to 3.3x P's small pan.
+The Layout pan equals the Adjust pan (276/336/349/306/480); it is bigger than lane P's small pan
+(`clamp(88px, 30cqw, 160px)`) at every viewport, never bigger than Adjust. The 5.3 e2e floors are these
+measured values minus 2px (274/334/347/304/478).
 
 What the extra chrome costs is the fold, not the size. Measured, with the plate band's top and bottom
 against the bottom of the `.sheetbody` scroller:
@@ -363,11 +371,26 @@ Precisely:
 - **After a typed-octave note:** the next unoctaved note takes the nearest instance strictly above that typed note, wherever it sits relative to the ding.
 - **First note unoctaved:** the octave below the ding, never above it; a note with the ding's pitch class is D-12.
 - Only the first note uses the ding; nothing else is capped by it.
-- **AFK decision TB-A1:** step 3 does NOT skip the ding's midi. Under ding D3, `c d` gives C3 D3. This
-  follows the owner's rule literally ("can go higher than the ding", nothing about skipping it). It also
-  matches the other two paths, since `parseSeed` and the legacy list already accept a bottom on the ding's
-  midi; measured: legacy `(A4) G B F# G B E | B G A E F Gb` places a bottom A4 under the new rule. Lane P's
-  importer stepped past it (D3, `C D` gave C3 D4), and that test is rewritten (4.4).
+- **Owner decision on the ding's midi (2026-10-19, replaces the AFK pick TB-A1), verbatim:** "TbA1 should be
+  an error we should warn the user that there are two of those exact same notes and ask the user to double
+  check, but do not block". Applied as:
+  - Step 3 stays as written: no ding skip. Under ding D3, `c d` gives C3 D3.
+  - **Duplicate warning.** When an INFERRED bottom lands on the exact midi of the ding, or of any top or
+    inner field, `compose` keeps `ok` true and adds a non-blocking warning naming the duplicate:
+    "D3 is already the ding. Double-check the bottom notes." / "C4 is already top note 2. Double-check the
+    bottom notes." / "F5 is already inner note 1. Double-check the bottom notes." (the field's 1-based
+    position in its own row). It never disables NEXT, GENERATE CARDS or SAVE CHANGES.
+  - A TYPED octave never warns: the person wrote that pitch, as on the line. Typing an octave on the
+    inferred note (D3 → `D4`) clears the warning.
+  - An inferred or typed bottom on another BOTTOM's midi stays the existing refusal "X is already in the
+    bottom notes." (same-shell repeat, which the line also refuses with `NOTE_REPEATED`).
+  - **The line is unchanged.** Measured on the lane base: `parseSeed` ACCEPTS a cross-shell duplicate
+    silently (`[C3] [D3] (D3) A3 C4` and `(D3) [A3] A3 C4` both parse and keep both fields) and refuses only
+    a same-shell repeat (`(D3) A3 C4 D4 D4` is `NOTE_REPEATED`). `parseLegacySeed` decodes the same way, with
+    no warning: 56 of the 513 frozen legacy strings carry such a duplicate under the new rule (59 today).
+    The inferred path warns where the line does not because the octave was guessed, not typed: a person
+    who writes `[D3] (D3)` chose it, while a person who writes `c d` under D3 may not know where `d` landed.
+  - Lane P's importer stepped past the ding (D3, `C D` gave C3 D4); that test is rewritten (4.4).
 
 Worked examples (ding D3 unless stated):
 
@@ -380,7 +403,8 @@ Worked examples (ding D3 unless stated):
 | `g A1` | G2 then A1 → "A1 is lower than G2: list low to high." |
 | `d` | D2 (same pitch class as the ding) |
 | `A2 a` | A2 then A3 (strictly above), accepted |
-| `c d` | C3 D3 (the second lands on the ding's midi and stays there, TB-A1) |
+| `c d` | C3 D3, with the warning "D3 is already the ding. Double-check the bottom notes."; `c D4` clears it |
+| top `A3 C4`, bottom `B3 c` | B3 C4, with the warning "C4 is already top note 2. Double-check the bottom notes." |
 | `C1 c1`-style repeat `G2 G2` | "G2 is already in the bottom notes." |
 | ding F3, `C Db Eb Bb Db Ab` (Pygmy unoctaved) | C3 Db3 Eb3 Bb3 Db4 Ab4 |
 | ding F3, `c Db4` | C3 Db4 |
@@ -422,6 +446,26 @@ they cannot drift (owner, 2026-10-19, "One engine, new rule"):
    `nearestToDing` + `nextAbove` pair for bottoms; `nearestToDing` is removed if nothing else calls it
    (enumerate callers, do not grep).
 3. `importer.composeBottoms` calls it instead of its own `ding.octave` seed + `composeAbove`.
+4. **The duplicate warning (owner, 2026-10-19).** `compose` gains one key, `warn: { bottom: null }`, beside
+   `errors` and `info`. When an inferred bottom midi equals the ding's midi or a top or inner field's midi,
+   `warn.bottom` is `{ code: "DUPLICATE_NOTE", text: "<Note> is already the ding|top note N|inner note N.
+   Double-check the bottom notes." }`. `ok`, `line`, `seed`, `notes` and `guessed` are what they would be
+   without the duplicate, so the line written to `#scale-box`, the stored record and the share code carry
+   no trace of it.
+   - Why a new key and not `interpret`'s flag ladder: `compose` has no levels; its `errors` block and its
+     `info` is the "Octaves guessed" line in `#scale-field-msg`. A CONFIRM flag means "tick before USE" in
+     the import box, which is a block in effect, and the owner said do not block. So the level is INFO
+     in spirit, under its own key so the sheet can route it to `#scale-msg.warn` rather than the field line.
+   - Why not `info.bottom`: that line is already taken by "Octaves guessed: ..." and the two can both apply.
+   - **Where it surfaces (lane T1):** `#scale-msg` with class `warn`, inside `#scale-guidance`, through
+     `say(text, "warn")` from `paintFields` when `warn.bottom` is set and `inputPath` is `fields`, and
+     `say("", "")` when it clears. It takes NO `pan` class, so it never yields to the Layout notice: it is
+     about the fields, and 3.4 shows `#scale-msg` on both tabs. The slot's two-line reserve holds the
+     longest text ("C#4 is already inner note 2. Double-check the bottom notes.", 59 characters), so the slot
+     does not grow (CLAUDE.md "sheet guidance" N-A6); the 5.2 test "O1: bottoms B3 c under D3 / A3 C4 show
+     ... and the slot keeps its two-line height" measures that at 320px. It does not use the
+     `#scale-refusal` line (not a refusal) nor `#scale-field-msg` (`info` kind stays "Octaves guessed").
+   - Decode paths (`parseSeed`, `parseLegacySeed`) have no sheet and keep accepting the duplicate silently.
 
 Because both files are engine modules: `python3 tools/inline_engine.py`; `node tools/regen_engine_corpus.js --check`
 then regenerate on drift; `tools/validate.py` check 4.
@@ -463,8 +507,10 @@ Consequences:
 - 73 frozen legacy strings move their id, so "every frozen legacy string keeps its deck id" goes red and
   would have to be re-pinned (`deck_ids_v1.json` regenerated). A person opening an old v1-v3 link with an
   unoctaved bottom note would get different bottom octaves and a new custom deck id, so the same link
-  opened before and after would give two decks. `engine_corpus_v1.json` moves only where it holds such a
-  legacy string; lane E regenerates it.
+  opened before and after would give two decks. `engine_corpus_v1.json` does not move: measured, none of its 20
+  `synthetic_scales.json` strings (all read with the legacy reader) and none of its six malformed seeds
+  change fields or code under the new rule, so lane E checks it (`node tools/regen_engine_corpus.js
+  --check`) and it reports no drift.
 - Owner decision Q4 (a) and "One engine, new rule", 2026-10-19, binding: one inference function for the field and the legacy list; lane E re-pins the 73 ids and lists each old and new id in its PR body.
 
 ### 4.4 Existing tests that pin current behaviour
@@ -496,9 +542,22 @@ retitled, and the PR body lists old and new titles:
   "IH: compose refuses notes outside C-1 to G9 in each field, and an octaveless bottom placed above G9".
 - "IH: compose steps a later octaveless bottom past the ding's midi: under ding D3, bottoms C D read C3
   D4" becomes "IH: compose lets a later octaveless bottom land on the ding's midi: under ding D3, bottoms
-  C D read C3 D3" (`guessed` C3 D3 [C3 D4], line `[C3] [D3] (D3) A3` [`[C3] (D3) A3 [D4]`]; TB-A1).
+  C D read C3 D3 and warn that D3 is already the ding" (`guessed` C3 D3 [C3 D4], line `[C3] [D3] (D3) A3` [`[C3] (D3) A3 [D4]`], `warn.bottom.code` DUPLICATE_NOTE; owner decision, 4.1).
 - Unchanged and rechecked: "IH: compose keeps a typed bottom octave ..." (C3 Eb → Eb3; C Eb → C3 Eb3)
   and "IH: compose steps each later octaveless bottom ... C3 Db3 Eb3 Bb3 Db4 Ab4".
+
+`HINT_GUESS` (S6, lane T1): three `tests/app.test.js` tests assert the sentence "Layout is a guess. Open
+ADJUST LAYOUT ..." and are rewritten to assert that `#scale-layout-hint` is hidden (and empty of that
+sentence) on a valid scale:
+- "DR2 lines 85, 132: the hint reads the empty sentence while the toggle is disabled and LAYOUT_HINT once
+  the scale parses" → "DR2 lines 85, 132: the hint reads the empty sentence while the scale is empty or
+  invalid and is hidden once the scale parses";
+- "DR1 rule S: notice, toggle, switches, anchors and hint match spec 16 for every sheet, stored layout, box
+  and press" (its `S_HINT.valid` constant): `S_HINT.valid` becomes "hidden" and the walker asserts
+  `hint.hidden` in place of the text; retitled "DR1 rule S: notice, switches, anchors and hint match spec 16
+  for every sheet, stored layout, box and press";
+- "DR2a (83, 132, 130): the DOM carries the new controls in the order of 20.24, the old group is gone, the
+  closed hint is LAYOUT_HINT" → "... the old group is gone, the hint is hidden on a valid scale".
 
 Existing mutants that pin the old rule (all four anchor on lines lane E removes):
 - **Retired, with their `# kills:` clauses:** `ih_e_ding_match_by_letter.patch`,
@@ -534,7 +593,11 @@ in `tests/e2e.test.js`. Prefixes: `O1:` (engine and sheet placement), `TB:` (tab
 - "O1: the owner's legacy example: (D3) A3 C4 D4 E4 F4 G4 A4 C5 | F G A gives F2 G2 A2, and | C E gives C3 E3"
 - `tests/core.test.js`: "O1: parseLegacySeed places the first octaveless bottom in the octave below the ding: (D3) A3 C4 E4 | G gives G2"
 - `tests/core.test.js`: "O1: inferBottoms returns {midis, failAt}: a typed Cb-1 fails at its index with midi -1, ding C-1 with b fails with -1, G9 then a fails with 129, and a clean list has failAt -1"
-- "O1: a later octaveless bottom may land on the ding's midi: D3 c d gives C3 D3" (TB-A1; this is the rewritten "IH: compose lets a later ..." test in 4.4)
+- "O1: an inferred bottom on the ding's midi warns and does not block: D3 c d gives C3 D3, ok, line [C3] [D3] (D3) A3, and warn.bottom is DUPLICATE_NOTE 'D3 is already the ding. Double-check the bottom notes.'" (this is the rewritten "IH: compose lets a later ..." test in 4.4)
+- "O1: an inferred bottom on a top or inner note's midi warns: D3 / A3 C4 / B3 c says C4 is already top note 2; D3 / A3 C4 | F5 / E5 f says F5 is already inner note 1"
+- "O1: a typed bottom octave never warns and clears the warning: D3 c D4 and D3 C3 D3 have warn.bottom null; D3 / A3 C4 / B3 C4 has warn.bottom null"
+- "O1: a duplicate of another bottom stays the refusal: D3 c C3 says C3 is already in the bottom notes"
+- "O1: compose's seed and line are the same with and without the warning: D3 c d and D3 C3 D3 give one line and one seed, and parseSeed accepts [C3] [D3] (D3) A3 as on origin/main"
 
 ### 5.2 Sandbox (`tests/app.test.js`)
 - "O1: typing g a b c in BOTTOM NOTES with ding D3 writes [G2] [A2] [B2] [C3] into the line"
@@ -549,10 +612,16 @@ in `tests/e2e.test.js`. Prefixes: `O1:` (engine and sheet placement), `TB:` (tab
 - "TB: in Edit SAVE CHANGES is the primary on both tabs with today's enabling, and DELETE shows on both"
 - "TB: the Layout tab with an empty or invalid scale shows the hint, the empty plate and every drawer control disabled and out of the Tab order"
 - "TB: the sheet Tab order on each tab and flow is the section 3.3 list filtered by isStop"
+- "TB: RESET LAYOUT moves focus to the Layout tab"
 - "TB: the Adjust overlay is gone: no showAdjust, no adjust history state, no #scale-adjust-head, #scale-layout-toggle or adjusting class, and a pan tap on Layout opens nothing" — the lane P retirement test.
 - "TB: #scale-field-msg shows on Scale only, #scale-layout-state on Layout only, and #scale-guidance keeps its SG order and two-line reserve on both"
 - "TB: ELEMENT_IDS carries scale-tabs, scale-tab-scale, scale-tab-layout, scale-panel-scale, scale-panel-layout, scale-next, scale-foot, scale-footslide and scale-lip, and none of the retired adjust ids"
 - "O1: GENERATE CARDS and SAVE CHANGES from fields D3 / A3 C4 E4 / g store G2, equal to the parse line"
+- "O1: bottoms c d under D3 show 'D3 is already the ding. Double-check the bottom notes.' in #scale-msg.warn without the pan class, and NEXT, GENERATE CARDS and SAVE CHANGES stay enabled"
+- "O1: bottoms B3 c under D3 / A3 C4 show 'C4 is already top note 2. Double-check the bottom notes.' and the slot keeps its two-line height"
+- "O1: typing D4 over the inferred d clears the duplicate warning, and switching to the line path clears it too"
+- "O1: the stored record and the #s= code for fields D3 / A3 C4 / c d equal those for C3 D3 typed: the warning leaves no trace"
+- "O1: the duplicate warning does not yield to the Layout notice: with warn set, a tapped anchor on Layout shows the notice and #scale-msg keeps its text"
 - "TB: switching to Layout with #scale-box focused and the keyboard up ends kbup and shows the tab strip"
 - "OR: #scale-or sits between #scale-fields and the scale line, is a separator named or, and is not a Tab stop"
 - "LP: the lip's aria-label names the visible primary: Show NEXT, Show GENERATE CARDS, Show SAVE CHANGES"
@@ -561,7 +630,7 @@ in `tests/e2e.test.js`. Prefixes: `O1:` (engine and sheet placement), `TB:` (tab
 - Lane L was never built: dev has no `uxl_*` mutant and no `#scale-lip`. Lane T2 AUTHORS lane L's A1-A19 sandbox tests from ux plan section 8, titles verbatim. Each title that names "GENERATE CARDS" as the primary is re-run once per primary (NEXT, GENERATE CARDS, SAVE CHANGES) by its existing loop.
 
 ### 5.3 Real Chrome (`tests/e2e.test.js`)
-- "TB: at 320x568, 380x780, 393x852, 844x390 and 1280x800 the Layout pan is wider than the old small pan clamp(88px, 30cqw, 160px) and at least the section 3.6 width minus 2px" (floors 274, 334, 347, 304, 478)
+- "TB: at 320x568, 380x780, 393x852, 844x390 and 1280x800 the Layout pan is wider than the old small pan clamp(88px, 30cqw, 160px) and at least the section 3.6 width minus 2px" (floors 274, 334, 347, 304, 478: the 3.6 measured values minus 2)
 - "TB: at 844x390 the Layout tab's .sheetsurf is wider than 600px, the tab strip sits right of the plate and the pan is at least 304px"
 - "TB: at 320x568, 380x780 and 393x852 the whole Layout pan is inside the .sheetbody box when the tab opens"
 - "TB: at 380x780 the four note fields and the scale line take the full content width on the Scale tab"
@@ -582,6 +651,11 @@ in `tests/e2e.test.js`. Prefixes: `O1:` (engine and sheet placement), `TB:` (tab
   - Their replacements are the TB tests above. The lane removes them by exact title and lists each
     retired title in its PR body.
 - DI 2.4 Tab-order tests that list `drawerBtn`: rewritten to the 3.3 lists (S12).
+- The KB F4 Adjust tests: "KB: F4 in Adjust layout at WxH at least 160px of options show under the large pan
+  and the pan is at least 140px" and "KB: F4 in Adjust layout at WxH every note on the large pan is hit by a
+  tap at its centre (slug)" are rewritten to open the Layout tab ("KB: F4 on the Layout tab at ..."), same
+  assertions; "KB: F4 opening Adjust layout focuses its title without scrolling the sheet" is retired (S4;
+  NEXT's focus is pinned by "TB: NEXT shows only in Add on the Scale tab, ...").
 
 ### 5.4 Mutants (`tests/mutants/`, no `index` lines, `.`-wildcard `# suite:`)
 
@@ -603,10 +677,77 @@ in `tests/e2e.test.js`. Prefixes: `O1:` (engine and sheet placement), `TB:` (tab
 
 Lane T2 authors lane L's `uxl_*` mutant table from ux plan section 8 (none exist on dev), anchored on its own code. Added rows:
 
+| file | change | `# kills:` | `# suite:` |
+|---|---|---|---|
 | `o1_ding_midi_skipped.patch` | `inferBottoms` steps a later note past the ding's midi (lane P's rule) | IH: compose lets a later octaveless bottom land on the ding's midi: under ding D3, bottoms C D read C3 D3 | `IH:.compose.lets.a.later` |
+| `o1_dup_warning_dropped.patch` | `compose` never sets `warn.bottom` | O1: an inferred bottom on the ding's midi warns and does not block: D3 c d gives C3 D3, ok, line [C3] [D3] (D3) A3, and warn.bottom is DUPLICATE_NOTE 'D3 is already the ding. Double-check the bottom notes.' | `O1:.an.inferred.bottom.on.the.ding` |
+| `o1_dup_warning_blocks.patch` | the duplicate sets `errors.bottom` instead of `warn.bottom` (a block) | same test (`ok` true and `warn.bottom` asserted) | `O1:.an.inferred.bottom.on.the.ding` |
+| `o1_dup_typed_warns.patch` | a typed octave on the ding's midi also warns | O1: a typed bottom octave never warns and clears the warning: D3 c D4 and D3 C3 D3 have warn.bottom null; D3 / A3 C4 / B3 C4 has warn.bottom null | `O1:.a.typed.bottom.octave.never` |
+| `tb_dup_warning_unpainted.patch` | `paintFields` ignores `warn.bottom` | O1: bottoms c d under D3 show 'D3 is already the ding. Double-check the bottom notes.' in #scale-msg.warn without the pan class, and NEXT, GENERATE CARDS and SAVE CHANGES stay enabled | `O1:.bottoms.c.d.under.D3` |
+| `tb_dup_warning_disables_next.patch` | the warning disables the primary | same test | `O1:.bottoms.c.d.under.D3` |
 | `o1_no_range_floor.patch` | placement drops the midi >= 0 floor | O1: a bottom with no octave at or above zero refuses: ding C-1 b says B has no octave that fits: type one | `O1:.a.bottom.with.no.octave` |
 | `tb_landscape_unlifted.patch` | the landscape max-width:none rule left on `.adjusting` | TB: at 844x390 the Layout tab's .sheetsurf is wider than 600px, the tab strip sits right of the plate and the pan is at least 304px | `TB:.at.844x390` |
 | `tb_landscape_tabs_on_top.patch` | the wide block keeps the tab strip above the plate | TB: at 844x390 the Layout tab's .sheetsurf is wider than 600px, the tab strip sits right of the plate and the pan is at least 304px | `TB:.at.844x390` |
+
+**Existing mutants that name code or ids lane T1 removes (measured on the lane base).** Grep of the changed
+lines (`-`/`+`) of every `tests/mutants/*.patch` for `scale-layout-toggle|scale-adjust-|scale-pancol|adjusting|drawerOpen|drawerBtn|showAdjust|closeAdjust|layoutHint|pendingAdjustPop|HINT_GUESS|ADJUST LAYOUT|scalestage|history\.state\.adjust|adjust: *true`
+hits 22 patches; the same grep over whole patches (context lines and `# kills:` titles included) hits 55, of
+which the 44 below either mutate removed code or kill a test whose title names Adjust, the toggle or the
+drawer opening (the other 12 only carry a removed id in a context line and are re-anchored by
+`tools/refresh_mutants.py` with no disposition owed; `a_warning_shares_the_seed_row` is in the table because
+its kill test measures the pan under `#scale-layout-row`, although no grep term hits it). Lane T1 re-runs the grep on its own head before removing anything, adds or drops
+rows as it says, and writes each disposition in its PR body. "Re-anchor" keeps `# kills:` (retitled where the
+test is) and the mutation; "retire" deletes the patch with its reason.
+
+| mutant | disposition | reason |
+|---|---|---|
+| `a_seed_refusal_below_the_pan` | re-anchor | the refusal still sits in the line `.fieldrow` after `#scale-parse`; the kill test asserts that on the Scale tab, with no pan beside it |
+| `a_warning_shares_the_seed_row` | re-anchor | `say()` routing survives; the kill test measures the pan on the Layout tab instead of `#scale-layout-row` |
+| `di_e_drawer_band_lost` | re-anchor | the two-column wide grid is re-keyed to `[data-tab="layout"]` (S3) |
+| `di_e_side_stack` | retire | the Scale tab draws no pan; `.scalestage` is one column (S1, S13) |
+| `di_e_no_wide_grid` | retire | same (S1, S13) |
+| `di_fields_after_box` | re-anchor | the fields still precede `#scale-box`, now inside `#scale-panel-scale` |
+| `di_tab_skips_fields` | re-anchor | the Scale-tab order of 3.3 (its title loses "ADJUST LAYOUT") |
+| `dr1_hint_stays_while_open` | re-anchor | `layoutHint.hidden` now reads `boxOk` (S6): the hint stays shown on a valid scale |
+| `dr1g_threshold_off` | re-anchor | rule G kept, `panCol` is `#scale-plate-band` (3.1); the test opens the Layout tab |
+| `dr1_disabled_not_dimmed` | re-anchor | disabled drawer controls on the Layout tab still dim (S5) |
+| `dr1_landscape_scroll_padding` | re-anchor | rule G kept (3.1) |
+| `dr1_toggle_inert` | retire | no toggle; the Layout tab is opened by "TB: NEXT shows only in Add on the Scale tab, ..." and the tab tests |
+| `dr1g_toggle_not_in_view` | re-anchor | the panel scroll resets to the top on a switch (3.3) |
+| `dr1g_band_not_observed` | re-anchor | rule G kept (3.1) |
+| `dr2a_ready_drops_count_sentence` | re-anchor | status sentences unchanged; the test opens the Layout tab |
+| `dr2a_reset_seats_leaves_focus` | re-anchor | RESET LAYOUT focuses `#scale-tab-layout` (3.3) |
+| `dr2a_focus_on_open_removed` | re-anchor | NEXT focuses `#scale-tab-layout` (S4) |
+| `dr3_tab_list_omits_disclosure` | re-anchor | the Layout-tab order of 3.3 |
+| `e_edit_tab_skips_delete` | re-anchor | DELETE is in both tab orders of 3.3 |
+| `kb_f4_plate_too_small` | re-anchor | the clamp is kept, keyed to `[data-tab="layout"]` (S3); the KB F4 test opens the Layout tab (5.3) |
+| `kb_f4_bottom_ring_untappable` | re-anchor | same (S3, 5.3) |
+| `r3s_served_id_not_in_markup` | re-anchor | `ELEMENT_IDS` context lines change; the mutation is unchanged |
+| `r3f_served_id_never_looked_up` | re-anchor | same |
+| `uxp_close_focus_lost` | re-anchor | focus on a switch goes to the activated tab (S4, 3.3) |
+| `uxp_adjust_no_push` | retire | no Adjust entry (S2); the inverse is `tb_tab_pushes_history` |
+| `uxp_close_focus_before_unhide` | re-anchor | focus on a switch goes to the activated tab (S4, 3.3) |
+| `uxp_adjust_tab_leaks` | re-anchor | the Layout-tab order of 3.3 (Tab never reaches the hidden panel) |
+| `uxp_fields_shown_in_adjust` | re-anchor | the Scale panel is `hidden` while Layout is selected; the mutation drops that `hidden` |
+| `uxp_plate_click_ignored` | retire | no small pan (S1); "TB: the Adjust overlay is gone ..." asserts a pan tap on Layout opens nothing |
+| `uxp_small_pan_rule_wide` | retire | no small pan (S1) |
+| `uxp_reserve_dropped` | re-anchor | `--adj-reserve` kept, keyed to `[data-tab="layout"]` (S3) |
+| `uxp_adjust_pop_guard_dropped` | retire | `pendingAdjustPop` is removed (S2); the sheet's own `pendingPop` guard is untouched and keeps its own mutants |
+| `uxp_close_scroll_lost` | re-anchor | the mutation becomes "a switch keeps the old scroll"; 3.3 resets it to the top |
+| `uxp_push_before_guard` | retire | `showAdjust` is removed (S2) |
+| `dr2a_escape_skips_put_down` | re-anchor | `drawerOpen` reads "Layout selected and boxOk" (S5); the Escape ladder's put-down survives |
+| `dr3_escape_on_disclosure_loses_focus` | retire | the drawer never closes; Escape with no pick closes the sheet, pinned by "TB: Back, Escape and a popstate close the sheet from the Layout tab ..." |
+| `uxp_close_sheet_single_back` | retire | `pendingAdjustPop` and `closeAfterAdjustPop` are removed (S2) |
+| `cl_name_refusal_warning_not_marked_pan` | re-anchor | the `pan` class survives; its kill test "LF F-1 (a): ... keeps ADJUST LAYOUT enabled, GENERATE disabled, ..." is retitled to the Layout tab's controls staying enabled |
+| `r4f_f4_name_refusal_disables_drawer` | re-anchor | same kill test |
+| `sg_notice_rewritten_every_paint` | re-anchor | "SG: N-A10 repeated paints (ten real drawer-toggle clicks) ..." becomes ten real tab switches; the mutation is unchanged |
+| `uxp_adjust_pop_closes_sheet` | re-anchor | the popstate `atSheet` guard survives; the kill test is "TB: Back, Escape and a popstate close the sheet from the Layout tab ..." |
+| `uxp_fragment_keeps_sheet` | re-anchor | same guard; the kill test becomes a typed `#deck=` fragment while the Layout tab is selected closes the sheet |
+| `uxp_forward_closes_sheet` | retire | the `history.state.adjust` popstate branch is removed (S2) |
+| `uxp_forward_ignores_hash` | retire | same (S2) |
+
+Twelve retired, 32 re-anchored. Lane T1's corpus therefore changes by (new `tb_*` and `lp_*` rows) - 12, inside
+the README band or with the README sentence restated (lane E's rule, 4.4).
 
 ## 6. Lanes (/swarm)
 
@@ -617,12 +758,12 @@ engine is a separate file-ownership boundary.
 - **Base:** `origin/claude/dual-input-ux-p` (lane P head, PR #408). Branch `claude/sheet-tabs-e`.
 - **Owns:** `src/engine/importer.js`; the `<!-- engine:importer -->` and `<!-- engine:core -->` regions of
   `index.html`, written only by `tools/inline_engine.py`; `tests/import.test.js`;
-  `tests/fixtures/engine_corpus_v1.json` (regen only); `src/engine/core.js` (the new `inferBottoms`, its use in `validate`, and `nearestToDing`'s removal), and
+  `tests/fixtures/engine_corpus_v1.json` (check only; measured unchanged, 4.3); `src/engine/core.js` (the new `inferBottoms`, its use in `validate`, and `nearestToDing`'s removal), and
   `tests/core.test.js`; `tests/fixtures/deck_ids_v1.json`: no tool writes it, so lane E rewrites the 73 changed `strings`
   entries with a one-off `node:vm` script that is not committed, leaves `pinned` and `note` untouched, and
   lists every old -> new id in the PR body;
-  `tests/fixtures/engine_corpus_v1.json` regenerated with `node tools/regen_engine_corpus.js` in the same commit
-  as the engine change; `tests/mutants/o1_*` engine rows; re-anchoring `ih_e_bottom_order_unchecked.patch` and any
+  `tests/fixtures/engine_corpus_v1.json` checked with `node tools/regen_engine_corpus.js --check` in the same commit
+  as the engine change (it reports no drift; a regen is a plan deviation to name in the PR body); `tests/mutants/o1_*` engine rows; re-anchoring `ih_e_bottom_order_unchecked.patch` and any
   existing mutant whose anchor is in `nearestToDing`/`validate` or the importer region; retiring
   `ih_e_ding_match_by_letter`, `ih_e_guess_restarts_at_ding` and `ih_e_later_guess_lands_on_ding`;
   re-anchoring `u_order_collapses_to_bad_note` (4.4); the README mutant sentence (only if its band
@@ -639,6 +780,9 @@ engine is a separate file-ownership boundary.
   two-space-indented `function` line to the first two-space `}`, 47 and 72 lines on the base) with the base.
   It is bash, for the process substitution. A changed helper they call is caught by the 5.1 guard test,
   not by this diff.
+- **Also owns:** the `compose` `warn` key and `DUPLICATE_NOTE` (4.2 item 4) with its 5.1 tests and the three
+  `o1_dup_*` mutants. Lane T1 owns the rendering (`paintFields` → `say`), the 5.2 duplicate tests and the two
+  `tb_dup_*` mutants.
 - **Non-goals:** no `index.html` edit outside the engine regions; no `share.js`, `formatSeed`, `parseSeed` or `scaleInfer` edit; no UI.
 
 ### Lane T1: tabs and OR (then T2: the lip), serial
@@ -646,7 +790,17 @@ engine is a separate file-ownership boundary.
 - **Owns:** `index.html` outside engine regions and outside the DECKS line; `tools/sandbox.js`
   (ELEMENT_IDS); `tests/app.test.js`; `tests/e2e.test.js`; `tools/probe/panel_fit.js` only if the
   sheet change moves a panel control (expected: no change); `tests/mutants/tb_*`, `lp_*`,
-  the sandbox O1 tests in 5.2, and the authored `uxl_*`.
+  the sandbox O1 tests in 5.2, and the authored `uxl_*`; and every file on the base that opens the pan
+  through a removed id: `tests/drawer_drag.test.js`, `tests/drawer_grid.test.js`, `tests/drawer_seats.test.js`,
+  `tests/helpers/seat_sweep_common.js` (`d2Open` clicks `#scale-tab-layout` instead of `#scale-layout-toggle`,
+  which carries the three `tests/seat_sweeps_*.test.js`), the KB F4 Adjust tests in `tests/e2e.test.js`
+  (5.3), and every `tests/mutants/*.patch` naming a removed id or removed code (the 5.4 disposition table).
+  Measured on the base: `scale-layout-toggle|scale-adjust-|scale-pancol|adjusting` hits `tests/app.test.js`
+  81 times, `tests/e2e.test.js` 56, `tests/drawer_seats.test.js` 24, `tests/drawer_grid.test.js` 5,
+  `tests/drawer_drag.test.js` 2 and `tests/helpers/seat_sweep_common.js` 1. Before removing anything, T1 runs
+  `grep -rln "scale-layout-toggle\|scale-adjust-\|scale-pancol\|adjusting\|history.state.adjust" tests/ tools/`; each hit is
+  rewritten to the Layout tab or retired by exact title in the PR body; each mutant in the 5.4 table is
+  re-anchored or retired with its reason in the PR body.
 - **Acceptance:**
   - 5.2 and 5.3 green;
   - 5.3's retirements listed by exact title in the PR body;
@@ -691,10 +845,12 @@ Lanes are serial E -> T1 -> T2 (T1 runs on lane E's inlined engine; T1 and T2 sh
    controls are greyed and GENERATE CARDS is off.
 7. On Layout press the phone's Back. The sheet closes, and it does not return to the Scale tab.
 8. **Edit the deck from step 5.** SAVE CHANGES shows on both tabs. Change a note, switch to Layout, SAVE.
-9. **Rotate to landscape.** The Layout pan is about 306px (the same as the old Adjust layout), with the tabs to its right. Scroll the panel to see the plate's lower edge (TB-A2).
+9. **Rotate to landscape.** The Layout pan is about 306px (the same as the old Adjust layout), with the tabs to its right. Scroll the panel to see the plate's lower edge, then drag a bottom note (TB-A2).
 10. **Settings > Accessibility > Reduce Motion on.** The lip and tab switches are instant.
 11. Add a scale with ding F3 and bottoms `C Db Eb Bb Db Ab` (no octaves). They read `C3 Db3 Eb3 Bb3 Db4 Ab4`.
 12. Open the Pygmy deck's Edit. Its bottom notes `C3 Db3 Eb3 Bb3 Db4 Ab5` are unchanged.
+13. Add a scale with ding D3, top `A3 C4`, bottom `c d`. Under the fields: "D3 is already the ding.
+    Double-check the bottom notes." NEXT stays on. Change `d` to `D4` and the warning goes.
 
 ## 7. Open questions (real forks only, recommendation first)
 
@@ -704,7 +860,7 @@ amended O1).
 
 **Q4 closed (owner, 2026-10-19): (a), then narrowed the same day to "One engine, new rule":** one inference function for the BOTTOM NOTES field and the legacy `|` list; the scale line is definitive and unchanged. The legacy first-bottom rule changes and the 73 frozen ids are re-pinned (sections 4.2, 4.3, lane E).
 
-No open questions remain. AFK decisions for the owner to confirm: TB-A1 (4.1) and TB-A2 (3.6).
+No open questions remain. TB-A1 was replaced by the owner's decision of 2026-10-19 (4.1: no ding skip, a non-blocking duplicate warning). AFK decision TB-A2 (3.6) is still for the owner to confirm.
 
 Everything else is decided above:
 - tab switches push no history;
@@ -717,11 +873,11 @@ Everything else is decided above:
 
 | line | score | evidence |
 |---|---|---|
-| R1 Owner fidelity | 9 | Amended O1, both amendments and Q1-Q4 folded; the 73 moved ids are decided by the owner: re-pin the 73. TB-A1 and TB-A2 are recorded for the owner. |
+| R1 Owner fidelity | 9 | Amended O1, both amendments and Q1-Q4 folded; the 73 moved ids are decided by the owner: re-pin the 73; the ding-midi duplicate is the owner's warn-don't-block decision. TB-A2 is recorded for the owner. |
 | R2 Grounding | 9 | Placement claims checked by running the lane base `core.js`; every 3.6 pan size measured in headless Chrome on the lane base, the Layout column on a prototype. |
 | R3 State completeness | 9 | 3.8 covers every cell; landscape is now defined (tabs beside the plate). |
 | R4 Constraint safety | 9 | v4/v5, stored records and built-ins measured unchanged; the legacy change is the owner's Q4 (a) decision, its cost measured. |
 | R5 Testability | 9 | Every 4.1 branch has a test and a mutant; lane L tests are authored from the ux plan, not yet written. |
 | R6 Swarm shape | 9 | E -> T1 -> T2 serial with owns, verify and gates. |
 | R7 Design quality | 9 | The Layout pan equals the Adjust pan at all five viewports (276, 336, 349, 306, 480, measured); the cost is the fold at 844x390 (70px vs 20px today), recorded as TB-A2. |
-| R8 Decisiveness | 9 | No open fork; the 73 ids are decided by the owner: re-pin the 73. Two AFK decisions are recorded with numbers. |
+| R8 Decisiveness | 9 | No open fork; the 73 ids are decided by the owner: re-pin the 73. One AFK decision (TB-A2) is recorded with numbers. |
