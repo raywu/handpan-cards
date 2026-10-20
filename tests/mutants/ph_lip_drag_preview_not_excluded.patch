@@ -1,0 +1,15 @@
+# kills: PH: P3 starts on the lip, the plate, a field or with a second finger do not collapse; the keyboard does not either
+# suite: node --test --test-name-pattern PH:.P3 tests/app.test.js
+# A drag that starts on the plate is no longer excluded, so a note drag collapses the footer.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10781,7 +10781,7 @@ sheet.addEventListener("keydown", (e) => {
+   lipUser();
+ }, true);
+ let lipDrag = null, lipDragEnd = 0;
+-const lipExcluded = (t) => !!(t && t.closest && t.closest("#scale-lip, #scale-preview, input, textarea, select"));
++const lipExcluded = (t) => !!(t && t.closest && t.closest("#scale-lip, input, textarea, select"));
+ sheet.addEventListener("touchstart", (e) => {
+   const ts = e.touches;
+   lipDrag = ts && ts.length === 1 && !lipExcluded(e.target) ? { id: ts[0].identifier, x: ts[0].clientX, y: ts[0].clientY, dir: 0 } : null;

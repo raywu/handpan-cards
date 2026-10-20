@@ -1,0 +1,15 @@
+# kills: PH: P3 a 24px finger-up drag collapses a sheet whose range is far under the footer's height; 23px does not
+# suite: node --test --test-name-pattern PH:.P3 tests/app.test.js
+# The finger drag direction is swapped: a finger-up drag restores and a finger-down drag collapses.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10797,7 +10797,7 @@ sheet.addEventListener("touchmove", (e) => {
+   L.dir = dy > 0 ? 1 : -1;
+   L.y = p.clientY;
+   L.x = p.clientX;
+-  if (dy > 0) { if (!isLipShut()) collapseLip(); } else if (isLipShut()) restoreLip();
++  if (dy < 0) { if (!isLipShut()) collapseLip(); } else if (isLipShut()) restoreLip();
+ }, { passive: true, capture: true });
+ const lipDragStop = () => {
+   if (lipDrag) lipDragEnd = Date.now() + LIP_END_MS;

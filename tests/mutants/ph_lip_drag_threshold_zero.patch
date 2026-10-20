@@ -1,0 +1,15 @@
+# kills: PH: P3 a 24px finger-up drag collapses a sheet whose range is far under the footer's height; 23px does not
+# suite: node --test --test-name-pattern PH:.P3 tests/app.test.js
+# A finger drag of any length collapses, so a 23px drag collapses the footer.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10792,7 +10792,7 @@ sheet.addEventListener("touchmove", (e) => {
+   if (!p) return;
+   if ((L.dir > 0 && p.clientY < L.y) || (L.dir < 0 && p.clientY > L.y)) { L.y = p.clientY; L.x = p.clientX; return; }
+   const dy = L.y - p.clientY;
+-  if (Math.abs(dy) < LIP_PX || Math.abs(dy) <= Math.abs(p.clientX - L.x)) return;
++  if (Math.abs(dy) < 1 || Math.abs(dy) <= Math.abs(p.clientX - L.x)) return;
+   if (!sheetOpen || sheet.classList.contains("kbup") || Date.now() < lipQuietUntil) return;
+   L.dir = dy > 0 ? 1 : -1;
+   L.y = p.clientY;
