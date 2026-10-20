@@ -101,8 +101,11 @@ notes that the sheet places below the ding: D3 with "g a b c" gives G2 A2 B2 C3.
   `#scale-adjust-back`, `#scale-adjust-title`.
 - **Kept behind a renamed lookup:** the sticky plate band (DR1 rule G: `syncBand`, `BAND_MIN_ROOM` 44,
   `bandWatch`, `nostick`) stays as it is on the base, with `panCol` read from `#scale-plate-band` instead of
-  `#scale-pancol` and `bandPort` still `.sheetbody`. Its `tests/drawer_grid.test.js` tests open the Layout tab
-  where they clicked `#scale-layout-toggle` (lane T1, section 6).
+  `#scale-pancol` and `bandPort` still `.sheetbody`. The base CSS line
+  `.sheetbody:has(#scale-layout-zone.nostick) #scale-pancol{position:static}` sits outside the wide block
+  and is rewritten to `#scale-plate-band` (S3's re-keying covers only `.adjusting` selectors). Its
+  `tests/drawer_grid.test.js` tests open the Layout tab where they clicked `#scale-layout-toggle` (lane T1,
+  section 6).
 - **New ids:** `scale-tabs`, `scale-tab-scale`, `scale-tab-layout`, `scale-panel-scale`,
   `scale-panel-layout`, `scale-or`, `scale-next`.
 - **Lane L ids, first built here:** `scale-foot`, `scale-footclip`, `scale-footslide`, `scale-lip`.
@@ -404,7 +407,7 @@ Worked examples (ding D3 unless stated):
 | `d` | D2 (same pitch class as the ding) |
 | `A2 a` | A2 then A3 (strictly above), accepted |
 | `c d` | C3 D3, with the warning "D3 is already the ding. Double-check the bottom notes."; `c D4` clears it |
-| top `A3 C4`, bottom `B3 c` | B3 C4, with the warning "C4 is already top note 2. Double-check the bottom notes." |
+| top `A3 C4`, bottom `B3 c` | B3 C4, with the warning "C4 is already top note 2. Double-check the bottom notes." on the field line |
 | `C1 c1`-style repeat `G2 G2` | "G2 is already in the bottom notes." |
 | ding F3, `C Db Eb Bb Db Ab` (Pygmy unoctaved) | C3 Db3 Eb3 Bb3 Db4 Ab4 |
 | ding F3, `c Db4` | C3 Db4 |
@@ -455,16 +458,22 @@ they cannot drift (owner, 2026-10-19, "One engine, new rule"):
    - Why a new key and not `interpret`'s flag ladder: `compose` has no levels; its `errors` block and its
      `info` is the "Octaves guessed" line in `#scale-field-msg`. A CONFIRM flag means "tick before USE" in
      the import box, which is a block in effect, and the owner said do not block. So the level is INFO
-     in spirit, under its own key so the sheet can route it to `#scale-msg.warn` rather than the field line.
-   - Why not `info.bottom`: that line is already taken by "Octaves guessed: ..." and the two can both apply.
-   - **Where it surfaces (lane T1):** `#scale-msg` with class `warn`, inside `#scale-guidance`, through
-     `say(text, "warn")` from `paintFields` when `warn.bottom` is set and `inputPath` is `fields`, and
-     `say("", "")` when it clears. It takes NO `pan` class, so it never yields to the Layout notice: it is
-     about the fields, and 3.4 shows `#scale-msg` on both tabs. The slot's two-line reserve holds the
-     longest text ("C#4 is already inner note 2. Double-check the bottom notes.", 59 characters), so the slot
-     does not grow (CLAUDE.md "sheet guidance" N-A6); the 5.2 test "O1: bottoms B3 c under D3 / A3 C4 show
-     ... and the slot keeps its two-line height" measures that at 320px. It does not use the
-     `#scale-refusal` line (not a refusal) nor `#scale-field-msg` (`info` kind stays "Octaves guessed").
+     in spirit, under its own key so the sheet can paint it with its own kind rather than as an error.
+   - Why not `info.bottom`: that line is already taken by "Octaves guessed: ..." and the two always apply
+     together, since a duplicate arises only from a guessed octave.
+   - **Where it surfaces (lane T1; integrator decision, AFK, review 5):** in `#scale-field-msg`, which
+     `paintFields` already paints for the fields. `renderFieldMessages` takes `warn.bottom` ahead of
+     `info.bottom` for the bottom field with kind `warn` (class `warn` on `#scale-field-msg`, beside the
+     existing `info` and `stale` classes), so the one field line reads "bottom: D3 is already the ding.
+     Double-check the bottom notes." and the "Octaves guessed" line is implied by it; an error on any field
+     still wins. `#scale-msg` stays hidden by `paintFields` as on the base (`msgLine.style.display = text ?
+     "none" : ""`, the line that would have hidden a `say()` warning in exactly the state that warns, since
+     every inferred bottom sets `info.bottom`), so no `say()` call and no `pan` class are involved and the
+     Layout notice cannot hide it. It is shown on the Scale tab only (3.4 hides `#scale-field-msg` on
+     Layout). The slot's two-line reserve holds the longest text ("bottom: C#4 is already inner note 2.
+     Double-check the bottom notes.", 67 characters), so it does not grow (CLAUDE.md "sheet guidance"
+     N-A6); the 5.3 e2e test "O1: at 320x568 the duplicate warning on the field line keeps the slot's
+     two-line height" measures that. It does not use `#scale-refusal` (not a refusal).
    - Decode paths (`parseSeed`, `parseLegacySeed`) have no sheet and keep accepting the duplicate silently.
 
 Because both files are engine modules: `python3 tools/inline_engine.py`; `node tools/regen_engine_corpus.js --check`
@@ -617,11 +626,11 @@ in `tests/e2e.test.js`. Prefixes: `O1:` (engine and sheet placement), `TB:` (tab
 - "TB: #scale-field-msg shows on Scale only, #scale-layout-state on Layout only, and #scale-guidance keeps its SG order and two-line reserve on both"
 - "TB: ELEMENT_IDS carries scale-tabs, scale-tab-scale, scale-tab-layout, scale-panel-scale, scale-panel-layout, scale-next, scale-foot, scale-footslide and scale-lip, and none of the retired adjust ids"
 - "O1: GENERATE CARDS and SAVE CHANGES from fields D3 / A3 C4 E4 / g store G2, equal to the parse line"
-- "O1: bottoms c d under D3 show 'D3 is already the ding. Double-check the bottom notes.' in #scale-msg.warn without the pan class, and NEXT, GENERATE CARDS and SAVE CHANGES stay enabled"
-- "O1: bottoms B3 c under D3 / A3 C4 show 'C4 is already top note 2. Double-check the bottom notes.' and the slot keeps its two-line height"
+- "O1: bottoms c d under D3 show 'bottom: D3 is already the ding. Double-check the bottom notes.' in #scale-field-msg.warn, with #scale-msg hidden, and NEXT, GENERATE CARDS and SAVE CHANGES stay enabled"
+- "O1: bottoms B3 c under D3 / A3 C4 show 'bottom: C4 is already top note 2. Double-check the bottom notes.' in #scale-field-msg.warn, and an error on another field wins"
 - "O1: typing D4 over the inferred d clears the duplicate warning, and switching to the line path clears it too"
 - "O1: the stored record and the #s= code for fields D3 / A3 C4 / c d equal those for C3 D3 typed: the warning leaves no trace"
-- "O1: the duplicate warning does not yield to the Layout notice: with warn set, a tapped anchor on Layout shows the notice and #scale-msg keeps its text"
+- "O1: the duplicate warning is not hidden by the Layout notice: with warn set, a tapped anchor on Layout shows the notice and switching back to Scale shows #scale-field-msg.warn with its text"
 - "TB: switching to Layout with #scale-box focused and the keyboard up ends kbup and shows the tab strip"
 - "OR: #scale-or sits between #scale-fields and the scale line, is a separator named or, and is not a Tab stop"
 - "LP: the lip's aria-label names the visible primary: Show NEXT, Show GENERATE CARDS, Show SAVE CHANGES"
@@ -641,6 +650,7 @@ in `tests/e2e.test.js`. Prefixes: `O1:` (engine and sheet placement), `TB:` (tab
 - "LP: at 380x780 scrolling the Scale panel collapses the footer to the lip and a tap on the lip restores NEXT"
 - "LP: the lip slide takes 180ms and is instant under prefers-reduced-motion; tab switches have no transition"
 - "TB: at 380x780 with the keyboard up the head and tab strip hide and the footer stays above the keyboard"
+- "O1: at 320x568 the duplicate warning on the field line keeps the slot's two-line height" (the N-A6 height assertion lives here because the sandbox stubs `getBoundingClientRect` and `offsetHeight`; the 5.2 twin asserts text and class only)
 - Lane T2 authors lane L's E1-E12 e2e tests from ux plan section 8, titles verbatim, re-based on the tabbed footer.
 
 **Retired or rewritten (each with a reason, never weakened silently):**
@@ -683,7 +693,7 @@ Lane T2 authors lane L's `uxl_*` mutant table from ux plan section 8 (none exist
 | `o1_dup_warning_dropped.patch` | `compose` never sets `warn.bottom` | O1: an inferred bottom on the ding's midi warns and does not block: D3 c d gives C3 D3, ok, line [C3] [D3] (D3) A3, and warn.bottom is DUPLICATE_NOTE 'D3 is already the ding. Double-check the bottom notes.' | `O1:.an.inferred.bottom.on.the.ding` |
 | `o1_dup_warning_blocks.patch` | the duplicate sets `errors.bottom` instead of `warn.bottom` (a block) | same test (`ok` true and `warn.bottom` asserted) | `O1:.an.inferred.bottom.on.the.ding` |
 | `o1_dup_typed_warns.patch` | a typed octave on the ding's midi also warns | O1: a typed bottom octave never warns and clears the warning: D3 c D4 and D3 C3 D3 have warn.bottom null; D3 / A3 C4 / B3 C4 has warn.bottom null | `O1:.a.typed.bottom.octave.never` |
-| `tb_dup_warning_unpainted.patch` | `paintFields` ignores `warn.bottom` | O1: bottoms c d under D3 show 'D3 is already the ding. Double-check the bottom notes.' in #scale-msg.warn without the pan class, and NEXT, GENERATE CARDS and SAVE CHANGES stay enabled | `O1:.bottoms.c.d.under.D3` |
+| `tb_dup_warning_unpainted.patch` | `renderFieldMessages` ignores `warn.bottom` | O1: bottoms c d under D3 show 'bottom: D3 is already the ding. Double-check the bottom notes.' in #scale-field-msg.warn, with #scale-msg hidden, and NEXT, GENERATE CARDS and SAVE CHANGES stay enabled | `O1:.bottoms.c.d.under.D3` |
 | `tb_dup_warning_disables_next.patch` | the warning disables the primary | same test | `O1:.bottoms.c.d.under.D3` |
 | `o1_no_range_floor.patch` | placement drops the midi >= 0 floor | O1: a bottom with no octave at or above zero refuses: ding C-1 b says B has no octave that fits: type one | `O1:.a.bottom.with.no.octave` |
 | `tb_landscape_unlifted.patch` | the landscape max-width:none rule left on `.adjusting` | TB: at 844x390 the Layout tab's .sheetsurf is wider than 600px, the tab strip sits right of the plate and the pan is at least 304px | `TB:.at.844x390` |
@@ -693,7 +703,7 @@ Lane T2 authors lane L's `uxl_*` mutant table from ux plan section 8 (none exist
 lines (`-`/`+`) of every `tests/mutants/*.patch` for `scale-layout-toggle|scale-adjust-|scale-pancol|adjusting|drawerOpen|drawerBtn|showAdjust|closeAdjust|layoutHint|pendingAdjustPop|HINT_GUESS|ADJUST LAYOUT|scalestage|history\.state\.adjust|adjust: *true`
 hits 22 patches; the same grep over whole patches (context lines and `# kills:` titles included) hits 55, of
 which the 44 below either mutate removed code or kill a test whose title names Adjust, the toggle or the
-drawer opening (the other 12 only carry a removed id in a context line and are re-anchored by
+drawer opening (the other 12 only carry a removed id or line in a context line and are re-anchored by
 `tools/refresh_mutants.py` with no disposition owed; `a_warning_shares_the_seed_row` is in the table because
 its kill test measures the pan under `#scale-layout-row`, although no grep term hits it). Lane T1 re-runs the grep on its own head before removing anything, adds or drops
 rows as it says, and writes each disposition in its PR body. "Re-anchor" keeps `# kills:` (retitled where the
@@ -781,7 +791,7 @@ engine is a separate file-ownership boundary.
   It is bash, for the process substitution. A changed helper they call is caught by the 5.1 guard test,
   not by this diff.
 - **Also owns:** the `compose` `warn` key and `DUPLICATE_NOTE` (4.2 item 4) with its 5.1 tests and the three
-  `o1_dup_*` mutants. Lane T1 owns the rendering (`paintFields` → `say`), the 5.2 duplicate tests and the two
+  `o1_dup_*` mutants. Lane T1 owns the rendering (`renderFieldMessages` → `#scale-field-msg.warn`), the 5.2 duplicate tests and the two
   `tb_dup_*` mutants.
 - **Non-goals:** no `index.html` edit outside the engine regions; no `share.js`, `formatSeed`, `parseSeed` or `scaleInfer` edit; no UI.
 
@@ -798,7 +808,7 @@ engine is a separate file-ownership boundary.
   Measured on the base: `scale-layout-toggle|scale-adjust-|scale-pancol|adjusting` hits `tests/app.test.js`
   81 times, `tests/e2e.test.js` 56, `tests/drawer_seats.test.js` 24, `tests/drawer_grid.test.js` 5,
   `tests/drawer_drag.test.js` 2 and `tests/helpers/seat_sweep_common.js` 1. Before removing anything, T1 runs
-  `grep -rln "scale-layout-toggle\|scale-adjust-\|scale-pancol\|adjusting\|history.state.adjust" tests/ tools/`; each hit is
+  `grep -rln "scale-layout-toggle\|scale-adjust-\|scale-pancol\|adjusting\|history.state.adjust" tests/ tools/ index.html`; each hit is
   rewritten to the Layout tab or retired by exact title in the PR body; each mutant in the 5.4 table is
   re-anchored or retired with its reason in the PR body.
 - **Acceptance:**
@@ -849,8 +859,8 @@ Lanes are serial E -> T1 -> T2 (T1 runs on lane E's inlined engine; T1 and T2 sh
 10. **Settings > Accessibility > Reduce Motion on.** The lip and tab switches are instant.
 11. Add a scale with ding F3 and bottoms `C Db Eb Bb Db Ab` (no octaves). They read `C3 Db3 Eb3 Bb3 Db4 Ab4`.
 12. Open the Pygmy deck's Edit. Its bottom notes `C3 Db3 Eb3 Bb3 Db4 Ab5` are unchanged.
-13. Add a scale with ding D3, top `A3 C4`, bottom `c d`. Under the fields: "D3 is already the ding.
-    Double-check the bottom notes." NEXT stays on. Change `d` to `D4` and the warning goes.
+13. Add a scale with ding D3, top `A3 C4`, bottom `c d`. On the field line: "bottom: D3 is already the
+    ding. Double-check the bottom notes." NEXT stays on. Change `d` to `D4` and the warning goes.
 
 ## 7. Open questions (real forks only, recommendation first)
 
