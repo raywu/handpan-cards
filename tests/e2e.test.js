@@ -5659,12 +5659,11 @@ function run() {
        click retargets to an ancestor, the delegated handler finds no hit and
        drops it, and the owner's first tap does nothing at all. */
     try {
-      await editFreshDeck();
-      await b.click("#scale-delete");
+      await editFreshDeckOpen();
+      await b.eval(`document.getElementById("scale-delete").click(); return true;`);
       assert.strictEqual(
         await b.eval(`return document.getElementById("scale-delete").hasAttribute("data-armed");`),
         true, "DELETE never armed");
-      await b.click("#scale-layout-toggle");
       const before = await panState();
       const target = before.notes.find(n => n !== before.selected);
       assert.ok(target, `the pan drew nothing to tap: ${JSON.stringify(before.notes)}`);
@@ -6506,6 +6505,9 @@ function run() {
       + `survives the sheet's own scroller (${m.portH.toFixed(1)}px tall) and the `
       + `keyboard line at ${m.kbTop.toFixed(1)}px (box ${m.boxTop.toFixed(1)}-`
       + `${m.boxBottom.toFixed(1)}) - the owner cannot read what they are typing`);
+    assert.ok(m.portH >= m.h + 100,
+      `${where}: the sheet's scroller is only ${m.portH.toFixed(1)}px tall, under the ${(m.h + 100).toFixed(1)}px `
+      + "that leaves the box 100px of its neighbours - pinned rows are starving it");
   }
 
   /* The owner's device: iPhone 14 / iOS 26.6, 390 CSS px wide, ~745 px of
@@ -8076,6 +8078,10 @@ function run() {
       // scale (HINT_EMPTY to HINT_GUESS), so its own wrap is a third element.
       // The small pan and its caption now sit beside the four fields, so the
       // stage is the taller of the two columns and is one term.
+      for (const [name, st] of [["empty", empty], ["typed", typed]]) {
+        assert.ok(st.stage - st.fields < 1,
+          `the ${name} stage is ${st.stage.toFixed(1)}px tall but its four fields only ${st.fields.toFixed(1)}px - the small pan, not the fields, is setting its height`);
+      }
       const parseDelta = (empty.row - typed.row) + (empty.stage - typed.stage);
       assert.ok(Math.abs(bodyDelta - parseDelta) < 1,
         `the scrolling body moved ${bodyDelta.toFixed(1)}px between empty and ` +

@@ -407,12 +407,14 @@ function run() {
   });
 
   test("DR2a browser (70): a swap reaches the stored deck and Edit shows it", async () => {
+    await b.send("Page.resetNavigationHistory");
     await openAdd(SCALES.amara);
     await tap("A3"); await tap("C4");
     await ev(`document.getElementById("scale-adjust-back").click(); return true;`);
-    await b.waitFor(`!document.getElementById("scale-sheet").classList.contains("adjusting")`, { label: "the layer to close" });
+    await b.waitFor(`!document.getElementById("scale-sheet").classList.contains("adjusting") && !(history.state && history.state.adjust)`, { label: "the layer to close and its entry to pop" });
     await ev(`document.getElementById("scale-generate").click(); return true;`);
     await waitSheet(false);
+    await b.waitFor(`!(history.state && history.state.scalePage)`, { label: "the sheet's entry to pop" });
     await ev(`document.querySelector("#decks .chip.on").click(); return true;`);
     await waitSheet(true);
     await ev(`document.getElementById("scale-layout-toggle").click(); return true;`);
