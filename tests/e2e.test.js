@@ -14179,6 +14179,7 @@ function run() {
       }
       await sleep(400);
     };
+    const lipDiag = () => b.eval(`const s = document.getElementById("scale-sheet"), f = document.getElementById("scale-foot").getBoundingClientRect(), l = document.getElementById("scale-lip").getBoundingClientRect(); return JSON.stringify({ cls: s.className, ih: innerHeight, vv: visualViewport.height, foot: [f.top, f.bottom], lip: [l.top, l.bottom, document.getElementById("scale-lip").hidden], top: (document.elementFromPoint(190, l.top + 2) || {}).id });`);
     const primaryRect = () => b.eval(`
       const n = document.getElementById("scale-next"), g = document.getElementById("scale-generate");
       const e = !n.hidden ? n : g; const r = e.getBoundingClientRect();
@@ -14308,7 +14309,7 @@ function run() {
         assert.ok(hs.length > 3, `only ${hs.length} frames sampled in the slide`);
         for (const v of hs) assert.ok(Math.abs(v - lippedH) <= 0.5, `the body was ${v}px mid-slide, lipped height ${lippedH}`);
         const after = await primaryRect();
-        assert.ok(Math.abs(after.top - open.top) <= 1, `the primary landed at ${after.top}, the open layout has it at ${open.top}`);
+        assert.ok(Math.abs(after.top - open.top) <= 1, `the primary landed at ${after.top}, the open layout has it at ${open.top} ${await lipDiag()}`);
       } finally { await reset(); }
     });
 
@@ -14356,7 +14357,7 @@ function run() {
         assert.ok(Math.abs(m.bottom - (m.surfBottom - inset)) <= 1.5, `the lip bottom ${m.bottom} against the surface bottom ${m.surfBottom} less inset ${inset}`);
         const cx = (m.left + m.right) / 2;
         await tapAt(cx, m.top + 2);
-        assert.strictEqual((await lipState()).lipped, false, "a tap at the top of the zone did not restore");
+        assert.strictEqual((await lipState()).lipped, false, "a tap at the top of the zone did not restore " + await lipDiag() + " tap " + cx + "," + (m.top + 2) + " inset " + inset);
         await collapse();
         const m2 = await lipRect();
         await tapAt(m2.left + 4, m2.bottom - 2);
