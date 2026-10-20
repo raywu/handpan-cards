@@ -7,7 +7,7 @@ subplan record" Q1-Q10, lane P, sections 6-7; `docs/plans/2026-10-18-dual-input.
 `origin/claude/dual-input-plan`, "dual-input plan"), sections 2.1-2.5, A1-A22 and E1-E9; `origin/dev`
 `index.html`, `src/engine/core.js`, `src/engine/importer.js`, `tools/sandbox.js`.
 
-Owner input O1-O4 (2026-10-19, phone check on DEV) and amendments A1-A5 are binding.
+Owner input O1-O4 (2026-10-19, phone check on DEV) and amendments A2-A5 are binding. **O1 was amended by the owner later on 2026-10-19** (verbatim: "Bottom notes should start in octave below ding but can go higher than the ding. This is an amendment from previous interview."); the amended O1 replaces A1's right-to-left rule. Owner answers of 2026-10-19: Q1 "I prefer a single rule for both add/edit and decode (everywhere) but let's evaluate backwards compatibility"; Q2 tabs beside the pan in the wide landscape block; Q3 closed by the amendment.
 
 ## 1. Goal and non-goals
 
@@ -20,11 +20,9 @@ notes that the sheet places below the ding: D3 with "g a b c" gives G2 A2 B2 C3.
 **Non-goals.**
 - No deck data or diagram geometry change. `data/decks.json`, the DECKS line, `layout.solve` and every
   built-in's drawing stay byte-identical (CLAUDE.md "Hard constraints", "Instrument layouts").
-- No change to share-link, stored-record, SAVE or DELETE semantics. `HPE.share` is untouched, and
-  `formatSeed` / `parseSeed` / `parseLegacySeed` keep their output (CLAUDE.md "Share link v5",
-  "Known pitfalls" on seeded SAVE / DELETE).
-- No engine change beyond O1. O1 touches `HPE.importer` only; `src/engine/core.js` is untouched
-  (section 4.2).
+- No change to SAVE or DELETE semantics, `HPE.share`, `formatSeed` or `parseSeed`. The only decode
+  change is O1 inside `parseLegacySeed` (v1-v3 links), and only if the owner accepts Q4 (section 4.3).
+- No engine change beyond O1: `importer.composeBottoms` and, under Q4, `core.nearestToDing`.
 - `#import-row` stays `hidden`; the memory rule "Import hidden until DEV-proven" stands.
 - Nothing goes to `main` except this plan PR (held) and, later, the lanes' main PRs after the owner's
   explicit go.
@@ -51,10 +49,10 @@ notes that the sheet places below the ding: D3 with "g a b c" gives G2 A2 B2 C3.
 | S11 | L Q-record: Tab-list keyed on `lipshut`; a 220ms timer plus `lipGen`; no rAF or ResizeObserver | **Kept** | The sheet Tab list (section 3.3) adds `#scale-next` where GENERATE sat. |
 | S12 | DI 2.4: sheet Tab order `[backBtn, nameBox (Edit), drawerBtn, ding, top, inner, bottom, scaleBox, ...swatches, genBtn, delBtn (Edit)]` | **Replaced** | Per-tab order in section 3.3. `drawerBtn` is gone, and the tab strip has a single roving stop. |
 | S13 | DI 2.1: the four fields sit in a column beside the pan | **Modified** | Same four fields, same order (DING, TOP, INNER, BOTTOM), at full width. |
-| S14 | DI 2.3 mirror: fields to line through `HPE.importer.compose`; line to fields through `parseSeed`, writing explicit octaves | **Kept, O1 inserted** | Bottom placement in `compose` follows section 4. A typed line goes through the same placement before `parseSeed` (section 4.2). The fields then show back the explicit octaves. |
+| S14 | DI 2.3 mirror: fields to line through `HPE.importer.compose`; line to fields through `parseSeed`, writing explicit octaves | **Kept, O1 inserted** | Bottom placement in `compose` follows section 4.1. The line path already satisfies O1 (section 4.2) and is unchanged; the fields show back the explicit octaves. |
 | S15 | DI 2.5 / `#scale-guidance` order (`#scale-field-msg`, `#scale-msg`, `#scale-layout-state`) between `.sheetbody` and the footer | **Kept** | One slot, shared by both tabs, outside both panels (section 3.4). `#scale-layout-state` is shown only on the Layout tab. |
-| S16 | CLAUDE.md "Scale strings": "square brackets mark a bottom note at its pitch position" | **Modified, sheet path only** | In the sheet, an unoctaved bracketed note is placed by section 4's rule, which can move it away from its pitch position: `[g] (D3)` reads G2, not G3. `parseSeed`, stored records and share links are unchanged. The sentence gains: "In the sheet, an unoctaved bracketed note is placed below the ding (O1)." |
-| S17 | `importer.composeBottoms`: the first unoctaved bottom starts at `ding.octave` (one octave down only on a hit at the ding's midi); later ones use `composeAbove` | **Replaced** | Section 4.1's right-to-left rule. |
+| S16 | CLAUDE.md "Scale strings": "square brackets mark a bottom note at its pitch position" | **Kept** | Under the amended O1 the rule still holds: in the v4+ line a bracket written before the ding already lands below it (`[G] (D3)` reads G2, checked on origin/dev) and one written after it sits at its position. No supersession. |
+| S17 | `importer.composeBottoms`: the first unoctaved bottom starts at `ding.octave` (one octave down only on a hit at the ding's midi); later ones use `composeAbove` | **Replaced** | Section 4.1's left-to-right rule (first unoctaved note in the octave below the ding). |
 | S18 | DI: the Add CTA is GENERATE CARDS and the Edit CTA is SAVE CHANGES, both as `#scale-generate` | **Modified** | Add/Scale shows NEXT (`#scale-next`). Add/Layout shows GENERATE CARDS. Edit shows SAVE CHANGES on both tabs. |
 | S19 | ux plan section 7 gates (dev-sync after CI plus reviewer, phone check) | **Kept** | Section 6.4. PR #408 (lane P's main PR) is closed unmerged once lane T's dev PR lands and the owner's phone check passes. |
 | S20 | P's phone-check steps (ux plan section 7) | **Replaced** | Section 6.5. |
@@ -226,13 +224,13 @@ Lane T's E2E test (section 5) measures the real values and must hold the "bigger
 | 320x568 | 276 | 88 | 276 | min(276, 568-300=268) = **268** |
 | 380x780 | 336 | 101 | 336 | min(336, 480) = **336** |
 | 393x852 | 349 | 105 | 349 | min(349, 552) = **349** |
-| 844x390 | 800 (max-width:none under the landscape rule, re-keyed per S3) | 148 | 318 | wide block: min(800, 390-132) = **258** |
-| 1280x800 | 621 (`.sheetsurf{max-width:clamp(520px, 52vw, 680px)}` = 665, minus 44 padding) | 160 | 480 | wide block (621 >= 600, landscape): min(621, 800-132, 480 cap) = **480**; lane T measures it |
+| 844x390 | 800 (max-width:none under the landscape rule, re-keyed per S3) | 148 | 318 | wide block, tabs beside the plate (owner Q2): min(800, 390-72) = **318** |
+| 1280x800 | 621 (`.sheetsurf{max-width:clamp(520px, 52vw, 680px)}` = 665, minus 44 padding) | 160 | 480 | wide block (621 >= 600, landscape): min(621, 800-72, 480 cap) = **480**; lane T measures it |
 
 The Layout pan is 1.7x to 3.3x P's small pan at every viewport. It is under P's Adjust pan at two
 viewports, because the tab strip and the kept footer take height Adjust hid:
 - 320x568: 268 vs 276 (8px).
-- 844x390: 258 vs 318 (60px). Open question Q2 offers a fix (tab strip moved into the left column in the wide block).
+- 844x390: closed by owner Q2: in the wide container block the tab strip moves into the left column beside the plate (`#scale-tabs` grid-column 2, row 1, above the drawer), so the plate's reserve drops from 132px to 72px: min(800, 390-72) = **318px**, equal to P's Adjust pan. The 844x390 row above reads 318 under this rule.
 
 ### 3.7 O4: the lip on the tabbed footer
 
@@ -311,135 +309,136 @@ Principles rejected, with one line why each:
 - "Numbered markers only for sequences." Not used: two tabs need no numbers, even though they are a
   sequence in Add, because Edit uses them freely.
 
-## 4. O1: bottom-note placement
+## 4. O1: bottom-note placement (amended O1)
 
-### 4.1 Algorithm (A1)
+### 4.1 Algorithm
 
-Input: the ding D (always octaved, since compose already resolves it), and the bottom list
-b1..bn in typed order.
+Input: the ding D (octaved) and the bottom list b1..bn in typed order. Left to right:
 
 ```
-limit = D.midi
-for i = n down to 1:
-  if b_i has a typed octave: m_i = its midi                     (kept as typed)
-  else: m_i = highest midi with b_i's pitch class and m_i < limit,
-              where limit = min(D.midi, m_{i+1}) (D.midi alone when i = n)
-  next limit = min(D.midi, m_i)
-then, left to right:
-  if m_i == m_j for some j < i:  error "<name> is already in the bottom notes."   (existing)
-  else if m_i < m_{i-1}:         error composeLower(b_i, b_{i-1}) "X is lower than P: list low to high." (existing)
-range floor: if no midi >= 0 of b_i's pitch class lies below limit -> existing "<name> has no octave that fits: type one." (review fold E5)
-info: "Octaves guessed: <placed unoctaved notes>. Type an octave to change a guess."  (existing text)
+prev = none
+for i = 1 to n:
+  if b_i has a typed octave: m_i = its midi                         (kept as typed)
+  else if prev is none:      m_i = the instance with D-12 <= m_i < D (the octave below the ding)
+  else:                      m_i = the nearest instance strictly above prev   (may rise above the ding)
+  if m_i < 0:                error "<name> has no octave that fits: type one."   (existing, range floor)
+  if m_i equals an earlier m_j: error "<name> is already in the bottom notes."   (existing)
+  if prev and m_i < prev:    error composeLower: "X is lower than P: list low to high." (existing)
+  prev = m_i
+info: "Octaves guessed: <unoctaved notes as placed>. Type an octave to change a guess."  (existing)
 ```
 
-Rules:
-- "Strictly below both" uses `min(D, right neighbour)`. An unoctaved note is therefore never above the
-  ding, even beside a typed note that is (A1).
-- The duplicate check runs before the order check, so "A2 a" reports the duplicate.
+Precisely:
+- **First note octaved:** kept. Every later unoctaved note goes strictly above the note before it.
+- **After a typed-octave note:** the next unoctaved note takes the nearest instance strictly above that typed note, wherever it sits relative to the ding.
+- **First note unoctaved:** the octave below the ding, never above it; a note with the ding's pitch class is D-12.
+- Only the first note uses the ding; nothing else is capped by it.
 
 Worked examples (ding D3 unless stated):
 
-| input | placement (right to left) | result |
-|---|---|---|
-| `g a b c` | c < D3 → C3; b < C3 → B2; a < B2 → A2; g < A2 → G2 | G2 A2 B2 C3 |
-| `c d e f g` | g → G2; f → F2; e → E2; d → D2; c → C2 | C2 D2 E2 F2 G2 |
-| `g A2 c` | c → C3; A2 kept; g < A2 → G2 | G2 A2 C3 |
-| `c E2` | E2 kept; c < E2 → C2 | C2 E2 |
-| `g A3 c` | c → C3; A3 kept; g < min(D3, A3) → G2 | G2 A3 C3: A3 then C3 descends → **"C3 is lower than A3: list low to high."** |
-| `A2 a` | a < D3 → A2; A2 kept | A2 A2 → **"A2 is already in the bottom notes."** |
-| ding F3, `c Db4` | Db4 kept; c < min(F3, Db4) → C3 | C3 Db4 |
-| ding F3, `C3 Db3 Eb3 Bb3 Db4 Ab5` (Pygmy, all typed) | all kept | unchanged, C3 Db3 Eb3 Bb3 Db4 Ab5 |
+| input | result |
+|---|---|
+| `g a b c` | G2 A2 B2 C3 |
+| `c d e f g` | C3 D3 E3 F3 G3 (C3 is in D2..C#3; the run then rises past the ding) |
+| `g A2 c` | G2 A2 C3 |
+| `A3 c` | A3 C4 (first octaved; c above A3) |
+| `g A1` | G2 then A1 → "A1 is lower than G2: list low to high." |
+| `d` | D2 (same pitch class as the ding) |
+| `A2 a` | A2 then A3 (strictly above), accepted |
+| `C1 c1`-style repeat `G2 G2` | "G2 is already in the bottom notes." |
+| ding F3, `C Db Eb Bb Db Ab` (Pygmy unoctaved) | C3 Db3 Eb3 Bb3 Db4 Ab4 |
+| ding F3, `c Db4` | C3 Db4 |
+| ding F3, `C3 Db3 Eb3 Bb3 Db4 Ab5` (Pygmy, all typed) | unchanged |
+| ding C0, `b` | B-1 (midi 11) accepted; ding C-1 `b` → "B has no octave that fits: type one." |
 
-**Line to fields (DI 2.3).** The line `(D3) [g] [a] [b] [c] A3 ...` places its bracketed unoctaved notes
-by the same rule, so the line reads `[G2] [A2] [B2] [C3]`. The mirror then writes the explicit octaves
-back into BOTTOM NOTES as `G2 A2 B2 C3` (`formatSeed` always writes octaves).
+Line to fields: the fields path writes octaved `[..]` tokens into the line through `compose`; the line
+path writes explicit octaves back into BOTTOM NOTES (`formatSeed`).
 
-### 4.2 Code sites and compatibility (A2)
+### 4.2 Where each input is placed today (checked on origin/dev)
 
-Checked on `origin/dev`:
-- `core.formatSeed` always writes an octave on every field (`"[" + fields[id][0] + fields[id][1] + "]"`).
-  Every stored record (v4 shape, `formatSeed` plus options) and every v4/v5 share link
-  (`share.js`, "core.formatSeed <-> the link's scale segment") therefore carries octaved bottoms
-  only, and is unaffected by any rule for unoctaved input.
-- v1-v3 links decode through `HPE.core.parseLegacySeed` (`share.js`,
-  `version <= 3 ? parseLegacySeed : parseSeed`). Frozen legacy strings can carry unoctaved bottom
-  notes. They are placed by `core.validate`'s `nearestToDing` (first bottom) and `nextAbove` (the
-  rest). Changing `nearestToDing` would change what an old link or a boot-rewritten legacy record
-  decodes to, and could move a deck id.
+- **Fields (Add/Edit):** `importer.composeBottoms` - the first unoctaved bottom starts at `ding.octave`
+  and moves down only on the ding's own midi; that is the observed bug (D3 + g → G3).
+- **v4+ scale line (`core.parseSeed`, also stored records and v4/v5 links):** an unoctaved bracket takes
+  its pitch position. `[G] [A] [B] [C] (D3) ...` already reads `[G2] [A2] [B2] [C3]`, a bracket after the
+  ding reads relative to its neighbour, and lowercase `[g]` is refused as BAD_NOTE. This already matches
+  the amended O1 (start below the ding, may rise above it), so **`parseSeed` does not change**. Stored
+  records and v4/v5 links are written by `formatSeed`, which always writes octaves.
+- **v1-v3 links and legacy strings (`core.parseLegacySeed`):** `validate` places the first bottom with
+  `nearestToDing` (nearest instance either side, ties below) and the rest with `nextAbove`. This is the one
+  decode path that disagrees with O1: D3 with bottom `g` gives G3.
 
-**Decision: `src/engine/core.js` does NOT change.** `nearestToDing`, `parseSeed` and `parseLegacySeed`
-keep their behaviour. "every frozen legacy string keeps its deck id" (`tests/core.test.js`) and
-"SV: the five built-in decks' v5 links are pinned" (`tests/share.test.js`) stay green and unedited.
+So "one rule everywhere" (owner Q1) means two code changes:
+1. `composeBottoms` (fields) adopts 4.1 - required, no compatibility cost.
+2. `nearestToDing` returns the octave-below instance (the `below` it already computes) - this changes
+   legacy decode and is gated on Q4.
 
-The rule is confined to the sheet path, in `src/engine/importer.js`:
-1. `composeBottoms(notes, ding)` is rewritten to 4.1. This is the fields path through
-   `HPE.importer.compose`.
-2. New `HPE.importer.placeLineBottoms(text)` returns the line with each unoctaved bracketed note given
-   its 4.1 octave, or the text unchanged when there is no ding or no unoctaved bracket.
-   - The sheet's line handlers call it before `HPE.core.parseSeed`. These are the `scaleBox` input path
-     in `index.html` (the `parseSeed(String(scaleBox.value || ""), layoutOptions())` call sites inside
-     the sheet's parse, layout and generate handlers).
-   - Share decode, boot and records do not call it. The import row's USE writes `serialise(r)`, which is
-     always octaved, so the hook is a no-op on it.
-3. **One reader (review fold E2).** Every sheet read of `scaleBox.value` goes through one
-   `sheetLine()` = `HPE.importer.placeLineBottoms(String(scaleBox.value || ""))`. Callers, enumerated by
-   reading `index.html` on origin/dev (not by grep alone; memory "Enumerate callers, do not grep"):
-   `hasTwoNoteRing()`; `syncParseState()`; `resyncSheet()`; `runGenerate()`'s `generateDeck(...)` call
-   (GENERATE CARDS and SAVE CHANGES); `lineInput()` and the line-to-fields mirror; `sheetKey` keeps the
-   raw value (dirty check). Writers (`resetSheetState`, `writeLine`) are untouched. `generateDeck` itself
-   is unchanged. A fence test fails on any `scaleBox.value` read outside `sheetLine` and `sheetKey`.
+Lane E implements both. Change 2 lands only if the owner accepts Q4 (a); under Q4 (b) lane E ships change 1
+and keeps `nearestToDing`.
 
-Because this is an engine-module change:
-- run `python3 tools/inline_engine.py`;
-- run `node tools/regen_engine_corpus.js` if `tests/fixtures/engine_corpus_v1.json` covers `compose`
-  (lane E checks `--check` first and regenerates only on drift);
-- `tools/validate.py` check 4 must pass.
+Because both are engine modules: `python3 tools/inline_engine.py`; `node tools/regen_engine_corpus.js --check`
+then regenerate on drift; `tools/validate.py` check 4.
 
-### 4.3 Existing tests that pin current behaviour
+### 4.3 Backwards compatibility (measured)
 
-These live in `tests/import.test.js`, and lane E rewrites each in the same PR with the reason "O1
-(owner 2026-10-19)":
-- `IH: compose ... (info lines)`, the block asserting `two.info.bottom` = "Octaves guessed: C3, Eb3.
-  ..." and `mixed.info.bottom` = "Octaves guessed: Eb3. ...". With ding F3 these stay C3 / Eb3 (both
-  below F3, ascending), so they are **unchanged**. Lane E confirms they pass untouched and does not edit
-  them if so.
-- The test asserting `r.info.bottom` = "Octaves guessed: C3, Db3, Eb3, Bb3, Db4, Ab4. ..." (Pygmy with
-  unoctaved bottoms) is **retired** and replaced by "O1: Pygmy's octaveless bottoms C Db Eb Bb Db Ab under F3 place right to left as C1 Db1 Eb1 Bb1 Db2 Ab2" (asserts guessed, notes.bottom, line and info). The owner confirms the musically odd result in Q3 and phone step 12. The old upward build gave Bb3 Db4 Ab4 above the ding. Under O1 every
-  unoctaved note goes below F3, so the run ends below F3 and the expected value is rewritten from 4.1
-  (right to left: Ab < F3 → Ab2; Db < Ab2 → Db2; Bb < Db2 → Bb1; Eb < Bb1 → Eb1; Db < Eb1 →
-  Db1; C < Db1 → C1), giving "Octaves guessed: C1, Db1, Eb1, Bb1, Db2, Ab2.". The test title is kept;
-  only the expected string changes, and the commit names O1.
-- "IH: compose refuses bottoms out of order with "X is lower than Y: list low to high.", refuses a
-  repeated bottom, and accepts a bottom copy of a rim pitch": its `order` / `repeat` / `typedLow`
-  inputs are rechecked against 4.1. Any expectation that moves is rewritten to the 4.1 result. The
-  three refusal kinds stay asserted, so nothing is weakened.
-- `tests/app.test.js` "BOTTOM NOTES: Octaves guessed: C3, Eb3. ..." (sheet field message): ding F3 with
-  C Eb, so it is unchanged.
-- Mutant `tests/mutants/ih_e_bottom_order_unchecked.patch`: its anchor line is re-checked with
-  `git apply --check`. If the rewrite moves the order check, the patch is re-anchored on the new line
-  (memory "Hand-regenerated mutants drift"), and its `# kills:` stays.
+Method: `origin/dev` `core.js` against a copy whose `nearestToDing` returns `below`, both loaded in a
+`node:vm` context, over every string in `tests/fixtures/*.json` and `data/decks.json` that contains `(`
+(424 candidates), plus the 518 frozen strings of `tests/fixtures/deck_ids_v1.json`. Run on 2026-10-19.
+
+| input | parsed | decode differs | deck id changes |
+|---|---|---|---|
+| fixture strings through `parseLegacySeed` (v1-v3 grammar) | 261 | **27** | - |
+| fixture strings through `parseSeed` (v4/v5 grammar) | 228 | **0** | - |
+| frozen legacy strings (`deck_ids_v1.json`, test "every frozen legacy string keeps its deck id") | 518 | - | **73 of 518** |
+| the five named strings in that test (the built-ins) | 5 | 0 | 0 |
+| the five built-in decks (`data/decks.json`, `formatSeed` then `parseSeed`) | 5 | 0 | 0 |
+| stored records (v4 shape, octaved) | - | 0 by construction | 0 |
+| "SV: the five built-in decks' v5 links are pinned" | - | 0 | stays green |
+
+Examples of moved ids: `D/ A Db F A# G E B D# Ab E | F# E Cb F` custom:cd34cf4b → custom:6a11a741;
+`(G3) A B Bb F E D F B# Db | Ab A D` custom:e147519d → custom:0d484d2a.
+
+Consequences:
+- No built-in, no stored record, no v4/v5 link and no pinned v5 link moves.
+- 73 frozen legacy strings move their id, so "every frozen legacy string keeps its deck id" goes red and
+  would have to be re-pinned (`deck_ids_v1.json` regenerated). A person opening an old v1-v3 link with an
+  unoctaved bottom note would get different bottom octaves and a new custom deck id, so the same link
+  opened before and after would give two decks. `engine_corpus_v1.json` moves only where it holds such a
+  legacy string; lane E regenerates it.
+- This is a binding owner question (Q4); the plan does not decide it.
+
+### 4.4 Existing tests that pin current behaviour
+
+- `tests/import.test.js` "Octaves guessed: C3, Db3, Eb3, Bb3, Db4, Ab4." (Pygmy, ding F3, unoctaved): the
+  amended rule gives the same notes, so it is **unchanged**. The earlier retirement (review fold E4) is withdrawn.
+- `tests/import.test.js` `two.info.bottom` "C3, Eb3" and `mixed.info.bottom` "Eb3" (ding F3): unchanged.
+- "IH: compose refuses bottoms out of order ..., refuses a repeated bottom, and accepts a bottom copy of a
+  rim pitch": rechecked; any input whose first unoctaved note sat above the ding is rewritten to the 4.1
+  result, and all three refusal kinds stay asserted.
+- Under Q4 (a) only: "every frozen legacy string keeps its deck id" is re-pinned with the 73 new ids,
+  each listed in the PR body, and the five named built-in rows stay literal and unchanged.
+- `tests/mutants/ih_e_bottom_order_unchecked.patch`: re-anchored if its line moves; `# kills:` kept.
 
 ## 5. Test plan (TDD: tests first, red, then implement)
 
 Sandbox tests are in `tests/app.test.js`, engine tests in `tests/import.test.js`, and real Chrome tests
 in `tests/e2e.test.js`. Prefixes: `O1:` (engine and sheet placement), `TB:` (tabs), `OR:`, `LP:` (lip).
 
-### 5.1 Engine (`tests/import.test.js`)
-- "O1: compose places unoctaved bottoms right to left below the ding: D3 g a b c gives G2 A2 B2 C3" — asserts the line and the info names G2, A2, B2, C3.
-- "O1: an ascending unoctaved run ends below the ding: D3 c d e f g gives C2 D2 E2 F2 G2"
-- "O1: a typed bottom octave is kept and its unoctaved neighbours go below it: D3 g A2 c gives G2 A2 C3, D3 c E2 gives C2 E2"
-- "O1: an unoctaved bottom never sits above the ding beside a typed one that does: F3 c Db4 gives C3 Db4"
-- "O1: a typed list that does not ascend after placement refuses with composeLower: D3 g A3 c says C3 is lower than A3"
-- "O1: a placed note equal to a typed one refuses as a repeat: D3 A2 a says A2 is already in the bottom notes"
+### 5.1 Engine (`tests/import.test.js`, `tests/core.test.js`)
+- "O1: compose places the first octaveless bottom in the octave below the ding: D3 g a b c gives G2 A2 B2 C3"
+- "O1: an octaveless bottom run may rise past the ding: D3 c d e f g gives C3 D3 E3 F3 G3"
+- "O1: a typed bottom octave is kept and the next octaveless note goes above it: D3 g A2 c gives G2 A2 C3, D3 A3 c gives A3 C4"
+- "O1: Pygmy's octaveless bottoms under F3 give C3 Db3 Eb3 Bb3 Db4 Ab4, and F3 c Db4 gives C3 Db4"
+- "O1: a typed note below the one before it refuses with composeLower: D3 g A1 says A1 is lower than G2"
+- "O1: a repeated bottom refuses: D3 G2 G2 says G2 is already in the bottom notes"
+- "O1: a bottom with no octave at or above zero refuses: ding C-1 b says B has no octave that fits: type one"
 - "O1: Pygmy's bottoms typed with octaves are unchanged: F3 C3 Db3 Eb3 Bb3 Db4 Ab5"
-- "O1: a note with no instance below its limit refuses: D3 c C0 says C has no octave that fits: type one"
-- "O1: placeLineBottoms handles (D3), D3/ and D3| ding spellings and returns a line with an unoctaved ding unchanged"
-- "O1: core.parseSeed still places an unoctaved bracketed note by nearestToDing" — pins the A2 confinement: `(D3) [g] A3` through `parseSeed` alone still reads G3.
+- "O1: parseSeed already places a bracket before the ding below it: [G] [A] [B] [C] (D3) A3 C4 E4 gives G2 A2 B2 C3" (pin, green before and after)
+- Under Q4 (a), `tests/core.test.js`: "O1: parseLegacySeed places the first octaveless bottom in the octave below the ding: (D3) A3 C4 E4 | G gives G2"
 
 ### 5.2 Sandbox (`tests/app.test.js`)
 - "O1: typing g a b c in BOTTOM NOTES with ding D3 writes [G2] [A2] [B2] [C3] into the line"
-- "O1: typing (D3) [g] [a] [b] [c] A3 in the line writes G2 A2 B2 C3 back into BOTTOM NOTES"
-- "O1: a share link and a stored record with octaved bottoms open unchanged after the sheet rule" — boots a v5 link and a stored record, and asserts no `placeLineBottoms` call and identical fields.
+- "O1: typing [G] [A] [B] [C] (D3) A3 C4 E4 in the line writes G2 A2 B2 C3 back into BOTTOM NOTES"
+- "O1: a v5 link and a stored record open with the same fields as before O1"
 - "TB: the served markup has a tablist with Scale then Layout, two tabpanels, and the Scale tab selected with tabindex 0 on open, Add and Edit"
 - "TB: ArrowRight, ArrowLeft, Home and End move and activate the tabs, wrap, and keep exactly one tabindex 0"
 - "TB: a tab switch pushes no history entry and calls no replaceState"
@@ -452,8 +451,7 @@ in `tests/e2e.test.js`. Prefixes: `O1:` (engine and sheet placement), `TB:` (tab
 - "TB: the Adjust overlay is gone: no showAdjust, no adjust history state, no #scale-adjust-head, #scale-layout-toggle or adjusting class, and a pan tap on Layout opens nothing" — the lane P retirement test.
 - "TB: #scale-field-msg shows on Scale only, #scale-layout-state on Layout only, and #scale-guidance keeps its SG order and two-line reserve on both"
 - "TB: ELEMENT_IDS carries scale-tabs, scale-tab-scale, scale-tab-layout, scale-panel-scale, scale-panel-layout, scale-next, scale-foot, scale-footslide and scale-lip, and none of the retired adjust ids"
-- "O1: GENERATE CARDS and SAVE CHANGES from a line (D3) [g] A3 C4 store G2, equal to the parse line"
-- "O1: no sheet code reads scaleBox.value outside sheetLine and sheetKey"
+- "O1: GENERATE CARDS and SAVE CHANGES from fields D3 / A3 C4 E4 / g store G2, equal to the parse line"
 - "TB: switching to Layout with #scale-box focused and the keyboard up ends kbup and shows the tab strip"
 - "OR: #scale-or sits between #scale-fields and the scale line, is a separator named or, and is not a Tab stop"
 - "LP: the lip's aria-label names the visible primary: Show NEXT, Show GENERATE CARDS, Show SAVE CHANGES"
@@ -463,7 +461,7 @@ in `tests/e2e.test.js`. Prefixes: `O1:` (engine and sheet placement), `TB:` (tab
 
 ### 5.3 Real Chrome (`tests/e2e.test.js`)
 - "TB: at 320x568, 380x780, 393x852, 844x390 and 1280x800 the Layout pan is wider than the old small pan clamp(88px, 30cqw, 160px) and at least the section 3.6 width minus 2px"
-- "TB: at 844x390 the Layout tab's .sheetsurf is wider than 600px, the wide container block applies and the pan is at least 256px"
+- "TB: at 844x390 the Layout tab's .sheetsurf is wider than 600px, the tab strip sits beside the plate and the pan is at least 310px"
 - "TB: at 380x780 the four note fields and the scale line take the full content width on the Scale tab"
 - "TB: at 380x780 Add: type a scale, NEXT, adjust anchor, GENERATE CARDS opens the deck, and one Back from the deck leaves no sheet entry"
 - "TB: at 380x780 Edit: SAVE CHANGES from the Layout tab saves and the bar ends on the deck's route"
@@ -487,11 +485,10 @@ in `tests/e2e.test.js`. Prefixes: `O1:` (engine and sheet placement), `TB:` (tab
 
 | file | change | `# kills:` | `# suite:` |
 |---|---|---|---|
-| `o1_bottom_left_to_right.patch` | place left to right from the ding's octave (old rule) | O1: compose places unoctaved bottoms right to left below the ding: D3 g a b c gives G2 A2 B2 C3 | `O1:.compose.places` |
-| `o1_limit_ignores_ding.patch` | `limit = m_{i+1}` without `min(D, ...)` | O1: an unoctaved bottom never sits above the ding beside a typed one that does: F3 c Db4 gives C3 Db4 | `O1:.an.unoctaved.bottom.never` |
-| `o1_typed_octave_replaced.patch` | an octaved note also gets placed | O1: a typed bottom octave is kept and its unoctaved neighbours go below it: D3 g A2 c gives G2 A2 C3, D3 c E2 gives C2 E2 | `O1:.a.typed.bottom.octave` |
-| `o1_line_prepass_skipped.patch` | the sheet line handler skips `placeLineBottoms` | O1: typing (D3) [g] [a] [b] [c] A3 in the line writes G2 A2 B2 C3 back into BOTTOM NOTES | `O1:.typing..D3.` |
-| `o1_core_rule_leaked.patch` | `nearestToDing` takes the O1 rule | O1: core.parseSeed still places an unoctaved bracketed note by nearestToDing | `O1:.core.parseSeed.still` |
+| `o1_first_at_ding_octave.patch` | first octaveless bottom seeded at `ding.octave` (old rule) | O1: compose places the first octaveless bottom in the octave below the ding: D3 g a b c gives G2 A2 B2 C3 | `O1:.compose.places.the.first` |
+| `o1_run_capped_at_ding.patch` | later notes capped below the ding | O1: an octaveless bottom run may rise past the ding: D3 c d e f g gives C3 D3 E3 F3 G3 | `O1:.an.octaveless.bottom.run` |
+| `o1_typed_octave_replaced.patch` | an octaved note also gets placed | O1: a typed bottom octave is kept and the next octaveless note goes above it: D3 g A2 c gives G2 A2 C3, D3 A3 c gives A3 C4 | `O1:.a.typed.bottom.octave` |
+| `o1_legacy_nearest_kept.patch` (Q4 (a) only) | `nearestToDing` keeps the nearest instance | O1: parseLegacySeed places the first octaveless bottom in the octave below the ding: (D3) A3 C4 E4 &#124; G gives G2 | `O1:.parseLegacySeed.places` |
 | `tb_tab_pushes_history.patch` | the tab switch calls `pushState` | TB: a tab switch pushes no history entry and calls no replaceState | `TB:.a.tab.switch.pushes` |
 | `tb_back_returns_to_scale.patch` | Back on Layout selects Scale instead of closing | TB: Back, Escape and a popstate close the sheet from the Layout tab exactly as from the Scale tab, with one history.back | `TB:.Back..Escape` |
 | `tb_next_validates.patch` | NEXT disabled while `!boxOk` | TB: NEXT shows only in Add on the Scale tab, is enabled in every scale state, selects Layout and focuses the Layout tab | `TB:.NEXT.shows` |
@@ -503,37 +500,36 @@ in `tests/e2e.test.js`. Prefixes: `O1:` (engine and sheet placement), `TB:` (tab
 
 Lane T2 authors lane L's `uxl_*` mutant table from ux plan section 8 (none exist on dev), anchored on its own code. Added rows:
 
-| `o1_generate_skips_prepass.patch` | `runGenerate` passes raw `scaleBox.value` to `generateDeck` | O1: GENERATE CARDS and SAVE CHANGES from a line (D3) [g] A3 C4 store G2, equal to the parse line | `O1:.GENERATE.CARDS.and.SAVE` |
-| `o1_no_range_floor.patch` | placement drops the midi >= 0 floor | O1: a note with no instance below its limit refuses: D3 c C0 says C has no octave that fits: type one | `O1:.a.note.with.no.instance` |
-| `tb_landscape_unlifted.patch` | the landscape max-width:none rule left on `.adjusting` | TB: at 844x390 the Layout tab's .sheetsurf is wider than 600px, the wide container block applies and the pan is at least 256px | `TB:.at.844x390` |
+| `o1_no_range_floor.patch` | placement drops the midi >= 0 floor | O1: a bottom with no octave at or above zero refuses: ding C-1 b says B has no octave that fits: type one | `O1:.a.bottom.with.no.octave` |
+| `tb_landscape_unlifted.patch` | the landscape max-width:none rule left on `.adjusting` | TB: at 844x390 the Layout tab's .sheetsurf is wider than 600px, the tab strip sits beside the plate and the pan is at least 310px | `TB:.at.844x390` |
+| `tb_landscape_tabs_on_top.patch` | the wide block keeps the tab strip above the plate | TB: at 844x390 the Layout tab's .sheetsurf is wider than 600px, the tab strip sits beside the plate and the pan is at least 310px | `TB:.at.844x390` |
 
 ## 6. Lanes (/swarm)
 
-`index.html` cannot split, so the tabs, OR rule, lip and the sheet's O1 line hook are one lane. The
+`index.html` cannot split, so the tabs, OR rule and lip are serial lanes on it. The
 engine is a separate file-ownership boundary.
 
 ### Lane E: engine O1
 - **Base:** `origin/claude/dual-input-ux-p` (lane P head, PR #408). Branch `claude/sheet-tabs-e`.
 - **Owns:** `src/engine/importer.js`; the `<!-- engine:importer -->` region of `index.html`, written
   only by `tools/inline_engine.py`; `tests/import.test.js`;
-  `tests/fixtures/engine_corpus_v1.json` (regen only); `tests/mutants/o1_bottom_left_to_right.patch`,
-  `o1_limit_ignores_ding.patch`, `o1_typed_octave_replaced.patch`, `o1_core_rule_leaked.patch`;
+  `tests/fixtures/engine_corpus_v1.json` (regen only); `src/engine/core.js` `nearestToDing` and
+  `tests/core.test.js` + `tests/fixtures/deck_ids_v1.json` re-pin (Q4 (a) only); `tests/mutants/o1_*` engine rows;
   re-anchoring `ih_e_bottom_order_unchecked.patch`.
-- **Acceptance:** 5.1 green; 4.3 rewrites done with reasons; `core.js` byte-identical to origin/dev;
-  "every frozen legacy string keeps its deck id" and "SV: the five built-in decks' v5 links are pinned"
-  green unedited.
+- **Acceptance:** 5.1 green; 4.4 rewrites done with reasons; "SV: the five built-in decks' v5 links are pinned" green unedited;
+  under Q4 (b) `core.js` byte-identical and the frozen-id test unedited; under Q4 (a) exactly the 73 measured ids re-pinned, five named rows unchanged.
 - **Verify:**
   ```
-  python3 tools/inline_engine.py --check && node tools/regen_engine_corpus.js --check && node --test tests/import.test.js tests/core.test.js tests/share.test.js && python3 tools/validate.py && git diff --exit-code origin/dev -- src/engine/core.js
+  python3 tools/inline_engine.py --check && node tools/regen_engine_corpus.js --check && node --test tests/import.test.js tests/core.test.js tests/share.test.js && python3 tools/validate.py
   ```
-- **Non-goals:** no `index.html` edit outside the engine region, no `core.js` or `share.js` edit, no UI.
+- **Non-goals:** no `index.html` edit outside the engine regions, no `share.js` or `parseSeed` edit, no UI.
 
-### Lane T1: tabs, OR and the sheet O1 hook (then T2: the lip), serial
+### Lane T1: tabs and OR (then T2: the lip), serial
 - **Base:** lane E's head. Branch `claude/sheet-tabs-t1`. Lane T2 (`claude/sheet-tabs-t2`) bases on T1's head and owns only the lip: `#scale-foot`/`#scale-footclip`/`#scale-footslide`/`#scale-lip` markup, CSS and JS, the authored lane L A1-A19 / E1-E12 tests and `uxl_*` mutants, and the LP tests and mutants. T1 owns everything else listed below. Lane T2's M PR carries lane P's net code minus Adjust and supersedes #408.
 - **Owns:** `index.html` outside engine regions and outside the DECKS line; `tools/sandbox.js`
   (ELEMENT_IDS); `tests/app.test.js`; `tests/e2e.test.js`; `tools/probe/panel_fit.js` only if the
   sheet change moves a panel control (expected: no change); `tests/mutants/tb_*`, `lp_*`,
-  `o1_line_prepass_skipped.patch` and the carried `uxl_*`.
+  the sandbox O1 tests in 5.2, and the authored `uxl_*`.
 - **Acceptance:**
   - 5.2 and 5.3 green;
   - 5.3's retirements listed by exact title in the PR body;
@@ -549,7 +545,7 @@ engine is a separate file-ownership boundary.
 - **Non-goals:** no engine edit, no `data/decks.json` edit, no share/route/record change, no
   `#import-row` unhide, no About / settings / card change.
 
-Lanes are serial E -> T1 -> T2 (T1 depends on `placeLineBottoms`; T1 and T2 share `index.html`). There is no parallel `index.html` lane.
+Lanes are serial E -> T1 -> T2 (T1 runs on lane E's inlined engine; T1 and T2 share `index.html`). There is no parallel `index.html` lane.
 
 ### 6.4 Gates (owner's dev-first rule)
 0. Before opening M: `git diff origin/main...HEAD --name-only` lists no `_headers`, and `git log origin/main..HEAD` contains no `claude/dev-overlay` commit (619201e, c0cc1fc).
@@ -578,27 +574,24 @@ Lanes are serial E -> T1 -> T2 (T1 depends on `placeLineBottoms`; T1 and T2 shar
    controls are greyed and GENERATE CARDS is off.
 7. On Layout press the phone's Back. The sheet closes, and it does not return to the Scale tab.
 8. **Edit the deck from step 5.** SAVE CHANGES shows on both tabs. Change a note, switch to Layout, SAVE.
-9. **Rotate to landscape.** The Layout pan is about 258px, and the tabs still fit.
+9. **Rotate to landscape.** The Layout pan is about 318px, with the tabs beside it.
 10. **Settings > Accessibility > Reduce Motion on.** The lip and tab switches are instant.
-12. Add a scale with ding F3 and bottoms `C Db Eb Bb Db Ab` (no octaves). They read `C1 Db1 Eb1 Bb1 Db2 Ab2`; say whether that is acceptable (Q3).
+12. Add a scale with ding F3 and bottoms `C Db Eb Bb Db Ab` (no octaves). They read `C3 Db3 Eb3 Bb3 Db4 Ab4`.
 11. Open the Pygmy deck's Edit. Its bottom notes `C3 Db3 Eb3 Bb3 Db4 Ab5` are unchanged.
 
 ## 7. Open questions (real forks only, recommendation first)
 
-**Q1. Should the O1 rule also apply when an old v1-v3 share link or legacy string carries an
-unoctaved bottom note?**
-- **Recommended: (a) no, sheet path only.** The deck a person already shared or stored keeps its
-  notes, and the two pinned tests stay green unchanged.
-- (b) Yes, change `core.nearestToDing` too. This rewrites what some old links decode to and can move a
-  legacy deck id.
+Closed on 2026-10-19 by the owner: Q1 (one rule everywhere, subject to the compatibility check, which
+became Q4), Q2 (tabs beside the plate in the wide landscape block, folded into 3.6), Q3 (closed by the
+amended O1).
 
-**Q2. At 844x390 the Layout pan is 258px against Adjust's 318px.**
-- **Recommended: (a)** in the wide container block, the tab strip moves into the left column beside the plate, recovering its 60px of height (pan about 318px).
-- (b) Accept 258px.
-
-**Q3. Octaveless bottoms that wrap far below the ding** (F3 with `C Db Eb Bb Db Ab` gives C1 Db1 Eb1 Bb1 Db2 Ab2, musically odd).
-- **Recommended: (a)** accept: O1 as written, and the guessed-octaves info tells the user to type octaves.
-- (b) Refuse a list that would place any note more than an octave below the ding, asking for octaves.
+**Q4 (binding). Apply O1 to legacy decode too, at the measured cost in 4.3?**
+- **Recommended: (a) yes, one rule.** Change `core.nearestToDing` as 4.2 says. Cost: 27 of 261 fixture
+  legacy strings decode with different bottom octaves and 73 of 518 frozen legacy strings change deck id,
+  so "every frozen legacy string keeps its deck id" is re-pinned. Nothing built-in, stored or v4/v5
+  moves, and the owner expects few old links in circulation.
+- (b) Fields only: `composeBottoms` changes and legacy v1-v3 decode keeps `nearestToDing`; no id moves,
+  but the old grammar keeps a second rule.
 
 Everything else is decided above:
 - tab switches push no history;
@@ -607,15 +600,15 @@ Everything else is decided above:
 - the Layout tab is the only place the pan draws;
 - the lip is kept from L.
 
-## Appendix: self-check (R1-R8, after the review fold)
+## Appendix: self-check (R1-R8, after the amended O1)
 
 | line | score | evidence |
 |---|---|---|
-| R1 Owner fidelity | 9 | O1-O4 delivered; Q2 and Q3 surface two owner-visible consequences rather than deciding them. |
-| R2 Grounding | 9 | Ids, selectors, callers and branch names checked on origin/dev and PR #408; 1280x800 pan is computed and left to lane T to measure. |
-| R3 State completeness | 9 | 3.8 covers every cell; landscape answer depends on Q2. |
-| R4 Constraint safety | 9 | core.js and share untouched, overlay excluded by the 6.4 step-0 check; lane base on #408 branch. |
-| R5 Testability | 9 | Verbatim titles plus fence and range-floor tests; lane L tests are authored from the ux plan, not yet written. |
-| R6 Swarm shape | 9 | E -> T1 -> T2 serial with owns, verify and gates; serial cost accepted because index.html cannot split. |
-| R7 Design quality | 8 | Existing tokens and .mode; pan is 1.7-3.3x the small pan but under Adjust at 320 and 844 (disclosed, Q2). |
-| R8 Decisiveness | 9 | Three forks, each with a recommendation. |
+| R1 Owner fidelity | 9 | Amended O1, Q1-Q3 answers folded; the one consequence the owner has not seen (73 moved ids) is a binding question, not decided. |
+| R2 Grounding | 9 | Placement claims checked by running origin/dev `core.js`; the 1280x800 pan stays computed, measured by lane T. |
+| R3 State completeness | 9 | 3.8 covers every cell; landscape is now defined (tabs beside the plate). |
+| R4 Constraint safety | 9 | v4/v5, stored records and built-ins measured unchanged; the legacy change is gated on Q4. |
+| R5 Testability | 9 | Every 4.1 branch has a test and a mutant; lane L tests are authored from the ux plan, not yet written. |
+| R6 Swarm shape | 9 | E -> T1 -> T2 serial with owns, verify and gates. |
+| R7 Design quality | 9 | The Layout pan meets or beats Adjust at every viewport except 320x568 (268 vs 276). |
+| R8 Decisiveness | 9 | One binding fork, with numbers and a recommendation. |
