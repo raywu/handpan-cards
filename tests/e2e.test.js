@@ -14299,6 +14299,11 @@ function run() {
         await b.eval(`
           const body = document.querySelector("#scale-sheet .sheetbody"), s = document.getElementById("scale-sheet");
           window.__h = [];
+          window.__tr = [];
+          const t0 = performance.now();
+          const cadd = s.classList.add.bind(s.classList);
+          s.classList.add = (...a) => { if (a.includes("lipshut")) window.__tr.push([Math.round(performance.now() - t0), new Error().stack.split("\\n").slice(1, 5).map((x) => x.trim().slice(0, 60)).join(" < ")]); return cadd(...a); };
+          body.addEventListener("scroll", () => window.__tr.push([Math.round(performance.now() - t0), "scroll " + body.scrollTop]), { passive: true });
           const iv = setInterval(() => { if (s.classList.contains("lipped") && !s.classList.contains("lipshut")) window.__h.push(body.getBoundingClientRect().height); if (!s.classList.contains("lipped")) clearInterval(iv); }, 8);
           document.getElementById("scale-lip").click();
           return true;`);
@@ -14309,7 +14314,7 @@ function run() {
         assert.ok(hs.length > 3, `only ${hs.length} frames sampled in the slide`);
         for (const v of hs) assert.ok(Math.abs(v - lippedH) <= 0.5, `the body was ${v}px mid-slide, lipped height ${lippedH}`);
         const after = await primaryRect();
-        assert.ok(Math.abs(after.top - open.top) <= 1, `the primary landed at ${after.top}, the open layout has it at ${open.top} ${await lipDiag()}`);
+        assert.ok(Math.abs(after.top - open.top) <= 1, `the primary landed at ${after.top}, the open layout has it at ${open.top} ${await lipDiag()} ${JSON.stringify(await b.eval('return window.__tr;'))}`);
       } finally { await reset(); }
     });
 
