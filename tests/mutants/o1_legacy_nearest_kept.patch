@@ -1,0 +1,17 @@
+# kills: O1: parseLegacySeed places the first octaveless bottom in the octave below the ding: (D3) A3 C4 E4 | G gives G2
+# suite: node --test --test-name-pattern O1:.parseLegacySeed.places tests/core.test.js
+# The legacy | list places its first bottom by the nearest instance either side of the ding again.
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -456,6 +456,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     for (n = 0; n < bottomNotes.length; n += 1) {
+       var low = bottomNotes[n];
+       low.midi = inferred.midis[n];
++      if (n === 0 && low.octave === null) {
++        var gap = ((dingMidi - midiFromName(low.letter, low.accidental, 0)) % 12 + 12) % 12;
++        low.midi = gap > 6 ? dingMidi - gap + 12 : dingMidi - (gap === 0 ? 12 : gap);
++      }
+       if (n === inferred.failAt) return outOfRange(low, low.midi);
+       if (n > 0 && low.midi <= bottomNotes[n - 1].midi) {
+         return outOfOrder(low, low.midi, bottomNotes[n - 1],

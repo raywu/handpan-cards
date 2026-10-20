@@ -1,0 +1,15 @@
+# kills: O1: an inferred bottom on the ding's midi warns and does not block: D3 c d gives C3 D3, ok, line [C3] [D3] (D3) A3, and warn.bottom is DUPLICATE_NOTE 'D3 is already the ding. Double-check the bottom notes.'
+# suite: node --test --test-name-pattern O1:.an.inferred.bottom.on.the.ding tests/import.test.js
+# inferBottoms steps a later note past the ding's midi (lane P's rule).
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -270,7 +270,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+         midi = dingMidi - (step === 0 ? 12 : step);
+       } else {
+         midi = midiFromName(note.letter, note.accidental, -1);
+         while (midi <= previous) midi += 12;
++        if (midi === dingMidi) midi += 12;
+       }
+       midis.push(midi);
+       if (midi < 0 || midi > 127) return { midis: midis, failAt: i };

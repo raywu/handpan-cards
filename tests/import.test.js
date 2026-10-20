@@ -1202,10 +1202,10 @@ describe("IH: compose", () => {
     }
   });
 
-  test("IH: compose guesses the first octaveless bottom in the ding's octave, an octave down when it names the ding, and lists it in guessed, and Db under ding C#3 reads Db2", () => {
+  test("IH: compose guesses the first octaveless bottom in the octave below the ding, an octave down when it names the ding, and lists it in guessed, and Db under ding C#3 reads Db2", () => {
     const a = compose({ ding: "D3", top: "A3", bottom: "Bb" });
-    assert.deepEqual(a.guessed, ["Bb3"]);
-    assert.deepEqual(a.notes.bottom, ["Bb3"]);
+    assert.deepEqual(a.guessed, ["Bb2"]);
+    assert.deepEqual(a.notes.bottom, ["Bb2"]);
     const same = compose({ ding: "D3", top: "A3", bottom: "D" });
     assert.deepEqual(same.guessed, ["D2"]);
     assert.equal(same.line, "[D2] (D3) A3");
@@ -1231,8 +1231,8 @@ describe("IH: compose", () => {
     const r = compose({ ding: "d3", top: "a3 bb3 c4 d4 e4 f4 g4 a4", bottom: "eb" });
     assert.ok(r.ok);
     assert.deepEqual(r.notes.top, ["A3", "Bb3", "C4", "D4", "E4", "F4", "G4", "A4"]);
-    assert.deepEqual(r.notes.bottom, ["Eb3"]);
-    assert.equal(r.line, "(D3) [Eb3] A3 Bb3 C4 D4 E4 F4 G4 A4");
+    assert.deepEqual(r.notes.bottom, ["Eb2"]);
+    assert.equal(r.line, "[Eb2] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4");
   });
 
   test("IH: compose refuses an uppercase second B: BB3 gives \"BB is not a note: write B-flat as Bb.\" and EB gives \"EB is not a note: write E-flat as Eb.\"", () => {
@@ -1364,7 +1364,7 @@ describe("IH: compose", () => {
     assert.equal(copy.line, "(D3) [A3] A3 Bb3");
   });
 
-  test("IH: compose refuses notes outside C-1 to G9 in each field, and an octaveless bottom whose guess falls outside that range", () => {
+  test("IH: compose refuses notes outside C-1 to G9 in each field, and an octaveless bottom placed above G9", () => {
     const msg = (x) => x + " is outside C-1 to G9.";
     assert.equal(compose({ ding: "D3", top: "A3 Ab9" }).errors.top, msg("Ab9"));
     assert.equal(compose({ ding: "Ab9" }).errors.ding, msg("Ab9"));
@@ -1372,7 +1372,6 @@ describe("IH: compose", () => {
     assert.equal(compose({ ding: "D3", top: "A3", bottom: "Cb-1" }).errors.bottom, msg("Cb-1"));
     assert.equal(compose({ ding: "D3", top: "G9 A" }).errors.top, msg("A9"));
     const fit = "A has no octave that fits: type one.";
-    assert.equal(compose({ ding: "G9", bottom: "A" }).errors.bottom, fit);
     assert.equal(compose({ ding: "D3", top: "A3", bottom: "G9 A" }).errors.bottom, fit);
     assert.ok(compose({ ding: "Cb4", top: "Gb4", bottom: "G9" }).ok);
   });
@@ -1399,11 +1398,159 @@ describe("IH: compose", () => {
     assert.equal(r.info.bottom, "Octaves guessed: C3, Db3, Eb3, Bb3, Db4, Ab4. Type an octave to change a guess.");
   });
 
-  test("IH: compose steps a later octaveless bottom past the ding's midi: under ding D3, bottoms C D read C3 D4", () => {
-    const r = compose({ ding: "D3", top: "A3", bottom: "C D" });
+  const warnOf = (f) => compose(f).warn.bottom;
+  const BOTTOM_DUP = (n, where) => ({ code: "DUPLICATE_NOTE", text: n + " is already " + where + ". Double-check the bottom notes." });
+  const bottomMidis = (seed) => Object.values(seed.fields).filter((f) => f[3] === "bottom").map((f) => f[2]).sort((a, b) => a - b);
+  const bottomNames = (seed) => Object.values(seed.fields).filter((f) => f[3] === "bottom").sort((a, b) => a[2] - b[2]).map((f) => f[0] + f[1]);
+  const PYGMY_TOP = "G Ab C Eb F G Ab C Eb";
+
+  test("O1: compose places the first octaveless bottom in the octave below the ding: D3 g a b c gives G2 A2 B2 C3", () => {
+    const r = compose({ ding: "D3", top: "A3 C4", bottom: "g a b c" });
     assert.ok(r.ok);
-    assert.deepEqual(r.guessed, ["C3", "D4"]);
-    assert.equal(r.line, lineOf("[C3] (D3) A3 [D4]"));
-    assert.deepEqual(r.notes.bottom, ["C3", "D4"]);
+    assert.deepEqual(r.notes.bottom, ["G2", "A2", "B2", "C3"]);
+    assert.deepEqual(r.guessed, ["G2", "A2", "B2", "C3"]);
+    assert.equal(r.line, lineOf("[G2] [A2] [B2] [C3] (D3) A3 C4"));
+    assert.equal(r.info.bottom, "Octaves guessed: G2, A2, B2, C3. Type an octave to change a guess.");
+  });
+
+  test("O1: an octaveless bottom run may rise past the ding: D3 c d e f g gives C3 D3 E3 F3 G3", () => {
+    const r = compose({ ding: "D3", top: "A3 C4", bottom: "c d e f g" });
+    assert.ok(r.ok);
+    assert.deepEqual(r.notes.bottom, ["C3", "D3", "E3", "F3", "G3"]);
+  });
+
+  test("O1: a typed bottom octave is kept and the next octaveless note goes above it: D3 g A2 c gives G2 A2 C3, D3 A3 c gives A3 C4", () => {
+    const a = compose({ ding: "D3", top: "A3 C4", bottom: "g A2 c" });
+    assert.ok(a.ok);
+    assert.deepEqual(a.notes.bottom, ["G2", "A2", "C3"]);
+    assert.deepEqual(a.guessed, ["G2", "C3"]);
+    const b = compose({ ding: "D3", top: "A3 C4", bottom: "A3 c" });
+    assert.ok(b.ok);
+    assert.deepEqual(b.notes.bottom, ["A3", "C4"]);
+    assert.deepEqual(b.guessed, ["C4"]);
+  });
+
+  test("O1: Pygmy's octaveless bottoms under F3 give C3 Db3 Eb3 Bb3 Db4 Ab4, and F3 c Db4 gives C3 Db4", () => {
+    const a = compose({ ding: "F3", top: PYGMY_TOP, inner: "F G", bottom: "C Db Eb Bb Db Ab" });
+    assert.ok(a.ok);
+    assert.deepEqual(a.notes.bottom, ["C3", "Db3", "Eb3", "Bb3", "Db4", "Ab4"]);
+    const b = compose({ ding: "F3", top: PYGMY_TOP, inner: "F G", bottom: "c Db4" });
+    assert.ok(b.ok);
+    assert.deepEqual(b.notes.bottom, ["C3", "Db4"]);
+  });
+
+  test("O1: a typed note below the one before it refuses with composeLower: D3 g A1 says A1 is lower than G2", () => {
+    const r = compose({ ding: "D3", top: "A3", bottom: "g A1" });
+    assert.equal(r.ok, false);
+    assert.equal(r.errors.bottom, "A1 is lower than G2: list low to high.");
+  });
+
+  test("O1: a repeated bottom refuses: D3 G2 G2 says G2 is already in the bottom notes", () => {
+    const r = compose({ ding: "D3", top: "A3", bottom: "G2 G2" });
+    assert.equal(r.ok, false);
+    assert.equal(r.errors.bottom, "G2 is already in the bottom notes.");
+  });
+
+  test("O1: a bottom with no octave at or above zero refuses: ding C-1 b says B has no octave that fits: type one", () => {
+    const r = compose({ ding: "C-1", top: "G-1", bottom: "b" });
+    assert.equal(r.ok, false);
+    assert.equal(r.errors.bottom, "B has no octave that fits: type one.");
+    const low = compose({ ding: "C0", top: "G0", bottom: "b" });
+    assert.ok(low.ok);
+    assert.deepEqual(low.notes.bottom, ["B-1"]);
+  });
+
+  test("O1: Pygmy's bottoms typed with octaves are unchanged: F3 C3 Db3 Eb3 Bb3 Db4 Ab5", () => {
+    const r = compose({ ding: "F3", top: PYGMY_TOP, inner: "F G", bottom: "C3 Db3 Eb3 Bb3 Db4 Ab5" });
+    assert.ok(r.ok);
+    assert.deepEqual(r.notes.bottom, ["C3", "Db3", "Eb3", "Bb3", "Db4", "Ab5"]);
+    assert.deepEqual(r.guessed, []);
+    assert.equal(r.warn.bottom, null);
+  });
+
+  test("O1: the scale line is definitive: (D3) [G] A3, (D3) A3 C5 [G], (D3) A3 [G] C4 and [G] [A] [B] [C] (D3) A3 C4 E4 decode as on origin/main", () => {
+    const bottoms = (s) => {
+      const r = core.parseSeed(s);
+      return r.ok ? bottomNames(r.value) : r.code;
+    };
+    assert.deepEqual(bottoms("(D3) [G] A3"), ["G3"]);
+    assert.deepEqual(bottoms("(D3) A3 C5 [G]"), ["G5"]);
+    assert.equal(bottoms("(D3) A3 [G] C4"), "NOTE_OUT_OF_ORDER");
+    assert.deepEqual(bottoms("[G] [A] [B] [C] (D3) A3 C4 E4"), ["G2", "A2", "B2", "C3"]);
+  });
+
+  test("O1: the two inference paths agree: compose and parseLegacySeed give the same bottom midis for D3 g; D3 g a b c; D3 c d e f g; F3 C Db Eb Bb Db Ab", () => {
+    const cases = [
+      ["D3", "A3 C4 E4", "g"], ["D3", "A3 C4 E4", "g a b c"], ["D3", "A3 C4 E4", "c d e f g"],
+      ["F3", PYGMY_TOP, "C Db Eb Bb Db Ab"]
+    ];
+    for (const [ding, top, bottom] of cases) {
+      const r = compose({ ding, top, bottom });
+      assert.ok(r.ok, bottom);
+      const legacy = core.parseLegacySeed("(" + ding + ") " + top + " | " + bottom.replace(/^.|\s./g, (c) => c.toUpperCase()));
+      assert.ok(legacy.ok, bottom);
+      assert.deepEqual(bottomMidis(legacy.value), bottomMidis(r.seed), ding + " " + bottom);
+    }
+  });
+
+  test("O1: the owner's legacy example: (D3) A3 C4 D4 E4 F4 G4 A4 C5 | F G A gives F2 G2 A2, and | C E gives C3 E3", () => {
+    const names = (s) => bottomNames(core.parseLegacySeed(s).value);
+    assert.deepEqual(names("(D3) A3 C4 D4 E4 F4 G4 A4 C5 | F G A"), ["F2", "G2", "A2"]);
+    assert.deepEqual(names("(D3) A3 C4 D4 E4 F4 G4 A4 C5 | C E"), ["C3", "E3"]);
+  });
+
+  test("O1: an inferred bottom on the ding's midi warns and does not block: D3 c d gives C3 D3, ok, line [C3] [D3] (D3) A3, and warn.bottom is DUPLICATE_NOTE 'D3 is already the ding. Double-check the bottom notes.'", () => {
+    const r = compose({ ding: "D3", top: "A3", bottom: "c d" });
+    assert.ok(r.ok);
+    assert.deepEqual(r.guessed, ["C3", "D3"]);
+    assert.equal(r.line, "[C3] [D3] (D3) A3");
+    assert.deepEqual(r.notes.bottom, ["C3", "D3"]);
+    assert.deepEqual(r.warn.bottom, BOTTOM_DUP("D3", "the ding"));
+    assert.equal(r.errors.bottom, null);
+  });
+
+  test("O1: an inferred bottom on a top or inner note's midi warns: D3 / A3 C4 / B3 c says C4 is already top note 2; D3 / A3 C4 | F5 / E5 f says F5 is already inner note 1", () => {
+    assert.deepEqual(warnOf({ ding: "D3", top: "A3 C4", bottom: "B3 c" }), BOTTOM_DUP("C4", "top note 2"));
+    const inner = compose({ ding: "D3", top: "A3 C4", inner: "F5", bottom: "E5 f" });
+    assert.ok(inner.ok);
+    assert.deepEqual(inner.warn.bottom, BOTTOM_DUP("F5", "inner note 1"));
+  });
+
+  test("O1: a typed bottom octave never warns and clears the warning: D3 c D4 and D3 C3 D3 have warn.bottom null; D3 / A3 C4 / B3 C4 has warn.bottom null", () => {
+    assert.equal(warnOf({ ding: "D3", top: "A3", bottom: "c D4" }), null);
+    assert.equal(warnOf({ ding: "D3", top: "A3", bottom: "C3 D3" }), null);
+    assert.equal(warnOf({ ding: "D3", top: "A3 C4", bottom: "B3 C4" }), null);
+    assert.equal(warnOf({ ding: "D3", top: "A3", bottom: "c D3" }), null);
+  });
+
+  test("O1: a guessed bottom beside an erroring top or inner field returns the field error and never throws", () => {
+    const empty = compose({ ding: "D3", top: "", bottom: "g" });
+    assert.equal(empty.ok, false);
+    assert.ok(empty.errors.top);
+    assert.equal(empty.warn.bottom, null);
+    const bad = compose({ ding: "D3", top: "A3 X", bottom: "g" });
+    assert.equal(bad.ok, false);
+    assert.ok(bad.errors.top);
+    assert.equal(bad.warn.bottom, null);
+    const inner = compose({ ding: "D3", top: "A3 C4", inner: "Q", bottom: "c d" });
+    assert.equal(inner.ok, false);
+    assert.ok(inner.errors.inner);
+    assert.deepEqual(inner.warn.bottom, BOTTOM_DUP("D3", "the ding"));
+  });
+
+  test("O1: a duplicate of another bottom stays the refusal: D3 c C3 says C3 is already in the bottom notes", () => {
+    const r = compose({ ding: "D3", top: "A3", bottom: "c C3" });
+    assert.equal(r.ok, false);
+    assert.equal(r.errors.bottom, "C3 is already in the bottom notes.");
+    assert.equal(r.warn.bottom, null);
+  });
+
+  test("O1: compose's seed and line are the same with and without the warning: D3 c d and D3 C3 D3 give one line and one seed, and parseSeed accepts [C3] [D3] (D3) A3 as on origin/main", () => {
+    const warned = compose({ ding: "D3", top: "A3", bottom: "c d" });
+    const typed = compose({ ding: "D3", top: "A3", bottom: "C3 D3" });
+    assert.ok(warned.warn.bottom && typed.warn.bottom === null);
+    assert.equal(warned.line, typed.line);
+    assert.deepEqual(warned.seed, typed.seed);
+    assert.ok(core.parseSeed("[C3] [D3] (D3) A3").ok);
   });
 });

@@ -1,0 +1,16 @@
+# kills: O1: compose places the first octaveless bottom in the octave below the ding: D3 g a b c gives G2 A2 B2 C3
+# suite: node --test --test-name-pattern O1:.compose.places.the.first tests/import.test.js
+# The first octaveless bottom is seeded in the ding's own octave (the old rule).
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -267,8 +267,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+         midi = midiFromName(note.letter, note.accidental, note.octave);
+       } else if (previous === null) {
+         var step = ((dingMidi - midiFromName(note.letter, note.accidental, 0)) % 12 + 12) % 12;
+-        midi = dingMidi - (step === 0 ? 12 : step);
++        midi = midiFromName(note.letter, note.accidental, Math.floor(dingMidi / 12) - 1);
+       } else {
+         midi = midiFromName(note.letter, note.accidental, -1);
+         while (midi <= previous) midi += 12;
+       }

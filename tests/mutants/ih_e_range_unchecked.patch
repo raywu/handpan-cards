@@ -1,4 +1,5 @@
-# kills: IH: compose refuses notes outside C-1 to G9 in each field, and an octaveless bottom whose guess falls outside that range
+# kills: IH: compose refuses notes outside C-1 to G9 in each field, and an octaveless bottom placed above G9
+# was: and an octaveless bottom whose guess falls outside that range
 # suite: node --test --test-name-pattern ^IH:.compose.refuses.notes.outside.C.1 tests/import.test.js
 # No range check: every pitch fits.
 diff --git a/src/engine/importer.js b/src/engine/importer.js

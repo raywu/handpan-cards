@@ -4,9 +4,9 @@
 diff --git a/src/engine/core.js b/src/engine/core.js
 --- a/src/engine/core.js
 +++ b/src/engine/core.js
-@@ -443,8 +443,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-         : place(low, bottomNotes[n - 1].midi, nextAbove);
-       if (low.midi < 0 || low.midi > 127) return outOfRange(low, low.midi);
+@@ -458,8 +458,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       low.midi = inferred.midis[n];
+       if (n === inferred.failAt) return outOfRange(low, low.midi);
        if (n > 0 && low.midi <= bottomNotes[n - 1].midi) {
 -        return outOfOrder(low, low.midi, bottomNotes[n - 1],
 -                          bottomNotes[n - 1].midi, false);

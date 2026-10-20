@@ -1,0 +1,15 @@
+# kills: O1: a typed bottom octave is kept and the next octaveless note goes above it: D3 g A2 c gives G2 A2 C3, D3 A3 c gives A3 C4
+# suite: node --test --test-name-pattern O1:.a.typed.bottom.octave.is.kept tests/import.test.js
+# A note with a typed octave is placed like an unoctaved one.
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -263,7 +263,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     for (var i = 0; i < notes.length; i += 1) {
+       var note = notes[i];
+       var midi;
+-      if (note.octave !== null && note.octave !== undefined) {
++      if (false) {
+         midi = midiFromName(note.letter, note.accidental, note.octave);
+       } else if (previous === null) {
+         var step = ((dingMidi - midiFromName(note.letter, note.accidental, 0)) % 12 + 12) % 12;

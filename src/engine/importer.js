@@ -746,28 +746,46 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   function composeBottoms(notes, ding) {
     var names = [];
     var guessed = [];
+    var midis = [];
     var below = null;
+    var placed = core().inferBottoms(notes.map(function (x) {
+      return { letter: x.letter, accidental: x.acc, octave: x.octave };
+    }), ding.midi);
     for (var i = 0; i < notes.length; i++) {
       var n = notes[i];
-      var octave = n.octave;
-      var guess = octave === null;
-      if (guess) {
-        octave = below === null ? ding.octave : composeAbove(n, below);
-        var at = composeMidi(n, octave);
-        if (at === ding.midi) octave += below === null ? -1 : 1;
-      }
-      var midi = composeMidi(n, octave);
+      var guess = n.octave === null;
+      var midi = placed.midis[i];
+      var octave = (midi - composeMidi(n, 0)) / 12;
       var name = composeNamed(n, octave);
-      if (octave < COMPOSE_LOW || octave > COMPOSE_HIGH || !composeFits(midi)) {
-        return { names: [], guessed: [], error: n.letter + n.acc + " has no octave that fits: type one." };
+      if (i === placed.failAt) {
+        return { names: [], guessed: [], error: guess ? n.letter + n.acc + " has no octave that fits: type one." : composeRange(name) };
       }
       if (below !== null && midi === below) return { names: [], guessed: [], error: name + " is already in the bottom notes." };
       if (below !== null && midi < below) return { names: [], guessed: [], error: composeLower(name, names[i - 1]) };
       names.push(name);
+      midis.push(midi);
       if (guess) guessed.push(name);
       below = midi;
     }
-    return { names: names, guessed: guessed, error: null };
+    return { names: names, midis: midis, guessed: guessed, error: null };
+  }
+
+  // A bottom whose octave was inferred and whose midi is the ding's or a top or
+  // inner field's: a warning, never a block. A typed octave never warns.
+  function composeDuplicate(bottom, read, ding, top, inner) {
+    var rows = [["the ding", [ding.name]]];
+    (top || []).forEach(function (x, k) { rows.push(["top note " + (k + 1), [x]]); });
+    (inner || []).forEach(function (x, k) { rows.push(["inner note " + (k + 1), [x]]); });
+    for (var i = 0; i < bottom.names.length; i++) {
+      if (read[i].octave !== null) continue;
+      for (var r = 0; r < rows.length; r++) {
+        var m = COMPOSE_NOTE.exec(rows[r][1][0]);
+        if (composeMidi({ letter: m[1], acc: m[2] || "" }, Number(m[3])) === bottom.midis[i]) {
+          return { code: "DUPLICATE_NOTE", text: bottom.names[i] + " is already " + rows[r][0] + ". Double-check the bottom notes." };
+        }
+      }
+    }
+    return null;
   }
 
   function compose(fields) {
@@ -775,7 +793,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var out = {
       ok: false, empty: false, line: "", seed: null,
       errors: { ding: null, top: null, inner: null, bottom: null },
-      info: { bottom: null, inner: null }, guessed: [],
+      info: { bottom: null, inner: null }, warn: { bottom: null }, guessed: [],
       notes: { ding: [], top: [], inner: [], bottom: [] }
     };
     var read = {};
@@ -846,6 +864,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       out.guessed = bottom.guessed;
       if (bottom.guessed.length) {
         out.info.bottom = "Octaves guessed: " + bottom.guessed.join(", ") + ". Type an octave to change a guess.";
+        out.warn.bottom = composeDuplicate(bottom, read.bottom.notes, ding, top, inner);
       }
     }
 

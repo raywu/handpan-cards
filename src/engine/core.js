@@ -249,16 +249,34 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return midi;
   }
 
-  // Section 3: the first bottom note is the instance of its pitch class nearest
-  // the ding, excluding the ding's own midi, ties (tritone, same pitch class)
-  // going BELOW.
-  function nearestToDing(dingMidi, letter, accidental) {
-    var step = ((dingMidi - midiFromName(letter, accidental, 0)) % 12 + 12) % 12;
-    // The ding's own midi is not a candidate, so a same-pitch-class bottom note
-    // has its neighbours a full octave either side and the tie goes below.
-    var below = dingMidi - (step === 0 ? 12 : step);
-    var above = step === 0 ? dingMidi + 12 : below + 12;
-    return (dingMidi - below) <= (above - dingMidi) ? below : above;
+  // O1 (2026-10-19), the ONE rule for unoctaved bottom notes, shared by the
+  // BOTTOM NOTES field (importer.composeBottoms) and the legacy `|` list: a
+  // typed octave is kept; the first unoctaved note lands in the octave below
+  // the ding (dingMidi - 12 <= m < dingMidi); each later unoctaved note takes
+  // the nearest instance strictly above the note before it and may rise past
+  // the ding. `notes` is [{letter, accidental, octave|null}]. Returns the midis
+  // up to and including the first one outside 0..127 (raw), and that index as
+  // failAt, or -1. Order and repeats are the callers' own refusals.
+  function inferBottoms(notes, dingMidi) {
+    var midis = [];
+    var previous = null;
+    for (var i = 0; i < notes.length; i += 1) {
+      var note = notes[i];
+      var midi;
+      if (note.octave !== null && note.octave !== undefined) {
+        midi = midiFromName(note.letter, note.accidental, note.octave);
+      } else if (previous === null) {
+        var step = ((dingMidi - midiFromName(note.letter, note.accidental, 0)) % 12 + 12) % 12;
+        midi = dingMidi - (step === 0 ? 12 : step);
+      } else {
+        midi = midiFromName(note.letter, note.accidental, -1);
+        while (midi <= previous) midi += 12;
+      }
+      midis.push(midi);
+      if (midi < 0 || midi > 127) return { midis: midis, failAt: i };
+      previous = midi;
+    }
+    return { midis: midis, failAt: -1 };
   }
 
   // The positional zone rule of section 4: with no separator, the first up to
@@ -435,12 +453,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       previousNote = top;
     }
 
+    var inferred = inferBottoms(bottomNotes, dingMidi);
     for (n = 0; n < bottomNotes.length; n += 1) {
       var low = bottomNotes[n];
-      low.midi = n === 0
-        ? place(low, dingMidi, nearestToDing)
-        : place(low, bottomNotes[n - 1].midi, nextAbove);
-      if (low.midi < 0 || low.midi > 127) return outOfRange(low, low.midi);
+      low.midi = inferred.midis[n];
+      if (n === inferred.failAt) return outOfRange(low, low.midi);
       if (n > 0 && low.midi <= bottomNotes[n - 1].midi) {
         return outOfOrder(low, low.midi, bottomNotes[n - 1],
                           bottomNotes[n - 1].midi, false);
@@ -985,6 +1002,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     LABEL_RULE: LABEL_RULE,
     parseSeed: parseSeed,
     parseLegacySeed: parseLegacySeed,
+    inferBottoms: inferBottoms,
     formatSeed: formatSeed,
     innerBelowRim: innerBelowRim,
     formatLegacySeed: formatLegacySeed,
