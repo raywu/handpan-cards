@@ -7361,7 +7361,7 @@ function run() {
     await new Promise((r) => setTimeout(r, 250));
   };
   const kb2Tap = async (id, fromTop) => {
-    const p = await b.eval(`const r = document.getElementById(${JSON.stringify(id)}).getBoundingClientRect(); return { x: r.left + r.width / 2, y: ${fromTop ? "r.top + 6" : "r.top + r.height / 2"} };`);
+    const p = await b.eval(`const r = document.getElementById(${JSON.stringify(id)}).getBoundingClientRect(); return { x: r.left + r.width / 2, y: ${fromTop ? "r.top + 14" : "r.top + r.height / 2"} };`);
     const t0 = Date.now() / 1000;
     await kb2Touch("touchStart", [[p.x, p.y]], t0);
     await kb2Touch("touchEnd", [], t0 + 0.05);
@@ -7459,7 +7459,7 @@ function run() {
 
   test("KB2: a partly hidden note field is revealed with the minimal scroll", async () => {
     try {
-      for (const [w, h, vv] of [[393, 659, 270]]) {
+      for (const [w, h, vv] of [[393, 659, 274]]) {
         for (const ios of [false, true]) {
           await kb2Setup(w, h, vv, ios);
           const before = await kb2Scene();
@@ -7468,9 +7468,10 @@ function run() {
           await kb2Tap("scale-bottom", true);
           const after = await kb2Scene();
           const ctx = `${w}x${h} ios-native ${ios}`;
-          assert.ok(after.fields["scale-bottom"].bottom <= after.body.bottom - 19 && after.fields["scale-bottom"].top >= after.body.top - 1, `${ctx}: BOTTOM is not whole above the lip zone ${JSON.stringify(after.fields["scale-bottom"])} in ${JSON.stringify(after.body)}`);
+          assert.ok(Math.abs(after.fields["scale-bottom"].bottom - (after.body.bottom - 21)) <= 3 && after.fields["scale-bottom"].top >= after.body.top - 1, `${ctx}: BOTTOM does not end at the lip zone's edge ${JSON.stringify(after.fields["scale-bottom"])} in ${JSON.stringify(after.body)}`);
           assert.ok(await b.eval(`return document.getElementById("scale-sheet").classList.contains("lipped");`), `${ctx}: lipped stays true`);
-          assert.ok(after.bodyTop - before.bodyTop >= hidden - 2, `${ctx}: scrolled ${after.bodyTop - before.bodyTop}, at least ${hidden} was hidden`);
+          const minimal = hidden + (before.body.bottom - after.body.bottom) + 21;
+          assert.ok(Math.abs(after.bodyTop - before.bodyTop - minimal) <= 3, `${ctx}: scrolled ${after.bodyTop - before.bodyTop}, the minimum is ${minimal} (hidden ${hidden}, the slot grew ${before.body.bottom - after.body.bottom}, the lip zone 21)`);
           await b.clearKeyboard();
         }
       }
