@@ -21,8 +21,8 @@ notes that the sheet places below the ding: D3 with "g a b c" gives G2 A2 B2 C3.
 - No deck data or diagram geometry change. `data/decks.json`, the DECKS line, `layout.solve` and every
   built-in's drawing stay byte-identical (CLAUDE.md "Hard constraints", "Instrument layouts").
 - No change to SAVE or DELETE semantics, `HPE.share`, `formatSeed` or `parseSeed`. The only decode
-  change is O1 inside `parseLegacySeed` (v1-v3 links), and only if the owner accepts Q4 (section 4.3).
-- No engine change beyond O1: `importer.composeBottoms` and, under Q4, `core.nearestToDing`.
+  change is O1 inside `parseLegacySeed` (v1-v3 links), decided by the owner in Q4 (a) (section 4.3).
+- No engine change beyond O1: `importer.composeBottoms` and `core.nearestToDing`.
 - `#import-row` stays `hidden`; the memory rule "Import hidden until DEV-proven" stands.
 - Nothing goes to `main` except this plan PR (held) and, later, the lanes' main PRs after the owner's
   explicit go.
@@ -370,10 +370,9 @@ path writes explicit octaves back into BOTTOM NOTES (`formatSeed`).
 So "one rule everywhere" (owner Q1) means two code changes:
 1. `composeBottoms` (fields) adopts 4.1 - required, no compatibility cost.
 2. `nearestToDing` returns the octave-below instance (the `below` it already computes) - this changes
-   legacy decode and is gated on Q4.
+   legacy decode (owner Q4 (a), binding).
 
-Lane E implements both. Change 2 lands only if the owner accepts Q4 (a); under Q4 (b) lane E ships change 1
-and keeps `nearestToDing`.
+Lane E implements both (owner Q4 (a), 2026-10-19).
 
 Because both are engine modules: `python3 tools/inline_engine.py`; `node tools/regen_engine_corpus.js --check`
 then regenerate on drift; `tools/validate.py` check 4.
@@ -404,7 +403,7 @@ Consequences:
   unoctaved bottom note would get different bottom octaves and a new custom deck id, so the same link
   opened before and after would give two decks. `engine_corpus_v1.json` moves only where it holds such a
   legacy string; lane E regenerates it.
-- This is a binding owner question (Q4); the plan does not decide it.
+- Owner decision Q4 (a), 2026-10-19, binding: one rule everywhere; lane E re-pins the 73 ids and lists each old and new id in its PR body.
 
 ### 4.4 Existing tests that pin current behaviour
 
@@ -414,7 +413,7 @@ Consequences:
 - "IH: compose refuses bottoms out of order ..., refuses a repeated bottom, and accepts a bottom copy of a
   rim pitch": rechecked; any input whose first unoctaved note sat above the ding is rewritten to the 4.1
   result, and all three refusal kinds stay asserted.
-- Under Q4 (a) only: "every frozen legacy string keeps its deck id" is re-pinned with the 73 new ids,
+- "every frozen legacy string keeps its deck id" is re-pinned with the 73 new ids,
   each listed in the PR body, and the five named built-in rows stay literal and unchanged.
 - `tests/mutants/ih_e_bottom_order_unchecked.patch`: re-anchored if its line moves; `# kills:` kept.
 
@@ -433,7 +432,7 @@ in `tests/e2e.test.js`. Prefixes: `O1:` (engine and sheet placement), `TB:` (tab
 - "O1: a bottom with no octave at or above zero refuses: ding C-1 b says B has no octave that fits: type one"
 - "O1: Pygmy's bottoms typed with octaves are unchanged: F3 C3 Db3 Eb3 Bb3 Db4 Ab5"
 - "O1: parseSeed already places a bracket before the ding below it: [G] [A] [B] [C] (D3) A3 C4 E4 gives G2 A2 B2 C3" (pin, green before and after)
-- Under Q4 (a), `tests/core.test.js`: "O1: parseLegacySeed places the first octaveless bottom in the octave below the ding: (D3) A3 C4 E4 | G gives G2"
+- `tests/core.test.js`: "O1: parseLegacySeed places the first octaveless bottom in the octave below the ding: (D3) A3 C4 E4 | G gives G2"
 
 ### 5.2 Sandbox (`tests/app.test.js`)
 - "O1: typing g a b c in BOTTOM NOTES with ding D3 writes [G2] [A2] [B2] [C3] into the line"
@@ -488,7 +487,7 @@ in `tests/e2e.test.js`. Prefixes: `O1:` (engine and sheet placement), `TB:` (tab
 | `o1_first_at_ding_octave.patch` | first octaveless bottom seeded at `ding.octave` (old rule) | O1: compose places the first octaveless bottom in the octave below the ding: D3 g a b c gives G2 A2 B2 C3 | `O1:.compose.places.the.first` |
 | `o1_run_capped_at_ding.patch` | later notes capped below the ding | O1: an octaveless bottom run may rise past the ding: D3 c d e f g gives C3 D3 E3 F3 G3 | `O1:.an.octaveless.bottom.run` |
 | `o1_typed_octave_replaced.patch` | an octaved note also gets placed | O1: a typed bottom octave is kept and the next octaveless note goes above it: D3 g A2 c gives G2 A2 C3, D3 A3 c gives A3 C4 | `O1:.a.typed.bottom.octave` |
-| `o1_legacy_nearest_kept.patch` (Q4 (a) only) | `nearestToDing` keeps the nearest instance | O1: parseLegacySeed places the first octaveless bottom in the octave below the ding: (D3) A3 C4 E4 &#124; G gives G2 | `O1:.parseLegacySeed.places` |
+| `o1_legacy_nearest_kept.patch` | `nearestToDing` keeps the nearest instance | O1: parseLegacySeed places the first octaveless bottom in the octave below the ding: (D3) A3 C4 E4 &#124; G gives G2 | `O1:.parseLegacySeed.places` |
 | `tb_tab_pushes_history.patch` | the tab switch calls `pushState` | TB: a tab switch pushes no history entry and calls no replaceState | `TB:.a.tab.switch.pushes` |
 | `tb_back_returns_to_scale.patch` | Back on Layout selects Scale instead of closing | TB: Back, Escape and a popstate close the sheet from the Layout tab exactly as from the Scale tab, with one history.back | `TB:.Back..Escape` |
 | `tb_next_validates.patch` | NEXT disabled while `!boxOk` | TB: NEXT shows only in Add on the Scale tab, is enabled in every scale state, selects Layout and focuses the Layout tab | `TB:.NEXT.shows` |
@@ -514,13 +513,16 @@ engine is a separate file-ownership boundary.
 - **Owns:** `src/engine/importer.js`; the `<!-- engine:importer -->` region of `index.html`, written
   only by `tools/inline_engine.py`; `tests/import.test.js`;
   `tests/fixtures/engine_corpus_v1.json` (regen only); `src/engine/core.js` `nearestToDing` and
-  `tests/core.test.js` + `tests/fixtures/deck_ids_v1.json` re-pin (Q4 (a) only); `tests/mutants/o1_*` engine rows;
-  re-anchoring `ih_e_bottom_order_unchecked.patch`.
+  `tests/core.test.js`; `tests/fixtures/deck_ids_v1.json` (re-pin of exactly the 73 measured ids);
+  `tests/fixtures/engine_corpus_v1.json` regenerated with `node tools/regen_engine_corpus.js` in the same commit
+  as the engine change; `tests/mutants/o1_*` engine rows; re-anchoring `ih_e_bottom_order_unchecked.patch` and any
+  existing mutant whose anchor is in `nearestToDing`/`validate` or the importer region. No data mutant
+  (`tools/regen_data_mutants.py`) is owned or regenerated: `data/decks.json` and the DECKS line do not change.
 - **Acceptance:** 5.1 green; 4.4 rewrites done with reasons; "SV: the five built-in decks' v5 links are pinned" green unedited;
-  under Q4 (b) `core.js` byte-identical and the frozen-id test unedited; under Q4 (a) exactly the 73 measured ids re-pinned, five named rows unchanged.
+  exactly the 73 measured ids re-pinned, five named rows unchanged, and the PR body lists all 73 old -> new ids.
 - **Verify:**
   ```
-  python3 tools/inline_engine.py --check && node tools/regen_engine_corpus.js --check && node --test tests/import.test.js tests/core.test.js tests/share.test.js && python3 tools/validate.py
+  python3 tools/inline_engine.py --check && node tools/regen_engine_corpus.js --check && python3 tools/regen_data_mutants.py --check 2>/dev/null; git diff --exit-code origin/claude/dual-input-ux-p -- data/decks.json && node --test tests/import.test.js tests/core.test.js tests/share.test.js && python3 tools/validate.py && for m in tests/mutants/o1_*.patch tests/mutants/ih_e_bottom_order_unchecked.patch; do git apply --check "$m" || exit 1; done
   ```
 - **Non-goals:** no `index.html` edit outside the engine regions, no `share.js` or `parseSeed` edit, no UI.
 
@@ -582,16 +584,12 @@ Lanes are serial E -> T1 -> T2 (T1 runs on lane E's inlined engine; T1 and T2 sh
 ## 7. Open questions (real forks only, recommendation first)
 
 Closed on 2026-10-19 by the owner: Q1 (one rule everywhere, subject to the compatibility check, which
-became Q4), Q2 (tabs beside the plate in the wide landscape block, folded into 3.6), Q3 (closed by the
+became Q4, also closed below), Q2 (tabs beside the plate in the wide landscape block, folded into 3.6), Q3 (closed by the
 amended O1).
 
-**Q4 (binding). Apply O1 to legacy decode too, at the measured cost in 4.3?**
-- **Recommended: (a) yes, one rule.** Change `core.nearestToDing` as 4.2 says. Cost: 27 of 261 fixture
-  legacy strings decode with different bottom octaves and 73 of 518 frozen legacy strings change deck id,
-  so "every frozen legacy string keeps its deck id" is re-pinned. Nothing built-in, stored or v4/v5
-  moves, and the owner expects few old links in circulation.
-- (b) Fields only: `composeBottoms` changes and legacy v1-v3 decode keeps `nearestToDing`; no id moves,
-  but the old grammar keeps a second rule.
+**Q4 closed (owner, 2026-10-19): (a) one rule everywhere.** `core.nearestToDing` changes and the 73 frozen ids are re-pinned (sections 4.2, 4.3, lane E).
+
+No open questions remain.
 
 Everything else is decided above:
 - tab switches push no history;
@@ -607,7 +605,7 @@ Everything else is decided above:
 | R1 Owner fidelity | 9 | Amended O1, Q1-Q3 answers folded; the one consequence the owner has not seen (73 moved ids) is a binding question, not decided. |
 | R2 Grounding | 9 | Placement claims checked by running origin/dev `core.js`; the 1280x800 pan stays computed, measured by lane T. |
 | R3 State completeness | 9 | 3.8 covers every cell; landscape is now defined (tabs beside the plate). |
-| R4 Constraint safety | 9 | v4/v5, stored records and built-ins measured unchanged; the legacy change is gated on Q4. |
+| R4 Constraint safety | 9 | v4/v5, stored records and built-ins measured unchanged; the legacy change is the owner's Q4 (a) decision, its cost measured. |
 | R5 Testability | 9 | Every 4.1 branch has a test and a mutant; lane L tests are authored from the ux plan, not yet written. |
 | R6 Swarm shape | 9 | E -> T1 -> T2 serial with owns, verify and gates. |
 | R7 Design quality | 9 | The Layout pan meets or beats Adjust at every viewport except 320x568 (268 vs 276). |
