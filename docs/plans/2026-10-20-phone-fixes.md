@@ -62,6 +62,38 @@ Amended existing assertions (touch path only; each wheel and keyboard equivalent
 
 Mutants: `ph_lip_drag_threshold_zero` (drag collapses at any distance), `ph_lip_drag_direction_flipped` (a finger-down drag collapses), `ph_lip_drag_preview_not_excluded` (note drags on the plate collapse), `ph_lip_touch_restores_at_bottom` (the scroll path's bottom restore applies during a touch drag).
 
+### P4: thinner footer (owner feedback 2026-10-20)
+
+Owner: "I think the drawer is still too thick. Why is there an empty space on top of the actual button? I expect minimized lips to be even smaller."
+
+P4a, collapse when empty (owner decision). `#scale-guidance` takes no reserved space while it holds no visible message: 0px tall with no margins and out of flow, so the primary sits one normal flow gap below `.sheetbody`. It grows only while `#scale-msg`, `#scale-field-msg` or `#scale-layout-state` shows text, to the height of that text, with the unchanged `--sp-2` gaps. The rule that took an empty slot out of flow under the lip (`#scale-sheet.lipped #scale-guidance:not(:has(...))`) now applies on every sheet. SUPERSEDES the sheet-guidance N-A6 "scrollport does not resize / reserves two lines (36px)" rule; the push-down on a message is accepted, and a message appearing while lipshut does not flip the lip (test below).
+
+Measured body-to-primary distance, Add sheet with no message: before 52px (8 + 36 + 8) against a 22px flow gap at 390x797, and 52px by the same arithmetic at 380x780; after 22px (one flow gap, slot 0px, margins 0px) at both.
+
+P4b, thin pill, same tap zone (owner decision). Minimized (`lipshut`) the only visible part is a 2px footer bar carrying a 32x3 pill. The invisible tap zone stays 25px, `LIP_SWIPE` stays 16 and `scroll-padding-bottom` stays 21px.
+
+| value | old | new |
+|---|---|---|
+| shut footer (`#scale-foot`) | 4px | 2px |
+| pill (`#scale-lip::after`) | 36x4 | 32x3 |
+| guidance reserve | 36px | 0px |
+| tap zone, `LIP_SWIPE`, scroll-padding-bottom | 25px, 16, 21px | unchanged |
+
+Owner-decision supersessions, amended tests (each keeps its other clauses):
+- "SG: N-A6 the scrollport does not resize between empty, notice and one- or two-line states, ..." is now "SG: N-A6 the slot takes no height when empty, grows to its message by exactly 18px a line in the enumerated states and back to 0 on clearing, a warning yields to a standing notice, and the slot sits --sp-2 from both neighbours while it shows". The empty slot is 0px and body-to-primary is one flow gap; with a message the scrollport shrinks by exactly the growth of body-to-primary, the slot is the message height, and the --sp-2 gaps hold.
+- "SG: N-A7 the seed box stays readable with a two-line warning and a notice both pending, ..." (title unchanged): the slot is the notice alone, no longer 36px.
+- "SG: N-A7 the crowded 24-note pan: ..." (title unchanged): the slot is the notice's own height, no longer the two-line reserve.
+- "O1: at 320x568 the duplicate warning on the field line keeps the slot's two-line height" is now "O1: at 320x568 the duplicate warning on the field line grows the slot and clearing it returns the slot to 0". It now also fires the field's blur, since without it the old test never raised the warning.
+- "TB: #scale-field-msg shows on Scale only, ... keeps its SG order and two-line reserve on both" is now "... keeps its SG order on both" (title only).
+- "UX: a real touch swipe down collapses the footer to a 4px lip, ..." is now "... to a 2px lip, ..." (shut footer at most 2px).
+- "UX: the lip draws a 36x4 grabber at ..." is now "UX: the lip draws a 32x3 pill at ..." and also hit-tests the 25px zone (inside the box hits the lip, one pixel above does not) and the 2px footer.
+
+- "KB: a visualViewport scroll event does not reveal the focused field, a resize does" (title unchanged): the body is 30px taller with no empty band, so scrolling to the end no longer pushed the field out of view; the test now adds a 400px spacer first, and every assertion is kept.
+
+New tests: "PH: P4 the Add sheet with no message has no empty band above the primary: body to primary is one flow gap at 390x797 and 380x780" and "PH: P4 a message appearing while the footer is lipshut grows the slot without flipping the lip, and clearing it returns the slot to 0".
+
+Mutants: new `ph_guidance_min_height_36` (the 36px reserve returns, in flow), `ph_pill_36x4`, `ph_foot_4px`, `sg_slot_margin_untrimmed` (replaces `sg_slot_shrinks`, which became equivalent once the slot lost its min-height, and `sg_slot_reserved_height_dropped`, which has nothing left to drop). Re-anchored with unchanged edits: `c_sheetbody_hairline_dropped`, `sg_notice_amber_in_slot`, `uxl_height_transition`, `uxl_no_scroll_padding`, `uxl_zone_44` (kills line renamed), `uxl_guidance_never_hides` (now removes the generalised rule's body).
+
 ## Acceptance / verify
 - `python3 tools/sync_decks.py --check && python3 tools/inline_engine.py --check && node --test tests/app.test.js && python3 tools/validate.py` (app.test.js fully green on this base: real GA id).
 - Targeted e2e: `node --test --test-name-pattern 'PH:' tests/e2e.test.js` with CHROME_BIN.

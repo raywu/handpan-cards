@@ -7306,7 +7306,7 @@ function run() {
       await b.fakeKeyboard(369);
       await kbSettle();
       const topOf = () => b.eval(`const r = document.getElementById("scale-top").getBoundingClientRect(); return { top: r.top, scroll: document.querySelector("#scale-sheet .sheetbody").scrollTop };`);
-      await b.eval(`const body = document.querySelector("#scale-sheet .sheetbody"); body.scrollTop = body.scrollHeight; return true;`);
+      await b.eval(`const body = document.querySelector("#scale-sheet .sheetbody"); const sp = document.createElement("div"); sp.style.height = "400px"; document.getElementById("scale-panel-scale").appendChild(sp); body.scrollTop = body.scrollHeight; return true;`);
       await kbSettle();
       const hidden = await topOf();
       assert.ok(hidden.top < 0, `the focused field is still in view (${hidden.top}), so this proves nothing`);
