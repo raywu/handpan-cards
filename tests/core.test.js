@@ -30,6 +30,8 @@ function host(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+const plainOf = (x) => JSON.parse(JSON.stringify(x));
+
 function parsed(str, options) {
   const r = core.parseLegacySeed(str, options);
   assert.equal(r.ok, true, `expected ${JSON.stringify(str)} to parse, got ` +
@@ -313,22 +315,36 @@ test("MIDI is letter-anchored, so Cb4 is 59 and B#3 is 60", () => {
     "an inferred octave prints the one the formula implies for the typed letter");
 });
 
-test("bottom inference restarts nearest the ding, ties going below", () => {
-  // Section 3: the first bottom note is the instance of its pitch class
-  // NEAREST the ding; a tritone and the ding's own pitch class both tie, and
-  // the tie goes below.
+test("bottom inference starts in the octave below the ding", () => {
+  // O1 (2026-10-19): the first unoctaved bottom note is the instance of its
+  // pitch class in D-12 <= m < D, the ding's own pitch class included.
   const tail = "(F3) G3 Ab3 C4 | ";
   assert.deepEqual(host(parsed(tail + "F").fields["101"]).slice(0, 3), ["F", 2, 41],
     "same pitch class as the ding resolves below it");
   assert.deepEqual(host(parsed(tail + "B").fields["101"]).slice(0, 3), ["B", 2, 47],
     "a tritone from the ding resolves below it");
-  assert.deepEqual(host(parsed(tail + "G").fields["101"]).slice(0, 3), ["G", 3, 55],
-    "a whole tone above the ding is nearest above");
+  assert.deepEqual(host(parsed(tail + "G").fields["101"]).slice(0, 3), ["G", 2, 43],
+    "a whole tone above the ding still lands below it");
   assert.deepEqual(host(parsed(tail + "E").fields["101"]).slice(0, 3), ["E", 3, 52],
     "a semitone below the ding is nearest below");
   const two = parsed(tail + "E G");
   assert.deepEqual(host(two.fields["102"]).slice(0, 3), ["G", 3, 55],
     "each later bottom note is the next instance strictly above the previous");
+});
+
+test("O1: parseLegacySeed places the first octaveless bottom in the octave below the ding: (D3) A3 C4 E4 | G gives G2", () => {
+  const f = parsed("(D3) A3 C4 E4 | G").fields;
+  assert.deepEqual(host(f["101"]).slice(0, 3), ["G", 2, 43]);
+});
+
+test("O1: inferBottoms returns {midis, failAt}: a typed Cb-1 fails at its index with midi -1, ding C-1 with b fails with -1, G9 then a fails with 129, and a clean list has failAt -1", () => {
+  const n = (letter, accidental, octave) => ({ letter, accidental, octave });
+  const typed = core.inferBottoms([n("G", "", null), n("C", "b", -1)], 50);
+  assert.deepEqual(plainOf(typed), { midis: [43, -1], failAt: 1 });
+  assert.deepEqual(plainOf(core.inferBottoms([n("B", "", null)], 0)), { midis: [-1], failAt: 0 });
+  assert.deepEqual(plainOf(core.inferBottoms([n("G", "", 9), n("A", "", null)], 50)), { midis: [127, 129], failAt: 1 });
+  assert.deepEqual(plainOf(core.inferBottoms([n("G", "", null), n("A", "", null), n("B", "", null), n("C", "", null)], 50)),
+    { midis: [43, 45, 47, 48], failAt: -1 });
 });
 
 test("an explicit octave that breaks the ascending order is NOTE_OUT_OF_ORDER", () => {
