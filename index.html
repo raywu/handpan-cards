@@ -926,19 +926,21 @@ footer.seq{row-gap:var(--sp-1)}
    edge, so that is where it belongs: moving a child across it cannot unhook it
    again. Pinned by "a hairline divides the pinned footer from the scroll". */
 .sheetbody{border-bottom:1px solid #332c22}
-/* The pinned message slot between the scrollport and the primary. The reserve
-   is two 12px/1.5 lines (36px); the negative margin trims the surface's two
-   --sp-4 gaps to --sp-2. flex:0 0 auto is load-bearing: as a shrinkable item a
-   three-line message spills over the button. #scale-msg drops its own 1.5em
-   floor so the wrapper owns the reservation, and justify-content:flex-end
-   bottom-aligns whichever line is lit. */
-#scale-guidance{flex:0 0 auto; min-height:calc(2 * 1.5 * 12px); display:flex; flex-direction:column;
+/* The pinned message slot between the scrollport and the primary. It reserves
+   nothing: with no visible message it is out of flow and 0px tall with no
+   margins (owner 2026-10-20), and it grows only to the height of the text it
+   shows, the negative margin trimming the surface's two --sp-4 gaps to --sp-2.
+   flex:0 0 auto is load-bearing: as a shrinkable item a three-line message
+   spills over the button. */
+#scale-guidance{flex:0 0 auto; display:flex; flex-direction:column;
   justify-content:flex-end; margin-block:calc(var(--sp-2) - var(--sp-4))}
+#scale-sheet #scale-guidance:not(:has(> :not([hidden]):not(:empty))){position:absolute;
+  min-height:0; height:0; margin:0; overflow:hidden}
 #scale-guidance #scale-msg{min-height:0}
 #scale-guidance #scale-layout-state{font:400 12px/1.5 "Nunito Sans"; color:#c4bcab}
 /* One message wins (plan N-6 alternative, owner 2026-10-14; X3): while the notice holds text a PAN
-   warning (.pan, set by the call sites that write one) steps aside, so the slot never outgrows its
-   two-line reserve. Refusals, errors and every other warn (the delete refusal) always show.
+   warning (.pan, set by the call sites that write one) steps aside, so the slot never stacks two messages.
+   Refusals, errors and every other warn (the delete refusal) always show.
    The aria-live copy of the warning (.announce) is a separate element and still speaks. The class is on
    #scale-sheet, not the wrapper: paintLayout() reaches the sheet through a variable the sandbox already
    has, and say() rewrites #scale-msg's own className on every call, which also clears .pan. */
@@ -949,13 +951,11 @@ footer.seq{row-gap:var(--sp-1)}
 :root{--lip-ease:cubic-bezier(.3,0,.2,1)}
 #scale-sheet.lipped .sheetsurf{padding-bottom:env(safe-area-inset-bottom)}
 #scale-sheet.lipped:not(.tiny) .sheetbody{flex-grow:1}
-#scale-sheet.lipped #scale-foot{display:block; position:relative; flex:0 0 auto; height:4px;
+#scale-sheet.lipped #scale-foot{display:block; position:relative; flex:0 0 auto; height:2px;
   margin-top:calc(-1 * var(--sp-4))}
 @media (max-height:520px){#scale-sheet.lipped #scale-foot{margin-top:calc(-1 * var(--sp-3))}}
 #scale-sheet.short.lipped #scale-foot{margin-top:calc(-1 * var(--sp-2))}
 #scale-sheet.lipped:has(#scale-guidance > :not([hidden]):not(:empty)) #scale-foot{margin-top:0}
-#scale-sheet.lipped #scale-guidance:not(:has(> :not([hidden]):not(:empty))){position:absolute;
-  min-height:0; height:0; margin:0; overflow:hidden}
 #scale-sheet.lipped #scale-footclip{display:block; position:absolute; bottom:100%;
   left:calc(-1 * var(--ring)); right:calc(-1 * var(--ring)); padding-inline:var(--ring);
   height:var(--lip-h, 0px); overflow:hidden; overflow:clip; pointer-events:none}
@@ -973,8 +973,8 @@ footer.seq{row-gap:var(--sp-1)}
 #scale-lip:not([hidden]){display:block; position:absolute; left:0; right:0; bottom:0; height:25px;
   z-index:2; margin:0; padding:0; border:0; background:transparent; cursor:pointer;
   touch-action:none; -webkit-tap-highlight-color:transparent}
-#scale-lip::after{content:""; position:absolute; left:50%; bottom:0; width:36px; height:4px;
-  margin-left:-18px; border-radius:2px; background:#a79d8b}
+#scale-lip::after{content:""; position:absolute; left:50%; bottom:0; width:32px; height:3px;
+  margin-left:-16px; border-radius:2px; background:#a79d8b}
 #scale-lip:focus-visible{outline-offset:-2px}
 #scale-sheet.lipped .sheetbody{scroll-padding-bottom:21px}
 #scale-sheet.lipnow #scale-footslide, #scale-sheet.lipnow #scale-guidance{transition:none}

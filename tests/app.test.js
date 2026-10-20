@@ -11274,7 +11274,7 @@ describe("TB: the sheet's tabs", () => {
     assert.deepStrictEqual(tbSelected(app), ["layout"]);
   });
 
-  test("TB: #scale-field-msg shows on Scale only, #scale-layout-state on Layout only, and #scale-guidance keeps its SG order and two-line reserve on both", () => {
+  test("TB: #scale-field-msg shows on Scale only, #scale-layout-state on Layout only, and #scale-guidance keeps its SG order on both", () => {
     const app = boot();
     openSheet(app);
     tbFieldType(app, "ding", "D3");
