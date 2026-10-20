@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12016,7 +12016,7 @@ function paintFields(values, announceNew, composed) {
-     fieldEls[k].setAttribute("aria-invalid", bad ? "true" : "false");
+@@ -12171,7 +12171,7 @@ function paintFields(values, announceNew, composed) {
    }
-   const first = FIELD_KEYS.find((k) => next[k] && next[k].kind === "error") || FIELD_KEYS.find((k) => next[k]);
+   const first = FIELD_KEYS.find((k) => next[k] && next[k].kind === "error") ||
+     FIELD_KEYS.find((k) => next[k] && next[k].kind === "warn") || FIELD_KEYS.find((k) => next[k]);
 -  const text = first ? FIELD_SHORT[first] + ": " + next[first].text : "";
 +  const text = first ? next[first].text : "";
    if (fieldMsg.textContent !== text) fieldMsg.textContent = text;
    fieldMsg.classList.toggle("info", !!first && next[first].kind === "info");
-   fieldMsg.classList.toggle("stale", !!first && !!next[first].stale);
+   fieldMsg.classList.toggle("warn", !!first && next[first].kind === "warn");

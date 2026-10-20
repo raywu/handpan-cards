@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1557,7 +1557,7 @@ html.about-open{overflow:hidden}
+@@ -1520,7 +1520,7 @@ html.about-open{overflow:hidden}
      <div id="scale-guidance">
        <p id="scale-field-msg"></p>
        <div id="scale-msg" aria-live="polite"></div>
 -      <p class="sheethint" id="scale-layout-state" aria-live="polite" aria-atomic="true" hidden></p>
 +      <p class="sheethint" id="scale-layout-state" hidden></p>
      </div>
-     <button id="scale-generate" type="button" disabled>GENERATE CARDS</button>
-     <div class="editrow" id="scale-delete-row" hidden>
+     <button id="scale-next" type="button">NEXT</button>
+     <button id="scale-generate" type="button" hidden disabled>GENERATE CARDS</button>

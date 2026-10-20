@@ -5,10 +5,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12097,7 +12097,7 @@ function renderFieldMessages(r, values, editing, shown) {
-     const text = r.errors[k] || r.info[k];
+@@ -12150,7 +12150,7 @@ function renderFieldMessages(r, values, editing, shown) {
+     const text = r.errors[k] || warnText || r.info[k];
      if (!text) continue;
-     const kind = r.errors[k] ? "error" : "info";
+     const kind = r.errors[k] ? "error" : warnText ? "warn" : "info";
 -    if (editing === null) out[k] = { text, kind };
 +    out[k] = { text, kind }; if (false)
      else if (shown[k] && shown[k].kind === kind) out[k] = { text: shown[k].text, kind, stale: shown[k].text !== text };

@@ -10,9 +10,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11511,7 +11511,7 @@ function hideSheet() {
-   sheet.setAttribute("aria-labelledby", "scale-title");
-   adjustRouted = pendingAdjustPop = closeAfterAdjustPop = false;
+@@ -11477,7 +11477,7 @@ function hideSheet() {
+   seedPrefill = null;
+   dropDrawer();
    setInert(false, background);
 -  (sheetOpener || addChip).focus();
 +  addChip.focus();

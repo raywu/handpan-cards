@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9080,7 +9080,7 @@ function paintLayout() {
-   fineBtn.textContent = fineOpen ? "HIDE FINER CONTROLS" : "HARD TO TAP? SHOW FINER CONTROLS";
+@@ -10456,7 +10456,7 @@ function paintLayout() {
    layoutZone.classList.toggle("open", drawerOpen);
-   const note = layoutNoticeText();
+   fieldMsg.hidden = drawerOpen;
+   const note = drawerOpen ? layoutNoticeText() : "";
 -  if (layoutNote.textContent !== note) layoutNote.textContent = note;
 +  layoutNote.textContent = note;
    layoutNote.hidden = !note;

@@ -4,9 +4,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11548,7 +11548,6 @@ window.addEventListener("popstate", () => {
-     return;
-   }
+@@ -11498,7 +11498,6 @@ let pendingPop = false;
+ window.addEventListener("popstate", () => {
+   if (pendingPop) { pendingPop = false; syncRoute(); return; }
    if (aboutOpen) { hideAbout(); return; }
 -  if (location.hash === ABOUT_ROUTE) { syncRoute(); return; }
    if (!sheetOpen) return;

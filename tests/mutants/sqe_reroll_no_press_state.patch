@@ -6,11 +6,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -843,7 +843,6 @@ button.nav:active{background:#2e281e}
+@@ -1171,7 +1171,6 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
  .mode:active{background:#2e281e}
  .mode.on:active{background:#ddd7cb; border-color:#ddd7cb}
  .shuffle:active{color:#eae6df}
 -.shuffle.reroll:active{background:#2e281e}
  .card:active{box-shadow:0 0 0 3px rgba(234,230,223,.22)}
- #scale-generate:active{background:#ddd7cb; border-color:#ddd7cb}
- #scale-generate:disabled:active{background:#f1ece1; border-color:#f1ece1}
+ #scale-generate:active, #scale-next:active{background:#ddd7cb; border-color:#ddd7cb}
+ #scale-generate:disabled:active, #scale-next:disabled:active{background:#f1ece1; border-color:#f1ece1}
