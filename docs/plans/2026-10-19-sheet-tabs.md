@@ -201,6 +201,11 @@ notes that the sheet places below the ding: D3 with "g a b c" gives G2 A2 B2 C3.
   - The SG rules hold on each tab: a two-line reserve, 18px per extra line, a `.warn.pan` warning that
     yields to the notice via `#scale-sheet.noticed`, and the slot above the primary (CLAUDE.md
     "Known pitfalls", sheet guidance).
+  - Known pre-existing gap, accepted as out of scope (integrator decision, AFK, review 6): on the base
+    `paintFields` sets `#scale-msg` to `display:none` whenever the field line has text, on any tab, so on
+    Layout with an inferred bottom (every guess writes "Octaves guessed") the pan `say()` warnings are
+    invisible, exactly as they are on the base's Adjust drawer. This plan does not fix it; it is listed in
+    section 7 for the owner.
 - **`#scale-refusal`** stays by `#scale-box` in the Scale panel. On Layout, an invalid scale shows the
   empty state in 3.5 instead. The refusal text is not duplicated.
 
@@ -464,14 +469,21 @@ they cannot drift (owner, 2026-10-19, "One engine, new rule"):
    - **Where it surfaces (lane T1; integrator decision, AFK, review 5):** in `#scale-field-msg`, which
      `paintFields` already paints for the fields. `renderFieldMessages` takes `warn.bottom` ahead of
      `info.bottom` for the bottom field with kind `warn` (class `warn` on `#scale-field-msg`, beside the
-     existing `info` and `stale` classes), so the one field line reads "bottom: D3 is already the ding.
-     Double-check the bottom notes." and the "Octaves guessed" line is implied by it; an error on any field
-     still wins. `#scale-msg` stays hidden by `paintFields` as on the base (`msgLine.style.display = text ?
+     existing `info` and `stale` classes: `paintFields` also `classList.toggle("warn", ...)` on
+     `#scale-field-msg`, and there is no CSS collision, since `#scale-field-msg` has only `.info` and
+     `.stale` rules and every `.warn` rule is scoped to another element), so the one field line reads
+     "BOTTOM NOTES: D3 is already the ding. Double-check the bottom notes." (the `FIELD_SHORT` prefix
+     `paintFields` already writes) and the "Octaves guessed" line is implied by it. `paintFields` picks the
+     first field with an error, else the first with a `warn`, else the first with an `info`, so an error on
+     any field still wins and an inner "Octaves guessed" line never hides the warning (on the base `first`
+     is the first error else the first message of any kind, which would paint inner `f`'s info over
+     bottom `c d`'s warning). `#scale-msg` stays hidden by `paintFields` as on the base (`msgLine.style.display = text ?
      "none" : ""`, the line that would have hidden a `say()` warning in exactly the state that warns, since
      every inferred bottom sets `info.bottom`), so no `say()` call and no `pan` class are involved and the
      Layout notice cannot hide it. It is shown on the Scale tab only (3.4 hides `#scale-field-msg` on
-     Layout). The slot's two-line reserve holds the longest text ("bottom: C#4 is already inner note 2.
-     Double-check the bottom notes.", 67 characters), so it does not grow (CLAUDE.md "sheet guidance"
+     Layout). The slot's two-line reserve holds the longest text ("BOTTOM NOTES: C#4 is already inner
+     note 2. Double-check the bottom notes.", 73 characters, 423.5px of Nunito Sans at 12px against a 276px
+     content width at 320px, under two lines), so it does not grow (CLAUDE.md "sheet guidance"
      N-A6); the 5.3 e2e test "O1: at 320x568 the duplicate warning on the field line keeps the slot's
      two-line height" measures that. It does not use `#scale-refusal` (not a refusal).
    - Decode paths (`parseSeed`, `parseLegacySeed`) have no sheet and keep accepting the duplicate silently.
@@ -550,8 +562,9 @@ retitled, and the PR body lists old and new titles:
   The guess clause stays asserted by `{ding: "D3", top: "A3", bottom: "G9 A"}` (A9 > 127). Retitled
   "IH: compose refuses notes outside C-1 to G9 in each field, and an octaveless bottom placed above G9".
 - "IH: compose steps a later octaveless bottom past the ding's midi: under ding D3, bottoms C D read C3
-  D4" becomes "IH: compose lets a later octaveless bottom land on the ding's midi: under ding D3, bottoms
-  C D read C3 D3 and warn that D3 is already the ding" (`guessed` C3 D3 [C3 D4], line `[C3] [D3] (D3) A3` [`[C3] (D3) A3 [D4]`], `warn.bottom.code` DUPLICATE_NOTE; owner decision, 4.1).
+  D4" becomes the 5.1 test "O1: an inferred bottom on the ding's midi warns and does not block: D3 c d
+  gives C3 D3, ok, line [C3] [D3] (D3) A3, and warn.bottom is DUPLICATE_NOTE 'D3 is already the ding.
+  Double-check the bottom notes.'" (one title, not an IH: retitle; `guessed` C3 D3 [C3 D4], line `[C3] [D3] (D3) A3` [`[C3] (D3) A3 [D4]`], `warn.bottom.code` DUPLICATE_NOTE; owner decision, 4.1).
 - Unchanged and rechecked: "IH: compose keeps a typed bottom octave ..." (C3 Eb → Eb3; C Eb → C3 Eb3)
   and "IH: compose steps each later octaveless bottom ... C3 Db3 Eb3 Bb3 Db4 Ab4".
 
@@ -602,7 +615,7 @@ in `tests/e2e.test.js`. Prefixes: `O1:` (engine and sheet placement), `TB:` (tab
 - "O1: the owner's legacy example: (D3) A3 C4 D4 E4 F4 G4 A4 C5 | F G A gives F2 G2 A2, and | C E gives C3 E3"
 - `tests/core.test.js`: "O1: parseLegacySeed places the first octaveless bottom in the octave below the ding: (D3) A3 C4 E4 | G gives G2"
 - `tests/core.test.js`: "O1: inferBottoms returns {midis, failAt}: a typed Cb-1 fails at its index with midi -1, ding C-1 with b fails with -1, G9 then a fails with 129, and a clean list has failAt -1"
-- "O1: an inferred bottom on the ding's midi warns and does not block: D3 c d gives C3 D3, ok, line [C3] [D3] (D3) A3, and warn.bottom is DUPLICATE_NOTE 'D3 is already the ding. Double-check the bottom notes.'" (this is the rewritten "IH: compose lets a later ..." test in 4.4)
+- "O1: an inferred bottom on the ding's midi warns and does not block: D3 c d gives C3 D3, ok, line [C3] [D3] (D3) A3, and warn.bottom is DUPLICATE_NOTE 'D3 is already the ding. Double-check the bottom notes.'" (the rewritten "IH: compose steps a later ..." test of 4.4, under this one title)
 - "O1: an inferred bottom on a top or inner note's midi warns: D3 / A3 C4 / B3 c says C4 is already top note 2; D3 / A3 C4 | F5 / E5 f says F5 is already inner note 1"
 - "O1: a typed bottom octave never warns and clears the warning: D3 c D4 and D3 C3 D3 have warn.bottom null; D3 / A3 C4 / B3 C4 has warn.bottom null"
 - "O1: a duplicate of another bottom stays the refusal: D3 c C3 says C3 is already in the bottom notes"
@@ -626,8 +639,9 @@ in `tests/e2e.test.js`. Prefixes: `O1:` (engine and sheet placement), `TB:` (tab
 - "TB: #scale-field-msg shows on Scale only, #scale-layout-state on Layout only, and #scale-guidance keeps its SG order and two-line reserve on both"
 - "TB: ELEMENT_IDS carries scale-tabs, scale-tab-scale, scale-tab-layout, scale-panel-scale, scale-panel-layout, scale-next, scale-foot, scale-footslide and scale-lip, and none of the retired adjust ids"
 - "O1: GENERATE CARDS and SAVE CHANGES from fields D3 / A3 C4 E4 / g store G2, equal to the parse line"
-- "O1: bottoms c d under D3 show 'bottom: D3 is already the ding. Double-check the bottom notes.' in #scale-field-msg.warn, with #scale-msg hidden, and NEXT, GENERATE CARDS and SAVE CHANGES stay enabled"
-- "O1: bottoms B3 c under D3 / A3 C4 show 'bottom: C4 is already top note 2. Double-check the bottom notes.' in #scale-field-msg.warn, and an error on another field wins"
+- "O1: bottoms c d under D3 show 'BOTTOM NOTES: D3 is already the ding. Double-check the bottom notes.' in #scale-field-msg.warn, with #scale-msg hidden, and NEXT, GENERATE CARDS and SAVE CHANGES stay enabled"
+- "O1: bottoms B3 c under D3 / A3 C4 show 'BOTTOM NOTES: C4 is already top note 2. Double-check the bottom notes.' in #scale-field-msg.warn, and an error on another field wins"
+- "O1: with inner f guessed under D3 / A3 C4, bottoms c d still show the duplicate warning on the field line over the inner Octaves-guessed line"
 - "O1: typing D4 over the inferred d clears the duplicate warning, and switching to the line path clears it too"
 - "O1: the stored record and the #s= code for fields D3 / A3 C4 / c d equal those for C3 D3 typed: the warning leaves no trace"
 - "O1: the duplicate warning is not hidden by the Layout notice: with warn set, a tapped anchor on Layout shows the notice and switching back to Scale shows #scale-field-msg.warn with its text"
@@ -689,12 +703,13 @@ Lane T2 authors lane L's `uxl_*` mutant table from ux plan section 8 (none exist
 
 | file | change | `# kills:` | `# suite:` |
 |---|---|---|---|
-| `o1_ding_midi_skipped.patch` | `inferBottoms` steps a later note past the ding's midi (lane P's rule) | IH: compose lets a later octaveless bottom land on the ding's midi: under ding D3, bottoms C D read C3 D3 | `IH:.compose.lets.a.later` |
+| `o1_ding_midi_skipped.patch` | `inferBottoms` steps a later note past the ding's midi (lane P's rule) | O1: an inferred bottom on the ding's midi warns and does not block: D3 c d gives C3 D3, ok, line [C3] [D3] (D3) A3, and warn.bottom is DUPLICATE_NOTE 'D3 is already the ding. Double-check the bottom notes.' | `O1:.an.inferred.bottom.on.the.ding` |
 | `o1_dup_warning_dropped.patch` | `compose` never sets `warn.bottom` | O1: an inferred bottom on the ding's midi warns and does not block: D3 c d gives C3 D3, ok, line [C3] [D3] (D3) A3, and warn.bottom is DUPLICATE_NOTE 'D3 is already the ding. Double-check the bottom notes.' | `O1:.an.inferred.bottom.on.the.ding` |
 | `o1_dup_warning_blocks.patch` | the duplicate sets `errors.bottom` instead of `warn.bottom` (a block) | same test (`ok` true and `warn.bottom` asserted) | `O1:.an.inferred.bottom.on.the.ding` |
 | `o1_dup_typed_warns.patch` | a typed octave on the ding's midi also warns | O1: a typed bottom octave never warns and clears the warning: D3 c D4 and D3 C3 D3 have warn.bottom null; D3 / A3 C4 / B3 C4 has warn.bottom null | `O1:.a.typed.bottom.octave.never` |
-| `tb_dup_warning_unpainted.patch` | `renderFieldMessages` ignores `warn.bottom` | O1: bottoms c d under D3 show 'bottom: D3 is already the ding. Double-check the bottom notes.' in #scale-field-msg.warn, with #scale-msg hidden, and NEXT, GENERATE CARDS and SAVE CHANGES stay enabled | `O1:.bottoms.c.d.under.D3` |
+| `tb_dup_warning_unpainted.patch` | `renderFieldMessages` ignores `warn.bottom` | O1: bottoms c d under D3 show 'BOTTOM NOTES: D3 is already the ding. Double-check the bottom notes.' in #scale-field-msg.warn, with #scale-msg hidden, and NEXT, GENERATE CARDS and SAVE CHANGES stay enabled | `O1:.bottoms.c.d.under.D3` |
 | `tb_dup_warning_disables_next.patch` | the warning disables the primary | same test | `O1:.bottoms.c.d.under.D3` |
+| `tb_dup_warning_under_info.patch` | `paintFields` picks the first `info` before the `warn` | O1: with inner f guessed under D3 / A3 C4, bottoms c d still show the duplicate warning on the field line over the inner Octaves-guessed line | `O1:.with.inner.f.guessed` |
 | `o1_no_range_floor.patch` | placement drops the midi >= 0 floor | O1: a bottom with no octave at or above zero refuses: ding C-1 b says B has no octave that fits: type one | `O1:.a.bottom.with.no.octave` |
 | `tb_landscape_unlifted.patch` | the landscape max-width:none rule left on `.adjusting` | TB: at 844x390 the Layout tab's .sheetsurf is wider than 600px, the tab strip sits right of the plate and the pan is at least 304px | `TB:.at.844x390` |
 | `tb_landscape_tabs_on_top.patch` | the wide block keeps the tab strip above the plate | TB: at 844x390 the Layout tab's .sheetsurf is wider than 600px, the tab strip sits right of the plate and the pan is at least 304px | `TB:.at.844x390` |
@@ -859,8 +874,8 @@ Lanes are serial E -> T1 -> T2 (T1 runs on lane E's inlined engine; T1 and T2 sh
 10. **Settings > Accessibility > Reduce Motion on.** The lip and tab switches are instant.
 11. Add a scale with ding F3 and bottoms `C Db Eb Bb Db Ab` (no octaves). They read `C3 Db3 Eb3 Bb3 Db4 Ab4`.
 12. Open the Pygmy deck's Edit. Its bottom notes `C3 Db3 Eb3 Bb3 Db4 Ab5` are unchanged.
-13. Add a scale with ding D3, top `A3 C4`, bottom `c d`. On the field line: "bottom: D3 is already the
-    ding. Double-check the bottom notes." NEXT stays on. Change `d` to `D4` and the warning goes.
+13. Add a scale with ding D3, top `A3 C4`, bottom `c d`. On the field line: "BOTTOM NOTES: D3 is already
+    the ding. Double-check the bottom notes." NEXT stays on. Change `d` to `D4` and the warning goes.
 
 ## 7. Open questions (real forks only, recommendation first)
 
@@ -869,6 +884,8 @@ became Q4, also closed below), Q2 (tabs beside the plate in the wide landscape b
 amended O1).
 
 **Q4 closed (owner, 2026-10-19): (a), then narrowed the same day to "One engine, new rule":** one inference function for the BOTTOM NOTES field and the legacy `|` list; the scale line is definitive and unchanged. The legacy first-bottom rule changes and the 73 frozen ids are re-pinned (sections 4.2, 4.3, lane E).
+
+Open item for the owner, not a fork (3.4, review 6): the base hides `#scale-msg` whenever `#scale-field-msg` has text, so with an inferred bottom the pan `say()` warnings never show on Layout (nor on the base's Adjust). Pre-existing; accepted as out of scope for this plan by the integrator (AFK). A later lane can route pan warnings around that line.
 
 No open questions remain. TB-A1 was replaced by the owner's decision of 2026-10-19 (4.1: no ding skip, a non-blocking duplicate warning). AFK decision TB-A2 (3.6) is still for the owner to confirm.
 
