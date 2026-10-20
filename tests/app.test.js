@@ -5115,7 +5115,9 @@ describe("tab stops follow rendering", () => {
   test("SB-5 Tab in an empty ADD sheet never lands on the disabled GENERATE", () => {
     const app = boot();
     app.run("openScaleSheet()");
+    app.click(app.els["scale-tab-layout"]);
     assert.strictEqual(app.els["scale-generate"].disabled, true);
+    assert.ok(app.els["scale-generate"].getClientRects().length > 0, "GENERATE is rendered on the Layout tab");
     const seen = new Set();
     for (let i = 0; i < 30; i += 1) {
       app.els["scale-sheet"].dispatchEvent(
@@ -5123,7 +5125,7 @@ describe("tab stops follow rendering", () => {
       seen.add(app.activeId());
     }
     assert.ok(seen.has("scale-back"), "Tab never reached the BACK control");
-    assert.ok(seen.has("scale-box"), "Tab never reached the scale box");
+    assert.ok(seen.has("scale-tab-layout"), `Tab never reached the Layout tab: ${[...seen]}`);
     assert.ok(!seen.has("scale-generate"), "Tab landed on the disabled GENERATE");
   });
 
@@ -9063,6 +9065,7 @@ test("SD: a seeded deck's sheet never reports a layout change on open", () => {
     app.select(app.get("DECKS")[i].id);
     app.clickChip(name);
     assert.strictEqual(app.sheetOpen(), true, `${name}: the sheet did not open`);
+    app.click(app.els["scale-tab-layout"]);
     assert.strictEqual(dr1Notice(app), "", `${name}: a seeded sheet reported a layout change on open`);
   });
 });

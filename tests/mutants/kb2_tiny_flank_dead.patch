@@ -1,4 +1,4 @@
-# kills: KB2: with the keyboard up and a note field focused in landscape, a touch swipe anywhere on the sheet scrolls it until GENERATE is fully visible, and back to DING
+# kills: KB2: with the keyboard up and a note field focused in landscape, a touch swipe anywhere on the sheet scrolls it until NEXT is fully visible, and back to DING
 # suite: node --test --test-name-pattern ^KB2..with.the.keyboard.up.and.a.note.field.focused.in.landscape tests/e2e.test.js
 # The tiny scroller is back to the 520px column, so a swipe on the flanks beside it scrolls nothing.
 diff --git a/index.html b/index.html

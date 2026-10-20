@@ -7373,7 +7373,7 @@ function run() {
     const body = document.querySelector("#scale-sheet .sheetbody");
     o.body = q(body); o.bodyTop = body.scrollTop; o.vvh = window.visualViewport.height;
     o.surfTop = document.querySelector("#scale-sheet .sheetsurf").scrollTop;
-    o.gen = q(document.getElementById("scale-generate"));
+    o.gen = q(document.getElementById("scale-next"));
     return o;`);
   const kb2Watch = () => b.eval(`
     window.__kb2Scrolls = 0;
@@ -7386,7 +7386,7 @@ function run() {
     return true;`);
   const kb2Whole = (r, s) => r.top >= s.body.top - 1 && r.bottom <= s.body.bottom + 1 && r.top >= -1 && r.bottom <= s.vvh + 1;
 
-  test("KB2: with the keyboard up and a note field focused in landscape, a touch swipe anywhere on the sheet scrolls it until GENERATE is fully visible, and back to DING", async () => {
+  test("KB2: with the keyboard up and a note field focused in landscape, a touch swipe anywhere on the sheet scrolls it until NEXT is fully visible, and back to DING", async () => {
     try {
       for (const [w, h, vv] of [[852, 393, 193]]) {
         await kbOpenAdd(w, h);
@@ -7401,7 +7401,7 @@ function run() {
             await kb2Swipe(x, Math.round(vv * 0.8), -90);
             s = await kb2Scene();
           }
-          assert.ok(s.gen.top >= -1 && s.gen.bottom <= s.vvh + 1, `${w}x${h} swipe at x=${x}: GENERATE not reachable ${JSON.stringify(s.gen)} in ${s.vvh}`);
+          assert.ok(s.gen.top >= -1 && s.gen.bottom <= s.vvh + 1, `${w}x${h} swipe at x=${x}: NEXT not reachable ${JSON.stringify(s.gen)} in ${s.vvh}`);
           for (let i = 0; i < 8 && !(s.fields["scale-ding"].top >= -1); i++) {
             await kb2Swipe(x, Math.round(vv * 0.2), 90);
             s = await kb2Scene();
