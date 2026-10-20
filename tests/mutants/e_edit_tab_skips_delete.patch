@@ -1,17 +1,22 @@
 # kills: Tab is trapped inside the Edit sheet and reaches every Edit control
 # suite: node --test --test-name-pattern ^Tab.is.trapped.inside.the.Edit.sheet.and.reaches.every.Edit.control$ tests/e2e.test.js
-# Re-anchored 2026-10-19 (dual input, lane P) against the Adjust layout source. The defect is unchanged.
-# Re-anchored 2026-10-14 (remove-degrees, lane app) against the new source. The mutation itself is unchanged.
+# DELETE THIS DECK is missing from both tabs' Tab lists.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12356,8 +12356,7 @@ sheet.addEventListener("keydown", e => {
-        drawerBtn,
+@@ -12318,13 +12318,12 @@
+     ? [backBtn, onTab, previewBox.querySelector('.panhit[tabindex="0"]'),
+        anchorOne, anchorBetween, mirrorTop, mirrorBot, fineBtn,
+        notePrev, noteNext, seatPrev, seatNext, resetBtn,
+-       genBtn, editingId ? delBtn : null]
++       genBtn]
+     : [backBtn, onTab,
+        editingId ? nameBox : null,
         fieldEls.ding, fieldEls.top, fieldEls.inner, fieldEls.bottom,
         scaleBox,
--       ...swatches.children, genBtn,
+-       ...swatches.children, editingId ? genBtn : nextBtn,
 -       editingId ? delBtn : null])
-+       ...swatches.children, genBtn])
++       ...swatches.children, editingId ? genBtn : nextBtn])
      .filter(isStop);
    if (isHit(document.activeElement) && pickRef && lastSolved) setRover(pickRef);
    cycleTabStops(stops, e);

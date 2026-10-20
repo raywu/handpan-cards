@@ -1,15 +1,15 @@
-# kills: DR2a (18): a pan whose only ring of two is the bottom opens the layer on its title with no note focused or armed
-# suite: node --test --test-name-pattern ^DR2a..18...a.pan.whose.only.ring.of.two.is.the.bottom.* tests/app.test.js
-# Opening Adjust layout no longer moves focus to the layer title (owner D11 revised).
-Opening the drawer no longer moves focus to the first pickable note.
+# kills: TB: NEXT shows only in Add on the Scale tab, is enabled in every scale state, selects Layout and focuses the Layout tab
+# suite: node --test --test-name-pattern ^TB:.NEXT.shows tests/app.test.js
+# NEXT no longer moves focus to the Layout tab.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10613,7 +10613,6 @@ function enterAdjust() {
-   sheet.setAttribute("aria-labelledby", "scale-adjust-title");
-   openDrawer();
-   bandPort.scrollTop = 0;
--  adjustTitle.focus({ preventScroll: true });
- }
- function hideAdjust() {
-   sheet.classList.remove("adjusting");
+@@ -11797,7 +11797,7 @@
+ anchorBetween.onclick = pickAnchor("between");
+ tabScale.addEventListener("click", () => setTab("scale"));
+ tabLayout.addEventListener("click", () => setTab("layout"));
+-nextBtn.addEventListener("click", () => { setTab("layout"); tabLayout.focus(); });
++nextBtn.addEventListener("click", () => { setTab("layout"); });
+ tabStrip.addEventListener("keydown", (e) => {
+   if (e.altKey || e.ctrlKey || e.metaKey) return;
+   const tabs = [tabScale, tabLayout];

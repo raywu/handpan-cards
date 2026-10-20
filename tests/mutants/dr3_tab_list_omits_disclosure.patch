@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12349,7 +12349,7 @@ sheet.addEventListener("keydown", e => {
-   if (e.key !== "Tab") return;
-   const stops = (sheet.classList.contains("adjusting")
-     ? [adjustBack, previewBox.querySelector('.panhit[tabindex="0"]'),
+@@ -12316,7 +12316,7 @@ sheet.addEventListener("keydown", e => {
+   const onTab = sheetTab === "layout" ? tabLayout : tabScale;
+   const stops = (sheetTab === "layout"
+     ? [backBtn, onTab, previewBox.querySelector('.panhit[tabindex="0"]'),
 -       anchorOne, anchorBetween, mirrorTop, mirrorBot, fineBtn,
 +       anchorOne, anchorBetween, mirrorTop, mirrorBot,
-        notePrev, noteNext, seatPrev, seatNext, resetBtn]
-     : [backBtn,
-        editingId ? nameBox : null,
+        notePrev, noteNext, seatPrev, seatNext, resetBtn,
+        genBtn, editingId ? delBtn : null]
+     : [backBtn, onTab,

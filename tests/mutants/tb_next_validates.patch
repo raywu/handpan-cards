@@ -1,0 +1,14 @@
+# kills: TB: NEXT shows only in Add on the Scale tab, is enabled in every scale state, selects Layout and focuses the Layout tab
+# suite: node --test --test-name-pattern ^TB:.NEXT.shows tests/app.test.js
+# NEXT is disabled while the scale does not parse, so it cannot be used to look at Layout.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10443,6 +10443,7 @@
+   }
+   layoutHint.textContent = HINT_EMPTY;
+   layoutHint.hidden = boxOk;
++  nextBtn.disabled = !boxOk;
+   drawerStatus.hidden = !drawerOpen || !boxOk;
+   drawerHint.textContent = DRAWER_HINT;
+   drawerHint.hidden = !(drawerOpen && boxOk);

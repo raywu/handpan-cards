@@ -1,20 +1,18 @@
 # kills: GENERATE CARDS is reachable without scrolling at every phone viewport
-# suite: node --test --test-name-pattern GENERATE.CARDS.is.reachable.without.scrolling.at.every tests/e2e.test.js
-# .sheetbody swallows the primary as well, so the whole sheet scrolls as one and
-# GENERATE CARDS - last in the flow - goes below the fold: the reported bug
-# verbatim (queue row 211).
+# suite: node --test --test-name-pattern ^GENERATE.CARDS.is.reachable.without.scrolling tests/e2e.test.js
+# The primary and the guidance slot go back inside .sheetbody, in the scroll, so they can scroll out of reach.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1331,7 +1331,6 @@ footer.seq{row-gap:var(--sp-1)}
-     <div class="ctlrow">
-       <div id="scale-swatches" role="group" aria-label="Card palette"></div>
+@@ -1507,7 +1507,6 @@
+       </div>
+     </div>
      </div>
 -   </div>
      <!-- The page's messages, pinned with the primary: everything say() writes
           (#scale-msg) and the layout notice (#scale-layout-state, nearest the
           button it names); a pan warning yields to the notice while the notice
-@@ -1359,6 +1358,7 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1537,6 +1536,7 @@
             below the button is also where the owner is already looking. -->
        <div id="scale-del-note" aria-live="polite"></div>
      </div>

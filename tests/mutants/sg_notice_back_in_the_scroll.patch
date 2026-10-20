@@ -1,24 +1,22 @@
 # kills: SG: N-A2 the served markup order is .sheetbody, #scale-guidance (#scale-field-msg, #scale-msg, #scale-layout-state), #scale-generate, #scale-delete-row
-# Plan wording: SG: N-A2 the served markup order is .sheetbody, #scale-guidance (#scale-msg, #scale-layout-state), #scale-generate, #scale-delete-row
 # suite: node --test --test-name-pattern ^SG:.N-A2.the.served.markup.order tests/app.test.js
-# Re-anchored 2026-10-19 (lane P) against the layer markup. The mutation itself is unchanged.
-# The layout notice goes back into #scale-layout-zone, in the scroll, so a stuck band or a keyboard can hide it.
+# The layout notice goes back into the scroll, away from the primary it names.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1468,6 +1468,7 @@ html.about-open{overflow:hidden}
-          pan() renderer the cards use, with no chord chosen, so what is
-          previewed cannot drift from what GENERATE CARDS produces. -->
+@@ -1467,6 +1467,7 @@
+       <div id="scale-drawer-status" aria-live="polite" aria-atomic="true" hidden></div>
+     </div>
      <div id="scale-layout-zone">
 +      <p class="sheethint" id="scale-layout-state" hidden></p>
-       <div id="scale-drawer" role="group" aria-label="Layout" hidden>
+       <div id="scale-drawer" role="group" aria-label="Layout">
          <p class="sheethint" id="scale-drawer-hint" hidden></p>
          <div class="editrow">
-@@ -1547,7 +1548,6 @@ html.about-open{overflow:hidden}
+@@ -1520,7 +1521,6 @@
      <div id="scale-guidance">
        <p id="scale-field-msg"></p>
        <div id="scale-msg" aria-live="polite"></div>
 -      <p class="sheethint" id="scale-layout-state" aria-live="polite" aria-atomic="true" hidden></p>
      </div>
-     <button id="scale-generate" type="button" disabled>GENERATE CARDS</button>
-     <div class="editrow" id="scale-delete-row" hidden>
+     <button id="scale-next" type="button">NEXT</button>
+     <button id="scale-generate" type="button" hidden disabled>GENERATE CARDS</button>

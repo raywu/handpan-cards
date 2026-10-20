@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8984,7 +8984,7 @@ function paintLayout() {
-   drawerHint.hidden = !drawerOpen;
+@@ -10448,7 +10448,7 @@ function paintLayout() {
+   drawerHint.hidden = !(drawerOpen && boxOk);
    notePrev.disabled = noteNext.disabled = !boxOk || !ringPickable();
    seatPrev.disabled = seatNext.disabled = !boxOk || !pickRef;
 -  resetBtn.disabled = !boxOk || !(layoutSeats || mirror || bottomMirror() || anchor !== "one");

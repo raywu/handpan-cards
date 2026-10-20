@@ -1,0 +1,15 @@
+# kills: O1: bottoms c d under D3 show 'BOTTOM NOTES: D3 is already the ding. Double-check the bottom notes.' in #scale-field-msg.warn, with #scale-msg hidden, and NEXT, GENERATE CARDS and SAVE CHANGES stay enabled
+# suite: node --test --test-name-pattern ^O1:.bottoms.c.d.under.D3 tests/app.test.js
+# renderFieldMessages ignores warn.bottom, so the duplicate warning is never painted.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12146,7 +12146,7 @@
+   const out = {};
+   for (const k of FIELD_KEYS) {
+     if (!values[k].trim()) continue;
+-    const warnText = k === "bottom" && r.warn && r.warn.bottom ? r.warn.bottom.text : "";
++    const warnText = "";
+     const text = r.errors[k] || warnText || r.info[k];
+     if (!text) continue;
+     const kind = r.errors[k] ? "error" : warnText ? "warn" : "info";

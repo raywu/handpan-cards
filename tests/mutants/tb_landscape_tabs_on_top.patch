@@ -1,0 +1,16 @@
+# kills: TB: at 844x390 the Layout tab's .sheetsurf is wider than 600px, the tab strip sits right of the plate and the pan is at least 304px
+# suite: node --test --test-name-pattern ^TB:.at.844x390 tests/e2e.test.js
+# The wide block keeps the tab strip in column one, over the plate, instead of beside it.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1060,7 +1060,8 @@
+   #scale-sheet[data-tab="layout"] .sheetbody{display:grid; grid-template-columns:auto 1fr; column-gap:var(--sp-3); row-gap:0; align-content:start}
+   #scale-sheet[data-tab="layout"] #scale-panel-layout{display:contents}
+   #scale-sheet[data-tab="layout"] #scale-plate-band{grid-column:1; grid-row:1 / span 30; align-self:start; position:static}
+-  #scale-sheet[data-tab="layout"] #scale-tabs, #scale-sheet[data-tab="layout"] #scale-layout-hint,
++  #scale-sheet[data-tab="layout"] #scale-tabs{grid-column:1 / -1; grid-row:1}
++  #scale-sheet[data-tab="layout"] #scale-layout-hint,
+   #scale-sheet[data-tab="layout"] #scale-layout-zone{grid-column:2}
+   #scale-sheet[data-tab="layout"] #scale-layout-hint, #scale-sheet[data-tab="layout"] #scale-layout-zone{margin-top:var(--sp-3)}
+   #scale-plate-band #scale-drawer-status{width:0; min-width:100%}

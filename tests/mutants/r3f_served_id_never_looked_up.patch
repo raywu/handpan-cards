@@ -10,6 +10,6 @@ diff --git a/tools/sandbox.js b/tools/sandbox.js
    // BACK control and a visible title where the drawer had neither.
 -  "scale-back", "scale-title",
 +  "scale-back", "scale-title", "settings-title",
-   // Lane P: the pan column and the Adjust layout layer head.
-   "scale-adjust-head", "scale-adjust-back", "scale-adjust-title", "scale-pancol",
+   // The sheet's tabs, their panels and the NEXT button (plan 2026-10-19-sheet-tabs).
+   "scale-tabs", "scale-tab-scale", "scale-tab-layout", "scale-panel-scale", "scale-panel-layout", "scale-next",
    // Lane M1: the settings panel that now hosts the mode toggle and print

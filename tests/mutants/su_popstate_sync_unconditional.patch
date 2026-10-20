@@ -4,13 +4,13 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11537,7 +11537,8 @@ window.addEventListener("popstate", () => {
-     if (closeAfterAdjustPop) { closeAfterAdjustPop = false; closeScaleSheet(); }
-     return;
-   }
+@@ -11496,7 +11496,8 @@ let pendingPop = false;
+ // The browser's way out: the back gesture, or a swipe. The entry is already
+ // gone, so this only takes the page down.
+ window.addEventListener("popstate", () => {
 -  if (pendingPop) { pendingPop = false; syncRoute(); return; }
 +  syncRoute();
 +  if (pendingPop) { pendingPop = false; return; }
-   const atSheet = location.hash === sheetRoute();
-   if (drawerOpen) {
-     adjustRouted = false;
+   if (aboutOpen) { hideAbout(); return; }
+   if (location.hash === ABOUT_ROUTE) { syncRoute(); return; }
+   if (!sheetOpen) return;

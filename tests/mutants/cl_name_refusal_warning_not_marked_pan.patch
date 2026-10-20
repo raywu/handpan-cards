@@ -1,4 +1,4 @@
-# kills: LF F-1 (a): a non-ASCII name with a valid scale keeps ADJUST LAYOUT enabled, GENERATE disabled, the refusal naming the name
+# kills: LF F-1 (a): a non-ASCII name with a valid scale keeps the Layout tab enabled, GENERATE disabled, the refusal naming the name
 # suite: node --test --test-name-pattern ^LF.F-1.\(a\) tests/app.test.js
 # The name-refusal branch of syncParseState shows its crowded warning without the .pan class.
 diff --git a/index.html b/index.html

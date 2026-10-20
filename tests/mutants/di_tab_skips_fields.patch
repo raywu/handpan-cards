@@ -1,15 +1,15 @@
-# kills: DI: the sheet's Tab order is BACK, the deck name on Edit, ADJUST LAYOUT once a scale is typed, DING, TOP, INNER, BOTTOM, then #scale-box and the existing stops
+# kills: DI: the sheet's Tab order is BACK, the deck name on Edit, the Scale tab, DING, TOP, INNER, BOTTOM, then #scale-box and the existing stops
 # suite: node --test --test-name-pattern ^DI:.the.sheet.s.Tab.order tests/app.test.js
 # Re-anchored 2026-10-19 (dual input, lane P) against the Adjust layout source. The defect is unchanged.
 # Mutant di_tab_skips_fields.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12354,7 +12354,6 @@ sheet.addEventListener("keydown", e => {
-     : [backBtn,
+@@ -12321,7 +12321,6 @@ sheet.addEventListener("keydown", e => {
+        genBtn, editingId ? delBtn : null]
+     : [backBtn, onTab,
         editingId ? nameBox : null,
-        drawerBtn,
 -       fieldEls.ding, fieldEls.top, fieldEls.inner, fieldEls.bottom,
         scaleBox,
-        ...swatches.children, genBtn,
+        ...swatches.children, editingId ? genBtn : nextBtn,
         editingId ? delBtn : null])

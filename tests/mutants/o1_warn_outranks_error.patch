@@ -1,0 +1,17 @@
+# kills: O1: bottoms B3 c under D3 / A3 C4 show 'BOTTOM NOTES: C4 is already top note 2. Double-check the bottom notes.' in #scale-field-msg.warn, and an error on another field wins
+# suite: node --test --test-name-pattern ^O1:.bottoms.B3.c.under tests/app.test.js
+# The field line shows a warning ahead of an error on another field.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12169,8 +12169,8 @@ function paintFields(values, announceNew, composed) {
+     fieldEls[k].classList.toggle("bad", bad);
+     fieldEls[k].setAttribute("aria-invalid", bad ? "true" : "false");
+   }
+-  const first = FIELD_KEYS.find((k) => next[k] && next[k].kind === "error") ||
+-    FIELD_KEYS.find((k) => next[k] && next[k].kind === "warn") || FIELD_KEYS.find((k) => next[k]);
++  const first = FIELD_KEYS.find((k) => next[k] && next[k].kind === "warn") ||
++    FIELD_KEYS.find((k) => next[k] && next[k].kind === "error") || FIELD_KEYS.find((k) => next[k]);
+   const text = first ? FIELD_SHORT[first] + ": " + next[first].text : "";
+   if (fieldMsg.textContent !== text) fieldMsg.textContent = text;
+   fieldMsg.classList.toggle("info", !!first && next[first].kind === "info");
