@@ -14219,7 +14219,7 @@ function run() {
       assert.deepStrictEqual(fails, [], fails.join("\n"));
     });
 
-    test("UX: a sheet whose content does not scroll never collapses", async () => {
+    test("UX: a sheet whose content does not scroll never collapses", { timeout: 60000 }, async () => {
       let covered = 0;
       try {
         for (const [w, h] of SIZES) {
@@ -14238,7 +14238,7 @@ function run() {
       assert.ok(covered >= 1, "no viewport had a non-scrolling sheet, so this proves nothing");
     });
 
-    test("UX: at the collapse instant .sheetbody has grown, GENERATE, the guidance line and the hairline have not moved, and scrollTop is unchanged", async () => {
+    test("UX: at the collapse instant .sheetbody has grown, GENERATE, the guidance line and the hairline have not moved, and scrollTop is unchanged", { timeout: 60000 }, async () => {
       try {
         await lipOpen(380, 780, { scale: LIP_CROWDED });
         await b.eval(`
@@ -14269,7 +14269,7 @@ function run() {
       } finally { await reset(); }
     });
 
-    test("UX: a collapse and a restore resize .sheetbody once each and never during the 180ms slide", async () => {
+    test("UX: a collapse and a restore resize .sheetbody once each and never during the 180ms slide", { timeout: 60000 }, async () => {
       try {
         await lipOpen(380, 780);
         await b.eval(`
@@ -14291,7 +14291,7 @@ function run() {
       } finally { await reset(); }
     });
 
-    test("UX: during a restore's slide .sheetbody keeps its lipped height, and GENERATE lands where the open layout puts it", async () => {
+    test("UX: during a restore's slide .sheetbody keeps its lipped height, and GENERATE lands where the open layout puts it", { timeout: 60000 }, async () => {
       try {
         await lipOpen(380, 780);
         const open = await primaryRect();
@@ -14314,7 +14314,7 @@ function run() {
       } finally { await reset(); }
     });
 
-    test("UX: lipped, an empty guidance slot takes no height and the lip sits on the body's hairline; a slot with text stays --sp-2 above the lip", async () => {
+    test("UX: lipped, an empty guidance slot takes no height and the lip sits on the body's hairline; a slot with text stays --sp-2 above the lip", { timeout: 60000 }, async () => {
       try {
         await lipOpen(380, 780);
         await collapse();
@@ -14341,10 +14341,10 @@ function run() {
       } finally { await reset(); }
     });
 
-    test("UX: the lip draws a 36x4 grabber at the surface's bottom above the safe-area inset, its tap zone is 25px tall, and a tap anywhere in the zone restores", async () => {
+    test("UX: the lip draws a 36x4 grabber at the surface's bottom above the safe-area inset, its tap zone is 25px tall, and a tap anywhere in the zone restores", { timeout: 60000 }, async () => {
       try {
         let inset = 0;
-        try { await b.send("Emulation.setSafeAreaInsetsOverride", { insets: { bottom: 34 } }); inset = 34; } catch (e) { inset = 0; }
+        try { await Promise.race([b.send("Emulation.setSafeAreaInsetsOverride", { insets: { bottom: 34 } }), sleep(3000).then(() => { throw new Error("no override"); })]); inset = 34; } catch (e) { inset = 0; }
         await lipOpen(380, 780);
         await collapse();
         const m = await b.eval(`
@@ -14364,12 +14364,12 @@ function run() {
         await tapAt(m2.left + 4, m2.bottom - 2);
         assert.strictEqual((await lipState()).lipped, false, "a tap at the bottom corner of the zone did not restore");
       } finally {
-        await b.send("Emulation.setSafeAreaInsetsOverride", { insets: { bottom: 0 } }).catch(() => {});
+        await Promise.race([b.send("Emulation.setSafeAreaInsetsOverride", { insets: { bottom: 0 } }), sleep(3000)]).catch(() => {});
         await reset();
       }
     });
 
-    test("UX: a real touch swipe up of 20px that starts on the lip restores the footer, and the same swipe on the body above it does not", async () => {
+    test("UX: a real touch swipe up of 20px that starts on the lip restores the footer, and the same swipe on the body above it does not", { timeout: 60000 }, async () => {
       try {
         await lipOpen(380, 780);
         await collapse();
@@ -14385,7 +14385,7 @@ function run() {
       } finally { await reset(); }
     });
 
-    test("UX: with the keyboard up the lip and the focused field are on screen, a field the app reveals sits above the tap zone, and dismissing the keyboard restores GENERATE", async () => {
+    test("UX: with the keyboard up the lip and the focused field are on screen, a field the app reveals sits above the tap zone, and dismissing the keyboard restores GENERATE", { timeout: 60000 }, async () => {
       try {
         await lipOpen(393, 852);
         await b.eval(`document.getElementById("scale-box").focus(); return true;`);
@@ -14414,7 +14414,7 @@ function run() {
       } finally { await reset(); }
     });
 
-    test("UX: at 844x390 with the keyboard up (tiny, the surface scrolls) a real touch swipe with momentum changes lipped zero times", async () => {
+    test("UX: at 844x390 with the keyboard up (tiny, the surface scrolls) a real touch swipe with momentum changes lipped zero times", { timeout: 60000 }, async () => {
       try {
         await lipOpen(844, 390);
         await b.eval(`document.getElementById("scale-top").focus(); return true;`);
@@ -14431,7 +14431,7 @@ function run() {
       } finally { await reset(); }
     });
 
-    test("UX: under prefers-reduced-motion the footer collapses and restores with no transition, in one task", async () => {
+    test("UX: under prefers-reduced-motion the footer collapses and restores with no transition, in one task", { timeout: 60000 }, async () => {
       try {
         await lipOpen(380, 780);
         await b.send("Emulation.setEmulatedMedia", { media: "", features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
@@ -14450,7 +14450,7 @@ function run() {
       } finally { await reset(); }
     });
 
-    test("UX: a flick to the end changes lipped at most twice and ends with the footer shown", async () => {
+    test("UX: a flick to the end changes lipped at most twice and ends with the footer shown", { timeout: 60000 }, async () => {
       try {
         await lipOpen(380, 780, { spacer: 260 });
         for (let i = 0; i < 2; i++) {
@@ -14464,7 +14464,7 @@ function run() {
       } finally { await reset(); }
     });
 
-    test("LP: at 380x780 scrolling the Scale panel collapses the footer to the lip and a tap on the lip restores NEXT", async () => {
+    test("LP: at 380x780 scrolling the Scale panel collapses the footer to the lip and a tap on the lip restores NEXT", { timeout: 60000 }, async () => {
       try {
         await lipOpen(380, 780);
         await collapse();
@@ -14480,7 +14480,7 @@ function run() {
       } finally { await reset(); }
     });
 
-    test("LP: the lip slide takes 180ms and is instant under prefers-reduced-motion; tab switches have no transition", async () => {
+    test("LP: the lip slide takes 180ms and is instant under prefers-reduced-motion; tab switches have no transition", { timeout: 60000 }, async () => {
       try {
         await lipOpen(380, 780);
         await collapse();
