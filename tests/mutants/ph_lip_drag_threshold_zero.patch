@@ -1,5 +1,5 @@
 # kills: PH: P3 a 24px finger-up drag collapses a sheet whose range is far under the footer's height; 23px does not
-# suite: node --test --test-name-pattern PH:.P3 tests/app.test.js
+# suite: node --test --test-name-pattern ^PH..P3.a.24px.finger.up.drag.collapses.a.sheet.whose.range.is.far.under.the.footer.s.height..23px.does.not$ tests/app.test.js
 # A finger drag of any length collapses, so a 23px drag collapses the footer.
 diff --git a/index.html b/index.html
 --- a/index.html

@@ -1,5 +1,5 @@
 # kills: PH: P3 a drag that scrolls the body to its end neither restores nor collapses again, momentum included
-# suite: node --test --test-name-pattern PH:.P3 tests/app.test.js
+# suite: node --test --test-name-pattern ^PH..P3.a.drag.that.scrolls.the.body.to.its.end.neither.restores.nor.collapses.again..momentum.included$ tests/app.test.js
 # The scroll path is no longer suppressed during a touch drag or its momentum, so reaching the scroll end restores the footer.
 diff --git a/index.html b/index.html
 --- a/index.html

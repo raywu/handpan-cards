@@ -1,5 +1,5 @@
 # kills: PH: P3 starts on the lip, the plate, a field or with a second finger do not collapse; the keyboard does not either
-# suite: node --test --test-name-pattern PH:.P3 tests/app.test.js
+# suite: node --test --test-name-pattern ^PH..P3.starts.on.the.lip..the.plate..a.field.or.with.a.second.finger.do.not.collapse..the.keyboard.does.not.either$ tests/app.test.js
 # A drag that starts on the plate is no longer excluded, so a note drag collapses the footer.
 diff --git a/index.html b/index.html
 --- a/index.html
