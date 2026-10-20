@@ -11188,6 +11188,7 @@ describe("TB: the sheet's tabs", () => {
         assert.strictEqual(hint.hidden, false);
         assert.strictEqual(hint.textContent, "Type a scale to adjust its layout.");
         assert.strictEqual(tbEl(app, "scale-drawer").hidden, false, "the drawer is never hidden");
+        if (!text && !edit) assert.strictEqual(tbEl(app, "scale-preview").hidden, false, "an empty box paints the placeholder example");
         for (const id of ids) assert.strictEqual(tbEl(app, id).disabled, true, `${id} (${text}, edit ${edit})`);
         assert.strictEqual(tbEl(app, "scale-generate").disabled, true);
         assert.strictEqual(app.hits().length, 0, "no note buttons on the empty plate");

@@ -1,5 +1,5 @@
-# suite: node --test --test-name-pattern ^the.sheet.widens.with.the.viewport.on.desktop,.and.the.small.pan.stays.at.most.160px$ tests/e2e.test.js
-# kills: the sheet widens with the viewport on desktop, and the small pan stays at most 160px
+# suite: node --test --test-name-pattern ^the.sheet.widens.with.the.viewport.on.desktop$ tests/e2e.test.js
+# kills: the sheet widens with the viewport on desktop
 # The sheet goes back to one width at every desktop size, so a 1440px window
 # shows the same 520px column as a 640px one.
 diff --git a/index.html b/index.html

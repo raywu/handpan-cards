@@ -7976,7 +7976,7 @@ function run() {
       const top = async () => {
         await b.settle();
         return b.eval(`
-          return document.getElementById("scale-layout-zone").getBoundingClientRect().top;
+          return document.querySelector("#scale-panel-scale .ctlrow").getBoundingClientRect().top;
         `);
       };
       // No EMPTY-vs-typed comparison here: the first keystroke legitimately
@@ -8030,7 +8030,6 @@ function run() {
                  box: document.getElementById("scale-box").getBoundingClientRect().height,
                  hint: document.getElementById("scale-layout-hint").getBoundingClientRect().height,
                  fields: document.getElementById("scale-fields").getBoundingClientRect().height,
-                 stage: document.querySelector(".scalestage").getBoundingClientRect().height,
                  row: document.getElementById("scale-box").closest(".fieldrow").getBoundingClientRect().height };
       `);
       await b.settle();
@@ -8047,13 +8046,8 @@ function run() {
       // so its own rows are the second element that legitimately changes.
       // Lane DR1: the toggle row's hint changes sentence on the first valid
       // scale (HINT_EMPTY to HINT_GUESS), so its own wrap is a third element.
-      // The small pan and its caption now sit beside the four fields, so the
-      // stage is the taller of the two columns and is one term.
-      for (const [name, st] of [["empty", empty], ["typed", typed]]) {
-        assert.ok(st.stage - st.fields < 1,
-          `the ${name} stage is ${st.stage.toFixed(1)}px tall but its four fields only ${st.fields.toFixed(1)}px - the small pan, not the fields, is setting its height`);
-      }
-      const parseDelta = (empty.row - typed.row) + (empty.stage - typed.stage);
+      // The four fields grow by their derived-notes line on the first valid scale.
+      const parseDelta = (empty.row - typed.row) + (empty.fields - typed.fields);
       assert.ok(Math.abs(bodyDelta - parseDelta) < 1,
         `the scrolling body moved ${bodyDelta.toFixed(1)}px between empty and ` +
         `typed but the parse line and the field only account for ${parseDelta.toFixed(1)}px ` +
@@ -8102,7 +8096,7 @@ function run() {
     }
   });
 
-  test("the sheet widens with the viewport on desktop, and the small pan stays at most 160px", async () => {
+  test("the sheet widens with the viewport on desktop", async () => {
     // Request 4. Nothing inside the drawer scales with its width on its own -
     // the seed is a short string and the plate is pinned at a phone measurement
     // (300px since Stage 3, when the plate became the correction surface and
@@ -8128,8 +8122,6 @@ function run() {
         assert.ok(Math.abs(m.surf - CLAMP(m.vw)) < 1,
           `at ${w}px the sheet is ${m.surf.toFixed(1)}px, expected ` +
           `${CLAMP(m.vw).toFixed(1)}px (clamp(520px, 52vw, 680px))`);
-        assert.ok(m.plate <= 160.5 && Math.abs(m.plate - Math.min(160, Math.max(88, m.cw * 0.3))) < 1,
-          `at ${w}px the small pan is ${m.plate.toFixed(1)}px, expected clamp(88px, 30cqw, 160px) of ${m.cw.toFixed(1)}px`);
       }
     } finally {
       await b.setViewport(900, 900, false);
