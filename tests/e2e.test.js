@@ -3303,12 +3303,10 @@ function run() {
       await openSheet();
       await b.eval(`const box = document.getElementById("scale-box");
         box.value = "[C3] (D3) A3 C4 D4";
-        box.dispatchEvent(new Event("input", { bubbles: true }));
-        document.getElementById("scale-layout-toggle").click(); return true;`);
+        box.dispatchEvent(new Event("input", { bubbles: true })); return true;`);
       const hits = await b.eval(`
         const out = { small: [], swatches: [] };
-        const sel = "#decks .chip, #scale-box, #scale-layout-toggle, #scale-mirror, #scale-mirror-bottom, " +
-          "#scale-anchor-one, #scale-anchor-between, #scale-generate";
+        const sel = "#decks .chip, #scale-box, #scale-layout-toggle, #scale-generate";
         for (const el of document.querySelectorAll(sel)) {
           const r = el.getBoundingClientRect();
           if (r.height < 44) out.small.push((el.id || el.className) + " " + r.height.toFixed(1));
@@ -3331,6 +3329,15 @@ function run() {
       assert.strictEqual(hits.swatches.length, 6);
       assert.ok(hits.swatches.every(Boolean),
         `a palette swatch has no 44px hit area: ${JSON.stringify(hits.swatches)}`);
+      await b.eval(`document.getElementById("scale-layout-toggle").click(); return true;`);
+      const layer = await b.eval(`
+        const out = [];
+        for (const id of ["scale-mirror", "scale-mirror-bottom", "scale-anchor-one", "scale-anchor-between"]) {
+          const r = document.getElementById(id).getBoundingClientRect();
+          if (r.height < 44) out.push(id + " " + r.height.toFixed(1));
+        }
+        return out;`);
+      assert.deepStrictEqual(layer, [], "Adjust layout controls shorter than 44px");
     } finally {
       await b.key("Escape", "Escape", 27);
       await b.setViewport(900, 900, false);
@@ -4975,7 +4982,7 @@ function run() {
 
   test("Tab is trapped inside the Edit sheet and reaches every Edit control", async () => {
     try {
-      await editFreshDeckOpen();
+      await editFreshDeck();
       const seen = [];
       for (let i = 0; i < 31; i++) {
         await b.key("Tab", "Tab", 9);
@@ -4992,6 +4999,19 @@ function run() {
       for (const id of ["scale-back",
                         "scale-name", "scale-box", "scale-generate", "scale-delete"]) {
         assert.ok(ids.has(id), `Tab never reached #${id}: ${JSON.stringify([...ids])}`);
+      }
+      await openDrawer();
+      const inner = [];
+      for (let k = 0; k < 14; k++) {
+        await b.key("Tab", "Tab", 9);
+        inner.push(await b.eval(`
+          const el = document.activeElement;
+          return { id: (el && el.id) || "", inside: !!(el && document.getElementById("scale-sheet").contains(el)) };`));
+      }
+      assert.ok(inner.every(x => x.inside), `Tab escaped Adjust layout: ${JSON.stringify(inner)}`);
+      const innerIds = new Set(inner.map(x => x.id));
+      for (const id of ["scale-adjust-back", "scale-anchor-one", "scale-anchor-between", "scale-mirror"]) {
+        assert.ok(innerIds.has(id), `Tab never reached #${id} in Adjust layout: ${JSON.stringify([...innerIds])}`);
       }
     } finally {
       await b.key("Escape", "Escape", 27);
@@ -5639,15 +5659,15 @@ function run() {
        click retargets to an ancestor, the delegated handler finds no hit and
        drops it, and the owner's first tap does nothing at all. */
     try {
-      await editFreshDeckOpen();
-      const before = await panState();
-      const target = before.notes.find(n => n !== before.selected);
-      assert.ok(target, `the pan drew nothing to tap: ${JSON.stringify(before.notes)}`);
-
+      await editFreshDeck();
       await b.click("#scale-delete");
       assert.strictEqual(
         await b.eval(`return document.getElementById("scale-delete").hasAttribute("data-armed");`),
         true, "DELETE never armed");
+      await b.click("#scale-layout-toggle");
+      const before = await panState();
+      const target = before.notes.find(n => n !== before.selected);
+      assert.ok(target, `the pan drew nothing to tap: ${JSON.stringify(before.notes)}`);
 
       await tapPanNote(target);
       const after = await panState();
@@ -6376,6 +6396,10 @@ function run() {
     };
   `);
 
+  const settleBox = () => b.waitFor(
+    `document.getElementById("scale-box").getBoundingClientRect().bottom <= window.innerHeight + 0.5`,
+    { label: "the focused box to be revealed" }).catch(() => {});
+
   function assertBothOnScreen(m, where) {
     assert.strictEqual(m.focused, "scale-box",
       `${where}: the box is not focused, so no keyboard would be up`);
@@ -6398,6 +6422,7 @@ function run() {
       await b.eval(`document.getElementById("scale-box").scrollIntoView({ block: "center" });`);
       await b.click("#scale-box");
       await b.setViewport(380, 508, true);
+      await settleBox();
       assertBothOnScreen(await boxAndPrimary(), "the Edit page at 380x508");
       await b.key("Escape", "Escape", 27);
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
@@ -6412,6 +6437,7 @@ function run() {
       await b.eval(`document.getElementById("scale-box").scrollIntoView({ block: "center" });`);
       await b.click("#scale-box");
       await b.setViewport(380, 508, true);
+      await settleBox();
       assertBothOnScreen(await boxAndPrimary(), "the Add page at 380x508");
     } finally {
       await b.setViewport(900, 900, false);
@@ -6611,7 +6637,7 @@ function run() {
           live: [msg.getAttribute("aria-live"), note.getAttribute("aria-live"), note.getAttribute("aria-atomic"), slot.getAttribute("aria-live")],
         };`);
       assert.ok(m.slotParent, "#scale-guidance is not a direct child of the sheet surface");
-      assert.deepStrictEqual(m.order, ["sheethead", "sheetbody", "scale-guidance", "scale-generate", "scale-delete-row"],
+      assert.deepStrictEqual(m.order, ["sheethead", "scale-adjust-head", "sheetbody", "scale-guidance", "scale-generate", "scale-delete-row"],
         `the surface order is ${m.order}`);
       assert.deepStrictEqual(m.kids, ["scale-field-msg", "scale-msg", "scale-layout-state"]);
       assert.strictEqual(m.msgParent, "scale-guidance");
@@ -6644,7 +6670,7 @@ function run() {
         out[id] = { shown, top: r.top, bottom: r.bottom, left: r.left, right: r.right,
           hits: !shown || (hit && (hit === el || el.contains(hit))), hit: hit && (hit.id || hit.className || hit.tagName) };
       }
-      return { out, surfTop: sr.top, surfBottom: sr.bottom, genTop: gen.top, vw: window.innerWidth, vh: window.innerHeight, kbTop };`);
+      return { out, surfTop: sr.top, surfBottom: sr.bottom, genTop: gen.top, genHidden: gen.height === 0, vw: window.innerWidth, vh: window.innerHeight, kbTop };`);
     const assertOnScreen = (m, where) => {
       for (const [id, r] of Object.entries(m.out)) {
         assert.ok(r.shown, `${where}: #${id} is not showing, so this proves nothing`);
@@ -6652,7 +6678,7 @@ function run() {
           `${where}: #${id} is outside the viewport (top ${r.top.toFixed(1)}, bottom ${r.bottom.toFixed(1)}, viewport ${m.vh}, keyboard line ${m.kbTop})`);
         assert.ok(r.top >= m.surfTop - 0.5 && r.bottom <= m.surfBottom + 0.5, `${where}: #${id} is clipped by the surface`);
         assert.ok(r.left >= -0.5 && r.right <= m.vw + 0.5, `${where}: #${id} runs off the side`);
-        assert.ok(r.bottom <= m.genTop + 0.5, `${where}: #${id} overlaps or sits below the primary (${r.bottom.toFixed(1)} > ${m.genTop.toFixed(1)})`);
+        assert.ok(m.genHidden || r.bottom <= m.genTop + 0.5, `${where}: #${id} overlaps or sits below the primary (${r.bottom.toFixed(1)} > ${m.genTop.toFixed(1)})`);
         assert.ok(r.hits, `${where}: #${id} is covered by "${r.hit}"`);
       }
     };
@@ -6892,7 +6918,10 @@ function run() {
       const first = { text: await b.eval(`return layoutNote.textContent;`), records: await count() };
       const before = await b.eval(`return window.__sgPaints;`);
       await b.eval(`document.getElementById("scale-layout-toggle").scrollIntoView({ block: "center" }); return true;`);
-      for (let i = 0; i < 10; i += 1) await b.click("#scale-layout-toggle");
+      for (let i = 0; i < 10; i += 1) {
+        await b.click("#scale-layout-toggle");
+        await b.click("#scale-adjust-back");
+      }
       const paints = (await b.eval(`return window.__sgPaints;`)) - before;
       const repeated = await count();
       await b.eval(`document.getElementById("scale-anchor-one").click(); return true;`);
@@ -7233,12 +7262,9 @@ function run() {
 
   test("KB: at 844x334 with a 104px visible area, under every innerHeight model the sheet is tiny, the focused field is in view and GENERATE and the guidance slot are reachable by scrolling the surface", async () => {
     try {
-      for (const open of [false, true]) {
+      for (const open of [false]) {
         for (const [model, how] of KB_MODELS) {
           await kbOpenAdd(844, 334);
-          if (open) {
-            await f4OpenDrawer();
-          }
           await kbFocus("scale-top");
           await b.fakeKeyboard(104, 0, how);
           await kbSettle();

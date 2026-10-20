@@ -1,5 +1,5 @@
 # kills: UX: a Back onto an entry left with adjust state by a reload closes the sheet and does not open Adjust layout
-# suite: node --test --test-name-pattern ^UX:.a. tests/app.test.js
+# suite: node --test --test-name-pattern ^UX:.a.Back.onto.an.entry tests/app.test.js
 # The Forward branch ignores the hash, so any entry carrying adjust state reopens the layer.
 diff --git a/index.html b/index.html
 --- a/index.html

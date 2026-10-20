@@ -1,5 +1,5 @@
-# kills: DR3 browser: real Tab skips the hidden step buttons and every stop lands inside the scrollport at 380x667, and the toggle moves no scroll
-# suite: node --test --test-name-pattern ^DR3.browser..real.Tab.skips.the.hidden.step.buttons.and.every.stop.lands.inside.the.scrollport.at.380x667..and.the.toggle.moves.no.scroll$ tests/drawer_seats.test.js
+# kills: DR3 browser: real Tab skips the hidden step buttons and every stop lands inside the scrollport at 380x667, and BACK moves no scroll
+# suite: node --test --test-name-pattern ^DR3.browser..real.Tab.skips.the.hidden.step.buttons.and.every.stop.lands.inside.the.scrollport.at.380x667..and.BACK.moves.no.scroll$ tests/drawer_seats.test.js
 # Tab lands on the next stop without scrolling it into view, so a stop below the fold stays outside the scrollport.
 diff --git a/index.html b/index.html
 --- a/index.html
