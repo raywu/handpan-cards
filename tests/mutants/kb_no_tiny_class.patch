@@ -1,4 +1,4 @@
-# kills: KB: at 844x334 with a 104px visible area, under every innerHeight model the sheet is tiny, the focused field is in view and GENERATE and the guidance slot are reachable by scrolling the surface
+# kills: KB: at 844x334 with a 104px visible area, under every innerHeight model the sheet is tiny, the focused field is in view and the lip and the guidance slot are reachable by scrolling the surface
 # suite: node --test --test-name-pattern ^KB..at.844x334.with.a.104px.* tests/e2e.test.js
 # The tiny class is never set, so under a 104px visible area the sheet body keeps its own scroller
 # and GENERATE and the guidance slot stay out of reach.

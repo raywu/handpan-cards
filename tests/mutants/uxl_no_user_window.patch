@@ -1,5 +1,5 @@
 # kills: UX: a scroll with no touch, wheel or scroll key in the last 150ms changes no lip state
-# suite: node --test --test-name-pattern UX:.a.scroll.with.no.touch..wheel.or.scroll.key.in.the.last.150ms.changes.no.lip.state tests/app.test.js
+# suite: node --test --test-name-pattern ^UX:.a.scroll.with.no.touch..wheel.or.scroll.key.in.the.last.150ms.changes.no.lip.state$ tests/app.test.js
 # uxl_no_user_window
 diff --git a/index.html b/index.html
 --- a/index.html

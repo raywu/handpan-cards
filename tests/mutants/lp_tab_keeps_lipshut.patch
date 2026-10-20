@@ -1,5 +1,5 @@
 # kills: LP: a tab switch or NEXT clears lipshut with lipnow and re-baselines the scroll
-# suite: node --test --test-name-pattern LP:.a.tab.switch.or.NEXT.clears.lipshut.with.lipnow.and.re-baselines.the.scroll tests/app.test.js
+# suite: node --test --test-name-pattern ^LP:.a.tab.switch.or.NEXT.clears.lipshut.with.lipnow.and.re.baselines.the.scroll$ tests/app.test.js
 # lp_tab_keeps_lipshut
 diff --git a/index.html b/index.html
 --- a/index.html

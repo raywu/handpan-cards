@@ -1,5 +1,5 @@
-# kills: UX: the lip control is named Show GENERATE CARDS on Add
-# suite: node --test --test-name-pattern UX:.the.lip.control.is.named.Show.GENERATE.CARDS.on.Add tests/app.test.js
+# kills: UX: the lip control is named Show GENERATE CARDS on Add and Show SAVE CHANGES on Edit, a seeded deck's Edit included
+# suite: node --test --test-name-pattern ^UX:.the.lip.control.is.named.Show.GENERATE.CARDS.on.Add.and.Show.SAVE.CHANGES.on.Edit..a.seeded.deck.s.Edit.included$ tests/app.test.js
 # uxl_lip_name_static
 diff --git a/index.html b/index.html
 --- a/index.html

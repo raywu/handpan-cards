@@ -1,5 +1,5 @@
 # kills: UX: negative scrollTop and overshoot past the end change no lip state
-# suite: node --test --test-name-pattern UX:.negative.scrollTop.and.overshoot.past.the.end.change.no.lip.state tests/app.test.js
+# suite: node --test --test-name-pattern ^UX:.negative.scrollTop.and.overshoot.past.the.end.change.no.lip.state$ tests/app.test.js
 # uxl_overscroll_unclamped
 diff --git a/index.html b/index.html
 --- a/index.html

@@ -1,5 +1,5 @@
 # kills: UX: opening, Edit-opening and closing the sheet leave the footer open with no lip classes or variables
-# suite: node --test --test-name-pattern UX:.opening..Edit-opening.and.closing.the.sheet.leave.the.footer.open.with.no.lip.classes.or.variables tests/app.test.js
+# suite: node --test --test-name-pattern ^UX:.opening..Edit.opening.and.closing.the.sheet.leave.the.footer.open.with.no.lip.classes.or.variables$ tests/app.test.js
 # uxl_close_leaves_lipped
 diff --git a/index.html b/index.html
 --- a/index.html

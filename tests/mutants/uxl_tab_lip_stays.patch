@@ -1,5 +1,5 @@
-# kills: UX: Tab onto the lip restores the footer and focuses GENERATE CARDS
-# suite: node --test --test-name-pattern UX:.Tab.onto.the.lip.restores.the.footer.and.focuses.GENERATE.CARDS tests/app.test.js
+# kills: UX: Tab onto the lip restores the footer and focuses GENERATE CARDS, DELETE when GENERATE is disabled on Edit, else the last swatch
+# suite: node --test --test-name-pattern ^UX:.Tab.onto.the.lip.restores.the.footer.and.focuses.GENERATE.CARDS..DELETE.when.GENERATE.is.disabled.on.Edit..else.the.last.swatch$ tests/app.test.js
 # uxl_tab_lip_stays
 diff --git a/index.html b/index.html
 --- a/index.html

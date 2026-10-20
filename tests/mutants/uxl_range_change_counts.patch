@@ -1,5 +1,5 @@
 # kills: UX: a scroll event whose scroll range changed only re-baselines
-# suite: node --test --test-name-pattern UX:.a.scroll.event.whose.scroll.range.changed.only.re-baselines tests/app.test.js
+# suite: node --test --test-name-pattern ^UX:.a.scroll.event.whose.scroll.range.changed.only.re.baselines$ tests/app.test.js
 # uxl_range_change_counts
 diff --git a/index.html b/index.html
 --- a/index.html

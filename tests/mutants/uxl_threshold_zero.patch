@@ -1,5 +1,5 @@
 # kills: UX: a 23px user scroll down does not collapse the footer and 24px does
-# suite: node --test --test-name-pattern UX:.a.23px.user.scroll.down.does.not.collapse.the.footer.and.24px.does tests/app.test.js
+# suite: node --test --test-name-pattern ^UX:.a.23px.user.scroll.down.does.not.collapse.the.footer.and.24px.does$ tests/app.test.js
 # uxl_threshold_zero
 diff --git a/index.html b/index.html
 --- a/index.html

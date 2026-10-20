@@ -1,5 +1,5 @@
 # kills: UX: a collapse while GENERATE CARDS holds focus moves focus to the lip, never body
-# suite: node --test --test-name-pattern UX:.a.collapse.while.GENERATE.CARDS.holds.focus.moves.focus.to.the.lip..never.body tests/app.test.js
+# suite: node --test --test-name-pattern ^UX:.a.collapse.while.GENERATE.CARDS.holds.focus.moves.focus.to.the.lip..never.body$ tests/app.test.js
 # uxl_collapse_drops_focus
 diff --git a/index.html b/index.html
 --- a/index.html

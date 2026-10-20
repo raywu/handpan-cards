@@ -1,5 +1,5 @@
 # kills: LP: the lip's aria-label names the visible primary: Show NEXT, Show GENERATE CARDS, Show SAVE CHANGES
-# suite: node --test --test-name-pattern LP:.the.lip.s.aria-label.names.the.visible.primary:.Show.NEXT..Show.GENERATE.CARDS..Show.SAVE.CHANGES tests/app.test.js
+# suite: node --test --test-name-pattern ^LP:.the.lip.s.aria.label.names.the.visible.primary:.Show.NEXT..Show.GENERATE.CARDS..Show.SAVE.CHANGES$ tests/app.test.js
 # lp_label_fixed
 diff --git a/index.html b/index.html
 --- a/index.html

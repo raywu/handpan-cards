@@ -1,5 +1,5 @@
-# kills: UX: during a restore's slide .sheetbody keeps its lipped height
-# suite: node --test --test-name-pattern UX:.during.a.restore.s.slide..sheetbody.keeps.its.lipped.height tests/e2e.test.js
+# kills: UX: during a restore's slide .sheetbody keeps its lipped height, and GENERATE lands where the open layout puts it
+# suite: node --test --test-name-pattern ^UX:.during.a.restore.s.slide..sheetbody.keeps.its.lipped.height..and.GENERATE.lands.where.the.open.layout.puts.it$ tests/e2e.test.js
 # uxl_restore_layout_at_start
 diff --git a/index.html b/index.html
 --- a/index.html

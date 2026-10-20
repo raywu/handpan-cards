@@ -1,5 +1,5 @@
 # kills: UX: the keyboard rising collapses the footer and its fall restores it
-# suite: node --test --test-name-pattern UX:.the.keyboard.rising.collapses.the.footer.and.its.fall.restores.it tests/app.test.js
+# suite: node --test --test-name-pattern ^UX:.the.keyboard.rising.collapses.the.footer.and.its.fall.restores.it$ tests/app.test.js
 # uxl_kb_rise_ignored
 diff --git a/index.html b/index.html
 --- a/index.html

@@ -1,5 +1,5 @@
 # kills: UX: a reversal mid-slide retargets the slide and never changes the layout classes
-# suite: node --test --test-name-pattern UX:.a.reversal.mid-slide.retargets.the.slide.and.never.changes.the.layout.classes tests/app.test.js
+# suite: node --test --test-name-pattern ^UX:.a.reversal.mid.slide.retargets.the.slide.and.never.changes.the.layout.classes$ tests/app.test.js
 # uxl_reversal_relayouts
 diff --git a/index.html b/index.html
 --- a/index.html

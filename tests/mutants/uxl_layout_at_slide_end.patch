@@ -1,5 +1,5 @@
-# kills: UX: at the collapse instant .sheetbody has grown
-# suite: node --test --test-name-pattern UX:.at.the.collapse.instant..sheetbody.has.grown tests/e2e.test.js
+# kills: UX: at the collapse instant .sheetbody has grown, GENERATE, the guidance line and the hairline have not moved, and scrollTop is unchanged
+# suite: node --test --test-name-pattern ^UX:.at.the.collapse.instant..sheetbody.has.grown..GENERATE..the.guidance.line.and.the.hairline.have.not.moved..and.scrollTop.is.unchanged$ tests/e2e.test.js
 # uxl_layout_at_slide_end
 diff --git a/index.html b/index.html
 --- a/index.html

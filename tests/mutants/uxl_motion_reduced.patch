@@ -1,5 +1,5 @@
 # kills: UX: under prefers-reduced-motion the footer collapses and restores with no transition, in one task
-# suite: node --test --test-name-pattern UX:.under.prefers-reduced-motion.the.footer.collapses.and.restores.with.no.transition..in.one.task tests/e2e.test.js
+# suite: node --test --test-name-pattern ^UX:.under.prefers.reduced.motion.the.footer.collapses.and.restores.with.no.transition..in.one.task$ tests/e2e.test.js
 # uxl_motion_reduced
 diff --git a/index.html b/index.html
 --- a/index.html

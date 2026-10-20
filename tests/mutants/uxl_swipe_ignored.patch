@@ -1,5 +1,5 @@
-# kills: UX: a lip click, a 16px upward touch on the lip and a focus on the lip each restore
-# suite: node --test --test-name-pattern UX:.a.lip.click..a.16px.upward.touch.on.the.lip.and.a.focus.on.the.lip.each.restore tests/app.test.js
+# kills: UX: a lip click, a 16px upward touch on the lip and a focus on the lip each restore; a 15px touch and a downward one do not
+# suite: node --test --test-name-pattern ^UX:.a.lip.click..a.16px.upward.touch.on.the.lip.and.a.focus.on.the.lip.each.restore..a.15px.touch.and.a.downward.one.do.not$ tests/app.test.js
 # uxl_swipe_ignored
 diff --git a/index.html b/index.html
 --- a/index.html

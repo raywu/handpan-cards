@@ -1,5 +1,5 @@
 # kills: UX: while the keyboard is up no scroll changes the lip state, and a lip tap or swipe still restores
-# suite: node --test --test-name-pattern UX:.while.the.keyboard.is.up.no.scroll.changes.the.lip.state..and.a.lip.tap.or.swipe.still.restores tests/app.test.js
+# suite: node --test --test-name-pattern ^UX:.while.the.keyboard.is.up.no.scroll.changes.the.lip.state..and.a.lip.tap.or.swipe.still.restores$ tests/app.test.js
 # uxl_kb_scroll_counts
 diff --git a/index.html b/index.html
 --- a/index.html

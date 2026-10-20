@@ -1,5 +1,5 @@
 # kills: UX: a restore ends on the 220ms timer when no transitionend arrives, and a stale timer from a reversed slide does nothing
-# suite: node --test --test-name-pattern UX:.a.restore.ends.on.the.220ms.timer.when.no.transitionend.arrives..and.a.stale.timer.from.a.reversed.slide.does.nothing tests/app.test.js
+# suite: node --test --test-name-pattern ^UX:.a.restore.ends.on.the.220ms.timer.when.no.transitionend.arrives..and.a.stale.timer.from.a.reversed.slide.does.nothing$ tests/app.test.js
 # uxl_no_end_timer
 diff --git a/index.html b/index.html
 --- a/index.html

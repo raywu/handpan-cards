@@ -1,5 +1,5 @@
 # kills: UX: revealField, the tap pin and the keyboard handler's scrolls never collapse the footer
-# suite: node --test --test-name-pattern UX:.revealField..the.tap.pin.and.the.keyboard.handler.s.scrolls.never.collapse.the.footer tests/app.test.js
+# suite: node --test --test-name-pattern ^UX:.revealField..the.tap.pin.and.the.keyboard.handler.s.scrolls.never.collapse.the.footer$ tests/app.test.js
 # uxl_programmatic_counts
 diff --git a/index.html b/index.html
 --- a/index.html

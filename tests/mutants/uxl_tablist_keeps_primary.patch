@@ -1,5 +1,5 @@
 # kills: UX: while lipped the sheet's Tab list holds the lip in place of GENERATE and DELETE
-# suite: node --test --test-name-pattern UX:.while.lipped.the.sheet.s.Tab.list.holds.the.lip.in.place.of.GENERATE.and.DELETE tests/app.test.js
+# suite: node --test --test-name-pattern ^UX:.while.lipped.the.sheet.s.Tab.list.holds.the.lip.in.place.of.GENERATE.and.DELETE$ tests/app.test.js
 # uxl_tablist_keeps_primary
 diff --git a/index.html b/index.html
 --- a/index.html

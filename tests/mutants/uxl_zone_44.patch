@@ -1,5 +1,5 @@
-# kills: UX: the lip draws a 36x4 grabber at the surface's bottom above the safe-area inset
-# suite: node --test --test-name-pattern UX:.the.lip.draws.a.36x4.grabber.at.the.surface.s.bottom.above.the.safe-area.inset tests/e2e.test.js
+# kills: UX: the lip draws a 36x4 grabber at the surface's bottom above the safe-area inset, its tap zone is 25px tall, and a tap anywhere in the zone restores
+# suite: node --test --test-name-pattern ^UX:.the.lip.draws.a.36x4.grabber.at.the.surface.s.bottom.above.the.safe.area.inset..its.tap.zone.is.25px.tall..and.a.tap.anywhere.in.the.zone.restores$ tests/e2e.test.js
 # uxl_zone_44
 diff --git a/index.html b/index.html
 --- a/index.html
