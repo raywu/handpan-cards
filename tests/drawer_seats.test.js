@@ -111,9 +111,9 @@ function run() {
     assert.match(await status(), /^Picked up /);
     await b.key("Escape", "Escape", 27);
     assert.strictEqual(await status(), "Cancelled. Nothing moved.");
-    assert.strictEqual(await ev(`return document.getElementById("scale-drawer").hidden;`), false, "the first Escape closed the drawer");
+    assert.strictEqual(await ev(`return document.getElementById("scale-sheet").hidden;`), false, "the first Escape closed the sheet");
     await b.key("Escape", "Escape", 27);
-    assert.strictEqual(await ev(`return document.getElementById("scale-drawer").hidden;`), true);
+    await waitSheet(false);
   });
 
   for (const [key, scale] of Object.entries({ amara: SCALES.amara, kurd: SCALES.kurd, pygmy: SCALES.pygmy })) {

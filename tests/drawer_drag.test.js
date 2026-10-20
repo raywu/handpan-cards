@@ -361,7 +361,7 @@ function run() {
     await openAdd(SCALES.amara);
     const fire = () => ev(`const e = new MouseEvent("contextmenu", { bubbles: true, cancelable: true }); document.querySelector("#scale-preview .panhit").dispatchEvent(e); return e.defaultPrevented;`);
     assert.strictEqual(await fire(), true);
-    await ev(`document.getElementById("scale-tab-layout").click(); return true;`);
+    await ev(`document.getElementById("scale-tab-scale").click(); return true;`);
     assert.strictEqual(await fire().catch(() => false), false);
   });
 

@@ -244,7 +244,9 @@ function run() {
             if (!floor) {
               const p = open.plate;
               if (!open.back) fail("G-f", "BACK is not on the screen after the open");
-              if (p.vis < Math.min(p.h, p.st.room) - 0.5) fail("G-f", `the plate shows ${p.vis} of ${Math.min(p.h, p.st.room).toFixed(1)}px (top ${p.top.toFixed(1)}, scrollport ${p.st.spTop.toFixed(1)} to ${p.st.spBottom.toFixed(1)})`);
+              const above = p.top - p.st.spTop;
+              if (above > 80) fail("G-f", `${above.toFixed(1)}px sit above the plate: more than the tab strip and its gap`);
+              if (p.vis < Math.min(p.h, p.st.room - above) - 0.5) fail("G-f", `the plate shows ${p.vis} of ${Math.min(p.h, p.st.room - above).toFixed(1)}px (top ${p.top.toFixed(1)}, scrollport ${p.st.spTop.toFixed(1)} to ${p.st.spBottom.toFixed(1)})`);
             }
             if (!floor) await tabWalk(fail);
           } catch (e) {
@@ -328,7 +330,7 @@ function run() {
         await openDrawerNow();
         const seen = { yes: 0, no: 0 };
         let oneColumn = true;
-        for (let h = 240; h <= 640; h++) {
+        for (let h = 240; h <= 1000; h++) {
           await b.setViewport(w, h, true);
           await frames();
           const st = await ev(`return __d.state();`);
@@ -338,7 +340,7 @@ function run() {
         }
         note.push(`${w}: ${JSON.stringify(seen)}`);
         if (oneColumn && !(seen.yes > 0 && seen.no > 0)) {
-          fails.push({ cell: `${w}x240-640`, clause: "G-a", detail: `the walk never crossed the threshold: ${JSON.stringify(seen)}` });
+          fails.push({ cell: `${w}x240-1000`, clause: "G-a", detail: `the walk never crossed the threshold: ${JSON.stringify(seen)}` });
         }
       }
     } finally {
