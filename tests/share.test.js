@@ -1659,3 +1659,13 @@ test("SV: the 120-note worst case fits the cap", () => {
   const seg = optionSegs(r.value).find(s => s.startsWith("seats-"));
   assert.deepEqual(seg.slice(6).split(";").map(s => s.split(",").length), [60, 30, 29]);
 });
+
+test("IB: a dip round-trips through share encode/decode and its scale segment puts - where the rim ends", () => {
+  const plain = seedNew("(D3) A3 C4 D4 E4 | B3 F4");
+  const link = encoded(plain);
+  assert.equal(segsOf(link)[1], "(D3)_A3_C4_D4_E4_-_B3_F4");
+  assert.deepStrictEqual(decoded(link), plain);
+  const low = seedNew("[C3] (D3) A3 C4 D4 E4 [G5] | B3 F4");
+  assert.equal(segsOf(encoded(low))[1], "uC3_(D3)_A3_C4_D4_E4_uG5_-_B3_F4");
+  assert.deepStrictEqual(decoded(encoded(low)), low);
+});

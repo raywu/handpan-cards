@@ -1429,12 +1429,12 @@ html.about-open{overflow:hidden}
                autocomplete="off" spellcheck="false" enterkeyhint="next" aria-describedby="scale-field-msg">
       </div>
       <div class="fieldrow">
-        <label class="sheetlabel" id="scale-inner-label" for="scale-inner">TOP INNER NOTES (OPTIONAL)</label>
+        <label class="sheetlabel" id="scale-inner-label" for="scale-inner">TOP INNER NOTES, LOW TO HIGH (OPTIONAL)</label>
         <input id="scale-inner" type="text" placeholder="C5 D5" autocapitalize="off" autocorrect="off"
                autocomplete="off" spellcheck="false" enterkeyhint="next" aria-describedby="scale-field-msg">
       </div>
       <div class="fieldrow">
-        <label class="sheetlabel" id="scale-bottom-label" for="scale-bottom">BOTTOM NOTES (OPTIONAL)</label>
+        <label class="sheetlabel" id="scale-bottom-label" for="scale-bottom">BOTTOM NOTES, LOW TO HIGH (OPTIONAL)</label>
         <input id="scale-bottom" type="text" placeholder="C3 Eb3" autocapitalize="off" autocorrect="off"
                autocomplete="off" spellcheck="false" enterkeyhint="done" aria-describedby="scale-field-msg">
       </div>
@@ -3593,7 +3593,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       reason: "<A> is not above <B>, and the line runs low to high. Give <A> a higher octave or move it earlier, e.g. (D3) A3 C4 D4.",
       alternates: {
         ding: "<A> is at or below the ding <B>. Top notes are above the ding; a lower note is a bottom note and goes before it in square brackets, e.g. [C3] (D3) A3.",
-        afterBar: "<A> comes after the | but is below <B>. Notes after | are inner notes now. For a bottom note, use square brackets where its pitch falls, e.g. [C3] (D3) A3 C4.",
         below: "<A> is not below <B>. Bottom notes before the ding also run low to high, e.g. [C3] [D3] (E3) B3."
       }
     },
@@ -4237,12 +4236,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     }
 
     var prev = ding;
-    var lastTop = ding;
+    var lastRim = ding;
+    var lastInner = null;
     var lastBottom = low.length ? low[low.length - 1] : null;
-    var firstInner = null;
-    for (n = 0; n < high.length; n += 1) {
-      if (high[n].zone === "inner") { firstInner = high[n]; break; }
-    }
+    var rimNotes = {};
+    var seenInner = false;
     for (n = 0; n < high.length; n += 1) {
       var entry = high[n];
       var note = entry.note;
@@ -4255,19 +4253,26 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       }
       bad = scalePlaced(note, mm);
       if (bad) return bad;
-      if (mm < prev.midi) {
-        return scaleOrder(note, prev, entry === firstInner ? "afterBar" :
-                                      (prev === ding ? "ding" : undefined));
+      var restarts = entry.zone === "inner" && !seenInner;
+      if (entry.zone === "inner") seenInner = true;
+      if (mm < prev.midi && !restarts) {
+        return scaleOrder(note, prev, prev === ding ? "ding" : undefined);
       }
       if (entry.zone === "bottom") {
         if (lastBottom && mm <= lastBottom.midi) return scaleRepeated(note, lastBottom);
         if (mm <= ding.midi) return scaleOrder(note, ding, "ding");
         lastBottom = note;
-      } else {
-        if (mm <= lastTop.midi) {
-          return lastTop === ding ? scaleOrder(note, ding, "ding") : scaleRepeated(note, lastTop);
+      } else if (entry.zone === "rim") {
+        if (mm <= lastRim.midi) {
+          return lastRim === ding ? scaleOrder(note, ding, "ding") : scaleRepeated(note, lastRim);
         }
-        lastTop = note;
+        lastRim = note;
+        rimNotes[mm] = note;
+      } else {
+        if (restarts && mm <= ding.midi) return scaleOrder(note, ding, "ding");
+        if (rimNotes[mm]) return scaleRepeated(note, rimNotes[mm]);
+        if (lastInner && mm <= lastInner.midi) return scaleRepeated(note, lastInner);
+        lastInner = note;
       }
       prev = note;
     }
@@ -4322,8 +4327,25 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return ok({ fields: fields, options: opts.value });
   }
 
+  // The names of the inner notes under the highest rim note, in field order.
+  function innerBelowRim(seedOrFields) {
+    var fields = fieldsOf(seedOrFields);
+    var ids = orderedIds(fields);
+    var highest = -Infinity;
+    ids.top.forEach(function (id) {
+      if (fields[id][3] === "rim" && fields[id][2] > highest) highest = fields[id][2];
+    });
+    var names = [];
+    ids.top.forEach(function (id) {
+      if (fields[id][3] === "inner" && fields[id][2] < highest) names.push(fields[id][0] + fields[id][1]);
+    });
+    return names;
+  }
+
   // The canonical string: every note by pitch, a bottom note ahead of the ding
-  // or a top note of the same pitch, the bar before the first inner note.
+  // or a top note of the same pitch, the bar before the first inner note. A pan
+  // with an inner note under its highest rim note writes the bottoms, ding and
+  // rim sorted, then the bar, then the inner notes sorted.
   function formatSeed(seedOrFields) {
     var fields = fieldsOf(seedOrFields);
     var ids = orderedIds(fields);
@@ -4339,6 +4361,16 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     line.sort(function (a, c) { return a.midi - c.midi || a.rank - c.rank; });
     var out = [];
     var barred = false;
+    if (innerBelowRim(fields).length) {
+      line.filter(function (entry) { return !entry.inner; }).forEach(function (entry) {
+        out.push(entry.text);
+      });
+      out.push("|");
+      line.filter(function (entry) { return entry.inner; }).forEach(function (entry) {
+        out.push(entry.text);
+      });
+      return out.join(" ");
+    }
     line.forEach(function (entry) {
       if (entry.inner && !barred) { out.push("|"); barred = true; }
       out.push(entry.text);
@@ -4498,6 +4530,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     parseSeed: parseSeed,
     parseLegacySeed: parseLegacySeed,
     formatSeed: formatSeed,
+    innerBelowRim: innerBelowRim,
     formatLegacySeed: formatLegacySeed,
     identitySeed: identitySeed,
     deckId: deckId,
@@ -4547,7 +4580,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   var FLAG_ORDER = [
     ["NO_NOTE_LIST", BLOCK], ["UNDECLARED_PARENS", BLOCK], ["CONFLICTING_DING", BLOCK], ["DING_CLAUSE_MANY", BLOCK], ["DING_NOT_LOWEST", BLOCK],
     ["DING_ON_BOTTOM", BLOCK], ["REPEATED_IN_SHELL", BLOCK],
-    ["AMBIGUOUS_NOTE", BLOCK], ["INNER_BELOW_TOP", BLOCK], ["COUNT_MISMATCH", BLOCK], ["PROVISIONAL_REFUSED", BLOCK],
+    ["AMBIGUOUS_NOTE", BLOCK], ["INNER_BELOW_TOP", INFO], ["COUNT_MISMATCH", BLOCK], ["PROVISIONAL_REFUSED", BLOCK],
     ["BOTTOM_NO_OCTAVE", BLOCK], ["CONFLICTING_LIST", BLOCK], ["SEED_REFUSED", BLOCK],
     ["DING_CUE", CONFIRM], ["PARENS_AS_BOTTOM", CONFIRM], ["COUNT_EXCL_DING", CONFIRM], ["SPACE_IN_NOTE", CONFIRM],
     ["SOURCE_NOT_ASCENDING", CONFIRM], ["DUPLICATE_PITCH", CONFIRM], ["NO_OCTAVE", CONFIRM],
@@ -5162,13 +5195,26 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     result.roles.top.forEach(function (e) { add(e, 2, e.note, false); });
     result.roles.inner.forEach(function (e) { add(e, 2, e.note, true); });
     if (bad) return "";
-    line.sort(function (a, b) { return a.midi - b.midi || a.rank - b.rank; });
+    var byPitch = function (a, b) { return a.midi - b.midi || a.rank - b.rank; };
     var out = [];
-    var barred = false;
+    var rimMax = -Infinity;
+    var innerMin = Infinity;
     line.forEach(function (e) {
-      if (e.inner && !barred) { out.push("|"); barred = true; }
-      out.push(e.text);
+      if (e.inner) innerMin = Math.min(innerMin, e.midi);
+      else if (e.rank === 2) rimMax = Math.max(rimMax, e.midi);
     });
+    if (innerMin < rimMax) {
+      line.filter(function (e) { return !e.inner; }).sort(byPitch).forEach(function (e) { out.push(e.text); });
+      out.push("|");
+      line.filter(function (e) { return e.inner; }).sort(byPitch).forEach(function (e) { out.push(e.text); });
+    } else {
+      line.sort(byPitch);
+      var barred = false;
+      line.forEach(function (e) {
+        if (e.inner && !barred) { out.push("|"); barred = true; }
+        out.push(e.text);
+      });
+    }
     var text = out.join(" ");
     var parsed = core().parseSeed(text);
     return parsed.ok ? core().formatSeed(parsed.value.fields) : text;
@@ -5224,6 +5270,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   function composeStage(head, notes, below, field, anchorName) {
     var names = [];
+    var guessed = [];
     for (var k = 0; k < notes.length; k++) {
       var n = notes[k];
       var octave = n.octave === null ? composeAbove(n, below) : n.octave;
@@ -5231,6 +5278,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       var name = composeNamed(n, octave);
       if (!composeFits(midi)) return { names: names, error: composeRange(name) };
       names.push(name);
+      if (n.octave === null) guessed.push(name);
       var parsed = core().parseSeed(head + names.join(" "));
       if (!parsed.ok && parsed.code !== "NO_FIFTH") {
         names.pop();
@@ -5241,13 +5289,13 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         else if (parsed.code === "NOTE_OUT_OF_ORDER") {
           if (before) error = composeLower(name, before);
           else if (field === "top") error = name + " is not above the ding, " + anchorName + ".";
-          else error = name + " is below the highest top note, " + anchorName + ".";
+          else error = name + " is not above the ding, " + anchorName + ".";
         }
         return { names: names, error: error };
       }
       below = midi;
     }
-    return { names: names, last: below, error: null };
+    return { names: names, guessed: guessed, last: below, error: null };
   }
 
   function composeBottoms(notes, ding) {
@@ -5282,7 +5330,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var out = {
       ok: false, empty: false, line: "", seed: null,
       errors: { ding: null, top: null, inner: null, bottom: null },
-      info: { bottom: null }, guessed: [],
+      info: { bottom: null, inner: null }, guessed: [],
       notes: { ding: [], top: [], inner: [], bottom: [] }
     };
     var read = {};
@@ -5308,6 +5356,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var top = null;
     var topMidi = null;
     var inner = null;
+    var innerGuessed = [];
     if (!out.errors.top && !read.top.notes.length) out.errors.top = "Enter the top notes, low to high.";
     if (ding && !out.errors.top) {
       var staged = composeStage("(" + ding.name + ") ", read.top.notes, ding.midi, "top", ding.name);
@@ -5317,10 +5366,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     if (top) {
       out.notes.top = top;
       if (read.inner.notes.length && !out.errors.inner) {
-        var high = top[top.length - 1];
-        var upper = composeStage("(" + ding.name + ") " + top.join(" ") + " | ", read.inner.notes, topMidi, "inner", high);
+        var upper = composeStage("(" + ding.name + ") " + top.join(" ") + " | ", read.inner.notes, topMidi, "inner", ding.name);
         if (upper.error) out.errors.inner = upper.error;
-        else inner = upper.names;
+        else { inner = upper.names; innerGuessed = upper.guessed; }
       } else if (!out.errors.inner) inner = [];
     }
     if (inner) {
@@ -5329,6 +5377,17 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       if (!full.ok && full.code === "NO_FIFTH") {
         out.errors.ding = "No fifth above the ding " + ding.name + ": add " + core().fifthName(ding.letter, ding.acc) + " to the top notes, or check the ding.";
       } else if (!full.ok) out.errors.top = full.reason;
+      else {
+        var notes = [];
+        if (innerGuessed.length) {
+          notes.push("Octaves guessed: " + innerGuessed.join(", ") + ". An inner note can sit below the top notes: type its octave to put it there.");
+        }
+        var low = core().innerBelowRim(full.value.fields);
+        if (low.length) {
+          notes.push(low.join(", ") + (low.length > 1 ? " sit" : " sits") + " below the top notes. Check " + (low.length > 1 ? "them" : "it") + " on the pan picture.");
+        }
+        if (notes.length) out.info.inner = notes.join(" ");
+      }
     }
 
     var bottom = null;
@@ -10597,6 +10656,8 @@ function parseLineText(fields) {
   for (const [key, label] of [["rim", "Top"], ["inner", "Inner"], ["bottom", "Bottom"]]) {
     if (shells[key].length) line += " " + label + " " + names(shells[key]) + ".";
   }
+  const low = HPE.core.innerBelowRim(fields);
+  if (low.length) line += " " + low.join(", ") + (low.length > 1 ? " are" : " is") + " below the top notes: check the pan picture.";
   return line;
 }
 
@@ -12099,7 +12160,7 @@ function renderFieldMessages(r, values, editing, shown) {
   const out = {};
   for (const k of FIELD_KEYS) {
     if (!values[k].trim()) continue;
-    const text = r.errors[k] || (k === "bottom" ? r.info.bottom : null);
+    const text = r.errors[k] || r.info[k];
     if (!text) continue;
     const kind = r.errors[k] ? "error" : "info";
     if (editing === null) out[k] = { text, kind };

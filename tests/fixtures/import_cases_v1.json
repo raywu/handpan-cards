@@ -1332,11 +1332,11 @@
     "note": "inner note B4 sits below the top note C5"
    },
    "expect": {
-    "status": "NEEDS_INPUT",
+    "status": "REVIEW",
     "codes": [
      "INNER_BELOW_TOP"
     ],
-    "serialised": "",
+    "serialised": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5 | B4",
     "fields": null
    }
   },

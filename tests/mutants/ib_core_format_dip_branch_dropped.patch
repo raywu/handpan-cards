@@ -1,0 +1,15 @@
+# suite: node --test --test-name-pattern ^IB..formatSeed.writes.a.dip.as.bottoms,.ding.and.rim,.then.the.bar.and.the.inner.notes,.and.it.round-trips$ tests/core.test.js
+# kills: IB: formatSeed writes a dip as bottoms, ding and rim, then the bar and the inner notes, and it round-trips
+# formatSeed never takes the dip branch, so the bar lands in the middle of the rim.
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -817,7 +817,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     line.sort(function (a, c) { return a.midi - c.midi || a.rank - c.rank; });
+     var out = [];
+     var barred = false;
+-    if (innerBelowRim(fields).length) {
++    if (false) {
+       line.filter(function (entry) { return !entry.inner; }).forEach(function (entry) {
+         out.push(entry.text);
+       });

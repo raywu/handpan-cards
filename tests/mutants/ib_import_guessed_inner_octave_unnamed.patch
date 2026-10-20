@@ -1,0 +1,14 @@
+# kills: IB: compose names a guessed inner octave in info.inner and says how to put a note lower
+# suite: node --test --test-name-pattern ^IB..compose.names.a.guessed.inner.octave tests/import.test.js
+# composeStage never records a guessed octave, so info.inner stays silent about guesses.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -723,7 +723,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       var name = composeNamed(n, octave);
+       if (!composeFits(midi)) return { names: names, error: composeRange(name) };
+       names.push(name);
+-      if (n.octave === null) guessed.push(name);
+       var parsed = core().parseSeed(head + names.join(" "));
+       if (!parsed.ok && parsed.code !== "NO_FIFTH") {
+         names.pop();
