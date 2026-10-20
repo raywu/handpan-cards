@@ -247,7 +247,7 @@ test("the Edit sheet draws the mock too, and makes it the correction surface", (
   assert.ok(previewHTML(app).includes("<svg"), "the Edit sheet draws no pan to correct");
   assert.ok(!previewHTML(app).includes('class="panhit"'),
     "with the drawer closed the Edit mock is a picture");
-  app.run("openDrawer()");
+  app.run('setTab("layout")');
   const svg = previewHTML(app);
   assert.ok(svg.includes('class="panhit"'),
     "with the drawer open the Edit mock is the correction surface (D1)");

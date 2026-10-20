@@ -6,10 +6,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1078,7 +1078,7 @@ footer.seq{row-gap:var(--sp-1)}
-   #scale-sheet.adjusting #scale-pancol{grid-column:1; grid-row:1 / span 30; align-self:start; position:static}
-   #scale-sheet.adjusting .sheetbody > :not(#scale-pancol){grid-column:2}
-   #scale-sheet.adjusting #scale-plate-band #scale-drawer-status{width:0; min-width:100%}
+@@ -1064,7 +1064,7 @@ footer.seq{row-gap:var(--sp-1)}
+   #scale-sheet[data-tab="layout"] #scale-layout-zone{grid-column:2}
+   #scale-sheet[data-tab="layout"] #scale-layout-hint, #scale-sheet[data-tab="layout"] #scale-layout-zone{margin-top:var(--sp-3)}
+   #scale-plate-band #scale-drawer-status{width:0; min-width:100%}
 -  .sheetbody{scroll-padding-top:0}
 +  .sheetbody{scroll-padding-top:240px}
  }

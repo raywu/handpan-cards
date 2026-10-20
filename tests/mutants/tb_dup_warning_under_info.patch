@@ -1,0 +1,15 @@
+# kills: O1: with inner f guessed under D3 / A3 C4, bottoms c d still show the duplicate warning on the field line over the inner Octaves-guessed line
+# suite: node --test --test-name-pattern ^O1:.with.inner.f.guessed tests/app.test.js
+# paintFields picks the first message of any kind after the errors, so an earlier field's info hides a later warning.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12170,7 +12170,7 @@
+     fieldEls[k].setAttribute("aria-invalid", bad ? "true" : "false");
+   }
+   const first = FIELD_KEYS.find((k) => next[k] && next[k].kind === "error") ||
+-    FIELD_KEYS.find((k) => next[k] && next[k].kind === "warn") || FIELD_KEYS.find((k) => next[k]);
++    FIELD_KEYS.find((k) => next[k]);
+   const text = first ? FIELD_SHORT[first] + ": " + next[first].text : "";
+   if (fieldMsg.textContent !== text) fieldMsg.textContent = text;
+   fieldMsg.classList.toggle("info", !!first && next[first].kind === "info");

@@ -71,7 +71,7 @@ function run() {
     await ev(`document.getElementById("deck-add").click(); return true;`);
     await waitSheet(true);
     await typeBox(scale);
-    await ev(`document.getElementById("scale-layout-toggle").click(); return true;`);
+    await ev(`document.getElementById("scale-tab-layout").click(); return true;`);
     await frames();
   };
   // The drawn state: each note's name, ring, seat centre in the viewBox, and its screen circle.
@@ -361,7 +361,7 @@ function run() {
     await openAdd(SCALES.amara);
     const fire = () => ev(`const e = new MouseEvent("contextmenu", { bubbles: true, cancelable: true }); document.querySelector("#scale-preview .panhit").dispatchEvent(e); return e.defaultPrevented;`);
     assert.strictEqual(await fire(), true);
-    await ev(`document.getElementById("scale-layout-toggle").click(); return true;`);
+    await ev(`document.getElementById("scale-tab-scale").click(); return true;`);
     assert.strictEqual(await fire().catch(() => false), false);
   });
 

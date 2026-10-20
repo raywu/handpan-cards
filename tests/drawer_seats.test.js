@@ -66,7 +66,7 @@ function run() {
     await ev(`document.getElementById("deck-add").click(); return true;`);
     await waitSheet(true);
     await typeBox(scale);
-    await ev(`document.getElementById("scale-layout-toggle").click(); return true;`);
+    await ev(`document.getElementById("scale-tab-layout").click(); return true;`);
     await frames();
   };
   const names = () => ev(`return [...document.querySelectorAll("#scale-preview .panhit")].map((h) => h.getAttribute("aria-label").split(",")[0]);`);
@@ -93,12 +93,12 @@ function run() {
 
   test("DR2a browser: Tab order, the plate as one stop, and Space/arrows/Escape on a focused note", async () => {
     await openAdd(SCALES.pygmy);
-    await ev(`document.getElementById("scale-adjust-back").focus(); return true;`);
+    await ev(`document.getElementById("scale-back").focus(); return true;`);
     const seen = [];
     for (let i = 0; i < 16; i += 1) {
       await b.key("Tab", "Tab", 9);
       const id = await ev(`const a = document.activeElement; return a.classList.contains("panhit") ? "plate" : a.id;`);
-      if (id === "scale-adjust-back") break;
+      if (id === "scale-back") break;
       seen.push(id);
     }
     const head = ["plate", "scale-anchor-one", "scale-anchor-between", "scale-mirror",
@@ -111,9 +111,9 @@ function run() {
     assert.match(await status(), /^Picked up /);
     await b.key("Escape", "Escape", 27);
     assert.strictEqual(await status(), "Cancelled. Nothing moved.");
-    assert.strictEqual(await ev(`return document.getElementById("scale-drawer").hidden;`), false, "the first Escape closed the drawer");
+    assert.strictEqual(await ev(`return document.getElementById("scale-sheet").hidden;`), false, "the first Escape closed the sheet");
     await b.key("Escape", "Escape", 27);
-    assert.strictEqual(await ev(`return document.getElementById("scale-drawer").hidden;`), true);
+    await waitSheet(false);
   });
 
   for (const [key, scale] of Object.entries({ amara: SCALES.amara, kurd: SCALES.kurd, pygmy: SCALES.pygmy })) {
@@ -158,7 +158,7 @@ function run() {
 
   const reach = () => ev(`const sp = document.querySelector("#scale-sheet .sheetbody"), sr = sp.getBoundingClientRect();
     const out = (id) => Math.round((document.getElementById(id).getBoundingClientRect().bottom - sr.bottom) * 10) / 10;
-    const back = document.getElementById("scale-adjust-back").getBoundingClientRect();
+    const back = document.getElementById("scale-back").getBoundingClientRect();
     return { plateW: document.querySelector("#scale-preview svg").getBoundingClientRect().width,
       backInside: back.top >= 0 && back.bottom <= window.innerHeight,
       status: out("scale-drawer-status") };`);
@@ -189,13 +189,11 @@ function run() {
   test("DR2a browser (84, report): on Edit at 380x667 the open plate is no narrower than on Add; the rows' overhang is recorded", async () => {
     await openAdd(SCALES.amara);
     const add = await reach();
-    await ev(`document.getElementById("scale-adjust-back").click(); return true;`);
-    await b.waitFor(`!document.getElementById("scale-sheet").classList.contains("adjusting")`, { label: "the layer to close" });
     await ev(`document.getElementById("scale-generate").click(); return true;`);
     await waitSheet(false);
     await ev(`document.querySelector("#decks .chip.on").click(); return true;`);
     await waitSheet(true);
-    await ev(`document.getElementById("scale-layout-toggle").click(); return true;`);
+    await ev(`document.getElementById("scale-tab-layout").click(); return true;`);
     await frames();
     const edit = await reach();
     const open = await reachOpen();
@@ -286,13 +284,13 @@ function run() {
     await frames();
   };
   const openBy = async (how) => {
-    await ev(`document.getElementById("scale-layout-toggle").scrollIntoView({ block: "center" }); return true;`);
-    if (how === "pointer") await b.click("#scale-layout-toggle");
+    await ev(`document.getElementById("scale-tab-layout").scrollIntoView({ block: "center" }); return true;`);
+    if (how === "pointer") await b.click("#scale-tab-layout");
     else {
       await ev(`document.getElementById("scale-back").focus(); return true;`);
-      for (let i = 0; i < 8 && (await ev(`return document.activeElement.id;`)) !== "scale-layout-toggle"; i += 1) await b.key("Tab", "Tab", 9);
-      assert.strictEqual(await ev(`return document.activeElement.id;`), "scale-layout-toggle", "Tab did not reach the toggle");
-      await ev(`document.activeElement.click(); return true;`);
+      await b.key("Tab", "Tab", 9);
+      assert.strictEqual(await ev(`return document.activeElement.id;`), "scale-tab-scale", "Tab did not reach the Scale tab");
+      await b.key("ArrowRight", "ArrowRight", 39);
     }
     await frames();
   };
@@ -305,44 +303,40 @@ function run() {
 
   for (const edit of [false, true]) {
     for (const how of ["pointer", "keyboard"]) {
-      test(`DR2a browser (18, 96): opening by ${how} on ${edit ? "Edit" : "Add"} puts focus on the layer's title with no note focused or armed`, async () => {
+      test(`DR2a browser (18, 96): opening by ${how} on ${edit ? "Edit" : "Add"} leaves focus on the Layout tab with no note focused or armed`, async () => {
         await sheetWith(SCALES.pygmy, edit);
         await openBy(how);
         const f = await focusState();
-        assert.deepStrictEqual([f.name, f.hit, f.text, f.mark], ["scale-adjust-title", false, false, null], JSON.stringify(f));
+        assert.deepStrictEqual([f.name, f.hit, f.text, f.mark], ["scale-tab-layout", false, false, null], JSON.stringify(f));
         assert.strictEqual(await ev(`return document.querySelectorAll("#scale-preview .panhit[aria-pressed='true']").length;`), 0, "a note is armed on open");
-        await ev(`document.getElementById("scale-adjust-title").focus(); return true;`);
         await b.key("Tab", "Tab", 9);
-        assert.strictEqual((await focusState()).name, "scale-adjust-back", "the next Tab from the title does not reach the first control");
-        await b.key("Tab", "Tab", 9);
-        assert.ok((await focusState()).hit, "the Tab after BACK does not reach the plate");
-        await ev(`document.getElementById("scale-adjust-back").click(); return true;`);
-        await b.waitFor(`!document.getElementById("scale-sheet").classList.contains("adjusting")`, { label: "the layer to close" });
-        assert.strictEqual((await focusState()).name, "scale-layout-toggle", "closing did not return focus to the toggle");
+        assert.ok((await focusState()).hit, "the next Tab from the Layout tab does not reach the plate");
+        await ev(`document.getElementById("scale-tab-scale").click(); return true;`);
+        await frames();
         await openBy(how);
-        assert.strictEqual((await focusState()).name, "scale-adjust-title", "a reopen did not focus the title");
+        assert.strictEqual((await focusState()).name, "scale-tab-layout", "a reopen did not leave focus on the Layout tab");
       });
     }
   }
 
-  test("DR2a browser (18): a pan with no ring of two notes opens the layer on its title", async () => {
+  test("DR2a browser (18): a pan with no ring of two notes opens the Layout tab with focus on the tab", async () => {
     await sheetWith("(D3) A3", false);
     await openBy("pointer");
-    assert.strictEqual((await focusState()).name, "scale-adjust-title");
+    assert.strictEqual((await focusState()).name, "scale-tab-layout");
     assert.strictEqual((await focusState()).hit, false);
   });
 
-  test("DR2a browser (18): a pan with no note (a ding alone does not parse, so the drawer cannot open) keeps focus off every note", async () => {
+  test("DR2a browser (18): a pan with no note (a ding alone does not parse, so the drawer controls are disabled) keeps focus off every note", async () => {
     await sheetWith("(D3)", false);
     await openBy("pointer");
-    assert.strictEqual(await ev(`return document.getElementById("scale-drawer").hidden;`), true, "the drawer opened over a pan with no note");
+    assert.strictEqual(await ev(`return document.getElementById("scale-fine-toggle").disabled;`), true, "the drawer controls were enabled over a pan with no note");
     assert.strictEqual((await focusState()).hit, false, "focus went to a note over a pan with none");
   });
 
   test("DR2a browser (18, 84): the focus move on open leaves BACK inside the scrollport and the step rows reachable at 380x667", async () => {
     await sheetWith(SCALES.pygmy, false);
     await openBy("pointer");
-    const m = await ev(`const r = document.getElementById("scale-adjust-back").getBoundingClientRect();
+    const m = await ev(`const r = document.getElementById("scale-back").getBoundingClientRect();
       return { top: r.top, bottom: r.bottom, h: window.innerHeight };`);
     assert.ok(m.top >= -0.5 && m.bottom <= m.h + 0.5, `BACK is outside the screen after the open: ${JSON.stringify(m)}`);
     const r = await reach();
@@ -367,7 +361,7 @@ function run() {
     await b.key("Tab", "Tab", 9);
     assert.strictEqual(await focusName(), "scale-note-prev");
     const scrolled = await ev(`return document.querySelector("#scale-sheet .sheetbody").scrollTop;`);
-    await ev(`document.getElementById("scale-adjust-back").focus(); return true;`);
+    await ev(`document.getElementById("scale-back").focus(); return true;`);
     await frames();
     assert.strictEqual(await ev(`return document.querySelector("#scale-sheet .sheetbody").scrollTop;`), scrolled, "focusing BACK moved the scroll");
     await ev(`document.getElementById("scale-note-prev").focus(); return true;`);
@@ -410,14 +404,12 @@ function run() {
     await b.send("Page.resetNavigationHistory");
     await openAdd(SCALES.amara);
     await tap("A3"); await tap("C4");
-    await ev(`document.getElementById("scale-adjust-back").click(); return true;`);
-    await b.waitFor(`!document.getElementById("scale-sheet").classList.contains("adjusting") && !(history.state && history.state.adjust)`, { label: "the layer to close and its entry to pop" });
     await ev(`document.getElementById("scale-generate").click(); return true;`);
     await waitSheet(false);
     await b.waitFor(`!(history.state && history.state.scalePage)`, { label: "the sheet's entry to pop" });
     await ev(`document.querySelector("#decks .chip.on").click(); return true;`);
     await waitSheet(true);
-    await ev(`document.getElementById("scale-layout-toggle").click(); return true;`);
+    await ev(`document.getElementById("scale-tab-layout").click(); return true;`);
     await frames();
     assert.match(await seatOrder(), /^C4=1 A3=2 /);
   });

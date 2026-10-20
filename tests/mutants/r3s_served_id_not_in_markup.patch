@@ -11,5 +11,5 @@ diff --git a/tools/sandbox.js b/tools/sandbox.js
 -  "scale-layout-reset",
 +  "scale-layout-reset", "scale-slots",
    // Lane DR1: the layout drawer shell.
-   "scale-layout-zone", "scale-plate-band", "scale-layout-toggle", "scale-layout-hint",
+   "scale-layout-zone", "scale-plate-band", "scale-layout-hint",
    "scale-layout-state", "scale-drawer", "scale-drawer-hint", "scale-drawer-status",

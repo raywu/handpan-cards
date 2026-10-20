@@ -1,14 +1,14 @@
-# kills: DR2a (59, 76, 99, 116, 12): SEAT buttons follow the pick, RESET LAYOUT follows the layout and returns to the default
-# suite: node --test --test-name-pattern ^DR2a..59..76..99..116..12...SEAT.buttons.follow.the.pick..RESET.LAYOUT.follows.the.layout.and.returns.to.the.default$ tests/app.test.js
+# kills: TB: RESET LAYOUT moves focus to the Layout tab
+# suite: node --test --test-name-pattern ^TB:.RESET.LAYOUT.moves.focus tests/app.test.js
 # RESET LAYOUT leaves focus on a button that may have gone disabled.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9395,7 +9395,6 @@ function resetLayout() {
+@@ -10919,7 +10919,6 @@
    paintLayout();
    resyncSheet(true);
    layoutStatus("Layout reset.");
--  drawerBtn.focus();
+-  tabLayout.focus();
  }
  
  /** The sheet's options without the deck name: what the layout alone needs. */

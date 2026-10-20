@@ -1,4 +1,4 @@
-# kills: KB: at 390x745 with a 369px visible area, under every innerHeight model the sheet is kbup, short and side, the head is hidden, and each field is fully visible with the pan's top
+# kills: KB: at 390x745 with a 369px visible area, under every innerHeight model the sheet is kbup, short and side, the head is hidden, and each field is fully visible
 # suite: node --test --test-name-pattern ^KB..at.390x745.with.a.369px.* tests/e2e.test.js
 # The kbBase term goes: a keyboard that resizes the layout viewport itself (model D) leaves the sheet
 # in no keyboard class because vv.height equals the new layout height.

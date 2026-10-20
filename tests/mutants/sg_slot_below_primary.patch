@@ -1,21 +1,22 @@
 # kills: SG: N-A2 the served markup order is .sheetbody, #scale-guidance (#scale-field-msg, #scale-msg, #scale-layout-state), #scale-generate, #scale-delete-row
-# Plan wording: SG: N-A2 the served markup order is .sheetbody, #scale-guidance (#scale-msg, #scale-layout-state), #scale-generate, #scale-delete-row
 # suite: node --test --test-name-pattern ^SG:.N-A2.the.served.markup.order tests/app.test.js
 # The slot is placed under the primary, away from the button the notice names.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1554,12 +1554,12 @@ html.about-open{overflow:hidden}
+@@ -1517,13 +1517,13 @@
           Seed refusals, the parse line, the drawer status and the hints stay by
           the controls they describe. Pinned by "SG: N-A2", "SG: N-A5" and
           "SG: N-A6" in tests/e2e.test.js. -->
-+    <button id="scale-generate" type="button" disabled>GENERATE CARDS</button>
++    <button id="scale-next" type="button">NEXT</button>
++    <button id="scale-generate" type="button" hidden disabled>GENERATE CARDS</button>
      <div id="scale-guidance">
        <p id="scale-field-msg"></p>
        <div id="scale-msg" aria-live="polite"></div>
        <p class="sheethint" id="scale-layout-state" aria-live="polite" aria-atomic="true" hidden></p>
      </div>
--    <button id="scale-generate" type="button" disabled>GENERATE CARDS</button>
+-    <button id="scale-next" type="button">NEXT</button>
+-    <button id="scale-generate" type="button" hidden disabled>GENERATE CARDS</button>
      <div class="editrow" id="scale-delete-row" hidden>
        <button id="scale-delete" type="button">DELETE THIS DECK</button>
        <!-- The arming warning lives NEXT TO THE BUTTON it is about, not in

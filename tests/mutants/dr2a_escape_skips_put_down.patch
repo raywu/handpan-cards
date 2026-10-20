@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12632,7 +12632,7 @@ document.addEventListener("keydown", e => {
+@@ -12599,7 +12599,7 @@ document.addEventListener("keydown", e => {
    if (sheetOpen) {
      if (e.key === "Escape") {
        e.preventDefault();
 -      if (drawerOpen && pickRef) putDownPick();
 +      if (false) putDownPick();
-       else if (drawerOpen) closeAdjust();
        else closeScaleSheet();
      }
+     return;

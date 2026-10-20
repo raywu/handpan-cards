@@ -1,13 +1,12 @@
 # kills: DR3 order: hint, orientation, mirrors, disclosure, finer rows, RESET LAYOUT
 # suite: node --test --test-name-pattern ^DR3.order tests/app.test.js
 # The orientation block sits below the mirror rows instead of above them.
-# The orientation block sits below the mirror rows instead of above them.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1470,6 +1470,13 @@ html.about-open{overflow:hidden}
+@@ -1469,6 +1469,13 @@
      <div id="scale-layout-zone">
-       <div id="scale-drawer" role="group" aria-label="Layout" hidden>
+       <div id="scale-drawer" role="group" aria-label="Layout">
          <p class="sheethint" id="scale-drawer-hint" hidden></p>
 +        <div class="ctlrow">
 +          <div class="mirror">
@@ -19,7 +18,7 @@ diff --git a/index.html b/index.html
          <div class="editrow">
            <span class="sheetlabel" id="scale-anchor-label">HANDPAN ORIENTATION</span>
            <div class="ctlrow" role="group" aria-labelledby="scale-anchor-label">
-@@ -1480,13 +1487,6 @@ html.about-open{overflow:hidden}
+@@ -1479,13 +1486,6 @@
            </div>
          </div>
          <p class="sheethint">Which note sits nearest you: note 1 alone, or notes 1 and 2 side by side.</p>

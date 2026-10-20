@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1304,6 +1304,10 @@
+@@ -1506,6 +1506,10 @@ html.about-open{overflow:hidden}
          </div>
        </div>
      </div>
@@ -12,6 +12,6 @@ diff --git a/index.html b/index.html
 +      <label class="sheetlabel" for="scale-degrees">DEGREES</label>
 +      <select id="scale-degrees"></select>
 +    </div>
-     <!-- Inside .sheetbody, in the scroll. It used to be pinned below the
-          scrollport with the primary, on the argument that everything outside
-          .sheetbody is what the sheet guarantees without scrolling - so the
+     </div>
+    </div>
+     <!-- The page's messages, pinned with the primary: everything say() writes
