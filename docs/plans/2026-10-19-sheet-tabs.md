@@ -412,7 +412,7 @@ Worked examples (ding D3 unless stated):
 | `d` | D2 (same pitch class as the ding) |
 | `A2 a` | A2 then A3 (strictly above), accepted |
 | `c d` | C3 D3, with the warning "D3 is already the ding. Double-check the bottom notes."; `c D4` clears it |
-| top `A3 C4`, bottom `B3 c` | B3 C4, with the warning "C4 is already top note 2. Double-check the bottom notes." on the field line |
+| top `A3 C4`, bottom `B3 c` | B3 C4, with the warning "C4 is already top note 2. Double-check the bottom notes." on the field line (prefixed BOTTOM NOTES: by paintFields) |
 | `C1 c1`-style repeat `G2 G2` | "G2 is already in the bottom notes." |
 | ding F3, `C Db Eb Bb Db Ab` (Pygmy unoctaved) | C3 Db3 Eb3 Bb3 Db4 Ab4 |
 | ding F3, `c Db4` | C3 Db4 |
@@ -687,7 +687,7 @@ in `tests/e2e.test.js`. Prefixes: `O1:` (engine and sheet placement), `TB:` (tab
 |---|---|---|---|
 | `o1_first_at_ding_octave.patch` | first octaveless bottom seeded at `ding.octave` (old rule) | O1: compose places the first octaveless bottom in the octave below the ding: D3 g a b c gives G2 A2 B2 C3 | `O1:.compose.places.the.first` |
 | `o1_run_capped_at_ding.patch` | later notes capped below the ding | O1: an octaveless bottom run may rise past the ding: D3 c d e f g gives C3 D3 E3 F3 G3 | `O1:.an.octaveless.bottom.run` |
-| `o1_typed_octave_replaced.patch` | an octaved note also gets placed | O1: a typed bottom octave is kept and the next octaveless note goes above it: D3 g A2 c gives G2 A2 C3, D3 A3 c gives A3 C4 | `O1:.a.typed.bottom.octave` |
+| `o1_typed_octave_replaced.patch` | an octaved note also gets placed | O1: a typed bottom octave is kept and the next octaveless note goes above it: D3 g A2 c gives G2 A2 C3, D3 A3 c gives A3 C4 | `O1:.a.typed.bottom.octave.is.kept` |
 | `o1_paths_diverge.patch` | `composeBottoms` stops calling `HPE.core.inferBottoms` and seeds from `ding.octave` again; `parseLegacySeed` untouched | O1: the two inference paths agree: compose and parseLegacySeed give the same bottom midis for D3 g; D3 g a b c; D3 c d e f g; F3 C Db Eb Bb Db Ab | `O1:.the.two.inference.paths` |
 | `o1_legacy_nearest_kept.patch` | `validate` places the legacy `|` list's first bottom by the nearest instance again (old `nearestToDing`) | O1: parseLegacySeed places the first octaveless bottom in the octave below the ding: (D3) A3 C4 E4 &#124; G gives G2 | `O1:.parseLegacySeed.places` |
 | `tb_tab_pushes_history.patch` | the tab switch calls `pushState` | TB: a tab switch pushes no history entry and calls no replaceState | `TB:.a.tab.switch.pushes` |
@@ -695,7 +695,7 @@ in `tests/e2e.test.js`. Prefixes: `O1:` (engine and sheet placement), `TB:` (tab
 | `tb_next_validates.patch` | NEXT disabled while `!boxOk` | TB: NEXT shows only in Add on the Scale tab, is enabled in every scale state, selects Layout and focuses the Layout tab | `TB:.NEXT.shows` |
 | `tb_roving_two_zeros.patch` | both tabs `tabindex=0` | TB: ArrowRight, ArrowLeft, Home and End move and activate the tabs, wrap, and keep exactly one tabindex 0 | `TB:.ArrowRight` |
 | `tb_layout_controls_enabled_invalid.patch` | drawer controls enabled with `!boxOk` | TB: the Layout tab with an empty or invalid scale shows the hint, the empty plate and every drawer control disabled and out of the Tab order | `TB:.the.Layout.tab.with` |
-| `tb_pan_small_on_layout.patch` | Layout pan uses `clamp(88px,30cqw,160px)` | TB: at 320x568, 380x780, 393x852, 844x390 and 1280x800 the Layout pan is wider than the old small pan clamp(88px, 30cqw, 160px) and at least the section 3.6 width minus 2px | `TB:.at.320x568` |
+| `tb_pan_small_on_layout.patch` | Layout pan uses `clamp(88px,30cqw,160px)` | TB: at 320x568, 380x780, 393x852, 844x390 and 1280x800 the Layout pan is wider than the old small pan clamp(88px, 30cqw, 160px) and at least the section 3.6 width minus 2px | `TB:.at.320x568..380x780..393x852..844x390` |
 | `lp_label_fixed.patch` | lip label always "Show GENERATE CARDS" | LP: the lip's aria-label names the visible primary: Show NEXT, Show GENERATE CARDS, Show SAVE CHANGES | `LP:.the.lip.s.aria.label` |
 | `lp_tab_keeps_lipshut.patch` | a tab switch leaves `lipshut` | LP: a tab switch or NEXT clears lipshut with lipnow and re-baselines the scroll | `LP:.a.tab.switch.or.NEXT` |
 
@@ -806,7 +806,7 @@ engine is a separate file-ownership boundary.
   It is bash, for the process substitution. A changed helper they call is caught by the 5.1 guard test,
   not by this diff.
 - **Also owns:** the `compose` `warn` key and `DUPLICATE_NOTE` (4.2 item 4) with its 5.1 tests and the three
-  `o1_dup_*` mutants. Lane T1 owns the rendering (`renderFieldMessages` → `#scale-field-msg.warn`), the 5.2 duplicate tests and the two
+  `o1_dup_*` mutants. Lane T1 owns the rendering (`renderFieldMessages` → `#scale-field-msg.warn`), the 5.2 duplicate tests and the three
   `tb_dup_*` mutants.
 - **Non-goals:** no `index.html` edit outside the engine regions; no `share.js`, `formatSeed`, `parseSeed` or `scaleInfer` edit; no UI.
 
