@@ -1,0 +1,15 @@
+# kills: UX: a tap on the small pan opens Adjust layout; on an empty or invalid scale it does nothing
+# suite: node --test --test-name-pattern ^UX:.a.tap.on.the.small.pan tests/app.test.js
+# A tap on the small pan does nothing.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11863,7 +11863,7 @@ drawerBtn.addEventListener("blur", () => {
+ // Delegated to the plate: the targets are rewritten on every repaint.
+ previewBox.addEventListener("click", (e) => {
+   const hit = e.target && e.target.closest ? e.target.closest(".panhit") : null;
+-  if (!drawerOpen) { if (boxOk && !hit) showAdjust(); return; }
++  if (!drawerOpen) return;
+   if (!hit || !lastSolved) return;
+   if (suppressClick) { suppressClick = false; return; }
+   const ref = refOfNode(hit);

@@ -1,14 +1,15 @@
 # kills: DR3 Tab order on Add and Edit, finer controls closed and open
 # suite: node --test --test-name-pattern ^DR3.Tab.order.on.Add.and.Edit..finer.controls.closed.and.open$ tests/app.test.js
+# Re-anchored 2026-10-19 (dual input, lane P) against the Adjust layout source. The defect is unchanged.
 # The sheet's Tab list stops on buttons inside the closed disclosure.
 # Re-anchored 2026-10-14 (remove-degrees, lane app) against the new source. The mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10624,7 +10624,7 @@
-                  notePrev, noteNext, seatPrev, seatNext, resetBtn,
-                  ...swatches.children, genBtn,
-                  editingId ? delBtn : null]
+@@ -12358,7 +12358,7 @@ sheet.addEventListener("keydown", e => {
+        scaleBox,
+        ...swatches.children, genBtn,
+        editingId ? delBtn : null])
 -    .filter(isStop);
 +    .filter((el) => !!el && !el.disabled);
    if (isHit(document.activeElement) && pickRef && lastSolved) setRover(pickRef);

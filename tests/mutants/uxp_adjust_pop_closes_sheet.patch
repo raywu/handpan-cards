@@ -1,0 +1,14 @@
+# kills: UX: BACK, Escape and a popstate each close Adjust layout, keep the sheet, consume the entry and focus ADJUST LAYOUT
+# suite: node --test --test-name-pattern ^UX:.BACK,.Escape.and.a.popstate tests/app.test.js
+# A popstate out of Adjust layout falls through and closes the sheet as well.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11542,7 +11542,6 @@ window.addEventListener("popstate", () => {
+   if (drawerOpen) {
+     adjustRouted = false;
+     hideAdjust();
+-    if (atSheet) return;
+   } else if (atSheet && sheetOpen && history.state && history.state.adjust) {
+     if (boxOk) { adjustRouted = true; enterAdjust(); } else { pendingAdjustPop = true; history.back(); }
+     return;

@@ -1,15 +1,16 @@
 # kills: DR1 line 17: the toggle shows the drawer, sets aria-expanded and adds .on
 # suite: node --test --test-name-pattern ^DR1.line.17.* tests/app.test.js
+# Re-anchored 2026-10-19 (dual input, lane P) against the Adjust layout source. The defect is unchanged.
 # ADJUST LAYOUT does nothing when tapped: the drawer can never be opened.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10044,7 +10044,7 @@ const pickAnchor = (to) => () => {
+@@ -11845,7 +11845,7 @@ const pickAnchor = (to) => () => {
  };
  anchorOne.onclick = pickAnchor("one");
  anchorBetween.onclick = pickAnchor("between");
--drawerBtn.onclick = () => { if (drawerOpen) closeDrawer(true); else openDrawer(); };
+-drawerBtn.onclick = () => { if (drawerOpen) closeAdjust(); else showAdjust(); };
 +drawerBtn.onclick = () => {};
+ adjustBack.onclick = closeAdjust;
  notePrev.onclick = () => stepNote(-1);
  noteNext.onclick = () => stepNote(1);
- seatPrev.onclick = () => stepSeat(-1);

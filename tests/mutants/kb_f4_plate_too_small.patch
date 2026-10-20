@@ -1,15 +1,16 @@
-# kills: KB: F4 with the drawer open at 320x568 the per-viewport floor of options shows under the pan (160px where the viewport allows) and the plate is at least 140px
-# suite: node --test --test-name-pattern ^KB..F4.with.the.drawer.open.at.320x568.the.per.viewport.floor.* tests/e2e.test.js
+# kills: KB: F4 in Adjust layout at 320x568 at least 160px of options show under the large pan and the pan is at least 140px
+# suite: node --test --test-name-pattern ^KB..F4.in.Adjust.layout.at.320x568.at.least.160px.* tests/e2e.test.js
+# The large pan is fixed at 90px. The plate-width assertion kills it; the tap tests check occlusion, not size.
 # The open-drawer plate is capped at 90px. The plate-width assertion kills it; the tap tests check occlusion, not size.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1053,7 +1053,7 @@
- .scalestage > #scale-plate-band{position:sticky; top:0; z-index:2; background:#1f1b15;
-   padding-bottom:var(--sp-1)}
- .scalestage #scale-preview{width:clamp(110px, calc(100cqh - 260px), 300px); max-width:none}
--.sheetbody:has(#scale-layout-zone.open) #scale-preview{width:100%; max-width:min(300px, 31dvh)}
-+.sheetbody:has(#scale-layout-zone.open) #scale-preview{width:100%; max-width:min(300px, 90px)}
- .sheetbody:has(#scale-layout-zone.open):has(input:focus, textarea:focus, #scale-swatches button:focus)
-   #scale-plate-band{position:static}
- .sheetbody:has(#scale-layout-zone.nostick) #scale-plate-band{position:static}
+@@ -1047,7 +1047,7 @@ footer.seq{row-gap:var(--sp-1)}
+    chrome (two columns, set in the container query below). */
+ #scale-sheet:not(.adjusting) #scale-preview{width:clamp(88px, 30cqw, 160px)}
+ #scale-sheet.adjusting #scale-preview{--adj-reserve:232px;
+-  width:clamp(160px, min(100cqw, calc(100cqh - var(--adj-reserve))), 480px)}
++  width:90px}
+ /* The stage: the small pan and its caption in column one, the four fields in
+    column two. The column is as wide as the pan alone: the caption and hint are
+    0-wide and stretch, so their text never widens it. */

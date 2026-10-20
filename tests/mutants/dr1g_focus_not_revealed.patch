@@ -1,10 +1,10 @@
-# kills: DR1 rule G grid: stuck, padding, Tab stops, toggle in view and keyboard-up fields hold at every cell
-# suite: node --test --test-name-pattern ^DR1.rule.G.grid.* tests/drawer_grid.test.js
+# kills: KB2: a partly hidden note field is revealed with the minimal scroll
+# suite: node --test --test-name-pattern ^KB2:.a.partly.hidden tests/e2e.test.js
 # A focused text control is not revealed in its scroller (rule G-c).
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10454,7 +10454,7 @@ bandPort.addEventListener("focusin", (e) => {
+@@ -10503,6 +10503,6 @@
      if (sheetSurf) sheetSurf.scrollTop = snap.surf;
      scrollPin = { until: Date.now() + PIN_MS, body: 0, surf: 0 };
    }
@@ -12,4 +12,3 @@ diff --git a/index.html b/index.html
 +  void t;
  });
  /** Bring a focused field into view by scrolling only the scrollers inside the
-  *  sheet, the least distance, and not at all when it is whole in view.

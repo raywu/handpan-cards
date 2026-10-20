@@ -1,0 +1,15 @@
+# kills: UX: opening Adjust layout on a scale that does not parse pushes nothing
+# suite: node --test --test-name-pattern ^UX:.opening.Adjust.layout.on.a.scale tests/app.test.js
+# showAdjust loses its boxOk guard and pushes an entry for a scale that does not parse.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10601,7 +10601,7 @@ let pendingAdjustPop = false;
+ let closeAfterAdjustPop = false;
+ let sheetScroll = 0;
+ function showAdjust() {
+-  if (!(sheetOpen && boxOk && !drawerOpen && !pendingAdjustPop)) return;
++  if (!(sheetOpen && !drawerOpen && !pendingAdjustPop)) return;
+   history.pushState({ scalePage: true, adjust: true }, "", sheetRoute());
+   adjustRouted = true;
+   enterAdjust();

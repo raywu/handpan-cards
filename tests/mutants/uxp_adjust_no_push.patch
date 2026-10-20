@@ -1,0 +1,14 @@
+# kills: UX: opening Adjust layout pushes one state-only entry at the sheet's route and adds .adjusting
+# suite: node --test --test-name-pattern ^UX:.opening.Adjust.layout.pushes.one tests/app.test.js
+# Adjust layout pushes no history entry, so the back gesture would leave the sheet.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10602,7 +10602,6 @@ let closeAfterAdjustPop = false;
+ let sheetScroll = 0;
+ function showAdjust() {
+   if (!(sheetOpen && boxOk && !drawerOpen && !pendingAdjustPop)) return;
+-  history.pushState({ scalePage: true, adjust: true }, "", sheetRoute());
+   adjustRouted = true;
+   enterAdjust();
+ }

@@ -1,5 +1,6 @@
 # kills: arrow keys do not step the card while the sheet is open
 # suite: node --test --test-name-pattern ^arrow.keys.do.not.step.the.card.while.the.sheet.is.open$ tests/app.test.js
+# Re-anchored 2026-10-19 (dual input, lane P) against the Adjust layout source. The defect is unchanged.
 # Arrow keys still step the practice deck while the sheet is open, so moving
 # the caret inside the scale box shuffles the card behind it.
 #
@@ -13,8 +14,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10332,7 +10332,6 @@ document.addEventListener("keydown", e => {
-       else if (drawerOpen) closeDrawer();
+@@ -12636,7 +12636,6 @@ document.addEventListener("keydown", e => {
+       else if (drawerOpen) closeAdjust();
        else closeScaleSheet();
      }
 -    return;

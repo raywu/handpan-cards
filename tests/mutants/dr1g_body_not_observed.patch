@@ -1,19 +1,21 @@
 # kills: DR1 rule G by resize: open on Edit, rotate in either direction, and the band and padding follow
 # suite: node --test --test-name-pattern ^DR1.rule.G.by.resize.* tests/drawer_grid.test.js
+# Neither the pan column nor the sheet body is observed and the keyboard offset no longer calls syncBand, so a shrinking scrollport leaves the stuck state stale (rule G-e).
+# Re-anchored 2026-10-19 (lane P).
 # The sheet body is not observed, so a keyboard shrinking the scrollport leaves the stuck state stale (rule G-e). Widened 2026-10-19 (dual input, lane H2b'): the keyboard offset now also calls syncBand, so the missing observer alone is equivalent; the keyboard offset and the plate band's own observer keep the stuck state fresh in every scenario the suite can build, so the mutant drops the body observer, the plate-band observer and the keyboard-path call together.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10437,8 +10437,6 @@
- const bandPort = document.querySelector(".sheetbody") || plateBand;
+@@ -10488,8 +10488,6 @@ function syncBand() {
+ const bandPort = document.querySelector(".sheetbody") || panCol;
  if (typeof ResizeObserver === "function") {
    const bandWatch = new ResizeObserver(syncBand);
--  bandWatch.observe(plateBand);
+-  bandWatch.observe(panCol);
 -  bandWatch.observe(bandPort);
  }
  /** A native focus scrolls a text control only far enough to show its caret;
   *  rule G-c wants the whole control in the scrollport. */
-@@ -11205,7 +11203,6 @@
+@@ -11331,7 +11329,6 @@ function applyKbOffset(e) {
    setSheetClass("short", high > 0 && high < 560);
    setSheetClass("side", high > 0 && high < 420);
    setSheetClass("tiny", kb && high > 0 && high < 200);

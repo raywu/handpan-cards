@@ -1,0 +1,15 @@
+# kills: UX: a tap between BACK and its pop pushes no second Adjust entry
+# suite: node --test --test-name-pattern ^UX:.a.tap.between.BACK tests/e2e.test.js
+# showAdjust no longer refuses while BACK's history.back() is pending, so a tap pushes a second entry.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10601,7 +10601,7 @@
+ let closeAfterAdjustPop = false;
+ let sheetScroll = 0;
+ function showAdjust() {
+-  if (!(sheetOpen && boxOk && !drawerOpen && !pendingAdjustPop)) return;
++  if (!(sheetOpen && boxOk && !drawerOpen)) return;
+   history.pushState({ scalePage: true, adjust: true }, "", sheetRoute());
+   adjustRouted = true;
+   enterAdjust();

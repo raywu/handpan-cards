@@ -1,0 +1,22 @@
+# kills: UX: a popstate mid-drag cancels the gesture and moves nothing
+# suite: node --test --test-name-pattern ^UX:.a.popstate.mid-drag tests/app.test.js
+# Neither closing the layer nor the plate repaint cancels a gesture in flight.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10582,7 +10582,6 @@ function openDrawer() {
+  *  toggle once the toggle is rendered again. */
+ function closeDrawer() {
+   if (!drawerOpen) return;
+-  cancelGesture();
+   previewBox.removeEventListener("touchmove", plateTouchMove, { passive: false });
+   drawerOpen = false;
+   drawerPaused = false;
+@@ -11068,7 +11067,6 @@ function paintPan(seed, state) {
+   lastSeed = seed;
+   lastSolved = solved;
+   const interactive = drawerOpen && state === "current";
+-  if (!interactive) cancelGesture();
+   const p = HPE.select.PALETTES[palette] || HPE.select.PALETTES[0];
+   previewBox.innerHTML = pan(
+     { geom: solved.geom, fields: solved.fields, colors: { root: p.root, tone: p.tone } },
