@@ -1,15 +1,14 @@
-# kills: KB: F4 in Adjust layout at 390x669 every note on the large pan is hit by a tap at its centre (pygmy)
-# suite: node --test --test-name-pattern ^KB..F4.in.Adjust.layout.at.390x669.every.note.on.the.large.pan.*pygmy tests/e2e.test.js
-# The bottom-shell notes of the large pan stop taking pointer events, so six Pygmy notes cannot be tapped.
-# The bottom-shell notes of the open-drawer plate stop taking pointer events, so six Pygmy notes cannot be tapped.
+# kills: KB: F4 on the Layout tab at 390x669 every note on the large pan is hit by a tap at its centre (pygmy)
+# suite: node --test --test-name-pattern ^KB..F4.on.the.Layout.tab.at.390x669.every.note.on.the.large.pan.*pygmy tests/e2e.test.js
+# The bottom ring of the large pan takes no taps.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1046,6 +1046,7 @@ footer.seq{row-gap:var(--sp-1)}
-    keeps for controls under the pan (one column) or the room it gives the
-    chrome (two columns, set in the container query below). */
- #scale-sheet:not(.adjusting) #scale-preview{width:clamp(88px, 30cqw, 160px)}
-+#scale-sheet.adjusting #scale-preview .panhit[data-ring="bottom"]{pointer-events:none}
- #scale-sheet.adjusting #scale-preview{--adj-reserve:232px;
+@@ -1049,6 +1049,7 @@
+ #scale-or span{font:600 9.5px/1.5 "Nunito Sans"; letter-spacing:.13em; color:#a79d8b; text-transform:uppercase}
+ #scale-preview{--adj-reserve:232px;
    width:clamp(160px, min(100cqw, calc(100cqh - var(--adj-reserve))), 480px)}
- /* The stage: the small pan and its caption in column one, the four fields in
++#scale-preview .panhit[data-ring="bottom"]{pointer-events:none}
+ #scale-plate-band{position:sticky; top:0; z-index:2; background:#1f1b15; padding-bottom:var(--sp-1)}
+ .sheetbody:has(#scale-layout-zone.nostick) #scale-plate-band{position:static}
+ .sheetbody{scroll-padding-top:var(--plate-band-h, 0px)}

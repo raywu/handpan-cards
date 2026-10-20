@@ -1,21 +1,11 @@
 # kills: arrow keys do not step the card while the sheet is open
 # suite: node --test --test-name-pattern ^arrow.keys.do.not.step.the.card.while.the.sheet.is.open$ tests/app.test.js
-# Re-anchored 2026-10-19 (dual input, lane P) against the Adjust layout source. The defect is unchanged.
-# Arrow keys still step the practice deck while the sheet is open, so moving
-# the caret inside the scale box shuffles the card behind it.
-#
-# Refreshed 2026-09-28 (lane M1, menu-shell): the settings panel's own
-# keydown block (panelOpen) now sits between the sheetOpen block and the
-# ArrowRight/ArrowLeft handling, so the old hunk's trailing context (the
-# arrow-key lines immediately after the closing brace) no longer sits next
-# to this code. Re-anchored on the lines that still are adjacent; the
-# defect and the fix are unchanged.
-# Refreshed 2026-10-08 (DR2a): re-anchored on the DR2a source
+# Arrow keys still step the practice deck while the sheet is open.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12636,7 +12636,6 @@ document.addEventListener("keydown", e => {
-       else if (drawerOpen) closeAdjust();
+@@ -12602,7 +12602,6 @@
+       if (drawerOpen && pickRef) putDownPick();
        else closeScaleSheet();
      }
 -    return;

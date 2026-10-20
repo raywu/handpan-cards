@@ -1,14 +1,14 @@
 # kills: DR2a (68, 122, 99, 18): closing the drawer, or a scale that stops parsing, ends the pick and keeps the swaps
 # suite: node --test --test-name-pattern ^DR2a..68..122..99..18...closing.the.drawer..or.a.scale.that.stops.parsing..ends.the.pick.and.keeps.the.swaps$ tests/app.test.js
-# Closing the drawer leaves a note picked.
+# Leaving the Layout tab leaves a note picked.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9025,7 +9025,6 @@ function closeDrawer(viaToggle) {
-   previewBox.removeEventListener("touchmove", plateTouchMove, { passive: false });
-   drawerOpen = false;
-   drawerPaused = false;
--  pickRef = null;
-   pickMoved = false;
-   drawerStatus.textContent = "";
-   drawerStatus.classList.remove("warn");
+@@ -10580,7 +10580,6 @@
+   if (sheetTab === "layout") {
+     cancelGesture();
+     previewBox.removeEventListener("touchmove", plateTouchMove, { passive: false });
+-    pickRef = null;
+     pickMoved = false;
+     drawerStatus.textContent = "";
+     drawerStatus.classList.remove("warn");

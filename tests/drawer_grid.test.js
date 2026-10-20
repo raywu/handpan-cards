@@ -153,7 +153,7 @@ function run() {
     await frames();
   };
   const openDrawerNow = async () => {
-    await ev(`__d.sp().scrollTop = 0; const t = document.getElementById("scale-tab-layout"); t.focus(); t.click(); return true;`);
+    await ev(`__d.sp().scrollTop = __d.sp().scrollHeight; const t = document.getElementById("scale-tab-layout"); t.focus(); t.click(); return true;`);
     await frames();
   };
 

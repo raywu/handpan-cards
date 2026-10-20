@@ -1,15 +1,15 @@
-# kills: UX: Adjust layout is two columns at 844x390 with the large pan >=280px, one column at 500x390
-# suite: node --test --test-name-pattern ^UX:.Adjust.layout.is.two.columns tests/e2e.test.js
-# The large pan reserves no room for the controls, so at 500x390 it fills the screen.
+# kills: KB: F4 on the Layout tab at 320x568 at least 160px of options show under the large pan and the pan is at least 140px
+# suite: node --test --test-name-pattern ^KB..F4.on.the.Layout.tab.at.320x568.at.least.160px.* tests/e2e.test.js
+# The room kept for the controls under the pan is dropped, so the pan eats the viewport.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1046,7 +1046,7 @@ footer.seq{row-gap:var(--sp-1)}
-    keeps for controls under the pan (one column) or the room it gives the
-    chrome (two columns, set in the container query below). */
- #scale-sheet:not(.adjusting) #scale-preview{width:clamp(88px, 30cqw, 160px)}
--#scale-sheet.adjusting #scale-preview{--adj-reserve:232px;
-+#scale-sheet.adjusting #scale-preview{--adj-reserve:0px;
+@@ -1047,7 +1047,7 @@
+ #scale-or{display:flex; align-items:center; gap:var(--sp-3)}
+ #scale-or::before, #scale-or::after{content:""; flex:1 1 0; height:1px; background:#433b2c}
+ #scale-or span{font:600 9.5px/1.5 "Nunito Sans"; letter-spacing:.13em; color:#a79d8b; text-transform:uppercase}
+-#scale-preview{--adj-reserve:232px;
++#scale-preview{--adj-reserve:0px;
    width:clamp(160px, min(100cqw, calc(100cqh - var(--adj-reserve))), 480px)}
- /* The stage: the small pan and its caption in column one, the four fields in
-    column two. The column is as wide as the pan alone: the caption and hint are
+ #scale-plate-band{position:sticky; top:0; z-index:2; background:#1f1b15; padding-bottom:var(--sp-1)}
+ .sheetbody:has(#scale-layout-zone.nostick) #scale-plate-band{position:static}

@@ -1,15 +1,15 @@
-# kills: UX: Adjust layout shows the large pan, the layout controls and no field, scale line or primary
-# suite: node --test --test-name-pattern ^UX:.Adjust.layout.shows.the.large.pan tests/e2e.test.js
-# The four fields stay visible under the large pan.
+# kills: TB: ArrowRight, ArrowLeft, Home and End move and activate the tabs, wrap, and keep exactly one tabindex 0
+# suite: node --test --test-name-pattern ^TB:.ArrowRight tests/app.test.js
+# The Scale panel stays shown while Layout is selected.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1063,7 +1063,7 @@ footer.seq{row-gap:var(--sp-1)}
- /* Adjust layout is a layer over the sheet: the head, the pan and the drawer
-    stay; every field, the scale line, the swatches and the footer step aside. */
- #scale-sheet.adjusting .sheethead:not(#scale-adjust-head), #scale-sheet.adjusting #scale-name-row,
--#scale-sheet.adjusting .scalecol, #scale-sheet.adjusting .sheetbody > .fieldrow,
-+#scale-sheet.adjusting .sheetbody > .fieldrow,
- #scale-sheet.adjusting .sheetbody > .ctlrow, #scale-sheet.adjusting #scale-layout-row,
- #scale-sheet.adjusting #scale-generate, #scale-sheet.adjusting #scale-delete-row{display:none}
- #scale-sheet.adjusting .scalestage{display:contents}
+@@ -10569,7 +10569,7 @@
+     tab.classList.toggle("on", on);
+     tab.setAttribute("aria-selected", String(on));
+     tab.setAttribute("tabindex", on ? "0" : "-1");
+-    panel.hidden = !on;
++    panel.hidden = !on && panel !== panelScale;
+   }
+   sheet.setAttribute("data-tab", sheetTab);
+   nextBtn.hidden = !(!editingId && !onLayout);

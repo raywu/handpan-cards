@@ -4528,6 +4528,8 @@ function run() {
         await b.settle();
         await b.eval(`document.getElementById("scale-inner").focus(); return true;`);
         await b.settle();
+        await b.eval(`const sb = document.querySelector("#scale-sheet .sheetbody"); sb.scrollTop = sb.scrollHeight; return true;`);
+        await b.settle();
         const m = await b.eval(`
           const el = document.getElementById("scale-field-msg"), r = el.getBoundingClientRect(), vv = window.visualViewport;
           return { text: el.textContent, top: r.top, bottom: r.bottom, h: r.height, vvBottom: vv.offsetTop + vv.height };`);

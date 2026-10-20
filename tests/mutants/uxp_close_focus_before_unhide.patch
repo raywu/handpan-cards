@@ -1,20 +1,14 @@
-# kills: UX: closing Adjust layout restores the sheet's scroll and focuses ADJUST LAYOUT
-# suite: node --test --test-name-pattern ^UX:.closing.Adjust.layout.restores tests/e2e.test.js
-# Focus is requested while the layer still hides ADJUST LAYOUT, so it falls to body.
+# kills: TB: switching to Layout with #scale-box focused and the keyboard up ends kbup and shows the tab strip
+# suite: node --test --test-name-pattern ^TB:.switching.to.Layout.with tests/app.test.js
+# A switch leaves focus on a control inside the panel it just hid.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10616,11 +10616,11 @@ function enterAdjust() {
-   adjustTitle.focus({ preventScroll: true });
- }
- function hideAdjust() {
-+  drawerBtn.disabled = false;
-+  drawerBtn.focus({ preventScroll: true });
-   sheet.classList.remove("adjusting");
-   adjustHead.hidden = true;
-   sheet.setAttribute("aria-labelledby", "scale-title");
--  drawerBtn.disabled = false;
--  drawerBtn.focus({ preventScroll: true });
-   closeDrawer();
-   bandPort.scrollTop = sheetScroll;
- }
+@@ -10591,7 +10591,6 @@
+   drawerOpen = tab === "layout";
+   paintTabs();
+   const held = document.activeElement;
+-  if (held && held !== document.body && !held.getClientRects().length) held.blur();
+   paintLayout();
+   repaintPlate();
+   bandPort.scrollTop = 0;
