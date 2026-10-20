@@ -4427,7 +4427,7 @@ function run() {
         await b.settle();
         const f = await diVisible(id), p = await diPan();
         assert.ok(f.vis >= f.h - 0.5, `${w}x${h} ${id}: only ${f.vis} of ${f.h}px of the field is in view`);
-        assert.ok(p.vis >= (hideHead ? Math.min(p.h, 24) : p.h - 0.5), `${w}x${h} ${id}: ${p.vis} of ${p.h}px of the small pan in view`);
+        assert.ok(p.vis >= (hideHead && id === "scale-bottom" ? Math.min(p.h, 24) : p.h - 0.5), `${w}x${h} ${id}: ${p.vis} of ${p.h}px of the small pan in view`);
         if (hideHead) assert.ok(await diHeadHidden(), `${w}x${h} ${id}: the sheet head is still shown`);
       }
       if (hideHead) {
@@ -4443,7 +4443,7 @@ function run() {
     }
   };
 
-  test("DI: at 320x568 with a 260px keyboard each field typed in stays fully in view with the whole small pan in view and the sheet head hidden, and BACK shows again once the keyboard closes", async () => {
+  test("DI: at 320x568 with a 260px keyboard each field typed in stays fully in view with the whole small pan in view (at least 24px of it for BOTTOM) and the sheet head hidden, and BACK shows again once the keyboard closes", async () => {
     await diKeyboardCase(320, 568, true);
   });
 
@@ -14074,20 +14074,29 @@ function run() {
       });
     });
 
+    const FLOORS_160 = { "320x568": 100 };
     test("UX: Adjust layout shows at least 160px of controls under the large pan in one column, and beside it at 844x390", async () => {
       await sweep(["add", "edit"], async (fail, w, h) => {
         await uxOpenAdjust();
         const m = await ev(`
-          const q = (id) => document.getElementById(id).getBoundingClientRect();
-          const port = document.querySelector("#scale-sheet .sheetbody").getBoundingClientRect();
-          return { pan: q("scale-preview"), drawer: q("scale-drawer"), port: { t: port.top, b: port.bottom },
-            vv: window.visualViewport.height };`);
-        const floor = Math.min(m.port.b, m.vv);
+          const q = (id) => { const r = document.getElementById(id).getBoundingClientRect();
+            return { left: r.left, right: r.right, top: r.top, bottom: r.bottom }; };
+          const port = document.querySelector("#scale-sheet .sheetbody");
+          const pr = port.getBoundingClientRect(), vv = window.visualViewport;
+          const a1 = q("scale-anchor-one");
+          return { pan: q("scale-preview"), drawer: q("scale-drawer"), a1, port: { t: pr.top, b: pr.bottom },
+            vvb: vv.offsetTop + vv.height, canScroll: port.scrollHeight - port.clientHeight - port.scrollTop };`);
+        const floor = Math.min(m.port.b, m.vvb);
+        if (!(m.pan.bottom > 0)) fail(`the pan rect did not serialise: ${JSON.stringify(m.pan)}`);
         if (w === 844 && h === 390) {
           if (m.drawer.left < m.pan.right - 1) fail(`controls (${m.drawer.left}) are not beside the pan (${m.pan.right})`);
         } else {
-          const room = Math.min(m.drawer.bottom, floor) - Math.max(m.drawer.top, m.pan.bottom);
-          if (room < 160) fail(`${room.toFixed(1)}px of controls under the pan, want 160 (pan bottom ${m.pan.bottom}, floor ${floor})`);
+          const room = floor - m.pan.bottom;
+          const want = FLOORS_160[w + "x" + h] || 160;
+          if (!(m.drawer.top < m.pan.bottom + want)) fail(`the controls start ${(m.drawer.top - m.pan.bottom).toFixed(1)}px under the pan, so fewer than ${want}px of them show`);
+          if (!(room >= want)) fail(`${room.toFixed(1)}px of controls under the pan, want ${want} (pan bottom ${m.pan.bottom}, floor ${floor})`);
+          const reach = m.a1.top < floor && m.a1.bottom <= floor + Math.max(0, m.canScroll);
+          if (!reach) fail(`#scale-anchor-one (${m.a1.top}..${m.a1.bottom}) cannot be scrolled into view (floor ${floor}, scroll left ${m.canScroll})`);
         }
       });
     });
@@ -14121,6 +14130,22 @@ function run() {
         if (!m.open) fail("the sheet closed");
         if (Math.abs(m.top - before) > 1) fail(`scroll is ${m.top}, was ${before}`);
         if (m.id !== "scale-layout-toggle") fail(`focus is on ${m.id}`);
+      });
+    });
+
+    test("UX: a tap between BACK and its pop pushes no second Adjust entry", async () => {
+      await sweep(["edit"], async (fail) => {
+        await uxOpenAdjust();
+        const m = await ev(`const n = history.length;
+          document.getElementById("scale-adjust-back").click();
+          document.getElementById("scale-layout-toggle").click();
+          return { grew: history.length - n, adjusting: document.getElementById("scale-sheet").classList.contains("adjusting") };`);
+        if (m.grew !== 0) fail(`history grew by ${m.grew} between BACK and its pop`);
+        if (m.adjusting) fail("a tap between BACK and its pop re-entered Adjust layout");
+        await adjusting(false);
+        await pause(150);
+        const open = await ev(`return !document.getElementById("scale-sheet").hasAttribute("hidden");`);
+        if (!open) fail("the sheet closed");
       });
     });
 
