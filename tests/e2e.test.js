@@ -14431,6 +14431,48 @@ function run() {
       } finally { await reset(); }
     });
 
+    const focusPrimary = () => b.eval(`const n = document.getElementById("scale-next"), g = document.getElementById("scale-generate"); const e = !n.hidden ? n : g; e.focus(); return document.activeElement.id;`);
+    const activeId = () => b.eval(`return document.activeElement && document.activeElement.id;`);
+    test("UX: a collapse while the primary holds focus moves focus to the lip and the footer stays collapsed", { timeout: 40000 }, async () => {
+      const fails = [];
+      try {
+        for (const [w, h] of [[380, 780], [844, 390]]) {
+          await lipOpen(w, h);
+          const ctx = `${w}x${h}`;
+          const id = await focusPrimary();
+          if (id !== "scale-next" && id !== "scale-generate") { fails.push(`${ctx}: the primary did not take focus (${id})`); continue; }
+          await collapse();
+          const s = await lipState();
+          const a = await activeId();
+          if (!(s.lipped && s.shut)) fails.push(`${ctx}: the collapse undid itself (${JSON.stringify(s)})`);
+          if (a !== "scale-lip") fails.push(`${ctx}: focus is on ${a}, not the lip`);
+        }
+      } finally { await reset(); }
+      assert.deepEqual(fails, []);
+    });
+
+    test("UX: after a tap on the lip restores the footer, a second swipe down collapses it again", { timeout: 40000 }, async () => {
+      const fails = [];
+      try {
+        for (const [w, h] of [[380, 780], [844, 390]]) {
+          await lipOpen(w, h);
+          const ctx = `${w}x${h}`;
+          await collapse();
+          let s = await lipState();
+          if (!(s.lipped && s.shut)) { fails.push(`${ctx}: the first swipe did not collapse (${JSON.stringify(s)})`); continue; }
+          const r = await lipRect();
+          await tapAt(Math.round((r.left + r.right) / 2), Math.round((r.top + r.bottom) / 2));
+          s = await lipState();
+          if (s.lipped) { fails.push(`${ctx}: the tap did not restore (${await lipDiag()})`); continue; }
+          await collapse();
+          s = await lipState();
+          if (!s.lipped) { await collapse(); s = await lipState(); }
+          if (!(s.lipped && s.shut)) fails.push(`${ctx}: the swipe after a lip tap did not collapse (${await lipDiag()})`);
+        }
+      } finally { await reset(); }
+      assert.deepEqual(fails, []);
+    });
+
     test("UX: under prefers-reduced-motion the footer collapses and restores with no transition, in one task", { timeout: 60000 }, async () => {
       try {
         await lipOpen(380, 780);

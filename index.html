@@ -10650,6 +10650,7 @@ function lipHandOff() {
   const to = !lead.disabled && !lead.hidden ? lead : (editingId && !delBtn.disabled ? delBtn : swatches.lastElementChild || lead);
   if (to && to.focus) to.focus({ preventScroll: true });
 }
+let lipFocusing = false;
 function collapseLip() {
   if (!sheetOpen) return;
   lipAcc = 0;
@@ -10668,7 +10669,11 @@ function collapseLip() {
   const gen = lipGen;
   lipTimer = setTimeout(() => { if (gen === lipGen) lipSettled = true; }, LIP_END_MS);
   const a = document.activeElement;
-  if (a === nextBtn || a === genBtn || a === delBtn) lipBtn.focus({ preventScroll: true });
+  if (a === nextBtn || a === genBtn || a === delBtn) {
+    lipFocusing = true;
+    lipBtn.focus({ preventScroll: true });
+    lipFocusing = false;
+  }
 }
 function restoreLip() {
   if (!sheetOpen || !isLipped() || !isLipShut()) return;
@@ -10767,7 +10772,9 @@ lipBtn.addEventListener("touchmove", (e) => {
 }, { passive: true });
 lipBtn.addEventListener("touchend", () => { lipTouch = null; }, { passive: true });
 lipBtn.addEventListener("click", restoreLip);
-lipBtn.addEventListener("focusin", restoreLip);
+lipBtn.addEventListener("focusin", () => {
+  if (!lipFocusing) restoreLip();
+});
 footSlide.addEventListener("transitionend", (e) => {
   if (e.target === footSlide && e.propertyName === "transform") endOpening(lipEnd);
 });

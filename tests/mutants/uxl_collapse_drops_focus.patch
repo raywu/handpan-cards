@@ -8,7 +8,11 @@ diff --git a/index.html b/index.html
    const gen = lipGen;
    lipTimer = setTimeout(() => { if (gen === lipGen) lipSettled = true; }, LIP_END_MS);
    const a = document.activeElement;
--  if (a === nextBtn || a === genBtn || a === delBtn) lipBtn.focus({ preventScroll: true });
+-  if (a === nextBtn || a === genBtn || a === delBtn) {
+-    lipFocusing = true;
+-    lipBtn.focus({ preventScroll: true });
+-    lipFocusing = false;
+-  }
  }
  function restoreLip() {
    if (!sheetOpen || !isLipped() || !isLipShut()) return;
