@@ -1,17 +1,17 @@
 # kills: DR1 rule G grid: stuck, padding, Tab stops, toggle in view and keyboard-up fields hold at every cell
 # suite: node --test --test-name-pattern ^DR1.rule.G.grid.* tests/drawer_grid.test.js
+# Opening Adjust layout leaves the sheet where it was scrolled instead of at the top, so the pan is not brought into view (rule G-f).
+# Re-anchored 2026-10-19 (lane P): the zone and toggle scrolls are gone with the in-sheet drawer.
 # Opening the drawer scrolls nothing: neither the zone nor the toggle is brought into view (rule G-f). Widened 2026-10-19 (dual input, lane H2b'): with the fields above the layout zone the zone scroll alone brings the toggle in view, so the toggle line alone is equivalent.
 # Refreshed 2026-10-08 (DR2a): context follows the focus-on-open line
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10475,9 +10475,6 @@
-   paintLayout();
-   focusFirstNext = true;
-   repaintPlate();
--  keepToggle(at);
--  layoutZone.scrollIntoView({ block: "nearest", behavior: "auto" });
--  drawerBtn.scrollIntoView({ block: "nearest", behavior: "auto" });
-   const note = document.activeElement;
-   if (window.getComputedStyle && getComputedStyle(plateBand).position === "static" &&
-       note && note.closest && note.closest("#scale-preview")) {
+@@ -10612,7 +10612,6 @@ function enterAdjust() {
+   adjustHead.hidden = false;
+   sheet.setAttribute("aria-labelledby", "scale-adjust-title");
+   openDrawer();
+-  bandPort.scrollTop = 0;
+   adjustTitle.focus({ preventScroll: true });
+ }
+ function hideAdjust() {

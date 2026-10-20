@@ -4,15 +4,15 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1266,7 +1266,6 @@ footer.seq{row-gap:var(--sp-1)}
-         <p class="sheethint" id="scale-layout-hint">Type a scale to adjust its layout.</p>
-       </div>
+@@ -1469,7 +1469,6 @@ html.about-open{overflow:hidden}
+          previewed cannot drift from what GENERATE CARDS produces. -->
+     <div id="scale-layout-zone">
        <div id="scale-drawer" role="group" aria-label="Layout" hidden>
 -        <p class="sheethint" id="scale-drawer-hint" hidden></p>
          <div class="editrow">
            <span class="sheetlabel" id="scale-anchor-label">HANDPAN ORIENTATION</span>
            <div class="ctlrow" role="group" aria-labelledby="scale-anchor-label">
-@@ -1302,6 +1301,7 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1505,6 +1504,7 @@ html.about-open{overflow:hidden}
          <div class="ctlrow">
            <button class="mode" type="button" id="scale-layout-reset" disabled>RESET LAYOUT</button>
          </div>

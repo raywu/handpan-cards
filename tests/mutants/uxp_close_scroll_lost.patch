@@ -1,0 +1,14 @@
+# kills: UX: closing Adjust layout restores the sheet's scroll and focuses ADJUST LAYOUT
+# suite: node --test --test-name-pattern ^UX:.closing.Adjust.layout.restores tests/e2e.test.js
+# Closing the layer does not restore the sheet scroll.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10622,7 +10622,6 @@ function hideAdjust() {
+   drawerBtn.disabled = false;
+   drawerBtn.focus({ preventScroll: true });
+   closeDrawer();
+-  bandPort.scrollTop = sheetScroll;
+ }
+ function closeAdjust() {
+   hideAdjust();

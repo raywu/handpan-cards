@@ -1,14 +1,15 @@
-# kills: KB: F4 with the drawer open at 390x669 every note on the shrunk pan is hit by a tap at its centre (pygmy)
-# suite: node --test --test-name-pattern ^KB..F4.with.the.drawer.open.at.390x669.every.note.on.the.shrunk.pan.*pygmy tests/e2e.test.js
+# kills: KB: F4 in Adjust layout at 390x669 every note on the large pan is hit by a tap at its centre (pygmy)
+# suite: node --test --test-name-pattern ^KB..F4.in.Adjust.layout.at.390x669.every.note.on.the.large.pan.*pygmy tests/e2e.test.js
+# The bottom-shell notes of the large pan stop taking pointer events, so six Pygmy notes cannot be tapped.
 # The bottom-shell notes of the open-drawer plate stop taking pointer events, so six Pygmy notes cannot be tapped.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1054,6 +1054,7 @@ footer.seq{row-gap:var(--sp-1)}
-   padding-bottom:var(--sp-1)}
- .scalestage #scale-preview{width:clamp(110px, calc(100cqh - 260px), 300px); max-width:none}
- .sheetbody:has(#scale-layout-zone.open) #scale-preview{width:100%; max-width:min(300px, 31dvh)}
-+.sheetbody:has(#scale-layout-zone.open) #scale-preview .panhit[data-ring="bottom"]{pointer-events:none}
- .sheetbody:has(#scale-layout-zone.open):has(input:focus, textarea:focus, #scale-swatches button:focus)
-   #scale-plate-band{position:static}
- .sheetbody:has(#scale-layout-zone.nostick) #scale-plate-band{position:static}
+@@ -1046,6 +1046,7 @@ footer.seq{row-gap:var(--sp-1)}
+    keeps for controls under the pan (one column) or the room it gives the
+    chrome (two columns, set in the container query below). */
+ #scale-sheet:not(.adjusting) #scale-preview{width:clamp(88px, 30cqw, 160px)}
++#scale-sheet.adjusting #scale-preview .panhit[data-ring="bottom"]{pointer-events:none}
+ #scale-sheet.adjusting #scale-preview{--adj-reserve:232px;
+   width:clamp(160px, min(100cqw, calc(100cqh - var(--adj-reserve))), 480px)}
+ /* The stage: the small pan and its caption in column one, the four fields in

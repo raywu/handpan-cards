@@ -1,5 +1,6 @@
 # kills: with a real keyboard up, the seed box is not clipped by the sheet's own scroller
 # suite: node --test --test-name-pattern ^with.a.real.keyboard.up,.the.seed.box.is.not.clipped.by.the.sheet's.own.scroller$ tests/e2e.test.js
+# Re-anchored 2026-10-19 (lane P) against the layer markup. The mutation itself is unchanged.
 # The mirror/palette row goes back into the pinned footer, so .sheetbody shrinks
 # again to make room for it. Under a real iOS keyboard there is nothing left to
 # shrink: the Edit page gives a 48px seed field a 12px scrollport, which is the
@@ -9,15 +10,15 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1466,6 +1466,7 @@ html.about-open{overflow:hidden}
-     </div>
-     </div>
+@@ -1458,6 +1458,7 @@ html.about-open{overflow:hidden}
+       <div id="scale-refusal" aria-live="polite"></div>
+       <p class="sheethint" id="scale-line-note"></p>
      </div>
 +   </div>
      <!-- The pan mock: where the notes actually land - ding, rim zig-zag, inner
           pair, dashed bottom ring in x-ray view - drawn by the SAME pan()
           renderer the cards use, with no chord chosen, so what is previewed
-@@ -1547,7 +1548,6 @@ html.about-open{overflow:hidden}
+@@ -1534,7 +1535,6 @@ html.about-open{overflow:hidden}
      <div class="ctlrow">
        <div id="scale-swatches" role="group" aria-label="Card palette"></div>
      </div>

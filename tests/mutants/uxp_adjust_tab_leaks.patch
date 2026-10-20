@@ -1,0 +1,15 @@
+# kills: UX: the Tab cycle inside Adjust layout is BACK, the plate, the layout controls and RESET LAYOUT, and wraps
+# suite: node --test --test-name-pattern ^UX:.the.Tab.cycle.inside.Adjust tests/app.test.js
+# Adjust layout uses the sheet Tab list, so Tab leaks to the hidden fields.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12347,7 +12347,7 @@ function cycleTabStops(stops, e) {
+ // Tab is trapped inside: the sheet's own controls, in visual order.
+ sheet.addEventListener("keydown", e => {
+   if (e.key !== "Tab") return;
+-  const stops = (sheet.classList.contains("adjusting")
++  const stops = (false
+     ? [adjustBack, previewBox.querySelector('.panhit[tabindex="0"]'),
+        anchorOne, anchorBetween, mirrorTop, mirrorBot, fineBtn,
+        notePrev, noteNext, seatPrev, seatNext, resetBtn]

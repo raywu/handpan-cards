@@ -1,0 +1,15 @@
+# kills: UX: Adjust layout shows the large pan, the layout controls and no field, scale line or primary
+# suite: node --test --test-name-pattern ^UX:.Adjust.layout.shows.the.large.pan tests/e2e.test.js
+# The four fields stay visible under the large pan.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1063,7 +1063,7 @@ footer.seq{row-gap:var(--sp-1)}
+ /* Adjust layout is a layer over the sheet: the head, the pan and the drawer
+    stay; every field, the scale line, the swatches and the footer step aside. */
+ #scale-sheet.adjusting .sheethead:not(#scale-adjust-head), #scale-sheet.adjusting #scale-name-row,
+-#scale-sheet.adjusting .scalecol, #scale-sheet.adjusting .sheetbody > .fieldrow,
++#scale-sheet.adjusting .sheetbody > .fieldrow,
+ #scale-sheet.adjusting .sheetbody > .ctlrow, #scale-sheet.adjusting #scale-layout-row,
+ #scale-sheet.adjusting #scale-generate, #scale-sheet.adjusting #scale-delete-row{display:none}
+ #scale-sheet.adjusting .scalestage{display:contents}

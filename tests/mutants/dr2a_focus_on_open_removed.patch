@@ -1,14 +1,15 @@
-# kills: DR2a (18): opening the drawer focuses the first pickable note and no other control, Add
-# suite: node --test --test-name-pattern ^DR2a..18...opening.the.drawer.focuses.the.first.pickable.note.and.no.other.control..Add$ tests/app.test.js
+# kills: DR2a (18): a pan whose only ring of two is the bottom opens the layer on its title with no note focused or armed
+# suite: node --test --test-name-pattern ^DR2a..18...a.pan.whose.only.ring.of.two.is.the.bottom.* tests/app.test.js
+# Opening Adjust layout no longer moves focus to the layer title (owner D11 revised).
 Opening the drawer no longer moves focus to the first pickable note.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10473,7 +10473,6 @@ function openDrawer() {
-   drawerStatus.textContent = "";
-   drawerStatus.classList.remove("warn");
-   paintLayout();
--  focusFirstNext = true;
-   repaintPlate();
-   keepToggle(at);
-   layoutZone.scrollIntoView({ block: "nearest", behavior: "auto" });
+@@ -10613,7 +10613,6 @@ function enterAdjust() {
+   sheet.setAttribute("aria-labelledby", "scale-adjust-title");
+   openDrawer();
+   bandPort.scrollTop = 0;
+-  adjustTitle.focus({ preventScroll: true });
+ }
+ function hideAdjust() {
+   sheet.classList.remove("adjusting");
