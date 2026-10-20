@@ -10746,11 +10746,6 @@ function lipScroll() {
   const prev = lipPrev;
   lipPrev = { t, M };
   const now = Date.now();
-  if (lipDrag || now < lipDragEnd) {
-    if (!lipDrag) lipDragEnd = now + LIP_END_MS;
-    lipAcc = 0;
-    return;
-  }
   if (!sheetOpen || sheet.classList.contains("kbup") || now < lipQuietUntil || now > userWindowUntil) return;
   userWindowUntil = now + LIP_WINDOW;
   if (isLipShut() && t >= M - 1) { restoreLip(); return; }
@@ -10768,7 +10763,16 @@ function lipScroll() {
   }
 }
 const lipUser = () => { userWindowUntil = Date.now() + LIP_WINDOW; };
-bandPort.addEventListener("scroll", lipScroll, { passive: true });
+function lipScrollEvent() {
+  const now = Date.now();
+  if (lipDrag || now < lipDragEnd) {
+    if (!lipDrag) lipDragEnd = now + LIP_END_MS;
+    userWindowUntil = 0;
+    lipAcc = 0;
+  }
+  lipScroll();
+}
+bandPort.addEventListener("scroll", lipScrollEvent, { passive: true });
 for (const ev of ["touchstart", "touchmove", "wheel"]) sheet.addEventListener(ev, lipUser, { passive: true, capture: true });
 sheet.addEventListener("keydown", (e) => {
   const t = e.target;
