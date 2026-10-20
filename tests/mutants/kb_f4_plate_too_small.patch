@@ -1,5 +1,5 @@
-# kills: KB: F4 on the Layout tab at 320x568 at least 160px of options show under the large pan and the pan is at least 140px
-# suite: node --test --test-name-pattern ^KB..F4.on.the.Layout.tab.at.320x568.at.least.160px.* tests/e2e.test.js
+# kills: KB: F4 on the Layout tab at 320x568 the options keep their room under the large pan and the pan is at least 140px
+# suite: node --test --test-name-pattern ^KB..F4.on.the.Layout.tab.at.320x568.the.options.keep.* tests/e2e.test.js
 # The Layout pan collapses to 90px.
 diff --git a/index.html b/index.html
 --- a/index.html

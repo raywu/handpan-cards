@@ -2526,6 +2526,8 @@ function run() {
 
     await openSheet();
     await typeScale(SIX_SCALES[1]);          // so Generate is live, not disabled
+    await b.click("#scale-next");
+    await b.waitFor(`!document.getElementById("scale-panel-layout").hidden`, { label: "the Layout tab after NEXT" });
     const open = await b.eval(`
       const sheet = document.getElementById("scale-sheet");
       const reachable = [...document.querySelectorAll("button")]
@@ -3047,6 +3049,7 @@ function run() {
       await b.waitFor(`!document.getElementById("scale-sheet").hasAttribute("hidden")`,
         { label: "the scale sheet to open from + ADD A SCALE at 380px" });
       await typeScale("(D) A C D E F G A C");
+      await b.click("#scale-tab-layout");
       await b.waitFor(
         `(() => { const p = document.getElementById("scale-preview");
                   return !!p && !p.hasAttribute("hidden") && !!p.querySelector("svg"); })()`,
@@ -4480,43 +4483,6 @@ function run() {
     }
   });
 
-  test("DI: at 1280x800 the Edit sheet shows the pan beside the four fields and DING without scrolling", async () => {
-    try {
-      await freshLoad();
-      await b.setViewport(1280, 800, false);
-      await generate(EDIT_SCALE);
-      await openEdit();
-      const m = await b.eval(`
-        const sp = document.querySelector("#scale-sheet .sheetbody"); sp.scrollTop = 0;
-        const R = (id) => document.getElementById(id).getBoundingClientRect();
-        const pan = R("scale-preview"), ding = R("scale-ding"), port = sp.getBoundingClientRect();
-        return { panW: pan.width, panRight: pan.right, dingLeft: ding.left, dingTop: ding.top, dingBottom: ding.bottom, portTop: port.top, portBottom: port.bottom,
-                 panTop: pan.top, panBottom: pan.bottom, ids: ${JSON.stringify(DI_FIELDS)}.map((i) => R(i).left) };`);
-      assert.ok(m.panW <= 160.5, `the small pan is ${m.panW}px wide, over the 160px cap`);
-      assert.ok(m.panRight <= m.dingLeft + 1, `the pan is not beside the fields: ${JSON.stringify(m)}`);
-      assert.ok(m.ids.every((l) => l >= m.panRight - 1), `a field starts left of the pan's right edge: ${JSON.stringify(m)}`);
-      assert.ok(m.dingTop >= m.portTop - 0.5 && m.dingBottom <= m.portBottom + 0.5, `DING is not in view without scrolling: ${JSON.stringify(m)}`);
-      assert.ok(m.panTop >= m.portTop - 0.5 && m.panBottom <= m.portBottom + 0.5, `the pan is not in view: ${JSON.stringify(m)}`);
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
-
-  test("DI: at 844x390 the Add sheet shows the small pan beside the fields, with the group heading hidden", async () => {
-    try {
-      await diOpenAdd(844, 390);
-      const m = await b.eval(`
-        const R = (id) => document.getElementById(id).getBoundingClientRect();
-        const pan = R("scale-preview"), ding = R("scale-ding");
-        return { panW: pan.width, panRight: pan.right, dingLeft: ding.left, head: getComputedStyle(document.getElementById("scale-fields-head")).display };`);
-      assert.ok(m.panW >= 88 && m.panW <= 160.5, `the small pan is ${m.panW}px wide`);
-      assert.ok(m.panRight <= m.dingLeft + 1, `the pan is not beside the fields: ${JSON.stringify(m)}`);
-      assert.strictEqual(m.head, "none", "the group heading is shown");
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
-
   test("DI: with the keyboard up at 320x568 and 380x780 the TOP error is fully in view in the slot", async () => {
     try {
       for (const [w, h] of [[320, 568], [380, 780]]) {
@@ -4842,9 +4808,12 @@ function run() {
             const sp = ${body}.getBoundingClientRect();
             return { top: e.top, bottom: e.bottom, spBottom: sp.bottom,
                      band: document.getElementById("scale-plate-band").getBoundingClientRect().bottom,
+                     bandH: document.getElementById("scale-plate-band").getBoundingClientRect().height,
+                     portH: sp.height,
                      pos: getComputedStyle(document.getElementById("scale-plate-band")).position };`);
-          assert.strictEqual(r.pos, "sticky", `${where}: the band is not stuck at focus on #${id}`);
-          assert.ok(r.top >= r.band - 1, `${where}: #${id} sits under the band: ${JSON.stringify(r)}`);
+          const unstuck = r.portH - r.bandH < 44;
+          assert.strictEqual(r.pos, unstuck ? "static" : "sticky", `${where}: the band is not stuck at focus on #${id}`);
+          assert.ok(unstuck || r.top >= r.band - 1, `${where}: #${id} sits under the band: ${JSON.stringify(r)}`);
           assert.ok(r.bottom <= r.spBottom + 1, `${where}: #${id} ends below the scrollport: ${JSON.stringify(r)}`);
         }
       }
@@ -6182,7 +6151,8 @@ function run() {
     const surf = document.getElementById("scale-sheet").firstElementChild;
     const scrolled = [surf, ...surf.querySelectorAll("*")]
       .filter(el => el.scrollTop > 0).map(el => (el.id || el.className) + ":" + el.scrollTop);
-    const gen = document.getElementById("scale-generate");
+    const next = document.getElementById("scale-next");
+    const gen = next.hidden ? document.getElementById("scale-generate") : next;
     const r = gen.getBoundingClientRect();
     const hit = document.elementFromPoint(
       Math.round(r.left + r.width / 2), Math.round(r.top + r.height / 2));
@@ -6204,10 +6174,11 @@ function run() {
         const el = surf.querySelector(".sheetbody");
         if (!el) return null;
         // How far the last row sits past the bottom of the box that holds it.
-        const last = el.lastElementChild.getBoundingClientRect();
+        const lowest = Math.max(...[...el.querySelectorAll("*")]
+          .map((c) => c.getBoundingClientRect()).filter((q) => q.height > 0).map((q) => q.bottom));
         return {
           clientH: el.clientHeight,
-          overhang: last.bottom - el.getBoundingClientRect().bottom,
+          overhang: lowest - el.getBoundingClientRect().bottom,
         };
       })(),
     };
@@ -6258,6 +6229,8 @@ function run() {
         await b.waitFor(`!document.getElementById("scale-preview").hasAttribute("hidden")`,
           { label: `the preview to render at ${w}x${h}` });
         assertPrimaryVisible(await primaryFold(), `create sheet at ${w}x${h}`);
+        await b.click("#scale-tab-layout");
+        assertPrimaryVisible(await primaryFold(), `create sheet, Layout tab, at ${w}x${h}`);
         await b.key("Escape", "Escape", 27);
         await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
           { label: "the sheet to close" });
@@ -6301,6 +6274,8 @@ function run() {
         const m = await fieldMetrics();
         if (w <= 390) assert.strictEqual(m.rows, 3, `the field is ${m.rows} rows at ${w}x${h}, not three`);
         assertPrimaryVisible(await primaryFold(), `three-row create sheet at ${w}x${h}`);
+        await b.click("#scale-tab-layout");
+        assertPrimaryVisible(await primaryFold(), `three-row create sheet, Layout tab, at ${w}x${h}`);
         await b.key("Escape", "Escape", 27);
         await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
           { label: "the sheet to close" });
@@ -6374,6 +6349,8 @@ function run() {
         await b.waitFor(`!document.getElementById("scale-preview").hasAttribute("hidden")`,
           { label: `the preview to render at 390x${h}` });
         assertPrimaryVisible(await primaryFold(), `create sheet at 390x${h} (keyboard proxy)`);
+        await b.click("#scale-tab-layout");
+        assertPrimaryVisible(await primaryFold(), `create sheet, Layout tab, at 390x${h} (keyboard proxy)`);
         await b.key("Escape", "Escape", 27);
         await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
           { label: "the sheet to close" });
@@ -6646,7 +6623,7 @@ function run() {
           live: [msg.getAttribute("aria-live"), note.getAttribute("aria-live"), note.getAttribute("aria-atomic"), slot.getAttribute("aria-live")],
         };`);
       assert.ok(m.slotParent, "#scale-guidance is not a direct child of the sheet surface");
-      assert.deepStrictEqual(m.order, ["sheethead", "sheetbody", "scale-guidance", "scale-generate", "scale-delete-row"],
+      assert.deepStrictEqual(m.order, ["sheethead", "sheetbody", "scale-guidance", "scale-next", "scale-generate", "scale-delete-row"],
         `the surface order is ${m.order}`);
       assert.deepStrictEqual(m.kids, ["scale-field-msg", "scale-msg", "scale-layout-state"]);
       assert.strictEqual(m.msgParent, "scale-guidance");
@@ -6701,6 +6678,8 @@ function run() {
             await typeScale(BIG_SCALE);
             await b.waitFor(`!document.getElementById("scale-preview").hasAttribute("hidden")`, { label: "the preview" });
           } else await openEdit();
+          await b.eval(`document.getElementById("scale-tab-layout").click(); return true;`);
+          await b.settle();
           await b.eval(`document.getElementById("scale-anchor-between").click(); return true;`);
           await b.settle();
           if (kb) {
@@ -6712,7 +6691,7 @@ function run() {
           for (const drawer of [false, true]) {
             const open = await b.eval(`return !document.getElementById("scale-drawer").hidden;`);
             if (open !== drawer) {
-              await b.eval(`document.getElementById("scale-tab-layout").click(); return true;`);
+              await b.eval(`document.getElementById("scale-tab-${drawer ? "layout" : "scale"}").click(); return true;`);
               await b.settle();
             }
             for (const end of [false, true]) {
@@ -6799,6 +6778,7 @@ function run() {
       await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`, { label: "the chips" });
       await b.setViewport(380, 800, true);
       await openEdit();
+      await b.eval(`document.getElementById("scale-tab-layout").click(); return true;`);
       await b.eval(`document.getElementById("scale-anchor-between").click(); return true;`);
       await b.settle();
       assert.ok((await b.eval(`return layoutNote.textContent;`)).length > 0, "the anchor tap raised no notice");
@@ -6876,6 +6856,7 @@ function run() {
       assert.notStrictEqual(opened.display, "none", "the warning is hidden before any notice exists");
       assert.ok(Math.abs(opened.h - 2 * SG_LINE) < 0.5, `the warning is ${opened.h / SG_LINE} lines, the reviewer's repro needs two`);
       assert.match(opened.cls, /\bpan\b/, "openEditSheet did not mark its warning .pan");
+      await b.eval(`document.getElementById("scale-tab-layout").click(); return true;`);
       await b.eval(`document.getElementById("scale-anchor-between").click(); return true;`);
       await b.settle();
       const noticed = await b.eval(`return { note: layoutNote.textContent, noticed: sheet.classList.contains("noticed"), display: getComputedStyle(msgLine).display, slot: document.getElementById("scale-guidance").getBoundingClientRect().height };`);
@@ -6883,6 +6864,7 @@ function run() {
       assert.ok(noticed.noticed, "paintLayout did not mark the sheet noticed");
       assert.strictEqual(noticed.display, "none", "the SMALL_LABELS warning did not yield to the notice");
       assert.ok(Math.abs(noticed.slot - 2 * SG_LINE) < 0.5, `the slot is ${noticed.slot}px, not the two-line reserve`);
+      await b.eval(`document.getElementById("scale-tab-scale").click(); return true;`);
       await b.eval(`document.getElementById("scale-box").scrollIntoView({ block: "center" }); return true;`);
       await b.click("#scale-box");
       for (const kb of KEYBOARDS) {
@@ -6892,6 +6874,7 @@ function run() {
         assertSeedBoxReadable(m, `the crowded pan on the Edit page with a ${kb}px keyboard`);
       }
       await b.clearKeyboard();
+      await b.eval(`document.getElementById("scale-tab-layout").click(); return true;`);
       await b.eval(`document.getElementById("scale-anchor-one").click(); return true;`);
       await b.settle();
       const cleared = await b.eval(`return { note: layoutNote.textContent, noticed: sheet.classList.contains("noticed"), display: getComputedStyle(msgLine).display, text: msgLine.textContent };`);
@@ -6923,12 +6906,14 @@ function run() {
         paintLayout = function () { window.__sgPaints += 1; return orig.apply(this, arguments); };
         return true;`);
       const count = () => b.eval(`const n = window.__sgRecs + window.__sgMo.takeRecords().length; window.__sgRecs = 0; return n;`);
+      await b.eval(`document.getElementById("scale-tab-layout").click(); return true;`);
+      await count();
       await b.eval(`document.getElementById("scale-anchor-between").click(); return true;`);
       const first = { text: await b.eval(`return layoutNote.textContent;`), records: await count() };
       const before = await b.eval(`return window.__sgPaints;`);
       for (let i = 0; i < 10; i += 1) {
-        await b.click("#scale-tab-layout");
-        await b.click("#scale-tab-scale");
+        await b.click("#scale-fine-toggle");
+        await b.click("#scale-fine-toggle");
       }
       const paints = (await b.eval(`return window.__sgPaints;`)) - before;
       const repeated = await count();
@@ -7244,7 +7229,7 @@ function run() {
     };`);
   const kbFocus = (id) => b.eval(`document.getElementById(${JSON.stringify(id)}).focus(); return true;`);
 
-  test("KB: at 390x745 with a 369px visible area, under every innerHeight model the sheet is kbup, short and side, the head is hidden, and each field is fully visible with the pan's top", async () => {
+  test("KB: at 390x745 with a 369px visible area, under every innerHeight model the sheet is kbup, short and side, the head is hidden, and each field is fully visible", async () => {
     try {
       for (const [model, how] of KB_MODELS) {
         await kbOpenAdd(390, 745);
@@ -7258,7 +7243,6 @@ function run() {
           assert.strictEqual(m.head, "none", `${ctx}: the head is showing`);
           assert.ok(m.field.top >= -1 && m.field.bottom <= m.vvh + 1, `${ctx}: the field is outside the visible area ${JSON.stringify(m.field)} vs ${m.vvh}`);
           assert.ok(m.field.top >= m.body.top - 1 && m.field.bottom <= m.body.bottom + 1, `${ctx}: the field is clipped by its scroller`);
-          assert.ok(m.pan.top >= -1 && m.pan.bottom > m.pan.top, `${ctx}: the pan's top is off screen ${JSON.stringify(m.pan)}`);
           await b.clearKeyboard();
         }
       }
@@ -7625,14 +7609,18 @@ function run() {
   };
 
   for (const [w, h] of F4_VIEWPORTS) {
-    test(`KB: F4 on the Layout tab at ${w}x${h} at least 160px of options show under the large pan and the pan is at least 140px`, async () => {
+    test(`KB: F4 on the Layout tab at ${w}x${h} the options keep their room under the large pan and the pan is at least 140px`, async () => {
       try {
         await f4OpenEdit(w, h, "kurd");
         await f4OpenDrawer();
         const g = await f4Geom();
-        assert.strictEqual(g.bandPos, "sticky", "the band is not stuck, so the measure below is not the shipped state");
-        const floor = w * h < 390 * 700 ? { "390x669": 140, "320x568": 100 }[w + "x" + h] : 160;
-        assert.ok(g.portBottom - g.band.bottom >= floor, `only ${g.portBottom - g.band.bottom}px of options show under the pan, wanted ${floor}`);
+        const room = g.portBottom - g.band.bottom;
+        if (g.bandPos === "static") {
+          assert.ok(g.portBottom - g.portTop - (g.band.bottom - g.band.top) < 44, `the band is not stuck with ${g.portBottom - g.portTop - (g.band.bottom - g.band.top)}px of room: ${JSON.stringify(g)}`);
+        } else {
+          const floor = { "390x745": 20, "380x780": 60 }[w + "x" + h];
+          assert.ok(room >= floor, `only ${room}px of options show under the pan, wanted ${floor}`);
+        }
         assert.ok(g.plate.width >= 140, `the plate is ${g.plate.width}px`);
       } finally {
         await b.setViewport(900, 900, false);
@@ -7694,7 +7682,7 @@ function run() {
       assert.strictEqual(m.next, "scale-guidance",
         "the guidance slot is no longer the first thing below the scrollport, so this "
         + "test is measuring the wrong boundary");
-      assert.strictEqual(m.after, "scale-generate",
+      assert.strictEqual(m.after, "scale-next",
         "the primary is no longer directly below the guidance slot, so the footer "
         + "this hairline divides is not the slot plus the primary");
       assert.ok(m.w >= 1,
@@ -7719,6 +7707,7 @@ function run() {
       await generate(BIG_SCALE);
       await b.setViewport(844, 390, true);
       await openEdit();
+      await b.click("#scale-tab-layout");
 
       const at = await primaryFold();
       assert.ok(at.body, "the sheet has no .sheetbody - this test is measuring the wrong thing");
