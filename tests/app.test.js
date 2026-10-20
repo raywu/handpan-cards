@@ -11298,9 +11298,9 @@ describe("TB: the sheet's tabs", () => {
     assert.deepStrictEqual(order.slice().sort((x, y) => x - y), order);
   });
 
-  test("TB: ELEMENT_IDS carries scale-tabs, scale-tab-scale, scale-tab-layout, scale-panel-scale, scale-panel-layout and scale-next, and none of the retired adjust ids", () => {
+  test("TB: ELEMENT_IDS carries scale-tabs, scale-tab-scale, scale-tab-layout, scale-panel-scale, scale-panel-layout, scale-next, scale-foot, scale-footslide and scale-lip, and none of the retired adjust ids", () => {
     const { ELEMENT_IDS } = require("../tools/sandbox.js");
-    for (const id of ["scale-tabs", "scale-tab-scale", "scale-tab-layout", "scale-panel-scale", "scale-panel-layout", "scale-next"]) {
+    for (const id of ["scale-tabs", "scale-tab-scale", "scale-tab-layout", "scale-panel-scale", "scale-panel-layout", "scale-next", "scale-foot", "scale-footslide", "scale-lip"]) {
       assert.ok(ELEMENT_IDS.includes(id), id);
     }
     for (const id of ["scale-layout-toggle", "scale-adjust-back", "scale-adjust-title", "scale-adjust-head", "scale-pancol", "scale-layout-row"]) {
@@ -11484,5 +11484,429 @@ describe("O1: the duplicate-bottom warning on the field line", () => {
     assert.strictEqual(m.hidden, false);
     assert.strictEqual(m.textContent, WARN_DING);
     assert.ok(m.classList.contains("warn"));
+  });
+});
+
+describe("UX: the footer lip", () => {
+  const LINE = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
+  const rectOf = (top, bottom) => () => ({ top, bottom, left: 0, right: 360, width: 360, height: bottom - top });
+  const lipApp = (kind = "add", extra = {}) => {
+    const app = boot({ clock: true, layout: true, innerHeight: 800, visualViewport: { height: 800, offsetTop: 0, scale: 1 }, ...extra });
+    if (kind === "seed") app.clickChip("D KURD 10");
+    else if (kind === "edit") openEdit(app, makeCustom(app, LINE));
+    else { openSheet(app); app.type(LINE); }
+    const bp = app.get("bandPort");
+    bp.scrollHeight = 1400;
+    bp.clientHeight = 500;
+    bp.scrollTop = 0;
+    bp.getBoundingClientRect = rectOf(100, 600);
+    app.els["scale-sheet"].firstElementChild.getBoundingClientRect = rectOf(0, 700);
+    app.els["scale-foot"].getBoundingClientRect = rectOf(600, 700);
+    app.advance(200);
+    bp.dispatchEvent({ type: "scroll" });
+    return app;
+  };
+  const sheetOf = (app) => app.els["scale-sheet"];
+  const user = (app) => sheetOf(app).dispatchEvent({ type: "touchmove", touches: [] });
+  const scrollTo = (app, top, touched = true) => {
+    const bp = app.get("bandPort");
+    if (touched) user(app);
+    bp.scrollTop = top;
+    bp.dispatchEvent({ type: "scroll" });
+  };
+  const state = (app) => {
+    const c = sheetOf(app).classList;
+    return `${c.contains("lipped") ? "lipped" : "plain"}/${c.contains("lipshut") ? "shut" : "open"}`;
+  };
+  const OPEN = "plain/open", SHUT = "lipped/shut";
+  const tab = (app, shiftKey = false) => sheetOf(app).dispatchEvent({ type: "keydown", key: "Tab", shiftKey, preventDefault() {} });
+  const isActive = (app, expr) => app.get(`document.activeElement === ${expr}`);
+  const collapsed = (app, kind) => { scrollTo(app, 300); assert.strictEqual(state(app), SHUT, kind); return app; };
+  const lipSource = () => {
+    const src = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    return src.slice(src.indexOf("/* ---- the footer lip"), src.indexOf("function hasTwoNoteRing"));
+  };
+
+  test("UX: the lip control is named Show GENERATE CARDS on Add and Show SAVE CHANGES on Edit, a seeded deck's Edit included", () => {
+    const add = lipApp("add");
+    add.run("setTab('layout')");
+    add.run("collapseLip()");
+    assert.strictEqual(add.els["scale-lip"].getAttribute("aria-label"), "Show GENERATE CARDS");
+    for (const kind of ["edit", "seed"]) {
+      const app = lipApp(kind);
+      app.run("collapseLip()");
+      assert.strictEqual(app.els["scale-lip"].getAttribute("aria-label"), "Show SAVE CHANGES", kind);
+    }
+  });
+
+  test("UX: a 23px user scroll down does not collapse the footer and 24px does", () => {
+    const a = lipApp();
+    scrollTo(a, 23);
+    assert.strictEqual(state(a), OPEN);
+    const b = lipApp();
+    scrollTo(b, 24);
+    assert.strictEqual(state(b), SHUT);
+  });
+
+  test("UX: a user scroll up of 24px, or one that lands at the end, restores the footer", () => {
+    const up = collapsed(lipApp(), "up");
+    scrollTo(up, 276);
+    assert.strictEqual(up.els["scale-sheet"].classList.contains("lipshut"), false);
+    up.advance(300);
+    assert.strictEqual(state(up), OPEN);
+    const near = collapsed(lipApp(), "near");
+    scrollTo(near, 290);
+    assert.strictEqual(state(near), SHUT, "a 10px nudge up is not enough");
+    const end = collapsed(lipApp(), "end");
+    scrollTo(end, 900);
+    assert.strictEqual(end.els["scale-sheet"].classList.contains("lipshut"), false);
+    end.advance(300);
+    assert.strictEqual(state(end), OPEN);
+  });
+
+  test("UX: revealField, the tap pin and the keyboard handler's scrolls never collapse the footer", () => {
+    const a = lipApp();
+    a.sandbox.getComputedStyle = () => ({ overflowY: "auto", scrollPaddingTop: "0px", scrollPaddingBottom: "0px" });
+    const bp = a.get("bandPort");
+    const scroller = { scrollHeight: 1400, clientHeight: 500, scrollTop: 0, clientTop: 0, getBoundingClientRect: rectOf(100, 600), parentElement: sheetOf(a) };
+    a.sandbox.__field = { getBoundingClientRect: rectOf(650, 690), parentElement: scroller };
+    user(a);
+    a.run("revealField(__field)");
+    assert.ok(scroller.scrollTop > 0, "revealField scrolled");
+    scrollTo(a, 200);
+    assert.strictEqual(state(a), OPEN, "a scroll inside a revealField's quiet window");
+    a.advance(300);
+    a.run("scrollPin = { until: Date.now() + 600, body: 0, surf: 0 }");
+    bp.scrollTop = 50;
+    bp.dispatchEvent({ type: "scroll" });
+    scrollTo(a, 200);
+    assert.strictEqual(state(a), OPEN, "a scroll right after holdPin wrote");
+    a.advance(300);
+    a.run("scrollPin = null");
+    scrollTo(a, 400);
+    assert.strictEqual(state(a), SHUT, "once both windows lapse a user scroll collapses");
+    const b = lipApp();
+    b.get("window.visualViewport").height = 790;
+    b.run("applyKbOffset()");
+    scrollTo(b, 200);
+    assert.strictEqual(state(b), OPEN, "a scroll inside applyKbOffset's quiet window");
+  });
+
+  test("UX: a scroll with no touch, wheel or scroll key in the last 150ms changes no lip state", () => {
+    const a = lipApp();
+    scrollTo(a, 300, false);
+    assert.strictEqual(state(a), OPEN, "no gesture");
+    const b = lipApp();
+    user(b);
+    b.advance(151);
+    scrollTo(b, 300, false);
+    assert.strictEqual(state(b), OPEN, "the window lapsed");
+    const c = lipApp();
+    sheetOf(c).dispatchEvent({ type: "wheel" });
+    scrollTo(c, 300, false);
+    assert.strictEqual(state(c), SHUT, "a wheel opens the window");
+    const d = lipApp();
+    sheetOf(d).dispatchEvent({ type: "keydown", key: "PageDown", target: d.els["scale-back"] });
+    scrollTo(d, 300, false);
+    assert.strictEqual(state(d), SHUT, "a scroll key opens the window");
+    const e = lipApp();
+    sheetOf(e).dispatchEvent({ type: "keydown", key: "ArrowDown", target: { matches: () => true } });
+    scrollTo(e, 300, false);
+    assert.strictEqual(state(e), OPEN, "an arrow key in a text field is not a scroll");
+  });
+
+  test("UX: negative scrollTop and overshoot past the end change no lip state", () => {
+    const a = lipApp();
+    scrollTo(a, -30);
+    scrollTo(a, -60);
+    assert.strictEqual(state(a), OPEN);
+    scrollTo(a, 1100);
+    assert.strictEqual(state(a), OPEN, "the clamped end leaves too little to scroll");
+  });
+
+  test("UX: a collapse needs more remaining scroll than the open footer's height", () => {
+    const a = lipApp();
+    scrollTo(a, 810);
+    assert.strictEqual(state(a), OPEN, "90px left, footer 100px");
+    const b = lipApp();
+    scrollTo(b, 790);
+    assert.strictEqual(state(b), SHUT, "110px left");
+  });
+
+  test("UX: a scroll event whose scroll range changed only re-baselines", () => {
+    const a = lipApp();
+    a.get("bandPort").scrollHeight = 1500;
+    scrollTo(a, 50);
+    assert.strictEqual(state(a), OPEN, "the range changed");
+    scrollTo(a, 60);
+    assert.strictEqual(state(a), OPEN, "10px since the baseline");
+    scrollTo(a, 90);
+    assert.strictEqual(state(a), SHUT, "30 more reaches 24 from the new baseline");
+  });
+
+  test("UX: the keyboard rising collapses the footer and its fall restores it", () => {
+    const a = lipApp();
+    a.get("window.visualViewport").height = 400;
+    a.run("applyKbOffset()");
+    assert.strictEqual(sheetOf(a).classList.contains("kbup"), true);
+    assert.strictEqual(state(a), SHUT);
+    a.get("window.visualViewport").height = 800;
+    a.run("applyKbOffset()");
+    assert.strictEqual(sheetOf(a).classList.contains("kbup"), false);
+    assert.strictEqual(sheetOf(a).classList.contains("lipshut"), false);
+    a.advance(300);
+    assert.strictEqual(state(a), OPEN);
+  });
+
+  test("UX: while the keyboard is up no scroll changes the lip state, and a lip tap or swipe still restores", () => {
+    const rise = () => {
+      const a = lipApp();
+      a.get("window.visualViewport").height = 400;
+      a.run("applyKbOffset()");
+      a.advance(300);
+      return a;
+    };
+    const a = rise();
+    scrollTo(a, 300);
+    scrollTo(a, 100);
+    assert.strictEqual(state(a), SHUT, "scrolls are ignored");
+    scrollTo(a, 900);
+    assert.strictEqual(state(a), SHUT, "even one that lands at the end");
+    a.els["scale-lip"].dispatchEvent({ type: "click" });
+    assert.strictEqual(a.els["scale-sheet"].classList.contains("lipshut"), false, "a tap restores");
+    const b = rise();
+    const lip = b.els["scale-lip"];
+    lip.dispatchEvent({ type: "touchstart", touches: [{ identifier: 1, clientY: 500 }] });
+    lip.dispatchEvent({ type: "touchmove", touches: [{ identifier: 1, clientY: 480 }] });
+    assert.strictEqual(b.els["scale-sheet"].classList.contains("lipshut"), false, "a swipe restores");
+  });
+
+  test("UX: Tab onto the lip restores the footer and focuses GENERATE CARDS, DELETE when GENERATE is disabled on Edit, else the last swatch", () => {
+    const arrive = (app) => {
+      collapsed(app, "arrive");
+      app.els["scale-lip"].focus();
+      app.els["scale-lip"].dispatchEvent({ type: "focusin" });
+    };
+    const add = lipApp("add");
+    add.run("setTab('layout')");
+    add.els["scale-generate"].disabled = false;
+    arrive(add);
+    assert.strictEqual(add.els["scale-sheet"].classList.contains("lipshut"), false);
+    assert.strictEqual(add.activeId(), "scale-generate");
+    const edit = lipApp("edit");
+    edit.els["scale-generate"].disabled = true;
+    arrive(edit);
+    assert.strictEqual(edit.activeId(), "scale-delete");
+    const bare = lipApp("add");
+    bare.run("setTab('layout')");
+    bare.els["scale-generate"].disabled = true;
+    bare.els["scale-swatches"].lastElementChild = bare.els["scale-box"];
+    arrive(bare);
+    assert.strictEqual(bare.activeId(), "scale-box", "the last swatch");
+  });
+
+  test("UX: while lipped the sheet's Tab list holds the lip in place of GENERATE and DELETE", () => {
+    const app = lipApp("edit");
+    collapsed(app, "edit");
+    app.get("backBtn").focus();
+    tab(app, true);
+    assert.strictEqual(app.activeId(), "scale-lip", "the last stop is the lip");
+    tab(app);
+    assert.ok(isActive(app, "backBtn"), "forward from the lip wraps; DELETE is not a stop");
+    app.run("restoreLip()");
+    app.get("backBtn").focus();
+    tab(app, true);
+    assert.strictEqual(app.activeId(), "scale-delete", "during OPENING DELETE is back");
+    tab(app, true);
+    assert.strictEqual(app.activeId(), "scale-generate", "and GENERATE before it");
+    const add = lipApp("add");
+    add.run("setTab('layout')");
+    collapsed(add, "layout");
+    add.get("backBtn").focus();
+    tab(add, true);
+    assert.strictEqual(add.activeId(), "scale-lip", "Layout holds the lip too");
+    const scale = lipApp("add");
+    collapsed(scale, "scale");
+    scale.get("backBtn").focus();
+    tab(scale, true);
+    assert.strictEqual(scale.activeId(), "scale-lip", "Scale holds the lip in place of NEXT");
+  });
+
+  test("UX: a collapse while GENERATE CARDS holds focus moves focus to the lip, never body", () => {
+    for (const [kind, id] of [["edit", "scale-generate"], ["add", "scale-next"]]) {
+      const app = lipApp(kind);
+      app.els[id].focus();
+      scrollTo(app, 300);
+      assert.strictEqual(state(app), SHUT, kind);
+      assert.strictEqual(app.activeId(), "scale-lip", kind);
+    }
+    const layout = lipApp("add");
+    layout.run("setTab('layout')");
+    layout.els["scale-generate"].disabled = false;
+    layout.els["scale-generate"].focus();
+    scrollTo(layout, 300);
+    assert.strictEqual(layout.activeId(), "scale-lip");
+  });
+
+  test("UX: Adjust layout never shows the lip, and opening it restores the footer at once", () => {
+    const app = collapsed(lipApp("add"), "add");
+    app.click(app.els["scale-tab-layout"]);
+    assert.strictEqual(state(app), OPEN, "the tab switch is instant");
+    assert.strictEqual(app.els["scale-lip"].hidden, true);
+    assert.strictEqual(app.els["scale-sheet"].classList.contains("lipnow"), false);
+    for (const k of ["--lip-h", "--lip-pad", "--lip-gd", "--lip-g"]) assert.strictEqual(app.els["scale-sheet"].style[k] || "", "", k);
+    app.advance(300);
+    assert.strictEqual(state(app), OPEN, "no timer finishes anything later");
+  });
+
+  test("UX: a restore ends on the 220ms timer when no transitionend arrives, and a stale timer from a reversed slide does nothing", () => {
+    const a = lipApp();
+    collapsed(a, "a");
+    a.advance(300);
+    scrollTo(a, 270);
+    assert.strictEqual(state(a), "lipped/open");
+    a.advance(219);
+    assert.strictEqual(state(a), "lipped/open", "not yet");
+    a.advance(1);
+    assert.strictEqual(state(a), OPEN, "the timer ended it");
+    assert.strictEqual(a.els["scale-lip"].hidden, true);
+    const b = lipApp();
+    collapsed(b, "b");
+    b.advance(300);
+    scrollTo(b, 270);
+    b.advance(50);
+    scrollTo(b, 400);
+    assert.strictEqual(state(b), SHUT, "reversed");
+    b.advance(400);
+    assert.strictEqual(state(b), SHUT, "the first restore's timer did nothing");
+    const slide = b.els["scale-footslide"];
+    scrollTo(b, 370);
+    slide.dispatchEvent({ type: "transitionend", target: slide, propertyName: "transform" });
+    assert.strictEqual(state(b), OPEN, "a transitionend on the slab ends the restore early");
+    const c = collapsed(lipApp(), "c");
+    c.advance(300);
+    scrollTo(c, 270);
+    c.els["scale-footslide"].dispatchEvent({ type: "transitionend", target: c.els["scale-foot"], propertyName: "transform" });
+    assert.strictEqual(state(c), "lipped/open", "a transitionend from another element is ignored");
+  });
+
+  test("UX: a reversal mid-slide retargets the slide and never changes the layout classes", () => {
+    const app = lipApp();
+    const log = [];
+    const cl = sheetOf(app).classList;
+    for (const m of ["add", "remove"]) {
+      const orig = cl[m].bind(cl);
+      cl[m] = (...names) => { if (names.some((n) => n === "lipped" || n === "lipnow")) log.push(m + ":" + names.join()); return orig(...names); };
+    }
+    collapsed(app, "go");
+    const afterCollapse = log.length;
+    app.advance(40);
+    scrollTo(app, 270);
+    assert.strictEqual(state(app), "lipped/open");
+    app.advance(40);
+    scrollTo(app, 400);
+    assert.strictEqual(state(app), SHUT);
+    app.advance(40);
+    scrollTo(app, 370);
+    assert.strictEqual(state(app), "lipped/open");
+    assert.deepStrictEqual(log.slice(afterCollapse), [], "no lipped or lipnow write between the start and the end");
+  });
+
+  test("UX: opening, Edit-opening and closing the sheet leave the footer open with no lip classes or variables", () => {
+    const clean = (app, label) => {
+      const c = sheetOf(app).classList;
+      for (const n of ["lipped", "lipshut", "lipnow"]) assert.strictEqual(c.contains(n), false, label + " " + n);
+      assert.strictEqual(app.els["scale-lip"].hidden, true, label);
+      for (const k of ["--lip-h", "--lip-pad", "--lip-gd", "--lip-g"]) assert.strictEqual(sheetOf(app).style[k] || "", "", label + " " + k);
+    };
+    const app = lipApp("add");
+    clean(app, "open");
+    collapsed(app, "shut");
+    app.run("closeScaleSheet()");
+    clean(app, "closed while shut");
+    openSheet(app);
+    clean(app, "reopened");
+    const edit = lipApp("edit");
+    clean(edit, "edit");
+    collapsed(edit, "edit shut");
+    edit.run("closeScaleSheet()");
+    clean(edit, "edit closed");
+  });
+
+  test("UX: a lip click, a 16px upward touch on the lip and a focus on the lip each restore; a 15px touch and a downward one do not", () => {
+    const touch = (app, dy) => {
+      const lip = app.els["scale-lip"];
+      lip.dispatchEvent({ type: "touchstart", touches: [{ identifier: 3, clientY: 500 }] });
+      lip.dispatchEvent({ type: "touchmove", touches: [{ identifier: 3, clientY: 500 + dy }] });
+    };
+    const shutOf = (app) => app.els["scale-sheet"].classList.contains("lipshut");
+    const a = collapsed(lipApp(), "click");
+    a.els["scale-lip"].dispatchEvent({ type: "click" });
+    assert.strictEqual(shutOf(a), false, "click");
+    const b = collapsed(lipApp(), "focus");
+    b.els["scale-lip"].dispatchEvent({ type: "focusin" });
+    assert.strictEqual(shutOf(b), false, "focus");
+    const c = collapsed(lipApp(), "16");
+    touch(c, -16);
+    assert.strictEqual(shutOf(c), false, "16px up");
+    const d = collapsed(lipApp(), "15");
+    touch(d, -15);
+    assert.strictEqual(shutOf(d), true, "15px up");
+    const e = collapsed(lipApp(), "down");
+    touch(e, 40);
+    assert.strictEqual(shutOf(e), true, "down");
+  });
+
+  test("UX: no lip code calls requestAnimationFrame or constructs a ResizeObserver", () => {
+    const js = lipSource();
+    assert.ok(js.length > 2000, "the lip section was found");
+    assert.ok(!/requestAnimationFrame|ResizeObserver/.test(js));
+  });
+
+  test("LP: the lip's aria-label names the visible primary: Show NEXT, Show GENERATE CARDS, Show SAVE CHANGES", () => {
+    const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    assert.match(html, /<button id="scale-lip"[^>]*aria-label="Show NEXT"/);
+    const add = lipApp("add");
+    add.els["scale-next"].textContent = "NEXT";
+    add.run("collapseLip()");
+    assert.strictEqual(add.els["scale-lip"].getAttribute("aria-label"), "Show NEXT");
+    const lay = lipApp("add");
+    lay.run("setTab('layout')");
+    lay.run("collapseLip()");
+    assert.strictEqual(lay.els["scale-lip"].getAttribute("aria-label"), "Show GENERATE CARDS");
+    const edit = lipApp("edit");
+    edit.run("collapseLip()");
+    assert.strictEqual(edit.els["scale-lip"].getAttribute("aria-label"), "Show SAVE CHANGES");
+  });
+
+  test("LP: a tab switch or NEXT clears lipshut with lipnow and re-baselines the scroll", () => {
+    for (const how of ["next", "tab"]) {
+      const app = lipApp("add");
+      collapsed(app, how);
+      app.get("bandPort").scrollHeight = 1500;
+      if (how === "next") app.click(app.els["scale-next"]); else app.click(app.els["scale-tab-layout"]);
+      assert.strictEqual(state(app), OPEN, how);
+      assert.strictEqual(sheetOf(app).classList.contains("lipnow"), false, how);
+      assert.deepStrictEqual(JSON.parse(app.get("JSON.stringify(lipPrev)")), { t: 0, M: 1000 }, how + " re-baselined to the new range");
+      scrollTo(app, 20);
+      assert.strictEqual(state(app), OPEN, how + ": 20px from the new baseline");
+    }
+  });
+
+  test("LP: while lipshut the footer stops are replaced by #scale-lip in the Tab order on both tabs", () => {
+    for (const edit of [false, true]) {
+      for (const layout of [false, true]) {
+        const app = lipApp(edit ? "edit" : "add");
+        if (layout) app.run("setTab('layout')");
+        app.get("backBtn").focus();
+        tab(app, true);
+        const open = app.activeId();
+        assert.strictEqual(open, edit ? "scale-delete" : (layout ? "scale-generate" : "scale-next"), `open edit=${edit} layout=${layout}`);
+        collapsed(app, "shut");
+        app.get("backBtn").focus();
+        tab(app, true);
+        assert.strictEqual(app.activeId(), "scale-lip", `shut edit=${edit} layout=${layout}`);
+      }
+    }
   });
 });
