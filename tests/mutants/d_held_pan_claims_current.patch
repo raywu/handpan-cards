@@ -7,12 +7,13 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9403,13 +9403,13 @@ function clearPanPreview() {
+@@ -11248,14 +11248,14 @@ function clearPanPreview() {
  let panState = "example";
  function markPan(state, interactive) {
    panState = state;
 -  previewBox.classList.toggle("stale", state !== "current");
 +  previewBox.classList.remove("stale");
+   previewBox.classList.toggle("example", state === "example");
    if (interactive) {
      previewBox.setAttribute("role", "group");
      previewBox.setAttribute("aria-label", countsLabel(ringSizes(lastSolved.fields)));

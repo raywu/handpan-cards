@@ -5,15 +5,15 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1459,6 +1459,7 @@
+@@ -1507,6 +1507,7 @@ html.about-open{overflow:hidden}
        <div id="scale-swatches" role="group" aria-label="Card palette"></div>
      </div>
      </div>
 +   </div>
      <div id="scale-panel-layout" role="tabpanel" aria-labelledby="scale-tab-layout" hidden>
-     <p class="sheethint" id="scale-layout-hint">Type a scale to adjust its layout.</p>
      <div id="scale-plate-band">
-@@ -1507,7 +1508,6 @@
+       <div id="scale-preview" role="img"
+@@ -1555,7 +1556,6 @@ html.about-open{overflow:hidden}
        </div>
      </div>
      </div>

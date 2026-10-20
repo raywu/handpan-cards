@@ -1,0 +1,18 @@
+# kills: PH: the CTA is a sibling right after the plate inside the band, not in the flow above it
+# suite: node --test --test-name-pattern ^PH:.the.CTA.is.a.sibling tests/app.test.js
+# Puts the layout hint back above the plate band, in the flow, instead of over the plate.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1508,10 +1508,10 @@ html.about-open{overflow:hidden}
+     </div>
+     </div>
+     <div id="scale-panel-layout" role="tabpanel" aria-labelledby="scale-tab-layout" hidden>
++    <p class="sheethint" id="scale-layout-hint">Type a scale to adjust its layout.</p>
+     <div id="scale-plate-band">
+       <div id="scale-preview" role="img"
+            aria-label="Preview of where the notes sit on the pan" hidden></div>
+-      <p class="sheethint" id="scale-layout-hint">Type a scale to adjust its layout.</p>
+       <div id="scale-drawer-status" aria-live="polite" aria-atomic="true" hidden></div>
+     </div>
+     <div id="scale-layout-zone">

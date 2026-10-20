@@ -4839,7 +4839,7 @@ function run() {
                      portH: sp.height,
                      pos: getComputedStyle(document.getElementById("scale-plate-band")).position };`);
           const unstuck = r.portH - r.bandH < 44;
-          assert.strictEqual(r.pos, unstuck ? "static" : "sticky", `${where}: the band is not stuck at focus on #${id}`);
+          assert.strictEqual(r.pos, unstuck ? "relative" : "sticky", `${where}: the band is not stuck at focus on #${id}`);
           assert.ok(unstuck || r.top >= r.band - 1, `${where}: #${id} sits under the band: ${JSON.stringify(r)}`);
           assert.ok(r.bottom <= r.spBottom + 1, `${where}: #${id} ends below the scrollport: ${JSON.stringify(r)}`);
         }
@@ -7645,7 +7645,7 @@ function run() {
         await f4OpenDrawer();
         const g = await f4Geom();
         const room = g.portBottom - g.band.bottom;
-        if (g.bandPos === "static") {
+        if (g.bandPos !== "sticky") {
           assert.ok(g.portBottom - g.portTop - (g.band.bottom - g.band.top) < 44, `the band is not stuck with ${g.portBottom - g.portTop - (g.band.bottom - g.band.top)}px of room: ${JSON.stringify(g)}`);
         } else {
           const floor = { "390x745": 20, "380x780": 60 }[w + "x" + h];
@@ -8087,6 +8087,96 @@ function run() {
     }
   });
 
+  for (const [vw, vh] of [[380, 780], [844, 390]]) {
+    test(`PH: ${vw}x${vh} the CTA sits inside the plate with its own 4.5:1 contrast and takes no room`, async () => {
+      try {
+        await freshLoad();
+        await b.setViewport(vw, vh, true);
+        await openSheet();
+        await b.eval(`document.getElementById("scale-tab-layout").click();`);
+        await b.settle();
+        const m = () => b.eval(`
+          const p = document.getElementById("scale-preview").getBoundingClientRect();
+          const h = document.getElementById("scale-layout-hint");
+          const r = h.getBoundingClientRect(), cs = getComputedStyle(h);
+          const bg = (() => { let e = h; while (e) { const c = getComputedStyle(e).backgroundColor;
+            if (c && c !== "rgba(0, 0, 0, 0)" && c !== "transparent") return c; e = e.parentElement; } return "rgb(0, 0, 0)"; })();
+          return { hidden: h.hidden, pos: cs.position, pe: cs.pointerEvents, fg: cs.color, bg,
+            plate: [p.left, p.top, p.width, p.height], hint: [r.left, r.top, r.right, r.bottom] };
+        `);
+        const rgb = (s) => s.match(/[\d.]+/g).slice(0, 3).map(Number);
+        const empty = await m();
+        assert.strictEqual(empty.hidden, false);
+        assert.strictEqual(empty.pos, "absolute");
+        assert.strictEqual(empty.pe, "none");
+        const [pl, pt, pw, ph] = empty.plate;
+        const [hl, ht, hr, hb] = empty.hint;
+        assert.ok(hl >= pl - 0.5 && hr <= pl + pw + 0.5 && ht >= pt - 0.5 && hb <= pt + ph + 0.5,
+          `the CTA is not inside the plate: ${JSON.stringify(empty)}`);
+        assert.ok(contrastRatio(rgb(empty.fg), rgb(empty.bg)) >= 4.5, `CTA contrast ${empty.fg} on ${empty.bg}`);
+        await b.eval(`document.getElementById("scale-layout-hint").hidden = true;`);
+        const off = await m();
+        assert.deepStrictEqual(off.plate, empty.plate, "the CTA moved the plate");
+        await b.eval(`document.getElementById("scale-layout-hint").hidden = false;`);
+        await typeScale("(D3) A3 C4 D4");
+        await b.settle();
+        assert.strictEqual((await m()).hidden, true, "the CTA stayed after a valid seed");
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test(`PH: ${vw}x${vh} the tabs are a text strip with a 2px cream underline on the selected one, 44px tall`, async () => {
+      try {
+        await freshLoad();
+        await b.setViewport(vw, vh, true);
+        await openSheet();
+        const read = () => b.eval(`
+          return ["scale-tab-scale", "scale-tab-layout"].map((id) => {
+            const e = document.getElementById(id), cs = getComputedStyle(e), r = e.getBoundingClientRect();
+            const af = getComputedStyle(e, "::after");
+            return { bg: cs.backgroundColor, color: cs.color, bw: cs.borderBottomWidth, bc: cs.borderBottomColor,
+              afH: af.height, afBg: af.backgroundColor, h: r.height, w: r.width, radius: cs.borderTopLeftRadius };
+          });`);
+        const [sel, other] = await read();
+        assert.strictEqual(sel.bg, "rgba(0, 0, 0, 0)", `the selected tab is filled: ${sel.bg}`);
+        assert.strictEqual(other.bg, "rgba(0, 0, 0, 0)");
+        assert.ok(sel.h >= 44 && other.h >= 44, `tabs are ${sel.h}px / ${other.h}px tall`);
+        assert.ok(Math.abs(sel.w - other.w) < 1.5, "the tabs are not equal widths");
+        const cream = "rgb(241, 236, 225)";
+        const underlined = (t) => (t.bw === "2px" && t.bc === cream) || (t.afH === "2px" && t.afBg === cream);
+        assert.ok(underlined(sel), `the selected tab has no 2px cream underline: ${JSON.stringify(sel)}`);
+        assert.ok(!underlined(other), "the unselected tab is underlined in cream");
+        assert.notStrictEqual(sel.color, other.color, "selected and unselected labels share a colour");
+        assert.strictEqual(sel.radius, "0px", "the tab is a rounded button");
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+  }
+
+  test("PH: the example plate is dimmer and greyer than a held plate", async () => {
+    try {
+      await freshLoad();
+      await b.setViewport(380, 780, true);
+      await openSheet();
+      await b.eval(`document.getElementById("scale-tab-layout").click();`);
+      const st = () => b.eval(`
+        const cs = getComputedStyle(document.getElementById("scale-preview"));
+        return { o: parseFloat(cs.opacity), f: cs.filter };`);
+      const example = await st();
+      await typeScale("(D) A C D E F G A C");
+      await typeScale("(D) A C D z");
+      await b.settle();
+      const held = await st();
+      assert.ok(example.o < held.o, `example ${example.o} is not dimmer than held ${held.o}`);
+      assert.ok(example.f.includes("grayscale"), `the example is not desaturated (${example.f})`);
+      assert.ok(!held.f.includes("grayscale"), "a held plate is desaturated");
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
   test("a held pan is never announced as the current one", async () => {
     // The pan is role="img" with a name, so it is content: a stale render
     // left under the live name tells a screen reader the user is looking at
@@ -8119,8 +8209,10 @@ function run() {
         `held ${held.opacity}, current ${valid.opacity})`);
       // Floored so the plate's black rim ink keeps its contrast: this is
       // graphic content, not decoration.
-      assert.ok(held.opacity >= 0.5 && empty.opacity >= 0.5,
-        `dimmed below the 0.5 contrast floor (${held.opacity}, ${empty.opacity})`);
+      // PH: the owner asked for the example to be greyed further, so the
+      // floor holds for a held pan only and the example sits below it.
+      assert.ok(held.opacity >= 0.5 && empty.opacity < held.opacity,
+        `held dimmed below the 0.5 contrast floor or the example is not dimmer (${held.opacity}, ${empty.opacity})`);
     } finally {
       await b.setViewport(900, 900, false);
     }

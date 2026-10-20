@@ -877,14 +877,15 @@ footer.seq{row-gap:var(--sp-1)}
 #scale-preview{align-self:center; padding:var(--sp-2);
   border-radius:12px; background:#f1ece1; border:1px solid #433b2c}
 /* Not-current: the placeholder example before anything is typed, and the last
-   render held through an invalid parse. ONE treatment for both, because the
-   invalid case already shouts in two other channels (#scale-box.bad's orange
-   border and the orange message) - what separates them is the accessible name,
-   set in JS. The whole plate dims, not the SVG inside it: an undimmed
+   render held through an invalid parse. Held keeps .62 (the invalid case already
+   shouts in two other channels: #scale-box.bad's orange border and the orange
+   message); the example, which nobody typed, is greyed further by .example
+   below. What separates all three is the accessible name, set in JS. The whole plate dims, not the SVG inside it: an undimmed
    #f1ece1 plate on a #1f1b15 sheet is the loudest thing in the drawer, and on
    an empty box that is an example nobody typed. .62 and not lower because the
    pan is role="img" content, so the rim ink has to keep its contrast. */
 #scale-preview.stale{opacity:.62}
+#scale-preview.stale.example{opacity:.35; filter:grayscale(1)}
 #scale-preview svg{display:block; width:100%; height:auto}
 /* Geometry deliberately IDENTICAL to #scale-parse above, because this sits
    between the scale field and the pan preview and the two take turns in one
@@ -1077,8 +1078,13 @@ footer.seq{row-gap:var(--sp-1)}
 /* The tab strip, the panels and the OR rule (plan 2026-10-19-sheet-tabs, O2 and O3). One pan size:
    the Layout tab's, which is the old Adjust size. --adj-reserve is the room kept for controls under
    the pan (one column) or given to the chrome (two columns, set in the container query below). */
-#scale-tabs{display:flex; gap:var(--sp-2)}
-#scale-tabs .mode{flex:1 1 0; min-width:0}
+#scale-tabs{display:flex; gap:0; border-bottom:1px solid #433b2c}
+#scale-tabs [role=tab]{flex:1 1 0; min-width:0; min-height:44px; position:relative; display:inline-flex;
+  align-items:center; justify-content:center; background:none; border:0; border-radius:0; padding:0 var(--sp-3);
+  color:#a79d8b; font:600 10.5px/1 "Nunito Sans"; letter-spacing:.13em; text-transform:uppercase; cursor:pointer}
+#scale-tabs [role=tab].on{color:#f1ece1}
+#scale-tabs [role=tab]::after{content:""; position:absolute; left:0; right:0; bottom:-1px; height:2px; background:transparent}
+#scale-tabs [role=tab].on::after{background:#f1ece1}
 #scale-sheet.kbup.side #scale-tabs{display:none}
 #scale-panel-scale, #scale-panel-layout{display:flex; flex-direction:column; gap:var(--sp-3); min-width:0}
 #scale-panel-scale[hidden], #scale-panel-layout[hidden]{display:none}
@@ -1088,7 +1094,11 @@ footer.seq{row-gap:var(--sp-1)}
 #scale-preview{--adj-reserve:232px;
   width:clamp(160px, min(100cqw, calc(100cqh - var(--adj-reserve))), 480px)}
 #scale-plate-band{position:sticky; top:0; z-index:2; background:#1f1b15; padding-bottom:var(--sp-1)}
-.sheetbody:has(#scale-layout-zone.nostick) #scale-plate-band{position:static}
+.sheetbody:has(#scale-layout-zone.nostick) #scale-plate-band{position:relative}
+#scale-plate-band #scale-layout-hint{position:absolute; left:50%; top:calc((100% - var(--sp-1)) / 2);
+  transform:translate(-50%, -50%); width:max-content; max-width:min(60%, 200px); box-sizing:border-box;
+  padding:6px 10px; border-radius:8px; background:#1f1b15; color:#eae6df; text-align:center; pointer-events:none}
+#scale-plate-band #scale-layout-hint[hidden]{display:none}
 .sheetbody{scroll-padding-top:var(--plate-band-h, 0px)}
 @media (orientation:landscape) and (max-height:500px){
   #scale-sheet[data-tab="layout"] .sheetsurf{max-width:none}
@@ -1097,10 +1107,10 @@ footer.seq{row-gap:var(--sp-1)}
   #scale-preview{--adj-reserve:72px}
   #scale-sheet[data-tab="layout"] .sheetbody{display:grid; grid-template-columns:auto 1fr; column-gap:var(--sp-3); row-gap:0; align-content:start}
   #scale-sheet[data-tab="layout"] #scale-panel-layout{display:contents}
-  #scale-sheet[data-tab="layout"] #scale-plate-band{grid-column:1; grid-row:1 / span 30; align-self:start; position:static}
-  #scale-sheet[data-tab="layout"] #scale-tabs, #scale-sheet[data-tab="layout"] #scale-layout-hint,
+  #scale-sheet[data-tab="layout"] #scale-plate-band{grid-column:1; grid-row:1 / span 30; align-self:start; position:relative}
+  #scale-sheet[data-tab="layout"] #scale-tabs,
   #scale-sheet[data-tab="layout"] #scale-layout-zone{grid-column:2}
-  #scale-sheet[data-tab="layout"] #scale-layout-hint, #scale-sheet[data-tab="layout"] #scale-layout-zone{margin-top:var(--sp-3)}
+  #scale-sheet[data-tab="layout"] #scale-layout-zone{margin-top:var(--sp-3)}
   #scale-plate-band #scale-drawer-status{width:0; min-width:100%}
   .sheetbody{scroll-padding-top:0}
 }
@@ -1217,6 +1227,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 #scale-swatches .dot.sel:active::after{box-shadow:0 0 0 2px #f1ece1}
 #scale-swatches .dot:active{opacity:.75}
 #scale-fine-toggle:active, #scale-delete:active{color:#eae6df}
+#scale-tabs [role=tab]:active{color:#eae6df}
 /* Armed is a state the eye can read without the label: the same amber the
    announcer uses for a warning. */
 #scale-delete[data-armed]{color:#e3b25c}
@@ -1395,9 +1406,9 @@ html.about-open{overflow:hidden}
     <!-- Two tabs (plan 2026-10-19-sheet-tabs, O3): Scale, then Layout. Automatic
          activation, roving tabindex; a switch pushes no history entry. -->
     <div id="scale-tabs" role="tablist" aria-label="Scale sheet">
-      <button class="mode on" type="button" id="scale-tab-scale" role="tab" aria-selected="true"
+      <button class="on" type="button" id="scale-tab-scale" role="tab" aria-selected="true"
               aria-controls="scale-panel-scale" tabindex="0">Scale</button>
-      <button class="mode" type="button" id="scale-tab-layout" role="tab" aria-selected="false"
+      <button type="button" id="scale-tab-layout" role="tab" aria-selected="false"
               aria-controls="scale-panel-layout" tabindex="-1">Layout</button>
     </div>
     <div id="scale-panel-scale" role="tabpanel" aria-labelledby="scale-tab-scale">
@@ -1498,10 +1509,10 @@ html.about-open{overflow:hidden}
     </div>
     </div>
     <div id="scale-panel-layout" role="tabpanel" aria-labelledby="scale-tab-layout" hidden>
-    <p class="sheethint" id="scale-layout-hint">Type a scale to adjust its layout.</p>
     <div id="scale-plate-band">
       <div id="scale-preview" role="img"
            aria-label="Preview of where the notes sit on the pan" hidden></div>
+      <p class="sheethint" id="scale-layout-hint">Type a scale to adjust its layout.</p>
       <div id="scale-drawer-status" aria-live="polite" aria-atomic="true" hidden></div>
     </div>
     <div id="scale-layout-zone">
@@ -11213,9 +11224,8 @@ function solvePreviewLayout(seed) {
  * in the box must not claim to be: "current" is the seed as typed, "example" is
  * the placeholder drawn for an empty box, and "held" is the last render kept
  * through an invalid parse so a typo does not throw away the pan being edited.
- * Visually "example" and "held" share one dim treatment (#scale-preview.stale)
- * - the invalid case is already distinguished by the box's orange border and
- * the orange message, so a second visual vocabulary would only be noise. */
+ * Both dim the plate (#scale-preview.stale); the example, which nobody typed,
+ * is greyed further by #scale-preview.example. */
 const PAN_NAMES = {
   current: "Preview of where the notes sit on the pan",
   example: "Example pan for the placeholder seed",
@@ -11230,6 +11240,7 @@ function clearPanPreview() {
   previewBox.innerHTML = "";
   previewBox.removeAttribute("aria-label");
   previewBox.classList.remove("stale");
+  previewBox.classList.remove("example");
   previewBox.setAttribute("hidden", "");
 }
 
@@ -11239,6 +11250,7 @@ let panState = "example";
 function markPan(state, interactive) {
   panState = state;
   previewBox.classList.toggle("stale", state !== "current");
+  previewBox.classList.toggle("example", state === "example");
   if (interactive) {
     previewBox.setAttribute("role", "group");
     previewBox.setAttribute("aria-label", countsLabel(ringSizes(lastSolved.fields)));
@@ -11293,12 +11305,15 @@ function showPanPreview(seed) {
 }
 
 /** An empty box still gets a pan, so the drawer is the same height before the
- * first keystroke as after it. The seed comes from the placeholder ATTRIBUTE
- * rather than a second copy of it in JS: the label, the placeholder and
- * PARSE_HINT are the only teaching of the grammar there is, and this way the
- * example drawn is provably the example shown. */
+ * first keystroke as after it. The seed is what the four fields' placeholder
+ * ATTRIBUTES compose, through the same HPE.importer.compose typing uses,
+ * rather than a second copy of it in JS: the placeholders are the teaching of
+ * the grammar, and this way the example drawn is provably the example shown. */
 function showPlaceholderPan() {
-  const res = HPE.core.parseSeed(String(scaleBox.placeholder || ""), sheetOptions());
+  const values = {};
+  for (const k of FIELD_KEYS) values[k] = String(fieldEls[k].placeholder || "");
+  const composed = HPE.importer.compose(values);
+  const res = composed.ok ? HPE.core.parseSeed(composed.line, sheetOptions()) : composed;
   if (!res.ok || !paintPan(res.value, "example")) clearPanPreview();
 }
 
