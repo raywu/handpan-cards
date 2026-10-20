@@ -48,6 +48,8 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", 
   // Stage 2: the page header. The sheet became a full-screen page, so it has a
   // BACK control and a visible title where the drawer had neither.
   "scale-back", "scale-title",
+  // Lane P: the pan column and the Adjust layout layer head.
+  "scale-pancol", "scale-adjust-head", "scale-adjust-back", "scale-adjust-title",
   // Lane M1: the settings panel that now hosts the mode toggle and print
   // controls, plus its header trigger and scrim.
   "settings-trigger", "settings-scrim", "settings-panel",

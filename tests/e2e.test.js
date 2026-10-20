@@ -14024,4 +14024,256 @@ function run() {
       assert.match(await chipOn(), /pygmy/i);
     });
   });
+
+  /* ------------------------- UX: two pan sizes, Adjust layout ----------------
+   * Lane P of docs/plans/2026-10-19-dual-input-sheet-ux.md. Every test loops
+   * the five viewports; each failure names its cell. */
+  describe("UX: two pan sizes and Adjust layout", () => {
+    const UX_VIEWPORTS = [[380, 780, true], [320, 568, true], [393, 852, true], [844, 390, true], [1280, 800, false]];
+    const UX_KURD = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
+    const UX_PYGMY = "[C3] [Db3] [Eb3] F3 | G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]";
+    const ev = (s) => b.eval(s);
+    const frames = () => ev(`return new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r(true))));`);
+    const sheetShown = (shown) => b.waitFor(
+      `document.getElementById("scale-sheet").hasAttribute("hidden") === ${!shown}`, { label: "the sheet" });
+    const adjusting = (on) => b.waitFor(
+      `document.getElementById("scale-sheet").classList.contains("adjusting") === ${on}`, { label: "adjusting " + on });
+    const typeBox = (s) => ev(`const el = document.getElementById("scale-box"); el.value = ${JSON.stringify(s)};
+      el.dispatchEvent(new Event("input", { bubbles: true })); return el.value;`);
+    const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+    /* A page at w x h with the sheet open: "add" types `scale`, "edit" opens the
+     * shown deck (Kurd, seeded) for editing; `pygmyEdit` selects Pygmy first. */
+    const uxOpen = async (w, h, mode, scale = UX_KURD) => {
+      await freshLoad();
+      await b.setViewport(w, h, w < 1000);
+      await b.settle();
+      if (mode === "edit-pygmy") {
+        await ev(`[...document.querySelectorAll("#decks .chip")].find((c) => /pygmy/i.test(c.textContent)).click(); return true;`);
+        await frames();
+      }
+      if (mode === "add") {
+        await ev(`document.getElementById("deck-add").click(); return true;`);
+        await sheetShown(true);
+        if (scale) await typeBox(scale);
+      } else {
+        await ev(`document.querySelector("#decks .chip.on").click(); return true;`);
+        await sheetShown(true);
+      }
+      await frames();
+    };
+    const uxOpenAdjust = async () => {
+      await b.click("#scale-layout-toggle");
+      await adjusting(true);
+      await frames();
+    };
+    const rectOf = (sel) => ev(`const e = document.querySelector(${JSON.stringify(sel)}); if (!e) return null;
+      const r = e.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom, w: r.width, h: r.height,
+      shown: e.getClientRects().length > 0 && getComputedStyle(e).visibility !== "hidden" };`);
+    /* The width the small pan must have: clamp(88px, 30cqw, 160px) of the sheet's content box. */
+    const smallWant = () => ev(`const surf = document.querySelector(".sheetsurf"), cs = getComputedStyle(surf);
+      const cw = surf.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+      return Math.min(160, Math.max(88, cw * 0.3));`);
+    const cellsOf = (modes) => UX_VIEWPORTS.flatMap(([w, h]) => modes.map((m) => [w, h, m]));
+    const sweep = async (modes, fn) => {
+      const fails = [];
+      try {
+        for (const [w, h, m] of cellsOf(modes)) {
+          const fail = (msg) => fails.push(`${w}x${h} ${m}: ${msg}`);
+          await uxOpen(w, h, m, m === "edit-pygmy" ? null : m === "add-pygmy" ? UX_PYGMY : UX_KURD);
+          await fn(fail, w, h, m);
+        }
+      } finally {
+        await b.clearKeyboard().catch(() => {});
+        await b.setViewport(900, 900, false);
+      }
+      assert.deepStrictEqual(fails, [], fails.slice(0, 6).join("\n"));
+    };
+
+    test("UX: the sheet opens with the small pan left of the four fields, clamp(88px, 30cqw, 160px), at every viewport", async () => {
+      await sweep(["add", "edit"], async (fail) => {
+        const m = await ev(`
+          const surf = document.querySelector(".sheetsurf"), cs = getComputedStyle(surf);
+          const cw = surf.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+          const r = (id) => { const e = document.getElementById(id); const q = e.getBoundingClientRect();
+            return { l: q.left, t: q.top, r: q.right, b: q.bottom, w: q.width }; };
+          return { cw, pan: r("scale-preview"), ding: r("scale-ding"), top: r("scale-top"),
+            inner: r("scale-inner"), bottom: r("scale-bottom") };`);
+        const want = Math.min(160, Math.max(88, m.cw * 0.3));
+        if (Math.abs(m.pan.w - want) > 1.5) fail(`the small pan is ${m.pan.w}px wide, want ${want.toFixed(1)}`);
+        for (const k of ["ding", "top", "inner", "bottom"]) {
+          if (m[k].l < m.pan.r - 1) fail(`${k} starts at ${m[k].l}, left of the pan's right edge ${m.pan.r}`);
+          if (m[k].t > m.pan.b || m[k].b < m.pan.t) fail(`${k} is not beside the pan`);
+        }
+      });
+    });
+
+    test("UX: Adjust layout shows the large pan, the layout controls and no field, scale line or primary", async () => {
+      await sweep(["add", "edit"], async (fail) => {
+        const small = (await rectOf("#scale-preview")).w;
+        await uxOpenAdjust();
+        const pan = await rectOf("#scale-preview");
+        if (!(pan.w >= 160 && pan.w <= 480.5 && pan.w > small)) fail(`the large pan is ${pan.w}px, the small one was ${small}`);
+        for (const sel of ["#scale-fields", "#scale-box", "#scale-generate", "#scale-back", "#scale-swatches"]) {
+          const r = await rectOf(sel);
+          if (r && r.shown) fail(`${sel} is shown in Adjust layout`);
+        }
+        for (const sel of ["#scale-adjust-head", "#scale-adjust-back", "#scale-drawer", "#scale-anchor-one"]) {
+          const r = await rectOf(sel);
+          if (!r || !r.shown) fail(`${sel} is not shown in Adjust layout`);
+        }
+        const name = await ev(`return document.getElementById("scale-adjust-back").getAttribute("aria-label");`);
+        if (name !== "Back to the scale") fail(`BACK is named ${name}`);
+      });
+    });
+
+    test("UX: Adjust layout shows at least 160px of controls under the large pan in one column, and beside it at 844x390", async () => {
+      await sweep(["add", "edit"], async (fail, w, h) => {
+        await uxOpenAdjust();
+        const m = await ev(`
+          const q = (id) => document.getElementById(id).getBoundingClientRect();
+          const port = document.querySelector("#scale-sheet .sheetbody").getBoundingClientRect();
+          return { pan: q("scale-preview"), drawer: q("scale-drawer"), port: { t: port.top, b: port.bottom },
+            vv: window.visualViewport.height };`);
+        const floor = Math.min(m.port.b, m.vv);
+        if (w === 844 && h === 390) {
+          if (m.drawer.left < m.pan.right - 1) fail(`controls (${m.drawer.left}) are not beside the pan (${m.pan.right})`);
+        } else {
+          const room = Math.min(m.drawer.bottom, floor) - Math.max(m.drawer.top, m.pan.bottom);
+          if (room < 160) fail(`${room.toFixed(1)}px of controls under the pan, want 160 (pan bottom ${m.pan.bottom}, floor ${floor})`);
+        }
+      });
+    });
+
+    test("UX: every note on the large pan is hit by a tap at its centre (Kurd, Pygmy)", async () => {
+      await sweep(["edit", "edit-pygmy"], async (fail) => {
+        await uxOpenAdjust();
+        const bad = await ev(`
+          const out = [];
+          const hits = [...document.querySelectorAll("#scale-preview .panhit")];
+          for (const n of hits) {
+            const r = n.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
+            const at = document.elementFromPoint(x, y);
+            if (!(at && at.closest(".panhit") === n)) out.push(n.getAttribute("aria-label") + " at " + Math.round(x) + "," + Math.round(y));
+          }
+          return { n: hits.length, out };`);
+        if (!bad.n) fail("the large pan has no notes");
+        if (bad.out.length) fail(`${bad.out.length} notes are not hit at their centre: ${bad.out.slice(0, 3).join("; ")}`);
+      });
+    });
+
+    test("UX: closing Adjust layout restores the sheet's scroll and focuses ADJUST LAYOUT", async () => {
+      await sweep(["add", "edit"], async (fail) => {
+        const before = await ev(`const p = document.querySelector("#scale-sheet .sheetbody");
+          p.scrollTop = Math.min(40, p.scrollHeight - p.clientHeight); return p.scrollTop;`);
+        await frames();
+        await uxOpenAdjust();
+        await b.click("#scale-adjust-back");
+        await adjusting(false);
+        await pause(150);
+        const m = await ev(`return { top: document.querySelector("#scale-sheet .sheetbody").scrollTop,
+          id: document.activeElement && document.activeElement.id,
+          open: !document.getElementById("scale-sheet").hasAttribute("hidden") };`);
+        if (!m.open) fail("the sheet closed");
+        if (Math.abs(m.top - before) > 1) fail(`scroll is ${m.top}, was ${before}`);
+        if (m.id !== "scale-layout-toggle") fail(`focus is on ${m.id}`);
+      });
+    });
+
+    test("UX: the phone back gesture from Adjust layout returns to the sheet, and one more Back closes it with the bar on the deck's route", async () => {
+      await sweep(["add", "edit"], async (fail, w, h, mode) => {
+        const route = await ev(`return location.hash;`);
+        await uxOpenAdjust();
+        await ev(`history.back(); return true;`);
+        await adjusting(false);
+        await pause(150);
+        const open = await ev(`return !document.getElementById("scale-sheet").hasAttribute("hidden");`);
+        if (!open) fail("the first Back closed the sheet");
+        const sheetHash = await ev(`return location.hash;`);
+        if (!/^#(add|edit-)/.test(sheetHash)) fail(`the sheet's route is ${sheetHash}`);
+        await ev(`history.back(); return true;`);
+        await sheetShown(false);
+        await pause(150);
+        const hash = await ev(`return location.hash;`);
+        if (hash !== "#deck=d-kurd-10") fail(`the bar ends on ${hash}, want #deck=d-kurd-10 (it was ${route} on open)`);
+      });
+    });
+
+    test("UX: the small pan stays in view beside each field typed in with the keyboard up", async () => {
+      try {
+        await uxOpen(393, 852, "add");
+        await b.fakeKeyboard(336);
+        await frames();
+        const fails = [];
+        for (const id of ["scale-ding", "scale-top", "scale-inner", "scale-bottom"]) {
+          await ev(`const e = document.getElementById(${JSON.stringify(id)}); e.focus();
+            e.dispatchEvent(new Event("input", { bubbles: true })); return true;`);
+          await frames();
+          const m = await ev(`const q = (e) => e.getBoundingClientRect();
+            const f = q(document.getElementById(${JSON.stringify(id)})), p = q(document.getElementById("scale-preview"));
+            const port = q(document.querySelector("#scale-sheet .sheetbody"));
+            return { f: { t: f.top, b: f.bottom, l: f.left }, p: { t: p.top, b: p.bottom, r: p.right },
+              vv: window.visualViewport.height, pt: port.top, pb: port.bottom };`);
+          const want = await smallWant();
+          const pw = await rectOf("#scale-preview");
+          if (Math.abs(pw.w - want) > 1.5) fails.push(`${id}: the pan is ${pw.w}px wide, want ${want.toFixed(1)}`);
+          const lo = Math.max(0, m.pt), hi = Math.min(m.vv, m.pb);
+          if (m.p.t < lo - 1 || m.p.b > hi + 1) fails.push(`${id}: the pan (${m.p.t}..${m.p.b}) is outside ${lo}..${hi}`);
+          if (m.f.t < lo - 1 || m.f.b > hi + 1) fails.push(`${id}: the field is outside the view`);
+          if (m.f.l < m.p.r - 1) fails.push(`${id}: the field is not right of the pan`);
+        }
+        assert.deepStrictEqual(fails, [], fails.join("\n"));
+      } finally {
+        await b.clearKeyboard().catch(() => {});
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("UX: the first field does not move between an empty sheet and the Pygmy prefill", async () => {
+      const fails = [];
+      try {
+        for (const [w, h] of UX_VIEWPORTS) {
+          await uxOpen(w, h, "add", null);
+          const empty = await rectOf("#scale-ding");
+          const pan0 = await rectOf("#scale-preview");
+          await typeBox(UX_PYGMY);
+          await frames();
+          const full = await rectOf("#scale-ding");
+          const pan1 = await rectOf("#scale-preview");
+          for (const [at, pan] of [["empty", pan0], ["Pygmy", pan1]]) {
+            const want = await smallWant();
+            if (Math.abs(pan.w - want) > 1.5) fails.push(`${w}x${h}: the ${at} sheet's pan is ${pan.w}px wide, want ${want.toFixed(1)}`);
+          }
+          for (const k of ["l", "t", "w"]) {
+            if (Math.abs(empty[k] - full[k]) > 0.5) fails.push(`${w}x${h}: the first field's ${k} moved ${empty[k]} to ${full[k]}`);
+            if (Math.abs(pan0[k] - pan1[k]) > 0.5) fails.push(`${w}x${h}: the pan's ${k} moved ${pan0[k]} to ${pan1[k]}`);
+          }
+        }
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+      assert.deepStrictEqual(fails, [], fails.join("\n"));
+    });
+
+    test("UX: Escape twice at real speed closes Adjust layout then the sheet, and one more Back leaves the page's history as it was before the sheet", async () => {
+      await sweep(["add", "edit"], async (fail) => {
+        // The sheet is already open here; close it by hand to read the entry it was pushed over.
+        await ev(`document.getElementById("scale-back").click(); return true;`);
+        await sheetShown(false);
+        await pause(200);
+        const before = await ev(`return { i: navigation.currentEntry.index, u: navigation.currentEntry.url };`);
+        await ev(`document.querySelector("#decks .chip.on").click(); return true;`);
+        await sheetShown(true);
+        await uxOpenAdjust();
+        await ev(`for (let i = 0; i < 2; i++) document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+          return true;`);
+        await sheetShown(false);
+        await pause(300);
+        const after = await ev(`return { i: navigation.currentEntry.index, u: navigation.currentEntry.url,
+          adj: document.getElementById("scale-sheet").classList.contains("adjusting") };`);
+        if (after.adj) fail("the layer is still up");
+        if (after.i !== before.i) fail(`the history index is ${after.i}, was ${before.i}`);
+        if (after.u !== before.u) fail(`the current entry is ${after.u}, was ${before.u}`);
+      });
+    });
+  });
 }
