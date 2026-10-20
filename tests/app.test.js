@@ -11208,6 +11208,17 @@ describe("TB: the sheet's tabs", () => {
     assert.ok(app.hits().length > 0, "the plate is interactive");
   });
 
+  test("TB: a tab switch resets the panel scroll to the top after the Scale panel was scrolled", () => {
+    const app = tbOpen(boot(), false);
+    app.run("bandPort.scrollTop = 120");
+    assert.strictEqual(app.get("bandPort.scrollTop"), 120);
+    app.click(tbTab(app, "layout"));
+    assert.strictEqual(app.get("bandPort.scrollTop"), 0, "Layout opened scrolled");
+    app.run("bandPort.scrollTop = 80");
+    app.click(tbTab(app, "scale"));
+    assert.strictEqual(app.get("bandPort.scrollTop"), 0, "Scale reopened scrolled");
+  });
+
   test("TB: the sheet Tab order on each tab and flow is the section 3.3 list filtered by isStop", () => {
     const scaleAdd = ["scale-back", "scale-tab-scale", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box"];
     let app = boot();
@@ -11320,6 +11331,64 @@ describe("TB: the sheet's tabs", () => {
   });
 });
 
+describe("O1: sheet placement of octaveless bottoms", () => {
+  const type = (app, k, text) => {
+    app.els["scale-" + k].dispatchEvent({ type: "focus" });
+    app.els["scale-" + k].value = text;
+    app.els["scale-" + k].dispatchEvent({ type: "input" });
+  };
+  const settle = (app, k) => app.els["scale-" + k].dispatchEvent({ type: "blur" });
+  const fieldsOf = (app) => ["ding", "top", "inner", "bottom"].map((k) => app.els["scale-" + k].value);
+  test("O1: typing g a b c in BOTTOM NOTES with ding D3 writes [G2] [A2] [B2] [C3] into the line", () => {
+    const app = boot();
+    openSheet(app);
+    type(app, "ding", "D3");
+    type(app, "top", "A3 C4");
+    type(app, "bottom", "g a b c");
+    settle(app, "bottom");
+    assert.strictEqual(app.els["scale-box"].value, "[G2] [A2] [B2] [C3] (D3) A3 C4");
+  });
+  test("O1: typing (D3) [G] A3 in the line writes G3 back into BOTTOM NOTES: the line is definitive", () => {
+    const app = boot();
+    openSheet(app);
+    app.type("(D3) [G] A3");
+    assert.strictEqual(app.els["scale-bottom"].value, "G3");
+    assert.strictEqual(app.els["scale-ding"].value, "D3");
+  });
+  test("O1: a v5 link and a stored record open with the same fields as before O1", () => {
+    const link = boot({ href: "https://example.test/index.html#s=5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/parent-aeolian/mirror/between/seats-1,0,2,3,4,5,6,7;;/975b6c" });
+    openEdit(link, link.registry()[link.deckId()]);
+    assert.deepStrictEqual(fieldsOf(link), ["D3", "A3 C4 D4 E4 F4 G4 A4 C5", "", ""]);
+    const first = boot();
+    const d = makeCustom(first, "[G2] [A2] (D3) A3 C4 E4");
+    const again = reboot(first);
+    openEdit(again, d);
+    assert.deepStrictEqual(fieldsOf(again), ["D3", "A3 C4 E4", "", "G2 A2"]);
+  });
+  test("O1: GENERATE CARDS and SAVE CHANGES from fields D3 / A3 C4 E4 / g store G2, equal to the parse line", () => {
+    const app = boot();
+    openSheet(app);
+    type(app, "ding", "D3");
+    type(app, "top", "A3 C4 E4");
+    type(app, "bottom", "g");
+    settle(app, "bottom");
+    const line = app.els["scale-box"].value;
+    assert.strictEqual(line, "[G2] (D3) A3 C4 E4");
+    app.els["scale-generate"].click();
+    const d = app.registry()[app.deckId()];
+    assert.strictEqual(app.get("HPE.core.formatSeed(deck().fields)"), line);
+    assert.ok(Object.values(d.fields).some((f) => f[0] === "G" && f[1] === 2), JSON.stringify(d.fields));
+    openEdit(app, d);
+    type(app, "top", "A3 C4 E4 F4");
+    type(app, "bottom", "g");
+    settle(app, "bottom");
+    app.els["scale-generate"].click();
+    const e = app.registry()[app.deckId()];
+    assert.strictEqual(app.get("HPE.core.formatSeed(deck().fields)"), "[G2] (D3) A3 C4 E4 F4");
+    assert.ok(Object.values(e.fields).some((f) => f[0] === "G" && f[1] === 2));
+  });
+});
+
 describe("O1: the duplicate-bottom warning on the field line", () => {
   const WARN_DING = "BOTTOM NOTES: D3 is already the ding. Double-check the bottom notes.";
   const type = (app, k, text) => {
@@ -11359,6 +11428,13 @@ describe("O1: the duplicate-bottom warning on the field line", () => {
     fill(app, "B3 c");
     assert.strictEqual(app.els["scale-field-msg"].textContent, "BOTTOM NOTES: C4 is already top note 2. Double-check the bottom notes.");
     assert.ok(app.els["scale-field-msg"].classList.contains("warn"));
+    const both = boot();
+    fill(both, "c d");
+    assert.strictEqual(both.els["scale-field-msg"].textContent, WARN_DING);
+    type(both, "top", "A3 X4");
+    settle(both, "top");
+    assert.ok(both.els["scale-field-msg"].textContent.startsWith("TOP RIM NOTES: "), both.els["scale-field-msg"].textContent);
+    assert.ok(!both.els["scale-field-msg"].classList.contains("warn"));
     type(app, "top", "A3 X4");
     settle(app, "top");
     assert.ok(app.els["scale-field-msg"].textContent.startsWith("TOP RIM NOTES: "), app.els["scale-field-msg"].textContent);
