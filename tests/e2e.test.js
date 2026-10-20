@@ -1536,8 +1536,8 @@ function run() {
         const box = document.getElementById("scale-box");
         box.value = "[C3] (D3) A3 C4 D4";
         box.dispatchEvent(new Event("input", { bubbles: true }));
-        document.getElementById("scale-layout-toggle").click();
-        document.getElementById("scale-adjust-back").focus(); return true;`);
+        document.getElementById("scale-tab-layout").click();
+        document.getElementById("scale-back").focus(); return true;`);
       const seen = [];
       let prev = await stopTag();
       for (let i = 0; i < 24; i++) {
@@ -1550,7 +1550,7 @@ function run() {
       }
       assert.ok(!seen.includes("scale-mirror"), "focus landed on the unrendered #scale-mirror");
       assert.ok(seen.includes("scale-mirror-bottom"), `Tab never reached #scale-mirror-bottom: ${JSON.stringify(seen)}`);
-      assert.ok(seen.includes("scale-adjust-back"), `Tab never wrapped to #scale-adjust-back: ${JSON.stringify(seen)}`);
+      assert.ok(seen.includes("scale-back"), `Tab never wrapped to #scale-back: ${JSON.stringify(seen)}`);
     });
 
   test("Tab from outside the stop list enters the panel cycle", async () => {
@@ -2396,10 +2396,18 @@ function run() {
     }
   }
 
+  /** Tap the primary: on Add's Scale tab that is NEXT first, then GENERATE CARDS. */
+  async function clickGenerate() {
+    if (await b.eval(`return !document.getElementById("scale-next").hidden;`)) {
+      await b.click("#scale-next");
+      await b.waitFor(`!document.getElementById("scale-panel-layout").hidden`, { label: "the Layout tab after NEXT" });
+    }
+    await b.click("#scale-generate");
+  }
   async function generate(scale) {
     await openSheet();
     await typeScale(scale);
-    await b.click("#scale-generate");
+    await clickGenerate();
     await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
       { label: "the sheet to close after Generate" });
   }
@@ -3306,7 +3314,7 @@ function run() {
         box.dispatchEvent(new Event("input", { bubbles: true })); return true;`);
       const hits = await b.eval(`
         const out = { small: [], swatches: [] };
-        const sel = "#decks .chip, #scale-box, #scale-layout-toggle, #scale-generate";
+        const sel = "#decks .chip, #scale-box, #scale-tab-scale, #scale-tab-layout, #scale-next";
         for (const el of document.querySelectorAll(sel)) {
           const r = el.getBoundingClientRect();
           if (r.height < 44) out.small.push((el.id || el.className) + " " + r.height.toFixed(1));
@@ -3329,15 +3337,15 @@ function run() {
       assert.strictEqual(hits.swatches.length, 6);
       assert.ok(hits.swatches.every(Boolean),
         `a palette swatch has no 44px hit area: ${JSON.stringify(hits.swatches)}`);
-      await b.eval(`document.getElementById("scale-layout-toggle").click(); return true;`);
+      await b.eval(`document.getElementById("scale-tab-layout").click(); return true;`);
       const layer = await b.eval(`
         const out = [];
-        for (const id of ["scale-mirror", "scale-mirror-bottom", "scale-anchor-one", "scale-anchor-between"]) {
+        for (const id of ["scale-generate", "scale-mirror", "scale-mirror-bottom", "scale-anchor-one", "scale-anchor-between"]) {
           const r = document.getElementById(id).getBoundingClientRect();
           if (r.height < 44) out.push(id + " " + r.height.toFixed(1));
         }
         return out;`);
-      assert.deepStrictEqual(layer, [], "Adjust layout controls shorter than 44px");
+      assert.deepStrictEqual(layer, [], "Layout tab controls shorter than 44px");
     } finally {
       await b.key("Escape", "Escape", 27);
       await b.setViewport(900, 900, false);
@@ -3973,7 +3981,7 @@ function run() {
         el.dispatchEvent(new Event("input", { bubbles: true }));
         return el.value;
       `);
-      await b.click("#scale-generate");
+      await clickGenerate();
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
         { label: "the Edit sheet to close after the rename" });
 
@@ -4323,13 +4331,13 @@ function run() {
     await openEdit();
   }
 
-  /** Open the layout drawer by its toggle, the way a finger does. */
+  /** Open the Layout tab, the way a finger does. */
   const openDrawer = async () => {
-    await b.eval(`document.getElementById("scale-layout-toggle")
+    await b.eval(`document.getElementById("scale-tab-layout")
       .scrollIntoView({ block: "nearest", inline: "nearest" }); return true;`);
-    await b.click("#scale-layout-toggle");
-    await b.waitFor(`!document.getElementById("scale-drawer").hidden`,
-      { label: "the layout drawer to open" });
+    await b.click("#scale-tab-layout");
+    await b.waitFor(`!document.getElementById("scale-panel-layout").hidden`,
+      { label: "the Layout tab to open" });
   };
   /** editFreshDeck(), then the drawer that holds ROTATE, MOVE and RESET. */
   async function editFreshDeckOpen() {
@@ -4368,7 +4376,7 @@ function run() {
       const r = await inScrollport("scale-plate-band");
       assert.ok(r.top >= r.spTop - 1 && r.bottom <= r.spBottom + 1,
         `the band left the scrollport: ${JSON.stringify(r)}`);
-      assert.strictEqual(await b.eval(`return getComputedStyle(document.getElementById("scale-pancol")).position;`), "sticky");
+      assert.strictEqual(await b.eval(`return getComputedStyle(document.getElementById("scale-plate-band")).position;`), "sticky");
     } finally {
       await b.setViewport(900, 900, false);
     }
@@ -4379,7 +4387,7 @@ function run() {
       await addWithDrawer(844, 390);
       const two = await b.eval(`
         const z = document.querySelector(".sheetbody");
-        const col = document.getElementById("scale-pancol").getBoundingClientRect();
+        const col = document.getElementById("scale-plate-band").getBoundingClientRect();
         const ctl = document.getElementById("scale-anchor-one").getBoundingClientRect();
         return { display: getComputedStyle(z).display, colRight: col.right, ctlLeft: ctl.left,
                  plate: document.getElementById("scale-preview").getBoundingClientRect().width };
@@ -4555,7 +4563,7 @@ function run() {
       assert.strictEqual(m.box, "(D3) A3 C4 D4 E4 | B3");
       assert.ok(m.pan, "no pan preview");
       assert.strictEqual(m.gen, false);
-      await b.click("#scale-generate");
+      await clickGenerate();
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet to close after Generate" });
       const shared = await b.eval(`const d = CUSTOM[deckId]; const res = shareLink(d);
         return { ok: res.ok, url: res.ok ? res.value : null, chords: d.chords.length };`);
@@ -4614,7 +4622,7 @@ function run() {
       await addWithDrawer(844, 390);
       const wide = await b.eval(`
         const R = (id) => document.getElementById(id).getBoundingClientRect();
-        return { plate: R("scale-preview").width, colRight: R("scale-pancol").right, ctlLeft: R("scale-anchor-one").left };`);
+        return { plate: R("scale-preview").width, colRight: R("scale-plate-band").right, ctlLeft: R("scale-anchor-one").left };`);
       assert.ok(wide.plate >= 280, `the large pan is ${wide.plate}px`);
       assert.ok(wide.ctlLeft >= wide.colRight - 1, `the controls are not beside the pan: ${JSON.stringify(wide)}`);
       const plateInView = () => b.eval(`
@@ -4648,7 +4656,7 @@ function run() {
     }
   });
 
-  test("DI: Adjust layout opened by Tab and Enter at 844x390 shows the plate from the scroller top and keeps the focused title in view (review F2)", async () => {
+  test("DI: the Layout tab opened by Tab and ArrowRight at 844x390 shows the plate from the scroller top and keeps the focused tab in view (review F2)", async () => {
     const enter = async () => {
       for (const type of ["rawKeyDown", "char", "keyUp"]) {
         await b.send("Input.dispatchKeyEvent", { type, key: "Enter", code: "Enter",
@@ -4658,27 +4666,24 @@ function run() {
     };
     const openByKeyboard = async (what) => {
       await b.eval(`document.getElementById("scale-back").focus(); return true;`);
-      for (let n = 0; n < 40; n++) {
-        await b.key("Tab", "Tab", 9);
-        if (await b.eval(`return document.activeElement.id === "scale-layout-toggle";`)) break;
-      }
-      assert.strictEqual(await b.eval(`return document.activeElement.id;`), "scale-layout-toggle",
-        `${what}: Tab never reached ADJUST LAYOUT`);
-      await enter();
-      await b.waitFor(`!document.getElementById("scale-drawer").hidden`, { label: `${what}: Adjust layout to open` });
+      await b.key("Tab", "Tab", 9);
+      assert.strictEqual(await b.eval(`return document.activeElement.id;`), "scale-tab-scale",
+        `${what}: Tab never reached the Scale tab`);
+      await b.key("ArrowRight", "ArrowRight", 39);
+      await b.waitFor(`!document.getElementById("scale-panel-layout").hidden`, { label: `${what}: the Layout tab to open` });
       await waitElapsed(500);
       const m = await b.eval(`
         const port = document.querySelector("#scale-sheet .sheetbody").getBoundingClientRect();
         const r = document.getElementById("scale-preview").getBoundingClientRect();
         const a = document.activeElement, f = a.getBoundingClientRect();
         return { top: r.top, bottom: r.bottom, portTop: port.top, portBottom: port.bottom,
-                 title: a.id === "scale-adjust-title", fTop: f.top, fBottom: f.bottom };`);
+                 title: a.id === "scale-tab-layout", fTop: f.top, fBottom: f.bottom };`);
       const shown = Math.min(m.bottom, m.portBottom) - Math.max(m.top, m.portTop);
       const want = Math.min(m.bottom - m.top, m.portBottom - m.portTop);
       assert.ok(shown >= want - 0.5, `${what}: the plate is not as fully inside the scroller as it can be: ${JSON.stringify(m)}`);
-      assert.ok(m.title, `${what}: focus did not land on the title: ${JSON.stringify(m)}`);
+      assert.ok(m.title, `${what}: focus did not stay on the Layout tab: ${JSON.stringify(m)}`);
       assert.ok(m.fTop >= -0.5 && m.fBottom <= 390.5,
-        `${what}: the focused title is outside the viewport: ${JSON.stringify(m)}`);
+        `${what}: the focused tab is outside the viewport: ${JSON.stringify(m)}`);
     };
     try {
       await freshLoad();
@@ -4719,7 +4724,7 @@ function run() {
   test("DR1 line 38: each drawer control shows the global 2px #e3b25c focus ring from the keyboard", async () => {
     try {
       await addWithDrawer(380, 780);
-      await b.eval(`document.getElementById("scale-adjust-back").focus(); return true;`);
+      await b.eval(`document.getElementById("scale-tab-layout").focus(); return true;`);
       for (const id of ["scale-anchor-one", "scale-anchor-between", "scale-mirror", "scale-mirror-bottom"]) {
         assert.ok(await tabTo(id, 40), `Tab never reached #${id}`);
         const o = await b.eval(`const cs = getComputedStyle(document.activeElement);
@@ -4736,8 +4741,8 @@ function run() {
     try {
       await addWithDrawer(380, 780);
       const bad = await b.eval(`
-        const els = [document.getElementById("scale-layout-toggle"), document.getElementById("scale-drawer"),
-          ...document.querySelectorAll("#scale-drawer button, #scale-layout-toggle span")];
+        const els = [document.getElementById("scale-tab-scale"), document.getElementById("scale-tab-layout"), document.getElementById("scale-drawer"),
+          ...document.querySelectorAll("#scale-drawer button")];
         return els.map(el => { const cs = getComputedStyle(el);
           return { id: el.id || el.tagName, t: cs.transitionDuration, a: cs.animationName }; })
           .filter(x => !/^0s(, 0s)*$/.test(x.t) || x.a !== "none");
@@ -4766,21 +4771,21 @@ function run() {
     }
   });
 
-  test("DR1 hint row dimming: the hint and the toggle dim together when disabled, and a disabled drawer switch dims", async () => {
+  test("DR1 hint row dimming: the empty hint shows with dimmed controls on an empty scale, and a disabled drawer switch dims", async () => {
     try {
       await freshLoad();
       await b.setViewport(380, 780, true);
       await openSheet();
-      const op = () => b.eval(`return { hint: getComputedStyle(document.getElementById("scale-layout-hint")).opacity,
-        toggle: getComputedStyle(document.getElementById("scale-layout-toggle")).opacity };`);
+      await b.eval(`document.getElementById("scale-tab-layout").click();`);
+      const op = () => b.eval(`return { hintShown: !document.getElementById("scale-layout-hint").hidden,
+        mirror: getComputedStyle(document.getElementById("scale-mirror")).opacity };`);
       const empty = await op();
-      assert.strictEqual(empty.toggle, "0.5");
-      assert.strictEqual(empty.hint, empty.toggle, "the empty-state hint is not dimmed with its button");
+      assert.strictEqual(empty.mirror, "0.5", "a disabled drawer control is not dimmed");
+      assert.strictEqual(empty.hintShown, true, "the empty-state hint is hidden on an empty scale");
       await typeScale("(D3) A3 C4 D4");
       const typed = await op();
-      assert.strictEqual(typed.toggle, "1");
-      assert.strictEqual(typed.hint, "1", "the hint stayed dimmed after the scale parsed");
-      await b.eval(`document.getElementById("scale-layout-toggle").click();`);
+      assert.strictEqual(typed.mirror, "1");
+      assert.strictEqual(typed.hintShown, false, "the hint stayed after the scale parsed");
       const mb = await b.eval(`const e = document.getElementById("scale-mirror-bottom");
         return { off: e.disabled, o: getComputedStyle(e).opacity,
           top: getComputedStyle(document.getElementById("scale-mirror")).opacity };`);
@@ -4791,7 +4796,7 @@ function run() {
     }
   });
 
-  test("UX: in Adjust layout the plate is the stop after BACK, and is no stop in the sheet", async () => {
+  test("UX: on the Layout tab the plate is the stop after the tab, and is no stop on the Scale tab", async () => {
     try {
       await editFreshDeck();
       await b.eval(`document.getElementById("scale-back").focus(); return true;`);
@@ -4801,7 +4806,7 @@ function run() {
         assert.strictEqual(hit, false, `Tab ${i + 1} in the sheet landed on the plate`);
       }
       await openDrawer();
-      await b.eval(`document.getElementById("scale-adjust-back").focus(); return true;`);
+      await b.eval(`document.getElementById("scale-tab-layout").focus(); return true;`);
       const seen = [];
       for (let i = 0; i < 2; i += 1) {
         await b.key("Tab", "Tab", 9);
@@ -4827,7 +4832,7 @@ function run() {
           await addWithDrawer(380, h);
         }
         for (const id of ["scale-anchor-one", "scale-anchor-between", "scale-mirror", "scale-mirror-bottom"]) {
-          await b.eval(`document.getElementById("scale-adjust-back").focus(); return true;`);
+          await b.eval(`document.getElementById("scale-tab-layout").focus(); return true;`);
           await scrollEnd();
           assert.ok(await tabTo(id, 40), `${where}: Tab never reached #${id}`);
           const r = await b.eval(`
@@ -4835,7 +4840,7 @@ function run() {
             const sp = ${body}.getBoundingClientRect();
             return { top: e.top, bottom: e.bottom, spBottom: sp.bottom,
                      band: document.getElementById("scale-plate-band").getBoundingClientRect().bottom,
-                     pos: getComputedStyle(document.getElementById("scale-pancol")).position };`);
+                     pos: getComputedStyle(document.getElementById("scale-plate-band")).position };`);
           assert.strictEqual(r.pos, "sticky", `${where}: the band is not stuck at focus on #${id}`);
           assert.ok(r.top >= r.band - 1, `${where}: #${id} sits under the band: ${JSON.stringify(r)}`);
           assert.ok(r.bottom <= r.spBottom + 1, `${where}: #${id} ends below the scrollport: ${JSON.stringify(r)}`);
@@ -4882,16 +4887,16 @@ function run() {
     }
   });
 
-  test("DR1 line 89 (report): where the toggle sits at 380 x 667 closed, and the status at 844 x 390", async () => {
+  test("DR1 line 89 (report): where the Layout tab sits at 380 x 667, and the status at 844 x 390", async () => {
     try {
       await freshLoad();
       await b.setViewport(380, 667, true);
       await openSheet();
       await typeScale("(D3) A3 C4 D4 E4 F4 G4 A4 C5");
       const t = await b.eval(`const sp = ${body}; sp.scrollTop = 0;
-        const sr = sp.getBoundingClientRect(); const r = document.getElementById("scale-layout-toggle").getBoundingClientRect();
+        const sr = sp.getBoundingClientRect(); const r = document.getElementById("scale-tab-layout").getBoundingClientRect();
         return { top: r.top - sr.top, bottom: r.bottom - sr.top, scrollport: sr.height };`);
-      console.log("DR1 line 89: toggle at 380 x 667, closed, scrollTop 0:", JSON.stringify(t));
+      console.log("DR1 line 89: Layout tab at 380 x 667, scrollTop 0:", JSON.stringify(t));
       await addWithDrawer(844, 390);
       const st = await b.eval(`const sp = ${body}.getBoundingClientRect();
         const r = document.getElementById("scale-drawer-status").getBoundingClientRect();
@@ -5008,10 +5013,10 @@ function run() {
           const el = document.activeElement;
           return { id: (el && el.id) || "", inside: !!(el && document.getElementById("scale-sheet").contains(el)) };`));
       }
-      assert.ok(inner.every(x => x.inside), `Tab escaped Adjust layout: ${JSON.stringify(inner)}`);
+      assert.ok(inner.every(x => x.inside), `Tab escaped the Layout tab: ${JSON.stringify(inner)}`);
       const innerIds = new Set(inner.map(x => x.id));
-      for (const id of ["scale-adjust-back", "scale-anchor-one", "scale-anchor-between", "scale-mirror"]) {
-        assert.ok(innerIds.has(id), `Tab never reached #${id} in Adjust layout: ${JSON.stringify([...innerIds])}`);
+      for (const id of ["scale-back", "scale-anchor-one", "scale-anchor-between", "scale-mirror"]) {
+        assert.ok(innerIds.has(id), `Tab never reached #${id} on the Layout tab: ${JSON.stringify([...innerIds])}`);
       }
     } finally {
       await b.key("Escape", "Escape", 27);
@@ -5019,7 +5024,7 @@ function run() {
     }
   });
 
-  test("RD: the Edit page's Tab order is BACK, name, ADJUST LAYOUT, the fields, box, swatches, SAVE CHANGES, DELETE with Adjust layout closed, forward and back, and no stop is a select", async () => {
+  test("RD: the Edit page's Tab order is BACK, the Scale tab, name, the fields, box, swatches, SAVE CHANGES, DELETE on the Scale tab, forward and back, and no stop is a select", async () => {
     try {
       await editFreshDeck();
       await b.setViewport(380, 800, true);
@@ -5041,10 +5046,10 @@ function run() {
       };
       const forward = await walk("scale-back", false);
       assert.deepStrictEqual(forward,
-        ["scale-name", "scale-layout-toggle", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box", ...swatches, "scale-generate", "scale-delete", "scale-back"]);
+        ["scale-tab-scale", "scale-name", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box", ...swatches, "scale-generate", "scale-delete", "scale-back"]);
       const backward = await walk("scale-delete", true);
       assert.deepStrictEqual(backward,
-        ["scale-generate", ...swatches.slice().reverse(), "scale-box", "scale-bottom", "scale-inner", "scale-top", "scale-ding", "scale-layout-toggle", "scale-name", "scale-back", "scale-delete"]);
+        ["scale-generate", ...swatches.slice().reverse(), "scale-box", "scale-bottom", "scale-inner", "scale-top", "scale-ding", "scale-name", "scale-tab-scale", "scale-back", "scale-delete"]);
       assert.strictEqual(await b.eval(`return document.querySelector("#scale-sheet select");`), null,
         "the Edit sheet still holds a select");
     } finally {
@@ -5061,7 +5066,7 @@ function run() {
         el.dispatchEvent(new Event("input", { bubbles: true }));
         return el.value;
       `);
-      await b.click("#scale-generate");
+      await clickGenerate();
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
         { label: "the Edit sheet to close after SAVE CHANGES" });
       const row = await b.eval(`
@@ -5118,7 +5123,7 @@ function run() {
     const hits = [...box.querySelectorAll(".panhit")];
     const name = h => String(h.getAttribute("aria-label") || "").split(",")[0];
     const sel = hits.filter(h => h.getAttribute("aria-pressed") === "true");
-    const row = document.getElementById("scale-layout-row").getBoundingClientRect();
+    const row = document.getElementById("scale-layout-zone").getBoundingClientRect();
     const br = box.getBoundingClientRect();
     const places = {};
     for (const h of hits) places[name(h)] = h.getAttribute("cx") + "," + h.getAttribute("cy");
@@ -5325,7 +5330,7 @@ function run() {
   /** Retype the scale box and press SAVE CHANGES on an open Edit sheet. */
   async function saveFields(scale) {
     await typeScale(scale);
-    await b.click("#scale-generate");
+    await clickGenerate();
     await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
       { label: "the Edit sheet to close after SAVE CHANGES" });
   }
@@ -5456,7 +5461,7 @@ function run() {
         el.dispatchEvent(new Event("input", { bubbles: true }));
         return el.value;
       `);
-      await b.click("#scale-generate");
+      await clickGenerate();
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
         { label: "the Edit sheet to close after the rename" });
 
@@ -5467,7 +5472,7 @@ function run() {
       await selectChipAt(before.chips.indexOf("RAY'S PAN") + 1);   // the FIRST custom deck, now after the newer one
       await openEdit();
       await typeScale(COLLIDE_SCALE);
-      await b.click("#scale-generate");
+      await clickGenerate();
 
       const st = await sheetState();
       assert.strictEqual(st.open, true, "the refused save closed the sheet");
@@ -5513,7 +5518,7 @@ function run() {
      "the sheet does not change height as the seed is typed" nor
      "the pan does not move when the seed goes bad" could see them: the row
      took two lines, the pan stepped 26.59px under the finger, and
-     #scale-layout-row's bottom reached 785.69 against a 780px viewport.
+     #scale-swatches' bottom reached 785.69 against a 780px viewport.
      The fix is one element per role - #scale-refusal in the .fieldrow for
      seed refusals, #scale-msg below the pan for everything else - so what
      these assert is that a message which is NOT about the seed never enters
@@ -5523,7 +5528,7 @@ function run() {
     const port = document.querySelector(".sheetbody");
     const prev = port.scrollTop;
     port.scrollTop = port.scrollHeight;
-    const row = document.getElementById("scale-layout-row").getBoundingClientRect();
+    const row = document.getElementById("scale-swatches").getBoundingClientRect();
     const r = { rowBottom: row.bottom, portBottom: port.getBoundingClientRect().bottom };
     port.scrollTop = prev;
     return r;
@@ -5539,7 +5544,7 @@ function run() {
       await generate("(C3) G3 D4 G4 D5");
       await openEdit();
       const read = () => b.eval(`
-        const row = document.getElementById("scale-layout-row").getBoundingClientRect();
+        const row = document.getElementById("scale-swatches").getBoundingClientRect();
         return {
           panTop: document.getElementById("scale-preview").getBoundingClientRect().top,
           rowBottom: row.bottom,
@@ -5569,7 +5574,7 @@ function run() {
         `top ${warned.msgTop.toFixed(1)}px, scrollport bottom ${warned.portBottom.toFixed(1)}px)`);
       const reach = await layoutRowReachable();
       assert.ok(reach.rowBottom <= reach.portBottom + 0.5,
-        `#scale-layout-row's bottom is ${reach.rowBottom.toFixed(1)}px against a scrollport ending ` +
+        `#scale-swatches' bottom is ${reach.rowBottom.toFixed(1)}px against a scrollport ending ` +
         `at ${reach.portBottom.toFixed(1)}px - the LAYOUT row is out of reach`);
 
       // The next keystroke re-syncs the parse line. If the warning shared that
@@ -5602,7 +5607,7 @@ function run() {
       await openEdit();
 
       const read = () => b.eval(`
-        const row = document.getElementById("scale-layout-row").getBoundingClientRect();
+        const row = document.getElementById("scale-swatches").getBoundingClientRect();
         return {
           panTop: document.getElementById("scale-preview").getBoundingClientRect().top,
           rowBottom: row.bottom,
@@ -5617,7 +5622,7 @@ function run() {
       await b.settle();
       const before = await read();
 
-      await b.click("#scale-generate");
+      await clickGenerate();
       await b.settle();
       const after = await read();
       assert.match(after.refusal, /Another deck already uses this scale/,
@@ -5629,7 +5634,7 @@ function run() {
         `(before=${before.panTop.toFixed(1)}, after=${after.panTop.toFixed(1)})`);
       const reach = await layoutRowReachable();
       assert.ok(reach.rowBottom <= reach.portBottom + 0.5,
-        `#scale-layout-row's bottom is ${reach.rowBottom.toFixed(1)}px against a scrollport ending ` +
+        `#scale-swatches' bottom is ${reach.rowBottom.toFixed(1)}px against a scrollport ending ` +
         `at ${reach.portBottom.toFixed(1)}px - the refusal pushed LAYOUT out of reach`);
     } finally {
       await b.setViewport(900, 900, false);
@@ -5697,7 +5702,7 @@ function run() {
       await selectChipAt(1);
       await openEdit();
       await typeScale(COLLIDE_SCALE);
-      await b.click("#scale-generate");
+      await clickGenerate();
 
       const refused = await sheetState();
       assert.strictEqual(refused.bad, true, "the collision did not mark the box bad");
@@ -5741,7 +5746,7 @@ function run() {
       await selectChipAt(1);
       await openEdit();
       await typeScale(COLLIDE_SCALE);
-      await b.click("#scale-generate");
+      await clickGenerate();
 
       const st1 = await sheetState();
       assert.strictEqual(st1.bad, true, "the scale box was not marked bad");
@@ -5779,14 +5784,14 @@ function run() {
       await selectChipAt(1);
       await openEdit();
       await typeScale(COLLIDE_SCALE);
-      await b.click("#scale-generate");
+      await clickGenerate();
 
       const refused = await sheetState();
       assert.strictEqual(refused.bad, true, "the collision did not mark the box bad");
       assert.match(refused.msg, /Another deck already uses this scale/,
         `the sheet says "${refused.msg}"`);
 
-      await b.eval(`document.getElementById("scale-layout-toggle").click(); return true;`);
+      await b.eval(`document.getElementById("scale-tab-layout").click(); return true;`);
       await b.eval(`document.getElementById("scale-mirror")
         .scrollIntoView({ block: "nearest", inline: "nearest" }); return true;`);
       await b.click("#scale-mirror");
@@ -6028,7 +6033,7 @@ function run() {
       await selectChipAt(1);
       await openEdit();
       await typeScale(COLLIDE_SCALE);
-      await b.click("#scale-generate");
+      await clickGenerate();
 
       const refused = await sheetState();
       assert.strictEqual(refused.bad, true, "the collision did not mark the box bad");
@@ -6069,7 +6074,7 @@ function run() {
       await selectChipAt(1);
       await openEdit();
       await typeScale(COLLIDE_SCALE);
-      await b.click("#scale-generate");
+      await clickGenerate();
 
       const refused = await sheetState();
       assert.strictEqual(refused.bad, true, "the collision did not mark the box bad");
@@ -6112,7 +6117,7 @@ function run() {
       await selectChipAt(at);
       await openEdit();
       await b.click("#scale-swatches > *:nth-child(5)");    // an OPTION only: the id cannot move
-      await b.click("#scale-generate");
+      await clickGenerate();
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
         { label: "the Edit sheet to close after SAVE CHANGES" });
 
@@ -6639,7 +6644,7 @@ function run() {
           live: [msg.getAttribute("aria-live"), note.getAttribute("aria-live"), note.getAttribute("aria-atomic"), slot.getAttribute("aria-live")],
         };`);
       assert.ok(m.slotParent, "#scale-guidance is not a direct child of the sheet surface");
-      assert.deepStrictEqual(m.order, ["sheethead", "scale-adjust-head", "sheetbody", "scale-guidance", "scale-generate", "scale-delete-row"],
+      assert.deepStrictEqual(m.order, ["sheethead", "sheetbody", "scale-guidance", "scale-generate", "scale-delete-row"],
         `the surface order is ${m.order}`);
       assert.deepStrictEqual(m.kids, ["scale-field-msg", "scale-msg", "scale-layout-state"]);
       assert.strictEqual(m.msgParent, "scale-guidance");
@@ -6705,7 +6710,7 @@ function run() {
           for (const drawer of [false, true]) {
             const open = await b.eval(`return !document.getElementById("scale-drawer").hidden;`);
             if (open !== drawer) {
-              await b.eval(`document.getElementById("scale-layout-toggle").click(); return true;`);
+              await b.eval(`document.getElementById("scale-tab-layout").click(); return true;`);
               await b.settle();
             }
             for (const end of [false, true]) {
@@ -6919,10 +6924,9 @@ function run() {
       await b.eval(`document.getElementById("scale-anchor-between").click(); return true;`);
       const first = { text: await b.eval(`return layoutNote.textContent;`), records: await count() };
       const before = await b.eval(`return window.__sgPaints;`);
-      await b.eval(`document.getElementById("scale-layout-toggle").scrollIntoView({ block: "center" }); return true;`);
       for (let i = 0; i < 10; i += 1) {
-        await b.click("#scale-layout-toggle");
-        await b.click("#scale-adjust-back");
+        await b.click("#scale-tab-layout");
+        await b.click("#scale-tab-scale");
       }
       const paints = (await b.eval(`return window.__sgPaints;`)) - before;
       const repeated = await count();
@@ -7609,22 +7613,17 @@ function run() {
     const f4Geom = () => b.eval(`
     const port = document.querySelector("#scale-sheet .sheetbody"), pr = port.getBoundingClientRect();
     const r = (id) => { const q = document.getElementById(id).getBoundingClientRect(); return { top: q.top, bottom: q.bottom, width: q.width }; };
-    return { scrollTop: port.scrollTop, portTop: pr.top, portBottom: pr.bottom, band: r("scale-pancol"),
-      plate: r("scale-preview"), btn: r("scale-layout-toggle"), drawer: r("scale-drawer"),
-      bandPos: getComputedStyle(document.getElementById("scale-pancol")).position };`);
-  const f4ScrollToToggle = () => b.eval(`
-    const port = document.querySelector("#scale-sheet .sheetbody"), btn = document.getElementById("scale-layout-toggle");
-    const want = port.getBoundingClientRect().top + port.clientHeight * 0.45;
-    port.scrollTop += btn.getBoundingClientRect().top - want; return port.scrollTop;`);
+    return { scrollTop: port.scrollTop, portTop: pr.top, portBottom: pr.bottom, band: r("scale-plate-band"),
+      plate: r("scale-preview"), btn: r("scale-tab-layout"), drawer: r("scale-drawer"),
+      bandPos: getComputedStyle(document.getElementById("scale-plate-band")).position };`);
   const f4OpenDrawer = async () => {
-    await b.eval(`document.getElementById("scale-layout-toggle").scrollIntoView({ block: "nearest", inline: "nearest" }); return true;`);
-    await b.click("#scale-layout-toggle");
-    await b.waitFor(`!document.getElementById("scale-drawer").hidden`, { label: "the drawer to open" });
+    await b.click("#scale-tab-layout");
+    await b.waitFor(`!document.getElementById("scale-panel-layout").hidden`, { label: "the Layout tab to open" });
     await new Promise((r) => setTimeout(r, 250));
   };
 
   for (const [w, h] of F4_VIEWPORTS) {
-    test(`KB: F4 in Adjust layout at ${w}x${h} at least 160px of options show under the large pan and the pan is at least 140px`, async () => {
+    test(`KB: F4 on the Layout tab at ${w}x${h} at least 160px of options show under the large pan and the pan is at least 140px`, async () => {
       try {
         await f4OpenEdit(w, h, "kurd");
         await f4OpenDrawer();
@@ -7639,7 +7638,7 @@ function run() {
     });
 
     for (const slug of ["kurd", "pygmy"]) {
-      test(`KB: F4 in Adjust layout at ${w}x${h} every note on the large pan is hit by a tap at its centre (${slug})`, async () => {
+      test(`KB: F4 on the Layout tab at ${w}x${h} every note on the large pan is hit by a tap at its centre (${slug})`, async () => {
         try {
           await f4OpenEdit(w, h, slug);
           await f4OpenDrawer();
@@ -7664,25 +7663,6 @@ function run() {
       });
     }
   }
-
-  test("KB: F4 opening Adjust layout focuses its title without scrolling the sheet", async () => {
-    try {
-      await f4OpenEdit(390, 669, "kurd");
-      await f4ScrollToToggle();
-      await b.eval(`
-        const port = document.querySelector("#scale-sheet .sheetbody");
-        window.__fs = [];
-        const wrap = (proto) => { const o = proto.focus; proto.focus = function (...a) { const s = port.scrollTop; const r = o.apply(this, a); if (this.id === "scale-adjust-title") window.__fs.push(port.scrollTop - s); return r; }; };
-        wrap(HTMLElement.prototype); wrap(SVGElement.prototype);
-        return true;`);
-      await f4OpenDrawer();
-      const fs = await b.eval(`return window.__fs;`);
-      assert.ok(fs.length >= 1, "the title took no focus on open");
-      for (const d of fs) assert.strictEqual(d, 0, `focusing the title scrolled the sheet by ${d}px`);
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
   /* The footer's hairline. It used to hang off `.sheetsurf > .ctlrow`, a
    * DIRECT-CHILD selector: when the mirror/palette row moved into .sheetbody
@@ -8205,7 +8185,7 @@ function run() {
     // sheet and then re-selects, so it rebuilds the strip too.
     try {
       await editFreshDeck();
-      await b.click("#scale-generate");
+      await clickGenerate();
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
         { label: "the Edit sheet to close after SAVE CHANGES" });
       const afterSave = await activeDesc();
@@ -8966,7 +8946,7 @@ function run() {
         // Generate path: focus should land on the new deck's chip.
         await openSheet();
         await typeScale(SIX_SCALES[0]);
-        await b.click("#scale-generate");
+        await clickGenerate();
         await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
           { label: "the sheet to close after Generate" });
         let a = await b.eval(`return {
@@ -10419,7 +10399,7 @@ function run() {
           box.dispatchEvent(new Event("input", { bubbles: true }));
           return true;
         `);
-        await b.click("#scale-generate");
+        await clickGenerate();
         await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`,
           { label: "the generated deck chip" });
         await openSettingsPanel();
@@ -10747,7 +10727,7 @@ function run() {
           box.dispatchEvent(new Event("input", { bubbles: true }));
           return true;
         `);
-        await b.click("#scale-generate");
+        await clickGenerate();
         await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`,
           { label: "the generated deck chip" });
         await openSettingsPanel();
@@ -12976,7 +12956,7 @@ function run() {
       await b.eval(`document.querySelectorAll("#scale-swatches .dot")[2].click(); return true;`);
       assert.strictEqual(await b.eval(`return document.querySelectorAll("#scale-swatches .dot")[2].classList.contains("sel");`), true,
         "the palette swatch did not take");
-      await b.click("#scale-generate");
+      await clickGenerate();
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
         { label: "the sheet to close after the save" });
       const chips = await chipTexts();
@@ -13092,7 +13072,7 @@ function run() {
       await b.eval(`document.querySelectorAll("#scale-swatches .dot")[2].click(); return true;`);
       assert.strictEqual(await b.eval(`return document.querySelectorAll("#scale-swatches .dot")[2].classList.contains("sel");`), true,
         "the palette swatch did not take");
-      await b.click("#scale-generate");
+      await clickGenerate();
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
         { label: "the sheet to close after the save" });
       assert.strictEqual(await b.eval(`return Object.keys(replacements()).length;`), 1, "the save left no replacement");
@@ -13135,7 +13115,7 @@ function run() {
       await b.eval(`document.querySelectorAll("#scale-swatches .dot")[2].click(); return true;`);
       assert.strictEqual(await b.eval(`return document.querySelectorAll("#scale-swatches .dot")[2].classList.contains("sel");`), true,
         "the palette swatch did not take");
-      await b.click("#scale-generate");
+      await clickGenerate();
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
         { label: "the sheet to close after the save" });
       const probe = await b.eval(`
@@ -13967,256 +13947,41 @@ function run() {
     });
   });
 
-  /* ------------------------- UX: two pan sizes, Adjust layout ----------------
-   * Lane P of docs/plans/2026-10-19-dual-input-sheet-ux.md. Every test loops
-   * the five viewports; each failure names its cell. */
-  describe("UX: two pan sizes and Adjust layout", () => {
-    const UX_VIEWPORTS = [[380, 780, true], [320, 568, true], [393, 852, true], [844, 390, true], [1280, 800, false]];
-    const UX_KURD = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
-    const UX_PYGMY = "[C3] [Db3] [Eb3] F3 | G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]";
-    const ev = (s) => b.eval(s);
-    const frames = () => ev(`return new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r(true))));`);
-    const sheetShown = (shown) => b.waitFor(
-      `document.getElementById("scale-sheet").hasAttribute("hidden") === ${!shown}`, { label: "the sheet" });
-    const adjusting = (on) => b.waitFor(
-      `document.getElementById("scale-sheet").classList.contains("adjusting") === ${on}`, { label: "adjusting " + on });
-    const typeBox = (s) => ev(`const el = document.getElementById("scale-box"); el.value = ${JSON.stringify(s)};
-      el.dispatchEvent(new Event("input", { bubbles: true })); return el.value;`);
-    const pause = (ms) => new Promise((r) => setTimeout(r, ms));
-    /* A page at w x h with the sheet open: "add" types `scale`, "edit" opens the
-     * shown deck (Kurd, seeded) for editing; `pygmyEdit` selects Pygmy first. */
-    const uxOpen = async (w, h, mode, scale = UX_KURD) => {
+  /* ------------------------- TB: Scale and Layout tabs, the OR rule ----------
+   * Lane T1 of docs/plans/2026-10-19-sheet-tabs.md (section 5.3). */
+  describe("TB: Scale and Layout tabs", () => {
+    const TB_KURD = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
+    const frames = () => b.eval(`return new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r(true))));`);
+    const tbOpenAdd = async (w, h, scale = TB_KURD) => {
       await freshLoad();
       await b.setViewport(w, h, w < 1000);
       await b.settle();
-      if (mode === "edit-pygmy") {
-        await ev(`[...document.querySelectorAll("#decks .chip")].find((c) => /pygmy/i.test(c.textContent)).click(); return true;`);
-        await frames();
-      }
-      if (mode === "add") {
-        await ev(`document.getElementById("deck-add").click(); return true;`);
-        await sheetShown(true);
-        if (scale) await typeBox(scale);
-      } else {
-        await ev(`document.querySelector("#decks .chip.on").click(); return true;`);
-        await sheetShown(true);
-      }
+      await openSheet();
+      if (scale) await typeScale(scale);
       await frames();
     };
-    const uxOpenAdjust = async () => {
-      await ev(`document.getElementById("scale-layout-toggle").scrollIntoView({ block: "center" }); return true;`);
+    const tbToLayout = async () => {
+      await b.click("#scale-tab-layout");
+      await b.waitFor(`!document.getElementById("scale-panel-layout").hidden`, { label: "the Layout tab" });
+      await new Promise((r) => setTimeout(r, 250));
       await frames();
-      const at = await ev(`return document.querySelector("#scale-sheet .sheetbody").scrollTop;`);
-      await b.click("#scale-layout-toggle");
-      await adjusting(true);
-      await frames();
-      return at;
     };
-    const rectOf = (sel) => ev(`const e = document.querySelector(${JSON.stringify(sel)}); if (!e) return null;
-      const r = e.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom, w: r.width, h: r.height,
-      shown: e.getClientRects().length > 0 && getComputedStyle(e).visibility !== "hidden" };`);
-    /* The width the small pan must have: clamp(88px, 30cqw, 160px) of the sheet's content box. */
-    const smallWant = () => ev(`const surf = document.querySelector(".sheetsurf"), cs = getComputedStyle(surf);
-      const cw = surf.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-      return Math.min(160, Math.max(88, cw * 0.3));`);
-    const cellsOf = (modes) => UX_VIEWPORTS.flatMap(([w, h]) => modes.map((m) => [w, h, m]));
-    const sweep = async (modes, fn) => {
+    const rect = (sel) => b.eval(`const e = document.querySelector(${JSON.stringify(sel)});
+      const r = e.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom, w: r.width, h: r.height };`);
+    const FLOORS = [[320, 568, 274], [380, 780, 334], [393, 852, 347], [844, 390, 304], [1280, 800, 478]];
+
+    test("TB: at 320x568, 380x780, 393x852, 844x390 and 1280x800 the Layout pan is wider than the old small pan clamp(88px, 30cqw, 160px) and at least the section 3.6 width minus 2px", async () => {
       const fails = [];
       try {
-        for (const [w, h, m] of cellsOf(modes)) {
-          const fail = (msg) => fails.push(`${w}x${h} ${m}: ${msg}`);
-          await uxOpen(w, h, m, m === "edit-pygmy" ? null : m === "add-pygmy" ? UX_PYGMY : UX_KURD);
-          await fn(fail, w, h, m);
-        }
-      } finally {
-        await b.clearKeyboard().catch(() => {});
-        await b.setViewport(900, 900, false);
-      }
-      assert.deepStrictEqual(fails, [], fails.slice(0, 6).join("\n"));
-    };
-
-    test("UX: the sheet opens with the small pan left of the four fields, clamp(88px, 30cqw, 160px), at every viewport", async () => {
-      await sweep(["add", "edit"], async (fail) => {
-        const m = await ev(`
-          const surf = document.querySelector(".sheetsurf"), cs = getComputedStyle(surf);
-          const cw = surf.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-          const r = (id) => { const e = document.getElementById(id); const q = e.getBoundingClientRect();
-            return { l: q.left, t: q.top, r: q.right, b: q.bottom, w: q.width }; };
-          return { cw, pan: r("scale-preview"), col: r("scale-pancol"), ding: r("scale-ding"), top: r("scale-top"),
-            inner: r("scale-inner"), bottom: r("scale-bottom") };`);
-        const want = Math.min(160, Math.max(88, m.cw * 0.3));
-        if (Math.abs(m.pan.w - want) > 1.5) fail(`the small pan is ${m.pan.w}px wide, want ${want.toFixed(1)}`);
-        for (const k of ["ding", "top", "inner", "bottom"]) {
-          if (m[k].l < m.pan.r - 1) fail(`${k} starts at ${m[k].l}, left of the pan's right edge ${m.pan.r}`);
-        }
-        for (const k of ["ding", "top"]) {
-          if (m[k].t > m.col.b || m[k].b < m.col.t) fail(`${k} is not beside the pan`);
-        }
-      });
-    });
-
-    test("UX: Adjust layout shows the large pan, the layout controls and no field, scale line or primary", async () => {
-      await sweep(["add", "edit"], async (fail) => {
-        const small = (await rectOf("#scale-preview")).w;
-        await uxOpenAdjust();
-        const pan = await rectOf("#scale-preview");
-        if (!(pan.w >= 160 && pan.w <= 480.5 && pan.w > small)) fail(`the large pan is ${pan.w}px, the small one was ${small}`);
-        for (const sel of ["#scale-fields", "#scale-box", "#scale-generate", "#scale-back", "#scale-swatches"]) {
-          const r = await rectOf(sel);
-          if (r && r.shown) fail(`${sel} is shown in Adjust layout`);
-        }
-        for (const sel of ["#scale-adjust-head", "#scale-adjust-back", "#scale-drawer", "#scale-anchor-one"]) {
-          const r = await rectOf(sel);
-          if (!r || !r.shown) fail(`${sel} is not shown in Adjust layout`);
-        }
-        const name = await ev(`return document.getElementById("scale-adjust-back").getAttribute("aria-label");`);
-        if (name !== "Back to the scale") fail(`BACK is named ${name}`);
-      });
-    });
-
-    const FLOORS_160 = { "320x568": 100 };
-    test("UX: Adjust layout shows at least 160px of controls under the large pan in one column, and beside it at 844x390", async () => {
-      await sweep(["add", "edit"], async (fail, w, h) => {
-        await uxOpenAdjust();
-        const m = await ev(`
-          const q = (id) => { const r = document.getElementById(id).getBoundingClientRect();
-            return { left: r.left, right: r.right, top: r.top, bottom: r.bottom }; };
-          const port = document.querySelector("#scale-sheet .sheetbody");
-          const pr = port.getBoundingClientRect(), vv = window.visualViewport;
-          const a1 = q("scale-anchor-one");
-          return { pan: q("scale-preview"), drawer: q("scale-drawer"), a1, port: { t: pr.top, b: pr.bottom },
-            vvb: vv.offsetTop + vv.height, canScroll: port.scrollHeight - port.clientHeight - port.scrollTop };`);
-        const floor = Math.min(m.port.b, m.vvb);
-        if (!(m.pan.bottom > 0)) fail(`the pan rect did not serialise: ${JSON.stringify(m.pan)}`);
-        if (w === 844 && h === 390) {
-          if (m.drawer.left < m.pan.right - 1) fail(`controls (${m.drawer.left}) are not beside the pan (${m.pan.right})`);
-        } else {
-          const room = floor - m.pan.bottom;
-          const want = FLOORS_160[w + "x" + h] || 160;
-          if (!(m.drawer.top < m.pan.bottom + want)) fail(`the controls start ${(m.drawer.top - m.pan.bottom).toFixed(1)}px under the pan, so fewer than ${want}px of them show`);
-          if (!(room >= want)) fail(`${room.toFixed(1)}px of controls under the pan, want ${want} (pan bottom ${m.pan.bottom}, floor ${floor})`);
-          const reach = m.a1.top < floor && m.a1.bottom <= floor + Math.max(0, m.canScroll);
-          if (!reach) fail(`#scale-anchor-one (${m.a1.top}..${m.a1.bottom}) cannot be scrolled into view (floor ${floor}, scroll left ${m.canScroll})`);
-        }
-      });
-    });
-
-    test("UX: every note on the large pan is hit by a tap at its centre (Kurd, Pygmy)", async () => {
-      await sweep(["edit", "edit-pygmy"], async (fail) => {
-        await uxOpenAdjust();
-        const bad = await ev(`
-          const out = [];
-          const hits = [...document.querySelectorAll("#scale-preview .panhit")];
-          for (const n of hits) {
-            const r = n.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
-            const at = document.elementFromPoint(x, y);
-            if (!(at && at.closest(".panhit") === n)) out.push(n.getAttribute("aria-label") + " at " + Math.round(x) + "," + Math.round(y));
-          }
-          return { n: hits.length, out };`);
-        if (!bad.n) fail("the large pan has no notes");
-        if (bad.out.length) fail(`${bad.out.length} notes are not hit at their centre: ${bad.out.slice(0, 3).join("; ")}`);
-      });
-    });
-
-    test("UX: closing Adjust layout restores the sheet's scroll and focuses ADJUST LAYOUT", async () => {
-      await sweep(["add", "edit"], async (fail) => {
-        const before = await uxOpenAdjust();
-        await b.click("#scale-adjust-back");
-        await adjusting(false);
-        await pause(150);
-        const m = await ev(`return { top: document.querySelector("#scale-sheet .sheetbody").scrollTop,
-          id: document.activeElement && document.activeElement.id,
-          open: !document.getElementById("scale-sheet").hasAttribute("hidden") };`);
-        if (!m.open) fail("the sheet closed");
-        if (Math.abs(m.top - before) > 1) fail(`scroll is ${m.top}, was ${before}`);
-        if (m.id !== "scale-layout-toggle") fail(`focus is on ${m.id}`);
-      });
-    });
-
-    test("UX: a tap between BACK and its pop pushes no second Adjust entry", async () => {
-      await sweep(["edit"], async (fail) => {
-        await uxOpenAdjust();
-        const m = await ev(`const n = history.length;
-          document.getElementById("scale-adjust-back").click();
-          document.getElementById("scale-layout-toggle").click();
-          return { grew: history.length - n, adjusting: document.getElementById("scale-sheet").classList.contains("adjusting") };`);
-        if (m.grew !== 0) fail(`history grew by ${m.grew} between BACK and its pop`);
-        if (m.adjusting) fail("a tap between BACK and its pop re-entered Adjust layout");
-        await adjusting(false);
-        await pause(150);
-        const open = await ev(`return !document.getElementById("scale-sheet").hasAttribute("hidden");`);
-        if (!open) fail("the sheet closed");
-      });
-    });
-
-    test("UX: the phone back gesture from Adjust layout returns to the sheet, and one more Back closes it with the bar on the deck's route", async () => {
-      await sweep(["add", "edit"], async (fail, w, h, mode) => {
-        const route = await ev(`return location.hash;`);
-        await uxOpenAdjust();
-        await ev(`history.back(); return true;`);
-        await adjusting(false);
-        await pause(150);
-        const open = await ev(`return !document.getElementById("scale-sheet").hasAttribute("hidden");`);
-        if (!open) fail("the first Back closed the sheet");
-        const sheetHash = await ev(`return location.hash;`);
-        if (!/^#(add|edit-)/.test(sheetHash)) fail(`the sheet's route is ${sheetHash}`);
-        await ev(`history.back(); return true;`);
-        await sheetShown(false);
-        await pause(150);
-        const hash = await ev(`return location.hash;`);
-        if (hash !== "#deck=d-kurd-10") fail(`the bar ends on ${hash}, want #deck=d-kurd-10 (it was ${route} on open)`);
-      });
-    });
-
-    test("UX: the small pan stays in view beside each field typed in with the keyboard up", async () => {
-      try {
-        await uxOpen(393, 852, "add");
-        await b.fakeKeyboard(336);
-        await frames();
-        const fails = [];
-        for (const id of ["scale-ding", "scale-top", "scale-inner", "scale-bottom"]) {
-          await ev(`const e = document.getElementById(${JSON.stringify(id)}); e.focus();
-            e.dispatchEvent(new Event("input", { bubbles: true })); return true;`);
-          await frames();
-          const m = await ev(`const q = (e) => e.getBoundingClientRect();
-            const f = q(document.getElementById(${JSON.stringify(id)})), p = q(document.getElementById("scale-preview"));
-            const port = q(document.querySelector("#scale-sheet .sheetbody"));
-            return { f: { t: f.top, b: f.bottom, l: f.left }, p: { t: p.top, b: p.bottom, r: p.right },
-              vv: window.visualViewport.height, pt: port.top, pb: port.bottom };`);
-          const want = await smallWant();
-          const pw = await rectOf("#scale-preview");
-          if (Math.abs(pw.w - want) > 1.5) fails.push(`${id}: the pan is ${pw.w}px wide, want ${want.toFixed(1)}`);
-          const lo = Math.max(0, m.pt), hi = Math.min(m.vv, m.pb);
-          if (m.p.t < lo - 1 || m.p.b > hi + 1) fails.push(`${id}: the pan (${m.p.t}..${m.p.b}) is outside ${lo}..${hi}`);
-          if (m.f.t < lo - 1 || m.f.b > hi + 1) fails.push(`${id}: the field is outside the view`);
-          if (m.f.l < m.p.r - 1) fails.push(`${id}: the field is not right of the pan`);
-        }
-        assert.deepStrictEqual(fails, [], fails.join("\n"));
-      } finally {
-        await b.clearKeyboard().catch(() => {});
-        await b.setViewport(900, 900, false);
-      }
-    });
-
-    test("UX: the first field does not move between an empty sheet and the Pygmy prefill", async () => {
-      const fails = [];
-      try {
-        for (const [w, h] of UX_VIEWPORTS) {
-          await uxOpen(w, h, "add", null);
-          const empty = await rectOf("#scale-ding");
-          const pan0 = await rectOf("#scale-preview");
-          await typeBox(UX_PYGMY);
-          await frames();
-          const full = await rectOf("#scale-ding");
-          const pan1 = await rectOf("#scale-preview");
-          for (const [at, pan] of [["empty", pan0], ["Pygmy", pan1]]) {
-            const want = await smallWant();
-            if (Math.abs(pan.w - want) > 1.5) fails.push(`${w}x${h}: the ${at} sheet's pan is ${pan.w}px wide, want ${want.toFixed(1)}`);
-          }
-          for (const k of ["l", "t", "w"]) {
-            if (Math.abs(empty[k] - full[k]) > 0.5) fails.push(`${w}x${h}: the first field's ${k} moved ${empty[k]} to ${full[k]}`);
-            if (Math.abs(pan0[k] - pan1[k]) > 0.5) fails.push(`${w}x${h}: the pan's ${k} moved ${pan0[k]} to ${pan1[k]}`);
-          }
+        for (const [w, h, floor] of FLOORS) {
+          await tbOpenAdd(w, h);
+          await tbToLayout();
+          const pan = await rect("#scale-preview");
+          const surf = await b.eval(`const s = document.querySelector(".sheetsurf"), cs = getComputedStyle(s);
+            return s.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);`);
+          const old = Math.min(160, Math.max(88, surf * 0.3));
+          if (!(pan.w > old)) fails.push(`${w}x${h}: the pan is ${pan.w}px, not wider than the old ${old}px`);
+          if (pan.w < floor) fails.push(`${w}x${h}: the pan is ${pan.w}px, floor ${floor}`);
         }
       } finally {
         await b.setViewport(900, 900, false);
@@ -14224,26 +13989,155 @@ function run() {
       assert.deepStrictEqual(fails, [], fails.join("\n"));
     });
 
-    test("UX: Escape twice at real speed closes Adjust layout then the sheet, and one more Back leaves the page's history as it was before the sheet", async () => {
-      await sweep(["add", "edit"], async (fail) => {
-        // The sheet is already open here; close it by hand to read the entry it was pushed over.
-        await ev(`document.getElementById("scale-back").click(); return true;`);
-        await sheetShown(false);
-        await pause(200);
-        const before = await ev(`return { i: navigation.currentEntry.key, u: navigation.currentEntry.url };`);
-        await ev(`document.querySelector("#decks .chip.on").click(); return true;`);
-        await sheetShown(true);
-        await uxOpenAdjust();
-        await ev(`for (let i = 0; i < 2; i++) document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
-          return true;`);
-        await sheetShown(false);
-        await pause(300);
-        const after = await ev(`return { i: navigation.currentEntry.key, u: navigation.currentEntry.url,
-          adj: document.getElementById("scale-sheet").classList.contains("adjusting") };`);
-        if (after.adj) fail("the layer is still up");
-        if (after.i !== before.i) fail(`the current entry key is ${after.i}, was ${before.i}`);
-        if (after.u !== before.u) fail(`the current entry is ${after.u}, was ${before.u}`);
-      });
+    test("TB: at 844x390 the Layout tab's .sheetsurf is wider than 600px, the tab strip sits right of the plate and the pan is at least 304px", async () => {
+      try {
+        await tbOpenAdd(844, 390);
+        await tbToLayout();
+        const surf = await rect(".sheetsurf");
+        const pan = await rect("#scale-preview");
+        const tabs = await rect("#scale-tabs");
+        assert.ok(surf.w > 600, `the surface is ${surf.w}px`);
+        assert.ok(pan.w >= 304, `the pan is ${pan.w}px`);
+        assert.ok(tabs.l >= pan.r - 1, `the tab strip (left ${tabs.l}) is not right of the plate (right ${pan.r})`);
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("TB: at 320x568, 380x780 and 393x852 the whole Layout pan is inside the .sheetbody box when the tab opens", async () => {
+      const fails = [];
+      try {
+        for (const [w, h] of [[320, 568], [380, 780], [393, 852]]) {
+          await tbOpenAdd(w, h);
+          await tbToLayout();
+          const pan = await rect("#scale-preview");
+          const body = await rect("#scale-sheet .sheetbody");
+          if (pan.t < body.t - 1 || pan.b > body.b + 1) fails.push(`${w}x${h}: pan ${pan.t}..${pan.b} is outside the body ${body.t}..${body.b}`);
+        }
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+      assert.deepStrictEqual(fails, [], fails.join("\n"));
+    });
+
+    test("TB: at 380x780 the four note fields and the scale line take the full content width on the Scale tab", async () => {
+      try {
+        await tbOpenAdd(380, 780);
+        const m = await b.eval(`const q = (id) => document.getElementById(id).getBoundingClientRect();
+          const panel = q("scale-panel-scale");
+          return { panel: panel.width, ids: ["scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box"].map((id) => [id, q(id).width]) };`);
+        for (const [id, w] of m.ids) {
+          assert.ok(w >= m.panel - 2, `#${id} is ${w}px in a ${m.panel}px panel`);
+        }
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("TB: at 380x780 Add: type a scale, NEXT, adjust anchor, GENERATE CARDS opens the deck, and one Back from the deck leaves no sheet entry", async () => {
+      try {
+        await tbOpenAdd(380, 780);
+        const before = await b.eval(`return history.length;`);
+        await b.click("#scale-next");
+        await b.waitFor(`!document.getElementById("scale-panel-layout").hidden`, { label: "the Layout tab" });
+        assert.strictEqual(await b.eval(`return history.length;`), before, "NEXT pushed a history entry");
+        await b.click("#scale-anchor-between");
+        await b.click("#scale-generate");
+        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet to close" });
+        await b.waitFor(`/^#(s=|deck=)/.test(location.hash)`, { label: "the deck's route" });
+        const route = await b.eval(`return location.hash;`);
+        await b.eval(`history.back(); return true;`);
+        await new Promise((r) => setTimeout(r, 400));
+        assert.strictEqual(await b.eval(`return document.getElementById("scale-sheet").hasAttribute("hidden");`), true, "the sheet came back");
+        assert.ok(route.length > 1);
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("TB: at 380x780 Edit: SAVE CHANGES from the Layout tab saves and the bar ends on the deck's route", async () => {
+      try {
+        await freshLoad();
+        await b.setViewport(380, 780, true);
+        await b.settle();
+        await openEdit();
+        await tbToLayout();
+        await b.click("#scale-anchor-between");
+        await b.click("#scale-generate");
+        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet to close" });
+        await b.waitFor(`/^#(s=|deck=)/.test(location.hash)`, { label: "the deck's route" });
+        const hash = await b.eval(`return location.hash;`);
+        assert.match(hash, /^#(s=|deck=)/);
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("TB: at 320x568 the tab strip, both tabs and NEXT are 44px targets with no horizontal scroll", async () => {
+      try {
+        await tbOpenAdd(320, 568);
+        for (const id of ["scale-tabs", "scale-tab-scale", "scale-tab-layout", "scale-next"]) {
+          const r = await rect("#" + id);
+          assert.ok(r.h >= 44 - 0.5, `#${id} is ${r.h}px tall`);
+        }
+        const over = await b.eval(`const b = document.querySelector("#scale-sheet .sheetbody");
+          return b.scrollWidth - b.clientWidth;`);
+        assert.ok(over <= 0, `the sheet scrolls ${over}px sideways`);
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("OR: at 380x780 the OR rule spans the content width between the fields and the scale line", async () => {
+      try {
+        await tbOpenAdd(380, 780);
+        const or = await rect("#scale-or");
+        const panel = await rect("#scale-panel-scale");
+        const bottom = await rect("#scale-bottom");
+        const box = await rect("#scale-box");
+        assert.ok(or.w >= panel.w - 2, `the rule is ${or.w}px in a ${panel.w}px panel`);
+        assert.ok(or.t >= bottom.b - 1, "the rule is not under the fields");
+        assert.ok(or.b <= box.t + 1, "the rule is not above the scale line");
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("TB: at 380x780 with the keyboard up the head and tab strip hide and the footer stays above the keyboard", async () => {
+      try {
+        await tbOpenAdd(380, 780);
+        await b.eval(`document.getElementById("scale-box").focus(); return true;`);
+        await b.fakeKeyboard(400);
+        await frames();
+        const m = await b.eval(`const hid = (sel) => getComputedStyle(document.querySelector(sel)).display === "none";
+          const f = document.getElementById("scale-next").getBoundingClientRect();
+          return { head: hid("#scale-sheet .sheethead"), tabs: hid("#scale-tabs"), footBottom: f.bottom, vv: window.visualViewport.height };`);
+        assert.strictEqual(m.head, true, "the head is showing");
+        assert.strictEqual(m.tabs, true, "the tab strip is showing");
+        assert.ok(m.footBottom <= m.vv + 1, `NEXT bottom ${m.footBottom} is under the keyboard (visible ${m.vv})`);
+      } finally {
+        await b.clearKeyboard().catch(() => {});
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("O1: at 320x568 the duplicate warning on the field line keeps the slot's two-line height", async () => {
+      try {
+        await tbOpenAdd(320, 568, null);
+        await typeScale("(D3) A3 C4 D4");
+        await b.eval(`const e = document.getElementById("scale-bottom"); e.value = "c d";
+          e.dispatchEvent(new Event("input", { bubbles: true })); return true;`);
+        await frames();
+        const slot = () => b.eval(`return document.getElementById("scale-guidance").getBoundingClientRect().height;`);
+        const warn = await slot();
+        await b.eval(`const e = document.getElementById("scale-bottom"); e.value = "";
+          e.dispatchEvent(new Event("input", { bubbles: true })); return true;`);
+        await frames();
+        const clear = await slot();
+        assert.strictEqual(warn, clear, `the slot grew from ${clear}px to ${warn}px under the duplicate warning`);
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
     });
   });
 }
