@@ -522,7 +522,7 @@ engine is a separate file-ownership boundary.
   exactly the 73 measured ids re-pinned, five named rows unchanged, and the PR body lists all 73 old -> new ids.
 - **Verify:**
   ```
-  python3 tools/inline_engine.py --check && node tools/regen_engine_corpus.js --check && python3 tools/regen_data_mutants.py --check 2>/dev/null; git diff --exit-code origin/claude/dual-input-ux-p -- data/decks.json && node --test tests/import.test.js tests/core.test.js tests/share.test.js && python3 tools/validate.py && for m in tests/mutants/o1_*.patch tests/mutants/ih_e_bottom_order_unchecked.patch; do git apply --check "$m" || exit 1; done
+  python3 tools/inline_engine.py --check && node tools/regen_engine_corpus.js --check && git diff --exit-code origin/claude/dual-input-ux-p -- data/decks.json && node --test tests/import.test.js tests/core.test.js tests/share.test.js && python3 tools/validate.py && for m in tests/mutants/o1_*.patch tests/mutants/ih_e_bottom_order_unchecked.patch; do git apply --check "$m" || exit 1; done
   ```
 - **Non-goals:** no `index.html` edit outside the engine regions, no `share.js` or `parseSeed` edit, no UI.
 
