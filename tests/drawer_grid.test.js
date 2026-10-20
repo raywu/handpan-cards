@@ -48,7 +48,7 @@ if (!BROWSER) {
 const PAGE = `
 window.__d = (() => {
   const sp = () => document.querySelector("#scale-sheet .sheetbody");
-  const band = () => document.getElementById("scale-pancol");
+  const band = () => document.getElementById("scale-plate-band");
   const r1 = (x) => Math.round(x * 10) / 10;
   const label = (el) => !el ? null : el.id || (el.parentElement && el.parentElement.id
     ? el.parentElement.id + "[" + [...el.parentElement.children].indexOf(el) + "]" : el.tagName);
@@ -153,7 +153,7 @@ function run() {
     await frames();
   };
   const openDrawerNow = async () => {
-    await ev(`__d.sp().scrollTop = 0; const t = document.getElementById("scale-layout-toggle"); t.focus(); t.click(); return true;`);
+    await ev(`__d.sp().scrollTop = 0; const t = document.getElementById("scale-tab-layout"); t.focus(); t.click(); return true;`);
     await frames();
   };
 
@@ -198,11 +198,11 @@ function run() {
   }
 
   const tabWalk = async (fail) => {
-    await ev(`__d.sp().scrollTop = 0; document.getElementById("scale-adjust-back").focus(); return true;`);
+    await ev(`__d.sp().scrollTop = 0; document.getElementById("scale-back").focus(); return true;`);
     const seen = [];
     for (let i = 0; i < 45; i++) {
       await b.key("Tab", "Tab", 9);
-      const a = await ev(`const a = document.activeElement; if (!a || a.id === "scale-adjust-back") return null; return __d.at(a);`);
+      const a = await ev(`const a = document.activeElement; if (!a || a.id === "scale-back") return null; return __d.at(a);`);
       if (!a) break;
       seen.push(a.id);
       checkAB(fail, a.st);
@@ -236,7 +236,7 @@ function run() {
             await openCell(w, h, sheet, scale);
             await openDrawerNow();
             const open = await ev(`return { st: __d.state(), plate: __d.at(document.getElementById("scale-preview")),
-              back: document.getElementById("scale-adjust-back").getBoundingClientRect().top >= 0 && document.getElementById("scale-adjust-back").getBoundingClientRect().bottom <= window.innerHeight };`);
+              back: document.getElementById("scale-back").getBoundingClientRect().top >= 0 && document.getElementById("scale-back").getBoundingClientRect().bottom <= window.innerHeight };`);
             const floor = open.st.room < ONE_CONTROL;
             if (floor) floorCells.push(cell);
             const stuck = checkAB(fail, open.st);

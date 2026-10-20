@@ -47,7 +47,7 @@ const d2Id = (n) => Array.from({ length: n }, (_, i) => i);
 function d2Open(app, text, edit) {
   if (edit) openEdit(app, makeCustom(app, text));
   else { openSheet(app); app.type(text); }
-  app.els["scale-layout-toggle"].click();
+  app.click(app.els["scale-tab-layout"]);
 }
 const d2Hit = (app, name) => {
   const h = app.hits().find((n) => String(n.getAttribute("aria-label")).startsWith(name + ","));
