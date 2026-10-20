@@ -1,0 +1,16 @@
+# kills: O1: an inferred bottom on the ding's midi warns and does not block: D3 c d gives C3 D3, ok, line [C3] [D3] (D3) A3, and warn.bottom is DUPLICATE_NOTE 'D3 is already the ding. Double-check the bottom notes.'
+# suite: node --test --test-name-pattern O1:.an.inferred.bottom.on.the.ding tests/import.test.js
+# The duplicate sets errors.bottom, a block, instead of warn.bottom.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -864,7 +864,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       out.guessed = bottom.guessed;
+       if (bottom.guessed.length) {
+         out.info.bottom = "Octaves guessed: " + bottom.guessed.join(", ") + ". Type an octave to change a guess.";
+-        out.warn.bottom = composeDuplicate(bottom, read.bottom.notes, ding, top, inner);
++        var dup = composeDuplicate(bottom, read.bottom.notes, ding, top, inner);
++        if (dup) out.errors.bottom = dup.text;
+       }
+     }
+ 

@@ -4,12 +4,12 @@
 diff --git a/src/engine/importer.js b/src/engine/importer.js
 --- a/src/engine/importer.js
 +++ b/src/engine/importer.js
-@@ -747,7 +747,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-         return { names: [], guessed: [], error: n.letter + n.acc + " has no octave that fits: type one." };
+@@ -761,7 +761,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+         return { names: [], guessed: [], error: guess ? n.letter + n.acc + " has no octave that fits: type one." : composeRange(name) };
        }
        if (below !== null && midi === below) return { names: [], guessed: [], error: name + " is already in the bottom notes." };
 -      if (below !== null && midi < below) return { names: [], guessed: [], error: composeLower(name, names[i - 1]) };
 +      if (false) return { names: [], guessed: [], error: composeLower(name, names[i - 1]) };
        names.push(name);
+       midis.push(midi);
        if (guess) guessed.push(name);
-       below = midi;

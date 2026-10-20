@@ -1,0 +1,21 @@
+# kills: O1: the two inference paths agree: compose and parseLegacySeed give the same bottom midis for D3 g; D3 g a b c; D3 c d e f g; F3 C Db Eb Bb Db Ab
+# suite: node --test --test-name-pattern O1:.the.two.inference.paths tests/import.test.js
+# composeBottoms stops calling HPE.core.inferBottoms and seeds from ding.octave again; parseLegacySeed is untouched.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -748,9 +748,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     var guessed = [];
+     var midis = [];
+     var below = null;
+-    var placed = core().inferBottoms(notes.map(function (x) {
+-      return { letter: x.letter, accidental: x.acc, octave: x.octave };
+-    }), ding.midi);
++    var placed = { midis: [], failAt: -1 };
++    notes.forEach(function (x, k) {
++      var o = x.octave !== null ? x.octave : (k === 0 ? ding.octave : composeAbove(x, placed.midis[k - 1]));
++      placed.midis.push(composeMidi(x, o));
++    });
+     for (var i = 0; i < notes.length; i++) {
+       var n = notes[i];
+       var guess = n.octave === null;

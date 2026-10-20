@@ -1,0 +1,25 @@
+# kills: O1: a typed bottom octave never warns and clears the warning: D3 c D4 and D3 C3 D3 have warn.bottom null; D3 / A3 C4 / B3 C4 has warn.bottom null
+# suite: node --test --test-name-pattern O1:.a.typed.bottom.octave.never tests/import.test.js
+# A typed octave on the ding's midi also warns.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -777,7 +777,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     top.forEach(function (x, k) { rows.push(["top note " + (k + 1), [x]]); });
+     inner.forEach(function (x, k) { rows.push(["inner note " + (k + 1), [x]]); });
+     for (var i = 0; i < bottom.names.length; i++) {
+-      if (read[i].octave !== null) continue;
+       for (var r = 0; r < rows.length; r++) {
+         var m = COMPOSE_NOTE.exec(rows[r][1][0]);
+         if (composeMidi({ letter: m[1], acc: m[2] || "" }, Number(m[3])) === bottom.midis[i]) {
+@@ -862,9 +861,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     if (bottom) {
+       out.notes.bottom = bottom.names;
+       out.guessed = bottom.guessed;
++      out.warn.bottom = composeDuplicate(bottom, read.bottom.notes, ding, top, inner);
+       if (bottom.guessed.length) {
+         out.info.bottom = "Octaves guessed: " + bottom.guessed.join(", ") + ". Type an octave to change a guess.";
+-        out.warn.bottom = composeDuplicate(bottom, read.bottom.notes, ding, top, inner);
+       }
+     }
+ 
