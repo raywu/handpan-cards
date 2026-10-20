@@ -1,0 +1,14 @@
+# kills: UX: at the collapse instant .sheetbody has grown, GENERATE, the guidance line and the hairline have not moved, and scrollTop is unchanged
+# suite: node --test --test-name-pattern ^UX:.at.the.collapse.instant..sheetbody.has.grown..GENERATE..the.guidance.line.and.the.hairline.have.not.moved..and.scrollTop.is.unchanged$ tests/e2e.test.js
+# uxl_no_flush
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10661,7 +10661,6 @@ function collapseLip() {
+   lipBtn.hidden = false;
+   lipBtn.setAttribute("aria-label", "Show " + lipPrimary().textContent);
+   lipWrite(open);
+-  lipFlush();
+   sheet.classList.remove("lipnow");
+   sheet.classList.add("lipshut");
+   lipSettled = false;

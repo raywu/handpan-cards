@@ -50,6 +50,8 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", 
   "scale-back", "scale-title",
   // The sheet's tabs, their panels and the NEXT button (plan 2026-10-19-sheet-tabs).
   "scale-tabs", "scale-tab-scale", "scale-tab-layout", "scale-panel-scale", "scale-panel-layout", "scale-next",
+  // The footer lip (plan 2026-10-19-sheet-tabs 3.7).
+  "scale-foot", "scale-footslide", "scale-lip",
   // Lane M1: the settings panel that now hosts the mode toggle and print
   // controls, plus its header trigger and scrim.
   "settings-trigger", "settings-scrim", "settings-panel",

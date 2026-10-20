@@ -1,0 +1,15 @@
+# kills: UX: a 23px user scroll down does not collapse the footer and 24px does
+# suite: node --test --test-name-pattern ^UX:.a.23px.user.scroll.down.does.not.collapse.the.footer.and.24px.does$ tests/app.test.js
+# uxl_threshold_zero
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10613,7 +10613,7 @@ const footSlide = document.getElementById("scale-footslide");
+ const lipBtn = document.getElementById("scale-lip");
+ const guidanceEl = msgLine.parentElement || msgLine.parentNode || null;
+ const LIP_VARS = ["--lip-h", "--lip-pad", "--lip-gd", "--lip-g"];
+-const LIP_PX = 24, LIP_SWIPE = 16, LIP_WINDOW = 150, LIP_END_MS = 220;
++const LIP_PX = 0, LIP_SWIPE = 16, LIP_WINDOW = 150, LIP_END_MS = 220;
+ let lipGen = 0, lipTimer = 0, lipEnd = 0, lipSettled = false;
+ let lipQuietUntil = 0, userWindowUntil = 0, lipAcc = 0, lipPrev = { t: 0, M: 0 };
+ const lipRect = (el) => (el && el.getBoundingClientRect ? el.getBoundingClientRect() : { top: 0, bottom: 0, height: 0 });

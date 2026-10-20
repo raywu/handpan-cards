@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11438,7 +11438,7 @@ function hideSheet() {
+@@ -11691,7 +11691,7 @@ function hideSheet() {
      sheetSurf.style.transform = "";
      sheetSurf.style.maxHeight = "";
    }
 -  for (const c of ["kbup", "short", "side", "tiny"]) setSheetClass(c, false);
 +  for (const c of ["kbup", "short", "side"]) setSheetClass(c, false);
+   setLip(false, { instant: true });
    scrollPin = null;
    tapSnap = null;
-   editingId = null;

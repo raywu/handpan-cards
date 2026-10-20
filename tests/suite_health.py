@@ -194,10 +194,12 @@ def check_python():
 # `node --test` runs with no per-test deadline here, so a suite that wedges -
 # a browser that never reports ready, a server socket that never binds - used to
 # hang this script forever and burn a whole CI job with no log. Every node suite
-# therefore runs under a wall clock. The slowest suite measured locally is the
-# e2e one, and this leaves it wide headroom; it matches the SUITE_TIMEOUT that
-# tests/mutation_check.sh already uses, and NODE_SUITE_TIMEOUT overrides it.
-NODE_TIMEOUT = int(os.environ.get("NODE_SUITE_TIMEOUT", "180"))
+# therefore runs under a wall clock. The slowest suite is the e2e one, which
+# ran the whole file in about 140s on CI before the footer-lip tests (2026-10-20)
+# and overran 180s with them, so the budget is 300s. tests/mutation_check.sh
+# keeps its own 180s SUITE_TIMEOUT: it runs a filtered subset per mutant, never
+# the whole file. NODE_SUITE_TIMEOUT overrides this one.
+NODE_TIMEOUT = int(os.environ.get("NODE_SUITE_TIMEOUT", "300"))
 
 
 # How much of a failing suite's own output to reprint. A return code with no

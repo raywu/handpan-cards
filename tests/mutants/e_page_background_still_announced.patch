@@ -6,10 +6,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8098,7 +8098,7 @@ function showSheet(opener) {
-   sheetOpener = opener || addChip;
+@@ -11586,7 +11586,7 @@ function showSheet(opener) {
    sheet.removeAttribute("hidden");
    sheetOpen = true;
+   setLip(false, { instant: true });
 -  setInert(true, background);
 +  for (const el of background) { el.inert = true; }
    resyncSheet(true);

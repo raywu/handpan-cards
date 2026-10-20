@@ -942,6 +942,44 @@ footer.seq{row-gap:var(--sp-1)}
    #scale-sheet, not the wrapper: paintLayout() reaches the sheet through a variable the sandbox already
    has, and say() rewrites #scale-msg's own className on every call, which also clears .pan. */
 #scale-sheet.noticed #scale-msg.warn.pan{display:none}
+/* The footer lip: open, the wrappers generate no box, so the footer is the layout it always was. */
+#scale-foot, #scale-footclip, #scale-footslide{display:contents}
+#scale-lip[hidden]{display:none}
+:root{--lip-ease:cubic-bezier(.3,0,.2,1)}
+#scale-sheet.lipped .sheetsurf{padding-bottom:env(safe-area-inset-bottom)}
+#scale-sheet.lipped:not(.tiny) .sheetbody{flex-grow:1}
+#scale-sheet.lipped #scale-foot{display:block; position:relative; flex:0 0 auto; height:4px;
+  margin-top:calc(-1 * var(--sp-4))}
+@media (max-height:520px){#scale-sheet.lipped #scale-foot{margin-top:calc(-1 * var(--sp-3))}}
+#scale-sheet.short.lipped #scale-foot{margin-top:calc(-1 * var(--sp-2))}
+#scale-sheet.lipped:has(#scale-guidance > :not([hidden]):not(:empty)) #scale-foot{margin-top:0}
+#scale-sheet.lipped #scale-guidance:not(:has(> :not([hidden]):not(:empty))){position:absolute;
+  min-height:0; height:0; margin:0; overflow:hidden}
+#scale-sheet.lipped #scale-footclip{display:block; position:absolute; bottom:100%;
+  left:calc(-1 * var(--ring)); right:calc(-1 * var(--ring)); padding-inline:var(--ring);
+  height:var(--lip-h, 0px); overflow:hidden; overflow:clip; pointer-events:none}
+#scale-sheet.lipped #scale-footslide{display:flex; flex-direction:column;
+  box-sizing:border-box; height:100%; padding-top:calc(var(--lip-pad, 1px) - 1px);
+  border-top:1px solid #332c22; background:#1f1b15; pointer-events:auto;
+  transform:none; visibility:visible;
+  transition:transform 180ms var(--lip-ease), visibility 0s linear 0s}
+#scale-sheet.lipped #scale-delete-row{margin-top:var(--lip-gd, 0px)}
+#scale-sheet.lipshut #scale-footslide{transform:translateY(var(--lip-h, 0px)); visibility:hidden;
+  transition:transform 180ms var(--lip-ease), visibility 0s linear 180ms}
+#scale-sheet.lipped #scale-guidance{position:relative; z-index:1; background:#1f1b15;
+  transform:translateY(var(--lip-g, 0px)); transition:transform 180ms var(--lip-ease)}
+#scale-sheet.lipshut #scale-guidance{transform:none}
+#scale-lip:not([hidden]){display:block; position:absolute; left:0; right:0; bottom:0; height:25px;
+  z-index:2; margin:0; padding:0; border:0; background:transparent; cursor:pointer;
+  touch-action:none; -webkit-tap-highlight-color:transparent}
+#scale-lip::after{content:""; position:absolute; left:50%; bottom:0; width:36px; height:4px;
+  margin-left:-18px; border-radius:2px; background:#a79d8b}
+#scale-lip:focus-visible{outline-offset:-2px}
+#scale-sheet.lipped .sheetbody{scroll-padding-bottom:21px}
+#scale-sheet.lipnow #scale-footslide, #scale-sheet.lipnow #scale-guidance{transition:none}
+@media (prefers-reduced-motion: reduce){
+  #scale-footslide, #scale-guidance{transition:none !important}
+}
 /* Landscape on a phone: 390px of height, and every pixel of chrome on the page
    comes straight off the scrolling body. The footer's breathing room above its
    own hairline is .sheetsurf's gap, already dropped to --sp-3 above; this
@@ -1522,6 +1560,10 @@ html.about-open{overflow:hidden}
       <div id="scale-msg" aria-live="polite"></div>
       <p class="sheethint" id="scale-layout-state" aria-live="polite" aria-atomic="true" hidden></p>
     </div>
+    <!-- The footer lip: while the footer is open these wrappers generate no box. -->
+    <div id="scale-foot">
+    <div id="scale-footclip">
+    <div id="scale-footslide">
     <button id="scale-next" type="button">NEXT</button>
     <button id="scale-generate" type="button" hidden disabled>GENERATE CARDS</button>
     <div class="editrow" id="scale-delete-row" hidden>
@@ -1536,6 +1578,10 @@ html.about-open{overflow:hidden}
            button's confirmation were only ever sharing one line by accident;
            below the button is also where the owner is already looking. -->
       <div id="scale-del-note" aria-live="polite"></div>
+    </div>
+    </div>
+    </div>
+    <button id="scale-lip" type="button" hidden aria-expanded="false" aria-controls="scale-next scale-generate scale-delete-row" aria-label="Show NEXT"></button>
     </div>
   </div>
 </div>
@@ -10514,7 +10560,8 @@ function revealField(t) {
     const edge = el.getBoundingClientRect().top + (el.clientTop || 0);
     const f = t.getBoundingClientRect();
     const up = f.top - (edge + (parseFloat(css.scrollPaddingTop) || 0));
-    const down = f.bottom - (edge + el.clientHeight);
+    const down = f.bottom - (edge + el.clientHeight - (parseFloat(css.scrollPaddingBottom) || 0));
+    if (up < 0 || down > 0) lipQuiet();
     if (up < 0) el.scrollTop += up;
     else if (down > 0) el.scrollTop += Math.min(down, up);
   }
@@ -10529,8 +10576,8 @@ const PIN_MS = 600;
 let tapSnap = null, scrollPin = null;
 const holdPin = () => {
   if (!scrollPin || Date.now() > scrollPin.until) return;
-  if (bandPort.scrollTop !== scrollPin.body) bandPort.scrollTop = scrollPin.body;
-  if (sheetSurf && sheetSurf.scrollTop !== scrollPin.surf) sheetSurf.scrollTop = scrollPin.surf;
+  if (bandPort.scrollTop !== scrollPin.body) { lipQuiet(); bandPort.scrollTop = scrollPin.body; }
+  if (sheetSurf && sheetSurf.scrollTop !== scrollPin.surf) { lipQuiet(); sheetSurf.scrollTop = scrollPin.surf; }
 };
 const releasePin = () => { scrollPin = null; };
 sheet.addEventListener("pointerdown", (e) => {
@@ -10555,6 +10602,182 @@ sheet.addEventListener("pointercancel", dropTap, true);
 sheet.addEventListener("wheel", releasePin, { passive: true });
 bandPort.addEventListener("scroll", holdPin);
 if (sheetSurf) sheetSurf.addEventListener("scroll", holdPin);
+
+/* ---- the footer lip ----
+ * OPEN -> SHUTTING (collapseLip), SHUT -> OPENING (restoreLip), OPENING -> OPEN
+ * (finishOpen). The layout classes change at the start of a collapse and the end
+ * of a restore only; between them just a transform slides. lipshut is the
+ * target state, lipped is the layout, lipnow suppresses the transition. */
+const footEl = document.getElementById("scale-foot");
+const footSlide = document.getElementById("scale-footslide");
+const lipBtn = document.getElementById("scale-lip");
+const guidanceEl = msgLine.parentElement || msgLine.parentNode || null;
+const LIP_VARS = ["--lip-h", "--lip-pad", "--lip-gd", "--lip-g"];
+const LIP_PX = 24, LIP_SWIPE = 16, LIP_WINDOW = 150, LIP_END_MS = 220;
+let lipGen = 0, lipTimer = 0, lipEnd = 0, lipSettled = false;
+let lipQuietUntil = 0, userWindowUntil = 0, lipAcc = 0, lipPrev = { t: 0, M: 0 };
+const lipRect = (el) => (el && el.getBoundingClientRect ? el.getBoundingClientRect() : { top: 0, bottom: 0, height: 0 });
+const lipPrimary = () => (nextBtn.hidden ? genBtn : nextBtn);
+const isLipped = () => sheet.classList.contains("lipped");
+const isLipShut = () => sheet.classList.contains("lipshut");
+const lipFlush = () => { if (footSlide.getBoundingClientRect) footSlide.getBoundingClientRect(); };
+const lipQuiet = () => { lipQuietUntil = Date.now() + LIP_WINDOW; };
+function lipRead() {
+  const lead = lipPrimary();
+  return {
+    body: lipRect(bandPort).bottom, top: lipRect(lead).top, bottom: lipRect(lead).bottom,
+    del: delRow.hidden ? null : lipRect(delRow).top,
+    g: guidanceEl && guidanceEl.getBoundingClientRect ? guidanceEl.getBoundingClientRect().top : null,
+  };
+}
+const lipText = () => !!guidanceEl && [...(guidanceEl.children || [])].some((c) => !c.hidden && c.textContent);
+function lipWrite(o) {
+  const set = (k, v) => sheet.style.setProperty(k, v);
+  set("--lip-h", (lipRect(footEl).top - (o.body - 1)) + "px");
+  set("--lip-pad", (o.top - (o.body - 1)) + "px");
+  set("--lip-gd", (o.del === null ? 0 : o.del - o.bottom) + "px");
+  if (lipText() && o.g !== null && guidanceEl.getBoundingClientRect) set("--lip-g", (o.g - lipRect(guidanceEl).top) + "px");
+  else set("--lip-g", "0px");
+}
+function lipRebase() {
+  const M = Math.max(0, bandPort.scrollHeight - bandPort.clientHeight);
+  lipPrev = { t: Math.min(M, Math.max(0, bandPort.scrollTop)), M };
+  lipAcc = 0;
+}
+function lipHandOff() {
+  if (document.activeElement !== lipBtn) return;
+  const lead = lipPrimary();
+  const to = !lead.disabled && !lead.hidden ? lead : (editingId && !delBtn.disabled ? delBtn : swatches.lastElementChild || lead);
+  if (to && to.focus) to.focus({ preventScroll: true });
+}
+let lipFocusing = false;
+function collapseLip() {
+  if (!sheetOpen) return;
+  lipAcc = 0;
+  clearTimeout(lipTimer);
+  lipGen += 1;
+  if (isLipped()) { sheet.classList.add("lipshut"); lipSettled = false; return; }
+  const open = lipRead();
+  sheet.classList.add("lipnow", "lipped");
+  lipBtn.hidden = false;
+  lipBtn.setAttribute("aria-label", "Show " + lipPrimary().textContent);
+  lipWrite(open);
+  lipFlush();
+  sheet.classList.remove("lipnow");
+  sheet.classList.add("lipshut");
+  lipSettled = false;
+  const gen = lipGen;
+  lipTimer = setTimeout(() => { if (gen === lipGen) lipSettled = true; }, LIP_END_MS);
+  const a = document.activeElement;
+  if (a === nextBtn || a === genBtn || a === delBtn) {
+    lipFocusing = true;
+    lipBtn.focus({ preventScroll: true });
+    lipFocusing = false;
+  }
+}
+function restoreLip() {
+  if (!sheetOpen || !isLipped() || !isLipShut()) return;
+  lipAcc = 0;
+  clearTimeout(lipTimer);
+  lipGen += 1;
+  if (lipSettled) {
+    sheet.classList.add("lipnow");
+    sheet.classList.remove("lipped", "lipshut");
+    const open = lipRead();
+    sheet.classList.add("lipped", "lipshut");
+    lipWrite(open);
+    lipFlush();
+    sheet.classList.remove("lipnow");
+  }
+  sheet.classList.remove("lipshut");
+  lipHandOff();
+  lipEnd = lipGen;
+  if (reducedMotion.matches) { finishOpen(); return; }
+  const gen = lipEnd;
+  lipTimer = setTimeout(() => endOpening(gen), LIP_END_MS);
+}
+function endOpening(gen) {
+  if (gen !== lipGen || !isLipped() || isLipShut()) return;
+  finishOpen();
+}
+function finishOpen() {
+  lipGen += 1;
+  clearTimeout(lipTimer);
+  lipHandOff();
+  sheet.classList.add("lipnow");
+  sheet.classList.remove("lipped", "lipshut");
+  lipBtn.hidden = true;
+  for (const k of LIP_VARS) sheet.style.setProperty(k, "");
+  lipFlush();
+  sheet.classList.remove("lipnow");
+  lipRebase();
+}
+function lipReset() {
+  clearTimeout(lipTimer);
+  lipGen += 1;
+  sheet.classList.remove("lipped", "lipshut", "lipnow");
+  lipBtn.hidden = true;
+  for (const k of LIP_VARS) sheet.style.setProperty(k, "");
+  lipRebase();
+}
+function setLip(on, o) {
+  if (on) collapseLip();
+  else if (o && o.instant) lipReset();
+  else restoreLip();
+}
+function lipKbEdge(was, kb) {
+  if (was === kb) return;
+  if (kb) collapseLip(); else restoreLip();
+}
+function lipScroll() {
+  const M = Math.max(0, bandPort.scrollHeight - bandPort.clientHeight);
+  const t = Math.min(M, Math.max(0, bandPort.scrollTop));
+  const prev = lipPrev;
+  lipPrev = { t, M };
+  const now = Date.now();
+  if (!sheetOpen || sheet.classList.contains("kbup") || now < lipQuietUntil || now > userWindowUntil) return;
+  userWindowUntil = now + LIP_WINDOW;
+  if (isLipShut() && t >= M - 1) { restoreLip(); return; }
+  if (M !== prev.M) { lipAcc = 0; return; }
+  const d = t - prev.t;
+  if (d * lipAcc < 0) lipAcc = 0;
+  lipAcc += d;
+  if (lipAcc >= LIP_PX && !isLipShut()) {
+    const E = lipRect(sheetSurf || sheet).bottom - lipRect(bandPort).bottom;
+    if (M - t > E) collapseLip();
+    lipAcc = 0;
+  } else if (lipAcc <= -LIP_PX && isLipShut()) {
+    restoreLip();
+    lipAcc = 0;
+  }
+}
+const lipUser = () => { userWindowUntil = Date.now() + LIP_WINDOW; };
+bandPort.addEventListener("scroll", lipScroll, { passive: true });
+for (const ev of ["touchstart", "touchmove", "wheel"]) sheet.addEventListener(ev, lipUser, { passive: true, capture: true });
+sheet.addEventListener("keydown", (e) => {
+  const t = e.target;
+  if (!["PageUp", "PageDown", " ", "Home", "End", "ArrowUp", "ArrowDown"].includes(e.key)) return;
+  if (t && t.matches && t.matches("input, textarea, select")) return;
+  lipUser();
+}, true);
+let lipTouch = null;
+lipBtn.addEventListener("touchstart", (e) => {
+  const p = e.touches && e.touches[0];
+  lipTouch = p ? { id: p.identifier, y: p.clientY } : null;
+}, { passive: true });
+lipBtn.addEventListener("touchmove", (e) => {
+  if (!lipTouch) return;
+  const p = [...(e.touches || [])].find((x) => x.identifier === lipTouch.id);
+  if (p && lipTouch.y - p.clientY >= LIP_SWIPE) { lipTouch = null; restoreLip(); }
+}, { passive: true });
+lipBtn.addEventListener("touchend", () => { lipTouch = null; }, { passive: true });
+lipBtn.addEventListener("click", restoreLip);
+lipBtn.addEventListener("focusin", () => {
+  if (!lipFocusing) restoreLip();
+});
+footSlide.addEventListener("transitionend", (e) => {
+  if (e.target === footSlide && e.propertyName === "transform") endOpening(lipEnd);
+});
 function hasTwoNoteRing() {
   const res = HPE.core.parseSeed(String(scaleBox.value || ""), layoutOptions());
   if (!res.ok) return true;
@@ -10595,6 +10818,7 @@ function setTab(tab) {
   paintLayout();
   repaintPlate();
   bandPort.scrollTop = 0;
+  setLip(false, { instant: true });
   if (drawerOpen && boxOk && !hasTwoNoteRing()) layoutStatus("This pan has no ring with two notes, so there is nothing to rearrange.");
 }
 /** Leaving the sheet or opening a fresh session: no focus, no status. */
@@ -11297,10 +11521,13 @@ function applyKbOffset(e) {
    * keyboard is up (the zoom branch above reads as no keyboard), and the
    * surface is short or very short. Read after the cap is written, once. */
   const high = sheetSurf.clientHeight;
+  const wasUp = sheet.classList.contains("kbup");
+  lipQuiet();
   setSheetClass("kbup", kb);
   setSheetClass("short", high > 0 && high < 560);
   setSheetClass("side", high > 0 && high < 420);
   setSheetClass("tiny", kb && high > 0 && high < 200);
+  lipKbEdge(wasUp, kb);
   syncBand();
   if (e && e.type === "scroll") return;
   const at = document.activeElement;
@@ -11365,6 +11592,7 @@ function showSheet(opener) {
   sheetOpener = opener || addChip;
   sheet.removeAttribute("hidden");
   sheetOpen = true;
+  setLip(false, { instant: true });
   setInert(true, background);
   resyncSheet(true);
   applyKbOffset();
@@ -11471,6 +11699,7 @@ function hideSheet() {
     sheetSurf.style.maxHeight = "";
   }
   for (const c of ["kbup", "short", "side", "tiny"]) setSheetClass(c, false);
+  setLip(false, { instant: true });
   scrollPin = null;
   tapSnap = null;
   editingId = null;
@@ -12326,17 +12555,18 @@ function cycleTabStops(stops, e) {
 sheet.addEventListener("keydown", e => {
   if (e.key !== "Tab") return;
   const onTab = sheetTab === "layout" ? tabLayout : tabScale;
+  const shut = isLipShut();
   const stops = (sheetTab === "layout"
     ? [backBtn, onTab, previewBox.querySelector('.panhit[tabindex="0"]'),
        anchorOne, anchorBetween, mirrorTop, mirrorBot, fineBtn,
        notePrev, noteNext, seatPrev, seatNext, resetBtn,
-       genBtn, editingId ? delBtn : null]
+       shut ? lipBtn : genBtn, editingId && !shut ? delBtn : null]
     : [backBtn, onTab,
        editingId ? nameBox : null,
        fieldEls.ding, fieldEls.top, fieldEls.inner, fieldEls.bottom,
        scaleBox,
-       ...swatches.children, editingId ? genBtn : nextBtn,
-       editingId ? delBtn : null])
+       ...swatches.children, shut ? lipBtn : editingId ? genBtn : nextBtn,
+       editingId && !shut ? delBtn : null])
     .filter(isStop);
   if (isHit(document.activeElement) && pickRef && lastSolved) setRover(pickRef);
   cycleTabStops(stops, e);

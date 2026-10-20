@@ -1,0 +1,16 @@
+# kills: UX: lipped, an empty guidance slot takes no height and the lip sits on the body's hairline; a slot with text stays --sp-2 above the lip
+# suite: node --test --test-name-pattern ^UX:.lipped..an.empty.guidance.slot.takes.no.height.and.the.lip.sits.on.the.body.s.hairline..a.slot.with.text.stays...sp.2.above.the.lip$ tests/e2e.test.js
+# uxl_guidance_never_hides
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -953,8 +953,7 @@ footer.seq{row-gap:var(--sp-1)}
+ @media (max-height:520px){#scale-sheet.lipped #scale-foot{margin-top:calc(-1 * var(--sp-3))}}
+ #scale-sheet.short.lipped #scale-foot{margin-top:calc(-1 * var(--sp-2))}
+ #scale-sheet.lipped:has(#scale-guidance > :not([hidden]):not(:empty)) #scale-foot{margin-top:0}
+-#scale-sheet.lipped #scale-guidance:not(:has(> :not([hidden]):not(:empty))){position:absolute;
+-  min-height:0; height:0; margin:0; overflow:hidden}
++#scale-sheet.lipped #scale-guidance:not(:has(> :not([hidden]):not(:empty))){}
+ #scale-sheet.lipped #scale-footclip{display:block; position:absolute; bottom:100%;
+   left:calc(-1 * var(--ring)); right:calc(-1 * var(--ring)); padding-inline:var(--ring);
+   height:var(--lip-h, 0px); overflow:hidden; overflow:clip; pointer-events:none}

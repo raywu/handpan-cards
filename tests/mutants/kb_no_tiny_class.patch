@@ -1,16 +1,16 @@
-# kills: KB: at 844x334 with a 104px visible area, under every innerHeight model the sheet is tiny, the focused field is in view and GENERATE and the guidance slot are reachable by scrolling the surface
+# kills: KB: at 844x334 with a 104px visible area, under every innerHeight model the sheet is tiny, the focused field is in view and the lip and the guidance slot are reachable by scrolling the surface
 # suite: node --test --test-name-pattern ^KB..at.844x334.with.a.104px.* tests/e2e.test.js
 # The tiny class is never set, so under a 104px visible area the sheet body keeps its own scroller
 # and GENERATE and the guidance slot stay out of reach.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11204,7 +11204,7 @@
+@@ -11519,7 +11519,7 @@ function applyKbOffset(e) {
    setSheetClass("kbup", kb);
    setSheetClass("short", high > 0 && high < 560);
    setSheetClass("side", high > 0 && high < 420);
 -  setSheetClass("tiny", kb && high > 0 && high < 200);
 +  setSheetClass("tiny", false);
+   lipKbEdge(wasUp, kb);
    syncBand();
    if (e && e.type === "scroll") return;
-   const at = document.activeElement;

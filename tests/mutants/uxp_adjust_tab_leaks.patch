@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12314,7 +12314,7 @@
- sheet.addEventListener("keydown", e => {
+@@ -12537,7 +12537,7 @@ sheet.addEventListener("keydown", e => {
    if (e.key !== "Tab") return;
    const onTab = sheetTab === "layout" ? tabLayout : tabScale;
+   const shut = isLipShut();
 -  const stops = (sheetTab === "layout"
 +  const stops = (false
      ? [backBtn, onTab, previewBox.querySelector('.panhit[tabindex="0"]'),

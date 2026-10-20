@@ -1,0 +1,31 @@
+# kills: UX: a restore ends on the 220ms timer when no transitionend arrives, and a stale timer from a reversed slide does nothing
+# suite: node --test --test-name-pattern ^UX:.a.restore.ends.on.the.220ms.timer.when.no.transitionend.arrives..and.a.stale.timer.from.a.reversed.slide.does.nothing$ tests/app.test.js
+# uxl_stale_timer_ends
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10653,7 +10653,6 @@ function lipHandOff() {
+ function collapseLip() {
+   if (!sheetOpen) return;
+   lipAcc = 0;
+-  clearTimeout(lipTimer);
+   lipGen += 1;
+   if (isLipped()) { sheet.classList.add("lipshut"); lipSettled = false; return; }
+   const open = lipRead();
+@@ -10673,7 +10672,6 @@ function collapseLip() {
+ function restoreLip() {
+   if (!sheetOpen || !isLipped() || !isLipShut()) return;
+   lipAcc = 0;
+-  clearTimeout(lipTimer);
+   lipGen += 1;
+   if (lipSettled) {
+     sheet.classList.add("lipnow");
+@@ -10692,7 +10690,7 @@ function restoreLip() {
+   lipTimer = setTimeout(() => endOpening(gen), LIP_END_MS);
+ }
+ function endOpening(gen) {
+-  if (gen !== lipGen || !isLipped() || isLipShut()) return;
++  if (!isLipped() || isLipShut()) return;
+   finishOpen();
+ }
+ function finishOpen() {

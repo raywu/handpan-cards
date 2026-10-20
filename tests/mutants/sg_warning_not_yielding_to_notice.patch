@@ -1,13 +1,14 @@
 # kills: SG: N-A7 the crowded 24-note pan: the real SMALL_LABELS warning (two lines) opens Edit, a tapped anchor raises the notice, the warning yields and the three-row seed box stays readable at every keyboard
 # suite: node --test --test-name-pattern ^SG:.N-A7.the.crowded tests/e2e.test.js
 # A pan warning no longer steps aside for a standing notice, so a two-line SMALL_LABELS warning plus the notice grows the slot and the seed box is clipped under the keyboard.
+diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -903,7 +903,6 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -941,7 +941,6 @@ footer.seq{row-gap:var(--sp-1)}
     The aria-live copy of the warning (.announce) is a separate element and still speaks. The class is on
     #scale-sheet, not the wrapper: paintLayout() reaches the sheet through a variable the sandbox already
     has, and say() rewrites #scale-msg's own className on every call, which also clears .pan. */
 -#scale-sheet.noticed #scale-msg.warn.pan{display:none}
- /* Landscape on a phone: 390px of height, and every pixel of chrome on the page
-    comes straight off the scrolling body. The footer's breathing room above its
-    own hairline is .sheetsurf's gap, already dropped to --sp-3 above; this
+ /* The footer lip: open, the wrappers generate no box, so the footer is the layout it always was. */
+ #scale-foot, #scale-footclip, #scale-footslide{display:contents}
+ #scale-lip[hidden]{display:none}

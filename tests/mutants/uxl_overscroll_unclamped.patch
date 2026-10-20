@@ -1,0 +1,15 @@
+# kills: UX: negative scrollTop and overshoot past the end change no lip state
+# suite: node --test --test-name-pattern ^UX:.negative.scrollTop.and.overshoot.past.the.end.change.no.lip.state$ tests/app.test.js
+# uxl_overscroll_unclamped
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10726,7 +10726,7 @@ function lipKbEdge(was, kb) {
+ }
+ function lipScroll() {
+   const M = Math.max(0, bandPort.scrollHeight - bandPort.clientHeight);
+-  const t = Math.min(M, Math.max(0, bandPort.scrollTop));
++  const t = bandPort.scrollTop;
+   const prev = lipPrev;
+   lipPrev = { t, M };
+   const now = Date.now();

@@ -1,0 +1,14 @@
+# kills: LP: a tab switch or NEXT clears lipshut with lipnow and re-baselines the scroll
+# suite: node --test --test-name-pattern ^LP:.a.tab.switch.or.NEXT.clears.lipshut.with.lipnow.and.re.baselines.the.scroll$ tests/app.test.js
+# lp_tab_keeps_lipshut
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10811,7 +10811,6 @@ function setTab(tab) {
+   paintLayout();
+   repaintPlate();
+   bandPort.scrollTop = 0;
+-  setLip(false, { instant: true });
+   if (drawerOpen && boxOk && !hasTwoNoteRing()) layoutStatus("This pan has no ring with two notes, so there is nothing to rearrange.");
+ }
+ /** Leaving the sheet or opening a fresh session: no focus, no status. */
