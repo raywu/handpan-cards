@@ -4,12 +4,13 @@
 diff --git a/src/engine/core.js b/src/engine/core.js
 --- a/src/engine/core.js
 +++ b/src/engine/core.js
-@@ -267,7 +267,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -267,8 +267,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
          midi = midiFromName(note.letter, note.accidental, note.octave);
        } else if (previous === null) {
          var step = ((dingMidi - midiFromName(note.letter, note.accidental, 0)) % 12 + 12) % 12;
 -        midi = dingMidi - (step === 0 ? 12 : step);
 +        midi = midiFromName(note.letter, note.accidental, Math.floor(dingMidi / 12) - 1);
        } else {
-         midi = nextAbove(previous, note.letter, note.accidental);
+         midi = midiFromName(note.letter, note.accidental, -1);
+         while (midi <= previous) midi += 12;
        }

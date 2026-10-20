@@ -14,6 +14,7 @@ const { loadEngine } = require("./helpers/engine.js");
 
 const ROOT = path.join(__dirname, "..");
 const core = loadEngine(["core"]).core;
+const importer = loadEngine(["core", "importer"]).importer;
 
 const golden = JSON.parse(
   fs.readFileSync(path.join(ROOT, "tests", "fixtures", "golden_decks_v3.json"), "utf8"));
@@ -345,6 +346,20 @@ test("O1: inferBottoms returns {midis, failAt}: a typed Cb-1 fails at its index 
   assert.deepEqual(plainOf(core.inferBottoms([n("G", "", 9), n("A", "", null)], 50)), { midis: [127, 129], failAt: 1 });
   assert.deepEqual(plainOf(core.inferBottoms([n("G", "", null), n("A", "", null), n("B", "", null), n("C", "", null)], 50)),
     { midis: [43, 45, 47, 48], failAt: -1 });
+});
+
+test("O1: a later inferred bottom can land in octave -1", () => {
+  const n = (letter, accidental, octave) => ({ letter, accidental, octave });
+  assert.deepEqual(plainOf(core.inferBottoms([n("C", "", -1), n("D", "", null)], 50)), { midis: [0, 2], failAt: -1 });
+  assert.deepEqual(plainOf(core.inferBottoms([n("A", "", null), n("B", "", null)], 12)), { midis: [9, 11], failAt: -1 });
+  const c = importer.compose({ ding: "D3", top: "A3", bottom: "C-1 d" });
+  assert.deepEqual(plainOf(c.notes.bottom), ["C-1", "D-1"]);
+  const d = importer.compose({ ding: "C0", top: "G0 C1", bottom: "a b" });
+  assert.deepEqual(plainOf(d.notes.bottom), ["A-1", "B-1"]);
+});
+
+test("O1: parseLegacySeed refuses a bottom run that rises past octave 9: (G8) D9 | G9 A is NOTE_OUT_OF_RANGE", () => {
+  assert.equal(core.parseLegacySeed("(G8) D9 | G9 A").code, "NOTE_OUT_OF_RANGE");
 });
 
 test("an explicit octave that breaks the ascending order is NOTE_OUT_OF_ORDER", () => {

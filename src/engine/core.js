@@ -269,7 +269,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         var step = ((dingMidi - midiFromName(note.letter, note.accidental, 0)) % 12 + 12) % 12;
         midi = dingMidi - (step === 0 ? 12 : step);
       } else {
-        midi = nextAbove(previous, note.letter, note.accidental);
+        midi = midiFromName(note.letter, note.accidental, -1);
+        while (midi <= previous) midi += 12;
       }
       midis.push(midi);
       if (midi < 0 || midi > 127) return { midis: midis, failAt: i };

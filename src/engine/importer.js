@@ -774,8 +774,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // inner field's: a warning, never a block. A typed octave never warns.
   function composeDuplicate(bottom, read, ding, top, inner) {
     var rows = [["the ding", [ding.name]]];
-    top.forEach(function (x, k) { rows.push(["top note " + (k + 1), [x]]); });
-    inner.forEach(function (x, k) { rows.push(["inner note " + (k + 1), [x]]); });
+    (top || []).forEach(function (x, k) { rows.push(["top note " + (k + 1), [x]]); });
+    (inner || []).forEach(function (x, k) { rows.push(["inner note " + (k + 1), [x]]); });
     for (var i = 0; i < bottom.names.length; i++) {
       if (read[i].octave !== null) continue;
       for (var r = 0; r < rows.length; r++) {

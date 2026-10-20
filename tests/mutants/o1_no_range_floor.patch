@@ -4,8 +4,9 @@
 diff --git a/src/engine/core.js b/src/engine/core.js
 --- a/src/engine/core.js
 +++ b/src/engine/core.js
-@@ -272,7 +272,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-         midi = nextAbove(previous, note.letter, note.accidental);
+@@ -272,8 +272,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+         midi = midiFromName(note.letter, note.accidental, -1);
+         while (midi <= previous) midi += 12;
        }
        midis.push(midi);
 -      if (midi < 0 || midi > 127) return { midis: midis, failAt: i };

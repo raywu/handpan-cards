@@ -1,0 +1,15 @@
+# kills: O1: a later inferred bottom can land in octave -1
+# suite: node --test --test-name-pattern O1:.a.later.inferred.bottom.can.land tests/core.test.js
+# inferBottoms searches upward from octave 0, so a later bottom never lands in octave -1.
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -269,7 +269,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+         var step = ((dingMidi - midiFromName(note.letter, note.accidental, 0)) % 12 + 12) % 12;
+         midi = dingMidi - (step === 0 ? 12 : step);
+       } else {
+-        midi = midiFromName(note.letter, note.accidental, -1);
++        midi = midiFromName(note.letter, note.accidental, 0);
+         while (midi <= previous) midi += 12;
+       }
+       midis.push(midi);

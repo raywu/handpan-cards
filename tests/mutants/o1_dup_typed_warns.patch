@@ -5,8 +5,8 @@ diff --git a/src/engine/importer.js b/src/engine/importer.js
 --- a/src/engine/importer.js
 +++ b/src/engine/importer.js
 @@ -777,7 +777,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-     top.forEach(function (x, k) { rows.push(["top note " + (k + 1), [x]]); });
-     inner.forEach(function (x, k) { rows.push(["inner note " + (k + 1), [x]]); });
+     (top || []).forEach(function (x, k) { rows.push(["top note " + (k + 1), [x]]); });
+     (inner || []).forEach(function (x, k) { rows.push(["inner note " + (k + 1), [x]]); });
      for (var i = 0; i < bottom.names.length; i++) {
 -      if (read[i].octave !== null) continue;
        for (var r = 0; r < rows.length; r++) {

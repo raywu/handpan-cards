@@ -1500,7 +1500,7 @@ describe("IH: compose", () => {
   });
 
   test("O1: an inferred bottom on the ding's midi warns and does not block: D3 c d gives C3 D3, ok, line [C3] [D3] (D3) A3, and warn.bottom is DUPLICATE_NOTE 'D3 is already the ding. Double-check the bottom notes.'", () => {
-    const r = compose({ ding: "D3", top: "A3", bottom: "C D" });
+    const r = compose({ ding: "D3", top: "A3", bottom: "c d" });
     assert.ok(r.ok);
     assert.deepEqual(r.guessed, ["C3", "D3"]);
     assert.equal(r.line, "[C3] [D3] (D3) A3");
@@ -1520,6 +1520,22 @@ describe("IH: compose", () => {
     assert.equal(warnOf({ ding: "D3", top: "A3", bottom: "c D4" }), null);
     assert.equal(warnOf({ ding: "D3", top: "A3", bottom: "C3 D3" }), null);
     assert.equal(warnOf({ ding: "D3", top: "A3 C4", bottom: "B3 C4" }), null);
+    assert.equal(warnOf({ ding: "D3", top: "A3", bottom: "c D3" }), null);
+  });
+
+  test("O1: a guessed bottom beside an erroring top or inner field returns the field error and never throws", () => {
+    const empty = compose({ ding: "D3", top: "", bottom: "g" });
+    assert.equal(empty.ok, false);
+    assert.ok(empty.errors.top);
+    assert.equal(empty.warn.bottom, null);
+    const bad = compose({ ding: "D3", top: "A3 X", bottom: "g" });
+    assert.equal(bad.ok, false);
+    assert.ok(bad.errors.top);
+    assert.equal(bad.warn.bottom, null);
+    const inner = compose({ ding: "D3", top: "A3 C4", inner: "Q", bottom: "c d" });
+    assert.equal(inner.ok, false);
+    assert.ok(inner.errors.inner);
+    assert.deepEqual(inner.warn.bottom, BOTTOM_DUP("D3", "the ding"));
   });
 
   test("O1: a duplicate of another bottom stays the refusal: D3 c C3 says C3 is already in the bottom notes", () => {
