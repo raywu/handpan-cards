@@ -774,7 +774,7 @@ footer.seq{row-gap:var(--sp-1)}
    footer, so the way out of the page is never scrolled off the top - which is
    the drawer's grab handle replaced by something that does a job. */
 .sheethead{flex:0 0 auto; display:flex; align-items:center; gap:var(--sp-3)}
-#scale-title{margin:0; font:600 13px/1.4 "Nunito Sans"; letter-spacing:.09em;
+#scale-title, #scale-adjust-title{margin:0; font:600 13px/1.4 "Nunito Sans"; letter-spacing:.09em;
   color:#eae6df; text-transform:uppercase}
 /* The surface fills the viewport, so on the Edit page, in landscape, or with
    a soft keyboard up its content is taller than the cap. Before .sheetbody
@@ -874,7 +874,7 @@ footer.seq{row-gap:var(--sp-1)}
    the 44px floor on a 17-field Pygmy pan - that needs 379.45px, which no
    380px viewport has - and per Stage 1 AC3 non-overlap wins there: the
    targets stay disjoint and Pygmy's cap at 34.8px stands. */
-#scale-preview{align-self:center; width:100%; max-width:300px; padding:var(--sp-2);
+#scale-preview{align-self:center; padding:var(--sp-2);
   border-radius:12px; background:#f1ece1; border:1px solid #433b2c}
 /* Not-current: the placeholder example before anything is typed, and the last
    render held through an invalid parse. ONE treatment for both, because the
@@ -961,9 +961,8 @@ footer.seq{row-gap:var(--sp-1)}
   #scale-guidance{margin-block:calc(var(--sp-2) - var(--sp-3))}
   /* A 390px-tall viewport leaves the body a couple of hundred px, and the
      plate is now always in the flow rather than only after a valid parse, so
-     at 300px it would be most of the scrollport. The pan stays readable at 120px - it is a
-     where-do-the-notes-sit mock, not the card. */
-  #scale-preview{max-width:120px}
+     at 300px it would be most of the scrollport. The pan is sized by the two
+     expressions below (SMALL and LARGE), never by a media query. */
 }
 /* Desktop: the sheet was pinned at the phone's 520px whatever the viewport,
    which on a 1440px screen is a narrow column floating in the middle of a wide
@@ -978,7 +977,6 @@ footer.seq{row-gap:var(--sp-1)}
    Gated on both axes like the ramp, so no phone in landscape picks it up. */
 @media (min-width:640px) and (min-height:700px){
   .sheetsurf{max-width:clamp(520px, 52vw, 680px)}
-  #scale-preview{max-width:340px}
 }
 /* No min-height here: .mode carries the 44px minimum for every .mode on the
    page, sheet buttons included. */
@@ -1034,8 +1032,6 @@ footer.seq{row-gap:var(--sp-1)}
 #scale-layout-toggle:disabled, #scale-layout-toggle[aria-disabled="true"],
 #scale-layout-toggle:disabled + #scale-layout-hint,
 #scale-drawer .mode:disabled, #scale-fine-toggle:disabled{opacity:.5; cursor:default}
-#scale-layout-toggle span{display:none; margin-left:var(--sp-2)}
-#scale-layout-toggle.on span{display:inline}
 #scale-drawer{display:flex; flex-direction:column; gap:var(--sp-2)}
 #scale-drawer[hidden]{display:none}
 #scale-drawer .mirror .mode{flex:1 1 0; min-width:0}
@@ -1044,23 +1040,45 @@ footer.seq{row-gap:var(--sp-1)}
 #scale-drawer-status{font:400 12px/1.5 Bitter, serif; color:#c4bcab; min-height:3em; text-align:center}
 #scale-drawer-status.warn{color:#e3b25c}
 #scale-layout-state{color:#e3b25c}
-/* Dual input: the plate band lives in .scalestage, above the note fields, and
-   is sticky at all times, so the pan stays in view while a field is typed in
-   (plan section 3). With the drawer open it keeps its older rules, now keyed to
-   the drawer's own state. */
-.scalestage{display:flex; flex-direction:column; gap:var(--sp-3)}
+/* Dual input, two sizes (plan 3.1). The pan has exactly two widths and no
+   other rule sizes it: SMALL left of the four fields while the sheet is the
+   page, LARGE while Adjust layout is up. --adj-reserve is the room the layer
+   keeps for controls under the pan (one column) or the room it gives the
+   chrome (two columns, set in the container query below). */
+#scale-sheet:not(.adjusting) #scale-preview{width:clamp(88px, 30cqw, 160px)}
+#scale-sheet.adjusting #scale-preview{--adj-reserve:232px;
+  width:clamp(160px, min(100cqw, calc(100cqh - var(--adj-reserve))), 480px)}
+/* The stage: the small pan and its caption in column one, the four fields in
+   column two. The column is as wide as the pan alone: the caption and hint are
+   0-wide and stretch, so their text never widens it. */
+.scalestage{display:grid; grid-template-columns:auto minmax(0,1fr); gap:var(--sp-3); align-items:start}
 .scalecol{display:flex; flex-direction:column; gap:var(--sp-3); min-width:0}
-.scalestage > #scale-plate-band{position:sticky; top:0; z-index:2; background:#1f1b15;
-  padding-bottom:var(--sp-1)}
-.scalestage #scale-preview{width:clamp(110px, calc(100cqh - 260px), 300px); max-width:none}
-.sheetbody:has(#scale-layout-zone.open) #scale-preview{width:100%; max-width:min(300px, 31dvh)}
-.sheetbody:has(#scale-layout-zone.open):has(input:focus, textarea:focus, #scale-swatches button:focus)
-  #scale-plate-band{position:static}
-.sheetbody:has(#scale-layout-zone.nostick) #scale-plate-band{position:static}
+.pancol{position:sticky; top:0; z-index:2; display:flex; flex-direction:column; gap:var(--sp-1)}
+.pancol > #scale-layout-row{width:0; min-width:100%}
+.pancol #scale-layout-toggle{width:100%; white-space:normal; text-align:center}
+.pancol #scale-layout-toggle:not(:disabled):not([aria-disabled="true"]) + #scale-layout-hint{display:none}
+.pancol:has(#scale-layout-toggle:not(:disabled):not([aria-disabled])) #scale-plate-band{cursor:pointer}
+.sheetbody:has(#scale-layout-zone.nostick) #scale-pancol{position:static}
 .sheetbody{scroll-padding-top:var(--plate-band-h, 0px)}
-.sheetbody:has(#scale-layout-zone.open):has(input:focus, textarea:focus, #scale-swatches button:focus){scroll-padding-top:0}
-@media (min-width:640px) and (min-height:700px){
-  .sheetbody:has(#scale-layout-zone.open) #scale-preview{max-width:340px}
+/* Adjust layout is a layer over the sheet: the head, the pan and the drawer
+   stay; every field, the scale line, the swatches and the footer step aside. */
+#scale-sheet.adjusting .sheethead:not(#scale-adjust-head), #scale-sheet.adjusting #scale-name-row,
+#scale-sheet.adjusting .scalecol, #scale-sheet.adjusting .sheetbody > .fieldrow,
+#scale-sheet.adjusting .sheetbody > .ctlrow, #scale-sheet.adjusting #scale-layout-row,
+#scale-sheet.adjusting #scale-generate, #scale-sheet.adjusting #scale-delete-row{display:none}
+#scale-sheet.adjusting .scalestage{display:contents}
+#scale-sheet.adjusting #scale-pancol{background:#1f1b15; padding-bottom:var(--sp-1)}
+#scale-adjust-title:focus{outline:none}
+@media (orientation:landscape) and (max-height:500px){
+  #scale-sheet.adjusting .sheetsurf{max-width:none}
+}
+@container surf (min-width:600px) and (min-aspect-ratio:1/1){
+  #scale-sheet.adjusting #scale-preview{--adj-reserve:72px}
+  #scale-sheet.adjusting .sheetbody{display:grid; grid-template-columns:auto 1fr; column-gap:var(--sp-3); row-gap:0; align-content:start}
+  #scale-sheet.adjusting #scale-pancol{grid-column:1; grid-row:1 / span 30; align-self:start; position:static}
+  #scale-sheet.adjusting .sheetbody > :not(#scale-pancol){grid-column:2}
+  #scale-sheet.adjusting #scale-plate-band #scale-drawer-status{width:0; min-width:100%}
+  .sheetbody{scroll-padding-top:0}
 }
 /* The four note fields and the scale line. */
 #scale-fields{display:flex; flex-direction:column; gap:var(--sp-2)}
@@ -1092,51 +1110,8 @@ footer.seq{row-gap:var(--sp-1)}
 #scale-sheet.tiny .sheetsurf{max-width:none; padding-inline:max(var(--sp-3), calc((100% - 520px) / 2 + var(--sp-3)))}
 /* The app's settings trigger paints over the open sheet; it has no job there. */
 body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
-@container surf (min-width:600px){
-  .scalestage{display:grid; grid-template-columns:auto minmax(0,1fr); column-gap:var(--sp-4); align-items:start}
-  .scalestage > #scale-plate-band{padding-bottom:0}
-  .scalestage #scale-preview{width:clamp(200px, calc(100cqh - 306px), 300px)}
-  .sheetbody{scroll-padding-top:0}
-}
-@media (min-width:640px) and (min-height:700px){
-  .scalestage #scale-preview{width:clamp(200px, calc(100cqh - 306px), 340px)}
-}
-#scale-sheet.side .scalestage{display:grid; grid-template-columns:auto minmax(0,1fr); column-gap:var(--sp-2); align-items:start}
-#scale-sheet.side .scalestage > #scale-plate-band{padding-bottom:0}
-#scale-sheet.side .scalestage #scale-preview{width:min(calc(100cqh - 172px), 46cqw); padding:4px}
-#scale-sheet.kbup.side .scalestage #scale-preview{width:min(calc(100cqh - 120px), 50cqw)}
 #scale-sheet.side #scale-fields .sheetlabel, #scale-sheet.side .scalecol > .fieldrow > .sheetlabel{font-size:8.5px; letter-spacing:.1em}
 #scale-sheet.side #scale-fields-head{display:none}
-#scale-sheet.side .sheetbody:not(:has(#scale-layout-zone.open)){scroll-padding-top:0}
-#scale-sheet.side .sheetbody:has(#scale-layout-zone.open) #scale-box{min-height:110px}
-/* Drawer open: the stage dissolves into the body, so the band's sticky box is the
-   whole scroll and the plate stays in view above the drawer. */
-#scale-sheet .sheetbody:has(#scale-layout-zone.open) .scalestage{display:contents}
-@media (max-height:520px) and (min-width:560px){
-  /* The band sits beside the controls here, not over them: nothing to pad for. */
-  .sheetbody{scroll-padding-top:0}
-  #scale-sheet .sheetbody:has(#scale-layout-zone.open){display:grid; grid-template-columns:auto 1fr; column-gap:var(--sp-3); row-gap:0; align-content:start}
-  #scale-sheet .sheetbody:has(#scale-layout-zone.open) .scalestage{display:contents}
-  #scale-sheet .sheetbody:has(#scale-layout-zone.open) #scale-plate-band{grid-column:1; grid-row:1 / span 30; align-self:start}
-  #scale-sheet .sheetbody:has(#scale-layout-zone.open) #scale-plate-band #scale-drawer-status{width:0; min-width:100%}
-  #scale-sheet .sheetbody:has(#scale-layout-zone.open):has(.panhit:focus-visible) #scale-plate-band{position:static}
-  #scale-sheet .sheetbody:has(#scale-layout-zone.open) > :not(.scalestage){grid-column:2}
-  #scale-sheet .sheetbody:has(#scale-layout-zone.open) .scalecol{grid-column:2; margin-bottom:var(--sp-3)}
-  #scale-sheet .sheetbody:has(#scale-layout-zone.open) > :not(.scalestage):not(:last-child){margin-bottom:var(--sp-3)}
-  #scale-sheet .sheetbody:has(#scale-layout-zone.open) #scale-preview{width:clamp(150px, calc(100dvh - 170px), 232px); max-width:none}
-}
-@container surf (min-width:600px){
-  /* The band sits beside the controls here, not over them: nothing to pad for. */
-  .sheetbody{scroll-padding-top:0}
-  #scale-sheet .sheetbody:has(#scale-layout-zone.open){display:grid; grid-template-columns:auto 1fr; column-gap:var(--sp-3); row-gap:0; align-content:start}
-  #scale-sheet .sheetbody:has(#scale-layout-zone.open) .scalestage{display:contents}
-  #scale-sheet .sheetbody:has(#scale-layout-zone.open) #scale-plate-band{grid-column:1; grid-row:1 / span 30; align-self:start}
-  #scale-sheet .sheetbody:has(#scale-layout-zone.open) #scale-plate-band #scale-drawer-status{width:0; min-width:100%}
-  #scale-sheet .sheetbody:has(#scale-layout-zone.open) > :not(.scalestage){grid-column:2}
-  #scale-sheet .sheetbody:has(#scale-layout-zone.open) .scalecol{grid-column:2; margin-bottom:var(--sp-3)}
-  #scale-sheet .sheetbody:has(#scale-layout-zone.open) > :not(.scalestage):not(:last-child){margin-bottom:var(--sp-3)}
-  #scale-sheet .sheetbody:has(#scale-layout-zone.open) #scale-preview{width:clamp(150px, calc(100dvh - 170px), 232px); max-width:none}
-}
 /* The selection ring is drawn in the SVG (pan(), .pansel) rather than in CSS:
    it has to sit on ONE note at the radius that note was drawn at, which is a
    solved number no selector can reach. What CSS owns is the focus treatment of
@@ -1389,6 +1364,13 @@ html.about-open{overflow:hidden}
              aria-label="Back to the practice screen">&larr; BACK</button>
      <h2 id="scale-title">Add a scale</h2>
    </div>
+   <!-- Adjust layout is a full-screen layer over this sheet (plan 3.3): while
+        #scale-sheet.adjusting this head replaces the one above. -->
+   <div class="sheethead" id="scale-adjust-head" hidden>
+     <button class="mode" type="button" id="scale-adjust-back"
+             aria-label="Back to the scale">&larr; BACK</button>
+     <h2 id="scale-adjust-title" tabindex="-1">Adjust layout</h2>
+   </div>
    <!-- The scrolling part. The primary below it is deliberately OUTSIDE, so it
         cannot be pushed under the fold by a tall Edit sheet or a short
         viewport - see .sheetbody in the stylesheet. DOM order is unchanged. -->
@@ -1405,10 +1387,17 @@ html.about-open{overflow:hidden}
          teaching of the seed grammar there is - keep all three saying the same
          thing, and keep the placeholder a seed that actually parses. -->
     <div class="scalestage">
+    <div class="pancol" id="scale-pancol">
     <div id="scale-plate-band">
       <div id="scale-preview" role="img"
            aria-label="Preview of where the notes sit on the pan" hidden></div>
       <div id="scale-drawer-status" aria-live="polite" aria-atomic="true" hidden></div>
+    </div>
+    <div class="editrow" id="scale-layout-row">
+      <button class="mode" type="button" id="scale-layout-toggle" aria-label="Adjust layout"
+              aria-expanded="false" aria-controls="scale-drawer" disabled>ADJUST LAYOUT</button>
+      <p class="sheethint" id="scale-layout-hint">Type a scale to adjust its layout.</p>
+    </div>
     </div>
     <div class="scalecol">
     <!-- Dual input: four note fields are the default way to write the scale and
@@ -1441,6 +1430,8 @@ html.about-open{overflow:hidden}
       <p class="sheethint" id="scale-fields-note"></p>
       <p class="sr-only" id="scale-fields-live" aria-live="polite"></p>
     </div>
+    </div>
+    </div>
     <div class="fieldrow">
       <label class="sheetlabel" for="scale-box">SCALE: (DING) TOP NOTES | OPTIONAL INNER NOTES</label>
       <span class="sheetlabel" id="scale-label-2">[NOTE] = A BOTTOM NOTE, WRITTEN WHERE ITS PITCH FALLS</span>
@@ -1467,8 +1458,6 @@ html.about-open{overflow:hidden}
       <div id="scale-refusal" aria-live="polite"></div>
       <p class="sheethint" id="scale-line-note"></p>
     </div>
-    </div>
-    </div>
     <!-- The pan mock: where the notes actually land - ding, rim zig-zag, inner
          pair, dashed bottom ring in x-ray view - drawn by the SAME pan()
          renderer the cards use, with no chord chosen, so what is previewed
@@ -1479,11 +1468,6 @@ html.about-open{overflow:hidden}
          pan() renderer the cards use, with no chord chosen, so what is
          previewed cannot drift from what GENERATE CARDS produces. -->
     <div id="scale-layout-zone">
-      <div class="editrow" id="scale-layout-row">
-        <button class="mode" type="button" id="scale-layout-toggle" aria-label="Adjust layout"
-                aria-expanded="false" aria-controls="scale-drawer" disabled>ADJUST LAYOUT<span aria-hidden="true">×</span></button>
-        <p class="sheethint" id="scale-layout-hint">Type a scale to adjust its layout.</p>
-      </div>
       <div id="scale-drawer" role="group" aria-label="Layout" hidden>
         <p class="sheethint" id="scale-drawer-hint" hidden></p>
         <div class="editrow">
@@ -10274,6 +10258,9 @@ const fieldsLive = document.getElementById("scale-fields-live");
 const fieldsNote = document.getElementById("scale-fields-note");
 const lineNote = document.getElementById("scale-line-note");
 const drawerBtn  = document.getElementById("scale-layout-toggle");
+const adjustHead = document.getElementById("scale-adjust-head");
+const adjustBack = document.getElementById("scale-adjust-back");
+const adjustTitle = document.getElementById("scale-adjust-title");
 const layoutHint = document.getElementById("scale-layout-hint");
 const layoutNote = document.getElementById("scale-layout-state");
 const drawerBox  = document.getElementById("scale-drawer");
@@ -10409,9 +10396,6 @@ const READY_TEXT = "Layout is ready again.";
 const HINT_EMPTY = "Type a scale to adjust its layout.";
 const HINT_GUESS = "Layout is a guess. Open ADJUST LAYOUT to move a note, change the handpan orientation, or mirror the pan.";
 const DRAWER_HINT = "Tap a note, then tap another note in the same ring to swap them. Or hold a note and drag it.";
-const DRAWER_ZONE = [drawerBtn, fineBtn, notePrev, noteNext, seatPrev, seatNext, resetBtn, mirrorTop, mirrorBot,
-  anchorOne, anchorBetween, previewBox];
-const inDrawerZone = (el) => DRAWER_ZONE.includes(el) || isHit(el);
 
 /** One line under the plate, read once. The same sentence twice in a row is
  *  cleared first, or a live region would stay silent on the repeat. */
@@ -10485,6 +10469,11 @@ function paintLayout() {
  *  Where nothing can be measured (no layout) it stays stuck. */
 const BAND_MIN_ROOM = 44;
 function syncBand() {
+  if (!sheet.classList.contains("adjusting")) {
+    layoutZone.classList.remove("nostick");
+    if (bandPad !== "0px") { bandPad = "0px"; document.documentElement.style.setProperty("--plate-band-h", bandPad); }
+    return;
+  }
   const high = (el) => (el.getBoundingClientRect ? el.getBoundingClientRect().height : el.offsetHeight) || 0;
   const wide = (el) => (el.getBoundingClientRect ? el.getBoundingClientRect().width : el.offsetWidth) || 0;
   const band = high(plateBand);
@@ -10577,44 +10566,21 @@ function hasTwoNoteRing() {
   return Object.values(n).some((c) => c >= 2);
 }
 const edgeOf = (el, side) => (el.getBoundingClientRect ? el.getBoundingClientRect()[side] : 0);
-/** Put the toggle back where the tap found it, unless the sticky band would
- *  cover it; then just below the band, or up far enough to show the options. */
-function keepToggle(at) {
-  bandPort.scrollTop += edgeOf(drawerBtn, "top") - at;
-  const room = edgeOf(bandPort, "top") + (parseFloat(bandPad) || 0);
-  const top = edgeOf(drawerBtn, "top");
-  const over = edgeOf(drawerBox, "bottom") - edgeOf(bandPort, "bottom");
-  if (top < room) bandPort.scrollTop -= room - top;
-  else if (over > 0) bandPort.scrollTop += Math.min(over, top - room);
-}
 function openDrawer() {
   if (!boxOk || drawerOpen) return;
-  const at = edgeOf(drawerBtn, "top");
   drawerOpen = true;
   drawerPaused = false;
   previewBox.addEventListener("touchmove", plateTouchMove, { passive: false });
   drawerStatus.textContent = "";
   drawerStatus.classList.remove("warn");
   paintLayout();
-  focusFirstNext = true;
   repaintPlate();
-  keepToggle(at);
-  layoutZone.scrollIntoView({ block: "nearest", behavior: "auto" });
-  drawerBtn.scrollIntoView({ block: "nearest", behavior: "auto" });
-  const note = document.activeElement;
-  if (window.getComputedStyle && getComputedStyle(plateBand).position === "static" &&
-      note && note.closest && note.closest("#scale-preview")) {
-    previewBox.scrollIntoView({ block: "start", behavior: "auto" });
-    note.scrollIntoView({ block: "nearest", behavior: "auto" });
-  }
   if (!hasTwoNoteRing()) layoutStatus("This pan has no ring with two notes, so there is nothing to rearrange.");
 }
-/** Close the drawer. Focus follows only when it was inside the zone, or the
- *  toggle itself closed it: to the toggle, which stays focusable (aria-disabled
- *  in place of disabled) when the scale does not parse. */
-function closeDrawer(viaToggle) {
+/** Close the drawer. Focus is the caller's: hideAdjust() puts it back on the
+ *  toggle once the toggle is rendered again. */
+function closeDrawer() {
   if (!drawerOpen) return;
-  const inside = viaToggle || inDrawerZone(document.activeElement);
   cancelGesture();
   previewBox.removeEventListener("touchmove", plateTouchMove, { passive: false });
   drawerOpen = false;
@@ -10623,9 +10589,42 @@ function closeDrawer(viaToggle) {
   pickMoved = false;
   drawerStatus.textContent = "";
   drawerStatus.classList.remove("warn");
-  if (inside) { drawerBtn.disabled = false; drawerBtn.focus(); }
   paintLayout();
   repaintPlate();
+}
+/* ---- Adjust layout, the full-screen layer (plan 3.3) ----
+   The layer is the drawer plus a class: opening it pushes ONE state-only entry
+   at the sheet's own route, so the back gesture returns to the sheet. */
+let adjustRouted = false;
+let pendingAdjustPop = false;
+let closeAfterAdjustPop = false;
+let sheetScroll = 0;
+function showAdjust() {
+  if (!(sheetOpen && boxOk && !drawerOpen && !pendingAdjustPop)) return;
+  history.pushState({ scalePage: true, adjust: true }, "", sheetRoute());
+  adjustRouted = true;
+  enterAdjust();
+}
+function enterAdjust() {
+  sheetScroll = bandPort.scrollTop;
+  sheet.classList.add("adjusting");
+  adjustHead.hidden = false;
+  sheet.setAttribute("aria-labelledby", "scale-adjust-title");
+  openDrawer();
+  bandPort.scrollTop = 0;
+  adjustTitle.focus({ preventScroll: true });
+}
+function hideAdjust() {
+  sheet.classList.remove("adjusting");
+  adjustHead.hidden = true;
+  sheet.setAttribute("aria-labelledby", "scale-title");
+  closeDrawer();
+  bandPort.scrollTop = sheetScroll;
+  drawerBtn.focus({ preventScroll: true });
+}
+function closeAdjust() {
+  hideAdjust();
+  if (adjustRouted) { adjustRouted = false; pendingAdjustPop = true; history.back(); }
 }
 /** Leaving the sheet or opening a fresh session: no focus, no status. */
 function dropDrawer() {
@@ -11505,6 +11504,10 @@ function hideSheet() {
   editingId = null;
   seedPrefill = null;
   dropDrawer();
+  sheet.classList.remove("adjusting");
+  adjustHead.hidden = true;
+  sheet.setAttribute("aria-labelledby", "scale-title");
+  adjustRouted = pendingAdjustPop = closeAfterAdjustPop = false;
   setInert(false, background);
   (sheetOpener || addChip).focus();
   sheetOpener = null;
@@ -11514,6 +11517,8 @@ function hideSheet() {
 // started and the next back press belongs to whatever came before the page.
 function closeScaleSheet() {
   if (!sheetOpen) return;
+  if (drawerOpen) closeAdjust();
+  if (pendingAdjustPop) { closeAfterAdjustPop = true; return; }
   const routed = sheetRouted;
   sheetRouted = false;
   hideSheet();
@@ -11525,7 +11530,21 @@ let pendingPop = false;
 // The browser's way out: the back gesture, or a swipe. The entry is already
 // gone, so this only takes the page down.
 window.addEventListener("popstate", () => {
+  if (pendingAdjustPop) {
+    pendingAdjustPop = false;
+    if (closeAfterAdjustPop) { closeAfterAdjustPop = false; closeScaleSheet(); }
+    return;
+  }
   if (pendingPop) { pendingPop = false; syncRoute(); return; }
+  const atSheet = location.hash === sheetRoute();
+  if (drawerOpen) {
+    adjustRouted = false;
+    hideAdjust();
+    if (atSheet) return;
+  } else if (atSheet && sheetOpen && history.state && history.state.adjust) {
+    if (boxOk) { adjustRouted = true; enterAdjust(); } else { pendingAdjustPop = true; history.back(); }
+    return;
+  }
   if (aboutOpen) { hideAbout(); return; }
   if (location.hash === ABOUT_ROUTE) { syncRoute(); return; }
   if (!sheetOpen) return;
@@ -11824,7 +11843,8 @@ const pickAnchor = (to) => () => {
 };
 anchorOne.onclick = pickAnchor("one");
 anchorBetween.onclick = pickAnchor("between");
-drawerBtn.onclick = () => { if (drawerOpen) closeDrawer(true); else openDrawer(); };
+drawerBtn.onclick = () => { if (drawerOpen) closeAdjust(); else showAdjust(); };
+adjustBack.onclick = closeAdjust;
 notePrev.onclick = () => stepNote(-1);
 noteNext.onclick = () => stepNote(1);
 seatPrev.onclick = () => stepSeat(-1);
@@ -11841,7 +11861,8 @@ drawerBtn.addEventListener("blur", () => {
 // Delegated to the plate: the targets are rewritten on every repaint.
 previewBox.addEventListener("click", (e) => {
   const hit = e.target && e.target.closest ? e.target.closest(".panhit") : null;
-  if (!hit || !drawerOpen || !lastSolved) return;
+  if (!drawerOpen) { if (boxOk && !hit) showAdjust(); return; }
+  if (!hit || !lastSolved) return;
   if (suppressClick) { suppressClick = false; return; }
   const ref = refOfNode(hit);
   if (ref) activateNote(ref, "tap");
@@ -12324,15 +12345,17 @@ function cycleTabStops(stops, e) {
 // Tab is trapped inside: the sheet's own controls, in visual order.
 sheet.addEventListener("keydown", e => {
   if (e.key !== "Tab") return;
-  const stops = [backBtn,
-                 editingId ? nameBox : null,
-                 fieldEls.ding, fieldEls.top, fieldEls.inner, fieldEls.bottom,
-                 scaleBox,
-                 drawerOpen ? previewBox.querySelector('.panhit[tabindex="0"]') : null,
-                 drawerBtn, anchorOne, anchorBetween, mirrorTop, mirrorBot, fineBtn,
-                 notePrev, noteNext, seatPrev, seatNext, resetBtn,
-                 ...swatches.children, genBtn,
-                 editingId ? delBtn : null]
+  const stops = (sheet.classList.contains("adjusting")
+    ? [adjustBack, previewBox.querySelector('.panhit[tabindex="0"]'),
+       anchorOne, anchorBetween, mirrorTop, mirrorBot, fineBtn,
+       notePrev, noteNext, seatPrev, seatNext, resetBtn]
+    : [backBtn,
+       editingId ? nameBox : null,
+       drawerBtn,
+       fieldEls.ding, fieldEls.top, fieldEls.inner, fieldEls.bottom,
+       scaleBox,
+       ...swatches.children, genBtn,
+       editingId ? delBtn : null])
     .filter(isStop);
   if (isHit(document.activeElement) && pickRef && lastSolved) setRover(pickRef);
   cycleTabStops(stops, e);
@@ -12608,7 +12631,7 @@ document.addEventListener("keydown", e => {
     if (e.key === "Escape") {
       e.preventDefault();
       if (drawerOpen && pickRef) putDownPick();
-      else if (drawerOpen) closeDrawer();
+      else if (drawerOpen) closeAdjust();
       else closeScaleSheet();
     }
     return;

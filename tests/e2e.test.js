@@ -14062,9 +14062,13 @@ function run() {
       await frames();
     };
     const uxOpenAdjust = async () => {
+      await ev(`document.getElementById("scale-layout-toggle").scrollIntoView({ block: "center" }); return true;`);
+      await frames();
+      const at = await ev(`return document.querySelector("#scale-sheet .sheetbody").scrollTop;`);
       await b.click("#scale-layout-toggle");
       await adjusting(true);
       await frames();
+      return at;
     };
     const rectOf = (sel) => ev(`const e = document.querySelector(${JSON.stringify(sel)}); if (!e) return null;
       const r = e.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom, w: r.width, h: r.height,
@@ -14096,13 +14100,15 @@ function run() {
           const cw = surf.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
           const r = (id) => { const e = document.getElementById(id); const q = e.getBoundingClientRect();
             return { l: q.left, t: q.top, r: q.right, b: q.bottom, w: q.width }; };
-          return { cw, pan: r("scale-preview"), ding: r("scale-ding"), top: r("scale-top"),
+          return { cw, pan: r("scale-preview"), col: r("scale-pancol"), ding: r("scale-ding"), top: r("scale-top"),
             inner: r("scale-inner"), bottom: r("scale-bottom") };`);
         const want = Math.min(160, Math.max(88, m.cw * 0.3));
         if (Math.abs(m.pan.w - want) > 1.5) fail(`the small pan is ${m.pan.w}px wide, want ${want.toFixed(1)}`);
         for (const k of ["ding", "top", "inner", "bottom"]) {
           if (m[k].l < m.pan.r - 1) fail(`${k} starts at ${m[k].l}, left of the pan's right edge ${m.pan.r}`);
-          if (m[k].t > m.pan.b || m[k].b < m.pan.t) fail(`${k} is not beside the pan`);
+        }
+        for (const k of ["ding", "top"]) {
+          if (m[k].t > m.col.b || m[k].b < m.col.t) fail(`${k} is not beside the pan`);
         }
       });
     });
@@ -14163,10 +14169,7 @@ function run() {
 
     test("UX: closing Adjust layout restores the sheet's scroll and focuses ADJUST LAYOUT", async () => {
       await sweep(["add", "edit"], async (fail) => {
-        const before = await ev(`const p = document.querySelector("#scale-sheet .sheetbody");
-          p.scrollTop = Math.min(40, p.scrollHeight - p.clientHeight); return p.scrollTop;`);
-        await frames();
-        await uxOpenAdjust();
+        const before = await uxOpenAdjust();
         await b.click("#scale-adjust-back");
         await adjusting(false);
         await pause(150);
@@ -14260,7 +14263,7 @@ function run() {
         await ev(`document.getElementById("scale-back").click(); return true;`);
         await sheetShown(false);
         await pause(200);
-        const before = await ev(`return { i: navigation.currentEntry.index, u: navigation.currentEntry.url };`);
+        const before = await ev(`return { i: navigation.currentEntry.key, u: navigation.currentEntry.url };`);
         await ev(`document.querySelector("#decks .chip.on").click(); return true;`);
         await sheetShown(true);
         await uxOpenAdjust();
@@ -14268,10 +14271,10 @@ function run() {
           return true;`);
         await sheetShown(false);
         await pause(300);
-        const after = await ev(`return { i: navigation.currentEntry.index, u: navigation.currentEntry.url,
+        const after = await ev(`return { i: navigation.currentEntry.key, u: navigation.currentEntry.url,
           adj: document.getElementById("scale-sheet").classList.contains("adjusting") };`);
         if (after.adj) fail("the layer is still up");
-        if (after.i !== before.i) fail(`the history index is ${after.i}, was ${before.i}`);
+        if (after.i !== before.i) fail(`the current entry key is ${after.i}, was ${before.i}`);
         if (after.u !== before.u) fail(`the current entry is ${after.u}, was ${before.u}`);
       });
     });

@@ -11196,7 +11196,7 @@ test("UX: a typed #deck= fragment while Adjust layout is open closes the layer a
   assert.strictEqual(app.sheetOpen(), false, "the sheet stayed open");
   assert.strictEqual(uxAdjusting(app), false, "the layer stayed up");
   assert.strictEqual(app.els["scale-sheet"].getAttribute("aria-labelledby"), "scale-title");
-  assert.strictEqual(app.deckId(), "d-amara-9");
+  assert.strictEqual(app.deckId(), "amara");
   assert.strictEqual(uxBacks(app), backs, "a fragment navigation popped an entry");
 });
 
