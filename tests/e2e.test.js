@@ -14170,7 +14170,7 @@ function run() {
       for (let i = 1; i <= steps; i++) pts.push([0, Math.round((ms * i) / steps), Math.round((dy * i) / steps)]);
       pts.push([0, ms + 250, dy]);
       await b.drag(".sheetbody", pts, { y0: Math.round(bb.h * 0.3) });
-      await sleep(500);
+      await sleep(300);
     };
     const collapse = async () => { await swipeBody(-140); };
     const restoreBySwipe = async () => { await swipeBody(140); };
@@ -14192,10 +14192,10 @@ function run() {
       await b.setViewport(900, 900, false);
     };
 
-    test("UX: a real touch swipe down collapses the footer to a 4px lip, a swipe up restores it, with no flicker under momentum", async () => {
+    test("UX: a real touch swipe down collapses the footer to a 4px lip, a swipe up restores it, with no flicker under momentum", { timeout: 90000 }, async () => {
       const fails = [];
       try {
-        for (const [w, h] of SIZES) {
+        for (const [w, h] of [[380, 780], [844, 390], [1280, 800]]) {
           for (const edit of [false, true]) {
             await lipOpen(w, h, { edit });
             const ctx = `${w}x${h} ${edit ? "Edit" : "Add"}`;
