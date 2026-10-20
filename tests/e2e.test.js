@@ -14168,16 +14168,9 @@ function run() {
       const steps = 6;
       const pts = [];
       for (let i = 1; i <= steps; i++) pts.push([0, Math.round((ms * i) / steps), Math.round((dy * i) / steps)]);
+      pts.push([0, ms + 250, dy]);
       await b.drag(".sheetbody", pts, { y0: Math.round(bb.h * 0.3) });
       await sleep(500);
-      let still = 0, last = -1;
-      for (let i = 0; i < 40 && still < 3; i++) {
-        const top = await b.eval(`return document.querySelector("#scale-sheet .sheetbody").scrollTop;`);
-        still = top === last ? still + 1 : 0;
-        last = top;
-        await sleep(60);
-      }
-      await sleep(200);
     };
     const collapse = async () => { await swipeBody(-140); };
     const restoreBySwipe = async () => { await swipeBody(140); };
