@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10418,7 +10418,7 @@ function paintLayout() {
+@@ -10468,7 +10468,7 @@ function paintLayout() {
  /** Rule G-a, G-b, G-e: the band sticks only while the scrollport keeps room
   *  for a control under it, and the scroll padding is its height exactly then.
   *  Where nothing can be measured (no layout) it stays stuck. */
 -const BAND_MIN_ROOM = 44;
 +const BAND_MIN_ROOM = 48;
  function syncBand() {
-   const high = (el) => (el.getBoundingClientRect ? el.getBoundingClientRect().height : el.offsetHeight) || 0;
-   const wide = (el) => (el.getBoundingClientRect ? el.getBoundingClientRect().width : el.offsetWidth) || 0;
+   if (!sheet.classList.contains("adjusting")) {
+     layoutZone.classList.remove("nostick");

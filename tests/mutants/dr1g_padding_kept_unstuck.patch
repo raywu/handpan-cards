@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10427,7 +10427,7 @@ function syncBand() {
-   const beside = wide(plateBand) > 0 && wide(bandPort) > 0 && wide(plateBand) < wide(bandPort) * 0.75;
+@@ -10482,7 +10482,7 @@ function syncBand() {
+   const beside = wide(panCol) > 0 && wide(bandPort) > 0 && wide(panCol) < wide(bandPort) * 0.75;
    const stuck = !beside && !(port > 0 && port - band < BAND_MIN_ROOM);
    layoutZone.classList.toggle("nostick", !beside && !stuck);
 -  const pad = (stuck ? band : 0) + "px";
 +  const pad = band + "px";
    if (bandPad !== pad) { bandPad = pad; document.documentElement.style.setProperty("--plate-band-h", pad); }
  }
- const bandPort = document.querySelector(".sheetbody") || plateBand;
+ const bandPort = document.querySelector(".sheetbody") || panCol;

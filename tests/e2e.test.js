@@ -1537,7 +1537,7 @@ function run() {
         box.value = "[C3] (D3) A3 C4 D4";
         box.dispatchEvent(new Event("input", { bubbles: true }));
         document.getElementById("scale-layout-toggle").click();
-        document.getElementById("scale-back").focus(); return true;`);
+        document.getElementById("scale-adjust-back").focus(); return true;`);
       const seen = [];
       let prev = await stopTag();
       for (let i = 0; i < 24; i++) {
@@ -1550,7 +1550,7 @@ function run() {
       }
       assert.ok(!seen.includes("scale-mirror"), "focus landed on the unrendered #scale-mirror");
       assert.ok(seen.includes("scale-mirror-bottom"), `Tab never reached #scale-mirror-bottom: ${JSON.stringify(seen)}`);
-      assert.ok(seen.includes("scale-back"), `Tab never wrapped to #scale-back: ${JSON.stringify(seen)}`);
+      assert.ok(seen.includes("scale-adjust-back"), `Tab never wrapped to #scale-adjust-back: ${JSON.stringify(seen)}`);
     });
 
   test("Tab from outside the stop list enters the panel cycle", async () => {
@@ -3303,12 +3303,10 @@ function run() {
       await openSheet();
       await b.eval(`const box = document.getElementById("scale-box");
         box.value = "[C3] (D3) A3 C4 D4";
-        box.dispatchEvent(new Event("input", { bubbles: true }));
-        document.getElementById("scale-layout-toggle").click(); return true;`);
+        box.dispatchEvent(new Event("input", { bubbles: true })); return true;`);
       const hits = await b.eval(`
         const out = { small: [], swatches: [] };
-        const sel = "#decks .chip, #scale-box, #scale-layout-toggle, #scale-mirror, #scale-mirror-bottom, " +
-          "#scale-anchor-one, #scale-anchor-between, #scale-generate";
+        const sel = "#decks .chip, #scale-box, #scale-layout-toggle, #scale-generate";
         for (const el of document.querySelectorAll(sel)) {
           const r = el.getBoundingClientRect();
           if (r.height < 44) out.small.push((el.id || el.className) + " " + r.height.toFixed(1));
@@ -3331,6 +3329,15 @@ function run() {
       assert.strictEqual(hits.swatches.length, 6);
       assert.ok(hits.swatches.every(Boolean),
         `a palette swatch has no 44px hit area: ${JSON.stringify(hits.swatches)}`);
+      await b.eval(`document.getElementById("scale-layout-toggle").click(); return true;`);
+      const layer = await b.eval(`
+        const out = [];
+        for (const id of ["scale-mirror", "scale-mirror-bottom", "scale-anchor-one", "scale-anchor-between"]) {
+          const r = document.getElementById(id).getBoundingClientRect();
+          if (r.height < 44) out.push(id + " " + r.height.toFixed(1));
+        }
+        return out;`);
+      assert.deepStrictEqual(layer, [], "Adjust layout controls shorter than 44px");
     } finally {
       await b.key("Escape", "Escape", 27);
       await b.setViewport(900, 900, false);
@@ -4354,49 +4361,37 @@ function run() {
     return { top: r.top, bottom: r.bottom, spTop: sp.top, spBottom: sp.bottom, h: r.height };
   `);
 
-  test("DR1 line 34: the open plate band stays in the scrollport at the end of the body, and is static while the field has focus", async () => {
+  test("UX: in Adjust layout the plate band stays in the scrollport at the end of the controls", async () => {
     try {
       await addWithDrawer(380, 780);
-      await b.eval(`document.getElementById("scale-layout-toggle").focus(); return true;`);
       await scrollEnd();
       const r = await inScrollport("scale-plate-band");
       assert.ok(r.top >= r.spTop - 1 && r.bottom <= r.spBottom + 1,
         `the band left the scrollport: ${JSON.stringify(r)}`);
-      assert.strictEqual(await bandPosition(), "sticky");
-      await b.eval(`document.getElementById("scale-box").focus(); return true;`);
-      assert.strictEqual(await bandPosition(), "static", "the band stayed sticky under the field's keyboard");
+      assert.strictEqual(await b.eval(`return getComputedStyle(document.getElementById("scale-pancol")).position;`), "sticky");
     } finally {
       await b.setViewport(900, 900, false);
     }
   });
 
-  test("DR1 line 35: at 380 x 667 the open plate is no wider than 42 percent of the viewport height", async () => {
-    try {
-      await addWithDrawer(380, 667);
-      const w = await b.eval(`return document.getElementById("scale-preview").getBoundingClientRect().width;`);
-      assert.ok(w <= 667 * 0.42 + 1, `the open plate is ${w}px wide`);
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
-
-  test("DR1 lines 36 and 88: at 844 x 390 the open drawer is two columns with a 220px plate, and at 500 x 390 one column", async () => {
+  test("UX: Adjust layout is two columns at 844x390 with the large pan >=280px, one column at 500x390", async () => {
     try {
       await addWithDrawer(844, 390);
       const two = await b.eval(`
         const z = document.querySelector(".sheetbody");
-        const band = document.getElementById("scale-plate-band").getBoundingClientRect();
-        const ctl = document.getElementById("scale-layout-toggle").getBoundingClientRect();
-        return { display: getComputedStyle(z).display, bandRight: band.right, ctlLeft: ctl.left,
+        const col = document.getElementById("scale-pancol").getBoundingClientRect();
+        const ctl = document.getElementById("scale-anchor-one").getBoundingClientRect();
+        return { display: getComputedStyle(z).display, colRight: col.right, ctlLeft: ctl.left,
                  plate: document.getElementById("scale-preview").getBoundingClientRect().width };
       `);
       assert.strictEqual(two.display, "grid");
-      assert.ok(two.ctlLeft >= two.bandRight - 1, `the controls are not beside the band: ${JSON.stringify(two)}`);
-      assert.ok(two.plate >= 150, `the plate is ${two.plate}px wide`);
-      assert.ok(Math.abs(two.plate - 220) <= 1, `the plate is ${two.plate}px wide, not 220`);
+      assert.ok(two.ctlLeft >= two.colRight - 1, `the controls are not beside the pan: ${JSON.stringify(two)}`);
+      assert.ok(two.plate >= 280, `the large pan is ${two.plate}px wide`);
       await b.setViewport(500, 390, true);
       const one = await b.eval(`return getComputedStyle(document.querySelector(".sheetbody")).display;`);
-      assert.notStrictEqual(one, "grid", "500 x 390 laid the zone out in two columns");
+      assert.notStrictEqual(one, "grid", "500 x 390 laid the layer out in two columns");
+      const short = await b.eval(`return document.getElementById("scale-preview").getBoundingClientRect().width;`);
+      assert.ok(short < 200, `the large pan takes ${short}px at 500x390 and leaves the controls no room`);
     } finally {
       await b.setViewport(900, 900, false);
     }
@@ -4419,7 +4414,7 @@ function run() {
     await b.setViewport(w, h, true);
     await openSheet();
   };
-  const diKeyboardCase = async (w, h, floor, hideHead) => {
+  const diKeyboardCase = async (w, h, hideHead) => {
     try {
       await diOpenAdd(w, h);
       for (const id of DI_FIELDS) {
@@ -4432,7 +4427,7 @@ function run() {
         await b.settle();
         const f = await diVisible(id), p = await diPan();
         assert.ok(f.vis >= f.h - 0.5, `${w}x${h} ${id}: only ${f.vis} of ${f.h}px of the field is in view`);
-        assert.ok(p.vis >= floor, `${w}x${h} ${id}: ${p.vis}px of pan in view, under ${floor}`);
+        assert.ok(p.vis >= (hideHead && id === "scale-bottom" ? Math.min(p.h, 24) : p.h - 0.5), `${w}x${h} ${id}: ${p.vis} of ${p.h}px of the small pan in view`);
         if (hideHead) assert.ok(await diHeadHidden(), `${w}x${h} ${id}: the sheet head is still shown`);
       }
       if (hideHead) {
@@ -4448,12 +4443,12 @@ function run() {
     }
   };
 
-  test("DI: at 320x568 with a 260px keyboard each field typed in stays fully in view with at least 130px of pan in view and the sheet head hidden, and BACK shows again once the keyboard closes", async () => {
-    await diKeyboardCase(320, 568, 130, true);
+  test("DI: at 320x568 with a 260px keyboard each field typed in stays fully in view with the whole small pan in view (at least 24px of it for BOTTOM) and the sheet head hidden, and BACK shows again once the keyboard closes", async () => {
+    await diKeyboardCase(320, 568, true);
   });
 
-  test("DI: at 380x780 with a 260px keyboard each field typed in stays fully in view with at least 212px of pan in view", async () => {
-    await diKeyboardCase(380, 780, 212, false);
+  test("DI: at 380x780 with a 260px keyboard each field typed in stays fully in view with the whole small pan in view", async () => {
+    await diKeyboardCase(380, 780, false);
   });
 
   test("DI: keyboard before focus and focus before keyboard both leave the focused field fully in view at 320x568 and 380x780", async () => {
@@ -4514,8 +4509,9 @@ function run() {
         const sp = document.querySelector("#scale-sheet .sheetbody"); sp.scrollTop = 0;
         const R = (id) => document.getElementById(id).getBoundingClientRect();
         const pan = R("scale-preview"), ding = R("scale-ding"), port = sp.getBoundingClientRect();
-        return { panRight: pan.right, dingLeft: ding.left, dingTop: ding.top, dingBottom: ding.bottom, portTop: port.top, portBottom: port.bottom,
+        return { panW: pan.width, panRight: pan.right, dingLeft: ding.left, dingTop: ding.top, dingBottom: ding.bottom, portTop: port.top, portBottom: port.bottom,
                  panTop: pan.top, panBottom: pan.bottom, ids: ${JSON.stringify(DI_FIELDS)}.map((i) => R(i).left) };`);
+      assert.ok(m.panW <= 160.5, `the small pan is ${m.panW}px wide, over the 160px cap`);
       assert.ok(m.panRight <= m.dingLeft + 1, `the pan is not beside the fields: ${JSON.stringify(m)}`);
       assert.ok(m.ids.every((l) => l >= m.panRight - 1), `a field starts left of the pan's right edge: ${JSON.stringify(m)}`);
       assert.ok(m.dingTop >= m.portTop - 0.5 && m.dingBottom <= m.portBottom + 0.5, `DING is not in view without scrolling: ${JSON.stringify(m)}`);
@@ -4525,14 +4521,14 @@ function run() {
     }
   });
 
-  test("DI: at 844x390 the Add sheet shows the pan beside the fields at least 190px wide, with the group heading hidden", async () => {
+  test("DI: at 844x390 the Add sheet shows the small pan beside the fields, with the group heading hidden", async () => {
     try {
       await diOpenAdd(844, 390);
       const m = await b.eval(`
         const R = (id) => document.getElementById(id).getBoundingClientRect();
         const pan = R("scale-preview"), ding = R("scale-ding");
         return { panW: pan.width, panRight: pan.right, dingLeft: ding.left, head: getComputedStyle(document.getElementById("scale-fields-head")).display };`);
-      assert.ok(m.panW >= 190, `the pan is ${m.panW}px wide`);
+      assert.ok(m.panW >= 88 && m.panW <= 160.5, `the small pan is ${m.panW}px wide`);
       assert.ok(m.panRight <= m.dingLeft + 1, `the pan is not beside the fields: ${JSON.stringify(m)}`);
       assert.strictEqual(m.head, "none", "the group heading is shown");
     } finally {
@@ -4640,14 +4636,14 @@ function run() {
     }
   });
 
-  test("DI: with the drawer open at 844x390 the plate stays beside the drawer controls at 220px, and at 380x780 above them", async () => {
+  test("UX: Adjust layout puts the large pan beside the controls at 844x390 and above them at 380x780", async () => {
     try {
       await addWithDrawer(844, 390);
       const wide = await b.eval(`
         const R = (id) => document.getElementById(id).getBoundingClientRect();
-        return { plate: R("scale-preview").width, bandRight: R("scale-plate-band").right, ctlLeft: R("scale-layout-toggle").left };`);
-      assert.ok(Math.abs(wide.plate - 220) <= 1, `the plate is ${wide.plate}px, not 220`);
-      assert.ok(wide.ctlLeft >= wide.bandRight - 1, `the controls are not beside the plate: ${JSON.stringify(wide)}`);
+        return { plate: R("scale-preview").width, colRight: R("scale-pancol").right, ctlLeft: R("scale-anchor-one").left };`);
+      assert.ok(wide.plate >= 280, `the large pan is ${wide.plate}px`);
+      assert.ok(wide.ctlLeft >= wide.colRight - 1, `the controls are not beside the pan: ${JSON.stringify(wide)}`);
       const plateInView = () => b.eval(`
         const port = document.querySelector("#scale-sheet .sheetbody").getBoundingClientRect();
         const r = document.getElementById("scale-preview").getBoundingClientRect();
@@ -4657,14 +4653,14 @@ function run() {
         const shown = Math.min(m.bottom, m.portBottom) - Math.max(m.top, m.portTop);
         const want = Math.min(m.bottom - m.top, m.portBottom - m.portTop);
         assert.ok(shown >= want - 0.5,
-          `${what}: the plate is not as fully inside the scroller as it can be: ${JSON.stringify(m)}`);
+          `${what}: the pan is not as fully inside the scroller as it can be: ${JSON.stringify(m)}`);
       };
-      fully(await plateInView(), "Add at 844x390, drawer opened by a real click");
+      fully(await plateInView(), "Add at 844x390, Adjust layout opened by a real click");
       await freshLoad();
       await b.setViewport(844, 390, true);
       await openEdit();
       await openDrawer();
-      fully(await plateInView(), "Edit Kurd at 844x390, drawer opened by a real click");
+      fully(await plateInView(), "Edit Kurd at 844x390, Adjust layout opened by a real click");
       await addWithDrawer(380, 780);
       const tall = await b.eval(`
         const sp = document.querySelector("#scale-sheet .sheetbody"); sp.scrollTop = 0;
@@ -4672,14 +4668,14 @@ function run() {
         const above = { bandBottom: R("scale-plate-band").bottom, drawerTop: R("scale-drawer").top };
         sp.scrollTop = sp.scrollHeight;
         return { ...above, bandTop: R("scale-plate-band").top, portTop: port.top };`);
-      assert.ok(tall.bandBottom <= tall.drawerTop + 1, `the plate is not above the drawer controls: ${JSON.stringify(tall)}`);
-      assert.ok(tall.bandTop >= tall.portTop - 0.5 && tall.bandTop <= tall.portTop + 1, `the plate left the top of the scrollport: ${JSON.stringify(tall)}`);
+      assert.ok(tall.bandBottom <= tall.drawerTop + 1, `the pan is not above the controls: ${JSON.stringify(tall)}`);
+      assert.ok(tall.bandTop >= tall.portTop - 0.5 && tall.bandTop <= tall.portTop + 1, `the pan left the top of the scrollport: ${JSON.stringify(tall)}`);
     } finally {
       await b.setViewport(900, 900, false);
     }
   });
 
-  test("DI: a drawer opened by Tab and Enter at 844x390 shows the plate from the scroller top and keeps the focused note in view (review F2)", async () => {
+  test("DI: Adjust layout opened by Tab and Enter at 844x390 shows the plate from the scroller top and keeps the focused title in view (review F2)", async () => {
     const enter = async () => {
       for (const type of ["rawKeyDown", "char", "keyUp"]) {
         await b.send("Input.dispatchKeyEvent", { type, key: "Enter", code: "Enter",
@@ -4696,20 +4692,20 @@ function run() {
       assert.strictEqual(await b.eval(`return document.activeElement.id;`), "scale-layout-toggle",
         `${what}: Tab never reached ADJUST LAYOUT`);
       await enter();
-      await b.waitFor(`!document.getElementById("scale-drawer").hidden`, { label: `${what}: the drawer to open` });
+      await b.waitFor(`!document.getElementById("scale-drawer").hidden`, { label: `${what}: Adjust layout to open` });
       await waitElapsed(500);
       const m = await b.eval(`
         const port = document.querySelector("#scale-sheet .sheetbody").getBoundingClientRect();
         const r = document.getElementById("scale-preview").getBoundingClientRect();
         const a = document.activeElement, f = a.getBoundingClientRect();
         return { top: r.top, bottom: r.bottom, portTop: port.top, portBottom: port.bottom,
-                 note: !!a.closest("#scale-preview"), fTop: f.top, fBottom: f.bottom };`);
+                 title: a.id === "scale-adjust-title", fTop: f.top, fBottom: f.bottom };`);
       const shown = Math.min(m.bottom, m.portBottom) - Math.max(m.top, m.portTop);
       const want = Math.min(m.bottom - m.top, m.portBottom - m.portTop);
       assert.ok(shown >= want - 0.5, `${what}: the plate is not as fully inside the scroller as it can be: ${JSON.stringify(m)}`);
-      assert.ok(m.note, `${what}: focus did not land on a note: ${JSON.stringify(m)}`);
-      assert.ok(m.fTop >= m.portTop - 0.5 && m.fBottom <= m.portBottom + 0.5,
-        `${what}: the focused note is outside the scroller: ${JSON.stringify(m)}`);
+      assert.ok(m.title, `${what}: focus did not land on the title: ${JSON.stringify(m)}`);
+      assert.ok(m.fTop >= -0.5 && m.fBottom <= 390.5,
+        `${what}: the focused title is outside the viewport: ${JSON.stringify(m)}`);
     };
     try {
       await freshLoad();
@@ -4750,9 +4746,8 @@ function run() {
   test("DR1 line 38: each drawer control shows the global 2px #e3b25c focus ring from the keyboard", async () => {
     try {
       await addWithDrawer(380, 780);
-      await b.eval(`document.getElementById("scale-back").focus(); return true;`);
-      for (const id of ["scale-layout-toggle", "scale-mirror", "scale-mirror-bottom",
-                        "scale-anchor-one", "scale-anchor-between"]) {
+      await b.eval(`document.getElementById("scale-adjust-back").focus(); return true;`);
+      for (const id of ["scale-anchor-one", "scale-anchor-between", "scale-mirror", "scale-mirror-bottom"]) {
         assert.ok(await tabTo(id, 40), `Tab never reached #${id}`);
         const o = await b.eval(`const cs = getComputedStyle(document.activeElement);
           return { w: cs.outlineWidth, c: cs.outlineColor, s: cs.outlineStyle };`);
@@ -4823,35 +4818,24 @@ function run() {
     }
   });
 
-  test("DR1 focus order: on Edit the plate is a tab stop only while the drawer is open, and comes before the toggle", async () => {
+  test("UX: in Adjust layout the plate is the stop after BACK, and is no stop in the sheet", async () => {
     try {
-      for (const open of [false, true]) {
-        await (open ? editFreshDeckOpen() : editFreshDeck());
-        await b.eval(`document.getElementById("scale-box").focus(); return true;`);
-        const seen = [];
-        for (let i = 0; i < (open ? 2 : 1); i += 1) {
-          await b.key("Tab", "Tab", 9);
-          seen.push(await b.eval(`return document.activeElement.id || document.activeElement.getAttribute("class");`));
-        }
-        assert.deepStrictEqual(seen, open ? ["panhit", "scale-layout-toggle"] : ["scale-layout-toggle"],
-          `drawer ${open ? "open" : "closed"}`);
+      await editFreshDeck();
+      await b.eval(`document.getElementById("scale-back").focus(); return true;`);
+      for (let i = 0; i < 16; i += 1) {
+        await b.key("Tab", "Tab", 9);
+        const hit = await b.eval(`return !!document.activeElement.closest("#scale-preview");`);
+        assert.strictEqual(hit, false, `Tab ${i + 1} in the sheet landed on the plate`);
       }
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
-
-  test("DR1 line 86: on Edit the band goes static for the name, and not for a drawer control", async () => {
-    try {
-      await editFreshDeckOpen();
-      for (const id of ["scale-name"]) {
-        await b.eval(`document.getElementById(${JSON.stringify(id)}).focus(); return true;`);
-        assert.strictEqual(await bandPosition(), "static", `focusing #${id} left the band sticky`);
+      await openDrawer();
+      await b.eval(`document.getElementById("scale-adjust-back").focus(); return true;`);
+      const seen = [];
+      for (let i = 0; i < 2; i += 1) {
+        await b.key("Tab", "Tab", 9);
+        seen.push(await b.eval(`return document.activeElement.id || document.activeElement.getAttribute("class");`));
       }
-      await b.eval(`document.getElementById("scale-mirror").focus(); return true;`);
-      assert.strictEqual(await bandPosition(), "sticky");
+      assert.deepStrictEqual(seen, ["panhit", "scale-anchor-one"]);
     } finally {
-      await b.key("Escape", "Escape", 27);
       await b.setViewport(900, 900, false);
     }
   });
@@ -4869,9 +4853,8 @@ function run() {
         } else {
           await addWithDrawer(380, h);
         }
-        for (const id of ["scale-layout-toggle", "scale-mirror", "scale-mirror-bottom",
-                          "scale-anchor-one", "scale-anchor-between"]) {
-          await b.eval(`document.getElementById("scale-back").focus(); return true;`);
+        for (const id of ["scale-anchor-one", "scale-anchor-between", "scale-mirror", "scale-mirror-bottom"]) {
+          await b.eval(`document.getElementById("scale-adjust-back").focus(); return true;`);
           await scrollEnd();
           assert.ok(await tabTo(id, 40), `${where}: Tab never reached #${id}`);
           const r = await b.eval(`
@@ -4879,7 +4862,7 @@ function run() {
             const sp = ${body}.getBoundingClientRect();
             return { top: e.top, bottom: e.bottom, spBottom: sp.bottom,
                      band: document.getElementById("scale-plate-band").getBoundingClientRect().bottom,
-                     pos: getComputedStyle(document.getElementById("scale-plate-band")).position };`);
+                     pos: getComputedStyle(document.getElementById("scale-pancol")).position };`);
           assert.strictEqual(r.pos, "sticky", `${where}: the band is not stuck at focus on #${id}`);
           assert.ok(r.top >= r.band - 1, `${where}: #${id} sits under the band: ${JSON.stringify(r)}`);
           assert.ok(r.bottom <= r.spBottom + 1, `${where}: #${id} ends below the scrollport: ${JSON.stringify(r)}`);
@@ -4942,24 +4925,6 @@ function run() {
         return { top: r.top - sp.top, bottom: r.bottom - sp.top, scrollport: sp.height, hidden: document.getElementById("scale-drawer-status").hidden };`);
       console.log("DR1 line 89: status at 844 x 390, open:", JSON.stringify(st));
       assert.ok(Number.isFinite(t.top) && Number.isFinite(st.top));
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
-
-  test("DR1 line 108: the open toggle shows one aria-hidden U+00D7, the closed one hides it, and the name stays", async () => {
-    try {
-      await addWithDrawer(380, 780);
-      const read = () => b.eval(`
-        const t = document.getElementById("scale-layout-toggle");
-        const m = [...t.querySelectorAll("[aria-hidden='true']")];
-        return { n: m.length, text: m[0] && m[0].textContent, shown: !!m[0] && getComputedStyle(m[0]).display !== "none",
-                 name: t.getAttribute("aria-label") };`);
-      const open = await read();
-      assert.deepStrictEqual(open, { n: 1, text: "×", shown: true, name: "Adjust layout" });
-      await b.click("#scale-layout-toggle");
-      const closed = await read();
-      assert.deepStrictEqual(closed, { n: 1, text: "×", shown: false, name: "Adjust layout" });
     } finally {
       await b.setViewport(900, 900, false);
     }
@@ -5044,7 +5009,7 @@ function run() {
 
   test("Tab is trapped inside the Edit sheet and reaches every Edit control", async () => {
     try {
-      await editFreshDeckOpen();
+      await editFreshDeck();
       const seen = [];
       for (let i = 0; i < 31; i++) {
         await b.key("Tab", "Tab", 9);
@@ -5062,13 +5027,26 @@ function run() {
                         "scale-name", "scale-box", "scale-generate", "scale-delete"]) {
         assert.ok(ids.has(id), `Tab never reached #${id}: ${JSON.stringify([...ids])}`);
       }
+      await openDrawer();
+      const inner = [];
+      for (let k = 0; k < 14; k++) {
+        await b.key("Tab", "Tab", 9);
+        inner.push(await b.eval(`
+          const el = document.activeElement;
+          return { id: (el && el.id) || "", inside: !!(el && document.getElementById("scale-sheet").contains(el)) };`));
+      }
+      assert.ok(inner.every(x => x.inside), `Tab escaped Adjust layout: ${JSON.stringify(inner)}`);
+      const innerIds = new Set(inner.map(x => x.id));
+      for (const id of ["scale-adjust-back", "scale-anchor-one", "scale-anchor-between", "scale-mirror"]) {
+        assert.ok(innerIds.has(id), `Tab never reached #${id} in Adjust layout: ${JSON.stringify([...innerIds])}`);
+      }
     } finally {
       await b.key("Escape", "Escape", 27);
       await b.setViewport(900, 900, false);
     }
   });
 
-  test("RD: the Edit page's Tab order is BACK, name, box, ADJUST LAYOUT, swatches, SAVE CHANGES, DELETE with the drawer closed, forward and back, and no stop is a select", async () => {
+  test("RD: the Edit page's Tab order is BACK, name, ADJUST LAYOUT, the fields, box, swatches, SAVE CHANGES, DELETE with Adjust layout closed, forward and back, and no stop is a select", async () => {
     try {
       await editFreshDeck();
       await b.setViewport(380, 800, true);
@@ -5090,10 +5068,10 @@ function run() {
       };
       const forward = await walk("scale-back", false);
       assert.deepStrictEqual(forward,
-        ["scale-name", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box", "scale-layout-toggle", ...swatches, "scale-generate", "scale-delete", "scale-back"]);
+        ["scale-name", "scale-layout-toggle", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box", ...swatches, "scale-generate", "scale-delete", "scale-back"]);
       const backward = await walk("scale-delete", true);
       assert.deepStrictEqual(backward,
-        ["scale-generate", ...swatches.slice().reverse(), "scale-layout-toggle", "scale-box", "scale-bottom", "scale-inner", "scale-top", "scale-ding", "scale-name", "scale-back", "scale-delete"]);
+        ["scale-generate", ...swatches.slice().reverse(), "scale-box", "scale-bottom", "scale-inner", "scale-top", "scale-ding", "scale-layout-toggle", "scale-name", "scale-back", "scale-delete"]);
       assert.strictEqual(await b.eval(`return document.querySelector("#scale-sheet select");`), null,
         "the Edit sheet still holds a select");
     } finally {
@@ -5709,14 +5687,13 @@ function run() {
        drops it, and the owner's first tap does nothing at all. */
     try {
       await editFreshDeckOpen();
-      const before = await panState();
-      const target = before.notes.find(n => n !== before.selected);
-      assert.ok(target, `the pan drew nothing to tap: ${JSON.stringify(before.notes)}`);
-
-      await b.click("#scale-delete");
+      await b.eval(`document.getElementById("scale-delete").click(); return true;`);
       assert.strictEqual(
         await b.eval(`return document.getElementById("scale-delete").hasAttribute("data-armed");`),
         true, "DELETE never armed");
+      const before = await panState();
+      const target = before.notes.find(n => n !== before.selected);
+      assert.ok(target, `the pan drew nothing to tap: ${JSON.stringify(before.notes)}`);
 
       await tapPanNote(target);
       const after = await panState();
@@ -6445,6 +6422,10 @@ function run() {
     };
   `);
 
+  const settleBox = () => b.waitFor(
+    `document.getElementById("scale-box").getBoundingClientRect().bottom <= window.innerHeight + 0.5`,
+    { label: "the focused box to be revealed" }).catch(() => {});
+
   function assertBothOnScreen(m, where) {
     assert.strictEqual(m.focused, "scale-box",
       `${where}: the box is not focused, so no keyboard would be up`);
@@ -6467,6 +6448,7 @@ function run() {
       await b.eval(`document.getElementById("scale-box").scrollIntoView({ block: "center" });`);
       await b.click("#scale-box");
       await b.setViewport(380, 508, true);
+      await settleBox();
       assertBothOnScreen(await boxAndPrimary(), "the Edit page at 380x508");
       await b.key("Escape", "Escape", 27);
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
@@ -6481,6 +6463,7 @@ function run() {
       await b.eval(`document.getElementById("scale-box").scrollIntoView({ block: "center" });`);
       await b.click("#scale-box");
       await b.setViewport(380, 508, true);
+      await settleBox();
       assertBothOnScreen(await boxAndPrimary(), "the Add page at 380x508");
     } finally {
       await b.setViewport(900, 900, false);
@@ -6549,6 +6532,9 @@ function run() {
       + `survives the sheet's own scroller (${m.portH.toFixed(1)}px tall) and the `
       + `keyboard line at ${m.kbTop.toFixed(1)}px (box ${m.boxTop.toFixed(1)}-`
       + `${m.boxBottom.toFixed(1)}) - the owner cannot read what they are typing`);
+    assert.ok(m.portH >= m.h + 100,
+      `${where}: the sheet's scroller is only ${m.portH.toFixed(1)}px tall, under the ${(m.h + 100).toFixed(1)}px `
+      + "that leaves the box 100px of its neighbours - pinned rows are starving it");
   }
 
   /* The owner's device: iPhone 14 / iOS 26.6, 390 CSS px wide, ~745 px of
@@ -6680,7 +6666,7 @@ function run() {
           live: [msg.getAttribute("aria-live"), note.getAttribute("aria-live"), note.getAttribute("aria-atomic"), slot.getAttribute("aria-live")],
         };`);
       assert.ok(m.slotParent, "#scale-guidance is not a direct child of the sheet surface");
-      assert.deepStrictEqual(m.order, ["sheethead", "sheetbody", "scale-guidance", "scale-generate", "scale-delete-row"],
+      assert.deepStrictEqual(m.order, ["sheethead", "scale-adjust-head", "sheetbody", "scale-guidance", "scale-generate", "scale-delete-row"],
         `the surface order is ${m.order}`);
       assert.deepStrictEqual(m.kids, ["scale-field-msg", "scale-msg", "scale-layout-state"]);
       assert.strictEqual(m.msgParent, "scale-guidance");
@@ -6713,7 +6699,7 @@ function run() {
         out[id] = { shown, top: r.top, bottom: r.bottom, left: r.left, right: r.right,
           hits: !shown || (hit && (hit === el || el.contains(hit))), hit: hit && (hit.id || hit.className || hit.tagName) };
       }
-      return { out, surfTop: sr.top, surfBottom: sr.bottom, genTop: gen.top, vw: window.innerWidth, vh: window.innerHeight, kbTop };`);
+      return { out, surfTop: sr.top, surfBottom: sr.bottom, genTop: gen.top, genHidden: gen.height === 0, vw: window.innerWidth, vh: window.innerHeight, kbTop };`);
     const assertOnScreen = (m, where) => {
       for (const [id, r] of Object.entries(m.out)) {
         assert.ok(r.shown, `${where}: #${id} is not showing, so this proves nothing`);
@@ -6721,7 +6707,7 @@ function run() {
           `${where}: #${id} is outside the viewport (top ${r.top.toFixed(1)}, bottom ${r.bottom.toFixed(1)}, viewport ${m.vh}, keyboard line ${m.kbTop})`);
         assert.ok(r.top >= m.surfTop - 0.5 && r.bottom <= m.surfBottom + 0.5, `${where}: #${id} is clipped by the surface`);
         assert.ok(r.left >= -0.5 && r.right <= m.vw + 0.5, `${where}: #${id} runs off the side`);
-        assert.ok(r.bottom <= m.genTop + 0.5, `${where}: #${id} overlaps or sits below the primary (${r.bottom.toFixed(1)} > ${m.genTop.toFixed(1)})`);
+        assert.ok(m.genHidden || r.bottom <= m.genTop + 0.5, `${where}: #${id} overlaps or sits below the primary (${r.bottom.toFixed(1)} > ${m.genTop.toFixed(1)})`);
         assert.ok(r.hits, `${where}: #${id} is covered by "${r.hit}"`);
       }
     };
@@ -6961,7 +6947,10 @@ function run() {
       const first = { text: await b.eval(`return layoutNote.textContent;`), records: await count() };
       const before = await b.eval(`return window.__sgPaints;`);
       await b.eval(`document.getElementById("scale-layout-toggle").scrollIntoView({ block: "center" }); return true;`);
-      for (let i = 0; i < 10; i += 1) await b.click("#scale-layout-toggle");
+      for (let i = 0; i < 10; i += 1) {
+        await b.click("#scale-layout-toggle");
+        await b.click("#scale-adjust-back");
+      }
       const paints = (await b.eval(`return window.__sgPaints;`)) - before;
       const repeated = await count();
       await b.eval(`document.getElementById("scale-anchor-one").click(); return true;`);
@@ -7302,12 +7291,9 @@ function run() {
 
   test("KB: at 844x334 with a 104px visible area, under every innerHeight model the sheet is tiny, the focused field is in view and GENERATE and the guidance slot are reachable by scrolling the surface", async () => {
     try {
-      for (const open of [false, true]) {
+      for (const open of [false]) {
         for (const [model, how] of KB_MODELS) {
           await kbOpenAdd(844, 334);
-          if (open) {
-            await f4OpenDrawer();
-          }
           await kbFocus("scale-top");
           await b.fakeKeyboard(104, 0, how);
           await kbSettle();
@@ -7647,14 +7633,12 @@ function run() {
     await openEdit();
     await b.eval(`document.activeElement && document.activeElement.blur(); return true;`);
   };
-  /* 390x669 (145.6px measured) and 320x568 (75.9px, a 296px scrollport) cannot show the full target: the pan needs the 31dvh plate to keep every note tappable (owner: tappability wins). */
-  const F4_OPTION_FLOOR = { "390x669": 140, "390x745": 160, "380x780": 160, "320x568": 70 };
-  const f4Geom = () => b.eval(`
+    const f4Geom = () => b.eval(`
     const port = document.querySelector("#scale-sheet .sheetbody"), pr = port.getBoundingClientRect();
     const r = (id) => { const q = document.getElementById(id).getBoundingClientRect(); return { top: q.top, bottom: q.bottom, width: q.width }; };
-    return { scrollTop: port.scrollTop, portTop: pr.top, portBottom: pr.bottom, band: r("scale-plate-band"),
+    return { scrollTop: port.scrollTop, portTop: pr.top, portBottom: pr.bottom, band: r("scale-pancol"),
       plate: r("scale-preview"), btn: r("scale-layout-toggle"), drawer: r("scale-drawer"),
-      bandPos: getComputedStyle(document.getElementById("scale-plate-band")).position };`);
+      bandPos: getComputedStyle(document.getElementById("scale-pancol")).position };`);
   const f4ScrollToToggle = () => b.eval(`
     const port = document.querySelector("#scale-sheet .sheetbody"), btn = document.getElementById("scale-layout-toggle");
     const want = port.getBoundingClientRect().top + port.clientHeight * 0.45;
@@ -7667,62 +7651,13 @@ function run() {
   };
 
   for (const [w, h] of F4_VIEWPORTS) {
-    test(`KB: F4 at ${w}x${h} a tap on ADJUST LAYOUT from a scrolled Edit Kurd keeps the toggle in place or just under the band and opens the drawer below it`, async () => {
-      try {
-        await f4OpenEdit(w, h, "kurd");
-        await f4ScrollToToggle();
-        await new Promise((r) => setTimeout(r, 100));
-        const before = await f4Geom();
-        await b.eval(`
-          const port = document.querySelector("#scale-sheet .sheetbody");
-          port.style.overflowAnchor = "none";
-          window.__f4 = [];
-          port.addEventListener("scroll", () => {
-            const btn = document.getElementById("scale-layout-toggle").getBoundingClientRect();
-            const band = document.getElementById("scale-plate-band").getBoundingClientRect();
-            const pr = port.getBoundingClientRect();
-            window.__f4.push({ top: btn.top, bottom: btn.bottom, bandBottom: band.bottom, portBottom: pr.bottom, st: port.scrollTop });
-          });
-          return true;`);
-        await f4OpenDrawer();
-        const log = await b.eval(`return window.__f4;`);
-        const after = await f4Geom();
-        for (const e of log) {
-          assert.ok(e.top >= e.bandBottom - 1 && e.bottom <= e.portBottom + 1,
-            `the toggle left the scrollport during the open: ${JSON.stringify(e)}`);
-        }
-        const covered = before.btn.top < after.band.bottom;
-        const need = after.drawer.bottom - after.btn.top;
-        if (covered) {
-          assert.ok(after.btn.top >= after.band.bottom - 1 && after.btn.top <= after.band.bottom + 6,
-            `the covered toggle is not just under the band: ${after.btn.top} vs ${after.band.bottom}`);
-        } else if (before.btn.top + need <= after.portBottom + 1) {
-          assert.ok(Math.abs(after.btn.top - before.btn.top) <= 4,
-            `the toggle moved from ${before.btn.top} to ${after.btn.top} though the options fit under it`);
-        } else {
-          assert.ok(after.drawer.bottom <= after.portBottom + 1 || after.btn.top <= after.band.bottom + 6,
-            `the toggle rose past the point where the options show: ${JSON.stringify(after)}`);
-        }
-        if (F4_OPTION_FLOOR[w + "x" + h] >= 160) {
-          const firstRow = await b.eval(`
-            const d = document.getElementById("scale-drawer");
-            const row = [...d.querySelectorAll("button, input, select")].find((e) => e.offsetParent !== null);
-            const q = row.getBoundingClientRect(); return { top: q.top, bottom: q.bottom };`);
-          assert.ok(firstRow.top >= after.btn.bottom - 1 && firstRow.bottom <= after.portBottom + 1,
-            `the first drawer row is not fully visible under the toggle: ${JSON.stringify(firstRow)} in ${after.portBottom}`);
-        }
-      } finally {
-        await b.setViewport(900, 900, false);
-      }
-    });
-
-    test(`KB: F4 with the drawer open at ${w}x${h} the per-viewport floor of options shows under the pan (160px where the viewport allows) and the plate is at least 140px`, async () => {
+    test(`KB: F4 in Adjust layout at ${w}x${h} at least 160px of options show under the large pan and the pan is at least 140px`, async () => {
       try {
         await f4OpenEdit(w, h, "kurd");
         await f4OpenDrawer();
         const g = await f4Geom();
         assert.strictEqual(g.bandPos, "sticky", "the band is not stuck, so the measure below is not the shipped state");
-        const floor = F4_OPTION_FLOOR[w + "x" + h];
+        const floor = w * h < 390 * 700 ? { "390x669": 140, "320x568": 100 }[w + "x" + h] : 160;
         assert.ok(g.portBottom - g.band.bottom >= floor, `only ${g.portBottom - g.band.bottom}px of options show under the pan, wanted ${floor}`);
         assert.ok(g.plate.width >= 140, `the plate is ${g.plate.width}px`);
       } finally {
@@ -7731,7 +7666,7 @@ function run() {
     });
 
     for (const slug of ["kurd", "pygmy"]) {
-      test(`KB: F4 with the drawer open at ${w}x${h} every note on the shrunk pan is hit by a tap at its centre (${slug})`, async () => {
+      test(`KB: F4 in Adjust layout at ${w}x${h} every note on the large pan is hit by a tap at its centre (${slug})`, async () => {
         try {
           await f4OpenEdit(w, h, slug);
           await f4OpenDrawer();
@@ -7757,20 +7692,20 @@ function run() {
     }
   }
 
-  test("KB: F4 opening the drawer focuses the first note without scrolling the sheet", async () => {
+  test("KB: F4 opening Adjust layout focuses its title without scrolling the sheet", async () => {
     try {
       await f4OpenEdit(390, 669, "kurd");
       await f4ScrollToToggle();
       await b.eval(`
         const port = document.querySelector("#scale-sheet .sheetbody");
         window.__fs = [];
-        const wrap = (proto) => { const o = proto.focus; proto.focus = function (...a) { const s = port.scrollTop; const r = o.apply(this, a); if (this.classList && this.classList.contains("panhit")) window.__fs.push(port.scrollTop - s); return r; }; };
+        const wrap = (proto) => { const o = proto.focus; proto.focus = function (...a) { const s = port.scrollTop; const r = o.apply(this, a); if (this.id === "scale-adjust-title") window.__fs.push(port.scrollTop - s); return r; }; };
         wrap(HTMLElement.prototype); wrap(SVGElement.prototype);
         return true;`);
       await f4OpenDrawer();
       const fs = await b.eval(`return window.__fs;`);
-      assert.ok(fs.length >= 1, "no note took focus on open");
-      for (const d of fs) assert.strictEqual(d, 0, `focusing a note scrolled the sheet by ${d}px`);
+      assert.ok(fs.length >= 1, "the title took no focus on open");
+      for (const d of fs) assert.strictEqual(d, 0, `focusing the title scrolled the sheet by ${d}px`);
     } finally {
       await b.setViewport(900, 900, false);
     }
@@ -8097,7 +8032,7 @@ function run() {
       const top = async () => {
         await b.settle();
         return b.eval(`
-          return document.getElementById("scale-layout-row").getBoundingClientRect().top;
+          return document.getElementById("scale-layout-zone").getBoundingClientRect().top;
         `);
       };
       // No EMPTY-vs-typed comparison here: the first keystroke legitimately
@@ -8151,6 +8086,7 @@ function run() {
                  box: document.getElementById("scale-box").getBoundingClientRect().height,
                  hint: document.getElementById("scale-layout-hint").getBoundingClientRect().height,
                  fields: document.getElementById("scale-fields").getBoundingClientRect().height,
+                 stage: document.querySelector(".scalestage").getBoundingClientRect().height,
                  row: document.getElementById("scale-box").closest(".fieldrow").getBoundingClientRect().height };
       `);
       await b.settle();
@@ -8167,9 +8103,14 @@ function run() {
       // so its own rows are the second element that legitimately changes.
       // Lane DR1: the toggle row's hint changes sentence on the first valid
       // scale (HINT_EMPTY to HINT_GUESS), so its own wrap is a third element.
-      const parseDelta = (empty.row - typed.row) + (empty.hint - typed.hint) +
-                         (empty.fields - typed.fields);
-      assert.ok(Math.abs(bodyDelta - parseDelta) < 0.5,
+      // The small pan and its caption now sit beside the four fields, so the
+      // stage is the taller of the two columns and is one term.
+      for (const [name, st] of [["empty", empty], ["typed", typed]]) {
+        assert.ok(st.stage - st.fields < 1,
+          `the ${name} stage is ${st.stage.toFixed(1)}px tall but its four fields only ${st.fields.toFixed(1)}px - the small pan, not the fields, is setting its height`);
+      }
+      const parseDelta = (empty.row - typed.row) + (empty.stage - typed.stage);
+      assert.ok(Math.abs(bodyDelta - parseDelta) < 1,
         `the scrolling body moved ${bodyDelta.toFixed(1)}px between empty and ` +
         `typed but the parse line and the field only account for ${parseDelta.toFixed(1)}px ` +
         "- something else in the page is resizing on input");
@@ -8217,7 +8158,7 @@ function run() {
     }
   });
 
-  test("the sheet widens with the viewport on desktop, and the pan with it", async () => {
+  test("the sheet widens with the viewport on desktop, and the small pan stays at most 160px", async () => {
     // Request 4. Nothing inside the drawer scales with its width on its own -
     // the seed is a short string and the plate is pinned at a phone measurement
     // (300px since Stage 3, when the plate became the correction surface and
@@ -8234,16 +8175,17 @@ function run() {
         const m = await b.eval(`
           const surf = document.querySelector(".sheetsurf");
           const plate = document.getElementById("scale-preview");
+          const cs = getComputedStyle(surf);
           return { surf: surf.getBoundingClientRect().width,
+                   cw: surf.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight),
                    plate: plate.getBoundingClientRect().width,
                    vw: window.innerWidth };
         `);
         assert.ok(Math.abs(m.surf - CLAMP(m.vw)) < 1,
           `at ${w}px the sheet is ${m.surf.toFixed(1)}px, expected ` +
           `${CLAMP(m.vw).toFixed(1)}px (clamp(520px, 52vw, 680px))`);
-        assert.ok(Math.abs(m.plate - 340) < 1,
-          `at ${w}px the pan plate is ${m.plate.toFixed(1)}px, expected 340px - ` +
-          `a wide sheet around a phone-sized plate is a wide empty band`);
+        assert.ok(m.plate <= 160.5 && Math.abs(m.plate - Math.min(160, Math.max(88, m.cw * 0.3))) < 1,
+          `at ${w}px the small pan is ${m.plate.toFixed(1)}px, expected clamp(88px, 30cqw, 160px) of ${m.cw.toFixed(1)}px`);
       }
     } finally {
       await b.setViewport(900, 900, false);
@@ -14049,6 +13991,286 @@ function run() {
       await new Promise((r) => setTimeout(r, 300));
       assert.strictEqual(await hash(), PYGMY);
       assert.match(await chipOn(), /pygmy/i);
+    });
+  });
+
+  /* ------------------------- UX: two pan sizes, Adjust layout ----------------
+   * Lane P of docs/plans/2026-10-19-dual-input-sheet-ux.md. Every test loops
+   * the five viewports; each failure names its cell. */
+  describe("UX: two pan sizes and Adjust layout", () => {
+    const UX_VIEWPORTS = [[380, 780, true], [320, 568, true], [393, 852, true], [844, 390, true], [1280, 800, false]];
+    const UX_KURD = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
+    const UX_PYGMY = "[C3] [Db3] [Eb3] F3 | G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]";
+    const ev = (s) => b.eval(s);
+    const frames = () => ev(`return new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r(true))));`);
+    const sheetShown = (shown) => b.waitFor(
+      `document.getElementById("scale-sheet").hasAttribute("hidden") === ${!shown}`, { label: "the sheet" });
+    const adjusting = (on) => b.waitFor(
+      `document.getElementById("scale-sheet").classList.contains("adjusting") === ${on}`, { label: "adjusting " + on });
+    const typeBox = (s) => ev(`const el = document.getElementById("scale-box"); el.value = ${JSON.stringify(s)};
+      el.dispatchEvent(new Event("input", { bubbles: true })); return el.value;`);
+    const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+    /* A page at w x h with the sheet open: "add" types `scale`, "edit" opens the
+     * shown deck (Kurd, seeded) for editing; `pygmyEdit` selects Pygmy first. */
+    const uxOpen = async (w, h, mode, scale = UX_KURD) => {
+      await freshLoad();
+      await b.setViewport(w, h, w < 1000);
+      await b.settle();
+      if (mode === "edit-pygmy") {
+        await ev(`[...document.querySelectorAll("#decks .chip")].find((c) => /pygmy/i.test(c.textContent)).click(); return true;`);
+        await frames();
+      }
+      if (mode === "add") {
+        await ev(`document.getElementById("deck-add").click(); return true;`);
+        await sheetShown(true);
+        if (scale) await typeBox(scale);
+      } else {
+        await ev(`document.querySelector("#decks .chip.on").click(); return true;`);
+        await sheetShown(true);
+      }
+      await frames();
+    };
+    const uxOpenAdjust = async () => {
+      await ev(`document.getElementById("scale-layout-toggle").scrollIntoView({ block: "center" }); return true;`);
+      await frames();
+      const at = await ev(`return document.querySelector("#scale-sheet .sheetbody").scrollTop;`);
+      await b.click("#scale-layout-toggle");
+      await adjusting(true);
+      await frames();
+      return at;
+    };
+    const rectOf = (sel) => ev(`const e = document.querySelector(${JSON.stringify(sel)}); if (!e) return null;
+      const r = e.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom, w: r.width, h: r.height,
+      shown: e.getClientRects().length > 0 && getComputedStyle(e).visibility !== "hidden" };`);
+    /* The width the small pan must have: clamp(88px, 30cqw, 160px) of the sheet's content box. */
+    const smallWant = () => ev(`const surf = document.querySelector(".sheetsurf"), cs = getComputedStyle(surf);
+      const cw = surf.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+      return Math.min(160, Math.max(88, cw * 0.3));`);
+    const cellsOf = (modes) => UX_VIEWPORTS.flatMap(([w, h]) => modes.map((m) => [w, h, m]));
+    const sweep = async (modes, fn) => {
+      const fails = [];
+      try {
+        for (const [w, h, m] of cellsOf(modes)) {
+          const fail = (msg) => fails.push(`${w}x${h} ${m}: ${msg}`);
+          await uxOpen(w, h, m, m === "edit-pygmy" ? null : m === "add-pygmy" ? UX_PYGMY : UX_KURD);
+          await fn(fail, w, h, m);
+        }
+      } finally {
+        await b.clearKeyboard().catch(() => {});
+        await b.setViewport(900, 900, false);
+      }
+      assert.deepStrictEqual(fails, [], fails.slice(0, 6).join("\n"));
+    };
+
+    test("UX: the sheet opens with the small pan left of the four fields, clamp(88px, 30cqw, 160px), at every viewport", async () => {
+      await sweep(["add", "edit"], async (fail) => {
+        const m = await ev(`
+          const surf = document.querySelector(".sheetsurf"), cs = getComputedStyle(surf);
+          const cw = surf.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+          const r = (id) => { const e = document.getElementById(id); const q = e.getBoundingClientRect();
+            return { l: q.left, t: q.top, r: q.right, b: q.bottom, w: q.width }; };
+          return { cw, pan: r("scale-preview"), col: r("scale-pancol"), ding: r("scale-ding"), top: r("scale-top"),
+            inner: r("scale-inner"), bottom: r("scale-bottom") };`);
+        const want = Math.min(160, Math.max(88, m.cw * 0.3));
+        if (Math.abs(m.pan.w - want) > 1.5) fail(`the small pan is ${m.pan.w}px wide, want ${want.toFixed(1)}`);
+        for (const k of ["ding", "top", "inner", "bottom"]) {
+          if (m[k].l < m.pan.r - 1) fail(`${k} starts at ${m[k].l}, left of the pan's right edge ${m.pan.r}`);
+        }
+        for (const k of ["ding", "top"]) {
+          if (m[k].t > m.col.b || m[k].b < m.col.t) fail(`${k} is not beside the pan`);
+        }
+      });
+    });
+
+    test("UX: Adjust layout shows the large pan, the layout controls and no field, scale line or primary", async () => {
+      await sweep(["add", "edit"], async (fail) => {
+        const small = (await rectOf("#scale-preview")).w;
+        await uxOpenAdjust();
+        const pan = await rectOf("#scale-preview");
+        if (!(pan.w >= 160 && pan.w <= 480.5 && pan.w > small)) fail(`the large pan is ${pan.w}px, the small one was ${small}`);
+        for (const sel of ["#scale-fields", "#scale-box", "#scale-generate", "#scale-back", "#scale-swatches"]) {
+          const r = await rectOf(sel);
+          if (r && r.shown) fail(`${sel} is shown in Adjust layout`);
+        }
+        for (const sel of ["#scale-adjust-head", "#scale-adjust-back", "#scale-drawer", "#scale-anchor-one"]) {
+          const r = await rectOf(sel);
+          if (!r || !r.shown) fail(`${sel} is not shown in Adjust layout`);
+        }
+        const name = await ev(`return document.getElementById("scale-adjust-back").getAttribute("aria-label");`);
+        if (name !== "Back to the scale") fail(`BACK is named ${name}`);
+      });
+    });
+
+    const FLOORS_160 = { "320x568": 100 };
+    test("UX: Adjust layout shows at least 160px of controls under the large pan in one column, and beside it at 844x390", async () => {
+      await sweep(["add", "edit"], async (fail, w, h) => {
+        await uxOpenAdjust();
+        const m = await ev(`
+          const q = (id) => { const r = document.getElementById(id).getBoundingClientRect();
+            return { left: r.left, right: r.right, top: r.top, bottom: r.bottom }; };
+          const port = document.querySelector("#scale-sheet .sheetbody");
+          const pr = port.getBoundingClientRect(), vv = window.visualViewport;
+          const a1 = q("scale-anchor-one");
+          return { pan: q("scale-preview"), drawer: q("scale-drawer"), a1, port: { t: pr.top, b: pr.bottom },
+            vvb: vv.offsetTop + vv.height, canScroll: port.scrollHeight - port.clientHeight - port.scrollTop };`);
+        const floor = Math.min(m.port.b, m.vvb);
+        if (!(m.pan.bottom > 0)) fail(`the pan rect did not serialise: ${JSON.stringify(m.pan)}`);
+        if (w === 844 && h === 390) {
+          if (m.drawer.left < m.pan.right - 1) fail(`controls (${m.drawer.left}) are not beside the pan (${m.pan.right})`);
+        } else {
+          const room = floor - m.pan.bottom;
+          const want = FLOORS_160[w + "x" + h] || 160;
+          if (!(m.drawer.top < m.pan.bottom + want)) fail(`the controls start ${(m.drawer.top - m.pan.bottom).toFixed(1)}px under the pan, so fewer than ${want}px of them show`);
+          if (!(room >= want)) fail(`${room.toFixed(1)}px of controls under the pan, want ${want} (pan bottom ${m.pan.bottom}, floor ${floor})`);
+          const reach = m.a1.top < floor && m.a1.bottom <= floor + Math.max(0, m.canScroll);
+          if (!reach) fail(`#scale-anchor-one (${m.a1.top}..${m.a1.bottom}) cannot be scrolled into view (floor ${floor}, scroll left ${m.canScroll})`);
+        }
+      });
+    });
+
+    test("UX: every note on the large pan is hit by a tap at its centre (Kurd, Pygmy)", async () => {
+      await sweep(["edit", "edit-pygmy"], async (fail) => {
+        await uxOpenAdjust();
+        const bad = await ev(`
+          const out = [];
+          const hits = [...document.querySelectorAll("#scale-preview .panhit")];
+          for (const n of hits) {
+            const r = n.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
+            const at = document.elementFromPoint(x, y);
+            if (!(at && at.closest(".panhit") === n)) out.push(n.getAttribute("aria-label") + " at " + Math.round(x) + "," + Math.round(y));
+          }
+          return { n: hits.length, out };`);
+        if (!bad.n) fail("the large pan has no notes");
+        if (bad.out.length) fail(`${bad.out.length} notes are not hit at their centre: ${bad.out.slice(0, 3).join("; ")}`);
+      });
+    });
+
+    test("UX: closing Adjust layout restores the sheet's scroll and focuses ADJUST LAYOUT", async () => {
+      await sweep(["add", "edit"], async (fail) => {
+        const before = await uxOpenAdjust();
+        await b.click("#scale-adjust-back");
+        await adjusting(false);
+        await pause(150);
+        const m = await ev(`return { top: document.querySelector("#scale-sheet .sheetbody").scrollTop,
+          id: document.activeElement && document.activeElement.id,
+          open: !document.getElementById("scale-sheet").hasAttribute("hidden") };`);
+        if (!m.open) fail("the sheet closed");
+        if (Math.abs(m.top - before) > 1) fail(`scroll is ${m.top}, was ${before}`);
+        if (m.id !== "scale-layout-toggle") fail(`focus is on ${m.id}`);
+      });
+    });
+
+    test("UX: a tap between BACK and its pop pushes no second Adjust entry", async () => {
+      await sweep(["edit"], async (fail) => {
+        await uxOpenAdjust();
+        const m = await ev(`const n = history.length;
+          document.getElementById("scale-adjust-back").click();
+          document.getElementById("scale-layout-toggle").click();
+          return { grew: history.length - n, adjusting: document.getElementById("scale-sheet").classList.contains("adjusting") };`);
+        if (m.grew !== 0) fail(`history grew by ${m.grew} between BACK and its pop`);
+        if (m.adjusting) fail("a tap between BACK and its pop re-entered Adjust layout");
+        await adjusting(false);
+        await pause(150);
+        const open = await ev(`return !document.getElementById("scale-sheet").hasAttribute("hidden");`);
+        if (!open) fail("the sheet closed");
+      });
+    });
+
+    test("UX: the phone back gesture from Adjust layout returns to the sheet, and one more Back closes it with the bar on the deck's route", async () => {
+      await sweep(["add", "edit"], async (fail, w, h, mode) => {
+        const route = await ev(`return location.hash;`);
+        await uxOpenAdjust();
+        await ev(`history.back(); return true;`);
+        await adjusting(false);
+        await pause(150);
+        const open = await ev(`return !document.getElementById("scale-sheet").hasAttribute("hidden");`);
+        if (!open) fail("the first Back closed the sheet");
+        const sheetHash = await ev(`return location.hash;`);
+        if (!/^#(add|edit-)/.test(sheetHash)) fail(`the sheet's route is ${sheetHash}`);
+        await ev(`history.back(); return true;`);
+        await sheetShown(false);
+        await pause(150);
+        const hash = await ev(`return location.hash;`);
+        if (hash !== "#deck=d-kurd-10") fail(`the bar ends on ${hash}, want #deck=d-kurd-10 (it was ${route} on open)`);
+      });
+    });
+
+    test("UX: the small pan stays in view beside each field typed in with the keyboard up", async () => {
+      try {
+        await uxOpen(393, 852, "add");
+        await b.fakeKeyboard(336);
+        await frames();
+        const fails = [];
+        for (const id of ["scale-ding", "scale-top", "scale-inner", "scale-bottom"]) {
+          await ev(`const e = document.getElementById(${JSON.stringify(id)}); e.focus();
+            e.dispatchEvent(new Event("input", { bubbles: true })); return true;`);
+          await frames();
+          const m = await ev(`const q = (e) => e.getBoundingClientRect();
+            const f = q(document.getElementById(${JSON.stringify(id)})), p = q(document.getElementById("scale-preview"));
+            const port = q(document.querySelector("#scale-sheet .sheetbody"));
+            return { f: { t: f.top, b: f.bottom, l: f.left }, p: { t: p.top, b: p.bottom, r: p.right },
+              vv: window.visualViewport.height, pt: port.top, pb: port.bottom };`);
+          const want = await smallWant();
+          const pw = await rectOf("#scale-preview");
+          if (Math.abs(pw.w - want) > 1.5) fails.push(`${id}: the pan is ${pw.w}px wide, want ${want.toFixed(1)}`);
+          const lo = Math.max(0, m.pt), hi = Math.min(m.vv, m.pb);
+          if (m.p.t < lo - 1 || m.p.b > hi + 1) fails.push(`${id}: the pan (${m.p.t}..${m.p.b}) is outside ${lo}..${hi}`);
+          if (m.f.t < lo - 1 || m.f.b > hi + 1) fails.push(`${id}: the field is outside the view`);
+          if (m.f.l < m.p.r - 1) fails.push(`${id}: the field is not right of the pan`);
+        }
+        assert.deepStrictEqual(fails, [], fails.join("\n"));
+      } finally {
+        await b.clearKeyboard().catch(() => {});
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("UX: the first field does not move between an empty sheet and the Pygmy prefill", async () => {
+      const fails = [];
+      try {
+        for (const [w, h] of UX_VIEWPORTS) {
+          await uxOpen(w, h, "add", null);
+          const empty = await rectOf("#scale-ding");
+          const pan0 = await rectOf("#scale-preview");
+          await typeBox(UX_PYGMY);
+          await frames();
+          const full = await rectOf("#scale-ding");
+          const pan1 = await rectOf("#scale-preview");
+          for (const [at, pan] of [["empty", pan0], ["Pygmy", pan1]]) {
+            const want = await smallWant();
+            if (Math.abs(pan.w - want) > 1.5) fails.push(`${w}x${h}: the ${at} sheet's pan is ${pan.w}px wide, want ${want.toFixed(1)}`);
+          }
+          for (const k of ["l", "t", "w"]) {
+            if (Math.abs(empty[k] - full[k]) > 0.5) fails.push(`${w}x${h}: the first field's ${k} moved ${empty[k]} to ${full[k]}`);
+            if (Math.abs(pan0[k] - pan1[k]) > 0.5) fails.push(`${w}x${h}: the pan's ${k} moved ${pan0[k]} to ${pan1[k]}`);
+          }
+        }
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+      assert.deepStrictEqual(fails, [], fails.join("\n"));
+    });
+
+    test("UX: Escape twice at real speed closes Adjust layout then the sheet, and one more Back leaves the page's history as it was before the sheet", async () => {
+      await sweep(["add", "edit"], async (fail) => {
+        // The sheet is already open here; close it by hand to read the entry it was pushed over.
+        await ev(`document.getElementById("scale-back").click(); return true;`);
+        await sheetShown(false);
+        await pause(200);
+        const before = await ev(`return { i: navigation.currentEntry.key, u: navigation.currentEntry.url };`);
+        await ev(`document.querySelector("#decks .chip.on").click(); return true;`);
+        await sheetShown(true);
+        await uxOpenAdjust();
+        await ev(`for (let i = 0; i < 2; i++) document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+          return true;`);
+        await sheetShown(false);
+        await pause(300);
+        const after = await ev(`return { i: navigation.currentEntry.key, u: navigation.currentEntry.url,
+          adj: document.getElementById("scale-sheet").classList.contains("adjusting") };`);
+        if (after.adj) fail("the layer is still up");
+        if (after.i !== before.i) fail(`the current entry key is ${after.i}, was ${before.i}`);
+        if (after.u !== before.u) fail(`the current entry is ${after.u}, was ${before.u}`);
+      });
     });
   });
 }

@@ -1,14 +1,15 @@
 # kills: DI: the sheet serves DING, TOP RIM NOTES, TOP INNER NOTES and BOTTOM NOTES in that order before #scale-box, each a text input with autocapitalize off, enterkeyhint next and BOTTOM done
 # Plan wording: DI: the sheet serves DING, TOP RIM NOTES, TOP INNER NOTES and BOTTOM NOTES in that order before #scale-box
 # suite: node --test --test-name-pattern ^DI:.the.sheet.serves.DING tests/app.test.js
+# Re-anchored 2026-10-19 (lane P): the scale box moves above the stage that holds the fields.
 # Mutant di_fields_after_box.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1410,6 +1410,16 @@ html.about-open{overflow:hidden}
-          parseSeed); focusing one dims the other. One variable, inputPath, says
-          which is active. The live region is the last child so the order the
-          SG: N-A2 tests pin is untouched. -->
+@@ -1386,6 +1386,17 @@ html.about-open{overflow:hidden}
+          options"), this label, this placeholder and PARSE_HINT are the ONLY
+          teaching of the seed grammar there is - keep all three saying the same
+          thing, and keep the placeholder a seed that actually parses. -->
 +    <div class="fieldrow">
 +      <label class="sheetlabel" for="scale-box">SCALE: (DING) TOP NOTES | OPTIONAL INNER NOTES</label>
 +      <span class="sheetlabel" id="scale-label-2">[NOTE] = A BOTTOM NOTE, WRITTEN WHERE ITS PITCH FALLS</span>
@@ -19,14 +20,14 @@ diff --git a/index.html b/index.html
 +                  placeholder="[C] [D] (E) [F#] [G] [A] B [C] D E F# G A B [C] D E | F# G A"></textarea>
 +      </div>
 +      <div id="scale-parse"></div>
-     <div id="scale-fields" role="group" aria-labelledby="scale-fields-head">
-       <p class="sheetlabel" id="scale-fields-head">YOUR SCALE, NOTE BY NOTE</p>
-       <div class="fieldrow">
-@@ -1435,16 +1445,6 @@ html.about-open{overflow:hidden}
-       <p class="sheethint" id="scale-fields-note"></p>
-       <p class="sr-only" id="scale-fields-live" aria-live="polite"></p>
++    </div>
+     <div class="scalestage">
+     <div class="pancol" id="scale-pancol">
+     <div id="scale-plate-band">
+@@ -1433,15 +1444,6 @@ html.about-open{overflow:hidden}
      </div>
--    <div class="fieldrow">
+     </div>
+     <div class="fieldrow">
 -      <label class="sheetlabel" for="scale-box">SCALE: (DING) TOP NOTES | OPTIONAL INNER NOTES</label>
 -      <span class="sheetlabel" id="scale-label-2">[NOTE] = A BOTTOM NOTE, WRITTEN WHERE ITS PITCH FALLS</span>
 -      <div id="scale-box-wrap" data-grow="[C] [D] (E) [F#] [G] [A] B [C] D E F# G A B [C] D E | F# G A">

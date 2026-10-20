@@ -6318,6 +6318,11 @@ const dr1Open = (app, text = W1_NONE) => {
   if (text !== null) app.type(text);
   return app.els;
 };
+const dr1Close = (app) => {
+  app.els["scale-adjust-back"].click();
+  app.history.state = { scalePage: true };
+  app.popstate();
+};
 const DR1_HTML = fs.readFileSync(path.join(ROOT, "index.html"), "utf8").replace(/<!--[\s\S]*?-->/g, "");
 /* Sheet guidance (plan docs/plans/2026-10-13-sheet-guidance.md, lane app). The
    sandbox's _markupParent links only ids in ELEMENT_IDS, and the wrapper is
@@ -6379,7 +6384,7 @@ test("DR1 line 15: the toggle exists on Add and Edit with its name, state and co
     assert.strictEqual(app.els["scale-drawer"].hidden, true);
   }
   const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8").replace(/<!--[\s\S]*?-->/g, "");
-  assert.match(html, /<button[^>]*\bid="scale-layout-toggle"[^>]*>\s*ADJUST LAYOUT\s*<span aria-hidden="true">/);
+  assert.match(html, /<button[^>]*\bid="scale-layout-toggle"[^>]*>\s*ADJUST LAYOUT\s*<\/button>/);
   assert.match(html, /<div[^>]*\bid="scale-drawer"[^>]*\brole="group"/);
 });
 
@@ -6402,11 +6407,11 @@ test("DR1 line 17: the toggle shows the drawer, sets aria-expanded and adds .on"
   assert.strictEqual(dr1Toggle(app).classList.contains("on"), true);
 });
 
-test("DR1 line 20: the toggle again hides the drawer and focus is on the toggle, also after Escape from a drawer control", () => {
+test("DR1 line 20: BACK hides the drawer and focus is on the toggle, also after Escape from a drawer control", () => {
   const app = boot();
   dr1Open(app);
   dr1Toggle(app).click();
-  dr1Toggle(app).click();
+  dr1Close(app);
   assert.strictEqual(app.els["scale-drawer"].hidden, true);
   assert.strictEqual(dr1Toggle(app).getAttribute("aria-expanded"), "false");
   assert.strictEqual(dr1Toggle(app).classList.contains("on"), false);
@@ -6423,9 +6428,14 @@ test("DR1 line 21: Escape closes the open drawer and keeps the sheet; a second E
   const app = boot();
   dr1Open(app);
   dr1Toggle(app).click();
+  const backs = app.history.calls.filter((c) => c.type === "back").length;
   app.keydown("Escape");
   assert.strictEqual(app.els["scale-drawer"].hidden, true);
   assert.strictEqual(app.sheetOpen(), true, "the first Escape closed the sheet");
+  assert.strictEqual(app.history.calls.filter((c) => c.type === "back").length, backs + 1, "the first Escape did not consume the Adjust entry");
+  app.history.state = { scalePage: true };
+  app.popstate();
+  assert.strictEqual(app.sheetOpen(), true, "the answering pop closed the sheet");
   app.keydown("Escape");
   assert.strictEqual(app.sheetOpen(), false, "the second Escape left the sheet open");
 });
@@ -6436,6 +6446,7 @@ test("DR1 line 22: the sheet opens with the drawer closed, on Add and on Edit", 
   openSheet(app);
   app.type(W1_NONE);
   dr1Toggle(app).click();
+  dr1Close(app);
   app.els["scale-back"].click();
   openSheet(app);
   assert.strictEqual(app.els["scale-drawer"].hidden, true, "Add reopened with the drawer open");
@@ -6443,6 +6454,7 @@ test("DR1 line 22: the sheet opens with the drawer closed, on Add and on Edit", 
   app.els["scale-back"].click();
   openEdit(app, d);
   dr1Toggle(app).click();
+  dr1Close(app);
   app.els["scale-back"].click();
   openEdit(app, d);
   assert.strictEqual(app.els["scale-drawer"].hidden, true, "Edit reopened with the drawer open");
@@ -6708,17 +6720,6 @@ test("DR1 hint row: the toggle row's hint is hidden while the drawer is open, sh
   assert.ok(!hint.hidden, "the hint did not return after Escape closed the drawer");
 });
 
-test("DR1 open step 5: opening the drawer scrolls the zone into view with block nearest and behavior auto, and closing does not scroll", () => {
-  const app = boot();
-  dr1Open(app, W1_NONE);
-  const calls = [];
-  app.els["scale-layout-zone"].scrollIntoView = (o) => calls.push(o);
-  dr1Toggle(app).click();
-  assert.strictEqual(JSON.stringify(calls), JSON.stringify([{ block: "nearest", behavior: "auto" }]));
-  dr1Toggle(app).click();
-  assert.strictEqual(calls.length, 1, "closing the drawer scrolled the sheet");
-});
-
 test("DR2 lines 85, 132: the hint reads the empty sentence while the toggle is disabled and LAYOUT_HINT once the scale parses", () => {
   const app = boot();
   openSheet(app);
@@ -6729,22 +6730,6 @@ test("DR2 lines 85, 132: the hint reads the empty sentence while the toggle is d
     "Layout is a guess. Open ADJUST LAYOUT to move a note, change the handpan orientation, or mirror the pan.");
   app.type("(D3) zzz");
   assert.strictEqual(hint.textContent, "Type a scale to adjust its layout.");
-});
-
-test("DR1 line 108: the toggle holds one aria-hidden close mark, U+00D7, and keeps its name", () => {
-  const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8").replace(/<!--[\s\S]*?-->/g, "");
-  const m = /<button[^>]*\bid="scale-layout-toggle"[^>]*>([\s\S]*?)<\/button>/.exec(html);
-  assert.ok(m, "no toggle in the markup");
-  const marks = [...m[1].matchAll(/<span\b[^>]*\baria-hidden="true"[^>]*>([^<]*)<\/span>/g)];
-  assert.strictEqual(marks.length, 1);
-  assert.ok(marks[0][1] === "×" || marks[0][1] === "&times;", `the mark reads ${marks[0][1]}`);
-  const app = boot();
-  dr1Open(app);
-  assert.strictEqual(dr1Markup("scale-layout-toggle").attr("aria-label"), "Adjust layout");
-  for (const open of [false, true]) {
-    if (open) dr1Toggle(app).click();
-    assert.strictEqual(dr1Toggle(app).getAttribute("aria-label"), null, "the app rewrote the toggle's name; the markup's stays");
-  }
 });
 
 test("DR1 line 40: the pan drawn with interactive off is byte-identical to the shipped output for all five built-in decks", () => {
@@ -6816,13 +6801,13 @@ test("DR1 line 115: Pygmy typed on Add opens #1 CENTRED; one tap on #1 / #2 give
   assert.strictEqual(app.els["scale-anchor-between"].getAttribute("aria-pressed"), "true");
 });
 
-test("DR1 line 121: closing over an invalid or empty box lands on the field; over a valid one on the toggle; Escape from the field stays there", () => {
+test("DR1 line 121: closing Adjust layout over an invalid or empty box lands on the toggle, aria-disabled; the box is not in the layer", () => {
   const app = boot();
   dr1Open(app, W1_NONE);
   dr1Toggle(app).click();
   app.type("(D3) zzz");
   app.els["scale-anchor-one"].focus();
-  dr1Toggle(app).click();
+  dr1Close(app);
   assert.strictEqual(app.activeId(), "scale-layout-toggle");
   assert.strictEqual(dr1Toggle(app).getAttribute("aria-disabled"), "true");
   assert.strictEqual(dr1Toggle(app).disabled, false);
@@ -6835,17 +6820,7 @@ test("DR1 line 121: closing over an invalid or empty box lands on the field; ove
   empty.keydown("Escape");
   assert.strictEqual(empty.activeId(), "scale-layout-toggle");
   assert.strictEqual(dr1Toggle(empty).getAttribute("aria-disabled"), "true");
-
-  const typing = boot();
-  dr1Open(typing, W1_NONE);
-  dr1Toggle(typing).click();
-  typing.els["scale-box"].focus();
-  typing.keydown("Escape");
-  assert.strictEqual(typing.els["scale-drawer"].hidden, true);
-  assert.strictEqual(typing.activeId(), "scale-box");
 });
-
-
 
 test("DR1 line 131: on Edit, Escape from NOTE closes the drawer, keeps the sheet and focuses the toggle", () => {
   const app = boot();
@@ -6910,7 +6885,10 @@ test("DR1 rule S: notice, toggle, switches, anchors and hint match spec 16 for e
     const press = (id) => {
       const e = app.els[id];
       if (e.disabled || e.getAttribute("aria-disabled") === "true" || !e.getClientRects().length) return false;
-      e.focus(); e.click();
+      const closing = id === "scale-layout-toggle" && M.open;
+      const target = closing ? app.els["scale-adjust-back"] : e;
+      target.focus(); target.click();
+      if (closing) { app.history.state = { scalePage: true }; app.popstate(); }
       if (id === "scale-layout-toggle") M.open = !M.open;
       if (id === "scale-mirror") M.mirror = !M.mirror;
       if (id === "scale-mirror-bottom") M.mb = !M.mb;
@@ -7178,9 +7156,9 @@ for (const edit of [false, true]) {
     assert.deepStrictEqual(d2Rover(app), ["E4"]);
     assert.deepStrictEqual(d2Pressed(app), ["C4"]);
     app.press(d2Hit(app, "E4"), "Tab");
-    assert.strictEqual(app.activeId(), "scale-layout-toggle");
+    assert.strictEqual(app.activeId(), "scale-anchor-one");
     assert.deepStrictEqual(d2Rover(app), ["C4"], "tab entry is not the picked note");
-    app.press(app.els["scale-layout-toggle"], "Tab", { shiftKey: true });
+    app.press(app.els["scale-anchor-one"], "Tab", { shiftKey: true });
     assert.strictEqual(d2Focus(app), "C4");
     assert.deepStrictEqual(d2Pressed(app), ["C4"]);
     assert.strictEqual(d2Seats(app), null);
@@ -7202,13 +7180,15 @@ for (const edit of [false, true]) {
     assert.deepStrictEqual(d2Norm(d2Seats(app)), { rim: [0, 2, 1, 3, 4, 5, 6, 7] });
     assert.strictEqual(d2Focus(app), "C4", "focus did not go to the picked note from a SEAT button");
     d2Tap(app, "D4");
-    app.els["scale-box"].focus();
+    app.els["scale-anchor-one"].focus();
     app.keydown("Escape");
     assert.strictEqual(d2Pick(app), null);
     assert.strictEqual(app.els["scale-drawer"].hidden, false);
     app.keydown("Escape");
     assert.strictEqual(app.els["scale-drawer"].hidden, true);
-    assert.strictEqual(app.activeId(), "scale-box", "focus left the field");
+    assert.strictEqual(app.activeId(), "scale-layout-toggle", "focus left the toggle");
+    app.history.state = { scalePage: true };
+    app.popstate();
     app.keydown("Escape");
     assert.strictEqual(app.sheetOpen(), false);
   });
@@ -7237,7 +7217,7 @@ for (const edit of [false, true]) {
 
     const two = boot();
     d2Open(two, D2_AMARA, edit);
-    two.els["scale-layout-toggle"].click();
+    dr1Close(two);
     two.type("(D3) A3 | C4");
     two.els["scale-layout-toggle"].click();
     assert.strictEqual(d2Status(two), "This pan has no ring with two notes, so there is nothing to rearrange.");
@@ -7308,7 +7288,7 @@ test("DR2a (68, 122, 99, 18): closing the drawer, or a scale that stops parsing,
   const app = boot();
   d2Open(app, D2_AMARA, false);
   d2Tap(app, "A3"); d2Tap(app, "C4"); d2Tap(app, "D4");
-  app.els["scale-layout-toggle"].click();
+  dr1Close(app);
   assert.strictEqual(d2Pick(app), null);
   assert.deepStrictEqual(d2Norm(d2Seats(app)), { rim: [1, 0, 2, 3, 4, 5, 6, 7] });
   app.els["scale-layout-toggle"].click();
@@ -7330,7 +7310,7 @@ test("DR2a item 7 (121): closing the drawer over a scale that does not parse lea
   d2Open(app, D2_AMARA, false);
   app.type("(D3) zzz");
   app.els["scale-note-next"].focus();
-  app.els["scale-layout-toggle"].click();
+  dr1Close(app);
   assert.strictEqual(app.els["scale-layout-toggle"].disabled, false);
   assert.strictEqual(app.els["scale-layout-toggle"].getAttribute("aria-disabled"), "true");
   assert.strictEqual(app.activeId(), "scale-layout-toggle");
@@ -7382,18 +7362,18 @@ test("DR3 Tab order on Add and Edit, finer controls closed and open", () => {
       if (open) app.els["scale-fine-toggle"].click();
       d2Tap(app, "G3");
       app.els["scale-seat-next"].click();
-      app.els["scale-back"].focus();
+      app.els["scale-adjust-back"].focus();
       const seen = [];
       for (let i = 0; i < 40; i += 1) {
         app.press(app.els["scale-sheet"], "Tab");
         const here = app.activeHit() !== null ? "plate" : app.activeId();
-        if (here === "scale-back") break;
+        if (here === "scale-adjust-back") break;
         seen.push(here);
       }
-      const want = [edit ? "scale-name" : null, "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box", "plate", "scale-layout-toggle", "scale-anchor-one",
+      const want = ["plate", "scale-anchor-one",
         "scale-anchor-between", "scale-mirror", "scale-mirror-bottom", "scale-fine-toggle",
         ...(open ? ["scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next"] : []),
-        "scale-layout-reset"].filter((x) => x !== null);
+        "scale-layout-reset"];
       const ctx = `edit=${edit} open=${open}: ${seen}`;
       assert.deepStrictEqual(seen.slice(0, want.length), want, ctx);
       assert.strictEqual(seen.filter((x) => x === "plate").length, 1, "the plate is more than one Tab stop");
@@ -7495,7 +7475,7 @@ for (const edit of [false, true]) {
     const a = { rim: 3, inner: 3, bottom: 3 };
     d2Open(app, d2Build(a).text, edit);
     d2Tap(app, "E3"); d2Tap(app, "F3");
-    app.els["scale-layout-toggle"].click();
+    dr1Close(app);
     app.type(d2Build({ ...a, rim: 5 }).text);
     assert.deepStrictEqual(d2Seats(app), null);
     app.type(d2Build(a).text);
@@ -7507,7 +7487,7 @@ for (const edit of [false, true]) {
     assert.strictEqual(d2Status(app), "");
     const none = boot();
     d2Open(none, d2Build(a).text, edit);
-    none.els["scale-layout-toggle"].click();
+    dr1Close(none);
     none.type("(D3) A3 | C4");
     none.els["scale-layout-toggle"].click();
     assert.strictEqual(d2Status(none), "This pan has no ring with two notes, so there is nothing to rearrange.");
@@ -7697,17 +7677,18 @@ for (const edit of [false, true]) {
   test(`DR2a (18): opening the drawer focuses the first pickable note and no other control, ${edit ? "Edit" : "Add"}`, () => {
     const app = boot();
     d2Open(app, D2_AMARA, edit);
-    assert.strictEqual(d2Focus(app), "A3", "focus did not move to the first pickable note on open");
-    assert.deepStrictEqual(d2Rover(app), ["A3"]);
+    assert.strictEqual(app.activeId(), "scale-adjust-title", "focus did not move to the layer's title on open");
+    assert.strictEqual(app.activeHit(), null, "a note is focused on open");
+    assert.strictEqual(d2Pick(app), null, "a note is armed on open");
   });
 }
 
-test("DR2a (18): a pan whose only ring of two is the bottom focuses the first note of that ring", () => {
+test("DR2a (18): a pan whose only ring of two is the bottom opens the layer on its title with no note focused or armed", () => {
   const app = boot();
   d2Open(app, "[C3] [D3] (A3) E4", false);
-  const name = d2Focus(app);
-  assert.ok(app.activeHit() !== null, "focus is not on a note: " + name);
-  assert.match(name, /^[CD]3$/, "the first pickable note is in the bottom ring");
+  assert.strictEqual(app.activeId(), "scale-adjust-title");
+  assert.strictEqual(app.activeHit(), null);
+  assert.strictEqual(d2Pick(app), null);
 });
 
 test("DR2a (71): MIRROR TOP then #1 / #2 leave every permutation as it was", () => {
@@ -7985,7 +7966,7 @@ describe("DR2b drag, touch (rule T traces on a controlled clock)", () => {
 
   test("DR2b (47): the touchmove listener leaves with the drawer", () => {
     const app = dgOpen({});
-    app.els["scale-layout-toggle"].click();
+    dr1Close(app);
     assert.strictEqual((app.els["scale-preview"].listeners.touchmove || []).length, 0);
     app.els["scale-layout-toggle"].click();
     assert.strictEqual(app.els["scale-preview"].listeners.touchmove.length, 1);
@@ -8560,6 +8541,8 @@ test("DR3 Escape from the disclosure closes the drawer and focuses the toggle", 
   assert.strictEqual(app.els["scale-drawer"].hidden, true);
   assert.strictEqual(app.sheetOpen(), true);
   assert.strictEqual(app.activeId(), "scale-layout-toggle");
+  app.history.state = { scalePage: true };
+  app.popstate();
   app.els["scale-layout-toggle"].click();
   d2Tap(app, "D4");
   assert.ok(d2Pick(app));
@@ -10961,7 +10944,7 @@ describe("DI: dual input", () => {
     }
   });
 
-  test("DI: the sheet's Tab order is BACK, the deck name on Edit, DING, TOP, INNER, BOTTOM, then #scale-box and the existing stops", () => {
+  test("DI: the sheet's Tab order is BACK, the deck name on Edit, ADJUST LAYOUT once a scale is typed, DING, TOP, INNER, BOTTOM, then #scale-box and the existing stops", () => {
     const walk = (app, n) => {
       const seen = [];
       for (let i = 0; i < n; i += 1) { app.press(el(app, app.activeId() || "scale-back"), "Tab"); seen.push(app.activeId()); }
@@ -10972,7 +10955,7 @@ describe("DI: dual input", () => {
     assert.deepStrictEqual(walk(add, 5), ["scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box"]);
     const edit = openBuiltin("amara");
     el(edit, "scale-back").focus();
-    assert.deepStrictEqual(walk(edit, 6), ["scale-name", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box"]);
+    assert.deepStrictEqual(walk(edit, 7), ["scale-name", "scale-layout-toggle", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box"]);
   });
 
   test("DI: a typed line keeps its spelling until a field edit rewrites it canonically", () => {
@@ -11116,11 +11099,235 @@ test("KB: F4 the put-down focus path passes preventScroll", () => {
     "the put-down focus scrolled the sheet");
 });
 
-test("KB: F4 opening the drawer focuses the first note with preventScroll", () => {
+test("KB: F4 opening the layer focuses its title with preventScroll", () => {
   const app = boot();
   openSheet(app);
   app.type(D2_AMARA);
   app.els["scale-layout-toggle"].click();
-  assert.ok(app.activeHit() !== null, "opening the drawer did not focus a note");
+  assert.strictEqual(app.activeId(), "scale-adjust-title", "opening the layer did not focus its title");
   assert.deepStrictEqual(plain(app.get("document.activeElement.focusOpts")), { preventScroll: true });
+});
+
+/* ------------------------- UX: two pan sizes, Adjust layout ----------------
+ * Lane P of docs/plans/2026-10-19-dual-input-sheet-ux.md. Adjust layout is a
+ * full-screen layer over the sheet that owns one STATE-ONLY history entry at
+ * the sheet's own route. The sandbox keeps no entry stack, so a test plays the
+ * browser: history.state and location are set by hand before popstate(). */
+const uxBacks = (app) => app.history.calls.filter((c) => c.type === "back").length;
+const uxPushes = (app) => app.history.calls.filter((c) => c.type === "push");
+const uxAdjusting = (app) => app.els["scale-sheet"].classList.contains("adjusting");
+const uxOpen = (app, text = W1_NONE) => { dr1Open(app, text); return app; };
+const uxToggle = (app) => app.els["scale-layout-toggle"].click();
+const uxPopTo = (app, state) => { app.history.state = state; app.popstate(); };
+
+test("UX: opening Adjust layout pushes one state-only entry at the sheet's route and adds .adjusting", () => {
+  const app = uxOpen(boot());
+  const before = uxPushes(app).length;
+  assert.strictEqual(uxAdjusting(app), false);
+  assert.strictEqual(app.els["scale-adjust-head"].hidden, true);
+  uxToggle(app);
+  const pushed = uxPushes(app).slice(before);
+  assert.strictEqual(pushed.length, 1, "Adjust layout did not push exactly one entry");
+  assert.strictEqual(pushed[0].url, "#add");
+  assert.deepStrictEqual(plain(pushed[0].state), { scalePage: true, adjust: true });
+  assert.strictEqual(app.location.hash, "#add");
+  assert.strictEqual(uxAdjusting(app), true);
+  assert.strictEqual(app.els["scale-adjust-head"].hidden, false);
+  assert.strictEqual(app.els["scale-sheet"].getAttribute("aria-labelledby"), "scale-adjust-title");
+});
+
+test("UX: a tap on the small pan opens Adjust layout; on an empty or invalid scale it does nothing", () => {
+  const app = uxOpen(boot());
+  const before = uxPushes(app).length;
+  app.click(app.els["scale-preview"]);
+  assert.strictEqual(uxAdjusting(app), true, "a tap on the small pan did not open Adjust layout");
+  assert.strictEqual(uxPushes(app).length, before + 1);
+  for (const text of ["", "(D3) zzz"]) {
+    const bare = uxOpen(boot(), null);
+    if (text) bare.type(text);
+    const n = uxPushes(bare).length;
+    bare.click(bare.els["scale-preview"]);
+    assert.strictEqual(uxAdjusting(bare), false, `a tap opened Adjust layout on ${JSON.stringify(text)}`);
+    assert.strictEqual(uxPushes(bare).length, n);
+  }
+});
+
+test("UX: BACK, Escape and a popstate each close Adjust layout, keep the sheet, consume the entry and focus ADJUST LAYOUT", () => {
+  for (const how of ["back", "escape", "popstate"]) {
+    const app = uxOpen(boot());
+    uxToggle(app);
+    const backs = uxBacks(app);
+    if (how === "back") app.els["scale-adjust-back"].click();
+    else if (how === "escape") app.keydown("Escape");
+    else uxPopTo(app, { scalePage: true });
+    assert.strictEqual(uxAdjusting(app), false, how);
+    assert.strictEqual(app.sheetOpen(), true, `${how} closed the sheet`);
+    assert.strictEqual(app.activeId(), "scale-layout-toggle", how);
+    assert.strictEqual(app.els["scale-adjust-head"].hidden, true, how);
+    assert.strictEqual(app.els["scale-sheet"].getAttribute("aria-labelledby"), "scale-title", how);
+    if (how === "popstate") assert.strictEqual(uxBacks(app), backs, "a pop issued a back of its own");
+    else {
+      assert.strictEqual(uxBacks(app), backs + 1, `${how} did not consume its entry`);
+      uxPopTo(app, { scalePage: true });
+      assert.strictEqual(app.sheetOpen(), true, `the answering pop of ${how} closed the sheet`);
+      assert.strictEqual(uxBacks(app), backs + 1, `the answering pop of ${how} issued another back`);
+    }
+    assert.strictEqual(app.location.hash, "#add", how);
+  }
+});
+
+test("UX: a Forward traversal onto a popped Adjust entry reopens it when the scale parses and steps back otherwise", () => {
+  const app = uxOpen(boot());
+  uxToggle(app);
+  uxPopTo(app, { scalePage: true });
+  assert.strictEqual(uxAdjusting(app), false);
+  const pushes = uxPushes(app).length;
+  uxPopTo(app, { scalePage: true, adjust: true });
+  assert.strictEqual(uxAdjusting(app), true, "Forward did not reopen Adjust layout");
+  assert.strictEqual(uxPushes(app).length, pushes, "Forward pushed a second entry");
+  assert.strictEqual(app.sheetOpen(), true);
+
+  uxPopTo(app, { scalePage: true });
+  app.type("(D3) zzz");
+  const backs = uxBacks(app);
+  uxPopTo(app, { scalePage: true, adjust: true });
+  assert.strictEqual(uxAdjusting(app), false, "Forward opened Adjust layout on a scale that does not parse");
+  assert.strictEqual(uxBacks(app), backs + 1, "Forward onto a refused entry did not step back");
+  assert.strictEqual(uxPushes(app).length, pushes);
+  uxPopTo(app, { scalePage: true });
+  assert.strictEqual(app.sheetOpen(), true, "the answering pop closed the sheet");
+  assert.strictEqual(uxBacks(app), backs + 1);
+});
+
+test("UX: closing the sheet while Adjust layout is open issues one back, then a second only after the first pop, and the bar ends on the deck's route", () => {
+  const app = uxOpen(boot());
+  uxToggle(app);
+  const backs = uxBacks(app);
+  app.els["scale-back"].click();
+  assert.strictEqual(uxBacks(app), backs + 1, "the first back was not issued");
+  assert.strictEqual(uxAdjusting(app), false);
+  assert.strictEqual(app.sheetOpen(), true, "the sheet closed before the first pop");
+  uxPopTo(app, { scalePage: true });
+  assert.strictEqual(app.sheetOpen(), false, "the first pop did not close the sheet");
+  assert.strictEqual(uxBacks(app), backs + 2, "the second back was not issued after the first pop");
+  uxPopTo(app, null);
+  assert.strictEqual(uxBacks(app), backs + 2);
+  assert.strictEqual(app.location.hash, "#deck=d-kurd-10");
+});
+
+test("UX: Escape twice in quick succession closes Adjust layout then the sheet, the second back issued only after the first pop", () => {
+  const app = uxOpen(boot());
+  uxToggle(app);
+  const backs = uxBacks(app);
+  app.keydown("Escape");
+  app.keydown("Escape");
+  assert.strictEqual(uxBacks(app), backs + 1, "the second Escape issued its back before the first pop");
+  assert.strictEqual(app.sheetOpen(), true);
+  uxPopTo(app, { scalePage: true });
+  assert.strictEqual(app.sheetOpen(), false);
+  assert.strictEqual(uxBacks(app), backs + 2);
+  uxPopTo(app, null);
+  assert.strictEqual(app.location.hash, "#deck=d-kurd-10");
+  assert.strictEqual(uxBacks(app), backs + 2);
+});
+
+test("UX: a Back onto an entry left with adjust state by a reload closes the sheet and does not open Adjust layout", () => {
+  const app = boot();
+  openSheet(app);
+  app.type(W1_NONE);
+  const pushes = uxPushes(app).length;
+  app.location.hash = "#deck=d-kurd-10";
+  uxPopTo(app, { scalePage: true, adjust: true });
+  assert.strictEqual(app.sheetOpen(), false, "the sheet stayed open");
+  assert.strictEqual(uxAdjusting(app), false, "a stale adjust state reopened Adjust layout");
+  assert.strictEqual(uxPushes(app).length, pushes);
+  assert.strictEqual(app.get("adjustRouted"), false);
+  assert.strictEqual(app.get("pendingAdjustPop"), false);
+});
+
+test("UX: a typed #deck= fragment while Adjust layout is open closes the layer and the sheet, as a fragment closes the sheet today, and hashchange routes the deck", () => {
+  const app = uxOpen(boot());
+  uxToggle(app);
+  const backs = uxBacks(app);
+  app.location.hash = "#deck=d-amara-9";
+  app.popstate();
+  app.hashchange("#deck=d-amara-9", { force: true });
+  assert.strictEqual(app.sheetOpen(), false, "the sheet stayed open");
+  assert.strictEqual(uxAdjusting(app), false, "the layer stayed up");
+  assert.strictEqual(app.els["scale-sheet"].getAttribute("aria-labelledby"), "scale-title");
+  assert.strictEqual(app.deckId(), "amara");
+  assert.strictEqual(uxBacks(app), backs, "a fragment navigation popped an entry");
+});
+
+test("UX: closing Adjust layout focuses ADJUST LAYOUT, never body, and moves no scroll before the restore", () => {
+  const app = uxOpen(boot());
+  uxToggle(app);
+  const opts = [];
+  const toggle = app.els["scale-layout-toggle"];
+  const focus = toggle.focus;
+  toggle.focus = function (o) { opts.push(o); return focus.call(this, o); };
+  app.els["scale-adjust-back"].focus();
+  app.els["scale-adjust-back"].click();
+  assert.strictEqual(app.activeId(), "scale-layout-toggle");
+  assert.ok(opts.length >= 1, "ADJUST LAYOUT was never focused");
+  assert.deepStrictEqual(plain(opts.at(-1)), { preventScroll: true }, "the focus could scroll the sheet");
+});
+
+test("UX: opening Adjust layout on a scale that does not parse pushes nothing", () => {
+  const app = uxOpen(boot(), "(D3) zzz");
+  const n = uxPushes(app).length;
+  app.run("showAdjust()");
+  uxToggle(app);
+  assert.strictEqual(uxPushes(app).length, n);
+  assert.strictEqual(uxAdjusting(app), false);
+  assert.strictEqual(app.els["scale-adjust-head"].hidden, true);
+});
+
+test("UX: the Tab cycle inside Adjust layout is BACK, the plate, the layout controls and RESET LAYOUT, and wraps", () => {
+  const app = boot();
+  d2Open(app, DR1_PYGMY_MAKER, false);
+  assert.strictEqual(uxAdjusting(app), true);
+  app.els["scale-fine-toggle"].click();
+  d2Tap(app, "G3");
+  app.els["scale-seat-next"].click();
+  const here = () => (app.activeHit() !== null ? "plate" : app.activeId());
+  app.els["scale-adjust-back"].focus();
+  const seen = [];
+  for (let i = 0; i < 13; i += 1) { app.press(app.els["scale-sheet"], "Tab"); seen.push(here()); }
+  assert.deepStrictEqual(seen, ["plate", "scale-anchor-one", "scale-anchor-between", "scale-mirror",
+    "scale-mirror-bottom", "scale-fine-toggle", "scale-note-prev", "scale-note-next", "scale-seat-prev",
+    "scale-seat-next", "scale-layout-reset", "scale-adjust-back", "plate"]);
+  app.els["scale-adjust-back"].focus();
+  app.press(app.els["scale-sheet"], "Tab", { shiftKey: true });
+  assert.strictEqual(here(), "scale-layout-reset", "Shift+Tab from BACK did not wrap");
+  for (const id of ["scale-back", "scale-box", "scale-ding", "scale-generate", "scale-layout-toggle"]) {
+    assert.ok(!seen.includes(id), `${id} is a Tab stop inside Adjust layout`);
+  }
+});
+
+test("UX: a popstate mid-drag cancels the gesture and moves nothing", () => {
+  const app = dgOpen({});
+  const g = DG.down(app, "A3");
+  DG.moveTo(app, g, g.x + 6, g.y);
+  assert.strictEqual(DG.ghostEls(app).length, 1, "no ghost mid-drag");
+  assert.strictEqual(uxAdjusting(app), true);
+  uxPopTo(app, { scalePage: true });
+  assert.strictEqual(uxAdjusting(app), false);
+  assert.strictEqual(app.sheetOpen(), true, "the pop closed the sheet");
+  assert.strictEqual(dgPress(app), null, "the press survived the pop");
+  assert.strictEqual(DG.ghostEls(app).length, 0, "the ghost survived the pop");
+  assert.strictEqual(dgSeats(app), null, "the pop moved a note");
+});
+
+test("UX: layout edits made in Adjust layout survive BACK and reach GENERATE", () => {
+  const app = boot();
+  dr1Open(app, DR1_PYGMY_MAKER);
+  uxToggle(app);
+  app.els["scale-anchor-between"].click();
+  app.els["scale-adjust-back"].click();
+  uxPopTo(app, { scalePage: true });
+  assert.strictEqual(app.els["scale-anchor-between"].getAttribute("aria-pressed"), "true");
+  assert.strictEqual(app.sheetOpen(), true);
+  app.els["scale-generate"].click();
+  assert.strictEqual(app.registry()[app.deckId()].options.anchor, "between");
 });

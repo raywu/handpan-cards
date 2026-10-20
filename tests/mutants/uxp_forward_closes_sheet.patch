@@ -1,0 +1,15 @@
+# kills: UX: a Forward traversal onto a popped Adjust entry reopens it when the scale parses and steps back otherwise
+# suite: node --test --test-name-pattern ^UX:.a.Forward.traversal tests/app.test.js
+# A Forward traversal onto the Adjust entry closes the sheet instead of reopening the layer.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11543,7 +11543,7 @@ window.addEventListener("popstate", () => {
+     adjustRouted = false;
+     hideAdjust();
+     if (atSheet) return;
+-  } else if (atSheet && sheetOpen && history.state && history.state.adjust) {
++  } else if (false && atSheet && sheetOpen && history.state && history.state.adjust) {
+     if (boxOk) { adjustRouted = true; enterAdjust(); } else { pendingAdjustPop = true; history.back(); }
+     return;
+   }

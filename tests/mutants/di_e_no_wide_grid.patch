@@ -1,16 +1,17 @@
 # kills: DI: at 1280x800 the Edit sheet shows the pan beside the four fields and DING without scrolling
 # Plan wording: DI: at 1280x800 the Edit sheet shows the pan beside the four fields
 # suite: node --test --test-name-pattern ^DI:.at.1280x800.the.Edit.sheet tests/e2e.test.js
+# The stage is a block, so the small pan stacks above the fields. Re-anchored 2026-10-19 (lane P).
 # Mutant di_e_no_wide_grid.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1090,7 +1090,7 @@ footer.seq{row-gap:var(--sp-1)}
- /* The app's settings trigger paints over the open sheet; it has no job there. */
- body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
- @container surf (min-width:600px){
--  .scalestage{display:grid; grid-template-columns:auto minmax(0,1fr); column-gap:var(--sp-4); align-items:start}
-+  .scalestage{display:flex; grid-template-columns:auto minmax(0,1fr); column-gap:var(--sp-4); align-items:start}
-   .scalestage > #scale-plate-band{padding-bottom:0}
-   .scalestage #scale-preview{width:clamp(200px, calc(100cqh - 306px), 300px)}
-   .sheetbody{scroll-padding-top:0}
+@@ -1051,7 +1051,7 @@ footer.seq{row-gap:var(--sp-1)}
+ /* The stage: the small pan and its caption in column one, the four fields in
+    column two. The column is as wide as the pan alone: the caption and hint are
+    0-wide and stretch, so their text never widens it. */
+-.scalestage{display:grid; grid-template-columns:auto minmax(0,1fr); gap:var(--sp-3); align-items:start}
++.scalestage{display:block; grid-template-columns:auto minmax(0,1fr); gap:var(--sp-3); align-items:start}
+ .scalecol{display:flex; flex-direction:column; gap:var(--sp-3); min-width:0}
+ .pancol{position:sticky; top:0; z-index:2; display:flex; flex-direction:column; gap:var(--sp-1)}
+ .pancol > #scale-layout-row{width:0; min-width:100%}

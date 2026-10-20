@@ -1,16 +1,16 @@
-# suite: node --test --test-name-pattern ^the.sheet.widens.with.the.viewport.on.desktop,.and.the.pan.with.it$ tests/e2e.test.js
-# kills: the sheet widens with the viewport on desktop, and the pan with it
+# suite: node --test --test-name-pattern ^the.sheet.widens.with.the.viewport.on.desktop,.and.the.small.pan.stays.at.most.160px$ tests/e2e.test.js
+# kills: the sheet widens with the viewport on desktop, and the small pan stays at most 160px
 # The sheet goes back to one width at every desktop size, so a 1440px window
 # shows the same 520px column as a 640px one.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -542,7 +542,7 @@ button.nav:active{background:#2e281e}
+@@ -976,7 +976,7 @@ footer.seq{row-gap:var(--sp-1)}
     is as far as it goes: beyond that the mock starts competing with the card.
     Gated on both axes like the ramp, so no phone in landscape picks it up. */
  @media (min-width:640px) and (min-height:700px){
 -  .sheetsurf{max-width:clamp(520px, 52vw, 680px)}
 +  .sheetsurf{max-width:520px}
-   #scale-preview{max-width:340px}
  }
  /* No min-height here: .mode carries the 44px minimum for every .mode on the
+    page, sheet buttons included. */

@@ -1,0 +1,14 @@
+# kills: UX: BACK, Escape and a popstate each close Adjust layout, keep the sheet, consume the entry and focus ADJUST LAYOUT
+# suite: node --test --test-name-pattern ^UX:.BACK,.Escape.and.a.popstate tests/app.test.js
+# Closing the layer moves focus nowhere.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10620,7 +10620,6 @@ function hideAdjust() {
+   adjustHead.hidden = true;
+   sheet.setAttribute("aria-labelledby", "scale-title");
+   drawerBtn.disabled = false;
+-  drawerBtn.focus({ preventScroll: true });
+   closeDrawer();
+   bandPort.scrollTop = sheetScroll;
+ }
