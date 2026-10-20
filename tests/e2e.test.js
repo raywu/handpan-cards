@@ -14302,6 +14302,8 @@ function run() {
           document.getElementById("scale-lip").click();
           return true;`);
         await sleep(600);
+        for (let i = 0; i < 30 && await b.eval(`return document.getElementById("scale-sheet").classList.contains("lipped");`); i++) await sleep(100);
+        await sleep(300);
         const hs = await b.eval(`return window.__h;`);
         assert.ok(hs.length > 3, `only ${hs.length} frames sampled in the slide`);
         for (const v of hs) assert.ok(Math.abs(v - lippedH) <= 0.5, `the body was ${v}px mid-slide, lipped height ${lippedH}`);
