@@ -542,6 +542,8 @@ All four are one line at 844x390 (335px).
 
 **Owner answers (2026-10-19, round 2).** Phone recheck of lanes A and KB2b on DEV a256aec: PASSED, the iOS jitter tap included (closes K-N3). D3 (a) scroll inside the field. D16 (b) no extra line. D6 REVISED by owner after the playground: (b) a 180ms slide, and the collapsed footer is fully collapsed, a 1-5px lip ("The artifact's collapse doesn't minimize all the way which still takes up valuable viewport. It needs to be a 1-5px lip. I prefer 180 ms"). This supersedes section 3.4's 44px lip and the D6 (a) recommendation and its "no motion" oscillation argument; lane L is re-planned (restore affordance for a lip under 44px, a slide that does not resize the scroller per frame, and a fresh oscillation proof) and that subplan takes its own eng review before lane L starts. D5 and D17 are moot under a lip with no text; D18 stands for the lip control's accessible name. Lane P (items 1-3) is unaffected.
 
+**Owner answers (2026-10-19, round 3).** Lip reopen (new, owner): a combination of an invisible tap zone smaller than 44px ("consider 25px"), scroll up, and swipe up on the lip edge. The tap zone departs from the 44px target rule by owner decision; keyboard users get the lip button itself. D4 (a) accept. D7 (a) swatches stay in the sheet. D8 30cqw, clamp 88-160px. D9 (a) "Back to the scale". D13 (a) no event. D14 24px and 150ms. D18 (a) "Show GENERATE CARDS" / "Show SAVE CHANGES" on the lip control. Every open decision is now answered; the lane L subplan carries D6 and the reopen rule.
+
 ## 6. Lanes
 
 **Split decision: SERIALIZED** (stacked branches), not parallel by region. The reasons:
