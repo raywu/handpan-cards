@@ -1,0 +1,14 @@
+# kills: UX: a user scroll up of 24px, or one that lands at the end, restores the footer
+# suite: node --test --test-name-pattern UX:.a.user.scroll.up.of.24px..or.one.that.lands.at.the.end..restores.the.footer tests/app.test.js
+# uxl_end_not_restoring
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10732,7 +10732,6 @@ function lipScroll() {
+   const now = Date.now();
+   if (!sheetOpen || sheet.classList.contains("kbup") || now < lipQuietUntil || now > userWindowUntil) return;
+   userWindowUntil = now + LIP_WINDOW;
+-  if (isLipShut() && t >= M - 1) { restoreLip(); return; }
+   if (M !== prev.M) { lipAcc = 0; return; }
+   const d = t - prev.t;
+   if (d * lipAcc < 0) lipAcc = 0;

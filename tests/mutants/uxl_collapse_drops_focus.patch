@@ -1,0 +1,14 @@
+# kills: UX: a collapse while GENERATE CARDS holds focus moves focus to the lip, never body
+# suite: node --test --test-name-pattern UX:.a.collapse.while.GENERATE.CARDS.holds.focus.moves.focus.to.the.lip..never.body tests/app.test.js
+# uxl_collapse_drops_focus
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10668,7 +10668,6 @@ function collapseLip() {
+   const gen = lipGen;
+   lipTimer = setTimeout(() => { if (gen === lipGen) lipSettled = true; }, LIP_END_MS);
+   const a = document.activeElement;
+-  if (a === nextBtn || a === genBtn || a === delBtn) lipBtn.focus({ preventScroll: true });
+ }
+ function restoreLip() {
+   if (!sheetOpen || !isLipped() || !isLipShut()) return;

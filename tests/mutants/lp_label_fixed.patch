@@ -1,0 +1,15 @@
+# kills: LP: the lip's aria-label names the visible primary: Show NEXT, Show GENERATE CARDS, Show SAVE CHANGES
+# suite: node --test --test-name-pattern LP:.the.lip.s.aria-label.names.the.visible.primary:.Show.NEXT..Show.GENERATE.CARDS..Show.SAVE.CHANGES tests/app.test.js
+# lp_label_fixed
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10659,7 +10659,7 @@ function collapseLip() {
+   const open = lipRead();
+   sheet.classList.add("lipnow", "lipped");
+   lipBtn.hidden = false;
+-  lipBtn.setAttribute("aria-label", "Show " + lipPrimary().textContent);
++  lipBtn.setAttribute("aria-label", "Show NEXT");
+   lipWrite(open);
+   lipFlush();
+   sheet.classList.remove("lipnow");

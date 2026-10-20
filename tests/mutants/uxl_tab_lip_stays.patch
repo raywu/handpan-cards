@@ -1,0 +1,14 @@
+# kills: UX: Tab onto the lip restores the footer and focuses GENERATE CARDS
+# suite: node --test --test-name-pattern UX:.Tab.onto.the.lip.restores.the.footer.and.focuses.GENERATE.CARDS tests/app.test.js
+# uxl_tab_lip_stays
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10767,7 +10767,6 @@ lipBtn.addEventListener("touchmove", (e) => {
+ }, { passive: true });
+ lipBtn.addEventListener("touchend", () => { lipTouch = null; }, { passive: true });
+ lipBtn.addEventListener("click", restoreLip);
+-lipBtn.addEventListener("focusin", restoreLip);
+ footSlide.addEventListener("transitionend", (e) => {
+   if (e.target === footSlide && e.propertyName === "transform") endOpening(lipEnd);
+ });

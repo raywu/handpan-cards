@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11204,7 +11204,7 @@
+@@ -11519,7 +11519,7 @@ function applyKbOffset(e) {
    setSheetClass("kbup", kb);
    setSheetClass("short", high > 0 && high < 560);
    setSheetClass("side", high > 0 && high < 420);
 -  setSheetClass("tiny", kb && high > 0 && high < 200);
 +  setSheetClass("tiny", false);
+   lipKbEdge(wasUp, kb);
    syncBand();
    if (e && e.type === "scroll") return;
-   const at = document.activeElement;

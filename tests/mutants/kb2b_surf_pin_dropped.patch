@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10509,7 +10509,7 @@ sheet.addEventListener("touchmove", (e) => {
+@@ -10601,7 +10601,7 @@ sheet.addEventListener("touchmove", (e) => {
  sheet.addEventListener("pointercancel", dropTap, true);
  sheet.addEventListener("wheel", releasePin, { passive: true });
  bandPort.addEventListener("scroll", holdPin);
 -if (sheetSurf) sheetSurf.addEventListener("scroll", holdPin);
 +
- function hasTwoNoteRing() {
-   const res = HPE.core.parseSeed(String(scaleBox.value || ""), layoutOptions());
-   if (!res.ok) return true;
+ 
+ /* ---- the footer lip ----
+  * OPEN -> SHUTTING (collapseLip), SHUT -> OPENING (restoreLip), OPENING -> OPEN

@@ -1,0 +1,15 @@
+# kills: UX: Adjust layout never shows the lip, and opening it restores the footer at once
+# suite: node --test --test-name-pattern UX:.Adjust.layout.never.shows.the.lip..and.opening.it.restores.the.footer.at.once tests/app.test.js
+# uxl_adjust_shows_lip
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10811,7 +10811,7 @@ function setTab(tab) {
+   paintLayout();
+   repaintPlate();
+   bandPort.scrollTop = 0;
+-  setLip(false, { instant: true });
++  setLip(false);
+   if (drawerOpen && boxOk && !hasTwoNoteRing()) layoutStatus("This pan has no ring with two notes, so there is nothing to rearrange.");
+ }
+ /** Leaving the sheet or opening a fresh session: no focus, no status. */

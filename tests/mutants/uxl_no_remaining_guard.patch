@@ -1,0 +1,15 @@
+# kills: UX: a collapse needs more remaining scroll than the open footer's height
+# suite: node --test --test-name-pattern UX:.a.collapse.needs.more.remaining.scroll.than.the.open.footer.s.height tests/app.test.js
+# uxl_no_remaining_guard
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10739,7 +10739,7 @@ function lipScroll() {
+   lipAcc += d;
+   if (lipAcc >= LIP_PX && !isLipShut()) {
+     const E = lipRect(sheetSurf || sheet).bottom - lipRect(bandPort).bottom;
+-    if (M - t > E) collapseLip();
++    collapseLip();
+     lipAcc = 0;
+   } else if (lipAcc <= -LIP_PX && isLipShut()) {
+     restoreLip();

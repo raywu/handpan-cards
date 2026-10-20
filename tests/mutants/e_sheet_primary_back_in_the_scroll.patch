@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1507,7 +1507,6 @@
+@@ -1545,7 +1545,6 @@ html.about-open{overflow:hidden}
        </div>
      </div>
      </div>
@@ -12,9 +12,9 @@ diff --git a/index.html b/index.html
      <!-- The page's messages, pinned with the primary: everything say() writes
           (#scale-msg) and the layout notice (#scale-layout-state, nearest the
           button it names); a pan warning yields to the notice while the notice
-@@ -1537,6 +1536,7 @@
-            below the button is also where the owner is already looking. -->
-       <div id="scale-del-note" aria-live="polite"></div>
+@@ -1583,6 +1582,7 @@ html.about-open{overflow:hidden}
+     </div>
+     <button id="scale-lip" type="button" hidden aria-expanded="false" aria-controls="scale-next scale-generate scale-delete-row" aria-label="Show NEXT"></button>
      </div>
 +   </div>
    </div>

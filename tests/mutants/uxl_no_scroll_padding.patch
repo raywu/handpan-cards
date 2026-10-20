@@ -1,0 +1,23 @@
+# kills: UX: with the keyboard up the lip and the focused field are on screen
+# suite: node --test --test-name-pattern UX:.with.the.keyboard.up.the.lip.and.the.focused.field.are.on.screen tests/e2e.test.js
+# uxl_no_scroll_padding
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -975,7 +975,6 @@ footer.seq{row-gap:var(--sp-1)}
+ #scale-lip::after{content:""; position:absolute; left:50%; bottom:0; width:36px; height:4px;
+   margin-left:-18px; border-radius:2px; background:#a79d8b}
+ #scale-lip:focus-visible{outline-offset:-2px}
+-#scale-sheet.lipped .sheetbody{scroll-padding-bottom:21px}
+ #scale-sheet.lipnow #scale-footslide, #scale-sheet.lipnow #scale-guidance{transition:none}
+ @media (prefers-reduced-motion: reduce){
+   #scale-footslide, #scale-guidance{transition:none !important}
+@@ -10560,7 +10559,7 @@ function revealField(t) {
+     const edge = el.getBoundingClientRect().top + (el.clientTop || 0);
+     const f = t.getBoundingClientRect();
+     const up = f.top - (edge + (parseFloat(css.scrollPaddingTop) || 0));
+-    const down = f.bottom - (edge + el.clientHeight - (parseFloat(css.scrollPaddingBottom) || 0));
++    const down = f.bottom - (edge + el.clientHeight - 0);
+     if (up < 0 || down > 0) lipQuiet();
+     if (up < 0) el.scrollTop += up;
+     else if (down > 0) el.scrollTop += Math.min(down, up);

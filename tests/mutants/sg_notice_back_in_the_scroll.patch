@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1467,6 +1467,7 @@
+@@ -1505,6 +1505,7 @@ html.about-open{overflow:hidden}
        <div id="scale-drawer-status" aria-live="polite" aria-atomic="true" hidden></div>
      </div>
      <div id="scale-layout-zone">
@@ -12,11 +12,11 @@ diff --git a/index.html b/index.html
        <div id="scale-drawer" role="group" aria-label="Layout">
          <p class="sheethint" id="scale-drawer-hint" hidden></p>
          <div class="editrow">
-@@ -1520,7 +1521,6 @@
+@@ -1558,7 +1559,6 @@ html.about-open{overflow:hidden}
      <div id="scale-guidance">
        <p id="scale-field-msg"></p>
        <div id="scale-msg" aria-live="polite"></div>
 -      <p class="sheethint" id="scale-layout-state" aria-live="polite" aria-atomic="true" hidden></p>
      </div>
-     <button id="scale-next" type="button">NEXT</button>
-     <button id="scale-generate" type="button" hidden disabled>GENERATE CARDS</button>
+     <!-- The footer lip: while the footer is open these wrappers generate no box. -->
+     <div id="scale-foot">
