@@ -10238,6 +10238,7 @@ const fineBox   = document.getElementById("scale-fine");
 // Lane DR1: the layout drawer shell.
 const layoutZone = document.getElementById("scale-layout-zone");
 const plateBand  = document.getElementById("scale-plate-band");
+const panCol     = document.getElementById("scale-pancol");
 // Dual input: four note fields beside the scale line. Literal lookups, one per
 // id, so a renamed id fails the SB-2 test rather than a dynamic string.
 const fieldsGroup = document.getElementById("scale-fields");
@@ -10476,18 +10477,18 @@ function syncBand() {
   }
   const high = (el) => (el.getBoundingClientRect ? el.getBoundingClientRect().height : el.offsetHeight) || 0;
   const wide = (el) => (el.getBoundingClientRect ? el.getBoundingClientRect().width : el.offsetWidth) || 0;
-  const band = high(plateBand);
+  const band = high(panCol);
   const port = bandPort.clientHeight > 0 ? high(bandPort) : 0;
-  const beside = wide(plateBand) > 0 && wide(bandPort) > 0 && wide(plateBand) < wide(bandPort) * 0.75;
+  const beside = wide(panCol) > 0 && wide(bandPort) > 0 && wide(panCol) < wide(bandPort) * 0.75;
   const stuck = !beside && !(port > 0 && port - band < BAND_MIN_ROOM);
   layoutZone.classList.toggle("nostick", !beside && !stuck);
   const pad = (stuck ? band : 0) + "px";
   if (bandPad !== pad) { bandPad = pad; document.documentElement.style.setProperty("--plate-band-h", pad); }
 }
-const bandPort = document.querySelector(".sheetbody") || plateBand;
+const bandPort = document.querySelector(".sheetbody") || panCol;
 if (typeof ResizeObserver === "function") {
   const bandWatch = new ResizeObserver(syncBand);
-  bandWatch.observe(plateBand);
+  bandWatch.observe(panCol);
   bandWatch.observe(bandPort);
 }
 /** A native focus scrolls a text control only far enough to show its caret;
