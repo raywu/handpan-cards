@@ -10618,9 +10618,10 @@ function hideAdjust() {
   sheet.classList.remove("adjusting");
   adjustHead.hidden = true;
   sheet.setAttribute("aria-labelledby", "scale-title");
+  drawerBtn.disabled = false;
+  drawerBtn.focus({ preventScroll: true });
   closeDrawer();
   bandPort.scrollTop = sheetScroll;
-  drawerBtn.focus({ preventScroll: true });
 }
 function closeAdjust() {
   hideAdjust();
