@@ -14311,6 +14311,94 @@ function run() {
       assert.deepStrictEqual(fails, [], fails.join("\n"));
     });
 
+    const gap = () => b.eval(`
+      const body = document.querySelector("#scale-sheet .sheetbody");
+      const surf = document.querySelector("#scale-sheet .sheetsurf") || document.getElementById("scale-sheet");
+      return { M: body.scrollHeight - body.clientHeight, E: surf.getBoundingClientRect().bottom - body.getBoundingClientRect().bottom };`);
+    const pull = async (dy, { sel = "#scale-tabs", y0 = 0, ms = 90 } = {}) => {
+      const pts = [];
+      for (let i = 1; i <= 6; i++) pts.push([0, Math.round((ms * i) / 6), Math.round((dy * i) / 6)]);
+      await b.drag(sel, pts, { y0 });
+      await sleep(350);
+    };
+    const wheelBody = async (dy) => {
+      const bb = await bodyBox();
+      await b.send("Input.dispatchMouseEvent", { type: "mouseWheel", x: 150, y: Math.round(bb.top + bb.h / 2), deltaX: 0, deltaY: dy });
+      await sleep(400);
+    };
+    const finger2 = (type, pts) => b.send("Input.dispatchTouchEvent", { type, touchPoints: pts.map(([x, y], i) => ({ x, y, id: i + 1, radiusX: 4, radiusY: 4, force: 1 })) });
+
+    test("PH: P3 at 390x797 a 24px finger-up drag collapses a Scale tab whose range is under the footer, 23px does not, a 24px finger-down drag restores", { timeout: 90000 }, async () => {
+      try {
+        await lipOpen(390, 797, { spacer: 0 });
+        const g = await gap();
+        assert.ok(g.M < g.E, `this proves nothing unless the range ${g.M} is under the footer ${g.E}`);
+        await pull(-23);
+        assert.strictEqual((await lipState()).lipped, false, "23px collapsed");
+        await pull(-24);
+        let s = await lipState();
+        assert.ok(s.lipped && s.shut, `24px up did not collapse (${JSON.stringify(s)})`);
+        await pull(24);
+        s = await lipState();
+        assert.strictEqual(s.lipped, false, `24px down did not restore (${JSON.stringify(s)})`);
+      } finally { await reset(); }
+    });
+
+    test("PH: P3 at 390x797 repeated drags change the lip only at the drags, and a drag to the scroll end neither restores nor flickers", { timeout: 90000 }, async () => {
+      try {
+        await lipOpen(390, 797, { spacer: 0 });
+        for (let i = 0; i < 3; i++) { await pull(-60); await pull(60); }
+        assert.strictEqual((await lipState()).lippedFlips, 6, "three up and three down drags");
+        await lipOpen(390, 797, { spacer: 260 });
+        await pull(-320, { ms: 60, sel: ".sheetbody", y0: 120 });
+        await sleep(900);
+        await pull(-320, { ms: 60, sel: ".sheetbody", y0: 120 });
+        await sleep(900);
+        const s = await lipState();
+        assert.ok(s.top >= s.M - 2, `the drags did not reach the end (${s.top} of ${s.M})`);
+        assert.ok(s.lipped && s.shut, `the footer reopened at the end (${JSON.stringify(s)})`);
+        assert.strictEqual(s.lippedFlips, 1, `${s.lippedFlips} lip changes across two flicks`);
+      } finally { await reset(); }
+    });
+
+    test("PH: P3 at 390x797 a drag that starts on a field, on the plate or with a second finger does not collapse, and a mostly sideways one does not", { timeout: 90000 }, async () => {
+      try {
+        await lipOpen(390, 797, { spacer: 0 });
+        await pull(-60, { sel: "#scale-box" });
+        assert.strictEqual((await lipState()).lipped, false, "a drag from the seed box collapsed");
+        await b.eval(`document.getElementById("scale-tab-layout").click(); return true;`);
+        await sleep(300);
+        await pull(-60, { sel: "#scale-preview" });
+        assert.strictEqual((await lipState()).lipped, false, "a drag from the plate collapsed");
+        await b.eval(`document.getElementById("scale-tab-scale").click(); return true;`);
+        await sleep(300);
+        const bb = await bodyBox();
+        const y = Math.round(bb.top + bb.h / 2);
+        await finger2("touchStart", [[100, y], [200, y]]);
+        for (let i = 1; i <= 6; i++) await finger2("touchMove", [[100, y - i * 10], [200, y - i * 10]]);
+        await finger2("touchEnd", []);
+        await sleep(400);
+        assert.strictEqual((await lipState()).lipped, false, "a two-finger drag collapsed");
+        await b.drag(".sheetbody", [[20, 30, -5], [60, 60, -10], [120, 90, -24]], { y0: 0 });
+        await sleep(400);
+        assert.strictEqual((await lipState()).lipped, false, "a sideways drag collapsed");
+      } finally { await reset(); }
+    });
+
+    test("PH: P3 at 390x797 a wheel on a sheet with no room never collapses; with room it collapses", { timeout: 90000 }, async () => {
+      try {
+        await lipOpen(390, 797, { spacer: 0 });
+        await wheelBody(300);
+        await wheelBody(-300);
+        assert.strictEqual((await lipState()).flips, 0, "a wheel on a short sheet changed the lip");
+        await lipOpen(390, 797, { spacer: 900 });
+        await wheelBody(50);
+        await wheelBody(300);
+        const s = await lipState();
+        assert.ok(s.lipped && s.shut, `a wheel with room did not collapse (${JSON.stringify(s)})`);
+      } finally { await reset(); }
+    });
+
     test("UX: a sheet whose content does not scroll never collapses", { timeout: 60000 }, async () => {
       let covered = 0;
       try {
@@ -14319,9 +14407,9 @@ function run() {
           let s = await lipState();
           if (s.M > 1) continue;
           covered += 1;
-          await collapse();
-          await restoreBySwipe();
-          await collapse();
+          await wheelBody(300);
+          await wheelBody(-300);
+          await wheelBody(300);
           s = await lipState();
           assert.strictEqual(s.lipped, false, `${w}x${h}: a non-scrolling sheet collapsed`);
           assert.strictEqual(s.flips, 0, `${w}x${h}: lip classes changed ${s.flips} times`);
@@ -14584,7 +14672,7 @@ function run() {
       } finally { await reset(); }
     });
 
-    test("UX: a flick to the end changes lipped at most twice and ends with the footer shown", { timeout: 60000 }, async () => {
+    test("UX: a touch flick to the end collapses once and stays collapsed", { timeout: 60000 }, async () => {
       try {
         await lipOpen(380, 780, { spacer: 260 });
         for (let i = 0; i < 2; i++) {
@@ -14592,8 +14680,8 @@ function run() {
           await sleep(1200);
         }
         const s = await lipState();
-        assert.ok(s.lippedFlips <= 2, `the flick changed lipped ${s.lippedFlips} times`);
-        assert.strictEqual(s.lipped, false, `the flick ended lipped (${JSON.stringify(s)})`);
+        assert.strictEqual(s.lippedFlips, 1, `the flick changed lipped ${s.lippedFlips} times`);
+        assert.ok(s.lipped && s.shut, `the flick reopened the footer at the end (${JSON.stringify(s)})`);
         assert.ok(s.top >= s.M - 2, `the flick did not reach the end (${s.top} of ${s.M})`);
       } finally { await reset(); }
     });

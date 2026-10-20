@@ -11871,6 +11871,117 @@ describe("UX: the footer lip", () => {
     assert.strictEqual(shutOf(e), true, "down");
   });
 
+  describe("PH: P3 finger drag", () => {
+    const shortApp = () => {
+      const a = lipApp();
+      a.get("bandPort").scrollHeight = 510;
+      return a;
+    };
+    const finger = (app, type, y, o = {}) => {
+      const pts = type === "touchend" ? [] : [{ identifier: o.id || 1, clientX: o.x || 0, clientY: y }, ...(o.extra ? [{ identifier: 2, clientX: 5, clientY: y }] : [])];
+      sheetOf(app).dispatchEvent({ type, touches: pts, changedTouches: [{ identifier: o.id || 1, clientX: o.x || 0, clientY: y }], target: o.target });
+    };
+    const drag = (app, dy, o = {}) => {
+      finger(app, "touchstart", 400, o);
+      finger(app, "touchmove", 400 + dy, { ...o, x: (o.x || 0) + (o.dx || 0) });
+      if (!o.hold) finger(app, "touchend", 400 + dy, o);
+    };
+    const isShut = (app) => sheetOf(app).classList.contains("lipshut");
+
+    test("PH: P3 a 24px finger-up drag collapses a sheet whose range is far under the footer's height; 23px does not", () => {
+      const a = shortApp();
+      drag(a, -23);
+      assert.strictEqual(state(a), OPEN, "23px");
+      const b = shortApp();
+      drag(b, -24);
+      assert.strictEqual(state(b), SHUT, "24px");
+    });
+
+    test("PH: P3 a mostly horizontal drag does not collapse, and neither does a finger-down drag", () => {
+      const a = shortApp();
+      drag(a, -24, { dx: 60 });
+      assert.strictEqual(state(a), OPEN, "horizontal");
+      const b = shortApp();
+      drag(b, 40);
+      assert.strictEqual(state(b), OPEN, "down on an open footer");
+    });
+
+    test("PH: P3 a 24px finger-down drag restores, one gesture can reverse, and repeats never oscillate", () => {
+      const a = shortApp();
+      drag(a, -40);
+      assert.strictEqual(isShut(a), true);
+      a.advance(300);
+      drag(a, 24);
+      assert.strictEqual(isShut(a), false, "down restores");
+      a.advance(300);
+      finger(a, "touchstart", 400);
+      finger(a, "touchmove", 370);
+      assert.strictEqual(isShut(a), true, "up");
+      finger(a, "touchmove", 350);
+      finger(a, "touchmove", 340);
+      assert.strictEqual(isShut(a), true, "continuing up changes nothing");
+      finger(a, "touchmove", 364);
+      assert.strictEqual(isShut(a), false, "reversal by 24 restores inside the gesture");
+      finger(a, "touchend", 360);
+      a.advance(300);
+      const flips = [];
+      for (let i = 0; i < 3; i++) { drag(a, -30); flips.push(isShut(a)); a.advance(300); drag(a, 30); flips.push(isShut(a)); a.advance(300); }
+      assert.deepStrictEqual(flips, [true, false, true, false, true, false]);
+    });
+
+    test("PH: P3 a drag that scrolls the body to its end neither restores nor collapses again, momentum included", () => {
+      const a = lipApp();
+      drag(a, -40, { hold: true });
+      assert.strictEqual(isShut(a), true);
+      scrollTo(a, 900);
+      scrollTo(a, 900);
+      assert.strictEqual(isShut(a), true, "bottom reached during the drag");
+      finger(a, "touchend", 360);
+      a.advance(100);
+      scrollTo(a, 300);
+      scrollTo(a, 900);
+      assert.strictEqual(isShut(a), true, "momentum after touchend");
+      a.advance(400);
+      a.advance(400);
+      scrollTo(a, 900, false);
+      assert.strictEqual(isShut(a), true, "no gesture, no change");
+    });
+
+    test("PH: P3 a wheel scroll on a sheet with no room still never collapses, and with room it collapses and the end restores", () => {
+      const a = shortApp();
+      scrollTo(a, 10);
+      scrollTo(a, 0);
+      assert.strictEqual(state(a), OPEN);
+      const b = lipApp();
+      sheetOf(b).dispatchEvent({ type: "wheel" });
+      scrollTo(b, 300, false);
+      assert.strictEqual(state(b), SHUT, "a wheel with room collapses");
+      scrollTo(b, 900);
+      assert.strictEqual(isShut(b), false, "the bottom restores on the scroll path");
+    });
+
+    test("PH: P3 starts on the lip, the plate, a field or with a second finger do not collapse; the keyboard does not either", () => {
+      const hit = (sel) => ({ closest: (s) => (s.split(",").map((x) => x.trim()).includes(sel) ? {} : null) });
+      for (const sel of ["#scale-lip", "#scale-preview", "input", "textarea", "select"]) {
+        const a = shortApp();
+        drag(a, -40, { target: hit(sel) });
+        assert.strictEqual(state(a), OPEN, sel);
+      }
+      const two = shortApp();
+      drag(two, -40, { extra: true });
+      assert.strictEqual(state(two), OPEN, "two fingers");
+      const kb = shortApp();
+      kb.get("window.visualViewport").height = 400;
+      kb.run("applyKbOffset()");
+      kb.advance(300);
+      kb.run("restoreLip()");
+      kb.advance(300);
+      const before = state(kb);
+      drag(kb, -40);
+      assert.strictEqual(state(kb), before, "kbup");
+    });
+  });
+
   test("UX: no lip code calls requestAnimationFrame or constructs a ResizeObserver", () => {
     const js = lipSource();
     assert.ok(js.length > 2000, "the lip section was found");
