@@ -7,7 +7,7 @@ subplan record" Q1-Q10, lane P, sections 6-7; `docs/plans/2026-10-18-dual-input.
 `origin/claude/dual-input-plan`, "dual-input plan"), sections 2.1-2.5, A1-A22 and E1-E9; `origin/dev`
 `index.html`, `src/engine/core.js`, `src/engine/importer.js`, `tools/sandbox.js`.
 
-Owner input O1-O4 (2026-10-19, phone check on DEV) and amendments A2-A5 are binding. **O1 was amended by the owner later on 2026-10-19** (verbatim: "Bottom notes should start in octave below ding but can go higher than the ding. This is an amendment from previous interview."); the amended O1 replaces A1's right-to-left rule. Owner answers of 2026-10-19: Q1 "I prefer a single rule for both add/edit and decode (everywhere) but let's evaluate backwards compatibility"; Q2 tabs beside the pan in the wide landscape block; Q3 closed by the amendment.
+Owner input O1-O4 (2026-10-19, phone check on DEV) and amendments A2-A5 are binding. **O1 was amended by the owner later on 2026-10-19** (verbatim: "Bottom notes should start in octave below ding but can go higher than the ding. This is an amendment from previous interview."); the amended O1 replaces A1's right-to-left rule. Owner answers of 2026-10-19: Q1 "I prefer a single rule for both add/edit and decode (everywhere) but let's evaluate backwards compatibility"; Q2 tabs beside the pan in the wide landscape block; Q3 closed by the amendment. **Second amendment, 2026-10-19 (owner, verbatim):** "The scale line is definitive if it's in a linear order. It's only when the bottom notes are input from the note by note text field where we need to infer." Asked about legacy v1-v3 links, the owner chose "One engine, new rule": the legacy `|` bottom list is also an inference path and uses the same function as the fields. So the 4.1 rule applies only to the BOTTOM NOTES field and the legacy bottom list; the v4+ scale line (`parseSeed`) is unchanged, post-ding brackets included. This supersedes the re-review F1 fold at 8c8ea93.
 
 ## 1. Goal and non-goals
 
@@ -20,11 +20,11 @@ notes that the sheet places below the ding: D3 with "g a b c" gives G2 A2 B2 C3.
 **Non-goals.**
 - No deck data or diagram geometry change. `data/decks.json`, the DECKS line, `layout.solve` and every
   built-in's drawing stay byte-identical (CLAUDE.md "Hard constraints", "Instrument layouts").
-- No change to SAVE or DELETE semantics, `HPE.share` or `formatSeed`. The decode changes are O1 in
-  `parseLegacySeed` (v1-v3, owner Q4 (a)) and O1 for unoctaved brackets after the ding in `parseSeed`
-  (one rule everywhere, owner Q1); measured in section 4.3. No string `formatSeed` writes decodes differently.
-- No engine change beyond O1: `importer.composeBottoms`, `core.nearestToDing` and `core.scaleInfer`'s
-  bottom branch.
+- No change to SAVE or DELETE semantics, `HPE.share`, `formatSeed`, `parseSeed` or `scaleInfer`: the
+  scale line is definitive (owner, 2026-10-19). The only decode change is O1 in `parseLegacySeed`'s `|`
+  bottom list (v1-v3, owner Q4 (a)), measured in section 4.3.
+- No engine change beyond O1: one shared bottom-inference function in `core.js`, used by
+  `parseLegacySeed` (in place of `nearestToDing` + `nextAbove` for bottoms) and by `importer.composeBottoms`.
 - `#import-row` stays `hidden`; the memory rule "Import hidden until DEV-proven" stands.
 - Nothing goes to `main` except this plan PR (held) and, later, the lanes' main PRs after the owner's
   explicit go.
@@ -51,9 +51,9 @@ notes that the sheet places below the ding: D3 with "g a b c" gives G2 A2 B2 C3.
 | S11 | L Q-record: Tab-list keyed on `lipshut`; a 220ms timer plus `lipGen`; no rAF or ResizeObserver | **Kept** | The sheet Tab list (section 3.3) adds `#scale-next` where GENERATE sat. |
 | S12 | DI 2.4: sheet Tab order `[backBtn, nameBox (Edit), drawerBtn, ding, top, inner, bottom, scaleBox, ...swatches, genBtn, delBtn (Edit)]` | **Replaced** | Per-tab order in section 3.3. `drawerBtn` is gone, and the tab strip has a single roving stop. |
 | S13 | DI 2.1: the four fields sit in a column beside the pan | **Modified** | Same four fields, same order (DING, TOP, INNER, BOTTOM), at full width. |
-| S14 | DI 2.3 mirror: fields to line through `HPE.importer.compose`; line to fields through `parseSeed`, writing explicit octaves | **Kept, O1 inserted** | Bottom placement in `compose` and in `parseSeed` follows section 4.1 (section 4.2); the fields show back the explicit octaves. |
+| S14 | DI 2.3 mirror: fields to line through `HPE.importer.compose`; line to fields through `parseSeed`, writing explicit octaves | **Kept, O1 inserted** | Bottom placement in `compose` follows section 4.1 (section 4.2). Line to fields is unchanged: `parseSeed` reads the line as written and the fields show back its explicit octaves. |
 | S15 | DI 2.5 / `#scale-guidance` order (`#scale-field-msg`, `#scale-msg`, `#scale-layout-state`) between `.sheetbody` and the footer | **Kept** | One slot, shared by both tabs, outside both panels (section 3.4). `#scale-layout-state` is shown only on the Layout tab. |
-| S16 | CLAUDE.md "Scale strings": "square brackets mark a bottom note at its pitch position" | **Modified (O1, owner Q1)** | A bracket before the ding keeps its position (it already lands below the ding). An UNOCTAVED bracket after the ding no longer takes its pitch position: it is placed by 4.1 from the bottom notes before it (`(D3) A3 [G] C4` reads G2, was refused). A typed octave is kept anywhere. The sentence becomes: "Square brackets mark a bottom note; one with no octave is placed below the ding, or above the bottom note before it (section 4.1)." Lane E edits `tests/fixtures/scale_grammar_v1.json` rows 5, 15, 16 and 27 (second string) and `tests/scale.test.js` (the two Pygmy octaveless-line uses and `(D) A [B] C`) with reasons. |
+| S16 | CLAUDE.md "Scale strings": "square brackets mark a bottom note at its pitch position" | **Kept (owner, 2026-10-19: the scale line is definitive)** | No change to the line grammar, before or after the ding: `(D3) [G] A3` still reads G3. The plan adds one CLAUDE.md sentence after it: "Octaves are inferred only where bottom notes come as a list: the BOTTOM NOTES field and a legacy `|` bottom list. The first unoctaved one takes the octave below the ding and each later one the nearest instance above the one before it (`HPE.core.inferBottoms`)." |
 | S17 | `importer.composeBottoms`: the first unoctaved bottom starts at `ding.octave` (one octave down only on a hit at the ding's midi); later ones use `composeAbove` | **Replaced** | Section 4.1's left-to-right rule (first unoctaved note in the octave below the ding). |
 | S18 | DI: the Add CTA is GENERATE CARDS and the Edit CTA is SAVE CHANGES, both as `#scale-generate` | **Modified** | Add/Scale shows NEXT (`#scale-next`). Add/Layout shows GENERATE CARDS. Edit shows SAVE CHANGES on both tabs. |
 | S19 | ux plan section 7 gates (dev-sync after CI plus reviewer, phone check) | **Kept** | Section 6.4. PR #408 (lane P's main PR) is closed unmerged once lane T's dev PR lands and the owner's phone check passes. |
@@ -360,67 +360,60 @@ path writes explicit octaves back into BOTTOM NOTES (`formatSeed`).
 
 - **Fields (Add/Edit):** `importer.composeBottoms` - the first unoctaved bottom starts at `ding.octave`
   and moves down only on the ding's own midi; that is the observed bug (D3 + g → G3).
-- **v4+ scale line (`core.parseSeed`, also stored records and v4/v5 links):** a bracket BEFORE the ding
-  already lands below it (`[G] [A] [B] [C] (D3)` reads G2 A2 B2 C3). A bracket AFTER the ding takes its pitch
-  position, which disagrees with O1 (checked on origin/claude/dual-input-ux-p): `(D3) [G] A3` gives G3,
-  `(D3) A3 C5 [G]` gives G5, `(D3) A3 [G] C4` is NOTE_OUT_OF_ORDER; 4.1 gives G2 for all three. So
-  `scaleInfer`'s post-ding loop changes: an unoctaved bracket takes 4.1 from the last bottom note (before or
-  after the ding; none means the octave below the ding), a typed one is kept, and neither is checked against
-  the rim/inner note before it or against the ding. Bottoms must still ascend among themselves
-  (NOTE_REPEATED as today). A typed post-ding bracket equal to the ding (`(D3) [D3] A3`) is then accepted, as
-  `[D3] (D3) A3` already is. Stored records and v4/v5 links are written by `formatSeed`, which always writes
-  octaves, so none decodes differently (measured, 4.3).
+- **v4+ scale line (`core.parseSeed`, also stored records and v4/v5 links):** definitive, unchanged
+  (owner, 2026-10-19). A bracket before the ding lands below it, one after it takes its pitch position
+  (`(D3) [G] A3` reads G3, `(D3) A3 C5 [G]` reads G5, `(D3) A3 [G] C4` is NOTE_OUT_OF_ORDER, on origin/main
+  and on the lane base alike). A guard test pins these outputs (5.1).
 - **v1-v3 links and legacy strings (`core.parseLegacySeed`):** `validate` places the first bottom with
   `nearestToDing` (nearest instance either side, ties below) and the rest with `nextAbove`. This is the one
   decode path that disagrees with O1: D3 with bottom `g` gives G3.
 
-So "one rule everywhere" (owner Q1) means three code changes, all binding and all lane E's:
-1. `composeBottoms` (fields) adopts 4.1.
-2. `nearestToDing` returns the octave-below instance (the `below` it already computes) - legacy decode
-   (owner Q4 (a)).
-3. `scaleInfer` places unoctaved post-ding brackets by 4.1 (owner Q1; F1 of the re-review at f0ffb52).
+So the two inference paths share ONE function, defined once in `core.js` and called by the importer, so
+they cannot drift (owner, 2026-10-19, "One engine, new rule"):
+1. `HPE.core.inferBottoms(dingMidi, notes)`: implements 4.1 and returns each bottom's midi, or the index
+   of the first note with no octave at or above zero. Callers keep their own refusal codes and wording.
+2. `validate` (inside `parseLegacySeed`) places its `|` bottom list with it, replacing the
+   `nearestToDing` + `nextAbove` pair for bottoms; `nearestToDing` is removed if nothing else calls it
+   (enumerate callers, do not grep).
+3. `importer.composeBottoms` calls it instead of its own `ding.octave` seed + `composeAbove`.
 
-Because both are engine modules: `python3 tools/inline_engine.py`; `node tools/regen_engine_corpus.js --check`
+Because both files are engine modules: `python3 tools/inline_engine.py`; `node tools/regen_engine_corpus.js --check`
 then regenerate on drift; `tools/validate.py` check 4.
 
 ### 4.3 Backwards compatibility (measured)
 
-Method: `origin/dev` `core.js` against a copy whose `nearestToDing` returns `below`, both loaded in a
-`node:vm` context, over every string in `tests/fixtures/*.json` and `data/decks.json` that contains `(`
-(424 candidates), plus `tests/fixtures/deck_ids_v1.json` (5 `pinned` + 513 `strings`). Run on 2026-10-19.
-The `parseSeed` change was measured the same way against `origin/claude/dual-input-ux-p` with a prototype of
-change 3, over 559 fixture strings plus every bracketed string literal in `tests/*.js` (2,699 in all).
+Method (re-run 2026-10-19 for the second amendment): the lane base `origin/claude/dual-input-ux-p` `core.js`
+against a copy whose `nearestToDing` returns `below` (the 4.1 first-note rule; later notes were already
+`nextAbove`), both loaded in a `node:vm` context, over every string in `tests/fixtures/*.json` and
+`data/decks.json` that contains `(` (424 candidates), plus `tests/fixtures/deck_ids_v1.json`
+(5 `pinned` + 513 `strings`).
 
 | input | parsed | decode differs | deck id changes |
 |---|---|---|---|
-| fixture strings through `parseLegacySeed` (v1-v3 grammar) | 261 | **27** | - |
-| fixture strings through `parseSeed`, `nearestToDing` change only | 228 | **0** | - |
-| fixture and test-literal strings through `parseSeed`, change 3 | 393 | **11** | **9** |
-| every `formatSeed` output of those strings (what the app writes into records and links) | 391 | **0** | 0 |
+| fixture strings through `parseLegacySeed` (v1-v3 `|` bottom list) | 261 | **27** | - |
+| fixture strings through `parseSeed` (v4/v5 line, unchanged by design) | 228 | **0** | - |
 | frozen legacy strings (`deck_ids_v1.json` `strings`, test "every frozen legacy string keeps its deck id") | 513 | - | **73 of 513** |
 | the five `pinned` strings in that file (the built-ins) | 5 | 0 | 0 |
 | the five built-in decks (`data/decks.json`, `formatSeed` then `parseSeed`) | 5 | 0 | 0 |
 | stored records (v4 shape, octaved) | - | 0 by construction | 0 |
 | "SV: the five built-in decks' v5 links are pinned" | - | 0 | stays green |
 
+Owner's worked example (measured): `(D3) A3 C4 D4 E4 F4 G4 A4 C5 | F G A` decodes today to bottoms
+F3 G3 A3 (custom:c5690316) and under the new rule to F2 G2 A2 (custom:0a03f67f). `(D3) A3 C4 D4 E4 F4 G4 A4 C5 | C E`
+is unchanged (C3 E3, custom:addbfb13), and Pygmy's legacy bottom list, octaved
+(`| C3 Db3 Eb3 Bb3 Db4 Ab5`) or not (`| C Db Eb Bb Db Ab`), is unchanged.
+
 Examples of moved ids: `D/ A Db F A# G E B D# Ab E | F# E Cb F` custom:cd34cf4b → custom:6a11a741;
 `(G3) A B Bb F E D F B# Db | Ab A D` custom:e147519d → custom:0d484d2a.
 
-The 11 `parseSeed` differences are all hand-written, octaveless test inputs, none a link: four `provisional`
-rows of `import_cases_v1.json` (lines 781, 890, 1011, 1246; trailing brackets move from above the rim to
-below the ding, or a refusal becomes a parse), `scale_grammar_v1.json` rows 5, 15, 16 and 27, and three
-`tests/scale.test.js` literals. Row 5, the octaveless Pygmy line, now ends `[Ab4]` not `[Ab5]`, the same
-C3 Db3 Eb3 Bb3 Db4 Ab4 as the fields path and the owner's example. No built-in, no v5 pin and no
-app-emitted link changes, so there is no Q5.
-
 Consequences:
-- No built-in, no stored record, no app-emitted v4/v5 link and no pinned v5 link moves.
+- No built-in, no stored record, no v4/v5 link and no pinned v5 link moves.
 - 73 frozen legacy strings move their id, so "every frozen legacy string keeps its deck id" goes red and
   would have to be re-pinned (`deck_ids_v1.json` regenerated). A person opening an old v1-v3 link with an
   unoctaved bottom note would get different bottom octaves and a new custom deck id, so the same link
   opened before and after would give two decks. `engine_corpus_v1.json` moves only where it holds such a
   legacy string; lane E regenerates it.
-- Owner decision Q4 (a), 2026-10-19, binding: one rule everywhere; lane E re-pins the 73 ids and lists each old and new id in its PR body.
+- Owner decision Q4 (a) and "One engine, new rule", 2026-10-19, binding: one inference function for the field and the legacy list; lane E re-pins the 73 ids and lists each old and new id in its PR body.
 
 ### 4.4 Existing tests that pin current behaviour
 
@@ -448,16 +441,14 @@ in `tests/e2e.test.js`. Prefixes: `O1:` (engine and sheet placement), `TB:` (tab
 - "O1: a repeated bottom refuses: D3 G2 G2 says G2 is already in the bottom notes"
 - "O1: a bottom with no octave at or above zero refuses: ding C-1 b says B has no octave that fits: type one"
 - "O1: Pygmy's bottoms typed with octaves are unchanged: F3 C3 Db3 Eb3 Bb3 Db4 Ab5"
-- "O1: parseSeed places a bracket before the ding below it: [G] [A] [B] [C] (D3) A3 C4 E4 gives G2 A2 B2 C3" (pin, green before and after)
-- "O1: parseSeed places an octaveless bracket after the ding by the bottom rule: (D3) [G] A3, (D3) A3 C5 [G] and (D3) A3 [G] C4 each give G2"
-- "O1: a typed bracket after the ding is kept and the next octaveless bracket goes above it: (D3) A3 [A3] [c] gives A3 C4"
-- "O1: every formatSeed output of the five built-ins and the scale grammar fixture decodes unchanged" (link safety)
-- "O1: the three paths agree: compose, parseLegacySeed and parseSeed give the same bottom midis for D3 g; D3 g a b c; D3 c d e f g; F3 C Db Eb Bb Db Ab" - each case written as fields, as a v1-v3 string with a bottom list, and as a v4 line with the brackets AFTER the ding (e.g. `(D3) A3 C4 E4 [g] [a] [b] [c]` with `[G]` etc.)
+- "O1: the scale line is definitive: (D3) [G] A3, (D3) A3 C5 [G], (D3) A3 [G] C4 and [G] [A] [B] [C] (D3) A3 C4 E4 decode as on origin/main" (guard, green before and after: G3, G5, NOTE_OUT_OF_ORDER, G2 A2 B2 C3 pinned as literals measured on origin/main)
+- "O1: the two inference paths agree: compose and parseLegacySeed give the same bottom midis for D3 g; D3 g a b c; D3 c d e f g; F3 C Db Eb Bb Db Ab" - each case as fields and as a v1-v3 string with a `|` bottom list
+- "O1: the owner's legacy example: (D3) A3 C4 D4 E4 F4 G4 A4 C5 | F G A gives F2 G2 A2, and | C E gives C3 E3"
 - `tests/core.test.js`: "O1: parseLegacySeed places the first octaveless bottom in the octave below the ding: (D3) A3 C4 E4 | G gives G2"
 
 ### 5.2 Sandbox (`tests/app.test.js`)
 - "O1: typing g a b c in BOTTOM NOTES with ding D3 writes [G2] [A2] [B2] [C3] into the line"
-- "O1: typing [G] [A] [B] [C] (D3) A3 C4 E4 in the line writes G2 A2 B2 C3 back into BOTTOM NOTES"
+- "O1: typing (D3) [G] A3 in the line writes G3 back into BOTTOM NOTES: the line is definitive"
 - "O1: a v5 link and a stored record open with the same fields as before O1"
 - "TB: the served markup has a tablist with Scale then Layout, two tabpanels, and the Scale tab selected with tabindex 0 on open, Add and Edit"
 - "TB: ArrowRight, ArrowLeft, Home and End move and activate the tabs, wrap, and keep exactly one tabindex 0"
@@ -508,9 +499,8 @@ in `tests/e2e.test.js`. Prefixes: `O1:` (engine and sheet placement), `TB:` (tab
 | `o1_first_at_ding_octave.patch` | first octaveless bottom seeded at `ding.octave` (old rule) | O1: compose places the first octaveless bottom in the octave below the ding: D3 g a b c gives G2 A2 B2 C3 | `O1:.compose.places.the.first` |
 | `o1_run_capped_at_ding.patch` | later notes capped below the ding | O1: an octaveless bottom run may rise past the ding: D3 c d e f g gives C3 D3 E3 F3 G3 | `O1:.an.octaveless.bottom.run` |
 | `o1_typed_octave_replaced.patch` | an octaved note also gets placed | O1: a typed bottom octave is kept and the next octaveless note goes above it: D3 g A2 c gives G2 A2 C3, D3 A3 c gives A3 C4 | `O1:.a.typed.bottom.octave` |
-| `o1_line_pitch_position_kept.patch` | `scaleInfer` keeps pitch position for a post-ding octaveless bracket | O1: parseSeed places an octaveless bracket after the ding by the bottom rule: (D3) [G] A3, (D3) A3 C5 [G] and (D3) A3 [G] C4 each give G2 | `O1:.parseSeed.places.an.octaveless` |
-| `o1_paths_diverge.patch` | `composeBottoms` seeds from the ding's own octave again, the other paths untouched | O1: the three paths agree: compose, parseLegacySeed and parseSeed give the same bottom midis for D3 g; D3 g a b c; D3 c d e f g; F3 C Db Eb Bb Db Ab | `O1:.the.three.paths.agree` |
-| `o1_legacy_nearest_kept.patch` | `nearestToDing` keeps the nearest instance | O1: parseLegacySeed places the first octaveless bottom in the octave below the ding: (D3) A3 C4 E4 &#124; G gives G2 | `O1:.parseLegacySeed.places` |
+| `o1_paths_diverge.patch` | `composeBottoms` stops calling `HPE.core.inferBottoms` and seeds from `ding.octave` again; `parseLegacySeed` untouched | O1: the two inference paths agree: compose and parseLegacySeed give the same bottom midis for D3 g; D3 g a b c; D3 c d e f g; F3 C Db Eb Bb Db Ab | `O1:.the.two.inference.paths` |
+| `o1_legacy_nearest_kept.patch` | `validate` places the legacy `|` list's first bottom by the nearest instance again (old `nearestToDing`) | O1: parseLegacySeed places the first octaveless bottom in the octave below the ding: (D3) A3 C4 E4 &#124; G gives G2 | `O1:.parseLegacySeed.places` |
 | `tb_tab_pushes_history.patch` | the tab switch calls `pushState` | TB: a tab switch pushes no history entry and calls no replaceState | `TB:.a.tab.switch.pushes` |
 | `tb_back_returns_to_scale.patch` | Back on Layout selects Scale instead of closing | TB: Back, Escape and a popstate close the sheet from the Layout tab exactly as from the Scale tab, with one history.back | `TB:.Back..Escape` |
 | `tb_next_validates.patch` | NEXT disabled while `!boxOk` | TB: NEXT shows only in Add on the Scale tab, is enabled in every scale state, selects Layout and focuses the Layout tab | `TB:.NEXT.shows` |
@@ -534,10 +524,8 @@ engine is a separate file-ownership boundary.
 ### Lane E: engine O1
 - **Base:** `origin/claude/dual-input-ux-p` (lane P head, PR #408). Branch `claude/sheet-tabs-e`.
 - **Owns:** `src/engine/importer.js`; the `<!-- engine:importer -->` and `<!-- engine:core -->` regions of
-  `index.html`, written only by `tools/inline_engine.py`; `tests/scale.test.js` and
-  `tests/fixtures/scale_grammar_v1.json` (the rows 4.3 lists, each with a reason); the four
-  `provisional` rows of `tests/fixtures/import_cases_v1.json` if a test reads them; `tests/import.test.js`;
-  `tests/fixtures/engine_corpus_v1.json` (regen only); `src/engine/core.js` `nearestToDing` and `scaleInfer`'s bottom branch, and
+  `index.html`, written only by `tools/inline_engine.py`; `tests/import.test.js`;
+  `tests/fixtures/engine_corpus_v1.json` (regen only); `src/engine/core.js` (the new `inferBottoms`, its use in `validate`, and `nearestToDing`'s removal), and
   `tests/core.test.js`; `tests/fixtures/deck_ids_v1.json`: no tool writes it, so lane E rewrites the 73 changed `strings`
   entries with a one-off `node:vm` script that is not committed, leaves `pinned` and `note` untouched, and
   lists every old -> new id in the PR body;
@@ -545,13 +533,13 @@ engine is a separate file-ownership boundary.
   as the engine change; `tests/mutants/o1_*` engine rows; re-anchoring `ih_e_bottom_order_unchecked.patch` and any
   existing mutant whose anchor is in `nearestToDing`/`validate` or the importer region. No data mutant
   (`tools/regen_data_mutants.py`) is owned or regenerated: `data/decks.json` and the DECKS line do not change.
-- **Acceptance:** 5.1 green; 4.4 rewrites done with reasons; "SV: the five built-in decks' v5 links are pinned" green unedited;
+- **Acceptance:** 5.1 green; `parseSeed` and `scaleInfer` byte-identical to the base; `tests/scale.test.js`, `scale_grammar_v1.json` and `import_cases_v1.json` unedited; 4.4 rewrites done with reasons; "SV: the five built-in decks' v5 links are pinned" green unedited;
   exactly the 73 measured ids re-pinned, five named rows unchanged, and the PR body lists all 73 old -> new ids.
 - **Verify:**
   ```
-  python3 tools/inline_engine.py --check && node tools/regen_engine_corpus.js --check && git diff --exit-code origin/claude/dual-input-ux-p -- data/decks.json && node --test tests/import.test.js tests/core.test.js tests/scale.test.js tests/share.test.js && python3 tools/validate.py && for m in tests/mutants/o1_*.patch tests/mutants/ih_e_bottom_order_unchecked.patch; do git apply --check "$m" || exit 1; done
+  python3 tools/inline_engine.py --check && node tools/regen_engine_corpus.js --check && git diff --exit-code origin/claude/dual-input-ux-p -- data/decks.json && node --test tests/import.test.js tests/core.test.js tests/scale.test.js tests/share.test.js && git diff --exit-code origin/claude/dual-input-ux-p -- tests/scale.test.js tests/fixtures/scale_grammar_v1.json tests/fixtures/import_cases_v1.json && python3 tools/validate.py && for m in tests/mutants/o1_*.patch tests/mutants/ih_e_bottom_order_unchecked.patch; do git apply --check "$m" || exit 1; done
   ```
-- **Non-goals:** no `index.html` edit outside the engine regions, no `share.js` or `formatSeed` edit, no UI.
+- **Non-goals:** no `index.html` edit outside the engine regions; no `share.js`, `formatSeed`, `parseSeed` or `scaleInfer` edit; no UI.
 
 ### Lane T1: tabs and OR (then T2: the lip), serial
 - **Base:** lane E's head. Branch `claude/sheet-tabs-t1`. Lane T2 (`claude/sheet-tabs-t2`) bases on T1's head and owns only the lip: `#scale-foot`/`#scale-footclip`/`#scale-footslide`/`#scale-lip` markup, CSS and JS, the authored lane L A1-A19 / E1-E12 tests and `uxl_*` mutants, and the LP tests and mutants. T1 owns everything else listed below. Lane T2's M PR carries lane P's net code minus Adjust and supersedes #408.
@@ -610,11 +598,11 @@ Lanes are serial E -> T1 -> T2 (T1 runs on lane E's inlined engine; T1 and T2 sh
 
 ## 7. Open questions (real forks only, recommendation first)
 
-Closed on 2026-10-19 by the owner: Q1 (one rule everywhere, subject to the compatibility check, which
+Closed on 2026-10-19 by the owner: Q1 (one rule for every INFERENCE path, subject to the compatibility check, which
 became Q4, also closed below), Q2 (tabs beside the plate in the wide landscape block, folded into 3.6), Q3 (closed by the
 amended O1).
 
-**Q4 closed (owner, 2026-10-19): (a) one rule everywhere.** `core.nearestToDing` changes and the 73 frozen ids are re-pinned (sections 4.2, 4.3, lane E).
+**Q4 closed (owner, 2026-10-19): (a), then narrowed the same day to "One engine, new rule":** one inference function for the BOTTOM NOTES field and the legacy `|` list; the scale line is definitive and unchanged. The legacy first-bottom rule changes and the 73 frozen ids are re-pinned (sections 4.2, 4.3, lane E).
 
 No open questions remain.
 
