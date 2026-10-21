@@ -1,4 +1,4 @@
-# kills: TB: the Layout tab with an empty or invalid scale shows the hint, the empty plate and every drawer control disabled and out of the Tab order
+# kills: TB: the Layout tab with an empty scale shows the hint, the empty plate and every drawer control disabled and out of the Tab order; an invalid scale with a held plate hides the hint
 # suite: node --test --test-name-pattern ^TB:.the.Layout.tab.with tests/app.test.js
 # A layout control is enabled while the scale is empty or invalid.
 diff --git a/index.html b/index.html

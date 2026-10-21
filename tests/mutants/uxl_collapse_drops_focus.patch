@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10669,11 +10669,6 @@ function collapseLip() {
+@@ -10685,11 +10685,6 @@ function collapseLip() {
    const gen = lipGen;
    lipTimer = setTimeout(() => { if (gen === lipGen) lipSettled = true; }, LIP_END_MS);
    const a = document.activeElement;
@@ -14,5 +14,5 @@ diff --git a/index.html b/index.html
 -    lipFocusing = false;
 -  }
  }
- function restoreLip() {
-   if (!sheetOpen || !isLipped() || !isLipShut()) return;
+ function lipMeasure() {
+   const shut = isLipShut();

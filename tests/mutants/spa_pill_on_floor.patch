@@ -1,0 +1,15 @@
+# kills: SPA: the shut footer is 9px, the 32x3 pill sits 3px above the footer's bottom and is centred, and the tap zone is 25px with its bottom on the surface's bottom above the inset
+# suite: node --test --test-name-pattern ^SPA..the.shut.footer.is.9px..the.32x3.pill.sits.3px.above.the.footer.s.bottom.and.is.centred..and.the.tap.zone.is.25px.with.its.bottom.on.the.surface.s.bottom.above.the.inset$ tests/e2e.test.js
+# The pill sits on the footer's bottom, not 3px above it.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -973,7 +973,7 @@ footer.seq{row-gap:var(--sp-1)}
+ #scale-lip:not([hidden]){display:block; position:absolute; left:0; right:0; bottom:0; height:var(--lip-zone);
+   z-index:2; margin:0; padding:0; border:0; background:transparent; cursor:pointer;
+   touch-action:none; -webkit-tap-highlight-color:transparent}
+-#scale-lip::after{content:""; position:absolute; left:50%; bottom:3px; width:32px; height:3px;
++#scale-lip::after{content:""; position:absolute; left:50%; bottom:0; width:32px; height:3px;
+   margin-left:-16px; border-radius:2px; background:#a79d8b}
+ #scale-lip:focus-visible{outline-offset:-2px}
+ #scale-sheet.lipped .sheetbody{scroll-padding-bottom:21px}

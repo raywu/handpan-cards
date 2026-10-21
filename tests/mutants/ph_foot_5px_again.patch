@@ -1,0 +1,16 @@
+# kills: UX: a real touch swipe down collapses the footer to a 9px lip, a swipe up restores it, with no flicker under momentum
+# suite: node --test --test-name-pattern ^UX..a.real.touch.swipe.down.collapses.the.footer.to.a.9px.lip..a.swipe.up.restores.it..with.no.flicker.under.momentum$ tests/e2e.test.js
+# The shut footer is 5px tall again, not 9.
+# Also killed by: A3 (SPA: the shut footer is 9px ...)
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -951,7 +951,7 @@ footer.seq{row-gap:var(--sp-1)}
+ :root{--lip-ease:cubic-bezier(.3,0,.2,1); --lip-foot:9px; --lip-zone:25px; --lip-over:calc(var(--lip-zone) - var(--lip-foot))}
+ #scale-sheet.lipped .sheetsurf{padding-bottom:env(safe-area-inset-bottom)}
+ #scale-sheet.lipped:not(.tiny) .sheetbody{flex-grow:1}
+-#scale-sheet.lipped #scale-foot{display:block; position:relative; flex:0 0 auto; height:var(--lip-foot);
++#scale-sheet.lipped #scale-foot{display:block; position:relative; flex:0 0 auto; height:5px;
+   margin-top:calc(-1 * var(--sp-4))}
+ @media (max-height:520px){#scale-sheet.lipped #scale-foot{margin-top:calc(-1 * var(--sp-3))}}
+ #scale-sheet.short.lipped #scale-foot{margin-top:calc(-1 * var(--sp-2))}

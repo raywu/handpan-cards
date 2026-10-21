@@ -7403,7 +7403,7 @@ function run() {
     const o = { fields: {} };
     for (const id of ${JSON.stringify(KB_FIELDS)}) o.fields[id] = q(document.getElementById(id));
     const body = document.querySelector("#scale-sheet .sheetbody");
-    o.body = q(body); o.bodyTop = body.scrollTop; o.vvh = window.visualViewport.height;
+    o.body = q(body); o.padB = parseFloat(getComputedStyle(body).scrollPaddingBottom) || 0; o.bodyTop = body.scrollTop; o.vvh = window.visualViewport.height;
     o.surfTop = document.querySelector("#scale-sheet .sheetsurf").scrollTop;
     o.gen = q(document.getElementById("scale-lip"));
     return o;`);
@@ -7416,7 +7416,7 @@ function run() {
       setTimeout(() => { const body = document.querySelector("#scale-sheet .sheetbody"); body.scrollTop += 37; }, 30);
     }, true);
     return true;`);
-  const kb2Whole = (r, s) => r.top >= s.body.top - 1 && r.bottom <= s.body.bottom + 1 && r.top >= -1 && r.bottom <= s.vvh + 1;
+  const kb2Whole = (r, s) => r.top >= s.body.top - 1 && r.bottom <= s.body.bottom - s.padB + 1 && r.top >= -1 && r.bottom <= s.vvh + 1;
 
   test("KB2: with the keyboard up and a note field focused in landscape, a touch swipe anywhere on the sheet scrolls it until NEXT is fully visible, and back to DING", async () => {
     try {
@@ -14252,6 +14252,494 @@ function run() {
     });
   });
 
+  describe("SPA: sheet polish lane A", () => {
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    const SPA_SCALE = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
+    const SPA_WARN = "Keep every note you can reach on the pan before you press the button below, because a note that is left out cannot be lit on its card";
+    const SPA_ONE = "Keep every note you can reach";
+    const SPA_MORE = " and the sheet keeps the message clear of the footer while it folds away and comes back again, so a long warning still reads in full above the buttons and never slides under the lip at any width";
+    const titleSet = (t, re) => [...new Set([...t.name.matchAll(re)].map((m) => m[0]))].sort();
+    const ranSet = (xs) => [...new Set(xs)].sort();
+    const THREE = {};
+    const calibrate = async () => {
+      await b.eval(`say(${JSON.stringify(SPA_ONE)}, "warn"); return true;`);
+      assert.strictEqual(await msgLines(), 1, "SPA_ONE is not one line");
+      let text = SPA_WARN;
+      const words = SPA_MORE.trim().split(" ");
+      for (let i = 0; i <= words.length; i++) {
+        await b.eval(`say(${JSON.stringify(text)}, "warn"); return true;`);
+        const n = await msgLines();
+        if (n === 3) { await b.eval(`say("", ""); return true;`); return text; }
+        assert.ok(n < 3, `calibration overshot to ${n} lines`);
+        text += " " + words[i];
+      }
+      assert.fail("no three-line text was reached");
+    };
+    const msgLines = () => b.eval(`const r = document.createRange(); r.selectNodeContents(document.getElementById("scale-msg")); return new Set([...r.getClientRects()].filter((x) => x.height > 0).map((x) => Math.round(x.top))).size;`);
+    const VPS = [[320, 568], [380, 780], [390, 844], [844, 390]];
+    const kbHeight = (w, h) => (h - (h >= 700 ? 336 : 260));
+    const spaOpen = async (w, h, { edit = false, tab = "scale" } = {}) => {
+      await freshLoad();
+      await b.setViewport(w, h, w < 1000);
+      await b.settle();
+      if (edit) { await generate(SPA_SCALE); await openEdit(); }
+      else { await openSheet(); await typeScale(SPA_SCALE); }
+      if (tab === "layout") { await b.click("#scale-tab-layout"); await sleep(250); }
+      await b.eval(`
+        const s = document.getElementById("scale-sheet");
+        window.__lip = [];
+        let last = s.className;
+        new MutationObserver(() => {
+          const c = s.className;
+          if (c === last) return;
+          const had = (k) => last.split(" ").includes(k), has = (k) => c.split(" ").includes(k);
+          if (had("lipped") !== has("lipped") || had("lipshut") !== has("lipshut")) window.__lip.push({ t: performance.now(), lipped: has("lipped"), shut: has("lipshut") });
+          last = c;
+        }).observe(s, { attributes: true, attributeFilter: ["class"] });
+        return true;`);
+      await sleep(80);
+    };
+    const spaReset = async () => {
+      await b.send("Emulation.setEmulatedMedia", { media: "", features: [{ name: "prefers-reduced-motion", value: "no-preference" }] }).catch(() => {});
+      await b.clearKeyboard().catch(() => {});
+      await b.setViewport(900, 900, false);
+    };
+    const tabOn = (tab) => b.eval(`const t = document.getElementById("scale-tab-${tab}"), p = document.getElementById("scale-panel-${tab}"); return t.getAttribute("aria-selected") === "true" && !p.hidden;`);
+    const rmOn = () => b.eval(`return matchMedia("(prefers-reduced-motion: reduce)").matches;`);
+    const kbOn = () => b.eval(`return document.getElementById("scale-sheet").classList.contains("kbup");`);
+    const shut = async () => { await b.eval(`collapseLip(); return true;`); await sleep(260); };
+    const state = () => b.eval(`const s = document.getElementById("scale-sheet"); return { lipped: s.classList.contains("lipped"), shut: s.classList.contains("lipshut"), kbup: s.classList.contains("kbup"), flips: window.__lip.length };`);
+    const px = (name) => b.eval(`
+      const p = document.createElement("div");
+      p.style.cssText = "position:absolute;visibility:hidden;width:0;height:var(${name})";
+      document.body.appendChild(p);
+      const h = p.getBoundingClientRect().height;
+      p.remove();
+      return h;`);
+    const kbUp = async (w, h) => {
+      await b.eval(`document.getElementById("scale-box").focus(); return true;`);
+      await b.fakeKeyboard(kbHeight(w, h));
+      await sleep(400);
+    };
+    const tapAt = async (x, y) => {
+      for (const type of ["mousePressed", "mouseReleased"]) await b.send("Input.dispatchMouseEvent", { type, x, y, button: "left", clickCount: 1 });
+      await sleep(250);
+    };
+    const PROBE = `
+      window.__spa = {
+        snap(t) {
+          const q = (id) => document.getElementById(id);
+          const rect = (e) => { const r = e.getBoundingClientRect(); return { top: r.top, bottom: r.bottom }; };
+          const msg = q("scale-msg"), sheet = q("scale-sheet");
+          let text = null;
+          if (msg.textContent) {
+            const r = document.createRange(); r.selectNodeContents(msg);
+            const rs = [...r.getClientRects()].filter((x) => x.height > 0);
+            if (rs.length) text = { top: Math.min(...rs.map((x) => x.top)), bottom: Math.max(...rs.map((x) => x.bottom)) };
+          }
+          const lipped = sheet.classList.contains("lipped");
+          const clip = lipped ? rect(q("scale-footclip")) : null;
+          const seen = (e) => {
+            if (!e || e.hidden || getComputedStyle(e).visibility === "hidden") return null;
+            let r = rect(e);
+            if (clip) r = { top: Math.max(r.top, clip.top), bottom: Math.min(r.bottom, clip.bottom) };
+            return r.bottom - r.top > 0.5 ? r : null;
+          };
+          const n = q("scale-next"), g = q("scale-generate");
+          const lip = q("scale-lip");
+          return { t, text, primary: seen(!n.hidden ? n : g), del: q("scale-delete-row").hidden ? null : seen(q("scale-delete")),
+            zone: lip.hidden ? null : rect(lip), cls: sheet.className };
+        },
+        run(ms, steps) {
+          return new Promise((res) => {
+            const out = [], t0 = performance.now();
+            const todo = steps.map((s) => ({ ...s, done: false }));
+            const tick = () => {
+              const t = performance.now() - t0;
+              for (const s of todo) if (!s.done && t >= s.at) { s.done = true; new Function(s.code)(); }
+              out.push(this.snap(Math.round(t)));
+              if (t < ms) requestAnimationFrame(tick); else res(out);
+            };
+            requestAnimationFrame(tick);
+          });
+        },
+      };
+      return true;`;
+    const hits = (f) => {
+      const v = [];
+      const over = (a, b2) => a && b2 && Math.min(a.bottom, b2.bottom) - Math.max(a.top, b2.top) > 1;
+      if (over(f.text, f.primary)) v.push(`t=${f.t} text ${JSON.stringify(f.text)} over the primary ${JSON.stringify(f.primary)} [${f.cls}]`);
+      if (over(f.text, f.del)) v.push(`t=${f.t} text ${JSON.stringify(f.text)} over DELETE ${JSON.stringify(f.del)} [${f.cls}]`);
+      if (over(f.text, f.zone)) v.push(`t=${f.t} text ${JSON.stringify(f.text)} over the tap zone ${JSON.stringify(f.zone)} [${f.cls}]`);
+      return v;
+    };
+    const lastControl = (open) => b.eval(`
+      const body = document.querySelector("#scale-sheet .sheetbody");
+      body.scrollTop = body.scrollHeight;
+      const panel = document.querySelector('#scale-sheet [role=tabpanel]:not([hidden])');
+      const seen = [...panel.querySelectorAll("button, input, textarea, select, a[href]")].filter((e) => e.getClientRects().length && getComputedStyle(e).visibility !== "hidden" && !e.closest("[hidden]"));
+      let last = null;
+      for (const e of seen) if (!last || e.getBoundingClientRect().bottom > last.getBoundingClientRect().bottom) last = e;
+      const r = last.getBoundingClientRect();
+      let onLip = 0;
+      for (const fx of [0.25, 0.5, 0.75]) for (const dy of [1, 3, 6]) {
+        const t = document.elementFromPoint(r.left + r.width * fx, r.bottom - dy);
+        if (t && t.closest("#scale-lip")) onLip += 1;
+      }
+      const lip = document.getElementById("scale-lip");
+      return { id: last.id || last.className || last.tagName, bottom: r.bottom, body: body.getBoundingClientRect().bottom,
+        zoneTop: lip.hidden ? null : lip.getBoundingClientRect().top, onLip, M: body.scrollHeight - body.clientHeight };`);
+
+    test("SPA: at 320x568, 380x780, 390x844, 844x390 and 1280x800, on the tab that scrolls, the last control ends at least --sp-2 above the lip's tap zone with the footer shut and no point of it hit-tests to #scale-lip", { timeout: 240000 }, async (t) => {
+      const fails = [], vpRan = [], scrolls = {};
+      try {
+        for (const [w, h] of [...VPS, [1280, 800]]) {
+          vpRan.push(`${w}x${h}`);
+          for (const tab of ["scale", "layout"]) {
+            await spaOpen(w, h, { tab });
+            await shut();
+            const st = await state();
+            if (!(st.lipped && st.shut)) { fails.push(`${w}x${h} ${tab}: the footer is not shut (${JSON.stringify(st)})`); continue; }
+            if (!(await tabOn(tab))) { fails.push(`${w}x${h} ${tab}: the ${tab} tab is not the selected, shown tab`); continue; }
+            const sp2 = await px("--sp-2");
+            const m = await lastControl();
+            const ctx = `${w}x${h} ${tab} (${m.id}, M ${m.M})`;
+            if (m.M > 0) scrolls[`${w}x${h}`] = true;
+            if (m.zoneTop === null) { fails.push(`${ctx}: the lip did not shut`); continue; }
+            if (m.bottom > m.zoneTop - sp2 + 0.5) fails.push(`${ctx}: the last control ends ${m.bottom}, ${(m.zoneTop - m.bottom).toFixed(1)}px above the zone at ${m.zoneTop}, not ${sp2}`);
+            if (m.onLip) fails.push(`${ctx}: ${m.onLip} points of the last control hit-test to #scale-lip`);
+          }
+          if (!scrolls[`${w}x${h}`]) fails.push(`${w}x${h}: neither tab scrolls`);
+        }
+      } finally { await spaReset(); }
+      assert.deepStrictEqual(titleSet(t, /\b\d+x\d+\b/g), ranSet(vpRan));
+      assert.deepStrictEqual(fails, [], fails.join("\n"));
+    });
+
+    test("SPA: with the footer open the last control ends at least --sp-2 plus 16px above the hairline on both tabs", { timeout: 240000 }, async () => {
+      const fails = [];
+      try {
+        for (const [w, h] of [...VPS, [1280, 800]]) {
+          for (const tab of ["scale", "layout"]) {
+            await spaOpen(w, h, { tab });
+            const sp2 = await px("--sp-2");
+            const over = await px("--lip-over");
+            const m = await lastControl();
+            const ctx = `${w}x${h} ${tab} (${m.id})`;
+            const s = await state();
+            if (s.lipped || s.shut) fails.push(`${ctx}: the footer is not open (${JSON.stringify(s)})`);
+            if (!(await tabOn(tab))) fails.push(`${ctx}: the ${tab} tab is not the selected, shown tab`);
+            if (over !== 16) fails.push(`${ctx}: --lip-over is ${over}px, not 16`);
+            if (m.bottom > m.body - (sp2 + 16) + 0.5) fails.push(`${ctx}: the last control ends ${(m.body - m.bottom).toFixed(1)}px above the hairline, not ${sp2 + 16}`);
+          }
+        }
+      } finally { await spaReset(); }
+      assert.deepStrictEqual(fails, [], fails.join("\n"));
+    });
+
+    test("SPA: the shut footer is 9px, the 32x3 pill sits 3px above the footer's bottom and is centred, and the tap zone is 25px with its bottom on the surface's bottom above the inset", { timeout: 90000 }, async () => {
+      try {
+        let inset = 0;
+        try { await Promise.race([b.send("Emulation.setSafeAreaInsetsOverride", { insets: { bottom: 34 } }), sleep(3000).then(() => { throw new Error("no override"); })]); inset = 34; } catch (e) { inset = 0; }
+        await spaOpen(380, 780);
+        await shut();
+        const st = await state();
+        assert.ok(st.lipped && st.shut, `the footer is not shut (${JSON.stringify(st)})`);
+        const seen = await b.eval(`const p = document.createElement("div"); p.style.cssText = "position:absolute;visibility:hidden;width:0;height:env(safe-area-inset-bottom)"; document.body.appendChild(p); const h = p.getBoundingClientRect().height; p.remove(); return h;`);
+        assert.strictEqual(seen, 34, `the page sees a bottom inset of ${seen}px, not 34`);
+        const m = await b.eval(`
+          const lip = document.getElementById("scale-lip"), r = lip.getBoundingClientRect();
+          const a = getComputedStyle(lip, "::after");
+          const foot = document.getElementById("scale-foot").getBoundingClientRect();
+          const surf = document.querySelector("#scale-sheet .sheetsurf").getBoundingClientRect();
+          return { zoneH: r.height, zoneBottom: r.bottom, surfBottom: surf.bottom, footH: foot.height, footBottom: foot.bottom, footTop: foot.top,
+            w: parseFloat(a.width), h: parseFloat(a.height), pillBottom: r.bottom - parseFloat(a.bottom), left: parseFloat(a.left), ml: parseFloat(a.marginLeft), zoneW: r.width };`);
+        assert.ok(Math.abs(m.footH - 9) <= 0.5, `the shut footer is ${m.footH}px, not 9`);
+        assert.strictEqual(m.w, 32);
+        assert.strictEqual(m.h, 3);
+        assert.ok(Math.abs(m.footBottom - m.pillBottom - 3) <= 0.5, `the pill bottom is ${m.footBottom - m.pillBottom}px above the footer's bottom, not 3`);
+        assert.ok(Math.abs((m.pillBottom - 3) - m.footTop - 3) <= 0.5, `the pill is not centred in the 9px footer (top gap ${m.pillBottom - 3 - m.footTop})`);
+        assert.ok(Math.abs(m.left - m.zoneW / 2) <= 0.5 && m.ml === -16, `the pill is not centred across the zone (left ${m.left}, margin ${m.ml})`);
+        assert.strictEqual(m.zoneH, 25);
+        assert.ok(Math.abs(m.zoneBottom - (m.surfBottom - inset)) <= 1.5, `the zone bottom ${m.zoneBottom} against the surface bottom ${m.surfBottom} less inset ${inset}`);
+      } finally {
+        await Promise.race([b.send("Emulation.setSafeAreaInsetsOverride", { insets: { bottom: 0 } }), sleep(3000)]).catch(() => {});
+        await spaReset();
+      }
+    });
+
+    const msgState = () => b.eval(`
+      const msg = document.getElementById("scale-msg"), lip = document.getElementById("scale-lip");
+      const r = document.createRange(); r.selectNodeContents(msg);
+      const rs = [...r.getClientRects()].filter((x) => x.height > 0);
+      const bottom = Math.max(...rs.map((x) => x.bottom)), top = Math.min(...rs.map((x) => x.top));
+      const left = Math.min(...rs.map((x) => x.left)), right = Math.max(...rs.map((x) => x.right));
+      const hit = (x, y) => { const t = document.elementFromPoint(x, y); return !!(t && t.closest("#scale-guidance")); };
+      const cx = (left + right) / 2;
+      return { top, bottom, cx, zoneTop: lip.hidden ? null : lip.getBoundingClientRect().top,
+        hitCentre: hit(cx, (top + bottom) / 2), hitBottom: hit(cx, bottom - 1), hitLeft: hit(left + 2, bottom - 1) };`);
+
+    test("SPA: a message shown while the footer is shut ends at least --sp-1 above the lip's tap zone and hit-tests to itself, keyboard up and down at 320x568, 380x780 and 390x844 and keyboard down at 844x390", { timeout: 240000 }, async (t) => {
+      const fails = [], ran = [];
+      try {
+        for (const [w, h] of VPS) {
+          for (const kb of [false, true]) {
+            if (kb && w > h) continue;
+            await spaOpen(w, h);
+            if (kb) await kbUp(w, h);
+            await shut();
+            await b.eval(`say(${JSON.stringify(SPA_WARN)}, "warn"); return true;`);
+            await sleep(300);
+            const sp1 = await px("--sp-1");
+            const s = await state();
+            const ctx = `${w}x${h} keyboard ${kb ? "up" : "down"}`;
+            ran.push(ctx);
+            if (s.kbup !== kb) fails.push(`${ctx}: kbup is ${s.kbup}`);
+            if ((await msgLines()) < 1) { fails.push(`${ctx}: no message is showing`); continue; }
+            const m = await msgState();
+            if (!(s.lipped && s.shut)) { fails.push(`${ctx}: the footer is not shut (${JSON.stringify(s)})`); continue; }
+            if (m.zoneTop === null) { fails.push(`${ctx}: no tap zone`); continue; }
+            if (m.bottom > m.zoneTop - sp1 + 0.5) fails.push(`${ctx}: the message ends ${m.bottom}, ${(m.zoneTop - m.bottom).toFixed(1)}px above the zone at ${m.zoneTop}, not ${sp1}`);
+            if (!m.hitCentre || !m.hitBottom || !m.hitLeft) fails.push(`${ctx}: the message does not hit-test to itself (centre ${m.hitCentre}, bottom ${m.hitBottom}, left ${m.hitLeft})`);
+          }
+        }
+      } finally { await spaReset(); }
+      assert.deepStrictEqual(titleSet(t, /\b\d+x\d+\b/g), ranSet(ran.map((r) => r.split(" ")[0])));
+      assert.deepStrictEqual(ran, ["320x568 keyboard down", "320x568 keyboard up", "380x780 keyboard down", "380x780 keyboard up", "390x844 keyboard down", "390x844 keyboard up", "844x390 keyboard down"]);
+      assert.deepStrictEqual(fails, [], fails.join("\n"));
+    });
+
+    test("SPA: a tap on a message above the shut lip does not restore the footer", { timeout: 120000 }, async () => {
+      const fails = [];
+      try {
+        for (const [w, h] of [[320, 568], [380, 780]]) {
+          await spaOpen(w, h);
+          await shut();
+          await b.eval(`say(${JSON.stringify(SPA_WARN)}, "warn"); return true;`);
+          await sleep(300);
+          const pre = await state();
+          if (!(pre.lipped && pre.shut)) { fails.push(`${w}x${h}: the footer is not shut before the tap (${JSON.stringify(pre)})`); continue; }
+          if ((await msgLines()) < 1) { fails.push(`${w}x${h}: no message is showing`); continue; }
+          const m = await msgState();
+          if (!m.hitBottom) { fails.push(`${w}x${h}: the tap point does not hit the message`); continue; }
+          await tapAt(m.cx, m.bottom - 2);
+          const s = await state();
+          if (!(s.lipped && s.shut)) fails.push(`${w}x${h}: a tap on the message's last line restored the footer (${JSON.stringify(s)})`);
+        }
+      } finally { await spaReset(); }
+      assert.deepStrictEqual(fails, [], fails.join("\n"));
+    });
+
+    test("SPA: with the keyboard up and a warning showing, a lip tap restores the footer and the message's bottom ends at or above NEXT's top", { timeout: 120000 }, async () => {
+      const fails = [];
+      try {
+        for (const [w, h] of [[380, 780], [393, 852]]) {
+          await spaOpen(w, h);
+          await b.eval(PROBE);
+          await kbUp(w, h);
+          await b.eval(`say(${JSON.stringify(SPA_WARN)}, "warn"); return true;`);
+          await sleep(300);
+          const before = await state();
+          if (!(before.lipped && before.shut && before.kbup)) { fails.push(`${w}x${h}: not shut under the keyboard (${JSON.stringify(before)})`); continue; }
+          if ((await msgLines()) < 1) { fails.push(`${w}x${h}: no warning is showing before the lip tap`); continue; }
+          const z = await b.eval(`const r = document.getElementById("scale-lip").getBoundingClientRect(); return { x: (r.left + r.right) / 2, y: r.top + 2 };`);
+          const rec = b.eval(`return window.__spa.run(600, []);`);
+          await tapAt(z.x, z.y);
+          const frames = await rec;
+          const s = await state();
+          if (s.lipped) fails.push(`${w}x${h}: the lip tap did not restore (${JSON.stringify(s)})`);
+          if ((await msgLines()) < 1) { fails.push(`${w}x${h}: the warning is gone after the lip tap`); continue; }
+          const m = await b.eval(`
+            const r = document.createRange(); r.selectNodeContents(document.getElementById("scale-msg"));
+            const bottom = Math.max(...[...r.getClientRects()].map((x) => x.bottom));
+            const n = document.getElementById("scale-next"), p = !n.hidden ? n : document.getElementById("scale-generate");
+            return { bottom, top: p.getBoundingClientRect().top, id: p.id };`);
+          if (m.id !== "scale-next") fails.push(`${w}x${h}: the primary is ${m.id}, not NEXT`);
+          if (m.bottom > m.top + 0.5) fails.push(`${w}x${h}: the message ends ${m.bottom}, below NEXT's top ${m.top}`);
+          if (!frames.length || !frames.some((f) => f.text)) fails.push(`${w}x${h}: no sampled frame had visible message text (${frames.length} frames)`);
+          for (const f of frames) for (const v of hits(f)) fails.push(`${w}x${h}: ${v}`);
+        }
+      } finally { await spaReset(); }
+      assert.deepStrictEqual(fails.slice(0, 12), [], fails.slice(0, 12).join("\n"));
+    });
+
+    test("SPA: with the keyboard up and the lip shut at 390x844, the message's last line ends at least 4px above the lip's tap zone and its background is the sheet surface colour; sampled frames during the collapse and the restore keep its text off the primary, DELETE and the tap zone", { timeout: 120000 }, async () => {
+      const fails = [];
+      try {
+        for (const edit of [false, true]) {
+          await spaOpen(390, 844, { edit });
+          await b.eval(PROBE);
+          await kbUp(390, 844);
+          await b.eval(`say(${JSON.stringify(SPA_WARN)}, "warn"); return true;`);
+          await sleep(300);
+          const ctx = edit ? "Edit" : "Add";
+          const st = await state();
+          if (!(st.kbup && st.lipped && st.shut)) { fails.push(`${ctx}: not shut under the keyboard (${JSON.stringify(st)})`); continue; }
+          if ((await msgLines()) < 1) { fails.push(`${ctx}: no message is showing`); continue; }
+          const m = await msgState();
+          if (m.zoneTop === null) { fails.push(`${ctx}: no tap zone`); continue; }
+          if (m.bottom > m.zoneTop - 4 + 0.5) fails.push(`${ctx}: the last line ends ${(m.zoneTop - m.bottom).toFixed(1)}px above the zone, not 4`);
+          const bg = await b.eval(`return { msg: getComputedStyle(document.getElementById("scale-guidance")).backgroundColor, surf: getComputedStyle(document.querySelector("#scale-sheet .sheetsurf")).backgroundColor };`);
+          if (bg.msg !== bg.surf) fails.push(`${ctx}: the message background is ${bg.msg}, not the surface ${bg.surf}`);
+          const down = await b.eval(`return window.__spa.run(700, [{ at: 40, code: "restoreLip()" }]);`);
+          if (!down.length || !down.some((f) => f.text)) fails.push(`${ctx} restore: no sampled frame had visible message text (${down.length} frames)`);
+          for (const f of down) for (const v of hits(f)) fails.push(`${ctx} restore: ${v}`);
+          if (!down[0].cls.includes("lipshut") || down[down.length - 1].cls.includes("lipshut")) fails.push(`${ctx} restore: the frames do not run from shut to open`);
+          const up = await b.eval(`return window.__spa.run(700, [{ at: 40, code: "collapseLip()" }]);`);
+          if (!up.length || !up.some((f) => f.text)) fails.push(`${ctx} collapse: no sampled frame had visible message text (${up.length} frames)`);
+          for (const f of up) for (const v of hits(f)) fails.push(`${ctx} collapse: ${v}`);
+          if (up[0].cls.includes("lipshut") || !up[up.length - 1].cls.includes("lipshut")) fails.push(`${ctx} collapse: the frames do not run from open to shut`);
+        }
+      } finally { await spaReset(); }
+      assert.deepStrictEqual(fails.slice(0, 12), [], fails.slice(0, 12).join("\n"));
+    });
+
+    const CHANGES = {
+      appear: { pre: `say("", "")`, change: `say(${JSON.stringify(SPA_WARN)}, "warn")` },
+      clear: { pre: `say(${JSON.stringify(SPA_WARN)}, "warn")`, change: `say("", "")` },
+      grow: { pre: `say(${JSON.stringify(SPA_ONE)}, "warn")`, change: (w) => `say(${JSON.stringify(THREE[w])}, "warn")` },
+    };
+    const LINES = { appear: [(n) => n === 0, (n) => n >= 1], clear: [(n) => n >= 1, (n) => n === 0], grow: [(n) => n === 1, (n) => n === 3] };
+    const LINES_SAID = { appear: "0 to 1 or more", clear: "1 or more to 0", grow: "1 to 3" };
+    test("SPA: guidance that appears, clears or grows from one to three lines at 40ms, 90ms and 150ms into a collapse or a restore at 380x780, and at 40ms into an immediate reversal at 380x780 and 844x390 and with the keyboard up, never puts its visible text over the primary, DELETE or the lip's tap zone in any sampled frame, with and without reduced motion", { timeout: 900000 }, async (t) => {
+      const fails = [], ran = new Set();
+      const atRan = [], vpRan = [];
+      const sub = async (ctx, kind, change, at, w) => {
+        atRan.push(`${at}ms`);
+        const c = { ...CHANGES[change], change: typeof CHANGES[change].change === "function" ? CHANGES[change].change(w) : CHANGES[change].change };
+        await b.eval(`lipReset(); ${c.pre}; return true;`);
+        await sleep(60);
+        const pre = await msgLines();
+        if (kind === "restore") { await b.eval(`collapseLip(); return true;`); await sleep(250); }
+        const steps = kind === "collapse" ? [{ at: 0, code: "collapseLip()" }, { at, code: c.change }]
+          : kind === "restore" ? [{ at: 0, code: "restoreLip()" }, { at, code: c.change }]
+          : [{ at: 0, code: "collapseLip()" }, { at, code: c.change }, { at: at + 12, code: "restoreLip()" }];
+        const frames = await b.eval(`return window.__spa.run(380, ${JSON.stringify(steps)});`);
+        if (!frames.length || !frames.some((f) => f.text)) fails.push(`${ctx} ${kind} ${change}@${at}: no sampled frame had visible message text (${frames.length} frames)`);
+        for (const f of frames) for (const v of hits(f)) fails.push(`${ctx} ${kind} ${change}@${at}: ${v}`);
+        const post = await msgLines();
+        if (!LINES[change][0](pre) || !LINES[change][1](post)) fails.push(`${ctx} ${kind} ${change}@${at}: ${pre} to ${post} lines, not ${LINES_SAID[change]}`);
+        const cls = frames.map((f) => f.cls.split(" "));
+        if (kind !== "restore" && !cls.some((c) => c.includes("lipshut"))) fails.push(`${ctx} ${kind} ${change}@${at}: no sampled frame had the footer shut`);
+        if (kind !== "collapse" && cls[cls.length - 1].includes("lipshut")) fails.push(`${ctx} ${kind} ${change}@${at}: the footer was still shut in the last frame`);
+        if (kind === "collapse" && !cls[cls.length - 1].includes("lipshut")) fails.push(`${ctx} ${kind} ${change}@${at}: the footer was not shut in the last frame`);
+        ran.add(`${ctx.split(" ")[0]} ${ctx.includes("Edit") ? "Edit" : "Add"} ${ctx.includes("reduced") ? "reduced" : "motion"}${ctx.includes("keyboard") ? " keyboard" : ""} ${kind} ${change} ${at}`);
+      };
+      try {
+        for (const [w, h] of VPS.filter(([vw]) => vw !== 390 && vw !== 320)) {
+          for (const edit of [false, true]) {
+            for (const rm of [false, true]) {
+              if (edit && w !== 380) continue;
+              if (rm && (edit || w !== 380)) continue;
+              await spaOpen(w, h, { edit });
+              await b.eval(PROBE);
+              vpRan.push(`${w}x${h}`);
+              if (!THREE[w]) THREE[w] = await calibrate();
+              await b.send("Emulation.setEmulatedMedia", { media: "", features: [{ name: "prefers-reduced-motion", value: rm ? "reduce" : "no-preference" }] });
+              await sleep(100);
+              if ((await rmOn()) !== rm) { fails.push(`${w}x${h}: prefers-reduced-motion is not ${rm ? "reduce" : "no-preference"}`); continue; }
+              const ctx = `${w}x${h} ${edit ? "Edit" : "Add"} ${rm ? "reduced" : "motion"}`;
+              const full = w === 380 && !edit && !rm;
+              const kinds = full ? ["collapse", "restore", "reverse"] : rm ? ["collapse"] : ["reverse"];
+              for (const kind of kinds) {
+                for (const change of Object.keys(CHANGES)) {
+                  for (const at of kind === "reverse" || rm ? [40] : full ? [40, 90, 150] : [40]) await sub(ctx, kind, change, at, w);
+                }
+              }
+              if (!rm && !edit && w === 380) {
+                await kbUp(w, h);
+                if (!(await kbOn())) { fails.push(`${w}x${h}: the sheet does not have kbup after the keyboard rose`); continue; }
+                for (const change of Object.keys(CHANGES)) for (const at of [40]) await sub(ctx + " keyboard", "reverse", change, at, w);
+              }
+            }
+          }
+        }
+      } finally { await spaReset(); }
+      assert.deepStrictEqual(titleSet(t, /\b\d+x\d+\b/g), ranSet(vpRan));
+      assert.deepStrictEqual(titleSet(t, /\b\d+ms\b/g), ranSet(atRan), "a millisecond in the title did not run, or one ran that it does not state");
+      for (const vp of ["380x780", "844x390"]) for (const ch of ["appear", "clear", "grow"]) assert.ok(ran.has(`${vp} Add motion reverse ${ch} 40`), `${vp} reverse ${ch} did not run`);
+      for (const kind of ["collapse", "restore"]) for (const at of [40, 90, 150]) for (const ch of ["appear", "clear", "grow"]) assert.ok(ran.has(`380x780 Add motion ${kind} ${ch} ${at}`), `${kind} ${ch}@${at} did not run`);
+      for (const ch of ["appear", "clear", "grow"]) { assert.ok(ran.has(`380x780 Add motion keyboard reverse ${ch} 40`), `keyboard reverse ${ch} did not run`); assert.ok(ran.has(`380x780 Add reduced collapse ${ch} 40`), `reduced ${ch} did not run`); assert.ok(ran.has(`380x780 Edit motion reverse ${ch} 40`), `Edit ${ch} did not run`); }
+      const groups = {};
+      for (const f of fails) { const k = f.replace(/: t=.*$/, ""); groups[k] = (groups[k] || 0) + 1; }
+      assert.deepStrictEqual(fails.slice(0, 6), [], fails.length + " violations\n" + JSON.stringify(groups, null, 1) + "\n" + fails.slice(0, 6).join("\n"));
+    });
+
+    test("SPA: guidance appearing or clearing at the scroll end during a wheel window, a touch drag and its fling, keyboard up and down, changes the lip state zero times and starts no collapse and restore cycle", { timeout: 300000 }, async (t) => {
+      const fails = [], ran = [];
+      const settle = async (ctx, how) => {
+        const s = await state();
+        if (s.flips !== 0) fails.push(`${ctx} ${how}: the lip changed ${s.flips} times`);
+      };
+      try {
+        for (const [w, h] of [[380, 780]]) {
+          for (const kb of [false, true]) {
+            if (kb && w > h) continue;
+            for (const how of ["wheel", "drag", "fling"]) {
+              for (const change of ["clear", "appear"]) {
+                await spaOpen(w, h);
+                await b.eval(`const p = document.getElementById("scale-panel-scale"), d = document.createElement("div"); d.style.height = "900px"; p.appendChild(d); return true;`);
+                if (kb) await kbUp(w, h);
+                if ((await kbOn()) !== kb) { fails.push(`${w}x${h} keyboard ${kb ? "up" : "down"} ${how} ${change}: kbup is ${!kb}`); continue; }
+                if (change === "clear") await b.eval(`say(${JSON.stringify(SPA_WARN)}, "warn"); return true;`);
+                await shut();
+                if (change === "clear" && (await msgLines()) < 1) { fails.push(`${w}x${h} keyboard ${kb ? "up" : "down"} ${how} ${change}: no warning is showing to clear`); continue; }
+                const atEnd = await b.eval(`const body = document.querySelector("#scale-sheet .sheetbody"); body.scrollTop = body.scrollHeight; window.__lip.length = 0; return body.scrollTop + body.clientHeight >= body.scrollHeight - 1;`);
+                await sleep(200);
+                const ctx = `${w}x${h} keyboard ${kb ? "up" : "down"} ${change}`;
+                if (!atEnd) fails.push(`${ctx} ${how}: the body is not at the scroll end`);
+                const bb = await b.eval(`const r = document.querySelector("#scale-sheet .sheetbody").getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+                const go = change === "clear" ? `say("", ""); return true;` : `say(${JSON.stringify(SPA_WARN)}, "warn"); return true;`;
+                if (how === "wheel") {
+                  await b.send("Input.dispatchMouseEvent", { type: "mouseWheel", x: bb.x, y: bb.y, deltaX: 0, deltaY: 1 });
+                  const eng = await b.eval(`const e = Date.now() < userWindowUntil; ${go.replace("return true;", "")} return e;`);
+                  if (!eng) fails.push(`${ctx} ${how}: the wheel did not open the user window`);
+                } else {
+                  const tp = (dy) => [{ x: bb.x, y: bb.y + dy, radiusX: 4, radiusY: 4, force: 1, id: 1 }];
+                  await b.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: tp(0) });
+                  for (const dy of [-6, -14, -24, -36]) await b.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: tp(dy) });
+                  if (how === "drag") {
+                    const eng = await b.eval(`const e = lipDrag !== null; ${go.replace("return true;", "")} return e;`);
+                    if (!eng) fails.push(`${ctx} ${how}: no drag was in progress`);
+                  }
+                  await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+                  if (how === "fling") {
+                    const eng = await b.eval(`const e = lipFling !== null; ${go.replace("return true;", "")} return e;`);
+                    if (!eng) fails.push(`${ctx} ${how}: no fling was running`);
+                  }
+                }
+                await sleep(400);
+                const nl = await msgLines();
+                if (change === "appear" ? nl < 1 : nl !== 0) fails.push(`${ctx} ${how}: the warning did not ${change === "appear" ? "appear" : "clear"} (${nl} lines)`);
+                ran.push(`${kb ? "up" : "down"} ${how} ${change}`);
+                await settle(ctx, how);
+              }
+            }
+          }
+        }
+      } finally { await spaReset(); }
+      assert.deepStrictEqual(ran.sort(), ["down", "up"].flatMap((k) => ["wheel", "drag", "fling"].flatMap((how) => ["clear", "appear"].map((c) => `${k} ${how} ${c}`))).sort());
+      for (const how of ["wheel", "drag", "fling"]) assert.ok(new RegExp(how).test(t.name) && ran.some((r) => r.startsWith("down " + how)) && ran.some((r) => r.startsWith("up " + how)), how);
+      assert.deepStrictEqual(fails, [], fails.join("\n"));
+    });
+
+    test("SPA: the selected tab's pressed colour differs from its rest colour", { timeout: 60000 }, async () => {
+      try {
+        await spaOpen(380, 780);
+        const lum = (c) => { const [r, g, bl] = c.match(/[\d.]+/g).map(Number); return 0.2126 * r + 0.7152 * g + 0.0722 * bl; };
+        const rest = await b.eval(`return getComputedStyle(document.getElementById("scale-tab-scale")).color;`);
+        await b.send("DOM.enable");
+        await b.send("CSS.enable");
+        const doc = await b.send("DOM.getDocument", { depth: 0 });
+        const node = await b.send("DOM.querySelector", { nodeId: doc.root.nodeId, selector: "#scale-tab-scale" });
+        await b.send("CSS.forcePseudoState", { nodeId: node.nodeId, forcedPseudoClasses: ["active"] });
+        const pressed = await b.eval(`return getComputedStyle(document.getElementById("scale-tab-scale")).color;`);
+        await b.send("CSS.forcePseudoState", { nodeId: node.nodeId, forcedPseudoClasses: [] });
+        assert.ok(Math.abs(lum(rest) - lum(pressed)) >= 20, `the selected tab rests at ${rest} and presses to ${pressed}`);
+      } finally { await spaReset(); }
+    });
+  });
+
   describe("UX: the footer lip", () => {
     const LIP_KURD = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
     const SIZES = [[380, 780], [320, 568], [393, 852], [844, 390], [1280, 800]];
@@ -14327,7 +14815,7 @@ function run() {
       await b.setViewport(900, 900, false);
     };
 
-    test("UX: a real touch swipe down collapses the footer to a 5px lip, a swipe up restores it, with no flicker under momentum", { timeout: 90000 }, async () => {
+    test("UX: a real touch swipe down collapses the footer to a 9px lip, a swipe up restores it, with no flicker under momentum", { timeout: 90000 }, async () => {
       const fails = [];
       try {
         for (const [w, h] of [[380, 780], [844, 390], [1280, 800]]) {
@@ -14341,7 +14829,7 @@ function run() {
             if (!(s.lipped && s.shut)) fails.push(`${ctx}: a swipe down did not collapse (${JSON.stringify(s)})`);
             else {
               const foot = await b.eval(`return document.getElementById("scale-foot").getBoundingClientRect().height;`);
-              if (Math.abs(foot - 5) > 0.5) fails.push(`${ctx}: the shut footer is ${foot}px, not 5`);
+              if (Math.abs(foot - 9) > 0.5) fails.push(`${ctx}: the shut footer is ${foot}px, not 9`);
               if (s.lippedFlips !== 1) fails.push(`${ctx}: ${s.lippedFlips} lip changes under momentum, not 1`);
             }
             await restoreBySwipe();
@@ -14810,7 +15298,7 @@ function run() {
       } finally { await reset(); }
     });
 
-    test("UX: lipped, an empty guidance slot takes no height and the lip sits on the body's hairline; a slot with text stays --sp-2 above the lip", { timeout: 60000 }, async () => {
+    test("UX: lipped, an empty guidance slot takes no height and the lip sits on the body's hairline; a slot with text stays --sp-2 plus --lip-over above the lip", { timeout: 60000 }, async () => {
       try {
         await lipOpen(380, 780);
         await collapse();
@@ -14829,9 +15317,15 @@ function run() {
           const g = document.getElementById("scale-guidance").getBoundingClientRect();
           const foot = document.getElementById("scale-foot").getBoundingClientRect();
           const sp2 = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--sp-2"));
-          return { h: g.height, gap: foot.top - g.bottom, sp2 };`);
+          const probe = document.createElement("div");
+          probe.style.cssText = "position:absolute;visibility:hidden;height:var(--lip-over)";
+          document.body.appendChild(probe);
+          const over = probe.getBoundingClientRect().height;
+          probe.remove();
+          return { h: g.height, gap: foot.top - g.bottom, sp2, over };`);
         assert.ok(t.h > 0, "the warning gave the slot no height");
-        assert.ok(Math.abs(t.gap - t.sp2) <= 2, `the slot with text is ${t.gap}px above the lip, --sp-2 is ${t.sp2}`);
+        assert.ok(t.over > 0, "--lip-over resolves to no height");
+        assert.ok(Math.abs(t.gap - (t.sp2 + t.over)) <= 2, `the slot with text is ${t.gap}px above the lip, --sp-2 plus --lip-over is ${t.sp2 + t.over}`);
         const msg = await b.eval(`return document.getElementById("scale-msg").textContent.length;`);
         assert.ok(msg > 0, "a say() while lipped put no text in #scale-msg");
       } finally { await reset(); }
@@ -14856,7 +15350,7 @@ function run() {
           return { inside: document.elementFromPoint(x, r.top + 1) === lip, above: document.elementFromPoint(x, r.top - 1) === lip,
             foot: document.getElementById("scale-foot").getBoundingClientRect().height };`);
         assert.ok(hit.inside && !hit.above, `the hit-test zone is not the 25px box (inside ${hit.inside}, above ${hit.above})`);
-        assert.ok(Math.abs(hit.foot - 5) <= 0.5, `the shut footer is ${hit.foot}px, not 5`);
+        assert.ok(Math.abs(hit.foot - 9) <= 0.5, `the shut footer is ${hit.foot}px, not 9`);
         assert.ok(Math.abs(m.bottom - (m.surfBottom - inset)) <= 1.5, `the lip bottom ${m.bottom} against the surface bottom ${m.surfBottom} less inset ${inset}`);
         const cx = (m.left + m.right) / 2;
         await tapAt(cx, m.top + 2);

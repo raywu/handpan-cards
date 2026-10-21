@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10733,7 +10733,6 @@ function lipScroll() {
+@@ -10760,7 +10760,6 @@ function lipScroll() {
+   const now = Date.now();
    if (!sheetOpen || sheet.classList.contains("kbup") || now < lipQuietUntil || now > userWindowUntil) return;
    userWindowUntil = now + LIP_WINDOW;
-   if (isLipShut() && t >= M - 1) { restoreLip(); return; }
 -  if (M !== prev.M) { lipAcc = 0; return; }
+   if (isLipShut() && t >= M - 1) { restoreLip(); return; }
    const d = t - prev.t;
    if (d * lipAcc < 0) lipAcc = 0;
-   lipAcc += d;
