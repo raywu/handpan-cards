@@ -10765,7 +10765,7 @@ function lipScroll() {
 const lipUser = () => { userWindowUntil = Date.now() + LIP_WINDOW; };
 function lipScrollEvent() {
   const now = Date.now();
-  if (lipDrag || now < lipDragEnd) {
+  if (lipDrag || lipTouching || now < lipDragEnd) {
     if (!lipDrag) lipDragEnd = now + LIP_END_MS;
     userWindowUntil = 0;
     lipAcc = 0;
@@ -10780,10 +10780,11 @@ sheet.addEventListener("keydown", (e) => {
   if (t && t.matches && t.matches("input, textarea, select")) return;
   lipUser();
 }, true);
-let lipDrag = null, lipDragEnd = 0;
+let lipDrag = null, lipDragEnd = 0, lipTouching = false;
 const lipExcluded = (t) => !!(t && t.closest && t.closest("#scale-lip, #scale-preview, input, textarea, select"));
 sheet.addEventListener("touchstart", (e) => {
   const ts = e.touches;
+  lipTouching = true;
   lipDrag = ts && ts.length === 1 && !lipExcluded(e.target) ? { id: ts[0].identifier, x: ts[0].clientX, y: ts[0].clientY, dir: 0 } : null;
 }, { passive: true, capture: true });
 sheet.addEventListener("touchmove", (e) => {
@@ -10799,9 +10800,10 @@ sheet.addEventListener("touchmove", (e) => {
   L.x = p.clientX;
   if (dy > 0) { if (!isLipShut()) collapseLip(); } else if (isLipShut()) restoreLip();
 }, { passive: true, capture: true });
-const lipDragStop = () => {
-  if (lipDrag) lipDragEnd = Date.now() + LIP_END_MS;
+const lipDragStop = (e) => {
+  lipDragEnd = Date.now() + LIP_END_MS;
   lipDrag = null;
+  lipTouching = !!(e && e.touches && e.touches.length);
 };
 for (const ev of ["touchend", "touchcancel"]) sheet.addEventListener(ev, lipDragStop, { passive: true, capture: true });
 let lipTouch = null;

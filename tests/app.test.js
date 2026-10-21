@@ -11924,6 +11924,14 @@ describe("UX: the footer lip", () => {
       assert.strictEqual(isShut(a), false, "reversal by 24 restores inside the gesture");
       finger(a, "touchend", 360);
       a.advance(300);
+      finger(a, "touchstart", 400);
+      finger(a, "touchmove", 370);
+      assert.strictEqual(isShut(a), true, "up again");
+      finger(a, "touchmove", 360);
+      finger(a, "touchmove", 384);
+      assert.strictEqual(isShut(a), false, "the anchor follows the finger: 24px from the lowest point restores, not 24px from where it first collapsed");
+      finger(a, "touchend", 384);
+      a.advance(300);
       const flips = [];
       for (let i = 0; i < 3; i++) { drag(a, -30); flips.push(isShut(a)); a.advance(300); drag(a, 30); flips.push(isShut(a)); a.advance(300); }
       assert.deepStrictEqual(flips, [true, false, true, false, true, false]);
@@ -11943,8 +11951,47 @@ describe("UX: the footer lip", () => {
       assert.strictEqual(isShut(a), true, "momentum after touchend");
       a.advance(400);
       a.advance(400);
-      scrollTo(a, 900, false);
-      assert.strictEqual(isShut(a), true, "no gesture, no change");
+      scrollTo(a, 100, false);
+      assert.strictEqual(isShut(a), true, "a stray scroll event long after the gesture, with no wheel or key, changes nothing");
+    });
+
+    test("PH: P3 every touch suspends the scroll path, an excluded start or a second finger included: no collapse, no restore, and momentum keeps extending the window", () => {
+      const hit = (sel) => ({ closest: (s) => (s.split(",").map((x) => x.trim()).includes(sel) ? {} : null) });
+      const starts = [
+        ["the plate", (a) => finger(a, "touchstart", 400, { target: hit("#scale-preview") })],
+        ["a field", (a) => finger(a, "touchstart", 400, { target: hit("input") })],
+        ["the lip", (a) => finger(a, "touchstart", 400, { target: hit("#scale-lip") })],
+        ["two fingers", (a) => finger(a, "touchstart", 400, { extra: true })],
+      ];
+      for (const [name, start] of starts) {
+        const a = lipApp();
+        start(a);
+        scrollTo(a, 100);
+        scrollTo(a, 300);
+        assert.strictEqual(state(a), OPEN, `${name}: the scroll rule collapsed during the touch`);
+        scrollTo(a, 900);
+        finger(a, "touchend", 340);
+        a.advance(100);
+        scrollTo(a, 300);
+        scrollTo(a, 900);
+        assert.strictEqual(state(a), OPEN, `${name}: momentum after the touch collapsed`);
+        a.advance(400);
+        a.advance(400);
+        sheetOf(a).dispatchEvent({ type: "wheel" });
+        scrollTo(a, 100, false);
+        scrollTo(a, 300, false);
+        assert.strictEqual(state(a), SHUT, `${name}: a wheel scroll long after the touch collapses as before`);
+      }
+      const b = lipApp();
+      scrollTo(b, 300);
+      assert.strictEqual(state(b), SHUT);
+      b.advance(400);
+      finger(b, "touchstart", 400, { target: hit("#scale-preview") });
+      scrollTo(b, 900);
+      assert.strictEqual(state(b), SHUT, "an excluded touch that scrolls to the end does not restore");
+      scrollTo(b, 200);
+      scrollTo(b, 0);
+      assert.strictEqual(state(b), SHUT, "an excluded touch scrolling back up does not restore");
     });
 
     test("PH: P3 a wheel scroll on a sheet with no room still never collapses, and with room it collapses and the end restores", () => {

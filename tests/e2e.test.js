@@ -14366,27 +14366,39 @@ function run() {
       } finally { await reset(); }
     });
 
-    test("PH: P3 at 390x797 a drag that starts on a field, on the plate or with a second finger does not collapse, and a mostly sideways one does not", { timeout: 90000 }, async () => {
+    test("PH: P3 a drag that starts on a field, on the plate or with a second finger changes the lip zero times across the gesture and its settle, at 390x797 and 380x780", { timeout: 120000 }, async () => {
       try {
-        await lipOpen(390, 797, { spacer: 0 });
-        await pull(-60, { sel: "#scale-box" });
-        assert.strictEqual((await lipState()).lipped, false, "a drag from the seed box collapsed");
-        await b.eval(`document.getElementById("scale-tab-layout").click(); return true;`);
-        await sleep(300);
-        await pull(-60, { sel: "#scale-preview" });
-        assert.strictEqual((await lipState()).lipped, false, "a drag from the plate collapsed");
-        await b.eval(`document.getElementById("scale-tab-scale").click(); return true;`);
-        await sleep(300);
-        const bb = await bodyBox();
-        const y = Math.round(bb.top + bb.h / 2);
-        await finger2("touchStart", [[100, y], [200, y]]);
-        for (let i = 1; i <= 6; i++) await finger2("touchMove", [[100, y - i * 10], [200, y - i * 10]]);
-        await finger2("touchEnd", []);
-        await sleep(400);
-        assert.strictEqual((await lipState()).lipped, false, "a two-finger drag collapsed");
-        await b.drag(".sheetbody", [[20, 30, -5], [60, 60, -10], [120, 90, -24]], { y0: 0 });
-        await sleep(400);
-        assert.strictEqual((await lipState()).lipped, false, "a sideways drag collapsed");
+        for (const [w, h] of [[390, 797], [380, 780]]) {
+          await lipOpen(w, h, { spacer: 0 });
+          const sc = await gap();
+          assert.ok(sc.M < sc.E, `${w}x${h}: this proves nothing unless the Scale range ${sc.M} is under the footer ${sc.E}`);
+          await pull(-60, { sel: "#scale-box" });
+          await sleep(600);
+          assert.strictEqual((await lipState()).flips, 0, `${w}x${h}: a drag from the seed box changed the lip`);
+          await b.eval(`document.getElementById("scale-tab-layout").click(); return true;`);
+          await sleep(400);
+          const ly = await b.eval(`const body = document.querySelector("#scale-sheet .sheetbody"), surf = document.querySelector("#scale-sheet .sheetsurf") || document.getElementById("scale-sheet");
+            return { M: body.scrollHeight - body.clientHeight, t: body.scrollTop, E: surf.getBoundingClientRect().bottom - body.getBoundingClientRect().bottom };`);
+          assert.ok(ly.M - ly.t > ly.E, `${w}x${h}: this proves nothing unless the Layout range ${ly.M} - ${ly.t} is over the footer ${ly.E}, where the scroll rule would collapse and then restore`);
+          const before = (await lipState()).flips;
+          await pull(-60, { sel: "#scale-preview", ms: 90 });
+          await sleep(700);
+          const s = await lipState();
+          assert.strictEqual(s.flips - before, 0, `${w}x${h}: a drag from the plate changed the lip ${s.flips - before} times (${JSON.stringify(s)})`);
+          assert.strictEqual(s.lipped, false, `${w}x${h}: a drag from the plate left the lip changed`);
+          await b.eval(`document.getElementById("scale-tab-scale").click(); return true;`);
+          await sleep(300);
+          const bb = await bodyBox();
+          const y = Math.round(bb.top + bb.h / 2);
+          await finger2("touchStart", [[100, y], [200, y]]);
+          for (let i = 1; i <= 6; i++) await finger2("touchMove", [[100, y - i * 10], [200, y - i * 10]]);
+          await finger2("touchEnd", []);
+          await sleep(700);
+          assert.strictEqual((await lipState()).flips, before, `${w}x${h}: a two-finger drag changed the lip`);
+          await b.drag(".sheetbody", [[20, 30, -5], [60, 60, -10], [120, 90, -24]], { y0: 0 });
+          await sleep(500);
+          assert.strictEqual((await lipState()).flips, before, `${w}x${h}: a sideways drag changed the lip`);
+        }
       } finally { await reset(); }
     });
 
