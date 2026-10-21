@@ -11951,8 +11951,55 @@ describe("UX: the footer lip", () => {
       assert.strictEqual(isShut(a), true, "momentum after touchend");
       a.advance(400);
       a.advance(400);
-      scrollTo(a, 100, false);
-      assert.strictEqual(isShut(a), true, "a stray scroll event long after the gesture, with no wheel or key, changes nothing");
+      scrollTo(a, 900);
+      assert.strictEqual(isShut(a), false, "once the touch and LIP_END_MS are over, reaching the end on the scroll path restores again");
+    });
+
+    const trackedTarget = (excluded = true) => {
+      const on = {};
+      return {
+        on,
+        closest: (sel) => (excluded && sel.split(",").map((x) => x.trim()).includes("#scale-preview") ? {} : null),
+        addEventListener: (type, fn) => { on[type] = fn; },
+        fire: (type) => on[type] && on[type]({ type, touches: [] }),
+      };
+    };
+
+    test("PH: P3 a touch whose target is detached before touchend still ends: the target's own touchend and touchcancel end the suspension", () => {
+      for (const type of ["touchend", "touchcancel"]) {
+        const a = lipApp();
+        const t = trackedTarget();
+        finger(a, "touchstart", 400, { target: t });
+        assert.ok(t.on.touchend && t.on.touchcancel, "touchstart attaches touchend and touchcancel to the target itself");
+        scrollTo(a, 300);
+        assert.strictEqual(state(a), OPEN, "suspended while the finger is down");
+        t.fire(type);
+        a.advance(400);
+        scrollTo(a, 340);
+        assert.strictEqual(state(a), SHUT, `${type} on the target alone (the sheet never saw it) ended the suspension`);
+      }
+    });
+
+    test("PH: P3 a touchcancel with no touchend ends the suspension after LIP_END_MS", () => {
+      const a = lipApp();
+      finger(a, "touchstart", 400);
+      scrollTo(a, 100);
+      scrollTo(a, 300);
+      assert.strictEqual(state(a), OPEN);
+      sheetOf(a).dispatchEvent({ type: "touchcancel", touches: [] });
+      a.advance(400);
+      scrollTo(a, 340);
+      assert.strictEqual(state(a), SHUT, "after the cancel and LIP_END_MS the scroll rule drives the lip again");
+    });
+
+    test("PH: P3 a wheel or a scrolling key on the sheet ends a suspension no touchend ever closed", () => {
+      for (const ev of [{ type: "wheel" }, { type: "keydown", key: "ArrowDown", preventDefault() {} }]) {
+        const a = lipApp();
+        finger(a, "touchstart", 400, { target: trackedTarget() });
+        sheetOf(a).dispatchEvent(ev);
+        scrollTo(a, 300, false);
+        assert.strictEqual(state(a), SHUT, `${ev.type} after a touch that never ended`);
+      }
     });
 
     test("PH: P3 every touch suspends the scroll path, an excluded start or a second finger included: no collapse, no restore, and momentum keeps extending the window", () => {

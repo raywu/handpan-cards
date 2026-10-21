@@ -10784,7 +10784,9 @@ let lipDrag = null, lipDragEnd = 0, lipTouching = false;
 const lipExcluded = (t) => !!(t && t.closest && t.closest("#scale-lip, #scale-preview, input, textarea, select"));
 sheet.addEventListener("touchstart", (e) => {
   const ts = e.touches;
-  lipTouching = true;
+  lipTouching = !!(ts && ts.length);
+  const tg = e.target;
+  if (tg && tg.addEventListener) for (const ev of ["touchend", "touchcancel"]) tg.addEventListener(ev, lipDragStop, { once: true, passive: true });
   lipDrag = ts && ts.length === 1 && !lipExcluded(e.target) ? { id: ts[0].identifier, x: ts[0].clientX, y: ts[0].clientY, dir: 0 } : null;
 }, { passive: true, capture: true });
 sheet.addEventListener("touchmove", (e) => {
@@ -10806,6 +10808,9 @@ const lipDragStop = (e) => {
   lipTouching = !!(e && e.touches && e.touches.length);
 };
 for (const ev of ["touchend", "touchcancel"]) sheet.addEventListener(ev, lipDragStop, { passive: true, capture: true });
+const lipTouchClear = () => { lipTouching = false; lipDrag = null; lipDragEnd = 0; };
+sheet.addEventListener("wheel", lipTouchClear, { passive: true, capture: true });
+sheet.addEventListener("keydown", lipTouchClear, { capture: true });
 let lipTouch = null;
 lipBtn.addEventListener("touchstart", (e) => {
   const p = e.touches && e.touches[0];

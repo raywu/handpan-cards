@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10781,7 +10781,7 @@ sheet.addEventListener("keydown", (e) => {
+@@ -10781,7 +10781,7 @@
    lipUser();
  }, true);
  let lipDrag = null, lipDragEnd = 0, lipTouching = false;
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +const lipExcluded = (t) => !!(t && t.closest && t.closest("#scale-lip, input, textarea, select"));
  sheet.addEventListener("touchstart", (e) => {
    const ts = e.touches;
-   lipTouching = true;
+   lipTouching = !!(ts && ts.length);

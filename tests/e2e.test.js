@@ -14413,6 +14413,47 @@ function run() {
       } finally { await reset(); }
     });
 
+    test("PH: P3 a long press on a plate field that repaints under the finger, then a wheel or ArrowDown, collapses exactly once, at 390x797 and 380x780", { timeout: 120000 }, async () => {
+      try {
+        for (const key of ["wheel", "ArrowDown"]) {
+          for (const [w, h] of [[390, 797], [380, 780]]) {
+            await lipOpen(w, h, { spacer: 0 });
+            await b.eval(`document.getElementById("scale-tab-layout").click(); return true;`);
+            await sleep(400);
+            const ly = await b.eval(`const body = document.querySelector("#scale-sheet .sheetbody"), surf = document.querySelector("#scale-sheet .sheetsurf") || document.getElementById("scale-sheet");
+              return { M: body.scrollHeight - body.clientHeight, t: body.scrollTop, E: surf.getBoundingClientRect().bottom - body.getBoundingClientRect().bottom };`);
+            assert.ok(ly.M - ly.t > ly.E, `${key} ${w}x${h}: this proves nothing unless the Layout range ${ly.M} - ${ly.t} is over the footer ${ly.E}`);
+            const pt = await b.eval(`
+              const hits = [...document.querySelectorAll("#scale-preview .panhit")];
+              const r = hits[0].getBoundingClientRect();
+              return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2), n: hits.length };`);
+            assert.ok(pt.n > 0, `${key} ${w}x${h}: no .panhit to press`);
+            const before = (await lipState()).flips;
+            await finger2("touchStart", [[pt.x, pt.y]]);
+            await sleep(400);
+            await finger2("touchEnd", []);
+            await sleep(500);
+            if (key === "wheel") {
+              await wheelBody(15);
+              await wheelBody(15);
+            } else {
+              await b.eval(`document.querySelector("#scale-sheet .sheetbody").focus(); return true;`);
+              for (let i = 0; i < 1; i++) {
+                await b.send("Input.dispatchKeyEvent", { type: "rawKeyDown", key: "ArrowDown", code: "ArrowDown", windowsVirtualKeyCode: 40, nativeVirtualKeyCode: 40 });
+                await b.send("Input.dispatchKeyEvent", { type: "keyUp", key: "ArrowDown", code: "ArrowDown", windowsVirtualKeyCode: 40, nativeVirtualKeyCode: 40 });
+                await sleep(60);
+              }
+              await sleep(400);
+            }
+            const s = await lipState();
+            assert.ok(s.top > ly.t, `${key} ${w}x${h}: the body did not scroll (${JSON.stringify(s)}), so this proves nothing`);
+            assert.strictEqual(s.flips - before, 1, `${key} ${w}x${h}: ${s.flips - before} lip changes after a long press, not 1 (${JSON.stringify(s)})`);
+            assert.ok(s.lipped && s.shut, `${key} ${w}x${h}: not collapsed (${JSON.stringify(s)})`);
+          }
+        }
+      } finally { await reset(); }
+    });
+
     test("PH: P3 at 390x797 a wheel on a sheet with no room never collapses; with room it collapses", { timeout: 90000 }, async () => {
       try {
         await lipOpen(390, 797, { spacer: 0 });
