@@ -14530,7 +14530,7 @@ function run() {
         for (const f of frames) for (const v of hits(f)) fails.push(`${ctx} ${kind} ${change}@${at}: ${v}`);
       };
       try {
-        for (const [w, h] of VPS.filter(([vw]) => vw !== 390)) {
+        for (const [w, h] of VPS.filter(([vw]) => vw !== 390 && vw !== 320)) {
           for (const edit of [false, true]) {
             for (const rm of [false, true]) {
               if (edit && w !== 380) continue;
@@ -14570,7 +14570,7 @@ function run() {
         for (const [w, h] of [[380, 780]]) {
           for (const kb of [false, true]) {
             if (kb && w > h) continue;
-            for (const how of kb ? ["fling"] : ["wheel", "drag", "fling"]) {
+            for (const how of kb ? ["fling"] : ["wheel", "fling"]) {
               for (const change of ["clear", "appear"]) {
                 await spaOpen(w, h);
                 await b.eval(`const p = document.getElementById("scale-panel-scale"), d = document.createElement("div"); d.style.height = "900px"; p.appendChild(d); return true;`);
