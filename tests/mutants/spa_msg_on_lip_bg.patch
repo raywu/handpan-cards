@@ -1,0 +1,15 @@
+# kills: SPA: with the keyboard up and the lip shut at 390x844, the message's last line ends at least 4px above the lip's tap zone and its background is the sheet surface colour; sampled frames during the collapse and the restore keep its text off the primary, DELETE and the tap zone
+# suite: node --test --test-name-pattern ^SPA..with.the.keyboard.up.and.the.lip.shut.at.390x844..the.message.s.last.line.ends.at.least.4px.above.the.lip.s.tap.zone.and.its.background.is.the.sheet.surface.colour..sampled.frames.during.the.collapse.and.the.restore.keep.its.text.off.the.primary..DELETE.and.the.tap.zone$ tests/e2e.test.js
+# A lipped guidance has no opaque background, so the message shows through its own footer.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -967,7 +967,7 @@ footer.seq{row-gap:var(--sp-1)}
+ #scale-sheet.lipped #scale-delete-row{margin-top:var(--lip-gd, 0px)}
+ #scale-sheet.lipshut #scale-footslide{transform:translateY(var(--lip-h, 0px)); visibility:hidden;
+   transition:transform 180ms var(--lip-ease), visibility 0s linear 180ms}
+-#scale-sheet.lipped #scale-guidance{position:relative; z-index:1; background:#1f1b15;
++#scale-sheet.lipped #scale-guidance{position:relative; z-index:1;
+   transform:translateY(var(--lip-g, 0px)); transition:transform 180ms var(--lip-ease)}
+ #scale-sheet.lipshut #scale-guidance{transform:none}
+ #scale-lip:not([hidden]){display:block; position:absolute; left:0; right:0; bottom:0; height:var(--lip-zone);

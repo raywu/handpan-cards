@@ -1,0 +1,14 @@
+# kills: SPA: the selected tab's pressed colour differs from its rest colour
+# suite: node --test --test-name-pattern ^SPA..the.selected.tab.s.pressed.colour.differs.from.its.rest.colour$ tests/e2e.test.js
+# The selected tab has no pressed colour.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1229,7 +1229,6 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+ #scale-swatches .dot:active{opacity:.75}
+ #scale-fine-toggle:active, #scale-delete:active{color:#eae6df}
+ #scale-tabs [role=tab]:active{color:#eae6df}
+-#scale-tabs [role=tab].on:active{color:#c4bcab}
+ /* Armed is a state the eye can read without the label: the same amber the
+    announcer uses for a warning. */
+ #scale-delete[data-armed]{color:#e3b25c}

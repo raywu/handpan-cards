@@ -6623,7 +6623,7 @@ test("DR1 16.1/16.2 sweep: old single mirror true, the bottom switch when notes 
   }
 });
 
-test("DR1 line 31: a scale that stops parsing disables the Layout controls, keeps their values and shows the empty hint", () => {
+test("DR1 line 31: a scale that stops parsing disables the Layout controls, keeps their values and hides the hint over the held plate", () => {
   const app = boot();
   dr1Open(app, W1_BOTTOM);
   app.click(dr1Toggle(app));
@@ -6639,7 +6639,7 @@ test("DR1 line 31: a scale that stops parsing disables the Layout controls, keep
   assert.strictEqual(app.els["scale-mirror"].getAttribute("aria-pressed"), "true");
   assert.strictEqual(app.els["scale-anchor-between"].getAttribute("aria-pressed"), "true");
   assert.strictEqual(app.els["scale-preview"].classList.contains("stale"), true);
-  assert.strictEqual(app.els["scale-layout-hint"].hidden, false);
+  assert.strictEqual(app.els["scale-layout-hint"].hidden, true);
   assert.strictEqual(app.els["scale-drawer-status"].hidden, true);
 });
 
@@ -6853,12 +6853,14 @@ test("DR1 rule S: notice, switches, anchors and hint match spec 16 for every she
           mb: typeof stored.mirrorBottom === "boolean" ? stored.mirrorBottom : !!stored.mirror }
       : { anchor: "one", mirror: false, mb: false };
     const M = { anchor: kept.anchor, mirror: kept.mirror, hasBottom: sheet === "edit" && S_HAS_BOTTOM[boxKey],
-                valid: sheet === "edit", open: false };
+                valid: sheet === "edit", held: sheet === "edit", empty: sheet !== "edit", open: false };
     M.mb = M.hasBottom ? kept.mb : false;
     const box = (k) => {
       app.type(k === "invalid" ? "xyz" : k === "empty" ? "" : S_BOXES[k]);
+      M.empty = k === "empty";
       if (k === "invalid" || k === "empty") { M.valid = false; return; }
       M.valid = true;
+      M.held = true;
       if (S_HAS_BOTTOM[k] !== M.hasBottom) { M.hasBottom = S_HAS_BOTTOM[k]; M.mb = false; }
     };
     const press = (id) => {
@@ -6885,8 +6887,9 @@ test("DR1 rule S: notice, switches, anchors and hint match spec 16 for every she
       bad("layout tab enabled", true, !els["scale-tab-layout"].disabled);
       bad("layout tab selected", String(M.open), els["scale-tab-layout"].getAttribute("aria-selected"));
       bad("layout tab on", M.open, els["scale-tab-layout"].classList.contains("on"));
-      bad("hint shown", M.open && !M.valid, shown("scale-layout-hint"));
-      if (M.open && !M.valid) bad("hint text", S_HINT.empty, els["scale-layout-hint"].textContent);
+      const hintOn = M.open && !M.valid && (M.empty || !M.held);
+      bad("hint shown", hintOn, shown("scale-layout-hint"));
+      if (hintOn) bad("hint text", S_HINT.empty, els["scale-layout-hint"].textContent);
       bad("drawer shown", M.open, shown("scale-drawer"));
       bad("status shown", M.open && M.valid, shown("scale-drawer-status"));
       if (!M.open) bad("status cleared", "", els["scale-drawer-status"].textContent);

@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10684,7 +10684,7 @@ function restoreLip() {
-     lipFlush();
-     sheet.classList.remove("lipnow");
-   }
+@@ -10712,7 +10712,7 @@ function restoreLip() {
+   clearTimeout(lipTimer);
+   lipGen += 1;
+   if (lipSettled) lipMeasure();
 -  sheet.classList.remove("lipshut");
 +  sheet.classList.remove("lipshut", "lipped");
    lipHandOff();

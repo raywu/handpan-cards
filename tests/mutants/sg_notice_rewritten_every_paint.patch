@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10456,7 +10456,7 @@ function paintLayout() {
-   layoutZone.classList.toggle("open", drawerOpen);
+@@ -10517,7 +10517,7 @@ function paintLayout() {
    fieldMsg.hidden = drawerOpen;
    const note = drawerOpen ? layoutNoticeText() : "";
--  if (layoutNote.textContent !== note) layoutNote.textContent = note;
+   const noteChanged = layoutNote.textContent !== note;
+-  if (noteChanged) layoutNote.textContent = note;
 +  layoutNote.textContent = note;
    layoutNote.hidden = !note;
    sheet.classList.toggle("noticed", !!note);
-   syncBand();
+   if (noteChanged) lipGuidanceChanged();

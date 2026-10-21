@@ -10,5 +10,5 @@ diff --git a/index.html b/index.html
  #scale-tabs [role=tab]::after{content:""; position:absolute; left:0; right:0; bottom:-1px; height:2px; background:transparent}
 -#scale-tabs [role=tab].on::after{background:#f1ece1}
  #scale-sheet.kbup.side #scale-tabs{display:none}
- #scale-panel-scale, #scale-panel-layout{display:flex; flex-direction:column; gap:var(--sp-3); min-width:0}
- #scale-panel-scale[hidden], #scale-panel-layout[hidden]{display:none}
+ #scale-panel-scale, #scale-panel-layout{display:flex; flex-direction:column; gap:var(--sp-3); min-width:0;
+   padding-bottom:calc(var(--lip-over) + var(--sp-2))}
