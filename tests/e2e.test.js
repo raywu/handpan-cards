@@ -14513,29 +14513,43 @@ function run() {
 
     test("LG: a real tap on each field focuses it, the pin holds it in view, and the lip does not change", { timeout: 120000 }, async () => {
       try {
-        await lipOpen(390, 797, { spacer: 0 });
-        for (const id of ["scale-top", "scale-bottom", "scale-box"]) {
-          const before = (await lipState()).flips;
-          await b.drag(`#${id}`, [], { y0: 0 });
+        for (const [w, h] of [[390, 797], [380, 780], [320, 568]]) {
+          await lipOpen(w, h, { spacer: 0 });
+          for (const id of ["scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box"]) {
+            await b.eval(`const e = document.getElementById(${JSON.stringify(id)}), body = document.querySelector("#scale-sheet .sheetbody"), q = e.getBoundingClientRect(), p = body.getBoundingClientRect();
+              if (q.top < p.top || q.bottom > p.bottom) e.scrollIntoView({ block: "center" });
+              return true;`);
+            await sleep(450);
+            const before = (await lipState()).flips;
+            await b.drag(`#${id}`, [], { y0: 0 });
+            await sleep(800);
+            const r = await b.eval(`const e = document.getElementById(${JSON.stringify(id)}), q = e.getBoundingClientRect(); return { active: document.activeElement.id, top: q.top, bottom: q.bottom, ih: innerHeight };`);
+            assert.strictEqual(r.active, id, `${w}x${h}: a tap on #${id} did not focus it`);
+            assert.ok(r.top >= 0 && r.bottom <= r.ih, `${w}x${h}: #${id} is out of view after the tap (${JSON.stringify(r)})`);
+            assert.strictEqual((await lipState()).flips, before, `${w}x${h}: a tap on #${id} changed the lip`);
+          }
+          await b.eval(`document.getElementById("scale-tab-layout").click(); return true;`);
+          await sleep(400);
+          const beforePlate = (await lipState()).flips;
+          await b.drag("#scale-preview", [], { y0: 0 });
           await sleep(500);
-          const r = await b.eval(`const e = document.getElementById(${JSON.stringify(id)}), q = e.getBoundingClientRect(); return { active: document.activeElement.id, top: q.top, bottom: q.bottom, ih: innerHeight };`);
-          assert.strictEqual(r.active, id, `a tap on #${id} did not focus it`);
-          assert.ok(r.top >= 0 && r.bottom <= r.ih, `#${id} is out of view after the tap (${JSON.stringify(r)})`);
-          assert.strictEqual((await lipState()).flips, before, `a tap on #${id} changed the lip`);
+          assert.strictEqual((await lipState()).flips, beforePlate, `${w}x${h}: a tap on the plate changed the lip`);
         }
       } finally { await reset(); }
     });
 
     test("LG: a drag in the focused #scale-box (selection) never acts and never blurs", { timeout: 120000 }, async () => {
       try {
-        await lipOpen(390, 797, { spacer: 0 });
-        await b.eval(`document.getElementById("scale-box").focus(); return true;`);
-        await lgWatch();
-        const before = (await lipState()).flips;
-        await pull(-60, { sel: "#scale-box" });
-        await sleep(600);
-        assert.strictEqual((await lipState()).flips, before, "a drag in the focused box changed the lip");
-        assert.strictEqual((await lgSeen()).active, "scale-box", "the box lost focus");
+        for (const [w, h] of [[390, 797], [380, 780], [320, 568]]) {
+          await lipOpen(w, h, { spacer: 0 });
+          await b.eval(`document.getElementById("scale-box").focus(); return true;`);
+          await lgWatch();
+          const before = (await lipState()).flips;
+          await pull(-60, { sel: "#scale-box" });
+          await sleep(600);
+          assert.strictEqual((await lipState()).flips, before, `${w}x${h}: a drag in the focused box changed the lip`);
+          assert.strictEqual((await lgSeen()).active, "scale-box", `${w}x${h}: the box lost focus`);
+        }
       } finally { await reset(); }
     });
 

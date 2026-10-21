@@ -1,5 +1,5 @@
-# kills: LG: a wheel tick or a typing key while a finger is down does not end the gesture, a scroll key outside a field does
-# suite: node --test --test-name-pattern ^LG..a.wheel.tick.or.a.typing.key.while.a.finger.is.down.does.not.end.the.gesture..a.scroll.key.outside.a.field.does$ tests/app.test.js
+# kills: LG: a wheel tick or a typing key while a finger is down does not end the gesture, a scroll key outside a field parks the gesture
+# suite: node --test --test-name-pattern ^LG..a.wheel.tick.or.a.typing.key.while.a.finger.is.down.does.not.end.the.gesture..a.scroll.key.outside.a.field.parks.the.gesture$ tests/app.test.js
 # A wheel tick parks nothing: touchmove no longer revives a parked drag.
 diff --git a/index.html b/index.html
 --- a/index.html
