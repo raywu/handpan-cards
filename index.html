@@ -10656,7 +10656,11 @@ if (LIPDBG) {
   const btnCss = "min-height:44px;min-width:44px;flex:1;font:600 12px monospace;border:1px solid #000;background:#fff;color:#000;border-radius:6px;padding:0 6px";
   const pill = mk("button", "position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:2147483000;min-height:44px;min-width:44px;padding:0 10px;border:2px solid #000;border-radius:22px;background:#ffe14d;color:#000;font:700 12px monospace;pointer-events:auto", "LOG 0");
   pill.type = "button";
-  const pillPlace = () => { const land = innerWidth > innerHeight; pill.style.top = land ? "60px" : "8px"; pill.style.left = land ? "4px" : "50%"; pill.style.transform = land ? "none" : "translateX(-50%)"; };
+  pill.id = "lipdbg-pill";
+  const pillHide = document.createElement("style");
+  pillHide.textContent = 'body:has(#settings-trigger[aria-expanded="true"]) #lipdbg-pill, body:has(#about:not([hidden])) #lipdbg-pill{display:none !important}';
+  document.head.appendChild(pillHide);
+  const pillPlace = () => { const land = innerWidth > innerHeight; pill.style.top = land ? "60px" : "126px"; pill.style.minHeight = land ? "44px" : "30px"; pill.style.padding = land ? "0 10px" : "0 8px"; pill.style.left = land ? "4px" : "50%"; pill.style.transform = land ? "none" : "translateX(-50%)"; };
   pillPlace();
   window.addEventListener("resize", pillPlace);
   const panel = mk("div", "position:fixed;top:52px;left:4px;width:min(372px,calc(100vw - 8px));max-height:62vh;z-index:2147483000;background:#fff;color:#000;border:2px solid #000;border-radius:8px;padding:6px;display:none;flex-direction:column;gap:6px;box-sizing:border-box;pointer-events:auto");
