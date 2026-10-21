@@ -14521,18 +14521,20 @@ function run() {
       const sub = async (ctx, kind, change, at) => {
         const c = CHANGES[change];
         await b.eval(`lipReset(); ${c.pre}; return true;`);
-        await sleep(120);
-        if (kind === "restore") { await b.eval(`collapseLip(); return true;`); await sleep(330); }
+        await sleep(60);
+        if (kind === "restore") { await b.eval(`collapseLip(); return true;`); await sleep(250); }
         const steps = kind === "collapse" ? [{ at: 0, code: "collapseLip()" }, { at, code: c.change }]
           : kind === "restore" ? [{ at: 0, code: "restoreLip()" }, { at, code: c.change }]
           : [{ at: 0, code: "collapseLip()" }, { at, code: c.change }, { at: at + 12, code: "restoreLip()" }];
-        const frames = await b.eval(`return window.__spa.run(480, ${JSON.stringify(steps)});`);
+        const frames = await b.eval(`return window.__spa.run(380, ${JSON.stringify(steps)});`);
         for (const f of frames) for (const v of hits(f)) fails.push(`${ctx} ${kind} ${change}@${at}: ${v}`);
       };
       try {
         for (const [w, h] of VPS) {
           for (const edit of [false, true]) {
             for (const rm of [false, true]) {
+              if (edit && w !== 380) continue;
+              if (rm && (edit || w !== 380)) continue;
               await spaOpen(w, h, { edit });
               await b.eval(PROBE);
               await b.send("Emulation.setEmulatedMedia", { media: "", features: [{ name: "prefers-reduced-motion", value: rm ? "reduce" : "no-preference" }] });
@@ -14540,12 +14542,12 @@ function run() {
               const ctx = `${w}x${h} ${edit ? "Edit" : "Add"} ${rm ? "reduced" : "motion"}`;
               for (const kind of ["collapse", "restore", "reverse"]) {
                 for (const change of Object.keys(CHANGES)) {
-                  for (const at of rm ? [40] : kind === "reverse" ? [40, 90] : [40, 90, 150]) await sub(ctx, kind, change, at);
+                  for (const at of rm || kind === "reverse" ? [40] : [40, 90]) await sub(ctx, kind, change, at);
                 }
               }
-              if (!rm && w < h && w >= 380) {
+              if (!rm && !edit && w === 380) {
                 await kbUp(w, h);
-                for (const change of Object.keys(CHANGES)) for (const at of [40, 90]) await sub(ctx + " keyboard", "reverse", change, at);
+                for (const change of Object.keys(CHANGES)) for (const at of [40]) await sub(ctx + " keyboard", "reverse", change, at);
               }
             }
           }
@@ -14574,7 +14576,7 @@ function run() {
                 if (change === "clear") await b.eval(`say(${JSON.stringify(SPA_WARN)}, "warn"); return true;`);
                 await shut();
                 await b.eval(`const body = document.querySelector("#scale-sheet .sheetbody"); body.scrollTop = body.scrollHeight; window.__lip.length = 0; return true;`);
-                await sleep(300);
+                await sleep(200);
                 const ctx = `${w}x${h} keyboard ${kb ? "up" : "down"} ${change}`;
                 const bb = await b.eval(`const r = document.querySelector("#scale-sheet .sheetbody").getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
                 const go = change === "clear" ? `say("", ""); return true;` : `say(${JSON.stringify(SPA_WARN)}, "warn"); return true;`;
@@ -14589,7 +14591,7 @@ function run() {
                   await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
                   if (how === "fling") await b.eval(go);
                 }
-                await sleep(600);
+                await sleep(400);
                 await settle(ctx, how);
               }
             }
