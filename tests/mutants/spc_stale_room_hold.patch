@@ -1,0 +1,15 @@
+# kills: SPC: Edit at 844x390, a notice that appears or clears while the footer is shut resizes the pan to the open-footer size at once and the restore changes nothing
+# suite: node --test --test-name-pattern ^SPC:.((create|Edit).(at.844x390,.a.notice|rotating.from)|a.size.held) tests/e2e.test.js
+# While the footer is shut the pan holds the last open-footer size instead of re-deriving it, so guidance and viewport changes resize it on restore.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10583,7 +10583,7 @@ function syncBand() {
+   if (beside && port > 0) {
+     const put = (px) => { const v = px + "px"; if (plateRoom !== v) { plateRoom = v; root.setProperty("--plate-room", v); } };
+     const lipped = sheet.classList.contains("lipped");
+-    if (lipped && !sheet.classList.contains("lipshut")) { if (openRoom > 0) put(openRoom); return; }
++    if (lipped) { if (openRoom > 0) put(openRoom); return; }
+     const shut = lipped && sheet.classList.contains("lipshut");
+     if (lipped) { sheet.classList.add("lipnow"); sheet.classList.remove("lipped", "lipshut"); }
+     const seen = [];

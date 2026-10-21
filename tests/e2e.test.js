@@ -14844,12 +14844,12 @@ function run() {
       await typeScale(SPC_KURD);
       await toLayout();
     };
-    const spcEdit = async () => {
+    const spcEdit = async (w = 844, h = 390) => {
       await freshLoad();
       await b.eval(`localStorage.setItem("hpfc", ${JSON.stringify(JSON.stringify({ deck: "kurd", mode: "A", hidden: ["amara10", "amara", "hijaz", "pygmy"] }))}); return true;`);
       await navigate();
       await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`, { label: "the chips" });
-      await b.setViewport(844, 390, true);
+      await b.setViewport(w, h, true);
       await b.settle();
       await openEdit();
       await toLayout();
@@ -15193,6 +15193,118 @@ function run() {
       assert.deepStrictEqual(disarmed, ["a re-armed DELETE"]);
       console.log("SPC C5 pan widths:", JSON.stringify(widths));
       assert.ok(widths["the notice with three ring-reset suffixes"] < widths["no message"] - 4, `guidance did not shrink the pan: ${JSON.stringify(widths)}`);
+    });
+
+    const spcShutPan = (call = "") => b.eval(`${call}
+      const q = document.getElementById("scale-preview").getBoundingClientRect();
+      return { w: q.width, h: q.height, lipped: sheet.classList.contains("lipped"), shut: sheet.classList.contains("lipshut"),
+        note: layoutNote.hidden ? "" : layoutNote.textContent };`);
+    const spcRestoreTrace = (want, tag) => b.eval(`
+      const out = [];
+      const read = () => { const q = document.getElementById("scale-preview").getBoundingClientRect(); return Math.round(q.width * 10) / 10; };
+      restoreLip();
+      const t0 = performance.now();
+      return new Promise((resolve) => {
+        const tick = () => {
+          out.push([Math.round(performance.now() - t0), read(), sheet.classList.contains("lipped")]);
+          if (performance.now() - t0 < 520) setTimeout(tick, 20); else resolve(out);
+        };
+        tick();
+      });`).then((trace) => {
+      const bad = trace.filter(([, w]) => Math.abs(w - want) > 0.5);
+      assert.ok(trace.some(([, , lipped]) => !lipped), `${tag}: the footer never finished opening`);
+      assert.deepStrictEqual(bad, [], `${tag}: the pan is not ${want}px at every frame of the restore, trace [ms, width, lipped]: ${JSON.stringify(trace.filter((x, i, a) => i === 0 || x[1] !== a[i - 1][1] || x[2] !== a[i - 1][2]))}`);
+    });
+
+    for (const mode of ["create", "Edit"]) {
+      test(`SPC: ${mode} at 844x390, a notice that appears or clears while the footer is shut resizes the pan to the open-footer size at once and the restore changes nothing`, async () => {
+        try {
+          if (mode === "create") await spcCreate(); else await spcEdit();
+          const open0 = await spcShutPan();
+          assert.strictEqual(open0.lipped, false);
+          assert.strictEqual(open0.note, "", "the sheet starts with a notice");
+          await b.eval(`collapseLip(); return true;`);
+          await sleep(350);
+          const shut0 = await spcShutPan();
+          assert.ok(shut0.lipped && shut0.shut, `${mode}: the footer is not shut`);
+          assert.ok(Math.abs(shut0.w - open0.w) <= 0.5, `${mode}: the shut pan is ${shut0.w}, the open one ${open0.w}`);
+          await b.eval(`document.getElementById("scale-anchor-between").click(); return true;`);
+          await b.settle();
+          await sleep(300);
+          const shut1 = await spcShutPan();
+          assert.ok(shut1.lipped && shut1.shut, `${mode}: the tap restored the footer`);
+          assert.match(shut1.note, /Layout not saved yet/, `${mode}: no notice appeared while shut`);
+          assert.ok(shut1.w < shut0.w - 4, `${mode}: a notice appeared while shut and the pan is still ${shut1.w}px (was ${shut0.w}px): it will shrink on restore`);
+          await spcRestoreTrace(shut1.w, `${mode}, notice appeared while shut`);
+          const open1 = await spcShutPan();
+          assert.strictEqual(open1.lipped, false);
+          assert.ok(Math.abs(open1.w - shut1.w) <= 0.5, `${mode}: the restored pan is ${open1.w}, the shut one was ${shut1.w}`);
+          await b.eval(`collapseLip(); return true;`);
+          await sleep(350);
+          await b.eval(`document.getElementById("scale-anchor-one").click(); return true;`);
+          await b.settle();
+          await sleep(300);
+          const shut2 = await spcShutPan();
+          assert.ok(shut2.lipped && shut2.shut && shut2.note === "", `${mode}: the notice did not clear while shut: ${JSON.stringify(shut2)}`);
+          assert.ok(Math.abs(shut2.w - open0.w) <= 0.5, `${mode}: the notice cleared while shut and the pan is ${shut2.w}px, not ${open0.w}px: it will grow on restore`);
+          await spcRestoreTrace(shut2.w, `${mode}, notice cleared while shut`);
+        } finally {
+          await b.setViewport(900, 900, false);
+        }
+      });
+    }
+
+    for (const mode of ["create", "Edit"]) {
+      test(`SPC: ${mode} rotating from 380x780 to 844x390 while the footer is shut sizes the pan for the new viewport and the restore changes nothing`, async () => {
+        try {
+          if (mode === "create") await spcCreate(380, 780); else await spcEdit(380, 780);
+          await b.eval(`collapseLip(); return true;`);
+          await sleep(350);
+          await b.setViewport(844, 390, true);
+          await b.settle();
+          await sleep(400);
+          const shut = await spcShutPan();
+          assert.ok(shut.lipped && shut.shut, `${mode}: the rotation did not leave the footer shut: ${JSON.stringify(shut)}`);
+          await spcRestoreTrace(shut.w, `${mode}, rotated while shut`);
+          const open = await spcShutPan();
+          assert.ok(Math.abs(open.w - shut.w) <= 0.5, `${mode}: the restored pan is ${open.w}, the shut one was ${shut.w}`);
+        } finally {
+          await b.setViewport(900, 900, false);
+        }
+      });
+    }
+
+    test("SPC: a size held by an earlier landscape session with a notice does not carry into the next one: opened in portrait, shut, then rotated, the restore does not grow the pan", async () => {
+      try {
+        await spcCreate();
+        await b.eval(`document.getElementById("scale-anchor-between").click(); return true;`);
+        await b.settle();
+        await sleep(300);
+        const withNote = await spcShutPan();
+        assert.match(withNote.note, /Layout not saved yet/);
+        await b.eval(`closeScaleSheet(); return true;`);
+        await b.waitFor(`!sheetOpen`, { label: "the sheet closing" });
+        await b.setViewport(380, 780, true);
+        await b.settle();
+        await sleep(300);
+        await openSheet();
+        await typeScale(SPC_KURD);
+        await toLayout();
+        await b.eval(`collapseLip(); return true;`);
+        await sleep(350);
+        await b.setViewport(844, 390, true);
+        await b.settle();
+        await sleep(400);
+        const shut = await spcShutPan();
+        assert.ok(shut.lipped && shut.shut, `the rotation did not leave the footer shut: ${JSON.stringify(shut)}`);
+        assert.strictEqual(shut.note, "", "the reopened sheet has a notice");
+        assert.ok(shut.w > withNote.w + 4, `shut with no message the pan is ${shut.w}px, the size an earlier noticed session held (${withNote.w}px): it will grow on restore`);
+        await spcRestoreTrace(shut.w, "stale hold from an earlier session");
+        const open = await spcShutPan();
+        assert.ok(open.w > withNote.w + 4, `the restored pan is ${open.w}px, the noticed session's was ${withNote.w}px`);
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
     });
 
     test("SPC: at 380x780 and 380x667 the drawer status keeps its 81ad610 rect relative to the plate at the top of the scroll and stays pinned under the band at the end", async () => {
