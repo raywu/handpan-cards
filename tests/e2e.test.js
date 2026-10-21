@@ -14544,7 +14544,7 @@ function run() {
               const kinds = full ? ["collapse", "restore", "reverse"] : rm ? ["collapse"] : ["reverse"];
               for (const kind of kinds) {
                 for (const change of Object.keys(CHANGES)) {
-                  for (const at of kind === "reverse" || rm ? [40] : full ? [90] : [40]) await sub(ctx, kind, change, at);
+                  for (const at of kind === "reverse" || rm ? [40] : full ? [90, 150] : [40]) await sub(ctx, kind, change, at);
                 }
               }
               if (!rm && !edit && w === 380) {
