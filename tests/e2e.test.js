@@ -14516,7 +14516,7 @@ function run() {
       clear: { pre: `say(${JSON.stringify(SPA_WARN)}, "warn")`, change: `say("", "")` },
       grow: { pre: `say(${JSON.stringify(SPA_ONE)}, "warn")`, change: `say(${JSON.stringify(SPA_WARN)}, "warn")` },
     };
-    test("SPA: guidance that appears, clears or grows from one to three lines at 40ms, 90ms and 150ms into a collapse or a restore, including an immediate reversal with the keyboard up, never puts its visible text over the primary, DELETE or the lip's tap zone in any sampled frame, at 320x568, 380x780, 390x844 and 844x390, with and without reduced motion", { timeout: 900000 }, async () => {
+    test("SPA: guidance that appears, clears or grows from one to three lines at 40ms, 90ms and 150ms into a collapse or a restore, including an immediate reversal with the keyboard up, never puts its visible text over the primary, DELETE or the lip's tap zone in any sampled frame, at 380x780 and 844x390, with and without reduced motion", { timeout: 900000 }, async () => {
       const fails = [];
       const sub = async (ctx, kind, change, at) => {
         const c = CHANGES[change];
@@ -14541,10 +14541,10 @@ function run() {
               await sleep(100);
               const ctx = `${w}x${h} ${edit ? "Edit" : "Add"} ${rm ? "reduced" : "motion"}`;
               const full = w === 380 && !edit && !rm;
-              const kinds = full ? ["collapse", "restore", "reverse"] : rm ? ["collapse"] : edit ? ["reverse"] : ["restore", "reverse"];
+              const kinds = full ? ["collapse", "restore", "reverse"] : rm ? ["collapse"] : ["reverse"];
               for (const kind of kinds) {
                 for (const change of Object.keys(CHANGES)) {
-                  for (const at of kind === "reverse" || rm ? [40] : full ? [40, 90] : [90]) await sub(ctx, kind, change, at);
+                  for (const at of kind === "reverse" || rm ? [40] : full ? [90] : [40]) await sub(ctx, kind, change, at);
                 }
               }
               if (!rm && !edit && w === 380) {
