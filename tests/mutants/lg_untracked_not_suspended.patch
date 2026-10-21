@@ -1,0 +1,15 @@
+# kills: LG: an untracked touch (second finger, #scale-lip start, vetoed gesture) keeps the full P3 suspension through its momentum
+# suite: node --test --test-name-pattern ^LG..an.untracked.touch..second.finger...scale.lip.start..vetoed.gesture..keeps.the.full.P3.suspension.through.its.momentum$ tests/app.test.js
+# An untracked touch no longer sets lipDragEnd, so its momentum is not suspended.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10850,7 +10850,7 @@
+     const seed = L.lastMoveWay === "up" ? Math.max(0, t - L.bodyTop0) : Math.max(0, L.bodyTop0 - t);
+     lipFling = { way: L.lastMoveWay, done: false, acc: seed, prevT: t, prevM: lipRange(), until: Date.now() + LIP_END_MS };
+   }
+-  lipDragEnd = Date.now() + LIP_END_MS;
++  if (lipDrag) lipDragEnd = Date.now() + LIP_END_MS;
+   lipDrag = null;
+   lipParked = null;
+   lipTouching = !!(e && e.touches && e.touches.length);

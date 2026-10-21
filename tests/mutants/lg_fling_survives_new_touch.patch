@@ -1,0 +1,14 @@
+# kills: LG: a new touch ends a live fling: a lip tap that restores during a collapse fling's tail stays restored
+# suite: node --test --test-name-pattern ^LG..a.new.touch.ends.a.live.fling..a.lip.tap.that.restores.during.a.collapse.fling.s.tail.stays.restored$ tests/app.test.js
+# A new touch no longer ends a live fling.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10807,7 +10807,6 @@
+   lipTouching = !!(ts && ts.length);
+   const tg = e.target;
+   if (tg && tg.addEventListener) for (const ev of ["touchend", "touchcancel"]) tg.addEventListener(ev, lipDragStop, { once: true, passive: true });
+-  lipFling = null;
+   lipParked = null;
+   const box = tg && tg.closest ? tg.closest("#scale-box") : null;
+   lipDrag = ts && ts.length === 1 && !lipNeverArms(tg) && !lipFocusedField(tg)

@@ -12054,9 +12054,9 @@ describe("UX: the footer lip", () => {
       assert.strictEqual(isShut(b), false, "the bottom restores on the scroll path");
     });
 
-    test("PH: P3 starts on the lip, the plate, a field or with a second finger do not collapse; the keyboard does not either", () => {
+    test("PH: P3 starts on the lip, a select or with a second finger do not collapse; the keyboard does not either", () => {
       const hit = (sel) => ({ closest: (s) => (s.split(",").map((x) => x.trim()).includes(sel) ? {} : null) });
-      for (const sel of ["#scale-lip", "#scale-preview", "input", "textarea", "select"]) {
+      for (const sel of ["#scale-lip", "select"]) {
         const a = shortApp();
         drag(a, -40, { target: hit(sel) });
         assert.strictEqual(state(a), OPEN, sel);
@@ -12073,6 +12073,425 @@ describe("UX: the footer lip", () => {
       const before = state(kb);
       drag(kb, -40);
       assert.strictEqual(state(kb), before, "kbup");
+    });
+
+    describe("LG: the lip gesture on every surface, momentum included", () => {
+      const HOLD = 250;
+      const field = (a, id, tag = "INPUT") => { const e = a.els[id]; e.tagName = tag; return e; };
+      const IDS = [["scale-ding", "INPUT"], ["scale-top", "INPUT"], ["scale-inner", "INPUT"], ["scale-bottom", "INPUT"], ["scale-box", "TEXTAREA"]];
+      const frames = (a, from, steps, gap = 33) => { let t = from; for (const s of steps) { a.advance(gap); t += s; scrollTo(a, t, false); } return t; };
+      const spy = (a, fn) => a.run(`(() => { const o = ${fn}; globalThis.__${fn} = 0; ${fn} = function () { globalThis.__${fn}++; return o.apply(this, arguments); }; })()`);
+      const calls = (a, fn) => a.get(`globalThis.__${fn}`);
+      const flingOf = (a) => a.get("lipFling ? lipFling.way : null");
+      const bodyAt = (a, top) => { a.get("bandPort").scrollTop = top; a.run("lipRebase()"); };
+      const hit = (sel) => ({ closest: (s) => (s.split(",").map((x) => x.trim()).includes(sel) ? {} : null) });
+
+      test("LG: a tap on each field (travel 6px) arms nothing, acts on nothing and leaves tapSnap and scrollPin as P3 left them", () => {
+        for (const [id, tag] of [...IDS, ["scale-preview", "DIV"]]) {
+          const a = lipApp();
+          const e = field(a, id, tag);
+          const snap = a.get("JSON.stringify([tapSnap, scrollPin])");
+          finger(a, "touchstart", 400, { target: e });
+          finger(a, "touchmove", 394, { target: e });
+          finger(a, "touchend", 394, { target: e });
+          assert.strictEqual(state(a), OPEN, id);
+          assert.strictEqual(flingOf(a), null, id + ": a tap makes no fling");
+          assert.strictEqual(a.get("JSON.stringify([tapSnap, scrollPin])"), snap, id + ": tapSnap untouched");
+        }
+      });
+
+      test("LG: a stationary press on an unfocused field for HOLD_MS then a 60px drag does not act", () => {
+        for (const [id, tag] of [["scale-top", "INPUT"], ["scale-box", "TEXTAREA"], ["scale-preview", "DIV"]]) {
+          const a = shortApp();
+          const e = field(a, id, tag);
+          finger(a, "touchstart", 400, { target: e });
+          a.advance(HOLD);
+          finger(a, "touchmove", 340, { target: e });
+          assert.strictEqual(state(a), OPEN, id + " (a): one big move after a hold");
+          const b = shortApp();
+          const f = field(b, id, tag);
+          finger(b, "touchstart", 400, { target: f });
+          for (const y of [403, 398, 402, 399]) { b.advance(70); finger(b, "touchmove", y, { target: f }); }
+          finger(b, "touchmove", 340, { target: f });
+          assert.strictEqual(state(b), OPEN, id + " (b): jitter through the hold, then a drag");
+        }
+        const c = shortApp();
+        finger(c, "touchstart", 400);
+        c.advance(HOLD);
+        finger(c, "touchmove", 340);
+        assert.strictEqual(state(c), SHUT, "(c) a hold on the body, which P3 already armed, still drags");
+      });
+
+      test("LG: a 24px finger-up drag from each unfocused field collapses and a 24px finger-down drag restores; 23px does neither", () => {
+        for (const mk of [shortApp, lipApp]) {
+          for (const [id, tag] of [...IDS]) {
+            const a = mk();
+            const e = field(a, id, tag);
+            drag(a, -23, { target: e });
+            assert.strictEqual(state(a), OPEN, id + " 23px");
+            a.advance(300);
+            drag(a, -24, { target: e });
+            assert.strictEqual(state(a), SHUT, id + " 24px up");
+            a.advance(300);
+            drag(a, 23, { target: e });
+            assert.strictEqual(isShut(a), true, id + " 23px down");
+            a.advance(300);
+            drag(a, 24, { target: e });
+            assert.strictEqual(isShut(a), false, id + " 24px down");
+          }
+        }
+      });
+
+      test("LG: a drag inside the focused field never acts, kb down included", () => {
+        for (const [id, tag] of IDS) {
+          const a = shortApp();
+          const e = field(a, id, tag);
+          e.focus();
+          let blurs = 0;
+          const ob = e.blur; e.blur = () => { blurs++; ob(); };
+          drag(a, -60, { target: e });
+          assert.strictEqual(state(a), OPEN, id + " up");
+          a.advance(300);
+          const b = shortApp();
+          const f = field(b, id, tag);
+          b.run("collapseLip()");
+          b.advance(300);
+          f.focus();
+          drag(b, 60, { target: f });
+          assert.strictEqual(isShut(b), true, id + " down");
+          assert.strictEqual(blurs, 0, "blur is never called");
+        }
+      });
+
+      test("LG: a drag that starts on another, unfocused field while one is focused acts", () => {
+        const a = shortApp();
+        field(a, "scale-ding").focus();
+        drag(a, -40, { target: field(a, "scale-top") });
+        assert.strictEqual(state(a), SHUT);
+      });
+
+      test("LG: a drag that scrolls #scale-box's own content never acts, in the finger phase or its fling", () => {
+        const a = lipApp();
+        const box = field(a, "scale-box", "TEXTAREA");
+        box.scrollTop = 0;
+        finger(a, "touchstart", 400, { target: box });
+        box.scrollTop = 30;
+        finger(a, "touchmove", 340, { target: box });
+        assert.strictEqual(state(a), OPEN, "the finger phase");
+        finger(a, "touchend", 340, { target: box });
+        assert.strictEqual(flingOf(a), null, "no fling is handed on");
+        a.advance(33);
+        scrollTo(a, 300);
+        assert.strictEqual(state(a), OPEN, "its momentum is suspended like any untracked touch");
+      });
+
+      test("LG: a drag from #scale-box at its scroll edge, where its scrollTop does not change, acts", () => {
+        const a = lipApp();
+        const box = field(a, "scale-box", "TEXTAREA");
+        box.scrollTop = 0;
+        drag(a, -40, { target: box });
+        assert.strictEqual(state(a), SHUT);
+      });
+
+      test("LG: while kbup a drag from any surface and its fling do nothing", () => {
+        for (const [id, tag] of [...IDS, ["scale-preview", "DIV"]]) {
+          const a = shortApp();
+          sheetOf(a).classList.add("kbup");
+          drag(a, -60, { target: field(a, id, tag) });
+          assert.strictEqual(state(a), OPEN, id);
+        }
+        const b = lipApp();
+        finger(b, "touchstart", 400);
+        bodyAt(b, 0);
+        b.get("bandPort").scrollTop = 10;
+        b.get("bandPort").dispatchEvent({ type: "scroll" });
+        finger(b, "touchmove", 390);
+        finger(b, "touchend", 390);
+        assert.strictEqual(flingOf(b), "up");
+        sheetOf(b).classList.add("kbup");
+        frames(b, 10, [5, 5, 5, 5, 5, 5]);
+        assert.strictEqual(state(b), OPEN, "a fling that meets the keyboard counts nothing");
+      });
+
+      test("LG: focus moving field to field with kbup does not change the lip", () => {
+        const a = shortApp();
+        sheetOf(a).classList.add("kbup");
+        for (const [id, tag] of IDS) {
+          const e = field(a, id, tag);
+          e.focus();
+          sheetOf(a).dispatchEvent({ type: "focusin", target: e });
+          assert.strictEqual(state(a), OPEN, id);
+          assert.strictEqual(a.get("lipDrag"), null, id + ": nothing armed");
+        }
+      });
+
+      test("LG: a touch on #scale-lip arms no body drag: its 16px swipe restores once and nothing else acts", () => {
+        const a = shortApp();
+        a.run("collapseLip()");
+        a.advance(300);
+        const lip = a.els["scale-lip"];
+        drag(a, 60, { target: lip });
+        assert.strictEqual(isShut(a), true, "the body gesture never armed on the lip");
+        a.advance(300);
+        spy(a, "restoreLip");
+        lip.dispatchEvent({ type: "touchstart", touches: [{ identifier: 3, clientX: 0, clientY: 600 }] });
+        lip.dispatchEvent({ type: "touchmove", touches: [{ identifier: 3, clientX: 0, clientY: 583 }] });
+        assert.strictEqual(isShut(a), false, "the lip's own swipe restores");
+        assert.strictEqual(calls(a, "restoreLip"), 1);
+      });
+
+      test("LG: a 60px drag from the plate on the Layout tab collapses and activates no note", () => {
+        const a = shortApp();
+        a.run("setTab('layout')");
+        spy(a, "activateNote");
+        drag(a, -60, { target: a.els["scale-preview"] });
+        assert.strictEqual(state(a), SHUT);
+        assert.strictEqual(calls(a, "activateNote"), 0);
+      });
+
+      test("LG: a plate press held (press.lifted) then dragged 60px never acts", () => {
+        for (const state_ of ["held", "drag"]) {
+          const a = shortApp();
+          a.run("setTab('layout')");
+          a.run(`press = { lifted: true, state: ${JSON.stringify(state_)} }`);
+          drag(a, -60, { target: a.els["scale-preview"] });
+          assert.strictEqual(state(a), OPEN, state_);
+          a.run("press = null");
+        }
+      });
+
+      test("LG: a tap on the plate (travel 6px) with the Layout tab open acts on nothing and the lip code calls activateNote zero times", () => {
+        const a = shortApp();
+        a.run("setTab('layout')");
+        spy(a, "activateNote");
+        finger(a, "touchstart", 400, { target: a.els["scale-preview"] });
+        finger(a, "touchmove", 394, { target: a.els["scale-preview"] });
+        finger(a, "touchend", 394, { target: a.els["scale-preview"] });
+        assert.strictEqual(state(a), OPEN);
+        assert.strictEqual(flingOf(a), null);
+        assert.strictEqual(calls(a, "activateNote"), 0);
+      });
+
+      test("LG: lipNeverArms matches #scale-lip and select, and #scale-sheet holds no select", () => {
+        const never = (sel) => a0.get(`lipNeverArms({ closest: (s) => s.split(",").map((x) => x.trim()).includes(${JSON.stringify(sel)}) ? {} : null })`);
+        const a0 = lipApp();
+        assert.strictEqual(never("#scale-lip"), true);
+        assert.strictEqual(never("select"), true);
+        for (const s of ["input", "textarea", "#scale-preview"]) assert.strictEqual(never(s), false, s);
+        const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+        const from = html.indexOf('<div id="scale-sheet"');
+        const sheetHtml = html.slice(from, html.indexOf('id="scale-lip"', from));
+        assert.ok(!/<select\b/.test(sheetHtml), "the sheet holds no select");
+        assert.deepStrictEqual([...html.matchAll(/<select\b[^>]*id="([^"]+)"/g)].map((m) => m[1]), ["print-paper-select"]);
+      });
+
+      const flingFrom = (a, { seed = 10, way = "up", start = 0 } = {}) => {
+        bodyAt(a, start);
+        finger(a, "touchstart", 400);
+        const y = way === "up" ? 390 : 410;
+        const t = way === "up" ? start + seed : start - seed;
+        a.get("bandPort").scrollTop = t;
+        a.get("bandPort").dispatchEvent({ type: "scroll" });
+        finger(a, "touchmove", y);
+        finger(a, "touchend", y);
+        return t;
+      };
+
+      test("LG: momentum after touchend in the finger's direction collapses once it reaches 24px with the seed", () => {
+        const a = lipApp();
+        spy(a, "collapseLip");
+        const t = flingFrom(a);
+        assert.strictEqual(state(a), OPEN, "10px of finger is under 24");
+        assert.strictEqual(flingOf(a), "up");
+        let at = frames(a, t, [5]);
+        at = frames(a, at, [5]);
+        assert.strictEqual(state(a), OPEN, "20 of 24");
+        frames(a, at, [5]);
+        assert.strictEqual(state(a), SHUT, "10 seeded + 15 momentum");
+        assert.strictEqual(calls(a, "collapseLip"), 1);
+      });
+
+      test("LG: momentum after a finger-down drag restores a shut footer", () => {
+        const a = lipApp();
+        scrollTo(a, 300);
+        assert.strictEqual(state(a), SHUT);
+        a.advance(400);
+        const t = flingFrom(a, { way: "down", start: 300 });
+        assert.strictEqual(isShut(a), true);
+        frames(a, t, [-5, -5, -5]);
+        assert.strictEqual(isShut(a), false);
+      });
+
+      test("LG: a fling acts at most once: a touchmove collapse and a 482px tail is one collapse, and a lip click restore during a collapse fling's tail is not undone", () => {
+        const a = lipApp();
+        spy(a, "collapseLip");
+        finger(a, "touchstart", 400);
+        finger(a, "touchmove", 360);
+        assert.strictEqual(state(a), SHUT);
+        finger(a, "touchend", 360);
+        let t = 0;
+        for (let i = 0; i < 40; i++) t = frames(a, t, [12]);
+        assert.strictEqual(calls(a, "collapseLip"), 1, "one collapse across the finger and a 480px tail");
+        const b = lipApp();
+        spy(b, "collapseLip");
+        const t0 = flingFrom(b);
+        let u = frames(b, t0, [5, 5, 5]);
+        assert.strictEqual(state(b), SHUT);
+        b.click(b.els["scale-lip"]);
+        assert.strictEqual(isShut(b), false, "the lip click restored");
+        u = frames(b, u, [12, 12, 12, 12]);
+        assert.strictEqual(isShut(b), false, "later momentum frames leave it open");
+        assert.strictEqual(calls(b, "collapseLip"), 1);
+      });
+
+      test("LG: a fling's opposite-sign scroll (the collapse clamp) never restores", () => {
+        const a = lipApp();
+        bodyAt(a, 300);
+        finger(a, "touchstart", 400);
+        finger(a, "touchmove", 390);
+        finger(a, "touchend", 390);
+        frames(a, 300, [-50, -50]);
+        assert.strictEqual(state(a), OPEN, "the opposite sign never counts toward an up fling");
+        const b = lipApp();
+        const t = flingFrom(b, { seed: 20 });
+        const at = frames(b, t, [10]);
+        assert.strictEqual(isShut(b), true);
+        frames(b, at, [-30, -30, -30]);
+        assert.strictEqual(isShut(b), true, "a clamp after the collapse restores nothing");
+      });
+
+      test("LG: a fling never restores on reaching the bottom", () => {
+        const a = lipApp();
+        scrollTo(a, 300);
+        assert.strictEqual(state(a), SHUT);
+        a.advance(400);
+        const t = flingFrom(a, { start: 300 });
+        frames(a, t, [200, 200, 200, 200]);
+        assert.strictEqual(isShut(a), true, "the bottom is reached by touch momentum");
+      });
+
+      test("LG: the fling ends LIP_END_MS after the last scroll and a later programmatic scroll does nothing", () => {
+        const a = lipApp();
+        const t = flingFrom(a, { seed: 0 });
+        frames(a, t, [5]);
+        a.advance(230);
+        scrollTo(a, 300, false);
+        assert.strictEqual(state(a), OPEN);
+        assert.strictEqual(flingOf(a), null);
+      });
+
+      test("LG: a 140ms gap between momentum frames keeps the fling alive", () => {
+        const a = lipApp();
+        const t = flingFrom(a);
+        frames(a, t, [5, 5, 5], 140);
+        assert.strictEqual(state(a), SHUT);
+      });
+
+      test("LG: wheel and keyboard scrolling are unchanged: the scroll rule M - t > E and the bottom restore", () => {
+        const a = shortApp();
+        sheetOf(a).dispatchEvent({ type: "wheel" });
+        scrollTo(a, 10, false);
+        assert.strictEqual(state(a), OPEN, "no room: M - t > E fails, nothing collapses");
+        const b = lipApp();
+        sheetOf(b).dispatchEvent({ type: "wheel" });
+        scrollTo(b, 300, false);
+        assert.strictEqual(state(b), SHUT);
+        scrollTo(b, 900);
+        assert.strictEqual(isShut(b), false, "the bottom restores on the scroll path");
+        const c = lipApp();
+        sheetOf(c).dispatchEvent({ type: "keydown", key: "PageDown", preventDefault() {} });
+        scrollTo(c, 300, false);
+        assert.strictEqual(state(c), SHUT, "a scroll key collapses as before");
+        assert.strictEqual(flingOf(c), null);
+      });
+
+      test("LG: an untracked touch (second finger, #scale-lip start, vetoed gesture) keeps the full P3 suspension through its momentum", () => {
+        const starts = [
+          ["two fingers", (a) => { finger(a, "touchstart", 400, { extra: true }); finger(a, "touchmove", 330, { extra: true }); }],
+          ["the lip", (a) => { finger(a, "touchstart", 400, { target: a.els["scale-lip"] }); finger(a, "touchmove", 330); }],
+          ["a vetoed gesture", (a) => {
+            const box = field(a, "scale-box", "TEXTAREA");
+            box.scrollTop = 0;
+            finger(a, "touchstart", 400, { target: box });
+            box.scrollTop = 20;
+            finger(a, "touchmove", 330, { target: box });
+          }],
+        ];
+        for (const [name, start] of starts) {
+          const a = lipApp();
+          start(a);
+          finger(a, "touchend", 330);
+          a.advance(100);
+          scrollTo(a, 300);
+          scrollTo(a, 900);
+          assert.strictEqual(state(a), OPEN, `${name}: momentum after the touch counted`);
+        }
+      });
+
+      test("LG: a wheel or key during a fling ends the fling", () => {
+        for (const ev of [{ type: "wheel" }, { type: "keydown", key: "PageDown", preventDefault() {} }]) {
+          const a = lipApp();
+          const t = flingFrom(a);
+          frames(a, t, [5]);
+          assert.strictEqual(flingOf(a), "up");
+          sheetOf(a).dispatchEvent(ev);
+          assert.strictEqual(flingOf(a), null, ev.type);
+        }
+      });
+
+      test("LG: a new touch ends a live fling: a lip tap that restores during a collapse fling's tail stays restored", () => {
+        const a = lipApp();
+        const t = flingFrom(a);
+        const at = frames(a, t, [5]);
+        finger(a, "touchstart", 500, { target: a.els["scale-lip"] });
+        assert.strictEqual(flingOf(a), null, "touchstart ends the fling");
+        finger(a, "touchend", 500, { target: a.els["scale-lip"] });
+        frames(a, at, [5, 5, 5, 5]);
+        assert.strictEqual(state(a), OPEN, "the remaining momentum collapses nothing");
+      });
+
+      test("LG: scrolls under lipQuiet during a fling add nothing: a programmatic 300px scroll then 10px of momentum does not act", () => {
+        const a = lipApp();
+        const t = flingFrom(a, { seed: 0 });
+        a.advance(33);
+        a.run("lipQuiet()");
+        scrollTo(a, 300, false);
+        a.advance(160);
+        scrollTo(a, 310, false);
+        assert.strictEqual(state(a), OPEN);
+        assert.ok(t >= 0);
+      });
+
+      test("LG: lipDragStop running twice for one touchend (sheet and target) creates one fling and does not clear it", () => {
+        const a = lipApp();
+        const on = {};
+        const tgt = { closest: () => null, addEventListener: (type, fn) => { on[type] = fn; } };
+        bodyAt(a, 0);
+        finger(a, "touchstart", 400, { target: tgt });
+        a.get("bandPort").scrollTop = 10;
+        a.get("bandPort").dispatchEvent({ type: "scroll" });
+        finger(a, "touchmove", 390, { target: tgt });
+        finger(a, "touchend", 390, { target: tgt });
+        on.touchend({ type: "touchend", touches: [] });
+        assert.strictEqual(flingOf(a), "up");
+        assert.strictEqual(a.get("lipFling.acc"), 10, "seeded once");
+      });
+
+      test("LG: a wheel tick or a typing key while a finger is down does not end the gesture, a scroll key outside a field does", () => {
+        const a = lipApp();
+        finger(a, "touchstart", 400);
+        finger(a, "touchmove", 385);
+        sheetOf(a).dispatchEvent({ type: "wheel" });
+        sheetOf(a).dispatchEvent({ type: "keydown", key: "a", preventDefault() {} });
+        sheetOf(a).dispatchEvent({ type: "keydown", key: "ArrowDown", target: field(a, "scale-ding"), preventDefault() {} });
+        finger(a, "touchmove", 370);
+        assert.strictEqual(state(a), SHUT, "the finger kept its gesture across a wheel tick and two keys");
+        const b = lipApp();
+        finger(b, "touchstart", 400);
+        sheetOf(b).dispatchEvent({ type: "keydown", key: "PageDown", preventDefault() {} });
+        scrollTo(b, 300, false);
+        assert.strictEqual(state(b), SHUT, "a scroll key outside a field still ends a suspension no touchend closed");
+      });
     });
   });
 

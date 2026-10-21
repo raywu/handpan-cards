@@ -496,6 +496,8 @@ There is no critical gap: every silent failure now has a test.
 | Q4 | **Yes.** Act past the textarea's scroll edge, and observe it in device step D8. | P3 says a 24px drag acts "even when the content cannot scroll". The iOS edge behaviour is recorded, not gated. |
 | Q5 | **Yes.** Keep `select` excluded. | It costs nothing, and the sheet has none today. |
 | Q6 | **Lane LG stacks on lane P's #418 branch `claude/phone-fixes`.** Both reach `dev` first, LG's dev PR after #418's. Main merges are owner-gated and never done by an agent, with #418 first. | LG is cut from `5caaf6b`. Owner rule: dev first, never merge to main. |
+| A1 | **The shut footer is 5px, not 2px.** The pill (32x3), the tap zone (25px), `LIP_SWIPE` (16) and `scroll-padding-bottom` (21px) are unchanged. Tests and mutants that pin the foot height pin 5px as an exact value (`UX: a real touch swipe down collapses the footer to a 5px lip ...`, `ph_foot_4px`). | Integrator addition: same code block / one owner retest. |
+| A2 | **The keydown backstop is limited to the scroll keys** (PageUp, PageDown, space, Home, End, ArrowUp, ArrowDown) outside input, textarea and select, and **a wheel tick no longer kills a live finger drag** (the drag is parked and a touchmove with the same touch id revives it). Test `LG: a wheel tick or a typing key while a finger is down does not end the gesture, a scroll key outside a field does`; mutants `lg_wheel_kills_finger`, `lg_typing_key_clears_gesture`. All inside the lip block. | Integrator addition: same code block / one owner retest. |
 
 The review skill also auto-chose two things in the spawned session. There is no design doc, so the standard review ran without /office-hours. Scope was accepted as is: one lane, a minimal diff confined to the lip block.
 

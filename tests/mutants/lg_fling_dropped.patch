@@ -1,0 +1,15 @@
+# kills: LG: momentum after touchend in the finger's direction collapses once it reaches 24px with the seed
+# suite: node --test --test-name-pattern ^LG..momentum.after.touchend.in.the.finger.s.direction.collapses.once.it.reaches.24px.with.the.seed$ tests/app.test.js
+# lipDragStop builds no fling, so momentum after touchend does nothing (the defect).
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10845,7 +10845,7 @@
+ }, { passive: true, capture: true });
+ const lipDragStop = (e) => {
+   const L = lipDrag;
+-  if (L && L.moved && L.lastMoveWay && !(L.box && L.box.scrollTop !== L.boxTop)) {
++  if (false && L && L.moved && L.lastMoveWay && !(L.box && L.box.scrollTop !== L.boxTop)) {
+     const t = lipClamp(bandPort.scrollTop);
+     const seed = L.lastMoveWay === "up" ? Math.max(0, t - L.bodyTop0) : Math.max(0, L.bodyTop0 - t);
+     lipFling = { way: L.lastMoveWay, done: false, acc: seed, prevT: t, prevM: lipRange(), until: Date.now() + LIP_END_MS };
