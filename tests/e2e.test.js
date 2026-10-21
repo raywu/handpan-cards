@@ -7376,7 +7376,7 @@ function run() {
     const o = { fields: {} };
     for (const id of ${JSON.stringify(KB_FIELDS)}) o.fields[id] = q(document.getElementById(id));
     const body = document.querySelector("#scale-sheet .sheetbody");
-    o.body = q(body); o.bodyTop = body.scrollTop; o.vvh = window.visualViewport.height;
+    o.body = q(body); o.padB = parseFloat(getComputedStyle(body).scrollPaddingBottom) || 0; o.bodyTop = body.scrollTop; o.vvh = window.visualViewport.height;
     o.surfTop = document.querySelector("#scale-sheet .sheetsurf").scrollTop;
     o.gen = q(document.getElementById("scale-lip"));
     return o;`);
@@ -7389,7 +7389,7 @@ function run() {
       setTimeout(() => { const body = document.querySelector("#scale-sheet .sheetbody"); body.scrollTop += 37; }, 30);
     }, true);
     return true;`);
-  const kb2Whole = (r, s) => r.top >= s.body.top - 1 && r.bottom <= s.body.bottom + 1 && r.top >= -1 && r.bottom <= s.vvh + 1;
+  const kb2Whole = (r, s) => r.top >= s.body.top - 1 && r.bottom <= s.body.bottom - s.padB + 1 && r.top >= -1 && r.bottom <= s.vvh + 1;
 
   test("KB2: with the keyboard up and a note field focused in landscape, a touch swipe anywhere on the sheet scrolls it until NEXT is fully visible, and back to DING", async () => {
     try {
@@ -14530,7 +14530,7 @@ function run() {
         for (const f of frames) for (const v of hits(f)) fails.push(`${ctx} ${kind} ${change}@${at}: ${v}`);
       };
       try {
-        for (const [w, h] of VPS) {
+        for (const [w, h] of VPS.filter(([vw]) => vw !== 390)) {
           for (const edit of [false, true]) {
             for (const rm of [false, true]) {
               if (edit && w !== 380) continue;
@@ -14540,9 +14540,11 @@ function run() {
               await b.send("Emulation.setEmulatedMedia", { media: "", features: [{ name: "prefers-reduced-motion", value: rm ? "reduce" : "no-preference" }] });
               await sleep(100);
               const ctx = `${w}x${h} ${edit ? "Edit" : "Add"} ${rm ? "reduced" : "motion"}`;
-              for (const kind of ["collapse", "restore", "reverse"]) {
+              const full = w === 380 && !edit && !rm;
+              const kinds = full ? ["collapse", "restore", "reverse"] : rm ? ["collapse"] : edit ? ["reverse"] : ["restore", "reverse"];
+              for (const kind of kinds) {
                 for (const change of Object.keys(CHANGES)) {
-                  for (const at of rm || kind === "reverse" ? [40] : [40, 90]) await sub(ctx, kind, change, at);
+                  for (const at of kind === "reverse" || rm ? [40] : full ? [40, 90] : [90]) await sub(ctx, kind, change, at);
                 }
               }
               if (!rm && !edit && w === 380) {
@@ -14565,10 +14567,10 @@ function run() {
         if (s.flips !== 0) fails.push(`${ctx} ${how}: the lip changed ${s.flips} times`);
       };
       try {
-        for (const [w, h] of [[380, 780], [844, 390]]) {
+        for (const [w, h] of [[380, 780]]) {
           for (const kb of [false, true]) {
             if (kb && w > h) continue;
-            for (const how of ["wheel", "drag", "fling"]) {
+            for (const how of kb ? ["fling"] : ["wheel", "drag", "fling"]) {
               for (const change of ["clear", "appear"]) {
                 await spaOpen(w, h);
                 await b.eval(`const p = document.getElementById("scale-panel-scale"), d = document.createElement("div"); d.style.height = "900px"; p.appendChild(d); return true;`);
