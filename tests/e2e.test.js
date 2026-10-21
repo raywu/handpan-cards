@@ -14277,6 +14277,9 @@ function run() {
       await b.clearKeyboard().catch(() => {});
       await b.setViewport(900, 900, false);
     };
+    const tabOn = (tab) => b.eval(`const t = document.getElementById("scale-tab-${tab}"), p = document.getElementById("scale-panel-${tab}"); return t.getAttribute("aria-selected") === "true" && !p.hidden;`);
+    const rmOn = () => b.eval(`return matchMedia("(prefers-reduced-motion: reduce)").matches;`);
+    const kbOn = () => b.eval(`return document.getElementById("scale-sheet").classList.contains("kbup");`);
     const shut = async () => { await b.eval(`collapseLip(); return true;`); await sleep(260); };
     const state = () => b.eval(`const s = document.getElementById("scale-sheet"); return { lipped: s.classList.contains("lipped"), shut: s.classList.contains("lipshut"), kbup: s.classList.contains("kbup"), flips: window.__lip.length };`);
     const px = (name) => b.eval(`
@@ -14370,6 +14373,7 @@ function run() {
             await shut();
             const st = await state();
             if (!(st.lipped && st.shut)) { fails.push(`${w}x${h} ${tab}: the footer is not shut (${JSON.stringify(st)})`); continue; }
+            if (!(await tabOn(tab))) { fails.push(`${w}x${h} ${tab}: the ${tab} tab is not the selected, shown tab`); continue; }
             const sp2 = await px("--sp-2");
             const m = await lastControl();
             const ctx = `${w}x${h} ${tab} (${m.id}, M ${m.M})`;
@@ -14397,6 +14401,7 @@ function run() {
             const ctx = `${w}x${h} ${tab} (${m.id})`;
             const s = await state();
             if (s.lipped || s.shut) fails.push(`${ctx}: the footer is not open (${JSON.stringify(s)})`);
+            if (!(await tabOn(tab))) fails.push(`${ctx}: the ${tab} tab is not the selected, shown tab`);
             if (over !== 16) fails.push(`${ctx}: --lip-over is ${over}px, not 16`);
             if (m.bottom > m.body - (sp2 + 16) + 0.5) fails.push(`${ctx}: the last control ends ${(m.body - m.bottom).toFixed(1)}px above the hairline, not ${sp2 + 16}`);
           }
@@ -14464,6 +14469,7 @@ function run() {
             const ctx = `${w}x${h} keyboard ${kb ? "up" : "down"}`;
             ran.push(ctx);
             if (s.kbup !== kb) fails.push(`${ctx}: kbup is ${s.kbup}`);
+            if ((await msgLines()) < 1) { fails.push(`${ctx}: no message is showing`); continue; }
             if (!(s.lipped && s.shut)) { fails.push(`${ctx}: the footer is not shut (${JSON.stringify(s)})`); continue; }
             if (m.zoneTop === null) { fails.push(`${ctx}: no tap zone`); continue; }
             if (m.bottom > m.zoneTop - sp1 + 0.5) fails.push(`${ctx}: the message ends ${m.bottom}, ${(m.zoneTop - m.bottom).toFixed(1)}px above the zone at ${m.zoneTop}, not ${sp1}`);
@@ -14484,6 +14490,9 @@ function run() {
           await shut();
           await b.eval(`say(${JSON.stringify(SPA_WARN)}, "warn"); return true;`);
           await sleep(300);
+          const pre = await state();
+          if (!(pre.lipped && pre.shut)) { fails.push(`${w}x${h}: the footer is not shut before the tap (${JSON.stringify(pre)})`); continue; }
+          if ((await msgLines()) < 1) { fails.push(`${w}x${h}: no message is showing`); continue; }
           const m = await msgState();
           if (!m.hitBottom) { fails.push(`${w}x${h}: the tap point does not hit the message`); continue; }
           await tapAt(m.cx, m.bottom - 2);
@@ -14505,12 +14514,14 @@ function run() {
           await sleep(300);
           const before = await state();
           if (!(before.lipped && before.shut && before.kbup)) { fails.push(`${w}x${h}: not shut under the keyboard (${JSON.stringify(before)})`); continue; }
+          if ((await msgLines()) < 1) { fails.push(`${w}x${h}: no warning is showing before the lip tap`); continue; }
           const z = await b.eval(`const r = document.getElementById("scale-lip").getBoundingClientRect(); return { x: (r.left + r.right) / 2, y: r.top + 2 };`);
           const rec = b.eval(`return window.__spa.run(600, []);`);
           await tapAt(z.x, z.y);
           const frames = await rec;
           const s = await state();
           if (s.lipped) fails.push(`${w}x${h}: the lip tap did not restore (${JSON.stringify(s)})`);
+          if ((await msgLines()) < 1) { fails.push(`${w}x${h}: the warning is gone after the lip tap`); continue; }
           const m = await b.eval(`
             const r = document.createRange(); r.selectNodeContents(document.getElementById("scale-msg"));
             const bottom = Math.max(...[...r.getClientRects()].map((x) => x.bottom));
@@ -14536,6 +14547,7 @@ function run() {
           const ctx = edit ? "Edit" : "Add";
           const st = await state();
           if (!(st.kbup && st.lipped && st.shut)) { fails.push(`${ctx}: not shut under the keyboard (${JSON.stringify(st)})`); continue; }
+          if ((await msgLines()) < 1) { fails.push(`${ctx}: no message is showing`); continue; }
           const m = await msgState();
           if (m.zoneTop === null) { fails.push(`${ctx}: no tap zone`); continue; }
           if (m.bottom > m.zoneTop - 4 + 0.5) fails.push(`${ctx}: the last line ends ${(m.zoneTop - m.bottom).toFixed(1)}px above the zone, not 4`);
@@ -14594,6 +14606,7 @@ function run() {
               if (!THREE[w]) THREE[w] = await calibrate();
               await b.send("Emulation.setEmulatedMedia", { media: "", features: [{ name: "prefers-reduced-motion", value: rm ? "reduce" : "no-preference" }] });
               await sleep(100);
+              if ((await rmOn()) !== rm) { fails.push(`${w}x${h}: prefers-reduced-motion is not ${rm ? "reduce" : "no-preference"}`); continue; }
               const ctx = `${w}x${h} ${edit ? "Edit" : "Add"} ${rm ? "reduced" : "motion"}`;
               const full = w === 380 && !edit && !rm;
               const kinds = full ? ["collapse", "restore", "reverse"] : rm ? ["collapse"] : ["reverse"];
@@ -14604,6 +14617,7 @@ function run() {
               }
               if (!rm && !edit && w === 380) {
                 await kbUp(w, h);
+                if (!(await kbOn())) { fails.push(`${w}x${h}: the sheet does not have kbup after the keyboard rose`); continue; }
                 for (const change of Object.keys(CHANGES)) for (const at of [40]) await sub(ctx + " keyboard", "reverse", change, at, w);
               }
             }
@@ -14635,8 +14649,10 @@ function run() {
                 await spaOpen(w, h);
                 await b.eval(`const p = document.getElementById("scale-panel-scale"), d = document.createElement("div"); d.style.height = "900px"; p.appendChild(d); return true;`);
                 if (kb) await kbUp(w, h);
+                if ((await kbOn()) !== kb) { fails.push(`${w}x${h} keyboard ${kb ? "up" : "down"} ${how} ${change}: kbup is ${!kb}`); continue; }
                 if (change === "clear") await b.eval(`say(${JSON.stringify(SPA_WARN)}, "warn"); return true;`);
                 await shut();
+                if (change === "clear" && (await msgLines()) < 1) { fails.push(`${w}x${h} keyboard ${kb ? "up" : "down"} ${how} ${change}: no warning is showing to clear`); continue; }
                 const atEnd = await b.eval(`const body = document.querySelector("#scale-sheet .sheetbody"); body.scrollTop = body.scrollHeight; window.__lip.length = 0; return body.scrollTop + body.clientHeight >= body.scrollHeight - 1;`);
                 await sleep(200);
                 const ctx = `${w}x${h} keyboard ${kb ? "up" : "down"} ${change}`;
