@@ -52,7 +52,7 @@ window.__d = (() => {
   const r1 = (x) => Math.round(x * 10) / 10;
   const label = (el) => !el ? null : el.id || (el.parentElement && el.parentElement.id
     ? el.parentElement.id + "[" + [...el.parentElement.children].indexOf(el) + "]" : el.tagName);
-  const unsticks = (el) => !!el && el.matches("input, textarea, select, #scale-swatches button");
+  const unsticks = (el) => !!el && el.matches("input, textarea, select");
   function vis(el) {
     const s = sp(), sr = s.getBoundingClientRect(), r = el.getBoundingClientRect();
     let lo = Math.max(r.top, 0), hi = Math.min(r.bottom, window.visualViewport.height);

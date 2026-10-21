@@ -4,69 +4,69 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1379,6 +1379,32 @@
+@@ -1431,32 +1431,6 @@ html.about-open{overflow:hidden}
           parseSeed); focusing one dims the other. One variable, inputPath, says
           which is active. The live region is the last child so the order the
           SG: N-A2 tests pin is untouched. -->
-+    <div class="fieldrow">
-+      <label class="sheetlabel" for="scale-box">SCALE: (DING) TOP NOTES | OPTIONAL INNER NOTES</label>
-+      <span class="sheetlabel" id="scale-label-2">[NOTE] = A BOTTOM NOTE, WRITTEN WHERE ITS PITCH FALLS</span>
-+      <div id="scale-box-wrap" data-grow="[C] [D] (E) [F#] [G] [A] B [C] D E F# G A B [C] D E | F# G A">
-+        <textarea id="scale-box" rows="1" wrap="soft" autocapitalize="off" autocorrect="off"
-+                  autocomplete="off" spellcheck="false" enterkeyhint="go"
-+                  aria-describedby="scale-label-2"
-+                  placeholder="[C] [D] (E) [F#] [G] [A] B [C] D E F# G A B [C] D E | F# G A"></textarea>
-+      </div>
-+      <div id="scale-parse"></div>
-+      <!-- Owner feedback, 2026-09-21: a refusal rendered below the pan is
-+           below the fold on an iPhone 14 with the keyboard up, so the user
-+           retypes a seed whose reason they never saw. It belongs directly
-+           under the field it is about, inside the same .fieldrow group.
-+           This element carries SEED REFUSALS ONLY - it is not the sheet's
-+           message area. #scale-msg keeps that job, in #scale-guidance below the scroll, because a
-+           warning or a success notice is not about the field and must not
-+           compete for this row. Refusals never go through say(): sharing one
-+           reserved line with the parse line only works while exactly one of
-+           the two is filled, and showRefusal()/showParse() are what make that
-+           true rather than hoping every caller happens to agree. It carries
-+           its own aria-live because #scale-sheet is aria-modal, which puts
-+           the page-level .announce outside the dialog and out of reach. -->
-+      <div id="scale-refusal" aria-live="polite"></div>
-+      <p class="sheethint" id="scale-line-note"></p>
-+    </div>
-     <div id="scale-fields" role="group" aria-labelledby="scale-fields-head">
-       <p class="sheetlabel" id="scale-fields-head">YOUR SCALE, NOTE BY NOTE</p>
-       <div class="fieldrow">
-@@ -1405,32 +1431,6 @@
-       <p class="sr-only" id="scale-fields-live" aria-live="polite"></p>
-     </div>
-     <div id="scale-or" role="separator" aria-label="or"><span>OR</span></div>
--    <div class="fieldrow">
--      <label class="sheetlabel" for="scale-box">SCALE: (DING) TOP NOTES | OPTIONAL INNER NOTES</label>
--      <span class="sheetlabel" id="scale-label-2">[NOTE] = A BOTTOM NOTE, WRITTEN WHERE ITS PITCH FALLS</span>
--      <div id="scale-box-wrap" data-grow="[C] [D] (E) [F#] [G] [A] B [C] D E F# G A B [C] D E | F# G A">
--        <textarea id="scale-box" rows="1" wrap="soft" autocapitalize="off" autocorrect="off"
--                  autocomplete="off" spellcheck="false" enterkeyhint="go"
--                  aria-describedby="scale-label-2"
--                  placeholder="[C] [D] (E) [F#] [G] [A] B [C] D E F# G A B [C] D E | F# G A"></textarea>
+-    <div id="scale-fields" role="group" aria-labelledby="scale-fields-head">
+-      <p class="sheetlabel" id="scale-fields-head">YOUR SCALE, NOTE BY NOTE</p>
+-      <div class="fieldrow">
+-        <label class="sheetlabel" id="scale-ding-label" for="scale-ding">DING</label>
+-        <input id="scale-ding" type="text" placeholder="D3" autocapitalize="off" autocorrect="off"
+-               autocomplete="off" spellcheck="false" enterkeyhint="next" aria-describedby="scale-field-msg">
 -      </div>
--      <div id="scale-parse"></div>
--      <!-- Owner feedback, 2026-09-21: a refusal rendered below the pan is
--           below the fold on an iPhone 14 with the keyboard up, so the user
--           retypes a seed whose reason they never saw. It belongs directly
--           under the field it is about, inside the same .fieldrow group.
--           This element carries SEED REFUSALS ONLY - it is not the sheet's
--           message area. #scale-msg keeps that job, in #scale-guidance below the scroll, because a
--           warning or a success notice is not about the field and must not
--           compete for this row. Refusals never go through say(): sharing one
--           reserved line with the parse line only works while exactly one of
--           the two is filled, and showRefusal()/showParse() are what make that
--           true rather than hoping every caller happens to agree. It carries
--           its own aria-live because #scale-sheet is aria-modal, which puts
--           the page-level .announce outside the dialog and out of reach. -->
--      <div id="scale-refusal" aria-live="polite"></div>
--      <p class="sheethint" id="scale-line-note"></p>
+-      <div class="fieldrow">
+-        <label class="sheetlabel" id="scale-top-label" for="scale-top">TOP RIM NOTES, LOW TO HIGH</label>
+-        <input id="scale-top" type="text" placeholder="A Bb C D E F G A" autocapitalize="off" autocorrect="off"
+-               autocomplete="off" spellcheck="false" enterkeyhint="next" aria-describedby="scale-field-msg">
+-      </div>
+-      <div class="fieldrow">
+-        <label class="sheetlabel" id="scale-inner-label" for="scale-inner">TOP INNER NOTES, LOW TO HIGH (OPTIONAL)</label>
+-        <input id="scale-inner" type="text" placeholder="C5 D5" autocapitalize="off" autocorrect="off"
+-               autocomplete="off" spellcheck="false" enterkeyhint="next" aria-describedby="scale-field-msg">
+-      </div>
+-      <div class="fieldrow">
+-        <label class="sheetlabel" id="scale-bottom-label" for="scale-bottom">BOTTOM NOTES, LOW TO HIGH (OPTIONAL)</label>
+-        <input id="scale-bottom" type="text" placeholder="C3 Eb3" autocapitalize="off" autocorrect="off"
+-               autocomplete="off" spellcheck="false" enterkeyhint="done" aria-describedby="scale-field-msg">
+-      </div>
+-      <p class="sheethint" id="scale-fields-note"></p>
+-      <p class="sr-only" id="scale-fields-live" aria-live="polite"></p>
 -    </div>
-     <!-- Inside .sheetbody, in the scroll. It used to be pinned below the
-          scrollport with the primary, on the argument that everything outside
-          .sheetbody is what the sheet guarantees without scrolling - so the
+-    <div id="scale-or" role="separator" aria-label="or"><span>OR</span></div>
+     <div class="fieldrow">
+       <label class="sheetlabel" for="scale-box">SCALE: (DING) TOP NOTES | OPTIONAL INNER NOTES</label>
+       <span class="sheetlabel" id="scale-label-2">[NOTE] = A BOTTOM NOTE, WRITTEN WHERE ITS PITCH FALLS</span>
+@@ -1483,6 +1457,32 @@ html.about-open{overflow:hidden}
+       <div id="scale-refusal" aria-live="polite"></div>
+       <p class="sheethint" id="scale-line-note"></p>
+     </div>
++    <div id="scale-fields" role="group" aria-labelledby="scale-fields-head">
++      <p class="sheetlabel" id="scale-fields-head">YOUR SCALE, NOTE BY NOTE</p>
++      <div class="fieldrow">
++        <label class="sheetlabel" id="scale-ding-label" for="scale-ding">DING</label>
++        <input id="scale-ding" type="text" placeholder="D3" autocapitalize="off" autocorrect="off"
++               autocomplete="off" spellcheck="false" enterkeyhint="next" aria-describedby="scale-field-msg">
++      </div>
++      <div class="fieldrow">
++        <label class="sheetlabel" id="scale-top-label" for="scale-top">TOP RIM NOTES, LOW TO HIGH</label>
++        <input id="scale-top" type="text" placeholder="A Bb C D E F G A" autocapitalize="off" autocorrect="off"
++               autocomplete="off" spellcheck="false" enterkeyhint="next" aria-describedby="scale-field-msg">
++      </div>
++      <div class="fieldrow">
++        <label class="sheetlabel" id="scale-inner-label" for="scale-inner">TOP INNER NOTES, LOW TO HIGH (OPTIONAL)</label>
++        <input id="scale-inner" type="text" placeholder="C5 D5" autocapitalize="off" autocorrect="off"
++               autocomplete="off" spellcheck="false" enterkeyhint="next" aria-describedby="scale-field-msg">
++      </div>
++      <div class="fieldrow">
++        <label class="sheetlabel" id="scale-bottom-label" for="scale-bottom">BOTTOM NOTES, LOW TO HIGH (OPTIONAL)</label>
++        <input id="scale-bottom" type="text" placeholder="C3 Eb3" autocapitalize="off" autocorrect="off"
++               autocomplete="off" spellcheck="false" enterkeyhint="done" aria-describedby="scale-field-msg">
++      </div>
++      <p class="sheethint" id="scale-fields-note"></p>
++      <p class="sr-only" id="scale-fields-live" aria-live="polite"></p>
++    </div>
++    <div id="scale-or" role="separator" aria-label="or"><span>OR</span></div>
+     </div>
+     <div id="scale-panel-layout" role="tabpanel" aria-labelledby="scale-tab-layout" hidden>
+     <div id="scale-plate-band">

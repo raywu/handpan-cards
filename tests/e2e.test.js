@@ -3315,13 +3315,18 @@ function run() {
       await b.eval(`const box = document.getElementById("scale-box");
         box.value = "[C3] (D3) A3 C4 D4";
         box.dispatchEvent(new Event("input", { bubbles: true })); return true;`);
-      const hits = await b.eval(`
-        const out = { small: [], swatches: [] };
+      const small = await b.eval(`
+        const out = [];
         const sel = "#decks .chip, #scale-box, #scale-tab-scale, #scale-tab-layout, #scale-next";
         for (const el of document.querySelectorAll(sel)) {
           const r = el.getBoundingClientRect();
-          if (r.height < 44) out.small.push((el.id || el.className) + " " + r.height.toFixed(1));
+          if (r.height < 44) out.push((el.id || el.className) + " " + r.height.toFixed(1));
         }
+        return out;`);
+      assert.deepStrictEqual(small, [], "controls shorter than 44px");
+      await openDrawer();
+      const hits = await b.eval(`
+        const out = { swatches: [] };
         // The palette swatches are 14px by spec, so their hit area is an
         // invisible overlay: probe it instead of measuring the dot.
         for (const dot of document.querySelectorAll("#scale-swatches .dot")) {
@@ -3336,11 +3341,9 @@ function run() {
         }
         return out;
       `);
-      assert.deepStrictEqual(hits.small, [], "controls shorter than 44px");
       assert.strictEqual(hits.swatches.length, 6);
       assert.ok(hits.swatches.every(Boolean),
         `a palette swatch has no 44px hit area: ${JSON.stringify(hits.swatches)}`);
-      await b.eval(`document.getElementById("scale-tab-layout").click(); return true;`);
       const layer = await b.eval(`
         const out = [];
         for (const id of ["scale-generate", "scale-mirror", "scale-mirror-bottom", "scale-anchor-one", "scale-anchor-between"]) {
@@ -3390,6 +3393,7 @@ function run() {
     await b.setViewport(380, 780, true);
     try {
       await openSheet();
+      await openDrawer();
       const probe = await b.eval(`
         const dots = [...document.querySelectorAll("#scale-swatches .dot")];
         const name = (el) => !el ? "null"
@@ -5022,17 +5026,16 @@ function run() {
     }
   });
 
-  test("RD: the Edit page's Tab order is BACK, the Scale tab, name, the fields, box, swatches, SAVE CHANGES, DELETE on the Scale tab, forward and back, and no stop is a select", async () => {
+  test("RD: the Edit page's Tab order is BACK, the Scale tab, name, the fields, box, SAVE CHANGES, DELETE on the Scale tab, forward and back, and no stop is a select", async () => {
     try {
       await editFreshDeck();
       await b.setViewport(380, 800, true);
       const stop = () => b.eval(`
         const el = document.activeElement;
         return (el && (el.id || el.getAttribute("aria-label"))) || "";`);
-      const n = await b.eval(`return document.querySelectorAll("#scale-swatches button").length;`);
-      assert.ok(n > 0, "no swatches");
-      const swatches = Array.from({ length: n }, (_, i) => `Palette ${i + 1}`);
-      const cycle = n + 10;
+      assert.strictEqual(await b.eval(`return document.getElementById("scale-panel-scale").hidden;`), false,
+        "the Edit page did not open on the Scale tab");
+      const cycle = 10;
       const walk = async (start, shift) => {
         await b.eval(`document.getElementById(${JSON.stringify(start)}).focus(); return true;`);
         const seen = [];
@@ -5044,12 +5047,106 @@ function run() {
       };
       const forward = await walk("scale-back", false);
       assert.deepStrictEqual(forward,
-        ["scale-tab-scale", "scale-name", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box", ...swatches, "scale-generate", "scale-delete", "scale-back"]);
+        ["scale-tab-scale", "scale-name", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box", "scale-generate", "scale-delete", "scale-back"]);
       const backward = await walk("scale-delete", true);
       assert.deepStrictEqual(backward,
-        ["scale-generate", ...swatches.slice().reverse(), "scale-box", "scale-bottom", "scale-inner", "scale-top", "scale-ding", "scale-name", "scale-tab-scale", "scale-back", "scale-delete"]);
+        ["scale-generate", "scale-box", "scale-bottom", "scale-inner", "scale-top", "scale-ding", "scale-name", "scale-tab-scale", "scale-back", "scale-delete"]);
       assert.strictEqual(await b.eval(`return document.querySelector("#scale-sheet select");`), null,
         "the Edit sheet still holds a select");
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("SPB: the Scale tab's Tab stops end box, primary, DELETE with no swatch; the Layout tab's run RESET LAYOUT, the six swatches, primary, DELETE, forward and back, on create and Edit", async () => {
+    const swatches = Array.from({ length: 6 }, (_, i) => `Palette ${i + 1}`);
+    const ran = [];
+    const stop = () => b.eval(`
+      const el = document.activeElement;
+      return (el && (el.id || el.getAttribute("aria-label"))) || "";`);
+    const walk = async (cycle, shift) => {
+      await b.eval(`document.getElementById("scale-back").focus(); return true;`);
+      const seen = [];
+      for (let i = 0; i < cycle.length; i++) {
+        await tabKey(shift);
+        seen.push(await stop());
+      }
+      return seen;
+    };
+    const both = async (label, cycle) => {
+      assert.ok(cycle.length > 5, `${label}: the expected cycle is too short to mean anything`);
+      assert.deepStrictEqual(await walk(cycle, false), [...cycle.slice(1), cycle[0]], `${label}: forward`);
+      assert.deepStrictEqual(await walk(cycle, true), [...cycle.slice(1).reverse(), cycle[0]], `${label}: backward`);
+    };
+    try {
+      for (const mode of ["create", "edit"]) {
+        const edit = mode === "edit";
+        if (edit) await editFreshDeck();
+        else {
+          await freshLoad();
+          await b.setViewport(380, 840, true);
+          await openSheet();
+          await typeScale(EDIT_SCALE);
+        }
+        assert.strictEqual(await b.eval(`return document.getElementById("scale-delete-row").hidden;`), !edit,
+          `${mode}: the DELETE row is ${edit ? "hidden on Edit" : "shown on create"}`);
+        assert.strictEqual(await b.eval(`return document.querySelectorAll("#scale-swatches button").length;`), 6, `${mode}: six swatches`);
+
+        assert.strictEqual(await b.eval(`return document.getElementById("scale-panel-scale").hidden;`), false, `${mode}: opens on the Scale tab`);
+        const scaleCycle = edit
+          ? ["scale-back", "scale-tab-scale", "scale-name", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box", "scale-generate", "scale-delete"]
+          : ["scale-back", "scale-tab-scale", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box", "scale-next"];
+        await both(`${mode} Scale tab`, scaleCycle);
+        assert.ok(!scaleCycle.some((id) => swatches.includes(id)), "the Scale cycle names a swatch");
+        ran.push(`${mode}/scale`);
+
+        await openDrawer();
+        await b.click("#scale-anchor-between");
+        assert.strictEqual(await b.eval(`return document.getElementById("scale-layout-reset").disabled;`), false,
+          `${mode}: RESET LAYOUT is a stop only once a layout change enables it`);
+        const panhit = await b.eval(`const el = document.querySelector('#scale-preview .panhit[tabindex="0"]'); return el ? (el.id || el.getAttribute("aria-label") || "") : null;`);
+        assert.notStrictEqual(panhit, null, `${mode}: the plate is not a tab stop`);
+        const layoutCycle = ["scale-back", "scale-tab-layout", panhit, "scale-anchor-one", "scale-anchor-between", "scale-mirror",
+          "scale-fine-toggle", "scale-layout-reset", ...swatches, "scale-generate", ...(edit ? ["scale-delete"] : [])];
+        await both(`${mode} Layout tab`, layoutCycle);
+        ran.push(`${mode}/layout`);
+        assert.strictEqual(await b.eval(`return document.querySelector("#scale-sheet select");`), null, `${mode}: the sheet holds a select`);
+      }
+      assert.deepStrictEqual(ran, ["create/scale", "create/layout", "edit/scale", "edit/layout"]);
+    } finally {
+      await b.key("Escape", "Escape", 27);
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("SPB: at 380x780 a swatch picked on the Layout tab survives a switch to Scale and back and is the palette GENERATE CARDS saves", async () => {
+    try {
+      await freshLoad();
+      await b.setViewport(380, 780, true);
+      await openSheet();
+      await typeScale(EDIT_SCALE);
+      const pressed = () => b.eval(`return [...document.querySelectorAll("#scale-swatches .dot")].map(d => d.getAttribute("aria-pressed"));`);
+      const PICK = 4;
+      const want = ["false", "false", "false", "false", "true", "false"];
+      await openDrawer();
+      assert.deepStrictEqual(await pressed(), ["true", "false", "false", "false", "false", "false"], "palette 1 is not the default");
+      await b.eval(`document.querySelectorAll("#scale-swatches button")[${PICK}].scrollIntoView({ block: "center" }); return true;`);
+      await b.click(`#scale-swatches > *:nth-child(${PICK + 1})`);
+      assert.deepStrictEqual(await pressed(), want, "the tap did not pick the fifth swatch");
+
+      await b.eval(`document.getElementById("scale-tab-scale").scrollIntoView({ block: "nearest" }); return true;`);
+      await b.click("#scale-tab-scale");
+      await b.waitFor(`!document.getElementById("scale-panel-scale").hidden`, { label: "the Scale tab" });
+      assert.strictEqual(await b.eval(`return document.getElementById("scale-swatches").getClientRects().length;`), 0,
+        "the swatches are rendered on the Scale tab");
+      await openDrawer();
+      assert.deepStrictEqual(await pressed(), want, "the pick did not survive Scale and back");
+      assert.strictEqual(await b.eval(`return document.querySelectorAll("#scale-swatches .dot")[${PICK}].classList.contains("sel");`), true);
+
+      await clickGenerate();
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet to close after GENERATE CARDS" });
+      const saved = await b.eval(`return JSON.parse(localStorage.getItem("hpfc.scales.v3") || "[]").map(r => r.o && r.o.palette);`);
+      assert.deepStrictEqual(saved, [PICK], "the saved deck record does not carry the picked palette");
     } finally {
       await b.setViewport(900, 900, false);
     }
@@ -5516,7 +5613,9 @@ function run() {
      "the sheet does not change height as the seed is typed" nor
      "the pan does not move when the seed goes bad" could see them: the row
      took two lines, the pan stepped 26.59px under the finger, and
-     #scale-swatches' bottom reached 785.69 against a 780px viewport.
+     the last row's bottom (then #scale-swatches, now the Scale tab's
+     #scale-box-wrap since the palette moved to Layout) reached 785.69 against
+     a 780px viewport.
      The fix is one element per role - #scale-refusal in the .fieldrow for
      seed refusals, #scale-msg below the pan for everything else - so what
      these assert is that a message which is NOT about the seed never enters
@@ -5526,7 +5625,7 @@ function run() {
     const port = document.querySelector(".sheetbody");
     const prev = port.scrollTop;
     port.scrollTop = port.scrollHeight;
-    const row = document.getElementById("scale-swatches").getBoundingClientRect();
+    const row = document.getElementById("scale-box-wrap").getBoundingClientRect();
     const r = { rowBottom: row.bottom, portBottom: port.getBoundingClientRect().bottom };
     port.scrollTop = prev;
     return r;
@@ -5542,7 +5641,7 @@ function run() {
       await generate("(C3) G3 D4 G4 D5");
       await openEdit();
       const read = () => b.eval(`
-        const row = document.getElementById("scale-swatches").getBoundingClientRect();
+        const row = document.getElementById("scale-box-wrap").getBoundingClientRect();
         return {
           panTop: document.getElementById("scale-preview").getBoundingClientRect().top,
           rowBottom: row.bottom,
@@ -5572,8 +5671,8 @@ function run() {
         `top ${warned.msgTop.toFixed(1)}px, scrollport bottom ${warned.portBottom.toFixed(1)}px)`);
       const reach = await layoutRowReachable();
       assert.ok(reach.rowBottom <= reach.portBottom + 0.5,
-        `#scale-swatches' bottom is ${reach.rowBottom.toFixed(1)}px against a scrollport ending ` +
-        `at ${reach.portBottom.toFixed(1)}px - the LAYOUT row is out of reach`);
+        `#scale-box-wrap's bottom is ${reach.rowBottom.toFixed(1)}px against a scrollport ending ` +
+        `at ${reach.portBottom.toFixed(1)}px - the Scale tab's last row is out of reach`);
 
       // The next keystroke re-syncs the parse line. If the warning shared that
       // row, the row would shrink back to one line and step the pan.
@@ -5605,7 +5704,7 @@ function run() {
       await openEdit();
 
       const read = () => b.eval(`
-        const row = document.getElementById("scale-swatches").getBoundingClientRect();
+        const row = document.getElementById("scale-box-wrap").getBoundingClientRect();
         return {
           panTop: document.getElementById("scale-preview").getBoundingClientRect().top,
           rowBottom: row.bottom,
@@ -5632,8 +5731,8 @@ function run() {
         `(before=${before.panTop.toFixed(1)}, after=${after.panTop.toFixed(1)})`);
       const reach = await layoutRowReachable();
       assert.ok(reach.rowBottom <= reach.portBottom + 0.5,
-        `#scale-swatches' bottom is ${reach.rowBottom.toFixed(1)}px against a scrollport ending ` +
-        `at ${reach.portBottom.toFixed(1)}px - the refusal pushed LAYOUT out of reach`);
+        `#scale-box-wrap's bottom is ${reach.rowBottom.toFixed(1)}px against a scrollport ending ` +
+        `at ${reach.portBottom.toFixed(1)}px - the refusal pushed the Scale tab's last row out of reach`);
     } finally {
       await b.setViewport(900, 900, false);
     }
@@ -6114,6 +6213,7 @@ function run() {
 
       await selectChipAt(at);
       await openEdit();
+      await openDrawer();
       await b.click("#scale-swatches > *:nth-child(5)");    // an OPTION only: the id cannot move
       await clickGenerate();
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
@@ -8010,7 +8110,7 @@ function run() {
       const top = async () => {
         await b.settle();
         return b.eval(`
-          return document.querySelector("#scale-panel-scale .ctlrow").getBoundingClientRect().top;
+          return document.getElementById("scale-box-wrap").parentElement.getBoundingClientRect().bottom;
         `);
       };
       // No EMPTY-vs-typed comparison here: the first keystroke legitimately

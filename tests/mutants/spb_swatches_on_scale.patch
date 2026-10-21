@@ -1,0 +1,32 @@
+# kills: SPB: #scale-swatches is the last child of #scale-panel-layout after #scale-layout-zone, in an .editrow whose span.sheetlabel#scale-palette-label (text CARD PALETTE) names the group through aria-labelledby
+# suite: node --test --test-name-pattern ^SPB:.#scale-swatches.is.the.last.child.of.#scale-panel-layout.after.#scale-layout-zone,.in.an..editrow.whose.span.sheetlabel#scale-palette-label..text.CARD.PALETTE..names.the.group.through.aria-labelledby$ tests/app.test.js
+# The palette row goes back to the foot of the Scale panel; the Layout panel no longer ends with it.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1483,6 +1483,12 @@ html.about-open{overflow:hidden}
+       <div id="scale-refusal" aria-live="polite"></div>
+       <p class="sheethint" id="scale-line-note"></p>
+     </div>
++    <div class="editrow">
++      <span class="sheetlabel" id="scale-palette-label">CARD PALETTE</span>
++      <div class="ctlrow">
++        <div id="scale-swatches" role="group" aria-labelledby="scale-palette-label"></div>
++      </div>
++    </div>
+     </div>
+     <div id="scale-panel-layout" role="tabpanel" aria-labelledby="scale-tab-layout" hidden>
+     <div id="scale-plate-band">
+@@ -1564,12 +1570,6 @@ html.about-open{overflow:hidden}
+          tests/mutants/e_sheet_primary_back_in_the_scroll.patch, which dies on
+          "GENERATE CARDS is reachable without scrolling at every phone
+          viewport". -->
+-    <div class="editrow">
+-      <span class="sheetlabel" id="scale-palette-label">CARD PALETTE</span>
+-      <div class="ctlrow">
+-        <div id="scale-swatches" role="group" aria-labelledby="scale-palette-label"></div>
+-      </div>
+-    </div>
+     </div>
+    </div>
+     <!-- The page's messages, pinned with the primary: everything say() writes
