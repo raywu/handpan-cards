@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10807,7 +10807,7 @@
-   lipDrag = null;
+@@ -10855,7 +10855,7 @@
+   lipParked = null;
    lipTouching = !!(e && e.touches && e.touches.length);
  };
 -for (const ev of ["touchend", "touchcancel"]) sheet.addEventListener(ev, lipDragStop, { passive: true, capture: true });
 +for (const ev of ["touchend"]) sheet.addEventListener(ev, lipDragStop, { passive: true, capture: true });
- const lipTouchClear = () => { lipTouching = false; lipDrag = null; lipDragEnd = 0; };
+ const lipTouchClear = () => { if (lipDrag) lipParked = lipDrag; lipFling = null; lipTouching = false; lipDrag = null; lipDragEnd = 0; };
  sheet.addEventListener("wheel", lipTouchClear, { passive: true, capture: true });
- sheet.addEventListener("keydown", lipTouchClear, { capture: true });
+ sheet.addEventListener("keydown", (e) => { if (lipScrollKey(e)) lipTouchClear(); }, { capture: true });

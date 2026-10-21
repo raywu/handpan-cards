@@ -1,0 +1,14 @@
+# kills: LG: a drag that scrolls #scale-box's own content never acts, in the finger phase or its fling
+# suite: node --test --test-name-pattern ^LG..a.drag.that.scrolls..scale.box.s.own.content.never.acts..in.the.finger.phase.or.its.fling$ tests/app.test.js
+# The scrollTop latch is gone, so a drag that scrolls the seed box acts.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10830,7 +10830,6 @@
+     if (Math.hypot(p.clientX - L.x0, p.clientY - L.y0) <= 8) return;
+     L.moved = true;
+   }
+-  if (L.box && L.box.scrollTop !== L.boxTop) { lipDrag = null; return; }
+   if (L.plate && press && press.lifted) { lipDrag = null; return; }
+   if (p.clientY !== L.py) L.lastMoveWay = p.clientY < L.py ? "up" : "down";
+   L.py = p.clientY;

@@ -1,0 +1,15 @@
+# kills: LG: a 60px drag from the plate on the Layout tab collapses and activates no note
+# suite: node --test --test-name-pattern ^LG..a.60px.drag.from.the.plate.on.the.Layout.tab.collapses.and.activates.no.note$ tests/app.test.js
+# lipNeverArms excludes the plate again, so a drag from the plate arms nothing.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10797,7 +10797,7 @@
+ };
+ sheet.addEventListener("keydown", (e) => { if (lipScrollKey(e)) lipUser(); }, true);
+ let lipDrag = null, lipDragEnd = 0, lipTouching = false, lipParked = null;
+-const lipNeverArms = (t) => !!(t && t.closest && t.closest("#scale-lip, select"));
++const lipNeverArms = (t) => !!(t && t.closest && t.closest("#scale-lip, select, #scale-preview"));
+ const lipFocusedField = (t) => {
+   const a = document.activeElement;
+   return !!(a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.contains && t && a.contains(t));

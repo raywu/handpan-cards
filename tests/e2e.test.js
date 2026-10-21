@@ -14327,7 +14327,7 @@ function run() {
       await b.setViewport(900, 900, false);
     };
 
-    test("UX: a real touch swipe down collapses the footer to a 2px lip, a swipe up restores it, with no flicker under momentum", { timeout: 90000 }, async () => {
+    test("UX: a real touch swipe down collapses the footer to a 5px lip, a swipe up restores it, with no flicker under momentum", { timeout: 90000 }, async () => {
       const fails = [];
       try {
         for (const [w, h] of [[380, 780], [844, 390], [1280, 800]]) {
@@ -14341,7 +14341,7 @@ function run() {
             if (!(s.lipped && s.shut)) fails.push(`${ctx}: a swipe down did not collapse (${JSON.stringify(s)})`);
             else {
               const foot = await b.eval(`return document.getElementById("scale-foot").getBoundingClientRect().height;`);
-              if (foot > 2.5) fails.push(`${ctx}: the shut footer is ${foot}px, not 2`);
+              if (Math.abs(foot - 5) > 0.5) fails.push(`${ctx}: the shut footer is ${foot}px, not 5`);
               if (s.lippedFlips !== 1) fails.push(`${ctx}: ${s.lippedFlips} lip changes under momentum, not 1`);
             }
             await restoreBySwipe();
@@ -14404,39 +14404,203 @@ function run() {
       } finally { await reset(); }
     });
 
-    test("PH: P3 a drag that starts on a field, on the plate or with a second finger changes the lip zero times across the gesture and its settle, at 390x797 and 380x780", { timeout: 120000 }, async () => {
+    test("PH: P3 a drag with a second finger or mostly sideways changes the lip zero times across the gesture and its settle, at 390x797 and 380x780", { timeout: 120000 }, async () => {
       try {
         for (const [w, h] of [[390, 797], [380, 780]]) {
           await lipOpen(w, h, { spacer: 0 });
           const sc = await gap();
           assert.ok(sc.M < sc.E, `${w}x${h}: this proves nothing unless the Scale range ${sc.M} is under the footer ${sc.E}`);
-          await pull(-60, { sel: "#scale-box" });
-          await sleep(600);
-          assert.strictEqual((await lipState()).flips, 0, `${w}x${h}: a drag from the seed box changed the lip`);
-          await b.eval(`document.getElementById("scale-tab-layout").click(); return true;`);
-          await sleep(400);
-          const ly = await b.eval(`const body = document.querySelector("#scale-sheet .sheetbody"), surf = document.querySelector("#scale-sheet .sheetsurf") || document.getElementById("scale-sheet");
-            return { M: body.scrollHeight - body.clientHeight, t: body.scrollTop, E: surf.getBoundingClientRect().bottom - body.getBoundingClientRect().bottom };`);
-          assert.ok(ly.M - ly.t > ly.E, `${w}x${h}: this proves nothing unless the Layout range ${ly.M} - ${ly.t} is over the footer ${ly.E}, where the scroll rule would collapse and then restore`);
-          const before = (await lipState()).flips;
-          await pull(-60, { sel: "#scale-preview", ms: 90 });
-          await sleep(700);
-          const s = await lipState();
-          assert.strictEqual(s.flips - before, 0, `${w}x${h}: a drag from the plate changed the lip ${s.flips - before} times (${JSON.stringify(s)})`);
-          assert.strictEqual(s.lipped, false, `${w}x${h}: a drag from the plate left the lip changed`);
-          await b.eval(`document.getElementById("scale-tab-scale").click(); return true;`);
-          await sleep(300);
           const bb = await bodyBox();
           const y = Math.round(bb.top + bb.h / 2);
+          const before = (await lipState()).flips;
           await finger2("touchStart", [[100, y], [200, y]]);
           for (let i = 1; i <= 6; i++) await finger2("touchMove", [[100, y - i * 10], [200, y - i * 10]]);
           await finger2("touchEnd", []);
           await sleep(700);
           assert.strictEqual((await lipState()).flips, before, `${w}x${h}: a two-finger drag changed the lip`);
+          const before2 = (await lipState()).flips;
           await b.drag(".sheetbody", [[20, 30, -5], [60, 60, -10], [120, 90, -24]], { y0: 0 });
           await sleep(500);
-          assert.strictEqual((await lipState()).flips, before, `${w}x${h}: a sideways drag changed the lip`);
+          assert.strictEqual((await lipState()).flips, before2, `${w}x${h}: a sideways drag changed the lip`);
         }
+      } finally { await reset(); }
+    });
+
+    const lgWatch = () => b.eval(`
+      window.__lg = { clicks: 0, focusin: 0 };
+      document.addEventListener("click", () => { window.__lg.clicks += 1; }, true);
+      document.addEventListener("focusin", () => { window.__lg.focusin += 1; }, true);
+      return true;`);
+    const lgSeen = () => b.eval(`return { clicks: window.__lg.clicks, focusin: window.__lg.focusin, active: (document.activeElement || {}).id || document.activeElement.tagName };`);
+    const lgDrag = async (sel, dy, { ms = 90 } = {}) => {
+      const pts = [];
+      for (let i = 1; i <= 6; i++) pts.push([0, Math.round((ms * i) / 6), Math.round((dy * i) / 6)]);
+      await b.drag(sel, pts, { y0: 0 });
+      await sleep(700);
+    };
+    const lgReplay = async (ctx, w, h, sel, dy, startShut) => {
+      await lipOpen(w, h, { spacer: 900 });
+      await lgWatch();
+      if (startShut) {
+        await wheelBody(300);
+        await wheelBody(300);
+        assert.ok((await lipState()).shut, `${ctx}: the footer did not shut first`);
+      }
+      const hit = await b.eval(`
+        const el = document.querySelector(${JSON.stringify(sel)}), body = document.querySelector("#scale-sheet .sheetbody");
+        if (${startShut ? "true" : "false"}) body.scrollTop = Math.min(258, body.scrollHeight - body.clientHeight);
+        else { const r0 = el.getBoundingClientRect(), b0 = body.getBoundingClientRect(); if (r0.top < b0.top || r0.bottom > b0.bottom) body.scrollTop = 0; }
+        const r = el.getBoundingClientRect(), t = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+        return { ok: !!t && (t === el || el.contains(t)), top: body.scrollTop };`);
+      await sleep(400);
+      const before = await lipState();
+      const seen0 = await lgSeen();
+      if (!hit.ok) return { skipped: true, ctx };
+      await lgDrag(sel, dy);
+      const after = await lipState();
+      const seen = await lgSeen();
+      return { skipped: false, ctx, flips: after.lippedFlips - before.lippedFlips, shut: after.shut, lipped: after.lipped, seen0, seen };
+    };
+
+    test("LG: replay t109947 at 750x294 and 390x629: a -156px finger-down drag that starts on #scale-bottom while shut restores, focuses nothing and clicks nothing", { timeout: 120000 }, async () => {
+      const fails = [];
+      let ran = 0;
+      try {
+        for (const [w, h] of [[750, 294], [390, 629]]) {
+          const r = await lgReplay(`${w}x${h}`, w, h, "#scale-bottom", 156, true);
+          if (r.skipped) { fails.push(`${r.ctx}: #scale-bottom is not hit-testable at its centre`); continue; }
+          ran += 1;
+          if (r.flips !== 1 || r.lipped) fails.push(`${r.ctx}: ${r.flips} lip changes, lipped ${r.lipped}, not one restore`);
+          if (r.seen.active !== r.seen0.active) fails.push(`${r.ctx}: focus moved from ${r.seen0.active} to ${r.seen.active}`);
+          if (r.seen.clicks !== 0 || r.seen.focusin !== 0) fails.push(`${r.ctx}: ${r.seen.clicks} clicks and ${r.seen.focusin} focusin reached the page`);
+        }
+      } finally { await reset(); }
+      assert.deepStrictEqual(fails, [], fails.join("\n"));
+      assert.strictEqual(ran, 2);
+    });
+
+    test("LG: replay t116083 at 390x629 and 750x294: a +132px finger-up drag that starts on #scale-top while open collapses, focuses nothing and clicks nothing", { timeout: 120000 }, async () => {
+      const fails = [];
+      try {
+        for (const [w, h] of [[390, 629], [750, 294]]) {
+          const r = await lgReplay(`${w}x${h}`, w, h, "#scale-top", -132, false);
+          if (r.skipped) { fails.push(`${r.ctx}: #scale-top is not hit-testable at its centre`); continue; }
+          if (r.flips !== 1 || !r.shut) fails.push(`${r.ctx}: ${r.flips} lip changes, shut ${r.shut}, not one collapse`);
+          if (r.seen.active !== r.seen0.active) fails.push(`${r.ctx}: focus moved from ${r.seen0.active} to ${r.seen.active}`);
+          if (r.seen.clicks !== 0 || r.seen.focusin !== 0) fails.push(`${r.ctx}: ${r.seen.clicks} clicks and ${r.seen.focusin} focusin reached the page`);
+        }
+      } finally { await reset(); }
+      assert.deepStrictEqual(fails, [], fails.join("\n"));
+    });
+
+    test("LG: a 60px drag from the plate on the Layout tab collapses once and activates no note, at 390x797 and 380x780", { timeout: 120000 }, async () => {
+      try {
+        for (const [w, h] of [[390, 797], [380, 780]]) {
+          await lipOpen(w, h, { spacer: 0 });
+          await b.eval(`document.getElementById("scale-tab-layout").click(); return true;`);
+          await sleep(400);
+          await lgWatch();
+          const ly = await b.eval(`const body = document.querySelector("#scale-sheet .sheetbody"), surf = document.querySelector("#scale-sheet .sheetsurf") || document.getElementById("scale-sheet");
+            return { M: body.scrollHeight - body.clientHeight, t: body.scrollTop, E: surf.getBoundingClientRect().bottom - body.getBoundingClientRect().bottom };`);
+          assert.ok(ly.M - ly.t > ly.E, `${w}x${h}: this proves nothing unless the Layout range ${ly.M} - ${ly.t} is over the footer ${ly.E}`);
+          const plate0 = await b.eval(`return document.getElementById("scale-preview").innerHTML;`);
+          const before = (await lipState()).flips;
+          await pull(-60, { sel: "#scale-preview", ms: 90 });
+          await sleep(700);
+          const s = await lipState();
+          assert.strictEqual(s.flips - before, 1, `${w}x${h}: a drag from the plate changed the lip ${s.flips - before} times, not 1 (${JSON.stringify(s)})`);
+          assert.ok(s.lipped && s.shut, `${w}x${h}: the lip did not collapse`);
+          const seen = await lgSeen();
+          assert.strictEqual(seen.clicks, 0, `${w}x${h}: a click reached the page`);
+          assert.strictEqual(await b.eval(`return document.getElementById("scale-preview").innerHTML;`), plate0, `${w}x${h}: the plate changed, a note was activated`);
+        }
+      } finally { await reset(); }
+    });
+
+    test("LG: a 60px drag from #scale-box with no overflow acts once and leaves focus where it was, at 390x797 and 380x780", { timeout: 120000 }, async () => {
+      try {
+        for (const [w, h] of [[390, 797], [380, 780]]) {
+          await lipOpen(w, h, { spacer: 0 });
+          const sc = await gap();
+          assert.ok(sc.M < sc.E, `${w}x${h}: this proves nothing unless the Scale range ${sc.M} is under the footer ${sc.E}`);
+          await lgWatch();
+          const seen0 = await lgSeen();
+          const before = (await lipState()).flips;
+          await pull(-60, { sel: "#scale-box" });
+          await sleep(600);
+          const s = await lipState();
+          assert.strictEqual(s.flips - before, 1, `${w}x${h}: a drag from the seed box changed the lip ${s.flips - before} times, not 1`);
+          assert.ok(s.lipped && s.shut, `${w}x${h}: not collapsed`);
+          const seen = await lgSeen();
+          assert.strictEqual(seen.active, seen0.active, `${w}x${h}: focus moved`);
+          assert.strictEqual(seen.clicks + seen.focusin, 0, `${w}x${h}: a click or focusin reached a field`);
+        }
+      } finally { await reset(); }
+    });
+
+    test("LG: a real tap on each field focuses it, the pin holds it in view, and the lip does not change", { timeout: 120000 }, async () => {
+      try {
+        await lipOpen(390, 797, { spacer: 0 });
+        for (const id of ["scale-top", "scale-bottom", "scale-box"]) {
+          const before = (await lipState()).flips;
+          await b.drag(`#${id}`, [], { y0: 0 });
+          await sleep(500);
+          const r = await b.eval(`const e = document.getElementById(${JSON.stringify(id)}), q = e.getBoundingClientRect(); return { active: document.activeElement.id, top: q.top, bottom: q.bottom, ih: innerHeight };`);
+          assert.strictEqual(r.active, id, `a tap on #${id} did not focus it`);
+          assert.ok(r.top >= 0 && r.bottom <= r.ih, `#${id} is out of view after the tap (${JSON.stringify(r)})`);
+          assert.strictEqual((await lipState()).flips, before, `a tap on #${id} changed the lip`);
+        }
+      } finally { await reset(); }
+    });
+
+    test("LG: a drag in the focused #scale-box (selection) never acts and never blurs", { timeout: 120000 }, async () => {
+      try {
+        await lipOpen(390, 797, { spacer: 0 });
+        await b.eval(`document.getElementById("scale-box").focus(); return true;`);
+        await lgWatch();
+        const before = (await lipState()).flips;
+        await pull(-60, { sel: "#scale-box" });
+        await sleep(600);
+        assert.strictEqual((await lipState()).flips, before, "a drag in the focused box changed the lip");
+        assert.strictEqual((await lgSeen()).active, "scale-box", "the box lost focus");
+      } finally { await reset(); }
+    });
+
+    test("LG: with #scale-box overflowing, a drag that scrolls its content does not act; a drag past its edge acts", { timeout: 120000 }, async () => {
+      try {
+        await lipOpen(390, 797, { spacer: 0 });
+        const room = await b.eval(`
+          const el = document.getElementById("scale-box");
+          el.value = ${JSON.stringify("(D3) A3 C4 D4 E4\nF4 G4 A4 C5\n".repeat(4))};
+          el.style.height = "44px"; el.style.overflowY = "auto"; el.scrollTop = 0;
+          return el.scrollHeight - el.clientHeight;`);
+        assert.ok(room > 60, `this proves nothing unless the box overflows (${room})`);
+        await sleep(200);
+        const before = (await lipState()).flips;
+        await pull(-30, { sel: "#scale-box", ms: 90 });
+        await sleep(500);
+        const top = await b.eval(`return document.getElementById("scale-box").scrollTop;`);
+        assert.ok(top > 0, `the drag did not scroll the box (${top})`);
+        assert.strictEqual((await lipState()).flips, before, "a drag that scrolled the box changed the lip");
+        await b.eval(`const el = document.getElementById("scale-box"); el.scrollTop = el.scrollHeight; return true;`);
+        await sleep(200);
+        await pull(-60, { sel: "#scale-box", ms: 90 });
+        await sleep(500);
+        assert.strictEqual((await lipState()).flips - before, 1, "a drag past the box's edge did not act once");
+      } finally { await reset(); }
+    });
+
+    test("LG: a flick whose momentum carries the body collapses once, and its settle adds no flip, at 390x797", { timeout: 120000 }, async () => {
+      try {
+        await lipOpen(390, 797, { spacer: 900 });
+        await pull(-320, { ms: 60, sel: ".sheetbody", y0: 120 });
+        await sleep(900);
+        const s = await lipState();
+        assert.ok(s.top > 0, `the flick did not scroll the body (${JSON.stringify(s)})`);
+        assert.ok(s.lipped && s.shut, `not collapsed (${JSON.stringify(s)})`);
+        assert.strictEqual(s.lippedFlips, 1, `${s.lippedFlips} lip changes across the flick and its settle`);
+        await sleep(600);
+        assert.strictEqual((await lipState()).flips, s.flips, "the settle added a flip");
       } finally { await reset(); }
     });
 
@@ -14678,7 +14842,7 @@ function run() {
           return { inside: document.elementFromPoint(x, r.top + 1) === lip, above: document.elementFromPoint(x, r.top - 1) === lip,
             foot: document.getElementById("scale-foot").getBoundingClientRect().height };`);
         assert.ok(hit.inside && !hit.above, `the hit-test zone is not the 25px box (inside ${hit.inside}, above ${hit.above})`);
-        assert.ok(hit.foot <= 2.5, `the shut footer is ${hit.foot}px, not 2`);
+        assert.ok(Math.abs(hit.foot - 5) <= 0.5, `the shut footer is ${hit.foot}px, not 5`);
         assert.ok(Math.abs(m.bottom - (m.surfBottom - inset)) <= 1.5, `the lip bottom ${m.bottom} against the surface bottom ${m.surfBottom} less inset ${inset}`);
         const cx = (m.left + m.right) / 2;
         await tapAt(cx, m.top + 2);

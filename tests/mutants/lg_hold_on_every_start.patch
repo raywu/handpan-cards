@@ -1,0 +1,15 @@
+# kills: LG: a stationary press on an unfocused field for HOLD_MS then a 60px drag does not act
+# suite: node --test --test-name-pattern ^LG..a.stationary.press.on.an.unfocused.field.for.HOLD.MS.then.a.60px.drag.does.not.act$ tests/app.test.js
+# The hold guard covers every start, not only the newly armed surfaces.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10826,7 +10826,7 @@
+   if (!p) return;
+   if (L !== lipDrag) { lipDrag = L; lipParked = null; lipTouching = true; }
+   if (!L.moved) {
+-    if (L.fresh && Date.now() - L.t0 >= HOLD_MS) { lipDrag = null; return; }
++    if (Date.now() - L.t0 >= HOLD_MS) { lipDrag = null; return; }
+     if (Math.hypot(p.clientX - L.x0, p.clientY - L.y0) <= 8) return;
+     L.moved = true;
+   }

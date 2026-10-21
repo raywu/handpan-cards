@@ -4,12 +4,16 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10765,7 +10765,7 @@ function lipScroll() {
- const lipUser = () => { userWindowUntil = Date.now() + LIP_WINDOW; };
+@@ -10783,9 +10783,9 @@
  function lipScrollEvent() {
    const now = Date.now();
--  if (lipDrag || lipTouching || now < lipDragEnd) {
-+  if (false) {
-     if (!lipDrag) lipDragEnd = now + LIP_END_MS;
-     userWindowUntil = 0;
-     lipAcc = 0;
+   if (lipFling && now >= lipFling.until) lipFling = null;
+-  if (lipDrag || lipTouching) { userWindowUntil = 0; lipAcc = 0; lipScroll(); return; }
+-  if (lipFling) { userWindowUntil = 0; lipAcc = 0; lipFlingStep(now); lipScroll(); return; }
+-  if (now < lipDragEnd) { lipDragEnd = now + LIP_END_MS; userWindowUntil = 0; lipAcc = 0; }
++  if (false) { userWindowUntil = 0; lipAcc = 0; lipScroll(); return; }
++  if (false) { userWindowUntil = 0; lipAcc = 0; lipFlingStep(now); lipScroll(); return; }
++  if (false) { lipDragEnd = now + LIP_END_MS; userWindowUntil = 0; lipAcc = 0; }
+   lipScroll();
+ }
+ bandPort.addEventListener("scroll", lipScrollEvent, { passive: true });

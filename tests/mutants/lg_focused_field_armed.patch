@@ -1,0 +1,15 @@
+# kills: LG: a drag inside the focused field never acts, kb down included
+# suite: node --test --test-name-pattern ^LG..a.drag.inside.the.focused.field.never.acts..kb.down.included$ tests/app.test.js
+# The focused-field exclusion is gone, so a selection drag inside the focused field acts.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10800,7 +10800,7 @@
+ const lipNeverArms = (t) => !!(t && t.closest && t.closest("#scale-lip, select"));
+ const lipFocusedField = (t) => {
+   const a = document.activeElement;
+-  return !!(a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.contains && t && a.contains(t));
++  return false && !!(a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.contains && t && a.contains(t));
+ };
+ sheet.addEventListener("touchstart", (e) => {
+   const ts = e.touches;

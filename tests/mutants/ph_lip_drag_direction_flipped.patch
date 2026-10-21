@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10798,7 +10798,7 @@ sheet.addEventListener("touchmove", (e) => {
+@@ -10841,7 +10841,7 @@
    L.dir = dy > 0 ? 1 : -1;
    L.y = p.clientY;
    L.x = p.clientX;
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +  if (dy < 0) { if (!isLipShut()) collapseLip(); } else if (isLipShut()) restoreLip();
  }, { passive: true, capture: true });
  const lipDragStop = (e) => {
-   lipDragEnd = Date.now() + LIP_END_MS;
+   const L = lipDrag;

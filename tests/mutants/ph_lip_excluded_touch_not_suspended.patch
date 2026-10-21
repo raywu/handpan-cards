@@ -1,24 +1,24 @@
-# kills: PH: P3 a drag that starts on a field, on the plate or with a second finger changes the lip zero times across the gesture and its settle, at 390x797 and 380x780
-# suite: node --test --test-name-pattern ^PH..P3.a.drag.that.starts.on.a.field..on.the.plate.or.with.a.second.finger.changes.the.lip.zero.times.across.the.gesture.and.its.settle..at.390x797.and.380x780$ tests/e2e.test.js
-# An excluded start (plate, field, lip) or a second finger no longer suspends the scroll path, so the scroll rule collapses and then restores the footer during one touch.
+# kills: LG: an untracked touch (second finger, #scale-lip start, vetoed gesture) keeps the full P3 suspension through its momentum
+# suite: node --test --test-name-pattern ^LG..an.untracked.touch..second.finger...scale.lip.start..vetoed.gesture..keeps.the.full.P3.suspension.through.its.momentum$ tests/app.test.js
+# An untracked touch (second finger, lip start, vetoed gesture) no longer suspends the scroll path: lipTouching is not read and lipDragStop sets lipDragEnd only for a tracked drag.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10765,7 +10765,7 @@ function lipScroll() {
- const lipUser = () => { userWindowUntil = Date.now() + LIP_WINDOW; };
+@@ -10783,7 +10783,7 @@
  function lipScrollEvent() {
    const now = Date.now();
--  if (lipDrag || lipTouching || now < lipDragEnd) {
-+  if (lipDrag || now < lipDragEnd) {
-     if (!lipDrag) lipDragEnd = now + LIP_END_MS;
-     userWindowUntil = 0;
-     lipAcc = 0;
-@@ -10801,7 +10801,7 @@ sheet.addEventListener("touchmove", (e) => {
-   if (dy > 0) { if (!isLipShut()) collapseLip(); } else if (isLipShut()) restoreLip();
- }, { passive: true, capture: true });
- const lipDragStop = (e) => {
+   if (lipFling && now >= lipFling.until) lipFling = null;
+-  if (lipDrag || lipTouching) { userWindowUntil = 0; lipAcc = 0; lipScroll(); return; }
++  if (lipDrag) { userWindowUntil = 0; lipAcc = 0; lipScroll(); return; }
+   if (lipFling) { userWindowUntil = 0; lipAcc = 0; lipFlingStep(now); lipScroll(); return; }
+   if (now < lipDragEnd) { lipDragEnd = now + LIP_END_MS; userWindowUntil = 0; lipAcc = 0; }
+   lipScroll();
+@@ -10850,7 +10850,7 @@
+     const seed = L.lastMoveWay === "up" ? Math.max(0, t - L.bodyTop0) : Math.max(0, L.bodyTop0 - t);
+     lipFling = { way: L.lastMoveWay, done: false, acc: seed, prevT: t, prevM: lipRange(), until: Date.now() + LIP_END_MS };
+   }
 -  lipDragEnd = Date.now() + LIP_END_MS;
 +  if (lipDrag) lipDragEnd = Date.now() + LIP_END_MS;
    lipDrag = null;
+   lipParked = null;
    lipTouching = !!(e && e.touches && e.touches.length);
- };

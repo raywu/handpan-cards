@@ -1,0 +1,14 @@
+# kills: LG: a fling acts at most once: a touchmove collapse and a 482px tail is one collapse, and a lip click restore during a collapse fling's tail is not undone
+# suite: node --test --test-name-pattern ^LG..a.fling.acts.at.most.once..a.touchmove.collapse.and.a.482px.tail.is.one.collapse..and.a.lip.click.restore.during.a.collapse.fling.s.tail.is.not.undone$ tests/app.test.js
+# The fling never records that it acted, so it acts again.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10777,7 +10777,6 @@
+   if (s <= 0) return;
+   F.acc += s;
+   if (F.done || F.acc < LIP_PX) return;
+-  F.done = true;
+   if (F.way === "up") { if (!isLipShut()) collapseLip(); } else if (isLipShut()) restoreLip();
+ }
+ function lipScrollEvent() {
