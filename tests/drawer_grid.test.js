@@ -5,8 +5,8 @@
 //
 // Rule G (plan 20.16): with the drawer open, at every window size, on Add and
 // Edit, keyboard up or down, before and after a resize:
-//   G-a  the band is stuck only while scrollport height - band height >= 44
-//   G-b  scroll-padding-top equals the band height while stuck, else 0
+//   G-a  the band is stuck only while scrollport height - band height, the drawer status line included in portrait >= 44
+//   G-b  scroll-padding-top equals the band height (status line included in portrait) plus the status margin while stuck, else 0
 //   G-c  after a real Tab every stop is inside the scrollport and clear of a
 //        stuck band (a stop taller than its room: its top is in view below it)
 //   G-d  keyboard up: a focused text field shows as much open as closed
@@ -61,17 +61,23 @@ window.__d = (() => {
     const b = band();
     if (b && !b.contains(el) && s.contains(el) && getComputedStyle(b).position === "sticky") {
       const br = b.getBoundingClientRect();
-      if (br.right > r.left + 1 && br.left < r.right - 1 && br.bottom > lo && br.top < hi) {
-        const above = Math.max(0, Math.min(hi, br.top) - lo), below = Math.max(0, hi - Math.max(lo, br.bottom));
+      if (br.right > r.left + 1 && br.left < r.right - 1 && br.bottom + stackExtra().h > lo && br.top < hi) {
+        const bottom = br.bottom + stackExtra().h;
+        const above = Math.max(0, Math.min(hi, br.top) - lo), below = Math.max(0, hi - Math.max(lo, bottom));
         return r1(Math.max(above, below));
       }
     }
     return r1(hi - lo);
   }
+  function stackExtra() {
+    const t = document.getElementById("scale-drawer-status");
+    if (!t || t.hidden || getComputedStyle(sp()).display === "grid") return { h: 0, m: 0 };
+    return { h: t.getBoundingClientRect().height, m: parseFloat(getComputedStyle(t).marginBottom) || 0 };
+  }
   function state() {
-    const s = sp(), sr = s.getBoundingClientRect(), b = band(), br = b.getBoundingClientRect();
+    const s = sp(), sr = s.getBoundingClientRect(), b = band(), br = b.getBoundingClientRect(), x = stackExtra();
     const pad = parseFloat(getComputedStyle(s).scrollPaddingTop);
-    return { room: sr.height, spTop: sr.top, spBottom: sr.bottom, bandH: br.height, bandBottom: br.bottom,
+    return { room: sr.height, spTop: sr.top, spBottom: sr.bottom, bandH: br.height + x.h, bandBottom: br.bottom + x.h, gap: x.m,
       pos: getComputedStyle(b).position, pad: Number.isFinite(pad) ? pad : 0,
       open: document.getElementById("scale-layout-zone").classList.contains("open"),
       twoCol: getComputedStyle(s).display === "grid",
@@ -177,7 +183,7 @@ function run() {
       fail("G-a", `${stuck ? "stuck" : "not stuck"} with scrollport ${st.room.toFixed(1)} and band ${st.bandH.toFixed(1)} ` +
         `(window ${(st.room - st.bandH).toFixed(1)}, ${ONE_CONTROL} needed)`);
     }
-    const want = stuck ? st.bandH : 0;
+    const want = stuck ? st.bandH + st.gap : 0;
     if (Math.abs(st.pad - want) > 1) fail("G-b", `scroll-padding-top ${st.pad} while ${stuck ? "stuck with band " + st.bandH.toFixed(1) : "not stuck"}`);
     return stuck;
   }
