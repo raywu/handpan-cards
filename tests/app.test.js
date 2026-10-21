@@ -11687,7 +11687,7 @@ describe("UX: the footer lip", () => {
     assert.strictEqual(b.els["scale-sheet"].classList.contains("lipshut"), false, "a swipe restores");
   });
 
-  test("UX: Tab onto the lip restores the footer and focuses GENERATE CARDS, DELETE when GENERATE is disabled on Edit, else the last swatch", () => {
+  test("UX: Tab onto the lip restores the footer and focuses GENERATE CARDS, DELETE when GENERATE is disabled on Edit, else the shown tab's last stop", () => {
     const arrive = (app) => {
       collapsed(app, "arrive");
       app.els["scale-lip"].focus();
@@ -11706,9 +11706,18 @@ describe("UX: the footer lip", () => {
     const bare = lipApp("add");
     bare.run("setTab('layout')");
     bare.els["scale-generate"].disabled = true;
-    bare.els["scale-swatches"].lastElementChild = bare.els["scale-box"];
+    assert.strictEqual(bare.get("swatches.children.length"), 6, "six swatches to land on");
+    bare.els["scale-swatches"].lastElementChild = bare.els["scale-swatches"].children[5];
     arrive(bare);
-    assert.strictEqual(bare.activeId(), "scale-box", "the last swatch");
+    assert.strictEqual(bare.get("document.activeElement === swatches.children[5]"), true,
+      "on the Layout tab the last stop is the sixth swatch");
+    const scale = lipApp("add");
+    assert.strictEqual(scale.get("sheetTab"), "scale", "the bare Scale case starts on the Scale tab");
+    scale.els["scale-next"].disabled = true;
+    scale.els["scale-swatches"].lastElementChild = scale.els["scale-swatches"].children[5];
+    arrive(scale);
+    assert.strictEqual(scale.activeId(), "scale-box", "on the Scale tab the last stop is the scale box, not a swatch that is hidden");
+    assert.strictEqual(scale.get("swatches.contains(document.activeElement)"), false);
   });
 
   test("UX: while lipped the sheet's Tab list holds the lip in place of GENERATE and DELETE", () => {
@@ -12631,5 +12640,66 @@ describe("SPA: sheet polish lane A", () => {
     app.type(W1_NONE);
     app.type("");
     assert.strictEqual(hint.hidden, false, "clearing the box returns the example and its hint");
+  });
+});
+
+describe("SPB: sheet polish lane B", () => {
+  const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8")
+    .replace(/<!--[\s\S]*?-->/g, "").replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/g, "");
+  const panelSpan = (id) => {
+    const start = html.indexOf(`<div id="${id}"`);
+    assert.ok(start >= 0, `no #${id} in the markup`);
+    let depth = 0;
+    for (const m of html.slice(start).matchAll(/<(\/?)div\b[^>]*>/g)) {
+      depth += m[1] ? -1 : 1;
+      if (depth === 0) return { start, end: start + m.index + m[0].length, html: html.slice(start, start + m.index + m[0].length) };
+    }
+    throw new assert.AssertionError({ message: `#${id} is never closed` });
+  };
+
+  test("SPB: #scale-swatches is the last child of #scale-panel-layout after #scale-layout-zone, in an .editrow whose span.sheetlabel#scale-palette-label (text CARD PALETTE) names the group through aria-labelledby", () => {
+    const layout = panelSpan("scale-panel-layout");
+    const scale = panelSpan("scale-panel-scale");
+    const zone = panelSpan("scale-layout-zone");
+    assert.ok(zone.start > layout.start && zone.end < layout.end, "the zone is inside the Layout panel");
+    assert.strictEqual(html.split('id="scale-swatches"').length, 2, "exactly one #scale-swatches");
+    const at = html.indexOf('id="scale-swatches"');
+    assert.ok(at > layout.start && at < layout.end, "#scale-swatches is not in the Layout panel");
+    assert.ok(!(at > scale.start && at < scale.end), "#scale-swatches is still in the Scale panel");
+    assert.ok(at > zone.end, "#scale-swatches is not after #scale-layout-zone");
+    assert.ok(!(at > zone.start && at < zone.end), "#scale-swatches is inside the zone");
+    const tail = html.slice(zone.end, layout.end);
+    assert.match(tail, /^\s*<div class="editrow">\s*<span class="sheetlabel" id="scale-palette-label">CARD PALETTE<\/span>\s*<div class="ctlrow">\s*<div id="scale-swatches" role="group" aria-labelledby="scale-palette-label"><\/div>\s*<\/div>\s*<\/div>\s*<\/div>$/,
+      "the Layout panel does not end with the palette .editrow");
+    assert.ok(!/id="scale-swatches"[^>]*aria-label=/.test(html), "the group still has an aria-label");
+    assert.ok(!html.includes('aria-label="Card palette"'), "the old Card palette label is still served");
+    const app = boot();
+    assert.strictEqual(app.els["scale-swatches"].children.length, 6, "six swatches built");
+  });
+
+  test("SPB: the swatches stay enabled on the Layout tab with an empty or invalid scale while every drawer control is disabled", () => {
+    const DRAWER = ["scale-anchor-one", "scale-anchor-between", "scale-mirror", "scale-mirror-bottom", "scale-fine-toggle",
+      "scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next", "scale-layout-reset"];
+    const ran = [];
+    for (const bad of ["", "(D3) A3 zzz"]) {
+      const app = boot();
+      openSheet(app);
+      app.type(bad);
+      app.click(app.els["scale-tab-layout"]);
+      assert.strictEqual(app.get("sheetTab"), "layout", `the Layout tab did not open on "${bad}"`);
+      assert.strictEqual(app.get("boxOk"), false, `"${bad}" parsed`);
+      assert.strictEqual(DRAWER.length, 10);
+      assert.deepStrictEqual(DRAWER.filter((id) => app.els[id].disabled !== true), [],
+        `a drawer control is enabled on "${bad}"`);
+      assert.strictEqual(app.els["scale-swatches"].children.length, 6, "six swatches");
+      assert.deepStrictEqual([...app.els["scale-swatches"].children].map((b) => Boolean(b.disabled)), [false, false, false, false, false, false],
+        `a swatch is disabled on "${bad}"`);
+      app.els["scale-swatches"].children[4].click();
+      const pressed = [...app.els["scale-swatches"].children].map((b) => b.getAttribute("aria-pressed"));
+      assert.deepStrictEqual(pressed, ["false", "false", "false", "false", "true", "false"],
+        `a swatch tap did not take on "${bad}"`);
+      ran.push(bad);
+    }
+    assert.deepStrictEqual(ran, ["", "(D3) A3 zzz"]);
   });
 });

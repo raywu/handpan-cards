@@ -1112,6 +1112,7 @@ footer.seq{row-gap:var(--sp-1)}
   #scale-sheet[data-tab="layout"] #scale-tabs,
   #scale-sheet[data-tab="layout"] #scale-layout-zone{grid-column:2}
   #scale-sheet[data-tab="layout"] #scale-layout-zone{margin-top:var(--sp-3)}
+  #scale-sheet[data-tab="layout"] #scale-panel-layout > .editrow{grid-column:2; margin-top:var(--sp-3)}
   #scale-plate-band #scale-drawer-status{width:0; min-width:100%}
   .sheetbody{scroll-padding-top:0}
 }
@@ -1482,33 +1483,6 @@ html.about-open{overflow:hidden}
       <div id="scale-refusal" aria-live="polite"></div>
       <p class="sheethint" id="scale-line-note"></p>
     </div>
-    <!-- Inside .sheetbody, in the scroll. It used to be pinned below the
-         scrollport with the primary, on the argument that everything outside
-         .sheetbody is what the sheet guarantees without scrolling - so the
-         palette and the mirror toggle were guaranteed too.
-         The owner overruled that on 2026-09-17 after photographing an
-         iPhone 14 / iOS 26.6 with the keyboard up: "only generate cards
-         button should be part of the bottom drawer. As of current design the
-         keyboard pushes the bottom drawer up and covers the input field."
-         A pinned row is not free - .sheetbody SHRINKS to make room for it
-         (see the .sheetbody comment above), and under a real keyboard there
-         is almost nothing left to shrink. With this row pinned, a 336px iOS
-         keyboard leaves the Edit page a 12px scrollport for a 48px seed
-         field; with it in the scroll, 159px. Guaranteeing the swatches cost
-         the field the owner was typing into.
-         So only #scale-generate (and the Edit-only delete row) stay pinned.
-         The swatches and the mirror toggle lose their reachable-without-
-         scrolling guarantee - that is the trade the owner chose. DOM order is
-         unchanged. Moving this </div> back up is
-         tests/mutants/e_sheet_ctlrow_pinned_again.patch, which dies on "with
-         a real keyboard up, the seed box is not clipped by the sheet's own
-         scroller"; moving it DOWN past the primary is
-         tests/mutants/e_sheet_primary_back_in_the_scroll.patch, which dies on
-         "GENERATE CARDS is reachable without scrolling at every phone
-         viewport". -->
-    <div class="ctlrow">
-      <div id="scale-swatches" role="group" aria-label="Card palette"></div>
-    </div>
     </div>
     <div id="scale-panel-layout" role="tabpanel" aria-labelledby="scale-tab-layout" hidden>
     <div id="scale-plate-band">
@@ -1555,6 +1529,45 @@ html.about-open{overflow:hidden}
         <div class="ctlrow">
           <button class="mode" type="button" id="scale-layout-reset" disabled>RESET LAYOUT</button>
         </div>
+      </div>
+    </div>
+    <!-- The card palette: the last group of the Layout tab, inside .sheetbody,
+         in the scroll (it sat at the foot of the Scale tab until sheet polish
+         lane B, 2026-10-21, owner: first or last on Layout, last chosen). It
+         styles the cards rather than the pan and is the last decision before
+         GENERATE CARDS, so it follows RESET LAYOUT. It never reads boxOk: the
+         palette needs no pan, so it stays enabled before a scale parses.
+         Pinned by "SPB: #scale-swatches is the last child of
+         #scale-panel-layout ..." and "SPB: the swatches stay enabled on the
+         Layout tab ...".
+         Before 2026-09-17 it was pinned below the
+         scrollport with the primary, on the argument that everything outside
+         .sheetbody is what the sheet guarantees without scrolling - so the
+         palette and the mirror toggle were guaranteed too.
+         The owner overruled that on 2026-09-17 after photographing an
+         iPhone 14 / iOS 26.6 with the keyboard up: "only generate cards
+         button should be part of the bottom drawer. As of current design the
+         keyboard pushes the bottom drawer up and covers the input field."
+         A pinned row is not free - .sheetbody SHRINKS to make room for it
+         (see the .sheetbody comment above), and under a real keyboard there
+         is almost nothing left to shrink. With this row pinned, a 336px iOS
+         keyboard leaves the Edit page a 12px scrollport for a 48px seed
+         field; with it in the scroll, 159px. Guaranteeing the swatches cost
+         the field the owner was typing into.
+         So only #scale-generate (and the Edit-only delete row) stay pinned.
+         The swatches and the mirror toggle lose their reachable-without-
+         scrolling guarantee - that is the trade the owner chose. Moving
+         the .sheetbody's closing </div> back above the Layout panel is
+         tests/mutants/e_sheet_ctlrow_pinned_again.patch, which dies on "with
+         a real keyboard up, the seed box is not clipped by the sheet's own
+         scroller"; moving it DOWN past the primary is
+         tests/mutants/e_sheet_primary_back_in_the_scroll.patch, which dies on
+         "GENERATE CARDS is reachable without scrolling at every phone
+         viewport". -->
+    <div class="editrow">
+      <span class="sheetlabel" id="scale-palette-label">CARD PALETTE</span>
+      <div class="ctlrow">
+        <div id="scale-swatches" role="group" aria-labelledby="scale-palette-label"></div>
       </div>
     </div>
     </div>
@@ -10663,7 +10676,7 @@ function lipRebase() {
 function lipHandOff() {
   if (document.activeElement !== lipBtn) return;
   const lead = lipPrimary();
-  const to = !lead.disabled && !lead.hidden ? lead : (editingId && !delBtn.disabled ? delBtn : swatches.lastElementChild || lead);
+  const to = !lead.disabled && !lead.hidden ? lead : (editingId && !delBtn.disabled ? delBtn : (sheetTab === "layout" ? swatches.lastElementChild : scaleBox) || lead);
   if (to && to.focus) to.focus({ preventScroll: true });
 }
 let lipFocusing = false;
@@ -12663,12 +12676,12 @@ sheet.addEventListener("keydown", e => {
     ? [backBtn, onTab, previewBox.querySelector('.panhit[tabindex="0"]'),
        anchorOne, anchorBetween, mirrorTop, mirrorBot, fineBtn,
        notePrev, noteNext, seatPrev, seatNext, resetBtn,
-       shut ? lipBtn : genBtn, editingId && !shut ? delBtn : null]
+       ...swatches.children, shut ? lipBtn : genBtn, editingId && !shut ? delBtn : null]
     : [backBtn, onTab,
        editingId ? nameBox : null,
        fieldEls.ding, fieldEls.top, fieldEls.inner, fieldEls.bottom,
        scaleBox,
-       ...swatches.children, shut ? lipBtn : editingId ? genBtn : nextBtn,
+       shut ? lipBtn : editingId ? genBtn : nextBtn,
        editingId && !shut ? delBtn : null])
     .filter(isStop);
   if (isHit(document.activeElement) && pickRef && lastSolved) setRover(pickRef);
