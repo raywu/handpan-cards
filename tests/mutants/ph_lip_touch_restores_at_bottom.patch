@@ -8,7 +8,7 @@ diff --git a/index.html b/index.html
  const lipUser = () => { userWindowUntil = Date.now() + LIP_WINDOW; };
  function lipScrollEvent() {
    const now = Date.now();
--  if (lipDrag || now < lipDragEnd) {
+-  if (lipDrag || lipTouching || now < lipDragEnd) {
 +  if (false) {
      if (!lipDrag) lipDragEnd = now + LIP_END_MS;
      userWindowUntil = 0;

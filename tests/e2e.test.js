@@ -14212,11 +14212,12 @@ function run() {
         await frames();
         const slot = () => b.eval(`return document.getElementById("scale-guidance").getBoundingClientRect().height;`);
         const warn = await slot();
+        const line = await b.eval(`return document.getElementById("scale-field-msg").getBoundingClientRect().height;`);
         await b.eval(`const e = document.getElementById("scale-bottom"); e.value = "";
           e.dispatchEvent(new Event("input", { bubbles: true })); return true;`);
         await frames();
         const clear = await slot();
-        assert.ok(warn > 0, "the duplicate warning gave the slot no height");
+        assert.ok(line > 0 && Math.abs(warn - line) < 0.5, `the slot is ${warn}px, the warning is ${line}px tall`);
         assert.strictEqual(clear, 0, `the slot is ${clear}px after the warning cleared, not 0`);
       } finally {
         await b.setViewport(900, 900, false);
@@ -14266,7 +14267,17 @@ function run() {
       const pts = [];
       for (let i = 1; i <= steps; i++) pts.push([0, Math.round((ms * i) / steps), Math.round((dy * i) / steps)]);
       pts.push([0, ms + 250, dy]);
-      await b.drag(".sheetbody", pts, { y0: Math.round(bb.h * 0.3) });
+      const y0 = await b.eval(`
+        const body = document.querySelector(".sheetbody"), r = body.getBoundingClientRect(), x = r.left + r.width / 2;
+        for (let y = r.top + r.height * 0.8; y > r.top + 4; y -= 4) {
+          const clear = [[0, 0], [0, -24], [0, 24], [-24, 0], [24, 0]].every(([dx, dy]) => {
+            const t = document.elementFromPoint(x + dx, y + dy);
+            return t && body.contains(t) && !t.closest("#scale-lip, #scale-preview, input, textarea, select");
+          });
+          if (clear) return Math.round(y - (r.top + r.height / 2));
+        }
+        return ${Math.round(bb.h * 0.3)};`);
+      await b.drag(".sheetbody", pts, { y0 });
       await sleep(300);
     };
     const collapse = async () => { await swipeBody(-140); };
