@@ -1,21 +1,18 @@
-# kills: UX: while lipped the sheet's Tab list holds the lip in place of GENERATE and DELETE
-# suite: node --test --test-name-pattern ^UX:.while.lipped.the.sheet.s.Tab.list.holds.the.lip.in.place.of.GENERATE.and.DELETE$ tests/app.test.js
-# uxl_tablist_keeps_primary
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12541,12 +12541,12 @@ sheet.addEventListener("keydown", e => {
+@@ -12676,12 +12676,12 @@ sheet.addEventListener("keydown", e => {
      ? [backBtn, onTab, previewBox.querySelector('.panhit[tabindex="0"]'),
         anchorOne, anchorBetween, mirrorTop, mirrorBot, fineBtn,
         notePrev, noteNext, seatPrev, seatNext, resetBtn,
--       shut ? lipBtn : genBtn, editingId && !shut ? delBtn : null]
-+       genBtn, editingId && !shut ? delBtn : null]
+-       ...swatches.children, shut ? lipBtn : genBtn, editingId && !shut ? delBtn : null]
++       ...swatches.children, genBtn, editingId && !shut ? delBtn : null]
      : [backBtn, onTab,
         editingId ? nameBox : null,
         fieldEls.ding, fieldEls.top, fieldEls.inner, fieldEls.bottom,
         scaleBox,
--       ...swatches.children, shut ? lipBtn : editingId ? genBtn : nextBtn,
-+       ...swatches.children, editingId ? genBtn : nextBtn,
+-       shut ? lipBtn : editingId ? genBtn : nextBtn,
++       editingId ? genBtn : nextBtn,
         editingId && !shut ? delBtn : null])
      .filter(isStop);
    if (isHit(document.activeElement) && pickRef && lastSolved) setRover(pickRef);

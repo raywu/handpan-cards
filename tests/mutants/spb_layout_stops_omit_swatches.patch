@@ -1,0 +1,15 @@
+# kills: SPB: the Scale tab's Tab stops end box, primary, DELETE with no swatch; the Layout tab's run RESET LAYOUT, the six swatches, primary, DELETE, forward and back, on create and Edit
+# suite: node --test --test-name-pattern ^SPB:.the.Scale.tab's.Tab.stops.end.box,.primary,.DELETE.with.no.swatch;.the.Layout.tab's.run.RESET.LAYOUT,.the.six.swatches,.primary,.DELETE,.forward.and.back,.on.create.and.Edit$ tests/e2e.test.js
+# The Layout tab's Tab stops lose the six swatches, so Tab skips the palette.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12676,7 +12676,7 @@ sheet.addEventListener("keydown", e => {
+     ? [backBtn, onTab, previewBox.querySelector('.panhit[tabindex="0"]'),
+        anchorOne, anchorBetween, mirrorTop, mirrorBot, fineBtn,
+        notePrev, noteNext, seatPrev, seatNext, resetBtn,
+-       ...swatches.children, shut ? lipBtn : genBtn, editingId && !shut ? delBtn : null]
++       shut ? lipBtn : genBtn, editingId && !shut ? delBtn : null]
+     : [backBtn, onTab,
+        editingId ? nameBox : null,
+        fieldEls.ding, fieldEls.top, fieldEls.inner, fieldEls.bottom,

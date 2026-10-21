@@ -7331,7 +7331,7 @@ test("DR3 Tab order on Add and Edit, finer controls closed and open", () => {
       const want = ["scale-tab-layout", "plate", "scale-anchor-one",
         "scale-anchor-between", "scale-mirror", "scale-mirror-bottom", "scale-fine-toggle",
         ...(open ? ["scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next"] : []),
-        "scale-layout-reset", "scale-generate", ...(edit ? ["scale-delete"] : [])];
+        "scale-layout-reset", ...Array(6).fill("dyn"), "scale-generate", ...(edit ? ["scale-delete"] : [])];
       const ctx = `edit=${edit} open=${open}: ${seen}`;
       assert.deepStrictEqual(seen, want, ctx);
       assert.strictEqual(seen.filter((x) => x === "plate").length, 1, "the plate is more than one Tab stop");
@@ -9217,8 +9217,9 @@ test("RD: no DEGREES row - the served markup, ELEMENT_IDS and the app script car
   const body = html.slice(html.indexOf('<div class="sheetbody"'), html.indexOf('id="scale-guidance"'))
     .replace(/<!--[\s\S]*?-->/g, "");
   assert.deepStrictEqual([...body.matchAll(/class="editrow"(?: id="([^"]+)")?/g)].map((m) => m[1]),
-    ["scale-name-row", undefined],
-    "an .editrow other than the name row and the layout zone's own is in .sheetbody");
+    ["scale-name-row", undefined, undefined],
+    "an .editrow other than the name row, the layout zone's own and the palette's is in .sheetbody");
+  assert.ok(/class="editrow">\s*<span class="sheetlabel" id="scale-palette-label">/.test(body), "the last .editrow is not the palette's");
 
   const { ELEMENT_IDS } = require("../tools/sandbox.js");
   assert.ok(!ELEMENT_IDS.includes("scale-degrees-row") && !ELEMENT_IDS.includes("scale-degrees"));

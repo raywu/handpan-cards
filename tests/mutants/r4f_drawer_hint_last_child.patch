@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1468,7 +1468,6 @@ html.about-open{overflow:hidden}
+@@ -1493,7 +1493,6 @@ html.about-open{overflow:hidden}
      </div>
      <div id="scale-layout-zone">
        <div id="scale-drawer" role="group" aria-label="Layout">
@@ -12,11 +12,11 @@ diff --git a/index.html b/index.html
          <div class="editrow">
            <span class="sheetlabel" id="scale-anchor-label">HANDPAN ORIENTATION</span>
            <div class="ctlrow" role="group" aria-labelledby="scale-anchor-label">
-@@ -1504,6 +1503,7 @@ html.about-open{overflow:hidden}
+@@ -1529,6 +1528,7 @@ html.about-open{overflow:hidden}
          <div class="ctlrow">
            <button class="mode" type="button" id="scale-layout-reset" disabled>RESET LAYOUT</button>
          </div>
 +        <p class="sheethint" id="scale-drawer-hint" hidden></p>
        </div>
      </div>
-     </div>
+     <!-- The card palette: the last group of the Layout tab, inside .sheetbody,

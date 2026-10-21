@@ -1,19 +1,15 @@
-# kills: with a real keyboard up, the seed box is not clipped by the sheet's own scroller
-# suite: node --test --test-name-pattern ^with.a.real.keyboard.up,.the.seed.box.is.not.clipped.by.the.sheet's.own.scroller$ tests/e2e.test.js
-# The Layout panel goes back into the pinned footer, outside .sheetbody, so the scroller shrinks to make room for it
-# and under a real keyboard the seed field has almost no scrollport left.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1507,6 +1507,7 @@ html.about-open{overflow:hidden}
-       <div id="scale-swatches" role="group" aria-label="Card palette"></div>
+@@ -1484,6 +1484,7 @@ html.about-open{overflow:hidden}
+       <p class="sheethint" id="scale-line-note"></p>
      </div>
      </div>
 +   </div>
      <div id="scale-panel-layout" role="tabpanel" aria-labelledby="scale-tab-layout" hidden>
      <div id="scale-plate-band">
        <div id="scale-preview" role="img"
-@@ -1555,7 +1556,6 @@ html.about-open{overflow:hidden}
+@@ -1571,7 +1572,6 @@ html.about-open{overflow:hidden}
        </div>
      </div>
      </div>
