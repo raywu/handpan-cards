@@ -1,0 +1,14 @@
+# kills: SPN: a down fling while the scroll range shrinks re-baselines and does not restore
+# suite: node --test --test-name-pattern ^SPN..a.down.fling.while.the.scroll.range.shrinks.re.baselines.and.does.not.restore$ tests/app.test.js
+# The fling no longer re-baselines when the scroll range changes, so the clamp from a shrinking range reads as finger travel and restores a shut footer.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10769,7 +10769,6 @@ let lipFling = null;
+ function lipFlingStep(now) {
+   const F = lipFling, t = lipClamp(bandPort.scrollTop), M = lipRange();
+   F.until = now + LIP_END_MS;
+-  if (M !== F.prevM) { F.prevM = M; F.prevT = t; return; }
+   const d = t - F.prevT;
+   F.prevT = t;
+   if (!sheetOpen || sheet.classList.contains("kbup") || now < lipQuietUntil) return;

@@ -12166,13 +12166,15 @@ describe("UX: the footer lip", () => {
         for (const [id, tag] of [...IDS, ["scale-preview", "DIV"]]) {
           const a = lipApp();
           const e = field(a, id, tag);
-          const snap = a.get("JSON.stringify([tapSnap, scrollPin])");
+          e.matches = (sel) => sel.split(",").map((x) => x.trim()).includes(tag.toLowerCase());
+          sheetOf(a).dispatchEvent({ type: "pointerdown", target: e });
           finger(a, "touchstart", 400, { target: e });
           finger(a, "touchmove", 394, { target: e });
           finger(a, "touchend", 394, { target: e });
           assert.strictEqual(state(a), OPEN, id);
           assert.strictEqual(flingOf(a), null, id + ": a tap makes no fling");
-          assert.strictEqual(a.get("JSON.stringify([tapSnap, scrollPin])"), snap, id + ": tapSnap untouched");
+          const P3 = tag === "DIV" ? "[null,null]" : '[{"body":0},null]';
+          assert.strictEqual(a.get("JSON.stringify([tapSnap && { body: tapSnap.body, surf: tapSnap.surf }, scrollPin])"), P3, id + ": tapSnap and scrollPin differ from the values P3 left (5caaf6b)");
         }
       });
 
@@ -12346,6 +12348,10 @@ describe("UX: the footer lip", () => {
         assert.strictEqual(state(a), OPEN);
         assert.strictEqual(flingOf(a), null);
         assert.strictEqual(calls(a, "activateNote"), 0);
+        d2Tap(a, "A3");
+        assert.strictEqual(calls(a, "activateNote"), 1, "the click on the plate note activates it once");
+        assert.deepStrictEqual(d2Pick(a), { ring: "rim", i: 0 }, "the tap selected the note");
+        assert.strictEqual(state(a), OPEN, "and the click acted on nothing in the lip");
       });
 
       test("LG: lipNeverArms matches #scale-lip and select, and #scale-sheet holds no select", () => {
@@ -12535,7 +12541,8 @@ describe("UX: the footer lip", () => {
         a.advance(160);
         scrollTo(a, 310, false);
         assert.strictEqual(state(a), OPEN);
-        assert.ok(t >= 0);
+        assert.strictEqual(a.get("lipFling.acc"), 10, "only the 10px of momentum counted, not the 300px quiet scroll");
+        assert.strictEqual(t, 0);
       });
 
       test("LG: lipDragStop running twice for one touchend (sheet and target) creates one fling and does not clear it", () => {
@@ -12553,7 +12560,7 @@ describe("UX: the footer lip", () => {
         assert.strictEqual(a.get("lipFling.acc"), 10, "seeded once");
       });
 
-      test("LG: a wheel tick or a typing key while a finger is down does not end the gesture, a scroll key outside a field does", () => {
+      test("LG: a wheel tick or a typing key while a finger is down does not end the gesture, a scroll key outside a field parks the gesture", () => {
         const a = lipApp();
         finger(a, "touchstart", 400);
         finger(a, "touchmove", 385);
@@ -12572,6 +12579,40 @@ describe("UX: the footer lip", () => {
         sheetOf(c).dispatchEvent({ type: "keydown", key: "a", preventDefault() {} });
         scrollTo(c, 300, false);
         assert.strictEqual(state(c), OPEN, "a typing key leaves the suspension in place, so the scroll rule stays out of it");
+      });
+    });
+
+    describe("SPN: tests-only nits on the lip fling and the example plate", () => {
+      const downFling = (a, start, seed) => {
+        a.get("bandPort").scrollTop = start;
+        a.run("lipRebase()");
+        finger(a, "touchstart", 400);
+        a.get("bandPort").scrollTop = start - seed;
+        a.get("bandPort").dispatchEvent({ type: "scroll" });
+        finger(a, "touchmove", 410);
+        finger(a, "touchend", 410);
+      };
+
+      test("SPN: a down fling while the scroll range shrinks re-baselines and does not restore", () => {
+        const a = lipApp();
+        scrollTo(a, 300);
+        assert.strictEqual(state(a), SHUT);
+        a.advance(400);
+        downFling(a, 300, 10);
+        assert.strictEqual(a.get("lipFling.way"), "down");
+        assert.strictEqual(a.get("lipFling.acc"), 10);
+        a.advance(33);
+        const bp = a.get("bandPort");
+        bp.scrollHeight = 740;
+        bp.scrollTop = 240;
+        bp.dispatchEvent({ type: "scroll" });
+        assert.strictEqual(a.get("lipFling.acc"), 10, "the clamp from the shrunk range counted as finger travel");
+        assert.strictEqual(isShut(a), true, "a clamp from a shrinking range restored the footer");
+        a.advance(33);
+        bp.scrollTop = 225;
+        bp.dispatchEvent({ type: "scroll" });
+        assert.strictEqual(a.get("lipFling.acc"), 25, "after the re-baseline real momentum counts again");
+        assert.strictEqual(isShut(a), false, "24px of real momentum after the shrink restores");
       });
     });
   });
@@ -12630,6 +12671,33 @@ describe("UX: the footer lip", () => {
   });
 });
 
+describe("SPN: the example plate", () => {
+  test("SPN: the example plate's fields equal HPE.importer.compose of the four placeholder attributes", () => {
+    const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    const values = {};
+    for (const k of ["ding", "top", "inner", "bottom"]) {
+      const m = html.match(new RegExp(`<input id="scale-${k}"[^>]*placeholder="([^"]*)"`));
+      assert.ok(m, `no placeholder attribute on #scale-${k}`);
+      values[k] = m[1];
+    }
+    const engine = require("./helpers/engine.js").loadEngine(["core", "importer"]);
+    const composed = engine.importer.compose(values);
+    assert.ok(composed.ok, "the placeholders do not compose");
+    const parsed = engine.core.parseSeed(composed.line, { palette: 0, parent: null, name: "", mirror: false });
+    assert.ok(parsed.ok, "the composed placeholders do not parse");
+    const expected = Object.values(parsed.value.fields).map((f) => f[0] + f[1]);
+    const app = boot();
+    app.els["deck-add"].click();
+    assert.ok(app.els["scale-preview"].classList.contains("example"), "the empty sheet draws no example");
+    assert.deepStrictEqual(plateNotes(app), expected);
+    assert.strictEqual(Object.keys(parsed.value.fields).length, 13);
+  });
+});
+
+function plateNotes(app) {
+  return [...app.els["scale-preview"].innerHTML.matchAll(/<text[^>]*>([A-G][#b]?)<tspan[^>]*>(-?\d+)<\/tspan>/g)].map((m) => m[1] + m[2]);
+}
+
 describe("PH: phone-check fixes", () => {
   const plateLabels = (app) =>
     [...app.els["scale-preview"].innerHTML.matchAll(/<text[^>]*>([^<]*)</g)].map((m) => m[1]).join("|");
@@ -12646,6 +12714,8 @@ describe("PH: phone-check fixes", () => {
     app.type(r.line);
     assert.strictEqual(example, plateLabels(app), "the example is not the composed placeholder seed");
     assert.ok(!example.startsWith("E|"), "the old example (ding E) is still drawn");
+    const drawn = plateNotes(app);
+    for (const old of ["E3", "B3", "F#5"]) assert.ok(!drawn.includes(old), `the old example's ${old} is still drawn`);
   });
 
   test("PH: the example plate carries .example beside .stale, a held plate carries .stale alone", () => {
