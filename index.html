@@ -10658,12 +10658,13 @@ if (LIPDBG) {
   pill.type = "button";
   pill.id = "lipdbg-pill";
   const pillHide = document.createElement("style");
-  pillHide.textContent = 'body:has(#settings-trigger[aria-expanded="true"]) #lipdbg-pill, body:has(#about:not([hidden])) #lipdbg-pill{display:none !important}';
+  pillHide.textContent = 'body:has(#scale-sheet:not([hidden])) :is(#lipdbg-pill,#lipdbg-panel), body:has(#settings-trigger[aria-expanded="true"]) :is(#lipdbg-pill,#lipdbg-panel), body:has(#about:not([hidden])) :is(#lipdbg-pill,#lipdbg-panel), body:has(#share-url:not([hidden])) :is(#lipdbg-pill,#lipdbg-panel){display:none !important}';
   document.head.appendChild(pillHide);
-  const pillPlace = () => { const land = innerWidth > innerHeight; pill.style.top = land ? "60px" : "126px"; pill.style.minHeight = land ? "44px" : "30px"; pill.style.padding = land ? "0 10px" : "0 8px"; pill.style.left = land ? "4px" : "50%"; pill.style.transform = land ? "none" : "translateX(-50%)"; };
+  const pillPlace = () => { const land = innerWidth > innerHeight; pill.style.top = land ? "60px" : "8px"; pill.style.left = land ? "4px" : "50%"; pill.style.transform = land ? "none" : "translateX(-50%)"; panel.style.top = land ? "108px" : "52px"; };
+  const panel = mk("div", "position:fixed;top:52px;left:4px;width:min(372px,calc(100vw - 8px));max-height:62vh;z-index:2147483000;background:#fff;color:#000;border:2px solid #000;border-radius:8px;padding:6px;display:none;flex-direction:column;gap:6px;box-sizing:border-box;pointer-events:auto");
+  panel.id = "lipdbg-panel";
   pillPlace();
   window.addEventListener("resize", pillPlace);
-  const panel = mk("div", "position:fixed;top:52px;left:4px;width:min(372px,calc(100vw - 8px));max-height:62vh;z-index:2147483000;background:#fff;color:#000;border:2px solid #000;border-radius:8px;padding:6px;display:none;flex-direction:column;gap:6px;box-sizing:border-box;pointer-events:auto");
   const view = mk("pre", "margin:0;overflow:auto;flex:1;min-height:80px;max-height:36vh;font:9px/1.25 monospace;white-space:pre-wrap;word-break:break-all;background:#f4f4f4");
   const row = mk("div", "display:flex;gap:6px");
   const status = mk("div", "font:11px monospace;min-height:14px");
@@ -10905,10 +10906,10 @@ sheet.addEventListener("touchmove", (e) => {
     const n = performance.now();
     if (!act && n - lipMoveAt < 50) return;
     lipMoveAt = n;
-    lipLog("touchmove", { why, dx: p ? Math.round(p.clientX - L.x) : null, dy: p ? Math.round(L.y - p.clientY) : null, dir: L.dir, ...extra });
+    lipLog("touchmove", { why, dx: p ? Math.round(p.clientX - L.x) : null, dy: p ? Math.round(L.y - p.clientY) : null, dySign: p ? Math.sign(L.y - p.clientY) : null, dir: L.dir, ...extra });
   };
   if (!p) { mv("wrong-finger", false, { n: e.touches ? e.touches.length : 0 }); return; }
-  if ((L.dir > 0 && p.clientY < L.y) || (L.dir < 0 && p.clientY > L.y)) { mv("anchor-reset:reversal", false, { from: Math.round(L.y), to: Math.round(p.clientY) }); L.y = p.clientY; L.x = p.clientX; return; }
+  if ((L.dir > 0 && p.clientY < L.y) || (L.dir < 0 && p.clientY > L.y)) { mv("anchor-follow:same-dir", false, { from: Math.round(L.y), to: Math.round(p.clientY) }); L.y = p.clientY; L.x = p.clientX; return; }
   const dy = L.y - p.clientY;
   if (Math.abs(dy) < LIP_PX) { mv("below-LIP_PX", false); return; }
   if (Math.abs(dy) <= Math.abs(p.clientX - L.x)) { mv("horizontal-dominant", false); return; }
@@ -10918,7 +10919,7 @@ sheet.addEventListener("touchmove", (e) => {
   L.y = p.clientY;
   L.x = p.clientX;
   const noop = dy > 0 ? isLipShut() : !isLipShut();
-  mv(noop ? "already-" + (dy > 0 ? "shut" : "open") : dy > 0 ? "act:collapse" : "act:restore", true, { dx: Math.round(p.clientX - ox), dy: Math.round(dy), anchorReset: true });
+  mv(noop ? "already-" + (dy > 0 ? "shut" : "open") : dy > 0 ? "act:collapse" : "act:restore", true, { dx: Math.round(p.clientX - ox), dy: Math.round(dy), dySign: Math.sign(dy), anchorReset: true });
   lipWhy(dy > 0 ? "drag-up" : "drag-down");
   if (dy > 0) { if (!isLipShut()) collapseLip(); } else if (isLipShut()) restoreLip();
   if (noop) lipWhy("other");
