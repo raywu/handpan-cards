@@ -10560,6 +10560,10 @@ const roomOf = () => {
   const cs = typeof getComputedStyle === "function" ? getComputedStyle(plateBand) : null;
   return Math.max(0, (bandPort.clientHeight || 0) - (cs ? parseFloat(cs.paddingBottom) || 0 : 0));
 };
+const platesBeside = () => {
+  const w = (el) => (el.getBoundingClientRect ? el.getBoundingClientRect().width : el.offsetWidth) || 0;
+  return w(plateBand) > 0 && w(bandPort) > 0 && w(plateBand) < w(bandPort) * 0.75;
+};
 function syncBand() {
   if (!drawerOpen) {
     layoutZone.classList.remove("nostick");
@@ -10572,7 +10576,7 @@ function syncBand() {
   const band = high(plateBand);
   const stat = drawerStatus.hidden ? 0 : high(drawerStatus);
   const port = bandPort.clientHeight > 0 ? high(bandPort) : 0;
-  const beside = wide(plateBand) > 0 && wide(bandPort) > 0 && wide(plateBand) < wide(bandPort) * 0.75;
+  const beside = platesBeside();
   const stuck = !beside && !(port > 0 && port - band - stat < BAND_MIN_ROOM);
   layoutZone.classList.toggle("nostick", !beside && !stuck);
   const sm = stat && typeof getComputedStyle === "function" ? parseFloat(getComputedStyle(drawerStatus).marginBottom) || 0 : 0;
@@ -10762,7 +10766,8 @@ function lipMeasure() {
 }
 function lipGuidanceChanged() {
   if (!isLipped() || (isLipShut() && lipSettled)) return;
-  lipDirty = true;
+  if (platesBeside()) { lipDirty = true; return; }
+  lipMeasure();
 }
 function restoreLip() {
   if (!sheetOpen || !isLipped() || !isLipShut()) return;
