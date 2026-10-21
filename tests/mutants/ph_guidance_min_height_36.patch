@@ -1,0 +1,19 @@
+# kills: PH: P4 the Add sheet with no message has no empty band above the primary: body to primary is one flow gap at 390x797 and 380x780
+# suite: node --test --test-name-pattern ^PH..P4.the.Add.sheet.with.no.message.has.no.empty.band.above.the.primary..body.to.primary.is.one.flow.gap.at.390x797.and.380x780$ tests/e2e.test.js
+# The slot reserves its two lines again and is no longer taken out of flow when empty, so an empty band returns above the primary.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -932,10 +932,9 @@ footer.seq{row-gap:var(--sp-1)}
+    shows, the negative margin trimming the surface's two --sp-4 gaps to --sp-2.
+    flex:0 0 auto is load-bearing: as a shrinkable item a three-line message
+    spills over the button. */
+-#scale-guidance{flex:0 0 auto; display:flex; flex-direction:column;
++#scale-guidance{flex:0 0 auto; min-height:calc(2 * 1.5 * 12px); display:flex; flex-direction:column;
+   justify-content:flex-end; margin-block:calc(var(--sp-2) - var(--sp-4))}
+-#scale-sheet #scale-guidance:not(:has(> :not([hidden]):not(:empty))){position:absolute;
+-  min-height:0; height:0; margin:0; overflow:hidden}
++#scale-sheet #scale-guidance:not(:has(> :not([hidden]):not(:empty))){}
+ #scale-guidance #scale-msg{min-height:0}
+ #scale-guidance #scale-layout-state{font:400 12px/1.5 "Nunito Sans"; color:#c4bcab}
+ /* One message wins (plan N-6 alternative, owner 2026-10-14; X3): while the notice holds text a PAN

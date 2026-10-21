@@ -6619,6 +6619,7 @@ function run() {
     const bb = body.getBoundingClientRect(), sr = slot.getBoundingClientRect(), gr = gen.getBoundingClientRect();
     const h = (el) => el.hidden || !el.textContent ? 0 : el.getBoundingClientRect().height;
     return { port: body.clientHeight, slotH: sr.height, gapTop: sr.top - bb.bottom, gapBottom: gr.top - sr.bottom,
+      rowGap: parseFloat(getComputedStyle(surf).rowGap) || 0, bodyToGen: gr.top - bb.bottom,
       sp2, msgH: h(document.getElementById("scale-msg")) + h(document.getElementById("scale-field-msg")), noteH: h(document.getElementById("scale-layout-state")),
       genTop: gr.top };`);
 
@@ -6745,7 +6746,7 @@ function run() {
     }
   });
 
-  test("SG: N-A6 the scrollport does not resize between empty, notice and one- or two-line states, grows by exactly 18px a line in the enumerated states, a warning yields to a standing notice, and the slot sits --sp-2 from both neighbours", async () => {
+  test("SG: N-A6 the slot takes no height when empty, grows to its message by exactly 18px a line in the enumerated states and back to 0 on clearing, a warning yields to a standing notice, and the slot sits --sp-2 from both neighbours while it shows", async () => {
     try {
       await sgEditBig();
       for (const [w, h] of [[380, 800], [844, 390], [390, 745]]) {
@@ -6761,17 +6762,20 @@ function run() {
           const display = await b.eval(`return getComputedStyle(msgLine).display;`);
           assert.strictEqual(display === "none", warnHidden, `${where}, ${label}: #scale-msg display is ${display}, expected ${warnHidden ? "none (one message wins)" : "shown"}`);
           const g = await sgGeometry();
-          const reserve = 2 * SG_LINE;
-          const want = Math.max(reserve, g.msgH + g.noteH);
+          const want = g.msgH + g.noteH;
           assert.strictEqual(Math.round((g.msgH + g.noteH) / SG_LINE), lines, `${where}, ${label}: measured ${(g.msgH + g.noteH) / SG_LINE} lines, expected ${lines}`);
           assert.ok(Math.abs(g.slotH - want) < 0.5, `${where}, ${label}: the slot is ${g.slotH}px, expected ${want}px`);
-          assert.ok(Math.abs(g.port - (base.port - (want - reserve))) < 0.5,
-            `${where}, ${label}: the scrollport is ${g.port}px, expected ${base.port - (want - reserve)}px (empty ${base.port}px)`);
+          assert.ok(Math.abs(g.port - (base.port - (g.bodyToGen - base.bodyToGen))) < 0.5,
+            `${where}, ${label}: the scrollport is ${g.port}px, expected ${base.port - (g.bodyToGen - base.bodyToGen)}px (empty ${base.port}px)`);
+          if (lines === 0) {
+            assert.ok(Math.abs(g.bodyToGen - g.rowGap) < 0.5, `${where}, ${label}: body to primary is ${g.bodyToGen}px, one flow gap is ${g.rowGap}px`);
+            return g;
+          }
           assert.ok(Math.abs(g.gapTop - g.sp2) < 0.5, `${where}, ${label}: the gap above the slot is ${g.gapTop}px, --sp-2 is ${g.sp2}px`);
           assert.ok(Math.abs(g.gapBottom - g.sp2) < 0.5, `${where}, ${label}: the gap below the slot is ${g.gapBottom}px, --sp-2 is ${g.sp2}px`);
           return g;
         };
-        assert.ok(Math.abs(base.slotH - 2 * SG_LINE) < 0.5, `${where}: the empty slot is ${base.slotH}px, not the 36px reserve`);
+        assert.strictEqual(base.slotH, 0, `${where}: the empty slot is ${base.slotH}px, it takes no space`);
         await check("empty", {}, 0);
         await check("notice, one line", { note: t1 }, 1);
         await check("warning, one line", { warn: w1 }, 1);
@@ -6857,7 +6861,7 @@ function run() {
       const w2 = await sgFit("msg", 2), t1 = await sgFit("note", 1);
       await sgPut({ warn: w2, note: t1 });
       const g = await sgGeometry();
-      assert.ok(Math.abs(g.slotH - 2 * SG_LINE) < 0.5, `the slot grew to ${g.slotH}px with a warning and a notice`);
+      assert.ok(Math.abs(g.slotH - g.noteH) < 0.5, `the slot is ${g.slotH}px with a warning and a notice, the notice alone is ${g.noteH}px`);
       assert.strictEqual(await b.eval(`return getComputedStyle(msgLine).display;`), "none", "the warning did not yield to the notice");
       for (const kb of KEYBOARDS) {
         await b.fakeKeyboard(745 - kb);
@@ -6887,11 +6891,11 @@ function run() {
       await b.eval(`document.getElementById("scale-tab-layout").click(); return true;`);
       await b.eval(`document.getElementById("scale-anchor-between").click(); return true;`);
       await b.settle();
-      const noticed = await b.eval(`return { note: layoutNote.textContent, noticed: sheet.classList.contains("noticed"), display: getComputedStyle(msgLine).display, slot: document.getElementById("scale-guidance").getBoundingClientRect().height };`);
+      const noticed = await b.eval(`return { note: layoutNote.textContent, noticed: sheet.classList.contains("noticed"), display: getComputedStyle(msgLine).display, slot: document.getElementById("scale-guidance").getBoundingClientRect().height, noteH: layoutNote.getBoundingClientRect().height };`);
       assert.ok(noticed.note.length > 0, "the anchor tap raised no notice");
       assert.ok(noticed.noticed, "paintLayout did not mark the sheet noticed");
       assert.strictEqual(noticed.display, "none", "the SMALL_LABELS warning did not yield to the notice");
-      assert.ok(Math.abs(noticed.slot - 2 * SG_LINE) < 0.5, `the slot is ${noticed.slot}px, not the two-line reserve`);
+      assert.ok(Math.abs(noticed.slot - noticed.noteH) < 0.5, `the slot is ${noticed.slot}px, the notice alone is ${noticed.noteH}px`);
       await b.eval(`document.getElementById("scale-tab-scale").click(); return true;`);
       await b.eval(`document.getElementById("scale-box").scrollIntoView({ block: "center" }); return true;`);
       await b.click("#scale-box");
@@ -7329,7 +7333,7 @@ function run() {
       await b.fakeKeyboard(369);
       await kbSettle();
       const topOf = () => b.eval(`const r = document.getElementById("scale-top").getBoundingClientRect(); return { top: r.top, scroll: document.querySelector("#scale-sheet .sheetbody").scrollTop };`);
-      await b.eval(`const body = document.querySelector("#scale-sheet .sheetbody"); body.scrollTop = body.scrollHeight; return true;`);
+      await b.eval(`const body = document.querySelector("#scale-sheet .sheetbody"); const sp = document.createElement("div"); sp.style.height = "400px"; document.getElementById("scale-panel-scale").appendChild(sp); body.scrollTop = body.scrollHeight; return true;`);
       await kbSettle();
       const hidden = await topOf();
       assert.ok(hidden.top < 0, `the focused field is still in view (${hidden.top}), so this proves nothing`);
@@ -14226,20 +14230,22 @@ function run() {
       }
     });
 
-    test("O1: at 320x568 the duplicate warning on the field line keeps the slot's two-line height", async () => {
+    test("O1: at 320x568 the duplicate warning on the field line grows the slot and clearing it returns the slot to 0", async () => {
       try {
         await tbOpenAdd(320, 568, null);
         await typeScale("(D3) A3 C4 D4");
         await b.eval(`const e = document.getElementById("scale-bottom"); e.value = "c d";
-          e.dispatchEvent(new Event("input", { bubbles: true })); return true;`);
+          e.dispatchEvent(new Event("input", { bubbles: true })); e.dispatchEvent(new Event("blur")); return true;`);
         await frames();
         const slot = () => b.eval(`return document.getElementById("scale-guidance").getBoundingClientRect().height;`);
         const warn = await slot();
+        const line = await b.eval(`return document.getElementById("scale-field-msg").getBoundingClientRect().height;`);
         await b.eval(`const e = document.getElementById("scale-bottom"); e.value = "";
           e.dispatchEvent(new Event("input", { bubbles: true })); return true;`);
         await frames();
         const clear = await slot();
-        assert.strictEqual(warn, clear, `the slot grew from ${clear}px to ${warn}px under the duplicate warning`);
+        assert.ok(line > 0 && Math.abs(warn - line) < 0.5, `the slot is ${warn}px, the warning is ${line}px tall`);
+        assert.strictEqual(clear, 0, `the slot is ${clear}px after the warning cleared, not 0`);
       } finally {
         await b.setViewport(900, 900, false);
       }
@@ -14288,7 +14294,17 @@ function run() {
       const pts = [];
       for (let i = 1; i <= steps; i++) pts.push([0, Math.round((ms * i) / steps), Math.round((dy * i) / steps)]);
       pts.push([0, ms + 250, dy]);
-      await b.drag(".sheetbody", pts, { y0: Math.round(bb.h * 0.3) });
+      const y0 = await b.eval(`
+        const body = document.querySelector(".sheetbody"), r = body.getBoundingClientRect(), x = r.left + r.width / 2;
+        for (let y = r.top + r.height * 0.8; y > r.top + 4; y -= 4) {
+          const clear = [[0, 0], [0, -24], [0, 24], [-24, 0], [24, 0]].every(([dx, dy]) => {
+            const t = document.elementFromPoint(x + dx, y + dy);
+            return t && body.contains(t) && !t.closest("#scale-lip, #scale-preview, input, textarea, select");
+          });
+          if (clear) return Math.round(y - (r.top + r.height / 2));
+        }
+        return ${Math.round(bb.h * 0.3)};`);
+      await b.drag(".sheetbody", pts, { y0 });
       await sleep(300);
     };
     const collapse = async () => { await swipeBody(-140); };
@@ -14311,7 +14327,7 @@ function run() {
       await b.setViewport(900, 900, false);
     };
 
-    test("UX: a real touch swipe down collapses the footer to a 4px lip, a swipe up restores it, with no flicker under momentum", { timeout: 90000 }, async () => {
+    test("UX: a real touch swipe down collapses the footer to a 2px lip, a swipe up restores it, with no flicker under momentum", { timeout: 90000 }, async () => {
       const fails = [];
       try {
         for (const [w, h] of [[380, 780], [844, 390], [1280, 800]]) {
@@ -14325,7 +14341,7 @@ function run() {
             if (!(s.lipped && s.shut)) fails.push(`${ctx}: a swipe down did not collapse (${JSON.stringify(s)})`);
             else {
               const foot = await b.eval(`return document.getElementById("scale-foot").getBoundingClientRect().height;`);
-              if (foot > 4.5) fails.push(`${ctx}: the shut footer is ${foot}px, not 4`);
+              if (foot > 2.5) fails.push(`${ctx}: the shut footer is ${foot}px, not 2`);
               if (s.lippedFlips !== 1) fails.push(`${ctx}: ${s.lippedFlips} lip changes under momentum, not 1`);
             }
             await restoreBySwipe();
@@ -14338,6 +14354,147 @@ function run() {
       assert.deepStrictEqual(fails, [], fails.join("\n"));
     });
 
+    const gap = () => b.eval(`
+      const body = document.querySelector("#scale-sheet .sheetbody");
+      const surf = document.querySelector("#scale-sheet .sheetsurf") || document.getElementById("scale-sheet");
+      return { M: body.scrollHeight - body.clientHeight, E: surf.getBoundingClientRect().bottom - body.getBoundingClientRect().bottom };`);
+    const pull = async (dy, { sel = "#scale-tabs", y0 = 0, ms = 90 } = {}) => {
+      const pts = [];
+      for (let i = 1; i <= 6; i++) pts.push([0, Math.round((ms * i) / 6), Math.round((dy * i) / 6)]);
+      await b.drag(sel, pts, { y0 });
+      await sleep(350);
+    };
+    const wheelBody = async (dy) => {
+      const bb = await bodyBox();
+      await b.send("Input.dispatchMouseEvent", { type: "mouseWheel", x: 150, y: Math.round(bb.top + bb.h / 2), deltaX: 0, deltaY: dy });
+      await sleep(400);
+    };
+    const finger2 = (type, pts) => b.send("Input.dispatchTouchEvent", { type, touchPoints: pts.map(([x, y], i) => ({ x, y, id: i + 1, radiusX: 4, radiusY: 4, force: 1 })) });
+
+    test("PH: P3 at 390x797 a 24px finger-up drag collapses a Scale tab whose range is under the footer, 23px does not, a 24px finger-down drag restores", { timeout: 90000 }, async () => {
+      try {
+        await lipOpen(390, 797, { spacer: 0 });
+        const g = await gap();
+        assert.ok(g.M < g.E, `this proves nothing unless the range ${g.M} is under the footer ${g.E}`);
+        await pull(-23);
+        assert.strictEqual((await lipState()).lipped, false, "23px collapsed");
+        await pull(-24);
+        let s = await lipState();
+        assert.ok(s.lipped && s.shut, `24px up did not collapse (${JSON.stringify(s)})`);
+        await pull(24);
+        s = await lipState();
+        assert.strictEqual(s.lipped, false, `24px down did not restore (${JSON.stringify(s)})`);
+      } finally { await reset(); }
+    });
+
+    test("PH: P3 at 390x797 repeated drags change the lip only at the drags, and a drag to the scroll end neither restores nor flickers", { timeout: 90000 }, async () => {
+      try {
+        await lipOpen(390, 797, { spacer: 0 });
+        for (let i = 0; i < 3; i++) { await pull(-60); await pull(60); }
+        assert.strictEqual((await lipState()).lippedFlips, 6, "three up and three down drags");
+        await lipOpen(390, 797, { spacer: 260 });
+        await pull(-320, { ms: 60, sel: ".sheetbody", y0: 120 });
+        await sleep(900);
+        await pull(-320, { ms: 60, sel: ".sheetbody", y0: 120 });
+        await sleep(900);
+        const s = await lipState();
+        assert.ok(s.top >= s.M - 2, `the drags did not reach the end (${s.top} of ${s.M})`);
+        assert.ok(s.lipped && s.shut, `the footer reopened at the end (${JSON.stringify(s)})`);
+        assert.strictEqual(s.lippedFlips, 1, `${s.lippedFlips} lip changes across two flicks`);
+      } finally { await reset(); }
+    });
+
+    test("PH: P3 a drag that starts on a field, on the plate or with a second finger changes the lip zero times across the gesture and its settle, at 390x797 and 380x780", { timeout: 120000 }, async () => {
+      try {
+        for (const [w, h] of [[390, 797], [380, 780]]) {
+          await lipOpen(w, h, { spacer: 0 });
+          const sc = await gap();
+          assert.ok(sc.M < sc.E, `${w}x${h}: this proves nothing unless the Scale range ${sc.M} is under the footer ${sc.E}`);
+          await pull(-60, { sel: "#scale-box" });
+          await sleep(600);
+          assert.strictEqual((await lipState()).flips, 0, `${w}x${h}: a drag from the seed box changed the lip`);
+          await b.eval(`document.getElementById("scale-tab-layout").click(); return true;`);
+          await sleep(400);
+          const ly = await b.eval(`const body = document.querySelector("#scale-sheet .sheetbody"), surf = document.querySelector("#scale-sheet .sheetsurf") || document.getElementById("scale-sheet");
+            return { M: body.scrollHeight - body.clientHeight, t: body.scrollTop, E: surf.getBoundingClientRect().bottom - body.getBoundingClientRect().bottom };`);
+          assert.ok(ly.M - ly.t > ly.E, `${w}x${h}: this proves nothing unless the Layout range ${ly.M} - ${ly.t} is over the footer ${ly.E}, where the scroll rule would collapse and then restore`);
+          const before = (await lipState()).flips;
+          await pull(-60, { sel: "#scale-preview", ms: 90 });
+          await sleep(700);
+          const s = await lipState();
+          assert.strictEqual(s.flips - before, 0, `${w}x${h}: a drag from the plate changed the lip ${s.flips - before} times (${JSON.stringify(s)})`);
+          assert.strictEqual(s.lipped, false, `${w}x${h}: a drag from the plate left the lip changed`);
+          await b.eval(`document.getElementById("scale-tab-scale").click(); return true;`);
+          await sleep(300);
+          const bb = await bodyBox();
+          const y = Math.round(bb.top + bb.h / 2);
+          await finger2("touchStart", [[100, y], [200, y]]);
+          for (let i = 1; i <= 6; i++) await finger2("touchMove", [[100, y - i * 10], [200, y - i * 10]]);
+          await finger2("touchEnd", []);
+          await sleep(700);
+          assert.strictEqual((await lipState()).flips, before, `${w}x${h}: a two-finger drag changed the lip`);
+          await b.drag(".sheetbody", [[20, 30, -5], [60, 60, -10], [120, 90, -24]], { y0: 0 });
+          await sleep(500);
+          assert.strictEqual((await lipState()).flips, before, `${w}x${h}: a sideways drag changed the lip`);
+        }
+      } finally { await reset(); }
+    });
+
+    test("PH: P3 a long press on a plate field that repaints under the finger, then a wheel or ArrowDown, collapses exactly once, at 390x797 and 380x780", { timeout: 120000 }, async () => {
+      try {
+        for (const key of ["wheel", "ArrowDown"]) {
+          for (const [w, h] of [[390, 797], [380, 780]]) {
+            await lipOpen(w, h, { spacer: 0 });
+            await b.eval(`document.getElementById("scale-tab-layout").click(); return true;`);
+            await sleep(400);
+            const ly = await b.eval(`const body = document.querySelector("#scale-sheet .sheetbody"), surf = document.querySelector("#scale-sheet .sheetsurf") || document.getElementById("scale-sheet");
+              return { M: body.scrollHeight - body.clientHeight, t: body.scrollTop, E: surf.getBoundingClientRect().bottom - body.getBoundingClientRect().bottom };`);
+            assert.ok(ly.M - ly.t > ly.E, `${key} ${w}x${h}: this proves nothing unless the Layout range ${ly.M} - ${ly.t} is over the footer ${ly.E}`);
+            const pt = await b.eval(`
+              const hits = [...document.querySelectorAll("#scale-preview .panhit")];
+              const r = hits[0].getBoundingClientRect();
+              return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2), n: hits.length };`);
+            assert.ok(pt.n > 0, `${key} ${w}x${h}: no .panhit to press`);
+            const before = (await lipState()).flips;
+            await finger2("touchStart", [[pt.x, pt.y]]);
+            await sleep(400);
+            await finger2("touchEnd", []);
+            await sleep(500);
+            if (key === "wheel") {
+              await wheelBody(15);
+              await wheelBody(15);
+            } else {
+              await b.eval(`document.querySelector("#scale-sheet .sheetbody").focus(); return true;`);
+              for (let i = 0; i < 1; i++) {
+                await b.send("Input.dispatchKeyEvent", { type: "rawKeyDown", key: "ArrowDown", code: "ArrowDown", windowsVirtualKeyCode: 40, nativeVirtualKeyCode: 40 });
+                await b.send("Input.dispatchKeyEvent", { type: "keyUp", key: "ArrowDown", code: "ArrowDown", windowsVirtualKeyCode: 40, nativeVirtualKeyCode: 40 });
+                await sleep(60);
+              }
+              await sleep(400);
+            }
+            const s = await lipState();
+            assert.ok(s.top > ly.t, `${key} ${w}x${h}: the body did not scroll (${JSON.stringify(s)}), so this proves nothing`);
+            assert.strictEqual(s.flips - before, 1, `${key} ${w}x${h}: ${s.flips - before} lip changes after a long press, not 1 (${JSON.stringify(s)})`);
+            assert.ok(s.lipped && s.shut, `${key} ${w}x${h}: not collapsed (${JSON.stringify(s)})`);
+          }
+        }
+      } finally { await reset(); }
+    });
+
+    test("PH: P3 at 390x797 a wheel on a sheet with no room never collapses; with room it collapses", { timeout: 90000 }, async () => {
+      try {
+        await lipOpen(390, 797, { spacer: 0 });
+        await wheelBody(300);
+        await wheelBody(-300);
+        assert.strictEqual((await lipState()).flips, 0, "a wheel on a short sheet changed the lip");
+        await lipOpen(390, 797, { spacer: 900 });
+        await wheelBody(50);
+        await wheelBody(300);
+        const s = await lipState();
+        assert.ok(s.lipped && s.shut, `a wheel with room did not collapse (${JSON.stringify(s)})`);
+      } finally { await reset(); }
+    });
+
     test("UX: a sheet whose content does not scroll never collapses", { timeout: 60000 }, async () => {
       let covered = 0;
       try {
@@ -14346,9 +14503,9 @@ function run() {
           let s = await lipState();
           if (s.M > 1) continue;
           covered += 1;
-          await collapse();
-          await restoreBySwipe();
-          await collapse();
+          await wheelBody(300);
+          await wheelBody(-300);
+          await wheelBody(300);
           s = await lipState();
           assert.strictEqual(s.lipped, false, `${w}x${h}: a non-scrolling sheet collapsed`);
           assert.strictEqual(s.flips, 0, `${w}x${h}: lip classes changed ${s.flips} times`);
@@ -14433,6 +14590,48 @@ function run() {
       } finally { await reset(); }
     });
 
+    test("PH: P4 the Add sheet with no message has no empty band above the primary: body to primary is one flow gap at 390x797 and 380x780", { timeout: 60000 }, async () => {
+      try {
+        for (const [w, h] of [[390, 797], [380, 780]]) {
+          await lipOpen(w, h, { spacer: 0 });
+          const m = await b.eval(`
+            const surf = document.querySelector("#scale-sheet .sheetsurf"), body = surf.querySelector(".sheetbody");
+            const slot = document.getElementById("scale-guidance"), gen = document.getElementById("scale-generate"), next = document.getElementById("scale-next");
+            const prim = !next.hidden ? next : gen;
+            const cs = getComputedStyle(slot);
+            return { slot: slot.getBoundingClientRect().height, mt: cs.marginTop, mb: cs.marginBottom, gap: prim.getBoundingClientRect().top - body.getBoundingClientRect().bottom,
+              row: parseFloat(getComputedStyle(surf).rowGap) };`);
+          assert.ok(Math.abs(m.gap - m.row) < 0.5, `${w}x${h}: body to primary is ${m.gap}px, one flow gap is ${m.row}px (slot ${m.slot}px)`);
+          assert.strictEqual(m.slot, 0, `${w}x${h}: the empty slot is ${m.slot}px tall`);
+          assert.strictEqual(m.mt + m.mb, "0px0px", `${w}x${h}: the empty slot has margins ${m.mt} ${m.mb}`);
+        }
+      } finally { await reset(); }
+    });
+
+    test("PH: P4 a message appearing while the footer is lipshut grows the slot without flipping the lip, and clearing it returns the slot to 0", { timeout: 60000 }, async () => {
+      try {
+        await lipOpen(390, 797);
+        await collapse();
+        let s = await lipState();
+        assert.ok(s.lipped && s.shut, `the footer did not shut (${JSON.stringify(s)})`);
+        const slot = () => b.eval(`return document.getElementById("scale-guidance").getBoundingClientRect().height;`);
+        assert.strictEqual(await slot(), 0);
+        const flips = s.flips;
+        await b.eval(`say("Keep every note you can reach on the pan before you press the button below", "warn"); return true;`);
+        await sleep(600);
+        s = await lipState();
+        assert.ok(await slot() > 0, "the message gave the slot no height");
+        assert.ok(s.lipped && s.shut, `the message flipped the lip (${JSON.stringify(s)})`);
+        assert.strictEqual(s.flips, flips, `the message produced ${s.flips - flips} lip changes`);
+        await b.eval(`say("", ""); return true;`);
+        await sleep(600);
+        s = await lipState();
+        assert.strictEqual(await slot(), 0, "clearing the message left the slot open");
+        assert.ok(s.lipped && s.shut, `clearing the message flipped the lip (${JSON.stringify(s)})`);
+        assert.strictEqual(s.flips, flips, `the clear produced ${s.flips - flips} lip changes`);
+      } finally { await reset(); }
+    });
+
     test("UX: lipped, an empty guidance slot takes no height and the lip sits on the body's hairline; a slot with text stays --sp-2 above the lip", { timeout: 60000 }, async () => {
       try {
         await lipOpen(380, 780);
@@ -14460,7 +14659,7 @@ function run() {
       } finally { await reset(); }
     });
 
-    test("UX: the lip draws a 36x4 grabber at the surface's bottom above the safe-area inset, its tap zone is 25px tall, and a tap anywhere in the zone restores", { timeout: 60000 }, async () => {
+    test("UX: the lip draws a 32x3 pill at the surface's bottom above the safe-area inset, its tap zone is 25px tall, and a tap anywhere in the zone restores", { timeout: 60000 }, async () => {
       try {
         let inset = 0;
         try { await Promise.race([b.send("Emulation.setSafeAreaInsetsOverride", { insets: { bottom: 34 } }), sleep(3000).then(() => { throw new Error("no override"); })]); inset = 34; } catch (e) { inset = 0; }
@@ -14472,8 +14671,14 @@ function run() {
           const surf = document.querySelector("#scale-sheet .sheetsurf").getBoundingClientRect();
           return { h: r.height, w: parseFloat(a.width), ah: parseFloat(a.height), bottom: r.bottom, surfBottom: surf.bottom, top: r.top, left: r.left, right: r.right };`);
         assert.strictEqual(m.h, 25);
-        assert.strictEqual(m.w, 36);
-        assert.strictEqual(m.ah, 4);
+        assert.strictEqual(m.w, 32);
+        assert.strictEqual(m.ah, 3);
+        const hit = await b.eval(`
+          const lip = document.getElementById("scale-lip"), r = lip.getBoundingClientRect(), x = (r.left + r.right) / 2;
+          return { inside: document.elementFromPoint(x, r.top + 1) === lip, above: document.elementFromPoint(x, r.top - 1) === lip,
+            foot: document.getElementById("scale-foot").getBoundingClientRect().height };`);
+        assert.ok(hit.inside && !hit.above, `the hit-test zone is not the 25px box (inside ${hit.inside}, above ${hit.above})`);
+        assert.ok(hit.foot <= 2.5, `the shut footer is ${hit.foot}px, not 2`);
         assert.ok(Math.abs(m.bottom - (m.surfBottom - inset)) <= 1.5, `the lip bottom ${m.bottom} against the surface bottom ${m.surfBottom} less inset ${inset}`);
         const cx = (m.left + m.right) / 2;
         await tapAt(cx, m.top + 2);
@@ -14611,7 +14816,7 @@ function run() {
       } finally { await reset(); }
     });
 
-    test("UX: a flick to the end changes lipped at most twice and ends with the footer shown", { timeout: 60000 }, async () => {
+    test("UX: a touch flick to the end collapses once and stays collapsed", { timeout: 60000 }, async () => {
       try {
         await lipOpen(380, 780, { spacer: 260 });
         for (let i = 0; i < 2; i++) {
@@ -14619,8 +14824,8 @@ function run() {
           await sleep(1200);
         }
         const s = await lipState();
-        assert.ok(s.lippedFlips <= 2, `the flick changed lipped ${s.lippedFlips} times`);
-        assert.strictEqual(s.lipped, false, `the flick ended lipped (${JSON.stringify(s)})`);
+        assert.strictEqual(s.lippedFlips, 1, `the flick changed lipped ${s.lippedFlips} times`);
+        assert.ok(s.lipped && s.shut, `the flick reopened the footer at the end (${JSON.stringify(s)})`);
         assert.ok(s.top >= s.M - 2, `the flick did not reach the end (${s.top} of ${s.M})`);
       } finally { await reset(); }
     });

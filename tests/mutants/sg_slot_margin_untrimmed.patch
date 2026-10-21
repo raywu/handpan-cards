@@ -1,0 +1,15 @@
+# kills: SG: N-A6 the slot takes no height when empty, grows to its message by exactly 18px a line in the enumerated states and back to 0 on clearing, a warning yields to a standing notice, and the slot sits --sp-2 from both neighbours while it shows
+# suite: node --test --test-name-pattern ^SG..N.A6.the.slot.takes.no.height.when.empty..grows.to.its.message.by.exactly.18px.a.line.in.the.enumerated.states.and.back.to.0.on.clearing..a.warning.yields.to.a.standing.notice..and.the.slot.sits...sp.2.from.both.neighbours.while.it.shows$ tests/e2e.test.js
+# The slot keeps the surface's two --sp-4 gaps instead of trimming them to --sp-2, so a message sits too far from both neighbours.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -933,7 +933,7 @@ footer.seq{row-gap:var(--sp-1)}
+    flex:0 0 auto is load-bearing: as a shrinkable item a three-line message
+    spills over the button. */
+ #scale-guidance{flex:0 0 auto; display:flex; flex-direction:column;
+-  justify-content:flex-end; margin-block:calc(var(--sp-2) - var(--sp-4))}
++  justify-content:flex-end}
+ #scale-sheet #scale-guidance:not(:has(> :not([hidden]):not(:empty))){position:absolute;
+   min-height:0; height:0; margin:0; overflow:hidden}
+ #scale-guidance #scale-msg{min-height:0}
