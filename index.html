@@ -10614,6 +10614,84 @@ sheet.addEventListener("wheel", releasePin, { passive: true });
 bandPort.addEventListener("scroll", holdPin);
 if (sheetSurf) sheetSurf.addEventListener("scroll", holdPin);
 
+/* ---- DEV only: lip debug log (?lipdebug=1). Never merge to main. ---- */
+const LIPDBG = (() => {
+  let q = null;
+  try { q = new URLSearchParams(location.search).get("lipdebug"); } catch (e) {}
+  try {
+    if (q === "1") sessionStorage.setItem("lipdebug", "1");
+    else if (q === "0") sessionStorage.removeItem("lipdebug");
+    return q === "1" || sessionStorage.getItem("lipdebug") === "1";
+  } catch (e) { return q === "1"; }
+})();
+let lipCause = "other";
+const lipWhy = (c) => { if (LIPDBG) lipCause = c; };
+const lipWhyDefault = (c) => { if (LIPDBG && lipCause === "other") lipCause = c; };
+const lipCauseTake = () => { const c = lipCause; lipCause = "other"; return c; };
+const lipLogBuf = [];
+let lipLogSave = 0, lipLogUi = null, lipMoveAt = 0;
+function lipLog(type, data) {
+  if (!LIPDBG) return;
+  const e = Object.assign({ t: Math.round(performance.now() * 10) / 10, type }, data);
+  lipLogBuf.push(e);
+  if (lipLogBuf.length > 600) lipLogBuf.shift();
+  if (!lipLogSave) lipLogSave = setTimeout(lipLogFlush, 250);
+  if (lipLogUi) lipLogUi.changed();
+}
+function lipLogFlush() {
+  lipLogSave = 0;
+  try { sessionStorage.setItem("lipdebuglog", JSON.stringify(lipLogBuf)); } catch (e) {}
+}
+const lipSnap = () => ({ shut: isLipShut(), lipped: isLipped(), tab: sheetTab, st: Math.round(bandPort.scrollTop * 10) / 10 });
+const lipSum = (t) => {
+  if (!t || !t.tagName) return "";
+  const c = typeof t.className === "string" && t.className ? "." + t.className.trim().split(/\s+/).join(".") : "";
+  return (t.tagName.toLowerCase() + (t.id ? "#" + t.id : "") + c).slice(0, 40);
+};
+if (LIPDBG) {
+  try { const old = JSON.parse(sessionStorage.getItem("lipdebuglog") || "[]"); if (Array.isArray(old)) lipLogBuf.push(...old.slice(-600)); } catch (e) {}
+  window.addEventListener("pagehide", lipLogFlush);
+  document.addEventListener("visibilitychange", lipLogFlush);
+  const mk = (tag, css, txt) => { const el = document.createElement(tag); el.style.cssText = css; if (txt) el.textContent = txt; return el; };
+  const btnCss = "min-height:44px;min-width:44px;flex:1;font:600 12px monospace;border:1px solid #000;background:#fff;color:#000;border-radius:6px;padding:0 6px";
+  const pill = mk("button", "position:fixed;top:4px;left:4px;z-index:2147483000;min-height:44px;min-width:44px;padding:0 10px;border:2px solid #000;border-radius:22px;background:#ffe14d;color:#000;font:700 12px monospace;pointer-events:auto", "LOG 0");
+  pill.type = "button";
+  const panel = mk("div", "position:fixed;top:52px;left:4px;width:min(372px,calc(100vw - 8px));max-height:62vh;z-index:2147483000;background:#fff;color:#000;border:2px solid #000;border-radius:8px;padding:6px;display:none;flex-direction:column;gap:6px;box-sizing:border-box;pointer-events:auto");
+  const view = mk("pre", "margin:0;overflow:auto;flex:1;min-height:80px;max-height:36vh;font:9px/1.25 monospace;white-space:pre-wrap;word-break:break-all;background:#f4f4f4");
+  const row = mk("div", "display:flex;gap:6px");
+  const status = mk("div", "font:11px monospace;min-height:14px");
+  const ta = mk("textarea", "display:none;width:100%;height:80px;font:9px monospace");
+  ta.readOnly = true;
+  const header = () => JSON.stringify({ type: "header", userAgent: navigator.userAgent, inner: innerWidth + "x" + innerHeight, vv: window.visualViewport ? Math.round(window.visualViewport.height) : null, dpr: window.devicePixelRatio, page: document.lastModified, url: location.pathname + location.search, dev: "unknown" });
+  const dump = () => [header(), ...lipLogBuf.map((x) => JSON.stringify(x))].join("\n");
+  let marks = 0, paintAt = 0;
+  const paint = () => {
+    pill.textContent = "LOG " + lipLogBuf.length;
+    if (panel.style.display === "none") return;
+    view.textContent = lipLogBuf.slice(-30).map((x) => JSON.stringify(x)).join("\n");
+    view.scrollTop = view.scrollHeight;
+  };
+  lipLogUi = { changed() { if (!paintAt) paintAt = setTimeout(() => { paintAt = 0; paint(); }, 120); } };
+  for (const b of [["COPY", async () => {
+    const text = dump();
+    try { await navigator.clipboard.writeText(text); status.textContent = "COPIED " + lipLogBuf.length; ta.style.display = "none"; }
+    catch (e) { ta.style.display = "block"; ta.value = text; ta.focus(); ta.select(); status.textContent = "CLIPBOARD REFUSED: text selected, copy it"; }
+  }], ["MARK", () => { marks += 1; lipLog("mark", { n: marks }); }],
+  ["CLEAR", () => { lipLogBuf.length = 0; marks = 0; lipLogFlush(); paint(); status.textContent = "CLEARED"; }],
+  ["CLOSE", () => { panel.style.display = "none"; }]]) {
+    const el = mk("button", btnCss, b[0]);
+    el.type = "button";
+    el.addEventListener("click", b[1]);
+    row.append(el);
+  }
+  panel.append(view, row, status, ta);
+  for (const el of [pill, panel]) for (const ev of ["touchstart", "touchmove", "touchend", "touchcancel", "pointerdown", "wheel", "keydown"]) el.addEventListener(ev, (e) => e.stopPropagation());
+  pill.addEventListener("click", () => { panel.style.display = panel.style.display === "none" ? "flex" : "none"; paint(); });
+  document.body.append(pill, panel);
+  lipLog("boot", { url: location.pathname + location.search, w: innerWidth, h: innerHeight });
+  paint();
+}
+
 /* ---- the footer lip ----
  * OPEN -> SHUTTING (collapseLip), SHUT -> OPENING (restoreLip), OPENING -> OPEN
  * (finishOpen). The layout classes change at the start of a collapse and the end
@@ -10659,10 +10737,12 @@ function lipHandOff() {
   if (document.activeElement !== lipBtn) return;
   const lead = lipPrimary();
   const to = !lead.disabled && !lead.hidden ? lead : (editingId && !delBtn.disabled ? delBtn : swatches.lastElementChild || lead);
+  if (LIPDBG) lipLog("handoff", { to: lipSum(to) });
   if (to && to.focus) to.focus({ preventScroll: true });
 }
 let lipFocusing = false;
 function collapseLip() {
+  if (LIPDBG) lipLog("collapse", { cause: lipCauseTake(), result: !sheetOpen ? "noop:sheet-closed" : isLipped() && isLipShut() ? "noop:already-shut" : "act", ...lipSnap() });
   if (!sheetOpen) return;
   lipAcc = 0;
   clearTimeout(lipTimer);
@@ -10687,6 +10767,7 @@ function collapseLip() {
   }
 }
 function restoreLip() {
+  if (LIPDBG) lipLog("restore", { cause: lipCauseTake(), result: !sheetOpen ? "noop:sheet-closed" : !isLipped() ? "noop:not-lipped" : !isLipShut() ? "noop:not-shut" : lipSettled ? "act:settled" : "act:mid-transition", ...lipSnap() });
   if (!sheetOpen || !isLipped() || !isLipShut()) return;
   lipAcc = 0;
   clearTimeout(lipTimer);
@@ -10712,6 +10793,7 @@ function endOpening(gen) {
   finishOpen();
 }
 function finishOpen() {
+  if (LIPDBG) lipLog("finishOpen", lipSnap());
   lipGen += 1;
   clearTimeout(lipTimer);
   lipHandOff();
@@ -10724,6 +10806,7 @@ function finishOpen() {
   lipRebase();
 }
 function lipReset() {
+  if (LIPDBG) lipLog("reset", { cause: lipCauseTake(), ...lipSnap() });
   clearTimeout(lipTimer);
   lipGen += 1;
   sheet.classList.remove("lipped", "lipshut", "lipnow");
@@ -10738,6 +10821,7 @@ function setLip(on, o) {
 }
 function lipKbEdge(was, kb) {
   if (was === kb) return;
+  if (LIPDBG) { lipWhy("kb"); lipLog("kbedge", { kb, vv: window.visualViewport ? Math.round(window.visualViewport.height) : null, ih: innerHeight }); }
   if (kb) collapseLip(); else restoreLip();
 }
 function lipScroll() {
@@ -10746,26 +10830,34 @@ function lipScroll() {
   const prev = lipPrev;
   lipPrev = { t, M };
   const now = Date.now();
-  if (!sheetOpen || sheet.classList.contains("kbup") || now < lipQuietUntil || now > userWindowUntil) return;
+  const sl = (why, extra) => { if (LIPDBG) lipLog("lipScroll", { why, st: t, d: t - prev.t, M, acc: lipAcc, quiet: Math.max(0, lipQuietUntil - now), user: Math.max(0, userWindowUntil - now), shut: isLipShut(), ...extra }); };
+  if (!sheetOpen || sheet.classList.contains("kbup") || now < lipQuietUntil || now > userWindowUntil) {
+    sl(!sheetOpen ? "sheet-closed" : sheet.classList.contains("kbup") ? "kbup" : now < lipQuietUntil ? "quiet-window" : "no-user-window");
+    return;
+  }
   userWindowUntil = now + LIP_WINDOW;
-  if (isLipShut() && t >= M - 1) { restoreLip(); return; }
-  if (M !== prev.M) { lipAcc = 0; return; }
+  if (isLipShut() && t >= M - 1) { sl("bottom-restore"); lipWhy("scroll"); restoreLip(); return; }
+  if (M !== prev.M) { lipAcc = 0; sl("M-changed", { prevM: prev.M }); return; }
   const d = t - prev.t;
   if (d * lipAcc < 0) lipAcc = 0;
   lipAcc += d;
   if (lipAcc >= LIP_PX && !isLipShut()) {
     const E = lipRect(sheetSurf || sheet).bottom - lipRect(bandPort).bottom;
-    if (M - t > E) collapseLip();
+    sl("acc-collapse", { E, skip: !(M - t > E) });
+    if (M - t > E) { lipWhy("scroll"); collapseLip(); }
     lipAcc = 0;
   } else if (lipAcc <= -LIP_PX && isLipShut()) {
+    sl("acc-restore");
+    lipWhy("scroll");
     restoreLip();
     lipAcc = 0;
-  }
+  } else sl("accumulate");
 }
 const lipUser = () => { userWindowUntil = Date.now() + LIP_WINDOW; };
 function lipScrollEvent() {
   const now = Date.now();
   if (lipDrag || lipTouching || now < lipDragEnd) {
+    if (LIPDBG) lipLog("scrollSuppressed", { why: lipDrag ? "drag" : lipTouching ? "touching" : "dragEnd", st: bandPort.scrollTop, endIn: Math.max(0, lipDragEnd - now), acc: lipAcc });
     if (!lipDrag) lipDragEnd = now + LIP_END_MS;
     userWindowUntil = 0;
     lipAcc = 0;
@@ -10781,6 +10873,7 @@ sheet.addEventListener("keydown", (e) => {
   lipUser();
 }, true);
 let lipDrag = null, lipDragEnd = 0, lipTouching = false;
+let lipTouchAt = 0, lipTouchY0 = 0, lipLastEnd = null;
 const lipExcluded = (t) => !!(t && t.closest && t.closest("#scale-lip, #scale-preview, input, textarea, select"));
 sheet.addEventListener("touchstart", (e) => {
   const ts = e.touches;
@@ -10788,27 +10881,49 @@ sheet.addEventListener("touchstart", (e) => {
   const tg = e.target;
   if (tg && tg.addEventListener) for (const ev of ["touchend", "touchcancel"]) tg.addEventListener(ev, lipDragStop, { once: true, passive: true });
   lipDrag = ts && ts.length === 1 && !lipExcluded(e.target) ? { id: ts[0].identifier, x: ts[0].clientX, y: ts[0].clientY, dir: 0 } : null;
+  if (LIPDBG) {
+    const hit = ["#scale-lip", "#scale-preview", "input", "textarea", "select"].find((q) => tg && tg.closest && tg.closest(q));
+    const p0 = ts && ts[0];
+    lipLog("touchstart", { target: lipSum(tg), n: ts ? ts.length : 0, excluded: !!hit, sel: hit || null, x: p0 ? Math.round(p0.clientX) : null, y: p0 ? Math.round(p0.clientY) : null, armed: !!lipDrag, ...lipSnap() });
+    lipTouchAt = performance.now();
+    lipTouchY0 = p0 ? p0.clientY : 0;
+  }
 }, { passive: true, capture: true });
 sheet.addEventListener("touchmove", (e) => {
   const L = lipDrag;
   const p = L && [...(e.touches || [])].find((x) => x.identifier === L.id);
-  if (!p) return;
-  if ((L.dir > 0 && p.clientY < L.y) || (L.dir < 0 && p.clientY > L.y)) { L.y = p.clientY; L.x = p.clientX; return; }
+  const mv = (why, act, extra) => {
+    if (!LIPDBG || !L) return;
+    const n = performance.now();
+    if (!act && n - lipMoveAt < 50) return;
+    lipMoveAt = n;
+    lipLog("touchmove", { why, dx: p ? Math.round(p.clientX - L.x) : null, dy: p ? Math.round(L.y - p.clientY) : null, dir: L.dir, ...extra });
+  };
+  if (!p) { mv("wrong-finger", false, { n: e.touches ? e.touches.length : 0 }); return; }
+  if ((L.dir > 0 && p.clientY < L.y) || (L.dir < 0 && p.clientY > L.y)) { mv("anchor-reset:reversal", false, { from: Math.round(L.y), to: Math.round(p.clientY) }); L.y = p.clientY; L.x = p.clientX; return; }
   const dy = L.y - p.clientY;
-  if (Math.abs(dy) < LIP_PX || Math.abs(dy) <= Math.abs(p.clientX - L.x)) return;
-  if (!sheetOpen || sheet.classList.contains("kbup") || Date.now() < lipQuietUntil) return;
+  if (Math.abs(dy) < LIP_PX) { mv("below-LIP_PX", false); return; }
+  if (Math.abs(dy) <= Math.abs(p.clientX - L.x)) { mv("horizontal-dominant", false); return; }
+  if (!sheetOpen || sheet.classList.contains("kbup") || Date.now() < lipQuietUntil) { mv(!sheetOpen ? "sheet-closed" : sheet.classList.contains("kbup") ? "kbup" : "quiet-window", true, { quiet: lipQuietUntil - Date.now() }); return; }
+  const ox = L.x;
   L.dir = dy > 0 ? 1 : -1;
   L.y = p.clientY;
   L.x = p.clientX;
+  const noop = dy > 0 ? isLipShut() : !isLipShut();
+  mv(noop ? "already-" + (dy > 0 ? "shut" : "open") : dy > 0 ? "act:collapse" : "act:restore", true, { dx: Math.round(p.clientX - ox), dy: Math.round(dy), anchorReset: true });
+  lipWhy(dy > 0 ? "drag-up" : "drag-down");
   if (dy > 0) { if (!isLipShut()) collapseLip(); } else if (isLipShut()) restoreLip();
+  if (noop) lipWhy("other");
 }, { passive: true, capture: true });
 const lipDragStop = (e) => {
+  if (LIPDBG && e !== lipLastEnd) lipLog("touchend", { ev: e && e.type, dyTotal: e && e.changedTouches && e.changedTouches[0] ? Math.round(lipTouchY0 - e.changedTouches[0].clientY) : null, ms: Math.round(performance.now() - lipTouchAt), armed: !!lipDrag, setDragEnd: LIP_END_MS, ...lipSnap() });
+  if (LIPDBG) lipLastEnd = e;
   lipDragEnd = Date.now() + LIP_END_MS;
   lipDrag = null;
   lipTouching = !!(e && e.touches && e.touches.length);
 };
 for (const ev of ["touchend", "touchcancel"]) sheet.addEventListener(ev, lipDragStop, { passive: true, capture: true });
-const lipTouchClear = () => { lipTouching = false; lipDrag = null; lipDragEnd = 0; };
+const lipTouchClear = (e) => { if (LIPDBG) lipLog("touchclear", { ev: e && e.type, key: e && e.key, wasDrag: !!lipDrag, wasTouching: lipTouching }); lipTouching = false; lipDrag = null; lipDragEnd = 0; };
 sheet.addEventListener("wheel", lipTouchClear, { passive: true, capture: true });
 sheet.addEventListener("keydown", lipTouchClear, { capture: true });
 let lipTouch = null;
@@ -10819,12 +10934,12 @@ lipBtn.addEventListener("touchstart", (e) => {
 lipBtn.addEventListener("touchmove", (e) => {
   if (!lipTouch) return;
   const p = [...(e.touches || [])].find((x) => x.identifier === lipTouch.id);
-  if (p && lipTouch.y - p.clientY >= LIP_SWIPE) { lipTouch = null; restoreLip(); }
+  if (p && lipTouch.y - p.clientY >= LIP_SWIPE) { lipTouch = null; lipWhy("lip-swipe"); restoreLip(); }
 }, { passive: true });
 lipBtn.addEventListener("touchend", () => { lipTouch = null; }, { passive: true });
-lipBtn.addEventListener("click", restoreLip);
+lipBtn.addEventListener("click", () => { lipWhy("lip-tap"); restoreLip(); });
 lipBtn.addEventListener("focusin", () => {
-  if (!lipFocusing) restoreLip();
+  if (!lipFocusing) { lipWhy("focus"); restoreLip(); }
 });
 footSlide.addEventListener("transitionend", (e) => {
   if (e.target === footSlide && e.propertyName === "transform") endOpening(lipEnd);
@@ -10869,6 +10984,7 @@ function setTab(tab) {
   paintLayout();
   repaintPlate();
   bandPort.scrollTop = 0;
+  if (LIPDBG) { lipWhyDefault("tab"); lipLog("tab", { to: tab, cause: lipCause }); }
   setLip(false, { instant: true });
   if (drawerOpen && boxOk && !hasTwoNoteRing()) layoutStatus("This pan has no ring with two notes, so there is nothing to rearrange.");
 }
@@ -11647,6 +11763,7 @@ function showSheet(opener) {
   sheetOpener = opener || addChip;
   sheet.removeAttribute("hidden");
   sheetOpen = true;
+  if (LIPDBG) { lipLog("sheet-open", { w: innerWidth, h: innerHeight }); lipWhy("reset"); }
   setLip(false, { instant: true });
   setInert(true, background);
   resyncSheet(true);
@@ -11754,6 +11871,7 @@ function hideSheet() {
     sheetSurf.style.maxHeight = "";
   }
   for (const c of ["kbup", "short", "side", "tiny"]) setSheetClass(c, false);
+  if (LIPDBG) { lipLog("sheet-close", {}); lipWhy("reset"); }
   setLip(false, { instant: true });
   scrollPin = null;
   tapSnap = null;
@@ -12081,7 +12199,7 @@ anchorOne.onclick = pickAnchor("one");
 anchorBetween.onclick = pickAnchor("between");
 tabScale.addEventListener("click", () => setTab("scale"));
 tabLayout.addEventListener("click", () => setTab("layout"));
-nextBtn.addEventListener("click", () => { setTab("layout"); tabLayout.focus(); });
+nextBtn.addEventListener("click", () => { lipWhy("next"); setTab("layout"); tabLayout.focus(); });
 tabStrip.addEventListener("keydown", (e) => {
   if (e.altKey || e.ctrlKey || e.metaKey) return;
   const tabs = [tabScale, tabLayout];
