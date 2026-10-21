@@ -1,23 +1,23 @@
 # kills: the seed refusal sits above the pan
 # suite: node --test --test-name-pattern ^the.seed.refusal.sits.above.the.pan$ tests/e2e.test.js
-# #scale-refusal moves out of the scale-line .fieldrow to the foot of the Scale panel, under the
-# palette. The text, the tier classes and aria-live are untouched; only a geometric test sees it.
+# #scale-refusal moves out of the scale-line .fieldrow to the foot of the Layout panel, past the pan
+# and the palette. The text, the tier classes and aria-live are untouched; only a geometric test sees it.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1476,7 +1476,6 @@ html.about-open{overflow:hidden}
+@@ -1480,7 +1480,6 @@ html.about-open{overflow:hidden}
             true rather than hoping every caller happens to agree. It carries
             its own aria-live because #scale-sheet is aria-modal, which puts
             the page-level .announce outside the dialog and out of reach. -->
 -      <div id="scale-refusal" aria-live="polite"></div>
        <p class="sheethint" id="scale-line-note"></p>
      </div>
-     <!-- Inside .sheetbody, in the scroll. It used to be pinned below the
-@@ -1506,6 +1505,7 @@ html.about-open{overflow:hidden}
-     <div class="ctlrow">
-       <div id="scale-swatches" role="group" aria-label="Card palette"></div>
+     </div>
+@@ -1570,6 +1569,7 @@ html.about-open{overflow:hidden}
+         <div id="scale-swatches" role="group" aria-labelledby="scale-palette-label"></div>
+       </div>
      </div>
 +    <div id="scale-refusal" aria-live="polite"></div>
      </div>
-     <div id="scale-panel-layout" role="tabpanel" aria-labelledby="scale-tab-layout" hidden>
-     <div id="scale-plate-band">
+    </div>
+     <!-- The page's messages, pinned with the primary: everything say() writes

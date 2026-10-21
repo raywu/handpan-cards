@@ -1,0 +1,14 @@
+# kills: SPB: the swatches stay enabled on the Layout tab with an empty or invalid scale while every drawer control is disabled
+# suite: node --test --test-name-pattern ^SPB:.the.swatches.stay.enabled.on.the.Layout.tab.with.an.empty.or.invalid.scale.while.every.drawer.control.is.disabled$ tests/app.test.js
+# The swatches are disabled while the scale box does not parse.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10448,6 +10448,7 @@ function buildSwatches() {
+   HPE.select.PALETTES.forEach((p, i) => {
+     const b = document.createElement("button");
+     b.type = "button";
++    b.disabled = !boxOk;
+     b.className = "dot" + (i === palette ? " sel" : "");
+     b.setAttribute("aria-label", "Palette " + (i + 1));
+     b.setAttribute("aria-pressed", String(i === palette));

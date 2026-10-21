@@ -4,19 +4,19 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12541,13 +12541,12 @@ sheet.addEventListener("keydown", e => {
+@@ -12676,13 +12676,12 @@ sheet.addEventListener("keydown", e => {
      ? [backBtn, onTab, previewBox.querySelector('.panhit[tabindex="0"]'),
         anchorOne, anchorBetween, mirrorTop, mirrorBot, fineBtn,
         notePrev, noteNext, seatPrev, seatNext, resetBtn,
--       shut ? lipBtn : genBtn, editingId && !shut ? delBtn : null]
-+       shut ? lipBtn : genBtn]
+-       ...swatches.children, shut ? lipBtn : genBtn, editingId && !shut ? delBtn : null]
++       ...swatches.children, shut ? lipBtn : genBtn]
      : [backBtn, onTab,
         editingId ? nameBox : null,
         fieldEls.ding, fieldEls.top, fieldEls.inner, fieldEls.bottom,
         scaleBox,
--       ...swatches.children, shut ? lipBtn : editingId ? genBtn : nextBtn,
+-       shut ? lipBtn : editingId ? genBtn : nextBtn,
 -       editingId && !shut ? delBtn : null])
-+       ...swatches.children, shut ? lipBtn : editingId ? genBtn : nextBtn])
++       shut ? lipBtn : editingId ? genBtn : nextBtn])
      .filter(isStop);
    if (isHit(document.activeElement) && pickRef && lastSolved) setRover(pickRef);
    cycleTabStops(stops, e);

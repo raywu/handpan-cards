@@ -6,15 +6,15 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1544,6 +1544,7 @@ html.about-open{overflow:hidden}
+@@ -1531,6 +1531,7 @@ html.about-open{overflow:hidden}
          </div>
        </div>
      </div>
 +    <div id="scale-msg" aria-live="polite"></div>
-     </div>
-    </div>
-     <!-- The page's messages, pinned with the primary: everything say() writes
-@@ -1557,7 +1558,6 @@ html.about-open{overflow:hidden}
+     <!-- The card palette: the last group of the Layout tab, inside .sheetbody,
+          in the scroll (it sat at the foot of the Scale tab until sheet polish
+          lane B, 2026-10-21, owner: first or last on Layout, last chosen). It
+@@ -1583,7 +1584,6 @@ html.about-open{overflow:hidden}
           "SG: N-A6" in tests/e2e.test.js. -->
      <div id="scale-guidance">
        <p id="scale-field-msg"></p>
