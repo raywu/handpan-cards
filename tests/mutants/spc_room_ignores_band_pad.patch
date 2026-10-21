@@ -11,5 +11,5 @@ diff --git a/index.html b/index.html
 -  return Math.max(0, (bandPort.clientHeight || 0) - (cs ? parseFloat(cs.paddingBottom) || 0 : 0));
 +  return Math.max(0, (bandPort.clientHeight || 0));
  };
- function syncBand() {
-   if (!drawerOpen) {
+ const platesBeside = () => {
+   const w = (el) => (el.getBoundingClientRect ? el.getBoundingClientRect().width : el.offsetWidth) || 0;

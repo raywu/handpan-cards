@@ -4,25 +4,21 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10657,7 +10657,7 @@ function collapseLip() {
-   lipGen += 1;
+@@ -10736,7 +10736,7 @@ function collapseLip() {
    if (isLipped()) { sheet.classList.add("lipshut"); lipSettled = false; return; }
    const open = lipRead();
+   lipDirty = false;
 -  sheet.classList.add("lipnow", "lipped");
 +  sheet.classList.add("lipnow");
    lipBtn.hidden = false;
    lipBtn.setAttribute("aria-label", "Show " + lipPrimary().textContent);
    lipWrite(open);
-@@ -10666,7 +10666,7 @@ function collapseLip() {
+@@ -10745,7 +10745,7 @@ function collapseLip() {
    sheet.classList.add("lipshut");
    lipSettled = false;
    const gen = lipGen;
--  lipTimer = setTimeout(() => { if (gen === lipGen) lipSettled = true; }, LIP_END_MS);
-+  lipTimer = setTimeout(() => { if (gen === lipGen) { sheet.classList.add("lipped"); lipSettled = true; } }, LIP_END_MS);
+-  lipTimer = setTimeout(() => { if (gen === lipGen) { lipSettled = true; if (lipDirty) { lipDirty = false; lipMeasure(); } syncBand(); } }, LIP_END_MS);
++  lipTimer = setTimeout(() => { if (gen === lipGen) { sheet.classList.add("lipped"); lipSettled = true; if (lipDirty) { lipDirty = false; lipMeasure(); } syncBand(); } }, LIP_END_MS);
    const a = document.activeElement;
    if (a === nextBtn || a === genBtn || a === delBtn) {
      lipFocusing = true;
-     lipBtn.focus({ preventScroll: true });
-     lipFocusing = false;
-   }
- }
