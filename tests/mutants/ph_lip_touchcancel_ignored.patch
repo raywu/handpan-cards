@@ -1,0 +1,15 @@
+# kills: PH: P3 a touchcancel with no touchend ends the suspension after LIP_END_MS
+# suite: node --test --test-name-pattern ^PH..P3.a.touchcancel.with.no.touchend.ends.the.suspension.after.LIP.END.MS$ tests/app.test.js
+# The sheet no longer listens for touchcancel, so a cancelled touch never opens its LIP_END_MS settle and the scroll path stays suspended.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10807,7 +10807,7 @@
+   lipDrag = null;
+   lipTouching = !!(e && e.touches && e.touches.length);
+ };
+-for (const ev of ["touchend", "touchcancel"]) sheet.addEventListener(ev, lipDragStop, { passive: true, capture: true });
++for (const ev of ["touchend"]) sheet.addEventListener(ev, lipDragStop, { passive: true, capture: true });
+ const lipTouchClear = () => { lipTouching = false; lipDrag = null; lipDragEnd = 0; };
+ sheet.addEventListener("wheel", lipTouchClear, { passive: true, capture: true });
+ sheet.addEventListener("keydown", lipTouchClear, { capture: true });

@@ -11350,7 +11350,7 @@ describe("TB: the sheet's tabs", () => {
     assert.deepStrictEqual(tbSelected(app), ["layout"]);
   });
 
-  test("TB: #scale-field-msg shows on Scale only, #scale-layout-state on Layout only, and #scale-guidance keeps its SG order and two-line reserve on both", () => {
+  test("TB: #scale-field-msg shows on Scale only, #scale-layout-state on Layout only, and #scale-guidance keeps its SG order on both", () => {
     const app = boot();
     openSheet(app);
     tbFieldType(app, "ding", "D3");
@@ -11945,6 +11945,211 @@ describe("UX: the footer lip", () => {
     const e = collapsed(lipApp(), "down");
     touch(e, 40);
     assert.strictEqual(shutOf(e), true, "down");
+  });
+
+  describe("PH: P3 finger drag", () => {
+    const shortApp = () => {
+      const a = lipApp();
+      a.get("bandPort").scrollHeight = 510;
+      return a;
+    };
+    const finger = (app, type, y, o = {}) => {
+      const pts = type === "touchend" ? [] : [{ identifier: o.id || 1, clientX: o.x || 0, clientY: y }, ...(o.extra ? [{ identifier: 2, clientX: 5, clientY: y }] : [])];
+      sheetOf(app).dispatchEvent({ type, touches: pts, changedTouches: [{ identifier: o.id || 1, clientX: o.x || 0, clientY: y }], target: o.target });
+    };
+    const drag = (app, dy, o = {}) => {
+      finger(app, "touchstart", 400, o);
+      finger(app, "touchmove", 400 + dy, { ...o, x: (o.x || 0) + (o.dx || 0) });
+      if (!o.hold) finger(app, "touchend", 400 + dy, o);
+    };
+    const isShut = (app) => sheetOf(app).classList.contains("lipshut");
+
+    test("PH: P3 a 24px finger-up drag collapses a sheet whose range is far under the footer's height; 23px does not", () => {
+      const a = shortApp();
+      drag(a, -23);
+      assert.strictEqual(state(a), OPEN, "23px");
+      const b = shortApp();
+      drag(b, -24);
+      assert.strictEqual(state(b), SHUT, "24px");
+    });
+
+    test("PH: P3 a mostly horizontal drag does not collapse, and neither does a finger-down drag", () => {
+      const a = shortApp();
+      drag(a, -24, { dx: 60 });
+      assert.strictEqual(state(a), OPEN, "horizontal");
+      const b = shortApp();
+      drag(b, 40);
+      assert.strictEqual(state(b), OPEN, "down on an open footer");
+    });
+
+    test("PH: P3 a 24px finger-down drag restores, one gesture can reverse, and repeats never oscillate", () => {
+      const a = shortApp();
+      drag(a, -40);
+      assert.strictEqual(isShut(a), true);
+      a.advance(300);
+      drag(a, 24);
+      assert.strictEqual(isShut(a), false, "down restores");
+      a.advance(300);
+      finger(a, "touchstart", 400);
+      finger(a, "touchmove", 370);
+      assert.strictEqual(isShut(a), true, "up");
+      finger(a, "touchmove", 350);
+      finger(a, "touchmove", 340);
+      assert.strictEqual(isShut(a), true, "continuing up changes nothing");
+      finger(a, "touchmove", 364);
+      assert.strictEqual(isShut(a), false, "reversal by 24 restores inside the gesture");
+      finger(a, "touchend", 360);
+      a.advance(300);
+      finger(a, "touchstart", 400);
+      finger(a, "touchmove", 370);
+      assert.strictEqual(isShut(a), true, "up again");
+      finger(a, "touchmove", 360);
+      finger(a, "touchmove", 384);
+      assert.strictEqual(isShut(a), false, "the anchor follows the finger: 24px from the lowest point restores, not 24px from where it first collapsed");
+      finger(a, "touchend", 384);
+      a.advance(300);
+      const flips = [];
+      for (let i = 0; i < 3; i++) { drag(a, -30); flips.push(isShut(a)); a.advance(300); drag(a, 30); flips.push(isShut(a)); a.advance(300); }
+      assert.deepStrictEqual(flips, [true, false, true, false, true, false]);
+    });
+
+    test("PH: P3 a drag that scrolls the body to its end neither restores nor collapses again, momentum included", () => {
+      const a = lipApp();
+      drag(a, -40, { hold: true });
+      assert.strictEqual(isShut(a), true);
+      scrollTo(a, 900);
+      scrollTo(a, 900);
+      assert.strictEqual(isShut(a), true, "bottom reached during the drag");
+      finger(a, "touchend", 360);
+      a.advance(100);
+      scrollTo(a, 300);
+      scrollTo(a, 900);
+      assert.strictEqual(isShut(a), true, "momentum after touchend");
+      a.advance(400);
+      a.advance(400);
+      scrollTo(a, 900);
+      assert.strictEqual(isShut(a), false, "once the touch and LIP_END_MS are over, reaching the end on the scroll path restores again");
+    });
+
+    const trackedTarget = (excluded = true) => {
+      const on = {};
+      return {
+        on,
+        closest: (sel) => (excluded && sel.split(",").map((x) => x.trim()).includes("#scale-preview") ? {} : null),
+        addEventListener: (type, fn) => { on[type] = fn; },
+        fire: (type) => on[type] && on[type]({ type, touches: [] }),
+      };
+    };
+
+    test("PH: P3 a touch whose target is detached before touchend still ends: the target's own touchend and touchcancel end the suspension", () => {
+      for (const type of ["touchend", "touchcancel"]) {
+        const a = lipApp();
+        const t = trackedTarget();
+        finger(a, "touchstart", 400, { target: t });
+        assert.ok(t.on.touchend && t.on.touchcancel, "touchstart attaches touchend and touchcancel to the target itself");
+        scrollTo(a, 300);
+        assert.strictEqual(state(a), OPEN, "suspended while the finger is down");
+        t.fire(type);
+        a.advance(400);
+        scrollTo(a, 340);
+        assert.strictEqual(state(a), SHUT, `${type} on the target alone (the sheet never saw it) ended the suspension`);
+      }
+    });
+
+    test("PH: P3 a touchcancel with no touchend ends the suspension after LIP_END_MS", () => {
+      const a = lipApp();
+      finger(a, "touchstart", 400);
+      scrollTo(a, 100);
+      scrollTo(a, 300);
+      assert.strictEqual(state(a), OPEN);
+      sheetOf(a).dispatchEvent({ type: "touchcancel", touches: [] });
+      a.advance(400);
+      scrollTo(a, 340);
+      assert.strictEqual(state(a), SHUT, "after the cancel and LIP_END_MS the scroll rule drives the lip again");
+    });
+
+    test("PH: P3 a wheel or a scrolling key on the sheet ends a suspension no touchend ever closed", () => {
+      for (const ev of [{ type: "wheel" }, { type: "keydown", key: "ArrowDown", preventDefault() {} }]) {
+        const a = lipApp();
+        finger(a, "touchstart", 400, { target: trackedTarget() });
+        sheetOf(a).dispatchEvent(ev);
+        scrollTo(a, 300, false);
+        assert.strictEqual(state(a), SHUT, `${ev.type} after a touch that never ended`);
+      }
+    });
+
+    test("PH: P3 every touch suspends the scroll path, an excluded start or a second finger included: no collapse, no restore, and momentum keeps extending the window", () => {
+      const hit = (sel) => ({ closest: (s) => (s.split(",").map((x) => x.trim()).includes(sel) ? {} : null) });
+      const starts = [
+        ["the plate", (a) => finger(a, "touchstart", 400, { target: hit("#scale-preview") })],
+        ["a field", (a) => finger(a, "touchstart", 400, { target: hit("input") })],
+        ["the lip", (a) => finger(a, "touchstart", 400, { target: hit("#scale-lip") })],
+        ["two fingers", (a) => finger(a, "touchstart", 400, { extra: true })],
+      ];
+      for (const [name, start] of starts) {
+        const a = lipApp();
+        start(a);
+        scrollTo(a, 100);
+        scrollTo(a, 300);
+        assert.strictEqual(state(a), OPEN, `${name}: the scroll rule collapsed during the touch`);
+        scrollTo(a, 900);
+        finger(a, "touchend", 340);
+        a.advance(100);
+        scrollTo(a, 300);
+        scrollTo(a, 900);
+        assert.strictEqual(state(a), OPEN, `${name}: momentum after the touch collapsed`);
+        a.advance(400);
+        a.advance(400);
+        sheetOf(a).dispatchEvent({ type: "wheel" });
+        scrollTo(a, 100, false);
+        scrollTo(a, 300, false);
+        assert.strictEqual(state(a), SHUT, `${name}: a wheel scroll long after the touch collapses as before`);
+      }
+      const b = lipApp();
+      scrollTo(b, 300);
+      assert.strictEqual(state(b), SHUT);
+      b.advance(400);
+      finger(b, "touchstart", 400, { target: hit("#scale-preview") });
+      scrollTo(b, 900);
+      assert.strictEqual(state(b), SHUT, "an excluded touch that scrolls to the end does not restore");
+      scrollTo(b, 200);
+      scrollTo(b, 0);
+      assert.strictEqual(state(b), SHUT, "an excluded touch scrolling back up does not restore");
+    });
+
+    test("PH: P3 a wheel scroll on a sheet with no room still never collapses, and with room it collapses and the end restores", () => {
+      const a = shortApp();
+      scrollTo(a, 10);
+      scrollTo(a, 0);
+      assert.strictEqual(state(a), OPEN);
+      const b = lipApp();
+      sheetOf(b).dispatchEvent({ type: "wheel" });
+      scrollTo(b, 300, false);
+      assert.strictEqual(state(b), SHUT, "a wheel with room collapses");
+      scrollTo(b, 900);
+      assert.strictEqual(isShut(b), false, "the bottom restores on the scroll path");
+    });
+
+    test("PH: P3 starts on the lip, the plate, a field or with a second finger do not collapse; the keyboard does not either", () => {
+      const hit = (sel) => ({ closest: (s) => (s.split(",").map((x) => x.trim()).includes(sel) ? {} : null) });
+      for (const sel of ["#scale-lip", "#scale-preview", "input", "textarea", "select"]) {
+        const a = shortApp();
+        drag(a, -40, { target: hit(sel) });
+        assert.strictEqual(state(a), OPEN, sel);
+      }
+      const two = shortApp();
+      drag(two, -40, { extra: true });
+      assert.strictEqual(state(two), OPEN, "two fingers");
+      const kb = shortApp();
+      kb.get("window.visualViewport").height = 400;
+      kb.run("applyKbOffset()");
+      kb.advance(300);
+      kb.run("restoreLip()");
+      kb.advance(300);
+      const before = state(kb);
+      drag(kb, -40);
+      assert.strictEqual(state(kb), before, "kbup");
+    });
   });
 
   test("UX: no lip code calls requestAnimationFrame or constructs a ResizeObserver", () => {
