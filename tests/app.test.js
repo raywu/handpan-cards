@@ -6720,7 +6720,7 @@ test("DR1 hint row: the empty hint is hidden on a valid scale, and the drawer hi
   assert.ok(dh.hidden, "the drawer hint stayed after the Scale tab opened");
 });
 
-test("DR2 lines 85, 132: the hint reads the empty sentence while the scale is empty or invalid and is hidden once the scale parses", () => {
+test("DR2 lines 85, 132: the hint reads the empty sentence while the scale is empty, is hidden on an invalid scale that holds a plate and once the scale parses", () => {
   const app = boot();
   openSheet(app);
   const hint = app.els["scale-layout-hint"];
@@ -6731,7 +6731,7 @@ test("DR2 lines 85, 132: the hint reads the empty sentence while the scale is em
   assert.ok(!hint.textContent.includes("Layout is a guess"), "the guess sentence is back");
   app.type("(D3) zzz");
   assert.strictEqual(hint.textContent, "Type a scale to adjust its layout.");
-  assert.strictEqual(hint.hidden, false);
+  assert.strictEqual(hint.hidden, true, "an invalid scale holds the last plate, which is the user's own");
 });
 
 test("DR1 line 40: the pan drawn with interactive off is byte-identical to the shipped output for all five built-in decks", () => {
@@ -11179,7 +11179,7 @@ describe("TB: the sheet's tabs", () => {
     }
   });
 
-  test("TB: the Layout tab with an empty or invalid scale shows the hint, the empty plate and every drawer control disabled and out of the Tab order", () => {
+  test("TB: the Layout tab with an empty scale shows the hint, the empty plate and every drawer control disabled and out of the Tab order; an invalid scale with a held plate hides the hint", () => {
     const ids = ["scale-anchor-one", "scale-anchor-between", "scale-mirror", "scale-mirror-bottom", "scale-fine-toggle",
       "scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next", "scale-layout-reset"];
     for (const text of ["", "nonsense"]) {
@@ -11188,7 +11188,8 @@ describe("TB: the sheet's tabs", () => {
         if (edit) { openEdit(app, makeCustom(app)); app.type(text || " "); } else { openSheet(app); if (text) app.type(text); }
         app.click(tbTab(app, "layout"));
         const hint = tbEl(app, "scale-layout-hint");
-        assert.strictEqual(hint.hidden, false);
+        const held = edit && !!text;
+        assert.strictEqual(hint.hidden, held, held ? "the hint covers a held plate" : "the example plate lost its hint");
         assert.strictEqual(hint.textContent, "Type a scale to adjust its layout.");
         assert.strictEqual(tbEl(app, "scale-drawer").hidden, false, "the drawer is never hidden");
         if (!text && !edit) assert.strictEqual(tbEl(app, "scale-preview").hidden, false, "an empty box paints the placeholder example");
@@ -12609,5 +12610,23 @@ describe("PH: phone-check fixes", () => {
     app.click(app.els["scale-tab-layout"]);
     assert.ok(app.els["scale-tab-layout"].classList.contains("on"));
     assert.ok(!app.els["scale-tab-scale"].classList.contains("on"));
+  });
+});
+
+describe("SPA: sheet polish lane A", () => {
+  test("SPA: the CTA shows over the example plate and is hidden over a held plate", () => {
+    const app = boot();
+    openSheet(app);
+    const hint = app.els["scale-layout-hint"];
+    assert.strictEqual(hint.hidden, false, "no hint over the empty sheet's example");
+    app.type("nonsense");
+    assert.strictEqual(hint.hidden, false, "no hint over the example while the first text is invalid");
+    app.type(W1_NONE);
+    assert.strictEqual(hint.hidden, true);
+    app.type("(D3) zzz");
+    assert.strictEqual(hint.hidden, true, "the hint covers a held plate");
+    app.type(W1_NONE);
+    app.type("");
+    assert.strictEqual(hint.hidden, false, "clearing the box returns the example and its hint");
   });
 });

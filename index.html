@@ -877,13 +877,13 @@ footer.seq{row-gap:var(--sp-1)}
 #scale-preview{align-self:center; padding:var(--sp-2);
   border-radius:12px; background:#f1ece1; border:1px solid #433b2c}
 /* Not-current: the placeholder example before anything is typed, and the last
-   render held through an invalid parse. Held keeps .62 (the invalid case already
+   render held through an invalid parse. The held plate dims to .62 (the invalid case already
    shouts in two other channels: #scale-box.bad's orange border and the orange
-   message); the example, which nobody typed, is greyed further by .example
-   below. What separates all three is the accessible name, set in JS. The whole plate dims, not the SVG inside it: an undimmed
-   #f1ece1 plate on a #1f1b15 sheet is the loudest thing in the drawer, and on
-   an empty box that is an example nobody typed. .62 and not lower because the
-   pan is role="img" content, so the rim ink has to keep its contrast. */
+   message). The example, which nobody typed, is a separate rule below: .35 and greyscale, so
+   .62 never applies to it. What separates the two is the accessible name, set in JS. The whole
+   plate dims, not the SVG inside it: an undimmed #f1ece1 plate on a #1f1b15 sheet is the
+   loudest thing in the drawer. The held plate stops at .62 because the pan is role="img"
+   content, so the rim ink has to keep its contrast. */
 #scale-preview.stale{opacity:.62}
 #scale-preview.stale.example{opacity:.35; filter:grayscale(1)}
 #scale-preview svg{display:block; width:100%; height:auto}
@@ -948,14 +948,14 @@ footer.seq{row-gap:var(--sp-1)}
 /* The footer lip: open, the wrappers generate no box, so the footer is the layout it always was. */
 #scale-foot, #scale-footclip, #scale-footslide{display:contents}
 #scale-lip[hidden]{display:none}
-:root{--lip-ease:cubic-bezier(.3,0,.2,1)}
+:root{--lip-ease:cubic-bezier(.3,0,.2,1); --lip-foot:9px; --lip-zone:25px; --lip-over:calc(var(--lip-zone) - var(--lip-foot))}
 #scale-sheet.lipped .sheetsurf{padding-bottom:env(safe-area-inset-bottom)}
 #scale-sheet.lipped:not(.tiny) .sheetbody{flex-grow:1}
-#scale-sheet.lipped #scale-foot{display:block; position:relative; flex:0 0 auto; height:5px;
+#scale-sheet.lipped #scale-foot{display:block; position:relative; flex:0 0 auto; height:var(--lip-foot);
   margin-top:calc(-1 * var(--sp-4))}
 @media (max-height:520px){#scale-sheet.lipped #scale-foot{margin-top:calc(-1 * var(--sp-3))}}
 #scale-sheet.short.lipped #scale-foot{margin-top:calc(-1 * var(--sp-2))}
-#scale-sheet.lipped:has(#scale-guidance > :not([hidden]):not(:empty)) #scale-foot{margin-top:0}
+#scale-sheet.lipped:has(#scale-guidance > :not([hidden]):not(:empty)) #scale-foot{margin-top:var(--lip-over)}
 #scale-sheet.lipped #scale-footclip{display:block; position:absolute; bottom:100%;
   left:calc(-1 * var(--ring)); right:calc(-1 * var(--ring)); padding-inline:var(--ring);
   height:var(--lip-h, 0px); overflow:hidden; overflow:clip; pointer-events:none}
@@ -970,10 +970,10 @@ footer.seq{row-gap:var(--sp-1)}
 #scale-sheet.lipped #scale-guidance{position:relative; z-index:1; background:#1f1b15;
   transform:translateY(var(--lip-g, 0px)); transition:transform 180ms var(--lip-ease)}
 #scale-sheet.lipshut #scale-guidance{transform:none}
-#scale-lip:not([hidden]){display:block; position:absolute; left:0; right:0; bottom:0; height:25px;
+#scale-lip:not([hidden]){display:block; position:absolute; left:0; right:0; bottom:0; height:var(--lip-zone);
   z-index:2; margin:0; padding:0; border:0; background:transparent; cursor:pointer;
   touch-action:none; -webkit-tap-highlight-color:transparent}
-#scale-lip::after{content:""; position:absolute; left:50%; bottom:0; width:32px; height:3px;
+#scale-lip::after{content:""; position:absolute; left:50%; bottom:3px; width:32px; height:3px;
   margin-left:-16px; border-radius:2px; background:#a79d8b}
 #scale-lip:focus-visible{outline-offset:-2px}
 #scale-sheet.lipped .sheetbody{scroll-padding-bottom:21px}
@@ -1086,7 +1086,8 @@ footer.seq{row-gap:var(--sp-1)}
 #scale-tabs [role=tab]::after{content:""; position:absolute; left:0; right:0; bottom:-1px; height:2px; background:transparent}
 #scale-tabs [role=tab].on::after{background:#f1ece1}
 #scale-sheet.kbup.side #scale-tabs{display:none}
-#scale-panel-scale, #scale-panel-layout{display:flex; flex-direction:column; gap:var(--sp-3); min-width:0}
+#scale-panel-scale, #scale-panel-layout{display:flex; flex-direction:column; gap:var(--sp-3); min-width:0;
+  padding-bottom:calc(var(--lip-over) + var(--sp-2))}
 #scale-panel-scale[hidden], #scale-panel-layout[hidden]{display:none}
 #scale-or{display:flex; align-items:center; gap:var(--sp-3)}
 #scale-or::before, #scale-or::after{content:""; flex:1 1 0; height:1px; background:#433b2c}
@@ -1228,6 +1229,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 #scale-swatches .dot:active{opacity:.75}
 #scale-fine-toggle:active, #scale-delete:active{color:#eae6df}
 #scale-tabs [role=tab]:active{color:#eae6df}
+#scale-tabs [role=tab].on:active{color:#c4bcab}
 /* Armed is a state the eye can read without the label: the same amber the
    announcer uses for a warning. */
 #scale-delete[data-armed]{color:#e3b25c}
@@ -10425,6 +10427,7 @@ function say(text, tier) {
     el.className = (el === announce ? "announce" : "") + (tier ? " " + tier : "");
     el.textContent = text;
   }
+  lipGuidanceChanged();
 }
 
 function buildSwatches() {
@@ -10499,7 +10502,7 @@ function paintLayout() {
     pickMoved = false;
   }
   layoutHint.textContent = HINT_EMPTY;
-  layoutHint.hidden = boxOk;
+  layoutHint.hidden = boxOk || !(panState === "example" || !String(scaleBox.value || "").trim());
   drawerStatus.hidden = !drawerOpen || !boxOk;
   drawerHint.textContent = DRAWER_HINT;
   drawerHint.hidden = !(drawerOpen && boxOk);
@@ -10513,9 +10516,11 @@ function paintLayout() {
   layoutZone.classList.toggle("open", drawerOpen);
   fieldMsg.hidden = drawerOpen;
   const note = drawerOpen ? layoutNoticeText() : "";
-  if (layoutNote.textContent !== note) layoutNote.textContent = note;
+  const noteChanged = layoutNote.textContent !== note;
+  if (noteChanged) layoutNote.textContent = note;
   layoutNote.hidden = !note;
   sheet.classList.toggle("noticed", !!note);
+  if (noteChanged) lipGuidanceChanged();
   syncBand();
 }
 /** Rule G-a, G-b, G-e: the band sticks only while the scrollport keeps room
@@ -10686,20 +10691,27 @@ function collapseLip() {
     lipFocusing = false;
   }
 }
+function lipMeasure() {
+  const shut = isLipShut();
+  sheet.classList.add("lipnow");
+  sheet.classList.remove("lipped", "lipshut");
+  const open = lipRead();
+  sheet.classList.add("lipped", "lipshut");
+  lipWrite(open);
+  if (!shut) sheet.classList.remove("lipshut");
+  lipFlush();
+  sheet.classList.remove("lipnow");
+}
+function lipGuidanceChanged() {
+  if (!isLipped() || (isLipShut() && lipSettled)) return;
+  lipMeasure();
+}
 function restoreLip() {
   if (!sheetOpen || !isLipped() || !isLipShut()) return;
   lipAcc = 0;
   clearTimeout(lipTimer);
   lipGen += 1;
-  if (lipSettled) {
-    sheet.classList.add("lipnow");
-    sheet.classList.remove("lipped", "lipshut");
-    const open = lipRead();
-    sheet.classList.add("lipped", "lipshut");
-    lipWrite(open);
-    lipFlush();
-    sheet.classList.remove("lipnow");
-  }
+  if (lipSettled) lipMeasure();
   sheet.classList.remove("lipshut");
   lipHandOff();
   lipEnd = lipGen;
@@ -10748,8 +10760,8 @@ function lipScroll() {
   const now = Date.now();
   if (!sheetOpen || sheet.classList.contains("kbup") || now < lipQuietUntil || now > userWindowUntil) return;
   userWindowUntil = now + LIP_WINDOW;
-  if (isLipShut() && t >= M - 1) { restoreLip(); return; }
   if (M !== prev.M) { lipAcc = 0; return; }
+  if (isLipShut() && t >= M - 1) { restoreLip(); return; }
   const d = t - prev.t;
   if (d * lipAcc < 0) lipAcc = 0;
   lipAcc += d;
