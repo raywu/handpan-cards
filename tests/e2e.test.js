@@ -7706,7 +7706,10 @@ function run() {
     const f4Geom = () => b.eval(`
     const port = document.querySelector("#scale-sheet .sheetbody"), pr = port.getBoundingClientRect();
     const r = (id) => { const q = document.getElementById(id).getBoundingClientRect(); return { top: q.top, bottom: q.bottom, width: q.width }; };
-    return { scrollTop: port.scrollTop, portTop: pr.top, portBottom: pr.bottom, band: r("scale-plate-band"),
+    const st = document.getElementById("scale-drawer-status");
+    const band = r("scale-plate-band");
+    if (!st.hidden) band.bottom = Math.max(band.bottom, st.getBoundingClientRect().bottom);
+    return { scrollTop: port.scrollTop, portTop: pr.top, portBottom: pr.bottom, band,
       plate: r("scale-preview"), btn: r("scale-tab-layout"), drawer: r("scale-drawer"),
       bandPos: getComputedStyle(document.getElementById("scale-plate-band")).position };`);
   const f4OpenDrawer = async () => {
