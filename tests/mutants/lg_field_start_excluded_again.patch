@@ -1,0 +1,15 @@
+# kills: LG: a 24px finger-up drag from each unfocused field collapses and a 24px finger-down drag restores; 23px does neither
+# suite: node --test --test-name-pattern ^LG..a.24px.finger.up.drag.from.each.unfocused.field.collapses.and.a.24px.finger.down.drag.restores..23px.does.neither$ tests/app.test.js
+# lipNeverArms excludes input and textarea again, so a drag from an unfocused field arms nothing.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10797,7 +10797,7 @@
+ };
+ sheet.addEventListener("keydown", (e) => { if (lipScrollKey(e)) lipUser(); }, true);
+ let lipDrag = null, lipDragEnd = 0, lipTouching = false, lipParked = null;
+-const lipNeverArms = (t) => !!(t && t.closest && t.closest("#scale-lip, select"));
++const lipNeverArms = (t) => !!(t && t.closest && t.closest("#scale-lip, select, input, textarea"));
+ const lipFocusedField = (t) => {
+   const a = document.activeElement;
+   return !!(a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.contains && t && a.contains(t));

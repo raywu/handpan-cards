@@ -1,0 +1,16 @@
+# kills: LG: a fling's opposite-sign scroll (the collapse clamp) never restores
+# suite: node --test --test-name-pattern ^LG..a.fling.s.opposite.sign.scroll..the.collapse.clamp..never.restores$ tests/app.test.js
+# The fling counts scroll in either direction.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10774,8 +10774,7 @@
+   F.prevT = t;
+   if (!sheetOpen || sheet.classList.contains("kbup") || now < lipQuietUntil) return;
+   const s = F.way === "up" ? d : -d;
+-  if (s <= 0) return;
+-  F.acc += s;
++  F.acc += Math.abs(d);
+   if (F.done || F.acc < LIP_PX) return;
+   F.done = true;
+   if (F.way === "up") { if (!isLipShut()) collapseLip(); } else if (isLipShut()) restoreLip();

@@ -1,0 +1,15 @@
+# kills: LG: momentum after touchend in the finger's direction collapses once it reaches 24px with the seed
+# suite: node --test --test-name-pattern ^LG..momentum.after.touchend.in.the.finger.s.direction.collapses.once.it.reaches.24px.with.the.seed$ tests/app.test.js
+# The fling is not seeded with the finger-phase travel.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10847,7 +10847,7 @@
+   const L = lipDrag;
+   if (L && L.moved && L.lastMoveWay && !(L.box && L.box.scrollTop !== L.boxTop)) {
+     const t = lipClamp(bandPort.scrollTop);
+-    const seed = L.lastMoveWay === "up" ? Math.max(0, t - L.bodyTop0) : Math.max(0, L.bodyTop0 - t);
++    const seed = 0;
+     lipFling = { way: L.lastMoveWay, done: false, acc: seed, prevT: t, prevM: lipRange(), until: Date.now() + LIP_END_MS };
+   }
+   lipDragEnd = Date.now() + LIP_END_MS;

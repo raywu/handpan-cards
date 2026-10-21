@@ -1,0 +1,14 @@
+# kills: LG: a fling never restores on reaching the bottom
+# suite: node --test --test-name-pattern ^LG..a.fling.never.restores.on.reaching.the.bottom$ tests/app.test.js
+# The fling restores a shut footer on reaching the bottom.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10769,6 +10769,7 @@
+ function lipFlingStep(now) {
+   const F = lipFling, t = lipClamp(bandPort.scrollTop), M = lipRange();
+   F.until = now + LIP_END_MS;
++  if (isLipShut() && t >= M - 1) restoreLip();
+   if (M !== F.prevM) { F.prevM = M; F.prevT = t; return; }
+   const d = t - F.prevT;
+   F.prevT = t;

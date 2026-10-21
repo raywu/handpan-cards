@@ -1,6 +1,6 @@
-# kills: UX: a real touch swipe down collapses the footer to a 2px lip, a swipe up restores it, with no flicker under momentum
-# suite: node --test --test-name-pattern ^UX..a.real.touch.swipe.down.collapses.the.footer.to.a.2px.lip..a.swipe.up.restores.it..with.no.flicker.under.momentum$ tests/e2e.test.js
-# The shut footer is 4px tall again.
+# kills: UX: a real touch swipe down collapses the footer to a 5px lip, a swipe up restores it, with no flicker under momentum
+# suite: node --test --test-name-pattern ^UX..a.real.touch.swipe.down.collapses.the.footer.to.a.5px.lip..a.swipe.up.restores.it..with.no.flicker.under.momentum$ tests/e2e.test.js
+# The shut footer is 4px tall again, not 5.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
@@ -8,7 +8,7 @@ diff --git a/index.html b/index.html
  :root{--lip-ease:cubic-bezier(.3,0,.2,1)}
  #scale-sheet.lipped .sheetsurf{padding-bottom:env(safe-area-inset-bottom)}
  #scale-sheet.lipped:not(.tiny) .sheetbody{flex-grow:1}
--#scale-sheet.lipped #scale-foot{display:block; position:relative; flex:0 0 auto; height:2px;
+-#scale-sheet.lipped #scale-foot{display:block; position:relative; flex:0 0 auto; height:5px;
 +#scale-sheet.lipped #scale-foot{display:block; position:relative; flex:0 0 auto; height:4px;
    margin-top:calc(-1 * var(--sp-4))}
  @media (max-height:520px){#scale-sheet.lipped #scale-foot{margin-top:calc(-1 * var(--sp-3))}}
