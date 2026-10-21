@@ -1,5 +1,5 @@
-# kills: SPA: a message shown while the footer is shut ends at least --sp-1 above the lip's tap zone and hit-tests to itself, keyboard up and down, at 320x568, 380x780, 390x844 and 844x390
-# suite: node --test --test-name-pattern ^SPA..a.message.shown.while.the.footer.is.shut.ends.at.least...sp.1.above.the.lip.s.tap.zone.and.hit.tests.to.itself..keyboard.up.and.down..at.320x568..380x780..390x844.and.844x390$ tests/e2e.test.js
+# kills: SPA: a message shown while the footer is shut ends at least --sp-1 above the lip's tap zone and hit-tests to itself, keyboard up and down at 320x568, 380x780 and 390x844 and keyboard down at 844x390
+# suite: node --test --test-name-pattern ^SPA..a.message.shown.while.the.footer.is.shut.ends.at.least...sp.1.above.the.lip.s.tap.zone.and.hit.tests.to.itself..keyboard.up.and.down.at.320x568..380x780.and.390x844.and.keyboard.down.at.844x390$ tests/e2e.test.js
 # A lipped footer with a message takes no clearance above the zone.
 # Also killed by: A6 (SPA: a tap on a message ...)
 diff --git a/index.html b/index.html

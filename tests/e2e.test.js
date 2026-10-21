@@ -14230,6 +14230,25 @@ function run() {
     const SPA_SCALE = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
     const SPA_WARN = "Keep every note you can reach on the pan before you press the button below, because a note that is left out cannot be lit on its card";
     const SPA_ONE = "Keep every note you can reach";
+    const SPA_MORE = " and the sheet keeps the message clear of the footer while it folds away and comes back again, so a long warning still reads in full above the buttons and never slides under the lip at any width";
+    const titleSet = (t, re) => [...new Set([...t.name.matchAll(re)].map((m) => m[0]))].sort();
+    const ranSet = (xs) => [...new Set(xs)].sort();
+    const THREE = {};
+    const calibrate = async () => {
+      await b.eval(`say(${JSON.stringify(SPA_ONE)}, "warn"); return true;`);
+      assert.strictEqual(await msgLines(), 1, "SPA_ONE is not one line");
+      let text = SPA_WARN;
+      const words = SPA_MORE.trim().split(" ");
+      for (let i = 0; i <= words.length; i++) {
+        await b.eval(`say(${JSON.stringify(text)}, "warn"); return true;`);
+        const n = await msgLines();
+        if (n === 3) { await b.eval(`say("", ""); return true;`); return text; }
+        assert.ok(n < 3, `calibration overshot to ${n} lines`);
+        text += " " + words[i];
+      }
+      assert.fail("no three-line text was reached");
+    };
+    const msgLines = () => b.eval(`const r = document.createRange(); r.selectNodeContents(document.getElementById("scale-msg")); return new Set([...r.getClientRects()].filter((x) => x.height > 0).map((x) => Math.round(x.top))).size;`);
     const VPS = [[320, 568], [380, 780], [390, 844], [844, 390]];
     const kbHeight = (w, h) => (h - (h >= 700 ? 336 : 260));
     const spaOpen = async (w, h, { edit = false, tab = "scale" } = {}) => {
@@ -14341,22 +14360,28 @@ function run() {
       return { id: last.id || last.className || last.tagName, bottom: r.bottom, body: body.getBoundingClientRect().bottom,
         zoneTop: lip.hidden ? null : lip.getBoundingClientRect().top, onLip, M: body.scrollHeight - body.clientHeight };`);
 
-    test("SPA: at 320x568, 380x780, 390x844, 844x390 and 1280x800, on the tab that scrolls, the last control ends at least --sp-2 above the lip's tap zone with the footer shut and no point of it hit-tests to #scale-lip", { timeout: 240000 }, async () => {
-      const fails = [];
+    test("SPA: at 320x568, 380x780, 390x844, 844x390 and 1280x800, on the tab that scrolls, the last control ends at least --sp-2 above the lip's tap zone with the footer shut and no point of it hit-tests to #scale-lip", { timeout: 240000 }, async (t) => {
+      const fails = [], vpRan = [], scrolls = {};
       try {
         for (const [w, h] of [...VPS, [1280, 800]]) {
+          vpRan.push(`${w}x${h}`);
           for (const tab of ["scale", "layout"]) {
             await spaOpen(w, h, { tab });
             await shut();
+            const st = await state();
+            if (!(st.lipped && st.shut)) { fails.push(`${w}x${h} ${tab}: the footer is not shut (${JSON.stringify(st)})`); continue; }
             const sp2 = await px("--sp-2");
             const m = await lastControl();
             const ctx = `${w}x${h} ${tab} (${m.id}, M ${m.M})`;
+            if (m.M > 0) scrolls[`${w}x${h}`] = true;
             if (m.zoneTop === null) { fails.push(`${ctx}: the lip did not shut`); continue; }
             if (m.bottom > m.zoneTop - sp2 + 0.5) fails.push(`${ctx}: the last control ends ${m.bottom}, ${(m.zoneTop - m.bottom).toFixed(1)}px above the zone at ${m.zoneTop}, not ${sp2}`);
             if (m.onLip) fails.push(`${ctx}: ${m.onLip} points of the last control hit-test to #scale-lip`);
           }
+          if (!scrolls[`${w}x${h}`]) fails.push(`${w}x${h}: neither tab scrolls`);
         }
       } finally { await spaReset(); }
+      assert.deepStrictEqual(titleSet(t, /\b\d+x\d+\b/g), ranSet(vpRan));
       assert.deepStrictEqual(fails, [], fails.join("\n"));
     });
 
@@ -14370,6 +14395,8 @@ function run() {
             const over = await px("--lip-over");
             const m = await lastControl();
             const ctx = `${w}x${h} ${tab} (${m.id})`;
+            const s = await state();
+            if (s.lipped || s.shut) fails.push(`${ctx}: the footer is not open (${JSON.stringify(s)})`);
             if (over !== 16) fails.push(`${ctx}: --lip-over is ${over}px, not 16`);
             if (m.bottom > m.body - (sp2 + 16) + 0.5) fails.push(`${ctx}: the last control ends ${(m.body - m.bottom).toFixed(1)}px above the hairline, not ${sp2 + 16}`);
           }
@@ -14384,6 +14411,10 @@ function run() {
         try { await Promise.race([b.send("Emulation.setSafeAreaInsetsOverride", { insets: { bottom: 34 } }), sleep(3000).then(() => { throw new Error("no override"); })]); inset = 34; } catch (e) { inset = 0; }
         await spaOpen(380, 780);
         await shut();
+        const st = await state();
+        assert.ok(st.lipped && st.shut, `the footer is not shut (${JSON.stringify(st)})`);
+        const seen = await b.eval(`const p = document.createElement("div"); p.style.cssText = "position:absolute;visibility:hidden;width:0;height:env(safe-area-inset-bottom)"; document.body.appendChild(p); const h = p.getBoundingClientRect().height; p.remove(); return h;`);
+        assert.strictEqual(seen, 34, `the page sees a bottom inset of ${seen}px, not 34`);
         const m = await b.eval(`
           const lip = document.getElementById("scale-lip"), r = lip.getBoundingClientRect();
           const a = getComputedStyle(lip, "::after");
@@ -14416,8 +14447,8 @@ function run() {
       return { top, bottom, cx, zoneTop: lip.hidden ? null : lip.getBoundingClientRect().top,
         hitCentre: hit(cx, (top + bottom) / 2), hitBottom: hit(cx, bottom - 1), hitLeft: hit(left + 2, bottom - 1) };`);
 
-    test("SPA: a message shown while the footer is shut ends at least --sp-1 above the lip's tap zone and hit-tests to itself, keyboard up and down, at 320x568, 380x780, 390x844 and 844x390", { timeout: 240000 }, async () => {
-      const fails = [];
+    test("SPA: a message shown while the footer is shut ends at least --sp-1 above the lip's tap zone and hit-tests to itself, keyboard up and down at 320x568, 380x780 and 390x844 and keyboard down at 844x390", { timeout: 240000 }, async (t) => {
+      const fails = [], ran = [];
       try {
         for (const [w, h] of VPS) {
           for (const kb of [false, true]) {
@@ -14431,6 +14462,8 @@ function run() {
             const s = await state();
             const m = await msgState();
             const ctx = `${w}x${h} keyboard ${kb ? "up" : "down"}`;
+            ran.push(ctx);
+            if (s.kbup !== kb) fails.push(`${ctx}: kbup is ${s.kbup}`);
             if (!(s.lipped && s.shut)) { fails.push(`${ctx}: the footer is not shut (${JSON.stringify(s)})`); continue; }
             if (m.zoneTop === null) { fails.push(`${ctx}: no tap zone`); continue; }
             if (m.bottom > m.zoneTop - sp1 + 0.5) fails.push(`${ctx}: the message ends ${m.bottom}, ${(m.zoneTop - m.bottom).toFixed(1)}px above the zone at ${m.zoneTop}, not ${sp1}`);
@@ -14438,6 +14471,8 @@ function run() {
           }
         }
       } finally { await spaReset(); }
+      assert.deepStrictEqual(titleSet(t, /\b\d+x\d+\b/g), ranSet(ran.map((r) => r.split(" ")[0])));
+      assert.deepStrictEqual(ran, ["320x568 keyboard down", "320x568 keyboard up", "380x780 keyboard down", "380x780 keyboard up", "390x844 keyboard down", "390x844 keyboard up", "844x390 keyboard down"]);
       assert.deepStrictEqual(fails, [], fails.join("\n"));
     });
 
@@ -14450,6 +14485,7 @@ function run() {
           await b.eval(`say(${JSON.stringify(SPA_WARN)}, "warn"); return true;`);
           await sleep(300);
           const m = await msgState();
+          if (!m.hitBottom) { fails.push(`${w}x${h}: the tap point does not hit the message`); continue; }
           await tapAt(m.cx, m.bottom - 2);
           const s = await state();
           if (!(s.lipped && s.shut)) fails.push(`${w}x${h}: a tap on the message's last line restored the footer (${JSON.stringify(s)})`);
@@ -14458,7 +14494,7 @@ function run() {
       assert.deepStrictEqual(fails, [], fails.join("\n"));
     });
 
-    test("SPA: with the keyboard up and a warning showing, a lip tap restores the footer and the message's bottom ends at or above GENERATE's top", { timeout: 120000 }, async () => {
+    test("SPA: with the keyboard up and a warning showing, a lip tap restores the footer and the message's bottom ends at or above NEXT's top", { timeout: 120000 }, async () => {
       const fails = [];
       try {
         for (const [w, h] of [[380, 780], [393, 852]]) {
@@ -14479,8 +14515,9 @@ function run() {
             const r = document.createRange(); r.selectNodeContents(document.getElementById("scale-msg"));
             const bottom = Math.max(...[...r.getClientRects()].map((x) => x.bottom));
             const n = document.getElementById("scale-next"), p = !n.hidden ? n : document.getElementById("scale-generate");
-            return { bottom, top: p.getBoundingClientRect().top };`);
-          if (m.bottom > m.top + 0.5) fails.push(`${w}x${h}: the message ends ${m.bottom}, below GENERATE's top ${m.top}`);
+            return { bottom, top: p.getBoundingClientRect().top, id: p.id };`);
+          if (m.id !== "scale-next") fails.push(`${w}x${h}: the primary is ${m.id}, not NEXT`);
+          if (m.bottom > m.top + 0.5) fails.push(`${w}x${h}: the message ends ${m.bottom}, below NEXT's top ${m.top}`);
           for (const f of frames) for (const v of hits(f)) fails.push(`${w}x${h}: ${v}`);
         }
       } finally { await spaReset(); }
@@ -14497,6 +14534,8 @@ function run() {
           await b.eval(`say(${JSON.stringify(SPA_WARN)}, "warn"); return true;`);
           await sleep(300);
           const ctx = edit ? "Edit" : "Add";
+          const st = await state();
+          if (!(st.kbup && st.lipped && st.shut)) { fails.push(`${ctx}: not shut under the keyboard (${JSON.stringify(st)})`); continue; }
           const m = await msgState();
           if (m.zoneTop === null) { fails.push(`${ctx}: no tap zone`); continue; }
           if (m.bottom > m.zoneTop - 4 + 0.5) fails.push(`${ctx}: the last line ends ${(m.zoneTop - m.bottom).toFixed(1)}px above the zone, not 4`);
@@ -14504,8 +14543,10 @@ function run() {
           if (bg.msg !== bg.surf) fails.push(`${ctx}: the message background is ${bg.msg}, not the surface ${bg.surf}`);
           const down = await b.eval(`return window.__spa.run(700, [{ at: 40, code: "restoreLip()" }]);`);
           for (const f of down) for (const v of hits(f)) fails.push(`${ctx} restore: ${v}`);
+          if (!down[0].cls.includes("lipshut") || down[down.length - 1].cls.includes("lipshut")) fails.push(`${ctx} restore: the frames do not run from shut to open`);
           const up = await b.eval(`return window.__spa.run(700, [{ at: 40, code: "collapseLip()" }]);`);
           for (const f of up) for (const v of hits(f)) fails.push(`${ctx} collapse: ${v}`);
+          if (up[0].cls.includes("lipshut") || !up[up.length - 1].cls.includes("lipshut")) fails.push(`${ctx} collapse: the frames do not run from open to shut`);
         }
       } finally { await spaReset(); }
       assert.deepStrictEqual(fails.slice(0, 12), [], fails.slice(0, 12).join("\n"));
@@ -14514,20 +14555,32 @@ function run() {
     const CHANGES = {
       appear: { pre: `say("", "")`, change: `say(${JSON.stringify(SPA_WARN)}, "warn")` },
       clear: { pre: `say(${JSON.stringify(SPA_WARN)}, "warn")`, change: `say("", "")` },
-      grow: { pre: `say(${JSON.stringify(SPA_ONE)}, "warn")`, change: `say(${JSON.stringify(SPA_WARN)}, "warn")` },
+      grow: { pre: `say(${JSON.stringify(SPA_ONE)}, "warn")`, change: (w) => `say(${JSON.stringify(THREE[w])}, "warn")` },
     };
-    test("SPA: guidance that appears, clears or grows from one to three lines at 40ms, 90ms and 150ms into a collapse or a restore, including an immediate reversal with the keyboard up, never puts its visible text over the primary, DELETE or the lip's tap zone in any sampled frame, at 380x780 and 844x390, with and without reduced motion", { timeout: 900000 }, async () => {
-      const fails = [];
-      const sub = async (ctx, kind, change, at) => {
-        const c = CHANGES[change];
+    const LINES = { appear: [(n) => n === 0, (n) => n >= 1], clear: [(n) => n >= 1, (n) => n === 0], grow: [(n) => n === 1, (n) => n === 3] };
+    const LINES_SAID = { appear: "0 to 1 or more", clear: "1 or more to 0", grow: "1 to 3" };
+    test("SPA: guidance that appears, clears or grows from one to three lines at 40ms, 90ms and 150ms into a collapse or a restore at 380x780, and at 40ms into an immediate reversal at 380x780 and 844x390 and with the keyboard up, never puts its visible text over the primary, DELETE or the lip's tap zone in any sampled frame, with and without reduced motion", { timeout: 900000 }, async (t) => {
+      const fails = [], ran = new Set();
+      const atRan = [], vpRan = [];
+      const sub = async (ctx, kind, change, at, w) => {
+        atRan.push(`${at}ms`);
+        const c = { ...CHANGES[change], change: typeof CHANGES[change].change === "function" ? CHANGES[change].change(w) : CHANGES[change].change };
         await b.eval(`lipReset(); ${c.pre}; return true;`);
         await sleep(60);
+        const pre = await msgLines();
         if (kind === "restore") { await b.eval(`collapseLip(); return true;`); await sleep(250); }
         const steps = kind === "collapse" ? [{ at: 0, code: "collapseLip()" }, { at, code: c.change }]
           : kind === "restore" ? [{ at: 0, code: "restoreLip()" }, { at, code: c.change }]
           : [{ at: 0, code: "collapseLip()" }, { at, code: c.change }, { at: at + 12, code: "restoreLip()" }];
         const frames = await b.eval(`return window.__spa.run(380, ${JSON.stringify(steps)});`);
         for (const f of frames) for (const v of hits(f)) fails.push(`${ctx} ${kind} ${change}@${at}: ${v}`);
+        const post = await msgLines();
+        if (!LINES[change][0](pre) || !LINES[change][1](post)) fails.push(`${ctx} ${kind} ${change}@${at}: ${pre} to ${post} lines, not ${LINES_SAID[change]}`);
+        const cls = frames.map((f) => f.cls.split(" "));
+        if (kind !== "restore" && !cls.some((c) => c.includes("lipshut"))) fails.push(`${ctx} ${kind} ${change}@${at}: no sampled frame had the footer shut`);
+        if (kind !== "collapse" && cls[cls.length - 1].includes("lipshut")) fails.push(`${ctx} ${kind} ${change}@${at}: the footer was still shut in the last frame`);
+        if (kind === "collapse" && !cls[cls.length - 1].includes("lipshut")) fails.push(`${ctx} ${kind} ${change}@${at}: the footer was not shut in the last frame`);
+        ran.add(`${ctx.split(" ")[0]} ${ctx.includes("Edit") ? "Edit" : "Add"} ${ctx.includes("reduced") ? "reduced" : "motion"}${ctx.includes("keyboard") ? " keyboard" : ""} ${kind} ${change} ${at}`);
       };
       try {
         for (const [w, h] of VPS.filter(([vw]) => vw !== 390 && vw !== 320)) {
@@ -14537,6 +14590,8 @@ function run() {
               if (rm && (edit || w !== 380)) continue;
               await spaOpen(w, h, { edit });
               await b.eval(PROBE);
+              vpRan.push(`${w}x${h}`);
+              if (!THREE[w]) THREE[w] = await calibrate();
               await b.send("Emulation.setEmulatedMedia", { media: "", features: [{ name: "prefers-reduced-motion", value: rm ? "reduce" : "no-preference" }] });
               await sleep(100);
               const ctx = `${w}x${h} ${edit ? "Edit" : "Add"} ${rm ? "reduced" : "motion"}`;
@@ -14544,24 +14599,29 @@ function run() {
               const kinds = full ? ["collapse", "restore", "reverse"] : rm ? ["collapse"] : ["reverse"];
               for (const kind of kinds) {
                 for (const change of Object.keys(CHANGES)) {
-                  for (const at of kind === "reverse" || rm ? [40] : full ? [90, 150] : [40]) await sub(ctx, kind, change, at);
+                  for (const at of kind === "reverse" || rm ? [40] : full ? [40, 90, 150] : [40]) await sub(ctx, kind, change, at, w);
                 }
               }
               if (!rm && !edit && w === 380) {
                 await kbUp(w, h);
-                for (const change of Object.keys(CHANGES)) for (const at of [40]) await sub(ctx + " keyboard", "reverse", change, at);
+                for (const change of Object.keys(CHANGES)) for (const at of [40]) await sub(ctx + " keyboard", "reverse", change, at, w);
               }
             }
           }
         }
       } finally { await spaReset(); }
+      assert.deepStrictEqual(titleSet(t, /\b\d+x\d+\b/g), ranSet(vpRan));
+      assert.deepStrictEqual(titleSet(t, /\b\d+ms\b/g), ranSet(atRan), "a millisecond in the title did not run, or one ran that it does not state");
+      for (const vp of ["380x780", "844x390"]) for (const ch of ["appear", "clear", "grow"]) assert.ok(ran.has(`${vp} Add motion reverse ${ch} 40`), `${vp} reverse ${ch} did not run`);
+      for (const kind of ["collapse", "restore"]) for (const at of [40, 90, 150]) for (const ch of ["appear", "clear", "grow"]) assert.ok(ran.has(`380x780 Add motion ${kind} ${ch} ${at}`), `${kind} ${ch}@${at} did not run`);
+      for (const ch of ["appear", "clear", "grow"]) { assert.ok(ran.has(`380x780 Add motion keyboard reverse ${ch} 40`), `keyboard reverse ${ch} did not run`); assert.ok(ran.has(`380x780 Add reduced collapse ${ch} 40`), `reduced ${ch} did not run`); assert.ok(ran.has(`380x780 Edit motion reverse ${ch} 40`), `Edit ${ch} did not run`); }
       const groups = {};
       for (const f of fails) { const k = f.replace(/: t=.*$/, ""); groups[k] = (groups[k] || 0) + 1; }
       assert.deepStrictEqual(fails.slice(0, 6), [], fails.length + " violations\n" + JSON.stringify(groups, null, 1) + "\n" + fails.slice(0, 6).join("\n"));
     });
 
-    test("SPA: guidance appearing or clearing at the scroll end during a wheel window, a touch drag and its fling, keyboard up and down, changes the lip state zero times and starts no collapse and restore cycle", { timeout: 300000 }, async () => {
-      const fails = [];
+    test("SPA: guidance appearing or clearing at the scroll end during a wheel window, a touch drag and its fling, keyboard up and down, changes the lip state zero times and starts no collapse and restore cycle", { timeout: 300000 }, async (t) => {
+      const fails = [], ran = [];
       const settle = async (ctx, how) => {
         const s = await state();
         if (s.flips !== 0) fails.push(`${ctx} ${how}: the lip changed ${s.flips} times`);
@@ -14570,36 +14630,47 @@ function run() {
         for (const [w, h] of [[380, 780]]) {
           for (const kb of [false, true]) {
             if (kb && w > h) continue;
-            for (const how of kb ? ["drag", "fling"] : ["wheel", "drag", "fling"]) {
+            for (const how of ["wheel", "drag", "fling"]) {
               for (const change of ["clear", "appear"]) {
                 await spaOpen(w, h);
                 await b.eval(`const p = document.getElementById("scale-panel-scale"), d = document.createElement("div"); d.style.height = "900px"; p.appendChild(d); return true;`);
                 if (kb) await kbUp(w, h);
                 if (change === "clear") await b.eval(`say(${JSON.stringify(SPA_WARN)}, "warn"); return true;`);
                 await shut();
-                await b.eval(`const body = document.querySelector("#scale-sheet .sheetbody"); body.scrollTop = body.scrollHeight; window.__lip.length = 0; return true;`);
+                const atEnd = await b.eval(`const body = document.querySelector("#scale-sheet .sheetbody"); body.scrollTop = body.scrollHeight; window.__lip.length = 0; return body.scrollTop + body.clientHeight >= body.scrollHeight - 1;`);
                 await sleep(200);
                 const ctx = `${w}x${h} keyboard ${kb ? "up" : "down"} ${change}`;
+                if (!atEnd) fails.push(`${ctx} ${how}: the body is not at the scroll end`);
                 const bb = await b.eval(`const r = document.querySelector("#scale-sheet .sheetbody").getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
                 const go = change === "clear" ? `say("", ""); return true;` : `say(${JSON.stringify(SPA_WARN)}, "warn"); return true;`;
                 if (how === "wheel") {
                   await b.send("Input.dispatchMouseEvent", { type: "mouseWheel", x: bb.x, y: bb.y, deltaX: 0, deltaY: 1 });
-                  await b.eval(go);
+                  const eng = await b.eval(`const e = Date.now() < userWindowUntil; ${go.replace("return true;", "")} return e;`);
+                  if (!eng) fails.push(`${ctx} ${how}: the wheel did not open the user window`);
                 } else {
                   const tp = (dy) => [{ x: bb.x, y: bb.y + dy, radiusX: 4, radiusY: 4, force: 1, id: 1 }];
                   await b.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: tp(0) });
                   for (const dy of [-6, -14, -24, -36]) await b.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: tp(dy) });
-                  if (how === "drag") await b.eval(go);
+                  if (how === "drag") {
+                    const eng = await b.eval(`const e = lipDrag !== null; ${go.replace("return true;", "")} return e;`);
+                    if (!eng) fails.push(`${ctx} ${how}: no drag was in progress`);
+                  }
                   await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
-                  if (how === "fling") await b.eval(go);
+                  if (how === "fling") {
+                    const eng = await b.eval(`const e = lipFling !== null; ${go.replace("return true;", "")} return e;`);
+                    if (!eng) fails.push(`${ctx} ${how}: no fling was running`);
+                  }
                 }
                 await sleep(400);
+                ran.push(`${kb ? "up" : "down"} ${how} ${change}`);
                 await settle(ctx, how);
               }
             }
           }
         }
       } finally { await spaReset(); }
+      assert.deepStrictEqual(ran.sort(), ["down", "up"].flatMap((k) => ["wheel", "drag", "fling"].flatMap((how) => ["clear", "appear"].map((c) => `${k} ${how} ${c}`))).sort());
+      for (const how of ["wheel", "drag", "fling"]) assert.ok(new RegExp(how).test(t.name) && ran.some((r) => r.startsWith("down " + how)) && ran.some((r) => r.startsWith("up " + how)), how);
       assert.deepStrictEqual(fails, [], fails.join("\n"));
     });
 
