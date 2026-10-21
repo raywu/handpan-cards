@@ -12491,6 +12491,11 @@ describe("UX: the footer lip", () => {
         sheetOf(b).dispatchEvent({ type: "keydown", key: "PageDown", preventDefault() {} });
         scrollTo(b, 300, false);
         assert.strictEqual(state(b), SHUT, "a scroll key outside a field still ends a suspension no touchend closed");
+        const c = lipApp();
+        finger(c, "touchstart", 400);
+        sheetOf(c).dispatchEvent({ type: "keydown", key: "a", preventDefault() {} });
+        scrollTo(c, 300, false);
+        assert.strictEqual(state(c), OPEN, "a typing key leaves the suspension in place, so the scroll rule stays out of it");
       });
     });
   });
