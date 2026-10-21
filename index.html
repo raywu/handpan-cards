@@ -10654,8 +10654,11 @@ if (LIPDBG) {
   document.addEventListener("visibilitychange", lipLogFlush);
   const mk = (tag, css, txt) => { const el = document.createElement(tag); el.style.cssText = css; if (txt) el.textContent = txt; return el; };
   const btnCss = "min-height:44px;min-width:44px;flex:1;font:600 12px monospace;border:1px solid #000;background:#fff;color:#000;border-radius:6px;padding:0 6px";
-  const pill = mk("button", "position:fixed;top:4px;left:4px;z-index:2147483000;min-height:44px;min-width:44px;padding:0 10px;border:2px solid #000;border-radius:22px;background:#ffe14d;color:#000;font:700 12px monospace;pointer-events:auto", "LOG 0");
+  const pill = mk("button", "position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:2147483000;min-height:44px;min-width:44px;padding:0 10px;border:2px solid #000;border-radius:22px;background:#ffe14d;color:#000;font:700 12px monospace;pointer-events:auto", "LOG 0");
   pill.type = "button";
+  const pillPlace = () => { const land = innerWidth > innerHeight; pill.style.top = land ? "60px" : "8px"; pill.style.left = land ? "4px" : "50%"; pill.style.transform = land ? "none" : "translateX(-50%)"; };
+  pillPlace();
+  window.addEventListener("resize", pillPlace);
   const panel = mk("div", "position:fixed;top:52px;left:4px;width:min(372px,calc(100vw - 8px));max-height:62vh;z-index:2147483000;background:#fff;color:#000;border:2px solid #000;border-radius:8px;padding:6px;display:none;flex-direction:column;gap:6px;box-sizing:border-box;pointer-events:auto");
   const view = mk("pre", "margin:0;overflow:auto;flex:1;min-height:80px;max-height:36vh;font:9px/1.25 monospace;white-space:pre-wrap;word-break:break-all;background:#f4f4f4");
   const row = mk("div", "display:flex;gap:6px");
@@ -10741,6 +10744,7 @@ function lipHandOff() {
   if (to && to.focus) to.focus({ preventScroll: true });
 }
 let lipFocusing = false;
+let lipPtrAt = -1e9;
 function collapseLip() {
   if (LIPDBG) lipLog("collapse", { cause: lipCauseTake(), result: !sheetOpen ? "noop:sheet-closed" : isLipped() && isLipShut() ? "noop:already-shut" : "act", ...lipSnap() });
   if (!sheetOpen) return;
@@ -10939,8 +10943,9 @@ lipBtn.addEventListener("touchmove", (e) => {
 lipBtn.addEventListener("touchend", () => { lipTouch = null; }, { passive: true });
 lipBtn.addEventListener("click", () => { lipWhy("lip-tap"); restoreLip(); });
 lipBtn.addEventListener("focusin", () => {
-  if (!lipFocusing) { lipWhy("focus"); restoreLip(); }
+  if (!lipFocusing) { lipWhy(LIPDBG && performance.now() - lipPtrAt < 1000 ? "lip-tap" : "focus"); restoreLip(); }
 });
+if (LIPDBG) for (const ev of ["pointerdown", "touchstart", "mousedown"]) lipBtn.addEventListener(ev, () => { lipPtrAt = performance.now(); }, { passive: true, capture: true });
 footSlide.addEventListener("transitionend", (e) => {
   if (e.target === footSlide && e.propertyName === "transform") endOpening(lipEnd);
 });
