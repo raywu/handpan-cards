@@ -1,3 +1,6 @@
+# kills: DR3 Tab order on Add and Edit, finer controls closed and open
+# suite: node --test --test-name-pattern ^DR3.Tab.order.on.Add.and.Edit..finer.controls.closed.and.open$ tests/app.test.js
+# The sheet's Tab list stops on buttons inside the closed disclosure.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html

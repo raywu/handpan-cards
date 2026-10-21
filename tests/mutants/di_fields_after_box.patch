@@ -1,3 +1,6 @@
+# kills: DI: the sheet serves DING, TOP RIM NOTES, TOP INNER NOTES and BOTTOM NOTES in that order before #scale-box, each a text input with autocapitalize off, enterkeyhint next and BOTTOM done
+# suite: node --test --test-name-pattern ^DI:.the.sheet.serves.DING tests/app.test.js
+# The scale line goes back above the four note fields.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html

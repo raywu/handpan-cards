@@ -8083,7 +8083,7 @@ function run() {
       const top = async () => {
         await b.settle();
         return b.eval(`
-          return document.querySelector("#scale-panel-scale .ctlrow").getBoundingClientRect().top;
+          return document.getElementById("scale-box-wrap").parentElement.getBoundingClientRect().bottom;
         `);
       };
       // No EMPTY-vs-typed comparison here: the first keystroke legitimately
