@@ -1,0 +1,15 @@
+# kills: SPC: at 380x780 and 380x667 the drawer status keeps its 81ad610 rect relative to the plate at the top of the scroll and stays pinned under the band at the end
+# suite: node --test --test-name-pattern ^SPC:.at.380x780.and.380x667.the.drawer.status.keeps.its.81ad tests/e2e.test.js
+# The portrait drawer status is no longer sticky under the band.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1073,7 +1073,7 @@ footer.seq{row-gap:var(--sp-1)}
+ #scale-drawer .mirror{width:100%}
+ #scale-drawer .ctlrow{justify-content:flex-start}
+ #scale-drawer-status{font:400 12px/1.5 Bitter, serif; color:#c4bcab; min-height:3em; text-align:center;
+-  position:sticky; top:var(--plate-pin-h, 0px); z-index:2; background:#1f1b15;
++  position:relative; top:var(--plate-pin-h, 0px); z-index:2; background:#1f1b15;
+   margin-top:calc(-1 * var(--sp-3)); margin-bottom:var(--sp-1); box-shadow:0 var(--sp-1) 0 #1f1b15}
+ .sheetbody:has(#scale-layout-zone.nostick) #scale-drawer-status{position:relative}
+ #scale-drawer-status.warn{color:#e3b25c}

@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10484,7 +10484,6 @@
+@@ -10593,7 +10593,6 @@ function syncBand() {
  const bandPort = document.querySelector(".sheetbody") || plateBand;
  if (typeof ResizeObserver === "function") {
    const bandWatch = new ResizeObserver(syncBand);
 -  bandWatch.observe(plateBand);
    bandWatch.observe(bandPort);
+   bandWatch.observe(drawerStatus);
  }
- /** A native focus scrolls a text control only far enough to show its caret;

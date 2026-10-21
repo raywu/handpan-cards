@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1101,7 +1101,6 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1105,7 +1105,6 @@ footer.seq{row-gap:var(--sp-1)}
  #scale-plate-band #scale-layout-hint[hidden]{display:none}
  .sheetbody{scroll-padding-top:var(--plate-band-h, 0px)}
  @media (orientation:landscape) and (max-height:500px){
 -  #scale-sheet[data-tab="layout"] .sheetsurf{max-width:none}
  }
  @container surf (min-width:600px) and (min-aspect-ratio:1/1){
-   #scale-preview{--adj-reserve:72px}
+   /* --plate-w is declared on every element that reads it because a container query cannot restyle its own

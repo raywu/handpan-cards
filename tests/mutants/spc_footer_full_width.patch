@@ -1,0 +1,15 @@
+# kills: SPC: at 844x390 #scale-generate, #scale-guidance, the delete row and the lip share the controls column's left and right edges in the OPEN, SHUTTING, SHUT and OPENING states, on create and on Edit with DELETE visible, and no plate field hit-tests to #scale-lip with the footer shut
+# suite: node --test --test-name-pattern ^SPC:.at.844x390.#scale-generate..#scale-guidance..the.delete tests/e2e.test.js
+# The footer is not capped to the controls column: its inset is dropped.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1125,7 +1125,7 @@ footer.seq{row-gap:var(--sp-1)}
+   #scale-sheet[data-tab="layout"] #scale-panel-layout > .editrow{grid-column:2; margin-top:var(--sp-3)}
+   #scale-sheet[data-tab="layout"] #scale-guidance, #scale-sheet[data-tab="layout"] #scale-next,
+   #scale-sheet[data-tab="layout"] #scale-generate, #scale-sheet[data-tab="layout"] #scale-delete-row,
+-  #scale-sheet[data-tab="layout"] #scale-foot{margin-left:calc(var(--plate-w) + var(--sp-2))}
++  #scale-sheet[data-tab="layout"] #scale-foot{margin-left:0}
+   #scale-sheet[data-tab="layout"] #scale-next, #scale-sheet[data-tab="layout"] #scale-generate{width:auto}
+   #scale-sheet[data-tab="layout"].lipped #scale-next, #scale-sheet[data-tab="layout"].lipped #scale-generate,
+   #scale-sheet[data-tab="layout"].lipped #scale-delete-row{margin-left:0}

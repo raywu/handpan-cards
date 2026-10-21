@@ -4,15 +4,15 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1505,6 +1505,7 @@ html.about-open{overflow:hidden}
-       <div id="scale-drawer-status" aria-live="polite" aria-atomic="true" hidden></div>
+@@ -1508,6 +1508,7 @@ html.about-open{overflow:hidden}
      </div>
+     <div id="scale-drawer-status" aria-live="polite" aria-atomic="true" hidden></div>
      <div id="scale-layout-zone">
 +      <p class="sheethint" id="scale-layout-state" hidden></p>
        <div id="scale-drawer" role="group" aria-label="Layout">
          <p class="sheethint" id="scale-drawer-hint" hidden></p>
          <div class="editrow">
-@@ -1558,7 +1559,6 @@ html.about-open{overflow:hidden}
+@@ -1600,7 +1601,6 @@ html.about-open{overflow:hidden}
      <div id="scale-guidance">
        <p id="scale-field-msg"></p>
        <div id="scale-msg" aria-live="polite"></div>
