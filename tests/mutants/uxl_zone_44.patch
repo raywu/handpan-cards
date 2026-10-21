@@ -8,8 +8,8 @@ diff --git a/index.html b/index.html
  #scale-sheet.lipped #scale-guidance{position:relative; z-index:1; background:#1f1b15;
    transform:translateY(var(--lip-g, 0px)); transition:transform 180ms var(--lip-ease)}
  #scale-sheet.lipshut #scale-guidance{transform:none}
--#scale-lip:not([hidden]){display:block; position:absolute; left:0; right:0; bottom:0; height:25px;
+-#scale-lip:not([hidden]){display:block; position:absolute; left:0; right:0; bottom:0; height:var(--lip-zone);
 +#scale-lip:not([hidden]){display:block; position:absolute; left:0; right:0; bottom:0; height:44px;
    z-index:2; margin:0; padding:0; border:0; background:transparent; cursor:pointer;
    touch-action:none; -webkit-tap-highlight-color:transparent}
- #scale-lip::after{content:""; position:absolute; left:50%; bottom:0; width:32px; height:3px;
+ #scale-lip::after{content:""; position:absolute; left:50%; bottom:3px; width:32px; height:3px;
