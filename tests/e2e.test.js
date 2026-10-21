@@ -14465,11 +14465,11 @@ function run() {
             await sleep(300);
             const sp1 = await px("--sp-1");
             const s = await state();
-            const m = await msgState();
             const ctx = `${w}x${h} keyboard ${kb ? "up" : "down"}`;
             ran.push(ctx);
             if (s.kbup !== kb) fails.push(`${ctx}: kbup is ${s.kbup}`);
             if ((await msgLines()) < 1) { fails.push(`${ctx}: no message is showing`); continue; }
+            const m = await msgState();
             if (!(s.lipped && s.shut)) { fails.push(`${ctx}: the footer is not shut (${JSON.stringify(s)})`); continue; }
             if (m.zoneTop === null) { fails.push(`${ctx}: no tap zone`); continue; }
             if (m.bottom > m.zoneTop - sp1 + 0.5) fails.push(`${ctx}: the message ends ${m.bottom}, ${(m.zoneTop - m.bottom).toFixed(1)}px above the zone at ${m.zoneTop}, not ${sp1}`);
@@ -14529,6 +14529,7 @@ function run() {
             return { bottom, top: p.getBoundingClientRect().top, id: p.id };`);
           if (m.id !== "scale-next") fails.push(`${w}x${h}: the primary is ${m.id}, not NEXT`);
           if (m.bottom > m.top + 0.5) fails.push(`${w}x${h}: the message ends ${m.bottom}, below NEXT's top ${m.top}`);
+          if (!frames.length || !frames.some((f) => f.text)) fails.push(`${w}x${h}: no sampled frame had visible message text (${frames.length} frames)`);
           for (const f of frames) for (const v of hits(f)) fails.push(`${w}x${h}: ${v}`);
         }
       } finally { await spaReset(); }
@@ -14554,9 +14555,11 @@ function run() {
           const bg = await b.eval(`return { msg: getComputedStyle(document.getElementById("scale-guidance")).backgroundColor, surf: getComputedStyle(document.querySelector("#scale-sheet .sheetsurf")).backgroundColor };`);
           if (bg.msg !== bg.surf) fails.push(`${ctx}: the message background is ${bg.msg}, not the surface ${bg.surf}`);
           const down = await b.eval(`return window.__spa.run(700, [{ at: 40, code: "restoreLip()" }]);`);
+          if (!down.length || !down.some((f) => f.text)) fails.push(`${ctx} restore: no sampled frame had visible message text (${down.length} frames)`);
           for (const f of down) for (const v of hits(f)) fails.push(`${ctx} restore: ${v}`);
           if (!down[0].cls.includes("lipshut") || down[down.length - 1].cls.includes("lipshut")) fails.push(`${ctx} restore: the frames do not run from shut to open`);
           const up = await b.eval(`return window.__spa.run(700, [{ at: 40, code: "collapseLip()" }]);`);
+          if (!up.length || !up.some((f) => f.text)) fails.push(`${ctx} collapse: no sampled frame had visible message text (${up.length} frames)`);
           for (const f of up) for (const v of hits(f)) fails.push(`${ctx} collapse: ${v}`);
           if (up[0].cls.includes("lipshut") || !up[up.length - 1].cls.includes("lipshut")) fails.push(`${ctx} collapse: the frames do not run from open to shut`);
         }
@@ -14585,6 +14588,7 @@ function run() {
           : kind === "restore" ? [{ at: 0, code: "restoreLip()" }, { at, code: c.change }]
           : [{ at: 0, code: "collapseLip()" }, { at, code: c.change }, { at: at + 12, code: "restoreLip()" }];
         const frames = await b.eval(`return window.__spa.run(380, ${JSON.stringify(steps)});`);
+        if (!frames.length || !frames.some((f) => f.text)) fails.push(`${ctx} ${kind} ${change}@${at}: no sampled frame had visible message text (${frames.length} frames)`);
         for (const f of frames) for (const v of hits(f)) fails.push(`${ctx} ${kind} ${change}@${at}: ${v}`);
         const post = await msgLines();
         if (!LINES[change][0](pre) || !LINES[change][1](post)) fails.push(`${ctx} ${kind} ${change}@${at}: ${pre} to ${post} lines, not ${LINES_SAID[change]}`);
@@ -14678,6 +14682,8 @@ function run() {
                   }
                 }
                 await sleep(400);
+                const nl = await msgLines();
+                if (change === "appear" ? nl < 1 : nl !== 0) fails.push(`${ctx} ${how}: the warning did not ${change === "appear" ? "appear" : "clear"} (${nl} lines)`);
                 ran.push(`${kb ? "up" : "down"} ${how} ${change}`);
                 await settle(ctx, how);
               }
