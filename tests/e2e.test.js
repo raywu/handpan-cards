@@ -14251,14 +14251,14 @@ function run() {
           last = c;
         }).observe(s, { attributes: true, attributeFilter: ["class"] });
         return true;`);
-      await sleep(150);
+      await sleep(80);
     };
     const spaReset = async () => {
       await b.send("Emulation.setEmulatedMedia", { media: "", features: [{ name: "prefers-reduced-motion", value: "no-preference" }] }).catch(() => {});
       await b.clearKeyboard().catch(() => {});
       await b.setViewport(900, 900, false);
     };
-    const shut = async () => { await b.eval(`collapseLip(); return true;`); await sleep(350); };
+    const shut = async () => { await b.eval(`collapseLip(); return true;`); await sleep(260); };
     const state = () => b.eval(`const s = document.getElementById("scale-sheet"); return { lipped: s.classList.contains("lipped"), shut: s.classList.contains("lipshut"), kbup: s.classList.contains("kbup"), flips: window.__lip.length };`);
     const px = (name) => b.eval(`
       const p = document.createElement("div");
@@ -14270,11 +14270,11 @@ function run() {
     const kbUp = async (w, h) => {
       await b.eval(`document.getElementById("scale-box").focus(); return true;`);
       await b.fakeKeyboard(kbHeight(w, h));
-      await sleep(600);
+      await sleep(400);
     };
     const tapAt = async (x, y) => {
       for (const type of ["mousePressed", "mouseReleased"]) await b.send("Input.dispatchMouseEvent", { type, x, y, button: "left", clickCount: 1 });
-      await sleep(400);
+      await sleep(250);
     };
     const PROBE = `
       window.__spa = {
@@ -14426,7 +14426,7 @@ function run() {
             if (kb) await kbUp(w, h);
             await shut();
             await b.eval(`say(${JSON.stringify(SPA_WARN)}, "warn"); return true;`);
-            await sleep(500);
+            await sleep(300);
             const sp1 = await px("--sp-1");
             const s = await state();
             const m = await msgState();
@@ -14448,7 +14448,7 @@ function run() {
           await spaOpen(w, h);
           await shut();
           await b.eval(`say(${JSON.stringify(SPA_WARN)}, "warn"); return true;`);
-          await sleep(500);
+          await sleep(300);
           const m = await msgState();
           await tapAt(m.cx, m.bottom - 2);
           const s = await state();
@@ -14466,7 +14466,7 @@ function run() {
           await b.eval(PROBE);
           await kbUp(w, h);
           await b.eval(`say(${JSON.stringify(SPA_WARN)}, "warn"); return true;`);
-          await sleep(500);
+          await sleep(300);
           const before = await state();
           if (!(before.lipped && before.shut && before.kbup)) { fails.push(`${w}x${h}: not shut under the keyboard (${JSON.stringify(before)})`); continue; }
           const z = await b.eval(`const r = document.getElementById("scale-lip").getBoundingClientRect(); return { x: (r.left + r.right) / 2, y: r.top + 2 };`);
@@ -14495,7 +14495,7 @@ function run() {
           await b.eval(PROBE);
           await kbUp(390, 844);
           await b.eval(`say(${JSON.stringify(SPA_WARN)}, "warn"); return true;`);
-          await sleep(500);
+          await sleep(300);
           const ctx = edit ? "Edit" : "Add";
           const m = await msgState();
           if (m.zoneTop === null) { fails.push(`${ctx}: no tap zone`); continue; }
