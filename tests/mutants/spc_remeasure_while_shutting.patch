@@ -1,0 +1,15 @@
+# kills: SPC: create at 844x390 on the Layout tab with a notice, a collapse and a restore ease the footer and the guidance over the slide and cancel nothing
+# suite: node --test --test-name-pattern ^SPC:.create.at.844x390.on.the.Layout.tab.with.a.notice tests/e2e.test.js
+# The open-footer re-measure runs while the footer is still shutting, toggling the lip classes mid-transition: the slide is cancelled and jumps instead of easing.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10583,7 +10583,7 @@ function syncBand() {
+   if (beside && port > 0) {
+     const put = (px) => { const v = px + "px"; if (plateRoom !== v) { plateRoom = v; root.setProperty("--plate-room", v); } };
+     const lipped = sheet.classList.contains("lipped");
+-    if (lipped && !(sheet.classList.contains("lipshut") && lipSettled)) { if (openRoom > 0) put(openRoom); return; }
++    if (lipped && !sheet.classList.contains("lipshut")) { if (openRoom > 0) put(openRoom); return; }
+     const shut = lipped && sheet.classList.contains("lipshut");
+     if (lipped) { sheet.classList.add("lipnow"); sheet.classList.remove("lipped", "lipshut"); }
+     const seen = [];

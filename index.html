@@ -10583,7 +10583,7 @@ function syncBand() {
   if (beside && port > 0) {
     const put = (px) => { const v = px + "px"; if (plateRoom !== v) { plateRoom = v; root.setProperty("--plate-room", v); } };
     const lipped = sheet.classList.contains("lipped");
-    if (lipped && !sheet.classList.contains("lipshut")) { if (openRoom > 0) put(openRoom); return; }
+    if (lipped && !(sheet.classList.contains("lipshut") && lipSettled)) { if (openRoom > 0) put(openRoom); return; }
     const shut = lipped && sheet.classList.contains("lipshut");
     if (lipped) { sheet.classList.add("lipnow"); sheet.classList.remove("lipped", "lipshut"); }
     const seen = [];
@@ -10687,7 +10687,7 @@ const lipBtn = document.getElementById("scale-lip");
 const guidanceEl = msgLine.parentElement || msgLine.parentNode || null;
 const LIP_VARS = ["--lip-h", "--lip-pad", "--lip-gd", "--lip-g"];
 const LIP_PX = 24, LIP_SWIPE = 16, LIP_WINDOW = 150, LIP_END_MS = 220;
-let lipGen = 0, lipTimer = 0, lipEnd = 0, lipSettled = false;
+let lipGen = 0, lipTimer = 0, lipEnd = 0, lipSettled = false, lipDirty = false;
 let lipQuietUntil = 0, userWindowUntil = 0, lipAcc = 0, lipPrev = { t: 0, M: 0 };
 const lipRect = (el) => (el && el.getBoundingClientRect ? el.getBoundingClientRect() : { top: 0, bottom: 0, height: 0 });
 const lipPrimary = () => (nextBtn.hidden ? genBtn : nextBtn);
@@ -10731,6 +10731,7 @@ function collapseLip() {
   lipGen += 1;
   if (isLipped()) { sheet.classList.add("lipshut"); lipSettled = false; return; }
   const open = lipRead();
+  lipDirty = false;
   sheet.classList.add("lipnow", "lipped");
   lipBtn.hidden = false;
   lipBtn.setAttribute("aria-label", "Show " + lipPrimary().textContent);
@@ -10740,7 +10741,7 @@ function collapseLip() {
   sheet.classList.add("lipshut");
   lipSettled = false;
   const gen = lipGen;
-  lipTimer = setTimeout(() => { if (gen === lipGen) lipSettled = true; }, LIP_END_MS);
+  lipTimer = setTimeout(() => { if (gen === lipGen) { lipSettled = true; if (lipDirty) { lipDirty = false; lipMeasure(); } syncBand(); } }, LIP_END_MS);
   const a = document.activeElement;
   if (a === nextBtn || a === genBtn || a === delBtn) {
     lipFocusing = true;
@@ -10761,7 +10762,7 @@ function lipMeasure() {
 }
 function lipGuidanceChanged() {
   if (!isLipped() || (isLipShut() && lipSettled)) return;
-  lipMeasure();
+  lipDirty = true;
 }
 function restoreLip() {
   if (!sheetOpen || !isLipped() || !isLipShut()) return;
@@ -10782,6 +10783,7 @@ function endOpening(gen) {
 }
 function finishOpen() {
   lipGen += 1;
+  lipDirty = false;
   clearTimeout(lipTimer);
   lipHandOff();
   sheet.classList.add("lipnow");
@@ -10794,6 +10796,7 @@ function finishOpen() {
 }
 function lipReset() {
   clearTimeout(lipTimer);
+  lipDirty = false;
   openRoom = 0;
   lipGen += 1;
   sheet.classList.remove("lipped", "lipshut", "lipnow");

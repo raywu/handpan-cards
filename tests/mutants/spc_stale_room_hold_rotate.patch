@@ -8,7 +8,7 @@ diff --git a/index.html b/index.html
    if (beside && port > 0) {
      const put = (px) => { const v = px + "px"; if (plateRoom !== v) { plateRoom = v; root.setProperty("--plate-room", v); } };
      const lipped = sheet.classList.contains("lipped");
--    if (lipped && !sheet.classList.contains("lipshut")) { if (openRoom > 0) put(openRoom); return; }
+-    if (lipped && !(sheet.classList.contains("lipshut") && lipSettled)) { if (openRoom > 0) put(openRoom); return; }
 +    if (lipped) { if (openRoom > 0) put(openRoom); return; }
      const shut = lipped && sheet.classList.contains("lipshut");
      if (lipped) { sheet.classList.add("lipnow"); sheet.classList.remove("lipped", "lipshut"); }

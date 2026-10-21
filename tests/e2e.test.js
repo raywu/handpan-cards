@@ -15307,6 +15307,80 @@ function run() {
       }
     });
 
+    const spcSlide = (call, midCall = "", midAt = 60) => b.eval(`
+      const foot = document.getElementById("scale-footslide"), g = document.getElementById("scale-guidance");
+      const ev = [], samples = [];
+      const names = ["transitionrun", "transitionend", "transitioncancel"];
+      const log = (e) => { if (e.propertyName === "transform" || e.propertyName === "visibility") ev.push([e.type, e.target === foot ? "foot" : "guidance", e.propertyName, Math.round(performance.now() - t0)]); };
+      for (const el of [foot, g]) for (const n of names) el.addEventListener(n, log);
+      const ty = (el) => new DOMMatrix(getComputedStyle(el).transform).m42;
+      const t0 = performance.now();
+      ${call}
+      ${midCall ? `setTimeout(() => { ${midCall} }, ${midAt});` : ""}
+      return new Promise((resolve) => {
+        const frame = () => {
+          const t = performance.now() - t0;
+          samples.push([Math.round(t), Math.round(ty(foot) * 10) / 10, Math.round(ty(g) * 10) / 10, getComputedStyle(foot).visibility]);
+          if (t < 600) requestAnimationFrame(frame); else resolve({ ev, samples });
+        };
+        requestAnimationFrame(frame);
+      });`);
+    const spcAssertSlide = (r, tag, hides) => {
+      const cancels = r.ev.filter((e) => e[0] === "transitioncancel");
+      assert.deepStrictEqual(cancels, [], `${tag}: the slide was cancelled, events [type, element, property, ms]: ${JSON.stringify(r.ev)}`);
+      assert.ok(r.ev.some((e) => e[0] === "transitionend" && e[1] === "foot" && e[2] === "transform" && e[3] >= 120), `${tag}: #scale-footslide never ended its transform transition after the 180ms slide: ${JSON.stringify(r.ev)}`);
+      const fy = r.samples.map((s) => s[1]);
+      const lo = Math.min(...fy), hi = Math.max(...fy);
+      assert.ok(hi - lo > 8, `${tag}: #scale-footslide moved only ${hi - lo}px`);
+      const mid = new Set(fy.filter((v) => v > lo + 1 && v < hi - 1));
+      assert.ok(mid.size >= 2, `${tag}: #scale-footslide jumped from ${lo} to ${hi} without easing, transforms across frames ${JSON.stringify(r.samples.slice(0, 16).map((s) => [s[0], s[1]]))}`);
+      const gy = r.samples.map((s) => s[2]);
+      const glo = Math.min(...gy), ghi = Math.max(...gy);
+      if (ghi - glo > 8) assert.ok(new Set(gy.filter((v) => v > glo + 1 && v < ghi - 1)).size >= 2, `${tag}: the guidance jumped from ${glo} to ${ghi} without easing`);
+      if (hides) {
+        const first = r.samples.find((s) => s[3] === "hidden");
+        assert.ok(first && first[0] >= 140, `${tag}: #scale-footslide went hidden at ${first && first[0]}ms, not at the end of the slide`);
+      }
+    };
+
+    for (const mode of ["create", "Edit"]) {
+      for (const withNote of [false, true]) {
+        test(`SPC: ${mode} at 844x390 on the Layout tab with ${withNote ? "a notice" : "no message"}, a collapse and a restore ease the footer and the guidance over the slide and cancel nothing`, async () => {
+          try {
+            if (mode === "create") await spcCreate(); else await spcEdit();
+            if (withNote) {
+              await b.eval(`document.getElementById("scale-anchor-between").click(); return true;`);
+              await b.settle();
+              await sleep(300);
+            }
+            const shutting = await spcSlide(`collapseLip();`);
+            spcAssertSlide(shutting, `${mode}, ${withNote ? "notice" : "no message"}, collapse`, true);
+            const opening = await spcSlide(`restoreLip();`);
+            spcAssertSlide(opening, `${mode}, ${withNote ? "notice" : "no message"}, restore`, false);
+          } finally {
+            await b.setViewport(900, 900, false);
+          }
+        });
+      }
+    }
+
+    test("SPC: at 844x390 a notice that appears while the footer is shutting neither cancels the slide nor leaves a stale pan size, and the later restore changes nothing", async () => {
+      try {
+        await spcCreate();
+        const open0 = await spcShutPan();
+        const r = await spcSlide(`collapseLip();`, `document.getElementById("scale-anchor-between").click();`, 60);
+        const cancels = r.ev.filter((e) => e[0] === "transitioncancel");
+        assert.deepStrictEqual(cancels, [], `a notice during SHUTTING cancelled the slide: ${JSON.stringify(r.ev)}`);
+        const shut = await spcShutPan();
+        assert.ok(shut.lipped && shut.shut, `the footer is not shut: ${JSON.stringify(shut)}`);
+        assert.match(shut.note, /Layout not saved yet/, "no notice appeared during the slide");
+        assert.ok(shut.w < open0.w - 4, `the notice appeared mid-slide and the pan is still ${shut.w}px (was ${open0.w}px): it will shrink on restore`);
+        await spcRestoreTrace(shut.w, "notice during SHUTTING");
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
     test("SPC: at 380x780 and 380x667 the drawer status keeps its 81ad610 rect relative to the plate at the top of the scroll and stays pinned under the band at the end", async () => {
       const ran = [];
       try {
