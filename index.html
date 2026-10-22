@@ -4554,6 +4554,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return bytes;
   }
 
+  // FNV-1a, 32 bit, over the UTF-8 bytes of the text; a uint32 number.
   function fnv1a32(str) {
     var hash = 0x811c9dc5;
     var bytes = utf8Bytes(str);
@@ -4563,15 +4564,13 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       hash = (((hash & 0xffff) * 0x01000193) +
               ((((hash >>> 16) * 0x01000193) & 0xffff) << 16)) >>> 0;
     }
-    var hex = hash.toString(16);
-    while (hex.length < 8) hex = "0" + hex;
-    return hex;
+    return hash;
   }
 
   // D14: a pure function of identitySeed - notes, octaves, zones and order. The
   // options are never hashed, so renaming or recolouring keeps the id.
   function deckId(seedOrFields) {
-    return "custom:" + fnv1a32(identitySeed(seedOrFields));
+    return "custom:" + fnv1a32(identitySeed(seedOrFields)).toString(16).padStart(8, "0");
   }
 
   var LABEL_RATIO_DING = 0.70875;
@@ -4609,6 +4608,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     err: err,
     badNote: badNote,
     utf8Bytes: utf8Bytes,
+    fnv1a32: fnv1a32,
     pc: pitchClass,
     isDing: isDing,
     fieldsOf: fieldsOf
@@ -7582,28 +7582,15 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return bytes;
   }
 
-  // FNV-1a, 32 bit, over the UTF-8 bytes of the guarded text. Same construction
-  // as core.deckId's hash; here it is an integrity check, not an identity.
-  function fnv1a(text) {
-    var hash = 0x811c9dc5;
-    var bytes = utf8Bytes(text);
-    for (var i = 0; i < bytes.length; i += 1) {
-      hash = (hash ^ bytes[i]) >>> 0;
-      hash = (((hash & 0xffff) * 0x01000193) +
-              ((((hash >>> 16) * 0x01000193) & 0xffff) << 16)) >>> 0;
-    }
-    return hash;
-  }
-
   function checksum(text) {
-    var hash = fnv1a(text);
+    var hash = HPE.core.fnv1a32(text);
     return toAlphabet([(hash >>> 24) & 0xff, (hash >>> 16) & 0xff,
                        (hash >>> 8) & 0xff, hash & 0xff]);
   }
 
   // v5: the top 24 bits of the same hash, six lowercase hex characters.
   function checkHex(text) {
-    return ("000000" + (fnv1a(text) >>> 8).toString(16)).slice(-6);
+    return ("000000" + (HPE.core.fnv1a32(text) >>> 8).toString(16)).slice(-6);
   }
 
   /* ---- the payload ------------------------------------------------------ */
