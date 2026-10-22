@@ -15381,6 +15381,261 @@ function run() {
       }
     });
 
+    /* Regroup (review 4): the open-footer room is derived (lipDelta), never measured, so a guidance or viewport change
+     * in ANY lip state sizes the pan at the event. The lip is driven by real CDP wheel events. A wheel scroll right after
+     * a collapse or restore first re-bases lipScroll's range (the range differs shut and open), so a -10 primer
+     * precedes the -100 that restores. The reversing gesture cancels the running transition by spec (2 cancels in
+     * SHUT-rev, 3 in OPENING-rev, measured with no event); the app's own cancels are counted after the retargeted
+     * slide's transitionrun, once the log is cleared. */
+    const spcWheel = (dy) => b.send("Input.dispatchMouseEvent", { type: "mouseWheel", x: 300, y: 200, deltaX: 0, deltaY: dy });
+    const spcPrime = () => spcWheel(-10);
+    const spcLog = () => b.eval(`
+      window.__spcEv = [];
+      if (!window.__spcLogged) {
+        window.__spcLogged = true;
+        const f = document.getElementById("scale-footslide"), g = document.getElementById("scale-guidance");
+        for (const n of ["transitionrun", "transitioncancel"]) for (const el of [f, g]) el.addEventListener(n, (e) => {
+          if (e.propertyName === "transform" || e.propertyName === "visibility") window.__spcEv.push([e.type, e.target === f ? "foot" : "guidance", e.propertyName, Math.round(performance.now())]);
+        });
+      }
+      return true;`);
+    const spcGesture = async (dy) => {
+      await b.eval(`window.__spcMark = performance.now(); return true;`);
+      await spcWheel(dy);
+      await b.waitFor(`window.__spcEv.some((e) => e[0] === "transitionrun" && e[1] === "foot" && e[2] === "transform" && e[3] >= window.__spcMark)`, { label: "the retargeted slide's transitionrun" });
+    };
+    const spcClearLog = () => b.eval(`const n = window.__spcEv.filter((e) => e[0] === "transitioncancel").length; window.__spcEv.length = 0; return n;`);
+    const spcDrive = async (state) => {
+      await spcLog();
+      if (state === "SHUTTING") { await spcGesture(100); return spcClearLog(); }
+      if (state === "OPENING-rev") {
+        await spcWheel(100);
+        await sleep(25);
+        await spcPrime();
+        await sleep(25);
+        await spcGesture(-100);
+        return spcClearLog();
+      }
+      await spcWheel(100);
+      await sleep(400);
+      await spcPrime();
+      await sleep(100);
+      if (state === "OPENING") { await spcGesture(-100); return spcClearLog(); }
+      await spcWheel(-100);
+      await sleep(40);
+      await spcGesture(100);
+      const pre = await spcClearLog();
+      await sleep(400);
+      return pre;
+    };
+    const spcSampler = (ms) => b.eval(`
+      window.__spcW = [];
+      const t0 = performance.now();
+      const f = () => {
+        const t = performance.now(), body = document.querySelector(".sheetbody");
+        window.__spcW.push([Math.round(t), Math.round(document.getElementById("scale-preview").getBoundingClientRect().width * 10) / 10,
+          sheet.classList.contains("lipped"), sheet.classList.contains("lipshut"), Math.round(plateBand.getBoundingClientRect().bottom * 10) / 10, Math.round(body.getBoundingClientRect().bottom * 10) / 10]);
+        if (t - t0 < ${ms}) requestAnimationFrame(f);
+      };
+      requestAnimationFrame(f);
+      return true;`);
+    const SPC_WARN = "Crowded pan: the labels are small. Keep every note you can reach on the pan before you press the button below, and a few more words so that this line wraps onto a second line even on a wide sheet.";
+    const spcFire = async (ev) => {
+      const mark = `window.__spcT = performance.now();`;
+      if (ev === "notice") await b.eval(`${mark} document.getElementById("scale-anchor-between").click(); return true;`);
+      else if (ev === "clear") await b.eval(`${mark} document.getElementById("scale-anchor-one").click(); return true;`);
+      else if (ev === "warn") await b.eval(`${mark} say(${JSON.stringify(SPC_WARN)}, "warn"); return true;`);
+      else if (ev === "rotate") { await b.eval(`${mark} return true;`); await b.setViewport(740, 360, true); }
+      else throw new Error("unknown event " + ev);
+    };
+    const spcPan = () => b.eval(`return Math.round(document.getElementById("scale-preview").getBoundingClientRect().width * 10) / 10;`);
+    /* One cell: drive to `state`, fire `ev`, sample every frame, restore if still shut, and judge the samples. */
+    const spcCell = async (mode, state, ev) => {
+      if (mode === "create") await spcCreate(); else await spcEdit();
+      if (ev === "clear") {
+        await b.eval(`document.getElementById("scale-anchor-between").click(); return true;`);
+        await b.settle();
+        await sleep(300);
+      }
+      const before = await spcPan();
+      const gestureCancels = await spcDrive(state);
+      await spcSampler(1000);
+      await spcFire(ev);
+      await sleep(state === "OPENING" || state === "OPENING-rev" ? 350 : 200);
+      const mid = await b.eval(`return { lipped: sheet.classList.contains("lipped"), shut: sheet.classList.contains("lipshut") };`);
+      if (mid.lipped) {
+        await spcPrime();
+        await sleep(100);
+        await spcWheel(-100);
+      }
+      await sleep(700);
+      const r = await b.eval(`return { T: window.__spcT, W: window.__spcW, cancels: window.__spcEv.filter((e) => e[0] === "transitioncancel"), ev: window.__spcEv };`);
+      return { before, gestureCancels, mid, ...r };
+    };
+    const spcJudge = (tag, c, { within = 50 } = {}) => {
+      const last = c.W[c.W.length - 1];
+      assert.strictEqual(last[2], false, `${tag}: the footer never finished opening, last sample ${JSON.stringify(last)}`);
+      const want = last[1];
+      assert.ok(Math.abs(want - c.before) > 4, `${tag}: the event did not change the open-footer size (${c.before} before, ${want} after)`);
+      const after = c.W.filter((s) => s[0] >= c.T);
+      const reached = after.find((s) => Math.abs(s[1] - want) <= 0.5);
+      const trace = JSON.stringify(after.filter((x, i, a) => i === 0 || x[1] !== a[i - 1][1] || x[2] !== a[i - 1][2] || x[3] !== a[i - 1][3]).map((s) => [s[0] - Math.round(c.T), s[1], s[2] ? (s[3] ? "S" : "O") : "-"]));
+      assert.ok(reached, `${tag}: the pan never reached ${want}px, trace [ms from the event, width, S shut / O opening / - open]: ${trace}`);
+      assert.ok(reached[2], `${tag}: the pan reached ${want}px only after the footer opened: it resized at the restore, not at the event, trace [ms, width, state]: ${trace}`);
+      assert.ok(reached[0] - c.T <= within, `${tag}: the pan took ${Math.round(reached[0] - c.T)}ms to reach ${want}px after the event, more than ${within}ms, trace [ms, width, state]: ${trace}`);
+      const wobble = after.filter((s) => s[0] > reached[0] && Math.abs(s[1] - want) > 0.5);
+      assert.deepStrictEqual(wobble, [], `${tag}: the pan changed after it reached ${want}px, trace [ms, width, state]: ${trace}`);
+      /* A rAF callback runs before the frame's ResizeObserver delivery, so the event's own first frame is unpainted layout: skip it. */
+      const past = after.filter((s) => s[0] > c.T + 20 && s[2] && s[4] > s[5] + 0.5);
+      assert.deepStrictEqual(past, [], `${tag}: the plate band ends below the scrollport while the footer is lipped, samples [t, w, lipped, shut, band bottom, port bottom]: ${JSON.stringify(past.slice(0, 3))}`);
+      assert.deepStrictEqual(c.cancels, [], `${tag}: the app cancelled the slide after the gesture's own ${c.gestureCancels} cancels, events [type, element, property, ms]: ${JSON.stringify(c.ev)}`);
+      console.log(`${tag}: reversing gesture cancelled ${c.gestureCancels} transitions (the control); pan ${c.before} -> ${want} in ${Math.round(reached[0] - c.T)}ms`);
+    };
+
+    for (const mode of ["create", "Edit"]) {
+      test(`SPC: ${mode} at 844x390, after a restore reversed into a collapse, a notice that appears or clears while shut resizes the pan to the open-footer size at once and the restore changes nothing`, async () => {
+        try {
+          for (const ev of ["notice", "clear"]) spcJudge(`${mode}, SHUT-rev, ${ev}`, await spcCell(mode, "SHUT-rev", ev));
+        } finally {
+          await b.setViewport(900, 900, false);
+        }
+      });
+    }
+
+    for (const mode of ["create", "Edit"]) {
+      test(`SPC: ${mode} at 844x390, after a restore reversed into a collapse, a two-line warning while shut resizes the pan at once and the restore changes nothing`, async () => {
+        try {
+          const c = await spcCell(mode, "SHUT-rev", "warn");
+          const h = await b.eval(`return msgLine.getBoundingClientRect().height;`);
+          assert.ok(h >= 35.5, `${mode}: the warning is ${h}px, under two lines`);
+          spcJudge(`${mode}, SHUT-rev, warn`, c);
+        } finally {
+          await b.setViewport(900, 900, false);
+        }
+      });
+    }
+
+    for (const mode of ["create", "Edit"]) {
+      test(`SPC: ${mode} after a restore reversed into a collapse at 844x390, a rotation to 740x360 while shut sizes the pan for the new viewport and the restore changes nothing`, async () => {
+        try {
+          spcJudge(`${mode}, SHUT-rev, rotate`, await spcCell(mode, "SHUT-rev", "rotate"));
+        } finally {
+          await b.setViewport(900, 900, false);
+        }
+      });
+    }
+
+    test("SPC: at 844x390, after a restore reversed into a collapse and a notice while shut, the restore eases the guidance over the slide", async () => {
+      try {
+        await spcCreate();
+        await spcDrive("SHUT-rev");
+        await b.eval(`document.getElementById("scale-anchor-between").click(); return true;`);
+        await b.settle();
+        await sleep(400);
+        await b.eval(`
+          window.__spcG = [];
+          const f = () => { const t = performance.now(); window.__spcG.push([Math.round(t), Math.round(document.getElementById("scale-guidance").getBoundingClientRect().top * 10) / 10, sheet.classList.contains("lipshut")]); if (t < window.__spcG0 + 700) requestAnimationFrame(f); };
+          window.__spcG0 = performance.now();
+          requestAnimationFrame(f);
+          return true;`);
+        await sleep(100);
+        await spcPrime();
+        await sleep(100);
+        await spcWheel(-100);
+        await sleep(700);
+        const g = await b.eval(`return window.__spcG;`);
+        const at = g.findIndex((s, i) => i > 0 && g[i - 1][2] && !s[2]);
+        assert.ok(at > 0, `the footer never started to open: ${JSON.stringify(g.slice(0, 5))}`);
+        const t0 = g[at][0], start = g[at - 1][1], end = g[g.length - 1][1];
+        assert.ok(Math.abs(end - start) > 8, `the guidance does not move over the restore (${start} to ${end})`);
+        const lo = Math.min(start, end), hi = Math.max(start, end);
+        const sample = g.filter((s) => s[0] - t0 >= 70 && s[0] - t0 <= 110);
+        assert.ok(sample.length > 0, "no frame sampled 70 to 110ms into the restore");
+        const flat = sample.filter((s) => s[1] <= lo + 1 || s[1] >= hi - 1);
+        assert.deepStrictEqual(flat, [], `the guidance sits at its start or end value about 90ms into the restore instead of easing between ${start} and ${end}, samples [t, top] ${JSON.stringify(g.filter((s) => s[0] >= t0 - 20).filter((x, i) => i % 3 === 0).map((s) => [s[0] - t0, s[1]]))}`);
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    for (const mode of ["create", "Edit"]) {
+      test(`SPC: ${mode} at 844x390, a notice that appears while the footer is opening, or while a collapse is reversed into a restore, resizes the pan within one frame of the notice, not after the restore ends`, async () => {
+        try {
+          for (const state of ["OPENING", "OPENING-rev"]) spcJudge(`${mode}, ${state}, notice`, await spcCell(mode, state, "notice"), { within: 40 });
+        } finally {
+          await b.setViewport(900, 900, false);
+        }
+      });
+    }
+
+    test("SPC: at 844x390, a notice that appears while the footer is shutting resizes the pan within one frame, not at the settle", async () => {
+      try {
+        spcJudge("create, SHUTTING, notice", await spcCell("create", "SHUTTING", "notice"), { within: 40 });
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("SPC: at 844x390 a primary that grows while the footer is shut resizes the pan within one frame, with the restore then changing nothing", async () => {
+      try {
+        await spcCreate();
+        await spcWheel(100);
+        await sleep(400);
+        await spcPrime();
+        await sleep(100);
+        const before = await spcPan();
+        await spcSampler(900);
+        await sleep(50);
+        /* A style write: no wheel or tap can make the primary taller, so this one goes through eval. */
+        await b.eval(`window.__spcT = performance.now(); const lead = lipPrimary(); lead.style.minHeight = (lead.getBoundingClientRect().height + 24) + "px"; return true;`);
+        await sleep(250);
+        await spcWheel(-100);
+        await sleep(700);
+        const c = await b.eval(`return { T: window.__spcT, W: window.__spcW };`);
+        const last = c.W[c.W.length - 1];
+        assert.strictEqual(last[2], false, `the footer never finished opening: ${JSON.stringify(last)}`);
+        const want = last[1];
+        assert.ok(before - want >= 10, `a taller primary did not shrink the open-footer size (${before} before, ${want} after)`);
+        const after = c.W.filter((s) => s[0] >= c.T);
+        const reached = after.find((s) => Math.abs(s[1] - want) <= 0.5);
+        const trace = JSON.stringify(after.filter((x, i, a) => i === 0 || x[1] !== a[i - 1][1] || x[2] !== a[i - 1][2]).map((s) => [s[0] - Math.round(c.T), s[1], s[2] ? "lipped" : "open"]));
+        assert.ok(reached && reached[2], `the pan reached ${want}px only at the restore, not while shut, trace [ms from the change, width, state]: ${trace}`);
+        assert.ok(reached[0] - c.T <= 40, `the pan took ${Math.round(reached[0] - c.T)}ms to follow the taller primary, trace [ms, width, state]: ${trace}`);
+        assert.deepStrictEqual(after.filter((s) => s[0] > reached[0] && Math.abs(s[1] - want) > 0.5), [], `the pan changed after it followed the primary, trace [ms, width, state]: ${trace}`);
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    /* A guard on the identity the derivation rests on: the shut pan equals the open-footer pan at three landscape
+     * viewports. The footer is collapsed and restored through collapseLip/restoreLip; no timing is under test here. */
+    test("SPC: the pan width while the footer is shut equals the open-footer room measured after the restore, at 844x390, 740x360 and 926x428, create and Edit, with no message, a notice and a two-line warning", { timeout: 240000 }, async () => {
+      const ran = [];
+      try {
+        for (const [w, h] of [[844, 390], [740, 360], [926, 428]]) for (const mode of ["create", "Edit"]) for (const state of ["no message", "a notice", "a two-line warning"]) {
+          if (mode === "create") await spcCreate(w, h); else await spcEdit(w, h);
+          if (state === "a notice") await b.eval(`document.getElementById("scale-anchor-between").click(); return true;`);
+          if (state === "a two-line warning") await b.eval(`say(${JSON.stringify(SPC_WARN)}, "warn"); return true;`);
+          await b.settle();
+          await sleep(300);
+          const tag = `${mode}, ${w}x${h}, ${state}`;
+          assert.strictEqual(await b.eval(`return platesBeside();`), true, `${tag}: the plate is not beside the controls`);
+          await b.eval(`collapseLip(); return true;`);
+          await sleep(400);
+          const shutW = await spcPan();
+          await b.eval(`restoreLip(); return true;`);
+          await sleep(450);
+          const openW = await spcPan();
+          assert.strictEqual(await b.eval(`return sheet.classList.contains("lipped");`), false, `${tag}: the footer did not reopen`);
+          assert.ok(Math.abs(shutW - openW) <= 0.5, `${tag}: the pan is ${shutW}px while shut and ${openW}px once the footer is open`);
+          ran.push(tag);
+        }
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+      assert.strictEqual(ran.length, 18);
+    });
+
     test("SPC: at 380x780 and 380x667 the drawer status keeps its 81ad610 rect relative to the plate at the top of the scroll and stays pinned under the band at the end", async () => {
       const ran = [];
       try {
