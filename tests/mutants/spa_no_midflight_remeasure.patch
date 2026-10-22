@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10703,6 +10703,7 @@ function lipMeasure() {
+@@ -10765,6 +10765,7 @@ function lipMeasure() {
    sheet.classList.remove("lipnow");
  }
  function lipGuidanceChanged() {
 +  return;
    if (!isLipped() || (isLipShut() && lipSettled)) return;
+   if (platesBeside()) { lipDirty = true; return; }
    lipMeasure();
- }

@@ -6687,13 +6687,16 @@ test("DR1 line 33: a SMALL_LABELS warning is in #scale-msg once and nowhere in t
   assert.ok(SG_HTML.indexOf('id="scale-msg"') > slot.start && SG_HTML.indexOf('id="scale-msg"') < slot.end, "#scale-msg is not in the slot");
 });
 
-test("DR1 line 81: the status line is in the band after the plate, hidden while closed, polite and atomic", () => {
+test("DR1 line 81: the status line is the panel's next element after the band, hidden while closed, polite and atomic", () => {
   const app = boot();
   const s = app.els["scale-drawer-status"];
-  assert.strictEqual(s._markupParent, app.els["scale-plate-band"]);
+  assert.strictEqual(s._markupParent, app.els["scale-panel-layout"]);
+  assert.strictEqual(app.els["scale-plate-band"]._markupParent, app.els["scale-panel-layout"]);
   assert.strictEqual(app.els["scale-preview"]._markupParent, app.els["scale-plate-band"]);
   const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8").replace(/<!--[\s\S]*?-->/g, "");
   assert.ok(html.indexOf('id="scale-preview"') < html.indexOf('id="scale-drawer-status"'));
+  assert.match(html, /<p class="sheethint" id="scale-layout-hint">[^<]*<\/p>\s*<\/div>\s*<div id="scale-drawer-status"[^>]*><\/div>\s*<div id="scale-layout-zone">/,
+    "the band closes, the status follows it as its next sibling, and the layout zone follows the status");
   assert.strictEqual(dr1Markup("scale-drawer-status").attr("aria-live"), "polite");
   assert.strictEqual(dr1Markup("scale-drawer-status").attr("aria-atomic"), "true");
   dr1Open(app);

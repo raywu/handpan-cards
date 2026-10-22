@@ -1,20 +1,22 @@
 # kills: DR1 rule G by resize: open on Edit, rotate in either direction, and the band and padding follow
 # suite: node --test --test-name-pattern ^DR1.rule.G.by.resize.* tests/drawer_grid.test.js
-# Neither the plate band nor the sheet body is observed and the keyboard offset no longer calls syncBand,
+# Neither the plate band, its status line nor the sheet body is observed and the keyboard offset no longer calls syncBand,
 # so a shrinking scrollport leaves the stuck state stale (rule G-e).
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10530,8 +10530,6 @@ function syncBand() {
+@@ -10606,10 +10606,6 @@ function syncBand() {
  const bandPort = document.querySelector(".sheetbody") || plateBand;
  if (typeof ResizeObserver === "function") {
    const bandWatch = new ResizeObserver(syncBand);
 -  bandWatch.observe(plateBand);
 -  bandWatch.observe(bandPort);
+-  bandWatch.observe(drawerStatus);
+-  for (const el of [nextBtn, genBtn, delRow, document.getElementById("scale-foot")]) if (el) bandWatch.observe(el);
  }
  /** A native focus scrolls a text control only far enough to show its caret;
   *  rule G-c wants the whole control in the scrollport. */
-@@ -11521,7 +11519,6 @@ function applyKbOffset(e) {
+@@ -11709,7 +11705,6 @@ function applyKbOffset(e) {
    setSheetClass("side", high > 0 && high < 420);
    setSheetClass("tiny", kb && high > 0 && high < 200);
    lipKbEdge(wasUp, kb);

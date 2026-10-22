@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1508,10 +1508,10 @@ html.about-open{overflow:hidden}
+@@ -1501,10 +1501,10 @@ html.about-open{overflow:hidden}
      </div>
      </div>
      <div id="scale-panel-layout" role="tabpanel" aria-labelledby="scale-tab-layout" hidden>
@@ -13,6 +13,6 @@ diff --git a/index.html b/index.html
        <div id="scale-preview" role="img"
             aria-label="Preview of where the notes sit on the pan" hidden></div>
 -      <p class="sheethint" id="scale-layout-hint">Type a scale to adjust its layout.</p>
-       <div id="scale-drawer-status" aria-live="polite" aria-atomic="true" hidden></div>
      </div>
+     <div id="scale-drawer-status" aria-live="polite" aria-atomic="true" hidden></div>
      <div id="scale-layout-zone">

@@ -1,15 +1,15 @@
-# kills: TB: at 844x390 the Layout tab's .sheetsurf is wider than 600px, the tab strip sits right of the plate and the pan is at least 304px
+# kills: TB: at 844x390 the Layout tab's .sheetsurf is wider than 600px, the tab strip sits right of the plate and the pan fills the open-footer scrollport less the band padding and, with no message, is at least 270px
 # suite: node --test --test-name-pattern ^TB:.at.844x390 tests/e2e.test.js
 # The wide Layout tab stays one column at 844x390, so the controls fall under the pan.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1105,7 +1105,7 @@ footer.seq{row-gap:var(--sp-1)}
- }
- @container surf (min-width:600px) and (min-aspect-ratio:1/1){
-   #scale-preview{--adj-reserve:72px}
--  #scale-sheet[data-tab="layout"] .sheetbody{display:grid; grid-template-columns:auto 1fr; column-gap:var(--sp-3); row-gap:0; align-content:start}
-+  #scale-sheet[data-tab="layout"] .sheetbody{display:block; grid-template-columns:auto 1fr; column-gap:var(--sp-3); row-gap:0; align-content:start}
+@@ -1114,7 +1114,7 @@ footer.seq{row-gap:var(--sp-1)}
+   #scale-preview, #scale-guidance, #scale-foot, #scale-generate, #scale-next, #scale-delete-row{
+     --adj-reserve:104px; --plate-w:clamp(160px, min(100cqw, var(--plate-room, calc(100cqh - var(--adj-reserve)))), 480px)}
+   #scale-preview{width:var(--plate-w)}
+-  #scale-sheet[data-tab="layout"] .sheetbody{display:grid; grid-template-columns:auto 1fr; grid-auto-rows:min-content; column-gap:var(--sp-3); row-gap:0; align-content:start}
++  #scale-sheet[data-tab="layout"] .sheetbody{display:block; grid-template-columns:auto 1fr; grid-auto-rows:min-content; column-gap:var(--sp-3); row-gap:0; align-content:start}
    #scale-sheet[data-tab="layout"] #scale-panel-layout{display:contents}
-   #scale-sheet[data-tab="layout"] #scale-plate-band{grid-column:1; grid-row:1 / span 30; align-self:start; position:relative}
+   #scale-sheet[data-tab="layout"] #scale-plate-band{grid-column:1; grid-row:1 / span 30; align-self:start; position:sticky; top:0}
    #scale-sheet[data-tab="layout"] #scale-tabs,

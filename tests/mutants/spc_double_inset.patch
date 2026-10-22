@@ -1,0 +1,15 @@
+# kills: SPC: at 844x390 #scale-generate, #scale-guidance, the delete row and the lip share the controls column's left and right edges in the OPEN, SHUTTING, SHUT and OPENING states, on create and on Edit with DELETE visible, and no plate field hit-tests to #scale-lip with the footer shut
+# suite: node --test --test-name-pattern ^SPC:.at.844x390.#scale-generate..#scale-guidance..the.delete tests/e2e.test.js
+# The lipped reset is dropped, so the shut footer's children keep the controls-column inset inside the lip.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1128,7 +1128,7 @@ footer.seq{row-gap:var(--sp-1)}
+   #scale-sheet[data-tab="layout"] #scale-foot{margin-left:calc(var(--plate-w) + var(--sp-2))}
+   #scale-sheet[data-tab="layout"] #scale-next, #scale-sheet[data-tab="layout"] #scale-generate{width:auto}
+   #scale-sheet[data-tab="layout"].lipped #scale-next, #scale-sheet[data-tab="layout"].lipped #scale-generate,
+-  #scale-sheet[data-tab="layout"].lipped #scale-delete-row{margin-left:0}
++  #scale-sheet[data-tab="layout"].lipped #scale-delete-row{margin-left:calc(var(--plate-w) + var(--sp-2))}
+   #scale-sheet[data-tab="layout"].lipped #scale-next, #scale-sheet[data-tab="layout"].lipped #scale-generate{width:100%}
+   .sheetbody{scroll-padding-top:0}
+ }
