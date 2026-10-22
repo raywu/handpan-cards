@@ -5095,7 +5095,7 @@ function run() {
         assert.strictEqual(await b.eval(`return document.getElementById("scale-panel-scale").hidden;`), false, `${mode}: opens on the Scale tab`);
         const scaleCycle = edit
           ? ["scale-back", "scale-tab-scale", "scale-name", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box", "scale-generate", "scale-delete"]
-          : ["scale-back", "scale-tab-scale", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box", "scale-next"];
+          : ["scale-back", "scale-tab-scale", "scale-name", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box", "scale-next"];
         await both(`${mode} Scale tab`, scaleCycle);
         assert.ok(!scaleCycle.some((id) => swatches.includes(id)), "the Scale cycle names a swatch");
         ran.push(`${mode}/scale`);
@@ -6363,6 +6363,29 @@ function run() {
         await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
           { label: "the sheet to close" });
       }
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("CN7: at 380x780 the Add sheet shows DECK NAME above DING and the primary stays visible", async () => {
+    try {
+      await freshLoad();
+      await b.setViewport(380, 780, true);
+      await openSheetForFold(380, 780);
+      const m = await b.eval(`
+        const r = (id) => document.getElementById(id).getBoundingClientRect();
+        const n = r("scale-name"), d = r("scale-ding");
+        return { hidden: document.getElementById("scale-name-row").hidden,
+          nameBottom: n.bottom, nameHeight: n.height, nameTop: n.top, dingTop: d.top, vh: window.innerHeight };`);
+      assert.strictEqual(m.hidden, false, "the DECK NAME row is hidden on Add");
+      assert.ok(m.nameHeight > 0 && m.nameTop >= 0 && m.nameBottom <= m.vh, "DECK NAME is not on screen");
+      assert.ok(m.nameBottom <= m.dingTop + 0.5, "DECK NAME is not above DING");
+      await typeScale(BIG_SCALE);
+      await b.waitFor(`!document.getElementById("scale-preview").hasAttribute("hidden")`,
+        { label: "the preview to render at 380x780" });
+      assertPrimaryVisible(await primaryFold(), "create sheet with DECK NAME at 380x780");
+      await b.key("Escape", "Escape", 27);
     } finally {
       await b.setViewport(900, 900, false);
     }
