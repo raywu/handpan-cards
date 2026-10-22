@@ -1,0 +1,14 @@
+# kills: TB: Back, Escape and a popstate close the sheet from the Layout tab exactly as from the Scale tab, with one history.back
+# suite: node --test --test-name-pattern ^TB:.Back..Escape tests/app.test.js
+# A popstate on the Layout tab selects Scale instead of taking the sheet down.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11500,6 +11500,7 @@
+   if (aboutOpen) { hideAbout(); return; }
+   if (location.hash === ABOUT_ROUTE) { syncRoute(); return; }
+   if (!sheetOpen) return;
++  if (sheetTab === "layout") { setTab("scale"); return; }
+   sheetRouted = false;
+   hideSheet();
+ });

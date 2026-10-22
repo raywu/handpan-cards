@@ -1,0 +1,15 @@
+# kills: IH: compose stages its parse: a top order error is under TOP with "X is lower than Y: list low to high.", a top note below the ding says so, a top pitch repeated in INNER is NOTE_REPEATED under INNER, and an octaveless inner Bb over top C4 reads Bb4
+# suite: node --test --test-name-pattern ^IH:.compose.stages.its.parse..a tests/import.test.js
+# The per-note staged parse never runs, so an ordering error is no longer owned by the field that caused it.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -724,7 +724,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       if (!composeFits(midi)) return { names: names, error: composeRange(name) };
+       names.push(name);
+       if (n.octave === null) guessed.push(name);
+-      var parsed = core().parseSeed(head + names.join(" "));
++      var parsed = { ok: true };
+       if (!parsed.ok && parsed.code !== "NO_FIFTH") {
+         names.pop();
+         var before = k ? names[k - 1] : null;

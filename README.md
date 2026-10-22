@@ -8,9 +8,9 @@ Chord flashcards and chord progressions for handpan scales. It runs in the brows
 - NAME → NOTES shows the chord name, then the notes. NOTES → NAME shows the lit pan, and you name the chord.
 - A card shows the pan with every field of the chord's pitch classes lit, the root in one colour and the other tones in another. Below it are the notes and field numbers, in order from the root.
 - The Chord progression group in the menu (EASY, MEDIUM, HARD) gives a loop of 2 to 6 chords to play.
-- The browser remembers your deck, mode, progression tier and paper size.
+- The browser remembers your scale, mode, progression tier and paper size.
 
-## Decks
+## Scales
 
 - D Kurd 10: 49 cards
 - D Amara 10: 29 cards
@@ -24,13 +24,13 @@ Chord flashcards and chord progressions for handpan scales. It runs in the brows
 
 - Menu, then + ADD A SCALE. Type the notes low to high on one line: the ding in round brackets, bottom notes in square brackets, a `|` before inner notes. Example: `[C] (D) A C D E F G A C`. Then GENERATE CARDS.
 - ADJUST LAYOUT under the preview mirrors or reorders fields to match your pan.
-- Tap the selected deck's chip (it has a pencil) to edit or delete it. You can edit built-in decks the same way; RESET SEEDED DECKS brings them back.
-- Scales stay in this browser. The link icon in the header copies a link that opens the deck on any device.
-- A deck id comes from a 32-bit hash of its notes. Two different scales can share an id, and then only one is kept.
+- Tap the selected scale's chip (it has a pencil) to edit or delete it. You can edit built-in scales the same way; RESET SEEDED SCALES brings them back.
+- Scales stay in this browser. The link icon in the header copies a link that opens the scale on any device.
+- A scale's id comes from a 32-bit hash of its notes. Two different scales can share an id, and then only one is kept.
 
 ## Printing
 
-DOWNLOAD PDF in the menu builds the chord cards for the shown deck in the browser. Pick Letter or A4. The cards are poker size, 3x3 per sheet. Print at 100% and check the calibration bar with a ruler.
+DOWNLOAD PDF in the menu builds the chord cards for the shown scale in the browser. Pick Letter or A4. The cards are poker size, 3x3 per sheet. Print at 100% and check the calibration bar with a ruler.
 
 The three `*_CHORD_ONLY_Letter.pdf` files in the repo root are the print-shop copies, built by `python3 tools/decks.py`.
 
@@ -52,7 +52,7 @@ Open `index.html` from disk, or run `tools/preview.sh` to serve it at `http://lo
 The engine is twelve modules under `src/engine/`:
 
 - `src/engine/core.js`: note parsing and pitch classes
-- `src/engine/importer.js`: product text to a scale string
+- `src/engine/importer.js`: product text, or the helper's four fields, to a scale string
 - `src/engine/voicing.js`: the cluster and spelling rules
 - `src/engine/naming.js`: chord symbols and subtitles
 - `src/engine/select.js`: which chords a pan gets, and in what order
@@ -74,7 +74,7 @@ Tests:
     python3 tests/suite_health.py   # per-file test-count floors
     ./tests/run.sh mutants          # mutation gate (slow)
 
-There are 24 node suites and 16 python suites. The mutation gate applies 1097 mutant patches from `tests/mutants/`, and a test must fail under each one. It edits the tree in place and refuses to start on uncommitted changes to a file a patch touches, `README.md` among them, so commit first.
+There are 25 node suites and 16 python suites. The mutation gate applies 1289 mutant patches from `tests/mutants/`, and a test must fail under each one. It edits the tree in place and refuses to start on uncommitted changes to a file a patch touches, `README.md` among them, so commit first.
 
 CI runs on pull requests into `main` and on pushes to `main`. A PR that changes only `docs/plans/` or `docs/prompts/` skips every job.
 

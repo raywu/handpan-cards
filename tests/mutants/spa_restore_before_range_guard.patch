@@ -1,0 +1,16 @@
+# kills: SPA: guidance appearing or clearing at the scroll end during a wheel window, a touch drag and its fling, keyboard up and down, changes the lip state zero times and starts no collapse and restore cycle
+# suite: node --test --test-name-pattern ^SPA..guidance.appearing.or.clearing.at.the.scroll.end.during.a.wheel.window..a.touch.drag.and.its.fling..keyboard.up.and.down..changes.the.lip.state.zero.times.and.starts.no.collapse.and.restore.cycle$ tests/e2e.test.js
+# The shut-at-end restore runs before the range re-baseline, so a range change at the end restores the footer.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10760,8 +10760,8 @@ function lipScroll() {
+   const now = Date.now();
+   if (!sheetOpen || sheet.classList.contains("kbup") || now < lipQuietUntil || now > userWindowUntil) return;
+   userWindowUntil = now + LIP_WINDOW;
+-  if (M !== prev.M) { lipAcc = 0; return; }
+   if (isLipShut() && t >= M - 1) { restoreLip(); return; }
++  if (M !== prev.M) { lipAcc = 0; return; }
+   const d = t - prev.t;
+   if (d * lipAcc < 0) lipAcc = 0;
+   lipAcc += d;

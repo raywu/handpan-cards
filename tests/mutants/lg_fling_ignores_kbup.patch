@@ -1,0 +1,15 @@
+# kills: LG: while kbup a drag from any surface and its fling do nothing
+# suite: node --test --test-name-pattern ^LG..while.kbup.a.drag.from.any.surface.and.its.fling.do.nothing$ tests/app.test.js
+# The fling ignores the keyboard.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10772,7 +10772,7 @@
+   if (M !== F.prevM) { F.prevM = M; F.prevT = t; return; }
+   const d = t - F.prevT;
+   F.prevT = t;
+-  if (!sheetOpen || sheet.classList.contains("kbup") || now < lipQuietUntil) return;
++  if (!sheetOpen || now < lipQuietUntil) return;
+   const s = F.way === "up" ? d : -d;
+   if (s <= 0) return;
+   F.acc += s;

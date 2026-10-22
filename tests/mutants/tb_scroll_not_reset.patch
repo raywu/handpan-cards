@@ -1,0 +1,14 @@
+# kills: TB: a tab switch resets the panel scroll to the top after the Scale panel was scrolled
+# suite: node --test --test-name-pattern ^TB:.a.tab.switch.resets.the.panel.scroll tests/app.test.js
+# A tab switch leaves the panel scrolled where the last tab left it.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10810,7 +10810,6 @@ function setTab(tab) {
+   if (held && held !== document.body && !held.getClientRects().length) held.blur();
+   paintLayout();
+   repaintPlate();
+-  bandPort.scrollTop = 0;
+   setLip(false, { instant: true });
+   if (drawerOpen && boxOk && !hasTwoNoteRing()) layoutStatus("This pan has no ring with two notes, so there is nothing to rearrange.");
+ }

@@ -1,0 +1,15 @@
+# kills: LG: a wheel tick or a typing key while a finger is down does not end the gesture, a scroll key outside a field parks the gesture
+# suite: node --test --test-name-pattern ^LG..a.wheel.tick.or.a.typing.key.while.a.finger.is.down.does.not.end.the.gesture..a.scroll.key.outside.a.field.parks.the.gesture$ tests/app.test.js
+# Every key, typing included, ends the gesture.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10858,7 +10858,7 @@
+ for (const ev of ["touchend", "touchcancel"]) sheet.addEventListener(ev, lipDragStop, { passive: true, capture: true });
+ const lipTouchClear = () => { if (lipDrag) lipParked = lipDrag; lipFling = null; lipTouching = false; lipDrag = null; lipDragEnd = 0; };
+ sheet.addEventListener("wheel", lipTouchClear, { passive: true, capture: true });
+-sheet.addEventListener("keydown", (e) => { if (lipScrollKey(e)) lipTouchClear(); }, { capture: true });
++sheet.addEventListener("keydown", () => { lipTouchClear(); }, { capture: true });
+ let lipTouch = null;
+ lipBtn.addEventListener("touchstart", (e) => {
+   const p = e.touches && e.touches[0];

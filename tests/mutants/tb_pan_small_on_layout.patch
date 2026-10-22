@@ -1,0 +1,15 @@
+# kills: TB: at 320x568, 380x780, 393x852, 844x390 and 1280x800 the Layout pan is wider than the old small pan clamp(88px, 30cqw, 160px) and at least the section 3.6 width minus 2px
+# suite: node --test --test-name-pattern ^TB:.at.320x568..380x780..393x852..844x390 tests/e2e.test.js
+# The Layout pan is the old small pan.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1092,7 +1092,7 @@ footer.seq{row-gap:var(--sp-1)}
+ #scale-or::before, #scale-or::after{content:""; flex:1 1 0; height:1px; background:#433b2c}
+ #scale-or span{font:600 9.5px/1.5 "Nunito Sans"; letter-spacing:.13em; color:#a79d8b; text-transform:uppercase}
+ #scale-preview{--adj-reserve:232px;
+-  width:clamp(160px, min(100cqw, calc(100cqh - var(--adj-reserve))), 480px)}
++  width:clamp(88px, 30cqw, 160px)}
+ #scale-plate-band{position:sticky; top:0; z-index:2; background:#1f1b15; padding-bottom:var(--sp-1)}
+ .sheetbody:has(#scale-layout-zone.nostick) #scale-plate-band{position:relative}
+ #scale-plate-band #scale-layout-hint{position:absolute; left:50%; top:calc((100% - var(--sp-1)) / 2);

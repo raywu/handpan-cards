@@ -1,0 +1,16 @@
+# kills: SPA: with the keyboard up and a warning showing, a lip tap restores the footer and the message's bottom ends at or above NEXT's top
+# suite: node --test --test-name-pattern ^SPA..with.the.keyboard.up.and.a.warning.showing..a.lip.tap.restores.the.footer.and.the.message.s.bottom.ends.at.or.above.NEXT.s.top$ tests/e2e.test.js
+# lipWrite never records the guidance slide, so a restore leaves the message where the shut lip put it.
+# Also killed by: A10 (SPA: with the keyboard up and the lip shut ...)
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10652,7 +10652,7 @@ function lipWrite(o) {
+   set("--lip-h", (lipRect(footEl).top - (o.body - 1)) + "px");
+   set("--lip-pad", (o.top - (o.body - 1)) + "px");
+   set("--lip-gd", (o.del === null ? 0 : o.del - o.bottom) + "px");
+-  if (lipText() && o.g !== null && guidanceEl.getBoundingClientRect) set("--lip-g", (o.g - lipRect(guidanceEl).top) + "px");
++  if (false && lipText() && o.g !== null && guidanceEl.getBoundingClientRect) set("--lip-g", (o.g - lipRect(guidanceEl).top) + "px");
+   else set("--lip-g", "0px");
+ }
+ function lipRebase() {

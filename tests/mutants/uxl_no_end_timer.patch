@@ -1,0 +1,14 @@
+# kills: UX: a restore ends on the 220ms timer when no transitionend arrives, and a stale timer from a reversed slide does nothing
+# suite: node --test --test-name-pattern ^UX:.a.restore.ends.on.the.220ms.timer.when.no.transitionend.arrives..and.a.stale.timer.from.a.reversed.slide.does.nothing$ tests/app.test.js
+# uxl_no_end_timer
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10689,7 +10689,6 @@ function restoreLip() {
+   lipEnd = lipGen;
+   if (reducedMotion.matches) { finishOpen(); return; }
+   const gen = lipEnd;
+-  lipTimer = setTimeout(() => endOpening(gen), LIP_END_MS);
+ }
+ function endOpening(gen) {
+   if (gen !== lipGen || !isLipped() || isLipShut()) return;

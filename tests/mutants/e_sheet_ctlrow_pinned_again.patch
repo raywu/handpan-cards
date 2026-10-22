@@ -1,24 +1,21 @@
 # kills: with a real keyboard up, the seed box is not clipped by the sheet's own scroller
 # suite: node --test --test-name-pattern ^with.a.real.keyboard.up,.the.seed.box.is.not.clipped.by.the.sheet's.own.scroller$ tests/e2e.test.js
-# The mirror/palette row goes back into the pinned footer, so .sheetbody shrinks
-# again to make room for it. Under a real iOS keyboard there is nothing left to
-# shrink: the Edit page gives a 48px seed field a 12px scrollport, which is the
-# owner's 2026-09-17 screenshot verbatim.
-# Re-anchored 2026-10-14 (remove-degrees, lane app) against the new source. The mutation itself is unchanged.
+# The Layout panel goes back into the pinned footer, outside .sheetbody, so the scroller shrinks to make room for it
+# and under a real keyboard the seed field has almost no scrollport left.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1304,6 +1304,7 @@ footer.seq{row-gap:var(--sp-1)}
-         </div>
-       </div>
+@@ -1484,6 +1484,7 @@ html.about-open{overflow:hidden}
+       <p class="sheethint" id="scale-line-note"></p>
+     </div>
      </div>
 +   </div>
-     <!-- Inside .sheetbody, in the scroll. It used to be pinned below the
-          scrollport with the primary, on the argument that everything outside
-          .sheetbody is what the sheet guarantees without scrolling - so the
-@@ -1331,7 +1332,6 @@ footer.seq{row-gap:var(--sp-1)}
-     <div class="ctlrow">
-       <div id="scale-swatches" role="group" aria-label="Card palette"></div>
+     <div id="scale-panel-layout" role="tabpanel" aria-labelledby="scale-tab-layout" hidden>
+     <div id="scale-plate-band">
+       <div id="scale-preview" role="img"
+@@ -1571,7 +1572,6 @@ html.about-open{overflow:hidden}
+       </div>
+     </div>
      </div>
 -   </div>
      <!-- The page's messages, pinned with the primary: everything say() writes

@@ -1,0 +1,15 @@
+# kills: parens: bottom reads round brackets as bottom notes; without it the same text still blocks
+# suite: node --test --test-name-pattern ^parens..bottom.reads tests/import.test.js
+# The parens option is ignored, so round brackets stay undeclared and the block is never lifted.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -463,7 +463,7 @@
+     Object.keys(clauses).forEach(function (k) { if (clauses[k].length > 1) crowded = crowded.concat(clauses[k]); });
+     if (pickable && crowded.length) flag("DING_CLAUSE_MANY", { notes: indices(crowded) });
+ 
+-    var parensBottom = opts.parens === "bottom";
++    var parensBottom = false;
+     notes.forEach(function (n) {
+       if (n === ding) n.assigned = "ding";
+       else if (pickable && contested && n.role === "ding" && !n.paren && clauses[n.list].length === 1) n.assigned = "dropped";

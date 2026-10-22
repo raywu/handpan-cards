@@ -1,0 +1,15 @@
+# kills: TB: ArrowRight, ArrowLeft, Home and End move and activate the tabs, wrap, and keep exactly one tabindex 0
+# suite: node --test --test-name-pattern ^TB:.ArrowRight tests/app.test.js
+# Both tabs are Tab stops, so the roving tabindex is lost.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10568,7 +10568,7 @@
+   for (const [tab, on, panel] of [[tabScale, !onLayout, panelScale], [tabLayout, onLayout, panelLayout]]) {
+     tab.classList.toggle("on", on);
+     tab.setAttribute("aria-selected", String(on));
+-    tab.setAttribute("tabindex", on ? "0" : "-1");
++    tab.setAttribute("tabindex", "0");
+     panel.hidden = !on;
+   }
+   sheet.setAttribute("data-tab", sheetTab);

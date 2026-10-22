@@ -1,0 +1,14 @@
+# kills: SPC: Edit at 844x390, a notice that appears or clears while the footer is shut resizes the pan to the open-footer size at once and the restore changes nothing
+# suite: node --test --test-name-pattern ^SPC:.Edit.at.844x390,.a.notice tests/e2e.test.js
+# While the footer is shut the pan holds the last open-footer size instead of re-deriving it. A notice appearing while shut resizes the pan on restore.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10597,6 +10597,7 @@ function syncBand() {
+   if (pinPad !== pin) { pinPad = pin; root.setProperty("--plate-pin-h", pin); }
+   if (beside && port > 0) {
+     const put = (px) => { const v = px + "px"; if (plateRoom !== v) { plateRoom = v; root.setProperty("--plate-room", v); } };
++    if (sheet.classList.contains("lipped")) return;
+     const seen = [];
+     let v = openRoomOf();
+     while (!seen.includes(v) && seen.length < 6) { seen.push(v); put(v); v = openRoomOf(); }

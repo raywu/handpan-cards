@@ -1,0 +1,15 @@
+# kills: IH: compose keeps a typed bottom octave, lists no guess for it, and sets info only when something was guessed
+# suite: node --test --test-name-pattern ^IH:.compose.keeps.a.typed.bottom tests/import.test.js
+# A bottom with a typed octave is listed as guessed.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -764,7 +764,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       if (below !== null && midi < below) return { names: [], guessed: [], error: composeLower(name, names[i - 1]) };
+       names.push(name);
+       midis.push(midi);
+-      if (guess) guessed.push(name);
++      guessed.push(name);
+       below = midi;
+     }
+     return { names: names, midis: midis, guessed: guessed, error: null };

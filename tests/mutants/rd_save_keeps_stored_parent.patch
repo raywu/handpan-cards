@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9475,6 +9475,7 @@
- function sheetOptions() {
-   const o = { palette, mirror, mirrorBottom: bottomMirror(), anchor };
-   if (editingId) {
+@@ -11346,6 +11346,7 @@ function sheetOptions() {
+   if (!editingId) {
+     if (n) o.name = n;  // an empty box keeps the auto label
+   } else {
 +    { const d = editedDeck(); if (d && d.options && d.options.parent != null) o.parent = d.options.parent; }
-     // iOS Smart Punctuation turns a typed ' or " into a curly U+2018/2019/
-     // U+201C/U+201D, a typed -- into an em dash U+2014, and a typed ... into
-     // a single ellipsis glyph U+2026 (a pasted en dash U+2013 can also show
+     // The box is PREFILLED, so an UNTOUCHED box on an auto-named deck is
+     // treated as ABSENT: otherwise a field edit would pin the old fields' name
+     // onto the new deck and the row would show two chips reading the same thing

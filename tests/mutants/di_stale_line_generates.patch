@@ -1,0 +1,24 @@
+# kills: DI: a field error keeps #scale-box at its last good line, marks it Not updated, holds the pan and disables GENERATE CARDS
+# suite: node --test --test-name-pattern ^DI:.a.field.error.keeps tests/app.test.js
+# Mutant di_stale_line_generates.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12041,7 +12041,6 @@ function paintPassive() {
+   fieldsNote.textContent = !onFields
+     ? (fieldsStale ? "Not updated: the line below does not read as a scale yet." : "Follows the line below. Tap a field to type notes instead.")
+     : "";
+-  if (onFields && lineStale) genBtn.disabled = true;
+ }
+ function writeLine(text) {
+   mirroring = true;
+@@ -12086,8 +12086,7 @@ function followFields(r, wasStale) {
+   } else {
+     lineStale = true;
+     holdPanPreview();
+-    genBtn.disabled = true;
+-    showParse("");
++    showParse("");
+   }
+ }
+ function lineInput() {

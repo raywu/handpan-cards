@@ -1,0 +1,15 @@
+# kills: KB2b: closing the sheet drops the tap pin and the tap snapshot
+# suite: node --test --test-name-pattern ^KB2b..closing.the.sheet tests/e2e.test.js
+# The sheet close leaves the pin and the snapshot standing.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11693,8 +11693,6 @@ function hideSheet() {
+   }
+   for (const c of ["kbup", "short", "side", "tiny"]) setSheetClass(c, false);
+   setLip(false, { instant: true });
+-  scrollPin = null;
+-  tapSnap = null;
+   editingId = null;
+   seedPrefill = null;
+   dropDrawer();

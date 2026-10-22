@@ -1,0 +1,15 @@
+# kills: KB: hideSheet clears tiny
+# suite: node --test --test-name-pattern ^KB..hideSheet.clears.tiny$ tests/app.test.js
+# hideSheet leaves tiny on the sheet, so the next open starts with the whole surface scrolling.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11691,7 +11691,7 @@ function hideSheet() {
+     sheetSurf.style.transform = "";
+     sheetSurf.style.maxHeight = "";
+   }
+-  for (const c of ["kbup", "short", "side", "tiny"]) setSheetClass(c, false);
++  for (const c of ["kbup", "short", "side"]) setSheetClass(c, false);
+   setLip(false, { instant: true });
+   scrollPin = null;
+   tapSnap = null;

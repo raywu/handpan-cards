@@ -1,0 +1,15 @@
+# kills: a picked ding clears DING_CUE and CONFLICTING_DING and lets the string through
+# suite: node --test --test-name-pattern ^a.picked.ding.clears tests/import.test.js
+# a spec-row ding clash still blocks after the user picks a ding.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -415,7 +415,7 @@
+ 
+     notes.forEach(function (n, i) { n.index = i; n.octave = hasOctave(n.name); n.midi = midiOf(n.name); });
+     var pickable = typeof opts.ding === "number" && opts.ding >= 0 && opts.ding < notes.length;
+-    if (dingClash && !pickable) flag("CONFLICTING_DING", { notes: dingClash.map(function (n) { return n.index; }) });
++    if (dingClash) flag("CONFLICTING_DING", { notes: dingClash.map(function (n) { return n.index; }) });
+     var contested = !!dingClash;
+ 
+     // Who is the ding?

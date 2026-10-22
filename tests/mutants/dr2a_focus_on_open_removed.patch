@@ -1,14 +1,15 @@
-# kills: DR2a (18): opening the drawer focuses the first pickable note and no other control, Add
-# suite: node --test --test-name-pattern ^DR2a..18...opening.the.drawer.focuses.the.first.pickable.note.and.no.other.control..Add$ tests/app.test.js
-Opening the drawer no longer moves focus to the first pickable note.
+# kills: TB: NEXT shows only in Add on the Scale tab, is enabled in every scale state, selects Layout and focuses the Layout tab
+# suite: node --test --test-name-pattern ^TB:.NEXT.shows tests/app.test.js
+# NEXT no longer moves focus to the Layout tab.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8995,7 +8995,6 @@ function openDrawer() {
-   drawerStatus.textContent = "";
-   drawerStatus.classList.remove("warn");
-   paintLayout();
--  focusFirstNext = true;
-   repaintPlate();
-   layoutZone.scrollIntoView({ block: "nearest", behavior: "auto" });
-   drawerBtn.scrollIntoView({ block: "nearest", behavior: "auto" });
+@@ -11797,7 +11797,7 @@
+ anchorBetween.onclick = pickAnchor("between");
+ tabScale.addEventListener("click", () => setTab("scale"));
+ tabLayout.addEventListener("click", () => setTab("layout"));
+-nextBtn.addEventListener("click", () => { setTab("layout"); tabLayout.focus(); });
++nextBtn.addEventListener("click", () => { setTab("layout"); });
+ tabStrip.addEventListener("keydown", (e) => {
+   if (e.altKey || e.ctrlKey || e.metaKey) return;
+   const tabs = [tabScale, tabLayout];

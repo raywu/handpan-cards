@@ -1,0 +1,14 @@
+# kills: UX: opening, Edit-opening and closing the sheet leave the footer open with no lip classes or variables
+# suite: node --test --test-name-pattern ^UX:.opening..Edit.opening.and.closing.the.sheet.leave.the.footer.open.with.no.lip.classes.or.variables$ tests/app.test.js
+# uxl_close_leaves_lipped
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11692,7 +11692,6 @@ function hideSheet() {
+     sheetSurf.style.maxHeight = "";
+   }
+   for (const c of ["kbup", "short", "side", "tiny"]) setSheetClass(c, false);
+-  setLip(false, { instant: true });
+   scrollPin = null;
+   tapSnap = null;
+   editingId = null;

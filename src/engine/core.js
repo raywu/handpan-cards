@@ -49,7 +49,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       reason: "<A> is not above <B>, and the line runs low to high. Give <A> a higher octave or move it earlier, e.g. (D3) A3 C4 D4.",
       alternates: {
         ding: "<A> is at or below the ding <B>. Top notes are above the ding; a lower note is a bottom note and goes before it in square brackets, e.g. [C3] (D3) A3.",
-        afterBar: "<A> comes after the | but is below <B>. Notes after | are inner notes now. For a bottom note, use square brackets where its pitch falls, e.g. [C3] (D3) A3 C4.",
         below: "<A> is not below <B>. Bottom notes before the ding also run low to high, e.g. [C3] [D3] (E3) B3."
       }
     },
@@ -250,16 +249,34 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return midi;
   }
 
-  // Section 3: the first bottom note is the instance of its pitch class nearest
-  // the ding, excluding the ding's own midi, ties (tritone, same pitch class)
-  // going BELOW.
-  function nearestToDing(dingMidi, letter, accidental) {
-    var step = ((dingMidi - midiFromName(letter, accidental, 0)) % 12 + 12) % 12;
-    // The ding's own midi is not a candidate, so a same-pitch-class bottom note
-    // has its neighbours a full octave either side and the tie goes below.
-    var below = dingMidi - (step === 0 ? 12 : step);
-    var above = step === 0 ? dingMidi + 12 : below + 12;
-    return (dingMidi - below) <= (above - dingMidi) ? below : above;
+  // O1 (2026-10-19), the ONE rule for unoctaved bottom notes, shared by the
+  // BOTTOM NOTES field (importer.composeBottoms) and the legacy `|` list: a
+  // typed octave is kept; the first unoctaved note lands in the octave below
+  // the ding (dingMidi - 12 <= m < dingMidi); each later unoctaved note takes
+  // the nearest instance strictly above the note before it and may rise past
+  // the ding. `notes` is [{letter, accidental, octave|null}]. Returns the midis
+  // up to and including the first one outside 0..127 (raw), and that index as
+  // failAt, or -1. Order and repeats are the callers' own refusals.
+  function inferBottoms(notes, dingMidi) {
+    var midis = [];
+    var previous = null;
+    for (var i = 0; i < notes.length; i += 1) {
+      var note = notes[i];
+      var midi;
+      if (note.octave !== null && note.octave !== undefined) {
+        midi = midiFromName(note.letter, note.accidental, note.octave);
+      } else if (previous === null) {
+        var step = ((dingMidi - midiFromName(note.letter, note.accidental, 0)) % 12 + 12) % 12;
+        midi = dingMidi - (step === 0 ? 12 : step);
+      } else {
+        midi = midiFromName(note.letter, note.accidental, -1);
+        while (midi <= previous) midi += 12;
+      }
+      midis.push(midi);
+      if (midi < 0 || midi > 127) return { midis: midis, failAt: i };
+      previous = midi;
+    }
+    return { midis: midis, failAt: -1 };
   }
 
   // The positional zone rule of section 4: with no separator, the first up to
@@ -436,12 +453,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       previousNote = top;
     }
 
+    var inferred = inferBottoms(bottomNotes, dingMidi);
     for (n = 0; n < bottomNotes.length; n += 1) {
       var low = bottomNotes[n];
-      low.midi = n === 0
-        ? place(low, dingMidi, nearestToDing)
-        : place(low, bottomNotes[n - 1].midi, nextAbove);
-      if (low.midi < 0 || low.midi > 127) return outOfRange(low, low.midi);
+      low.midi = inferred.midis[n];
+      if (n === inferred.failAt) return outOfRange(low, low.midi);
       if (n > 0 && low.midi <= bottomNotes[n - 1].midi) {
         return outOfOrder(low, low.midi, bottomNotes[n - 1],
                           bottomNotes[n - 1].midi, false);
@@ -693,12 +709,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     }
 
     var prev = ding;
-    var lastTop = ding;
+    var lastRim = ding;
+    var lastInner = null;
     var lastBottom = low.length ? low[low.length - 1] : null;
-    var firstInner = null;
-    for (n = 0; n < high.length; n += 1) {
-      if (high[n].zone === "inner") { firstInner = high[n]; break; }
-    }
+    var rimNotes = {};
+    var seenInner = false;
     for (n = 0; n < high.length; n += 1) {
       var entry = high[n];
       var note = entry.note;
@@ -711,19 +726,26 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       }
       bad = scalePlaced(note, mm);
       if (bad) return bad;
-      if (mm < prev.midi) {
-        return scaleOrder(note, prev, entry === firstInner ? "afterBar" :
-                                      (prev === ding ? "ding" : undefined));
+      var restarts = entry.zone === "inner" && !seenInner;
+      if (entry.zone === "inner") seenInner = true;
+      if (mm < prev.midi && !restarts) {
+        return scaleOrder(note, prev, prev === ding ? "ding" : undefined);
       }
       if (entry.zone === "bottom") {
         if (lastBottom && mm <= lastBottom.midi) return scaleRepeated(note, lastBottom);
         if (mm <= ding.midi) return scaleOrder(note, ding, "ding");
         lastBottom = note;
-      } else {
-        if (mm <= lastTop.midi) {
-          return lastTop === ding ? scaleOrder(note, ding, "ding") : scaleRepeated(note, lastTop);
+      } else if (entry.zone === "rim") {
+        if (mm <= lastRim.midi) {
+          return lastRim === ding ? scaleOrder(note, ding, "ding") : scaleRepeated(note, lastRim);
         }
-        lastTop = note;
+        lastRim = note;
+        rimNotes[mm] = note;
+      } else {
+        if (restarts && mm <= ding.midi) return scaleOrder(note, ding, "ding");
+        if (rimNotes[mm]) return scaleRepeated(note, rimNotes[mm]);
+        if (lastInner && mm <= lastInner.midi) return scaleRepeated(note, lastInner);
+        lastInner = note;
       }
       prev = note;
     }
@@ -778,8 +800,25 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return ok({ fields: fields, options: opts.value });
   }
 
+  // The names of the inner notes under the highest rim note, in field order.
+  function innerBelowRim(seedOrFields) {
+    var fields = fieldsOf(seedOrFields);
+    var ids = orderedIds(fields);
+    var highest = -Infinity;
+    ids.top.forEach(function (id) {
+      if (fields[id][3] === "rim" && fields[id][2] > highest) highest = fields[id][2];
+    });
+    var names = [];
+    ids.top.forEach(function (id) {
+      if (fields[id][3] === "inner" && fields[id][2] < highest) names.push(fields[id][0] + fields[id][1]);
+    });
+    return names;
+  }
+
   // The canonical string: every note by pitch, a bottom note ahead of the ding
-  // or a top note of the same pitch, the bar before the first inner note.
+  // or a top note of the same pitch, the bar before the first inner note. A pan
+  // with an inner note under its highest rim note writes the bottoms, ding and
+  // rim sorted, then the bar, then the inner notes sorted.
   function formatSeed(seedOrFields) {
     var fields = fieldsOf(seedOrFields);
     var ids = orderedIds(fields);
@@ -795,6 +834,16 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     line.sort(function (a, c) { return a.midi - c.midi || a.rank - c.rank; });
     var out = [];
     var barred = false;
+    if (innerBelowRim(fields).length) {
+      line.filter(function (entry) { return !entry.inner; }).forEach(function (entry) {
+        out.push(entry.text);
+      });
+      out.push("|");
+      line.filter(function (entry) { return entry.inner; }).forEach(function (entry) {
+        out.push(entry.text);
+      });
+      return out.join(" ");
+    }
     line.forEach(function (entry) {
       if (entry.inner && !barred) { out.push("|"); barred = true; }
       out.push(entry.text);
@@ -953,7 +1002,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     LABEL_RULE: LABEL_RULE,
     parseSeed: parseSeed,
     parseLegacySeed: parseLegacySeed,
+    inferBottoms: inferBottoms,
     formatSeed: formatSeed,
+    innerBelowRim: innerBelowRim,
     formatLegacySeed: formatLegacySeed,
     identitySeed: identitySeed,
     deckId: deckId,

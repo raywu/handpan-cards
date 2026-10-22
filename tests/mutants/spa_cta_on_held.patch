@@ -1,0 +1,15 @@
+# kills: SPA: the CTA shows over the example plate and is hidden over a held plate
+# suite: node --test --test-name-pattern ^SPA..the.CTA.shows.over.the.example.plate.and.is.hidden.over.a.held.plate$ tests/app.test.js
+# The CTA hint shows over a held plate again, whenever the box is not valid.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10502,7 +10502,7 @@ function paintLayout() {
+     pickMoved = false;
+   }
+   layoutHint.textContent = HINT_EMPTY;
+-  layoutHint.hidden = boxOk || !(panState === "example" || !String(scaleBox.value || "").trim());
++  layoutHint.hidden = boxOk;
+   drawerStatus.hidden = !drawerOpen || !boxOk;
+   drawerHint.textContent = DRAWER_HINT;
+   drawerHint.hidden = !(drawerOpen && boxOk);

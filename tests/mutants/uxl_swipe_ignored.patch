@@ -1,0 +1,15 @@
+# kills: UX: a lip click, a 16px upward touch on the lip and a focus on the lip each restore; a 15px touch and a downward one do not
+# suite: node --test --test-name-pattern ^UX:.a.lip.click..a.16px.upward.touch.on.the.lip.and.a.focus.on.the.lip.each.restore..a.15px.touch.and.a.downward.one.do.not$ tests/app.test.js
+# uxl_swipe_ignored
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10760,7 +10760,7 @@ lipBtn.addEventListener("touchstart", (e) => {
+   const p = e.touches && e.touches[0];
+   lipTouch = p ? { id: p.identifier, y: p.clientY } : null;
+ }, { passive: true });
+-lipBtn.addEventListener("touchmove", (e) => {
++lipBtn.addEventListener("touchmoveX", (e) => {
+   if (!lipTouch) return;
+   const p = [...(e.touches || [])].find((x) => x.identifier === lipTouch.id);
+   if (p && lipTouch.y - p.clientY >= LIP_SWIPE) { lipTouch = null; restoreLip(); }

@@ -1,14 +1,15 @@
 # kills: SG: N-A6 the delete refusal then a re-armed DELETE: the slot keeps its height, the refusal stays up and the arming note shows beside DELETE
 # suite: node --test --test-name-pattern ^SG:.N-A6.the.delete.refusal tests/e2e.test.js
 # Every warn-tier message yields to the notice, so the delete refusal vanishes while the notice stands.
+diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -903,7 +903,7 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -941,7 +941,7 @@ footer.seq{row-gap:var(--sp-1)}
     The aria-live copy of the warning (.announce) is a separate element and still speaks. The class is on
     #scale-sheet, not the wrapper: paintLayout() reaches the sheet through a variable the sandbox already
     has, and say() rewrites #scale-msg's own className on every call, which also clears .pan. */
 -#scale-sheet.noticed #scale-msg.warn.pan{display:none}
 +#scale-sheet.noticed #scale-msg.warn{display:none}
- /* Landscape on a phone: 390px of height, and every pixel of chrome on the page
-    comes straight off the scrolling body. The footer's breathing room above its
-    own hairline is .sheetsurf's gap, already dropped to --sp-3 above; this
+ /* The footer lip: open, the wrappers generate no box, so the footer is the layout it always was. */
+ #scale-foot, #scale-footclip, #scale-footslide{display:contents}
+ #scale-lip[hidden]{display:none}

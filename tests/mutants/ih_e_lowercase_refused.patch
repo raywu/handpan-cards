@@ -1,0 +1,15 @@
+# kills: IH: compose reads lowercase notes: a3, bb3 and eb read as A3, Bb3 and Eb
+# suite: node --test --test-name-pattern ^IH:.compose.reads.lowercase.notes..a3. tests/import.test.js
+# The first letter is not upper-cased, so a lowercase note is refused.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -683,7 +683,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+         var l = upper[1].toUpperCase();
+         return { notes: [], error: l + "B is not a note: write " + l + "-flat as " + l + "b." };
+       }
+-      var m = COMPOSE_NOTE.exec(t.replace(/♯/g, "#").replace(/♭/g, "b").replace(/^./, function (c) { return c.toUpperCase(); }));
++      var m = COMPOSE_NOTE.exec(t.replace(/♯/g, "#").replace(/♭/g, "b").replace(/^./, function (c) { return c; }));
+       if (!m) return { notes: [], error: "\"" + t + "\" is not a note: try C, F# or Bb." };
+       var n = { letter: m[1], acc: m[2] || "", octave: m[3] === undefined ? null : Number(m[3]) };
+       if (n.octave !== null && !composeFits(composeMidi(n, n.octave))) {

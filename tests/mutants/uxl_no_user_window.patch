@@ -1,0 +1,15 @@
+# kills: UX: a scroll with no touch, wheel or scroll key in the last 150ms changes no lip state
+# suite: node --test --test-name-pattern ^UX:.a.scroll.with.no.touch..wheel.or.scroll.key.in.the.last.150ms.changes.no.lip.state$ tests/app.test.js
+# uxl_no_user_window
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10758,7 +10758,7 @@ function lipScroll() {
+   const prev = lipPrev;
+   lipPrev = { t, M };
+   const now = Date.now();
+-  if (!sheetOpen || sheet.classList.contains("kbup") || now < lipQuietUntil || now > userWindowUntil) return;
++  if (!sheetOpen || sheet.classList.contains("kbup") || now < lipQuietUntil) return;
+   userWindowUntil = now + LIP_WINDOW;
+   if (M !== prev.M) { lipAcc = 0; return; }
+   if (isLipShut() && t >= M - 1) { restoreLip(); return; }

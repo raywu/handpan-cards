@@ -1,0 +1,15 @@
+# kills: UX: revealField, the tap pin and the keyboard handler's scrolls never collapse the footer
+# suite: node --test --test-name-pattern ^UX:.revealField..the.tap.pin.and.the.keyboard.handler.s.scrolls.never.collapse.the.footer$ tests/app.test.js
+# uxl_programmatic_counts
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10758,7 +10758,7 @@ function lipScroll() {
+   const prev = lipPrev;
+   lipPrev = { t, M };
+   const now = Date.now();
+-  if (!sheetOpen || sheet.classList.contains("kbup") || now < lipQuietUntil || now > userWindowUntil) return;
++  if (!sheetOpen || sheet.classList.contains("kbup") || now > userWindowUntil) return;
+   userWindowUntil = now + LIP_WINDOW;
+   if (M !== prev.M) { lipAcc = 0; return; }
+   if (isLipShut() && t >= M - 1) { restoreLip(); return; }

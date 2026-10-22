@@ -1,0 +1,15 @@
+# kills: LG: a wheel tick or a typing key while a finger is down does not end the gesture, a scroll key outside a field parks the gesture
+# suite: node --test --test-name-pattern ^LG..a.wheel.tick.or.a.typing.key.while.a.finger.is.down.does.not.end.the.gesture..a.scroll.key.outside.a.field.parks.the.gesture$ tests/app.test.js
+# A wheel tick parks nothing: touchmove no longer revives a parked drag.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10821,7 +10821,7 @@
+     : null;
+ }, { passive: true, capture: true });
+ sheet.addEventListener("touchmove", (e) => {
+-  const L = lipDrag || lipParked;
++  const L = lipDrag;
+   const p = L && [...(e.touches || [])].find((x) => x.identifier === L.id);
+   if (!p) return;
+   if (L !== lipDrag) { lipDrag = L; lipParked = null; lipTouching = true; }

@@ -1,0 +1,15 @@
+# kills: DS1: no served text, attribute, JSON-LD value or app-script string literal says deck
+# suite: node --test --test-name-pattern ^DS1..no.served.text..attribute..JSON.LD.value.or.app.script.string.literal.says.deck$ tests/app.test.js
+# The About heading goes back to Built-in decks.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1389,7 +1389,7 @@ html.about-open{overflow:hidden}
+     <li>Flip a card to see the chord lit on the pan.</li>
+     <li>Open the settings menu and switch to Chord progression for a sequence to play.</li>
+   </ol>
+-  <h3>Built-in scales</h3>
++  <h3>Built-in decks</h3>
+   <ul>
+     <li><a href="#deck=d-kurd-10">D Kurd 10: 49 chord cards</a></li>
+     <li><a href="#deck=d-amara-10">D Amara 10 (D Celtic): 29 chord cards</a></li>

@@ -1,0 +1,24 @@
+# kills: UX: at the collapse instant .sheetbody has grown, GENERATE, the guidance line and the hairline have not moved, and scrollTop is unchanged
+# suite: node --test --test-name-pattern ^UX:.at.the.collapse.instant..sheetbody.has.grown..GENERATE..the.guidance.line.and.the.hairline.have.not.moved..and.scrollTop.is.unchanged$ tests/e2e.test.js
+# uxl_layout_at_slide_end
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10737,7 +10737,7 @@ function collapseLip() {
+   if (isLipped()) { sheet.classList.add("lipshut"); lipSettled = false; const g = lipGen; lipTimer = setTimeout(() => { if (g === lipGen) { lipSettled = true; if (lipDirty) { lipDirty = false; lipMeasure(); } } }, LIP_END_MS); return; }
+   const open = lipRead();
+   lipDirty = false;
+-  sheet.classList.add("lipnow", "lipped");
++  sheet.classList.add("lipnow");
+   lipBtn.hidden = false;
+   lipBtn.setAttribute("aria-label", "Show " + lipPrimary().textContent);
+   lipWrite(open);
+@@ -10746,7 +10746,7 @@ function collapseLip() {
+   sheet.classList.add("lipshut");
+   lipSettled = false;
+   const gen = lipGen;
+-  lipTimer = setTimeout(() => { if (gen === lipGen) { lipSettled = true; if (lipDirty) { lipDirty = false; lipMeasure(); } } }, LIP_END_MS);
++  lipTimer = setTimeout(() => { if (gen === lipGen) { sheet.classList.add("lipped"); lipSettled = true; if (lipDirty) { lipDirty = false; lipMeasure(); } } }, LIP_END_MS);
+   const a = document.activeElement;
+   if (a === nextBtn || a === genBtn || a === delBtn) {
+     lipFocusing = true;

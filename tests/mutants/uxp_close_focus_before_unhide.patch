@@ -1,0 +1,14 @@
+# kills: TB: switching to Layout with #scale-box focused and the keyboard up ends kbup and shows the tab strip
+# suite: node --test --test-name-pattern ^TB:.switching.to.Layout.with tests/app.test.js
+# A switch leaves focus on a control inside the panel it just hid.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10591,7 +10591,6 @@
+   drawerOpen = tab === "layout";
+   paintTabs();
+   const held = document.activeElement;
+-  if (held && held !== document.body && !held.getClientRects().length) held.blur();
+   paintLayout();
+   repaintPlate();
+   bandPort.scrollTop = 0;

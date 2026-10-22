@@ -1,0 +1,15 @@
+# kills: UX: while the keyboard is up no scroll changes the lip state, and a lip tap or swipe still restores
+# suite: node --test --test-name-pattern ^UX:.while.the.keyboard.is.up.no.scroll.changes.the.lip.state..and.a.lip.tap.or.swipe.still.restores$ tests/app.test.js
+# uxl_kb_scroll_counts
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10758,7 +10758,7 @@ function lipScroll() {
+   const prev = lipPrev;
+   lipPrev = { t, M };
+   const now = Date.now();
+-  if (!sheetOpen || sheet.classList.contains("kbup") || now < lipQuietUntil || now > userWindowUntil) return;
++  if (!sheetOpen || now < lipQuietUntil || now > userWindowUntil) return;
+   userWindowUntil = now + LIP_WINDOW;
+   if (M !== prev.M) { lipAcc = 0; return; }
+   if (isLipShut() && t >= M - 1) { restoreLip(); return; }

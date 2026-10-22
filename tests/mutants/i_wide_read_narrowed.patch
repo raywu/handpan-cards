@@ -1,0 +1,15 @@
+# kills: narrowing check: a role clause outside the kept window blocks rather than being dropped
+# suite: node --test --test-name-pattern ^narrowing.check:.a.role.clause tests/import.test.js
+# The check reads the narrowed window twice instead of the whole text, so it never disagrees.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -616,7 +616,7 @@
+   function interpretRaw(raw, opts) {
+     var narrowed = read(raw, opts, true);
+     if (narrowed.status !== "REVIEW" || String(raw).length <= NARROW_OVER) return narrowed;
+-    var whole = read(raw, opts, false);
++    var whole = read(raw, opts, true);
+     if (readingOf(whole) === readingOf(narrowed)) return narrowed;
+     narrowed.flags.unshift({ code: "CONFLICTING_LIST", wide: true, level: BLOCK });
+     narrowed.status = "NEEDS_INPUT";

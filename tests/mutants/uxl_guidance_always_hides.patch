@@ -1,0 +1,14 @@
+# kills: UX: lipped, an empty guidance slot takes no height and the lip sits on the body's hairline; a slot with text stays --sp-2 plus --lip-over above the lip
+# suite: node --test --test-name-pattern ^UX..lipped..an.empty.guidance.slot.takes.no.height.and.the.lip.sits.on.the.body.s.hairline..a.slot.with.text.stays...sp.2.plus...lip.over.above.the.lip$ tests/e2e.test.js
+# uxl_guidance_always_hides
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -970,6 +970,7 @@ footer.seq{row-gap:var(--sp-1)}
+ #scale-sheet.lipped #scale-guidance{position:relative; z-index:1; background:#1f1b15;
+   transform:translateY(var(--lip-g, 0px)); transition:transform 180ms var(--lip-ease)}
+ #scale-sheet.lipshut #scale-guidance{transform:none}
++#scale-sheet.lipped #scale-guidance{display:none}
+ #scale-lip:not([hidden]){display:block; position:absolute; left:0; right:0; bottom:0; height:var(--lip-zone);
+   z-index:2; margin:0; padding:0; border:0; background:transparent; cursor:pointer;
+   touch-action:none; -webkit-tap-highlight-color:transparent}

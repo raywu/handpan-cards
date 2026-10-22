@@ -26,6 +26,7 @@ import re
 import signal
 import subprocess
 import sys
+import time
 import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -51,18 +52,19 @@ FLOORS = {
     "tests/test_site_files.py": 5,
     "tests/test_ci_scope.py": 5,
     # node
-    "tests/app.test.js": 622,
+    "tests/app.test.js": 754,
     "tests/seat_sweeps_tap_add.test.js": 3,
     "tests/seat_sweeps_tap_edit.test.js": 3,
     "tests/seat_sweeps_keys.test.js": 4,
-    "tests/e2e.test.js": 335,
+    "tests/e2e.test.js": 453,
     "tests/harness.test.js": 27,
     "tests/drawer_grid.test.js": 3,
-    "tests/drawer_seats.test.js": 29,
+    "tests/drawer_seats.test.js": 28,
     "tests/drawer_drag.test.js": 33,
     # pre-seeded for the scale-engine lanes; each lane raises its own row only.
-    "tests/core.test.js": 70,
-    "tests/import.test.js": 36,
+    "tests/core.test.js": 84,
+    "tests/import.test.js": 125,
+    "tests/import_gold.test.js": 8,
     "tests/voicing.test.js": 17,
     "tests/layout.test.js": 91,
     "tests/naming.test.js": 37,
@@ -193,10 +195,17 @@ def check_python():
 # `node --test` runs with no per-test deadline here, so a suite that wedges -
 # a browser that never reports ready, a server socket that never binds - used to
 # hang this script forever and burn a whole CI job with no log. Every node suite
-# therefore runs under a wall clock. The slowest suite measured locally is the
-# e2e one, and this leaves it wide headroom; it matches the SUITE_TIMEOUT that
-# tests/mutation_check.sh already uses, and NODE_SUITE_TIMEOUT overrides it.
-NODE_TIMEOUT = int(os.environ.get("NODE_SUITE_TIMEOUT", "180"))
+# therefore runs under a wall clock. The slowest suite is the e2e one, which
+# ran the whole file in about 140s on CI before the footer-lip tests (2026-10-20)
+# and overran 180s with them, so the budget became 300s; the sheet-polish lip
+# clearance tests (2026-10-21) took the file past 300s on CI, so it became 420s;
+# the combined sheet-polish release (every test bounded by its own 90s-or-less
+# timeout, so no hang) overran 420s on CI, so it is 900s, half the 30-minute
+# job limit. Every node file now prints its wall clock (timed_run) so the next
+# sizing is measured. tests/mutation_check.sh
+# keeps its own 180s SUITE_TIMEOUT: it runs a filtered subset per mutant, never
+# the whole file. NODE_SUITE_TIMEOUT overrides this one.
+NODE_TIMEOUT = int(os.environ.get("NODE_SUITE_TIMEOUT", "900"))
 
 
 # How much of a failing suite's own output to reprint. A return code with no
@@ -365,6 +374,15 @@ def _reap(proc):
 NO_NODE = "node: no `node` binary found on PATH"
 
 
+def timed_run(path):
+    """run_node_file(path), printing its wall clock so a budget is sized from
+    a measurement."""
+    start = time.monotonic()
+    result = run_node_file(path)
+    print(f"  {path}: wall {time.monotonic() - start:.1f}s")
+    return result
+
+
 def run_node_file(path):
     """-> (total, failed, skipped, cancelled, returncode, output) for one node
     test file.
@@ -498,7 +516,7 @@ def check_node():
         if path in E2E_FILES and not have_browser:
             print(f"  {path}: not run, no browser installed")
             continue
-        total, failed, skipped, cancelled, returncode, out = run_node_file(path)
+        total, failed, skipped, cancelled, returncode, out = timed_run(path)
         if total is None:
             if "TIMED OUT" in out:
                 print(f"  {path}: TIMED OUT after {NODE_TIMEOUT}s")
@@ -645,7 +663,7 @@ def collect_js():
         if path in E2E_FILES and not have_browser:
             files[path] = {"skipped_no_browser": True}
             continue
-        total, failed, skipped, cancelled, returncode, out = run_node_file(path)
+        total, failed, skipped, cancelled, returncode, out = timed_run(path)
         if total is None:
             files[path] = {"total": None, "error": out}
             any_red = True

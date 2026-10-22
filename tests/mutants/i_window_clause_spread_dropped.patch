@@ -1,0 +1,14 @@
+# kills: window invariant: a long text reads as its short form or blocks, over every list shape, labelled or clause, padding width and position
+# suite: node --test --test-name-pattern ^window.invariant tests/import.test.js
+# A text with no labelled list widens over nothing, so a clause bottom list outside the window is dropped.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -295,7 +295,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       var w = windowOf(full);
+       var whole = normalise(full);
+       var spread = labelledLists(whole, full).filter(function (l) { return l.notes.length; });
+-      if (!spread.length) spread = clauseLists(whole, full) || [];
+       if (spread.length) {
+         var lo = spread[0].at;
+         var hi = 0;

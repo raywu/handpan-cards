@@ -1,0 +1,15 @@
+# kills: window invariant: a long text reads as its short form or blocks, over every list shape, labelled or clause, padding width and position
+# suite: node --test --test-name-pattern ^window.invariant tests/import.test.js
+# The spread ends at each list's first note, so a multi-line bottom list is cut short.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -300,7 +300,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+         var lo = spread[0].at;
+         var hi = 0;
+         spread.forEach(function (l) {
+-          hi = Math.max(hi, l.end !== undefined ? l.end : l.notes[l.notes.length - 1].span.end);
++          hi = Math.max(hi, l.end !== undefined ? l.end : l.notes[0].span.end);
+         });
+         lo = lo > 0 ? full.lastIndexOf("\n", lo - 1) + 1 : 0;
+         hi = full.indexOf("\n", hi);

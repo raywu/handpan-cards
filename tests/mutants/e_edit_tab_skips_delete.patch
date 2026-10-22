@@ -1,16 +1,22 @@
 # kills: Tab is trapped inside the Edit sheet and reaches every Edit control
 # suite: node --test --test-name-pattern ^Tab.is.trapped.inside.the.Edit.sheet.and.reaches.every.Edit.control$ tests/e2e.test.js
-# Re-anchored 2026-10-14 (remove-degrees, lane app) against the new source. The mutation itself is unchanged.
+# DELETE THIS DECK is missing from both tabs' Tab lists.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10622,8 +10622,7 @@
-                  drawerOpen ? previewBox.querySelector('.panhit[tabindex="0"]') : null,
-                  drawerBtn, anchorOne, anchorBetween, mirrorTop, mirrorBot, fineBtn,
-                  notePrev, noteNext, seatPrev, seatNext, resetBtn,
--                 ...swatches.children, genBtn,
--                 editingId ? delBtn : null]
-+                 ...swatches.children, genBtn]
+@@ -12741,13 +12741,12 @@ sheet.addEventListener("keydown", e => {
+     ? [backBtn, onTab, previewBox.querySelector('.panhit[tabindex="0"]'),
+        anchorOne, anchorBetween, mirrorTop, mirrorBot, fineBtn,
+        notePrev, noteNext, seatPrev, seatNext, resetBtn,
+-       ...swatches.children, shut ? lipBtn : genBtn, editingId && !shut ? delBtn : null]
++       ...swatches.children, shut ? lipBtn : genBtn]
+     : [backBtn, onTab,
+        nameBox,
+        fieldEls.ding, fieldEls.top, fieldEls.inner, fieldEls.bottom,
+        scaleBox,
+-       shut ? lipBtn : editingId ? genBtn : nextBtn,
+-       editingId && !shut ? delBtn : null])
++       shut ? lipBtn : editingId ? genBtn : nextBtn])
      .filter(isStop);
    if (isHit(document.activeElement) && pickRef && lastSolved) setRover(pickRef);
    cycleTabStops(stops, e);

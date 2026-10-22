@@ -1,0 +1,15 @@
+# kills: SPC: at 844x390 the Layout plate band lies inside the scrollport at the top and at the end of the scroll, footer open and shut, with no message, a one-line notice, a two-line warning, the Edit delete refusal, the refusal beside a notice, a re-armed DELETE, the notice with three ring-reset suffixes, and a multi-line drawer status from layoutStatus()
+# suite: node --test --test-name-pattern ^SPC:.at.844x390.the.Layout.plate.band.lies.inside.the.scroll tests/e2e.test.js
+# The pan is sized from the whole scrollport, ignoring the band padding, so the band bottom passes the scrollport.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10558,7 +10558,7 @@ function paintLayout() {
+ const BAND_MIN_ROOM = 44;
+ const roomOf = () => {
+   const cs = typeof getComputedStyle === "function" ? getComputedStyle(plateBand) : null;
+-  return Math.max(0, (bandPort.clientHeight || 0) - (cs ? parseFloat(cs.paddingBottom) || 0 : 0));
++  return Math.max(0, (bandPort.clientHeight || 0));
+ };
+ const platesBeside = () => {
+   const w = (el) => (el.getBoundingClientRect ? el.getBoundingClientRect().width : el.offsetWidth) || 0;

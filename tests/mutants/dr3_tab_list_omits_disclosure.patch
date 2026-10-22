@@ -1,15 +1,16 @@
 # kills: DR3 Tab order on Add and Edit, finer controls closed and open
 # suite: node --test --test-name-pattern ^DR3.Tab.order.on.Add.and.Edit..finer.controls.closed.and.open$ tests/app.test.js
+# Re-anchored 2026-10-19 (dual input, lane P) against the Adjust layout source. The defect is unchanged.
 # The disclosure toggle is missing from the sheet's Tab list.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11398,7 +11398,7 @@ sheet.addEventListener("keydown", e => {
-                  scaleBox,
-                  ...(importRow.hidden ? [] : [importOpenBtn, importTextBox, importRunBtn, ...importTicks, importDingSel, importUseBtn]),
-                  drawerOpen ? previewBox.querySelector('.panhit[tabindex="0"]') : null,
--                 drawerBtn, anchorOne, anchorBetween, mirrorTop, mirrorBot, fineBtn,
-+                 drawerBtn, anchorOne, anchorBetween, mirrorTop, mirrorBot,
-                  notePrev, noteNext, seatPrev, seatNext, resetBtn,
-                  ...swatches.children, genBtn,
-                  editingId ? delBtn : null]
+@@ -12674,7 +12674,7 @@ sheet.addEventListener("keydown", e => {
+   const shut = isLipShut();
+   const stops = (sheetTab === "layout"
+     ? [backBtn, onTab, previewBox.querySelector('.panhit[tabindex="0"]'),
+-       anchorOne, anchorBetween, mirrorTop, mirrorBot, fineBtn,
++       anchorOne, anchorBetween, mirrorTop, mirrorBot,
+        notePrev, noteNext, seatPrev, seatNext, resetBtn,
+        ...swatches.children, shut ? lipBtn : genBtn, editingId && !shut ? delBtn : null]
+     : [backBtn, onTab,

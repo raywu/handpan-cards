@@ -1,0 +1,18 @@
+# kills: a reference pitch on the line after a list is not a list note
+# suite: node --test --test-name-pattern reference.pitch.on.the.line tests/import.test.js
+# A list reads on into a reference pitch, so A4 = 440 Hz joins the notes.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -132,10 +132,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     while ((m = re.exec(body))) {
+       var tok = m[0];
+       var start = from + m.index;
+-      if (REFERENCE.test(body.slice(m.index))) {
+-        if (readsAsNoteAfter(re, body, tok)) odd.push(tok);
+-        break;
+-      }
++      if (false) break;
+       var joined = JOINED.exec(tok);
+       var sol = SOLFEGE.exec(tok);
+       if (joined || sol || NOTE_UP.test(tok)) {

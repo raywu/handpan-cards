@@ -1,7 +1,7 @@
-# kills: the only height the first keystroke changes is the hint's own wrap
-# suite: node --test --test-name-pattern ^the.only.height.the.first.keystroke.changes.is.the.hint.s.own.wrap$ tests/e2e.test.js
-# An empty box shows no pan again, so the plate enters the flow on the first
-# keystroke and the drawer jumps by the height of the whole plate.
+# kills: TB: the Layout tab with an empty scale shows the hint, the empty plate and every drawer control disabled and out of the Tab order; an invalid scale with a held plate hides the hint
+# suite: node --test --test-name-pattern ^TB:.the.Layout.tab.with tests/app.test.js
+# An empty box shows no pan again, so the Layout tab's empty plate is blank instead of the placeholder example.
+# The plate is no longer on the Scale tab, so the flow-jump this once caused cannot be seen there.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html

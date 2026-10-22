@@ -1,0 +1,15 @@
+# kills: DI: SL a field focus after a refused line rebuilds the line from the fields, clears the refusal and enables GENERATE
+# suite: node --test --test-name-pattern ^DI:.SL.a.field.focus.after.a.refused.line.rebuilds tests/app.test.js
+# Mutant di_sl_focus_no_rebuild.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12123,7 +12123,7 @@
+   if (inputPath === path) return;
+   inputPath = path;
+   const values = fieldValues();
+-  if (path === "fields" && fieldsStale) {
++  if (path === "fields" && fieldsStale && false) {
+     fieldsStale = false;
+     const r = HPE.importer.compose(values);
+     paintFields(values, false, r);

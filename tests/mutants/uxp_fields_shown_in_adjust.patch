@@ -1,0 +1,15 @@
+# kills: TB: ArrowRight, ArrowLeft, Home and End move and activate the tabs, wrap, and keep exactly one tabindex 0
+# suite: node --test --test-name-pattern ^TB:.ArrowRight tests/app.test.js
+# The Scale panel stays shown while Layout is selected.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10569,7 +10569,7 @@
+     tab.classList.toggle("on", on);
+     tab.setAttribute("aria-selected", String(on));
+     tab.setAttribute("tabindex", on ? "0" : "-1");
+-    panel.hidden = !on;
++    panel.hidden = !on && panel !== panelScale;
+   }
+   sheet.setAttribute("data-tab", sheetTab);
+   nextBtn.hidden = !(!editingId && !onLayout);

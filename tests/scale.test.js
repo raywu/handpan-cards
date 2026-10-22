@@ -59,7 +59,6 @@ const SENTENCES = {
   NOTE_OUT_OF_ORDER: {
     order: "<A> is not above <B>, and the line runs low to high. Give <A> a higher octave or move it earlier, e.g. (D3) A3 C4 D4.",
     ding: "<A> is at or below the ding <B>. Top notes are above the ding; a lower note is a bottom note and goes before it in square brackets, e.g. [C3] (D3) A3.",
-    afterBar: "<A> comes after the | but is below <B>. Notes after | are inner notes now. For a bottom note, use square brackets where its pitch falls, e.g. [C3] (D3) A3 C4.",
     below: "<A> is not below <B>. Bottom notes before the ding also run low to high, e.g. [C3] [D3] (E3) B3."
   },
   NOTE_REPEATED: {
@@ -81,7 +80,7 @@ function sentenceMatcher(template) {
 }
 
 test("every row of the grammar table parses to its fields", () => {
-  assert.equal(grammar.rows.length, 32);
+  assert.equal(grammar.rows.length, 33);
   for (const row of grammar.rows.filter(r => r.accept)) {
     for (const str of row.strings) {
       const fields = scale(str);
@@ -375,4 +374,30 @@ test("R4-E gen_deck.js refuses a flag given no value, naming the flag, and exits
     assert.equal(r.status, 1, `${flag} with no value`);
     assert.ok(r.stderr.includes(`usage: ${flag} needs a value`), r.stderr);
   }
+});
+
+const IB_ALPHABET = ["|", "(D)", "A", "C", "F", "E4", "B3", "[C3]", "D5"];
+test("IB: the low-inner probe sweep round-trips", () => {
+  let accepted = 0;
+  let dips = 0;
+  const walk = (tokens, depth) => {
+    if (tokens.length) {
+      const r = core.parseSeed(tokens.join(" "));
+      if (r.ok) {
+        accepted += 1;
+        const fields = host(r.value.fields);
+        if (core.innerBelowRim(fields).length) dips += 1;
+        const canonical = core.formatSeed(fields);
+        const again = core.parseSeed(canonical);
+        assert.equal(again.ok, true, `${tokens.join(" ")} -> ${canonical}`);
+        assert.equal(JSON.stringify(host(again.value.fields)), JSON.stringify(fields), canonical);
+        assert.equal(core.formatSeed(again.value.fields), canonical, canonical);
+      }
+    }
+    if (depth === 5) return;
+    for (const t of IB_ALPHABET) { tokens.push(t); walk(tokens, depth + 1); tokens.pop(); }
+  };
+  walk([], 0);
+  assert.ok(accepted > 200, `only ${accepted} accepted`);
+  assert.ok(dips >= 20, `only ${dips} dips`);
 });

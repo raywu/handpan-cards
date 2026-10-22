@@ -1,0 +1,17 @@
+# kills: UX: the lip draws a 32x3 pill at the surface's bottom above the safe-area inset, its tap zone is 25px tall, and a tap anywhere in the zone restores
+# suite: node --test --test-name-pattern ^UX..the.lip.draws.a.32x3.pill.at.the.surface.s.bottom.above.the.safe.area.inset..its.tap.zone.is.25px.tall..and.a.tap.anywhere.in.the.zone.restores$ tests/e2e.test.js
+# The pill is 36x4 again.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -973,8 +973,8 @@ footer.seq{row-gap:var(--sp-1)}
+ #scale-lip:not([hidden]){display:block; position:absolute; left:0; right:0; bottom:0; height:var(--lip-zone);
+   z-index:2; margin:0; padding:0; border:0; background:transparent; cursor:pointer;
+   touch-action:none; -webkit-tap-highlight-color:transparent}
+-#scale-lip::after{content:""; position:absolute; left:50%; bottom:3px; width:32px; height:3px;
+-  margin-left:-16px; border-radius:2px; background:#a79d8b}
++#scale-lip::after{content:""; position:absolute; left:50%; bottom:3px; width:36px; height:4px;
++  margin-left:-18px; border-radius:2px; background:#a79d8b}
+ #scale-lip:focus-visible{outline-offset:-2px}
+ #scale-sheet.lipped .sheetbody{scroll-padding-bottom:21px}
+ #scale-sheet.lipnow #scale-footslide, #scale-sheet.lipnow #scale-guidance{transition:none}

@@ -1,0 +1,15 @@
+# kills: IX: a dropped ding cue is not checked for a repeated pitch
+# suite: node --test --test-name-pattern=a.dropped.ding.cue.is.not.checked tests/import.test.js
+# A dropped cue joins the pitch check, so a cue repeating a top note raises REPEATED_IN_SHELL.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -518,7 +518,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+ 
+     var byPitch = {};
+     notes.forEach(function (n) {
+-      if (n.assigned === "unknown" || n.assigned === "dropped" || n.midi === null) return;
++      if (n.assigned === "unknown" || n.midi === null) return;
+       var shell = n.assigned === "bottom" ? "b" : "t";
+       (byPitch[n.midi] = byPitch[n.midi] || { t: [], b: [] })[shell].push(n.index);
+     });

@@ -1,0 +1,18 @@
+# kills: PH: the empty sheet draws the pan the four field placeholders compose, not the old example
+# suite: node --test --test-name-pattern ^PH:.the.empty.sheet.draws tests/app.test.js
+# The example pan is drawn from the scale box's placeholder again instead of the composed field placeholders, so the empty Add sheet shows the old E Amara 20 example.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11309,10 +11309,7 @@ function showPanPreview(seed) {
+  * rather than a second copy of it in JS: the placeholders are the teaching of
+  * the grammar, and this way the example drawn is provably the example shown. */
+ function showPlaceholderPan() {
+-  const values = {};
+-  for (const k of FIELD_KEYS) values[k] = String(fieldEls[k].placeholder || "");
+-  const composed = HPE.importer.compose(values);
+-  const res = composed.ok ? HPE.core.parseSeed(composed.line, layoutOptions()) : composed;
++  const res = HPE.core.parseSeed(String(scaleBox.placeholder || ""), layoutOptions());
+   if (!res.ok || !paintPan(res.value, "example")) clearPanPreview();
+ }
+ 

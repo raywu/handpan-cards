@@ -1,13 +1,10 @@
 # kills: a pop with no page open is not an invitation to close something
 # suite: node --test --test-name-pattern ^a.pop.with.no.page.open.is.not.an.invitation.to.close.something$ tests/app.test.js
-# The popstate listener loses its guard and runs hideSheet() on every back
-# press in the app, open page or not. Nothing visibly closes - there was
-# nothing open - but hideSheet ends in (sheetOpener || addChip).focus(), so
-# each stray pop yanks focus to + ADD out of whatever the user was on.
+# The popstate listener loses its guard and runs hideSheet() on every back press.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10136,7 +10136,6 @@
+@@ -11499,7 +11499,6 @@
    if (pendingPop) { pendingPop = false; syncRoute(); return; }
    if (aboutOpen) { hideAbout(); return; }
    if (location.hash === ABOUT_ROUTE) { syncRoute(); return; }

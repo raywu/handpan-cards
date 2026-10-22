@@ -385,6 +385,7 @@ class Browser {
     }
   }
   async setViewport(width, height, mobile = true) {
+    this.lastViewport = { width, height, mobile };
     await this.send("Emulation.setDeviceMetricsOverride", {
       width, height, deviceScaleFactor: 1, mobile,
       screenWidth: width, screenHeight: height,
@@ -405,11 +406,27 @@ class Browser {
    * The shadowing lives on the document, so it does NOT survive goto(). Fake
    * after the last navigation, never before - a test that navigates in between
    * silently gets an unshrunk page and passes for the wrong reason. */
-  async fakeKeyboard(vvHeight, vvOffsetTop = 0) {
+  /* innerModel says what window.innerHeight does while the keyboard is up, the
+   * way the four iOS reports differ: "fixed" (the default, innerHeight stays
+   * whole), "vv" (innerHeight follows vv.height), a number N (innerHeight is
+   * vv.height + N), or "layout" (the LAYOUT viewport itself resizes, through
+   * setViewport, so vv.height needs no shadow at all). */
+  async fakeKeyboard(vvHeight, vvOffsetTop = 0, innerModel = "fixed") {
+    if (innerModel === "layout") {
+      const vp = this.keyboardFreeViewport || this.lastViewport;
+      this.keyboardFreeViewport = vp;
+      await this.setViewport(vp.width, vvHeight, vp.mobile);
+      await new Promise((r) => setTimeout(r, 80));
+      return this.eval(`return { innerHeight: window.innerHeight, vvHeight: window.visualViewport.height };`);
+    }
+    const inner = innerModel === "fixed" ? "null" : innerModel === "vv" ? String(vvHeight) : String(vvHeight + innerModel);
     return this.eval(`
       const vv = window.visualViewport;
+      if (!window.__kbInnerHeight) window.__kbInnerHeight = Object.getOwnPropertyDescriptor(window, "innerHeight");
       Object.defineProperty(vv, "height", { value: ${vvHeight}, configurable: true });
       Object.defineProperty(vv, "offsetTop", { value: ${vvOffsetTop}, configurable: true });
+      if (${inner} === null) Object.defineProperty(window, "innerHeight", window.__kbInnerHeight);
+      else Object.defineProperty(window, "innerHeight", { value: ${inner}, configurable: true });
       vv.dispatchEvent(new Event("resize"));
       return { innerHeight: window.innerHeight, vvHeight: vv.height, vvOffsetTop: vv.offsetTop };
     `);
@@ -421,10 +438,17 @@ class Browser {
    * browser session, and a leaked shadow is indistinguishable from a bug in
    * whatever runs next. */
   async clearKeyboard() {
+    if (this.keyboardFreeViewport) {
+      const vp = this.keyboardFreeViewport;
+      this.keyboardFreeViewport = null;
+      await this.setViewport(vp.width, vp.height, vp.mobile);
+      await new Promise((r) => setTimeout(r, 80));
+    }
     return this.eval(`
       const vv = window.visualViewport;
       delete vv.height;
       delete vv.offsetTop;
+      if (window.__kbInnerHeight) Object.defineProperty(window, "innerHeight", window.__kbInnerHeight);
       vv.dispatchEvent(new Event("resize"));
       return { innerHeight: window.innerHeight, vvHeight: vv.height };
     `);

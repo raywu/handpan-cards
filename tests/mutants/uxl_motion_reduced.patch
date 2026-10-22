@@ -1,0 +1,24 @@
+# kills: UX: under prefers-reduced-motion the footer collapses and restores with no transition, in one task
+# suite: node --test --test-name-pattern ^UX:.under.prefers.reduced.motion.the.footer.collapses.and.restores.with.no.transition..in.one.task$ tests/e2e.test.js
+# uxl_motion_reduced
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -977,9 +977,6 @@ footer.seq{row-gap:var(--sp-1)}
+ #scale-lip:focus-visible{outline-offset:-2px}
+ #scale-sheet.lipped .sheetbody{scroll-padding-bottom:21px}
+ #scale-sheet.lipnow #scale-footslide, #scale-sheet.lipnow #scale-guidance{transition:none}
+-@media (prefers-reduced-motion: reduce){
+-  #scale-footslide, #scale-guidance{transition:none !important}
+-}
+ /* Landscape on a phone: 390px of height, and every pixel of chrome on the page
+    comes straight off the scrolling body. The footer's breathing room above its
+    own hairline is .sheetsurf's gap, already dropped to --sp-3 above; this
+@@ -10687,7 +10684,6 @@ function restoreLip() {
+   sheet.classList.remove("lipshut");
+   lipHandOff();
+   lipEnd = lipGen;
+-  if (reducedMotion.matches) { finishOpen(); return; }
+   const gen = lipEnd;
+   lipTimer = setTimeout(() => endOpening(gen), LIP_END_MS);
+ }

@@ -1,0 +1,14 @@
+# kills: LG: a plate press held (press.lifted) then dragged 60px never acts
+# suite: node --test --test-name-pattern ^LG..a.plate.press.held..press.lifted..then.dragged.60px.never.acts$ tests/app.test.js
+# The press.lifted veto is gone, so a lifted note dragged on the plate acts.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10831,7 +10831,6 @@
+     L.moved = true;
+   }
+   if (L.box && L.box.scrollTop !== L.boxTop) { lipDrag = null; return; }
+-  if (L.plate && press && press.lifted) { lipDrag = null; return; }
+   if (p.clientY !== L.py) L.lastMoveWay = p.clientY < L.py ? "up" : "down";
+   L.py = p.clientY;
+   if ((L.dir > 0 && p.clientY < L.y) || (L.dir < 0 && p.clientY > L.y)) { L.y = p.clientY; L.x = p.clientX; return; }

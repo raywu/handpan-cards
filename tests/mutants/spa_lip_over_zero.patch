@@ -1,0 +1,16 @@
+# kills: SPA: at 320x568, 380x780, 390x844, 844x390 and 1280x800, on the tab that scrolls, the last control ends at least --sp-2 above the lip's tap zone with the footer shut and no point of it hit-tests to #scale-lip
+# suite: node --test --test-name-pattern ^SPA..at.320x568..380x780..390x844..844x390.and.1280x800..on.the.tab.that.scrolls..the.last.control.ends.at.least...sp.2.above.the.lip.s.tap.zone.with.the.footer.shut.and.no.point.of.it.hit.tests.to..scale.lip$ tests/e2e.test.js
+# --lip-over is 0, so neither the panel end padding nor the message clearance clears the zone.
+# Also killed by: A5 (SPA: a message shown while ...)
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -948,7 +948,7 @@ footer.seq{row-gap:var(--sp-1)}
+ /* The footer lip: open, the wrappers generate no box, so the footer is the layout it always was. */
+ #scale-foot, #scale-footclip, #scale-footslide{display:contents}
+ #scale-lip[hidden]{display:none}
+-:root{--lip-ease:cubic-bezier(.3,0,.2,1); --lip-foot:9px; --lip-zone:25px; --lip-over:calc(var(--lip-zone) - var(--lip-foot))}
++:root{--lip-ease:cubic-bezier(.3,0,.2,1); --lip-foot:9px; --lip-zone:25px; --lip-over:0px}
+ #scale-sheet.lipped .sheetsurf{padding-bottom:env(safe-area-inset-bottom)}
+ #scale-sheet.lipped:not(.tiny) .sheetbody{flex-grow:1}
+ #scale-sheet.lipped #scale-foot{display:block; position:relative; flex:0 0 auto; height:var(--lip-foot);

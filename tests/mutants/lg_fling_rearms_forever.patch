@@ -1,0 +1,15 @@
+# kills: LG: the fling ends LIP_END_MS after the last scroll and a later programmatic scroll does nothing
+# suite: node --test --test-name-pattern ^LG..the.fling.ends.LIP.END.MS.after.the.last.scroll.and.a.later.programmatic.scroll.does.nothing$ tests/app.test.js
+# The fling never expires.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10768,7 +10768,7 @@
+ let lipFling = null;
+ function lipFlingStep(now) {
+   const F = lipFling, t = lipClamp(bandPort.scrollTop), M = lipRange();
+-  F.until = now + LIP_END_MS;
++  F.until = Infinity;
+   if (M !== F.prevM) { F.prevM = M; F.prevT = t; return; }
+   const d = t - F.prevT;
+   F.prevT = t;

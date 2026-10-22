@@ -1,0 +1,15 @@
+# kills: BOTTOM_NO_OCTAVE: a bottom note written without an octave blocks and writes no string
+# suite: node --test --test-name-pattern ^BOTTOM_NO_OCTAVE..a.bottom tests/import.test.js
+# A bottom note written without an octave no longer raises BOTTOM_NO_OCTAVE, so the guessed placement reaches REVIEW.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -537,7 +537,7 @@
+     var bare = notes.filter(function (n) { return n.assigned !== "unknown" && n.assigned !== "dropped" && !n.octave; });
+     if (bare.length) flag("NO_OCTAVE", { notes: indices(bare) });
+     var lowBare = bottoms.filter(function (n) { return !n.octave && !n.inline; });
+-    if (lowBare.length) flag("BOTTOM_NO_OCTAVE", { notes: indices(lowBare) });
++    if (false) flag("BOTTOM_NO_OCTAVE", { notes: indices(lowBare) });
+ 
+     var blocked = !ding || flags.UNDECLARED_PARENS || flags.CONFLICTING_DING || flags.COUNT_MISMATCH ||
+                   flags.AMBIGUOUS_NOTE || flags.DING_NOT_LOWEST || flags.REPEATED_IN_SHELL || flags.DING_ON_BOTTOM || flags.DING_CLAUSE_MANY;

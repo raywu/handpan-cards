@@ -1,0 +1,15 @@
+# kills: UX: a collapse and a restore resize .sheetbody once each and never during the 180ms slide
+# suite: node --test --test-name-pattern ^UX:.a.collapse.and.a.restore.resize..sheetbody.once.each.and.never.during.the.180ms.slide$ tests/e2e.test.js
+# uxl_height_transition
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -977,6 +977,8 @@ footer.seq{row-gap:var(--sp-1)}
+   margin-left:-16px; border-radius:2px; background:#a79d8b}
+ #scale-lip:focus-visible{outline-offset:-2px}
+ #scale-sheet.lipped .sheetbody{scroll-padding-bottom:21px}
++#scale-sheet.lipped #scale-foot{transition:height 180ms var(--lip-ease)}
++#scale-sheet.lipshut #scale-foot{height:0}
+ #scale-sheet.lipnow #scale-footslide, #scale-sheet.lipnow #scale-guidance{transition:none}
+ @media (prefers-reduced-motion: reduce){
+   #scale-footslide, #scale-guidance{transition:none !important}

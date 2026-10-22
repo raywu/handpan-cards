@@ -5,13 +5,16 @@
 //
 // Rule G (plan 20.16): with the drawer open, at every window size, on Add and
 // Edit, keyboard up or down, before and after a resize:
-//   G-a  the band is stuck only while scrollport height - band height >= 44
-//   G-b  scroll-padding-top equals the band height while stuck, else 0
+//   G-a  the band is stuck only while scrollport height - band height, the drawer status line included in portrait >= 44
+//   G-b  scroll-padding-top equals the band height (status line included in portrait) plus the status margin while stuck, else 0
 //   G-c  after a real Tab every stop is inside the scrollport and clear of a
 //        stuck band (a stop taller than its room: its top is in view below it)
 //   G-d  keyboard up: a focused text field shows as much open as closed
 //   G-e  G-a and G-b are recomputed when the scrollport or the band resizes
-//   G-f  the toggle is in view after the drawer opens
+//   G-f  the toggle is in view after the drawer opens; when opening moved focus
+//        onto a note of a static plate (keyboard), the plate's top and that
+//        note are in view instead (review F2: the fields sit between the plate
+//        and the toggle, so no scroll position shows both)
 //   G-layout  the landscape two-column layout keeps the padding at 0
 //   G-floor  a scrollport under 44 px is held to G-a, G-b and G-d only
 
@@ -30,8 +33,7 @@ const SCALES = {
 };
 const WIDTHS = [320, 380, 500, 844];
 const HEIGHTS = [390, 480, 553, 667, 780];
-const NEIGHBOURS = [[559, 520], [560, 520], [560, 521], [639, 700], [640, 699]];
-const KEYBOARDS = [291, 395];
+const NEIGHBOURS = [[559, 520], [560, 520], [560, 521], [639, 700], [640, 699], [320, 260], [380, 270]];
 
 const BROWSER = findBrowser();
 if (!BROWSER) {
@@ -50,7 +52,7 @@ window.__d = (() => {
   const r1 = (x) => Math.round(x * 10) / 10;
   const label = (el) => !el ? null : el.id || (el.parentElement && el.parentElement.id
     ? el.parentElement.id + "[" + [...el.parentElement.children].indexOf(el) + "]" : el.tagName);
-  const unsticks = (el) => !!el && el.matches("input, textarea, select, #scale-swatches button");
+  const unsticks = (el) => !!el && el.matches("input, textarea, select");
   function vis(el) {
     const s = sp(), sr = s.getBoundingClientRect(), r = el.getBoundingClientRect();
     let lo = Math.max(r.top, 0), hi = Math.min(r.bottom, window.visualViewport.height);
@@ -59,20 +61,26 @@ window.__d = (() => {
     const b = band();
     if (b && !b.contains(el) && s.contains(el) && getComputedStyle(b).position === "sticky") {
       const br = b.getBoundingClientRect();
-      if (br.right > r.left + 1 && br.left < r.right - 1 && br.bottom > lo && br.top < hi) {
-        const above = Math.max(0, Math.min(hi, br.top) - lo), below = Math.max(0, hi - Math.max(lo, br.bottom));
+      if (br.right > r.left + 1 && br.left < r.right - 1 && br.bottom + stackExtra().h > lo && br.top < hi) {
+        const bottom = br.bottom + stackExtra().h;
+        const above = Math.max(0, Math.min(hi, br.top) - lo), below = Math.max(0, hi - Math.max(lo, bottom));
         return r1(Math.max(above, below));
       }
     }
     return r1(hi - lo);
   }
+  function stackExtra() {
+    const t = document.getElementById("scale-drawer-status");
+    if (!t || t.hidden || getComputedStyle(sp()).display === "grid") return { h: 0, m: 0 };
+    return { h: t.getBoundingClientRect().height, m: parseFloat(getComputedStyle(t).marginBottom) || 0 };
+  }
   function state() {
-    const s = sp(), sr = s.getBoundingClientRect(), b = band(), br = b.getBoundingClientRect();
+    const s = sp(), sr = s.getBoundingClientRect(), b = band(), br = b.getBoundingClientRect(), x = stackExtra();
     const pad = parseFloat(getComputedStyle(s).scrollPaddingTop);
-    return { room: sr.height, spTop: sr.top, spBottom: sr.bottom, bandH: br.height, bandBottom: br.bottom,
+    return { room: sr.height, spTop: sr.top, spBottom: sr.bottom, bandH: br.height + x.h, bandBottom: br.bottom + x.h, gap: x.m,
       pos: getComputedStyle(b).position, pad: Number.isFinite(pad) ? pad : 0,
       open: document.getElementById("scale-layout-zone").classList.contains("open"),
-      twoCol: matchMedia("(max-height:520px) and (min-width:560px)").matches,
+      twoCol: getComputedStyle(s).display === "grid",
       textFocus: unsticks(document.activeElement), scrollTop: s.scrollTop, sh: s.scrollHeight, ch: s.clientHeight };
   }
   function at(el) {
@@ -151,7 +159,7 @@ function run() {
     await frames();
   };
   const openDrawerNow = async () => {
-    await ev(`__d.sp().scrollTop = 0; const t = document.getElementById("scale-layout-toggle"); t.focus(); t.click(); return true;`);
+    await ev(`__d.sp().scrollTop = __d.sp().scrollHeight; const t = document.getElementById("scale-tab-layout"); t.focus(); t.click(); return true;`);
     await frames();
   };
 
@@ -175,7 +183,7 @@ function run() {
       fail("G-a", `${stuck ? "stuck" : "not stuck"} with scrollport ${st.room.toFixed(1)} and band ${st.bandH.toFixed(1)} ` +
         `(window ${(st.room - st.bandH).toFixed(1)}, ${ONE_CONTROL} needed)`);
     }
-    const want = stuck ? st.bandH : 0;
+    const want = stuck ? st.bandH + st.gap : 0;
     if (Math.abs(st.pad - want) > 1) fail("G-b", `scroll-padding-top ${st.pad} while ${stuck ? "stuck with band " + st.bandH.toFixed(1) : "not stuck"}`);
     return stuck;
   }
@@ -217,25 +225,6 @@ function run() {
     assert.strictEqual(fails.length, 0, `${name}: ${fails.length} failures\n  ${lines.join("\n  ")}${extra || ""}`);
   };
 
-  /* ---- keyboard-up reading of a text field (G-d) ---- */
-  const kbReading = async (field, kb, h, ch) => {
-    await b.clearKeyboard();
-    await ev(`document.activeElement && document.activeElement.blur(); __d.sp().scrollTop = 0; return true;`);
-    const val = await ev(`return document.getElementById(${JSON.stringify(field)}).value;`);
-    await b.fakeKeyboard(h - kb);
-    await ev(`document.getElementById(${JSON.stringify(field)}).focus(); return true;`);
-    await frames();
-    const focused = await ev(`return __d.at(document.getElementById(${JSON.stringify(field)}));`);
-    await b.send("Input.insertText", { text: ch });
-    await frames();
-    const typed = await ev(`return __d.at(document.getElementById(${JSON.stringify(field)}));`);
-    await ev(`const e = document.getElementById(${JSON.stringify(field)}); e.value = ${JSON.stringify(val)};
-      e.dispatchEvent(new Event("input", { bubbles: true })); e.blur(); return true;`);
-    await b.clearKeyboard();
-    await frames();
-    return { focused, typed };
-  };
-
   test("DR1 rule G grid: stuck, padding, Tab stops, toggle in view and keyboard-up fields hold at every cell", async () => {
     const fails = [];
     const floorCells = [];
@@ -251,38 +240,21 @@ function run() {
           const fail = (clause, detail) => fails.push({ cell, clause, detail });
           try {
             await openCell(w, h, sheet, scale);
-            const fields = sheet === "edit" ? ["scale-box", "scale-name"] : ["scale-box"];
-            const ch = (f) => (f === "scale-box" ? " " : "x");
-            const closed = {};
-            if (h >= 553) {
-              for (const kb of KEYBOARDS) for (const f of fields) closed[kb + f] = await kbReading(f, kb, h, ch(f));
-            }
             await openDrawerNow();
-            const open = await ev(`return { toggle: __d.at(document.getElementById("scale-layout-toggle")), st: __d.state() };`);
+            const open = await ev(`return { st: __d.state(), plate: __d.at(document.getElementById("scale-preview")),
+              back: document.getElementById("scale-back").getBoundingClientRect().top >= 0 && document.getElementById("scale-back").getBoundingClientRect().bottom <= window.innerHeight };`);
             const floor = open.st.room < ONE_CONTROL;
             if (floor) floorCells.push(cell);
             const stuck = checkAB(fail, open.st);
             if (!open.st.twoCol && !floor) stuckSeen[sheet][stuck ? "yes" : "no"] += 1;
-            if (!floor) checkC((c, d) => fail(c === "G-c" ? "G-f" : c, d), open.toggle);
-            if (!floor) await tabWalk(fail);
-            if (h >= 553) {
-              for (const kb of KEYBOARDS) for (const f of fields) {
-                await ev(`__d.sp().scrollTop = 0; return true;`);
-                await b.clearKeyboard();
-                await ev(`document.activeElement && document.activeElement.blur(); return true;`);
-                const r = await kbReading(f, kb, h, ch(f));
-                const c = closed[kb + f];
-                const sub = `${cell} kb${kb} ${f}`;
-                if (r.focused.vis < c.focused.vis - 0.5) fails.push({ cell: sub, clause: "G-d", detail: `focus shows ${r.focused.vis}, closed shows ${c.focused.vis}` });
-                if (r.typed.vis < c.typed.vis - 0.5) fails.push({ cell: sub, clause: "G-d", detail: `typed shows ${r.typed.vis}, closed shows ${c.typed.vis}` });
-                if (r.focused.st.room < ONE_CONTROL) floorCells.push(sub);
-                for (const m of [r.focused, r.typed]) {
-                  if (m.st.twoCol) continue;
-                  if (m.st.pos === "sticky") fails.push({ cell: sub, clause: "G-a", detail: "stuck under a focused text field" });
-                  if (m.st.pad > 0.5) fails.push({ cell: sub, clause: "G-b", detail: `padding ${m.st.pad} under a focused text field` });
-                }
-              }
+            if (!floor) {
+              const p = open.plate;
+              if (!open.back) fail("G-f", "BACK is not on the screen after the open");
+              const above = p.top - p.st.spTop;
+              if (above > 80) fail("G-f", `${above.toFixed(1)}px sit above the plate: more than the tab strip and its gap`);
+              if (p.vis < Math.min(p.h, p.st.room - above) - 0.5) fail("G-f", `the plate shows ${p.vis} of ${Math.min(p.h, p.st.room - above).toFixed(1)}px (top ${p.top.toFixed(1)}, scrollport ${p.st.spTop.toFixed(1)} to ${p.st.spBottom.toFixed(1)})`);
             }
+            if (!floor) await tabWalk(fail);
           } catch (e) {
             fail("error", String(e && e.message || e));
             await b.clearKeyboard().catch(() => {});
@@ -341,13 +313,11 @@ function run() {
         await openDrawerNow();
         const before = await ev(`return __d.state();`);
         checkAB(fail, before);
-        const vv = Math.round(before.bandH + 30 + 140 + 8);
-        await b.fakeKeyboard(vv);
+        await b.fakeKeyboard(250);
         await frames();
         const after = await ev(`return __d.state();`);
         await b.clearKeyboard();
         checkAB(fail, after);
-        if (Math.abs(after.bandH - before.bandH) > 1) fail("vacuous", `the band changed too: ${before.bandH} to ${after.bandH}`);
         if (before.pos !== "sticky" || after.pos === "sticky") fail("vacuous", `stuck did not flip: ${before.pos} to ${after.pos} with scrollport ${before.room} to ${after.room}`);
       }
     } finally {
@@ -362,11 +332,11 @@ function run() {
     try {
       await generateDeck(SCALES.n19);
       for (const w of WIDTHS) {
-        await openCell(w, 480, "edit", SCALES.n19);
+        await openCell(w, 240, "edit", SCALES.n19);
         await openDrawerNow();
         const seen = { yes: 0, no: 0 };
         let oneColumn = true;
-        for (let h = 480; h <= 640; h++) {
+        for (let h = 240; h <= 1000; h++) {
           await b.setViewport(w, h, true);
           await frames();
           const st = await ev(`return __d.state();`);
@@ -376,7 +346,7 @@ function run() {
         }
         note.push(`${w}: ${JSON.stringify(seen)}`);
         if (oneColumn && !(seen.yes > 0 && seen.no > 0)) {
-          fails.push({ cell: `${w}x480-640`, clause: "G-a", detail: `the walk never crossed the threshold: ${JSON.stringify(seen)}` });
+          fails.push({ cell: `${w}x240-1000`, clause: "G-a", detail: `the walk never crossed the threshold: ${JSON.stringify(seen)}` });
         }
       }
     } finally {

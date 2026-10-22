@@ -1,0 +1,16 @@
+# kills: UX: lipped, an empty guidance slot takes no height and the lip sits on the body's hairline; a slot with text stays --sp-2 plus --lip-over above the lip
+# suite: node --test --test-name-pattern ^UX..lipped..an.empty.guidance.slot.takes.no.height.and.the.lip.sits.on.the.body.s.hairline..a.slot.with.text.stays...sp.2.plus...lip.over.above.the.lip$ tests/e2e.test.js
+# uxl_guidance_never_hides
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -934,8 +934,7 @@ footer.seq{row-gap:var(--sp-1)}
+    spills over the button. */
+ #scale-guidance{flex:0 0 auto; display:flex; flex-direction:column;
+   justify-content:flex-end; margin-block:calc(var(--sp-2) - var(--sp-4))}
+-#scale-sheet #scale-guidance:not(:has(> :not([hidden]):not(:empty))){position:absolute;
+-  min-height:0; height:0; margin:0; overflow:hidden}
++#scale-sheet #scale-guidance:not(:has(> :not([hidden]):not(:empty))){}
+ #scale-guidance #scale-msg{min-height:0}
+ #scale-guidance #scale-layout-state{font:400 12px/1.5 "Nunito Sans"; color:#c4bcab}
+ /* One message wins (plan N-6 alternative, owner 2026-10-14; X3): while the notice holds text a PAN

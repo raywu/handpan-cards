@@ -1,0 +1,14 @@
+# kills: TB: ArrowRight, ArrowLeft, Home and End move and activate the tabs, wrap, and keep exactly one tabindex 0
+# suite: node --test --test-name-pattern ^TB:.ArrowRight tests/app.test.js
+# An arrow key moves the selection but not the focus.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11811,7 +11811,6 @@
+   if (to < 0) return;
+   e.preventDefault();
+   setTab(to === 0 ? "scale" : "layout");
+-  tabs[to].focus();
+ });
+ notePrev.onclick = () => stepNote(-1);
+ noteNext.onclick = () => stepNote(1);

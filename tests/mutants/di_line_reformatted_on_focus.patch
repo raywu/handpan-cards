@@ -1,0 +1,14 @@
+# kills: DI: a typed line keeps its spelling until a field edit rewrites it canonically
+# suite: node --test --test-name-pattern ^DI:.a.typed.line.keeps tests/app.test.js
+# Mutant di_line_reformatted_on_focus.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12122,6 +12122,7 @@ function paintFieldsOpen() {
+ function pathFocus(path) {
+   if (inputPath === path) return;
+   inputPath = path;
++  if (path === "line") { const q = HPE.core.parseSeed(String(scaleBox.value || "")); if (q.ok) scaleBox.value = HPE.core.formatSeed(q.value.fields); }
+   const values = fieldValues();
+   if (path === "fields" && fieldsStale) {
+     fieldsStale = false;

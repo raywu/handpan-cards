@@ -1,0 +1,15 @@
+# kills: TB: the sheet Tab order on each tab and flow is the section 3.3 list filtered by isStop
+# suite: node --test --test-name-pattern ^TB:.the.sheet.Tab.order tests/app.test.js
+# The Layout tab's Tab list is never used, so Tab on Layout walks the Scale list.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12537,7 +12537,7 @@ sheet.addEventListener("keydown", e => {
+   if (e.key !== "Tab") return;
+   const onTab = sheetTab === "layout" ? tabLayout : tabScale;
+   const shut = isLipShut();
+-  const stops = (sheetTab === "layout"
++  const stops = (false
+     ? [backBtn, onTab, previewBox.querySelector('.panhit[tabindex="0"]'),
+        anchorOne, anchorBetween, mirrorTop, mirrorBot, fineBtn,
+        notePrev, noteNext, seatPrev, seatNext, resetBtn,

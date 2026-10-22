@@ -1,0 +1,14 @@
+# kills: TB: a tab switch pushes no history entry and calls no replaceState
+# suite: node --test --test-name-pattern ^TB:.a.tab.switch.pushes tests/app.test.js
+# A tab switch pushes a history entry, so one Back no longer leaves the sheet.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10588,6 +10588,7 @@
+     previewBox.addEventListener("touchmove", plateTouchMove, { passive: false });
+   }
+   sheetTab = tab;
++  history.pushState({ tab }, "");
+   drawerOpen = tab === "layout";
+   paintTabs();
+   const held = document.activeElement;

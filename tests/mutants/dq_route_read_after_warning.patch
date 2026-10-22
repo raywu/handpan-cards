@@ -22,7 +22,7 @@ diff --git a/index.html b/index.html
 @@ -11439,6 +11436,8 @@ if (routedDeck && routedDeck !== bootStored) track("deck_route", { deck_id: rout
  if (wantedDeck !== deckId && !(replacements()[wantedDeck] && replacements()[wantedDeck].id === deckId) &&
      (wantedDeck.indexOf("custom:") === 0 || hidden.includes(wantedDeck)))
-   say("That deck is gone. Showing " + deck().name + ".", "warn");
+   say("That scale is gone. Showing " + deck().name + ".", "warn");
 +const routedDeck = routedDeckId();
 +if (routedDeck) { deckId = routedDeck; deckId = deck().id; storedDeck = deckId; setOrder(); buildChips(); setMode(mode); track("deck_route", { deck_id: routedDeck }); }
  // A page route in the address bar at boot is a RELOAD of a page, or a link

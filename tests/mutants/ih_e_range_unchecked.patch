@@ -1,0 +1,16 @@
+# kills: IH: compose refuses notes outside C-1 to G9 in each field, and an octaveless bottom placed above G9
+# was: and an octaveless bottom whose guess falls outside that range
+# suite: node --test --test-name-pattern ^IH:.compose.refuses.notes.outside.C.1 tests/import.test.js
+# No range check: every pitch fits.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -667,7 +667,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   function composeLower(x, p) { return x + " is lower than " + p + ": list low to high."; }
+ 
+   function composeMidi(n, octave) { return core().midiFromName(n.letter, n.acc, octave); }
+-  function composeFits(midi) { return midi >= 0 && midi <= 127; }
++  function composeFits(midi) { return true; }
+   function composeNamed(n, octave) { return n.letter + n.acc + octave; }
+ 
+   function composeRead(text) {

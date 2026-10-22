@@ -1,0 +1,15 @@
+# kills: battiloro window: a run of five or more notes outside the kept window blocks with CONFLICTING_LIST
+# suite: node --test --test-name-pattern ^battiloro.window tests/import.test.js
+# The whole-text scan never raises CONFLICTING_LIST, so narrowing to the window hides a run of notes outside it.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -317,7 +317,7 @@
+         var end = rm.index + rm[0].replace(/[\s,\-\/\u00b7|()]+$/, "").length;
+         if (rm.index < w.start || end > w.end) outside += 1;
+       }
+-      if (outside) flag("CONFLICTING_LIST", { runs: outside });
++      if (false) flag("CONFLICTING_LIST", { runs: outside });
+       base = w.start;
+       original = full.slice(w.start, w.end);
+     }

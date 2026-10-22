@@ -1,0 +1,19 @@
+# kills: PH: P3 a drag that scrolls the body to its end neither restores nor collapses again, momentum included
+# suite: node --test --test-name-pattern ^PH..P3.a.drag.that.scrolls.the.body.to.its.end.neither.restores.nor.collapses.again..momentum.included$ tests/app.test.js
+# The scroll path is no longer suppressed during a touch drag or its momentum, so reaching the scroll end restores the footer.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10783,9 +10783,9 @@
+ function lipScrollEvent() {
+   const now = Date.now();
+   if (lipFling && now >= lipFling.until) lipFling = null;
+-  if (lipDrag || lipTouching) { userWindowUntil = 0; lipAcc = 0; lipScroll(); return; }
+-  if (lipFling) { userWindowUntil = 0; lipAcc = 0; lipFlingStep(now); lipScroll(); return; }
+-  if (now < lipDragEnd) { lipDragEnd = now + LIP_END_MS; userWindowUntil = 0; lipAcc = 0; }
++  if (false) { userWindowUntil = 0; lipAcc = 0; lipScroll(); return; }
++  if (false) { userWindowUntil = 0; lipAcc = 0; lipFlingStep(now); lipScroll(); return; }
++  if (false) { lipDragEnd = now + LIP_END_MS; userWindowUntil = 0; lipAcc = 0; }
+   lipScroll();
+ }
+ bandPort.addEventListener("scroll", lipScrollEvent, { passive: true });

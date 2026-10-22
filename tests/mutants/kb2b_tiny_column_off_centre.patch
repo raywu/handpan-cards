@@ -1,0 +1,15 @@
+# kills: KB2b: the tiny column is centred and 520px wide at 852x393 and 844x390
+# suite: node --test --test-name-pattern ^KB2b..the.tiny.column tests/e2e.test.js
+# The tiny scroller keeps only its side gutters, so the column spans the screen.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1093,7 +1093,7 @@ footer.seq{row-gap:var(--sp-1)}
+ #scale-sheet.kbup.side .sheethead{display:none}
+ #scale-sheet.tiny .sheetbody{flex:0 0 auto; overflow:visible}
+ /* The scroller spans the screen, so a swipe on the flanks beside the 520px column scrolls it too. */
+-#scale-sheet.tiny .sheetsurf{max-width:none; padding-inline:max(var(--sp-3), calc((100% - 520px) / 2 + var(--sp-3)))}
++#scale-sheet.tiny .sheetsurf{max-width:none; padding-inline:var(--sp-3)}
+ /* The app's settings trigger paints over the open sheet; it has no job there. */
+ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+ #scale-sheet.side #scale-fields .sheetlabel{font-size:8.5px; letter-spacing:.1em}

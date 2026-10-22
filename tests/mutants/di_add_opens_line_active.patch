@@ -1,0 +1,15 @@
+# kills: DI: Add opens with the four fields empty, the fields path active, #scale-box empty and BACK focused
+# suite: node --test --test-name-pattern ^DI:.Add.opens.with.the.four.fields tests/app.test.js
+# Mutant di_add_opens_line_active.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12096,7 +12096,7 @@ function lineInput() {
+ }
+ /** The open paint: no message animates in and nothing is announced. */
+ function paintFieldsOpen() {
+-  inputPath = "fields";
++  inputPath = "line";
+   lineStale = false;
+   fieldsStale = false;
+   mirroring = false;

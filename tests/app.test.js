@@ -913,11 +913,6 @@ function openSheet(app) {
   return app.els;
 }
 
-/** The import row ships hidden (2026-10-17 hotfix); the IM tests un-hide it. */
-function showImport(app) {
-  app.els["import-row"].hidden = false;
-}
-
 test("the deck row opens with a + ADD chip that opens the page, focusing BACK", () => {
   const app = boot();
   const row = chipRow(app);
@@ -1009,7 +1004,7 @@ test("a valid scale fills the parse line with the ding and the numbered notes", 
   app.type(scale("omitted ding octave"));       // "(D) A C D E F G A C"
   const line = app.els["scale-parse"].textContent;
   assert.match(line, /^Ding D3 · 8 top · 0 inner · 0 bottom\. Top A3 C4 D4 /, `parse line was "${line}"`);
-  assert.strictEqual(app.els["scale-generate"].disabled, false);
+  assert.strictEqual(Boolean(app.els["scale-generate"].disabled), false);
   assert.strictEqual(app.els["scale-refusal"].textContent, "", "a valid scale shows no refusal");
 });
 
@@ -1540,8 +1535,9 @@ test("+ ADD after an Edit opens a clean create sheet, never the edited deck's se
 
   openSheet(app);
   assert.strictEqual(app.els["scale-box"].value, "", "the create box kept the edited seed");
-  assert.deepStrictEqual(editRowsShown(app), [false, false],
-    "an Edit-only row is visible on the create path");
+  assert.deepStrictEqual(editRowsShown(app), [true, false],
+    "the name row is hidden, or the DELETE row is visible, on the create path");
+  assert.strictEqual(app.els["scale-name"].value, "", "the create name box kept the edited deck's name");
   assert.strictEqual(app.els["scale-generate"].textContent, "GENERATE CARDS");
   assert.strictEqual(app.els["scale-generate"].disabled, true);
 });
@@ -1749,8 +1745,8 @@ test("DELETE THIS DECK arms on the first tap and only deletes on the second", ()
   assert.strictEqual(app.registry()[d.id] === undefined, false,
     "one tap deleted the deck - the confirmation did not gate anything");
   assert.strictEqual(app.sheetOpen(), true, "one tap closed the Edit page");
-  assert.notStrictEqual(app.els["scale-delete"].textContent.trim(), "DELETE THIS DECK",
-    "the armed button still reads DELETE THIS DECK, so nothing tells the owner " +
+  assert.notStrictEqual(app.els["scale-delete"].textContent.trim(), "DELETE THIS SCALE",
+    "the armed button still reads DELETE THIS SCALE, so nothing tells the owner " +
     "their tap did anything or that the next one is destructive");
   // The warning is read from #scale-del-note, not the practice-screen
   // announcer: since 2026-09-21 it lives beside the button rather than going
@@ -1776,7 +1772,7 @@ test("leaving the Edit page disarms DELETE, so a stale tap cannot destroy a deck
   app.keydown("Escape");                    // the owner leaves without deleting
   assert.strictEqual(app.sheetOpen(), false);
   app.clickChip(d.name);                    // and comes back later
-  assert.strictEqual(app.els["scale-delete"].textContent.trim(), "DELETE THIS DECK",
+  assert.strictEqual(app.els["scale-delete"].textContent.trim(), "DELETE THIS SCALE",
     "the page re-opened with DELETE still armed - the next tap would delete " +
     "a deck on a confirmation the owner gave to a different visit");
 
@@ -1804,7 +1800,7 @@ test("a tap anywhere else on the page disarms DELETE, without waiting for a blur
 
   app.els["scale-sheet"].dispatchEvent(
     { type: "pointerdown", target: app.els["scale-box"] });
-  assert.strictEqual(app.els["scale-delete"].textContent.trim(), "DELETE THIS DECK",
+  assert.strictEqual(app.els["scale-delete"].textContent.trim(), "DELETE THIS SCALE",
     "the owner touched the seed field and DELETE stayed armed - on iOS, where "
     + "a button takes no focus, the next tap on it would destroy the deck");
 
@@ -1872,7 +1868,7 @@ test("deleting a deck that is already gone leaves no armed button behind", () =>
 
   app.forgetDeck(d.id);
   app.els["scale-delete"].click();
-  assert.strictEqual(app.els["scale-delete"].textContent.trim(), "DELETE THIS DECK",
+  assert.strictEqual(app.els["scale-delete"].textContent.trim(), "DELETE THIS SCALE",
     "the deck is gone and the button still reads TAP AGAIN TO DELETE");
 });
 
@@ -1924,7 +1920,7 @@ test("tabbing away from DELETE disarms it too", () => {
   assert.strictEqual(typeof app.els["scale-delete"].onblur, "function",
     "DELETE has no blur handler, so tabbing away leaves it armed");
   app.els["scale-delete"].onblur();
-  assert.strictEqual(app.els["scale-delete"].textContent.trim(), "DELETE THIS DECK",
+  assert.strictEqual(app.els["scale-delete"].textContent.trim(), "DELETE THIS SCALE",
     "the owner tabbed off an armed DELETE and it stayed armed");
 });
 
@@ -2282,7 +2278,7 @@ test("a field edit still runs select.build exactly once (13A)", () => {
 // live region carries UI copy - never an engine reason, because the section 2
 // code enum is CLOSED and has no code for "that scale is taken".
 
-const COLLIDE_MSG = /Another deck already uses this scale/;
+const COLLIDE_MSG = /Another scale already has these notes/;
 // Deliberately NOT a built-in's scale: the built-in Hijaz chip already reads
 // "C# HIJAZ 9", which is also what autoName gives a pan seeded from it, so a
 // chip lookup by label could not tell the two apart.
@@ -3620,7 +3616,7 @@ test("PM rule 1: the print row is DOWNLOAD PDF then the paper select, and no ful
   assert.ok(rowHtml.indexOf("<button") < rowHtml.indexOf("<select"), "the button leads the row");
   assert.ok(!src.includes("FULL DECK PDF"), "no element offers a full deck PDF");
   assert.ok(!src.includes("CHORD-ONLY PDF"), "no element is labelled CHORD-ONLY PDF");
-  assert.match(panel, /<h3 class="panel-heading">Print this deck<\/h3>/);
+  assert.match(panel, /<h3 class="panel-heading">Print this scale<\/h3>/);
 });
 
 test("PM rule 3: DOWNLOAD PDF names and builds the chord-only file, byte for byte what main built", () => {
@@ -5120,7 +5116,9 @@ describe("tab stops follow rendering", () => {
   test("SB-5 Tab in an empty ADD sheet never lands on the disabled GENERATE", () => {
     const app = boot();
     app.run("openScaleSheet()");
+    app.click(app.els["scale-tab-layout"]);
     assert.strictEqual(app.els["scale-generate"].disabled, true);
+    assert.ok(app.els["scale-generate"].getClientRects().length > 0, "GENERATE is rendered on the Layout tab");
     const seen = new Set();
     for (let i = 0; i < 30; i += 1) {
       app.els["scale-sheet"].dispatchEvent(
@@ -5128,7 +5126,7 @@ describe("tab stops follow rendering", () => {
       seen.add(app.activeId());
     }
     assert.ok(seen.has("scale-back"), "Tab never reached the BACK control");
-    assert.ok(seen.has("scale-box"), "Tab never reached the scale box");
+    assert.ok(seen.has("scale-tab-layout"), `Tab never reached the Layout tab: ${[...seen]}`);
     assert.ok(!seen.has("scale-generate"), "Tab landed on the disabled GENERATE");
   });
 
@@ -5136,8 +5134,8 @@ describe("tab stops follow rendering", () => {
     const app = boot();
     app.run("openScaleSheet()");
     app.run("editingId = 'x'");
-    assert.strictEqual(app.els["scale-name-row"].hidden, true);
-    assert.strictEqual(app.els["scale-name"].getClientRects().length, 0);
+    assert.strictEqual(app.els["scale-delete-row"].hidden, true);
+    assert.strictEqual(app.els["scale-delete"].getClientRects().length, 0);
     const seen = new Set();
     for (let i = 0; i < 40; i += 1) {
       app.els["scale-sheet"].dispatchEvent(
@@ -5145,7 +5143,7 @@ describe("tab stops follow rendering", () => {
       seen.add(app.activeId());
     }
     assert.ok(seen.has("scale-box"), "Tab never reached the scale box");
-    assert.ok(!seen.has("scale-name"), "Tab landed on a control inside a hidden row");
+    assert.ok(!seen.has("scale-delete"), "Tab landed on a control inside a hidden row");
   });
 });
 
@@ -5446,7 +5444,7 @@ test("AP2-3 a refused generate restores readonly and the label and leaves the bu
   assert.strictEqual(app.get("scaleBox.hasAttribute('readonly')"), false, "readonly restored");
   assert.strictEqual(app.get("genBtn.textContent"), "SAVE CHANGES", "label restored");
   assert.strictEqual(app.get("genBtn.disabled"), true, "a refused seed stays disabled");
-  assert.strictEqual(app.get("refusal"), "Another deck already uses this scale.");
+  assert.strictEqual(app.get("refusal"), "Another scale already has these notes.");
   assert.strictEqual(app.get("scaleBox.classList.contains('bad')"), true);
   app.type(scale("builtin hijaz"));
   assert.strictEqual(app.get("genBtn.disabled"), false, "changing the seed re-enables it");
@@ -6081,7 +6079,7 @@ test("W1 line 119: the count line leads with the ding and all three counts, then
  * The flip. Tests below that were written AFTER the implementation are marked
  * "(pin)" in their title; the rest were written red first. */
 
-const PLACEHOLDER = "[C] [D] (E) [F#] [G] [A] B [C] D E F# G A B [C] D E | F# G A";
+const PLACEHOLDER = "[C3] [D3] (E3) [F#3] [G3] [A3] B3 [C4] D4 E4 F#4 G4 A4 B4 [C5] D5 E5 | F#5 G5 A5";
 const indexSource = () => require("node:fs").readFileSync(require("./helpers/sandbox.js").APP, "utf8");
 const placeholderOf = () => /id="scale-box"[\s\S]{0,400}?placeholder="([^"]+)"/.exec(indexSource())[1];
 
@@ -6163,12 +6161,12 @@ test("typing the old inner mark shows the slash sentence", () => {
   assert.strictEqual(app.els["scale-refusal"].textContent, app.get("HPE.core.REASONS.BAD_NOTE.alternates.slash"));
 });
 
-test("typing an old bottom list with octaves shows the afterBar sentence", () => {
+test("typing an old bottom list with octaves below the ding shows the ding sentence", () => {
   const app = boot();
   openSheet(app);
   app.type("(D3) A3 C4 D4 | C3 E3");
-  const alt = app.get("HPE.core.REASONS.NOTE_OUT_OF_ORDER.alternates.afterBar");
-  const want = alt.split("<A>").join("C3").split("<B>").join("D4");
+  const alt = app.get("HPE.core.REASONS.NOTE_OUT_OF_ORDER.alternates.ding");
+  const want = alt.split("<A>").join("C3").split("<B>").join("D3");
   assert.strictEqual(app.els["scale-refusal"].textContent, want);
 });
 
@@ -6323,6 +6321,9 @@ const dr1Open = (app, text = W1_NONE) => {
   if (text !== null) app.type(text);
   return app.els;
 };
+const dr1Close = (app) => {
+  app.click(app.els["scale-tab-scale"]);
+};
 const DR1_HTML = fs.readFileSync(path.join(ROOT, "index.html"), "utf8").replace(/<!--[\s\S]*?-->/g, "");
 /* Sheet guidance (plan docs/plans/2026-10-13-sheet-guidance.md, lane app). The
    sandbox's _markupParent links only ids in ELEMENT_IDS, and the wrapper is
@@ -6358,7 +6359,7 @@ const dr1Markup = (id) => {
   return { attrs, text: m[4].replace(/<[^>]*>/g, "").trim(),
     attr: (k) => { const a = new RegExp(`\\b${k}="([^"]*)"`).exec(attrs); return a ? a[1] : null; } };
 };
-const dr1Toggle = (app) => app.els["scale-layout-toggle"];
+const dr1Toggle = (app) => app.els["scale-tab-layout"];
 const dr1Notice = (app) => (sgNoticeInSlot(), app.els["scale-layout-state"].hidden ? "" : app.els["scale-layout-state"].textContent);
 const dr1Tabs = (app, from, n) => {
   app.els[from].focus();
@@ -6373,88 +6374,85 @@ const dr1Tabs = (app, from, n) => {
 const dr1Angles = (deck) => Object.fromEntries(
   Object.values(deck.fields).filter((f) => f[3] !== "ding").map((f) => [f[2], f[4]]));
 
-test("DR1 line 15: the toggle exists on Add and Edit with its name, state and controls; the drawer starts hidden", () => {
+test("DR1 line 15: the Layout tab exists on Add and Edit with its name and panel; the drawer starts hidden", () => {
   for (const edit of [false, true]) {
     const app = boot();
     if (edit) openEdit(app, makeCustom(app)); else openSheet(app);
     const t = dr1Toggle(app);
-    assert.strictEqual(dr1Markup("scale-layout-toggle").attr("aria-label"), "Adjust layout");
-    assert.strictEqual(t.getAttribute("aria-expanded"), "false");
-    assert.strictEqual(dr1Markup("scale-layout-toggle").attr("aria-controls"), "scale-drawer");
-    assert.strictEqual(app.els["scale-drawer"].hidden, true);
+    assert.strictEqual(t.getAttribute("aria-selected"), "false");
+    assert.strictEqual(dr1Markup("scale-tab-layout").attr("role"), "tab");
+    assert.strictEqual(dr1Markup("scale-tab-layout").attr("aria-controls"), "scale-panel-layout");
+    assert.strictEqual(app.els["scale-panel-layout"].hidden, true);
   }
   const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8").replace(/<!--[\s\S]*?-->/g, "");
-  assert.match(html, /<button[^>]*\bid="scale-layout-toggle"[^>]*>\s*ADJUST LAYOUT\s*<span aria-hidden="true">/);
+  assert.match(html, /<button[^>]*\bid="scale-tab-layout"[^>]*>\s*Layout\s*<\/button>/);
   assert.match(html, /<div[^>]*\bid="scale-drawer"[^>]*\brole="group"/);
 });
 
-test("DR1 line 16: the toggle is disabled for an empty or invalid box and enabled for a valid scale", () => {
+test("DR1 line 16: the Layout tab is enabled for an empty, invalid or valid scale; its drawer controls are disabled until the scale parses", () => {
   const app = boot();
   openSheet(app);
-  assert.strictEqual(dr1Toggle(app).disabled, true, "enabled on an empty box");
+  assert.strictEqual(Boolean(dr1Toggle(app).disabled), false, "disabled on an empty box");
+  app.click(dr1Toggle(app));
+  assert.strictEqual(Boolean(app.els["scale-anchor-one"].disabled), true, "anchor enabled on an empty box");
+  app.click(app.els["scale-tab-scale"]);
   app.type("(D3) zzz");
-  assert.strictEqual(dr1Toggle(app).disabled, true, "enabled on an invalid box");
+  assert.strictEqual(Boolean(dr1Toggle(app).disabled), false, "disabled on an invalid box");
   app.type(W1_NONE);
-  assert.strictEqual(dr1Toggle(app).disabled, false, "disabled on a valid scale");
+  app.click(dr1Toggle(app));
+  assert.strictEqual(Boolean(app.els["scale-anchor-one"].disabled), false, "anchor disabled on a valid scale");
 });
 
-test("DR1 line 17: the toggle shows the drawer, sets aria-expanded and adds .on", () => {
+test("DR1 line 17: the Layout tab shows the drawer, sets aria-selected and adds .on", () => {
   const app = boot();
   dr1Open(app);
-  dr1Toggle(app).click();
+  app.click(dr1Toggle(app));
   assert.strictEqual(app.els["scale-drawer"].hidden, false);
-  assert.strictEqual(dr1Toggle(app).getAttribute("aria-expanded"), "true");
+  assert.strictEqual(app.els["scale-panel-layout"].hidden, false);
+  assert.strictEqual(dr1Toggle(app).getAttribute("aria-selected"), "true");
   assert.strictEqual(dr1Toggle(app).classList.contains("on"), true);
 });
 
-test("DR1 line 20: the toggle again hides the drawer and focus is on the toggle, also after Escape from a drawer control", () => {
+test("DR1 line 20: the Scale tab hides the drawer and sets the tab state", () => {
   const app = boot();
   dr1Open(app);
-  dr1Toggle(app).click();
-  dr1Toggle(app).click();
-  assert.strictEqual(app.els["scale-drawer"].hidden, true);
-  assert.strictEqual(dr1Toggle(app).getAttribute("aria-expanded"), "false");
+  app.click(dr1Toggle(app));
+  dr1Close(app);
+  assert.strictEqual(app.els["scale-panel-layout"].hidden, true);
+  assert.strictEqual(dr1Toggle(app).getAttribute("aria-selected"), "false");
   assert.strictEqual(dr1Toggle(app).classList.contains("on"), false);
-  assert.strictEqual(app.activeId(), "scale-layout-toggle");
+  assert.strictEqual(app.els["scale-tab-scale"].getAttribute("aria-selected"), "true");
+});
 
-  dr1Toggle(app).click();
+test("DR1 line 21: Escape on the Layout tab closes the sheet and pushes nothing, as on the Scale tab", () => {
+  const app = boot();
+  dr1Open(app);
+  app.click(dr1Toggle(app));
   app.els["scale-anchor-between"].focus();
   app.keydown("Escape");
-  assert.strictEqual(app.els["scale-drawer"].hidden, true);
-  assert.strictEqual(app.activeId(), "scale-layout-toggle");
+  app.history.state = { scalePage: true };
+  app.popstate();
+  assert.strictEqual(app.sheetOpen(), false, "Escape left the sheet open");
 });
 
-test("DR1 line 21: Escape closes the open drawer and keeps the sheet; a second Escape closes the sheet", () => {
-  const app = boot();
-  dr1Open(app);
-  dr1Toggle(app).click();
-  app.keydown("Escape");
-  assert.strictEqual(app.els["scale-drawer"].hidden, true);
-  assert.strictEqual(app.sheetOpen(), true, "the first Escape closed the sheet");
-  app.keydown("Escape");
-  assert.strictEqual(app.sheetOpen(), false, "the second Escape left the sheet open");
-});
-
-test("DR1 line 22: the sheet opens with the drawer closed, on Add and on Edit", () => {
+test("DR1 line 22: the sheet opens on the Scale tab with the drawer closed, on Add and on Edit", () => {
   const app = boot();
   const d = makeCustom(app);
   openSheet(app);
   app.type(W1_NONE);
-  dr1Toggle(app).click();
+  app.click(dr1Toggle(app));
   app.els["scale-back"].click();
   openSheet(app);
-  assert.strictEqual(app.els["scale-drawer"].hidden, true, "Add reopened with the drawer open");
-  assert.strictEqual(dr1Toggle(app).getAttribute("aria-expanded"), "false");
+  assert.strictEqual(app.els["scale-panel-layout"].hidden, true, "Add reopened on the Layout tab");
+  assert.strictEqual(dr1Toggle(app).getAttribute("aria-selected"), "false");
   app.els["scale-back"].click();
   openEdit(app, d);
-  dr1Toggle(app).click();
+  app.click(dr1Toggle(app));
   app.els["scale-back"].click();
   openEdit(app, d);
-  assert.strictEqual(app.els["scale-drawer"].hidden, true, "Edit reopened with the drawer open");
-  assert.strictEqual(dr1Toggle(app).getAttribute("aria-expanded"), "false");
+  assert.strictEqual(app.els["scale-panel-layout"].hidden, true, "Edit reopened on the Layout tab");
+  assert.strictEqual(dr1Toggle(app).getAttribute("aria-selected"), "false");
 });
-
-
 
 test("DR1 line 25: two anchor buttons carry aria-pressed, #1 CENTRED pressed by default", () => {
   const app = boot();
@@ -6468,7 +6466,7 @@ test("DR1 line 25: two anchor buttons carry aria-pressed, #1 CENTRED pressed by 
 test("DR1 line 26: #1 / #2 re-solves the plate and reaches the deck, the stored record and the share link", () => {
   const app = boot();
   dr1Open(app, DR1_PYGMY_MAKER);
-  dr1Toggle(app).click();
+  app.click(dr1Toggle(app));
   const before = app.els["scale-preview"].innerHTML;
   app.els["scale-anchor-between"].click();
   assert.notStrictEqual(app.els["scale-preview"].innerHTML, before, "the plate did not change");
@@ -6504,7 +6502,7 @@ test("DR1 line 28: both mirror switches sit inside the drawer, keep their ids, r
     for (; n; n = n._markupParent) if (n === app.els["scale-drawer"]) inside = true;
     assert.ok(inside, `#${id} is not inside #scale-drawer`);
   }
-  dr1Toggle(app).click();
+  app.click(dr1Toggle(app));
   const before = app.els["scale-preview"].innerHTML;
   app.els["scale-mirror"].click();
   assert.notStrictEqual(app.els["scale-preview"].innerHTML, before);
@@ -6518,6 +6516,7 @@ test("DR1 line 28: both mirror switches sit inside the drawer, keep their ids, r
 test("DR1 line 30: the notice names the button on Add and on Edit, and is hidden when nothing differs", () => {
   const app = boot();
   dr1Open(app, W1_BOTTOM);
+  app.click(dr1Toggle(app));
   assert.strictEqual(dr1Notice(app), "");
   app.els["scale-mirror"].click();
   assert.strictEqual(dr1Notice(app), "Layout not saved yet. GENERATE CARDS keeps it.");
@@ -6532,6 +6531,7 @@ test("DR1 line 30: the notice names the button on Add and on Edit, and is hidden
 
   const made = app.generate(W1_BOTTOM, { mirror: true, mirrorBottom: true });
   openEdit(app, app.registry()[made.value.id]);
+  app.click(dr1Toggle(app));
   assert.strictEqual(dr1Notice(app), "Layout changed from the default.");
   app.els["scale-anchor-between"].click();
   assert.strictEqual(dr1Notice(app), "Layout not saved yet. SAVE CHANGES keeps it.");
@@ -6540,6 +6540,7 @@ test("DR1 line 30: the notice names the button on Add and on Edit, and is hidden
   const fresh = boot();
   const plain = fresh.generate(W1_NONE);
   openEdit(fresh, fresh.registry()[plain.value.id]);
+  fresh.click(dr1Toggle(fresh));
   assert.strictEqual(dr1Notice(fresh), "", "a default stored layout raised a notice");
 });
 
@@ -6548,6 +6549,7 @@ test("DR1 line 117: an Edit deck without bottom notes stored with the old mirror
   const app = boot({ storage: { [key]: JSON.stringify([{ v: 4, s: W1_NONE, o: { mirror: true } }]) } });
   const d = Object.values(app.registry())[0];
   openEdit(app, d);
+  app.click(dr1Toggle(app));
   assert.strictEqual(dr1Notice(app), "Layout changed from the default.");
 });
 
@@ -6555,6 +6557,7 @@ test("DR1 notice baseline: the stored MIRROR BOTTOM is the baseline, so a bottom
   const key = boot().get("SCALES_KEY");
   const app = boot({ storage: { [key]: JSON.stringify([{ v: 4, s: W1_NONE, o: { mirror: true } }]) } });
   openEdit(app, Object.values(app.registry())[0]);
+  app.click(dr1Toggle(app));
   assert.strictEqual(dr1Notice(app), "Layout changed from the default.");
   app.type(W1_BOTTOM);
   assert.strictEqual(app.els["scale-mirror-bottom"].disabled, false);
@@ -6566,17 +6569,20 @@ test("DR1 notice baseline: deleting the bottom notes leaves MIRROR BOTTOM out of
   const both = boot();
   const a = both.generate(W1_BOTTOM, { mirror: true, mirrorBottom: true });
   openEdit(both, both.registry()[a.value.id]);
+  both.click(dr1Toggle(both));
   assert.strictEqual(dr1Notice(both), "Layout changed from the default.");
   both.type(W1_NONE);
   assert.strictEqual(dr1Notice(both), "Layout changed from the default.");
   const only = boot();
   const b = only.generate(W1_BOTTOM, { mirror: false, mirrorBottom: true });
   openEdit(only, only.registry()[b.value.id]);
+  only.click(dr1Toggle(only));
   assert.strictEqual(dr1Notice(only), "Layout changed from the default.");
   only.type(W1_NONE);
   assert.strictEqual(dr1Notice(only), "", "a bottom-only stored mirror still raised a notice with no bottom notes");
   const add = boot();
   dr1Open(add, W1_BOTTOM);
+  add.click(dr1Toggle(add));
   add.els["scale-mirror-bottom"].click();
   assert.strictEqual(dr1Notice(add), "Layout not saved yet. GENERATE CARDS keeps it.");
   add.type(W1_NONE);
@@ -6611,40 +6617,44 @@ test("DR1 16.1/16.2 sweep: old single mirror true, the bottom switch when notes 
 
   const edit = boot();
   openEdit(edit, makeCustom(edit, W1_BOTTOM));
-  dr1Toggle(edit).click();
+  edit.click(dr1Toggle(edit));
   edit.type("(D3) zzz");
   for (const id of ["scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next", "scale-layout-reset"]) {
     assert.ok(edit.els[id].disabled, `#${id} enabled while the scale does not parse`);
   }
 });
 
-test("DR1 line 31: a scale that stops parsing under an open drawer pauses the controls and keeps their values", () => {
+test("DR1 line 31: a scale that stops parsing disables the Layout controls, keeps their values and hides the hint over the held plate", () => {
   const app = boot();
   dr1Open(app, W1_BOTTOM);
+  app.click(dr1Toggle(app));
   app.els["scale-mirror"].click();
   app.els["scale-anchor-between"].click();
-  dr1Toggle(app).click();
+  dr1Close(app);
   app.type("[C3] (D3) zzz");
-  assert.strictEqual(app.els["scale-drawer"].hidden, false, "the drawer closed");
-  assert.strictEqual(dr1Toggle(app).disabled, false, "the toggle cannot close the drawer");
+  app.click(dr1Toggle(app));
+  assert.strictEqual(app.els["scale-panel-layout"].hidden, false, "the Layout tab closed");
+  assert.strictEqual(Boolean(dr1Toggle(app).disabled), false, "the Layout tab cannot be left");
   for (const id of ["scale-anchor-one", "scale-anchor-between", "scale-mirror", "scale-mirror-bottom"])
     assert.strictEqual(app.els[id].disabled, true, `#${id} stayed enabled`);
   assert.strictEqual(app.els["scale-mirror"].getAttribute("aria-pressed"), "true");
   assert.strictEqual(app.els["scale-anchor-between"].getAttribute("aria-pressed"), "true");
   assert.strictEqual(app.els["scale-preview"].classList.contains("stale"), true);
-  assert.strictEqual(app.els["scale-drawer-status"].textContent, DR1_STATUS.paused);
-  assert.notStrictEqual(app.els["scale-refusal"].textContent, "", "the refusal sentence is gone");
+  assert.strictEqual(app.els["scale-layout-hint"].hidden, true);
+  assert.strictEqual(app.els["scale-drawer-status"].hidden, true);
 });
 
-test("DR1 line 32: after the scale parses again each control follows its own rule and the status says so", () => {
+test("DR1 line 32: after the scale parses again each control follows its own rule and the hint is hidden", () => {
   const app = boot();
   dr1Open(app, W1_NONE);
+  app.click(dr1Toggle(app));
   app.els["scale-mirror"].click();
   app.els["scale-anchor-between"].click();
-  dr1Toggle(app).click();
+  dr1Close(app);
   app.type("(D3) zzz");
   app.type(W1_NONE);
-  assert.strictEqual(app.els["scale-drawer-status"].textContent, DR1_STATUS.ready);
+  app.click(dr1Toggle(app));
+  assert.strictEqual(app.els["scale-layout-hint"].hidden, true);
   assert.strictEqual(app.els["scale-mirror"].disabled, false);
   assert.strictEqual(app.els["scale-mirror"].getAttribute("aria-pressed"), "true");
   assert.strictEqual(app.els["scale-anchor-between"].getAttribute("aria-pressed"), "true");
@@ -6666,7 +6676,7 @@ test("DR1 line 33: a SMALL_LABELS warning is in #scale-msg once and nowhere in t
   const app = boot();
   dr1Open(app, CROWDED);
   for (const open of [false, true]) {
-    if (open) dr1Toggle(app).click();
+    if (open) app.click(dr1Toggle(app));
     const warn = app.els["scale-msg"].textContent;
     assert.match(warn, /Crowded pan/);
     for (const id of ["scale-drawer-status", "scale-drawer-hint", "scale-layout-state", "scale-layout-hint"])
@@ -6678,78 +6688,54 @@ test("DR1 line 33: a SMALL_LABELS warning is in #scale-msg once and nowhere in t
   assert.ok(SG_HTML.indexOf('id="scale-msg"') > slot.start && SG_HTML.indexOf('id="scale-msg"') < slot.end, "#scale-msg is not in the slot");
 });
 
-test("DR1 line 81: the status line is in the band after the plate, hidden while closed, polite and atomic", () => {
+test("DR1 line 81: the status line is the panel's next element after the band, hidden while closed, polite and atomic", () => {
   const app = boot();
   const s = app.els["scale-drawer-status"];
-  assert.strictEqual(s._markupParent, app.els["scale-plate-band"]);
+  assert.strictEqual(s._markupParent, app.els["scale-panel-layout"]);
+  assert.strictEqual(app.els["scale-plate-band"]._markupParent, app.els["scale-panel-layout"]);
   assert.strictEqual(app.els["scale-preview"]._markupParent, app.els["scale-plate-band"]);
   const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8").replace(/<!--[\s\S]*?-->/g, "");
   assert.ok(html.indexOf('id="scale-preview"') < html.indexOf('id="scale-drawer-status"'));
+  assert.match(html, /<p class="sheethint" id="scale-layout-hint">[^<]*<\/p>\s*<\/div>\s*<div id="scale-drawer-status"[^>]*><\/div>\s*<div id="scale-layout-zone">/,
+    "the band closes, the status follows it as its next sibling, and the layout zone follows the status");
   assert.strictEqual(dr1Markup("scale-drawer-status").attr("aria-live"), "polite");
   assert.strictEqual(dr1Markup("scale-drawer-status").attr("aria-atomic"), "true");
   dr1Open(app);
   assert.strictEqual(s.hidden, true, "visible while the drawer is closed");
-  dr1Toggle(app).click();
+  app.click(dr1Toggle(app));
   assert.strictEqual(s.hidden, false);
-  dr1Toggle(app).click();
+  dr1Close(app);
   assert.strictEqual(s.hidden, true);
   assert.strictEqual(s.textContent, "", "the status was not cleared on close");
 });
 
-test("DR1 hint row: the toggle row's hint is hidden while the drawer is open, shown again on close, and the drawer hint takes its place", () => {
+test("DR1 hint row: the empty hint is hidden on a valid scale, and the drawer hint shows only on the Layout tab", () => {
   const app = boot();
   dr1Open(app, W1_NONE);
   const hint = app.els["scale-layout-hint"];
   const dh = app.els["scale-drawer-hint"];
-  assert.ok(!hint.hidden, "the hint is hidden with the drawer closed");
-  dr1Toggle(app).click();
-  assert.ok(hint.hidden, "the hint stays visible with the drawer open");
+  assert.ok(hint.hidden, "the empty hint shows on a valid scale");
+  assert.ok(dh.hidden, "the drawer hint shows on the Scale tab");
+  app.click(dr1Toggle(app));
+  assert.ok(hint.hidden, "the empty hint shows on the Layout tab with a valid scale");
   assert.ok(!dh.hidden && dh.textContent === "Tap a note, then tap another note in the same ring to swap them. Or hold a note and drag it.",
-    "the drawer hint is not the DR2a sentence while the drawer is open");
-  dr1Toggle(app).click();
-  assert.ok(!hint.hidden, "the hint did not return on close");
-  dr1Toggle(app).click();
-  app.keydown("Escape");
-  assert.ok(!hint.hidden, "the hint did not return after Escape closed the drawer");
+    "the drawer hint is not the DR2a sentence while the Layout tab is open");
+  dr1Close(app);
+  assert.ok(dh.hidden, "the drawer hint stayed after the Scale tab opened");
 });
 
-test("DR1 open step 5: opening the drawer scrolls the zone into view with block nearest and behavior auto, and closing does not scroll", () => {
-  const app = boot();
-  dr1Open(app, W1_NONE);
-  const calls = [];
-  app.els["scale-layout-zone"].scrollIntoView = (o) => calls.push(o);
-  dr1Toggle(app).click();
-  assert.strictEqual(JSON.stringify(calls), JSON.stringify([{ block: "nearest", behavior: "auto" }]));
-  dr1Toggle(app).click();
-  assert.strictEqual(calls.length, 1, "closing the drawer scrolled the sheet");
-});
-
-test("DR2 lines 85, 132: the hint reads the empty sentence while the toggle is disabled and LAYOUT_HINT once the scale parses", () => {
+test("DR2 lines 85, 132: the hint reads the empty sentence while the scale is empty, is hidden on an invalid scale that holds a plate and once the scale parses", () => {
   const app = boot();
   openSheet(app);
   const hint = app.els["scale-layout-hint"];
   assert.strictEqual(hint.textContent, "Type a scale to adjust its layout.");
+  assert.strictEqual(hint.hidden, false);
   app.type(W1_NONE);
-  assert.strictEqual(hint.textContent,
-    "Layout is a guess. Open ADJUST LAYOUT to move a note, change the handpan orientation, or mirror the pan.");
+  assert.strictEqual(hint.hidden, true);
+  assert.ok(!hint.textContent.includes("Layout is a guess"), "the guess sentence is back");
   app.type("(D3) zzz");
   assert.strictEqual(hint.textContent, "Type a scale to adjust its layout.");
-});
-
-test("DR1 line 108: the toggle holds one aria-hidden close mark, U+00D7, and keeps its name", () => {
-  const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8").replace(/<!--[\s\S]*?-->/g, "");
-  const m = /<button[^>]*\bid="scale-layout-toggle"[^>]*>([\s\S]*?)<\/button>/.exec(html);
-  assert.ok(m, "no toggle in the markup");
-  const marks = [...m[1].matchAll(/<span\b[^>]*\baria-hidden="true"[^>]*>([^<]*)<\/span>/g)];
-  assert.strictEqual(marks.length, 1);
-  assert.ok(marks[0][1] === "×" || marks[0][1] === "&times;", `the mark reads ${marks[0][1]}`);
-  const app = boot();
-  dr1Open(app);
-  assert.strictEqual(dr1Markup("scale-layout-toggle").attr("aria-label"), "Adjust layout");
-  for (const open of [false, true]) {
-    if (open) dr1Toggle(app).click();
-    assert.strictEqual(dr1Toggle(app).getAttribute("aria-label"), null, "the app rewrote the toggle's name; the markup's stays");
-  }
+  assert.strictEqual(hint.hidden, true, "an invalid scale holds the last plate, which is the user's own");
 });
 
 test("DR1 line 40: the pan drawn with interactive off is byte-identical to the shipped output for all five built-in decks", () => {
@@ -6775,7 +6761,7 @@ test("DR1 line 40: the pan drawn with interactive off is byte-identical to the s
 test("DR1 line 114: MIRROR TOP writes status row 14 and MIRROR BOTTOM row 21", () => {
   const app = boot();
   dr1Open(app, W1_BOTTOM);
-  dr1Toggle(app).click();
+  app.click(dr1Toggle(app));
   const s = app.els["scale-drawer-status"];
   app.els["scale-mirror"].click();
   assert.strictEqual(s.textContent, "Top mirror on.");
@@ -6796,13 +6782,11 @@ test("DR1 line 114: MIRROR TOP writes status row 14 and MIRROR BOTTOM row 21", (
 test("DR1 line 19 note, row 19: opening over a pan with no ring of two notes says so", () => {
   const app = boot();
   dr1Open(app, "(D3) A3");
-  dr1Toggle(app).click();
+  app.click(dr1Toggle(app));
   assert.strictEqual(app.els["scale-drawer-status"].textContent, DR1_STATUS.noRing);
-  dr1Toggle(app).click();
-  dr1Open(boot(), W1_NONE);
   const fine = boot();
   dr1Open(fine, W1_NONE);
-  dr1Toggle(fine).click();
+  fine.click(dr1Toggle(fine));
   assert.strictEqual(fine.els["scale-drawer-status"].textContent, "");
 });
 
@@ -6810,7 +6794,7 @@ test("DR1 line 115: Pygmy typed on Add opens #1 CENTRED; one tap on #1 / #2 give
   const app = boot();
   dr1Open(app, DR1_PYGMY_MAKER);
   assert.strictEqual(app.els["scale-anchor-one"].getAttribute("aria-pressed"), "true");
-  dr1Toggle(app).click();
+  app.click(dr1Toggle(app));
   app.els["scale-anchor-between"].click();
   app.els["scale-generate"].click();
   const deck = app.registry()[app.deckId()];
@@ -6821,47 +6805,16 @@ test("DR1 line 115: Pygmy typed on Add opens #1 CENTRED; one tap on #1 / #2 give
   assert.strictEqual(app.els["scale-anchor-between"].getAttribute("aria-pressed"), "true");
 });
 
-test("DR1 line 121: closing over an invalid or empty box lands on the field; over a valid one on the toggle; Escape from the field stays there", () => {
-  const app = boot();
-  dr1Open(app, W1_NONE);
-  dr1Toggle(app).click();
-  app.type("(D3) zzz");
-  app.els["scale-anchor-one"].focus();
-  dr1Toggle(app).click();
-  assert.strictEqual(app.activeId(), "scale-layout-toggle");
-  assert.strictEqual(dr1Toggle(app).getAttribute("aria-disabled"), "true");
-  assert.strictEqual(dr1Toggle(app).disabled, false);
-
-  const empty = boot();
-  dr1Open(empty, W1_NONE);
-  dr1Toggle(empty).click();
-  empty.type("");
-  empty.els["scale-mirror"].focus();
-  empty.keydown("Escape");
-  assert.strictEqual(empty.activeId(), "scale-layout-toggle");
-  assert.strictEqual(dr1Toggle(empty).getAttribute("aria-disabled"), "true");
-
-  const typing = boot();
-  dr1Open(typing, W1_NONE);
-  dr1Toggle(typing).click();
-  typing.els["scale-box"].focus();
-  typing.keydown("Escape");
-  assert.strictEqual(typing.els["scale-drawer"].hidden, true);
-  assert.strictEqual(typing.activeId(), "scale-box");
-});
-
-
-
-test("DR1 line 131: on Edit, Escape from NOTE closes the drawer, keeps the sheet and focuses the toggle", () => {
+test("DR1 line 131: on Edit, Escape from NOTE on the Layout tab closes the sheet", () => {
   const app = boot();
   const d = makeCustom(app, W1_NONE);
   openEdit(app, d);
-  dr1Toggle(app).click();
+  app.click(dr1Toggle(app));
   app.els["scale-note-prev"].focus();
   app.keydown("Escape");
-  assert.strictEqual(app.els["scale-drawer"].hidden, true);
-  assert.strictEqual(app.sheetOpen(), true);
-  assert.strictEqual(app.activeId(), "scale-layout-toggle");
+  app.history.state = { scalePage: true };
+  app.popstate();
+  assert.strictEqual(app.sheetOpen(), false);
 });
 
 /* ---- DR1 rule S (plan 20.16): the layout state, enumerated ---------------- */
@@ -6874,7 +6827,7 @@ const S_NOTICE = {
   edit: { true: { true: "Layout not saved yet. SAVE CHANGES keeps it.", false: "Layout not saved yet. SAVE CHANGES keeps it." },
           false: { true: "Layout changed from the default.", false: "" } },
 };
-const S_HINT = { valid: "Layout is a guess. Open ADJUST LAYOUT to move a note, change the handpan orientation, or mirror the pan.",
+const S_HINT = {
                  empty: "Type a scale to adjust its layout." };
 const S_BUTTON = { add: "GENERATE CARDS", edit: "SAVE CHANGES" };
 const S_BOXES = {
@@ -6885,7 +6838,7 @@ const S_BOXES = {
 };
 const S_HAS_BOTTOM = { plain: false, bottom: true, inner: false, innerBottom: true };
 
-test("DR1 rule S: notice, toggle, switches, anchors and hint match spec 16 for every sheet, stored layout, box and press", () => {
+test("DR1 rule S: notice, switches, anchors and hint match spec 16 for every sheet, stored layout, box and press", () => {
   const key = boot().get("SCALES_KEY");
   const misses = [];
   let cells = 0, snapshots = 0;
@@ -6904,18 +6857,21 @@ test("DR1 rule S: notice, toggle, switches, anchors and hint match spec 16 for e
           mb: typeof stored.mirrorBottom === "boolean" ? stored.mirrorBottom : !!stored.mirror }
       : { anchor: "one", mirror: false, mb: false };
     const M = { anchor: kept.anchor, mirror: kept.mirror, hasBottom: sheet === "edit" && S_HAS_BOTTOM[boxKey],
-                valid: sheet === "edit", open: false };
+                valid: sheet === "edit", held: sheet === "edit", empty: sheet !== "edit", open: false };
     M.mb = M.hasBottom ? kept.mb : false;
     const box = (k) => {
       app.type(k === "invalid" ? "xyz" : k === "empty" ? "" : S_BOXES[k]);
+      M.empty = k === "empty";
       if (k === "invalid" || k === "empty") { M.valid = false; return; }
       M.valid = true;
+      M.held = true;
       if (S_HAS_BOTTOM[k] !== M.hasBottom) { M.hasBottom = S_HAS_BOTTOM[k]; M.mb = false; }
     };
     const press = (id) => {
-      const e = app.els[id];
+      const e = app.els[id === "scale-layout-toggle" ? "scale-tab-layout" : id];
       if (e.disabled || e.getAttribute("aria-disabled") === "true" || !e.getClientRects().length) return false;
-      e.focus(); e.click();
+      if (id === "scale-layout-toggle") app.click(app.els[M.open ? "scale-tab-scale" : "scale-tab-layout"]);
+      else { e.focus(); e.click(); }
       if (id === "scale-layout-toggle") M.open = !M.open;
       if (id === "scale-mirror") M.mirror = !M.mirror;
       if (id === "scale-mirror-bottom") M.mb = !M.mb;
@@ -6931,17 +6887,17 @@ test("DR1 rule S: notice, toggle, switches, anchors and hint match spec 16 for e
       const differs = M.anchor !== kept.anchor || M.mirror !== kept.mirror || (M.hasBottom && M.mb !== kept.mb);
       const custom = kept.anchor !== "one" || kept.mirror || (kept.mb && M.hasBottom);
       sgNoticeInSlot();
-      bad("notice", S_NOTICE[sheet][differs][custom], els["scale-layout-state"].hidden ? "" : els["scale-layout-state"].textContent);
-      bad("toggle enabled", M.valid || M.open || app.activeId() === "scale-layout-toggle", !els["scale-layout-toggle"].disabled);
-      bad("toggle aria-disabled", !M.valid && !M.open && app.activeId() === "scale-layout-toggle" ? "true" : null, els["scale-layout-toggle"].getAttribute("aria-disabled"));
-      bad("toggle expanded", String(M.open), els["scale-layout-toggle"].getAttribute("aria-expanded"));
-      bad("toggle on", M.open, els["scale-layout-toggle"].classList.contains("on"));
-      bad("hint shown", !M.open, shown("scale-layout-hint"));
-      if (!M.open) bad("hint text", M.valid ? S_HINT.valid : S_HINT.empty, els["scale-layout-hint"].textContent);
+      bad("notice", M.open ? S_NOTICE[sheet][differs][custom] : "", els["scale-layout-state"].hidden ? "" : els["scale-layout-state"].textContent);
+      bad("layout tab enabled", true, !els["scale-tab-layout"].disabled);
+      bad("layout tab selected", String(M.open), els["scale-tab-layout"].getAttribute("aria-selected"));
+      bad("layout tab on", M.open, els["scale-tab-layout"].classList.contains("on"));
+      const hintOn = M.open && !M.valid && (M.empty || !M.held);
+      bad("hint shown", hintOn, shown("scale-layout-hint"));
+      if (hintOn) bad("hint text", S_HINT.empty, els["scale-layout-hint"].textContent);
       bad("drawer shown", M.open, shown("scale-drawer"));
-      bad("status shown", M.open, shown("scale-drawer-status"));
+      bad("status shown", M.open && M.valid, shown("scale-drawer-status"));
       if (!M.open) bad("status cleared", "", els["scale-drawer-status"].textContent);
-      bad("drawer hint", M.open ? "Tap a note, then tap another note in the same ring to swap them. Or hold a note and drag it." : "",
+      bad("drawer hint", M.open && M.valid ? "Tap a note, then tap another note in the same ring to swap them. Or hold a note and drag it." : "",
         shown("scale-drawer-hint") ? els["scale-drawer-hint"].textContent : "");
       for (const id of ["scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next"]) bad(`${id} shown`, false, shown(id));
       for (const id of ["scale-layout-reset", "scale-fine-toggle"]) bad(`${id} shown`, M.open, shown(id));
@@ -7045,7 +7001,7 @@ const d2Id = (n) => Array.from({ length: n }, (_, i) => i);
 function d2Open(app, text, edit) {
   if (edit) openEdit(app, makeCustom(app, text));
   else { openSheet(app); app.type(text); }
-  app.els["scale-layout-toggle"].click();
+  app.click(app.els["scale-tab-layout"]);
 }
 const d2Hit = (app, name) => {
   const h = app.hits().find((n) => String(n.getAttribute("aria-label")).startsWith(name + ","));
@@ -7183,9 +7139,9 @@ for (const edit of [false, true]) {
     assert.deepStrictEqual(d2Rover(app), ["E4"]);
     assert.deepStrictEqual(d2Pressed(app), ["C4"]);
     app.press(d2Hit(app, "E4"), "Tab");
-    assert.strictEqual(app.activeId(), "scale-layout-toggle");
+    assert.strictEqual(app.activeId(), "scale-anchor-one");
     assert.deepStrictEqual(d2Rover(app), ["C4"], "tab entry is not the picked note");
-    app.press(app.els["scale-layout-toggle"], "Tab", { shiftKey: true });
+    app.press(app.els["scale-anchor-one"], "Tab", { shiftKey: true });
     assert.strictEqual(d2Focus(app), "C4");
     assert.deepStrictEqual(d2Pressed(app), ["C4"]);
     assert.strictEqual(d2Seats(app), null);
@@ -7207,15 +7163,14 @@ for (const edit of [false, true]) {
     assert.deepStrictEqual(d2Norm(d2Seats(app)), { rim: [0, 2, 1, 3, 4, 5, 6, 7] });
     assert.strictEqual(d2Focus(app), "C4", "focus did not go to the picked note from a SEAT button");
     d2Tap(app, "D4");
-    app.els["scale-box"].focus();
+    app.els["scale-anchor-one"].focus();
     app.keydown("Escape");
     assert.strictEqual(d2Pick(app), null);
     assert.strictEqual(app.els["scale-drawer"].hidden, false);
     app.keydown("Escape");
-    assert.strictEqual(app.els["scale-drawer"].hidden, true);
-    assert.strictEqual(app.activeId(), "scale-box", "focus left the field");
-    app.keydown("Escape");
-    assert.strictEqual(app.sheetOpen(), false);
+    app.history.state = { scalePage: true };
+    app.popstate();
+    assert.strictEqual(app.sheetOpen(), false, "Escape with no pick left the sheet open");
   });
 
   test(`DR2a rule P (54, 55, 106): one-note rings, rows 2 and 10, and a pan with no ring of two, ${where}`, () => {
@@ -7242,9 +7197,9 @@ for (const edit of [false, true]) {
 
     const two = boot();
     d2Open(two, D2_AMARA, edit);
-    two.els["scale-layout-toggle"].click();
+    dr1Close(two);
     two.type("(D3) A3 | C4");
-    two.els["scale-layout-toggle"].click();
+    two.click(two.els["scale-tab-layout"]);
     assert.strictEqual(d2Status(two), "This pan has no ring with two notes, so there is nothing to rearrange.");
     for (const id of ["scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next"])
       assert.strictEqual(two.els[id].disabled, true, id);
@@ -7305,7 +7260,7 @@ test("DR2a (59, 76, 99, 116, 12): SEAT buttons follow the pick, RESET LAYOUT fol
   assert.strictEqual(app.els["scale-mirror"].getAttribute("aria-pressed"), "false");
   assert.strictEqual(app.els["scale-anchor-between"].getAttribute("aria-pressed"), "false");
   assert.strictEqual(app.els["scale-anchor-one"].getAttribute("aria-pressed"), "true");
-  assert.strictEqual(app.activeId(), "scale-layout-toggle");
+  assert.strictEqual(app.activeId(), "scale-tab-layout");
   assert.deepStrictEqual(["scale-seat-prev", "scale-seat-next"].map((id) => app.els[id].disabled), [true, true]);
 });
 
@@ -7313,16 +7268,15 @@ test("DR2a (68, 122, 99, 18): closing the drawer, or a scale that stops parsing,
   const app = boot();
   d2Open(app, D2_AMARA, false);
   d2Tap(app, "A3"); d2Tap(app, "C4"); d2Tap(app, "D4");
-  app.els["scale-layout-toggle"].click();
+  dr1Close(app);
   assert.strictEqual(d2Pick(app), null);
   assert.deepStrictEqual(d2Norm(d2Seats(app)), { rim: [1, 0, 2, 3, 4, 5, 6, 7] });
-  app.els["scale-layout-toggle"].click();
+  app.click(app.els["scale-tab-layout"]);
   d2Tap(app, "A3");
   d2Hit(app, "A3").focus();
   app.type("(D3) A3 C4 D4 E4 F4 G4 A4 C5 zzz");
   assert.strictEqual(d2Pick(app), null);
   assert.strictEqual(app.hits().length, 0, "the plate keeps a hit layer for a scale that does not parse");
-  assert.strictEqual(app.activeId(), "scale-layout-toggle");
   for (const id of ["scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next", "scale-layout-reset"])
     assert.strictEqual(app.els[id].disabled, true, id);
   app.type(D2_AMARA);
@@ -7330,27 +7284,9 @@ test("DR2a (68, 122, 99, 18): closing the drawer, or a scale that stops parsing,
   assert.strictEqual(app.hits().length, 8);
 });
 
-test("DR2a item 7 (121): closing the drawer over a scale that does not parse leaves the toggle focused, aria-disabled, then disabled on blur", () => {
-  const app = boot();
-  d2Open(app, D2_AMARA, false);
-  app.type("(D3) zzz");
-  app.els["scale-note-next"].focus();
-  app.els["scale-layout-toggle"].click();
-  assert.strictEqual(app.els["scale-layout-toggle"].disabled, false);
-  assert.strictEqual(app.els["scale-layout-toggle"].getAttribute("aria-disabled"), "true");
-  assert.strictEqual(app.activeId(), "scale-layout-toggle");
-  assert.strictEqual(app.els["scale-layout-hint"].textContent, "Type a scale to adjust its layout.");
-  app.els["scale-layout-toggle"].click();
-  assert.strictEqual(app.els["scale-drawer"].hidden, true, "a press on the aria-disabled toggle opened the drawer");
-  app.els["scale-box"].focus();
-  app.els["scale-layout-toggle"].dispatchEvent({ type: "blur" });
-  assert.strictEqual(app.els["scale-layout-toggle"].disabled, true);
-  assert.strictEqual(app.els["scale-layout-toggle"].hasAttribute("aria-disabled"), false);
-});
-
-test("DR2a (83, 132, 130): the DOM carries the new controls in the order of 20.24, the old group is gone, the closed hint is LAYOUT_HINT", () => {
+test("DR2a (83, 132, 130): the DOM carries the new controls in the order of 20.24, the old group is gone, the hint is hidden on a valid scale", () => {
   const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8").replace(/<!--[\s\S]*?-->/g, "");
-  const order = ["scale-layout-toggle", "scale-anchor-one", "scale-anchor-between", "scale-mirror",
+  const order = ["scale-tab-layout", "scale-anchor-one", "scale-anchor-between", "scale-mirror",
     "scale-mirror-bottom", "scale-fine-toggle", "scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next",
     "scale-layout-reset"];
   const at = order.map((id) => html.indexOf(`id="${id}"`));
@@ -7370,7 +7306,8 @@ test("DR2a (83, 132, 130): the DOM carries the new controls in the order of 20.2
   const app = boot();
   openSheet(app);
   app.type(D2_AMARA);
-  assert.strictEqual(app.els["scale-layout-hint"].textContent, "Layout is a guess. Open ADJUST LAYOUT to move a note, change the handpan orientation, or mirror the pan.");
+  assert.strictEqual(app.els["scale-layout-hint"].hidden, true);
+  assert.ok(!app.els["scale-layout-hint"].textContent.includes("Layout is a guess"));
   const drawer = boot();
   d2Open(drawer, D2_AMARA, false);
   assert.strictEqual(drawer.els["scale-drawer-hint"].hidden, false);
@@ -7384,7 +7321,6 @@ test("DR3 Tab order on Add and Edit, finer controls closed and open", () => {
     for (const open of [false, true]) {
       const app = boot();
       d2Open(app, DR1_PYGMY_MAKER, edit);
-      showImport(app);
       if (open) app.els["scale-fine-toggle"].click();
       d2Tap(app, "G3");
       app.els["scale-seat-next"].click();
@@ -7396,23 +7332,24 @@ test("DR3 Tab order on Add and Edit, finer controls closed and open", () => {
         if (here === "scale-back") break;
         seen.push(here);
       }
-      const want = [edit ? "scale-name" : null, "scale-box", "import-open", "plate", "scale-layout-toggle", "scale-anchor-one",
+      const want = ["scale-tab-layout", "plate", "scale-anchor-one",
         "scale-anchor-between", "scale-mirror", "scale-mirror-bottom", "scale-fine-toggle",
         ...(open ? ["scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next"] : []),
-        "scale-layout-reset"].filter((x) => x !== null);
+        "scale-layout-reset", ...Array(6).fill("dyn"), "scale-generate", ...(edit ? ["scale-delete"] : [])];
       const ctx = `edit=${edit} open=${open}: ${seen}`;
-      assert.deepStrictEqual(seen.slice(0, want.length), want, ctx);
+      assert.deepStrictEqual(seen, want, ctx);
       assert.strictEqual(seen.filter((x) => x === "plate").length, 1, "the plate is more than one Tab stop");
       if (!open) for (const id of ["scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next"]) {
         assert.ok(!seen.includes(id), `${id} is a Tab stop while the finer controls are closed`);
       }
-      app.els["scale-layout-reset"].focus();
+      const last = seen[seen.length - 1];
+      app.els[last].focus();
       const back = [];
-      for (let i = 0; i < want.length - 1; i += 1) {
+      for (let i = 0; i < seen.length - 1; i += 1) {
         app.press(app.els["scale-sheet"], "Tab", { shiftKey: true });
         back.push(app.activeHit() !== null ? "plate" : app.activeId());
       }
-      assert.deepStrictEqual(back, want.slice(0, -1).reverse(), `Shift+Tab ${ctx}`);
+      assert.deepStrictEqual(back, seen.slice(0, -1).reverse(), `Shift+Tab ${ctx}`);
     }
   }
 });
@@ -7501,7 +7438,7 @@ for (const edit of [false, true]) {
     const a = { rim: 3, inner: 3, bottom: 3 };
     d2Open(app, d2Build(a).text, edit);
     d2Tap(app, "E3"); d2Tap(app, "F3");
-    app.els["scale-layout-toggle"].click();
+    dr1Close(app);
     app.type(d2Build({ ...a, rim: 5 }).text);
     assert.deepStrictEqual(d2Seats(app), null);
     app.type(d2Build(a).text);
@@ -7509,13 +7446,13 @@ for (const edit of [false, true]) {
     app.type("(D3) zzz");
     app.type(d2Build(a).text);
     assert.deepStrictEqual(d2Norm(d2Seats(app)), { rim: [1, 0, 2] });
-    app.els["scale-layout-toggle"].click();
+    app.click(app.els["scale-tab-layout"]);
     assert.strictEqual(d2Status(app), "");
     const none = boot();
     d2Open(none, d2Build(a).text, edit);
-    none.els["scale-layout-toggle"].click();
+    dr1Close(none);
     none.type("(D3) A3 | C4");
-    none.els["scale-layout-toggle"].click();
+    none.click(none.els["scale-tab-layout"]);
     assert.strictEqual(d2Status(none), "This pan has no ring with two notes, so there is nothing to rearrange.");
   });
 }
@@ -7526,6 +7463,7 @@ test("DR2a item 6 (91): on Edit a changed count resets that ring only and the no
   const d = makeCustom(app, d2Build(a).text);
   app.run(`CUSTOM[${JSON.stringify(d.id)}].options.seats = {"rim":[1,0,2],"inner":[2,1,0]}`);
   openEdit(app, app.registry()[d.id]);
+  app.click(dr1Toggle(app));
   assert.strictEqual(dr1Notice(app), "Layout changed from the default.");
   app.type(d2Build({ ...a, rim: 4 }).text);
   assert.strictEqual(dr1Notice(app), "Layout not saved yet. SAVE CHANGES keeps it. The rim seats were reset.");
@@ -7565,7 +7503,7 @@ test("DR2a rule R (item 8, F1): under a standing refusal every layout control an
   app.els["scale-generate"].click();
   const refusal = app.els["scale-refusal"].textContent;
   assert.ok(refusal, "no refusal stands");
-  app.els["scale-layout-toggle"].click();
+  app.click(app.els["scale-tab-layout"]);
   const same = () => {
     assert.strictEqual(app.els["scale-refusal"].textContent, refusal, "the refusal text changed");
     assert.strictEqual(app.els["scale-generate"].disabled, true, "the primary button was enabled");
@@ -7603,7 +7541,6 @@ test("DR2a rule R (item 8, F1): under a standing refusal every layout control an
 /* Rule C, typed one keystroke at a time with the drawer open (review 1, F-2):
  * the keystroke that ends a pause and also changes a ring's count gives ONE
  * message, row 18b first, then the count sentence. */
-const D2_READY = "Layout is ready again.";
 const d2Keystrokes = (app, steps) => steps.map((t) => { app.type(t); return d2Status(app); });
 
 test("DR2a rule C (F-2): a bottom note typed into a pan with swapped bottom seats, keystroke by keystroke", () => {
@@ -7612,28 +7549,28 @@ test("DR2a rule C (F-2): a bottom note typed into a pan with swapped bottom seat
   d2Tap(app, "C3"); d2Tap(app, "D3");
   const head = "[C3] [D3] ", tail = "(F3) G3 A3 B3 C4", ins = "[E3] ";
   const said = d2Keystrokes(app, Array.from({ length: ins.length }, (_, i) => head + ins.slice(0, i + 1) + tail));
-  const paused = "Layout is paused until the scale parses.";
+  const paused = "";
   assert.deepStrictEqual(said, [paused, paused, paused, paused,
-    `${D2_READY} The bottom now has 3 notes, so its seats were reset.`]);
+    `The bottom now has 3 notes, so its seats were reset.`]);
 });
 
-test("DR2a rule C (F-2): the zzz case, rim 8 to 3, ends its pause with one message", () => {
+test("DR2a rule C (F-2): the zzz case, rim 8 to 3, says the count sentence once and nothing while the scale does not parse", () => {
   const app = boot();
   d2Open(app, D2_AMARA, false);
   d2Tap(app, "A3"); d2Tap(app, "C4");
   const said = d2Keystrokes(app, ["(D3) A3 C4 D4 z", "(D3) A3 C4 D4 zz", "(D3) A3 C4 D4 zzz", "(D3) A3 C4 D4 zz", "(D3) A3 C4 D4 z", "(D3) A3 C4 D4"]);
-  const paused = "Layout is paused until the scale parses.";
+  const paused = "";
   assert.deepStrictEqual(said, [paused, paused, paused, paused, paused,
-    `${D2_READY} The rim now has 3 notes, so its seats were reset.`]);
+    `The rim now has 3 notes, so its seats were reset.`]);
 });
 
-test("DR2a rule C (F-2): a restore that ends a pause is row 18b then row 16", () => {
+test("DR2a rule C (F-2): a restore after an invalid keystroke says row 16 once", () => {
   const app = boot();
   d2Open(app, D2_AMARA, false);
   d2Tap(app, "A3"); d2Tap(app, "C4");
   const said = d2Keystrokes(app, ["(D3) A3 C4 D4 E4 F4 G4 A4", "(D3) A3 C4 D4 E4 F4 G4 A4 z", "(D3) A3 C4 D4 E4 F4 G4 A4 C5"]);
-  assert.deepStrictEqual(said, ["The rim now has 7 notes, so its seats were reset.", "Layout is paused until the scale parses.",
-    `${D2_READY} The rim is back to 8 notes, so its earlier seats were restored.`]);
+  assert.deepStrictEqual(said, ["The rim now has 7 notes, so its seats were reset.", "",
+    `The rim is back to 8 notes, so its earlier seats were restored.`]);
 });
 
 /** The marks of a picked note, split by class: each tag's attributes. */
@@ -7700,20 +7637,19 @@ test("DR2a (70): the arrangement reaches the generated deck, the stored record a
 });
 
 for (const edit of [false, true]) {
-  test(`DR2a (18): opening the drawer focuses the first pickable note and no other control, ${edit ? "Edit" : "Add"}`, () => {
+  test(`DR2a (18): opening the Layout tab focuses no note and arms none, ${edit ? "Edit" : "Add"}`, () => {
     const app = boot();
     d2Open(app, D2_AMARA, edit);
-    assert.strictEqual(d2Focus(app), "A3", "focus did not move to the first pickable note on open");
-    assert.deepStrictEqual(d2Rover(app), ["A3"]);
+    assert.strictEqual(app.activeHit(), null, "a note is focused on open");
+    assert.strictEqual(d2Pick(app), null, "a note is armed on open");
   });
 }
 
-test("DR2a (18): a pan whose only ring of two is the bottom focuses the first note of that ring", () => {
+test("DR2a (18): a pan whose only ring of two is the bottom opens the Layout tab with no note focused or armed", () => {
   const app = boot();
   d2Open(app, "[C3] [D3] (A3) E4", false);
-  const name = d2Focus(app);
-  assert.ok(app.activeHit() !== null, "focus is not on a note: " + name);
-  assert.match(name, /^[CD]3$/, "the first pickable note is in the bottom ring");
+  assert.strictEqual(app.activeHit(), null);
+  assert.strictEqual(d2Pick(app), null);
 });
 
 test("DR2a (71): MIRROR TOP then #1 / #2 leave every permutation as it was", () => {
@@ -7933,12 +7869,12 @@ describe("DR2b drag, mouse", () => {
     assert.strictEqual(dgSeats(app), null, "the release after the cancel swapped");
   });
 
-  test("DR2b (16.3): closing the drawer or a reset with a drag in flight cancels the gesture", () => {
-    for (const how of ["scale-layout-reset", "scale-layout-toggle"]) {
+  test("DR2b (16.3): leaving the Layout tab or a reset with a drag in flight cancels the gesture", () => {
+    for (const how of ["scale-layout-reset", "scale-tab-scale"]) {
       const app = dgOpen({});
       const g = DG.down(app, "A3");
       DG.moveTo(app, g, g.x + 6, g.y);
-      app.els[how].click();
+      if (how === "scale-layout-reset") app.els[how].click(); else app.click(app.els[how]);
       assert.strictEqual(DG.ghostEls(app).length, 0, how);
       assert.strictEqual(dgPress(app), null, how);
     }
@@ -7991,9 +7927,9 @@ describe("DR2b drag, touch (rule T traces on a controlled clock)", () => {
 
   test("DR2b (47): the touchmove listener leaves with the drawer", () => {
     const app = dgOpen({});
-    app.els["scale-layout-toggle"].click();
+    dr1Close(app);
     assert.strictEqual((app.els["scale-preview"].listeners.touchmove || []).length, 0);
-    app.els["scale-layout-toggle"].click();
+    app.click(app.els["scale-tab-layout"]);
     assert.strictEqual(app.els["scale-preview"].listeners.touchmove.length, 1);
   });
 
@@ -8285,7 +8221,7 @@ describe("DR2b review 1 (20.22 steps 2, 3, 5, 6)", () => {
       app.els["scale-generate"].click();
       const refusal = app.els["scale-refusal"].textContent;
       assert.ok(refusal, "no refusal stands");
-      app.els["scale-layout-toggle"].click();
+      app.click(app.els["scale-tab-layout"]);
       const base = d2Drawn(app);
       if (how === "mouse") DG.mouseDrag(app, "G3", "Ab3"); else DG.touchDrag(app, "G3", "Ab3");
       assert.deepStrictEqual(d2Drawn(app), { ...base, G3: base.Ab3, Ab3: base.G3 }, `${how}: the drag did not redraw`);
@@ -8527,13 +8463,13 @@ test("DR3 disclosure: closed on every sheet open, kept across a drawer close", (
     assert.strictEqual(dr3Fine(app).textContent.trim(), "HIDE FINER CONTROLS", ctx);
     assert.strictEqual(dr3Fine(app).getAttribute("aria-expanded"), "true", ctx);
     for (const id of DR3_STEPS) assert.strictEqual(app.els[id].getClientRects().length, 1, `${ctx} #${id} is not rendered open`);
-    app.els["scale-layout-toggle"].click();
-    app.els["scale-layout-toggle"].click();
+    app.click(app.els["scale-tab-layout"]);
+    app.click(app.els["scale-tab-layout"]);
     assert.strictEqual(app.els["scale-fine"].hidden, false, `${ctx}: a drawer close and reopen shut the finer controls`);
     assert.strictEqual(dr3Fine(app).getAttribute("aria-expanded"), "true", ctx);
     app.run("closeScaleSheet()");
     if (edit) openEdit(app, Object.values(app.registry())[0]); else openSheet(app);
-    app.els["scale-layout-toggle"].click();
+    app.click(app.els["scale-tab-layout"]);
     assert.strictEqual(app.els["scale-fine"].hidden, true, `${ctx}: the sheet reopened with the finer controls open`);
     assert.strictEqual(dr3Fine(app).textContent.trim(), "HARD TO TAP? SHOW FINER CONTROLS", ctx);
     assert.strictEqual(dr3Fine(app).getAttribute("aria-expanded"), "false", ctx);
@@ -8559,23 +8495,20 @@ test("DR3 disclosure: toggling moves no focus, and closing under a focused step 
   assert.strictEqual(app.activeId(), "scale-fine-toggle");
 });
 
-test("DR3 Escape from the disclosure closes the drawer and focuses the toggle", () => {
+test("DR3 Escape from the disclosure on the Layout tab closes the sheet", () => {
   const app = dr3Open(boot(), DR3_D3, false);
   dr3Fine(app).focus();
   app.keydown("Escape");
-  assert.strictEqual(app.els["scale-drawer"].hidden, true);
-  assert.strictEqual(app.sheetOpen(), true);
-  assert.strictEqual(app.activeId(), "scale-layout-toggle");
-  app.els["scale-layout-toggle"].click();
-  d2Tap(app, "D4");
-  assert.ok(d2Pick(app));
-  dr3Fine(app).focus();
-  app.keydown("Escape");
-  assert.strictEqual(d2Pick(app), null, "Escape on the disclosure did not put the pick down");
-  assert.strictEqual(app.els["scale-drawer"].hidden, false, "the first Escape closed the drawer under a pick");
-  app.keydown("Escape");
-  assert.strictEqual(app.els["scale-drawer"].hidden, true);
-  assert.strictEqual(app.activeId(), "scale-layout-toggle");
+  assert.strictEqual(app.sheetOpen(), false);
+  const again = dr3Open(boot(), DR3_D3, false);
+  d2Tap(again, "D4");
+  assert.ok(d2Pick(again));
+  dr3Fine(again).focus();
+  again.keydown("Escape");
+  assert.strictEqual(d2Pick(again), null, "Escape on the disclosure did not put the pick down");
+  assert.strictEqual(again.sheetOpen(), true, "the first Escape closed the sheet under a pick");
+  again.keydown("Escape");
+  assert.strictEqual(again.sheetOpen(), false);
 });
 
 const dr3Reset = (app) => app.els["scale-layout-reset"];
@@ -8624,7 +8557,7 @@ test("DR3 reset returns seats, both mirrors and orientation to the default and w
   assert.deepStrictEqual(d2Drawn(app), home, "the plate is not back at the default");
   assert.strictEqual(d2Status(app), "Layout reset.");
   assert.strictEqual(dr3Reset(app).disabled, true);
-  assert.strictEqual(app.activeId(), "scale-layout-toggle");
+  assert.strictEqual(app.activeId(), "scale-tab-layout");
   assert.strictEqual(app.els["scale-fine"].hidden, false, "the disclosure state changed");
   app.els["scale-generate"].click();
   const fresh = makeCustom(boot(), DR1_PYGMY_MAKER);
@@ -8639,7 +8572,7 @@ test("DR3 reset on Edit gives the generated default, not the stored layout", () 
     seats: { rim: [1, 0, 2, 3, 4, 5, 6, 7, 8] } });
   assert.strictEqual(made.ok, true, made.reason);
   openEdit(app, app.registry()[made.value.id]);
-  app.els["scale-layout-toggle"].click();
+  app.click(app.els["scale-tab-layout"]);
   assert.strictEqual(app.els["scale-anchor-between"].getAttribute("aria-pressed"), "true");
   assert.strictEqual(dr3Reset(app).disabled, false, "a stored layout that differs from the default left RESET LAYOUT off");
   app.els["scale-layout-reset"].click();
@@ -8666,39 +8599,40 @@ const lfEditBadName = (text = D2_AMARA) => {
   return app;
 };
 
-test("LF F-1 (a): a non-ASCII name with a valid scale keeps ADJUST LAYOUT enabled, GENERATE disabled, the refusal naming the name", () => {
+test("LF F-1 (a): a non-ASCII name with a valid scale keeps the Layout tab enabled, GENERATE disabled, the refusal naming the name", () => {
   const app = lfEditBadName();
-  assert.strictEqual(app.els["scale-layout-toggle"].disabled, false, "a bad name disabled the drawer");
+  assert.strictEqual(Boolean(app.els["scale-tab-layout"].disabled), false, "a bad name disabled the Layout tab");
   assert.strictEqual(app.els["scale-generate"].disabled, true);
   assert.notStrictEqual(app.els["scale-refusal"].textContent, "");
   assert.strictEqual(app.els["scale-box"].classList.contains("bad"), true);
-  app.els["scale-layout-toggle"].click();
+  app.click(app.els["scale-tab-layout"]);
   assert.strictEqual(app.els["scale-drawer"].hidden, false, "the drawer did not open");
   const crowded = lfEditBadName(CROWDED);
   assert.match(crowded.els["scale-msg"].textContent, /^Crowded pan/, "the crowded seed under a refused name raised no warning");
   assert.strictEqual(crowded.els["scale-msg"].classList.contains("pan"), true, "the name-refusal branch did not mark its warning .pan");
 });
 
-test("LF F-1 (b): a non-ASCII name with an unparseable scale still disables ADJUST LAYOUT", () => {
+test("LF F-1 (b): a non-ASCII name with an unparseable scale still disables the Layout controls", () => {
   const app = lfEditBadName("(D3) zzz");
-  assert.strictEqual(app.els["scale-layout-toggle"].disabled, true);
+  app.click(app.els["scale-tab-layout"]);
+  assert.strictEqual(app.els["scale-fine-toggle"].disabled, true);
   assert.strictEqual(app.els["scale-generate"].disabled, true);
 });
 
-test("LF F-1 (c): the Add path ignores the name box, so nothing changes there", () => {
+test("LF F-1 (c): the Add path takes a refused name like Edit: Layout tab enabled, GENERATE disabled", () => {
   const app = boot();
   openSheet(app);
   app.els["scale-name"].value = LF_BAD_NAME;
   app.els["scale-name"].dispatchEvent({ type: "input" });
   app.type(D2_AMARA);
-  assert.strictEqual(app.els["scale-layout-toggle"].disabled, false);
-  assert.strictEqual(app.els["scale-generate"].disabled, false);
+  assert.strictEqual(Boolean(app.els["scale-tab-layout"].disabled), false);
+  assert.strictEqual(Boolean(app.els["scale-generate"].disabled), true);
 });
 
 test("LF F-1 (d): under a bad name, a pan with no ring of two notes still says so on open", () => {
   const app = lfEditBadName("(D3) A3");
-  assert.strictEqual(app.els["scale-layout-toggle"].disabled, false);
-  app.els["scale-layout-toggle"].click();
+  assert.strictEqual(Boolean(app.els["scale-tab-layout"].disabled), false);
+  app.click(app.els["scale-tab-layout"]);
   assert.strictEqual(app.els["scale-drawer-status"].textContent, DR1_STATUS.noRing);
 });
 
@@ -8813,7 +8747,7 @@ test("editable defaults: the fifth seeded delete with no custom deck is refused"
   assert.deepStrictEqual(labels(app), ["D KURD 10"], "the last visible deck was hidden");
   assert.deepStrictEqual(hiddenKey(app) || four, four);
   assert.strictEqual(app.sheetOpen(), true, "the refused hide closed the sheet");
-  assert.match(app.els["scale-msg"].textContent, /at least one deck/i);
+  assert.match(app.els["scale-msg"].textContent, /at least one scale/i);
   assert.match(app.els["scale-msg"].className, /warn/);
 });
 
@@ -8826,7 +8760,7 @@ test("editable defaults: saving each seeded deck with a palette change mints the
     app.clickChip(name);
     assert.strictEqual(app.sheetOpen(), true, `${d.id}: the selected chip did not open the sheet`);
     assert.strictEqual(app.els["scale-generate"].textContent, "SAVE CHANGES");
-    assert.strictEqual(app.els["scale-delete"].textContent, "DELETE THIS DECK");
+    assert.strictEqual(app.els["scale-delete"].textContent, "DELETE THIS SCALE");
     assert.strictEqual(app.els["scale-title"].textContent, "Edit this scale");
     assert.strictEqual(app.els["scale-name"].value, name);
     assert.strictEqual(app.els["scale-box"].value, app.get(`HPE.core.formatSeed(DECKS[${i}].fields)`));
@@ -8863,10 +8797,10 @@ test("editable defaults: RESET arms, then clears hidden and replacements and kee
   assert.deepStrictEqual(labels(app), [mine.name, ...BUILTIN_NAMES]);
   assert.strictEqual("hidden" in JSON.parse(app.store.hpfc), false, "the key survived an empty hidden list");
   assert.strictEqual(reset.hasAttribute("hidden"), true);
-  assert.strictEqual(reset.textContent, "RESET SEEDED DECKS");
+  assert.strictEqual(reset.textContent, "RESET SEEDED SCALES");
   assert.deepStrictEqual(Object.keys(app.registry()), [mine.id], "RESET dropped a custom deck or kept a replacement");
   assert.strictEqual(app.activeId(), "deck-add");
-  assert.strictEqual(app.announcer().textContent, "Seeded decks restored. Showing D KURD 10.");
+  assert.strictEqual(app.announcer().textContent, "Seeded scales restored. Showing D KURD 10.");
   assert.deepStrictEqual(records(app).filter(r => r.o && r.o.replaces), [], "RESET left a stored record naming a seed");
 });
 
@@ -8879,7 +8813,7 @@ test("editable defaults: saving seeded Kurd with only a palette change while its
   app.els["scale-swatches"].children[3].click();
   app.els["scale-generate"].click();
   assert.strictEqual(app.sheetOpen(), true, "the colliding save closed the sheet");
-  assert.strictEqual(app.els["scale-refusal"].textContent, "Another deck already uses this scale.");
+  assert.strictEqual(app.els["scale-refusal"].textContent, "Another scale already has these notes.");
   const kept = app.registry()[fork.id];
   assert.strictEqual(kept.name, "MY KURD", "the save renamed the fork");
   assert.strictEqual(kept.options.palette, fork.options.palette, "the save repainted the fork");
@@ -8924,7 +8858,7 @@ test("editable defaults: a seeded deck's DELETE arms with TAP AGAIN TO DELETE, i
   assert.strictEqual(app.activeId(), "scale-delete", "DELETE is not the last sheet tab stop");
   app.els["scale-back"].focus();
   app.els["scale-sheet"].dispatchEvent({ type: "keydown", key: "Tab", shiftKey: false, preventDefault() {} });
-  assert.strictEqual(app.activeId(), "scale-name", "the name box is not the first tab stop after BACK");
+  assert.strictEqual(app.activeId(), "scale-tab-scale", "the Scale tab is not the first tab stop after BACK");
 
   del.click();
   assert.strictEqual(del.textContent, "TAP AGAIN TO DELETE");
@@ -8943,7 +8877,7 @@ test("editable defaults: a stored hidden deck falls back to the first visible on
   const app = boot({ storage: { hpfc: JSON.stringify({ deck: "pygmy", mode: "A", hidden: ["pygmy"] }) } });
   assert.strictEqual(app.deckId(), "kurd");
   assert.deepStrictEqual(labels(app), BUILTIN_NAMES.slice(0, 4));
-  assert.match(app.announcer().textContent, /That deck is gone\. Showing D KURD 10\./);
+  assert.match(app.announcer().textContent, /That scale is gone\. Showing D KURD 10\./);
 });
 
 test("editable defaults: every built-in hidden in storage still opens a deck rather than a blank page", () => {
@@ -8962,7 +8896,7 @@ test("editable defaults: hpfc.hidden keeps only built-in ids", () => {
 
 test("editable defaults: #deck-restore follows #deck-add, starts hidden and joins the panel stops only while rendered", () => {
   const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
-  assert.match(html, /id="deck-add"[^>]*>[^<]*<\/button>\s*<\/div>\s*<button[^>]*id="deck-restore"[^>]*\bhidden\b[^>]*>RESET SEEDED DECKS<\/button>/,
+  assert.match(html, /id="deck-add"[^>]*>[^<]*<\/button>\s*<\/div>\s*<button[^>]*id="deck-restore"[^>]*\bhidden\b[^>]*>RESET SEEDED SCALES<\/button>/,
     "the restore button is not right after the Scales row, hidden, with its label");
   assert.match(html, /document\.getElementById\("deck-add"\), restoreBtn,/, "panelStops() does not list the restore button right after + ADD A SCALE");
   const app = boot();
@@ -8991,6 +8925,7 @@ function saveKurdRepainted(app, swatch = 3) {
 test("SD: the layout notice on a seeded deck names SAVE CHANGES", () => {
   const app = boot();
   app.clickChip("D KURD 10");
+  app.click(app.els["scale-tab-layout"]);
   app.els["scale-anchor-between"].click();
   assert.strictEqual(dr1Notice(app), "Layout not saved yet. SAVE CHANGES keeps it.");
 });
@@ -9063,14 +8998,14 @@ test("SD: an armed RESET disarms on a tap elsewhere, blur and panel close, and r
   down(reset);
   assert.strictEqual(reset.textContent, "TAP AGAIN TO RESET", "the arming tap's own pointerdown disarmed it");
   down(mainEl);
-  assert.strictEqual(reset.textContent, "RESET SEEDED DECKS", "a tap elsewhere left RESET armed");
+  assert.strictEqual(reset.textContent, "RESET SEEDED SCALES", "a tap elsewhere left RESET armed");
   arm();
   reset.onblur();
-  assert.strictEqual(reset.textContent, "RESET SEEDED DECKS", "blur left RESET armed");
+  assert.strictEqual(reset.textContent, "RESET SEEDED SCALES", "blur left RESET armed");
   arm();
   app.run("openPanel && openPanel()");
   app.run("closePanel()");
-  assert.strictEqual(reset.textContent, "RESET SEEDED DECKS", "closing the panel left RESET armed");
+  assert.strictEqual(reset.textContent, "RESET SEEDED SCALES", "closing the panel left RESET armed");
   arm();
   assert.deepStrictEqual(hiddenKey(app), ["amara"], "re-arming reset");
   reset.click();
@@ -9128,7 +9063,7 @@ test("SD: a seed both hidden and replaced boots onto its replacement without a w
   assert.strictEqual(hijaz.announcer().textContent, "", "(b) the boot said the deck was gone");
 
   const bare = boots({ deck: "kurd", hidden: ["kurd"] }, []);
-  assert.match(bare.announcer().textContent, /^That deck is gone\. Showing /, "(c) a hidden seed with no replacement stayed silent");
+  assert.match(bare.announcer().textContent, /^That scale is gone\. Showing /, "(c) a hidden seed with no replacement stayed silent");
 });
 
 test("SD: a seeded deck's sheet never reports a layout change on open", () => {
@@ -9137,6 +9072,7 @@ test("SD: a seeded deck's sheet never reports a layout change on open", () => {
     app.select(app.get("DECKS")[i].id);
     app.clickChip(name);
     assert.strictEqual(app.sheetOpen(), true, `${name}: the sheet did not open`);
+    app.click(app.els["scale-tab-layout"]);
     assert.strictEqual(dr1Notice(app), "", `${name}: a seeded sheet reported a layout change on open`);
   });
 });
@@ -9193,18 +9129,20 @@ test("SD: duplicate and unknown replaces targets are never unreachable", () => {
   assert.strictEqual(names.filter((n) => n === "D KURD 10").length, 1, "seeded Kurd shows beside its replacement");
 });
 
-test("SG: N-A2 the served markup order is .sheetbody, #scale-guidance (#scale-msg, #scale-layout-state), #scale-generate, #scale-delete-row", () => {
+test("SG: N-A2 the served markup order is .sheetbody, #scale-guidance (#scale-field-msg, #scale-msg, #scale-layout-state), #scale-generate, #scale-delete-row", () => {
   const body = sgSpan('<div class="sheetbody"');
   const slot = sgSpan('<div id="scale-guidance"');
   const at = (id) => SG_HTML.indexOf(`id="${id}"`);
   assert.ok(slot.start >= body.end, "#scale-guidance opens inside .sheetbody");
   assert.ok(at("scale-msg") > slot.start && at("scale-msg") < slot.end, "#scale-msg is outside #scale-guidance");
   assert.ok(at("scale-layout-state") > slot.start && at("scale-layout-state") < slot.end, "#scale-layout-state is outside #scale-guidance");
+  assert.ok(at("scale-field-msg") > slot.start && at("scale-field-msg") < slot.end, "#scale-field-msg is outside #scale-guidance");
+  assert.ok(at("scale-field-msg") < at("scale-msg"), "the field message does not come first in the slot");
   assert.ok(at("scale-msg") < at("scale-layout-state"), "the warning does not come first in the slot");
   assert.ok(at("scale-generate") > slot.end, "#scale-generate is not after the slot");
   assert.ok(at("scale-delete-row") > at("scale-generate"), "#scale-delete-row is not after the primary");
   assert.deepStrictEqual([...slot.html.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]),
-    ["scale-guidance", "scale-msg", "scale-layout-state"], "the slot holds something besides the two messages");
+    ["scale-guidance", "scale-field-msg", "scale-msg", "scale-layout-state"], "the slot holds something besides the three messages");
   for (const id of ["scale-msg", "scale-layout-state"]) {
     const drawer = sgSpan('<div id="scale-drawer"');
     assert.ok(at(id) < drawer.start || at(id) > drawer.end, `#${id} is inside #scale-drawer`);
@@ -9283,10 +9221,9 @@ test("RD: no DEGREES row - the served markup, ELEMENT_IDS and the app script car
   const body = html.slice(html.indexOf('<div class="sheetbody"'), html.indexOf('id="scale-guidance"'))
     .replace(/<!--[\s\S]*?-->/g, "");
   assert.deepStrictEqual([...body.matchAll(/class="editrow"(?: id="([^"]+)")?/g)].map((m) => m[1]),
-    ["scale-name-row", "scale-layout-row", undefined],
-    "an .editrow other than the name row and the layout zone's own two is in .sheetbody");
-  assert.match(body, /<\/div>\s*<\/div>\s*<div class="ctlrow">\s*<div id="scale-swatches"/,
-    "the swatches do not directly follow #scale-layout-zone");
+    ["scale-name-row", undefined, undefined],
+    "an .editrow other than the name row, the layout zone's own and the palette's is in .sheetbody");
+  assert.ok(/class="editrow">\s*<span class="sheetlabel" id="scale-palette-label">/.test(body), "the last .editrow is not the palette's");
 
   const { ELEMENT_IDS } = require("../tools/sandbox.js");
   assert.ok(!ELEMENT_IDS.includes("scale-degrees-row") && !ELEMENT_IDS.includes("scale-degrees"));
@@ -9590,34 +9527,9 @@ describe("discoverability: analytics events", () => {
     assert.deepStrictEqual(events(app), []);
   });
 
-  test("IM: importing tracks one scale_import per IMPORT with the status only and no pasted text", () => {
-    const app = bootEv();
-    openSheet(app);
-    showImport(app);
-    app.click(app.els["import-open"]);
-    const n = events(app).length;
-    const secret = "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 Bottom: C3";
-    app.els["import-text"].value = secret;
-    app.click(app.els["import-run"]);
-    app.els["import-ding"].value = "0";
-    app.els["import-ding"].dispatchEvent({ type: "change" });
-    assert.deepStrictEqual(since(app, n), [{ name: "scale_import", params: { status: "REVIEW" } }]);
-    app.els["import-text"].value = "D Kurd 10";
-    app.click(app.els["import-run"]);
-    app.els["import-text"].value = "Ding: D Top: E F G Bb";
-    app.click(app.els["import-run"]);
-    assert.deepStrictEqual(since(app, n).map((e) => e.params.status), ["REVIEW", "INSUFFICIENT", "NEEDS_INPUT"]);
-    assert.ok(!JSON.stringify(since(app, n)).includes("A3"));
-  });
-
   test("no event param is a string over 40 characters or names a custom: id", async () => {
     const app = bootEv();
     openSheet(app);
-    showImport(app);
-    app.click(app.els["import-open"]);
-    app.els["import-text"].value = "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 Bottom: C3";
-    app.click(app.els["import-run"]);
-    assert.ok(events(app).some((e) => e.name === "scale_import"), "no scale_import event to check");
     app.type(AMARA_STRING);
     app.els["scale-generate"].click();
     app.sandbox.navigator.clipboard = { writeText: async () => {} };
@@ -9680,13 +9592,13 @@ describe("discoverability: deck route", () => {
     const app = at("#deck=d-amara-9", { storage });
     assert.match(app.deckId(), /^custom:/);
     assert.strictEqual(app.registry()[app.deckId()].options.replaces, "amara");
-    assert.doesNotMatch(app.announcer().textContent || "", /That deck is gone/);
+    assert.doesNotMatch(app.announcer().textContent || "", /That scale is gone/);
   });
 
   test("a deleted seed falls back to the default deck and says the deck is gone", () => {
     const app = at("#deck=f-low-pygmy-18", { storage: { hpfc: JSON.stringify({ deck: "kurd", mode: "A", hidden: ["pygmy"] }) } });
     assert.strictEqual(app.deckId(), "kurd");
-    assert.match(app.announcer().textContent, /^That deck is gone\. Showing D KURD 10\./);
+    assert.match(app.announcer().textContent, /^That scale is gone\. Showing D KURD 10\./);
   });
 
   test("an unknown slug, a custom id and an empty slug fall back silently and lose the hash", () => {
@@ -9724,7 +9636,7 @@ describe("discoverability: deck route", () => {
     const gone = at("", { storage: { hpfc: JSON.stringify({ deck: "kurd", mode: "A", hidden: ["pygmy"] }) } });
     gone.hashchange("#deck=f-low-pygmy-18");
     assert.strictEqual(gone.deckId(), "kurd");
-    assert.match(gone.announcer().textContent, /^That deck is gone\./);
+    assert.match(gone.announcer().textContent, /^That scale is gone\./);
     assert.strictEqual(gone.location.hash, "#deck=d-kurd-10");
   });
 
@@ -10334,7 +10246,7 @@ describe("share url: edges", () => {
     const app = boot({ html, href: PAGE, storage });
     assert.match(app.deckId(), /^custom:/);
     assert.strictEqual(app.els["share-copy"].disabled, true, "the custom deck's code was not refused");
-    assert.match(app.announcer().textContent, /^That deck is gone\./);
+    assert.match(app.announcer().textContent, /^That scale is gone\./);
   });
 
   test("SU: following a link to the custom deck shown at boot after switching away tracks share_open", () => {
@@ -10473,7 +10385,7 @@ describe("about overlay", () => {
     assert.strictEqual(app.els.about.hidden, true);
     assert.strictEqual(app.activeId(), "settings-trigger");
     assert.match(app.deckId(), /^custom:/);
-    assert.doesNotMatch(app.announcer().textContent || "", /That deck is gone/);
+    assert.doesNotMatch(app.announcer().textContent || "", /That scale is gone/);
   });
 
   test("AO: a dispatched resize while About is open updates --about-head-h", () => {
@@ -10571,7 +10483,7 @@ describe("about overlay", () => {
     const gone = boot({ storage: { hpfc: JSON.stringify({ deck: "kurd", mode: "A", hidden: ["pygmy"] }) } });
     openAboutFrom(gone);
     gone.run("aboutLink('#deck=f-low-pygmy-18')");
-    assert.match(gone.announcer().textContent, /^That deck is gone\./, "a fallback link lost its warning");
+    assert.match(gone.announcer().textContent, /^That scale is gone\./, "a fallback link lost its warning");
   });
 
   test("AO: a boot on #about leaves About closed and ends on the deck's route", () => {
@@ -10641,251 +10553,2602 @@ describe("about overlay", () => {
   });
 });
 
-/* ------------------------------------------------ IM: import text (scale-import lane B) */
+describe("DI: dual input", () => {
+  const FIELDS = ["ding", "top", "inner", "bottom"];
+  const AMARA_LINE = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
+  const el = (app, id) => app.els[id];
+  const fire = (app, id, type) => el(app, id).dispatchEvent({ type });
+  const fieldType = (app, k, text) => {
+    fire(app, "scale-" + k, "focus");
+    el(app, "scale-" + k).value = text;
+    fire(app, "scale-" + k, "input");
+  };
+  const fieldSettle = (app, k) => fire(app, "scale-" + k, "blur");
+  const lineType = (app, text) => {
+    fire(app, "scale-box", "focus");
+    el(app, "scale-box").value = text;
+    fire(app, "scale-box", "input");
+  };
+  const fieldTexts = (app) => FIELDS.map((k) => el(app, "scale-" + k).value);
+  const cls = (app, id, c) => el(app, id).classList.contains(c);
+  const openAdd = () => { const app = boot(); app.els["deck-add"].click(); return app; };
+  const openBuiltin = (id) => {
+    const app = boot();
+    app.select(id);
+    app.run("openEditSheet(deck(), document.getElementById('deck-add'))");
+    return app;
+  };
+  const AMARA_FIELDS = { ding: "D3", top: "A3 C4 D4 E4 F4 G4 A4 C5" };
+  const fillAmara = (app) => { fieldType(app, "ding", AMARA_FIELDS.ding); fieldType(app, "top", AMARA_FIELDS.top); };
+  const src = () => fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
 
-describe("IM: import text on the sheet", () => {
-  const CLEAN = "Ding: D3 Top: A3 Bb3 C4 D4 E4 F4 G4 A4 Bottom: C3";
-  const CUE = "Notes: D3 A3 Bb3 C4 D4 E4 F4 G4 A4";
-  const OCTAVELESS = "Ding: D Top: A Bb C D E F G A Bottom: C";
-  const REFUSED = "Ding: D Top: E F G Bb";
-  const NO_CUE_REVIEW = "Ding: C Top: G A E Eb F";
-  const TWO_DINGS = "Ding: D3 Ding: E3 Top: A3 B3 C4";
-  const NAME_ONLY = "D Kurd 10";
+  test("DI: the sheet serves DING, TOP RIM NOTES, TOP INNER (CYCLOPS/MUTANT) NOTE and BOTTOM NOTES in that order before #scale-box, each a text input with autocapitalize off, enterkeyhint next and BOTTOM done", () => {
+    const h = src();
+    const at = (id) => h.indexOf(`id="${id}"`);
+    const order = ["scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box"].map(at);
+    assert.ok(order.every((n) => n > 0), "an id is missing from the markup");
+    assert.deepStrictEqual(order.slice().sort((a, b) => a - b), order, "the fields are not in order before #scale-box");
+    const labels = { ding: "DING", top: "TOP RIM NOTES, LOW TO HIGH", inner: "TOP INNER (CYCLOPS/MUTANT) NOTE, LOW TO HIGH (OPTIONAL)", bottom: "BOTTOM NOTES, LOW TO HIGH (OPTIONAL)" };
+    for (const k of FIELDS) {
+      const tag = h.match(new RegExp(`<input[^>]*id="scale-${k}"[^>]*>`))[0];
+      assert.match(tag, /type="text"/, k);
+      assert.match(tag, /autocapitalize="off"/, k);
+      assert.match(tag, /autocorrect="off"/, k);
+      assert.match(tag, /spellcheck="false"/, k);
+      assert.match(tag, new RegExp(`enterkeyhint="${k === "bottom" ? "done" : "next"}"`), k);
+      assert.match(tag, /aria-describedby="scale-field-msg"/, k);
+      assert.match(h, new RegExp(`id="scale-${k}-label"[^>]*>${labels[k].replace(/[()]/g, "\\$&")}<`), k);
+    }
+  });
 
-  const run = (app, text) => {
-    openSheet(app);
-    showImport(app);
-    app.click(app.els["import-open"]);
-    app.els["import-text"].value = text;
-    app.click(app.els["import-run"]);
-    return app.els;
+  test("DI: Add opens with the four fields empty, the fields path active, #scale-box empty and BACK focused", () => {
+    const app = openAdd();
+    assert.deepStrictEqual(fieldTexts(app), ["", "", "", ""]);
+    assert.strictEqual(el(app, "scale-box").value, "");
+    assert.strictEqual(app.get("inputPath"), "fields");
+    assert.strictEqual(cls(app, "scale-fields", "passive"), false);
+    assert.strictEqual(cls(app, "scale-box", "passive"), true);
+    assert.strictEqual(app.activeId(), "scale-back");
+  });
+
+  test("DI: Edit of each built-in fills the four fields with that deck's notes by zone with explicit octaves, and #scale-box holds formatSeed of the deck", () => {
+    for (const id of ["kurd", "amara10", "amara", "pygmy", "hijaz"]) {
+      const app = openBuiltin(id);
+      const fields = app.get("deck().fields");
+      const expect = { ding: [], rim: [], inner: [], bottom: [] };
+      Object.keys(fields).sort((a, b) => fields[a][2] - fields[b][2]).forEach((n) => expect[fields[n][3]].push(fields[n][0] + fields[n][1]));
+      assert.deepStrictEqual(fieldTexts(app),
+        [expect.ding.join(" "), expect.rim.join(" "), expect.inner.join(" "), expect.bottom.join(" ")], id);
+      assert.strictEqual(el(app, "scale-box").value, app.get("HPE.core.formatSeed(deck().fields)"), id);
+      assert.ok(/\d/.test(fieldTexts(app)[1]), `${id}: octaves are explicit`);
+      assert.strictEqual(app.get("inputPath"), "fields", id);
+      assert.strictEqual(app.get("lineStale || fieldsStale"), false, id);
+    }
+  });
+
+  test("DI: typing in the fields writes compose's line into #scale-box through one input event, the parse line and the pan match typing that line, and the field typed in keeps its text as typed", () => {
+    const app = openAdd();
+    let inputs = 0;
+    el(app, "scale-box").addEventListener("input", () => { inputs += 1; });
+    fieldType(app, "ding", "D3");
+    const before = inputs;
+    fieldType(app, "top", "a3 c4  d4 e4 f4 g4 a4 c5");
+    assert.strictEqual(inputs - before, 1, "one input event on the box");
+    assert.strictEqual(el(app, "scale-box").value, AMARA_LINE);
+    assert.strictEqual(el(app, "scale-top").value, "a3 c4  d4 e4 f4 g4 a4 c5", "the field typed in was rewritten");
+    const typed = boot(); typed.els["deck-add"].click(); typed.type(AMARA_LINE);
+    assert.strictEqual(el(app, "scale-parse").textContent, el(typed, "scale-parse").textContent);
+    assert.strictEqual(app.get("boxOk"), true);
+    assert.strictEqual(app.get("JSON.stringify(lastSolved && lastSolved.geom)"), typed.get("JSON.stringify(lastSolved && lastSolved.geom)"));
+  });
+
+  test("DI: clearing every field clears #scale-box", () => {
+    const app = openAdd();
+    fillAmara(app);
+    assert.strictEqual(el(app, "scale-box").value, AMARA_LINE);
+    fieldType(app, "top", "");
+    fieldType(app, "ding", "");
+    assert.strictEqual(el(app, "scale-box").value, "");
+    assert.strictEqual(el(app, "scale-generate").disabled, true);
+    assert.strictEqual(app.get("lineStale"), false);
+  });
+
+  test("DI: a field error keeps #scale-box at its last good line, marks it Not updated, holds the pan and disables GENERATE CARDS", () => {
+    const app = openAdd();
+    fillAmara(app);
+    const geom = app.get("JSON.stringify(lastSolved && lastSolved.geom)");
+    fieldType(app, "top", "A3 C4 X4");
+    assert.strictEqual(el(app, "scale-box").value, AMARA_LINE);
+    assert.strictEqual(app.get("lineStale"), true);
+    assert.match(el(app, "scale-line-note").textContent, /^Not updated/);
+    assert.strictEqual(cls(app, "scale-box", "stale"), true);
+    assert.strictEqual(el(app, "scale-generate").disabled, true);
+    assert.strictEqual(app.get("JSON.stringify(lastSolved && lastSolved.geom)"), geom, "the pan changed");
+  });
+
+  test("DI: fixing the field error rewrites the line and clears the stale mark", () => {
+    const app = openAdd();
+    fillAmara(app);
+    fieldType(app, "top", "A3 C4 X4");
+    fieldType(app, "top", "A3 C4 D4");
+    assert.strictEqual(el(app, "scale-box").value, "(D3) A3 C4 D4");
+    assert.strictEqual(app.get("lineStale"), false);
+    assert.strictEqual(cls(app, "scale-box", "stale"), false);
+    assert.doesNotMatch(el(app, "scale-line-note").textContent, /Not updated/);
+    assert.strictEqual(el(app, "scale-generate").disabled, false);
+    fieldType(app, "top", "A3 C4 X4");
+    fieldType(app, "top", "A3 C4 D4");
+    assert.strictEqual(el(app, "scale-generate").disabled, false, "an unchanged line left GENERATE disabled");
+  });
+
+  test("DI: typing a line that parses rewrites the four fields by zone with explicit octaves", () => {
+    const app = openAdd();
+    lineType(app, "[C3] (F3) G3 Ab3 C4 Eb4 | F5 G5");
+    assert.deepStrictEqual(fieldTexts(app), ["F3", "G3 Ab3 C4 Eb4", "F5 G5", "C3"]);
+    assert.strictEqual(app.get("fieldsStale"), false);
+    assert.strictEqual(app.get("inputPath"), "line");
+  });
+
+  test("DI: typing a line that does not parse leaves the fields as they were and marks them Not updated", () => {
+    const app = openAdd();
+    fillAmara(app);
+    const before = fieldTexts(app);
+    lineType(app, "(D3) A3 C4 zz");
+    assert.deepStrictEqual(fieldTexts(app), before);
+    assert.strictEqual(app.get("fieldsStale"), true);
+    assert.match(el(app, "scale-fields-note").textContent, /^Not updated/);
+    assert.strictEqual(cls(app, "scale-fields", "stale"), true);
+  });
+
+  test("DI: focusing a field or #scale-box switches the active path and rewrites neither path", () => {
+    const app = openAdd();
+    fillAmara(app);
+    lineType(app, "(D3)  A3 C4   D4 E4 F4 G4 A4 C5");
+    const box = el(app, "scale-box").value;
+    const fields = fieldTexts(app);
+    fire(app, "scale-top", "focus");
+    assert.strictEqual(app.get("inputPath"), "fields");
+    fire(app, "scale-box", "focus");
+    assert.strictEqual(app.get("inputPath"), "line");
+    fire(app, "scale-ding", "focus");
+    assert.strictEqual(el(app, "scale-box").value, box, "focus rewrote the line");
+    assert.deepStrictEqual(fieldTexts(app), fields, "focus rewrote the fields");
+    fieldType(app, "top", "A3  C4 D4 E4 F4 G4 A4 C5");
+    const typed = fieldTexts(app);
+    fire(app, "scale-box", "focus");
+    fire(app, "scale-ding", "focus");
+    assert.deepStrictEqual(fieldTexts(app), typed, "focus rewrote the fields as typed");
+  });
+
+  test("DI: only the passive path carries the passive class and its caption", () => {
+    const app = openAdd();
+    fillAmara(app);
+    const state = () => [cls(app, "scale-fields", "passive"), cls(app, "scale-box", "passive"),
+      el(app, "scale-fields-note").textContent, el(app, "scale-line-note").textContent];
+    let s = state();
+    assert.deepStrictEqual(s.slice(0, 2), [false, true]);
+    assert.strictEqual(s[2], "");
+    assert.match(s[3], /^Follows the notes above/);
+    fire(app, "scale-box", "focus");
+    s = state();
+    assert.deepStrictEqual(s.slice(0, 2), [true, false]);
+    assert.match(s[2], /^Follows the line below/);
+    assert.strictEqual(s[3], "");
+  });
+
+  test("DI: GENERATE CARDS follows the active path: a stale line never generates, and a line that parses generates while the fields are stale", () => {
+    const app = openAdd();
+    fillAmara(app);
+    fieldType(app, "top", "A3 C4 X4");
+    assert.strictEqual(el(app, "scale-generate").disabled, true);
+    const n = Object.keys(app.registry()).length;
+    el(app, "scale-generate").click();
+    assert.strictEqual(Object.keys(app.registry()).length, n, "a stale line generated");
+    fieldType(app, "top", "zz");
+    assert.strictEqual(app.get("lineStale"), true);
+    lineType(app, "(D3) A3 C4 D4 E4 F4 G4 A4 C5");
+    assert.strictEqual(app.get("lineStale"), false);
+    assert.strictEqual(el(app, "scale-generate").disabled, false);
+    lineType(app, "(D3) A3 C4 zz");
+    assert.strictEqual(el(app, "scale-generate").disabled, true);
+    lineType(app, "(D3) A3 C4 D4 E4 F4 G4 A4 C5");
+    assert.strictEqual(el(app, "scale-generate").disabled, false, "a line that parses stayed disabled while the fields were stale");
+    fieldType(app, "top", "zz");
+    lineType(app, "(D3) A3 C4 D4 E4 F4 G4 A4 C5");
+    assert.strictEqual(app.get("fieldsStale"), false);
+    el(app, "scale-generate").click();
+    assert.strictEqual(Object.keys(app.registry()).length, n + 1, "a line that parses did not generate");
+  });
+
+  test("DI: palette, anchor, mirror, mirror bottom and seats survive a field edit and a line edit", () => {
+    const app = openAdd();
+    fillAmara(app);
+    el(app, "scale-swatches").children[3].click();
+    el(app, "scale-mirror").click();
+    el(app, "scale-anchor-between").click();
+    const read = () => app.get("JSON.stringify([palette, mirror, bottomMirror(), anchor, layoutSeats])");
+    const before = read();
+    fieldType(app, "top", "A3 C4 D4 E4 F4 G4 A4");
+    assert.strictEqual(read(), before, "a field edit reset an option");
+    lineType(app, "(D3) A3 C4 D4 E4 F4 G4");
+    assert.strictEqual(read(), before, "a line edit reset an option");
+  });
+
+  test("DI: a guessed bottom octave is written explicit in the line and named by M16 in the slot", () => {
+    const app = openAdd();
+    fieldType(app, "ding", "D3");
+    fieldType(app, "top", "A3 C4 D4 E4");
+    fieldType(app, "bottom", "C Eb");
+    assert.strictEqual(el(app, "scale-box").value, "[C3] (D3) [Eb3] A3 C4 D4 E4");
+    fieldSettle(app, "bottom");
+    assert.strictEqual(el(app, "scale-field-msg").textContent,
+      "BOTTOM NOTES: Octaves guessed: C3, Eb3. Type an octave to change a guess.");
+  });
+
+  test("LB: the top and scale-box placeholders carry octaves and parse to the same fields as the octaveless examples", () => {
+    const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    const ph = (id) => html.match(new RegExp(`<(?:input|textarea) id="${id}"[^>]*placeholder="([^"]*)"`))[1];
+    assert.strictEqual(ph("scale-top"), "A3 Bb3 C4 D4 E4 F4 G4 A4");
+    const box = ph("scale-box");
+    assert.strictEqual(box, "[C3] [D3] (E3) [F#3] [G3] [A3] B3 [C4] D4 E4 F#4 G4 A4 B4 [C5] D5 E5 | F#5 G5 A5");
+    assert.match(html, new RegExp(`id="scale-box-wrap" data-grow="${box.replace(/[[\]()|]/g, "\\$&")}"`));
+    const engine = require("./helpers/engine.js").loadEngine(["core", "importer"]);
+    const opts = { palette: 0, parent: null, name: "", mirror: false };
+    const fields = (v) => {
+      const c = engine.importer.compose(v);
+      assert.ok(c.ok);
+      const r = engine.core.parseSeed(c.line, opts);
+      assert.ok(r.ok);
+      return JSON.stringify(r.value);
+    };
+    const v = { ding: ph("scale-ding"), top: ph("scale-top"), inner: ph("scale-inner"), bottom: ph("scale-bottom") };
+    assert.strictEqual(fields(v), fields({ ...v, top: "A Bb C D E F G A" }));
+    const oldBox = "[C] [D] (E) [F#] [G] [A] B [C] D E F# G A B [C] D E | F# G A";
+    assert.strictEqual(JSON.stringify(engine.core.parseSeed(box, opts).value), JSON.stringify(engine.core.parseSeed(oldBox, opts).value));
+  });
+
+  test("IB: the INNER and BOTTOM labels say LOW TO HIGH", () => {
+    const h = src();
+    assert.match(h, /id="scale-inner-label"[^>]*>TOP INNER \(CYCLOPS\/MUTANT\) NOTE, LOW TO HIGH \(OPTIONAL\)</);
+    assert.match(h, /id="scale-bottom-label"[^>]*>BOTTOM NOTES, LOW TO HIGH \(OPTIONAL\)</);
+  });
+
+  test("IB: a guessed inner octave is named under TOP INNER NOTES in the slot", () => {
+    const app = openAdd();
+    fieldType(app, "ding", "D3");
+    fieldType(app, "top", "A3 C4 D4 E4");
+    fieldType(app, "inner", "F G");
+    fieldSettle(app, "inner");
+    assert.strictEqual(el(app, "scale-field-msg").textContent,
+      "TOP INNER NOTES: Octaves guessed: F4, G4. An inner note can sit below the top notes: type its octave to put it there.");
+  });
+
+  test("IB: an inner note typed below the top notes generates a deck, and the slot names it", () => {
+    const app = openAdd();
+    fieldType(app, "ding", "D3");
+    fieldType(app, "top", "A3 C4 D4 E4");
+    fieldType(app, "inner", "B3");
+    fieldSettle(app, "inner");
+    assert.strictEqual(el(app, "scale-box").value, "(D3) A3 C4 D4 E4 | B3");
+    assert.strictEqual(el(app, "scale-field-msg").textContent,
+      "TOP INNER NOTES: B3 sits below the top notes. Check it on the pan picture.");
+    assert.strictEqual(el(app, "scale-generate").disabled, false);
+    const n = Object.keys(app.registry()).length;
+    el(app, "scale-generate").click();
+    assert.strictEqual(Object.keys(app.registry()).length, n + 1, "the dip pan did not generate");
+  });
+
+  test("IB: the parse line names an inner note below the top notes on the line path", () => {
+    const app = openAdd();
+    lineType(app, "(D3) A3 C4 D4 E4 | B3");
+    assert.match(el(app, "scale-parse").textContent, /Inner B3\. B3 is below the top notes: check the pan picture\.$/);
+    lineType(app, "(D3) A3 C4 D4 E4 | G3 B3");
+    assert.match(el(app, "scale-parse").textContent, /Inner G3 B3\. G3, B3 are below the top notes: check the pan picture\.$/);
+    lineType(app, "(D3) A3 C4 D4 E4 | F5");
+    assert.doesNotMatch(el(app, "scale-parse").textContent, /below the top notes/);
+    assert.strictEqual(el(app, "scale-field-msg").textContent, "");
+  });
+
+  test("DI: the slot shows the first shown message in visual order prefixed by its field's short name, and #scale-msg yields while it holds text", () => {
+    const app = openAdd();
+    fieldType(app, "ding", "Q9");
+    fieldType(app, "top", "A3 C4 zz");
+    fieldSettle(app, "top");
+    fieldSettle(app, "ding");
+    const text = el(app, "scale-field-msg").textContent;
+    assert.match(text, /^DING: /, "the first field in visual order that shows a message leads");
+    assert.strictEqual(el(app, "scale-msg").hidden, true);
+    fieldType(app, "ding", "D3");
+    fieldSettle(app, "ding");
+    assert.match(el(app, "scale-field-msg").textContent, /^TOP RIM NOTES: /);
+    fieldType(app, "top", "A3 C4 D4");
+    fieldSettle(app, "top");
+    assert.strictEqual(el(app, "scale-field-msg").textContent, "");
+    assert.strictEqual(el(app, "scale-msg").hidden, false);
+  });
+
+  const oneDeck = () => {
+    const four = ["amara10", "amara", "hijaz", "pygmy"];
+    const app = boot({ storage: { hpfc: JSON.stringify({ deck: "kurd", mode: "A", hidden: four }) } });
+    app.clickChip("D KURD 10");
+    fieldType(app, "bottom", "F");
+    fieldSettle(app, "bottom");
+    return app;
   };
-  const rows = (app) => app.els["import-rows"].children.map((li) => li.textContent);
-  const lis = (app) => app.els["import-flags"].children;
-  const codes = (app) => lis(app).map((li) => li.getAttribute("data-code"));
-  const tickBox = (app, code) => lis(app).find((x) => x.getAttribute("data-code") === code).children[0].children[0];
-  const tick = (app, code, on = true) => {
-    const box = tickBox(app, code);
-    box.checked = on;
-    box.dispatchEvent({ type: "change" });
-    return box;
+  const visibleMsg = (app) => !el(app, "scale-msg").hidden && el(app, "scale-msg").textContent !== "";
+
+  test("FX: a delete refusal stays visible on the Layout tab while a field message is pending", () => {
+    const app = oneDeck();
+    assert.notStrictEqual(el(app, "scale-field-msg").textContent, "");
+    app.click(el(app, "scale-tab-layout"));
+    el(app, "scale-delete").click(); el(app, "scale-delete").click();
+    assert.match(el(app, "scale-msg").textContent, /^Keep at least one scale/);
+    assert.strictEqual(visibleMsg(app), true);
+  });
+
+  test("FX: a delete refusal stays visible on the Scale tab beside a field message", () => {
+    const app = oneDeck();
+    assert.notStrictEqual(el(app, "scale-field-msg").textContent, "");
+    el(app, "scale-delete").click(); el(app, "scale-delete").click();
+    assert.match(el(app, "scale-msg").textContent, /^Keep at least one scale/);
+    assert.strictEqual(visibleMsg(app), true);
+  });
+
+  test("FX: on the Layout tab a pending field message never hides the crowded-pan warning", () => {
+    const app = openAdd();
+    fieldType(app, "ding", "C3"); fieldSettle(app, "ding");
+    fieldType(app, "top", "D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5 F5 G5 A5 B5 C6 D6 E6 F6"); fieldSettle(app, "top");
+    fieldType(app, "bottom", "C"); fieldSettle(app, "bottom");
+    app.click(el(app, "scale-tab-layout"));
+    assert.notStrictEqual(el(app, "scale-field-msg").textContent, "");
+    assert.match(el(app, "scale-msg").className, /\bpan\b/);
+    assert.strictEqual(visibleMsg(app), true);
+  });
+
+  test("FX: back on the Scale tab an info-level #scale-msg yields to a visible field message again", () => {
+    const app = openAdd();
+    fieldType(app, "ding", "C3"); fieldSettle(app, "ding");
+    fieldType(app, "top", "D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5 F5 G5 A5 B5 C6 D6 E6 F6"); fieldSettle(app, "top");
+    fieldType(app, "bottom", "C"); fieldSettle(app, "bottom");
+    app.click(el(app, "scale-tab-layout"));
+    app.click(el(app, "scale-tab-scale"));
+    assert.strictEqual(el(app, "scale-field-msg").hidden, false);
+    assert.strictEqual(el(app, "scale-msg").hidden, true);
+  });
+
+  test("DI: a field message joins only at settle: nothing while a field is typed in, the message at its blur", () => {
+    const app = openAdd();
+    fieldType(app, "ding", "D3");
+    fieldType(app, "top", "A3 C4 zz");
+    assert.strictEqual(el(app, "scale-field-msg").textContent, "");
+    assert.strictEqual(cls(app, "scale-top", "bad"), false);
+    fieldSettle(app, "top");
+    assert.match(el(app, "scale-field-msg").textContent, /^TOP RIM NOTES: /);
+    assert.strictEqual(cls(app, "scale-top", "bad"), true);
+    assert.strictEqual(el(app, "scale-top").getAttribute("aria-invalid"), "true");
+  });
+
+  test("DI: a settled new message is announced once through #scale-fields-live on a deferred tick, and the open paint announces nothing", () => {
+    const edit = openBuiltin("pygmy");
+    edit.flushTimers();
+    assert.strictEqual(el(edit, "scale-fields-live").textContent, "", "the open paint announced");
+    const app = openAdd();
+    fieldType(app, "ding", "D3");
+    fieldType(app, "top", "A3 C4 zz");
+    app.flushTimers();
+    assert.strictEqual(el(app, "scale-fields-live").textContent, "", "announced while editing");
+    fieldSettle(app, "top");
+    assert.strictEqual(el(app, "scale-fields-live").textContent, "", "announced before the deferred tick");
+    app.flushTimers();
+    const said = el(app, "scale-fields-live").textContent;
+    assert.ok(said.length > 0, "nothing announced");
+    fieldSettle(app, "top");
+    app.flushTimers();
+    assert.strictEqual(el(app, "scale-fields-live").textContent, said, "the same message was announced twice");
+  });
+
+  test("DI: Enter in DING, TOP and INNER moves to the next field, and Enter in BOTTOM blurs it", () => {
+    const app = openAdd();
+    const seq = ["ding", "top", "inner", "bottom"];
+    for (let i = 0; i < 3; i += 1) {
+      const f = el(app, "scale-" + seq[i]);
+      f.focus();
+      const ev = app.press(f, "Enter");
+      assert.strictEqual(app.activeId(), "scale-" + seq[i + 1]);
+      assert.notStrictEqual(ev && ev.defaultPrevented, false, "Enter was not prevented");
+    }
+    el(app, "scale-bottom").focus();
+    app.press(el(app, "scale-bottom"), "Enter");
+    assert.notStrictEqual(app.activeId(), "scale-bottom");
+    assert.strictEqual(Object.keys(app.registry()).length, 0, "Enter submitted the sheet");
+  });
+
+  test("DI: a mousedown on a field label is prevented and focuses its field", () => {
+    const app = openAdd();
+    for (const k of FIELDS) {
+      let prevented = false;
+      el(app, `scale-${k}-label`).dispatchEvent({ type: "mousedown", preventDefault() { prevented = true; } });
+      assert.strictEqual(prevented, true, k);
+      assert.strictEqual(app.activeId(), "scale-" + k, k);
+    }
+  });
+
+  test("DI: the sheet's Tab order is BACK, the Scale tab, the deck name, DING, TOP, INNER, BOTTOM, then #scale-box and the existing stops", () => {
+    const walk = (app, n) => {
+      const seen = [];
+      for (let i = 0; i < n; i += 1) { app.press(el(app, app.activeId() || "scale-back"), "Tab"); seen.push(app.activeId()); }
+      return seen;
+    };
+    const add = openAdd();
+    el(add, "scale-back").focus();
+    assert.deepStrictEqual(walk(add, 7), ["scale-tab-scale", "scale-name", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box"]);
+    const edit = openBuiltin("amara");
+    el(edit, "scale-back").focus();
+    assert.deepStrictEqual(walk(edit, 7), ["scale-tab-scale", "scale-name", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box"]);
+  });
+
+  test("DI: a typed line keeps its spelling until a field edit rewrites it canonically", () => {
+    const app = openAdd();
+    const odd = "(D3)   A3 C4  D4 E4 F4 G4 A4 C5";
+    lineType(app, odd);
+    fire(app, "scale-ding", "focus");
+    fire(app, "scale-box", "focus");
+    fire(app, "scale-top", "focus");
+    assert.strictEqual(el(app, "scale-box").value, odd);
+    fieldType(app, "top", AMARA_FIELDS.top + " ");
+    assert.strictEqual(el(app, "scale-box").value, AMARA_LINE);
+  });
+
+  const noFlags = (app) => {
+    assert.strictEqual(app.get("fieldsStale"), false);
+    assert.strictEqual(app.get("lineStale"), false);
   };
-  const pick = (app, i) => {
-    app.els["import-ding"].value = String(i);
-    app.els["import-ding"].dispatchEvent({ type: "change" });
+  for (const open of [() => { const a = openAdd(); fillAmara(a); return a; }, () => openBuiltin("amara")]) {
+    test("DI: SL a field focus after a refused line rebuilds the line from the fields, clears the refusal and enables GENERATE", () => {
+      const app = open();
+      lineType(app, "(D3) A3 X");
+      assert.strictEqual(app.get("fieldsStale"), true);
+      assert.notStrictEqual(el(app, "scale-refusal").textContent, "");
+      assert.strictEqual(el(app, "scale-generate").disabled, true);
+      const fields = fieldTexts(app);
+      const line = app.get("HPE.importer.compose(fieldValues()).line");
+      fire(app, "scale-ding", "focus");
+      assert.strictEqual(el(app, "scale-box").value, line);
+      assert.strictEqual(el(app, "scale-refusal").textContent, "");
+      assert.notStrictEqual(el(app, "scale-parse").textContent, "");
+      assert.strictEqual(cls(app, "scale-box", "bad"), false);
+      assert.strictEqual(cls(app, "scale-box", "stale"), false);
+      assert.strictEqual(el(app, "scale-generate").disabled, false);
+      assert.deepStrictEqual(fieldTexts(app), fields);
+      assert.strictEqual(app.get("inputPath"), "fields");
+      assert.strictEqual(cls(app, "scale-fields", "passive"), false);
+      assert.strictEqual(cls(app, "scale-fields", "stale"), false);
+      assert.strictEqual(cls(app, "scale-box", "passive"), true);
+      assert.match(el(app, "scale-line-note").textContent, /^Follows the notes above/);
+      noFlags(app);
+    });
+  }
+
+  test("DI: SL a field focus after a valid line rewrites nothing", () => {
+    const app = openAdd();
+    fillAmara(app);
+    const odd = "(D3)  A3 C4   D4 E4 F4 G4 A4 C5";
+    lineType(app, odd);
+    let inputs = 0;
+    el(app, "scale-box").addEventListener("input", () => { inputs += 1; });
+    fire(app, "scale-ding", "focus");
+    assert.strictEqual(el(app, "scale-box").value, odd);
+    assert.strictEqual(inputs, 0);
+  });
+
+  test("DI: SL a field focus after a refused line whose fields do not compose keeps the line stale and GENERATE disabled", () => {
+    const app = openAdd();
+    fillAmara(app);
+    fieldType(app, "top", "A3 C4 BB");
+    fieldSettle(app, "top");
+    assert.strictEqual(app.get("lineStale"), true);
+    lineType(app, "(D3) A3 X");
+    assert.strictEqual(app.get("fieldsStale"), true);
+    assert.strictEqual(app.get("lineStale"), false);
+    const fields = fieldTexts(app);
+    fire(app, "scale-ding", "focus");
+    assert.strictEqual(app.get("lineStale"), true);
+    assert.strictEqual(app.get("fieldsStale"), false);
+    assert.strictEqual(el(app, "scale-box").value, "(D3) A3 X");
+    assert.strictEqual(cls(app, "scale-box", "stale"), true);
+    assert.strictEqual(el(app, "scale-refusal").textContent, "");
+    assert.strictEqual(el(app, "scale-line-note").textContent, "Not updated: the notes above have a problem.");
+    assert.match(el(app, "scale-field-msg").textContent, /TOP RIM NOTES/);
+    assert.strictEqual(el(app, "scale-generate").disabled, true);
+    assert.deepStrictEqual(fieldTexts(app), fields);
+  });
+
+  test("DI: SL a field focus with empty fields after a refused line empties the line", () => {
+    const app = openAdd();
+    lineType(app, "X");
+    assert.strictEqual(app.get("fieldsStale"), true);
+    fire(app, "scale-ding", "focus");
+    assert.strictEqual(el(app, "scale-box").value, "");
+    assert.strictEqual(el(app, "scale-refusal").textContent, "");
+    assert.match(el(app, "scale-parse").textContent, /^Type every note low to high on one line\./);
+    assert.strictEqual(el(app, "scale-generate").disabled, true);
+    noFlags(app);
+  });
+
+  test("DI: SAVE from Edit after a field edit stores the same record as typing the composed line", () => {
+    const viaFields = boot();
+    const d = makeCustom(viaFields);
+    openEdit(viaFields, d);
+    fieldType(viaFields, "top", "A3 C4 D4 E4 F4 G4 A4");
+    el(viaFields, "scale-generate").click();
+    const viaLine = boot();
+    const d2 = makeCustom(viaLine);
+    openEdit(viaLine, d2);
+    viaLine.type(el(viaFields, "scale-box").value || viaFields.get("deck().id && HPE.core.formatSeed(deck().fields)"));
+    el(viaLine, "scale-generate").click();
+    const a = viaFields.registry(), b = viaLine.registry();
+    assert.deepStrictEqual(Object.values(a).map((r) => r.fields), Object.values(b).map((r) => r.fields));
+    assert.deepStrictEqual(Object.values(a).map((r) => r.options), Object.values(b).map((r) => r.options));
+  });
+});
+
+test("KB: applyKbOffset reads the sheet's own height when it has one and innerHeight otherwise", () => {
+  const app = boot({ layout: true, innerHeight: 800, visualViewport: { height: 400, offsetTop: 0, scale: 1 } });
+  const surf = app.els["scale-sheet"].firstElementChild;
+  app.els["scale-sheet"].clientHeight = 500;
+  app.run("openScaleSheet()");
+  assert.strictEqual(surf.style.transform, "translateY(-100px)", "the lift was measured from innerHeight, not the sheet");
+  assert.strictEqual(surf.style.maxHeight, "392px");
+  app.run("closeScaleSheet()");
+  const bare = boot({ layout: true, innerHeight: 800, visualViewport: { height: 400, offsetTop: 0, scale: 1 } });
+  bare.run("openScaleSheet()");
+  assert.strictEqual(bare.els["scale-sheet"].firstElementChild.style.transform, "translateY(-400px)",
+    "with no sheet height the lift must fall back to innerHeight");
+});
+
+test("KB: hideSheet clears tiny", () => {
+  const app = boot({ layout: true });
+  app.run("openScaleSheet()");
+  app.els["scale-sheet"].classList.add("tiny");
+  app.run("closeScaleSheet()");
+  assert.strictEqual(app.els["scale-sheet"].classList.contains("tiny"), false, "hideSheet left tiny on a closed sheet");
+});
+
+test("KB: F4 the put-down focus path passes preventScroll", () => {
+  const app = boot();
+  const to = { rim: 5, inner: 2, bottom: 3 };
+  d2Open(app, d2Build({ rim: 3, inner: 3, bottom: 3 }).text, false);
+  d2Tap(app, "E3"); d2Tap(app, "F3");
+  d2Tap(app, d2Build({ rim: 3, inner: 3, bottom: 3 }).names.inner[0]); d2Tap(app, d2Build({ rim: 3, inner: 3, bottom: 3 }).names.inner[1]);
+  d2Tap(app, "G3");
+  app.type(d2Build(to).text);
+  assert.strictEqual(d2Pick(app), null, "the pick was not put down, so this proves nothing");
+  assert.ok(app.activeHit() !== null, "focus did not return to a note");
+  assert.deepStrictEqual(plain(app.get("document.activeElement.focusOpts")), { preventScroll: true },
+    "the put-down focus scrolled the sheet");
+});
+
+/* ------------------------- UX: the Layout tab and the browser's history ----
+ * The Adjust overlay and its state-only history entry are gone (plan
+ * 2026-10-19-sheet-tabs). The sandbox keeps no entry stack, so a test plays the
+ * browser: history.state and location are set by hand before popstate(). */
+const uxToggle = (app) => app.click(app.els["scale-tab-layout"]);
+const uxPopTo = (app, state) => { app.history.state = state; app.popstate(); };
+
+test("UX: a popstate mid-drag closes the sheet, cancels the gesture and moves nothing", () => {
+  const app = dgOpen({});
+  const g = DG.down(app, "A3");
+  DG.moveTo(app, g, g.x + 6, g.y);
+  assert.strictEqual(DG.ghostEls(app).length, 1, "no ghost mid-drag");
+  uxPopTo(app, { scalePage: true });
+  assert.strictEqual(app.sheetOpen(), false, "the pop left the sheet open");
+  assert.strictEqual(dgPress(app), null, "the press survived the pop");
+  assert.strictEqual(DG.ghostEls(app).length, 0, "the ghost survived the pop");
+  assert.strictEqual(dgSeats(app), null, "the pop moved a note");
+});
+
+test("UX: layout edits made on the Layout tab survive the Scale tab and reach GENERATE", () => {
+  const app = boot();
+  dr1Open(app, DR1_PYGMY_MAKER);
+  uxToggle(app);
+  app.els["scale-anchor-between"].click();
+  dr1Close(app);
+  assert.strictEqual(app.els["scale-anchor-between"].getAttribute("aria-pressed"), "true");
+  assert.strictEqual(app.sheetOpen(), true);
+  uxToggle(app);
+  app.els["scale-generate"].click();
+  assert.strictEqual(app.registry()[app.deckId()].options.anchor, "between");
+});
+
+/* ------------------------------ TB / OR / O1 on the sheet ------------------
+ * Lane T1 of docs/plans/2026-10-19-sheet-tabs.md. The Add/Edit sheet has two
+ * tabs, Scale then Layout, an OR rule between the fields and the scale line,
+ * and the engine's duplicate-bottom warning on the field line. */
+describe("TB: the sheet's tabs", () => {
+  const TB_LINE = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
+  const tbEl = (app, id) => app.els[id];
+  const tbTab = (app, name) => app.els["scale-tab-" + name];
+  const tbOpen = (app, edit, text = TB_LINE) => {
+    if (edit) openEdit(app, makeCustom(app, text)); else { openSheet(app); app.type(text); }
+    return app;
   };
-  const engine = (app, text, opts) => JSON.parse(app.get(
-    `JSON.stringify((() => { const r = HPE.importer.interpret(${JSON.stringify(text)}${opts ? ", " + JSON.stringify(opts) : ""});` +
-    ` return { status: r.status, flags: r.flags.map(f => [f.code, f.level]), seed: HPE.importer.serialise(r), notes: r.notes.map(n => n.note) }; })())`));
-  const shown = (app) => lis(app).map((li) => [li.getAttribute("data-code"), li.className.toUpperCase()]);
-  const tabs = (app, n) => {
-    const seen = [];
+  const tbSelected = (app) => ["scale", "layout"].filter((n) => tbTab(app, n).getAttribute("aria-selected") === "true");
+  const tbZeros = (app) => ["scale", "layout"].filter((n) => tbTab(app, n).getAttribute("tabindex") === "0");
+  const tbMarkup = fs.readFileSync(path.join(ROOT, "index.html"), "utf8")
+    .replace(/<!--[\s\S]*?-->/g, "").replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/g, "");
+  const tbAttr = (id, name) => {
+    const m = new RegExp(`<\\w+\\b[^>]*\\bid="${id}"[^>]*>`).exec(tbMarkup);
+    assert.ok(m, `no #${id} in the markup`);
+    const a = new RegExp(`\\b${name}="([^"]*)"`).exec(m[0]);
+    return a ? a[1] : null;
+  };
+  const tbStops = (app, from, n) => {
+    app.els[from].focus();
+    const seen = [from];
     for (let i = 0; i < n; i += 1) {
       app.els["scale-sheet"].dispatchEvent({ type: "keydown", key: "Tab", shiftKey: false, preventDefault() {} });
       seen.push(app.activeId());
     }
     return seen;
   };
+  const tbFieldType = (app, k, text) => {
+    app.els["scale-" + k].dispatchEvent({ type: "focus" });
+    app.els["scale-" + k].value = text;
+    app.els["scale-" + k].dispatchEvent({ type: "input" });
+  };
 
-  test("IM: USE writes exactly serialise(r) into #scale-box, fires input, and the parse line matches typing it", () => {
-    const app = boot();
-    run(app, CLEAN);
-    const want = engine(app, CLEAN).seed;
-    assert.ok(want.length > 0);
-    assert.strictEqual(app.els["import-use"].disabled, false);
-    app.click(app.els["import-use"]);
-    assert.strictEqual(app.els["scale-box"].value, want);
-    const typed = boot();
-    openSheet(typed);
-    typed.type(want);
-    assert.ok(app.els["scale-parse"].textContent.length > 0, "input never fired: the parse line is empty");
-    assert.strictEqual(app.els["scale-parse"].textContent, typed.els["scale-parse"].textContent);
-    assert.strictEqual(app.els["scale-generate"].disabled, typed.els["scale-generate"].disabled);
-  });
-
-  test("IM: any BLOCK disables USE, and a click on it writes nothing", () => {
-    const app = boot();
-    run(app, REFUSED);
-    assert.strictEqual(engine(app, REFUSED).status, "NEEDS_INPUT");
-    assert.strictEqual(app.els["import-use"].disabled, true);
-    tick(app, "NO_OCTAVE");
-    assert.strictEqual(app.els["import-use"].disabled, true, "a tick lifted a BLOCK");
-    app.click(app.els["import-use"]);
-    assert.strictEqual(app.els["scale-box"].value, "");
-  });
-
-  test("IM: a CONFIRM needs a tick before USE enables, and unticking disables it again", () => {
-    const app = boot();
-    run(app, NO_CUE_REVIEW);
-    assert.deepStrictEqual(codes(app), ["NO_OCTAVE"]);
-    assert.strictEqual(app.els["import-use"].disabled, true);
-    tick(app, "NO_OCTAVE");
-    assert.strictEqual(app.els["import-use"].disabled, false);
-    tick(app, "NO_OCTAVE", false);
-    assert.strictEqual(app.els["import-use"].disabled, true);
-  });
-
-  test("IM: a DING_CUE CONFIRM is satisfied by a tick or by a picked ding", () => {
-    const ticked = boot();
-    run(ticked, CUE);
-    assert.deepStrictEqual(codes(ticked), ["DING_CUE"]);
-    assert.strictEqual(ticked.els["import-use"].disabled, true);
-    tick(ticked, "DING_CUE");
-    assert.strictEqual(ticked.els["import-use"].disabled, false);
-    const picked = boot();
-    run(picked, CUE);
-    pick(picked, 2);
-    assert.deepStrictEqual(codes(picked), []);
-    assert.strictEqual(picked.els["import-use"].disabled, false);
-    picked.click(picked.els["import-use"]);
-    assert.strictEqual(picked.els["scale-box"].value, engine(picked, CUE, { ding: 2 }).seed);
-  });
-
-  test("IM: picking a ding on the Ding: D Top: E F G Bb fixture leaves the picker enabled and the flag set equals interpret(text, {ding: i})", () => {
-    const app = boot();
-    run(app, REFUSED);
-    assert.deepStrictEqual(codes(app), ["PROVISIONAL_REFUSED", "NO_OCTAVE"]);
-    for (let i = 0; i < 5; i += 1) {
-      pick(app, i);
-      assert.notStrictEqual(app.els["import-ding"].disabled, true, "the picker was disabled at ding " + i);
-      assert.strictEqual(app.els["import-review"].hidden, false);
-      assert.deepStrictEqual(shown(app), engine(app, REFUSED, { ding: i }).flags, "flag set at ding " + i);
-      assert.strictEqual(app.els["import-use"].disabled, true, "USE opened under a BLOCK at ding " + i);
+  test("TB: the served markup has a tablist with Scale then Layout, two tabpanels, and the Scale tab selected with tabindex 0 on open, Add and Edit", () => {
+    assert.strictEqual(tbAttr("scale-tabs", "role"), "tablist");
+    assert.ok(tbMarkup.indexOf('id="scale-tab-scale"') < tbMarkup.indexOf('id="scale-tab-layout"'));
+    for (const n of ["scale", "layout"]) {
+      assert.strictEqual(tbAttr("scale-tab-" + n, "role"), "tab");
+      assert.strictEqual(tbAttr("scale-tab-" + n, "aria-controls"), "scale-panel-" + n);
+      assert.strictEqual(tbAttr("scale-panel-" + n, "role"), "tabpanel");
+      assert.strictEqual(tbAttr("scale-panel-" + n, "aria-labelledby"), "scale-tab-" + n);
     }
-    pick(app, "");
-    assert.deepStrictEqual(shown(app), engine(app, REFUSED).flags);
-  });
-
-  test("IM: a picked ding refreshes every inferred octave and clears the NO_OCTAVE tick", () => {
-    const app = boot();
-    run(app, OCTAVELESS);
-    tick(app, "NO_OCTAVE");
-    assert.strictEqual(app.els["import-use"].disabled, false);
-    pick(app, 1);
-    const want = engine(app, OCTAVELESS, { ding: 1 });
-    assert.strictEqual(tickBox(app, "NO_OCTAVE").checked, false, "the NO_OCTAVE tick survived a pick");
-    assert.strictEqual(app.els["import-use"].disabled, true);
-    const got = rows(app);
-    want.notes.forEach((n, i) => assert.ok(got[i].includes("  " + n + "  "), `row ${i} should show ${n}: ${got[i]}`));
-    tick(app, "NO_OCTAVE");
-    app.click(app.els["import-use"]);
-    assert.strictEqual(app.els["scale-box"].value, want.seed);
-  });
-
-  test("IM: a picked ding clears CONFLICTING_DING", () => {
-    const app = boot();
-    run(app, TWO_DINGS);
-    assert.deepStrictEqual(codes(app), ["CONFLICTING_DING"]);
-    assert.strictEqual(app.els["import-use"].disabled, true);
-    pick(app, 1);
-    assert.deepStrictEqual(codes(app), []);
-    assert.strictEqual(app.els["import-use"].disabled, false);
-    app.click(app.els["import-use"]);
-    assert.strictEqual(app.els["scale-box"].value, engine(app, TWO_DINGS, { ding: 1 }).seed);
-  });
-
-  test("IM: the ding picker shows on every NEEDS_INPUT or REVIEW list, including a REVIEW list with no DING_CUE", () => {
-    for (const text of [NO_CUE_REVIEW, CUE, REFUSED, TWO_DINGS, CLEAN]) {
+    for (const edit of [false, true]) {
       const app = boot();
-      run(app, text);
-      assert.strictEqual(app.els["import-review"].getClientRects().length, 1, text);
-      assert.strictEqual(app.els["import-ding"].getClientRects().length, 1, "picker hidden for " + text);
-      assert.strictEqual(app.els["import-ding"].children.length, engine(app, text).notes.length + 1);
+      if (edit) openEdit(app, makeCustom(app)); else openSheet(app);
+      assert.deepStrictEqual(tbSelected(app), ["scale"]);
+      assert.deepStrictEqual(tbZeros(app), ["scale"]);
+      assert.strictEqual(tbEl(app, "scale-panel-scale").hidden, false);
+      assert.strictEqual(tbEl(app, "scale-panel-layout").hidden, true);
+      assert.strictEqual(tbEl(app, "scale-sheet").getAttribute("data-tab"), "scale");
     }
-    const app = boot();
-    run(app, NO_CUE_REVIEW);
-    assert.ok(!codes(app).includes("DING_CUE"));
   });
 
-  test("IM: a NO_OCTAVE row marks each inferred octave, and an inferred bottom row says its placement is a guess", () => {
-    const app = boot();
-    run(app, OCTAVELESS);
-    const got = rows(app);
-    assert.strictEqual(got.length, 10);
-    got.slice(0, 9).forEach((t) => assert.ok(t.includes("octave inferred") && !t.includes("guess"), t));
-    assert.ok(got[9].includes("octave inferred") && got[9].includes("bottom placement is a guess"), got[9]);
-    const fixed = boot();
-    run(fixed, CLEAN);
-    rows(fixed).forEach((t) => assert.ok(!t.includes("inferred"), t));
+  test("TB: ArrowRight, ArrowLeft, Home and End move and activate the tabs, wrap, and keep exactly one tabindex 0", () => {
+    const app = tbOpen(boot());
+    tbTab(app, "scale").focus();
+    const seq = [["ArrowRight", "layout"], ["ArrowRight", "scale"], ["ArrowLeft", "layout"], ["Home", "scale"], ["End", "layout"],
+      ["ArrowLeft", "scale"], ["ArrowLeft", "layout"]];
+    for (const [key, want] of seq) {
+      const on = tbSelected(app)[0];
+      app.press(tbTab(app, on), key);
+      assert.deepStrictEqual(tbSelected(app), [want], key);
+      assert.deepStrictEqual(tbZeros(app), [want], key + " tabindex");
+      assert.strictEqual(app.activeId(), "scale-tab-" + want, key + " focus");
+      assert.strictEqual(tbEl(app, "scale-panel-" + want).hidden, false);
+      assert.strictEqual(tbEl(app, "scale-panel-" + (want === "scale" ? "layout" : "scale")).hidden, true);
+      assert.strictEqual(tbEl(app, "scale-sheet").getAttribute("data-tab"), want);
+    }
   });
 
-  test("IM: INSUFFICIENT shows one line, writes nothing to #scale-box and offers no preset", () => {
+  test("TB: a tab switch pushes no history entry and calls no replaceState", () => {
+    const app = tbOpen(boot());
+    const n = app.history.calls.length;
+    app.click(tbTab(app, "layout"));
+    app.click(tbTab(app, "scale"));
+    app.press(tbTab(app, "scale"), "ArrowRight");
+    assert.strictEqual(app.history.calls.length, n, JSON.stringify(app.history.calls.slice(n)));
+  });
+
+  test("TB: Back, Escape and a popstate close the sheet from the Layout tab exactly as from the Scale tab, with one history.back", () => {
+    const backs = (app) => app.history.calls.filter((c) => c.type === "back").length;
+    for (const how of ["back", "escape", "pop"]) {
+      const app = tbOpen(boot());
+      app.click(tbTab(app, "layout"));
+      assert.strictEqual(app.sheetOpen(), true);
+      if (how === "back") app.els["scale-back"].click();
+      else if (how === "escape") app.keydown("Escape");
+      else { app.history.state = null; app.location.hash = ""; app.popstate(); }
+      assert.strictEqual(app.sheetOpen(), false, how);
+      assert.strictEqual(backs(app), how === "pop" ? 0 : 1, how);
+    }
+    const app = tbOpen(boot());
+    app.click(tbTab(app, "layout"));
+    app.click(tbTab(app, "scale"));
+    app.click(tbTab(app, "layout"));
+    app.els["scale-back"].click();
+    assert.strictEqual(backs(app), 1, "one Back leaves no extra entry");
+  });
+
+  test("TB: NEXT shows only in Add on the Scale tab, is enabled in every scale state, selects Layout and focuses the Layout tab", () => {
     const app = boot();
     openSheet(app);
-    showImport(app);
-    app.type("[C3] D3");
-    app.click(app.els["import-open"]);
-    app.els["import-text"].value = NAME_ONLY;
-    app.click(app.els["import-run"]);
-    assert.strictEqual(app.els["import-status"].textContent,
-      "No note list found. Image-only specs can't be read; type the notes below.");
-    assert.strictEqual(app.els["import-review"].getClientRects().length, 0);
-    assert.strictEqual(app.els["import-use"].disabled, true);
-    assert.strictEqual(app.els["scale-box"].value, "[C3] D3");
-    assert.strictEqual(app.els["import-rows"].children.length, 0);
-    assert.strictEqual(app.els["import-flags"].children.length, 0);
+    const next = tbEl(app, "scale-next");
+    assert.strictEqual(tbMarkup.includes('id="scale-next"'), true);
+    assert.strictEqual(next.hidden, false);
+    assert.strictEqual(Boolean(next.disabled), false, "empty");
+    app.type("nonsense");
+    assert.strictEqual(Boolean(next.disabled), false, "invalid");
+    app.type(TB_LINE);
+    assert.strictEqual(Boolean(next.disabled), false, "valid");
+    assert.strictEqual(tbEl(app, "scale-generate").hidden, true, "GENERATE hidden on Add/Scale");
+    app.click(next);
+    assert.deepStrictEqual(tbSelected(app), ["layout"]);
+    assert.strictEqual(app.activeId(), "scale-tab-layout");
+    assert.strictEqual(next.hidden, true, "NEXT hidden on Layout");
+    assert.strictEqual(tbEl(app, "scale-generate").hidden, false);
+    app.click(tbTab(app, "scale"));
+    assert.strictEqual(next.hidden, false);
+    const e = boot();
+    openEdit(e, makeCustom(e));
+    assert.strictEqual(tbEl(e, "scale-next").hidden, true, "Edit/Scale has no NEXT");
+    e.click(tbTab(e, "layout"));
+    assert.strictEqual(tbEl(e, "scale-next").hidden, true, "Edit/Layout has no NEXT");
+    const empty = boot();
+    openSheet(empty);
+    empty.click(tbEl(empty, "scale-next"));
+    assert.deepStrictEqual(tbSelected(empty), ["layout"], "NEXT on an empty scale still routes");
   });
 
-  test("IM: opening the sheet again drops the old paste and review", () => {
+  test("TB: on Add Layout GENERATE CARDS is the primary and is disabled until the scale is valid", () => {
     const app = boot();
-    run(app, CLEAN);
-    app.click(app.els["scale-back"]);
     openSheet(app);
-    assert.strictEqual(app.els["import-area"].hidden, true);
-    assert.strictEqual(app.els["import-text"].value, "");
-    assert.strictEqual(app.els["import-result"].hidden, true);
-    assert.strictEqual(app.els["import-open"].getAttribute("aria-expanded"), "false");
+    app.click(tbTab(app, "layout"));
+    const gen = tbEl(app, "scale-generate");
+    assert.strictEqual(gen.hidden, false);
+    assert.strictEqual(gen.textContent, "GENERATE CARDS");
+    assert.strictEqual(gen.disabled, true, "empty");
+    app.click(tbTab(app, "scale"));
+    app.type("nonsense");
+    app.click(tbTab(app, "layout"));
+    assert.strictEqual(gen.disabled, true, "invalid");
+    app.click(tbTab(app, "scale"));
+    app.type(TB_LINE);
+    app.click(tbTab(app, "layout"));
+    assert.strictEqual(gen.disabled, false, "valid");
+    const before = Object.keys(app.registry()).length;
+    gen.click();
+    assert.strictEqual(Object.keys(app.registry()).length, before + 1);
+    assert.strictEqual(app.sheetOpen(), false);
   });
 
-  test("IM: the import row ships hidden: #import-row carries the hidden attribute in the served markup and IMPORT TEXT is not in the sheet's focus order", () => {
-    const src = require("node:fs").readFileSync(require("node:path").join(__dirname, "..", "index.html"), "utf8");
-    assert.match(src, /<div class="fieldrow" id="import-row" hidden>/);
-    assert.match(src, /#import-row\[hidden\]\s*\{\s*display:\s*none/);
+  test("TB: in Edit SAVE CHANGES is the primary on both tabs with today's enabling, and DELETE shows on both", () => {
+    const app = boot();
+    openEdit(app, makeCustom(app));
+    for (const tab of ["scale", "layout"]) {
+      app.click(tbTab(app, tab));
+      assert.strictEqual(tbEl(app, "scale-generate").hidden, false, tab);
+      assert.strictEqual(tbEl(app, "scale-generate").textContent, "SAVE CHANGES", tab);
+      assert.strictEqual(tbEl(app, "scale-generate").disabled, false, tab);
+      assert.strictEqual(tbEl(app, "scale-delete-row").hidden, false, tab);
+    }
+    app.click(tbTab(app, "scale"));
+    app.type("nonsense");
+    for (const tab of ["scale", "layout"]) {
+      app.click(tbTab(app, tab));
+      assert.strictEqual(tbEl(app, "scale-generate").disabled, true, tab + " invalid");
+      assert.strictEqual(tbEl(app, "scale-delete-row").hidden, false, tab + " invalid");
+    }
+  });
+
+  test("TB: the Layout tab with an empty scale shows the hint, the empty plate and every drawer control disabled and out of the Tab order; an invalid scale with a held plate hides the hint", () => {
+    const ids = ["scale-anchor-one", "scale-anchor-between", "scale-mirror", "scale-mirror-bottom", "scale-fine-toggle",
+      "scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next", "scale-layout-reset"];
+    for (const text of ["", "nonsense"]) {
+      for (const edit of [false, true]) {
+        const app = boot();
+        if (edit) { openEdit(app, makeCustom(app)); app.type(text || " "); } else { openSheet(app); if (text) app.type(text); }
+        app.click(tbTab(app, "layout"));
+        const hint = tbEl(app, "scale-layout-hint");
+        const held = edit && !!text;
+        assert.strictEqual(hint.hidden, held, held ? "the hint covers a held plate" : "the example plate lost its hint");
+        assert.strictEqual(hint.textContent, "Type a scale to adjust its layout.");
+        assert.strictEqual(tbEl(app, "scale-drawer").hidden, false, "the drawer is never hidden");
+        if (!text && !edit) assert.strictEqual(tbEl(app, "scale-preview").hidden, false, "an empty box paints the placeholder example");
+        for (const id of ids) assert.strictEqual(tbEl(app, id).disabled, true, `${id} (${text}, edit ${edit})`);
+        assert.strictEqual(tbEl(app, "scale-generate").disabled, true);
+        assert.strictEqual(app.hits().length, 0, "no note buttons on the empty plate");
+        const seen = tbStops(app, "scale-tab-layout", 4);
+        for (const id of ids) assert.ok(!seen.includes(id), `${id} is a Tab stop`);
+      }
+    }
     const app = boot();
     openSheet(app);
-    assert.strictEqual(app.els["import-row"].hidden, true);
-    assert.strictEqual(app.els["import-open"].getClientRects().length, 0);
-    const seen = tabs(app, 40);
-    for (const id of ["import-open", "import-text", "import-run", "import-use"]) {
-      assert.ok(!seen.includes(id), `${id} is in the focus order of a sheet whose import row is hidden`);
-    }
-    assert.ok(seen.includes("scale-box"));
+    app.type(TB_LINE);
+    app.click(tbTab(app, "layout"));
+    assert.strictEqual(tbEl(app, "scale-layout-hint").hidden, true, "no hint on a valid scale");
+    assert.strictEqual(tbEl(app, "scale-anchor-one").disabled, false);
+    assert.ok(app.hits().length > 0, "the plate is interactive");
   });
 
-  test("IM: the import controls join the sheet's focus order, in visual order, only while shown", () => {
-    const app = boot();
-    run(app, NO_CUE_REVIEW);
-    const seen = tabs(app, 40);
-    const order = ["scale-box", "import-open", "import-text", "import-run", "import-tick-NO_OCTAVE", "import-ding"];
-    let at = -1;
-    for (const id of order) {
-      const next = seen.indexOf(id, at + 1);
-      assert.ok(next > at, `${id} missing or out of order in ${seen.slice(0, 12)}`);
-      at = next;
-    }
-    assert.ok(!seen.includes("import-use"), "a disabled USE took a Tab stop");
-    tick(app, "NO_OCTAVE");
-    assert.ok(tabs(app, 40).includes("import-use"), "an enabled USE is not a Tab stop");
-    const closed = boot();
-    openSheet(closed);
-    showImport(closed);
-    const cl = tabs(closed, 40);
-    assert.ok(cl.includes("import-open"));
-    assert.ok(!cl.includes("import-text") && !cl.includes("import-run"), "a hidden paste area took a Tab stop");
+  test("TB: a tab switch resets the panel scroll to the top after the Scale panel was scrolled", () => {
+    const app = tbOpen(boot(), false);
+    app.run("bandPort.scrollTop = 120");
+    assert.strictEqual(app.get("bandPort.scrollTop"), 120);
+    app.click(tbTab(app, "layout"));
+    assert.strictEqual(app.get("bandPort.scrollTop"), 0, "Layout opened scrolled");
+    app.run("bandPort.scrollTop = 80");
+    app.click(tbTab(app, "scale"));
+    assert.strictEqual(app.get("bandPort.scrollTop"), 0, "Scale reopened scrolled");
   });
 
-  test("IM: importing makes no fetch and sends no beacon", () => {
+  test("TB: the sheet Tab order on each tab and flow is the section 3.3 list filtered by isStop", () => {
+    const scaleAdd = ["scale-back", "scale-tab-scale", "scale-name", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box"];
+    let app = boot();
+    openSheet(app);
+    let seen = tbStops(app, "scale-back", 16);
+    assert.deepStrictEqual(seen.slice(0, 8), scaleAdd);
+    assert.ok(seen.slice(8).includes("scale-next"), seen.join());
+    assert.ok(!seen.includes("scale-generate"));
+    assert.ok(!seen.includes("scale-layout-reset"));
+    app = boot();
+    openEdit(app, makeCustom(app));
+    seen = tbStops(app, "scale-back", 20);
+    assert.deepStrictEqual(seen.slice(0, 3), ["scale-back", "scale-tab-scale", "scale-name"]);
+    assert.ok(seen.includes("scale-generate") && seen.includes("scale-delete"), seen.join());
+    assert.ok(!seen.includes("scale-next"));
+    for (const edit of [false, true]) {
+      app = boot();
+      tbOpen(app, edit);
+      app.click(tbTab(app, "layout"));
+      seen = tbStops(app, "scale-back", 16);
+      assert.deepStrictEqual(seen.slice(0, 2), ["scale-back", "scale-tab-layout"]);
+      const rest = seen.slice(2);
+      const order = ["scale-anchor-one", "scale-anchor-between", "scale-mirror", "scale-fine-toggle",
+        "scale-generate"];
+      assert.deepStrictEqual(rest.filter((id) => order.includes(id)).slice(0, order.length), order, seen.join());
+      assert.ok(!rest.includes("scale-ding") && !rest.includes("scale-box"), "Tab reaches the hidden Scale panel");
+      assert.strictEqual(edit, rest.includes("scale-delete"));
+    }
+  });
+
+  test("TB: RESET LAYOUT moves focus to the Layout tab", () => {
+    const app = tbOpen(boot());
+    app.click(tbTab(app, "layout"));
+    app.els["scale-anchor-between"].click();
+    assert.strictEqual(tbEl(app, "scale-layout-reset").disabled, false);
+    app.els["scale-layout-reset"].focus();
+    app.els["scale-layout-reset"].click();
+    assert.strictEqual(app.activeId(), "scale-tab-layout");
+  });
+
+  test("TB: the Adjust overlay is gone: no showAdjust, no adjust history state, no #scale-adjust-head, #scale-layout-toggle or adjusting class, and a pan tap on Layout opens nothing", () => {
+    const src = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    for (const gone of ["showAdjust", "enterAdjust", "hideAdjust", "closeAdjust", "pendingAdjustPop", "adjusting",
+      "scale-adjust-head", "scale-adjust-back", "scale-adjust-title", "scale-layout-toggle", "scale-pancol", "scale-layout-row"]) {
+      assert.strictEqual(src.includes(gone), false, `${gone} is still in index.html`);
+    }
+    assert.strictEqual(/adjust:\s*true/.test(src), false);
+    const app = tbOpen(boot());
+    app.click(tbTab(app, "layout"));
+    const n = app.history.calls.length;
+    app.click(app.els["scale-preview"]);
+    assert.strictEqual(app.history.calls.length, n);
+    assert.deepStrictEqual(tbSelected(app), ["layout"]);
+  });
+
+  test("TB: #scale-field-msg shows on Scale only, #scale-layout-state on Layout only, and #scale-guidance keeps its SG order on both", () => {
     const app = boot();
-    let calls = 0;
-    app.sandbox.fetch = () => { calls += 1; return Promise.reject(new Error("no")); };
-    app.sandbox.XMLHttpRequest = function () { calls += 1; };
-    app.sandbox.navigator.sendBeacon = () => { calls += 1; return true; };
-    run(app, CLEAN);
-    pick(app, 0);
-    app.click(app.els["import-use"]);
-    assert.strictEqual(calls, 0);
-    const src = require("node:fs").readFileSync(require("node:path").join(__dirname, "..", "index.html"), "utf8");
-    const block = src.slice(src.indexOf("/* ---------------- import text"), src.indexOf("/** Put every sheet field"));
-    assert.ok(block.length > 500 && !/fetch\(|XMLHttpRequest|sendBeacon|new Image|WebSocket/.test(block));
+    openSheet(app);
+    tbFieldType(app, "ding", "D3");
+    tbFieldType(app, "top", "A3 X4");
+    app.els["scale-top"].dispatchEvent({ type: "blur" });
+    assert.ok(tbEl(app, "scale-field-msg").textContent, "an error on the field line");
+    assert.strictEqual(tbEl(app, "scale-field-msg").hidden, false);
+    app.click(tbTab(app, "layout"));
+    assert.strictEqual(tbEl(app, "scale-field-msg").hidden, true, "field line hidden on Layout");
+    app.click(tbTab(app, "scale"));
+    assert.strictEqual(tbEl(app, "scale-field-msg").hidden, false);
+    const b = boot();
+    tbOpen(b);
+    b.click(tbTab(b, "layout"));
+    b.els["scale-anchor-between"].click();
+    assert.ok(b.els["scale-layout-state"].textContent && !b.els["scale-layout-state"].hidden, "the notice shows on Layout");
+    b.click(tbTab(b, "scale"));
+    assert.strictEqual(b.els["scale-layout-state"].hidden, true, "the notice is hidden on Scale");
+    const slot = tbMarkup.slice(tbMarkup.indexOf('id="scale-guidance"'));
+    const order = ["scale-field-msg", "scale-msg", "scale-layout-state"].map((id) => slot.indexOf(`id="${id}"`));
+    assert.deepStrictEqual(order.slice().sort((x, y) => x - y), order);
+  });
+
+  test("TB: ELEMENT_IDS carries scale-tabs, scale-tab-scale, scale-tab-layout, scale-panel-scale, scale-panel-layout, scale-next, scale-foot, scale-footslide and scale-lip, and none of the retired adjust ids", () => {
+    const { ELEMENT_IDS } = require("../tools/sandbox.js");
+    for (const id of ["scale-tabs", "scale-tab-scale", "scale-tab-layout", "scale-panel-scale", "scale-panel-layout", "scale-next", "scale-foot", "scale-footslide", "scale-lip"]) {
+      assert.ok(ELEMENT_IDS.includes(id), id);
+    }
+    for (const id of ["scale-layout-toggle", "scale-adjust-back", "scale-adjust-title", "scale-adjust-head", "scale-pancol", "scale-layout-row"]) {
+      assert.ok(!ELEMENT_IDS.includes(id), id);
+    }
+  });
+
+  test("TB: switching to Layout with #scale-box focused and the keyboard up ends kbup and shows the tab strip", () => {
+    const app = tbOpen(boot({ layout: true, visualViewport: { height: 5000 } }));
+    app.els["scale-box"].focus();
+    app.run("setSheetClass('kbup', true); setSheetClass('side', true)");
+    assert.strictEqual(app.els["scale-sheet"].classList.contains("kbup"), true);
+    app.click(tbTab(app, "layout"));
+    assert.notStrictEqual(app.activeId(), "scale-box", "the hidden input kept focus");
+    app.run("applyKbOffset()");
+    assert.strictEqual(app.els["scale-sheet"].classList.contains("kbup"), false);
+  });
+
+  test("OR: #scale-or sits between #scale-fields and the scale line, is a separator named or, and is not a Tab stop", () => {
+    const at = (id) => tbMarkup.indexOf(`id="${id}"`);
+    assert.ok(at("scale-fields") < at("scale-or") && at("scale-or") < at("scale-box"));
+    assert.ok(at("scale-panel-scale") < at("scale-or") && at("scale-or") < at("scale-panel-layout"));
+    assert.strictEqual(tbAttr("scale-or", "role"), "separator");
+    assert.strictEqual(tbAttr("scale-or", "aria-label"), "or");
+    assert.strictEqual(tbAttr("scale-or", "tabindex"), null);
+    const m = /<div[^>]*id="scale-or"[^>]*>([\s\S]*?)<\/div>/.exec(tbMarkup);
+    assert.match(m[1], /<span>OR<\/span>/);
+  });
+});
+
+describe("O1: sheet placement of octaveless bottoms", () => {
+  const type = (app, k, text) => {
+    app.els["scale-" + k].dispatchEvent({ type: "focus" });
+    app.els["scale-" + k].value = text;
+    app.els["scale-" + k].dispatchEvent({ type: "input" });
+  };
+  const settle = (app, k) => app.els["scale-" + k].dispatchEvent({ type: "blur" });
+  const fieldsOf = (app) => ["ding", "top", "inner", "bottom"].map((k) => app.els["scale-" + k].value);
+  test("O1: typing g a b c in BOTTOM NOTES with ding D3 writes [G2] [A2] [B2] [C3] into the line", () => {
+    const app = boot();
+    openSheet(app);
+    type(app, "ding", "D3");
+    type(app, "top", "A3 C4");
+    type(app, "bottom", "g a b c");
+    settle(app, "bottom");
+    assert.strictEqual(app.els["scale-box"].value, "[G2] [A2] [B2] [C3] (D3) A3 C4");
+  });
+  test("O1: typing (D3) [G] A3 in the line writes G3 back into BOTTOM NOTES: the line is definitive", () => {
+    const app = boot();
+    openSheet(app);
+    app.type("(D3) [G] A3");
+    assert.strictEqual(app.els["scale-bottom"].value, "G3");
+    assert.strictEqual(app.els["scale-ding"].value, "D3");
+  });
+  test("O1: a v5 link and a stored record open with the same fields as before O1", () => {
+    const link = boot({ href: "https://example.test/index.html#s=5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/parent-aeolian/mirror/between/seats-1,0,2,3,4,5,6,7;;/975b6c" });
+    openEdit(link, link.registry()[link.deckId()]);
+    assert.deepStrictEqual(fieldsOf(link), ["D3", "A3 C4 D4 E4 F4 G4 A4 C5", "", ""]);
+    const first = boot();
+    const d = makeCustom(first, "[G2] [A2] (D3) A3 C4 E4");
+    const again = reboot(first);
+    openEdit(again, d);
+    assert.deepStrictEqual(fieldsOf(again), ["D3", "A3 C4 E4", "", "G2 A2"]);
+  });
+  test("O1: GENERATE CARDS and SAVE CHANGES from fields D3 / A3 C4 E4 / g store G2, equal to the parse line", () => {
+    const app = boot();
+    openSheet(app);
+    type(app, "ding", "D3");
+    type(app, "top", "A3 C4 E4");
+    type(app, "bottom", "g");
+    settle(app, "bottom");
+    const line = app.els["scale-box"].value;
+    assert.strictEqual(line, "[G2] (D3) A3 C4 E4");
+    app.els["scale-generate"].click();
+    const d = app.registry()[app.deckId()];
+    assert.strictEqual(app.get("HPE.core.formatSeed(deck().fields)"), line);
+    assert.ok(Object.values(d.fields).some((f) => f[0] === "G" && f[1] === 2), JSON.stringify(d.fields));
+    openEdit(app, d);
+    type(app, "top", "A3 C4 E4 F4");
+    type(app, "bottom", "g");
+    settle(app, "bottom");
+    app.els["scale-generate"].click();
+    const e = app.registry()[app.deckId()];
+    assert.strictEqual(app.get("HPE.core.formatSeed(deck().fields)"), "[G2] (D3) A3 C4 E4 F4");
+    assert.ok(Object.values(e.fields).some((f) => f[0] === "G" && f[1] === 2));
+  });
+});
+
+describe("O1: the duplicate-bottom warning on the field line", () => {
+  const WARN_DING = "BOTTOM NOTES: D3 is already the ding. Double-check the bottom notes.";
+  const type = (app, k, text) => {
+    app.els["scale-" + k].dispatchEvent({ type: "focus" });
+    app.els["scale-" + k].value = text;
+    app.els["scale-" + k].dispatchEvent({ type: "input" });
+  };
+  const settle = (app, k) => app.els["scale-" + k].dispatchEvent({ type: "blur" });
+  const fill = (app, bottom, inner = "") => {
+    openSheet(app);
+    type(app, "ding", "D3");
+    type(app, "top", "A3 C4");
+    if (inner) type(app, "inner", inner);
+    type(app, "bottom", bottom);
+    settle(app, "bottom");
+  };
+  test("O1: bottoms c d under D3 show 'BOTTOM NOTES: D3 is already the ding. Double-check the bottom notes.' in #scale-field-msg.warn, with #scale-msg hidden, and NEXT, GENERATE CARDS and SAVE CHANGES stay enabled", () => {
+    const app = boot();
+    fill(app, "c d");
+    const m = app.els["scale-field-msg"];
+    assert.strictEqual(m.textContent, WARN_DING);
+    assert.ok(m.classList.contains("warn"));
+    assert.ok(!m.classList.contains("info"));
+    assert.strictEqual(app.els["scale-msg"].hidden, true);
+    assert.strictEqual(Boolean(app.els["scale-next"].disabled), false);
+    assert.strictEqual(Boolean(app.els["scale-generate"].disabled), false);
+    const e = boot();
+    openEdit(e, makeCustom(e));
+    type(e, "bottom", "c d");
+    settle(e, "bottom");
+    assert.strictEqual(e.els["scale-field-msg"].textContent.startsWith("BOTTOM NOTES: "), true);
+    assert.strictEqual(e.els["scale-generate"].textContent, "SAVE CHANGES");
+    assert.strictEqual(Boolean(e.els["scale-generate"].disabled), false);
+  });
+  test("O1: bottoms B3 c under D3 / A3 C4 show 'BOTTOM NOTES: C4 is already top note 2. Double-check the bottom notes.' in #scale-field-msg.warn, and an error on another field wins", () => {
+    const app = boot();
+    fill(app, "B3 c");
+    assert.strictEqual(app.els["scale-field-msg"].textContent, "BOTTOM NOTES: C4 is already top note 2. Double-check the bottom notes.");
+    assert.ok(app.els["scale-field-msg"].classList.contains("warn"));
+    const both = boot();
+    fill(both, "c d");
+    assert.strictEqual(both.els["scale-field-msg"].textContent, WARN_DING);
+    type(both, "top", "A3 X4");
+    settle(both, "top");
+    assert.ok(both.els["scale-field-msg"].textContent.startsWith("TOP RIM NOTES: "), both.els["scale-field-msg"].textContent);
+    assert.ok(!both.els["scale-field-msg"].classList.contains("warn"));
+    type(app, "top", "A3 X4");
+    settle(app, "top");
+    assert.ok(app.els["scale-field-msg"].textContent.startsWith("TOP RIM NOTES: "), app.els["scale-field-msg"].textContent);
+    assert.ok(!app.els["scale-field-msg"].classList.contains("warn"));
+  });
+  test("O1: with inner f guessed under D3 / A3 C4, bottoms c d still show the duplicate warning on the field line over the inner Octaves-guessed line", () => {
+    const app = boot();
+    fill(app, "c d", "f");
+    const m = app.els["scale-field-msg"];
+    assert.strictEqual(m.textContent, WARN_DING);
+    assert.ok(m.classList.contains("warn") && !m.classList.contains("info"));
+  });
+  test("O1: typing D4 over the inferred d clears the duplicate warning, and switching to the line path clears it too", () => {
+    const app = boot();
+    fill(app, "c d");
+    assert.strictEqual(app.els["scale-field-msg"].textContent, WARN_DING);
+    type(app, "bottom", "c D4");
+    settle(app, "bottom");
+    assert.ok(!app.els["scale-field-msg"].classList.contains("warn"));
+    assert.ok(!app.els["scale-field-msg"].textContent.includes("already"), app.els["scale-field-msg"].textContent);
+    type(app, "bottom", "c d");
+    settle(app, "bottom");
+    assert.strictEqual(app.els["scale-field-msg"].textContent, WARN_DING);
+    app.els["scale-box"].dispatchEvent({ type: "focus" });
+    assert.ok(!app.els["scale-field-msg"].classList.contains("warn"));
+    assert.ok(!app.els["scale-field-msg"].textContent.includes("already"));
+  });
+  test("O1: the stored record and the #s= code for fields D3 / A3 C4 / c d equal those for C3 D3 typed: the warning leaves no trace", () => {
+    const run = (bottom) => {
+      const app = boot();
+      fill(app, bottom);
+      app.els["scale-generate"].click();
+      const d = app.registry()[app.deckId()];
+      return { fields: d.fields, id: d.id, line: app.get("HPE.core.formatSeed(deck().fields)") };
+    };
+    const a = run("c d"), b = run("C3 D3");
+    assert.deepStrictEqual(a, b);
+  });
+  test("O1: the duplicate warning is not hidden by the Layout notice: with warn set, a tapped anchor on Layout shows the notice and switching back to Scale shows #scale-field-msg.warn with its text", () => {
+    const app = boot();
+    fill(app, "c d");
+    app.click(app.els["scale-tab-layout"]);
+    app.els["scale-anchor-between"].click();
+    assert.ok(app.els["scale-layout-state"].textContent);
+    app.click(app.els["scale-tab-scale"]);
+    const m = app.els["scale-field-msg"];
+    assert.strictEqual(m.hidden, false);
+    assert.strictEqual(m.textContent, WARN_DING);
+    assert.ok(m.classList.contains("warn"));
+  });
+});
+
+describe("UX: the footer lip", () => {
+  const LINE = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
+  const rectOf = (top, bottom) => () => ({ top, bottom, left: 0, right: 360, width: 360, height: bottom - top });
+  const lipApp = (kind = "add", extra = {}) => {
+    const app = boot({ clock: true, layout: true, innerHeight: 800, visualViewport: { height: 800, offsetTop: 0, scale: 1 }, ...extra });
+    if (kind === "seed") app.clickChip("D KURD 10");
+    else if (kind === "edit") openEdit(app, makeCustom(app, LINE));
+    else { openSheet(app); app.type(LINE); }
+    const bp = app.get("bandPort");
+    bp.scrollHeight = 1400;
+    bp.clientHeight = 500;
+    bp.scrollTop = 0;
+    bp.getBoundingClientRect = rectOf(100, 600);
+    app.els["scale-sheet"].firstElementChild.getBoundingClientRect = rectOf(0, 700);
+    app.els["scale-foot"].getBoundingClientRect = rectOf(600, 700);
+    app.advance(200);
+    bp.dispatchEvent({ type: "scroll" });
+    return app;
+  };
+  const sheetOf = (app) => app.els["scale-sheet"];
+  const user = (app) => sheetOf(app).dispatchEvent({ type: "touchmove", touches: [] });
+  const scrollTo = (app, top, touched = true) => {
+    const bp = app.get("bandPort");
+    if (touched) user(app);
+    bp.scrollTop = top;
+    bp.dispatchEvent({ type: "scroll" });
+  };
+  const state = (app) => {
+    const c = sheetOf(app).classList;
+    return `${c.contains("lipped") ? "lipped" : "plain"}/${c.contains("lipshut") ? "shut" : "open"}`;
+  };
+  const OPEN = "plain/open", SHUT = "lipped/shut";
+  const tab = (app, shiftKey = false) => sheetOf(app).dispatchEvent({ type: "keydown", key: "Tab", shiftKey, preventDefault() {} });
+  const isActive = (app, expr) => app.get(`document.activeElement === ${expr}`);
+  const collapsed = (app, kind) => { scrollTo(app, 300); assert.strictEqual(state(app), SHUT, kind); return app; };
+  const lipSource = () => {
+    const src = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    return src.slice(src.indexOf("/* ---- the footer lip"), src.indexOf("function hasTwoNoteRing"));
+  };
+
+  test("UX: the lip control is named Show GENERATE CARDS on Add and Show SAVE CHANGES on Edit, a seeded deck's Edit included", () => {
+    const add = lipApp("add");
+    add.run("setTab('layout')");
+    add.run("collapseLip()");
+    assert.strictEqual(add.els["scale-lip"].getAttribute("aria-label"), "Show GENERATE CARDS");
+    for (const kind of ["edit", "seed"]) {
+      const app = lipApp(kind);
+      app.run("collapseLip()");
+      assert.strictEqual(app.els["scale-lip"].getAttribute("aria-label"), "Show SAVE CHANGES", kind);
+    }
+  });
+
+  test("UX: a 23px user scroll down does not collapse the footer and 24px does", () => {
+    const a = lipApp();
+    scrollTo(a, 23);
+    assert.strictEqual(state(a), OPEN);
+    const b = lipApp();
+    scrollTo(b, 24);
+    assert.strictEqual(state(b), SHUT);
+  });
+
+  test("UX: a user scroll up of 24px, or one that lands at the end, restores the footer", () => {
+    const up = collapsed(lipApp(), "up");
+    scrollTo(up, 276);
+    assert.strictEqual(up.els["scale-sheet"].classList.contains("lipshut"), false);
+    up.advance(300);
+    assert.strictEqual(state(up), OPEN);
+    const near = collapsed(lipApp(), "near");
+    scrollTo(near, 290);
+    assert.strictEqual(state(near), SHUT, "a 10px nudge up is not enough");
+    const end = collapsed(lipApp(), "end");
+    scrollTo(end, 900);
+    assert.strictEqual(end.els["scale-sheet"].classList.contains("lipshut"), false);
+    end.advance(300);
+    assert.strictEqual(state(end), OPEN);
+  });
+
+  test("UX: revealField, the tap pin and the keyboard handler's scrolls never collapse the footer", () => {
+    const a = lipApp();
+    a.sandbox.getComputedStyle = () => ({ overflowY: "auto", scrollPaddingTop: "0px", scrollPaddingBottom: "0px" });
+    const bp = a.get("bandPort");
+    const scroller = { scrollHeight: 1400, clientHeight: 500, scrollTop: 0, clientTop: 0, getBoundingClientRect: rectOf(100, 600), parentElement: sheetOf(a) };
+    a.sandbox.__field = { getBoundingClientRect: rectOf(650, 690), parentElement: scroller };
+    user(a);
+    a.run("revealField(__field)");
+    assert.ok(scroller.scrollTop > 0, "revealField scrolled");
+    scrollTo(a, 200);
+    assert.strictEqual(state(a), OPEN, "a scroll inside a revealField's quiet window");
+    a.advance(300);
+    a.run("scrollPin = { until: Date.now() + 600, body: 0, surf: 0 }");
+    bp.scrollTop = 50;
+    bp.dispatchEvent({ type: "scroll" });
+    scrollTo(a, 200);
+    assert.strictEqual(state(a), OPEN, "a scroll right after holdPin wrote");
+    a.advance(300);
+    a.run("scrollPin = null");
+    scrollTo(a, 400);
+    assert.strictEqual(state(a), SHUT, "once both windows lapse a user scroll collapses");
+    const b = lipApp();
+    b.get("window.visualViewport").height = 790;
+    b.run("applyKbOffset()");
+    scrollTo(b, 200);
+    assert.strictEqual(state(b), OPEN, "a scroll inside applyKbOffset's quiet window");
+  });
+
+  test("UX: a scroll with no touch, wheel or scroll key in the last 150ms changes no lip state", () => {
+    const a = lipApp();
+    scrollTo(a, 300, false);
+    assert.strictEqual(state(a), OPEN, "no gesture");
+    const b = lipApp();
+    user(b);
+    b.advance(151);
+    scrollTo(b, 300, false);
+    assert.strictEqual(state(b), OPEN, "the window lapsed");
+    const c = lipApp();
+    sheetOf(c).dispatchEvent({ type: "wheel" });
+    scrollTo(c, 300, false);
+    assert.strictEqual(state(c), SHUT, "a wheel opens the window");
+    const d = lipApp();
+    sheetOf(d).dispatchEvent({ type: "keydown", key: "PageDown", target: d.els["scale-back"] });
+    scrollTo(d, 300, false);
+    assert.strictEqual(state(d), SHUT, "a scroll key opens the window");
+    const e = lipApp();
+    sheetOf(e).dispatchEvent({ type: "keydown", key: "ArrowDown", target: { matches: () => true } });
+    scrollTo(e, 300, false);
+    assert.strictEqual(state(e), OPEN, "an arrow key in a text field is not a scroll");
+  });
+
+  test("UX: negative scrollTop and overshoot past the end change no lip state", () => {
+    const a = lipApp();
+    scrollTo(a, -30);
+    scrollTo(a, -60);
+    assert.strictEqual(state(a), OPEN);
+    scrollTo(a, 0);
+    assert.strictEqual(state(a), OPEN, "coming back from below zero is not a scroll down");
+    scrollTo(a, 1100);
+    assert.strictEqual(state(a), OPEN, "the clamped end leaves too little to scroll");
+  });
+
+  test("UX: a collapse needs more remaining scroll than the open footer's height", () => {
+    const a = lipApp();
+    scrollTo(a, 810);
+    assert.strictEqual(state(a), OPEN, "90px left, footer 100px");
+    const b = lipApp();
+    scrollTo(b, 790);
+    assert.strictEqual(state(b), SHUT, "110px left");
+  });
+
+  test("UX: a scroll event whose scroll range changed only re-baselines", () => {
+    const a = lipApp();
+    a.get("bandPort").scrollHeight = 1500;
+    scrollTo(a, 50);
+    assert.strictEqual(state(a), OPEN, "the range changed");
+    scrollTo(a, 60);
+    assert.strictEqual(state(a), OPEN, "10px since the baseline");
+    scrollTo(a, 90);
+    assert.strictEqual(state(a), SHUT, "30 more reaches 24 from the new baseline");
+  });
+
+  test("UX: the keyboard rising collapses the footer and its fall restores it", () => {
+    const a = lipApp();
+    a.get("window.visualViewport").height = 400;
+    a.run("applyKbOffset()");
+    assert.strictEqual(sheetOf(a).classList.contains("kbup"), true);
+    assert.strictEqual(state(a), SHUT);
+    a.get("window.visualViewport").height = 800;
+    a.run("applyKbOffset()");
+    assert.strictEqual(sheetOf(a).classList.contains("kbup"), false);
+    assert.strictEqual(sheetOf(a).classList.contains("lipshut"), false);
+    a.advance(300);
+    assert.strictEqual(state(a), OPEN);
+  });
+
+  test("UX: while the keyboard is up no scroll changes the lip state, and a lip tap or swipe still restores", () => {
+    const rise = () => {
+      const a = lipApp();
+      a.get("window.visualViewport").height = 400;
+      a.run("applyKbOffset()");
+      a.advance(300);
+      return a;
+    };
+    const a = rise();
+    scrollTo(a, 300);
+    scrollTo(a, 100);
+    assert.strictEqual(state(a), SHUT, "scrolls are ignored");
+    scrollTo(a, 900);
+    assert.strictEqual(state(a), SHUT, "even one that lands at the end");
+    a.els["scale-lip"].dispatchEvent({ type: "click" });
+    assert.strictEqual(a.els["scale-sheet"].classList.contains("lipshut"), false, "a tap restores");
+    const b = rise();
+    const lip = b.els["scale-lip"];
+    lip.dispatchEvent({ type: "touchstart", touches: [{ identifier: 1, clientY: 500 }] });
+    lip.dispatchEvent({ type: "touchmove", touches: [{ identifier: 1, clientY: 480 }] });
+    assert.strictEqual(b.els["scale-sheet"].classList.contains("lipshut"), false, "a swipe restores");
+  });
+
+  test("UX: Tab onto the lip restores the footer and focuses GENERATE CARDS, DELETE when GENERATE is disabled on Edit, else the shown tab's last stop", () => {
+    const arrive = (app) => {
+      collapsed(app, "arrive");
+      app.els["scale-lip"].focus();
+      app.els["scale-lip"].dispatchEvent({ type: "focusin" });
+    };
+    const add = lipApp("add");
+    add.run("setTab('layout')");
+    add.els["scale-generate"].disabled = false;
+    arrive(add);
+    assert.strictEqual(add.els["scale-sheet"].classList.contains("lipshut"), false);
+    assert.strictEqual(add.activeId(), "scale-generate");
+    const edit = lipApp("edit");
+    edit.els["scale-generate"].disabled = true;
+    arrive(edit);
+    assert.strictEqual(edit.activeId(), "scale-delete");
+    const bare = lipApp("add");
+    bare.run("setTab('layout')");
+    bare.els["scale-generate"].disabled = true;
+    assert.strictEqual(bare.get("swatches.children.length"), 6, "six swatches to land on");
+    bare.els["scale-swatches"].lastElementChild = bare.els["scale-swatches"].children[5];
+    arrive(bare);
+    assert.strictEqual(bare.get("document.activeElement === swatches.children[5]"), true,
+      "on the Layout tab the last stop is the sixth swatch");
+    const scale = lipApp("add");
+    assert.strictEqual(scale.get("sheetTab"), "scale", "the bare Scale case starts on the Scale tab");
+    scale.els["scale-next"].disabled = true;
+    scale.els["scale-swatches"].lastElementChild = scale.els["scale-swatches"].children[5];
+    arrive(scale);
+    assert.strictEqual(scale.activeId(), "scale-box", "on the Scale tab the last stop is the scale box, not a swatch that is hidden");
+    assert.strictEqual(scale.get("swatches.contains(document.activeElement)"), false);
+  });
+
+  test("UX: while lipped the sheet's Tab list holds the lip in place of GENERATE and DELETE", () => {
+    const app = lipApp("edit");
+    collapsed(app, "edit");
+    app.get("backBtn").focus();
+    tab(app, true);
+    assert.strictEqual(app.activeId(), "scale-lip", "the last stop is the lip");
+    tab(app);
+    assert.ok(isActive(app, "backBtn"), "forward from the lip wraps; DELETE is not a stop");
+    app.run("restoreLip()");
+    app.get("backBtn").focus();
+    tab(app, true);
+    assert.strictEqual(app.activeId(), "scale-delete", "during OPENING DELETE is back");
+    tab(app, true);
+    assert.strictEqual(app.activeId(), "scale-generate", "and GENERATE before it");
+    const add = lipApp("add");
+    add.run("setTab('layout')");
+    collapsed(add, "layout");
+    add.get("backBtn").focus();
+    tab(add, true);
+    assert.strictEqual(add.activeId(), "scale-lip", "Layout holds the lip too");
+    const scale = lipApp("add");
+    collapsed(scale, "scale");
+    scale.get("backBtn").focus();
+    tab(scale, true);
+    assert.strictEqual(scale.activeId(), "scale-lip", "Scale holds the lip in place of NEXT");
+  });
+
+  test("UX: a collapse while GENERATE CARDS holds focus moves focus to the lip, never body", () => {
+    for (const [kind, id] of [["edit", "scale-generate"], ["add", "scale-next"]]) {
+      const app = lipApp(kind);
+      app.els[id].focus();
+      scrollTo(app, 300);
+      assert.strictEqual(state(app), SHUT, kind);
+      assert.strictEqual(app.activeId(), "scale-lip", kind);
+    }
+    const layout = lipApp("add");
+    layout.run("setTab('layout')");
+    layout.els["scale-generate"].disabled = false;
+    layout.els["scale-generate"].focus();
+    scrollTo(layout, 300);
+    assert.strictEqual(layout.activeId(), "scale-lip");
+  });
+
+  test("UX: Adjust layout never shows the lip, and opening it restores the footer at once", () => {
+    const app = collapsed(lipApp("add"), "add");
+    app.click(app.els["scale-tab-layout"]);
+    assert.strictEqual(state(app), OPEN, "the tab switch is instant");
+    assert.strictEqual(app.els["scale-lip"].hidden, true);
+    assert.strictEqual(app.els["scale-sheet"].classList.contains("lipnow"), false);
+    for (const k of ["--lip-h", "--lip-pad", "--lip-gd", "--lip-g"]) assert.strictEqual(app.els["scale-sheet"].style[k] || "", "", k);
+    app.advance(300);
+    assert.strictEqual(state(app), OPEN, "no timer finishes anything later");
+  });
+
+  test("UX: a restore ends on the 220ms timer when no transitionend arrives, and a stale timer from a reversed slide does nothing", () => {
+    const a = lipApp();
+    collapsed(a, "a");
+    a.advance(300);
+    scrollTo(a, 270);
+    assert.strictEqual(state(a), "lipped/open");
+    a.advance(219);
+    assert.strictEqual(state(a), "lipped/open", "not yet");
+    a.advance(1);
+    assert.strictEqual(state(a), OPEN, "the timer ended it");
+    assert.strictEqual(a.els["scale-lip"].hidden, true);
+    const b = lipApp();
+    collapsed(b, "b");
+    b.advance(300);
+    scrollTo(b, 270);
+    b.advance(50);
+    scrollTo(b, 400);
+    assert.strictEqual(state(b), SHUT, "reversed");
+    b.advance(400);
+    assert.strictEqual(state(b), SHUT, "the first restore's timer did nothing");
+    const slide = b.els["scale-footslide"];
+    scrollTo(b, 370);
+    slide.dispatchEvent({ type: "transitionend", target: slide, propertyName: "transform" });
+    assert.strictEqual(state(b), OPEN, "a transitionend on the slab ends the restore early");
+    const c = collapsed(lipApp(), "c");
+    c.advance(300);
+    scrollTo(c, 270);
+    c.els["scale-footslide"].dispatchEvent({ type: "transitionend", target: c.els["scale-foot"], propertyName: "transform" });
+    assert.strictEqual(state(c), "lipped/open", "a transitionend from another element is ignored");
+    const d = collapsed(lipApp(), "d");
+    d.advance(300);
+    scrollTo(d, 270);
+    d.advance(50);
+    scrollTo(d, 400);
+    d.advance(50);
+    scrollTo(d, 370);
+    assert.strictEqual(state(d), "lipped/open", "restoring again");
+    d.advance(120);
+    assert.strictEqual(state(d), "lipped/open", "the first restore's timer fired and did nothing");
+    d.advance(100);
+    assert.strictEqual(state(d), OPEN, "the second restore's own timer ended it");
+  });
+
+  test("UX: a reversal mid-slide retargets the slide and never changes the layout classes", () => {
+    const app = lipApp();
+    const log = [];
+    const cl = sheetOf(app).classList;
+    for (const m of ["add", "remove"]) {
+      const orig = cl[m].bind(cl);
+      cl[m] = (...names) => { if (names.some((n) => n === "lipped" || n === "lipnow")) log.push(m + ":" + names.join()); return orig(...names); };
+    }
+    collapsed(app, "go");
+    const afterCollapse = log.length;
+    app.advance(40);
+    scrollTo(app, 270);
+    assert.strictEqual(state(app), "lipped/open");
+    app.advance(40);
+    scrollTo(app, 400);
+    assert.strictEqual(state(app), SHUT);
+    app.advance(40);
+    scrollTo(app, 370);
+    assert.strictEqual(state(app), "lipped/open");
+    assert.deepStrictEqual(log.slice(afterCollapse), [], "no lipped or lipnow write between the start and the end");
+  });
+
+  test("UX: opening, Edit-opening and closing the sheet leave the footer open with no lip classes or variables", () => {
+    const clean = (app, label) => {
+      const c = sheetOf(app).classList;
+      for (const n of ["lipped", "lipshut", "lipnow"]) assert.strictEqual(c.contains(n), false, label + " " + n);
+      assert.strictEqual(app.els["scale-lip"].hidden, true, label);
+      for (const k of ["--lip-h", "--lip-pad", "--lip-gd", "--lip-g"]) assert.strictEqual(sheetOf(app).style[k] || "", "", label + " " + k);
+    };
+    const app = lipApp("add");
+    clean(app, "open");
+    collapsed(app, "shut");
+    app.run("closeScaleSheet()");
+    clean(app, "closed while shut");
+    openSheet(app);
+    clean(app, "reopened");
+    const edit = lipApp("edit");
+    clean(edit, "edit");
+    collapsed(edit, "edit shut");
+    edit.run("closeScaleSheet()");
+    clean(edit, "edit closed");
+  });
+
+  test("UX: a lip click, a 16px upward touch on the lip and a focus on the lip each restore; a 15px touch and a downward one do not", () => {
+    const touch = (app, dy) => {
+      const lip = app.els["scale-lip"];
+      lip.dispatchEvent({ type: "touchstart", touches: [{ identifier: 3, clientY: 500 }] });
+      lip.dispatchEvent({ type: "touchmove", touches: [{ identifier: 3, clientY: 500 + dy }] });
+    };
+    const shutOf = (app) => app.els["scale-sheet"].classList.contains("lipshut");
+    const a = collapsed(lipApp(), "click");
+    a.els["scale-lip"].dispatchEvent({ type: "click" });
+    assert.strictEqual(shutOf(a), false, "click");
+    const b = collapsed(lipApp(), "focus");
+    b.els["scale-lip"].dispatchEvent({ type: "focusin" });
+    assert.strictEqual(shutOf(b), false, "focus");
+    const c = collapsed(lipApp(), "16");
+    touch(c, -16);
+    assert.strictEqual(shutOf(c), false, "16px up");
+    const d = collapsed(lipApp(), "15");
+    touch(d, -15);
+    assert.strictEqual(shutOf(d), true, "15px up");
+    const e = collapsed(lipApp(), "down");
+    touch(e, 40);
+    assert.strictEqual(shutOf(e), true, "down");
+  });
+
+  describe("PH: P3 finger drag", () => {
+    const shortApp = () => {
+      const a = lipApp();
+      a.get("bandPort").scrollHeight = 510;
+      return a;
+    };
+    const finger = (app, type, y, o = {}) => {
+      const pts = type === "touchend" ? [] : [{ identifier: o.id || 1, clientX: o.x || 0, clientY: y }, ...(o.extra ? [{ identifier: 2, clientX: 5, clientY: y }] : [])];
+      sheetOf(app).dispatchEvent({ type, touches: pts, changedTouches: [{ identifier: o.id || 1, clientX: o.x || 0, clientY: y }], target: o.target });
+    };
+    const drag = (app, dy, o = {}) => {
+      finger(app, "touchstart", 400, o);
+      finger(app, "touchmove", 400 + dy, { ...o, x: (o.x || 0) + (o.dx || 0) });
+      if (!o.hold) finger(app, "touchend", 400 + dy, o);
+    };
+    const isShut = (app) => sheetOf(app).classList.contains("lipshut");
+
+    test("PH: P3 a 24px finger-up drag collapses a sheet whose range is far under the footer's height; 23px does not", () => {
+      const a = shortApp();
+      drag(a, -23);
+      assert.strictEqual(state(a), OPEN, "23px");
+      const b = shortApp();
+      drag(b, -24);
+      assert.strictEqual(state(b), SHUT, "24px");
+    });
+
+    test("PH: P3 a mostly horizontal drag does not collapse, and neither does a finger-down drag", () => {
+      const a = shortApp();
+      drag(a, -24, { dx: 60 });
+      assert.strictEqual(state(a), OPEN, "horizontal");
+      const b = shortApp();
+      drag(b, 40);
+      assert.strictEqual(state(b), OPEN, "down on an open footer");
+    });
+
+    test("PH: P3 a 24px finger-down drag restores, one gesture can reverse, and repeats never oscillate", () => {
+      const a = shortApp();
+      drag(a, -40);
+      assert.strictEqual(isShut(a), true);
+      a.advance(300);
+      drag(a, 24);
+      assert.strictEqual(isShut(a), false, "down restores");
+      a.advance(300);
+      finger(a, "touchstart", 400);
+      finger(a, "touchmove", 370);
+      assert.strictEqual(isShut(a), true, "up");
+      finger(a, "touchmove", 350);
+      finger(a, "touchmove", 340);
+      assert.strictEqual(isShut(a), true, "continuing up changes nothing");
+      finger(a, "touchmove", 364);
+      assert.strictEqual(isShut(a), false, "reversal by 24 restores inside the gesture");
+      finger(a, "touchend", 360);
+      a.advance(300);
+      finger(a, "touchstart", 400);
+      finger(a, "touchmove", 370);
+      assert.strictEqual(isShut(a), true, "up again");
+      finger(a, "touchmove", 360);
+      finger(a, "touchmove", 384);
+      assert.strictEqual(isShut(a), false, "the anchor follows the finger: 24px from the lowest point restores, not 24px from where it first collapsed");
+      finger(a, "touchend", 384);
+      a.advance(300);
+      const flips = [];
+      for (let i = 0; i < 3; i++) { drag(a, -30); flips.push(isShut(a)); a.advance(300); drag(a, 30); flips.push(isShut(a)); a.advance(300); }
+      assert.deepStrictEqual(flips, [true, false, true, false, true, false]);
+    });
+
+    test("PH: P3 a drag that scrolls the body to its end neither restores nor collapses again, momentum included", () => {
+      const a = lipApp();
+      drag(a, -40, { hold: true });
+      assert.strictEqual(isShut(a), true);
+      scrollTo(a, 900);
+      scrollTo(a, 900);
+      assert.strictEqual(isShut(a), true, "bottom reached during the drag");
+      finger(a, "touchend", 360);
+      a.advance(100);
+      scrollTo(a, 300);
+      scrollTo(a, 900);
+      assert.strictEqual(isShut(a), true, "momentum after touchend");
+      a.advance(400);
+      a.advance(400);
+      scrollTo(a, 900);
+      assert.strictEqual(isShut(a), false, "once the touch and LIP_END_MS are over, reaching the end on the scroll path restores again");
+    });
+
+    const trackedTarget = (excluded = true) => {
+      const on = {};
+      return {
+        on,
+        closest: (sel) => (excluded && sel.split(",").map((x) => x.trim()).includes("#scale-preview") ? {} : null),
+        addEventListener: (type, fn) => { on[type] = fn; },
+        fire: (type) => on[type] && on[type]({ type, touches: [] }),
+      };
+    };
+
+    test("PH: P3 a touch whose target is detached before touchend still ends: the target's own touchend and touchcancel end the suspension", () => {
+      for (const type of ["touchend", "touchcancel"]) {
+        const a = lipApp();
+        const t = trackedTarget();
+        finger(a, "touchstart", 400, { target: t });
+        assert.ok(t.on.touchend && t.on.touchcancel, "touchstart attaches touchend and touchcancel to the target itself");
+        scrollTo(a, 300);
+        assert.strictEqual(state(a), OPEN, "suspended while the finger is down");
+        t.fire(type);
+        a.advance(400);
+        scrollTo(a, 340);
+        assert.strictEqual(state(a), SHUT, `${type} on the target alone (the sheet never saw it) ended the suspension`);
+      }
+    });
+
+    test("PH: P3 a touchcancel with no touchend ends the suspension after LIP_END_MS", () => {
+      const a = lipApp();
+      finger(a, "touchstart", 400);
+      scrollTo(a, 100);
+      scrollTo(a, 300);
+      assert.strictEqual(state(a), OPEN);
+      sheetOf(a).dispatchEvent({ type: "touchcancel", touches: [] });
+      a.advance(400);
+      scrollTo(a, 340);
+      assert.strictEqual(state(a), SHUT, "after the cancel and LIP_END_MS the scroll rule drives the lip again");
+    });
+
+    test("PH: P3 a wheel or a scrolling key on the sheet ends a suspension no touchend ever closed", () => {
+      for (const ev of [{ type: "wheel" }, { type: "keydown", key: "ArrowDown", preventDefault() {} }]) {
+        const a = lipApp();
+        finger(a, "touchstart", 400, { target: trackedTarget() });
+        sheetOf(a).dispatchEvent(ev);
+        scrollTo(a, 300, false);
+        assert.strictEqual(state(a), SHUT, `${ev.type} after a touch that never ended`);
+      }
+    });
+
+    test("PH: P3 every touch suspends the scroll path, an excluded start or a second finger included: no collapse, no restore, and momentum keeps extending the window", () => {
+      const hit = (sel) => ({ closest: (s) => (s.split(",").map((x) => x.trim()).includes(sel) ? {} : null) });
+      const starts = [
+        ["the plate", (a) => finger(a, "touchstart", 400, { target: hit("#scale-preview") })],
+        ["a field", (a) => finger(a, "touchstart", 400, { target: hit("input") })],
+        ["the lip", (a) => finger(a, "touchstart", 400, { target: hit("#scale-lip") })],
+        ["two fingers", (a) => finger(a, "touchstart", 400, { extra: true })],
+      ];
+      for (const [name, start] of starts) {
+        const a = lipApp();
+        start(a);
+        scrollTo(a, 100);
+        scrollTo(a, 300);
+        assert.strictEqual(state(a), OPEN, `${name}: the scroll rule collapsed during the touch`);
+        scrollTo(a, 900);
+        finger(a, "touchend", 340);
+        a.advance(100);
+        scrollTo(a, 300);
+        scrollTo(a, 900);
+        assert.strictEqual(state(a), OPEN, `${name}: momentum after the touch collapsed`);
+        a.advance(400);
+        a.advance(400);
+        sheetOf(a).dispatchEvent({ type: "wheel" });
+        scrollTo(a, 100, false);
+        scrollTo(a, 300, false);
+        assert.strictEqual(state(a), SHUT, `${name}: a wheel scroll long after the touch collapses as before`);
+      }
+      const b = lipApp();
+      scrollTo(b, 300);
+      assert.strictEqual(state(b), SHUT);
+      b.advance(400);
+      finger(b, "touchstart", 400, { target: hit("#scale-preview") });
+      scrollTo(b, 900);
+      assert.strictEqual(state(b), SHUT, "an excluded touch that scrolls to the end does not restore");
+      scrollTo(b, 200);
+      scrollTo(b, 0);
+      assert.strictEqual(state(b), SHUT, "an excluded touch scrolling back up does not restore");
+    });
+
+    test("PH: P3 a wheel scroll on a sheet with no room still never collapses, and with room it collapses and the end restores", () => {
+      const a = shortApp();
+      scrollTo(a, 10);
+      scrollTo(a, 0);
+      assert.strictEqual(state(a), OPEN);
+      const b = lipApp();
+      sheetOf(b).dispatchEvent({ type: "wheel" });
+      scrollTo(b, 300, false);
+      assert.strictEqual(state(b), SHUT, "a wheel with room collapses");
+      scrollTo(b, 900);
+      assert.strictEqual(isShut(b), false, "the bottom restores on the scroll path");
+    });
+
+    test("PH: P3 starts on the lip, a select or with a second finger do not collapse; the keyboard does not either", () => {
+      const hit = (sel) => ({ closest: (s) => (s.split(",").map((x) => x.trim()).includes(sel) ? {} : null) });
+      for (const sel of ["#scale-lip", "select"]) {
+        const a = shortApp();
+        drag(a, -40, { target: hit(sel) });
+        assert.strictEqual(state(a), OPEN, sel);
+      }
+      const two = shortApp();
+      drag(two, -40, { extra: true });
+      assert.strictEqual(state(two), OPEN, "two fingers");
+      const kb = shortApp();
+      kb.get("window.visualViewport").height = 400;
+      kb.run("applyKbOffset()");
+      kb.advance(300);
+      kb.run("restoreLip()");
+      kb.advance(300);
+      const before = state(kb);
+      drag(kb, -40);
+      assert.strictEqual(state(kb), before, "kbup");
+    });
+
+    describe("LG: the lip gesture on every surface, momentum included", () => {
+      const HOLD = 250;
+      const field = (a, id, tag = "INPUT") => { const e = a.els[id]; e.tagName = tag; return e; };
+      const IDS = [["scale-ding", "INPUT"], ["scale-top", "INPUT"], ["scale-inner", "INPUT"], ["scale-bottom", "INPUT"], ["scale-box", "TEXTAREA"]];
+      const frames = (a, from, steps, gap = 33) => { let t = from; for (const s of steps) { a.advance(gap); t += s; scrollTo(a, t, false); } return t; };
+      const spy = (a, fn) => a.run(`(() => { const o = ${fn}; globalThis.__${fn} = 0; ${fn} = function () { globalThis.__${fn}++; return o.apply(this, arguments); }; })()`);
+      const calls = (a, fn) => a.get(`globalThis.__${fn}`);
+      const flingOf = (a) => a.get("lipFling ? lipFling.way : null");
+      const bodyAt = (a, top) => { a.get("bandPort").scrollTop = top; a.run("lipRebase()"); };
+      const hit = (sel) => ({ closest: (s) => (s.split(",").map((x) => x.trim()).includes(sel) ? {} : null) });
+
+      test("LG: a tap on each field (travel 6px) arms nothing, acts on nothing and leaves tapSnap and scrollPin as P3 left them", () => {
+        for (const [id, tag] of [...IDS, ["scale-preview", "DIV"]]) {
+          const a = lipApp();
+          const e = field(a, id, tag);
+          e.matches = (sel) => sel.split(",").map((x) => x.trim()).includes(tag.toLowerCase());
+          sheetOf(a).dispatchEvent({ type: "pointerdown", target: e });
+          finger(a, "touchstart", 400, { target: e });
+          finger(a, "touchmove", 394, { target: e });
+          finger(a, "touchend", 394, { target: e });
+          assert.strictEqual(state(a), OPEN, id);
+          assert.strictEqual(flingOf(a), null, id + ": a tap makes no fling");
+          const P3 = tag === "DIV" ? "[null,null]" : '[{"body":0},null]';
+          assert.strictEqual(a.get("JSON.stringify([tapSnap && { body: tapSnap.body, surf: tapSnap.surf }, scrollPin])"), P3, id + ": tapSnap and scrollPin differ from the values P3 left (5caaf6b)");
+        }
+      });
+
+      test("LG: a stationary press on an unfocused field for HOLD_MS then a 60px drag does not act", () => {
+        for (const [id, tag] of [["scale-top", "INPUT"], ["scale-box", "TEXTAREA"], ["scale-preview", "DIV"]]) {
+          const a = shortApp();
+          const e = field(a, id, tag);
+          finger(a, "touchstart", 400, { target: e });
+          a.advance(HOLD);
+          finger(a, "touchmove", 340, { target: e });
+          assert.strictEqual(state(a), OPEN, id + " (a): one big move after a hold");
+          const b = shortApp();
+          const f = field(b, id, tag);
+          finger(b, "touchstart", 400, { target: f });
+          for (const y of [403, 398, 402, 399]) { b.advance(70); finger(b, "touchmove", y, { target: f }); }
+          finger(b, "touchmove", 340, { target: f });
+          assert.strictEqual(state(b), OPEN, id + " (b): jitter through the hold, then a drag");
+        }
+        const c = shortApp();
+        finger(c, "touchstart", 400);
+        c.advance(HOLD);
+        finger(c, "touchmove", 340);
+        assert.strictEqual(state(c), SHUT, "(c) a hold on the body, which P3 already armed, still drags");
+      });
+
+      test("LG: a 24px finger-up drag from each unfocused field collapses and a 24px finger-down drag restores; 23px does neither", () => {
+        for (const mk of [shortApp, lipApp]) {
+          for (const [id, tag] of [...IDS]) {
+            const a = mk();
+            const e = field(a, id, tag);
+            drag(a, -23, { target: e });
+            assert.strictEqual(state(a), OPEN, id + " 23px");
+            a.advance(300);
+            drag(a, -24, { target: e });
+            assert.strictEqual(state(a), SHUT, id + " 24px up");
+            a.advance(300);
+            drag(a, 23, { target: e });
+            assert.strictEqual(isShut(a), true, id + " 23px down");
+            a.advance(300);
+            drag(a, 24, { target: e });
+            assert.strictEqual(isShut(a), false, id + " 24px down");
+          }
+        }
+      });
+
+      test("LG: a drag inside the focused field never acts, kb down included", () => {
+        for (const [id, tag] of IDS) {
+          const a = shortApp();
+          const e = field(a, id, tag);
+          e.focus();
+          let blurs = 0;
+          const ob = e.blur; e.blur = () => { blurs++; ob(); };
+          drag(a, -60, { target: e });
+          assert.strictEqual(state(a), OPEN, id + " up");
+          a.advance(300);
+          const b = shortApp();
+          const f = field(b, id, tag);
+          b.run("collapseLip()");
+          b.advance(300);
+          f.focus();
+          drag(b, 60, { target: f });
+          assert.strictEqual(isShut(b), true, id + " down");
+          assert.strictEqual(blurs, 0, "blur is never called");
+        }
+      });
+
+      test("LG: a drag that starts on another, unfocused field while one is focused acts", () => {
+        const a = shortApp();
+        field(a, "scale-ding").focus();
+        drag(a, -40, { target: field(a, "scale-top") });
+        assert.strictEqual(state(a), SHUT);
+      });
+
+      test("LG: a drag that scrolls #scale-box's own content never acts, in the finger phase or its fling", () => {
+        const a = lipApp();
+        const box = field(a, "scale-box", "TEXTAREA");
+        box.scrollTop = 0;
+        finger(a, "touchstart", 400, { target: box });
+        box.scrollTop = 30;
+        finger(a, "touchmove", 340, { target: box });
+        assert.strictEqual(state(a), OPEN, "the finger phase");
+        finger(a, "touchend", 340, { target: box });
+        assert.strictEqual(flingOf(a), null, "no fling is handed on");
+        a.advance(33);
+        scrollTo(a, 300);
+        assert.strictEqual(state(a), OPEN, "its momentum is suspended like any untracked touch");
+      });
+
+      test("LG: a drag from #scale-box at its scroll edge, where its scrollTop does not change, acts", () => {
+        const a = lipApp();
+        const box = field(a, "scale-box", "TEXTAREA");
+        box.scrollTop = 0;
+        drag(a, -40, { target: box });
+        assert.strictEqual(state(a), SHUT);
+      });
+
+      test("LG: while kbup a drag from any surface and its fling do nothing", () => {
+        for (const [id, tag] of [...IDS, ["scale-preview", "DIV"]]) {
+          const a = shortApp();
+          sheetOf(a).classList.add("kbup");
+          drag(a, -60, { target: field(a, id, tag) });
+          assert.strictEqual(state(a), OPEN, id);
+        }
+        const b = lipApp();
+        finger(b, "touchstart", 400);
+        bodyAt(b, 0);
+        b.get("bandPort").scrollTop = 10;
+        b.get("bandPort").dispatchEvent({ type: "scroll" });
+        finger(b, "touchmove", 390);
+        finger(b, "touchend", 390);
+        assert.strictEqual(flingOf(b), "up");
+        sheetOf(b).classList.add("kbup");
+        frames(b, 10, [5, 5, 5, 5, 5, 5]);
+        assert.strictEqual(state(b), OPEN, "a fling that meets the keyboard counts nothing");
+      });
+
+      test("LG: focus moving field to field with kbup does not change the lip", () => {
+        const a = shortApp();
+        sheetOf(a).classList.add("kbup");
+        for (const [id, tag] of IDS) {
+          const e = field(a, id, tag);
+          e.focus();
+          sheetOf(a).dispatchEvent({ type: "focusin", target: e });
+          assert.strictEqual(state(a), OPEN, id);
+          assert.strictEqual(a.get("lipDrag"), null, id + ": nothing armed");
+        }
+      });
+
+      test("LG: a touch on #scale-lip arms no body drag: its 16px swipe restores once and nothing else acts", () => {
+        const a = shortApp();
+        a.run("collapseLip()");
+        a.advance(300);
+        const lip = a.els["scale-lip"];
+        drag(a, 60, { target: lip });
+        assert.strictEqual(isShut(a), true, "the body gesture never armed on the lip");
+        a.advance(300);
+        spy(a, "restoreLip");
+        lip.dispatchEvent({ type: "touchstart", touches: [{ identifier: 3, clientX: 0, clientY: 600 }] });
+        lip.dispatchEvent({ type: "touchmove", touches: [{ identifier: 3, clientX: 0, clientY: 583 }] });
+        assert.strictEqual(isShut(a), false, "the lip's own swipe restores");
+        assert.strictEqual(calls(a, "restoreLip"), 1);
+      });
+
+      test("LG: a 60px drag from the plate on the Layout tab collapses and activates no note", () => {
+        const a = shortApp();
+        a.run("setTab('layout')");
+        spy(a, "activateNote");
+        drag(a, -60, { target: a.els["scale-preview"] });
+        assert.strictEqual(state(a), SHUT);
+        assert.strictEqual(calls(a, "activateNote"), 0);
+      });
+
+      test("LG: a plate press held (press.lifted) then dragged 60px never acts", () => {
+        for (const state_ of ["held", "drag"]) {
+          const a = shortApp();
+          a.run("setTab('layout')");
+          a.run(`press = { lifted: true, state: ${JSON.stringify(state_)} }`);
+          drag(a, -60, { target: a.els["scale-preview"] });
+          assert.strictEqual(state(a), OPEN, state_);
+          a.run("press = null");
+        }
+      });
+
+      test("LG: a tap on the plate (travel 6px) with the Layout tab open acts on nothing and the lip code calls activateNote zero times", () => {
+        const a = shortApp();
+        a.run("setTab('layout')");
+        spy(a, "activateNote");
+        finger(a, "touchstart", 400, { target: a.els["scale-preview"] });
+        finger(a, "touchmove", 394, { target: a.els["scale-preview"] });
+        finger(a, "touchend", 394, { target: a.els["scale-preview"] });
+        assert.strictEqual(state(a), OPEN);
+        assert.strictEqual(flingOf(a), null);
+        assert.strictEqual(calls(a, "activateNote"), 0);
+        d2Tap(a, "A3");
+        assert.strictEqual(calls(a, "activateNote"), 1, "the click on the plate note activates it once");
+        assert.deepStrictEqual(d2Pick(a), { ring: "rim", i: 0 }, "the tap selected the note");
+        assert.strictEqual(state(a), OPEN, "and the click acted on nothing in the lip");
+      });
+
+      test("LG: lipNeverArms matches #scale-lip and select, and #scale-sheet holds no select", () => {
+        const never = (sel) => a0.get(`lipNeverArms({ closest: (s) => s.split(",").map((x) => x.trim()).includes(${JSON.stringify(sel)}) ? {} : null })`);
+        const a0 = lipApp();
+        assert.strictEqual(never("#scale-lip"), true);
+        assert.strictEqual(never("select"), true);
+        for (const s of ["input", "textarea", "#scale-preview"]) assert.strictEqual(never(s), false, s);
+        const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+        const from = html.indexOf('<div id="scale-sheet"');
+        const sheetHtml = html.slice(from, html.indexOf('id="scale-lip"', from));
+        assert.ok(!/<select\b/.test(sheetHtml), "the sheet holds no select");
+        assert.deepStrictEqual([...html.matchAll(/<select\b[^>]*id="([^"]+)"/g)].map((m) => m[1]), ["print-paper-select"]);
+      });
+
+      const flingFrom = (a, { seed = 10, way = "up", start = 0 } = {}) => {
+        bodyAt(a, start);
+        finger(a, "touchstart", 400);
+        const y = way === "up" ? 390 : 410;
+        const t = way === "up" ? start + seed : start - seed;
+        a.get("bandPort").scrollTop = t;
+        a.get("bandPort").dispatchEvent({ type: "scroll" });
+        finger(a, "touchmove", y);
+        finger(a, "touchend", y);
+        return t;
+      };
+
+      test("LG: momentum after touchend in the finger's direction collapses once it reaches 24px with the seed", () => {
+        const a = lipApp();
+        spy(a, "collapseLip");
+        const t = flingFrom(a);
+        assert.strictEqual(state(a), OPEN, "10px of finger is under 24");
+        assert.strictEqual(flingOf(a), "up");
+        let at = frames(a, t, [5]);
+        at = frames(a, at, [5]);
+        assert.strictEqual(state(a), OPEN, "20 of 24");
+        frames(a, at, [5]);
+        assert.strictEqual(state(a), SHUT, "10 seeded + 15 momentum");
+        assert.strictEqual(calls(a, "collapseLip"), 1);
+      });
+
+      test("LG: momentum after a finger-down drag restores a shut footer", () => {
+        const a = lipApp();
+        scrollTo(a, 300);
+        assert.strictEqual(state(a), SHUT);
+        a.advance(400);
+        const t = flingFrom(a, { way: "down", start: 300 });
+        assert.strictEqual(isShut(a), true);
+        frames(a, t, [-5, -5, -5]);
+        assert.strictEqual(isShut(a), false);
+      });
+
+      test("LG: a fling acts at most once: a touchmove collapse and a 482px tail is one collapse, and a lip click restore during a collapse fling's tail is not undone", () => {
+        const a = lipApp();
+        spy(a, "collapseLip");
+        finger(a, "touchstart", 400);
+        finger(a, "touchmove", 360);
+        assert.strictEqual(state(a), SHUT);
+        finger(a, "touchend", 360);
+        let t = 0;
+        for (let i = 0; i < 40; i++) t = frames(a, t, [12]);
+        assert.strictEqual(calls(a, "collapseLip"), 1, "one collapse across the finger and a 480px tail");
+        const b = lipApp();
+        spy(b, "collapseLip");
+        const t0 = flingFrom(b);
+        let u = frames(b, t0, [5, 5, 5]);
+        assert.strictEqual(state(b), SHUT);
+        b.click(b.els["scale-lip"]);
+        assert.strictEqual(isShut(b), false, "the lip click restored");
+        u = frames(b, u, [12, 12, 12, 12]);
+        assert.strictEqual(isShut(b), false, "later momentum frames leave it open");
+        assert.strictEqual(calls(b, "collapseLip"), 1);
+      });
+
+      test("LG: a fling's opposite-sign scroll (the collapse clamp) never restores", () => {
+        const a = lipApp();
+        bodyAt(a, 300);
+        finger(a, "touchstart", 400);
+        finger(a, "touchmove", 390);
+        finger(a, "touchend", 390);
+        frames(a, 300, [-50, -50]);
+        assert.strictEqual(state(a), OPEN, "the opposite sign never counts toward an up fling");
+        const b = lipApp();
+        const t = flingFrom(b, { seed: 20 });
+        const at = frames(b, t, [10]);
+        assert.strictEqual(isShut(b), true);
+        frames(b, at, [-30, -30, -30]);
+        assert.strictEqual(isShut(b), true, "a clamp after the collapse restores nothing");
+      });
+
+      test("LG: a fling never restores on reaching the bottom", () => {
+        const a = lipApp();
+        scrollTo(a, 300);
+        assert.strictEqual(state(a), SHUT);
+        a.advance(400);
+        const t = flingFrom(a, { start: 300 });
+        frames(a, t, [200, 200, 200, 200]);
+        assert.strictEqual(isShut(a), true, "the bottom is reached by touch momentum");
+      });
+
+      test("LG: the fling ends LIP_END_MS after the last scroll and a later programmatic scroll does nothing", () => {
+        const a = lipApp();
+        const t = flingFrom(a, { seed: 0 });
+        frames(a, t, [5]);
+        a.advance(230);
+        scrollTo(a, 300, false);
+        assert.strictEqual(state(a), OPEN);
+        assert.strictEqual(flingOf(a), null);
+      });
+
+      test("LG: a 140ms gap between momentum frames keeps the fling alive", () => {
+        const a = lipApp();
+        const t = flingFrom(a);
+        frames(a, t, [5, 5, 5], 140);
+        assert.strictEqual(state(a), SHUT);
+      });
+
+      test("LG: wheel and keyboard scrolling are unchanged: the scroll rule M - t > E and the bottom restore", () => {
+        const a = shortApp();
+        sheetOf(a).dispatchEvent({ type: "wheel" });
+        scrollTo(a, 10, false);
+        assert.strictEqual(state(a), OPEN, "no room: M - t > E fails, nothing collapses");
+        const b = lipApp();
+        sheetOf(b).dispatchEvent({ type: "wheel" });
+        scrollTo(b, 300, false);
+        assert.strictEqual(state(b), SHUT);
+        scrollTo(b, 900);
+        assert.strictEqual(isShut(b), false, "the bottom restores on the scroll path");
+        const c = lipApp();
+        sheetOf(c).dispatchEvent({ type: "keydown", key: "PageDown", preventDefault() {} });
+        scrollTo(c, 300, false);
+        assert.strictEqual(state(c), SHUT, "a scroll key collapses as before");
+        assert.strictEqual(flingOf(c), null);
+      });
+
+      test("LG: an untracked touch (second finger, #scale-lip start, vetoed gesture) keeps the full P3 suspension through its momentum", () => {
+        const starts = [
+          ["two fingers", (a) => { finger(a, "touchstart", 400, { extra: true }); finger(a, "touchmove", 330, { extra: true }); }],
+          ["the lip", (a) => { finger(a, "touchstart", 400, { target: a.els["scale-lip"] }); finger(a, "touchmove", 330); }],
+          ["a vetoed gesture", (a) => {
+            const box = field(a, "scale-box", "TEXTAREA");
+            box.scrollTop = 0;
+            finger(a, "touchstart", 400, { target: box });
+            box.scrollTop = 20;
+            finger(a, "touchmove", 330, { target: box });
+          }],
+        ];
+        for (const [name, start] of starts) {
+          const a = lipApp();
+          start(a);
+          finger(a, "touchend", 330);
+          a.advance(100);
+          scrollTo(a, 300);
+          scrollTo(a, 900);
+          assert.strictEqual(state(a), OPEN, `${name}: momentum after the touch counted`);
+        }
+      });
+
+      test("LG: a wheel or key during a fling ends the fling", () => {
+        for (const ev of [{ type: "wheel" }, { type: "keydown", key: "PageDown", preventDefault() {} }]) {
+          const a = lipApp();
+          const t = flingFrom(a);
+          frames(a, t, [5]);
+          assert.strictEqual(flingOf(a), "up");
+          sheetOf(a).dispatchEvent(ev);
+          assert.strictEqual(flingOf(a), null, ev.type);
+        }
+      });
+
+      test("LG: a new touch ends a live fling: a lip tap that restores during a collapse fling's tail stays restored", () => {
+        const a = lipApp();
+        const t = flingFrom(a);
+        const at = frames(a, t, [5]);
+        finger(a, "touchstart", 500, { target: a.els["scale-lip"] });
+        assert.strictEqual(flingOf(a), null, "touchstart ends the fling");
+        finger(a, "touchend", 500, { target: a.els["scale-lip"] });
+        frames(a, at, [5, 5, 5, 5]);
+        assert.strictEqual(state(a), OPEN, "the remaining momentum collapses nothing");
+      });
+
+      test("LG: scrolls under lipQuiet during a fling add nothing: a programmatic 300px scroll then 10px of momentum does not act", () => {
+        const a = lipApp();
+        const t = flingFrom(a, { seed: 0 });
+        a.advance(33);
+        a.run("lipQuiet()");
+        scrollTo(a, 300, false);
+        a.advance(160);
+        scrollTo(a, 310, false);
+        assert.strictEqual(state(a), OPEN);
+        assert.strictEqual(a.get("lipFling.acc"), 10, "only the 10px of momentum counted, not the 300px quiet scroll");
+        assert.strictEqual(t, 0);
+      });
+
+      test("LG: lipDragStop running twice for one touchend (sheet and target) creates one fling and does not clear it", () => {
+        const a = lipApp();
+        const on = {};
+        const tgt = { closest: () => null, addEventListener: (type, fn) => { on[type] = fn; } };
+        bodyAt(a, 0);
+        finger(a, "touchstart", 400, { target: tgt });
+        a.get("bandPort").scrollTop = 10;
+        a.get("bandPort").dispatchEvent({ type: "scroll" });
+        finger(a, "touchmove", 390, { target: tgt });
+        finger(a, "touchend", 390, { target: tgt });
+        on.touchend({ type: "touchend", touches: [] });
+        assert.strictEqual(flingOf(a), "up");
+        assert.strictEqual(a.get("lipFling.acc"), 10, "seeded once");
+      });
+
+      test("LG: a wheel tick or a typing key while a finger is down does not end the gesture, a scroll key outside a field parks the gesture", () => {
+        const a = lipApp();
+        finger(a, "touchstart", 400);
+        finger(a, "touchmove", 385);
+        sheetOf(a).dispatchEvent({ type: "wheel" });
+        sheetOf(a).dispatchEvent({ type: "keydown", key: "a", preventDefault() {} });
+        sheetOf(a).dispatchEvent({ type: "keydown", key: "ArrowDown", target: field(a, "scale-ding"), preventDefault() {} });
+        finger(a, "touchmove", 370);
+        assert.strictEqual(state(a), SHUT, "the finger kept its gesture across a wheel tick and two keys");
+        const b = lipApp();
+        finger(b, "touchstart", 400);
+        sheetOf(b).dispatchEvent({ type: "keydown", key: "PageDown", preventDefault() {} });
+        scrollTo(b, 300, false);
+        assert.strictEqual(state(b), SHUT, "a scroll key outside a field still ends a suspension no touchend closed");
+        const c = lipApp();
+        finger(c, "touchstart", 400);
+        sheetOf(c).dispatchEvent({ type: "keydown", key: "a", preventDefault() {} });
+        scrollTo(c, 300, false);
+        assert.strictEqual(state(c), OPEN, "a typing key leaves the suspension in place, so the scroll rule stays out of it");
+      });
+    });
+
+    describe("SPN: tests-only nits on the lip fling and the example plate", () => {
+      const downFling = (a, start, seed) => {
+        a.get("bandPort").scrollTop = start;
+        a.run("lipRebase()");
+        finger(a, "touchstart", 400);
+        a.get("bandPort").scrollTop = start - seed;
+        a.get("bandPort").dispatchEvent({ type: "scroll" });
+        finger(a, "touchmove", 410);
+        finger(a, "touchend", 410);
+      };
+
+      test("SPN: a down fling while the scroll range shrinks re-baselines and does not restore", () => {
+        const a = lipApp();
+        scrollTo(a, 300);
+        assert.strictEqual(state(a), SHUT);
+        a.advance(400);
+        downFling(a, 300, 10);
+        assert.strictEqual(a.get("lipFling.way"), "down");
+        assert.strictEqual(a.get("lipFling.acc"), 10);
+        a.advance(33);
+        const bp = a.get("bandPort");
+        bp.scrollHeight = 740;
+        bp.scrollTop = 240;
+        bp.dispatchEvent({ type: "scroll" });
+        assert.strictEqual(a.get("lipFling.acc"), 10, "the clamp from the shrunk range counted as finger travel");
+        assert.strictEqual(isShut(a), true, "a clamp from a shrinking range restored the footer");
+        a.advance(33);
+        bp.scrollTop = 225;
+        bp.dispatchEvent({ type: "scroll" });
+        assert.strictEqual(a.get("lipFling.acc"), 25, "after the re-baseline real momentum counts again");
+        assert.strictEqual(isShut(a), false, "24px of real momentum after the shrink restores");
+      });
+    });
+  });
+
+  test("UX: no lip code calls requestAnimationFrame or constructs a ResizeObserver", () => {
+    const js = lipSource();
+    assert.ok(js.length > 2000, "the lip section was found");
+    assert.ok(!/requestAnimationFrame|ResizeObserver/.test(js));
+  });
+
+  test("LP: the lip's aria-label names the visible primary: Show NEXT, Show GENERATE CARDS, Show SAVE CHANGES", () => {
+    const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    assert.match(html, /<button id="scale-lip"[^>]*aria-label="Show NEXT"/);
+    const add = lipApp("add");
+    add.els["scale-next"].textContent = "NEXT";
+    add.run("collapseLip()");
+    assert.strictEqual(add.els["scale-lip"].getAttribute("aria-label"), "Show NEXT");
+    const lay = lipApp("add");
+    lay.run("setTab('layout')");
+    lay.run("collapseLip()");
+    assert.strictEqual(lay.els["scale-lip"].getAttribute("aria-label"), "Show GENERATE CARDS");
+    const edit = lipApp("edit");
+    edit.run("collapseLip()");
+    assert.strictEqual(edit.els["scale-lip"].getAttribute("aria-label"), "Show SAVE CHANGES");
+  });
+
+  test("LP: a tab switch or NEXT clears lipshut with lipnow and re-baselines the scroll", () => {
+    for (const how of ["next", "tab"]) {
+      const app = lipApp("add");
+      collapsed(app, how);
+      app.get("bandPort").scrollHeight = 1500;
+      if (how === "next") app.click(app.els["scale-next"]); else app.click(app.els["scale-tab-layout"]);
+      assert.strictEqual(state(app), OPEN, how);
+      assert.strictEqual(sheetOf(app).classList.contains("lipnow"), false, how);
+      assert.deepStrictEqual(JSON.parse(app.get("JSON.stringify(lipPrev)")), { t: 0, M: 1000 }, how + " re-baselined to the new range");
+      scrollTo(app, 20);
+      assert.strictEqual(state(app), OPEN, how + ": 20px from the new baseline");
+    }
+  });
+
+  test("LP: while lipshut the footer stops are replaced by #scale-lip in the Tab order on both tabs", () => {
+    for (const edit of [false, true]) {
+      for (const layout of [false, true]) {
+        const app = lipApp(edit ? "edit" : "add");
+        if (layout) app.run("setTab('layout')");
+        app.get("backBtn").focus();
+        tab(app, true);
+        const open = app.activeId();
+        assert.strictEqual(open, edit ? "scale-delete" : (layout ? "scale-generate" : "scale-next"), `open edit=${edit} layout=${layout}`);
+        collapsed(app, "shut");
+        app.get("backBtn").focus();
+        tab(app, true);
+        assert.strictEqual(app.activeId(), "scale-lip", `shut edit=${edit} layout=${layout}`);
+      }
+    }
+  });
+});
+
+describe("SPN: the example plate", () => {
+  test("SPN: the example plate's fields equal HPE.importer.compose of the four placeholder attributes", () => {
+    const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    const values = {};
+    for (const k of ["ding", "top", "inner", "bottom"]) {
+      const m = html.match(new RegExp(`<input id="scale-${k}"[^>]*placeholder="([^"]*)"`));
+      assert.ok(m, `no placeholder attribute on #scale-${k}`);
+      values[k] = m[1];
+    }
+    const engine = require("./helpers/engine.js").loadEngine(["core", "importer"]);
+    const composed = engine.importer.compose(values);
+    assert.ok(composed.ok, "the placeholders do not compose");
+    const parsed = engine.core.parseSeed(composed.line, { palette: 0, parent: null, name: "", mirror: false });
+    assert.ok(parsed.ok, "the composed placeholders do not parse");
+    const expected = Object.values(parsed.value.fields).map((f) => f[0] + f[1]);
+    const app = boot();
+    app.els["deck-add"].click();
+    assert.ok(app.els["scale-preview"].classList.contains("example"), "the empty sheet draws no example");
+    assert.deepStrictEqual(plateNotes(app), expected);
+    assert.strictEqual(Object.keys(parsed.value.fields).length, 13);
+  });
+});
+
+function plateNotes(app) {
+  return [...app.els["scale-preview"].innerHTML.matchAll(/<text[^>]*>([A-G][#b]?)<tspan[^>]*>(-?\d+)<\/tspan>/g)].map((m) => m[1] + m[2]);
+}
+
+describe("PH: phone-check fixes", () => {
+  const plateLabels = (app) =>
+    [...app.els["scale-preview"].innerHTML.matchAll(/<text[^>]*>([^<]*)</g)].map((m) => m[1]).join("|");
+
+  test("PH: the empty sheet draws the pan the four field placeholders compose, not the old example", () => {
+    const app = boot();
+    app.els["deck-add"].click();
+    const example = plateLabels(app);
+    const values = {};
+    for (const k of ["ding", "top", "inner", "bottom"]) values[k] = app.els[`scale-${k}`].placeholder;
+    const compose = require("./helpers/engine.js").loadEngine(["core", "importer"]).importer.compose;
+    const r = compose(values);
+    assert.ok(r.ok, "the placeholders do not compose");
+    app.type(r.line);
+    assert.strictEqual(example, plateLabels(app), "the example is not the composed placeholder seed");
+    assert.ok(!example.startsWith("E|"), "the old example (ding E) is still drawn");
+    const drawn = plateNotes(app);
+    for (const old of ["E3", "B3", "F#5"]) assert.ok(!drawn.includes(old), `the old example's ${old} is still drawn`);
+  });
+
+  test("PH: the example plate carries .example beside .stale, a held plate carries .stale alone", () => {
+    const app = boot();
+    app.els["deck-add"].click();
+    const p = app.els["scale-preview"];
+    assert.ok(p.classList.contains("stale") && p.classList.contains("example"));
+    assert.strictEqual(p.getAttribute("aria-label"), "Example pan for the placeholder seed");
+    app.type("(D3) A3 C4 D4");
+    assert.ok(!p.classList.contains("stale") && !p.classList.contains("example"));
+    app.type("(D3) A3 C4 zzz");
+    assert.ok(p.classList.contains("stale") && !p.classList.contains("example"), "a held plate looks like the example");
+  });
+
+  test("PH: the CTA is a sibling right after the plate inside the band, not in the flow above it", () => {
+    const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    const from = html.indexOf('id="scale-panel-layout"');
+    const band = html.indexOf('<div id="scale-plate-band">');
+    assert.ok(from > 0 && band > from);
+    assert.ok(!html.slice(from, band).includes('id="scale-layout-hint"'), "the hint is still above the plate");
+    const inBand = html.slice(band);
+    const iPrev = inBand.indexOf('id="scale-preview"');
+    const iHint = inBand.indexOf('id="scale-layout-hint"');
+    assert.ok(iPrev > 0 && iHint > iPrev && iHint < inBand.indexOf('id="scale-drawer-status"'),
+      "the hint does not follow the plate inside the band");
+  });
+
+  test("PH: the tabs are not .mode buttons and keep .on, roles and ids", () => {
+    const app = boot();
+    app.els["deck-add"].click();
+    const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    for (const id of ["scale-tab-scale", "scale-tab-layout"]) {
+      const tag = html.match(new RegExp(`<button[^>]*id="${id}"[^>]*>`))[0];
+      assert.ok(!/class="[^"]*\bmode\b/.test(tag), `#${id} is still a .mode button`);
+      assert.ok(tag.includes('role="tab"'));
+    }
+    app.click(app.els["scale-tab-layout"]);
+    assert.ok(app.els["scale-tab-layout"].classList.contains("on"));
+    assert.ok(!app.els["scale-tab-scale"].classList.contains("on"));
+  });
+});
+
+describe("SPA: sheet polish lane A", () => {
+  test("SPA: the CTA shows over the example plate and is hidden over a held plate", () => {
+    const app = boot();
+    openSheet(app);
+    const hint = app.els["scale-layout-hint"];
+    assert.strictEqual(hint.hidden, false, "no hint over the empty sheet's example");
+    app.type("nonsense");
+    assert.strictEqual(hint.hidden, false, "no hint over the example while the first text is invalid");
+    app.type(W1_NONE);
+    assert.strictEqual(hint.hidden, true);
+    app.type("(D3) zzz");
+    assert.strictEqual(hint.hidden, true, "the hint covers a held plate");
+    app.type(W1_NONE);
+    app.type("");
+    assert.strictEqual(hint.hidden, false, "clearing the box returns the example and its hint");
+  });
+});
+
+describe("SPB: sheet polish lane B", () => {
+  const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8")
+    .replace(/<!--[\s\S]*?-->/g, "").replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/g, "");
+  const panelSpan = (id) => {
+    const start = html.indexOf(`<div id="${id}"`);
+    assert.ok(start >= 0, `no #${id} in the markup`);
+    let depth = 0;
+    for (const m of html.slice(start).matchAll(/<(\/?)div\b[^>]*>/g)) {
+      depth += m[1] ? -1 : 1;
+      if (depth === 0) return { start, end: start + m.index + m[0].length, html: html.slice(start, start + m.index + m[0].length) };
+    }
+    throw new assert.AssertionError({ message: `#${id} is never closed` });
+  };
+
+  test("SPB: #scale-swatches is the last child of #scale-panel-layout after #scale-layout-zone, in an .editrow whose span.sheetlabel#scale-palette-label (text CARD PALETTE) names the group through aria-labelledby", () => {
+    const layout = panelSpan("scale-panel-layout");
+    const scale = panelSpan("scale-panel-scale");
+    const zone = panelSpan("scale-layout-zone");
+    assert.ok(zone.start > layout.start && zone.end < layout.end, "the zone is inside the Layout panel");
+    assert.strictEqual(html.split('id="scale-swatches"').length, 2, "exactly one #scale-swatches");
+    const at = html.indexOf('id="scale-swatches"');
+    assert.ok(at > layout.start && at < layout.end, "#scale-swatches is not in the Layout panel");
+    assert.ok(!(at > scale.start && at < scale.end), "#scale-swatches is still in the Scale panel");
+    assert.ok(at > zone.end, "#scale-swatches is not after #scale-layout-zone");
+    assert.ok(!(at > zone.start && at < zone.end), "#scale-swatches is inside the zone");
+    const tail = html.slice(zone.end, layout.end);
+    assert.match(tail, /^\s*<div class="editrow">\s*<span class="sheetlabel" id="scale-palette-label">CARD PALETTE<\/span>\s*<div class="ctlrow">\s*<div id="scale-swatches" role="group" aria-labelledby="scale-palette-label"><\/div>\s*<\/div>\s*<\/div>\s*<\/div>$/,
+      "the Layout panel does not end with the palette .editrow");
+    assert.ok(!/id="scale-swatches"[^>]*aria-label=/.test(html), "the group still has an aria-label");
+    assert.ok(!html.includes('aria-label="Card palette"'), "the old Card palette label is still served");
+    const app = boot();
+    assert.strictEqual(app.els["scale-swatches"].children.length, 6, "six swatches built");
+  });
+
+  test("SPB: the swatches stay enabled on the Layout tab with an empty or invalid scale while every drawer control is disabled", () => {
+    const DRAWER = ["scale-anchor-one", "scale-anchor-between", "scale-mirror", "scale-mirror-bottom", "scale-fine-toggle",
+      "scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next", "scale-layout-reset"];
+    const ran = [];
+    for (const bad of ["", "(D3) A3 zzz"]) {
+      const app = boot();
+      openSheet(app);
+      app.type(bad);
+      app.click(app.els["scale-tab-layout"]);
+      assert.strictEqual(app.get("sheetTab"), "layout", `the Layout tab did not open on "${bad}"`);
+      assert.strictEqual(app.get("boxOk"), false, `"${bad}" parsed`);
+      assert.strictEqual(DRAWER.length, 10);
+      assert.deepStrictEqual(DRAWER.filter((id) => app.els[id].disabled !== true), [],
+        `a drawer control is enabled on "${bad}"`);
+      assert.strictEqual(app.els["scale-swatches"].children.length, 6, "six swatches");
+      assert.deepStrictEqual([...app.els["scale-swatches"].children].map((b) => Boolean(b.disabled)), [false, false, false, false, false, false],
+        `a swatch is disabled on "${bad}"`);
+      app.els["scale-swatches"].children[4].click();
+      const pressed = [...app.els["scale-swatches"].children].map((b) => b.getAttribute("aria-pressed"));
+      assert.deepStrictEqual(pressed, ["false", "false", "false", "false", "true", "false"],
+        `a swatch tap did not take on "${bad}"`);
+      ran.push(bad);
+    }
+    assert.deepStrictEqual(ran, ["", "(D3) A3 zzz"]);
+  });
+});
+
+describe("CN: SCALE NAME on the Add sheet", () => {
+  const html = () => fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+  const typeName = (app, name) => {
+    app.els["scale-name"].value = name;
+    app.els["scale-name"].dispatchEvent({ type: "input" });
+  };
+  const addAndGenerate = (app, name) => {
+    openSheet(app);
+    if (name !== undefined) typeName(app, name);
+    app.type(AMARA_STRING);
+    app.click(app.els["scale-next"]);
+    app.els["scale-generate"].click();
+    return app.registry()[app.deckId()];
+  };
+
+  test("CN1: the served markup has #scale-name-row without hidden, before #scale-fields", () => {
+    const h = html();
+    const row = /<div[^>]*\bid="scale-name-row"[^>]*>/.exec(h);
+    assert.ok(row, "the row is missing");
+    assert.ok(!/\bhidden\b/.test(row[0]), `the row still ships hidden: ${row[0]}`);
+    assert.ok(row.index < h.indexOf('id="scale-fields"'), "the row is not before #scale-fields");
+  });
+
+  test("CN10: the served label of the name row reads SCALE NAME, in uppercase, on the #scale-name input", () => {
+    const m = /<label[^>]*\bfor="scale-name"[^>]*>([^<]*)<\/label>/.exec(html());
+    assert.ok(m, "no label for #scale-name");
+    assert.strictEqual(m[1].trim(), "SCALE NAME");
+  });
+
+  test("CN2: opening Add shows the row, empty; opening Edit shows it prefilled", () => {
+    const app = boot();
+    openSheet(app);
+    assert.strictEqual(app.els["scale-name-row"].hasAttribute("hidden"), false);
+    assert.strictEqual(app.els["scale-name"].value, "");
+    const d = makeCustom(boot());
+    const ed = boot();
+    const made = makeCustom(ed);
+    openEdit(ed, made);
+    assert.strictEqual(ed.els["scale-name-row"].hasAttribute("hidden"), false);
+    assert.strictEqual(ed.els["scale-name"].value, made.name);
+    assert.ok(d.name);
+  });
+
+  test("CN3: Add with a typed name, NEXT, GENERATE CARDS: the deck, its chip and the share code carry the normalised name", () => {
+    const app = boot();
+    const d = addAndGenerate(app, "RAY’S – PAN");
+    assert.strictEqual(d.name, "RAY'S - PAN");
+    assert.ok(chipRow(app).some((c) => c.label === "RAY'S - PAN" && c.on),
+      JSON.stringify(chipRow(app).map((c) => c.label)));
+    const url = link(app, d.id);
+    assert.strictEqual(url.ok, true, url.reason);
+    const again = boot();
+    openShare(again, payload(url.value));
+    assert.strictEqual(again.registry()[again.deckId()].name, "RAY'S - PAN");
+  });
+
+  test("CN4: Add with the box empty takes the auto label and writes no options.name", () => {
+    const app = boot();
+    const d = addAndGenerate(app);
+    assert.ok(d.name && d.name.length > 0);
+    assert.strictEqual(d.options.name, undefined);
+    const bare = makeCustom(boot());
+    assert.strictEqual(d.name, bare.name);
+  });
+
+  test("CN5: Add with a valid scale and a refused name takes the Edit name-refusal path (Layout tab stays enabled, GENERATE disabled, the name reason shown) and creates nothing", () => {
+    const app = boot();
+    openSheet(app);
+    app.type(AMARA_STRING);
+    typeName(app, LF_BAD_NAME);
+    assert.strictEqual(Boolean(app.els["scale-tab-layout"].disabled), false, "the refused name disabled the Layout tab");
+    assert.strictEqual(app.els["scale-generate"].disabled, true);
+    assert.notStrictEqual(app.els["scale-refusal"].textContent, "", "no name refusal shown");
+    app.click(app.els["scale-tab-layout"]);
+    assert.strictEqual(app.els["scale-fine-toggle"].disabled, false, "the Layout controls were disabled under a refused name");
+    assert.deepStrictEqual(Object.keys(app.registry()), []);
+  });
+
+  test("CN5b: a name refused only at the GENERATE click shows the engine reason and keeps the sheet open", () => {
+    const app = boot();
+    openSheet(app);
+    typeName(app, "OK NAME");
+    app.type(AMARA_STRING);
+    app.click(app.els["scale-next"]);
+    app.els["scale-name"].value = LF_BAD_NAME;
+    app.els["scale-generate"].click();
+    assert.strictEqual(app.sheetOpen(), true);
+    assert.notStrictEqual(app.els["scale-refusal"].textContent, "");
+    assert.deepStrictEqual(Object.keys(app.registry()), []);
+  });
+
+  test("CN6: the Add Scale-tab Tab order is BACK, tab, SCALE NAME, DING, TOP, INNER, BOTTOM, scale box, NEXT", () => {
+    const app = boot();
+    openSheet(app);
+    const seen = [app.activeId()];
+    for (let i = 0; i < 8; i += 1) {
+      app.els["scale-sheet"].dispatchEvent({ type: "keydown", key: "Tab", shiftKey: false, preventDefault() {} });
+      seen.push(app.activeId());
+    }
+    assert.deepStrictEqual(seen.slice(0, 9), ["scale-back", "scale-tab-scale", "scale-name", "scale-ding",
+      "scale-top", "scale-inner", "scale-bottom", "scale-box", "scale-next"]);
+  });
+
+  test("CN8: Add on the fields of an existing custom deck with a typed name replaces it in place, renamed", () => {
+    const app = boot();
+    const first = makeCustom(app);
+    const d = addAndGenerate(app, "SECOND NAME");
+    assert.strictEqual(d.id, first.id);
+    assert.deepStrictEqual(Object.keys(app.registry()), [first.id]);
+    assert.strictEqual(d.name, "SECOND NAME");
+    assert.ok(app.announcer().textContent.startsWith("Updated SECOND NAME"), app.announcer().textContent);
+  });
+
+  test("CN9: Add with an empty scale box and a refused name still shows the placeholder pan", () => {
+    const app = boot();
+    openSheet(app);
+    typeName(app, LF_BAD_NAME);
+    app.run("showPlaceholderPan()");
+    assert.strictEqual(app.els["scale-preview"].hasAttribute("hidden"), false);
+    assert.ok(app.els["scale-preview"].innerHTML.length > 0, "the example pan was blanked");
+  });
+});
+
+test("LF: the root rule sets text-size-adjust to 100% with the -webkit- prefix, so landscape iOS does not inflate text", () => {
+  const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+  const css = html.slice(html.indexOf("<style>"), html.indexOf("@media print{"));
+  const rules = [...css.matchAll(/(?:^|[\s}\/])html\s*\{([^}]*)\}/g)].map((m) => m[1]);
+  assert.ok(rules.some((r) => /(?:^|[;\s])-webkit-text-size-adjust:\s*100%/.test(r)), "html lacks -webkit-text-size-adjust:100%");
+  assert.ok(rules.some((r) => /(?:^|[;\s])text-size-adjust:\s*100%/.test(r)), "html lacks text-size-adjust:100%");
+});
+
+describe("DS: the visible word is scale", () => {
+  const html = () => fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+  const WORD = /(?<![#\w-])decks?(?![\w=-])/i;
+
+  function deckHits() {
+    const hits = [];
+    let h = html().replace(/<!--[\s\S]*?-->/g, "");
+    const scripts = [];
+    h = h.replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gi, (m, body) => {
+      scripts.push(m);
+      return "";
+    });
+    h = h.replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, "");
+    for (const tag of h.match(/<[a-z][^>]*>/gi) || []) {
+      const re = /\b(content|aria-label|title|placeholder|alt|value)="([^"]*)"/gi;
+      let m;
+      while ((m = re.exec(tag))) if (WORD.test(m[2])) hits.push(`attr ${m[1]}: ${m[2]}`);
+    }
+    for (const t of h.replace(/<[^>]*>/g, "\n").split("\n")) if (WORD.test(t)) hits.push(`text: ${t.trim()}`);
+    const ld = scripts.find((s) => /application\/ld\+json/.test(s));
+    const walk = (v) => {
+      if (typeof v === "string") { if (WORD.test(v)) hits.push(`jsonld: ${v}`); }
+      else if (v && typeof v === "object") Object.values(v).forEach(walk);
+    };
+    walk(JSON.parse(ld.replace(/^<script[^>]*>/i, "").replace(/<\/script>$/i, "")));
+    const src = html().replace(/<!-- engine:(\S+) begin[\s\S]*?<!-- engine:\1 end -->/g, "");
+    const app = src.split(/<script\b[^>]*>/i).slice(1).map((s) => s.split(/<\/script>/i)[0])
+      .filter((s) => !/^\s*\{/.test(s)).join("\n");
+    const code = app.replace(/\/\*[\s\S]*?\*\//g, "");
+    for (const line of code.split("\n")) {
+      if (/^const DECKS = /.test(line) || /^\s*\/\//.test(line)) continue;
+      const bare = line.replace(/\s\/\/\s.*$/, "");
+      for (const lit of bare.match(/"[^"\\\n]*(?:\\.[^"\\\n]*)*"|'[^'\\\n]*(?:\\.[^'\\\n]*)*'|`[^`]*`/g) || []) {
+        if (/\s/.test(lit) && WORD.test(lit)) hits.push(`script: ${lit}`);
+      }
+    }
+    return hits;
+  }
+
+  test("DS1: no served text, attribute, JSON-LD value or app-script string literal says deck", () => {
+    assert.deepStrictEqual(deckHits(), []);
+  });
+
+  test("DS1b: the pinned strings are served", () => {
+    const h = html();
+    for (const s of ["or pick a built-in scale.", "Pick a built-in scale, or type your own.", "Built-in scales",
+      "DELETE THIS SCALE", "RESET SEEDED SCALES", "Print this scale"]) {
+      assert.ok(h.includes(s), `missing ${s}`);
+    }
+    const metas = [/<meta name="description" content="([^"]*)"/, /<meta property="og:description" content="([^"]*)"/,
+      /"description": "([^"]*)"/].map((r) => r.exec(h)[1]);
+    assert.strictEqual(new Set(metas).size, 1);
+    assert.ok(metas[0].endsWith("or pick a built-in scale."));
+    assert.ok(metas[0].length >= 120 && metas[0].length <= 155, String(metas[0].length));
+  });
+
+  test("DS2: the seeded arming note, the custom arming note, RESET idle and armed and its warning say scale, exactly", () => {
+    const seeded = boot();
+    seeded.select("kurd");
+    seeded.clickChip("D KURD 10");
+    seeded.els["scale-delete"].click();
+    assert.strictEqual(seeded.els["scale-del-note"].textContent,
+      "Tap again to remove D KURD 10. RESET SEEDED SCALES in the menu brings the seeded scales back.");
+    const custom = boot();
+    const c = makeCustom(custom);
+    custom.clickChip(c.name);
+    custom.els["scale-delete"].click();
+    assert.strictEqual(custom.els["scale-del-note"].textContent,
+      `Tap again to remove ${c.name}. This cannot be undone.`);
+    const app = boot();
+    hideViaSheet(app, "amara", "D AMARA 9");
+    const reset = app.els["deck-restore"];
+    reset.click();
+    assert.strictEqual(reset.textContent, "TAP AGAIN TO RESET");
+    assert.strictEqual(app.announcer().textContent, "Tap again to restore all seeded scales. Your edits to them will be gone.");
+    reset.click();
+    assert.match(app.announcer().textContent, /^Seeded scales restored\./);
+    assert.strictEqual(reset.textContent, "RESET SEEDED SCALES");
+  });
+
+  test("DS2b: a boot on a hidden seed says That scale is gone", () => {
+    const boot1 = boot({ storage: { hpfc: JSON.stringify({ deck: "kurd", mode: "A", hidden: ["kurd"] }) } });
+    assert.match(boot1.announcer().textContent, /^That scale is gone\. Showing /);
+    assert.doesNotMatch(boot1.announcer().textContent, /\bdeck\b/i);
+  });
+
+  test("DS2c: the delete refusal on the last scale reads Keep at least one scale. Add a scale before deleting X.", () => {
+    const four = ["amara10", "amara", "hijaz", "pygmy"];
+    const app = boot({ storage: { hpfc: JSON.stringify({ deck: "kurd", mode: "A", hidden: four }) } });
+    app.clickChip("D KURD 10");
+    app.els["scale-delete"].click();
+    app.els["scale-delete"].click();
+    assert.strictEqual(app.els["scale-msg"].textContent, "Keep at least one scale. Add a scale before deleting D KURD 10.");
   });
 });

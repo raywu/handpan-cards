@@ -1,26 +1,23 @@
 # kills: the seed refusal sits above the pan
 # suite: node --test --test-name-pattern ^the.seed.refusal.sits.above.the.pan$ tests/e2e.test.js
-# #scale-refusal put where #scale-msg used to be before 2026-09-21: out of
-# .fieldrow and below the preview. The text, the tier classes and aria-live are
-# untouched, so every other assertion on this element still passes - which is
-# the point. Only a geometric test sees it, and what the owner saw on the
-# device was exactly this: the refusal below the fold with the keyboard up.
+# #scale-refusal moves out of the scale-line .fieldrow to the foot of the Layout panel, past the pan
+# and the palette. The text, the tier classes and aria-live are untouched; only a geometric test sees it.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1359,7 +1359,6 @@ html.about-open{overflow:hidden}
+@@ -1480,7 +1480,6 @@ html.about-open{overflow:hidden}
             true rather than hoping every caller happens to agree. It carries
             its own aria-live because #scale-sheet is aria-modal, which puts
             the page-level .announce outside the dialog and out of reach. -->
 -      <div id="scale-refusal" aria-live="polite"></div>
+       <p class="sheethint" id="scale-line-note"></p>
      </div>
-     <!-- Import (scale-import lane B): a pasted maker's note list is read by
-          HPE.importer, shown role by role for the user to confirm, and only then
-@@ -1402,6 +1401,7 @@ html.about-open{overflow:hidden}
-         <div id="scale-preview" role="img"
-              aria-label="Preview of where the notes sit on the pan" hidden></div>
-         <div id="scale-drawer-status" aria-live="polite" aria-atomic="true" hidden></div>
-+      <div id="scale-refusal" aria-live="polite"></div>
+     </div>
+@@ -1570,6 +1569,7 @@ html.about-open{overflow:hidden}
+         <div id="scale-swatches" role="group" aria-labelledby="scale-palette-label"></div>
        </div>
-       <div class="editrow" id="scale-layout-row">
-         <button class="mode" type="button" id="scale-layout-toggle" aria-label="Adjust layout"
+     </div>
++    <div id="scale-refusal" aria-live="polite"></div>
+     </div>
+    </div>
+     <!-- The page's messages, pinned with the primary: everything say() writes

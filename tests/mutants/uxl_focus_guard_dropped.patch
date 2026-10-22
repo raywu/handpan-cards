@@ -1,0 +1,15 @@
+# kills: UX: a collapse while the primary holds focus moves focus to the lip and the footer stays collapsed
+# suite: node --test --test-name-pattern ^UX:.a.collapse.while.the.primary.holds.focus.moves.focus.to.the.lip.and.the.footer.stays.collapsed$ tests/e2e.test.js
+# uxl_focus_guard_dropped
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10950,7 +10950,7 @@ lipBtn.addEventListener("touchmove", (e) => {
+ lipBtn.addEventListener("touchend", () => { lipTouch = null; }, { passive: true });
+ lipBtn.addEventListener("click", restoreLip);
+ lipBtn.addEventListener("focusin", () => {
+-  if (!lipFocusing) restoreLip();
++  restoreLip();
+ });
+ footSlide.addEventListener("transitionend", (e) => {
+   if (e.target === footSlide && e.propertyName === "transform" && !(e.elapsedTime < 0.17)) endOpening(lipEnd);

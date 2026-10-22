@@ -1,0 +1,15 @@
+# kills: IH: compose places bottoms through serialise, after the bar when they sit above an inner note and before a ding of the same pitch
+# suite: node --test --test-name-pattern ^IH:.compose.places.bottoms.through.serialise. tests/import.test.js
+# The line writes every bottom first, before the ding and ahead of the bar, instead of going through serialise.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -830,7 +830,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+         inner: inner.map(function (x) { return { note: x }; }),
+         bottom: bottom.names.map(function (x) { return { note: x }; })
+       };
+-      var line = serialise({ status: "REVIEW", roles: roles });
++      var line = roles.bottom.map(function (x) { return "[" + x.note + "]"; }).concat(["(" + ding.name + ")"], top, inner.length ? ["|"].concat(inner) : []).join(" ");
+       var parsed = core().parseSeed(line);
+       if (parsed.ok) {
+         out.ok = true;

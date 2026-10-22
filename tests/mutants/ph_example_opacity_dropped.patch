@@ -1,0 +1,14 @@
+# kills: PH: the example plate is dimmer and greyer than a held plate
+# suite: node --test --test-name-pattern ^PH:.the.example.plate.is.dimmer tests/e2e.test.js
+# Drops the .example rule, so the example plate is as dim as a held one and not desaturated.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -885,7 +885,6 @@ footer.seq{row-gap:var(--sp-1)}
+    loudest thing in the drawer. The held plate stops at .62 because the pan is role="img"
+    content, so the rim ink has to keep its contrast. */
+ #scale-preview.stale{opacity:.62}
+-#scale-preview.stale.example{opacity:.35; filter:grayscale(1)}
+ #scale-preview svg{display:block; width:100%; height:auto}
+ /* Geometry deliberately IDENTICAL to #scale-parse above, because this sits
+    between the scale field and the pan preview and the two take turns in one

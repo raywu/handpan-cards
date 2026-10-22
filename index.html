@@ -19,12 +19,12 @@
 <meta name="theme-color" content="#1a1815">
 <meta name="color-scheme" content="dark">
 <title>Handpan Chords: Custom Scale Chord and Progression Practice</title>
-<meta name="description" content="Chord flashcards and progressions for your handpan scale, free and without an account. Type any scale to generate its chords, or pick a built-in deck.">
+<meta name="description" content="Chord flashcards and progressions for your handpan scale, free and without an account. Type any scale to generate its chords, or pick a built-in scale.">
 <link rel="canonical" href="https://handpan.raywu.org/">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://handpan.raywu.org/">
 <meta property="og:title" content="Handpan Chords: Custom Scale Chord and Progression Practice">
-<meta property="og:description" content="Chord flashcards and progressions for your handpan scale, free and without an account. Type any scale to generate its chords, or pick a built-in deck.">
+<meta property="og:description" content="Chord flashcards and progressions for your handpan scale, free and without an account. Type any scale to generate its chords, or pick a built-in scale.">
 <meta property="og:image" content="https://handpan.raywu.org/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -41,7 +41,7 @@
   "@type": "WebApplication",
   "name": "Handpan Chords",
   "url": "https://handpan.raywu.org/",
-  "description": "Chord flashcards and progressions for your handpan scale, free and without an account. Type any scale to generate its chords, or pick a built-in deck.",
+  "description": "Chord flashcards and progressions for your handpan scale, free and without an account. Type any scale to generate its chords, or pick a built-in scale.",
   "applicationCategory": "MusicApplication",
   "operatingSystem": "Any",
   "browserRequirements": "Requires JavaScript",
@@ -99,6 +99,7 @@ gtag("js", new Date());
      landscape - ever picks it up and spends the chrome budget on it. */
   --sp-1:4px; --sp-2:8px; --sp-3:14px; --sp-4:22px;
 }
+html{-webkit-text-size-adjust:100%; text-size-adjust:100%}
 @media (min-width:640px) and (min-height:700px){
   :root{--sp-1:6px; --sp-2:12px; --sp-3:20px; --sp-4:28px}
 }
@@ -768,7 +769,8 @@ footer.seq{row-gap:var(--sp-1)}
 .sheetsurf{width:100%; max-width:520px; background:#1f1b15;
   height:100dvh; max-height:100dvh; overflow-y:auto; overscroll-behavior:contain;
   padding:var(--sp-3) var(--sp-4) max(var(--sp-4), env(safe-area-inset-bottom));
-  display:flex; flex-direction:column; gap:var(--sp-4)}
+  display:flex; flex-direction:column; gap:var(--sp-4);
+  container:surf / size}
 /* The header row: BACK, then the page title. Outside .sheetbody like the
    footer, so the way out of the page is never scrolled off the top - which is
    the drawer's grab handle replaced by something that does a job. */
@@ -856,7 +858,7 @@ footer.seq{row-gap:var(--sp-1)}
    full: openEditSheet()'s pan warnings, and (in that first cut) the
    duplicate-scale refusal on a seed that parsed fine; refusals now go
    through showRefusal(), and runGenerate() only clears #scale-msg. Both took two rows, stepped the pan
-   26.59px under the finger, and put #scale-layout-row's bottom at 785.69
+   26.59px under the finger, and put the layout row's bottom at 785.69
    against a 780px viewport - below the fold, the exact cost this row exists
    to avoid. #scale-msg lives in #scale-guidance, below the scroll, and never
    enters this row. */
@@ -873,17 +875,18 @@ footer.seq{row-gap:var(--sp-1)}
    the 44px floor on a 17-field Pygmy pan - that needs 379.45px, which no
    380px viewport has - and per Stage 1 AC3 non-overlap wins there: the
    targets stay disjoint and Pygmy's cap at 34.8px stands. */
-#scale-preview{align-self:center; width:100%; max-width:300px; padding:var(--sp-2);
+#scale-preview{align-self:center; padding:var(--sp-2);
   border-radius:12px; background:#f1ece1; border:1px solid #433b2c}
 /* Not-current: the placeholder example before anything is typed, and the last
-   render held through an invalid parse. ONE treatment for both, because the
-   invalid case already shouts in two other channels (#scale-box.bad's orange
-   border and the orange message) - what separates them is the accessible name,
-   set in JS. The whole plate dims, not the SVG inside it: an undimmed
-   #f1ece1 plate on a #1f1b15 sheet is the loudest thing in the drawer, and on
-   an empty box that is an example nobody typed. .62 and not lower because the
-   pan is role="img" content, so the rim ink has to keep its contrast. */
+   render held through an invalid parse. The held plate dims to .62 (the invalid case already
+   shouts in two other channels: #scale-box.bad's orange border and the orange
+   message). The example, which nobody typed, is a separate rule below: .35 and greyscale, so
+   .62 never applies to it. What separates the two is the accessible name, set in JS. The whole
+   plate dims, not the SVG inside it: an undimmed #f1ece1 plate on a #1f1b15 sheet is the
+   loudest thing in the drawer. The held plate stops at .62 because the pan is role="img"
+   content, so the rim ink has to keep its contrast. */
 #scale-preview.stale{opacity:.62}
+#scale-preview.stale.example{opacity:.35; filter:grayscale(1)}
 #scale-preview svg{display:block; width:100%; height:auto}
 /* Geometry deliberately IDENTICAL to #scale-parse above, because this sits
    between the scale field and the pan preview and the two take turns in one
@@ -904,28 +907,6 @@ footer.seq{row-gap:var(--sp-1)}
   font-size:12px; line-height:1.55; color:#c4bcab; overflow-wrap:anywhere;
   margin-top:calc(var(--sp-2) - var(--sp-1)); min-height:1.55em}
 #scale-refusal.err{color:#E27005}
-/* Import (lane B): the quiet control, the paste area and the review list reuse
-   .mode, .sheetlabel and .sheethint; nothing here touches a shared rule. */
-#import-row[hidden]{display:none}
-#import-open{align-self:flex-start}
-#import-area:not([hidden]), #import-result:not([hidden]), #import-review:not([hidden]){
-  display:flex; flex-direction:column; gap:var(--sp-2)}
-#import-area{min-width:0}
-#import-text, #import-ding{width:100%; min-width:0; box-sizing:border-box; padding:12px var(--sp-3);
-  color:#eae6df; background:#151310; border:1px solid #433b2c; border-radius:8px;
-  font-family:Bitter, serif; font-weight:400; font-size:16px; line-height:1.3}
-#import-text{resize:none}
-#import-ding{min-height:44px}
-#import-run, #import-use{width:100%}
-#import-use:disabled{opacity:.5; cursor:default}
-#import-rows, #import-flags{list-style:none; margin:0; padding:0; display:flex; flex-direction:column;
-  gap:var(--sp-1); font:400 12px/1.5 "Nunito Sans"; color:#c4bcab; overflow-wrap:anywhere}
-#import-rows b{font-weight:700; letter-spacing:.08em; color:#eae6df}
-#import-flags .block{color:#E27005}
-#import-flags .confirm{color:#e3b25c}
-#import-flags label{display:flex; align-items:center; gap:var(--sp-2); min-height:44px; cursor:pointer}
-#import-flags input{width:20px; height:20px; flex:0 0 auto; margin:0}
-#import-ding-row{display:flex; flex-direction:column; gap:var(--sp-1)}
 #scale-msg{font:400 12px/1.5 "Nunito Sans"; min-height:1.5em; color:#c4bcab;
   overflow-wrap:anywhere}
 #scale-msg.err, .announce.err{color:#E27005}
@@ -946,30 +927,68 @@ footer.seq{row-gap:var(--sp-1)}
    edge, so that is where it belongs: moving a child across it cannot unhook it
    again. Pinned by "a hairline divides the pinned footer from the scroll". */
 .sheetbody{border-bottom:1px solid #332c22}
-/* The pinned message slot between the scrollport and the primary. The reserve
-   is two 12px/1.5 lines (36px); the negative margin trims the surface's two
-   --sp-4 gaps to --sp-2. flex:0 0 auto is load-bearing: as a shrinkable item a
-   three-line message spills over the button. #scale-msg drops its own 1.5em
-   floor so the wrapper owns the reservation, and justify-content:flex-end
-   bottom-aligns whichever line is lit. */
-#scale-guidance{flex:0 0 auto; min-height:calc(2 * 1.5 * 12px); display:flex; flex-direction:column;
+/* The pinned message slot between the scrollport and the primary. It reserves
+   nothing: with no visible message it is out of flow and 0px tall with no
+   margins (owner 2026-10-20), and it grows only to the height of the text it
+   shows, the negative margin trimming the surface's two --sp-4 gaps to --sp-2.
+   flex:0 0 auto is load-bearing: as a shrinkable item a three-line message
+   spills over the button. */
+#scale-guidance{flex:0 0 auto; display:flex; flex-direction:column;
   justify-content:flex-end; margin-block:calc(var(--sp-2) - var(--sp-4))}
+#scale-sheet #scale-guidance:not(:has(> :not([hidden]):not(:empty))){position:absolute;
+  min-height:0; height:0; margin:0; overflow:hidden}
 #scale-guidance #scale-msg{min-height:0}
 #scale-guidance #scale-layout-state{font:400 12px/1.5 "Nunito Sans"; color:#c4bcab}
 /* One message wins (plan N-6 alternative, owner 2026-10-14; X3): while the notice holds text a PAN
-   warning (.pan, set by the call sites that write one) steps aside, so the slot never outgrows its
-   two-line reserve. Refusals, errors and every other warn (the delete refusal) always show.
+   warning (.pan, set by the call sites that write one) steps aside, so the slot never stacks two messages.
+   Refusals, errors and every other warn (the delete refusal) always show.
    The aria-live copy of the warning (.announce) is a separate element and still speaks. The class is on
    #scale-sheet, not the wrapper: paintLayout() reaches the sheet through a variable the sandbox already
    has, and say() rewrites #scale-msg's own className on every call, which also clears .pan. */
 #scale-sheet.noticed #scale-msg.warn.pan{display:none}
+/* The footer lip: open, the wrappers generate no box, so the footer is the layout it always was. */
+#scale-foot, #scale-footclip, #scale-footslide{display:contents}
+#scale-lip[hidden]{display:none}
+:root{--lip-ease:cubic-bezier(.3,0,.2,1); --lip-foot:9px; --lip-zone:25px; --lip-over:calc(var(--lip-zone) - var(--lip-foot))}
+#scale-sheet.lipped .sheetsurf{padding-bottom:env(safe-area-inset-bottom)}
+#scale-sheet.lipped:not(.tiny) .sheetbody{flex-grow:1}
+#scale-sheet.lipped #scale-foot{display:block; position:relative; flex:0 0 auto; height:var(--lip-foot);
+  margin-top:calc(-1 * var(--sp-4))}
+@media (max-height:520px){#scale-sheet.lipped #scale-foot{margin-top:calc(-1 * var(--sp-3))}}
+#scale-sheet.short.lipped #scale-foot{margin-top:calc(-1 * var(--sp-2))}
+#scale-sheet.lipped:has(#scale-guidance > :not([hidden]):not(:empty)) #scale-foot{margin-top:var(--lip-over)}
+#scale-sheet.lipped #scale-footclip{display:block; position:absolute; bottom:100%;
+  left:calc(-1 * var(--ring)); right:calc(-1 * var(--ring)); padding-inline:var(--ring);
+  height:var(--lip-h, 0px); overflow:hidden; overflow:clip; pointer-events:none}
+#scale-sheet.lipped #scale-footslide{display:flex; flex-direction:column;
+  box-sizing:border-box; height:100%; padding-top:calc(var(--lip-pad, 1px) - 1px);
+  border-top:1px solid #332c22; background:#1f1b15; pointer-events:auto;
+  transform:none; visibility:visible;
+  transition:transform 180ms var(--lip-ease), visibility 0s linear 0s}
+#scale-sheet.lipped #scale-delete-row{margin-top:var(--lip-gd, 0px)}
+#scale-sheet.lipshut #scale-footslide{transform:translateY(var(--lip-h, 0px)); visibility:hidden;
+  transition:transform 180ms var(--lip-ease), visibility 0s linear 180ms}
+#scale-sheet.lipped #scale-guidance{position:relative; z-index:1; background:#1f1b15;
+  transform:translateY(var(--lip-g, 0px)); transition:transform 180ms var(--lip-ease)}
+#scale-sheet.lipshut #scale-guidance{transform:none}
+#scale-lip:not([hidden]){display:block; position:absolute; left:0; right:0; bottom:0; height:var(--lip-zone);
+  z-index:2; margin:0; padding:0; border:0; background:transparent; cursor:pointer;
+  touch-action:none; -webkit-tap-highlight-color:transparent}
+#scale-lip::after{content:""; position:absolute; left:50%; bottom:3px; width:32px; height:3px;
+  margin-left:-16px; border-radius:2px; background:#a79d8b}
+#scale-lip:focus-visible{outline-offset:-2px}
+#scale-sheet.lipped .sheetbody{scroll-padding-bottom:21px}
+#scale-sheet.lipnow #scale-footslide, #scale-sheet.lipnow #scale-guidance{transition:none}
+@media (prefers-reduced-motion: reduce){
+  #scale-footslide, #scale-guidance{transition:none !important}
+}
 /* Landscape on a phone: 390px of height, and every pixel of chrome on the page
    comes straight off the scrolling body. The footer's breathing room above its
    own hairline is .sheetsurf's gap, already dropped to --sp-3 above; this
    returns the primary to the 44px floor. The hairline stays: it is what says
    the footer does not scroll, and it costs one pixel. */
 @media (max-height:520px){
-  #scale-generate{min-height:44px}
+  #scale-generate, #scale-next{min-height:44px}
   /* Text fields go back to the 44px floor with tighter padding: on the Edit
      sheet there are two of them above the fold and the box the caret lands in
      is the lower one, so four pixels each is the difference between opening at
@@ -982,9 +1001,8 @@ footer.seq{row-gap:var(--sp-1)}
   #scale-guidance{margin-block:calc(var(--sp-2) - var(--sp-3))}
   /* A 390px-tall viewport leaves the body a couple of hundred px, and the
      plate is now always in the flow rather than only after a valid parse, so
-     at 300px it would be most of the scrollport. The pan stays readable at 120px - it is a
-     where-do-the-notes-sit mock, not the card. */
-  #scale-preview{max-width:120px}
+     at 300px it would be most of the scrollport. The pan is sized by the two
+     expressions below (SMALL and LARGE), never by a media query. */
 }
 /* Desktop: the sheet was pinned at the phone's 520px whatever the viewport,
    which on a 1440px screen is a narrow column floating in the middle of a wide
@@ -999,7 +1017,6 @@ footer.seq{row-gap:var(--sp-1)}
    Gated on both axes like the ramp, so no phone in landscape picks it up. */
 @media (min-width:640px) and (min-height:700px){
   .sheetsurf{max-width:clamp(520px, 52vw, 680px)}
-  #scale-preview{max-width:340px}
 }
 /* No min-height here: .mode carries the 44px minimum for every .mode on the
    page, sheet buttons included. */
@@ -1022,10 +1039,10 @@ footer.seq{row-gap:var(--sp-1)}
   width:14px; height:14px; margin:-7px 0 0 -7px; border-radius:50%;
   background:linear-gradient(180deg,var(--dga) 0 50%,var(--dgb) 50% 100%)}
 #scale-swatches .dot.sel::after{box-shadow:0 0 0 2px #f1ece1}
-#scale-generate{width:100%; min-height:52px; border-radius:10px; cursor:pointer;
+#scale-generate, #scale-next{width:100%; min-height:52px; border-radius:10px; cursor:pointer;
   border:1px solid #f1ece1; background:#f1ece1; color:#272219;
   font:600 11.5px/1 "Nunito Sans"; letter-spacing:.12em}
-#scale-generate:disabled{opacity:.5; cursor:default}
+#scale-generate:disabled, #scale-next:disabled{opacity:.5; cursor:default}
 /* ---- Edit state (Phase 4). The rows below are the ONLY difference between
    the create sheet and the Edit sheet; SAVE CHANGES reuses #scale-generate so
    there is never a second primary button on the surface. */
@@ -1037,7 +1054,6 @@ footer.seq{row-gap:var(--sp-1)}
    control here is a SECONDARY: the sheet's only full-width primary stays
    #scale-generate. The PAN is the selection and a single tab stop; its arrow
    keys walk the notes, so there is no drag-only path to any of this. */
-#scale-layout-row{gap:var(--sp-2)}
 /* The hint reads as prose, so it takes the parse line's Bitter rather than the
    label's letter-spaced caps - it is a sentence to read once, not a control
    label to scan. Dimmer than #scale-parse: that line reports on what is in the
@@ -1051,39 +1067,104 @@ footer.seq{row-gap:var(--sp-1)}
    appears and disappears in one frame. */
 #scale-layout-zone{display:flex; flex-direction:column; gap:var(--sp-2)}
 #scale-plate-band{display:flex; flex-direction:column; gap:var(--sp-1)}
-#scale-layout-toggle{align-self:flex-start}
-#scale-layout-toggle:disabled, #scale-layout-toggle[aria-disabled="true"],
-#scale-layout-toggle:disabled + #scale-layout-hint,
 #scale-drawer .mode:disabled, #scale-fine-toggle:disabled{opacity:.5; cursor:default}
-#scale-layout-toggle span{display:none; margin-left:var(--sp-2)}
-#scale-layout-toggle.on span{display:inline}
 #scale-drawer{display:flex; flex-direction:column; gap:var(--sp-2)}
 #scale-drawer[hidden]{display:none}
 #scale-drawer .mirror .mode{flex:1 1 0; min-width:0}
 #scale-drawer .mirror{width:100%}
 #scale-drawer .ctlrow{justify-content:flex-start}
-#scale-drawer-status{font:400 12px/1.5 Bitter, serif; color:#c4bcab; min-height:3em; text-align:center}
+#scale-drawer-status{font:400 12px/1.5 Bitter, serif; color:#c4bcab; min-height:3em; text-align:center;
+  position:sticky; top:var(--plate-pin-h, 0px); z-index:2; background:#1f1b15;
+  margin-top:calc(-1 * var(--sp-3)); margin-bottom:var(--sp-1); box-shadow:0 var(--sp-1) 0 #1f1b15}
+.sheetbody:has(#scale-layout-zone.nostick) #scale-drawer-status{position:relative}
 #scale-drawer-status.warn{color:#e3b25c}
 #scale-layout-state{color:#e3b25c}
-#scale-layout-zone.open #scale-plate-band{position:sticky; top:0; z-index:2; background:#1f1b15;
-  padding-bottom:var(--sp-1)}
-#scale-layout-zone.open #scale-preview{max-width:min(300px, 39dvh)}
-.sheetbody:has(input:focus, textarea:focus, #scale-swatches button:focus)
-  #scale-layout-zone.open #scale-plate-band{position:static}
-#scale-layout-zone.open.nostick #scale-plate-band{position:static}
+/* The tab strip, the panels and the OR rule (plan 2026-10-19-sheet-tabs, O2 and O3). One pan size:
+   the Layout tab's, which is the old Adjust size. --adj-reserve is the room kept for controls under
+   the pan (one column) or given to the chrome (two columns, set in the container query below). */
+#scale-tabs{display:flex; gap:0; border-bottom:1px solid #433b2c}
+#scale-tabs [role=tab]{flex:1 1 0; min-width:0; min-height:44px; position:relative; display:inline-flex;
+  align-items:center; justify-content:center; background:none; border:0; border-radius:0; padding:0 var(--sp-3);
+  color:#a79d8b; font:600 10.5px/1 "Nunito Sans"; letter-spacing:.13em; text-transform:uppercase; cursor:pointer}
+#scale-tabs [role=tab].on{color:#f1ece1}
+#scale-tabs [role=tab]::after{content:""; position:absolute; left:0; right:0; bottom:-1px; height:2px; background:transparent}
+#scale-tabs [role=tab].on::after{background:#f1ece1}
+#scale-sheet.kbup.side #scale-tabs{display:none}
+#scale-panel-scale, #scale-panel-layout{display:flex; flex-direction:column; gap:var(--sp-3); min-width:0;
+  padding-bottom:calc(var(--lip-over) + var(--sp-2))}
+#scale-panel-scale[hidden], #scale-panel-layout[hidden]{display:none}
+#scale-or{display:flex; align-items:center; gap:var(--sp-3)}
+#scale-or::before, #scale-or::after{content:""; flex:1 1 0; height:1px; background:#433b2c}
+#scale-or span{font:600 9.5px/1.5 "Nunito Sans"; letter-spacing:.13em; color:#a79d8b; text-transform:uppercase}
+#scale-preview{--adj-reserve:232px;
+  width:clamp(160px, min(100cqw, calc(100cqh - var(--adj-reserve))), 480px)}
+#scale-plate-band{position:sticky; top:0; z-index:2; background:#1f1b15; padding-bottom:var(--sp-1)}
+.sheetbody:has(#scale-layout-zone.nostick) #scale-plate-band{position:relative}
+#scale-plate-band #scale-layout-hint{position:absolute; left:50%; top:calc((100% - var(--sp-1)) / 2);
+  transform:translate(-50%, -50%); width:max-content; max-width:min(60%, 200px); box-sizing:border-box;
+  padding:6px 10px; border-radius:8px; background:#1f1b15; color:#eae6df; text-align:center; pointer-events:none}
+#scale-plate-band #scale-layout-hint[hidden]{display:none}
 .sheetbody{scroll-padding-top:var(--plate-band-h, 0px)}
-.sheetbody:has(input:focus, textarea:focus, #scale-swatches button:focus){scroll-padding-top:0}
-@media (min-width:640px) and (min-height:700px){
-  #scale-layout-zone.open #scale-preview{max-width:340px}
+@media (orientation:landscape) and (max-height:500px){
+  #scale-sheet[data-tab="layout"] .sheetsurf{max-width:none}
 }
-@media (max-height:520px) and (min-width:560px){
-  /* The band sits beside the controls here, not over them: nothing to pad for. */
+@container surf (min-width:600px) and (min-aspect-ratio:1/1){
+  /* --plate-w is declared on every element that reads it because a container query cannot restyle its own
+     container and a cq unit resolves per element; --plate-room is the open-footer scrollport less the band
+     padding, written by syncBand(), so the pan is the same size with the footer open or shut. */
+  #scale-preview, #scale-guidance, #scale-foot, #scale-generate, #scale-next, #scale-delete-row{
+    --adj-reserve:104px; --plate-w:clamp(160px, min(100cqw, var(--plate-room, calc(100cqh - var(--adj-reserve)))), 480px)}
+  #scale-preview{width:var(--plate-w)}
+  #scale-sheet[data-tab="layout"] .sheetbody{display:grid; grid-template-columns:auto 1fr; grid-auto-rows:min-content; column-gap:var(--sp-3); row-gap:0; align-content:start}
+  #scale-sheet[data-tab="layout"] #scale-panel-layout{display:contents}
+  #scale-sheet[data-tab="layout"] #scale-plate-band{grid-column:1; grid-row:1 / span 30; align-self:start; position:sticky; top:0}
+  #scale-sheet[data-tab="layout"] #scale-tabs,
+  #scale-sheet[data-tab="layout"] #scale-drawer-status,
+  #scale-sheet[data-tab="layout"] #scale-layout-zone{grid-column:2}
+  #scale-sheet[data-tab="layout"] #scale-drawer-status{position:relative; top:auto; margin:0; box-shadow:none; z-index:auto; min-width:0}
+  #scale-sheet[data-tab="layout"] #scale-layout-zone{margin-top:var(--sp-3)}
+  #scale-sheet[data-tab="layout"] #scale-panel-layout > .editrow{grid-column:2; margin-top:var(--sp-3)}
+  #scale-sheet[data-tab="layout"] #scale-guidance, #scale-sheet[data-tab="layout"] #scale-next,
+  #scale-sheet[data-tab="layout"] #scale-generate, #scale-sheet[data-tab="layout"] #scale-delete-row,
+  #scale-sheet[data-tab="layout"] #scale-foot{margin-left:calc(var(--plate-w) + var(--sp-2))}
+  #scale-sheet[data-tab="layout"] #scale-next, #scale-sheet[data-tab="layout"] #scale-generate{width:auto}
+  #scale-sheet[data-tab="layout"].lipped #scale-next, #scale-sheet[data-tab="layout"].lipped #scale-generate,
+  #scale-sheet[data-tab="layout"].lipped #scale-delete-row{margin-left:0}
+  #scale-sheet[data-tab="layout"].lipped #scale-next, #scale-sheet[data-tab="layout"].lipped #scale-generate{width:100%}
   .sheetbody{scroll-padding-top:0}
-  #scale-layout-zone.open{display:grid; grid-template-columns:auto 1fr; column-gap:var(--sp-3)}
-  #scale-layout-zone.open #scale-plate-band{grid-column:1; grid-row:1 / span 4; align-self:start}
-  #scale-layout-zone.open > :not(#scale-plate-band){grid-column:2}
-  #scale-layout-zone.open #scale-preview{width:clamp(150px, calc(100dvh - 170px), 232px); max-width:none}
 }
+/* The four note fields and the scale line. */
+#scale-fields{display:flex; flex-direction:column; gap:var(--sp-2)}
+#scale-fields .fieldrow{gap:0}
+#scale-fields input{width:100%; min-height:44px; padding:9px var(--sp-3); box-sizing:border-box; color:#eae6df;
+  background:#151310; border:1px solid #433b2c; border-radius:8px; font:400 16px/1.3 Bitter, serif}
+#scale-fields input::placeholder, #scale-box::placeholder{color:#6f675a}
+#scale-fields input.bad{border-color:#E27005}
+#scale-field-msg{margin:0; font:400 12px/1.5 "Nunito Sans"; color:#e3b25c}
+#scale-field-msg.info{color:#c4bcab}
+#scale-field-msg.stale{color:#a79d8b}
+#scale-field-msg:empty{display:none}
+#scale-fields-note:empty, #scale-line-note:empty{display:none}
+#scale-fields-note, #scale-line-note{color:#a79d8b}
+/* The passive path: a read-only look that stays tappable, text kept legible. */
+#scale-fields.passive input, #scale-box.passive{color:#b3aa98; background:transparent; border-style:dashed; border-color:#4a4233}
+#scale-fields.stale input, #scale-box.stale{text-decoration:line-through; text-decoration-color:#e3b25c}
+#scale-fields.stale #scale-fields-note, #scale-box-wrap.passive ~ #scale-line-note.stale{color:#e3b25c}
+#scale-box-wrap.passive ~ #scale-parse{display:none}
+#scale-sheet.short .sheetsurf{padding:var(--sp-2) var(--sp-3) var(--sp-2); gap:var(--sp-2)}
+#scale-sheet.short #scale-guidance{margin-block:0}
+#scale-sheet.short #scale-generate, #scale-sheet.short #scale-next{min-height:44px}
+#scale-sheet.short #scale-box, #scale-sheet.short #scale-box-wrap::after{min-height:44px; padding:9px var(--sp-3)}
+#scale-sheet.short .sheetbody{gap:var(--sp-2)}
+#scale-sheet.short #scale-label-2{display:none}
+#scale-sheet.kbup.side .sheethead{display:none}
+#scale-sheet.tiny .sheetbody{flex:0 0 auto; overflow:visible}
+/* The scroller spans the screen, so a swipe on the flanks beside the 520px column scrolls it too. */
+#scale-sheet.tiny .sheetsurf{max-width:none; padding-inline:max(var(--sp-3), calc((100% - 520px) / 2 + var(--sp-3)))}
+/* The app's settings trigger paints over the open sheet; it has no job there. */
+body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+#scale-sheet.side #scale-fields .sheetlabel{font-size:8.5px; letter-spacing:.1em}
+#scale-sheet.side #scale-fields-head{display:none}
 /* The selection ring is drawn in the SVG (pan(), .pansel) rather than in CSS:
    it has to sit on ONE note at the radius that note was drawn at, which is a
    solved number no selector can reach. What CSS owns is the focus treatment of
@@ -1159,12 +1240,14 @@ footer.seq{row-gap:var(--sp-1)}
 .shuffle:active{color:#eae6df}
 .shuffle.reroll:active{background:#2e281e}
 .card:active{box-shadow:0 0 0 3px rgba(234,230,223,.22)}
-#scale-generate:active{background:#ddd7cb; border-color:#ddd7cb}
-#scale-generate:disabled:active{background:#f1ece1; border-color:#f1ece1}
+#scale-generate:active, #scale-next:active{background:#ddd7cb; border-color:#ddd7cb}
+#scale-generate:disabled:active, #scale-next:disabled:active{background:#f1ece1; border-color:#f1ece1}
 #scale-swatches .dot:active::after{box-shadow:0 0 0 2px #a79d8b}
 #scale-swatches .dot.sel:active::after{box-shadow:0 0 0 2px #f1ece1}
 #scale-swatches .dot:active{opacity:.75}
 #scale-fine-toggle:active, #scale-delete:active{color:#eae6df}
+#scale-tabs [role=tab]:active{color:#eae6df}
+#scale-tabs [role=tab].on:active{color:#c4bcab}
 /* Armed is a state the eye can read without the label: the same amber the
    announcer uses for a warning. */
 #scale-delete[data-armed]{color:#e3b25c}
@@ -1303,11 +1386,11 @@ html.about-open{overflow:hidden}
   <p>A free chord and progression practice tool for your own handpan scale.</p>
   <h3>How it works</h3>
   <ol>
-    <li>Pick a built-in deck, or type your own scale.</li>
+    <li>Pick a built-in scale, or type your own.</li>
     <li>Flip a card to see the chord lit on the pan.</li>
     <li>Open the settings menu and switch to Chord progression for a sequence to play.</li>
   </ol>
-  <h3>Built-in decks</h3>
+  <h3>Built-in scales</h3>
   <ul>
     <li><a href="#deck=d-kurd-10">D Kurd 10: 49 chord cards</a></li>
     <li><a href="#deck=d-amara-10">D Amara 10 (D Celtic): 29 chord cards</a></li>
@@ -1340,8 +1423,17 @@ html.about-open{overflow:hidden}
         cannot be pushed under the fold by a tall Edit sheet or a short
         viewport - see .sheetbody in the stylesheet. DOM order is unchanged. -->
    <div class="sheetbody">
-    <div class="editrow" id="scale-name-row" hidden>
-      <label class="sheetlabel" for="scale-name">DECK NAME</label>
+    <!-- Two tabs (plan 2026-10-19-sheet-tabs, O3): Scale, then Layout. Automatic
+         activation, roving tabindex; a switch pushes no history entry. -->
+    <div id="scale-tabs" role="tablist" aria-label="Scale sheet">
+      <button class="on" type="button" id="scale-tab-scale" role="tab" aria-selected="true"
+              aria-controls="scale-panel-scale" tabindex="0">Scale</button>
+      <button type="button" id="scale-tab-layout" role="tab" aria-selected="false"
+              aria-controls="scale-panel-layout" tabindex="-1">Layout</button>
+    </div>
+    <div id="scale-panel-scale" role="tabpanel" aria-labelledby="scale-tab-scale">
+    <div class="editrow" id="scale-name-row">
+      <label class="sheetlabel" for="scale-name">SCALE NAME</label>
       <input id="scale-name" type="text" autocapitalize="characters" autocorrect="off"
              autocomplete="off" spellcheck="false" maxlength="40">
     </div>
@@ -1351,14 +1443,45 @@ html.about-open{overflow:hidden}
          options"), this label, this placeholder and PARSE_HINT are the ONLY
          teaching of the seed grammar there is - keep all three saying the same
          thing, and keep the placeholder a seed that actually parses. -->
+    <!-- Dual input: four note fields are the default way to write the scale and
+         the line below is the alternative. Each mirrors the other (compose and
+         parseSeed); focusing one dims the other. One variable, inputPath, says
+         which is active. The live region is the last child so the order the
+         SG: N-A2 tests pin is untouched. -->
+    <div id="scale-fields" role="group" aria-labelledby="scale-fields-head">
+      <p class="sheetlabel" id="scale-fields-head">YOUR SCALE, NOTE BY NOTE</p>
+      <div class="fieldrow">
+        <label class="sheetlabel" id="scale-ding-label" for="scale-ding">DING</label>
+        <input id="scale-ding" type="text" placeholder="D3" autocapitalize="off" autocorrect="off"
+               autocomplete="off" spellcheck="false" enterkeyhint="next" aria-describedby="scale-field-msg">
+      </div>
+      <div class="fieldrow">
+        <label class="sheetlabel" id="scale-top-label" for="scale-top">TOP RIM NOTES, LOW TO HIGH</label>
+        <input id="scale-top" type="text" placeholder="A3 Bb3 C4 D4 E4 F4 G4 A4" autocapitalize="off" autocorrect="off"
+               autocomplete="off" spellcheck="false" enterkeyhint="next" aria-describedby="scale-field-msg">
+      </div>
+      <div class="fieldrow">
+        <label class="sheetlabel" id="scale-inner-label" for="scale-inner">TOP INNER (CYCLOPS/MUTANT) NOTE, LOW TO HIGH (OPTIONAL)</label>
+        <input id="scale-inner" type="text" placeholder="C5 D5" autocapitalize="off" autocorrect="off"
+               autocomplete="off" spellcheck="false" enterkeyhint="next" aria-describedby="scale-field-msg">
+      </div>
+      <div class="fieldrow">
+        <label class="sheetlabel" id="scale-bottom-label" for="scale-bottom">BOTTOM NOTES, LOW TO HIGH (OPTIONAL)</label>
+        <input id="scale-bottom" type="text" placeholder="C3 Eb3" autocapitalize="off" autocorrect="off"
+               autocomplete="off" spellcheck="false" enterkeyhint="done" aria-describedby="scale-field-msg">
+      </div>
+      <p class="sheethint" id="scale-fields-note"></p>
+      <p class="sr-only" id="scale-fields-live" aria-live="polite"></p>
+    </div>
+    <div id="scale-or" role="separator" aria-label="or"><span>OR</span></div>
     <div class="fieldrow">
       <label class="sheetlabel" for="scale-box">SCALE: (DING) TOP NOTES | OPTIONAL INNER NOTES</label>
       <span class="sheetlabel" id="scale-label-2">[NOTE] = A BOTTOM NOTE, WRITTEN WHERE ITS PITCH FALLS</span>
-      <div id="scale-box-wrap" data-grow="[C] [D] (E) [F#] [G] [A] B [C] D E F# G A B [C] D E | F# G A">
+      <div id="scale-box-wrap" data-grow="[C3] [D3] (E3) [F#3] [G3] [A3] B3 [C4] D4 E4 F#4 G4 A4 B4 [C5] D5 E5 | F#5 G5 A5">
         <textarea id="scale-box" rows="1" wrap="soft" autocapitalize="off" autocorrect="off"
                   autocomplete="off" spellcheck="false" enterkeyhint="go"
                   aria-describedby="scale-label-2"
-                  placeholder="[C] [D] (E) [F#] [G] [A] B [C] D E F# G A B [C] D E | F# G A"></textarea>
+                  placeholder="[C3] [D3] (E3) [F#3] [G3] [A3] B3 [C4] D4 E4 F#4 G4 A4 B4 [C5] D5 E5 | F#5 G5 A5"></textarea>
       </div>
       <div id="scale-parse"></div>
       <!-- Owner feedback, 2026-09-21: a refusal rendered below the pan is
@@ -1375,55 +1498,18 @@ html.about-open{overflow:hidden}
            its own aria-live because #scale-sheet is aria-modal, which puts
            the page-level .announce outside the dialog and out of reach. -->
       <div id="scale-refusal" aria-live="polite"></div>
+      <p class="sheethint" id="scale-line-note"></p>
     </div>
-    <!-- Import (scale-import lane B): a pasted maker's note list is read by
-         HPE.importer, shown role by role for the user to confirm, and only then
-         written into #scale-box through the same input event typing fires. No
-         network, no preset: a name-only paste is INSUFFICIENT. -->
-    <div class="fieldrow" id="import-row" hidden>
-      <button class="mode" type="button" id="import-open" aria-expanded="false"
-              aria-controls="import-area">IMPORT TEXT</button>
-      <div id="import-area" hidden>
-        <label class="sheetlabel" for="import-text">PASTE THE MAKER'S NOTE LIST</label>
-        <textarea id="import-text" rows="4" autocapitalize="off" autocorrect="off"
-                  autocomplete="off" spellcheck="false"
-                  placeholder="Ding: D3  Top: A3 Bb3 C4 D4 E4 F4 G4 A4  Bottom: C3"></textarea>
-        <button class="mode" type="button" id="import-run">IMPORT</button>
-        <div id="import-result" hidden>
-          <p class="sheethint" id="import-status" aria-live="polite"></p>
-          <div id="import-review" hidden>
-            <ul id="import-rows"></ul>
-            <ul id="import-flags"></ul>
-            <div id="import-ding-row">
-              <label class="sheetlabel" for="import-ding">DING</label>
-              <select id="import-ding"></select>
-            </div>
-            <button class="mode" type="button" id="import-use" disabled>USE</button>
-          </div>
-        </div>
-      </div>
     </div>
-    <!-- The pan mock: where the notes actually land - ding, rim zig-zag, inner
-         pair, dashed bottom ring in x-ray view - drawn by the SAME pan()
-         renderer the cards use, with no chord chosen, so what is previewed
-         cannot drift from what GENERATE CARDS produces. -->
-    <!-- Lane DR1: the layout zone. The pan mock sits in a band (sticky while the
-         drawer is open) with its status line; the ADJUST LAYOUT toggle and its
-         hint come next, then the drawer. The pan mock is drawn by the SAME
-         pan() renderer the cards use, with no chord chosen, so what is
-         previewed cannot drift from what GENERATE CARDS produces. -->
+    <div id="scale-panel-layout" role="tabpanel" aria-labelledby="scale-tab-layout" hidden>
+    <div id="scale-plate-band">
+      <div id="scale-preview" role="img"
+           aria-label="Preview of where the notes sit on the pan" hidden></div>
+      <p class="sheethint" id="scale-layout-hint">Type a scale to adjust its layout.</p>
+    </div>
+    <div id="scale-drawer-status" aria-live="polite" aria-atomic="true" hidden></div>
     <div id="scale-layout-zone">
-      <div id="scale-plate-band">
-        <div id="scale-preview" role="img"
-             aria-label="Preview of where the notes sit on the pan" hidden></div>
-        <div id="scale-drawer-status" aria-live="polite" aria-atomic="true" hidden></div>
-      </div>
-      <div class="editrow" id="scale-layout-row">
-        <button class="mode" type="button" id="scale-layout-toggle" aria-label="Adjust layout"
-                aria-expanded="false" aria-controls="scale-drawer" disabled>ADJUST LAYOUT<span aria-hidden="true">×</span></button>
-        <p class="sheethint" id="scale-layout-hint">Type a scale to adjust its layout.</p>
-      </div>
-      <div id="scale-drawer" role="group" aria-label="Layout" hidden>
+      <div id="scale-drawer" role="group" aria-label="Layout">
         <p class="sheethint" id="scale-drawer-hint" hidden></p>
         <div class="editrow">
           <span class="sheetlabel" id="scale-anchor-label">HANDPAN ORIENTATION</span>
@@ -1462,7 +1548,16 @@ html.about-open{overflow:hidden}
         </div>
       </div>
     </div>
-    <!-- Inside .sheetbody, in the scroll. It used to be pinned below the
+    <!-- The card palette: the last group of the Layout tab, inside .sheetbody,
+         in the scroll (it sat at the foot of the Scale tab until sheet polish
+         lane B, 2026-10-21, owner: first or last on Layout, last chosen). It
+         styles the cards rather than the pan and is the last decision before
+         GENERATE CARDS, so it follows RESET LAYOUT. It never reads boxOk: the
+         palette needs no pan, so it stays enabled before a scale parses.
+         Pinned by "SPB: #scale-swatches is the last child of
+         #scale-panel-layout ..." and "SPB: the swatches stay enabled on the
+         Layout tab ...".
+         Before 2026-09-17 it was pinned below the
          scrollport with the primary, on the argument that everything outside
          .sheetbody is what the sheet guarantees without scrolling - so the
          palette and the mirror toggle were guaranteed too.
@@ -1478,16 +1573,20 @@ html.about-open{overflow:hidden}
          the field the owner was typing into.
          So only #scale-generate (and the Edit-only delete row) stay pinned.
          The swatches and the mirror toggle lose their reachable-without-
-         scrolling guarantee - that is the trade the owner chose. DOM order is
-         unchanged. Moving this </div> back up is
+         scrolling guarantee - that is the trade the owner chose. Moving
+         the .sheetbody's closing </div> back above the Layout panel is
          tests/mutants/e_sheet_ctlrow_pinned_again.patch, which dies on "with
          a real keyboard up, the seed box is not clipped by the sheet's own
          scroller"; moving it DOWN past the primary is
          tests/mutants/e_sheet_primary_back_in_the_scroll.patch, which dies on
          "GENERATE CARDS is reachable without scrolling at every phone
          viewport". -->
-    <div class="ctlrow">
-      <div id="scale-swatches" role="group" aria-label="Card palette"></div>
+    <div class="editrow">
+      <span class="sheetlabel" id="scale-palette-label">CARD PALETTE</span>
+      <div class="ctlrow">
+        <div id="scale-swatches" role="group" aria-labelledby="scale-palette-label"></div>
+      </div>
+    </div>
     </div>
    </div>
     <!-- The page's messages, pinned with the primary: everything say() writes
@@ -1500,12 +1599,18 @@ html.about-open{overflow:hidden}
          the controls they describe. Pinned by "SG: N-A2", "SG: N-A5" and
          "SG: N-A6" in tests/e2e.test.js. -->
     <div id="scale-guidance">
+      <p id="scale-field-msg"></p>
       <div id="scale-msg" aria-live="polite"></div>
       <p class="sheethint" id="scale-layout-state" aria-live="polite" aria-atomic="true" hidden></p>
     </div>
-    <button id="scale-generate" type="button" disabled>GENERATE CARDS</button>
+    <!-- The footer lip: while the footer is open these wrappers generate no box. -->
+    <div id="scale-foot">
+    <div id="scale-footclip">
+    <div id="scale-footslide">
+    <button id="scale-next" type="button">NEXT</button>
+    <button id="scale-generate" type="button" hidden disabled>GENERATE CARDS</button>
     <div class="editrow" id="scale-delete-row" hidden>
-      <button id="scale-delete" type="button">DELETE THIS DECK</button>
+      <button id="scale-delete" type="button">DELETE THIS SCALE</button>
       <!-- The arming warning lives NEXT TO THE BUTTON it is about, not in
            the sheet's message area. #scale-refusal sits above the pan
            preview, and arming DELETE there moved the pan out from under it:
@@ -1516,6 +1621,10 @@ html.about-open{overflow:hidden}
            button's confirmation were only ever sharing one line by accident;
            below the button is also where the owner is already looking. -->
       <div id="scale-del-note" aria-live="polite"></div>
+    </div>
+    </div>
+    </div>
+    <button id="scale-lip" type="button" hidden aria-expanded="false" aria-controls="scale-next scale-generate scale-delete-row" aria-label="Show NEXT"></button>
     </div>
   </div>
 </div>
@@ -1566,10 +1675,10 @@ html.about-open{overflow:hidden}
     <div class="modebar">
       <button class="mode" type="button" id="deck-add" aria-haspopup="dialog">+ ADD A SCALE</button>
     </div>
-    <button class="mode" type="button" id="deck-restore" hidden>RESET SEEDED DECKS</button>
+    <button class="mode" type="button" id="deck-restore" hidden>RESET SEEDED SCALES</button>
   </div>
   <div class="panel-group">
-    <h3 class="panel-heading">Print this deck</h3>
+    <h3 class="panel-heading">Print this scale</h3>
     <div class="prints">
       <button type="button" id="print-download" onclick="downloadDeckPDF('shop', this); closePanel();">DOWNLOAD PDF</button>
       <!-- The paper choice keeps the panel open (design direction, "After an
@@ -3531,7 +3640,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       reason: "<A> is not above <B>, and the line runs low to high. Give <A> a higher octave or move it earlier, e.g. (D3) A3 C4 D4.",
       alternates: {
         ding: "<A> is at or below the ding <B>. Top notes are above the ding; a lower note is a bottom note and goes before it in square brackets, e.g. [C3] (D3) A3.",
-        afterBar: "<A> comes after the | but is below <B>. Notes after | are inner notes now. For a bottom note, use square brackets where its pitch falls, e.g. [C3] (D3) A3 C4.",
         below: "<A> is not below <B>. Bottom notes before the ding also run low to high, e.g. [C3] [D3] (E3) B3."
       }
     },
@@ -3732,16 +3840,34 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return midi;
   }
 
-  // Section 3: the first bottom note is the instance of its pitch class nearest
-  // the ding, excluding the ding's own midi, ties (tritone, same pitch class)
-  // going BELOW.
-  function nearestToDing(dingMidi, letter, accidental) {
-    var step = ((dingMidi - midiFromName(letter, accidental, 0)) % 12 + 12) % 12;
-    // The ding's own midi is not a candidate, so a same-pitch-class bottom note
-    // has its neighbours a full octave either side and the tie goes below.
-    var below = dingMidi - (step === 0 ? 12 : step);
-    var above = step === 0 ? dingMidi + 12 : below + 12;
-    return (dingMidi - below) <= (above - dingMidi) ? below : above;
+  // O1 (2026-10-19), the ONE rule for unoctaved bottom notes, shared by the
+  // BOTTOM NOTES field (importer.composeBottoms) and the legacy `|` list: a
+  // typed octave is kept; the first unoctaved note lands in the octave below
+  // the ding (dingMidi - 12 <= m < dingMidi); each later unoctaved note takes
+  // the nearest instance strictly above the note before it and may rise past
+  // the ding. `notes` is [{letter, accidental, octave|null}]. Returns the midis
+  // up to and including the first one outside 0..127 (raw), and that index as
+  // failAt, or -1. Order and repeats are the callers' own refusals.
+  function inferBottoms(notes, dingMidi) {
+    var midis = [];
+    var previous = null;
+    for (var i = 0; i < notes.length; i += 1) {
+      var note = notes[i];
+      var midi;
+      if (note.octave !== null && note.octave !== undefined) {
+        midi = midiFromName(note.letter, note.accidental, note.octave);
+      } else if (previous === null) {
+        var step = ((dingMidi - midiFromName(note.letter, note.accidental, 0)) % 12 + 12) % 12;
+        midi = dingMidi - (step === 0 ? 12 : step);
+      } else {
+        midi = midiFromName(note.letter, note.accidental, -1);
+        while (midi <= previous) midi += 12;
+      }
+      midis.push(midi);
+      if (midi < 0 || midi > 127) return { midis: midis, failAt: i };
+      previous = midi;
+    }
+    return { midis: midis, failAt: -1 };
   }
 
   // The positional zone rule of section 4: with no separator, the first up to
@@ -3918,12 +4044,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       previousNote = top;
     }
 
+    var inferred = inferBottoms(bottomNotes, dingMidi);
     for (n = 0; n < bottomNotes.length; n += 1) {
       var low = bottomNotes[n];
-      low.midi = n === 0
-        ? place(low, dingMidi, nearestToDing)
-        : place(low, bottomNotes[n - 1].midi, nextAbove);
-      if (low.midi < 0 || low.midi > 127) return outOfRange(low, low.midi);
+      low.midi = inferred.midis[n];
+      if (n === inferred.failAt) return outOfRange(low, low.midi);
       if (n > 0 && low.midi <= bottomNotes[n - 1].midi) {
         return outOfOrder(low, low.midi, bottomNotes[n - 1],
                           bottomNotes[n - 1].midi, false);
@@ -4175,12 +4300,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     }
 
     var prev = ding;
-    var lastTop = ding;
+    var lastRim = ding;
+    var lastInner = null;
     var lastBottom = low.length ? low[low.length - 1] : null;
-    var firstInner = null;
-    for (n = 0; n < high.length; n += 1) {
-      if (high[n].zone === "inner") { firstInner = high[n]; break; }
-    }
+    var rimNotes = {};
+    var seenInner = false;
     for (n = 0; n < high.length; n += 1) {
       var entry = high[n];
       var note = entry.note;
@@ -4193,19 +4317,26 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       }
       bad = scalePlaced(note, mm);
       if (bad) return bad;
-      if (mm < prev.midi) {
-        return scaleOrder(note, prev, entry === firstInner ? "afterBar" :
-                                      (prev === ding ? "ding" : undefined));
+      var restarts = entry.zone === "inner" && !seenInner;
+      if (entry.zone === "inner") seenInner = true;
+      if (mm < prev.midi && !restarts) {
+        return scaleOrder(note, prev, prev === ding ? "ding" : undefined);
       }
       if (entry.zone === "bottom") {
         if (lastBottom && mm <= lastBottom.midi) return scaleRepeated(note, lastBottom);
         if (mm <= ding.midi) return scaleOrder(note, ding, "ding");
         lastBottom = note;
-      } else {
-        if (mm <= lastTop.midi) {
-          return lastTop === ding ? scaleOrder(note, ding, "ding") : scaleRepeated(note, lastTop);
+      } else if (entry.zone === "rim") {
+        if (mm <= lastRim.midi) {
+          return lastRim === ding ? scaleOrder(note, ding, "ding") : scaleRepeated(note, lastRim);
         }
-        lastTop = note;
+        lastRim = note;
+        rimNotes[mm] = note;
+      } else {
+        if (restarts && mm <= ding.midi) return scaleOrder(note, ding, "ding");
+        if (rimNotes[mm]) return scaleRepeated(note, rimNotes[mm]);
+        if (lastInner && mm <= lastInner.midi) return scaleRepeated(note, lastInner);
+        lastInner = note;
       }
       prev = note;
     }
@@ -4260,8 +4391,25 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return ok({ fields: fields, options: opts.value });
   }
 
+  // The names of the inner notes under the highest rim note, in field order.
+  function innerBelowRim(seedOrFields) {
+    var fields = fieldsOf(seedOrFields);
+    var ids = orderedIds(fields);
+    var highest = -Infinity;
+    ids.top.forEach(function (id) {
+      if (fields[id][3] === "rim" && fields[id][2] > highest) highest = fields[id][2];
+    });
+    var names = [];
+    ids.top.forEach(function (id) {
+      if (fields[id][3] === "inner" && fields[id][2] < highest) names.push(fields[id][0] + fields[id][1]);
+    });
+    return names;
+  }
+
   // The canonical string: every note by pitch, a bottom note ahead of the ding
-  // or a top note of the same pitch, the bar before the first inner note.
+  // or a top note of the same pitch, the bar before the first inner note. A pan
+  // with an inner note under its highest rim note writes the bottoms, ding and
+  // rim sorted, then the bar, then the inner notes sorted.
   function formatSeed(seedOrFields) {
     var fields = fieldsOf(seedOrFields);
     var ids = orderedIds(fields);
@@ -4277,6 +4425,16 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     line.sort(function (a, c) { return a.midi - c.midi || a.rank - c.rank; });
     var out = [];
     var barred = false;
+    if (innerBelowRim(fields).length) {
+      line.filter(function (entry) { return !entry.inner; }).forEach(function (entry) {
+        out.push(entry.text);
+      });
+      out.push("|");
+      line.filter(function (entry) { return entry.inner; }).forEach(function (entry) {
+        out.push(entry.text);
+      });
+      return out.join(" ");
+    }
     line.forEach(function (entry) {
       if (entry.inner && !barred) { out.push("|"); barred = true; }
       out.push(entry.text);
@@ -4435,7 +4593,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     LABEL_RULE: LABEL_RULE,
     parseSeed: parseSeed,
     parseLegacySeed: parseLegacySeed,
+    inferBottoms: inferBottoms,
     formatSeed: formatSeed,
+    innerBelowRim: innerBelowRim,
     formatLegacySeed: formatLegacySeed,
     identitySeed: identitySeed,
     deckId: deckId,
@@ -4483,11 +4643,13 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   // Flags leave interpret() in this order.
   var FLAG_ORDER = [
-    ["NO_NOTE_LIST", BLOCK], ["UNDECLARED_PARENS", BLOCK], ["CONFLICTING_DING", BLOCK],
-    ["AMBIGUOUS_NOTE", BLOCK], ["INNER_BELOW_TOP", BLOCK], ["COUNT_MISMATCH", BLOCK], ["PROVISIONAL_REFUSED", BLOCK],
-    ["DING_CUE", CONFIRM], ["COUNT_EXCL_DING", CONFIRM], ["SPACE_IN_NOTE", CONFIRM],
+    ["NO_NOTE_LIST", BLOCK], ["UNDECLARED_PARENS", BLOCK], ["CONFLICTING_DING", BLOCK], ["DING_CLAUSE_MANY", BLOCK], ["DING_NOT_LOWEST", BLOCK],
+    ["DING_ON_BOTTOM", BLOCK], ["REPEATED_IN_SHELL", BLOCK],
+    ["AMBIGUOUS_NOTE", BLOCK], ["INNER_BELOW_TOP", INFO], ["COUNT_MISMATCH", BLOCK], ["PROVISIONAL_REFUSED", BLOCK],
+    ["BOTTOM_NO_OCTAVE", BLOCK], ["CONFLICTING_LIST", BLOCK], ["SEED_REFUSED", BLOCK],
+    ["DING_CUE", CONFIRM], ["PARENS_AS_BOTTOM", CONFIRM], ["COUNT_EXCL_DING", CONFIRM], ["SPACE_IN_NOTE", CONFIRM],
     ["SOURCE_NOT_ASCENDING", CONFIRM], ["DUPLICATE_PITCH", CONFIRM], ["NO_OCTAVE", CONFIRM],
-    ["COUNT_OK", INFO]
+    ["DING_CUE_DROPPED", CONFIRM], ["COUNT_OK", INFO]
   ];
 
   var NOTE_UP = /^([A-G])(#|b)?(-1|[0-9])?$/;
@@ -4495,14 +4657,28 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   var NOTE_LIKE = /^[A-Ga-g](#|b)?$/;
   var OCTAVED = /^[A-Ha-h](#|b)?(-1|[0-9])$/;
   var JOINED = /^([A-G]) (#|b)(-1|[0-9])/;
-  var TOKEN = /([A-G]) (?:#|b)(?:-1|[0-9])|[A-Za-z][A-Za-z0-9#]*(?:-1(?![0-9]))?|[()\/\-,]|\S/g;
+  var TOKEN = /([A-G]) (?:#|b)(?:-1|[0-9])|Ré(?:#|b)?(?:-1|[0-9])|[A-Za-z][A-Za-z0-9#]*(?:-1(?![0-9]))?|[()\/\-,]|\S/g;
+  var SOLFEGE = /^(Do|R[eé]|Mi|Fa|Sol|La|Si)(#|b)?(-1|[0-9])$/;
+  var SOLFEGE_LETTER = { Do: "C", Re: "D", "Ré": "D", Mi: "E", Fa: "F", Sol: "G", La: "A", Si: "B" };
+  var PITCH_SRC = "(?:[A-G](?:#|b)?(?:-1|[0-9])?|(?:Do|R[e\\u00e9]|Mi|Fa|Sol|La|Si)(?:#|b)?[0-9])";
+  var EDGE_L = "(?<![A-Za-z0-9\\u00c0-\\u017f])";
+  var EDGE_R = "(?![A-Za-z0-9#\\u00c0-\\u017f])";
+  var RUN = new RegExp("(?:" + EDGE_L + PITCH_SRC + EDGE_R + "[\\s,\\-\\/\\u00b7|()]*){5,}", "g");
+  var PITCH = new RegExp(EDGE_L + PITCH_SRC + EDGE_R, "g");
+  var NARROW_OVER = 2000;
+  var WINDOW_CHARS = 1200;
   var SKIPPED = /^(?:and|&|\.|;)$/i;
   var REFERENCE = /^A4 *(?:=|at\b)? *[0-9]{3}(?![0-9])/;
   var GLUED = /^(?:[A-Ha-h](?:#|b)?(?:-1|[0-9])){2,}$/;
 
   var LABEL = new RegExp(
-    "\\b(?:(Ding)|(Inner(?:\\s*Notes)?)|(Notes\\s*Bottom\\s*Side|Bottom\\s*Side\\s*Notes|Bottom\\s*Notes|Bottom)" +
-    "|(Notes\\s*Top\\s*Side|Top\\s*Side\\s*Notes|Top\\s*Notes|Top|Tones|Notes|Notas))\\s*:", "gi");
+    "(?:\\b|(?<=[0-9]))(?:(Ding(?:\\s*\\((?:center|centre)\\))?)|(Inner(?:\\s*Notes)?)" +
+    "|(Notes\\s*\\(\\s*Bottom\\s*Side\\s*\\)|Notes\\s*Bottom\\s*Side|Bottom\\s*Side\\s*Notes|Bottom\\s*Notes|Bottom)" +
+    "|(Notes\\s*\\(\\s*Top\\s*Side\\s*\\)|Notes\\s*Top\\s*Side|Top\\s*Side\\s*Notes|Top\\s*Notes|Top|Tones|Notes?|Notas" +
+    "|Outer\\s*circle|notes\\b[^:]{0,40}\\bare))\\s*:", "gi");
+  // Colon-less spec-row labels count only when a note follows straight away,
+  // so "Anzahl Noten 14" and "Number of notes 12" are not labels.
+  var BARE_LABEL = new RegExp("\\b(?:(Hauptnote|Main note)|(Noten|Notes))(?=\\s+\\(?" + PITCH_SRC + EDGE_R + ")", "g");
   var LABEL_ROLES = [null, "ding", "inner", "bottom", "top"];
 
   function core() { return HPE.core; }
@@ -4545,7 +4721,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     rest.lastIndex = re.lastIndex;
     while ((m = rest.exec(body))) {
       tok = m[0];
-      if (JOINED.test(tok) || OCTAVED.test(tok) || GLUED.test(tok)) {
+      if (JOINED.test(tok) || OCTAVED.test(tok) || GLUED.test(tok) || SOLFEGE.test(tok)) {
         if (!REFERENCE.test(tok + body.slice(rest.lastIndex))) return true;
       } else if (NOTE_LIKE.test(tok)) {
         run = key ? 0 : run + 1;
@@ -4571,17 +4747,25 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var depth = 0;
     var last = null;
     var immediate = false;
+    var group = 0;
     var re = new RegExp(TOKEN.source, "g");
     var m;
     while ((m = re.exec(body))) {
       var tok = m[0];
       var start = from + m.index;
+      if (REFERENCE.test(body.slice(m.index))) {
+        if (readsAsNoteAfter(re, body, tok)) odd.push(tok);
+        break;
+      }
       var joined = JOINED.exec(tok);
-      if (joined || NOTE_UP.test(tok)) {
+      var sol = SOLFEGE.exec(tok);
+      if (joined || sol || NOTE_UP.test(tok)) {
         last = {
-          name: joined ? joined[1] + joined[2] + joined[3] : tok,
+          name: joined ? joined[1] + joined[2] + joined[3] :
+            sol ? SOLFEGE_LETTER[sol[1]] + (sol[2] || "") + sol[3] : tok,
           joined: !!joined,
           paren: depth > 0,
+          group: depth > 0 ? group : 0,
           role: role,
           span: spanOf(original, start, start + tok.length),
           closeMark: false,
@@ -4591,7 +4775,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         immediate = true;
         continue;
       }
-      if (tok === "(") { depth += 1; immediate = false; continue; }
+      if (tok === "(") { if (!depth) group += 1; depth += 1; immediate = false; continue; }
       if (tok === ")") {
         if (depth > 0) depth -= 1;
         else if (last && immediate) last.closeMark = true;
@@ -4619,15 +4803,33 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     while ((m = re.exec(text))) {
       var role = null;
       for (var g = 1; g < LABEL_ROLES.length; g += 1) if (m[g] !== undefined) role = LABEL_ROLES[g];
-      marks.push({ role: role, from: m.index + m[0].length, at: m.index });
+      // "Note:" and "notes ... are:" also open prose, so they label a list
+      // only when a run of notes follows.
+      var weak = m[4] !== undefined && /^note$|are$/i.test(m[4]);
+      marks.push({ role: role, from: m.index + m[0].length, at: m.index, weak: weak });
     }
-    var lists = [];
-    marks.forEach(function (mark, i) {
-      var to = i + 1 < marks.length ? marks[i + 1].at : text.length;
-      var list = readList(text, mark.from, to, mark.role, original);
-      if (list.notes.length || list.odd.length) lists.push(list);
-    });
-    return lists;
+    var bare = new RegExp(BARE_LABEL.source, "g");
+    while ((m = bare.exec(text))) {
+      var at = m.index;
+      if (marks.some(function (k) { return at >= k.at && at < k.from; })) continue;
+      var ding = m[1] !== undefined;
+      marks.push({ role: ding ? "ding" : "top", from: at + m[0].length, at: at, weak: !ding, bare: ding });
+    }
+    marks.sort(function (a, b) { return a.at - b.at; });
+    for (;;) {
+      var lists = [];
+      var prose = -1;
+      marks.forEach(function (mark, i) {
+        var to = i + 1 < marks.length ? marks[i + 1].at : text.length;
+        var list = readList(text, mark.from, to, mark.role, original);
+        if (mark.weak && list.notes.length < 5 && prose < 0) prose = i;
+        list.at = mark.at;
+        if (mark.bare) list.notes.forEach(function (n) { n.bareLabel = true; });
+        if (list.notes.length || list.odd.length) lists.push(list);
+      });
+      if (prose < 0) return lists;
+      marks.splice(prose, 1);
+    }
   }
 
   // "D3 ding, A3 Bb3 top, C3 bottom": a role word closes each comma clause.
@@ -4645,9 +4847,48 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       list.notes.forEach(function (n) {
         n.span = spanOf(original, m.index + n.span.start, m.index + n.span.end);
       });
+      list.at = m.index;
+      list.end = m.index + clause.length;
       lists.push(list);
     }
     return lists;
+  }
+
+  function letters(name) {
+    return name.replace(/(-1|[0-9])$/, "");
+  }
+
+  function pcOf(name) {
+    var m = NOTE_UP.exec(name);
+    return m ? core().midiFromName(m[1], m[2] || "", 4) % 12 : null;
+  }
+
+  function runNames(run) {
+    var out = [];
+    var re = new RegExp(PITCH.source, "g");
+    var m;
+    while ((m = re.exec(run))) {
+      var sol = SOLFEGE.exec(m[0]);
+      out.push(letters(sol ? SOLFEGE_LETTER[sol[1]] + (sol[2] || "") + sol[3] : m[0]));
+    }
+    return out;
+  }
+
+  // tier0's densest-pitch window: the best line and 3 either side, at most
+  // WINDOW_CHARS characters, solfege pitches scored too.
+  function windowOf(raw) {
+    var lines = raw.split("\n");
+    var score = lines.map(function (l) { return (normalise(l).match(new RegExp(PITCH.source, "g")) || []).length; });
+    var sum = function (i) {
+      return score.slice(Math.max(0, i - 3), i + 4).reduce(function (a, b) { return a + b; }, 0);
+    };
+    var best = 0;
+    for (var i = 0; i < lines.length; i += 1) if (sum(i) > sum(best)) best = i;
+    var lo = Math.max(0, best - 3);
+    var start = 0;
+    for (var j = 0; j < lo; j += 1) start += lines[j].length + 1;
+    var body = lines.slice(lo, best + 4).join("\n").slice(0, WINDOW_CHARS);
+    return { start: start, end: start + body.length };
   }
 
   function titleCountOf(title) {
@@ -4669,10 +4910,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return parts.join(" ");
   }
 
-  function interpret(raw, opts) {
+  function read(raw, opts, narrow) {
     opts = opts || {};
-    var original = String(raw);
-    var text = normalise(original);
+    var full = String(raw);
+    var base = 0;
+    var original = full;
     var titleCount = titleCountOf(opts.title);
     var flags = {};
     function flag(code, extra) {
@@ -4680,6 +4922,40 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       for (var k in extra) if (Object.prototype.hasOwnProperty.call(extra, k)) f[k] = extra[k];
       return f;
     }
+    // With narrow set, a long text is read only in its densest-pitch window,
+    // widened to whole lines over every labelled list in the text, or every
+    // clause list when it has none. A spread wider than NARROW_OVER or a run of
+    // five or more notes outside the window blocks; interpret() then checks
+    // any REVIEW against the whole text.
+    if (narrow && full.length > NARROW_OVER) {
+      var w = windowOf(full);
+      var whole = normalise(full);
+      var spread = labelledLists(whole, full).filter(function (l) { return l.notes.length; });
+      if (!spread.length) spread = clauseLists(whole, full) || [];
+      if (spread.length) {
+        var lo = spread[0].at;
+        var hi = 0;
+        spread.forEach(function (l) {
+          hi = Math.max(hi, l.end !== undefined ? l.end : l.notes[l.notes.length - 1].span.end);
+        });
+        lo = lo > 0 ? full.lastIndexOf("\n", lo - 1) + 1 : 0;
+        hi = full.indexOf("\n", hi);
+        if (hi < 0) hi = full.length;
+        if (hi - lo <= NARROW_OVER) w = { start: Math.min(w.start, lo), end: Math.max(w.end, hi) };
+        else flag("CONFLICTING_LIST", { spread: hi - lo });
+      }
+      var outside = 0;
+      var rr = new RegExp(RUN.source, "g");
+      var rm;
+      while ((rm = rr.exec(whole))) {
+        var end = rm.index + rm[0].replace(/[\s,\-\/\u00b7|()]+$/, "").length;
+        if (rm.index < w.start || end > w.end) outside += 1;
+      }
+      if (outside) flag("CONFLICTING_LIST", { runs: outside });
+      base = w.start;
+      original = full.slice(w.start, w.end);
+    }
+    var text = normalise(original);
     function finish(roles, notes, total) {
       var out = [];
       FLAG_ORDER.forEach(function (pair) {
@@ -4695,17 +4971,72 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     }
 
     var lists = labelledLists(text, original);
+    var labelled = lists.length > 0;
     if (!lists.length) lists = clauseLists(text, original) || [];
     var odd = [];
     var notes = [];
     lists.forEach(function (list, li) {
       odd = odd.concat(list.odd);
-      list.notes.forEach(function (n) { n.list = li; notes.push(n); });
+      list.notes.forEach(function (n) {
+        n.list = li;
+        if (base) n.span = spanOf(full, base + n.span.start, base + n.span.end);
+        notes.push(n);
+      });
     });
     if (!notes.length) return insufficient();
     if (odd.length) flag("AMBIGUOUS_NOTE", { tokens: odd });
+    // Two labelled top lists are two readings of the rim, so neither wins.
+    if (labelled && lists.filter(function (l) { return l.role === "top" && l.notes.length; }).length > 1) {
+      flag("CONFLICTING_LIST", { tops: true });
+    }
+
+    // A ding label restated as the first note of the next list ("Hauptnote C3
+    // ... Noten C/ ...") is one note, not two; the restatement lends the ding
+    // its octave when the label printed none.
+    var dingLabels = notes.filter(function (n) { return n.role === "ding" && !n.paren; });
+    var dingClash = null;
+    if (dingLabels.length === 1) {
+      var dl = dingLabels[0];
+      var nextTop = null;
+      lists.some(function (list) {
+        if (list.role !== "top" || list.notes.indexOf(dl) >= 0) return false;
+        nextTop = list.notes.filter(function (n) { return !n.paren; })[0] || null;
+        return true;
+      });
+      var same = nextTop && pcOf(nextTop.name) !== null && pcOf(nextTop.name) === pcOf(dl.name) &&
+        (!hasOctave(dl.name) || !hasOctave(nextTop.name) || nextTop.name === dl.name) &&
+        (nextTop.sep === "/" || !!dl.bareLabel && (hasOctave(dl.name) || !hasOctave(nextTop.name) ||
+          midiOf(nextTop.name) < 60));
+      if (same) {
+        if (!hasOctave(dl.name) && hasOctave(nextTop.name)) dl.name = nextTop.name;
+        notes.splice(notes.indexOf(nextTop), 1);
+        lists.forEach(function (list) {
+          var at = list.notes.indexOf(nextTop);
+          if (at >= 0) list.notes.splice(at, 1);
+        });
+      } else if (nextTop && (dl.bareLabel || nextTop.sep === "/")) {
+        // A spec-row ding the list does not restate, or a slash-marked ding
+        // in the list, is a second ding, so neither wins until one is picked.
+        dingClash = [dl, nextTop];
+      }
+    }
+
+    // An earlier run of five or more notes that disagrees with the chosen
+    // lists blocks (boullard-battiloro).
+    if (labelled) {
+      var chosen = notes.map(function (n) { return letters(n.name); }).join(" ");
+      var er = new RegExp(RUN.source, "g");
+      var em;
+      while ((em = er.exec(text))) {
+        if (em.index + em[0].length > lists[0].at) break;
+        if (runNames(em[0]).join(" ") !== chosen) flag("CONFLICTING_LIST", { earlier: true });
+      }
+    }
 
     notes.forEach(function (n, i) { n.index = i; n.octave = hasOctave(n.name); n.midi = midiOf(n.name); });
+    var pickable = typeof opts.ding === "number" && opts.ding >= 0 && opts.ding < notes.length;
+    if (dingClash && !pickable) flag("CONFLICTING_DING", { notes: dingClash.map(function (n) { return n.index; }) });
+    var contested = !!dingClash;
 
     // Who is the ding?
     var labelDings = notes.filter(function (n) { return n.role === "ding" && !n.paren; });
@@ -4715,10 +5046,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       firstTop = list.notes[0];
       return true;
     });
-    var pickable = typeof opts.ding === "number" && opts.ding >= 0 && opts.ding < notes.length;
     var ding = null;
     var stray = notes.filter(function (n) { return n.closeMark; });
     function indices(list) { return list.map(function (n) { return n.index; }); }
+    if (labelDings.length > 1 || (labelDings.length && stray.length)) contested = true;
     if (pickable) {
       ding = notes[opts.ding];
     } else if (labelDings.length) {
@@ -4727,6 +5058,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       } else {
         ding = labelDings[0];
       }
+    } else if (firstTop && firstTop.paren && notes.filter(function (n) {
+      return n.paren && n.list === firstTop.list && n.group === firstTop.group;
+    }).length === 1) {
+      // A leading parenthesised note before the list is the ding (D-G, Halo).
+      ding = firstTop;
+      flag("DING_CUE", { notes: [ding.index], cue: "parens" });
     } else if (firstTop && !firstTop.paren) {
       var bad = stray.filter(function (n) { return n !== firstTop; });
       if (bad.length) {
@@ -4738,11 +5075,27 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       }
     }
 
+    // One note per ding label is the cue; a label clause holding more than
+    // one note keeps a block under any pick.
+    var clauses = {};
+    labelDings.forEach(function (n) { (clauses[n.list] = clauses[n.list] || []).push(n); });
+    var crowded = [];
+    Object.keys(clauses).forEach(function (k) { if (clauses[k].length > 1) crowded = crowded.concat(clauses[k]); });
+    if (pickable && crowded.length) flag("DING_CLAUSE_MANY", { notes: indices(crowded) });
+
+    var parensBottom = opts.parens === "bottom";
     notes.forEach(function (n) {
       if (n === ding) n.assigned = "ding";
+      else if (pickable && contested && n.role === "ding" && !n.paren && clauses[n.list].length === 1) n.assigned = "dropped";
+      else if (n.paren && parensBottom) { n.assigned = "bottom"; n.inline = true; }
       else if (n.paren) n.assigned = "unknown";
       else n.assigned = n.role === "ding" ? "top" : n.role;
     });
+    var dropped = notes.filter(function (n) { return n.assigned === "dropped"; });
+    if (dropped.length) flag("DING_CUE_DROPPED", { notes: indices(dropped), ding: ding.index });
+    if (pickable && ding.role === "bottom") flag("DING_ON_BOTTOM", { ding: ding.index });
+    var inlined = notes.filter(function (n) { return n.inline; });
+    if (inlined.length) flag("PARENS_AS_BOTTOM", { notes: indices(inlined) });
     var unknown = notes.filter(function (n) { return n.assigned === "unknown"; });
     if (unknown.length) flag("UNDECLARED_PARENS", { notes: indices(unknown) });
     if (!ding && !flags.CONFLICTING_DING && !unknown.length) return insufficient();
@@ -4755,6 +5108,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var innerMin = Math.min.apply(null, inner.map(function (n) { return n.midi === null ? Infinity : n.midi; }));
     if (innerMin < topMax) {
       flag("INNER_BELOW_TOP", { notes: indices(inner.filter(function (n) { return n.midi !== null && n.midi < topMax; })) });
+    }
+
+    if (ding && ding.midi !== null && !flags.CONFLICTING_DING) {
+      var under = tops.concat(inner).filter(function (n) { return n.midi !== null && n.midi < ding.midi; });
+      if (under.length) flag("DING_NOT_LOWEST", { notes: indices(under), ding: ding.index });
     }
 
     var total = notes.length;
@@ -4780,23 +5138,41 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
     var byPitch = {};
     notes.forEach(function (n) {
-      if (n.assigned === "unknown" || n.midi === null) return;
-      (byPitch[n.midi] = byPitch[n.midi] || []).push(n.index);
+      if (n.assigned === "unknown" || n.assigned === "dropped" || n.midi === null) return;
+      var shell = n.assigned === "bottom" ? "b" : "t";
+      (byPitch[n.midi] = byPitch[n.midi] || { t: [], b: [] })[shell].push(n.index);
     });
     var repeated = [];
+    var sameShell = [];
     Object.keys(byPitch).forEach(function (k) {
-      if (byPitch[k].length > 1) repeated = repeated.concat(byPitch[k]);
+      var g = byPitch[k];
+      if (g.t.length > 1) sameShell = sameShell.concat(g.t);
+      if (g.b.length > 1) sameShell = sameShell.concat(g.b);
+      if (g.t.length && g.b.length) repeated = repeated.concat(g.t, g.b);
     });
-    if (repeated.length) flag("DUPLICATE_PITCH", { notes: repeated.sort(function (a, b) { return a - b; }) });
+    var num = function (a, b) { return a - b; };
+    if (sameShell.length && !flags.CONFLICTING_DING) flag("REPEATED_IN_SHELL", { notes: sameShell.sort(num) });
+    if (repeated.length) flag("DUPLICATE_PITCH", { notes: repeated.sort(num) });
 
-    var bare = notes.filter(function (n) { return n.assigned !== "unknown" && !n.octave; });
+    var bare = notes.filter(function (n) { return n.assigned !== "unknown" && n.assigned !== "dropped" && !n.octave; });
     if (bare.length) flag("NO_OCTAVE", { notes: indices(bare) });
+    var lowBare = bottoms.filter(function (n) { return !n.octave && !n.inline; });
+    if (lowBare.length) flag("BOTTOM_NO_OCTAVE", { notes: indices(lowBare) });
 
     var blocked = !ding || flags.UNDECLARED_PARENS || flags.CONFLICTING_DING || flags.COUNT_MISMATCH ||
-                  flags.AMBIGUOUS_NOTE;
+                  flags.AMBIGUOUS_NOTE || flags.DING_NOT_LOWEST || flags.REPEATED_IN_SHELL || flags.DING_ON_BOTTOM || flags.DING_CLAUSE_MANY;
     var octaves = {};
+    // With parens read as bottoms, each sits at its own place in the source line.
+    function inlineString(d) {
+      var parts = ["(" + d.name + ")"];
+      notes.forEach(function (n) {
+        if (n === d || n.assigned === "dropped") return;
+        parts.push(n.assigned === "bottom" ? "[" + n.name + "]" : n.name);
+      });
+      return parts.join(" ");
+    }
     if (bare.length && !blocked) {
-      var parsed = core().parseSeed(provisionalString(ding, tops, inner, bottoms));
+      var parsed = core().parseSeed(inlined.length ? inlineString(ding) : provisionalString(ding, tops, inner, bottoms));
       if (!parsed.ok) {
         flag("PROVISIONAL_REFUSED", { refusal: { code: parsed.code, reason: parsed.reason } });
       } else {
@@ -4822,7 +5198,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var roles = {
       ding: ding ? make(ding, false) : null,
       top: tops.map(function (n) { return make(n, false); }),
-      bottom: bottoms.map(function (n) { return make(n, true); }),
+      bottom: bottoms.map(function (n) { return make(n, !n.inline); }),
       inner: inner.map(function (n) { return make(n, false); })
     };
     var listing = notes.map(function (n) {
@@ -4832,9 +5208,44 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return finish(roles, listing, total);
   }
 
+  // A narrowed REVIEW stands only when the same reader, over the whole text,
+  // gives the same status, string and flags. Any difference BLOCKs, so
+  // narrowing can only keep the whole-text reading or refuse.
+  function readingOf(r) {
+    return JSON.stringify([r.status, serialise(r), r.flags]);
+  }
+
+  function guard(r) {
+    if (r.status !== "REVIEW") return r;
+    var line = serialise(r);
+    var parsed = line ? core().parseSeed(line) : { ok: false, code: "EMPTY", reason: "" };
+    if (parsed.ok) return r;
+    var f = { code: "SEED_REFUSED", refusal: { code: parsed.code, reason: parsed.reason }, level: BLOCK };
+    var rank = function (c) { for (var i = 0; i < FLAG_ORDER.length; i++) if (FLAG_ORDER[i][0] === c) return i; return -1; };
+    var at = 0;
+    while (at < r.flags.length && rank(r.flags[at].code) < rank("SEED_REFUSED")) at++;
+    r.flags.splice(at, 0, f);
+    r.status = "NEEDS_INPUT";
+    return r;
+  }
+
+  function interpret(raw, opts) {
+    return guard(interpretRaw(raw, opts));
+  }
+
+  function interpretRaw(raw, opts) {
+    var narrowed = read(raw, opts, true);
+    if (narrowed.status !== "REVIEW" || String(raw).length <= NARROW_OVER) return narrowed;
+    var whole = read(raw, opts, false);
+    if (readingOf(whole) === readingOf(narrowed)) return narrowed;
+    narrowed.flags.unshift({ code: "CONFLICTING_LIST", wide: true, level: BLOCK });
+    narrowed.status = "NEEDS_INPUT";
+    return narrowed;
+  }
+
   // The canonical line for a REVIEW result, or "" when nothing may be written.
-  // A string parseSeed refuses is still returned: its refusal belongs to the
-  // sheet's own #scale-refusal.
+  // interpret() never returns a REVIEW result whose line parseSeed refuses: its
+  // guard turns that into NEEDS_INPUT with SEED_REFUSED.
   function serialise(result) {
     if (!result || result.status !== "REVIEW" || !result.roles.ding) return "";
     var line = [];
@@ -4849,21 +5260,258 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     result.roles.top.forEach(function (e) { add(e, 2, e.note, false); });
     result.roles.inner.forEach(function (e) { add(e, 2, e.note, true); });
     if (bad) return "";
-    line.sort(function (a, b) { return a.midi - b.midi || a.rank - b.rank; });
+    var byPitch = function (a, b) { return a.midi - b.midi || a.rank - b.rank; };
     var out = [];
-    var barred = false;
+    var rimMax = -Infinity;
+    var innerMin = Infinity;
     line.forEach(function (e) {
-      if (e.inner && !barred) { out.push("|"); barred = true; }
-      out.push(e.text);
+      if (e.inner) innerMin = Math.min(innerMin, e.midi);
+      else if (e.rank === 2) rimMax = Math.max(rimMax, e.midi);
     });
+    if (innerMin < rimMax) {
+      line.filter(function (e) { return !e.inner; }).sort(byPitch).forEach(function (e) { out.push(e.text); });
+      out.push("|");
+      line.filter(function (e) { return e.inner; }).sort(byPitch).forEach(function (e) { out.push(e.text); });
+    } else {
+      line.sort(byPitch);
+      var barred = false;
+      line.forEach(function (e) {
+        if (e.inner && !barred) { out.push("|"); barred = true; }
+        out.push(e.text);
+      });
+    }
     var text = out.join(" ");
     var parsed = core().parseSeed(text);
     return parsed.ok ? core().formatSeed(parsed.value.fields) : text;
   }
 
+  // compose(): the four helper fields (ding, top, inner, bottom) to one scale
+  // line. Each field is read alone; later fields are checked only against
+  // earlier ones that read cleanly, so one slip produces one message.
+  var COMPOSE_SOLFEGE = /^(?:do|r[eé]|mi|fa|sol|la|si|ti)(?:#|b|♯|♭)?(?:-1|[0-9])?$/i;
+  var COMPOSE_UPPER_B = /^([A-Ga-g])B(?:-1|[0-9])?$/;
+  var COMPOSE_NOTE = /^([A-G])(#|b)?(-1|[0-9])?$/;
+  var COMPOSE_BARRED = /[()\[\]|]/;
+  var COMPOSE_FIELDS = ["ding", "top", "inner", "bottom"];
+  var COMPOSE_LOW = -1;
+  var COMPOSE_HIGH = 10;
+
+  function composeRange(x) { return x + " is outside C-1 to G9."; }
+  function composeLower(x, p) { return x + " is lower than " + p + ": list low to high."; }
+
+  function composeMidi(n, octave) { return core().midiFromName(n.letter, n.acc, octave); }
+  function composeFits(midi) { return midi >= 0 && midi <= 127; }
+  function composeNamed(n, octave) { return n.letter + n.acc + octave; }
+
+  function composeRead(text) {
+    var tokens = String(text === undefined || text === null ? "" : text).trim().split(/[\s,;]+/)
+      .filter(function (t) { return t !== ""; });
+    var notes = [];
+    for (var i = 0; i < tokens.length; i++) {
+      var t = tokens[i];
+      if (COMPOSE_BARRED.test(t)) return { notes: [], error: "Type notes only: the line is written for you." };
+      if (COMPOSE_SOLFEGE.test(t)) return { notes: [], error: "Use letter names, like D A Bb." };
+      var upper = COMPOSE_UPPER_B.exec(t);
+      if (upper) {
+        var l = upper[1].toUpperCase();
+        return { notes: [], error: l + "B is not a note: write " + l + "-flat as " + l + "b." };
+      }
+      var m = COMPOSE_NOTE.exec(t.replace(/♯/g, "#").replace(/♭/g, "b").replace(/^./, function (c) { return c.toUpperCase(); }));
+      if (!m) return { notes: [], error: "\"" + t + "\" is not a note: try C, F# or Bb." };
+      var n = { letter: m[1], acc: m[2] || "", octave: m[3] === undefined ? null : Number(m[3]) };
+      if (n.octave !== null && !composeFits(composeMidi(n, n.octave))) {
+        return { notes: [], error: composeRange(composeNamed(n, n.octave)) };
+      }
+      notes.push(n);
+    }
+    return { notes: notes, error: null };
+  }
+
+  // The lowest octave that puts the note strictly above `below` (a midi number).
+  function composeAbove(n, below) {
+    for (var o = COMPOSE_LOW; o < COMPOSE_HIGH; o++) if (composeMidi(n, o) > below) return o;
+    return COMPOSE_HIGH;
+  }
+
+  function composeStage(head, notes, below, field, anchorName) {
+    var names = [];
+    var guessed = [];
+    for (var k = 0; k < notes.length; k++) {
+      var n = notes[k];
+      var octave = n.octave === null ? composeAbove(n, below) : n.octave;
+      var midi = composeMidi(n, octave);
+      var name = composeNamed(n, octave);
+      if (!composeFits(midi)) return { names: names, error: composeRange(name) };
+      names.push(name);
+      if (n.octave === null) guessed.push(name);
+      var parsed = core().parseSeed(head + names.join(" "));
+      if (!parsed.ok && parsed.code !== "NO_FIFTH") {
+        names.pop();
+        var before = k ? names[k - 1] : null;
+        var error = parsed.reason;
+        if (parsed.code === "NOTE_OUT_OF_RANGE") error = composeRange(name);
+        else if (parsed.code === "NOTE_REPEATED") error = name + " is already in the top or inner notes.";
+        else if (parsed.code === "NOTE_OUT_OF_ORDER") {
+          if (before) error = composeLower(name, before);
+          else if (field === "top") error = name + " is not above the ding, " + anchorName + ".";
+          else error = name + " is not above the ding, " + anchorName + ".";
+        }
+        return { names: names, error: error };
+      }
+      below = midi;
+    }
+    return { names: names, guessed: guessed, last: below, error: null };
+  }
+
+  function composeBottoms(notes, ding) {
+    var names = [];
+    var guessed = [];
+    var midis = [];
+    var below = null;
+    var placed = core().inferBottoms(notes.map(function (x) {
+      return { letter: x.letter, accidental: x.acc, octave: x.octave };
+    }), ding.midi);
+    for (var i = 0; i < notes.length; i++) {
+      var n = notes[i];
+      var guess = n.octave === null;
+      var midi = placed.midis[i];
+      var octave = (midi - composeMidi(n, 0)) / 12;
+      var name = composeNamed(n, octave);
+      if (i === placed.failAt) {
+        return { names: [], guessed: [], error: guess ? n.letter + n.acc + " has no octave that fits: type one." : composeRange(name) };
+      }
+      if (below !== null && midi === below) return { names: [], guessed: [], error: name + " is already in the bottom notes." };
+      if (below !== null && midi < below) return { names: [], guessed: [], error: composeLower(name, names[i - 1]) };
+      names.push(name);
+      midis.push(midi);
+      if (guess) guessed.push(name);
+      below = midi;
+    }
+    return { names: names, midis: midis, guessed: guessed, error: null };
+  }
+
+  // A bottom whose octave was inferred and whose midi is the ding's or a top or
+  // inner field's: a warning, never a block. A typed octave never warns.
+  function composeDuplicate(bottom, read, ding, top, inner) {
+    var rows = [["the ding", [ding.name]]];
+    (top || []).forEach(function (x, k) { rows.push(["top note " + (k + 1), [x]]); });
+    (inner || []).forEach(function (x, k) { rows.push(["inner note " + (k + 1), [x]]); });
+    for (var i = 0; i < bottom.names.length; i++) {
+      if (read[i].octave !== null) continue;
+      for (var r = 0; r < rows.length; r++) {
+        var m = COMPOSE_NOTE.exec(rows[r][1][0]);
+        if (composeMidi({ letter: m[1], acc: m[2] || "" }, Number(m[3])) === bottom.midis[i]) {
+          return { code: "DUPLICATE_NOTE", text: bottom.names[i] + " is already " + rows[r][0] + ". Double-check the bottom notes." };
+        }
+      }
+    }
+    return null;
+  }
+
+  function compose(fields) {
+    fields = fields || {};
+    var out = {
+      ok: false, empty: false, line: "", seed: null,
+      errors: { ding: null, top: null, inner: null, bottom: null },
+      info: { bottom: null, inner: null }, warn: { bottom: null }, guessed: [],
+      notes: { ding: [], top: [], inner: [], bottom: [] }
+    };
+    var read = {};
+    COMPOSE_FIELDS.forEach(function (f) { read[f] = composeRead(fields[f]); });
+    if (COMPOSE_FIELDS.every(function (f) { return !read[f].error && !read[f].notes.length; })) {
+      out.empty = true;
+      return out;
+    }
+    COMPOSE_FIELDS.forEach(function (f) { out.errors[f] = read[f].error; });
+
+    var ding = null;
+    if (!out.errors.ding) {
+      if (!read.ding.notes.length) out.errors.ding = "Enter the ding, like D3.";
+      else if (read.ding.notes.length > 1) out.errors.ding = "Enter one note for the ding.";
+      else {
+        var d = read.ding.notes[0];
+        var dOctave = d.octave === null ? 3 : d.octave;
+        ding = { letter: d.letter, acc: d.acc, octave: dOctave, name: composeNamed(d, dOctave), midi: composeMidi(d, dOctave) };
+        out.notes.ding = [ding.name];
+      }
+    }
+
+    var top = null;
+    var topMidi = null;
+    var inner = null;
+    var innerGuessed = [];
+    if (!out.errors.top && !read.top.notes.length) out.errors.top = "Enter the top notes, low to high.";
+    if (ding && !out.errors.top) {
+      var staged = composeStage("(" + ding.name + ") ", read.top.notes, ding.midi, "top", ding.name);
+      if (staged.error) out.errors.top = staged.error;
+      else { top = staged.names; topMidi = staged.last; }
+    }
+    if (top) {
+      out.notes.top = top;
+      if (read.inner.notes.length && !out.errors.inner) {
+        var upper = composeStage("(" + ding.name + ") " + top.join(" ") + " | ", read.inner.notes, topMidi, "inner", ding.name);
+        if (upper.error) out.errors.inner = upper.error;
+        else { inner = upper.names; innerGuessed = upper.guessed; }
+      } else if (!out.errors.inner) inner = [];
+    }
+    if (inner) {
+      out.notes.inner = inner;
+      var full = core().parseSeed("(" + ding.name + ") " + top.join(" ") + (inner.length ? " | " + inner.join(" ") : ""));
+      if (!full.ok && full.code === "NO_FIFTH") {
+        out.errors.ding = "No fifth above the ding " + ding.name + ": add " + core().fifthName(ding.letter, ding.acc) + " to the top notes, or check the ding.";
+      } else if (!full.ok) out.errors.top = full.reason;
+      else {
+        var notes = [];
+        if (innerGuessed.length) {
+          notes.push("Octaves guessed: " + innerGuessed.join(", ") + ". An inner note can sit below the top notes: type its octave to put it there.");
+        }
+        var low = core().innerBelowRim(full.value.fields);
+        if (low.length) {
+          notes.push(low.join(", ") + (low.length > 1 ? " sit" : " sits") + " below the top notes. Check " + (low.length > 1 ? "them" : "it") + " on the pan picture.");
+        }
+        if (notes.length) out.info.inner = notes.join(" ");
+      }
+    }
+
+    var bottom = null;
+    if (ding && !out.errors.bottom) {
+      var placed = composeBottoms(read.bottom.notes, ding);
+      if (placed.error) out.errors.bottom = placed.error;
+      else bottom = placed;
+    }
+    if (bottom) {
+      out.notes.bottom = bottom.names;
+      out.guessed = bottom.guessed;
+      if (bottom.guessed.length) {
+        out.info.bottom = "Octaves guessed: " + bottom.guessed.join(", ") + ". Type an octave to change a guess.";
+        out.warn.bottom = composeDuplicate(bottom, read.bottom.notes, ding, top, inner);
+      }
+    }
+
+    if (ding && top && inner && bottom && COMPOSE_FIELDS.every(function (f) { return !out.errors[f]; })) {
+      var roles = {
+        ding: { note: ding.name },
+        top: top.map(function (x) { return { note: x }; }),
+        inner: inner.map(function (x) { return { note: x }; }),
+        bottom: bottom.names.map(function (x) { return { note: x }; })
+      };
+      var line = serialise({ status: "REVIEW", roles: roles });
+      var parsed = core().parseSeed(line);
+      if (parsed.ok) {
+        out.ok = true;
+        out.line = line;
+        out.seed = parsed.value;
+      } else {
+        out.errors.bottom = parsed.reason;
+      }
+    }
+    return out;
+  }
+
   HPE.importer = {
     interpret: interpret,
-    serialise: serialise
+    serialise: serialise,
+    compose: compose
   };
 })(HPE);
 </script>
@@ -9690,7 +10338,31 @@ const fineBox   = document.getElementById("scale-fine");
 // Lane DR1: the layout drawer shell.
 const layoutZone = document.getElementById("scale-layout-zone");
 const plateBand  = document.getElementById("scale-plate-band");
-const drawerBtn  = document.getElementById("scale-layout-toggle");
+// Dual input: four note fields beside the scale line. Literal lookups, one per
+// id, so a renamed id fails the SB-2 test rather than a dynamic string.
+const fieldsGroup = document.getElementById("scale-fields");
+const fieldEls = {
+  ding: document.getElementById("scale-ding"),
+  top: document.getElementById("scale-top"),
+  inner: document.getElementById("scale-inner"),
+  bottom: document.getElementById("scale-bottom"),
+};
+const fieldLabels = {
+  ding: document.getElementById("scale-ding-label"),
+  top: document.getElementById("scale-top-label"),
+  inner: document.getElementById("scale-inner-label"),
+  bottom: document.getElementById("scale-bottom-label"),
+};
+const fieldMsg = document.getElementById("scale-field-msg");
+const fieldsLive = document.getElementById("scale-fields-live");
+const fieldsNote = document.getElementById("scale-fields-note");
+const lineNote = document.getElementById("scale-line-note");
+const tabStrip   = document.getElementById("scale-tabs");
+const tabScale   = document.getElementById("scale-tab-scale");
+const tabLayout  = document.getElementById("scale-tab-layout");
+const panelScale = document.getElementById("scale-panel-scale");
+const panelLayout = document.getElementById("scale-panel-layout");
+const nextBtn    = document.getElementById("scale-next");
 const layoutHint = document.getElementById("scale-layout-hint");
 const layoutNote = document.getElementById("scale-layout-state");
 const drawerBox  = document.getElementById("scale-drawer");
@@ -9739,6 +10411,17 @@ let anchor = "one";
 let bottomHeld = false;
 let hadBottom = false;
 let boxOk = false;
+// Dual input state (plan 2.2, 2.5). inputPath says which of the two inputs is
+// the active one; the other follows it. A flag marks a passive path that could
+// not follow. `mirroring` is true only around the app's own write to #scale-box.
+let inputPath = "fields";
+let lineStale = false;
+let fieldsStale = false;
+let mirroring = false;
+let fieldEditing = null;
+let fieldShown = {};
+let liveTimer = null;
+let bandPad = "", plateRoom = "", pinPad = "";
 
 /* The seed row has exactly TWO writers, and each blanks the other. That is
    what makes #scale-parse and #scale-refusal mutually exclusive - and the
@@ -9774,6 +10457,12 @@ function say(text, tier) {
     el.className = (el === announce ? "announce" : "") + (tier ? " " + tier : "");
     el.textContent = text;
   }
+  syncMsgYield();
+  lipGuidanceChanged();
+}
+/** #scale-msg steps aside for the field line only while that line is visible, and an error or a refusal never does. */
+function syncMsgYield() {
+  msgLine.hidden = !!fieldMsg.textContent && !fieldMsg.hidden && !msgLine.classList.contains("err") && !msgLine.classList.contains("refusal");
 }
 
 function buildSwatches() {
@@ -9808,16 +10497,10 @@ function paintMirrors() {
    Its state is a session let like `mirror` and `anchor`: it opens closed,
    closing it never touches the layout, and leaving the sheet drops it. */
 let drawerOpen = false;
-let drawerPaused = false;
+let sheetTab = "scale";
 let layoutBase = { anchor: "one", mirror: false, mb: false, seats: "" };
-const PAUSED_TEXT = "Layout is paused until the scale parses.";
-const READY_TEXT = "Layout is ready again.";
 const HINT_EMPTY = "Type a scale to adjust its layout.";
-const HINT_GUESS = "Layout is a guess. Open ADJUST LAYOUT to move a note, change the handpan orientation, or mirror the pan.";
 const DRAWER_HINT = "Tap a note, then tap another note in the same ring to swap them. Or hold a note and drag it.";
-const DRAWER_ZONE = [drawerBtn, fineBtn, notePrev, noteNext, seatPrev, seatNext, resetBtn, mirrorTop, mirrorBot,
-  anchorOne, anchorBetween, previewBox];
-const inDrawerZone = (el) => DRAWER_ZONE.includes(el) || isHit(el);
 
 /** One line under the plate, read once. The same sentence twice in a row is
  *  cleared first, or a live region would stay silent on the repeat. */
@@ -9849,29 +10532,15 @@ function layoutNoticeText() {
 /** Everything the layout zone shows, from the session state alone. */
 function paintLayout() {
   paintMirrors();
-  if (drawerOpen && !boxOk && !drawerPaused) {
-    drawerPaused = true;
+  if (drawerOpen && !boxOk) {
     pickRef = null;
     pickMoved = false;
-    if (isHit(document.activeElement)) drawerBtn.focus();
-    layoutStatus(PAUSED_TEXT);
-  } else if (drawerOpen && boxOk && drawerPaused) {
-    drawerPaused = false;
-    const count = drawerStatus.textContent;
-    layoutStatus(count && count !== PAUSED_TEXT ? `${READY_TEXT} ${count}` : READY_TEXT);
   }
-  const off = !boxOk && !drawerOpen;
-  const keep = off && document.activeElement === drawerBtn;
-  drawerBtn.disabled = off && !keep;
-  if (keep) drawerBtn.setAttribute("aria-disabled", "true"); else drawerBtn.removeAttribute("aria-disabled");
-  drawerBtn.classList.toggle("on", drawerOpen);
-  drawerBtn.setAttribute("aria-expanded", String(drawerOpen));
-  layoutHint.textContent = boxOk || drawerOpen ? HINT_GUESS : HINT_EMPTY;
-  layoutHint.hidden = drawerOpen;
-  drawerBox.hidden = !drawerOpen;
-  drawerStatus.hidden = !drawerOpen;
+  layoutHint.textContent = HINT_EMPTY;
+  layoutHint.hidden = boxOk || !(panState === "example" || !String(scaleBox.value || "").trim());
+  drawerStatus.hidden = !drawerOpen || !boxOk;
   drawerHint.textContent = DRAWER_HINT;
-  drawerHint.hidden = !drawerOpen;
+  drawerHint.hidden = !(drawerOpen && boxOk);
   notePrev.disabled = noteNext.disabled = !boxOk || !ringPickable();
   seatPrev.disabled = seatNext.disabled = !boxOk || !pickRef;
   resetBtn.disabled = !boxOk || !(layoutSeats || mirror || bottomMirror() || anchor !== "one");
@@ -9880,35 +10549,418 @@ function paintLayout() {
   fineBtn.setAttribute("aria-expanded", String(fineOpen));
   fineBtn.textContent = fineOpen ? "HIDE FINER CONTROLS" : "HARD TO TAP? SHOW FINER CONTROLS";
   layoutZone.classList.toggle("open", drawerOpen);
-  const note = layoutNoticeText();
-  if (layoutNote.textContent !== note) layoutNote.textContent = note;
+  fieldMsg.hidden = drawerOpen;
+  syncMsgYield();
+  const note = drawerOpen ? layoutNoticeText() : "";
+  const noteChanged = layoutNote.textContent !== note;
+  if (noteChanged) layoutNote.textContent = note;
   layoutNote.hidden = !note;
   sheet.classList.toggle("noticed", !!note);
+  if (noteChanged) lipGuidanceChanged();
   syncBand();
 }
 /** Rule G-a, G-b, G-e: the band sticks only while the scrollport keeps room
  *  for a control under it, and the scroll padding is its height exactly then.
  *  Where nothing can be measured (no layout) it stays stuck. */
 const BAND_MIN_ROOM = 44;
+const roomOf = () => {
+  const cs = typeof getComputedStyle === "function" ? getComputedStyle(plateBand) : null;
+  return Math.max(0, (bandPort.clientHeight || 0) - (cs ? parseFloat(cs.paddingBottom) || 0 : 0));
+};
+const platesBeside = () => {
+  const w = (el) => (el.getBoundingClientRect ? el.getBoundingClientRect().width : el.offsetWidth) || 0;
+  return w(plateBand) > 0 && w(bandPort) > 0 && w(plateBand) < w(bandPort) * 0.75;
+};
+/** The scrollport height the lipped layout gives back: the surface padding, the lead and delete row, less the
+ *  footer and its margin. Mirrors the .sheetsurf padding rules (open, short, lipped); change one, change the other. */
+const lipDelta = () => {
+  const px = (v) => parseFloat(v) || 0;
+  const cs = getComputedStyle(sheetSurf), lead = nextBtn.hidden ? genBtn : nextBtn;
+  const padLip = px(cs.paddingBottom);
+  const rootCs = getComputedStyle(document.documentElement);
+  const padOpen = sheet.classList.contains("short") ? px(rootCs.getPropertyValue("--sp-2")) : Math.max(px(rootCs.getPropertyValue("--sp-4")), padLip);
+  return padOpen - padLip + lead.getBoundingClientRect().height + (delRow.hidden ? 0 : px(cs.rowGap) + delRow.getBoundingClientRect().height) - footEl.getBoundingClientRect().height - px(getComputedStyle(footEl).marginTop);
+};
+const openRoomOf = () => Math.max(0, roomOf() - (sheet.classList.contains("lipped") ? lipDelta() : 0));
 function syncBand() {
+  if (!drawerOpen) {
+    layoutZone.classList.remove("nostick");
+    if (bandPad !== "0px") { bandPad = "0px"; document.documentElement.style.setProperty("--plate-band-h", bandPad); }
+    return;
+  }
   const high = (el) => (el.getBoundingClientRect ? el.getBoundingClientRect().height : el.offsetHeight) || 0;
-  const band = drawerOpen ? high(plateBand) : 0;
+  const wide = (el) => (el.getBoundingClientRect ? el.getBoundingClientRect().width : el.offsetWidth) || 0;
+  const root = document.documentElement.style;
+  const band = high(plateBand);
+  const stat = drawerStatus.hidden ? 0 : high(drawerStatus);
   const port = bandPort.clientHeight > 0 ? high(bandPort) : 0;
-  const stuck = drawerOpen && !(port > 0 && port - band < BAND_MIN_ROOM);
-  layoutZone.classList.toggle("nostick", drawerOpen && !stuck);
-  document.documentElement.style.setProperty("--plate-band-h", (stuck ? band : 0) + "px");
+  const beside = platesBeside();
+  const stuck = !beside && !(port > 0 && port - band - stat < BAND_MIN_ROOM);
+  layoutZone.classList.toggle("nostick", !beside && !stuck);
+  const sm = stat && typeof getComputedStyle === "function" ? parseFloat(getComputedStyle(drawerStatus).marginBottom) || 0 : 0;
+  const pad = (stuck ? band + stat + sm : 0) + "px";
+  if (bandPad !== pad) { bandPad = pad; root.setProperty("--plate-band-h", pad); }
+  const pin = (stuck ? band : 0) + "px";
+  if (pinPad !== pin) { pinPad = pin; root.setProperty("--plate-pin-h", pin); }
+  if (beside && port > 0) {
+    const put = (px) => { const v = px + "px"; if (plateRoom !== v) { plateRoom = v; root.setProperty("--plate-room", v); } };
+    const seen = [];
+    let v = openRoomOf();
+    while (!seen.includes(v) && seen.length < 6) { seen.push(v); put(v); v = openRoomOf(); }
+    if (v !== seen[seen.length - 1]) { v = Math.min(...seen.slice(Math.max(0, seen.indexOf(v)))); put(v); }
+  }
 }
 const bandPort = document.querySelector(".sheetbody") || plateBand;
 if (typeof ResizeObserver === "function") {
   const bandWatch = new ResizeObserver(syncBand);
   bandWatch.observe(plateBand);
   bandWatch.observe(bandPort);
+  bandWatch.observe(drawerStatus);
+  for (const el of [nextBtn, genBtn, delRow, document.getElementById("scale-foot")]) if (el) bandWatch.observe(el);
 }
 /** A native focus scrolls a text control only far enough to show its caret;
  *  rule G-c wants the whole control in the scrollport. */
 bandPort.addEventListener("focusin", (e) => {
   const t = e.target;
-  if (t && t.matches && t.matches("input, textarea, select")) t.scrollIntoView({ block: "nearest", behavior: "auto" });
+  if (!(t && t.matches && t.matches("input, textarea, select"))) return;
+  const snap = tapSnap && Date.now() - tapSnap.at < 1000 ? tapSnap : null;
+  tapSnap = null;
+  if (snap) {
+    bandPort.scrollTop = snap.body;
+    if (sheetSurf) sheetSurf.scrollTop = snap.surf;
+    scrollPin = { until: Date.now() + PIN_MS, body: 0, surf: 0 };
+  }
+  revealField(t);
+});
+/** Bring a focused field into view by scrolling only the scrollers inside the
+ *  sheet, the least distance, and not at all when it is whole in view.
+ *  scrollIntoView would also scroll every other ancestor and, on iOS, the
+ *  visual viewport, on top of the browser's own focus scroll. */
+function revealField(t) {
+  if (!t || !t.getBoundingClientRect || !window.getComputedStyle) return;
+  for (let el = t.parentElement; el && el !== sheet; el = el.parentElement) {
+    if (!(el.scrollHeight > el.clientHeight)) continue;
+    const css = getComputedStyle(el);
+    if (css.overflowY !== "auto" && css.overflowY !== "scroll") continue;
+    const edge = el.getBoundingClientRect().top + (el.clientTop || 0);
+    const f = t.getBoundingClientRect();
+    const up = f.top - (edge + (parseFloat(css.scrollPaddingTop) || 0));
+    const down = f.bottom - (edge + el.clientHeight - (parseFloat(css.scrollPaddingBottom) || 0));
+    if (up < 0 || down > 0) lipQuiet();
+    if (up < 0) el.scrollTop += up;
+    else if (down > 0) el.scrollTop += Math.min(down, up);
+  }
+  if (scrollPin && Date.now() < scrollPin.until) { scrollPin.body = bandPort.scrollTop; scrollPin.surf = sheetSurf ? sheetSurf.scrollTop : 0; }
+}
+/** iOS scrolls the container itself when a tapped field gets focus, by an
+ *  amount of its own choosing and after the focus event. A tap remembers where
+ *  both scrollers stood, and for PIN_MS after the focus any scroll that is not
+ *  the finger's puts them back where revealField left them. A new touch or a
+ *  wheel turn hands the scroll back to the reader. */
+const PIN_MS = 600;
+let tapSnap = null, scrollPin = null;
+const holdPin = () => {
+  if (!scrollPin || Date.now() > scrollPin.until) return;
+  if (bandPort.scrollTop !== scrollPin.body) { lipQuiet(); bandPort.scrollTop = scrollPin.body; }
+  if (sheetSurf && sheetSurf.scrollTop !== scrollPin.surf) { lipQuiet(); sheetSurf.scrollTop = scrollPin.surf; }
+};
+const releasePin = () => { scrollPin = null; };
+sheet.addEventListener("pointerdown", (e) => {
+  const t = e.target;
+  const onField = t && t.matches && t.matches("input, textarea, select");
+  tapSnap = onField ? { at: Date.now(), body: bandPort.scrollTop, surf: sheetSurf ? sheetSurf.scrollTop : 0 } : null;
+  if (!onField) releasePin();
+}, true);
+const dropTap = () => { scrollPin = null; tapSnap = null; };
+let touchFrom = null;
+sheet.addEventListener("touchstart", (e) => {
+  const t = e.target, p = e.touches && e.touches[0];
+  touchFrom = p ? { x: p.clientX, y: p.clientY } : null;
+  if (!(t && t.matches && t.matches("input, textarea, select"))) releasePin();
+}, { passive: true, capture: true });
+sheet.addEventListener("touchmove", (e) => {
+  const p = e.touches && e.touches[0];
+  if (!touchFrom || !p) return;
+  if (Math.hypot(p.clientX - touchFrom.x, p.clientY - touchFrom.y) > 8) { dropTap(); touchFrom = null; }
+}, { passive: true, capture: true });
+sheet.addEventListener("pointercancel", dropTap, true);
+sheet.addEventListener("wheel", releasePin, { passive: true });
+bandPort.addEventListener("scroll", holdPin);
+if (sheetSurf) sheetSurf.addEventListener("scroll", holdPin);
+
+/* ---- the footer lip ----
+ * OPEN -> SHUTTING (collapseLip), SHUT -> OPENING (restoreLip), OPENING -> OPEN
+ * (finishOpen). The layout classes change at the start of a collapse and the end
+ * of a restore only; between them just a transform slides. lipshut is the
+ * target state, lipped is the layout, lipnow suppresses the transition. */
+const footEl = document.getElementById("scale-foot");
+const footSlide = document.getElementById("scale-footslide");
+const lipBtn = document.getElementById("scale-lip");
+const guidanceEl = msgLine.parentElement || msgLine.parentNode || null;
+const LIP_VARS = ["--lip-h", "--lip-pad", "--lip-gd", "--lip-g"];
+const LIP_PX = 24, LIP_SWIPE = 16, LIP_WINDOW = 150, LIP_END_MS = 220;
+let lipGen = 0, lipTimer = 0, lipEnd = 0, lipSettled = false, lipDirty = false;
+let lipQuietUntil = 0, userWindowUntil = 0, lipAcc = 0, lipPrev = { t: 0, M: 0 };
+const lipRect = (el) => (el && el.getBoundingClientRect ? el.getBoundingClientRect() : { top: 0, bottom: 0, height: 0 });
+const lipPrimary = () => (nextBtn.hidden ? genBtn : nextBtn);
+const isLipped = () => sheet.classList.contains("lipped");
+const isLipShut = () => sheet.classList.contains("lipshut");
+const lipFlush = () => { if (footSlide.getBoundingClientRect) footSlide.getBoundingClientRect(); };
+const lipQuiet = () => { lipQuietUntil = Date.now() + LIP_WINDOW; };
+function lipRead() {
+  const lead = lipPrimary();
+  return {
+    body: lipRect(bandPort).bottom, top: lipRect(lead).top, bottom: lipRect(lead).bottom,
+    del: delRow.hidden ? null : lipRect(delRow).top,
+    g: guidanceEl && guidanceEl.getBoundingClientRect ? guidanceEl.getBoundingClientRect().top : null,
+  };
+}
+const lipText = () => !!guidanceEl && [...(guidanceEl.children || [])].some((c) => !c.hidden && c.textContent);
+function lipWrite(o) {
+  const set = (k, v) => sheet.style.setProperty(k, v);
+  set("--lip-h", (lipRect(footEl).top - (o.body - 1)) + "px");
+  set("--lip-pad", (o.top - (o.body - 1)) + "px");
+  set("--lip-gd", (o.del === null ? 0 : o.del - o.bottom) + "px");
+  if (lipText() && o.g !== null && guidanceEl.getBoundingClientRect) set("--lip-g", (o.g - lipRect(guidanceEl).top) + "px");
+  else set("--lip-g", "0px");
+}
+function lipRebase() {
+  const M = Math.max(0, bandPort.scrollHeight - bandPort.clientHeight);
+  lipPrev = { t: Math.min(M, Math.max(0, bandPort.scrollTop)), M };
+  lipAcc = 0;
+}
+function lipHandOff() {
+  if (document.activeElement !== lipBtn) return;
+  const lead = lipPrimary();
+  const to = !lead.disabled && !lead.hidden ? lead : (editingId && !delBtn.disabled ? delBtn : (sheetTab === "layout" ? swatches.lastElementChild : scaleBox) || lead);
+  if (to && to.focus) to.focus({ preventScroll: true });
+}
+let lipFocusing = false;
+function collapseLip() {
+  if (!sheetOpen) return;
+  lipAcc = 0;
+  clearTimeout(lipTimer);
+  lipGen += 1;
+  if (isLipped()) { sheet.classList.add("lipshut"); lipSettled = false; const g = lipGen; lipTimer = setTimeout(() => { if (g === lipGen) { lipSettled = true; if (lipDirty) { lipDirty = false; lipMeasure(); } } }, LIP_END_MS); return; }
+  const open = lipRead();
+  lipDirty = false;
+  sheet.classList.add("lipnow", "lipped");
+  lipBtn.hidden = false;
+  lipBtn.setAttribute("aria-label", "Show " + lipPrimary().textContent);
+  lipWrite(open);
+  lipFlush();
+  sheet.classList.remove("lipnow");
+  sheet.classList.add("lipshut");
+  lipSettled = false;
+  const gen = lipGen;
+  lipTimer = setTimeout(() => { if (gen === lipGen) { lipSettled = true; if (lipDirty) { lipDirty = false; lipMeasure(); } } }, LIP_END_MS);
+  const a = document.activeElement;
+  if (a === nextBtn || a === genBtn || a === delBtn) {
+    lipFocusing = true;
+    lipBtn.focus({ preventScroll: true });
+    lipFocusing = false;
+  }
+}
+function lipMeasure() {
+  const shut = isLipShut();
+  sheet.classList.add("lipnow");
+  sheet.classList.remove("lipped", "lipshut");
+  const open = lipRead();
+  sheet.classList.add("lipped", "lipshut");
+  lipWrite(open);
+  if (!shut) sheet.classList.remove("lipshut");
+  lipFlush();
+  sheet.classList.remove("lipnow");
+}
+function lipGuidanceChanged() {
+  if (!isLipped() || (isLipShut() && lipSettled)) return;
+  if (platesBeside()) { lipDirty = true; return; }
+  lipMeasure();
+}
+function restoreLip() {
+  if (!sheetOpen || !isLipped() || !isLipShut()) return;
+  lipAcc = 0;
+  clearTimeout(lipTimer);
+  lipGen += 1;
+  if (lipSettled) lipMeasure();
+  sheet.classList.remove("lipshut");
+  lipHandOff();
+  lipEnd = lipGen;
+  if (reducedMotion.matches) { finishOpen(); return; }
+  const gen = lipEnd;
+  lipTimer = setTimeout(() => endOpening(gen), LIP_END_MS);
+}
+function endOpening(gen) {
+  if (gen !== lipGen || !isLipped() || isLipShut()) return;
+  finishOpen();
+}
+function finishOpen() {
+  lipGen += 1;
+  lipDirty = false;
+  clearTimeout(lipTimer);
+  lipHandOff();
+  sheet.classList.add("lipnow");
+  sheet.classList.remove("lipped", "lipshut");
+  lipBtn.hidden = true;
+  for (const k of LIP_VARS) sheet.style.setProperty(k, "");
+  lipFlush();
+  sheet.classList.remove("lipnow");
+  lipRebase();
+}
+function lipReset() {
+  clearTimeout(lipTimer);
+  lipDirty = false;
+  lipGen += 1;
+  sheet.classList.remove("lipped", "lipshut", "lipnow");
+  lipBtn.hidden = true;
+  for (const k of LIP_VARS) sheet.style.setProperty(k, "");
+  lipRebase();
+}
+function setLip(on, o) {
+  if (on) collapseLip();
+  else if (o && o.instant) lipReset();
+  else restoreLip();
+}
+function lipKbEdge(was, kb) {
+  if (was === kb) return;
+  if (kb) collapseLip(); else restoreLip();
+}
+function lipScroll() {
+  const M = Math.max(0, bandPort.scrollHeight - bandPort.clientHeight);
+  const t = Math.min(M, Math.max(0, bandPort.scrollTop));
+  const prev = lipPrev;
+  lipPrev = { t, M };
+  const now = Date.now();
+  if (!sheetOpen || sheet.classList.contains("kbup") || now < lipQuietUntil || now > userWindowUntil) return;
+  userWindowUntil = now + LIP_WINDOW;
+  if (M !== prev.M) { lipAcc = 0; return; }
+  if (isLipShut() && t >= M - 1) { restoreLip(); return; }
+  const d = t - prev.t;
+  if (d * lipAcc < 0) lipAcc = 0;
+  lipAcc += d;
+  if (lipAcc >= LIP_PX && !isLipShut()) {
+    const E = lipRect(sheetSurf || sheet).bottom - lipRect(bandPort).bottom;
+    if (M - t > E) collapseLip();
+    lipAcc = 0;
+  } else if (lipAcc <= -LIP_PX && isLipShut()) {
+    restoreLip();
+    lipAcc = 0;
+  }
+}
+const lipUser = () => { userWindowUntil = Date.now() + LIP_WINDOW; };
+const lipRange = () => Math.max(0, bandPort.scrollHeight - bandPort.clientHeight);
+const lipClamp = (x) => Math.min(Math.max(x, 0), lipRange());
+let lipFling = null;
+function lipFlingStep(now) {
+  const F = lipFling, t = lipClamp(bandPort.scrollTop), M = lipRange();
+  F.until = now + LIP_END_MS;
+  if (M !== F.prevM) { F.prevM = M; F.prevT = t; return; }
+  const d = t - F.prevT;
+  F.prevT = t;
+  if (!sheetOpen || sheet.classList.contains("kbup") || now < lipQuietUntil) return;
+  const s = F.way === "up" ? d : -d;
+  if (s <= 0) return;
+  F.acc += s;
+  if (F.done || F.acc < LIP_PX) return;
+  F.done = true;
+  if (F.way === "up") { if (!isLipShut()) collapseLip(); } else if (isLipShut()) restoreLip();
+}
+function lipScrollEvent() {
+  const now = Date.now();
+  if (lipFling && now >= lipFling.until) lipFling = null;
+  if (lipDrag || lipTouching) { userWindowUntil = 0; lipAcc = 0; lipScroll(); return; }
+  if (lipFling) { userWindowUntil = 0; lipAcc = 0; lipFlingStep(now); lipScroll(); return; }
+  if (now < lipDragEnd) { lipDragEnd = now + LIP_END_MS; userWindowUntil = 0; lipAcc = 0; }
+  lipScroll();
+}
+bandPort.addEventListener("scroll", lipScrollEvent, { passive: true });
+for (const ev of ["touchstart", "touchmove", "wheel"]) sheet.addEventListener(ev, lipUser, { passive: true, capture: true });
+const lipScrollKey = (e) => {
+  const t = e.target;
+  if (!["PageUp", "PageDown", " ", "Home", "End", "ArrowUp", "ArrowDown"].includes(e.key)) return false;
+  return !(t && ((t.matches && t.matches("input, textarea, select")) || (t.closest && t.closest("input, textarea, select"))));
+};
+sheet.addEventListener("keydown", (e) => { if (lipScrollKey(e)) lipUser(); }, true);
+let lipDrag = null, lipDragEnd = 0, lipTouching = false, lipParked = null;
+const lipNeverArms = (t) => !!(t && t.closest && t.closest("#scale-lip, select"));
+const lipFocusedField = (t) => {
+  const a = document.activeElement;
+  return !!(a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.contains && t && a.contains(t));
+};
+sheet.addEventListener("touchstart", (e) => {
+  const ts = e.touches;
+  lipTouching = !!(ts && ts.length);
+  const tg = e.target;
+  if (tg && tg.addEventListener) for (const ev of ["touchend", "touchcancel"]) tg.addEventListener(ev, lipDragStop, { once: true, passive: true });
+  lipFling = null;
+  lipParked = null;
+  const box = tg && tg.closest ? tg.closest("#scale-box") : null;
+  lipDrag = ts && ts.length === 1 && !lipNeverArms(tg) && !lipFocusedField(tg)
+    ? { id: ts[0].identifier, x: ts[0].clientX, y: ts[0].clientY, dir: 0,
+        x0: ts[0].clientX, y0: ts[0].clientY, py: ts[0].clientY,
+        t0: Date.now(), moved: false,
+        fresh: !!(tg && tg.closest && tg.closest("input, textarea, #scale-preview")),
+        box, boxTop: box ? box.scrollTop : 0,
+        plate: !!(tg && tg.closest && tg.closest("#scale-preview")),
+        bodyTop0: bandPort.scrollTop, lastMoveWay: null }
+    : null;
+}, { passive: true, capture: true });
+sheet.addEventListener("touchmove", (e) => {
+  const L = lipDrag || lipParked;
+  const p = L && [...(e.touches || [])].find((x) => x.identifier === L.id);
+  if (!p) return;
+  if (L !== lipDrag) { lipDrag = L; lipParked = null; lipTouching = true; }
+  if (!L.moved) {
+    if (L.fresh && Date.now() - L.t0 >= HOLD_MS) { lipDrag = null; return; }
+    if (Math.hypot(p.clientX - L.x0, p.clientY - L.y0) <= 8) return;
+    L.moved = true;
+  }
+  if (L.box && L.box.scrollTop !== L.boxTop) { lipDrag = null; return; }
+  if (L.plate && press && press.lifted) { lipDrag = null; return; }
+  if (p.clientY !== L.py) L.lastMoveWay = p.clientY < L.py ? "up" : "down";
+  L.py = p.clientY;
+  if ((L.dir > 0 && p.clientY < L.y) || (L.dir < 0 && p.clientY > L.y)) { L.y = p.clientY; L.x = p.clientX; return; }
+  const dy = L.y - p.clientY;
+  if (Math.abs(dy) < LIP_PX || Math.abs(dy) <= Math.abs(p.clientX - L.x)) return;
+  if (!sheetOpen || sheet.classList.contains("kbup") || Date.now() < lipQuietUntil) return;
+  L.dir = dy > 0 ? 1 : -1;
+  L.y = p.clientY;
+  L.x = p.clientX;
+  if (dy > 0) { if (!isLipShut()) collapseLip(); } else if (isLipShut()) restoreLip();
+}, { passive: true, capture: true });
+const lipDragStop = (e) => {
+  const L = lipDrag;
+  if (L && L.moved && L.lastMoveWay && !(L.box && L.box.scrollTop !== L.boxTop)) {
+    const t = lipClamp(bandPort.scrollTop);
+    const seed = L.lastMoveWay === "up" ? Math.max(0, t - L.bodyTop0) : Math.max(0, L.bodyTop0 - t);
+    lipFling = { way: L.lastMoveWay, done: false, acc: seed, prevT: t, prevM: lipRange(), until: Date.now() + LIP_END_MS };
+  }
+  lipDragEnd = Date.now() + LIP_END_MS;
+  lipDrag = null;
+  lipParked = null;
+  lipTouching = !!(e && e.touches && e.touches.length);
+};
+for (const ev of ["touchend", "touchcancel"]) sheet.addEventListener(ev, lipDragStop, { passive: true, capture: true });
+const lipTouchClear = () => { if (lipDrag) lipParked = lipDrag; lipFling = null; lipTouching = false; lipDrag = null; lipDragEnd = 0; };
+sheet.addEventListener("wheel", lipTouchClear, { passive: true, capture: true });
+sheet.addEventListener("keydown", (e) => { if (lipScrollKey(e)) lipTouchClear(); }, { capture: true });
+let lipTouch = null;
+lipBtn.addEventListener("touchstart", (e) => {
+  const p = e.touches && e.touches[0];
+  lipTouch = p ? { id: p.identifier, y: p.clientY } : null;
+}, { passive: true });
+lipBtn.addEventListener("touchmove", (e) => {
+  if (!lipTouch) return;
+  const p = [...(e.touches || [])].find((x) => x.identifier === lipTouch.id);
+  if (p && lipTouch.y - p.clientY >= LIP_SWIPE) { lipTouch = null; restoreLip(); }
+}, { passive: true });
+lipBtn.addEventListener("touchend", () => { lipTouch = null; }, { passive: true });
+lipBtn.addEventListener("click", restoreLip);
+lipBtn.addEventListener("focusin", () => {
+  if (!lipFocusing) restoreLip();
+});
+footSlide.addEventListener("transitionend", (e) => {
+  if (e.target === footSlide && e.propertyName === "transform" && !(e.elapsedTime < 0.17)) endOpening(lipEnd);
 });
 function hasTwoNoteRing() {
   const res = HPE.core.parseSeed(String(scaleBox.value || ""), layoutOptions());
@@ -9917,37 +10969,41 @@ function hasTwoNoteRing() {
   for (const f of Object.values(res.value.fields)) if (f[3] in n) n[f[3]] += 1;
   return Object.values(n).some((c) => c >= 2);
 }
-function openDrawer() {
-  if (!boxOk || drawerOpen) return;
-  drawerOpen = true;
-  drawerPaused = false;
-  previewBox.addEventListener("touchmove", plateTouchMove, { passive: false });
-  drawerStatus.textContent = "";
-  drawerStatus.classList.remove("warn");
-  paintLayout();
-  focusFirstNext = true;
-  repaintPlate();
-  layoutZone.scrollIntoView({ block: "nearest", behavior: "auto" });
-  drawerBtn.scrollIntoView({ block: "nearest", behavior: "auto" });
-  if (!hasTwoNoteRing()) layoutStatus("This pan has no ring with two notes, so there is nothing to rearrange.");
+const edgeOf = (el, side) => (el.getBoundingClientRect ? el.getBoundingClientRect()[side] : 0);
+function paintTabs() {
+  const onLayout = sheetTab === "layout";
+  for (const [tab, on, panel] of [[tabScale, !onLayout, panelScale], [tabLayout, onLayout, panelLayout]]) {
+    tab.classList.toggle("on", on);
+    tab.setAttribute("aria-selected", String(on));
+    tab.setAttribute("tabindex", on ? "0" : "-1");
+    panel.hidden = !on;
+  }
+  sheet.setAttribute("data-tab", sheetTab);
+  nextBtn.hidden = !(!editingId && !onLayout);
+  genBtn.hidden = !editingId && !onLayout;
 }
-/** Close the drawer. Focus follows only when it was inside the zone, or the
- *  toggle itself closed it: to the toggle, which stays focusable (aria-disabled
- *  in place of disabled) when the scale does not parse. */
-function closeDrawer(viaToggle) {
-  if (!drawerOpen) return;
-  const inside = viaToggle || inDrawerZone(document.activeElement);
-  cancelGesture();
-  previewBox.removeEventListener("touchmove", plateTouchMove, { passive: false });
-  drawerOpen = false;
-  drawerPaused = false;
-  pickRef = null;
-  pickMoved = false;
-  drawerStatus.textContent = "";
-  drawerStatus.classList.remove("warn");
-  if (inside) { drawerBtn.disabled = false; drawerBtn.focus(); }
+function setTab(tab) {
+  if (tab === sheetTab) return;
+  if (sheetTab === "layout") {
+    cancelGesture();
+    previewBox.removeEventListener("touchmove", plateTouchMove, { passive: false });
+    pickRef = null;
+    pickMoved = false;
+    drawerStatus.textContent = "";
+    drawerStatus.classList.remove("warn");
+  } else {
+    previewBox.addEventListener("touchmove", plateTouchMove, { passive: false });
+  }
+  sheetTab = tab;
+  drawerOpen = tab === "layout";
+  paintTabs();
+  const held = document.activeElement;
+  if (held && held !== document.body && !held.getClientRects().length) held.blur();
   paintLayout();
   repaintPlate();
+  bandPort.scrollTop = 0;
+  setLip(false, { instant: true });
+  if (drawerOpen && boxOk && !hasTwoNoteRing()) layoutStatus("This pan has no ring with two notes, so there is nothing to rearrange.");
 }
 /** Leaving the sheet or opening a fresh session: no focus, no status. */
 function dropDrawer() {
@@ -9956,7 +11012,8 @@ function dropDrawer() {
   drawerHint.textContent = "";
   drawerHint.hidden = true;
   drawerOpen = false;
-  drawerPaused = false;
+  sheetTab = "scale";
+  paintTabs();
   pickRef = null;
   pickMoved = false;
   drawerStatus.textContent = "";
@@ -9978,6 +11035,8 @@ function parseLineText(fields) {
   for (const [key, label] of [["rim", "Top"], ["inner", "Inner"], ["bottom", "Bottom"]]) {
     if (shells[key].length) line += " " + label + " " + names(shells[key]) + ".";
   }
+  const low = HPE.core.innerBelowRim(fields);
+  if (low.length) line += " " + low.join(", ") + (low.length > 1 ? " are" : " is") + " below the top notes: check the pan picture.";
   return line;
 }
 
@@ -10087,9 +11146,9 @@ function hitFor(ref) {
   const n = noteAt(ref);
   return n ? hitNodes().find((h) => h.getAttribute("data-field") === n.id) || null : null;
 }
-function focusRef(ref) {
+function focusRef(ref, opts) {
   const h = hitFor(ref);
-  if (h) h.focus();
+  if (h) h.focus(opts);
   return !!h;
 }
 /** The single Tab stop of the plate: the note the arrows last stood on. */
@@ -10268,7 +11327,7 @@ function resetLayout() {
   paintLayout();
   resyncSheet(true);
   layoutStatus("Layout reset.");
-  drawerBtn.focus();
+  tabLayout.focus();
 }
 
 /** The sheet's options without the deck name: what the layout alone needs. */
@@ -10282,16 +11341,18 @@ function layoutOptions() {
 /** The seed options the sheet currently describes. */
 function sheetOptions() {
   const o = { palette, mirror, mirrorBottom: bottomMirror(), anchor };
-  if (editingId) {
-    // iOS Smart Punctuation turns a typed ' or " into a curly U+2018/2019/
-    // U+201C/U+201D, a typed -- into an em dash U+2014, and a typed ... into
-    // a single ellipsis glyph U+2026 (a pasted en dash U+2013 can also show
-    // up), which core.js's NAME_RE (ASCII-only) then refuses - so a name is
-    // normalised back to ASCII before it ever reaches the engine.
-    const n = String(nameBox.value || "")
-      .replace(/[‘’]/g, "'").replace(/[“”]/g, '"')
-      .replace(/[–—]/g, "-").replace(/…/g, "...")
-      .trim();
+  // iOS Smart Punctuation turns a typed ' or " into a curly U+2018/2019/
+  // U+201C/U+201D, a typed -- into an em dash U+2014, and a typed ... into
+  // a single ellipsis glyph U+2026 (a pasted en dash U+2013 can also show
+  // up), which core.js's NAME_RE (ASCII-only) then refuses - so a name is
+  // normalised back to ASCII before it ever reaches the engine.
+  const n = String(nameBox.value || "")
+    .replace(/[‘’]/g, "'").replace(/[“”]/g, '"')
+    .replace(/[–—]/g, "-").replace(/…/g, "...")
+    .trim();
+  if (!editingId) {
+    if (n) o.name = n;  // an empty box keeps the auto label
+  } else {
     // The box is PREFILLED, so an UNTOUCHED box on an auto-named deck is
     // treated as ABSENT: otherwise a field edit would pin the old fields' name
     // onto the new deck and the row would show two chips reading the same thing
@@ -10338,9 +11399,8 @@ function solvePreviewLayout(seed) {
  * in the box must not claim to be: "current" is the seed as typed, "example" is
  * the placeholder drawn for an empty box, and "held" is the last render kept
  * through an invalid parse so a typo does not throw away the pan being edited.
- * Visually "example" and "held" share one dim treatment (#scale-preview.stale)
- * - the invalid case is already distinguished by the box's orange border and
- * the orange message, so a second visual vocabulary would only be noise. */
+ * Both dim the plate (#scale-preview.stale); the example, which nobody typed,
+ * is greyed further by #scale-preview.example. */
 const PAN_NAMES = {
   current: "Preview of where the notes sit on the pan",
   example: "Example pan for the placeholder seed",
@@ -10355,6 +11415,7 @@ function clearPanPreview() {
   previewBox.innerHTML = "";
   previewBox.removeAttribute("aria-label");
   previewBox.classList.remove("stale");
+  previewBox.classList.remove("example");
   previewBox.setAttribute("hidden", "");
 }
 
@@ -10364,6 +11425,7 @@ let panState = "example";
 function markPan(state, interactive) {
   panState = state;
   previewBox.classList.toggle("stale", state !== "current");
+  previewBox.classList.toggle("example", state === "example");
   if (interactive) {
     previewBox.setAttribute("role", "group");
     previewBox.setAttribute("aria-label", countsLabel(ringSizes(lastSolved.fields)));
@@ -10401,7 +11463,7 @@ function paintPan(seed, state) {
     if (focusFirstNext) {
       focusFirstNext = false;
       const first = allNotes().find((n) => n.k >= 2) || allNotes()[0];
-      if (first) { setRover({ ring: first.ring, i: first.i }); focusRef(first); }
+      if (first) { setRover({ ring: first.ring, i: first.i }); focusRef(first, { preventScroll: true }); }
     } else if (prev) focusRef(prev);
   }
   return true;
@@ -10418,12 +11480,15 @@ function showPanPreview(seed) {
 }
 
 /** An empty box still gets a pan, so the drawer is the same height before the
- * first keystroke as after it. The seed comes from the placeholder ATTRIBUTE
- * rather than a second copy of it in JS: the label, the placeholder and
- * PARSE_HINT are the only teaching of the grammar there is, and this way the
- * example drawn is provably the example shown. */
+ * first keystroke as after it. The seed is what the four fields' placeholder
+ * ATTRIBUTES compose, through the same HPE.importer.compose typing uses,
+ * rather than a second copy of it in JS: the placeholders are the teaching of
+ * the grammar, and this way the example drawn is provably the example shown. */
 function showPlaceholderPan() {
-  const res = HPE.core.parseSeed(String(scaleBox.placeholder || ""), sheetOptions());
+  const values = {};
+  for (const k of FIELD_KEYS) values[k] = String(fieldEls[k].placeholder || "");
+  const composed = HPE.importer.compose(values);
+  const res = composed.ok ? HPE.core.parseSeed(composed.line, layoutOptions()) : composed;
   if (!res.ok || !paintPan(res.value, "example")) clearPanPreview();
 }
 
@@ -10481,14 +11546,14 @@ function syncParseState({ paint }) {
     paintLayout();
     showParse(parseLineText(res.value.fields));
     scaleBox.classList.remove("bad");
-    genBtn.disabled = false;
+    genBtn.disabled = inputPath === "fields" && lineStale;
     if (paint) showPanPreview(res.value);
     const solved = solvePreviewLayout(res.value);
     const crowded = solved && HPE.select.smallLabels(solved.geom);
     if (crowded) { say(crowded.reason, "warn"); msgLine.classList.add("pan"); }
     else say("", "");
   } else {
-    const second = editingId && opts.name !== undefined ? HPE.core.parseSeed(text, layoutOptions()) : null;
+    const second = opts.name !== undefined ? HPE.core.parseSeed(text, layoutOptions()) : null;
     if (second && second.ok) {
       boxOk = true;
       const bottom = Object.values(second.value.fields).some((f) => f[3] === "bottom");
@@ -10521,7 +11586,7 @@ function syncParseState({ paint }) {
  *  An edit is also the one event that can clear a standing refusal. */
 function updateParse() {
   refusal = null;
-  if (drawerOpen && !drawerPaused) layoutStatus("");
+  if (drawerOpen) layoutStatus("");
   syncParseState({ paint: true });
 }
 
@@ -10588,7 +11653,7 @@ function kbCap(innerHeight, vvHeight) {
   if (innerHeight - vvHeight <= 0) return 0;
   return Math.max(0, Math.round(vvHeight - 8));
 }
-function applyKbOffset() {
+function applyKbOffset(e) {
   const vv = window.visualViewport;
   /* Gated on sheetOpen as well as on the two objects. The listeners below are
    * bound for the life of the page and never removed, so without this a
@@ -10619,8 +11684,22 @@ function applyKbOffset() {
    * The tolerance is for scales that do not land exactly on 1 coming back from
    * a pinch; a sub-percent residue is not a zoom. */
   const zoomed = vv.scale > 1.01;
-  const off = zoomed ? 0 : kbOffset(window.innerHeight, vv.height, vv.offsetTop);
-  const cap = zoomed ? 0 : kbCap(window.innerHeight, vv.height);
+  /* The keyboard-free baseline is the sheet's own height, not innerHeight:
+   * #scale-sheet is position:fixed; inset:0, so it is the layout viewport's
+   * height and does not depend on the cap or translate written below. iOS can
+   * move innerHeight with the keyboard. Only a layout viewport that itself
+   * resizes shrinks the sheet, so kbBase (the tallest visible area seen at this
+   * width) covers that model, and only while a text field is focused. The
+   * sandbox stub has no clientHeight/Width and falls back. */
+  const layoutH = sheet.clientHeight || window.innerHeight;
+  const layoutW = sheet.clientWidth || window.innerWidth;
+  if (layoutW !== kbBaseW) { kbBaseW = layoutW; kbBase = 0; }
+  if (!zoomed) kbBase = Math.max(kbBase, vv.height);
+  const focused = document.activeElement;
+  const textFocused = !!(focused && focused.matches && focused.matches("input, textarea"));
+  const kb = !zoomed && (vv.height < layoutH - 80 || (textFocused && vv.height < kbBase - 80));
+  const off = zoomed ? 0 : kbOffset(layoutH, vv.height, vv.offsetTop);
+  const cap = zoomed ? 0 : kbCap(layoutH, vv.height);
   /* Written only on change: this handler is bound to visualViewport's `scroll`
    * as well, which fires at frame rate while a zoomed page is panned, and each
    * unconditional style write forces a style recalc for no reason. */
@@ -10628,20 +11707,37 @@ function applyKbOffset() {
   const m = cap > 0 ? `${cap}px` : "";
   if (sheetSurf.style.transform !== t) sheetSurf.style.transform = t;
   if (sheetSurf.style.maxHeight !== m) sheetSurf.style.maxHeight = m;
+  /* Layout classes for the dual-input sheet, written only on change: the
+   * keyboard is up (the zoom branch above reads as no keyboard), and the
+   * surface is short or very short. Read after the cap is written, once. */
+  const high = sheetSurf.clientHeight;
+  const wasUp = sheet.classList.contains("kbup");
+  lipQuiet();
+  setSheetClass("kbup", kb);
+  setSheetClass("short", high > 0 && high < 560);
+  setSheetClass("side", high > 0 && high < 420);
+  setSheetClass("tiny", kb && high > 0 && high < 200);
+  lipKbEdge(wasUp, kb);
+  syncBand();
+  if (e && e.type === "scroll") return;
+  const at = document.activeElement;
+  if (at && at.matches && at.matches("input, textarea")) revealField(at);
+}
+let kbBase = 0, kbBaseW = 0;
+function setSheetClass(name, on) {
+  if (sheet.classList.contains(name) !== on) sheet.classList.toggle(name, on);
 }
 if (window.visualViewport) {
   window.visualViewport.addEventListener("resize", applyKbOffset);
   window.visualViewport.addEventListener("scroll", applyKbOffset);
 }
 
-/** Show or hide the two Edit-only rows and relabel the single primary.
+/** Show or hide the Edit-only DELETE row and relabel the single primary.
  *  `edit` is false (create) or true (Edit a seeded or a custom deck). */
 function setSheetMode(edit) {
   disarmDelete();
-  for (const el of [nameRow, delRow]) {
-    if (edit) el.removeAttribute("hidden");
-    else el.setAttribute("hidden", "");
-  }
+  if (edit) delRow.removeAttribute("hidden");
+  else delRow.setAttribute("hidden", "");
   delBtn.textContent = DEL_IDLE;
   genBtn.textContent = edit ? "SAVE CHANGES" : "GENERATE CARDS";
   // The page is named by the title it shows (#scale-title, via
@@ -10684,6 +11780,7 @@ function showSheet(opener) {
   sheetOpener = opener || addChip;
   sheet.removeAttribute("hidden");
   sheetOpen = true;
+  setLip(false, { instant: true });
   setInert(true, background);
   resyncSheet(true);
   applyKbOffset();
@@ -10698,189 +11795,12 @@ function showSheet(opener) {
   // from there walks the page the way it looks.
   backBtn.focus();
 }
-/* ---------------- import text (scale-import lane B) ---------------- */
-// HPE.importer reads the paste; this block only shows what it found and lets the
-// user confirm. Nothing here guesses a note, fetches a page or keeps the text:
-// USE hands the engine's own serialise() to #scale-box and fires the same input
-// event typing fires, so the parse line, refusal, preview and SAVE are unchanged.
-const importRow     = document.getElementById("import-row");
-const importOpenBtn = document.getElementById("import-open");
-const importArea    = document.getElementById("import-area");
-const importTextBox = document.getElementById("import-text");
-const importRunBtn  = document.getElementById("import-run");
-const importResult  = document.getElementById("import-result");
-const importStatus  = document.getElementById("import-status");
-const importReview  = document.getElementById("import-review");
-const importRowsEl  = document.getElementById("import-rows");
-const importFlagsEl = document.getElementById("import-flags");
-const importDingSel = document.getElementById("import-ding");
-const importUseBtn  = document.getElementById("import-use");
-const IMPORT_INSUFFICIENT = "No note list found. Image-only specs can't be read; type the notes below.";
-let importSource = "";
-let importRes = null;
-let importPick = null;
-let importTicks = [];
-const importTicked = new Set();
-const importNames = (r, f) => (f.notes || []).map(i => r.notes[i] ? r.notes[i].note : "?").join(", ");
-const IMPORT_FLAG_TEXT = {
-  UNDECLARED_PARENS: (r, f) => "Brackets around " + importNames(r, f) + " are not defined by the source. Pick the ding below or type the notes.",
-  CONFLICTING_DING: (r, f) => "More than one ding cue: " + importNames(r, f) + ". Pick the ding below.",
-  AMBIGUOUS_NOTE: (r, f) => "Unclear note spelling: " + (f.tokens || []).join(", ") + ". Type the notes instead.",
-  INNER_BELOW_TOP: (r, f) => "Inner notes " + importNames(r, f) + " sit below the top notes.",
-  COUNT_MISMATCH: (r, f) => "The title says " + f.title + " notes but the text lists " + f.listed + ".",
-  PROVISIONAL_REFUSED: (r, f) => "The octaves cannot be inferred: " + (f.refusal && f.refusal.reason || "refused") + " Pick the ding below or type the notes.",
-  DING_CUE: (r, f) => "The source never says which note is the ding. Taking " + importNames(r, f) + " (" + (f.cue === "mark" ? "marked" : f.cue === "separator" ? "set apart" : "listed first") + "). Tick to accept, or pick the ding below.",
-  COUNT_EXCL_DING: (r) => "The title count is " + (r.total - 1) + ", one fewer than the " + r.total + " notes listed: it leaves the ding out.",
-  SPACE_IN_NOTE: (r, f) => "Joined a spaced note: " + importNames(r, f) + ".",
-  SOURCE_NOT_ASCENDING: (r, f) => "The source is not in pitch order at " + importNames(r, f) + ". It may be a typo.",
-  DUPLICATE_PITCH: (r, f) => "The same pitch is listed twice: " + importNames(r, f) + ".",
-  NO_OCTAVE: (r, f) => "No octave in the source. Inferred: " + importNames(r, f) + ". Bottom notes are a guess.",
-  COUNT_OK: (r) => "The title count matches the " + r.total + " notes listed."
-};
-function importFlagLine(f) {
-  const make = IMPORT_FLAG_TEXT[f.code];
-  return make ? make(importRes, f) : f.code;
-}
-function importRoleOf(r, i) {
-  const hit = [r.roles.ding].concat(r.roles.top, r.roles.bottom, r.roles.inner)
-    .filter(Boolean).find(e => e.index === i);
-  return hit || null;
-}
-function importNeedsTick(f) { return f.level === "CONFIRM"; }
-function paintImportUse() {
-  const r = importRes;
-  const ready = !!r && r.status === "REVIEW" &&
-    r.flags.filter(importNeedsTick).every(f => importTicked.has(f.code));
-  importUseBtn.disabled = !ready;
-}
-function paintImportBody() {
-  const r = importRes;
-  importRowsEl.textContent = "";
-  importFlagsEl.textContent = "";
-  importTicks = [];
-  r.notes.forEach((n, i) => {
-    const e = importRoleOf(r, i);
-    const li = document.createElement("li");
-    let text = n.role.toUpperCase() + "  " + n.note + "  from '" + n.span.text + "'";
-    if (e && e.inferred) text += "  (octave inferred" + (e.guess ? "; bottom placement is a guess" : "") + ")";
-    li.textContent = text;
-    importRowsEl.appendChild(li);
-  });
-  r.flags.forEach(f => {
-    const li = document.createElement("li");
-    const text = f.level + ": " + importFlagLine(f);
-    li.className = f.level.toLowerCase();
-    li.setAttribute("data-code", f.code);
-    if (importNeedsTick(f)) {
-      const label = document.createElement("label");
-      const box = document.createElement("input");
-      box.type = "checkbox";
-      box.id = "import-tick-" + f.code;
-      box.checked = importTicked.has(f.code);
-      box.addEventListener("change", () => {
-        if (box.checked) importTicked.add(f.code); else importTicked.delete(f.code);
-        paintImportUse();
-      });
-      const span = document.createElement("span");
-      span.textContent = text;
-      label.appendChild(box);
-      label.appendChild(span);
-      li.appendChild(label);
-      importTicks.push(box);
-    } else {
-      li.textContent = text;
-    }
-    importFlagsEl.appendChild(li);
-  });
-  importStatus.textContent = r.status === "REVIEW"
-    ? "Check each note, tick what needs confirming, then USE."
-    : "Resolve the blocks below before USE.";
-  paintImportUse();
-}
-function paintImport() {
-  const r = importRes;
-  importResult.hidden = !r;
-  if (!r) return;
-  if (r.status === "INSUFFICIENT") {
-    importStatus.textContent = IMPORT_INSUFFICIENT;
-    importReview.hidden = true;
-    importUseBtn.disabled = true;
-    return;
-  }
-  importReview.hidden = false;
-  paintImportBody();
-}
-function buildImportPicker() {
-  importDingSel.textContent = "";
-  const none = document.createElement("option");
-  none.value = "";
-  none.textContent = "As the source says";
-  importDingSel.appendChild(none);
-  importRes.notes.forEach((n, i) => {
-    const o = document.createElement("option");
-    o.value = String(i);
-    o.textContent = (i + 1) + ". " + n.span.text;
-    importDingSel.appendChild(o);
-  });
-  importDingSel.value = "";
-}
-function runImport() {
-  importSource = String(importTextBox.value || "");
-  importPick = null;
-  importTicked.clear();
-  importRes = HPE.importer.interpret(importSource);
-  track("scale_import", { status: importRes.status });
-  if (importRes.status !== "INSUFFICIENT") buildImportPicker();
-  paintImport();
-}
-function pickImportDing() {
-  if (!importRes || importRes.status === "INSUFFICIENT") return;
-  const v = importDingSel.value;
-  importPick = v === "" ? null : Number(v);
-  importTicked.delete("NO_OCTAVE");
-  importRes = HPE.importer.interpret(importSource, importPick === null ? undefined : { ding: importPick });
-  paintImport();
-}
-function useImport() {
-  if (importUseBtn.disabled || !importRes) return;
-  const seed = HPE.importer.serialise(importRes);
-  if (!seed) return;
-  scaleBox.value = seed;
-  scaleBox.dispatchEvent(typeof Event === "function" ? new Event("input", { bubbles: true }) : { type: "input" });
-  setImportOpen(false);
-  importRes = null;
-  paintImport();
-  importOpenBtn.focus();
-}
-function setImportOpen(on) {
-  importArea.hidden = !on;
-  importOpenBtn.setAttribute("aria-expanded", on ? "true" : "false");
-}
-function resetImport() {
-  importTextBox.value = "";
-  importSource = "";
-  importRes = null;
-  importPick = null;
-  importTicked.clear();
-  setImportOpen(false);
-  paintImport();
-}
-importOpenBtn.addEventListener("click", () => {
-  const on = importArea.hidden;
-  setImportOpen(on);
-  if (on) importTextBox.focus();
-});
-importRunBtn.addEventListener("click", runImport);
-importDingSel.addEventListener("change", pickImportDing);
-importUseBtn.addEventListener("click", useImport);
-
 /** Put every sheet field and session let in the state one open mode wants.
  *  `edit` is the deck being edited, or null for the create path, which clears
  *  identity and options so an Edit never leaks into the next "+ ADD". */
 function resetSheetState(edit) {
   editingId = edit ? edit.id : null;
   seedPrefill = null;
-  resetImport();
   // A fresh session: a refusal from whatever was last edited must not leak
   // into this one (queue row 115) - showSheet() itself is not allowed to
   // clear it, since it is one of the seven non-seed callers.
@@ -10894,6 +11814,7 @@ function resetSheetState(edit) {
   nameBox.value = edit ? edit.name : "";
   nameDirty = false;                                 // prefilled, not typed
   scaleBox.value = edit ? HPE.core.formatSeed(edit.fields) : "";  // 8A: the canonical string
+  writeFieldValues(edit ? decomposeFields(edit.fields) : null);
   syncGrow();
   palette = !edit ? 0 : seeded() ? seedPalette(edit.colors) : edit.options.palette;
   buildSwatches();
@@ -10922,6 +11843,7 @@ function resetSheetState(edit) {
     ? o.mirrorBottom : mirror, seats: seatsKey(layoutSeats) };
   if (seeded()) seedPrefill = sheetKey();
   paintLayout();
+  paintFieldsOpen();
 }
 // The create path.
 function openScaleSheet(opener) {
@@ -10964,6 +11886,10 @@ function hideSheet() {
     sheetSurf.style.transform = "";
     sheetSurf.style.maxHeight = "";
   }
+  for (const c of ["kbup", "short", "side", "tiny"]) setSheetClass(c, false);
+  setLip(false, { instant: true });
+  scrollPin = null;
+  tapSnap = null;
   editingId = null;
   seedPrefill = null;
   dropDrawer();
@@ -11005,7 +11931,9 @@ function deleteDeck(id) {
   if (!d) return;
   // R2: the picker is never emptied by a delete.
   if (wouldEmpty(id)) {
-    say("Keep at least one deck. Add a scale before deleting " + d.name + ".", "warn");
+    say("Keep at least one scale. Add a scale before deleting " + d.name + ".", "warn");
+    msgLine.classList.add("refusal");
+    syncMsgYield();
     return;
   }
   const gone = d.name;
@@ -11087,7 +12015,7 @@ function runGenerate() {
     // section 2 code enum is closed and has no code for "that scale is taken",
     // so this composes no sentence that could pass for one and carries no code.
     scaleBox.classList.add("bad");
-    refusal = "Another deck already uses this scale.";
+    refusal = "Another scale already has these notes.";
     showRefusal(refusal);
     return;
   }
@@ -11152,7 +12080,7 @@ genBtn.onclick = runGenerate;
    like an idle one. setSheetMode() disarms on every open, and touching
    anything else on the page disarms it, so a confirmation never outlives the
    tap that gave it. */
-const DEL_IDLE = "DELETE THIS DECK";
+const DEL_IDLE = "DELETE THIS SCALE";
 const DEL_ARMED = "TAP AGAIN TO DELETE";
 let delArmed = false;
 function disarmDelete() {
@@ -11213,8 +12141,8 @@ delBtn.onclick = () => {
   const seat = d && d.options && d.options.replaces;
   const seatedDeck = isBuiltIn(target) || (typeof seat === "string" && replacements()[seat] === d);
   delNote.textContent = seatedDeck
-    ? "Tap again to remove " + d.name + ". RESET SEEDED DECKS in the menu brings the seeded decks back."
-    : "Tap again to remove " + (d ? d.name : "this deck") + ". This cannot be undone.";
+    ? "Tap again to remove " + d.name + ". RESET SEEDED SCALES in the menu brings the seeded scales back."
+    : "Tap again to remove " + (d ? d.name : "this scale") + ". This cannot be undone.";
 };
 /* Looking away is a decision too, and on a phone the only way to see it is the
    pointer: iOS Safari gives a <button> no focus on tap, so `blur` never fires
@@ -11234,9 +12162,9 @@ delBtn.onblur = disarmDelete;
    desktop sidebar has no panel to close and a Safari tap focuses no button, so
    neither close nor blur would ever fire there), on blur and on closePanel().
    disarmReset is its own function: disarmDelete re-derives sheet state. */
-const RESET_IDLE = "RESET SEEDED DECKS";
+const RESET_IDLE = "RESET SEEDED SCALES";
 const RESET_ARMED = "TAP AGAIN TO RESET";
-const RESET_WARNING = "Tap again to restore all seeded decks. Your edits to them will be gone.";
+const RESET_WARNING = "Tap again to restore all seeded scales. Your edits to them will be gone.";
 let resetArmed = false;
 function disarmReset() {
   if (!resetArmed) return;
@@ -11262,7 +12190,7 @@ restoreBtn.onclick = () => {
   const wasSelected = deckId;
   const stays = allDecks().some(d => d.id === wasSelected);
   if (!stays) selectDeck(fallbackDeck().id); else { save(); buildChips(); }
-  say("Seeded decks restored." + (stays ? "" : " Showing " + deck().name + "."), "ok");
+  say("Seeded scales restored." + (stays ? "" : " Showing " + deck().name + "."), "ok");
   addChip.focus();
 };
 restoreBtn.onblur = disarmReset;
@@ -11286,7 +12214,24 @@ const pickAnchor = (to) => () => {
 };
 anchorOne.onclick = pickAnchor("one");
 anchorBetween.onclick = pickAnchor("between");
-drawerBtn.onclick = () => { if (drawerOpen) closeDrawer(true); else openDrawer(); };
+tabScale.addEventListener("click", () => setTab("scale"));
+tabLayout.addEventListener("click", () => setTab("layout"));
+nextBtn.addEventListener("click", () => { setTab("layout"); tabLayout.focus(); });
+tabStrip.addEventListener("keydown", (e) => {
+  if (e.altKey || e.ctrlKey || e.metaKey) return;
+  const tabs = [tabScale, tabLayout];
+  const at = tabs.indexOf(e.target);
+  if (at < 0) return;
+  let to = -1;
+  if (e.key === "ArrowRight") to = (at + 1) % tabs.length;
+  else if (e.key === "ArrowLeft") to = (at + tabs.length - 1) % tabs.length;
+  else if (e.key === "Home") to = 0;
+  else if (e.key === "End") to = tabs.length - 1;
+  if (to < 0) return;
+  e.preventDefault();
+  setTab(to === 0 ? "scale" : "layout");
+  tabs[to].focus();
+});
 notePrev.onclick = () => stepNote(-1);
 noteNext.onclick = () => stepNote(1);
 seatPrev.onclick = () => stepSeat(-1);
@@ -11297,13 +12242,11 @@ fineBtn.onclick = () => {
   if (!fineOpen && [notePrev, noteNext, seatPrev, seatNext].includes(document.activeElement)) fineBtn.focus();
   paintLayout();
 };
-drawerBtn.addEventListener("blur", () => {
-  if (drawerBtn.getAttribute("aria-disabled")) paintLayout();
-});
 // Delegated to the plate: the targets are rewritten on every repaint.
 previewBox.addEventListener("click", (e) => {
   const hit = e.target && e.target.closest ? e.target.closest(".panhit") : null;
-  if (!hit || !drawerOpen || !lastSolved) return;
+  if (!drawerOpen) return;
+  if (!hit || !lastSolved) return;
   if (suppressClick) { suppressClick = false; return; }
   const ref = refOfNode(hit);
   if (ref) activateNote(ref, "tap");
@@ -11590,6 +12533,196 @@ scaleBox.addEventListener("keydown", e => {
   e.preventDefault();
   runGenerate();
 });
+/* ---- Dual input (plan docs/plans/2026-10-18-dual-input.md) ----
+   Four note fields and the scale line write the same scale. inputPath names the
+   active one; the other mirrors it and is never rewritten by a mere focus, except
+   that a focus on a field while the fields are stale rebuilds the line from them.
+   Fields to line goes through HPE.importer.compose, line to fields through
+   parseSeed, so neither side owns a grammar of its own. */
+const FIELD_KEYS = ["ding", "top", "inner", "bottom"];
+const FIELD_SHORT = { ding: "DING", top: "TOP RIM NOTES", inner: "TOP INNER NOTES", bottom: "BOTTOM NOTES" };
+function fireInput(el) {
+  el.dispatchEvent(typeof Event === "function" ? new Event("input", { bubbles: true }) : { type: "input" });
+}
+function fieldValues() {
+  const v = {};
+  for (const k of FIELD_KEYS) v[k] = String(fieldEls[k].value || "");
+  return v;
+}
+function writeFieldValues(v) {
+  for (const k of FIELD_KEYS) fieldEls[k].value = v ? v[k] || "" : "";
+}
+/** The four field texts a parsed scale reads as: by zone, in pitch order, every
+ *  note with its octave. */
+function decomposeFields(fields) {
+  const zone = { ding: [], rim: [], inner: [], bottom: [] };
+  Object.keys(fields).sort((a, b) => fields[a][2] - fields[b][2])
+    .forEach((id) => zone[fields[id][3]].push(fields[id][0] + fields[id][1]));
+  return { ding: zone.ding.join(" "), top: zone.rim.join(" "), inner: zone.inner.join(" "), bottom: zone.bottom.join(" ") };
+}
+/** Pure. Which message each field shows: settled shows every eligible message,
+ *  typing keeps only what was already shown and adds nothing (R1-R3). */
+function renderFieldMessages(r, values, editing, shown) {
+  const out = {};
+  for (const k of FIELD_KEYS) {
+    if (!values[k].trim()) continue;
+    const warnText = k === "bottom" && r.warn && r.warn.bottom ? r.warn.bottom.text : "";
+    const text = r.errors[k] || warnText || r.info[k];
+    if (!text) continue;
+    const kind = r.errors[k] ? "error" : warnText ? "warn" : "info";
+    if (editing === null) out[k] = { text, kind };
+    else if (shown[k] && shown[k].kind === kind) out[k] = { text: shown[k].text, kind, stale: shown[k].text !== text };
+  }
+  return out;
+}
+function announceFields(texts) {
+  if (!texts.length) return;
+  clearTimeout(liveTimer);
+  fieldsLive.textContent = "";
+  liveTimer = setTimeout(() => { fieldsLive.textContent = texts.join(" "); }, 0);
+}
+/** Paint the messages and the error marks from the settle-only render. */
+function paintFields(values, announceNew, composed) {
+  const next = inputPath === "line" ? {} : renderFieldMessages(composed || HPE.importer.compose(values), values, fieldEditing, fieldShown);
+  for (const k of FIELD_KEYS) {
+    const bad = !!(next[k] && next[k].kind === "error");
+    fieldEls[k].classList.toggle("bad", bad);
+    fieldEls[k].setAttribute("aria-invalid", bad ? "true" : "false");
+  }
+  const first = FIELD_KEYS.find((k) => next[k] && next[k].kind === "error") ||
+    FIELD_KEYS.find((k) => next[k] && next[k].kind === "warn") || FIELD_KEYS.find((k) => next[k]);
+  const text = first ? FIELD_SHORT[first] + ": " + next[first].text : "";
+  if (fieldMsg.textContent !== text) fieldMsg.textContent = text;
+  fieldMsg.classList.toggle("info", !!first && next[first].kind === "info");
+  fieldMsg.classList.toggle("warn", !!first && next[first].kind === "warn");
+  fieldMsg.classList.toggle("stale", !!first && !!next[first].stale);
+  syncMsgYield();
+  if (announceNew) {
+    announceFields(FIELD_KEYS.filter((k) => next[k] && (!fieldShown[k] || fieldShown[k].text !== next[k].text))
+      .map((k) => next[k].text));
+  }
+  fieldShown = next;
+  syncBand();
+}
+function paintPassive() {
+  const onFields = inputPath === "fields";
+  fieldsGroup.classList.toggle("passive", !onFields);
+  fieldsGroup.classList.toggle("stale", !onFields && fieldsStale);
+  scaleBox.classList.toggle("passive", onFields);
+  scaleWrap.classList.toggle("passive", onFields);
+  scaleBox.classList.toggle("stale", onFields && lineStale);
+  lineNote.textContent = onFields
+    ? (lineStale ? "Not updated: the notes above have a problem." : "Follows the notes above. Tap to type the line instead.")
+    : "";
+  fieldsNote.textContent = !onFields
+    ? (fieldsStale ? "Not updated: the line below does not read as a scale yet." : "Follows the line below. Tap a field to type notes instead.")
+    : "";
+  if (onFields && lineStale) genBtn.disabled = true;
+}
+function writeLine(text) {
+  mirroring = true;
+  try {
+    scaleBox.value = text;
+    fireInput(scaleBox);
+  } finally {
+    mirroring = false;
+  }
+}
+function fieldsInput(k) {
+  inputPath = "fields";
+  fieldEditing = k;
+  fieldsStale = false;
+  const values = fieldValues();
+  const r = HPE.importer.compose(values);
+  const wasStale = lineStale;
+  paintFields(values, false, r);
+  followFields(r, wasStale);
+  paintPassive();
+}
+function followFields(r, wasStale) {
+  if (r.empty) {
+    lineStale = false;
+    if (scaleBox.value !== "") writeLine("");
+    else if (wasStale) resyncSheet(true);
+  } else if (r.ok) {
+    lineStale = false;
+    if (scaleBox.value !== r.line) writeLine(r.line);
+    else if (wasStale) resyncSheet(true);
+  } else {
+    lineStale = true;
+    holdPanPreview();
+    genBtn.disabled = true;
+    showParse("");
+  }
+}
+function lineInput() {
+  inputPath = "line";
+  lineStale = false;
+  const text = String(scaleBox.value || "");
+  if (!text.trim()) {
+    writeFieldValues(null);
+    fieldsStale = false;
+  } else {
+    const res = HPE.core.parseSeed(text);
+    if (res.ok) {
+      writeFieldValues(decomposeFields(res.value.fields));
+      fieldsStale = false;
+    } else fieldsStale = true;
+  }
+  const values = fieldValues();
+  paintFields(values, false);
+  paintPassive();
+}
+/** The open paint: no message animates in and nothing is announced. */
+function paintFieldsOpen() {
+  inputPath = "fields";
+  lineStale = false;
+  fieldsStale = false;
+  mirroring = false;
+  fieldEditing = null;
+  fieldShown = {};
+  const values = fieldValues();
+  paintFields(values, false);
+  paintPassive();
+}
+function pathFocus(path) {
+  if (inputPath === path) return;
+  inputPath = path;
+  const values = fieldValues();
+  if (path === "fields" && fieldsStale) {
+    fieldsStale = false;
+    const r = HPE.importer.compose(values);
+    paintFields(values, false, r);
+    followFields(r, true);
+    paintPassive();
+    return;
+  }
+  paintFields(values, false);
+  paintPassive();
+  if (path === "line" && lineStale) resyncSheet(false);
+}
+FIELD_KEYS.forEach((k, i) => {
+  const el = fieldEls[k];
+  el.addEventListener("input", () => fieldsInput(k));
+  el.addEventListener("focus", () => pathFocus("fields"));
+  el.addEventListener("blur", () => {
+    fieldEditing = null;
+    const values = fieldValues();
+    paintFields(values, true);
+  });
+  el.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" || e.isComposing) return;
+    e.preventDefault();
+    const next = FIELD_KEYS[i + 1];
+    if (next) fieldEls[next].focus(); else el.blur();
+  });
+  fieldLabels[k].addEventListener("mousedown", (e) => {
+    e.preventDefault();
+    el.focus();
+  });
+});
+scaleBox.addEventListener("input", () => { if (!mirroring) lineInput(); });
+scaleBox.addEventListener("focus", () => pathFocus("line"));
 // Shared by every modal Tab trap (the sheet below, the settings panel
 // further down): wrap-around cycling through a caller-built stop list, the
 // one piece of the two traps' keydown handlers that was byte-for-byte
@@ -11611,15 +12744,19 @@ function cycleTabStops(stops, e) {
 // Tab is trapped inside: the sheet's own controls, in visual order.
 sheet.addEventListener("keydown", e => {
   if (e.key !== "Tab") return;
-  const stops = [backBtn,
-                 editingId ? nameBox : null,
-                 scaleBox,
-                 ...(importRow.hidden ? [] : [importOpenBtn, importTextBox, importRunBtn, ...importTicks, importDingSel, importUseBtn]),
-                 drawerOpen ? previewBox.querySelector('.panhit[tabindex="0"]') : null,
-                 drawerBtn, anchorOne, anchorBetween, mirrorTop, mirrorBot, fineBtn,
-                 notePrev, noteNext, seatPrev, seatNext, resetBtn,
-                 ...swatches.children, genBtn,
-                 editingId ? delBtn : null]
+  const onTab = sheetTab === "layout" ? tabLayout : tabScale;
+  const shut = isLipShut();
+  const stops = (sheetTab === "layout"
+    ? [backBtn, onTab, previewBox.querySelector('.panhit[tabindex="0"]'),
+       anchorOne, anchorBetween, mirrorTop, mirrorBot, fineBtn,
+       notePrev, noteNext, seatPrev, seatNext, resetBtn,
+       ...swatches.children, shut ? lipBtn : genBtn, editingId && !shut ? delBtn : null]
+    : [backBtn, onTab,
+       nameBox,
+       fieldEls.ding, fieldEls.top, fieldEls.inner, fieldEls.bottom,
+       scaleBox,
+       shut ? lipBtn : editingId ? genBtn : nextBtn,
+       editingId && !shut ? delBtn : null])
     .filter(isStop);
   if (isHit(document.activeElement) && pickRef && lastSolved) setRover(pickRef);
   cycleTabStops(stops, e);
@@ -11895,7 +13032,6 @@ document.addEventListener("keydown", e => {
     if (e.key === "Escape") {
       e.preventDefault();
       if (drawerOpen && pickRef) putDownPick();
-      else if (drawerOpen) closeDrawer();
       else closeScaleSheet();
     }
     return;
@@ -12376,7 +13512,7 @@ function routeToDeck(routed) {
   // The same "gone" test the boot makes: a routed seed that is hidden shows the
   // fallback and says so; one that shows its replacement does not.
   if (routed !== shown && !(replacements()[routed] && replacements()[routed].id === shown) && hidden.includes(routed))
-    say("That deck is gone. Showing " + deck().name + ".", "warn");
+    say("That scale is gone. Showing " + deck().name + ".", "warn");
   track("deck_route", { deck_id: routed });
   return shown;
 }
@@ -12417,7 +13553,7 @@ if (routedDeck && routedDeck !== bootStored) track("deck_route", { deck_id: rout
 // and a silent switch would look like the app lost their deck, so say so.
 if (wantedDeck !== deckId && !(replacements()[wantedDeck] && replacements()[wantedDeck].id === deckId) &&
     (wantedDeck.indexOf("custom:") === 0 || hidden.includes(wantedDeck)))
-  say("That deck is gone. Showing " + deck().name + ".", "warn");
+  say("That scale is gone. Showing " + deck().name + ".", "warn");
 // A page route in the address bar at boot is a RELOAD of a page, or a link
 // someone pasted. Neither reopens it: #edit-<id> names a deck this session may
 // not have, and a page restored with no entry behind it is one the back

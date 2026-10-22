@@ -36,7 +36,7 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", 
   // Phase 5 LAYOUT section, additive like the two before it.
   "scale-layout-reset",
   // Lane DR1: the layout drawer shell.
-  "scale-layout-zone", "scale-plate-band", "scale-layout-toggle", "scale-layout-hint",
+  "scale-layout-zone", "scale-plate-band", "scale-layout-hint",
   "scale-layout-state", "scale-drawer", "scale-drawer-hint", "scale-drawer-status",
   "scale-anchor-one", "scale-anchor-between",
   // Lane DR2a: the seat controls that replace the old rot/move group.
@@ -48,6 +48,10 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", 
   // Stage 2: the page header. The sheet became a full-screen page, so it has a
   // BACK control and a visible title where the drawer had neither.
   "scale-back", "scale-title",
+  // The sheet's tabs, their panels and the NEXT button (plan 2026-10-19-sheet-tabs).
+  "scale-tabs", "scale-tab-scale", "scale-tab-layout", "scale-panel-scale", "scale-panel-layout", "scale-next",
+  // The footer lip (plan 2026-10-19-sheet-tabs 3.7).
+  "scale-foot", "scale-footslide", "scale-lip",
   // Lane M1: the settings panel that now hosts the mode toggle and print
   // controls, plus its header trigger and scrim.
   "settings-trigger", "settings-scrim", "settings-panel",
@@ -60,9 +64,8 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", 
   "tier-basic", "tier-intermediate", "tier-advanced",
   // Share URL lane SU-A: the COPY LINK control and its readonly fallback input.
   "share-copy", "share-url", "about", "about-open", "about-close",
-  // Scale-import lane B: the IMPORT TEXT control, its paste area and review list.
-  "import-row", "import-open", "import-area", "import-text", "import-run", "import-result", "import-status",
-  "import-review", "import-rows", "import-flags", "import-ding", "import-use"];
+  "scale-fields", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-ding-label", "scale-top-label",
+  "scale-inner-label", "scale-bottom-label", "scale-field-msg", "scale-fields-live", "scale-fields-note", "scale-line-note"];
 
 /** Copy a value out of the vm realm, so assert.deepStrictEqual can compare it. */
 const plain = (v) => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
@@ -271,7 +274,7 @@ function boot(opts = {}) {
   // it. Every element this boot hands the app goes through bindFocus.
   const focusState = { active: null };
   const bindFocus = (el) => {
-    el.focus = () => { focusState.active = el; };
+    el.focus = (o) => { el.focusOpts = o; focusState.active = el; };
     el.blur = () => { if (focusState.active === el) focusState.active = null; };
     return opts.layout ? addLayout(el) : el;
   };
@@ -308,7 +311,7 @@ function boot(opts = {}) {
         return { left: x - r, right: x + r, top: y - r, bottom: y + r, width: 2 * r, height: 2 * r };
       };
       n.closest = (sel) => (/(^|,\s*)\.panhit/.test(String(sel)) ? n : null);
-      n.focus = () => { focusState.active = n; preview.dispatchEvent({ type: "focusin", target: n }); };
+      n.focus = (opts) => { n.focusOpts = opts; focusState.active = n; preview.dispatchEvent({ type: "focusin", target: n }); };
       return n;
     });
     return hitCache.nodes;
@@ -361,7 +364,7 @@ function boot(opts = {}) {
   // `hidden` is real initial state in the shipped markup (the scale page and
   // the print container both ship hidden), and a test that asserts a container
   // STARTS hidden has to see what the browser sees rather than `undefined`.
-  for (const [, tag, id] of html.matchAll(/<(?:div|section|aside|p|span)\b([^>]*\bid="([^"]+)"[^>]*)>/g)) {
+  for (const [, tag, id] of html.matchAll(/<(?:div|section|aside|p|span|button)\b([^>]*\bid="([^"]+)"[^>]*)>/g)) {
     if (els[id] && /\bhidden\b/.test(tag)) els[id].hidden = true;
   }
   // Ancestry from a tag-stack walk of the shipped markup, so a control inside a

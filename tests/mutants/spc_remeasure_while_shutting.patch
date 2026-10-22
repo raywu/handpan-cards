@@ -1,0 +1,21 @@
+# kills: SPC: create at 844x390 on the Layout tab with a notice, a collapse and a restore ease the footer and the guidance over the slide and cancel nothing
+# suite: node --test --test-name-pattern ^SPC:.create.at.844x390.on.the.Layout.tab.with.a.notice tests/e2e.test.js
+# The open-footer re-measure toggles the lip classes around the loop while the footer is shutting: the slide is cancelled and jumps instead of easing.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10597,10 +10597,14 @@ function syncBand() {
+   if (pinPad !== pin) { pinPad = pin; root.setProperty("--plate-pin-h", pin); }
+   if (beside && port > 0) {
+     const put = (px) => { const v = px + "px"; if (plateRoom !== v) { plateRoom = v; root.setProperty("--plate-room", v); } };
++    const lipped = sheet.classList.contains("lipped");
++    const shut = lipped && sheet.classList.contains("lipshut");
++    if (lipped) { sheet.classList.add("lipnow"); sheet.classList.remove("lipped", "lipshut"); }
+     const seen = [];
+     let v = openRoomOf();
+     while (!seen.includes(v) && seen.length < 6) { seen.push(v); put(v); v = openRoomOf(); }
+     if (v !== seen[seen.length - 1]) { v = Math.min(...seen.slice(Math.max(0, seen.indexOf(v)))); put(v); }
++    if (lipped) { sheet.classList.add("lipped"); if (shut) sheet.classList.add("lipshut"); lipFlush(); sheet.classList.remove("lipnow"); }
+   }
+ }
+ const bandPort = document.querySelector(".sheetbody") || plateBand;

@@ -1,0 +1,14 @@
+# kills: PH: P3 a touch whose target is detached before touchend still ends: the target's own touchend and touchcancel end the suspension
+# suite: node --test --test-name-pattern ^PH..P3.a.touch.whose.target.is.detached.before.touchend.still.ends..the.target.s.own.touchend.and.touchcancel.end.the.suspension$ tests/app.test.js
+# The touched node no longer carries its own touchend and touchcancel listeners, so a target detached by a repaint leaves lipTouching true.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10806,7 +10806,6 @@
+   const ts = e.touches;
+   lipTouching = !!(ts && ts.length);
+   const tg = e.target;
+-  if (tg && tg.addEventListener) for (const ev of ["touchend", "touchcancel"]) tg.addEventListener(ev, lipDragStop, { once: true, passive: true });
+   lipFling = null;
+   lipParked = null;
+   const box = tg && tg.closest ? tg.closest("#scale-box") : null;

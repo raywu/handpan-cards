@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9090,7 +9090,7 @@ function paintLayout() {
-   const note = layoutNoticeText();
-   if (layoutNote.textContent !== note) layoutNote.textContent = note;
+@@ -10519,7 +10519,7 @@ function paintLayout() {
+   const noteChanged = layoutNote.textContent !== note;
+   if (noteChanged) layoutNote.textContent = note;
    layoutNote.hidden = !note;
 -  sheet.classList.toggle("noticed", !!note);
 +  if (note) sheet.classList.add("noticed");
+   if (noteChanged) lipGuidanceChanged();
    syncBand();
  }
- /** Rule G-a, G-b, G-e: the band sticks only while the scrollport keeps room

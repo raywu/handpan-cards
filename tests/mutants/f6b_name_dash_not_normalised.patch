@@ -7,12 +7,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -6823,7 +6823,7 @@
-     // normalised back to ASCII before it ever reaches the engine.
-     const n = String(nameBox.value || "")
-       .replace(/[‘’]/g, "'").replace(/[“”]/g, '"')
--      .replace(/[–—]/g, "-").replace(/…/g, "...")
-+      .replace(/…/g, "...")
-       .trim();
-     // The box is PREFILLED, so an UNTOUCHED box on an auto-named deck is
-     // treated as ABSENT: otherwise a field edit would pin the old fields' name
+@@ -11341,7 +11341,7 @@ function sheetOptions() {
+   // normalised back to ASCII before it ever reaches the engine.
+   const n = String(nameBox.value || "")
+     .replace(/[‘’]/g, "'").replace(/[“”]/g, '"')
+-    .replace(/[–—]/g, "-").replace(/…/g, "...")
++    .replace(/…/g, "...")
+     .trim();
+   if (!editingId) {
+     if (n) o.name = n;  // an empty box keeps the auto label

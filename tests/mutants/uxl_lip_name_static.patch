@@ -1,0 +1,15 @@
+# kills: UX: the lip control is named Show GENERATE CARDS on Add and Show SAVE CHANGES on Edit, a seeded deck's Edit included
+# suite: node --test --test-name-pattern ^UX:.the.lip.control.is.named.Show.GENERATE.CARDS.on.Add.and.Show.SAVE.CHANGES.on.Edit..a.seeded.deck.s.Edit.included$ tests/app.test.js
+# uxl_lip_name_static
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10738,7 +10738,7 @@ function collapseLip() {
+   lipDirty = false;
+   sheet.classList.add("lipnow", "lipped");
+   lipBtn.hidden = false;
+-  lipBtn.setAttribute("aria-label", "Show " + lipPrimary().textContent);
++  lipBtn.setAttribute("aria-label", "Show GENERATE CARDS");
+   lipWrite(open);
+   lipFlush();
+   sheet.classList.remove("lipnow");

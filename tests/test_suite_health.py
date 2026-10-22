@@ -40,6 +40,7 @@ the grace, so nothing holds the pipes past it and the clock is unmoved by the
 drain's own bound; only shape 3 exercises that bound, and it does so by failing assert_dead
 long before 30s is in question.
 """
+import contextlib
 import glob
 import io
 import json
@@ -878,6 +879,20 @@ class VerifyArtifactsTest(unittest.TestCase):
         py_path = self._write("py.json", self._good_py())
         js_path = self._write("js.json", self._good_js())
         self.assertEqual(suite_health.verify(py_path, js_path), [])
+
+
+class TimedRunTest(unittest.TestCase):
+    def test_timed_run_prints_the_wall_clock_and_returns_the_result(self):
+        old = suite_health.run_node_file
+        suite_health.run_node_file = lambda path: (1, 0, 0, 0, 0, "out")
+        buf = io.StringIO()
+        try:
+            with contextlib.redirect_stdout(buf):
+                got = suite_health.timed_run("tests/x.test.js")
+        finally:
+            suite_health.run_node_file = old
+        self.assertEqual(got, (1, 0, 0, 0, 0, "out"))
+        self.assertRegex(buf.getvalue(), r"tests/x\.test\.js: wall \d+\.\ds")
 
 
 if __name__ == "__main__":
