@@ -1,0 +1,16 @@
+# kills: SPC: at 844x390 the drawer status line, one line and multi-line from layoutStatus(), heads the controls column under the tab strip and adds no height to the plate band
+# suite: node --test --test-name-pattern ^SPC:.at.844x390.the.drawer.status.line..one.line.and.multi-l tests/e2e.test.js
+# The drawer status goes back inside the plate band.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1505,8 +1505,8 @@ html.about-open{overflow:hidden}
+       <div id="scale-preview" role="img"
+            aria-label="Preview of where the notes sit on the pan" hidden></div>
+       <p class="sheethint" id="scale-layout-hint">Type a scale to adjust its layout.</p>
+-    </div>
+     <div id="scale-drawer-status" aria-live="polite" aria-atomic="true" hidden></div>
++    </div>
+     <div id="scale-layout-zone">
+       <div id="scale-drawer" role="group" aria-label="Layout">
+         <p class="sheethint" id="scale-drawer-hint" hidden></p>

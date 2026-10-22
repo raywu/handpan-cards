@@ -149,11 +149,13 @@ function run() {
       "Picked up Eb5, bottom seat U12, upper right. PREVIOUS SEAT and NEXT SEAT move it.",
     ];
     const longest = rows.reduce((a, r) => (r.length > a.length ? r : a), "");
-    const before = await ev(`return document.getElementById("scale-plate-band").getBoundingClientRect().height;`);
+    const stack = `const b = document.getElementById("scale-plate-band").getBoundingClientRect(), s = document.getElementById("scale-drawer-status").getBoundingClientRect(); return { stack: s.bottom - b.top, status: s.height };`;
+    const before = await ev(stack);
     await ev(`layoutStatus(${JSON.stringify(longest)}); return true;`);
     await frames();
-    const after = await ev(`return document.getElementById("scale-plate-band").getBoundingClientRect().height;`);
-    assert.ok(after - before <= 40, `the band grew ${before} to ${after} on a ${longest.length}-character row`);
+    const after = await ev(stack);
+    assert.ok(after.status >= before.status && after.status > 0, `the status is ${after.status}px after a ${longest.length}-character row, ${before.status}px before`);
+    assert.ok(after.stack - before.stack <= 40, `the band and status stack grew ${before.stack} to ${after.stack} on a ${longest.length}-character row`);
   });
 
   const reach = () => ev(`const sp = document.querySelector("#scale-sheet .sheetbody"), sr = sp.getBoundingClientRect();

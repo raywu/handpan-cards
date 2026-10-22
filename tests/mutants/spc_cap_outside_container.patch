@@ -1,0 +1,15 @@
+# kills: SPC: at 844x390 the Scale tab, and at 1280x800 both tabs, keep the 81ad610 rects of the footer, the controls, the drawer status and the preview's width and height
+# suite: node --test --test-name-pattern ^SPC:.at.844x390.the.Scale.tab..and.at.1280x800.both.tabs..ke tests/e2e.test.js
+# The landscape block moves from the surf container query to the bare media query.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1107,7 +1107,7 @@ footer.seq{row-gap:var(--sp-1)}
+ @media (orientation:landscape) and (max-height:500px){
+   #scale-sheet[data-tab="layout"] .sheetsurf{max-width:none}
+ }
+-@container surf (min-width:600px) and (min-aspect-ratio:1/1){
++@media (min-width:600px) and (min-aspect-ratio:1/1){
+   /* --plate-w is declared on every element that reads it because a container query cannot restyle its own
+      container and a cq unit resolves per element; --plate-room is the open-footer scrollport less the band
+      padding, written by syncBand(), so the pan is the same size with the footer open or shut. */

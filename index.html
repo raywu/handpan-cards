@@ -1072,7 +1072,10 @@ footer.seq{row-gap:var(--sp-1)}
 #scale-drawer .mirror .mode{flex:1 1 0; min-width:0}
 #scale-drawer .mirror{width:100%}
 #scale-drawer .ctlrow{justify-content:flex-start}
-#scale-drawer-status{font:400 12px/1.5 Bitter, serif; color:#c4bcab; min-height:3em; text-align:center}
+#scale-drawer-status{font:400 12px/1.5 Bitter, serif; color:#c4bcab; min-height:3em; text-align:center;
+  position:sticky; top:var(--plate-pin-h, 0px); z-index:2; background:#1f1b15;
+  margin-top:calc(-1 * var(--sp-3)); margin-bottom:var(--sp-1); box-shadow:0 var(--sp-1) 0 #1f1b15}
+.sheetbody:has(#scale-layout-zone.nostick) #scale-drawer-status{position:relative}
 #scale-drawer-status.warn{color:#e3b25c}
 #scale-layout-state{color:#e3b25c}
 /* The tab strip, the panels and the OR rule (plan 2026-10-19-sheet-tabs, O2 and O3). One pan size:
@@ -1105,15 +1108,28 @@ footer.seq{row-gap:var(--sp-1)}
   #scale-sheet[data-tab="layout"] .sheetsurf{max-width:none}
 }
 @container surf (min-width:600px) and (min-aspect-ratio:1/1){
-  #scale-preview{--adj-reserve:72px}
-  #scale-sheet[data-tab="layout"] .sheetbody{display:grid; grid-template-columns:auto 1fr; column-gap:var(--sp-3); row-gap:0; align-content:start}
+  /* --plate-w is declared on every element that reads it because a container query cannot restyle its own
+     container and a cq unit resolves per element; --plate-room is the open-footer scrollport less the band
+     padding, written by syncBand(), so the pan is the same size with the footer open or shut. */
+  #scale-preview, #scale-guidance, #scale-foot, #scale-generate, #scale-next, #scale-delete-row{
+    --adj-reserve:104px; --plate-w:clamp(160px, min(100cqw, var(--plate-room, calc(100cqh - var(--adj-reserve)))), 480px)}
+  #scale-preview{width:var(--plate-w)}
+  #scale-sheet[data-tab="layout"] .sheetbody{display:grid; grid-template-columns:auto 1fr; grid-auto-rows:min-content; column-gap:var(--sp-3); row-gap:0; align-content:start}
   #scale-sheet[data-tab="layout"] #scale-panel-layout{display:contents}
-  #scale-sheet[data-tab="layout"] #scale-plate-band{grid-column:1; grid-row:1 / span 30; align-self:start; position:relative}
+  #scale-sheet[data-tab="layout"] #scale-plate-band{grid-column:1; grid-row:1 / span 30; align-self:start; position:sticky; top:0}
   #scale-sheet[data-tab="layout"] #scale-tabs,
+  #scale-sheet[data-tab="layout"] #scale-drawer-status,
   #scale-sheet[data-tab="layout"] #scale-layout-zone{grid-column:2}
+  #scale-sheet[data-tab="layout"] #scale-drawer-status{position:relative; top:auto; margin:0; box-shadow:none; z-index:auto; min-width:0}
   #scale-sheet[data-tab="layout"] #scale-layout-zone{margin-top:var(--sp-3)}
   #scale-sheet[data-tab="layout"] #scale-panel-layout > .editrow{grid-column:2; margin-top:var(--sp-3)}
-  #scale-plate-band #scale-drawer-status{width:0; min-width:100%}
+  #scale-sheet[data-tab="layout"] #scale-guidance, #scale-sheet[data-tab="layout"] #scale-next,
+  #scale-sheet[data-tab="layout"] #scale-generate, #scale-sheet[data-tab="layout"] #scale-delete-row,
+  #scale-sheet[data-tab="layout"] #scale-foot{margin-left:calc(var(--plate-w) + var(--sp-2))}
+  #scale-sheet[data-tab="layout"] #scale-next, #scale-sheet[data-tab="layout"] #scale-generate{width:auto}
+  #scale-sheet[data-tab="layout"].lipped #scale-next, #scale-sheet[data-tab="layout"].lipped #scale-generate,
+  #scale-sheet[data-tab="layout"].lipped #scale-delete-row{margin-left:0}
+  #scale-sheet[data-tab="layout"].lipped #scale-next, #scale-sheet[data-tab="layout"].lipped #scale-generate{width:100%}
   .sheetbody{scroll-padding-top:0}
 }
 /* The four note fields and the scale line. */
@@ -1489,8 +1505,8 @@ html.about-open{overflow:hidden}
       <div id="scale-preview" role="img"
            aria-label="Preview of where the notes sit on the pan" hidden></div>
       <p class="sheethint" id="scale-layout-hint">Type a scale to adjust its layout.</p>
-      <div id="scale-drawer-status" aria-live="polite" aria-atomic="true" hidden></div>
     </div>
+    <div id="scale-drawer-status" aria-live="polite" aria-atomic="true" hidden></div>
     <div id="scale-layout-zone">
       <div id="scale-drawer" role="group" aria-label="Layout">
         <p class="sheethint" id="scale-drawer-hint" hidden></p>
@@ -10404,7 +10420,7 @@ let mirroring = false;
 let fieldEditing = null;
 let fieldShown = {};
 let liveTimer = null;
-let bandPad = "";
+let bandPad = "", plateRoom = "", pinPad = "";
 
 /* The seed row has exactly TWO writers, and each blanks the other. That is
    what makes #scale-parse and #scale-refusal mutually exclusive - and the
@@ -10540,6 +10556,25 @@ function paintLayout() {
  *  for a control under it, and the scroll padding is its height exactly then.
  *  Where nothing can be measured (no layout) it stays stuck. */
 const BAND_MIN_ROOM = 44;
+const roomOf = () => {
+  const cs = typeof getComputedStyle === "function" ? getComputedStyle(plateBand) : null;
+  return Math.max(0, (bandPort.clientHeight || 0) - (cs ? parseFloat(cs.paddingBottom) || 0 : 0));
+};
+const platesBeside = () => {
+  const w = (el) => (el.getBoundingClientRect ? el.getBoundingClientRect().width : el.offsetWidth) || 0;
+  return w(plateBand) > 0 && w(bandPort) > 0 && w(plateBand) < w(bandPort) * 0.75;
+};
+/** The scrollport height the lipped layout gives back: the surface padding, the lead and delete row, less the
+ *  footer and its margin. Mirrors the .sheetsurf padding rules (open, short, lipped); change one, change the other. */
+const lipDelta = () => {
+  const px = (v) => parseFloat(v) || 0;
+  const cs = getComputedStyle(sheetSurf), lead = nextBtn.hidden ? genBtn : nextBtn;
+  const padLip = px(cs.paddingBottom);
+  const rootCs = getComputedStyle(document.documentElement);
+  const padOpen = sheet.classList.contains("short") ? px(rootCs.getPropertyValue("--sp-2")) : Math.max(px(rootCs.getPropertyValue("--sp-4")), padLip);
+  return padOpen - padLip + lead.getBoundingClientRect().height + (delRow.hidden ? 0 : px(cs.rowGap) + delRow.getBoundingClientRect().height) - footEl.getBoundingClientRect().height - px(getComputedStyle(footEl).marginTop);
+};
+const openRoomOf = () => Math.max(0, roomOf() - (sheet.classList.contains("lipped") ? lipDelta() : 0));
 function syncBand() {
   if (!drawerOpen) {
     layoutZone.classList.remove("nostick");
@@ -10548,19 +10583,33 @@ function syncBand() {
   }
   const high = (el) => (el.getBoundingClientRect ? el.getBoundingClientRect().height : el.offsetHeight) || 0;
   const wide = (el) => (el.getBoundingClientRect ? el.getBoundingClientRect().width : el.offsetWidth) || 0;
+  const root = document.documentElement.style;
   const band = high(plateBand);
+  const stat = drawerStatus.hidden ? 0 : high(drawerStatus);
   const port = bandPort.clientHeight > 0 ? high(bandPort) : 0;
-  const beside = wide(plateBand) > 0 && wide(bandPort) > 0 && wide(plateBand) < wide(bandPort) * 0.75;
-  const stuck = !beside && !(port > 0 && port - band < BAND_MIN_ROOM);
+  const beside = platesBeside();
+  const stuck = !beside && !(port > 0 && port - band - stat < BAND_MIN_ROOM);
   layoutZone.classList.toggle("nostick", !beside && !stuck);
-  const pad = (stuck ? band : 0) + "px";
-  if (bandPad !== pad) { bandPad = pad; document.documentElement.style.setProperty("--plate-band-h", pad); }
+  const sm = stat && typeof getComputedStyle === "function" ? parseFloat(getComputedStyle(drawerStatus).marginBottom) || 0 : 0;
+  const pad = (stuck ? band + stat + sm : 0) + "px";
+  if (bandPad !== pad) { bandPad = pad; root.setProperty("--plate-band-h", pad); }
+  const pin = (stuck ? band : 0) + "px";
+  if (pinPad !== pin) { pinPad = pin; root.setProperty("--plate-pin-h", pin); }
+  if (beside && port > 0) {
+    const put = (px) => { const v = px + "px"; if (plateRoom !== v) { plateRoom = v; root.setProperty("--plate-room", v); } };
+    const seen = [];
+    let v = openRoomOf();
+    while (!seen.includes(v) && seen.length < 6) { seen.push(v); put(v); v = openRoomOf(); }
+    if (v !== seen[seen.length - 1]) { v = Math.min(...seen.slice(Math.max(0, seen.indexOf(v)))); put(v); }
+  }
 }
 const bandPort = document.querySelector(".sheetbody") || plateBand;
 if (typeof ResizeObserver === "function") {
   const bandWatch = new ResizeObserver(syncBand);
   bandWatch.observe(plateBand);
   bandWatch.observe(bandPort);
+  bandWatch.observe(drawerStatus);
+  for (const el of [nextBtn, genBtn, delRow, document.getElementById("scale-foot")]) if (el) bandWatch.observe(el);
 }
 /** A native focus scrolls a text control only far enough to show its caret;
  *  rule G-c wants the whole control in the scrollport. */
@@ -10643,7 +10692,7 @@ const lipBtn = document.getElementById("scale-lip");
 const guidanceEl = msgLine.parentElement || msgLine.parentNode || null;
 const LIP_VARS = ["--lip-h", "--lip-pad", "--lip-gd", "--lip-g"];
 const LIP_PX = 24, LIP_SWIPE = 16, LIP_WINDOW = 150, LIP_END_MS = 220;
-let lipGen = 0, lipTimer = 0, lipEnd = 0, lipSettled = false;
+let lipGen = 0, lipTimer = 0, lipEnd = 0, lipSettled = false, lipDirty = false;
 let lipQuietUntil = 0, userWindowUntil = 0, lipAcc = 0, lipPrev = { t: 0, M: 0 };
 const lipRect = (el) => (el && el.getBoundingClientRect ? el.getBoundingClientRect() : { top: 0, bottom: 0, height: 0 });
 const lipPrimary = () => (nextBtn.hidden ? genBtn : nextBtn);
@@ -10685,8 +10734,9 @@ function collapseLip() {
   lipAcc = 0;
   clearTimeout(lipTimer);
   lipGen += 1;
-  if (isLipped()) { sheet.classList.add("lipshut"); lipSettled = false; return; }
+  if (isLipped()) { sheet.classList.add("lipshut"); lipSettled = false; const g = lipGen; lipTimer = setTimeout(() => { if (g === lipGen) { lipSettled = true; if (lipDirty) { lipDirty = false; lipMeasure(); } } }, LIP_END_MS); return; }
   const open = lipRead();
+  lipDirty = false;
   sheet.classList.add("lipnow", "lipped");
   lipBtn.hidden = false;
   lipBtn.setAttribute("aria-label", "Show " + lipPrimary().textContent);
@@ -10696,7 +10746,7 @@ function collapseLip() {
   sheet.classList.add("lipshut");
   lipSettled = false;
   const gen = lipGen;
-  lipTimer = setTimeout(() => { if (gen === lipGen) lipSettled = true; }, LIP_END_MS);
+  lipTimer = setTimeout(() => { if (gen === lipGen) { lipSettled = true; if (lipDirty) { lipDirty = false; lipMeasure(); } } }, LIP_END_MS);
   const a = document.activeElement;
   if (a === nextBtn || a === genBtn || a === delBtn) {
     lipFocusing = true;
@@ -10717,6 +10767,7 @@ function lipMeasure() {
 }
 function lipGuidanceChanged() {
   if (!isLipped() || (isLipShut() && lipSettled)) return;
+  if (platesBeside()) { lipDirty = true; return; }
   lipMeasure();
 }
 function restoreLip() {
@@ -10738,6 +10789,7 @@ function endOpening(gen) {
 }
 function finishOpen() {
   lipGen += 1;
+  lipDirty = false;
   clearTimeout(lipTimer);
   lipHandOff();
   sheet.classList.add("lipnow");
@@ -10750,6 +10802,7 @@ function finishOpen() {
 }
 function lipReset() {
   clearTimeout(lipTimer);
+  lipDirty = false;
   lipGen += 1;
   sheet.classList.remove("lipped", "lipshut", "lipnow");
   lipBtn.hidden = true;

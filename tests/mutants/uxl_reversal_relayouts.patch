@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10655,7 +10655,7 @@ function collapseLip() {
+@@ -10734,7 +10734,7 @@ function collapseLip() {
    lipAcc = 0;
    clearTimeout(lipTimer);
    lipGen += 1;
--  if (isLipped()) { sheet.classList.add("lipshut"); lipSettled = false; return; }
-+  if (isLipped()) { sheet.classList.remove("lipped"); sheet.classList.add("lipped", "lipshut"); lipSettled = false; return; }
+-  if (isLipped()) { sheet.classList.add("lipshut"); lipSettled = false; const g = lipGen; lipTimer = setTimeout(() => { if (g === lipGen) { lipSettled = true; if (lipDirty) { lipDirty = false; lipMeasure(); } } }, LIP_END_MS); return; }
++  if (isLipped()) { sheet.classList.remove("lipped"); sheet.classList.add("lipped", "lipshut"); lipSettled = false; const g = lipGen; lipTimer = setTimeout(() => { if (g === lipGen) { lipSettled = true; if (lipDirty) { lipDirty = false; lipMeasure(); } } }, LIP_END_MS); return; }
    const open = lipRead();
+   lipDirty = false;
    sheet.classList.add("lipnow", "lipped");
-   lipBtn.hidden = false;

@@ -1,0 +1,15 @@
+# kills: SPC: at 844x390 the Layout plate band lies inside the scrollport at the top and at the end of the scroll, footer open and shut, with no message, a one-line notice, a two-line warning, the Edit delete refusal, the refusal beside a notice, a re-armed DELETE, the notice with three ring-reset suffixes, and a multi-line drawer status from layoutStatus()
+# suite: node --test --test-name-pattern ^SPC:.at.844x390.the.Layout.plate.band.lies.inside.the.scroll tests/e2e.test.js
+# The Layout plate band is no longer sticky in the landscape block, so it scrolls out of the scrollport.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1116,7 +1116,7 @@ footer.seq{row-gap:var(--sp-1)}
+   #scale-preview{width:var(--plate-w)}
+   #scale-sheet[data-tab="layout"] .sheetbody{display:grid; grid-template-columns:auto 1fr; grid-auto-rows:min-content; column-gap:var(--sp-3); row-gap:0; align-content:start}
+   #scale-sheet[data-tab="layout"] #scale-panel-layout{display:contents}
+-  #scale-sheet[data-tab="layout"] #scale-plate-band{grid-column:1; grid-row:1 / span 30; align-self:start; position:sticky; top:0}
++  #scale-sheet[data-tab="layout"] #scale-plate-band{grid-column:1; grid-row:1 / span 30; align-self:start; position:relative; top:0}
+   #scale-sheet[data-tab="layout"] #scale-tabs,
+   #scale-sheet[data-tab="layout"] #scale-drawer-status,
+   #scale-sheet[data-tab="layout"] #scale-layout-zone{grid-column:2}

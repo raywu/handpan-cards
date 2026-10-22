@@ -4389,7 +4389,7 @@ function run() {
     }
   });
 
-  test("UX: Adjust layout is two columns at 844x390 with the large pan >=280px, one column at 500x390", async () => {
+  test("UX: Adjust layout is two columns at 844x390 with the pan >=270px with no message, one column at 500x390", async () => {
     try {
       await addWithDrawer(844, 390);
       const two = await b.eval(`
@@ -4401,7 +4401,7 @@ function run() {
       `);
       assert.strictEqual(two.display, "grid");
       assert.ok(two.ctlLeft >= two.colRight - 1, `the controls are not beside the pan: ${JSON.stringify(two)}`);
-      assert.ok(two.plate >= 280, `the large pan is ${two.plate}px wide`);
+      assert.ok(two.plate >= 270, `the pan is ${two.plate}px wide`);
       await b.setViewport(500, 390, true);
       const one = await b.eval(`return getComputedStyle(document.querySelector(".sheetbody")).display;`);
       assert.notStrictEqual(one, "grid", "500 x 390 laid the layer out in two columns");
@@ -4622,7 +4622,7 @@ function run() {
       const wide = await b.eval(`
         const R = (id) => document.getElementById(id).getBoundingClientRect();
         return { plate: R("scale-preview").width, colRight: R("scale-plate-band").right, ctlLeft: R("scale-anchor-one").left };`);
-      assert.ok(wide.plate >= 280, `the large pan is ${wide.plate}px`);
+      assert.ok(wide.plate >= 270, `the large pan is ${wide.plate}px`);
       assert.ok(wide.ctlLeft >= wide.colRight - 1, `the controls are not beside the pan: ${JSON.stringify(wide)}`);
       const plateInView = () => b.eval(`
         const port = document.querySelector("#scale-sheet .sheetbody").getBoundingClientRect();
@@ -7733,7 +7733,10 @@ function run() {
     const f4Geom = () => b.eval(`
     const port = document.querySelector("#scale-sheet .sheetbody"), pr = port.getBoundingClientRect();
     const r = (id) => { const q = document.getElementById(id).getBoundingClientRect(); return { top: q.top, bottom: q.bottom, width: q.width }; };
-    return { scrollTop: port.scrollTop, portTop: pr.top, portBottom: pr.bottom, band: r("scale-plate-band"),
+    const st = document.getElementById("scale-drawer-status");
+    const band = r("scale-plate-band");
+    if (!st.hidden) band.bottom = Math.max(band.bottom, st.getBoundingClientRect().bottom);
+    return { scrollTop: port.scrollTop, portTop: pr.top, portBottom: pr.bottom, band,
       plate: r("scale-preview"), btn: r("scale-tab-layout"), drawer: r("scale-drawer"),
       bandPos: getComputedStyle(document.getElementById("scale-plate-band")).position };`);
   const f4OpenDrawer = async () => {
@@ -14177,7 +14180,7 @@ function run() {
     };
     const rect = (sel) => b.eval(`const e = document.querySelector(${JSON.stringify(sel)});
       const r = e.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom, w: r.width, h: r.height };`);
-    const FLOORS = [[320, 568, 274], [380, 780, 334], [393, 852, 347], [844, 390, 304], [1280, 800, 478]];
+    const FLOORS = [[320, 568, 274], [380, 780, 334], [393, 852, 347], [844, 390, 274], [1280, 800, 478]];
 
     test("TB: at 320x568, 380x780, 393x852, 844x390 and 1280x800 the Layout pan is wider than the old small pan clamp(88px, 30cqw, 160px) and at least the section 3.6 width minus 2px", async () => {
       const fails = [];
@@ -14198,7 +14201,7 @@ function run() {
       assert.deepStrictEqual(fails, [], fails.join("\n"));
     });
 
-    test("TB: at 844x390 the Layout tab's .sheetsurf is wider than 600px, the tab strip sits right of the plate and the pan is at least 304px", async () => {
+    test("TB: at 844x390 the Layout tab's .sheetsurf is wider than 600px, the tab strip sits right of the plate and the pan fills the open-footer scrollport less the band padding and, with no message, is at least 270px", async () => {
       try {
         await tbOpenAdd(844, 390);
         await tbToLayout();
@@ -14206,7 +14209,13 @@ function run() {
         const pan = await rect("#scale-preview");
         const tabs = await rect("#scale-tabs");
         assert.ok(surf.w > 600, `the surface is ${surf.w}px`);
-        assert.ok(pan.w >= 304, `the pan is ${pan.w}px`);
+        assert.ok(pan.w >= 270, `the pan is ${pan.w}px`);
+        const fill = await b.eval(`const port = document.querySelector(".sheetbody").clientHeight;
+          const band = parseFloat(getComputedStyle(document.getElementById("scale-plate-band")).paddingBottom);
+          return { port, band, lipped: document.getElementById("scale-sheet").classList.contains("lipped") };`);
+        assert.strictEqual(fill.lipped, false, "the footer is not open");
+        assert.ok(fill.band > 0, `the band padding is ${fill.band}px`);
+        assert.ok(Math.abs(pan.w - (fill.port - fill.band)) <= 1, `the pan is ${pan.w}px, the open scrollport is ${fill.port}px less ${fill.band}px of band padding`);
         assert.ok(tabs.l >= pan.r - 1, `the tab strip (left ${tabs.l}) is not right of the plate (right ${pan.r})`);
       } finally {
         await b.setViewport(900, 900, false);
@@ -14837,6 +14846,862 @@ function run() {
         await b.send("CSS.forcePseudoState", { nodeId: node.nodeId, forcedPseudoClasses: [] });
         assert.ok(Math.abs(lum(rest) - lum(pressed)) >= 20, `the selected tab rests at ${rest} and presses to ${pressed}`);
       } finally { await spaReset(); }
+    });
+  });
+
+  /* ------------------------- SPC: landscape Layout, plate pinned, footer capped ----
+   * Lane SPC of docs/plans/2026-10-21-sheet-polish.md (section 3.3, D-3; owner Q1 "Pin + fit").
+   * Baselines in C4 and C6 are the 81ad610 rects of Table M (rows Mc3-Mc7), re-measured on d4bfb86. */
+  describe("SPC: landscape Layout, plate pinned, footer capped", () => {
+    const SPC_KURD = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    const STATES = ["no message", "a one-line notice", "a two-line warning", "the Edit delete refusal",
+      "the refusal beside a notice", "a re-armed DELETE", "the notice with three ring-reset suffixes",
+      "a multi-line drawer status from layoutStatus()"];
+    const toLayout = async () => {
+      await b.eval(`document.getElementById("scale-tab-layout").click(); return true;`);
+      await b.waitFor(`!document.getElementById("scale-panel-layout").hidden`, { label: "the Layout tab" });
+      await sleep(300);
+    };
+    const spcCreate = async (w = 844, h = 390) => {
+      await freshLoad();
+      await b.setViewport(w, h, true);
+      await b.settle();
+      await openSheet();
+      await typeScale(SPC_KURD);
+      await toLayout();
+    };
+    const spcEdit = async (w = 844, h = 390) => {
+      await freshLoad();
+      await b.eval(`localStorage.setItem("hpfc", ${JSON.stringify(JSON.stringify({ deck: "kurd", mode: "A", hidden: ["amara10", "amara", "hijaz", "pygmy"] }))}); return true;`);
+      await navigate();
+      await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`, { label: "the chips" });
+      await b.setViewport(w, h, true);
+      await b.settle();
+      await openEdit();
+      await toLayout();
+    };
+    const probe = () => b.eval(`
+      const h = (el) => (!el || el.hidden || getComputedStyle(el).display === "none") ? 0 : el.getBoundingClientRect().height;
+      return { msg: h(msgLine), msgText: msgLine.textContent, note: h(layoutNote), noteText: layoutNote.textContent,
+        delNote: document.getElementById("scale-del-note").textContent, status: h(drawerStatus), statusText: drawerStatus.textContent,
+        guidance: document.getElementById("scale-guidance").getBoundingClientRect().height,
+        deleteShown: !document.getElementById("scale-delete-row").hidden };`);
+    const fitStatus = (n) => b.eval(`
+      const w = "Swapped Eb5 and Ab4 so the bottom ring reads upward from the lowest seat on the right".split(" ");
+      let t = "";
+      for (let i = 0; i < 120; i += 1) {
+        t += (i ? " " : "") + w[i % w.length];
+        layoutStatus(t);
+        if (drawerStatus.getBoundingClientRect().height >= ${n * SG_LINE} - 0.5) break;
+      }
+      return t;`);
+    const fitSettled = async (which, n, prefix = "") => {
+      const w = "Keep every note you can reach on the pan before you press the button below".split(" ");
+      const el = which === "warn" ? "msgLine" : "layoutNote";
+      let t = prefix;
+      for (let i = 0; i < 80; i += 1) {
+        t += (i || prefix ? " " : "") + w[i % w.length];
+        await sgPut(which === "warn" ? { warn: t } : { note: t });
+        await sleep(170);
+        const h = await b.eval(`return ${el}.getBoundingClientRect().height;`);
+        if (h >= n * SG_LINE - 0.5) return t;
+      }
+      throw new Error("could not fit " + n + " lines of " + which);
+    };
+    const REFUSAL = /Keep at least one deck/;
+    const apply = async (state) => {
+      const p0 = await probe();
+      assert.strictEqual(p0.deleteShown, true, "DELETE THIS DECK is not shown on Edit");
+      if (state === "no message") {
+        assert.strictEqual(p0.guidance, 0, "the guidance slot holds something with no message");
+        return;
+      }
+      if (state === "a one-line notice") await sgPut({ note: await sgFit("note", 1) });
+      else if (state === "a two-line warning") await fitSettled("warn", 2);
+      else if (state === "the Edit delete refusal") {
+        await b.click("#scale-delete");
+        await b.click("#scale-delete");
+      } else if (state === "the refusal beside a notice") {
+        await b.eval(`document.getElementById("scale-anchor-between").click(); return true;`);
+        await b.settle();
+        await b.click("#scale-delete");
+        await b.click("#scale-delete");
+      } else if (state === "a re-armed DELETE") {
+        await b.click("#scale-delete");
+        await b.click("#scale-delete");
+        const text = await b.eval(`return msgLine.textContent;`);
+        await b.eval(`say(${JSON.stringify(text)}, "warn"); return true;`);
+        await b.click("#scale-delete");
+      } else if (state === "the notice with three ring-reset suffixes") {
+        const sfx = await b.eval(`return LAYOUT_RINGS.map((r) => " The " + r + " seats were reset.").join("");`);
+        await fitSettled("note", 3, "Layout not saved yet. SAVE CHANGES keeps it." + sfx);
+      } else if (state === "a multi-line drawer status from layoutStatus()") await fitStatus(3);
+      else throw new Error("unknown state " + state);
+      await b.settle();
+      await sleep(150);
+      const p = await probe();
+      if (state === "a one-line notice") assert.ok(p.noteText.length > 0 && p.note > 17.5 && p.note < 30, `the notice is ${p.note}px: ${JSON.stringify(p)}`);
+      if (state === "a two-line warning") assert.ok(p.msgText.length > 0 && p.msg >= 35.5, `the warning is ${p.msg}px: ${JSON.stringify(p)}`);
+      if (state === "the Edit delete refusal") assert.ok(REFUSAL.test(p.msgText) && p.msg > 0, `no delete refusal: ${JSON.stringify(p)}`);
+      if (state === "the refusal beside a notice") {
+        assert.ok(REFUSAL.test(p.msgText) && p.msg > 0, `no delete refusal: ${JSON.stringify(p)}`);
+        assert.ok(p.noteText.length > 0 && p.note > 0, `no notice beside it: ${JSON.stringify(p)}`);
+        assert.ok(p.guidance >= p.msg + p.note - 0.5, `the slot is ${p.guidance}px for ${p.msg}px and ${p.note}px`);
+      }
+      if (state === "a re-armed DELETE") assert.ok(REFUSAL.test(p.msgText) && p.delNote.length > 0, `the re-arm wrote no note beside DELETE: ${JSON.stringify(p)}`);
+      if (state === "the notice with three ring-reset suffixes") {
+        assert.strictEqual((p.noteText.match(/seats were reset/g) || []).length, 3, `not three suffixes: ${p.noteText}`);
+        assert.ok(p.note >= 53.5, `the notice is ${p.note}px, under three lines`);
+      }
+      if (state === "a multi-line drawer status from layoutStatus()") {
+        assert.ok(p.statusText.length > 0 && p.status >= 53.5, `the status wraps to ${p.status}px, not more than one line (floor is 36px)`);
+        assert.strictEqual(p.guidance, 0, "the guidance slot holds the drawer status");
+      }
+    };
+    const measure = (call = "") => b.eval(`
+      ${call}
+      const r = (el) => { const q = el.getBoundingClientRect(); return { l: q.left, t: q.top, r: q.right, b: q.bottom, w: q.width, h: q.height }; };
+      const body = document.querySelector(".sheetbody");
+      return { body: r(body), port: body.clientHeight, st: body.scrollTop, M: body.scrollHeight - body.clientHeight,
+        band: r(plateBand), pan: r(document.getElementById("scale-preview")),
+        lipped: sheet.classList.contains("lipped"), shut: sheet.classList.contains("lipshut") };`);
+    const scrollTo = async (where) => {
+      await b.eval(`document.querySelector(".sheetbody").scrollTop = ${where === "end" ? 1e6 : 0}; return true;`);
+      await sleep(120);
+    };
+    const shut = async () => {
+      await b.eval(`collapseLip(); return true;`);
+      await sleep(350);
+    };
+
+    test("SPC: at 844x390 the Layout plate band lies inside the scrollport at the top and at the end of the scroll, footer open and shut, with no message, a one-line notice, a two-line warning, the Edit delete refusal, the refusal beside a notice, a re-armed DELETE, the notice with three ring-reset suffixes, and a multi-line drawer status from layoutStatus()", async () => {
+      const ran = [];
+      const sizes = {};
+      try {
+        for (const state of STATES) {
+          await spcEdit();
+          await apply(state);
+          for (const [footer, where] of [["open", "top"], ["open", "end"], ["shut", "end"], ["shut", "top"]]) {
+            if (footer === "shut" && where === "end") await shut();
+            await scrollTo(where);
+            const m = await measure();
+            const tag = `${state}, footer ${footer}, scroll ${where}`;
+            assert.strictEqual(m.lipped, footer === "shut", `${tag}: lipped is ${m.lipped}`);
+            assert.ok(m.M > 0, `${tag}: the scroll range is ${m.M}px, so top and end are the same place`);
+            if (where === "end") assert.ok(m.st >= m.M - 1, `${tag}: scrollTop ${m.st} is not the end ${m.M}`);
+            else assert.strictEqual(m.st, 0, `${tag}: scrollTop is ${m.st}`);
+            assert.ok(m.pan.w >= 160, `${tag}: the pan is ${m.pan.w}px`);
+            assert.ok(m.band.t >= m.body.t - 0.5, `${tag}: the band top ${m.band.t} is above the scrollport ${m.body.t}`);
+            assert.ok(m.band.b <= m.body.b + 0.5, `${tag}: the band bottom ${m.band.b} is below the scrollport bottom ${m.body.b} (${m.band.b - m.body.b}px)`);
+            assert.ok(m.pan.b <= m.body.b + 0.5, `${tag}: the pan bottom ${m.pan.b} is below the scrollport bottom ${m.body.b}`);
+            assert.ok(Math.abs(m.band.t - m.body.t) <= 1, `${tag}: the band top ${m.band.t} is not pinned to the scrollport top ${m.body.t}`);
+            ran.push(`${state}|${footer}|${where}`);
+            if (footer === "open" && where === "top") sizes[state] = m.pan.w;
+          }
+        }
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+      const want = [];
+      for (const s of STATES) for (const f of ["open", "shut"]) for (const w of ["top", "end"]) want.push(`${s}|${f}|${w}`);
+      assert.deepStrictEqual([...ran].sort(), want.sort(), "the cases that ran are not the cases the title claims");
+      assert.strictEqual(ran.length, 32);
+      console.log("SPC C1 pan widths by state (Edit, footer open):", JSON.stringify(sizes));
+      assert.ok(sizes["no message"] >= 160, `the no-message Edit pan is ${sizes["no message"]}px`);
+      assert.ok(sizes["the notice with three ring-reset suffixes"] < sizes["no message"] - 4,
+        `guidance did not shrink the pan: ${JSON.stringify(sizes)}`);
+    });
+
+    test("SPC: at 844x390 #scale-generate, #scale-guidance, the delete row and the lip share the controls column's left and right edges in the OPEN, SHUTTING, SHUT and OPENING states, on create and on Edit with DELETE visible, and no plate field hit-tests to #scale-lip with the footer shut", async () => {
+      const ran = [];
+      const EDGES = `
+        const r = (el) => { const q = el.getBoundingClientRect(); return { l: q.left, r: q.right, w: q.width }; };
+        const col = r(document.getElementById("scale-tabs"));
+        const els = {};
+        const put = (name, el, on) => { if (el && on) els[name] = r(el); };
+        put("guidance", document.getElementById("scale-guidance"), document.getElementById("scale-guidance").getBoundingClientRect().height > 0);
+        const prim = nextBtn.hidden ? genBtn : nextBtn;
+        put("primary", prim, !prim.hidden);
+        put("deleteRow", delRow, !delRow.hidden);
+        put("lip", lipBtn, !lipBtn.hidden);
+        return { col, els, lipped: sheet.classList.contains("lipped"), shut: sheet.classList.contains("lipshut") };`;
+      const sample = (call) => b.eval(`${call}\n${EDGES}`);
+      try {
+        for (const mode of ["create", "edit"]) {
+          if (mode === "create") await spcCreate(); else await spcEdit();
+          await sgPut({ note: await sgFit("note", 1) });
+          await b.settle();
+          const base = ["guidance", "primary"].concat(mode === "edit" ? ["deleteRow"] : []);
+          const cases = [
+            ["OPEN", "", base, false, false],
+            ["SHUTTING", "collapseLip();", base.concat(["lip"]), true, true],
+            ["SHUT", "", base.concat(["lip"]), true, true],
+            ["OPENING", "restoreLip();", base.concat(["lip"]), true, false],
+          ];
+          for (const [name, call, names, lipped, lipshut] of cases) {
+            if (name === "SHUT") await sleep(350);
+            const m = await sample(call);
+            const tag = `${mode}, ${name}`;
+            assert.strictEqual(m.lipped, lipped, `${tag}: lipped is ${m.lipped}`);
+            assert.strictEqual(m.shut, lipshut, `${tag}: lipshut is ${m.shut}`);
+            assert.deepStrictEqual(Object.keys(m.els).sort(), names.slice().sort(), `${tag}: the boxes measured`);
+            assert.ok(m.col.w > 400, `${tag}: the controls column is ${m.col.w}px`);
+            for (const [k, e] of Object.entries(m.els)) {
+              assert.ok(Math.abs(e.l - m.col.l) <= 1, `${tag}: ${k} left ${e.l} is not the controls column's ${m.col.l}`);
+              assert.ok(Math.abs(e.r - m.col.r) <= 1, `${tag}: ${k} right ${e.r} is not the controls column's ${m.col.r}`);
+            }
+            ran.push(`${mode}|${name}`);
+            if (name === "SHUT") {
+              const hits = await b.eval(`
+                const fields = [...document.querySelectorAll("#scale-preview .panhit")];
+                const out = fields.map((f) => { const q = f.getBoundingClientRect(); const hit = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2);
+                  return { field: f.getAttribute("data-field"), same: hit === f, hit: hit ? (hit.id || hit.tagName) : null }; });
+                return { n: fields.length, out };`);
+              assert.ok(hits.n >= 8, `${tag}: only ${hits.n} plate fields exist`);
+              assert.strictEqual(hits.out.length, hits.n);
+              const bad = hits.out.filter((h) => !h.same);
+              assert.deepStrictEqual(bad, [], `${tag}: plate fields that do not hit-test to themselves with the footer shut`);
+              assert.ok(!hits.out.some((h) => h.hit === "scale-lip"), `${tag}: a plate field hit-tests to #scale-lip`);
+            }
+            if (name === "SHUTTING") await sleep(0);
+          }
+          await b.eval(`finishOpen(); return true;`);
+        }
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+      assert.deepStrictEqual(ran, ["create|OPEN", "create|SHUTTING", "create|SHUT", "create|OPENING", "edit|OPEN", "edit|SHUTTING", "edit|SHUT", "edit|OPENING"]);
+    });
+
+    test("SPC: at 844x390 the drawer status line, one line and multi-line from layoutStatus(), heads the controls column under the tab strip and adds no height to the plate band", async () => {
+      try {
+        await spcCreate();
+        const read = () => b.eval(`
+          const r = (el) => { const q = el.getBoundingClientRect(); return { l: q.left, t: q.top, r: q.right, b: q.bottom, w: q.width, h: q.height }; };
+          const pan = r(document.getElementById("scale-preview"));
+          const col2 = [...document.querySelectorAll("#scale-panel-layout > *")].filter((e) => !e.hidden && e.getBoundingClientRect().height > 0 && e.getBoundingClientRect().left >= pan.r - 1)
+            .sort((a, c) => a.getBoundingClientRect().top - c.getBoundingClientRect().top).map((e) => e.id || e.className);
+          return { tabs: r(document.getElementById("scale-tabs")), status: r(drawerStatus), zone: r(document.getElementById("scale-layout-zone")),
+            band: r(plateBand), pan, text: drawerStatus.textContent, parent: drawerStatus.parentElement.id,
+            inBand: plateBand.contains(drawerStatus), col2 };`);
+        await b.eval(`layoutStatus(""); return true;`);
+        await b.settle();
+        const none = await read();
+        await b.eval(`layoutStatus("Top mirror on."); return true;`);
+        await b.settle();
+        const one = await read();
+        await fitStatus(3);
+        await b.settle();
+        const many = await read();
+        assert.strictEqual(none.text, "");
+        assert.strictEqual(one.text, "Top mirror on.");
+        assert.ok(many.text.length > 40, `the multi-line status is ${many.text.length} characters`);
+        assert.ok(one.status.h >= 35.5 && one.status.h < 40, `the one-line status is ${one.status.h}px`);
+        assert.ok(many.status.h >= 53.5 && many.status.h > one.status.h + 17, `the multi-line status is ${many.status.h}px, the one-line is ${one.status.h}px`);
+        for (const [name, m] of [["one line", one], ["multi-line", many]]) {
+          assert.strictEqual(m.parent, "scale-panel-layout", `${name}: the status is a child of ${m.parent}`);
+          assert.strictEqual(m.inBand, false, `${name}: the status is inside the plate band`);
+          assert.ok(Math.abs(m.status.l - m.tabs.l) <= 0.5 && Math.abs(m.status.w - m.tabs.w) <= 0.5,
+            `${name}: the status [${m.status.l}, ${m.status.w}] is not the tab strip's column [${m.tabs.l}, ${m.tabs.w}]`);
+          assert.ok(m.status.t >= m.tabs.b - 0.5 && m.status.t - m.tabs.b <= 12, `${name}: the status top ${m.status.t} is not under the tab strip bottom ${m.tabs.b}`);
+          assert.ok(m.zone.t >= m.status.b - 0.5, `${name}: the layout zone top ${m.zone.t} is above the status bottom ${m.status.b}`);
+          assert.deepStrictEqual(m.col2.slice(0, 2), ["scale-drawer-status", "scale-layout-zone"], `${name}: column 2 reads ${m.col2}`);
+          assert.ok(Math.abs(m.band.h - none.band.h) <= 0.5, `${name}: the band is ${m.band.h}px, ${none.band.h}px with an empty status`);
+          assert.ok(Math.abs(m.pan.h - none.pan.h) <= 0.5, `${name}: the pan is ${m.pan.h}px, ${none.pan.h}px with an empty status`);
+        }
+        assert.ok(none.band.h - none.pan.h <= 8, `the band is ${none.band.h}px for a ${none.pan.h}px pan`);
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("SPC: at 844x390 the Scale tab, and at 1280x800 both tabs, keep the 81ad610 rects of the footer, the controls, the drawer status and the preview's width and height", async () => {
+      const ran = [];
+      const get = (sel) => b.eval(`const e = document.querySelector(${JSON.stringify(sel)}); if (!e) return null;
+        const q = e.getBoundingClientRect(); return { l: q.left, t: q.top, w: q.width, h: q.height, b: q.bottom };`);
+      const near = (got, want, tag) => {
+        assert.ok(got, `${tag}: missing`);
+        for (const [k, v] of Object.entries(want)) assert.ok(Math.abs(got[k] - v) <= 0.5, `${tag}: ${k} is ${got[k]}, the 81ad610 rect has ${v}`);
+      };
+      try {
+        for (const [w, h, tab] of [[844, 390, "scale"], [1280, 800, "layout"], [1280, 800, "scale"]]) {
+          await freshLoad();
+          await b.setViewport(w, h, true);
+          await b.settle();
+          await openSheet();
+          await typeScale(SPC_KURD);
+          if (tab === "layout") { await toLayout(); await b.eval(`layoutStatus("Top mirror on."); return true;`); await b.settle(); }
+          else await sleep(250);
+          const tag = `${w}x${h} ${tab}`;
+          if (w === 844) {
+            near(await get(".sheetsurf"), { l: 162, w: 520 }, `${tag} surface`);
+            near(await get("#scale-tabs"), { l: 171, w: 502, h: 45 }, `${tag} tab strip`);
+            near(await get("#scale-fields"), { l: 171, w: 502 }, `${tag} fields`);
+            near(await get("#scale-next"), { l: 171, w: 502, h: 44 }, `${tag} NEXT`);
+            near(await get("#scale-preview"), { w: 0, h: 0 }, `${tag} preview (hidden on the Scale tab)`);
+          } else if (tab === "layout") {
+            const pan = await get("#scale-preview");
+            near(await get(".sheetsurf"), { l: 307.2, w: 665.6 }, `${tag} surface`);
+            near(await get("#scale-tabs"), { l: 335.2, w: 609.6, h: 45 }, `${tag} tab strip`);
+            near(pan, { l: 400, w: 480, h: 480 }, `${tag} preview`);
+            const st = await get("#scale-drawer-status");
+            near(st, { l: 335.2, w: 609.6, h: 36 }, `${tag} drawer status`);
+            assert.ok(Math.abs(st.t - pan.b - 6) <= 0.5, `${tag}: the status sits ${st.t - pan.b}px under the plate, the 81ad610 gap is 6`);
+            near(await get("#scale-generate"), { l: 335.2, w: 609.6, h: 52 }, `${tag} GENERATE`);
+          } else {
+            near(await get(".sheetsurf"), { l: 307.2, w: 665.6 }, `${tag} surface`);
+            near(await get("#scale-tabs"), { l: 335.2, w: 609.6, h: 45 }, `${tag} tab strip`);
+            near(await get("#scale-fields"), { l: 335.2, w: 609.6 }, `${tag} fields`);
+            near(await get("#scale-next"), { l: 335.2, w: 609.6, h: 52 }, `${tag} NEXT`);
+            near(await get("#scale-preview"), { w: 0, h: 0 }, `${tag} preview (hidden on the Scale tab)`);
+          }
+          ran.push(tag);
+        }
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+      assert.deepStrictEqual(ran, ["844x390 scale", "1280x800 layout", "1280x800 scale"]);
+    });
+
+    test("SPC: at 844x390 the pan size does not change when the footer collapses or restores, with no message and in every other guidance state of C1, and collapsing the footer disarms a re-armed DELETE and clears its message", async () => {
+      const ran = [], disarmed = [];
+      const widths = {};
+      const pan = (call = "") => b.eval(`${call}
+        const q = document.getElementById("scale-preview").getBoundingClientRect();
+        return { w: q.width, h: q.height, g: document.getElementById("scale-guidance").textContent, port: document.querySelector(".sheetbody").clientHeight, lipped: sheet.classList.contains("lipped"), shut: sheet.classList.contains("lipshut") };`);
+      const cycle = async (tag) => {
+        const open0 = await pan();
+        assert.strictEqual(open0.lipped, false, `${tag}: the footer starts shut`);
+        const shutting = await pan("collapseLip();");
+        assert.ok(shutting.lipped && shutting.shut, `${tag}: collapse did not start`);
+        const mid = await pan();
+        await sleep(350);
+        const shutN = await pan();
+        assert.ok(shutN.lipped && shutN.shut, `${tag}: the footer is not shut`);
+        assert.ok(shutN.port - open0.port >= 20, `${tag}: the shut scrollport is ${shutN.port}px, the open one ${open0.port}px, so a pan sized from the live port would grow`);
+        const opening = await pan("restoreLip();");
+        assert.ok(opening.lipped && !opening.shut, `${tag}: restore did not start`);
+        await sleep(450);
+        const open1 = await pan();
+        assert.strictEqual(open1.lipped, false, `${tag}: the footer did not finish opening`);
+        for (const [n, s] of [["shutting", shutting], ["mid-collapse", mid], ["shut", shutN], ["opening", opening], ["reopened", open1]]) {
+          assert.strictEqual(s.g, open0.g, `${tag}: the guidance text changed ${n}`);
+          assert.ok(Math.abs(s.w - open0.w) <= 0.5 && Math.abs(s.h - open0.h) <= 0.5,
+            `${tag}: the pan is ${s.w}x${s.h} ${n}, ${open0.w}x${open0.h} with the footer open`);
+        }
+        return open0.w;
+      };
+      try {
+        await spcCreate();
+        widths["create, no message"] = await cycle("create, no message");
+        ran.push("create, no message");
+        assert.ok(widths["create, no message"] >= 270, `the create no-message pan is ${widths["create, no message"]}px`);
+        for (const state of STATES) {
+          await spcEdit();
+          await apply(state);
+          if (state === "a re-armed DELETE") {
+            const before = await b.eval(`return [document.getElementById("scale-del-note").textContent, msgLine.textContent];`);
+            assert.ok(before[0].length > 0 && before[1].length > 0, `no re-armed DELETE to collapse: ${JSON.stringify(before)}`);
+            await b.eval(`collapseLip(); return true;`);
+            await sleep(350);
+            const after = await b.eval(`return [document.getElementById("scale-del-note").textContent, msgLine.textContent, sheet.classList.contains("lipshut")];`);
+            assert.deepStrictEqual(after, ["", "", true], "collapsing the footer did not disarm DELETE and clear its message");
+            disarmed.push(state);
+            continue;
+          }
+          widths[state] = await cycle(state);
+          ran.push(state);
+        }
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+      assert.deepStrictEqual(ran, ["create, no message"].concat(STATES.filter((x) => x !== "a re-armed DELETE")));
+      assert.deepStrictEqual(disarmed, ["a re-armed DELETE"]);
+      console.log("SPC C5 pan widths:", JSON.stringify(widths));
+      assert.ok(widths["the notice with three ring-reset suffixes"] < widths["no message"] - 4, `guidance did not shrink the pan: ${JSON.stringify(widths)}`);
+    });
+
+    const spcShutPan = (call = "") => b.eval(`${call}
+      const q = document.getElementById("scale-preview").getBoundingClientRect();
+      return { w: q.width, h: q.height, lipped: sheet.classList.contains("lipped"), shut: sheet.classList.contains("lipshut"),
+        note: layoutNote.hidden ? "" : layoutNote.textContent };`);
+    const spcRestoreTrace = (want, tag) => b.eval(`
+      const out = [];
+      const read = () => { const q = document.getElementById("scale-preview").getBoundingClientRect(); return Math.round(q.width * 10) / 10; };
+      restoreLip();
+      const t0 = performance.now();
+      return new Promise((resolve) => {
+        const tick = () => {
+          out.push([Math.round(performance.now() - t0), read(), sheet.classList.contains("lipped")]);
+          if (performance.now() - t0 < 520) setTimeout(tick, 20); else resolve(out);
+        };
+        tick();
+      });`).then((trace) => {
+      const bad = trace.filter(([, w]) => Math.abs(w - want) > 0.5);
+      assert.ok(trace.some(([, , lipped]) => !lipped), `${tag}: the footer never finished opening`);
+      assert.deepStrictEqual(bad, [], `${tag}: the pan is not ${want}px at every frame of the restore, trace [ms, width, lipped]: ${JSON.stringify(trace.filter((x, i, a) => i === 0 || x[1] !== a[i - 1][1] || x[2] !== a[i - 1][2]))}`);
+    });
+
+    for (const mode of ["create", "Edit"]) {
+      test(`SPC: ${mode} at 844x390, a notice that appears or clears while the footer is shut resizes the pan to the open-footer size at once and the restore changes nothing`, async () => {
+        try {
+          if (mode === "create") await spcCreate(); else await spcEdit();
+          const open0 = await spcShutPan();
+          assert.strictEqual(open0.lipped, false);
+          assert.strictEqual(open0.note, "", "the sheet starts with a notice");
+          await b.eval(`collapseLip(); return true;`);
+          await sleep(350);
+          const shut0 = await spcShutPan();
+          assert.ok(shut0.lipped && shut0.shut, `${mode}: the footer is not shut`);
+          assert.ok(Math.abs(shut0.w - open0.w) <= 0.5, `${mode}: the shut pan is ${shut0.w}, the open one ${open0.w}`);
+          await b.eval(`document.getElementById("scale-anchor-between").click(); return true;`);
+          await b.settle();
+          await sleep(300);
+          const shut1 = await spcShutPan();
+          assert.ok(shut1.lipped && shut1.shut, `${mode}: the tap restored the footer`);
+          assert.match(shut1.note, /Layout not saved yet/, `${mode}: no notice appeared while shut`);
+          assert.ok(shut1.w < shut0.w - 4, `${mode}: a notice appeared while shut and the pan is still ${shut1.w}px (was ${shut0.w}px): it will shrink on restore`);
+          await spcRestoreTrace(shut1.w, `${mode}, notice appeared while shut`);
+          const open1 = await spcShutPan();
+          assert.strictEqual(open1.lipped, false);
+          assert.ok(Math.abs(open1.w - shut1.w) <= 0.5, `${mode}: the restored pan is ${open1.w}, the shut one was ${shut1.w}`);
+          await b.eval(`collapseLip(); return true;`);
+          await sleep(350);
+          await b.eval(`document.getElementById("scale-anchor-one").click(); return true;`);
+          await b.settle();
+          await sleep(300);
+          const shut2 = await spcShutPan();
+          assert.ok(shut2.lipped && shut2.shut && shut2.note === "", `${mode}: the notice did not clear while shut: ${JSON.stringify(shut2)}`);
+          assert.ok(Math.abs(shut2.w - open0.w) <= 0.5, `${mode}: the notice cleared while shut and the pan is ${shut2.w}px, not ${open0.w}px: it will grow on restore`);
+          await spcRestoreTrace(shut2.w, `${mode}, notice cleared while shut`);
+        } finally {
+          await b.setViewport(900, 900, false);
+        }
+      });
+    }
+
+    for (const mode of ["create", "Edit"]) {
+      test(`SPC: ${mode} rotating from 380x780 to 844x390 while the footer is shut sizes the pan for the new viewport and the restore changes nothing`, async () => {
+        try {
+          if (mode === "create") await spcCreate(380, 780); else await spcEdit(380, 780);
+          await b.eval(`collapseLip(); return true;`);
+          await sleep(350);
+          await b.setViewport(844, 390, true);
+          await b.settle();
+          await sleep(400);
+          const shut = await spcShutPan();
+          assert.ok(shut.lipped && shut.shut, `${mode}: the rotation did not leave the footer shut: ${JSON.stringify(shut)}`);
+          await spcRestoreTrace(shut.w, `${mode}, rotated while shut`);
+          const open = await spcShutPan();
+          assert.ok(Math.abs(open.w - shut.w) <= 0.5, `${mode}: the restored pan is ${open.w}, the shut one was ${shut.w}`);
+        } finally {
+          await b.setViewport(900, 900, false);
+        }
+      });
+    }
+
+    test("SPC: a size held by an earlier landscape session with a notice does not carry into the next one: opened in portrait, shut, then rotated, the restore does not grow the pan", async () => {
+      try {
+        await spcCreate();
+        await b.eval(`document.getElementById("scale-anchor-between").click(); return true;`);
+        await b.settle();
+        await sleep(300);
+        const withNote = await spcShutPan();
+        assert.match(withNote.note, /Layout not saved yet/);
+        await b.eval(`closeScaleSheet(); return true;`);
+        await b.waitFor(`!sheetOpen`, { label: "the sheet closing" });
+        await b.setViewport(380, 780, true);
+        await b.settle();
+        await sleep(300);
+        await openSheet();
+        await typeScale(SPC_KURD);
+        await toLayout();
+        await b.eval(`collapseLip(); return true;`);
+        await sleep(350);
+        await b.setViewport(844, 390, true);
+        await b.settle();
+        await sleep(400);
+        const shut = await spcShutPan();
+        assert.ok(shut.lipped && shut.shut, `the rotation did not leave the footer shut: ${JSON.stringify(shut)}`);
+        assert.strictEqual(shut.note, "", "the reopened sheet has a notice");
+        assert.ok(shut.w > withNote.w + 4, `shut with no message the pan is ${shut.w}px, the size an earlier noticed session held (${withNote.w}px): it will grow on restore`);
+        await spcRestoreTrace(shut.w, "stale hold from an earlier session");
+        const open = await spcShutPan();
+        assert.ok(open.w > withNote.w + 4, `the restored pan is ${open.w}px, the noticed session's was ${withNote.w}px`);
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    const spcSlide = (call, midCall = "", midAt = 60) => b.eval(`
+      const foot = document.getElementById("scale-footslide"), g = document.getElementById("scale-guidance");
+      const ev = [], samples = [];
+      const names = ["transitionrun", "transitionend", "transitioncancel"];
+      const log = (e) => { if (e.propertyName === "transform" || e.propertyName === "visibility") ev.push([e.type, e.target === foot ? "foot" : "guidance", e.propertyName, Math.round(performance.now() - t0)]); };
+      for (const el of [foot, g]) for (const n of names) el.addEventListener(n, log);
+      const ty = (el) => new DOMMatrix(getComputedStyle(el).transform).m42;
+      const t0 = performance.now();
+      ${call}
+      ${midCall ? `setTimeout(() => { ${midCall} }, ${midAt});` : ""}
+      return new Promise((resolve) => {
+        const frame = () => {
+          const t = performance.now() - t0;
+          samples.push([Math.round(t), Math.round(ty(foot) * 10) / 10, Math.round(ty(g) * 10) / 10, getComputedStyle(foot).visibility]);
+          if (t < 600) requestAnimationFrame(frame); else resolve({ ev, samples });
+        };
+        requestAnimationFrame(frame);
+      });`);
+    const spcAssertSlide = (r, tag, hides) => {
+      const cancels = r.ev.filter((e) => e[0] === "transitioncancel");
+      assert.deepStrictEqual(cancels, [], `${tag}: the slide was cancelled, events [type, element, property, ms]: ${JSON.stringify(r.ev)}`);
+      assert.ok(r.ev.some((e) => e[0] === "transitionend" && e[1] === "foot" && e[2] === "transform" && e[3] >= 120), `${tag}: #scale-footslide never ended its transform transition after the 180ms slide: ${JSON.stringify(r.ev)}`);
+      const fy = r.samples.map((s) => s[1]);
+      const lo = Math.min(...fy), hi = Math.max(...fy);
+      assert.ok(hi - lo > 8, `${tag}: #scale-footslide moved only ${hi - lo}px`);
+      const mid = new Set(fy.filter((v) => v > lo + 1 && v < hi - 1));
+      assert.ok(mid.size >= 2, `${tag}: #scale-footslide jumped from ${lo} to ${hi} without easing, transforms across frames ${JSON.stringify(r.samples.slice(0, 16).map((s) => [s[0], s[1]]))}`);
+      const gy = r.samples.map((s) => s[2]);
+      const glo = Math.min(...gy), ghi = Math.max(...gy);
+      if (ghi - glo > 8) assert.ok(new Set(gy.filter((v) => v > glo + 1 && v < ghi - 1)).size >= 2, `${tag}: the guidance jumped from ${glo} to ${ghi} without easing`);
+      if (hides) {
+        const first = r.samples.find((s) => s[3] === "hidden");
+        assert.ok(first && first[0] >= 140, `${tag}: #scale-footslide went hidden at ${first && first[0]}ms, not at the end of the slide`);
+      }
+    };
+
+    for (const mode of ["create", "Edit"]) {
+      for (const withNote of [false, true]) {
+        test(`SPC: ${mode} at 844x390 on the Layout tab with ${withNote ? "a notice" : "no message"}, a collapse and a restore ease the footer and the guidance over the slide and cancel nothing`, async () => {
+          try {
+            if (mode === "create") await spcCreate(); else await spcEdit();
+            if (withNote) {
+              await b.eval(`document.getElementById("scale-anchor-between").click(); return true;`);
+              await b.settle();
+              await sleep(300);
+            }
+            const shutting = await spcSlide(`collapseLip();`);
+            spcAssertSlide(shutting, `${mode}, ${withNote ? "notice" : "no message"}, collapse`, true);
+            const opening = await spcSlide(`restoreLip();`);
+            spcAssertSlide(opening, `${mode}, ${withNote ? "notice" : "no message"}, restore`, false);
+          } finally {
+            await b.setViewport(900, 900, false);
+          }
+        });
+      }
+    }
+
+    test("SPC: at 844x390 a notice that appears while the footer is shutting neither cancels the slide nor leaves a stale pan size, and the later restore changes nothing", async () => {
+      try {
+        await spcCreate();
+        const open0 = await spcShutPan();
+        const r = await spcSlide(`collapseLip();`, `document.getElementById("scale-anchor-between").click();`, 60);
+        const cancels = r.ev.filter((e) => e[0] === "transitioncancel");
+        assert.deepStrictEqual(cancels, [], `a notice during SHUTTING cancelled the slide: ${JSON.stringify(r.ev)}`);
+        const shut = await spcShutPan();
+        assert.ok(shut.lipped && shut.shut, `the footer is not shut: ${JSON.stringify(shut)}`);
+        assert.match(shut.note, /Layout not saved yet/, "no notice appeared during the slide");
+        assert.ok(shut.w < open0.w - 4, `the notice appeared mid-slide and the pan is still ${shut.w}px (was ${open0.w}px): it will shrink on restore`);
+        await spcRestoreTrace(shut.w, "notice during SHUTTING");
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    /* Regroup (review 4): the open-footer room is derived (lipDelta), never measured, so a guidance or viewport change
+     * in ANY lip state sizes the pan at the event. The lip is driven by real CDP wheel events. A wheel scroll right after
+     * a collapse or restore first re-bases lipScroll's range (the range differs shut and open), so a -10 primer
+     * precedes the -100 that restores. The reversing gesture cancels the running transition by spec (2 cancels in
+     * SHUT-rev, 3 in OPENING-rev, measured with no event); the app's own cancels are counted after the retargeted
+     * slide's transitionrun, once the log is cleared. */
+    const spcWheel = (dy) => b.send("Input.dispatchMouseEvent", { type: "mouseWheel", x: 300, y: 200, deltaX: 0, deltaY: dy });
+    const spcPrime = () => spcWheel(-10);
+    const spcLog = () => b.eval(`
+      window.__spcEv = [];
+      if (!window.__spcLogged) {
+        window.__spcLogged = true;
+        const f = document.getElementById("scale-footslide"), g = document.getElementById("scale-guidance");
+        for (const n of ["transitionrun", "transitioncancel"]) for (const el of [f, g]) el.addEventListener(n, (e) => {
+          if (e.propertyName === "transform" || e.propertyName === "visibility") window.__spcEv.push([e.type, e.target === f ? "foot" : "guidance", e.propertyName, Math.round(performance.now())]);
+        });
+      }
+      return true;`);
+    const spcGesture = async (dy) => {
+      await b.eval(`window.__spcMark = performance.now(); return true;`);
+      await spcWheel(dy);
+      await b.waitFor(`window.__spcEv.some((e) => e[0] === "transitionrun" && e[1] === "foot" && e[2] === "transform" && e[3] >= window.__spcMark)`, { label: "the retargeted slide's transitionrun" });
+    };
+    const spcClearLog = () => b.eval(`const n = window.__spcEv.filter((e) => e[0] === "transitioncancel").length; window.__spcEv.length = 0; return n;`);
+    const spcDrive = async (state) => {
+      await spcLog();
+      if (state === "SHUTTING") { await spcGesture(100); return spcClearLog(); }
+      if (state === "OPENING-rev") {
+        await spcWheel(100);
+        await sleep(25);
+        await spcPrime();
+        await sleep(25);
+        await spcGesture(-100);
+        return spcClearLog();
+      }
+      await spcWheel(100);
+      await sleep(400);
+      await spcPrime();
+      await sleep(100);
+      if (state === "OPENING") { await spcGesture(-100); return spcClearLog(); }
+      await spcWheel(-100);
+      await sleep(40);
+      await spcGesture(100);
+      const pre = await spcClearLog();
+      await sleep(400);
+      return pre;
+    };
+    const spcSampler = (ms) => b.eval(`
+      window.__spcW = [];
+      const t0 = performance.now();
+      const f = () => {
+        const t = performance.now(), body = document.querySelector(".sheetbody");
+        window.__spcW.push([Math.round(t), Math.round(document.getElementById("scale-preview").getBoundingClientRect().width * 10) / 10,
+          sheet.classList.contains("lipped"), sheet.classList.contains("lipshut"), Math.round(plateBand.getBoundingClientRect().bottom * 10) / 10, Math.round(body.getBoundingClientRect().bottom * 10) / 10]);
+        if (t - t0 < ${ms}) requestAnimationFrame(f);
+      };
+      requestAnimationFrame(f);
+      return true;`);
+    const SPC_WARN = "Crowded pan: the labels are small. Keep every note you can reach on the pan before you press the button below, and a few more words so that this line wraps onto a second line even on a wide sheet.";
+    const spcFire = async (ev) => {
+      const mark = `window.__spcT = performance.now();`;
+      if (ev === "notice") await b.eval(`${mark} document.getElementById("scale-anchor-between").click(); return true;`);
+      else if (ev === "clear") await b.eval(`${mark} document.getElementById("scale-anchor-one").click(); return true;`);
+      else if (ev === "warn") await b.eval(`${mark} say(${JSON.stringify(SPC_WARN)}, "warn"); return true;`);
+      else if (ev === "rotate") { await b.eval(`${mark} return true;`); await b.setViewport(740, 360, true); }
+      else throw new Error("unknown event " + ev);
+    };
+    const spcPan = () => b.eval(`return Math.round(document.getElementById("scale-preview").getBoundingClientRect().width * 10) / 10;`);
+    /* One cell: drive to `state`, fire `ev`, sample every frame, restore if still shut, and judge the samples. */
+    const spcCell = async (mode, state, ev) => {
+      if (mode === "create") await spcCreate(); else await spcEdit();
+      if (ev === "clear") {
+        await b.eval(`document.getElementById("scale-anchor-between").click(); return true;`);
+        await b.settle();
+        await sleep(300);
+      }
+      const before = await spcPan();
+      const gestureCancels = await spcDrive(state);
+      await spcSampler(1000);
+      await spcFire(ev);
+      await sleep(state === "OPENING" || state === "OPENING-rev" ? 260 : 150);
+      const mid = await b.eval(`return { lipped: sheet.classList.contains("lipped"), shut: sheet.classList.contains("lipshut") };`);
+      if (mid.lipped) {
+        await spcPrime();
+        await sleep(100);
+        await spcWheel(-100);
+      }
+      await sleep(480);
+      const r = await b.eval(`return { T: window.__spcT, W: window.__spcW, cancels: window.__spcEv.filter((e) => e[0] === "transitioncancel"), ev: window.__spcEv };`);
+      return { before, gestureCancels, mid, ...r };
+    };
+    const spcJudge = (tag, c, { within = 50 } = {}) => {
+      const last = c.W[c.W.length - 1];
+      assert.strictEqual(last[2], false, `${tag}: the footer never finished opening, last sample ${JSON.stringify(last)}`);
+      const want = last[1];
+      assert.ok(Math.abs(want - c.before) > 4, `${tag}: the event did not change the open-footer size (${c.before} before, ${want} after)`);
+      const after = c.W.filter((s) => s[0] >= c.T);
+      const reached = after.find((s) => Math.abs(s[1] - want) <= 0.5);
+      const trace = JSON.stringify(after.filter((x, i, a) => i === 0 || x[1] !== a[i - 1][1] || x[2] !== a[i - 1][2] || x[3] !== a[i - 1][3]).map((s) => [s[0] - Math.round(c.T), s[1], s[2] ? (s[3] ? "S" : "O") : "-"]));
+      assert.ok(reached, `${tag}: the pan never reached ${want}px, trace [ms from the event, width, S shut / O opening / - open]: ${trace}`);
+      assert.ok(reached[2], `${tag}: the pan reached ${want}px only after the footer opened: it resized at the restore, not at the event, trace [ms, width, state]: ${trace}`);
+      assert.ok(reached[0] - c.T <= within, `${tag}: the pan took ${Math.round(reached[0] - c.T)}ms to reach ${want}px after the event, more than ${within}ms, trace [ms, width, state]: ${trace}`);
+      const wobble = after.filter((s) => s[0] > reached[0] && Math.abs(s[1] - want) > 0.5);
+      assert.deepStrictEqual(wobble, [], `${tag}: the pan changed after it reached ${want}px, trace [ms, width, state]: ${trace}`);
+      /* A rAF callback runs before the frame's ResizeObserver delivery, so the event's own first frame is unpainted layout: skip it. */
+      const past = after.filter((s) => s[0] > c.T + 20 && s[2] && s[4] > s[5] + 0.5);
+      assert.deepStrictEqual(past, [], `${tag}: the plate band ends below the scrollport while the footer is lipped, samples [t, w, lipped, shut, band bottom, port bottom]: ${JSON.stringify(past.slice(0, 3))}`);
+      assert.deepStrictEqual(c.cancels, [], `${tag}: the app cancelled the slide after the gesture's own ${c.gestureCancels} cancels, events [type, element, property, ms]: ${JSON.stringify(c.ev)}`);
+      console.log(`${tag}: reversing gesture cancelled ${c.gestureCancels} transitions (the control); pan ${c.before} -> ${want} in ${Math.round(reached[0] - c.T)}ms`);
+    };
+
+    for (const mode of ["create", "Edit"]) {
+      test(`SPC: ${mode} at 844x390, after a restore reversed into a collapse, a notice that appears or clears while shut resizes the pan to the open-footer size at once and the restore changes nothing`, async () => {
+        try {
+          for (const ev of ["notice", "clear"]) spcJudge(`${mode}, SHUT-rev, ${ev}`, await spcCell(mode, "SHUT-rev", ev));
+        } finally {
+          await b.setViewport(900, 900, false);
+        }
+      });
+    }
+
+    for (const mode of ["create", "Edit"]) {
+      test(`SPC: ${mode} at 844x390, after a restore reversed into a collapse, a two-line warning while shut resizes the pan at once and the restore changes nothing`, async () => {
+        try {
+          const c = await spcCell(mode, "SHUT-rev", "warn");
+          const h = await b.eval(`return msgLine.getBoundingClientRect().height;`);
+          assert.ok(h >= 35.5, `${mode}: the warning is ${h}px, under two lines`);
+          spcJudge(`${mode}, SHUT-rev, warn`, c);
+        } finally {
+          await b.setViewport(900, 900, false);
+        }
+      });
+    }
+
+    for (const mode of ["create", "Edit"]) {
+      test(`SPC: ${mode} after a restore reversed into a collapse at 844x390, a rotation to 740x360 while shut sizes the pan for the new viewport and the restore changes nothing`, async () => {
+        try {
+          spcJudge(`${mode}, SHUT-rev, rotate`, await spcCell(mode, "SHUT-rev", "rotate"));
+        } finally {
+          await b.setViewport(900, 900, false);
+        }
+      });
+    }
+
+    test("SPC: at 844x390, after a restore reversed into a collapse and a notice while shut, the restore eases the guidance over the slide", async () => {
+      try {
+        await spcCreate();
+        await spcDrive("SHUT-rev");
+        await b.eval(`document.getElementById("scale-anchor-between").click(); return true;`);
+        await b.settle();
+        await sleep(400);
+        await b.eval(`
+          window.__spcG = [];
+          const f = () => { const t = performance.now(); window.__spcG.push([Math.round(t), Math.round(document.getElementById("scale-guidance").getBoundingClientRect().top * 10) / 10, sheet.classList.contains("lipshut")]); if (t < window.__spcG0 + 700) requestAnimationFrame(f); };
+          window.__spcG0 = performance.now();
+          requestAnimationFrame(f);
+          return true;`);
+        await sleep(100);
+        await spcPrime();
+        await sleep(100);
+        await spcWheel(-100);
+        await sleep(700);
+        const g = await b.eval(`return window.__spcG;`);
+        const at = g.findIndex((s, i) => i > 0 && g[i - 1][2] && !s[2]);
+        assert.ok(at > 0, `the footer never started to open: ${JSON.stringify(g.slice(0, 5))}`);
+        const t0 = g[at][0], start = g[at - 1][1], end = g[g.length - 1][1];
+        assert.ok(Math.abs(end - start) > 8, `the guidance does not move over the restore (${start} to ${end})`);
+        const lo = Math.min(start, end), hi = Math.max(start, end);
+        const sample = g.filter((s) => s[0] - t0 >= 70 && s[0] - t0 <= 110);
+        assert.ok(sample.length > 0, "no frame sampled 70 to 110ms into the restore");
+        const flat = sample.filter((s) => s[1] <= lo + 1 || s[1] >= hi - 1);
+        assert.deepStrictEqual(flat, [], `the guidance sits at its start or end value about 90ms into the restore instead of easing between ${start} and ${end}, samples [t, top] ${JSON.stringify(g.filter((s) => s[0] >= t0 - 20).filter((x, i) => i % 3 === 0).map((s) => [s[0] - t0, s[1]]))}`);
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    for (const mode of ["create", "Edit"]) {
+      test(`SPC: ${mode} at 844x390, a notice that appears while the footer is opening, or while a collapse is reversed into a restore, resizes the pan within one frame of the notice, not after the restore ends`, async () => {
+        try {
+          for (const state of ["OPENING", "OPENING-rev"]) spcJudge(`${mode}, ${state}, notice`, await spcCell(mode, state, "notice"), { within: 40 });
+        } finally {
+          await b.setViewport(900, 900, false);
+        }
+      });
+    }
+
+    test("SPC: at 844x390, a notice that appears while the footer is shutting resizes the pan within one frame, not at the settle", async () => {
+      try {
+        spcJudge("create, SHUTTING, notice", await spcCell("create", "SHUTTING", "notice"), { within: 40 });
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("SPC: at 844x390 a primary that grows while the footer is shut resizes the pan within one frame, with the restore then changing nothing", async () => {
+      try {
+        await spcCreate();
+        await spcWheel(100);
+        await sleep(400);
+        await spcPrime();
+        await sleep(100);
+        const before = await spcPan();
+        await spcSampler(900);
+        await sleep(50);
+        /* A style write: no wheel or tap can make the primary taller, so this one goes through eval. */
+        await b.eval(`window.__spcT = performance.now(); const lead = lipPrimary(); lead.style.minHeight = (lead.getBoundingClientRect().height + 24) + "px"; return true;`);
+        await sleep(250);
+        await spcWheel(-100);
+        await sleep(700);
+        const c = await b.eval(`return { T: window.__spcT, W: window.__spcW };`);
+        const last = c.W[c.W.length - 1];
+        assert.strictEqual(last[2], false, `the footer never finished opening: ${JSON.stringify(last)}`);
+        const want = last[1];
+        assert.ok(before - want >= 10, `a taller primary did not shrink the open-footer size (${before} before, ${want} after)`);
+        const after = c.W.filter((s) => s[0] >= c.T);
+        const reached = after.find((s) => Math.abs(s[1] - want) <= 0.5);
+        const trace = JSON.stringify(after.filter((x, i, a) => i === 0 || x[1] !== a[i - 1][1] || x[2] !== a[i - 1][2]).map((s) => [s[0] - Math.round(c.T), s[1], s[2] ? "lipped" : "open"]));
+        assert.ok(reached && reached[2], `the pan reached ${want}px only at the restore, not while shut, trace [ms from the change, width, state]: ${trace}`);
+        assert.ok(reached[0] - c.T <= 40, `the pan took ${Math.round(reached[0] - c.T)}ms to follow the taller primary, trace [ms, width, state]: ${trace}`);
+        assert.deepStrictEqual(after.filter((s) => s[0] > reached[0] && Math.abs(s[1] - want) > 0.5), [], `the pan changed after it followed the primary, trace [ms, width, state]: ${trace}`);
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    /* A guard on the identity the derivation rests on: the shut pan equals the open-footer pan at landscape
+     * viewports. The footer is collapsed and restored through collapseLip/restoreLip; no timing is under test here. */
+    test("SPC: the pan width while the footer is shut equals the open-footer room measured after the restore, at 844x390 create and Edit, 740x360 create and 926x428 Edit, with no message, a notice and a two-line warning", { timeout: 240000 }, async () => {
+      const ran = [];
+      try {
+        for (const [w, h, mode] of [[844, 390, "create"], [844, 390, "Edit"], [740, 360, "create"], [926, 428, "Edit"]]) {
+          if (mode === "create") await spcCreate(w, h); else await spcEdit(w, h);
+          for (const state of ["no message", "a notice", "a two-line warning"]) {
+            if (state === "a notice") await b.eval(`document.getElementById("scale-anchor-between").click(); return true;`);
+            if (state === "a two-line warning") await b.eval(`document.getElementById("scale-anchor-one").click(); say(${JSON.stringify(SPC_WARN)}, "warn"); return true;`);
+            await b.settle();
+            await sleep(250);
+            const tag = `${mode}, ${w}x${h}, ${state}`;
+            assert.strictEqual(await b.eval(`return platesBeside();`), true, `${tag}: the plate is not beside the controls`);
+            await b.eval(`collapseLip(); return true;`);
+            await sleep(260);
+            const shutW = await spcPan();
+            await b.eval(`restoreLip(); return true;`);
+            await sleep(260);
+            const openW = await spcPan();
+            assert.strictEqual(await b.eval(`return sheet.classList.contains("lipped");`), false, `${tag}: the footer did not reopen`);
+            assert.ok(Math.abs(shutW - openW) <= 0.5, `${tag}: the pan is ${shutW}px while shut and ${openW}px once the footer is open`);
+            ran.push(tag);
+          }
+        }
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+      assert.strictEqual(ran.length, 12);
+    });
+
+    test("SPC: at 380x780 and 380x667 the drawer status keeps its 81ad610 rect relative to the plate at the top of the scroll and stays pinned under the band at the end", async () => {
+      const ran = [];
+      try {
+        for (const [w, h] of [[380, 780], [380, 667]]) {
+          await spcCreate(w, h);
+          await b.eval(`layoutStatus("Top mirror on."); return true;`);
+          await b.settle();
+          for (const where of ["top", "end"]) {
+            await scrollTo(where);
+            const m = await b.eval(`
+              const r = (el) => { const q = el.getBoundingClientRect(); return { l: q.left, t: q.top, r: q.right, b: q.bottom, w: q.width, h: q.height }; };
+              const body = document.querySelector(".sheetbody");
+              return { body: r(body), st: body.scrollTop, M: body.scrollHeight - body.clientHeight, band: r(plateBand),
+                pan: r(document.getElementById("scale-preview")), status: r(drawerStatus), zone: r(document.getElementById("scale-layout-zone")),
+                text: drawerStatus.textContent };`);
+            const tag = `${w}x${h}, scroll ${where}`;
+            assert.strictEqual(m.text, "Top mirror on.");
+            assert.ok(m.M > 0, `${tag}: no scroll range`);
+            if (where === "top") {
+              assert.strictEqual(m.st, 0);
+              assert.ok(Math.abs(m.status.l - m.pan.l) <= 0.5 && Math.abs(m.status.w - m.pan.w) <= 0.5, `${tag}: the status [${m.status.l}, ${m.status.w}] is not the plate's [${m.pan.l}, ${m.pan.w}]`);
+              assert.ok(Math.abs(m.status.h - 36) <= 0.5, `${tag}: the status is ${m.status.h}px, the 81ad610 rect is 36`);
+              assert.ok(Math.abs(m.status.t - m.pan.b - 4) <= 0.5, `${tag}: the status sits ${m.status.t - m.pan.b}px under the plate, the 81ad610 gap is 4`);
+            } else {
+              assert.ok(m.st >= m.M - 1, `${tag}: scrollTop ${m.st} is not the end ${m.M}`);
+              assert.ok(Math.abs(m.band.t - m.body.t) <= 1, `${tag}: the band is at ${m.band.t}, not pinned at ${m.body.t}`);
+              assert.ok(Math.abs(m.status.t - m.band.b) <= 1, `${tag}: the status top ${m.status.t} is not under the band bottom ${m.band.b}`);
+              assert.ok(m.status.b <= m.body.b + 0.5 && m.status.t >= m.body.t, `${tag}: the status is outside the scrollport`);
+              assert.ok(Math.abs(m.status.h - 36) <= 0.5, `${tag}: the status is ${m.status.h}px`);
+            }
+            ran.push(tag);
+          }
+        }
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+      assert.deepStrictEqual(ran, ["380x780, scroll top", "380x780, scroll end", "380x667, scroll top", "380x667, scroll end"]);
     });
   });
 
