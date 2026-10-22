@@ -8,9 +8,9 @@ Chord flashcards and chord progressions for handpan scales. It runs in the brows
 - NAME → NOTES shows the chord name, then the notes. NOTES → NAME shows the lit pan, and you name the chord.
 - A card shows the pan with every field of the chord's pitch classes lit, the root in one colour and the other tones in another. Below it are the notes and field numbers, in order from the root.
 - The Chord progression group in the menu (EASY, MEDIUM, HARD) gives a loop of 2 to 6 chords to play.
-- The browser remembers your deck, mode, progression tier and paper size.
+- The browser remembers your scale, mode, progression tier and paper size.
 
-## Decks
+## Scales
 
 - D Kurd 10: 49 cards
 - D Amara 10: 29 cards
@@ -24,13 +24,13 @@ Chord flashcards and chord progressions for handpan scales. It runs in the brows
 
 - Menu, then + ADD A SCALE. Type the notes low to high on one line: the ding in round brackets, bottom notes in square brackets, a `|` before inner notes. Example: `[C] (D) A C D E F G A C`. Then GENERATE CARDS.
 - ADJUST LAYOUT under the preview mirrors or reorders fields to match your pan.
-- Tap the selected deck's chip (it has a pencil) to edit or delete it. You can edit built-in decks the same way; RESET SEEDED DECKS brings them back.
-- Scales stay in this browser. The link icon in the header copies a link that opens the deck on any device.
-- A deck id comes from a 32-bit hash of its notes. Two different scales can share an id, and then only one is kept.
+- Tap the selected scale's chip (it has a pencil) to edit or delete it. You can edit built-in scales the same way; RESET SEEDED SCALES brings them back.
+- Scales stay in this browser. The link icon in the header copies a link that opens the scale on any device.
+- A scale's id comes from a 32-bit hash of its notes. Two different scales can share an id, and then only one is kept.
 
 ## Printing
 
-DOWNLOAD PDF in the menu builds the chord cards for the shown deck in the browser. Pick Letter or A4. The cards are poker size, 3x3 per sheet. Print at 100% and check the calibration bar with a ruler.
+DOWNLOAD PDF in the menu builds the chord cards for the shown scale in the browser. Pick Letter or A4. The cards are poker size, 3x3 per sheet. Print at 100% and check the calibration bar with a ruler.
 
 The three `*_CHORD_ONLY_Letter.pdf` files in the repo root are the print-shop copies, built by `python3 tools/decks.py`.
 

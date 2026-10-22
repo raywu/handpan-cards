@@ -114,10 +114,10 @@ diff --git a/index.html b/index.html
 +    <div class="modebar">
 +      <button class="mode" type="button" id="deck-add" aria-haspopup="dialog">+ ADD A SCALE</button>
 +    </div>
-+    <button class="mode" type="button" id="deck-restore" hidden>RESET SEEDED DECKS</button>
++    <button class="mode" type="button" id="deck-restore" hidden>RESET SEEDED SCALES</button>
 +  </div>
 +  <div class="panel-group">
-+    <h3 class="panel-heading">Print this deck</h3>
++    <h3 class="panel-heading">Print this scale</h3>
 +    <div class="prints">
 +      <button type="button" id="print-download" onclick="downloadDeckPDF('shop', this); closePanel();">DOWNLOAD PDF</button>
 +      <!-- The paper choice keeps the panel open (design direction, "After an
@@ -212,10 +212,10 @@ diff --git a/index.html b/index.html
 -    <div class="modebar">
 -      <button class="mode" type="button" id="deck-add" aria-haspopup="dialog">+ ADD A SCALE</button>
 -    </div>
--    <button class="mode" type="button" id="deck-restore" hidden>RESET SEEDED DECKS</button>
+-    <button class="mode" type="button" id="deck-restore" hidden>RESET SEEDED SCALES</button>
 -  </div>
 -  <div class="panel-group">
--    <h3 class="panel-heading">Print this deck</h3>
+-    <h3 class="panel-heading">Print this scale</h3>
 -    <div class="prints">
 -      <button type="button" id="print-download" onclick="downloadDeckPDF('shop', this); closePanel();">DOWNLOAD PDF</button>
 -      <!-- The paper choice keeps the panel open (design direction, "After an

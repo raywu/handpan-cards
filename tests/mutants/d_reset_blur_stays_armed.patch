@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10271,7 +10271,6 @@ restoreBtn.onclick = () => {
-   say("Seeded decks restored." + (stays ? "" : " Showing " + deck().name + "."), "ok");
+@@ -12192,7 +12192,6 @@ restoreBtn.onclick = () => {
+   say("Seeded scales restored." + (stays ? "" : " Showing " + deck().name + "."), "ok");
    addChip.focus();
  };
 -restoreBtn.onblur = disarmReset;
