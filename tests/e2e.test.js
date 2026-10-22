@@ -15461,14 +15461,14 @@ function run() {
       const gestureCancels = await spcDrive(state);
       await spcSampler(1000);
       await spcFire(ev);
-      await sleep(state === "OPENING" || state === "OPENING-rev" ? 350 : 200);
+      await sleep(state === "OPENING" || state === "OPENING-rev" ? 260 : 150);
       const mid = await b.eval(`return { lipped: sheet.classList.contains("lipped"), shut: sheet.classList.contains("lipshut") };`);
       if (mid.lipped) {
         await spcPrime();
         await sleep(100);
         await spcWheel(-100);
       }
-      await sleep(700);
+      await sleep(480);
       const r = await b.eval(`return { T: window.__spcT, W: window.__spcW, cancels: window.__spcEv.filter((e) => e[0] === "transitioncancel"), ev: window.__spcEv };`);
       return { before, gestureCancels, mid, ...r };
     };
@@ -15612,23 +15612,25 @@ function run() {
     test("SPC: the pan width while the footer is shut equals the open-footer room measured after the restore, at 844x390, 740x360 and 926x428, create and Edit, with no message, a notice and a two-line warning", { timeout: 240000 }, async () => {
       const ran = [];
       try {
-        for (const [w, h] of [[844, 390], [740, 360], [926, 428]]) for (const mode of ["create", "Edit"]) for (const state of ["no message", "a notice", "a two-line warning"]) {
+        for (const [w, h] of [[844, 390], [740, 360], [926, 428]]) for (const mode of ["create", "Edit"]) {
           if (mode === "create") await spcCreate(w, h); else await spcEdit(w, h);
-          if (state === "a notice") await b.eval(`document.getElementById("scale-anchor-between").click(); return true;`);
-          if (state === "a two-line warning") await b.eval(`say(${JSON.stringify(SPC_WARN)}, "warn"); return true;`);
-          await b.settle();
-          await sleep(300);
-          const tag = `${mode}, ${w}x${h}, ${state}`;
-          assert.strictEqual(await b.eval(`return platesBeside();`), true, `${tag}: the plate is not beside the controls`);
-          await b.eval(`collapseLip(); return true;`);
-          await sleep(400);
-          const shutW = await spcPan();
-          await b.eval(`restoreLip(); return true;`);
-          await sleep(450);
-          const openW = await spcPan();
-          assert.strictEqual(await b.eval(`return sheet.classList.contains("lipped");`), false, `${tag}: the footer did not reopen`);
-          assert.ok(Math.abs(shutW - openW) <= 0.5, `${tag}: the pan is ${shutW}px while shut and ${openW}px once the footer is open`);
-          ran.push(tag);
+          for (const state of ["no message", "a notice", "a two-line warning"]) {
+            if (state === "a notice") await b.eval(`document.getElementById("scale-anchor-between").click(); return true;`);
+            if (state === "a two-line warning") await b.eval(`document.getElementById("scale-anchor-one").click(); say(${JSON.stringify(SPC_WARN)}, "warn"); return true;`);
+            await b.settle();
+            await sleep(250);
+            const tag = `${mode}, ${w}x${h}, ${state}`;
+            assert.strictEqual(await b.eval(`return platesBeside();`), true, `${tag}: the plate is not beside the controls`);
+            await b.eval(`collapseLip(); return true;`);
+            await sleep(260);
+            const shutW = await spcPan();
+            await b.eval(`restoreLip(); return true;`);
+            await sleep(260);
+            const openW = await spcPan();
+            assert.strictEqual(await b.eval(`return sheet.classList.contains("lipped");`), false, `${tag}: the footer did not reopen`);
+            assert.ok(Math.abs(shutW - openW) <= 0.5, `${tag}: the pan is ${shutW}px while shut and ${openW}px once the footer is open`);
+            ran.push(tag);
+          }
         }
       } finally {
         await b.setViewport(900, 900, false);
