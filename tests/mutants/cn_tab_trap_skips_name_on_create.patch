@@ -1,0 +1,15 @@
+# kills: CN6: the Add Scale-tab Tab order is BACK, tab, DECK NAME, DING, TOP, INNER, BOTTOM, scale box, NEXT
+# suite: node --test --test-name-pattern ^CN6 tests/app.test.js
+# The Tab trap lists the name box only on Edit again.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12743,7 +12743,7 @@ sheet.addEventListener("keydown", e => {
+        notePrev, noteNext, seatPrev, seatNext, resetBtn,
+        ...swatches.children, shut ? lipBtn : genBtn, editingId && !shut ? delBtn : null]
+     : [backBtn, onTab,
+-       nameBox,
++       editingId ? nameBox : null,
+        fieldEls.ding, fieldEls.top, fieldEls.inner, fieldEls.bottom,
+        scaleBox,
+        shut ? lipBtn : editingId ? genBtn : nextBtn,

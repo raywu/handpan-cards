@@ -12993,10 +12993,12 @@ describe("CN: DECK NAME on the Add sheet", () => {
     assert.strictEqual(Boolean(app.els["scale-tab-layout"].disabled), false, "the refused name disabled the Layout tab");
     assert.strictEqual(app.els["scale-generate"].disabled, true);
     assert.notStrictEqual(app.els["scale-refusal"].textContent, "", "no name refusal shown");
+    app.click(app.els["scale-tab-layout"]);
+    assert.strictEqual(app.els["scale-fine-toggle"].disabled, false, "the Layout controls were disabled under a refused name");
     assert.deepStrictEqual(Object.keys(app.registry()), []);
   });
 
-  test("CN5: a name refused only at the GENERATE click shows the engine reason and keeps the sheet open", () => {
+  test("CN5b: a name refused only at the GENERATE click shows the engine reason and keeps the sheet open", () => {
     const app = boot();
     openSheet(app);
     typeName(app, "OK NAME");
