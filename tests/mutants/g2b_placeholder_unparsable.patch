@@ -8,8 +8,8 @@ diff --git a/index.html b/index.html
          <textarea id="scale-box" rows="1" wrap="soft" autocapitalize="off" autocorrect="off"
                    autocomplete="off" spellcheck="false" enterkeyhint="go"
                    aria-describedby="scale-label-2"
--                  placeholder="[C] [D] (E) [F#] [G] [A] B [C] D E F# G A B [C] D E | F# G A"></textarea>
-+                  placeholder="[C] [D] (E) [F#] [G] [A] B [C] D E F# G A B [C] D E / F# G A"></textarea>
+-                  placeholder="[C3] [D3] (E3) [F#3] [G3] [A3] B3 [C4] D4 E4 F#4 G4 A4 B4 [C5] D5 E5 | F#5 G5 A5"></textarea>
++                  placeholder="[C3] [D3] (E3) [F#3] [G3] [A3] B3 [C4] D4 E4 F#4 G4 A4 B4 [C5] D5 E5 / F#5 G5 A5"></textarea>
        </div>
        <div id="scale-parse"></div>
        <!-- Owner feedback, 2026-09-21: a refusal rendered below the pan is
