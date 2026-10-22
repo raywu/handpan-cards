@@ -98,6 +98,10 @@ no committed PDF; the app builds theirs in the browser.
   instruction. Layouts were verified against the physical instruments and
   some look "wrong" against generic handpan references - they are not.
 - **Preserve the visual system** (fonts, palettes, card anatomy below).
+- **Visible text says "scale", never "deck".** Identifiers, ids, `#deck=` routes, storage keys,
+  analytics events and code comments keep "deck" ("DS1: no served text, attribute, JSON-LD value
+  or app-script string literal says deck"; "DS2: the seeded arming note, the custom arming note,
+  RESET idle and armed and its warning say scale, exactly").
 
 ## Instrument layouts (verified - do not "correct")
 
@@ -443,11 +447,11 @@ pitch classes (midi % 12), never stored.
   `fallbackDeck()`: the default deck (or its replacement) if visible, else the
   first visible deck, custom decks first. A stored id of a hidden deck is NOT honoured. A stored id of a
   replaced seed shows its replacement, whichever seed it is (`deck()` consults
-  `replacements()` before `fallbackDeck()`), and boot says "That deck is gone."
+  `replacements()` before `fallbackDeck()`), and boot says "That scale is gone."
   only when the deck shown is not that replacement. A replacement outranks a
   hidden seed.
   Hidden ids live in the `hidden` field of the `hpfc` blob, written only when
-  non-empty; there is no separate `hpfc.hidden` key. RESET SEEDED DECKS
+  non-empty; there is no separate `hpfc.hidden` key. RESET SEEDED SCALES
   (`#deck-restore`) clears `hidden` and every record whose `replaces` names a
   seed (older records naming the same seed included), keeps plain custom
   decks, and moves to `fallbackDeck()` only if the selected deck is gone.
@@ -486,7 +490,7 @@ pitch classes (midi % 12), never stored.
   it with `replaceState` and never `pushState` ("SU: tapping three chips writes
   three replaceState hashes and no pushState"; `tests/e2e.test.js` "edge 1:
   three chip taps rewrite the bar each time and add no history entry"). It writes from four places: the end of `selectDeck` (chip taps, SAVE, DELETE,
-  RESET SEEDED DECKS: "SU: DELETE of the shown custom deck writes the fallback
+  RESET SEEDED SCALES: "SU: DELETE of the shown custom deck writes the fallback
   deck's route", "SU: RESET SEEDED DECKS while showing Kurd's replacement writes
   #deck=d-kurd-10"), the end of the boot (a hashless boot, a consumed `#s=` or a
   refused one: "SU: a hashless boot on a stored custom deck ends with its #s= in

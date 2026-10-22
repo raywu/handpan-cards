@@ -13134,6 +13134,7 @@ describe("DS: the visible word is scale", () => {
     assert.strictEqual(app.announcer().textContent, "Tap again to restore all seeded scales. Your edits to them will be gone.");
     reset.click();
     assert.match(app.announcer().textContent, /^Seeded scales restored\./);
+    assert.strictEqual(reset.textContent, "RESET SEEDED SCALES");
   });
 
   test("DS2b: a boot on a hidden seed says That scale is gone,", () => {
