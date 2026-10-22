@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1076,7 +1076,7 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1146,7 +1146,7 @@ footer.seq{row-gap:var(--sp-1)}
  #scale-fields-note:empty, #scale-line-note:empty{display:none}
  #scale-fields-note, #scale-line-note{color:#a79d8b}
  /* The passive path: a read-only look that stays tappable, text kept legible. */
 -#scale-fields.passive input, #scale-box.passive{color:#b3aa98; background:transparent; border-style:dashed; border-color:#4a4233}
 +#scale-fields.passive input, #scale-box.passive{color:#5a5244; background:transparent; border-style:dashed; border-color:#4a4233}
  #scale-fields.stale input, #scale-box.stale{text-decoration:line-through; text-decoration-color:#e3b25c}
- #scale-fields.stale #scale-fields-note, #scale-box-wrap.passive ~ #scale-line-note.stale{color:#e3b25c}
+ #scale-fields.stale #scale-fields-note{color:#e3b25c}
  #scale-box-wrap.passive ~ #scale-parse{display:none}
