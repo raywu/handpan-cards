@@ -13,7 +13,7 @@ diff --git a/index.html b/index.html
 @@ -8263,7 +8263,7 @@ function runGenerate() {
      // so this composes no sentence that could pass for one and carries no code.
      scaleBox.classList.add("bad");
-     refusal = "Another deck already uses this scale.";
+     refusal = "Another scale already has these notes.";
 -    showRefusal(refusal);
 +    say(refusal, "err");
      return;

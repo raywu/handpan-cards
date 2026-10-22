@@ -19,9 +19,9 @@ diff --git a/index.html b/index.html
    const seatedDeck = isBuiltIn(target) || (typeof seat === "string" && replacements()[seat] === d);
 -  delNote.textContent = seatedDeck
 +  showRefusal(seatedDeck
-     ? "Tap again to remove " + d.name + ". RESET SEEDED DECKS in the menu brings the seeded decks back."
--    : "Tap again to remove " + (d ? d.name : "this deck") + ". This cannot be undone.";
-+    : "Tap again to remove " + (d ? d.name : "this deck") + ". This cannot be undone.");
+     ? "Tap again to remove " + d.name + ". RESET SEEDED SCALES in the menu brings the seeded scales back."
+-    : "Tap again to remove " + (d ? d.name : "this scale") + ". This cannot be undone.";
++    : "Tap again to remove " + (d ? d.name : "this scale") + ". This cannot be undone.");
  };
  /* Looking away is a decision too, and on a phone the only way to see it is the
     pointer: iOS Safari gives a <button> no focus on tap, so `blur` never fires
