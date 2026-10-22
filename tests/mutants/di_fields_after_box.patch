@@ -1,4 +1,4 @@
-# kills: DI: the sheet serves DING, TOP RIM NOTES, TOP INNER NOTES and BOTTOM NOTES in that order before #scale-box, each a text input with autocapitalize off, enterkeyhint next and BOTTOM done
+# kills: DI: the sheet serves DING, TOP RIM NOTES, TOP INNER (CYCLOPS/MUTANT) NOTE and BOTTOM NOTES in that order before #scale-box, each a text input with autocapitalize off, enterkeyhint next and BOTTOM done
 # suite: node --test --test-name-pattern ^DI:.the.sheet.serves.DING tests/app.test.js
 # The scale line goes back above the four note fields.
 diff --git a/index.html b/index.html
@@ -17,11 +17,11 @@ diff --git a/index.html b/index.html
 -      </div>
 -      <div class="fieldrow">
 -        <label class="sheetlabel" id="scale-top-label" for="scale-top">TOP RIM NOTES, LOW TO HIGH</label>
--        <input id="scale-top" type="text" placeholder="A Bb C D E F G A" autocapitalize="off" autocorrect="off"
+-        <input id="scale-top" type="text" placeholder="A3 Bb3 C4 D4 E4 F4 G4 A4" autocapitalize="off" autocorrect="off"
 -               autocomplete="off" spellcheck="false" enterkeyhint="next" aria-describedby="scale-field-msg">
 -      </div>
 -      <div class="fieldrow">
--        <label class="sheetlabel" id="scale-inner-label" for="scale-inner">TOP INNER NOTES, LOW TO HIGH (OPTIONAL)</label>
+-        <label class="sheetlabel" id="scale-inner-label" for="scale-inner">TOP INNER (CYCLOPS/MUTANT) NOTE, LOW TO HIGH (OPTIONAL)</label>
 -        <input id="scale-inner" type="text" placeholder="C5 D5" autocapitalize="off" autocorrect="off"
 -               autocomplete="off" spellcheck="false" enterkeyhint="next" aria-describedby="scale-field-msg">
 -      </div>
@@ -50,11 +50,11 @@ diff --git a/index.html b/index.html
 +      </div>
 +      <div class="fieldrow">
 +        <label class="sheetlabel" id="scale-top-label" for="scale-top">TOP RIM NOTES, LOW TO HIGH</label>
-+        <input id="scale-top" type="text" placeholder="A Bb C D E F G A" autocapitalize="off" autocorrect="off"
++        <input id="scale-top" type="text" placeholder="A3 Bb3 C4 D4 E4 F4 G4 A4" autocapitalize="off" autocorrect="off"
 +               autocomplete="off" spellcheck="false" enterkeyhint="next" aria-describedby="scale-field-msg">
 +      </div>
 +      <div class="fieldrow">
-+        <label class="sheetlabel" id="scale-inner-label" for="scale-inner">TOP INNER NOTES, LOW TO HIGH (OPTIONAL)</label>
++        <label class="sheetlabel" id="scale-inner-label" for="scale-inner">TOP INNER (CYCLOPS/MUTANT) NOTE, LOW TO HIGH (OPTIONAL)</label>
 +        <input id="scale-inner" type="text" placeholder="C5 D5" autocapitalize="off" autocorrect="off"
 +               autocomplete="off" spellcheck="false" enterkeyhint="next" aria-describedby="scale-field-msg">
 +      </div>
