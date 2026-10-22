@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10773,7 +10773,7 @@ lipBtn.addEventListener("touchend", () => { lipTouch = null; }, { passive: true
+@@ -10950,7 +10950,7 @@ lipBtn.addEventListener("touchmove", (e) => {
  lipBtn.addEventListener("touchend", () => { lipTouch = null; }, { passive: true });
  lipBtn.addEventListener("click", restoreLip);
  lipBtn.addEventListener("focusin", () => {
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +  restoreLip();
  });
  footSlide.addEventListener("transitionend", (e) => {
-   if (e.target === footSlide && e.propertyName === "transform") endOpening(lipEnd);
+   if (e.target === footSlide && e.propertyName === "transform" && !(e.elapsedTime < 0.17)) endOpening(lipEnd);
