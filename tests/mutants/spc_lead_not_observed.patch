@@ -1,0 +1,14 @@
+# kills: SPC: at 844x390 a primary that grows while the footer is shut resizes the pan within one frame, with the restore then changing nothing
+# suite: node --test --test-name-pattern ^SPC:.at.844x390.a.primary.that.grows tests/e2e.test.js
+# The lead, the delete row and the footer are not observed, so a primary that grows while shut leaves the pan stale until the next port resize.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10609,7 +10609,6 @@ if (typeof ResizeObserver === "function") {
+   bandWatch.observe(plateBand);
+   bandWatch.observe(bandPort);
+   bandWatch.observe(drawerStatus);
+-  for (const el of [nextBtn, genBtn, delRow, document.getElementById("scale-foot")]) if (el) bandWatch.observe(el);
+ }
+ /** A native focus scrolls a text control only far enough to show its caret;
+  *  rule G-c wants the whole control in the scrollport. */

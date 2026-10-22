@@ -5,17 +5,18 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10593,9 +10593,6 @@ function syncBand() {
+@@ -10606,10 +10606,6 @@ function syncBand() {
  const bandPort = document.querySelector(".sheetbody") || plateBand;
  if (typeof ResizeObserver === "function") {
    const bandWatch = new ResizeObserver(syncBand);
 -  bandWatch.observe(plateBand);
 -  bandWatch.observe(bandPort);
 -  bandWatch.observe(drawerStatus);
+-  for (const el of [nextBtn, genBtn, delRow, document.getElementById("scale-foot")]) if (el) bandWatch.observe(el);
  }
  /** A native focus scrolls a text control only far enough to show its caret;
   *  rule G-c wants the whole control in the scrollport. */
-@@ -11691,7 +11688,6 @@ function applyKbOffset(e) {
+@@ -11709,7 +11705,6 @@ function applyKbOffset(e) {
    setSheetClass("side", high > 0 && high < 420);
    setSheetClass("tiny", kb && high > 0 && high < 200);
    lipKbEdge(wasUp, kb);

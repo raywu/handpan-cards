@@ -4,12 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10583,7 +10583,7 @@ function syncBand() {
+@@ -10597,6 +10597,7 @@ function syncBand() {
+   if (pinPad !== pin) { pinPad = pin; root.setProperty("--plate-pin-h", pin); }
    if (beside && port > 0) {
      const put = (px) => { const v = px + "px"; if (plateRoom !== v) { plateRoom = v; root.setProperty("--plate-room", v); } };
-     const lipped = sheet.classList.contains("lipped");
--    if (lipped && !(sheet.classList.contains("lipshut") && lipSettled)) { if (openRoom > 0) put(openRoom); return; }
-+    if (lipped) { if (openRoom > 0) put(openRoom); return; }
-     const shut = lipped && sheet.classList.contains("lipshut");
-     if (lipped) { sheet.classList.add("lipnow"); sheet.classList.remove("lipped", "lipshut"); }
++    if (sheet.classList.contains("lipped")) return;
      const seen = [];
+     let v = openRoomOf();
+     while (!seen.includes(v) && seen.length < 6) { seen.push(v); put(v); v = openRoomOf(); }

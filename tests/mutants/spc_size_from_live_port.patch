@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10583,7 +10583,7 @@ function syncBand() {
-   if (beside && port > 0) {
-     const put = (px) => { const v = px + "px"; if (plateRoom !== v) { plateRoom = v; root.setProperty("--plate-room", v); } };
-     const lipped = sheet.classList.contains("lipped");
--    if (lipped && !(sheet.classList.contains("lipshut") && lipSettled)) { if (openRoom > 0) put(openRoom); return; }
-+    if (lipped) { put(roomOf()); return; }
-     const shut = lipped && sheet.classList.contains("lipshut");
-     if (lipped) { sheet.classList.add("lipnow"); sheet.classList.remove("lipped", "lipshut"); }
-     const seen = [];
+@@ -10574,7 +10574,7 @@ const lipDelta = () => {
+   const padOpen = sheet.classList.contains("short") ? px(rootCs.getPropertyValue("--sp-2")) : Math.max(px(rootCs.getPropertyValue("--sp-4")), padLip);
+   return padOpen - padLip + lead.getBoundingClientRect().height + (delRow.hidden ? 0 : px(cs.rowGap) + delRow.getBoundingClientRect().height) - footEl.getBoundingClientRect().height - px(getComputedStyle(footEl).marginTop);
+ };
+-const openRoomOf = () => Math.max(0, roomOf() - (sheet.classList.contains("lipped") ? lipDelta() : 0));
++const openRoomOf = () => roomOf();
+ function syncBand() {
+   if (!drawerOpen) {
+     layoutZone.classList.remove("nostick");
