@@ -12877,7 +12877,7 @@ describe("SPB: sheet polish lane B", () => {
   });
 });
 
-describe("CN: DECK NAME on the Add sheet", () => {
+describe("CN: SCALE NAME on the Add sheet", () => {
   const html = () => fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
   const typeName = (app, name) => {
     app.els["scale-name"].value = name;
@@ -12898,6 +12898,12 @@ describe("CN: DECK NAME on the Add sheet", () => {
     assert.ok(row, "the row is missing");
     assert.ok(!/\bhidden\b/.test(row[0]), `the row still ships hidden: ${row[0]}`);
     assert.ok(row.index < h.indexOf('id="scale-fields"'), "the row is not before #scale-fields");
+  });
+
+  test("CN10: the served label of the name row reads SCALE NAME, in uppercase, on the #scale-name input", () => {
+    const m = /<label[^>]*\bfor="scale-name"[^>]*>([^<]*)<\/label>/.exec(html());
+    assert.ok(m, "no label for #scale-name");
+    assert.strictEqual(m[1].trim(), "SCALE NAME");
   });
 
   test("CN2: opening Add shows the row, empty; opening Edit shows it prefilled", () => {
@@ -12962,7 +12968,7 @@ describe("CN: DECK NAME on the Add sheet", () => {
     assert.deepStrictEqual(Object.keys(app.registry()), []);
   });
 
-  test("CN6: the Add Scale-tab Tab order is BACK, tab, DECK NAME, DING, TOP, INNER, BOTTOM, scale box, NEXT", () => {
+  test("CN6: the Add Scale-tab Tab order is BACK, tab, SCALE NAME, DING, TOP, INNER, BOTTOM, scale box, NEXT", () => {
     const app = boot();
     openSheet(app);
     const seen = [app.activeId()];

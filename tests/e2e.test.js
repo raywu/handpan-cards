@@ -6368,7 +6368,7 @@ function run() {
     }
   });
 
-  test("CN7: at 380x780 the Add sheet shows DECK NAME above DING and the primary stays visible", async () => {
+  test("CN7: at 380x780 the Add sheet shows SCALE NAME above DING and the primary stays visible", async () => {
     try {
       await freshLoad();
       await b.setViewport(380, 780, true);
@@ -6378,13 +6378,13 @@ function run() {
         const n = r("scale-name"), d = r("scale-ding");
         return { hidden: document.getElementById("scale-name-row").hidden,
           nameBottom: n.bottom, nameHeight: n.height, nameTop: n.top, dingTop: d.top, vh: window.innerHeight };`);
-      assert.strictEqual(m.hidden, false, "the DECK NAME row is hidden on Add");
-      assert.ok(m.nameHeight > 0 && m.nameTop >= 0 && m.nameBottom <= m.vh, "DECK NAME is not on screen");
-      assert.ok(m.nameBottom <= m.dingTop + 0.5, "DECK NAME is not above DING");
+      assert.strictEqual(m.hidden, false, "the SCALE NAME row is hidden on Add");
+      assert.ok(m.nameHeight > 0 && m.nameTop >= 0 && m.nameBottom <= m.vh, "SCALE NAME is not on screen");
+      assert.ok(m.nameBottom <= m.dingTop + 0.5, "SCALE NAME is not above DING");
       await typeScale(BIG_SCALE);
       await b.waitFor(`!document.getElementById("scale-preview").hasAttribute("hidden")`,
         { label: "the preview to render at 380x780" });
-      assertPrimaryVisible(await primaryFold(), "create sheet with DECK NAME at 380x780");
+      assertPrimaryVisible(await primaryFold(), "create sheet with SCALE NAME at 380x780");
       await b.key("Escape", "Escape", 27);
     } finally {
       await b.setViewport(900, 900, false);
@@ -7571,6 +7571,15 @@ function run() {
     }
   });
 
+  const kb2Still = async () => {
+    let last = await b.eval(`return document.querySelector("#scale-sheet .sheetbody").scrollTop + "/" + document.querySelector("#scale-sheet .sheetsurf").scrollTop;`);
+    for (let i = 0; i < 10; i++) {
+      await new Promise((r) => setTimeout(r, 150));
+      const now = await b.eval(`return document.querySelector("#scale-sheet .sheetbody").scrollTop + "/" + document.querySelector("#scale-sheet .sheetsurf").scrollTop;`);
+      if (now === last) return;
+      last = now;
+    }
+  };
   const kb2Reach = async (id, atTop) => {
     for (let i = 0; i < 8; i++) {
       const s = await kb2Scene();
@@ -7578,6 +7587,7 @@ function run() {
       const mid = atTop ? r.top + 14 : (r.top + r.bottom) / 2;
       if (mid < s.body.bottom - s.padB - 4 && mid < s.vvh - 4) return s;
       await kb2Swipe(40, Math.round((s.body.top + s.body.bottom) / 2), -30);
+      await kb2Still();
     }
     return kb2Scene();
   };
@@ -7599,6 +7609,7 @@ function run() {
           const order = ["scale-top", "scale-inner", "scale-bottom", "scale-ding", "scale-inner", "scale-top"];
           for (const id of order) {
             await kb2Reach(id);
+            await kb2Still();
             const before = await kb2Scene();
             const moved0 = await b.eval(`return window.__kb2Scrolls;`);
             await kb2Tap(id);
@@ -7631,6 +7642,7 @@ function run() {
             const s = await kb2Scene();
             if (s.fields["scale-bottom"].top <= s.body.bottom - 18) break;
             await kb2Swipe(40, Math.round(s.vvh * 0.8), -30);
+            await kb2Still();
           }
           const before = await kb2Scene();
           const hidden = before.fields["scale-bottom"].bottom - before.body.bottom;
@@ -7663,6 +7675,7 @@ function run() {
       const s = await kb2bSurf();
       if (pred(s)) return s;
       await kb2Swipe(40, Math.round(s.vvh * 0.8), -30);
+      await kb2Still();
     }
     return kb2bSurf();
   };
