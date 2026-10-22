@@ -7588,6 +7588,7 @@ function run() {
       if (mid < s.body.bottom - s.padB - 4 && mid < s.vvh - 4) return s;
       await kb2Swipe(40, Math.round((s.body.top + s.body.bottom) / 2), -30);
       await kb2Still();
+      await new Promise((r) => setTimeout(r, 1200));
     }
     return kb2Scene();
   };
@@ -7618,7 +7619,7 @@ function run() {
             assert.strictEqual(await b.eval(`return document.activeElement.id;`), id, `${ctx}: the tap did not focus the field`);
             if (kb2Whole(before.fields[id], before)) {
               for (const f of KB_FIELDS) {
-                assert.ok(Math.abs(after.fields[f].top - before.fields[f].top) <= 1, `${ctx}: ${f} moved ${before.fields[f].top} -> ${after.fields[f].top} though ${id} was whole in view`);
+                assert.ok(Math.abs(after.fields[f].top - before.fields[f].top) <= 1, `${ctx}: ${f} moved ${before.fields[f].top} -> ${after.fields[f].top} though ${id} was whole in view; before ${JSON.stringify(before)} after ${JSON.stringify(after)}`);
               }
               if (!ios) assert.strictEqual(await b.eval(`return window.__kb2Scrolls;`), moved0, `${ctx}: a scroll event fired though ${id} was whole in view`);
             }
