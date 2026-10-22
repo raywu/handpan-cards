@@ -1218,3 +1218,14 @@ test("IB: a bottom note written before the bar above the first inner note is acc
   assert.equal(again.ok, true);
   assert.equal(JSON.stringify(host(again.value.fields)), JSON.stringify(host(r.value.fields)));
 });
+
+test("DUP-1: HPE.core.fnv1a32 is the engine's one FNV loop and returns a uint32 number", () => {
+  assert.equal(typeof core.fnv1a32, "function");
+  assert.strictEqual(core.fnv1a32(""), 0x811c9dc5);
+  assert.strictEqual(core.fnv1a32("a"), 0xe40c292c);
+  assert.strictEqual(core.fnv1a32("é"), core.fnv1a32("é"));
+  const seed = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
+  const hex = core.fnv1a32(core.formatSeed(parsed(seed).fields)).toString(16).padStart(8, "0");
+  assert.equal(core.deckId(parsed(seed).fields), "custom:" + hex,
+    "deckId is the zero-padded 8-hex form of the numeric hash");
+});

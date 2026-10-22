@@ -963,6 +963,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return bytes;
   }
 
+  // FNV-1a, 32 bit, over the UTF-8 bytes of the text; a uint32 number.
   function fnv1a32(str) {
     var hash = 0x811c9dc5;
     var bytes = utf8Bytes(str);
@@ -972,15 +973,13 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       hash = (((hash & 0xffff) * 0x01000193) +
               ((((hash >>> 16) * 0x01000193) & 0xffff) << 16)) >>> 0;
     }
-    var hex = hash.toString(16);
-    while (hex.length < 8) hex = "0" + hex;
-    return hex;
+    return hash;
   }
 
   // D14: a pure function of identitySeed - notes, octaves, zones and order. The
   // options are never hashed, so renaming or recolouring keeps the id.
   function deckId(seedOrFields) {
-    return "custom:" + fnv1a32(identitySeed(seedOrFields));
+    return "custom:" + fnv1a32(identitySeed(seedOrFields)).toString(16).padStart(8, "0");
   }
 
   var LABEL_RATIO_DING = 0.70875;
@@ -1018,6 +1017,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     err: err,
     badNote: badNote,
     utf8Bytes: utf8Bytes,
+    fnv1a32: fnv1a32,
     pc: pitchClass,
     isDing: isDing,
     fieldsOf: fieldsOf
