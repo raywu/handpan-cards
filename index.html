@@ -10420,7 +10420,7 @@ let mirroring = false;
 let fieldEditing = null;
 let fieldShown = {};
 let liveTimer = null;
-let bandPad = "", plateRoom = "", pinPad = "", openRoom = 0;
+let bandPad = "", plateRoom = "", pinPad = "";
 
 /* The seed row has exactly TWO writers, and each blanks the other. That is
    what makes #scale-parse and #scale-refusal mutually exclusive - and the
@@ -10564,6 +10564,17 @@ const platesBeside = () => {
   const w = (el) => (el.getBoundingClientRect ? el.getBoundingClientRect().width : el.offsetWidth) || 0;
   return w(plateBand) > 0 && w(bandPort) > 0 && w(plateBand) < w(bandPort) * 0.75;
 };
+/** The scrollport height the lipped layout gives back: the surface padding, the lead and delete row, less the
+ *  footer and its margin. Mirrors the .sheetsurf padding rules (open, short, lipped); change one, change the other. */
+const lipDelta = () => {
+  const px = (v) => parseFloat(v) || 0;
+  const cs = getComputedStyle(sheetSurf), lead = nextBtn.hidden ? genBtn : nextBtn;
+  const padLip = px(cs.paddingBottom);
+  const rootCs = getComputedStyle(document.documentElement);
+  const padOpen = sheet.classList.contains("short") ? px(rootCs.getPropertyValue("--sp-2")) : Math.max(px(rootCs.getPropertyValue("--sp-4")), padLip);
+  return padOpen - padLip + lead.getBoundingClientRect().height + (delRow.hidden ? 0 : px(cs.rowGap) + delRow.getBoundingClientRect().height) - footEl.getBoundingClientRect().height - px(getComputedStyle(footEl).marginTop);
+};
+const openRoomOf = () => Math.max(0, roomOf() - (sheet.classList.contains("lipped") ? lipDelta() : 0));
 function syncBand() {
   if (!drawerOpen) {
     layoutZone.classList.remove("nostick");
@@ -10586,21 +10597,10 @@ function syncBand() {
   if (pinPad !== pin) { pinPad = pin; root.setProperty("--plate-pin-h", pin); }
   if (beside && port > 0) {
     const put = (px) => { const v = px + "px"; if (plateRoom !== v) { plateRoom = v; root.setProperty("--plate-room", v); } };
-    const lipped = sheet.classList.contains("lipped");
-    if (lipped && !(sheet.classList.contains("lipshut") && lipSettled)) { if (openRoom > 0) put(openRoom); return; }
-    const shut = lipped && sheet.classList.contains("lipshut");
-    if (lipped) { sheet.classList.add("lipnow"); sheet.classList.remove("lipped", "lipshut"); }
     const seen = [];
-    let v = roomOf();
-    while (!seen.includes(v) && seen.length < 6) { seen.push(v); put(v); v = roomOf(); }
+    let v = openRoomOf();
+    while (!seen.includes(v) && seen.length < 6) { seen.push(v); put(v); v = openRoomOf(); }
     if (v !== seen[seen.length - 1]) { v = Math.min(...seen.slice(Math.max(0, seen.indexOf(v)))); put(v); }
-    openRoom = v;
-    if (lipped) {
-      sheet.classList.add("lipped");
-      if (shut) sheet.classList.add("lipshut");
-      lipFlush();
-      sheet.classList.remove("lipnow");
-    }
   }
 }
 const bandPort = document.querySelector(".sheetbody") || plateBand;
@@ -10609,6 +10609,7 @@ if (typeof ResizeObserver === "function") {
   bandWatch.observe(plateBand);
   bandWatch.observe(bandPort);
   bandWatch.observe(drawerStatus);
+  for (const el of [nextBtn, genBtn, delRow, document.getElementById("scale-foot")]) if (el) bandWatch.observe(el);
 }
 /** A native focus scrolls a text control only far enough to show its caret;
  *  rule G-c wants the whole control in the scrollport. */
@@ -10733,7 +10734,7 @@ function collapseLip() {
   lipAcc = 0;
   clearTimeout(lipTimer);
   lipGen += 1;
-  if (isLipped()) { sheet.classList.add("lipshut"); lipSettled = false; return; }
+  if (isLipped()) { sheet.classList.add("lipshut"); lipSettled = false; const g = lipGen; lipTimer = setTimeout(() => { if (g === lipGen) { lipSettled = true; if (lipDirty) { lipDirty = false; lipMeasure(); } } }, LIP_END_MS); return; }
   const open = lipRead();
   lipDirty = false;
   sheet.classList.add("lipnow", "lipped");
@@ -10745,7 +10746,7 @@ function collapseLip() {
   sheet.classList.add("lipshut");
   lipSettled = false;
   const gen = lipGen;
-  lipTimer = setTimeout(() => { if (gen === lipGen) { lipSettled = true; if (lipDirty) { lipDirty = false; lipMeasure(); } syncBand(); } }, LIP_END_MS);
+  lipTimer = setTimeout(() => { if (gen === lipGen) { lipSettled = true; if (lipDirty) { lipDirty = false; lipMeasure(); } } }, LIP_END_MS);
   const a = document.activeElement;
   if (a === nextBtn || a === genBtn || a === delBtn) {
     lipFocusing = true;
@@ -10802,7 +10803,6 @@ function finishOpen() {
 function lipReset() {
   clearTimeout(lipTimer);
   lipDirty = false;
-  openRoom = 0;
   lipGen += 1;
   sheet.classList.remove("lipped", "lipshut", "lipnow");
   lipBtn.hidden = true;
