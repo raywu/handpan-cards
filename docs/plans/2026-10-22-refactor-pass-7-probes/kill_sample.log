@@ -1,0 +1,317 @@
+##### i_ding_label_octaveless_merge.patch
+# suite: node --test --test-name-pattern ^a.Ding..label.with.no.octave tests/import.test.js
+# kills:  a Ding: label with no octave is not merged into an octaved first top note
+rc=1
+15:  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+16:  + actual - expected
+18:  + '(D4) E4 F4 G4 A4 C5'
+19:  - '(D3) D4 E4 F4 G4 A4 C5'
+29:    actual: '(D4) E4 F4 G4 A4 C5',
+30:    expected: '(D3) D4 E4 F4 G4 A4 C5',
+##### d_tab_away_leaves_delete_armed.patch
+# suite: node --test --test-name-pattern ^tabbing.away.from.DELETE.disarms.it.too$ tests/app.test.js
+# kills:  tabbing away from DELETE disarms it too
+rc=1
+15:  AssertionError [ERR_ASSERTION]: DELETE has no blur handler, so tabbing away leaves it armed
+16:  + actual - expected
+18:  + 'undefined'
+19:  - 'function'
+28:    actual: 'undefined',
+29:    expected: 'function',
+##### ih_e_solfege_message_generic.patch
+# suite: node --test --test-name-pattern ^IH:.compose.refuses.solfege.with..Use tests/import.test.js
+# kills:  IH: compose refuses solfege with "Use letter names, like D A Bb."
+rc=1
+17:  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+18:  + actual - expected
+20:  + 'Use letter names.'
+21:  - 'Use letter names, like D A Bb.'
+36:    actual: 'Use letter names.',
+37:    expected: 'Use letter names, like D A Bb.',
+##### s_trim_reintroduced.patch
+# suite: node --test --test-name-pattern ^no.deck.is.trimmed..every.ranked.card.of.a.seed.is.in.the.deck$ tests/select.test.js
+# kills:  no deck is trimmed: every ranked card of a seed is in the deck
+rc=1
+15:  AssertionError [ERR_ASSERTION]: D Kurd 10
+16:  + actual - expected
+19:  +   25,
+20:  +   25
+21:  -   49,
+22:  -   49
+32:    actual: [ 25, 25 ],
+33:    expected: [ 49, 49 ],
+##### d_caller_scan_blind_to_escapes.patch
+# suite: node --test --test-name-pattern ^the.caller.scan.counts.every.occurrence..in.code.and.in.prose.alike$ tests/app.test.js
+# kills:  the caller scan counts every occurrence, in code and in prose alike
+rc=1
+15:  AssertionError [ERR_ASSERTION]: a unicode-escaped call site is now COUNTED. That is a real improvement, not a failure - but it means this known hole is closed, so delete this assertion and say so. Until then the scan is documented as blind to it.
+26:    actual: 3,
+27:    expected: 2,
+##### d_edit_not_prefilled.patch
+# suite: node --test --test-name-pattern ^tapping.the.already.selected.custom.chip.opens.the.sheet.in.Edit.state..prefilled$ tests/app.test.js
+# kills:  tapping the already-selected custom chip opens the sheet in Edit state, prefilled
+rc=1
+15:  AssertionError [ERR_ASSERTION]: the Edit box is not prefilled with formatSeed(fields)
+16:  + actual - expected
+18:  + ''
+19:  - '(D3) A3 C4 D4 E4 F4 G4 A4 C5'
+28:    actual: '',
+29:    expected: '(D3) A3 C4 D4 E4 F4 G4 A4 C5',
+##### uxl_collapse_drops_focus.patch
+# suite: node --test --test-name-pattern ^UX:.a.collapse.while.GENERATE.CARDS.holds.focus.moves.focus.to.the.lip..never.body$ tests/app.test.js
+# kills:  UX: a collapse while GENERATE CARDS holds focus moves focus to the lip, never body
+rc=1
+17:  AssertionError [ERR_ASSERTION]: edit
+18:  + actual - expected
+20:  + 'scale-generate'
+21:  - 'scale-lip'
+36:    actual: 'scale-generate',
+37:    expected: 'scale-lip',
+##### r3s_isstop_ignores_rects.patch
+# suite: node --test --test-name-pattern ^SB-5.Tab.in.the.ADD.sheet.skips.a.control.inside.a.hidden.row$ tests/app.test.js
+# kills:  SB-5 Tab in the ADD sheet skips a control inside a hidden row
+rc=1
+17:  AssertionError [ERR_ASSERTION]: Tab landed on a control inside a hidden row
+30:    actual: false,
+31:    expected: true,
+##### d_page_layer_closes_on_tap.patch
+# suite: node --test --test-name-pattern ^the.page.fills.the.viewport..so.there.is.no.backdrop.left.to.tap$ tests/app.test.js
+# kills:  the page fills the viewport, so there is no backdrop left to tap
+rc=1
+15:  AssertionError [ERR_ASSERTION]: a tap on the page layer closed it
+26:    actual: false,
+27:    expected: true,
+##### i_window_spread_counts_window_lead.patch
+# suite: node --test --test-name-pattern ^window.invariant tests/import.test.js
+# kills:  window invariant: a long text reads as its short form or blocks, over every list shape, labelled or clause, padding width and position
+rc=1
+15:  AssertionError [ERR_ASSERTION]: bare "\n" 6 326
+16:  + actual - expected
+19:  +   'INSUFFICIENT',
+20:  +   'NO_NOTE_LIST,CONFLICTING_LIST',
+21:  -   'REVIEW',
+23:  -   '(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5'
+33:    actual: [ 'INSUFFICIENT', 'NO_NOTE_LIST,CONFLICTING_LIST', '' ],
+34:    expected: [ 'REVIEW', '', '(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5' ],
+##### r4e_pdfcards_number_line_step_half_pt.patch
+# suite: node --test --test-name-pattern ^a.long.note.line.and.a.long.number.line.each.step.down.in.0.25.pt.to.the.widest.size.that.fits$ tests/pdfcards.test.js
+# kills:  a long note line and a long number line each step down in 0.25 pt to the widest size that fits
+rc=1
+15:  AssertionError [ERR_ASSERTION]: 12 fields: number line is the widest fit
+23:    actual: false,
+24:    expected: true,
+##### d_deck_copies_registry.patch
+# suite: node --test --test-name-pattern ^generation.runs.once.at.submit..never.inside.deck...or.render..$ tests/app.test.js
+# kills:  generation runs once at submit, never inside deck() or render()
+rc=1
+15:  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+26:    actual: false,
+27:    expected: true,
+##### qa_cycle_tab_stops_no_wrap.patch
+# suite: node --test --test-name-pattern ^Shift.Tab.from.the.sheet.s.first.stop.wraps.to.the.last..not.off.the.front$ tests/app.test.js
+# kills:  Shift+Tab from the sheet's first stop wraps to the last, not off the front
+rc=1
+15:  TypeError: Cannot read properties of undefined (reading 'focus')
+##### dr2a_reset_seats_leaves_focus.patch
+# suite: node --test --test-name-pattern ^TB:.RESET.LAYOUT.moves.focus tests/app.test.js
+# kills:  TB: RESET LAYOUT moves focus to the Layout tab
+rc=1
+17:  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+18:  + actual - expected
+20:  + 'scale-layout-reset'
+21:  - 'scale-tab-layout'
+36:    actual: 'scale-layout-reset',
+37:    expected: 'scale-tab-layout',
+##### cn_name_refusal_edit_only.patch
+# suite: node --test --test-name-pattern ^CN5: tests/app.test.js
+# kills:  CN5: Add with a valid scale and a refused name takes the Edit name-refusal path (Layout tab stays enabled, GENERATE disabled, the name reason shown) and creates nothing
+rc=1
+17:  AssertionError [ERR_ASSERTION]: the Layout controls were disabled under a refused name
+33:    actual: true,
+34:    expected: false,
+##### d_lines_pitch_order.patch
+# suite: node --test --test-name-pattern ^linesHTML.keeps.chord.spelling.order..not.pitch.order..Amara.Fmaj7.$ tests/app.test.js
+# kills:  linesHTML keeps chord-spelling order, not pitch order (Amara Fmaj7)
+rc=1
+15:  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+16:  + actual - expected
+19:  -   'F4',
+23:  +   'F4'
+33:    actual: [ 'A3', 'C4', 'E4', 'F4' ],
+34:    expected: [ 'F4', 'A3', 'C4', 'E4' ],
+##### lg_fling_survives_new_touch.patch
+# suite: node --test --test-name-pattern ^LG..a.new.touch.ends.a.live.fling..a.lip.tap.that.restores.during.a.collapse.fling.s.tail.stays.restored$ tests/app.test.js
+# kills:  LG: a new touch ends a live fling: a lip tap that restores during a collapse fling's tail stays restored
+rc=1
+21:  AssertionError [ERR_ASSERTION]: touchstart ends the fling
+37:    actual: 'up',
+38:    expected: null,
+##### l0_forget_null_id_matches.patch
+# suite: node --test --test-name-pattern ^deleting.a.deck.with.no.readable.id.keeps.every.other.record.byte.for.byte$ tests/app.test.js
+# kills:  deleting a deck with no readable id keeps every other record byte for byte
+rc=1
+15:  AssertionError [ERR_ASSERTION]: only the record with that exact string should leave
+16:  + actual - expected
+18:  + '[{"v":4,"s":"(D3) A3 C4 D4 E4 F4 G4 A4 C5","o":{}}]'
+19:  - '[{"v":2,"s":"(D3) B3 not-a-scale"},"junk",{"v":4,"s":"(D3) A3 C4 D4 E4 F4 G4 A4 C5","o":{}}]'
+28:    actual: '[{"v":4,"s":"(D3) A3 C4 D4 E4 F4 G4 A4 C5","o":{}}]',
+29:    expected: '[{"v":2,"s":"(D3) B3 not-a-scale"},"junk",{"v":4,"s":"(D3) A3 C4 D4 E4 F4 G4 A4 C5","o":{}}]',
+##### d_edit_appends_deck.patch
+# suite: node --test --test-name-pattern ^a.field.edit.replaces.the.deck.and.the.new.one.takes.the.old.chip.position$ tests/app.test.js
+# kills:  a field edit replaces the deck and the new one takes the old chip position
+rc=1
+15:  AssertionError [ERR_ASSERTION]: the replacement did not take the old chip's position: ["D AEOLIAN 10","E AEOLIAN 8","D KURD 10","D AMARA 10","D AMARA 9","C# HIJAZ 9","F3 LOW PYGMY 18"]
+16:  + actual - expected
+18:  + 'E AEOLIAN 8'
+19:  - 'D AEOLIAN 10'
+28:    actual: 'E AEOLIAN 8',
+29:    expected: 'D AEOLIAN 10',
+##### dr3_reset_returns_to_stored.patch
+# suite: node --test --test-name-pattern ^DR3.reset.on.Edit.gives.the.generated.default..not.the.stored.layout$ tests/app.test.js
+# kills:  DR3 reset on Edit gives the generated default, not the stored layout
+rc=1
+15:  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+16:  + actual - expected
+18:  + {
+19:  +   rim: [
+20:  +     1,
+21:  +     0,
+22:  +     2,
+23:  +     3,
+24:  +     4,
+25:  +     5,
+26:  +     6,
+27:  +     7,
+28:  +     8
+29:  +   ]
+30:  + }
+31:  - null
+40:    actual: {
+46:    expected: null,
+##### d_name_string_proxy.patch
+# suite: node --test --test-name-pattern ^a.user.typed.name.equal.to.the.auto.label.survives.a.later.field.edit$ tests/app.test.js
+# kills:  a user-typed name equal to the auto label survives a later field edit
+rc=1
+15:  AssertionError [ERR_ASSERTION]: a deliberately typed name was discarded as a coincidence
+16:  + actual - expected
+18:  + undefined
+19:  - 'D AEOLIAN 9'
+28:    actual: undefined,
+29:    expected: 'D AEOLIAN 9',
+##### r4e_gen_deck_flag_value_unchecked.patch
+# suite: node --test --test-name-pattern ^R4.E.gen.deck.js.refuses.a.flag.given.no.value..naming.the.flag..and.exits.1$ tests/scale.test.js
+# kills:  R4-E gen_deck.js refuses a flag given no value, naming the flag, and exits 1
+rc=1
+15:  AssertionError [ERR_ASSERTION]: usage: --palette needs an integer 0-5, got undefined
+24:    actual: false,
+25:    expected: true,
+##### e_timeout_skips_the_sigterm_grace.patch
+# suite: python3 -m unittest -k test_a_grandchild_in_its_own_session_is_reaped_by_its_parent tests.test_suite_health
+# kills:  test_a_grandchild_in_its_own_session_is_reaped_by_its_parent
+rc=1
+3:FAIL: test_a_grandchild_in_its_own_session_is_reaped_by_its_parent (tests.test_suite_health.RunNodeFileTimeoutTest)
+6:Traceback (most recent call last):
+8:    self.assert_dead(pid, "detached grandchild")
+9:  File "/private/tmp/claude-501/-Users-ray-Projects-handpan-cards/3347d7d0-1ec9-4967-bd81-dd4cf98e29d7/scratchpad/wt-refactor-7/tests/test_suite_health.py", line 215, in assert_dead
+11:AssertionError: detached grandchild pid 29842 survived the timeout
+16:FAILED (failures=1)
+##### b_engine_desync.patch
+# suite: python3 -m unittest -k test_validate_py_passes tests.test_deck_data
+# kills:  test_validate_py_passes
+rc=1
+7:4. inlined engine regions == src/engine/ (fontdata, pdf, pdfdeck, pdfcards, core, importer, voicing, layout, naming, select, share, sequence): FAILED - ['engine:core in index.html differs from src/engine/core.js']
+10:validate.py: 1 check(s) FAILED
+16:Traceback (most recent call last):
+21:subprocess.CalledProcessError: Command '['/private/tmp/claude-501/-Users-ray-Projects-handpan-cards/3347d7d0-1ec9-4967-bd81-dd4cf98e29d7/scratchpad/venv/bin/python3', '-B', 'tools/validate.py']' returned non-zero exit status 1.
+26:FAILED (errors=1)
+##### r_badge_count.patch
+# suite: python3 -m unittest -k test_drawn_bottom_note_badge_agrees tests.test_render_agreement
+# kills:  test_drawn_bottom_note_badge_agrees
+rc=1
+3:FAIL: test_drawn_bottom_note_badge_agrees (tests.test_render_agreement.RenderAgreement)
+4:The printed badge text itself - nothing else asserts what it says.
+6:Traceback (most recent call last):
+8:    self.assertEqual(app_c["badgeText"], print_c["badgeText"],
+9:AssertionError: '1 BOTTOM NOTE' != '8 BOTTOM NOTE'
+19:FAILED (failures=1)
+##### h_timeout_excerpt_is_tail_only.patch
+# suite: python3 -m unittest tests.test_suite_health.RunNodeFileTimeoutTest.test_timeout_excerpt_keeps_the_tap_output_when_stderr_is_huge
+# kills:  test_timeout_excerpt_keeps_the_tap_output_when_stderr_is_huge
+rc=1
+3:FAIL: test_timeout_excerpt_keeps_the_tap_output_when_stderr_is_huge (tests.test_suite_health.RunNodeFileTimeoutTest)
+6:Traceback (most recent call last):
+8:    self.assertIn(
+9:AssertionError: 'TAP_MARKER_SHOULD_REACH_THE_TAIL' not found in 'tests/does_not_matter.test.js: TIMED OUT after 2s - the suite hung and was killed.\nEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
+14:FAILED (failures=1)
+##### c_bottom_label_stored_figure.patch
+# suite: python3 -m unittest -k test_bottom_labels_are_an_output_of_the_rule tests.test_print
+# kills:  test_bottom_labels_are_an_output_of_the_rule
+rc=1
+3:FAIL: test_bottom_labels_are_an_output_of_the_rule (tests.test_print.LabelSizeRuleTest)
+6:Traceback (most recent call last):
+8:    self.assertAlmostEqual(min(names), want, places=4,
+9:AssertionError: 5.586 != 5.867769600000001 within 4 places (0.2817696000000005 difference) : the smallest name is a bottom-shell name and must come from the rule
+14:FAILED (failures=1)
+##### c_gen_pdf_oracle_blind.patch
+# suite: python3 -m unittest -k test_the_repo_pdfs_were_not_rebuilt tests.test_gen_deck
+# kills:  test_the_repo_pdfs_were_not_rebuilt
+rc=1
+3:FAIL: test_the_repo_pdfs_were_not_rebuilt (tests.test_gen_deck.GeneratedDeckPdfTest)
+6:Traceback (most recent call last):
+8:    self.assertEqual(len(self.pdfs_before), 3,
+9:AssertionError: 0 != 3 : three committed PDFs are the thing being guarded
+14:FAILED (failures=1)
+##### i_pdfcards_bottom_ring_colour.patch
+# suite: python3 -m unittest tests.test_pdf_parity.PrintParityTest.test_every_vector_matches_print
+# kills:  test_every_vector_matches_print - the bottom ring strokes hifi grey
+rc=1
+3:FAIL: test_every_vector_matches_print (tests.test_pdf_parity.PrintParityTest) (case='(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5', variant='full', page=1)
+5:Traceback (most recent call last):
+6:  File "/private/tmp/claude-501/-Users-ray-Projects-handpan-cards/3347d7d0-1ec9-4967-bd81-dd4cf98e29d7/scratchpad/wt-refactor-7/tests/test_pdf_parity.py", line 229, in _assert_vectors_match
+8:AssertionError: full page 1 of (F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5: first difference at op 336: ('s', (0.886, 0.463, 0.106), (), 1.1, ('[', ']', ' ', '0'), None, (('c', (303.2, 221.0), (303.2, 218.8), (301.4, 217.0), (299.2, 217.0)), ('c', (299.2, 217.0), (297.0, 217
+11:FAIL: test_every_vector_matches_print (tests.test_pdf_parity.PrintParityTest) (case='(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5', variant='full', page=2)
+13:Traceback (most recent call last):
+14:  File "/private/tmp/claude-501/-Users-ray-Projects-handpan-cards/3347d7d0-1ec9-4967-bd81-dd4cf98e29d7/scratchpad/wt-refactor-7/tests/test_pdf_parity.py", line 229, in _assert_vectors_match
+16:AssertionError: full page 2 of (F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5: first difference at op 317: ('s', (0.886, 0.463, 0.106), (), 1.43, ('[', ']', ' ', '0'), None, (('c', (150.2, 445.5), (150.2, 442.6), (147.9, 440.3), (145.0, 440.3)), ('c', (145.0, 440.3), (142.1, 4
+19:FAIL: test_every_vector_matches_print (tests.test_pdf_parity.PrintParityTest) (case='(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5', variant='full', page=3)
+21:Traceback (most recent call last):
+22:  File "/private/tmp/claude-501/-Users-ray-Projects-handpan-cards/3347d7d0-1ec9-4967-bd81-dd4cf98e29d7/scratchpad/wt-refactor-7/tests/test_pdf_parity.py", line 229, in _assert_vectors_match
+24:AssertionError: full page 3 of (F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5: first difference at op 322: ('s', (0.886, 0.463, 0.106), (), 1.43, ('[', ']', ' ', '0'), None, (('c', (150.2, 445.5), (150.2, 442.6), (147.9, 440.3), (145.0, 440.3)), ('c', (145.0, 440.3), (142.1, 4
+27:FAIL: test_every_vector_matches_print (tests.test_pdf_parity.PrintParityTest) (case='(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5', variant='full', page=4)
+29:Traceback (most recent call last):
+30:  File "/private/tmp/claude-501/-Users-ray-Projects-handpan-cards/3347d7d0-1ec9-4967-bd81-dd4cf98e29d7/scratchpad/wt-refactor-7/tests/test_pdf_parity.py", line 229, in _assert_vectors_match
+32:AssertionError: full page 4 of (F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5: first difference at op 321: ('s', (0.886, 0.463, 0.106), (), 1.43, ('[', ']', ' ', '0'), None, (('c', (179.0, 139.0), (179.0, 136.1), (176.7, 133.8), (173.8, 133.8)), ('c', (173.8, 133.8), (171.0, 1
+35:FAIL: test_every_vector_matches_print (tests.test_pdf_parity.PrintParityTest) (case='(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5', variant='full', page=5)
+37:Traceback (most recent call last):
+38:  File "/private/tmp/claude-501/-Users-ray-Projects-handpan-cards/3347d7d0-1ec9-4967-bd81-dd4cf98e29d7/scratchpad/wt-refactor-7/tests/test_pdf_parity.py", line 229, in _assert_vectors_match
+40:AssertionError: full page 5 of (F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5: first difference at op 321: ('s', (0.886, 0.463, 0.106), (), 1.43, ('[', ']', ' ', '0'), None, (('c', (179.0, 395.6), (179.0, 392.7), (176.7, 390.4), (173.8, 390.4)), ('c', (173.8, 390.4), (171.0, 3
+43:FAIL: test_every_vector_matches_print (tests.test_pdf_parity.PrintParityTest) (case='(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5', variant='full', page=6)
+45:Traceback (most recent call last):
+46:  File "/private/tmp/claude-501/-Users-ray-Projects-handpan-cards/3347d7d0-1ec9-4967-bd81-dd4cf98e29d7/scratchpad/wt-refactor-7/tests/test_pdf_parity.py", line 229, in _assert_vectors_match
+48:AssertionError: full page 6 of (F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5: first difference at op 318: ('s', (0.886, 0.463, 0.106), (), 1.43, ('[', ']', ' ', '0'), None, (('c', (150.2, 188.9), (150.2, 186.0), (147.9, 183.7), (145.0, 183.7)), ('c', (145.0, 183.7), (142.1, 1
+51:FAIL: test_every_vector_matches_print (tests.test_pdf_parity.PrintParityTest) (case='(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5', variant='full', page=7)
+53:Traceback (most recent call last):
+54:  File "/private/tmp/claude-501/-Users-ray-Projects-handpan-cards/3347d7d0-1ec9-4967-bd81-dd4cf98e29d7/scratchpad/wt-refactor-7/tests/test_pdf_parity.py", line 229, in _assert_vectors_match
+56:AssertionError: full page 7 of (F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5: first difference at op 242: ('s', (0.886, 0.463, 0.106), (), 1.43, ('[', ']', ' ', '0'), None, (('c', (150.2, 89.1), (150.2, 86.2), (147.9, 83.9), (145.0, 83.9)), ('c', (145.0, 83.9), (142.1, 83.9),
+59:FAIL: test_every_vector_matches_print (tests.test_pdf_parity.PrintParityTest) (case='pygmy', variant='full', page=1)
+61:Traceback (most recent call last):
+62:  File "/private/tmp/claude-501/-Users-ray-Projects-handpan-cards/3347d7d0-1ec9-4967-bd81-dd4cf98e29d7/scratchpad/wt-refactor-7/tests/test_pdf_parity.py", line 229, in _assert_vectors_match
+64:AssertionError: full page 1 of pygmy: first difference at op 390: ('s', (0.9, 0.9, 0.9), (), 0.7, ('[', ' ', '2', '.', '2', ' ', '2', '.', '2', ' ', ']', ' ', '0'), None, (('c', (185.2, 142.0), (185.2, 103.9), (154.3, 73.0), (116.2, 73.0)), ('c', (116.2, 73.0), (78.1, 73.0), (47.2, 103.9), (47.2,
+67:FAIL: test_every_vector_matches_print (tests.test_pdf_parity.PrintParityTest) (case='pygmy', variant='full', page=2)
+69:Traceback (most recent call last):
+70:  File "/private/tmp/claude-501/-Users-ray-Projects-handpan-cards/3347d7d0-1ec9-4967-bd81-dd4cf98e29d7/scratchpad/wt-refactor-7/tests/test_pdf_parity.py", line 229, in _assert_vectors_match
+72:AssertionError: full page 2 of pygmy: first difference at op 349: ('s', (0.9, 0.9, 0.9), (), 0.7, ('[', ' ', '2', '.', '2', ' ', '2', '.', '2', ' ', ']', ' ', '0'), None, (('c', (185.2, 142.0), (185.2, 103.9), (154.3, 73.0), (116.2, 73.0)), ('c', (116.2, 73.0), (78.1, 73.0), (47.2, 103.9), (47.2,
+75:FAIL: test_every_vector_matches_print (tests.test_pdf_parity.PrintParityTest) (case='pygmy', variant='full', page=3)
+77:Traceback (most recent call last):
+78:  File "/private/tmp/claude-501/-Users-ray-Projects-handpan-cards/3347d7d0-1ec9-4967-bd81-dd4cf98e29d7/scratchpad/wt-refactor-7/tests/test_pdf_parity.py", line 229, in _assert_vectors_match
+80:AssertionError: full page 3 of pygmy: first difference at op 379: ('s', (0.9, 0.9, 0.9), (), 0.7, ('[', ' ', '2', '.', '2', ' ', '2', '.', '2', ' ', ']', ' ', '0'), None, (('c', (185.2, 142.0), (185.2, 103.9), (154.3, 73.0), (116.2, 73.0)), ('c', (116.2, 73.0), (78.1, 73.0), (47.2, 103.9), (47.2,
+##### hc_collect_js_cancelled_ignored.patch
+# suite: python3 -m unittest tests.test_suite_health.CollectJsCancelledTest.test_emit_js_exits_red_on_cancelled_with_zero_failed
+# kills:  tests.test_suite_health.CollectJsCancelledTest.test_emit_js_exits_red_on_cancelled_with_zero_failed
+rc=1
+3:FAIL: test_emit_js_exits_red_on_cancelled_with_zero_failed (tests.test_suite_health.CollectJsCancelledTest)
+5:Traceback (most recent call last):
+7:    self.assertEqual(rc, 1, "a cancelled test with failed=0 must still exit the gate red")
+8:AssertionError: 0 != 1 : a cancelled test with failed=0 must still exit the gate red
+13:FAILED (failures=1)
+DONE
