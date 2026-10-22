@@ -1431,7 +1431,7 @@ html.about-open{overflow:hidden}
               aria-controls="scale-panel-layout" tabindex="-1">Layout</button>
     </div>
     <div id="scale-panel-scale" role="tabpanel" aria-labelledby="scale-tab-scale">
-    <div class="editrow" id="scale-name-row" hidden>
+    <div class="editrow" id="scale-name-row">
       <label class="sheetlabel" for="scale-name">DECK NAME</label>
       <input id="scale-name" type="text" autocapitalize="characters" autocorrect="off"
              autocomplete="off" spellcheck="false" maxlength="40">
@@ -11340,16 +11340,18 @@ function layoutOptions() {
 /** The seed options the sheet currently describes. */
 function sheetOptions() {
   const o = { palette, mirror, mirrorBottom: bottomMirror(), anchor };
-  if (editingId) {
-    // iOS Smart Punctuation turns a typed ' or " into a curly U+2018/2019/
-    // U+201C/U+201D, a typed -- into an em dash U+2014, and a typed ... into
-    // a single ellipsis glyph U+2026 (a pasted en dash U+2013 can also show
-    // up), which core.js's NAME_RE (ASCII-only) then refuses - so a name is
-    // normalised back to ASCII before it ever reaches the engine.
-    const n = String(nameBox.value || "")
-      .replace(/[‘’]/g, "'").replace(/[“”]/g, '"')
-      .replace(/[–—]/g, "-").replace(/…/g, "...")
-      .trim();
+  // iOS Smart Punctuation turns a typed ' or " into a curly U+2018/2019/
+  // U+201C/U+201D, a typed -- into an em dash U+2014, and a typed ... into
+  // a single ellipsis glyph U+2026 (a pasted en dash U+2013 can also show
+  // up), which core.js's NAME_RE (ASCII-only) then refuses - so a name is
+  // normalised back to ASCII before it ever reaches the engine.
+  const n = String(nameBox.value || "")
+    .replace(/[‘’]/g, "'").replace(/[“”]/g, '"')
+    .replace(/[–—]/g, "-").replace(/…/g, "...")
+    .trim();
+  if (!editingId) {
+    if (n) o.name = n;  // an empty box keeps the auto label
+  } else {
     // The box is PREFILLED, so an UNTOUCHED box on an auto-named deck is
     // treated as ABSENT: otherwise a field edit would pin the old fields' name
     // onto the new deck and the row would show two chips reading the same thing
@@ -11485,7 +11487,7 @@ function showPlaceholderPan() {
   const values = {};
   for (const k of FIELD_KEYS) values[k] = String(fieldEls[k].placeholder || "");
   const composed = HPE.importer.compose(values);
-  const res = composed.ok ? HPE.core.parseSeed(composed.line, sheetOptions()) : composed;
+  const res = composed.ok ? HPE.core.parseSeed(composed.line, layoutOptions()) : composed;
   if (!res.ok || !paintPan(res.value, "example")) clearPanPreview();
 }
 
@@ -11550,7 +11552,7 @@ function syncParseState({ paint }) {
     if (crowded) { say(crowded.reason, "warn"); msgLine.classList.add("pan"); }
     else say("", "");
   } else {
-    const second = editingId && opts.name !== undefined ? HPE.core.parseSeed(text, layoutOptions()) : null;
+    const second = opts.name !== undefined ? HPE.core.parseSeed(text, layoutOptions()) : null;
     if (second && second.ok) {
       boxOk = true;
       const bottom = Object.values(second.value.fields).some((f) => f[3] === "bottom");
@@ -11729,14 +11731,12 @@ if (window.visualViewport) {
   window.visualViewport.addEventListener("scroll", applyKbOffset);
 }
 
-/** Show or hide the two Edit-only rows and relabel the single primary.
+/** Show or hide the Edit-only DELETE row and relabel the single primary.
  *  `edit` is false (create) or true (Edit a seeded or a custom deck). */
 function setSheetMode(edit) {
   disarmDelete();
-  for (const el of [nameRow, delRow]) {
-    if (edit) el.removeAttribute("hidden");
-    else el.setAttribute("hidden", "");
-  }
+  if (edit) delRow.removeAttribute("hidden");
+  else delRow.setAttribute("hidden", "");
   delBtn.textContent = DEL_IDLE;
   genBtn.textContent = edit ? "SAVE CHANGES" : "GENERATE CARDS";
   // The page is named by the title it shows (#scale-title, via
@@ -12751,7 +12751,7 @@ sheet.addEventListener("keydown", e => {
        notePrev, noteNext, seatPrev, seatNext, resetBtn,
        ...swatches.children, shut ? lipBtn : genBtn, editingId && !shut ? delBtn : null]
     : [backBtn, onTab,
-       editingId ? nameBox : null,
+       nameBox,
        fieldEls.ding, fieldEls.top, fieldEls.inner, fieldEls.bottom,
        scaleBox,
        shut ? lipBtn : editingId ? genBtn : nextBtn,
