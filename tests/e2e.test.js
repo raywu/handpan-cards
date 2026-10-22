@@ -4946,7 +4946,7 @@ function run() {
       assert.match(st.box, /^\(D3\) /, `the Edit box reads "${st.box}"`);
       assert.ok(st.name.length > 0, "the Name field is empty");
       assert.strictEqual(st.primary, "SAVE CHANGES");
-      assert.strictEqual(st.del, "DELETE THIS DECK");
+      assert.strictEqual(st.del, "DELETE THIS SCALE");
       assert.strictEqual(st.delColor, "rgb(167, 157, 139)", "the delete link is not #a79d8b");
       assert.strictEqual(st.delWide, false, "the delete link reads as a second primary");
       assert.strictEqual(st.cardW, beforeCardW, "--card-w moved when the Edit sheet opened");
@@ -5572,7 +5572,7 @@ function run() {
       const st = await sheetState();
       assert.strictEqual(st.open, true, "the refused save closed the sheet");
       assert.strictEqual(st.bad, true, "the scale box was not marked bad");
-      assert.match(st.msg, /Another deck already uses this scale/,
+      assert.match(st.msg, /Another scale already has these notes/,
         `the sheet says "${st.msg}"`);
       assert.strictEqual(st.msgVisible, true, "the refusal message has no height");
       assert.ok(st.primaries <= 1, `${st.primaries} enabled primaries while the sheet is open`);
@@ -5722,7 +5722,7 @@ function run() {
       await clickGenerate();
       await b.settle();
       const after = await read();
-      assert.match(after.refusal, /Another deck already uses this scale/,
+      assert.match(after.refusal, /Another scale already has these notes/,
         `the refused save says "${after.refusal}" in the seed's row`);
       assert.strictEqual(after.msg, "",
         `the seed refusal was written below the pan as well: "${after.msg}"`);
@@ -5803,7 +5803,7 @@ function run() {
 
       const refused = await sheetState();
       assert.strictEqual(refused.bad, true, "the collision did not mark the box bad");
-      assert.match(refused.msg, /Another deck already uses this scale/,
+      assert.match(refused.msg, /Another scale already has these notes/,
         `the sheet says "${refused.msg}"`);
 
       await b.click("#scale-delete");           // arm DELETE on the refused seed
@@ -5815,7 +5815,7 @@ function run() {
       const after = await sheetState();
       assert.strictEqual(after.bad, true,
         "disarming DELETE cleared the collision's red box");
-      assert.match(after.msg, /Another deck already uses this scale/,
+      assert.match(after.msg, /Another scale already has these notes/,
         `after disarming DELETE the sheet says "${after.msg}"`);
     } finally {
       await b.key("Escape", "Escape", 27);
@@ -5847,7 +5847,7 @@ function run() {
 
       const st1 = await sheetState();
       assert.strictEqual(st1.bad, true, "the scale box was not marked bad");
-      assert.match(st1.msg, /Another deck already uses this scale/,
+      assert.match(st1.msg, /Another scale already has these notes/,
         `the sheet says "${st1.msg}"`);
 
       // an ordinary tap elsewhere in the sheet - DELETE was never armed
@@ -5885,7 +5885,7 @@ function run() {
 
       const refused = await sheetState();
       assert.strictEqual(refused.bad, true, "the collision did not mark the box bad");
-      assert.match(refused.msg, /Another deck already uses this scale/,
+      assert.match(refused.msg, /Another scale already has these notes/,
         `the sheet says "${refused.msg}"`);
 
       await b.eval(`document.getElementById("scale-tab-layout").click(); return true;`);
@@ -5896,7 +5896,7 @@ function run() {
       const after = await sheetState();
       assert.strictEqual(after.bad, true,
         "flipping the mirror cleared the collision's red box");
-      assert.match(after.msg, /Another deck already uses this scale/,
+      assert.match(after.msg, /Another scale already has these notes/,
         `after flipping the mirror the sheet says "${after.msg}"`);
     } finally {
       await b.key("Escape", "Escape", 27);
@@ -6134,7 +6134,7 @@ function run() {
 
       const refused = await sheetState();
       assert.strictEqual(refused.bad, true, "the collision did not mark the box bad");
-      assert.match(refused.msg, /Another deck already uses this scale/,
+      assert.match(refused.msg, /Another scale already has these notes/,
         `the sheet says "${refused.msg}"`);
 
       await openDrawer();
@@ -6146,7 +6146,7 @@ function run() {
       const after = await sheetState();
       assert.strictEqual(after.bad, true,
         "tapping a pan note cleared the collision's red box");
-      assert.match(after.msg, /Another deck already uses this scale/,
+      assert.match(after.msg, /Another scale already has these notes/,
         `after tapping a pan note the sheet says "${after.msg}"`);
     } finally {
       await b.key("Escape", "Escape", 27);
@@ -6175,7 +6175,7 @@ function run() {
 
       const refused = await sheetState();
       assert.strictEqual(refused.bad, true, "the collision did not mark the box bad");
-      assert.match(refused.msg, /Another deck already uses this scale/,
+      assert.match(refused.msg, /Another scale already has these notes/,
         `the sheet says "${refused.msg}"`);
 
       await typeScale(SIX_SCALES[4]);   // a free scale: the collision is over
@@ -6385,6 +6385,25 @@ function run() {
       await b.waitFor(`!document.getElementById("scale-preview").hasAttribute("hidden")`,
         { label: "the preview to render at 380x780" });
       assertPrimaryVisible(await primaryFold(), "create sheet with SCALE NAME at 380x780");
+      await b.key("Escape", "Escape", 27);
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("DS3: SCALE NAME labels the name row on Add and on Edit at 380x780", async () => {
+    try {
+      await freshLoad();
+      await b.setViewport(380, 780, true);
+      await openSheetForFold(380, 780);
+      const label = () => b.eval(`return document.querySelector('label[for="scale-name"]').textContent.trim();`);
+      assert.strictEqual(await label(), "SCALE NAME");
+      await b.key("Escape", "Escape", 27);
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
+        { label: "the Add sheet to close" });
+      await openEdit();
+      assert.strictEqual(await label(), "SCALE NAME");
+      assert.strictEqual(await b.eval(`return document.getElementById("scale-name-row").hidden;`), false);
       await b.key("Escape", "Escape", 27);
     } finally {
       await b.setViewport(900, 900, false);
@@ -6948,7 +6967,7 @@ function run() {
       await b.click("#scale-delete");
       await b.settle();
       const refused = await read();
-      assert.match(refused.msg, /Keep at least one deck/, "the delete was not refused");
+      assert.match(refused.msg, /Keep at least one scale/, "the delete was not refused");
       const shown = await b.eval(`const m = document.getElementById("scale-msg"); return { d: getComputedStyle(m).display, h: m.getBoundingClientRect().height };`);
       assert.notStrictEqual(shown.d, "none", "X3: the notice hid the delete refusal");
       assert.ok(shown.h > 0, "X3: the delete refusal has no height");
@@ -6961,7 +6980,7 @@ function run() {
       await b.click("#scale-delete");
       await b.settle();
       const rearmed = await read();
-      assert.match(rearmed.msg, /Keep at least one deck/, "re-arming wiped the refusal");
+      assert.match(rearmed.msg, /Keep at least one scale/, "re-arming wiped the refusal");
       assert.ok(rearmed.note.length > 0, "re-arming wrote no note beside DELETE");
       assert.ok(Math.abs(rearmed.slotH - refused.slotH) < 0.5, `the slot went ${refused.slotH}px to ${rearmed.slotH}px on the re-arm`);
       assert.ok(refused.slotH >= idle.slotH - 0.5);
@@ -13188,7 +13207,7 @@ function run() {
     await openEdit();
     await b.click("#scale-delete");
     await b.waitFor(`document.getElementById("scale-delete").hasAttribute("data-armed")`,
-      { label: "DELETE THIS DECK to arm" });
+      { label: "DELETE THIS SCALE to arm" });
     await b.click("#scale-delete");
     await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
       { label: "the sheet to close after the delete" });
@@ -13248,6 +13267,50 @@ function run() {
     }
   });
 
+  test("DS4: RESET SEEDED SCALES and the print heading stay on one line at 320x568, 844x390 and 1280x800, and the seeded arming note keeps its base line count at 320x568", async () => {
+    const linesOf = `const lines = (el) => { const r = document.createRange(); r.selectNodeContents(el);
+      return new Set([...r.getClientRects()].map(x => Math.round(x.top))).size; };`;
+    try {
+      for (const [w, h] of [[320, 568], [844, 390], [1280, 800]]) {
+        await freshLoad();
+        await b.setViewport(w, h, true);
+        await deleteSelectedSeeded();
+        await openSettingsPanel();
+        const m = await b.eval(`${linesOf}
+          const reset = document.getElementById("deck-restore");
+          reset.scrollIntoView({ block: "nearest" });
+          const head = [...document.querySelectorAll(".panel-heading")].find(e => /Print this/.test(e.textContent));
+          return { reset: lines(reset), head: head ? lines(head) : -1, text: head && head.textContent };`);
+        assert.strictEqual(m.reset, 1, `RESET SEEDED SCALES wraps at ${w}x${h}`);
+        assert.strictEqual(m.text, "Print this scale");
+        assert.strictEqual(m.head, 1, `the print heading wraps at ${w}x${h}`);
+      }
+      await freshLoad();
+      await b.setViewport(320, 568, true);
+      await b.eval(`localStorage.setItem("hpfc", JSON.stringify({ deck: "pygmy", mode: "A" })); return true;`);
+      await navigate();
+      await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`, { label: "chips" });
+      await openEdit();
+      await b.click("#scale-delete");
+      await b.waitFor(`document.getElementById("scale-delete").hasAttribute("data-armed")`,
+        { label: "DELETE THIS SCALE to arm" });
+      const n = await b.eval(`${linesOf}
+        const note = document.getElementById("scale-del-note");
+        const name = document.getElementById("scale-name").value;
+        const now = note.textContent;
+        const after = lines(note);
+        note.textContent = "Tap again to remove " + name + ". RESET SEEDED DECKS in the menu brings the seeded decks back.";
+        const base = lines(note);
+        note.textContent = now;
+        return { name, now, after, base };`);
+      assert.match(n.name, /PYGMY/);
+      assert.strictEqual(n.now, `Tap again to remove ${n.name}. RESET SEEDED SCALES in the menu brings the seeded scales back.`);
+      assert.strictEqual(n.after, n.base, `the arming note grew from ${n.base} to ${n.after} lines`);
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
   test("RESET SEEDED DECKS is absent until a seeded deck is edited or deleted, arms, and restores all five", async () => {
     try {
       await freshLoad();
@@ -13258,7 +13321,7 @@ function run() {
         return { text: el.textContent.trim(), hidden: el.hasAttribute("hidden"),
                  stop: window.panelStops().includes(el) };`);
       let r = await probe();
-      assert.strictEqual(r.text, "RESET SEEDED DECKS");
+      assert.strictEqual(r.text, "RESET SEEDED SCALES");
       assert.deepStrictEqual([r.hidden, r.stop], [true, false],
         "a fresh store shows a reset control");
 
@@ -13281,11 +13344,11 @@ function run() {
       await b.eval(`document.getElementById("deck-add").focus(); return true;`);
       await b.key("Tab", "Tab", 9);
       assert.strictEqual(await b.eval(`return document.activeElement.id;`), "deck-restore",
-        "Tab from + ADD A SCALE does not reach RESET SEEDED DECKS");
+        "Tab from + ADD A SCALE does not reach RESET SEEDED SCALES");
 
       await b.click("#deck-restore");
       await b.waitFor(`document.getElementById("deck-restore").hasAttribute("data-armed")`,
-        { label: "RESET SEEDED DECKS to arm" });
+        { label: "RESET SEEDED SCALES to arm" });
       await b.click("#deck-restore");
       await b.waitFor(`document.getElementById("deck-restore").hasAttribute("hidden")`,
         { label: "the reset control to go away" });
@@ -13320,8 +13383,8 @@ function run() {
                  text: document.getElementById("scale-sheet").textContent };`);
       assert.strictEqual(sheet.save, "SAVE CHANGES");
       assert.strictEqual(sheet.delShown, true, "a seeded deck's sheet shows no DELETE control");
-      assert.ok(/DELETE THIS DECK/.test(sheet.del), `the delete control reads ${JSON.stringify(sheet.del)}`);
-      assert.ok(!/FORK THIS DECK|HIDE THIS DECK|SHOW HIDDEN DECKS/.test(sheet.text),
+      assert.ok(/DELETE THIS SCALE/.test(sheet.del), `the delete control reads ${JSON.stringify(sheet.del)}`);
+      assert.ok(!/FORK THIS (DECK|SCALE)|HIDE THIS (DECK|SCALE)|SHOW HIDDEN (DECKS|SCALES)/.test(sheet.text),
         "the seeded sheet still carries the fork / hide copy");
     } finally {
       await b.setViewport(900, 900, false);
@@ -14974,7 +15037,7 @@ function run() {
       }
       throw new Error("could not fit " + n + " lines of " + which);
     };
-    const REFUSAL = /Keep at least one deck/;
+    const REFUSAL = /Keep at least one scale/;
     const apply = async (state) => {
       const p0 = await probe();
       assert.strictEqual(p0.deleteShown, true, "DELETE THIS DECK is not shown on Edit");

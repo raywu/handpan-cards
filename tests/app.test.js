@@ -1745,8 +1745,8 @@ test("DELETE THIS DECK arms on the first tap and only deletes on the second", ()
   assert.strictEqual(app.registry()[d.id] === undefined, false,
     "one tap deleted the deck - the confirmation did not gate anything");
   assert.strictEqual(app.sheetOpen(), true, "one tap closed the Edit page");
-  assert.notStrictEqual(app.els["scale-delete"].textContent.trim(), "DELETE THIS DECK",
-    "the armed button still reads DELETE THIS DECK, so nothing tells the owner " +
+  assert.notStrictEqual(app.els["scale-delete"].textContent.trim(), "DELETE THIS SCALE",
+    "the armed button still reads DELETE THIS SCALE, so nothing tells the owner " +
     "their tap did anything or that the next one is destructive");
   // The warning is read from #scale-del-note, not the practice-screen
   // announcer: since 2026-09-21 it lives beside the button rather than going
@@ -1772,7 +1772,7 @@ test("leaving the Edit page disarms DELETE, so a stale tap cannot destroy a deck
   app.keydown("Escape");                    // the owner leaves without deleting
   assert.strictEqual(app.sheetOpen(), false);
   app.clickChip(d.name);                    // and comes back later
-  assert.strictEqual(app.els["scale-delete"].textContent.trim(), "DELETE THIS DECK",
+  assert.strictEqual(app.els["scale-delete"].textContent.trim(), "DELETE THIS SCALE",
     "the page re-opened with DELETE still armed - the next tap would delete " +
     "a deck on a confirmation the owner gave to a different visit");
 
@@ -1800,7 +1800,7 @@ test("a tap anywhere else on the page disarms DELETE, without waiting for a blur
 
   app.els["scale-sheet"].dispatchEvent(
     { type: "pointerdown", target: app.els["scale-box"] });
-  assert.strictEqual(app.els["scale-delete"].textContent.trim(), "DELETE THIS DECK",
+  assert.strictEqual(app.els["scale-delete"].textContent.trim(), "DELETE THIS SCALE",
     "the owner touched the seed field and DELETE stayed armed - on iOS, where "
     + "a button takes no focus, the next tap on it would destroy the deck");
 
@@ -1868,7 +1868,7 @@ test("deleting a deck that is already gone leaves no armed button behind", () =>
 
   app.forgetDeck(d.id);
   app.els["scale-delete"].click();
-  assert.strictEqual(app.els["scale-delete"].textContent.trim(), "DELETE THIS DECK",
+  assert.strictEqual(app.els["scale-delete"].textContent.trim(), "DELETE THIS SCALE",
     "the deck is gone and the button still reads TAP AGAIN TO DELETE");
 });
 
@@ -1920,7 +1920,7 @@ test("tabbing away from DELETE disarms it too", () => {
   assert.strictEqual(typeof app.els["scale-delete"].onblur, "function",
     "DELETE has no blur handler, so tabbing away leaves it armed");
   app.els["scale-delete"].onblur();
-  assert.strictEqual(app.els["scale-delete"].textContent.trim(), "DELETE THIS DECK",
+  assert.strictEqual(app.els["scale-delete"].textContent.trim(), "DELETE THIS SCALE",
     "the owner tabbed off an armed DELETE and it stayed armed");
 });
 
@@ -2278,7 +2278,7 @@ test("a field edit still runs select.build exactly once (13A)", () => {
 // live region carries UI copy - never an engine reason, because the section 2
 // code enum is CLOSED and has no code for "that scale is taken".
 
-const COLLIDE_MSG = /Another deck already uses this scale/;
+const COLLIDE_MSG = /Another scale already has these notes/;
 // Deliberately NOT a built-in's scale: the built-in Hijaz chip already reads
 // "C# HIJAZ 9", which is also what autoName gives a pan seeded from it, so a
 // chip lookup by label could not tell the two apart.
@@ -3616,7 +3616,7 @@ test("PM rule 1: the print row is DOWNLOAD PDF then the paper select, and no ful
   assert.ok(rowHtml.indexOf("<button") < rowHtml.indexOf("<select"), "the button leads the row");
   assert.ok(!src.includes("FULL DECK PDF"), "no element offers a full deck PDF");
   assert.ok(!src.includes("CHORD-ONLY PDF"), "no element is labelled CHORD-ONLY PDF");
-  assert.match(panel, /<h3 class="panel-heading">Print this deck<\/h3>/);
+  assert.match(panel, /<h3 class="panel-heading">Print this scale<\/h3>/);
 });
 
 test("PM rule 3: DOWNLOAD PDF names and builds the chord-only file, byte for byte what main built", () => {
@@ -5444,7 +5444,7 @@ test("AP2-3 a refused generate restores readonly and the label and leaves the bu
   assert.strictEqual(app.get("scaleBox.hasAttribute('readonly')"), false, "readonly restored");
   assert.strictEqual(app.get("genBtn.textContent"), "SAVE CHANGES", "label restored");
   assert.strictEqual(app.get("genBtn.disabled"), true, "a refused seed stays disabled");
-  assert.strictEqual(app.get("refusal"), "Another deck already uses this scale.");
+  assert.strictEqual(app.get("refusal"), "Another scale already has these notes.");
   assert.strictEqual(app.get("scaleBox.classList.contains('bad')"), true);
   app.type(scale("builtin hijaz"));
   assert.strictEqual(app.get("genBtn.disabled"), false, "changing the seed re-enables it");
@@ -8747,7 +8747,7 @@ test("editable defaults: the fifth seeded delete with no custom deck is refused"
   assert.deepStrictEqual(labels(app), ["D KURD 10"], "the last visible deck was hidden");
   assert.deepStrictEqual(hiddenKey(app) || four, four);
   assert.strictEqual(app.sheetOpen(), true, "the refused hide closed the sheet");
-  assert.match(app.els["scale-msg"].textContent, /at least one deck/i);
+  assert.match(app.els["scale-msg"].textContent, /at least one scale/i);
   assert.match(app.els["scale-msg"].className, /warn/);
 });
 
@@ -8760,7 +8760,7 @@ test("editable defaults: saving each seeded deck with a palette change mints the
     app.clickChip(name);
     assert.strictEqual(app.sheetOpen(), true, `${d.id}: the selected chip did not open the sheet`);
     assert.strictEqual(app.els["scale-generate"].textContent, "SAVE CHANGES");
-    assert.strictEqual(app.els["scale-delete"].textContent, "DELETE THIS DECK");
+    assert.strictEqual(app.els["scale-delete"].textContent, "DELETE THIS SCALE");
     assert.strictEqual(app.els["scale-title"].textContent, "Edit this scale");
     assert.strictEqual(app.els["scale-name"].value, name);
     assert.strictEqual(app.els["scale-box"].value, app.get(`HPE.core.formatSeed(DECKS[${i}].fields)`));
@@ -8797,10 +8797,10 @@ test("editable defaults: RESET arms, then clears hidden and replacements and kee
   assert.deepStrictEqual(labels(app), [mine.name, ...BUILTIN_NAMES]);
   assert.strictEqual("hidden" in JSON.parse(app.store.hpfc), false, "the key survived an empty hidden list");
   assert.strictEqual(reset.hasAttribute("hidden"), true);
-  assert.strictEqual(reset.textContent, "RESET SEEDED DECKS");
+  assert.strictEqual(reset.textContent, "RESET SEEDED SCALES");
   assert.deepStrictEqual(Object.keys(app.registry()), [mine.id], "RESET dropped a custom deck or kept a replacement");
   assert.strictEqual(app.activeId(), "deck-add");
-  assert.strictEqual(app.announcer().textContent, "Seeded decks restored. Showing D KURD 10.");
+  assert.strictEqual(app.announcer().textContent, "Seeded scales restored. Showing D KURD 10.");
   assert.deepStrictEqual(records(app).filter(r => r.o && r.o.replaces), [], "RESET left a stored record naming a seed");
 });
 
@@ -8813,7 +8813,7 @@ test("editable defaults: saving seeded Kurd with only a palette change while its
   app.els["scale-swatches"].children[3].click();
   app.els["scale-generate"].click();
   assert.strictEqual(app.sheetOpen(), true, "the colliding save closed the sheet");
-  assert.strictEqual(app.els["scale-refusal"].textContent, "Another deck already uses this scale.");
+  assert.strictEqual(app.els["scale-refusal"].textContent, "Another scale already has these notes.");
   const kept = app.registry()[fork.id];
   assert.strictEqual(kept.name, "MY KURD", "the save renamed the fork");
   assert.strictEqual(kept.options.palette, fork.options.palette, "the save repainted the fork");
@@ -8877,7 +8877,7 @@ test("editable defaults: a stored hidden deck falls back to the first visible on
   const app = boot({ storage: { hpfc: JSON.stringify({ deck: "pygmy", mode: "A", hidden: ["pygmy"] }) } });
   assert.strictEqual(app.deckId(), "kurd");
   assert.deepStrictEqual(labels(app), BUILTIN_NAMES.slice(0, 4));
-  assert.match(app.announcer().textContent, /That deck is gone\. Showing D KURD 10\./);
+  assert.match(app.announcer().textContent, /That scale is gone\. Showing D KURD 10\./);
 });
 
 test("editable defaults: every built-in hidden in storage still opens a deck rather than a blank page", () => {
@@ -8896,7 +8896,7 @@ test("editable defaults: hpfc.hidden keeps only built-in ids", () => {
 
 test("editable defaults: #deck-restore follows #deck-add, starts hidden and joins the panel stops only while rendered", () => {
   const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
-  assert.match(html, /id="deck-add"[^>]*>[^<]*<\/button>\s*<\/div>\s*<button[^>]*id="deck-restore"[^>]*\bhidden\b[^>]*>RESET SEEDED DECKS<\/button>/,
+  assert.match(html, /id="deck-add"[^>]*>[^<]*<\/button>\s*<\/div>\s*<button[^>]*id="deck-restore"[^>]*\bhidden\b[^>]*>RESET SEEDED SCALES<\/button>/,
     "the restore button is not right after the Scales row, hidden, with its label");
   assert.match(html, /document\.getElementById\("deck-add"\), restoreBtn,/, "panelStops() does not list the restore button right after + ADD A SCALE");
   const app = boot();
@@ -8998,14 +8998,14 @@ test("SD: an armed RESET disarms on a tap elsewhere, blur and panel close, and r
   down(reset);
   assert.strictEqual(reset.textContent, "TAP AGAIN TO RESET", "the arming tap's own pointerdown disarmed it");
   down(mainEl);
-  assert.strictEqual(reset.textContent, "RESET SEEDED DECKS", "a tap elsewhere left RESET armed");
+  assert.strictEqual(reset.textContent, "RESET SEEDED SCALES", "a tap elsewhere left RESET armed");
   arm();
   reset.onblur();
-  assert.strictEqual(reset.textContent, "RESET SEEDED DECKS", "blur left RESET armed");
+  assert.strictEqual(reset.textContent, "RESET SEEDED SCALES", "blur left RESET armed");
   arm();
   app.run("openPanel && openPanel()");
   app.run("closePanel()");
-  assert.strictEqual(reset.textContent, "RESET SEEDED DECKS", "closing the panel left RESET armed");
+  assert.strictEqual(reset.textContent, "RESET SEEDED SCALES", "closing the panel left RESET armed");
   arm();
   assert.deepStrictEqual(hiddenKey(app), ["amara"], "re-arming reset");
   reset.click();
@@ -9063,7 +9063,7 @@ test("SD: a seed both hidden and replaced boots onto its replacement without a w
   assert.strictEqual(hijaz.announcer().textContent, "", "(b) the boot said the deck was gone");
 
   const bare = boots({ deck: "kurd", hidden: ["kurd"] }, []);
-  assert.match(bare.announcer().textContent, /^That deck is gone\. Showing /, "(c) a hidden seed with no replacement stayed silent");
+  assert.match(bare.announcer().textContent, /^That scale is gone\. Showing /, "(c) a hidden seed with no replacement stayed silent");
 });
 
 test("SD: a seeded deck's sheet never reports a layout change on open", () => {
@@ -9592,13 +9592,13 @@ describe("discoverability: deck route", () => {
     const app = at("#deck=d-amara-9", { storage });
     assert.match(app.deckId(), /^custom:/);
     assert.strictEqual(app.registry()[app.deckId()].options.replaces, "amara");
-    assert.doesNotMatch(app.announcer().textContent || "", /That deck is gone/);
+    assert.doesNotMatch(app.announcer().textContent || "", /That scale is gone/);
   });
 
   test("a deleted seed falls back to the default deck and says the deck is gone", () => {
     const app = at("#deck=f-low-pygmy-18", { storage: { hpfc: JSON.stringify({ deck: "kurd", mode: "A", hidden: ["pygmy"] }) } });
     assert.strictEqual(app.deckId(), "kurd");
-    assert.match(app.announcer().textContent, /^That deck is gone\. Showing D KURD 10\./);
+    assert.match(app.announcer().textContent, /^That scale is gone\. Showing D KURD 10\./);
   });
 
   test("an unknown slug, a custom id and an empty slug fall back silently and lose the hash", () => {
@@ -9636,7 +9636,7 @@ describe("discoverability: deck route", () => {
     const gone = at("", { storage: { hpfc: JSON.stringify({ deck: "kurd", mode: "A", hidden: ["pygmy"] }) } });
     gone.hashchange("#deck=f-low-pygmy-18");
     assert.strictEqual(gone.deckId(), "kurd");
-    assert.match(gone.announcer().textContent, /^That deck is gone\./);
+    assert.match(gone.announcer().textContent, /^That scale is gone\./);
     assert.strictEqual(gone.location.hash, "#deck=d-kurd-10");
   });
 
@@ -10246,7 +10246,7 @@ describe("share url: edges", () => {
     const app = boot({ html, href: PAGE, storage });
     assert.match(app.deckId(), /^custom:/);
     assert.strictEqual(app.els["share-copy"].disabled, true, "the custom deck's code was not refused");
-    assert.match(app.announcer().textContent, /^That deck is gone\./);
+    assert.match(app.announcer().textContent, /^That scale is gone\./);
   });
 
   test("SU: following a link to the custom deck shown at boot after switching away tracks share_open", () => {
@@ -10385,7 +10385,7 @@ describe("about overlay", () => {
     assert.strictEqual(app.els.about.hidden, true);
     assert.strictEqual(app.activeId(), "settings-trigger");
     assert.match(app.deckId(), /^custom:/);
-    assert.doesNotMatch(app.announcer().textContent || "", /That deck is gone/);
+    assert.doesNotMatch(app.announcer().textContent || "", /That scale is gone/);
   });
 
   test("AO: a dispatched resize while About is open updates --about-head-h", () => {
@@ -10483,7 +10483,7 @@ describe("about overlay", () => {
     const gone = boot({ storage: { hpfc: JSON.stringify({ deck: "kurd", mode: "A", hidden: ["pygmy"] }) } });
     openAboutFrom(gone);
     gone.run("aboutLink('#deck=f-low-pygmy-18')");
-    assert.match(gone.announcer().textContent, /^That deck is gone\./, "a fallback link lost its warning");
+    assert.match(gone.announcer().textContent, /^That scale is gone\./, "a fallback link lost its warning");
   });
 
   test("AO: a boot on #about leaves About closed and ends on the deck's route", () => {
@@ -10882,7 +10882,7 @@ describe("DI: dual input", () => {
     assert.notStrictEqual(el(app, "scale-field-msg").textContent, "");
     app.click(el(app, "scale-tab-layout"));
     el(app, "scale-delete").click(); el(app, "scale-delete").click();
-    assert.match(el(app, "scale-msg").textContent, /^Keep at least one deck/);
+    assert.match(el(app, "scale-msg").textContent, /^Keep at least one scale/);
     assert.strictEqual(visibleMsg(app), true);
   });
 
@@ -10890,7 +10890,7 @@ describe("DI: dual input", () => {
     const app = oneDeck();
     assert.notStrictEqual(el(app, "scale-field-msg").textContent, "");
     el(app, "scale-delete").click(); el(app, "scale-delete").click();
-    assert.match(el(app, "scale-msg").textContent, /^Keep at least one deck/);
+    assert.match(el(app, "scale-msg").textContent, /^Keep at least one scale/);
     assert.strictEqual(visibleMsg(app), true);
   });
 
@@ -13055,4 +13055,100 @@ test("LF: the root rule sets text-size-adjust to 100% with the -webkit- prefix, 
   const rules = [...css.matchAll(/(?:^|[\s}\/])html\s*\{([^}]*)\}/g)].map((m) => m[1]);
   assert.ok(rules.some((r) => /(?:^|[;\s])-webkit-text-size-adjust:\s*100%/.test(r)), "html lacks -webkit-text-size-adjust:100%");
   assert.ok(rules.some((r) => /(?:^|[;\s])text-size-adjust:\s*100%/.test(r)), "html lacks text-size-adjust:100%");
+});
+
+describe("DS: the visible word is scale", () => {
+  const html = () => fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+  const WORD = /(?<![#\w-])decks?(?![\w=-])/i;
+
+  function deckHits() {
+    const hits = [];
+    let h = html().replace(/<!--[\s\S]*?-->/g, "");
+    const scripts = [];
+    h = h.replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gi, (m, body) => {
+      scripts.push(m);
+      return "";
+    });
+    h = h.replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, "");
+    for (const tag of h.match(/<[a-z][^>]*>/gi) || []) {
+      const re = /\b(content|aria-label|title|placeholder|alt|value)="([^"]*)"/gi;
+      let m;
+      while ((m = re.exec(tag))) if (WORD.test(m[2])) hits.push(`attr ${m[1]}: ${m[2]}`);
+    }
+    for (const t of h.replace(/<[^>]*>/g, "\n").split("\n")) if (WORD.test(t)) hits.push(`text: ${t.trim()}`);
+    const ld = scripts.find((s) => /application\/ld\+json/.test(s));
+    const walk = (v) => {
+      if (typeof v === "string") { if (WORD.test(v)) hits.push(`jsonld: ${v}`); }
+      else if (v && typeof v === "object") Object.values(v).forEach(walk);
+    };
+    walk(JSON.parse(ld.replace(/^<script[^>]*>/i, "").replace(/<\/script>$/i, "")));
+    const src = html().replace(/<!-- engine:(\S+) begin[\s\S]*?<!-- engine:\1 end -->/g, "");
+    const app = src.split(/<script\b[^>]*>/i).slice(1).map((s) => s.split(/<\/script>/i)[0])
+      .filter((s) => !/^\s*\{/.test(s)).join("\n");
+    const code = app.replace(/\/\*[\s\S]*?\*\//g, "");
+    for (const line of code.split("\n")) {
+      if (/^const DECKS = /.test(line) || /^\s*\/\//.test(line)) continue;
+      const bare = line.replace(/\s\/\/\s.*$/, "");
+      for (const lit of bare.match(/"[^"\\\n]*(?:\\.[^"\\\n]*)*"|'[^'\\\n]*(?:\\.[^'\\\n]*)*'|`[^`]*`/g) || []) {
+        if (/\s/.test(lit) && WORD.test(lit)) hits.push(`script: ${lit}`);
+      }
+    }
+    return hits;
+  }
+
+  test("DS1: no served text, attribute, JSON-LD value or app-script string literal says deck", () => {
+    assert.deepStrictEqual(deckHits(), []);
+  });
+
+  test("DS1b: the pinned strings are served", () => {
+    const h = html();
+    for (const s of ["or pick a built-in scale.", "Pick a built-in scale, or type your own.", "Built-in scales",
+      "DELETE THIS SCALE", "RESET SEEDED SCALES", "Print this scale"]) {
+      assert.ok(h.includes(s), `missing ${s}`);
+    }
+    const metas = [/<meta name="description" content="([^"]*)"/, /<meta property="og:description" content="([^"]*)"/,
+      /"description": "([^"]*)"/].map((r) => r.exec(h)[1]);
+    assert.strictEqual(new Set(metas).size, 1);
+    assert.ok(metas[0].endsWith("or pick a built-in scale."));
+    assert.ok(metas[0].length >= 120 && metas[0].length <= 155, String(metas[0].length));
+  });
+
+  test("DS2: the seeded arming note, the custom arming note, RESET idle and armed and its warning say scale, exactly", () => {
+    const seeded = boot();
+    seeded.select("kurd");
+    seeded.clickChip("D KURD 10");
+    seeded.els["scale-delete"].click();
+    assert.strictEqual(seeded.els["scale-del-note"].textContent,
+      "Tap again to remove D KURD 10. RESET SEEDED SCALES in the menu brings the seeded scales back.");
+    const custom = boot();
+    const c = makeCustom(custom);
+    custom.clickChip(c.name);
+    custom.els["scale-delete"].click();
+    assert.strictEqual(custom.els["scale-del-note"].textContent,
+      `Tap again to remove ${c.name}. This cannot be undone.`);
+    const app = boot();
+    hideViaSheet(app, "amara", "D AMARA 9");
+    const reset = app.els["deck-restore"];
+    reset.click();
+    assert.strictEqual(reset.textContent, "TAP AGAIN TO RESET");
+    assert.strictEqual(app.announcer().textContent, "Tap again to restore all seeded scales. Your edits to them will be gone.");
+    reset.click();
+    assert.match(app.announcer().textContent, /^Seeded scales restored\./);
+    assert.strictEqual(reset.textContent, "RESET SEEDED SCALES");
+  });
+
+  test("DS2b: a boot on a hidden seed says That scale is gone", () => {
+    const boot1 = boot({ storage: { hpfc: JSON.stringify({ deck: "kurd", mode: "A", hidden: ["kurd"] }) } });
+    assert.match(boot1.announcer().textContent, /^That scale is gone\. Showing /);
+    assert.doesNotMatch(boot1.announcer().textContent, /\bdeck\b/i);
+  });
+
+  test("DS2c: the delete refusal on the last scale reads Keep at least one scale. Add a scale before deleting X.", () => {
+    const four = ["amara10", "amara", "hijaz", "pygmy"];
+    const app = boot({ storage: { hpfc: JSON.stringify({ deck: "kurd", mode: "A", hidden: four }) } });
+    app.clickChip("D KURD 10");
+    app.els["scale-delete"].click();
+    app.els["scale-delete"].click();
+    assert.strictEqual(app.els["scale-msg"].textContent, "Keep at least one scale. Add a scale before deleting D KURD 10.");
+  });
 });
