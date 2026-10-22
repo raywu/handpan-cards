@@ -7571,6 +7571,16 @@ function run() {
     }
   });
 
+  const kb2Reach = async (id, atTop) => {
+    for (let i = 0; i < 8; i++) {
+      const s = await kb2Scene();
+      const r = s.fields[id];
+      const mid = atTop ? r.top + 14 : (r.top + r.bottom) / 2;
+      if (mid < s.body.bottom - s.padB - 4 && mid < s.vvh - 4) return s;
+      await kb2Swipe(40, Math.round((s.body.top + s.body.bottom) / 2), -30);
+    }
+    return kb2Scene();
+  };
   const KB2_VIEWPORTS = [[393, 659, 361]];
   const kb2Setup = async (w, h, vv, ios) => {
     await kbOpenAdd(w, h);
@@ -7588,6 +7598,7 @@ function run() {
           await kb2Setup(w, h, vv, ios);
           const order = ["scale-top", "scale-inner", "scale-bottom", "scale-ding", "scale-inner", "scale-top"];
           for (const id of order) {
+            await kb2Reach(id);
             const before = await kb2Scene();
             const moved0 = await b.eval(`return window.__kb2Scrolls;`);
             await kb2Tap(id);
@@ -7616,6 +7627,11 @@ function run() {
       for (const [w, h, vv] of [[393, 659, 274]]) {
         for (const ios of [false, true]) {
           await kb2Setup(w, h, vv, ios);
+          for (let i = 0; i < 8; i++) {
+            const s = await kb2Scene();
+            if (s.fields["scale-bottom"].top <= s.body.bottom - 18) break;
+            await kb2Swipe(40, Math.round(s.vvh * 0.8), -30);
+          }
           const before = await kb2Scene();
           const hidden = before.fields["scale-bottom"].bottom - before.body.bottom;
           assert.ok(hidden > 2, `${w}x${h}: BOTTOM is not partly hidden to begin with (${hidden}), so this proves nothing`);
@@ -7642,6 +7658,14 @@ function run() {
     for (const id of ${JSON.stringify(KB_FIELDS)}) { const r = document.getElementById(id).getBoundingClientRect(); o.fields[id] = { top: r.top, bottom: r.bottom, left: r.left, right: r.right }; }
     return o;`);
   const kb2bWhole = (r, vvh) => r.top >= 1 && r.bottom <= vvh - 1;
+  const kb2bReveal = async (pred) => {
+    for (let i = 0; i < 8; i++) {
+      const s = await kb2bSurf();
+      if (pred(s)) return s;
+      await kb2Swipe(40, Math.round(s.vvh * 0.8), -30);
+    }
+    return kb2bSurf();
+  };
   const kb2bTinyOpen = async (w, h, vv) => {
     await kbOpenAdd(w, h);
     await kb2Tap("scale-ding");
@@ -7688,6 +7712,7 @@ function run() {
   test("KB2b: closing the sheet drops the tap pin and the tap snapshot", async () => {
     try {
       await kb2bTinyOpen(844, 390, 180);
+      await kb2bReveal((s) => kb2bWhole(s.fields["scale-top"], s.vvh));
       const tap = await b.eval(`const r = document.getElementById("scale-top").getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
       const t0 = Date.now() / 1000;
       await kb2Touch("touchStart", [[tap.x, tap.y]], t0);
@@ -7710,8 +7735,8 @@ function run() {
           setTimeout(() => { document.querySelector("#scale-sheet .sheetsurf").scrollTop += 37; }, 30);
         }, true);
         return true;`);
-      const before = await kb2bSurf();
       const focused = await b.eval(`return document.activeElement.id;`);
+      const before = await kb2bReveal((s) => KB_FIELDS.some((f) => f !== focused && kb2bWhole(s.fields[f], s.vvh)));
       const id = KB_FIELDS.find((f) => f !== focused && kb2bWhole(before.fields[f], before.vvh));
       assert.ok(id, `no other field whole in view ${JSON.stringify(before)}`);
       await kb2Tap(id);
@@ -15925,7 +15950,7 @@ function run() {
       const hit = await b.eval(`
         const el = document.querySelector(${JSON.stringify(sel)}), body = document.querySelector("#scale-sheet .sheetbody");
         if (${startShut ? "true" : "false"}) body.scrollTop = Math.min(258, body.scrollHeight - body.clientHeight);
-        else { const r0 = el.getBoundingClientRect(), b0 = body.getBoundingClientRect(); if (r0.top < b0.top || r0.bottom > b0.bottom) body.scrollTop = 0; }
+        else { const r0 = el.getBoundingClientRect(), b0 = body.getBoundingClientRect(); if (r0.top < b0.top || r0.bottom > b0.bottom) el.scrollIntoView({ block: "nearest" }); }
         const r = el.getBoundingClientRect(), t = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
         return { ok: !!t && (t === el || el.contains(t)), top: body.scrollTop };`);
       await sleep(400);
