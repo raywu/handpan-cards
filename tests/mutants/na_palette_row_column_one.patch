@@ -1,0 +1,15 @@
+# kills: SPB N5: at 844x390 the palette row sits in the controls column, below the drawer zone, right of the plate band
+# suite: node --test --test-name-pattern ^SPB.N5: tests/e2e.test.js
+# The landscape palette row loses its grid-column:2 and falls into the plate's column.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1123,7 +1123,7 @@
+   #scale-sheet[data-tab="layout"] #scale-layout-zone{grid-column:2}
+   #scale-sheet[data-tab="layout"] #scale-drawer-status{position:relative; top:auto; margin:0; box-shadow:none; z-index:auto; min-width:0}
+   #scale-sheet[data-tab="layout"] #scale-layout-zone{margin-top:var(--sp-3)}
+-  #scale-sheet[data-tab="layout"] #scale-panel-layout > .editrow{grid-column:2; margin-top:var(--sp-3)}
++  #scale-sheet[data-tab="layout"] #scale-panel-layout > .editrow{margin-top:var(--sp-3)}
+   #scale-sheet[data-tab="layout"] #scale-guidance, #scale-sheet[data-tab="layout"] #scale-next,
+   #scale-sheet[data-tab="layout"] #scale-generate, #scale-sheet[data-tab="layout"] #scale-delete-row,
+   #scale-sheet[data-tab="layout"] #scale-foot{margin-left:calc(var(--plate-w) + var(--sp-2))}

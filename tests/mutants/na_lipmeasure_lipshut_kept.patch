@@ -1,0 +1,14 @@
+# kills: SPA N2: a re-measure while the footer is opening leaves it opening, not shut
+# suite: node --test --test-name-pattern ^SPA.N2:.a.re-measure.while.the.footer.is.opening.leaves.it.opening,.not.shut$ tests/app.test.js
+# lipMeasure leaves lipshut on when the footer was not shut.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10771,7 +10771,6 @@
+   const open = lipRead();
+   sheet.classList.add("lipped", "lipshut");
+   lipWrite(open);
+-  if (!shut) sheet.classList.remove("lipshut");
+   lipFlush();
+   sheet.classList.remove("lipnow");
+ }

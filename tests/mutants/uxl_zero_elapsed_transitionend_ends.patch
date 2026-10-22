@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10953,7 +10953,7 @@
+@@ -10963,7 +10963,7 @@
    if (!lipFocusing) restoreLip();
  });
  footSlide.addEventListener("transitionend", (e) => {
--  if (e.target === footSlide && e.propertyName === "transform" && !(e.elapsedTime < 0.17)) endOpening(lipEnd);
+-  if (e.target === footSlide && e.propertyName === "transform" && !(e.elapsedTime < LIP_SLIDE_END_S)) endOpening(lipEnd);
 +  if (e.target === footSlide && e.propertyName === "transform") endOpening(lipEnd);
  });
  function hasTwoNoteRing() {

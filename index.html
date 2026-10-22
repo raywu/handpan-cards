@@ -10571,15 +10571,13 @@ const platesBeside = () => {
   const w = (el) => (el.getBoundingClientRect ? el.getBoundingClientRect().width : el.offsetWidth) || 0;
   return w(plateBand) > 0 && w(bandPort) > 0 && w(plateBand) < w(bandPort) * 0.75;
 };
-/** The scrollport height the lipped layout gives back: the surface padding, the lead and delete row, less the
- *  footer and its margin. Mirrors the .sheetsurf padding rules (open, short, lipped); change one, change the other. */
+/** The scrollport height the lipped layout gives back: the lead and delete row, less the footer and its margin.
+ *  Read only while the plate sits beside the controls, which happens only in the short layout, where the open and
+ *  the lipped surface padding are the same (the .short rule wins over the lipped one). */
 const lipDelta = () => {
   const px = (v) => parseFloat(v) || 0;
   const cs = getComputedStyle(sheetSurf), lead = nextBtn.hidden ? genBtn : nextBtn;
-  const padLip = px(cs.paddingBottom);
-  const rootCs = getComputedStyle(document.documentElement);
-  const padOpen = sheet.classList.contains("short") ? px(rootCs.getPropertyValue("--sp-2")) : Math.max(px(rootCs.getPropertyValue("--sp-4")), padLip);
-  return padOpen - padLip + lead.getBoundingClientRect().height + (delRow.hidden ? 0 : px(cs.rowGap) + delRow.getBoundingClientRect().height) - footEl.getBoundingClientRect().height - px(getComputedStyle(footEl).marginTop);
+  return lead.getBoundingClientRect().height + (delRow.hidden ? 0 : px(cs.rowGap) + delRow.getBoundingClientRect().height) - footEl.getBoundingClientRect().height - px(getComputedStyle(footEl).marginTop);
 };
 const openRoomOf = () => Math.max(0, roomOf() - (sheet.classList.contains("lipped") ? lipDelta() : 0));
 function syncBand() {
@@ -10699,6 +10697,8 @@ const lipBtn = document.getElementById("scale-lip");
 const guidanceEl = msgLine.parentElement || msgLine.parentNode || null;
 const LIP_VARS = ["--lip-h", "--lip-pad", "--lip-gd", "--lip-g"];
 const LIP_PX = 24, LIP_SWIPE = 16, LIP_WINDOW = 150, LIP_END_MS = 220;
+/** The footslide transform transition lasts 180ms in the stylesheet; a transitionend that reports under 10ms less is not its end. */
+const LIP_SLIDE_MS = 180, LIP_SLIDE_END_S = (LIP_SLIDE_MS - 10) / 1000;
 let lipGen = 0, lipTimer = 0, lipEnd = 0, lipSettled = false, lipDirty = false;
 let lipQuietUntil = 0, userWindowUntil = 0, lipAcc = 0, lipPrev = { t: 0, M: 0 };
 const lipRect = (el) => (el && el.getBoundingClientRect ? el.getBoundingClientRect() : { top: 0, bottom: 0, height: 0 });
@@ -10736,12 +10736,20 @@ function lipHandOff() {
   if (to && to.focus) to.focus({ preventScroll: true });
 }
 let lipFocusing = false;
+function lipTakeFocus() {
+  const a = document.activeElement;
+  if (a === nextBtn || a === genBtn || a === delBtn) {
+    lipFocusing = true;
+    lipBtn.focus({ preventScroll: true });
+    lipFocusing = false;
+  }
+}
 function collapseLip() {
   if (!sheetOpen) return;
   lipAcc = 0;
   clearTimeout(lipTimer);
   lipGen += 1;
-  if (isLipped()) { sheet.classList.add("lipshut"); lipSettled = false; const g = lipGen; lipTimer = setTimeout(() => { if (g === lipGen) { lipSettled = true; if (lipDirty) { lipDirty = false; lipMeasure(); } } }, LIP_END_MS); return; }
+  if (isLipped()) { sheet.classList.add("lipshut"); lipSettled = false; const g = lipGen; lipTimer = setTimeout(() => { if (g === lipGen) { lipSettled = true; if (lipDirty) { lipDirty = false; lipMeasure(); } } }, LIP_END_MS); lipTakeFocus(); return; }
   const open = lipRead();
   lipDirty = false;
   sheet.classList.add("lipnow", "lipped");
@@ -10754,12 +10762,7 @@ function collapseLip() {
   lipSettled = false;
   const gen = lipGen;
   lipTimer = setTimeout(() => { if (gen === lipGen) { lipSettled = true; if (lipDirty) { lipDirty = false; lipMeasure(); } } }, LIP_END_MS);
-  const a = document.activeElement;
-  if (a === nextBtn || a === genBtn || a === delBtn) {
-    lipFocusing = true;
-    lipBtn.focus({ preventScroll: true });
-    lipFocusing = false;
-  }
+  lipTakeFocus();
 }
 function lipMeasure() {
   const shut = isLipShut();
@@ -10960,7 +10963,7 @@ lipBtn.addEventListener("focusin", () => {
   if (!lipFocusing) restoreLip();
 });
 footSlide.addEventListener("transitionend", (e) => {
-  if (e.target === footSlide && e.propertyName === "transform" && !(e.elapsedTime < 0.17)) endOpening(lipEnd);
+  if (e.target === footSlide && e.propertyName === "transform" && !(e.elapsedTime < LIP_SLIDE_END_S)) endOpening(lipEnd);
 });
 function hasTwoNoteRing() {
   const res = HPE.core.parseSeed(String(scaleBox.value || ""), layoutOptions());

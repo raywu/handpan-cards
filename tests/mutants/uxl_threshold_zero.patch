@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10690,7 +10690,7 @@ const footSlide = document.getElementById("scale-footslide");
+@@ -10696,7 +10696,7 @@ const footSlide = document.getElementById("scale-footslide");
  const lipBtn = document.getElementById("scale-lip");
  const guidanceEl = msgLine.parentElement || msgLine.parentNode || null;
  const LIP_VARS = ["--lip-h", "--lip-pad", "--lip-gd", "--lip-g"];
 -const LIP_PX = 24, LIP_SWIPE = 16, LIP_WINDOW = 150, LIP_END_MS = 220;
 +const LIP_PX = 0, LIP_SWIPE = 16, LIP_WINDOW = 150, LIP_END_MS = 220;
+ /** The footslide transform transition lasts 180ms in the stylesheet; a transitionend that reports under 10ms less is not its end. */
+ const LIP_SLIDE_MS = 180, LIP_SLIDE_END_S = (LIP_SLIDE_MS - 10) / 1000;
  let lipGen = 0, lipTimer = 0, lipEnd = 0, lipSettled = false, lipDirty = false;
- let lipQuietUntil = 0, userWindowUntil = 0, lipAcc = 0, lipPrev = { t: 0, M: 0 };
- const lipRect = (el) => (el && el.getBoundingClientRect ? el.getBoundingClientRect() : { top: 0, bottom: 0, height: 0 });
