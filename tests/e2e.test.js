@@ -7580,15 +7580,18 @@ function run() {
       last = now;
     }
   };
-  const kb2Reach = async (id, atTop) => {
-    for (let i = 0; i < 8; i++) {
+  const kb2Reach = async (id) => {
+    for (let i = 0; i < 10; i++) {
       const s = await kb2Scene();
       const r = s.fields[id];
-      const mid = atTop ? r.top + 14 : (r.top + r.bottom) / 2;
-      if (mid < s.body.bottom - s.padB - 4 && mid < s.vvh - 4) return s;
-      await kb2Swipe(40, Math.round((s.body.top + s.body.bottom) / 2), -30);
+      const limit = s.body.bottom - s.padB;
+      const dy = r.top < s.body.top + 4 ? 30 : r.bottom > limit - 4 ? -30 : 0;
+      if (!dy) return s;
+      await kb2Swipe(40, Math.round((s.body.top + s.body.bottom) / 2), dy);
       await kb2Still();
-      await new Promise((r) => setTimeout(r, 1200));
+      await new Promise((res) => setTimeout(res, 1200));
+      const t = await kb2Scene();
+      if (t.bodyTop === s.bodyTop) return t;
     }
     return kb2Scene();
   };
