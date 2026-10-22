@@ -1,0 +1,15 @@
+# kills: CN5: Add with a valid scale and a refused name takes the Edit name-refusal path (Layout tab stays enabled, GENERATE disabled, the name reason shown) and creates nothing
+# suite: node --test --test-name-pattern ^CN5: tests/app.test.js
+# The name-refusal fallback is Edit-only again, so a refused name on Add reads as a bad scale.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11546,7 +11546,7 @@ function syncParseState({ paint }) {
+     if (crowded) { say(crowded.reason, "warn"); msgLine.classList.add("pan"); }
+     else say("", "");
+   } else {
+-    const second = opts.name !== undefined ? HPE.core.parseSeed(text, layoutOptions()) : null;
++    const second = editingId && opts.name !== undefined ? HPE.core.parseSeed(text, layoutOptions()) : null;
+     if (second && second.ok) {
+       boxOk = true;
+       const bottom = Object.values(second.value.fields).some((f) => f[3] === "bottom");

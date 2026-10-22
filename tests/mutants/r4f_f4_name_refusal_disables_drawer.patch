@@ -8,7 +8,7 @@ diff --git a/index.html b/index.html
      if (crowded) { say(crowded.reason, "warn"); msgLine.classList.add("pan"); }
      else say("", "");
    } else {
--    const second = editingId && opts.name !== undefined ? HPE.core.parseSeed(text, layoutOptions()) : null;
+-    const second = opts.name !== undefined ? HPE.core.parseSeed(text, layoutOptions()) : null;
 +    const second = null;
      if (second && second.ok) {
        boxOk = true;

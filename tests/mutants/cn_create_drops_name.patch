@@ -1,0 +1,15 @@
+# kills: CN3: Add with a typed name, NEXT, GENERATE CARDS: the deck, its chip and the share code carry the normalised name
+# suite: node --test --test-name-pattern ^CN3 tests/app.test.js
+# The create path no longer writes options.name, so a typed name on Add is ignored.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11344,7 +11344,7 @@ function sheetOptions() {
+     .replace(/[–—]/g, "-").replace(/…/g, "...")
+     .trim();
+   if (!editingId) {
+-    if (n) o.name = n;  // an empty box keeps the auto label
++    
+   } else {
+     // The box is PREFILLED, so an UNTOUCHED box on an auto-named deck is
+     // treated as ABSENT: otherwise a field edit would pin the old fields' name

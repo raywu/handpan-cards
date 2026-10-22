@@ -1,0 +1,15 @@
+# kills: CN1: the served markup has #scale-name-row without hidden, before #scale-fields
+# suite: node --test --test-name-pattern ^CN1 tests/app.test.js
+# The DECK NAME row ships hidden again, so Add has no name box.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1431,7 +1431,7 @@ html.about-open{overflow:hidden}
+               aria-controls="scale-panel-layout" tabindex="-1">Layout</button>
+     </div>
+     <div id="scale-panel-scale" role="tabpanel" aria-labelledby="scale-tab-scale">
+-    <div class="editrow" id="scale-name-row">
++    <div class="editrow" id="scale-name-row" hidden>
+       <label class="sheetlabel" for="scale-name">DECK NAME</label>
+       <input id="scale-name" type="text" autocapitalize="characters" autocorrect="off"
+              autocomplete="off" spellcheck="false" maxlength="40">
