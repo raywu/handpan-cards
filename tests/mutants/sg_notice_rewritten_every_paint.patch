@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10517,7 +10517,7 @@ function paintLayout() {
-   fieldMsg.hidden = drawerOpen;
+@@ -10552,7 +10552,7 @@ function paintLayout() {
+   syncMsgYield();
    const note = drawerOpen ? layoutNoticeText() : "";
    const noteChanged = layoutNote.textContent !== note;
 -  if (noteChanged) layoutNote.textContent = note;
