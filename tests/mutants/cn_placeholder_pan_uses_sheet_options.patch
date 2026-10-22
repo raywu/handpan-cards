@@ -1,0 +1,15 @@
+# kills: CN9: Add with an empty scale box and a refused name still shows the placeholder pan
+# suite: node --test --test-name-pattern ^CN9 tests/app.test.js
+# The example pan parses with the name-carrying options again, so a refused name blanks it.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11481,7 +11481,7 @@ function showPlaceholderPan() {
+   const values = {};
+   for (const k of FIELD_KEYS) values[k] = String(fieldEls[k].placeholder || "");
+   const composed = HPE.importer.compose(values);
+-  const res = composed.ok ? HPE.core.parseSeed(composed.line, layoutOptions()) : composed;
++  const res = composed.ok ? HPE.core.parseSeed(composed.line, sheetOptions()) : composed;
+   if (!res.ok || !paintPan(res.value, "example")) clearPanPreview();
+ }
+ 

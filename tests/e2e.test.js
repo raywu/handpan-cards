@@ -5095,7 +5095,7 @@ function run() {
         assert.strictEqual(await b.eval(`return document.getElementById("scale-panel-scale").hidden;`), false, `${mode}: opens on the Scale tab`);
         const scaleCycle = edit
           ? ["scale-back", "scale-tab-scale", "scale-name", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box", "scale-generate", "scale-delete"]
-          : ["scale-back", "scale-tab-scale", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box", "scale-next"];
+          : ["scale-back", "scale-tab-scale", "scale-name", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box", "scale-next"];
         await both(`${mode} Scale tab`, scaleCycle);
         assert.ok(!scaleCycle.some((id) => swatches.includes(id)), "the Scale cycle names a swatch");
         ran.push(`${mode}/scale`);
@@ -6368,6 +6368,29 @@ function run() {
     }
   });
 
+  test("CN7: at 380x780 the Add sheet shows SCALE NAME above DING and the primary stays visible", async () => {
+    try {
+      await freshLoad();
+      await b.setViewport(380, 780, true);
+      await openSheetForFold(380, 780);
+      const m = await b.eval(`
+        const r = (id) => document.getElementById(id).getBoundingClientRect();
+        const n = r("scale-name"), d = r("scale-ding");
+        return { hidden: document.getElementById("scale-name-row").hidden,
+          nameBottom: n.bottom, nameHeight: n.height, nameTop: n.top, dingTop: d.top, vh: window.innerHeight };`);
+      assert.strictEqual(m.hidden, false, "the SCALE NAME row is hidden on Add");
+      assert.ok(m.nameHeight > 0 && m.nameTop >= 0 && m.nameBottom <= m.vh, "SCALE NAME is not on screen");
+      assert.ok(m.nameBottom <= m.dingTop + 0.5, "SCALE NAME is not above DING");
+      await typeScale(BIG_SCALE);
+      await b.waitFor(`!document.getElementById("scale-preview").hasAttribute("hidden")`,
+        { label: "the preview to render at 380x780" });
+      assertPrimaryVisible(await primaryFold(), "create sheet with SCALE NAME at 380x780");
+      await b.key("Escape", "Escape", 27);
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
   test("SAVE CHANGES is reachable without scrolling on a built-in-sized deck", async () => {
     try {
       await freshLoad();
@@ -7548,6 +7571,30 @@ function run() {
     }
   });
 
+  const kb2Still = async () => {
+    let last = await b.eval(`return document.querySelector("#scale-sheet .sheetbody").scrollTop + "/" + document.querySelector("#scale-sheet .sheetsurf").scrollTop;`);
+    for (let i = 0; i < 10; i++) {
+      await new Promise((r) => setTimeout(r, 150));
+      const now = await b.eval(`return document.querySelector("#scale-sheet .sheetbody").scrollTop + "/" + document.querySelector("#scale-sheet .sheetsurf").scrollTop;`);
+      if (now === last) return;
+      last = now;
+    }
+  };
+  const kb2Reach = async (id) => {
+    for (let i = 0; i < 10; i++) {
+      const s = await kb2Scene();
+      const r = s.fields[id];
+      const limit = s.body.bottom - s.padB;
+      const dy = r.top < s.body.top + 4 ? 30 : r.bottom > limit - 4 ? -30 : 0;
+      if (!dy) return s;
+      await kb2Swipe(40, Math.round((s.body.top + s.body.bottom) / 2), dy);
+      await kb2Still();
+      await new Promise((res) => setTimeout(res, 1200));
+      const t = await kb2Scene();
+      if (t.bodyTop === s.bodyTop) return t;
+    }
+    return kb2Scene();
+  };
   const KB2_VIEWPORTS = [[393, 659, 361]];
   const kb2Setup = async (w, h, vv, ios) => {
     await kbOpenAdd(w, h);
@@ -7565,6 +7612,8 @@ function run() {
           await kb2Setup(w, h, vv, ios);
           const order = ["scale-top", "scale-inner", "scale-bottom", "scale-ding", "scale-inner", "scale-top"];
           for (const id of order) {
+            await kb2Reach(id);
+            await kb2Still();
             const before = await kb2Scene();
             const moved0 = await b.eval(`return window.__kb2Scrolls;`);
             await kb2Tap(id);
@@ -7573,7 +7622,7 @@ function run() {
             assert.strictEqual(await b.eval(`return document.activeElement.id;`), id, `${ctx}: the tap did not focus the field`);
             if (kb2Whole(before.fields[id], before)) {
               for (const f of KB_FIELDS) {
-                assert.ok(Math.abs(after.fields[f].top - before.fields[f].top) <= 1, `${ctx}: ${f} moved ${before.fields[f].top} -> ${after.fields[f].top} though ${id} was whole in view`);
+                assert.ok(Math.abs(after.fields[f].top - before.fields[f].top) <= 1, `${ctx}: ${f} moved ${before.fields[f].top} -> ${after.fields[f].top} though ${id} was whole in view; before ${JSON.stringify(before)} after ${JSON.stringify(after)}`);
               }
               if (!ios) assert.strictEqual(await b.eval(`return window.__kb2Scrolls;`), moved0, `${ctx}: a scroll event fired though ${id} was whole in view`);
             }
@@ -7593,6 +7642,12 @@ function run() {
       for (const [w, h, vv] of [[393, 659, 274]]) {
         for (const ios of [false, true]) {
           await kb2Setup(w, h, vv, ios);
+          for (let i = 0; i < 8; i++) {
+            const s = await kb2Scene();
+            if (s.fields["scale-bottom"].top <= s.body.bottom - 18) break;
+            await kb2Swipe(40, Math.round(s.vvh * 0.8), -30);
+            await kb2Still();
+          }
           const before = await kb2Scene();
           const hidden = before.fields["scale-bottom"].bottom - before.body.bottom;
           assert.ok(hidden > 2, `${w}x${h}: BOTTOM is not partly hidden to begin with (${hidden}), so this proves nothing`);
@@ -7619,6 +7674,15 @@ function run() {
     for (const id of ${JSON.stringify(KB_FIELDS)}) { const r = document.getElementById(id).getBoundingClientRect(); o.fields[id] = { top: r.top, bottom: r.bottom, left: r.left, right: r.right }; }
     return o;`);
   const kb2bWhole = (r, vvh) => r.top >= 1 && r.bottom <= vvh - 1;
+  const kb2bReveal = async (pred) => {
+    for (let i = 0; i < 8; i++) {
+      const s = await kb2bSurf();
+      if (pred(s)) return s;
+      await kb2Swipe(40, Math.round(s.vvh * 0.8), -30);
+      await kb2Still();
+    }
+    return kb2bSurf();
+  };
   const kb2bTinyOpen = async (w, h, vv) => {
     await kbOpenAdd(w, h);
     await kb2Tap("scale-ding");
@@ -7665,6 +7729,7 @@ function run() {
   test("KB2b: closing the sheet drops the tap pin and the tap snapshot", async () => {
     try {
       await kb2bTinyOpen(844, 390, 180);
+      await kb2bReveal((s) => kb2bWhole(s.fields["scale-top"], s.vvh));
       const tap = await b.eval(`const r = document.getElementById("scale-top").getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
       const t0 = Date.now() / 1000;
       await kb2Touch("touchStart", [[tap.x, tap.y]], t0);
@@ -7687,8 +7752,8 @@ function run() {
           setTimeout(() => { document.querySelector("#scale-sheet .sheetsurf").scrollTop += 37; }, 30);
         }, true);
         return true;`);
-      const before = await kb2bSurf();
       const focused = await b.eval(`return document.activeElement.id;`);
+      const before = await kb2bReveal((s) => KB_FIELDS.some((f) => f !== focused && kb2bWhole(s.fields[f], s.vvh)));
       const id = KB_FIELDS.find((f) => f !== focused && kb2bWhole(before.fields[f], before.vvh));
       assert.ok(id, `no other field whole in view ${JSON.stringify(before)}`);
       await kb2Tap(id);
@@ -15902,7 +15967,7 @@ function run() {
       const hit = await b.eval(`
         const el = document.querySelector(${JSON.stringify(sel)}), body = document.querySelector("#scale-sheet .sheetbody");
         if (${startShut ? "true" : "false"}) body.scrollTop = Math.min(258, body.scrollHeight - body.clientHeight);
-        else { const r0 = el.getBoundingClientRect(), b0 = body.getBoundingClientRect(); if (r0.top < b0.top || r0.bottom > b0.bottom) body.scrollTop = 0; }
+        else { const r0 = el.getBoundingClientRect(), b0 = body.getBoundingClientRect(); if (r0.top < b0.top || r0.bottom > b0.bottom) el.scrollIntoView({ block: "nearest" }); }
         const r = el.getBoundingClientRect(), t = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
         return { ok: !!t && (t === el || el.contains(t)), top: body.scrollTop };`);
       await sleep(400);

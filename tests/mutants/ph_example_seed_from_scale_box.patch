@@ -11,8 +11,8 @@ diff --git a/index.html b/index.html
 -  const values = {};
 -  for (const k of FIELD_KEYS) values[k] = String(fieldEls[k].placeholder || "");
 -  const composed = HPE.importer.compose(values);
--  const res = composed.ok ? HPE.core.parseSeed(composed.line, sheetOptions()) : composed;
-+  const res = HPE.core.parseSeed(String(scaleBox.placeholder || ""), sheetOptions());
+-  const res = composed.ok ? HPE.core.parseSeed(composed.line, layoutOptions()) : composed;
++  const res = HPE.core.parseSeed(String(scaleBox.placeholder || ""), layoutOptions());
    if (!res.ok || !paintPan(res.value, "example")) clearPanPreview();
  }
  
