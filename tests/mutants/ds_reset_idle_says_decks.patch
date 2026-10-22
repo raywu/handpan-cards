@@ -1,5 +1,5 @@
 # kills: DS2: the seeded arming note, the custom arming note, RESET idle and armed and its warning say scale, exactly
-# suite: node --test --test-name-pattern ^DS2 tests/app.test.js
+# suite: node --test --test-name-pattern ^DS2..the.seeded.arming.note..the.custom.arming.note..RESET.idle.and.armed.and.its.warning.say.scale..exactly$ tests/app.test.js
 # RESET_IDLE goes back to RESET SEEDED DECKS.
 diff --git a/index.html b/index.html
 --- a/index.html
