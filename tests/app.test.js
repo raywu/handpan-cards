@@ -10856,14 +10856,63 @@ describe("DI: dual input", () => {
     fieldSettle(app, "ding");
     const text = el(app, "scale-field-msg").textContent;
     assert.match(text, /^DING: /, "the first field in visual order that shows a message leads");
-    assert.strictEqual(el(app, "scale-msg").style.display, "none");
+    assert.strictEqual(el(app, "scale-msg").hidden, true);
     fieldType(app, "ding", "D3");
     fieldSettle(app, "ding");
     assert.match(el(app, "scale-field-msg").textContent, /^TOP RIM NOTES: /);
     fieldType(app, "top", "A3 C4 D4");
     fieldSettle(app, "top");
     assert.strictEqual(el(app, "scale-field-msg").textContent, "");
-    assert.notStrictEqual(el(app, "scale-msg").style.display, "none");
+    assert.strictEqual(el(app, "scale-msg").hidden, false);
+  });
+
+  const oneDeck = () => {
+    const four = ["amara10", "amara", "hijaz", "pygmy"];
+    const app = boot({ storage: { hpfc: JSON.stringify({ deck: "kurd", mode: "A", hidden: four }) } });
+    app.clickChip("D KURD 10");
+    fieldType(app, "bottom", "F");
+    fieldSettle(app, "bottom");
+    return app;
+  };
+  const visibleMsg = (app) => !el(app, "scale-msg").hidden && el(app, "scale-msg").textContent !== "";
+
+  test("FX: a delete refusal stays visible on the Layout tab while a field message is pending", () => {
+    const app = oneDeck();
+    assert.notStrictEqual(el(app, "scale-field-msg").textContent, "");
+    app.click(el(app, "scale-tab-layout"));
+    el(app, "scale-delete").click(); el(app, "scale-delete").click();
+    assert.match(el(app, "scale-msg").textContent, /^Keep at least one deck/);
+    assert.strictEqual(visibleMsg(app), true);
+  });
+
+  test("FX: a delete refusal stays visible on the Scale tab beside a field message", () => {
+    const app = oneDeck();
+    assert.notStrictEqual(el(app, "scale-field-msg").textContent, "");
+    el(app, "scale-delete").click(); el(app, "scale-delete").click();
+    assert.match(el(app, "scale-msg").textContent, /^Keep at least one deck/);
+    assert.strictEqual(visibleMsg(app), true);
+  });
+
+  test("FX: on the Layout tab a pending field message never hides the crowded-pan warning", () => {
+    const app = openAdd();
+    fieldType(app, "ding", "C3"); fieldSettle(app, "ding");
+    fieldType(app, "top", "D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5 F5 G5 A5 B5 C6 D6 E6 F6"); fieldSettle(app, "top");
+    fieldType(app, "bottom", "C"); fieldSettle(app, "bottom");
+    app.click(el(app, "scale-tab-layout"));
+    assert.notStrictEqual(el(app, "scale-field-msg").textContent, "");
+    assert.match(el(app, "scale-msg").className, /\bpan\b/);
+    assert.strictEqual(visibleMsg(app), true);
+  });
+
+  test("FX: back on the Scale tab an info-level #scale-msg yields to a visible field message again", () => {
+    const app = openAdd();
+    fieldType(app, "ding", "C3"); fieldSettle(app, "ding");
+    fieldType(app, "top", "D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5 F5 G5 A5 B5 C6 D6 E6 F6"); fieldSettle(app, "top");
+    fieldType(app, "bottom", "C"); fieldSettle(app, "bottom");
+    app.click(el(app, "scale-tab-layout"));
+    app.click(el(app, "scale-tab-scale"));
+    assert.strictEqual(el(app, "scale-field-msg").hidden, false);
+    assert.strictEqual(el(app, "scale-msg").hidden, true);
   });
 
   test("DI: a field message joins only at settle: nothing while a field is typed in, the message at its blur", () => {
@@ -11518,7 +11567,7 @@ describe("O1: the duplicate-bottom warning on the field line", () => {
     assert.strictEqual(m.textContent, WARN_DING);
     assert.ok(m.classList.contains("warn"));
     assert.ok(!m.classList.contains("info"));
-    assert.strictEqual(app.els["scale-msg"].style.display, "none");
+    assert.strictEqual(app.els["scale-msg"].hidden, true);
     assert.strictEqual(Boolean(app.els["scale-next"].disabled), false);
     assert.strictEqual(Boolean(app.els["scale-generate"].disabled), false);
     const e = boot();
