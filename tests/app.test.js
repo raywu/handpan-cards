@@ -6078,7 +6078,7 @@ test("W1 line 119: the count line leads with the ding and all three counts, then
  * The flip. Tests below that were written AFTER the implementation are marked
  * "(pin)" in their title; the rest were written red first. */
 
-const PLACEHOLDER = "[C] [D] (E) [F#] [G] [A] B [C] D E F# G A B [C] D E | F# G A";
+const PLACEHOLDER = "[C3] [D3] (E3) [F#3] [G3] [A3] B3 [C4] D4 E4 F#4 G4 A4 B4 [C5] D5 E5 | F#5 G5 A5";
 const indexSource = () => require("node:fs").readFileSync(require("./helpers/sandbox.js").APP, "utf8");
 const placeholderOf = () => /id="scale-box"[\s\S]{0,400}?placeholder="([^"]+)"/.exec(indexSource())[1];
 
@@ -10581,13 +10581,13 @@ describe("DI: dual input", () => {
   const fillAmara = (app) => { fieldType(app, "ding", AMARA_FIELDS.ding); fieldType(app, "top", AMARA_FIELDS.top); };
   const src = () => fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
 
-  test("DI: the sheet serves DING, TOP RIM NOTES, TOP INNER NOTES and BOTTOM NOTES in that order before #scale-box, each a text input with autocapitalize off, enterkeyhint next and BOTTOM done", () => {
+  test("DI: the sheet serves DING, TOP RIM NOTES, TOP INNER (CYCLOPS/MUTANT) NOTE and BOTTOM NOTES in that order before #scale-box, each a text input with autocapitalize off, enterkeyhint next and BOTTOM done", () => {
     const h = src();
     const at = (id) => h.indexOf(`id="${id}"`);
     const order = ["scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box"].map(at);
     assert.ok(order.every((n) => n > 0), "an id is missing from the markup");
     assert.deepStrictEqual(order.slice().sort((a, b) => a - b), order, "the fields are not in order before #scale-box");
-    const labels = { ding: "DING", top: "TOP RIM NOTES, LOW TO HIGH", inner: "TOP INNER NOTES, LOW TO HIGH (OPTIONAL)", bottom: "BOTTOM NOTES, LOW TO HIGH (OPTIONAL)" };
+    const labels = { ding: "DING", top: "TOP RIM NOTES, LOW TO HIGH", inner: "TOP INNER (CYCLOPS/MUTANT) NOTE, LOW TO HIGH (OPTIONAL)", bottom: "BOTTOM NOTES, LOW TO HIGH (OPTIONAL)" };
     for (const k of FIELDS) {
       const tag = h.match(new RegExp(`<input[^>]*id="scale-${k}"[^>]*>`))[0];
       assert.match(tag, /type="text"/, k);
@@ -10784,9 +10784,31 @@ describe("DI: dual input", () => {
       "BOTTOM NOTES: Octaves guessed: C3, Eb3. Type an octave to change a guess.");
   });
 
+  test("LB: the top and scale-box placeholders carry octaves and parse to the same fields as the octaveless examples", () => {
+    const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    const ph = (id) => html.match(new RegExp(`<(?:input|textarea) id="${id}"[^>]*placeholder="([^"]*)"`))[1];
+    assert.strictEqual(ph("scale-top"), "A3 Bb3 C4 D4 E4 F4 G4 A4");
+    const box = ph("scale-box");
+    assert.strictEqual(box, "[C3] [D3] (E3) [F#3] [G3] [A3] B3 [C4] D4 E4 F#4 G4 A4 B4 [C5] D5 E5 | F#5 G5 A5");
+    assert.match(html, new RegExp(`id="scale-box-wrap" data-grow="${box.replace(/[[\]()|]/g, "\\$&")}"`));
+    const engine = require("./helpers/engine.js").loadEngine(["core", "importer"]);
+    const opts = { palette: 0, parent: null, name: "", mirror: false };
+    const fields = (v) => {
+      const c = engine.importer.compose(v);
+      assert.ok(c.ok);
+      const r = engine.core.parseSeed(c.line, opts);
+      assert.ok(r.ok);
+      return JSON.stringify(r.value);
+    };
+    const v = { ding: ph("scale-ding"), top: ph("scale-top"), inner: ph("scale-inner"), bottom: ph("scale-bottom") };
+    assert.strictEqual(fields(v), fields({ ...v, top: "A Bb C D E F G A" }));
+    const oldBox = "[C] [D] (E) [F#] [G] [A] B [C] D E F# G A B [C] D E | F# G A";
+    assert.strictEqual(JSON.stringify(engine.core.parseSeed(box, opts).value), JSON.stringify(engine.core.parseSeed(oldBox, opts).value));
+  });
+
   test("IB: the INNER and BOTTOM labels say LOW TO HIGH", () => {
     const h = src();
-    assert.match(h, /id="scale-inner-label"[^>]*>TOP INNER NOTES, LOW TO HIGH \(OPTIONAL\)</);
+    assert.match(h, /id="scale-inner-label"[^>]*>TOP INNER \(CYCLOPS\/MUTANT\) NOTE, LOW TO HIGH \(OPTIONAL\)</);
     assert.match(h, /id="scale-bottom-label"[^>]*>BOTTOM NOTES, LOW TO HIGH \(OPTIONAL\)</);
   });
 

@@ -2489,7 +2489,7 @@ function run() {
     // only if #scale-refusal is itself a live region.
     assert.strictEqual(open.refusalLive, "polite",
       "the seed refusal is not in a live region inside the modal sheet");
-    assert.strictEqual(open.placeholder, "[C] [D] (E) [F#] [G] [A] B [C] D E F# G A B [C] D E | F# G A");
+    assert.strictEqual(open.placeholder, "[C3] [D3] (E3) [F#3] [G3] [A3] B3 [C4] D4 E4 F#4 G4 A4 B4 [C5] D5 E5 | F#5 G5 A5");
     assert.strictEqual(open.generateDisabled, true);
     assert.strictEqual(open.swatches, 6);
     assert.deepStrictEqual(open.mirrorOn, [], "neither mirror switch is pressed by default");
@@ -5969,13 +5969,13 @@ function run() {
     }
   });
 
-  test("W1 line 3: an empty field shows a 60-character placeholder whole, in at most three rows", async () => {
+  test("W1 line 3: an empty field shows an 80-character placeholder whole, in at most three rows", async () => {
     await freshLoad();
     await b.setViewport(...W1_PHONE);
     try {
       await openSheet();
-      const ph = "[C] [D] (E) [F#] [G] [A] B [C] D E F# G A B [C] D E | F# G A";
-      assert.strictEqual(ph.length, 60);
+      const ph = "[C3] [D3] (E3) [F#3] [G3] [A3] B3 [C4] D4 E4 F#4 G4 A4 B4 [C5] D5 E5 | F#5 G5 A5";
+      assert.strictEqual(ph.length, 80);
       const r = await b.eval(`
         const ta = document.getElementById("scale-box");
         ta.placeholder = ${JSON.stringify(ph)};
@@ -6418,7 +6418,7 @@ function run() {
     await b.setViewport(...W1_PHONE);
     try {
       await openSheet();
-      await typeScale("[C] [D] (E) [F#] [G] [A] B [C] D E F# G A B [C] D E | F# G A");
+      await typeScale("[C3] [D3] (E3) [F#3] [G3] [A3] B3 [C4] D4 E4 F#4 G4 A4 B4 [C5] D5 E5 | F#5 G5 A5");
       const m = await b.eval(`
         const l2 = document.getElementById("scale-label-2");
         const parse = document.getElementById("scale-parse");
