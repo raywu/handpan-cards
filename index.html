@@ -10953,7 +10953,7 @@ lipBtn.addEventListener("focusin", () => {
   if (!lipFocusing) restoreLip();
 });
 footSlide.addEventListener("transitionend", (e) => {
-  if (e.target === footSlide && e.propertyName === "transform") endOpening(lipEnd);
+  if (e.target === footSlide && e.propertyName === "transform" && !(e.elapsedTime < 0.17)) endOpening(lipEnd);
 });
 function hasTwoNoteRing() {
   const res = HPE.core.parseSeed(String(scaleBox.value || ""), layoutOptions());

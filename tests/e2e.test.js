@@ -16157,6 +16157,28 @@ function run() {
       } finally { await reset(); }
     });
 
+    test("UX: a zero-elapsed transitionend on the footslide during a restore's slide does not end the restore", { timeout: 60000 }, async () => {
+      try {
+        await lipOpen(380, 780);
+        await collapse();
+        await b.eval(`
+          const body = document.querySelector("#scale-sheet .sheetbody"), foot = document.getElementById("scale-footslide");
+          window.__ro2 = []; let first = true;
+          new ResizeObserver(() => { if (first) { first = false; return; } window.__ro2.push(performance.now()); }).observe(body);
+          document.getElementById("scale-lip").click();
+          window.__t0 = performance.now();
+          setTimeout(() => foot.dispatchEvent(new TransitionEvent("transitionend", { propertyName: "transform", elapsedTime: 0, bubbles: true })), 20);
+          return true;`);
+        await sleep(90);
+        const mid = await b.eval(`return { lipped: document.getElementById("scale-sheet").classList.contains("lipped"), ro: window.__ro2.length };`);
+        assert.strictEqual(mid.lipped, true, "a zero-elapsed transitionend ended the restore mid-slide");
+        assert.strictEqual(mid.ro, 0, `the body resized ${mid.ro} times mid-slide`);
+        await sleep(500);
+        const end = await b.eval(`return { lipped: document.getElementById("scale-sheet").classList.contains("lipped") };`);
+        assert.strictEqual(end.lipped, false, "the restore never finished");
+      } finally { await reset(); }
+    });
+
     test("UX: during a restore's slide .sheetbody keeps its lipped height, and GENERATE lands where the open layout puts it", { timeout: 60000 }, async () => {
       try {
         await lipOpen(380, 780);

@@ -1,0 +1,15 @@
+# kills: UX: a zero-elapsed transitionend on the footslide during a restore's slide does not end the restore
+# suite: node --test --test-name-pattern ^UX:.a.zero-elapsed.transitionend.on.the.footslide.during.a.restore.s.slide.does.not.end.the.restore$ tests/e2e.test.js
+# uxl_zero_elapsed_transitionend_ends
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10953,7 +10953,7 @@
+   if (!lipFocusing) restoreLip();
+ });
+ footSlide.addEventListener("transitionend", (e) => {
+-  if (e.target === footSlide && e.propertyName === "transform" && !(e.elapsedTime < 0.17)) endOpening(lipEnd);
++  if (e.target === footSlide && e.propertyName === "transform") endOpening(lipEnd);
+ });
+ function hasTwoNoteRing() {
+   const res = HPE.core.parseSeed(String(scaleBox.value || ""), layoutOptions());
