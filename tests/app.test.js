@@ -13048,3 +13048,11 @@ describe("CN: SCALE NAME on the Add sheet", () => {
     assert.ok(app.els["scale-preview"].innerHTML.length > 0, "the example pan was blanked");
   });
 });
+
+test("LF: the root rule sets text-size-adjust to 100% with the -webkit- prefix, so landscape iOS does not inflate text", () => {
+  const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+  const css = html.slice(html.indexOf("<style>"), html.indexOf("@media print{"));
+  const rules = [...css.matchAll(/(?:^|[\s}\/])html\s*\{([^}]*)\}/g)].map((m) => m[1]);
+  assert.ok(rules.some((r) => /(?:^|[;\s])-webkit-text-size-adjust:\s*100%/.test(r)), "html lacks -webkit-text-size-adjust:100%");
+  assert.ok(rules.some((r) => /(?:^|[;\s])text-size-adjust:\s*100%/.test(r)), "html lacks text-size-adjust:100%");
+});
