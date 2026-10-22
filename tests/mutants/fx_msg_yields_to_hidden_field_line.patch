@@ -1,0 +1,15 @@
+# kills: FX: on the Layout tab a pending field message never hides the crowded-pan warning
+# suite: node --test --test-name-pattern ^FX:.on.the.Layout.tab tests/app.test.js
+# Mutates the FX yield guard.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10461,7 +10461,7 @@ function say(text, tier) {
+ }
+ /** #scale-msg steps aside for the field line only while that line is visible, and an error or a refusal never does. */
+ function syncMsgYield() {
+-  msgLine.hidden = !!fieldMsg.textContent && !fieldMsg.hidden && !msgLine.classList.contains("err") && !msgLine.classList.contains("refusal");
++  msgLine.hidden = !!fieldMsg.textContent && !msgLine.classList.contains("err") && !msgLine.classList.contains("refusal");
+ }
+ 
+ function buildSwatches() {

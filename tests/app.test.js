@@ -1535,8 +1535,9 @@ test("+ ADD after an Edit opens a clean create sheet, never the edited deck's se
 
   openSheet(app);
   assert.strictEqual(app.els["scale-box"].value, "", "the create box kept the edited seed");
-  assert.deepStrictEqual(editRowsShown(app), [false, false],
-    "an Edit-only row is visible on the create path");
+  assert.deepStrictEqual(editRowsShown(app), [true, false],
+    "the name row is hidden, or the DELETE row is visible, on the create path");
+  assert.strictEqual(app.els["scale-name"].value, "", "the create name box kept the edited deck's name");
   assert.strictEqual(app.els["scale-generate"].textContent, "GENERATE CARDS");
   assert.strictEqual(app.els["scale-generate"].disabled, true);
 });
@@ -5133,8 +5134,8 @@ describe("tab stops follow rendering", () => {
     const app = boot();
     app.run("openScaleSheet()");
     app.run("editingId = 'x'");
-    assert.strictEqual(app.els["scale-name-row"].hidden, true);
-    assert.strictEqual(app.els["scale-name"].getClientRects().length, 0);
+    assert.strictEqual(app.els["scale-delete-row"].hidden, true);
+    assert.strictEqual(app.els["scale-delete"].getClientRects().length, 0);
     const seen = new Set();
     for (let i = 0; i < 40; i += 1) {
       app.els["scale-sheet"].dispatchEvent(
@@ -5142,7 +5143,7 @@ describe("tab stops follow rendering", () => {
       seen.add(app.activeId());
     }
     assert.ok(seen.has("scale-box"), "Tab never reached the scale box");
-    assert.ok(!seen.has("scale-name"), "Tab landed on a control inside a hidden row");
+    assert.ok(!seen.has("scale-delete"), "Tab landed on a control inside a hidden row");
   });
 });
 
@@ -8618,14 +8619,14 @@ test("LF F-1 (b): a non-ASCII name with an unparseable scale still disables the 
   assert.strictEqual(app.els["scale-generate"].disabled, true);
 });
 
-test("LF F-1 (c): the Add path ignores the name box, so nothing changes there", () => {
+test("LF F-1 (c): the Add path takes a refused name like Edit: Layout tab enabled, GENERATE disabled", () => {
   const app = boot();
   openSheet(app);
   app.els["scale-name"].value = LF_BAD_NAME;
   app.els["scale-name"].dispatchEvent({ type: "input" });
   app.type(D2_AMARA);
   assert.strictEqual(Boolean(app.els["scale-tab-layout"].disabled), false);
-  assert.strictEqual(Boolean(app.els["scale-generate"].disabled), false);
+  assert.strictEqual(Boolean(app.els["scale-generate"].disabled), true);
 });
 
 test("LF F-1 (d): under a bad name, a pan with no ring of two notes still says so on open", () => {
@@ -10856,14 +10857,63 @@ describe("DI: dual input", () => {
     fieldSettle(app, "ding");
     const text = el(app, "scale-field-msg").textContent;
     assert.match(text, /^DING: /, "the first field in visual order that shows a message leads");
-    assert.strictEqual(el(app, "scale-msg").style.display, "none");
+    assert.strictEqual(el(app, "scale-msg").hidden, true);
     fieldType(app, "ding", "D3");
     fieldSettle(app, "ding");
     assert.match(el(app, "scale-field-msg").textContent, /^TOP RIM NOTES: /);
     fieldType(app, "top", "A3 C4 D4");
     fieldSettle(app, "top");
     assert.strictEqual(el(app, "scale-field-msg").textContent, "");
-    assert.notStrictEqual(el(app, "scale-msg").style.display, "none");
+    assert.strictEqual(el(app, "scale-msg").hidden, false);
+  });
+
+  const oneDeck = () => {
+    const four = ["amara10", "amara", "hijaz", "pygmy"];
+    const app = boot({ storage: { hpfc: JSON.stringify({ deck: "kurd", mode: "A", hidden: four }) } });
+    app.clickChip("D KURD 10");
+    fieldType(app, "bottom", "F");
+    fieldSettle(app, "bottom");
+    return app;
+  };
+  const visibleMsg = (app) => !el(app, "scale-msg").hidden && el(app, "scale-msg").textContent !== "";
+
+  test("FX: a delete refusal stays visible on the Layout tab while a field message is pending", () => {
+    const app = oneDeck();
+    assert.notStrictEqual(el(app, "scale-field-msg").textContent, "");
+    app.click(el(app, "scale-tab-layout"));
+    el(app, "scale-delete").click(); el(app, "scale-delete").click();
+    assert.match(el(app, "scale-msg").textContent, /^Keep at least one deck/);
+    assert.strictEqual(visibleMsg(app), true);
+  });
+
+  test("FX: a delete refusal stays visible on the Scale tab beside a field message", () => {
+    const app = oneDeck();
+    assert.notStrictEqual(el(app, "scale-field-msg").textContent, "");
+    el(app, "scale-delete").click(); el(app, "scale-delete").click();
+    assert.match(el(app, "scale-msg").textContent, /^Keep at least one deck/);
+    assert.strictEqual(visibleMsg(app), true);
+  });
+
+  test("FX: on the Layout tab a pending field message never hides the crowded-pan warning", () => {
+    const app = openAdd();
+    fieldType(app, "ding", "C3"); fieldSettle(app, "ding");
+    fieldType(app, "top", "D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5 F5 G5 A5 B5 C6 D6 E6 F6"); fieldSettle(app, "top");
+    fieldType(app, "bottom", "C"); fieldSettle(app, "bottom");
+    app.click(el(app, "scale-tab-layout"));
+    assert.notStrictEqual(el(app, "scale-field-msg").textContent, "");
+    assert.match(el(app, "scale-msg").className, /\bpan\b/);
+    assert.strictEqual(visibleMsg(app), true);
+  });
+
+  test("FX: back on the Scale tab an info-level #scale-msg yields to a visible field message again", () => {
+    const app = openAdd();
+    fieldType(app, "ding", "C3"); fieldSettle(app, "ding");
+    fieldType(app, "top", "D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5 F5 G5 A5 B5 C6 D6 E6 F6"); fieldSettle(app, "top");
+    fieldType(app, "bottom", "C"); fieldSettle(app, "bottom");
+    app.click(el(app, "scale-tab-layout"));
+    app.click(el(app, "scale-tab-scale"));
+    assert.strictEqual(el(app, "scale-field-msg").hidden, false);
+    assert.strictEqual(el(app, "scale-msg").hidden, true);
   });
 
   test("DI: a field message joins only at settle: nothing while a field is typed in, the message at its blur", () => {
@@ -10923,7 +10973,7 @@ describe("DI: dual input", () => {
     }
   });
 
-  test("DI: the sheet's Tab order is BACK, the deck name on Edit, the Scale tab, DING, TOP, INNER, BOTTOM, then #scale-box and the existing stops", () => {
+  test("DI: the sheet's Tab order is BACK, the Scale tab, the deck name, DING, TOP, INNER, BOTTOM, then #scale-box and the existing stops", () => {
     const walk = (app, n) => {
       const seen = [];
       for (let i = 0; i < n; i += 1) { app.press(el(app, app.activeId() || "scale-back"), "Tab"); seen.push(app.activeId()); }
@@ -10931,7 +10981,7 @@ describe("DI: dual input", () => {
     };
     const add = openAdd();
     el(add, "scale-back").focus();
-    assert.deepStrictEqual(walk(add, 6), ["scale-tab-scale", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box"]);
+    assert.deepStrictEqual(walk(add, 7), ["scale-tab-scale", "scale-name", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box"]);
     const edit = openBuiltin("amara");
     el(edit, "scale-back").focus();
     assert.deepStrictEqual(walk(edit, 7), ["scale-tab-scale", "scale-name", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box"]);
@@ -11326,12 +11376,12 @@ describe("TB: the sheet's tabs", () => {
   });
 
   test("TB: the sheet Tab order on each tab and flow is the section 3.3 list filtered by isStop", () => {
-    const scaleAdd = ["scale-back", "scale-tab-scale", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box"];
+    const scaleAdd = ["scale-back", "scale-tab-scale", "scale-name", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box"];
     let app = boot();
     openSheet(app);
     let seen = tbStops(app, "scale-back", 16);
-    assert.deepStrictEqual(seen.slice(0, 7), scaleAdd);
-    assert.ok(seen.slice(7).includes("scale-next"), seen.join());
+    assert.deepStrictEqual(seen.slice(0, 8), scaleAdd);
+    assert.ok(seen.slice(8).includes("scale-next"), seen.join());
     assert.ok(!seen.includes("scale-generate"));
     assert.ok(!seen.includes("scale-layout-reset"));
     app = boot();
@@ -11518,7 +11568,7 @@ describe("O1: the duplicate-bottom warning on the field line", () => {
     assert.strictEqual(m.textContent, WARN_DING);
     assert.ok(m.classList.contains("warn"));
     assert.ok(!m.classList.contains("info"));
-    assert.strictEqual(app.els["scale-msg"].style.display, "none");
+    assert.strictEqual(app.els["scale-msg"].hidden, true);
     assert.strictEqual(Boolean(app.els["scale-next"].disabled), false);
     assert.strictEqual(Boolean(app.els["scale-generate"].disabled), false);
     const e = boot();
@@ -12873,5 +12923,128 @@ describe("SPB: sheet polish lane B", () => {
       ran.push(bad);
     }
     assert.deepStrictEqual(ran, ["", "(D3) A3 zzz"]);
+  });
+});
+
+describe("CN: SCALE NAME on the Add sheet", () => {
+  const html = () => fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+  const typeName = (app, name) => {
+    app.els["scale-name"].value = name;
+    app.els["scale-name"].dispatchEvent({ type: "input" });
+  };
+  const addAndGenerate = (app, name) => {
+    openSheet(app);
+    if (name !== undefined) typeName(app, name);
+    app.type(AMARA_STRING);
+    app.click(app.els["scale-next"]);
+    app.els["scale-generate"].click();
+    return app.registry()[app.deckId()];
+  };
+
+  test("CN1: the served markup has #scale-name-row without hidden, before #scale-fields", () => {
+    const h = html();
+    const row = /<div[^>]*\bid="scale-name-row"[^>]*>/.exec(h);
+    assert.ok(row, "the row is missing");
+    assert.ok(!/\bhidden\b/.test(row[0]), `the row still ships hidden: ${row[0]}`);
+    assert.ok(row.index < h.indexOf('id="scale-fields"'), "the row is not before #scale-fields");
+  });
+
+  test("CN10: the served label of the name row reads SCALE NAME, in uppercase, on the #scale-name input", () => {
+    const m = /<label[^>]*\bfor="scale-name"[^>]*>([^<]*)<\/label>/.exec(html());
+    assert.ok(m, "no label for #scale-name");
+    assert.strictEqual(m[1].trim(), "SCALE NAME");
+  });
+
+  test("CN2: opening Add shows the row, empty; opening Edit shows it prefilled", () => {
+    const app = boot();
+    openSheet(app);
+    assert.strictEqual(app.els["scale-name-row"].hasAttribute("hidden"), false);
+    assert.strictEqual(app.els["scale-name"].value, "");
+    const d = makeCustom(boot());
+    const ed = boot();
+    const made = makeCustom(ed);
+    openEdit(ed, made);
+    assert.strictEqual(ed.els["scale-name-row"].hasAttribute("hidden"), false);
+    assert.strictEqual(ed.els["scale-name"].value, made.name);
+    assert.ok(d.name);
+  });
+
+  test("CN3: Add with a typed name, NEXT, GENERATE CARDS: the deck, its chip and the share code carry the normalised name", () => {
+    const app = boot();
+    const d = addAndGenerate(app, "RAY’S – PAN");
+    assert.strictEqual(d.name, "RAY'S - PAN");
+    assert.ok(chipRow(app).some((c) => c.label === "RAY'S - PAN" && c.on),
+      JSON.stringify(chipRow(app).map((c) => c.label)));
+    const url = link(app, d.id);
+    assert.strictEqual(url.ok, true, url.reason);
+    const again = boot();
+    openShare(again, payload(url.value));
+    assert.strictEqual(again.registry()[again.deckId()].name, "RAY'S - PAN");
+  });
+
+  test("CN4: Add with the box empty takes the auto label and writes no options.name", () => {
+    const app = boot();
+    const d = addAndGenerate(app);
+    assert.ok(d.name && d.name.length > 0);
+    assert.strictEqual(d.options.name, undefined);
+    const bare = makeCustom(boot());
+    assert.strictEqual(d.name, bare.name);
+  });
+
+  test("CN5: Add with a valid scale and a refused name takes the Edit name-refusal path (Layout tab stays enabled, GENERATE disabled, the name reason shown) and creates nothing", () => {
+    const app = boot();
+    openSheet(app);
+    app.type(AMARA_STRING);
+    typeName(app, LF_BAD_NAME);
+    assert.strictEqual(Boolean(app.els["scale-tab-layout"].disabled), false, "the refused name disabled the Layout tab");
+    assert.strictEqual(app.els["scale-generate"].disabled, true);
+    assert.notStrictEqual(app.els["scale-refusal"].textContent, "", "no name refusal shown");
+    app.click(app.els["scale-tab-layout"]);
+    assert.strictEqual(app.els["scale-fine-toggle"].disabled, false, "the Layout controls were disabled under a refused name");
+    assert.deepStrictEqual(Object.keys(app.registry()), []);
+  });
+
+  test("CN5b: a name refused only at the GENERATE click shows the engine reason and keeps the sheet open", () => {
+    const app = boot();
+    openSheet(app);
+    typeName(app, "OK NAME");
+    app.type(AMARA_STRING);
+    app.click(app.els["scale-next"]);
+    app.els["scale-name"].value = LF_BAD_NAME;
+    app.els["scale-generate"].click();
+    assert.strictEqual(app.sheetOpen(), true);
+    assert.notStrictEqual(app.els["scale-refusal"].textContent, "");
+    assert.deepStrictEqual(Object.keys(app.registry()), []);
+  });
+
+  test("CN6: the Add Scale-tab Tab order is BACK, tab, SCALE NAME, DING, TOP, INNER, BOTTOM, scale box, NEXT", () => {
+    const app = boot();
+    openSheet(app);
+    const seen = [app.activeId()];
+    for (let i = 0; i < 8; i += 1) {
+      app.els["scale-sheet"].dispatchEvent({ type: "keydown", key: "Tab", shiftKey: false, preventDefault() {} });
+      seen.push(app.activeId());
+    }
+    assert.deepStrictEqual(seen.slice(0, 9), ["scale-back", "scale-tab-scale", "scale-name", "scale-ding",
+      "scale-top", "scale-inner", "scale-bottom", "scale-box", "scale-next"]);
+  });
+
+  test("CN8: Add on the fields of an existing custom deck with a typed name replaces it in place, renamed", () => {
+    const app = boot();
+    const first = makeCustom(app);
+    const d = addAndGenerate(app, "SECOND NAME");
+    assert.strictEqual(d.id, first.id);
+    assert.deepStrictEqual(Object.keys(app.registry()), [first.id]);
+    assert.strictEqual(d.name, "SECOND NAME");
+    assert.ok(app.announcer().textContent.startsWith("Updated SECOND NAME"), app.announcer().textContent);
+  });
+
+  test("CN9: Add with an empty scale box and a refused name still shows the placeholder pan", () => {
+    const app = boot();
+    openSheet(app);
+    typeName(app, LF_BAD_NAME);
+    app.run("showPlaceholderPan()");
+    assert.strictEqual(app.els["scale-preview"].hasAttribute("hidden"), false);
+    assert.ok(app.els["scale-preview"].innerHTML.length > 0, "the example pan was blanked");
   });
 });
