@@ -1,0 +1,15 @@
+# kills: CN10: the served label of the name row reads SCALE NAME, in uppercase, on the #scale-name input
+# suite: node --test --test-name-pattern ^CN10 tests/app.test.js
+# The name row label goes back to DECK NAME.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1432,7 +1432,7 @@ html.about-open{overflow:hidden}
+     </div>
+     <div id="scale-panel-scale" role="tabpanel" aria-labelledby="scale-tab-scale">
+     <div class="editrow" id="scale-name-row">
+-      <label class="sheetlabel" for="scale-name">SCALE NAME</label>
++      <label class="sheetlabel" for="scale-name">DECK NAME</label>
+       <input id="scale-name" type="text" autocapitalize="characters" autocorrect="off"
+              autocomplete="off" spellcheck="false" maxlength="40">
+     </div>

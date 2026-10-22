@@ -1,6 +1,6 @@
 # kills: CN1: the served markup has #scale-name-row without hidden, before #scale-fields
-# suite: node --test --test-name-pattern ^CN1 tests/app.test.js
-# The DECK NAME row ships hidden again, so Add has no name box.
+# suite: node --test --test-name-pattern ^CN1: tests/app.test.js
+# The SCALE NAME row ships hidden again, so Add has no name box.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
@@ -10,6 +10,6 @@ diff --git a/index.html b/index.html
      <div id="scale-panel-scale" role="tabpanel" aria-labelledby="scale-tab-scale">
 -    <div class="editrow" id="scale-name-row">
 +    <div class="editrow" id="scale-name-row" hidden>
-       <label class="sheetlabel" for="scale-name">DECK NAME</label>
+       <label class="sheetlabel" for="scale-name">SCALE NAME</label>
        <input id="scale-name" type="text" autocapitalize="characters" autocorrect="off"
               autocomplete="off" spellcheck="false" maxlength="40">

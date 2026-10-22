@@ -1,4 +1,4 @@
-# kills: CN6: the Add Scale-tab Tab order is BACK, tab, DECK NAME, DING, TOP, INNER, BOTTOM, scale box, NEXT
+# kills: CN6: the Add Scale-tab Tab order is BACK, tab, SCALE NAME, DING, TOP, INNER, BOTTOM, scale box, NEXT
 # suite: node --test --test-name-pattern ^CN6 tests/app.test.js
 # The Tab trap lists the name box only on Edit again.
 diff --git a/index.html b/index.html
