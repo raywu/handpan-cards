@@ -4,9 +4,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1382,7 +1382,7 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1679,7 +1679,7 @@ html.about-open{overflow:hidden}
    <div class="panel-group">
-     <h3 class="panel-heading">Print this deck</h3>
+     <h3 class="panel-heading">Print this scale</h3>
      <div class="prints">
 -      <button type="button" id="print-download" onclick="downloadDeckPDF('shop', this); closePanel();">DOWNLOAD PDF</button>
 +      <button type="button" id="print-download" onclick="downloadDeckPDF('full', this); closePanel();">DOWNLOAD PDF</button>
