@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12175,6 +12175,7 @@
+@@ -12594,6 +12594,7 @@ function paintFields(values, announceNew, composed) {
    if (fieldMsg.textContent !== text) fieldMsg.textContent = text;
    fieldMsg.classList.toggle("info", !!first && next[first].kind === "info");
    fieldMsg.classList.toggle("warn", !!first && next[first].kind === "warn");
 +  nextBtn.disabled = !!first && next[first].kind === "warn";
    fieldMsg.classList.toggle("stale", !!first && !!next[first].stale);
-   msgLine.style.display = text ? "none" : "";
+   syncMsgYield();
    if (announceNew) {

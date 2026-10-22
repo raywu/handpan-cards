@@ -6889,9 +6889,9 @@ function run() {
         await check("(c) three-line warning plus notice: the warning yields, the slot does not grow", { warn: w3, note: t1 }, 1, true);
         await check("(e) the notice with all three ring suffixes, three lines", { note: t3 }, 3);
         const f1 = await sgFit("field", 1), f2 = await sgFit("field", 2), f3 = await sgFit("field", 3);
-        await check("(f) a field message, one line", { field: f1 }, 1);
-        await check("(f) a field message, two lines", { field: f2 }, 2);
-        await check("(f) a field message, three lines", { field: f3 }, 3);
+        await check("(f) a field message, one line", { field: f1 }, 1, true);
+        await check("(f) a field message, two lines", { field: f2 }, 2, true);
+        await check("(f) a field message, three lines", { field: f3 }, 3, true);
         await sgPut({});
         await sgPut({});
         await b.key("Escape", "Escape", 27);

@@ -1,4 +1,4 @@
-# kills: FX: Layout never hides #scale-msg behind a hidden field line
+# kills: FX: on the Layout tab a pending field message never hides the crowded-pan warning
 # suite: node --test --test-name-pattern ^FX:.on.the.Layout.tab tests/app.test.js
 # Mutates the FX yield guard.
 diff --git a/index.html b/index.html

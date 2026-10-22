@@ -1,4 +1,4 @@
-# kills: FX: paintLayout resyncs the yield
+# kills: FX: on the Layout tab a pending field message never hides the crowded-pan warning
 # suite: node --test --test-name-pattern ^FX:.on.the.Layout.tab tests/app.test.js
 # Mutates the FX yield guard.
 diff --git a/index.html b/index.html

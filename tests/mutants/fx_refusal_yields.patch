@@ -1,4 +1,4 @@
-# kills: FX: a delete refusal never yields to a field message
+# kills: FX: a delete refusal stays visible on the Scale tab beside a field message
 # suite: node --test --test-name-pattern ^FX:.a.delete.refusal.stays.visible.on.the.Scale.tab tests/app.test.js
 # Mutates the FX yield guard.
 diff --git a/index.html b/index.html
