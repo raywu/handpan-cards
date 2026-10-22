@@ -1,7 +1,7 @@
 # kills: the seed refusal sits above the pan
 # suite: node --test --test-name-pattern ^the.seed.refusal.sits.above.the.pan$ tests/e2e.test.js
 # #scale-refusal moves out of the scale-line .fieldrow to the foot of the Layout panel, past the pan
-# and the palette. The text, the tier classes and aria-live are untouched; only a geometric test sees it.
+# and the palette. The text, the tier classes and aria-live are untouched; the test sees it by the refusal leaving the scale field's row.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html

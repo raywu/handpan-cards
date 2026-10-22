@@ -5614,7 +5614,7 @@ function run() {
      "the pan does not move when the seed goes bad" could see them: the row
      took two lines, the pan stepped 26.59px under the finger, and
      the last row's bottom (then #scale-swatches, now the Scale tab's
-     #scale-box-wrap since the palette moved to Layout) reached 785.69 against
+     scale field row since the palette moved to Layout) reached 785.69 against
      a 780px viewport.
      The fix is one element per role - #scale-refusal in the .fieldrow for
      seed refusals, #scale-msg below the pan for everything else - so what
@@ -5625,7 +5625,7 @@ function run() {
     const port = document.querySelector(".sheetbody");
     const prev = port.scrollTop;
     port.scrollTop = port.scrollHeight;
-    const row = document.getElementById("scale-box-wrap").getBoundingClientRect();
+    const row = document.getElementById("scale-box").closest(".fieldrow").getBoundingClientRect();
     const r = { rowBottom: row.bottom, portBottom: port.getBoundingClientRect().bottom };
     port.scrollTop = prev;
     return r;
@@ -5641,7 +5641,7 @@ function run() {
       await generate("(C3) G3 D4 G4 D5");
       await openEdit();
       const read = () => b.eval(`
-        const row = document.getElementById("scale-box-wrap").getBoundingClientRect();
+        const row = document.getElementById("scale-box").closest(".fieldrow").getBoundingClientRect();
         return {
           panTop: document.getElementById("scale-preview").getBoundingClientRect().top,
           rowBottom: row.bottom,
@@ -5671,7 +5671,7 @@ function run() {
         `top ${warned.msgTop.toFixed(1)}px, scrollport bottom ${warned.portBottom.toFixed(1)}px)`);
       const reach = await layoutRowReachable();
       assert.ok(reach.rowBottom <= reach.portBottom + 0.5,
-        `#scale-box-wrap's bottom is ${reach.rowBottom.toFixed(1)}px against a scrollport ending ` +
+        `the scale field row's bottom is ${reach.rowBottom.toFixed(1)}px against a scrollport ending ` +
         `at ${reach.portBottom.toFixed(1)}px - the Scale tab's last row is out of reach`);
 
       // The next keystroke re-syncs the parse line. If the warning shared that
@@ -5704,7 +5704,7 @@ function run() {
       await openEdit();
 
       const read = () => b.eval(`
-        const row = document.getElementById("scale-box-wrap").getBoundingClientRect();
+        const row = document.getElementById("scale-box").closest(".fieldrow").getBoundingClientRect();
         return {
           panTop: document.getElementById("scale-preview").getBoundingClientRect().top,
           rowBottom: row.bottom,
@@ -5731,7 +5731,7 @@ function run() {
         `(before=${before.panTop.toFixed(1)}, after=${after.panTop.toFixed(1)})`);
       const reach = await layoutRowReachable();
       assert.ok(reach.rowBottom <= reach.portBottom + 0.5,
-        `#scale-box-wrap's bottom is ${reach.rowBottom.toFixed(1)}px against a scrollport ending ` +
+        `the scale field row's bottom is ${reach.rowBottom.toFixed(1)}px against a scrollport ending ` +
         `at ${reach.portBottom.toFixed(1)}px - the refusal pushed the Scale tab's last row out of reach`);
     } finally {
       await b.setViewport(900, 900, false);
@@ -8162,6 +8162,12 @@ function run() {
                  text: document.getElementById("scale-refusal").textContent.trim() };
       `);
       assert.ok(r.text.length > 0, "no refusal was rendered for an invalid seed");
+      const placed = await b.eval(`
+        const msg = document.getElementById("scale-refusal"), row = document.getElementById("scale-box").closest(".fieldrow");
+        return { shown: msg.getClientRects().length > 0, inRow: !!row && row.contains(msg) };
+      `);
+      assert.ok(placed.inRow, "the refusal is not in the scale field's own row");
+      assert.ok(placed.shown, "the refusal is in the scale field's row but not displayed on the Scale tab");
       assert.ok(r.msgTop - r.boxBottom <= 24,
         `the refusal's top is ${r.msgTop.toFixed(1)}px, ${(r.msgTop - r.boxBottom).toFixed(1)}px ` +
         `under the scale field's bottom at ${r.boxBottom.toFixed(1)}px - it is not directly under the field`);
@@ -14449,18 +14455,28 @@ function run() {
       }
     });
 
-    test("TB: at 380x780 with the keyboard up the head and tab strip hide and the footer stays above the keyboard", async () => {
+    test("TB: at 380x780 with the keyboard up the head and tab strip hide and the footer collapses to a visible lip above the keyboard", async () => {
       try {
         await tbOpenAdd(380, 780);
         await b.eval(`document.getElementById("scale-box").focus(); return true;`);
         await b.fakeKeyboard(400);
         await frames();
         const m = await b.eval(`const hid = (sel) => getComputedStyle(document.querySelector(sel)).display === "none";
-          const f = document.getElementById("scale-next").getBoundingClientRect();
-          return { head: hid("#scale-sheet .sheethead"), tabs: hid("#scale-tabs"), footBottom: f.bottom, vv: window.visualViewport.height };`);
+          const s = document.getElementById("scale-sheet");
+          const l = document.getElementById("scale-lip");
+          const r = l.getBoundingClientRect();
+          const cx = Math.round((r.left + r.right) / 2), cy = Math.round((r.top + r.bottom) / 2);
+          const hit = document.elementFromPoint(cx, cy);
+          return { head: hid("#scale-sheet .sheethead"), tabs: hid("#scale-tabs"),
+            lipped: s.classList.contains("lipped"), shut: s.classList.contains("lipshut"), lipHidden: l.hidden,
+            lipTop: r.top, lipBottom: r.bottom, lipH: r.height, vv: window.visualViewport.height,
+            hit: hit && hit.closest("#scale-lip") ? "lip" : (hit && hit.id) || null };`);
         assert.strictEqual(m.head, true, "the head is showing");
         assert.strictEqual(m.tabs, true, "the tab strip is showing");
-        assert.ok(m.footBottom <= m.vv + 1, `NEXT bottom ${m.footBottom} is under the keyboard (visible ${m.vv})`);
+        assert.ok(m.lipped && m.shut, `the keyboard did not collapse the footer to the lip (${JSON.stringify(m)})`);
+        assert.strictEqual(m.lipHidden, false, "the lip is hidden");
+        assert.ok(m.lipH > 0 && m.lipTop >= 0 && m.lipBottom <= m.vv + 1, `the lip ${m.lipTop}..${m.lipBottom} is not above the keyboard (visible ${m.vv})`);
+        assert.strictEqual(m.hit, "lip", `the lip is covered by ${m.hit}`);
       } finally {
         await b.clearKeyboard().catch(() => {});
         await b.setViewport(900, 900, false);
@@ -15762,6 +15778,102 @@ function run() {
       }
     });
 
+    test("SPC: at 844x390 R4: on Edit a delete row that grows while the footer is shut resizes the pan within one frame, with the restore then changing nothing", async () => {
+      try {
+        await spcEdit();
+        await spcWheel(100);
+        await sleep(400);
+        await spcPrime();
+        await sleep(100);
+        const before = await spcPan();
+        await spcSampler(900);
+        await sleep(50);
+        /* A style write: no wheel or tap can make the delete row taller, so this one goes through eval. */
+        await b.eval(`window.__spcT = performance.now(); const lead = document.getElementById("scale-delete-row"); lead.style.minHeight = (lead.getBoundingClientRect().height + 24) + "px"; return true;`);
+        await sleep(250);
+        await spcWheel(-100);
+        await sleep(700);
+        const c = await b.eval(`return { T: window.__spcT, W: window.__spcW };`);
+        const last = c.W[c.W.length - 1];
+        assert.strictEqual(last[2], false, `the footer never finished opening: ${JSON.stringify(last)}`);
+        const want = last[1];
+        assert.ok(before - want >= 10, `a taller delete row did not shrink the open-footer size (${before} before, ${want} after)`);
+        const after = c.W.filter((s) => s[0] >= c.T);
+        const reached = after.find((s) => Math.abs(s[1] - want) <= 0.5);
+        const trace = JSON.stringify(after.filter((x, i, a) => i === 0 || x[1] !== a[i - 1][1] || x[2] !== a[i - 1][2]).map((s) => [s[0] - Math.round(c.T), s[1], s[2] ? "lipped" : "open"]));
+        assert.ok(reached && reached[2], `the pan reached ${want}px only at the restore, not while shut, trace [ms from the change, width, state]: ${trace}`);
+        assert.ok(reached[0] - c.T <= 40, `the pan took ${Math.round(reached[0] - c.T)}ms to follow the taller delete row, trace [ms, width, state]: ${trace}`);
+        assert.deepStrictEqual(after.filter((s) => s[0] > reached[0] && Math.abs(s[1] - want) > 0.5), [], `the pan changed after it followed the delete row, trace [ms, width, state]: ${trace}`);
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("SPB N5: at 844x390 the palette row sits in the controls column, below the drawer zone, right of the plate band", { timeout: 60000 }, async () => {
+      try {
+        await spcCreate();
+        const r = await b.eval(`
+          const row = document.getElementById("scale-swatches").closest(".editrow");
+          const q = (el) => { const x = el.getBoundingClientRect(); return { l: x.left, t: x.top, r: x.right, b: x.bottom }; };
+          return { row: q(row), zone: q(layoutZone), band: q(plateBand), col: getComputedStyle(row).gridColumnStart,
+                   lastChild: document.getElementById("scale-panel-layout").lastElementChild === row };`);
+        assert.strictEqual(r.col, "2", "the palette row is not in grid column 2");
+        assert.ok(r.lastChild, "the palette row is not the Layout panel's last child");
+        assert.ok(Math.abs(r.row.l - r.zone.l) <= 1, `the palette row's left edge ${r.row.l} is not the zone's ${r.zone.l}`);
+        assert.ok(r.row.t >= r.zone.b - 0.5, `the palette row (top ${r.row.t}) starts above the zone's bottom ${r.zone.b}`);
+        assert.ok(r.row.l >= r.band.r - 0.5, `the palette row (left ${r.row.l}) sits under the plate band (right ${r.band.r})`);
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("SPC R1: the plate sits beside the controls only in the short layout, where the open and the lipped surface padding are equal, so lipDelta needs no padding term", { timeout: 240000 }, async () => {
+      const seen = [];
+      try {
+        for (const [w, h] of [[844, 390], [900, 500], [1024, 600], [1100, 700], [1280, 800]]) {
+          await spcCreate(w, h);
+          await b.eval(`collapseLip(); return true;`);
+          await sleep(300);
+          const s = await b.eval(`return { beside: platesBeside(), short: sheet.classList.contains("short"), lipped: sheet.classList.contains("lipped") };`);
+          assert.strictEqual(s.lipped, true, `${w}x${h}: the footer did not collapse`);
+          if (s.beside) {
+            assert.strictEqual(s.short, true, `${w}x${h}: the plate is beside the controls outside the short layout`);
+            await b.eval(`restoreLip(); return true;`);
+            await sleep(300);
+            const open = await b.eval(`return getComputedStyle(sheetSurf).paddingBottom;`);
+            await b.eval(`collapseLip(); return true;`);
+            await sleep(300);
+            assert.strictEqual(await b.eval(`return getComputedStyle(sheetSurf).paddingBottom;`), open, `${w}x${h}: the lipped surface padding differs from the open one`);
+          }
+          seen.push(s.beside);
+        }
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+      assert.ok(seen.includes(true) && seen.includes(false), `the sweep never crossed both layouts: ${seen}`);
+    });
+
+    test("SPC R2: a notice that appears in the window after a restore is reversed into a collapse is measured when that window settles: the shut lip holds the same geometry as a collapse that met the notice already there", { timeout: 120000 }, async () => {
+      const geo = () => b.eval(`const st = sheet.style; return ["--lip-h", "--lip-pad", "--lip-gd", "--lip-g"].map((k) => k + "=" + st.getPropertyValue(k)).join(" ") + " foot=" + Math.round(footEl.getBoundingClientRect().top) + " guidance=" + Math.round(document.getElementById("scale-guidance").getBoundingClientRect().bottom);`);
+      try {
+        await spcCreate();
+        await b.eval(`collapseLip(); return true;`);
+        await sleep(300);
+        await b.eval(`restoreLip(); collapseLip(); document.getElementById("scale-anchor-between").click(); return true;`);
+        await b.settle();
+        await sleep(500);
+        assert.ok(await b.eval(`return sheet.classList.contains("lipshut") && layoutNote.textContent.length > 0;`), "the reversed collapse did not leave the footer shut with a notice");
+        const reversed = await geo();
+        await b.eval(`restoreLip(); return true;`);
+        await sleep(300);
+        await b.eval(`collapseLip(); return true;`);
+        await sleep(500);
+        assert.strictEqual(reversed, await geo(), "the notice in the reversal window was never measured: the shut lip differs from a collapse that met the notice already there");
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
     /* A guard on the identity the derivation rests on: the shut pan equals the open-footer pan at landscape
      * viewports. The footer is collapsed and restored through collapseLip/restoreLip; no timing is under test here. */
     test("SPC: the pan width while the footer is shut equals the open-footer room measured after the restore, at 844x390 create and Edit, 740x360 create and 926x428 Edit, with no message, a notice and a two-line warning", { timeout: 240000 }, async () => {
@@ -16348,6 +16460,21 @@ function run() {
       } finally { await reset(); }
     });
 
+    test("UX: a transitionend on the footslide that reports the slide's own 180ms ends the restore at once", { timeout: 60000 }, async () => {
+      try {
+        await lipOpen(380, 780);
+        await collapse();
+        await b.eval(`
+          const foot = document.getElementById("scale-footslide");
+          document.getElementById("scale-lip").click();
+          setTimeout(() => foot.dispatchEvent(new TransitionEvent("transitionend", { propertyName: "transform", elapsedTime: 0.18, bubbles: true })), 30);
+          return true;`);
+        await sleep(100);
+        const mid = await b.eval(`return document.getElementById("scale-sheet").classList.contains("lipped");`);
+        assert.strictEqual(mid, false, "a transitionend reporting 0.18s did not end the restore before its timer");
+      } finally { await reset(); }
+    });
+
     test("UX: during a restore's slide .sheetbody keeps its lipped height, and GENERATE lands where the open layout puts it", { timeout: 60000 }, async () => {
       try {
         await lipOpen(380, 780);
@@ -16562,6 +16689,38 @@ function run() {
       assert.deepEqual(fails, []);
     });
 
+    test("T2 R2-1: a re-collapse inside the OPENING window moves focus from the primary to the lip", { timeout: 60000 }, async () => {
+      const fails = [];
+      try {
+        for (const [w, h] of [[380, 780], [844, 390]]) {
+          await lipOpen(w, h);
+          const ctx = `${w}x${h}`;
+          await focusPrimary();
+          await collapse();
+          let s = await lipState();
+          if (!(s.lipped && s.shut)) { fails.push(`${ctx}: the first swipe did not collapse (${JSON.stringify(s)})`); continue; }
+          if ((await activeId()) !== "scale-lip") { fails.push(`${ctx}: the first collapse left focus off the lip`); continue; }
+          const vvh = Math.round(h * 0.55);
+          const mid = await b.eval(`
+            window.__lip.length = 0;
+            document.getElementById("scale-lip").click();
+            const sh = document.getElementById("scale-sheet");
+            const opening = { id: document.activeElement.id, lipped: sh.classList.contains("lipped"), shut: sh.classList.contains("lipshut") };
+            const vv = window.visualViewport;
+            Object.defineProperty(vv, "height", { value: ${vvh}, configurable: true });
+            vv.dispatchEvent(new Event("resize"));
+            return opening;`);
+          if (!(mid.lipped && !mid.shut && (mid.id === "scale-next" || mid.id === "scale-generate"))) { fails.push(`${ctx}: the restore is not in OPENING with the primary focused (${JSON.stringify(mid)})`); continue; }
+          await sleep(300);
+          s = await lipState();
+          if (!(s.lipped && s.shut)) { fails.push(`${ctx}: the re-collapse did not shut the footer (${JSON.stringify(s)})`); continue; }
+          const a = await activeId();
+          if (a !== "scale-lip") fails.push(`${ctx}: focus is on ${a || "body"}, not the lip, after a re-collapse inside OPENING`);
+        }
+      } finally { await reset(); }
+      assert.deepEqual(fails, []);
+    });
+
     test("UX: after a tap on the lip restores the footer, a second swipe down collapses it again", { timeout: 40000 }, async () => {
       const fails = [];
       try {
@@ -16577,7 +16736,6 @@ function run() {
           if (s.lipped) { fails.push(`${ctx}: the tap did not restore (${await lipDiag()})`); continue; }
           await collapse();
           s = await lipState();
-          if (!s.lipped) { await collapse(); s = await lipState(); }
           if (!(s.lipped && s.shut)) fails.push(`${ctx}: the swipe after a lip tap did not collapse (${await lipDiag()})`);
         }
       } finally { await reset(); }

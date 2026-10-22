@@ -1,0 +1,15 @@
+# kills: SPC R2: a notice that appears in the window after a restore is reversed into a collapse is measured when that window settles: the shut lip holds the same geometry as a collapse that met the notice already there
+# suite: node --test --test-name-pattern ^SPC.R2:.a.notice.that.appears.in.the.window tests/e2e.test.js
+# The reversal branch's settle timer stops measuring the guidance change that arrived inside its window.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10747,7 +10747,7 @@
+   lipAcc = 0;
+   clearTimeout(lipTimer);
+   lipGen += 1;
+-  if (isLipped()) { sheet.classList.add("lipshut"); lipSettled = false; const g = lipGen; lipTimer = setTimeout(() => { if (g === lipGen) { lipSettled = true; if (lipDirty) { lipDirty = false; lipMeasure(); } } }, LIP_END_MS); lipTakeFocus(); return; }
++  if (isLipped()) { sheet.classList.add("lipshut"); lipSettled = false; const g = lipGen; lipTimer = setTimeout(() => { if (g === lipGen) { lipSettled = true; } }, LIP_END_MS); lipTakeFocus(); return; }
+   const open = lipRead();
+   lipDirty = false;
+   sheet.classList.add("lipnow", "lipped");

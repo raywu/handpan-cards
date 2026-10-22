@@ -4,9 +4,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10574,7 +10574,7 @@ const lipDelta = () => {
-   const padOpen = sheet.classList.contains("short") ? px(rootCs.getPropertyValue("--sp-2")) : Math.max(px(rootCs.getPropertyValue("--sp-4")), padLip);
-   return padOpen - padLip + lead.getBoundingClientRect().height + (delRow.hidden ? 0 : px(cs.rowGap) + delRow.getBoundingClientRect().height) - footEl.getBoundingClientRect().height - px(getComputedStyle(footEl).marginTop);
+@@ -10579,7 +10579,7 @@ const lipDelta = () => {
+   const cs = getComputedStyle(sheetSurf), lead = nextBtn.hidden ? genBtn : nextBtn;
+   return lead.getBoundingClientRect().height + (delRow.hidden ? 0 : px(cs.rowGap) + delRow.getBoundingClientRect().height) - footEl.getBoundingClientRect().height - px(getComputedStyle(footEl).marginTop);
  };
 -const openRoomOf = () => Math.max(0, roomOf() - (sheet.classList.contains("lipped") ? lipDelta() : 0));
 +const openRoomOf = () => roomOf();

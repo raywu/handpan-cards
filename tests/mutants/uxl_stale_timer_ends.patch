@@ -4,15 +4,15 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10732,7 +10732,6 @@ let lipFocusing = false;
+@@ -10747,7 +10747,6 @@
  function collapseLip() {
    if (!sheetOpen) return;
    lipAcc = 0;
 -  clearTimeout(lipTimer);
    lipGen += 1;
-   if (isLipped()) { sheet.classList.add("lipshut"); lipSettled = false; const g = lipGen; lipTimer = setTimeout(() => { if (g === lipGen) { lipSettled = true; if (lipDirty) { lipDirty = false; lipMeasure(); } } }, LIP_END_MS); return; }
+   if (isLipped()) { sheet.classList.add("lipshut"); lipSettled = false; const g = lipGen; lipTimer = setTimeout(() => { if (g === lipGen) { lipSettled = true; if (lipDirty) { lipDirty = false; lipMeasure(); } } }, LIP_END_MS); lipTakeFocus(); return; }
    const open = lipRead();
-@@ -10773,7 +10772,6 @@ function lipGuidanceChanged() {
+@@ -10783,7 +10782,6 @@
  function restoreLip() {
    if (!sheetOpen || !isLipped() || !isLipShut()) return;
    lipAcc = 0;
@@ -20,7 +20,7 @@ diff --git a/index.html b/index.html
    lipGen += 1;
    if (lipSettled) lipMeasure();
    sheet.classList.remove("lipshut");
-@@ -10784,7 +10782,7 @@ function restoreLip() {
+@@ -10794,7 +10792,7 @@
    lipTimer = setTimeout(() => endOpening(gen), LIP_END_MS);
  }
  function endOpening(gen) {
