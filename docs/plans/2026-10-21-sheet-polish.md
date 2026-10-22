@@ -26,7 +26,7 @@ The owner's six items and the placed nits land on DEV in three serial `index.htm
 - NG6. No `#import-row` unhide. On dev the import UI is removed, and nothing here re-adds it.
 - NG7. Nothing in About, settings, cards or the share routes. `panelStops()` (the settings panel) is untouched. The sheet's Tab trap is the `keydown` handler beside the comment "Tab is trapped inside", not `panelStops()`.
 - NG8. Lane T2 nits R2-1 to R2-4 and the A9 amendment to sheet-tabs 3.7/3.8 belong to the post-main nits lane. They are not planned here.
-  - A9 ruling, confirmed by the owner and recorded by nits lane ND (the sheet-tabs plan is not in the repo, so its 3.7/3.8 cannot be amended in place): the keyboard rising collapses the footer to the lip until the keyboard is dismissed. Owner: "Opening the keyboard should also minimize the drawer until keyboard is dismissed". Test: "UX: the keyboard rising collapses the footer and its fall restores it".
+  - A9 ruling, confirmed by the owner and recorded by nits lane ND (the sheet-tabs plan is not on main; it lives on the open plan PR #410, so its 3.7/3.8 are not amended here): the keyboard rising collapses the footer to the lip until the keyboard is dismissed. Owner: "Opening the keyboard should also minimize the drawer until keyboard is dismissed". Test: "UX: the keyboard rising collapses the footer and its fall restores it".
 - NG9. No README mutant count or `tests/FLOORS` rows are set by any lane (see section 8).
 
 ## 2. Measurements
