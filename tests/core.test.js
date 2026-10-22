@@ -943,7 +943,7 @@ const ID_FIXTURE = JSON.parse(fs.readFileSync(
 
 // A characterisation pin (plan section 19, R3): the ids were captured from main
 // at d744071, before deckId was touched, so this is green when written.
-test("every frozen legacy string keeps its deck id", () => {
+test("every frozen legacy string keeps its deck id, the 73 unoctaved bottom-list ids re-pinned once by O1", () => {
   const rows = Object.entries(ID_FIXTURE.pinned).concat(ID_FIXTURE.strings);
   assert.ok(rows.length >= 500, `only ${rows.length} frozen strings`);
   for (const [text, id] of rows) {

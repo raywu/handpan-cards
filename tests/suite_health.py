@@ -43,7 +43,7 @@ FLOORS = {
     "tests/test_fixture_integrity.py": 8,
     "tests/test_failure_diagnosability.py": 23,
     "tests/test_readme_currency.py": 11,
-    "tests/test_suite_health.py": 30,
+    "tests/test_suite_health.py": 31,
     "tests/test_font_subset.py": 7,
     "tests/test_pdf_emitter.py": 7,
     "tests/test_pdf_deck_adapter.py": 4,
@@ -65,11 +65,11 @@ FLOORS = {
     "tests/core.test.js": 84,
     "tests/import.test.js": 125,
     "tests/import_gold.test.js": 8,
-    "tests/voicing.test.js": 17,
+    "tests/voicing.test.js": 18,
     "tests/layout.test.js": 91,
     "tests/naming.test.js": 37,
     "tests/select.test.js": 54,
-    "tests/share.test.js": 88,
+    "tests/share.test.js": 89,
     "tests/preview.test.js": 14,
     "tests/pdf.test.js": 14,
     "tests/pdfcards.test.js": 37,
@@ -77,7 +77,7 @@ FLOORS = {
     "tests/mutation_harness.test.js": 54,
     "tests/pdf_builtin.test.js": 13,
     "tests/sequence.test.js": 52,
-    "tests/scale.test.js": 13,
+    "tests/scale.test.js": 14,
 }
 
 # The e2e suites are the only ones allowed to vanish: they skip themselves
