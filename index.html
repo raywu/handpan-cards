@@ -10456,7 +10456,12 @@ function say(text, tier) {
     el.className = (el === announce ? "announce" : "") + (tier ? " " + tier : "");
     el.textContent = text;
   }
+  syncMsgYield();
   lipGuidanceChanged();
+}
+/** #scale-msg steps aside for the field line only while that line is visible, and an error or a refusal never does. */
+function syncMsgYield() {
+  msgLine.hidden = !!fieldMsg.textContent && !fieldMsg.hidden && !msgLine.classList.contains("err") && !msgLine.classList.contains("refusal");
 }
 
 function buildSwatches() {
@@ -10544,6 +10549,7 @@ function paintLayout() {
   fineBtn.textContent = fineOpen ? "HIDE FINER CONTROLS" : "HARD TO TAP? SHOW FINER CONTROLS";
   layoutZone.classList.toggle("open", drawerOpen);
   fieldMsg.hidden = drawerOpen;
+  syncMsgYield();
   const note = drawerOpen ? layoutNoticeText() : "";
   const noteChanged = layoutNote.textContent !== note;
   if (noteChanged) layoutNote.textContent = note;
@@ -11925,6 +11931,8 @@ function deleteDeck(id) {
   // R2: the picker is never emptied by a delete.
   if (wouldEmpty(id)) {
     say("Keep at least one deck. Add a scale before deleting " + d.name + ".", "warn");
+    msgLine.classList.add("refusal");
+    syncMsgYield();
     return;
   }
   const gone = d.name;
@@ -12587,7 +12595,7 @@ function paintFields(values, announceNew, composed) {
   fieldMsg.classList.toggle("info", !!first && next[first].kind === "info");
   fieldMsg.classList.toggle("warn", !!first && next[first].kind === "warn");
   fieldMsg.classList.toggle("stale", !!first && !!next[first].stale);
-  msgLine.style.display = text ? "none" : "";
+  syncMsgYield();
   if (announceNew) {
     announceFields(FIELD_KEYS.filter((k) => next[k] && (!fieldShown[k] || fieldShown[k].text !== next[k].text))
       .map((k) => next[k].text));
