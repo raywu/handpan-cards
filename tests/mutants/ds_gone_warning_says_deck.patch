@@ -1,5 +1,5 @@
 # kills: DS2b: a boot on a hidden seed says That scale is gone
-# suite: node --test --test-name-pattern ^DS2b tests/app.test.js
+# suite: node --test --test-name-pattern ^DS2b..a.boot.on.a.hidden.seed.says.That.scale.is.gone$ tests/app.test.js
 # The boot warning goes back to That deck is gone.
 diff --git a/index.html b/index.html
 --- a/index.html

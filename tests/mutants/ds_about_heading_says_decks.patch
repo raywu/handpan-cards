@@ -1,5 +1,5 @@
 # kills: DS1: no served text, attribute, JSON-LD value or app-script string literal says deck
-# suite: node --test --test-name-pattern ^DS1 tests/app.test.js
+# suite: node --test --test-name-pattern ^DS1..no.served.text..attribute..JSON.LD.value.or.app.script.string.literal.says.deck$ tests/app.test.js
 # The About heading goes back to Built-in decks.
 diff --git a/index.html b/index.html
 --- a/index.html

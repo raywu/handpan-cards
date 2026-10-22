@@ -13137,7 +13137,7 @@ describe("DS: the visible word is scale", () => {
     assert.strictEqual(reset.textContent, "RESET SEEDED SCALES");
   });
 
-  test("DS2b: a boot on a hidden seed says That scale is gone,", () => {
+  test("DS2b: a boot on a hidden seed says That scale is gone", () => {
     const boot1 = boot({ storage: { hpfc: JSON.stringify({ deck: "kurd", mode: "A", hidden: ["kurd"] }) } });
     assert.match(boot1.announcer().textContent, /^That scale is gone\. Showing /);
     assert.doesNotMatch(boot1.announcer().textContent, /\bdeck\b/i);
