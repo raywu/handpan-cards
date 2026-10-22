@@ -1,0 +1,15 @@
+# kills: SPC R1: the plate sits beside the controls only in the short layout, where the open and the lipped surface padding are equal, so lipDelta needs no padding term
+# suite: node --test --test-name-pattern ^SPC.R1:.the.plate.sits.beside tests/e2e.test.js
+# platesBeside is true in the stacked layouts too, so lipDelta would owe the padding term again.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10569,7 +10569,7 @@
+ };
+ const platesBeside = () => {
+   const w = (el) => (el.getBoundingClientRect ? el.getBoundingClientRect().width : el.offsetWidth) || 0;
+-  return w(plateBand) > 0 && w(bandPort) > 0 && w(plateBand) < w(bandPort) * 0.75;
++  return w(plateBand) > 0 && w(bandPort) > 0 && w(plateBand) < w(bandPort) * 1.5;
+ };
+ /** The scrollport height the lipped layout gives back: the lead and delete row, less the footer and its margin.
+  *  Read only while the plate sits beside the controls, which happens only in the short layout, where the open and

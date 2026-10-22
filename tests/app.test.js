@@ -7325,17 +7325,22 @@ test("DR3 Tab order on Add and Edit, finer controls closed and open", () => {
       d2Tap(app, "G3");
       app.els["scale-seat-next"].click();
       app.els["scale-back"].focus();
+      const stop = () => {
+        if (app.activeHit() !== null) return "plate";
+        const id = app.activeId();
+        return id === "dyn" ? app.get("document.activeElement.getAttribute('aria-label')") : id;
+      };
       const seen = [];
       for (let i = 0; i < 40; i += 1) {
         app.press(app.els["scale-sheet"], "Tab");
-        const here = app.activeHit() !== null ? "plate" : app.activeId();
+        const here = stop();
         if (here === "scale-back") break;
         seen.push(here);
       }
       const want = ["scale-tab-layout", "plate", "scale-anchor-one",
         "scale-anchor-between", "scale-mirror", "scale-mirror-bottom", "scale-fine-toggle",
         ...(open ? ["scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next"] : []),
-        "scale-layout-reset", ...Array(6).fill("dyn"), "scale-generate", ...(edit ? ["scale-delete"] : [])];
+        "scale-layout-reset", ...[1, 2, 3, 4, 5, 6].map((n) => `Palette ${n}`), "scale-generate", ...(edit ? ["scale-delete"] : [])];
       const ctx = `edit=${edit} open=${open}: ${seen}`;
       assert.deepStrictEqual(seen, want, ctx);
       assert.strictEqual(seen.filter((x) => x === "plate").length, 1, "the plate is more than one Tab stop");
@@ -7347,7 +7352,7 @@ test("DR3 Tab order on Add and Edit, finer controls closed and open", () => {
       const back = [];
       for (let i = 0; i < seen.length - 1; i += 1) {
         app.press(app.els["scale-sheet"], "Tab", { shiftKey: true });
-        back.push(app.activeHit() !== null ? "plate" : app.activeId());
+        back.push(stop());
       }
       assert.deepStrictEqual(back, seen.slice(0, -1).reverse(), `Shift+Tab ${ctx}`);
     }
@@ -12662,7 +12667,7 @@ describe("UX: the footer lip", () => {
         finger(b, "touchstart", 400);
         sheetOf(b).dispatchEvent({ type: "keydown", key: "PageDown", preventDefault() {} });
         scrollTo(b, 300, false);
-        assert.strictEqual(state(b), SHUT, "a scroll key outside a field still ends a suspension no touchend closed");
+        assert.strictEqual(state(b), SHUT, "a scroll key outside a field parks the gesture, and a scroll no touchend closed still collapses");
         const c = lipApp();
         finger(c, "touchstart", 400);
         sheetOf(c).dispatchEvent({ type: "keydown", key: "a", preventDefault() {} });
@@ -12701,9 +12706,44 @@ describe("UX: the footer lip", () => {
         bp.scrollTop = 225;
         bp.dispatchEvent({ type: "scroll" });
         assert.strictEqual(a.get("lipFling.acc"), 25, "after the re-baseline real momentum counts again");
-        assert.strictEqual(isShut(a), false, "24px of real momentum after the shrink restores");
+        assert.strictEqual(isShut(a), false, "real momentum past LIP_PX after the shrink restores");
       });
     });
+  });
+
+  test("SPA N1: a layout notice that appears while the footer is shutting re-measures the lip, and one that appears after it settled does not", () => {
+    const lipH = (app) => sheetOf(app).style._props["--lip-h"];
+    const a = lipApp();
+    a.click(a.els["scale-tab-layout"]);
+    scrollTo(a, 300);
+    assert.strictEqual(state(a), SHUT);
+    const before = lipH(a);
+    assert.ok(before, "the collapse wrote no --lip-h");
+    a.els["scale-foot"].getBoundingClientRect = rectOf(650, 700);
+    a.run('anchor = "between"; paintLayout();');
+    assert.ok(a.els["scale-layout-state"].textContent, "the anchor tap raised no notice");
+    assert.notStrictEqual(lipH(a), before, "a notice that appeared while the footer was shutting did not re-measure the lip");
+    const b = lipApp();
+    b.click(b.els["scale-tab-layout"]);
+    scrollTo(b, 300);
+    b.advance(400);
+    const settled = lipH(b);
+    b.els["scale-foot"].getBoundingClientRect = rectOf(650, 700);
+    b.run('anchor = "between"; paintLayout();');
+    assert.ok(b.els["scale-layout-state"].textContent, "the anchor tap raised no notice");
+    assert.strictEqual(lipH(b), settled, "a notice after the shut lip settled re-measured it");
+  });
+
+  test("SPA N2: a re-measure while the footer is opening leaves it opening, not shut", () => {
+    const a = lipApp();
+    a.click(a.els["scale-tab-layout"]);
+    scrollTo(a, 300);
+    a.advance(400);
+    a.run("restoreLip()");
+    assert.strictEqual(state(a), "lipped/open", "the restore did not enter OPENING");
+    a.els["scale-anchor-between"].click();
+    assert.ok(a.els["scale-layout-state"].textContent, "the anchor tap raised no notice");
+    assert.strictEqual(state(a), "lipped/open", "a re-measure inside OPENING shut the footer");
   });
 
   test("UX: no lip code calls requestAnimationFrame or constructs a ResizeObserver", () => {
@@ -12795,6 +12835,7 @@ describe("PH: phone-check fixes", () => {
     const app = boot();
     app.els["deck-add"].click();
     const example = plateLabels(app);
+    const drawn = plateNotes(app);
     const values = {};
     for (const k of ["ding", "top", "inner", "bottom"]) values[k] = app.els[`scale-${k}`].placeholder;
     const compose = require("./helpers/engine.js").loadEngine(["core", "importer"]).importer.compose;
@@ -12803,7 +12844,7 @@ describe("PH: phone-check fixes", () => {
     app.type(r.line);
     assert.strictEqual(example, plateLabels(app), "the example is not the composed placeholder seed");
     assert.ok(!example.startsWith("E|"), "the old example (ding E) is still drawn");
-    const drawn = plateNotes(app);
+    assert.deepStrictEqual(plateNotes(app), drawn, "the typed pan differs from the example");
     for (const old of ["E3", "B3", "F#5"]) assert.ok(!drawn.includes(old), `the old example's ${old} is still drawn`);
   });
 

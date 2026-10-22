@@ -1,0 +1,14 @@
+# kills: SPA N1: a layout notice that appears while the footer is shutting re-measures the lip, and one that appears after it settled does not
+# suite: node --test --test-name-pattern ^SPA.N1:.a.layout.notice.that.appears.while.the.footer.is.shutting.re-measures.the.lip,.and.one.that.appears.after.it.settled.does.not$ tests/app.test.js
+# A notice change in paintLayout no longer re-measures the lip.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10556,7 +10556,6 @@
+   if (noteChanged) layoutNote.textContent = note;
+   layoutNote.hidden = !note;
+   sheet.classList.toggle("noticed", !!note);
+-  if (noteChanged) lipGuidanceChanged();
+   syncBand();
+ }
+ /** Rule G-a, G-b, G-e: the band sticks only while the scrollport keeps room

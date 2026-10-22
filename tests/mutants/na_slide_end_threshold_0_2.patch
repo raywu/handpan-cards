@@ -1,0 +1,15 @@
+# kills: UX: a transitionend on the footslide that reports the slide's own 180ms ends the restore at once
+# suite: node --test --test-name-pattern ^UX:.a.transitionend.on.the.footslide.that.reports.the.slide.s.own.180ms tests/e2e.test.js
+# The end threshold sits above the slide's own 0.18s, so only the timer ends the restore.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10963,7 +10963,7 @@
+   if (!lipFocusing) restoreLip();
+ });
+ footSlide.addEventListener("transitionend", (e) => {
+-  if (e.target === footSlide && e.propertyName === "transform" && !(e.elapsedTime < LIP_SLIDE_END_S)) endOpening(lipEnd);
++  if (e.target === footSlide && e.propertyName === "transform" && !(e.elapsedTime < 0.2)) endOpening(lipEnd);
+ });
+ function hasTwoNoteRing() {
+   const res = HPE.core.parseSeed(String(scaleBox.value || ""), layoutOptions());
