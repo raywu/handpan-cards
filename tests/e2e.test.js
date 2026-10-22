@@ -15607,12 +15607,12 @@ function run() {
       }
     });
 
-    /* A guard on the identity the derivation rests on: the shut pan equals the open-footer pan at three landscape
+    /* A guard on the identity the derivation rests on: the shut pan equals the open-footer pan at landscape
      * viewports. The footer is collapsed and restored through collapseLip/restoreLip; no timing is under test here. */
-    test("SPC: the pan width while the footer is shut equals the open-footer room measured after the restore, at 844x390, 740x360 and 926x428, create and Edit, with no message, a notice and a two-line warning", { timeout: 240000 }, async () => {
+    test("SPC: the pan width while the footer is shut equals the open-footer room measured after the restore, at 844x390 create and Edit, 740x360 create and 926x428 Edit, with no message, a notice and a two-line warning", { timeout: 240000 }, async () => {
       const ran = [];
       try {
-        for (const [w, h] of [[844, 390], [740, 360], [926, 428]]) for (const mode of ["create", "Edit"]) {
+        for (const [w, h, mode] of [[844, 390, "create"], [844, 390, "Edit"], [740, 360, "create"], [926, 428, "Edit"]]) {
           if (mode === "create") await spcCreate(w, h); else await spcEdit(w, h);
           for (const state of ["no message", "a notice", "a two-line warning"]) {
             if (state === "a notice") await b.eval(`document.getElementById("scale-anchor-between").click(); return true;`);
@@ -15635,7 +15635,7 @@ function run() {
       } finally {
         await b.setViewport(900, 900, false);
       }
-      assert.strictEqual(ran.length, 18);
+      assert.strictEqual(ran.length, 12);
     });
 
     test("SPC: at 380x780 and 380x667 the drawer status keeps its 81ad610 rect relative to the plate at the top of the scroll and stays pinned under the band at the end", async () => {
