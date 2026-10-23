@@ -80,7 +80,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // line (the mirror of each ring, the anchor), v4 = the same payload with the
   // scale string on line 0 in the one-line grammar (v1 to v3 hold the legacy
   // one), v5 = the readable path in the header.
-  var VERSION = 5;
+  var VERSION = 6;
   // What a stored record carries. Records keep the v4 shape (formatSeed plus
   // options), so the wire version moves alone.
   var RECORD_VERSION = 4;
@@ -214,12 +214,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // shortens the link back to what it was.
   var RINGS = ["rim", "inner", "bottom"];
 
-  function seatsField(seats) {
+  function seatsField(seats, skipBottom) {
     if (!seats || typeof seats !== "object") return "";
     var parts = [];
     var any = false;
     for (var r = 0; r < RINGS.length; r += 1) {
-      var list = seats[RINGS[r]];
+      var list = skipBottom && RINGS[r] === "bottom" ? null : seats[RINGS[r]];
       if (list && list.length) {
         any = true;
         parts.push(list.join(","));
@@ -228,6 +228,20 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       }
     }
     return any ? parts.join(";") : "";
+  }
+
+  // v6: the bottom ring's angles, one entry per note, an empty entry for the
+  // solved angle. Written only when some entry is set.
+  function anglesField(angles) {
+    var list = angles && typeof angles === "object" ? angles.bottom : null;
+    if (!Array.isArray(list)) return "";
+    var any = false;
+    var parts = list.map(function (a) {
+      if (a === null || a === undefined) return "";
+      any = true;
+      return String(a);
+    });
+    return any ? parts.join(",") : "";
   }
 
   var UINT_RE = /^[0-9]{1,3}$/;
@@ -329,8 +343,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     else if (mirrors.top) option("mirror-top");
     else if (mirrors.bottom) option("mirror-bottom");
     if (opts.anchor === "between") option("between");
-    var seats = seatsField(opts.seats);
+    var angles = anglesField(opts.angles);
+    var seats = seatsField(opts.seats, angles !== "");
     if (seats !== "") option("seats-" + seats);
+    if (angles !== "") option("at-" + angles);
     segs.push(checkHex(meaning.join(SEP)));
     var out = segs.join("/");
     if (out.length > CAPS.payload) return badNote(out);
@@ -413,7 +429,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return HPE.naming.PARENTS[index].name.toLowerCase().split(" ").join("-");
   }
 
-  var OPTION_ORDER = { palette: 0, parent: 1, mirror: 2, between: 3, seats: 4 };
+  var OPTION_ORDER = { palette: 0, parent: 1, mirror: 2, between: 3, seats: 4, at: 5 };
 
   // Every structural refusal is badNote of the whole link; what
   // core.parseSeed says about the scale comes back unchanged.

@@ -1401,10 +1401,52 @@ const seedNew = (str, options) => {
 const segsOf = (link) => link.split("/");
 const optionSegs = (link) => segsOf(link).slice(3, -1);
 
-test("SV: this app writes wire version 5 and keeps records at 4", () => {
-  assert.equal(share.VERSION, 5);
+test("SV: this app writes wire version 6 and keeps records at 4", () => {
+  assert.equal(share.VERSION, 6);
   assert.equal(share.RECORD_VERSION, 4);
-  assert.ok(encoded(parsed(BASE)).startsWith("5/"));
+  assert.ok(encoded(parsed(BASE)).startsWith("6/"));
+});
+
+const PYGMY_BOTTOMS = 6;
+const withAngles = (seed, list) => {
+  const copy = host(seed);
+  copy.options = Object.assign({}, copy.options, { angles: { bottom: list } });
+  return copy;
+};
+const pygmyPlain = () => seedNew(PYGMY_SCALE, { anchor: "between" });
+
+test("FPS: at- is the last option and appears only when an entry is set", () => {
+  const plain = pygmyPlain();
+  const base = encoded(plain);
+  for (const none of [undefined, null, {}, { bottom: [] }, { bottom: Array(PYGMY_BOTTOMS).fill(null) }]) {
+    const seed = host(plain);
+    seed.options = Object.assign({}, seed.options, { angles: none });
+    assert.equal(encoded(seed), base, JSON.stringify(none));
+  }
+  const moved = encoded(withAngles(plain, [null, 125, null, 20, null, 355]));
+  assert.deepEqual(optionSegs(moved), ["between", "at-,125,,20,,355"]);
+  const everything = encoded(withSeats(withAngles(seedNew(PYGMY_SCALE, {
+    palette: 2, parent: 9, mirror: true, mirrorBottom: false, anchor: "between", name: "My Pan" }),
+    [0, 5, 10, 15, 20, 25]), { rim: identity(9).reverse() }));
+  const segs = optionSegs(everything);
+  assert.equal(segs[segs.length - 1], "at-0,5,10,15,20,25");
+  assert.ok(segs[segs.length - 2].startsWith("seats-"));
+  assert.ok(everything.startsWith("6/"));
+});
+
+test("FPS: a deck with bottom angles encodes no bottom seats entry", () => {
+  const plain = pygmyPlain();
+  const angles = [null, 125, null, 20, null, 355];
+  const bottom = identity(PYGMY_BOTTOMS).reverse();
+  const both = encoded(withAngles(withSeats(plain, { bottom }), angles));
+  assert.equal(both, encoded(withAngles(plain, angles)), "a bottom seats list was written beside at-");
+  assert.equal(optionSegs(both).some(x => x.startsWith("seats-")), false);
+  const rimToo = encoded(withAngles(withSeats(plain, { rim: identity(9).reverse(), bottom }), angles));
+  const seatsSeg = optionSegs(rimToo).find(x => x.startsWith("seats-"));
+  assert.equal(seatsSeg, `seats-${identity(9).reverse().join(",")};;`);
+  const withoutAngles = encoded(withSeats(plain, { bottom }));
+  assert.ok(optionSegs(withoutAngles).some(x => x === `seats-;;${bottom.join(",")}`),
+    "bottom seats vanished without angles");
 });
 
 test("SV: the five built-in decks' v5 links are pinned", () => {
