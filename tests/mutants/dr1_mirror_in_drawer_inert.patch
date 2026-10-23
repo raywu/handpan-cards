@@ -10,6 +10,6 @@ diff --git a/index.html b/index.html
  mirrorTop.onclick = () => {
 -  mirror = !mirror;
 +  mirror = mirror;
-   if (!toggleFits()) { mirror = !mirror; layoutStatus(TOGGLE_REFUSED); return; }
+   if (!toggleFits()) { mirror = !mirror; layoutStatus(TOGGLE_REFUSED, true); return; }
    paintLayout(); resyncSheet(true);
    layoutStatus(mirror ? "Top mirror on." : "Top mirror off.");
