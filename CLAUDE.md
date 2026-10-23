@@ -383,14 +383,23 @@ changing the solver or the seed, never by hand.
   position check, pairing every span of the committed and the fresh build in
   stream order and comparing text, font, size and bbox corners within 0.5 pt.
 - **The footer deck name clips with ASCII `"..."`.** `hifi.fit_clip` and
-  `fitClip` in `pdfcards.js` shrink to 3.6 pt, then drop trailing characters
-  and end in three periods, never U+2026, because the font subset's CHARSET
+  `fitClip` in `pdfcards.js` shrink the name at its drawn tracking (0.5 pt a
+  gap) down to 3.6 pt, then drop trailing characters and end in three periods,
+  never U+2026, because the font subset's CHARSET
   (`tools/inline_fonts.py`) is frozen to printable ASCII plus the degree sign
   (`tests/test_print.py` `HeaderWorstCaseTest`
   `test_a_forty_character_deck_name_with_a_warning_is_clipped_clear`; JS twin
   "P2/D2 twin: a 40-character deck name on a no-thirds pan is clipped to ASCII
   dots, clear of #n, the right-aligned warning and the credit" in
-  `tests/pdfcards.test.js`).
+  `tests/pdfcards.test.js`). A name that fits at a size below 4.6 pt draws
+  whole ("a 40-character deck name that fits below 4.6 pt draws whole at its
+  drawn tracking" and "fitClip agrees with hifi.fit_clip: the 40-character name
+  at budget 140.92 is whole at 4.35, the size hifi.fit_clip returns" in
+  `tests/pdfcards.test.js`; `test_a_forty_character_name_that_fits_below_4_6_draws_whole_at_its_drawn_tracking`
+  and `test_fit_clip_shrinks_at_the_drawn_tracking_before_it_clips` in
+  `tests/test_print.py`), and one too long even at 3.6 pt clips at exactly 3.6
+  pt ("a deck name too long even at 3.6 pt is clipped at exactly 3.6 pt" in
+  `tests/pdfcards.test.js`; `test_a_name_too_long_even_at_3_6_is_clipped_at_exactly_3_6`).
 - **Pan-wide warnings.** `NO_THIRDS` prints on the chord cards:
   `hifi.CARD_WARNINGS` maps it to a short orange badge at the foot of every
   chord card (`NO 3RDS ON THIS PAN`), the only place it survives, because
@@ -400,7 +409,7 @@ changing the solver or the seed, never by hand.
   `test_a_forty_character_deck_name_with_a_warning_is_clipped_clear`, which also
   asserts the warning's clearance from the rotated credit). One warning line
   only: a second `CARD_WARNINGS` entry would draw on the frame and must
-  re-plan the footer (no test; true by `hifi.card_header`). `SMALL_LABELS` is title card only (decision
+  re-plan the footer (no test; true by the warning loop at the end of `hifi.chord_card` and `chordCard` in `pdfcards.js`). `SMALL_LABELS` is title card only (decision
   A16): `decks.TITLE_WARNINGS` gives it the short line `CROWDED PAN: SMALL
   LABELS`, and there is no chord-card badge for it. Any other code the title
   card meets falls back to the engine's reason string, uppercased
