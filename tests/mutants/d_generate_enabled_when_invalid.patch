@@ -5,8 +5,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9352,7 +9352,7 @@
-     // jumps the sheet nor costs the fieldrow a second reserved line.
+@@ -12096,7 +12096,7 @@ function syncParseState({ paint }) {
+     typedNow = null;
      paintLayout();
      scaleBox.classList.add("bad");
 -    genBtn.disabled = true;

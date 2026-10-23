@@ -1,0 +1,15 @@
+# kills: OF: the order hint shows in the active path's note only while a rim or inner ring's seats equal its typed out-of-order arrangement, and adds no Tab stop
+# suite: node --test --test-name-pattern OF:.the.order.hint.shows.in.the.active.path tests/app.test.js
+# The hint shows for every parsed line, in order or not.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13199,7 +13199,7 @@ function paintPassive() {
+  *  follows what was typed. */
+ function orderHint() {
+   if (!typedNow || (inputPath === "fields" && lineStale)) return "";
+-  return followsTyped("rim") || followsTyped("inner") ? ORDER_HINT : "";
++  return ORDER_HINT;
+ }
+ function paintNotes() {
+   const onFields = inputPath === "fields";

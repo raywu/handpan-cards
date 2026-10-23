@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12054,6 +12054,7 @@ function writeLine(text) {
+@@ -13232,6 +13232,7 @@ function writeLine(text) {
  }
  function fieldsInput(k) {
-   inputPath = "fields";
+   hintQuiet = false;
 +  mirror = false;
+   inputPath = "fields";
    fieldEditing = k;
    fieldsStale = false;
-   const values = fieldValues();

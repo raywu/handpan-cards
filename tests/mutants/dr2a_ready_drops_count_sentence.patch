@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10791,7 +10791,7 @@
+@@ -11552,7 +11552,7 @@ function syncRingCounts(fields) {
      ringCount[ring] = to;
    }
    if (putDown) { pickRef = null; pickMoved = false; }
--  return { text: said.join(" ") + (putDown ? " The picked note was put down." : ""), putDown };
-+  return { text: "", putDown };
+-  return { text: said.join(" ") + (putDown ? " The picked note was put down." : ""), said: byRing, putDown };
++  return { text: "", said: byRing, putDown };
  }
  
  function cancelGesture() {

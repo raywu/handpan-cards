@@ -4,15 +4,15 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12638,7 +12638,6 @@ function paintPassive() {
-   fieldsNote.textContent = !onFields
-     ? (fieldsStale ? "Not updated: the line below does not read as a scale yet." : "Follows the line below. Tap a field to type notes instead.")
-     : (scaleBox.value === "" ? OCTAVE_SENTENCE : "");
+@@ -13193,7 +13193,6 @@ function paintPassive() {
+   scaleWrap.classList.toggle("passive", onFields);
+   scaleBox.classList.toggle("stale", onFields && lineStale);
+   paintNotes();
 -  if (onFields && lineStale) genBtn.disabled = true;
  }
- function writeLine(text) {
-   mirroring = true;
-@@ -12672,7 +12671,6 @@ function followFields(r, wasStale) {
+ /** The order hint: shown on the active path's note only while a ring still
+  *  follows what was typed. */
+@@ -13254,7 +13253,6 @@ function followFields(r, wasStale) {
    } else {
      lineStale = true;
      holdPanPreview();

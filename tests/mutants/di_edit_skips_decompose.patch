@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11262,7 +11262,7 @@ function resetSheetState(edit) {
-   nameBox.value = edit ? edit.name : "";
-   nameDirty = false;                                 // prefilled, not typed
-   scaleBox.value = edit ? HPE.core.formatSeed(edit.fields) : "";  // 8A: the canonical string
--  writeFieldValues(edit ? decomposeFields(edit.fields) : null);
+@@ -12344,7 +12344,7 @@ function resetSheetState(edit) {
+   typedNow = null;
+   hintSaid = "";
+   hintQuiet = true;
+-  writeFieldValues(edit ? (pre && pre.ok ? decomposeFields(pre.value.fields, pre.value.typed) : decomposeFields(edit.fields)) : null);
 +  writeFieldValues(null);
    syncGrow();
    palette = !edit ? 0 : seeded() ? seedPalette(edit.colors) : edit.options.palette;
