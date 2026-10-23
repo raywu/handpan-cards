@@ -1,0 +1,15 @@
+# kills: FPD: RESET LAYOUT clears angles and a bottom count change resets them with one sentence
+# suite: node --test --test-name-pattern ^FPD..RESET.LAYOUT.clears.angles.and.a.bottom.count.change.resets.them.with.one.sentence$ tests/app.test.js
+# The notice drops the reset suffix for stored angles.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10755,7 +10755,7 @@ function layoutNoticeText() {
+     for (const ring of LAYOUT_RINGS) {
+       if (ringCount[ring] === storedCounts[ring]) continue;
+       const seated = !!(storedSeats && storedSeats[ring]), angled = ring === "bottom" && !!storedAngles;
+-      if (seated || angled) text += ` The ${ring} ${seated && angled ? "seats and angles" : angled ? "angles" : "seats"} were reset.`;
++      if (seated) text += ` The ${ring} ${seated && angled ? "seats and angles" : angled ? "angles" : "seats"} were reset.`;
+     }
+   return text;
+ }

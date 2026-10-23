@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9248,7 +9248,7 @@ function activateNote(ref, how) {
+@@ -11631,7 +11631,7 @@ function activateNote(ref, how) {
    if (!n) return;
    const p = pickedNote();
    if (!p) {
--    if (n.k < 2) { layoutStatus(`${n.name} is the only note in the ${n.ring}, so it has no other seat.`); return; }
-+    if (n.k < 1) { layoutStatus(`${n.name} is the only note in the ${n.ring}, so it has no other seat.`); return; }
+-    if (n.k < 2 && n.ring !== "bottom") { layoutStatus(`${n.name} is the only note in the ${n.ring}, so it has no other seat.`); return; }
++    if (n.k < 1 && n.ring !== "bottom") { layoutStatus(`${n.name} is the only note in the ${n.ring}, so it has no other seat.`); return; }
      setPick(ref);
      layoutStatus(pickAnnouncement(n, how));
      return;

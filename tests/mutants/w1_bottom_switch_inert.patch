@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9849,7 +9849,7 @@
+@@ -12615,7 +12615,7 @@
    layoutStatus(mirror ? "Top mirror on." : "Top mirror off.");
  };
  mirrorBot.onclick = () => {
--  bottomHeld = !bottomHeld; paintLayout(); resyncSheet(true);
-+  paintLayout(); resyncSheet(true);
+-  bottomHeld = !bottomHeld;
++  bottomHeld = bottomHeld;
+   if (!toggleFits()) { bottomHeld = !bottomHeld; layoutStatus(TOGGLE_REFUSED); return; }
+   paintLayout(); resyncSheet(true);
    layoutStatus(bottomMirror() ? "Bottom mirror on." : "Bottom mirror off.");
- };
- const pickAnchor = (to) => () => {

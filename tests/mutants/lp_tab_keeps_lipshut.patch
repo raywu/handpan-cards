@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10811,7 +10811,6 @@ function setTab(tab) {
+@@ -11238,7 +11238,6 @@ function setTab(tab) {
    paintLayout();
    repaintPlate();
    bandPort.scrollTop = 0;
 -  setLip(false, { instant: true });
-   if (drawerOpen && boxOk && !hasTwoNoteRing()) layoutStatus("This pan has no ring with two notes, so there is nothing to rearrange.");
+   if (drawerOpen && boxOk && !hasTwoNoteRing() && !(ringCount && ringCount.bottom >= 1)) layoutStatus("This pan has no ring with two notes, so there is nothing to rearrange.");
  }
  /** Leaving the sheet or opening a fresh session: no focus, no status. */

@@ -4,9 +4,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9008,7 +9008,7 @@
-   const same = anchor === layoutBase.anchor && mirror === layoutBase.mirror &&
-     (!hadBottom || bottomMirror() === layoutBase.mb) && seatsKey(layoutSeats) === layoutBase.seats;
+@@ -10744,7 +10744,7 @@ function layoutNoticeText() {
+     (!hadBottom || bottomMirror() === layoutBase.mb) && seatsKey(layoutSeats) === layoutBase.seats &&
+     anglesKey(layoutAngles) === layoutBase.angles;
    let text;
 -  if (!same) text = editingId ? "Layout not saved yet. SAVE CHANGES keeps it."
 +  if (!same) text = editingId ? (seeded() ? "Layout not saved yet. FORK THIS DECK keeps it." : "Layout not saved yet. SAVE CHANGES keeps it.")

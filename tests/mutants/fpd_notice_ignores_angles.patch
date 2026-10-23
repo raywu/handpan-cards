@@ -1,0 +1,16 @@
+# kills: FPD: an angle-only change shows Layout not saved yet, and a reopened angle-only record shows Layout changed from the default with RESET enabled
+# suite: node --test --test-name-pattern ^FPD..an.angle.only.change.shows.Layout.not.saved.yet..and.a.reopened.angle.only.record.shows.Layout.changed.from.the.default.with.RESET.enabled$ tests/app.test.js
+# The unsaved-layout notice ignores angles.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10741,8 +10741,7 @@ function layoutStatus(text, warn) {
+ }
+ function layoutNoticeText() {
+   const same = anchor === layoutBase.anchor && mirror === layoutBase.mirror &&
+-    (!hadBottom || bottomMirror() === layoutBase.mb) && seatsKey(layoutSeats) === layoutBase.seats &&
+-    anglesKey(layoutAngles) === layoutBase.angles;
++    (!hadBottom || bottomMirror() === layoutBase.mb) && seatsKey(layoutSeats) === layoutBase.seats;
+   let text;
+   if (!same) text = editingId ? "Layout not saved yet. SAVE CHANGES keeps it."
+     : "Layout not saved yet. GENERATE CARDS keeps it.";

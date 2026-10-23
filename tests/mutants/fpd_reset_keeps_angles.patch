@@ -1,0 +1,14 @@
+# kills: FPD: RESET LAYOUT clears angles and a bottom count change resets them with one sentence
+# suite: node --test --test-name-pattern ^FPD..RESET.LAYOUT.clears.angles.and.a.bottom.count.change.resets.them.with.one.sentence$ tests/app.test.js
+# RESET LAYOUT leaves the angles.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11695,7 +11695,6 @@ function putDownPick() {
+ function resetLayout() {
+   cancelGesture();
+   layoutSeats = null;
+-  layoutAngles = null;
+   foldedBottom = false;
+   mirror = false;
+   bottomHeld = false;

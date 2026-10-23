@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11811,7 +11811,6 @@
+@@ -12618,7 +12618,6 @@ tabStrip.addEventListener("keydown", (e) => {
    if (to < 0) return;
    e.preventDefault();
    setTab(to === 0 ? "scale" : "layout");
 -  tabs[to].focus();
  });
- notePrev.onclick = () => stepNote(-1);
- noteNext.onclick = () => stepNote(1);
+ anglePrev.onclick = () => nudgeAngle(1);
+ angleNext.onclick = () => nudgeAngle(-1);

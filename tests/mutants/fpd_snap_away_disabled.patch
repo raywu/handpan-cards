@@ -1,0 +1,15 @@
+# kills: FPD: a release under the floor snaps to the nearest free step on the approach side, warns and flashes
+# suite: node --test --test-name-pattern ^FPD..a.release.under.the.floor.snaps.to.the.nearest.free.step.on.the.approach.side..warns.and.flashes$ tests/app.test.js
+# A drag release under the floor is accepted where it fell.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11493,7 +11493,7 @@ const withAngle = (list, i, a) => { const t = list.slice(); t[i] = a; return t;
+  *  nearest free step back the way the finger came (`dir` is its direction of travel). */
+ function landAt(home, list, i, want, dir) {
+   const hit = clashAt(home, withAngle(list, i, want), i);
+-  if (hit === null) return { angle: want, hit: null };
++  if (true) return { angle: want, hit: null };
+   for (let k = 1; k <= 360 / ANGLE_STEP; k += 1) {
+     const a = turnTo(want - (dir || 1) * ANGLE_STEP * k);
+     if (clashAt(home, withAngle(list, i, a), i) === null) return { angle: a, hit };

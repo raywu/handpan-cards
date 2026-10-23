@@ -1,0 +1,15 @@
+# kills: FPD: a scale with one bottom note opens the drawer with it pickable, a drag moves it, and the nothing-to-rearrange line never shows
+# suite: node --test --test-name-pattern ^FPD..a.scale.with.one.bottom.note.opens.the.drawer.with.it.pickable..a.drag.moves.it..and.the.nothing.to.rearrange.line.never.shows$ tests/app.test.js
+# A sole bottom note is not pickable.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11425,7 +11425,7 @@ function hitLayer() {
+ const countsLabel = (c) => `Pan layout: ${c.rim} rim, ${c.inner} inner, ${c.bottom} bottom notes.`;
+ 
+ function ringPickable() {
+-  return !!ringCount && (LAYOUT_RINGS.some((r) => ringCount[r] >= 2) || ringCount.bottom >= 1);
++  return !!ringCount && (LAYOUT_RINGS.some((r) => ringCount[r] >= 2) || ringCount.bottom >= 2);
+ }
+ 
+ /** A ring's note count changed: it takes the arrangement it last had at the new
