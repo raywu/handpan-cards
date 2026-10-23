@@ -7,8 +7,8 @@ diff --git a/src/engine/core.js b/src/engine/core.js
    // D14: a pure function of identitySeed - notes, octaves, zones and order. The
    // options are never hashed, so renaming or recolouring keeps the id.
    function deckId(seedOrFields) {
--    return "custom:" + fnv1a32(identitySeed(seedOrFields));
-+    return "custom:" + fnv1a32(formatSeed(fieldsOf(seedOrFields)));
+-    return "custom:" + fnv1a32(identitySeed(seedOrFields)).toString(16).padStart(8, "0");
++    return "custom:" + fnv1a32(formatSeed(fieldsOf(seedOrFields))).toString(16).padStart(8, "0");
    }
  
    var LABEL_RATIO_DING = 0.70875;

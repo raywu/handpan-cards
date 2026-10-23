@@ -1,0 +1,16 @@
+# kills: test_sync_decks_write_mode_catches_a_byte_level_reinjection_mismatch
+# suite: python3 -m unittest -k test_sync_decks_write_mode_catches_a_byte_level_reinjection_mismatch tests.test_deck_data
+# MUT-B1. inject() still reads index.html back but compares nothing: it fails
+# only when the DECKS line is missing, never when the bytes differ from `want`.
+diff --git a/tools/sync_decks.py b/tools/sync_decks.py
+--- a/tools/sync_decks.py
++++ b/tools/sync_decks.py
+@@ -57,7 +57,7 @@ def inject(decks):
+ 
+     with open(INDEX, encoding="utf-8") as fh:
+         again = PATTERN.search(fh.read())
+-    if again is None or again.group(1) != want:
++    if again is None:
+         raise SystemExit("re-injection did not land - index.html NOT in sync")
+ 
+ 

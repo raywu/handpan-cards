@@ -17,6 +17,7 @@ const assert = require("node:assert");
 const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const { launch, findBrowser, ANALYTICS_PATTERNS, APP_READY_EXPR, peekExceptions, expectUncaught, assertNoUncaught } = require("./helpers/cdp.js");
 
 const REPO = path.resolve(__dirname, "..");
@@ -244,6 +245,33 @@ function run() {
     await b.click("#tier-basic");
     await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
       { label: "mode S to take effect" });
+  }
+  /* Page timer constants the converted waits bound. They are written here on purpose, never read from the page: a wait that read the
+   * constant back would move with it and could not fail when the constant grows. */
+  const PIN_MS = 600, LIP_SLIDE_MS = 180, LIP_END_MS = 220;
+  const LIP_SLIDE_END_S = (LIP_SLIDE_MS - 10) / 1000; // mirrors index.html LIP_SLIDE_END_S: a transitionend under it is not the slide's end
+  /* A9 (iii): the sheet's scrollers have stood still for six frames and nothing animates, then one slide longer, so a late lip flip is seen. */
+  async function waitSheetRest(label) {
+    const ok = await b.eval(`return new Promise((res) => {
+      const els = [document.querySelector("#scale-sheet .sheetbody"), document.querySelector("#scale-sheet .sheetsurf")].filter(Boolean);
+      const pos = () => els.map((e) => e.scrollTop).join(",");
+      let last = pos(), still = 0;
+      const t0 = performance.now();
+      const f = () => {
+        const p = pos();
+        still = p === last && document.getAnimations().length === 0 ? still + 1 : 0;
+        last = p;
+        if (still >= 6) return res(true);
+        if (performance.now() - t0 > 5000) return res(false);
+        requestAnimationFrame(f);
+      };
+      requestAnimationFrame(f);
+    });`);
+    assert.ok(ok, `timed out waiting for ${label}`);
+  }
+  async function waitFlingSettled(label) {
+    await waitSheetRest(label);
+    await waitElapsed(LIP_SLIDE_MS + 120, "a late lip flip after " + label);
   }
   const railText = () => b.eval(`return document.querySelector("#count .seq-rail")?.textContent ?? null;`);
   const rectsOf = (sel) => `(() => {
@@ -4161,33 +4189,12 @@ function run() {
       await b.waitFor(`!document.getElementById("scale-sheet").hasAttribute("hidden")`,
         { label: "the Edit sheet to open" });
 
-      const bad = await b.eval(`
-        // Collect every selector in the document's own stylesheet that has an
-        // :active state, media queries included, and strip the pseudo-class so
-        // it can be matched against a live element.
-        //
-        // Two CSSOM traps, both of which return an EMPTY list rather than an
-        // error - i.e. both of which would make this test pass vacuously:
-        //  - CSSRuleList and StyleSheetList are array-like but NOT iterable in
-        //    Chrome, so a bare for..of throws and the catch below swallows it;
-        //    hence Array.from.
-        //  - since nested CSS, EVERY CSSStyleRule carries a .cssRules of its
-        //    own (empty), so "if (r.cssRules) { recurse; continue; }" skips
-        //    every real rule in the sheet. Recurse only into a NON-empty list
-        //    and never skip the rule itself.
-        // The assertion message prints the collected list for exactly this
-        // reason: an empty one is a broken sweep, not a clean app.
-        const actives = [];
-        ${WALK_RULES}
-        walkSheets((r) => {
-          if (!r.selectorText || !/:active\\b/.test(r.selectorText)) return;
-          // A declaration that changes nothing is not feedback.
-          if (!r.style || r.style.length === 0) return;
-          for (const one of r.selectorText.split(",")) {
-            actives.push(one.trim().replace(/:active\\b/g, ""));
-          }
-        });
-
+      // One element per distinct control name, hidden ones skipped; each is
+      // tagged so CDP can find it. A press state is what the control paints
+      // while :active is forced on it, compared with what it paints at rest
+      // (the armed-delete test below holds a real press; forcing the pseudo-class
+      // reaches the controls a single mouse cannot hold at once).
+      const names = await b.eval(`
         const name = (el) => el.id ? "#" + el.id
           : el.tagName.toLowerCase() + (typeof el.className === "string" && el.className.trim()
             ? "." + el.className.trim().split(/\\s+/).join(".") : "");
@@ -4198,15 +4205,41 @@ function run() {
           const n = name(el);
           if (seen.has(n)) continue;
           seen.add(n);
-          const hit = actives.some((sel) => { try { return el.matches(sel); } catch (e) { return false; } });
-          if (!hit) out.push(n);
+          el.setAttribute("data-press-probe", String(out.length));
+          out.push(n);
         }
-        return { bad: out, actives };
+        return out;
       `);
-      assert.deepStrictEqual(bad.bad, [],
-        "these controls have no :active rule, so on iOS - which has no hover and " +
+      assert.ok(names.length > 10, `the sweep found only ${names.length} controls, so it is broken: ${JSON.stringify(names)}`);
+      await b.send("DOM.enable");
+      await b.send("CSS.enable");
+      const paint = (i) => b.eval(`
+        const el = document.querySelector('[data-press-probe="${i}"]');
+        const cs = getComputedStyle(el);
+        const own = [cs.color, cs.backgroundColor, cs.borderTopColor, cs.boxShadow, cs.filter, cs.transform, cs.opacity, cs.outlineColor, cs.textDecorationLine].join("|");
+        const kids = [...el.querySelectorAll("*")].map((k) => { const c = getComputedStyle(k); return [c.color, c.fill, c.stroke, c.opacity].join(","); }).join("|");
+        return own + "||" + kids;
+      `);
+      const mute = [];
+      for (let i = 0; i < names.length; i++) {
+        await b.eval(`document.querySelector('[data-press-probe="${i}"]').scrollIntoView({ block: "nearest", inline: "nearest" }); return true;`);
+        const rest = await paint(i);
+        const doc = await b.send("DOM.getDocument", { depth: 0 });
+        const node = await b.send("DOM.querySelector", { nodeId: doc.root.nodeId, selector: `[data-press-probe="${i}"]` });
+        await b.send("CSS.forcePseudoState", { nodeId: node.nodeId, forcedPseudoClasses: ["active"] });
+        let pressed;
+        try {
+          await b.settle();
+          pressed = await paint(i);
+        } finally {
+          await b.send("CSS.forcePseudoState", { nodeId: node.nodeId, forcedPseudoClasses: [] });
+        }
+        if (pressed === rest) mute.push(names[i]);
+      }
+      assert.deepStrictEqual(mute, [],
+        "these controls paint the same pressed as at rest, so on iOS - which has no hover and " +
         "whose tap highlight this app turns off - a press gives no feedback at all " +
-        `(row 223f). The :active selectors that do exist are ${JSON.stringify(bad.actives)}`);
+        `(row 223f). Controls swept: ${JSON.stringify(names)}`);
     } finally {
       await b.setViewport(900, 900, false);
     }
@@ -7538,7 +7571,7 @@ function run() {
     const t0 = Date.now() / 1000;
     await kb2Touch("touchStart", [[p.x, p.y]], t0);
     await kb2Touch("touchEnd", [], t0 + 0.05);
-    await new Promise((r) => setTimeout(r, 650));
+    await waitElapsed(PIN_MS + 50, "the tap's focus pin (PIN_MS) to lapse");
   };
   const kb2Scene = () => b.eval(`
     const q = (e) => { const r = e.getBoundingClientRect(); return { top: r.top, bottom: r.bottom }; };
@@ -14506,7 +14539,6 @@ function run() {
   });
 
   describe("SPA: sheet polish lane A", () => {
-    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const SPA_SCALE = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
     const SPA_WARN = "Keep every note you can reach on the pan before you press the button below, because a note that is left out cannot be lit on its card";
     const SPA_ONE = "Keep every note you can reach";
@@ -14998,7 +15030,6 @@ function run() {
    * Baselines in C4 and C6 are the 81ad610 rects of Table M (rows Mc3-Mc7), re-measured on d4bfb86. */
   describe("SPC: landscape Layout, plate pinned, footer capped", () => {
     const SPC_KURD = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
-    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const STATES = ["no message", "a one-line notice", "a two-line warning", "the Edit delete refusal",
       "the refusal beside a notice", "a re-armed DELETE", "the notice with three ring-reset suffixes",
       "a multi-line drawer status from layoutStatus()"];
@@ -15606,8 +15637,9 @@ function run() {
         const t = performance.now(), body = document.querySelector(".sheetbody");
         window.__spcW.push([Math.round(t), Math.round(document.getElementById("scale-preview").getBoundingClientRect().width * 10) / 10,
           sheet.classList.contains("lipped"), sheet.classList.contains("lipshut"), Math.round(plateBand.getBoundingClientRect().bottom * 10) / 10, Math.round(body.getBoundingClientRect().bottom * 10) / 10]);
-        if (t - t0 < ${ms}) requestAnimationFrame(f);
+        if (t - t0 < ${ms}) requestAnimationFrame(f); else window.__spcDone = true;
       };
+      window.__spcDone = false;
       requestAnimationFrame(f);
       return true;`);
     const SPC_WARN = "Crowded pan: the labels are small. Keep every note you can reach on the pan before you press the button below, and a few more words so that this line wraps onto a second line even on a wide sheet.";
@@ -15705,7 +15737,8 @@ function run() {
         await sleep(400);
         await b.eval(`
           window.__spcG = [];
-          const f = () => { const t = performance.now(); window.__spcG.push([Math.round(t), Math.round(document.getElementById("scale-guidance").getBoundingClientRect().top * 10) / 10, sheet.classList.contains("lipshut")]); if (t < window.__spcG0 + 700) requestAnimationFrame(f); };
+          const f = () => { const t = performance.now(); window.__spcG.push([Math.round(t), Math.round(document.getElementById("scale-guidance").getBoundingClientRect().top * 10) / 10, sheet.classList.contains("lipshut")]); if (t < window.__spcG0 + 700) requestAnimationFrame(f); else window.__spcGDone = true; };
+          window.__spcGDone = false;
           window.__spcG0 = performance.now();
           requestAnimationFrame(f);
           return true;`);
@@ -15713,7 +15746,7 @@ function run() {
         await spcPrime();
         await sleep(100);
         await spcWheel(-100);
-        await sleep(700);
+        await b.waitFor(`window.__spcGDone === true`, { label: "the guidance sampler to finish" });
         const g = await b.eval(`return window.__spcG;`);
         const at = g.findIndex((s, i) => i > 0 && g[i - 1][2] && !s[2]);
         assert.ok(at > 0, `the footer never started to open: ${JSON.stringify(g.slice(0, 5))}`);
@@ -15761,7 +15794,7 @@ function run() {
         await b.eval(`window.__spcT = performance.now(); const lead = lipPrimary(); lead.style.minHeight = (lead.getBoundingClientRect().height + 24) + "px"; return true;`);
         await sleep(250);
         await spcWheel(-100);
-        await sleep(700);
+        await b.waitFor(`window.__spcDone === true`, { label: "the width sampler to finish" });
         const c = await b.eval(`return { T: window.__spcT, W: window.__spcW };`);
         const last = c.W[c.W.length - 1];
         assert.strictEqual(last[2], false, `the footer never finished opening: ${JSON.stringify(last)}`);
@@ -15792,7 +15825,7 @@ function run() {
         await b.eval(`window.__spcT = performance.now(); const lead = document.getElementById("scale-delete-row"); lead.style.minHeight = (lead.getBoundingClientRect().height + 24) + "px"; return true;`);
         await sleep(250);
         await spcWheel(-100);
-        await sleep(700);
+        await b.waitFor(`window.__spcDone === true`, { label: "the width sampler to finish" });
         const c = await b.eval(`return { T: window.__spcT, W: window.__spcW };`);
         const last = c.W[c.W.length - 1];
         assert.strictEqual(last[2], false, `the footer never finished opening: ${JSON.stringify(last)}`);
@@ -15948,7 +15981,6 @@ function run() {
   describe("UX: the footer lip", () => {
     const LIP_KURD = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
     const SIZES = [[380, 780], [320, 568], [393, 852], [844, 390], [1280, 800]];
-    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const LIP_CROWDED = "(C3) D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5 F5 G5 A5 B5 C6 D6 E6 F6";
     const lipOpen = async (w, h, { edit = false, spacer = 900, scale = LIP_KURD } = {}) => {
       await freshLoad();
@@ -16002,6 +16034,18 @@ function run() {
     };
     const collapse = async () => { await swipeBody(-140); };
     const restoreBySwipe = async () => { await swipeBody(140); };
+    const slideWithin = async (ms, label, act, doneExpr) => {
+      await b.waitFor(`document.getElementById("scale-footslide").getAnimations().length === 0`, { timeout: 3000, label: label + ": an earlier footslide transition to settle" });
+      await b.eval(`window.__slideN0 = window.__lip.length; window.__slideAct = performance.now(); window.__slideEnd = new Promise((r) => { const f = document.getElementById("scale-footslide"); f.addEventListener("transitionend", function on(e) { if (e.target !== f || e.propertyName !== "transform" || e.elapsedTime < ${LIP_SLIDE_END_S} || e.timeStamp < window.__slideAct) return; f.removeEventListener("transitionend", on); r(performance.now()); }); }); return true;`);
+      const t0 = Date.now();
+      await act();
+      await b.eval(`return Promise.race([window.__slideEnd, new Promise((_, rej) => setTimeout(() => rej(new Error(${JSON.stringify(label)} + ": no footslide transitionend within ${ms}ms")), ${ms}))]);`);
+      await b.waitFor(doneExpr, { timeout: Math.max(40, ms - (Date.now() - t0)), label: label + " within " + ms + "ms" });
+      const m = await b.eval(`const n = window.__lip.slice(window.__slideN0); return window.__slideEnd.then((end) => ({ start: n.length ? n[0].t : null, end, off: (n.find((e) => !e.lipped) || {}).t ?? null }));`);
+      assert.ok(m.start !== null, `${label}: no lip flip was logged`);
+      assert.ok(m.end - m.start <= LIP_SLIDE_MS + 80, `${label}: the footslide transition ended ${Math.round(m.end - m.start)}ms after the flip, over ${LIP_SLIDE_MS}ms + 80`);
+      assert.ok(m.off === null || m.off - m.start <= LIP_END_MS + 80, `${label}: the lipped class lapsed ${Math.round(m.off - m.start)}ms after the flip, over ${LIP_END_MS}ms + 80`);
+    };
     const tapAt = async (x, y) => {
       for (const type of ["mousePressed", "mouseReleased"]) {
         await b.send("Input.dispatchMouseEvent", { type, x, y, button: "left", clickCount: 1 });
@@ -16087,9 +16131,9 @@ function run() {
         assert.strictEqual((await lipState()).lippedFlips, 6, "three up and three down drags");
         await lipOpen(390, 797, { spacer: 260 });
         await pull(-320, { ms: 60, sel: ".sheetbody", y0: 120 });
-        await sleep(900);
+        await waitFlingSettled("the drag's momentum and the footer slide");
         await pull(-320, { ms: 60, sel: ".sheetbody", y0: 120 });
-        await sleep(900);
+        await waitFlingSettled("the drag's momentum and the footer slide");
         const s = await lipState();
         assert.ok(s.top >= s.M - 2, `the drags did not reach the end (${s.top} of ${s.M})`);
         assert.ok(s.lipped && s.shut, `the footer reopened at the end (${JSON.stringify(s)})`);
@@ -16109,7 +16153,7 @@ function run() {
           await finger2("touchStart", [[100, y], [200, y]]);
           for (let i = 1; i <= 6; i++) await finger2("touchMove", [[100, y - i * 10], [200, y - i * 10]]);
           await finger2("touchEnd", []);
-          await sleep(700);
+          await waitFlingSettled("the two-finger drag and the footer slide");
           assert.strictEqual((await lipState()).flips, before, `${w}x${h}: a two-finger drag changed the lip`);
           const before2 = (await lipState()).flips;
           await b.drag(".sheetbody", [[20, 30, -5], [60, 60, -10], [120, 90, -24]], { y0: 0 });
@@ -16129,7 +16173,7 @@ function run() {
       const pts = [];
       for (let i = 1; i <= 6; i++) pts.push([0, Math.round((ms * i) / 6), Math.round((dy * i) / 6)]);
       await b.drag(sel, pts, { y0: 0 });
-      await sleep(700);
+      await waitFlingSettled("the drag's momentum and the footer slide");
     };
     const lgReplay = async (ctx, w, h, sel, dy, startShut) => {
       await lipOpen(w, h, { spacer: 900 });
@@ -16199,7 +16243,7 @@ function run() {
           const plate0 = await b.eval(`return document.getElementById("scale-preview").innerHTML;`);
           const before = (await lipState()).flips;
           await pull(-60, { sel: "#scale-preview", ms: 90 });
-          await sleep(700);
+          await waitFlingSettled("the drag's momentum and the footer slide");
           const s = await lipState();
           assert.strictEqual(s.flips - before, 1, `${w}x${h}: a drag from the plate changed the lip ${s.flips - before} times, not 1 (${JSON.stringify(s)})`);
           assert.ok(s.lipped && s.shut, `${w}x${h}: the lip did not collapse`);
@@ -16220,7 +16264,7 @@ function run() {
           const seen0 = await lgSeen();
           const before = (await lipState()).flips;
           await pull(-60, { sel: "#scale-box" });
-          await sleep(600);
+          await waitFlingSettled("the drag's momentum and the footer slide");
           const s = await lipState();
           assert.strictEqual(s.flips - before, 1, `${w}x${h}: a drag from the seed box changed the lip ${s.flips - before} times, not 1`);
           assert.ok(s.lipped && s.shut, `${w}x${h}: not collapsed`);
@@ -16242,7 +16286,7 @@ function run() {
             await sleep(450);
             const before = (await lipState()).flips;
             await b.drag(`#${id}`, [], { y0: 0 });
-            await sleep(800);
+            await waitElapsed(PIN_MS + 200, "the focus pin (PIN_MS) to lapse");
             const r = await b.eval(`const e = document.getElementById(${JSON.stringify(id)}), q = e.getBoundingClientRect(); return { active: document.activeElement.id, top: q.top, bottom: q.bottom, ih: innerHeight };`);
             assert.strictEqual(r.active, id, `${w}x${h}: a tap on #${id} did not focus it`);
             assert.ok(r.top >= 0 && r.bottom <= r.ih, `${w}x${h}: #${id} is out of view after the tap (${JSON.stringify(r)})`);
@@ -16266,7 +16310,7 @@ function run() {
           await lgWatch();
           const before = (await lipState()).flips;
           await pull(-60, { sel: "#scale-box" });
-          await sleep(600);
+          await waitFlingSettled("the drag's momentum and the footer slide");
           assert.strictEqual((await lipState()).flips, before, `${w}x${h}: a drag in the focused box changed the lip`);
           assert.strictEqual((await lgSeen()).active, "scale-box", `${w}x${h}: the box lost focus`);
         }
@@ -16301,12 +16345,12 @@ function run() {
       try {
         await lipOpen(390, 797, { spacer: 900 });
         await pull(-320, { ms: 60, sel: ".sheetbody", y0: 120 });
-        await sleep(900);
+        await waitFlingSettled("the drag's momentum and the footer slide");
         const s = await lipState();
         assert.ok(s.top > 0, `the flick did not scroll the body (${JSON.stringify(s)})`);
         assert.ok(s.lipped && s.shut, `not collapsed (${JSON.stringify(s)})`);
         assert.strictEqual(s.lippedFlips, 1, `${s.lippedFlips} lip changes across the flick and its settle`);
-        await sleep(600);
+        await waitElapsed(PIN_MS, "a late flip after the settle");
         assert.strictEqual((await lipState()).flips, s.flips, "the settle added a flip");
       } finally { await reset(); }
     });
@@ -16422,15 +16466,14 @@ function run() {
         await b.eval(`
           const body = document.querySelector("#scale-sheet .sheetbody");
           window.__ro = []; let first = true;
-          new ResizeObserver(() => { if (first) { first = false; return; } window.__ro.push(performance.now()); }).observe(body);
-          return true;`);
-        await sleep(100);
+          return new Promise((installed) => {
+            new ResizeObserver(() => { if (first) { first = false; installed(true); return; } window.__ro.push(performance.now()); }).observe(body);
+          });`);
         await collapse();
         let ro = await b.eval(`return window.__ro.slice();`);
         assert.strictEqual(ro.length, 1, `the collapse resized the body ${ro.length} times`);
-        await restoreBySwipe();
-        await sleep(400);
-        ro = await b.eval(`return { ro: window.__ro.slice(), lip: window.__lip.slice() };`);
+        await slideWithin(400, "the restore slide to end", restoreBySwipe, `!document.getElementById("scale-sheet").classList.contains("lipped")`);
+        ro = await b.eval(`return new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r({ ro: window.__ro.slice(), lip: window.__lip.slice() }))));`);
         assert.strictEqual(ro.ro.length, 2, `a collapse and a restore resized the body ${ro.ro.length} times`);
         const start = ro.lip.find((e, i) => i > 0 && e.lipped && !e.shut);
         assert.ok(start, "no OPENING state was logged");
@@ -16487,8 +16530,7 @@ function run() {
           const iv = setInterval(() => { if (s.classList.contains("lipped") && !s.classList.contains("lipshut")) window.__h.push(body.getBoundingClientRect().height); if (!s.classList.contains("lipped")) clearInterval(iv); }, 8);
           document.getElementById("scale-lip").click();
           return true;`);
-        await sleep(600);
-        for (let i = 0; i < 30 && await b.eval(`return document.getElementById("scale-sheet").classList.contains("lipped");`); i++) await sleep(100);
+        await b.waitFor(`!document.getElementById("scale-sheet").classList.contains("lipped")`, { label: "the restore slide to end" });
         await sleep(300);
         const hs = await b.eval(`return window.__h;`);
         assert.ok(hs.length > 3, `only ${hs.length} frames sampled in the slide`);
@@ -16526,13 +16568,13 @@ function run() {
         assert.strictEqual(await slot(), 0);
         const flips = s.flips;
         await b.eval(`say("Keep every note you can reach on the pan before you press the button below", "warn"); return true;`);
-        await sleep(600);
+        await waitElapsed(PIN_MS, "a late lip flip after the message");
         s = await lipState();
         assert.ok(await slot() > 0, "the message gave the slot no height");
         assert.ok(s.lipped && s.shut, `the message flipped the lip (${JSON.stringify(s)})`);
         assert.strictEqual(s.flips, flips, `the message produced ${s.flips - flips} lip changes`);
         await b.eval(`say("", ""); return true;`);
-        await sleep(600);
+        await waitElapsed(PIN_MS, "a late lip flip after the clear");
         s = await lipState();
         assert.strictEqual(await slot(), 0, "clearing the message left the slot open");
         assert.ok(s.lipped && s.shut, `clearing the message flipped the lip (${JSON.stringify(s)})`);
@@ -16627,8 +16669,7 @@ function run() {
       try {
         await lipOpen(393, 852);
         await b.eval(`document.getElementById("scale-box").focus(); return true;`);
-        await b.fakeKeyboard(852 - 336);
-        await sleep(600);
+        await slideWithin(400, "the keyboard to shut the footer", () => b.fakeKeyboard(852 - 336), `document.getElementById("scale-sheet").classList.contains("lipshut")`);
         let m = await b.eval(`
           const s = document.getElementById("scale-sheet"), vvh = window.visualViewport.height;
           const lip = document.getElementById("scale-lip").getBoundingClientRect(), f = document.getElementById("scale-box").getBoundingClientRect();
@@ -16637,13 +16678,12 @@ function run() {
         assert.ok(m.lip.top >= -1 && m.lip.bottom <= m.vvh + 1, `the lip is off screen ${JSON.stringify(m.lip)} in ${m.vvh}`);
         assert.ok(m.f.top >= -1 && m.f.bottom <= m.vvh + 1, `the focused field is off screen ${JSON.stringify(m.f)} in ${m.vvh}`);
         await b.eval(`document.getElementById("scale-bottom").focus(); return true;`);
-        await sleep(600);
+        await waitSheetRest("the revealed field to come to rest");
         m = await b.eval(`
           const lip = document.getElementById("scale-lip").getBoundingClientRect(), f = document.getElementById("scale-bottom").getBoundingClientRect();
           return { lipTop: lip.top, fb: f.bottom, ft: f.top, vvh: window.visualViewport.height };`);
         assert.ok(m.fb <= m.lipTop + 1 && m.ft >= -1, `the revealed field ${m.ft}..${m.fb} is not above the tap zone at ${m.lipTop}`);
-        await b.clearKeyboard();
-        await sleep(700);
+        await slideWithin(400, "the footer to restore after the keyboard fell", () => b.clearKeyboard(), `!document.getElementById("scale-sheet").classList.contains("lipped")`);
         const s = await lipState();
         assert.strictEqual(s.lipped, false, "dismissing the keyboard left the footer lipped");
         const p = await primaryRect();
@@ -16657,13 +16697,13 @@ function run() {
         await lipOpen(844, 390);
         await b.eval(`document.getElementById("scale-top").focus(); return true;`);
         await b.fakeKeyboard(180);
-        await sleep(600);
+        await waitElapsed(PIN_MS, "the keyboard's lip handling to settle");
         await b.eval(`window.__lip.length = 0; return true;`);
         const pts = [[0, 20, -30], [0, 40, -90], [0, 60, -180], [0, 80, -300]];
         await b.drag(".sheetsurf", pts, { y0: 20 });
-        await sleep(900);
+        await waitFlingSettled("the drag's momentum and the footer slide");
         await b.drag(".sheetsurf", [[0, 20, 40], [0, 40, 120], [0, 60, 240]], { y0: -20 });
-        await sleep(900);
+        await waitFlingSettled("the drag's momentum and the footer slide");
         const n = await b.eval(`return window.__lip.length;`);
         assert.strictEqual(n, 0, `lip classes changed ${n} times with the keyboard up`);
       } finally { await reset(); }
@@ -16766,7 +16806,7 @@ function run() {
         await lipOpen(380, 780, { spacer: 260 });
         for (let i = 0; i < 2; i++) {
           await b.drag(".sheetbody", [[0, 10, -60], [0, 20, -160], [0, 30, -320]], { y0: 120 });
-          await sleep(1200);
+          await waitFlingSettled("the drag's momentum and the footer slide");
         }
         const s = await lipState();
         assert.strictEqual(s.lippedFlips, 1, `the flick changed lipped ${s.lippedFlips} times`);

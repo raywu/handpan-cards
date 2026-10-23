@@ -1,9 +1,11 @@
 # kills: Shift+Tab from the sheet's first stop wraps to the last, not off the front
 # suite: node --test --test-name-pattern ^Shift.Tab.from.the.sheet.s.first.stop.wraps.to.the.last..not.off.the.front$ tests/app.test.js
 # cycleTabStops() is shared by the sheet's and the settings panel's Tab traps
-# (finding 13, quality-refactor plan 2026-09-30). Dropping the Shift+Tab wrap
-# clause sends Shift+Tab from the first stop to index -1 instead of the last
-# stop.
+# (finding 13, quality-refactor plan 2026-09-30). Shift+Tab from the first stop
+# stays on the first stop instead of wrapping to the last. This form does not
+# throw (an index of -1 did, and the crash was what killed the old form), so
+# the kill is the test's own activeId assertion: "Shift+Tab from the first stop
+# did not wrap to the last stop".
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
@@ -12,7 +14,7 @@ diff --git a/index.html b/index.html
    if (!stops.length) return;
    const i = stops.indexOf(document.activeElement);
 -  const next = e.shiftKey ? (i <= 0 ? stops.length - 1 : i - 1) : (i === stops.length - 1 ? 0 : i + 1);
-+  const next = e.shiftKey ? i - 1 : (i === stops.length - 1 ? 0 : i + 1);
++  const next = e.shiftKey ? (i <= 0 ? 0 : i - 1) : (i === stops.length - 1 ? 0 : i + 1);
    e.preventDefault();
    stops[next].focus();
  }

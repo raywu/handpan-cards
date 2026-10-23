@@ -85,24 +85,19 @@ row is a failure - add a row (0 is a fine start). Node counts come from
    `d_caller_scan_counts_lines.patch` (makes the replaceRegistered caller scan
    count lines instead of occurrences). "No mutant patches tests/" is not a rule
    and never was, and is not a reason to ship a test helper with nothing that can kill it.
-4. **A mutant's diff body is GENERATED, never hand-written.** Produce it by
-   editing a committed tree and running `git diff`, then paste the result under
-   the patch's `# kills:` / `# suite:` prose. Do not hand-type or hand-edit the
-   `index <pre>..<post>` line. The mechanism that makes this invisible:
+4. **A mutant's diff body is GENERATED, never hand-written, and carries no
+   `index` line.** Produce it by editing a committed tree and running
+   `git diff`; delete the `index <pre>..<post>` line from the output, then paste
+   the rest under the patch's `# kills:` / `# suite:` prose. A committed patch
+   carries no `index` line: the test "no mutant patch carries a blob header it
+   cannot keep true" (`tests/mutation_harness.test.js`) fails on any line
+   matching `^index [0-9a-f]{7,40}\.\.[0-9a-f]{7,40}` in `tests/mutants/*.patch`,
+   because the preimage blob goes stale on the next commit to the mutated file.
    `tests/mutation_check.sh` applies mutants with a bare `git apply` - no
-   `--index`, no `--3way` - and bare `git apply` never reads the index line, so
-   a patch carrying a placeholder postimage (`a1b2c3d`) applies, kills its test
-   and reports green while claiming a blob that never existed. One shipped that
-   way and survived two reviews before an audit caught it. The consequence is
-   the reason for the rule: `--3way` and `--index` both DO consult those
-   hashes, so nobody can add either flag to `mutation_check.sh` casually - a
-   fleet of hand-typed index lines would fail to apply the moment the flag went
-   in, and each failure would look like a broken mutant rather than a broken
-   hash. Audit with: on a clean tree, resolve the declared preimage blob
-   (`git cat-file blob <pre>`), apply the patch to it in a scratch directory,
-   and check `git hash-object` of the result against the declared postimage.
-   A stale-but-real pair (generated against an older commit) is genuine and
-   fine; a pair that cannot be reproduced this way is fabricated.
+   `--index`, no `--3way` - and bare `git apply` never reads the line, so it was
+   invisible: a hand-typed placeholder postimage (`a1b2c3d`) once shipped,
+   applied, killed its test and survived two reviews. Banning the line removes
+   the claim that could be false, so there is no blob pair to audit.
 5. **A red against unmutated code is triaged, not "fixed".** Run
    `git diff origin/main -- data/decks.json index.html tools/decks.py \
    tools/hifi.py src/engine/**`.
@@ -162,5 +157,6 @@ row is a failure - add a row (0 is a fine start). Node counts come from
   no two chords in a deck share an identical `fields` list (49/29/27/19/53 all
   distinct, verified over all 177 cards). Kurd 10 and Amara 10 are not counted
   in the duplicate-set figures above.
-- Page counts: full 3/7/4, printer-only 3/6/3 (the six committed PDFs; Kurd 10
-  and Amara 10 have none). 177 cards total.
+- Page counts: full 3/7/4, printer-only 3/6/3 (the six PDFs built by
+  `test_all_six_pdfs_build_with_the_expected_page_counts` in `tests/test_pdf_build.py`,
+  of which the three printer-only ones are committed; Kurd 10 and Amara 10 have none). 177 cards total.

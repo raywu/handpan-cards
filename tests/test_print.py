@@ -437,8 +437,10 @@ class CardWarningTest(PaletteSafeTest):
     def test_an_unwarned_deck_prints_no_warning_line(self):
         deck = decks.HIJAZ
         self.use_palette(deck)
-        canvas = render_chord_card(deck, 1, deck["chords"][0])
-        self.assertNotIn("3RDS", "".join(t["text"] for t in canvas.texts))
+        for i, chord in enumerate(deck["chords"]):
+            canvas = render_chord_card(deck, i + 1, chord)
+            self.assertNotIn("3RDS", "".join(t["text"] for t in canvas.texts),
+                             "card %d prints a warning" % (i + 1,))
 
     def test_the_warning_line_stays_inside_the_card(self):
         deck = self.warned_deck()

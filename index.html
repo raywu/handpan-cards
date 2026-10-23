@@ -1042,7 +1042,7 @@ footer.seq{row-gap:var(--sp-1)}
 #scale-generate, #scale-next{width:100%; min-height:52px; border-radius:10px; cursor:pointer;
   border:1px solid #f1ece1; background:#f1ece1; color:#272219;
   font:600 11.5px/1 "Nunito Sans"; letter-spacing:.12em}
-#scale-generate:disabled, #scale-next:disabled{opacity:.5; cursor:default}
+#scale-generate:disabled{opacity:.5; cursor:default}
 /* ---- Edit state (Phase 4). The rows below are the ONLY difference between
    the create sheet and the Edit sheet; SAVE CHANGES reuses #scale-generate so
    there is never a second primary button on the surface. */
@@ -1069,7 +1069,6 @@ footer.seq{row-gap:var(--sp-1)}
 #scale-plate-band{display:flex; flex-direction:column; gap:var(--sp-1)}
 #scale-drawer .mode:disabled, #scale-fine-toggle:disabled{opacity:.5; cursor:default}
 #scale-drawer{display:flex; flex-direction:column; gap:var(--sp-2)}
-#scale-drawer[hidden]{display:none}
 #scale-drawer .mirror .mode{flex:1 1 0; min-width:0}
 #scale-drawer .mirror{width:100%}
 #scale-drawer .ctlrow{justify-content:flex-start}
@@ -1149,7 +1148,7 @@ footer.seq{row-gap:var(--sp-1)}
 /* The passive path: a read-only look that stays tappable, text kept legible. */
 #scale-fields.passive input, #scale-box.passive{color:#b3aa98; background:transparent; border-style:dashed; border-color:#4a4233}
 #scale-fields.stale input, #scale-box.stale{text-decoration:line-through; text-decoration-color:#e3b25c}
-#scale-fields.stale #scale-fields-note, #scale-box-wrap.passive ~ #scale-line-note.stale{color:#e3b25c}
+#scale-fields.stale #scale-fields-note{color:#e3b25c}
 #scale-box-wrap.passive ~ #scale-parse{display:none}
 #scale-sheet.short .sheetsurf{padding:var(--sp-2) var(--sp-3) var(--sp-2); gap:var(--sp-2)}
 #scale-sheet.short #scale-guidance{margin-block:0}
@@ -1241,7 +1240,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 .shuffle.reroll:active{background:#2e281e}
 .card:active{box-shadow:0 0 0 3px rgba(234,230,223,.22)}
 #scale-generate:active, #scale-next:active{background:#ddd7cb; border-color:#ddd7cb}
-#scale-generate:disabled:active, #scale-next:disabled:active{background:#f1ece1; border-color:#f1ece1}
+#scale-generate:disabled:active{background:#f1ece1; border-color:#f1ece1}
 #scale-swatches .dot:active::after{box-shadow:0 0 0 2px #a79d8b}
 #scale-swatches .dot.sel:active::after{box-shadow:0 0 0 2px #f1ece1}
 #scale-swatches .dot:active{opacity:.75}
@@ -4554,6 +4553,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return bytes;
   }
 
+  // FNV-1a, 32 bit, over the UTF-8 bytes of the text; a uint32 number.
   function fnv1a32(str) {
     var hash = 0x811c9dc5;
     var bytes = utf8Bytes(str);
@@ -4563,15 +4563,13 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       hash = (((hash & 0xffff) * 0x01000193) +
               ((((hash >>> 16) * 0x01000193) & 0xffff) << 16)) >>> 0;
     }
-    var hex = hash.toString(16);
-    while (hex.length < 8) hex = "0" + hex;
-    return hex;
+    return hash;
   }
 
   // D14: a pure function of identitySeed - notes, octaves, zones and order. The
   // options are never hashed, so renaming or recolouring keeps the id.
   function deckId(seedOrFields) {
-    return "custom:" + fnv1a32(identitySeed(seedOrFields));
+    return "custom:" + fnv1a32(identitySeed(seedOrFields)).toString(16).padStart(8, "0");
   }
 
   var LABEL_RATIO_DING = 0.70875;
@@ -4609,6 +4607,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     err: err,
     badNote: badNote,
     utf8Bytes: utf8Bytes,
+    fnv1a32: fnv1a32,
     pc: pitchClass,
     isDing: isDing,
     fieldsOf: fieldsOf
@@ -7582,28 +7581,15 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return bytes;
   }
 
-  // FNV-1a, 32 bit, over the UTF-8 bytes of the guarded text. Same construction
-  // as core.deckId's hash; here it is an integrity check, not an identity.
-  function fnv1a(text) {
-    var hash = 0x811c9dc5;
-    var bytes = utf8Bytes(text);
-    for (var i = 0; i < bytes.length; i += 1) {
-      hash = (hash ^ bytes[i]) >>> 0;
-      hash = (((hash & 0xffff) * 0x01000193) +
-              ((((hash >>> 16) * 0x01000193) & 0xffff) << 16)) >>> 0;
-    }
-    return hash;
-  }
-
   function checksum(text) {
-    var hash = fnv1a(text);
+    var hash = HPE.core.fnv1a32(text);
     return toAlphabet([(hash >>> 24) & 0xff, (hash >>> 16) & 0xff,
                        (hash >>> 8) & 0xff, hash & 0xff]);
   }
 
   // v5: the top 24 bits of the same hash, six lowercase hex characters.
   function checkHex(text) {
-    return ("000000" + (fnv1a(text) >>> 8).toString(16)).slice(-6);
+    return ("000000" + (HPE.core.fnv1a32(text) >>> 8).toString(16)).slice(-6);
   }
 
   /* ---- the payload ------------------------------------------------------ */
@@ -13409,6 +13395,7 @@ let analyticsLoaded = false;
 function analyticsAllowed() {
   if (location.protocol === "file:") return false;
   if (["localhost", "127.0.0.1", "[::1]"].includes(location.hostname)) return false;
+  if (location.hostname.endsWith(".pages.dev")) return false;
   if (navigator.webdriver) return false;
   return GA_MEASUREMENT_ID !== "G-XXXXXXXXXX";
 }
