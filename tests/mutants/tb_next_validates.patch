@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11027,6 +11027,7 @@ function paintLayout() {
+@@ -11124,6 +11124,7 @@ function paintLayout() {
    }
    layoutHint.textContent = HINT_EMPTY();
    layoutHint.hidden = boxOk || !(panState === "example" || !String(scaleBox.value || "").trim());
 +  nextBtn.disabled = !boxOk;
    drawerStatus.hidden = !drawerOpen || !boxOk;
+   if (sheetOpen) paintNotes();
    drawerHint.textContent = DRAWER_HINT() + (ringCount && ringCount.bottom >= 1 ? DRAWER_HINT_SLIDE() : "");
-   drawerHint.hidden = !(drawerOpen && boxOk);

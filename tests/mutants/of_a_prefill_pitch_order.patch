@@ -1,0 +1,15 @@
+# kills: OF: Edit of a record with drawer rim seats shows the seat-order line in #scale-box and the fields in the same order
+# suite: node --test --test-name-pattern OF:.Edit.of.a.record.with.drawer.rim.seats tests/app.test.js
+# Edit prefills the pitch-ordered line instead of the seat-ordered one.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12336,7 +12336,7 @@ function resetSheetState(edit) {
+   // The line lists the top notes in seat order (Q4 A), so a record with seats
+   // reads as it was typed; a seeded deck or a record without seats is the
+   // canonical string.
+-  const line = edit ? HPE.core.formatTyped(edit.fields, o && o.seats) : "";
++  const line = edit ? HPE.core.formatSeed(edit.fields) : "";
+   scaleBox.value = line;
+   const pre = edit ? HPE.core.parseSeed(line) : null;
+   const preTyped = pre && pre.ok ? HPE.core.typedSeats(pre.value) : null;

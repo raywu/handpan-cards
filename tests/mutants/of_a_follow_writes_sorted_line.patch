@@ -1,0 +1,15 @@
+# kills: OF: a field edit writes compose's typedLine into #scale-box through one input event
+# suite: node --test --test-name-pattern OF:.a.field.edit.writes.compose.s.typedLine tests/app.test.js
+# A field edit writes the pitch-sorted line, losing the typed order.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13249,7 +13249,7 @@ function followFields(r, wasStale) {
+     else if (wasStale) resyncSheet(true);
+   } else if (r.ok) {
+     lineStale = false;
+-    if (scaleBox.value !== r.typedLine) writeLine(r.typedLine);
++    if (scaleBox.value !== r.line) writeLine(r.line);
+     else if (wasStale) resyncSheet(true);
+   } else {
+     lineStale = true;
