@@ -4,7 +4,7 @@
 diff --git a/src/engine/layout.js b/src/engine/layout.js
 --- a/src/engine/layout.js
 +++ b/src/engine/layout.js
-@@ -276,7 +276,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -533,7 +533,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
    /* The short way round between two angles, in degrees. */
    function angleGap(a, b) {
      var d = Math.abs(norm(a) - norm(b));
@@ -12,4 +12,4 @@ diff --git a/src/engine/layout.js b/src/engine/layout.js
 +    return d;
    }
  
-   /* The smallest short-way gap between two bottom notes in the DEFAULT
+   /* The smallest short-way gap between bottom notes at the given angles - the
