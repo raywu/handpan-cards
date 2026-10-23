@@ -1588,3 +1588,21 @@ describe("IH: compose", () => {
     assert.ok(core.parseSeed("[C3] [D3] (D3) A3").ok);
   });
 });
+
+describe("compose codes", () => {
+  const { importer } = E;
+  test("compose codes mirror errors, info and warn", () => {
+    const bad = importer.compose({ ding: "D3", top: "Xx", inner: "", bottom: "" });
+    assert.ok(bad.codes && typeof bad.codes === "object", "codes exists");
+    for (const f of Object.keys(bad.errors)) {
+      if (bad.errors[f]) assert.ok(bad.codes[f] && typeof bad.codes[f].code === "string", f + " has a code");
+      else assert.ok(!bad.codes[f], f + " has no code");
+    }
+    assert.ok(Array.isArray(bad.infoCodes) && Array.isArray(bad.warnCodes));
+    const guessed = importer.compose({ ding: "D3", top: "A3 C4 D4", inner: "", bottom: "C" });
+    assert.equal(guessed.info ? guessed.infoCodes.length > 0 : guessed.infoCodes.length === 0, true);
+    const ok = importer.compose({ ding: "D3", top: "A3 C4 D4", inner: "", bottom: "" });
+    assert.deepEqual(ok.infoCodes, []);
+    assert.equal(typeof ok.line, "string");
+  });
+});

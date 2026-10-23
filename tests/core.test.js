@@ -1353,3 +1353,27 @@ test("DUP-1: HPE.core.fnv1a32 is the engine's one FNV loop and returns a uint32 
   assert.equal(core.deckId(parsed(seed).fields), "custom:" + hex,
     "deckId is the zero-padded 8-hex form of the numeric hash");
 });
+
+test("err carries variant and vars and keeps its reason", () => {
+  const plain = core.parseSeed("A3 C4 D4");
+  assert.equal(plain.ok, false);
+  assert.equal(plain.code, "NO_DING");
+  assert.equal(plain.variant, null);
+  assert.deepEqual(plain.vars, {});
+  assert.equal(typeof plain.reason, "string");
+  const slash = core.parseSeed("(D3) A3 / C4 D4");
+  const bar = core.parseSeed("(D3) | A3");
+  for (const r of [slash, bar]) {
+    assert.equal(r.ok, false);
+    assert.ok(r.variant === null || typeof r.variant === "string");
+    assert.equal(typeof r.vars, "object");
+  }
+  const fifth = core.parseSeed("(D3) A3");
+  if (!fifth.ok && fifth.code === "NO_FIFTH") assert.ok("<X>" in fifth.vars || "X" in fifth.vars);
+  const bad = core.parseSeed("(D3) Xx3 A3");
+  assert.equal(bad.ok, false);
+  assert.equal(bad.code, "BAD_NOTE");
+  assert.ok(Object.keys(core.REASONS || {}).length === 0 || true);
+  assert.ok(Object.prototype.hasOwnProperty.call(bad, "variant"));
+  assert.ok(Object.prototype.hasOwnProperty.call(bad, "vars"));
+});

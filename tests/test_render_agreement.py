@@ -739,3 +739,19 @@ class PdfEmitterGeometryTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class I18nRegionTest(unittest.TestCase):
+    def test_the_i18n_region_equals_data_i18n(self):
+        with open(os.path.join(paths.ROOT, "index.html"), encoding="utf-8") as fh:
+            html = fh.read()
+        m = re.search(r"<!-- i18n begin -->\s*<script>\s*(const I18N = .*?;)\s*</script>\s*<!-- i18n end -->", html, re.S)
+        self.assertIsNotNone(m, "index.html has no i18n region")
+        directory = os.path.join(paths.ROOT, "data", "i18n")
+        tables = {}
+        for name in sorted(os.listdir(directory)):
+            if name.endswith(".json"):
+                with open(os.path.join(directory, name), encoding="utf-8") as fh:
+                    tables[name[:-5]] = json.load(fh)
+        inline = json.loads(m.group(1)[len("const I18N = "):-1])
+        self.assertEqual(inline, tables)
