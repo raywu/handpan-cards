@@ -3,7 +3,7 @@
 // sections 4.3 and 4.3.1). Library and CLI.
 //
 //   node tools/probe/panel_fit.js --base origin/main [--candidate <ref>]
-//        [--font real|fallback|both] [--workers N]
+//        [--font real|fallback|both] [--workers N] [--lang <code>]
 //
 // It extracts the base's index.html with `git show`, serves base and candidate,
 // derives the media-query edges from the CSSOM of BOTH, and measures every cell
@@ -75,6 +75,15 @@ function aboutAllowance(baseControls, candControls) {
   return "about-open" in candControls && !("about-open" in baseControls) ? ABOUT_ALLOWANCE_PX : 0;
 }
 
+// The Language group (i18n lane B) is a heading and a 44px select after the About
+// row. Measured on this lane's head, both font modes, as the growth of the panel's
+// needed height. Same shape as the About allowance: rule 1 and rule 3, never rule 2,
+// and only while the base lacks `lang-select`.
+const LANG_ALLOWANCE_PX = 88;
+function langAllowance(baseControls, candControls) {
+  return "lang-select" in candControls && !("lang-select" in baseControls) ? LANG_ALLOWANCE_PX : 0;
+}
+
 const REAL_FACES = [["Marcellus", "400"], ["Bitter", "400"], ["Bitter", "700"],
   ["Nunito Sans", "400"], ["Nunito Sans", "600"]];
 
@@ -98,9 +107,10 @@ function judgeCell({ base: b, cand: c, refRendered, od8FailBaseOverflow = OD8_FA
   const baseFits = b.needed <= b.avail + FIT_TOL;
   const resA = resAllowance(b.controls, c.controls);
   const aboutA = aboutAllowance(b.controls, c.controls);
+  const langA = langAllowance(b.controls, c.controls);
 
   // 1 fit
-  if (c.needed > Math.max(b.needed + allowance + resA + aboutA, avail) + FIT_TOL) {
+  if (c.needed > Math.max(b.needed + allowance + resA + aboutA + langA, avail) + FIT_TOL) {
     out.rule1.fail.push(offender(id, `${c.needed.toFixed(1)} / ${b.needed.toFixed(1)} / ${avail.toFixed(1)}`));
   }
 
@@ -118,7 +128,7 @@ function judgeCell({ base: b, cand: c, refRendered, od8FailBaseOverflow = OD8_FA
         if (baseFits || od8FailBaseOverflow) out.rule2.fail.push(o);
         else out.rule2.reported.push(o);
       }
-    } else if (cc.rendered && cc.bottom > Math.max(avail, isRes(key) ? b.needed + resA : key === "about-open" ? b.needed + aboutA : 0) + CTRL_TOL) {
+    } else if (cc.rendered && cc.bottom > Math.max(avail, isRes(key) ? b.needed + resA : key === "about-open" ? b.needed + aboutA : key === "lang-select" ? b.needed + langA : 0) + CTRL_TOL) {
       // 3 new control
       const o = offender(id, `${key} bottom ${cc.bottom.toFixed(1)} vs avail ${avail.toFixed(1)}`);
       (baseFits ? out.rule3.fail : out.rule3.reported).push(o);
@@ -195,10 +205,16 @@ async function neutraliseScrollbars(b) {
   await b.send("Emulation.setScrollbarsHidden", { hidden: true });
 }
 
-async function prepareBrowser(b, url) {
+async function prepareBrowser(b, url, lang) {
   await neutraliseScrollbars(b);
   await b.setViewport(1000, 800, false);
   await b.goto(url);
+  if (lang) {
+    await b.eval(`localStorage.setItem("hpfc", JSON.stringify({ lang: ${JSON.stringify(lang)} })); return true;`);
+    await b.goto(url);
+    const got = await b.eval(`return document.documentElement.lang;`);
+    if (got !== lang) throw new PanelFitError(`--lang ${lang} requested but the candidate resolved ${JSON.stringify(got)}`);
+  }
   await b.eval(`window.__pf = ${MEASURE_SRC}; return true;`);
 }
 
@@ -501,8 +517,8 @@ function serve(html) {
 }
 
 class Root {
-  constructor(name, html, fontMode, workers) {
-    Object.assign(this, { name, html, fontMode, workers, browsers: [], url: "", server: null });
+  constructor(name, html, fontMode, workers, lang) {
+    Object.assign(this, { name, html, fontMode, workers, lang, browsers: [], url: "", server: null });
   }
   async start() {
     const { launch } = require("../../tests/helpers/cdp.js");
@@ -511,7 +527,7 @@ class Root {
     for (let i = 0; i < this.workers; i++) {
       const b = await launch({ realFonts: this.fontMode === "real" });
       if (!b) throw new PanelFitError("no browser found (set CHROME_BIN)");
-      await prepareBrowser(b, this.url);
+      await prepareBrowser(b, this.url, this.lang);
       this.browsers.push(b);
     }
     const fonts = await this.browsers[0].eval(`return window.__pf.fonts();`);
@@ -576,10 +592,10 @@ function invarianceWidths({ ws, starts, wLo, wHi, side, differs }) {
   return [...set].sort((a, b) => a - b);
 }
 
-async function runFont({ baseHtml, candHtml, baseLabel, candLabel, fontMode, workers, log, widthRange }) {
+async function runFont({ baseHtml, candHtml, baseLabel, candLabel, fontMode, workers, log, widthRange, lang }) {
   const t0 = Date.now();
   const base = new Root("base", baseHtml, fontMode, workers);
-  const cand = new Root("candidate", candHtml, fontMode, workers);
+  const cand = new Root("candidate", candHtml, fontMode, workers, lang);
   const report = { font: fontMode, skipped: 0, skipReasons: [], cells: 0, invariance: 0, rules: {}, removed: {}, edges: {} };
   const ruleNames = ["rule1", "rule2", "rule3", "rule4", "rule5", "rule6"];
   for (const r of ruleNames) report.rules[r] = { fail: 0, reported: 0, first: [], firstReported: [] };
@@ -786,13 +802,14 @@ function failed(r) {
 }
 
 function parseArgs(argv) {
-  const o = { base: "origin/main", candidate: null, font: "both", workers: 2, widths: null };
+  const o = { base: "origin/main", candidate: null, font: "both", workers: 2, widths: null, lang: null };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--base") o.base = argv[++i];
     else if (a === "--candidate") o.candidate = argv[++i];
     else if (a === "--font") o.font = argv[++i];
     else if (a === "--workers") o.workers = Number(argv[++i]);
+    else if (a === "--lang") o.lang = argv[++i];
     else if (a === "--widths") o.widths = argv[++i].split("-").map(Number);
     else throw new PanelFitError(`unknown argument ${a}`);
   }
@@ -812,7 +829,7 @@ async function main(argv) {
   }
   let bad = false;
   for (const fontMode of o.font === "both" ? ["real", "fallback"] : [o.font]) {
-    const r = await runFont({ baseHtml, candHtml, baseLabel: o.base, candLabel, fontMode, workers: o.workers, log: out, widthRange: o.widths });
+    const r = await runFont({ baseHtml, candHtml, baseLabel: o.base, candLabel, fontMode, workers: o.workers, log: out, widthRange: o.widths, lang: o.lang });
     printReport(r, out);
     if (failed(r)) bad = true;
   }
@@ -821,7 +838,7 @@ async function main(argv) {
 }
 
 module.exports = {
-  OD8_FAIL_BASE_OVERFLOW, REMOVED_BY_DESIGN, HEADING_ALLOWANCE_PX, ALLOWANCE_EXEMPT, headingAllowance, RES_ALLOWANCE_PX, resAllowance, ABOUT_ALLOWANCE_PX, aboutAllowance, thresholdCell,
+  OD8_FAIL_BASE_OVERFLOW, REMOVED_BY_DESIGN, HEADING_ALLOWANCE_PX, ALLOWANCE_EXEMPT, headingAllowance, RES_ALLOWANCE_PX, resAllowance, ABOUT_ALLOWANCE_PX, aboutAllowance, LANG_ALLOWANCE_PX, langAllowance, parseArgs, thresholdCell,
   overflowViewports, gutterMessage, neutraliseScrollbars, prepareBrowser, failed, PanelFitError, judgeCell, vectorsEqual, vectorOf, assertRunComplete,
   tallyJudgement, tallyGutter, invarianceWidths, checkFontMode, WALK_FN, parseCondition, edgeStarts, rawEdges, bands, sheetDisposition, checkRuleKind,
   MEASURE_SRC, Root, readRoot,

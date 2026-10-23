@@ -15,10 +15,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10829,7 +10829,7 @@
-           // after the print controls, in DOM order.
+@@ -13596,7 +13596,7 @@ function panelStops() {
            ...settingsPanel.querySelectorAll('#settings-panel a.mode[id^="res-"]'),
-           document.getElementById("about-open")]
+           document.getElementById("about-open"),
+           document.getElementById("lang-select")]
 -    .filter(isStop);
 +    .filter(el => el && !el.disabled);
  }

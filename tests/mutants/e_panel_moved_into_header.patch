@@ -79,7 +79,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1330,6 +1330,94 @@ html.about-open{overflow:hidden}
+@@ -1358,6 +1358,94 @@ html.about-open{overflow:hidden}
    <!-- "+ Add a scale" lives in the settings panel's Scales group now (M2,
         2026-09-28); #decks holds deck chips only. -->
    <nav class="decks" id="decks"></nav>
@@ -169,12 +169,12 @@ diff --git a/index.html b/index.html
 +      <button class="mode" type="button" id="about-open" aria-haspopup="dialog">ABOUT</button>
 +    </div>
 +  </div>
++  <div class="panel-group"><h3 class="panel-heading" id="panel-lang-heading">Language</h3><select id="lang-select" aria-labelledby="panel-lang-heading"></select></div>
 +</div>
-+
  </header>
  
  <main>
-@@ -1636,94 +1724,6 @@ html.about-open{overflow:hidden}
+@@ -1670,95 +1758,6 @@ html.about-open{overflow:hidden}
       below-breakpoint, modal presentation. At >=1024x700 the trigger that
       calls openPanel() is display:none, so the panel never gains them and
       the static sidebar is correctly plain, non-modal markup. -->
@@ -264,6 +264,7 @@ diff --git a/index.html b/index.html
 -      <button class="mode" type="button" id="about-open" aria-haspopup="dialog">ABOUT</button>
 -    </div>
 -  </div>
+-  <div class="panel-group"><h3 class="panel-heading" id="panel-lang-heading">Language</h3><select id="lang-select" aria-labelledby="panel-lang-heading"></select></div>
 -</div>
 -
  <!-- The scale engine, inlined verbatim from src/engine/*.js. The app is
