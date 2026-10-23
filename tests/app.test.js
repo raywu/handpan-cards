@@ -3859,10 +3859,19 @@ test("the paper control drives the page box, not just the filename", () => {
  * closePanel() ("After an action": a PDF build closes the panel). */
 test("the CTA buttons call the emitter, built-in and custom alike", () => {
   const src = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
-  const panel = src.slice(src.indexOf('id="settings-panel"'), src.indexOf('id="settings-panel"') + 4000);
-  assert.match(panel, /onclick="downloadDeckPDF\('shop', this\); closePanel\(\);"/);
   assert.strictEqual((src.match(/id="settings-panel"/g) || []).length, 1,
     "exactly one settings panel serves every deck");
+  const onclick = src.match(/<button[^>]*id="print-download"[^>]*onclick="([^"]*)"/)[1];
+  for (const kind of ["built-in", "custom"]) {
+    const app = boot();
+    if (kind === "custom") customDeck(app);
+    app.run("openPanel()");
+    app.run(`(function () { ${onclick} }).call({ closest: () => null })`);
+    const blobs = app.blobs();
+    assert.strictEqual(blobs.length, 1, `${kind}: the CTA click built ${blobs.length} PDFs, not 1`);
+    assert.strictEqual(blobs[0].type, "application/pdf", `${kind}: the CTA click did not build a PDF`);
+    assert.strictEqual(app.get("panelOpen"), false, `${kind}: a PDF build closes the panel`);
+  }
 });
 
 test("the legacy print sheet is gone: no #printroot, no openPrintSheet, no window.print caller", () => {
