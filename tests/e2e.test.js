@@ -1775,7 +1775,7 @@ function run() {
   // Lane PM (2026-10-08): HANDPAN 101 adds a 44px row + one --sp-1 (47 here) to the
   // Resources column, which is the tall one in this cell; the one-line print row
   // is not in it. So the literal is the old one + 47: 418.75 Linux / 420.75 macOS.
-  const MAIN_NEEDED_667x375_S_FALLBACK = process.platform === "linux" ? 418.75 : 420.75;
+  const MAIN_NEEDED_667x375_S_FALLBACK = process.platform === "linux" ? 369 : 371;
 
   test("the full-screen settings panel fits with no scroll in every mode, at 320x568 and every landscape size",
     async () => {
@@ -1981,7 +1981,7 @@ function run() {
             // -112) and HANDPAN 101 adds a row (+50), so the 673.75 / 669.75 became
             // 611.75 / 607.75. With the heading that is 634.75 of 688 and the cell
             // no longer scrolls; the edge test pins the exact figure.
-            const mainNeeded = process.platform === "linux" ? 607.75 : 611.75;
+            const mainNeeded = (process.platform === "linux" ? 607.75 : 611.75) - 56;
             const want = Math.max(0, mainNeeded + hg - m.clientH);
             const wantWith = Math.max(0, mainNeeded + hg + amy.cost - m.clientH);
             assert.ok(Math.abs(m.scrollH - m.clientH - wantWith) <= 1,
@@ -9616,7 +9616,7 @@ function run() {
           // Lane PM (2026-10-08): HANDPAN 101 (+47) and the one-line print row
           // (-50 where the print group was the tall column): 328.25 -> 375.25,
           // 310 -> 357, 251.75 unchanged, 313 -> 310.
-          [740, 360, "S", 375.25], [740, 340, "S", 375.25], [812, 330, "S", 357], [926, 310, "S", 251.75],
+          [740, 360, "S", 372.75], [740, 340, "S", 372.75], [812, 330, "S", 357], [926, 310, "S", 251.75],
           [568, 312, "A", 310],
         ];
         for (const [w, h, mode, mainNeeded] of cases) {
@@ -13160,6 +13160,10 @@ function run() {
     // tallest column moves (the other layouts derive it from the group heights below).
     // "fallback-linux" is measured on the CI runner (run 37890810855, 060e1c1).
     const PM_NEEDED_L = {"fallback":{"320x320":[-3,-3,-3],"320x375":[-3,-3,-3],"320x519":[-3,-3,-3],"320x520":[-3,-3,-3],"427x320":[47,47,47],"427x375":[47,47,47],"427x519":[47,47,47],"427x520":[47,47,47],"568x320":[44,44,44],"568x375":[44,44,44],"568x519":[44,44,44],"568x520":[44,44,44],"640x320":[17,17,47],"640x375":[17,17,47],"640x519":[17,17,47],"640x520":[17,17,47],"641x320":[17,17,47],"641x375":[17,17,47],"641x519":[17,17,47],"641x520":[17,17,47],"1023x320":[26.5,26.5,0],"1023x375":[26.5,26.5,0],"1023x519":[26.5,26.5,0],"1023x520":[26.5,26.5,0],"1024x320":[26.5,26.5,0],"1024x375":[26.5,26.5,0],"1024x519":[26.5,26.5,0],"1024x520":[26.5,26.5,0],"1280x320":[24,24,0],"1280x375":[24,24,0],"1280x519":[24,24,0],"1280x520":[24,24,0]},"real":{"320x320":[-3,-3,-3],"320x375":[-3,-3,-3],"320x519":[-3,-3,-3],"320x520":[-3,-3,-3],"427x320":[44,44,44],"427x375":[44,44,44],"427x519":[44,44,44],"427x520":[44,44,44],"568x320":[44,44,44],"568x375":[44,44,44],"568x519":[44,44,44],"568x520":[44,44,44],"640x320":[18,18,47],"640x375":[18,18,47],"640x519":[18,18,47],"640x520":[18,18,47],"641x320":[18,18,47],"641x375":[18,18,47],"641x519":[18,18,47],"641x520":[18,18,47],"1023x320":[23,23,0],"1023x375":[23,23,0],"1023x519":[23,23,0],"1023x520":[23,23,0],"1024x320":[23,23,0],"1024x375":[23,23,0],"1024x519":[23,23,0],"1024x520":[23,23,0],"1280x320":[23,23,0],"1280x375":[23,23,0],"1280x519":[23,23,0],"1280x520":[23,23,0]},"fallback-linux":{"320x320":[-3,-3,-3],"320x375":[-3,-3,-3],"320x519":[-3,-3,-3],"320x520":[-3,-3,-3],"427x320":[47,47,47],"427x375":[47,47,47],"427x519":[47,47,47],"427x520":[47,47,47],"568x320":[44,44,44],"568x375":[44,44,44],"568x519":[44,44,44],"568x520":[44,44,44],"640x320":[16,16,47],"640x375":[16,16,47],"640x519":[16,16,47],"640x520":[16,16,47],"641x320":[16,16,47],"641x375":[16,16,47],"641x519":[16,16,47],"641x520":[16,16,47],"1023x320":[27.5,27.5,0],"1023x375":[27.5,27.5,0],"1023x519":[27.5,27.5,0],"1023x520":[27.5,27.5,0],"1024x320":[27.5,27.5,0],"1024x375":[27.5,27.5,0],"1024x519":[27.5,27.5,0],"1024x520":[27.5,27.5,0],"1280x320":[25,25,0],"1280x375":[25,25,0],"1280x519":[25,25,0],"1280x520":[25,25,0]}};
+    // Lane W (PDF cleanup): removing the HTC link takes the sites row from two lines to one in these
+    // cells, so `needed` and the Resources group both fall by this much (measured against b726b3f,
+    // the same figure in every mode; every cell not listed is unchanged).
+    const HTC_DROP = {"fallback":{"1023x320":2.5,"1023x375":2.5,"1023x519":2.5,"1023x520":2.5,"1024x320":2.5,"1024x375":2.5,"1024x519":2.5,"1024x520":2.5,"1024x700":56.0,"1024x701":56.0,"1025x700":56.0,"1025x701":56.0,"1280x740":56.0,"1280x800":56.0,"427x320":50.0,"427x375":50.0,"427x519":50.0,"427x520":50.0,"640x320":50.0,"640x375":50.0,"640x519":50.0,"640x520":50.0,"641x320":50.0,"641x375":50.0,"641x519":50.0,"641x520":50.0},"real":{"1024x700":56.0,"1024x701":56.0,"1025x700":56.0,"1025x701":56.0,"1280x740":56.0,"1280x800":56.0,"427x320":50,"427x375":50,"427x519":50,"427x520":50,"640x320":50,"640x375":50,"640x519":50,"640x520":50,"641x320":50,"641x375":50,"641x519":50,"641x520":50}};
     const tableKey = (fm) => (fm === "fallback" && process.platform === "linux" ? "fallback-linux" : fm);
     const isLandscape = (w, h) => h <= 520;
     const isSidebar = (w, h) => w >= 1024 && h >= 700;
@@ -13258,12 +13262,15 @@ function run() {
             const dPrint = wantG[1] - wantG[2];
             const dRes = 44 + g.sp1;
             const dAbout = 44 + g.sp1;
+            const htc = (HTC_DROP[fm] || {})[key] || 0;
+            // In landscape progression the About term (needed - neededNoAbout) already absorbs a 2.5px change.
+            const htcNeeded = delta && htc < 5 && m === "S" ? 0 : htc;
             const dPm = (delta ? PM_NEEDED_L[tableKey(fm)][key][i] : dPrint + dRes) + (delta ? g.needed - g.neededNoAbout : dAbout);
-            assert.ok(Math.abs(g.needed - (want[i] + d * g.hg + amyNeeded + dPm)) <= 0.5,
-              `${where}: needed ${g.needed}px, expected main ${want[i]} + ${d ? "H + g = " + g.hg : "0"} + the Amy row ${amyNeeded} + PM ${dPm}`);
+            assert.ok(Math.abs(g.needed - (want[i] + d * g.hg + amyNeeded + dPm - htcNeeded)) <= 0.5,
+              `${where}: needed ${g.needed}px, expected main ${want[i]} + ${d ? "H + g = " + g.hg : "0"} + the Amy row ${amyNeeded} + PM ${dPm} - HTC ${htcNeeded}`);
             assert.ok(Math.abs(g.groups[0] - (wantG[0] + g.hg)) <= 0.5, `${where}: the first group is ${g.groups[0]}px, expected main ${wantG[0]} + ${g.hg}`);
             const plus = [0, 0, dPrint, amyRes + dRes + dAbout];
-            for (let k = 1; k < 4; k++) assert.ok(Math.abs(g.groups[k] - (wantG[k] + plus[k])) <= 0.5, `${where}: group ${k} is ${g.groups[k]}px, main has ${wantG[k]}px plus ${plus[k]}`);
+            for (let k = 1; k < 4; k++) assert.ok(Math.abs(g.groups[k] - (wantG[k] + plus[k] - (k === 3 ? htc : 0))) <= 0.5, `${where}: group ${k} is ${g.groups[k]}px, main has ${wantG[k]}px plus ${plus[k]}`);
           });
         }
       }
