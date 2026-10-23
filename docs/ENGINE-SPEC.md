@@ -749,7 +749,7 @@ Verified against all three built-ins under the fixed list order of
   because list order is total.
 - DECIDED(D10, D14 as amended) The parent override is encoded as an INDEX into
   that list (0-10) and travels in the seed options; it changes degree labels
-  only, never the fields list, so the deck id is unchanged. Since 2026-10-14 the sheet writes no index (every deck saved from the sheet carries the inferred one); the encoding stays, and an explicit index from an older record or a share link is honoured and re-stored when that link is opened (`tests/share.test.js` "parent survives the round trip on its own, null included"; app test "RD: opening a share link that carries an explicit parent stores that parent again, after an inferred SAVE included").
+  only, never the fields list, so the deck id is unchanged. Since 2026-10-14 the sheet writes no index (every deck saved from the sheet, or opened from a link or record with no parent, stores no index, and the engine infers one at build); the encoding stays, and an explicit index from an older record or a share link is honoured and re-stored when that link is opened (`tests/share.test.js` "parent survives the round trip on its own, null included"; app test "RD: opening a share link that carries an explicit parent stores that parent again, after an inferred SAVE included").
 - DECIDED(swarm-2026-09-08) A parent is always inferred - every candidate has a
   finite distance, so there is no "no usable parent" branch. When the
   select-level `NO_THIRDS` warning fires (no root on the pan has a third), every
