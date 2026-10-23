@@ -27,6 +27,7 @@ import decks as D  # noqa: E402
 import inline_engine  # noqa: E402
 import inline_fonts  # noqa: E402
 import sync_decks  # noqa: E402  (tools/ is on sys.path, above)
+import sync_i18n  # noqa: E402
 
 PY = {"kurd": D.KURD, "amara10": D.AMARA10, "hijaz": D.HIJAZ,
       "pygmy": D.PYGMY, "amara": D.AMARA}
@@ -155,6 +156,12 @@ def main():
         assert inline_fonts.main(["inline_fonts.py", "--check"]) == 0, \
             "src/engine/fontdata.js is stale - run `python3 tools/inline_fonts.py`"
     run_check(5, "src/engine/fontdata.js == tools/fonts/ subsets", check_5, failures)
+
+    # 6. the i18n region == data/i18n/*.json.
+    def check_6():
+        assert sync_i18n.main(["sync_i18n.py", "--check"]) == 0, \
+            "index.html i18n region is stale - run `python3 tools/sync_i18n.py`"
+    run_check(6, "index.html i18n region == data/i18n", check_6, failures)
 
     return failures
 

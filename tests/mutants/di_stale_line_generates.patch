@@ -4,15 +4,16 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13193,7 +13193,6 @@ function paintPassive() {
+@@ -13457,7 +13457,7 @@ function paintPassive() {
    scaleWrap.classList.toggle("passive", onFields);
    scaleBox.classList.toggle("stale", onFields && lineStale);
    paintNotes();
 -  if (onFields && lineStale) genBtn.disabled = true;
++
  }
  /** The order hint: shown on the active path's note only while a ring still
   *  follows what was typed. */
-@@ -13254,7 +13253,6 @@ function followFields(r, wasStale) {
+@@ -13518,7 +13518,6 @@ function followFields(r, wasStale) {
    } else {
      lineStale = true;
      holdPanPreview();

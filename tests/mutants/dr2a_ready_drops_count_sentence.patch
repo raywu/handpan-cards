@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11552,7 +11552,7 @@ function syncRingCounts(fields) {
+@@ -11811,7 +11811,7 @@ function syncRingCounts(fields) {
      ringCount[ring] = to;
    }
    if (putDown) { pickRef = null; pickMoved = false; }
--  return { text: said.join(" ") + (putDown ? " The picked note was put down." : ""), said: byRing, putDown };
+-  return { text: said.join(" ") + (putDown ? t("sheet.put_down") : ""), said: byRing, putDown };
 +  return { text: "", said: byRing, putDown };
  }
  

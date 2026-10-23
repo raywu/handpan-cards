@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12096,7 +12096,7 @@ function syncParseState({ paint }) {
+@@ -12353,7 +12353,7 @@ function syncParseState({ paint }) {
      typedNow = null;
      paintLayout();
      scaleBox.classList.add("bad");
 -    genBtn.disabled = true;
 +    genBtn.disabled = false;
      if (paint) holdPanPreview();
-     showRefusal(res.reason);
+     showRefusal(reasonText(res));
    }

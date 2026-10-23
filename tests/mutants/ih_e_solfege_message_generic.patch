@@ -4,12 +4,12 @@
 diff --git a/src/engine/importer.js b/src/engine/importer.js
 --- a/src/engine/importer.js
 +++ b/src/engine/importer.js
-@@ -677,7 +677,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -691,7 +691,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
      for (var i = 0; i < tokens.length; i++) {
        var t = tokens[i];
-       if (COMPOSE_BARRED.test(t)) return { notes: [], error: "Type notes only: the line is written for you." };
--      if (COMPOSE_SOLFEGE.test(t)) return { notes: [], error: "Use letter names, like D A Bb." };
-+      if (COMPOSE_SOLFEGE.test(t)) return { notes: [], error: "Use letter names." };
+       if (COMPOSE_BARRED.test(t)) return { notes: [], error: "Type notes only: the line is written for you.", errorCode: composeCode("TYPE_NOTES_ONLY") };
+-      if (COMPOSE_SOLFEGE.test(t)) return { notes: [], error: "Use letter names, like D A Bb.", errorCode: composeCode("SOLFEGE") };
++      if (COMPOSE_SOLFEGE.test(t)) return { notes: [], error: "Use letter names.", errorCode: composeCode("SOLFEGE") };
        var upper = COMPOSE_UPPER_B.exec(t);
        if (upper) {
          var l = upper[1].toUpperCase();

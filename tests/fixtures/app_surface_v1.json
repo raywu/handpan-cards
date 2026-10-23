@@ -4,7 +4,10 @@
   "names": [
     "CUSTOM",
     "DECKS",
+    "ENDONYMS",
     "HPE",
+    "I18N",
+    "LANGS",
     "PARSE_HINT",
     "SCALES_KEY",
     "SEQ_STYLE_COPY",
@@ -24,6 +27,7 @@
     "SWIPE_TILT_MAX_DEG",
     "announce",
     "applyKbOffset",
+    "applyLang",
     "card",
     "checkShareVersion",
     "closeScaleSheet",
@@ -31,6 +35,7 @@
     "deck",
     "deckId",
     "deleteDeck",
+    "detectLang",
     "downloadDeckPDF",
     "drag",
     "eatClick",
@@ -62,6 +67,7 @@
     "scene",
     "selectDeck",
     "seq",
+    "setLang",
     "setMode",
     "setPrintPaper",
     "setTier",
@@ -76,7 +82,9 @@
     "swatches",
     "swipeDecision",
     "swipeOutTiming",
+    "t",
     "tier",
+    "uiLang",
     "wheel"
   ]
 }

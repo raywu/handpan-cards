@@ -5,8 +5,8 @@
 diff --git a/src/engine/importer.js b/src/engine/importer.js
 --- a/src/engine/importer.js
 +++ b/src/engine/importer.js
-@@ -679,7 +679,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-   function composeRange(x) { return x + " is outside C-1 to G9."; }
+@@ -681,7 +681,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   function composeRangeCode(x) { return composeCode("OUT_OF_RANGE", { X: x }); }
  
    function composeMidi(n, octave) { return core().midiFromName(n.letter, n.acc, octave); }
 -  function composeFits(midi) { return midi >= 0 && midi <= 127; }

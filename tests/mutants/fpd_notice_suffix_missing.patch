@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10853,7 +10853,7 @@ function layoutNoticeText() {
+@@ -11111,7 +11111,7 @@ function layoutNoticeText() {
        if (ringCount[ring] === storedCounts[ring]) continue;
        const seated = !!(storedSeats && storedSeats[ring]), angled = ring === "bottom" && !!storedAngles;
        if (seated && !angled && followsTyped(ring)) continue;
--      if (seated || angled) text += ` The ${ring} ${seated && angled ? "seats and angles" : angled ? "angles" : "seats"} were reset.`;
-+      if (seated) text += ` The ${ring} ${seated && angled ? "seats and angles" : angled ? "angles" : "seats"} were reset.`;
+-      if (seated || angled) text += t(seated && angled ? "sheet.seats_angles_reset" : angled ? "sheet.angles_reset" : "sheet.seats_reset", { ring: ringWord(ring) });
++      if (seated) text += t(seated && angled ? "sheet.seats_angles_reset" : angled ? "sheet.angles_reset" : "sheet.seats_reset", { ring: ringWord(ring) });
      }
    return text;
  }

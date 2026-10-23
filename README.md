@@ -45,7 +45,7 @@ Open `index.html` from disk, or run `tools/preview.sh` to serve it at `http://lo
 - The `<!-- engine:... -->` regions of `index.html` are copies of `src/engine/*.js`. `python3 tools/inline_engine.py` rewrites them.
 - The `const DECKS` line is rewritten from `data/decks.json` by `python3 tools/sync_decks.py`.
 - Do not edit either by hand. Both tools take `--check`, and `python3 tools/validate.py` fails if either drifts.
-- To fork, set `GA_MEASUREMENT_ID` in `index.html` to `G-XXXXXXXXXX` (this disables analytics) or your own id. Replace `CNAME`, the canonical, og and `twitter:image` URLs and the JSON-LD `url` in `index.html`, `robots.txt` and `sitemap.xml`. Tests and mutants pin the domain and the id, so update them too.
+- To fork, set `GA_MEASUREMENT_ID` in `index.html` to `G-XXXXXXXXXX` (this disables analytics) or your own id. Replace `CNAME`, the canonical, og and `twitter:image` URLs, both JSON-LD `url` values and the WebSite `alternateName` in `index.html`, `robots.txt` and `sitemap.xml`. Tests and mutants pin the domain and the id, so update them too.
 
 The engine is twelve modules under `src/engine/`:
 
@@ -72,7 +72,7 @@ Tests:
     python3 tests/suite_health.py   # per-file test-count floors
     ./tests/run.sh mutants          # mutation gate (slow)
 
-There are 25 node suites and 16 python suites. The mutation gate applies 1395 mutant patches from `tests/mutants/`, and a test must fail under each one. It edits the tree in place and refuses to start on uncommitted changes to a file a patch touches, `README.md` among them, so commit first.
+There are 25 node suites and 16 python suites. The mutation gate applies 1440 mutant patches from `tests/mutants/`, and a test must fail under each one. It edits the tree in place and refuses to start on uncommitted changes to a file a patch touches, `README.md` among them, so commit first.
 
 CI runs on pull requests into `main` and on pushes to `main`. A PR that changes only `docs/plans/` or `docs/prompts/` skips every job.
 

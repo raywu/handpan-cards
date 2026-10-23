@@ -13972,6 +13972,43 @@ function run() {
       }
     });
 
+    test("I18N: the CJK stacks resolve to a CJK family under ja and zh-Hant, the panel headings are 17px, and the page makes no new request", async () => {
+      await freshLoad();
+      await b.setViewport(380, 800, false);
+      try {
+        await b.settle();
+        await openSettingsPanel();
+        const urls = [];
+        b.on("Network.requestWillBeSent", (p) => urls.push(p.request.url));
+        await b.send("Network.enable");
+        const probe = (lang) => b.eval(`
+          document.documentElement.lang = ${JSON.stringify(lang)};
+          const fam = (e) => getComputedStyle(e).fontFamily;
+          const heading = document.querySelector("#settings-panel .panel-heading");
+          return { about: fam(document.getElementById("about-open")), note: fam(document.querySelector("#settings-panel .panel-note")),
+                   heading: fam(heading), line: getComputedStyle(heading).lineHeight };
+        `);
+        try {
+          const cjk = /Hiragino|Yu Gothic|Noto Sans CJK|PingFang|JhengHei|YaHei/;
+          for (const [lang, serif] of [["ja", /Hiragino Mincho|Yu Mincho|Noto Serif CJK JP/], ["zh-Hant", /PingFang TC|JhengHei|Noto Serif CJK TC/]]) {
+            const m = await probe(lang);
+            assert.match(m.about, cjk, `${lang}: #about-open family ${m.about}`);
+            assert.match(m.note, cjk, `${lang}: .panel-note family ${m.note}`);
+            assert.match(m.heading, serif, `${lang}: .panel-heading family ${m.heading}`);
+            assert.strictEqual(m.line, "17px", `${lang}: .panel-heading line-height`);
+          }
+          const en = await probe("en");
+          assert.doesNotMatch(en.about, /Hiragino|PingFang/, "en: no CJK family");
+        } finally {
+          await b.eval(`document.documentElement.lang = "en"; return true;`);
+          b.off("Network.requestWillBeSent");
+        }
+        assert.deepStrictEqual(urls.filter((u) => !/^data:/.test(u)), [], "setting lang made a request");
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
     test("AO: About has no transition or animation with and without prefers-reduced-motion", async () => {
       await freshLoad();
       await b.setViewport(380, 800, false);

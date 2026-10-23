@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12169,8 +12169,8 @@ function paintFields(values, announceNew, composed) {
+@@ -13276,8 +13276,8 @@ function paintFields(values, announceNew, composed) {
      fieldEls[k].classList.toggle("bad", bad);
      fieldEls[k].setAttribute("aria-invalid", bad ? "true" : "false");
    }
@@ -12,6 +12,6 @@ diff --git a/index.html b/index.html
 -    FIELD_KEYS.find((k) => next[k] && next[k].kind === "warn") || FIELD_KEYS.find((k) => next[k]);
 +  const first = FIELD_KEYS.find((k) => next[k] && next[k].kind === "warn") ||
 +    FIELD_KEYS.find((k) => next[k] && next[k].kind === "error") || FIELD_KEYS.find((k) => next[k]);
-   const text = first ? FIELD_SHORT[first] + ": " + next[first].text : "";
+   const text = first ? t("sheet.field_msg", { FIELD_SHORT: FIELD_SHORT[first], message: next[first].text }) : "";
    if (fieldMsg.textContent !== text) fieldMsg.textContent = text;
    fieldMsg.classList.toggle("info", !!first && next[first].kind === "info");

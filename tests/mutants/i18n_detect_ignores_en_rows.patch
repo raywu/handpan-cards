@@ -1,0 +1,15 @@
+# kills: I18N: the detection table
+# suite: node --test --test-name-pattern ^I18N:.the.detection.table$ tests/app.test.js
+# Detection skips an English entry and takes the next language that has a table.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9450,7 +9450,7 @@ function langOfTag(tag) {
+ function detectLang(list) {
+   for (const tag of list || []) {
+     const code = langOfTag(tag);
+-    if (code && LANGS.includes(code)) return code;
++    if (code && code !== "en" && LANGS.includes(code)) return code;
+   }
+   return "en";
+ }

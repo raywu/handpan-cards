@@ -28,16 +28,23 @@
 <meta property="og:image" content="https://handpan.raywu.org/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
+<meta property="og:site_name" content="Handpan Chords">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Handpan Chords: Custom Scale Chord and Progression Practice">
 <meta name="twitter:image" content="https://handpan.raywu.org/og.png">
 <!-- Structured data (discoverability plan section 6): states only what the page
-     shows. No rating or review markup, so it earns no rich result; it is a
-     machine-readable statement of name, price and purpose. Pinned by
-     tests/app.test.js "the JSON-LD block parses and states only what the page shows". -->
+     shows. One block, one @graph: a WebApplication node (name, price, purpose) and
+     a WebSite node (name, alternateName, url) beside og:site_name. No rating or
+     review markup, so it earns no rich result. Pinned by tests/app.test.js
+     "SN: the JSON-LD block is one @graph holding exactly one WebApplication and one WebSite node",
+     "SN: the WebSite node is named as the h1, at the canonical and og:url, with only the lowercase subdomain as alternateName",
+     "SN: og:site_name equals the WebSite name and appears once" and
+     "the JSON-LD block parses and states only what the page shows". -->
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
+  "@graph": [
+  {
   "@type": "WebApplication",
   "name": "Handpan Chords",
   "url": "https://handpan.raywu.org/",
@@ -48,6 +55,14 @@
   "isAccessibleForFree": true,
   "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
   "featureList": "Chord flashcards; chord progressions; custom scale input; printable PDF"
+  },
+  {
+  "@type": "WebSite",
+  "name": "Handpan Chords",
+  "alternateName": ["handpan.raywu.org"],
+  "url": "https://handpan.raywu.org/"
+  }
+  ]
 }
 </script>
 <!-- Analytics consent defaults (discoverability plan section 7). Inline and inert: it
@@ -1279,6 +1294,18 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 #about a{color:#eae6df}
 #about ul a, #about a[href^="mailto:"]{display:flex; align-items:center; min-height:44px}
 html.about-open{overflow:hidden}
+
+/* ---- CJK (i18n): Latin face first, then the system CJK families ------------ */
+:lang(ja) body, :lang(ja) .mode, :lang(ja) .prints button, :lang(ja) .prints select, :lang(ja) .panel-note, :lang(ja) .chip{
+  font-family:"Nunito Sans", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Noto Sans CJK JP", "Noto Sans JP", sans-serif}
+:lang(ja) .panel-heading{font-family:Marcellus, "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif CJK JP", serif}
+:lang(zh-Hant) body, :lang(zh-Hant) .mode, :lang(zh-Hant) .prints button, :lang(zh-Hant) .prints select, :lang(zh-Hant) .panel-note, :lang(zh-Hant) .chip{
+  font-family:"Nunito Sans", "PingFang TC", "Microsoft JhengHei", "Noto Sans CJK TC", "Noto Sans TC", sans-serif}
+:lang(zh-Hant) .panel-heading{font-family:Marcellus, "PingFang TC", "Microsoft JhengHei", "Noto Serif CJK TC", serif}
+:lang(zh-Hans) body, :lang(zh-Hans) .mode, :lang(zh-Hans) .prints button, :lang(zh-Hans) .prints select, :lang(zh-Hans) .panel-note, :lang(zh-Hans) .chip{
+  font-family:"Nunito Sans", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Noto Sans SC", sans-serif}
+:lang(zh-Hans) .panel-heading{font-family:Marcellus, "PingFang SC", "Microsoft YaHei", "Noto Serif CJK SC", serif}
+:lang(ja) .panel-heading, :lang(zh) .panel-heading{line-height:17px}
 
 /* ---- print (R1, 2026-09-29) -----------------------------------------------
    Forces print colour adjustment, clears the page background and padding for
@@ -3742,7 +3769,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         reason = reason.split(key).join(substitutions[key]);
       }
     }
-    return { ok: false, code: code, reason: reason };
+    return { ok: false, code: code, reason: reason, variant: alternate || null, vars: substitutions || {} };
   }
 
   function badNote(token) {
@@ -5411,6 +5438,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   var COMPOSE_HIGH = 10;
 
   function composeRange(x) { return x + " is outside C-1 to G9."; }
+  function composeCode(code, vars, variant) { return { code: code, variant: variant || null, vars: vars || {} }; }
+  function composeRangeCode(x) { return composeCode("OUT_OF_RANGE", { X: x }); }
 
   function composeMidi(n, octave) { return core().midiFromName(n.letter, n.acc, octave); }
   function composeFits(midi) { return midi >= 0 && midi <= 127; }
@@ -5422,18 +5451,18 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var notes = [];
     for (var i = 0; i < tokens.length; i++) {
       var t = tokens[i];
-      if (COMPOSE_BARRED.test(t)) return { notes: [], error: "Type notes only: the line is written for you." };
-      if (COMPOSE_SOLFEGE.test(t)) return { notes: [], error: "Use letter names, like D A Bb." };
+      if (COMPOSE_BARRED.test(t)) return { notes: [], error: "Type notes only: the line is written for you.", errorCode: composeCode("TYPE_NOTES_ONLY") };
+      if (COMPOSE_SOLFEGE.test(t)) return { notes: [], error: "Use letter names, like D A Bb.", errorCode: composeCode("SOLFEGE") };
       var upper = COMPOSE_UPPER_B.exec(t);
       if (upper) {
         var l = upper[1].toUpperCase();
-        return { notes: [], error: l + "B is not a note: write " + l + "-flat as " + l + "b." };
+        return { notes: [], error: l + "B is not a note: write " + l + "-flat as " + l + "b.", errorCode: composeCode("DOUBLE_B", { L: l }) };
       }
       var m = COMPOSE_NOTE.exec(t.replace(/♯/g, "#").replace(/♭/g, "b").replace(/^./, function (c) { return c.toUpperCase(); }));
-      if (!m) return { notes: [], error: "\"" + t + "\" is not a note: try C, F# or Bb." };
+      if (!m) return { notes: [], error: "\"" + t + "\" is not a note: try C, F# or Bb.", errorCode: composeCode("NOT_A_NOTE", { T: t }) };
       var n = { letter: m[1], acc: m[2] || "", octave: m[3] === undefined ? null : Number(m[3]) };
       if (n.octave !== null && !composeFits(composeMidi(n, n.octave))) {
-        return { notes: [], error: composeRange(composeNamed(n, n.octave)) };
+        return { notes: [], error: composeRange(composeNamed(n, n.octave)), errorCode: composeRangeCode(composeNamed(n, n.octave)) };
       }
       notes.push(n);
     }
@@ -5454,17 +5483,18 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       var octave = n.octave === null ? composeAbove(n, below) : n.octave;
       var midi = composeMidi(n, octave);
       var name = composeNamed(n, octave);
-      if (!composeFits(midi)) return { names: names, error: composeRange(name) };
+      if (!composeFits(midi)) return { names: names, error: composeRange(name), errorCode: composeRangeCode(name) };
       names.push(name);
       if (n.octave === null) guessed.push(name);
       var parsed = core().parseSeed(head + names.join(" "));
       if (!parsed.ok && parsed.code !== "NO_FIFTH") {
         names.pop();
         var error = parsed.reason;
-        if (parsed.code === "NOTE_OUT_OF_RANGE") error = composeRange(name);
-        else if (parsed.code === "NOTE_REPEATED") error = name + " is already in the top or inner notes.";
-        else if (parsed.code === "NOTE_OUT_OF_ORDER") error = name + " is not above the ding, " + anchorName + ".";
-        return { names: names, error: error };
+        var errorCode = { code: parsed.code, variant: parsed.variant || null, vars: parsed.vars || {}, pass: true };
+        if (parsed.code === "NOTE_OUT_OF_RANGE") { error = composeRange(name); errorCode = composeRangeCode(name); }
+        else if (parsed.code === "NOTE_REPEATED") { error = name + " is already in the top or inner notes."; errorCode = composeCode("IN_TOP", { name: name }); }
+        else if (parsed.code === "NOTE_OUT_OF_ORDER") { error = name + " is not above the ding, " + anchorName + "."; errorCode = composeCode("NOT_ABOVE_DING", { name: name, ding: anchorName }); }
+        return { names: names, error: error, errorCode: errorCode };
       }
       below = midi;
     }
@@ -5485,9 +5515,13 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       var octave = (midi - composeMidi(n, 0)) / 12;
       var name = composeNamed(n, octave);
       if (i === placed.failAt) {
-        return { names: [], guessed: [], error: guess ? n.letter + n.acc + " has no octave that fits: type one." : composeRange(name) };
+        return {
+          names: [], guessed: [],
+          error: guess ? n.letter + n.acc + " has no octave that fits: type one." : composeRange(name),
+          errorCode: guess ? composeCode("NO_OCTAVE_FITS", { L: n.letter + n.acc }) : composeRangeCode(name)
+        };
       }
-      if (midis.indexOf(midi) !== -1) return { names: [], guessed: [], error: name + " is already in the bottom notes." };
+      if (midis.indexOf(midi) !== -1) return { names: [], guessed: [], error: name + " is already in the bottom notes.", errorCode: composeCode("IN_BOTTOM", { name: name }) };
       names.push(name);
       midis.push(midi);
       if (guess) guessed.push(name);
@@ -5507,6 +5541,22 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         var m = COMPOSE_NOTE.exec(rows[r][1][0]);
         if (composeMidi({ letter: m[1], acc: m[2] || "" }, Number(m[3])) === bottom.midis[i]) {
           return { code: "DUPLICATE_NOTE", text: bottom.names[i] + " is already " + rows[r][0] + ". Double-check the bottom notes." };
+        }
+      }
+    }
+    return null;
+  }
+
+  function composeDuplicateCode(bottom, read, ding, top, inner) {
+    var rows = [["ding", ding.name, 0]];
+    (top || []).forEach(function (x, k) { rows.push(["top", x, k + 1]); });
+    (inner || []).forEach(function (x, k) { rows.push(["inner", x, k + 1]); });
+    for (var i = 0; i < bottom.names.length; i++) {
+      if (read[i].octave !== null) continue;
+      for (var r = 0; r < rows.length; r++) {
+        var m = COMPOSE_NOTE.exec(rows[r][1]);
+        if (composeMidi({ letter: m[1], acc: m[2] || "" }, Number(m[3])) === bottom.midis[i]) {
+          return composeCode("DUPLICATE_NOTE", { name: bottom.names[i], k: rows[r][2] }, rows[r][0]);
         }
       }
     }
@@ -5533,7 +5583,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       ok: false, empty: false, line: "", typedLine: "", seed: null,
       errors: { ding: null, top: null, inner: null, bottom: null },
       info: { bottom: null, inner: null }, warn: { bottom: null }, guessed: [],
-      notes: { ding: [], top: [], inner: [], bottom: [] }
+      notes: { ding: [], top: [], inner: [], bottom: [] },
+      codes: { ding: null, top: null, inner: null, bottom: null },
+      infoCodes: { bottom: null, inner: null }, warnCodes: { bottom: null }
     };
     var read = {};
     COMPOSE_FIELDS.forEach(function (f) { read[f] = composeRead(fields[f]); });
@@ -5541,12 +5593,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       out.empty = true;
       return out;
     }
-    COMPOSE_FIELDS.forEach(function (f) { out.errors[f] = read[f].error; });
+    COMPOSE_FIELDS.forEach(function (f) { out.errors[f] = read[f].error; out.codes[f] = read[f].errorCode || null; });
 
     var ding = null;
     if (!out.errors.ding) {
-      if (!read.ding.notes.length) out.errors.ding = "Enter the ding, like D3.";
-      else if (read.ding.notes.length > 1) out.errors.ding = "Enter one note for the ding.";
+      if (!read.ding.notes.length) { out.errors.ding = "Enter the ding, like D3."; out.codes.ding = composeCode("DING_EMPTY"); }
+      else if (read.ding.notes.length > 1) { out.errors.ding = "Enter one note for the ding."; out.codes.ding = composeCode("DING_ONE"); }
       else {
         var d = read.ding.notes[0];
         var dOctave = d.octave === null ? 3 : d.octave;
@@ -5559,17 +5611,17 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var topMidi = null;
     var inner = null;
     var innerGuessed = [];
-    if (!out.errors.top && !read.top.notes.length) out.errors.top = "Enter the top notes.";
+    if (!out.errors.top && !read.top.notes.length) { out.errors.top = "Enter the top notes."; out.codes.top = composeCode("TOP_EMPTY"); }
     if (ding && !out.errors.top) {
       var staged = composeStage("(" + ding.name + ") ", read.top.notes, ding.midi, ding.name);
-      if (staged.error) out.errors.top = staged.error;
+      if (staged.error) { out.errors.top = staged.error; out.codes.top = staged.errorCode; }
       else { top = staged.names; topMidi = staged.last; }
     }
     if (top) {
       out.notes.top = top;
       if (read.inner.notes.length && !out.errors.inner) {
         var upper = composeStage("(" + ding.name + ") " + top.join(" ") + " | ", read.inner.notes, topMidi, ding.name);
-        if (upper.error) out.errors.inner = upper.error;
+        if (upper.error) { out.errors.inner = upper.error; out.codes.inner = upper.errorCode; }
         else { inner = upper.names; innerGuessed = upper.guessed; }
       } else if (!out.errors.inner) inner = [];
     }
@@ -5578,24 +5630,34 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       var full = core().parseSeed("(" + ding.name + ") " + top.join(" ") + (inner.length ? " | " + inner.join(" ") : ""));
       if (!full.ok && full.code === "NO_FIFTH") {
         out.errors.ding = "No fifth above the ding " + ding.name + ": add " + core().fifthName(ding.letter, ding.acc) + " to the top notes, or check the ding.";
-      } else if (!full.ok) out.errors.top = full.reason;
+        out.codes.ding = composeCode("NO_FIFTH", { ding: ding.name, fifth: core().fifthName(ding.letter, ding.acc) });
+      } else if (!full.ok) {
+        out.errors.top = full.reason;
+        out.codes.top = { code: full.code, variant: full.variant || null, vars: full.vars || {}, pass: true };
+      }
       else {
         var notes = [];
+        var infoParts = [];
         if (innerGuessed.length) {
+          infoParts.push(composeCode("OCTAVES_GUESSED_INNER", { list: innerGuessed.join(", ") }));
           notes.push("Octaves guessed: " + innerGuessed.join(", ") + ". An inner note can sit below the top notes: type its octave to put it there.");
         }
         var low = core().innerBelowRim(full.value.fields);
         if (low.length) {
+          infoParts.push(composeCode("INNER_BELOW_TOP", { list: low.join(", "), n: low.length }));
           notes.push(low.join(", ") + (low.length > 1 ? " sit" : " sits") + " below the top notes. Check " + (low.length > 1 ? "them" : "it") + " on the pan picture.");
         }
-        if (notes.length) out.info.inner = notes.join(" ");
+        if (notes.length) {
+          out.info.inner = notes.join(" ");
+          out.infoCodes.inner = infoParts.length === 1 ? infoParts[0] : { code: "PARTS", variant: null, vars: {}, parts: infoParts };
+        }
       }
     }
 
     var bottom = null;
     if (ding && !out.errors.bottom) {
       var placed = composeBottoms(read.bottom.notes, ding);
-      if (placed.error) out.errors.bottom = placed.error;
+      if (placed.error) { out.errors.bottom = placed.error; out.codes.bottom = placed.errorCode; }
       else bottom = placed;
     }
     if (bottom) {
@@ -5603,7 +5665,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       out.guessed = bottom.guessed;
       if (bottom.guessed.length) {
         out.info.bottom = "Octaves guessed: " + bottom.guessed.join(", ") + ". Type an octave to change a guess.";
+        out.infoCodes.bottom = composeCode("OCTAVES_GUESSED", { list: bottom.guessed.join(", ") });
         out.warn.bottom = composeDuplicate(bottom, read.bottom.notes, ding, top, inner);
+        if (out.warn.bottom) out.warnCodes.bottom = composeDuplicateCode(bottom, read.bottom.notes, ding, top, inner);
       }
     }
 
@@ -5626,6 +5690,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         out.seed = parsed.value;
       } else {
         out.errors.bottom = parsed.reason;
+        out.codes.bottom = { code: parsed.code, variant: parsed.variant || null, vars: parsed.vars || {}, pass: true };
       }
     }
     return out;
@@ -9429,6 +9494,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 </script>
 <!-- engine:sequence end -->
 <!-- engine end -->
+<!-- i18n begin - synced from data/i18n/*.json by tools/sync_i18n.py -->
+<script>const I18N = {"en": {"header.share_copy": "Copy link", "header.settings": "Settings", "header.share_url": "Share link", "card.flip": "Flip card", "card.hint_notes": "Tap to reveal the notes", "card.hint_name": "Tap to reveal the name", "card.which_chord": "WHICH CHORD IS THIS?", "footer.prev": "Previous card", "footer.next": "Next card", "footer.shuffle_off": "Shuffle: off", "footer.shuffle_on": "Shuffle: on", "seq.new_progression": "New progression", "seq.live": "{chord}, chord {i} of {n}", "seq.empty_tier": "This scale has no {tier} progressions. Pick another difficulty or another scale.", "seq.empty_few": "This scale doesn’t have enough simple chords to make a progression. Pick another scale, or switch to NAME → NOTES in the menu.", "seq.no_playable": "This pan has no playable chords - try a different scale.", "style.together.name": "All at once", "style.together.tip": "Strike every note of the chord together, then let it ring before the next one", "style.arpeggio.name": "Arpeggio", "style.arpeggio.tip": "Play the notes one at a time, low to high, then come back down", "style.three-over-two.name": "3:2 polyrhythm", "style.three-over-two.tip": "One hand plays three even strokes while the other plays two, in the same span", "style.three-three-two.name": "3-3-2", "style.three-three-two.tip": "Group your strokes 3 + 3 + 2 and keep the cycle going through each chord", "style.paradiddle.name": "Paradiddle", "style.paradiddle.tip": "Right-left-right-right, left-right-left-left, moving the strokes across the chord's notes", "style.groove.name": "Groove", "style.groove.tip": "Keep one chord shape and add slaps, soft ghost notes, or move the accent around", "style.freestyle.name": "Freestyle", "style.freestyle.tip": "Mix the patterns, bring a different top note forward each time, and follow your ear", "tier.basic": "EASY", "tier.intermediate": "MEDIUM", "tier.advanced": "HARD", "panel.heading": "Settings", "panel.flash": "Flash cards", "panel.modeA": "NAME → NOTES", "panel.modeB": "NOTES → NAME", "panel.progression": "Chord progression", "panel.seven_ways": "7 different ways to play chords:", "panel.watch_youtube": "Watch on YouTube", "panel.scales": "Scales", "panel.add": "+ ADD A SCALE", "panel.reset_idle": "RESET SEEDED SCALES", "panel.reset_armed": "TAP AGAIN TO RESET", "panel.reset_warning": "Tap again to restore all seeded scales. Your edits to them will be gone.", "panel.reset_done": "Seeded scales restored.", "panel.print": "Print this scale", "panel.download": "DOWNLOAD PDF", "panel.paper": "Paper size", "panel.resources": "Resources", "panel.res_amy_bottom": "AMY: BOTTOM NOTES", "panel.res_101.aria": "Handpan 101 (Google Doc)", "panel.about": "ABOUT", "share.copied": "LINK COPIED", "share.shared": "LINK SHARED", "share.select": "SELECT THE LINK AND COPY IT", "boot.gone": "That scale is gone. Showing {name}.", "boot.removed": "Removed {a}. Showing {b}.", "about.back": "← BACK", "about.back.aria": "Back to the practice screen", "about.title": "About Handpan Chords", "sheet.back": "← BACK", "sheet.title_add": "Add a scale", "sheet.title_edit": "Edit this scale", "sheet.tablist": "Scale sheet", "sheet.tab_scale": "Scale", "sheet.tab_layout": "Layout", "sheet.name_label": "SCALE NAME", "sheet.your_scale": "YOUR SCALE", "sheet.note_by_note": "NOTE BY NOTE", "sheet.inner_short": "TOP INNER NOTES", "sheet.bottom": "BOTTOM NOTES", "sheet.or": "OR", "sheet.or.aria": "or", "sheet.line_label": "SCALE: (DING) TOP NOTES | OPTIONAL INNER NOTES", "sheet.preview.aria": "Preview of where the notes sit on the pan", "sheet.layout_hint_empty": "Type a scale to adjust its layout.", "sheet.drawer_hint": "Tap a note, then tap another note in the same ring to swap them. Or hold a note and drag it.", "sheet.drawer.aria": "Layout", "sheet.orientation": "HANDPAN ORIENTATION", "sheet.anchor_one": "#1 CENTRED", "sheet.anchor_between": "#1 / #2", "sheet.anchor_between.aria": "#1 / #2, notes 1 and 2 either side of centre", "sheet.anchor_hint": "Which note sits nearest you: note 1 alone, or notes 1 and 2 side by side.", "sheet.mirror_top": "MIRROR TOP", "sheet.mirror_bottom": "MIRROR BOTTOM", "sheet.mirror_hint": "Each flips left and right. Top covers the rim and the inner notes.", "sheet.fine_show": "HARD TO TAP? SHOW FINER CONTROLS", "sheet.fine_hide": "HIDE FINER CONTROLS", "sheet.prev_note": "PREVIOUS NOTE", "sheet.next_note": "NEXT NOTE", "sheet.prev_seat": "PREVIOUS SEAT", "sheet.next_seat": "NEXT SEAT", "sheet.reset_layout": "RESET LAYOUT", "sheet.palette": "CARD PALETTE", "sheet.palette_n": "Palette {n}", "sheet.next": "NEXT", "sheet.generate": "GENERATE CARDS", "sheet.save": "SAVE CHANGES", "sheet.generating": "GENERATING", "sheet.saving": "SAVING", "sheet.del_idle": "DELETE THIS SCALE", "sheet.del_armed": "TAP AGAIN TO DELETE", "sheet.del_note_seeded": "Tap again to remove {name}. RESET SEEDED SCALES in the menu brings the seeded scales back.", "sheet.del_note_custom": "Tap again to remove {name}. This cannot be undone.", "sheet.del_refusal": "Keep at least one scale. Add a scale before deleting {name}.", "sheet.lip.aria": "Show NEXT", "sheet.duplicate": "Another scale already has these notes.", "sheet.generated": {"one": "{n} cards generated", "other": "{n} cards generated"}, "sheet.layout_unsaved_edit": "Layout not saved yet. SAVE CHANGES keeps it.", "sheet.layout_unsaved_add": "Layout not saved yet. GENERATE CARDS keeps it.", "sheet.layout_changed": "Layout changed from the default.", "sheet.seats_reset": " The {ring} seats were reset.", "sheet.counts": "Pan layout: {rim} rim, {inner} inner, {bottom} bottom notes.", "sheet.hit_label": "{name}, {ring} seat {label}, {place}", "sheet.ring_back": "The {ring} is back to {n} notes, so its earlier seats were restored.", "sheet.ring_reset": {"one": "The {ring} now has {n} note, so its seats were reset.", "other": "The {ring} now has {n} notes, so its seats were reset."}, "sheet.put_down": " The picked note was put down.", "sheet.stays": "{name} stays in {ring} seat {label}.", "sheet.swapped": "Swapped {a} and {b}. {m} is now in {ring} seat {label}, {place}.", "sheet.pick_note": "Picked up {name}, {ring} seat {label}, {place}. PREVIOUS SEAT and NEXT SEAT move it.", "sheet.pick_keys": "Picked up {name}. Arrows choose a seat in the {ring}. Space swaps. Escape cancels.", "sheet.only_note": "{name} is the only note in the {ring}, so it has no other seat.", "sheet.not_moved": "Not moved. {name} moves only within the {ring}.", "sheet.put_down_kept": "{name} put down. The swaps you made are kept.", "sheet.cancelled": "Cancelled. Nothing moved.", "sheet.layout_reset": "Layout reset.", "sheet.ring_inner": "inner", "sheet.ring_bottom": "bottom", "sheet.zone_top": "Top", "sheet.zone_inner": "Inner", "sheet.zone_bottom": "Bottom", "sheet.line_follows": "Follows the notes above. Tap to type the line instead.", "sheet.line_stale": "Not updated: the notes above have a problem.", "sheet.fields_follow": "Follows the line below. Tap a field to type notes instead.", "sheet.fields_stale": "Not updated: the line below does not read as a scale yet.", "sheet.field_msg": "{FIELD_SHORT}: {message}", "sheet.top": "TOP RIM NOTES", "sheet.inner": "TOP INNER (CYCLOPS/MUTANT) NOTE (OPTIONAL)", "sheet.ding": "DING", "sheet.parse_hint": "Type every note on one line, in any order. Put the ding in round brackets: (D) and each bottom note in square brackets: [C]. Put a | before inner notes.", "sheet.bottom_opt": "BOTTOM NOTES (OPTIONAL)", "sheet.fields_head": "YOUR SCALE, NOTE BY NOTE", "sheet.line_sub": "[NOTE] = A BOTTOM NOTE", "sheet.octave_sentence": "Octaves are optional: without one, we assume the notes run low to high.", "sheet.updated": "Updated {name}", "sheet.angles_reset": " The {ring} angles were reset.", "sheet.seats_angles_reset": " The {ring} seats and angles were reset.", "sheet.bottom_now_has": {"one": "The bottom now has {n} note, so its seats were reset.", "other": "The bottom now has {n} notes, so its seats were reset."}, "sheet.bottom_now_has_angles": {"one": "The bottom now has {n} note, so its angles were reset.", "other": "The bottom now has {n} notes, so its angles were reset."}, "sheet.put_down_kept_moves": "{name} put down. The moves you made are kept.", "card.shuffle_on": "Shuffle: on", "card.shuffle_off": "Shuffle: off", "sheet.mirror_top_on": "Top mirror on.", "sheet.mirror_top_off": "Top mirror off.", "sheet.mirror_bottom_on": "Bottom mirror on.", "sheet.mirror_bottom_off": "Bottom mirror off.", "sheet.no_two_ring": "This pan has no ring with two notes, so there is nothing to rearrange.", "sheet.drop_swap": "Not moved. Drop {name} on another {ring} note to swap.", "sheet.ring_rim": "rim", "sheet.pick_tap": "Picked up {name}. Tap or drop it on another {ring} note to swap.", "sheet.pick_tap_seat": "Picked up {name}. Tap or drop it on another {ring} note to swap, or use PREVIOUS SEAT and NEXT SEAT.", "sheet.edit_aria": "Edit {name}", "sheet.lip_show": "Show {label}", "compose.TYPE_NOTES_ONLY": "Type notes only: the line is written for you.", "compose.SOLFEGE": "Use letter names, like D A Bb.", "compose.DOUBLE_B": "{L}B is not a note: write {L}-flat as {L}b.", "compose.NOT_A_NOTE": "\"{T}\" is not a note: try C, F# or Bb.", "compose.OUT_OF_RANGE": "{X} is outside C-1 to G9.", "compose.IN_TOP": "{name} is already in the top or inner notes.", "compose.NOT_ABOVE_DING": "{name} is not above the ding, {ding}.", "compose.NO_OCTAVE_FITS": "{L} has no octave that fits: type one.", "compose.IN_BOTTOM": "{name} is already in the bottom notes.", "compose.DING_EMPTY": "Enter the ding, like D3.", "compose.DING_ONE": "Enter one note for the ding.", "compose.TOP_EMPTY": "Enter the top notes.", "compose.NO_FIFTH": "No fifth above the ding {ding}: add {fifth} to the top notes, or check the ding.", "compose.OCTAVES_GUESSED_INNER": "Octaves guessed: {list}. An inner note can sit below the top notes: type its octave to put it there.", "compose.INNER_BELOW_TOP": {"one": "{list} sits below the top notes. Check it on the pan picture.", "other": "{list} sit below the top notes. Check them on the pan picture."}, "compose.OCTAVES_GUESSED": "Octaves guessed: {list}. Type an octave to change a guess.", "compose.DUPLICATE_NOTE.ding": "{name} is already the ding. Double-check the bottom notes.", "compose.DUPLICATE_NOTE.top": "{name} is already top note {k}. Double-check the bottom notes.", "compose.DUPLICATE_NOTE.inner": "{name} is already inner note {k}. Double-check the bottom notes.", "reason.NO_DING": "No ding. Put the ding in round brackets, e.g. (D) A C D E.", "reason.NO_DING.which": "Which note is the ding? Put it in round brackets, e.g. (D) A C D E, or put a | straight after it: D | A C D E.", "reason.NO_DING.two": "Two dings. Only the ding takes round brackets; a bottom note takes square ones, e.g. [C] (D) A C.", "reason.NO_DING.below": "{X} comes before the ding, so it must be a bottom note. Write it in square brackets, e.g. [C] (D) A C.", "reason.NO_FIFTH": "No perfect fifth above the ding {X}. Add a {fifth}, or check the ding.", "reason.BAD_NOTE": "{X} is not a note. Use names like C, F#, Bb, with an optional octave, e.g. (D) A Bb C.", "reason.BAD_NOTE.slash": "A lone / is the old way to mark inner notes. Use | now, e.g. (D) A C D | E F.", "reason.BAD_NOTE.bracket": "{X} is not a bottom note. Give each bottom note its own square brackets, no spaces inside, e.g. [C] [D] (E) B.", "reason.BAD_NOTE.bar": "Too many | marks. One | starts the inner notes, e.g. (D) A C D | E F. A bottom note takes square brackets instead: [C].", "reason.BAD_NOTE.barEmpty": "A | needs top notes before it and inner notes after it, e.g. (D) A C D | E F.", "reason.BAD_NOTE.barFirst": "The | comes after the ding and the top notes, e.g. (D) A C D | E F.", "reason.NOTE_OUT_OF_RANGE": "{A} is off the keyboard: a note must be between C-1 and G9.", "reason.NOTE_OUT_OF_ORDER": "{A} is not above {B}, and the line runs low to high. Give {A} a higher octave or move it earlier, e.g. (D3) A3 C4 D4.", "reason.NOTE_OUT_OF_ORDER.ding": "{A} is at or below the ding {B}. Top notes are above the ding; a lower note is a bottom note and goes before it in square brackets, e.g. [C3] (D3) A3.", "reason.NOTE_REPEATED": "{B} and {A} are the same note, and a note may appear only once per shell. A bottom copy takes square brackets and its octave, e.g. (D3) A3 [C4] C4.", "reason.NEEDS_NEWER_APP": "This link needs a newer version of the app. Reload.", "reason.NO_THIRDS": "No 3rds on this pan: only power chords and sus chords.", "reason.SMALL_LABELS": "Crowded pan: the smallest labels print at {N} pt, under the 3.6 pt this app treats as readable. Nothing is left out.", "panel.res_amy_prog": "AMY: PROGRESSIONS", "panel.res_amy_prog.aria": "Amy Naylor: ten handpan chord progressions (YouTube)", "panel.res_amy_bottom.aria": "Amy Naylor: more interesting chords with bottom notes (YouTube)", "sheet.angle_prev": "ANTICLOCKWISE", "sheet.angle_prev.aria": "Move 5 degrees anticlockwise", "sheet.angle_next": "CLOCKWISE", "sheet.angle_next.aria": "Move 5 degrees clockwise", "boot.showing": "Showing {name}.", "sheet.this_scale": "this scale", "sheet.toggle_refused": "Not changed: it would put a note you moved too close to another. Reset layout first.", "sheet.anchor_one_on": "Note 1 is centred.", "sheet.anchor_between_on": "Notes 1 and 2 are split.", "sheet.drawer_hint_slide": " Bottom notes also slide along their ring: hold one and drag it to where it sits on your pan.", "sheet.too_close_steps": "Not moved. The bottom notes are too close to sit on the {step}° steps.", "sheet.in_way": "{name} is in the way.", "sheet.no_free_place": "Not moved. There is no free place for {name}.", "sheet.stays_at": "{name} stays at {angle}°, {place}.", "sheet.too_close_so": "{name} was too close to {other}, so it sits at {at}.", "sheet.at": "{name} at {at}.", "sheet.moved_to": "{name} moved to {at}.", "sheet.seat_numbers": " Bottom seat numbers now run low to high.", "sheet.seat_stays": " Seat {label} stays its number.", "sheet.cannot_trade": "Not moved. {a} and {b} cannot trade places on the {step}° steps.", "sheet.pick_bottom_one": "Picked up {name}. Drag it along the ring to move it.", "sheet.pick_bottom_one_fine": "Picked up {name}. Drag it along the ring to move it, or use the finer controls below.", "sheet.pick_bottom_many": "Picked up {name}. Drag it along the ring to move it, or drop it on another bottom note to swap.", "sheet.pick_bottom_many_fine": "Picked up {name}. Drag it along the ring to move it, or drop it on another bottom note to swap, or use the finer controls below.", "sheet.parse_summary": "Ding {ding} · {top} top · {inner} inner · {bottom} bottom.", "sheet.parse_zone": " {label} {names}.", "sheet.inner_below": {"one": " {names} is below the top notes: check the pan picture.", "other": " {names} are below the top notes: check the pan picture."}, "sheet.place.right": "right", "sheet.place.upper_right": "upper right", "sheet.place.top": "top", "sheet.place.upper_left": "upper left", "sheet.place.left": "left", "sheet.place.lower_left": "lower left", "sheet.place.bottom": "bottom", "sheet.place.lower_right": "lower right", "sheet.bottom_now_has_both": {"one": "The bottom now has {n} note, so its seats and angles were reset.", "other": "The bottom now has {n} notes, so its seats and angles were reset."}, "sheet.pan_example": "Example pan for the placeholder seed", "sheet.pan_held": "Preview of the last seed that parsed", "sheet.order_hint": "Top notes take their seats in the order listed. Rearrange them on the Layout tab.", "sheet.rim_follows": "The rim now follows the order listed.", "sheet.inner_follows": "The inner notes now follow the order listed."}};</script>
+<!-- i18n end -->
 
 <script>
 const DECKS = [{"id": "kurd", "name": "D KURD 10", "sub": "9 + 1", "colors": {"root": "#2563B0", "tone": "#C0452C", "ga": "#2563B0", "gb": "#C0452C"}, "degrees": {"0": "VII", "2": "i", "4": "ii\u00b0", "5": "III", "7": "iv", "9": "v", "10": "VI"}, "geom": {"rim": 0.745, "inner": 0, "bottom": 0, "r_ding": 0.2, "ding_dy": 0, "r_note": 0.19, "r_bnote": 0, "inner_ring": 0.355, "f_ding": 0.12, "f_note": 0.1454, "f_bnote": 0, "f_num": 0.1216, "n_in": 0.085, "n_out": 0, "rim_num_out": false}, "fields": {"0": ["D", 3, 50, "ding", null, "Ding"], "1": ["A", 3, 57, "rim", 270, "1"], "2": ["Bb", 3, 58, "rim", 230, "2"], "3": ["C", 4, 60, "rim", 310, "3"], "4": ["D", 4, 62, "rim", 190, "4"], "5": ["E", 4, 64, "rim", 350, "5"], "6": ["F", 4, 65, "rim", 150, "6"], "7": ["G", 4, 67, "rim", 30, "7"], "8": ["A", 4, 69, "rim", 110, "8"], "9": ["C", 5, 72, "rim", 70, "9"]}, "chords": [{"main": "Dm", "sup": "", "subtitle": "D MINOR", "fields": [4, 6, 8], "roots": [4]}, {"main": "D5", "sup": "", "subtitle": "POWER CHORD", "fields": [4, 8], "roots": [4]}, {"main": "Dsus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [4, 7, 8], "roots": [4]}, {"main": "D7sus", "sup": "4", "subtitle": "SUSPENDED DOMINANT 7", "fields": [4, 7, 8, 9], "roots": [4]}, {"main": "Dm", "sup": "7", "subtitle": "D MINOR 7 ( = F6 )", "fields": [4, 6, 8, 9], "roots": [4]}, {"main": "Dm", "sup": "add9", "subtitle": "D MINOR ADD 9", "fields": [4, 6, 8, 5], "roots": [4]}, {"main": "Dm", "sup": "9", "subtitle": "D MINOR 9", "fields": [4, 6, 8, 9, 5], "roots": [4]}, {"main": "Dm", "sup": "11", "subtitle": "D MINOR 11", "fields": [4, 6, 8, 9, 5, 7], "roots": [4]}, {"main": "E\u00b0", "sup": "", "subtitle": "DIMINISHED", "fields": [5, 7, 2], "roots": [5]}, {"main": "Em7", "sup": "b5", "subtitle": "HALF-DIMINISHED ( = Gm6 )", "fields": [5, 7, 2, 4], "roots": [5]}, {"main": "F", "sup": "", "subtitle": "F MAJOR", "fields": [6, 8, 9], "roots": [6]}, {"main": "F5", "sup": "", "subtitle": "POWER CHORD", "fields": [6, 9], "roots": [6]}, {"main": "Fsus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [6, 2, 3], "roots": [6]}, {"main": "Fmaj7sus", "sup": "4", "subtitle": "SUSPENDED MAJOR 7", "fields": [6, 2, 3, 5], "roots": [6]}, {"main": "Fmaj", "sup": "7", "subtitle": "F MAJOR 7", "fields": [6, 1, 3, 5], "roots": [6]}, {"main": "F", "sup": "add9", "subtitle": "F MAJOR ADD 9", "fields": [6, 8, 9, 7], "roots": [6]}, {"main": "F", "sup": "6/9", "subtitle": "F MAJOR 6/9", "fields": [6, 1, 3, 4, 7], "roots": [6]}, {"main": "Fmaj", "sup": "9", "subtitle": "F MAJOR 9", "fields": [6, 1, 3, 5, 7], "roots": [6]}, {"main": "Gm", "sup": "", "subtitle": "G MINOR", "fields": [7, 2, 4], "roots": [7]}, {"main": "G5", "sup": "", "subtitle": "POWER CHORD", "fields": [7, 4], "roots": [7]}, {"main": "Gsus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [7, 3, 4], "roots": [7]}, {"main": "G7sus", "sup": "4", "subtitle": "SUSPENDED DOMINANT 7", "fields": [7, 3, 4, 6], "roots": [7]}, {"main": "Gm", "sup": "7", "subtitle": "G MINOR 7 ( = Bb6 )", "fields": [7, 2, 4, 6], "roots": [7]}, {"main": "Gm", "sup": "add9", "subtitle": "G MINOR ADD 9", "fields": [7, 2, 4, 8], "roots": [7]}, {"main": "Gm", "sup": "6/9", "subtitle": "G MINOR 6/9", "fields": [7, 2, 4, 5, 8], "roots": [7]}, {"main": "Gm", "sup": "9", "subtitle": "G MINOR 9", "fields": [7, 2, 4, 6, 8], "roots": [7]}, {"main": "Gm", "sup": "11", "subtitle": "G MINOR 11", "fields": [7, 2, 4, 6, 8, 9], "roots": [7]}, {"main": "Am", "sup": "", "subtitle": "A MINOR", "fields": [1, 3, 5], "roots": [1]}, {"main": "A5", "sup": "", "subtitle": "POWER CHORD", "fields": [1, 5], "roots": [1]}, {"main": "Asus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [1, 4, 5], "roots": [1]}, {"main": "A7sus", "sup": "4", "subtitle": "SUSPENDED DOMINANT 7", "fields": [1, 4, 5, 7], "roots": [1]}, {"main": "Am", "sup": "7", "subtitle": "A MINOR 7 ( = C6 )", "fields": [1, 3, 5, 7], "roots": [1]}, {"main": "Bb", "sup": "", "subtitle": "Bb MAJOR", "fields": [2, 4, 6], "roots": [2]}, {"main": "Bb5", "sup": "", "subtitle": "POWER CHORD", "fields": [2, 6], "roots": [2]}, {"main": "Bbmaj", "sup": "7", "subtitle": "Bb MAJOR 7", "fields": [2, 4, 6, 8], "roots": [2]}, {"main": "Bb", "sup": "add9", "subtitle": "Bb MAJOR ADD 9", "fields": [2, 4, 6, 3], "roots": [2]}, {"main": "Bb", "sup": "6/9", "subtitle": "Bb MAJOR 6/9", "fields": [2, 4, 6, 7, 3], "roots": [2]}, {"main": "Bbmaj", "sup": "9", "subtitle": "Bb MAJOR 9", "fields": [2, 4, 6, 8, 3], "roots": [2]}, {"main": "Bbmaj7", "sup": "#11", "subtitle": "Bb MAJOR 7 SHARP 11", "fields": [2, 4, 6, 8, 5], "roots": [2]}, {"main": "C", "sup": "", "subtitle": "C MAJOR", "fields": [3, 5, 7], "roots": [3]}, {"main": "C5", "sup": "", "subtitle": "POWER CHORD", "fields": [3, 7], "roots": [3]}, {"main": "Csus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [3, 6, 7], "roots": [3]}, {"main": "C7sus", "sup": "4", "subtitle": "SUSPENDED DOMINANT 7", "fields": [3, 6, 7, 2], "roots": [3]}, {"main": "C", "sup": "7", "subtitle": "C DOMINANT 7", "fields": [3, 5, 7, 2], "roots": [3]}, {"main": "C", "sup": "add9", "subtitle": "C MAJOR ADD 9", "fields": [3, 5, 7, 4], "roots": [3]}, {"main": "C", "sup": "6/9", "subtitle": "C MAJOR 6/9", "fields": [3, 5, 7, 8, 4], "roots": [3]}, {"main": "C", "sup": "9", "subtitle": "C DOMINANT 9", "fields": [3, 5, 7, 2, 4], "roots": [3]}, {"main": "C", "sup": "11", "subtitle": "C DOMINANT 11", "fields": [3, 5, 7, 2, 4, 6], "roots": [3]}, {"main": "C", "sup": "13", "subtitle": "C DOMINANT 13", "fields": [3, 5, 7, 2, 6, 8], "roots": [3]}], "print": {"title": "D Kurd 10 - Chord Cards", "credit": "D KURD 10 / D MINOR", "R": 69.8, "cy": 124.0, "y_note": 30.0, "y_num": 14.0, "legend_demo": [6, 4], "grad": [[0.145, 0.388, 0.69], [0.753, 0.271, 0.173]], "col_root": [0.145, 0.388, 0.69], "col_tone": [0.753, 0.271, 0.173], "blurb": ["D3  |  A3  Bb3  C4  D4  E4  F4  G4  A4  C5", "49 CHORDS - ONE CARD PER CHORD"], "legend_lines": ["NOTE NAME + OCTAVE INSIDE EACH TONEFIELD", "TONEFIELD NUMBERS RUN 1 - 9 FROM THE LOWEST NOTE"]}}, {"id": "amara10", "name": "D AMARA 10", "sub": "9 + 1", "colors": {"root": "#3B7A2A", "tone": "#B3263A", "ga": "#3B7A2A", "gb": "#B3263A"}, "degrees": {"0": "VII", "2": "i", "4": "ii\u00b0", "5": "III", "7": "iv", "9": "v"}, "geom": {"rim": 0.745, "inner": 0, "bottom": 0, "r_ding": 0.2, "ding_dy": 0, "r_note": 0.19, "r_bnote": 0, "inner_ring": 0.355, "f_ding": 0.12, "f_note": 0.1454, "f_bnote": 0, "f_num": 0.1216, "n_in": 0.085, "n_out": 0, "rim_num_out": false}, "fields": {"0": ["D", 3, 50, "ding", null, "Ding"], "1": ["A", 3, 57, "rim", 270, "1"], "2": ["C", 4, 60, "rim", 230, "2"], "3": ["D", 4, 62, "rim", 310, "3"], "4": ["E", 4, 64, "rim", 190, "4"], "5": ["F", 4, 65, "rim", 350, "5"], "6": ["G", 4, 67, "rim", 150, "6"], "7": ["A", 4, 69, "rim", 30, "7"], "8": ["C", 5, 72, "rim", 110, "8"], "9": ["D", 5, 74, "rim", 70, "9"]}, "chords": [{"main": "Dm", "sup": "", "subtitle": "D MINOR", "fields": [3, 5, 7], "roots": [3]}, {"main": "D5", "sup": "", "subtitle": "POWER CHORD", "fields": [3, 7], "roots": [3]}, {"main": "Dsus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [3, 6, 7], "roots": [3]}, {"main": "D7sus", "sup": "4", "subtitle": "SUSPENDED DOMINANT 7", "fields": [3, 6, 7, 8], "roots": [3]}, {"main": "Dm", "sup": "7", "subtitle": "D MINOR 7 ( = F6 )", "fields": [3, 5, 7, 8], "roots": [3]}, {"main": "Dm", "sup": "add9", "subtitle": "D MINOR ADD 9", "fields": [3, 5, 7, 4], "roots": [3]}, {"main": "Dm", "sup": "9", "subtitle": "D MINOR 9", "fields": [3, 5, 7, 8, 4], "roots": [3]}, {"main": "Dm", "sup": "11", "subtitle": "D MINOR 11", "fields": [3, 5, 7, 8, 4, 6], "roots": [3]}, {"main": "F", "sup": "", "subtitle": "F MAJOR", "fields": [5, 7, 8], "roots": [5]}, {"main": "F5", "sup": "", "subtitle": "POWER CHORD", "fields": [5, 8], "roots": [5]}, {"main": "Fmaj", "sup": "7", "subtitle": "F MAJOR 7", "fields": [5, 1, 2, 4], "roots": [5]}, {"main": "F", "sup": "add9", "subtitle": "F MAJOR ADD 9", "fields": [5, 7, 8, 6], "roots": [5]}, {"main": "F", "sup": "6/9", "subtitle": "F MAJOR 6/9", "fields": [5, 7, 8, 9, 6], "roots": [5]}, {"main": "Fmaj", "sup": "9", "subtitle": "F MAJOR 9", "fields": [5, 1, 2, 4, 6], "roots": [5]}, {"main": "G5", "sup": "", "subtitle": "POWER CHORD", "fields": [6, 9], "roots": [6]}, {"main": "Gsus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [6, 8, 9], "roots": [6]}, {"main": "G7sus", "sup": "4", "subtitle": "SUSPENDED DOMINANT 7", "fields": [6, 2, 3, 5], "roots": [6]}, {"main": "Am", "sup": "", "subtitle": "A MINOR", "fields": [1, 2, 4], "roots": [1]}, {"main": "A5", "sup": "", "subtitle": "POWER CHORD", "fields": [1, 4], "roots": [1]}, {"main": "Asus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [1, 3, 4], "roots": [1]}, {"main": "A7sus", "sup": "4", "subtitle": "SUSPENDED DOMINANT 7", "fields": [1, 3, 4, 6], "roots": [1]}, {"main": "Am", "sup": "7", "subtitle": "A MINOR 7 ( = C6 )", "fields": [1, 2, 4, 6], "roots": [1]}, {"main": "C", "sup": "", "subtitle": "C MAJOR", "fields": [2, 4, 6], "roots": [2]}, {"main": "C5", "sup": "", "subtitle": "POWER CHORD", "fields": [2, 6], "roots": [2]}, {"main": "Csus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [2, 5, 6], "roots": [2]}, {"main": "C", "sup": "add9", "subtitle": "C MAJOR ADD 9", "fields": [2, 4, 6, 3], "roots": [2]}, {"main": "C", "sup": "add9", "subtitle": "C MAJOR ADD 9 - HIGH VOICING", "fields": [8, 4, 6, 9], "roots": [8]}, {"main": "C", "sup": "6/9", "subtitle": "C MAJOR 6/9", "fields": [2, 4, 6, 7, 3], "roots": [2]}, {"main": "C", "sup": "6/9", "subtitle": "C MAJOR 6/9 - HIGH VOICING", "fields": [8, 4, 6, 7, 9], "roots": [8]}], "print": {"title": "D Amara 10 - Chord Cards", "credit": "D AMARA 10 / D MINOR", "R": 69.8, "cy": 124.0, "y_note": 30.0, "y_num": 14.0, "legend_demo": [5, 3], "grad": [[0.231, 0.478, 0.165], [0.702, 0.149, 0.227]], "col_root": [0.231, 0.478, 0.165], "col_tone": [0.702, 0.149, 0.227], "blurb": ["D3  |  A3  C4  D4  E4  F4  G4  A4  C5  D5", "29 CHORDS - ONE CARD PER CHORD"], "legend_lines": ["NOTE NAME + OCTAVE INSIDE EACH TONEFIELD", "TONEFIELD NUMBERS RUN 1 - 9 FROM THE LOWEST NOTE"]}}, {"id": "amara", "name": "D AMARA 9", "sub": "8 + 1", "colors": {"root": "#0B7B75", "tone": "#DD8F00", "ga": "#0B7B75", "gb": "#DD8F00"}, "degrees": {"2": "i", "9": "v", "7": "iv", "0": "VII", "5": "III"}, "geom": {"rim": 0.745, "r_ding": 0.2, "r_note": 0.19, "inner_ring": 0.355, "f_ding": 0.135, "f_note": 0.128, "f_num": 0.105, "n_in": 0.085, "n_out": 0.0, "r_bnote": 0.0, "f_bnote": 0.0}, "fields": {"0": ["D", 3, 50, "ding", null, "Ding"], "1": ["A", 3, 57, "rim", 270, "1"], "2": ["C", 4, 60, "rim", 225, "2"], "3": ["D", 4, 62, "rim", 315, "3"], "4": ["E", 4, 64, "rim", 180, "4"], "5": ["F", 4, 65, "rim", 0, "5"], "6": ["G", 4, 67, "rim", 135, "6"], "7": ["A", 4, 69, "rim", 45, "7"], "8": ["C", 5, 72, "rim", 90, "8"]}, "chords": [{"main": "Dm", "sup": "", "subtitle": "D MINOR", "fields": [3, 5, 7], "roots": [3]}, {"main": "D5", "sup": "", "subtitle": "POWER CHORD", "fields": [3, 7], "roots": [3]}, {"main": "Dsus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [3, 6, 7], "roots": [3]}, {"main": "D7sus", "sup": "4", "subtitle": "SUSPENDED DOMINANT 7", "fields": [3, 6, 7, 8], "roots": [3]}, {"main": "Dm", "sup": "7", "subtitle": "D MINOR 7 ( = F6 )", "fields": [3, 5, 7, 8], "roots": [3]}, {"main": "Dm", "sup": "add9", "subtitle": "D MINOR ADD 9", "fields": [3, 5, 7, 4], "roots": [3]}, {"main": "Dm", "sup": "9", "subtitle": "D MINOR 9", "fields": [3, 5, 7, 8, 4], "roots": [3]}, {"main": "Dm", "sup": "11", "subtitle": "D MINOR 11", "fields": [3, 5, 7, 8, 4, 6], "roots": [3]}, {"main": "F", "sup": "", "subtitle": "F MAJOR", "fields": [5, 7, 8], "roots": [5]}, {"main": "F5", "sup": "", "subtitle": "POWER CHORD", "fields": [5, 8], "roots": [5]}, {"main": "Fmaj", "sup": "7", "subtitle": "F MAJOR 7", "fields": [5, 1, 2, 4], "roots": [5]}, {"main": "F", "sup": "add9", "subtitle": "F MAJOR ADD 9", "fields": [5, 7, 8, 6], "roots": [5]}, {"main": "F", "sup": "6/9", "subtitle": "F MAJOR 6/9", "fields": [5, 1, 2, 3, 6], "roots": [5]}, {"main": "Fmaj", "sup": "9", "subtitle": "F MAJOR 9", "fields": [5, 1, 2, 4, 6], "roots": [5]}, {"main": "G5", "sup": "", "subtitle": "POWER CHORD", "fields": [6, 3], "roots": [6]}, {"main": "Gsus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [6, 2, 3], "roots": [6]}, {"main": "G7sus", "sup": "4", "subtitle": "SUSPENDED DOMINANT 7", "fields": [6, 2, 3, 5], "roots": [6]}, {"main": "Am", "sup": "", "subtitle": "A MINOR", "fields": [1, 2, 4], "roots": [1]}, {"main": "A5", "sup": "", "subtitle": "POWER CHORD", "fields": [1, 4], "roots": [1]}, {"main": "Asus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [1, 3, 4], "roots": [1]}, {"main": "A7sus", "sup": "4", "subtitle": "SUSPENDED DOMINANT 7", "fields": [1, 3, 4, 6], "roots": [1]}, {"main": "Am", "sup": "7", "subtitle": "A MINOR 7 ( = C6 )", "fields": [1, 2, 4, 6], "roots": [1]}, {"main": "C", "sup": "", "subtitle": "C MAJOR", "fields": [2, 4, 6], "roots": [2]}, {"main": "C5", "sup": "", "subtitle": "POWER CHORD", "fields": [2, 6], "roots": [2]}, {"main": "Csus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [2, 5, 6], "roots": [2]}, {"main": "C", "sup": "add9", "subtitle": "C MAJOR ADD 9", "fields": [2, 4, 6, 3], "roots": [2]}, {"main": "C", "sup": "6/9", "subtitle": "C MAJOR 6/9", "fields": [2, 4, 6, 7, 3], "roots": [2]}], "print": {"title": "D Amara 9 - Chord Cards", "credit": "D AMARA / D MINOR", "R": 73.0, "cy": 126.0, "y_note": 30.0, "y_num": 14.0, "legend_demo": [5, 3], "grad": [[0.043, 0.482, 0.459], [0.867, 0.561, 0.0]], "col_root": [0.043, 0.482, 0.459], "col_tone": [0.867, 0.561, 0.0], "blurb": ["D3  |  A3  C4  D4  E4  F4  G4  A4  C5", "16 CHORDS - ONE CARD PER CHORD"], "legend_lines": ["NOTE NAME + OCTAVE INSIDE EACH TONEFIELD", "TONEFIELD NUMBERS RUN 1 - 8 FROM THE LOWEST NOTE"]}}, {"id": "hijaz", "name": "C# HIJAZ 9", "sub": "ORION  -  8 + 1", "colors": {"root": "#E0559A", "tone": "#E2761B", "ga": "#E0559A", "gb": "#E2761B"}, "degrees": {"1": "I", "2": "II", "6": "iv", "8": "v\u00b0", "11": "vii", "5": "iii\u00b0"}, "geom": {"rim": 0.745, "r_ding": 0.2, "r_note": 0.19, "inner_ring": 0.355, "f_ding": 0.135, "f_note": 0.128, "f_num": 0.105, "n_in": 0.085, "n_out": 0.0, "r_bnote": 0.0, "f_bnote": 0.0}, "fields": {"0": ["C#", 3, 49, "ding", null, "Ding"], "1": ["G#", 3, 56, "rim", 270, "1"], "2": ["B", 3, 59, "rim", 225, "2"], "3": ["C#", 4, 61, "rim", 315, "3"], "4": ["D", 4, 62, "rim", 180, "4"], "5": ["F", 4, 65, "rim", 0, "5"], "6": ["F#", 4, 66, "rim", 135, "6"], "7": ["G#", 4, 68, "rim", 45, "7"], "8": ["B", 4, 71, "rim", 90, "8"]}, "chords": [{"main": "C#", "sup": "", "subtitle": "C# MAJOR", "fields": [3, 5, 7], "roots": [3]}, {"main": "C#5", "sup": "", "subtitle": "POWER CHORD", "fields": [3, 7], "roots": [3]}, {"main": "C#sus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [3, 6, 7], "roots": [3]}, {"main": "C#7sus", "sup": "4", "subtitle": "SUSPENDED DOMINANT 7", "fields": [3, 6, 7, 8], "roots": [3]}, {"main": "C#", "sup": "7", "subtitle": "C# DOMINANT 7", "fields": [3, 5, 7, 8], "roots": [3]}, {"main": "C#7", "sup": "b9", "subtitle": "C# DOMINANT 7 FLAT 9", "fields": [3, 5, 7, 8, 4], "roots": [3]}, {"main": "D\u00b0", "sup": "", "subtitle": "DIMINISHED", "fields": [4, 5, 7], "roots": [4]}, {"main": "D\u00b0", "sup": "7", "subtitle": "DIMINISHED 7", "fields": [4, 5, 7, 8], "roots": [4]}, {"main": "F\u00b0", "sup": "", "subtitle": "DIMINISHED", "fields": [5, 7, 8], "roots": [5]}, {"main": "F#5", "sup": "", "subtitle": "POWER CHORD", "fields": [6, 3], "roots": [6]}, {"main": "F#sus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [6, 2, 3], "roots": [6]}, {"main": "F#maj7sus", "sup": "4", "subtitle": "SUSPENDED MAJOR 7", "fields": [6, 2, 3, 5], "roots": [6]}, {"main": "G#\u00b0", "sup": "", "subtitle": "DIMINISHED", "fields": [1, 2, 4], "roots": [1]}, {"main": "G#m7", "sup": "b5", "subtitle": "HALF-DIMINISHED ( = Bm6 )", "fields": [1, 2, 4, 6], "roots": [1]}, {"main": "Bm", "sup": "", "subtitle": "B MINOR", "fields": [2, 4, 6], "roots": [2]}, {"main": "B\u00b0", "sup": "", "subtitle": "DIMINISHED", "fields": [2, 4, 5], "roots": [2]}, {"main": "B5", "sup": "", "subtitle": "POWER CHORD", "fields": [2, 6], "roots": [2]}, {"main": "Bm", "sup": "add9", "subtitle": "B MINOR ADD 9", "fields": [2, 4, 6, 3], "roots": [2]}, {"main": "Bm", "sup": "6/9", "subtitle": "B MINOR 6/9", "fields": [2, 4, 6, 7, 3], "roots": [2]}], "print": {"title": "C# Hijaz / Orion 9 - Chord Cards", "credit": "C# HIJAZ / ORION", "R": 73.0, "cy": 126.0, "y_note": 30.0, "y_num": 14.0, "legend_demo": [5, 3], "grad": [[0.878, 0.333, 0.604], [0.886, 0.463, 0.106]], "col_root": [0.878, 0.333, 0.604], "col_tone": [0.886, 0.463, 0.106], "blurb": ["C#3  |  G#3  B3  C#4  D4  F4  F#4  G#4  B4", "PHRYGIAN DOMINANT, NO b6   -   18 CHORDS"], "legend_lines": ["NOTE NAME + OCTAVE INSIDE EACH TONEFIELD", "TONEFIELD NUMBERS RUN 1 - 8 FROM THE LOWEST NOTE"]}}, {"id": "pygmy", "name": "F3 LOW PYGMY 18", "sub": "11 + 1 TOP  /  6 BOTTOM", "colors": {"root": "#6D40A3", "tone": "#C9971E", "ga": "#6D40A3", "gb": "#C9971E"}, "degrees": {"5": "i", "8": "III", "10": "iv", "0": "v", "1": "VI", "3": "VII", "7": "ii\u00b0"}, "geom": {"rim": 0.722, "inner": 0.38, "bottom": 1.15, "r_ding": 0.19, "ding_dy": 0.1425, "r_note": 0.1456, "r_bnote": 0.1188, "inner_ring": 0, "f_ding": 0.114, "f_note": 0.1114, "f_bnote": 0.0931, "f_num": 0.0932, "n_in": 0.052, "n_out": 0.068, "rim_num_out": true}, "fields": {"0": ["F", 3, 53, "ding", null, "Ding"], "1": ["G", 3, 55, "rim", 290, "1"], "2": ["Ab", 3, 56, "rim", 250, "2"], "3": ["C", 4, 60, "rim", 330, "3"], "4": ["Eb", 4, 63, "rim", 210, "4"], "5": ["F", 4, 65, "rim", 10, "5"], "6": ["G", 4, 67, "rim", 170, "6"], "7": ["Ab", 4, 68, "rim", 50, "7"], "8": ["C", 5, 72, "rim", 130, "8"], "9": ["Eb", 5, 75, "rim", 90, "9"], "10": ["F", 5, 77, "inner", 128, "10"], "11": ["G", 5, 79, "inner", 52, "11"], "101": ["C", 3, 48, "bottom", 300, "U1"], "102": ["Db", 3, 49, "bottom", 240, "U2"], "103": ["Eb", 3, 51, "bottom", 0, "U3"], "104": ["Bb", 3, 58, "bottom", 180, "U4"], "105": ["Db", 4, 61, "bottom", 60, "U5"], "106": ["Ab", 5, 80, "bottom", 120, "U6"]}, "chords": [{"main": "Fm", "sup": "", "subtitle": "F MINOR", "fields": [5, 7, 8], "roots": [5]}, {"main": "F5", "sup": "", "subtitle": "POWER CHORD", "fields": [5, 8], "roots": [5]}, {"main": "Fsus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [5, 104, 8], "roots": [5]}, {"main": "F7sus", "sup": "4", "subtitle": "SUSPENDED DOMINANT 7", "fields": [5, 104, 8, 9], "roots": [5]}, {"main": "Fm", "sup": "7", "subtitle": "F MINOR 7 ( = Ab6 )", "fields": [5, 7, 8, 9], "roots": [5]}, {"main": "Fm", "sup": "add9", "subtitle": "F MINOR ADD 9", "fields": [5, 7, 8, 6], "roots": [5]}, {"main": "Fm", "sup": "9", "subtitle": "F MINOR 9", "fields": [5, 7, 8, 9, 6], "roots": [5]}, {"main": "G\u00b0", "sup": "", "subtitle": "DIMINISHED", "fields": [1, 104, 105], "roots": [1]}, {"main": "Gm7", "sup": "b5", "subtitle": "HALF-DIMINISHED ( = Bbm6 )", "fields": [1, 104, 105, 5], "roots": [1]}, {"main": "Ab", "sup": "", "subtitle": "Ab MAJOR", "fields": [2, 3, 4], "roots": [2]}, {"main": "Ab", "sup": "", "subtitle": "Ab MAJOR - HIGH VOICING", "fields": [7, 8, 9], "roots": [7]}, {"main": "Ab", "sup": "", "subtitle": "Ab MAJOR - HIGH VOICING", "fields": [106, 8, 9], "roots": [106]}, {"main": "Ab5", "sup": "", "subtitle": "POWER CHORD", "fields": [2, 4], "roots": [2]}, {"main": "Ab5", "sup": "", "subtitle": "POWER CHORD - HIGH VOICING", "fields": [7, 9], "roots": [7]}, {"main": "Ab5", "sup": "", "subtitle": "POWER CHORD - HIGH VOICING", "fields": [106, 9], "roots": [106]}, {"main": "Absus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [2, 105, 4], "roots": [2]}, {"main": "Abmaj7sus", "sup": "4", "subtitle": "SUSPENDED MAJOR 7", "fields": [2, 105, 4, 6], "roots": [2]}, {"main": "Abmaj", "sup": "7", "subtitle": "Ab MAJOR 7", "fields": [2, 3, 4, 6], "roots": [2]}, {"main": "Abmaj", "sup": "7", "subtitle": "Ab MAJOR 7 - HIGH VOICING", "fields": [7, 8, 9, 11], "roots": [7]}, {"main": "Abmaj", "sup": "7", "subtitle": "Ab MAJOR 7 - HIGH VOICING", "fields": [106, 8, 9, 11], "roots": [106]}, {"main": "Bbm", "sup": "", "subtitle": "Bb MINOR", "fields": [104, 105, 5], "roots": [104]}, {"main": "Bb5", "sup": "", "subtitle": "POWER CHORD", "fields": [104, 5], "roots": [104]}, {"main": "Bbsus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [104, 4, 5], "roots": [104]}, {"main": "Bb7sus", "sup": "4", "subtitle": "SUSPENDED DOMINANT 7", "fields": [104, 4, 5, 7], "roots": [104]}, {"main": "Bbm", "sup": "7", "subtitle": "Bb MINOR 7 ( = Db6 )", "fields": [104, 105, 5, 7], "roots": [104]}, {"main": "Cm", "sup": "", "subtitle": "C MINOR", "fields": [3, 4, 6], "roots": [3]}, {"main": "Cm", "sup": "", "subtitle": "C MINOR - LOW VOICING", "fields": [101, 103, 1], "roots": [101]}, {"main": "Cm", "sup": "", "subtitle": "C MINOR - HIGH VOICING", "fields": [8, 9, 11], "roots": [8]}, {"main": "C5", "sup": "", "subtitle": "POWER CHORD", "fields": [3, 6], "roots": [3]}, {"main": "C5", "sup": "", "subtitle": "POWER CHORD - LOW VOICING", "fields": [101, 1], "roots": [101]}, {"main": "C5", "sup": "", "subtitle": "POWER CHORD - HIGH VOICING", "fields": [8, 11], "roots": [8]}, {"main": "Csus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [3, 5, 6], "roots": [3]}, {"main": "Csus", "sup": "4", "subtitle": "SUSPENDED CHORD - LOW VOICING", "fields": [101, 5, 1], "roots": [101]}, {"main": "Csus", "sup": "4", "subtitle": "SUSPENDED CHORD - HIGH VOICING", "fields": [8, 10, 11], "roots": [8]}, {"main": "C7sus", "sup": "4", "subtitle": "SUSPENDED DOMINANT 7", "fields": [3, 5, 6, 104], "roots": [3]}, {"main": "C7sus", "sup": "4", "subtitle": "SUSPENDED DOMINANT 7 - LOW VOICING", "fields": [101, 5, 1, 104], "roots": [101]}, {"main": "Cm", "sup": "7", "subtitle": "C MINOR 7 ( = Eb6 )", "fields": [3, 4, 6, 104], "roots": [3]}, {"main": "Cm", "sup": "7", "subtitle": "C MINOR 7 ( = Eb6 ) - LOW VOICING", "fields": [101, 103, 1, 104], "roots": [101]}, {"main": "Db", "sup": "", "subtitle": "Db MAJOR", "fields": [105, 5, 7], "roots": [105]}, {"main": "Db", "sup": "", "subtitle": "Db MAJOR - LOW VOICING", "fields": [102, 5, 2], "roots": [102]}, {"main": "Db5", "sup": "", "subtitle": "POWER CHORD", "fields": [105, 7], "roots": [105]}, {"main": "Db5", "sup": "", "subtitle": "POWER CHORD - LOW VOICING", "fields": [102, 2], "roots": [102]}, {"main": "Dbmaj", "sup": "7", "subtitle": "Db MAJOR 7", "fields": [105, 5, 7, 8], "roots": [105]}, {"main": "Dbmaj", "sup": "7", "subtitle": "Db MAJOR 7 - LOW VOICING", "fields": [102, 5, 2, 3], "roots": [102]}, {"main": "Eb", "sup": "", "subtitle": "Eb MAJOR", "fields": [4, 6, 104], "roots": [4]}, {"main": "Eb", "sup": "", "subtitle": "Eb MAJOR - LOW VOICING", "fields": [103, 1, 104], "roots": [103]}, {"main": "Eb5", "sup": "", "subtitle": "POWER CHORD", "fields": [4, 104], "roots": [4]}, {"main": "Ebsus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [4, 7, 104], "roots": [4]}, {"main": "Ebsus", "sup": "4", "subtitle": "SUSPENDED CHORD - LOW VOICING", "fields": [103, 2, 104], "roots": [103]}, {"main": "Eb7sus", "sup": "4", "subtitle": "SUSPENDED DOMINANT 7", "fields": [4, 7, 104, 105], "roots": [4]}, {"main": "Eb7sus", "sup": "4", "subtitle": "SUSPENDED DOMINANT 7 - LOW VOICING", "fields": [103, 2, 104, 105], "roots": [103]}, {"main": "Eb", "sup": "7", "subtitle": "Eb DOMINANT 7", "fields": [4, 6, 104, 105], "roots": [4]}, {"main": "Eb", "sup": "7", "subtitle": "Eb DOMINANT 7 - LOW VOICING", "fields": [103, 1, 104, 105], "roots": [103]}], "print": {"title": "F3 Low Pygmy 18 - Chord Cards", "credit": "F3 LOW PYGMY / F AEOLIAN", "R": 60.0, "cy": 121.0, "y_note": 30.0, "y_num": 14.0, "legend_demo": [3, 0], "blank_cards": 7, "grad": [[0.427, 0.251, 0.639], [0.788, 0.592, 0.118]], "col_root": [0.427, 0.251, 0.639], "col_tone": [0.788, 0.592, 0.118], "blurb": ["F3 | G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5", "BOTTOM:  C3  Db3  Eb3  Bb3  Db4  Ab5", "COMPLETE F NATURAL MINOR   -   25 CHORDS"], "legend_lines": ["U1 - U6: BOTTOM NOTES, X-RAY VIEW (SEEN FROM ABOVE)", "Bb AND Db EXIST ONLY ON THE BOTTOM SHELL", "TONEFIELDS 1 - 11 RUN FROM THE LOWEST TOP NOTE"]}}];
@@ -9446,6 +9514,203 @@ const LEGACY_SCALES_KEY = "hpfc.scales";
 const readStore = key => { try { return JSON.parse(localStorage.getItem(key) || "null"); } catch (e) { return null; } };
 let store = readStore(STORE_KEY) || {};
 if (typeof store !== "object" || Array.isArray(store)) store = {};
+
+/* ---------------- interface language ---------------- */
+// The tables are the generated I18N region above. English is the base: a
+// missing key falls back to it, and to the key itself only if it lacks it too.
+const LANG_ORDER = ["en", "de", "fr", "it", "es", "ja", "zh-Hant", "zh-Hans"];
+const LANGS = LANG_ORDER.filter(code => Object.prototype.hasOwnProperty.call(I18N, code));
+const ENDONYMS = { "en": "ENGLISH", "de": "DEUTSCH", "fr": "FRANÇAIS", "it": "ITALIANO", "es": "ESPAÑOL",
+  "ja": "日本語", "zh-Hant": "繁體中文", "zh-Hans": "简体中文" };
+/** One language tag to a code in LANG_ORDER, or null. Region and script decide Chinese. */
+function langOfTag(tag) {
+  const parts = String(tag).toLowerCase().split("-");
+  const base = parts[0];
+  if (base === "zh") {
+    return parts.includes("hant") || parts.includes("hk") || parts.includes("tw") || parts.includes("mo") ? "zh-Hant" : "zh-Hans";
+  }
+  return LANG_ORDER.includes(base) ? base : null;
+}
+/** The first tag that maps to a present table wins, else English. */
+function detectLang(list) {
+  for (const tag of list || []) {
+    const code = langOfTag(tag);
+    if (code && LANGS.includes(code)) return code;
+  }
+  return "en";
+}
+const browserLanguages = () => (navigator.languages && navigator.languages.length ? [...navigator.languages]
+  : navigator.language ? [navigator.language] : []);
+/** The stored choice if it names a present table, else what the browser asks for. */
+function uiLang() {
+  return typeof store.lang === "string" && LANGS.includes(store.lang) ? store.lang : detectLang(browserLanguages());
+}
+/** `null` is Auto: the stored field goes and nothing else is written. */
+function setLang(code) {
+  if (code === null || code === undefined) {
+    if ("lang" in store) {
+      delete store.lang;
+      try {
+        const base = readStore(STORE_KEY);
+        if (base && typeof base === "object" && !Array.isArray(base) && "lang" in base) {
+          delete base.lang;
+          localStorage.setItem(STORE_KEY, JSON.stringify(base));
+        }
+      } catch (e) {}
+    }
+  } else if (LANGS.includes(code)) {
+    store.lang = code;
+    try {
+      const base = readStore(STORE_KEY);
+      const next = (base && typeof base === "object" && !Array.isArray(base)) ? base : {};
+      next.lang = code;
+      localStorage.setItem(STORE_KEY, JSON.stringify(next));
+    } catch (e) {}
+  }
+  applyLang();
+}
+const hasKey = key => Object.prototype.hasOwnProperty.call(I18N[uiLang()] || {}, key) || Object.prototype.hasOwnProperty.call(I18N.en, key);
+/** The text for `key`: the UI table, then English, then the key itself. {name} is substituted; a {one, other} entry is chosen by vars.n. */
+function t(key, vars) {
+  const lang = uiLang();
+  let entry = (I18N[lang] || {})[key];
+  if (entry === undefined) entry = I18N.en[key];
+  if (entry === undefined) return key;
+  if (entry !== null && typeof entry === "object") {
+    let category = "other";
+    try { category = new Intl.PluralRules(lang).select(vars && vars.n); } catch (e) {}
+    entry = entry[category] !== undefined ? entry[category] : entry.other;
+  }
+  return String(entry).replace(/\{(\w+)\}/g, (m, name) => (vars && Object.prototype.hasOwnProperty.call(vars, name) ? String(vars[name]) : m));
+}
+const escapeText = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+/** t() for markup: escaped, with the two characters the English source wrote as entities. */
+const tHtml = (key, vars) => escapeText(t(key, vars)).replace(/’/g, "&rsquo;").replace(/→/g, "&rarr;");
+const tVars = vars => {
+  const out = {};
+  for (const k of Object.keys(vars || {})) out[k.replace(/^<|>$/g, "").replace("fifth of X", "fifth")] = vars[k];
+  return out;
+};
+/** An engine reason in the UI language; the engine's own English sentence when no key resolves. */
+function reasonText(r) {
+  if (!r || !r.code) return r && r.reason || "";
+  const key = "reason." + r.code + (r.variant ? "." + r.variant : "");
+  if (!hasKey(key)) return r.reason || "";
+  const vars = tVars(r.vars);
+  if (r.code === "SMALL_LABELS" && vars.N === undefined) {
+    const m = /print at ([\d.]+) pt/.exec(r.reason || "");
+    if (m) vars.N = m[1];
+  }
+  const text = t(key, vars);
+  return /\{\w+\}/.test(text) ? (r.reason || text) : text;
+}
+/** A compose message in the UI language, or `fallback` (the engine's English) when its code has no key. */
+function composeText(c, fallback) {
+  if (!c) return fallback;
+  if (c.code === "PARTS") return c.parts.map(p => composeText(p, "")).join(" ");
+  if (c.pass) return reasonText({ code: c.code, variant: c.variant, vars: c.vars, reason: fallback });
+  const key = "compose." + c.code + (c.variant ? "." + c.variant : "");
+  if (!hasKey(key)) return fallback;
+  const text = t(key, Object.assign({}, c.vars, { n: c.vars && c.vars.n }));
+  return /\{\w+\}/.test(text) ? fallback : text;
+}
+/** [selector, attribute | null for the text | "#text0" for the first text node, key]. A selector that is not
+ *  an #id binds to the element whose current text is the English value. */
+const STATIC_STRINGS = [
+  ["#share-copy", "aria-label", "header.share_copy"], ["#settings-trigger", "aria-label", "header.settings"],
+  ["#share-url", "aria-label", "header.share_url"], ["#card", "aria-label", "card.flip"],
+  ["#prev", "aria-label", "footer.prev"], ["#next", "aria-label", "footer.next"],
+  ["#tier-basic", null, "tier.basic"], ["#tier-intermediate", null, "tier.intermediate"], ["#tier-advanced", null, "tier.advanced"],
+  ["#settings-title", null, "panel.heading"], [".panel-heading", null, "panel.flash"], ["#modeA", null, "panel.modeA"],
+  ["#modeB", null, "panel.modeB"], ["#panel-prog-heading", null, "panel.progression"], ["#panel-seq-note", "#text0", "panel.seven_ways"],
+  ["#seq-source-link", null, "panel.watch_youtube"], [".panel-heading", null, "panel.scales"], ["#deck-add", null, "panel.add"],
+  [".panel-heading", null, "panel.print"], ["#print-download", null, "panel.download"],
+  ["#print-paper-select", "aria-label", "panel.paper"], [".panel-heading", null, "panel.resources"],
+  ["#res-amy-progressions", null, "panel.res_amy_prog"], ["#res-amy-progressions", "aria-label", "panel.res_amy_prog.aria"],
+  ["#res-amy-bottom", null, "panel.res_amy_bottom"], ["#res-amy-bottom", "aria-label", "panel.res_amy_bottom.aria"],
+  ["#res-handpan-101", "aria-label", "panel.res_101.aria"], ["#about-open", null, "panel.about"],
+  ["#scale-back", null, "sheet.back"], ["#scale-tabs", "aria-label", "sheet.tablist"],
+  ["#scale-tab-scale", null, "sheet.tab_scale"], ["#scale-tab-layout", null, "sheet.tab_layout"],
+  ["label[for=scale-name]", null, "sheet.name_label"], ["#scale-fields-head", null, "sheet.fields_head"],
+  ["#scale-ding-label", null, "sheet.ding"], ["#scale-top-label", null, "sheet.top"],
+  ["#scale-inner-label", null, "sheet.inner"], ["#scale-bottom-label", null, "sheet.bottom_opt"],
+  ["#scale-or span", null, "sheet.or"], ["#scale-or", "aria-label", "sheet.or.aria"],
+  ["label[for=scale-box]", null, "sheet.line_label"], ["#scale-label-2", null, "sheet.line_sub"],
+  ["#scale-drawer", "aria-label", "sheet.drawer.aria"], ["#scale-anchor-label", null, "sheet.orientation"],
+  ["#scale-anchor-one", null, "sheet.anchor_one"], ["#scale-anchor-between", null, "sheet.anchor_between"],
+  ["#scale-anchor-between", "aria-label", "sheet.anchor_between.aria"], [".sheethint", null, "sheet.anchor_hint"],
+  ["#scale-mirror", null, "sheet.mirror_top"], ["#scale-mirror-bottom", null, "sheet.mirror_bottom"],
+  [".sheethint", null, "sheet.mirror_hint"], ["#scale-note-prev", null, "sheet.prev_note"],
+  ["#scale-note-next", null, "sheet.next_note"], ["#scale-seat-prev", null, "sheet.prev_seat"],
+  ["#scale-seat-next", null, "sheet.next_seat"], ["#scale-angle-prev", null, "sheet.angle_prev"],
+  ["#scale-angle-prev", "aria-label", "sheet.angle_prev.aria"], ["#scale-angle-next", null, "sheet.angle_next"],
+  ["#scale-angle-next", "aria-label", "sheet.angle_next.aria"], ["#scale-layout-reset", null, "sheet.reset_layout"],
+  ["#scale-palette-label", null, "sheet.palette"], ["#scale-next", null, "sheet.next"],
+];
+const staticBound = new Map();
+function staticElement(selector, key) {
+  if (selector.charAt(0) === "#" && /^#[\w-]+$/.test(selector)) {
+    try { return document.getElementById(selector.slice(1)); } catch (e) { return null; }
+  }
+  if (staticBound.has(key)) return staticBound.get(key);
+  const english = I18N.en[key];
+  const found = Array.from(document.querySelectorAll(selector)).find(el => String(el.textContent || "").trim() === english) || null;
+  if (found) staticBound.set(key, found);
+  return found;
+}
+let staticDirty = false;
+function applyStatic() {
+  if (uiLang() === "en" && !staticDirty) return;
+  staticDirty = true;
+  for (const [selector, attr, key] of STATIC_STRINGS) {
+    const el = staticElement(selector, key);
+    if (!el) continue;
+    const value = t(key);
+    if (attr === "#text0") {
+      const node = el.firstChild;
+      if (node && node.nodeType === 3 && String(node.nodeValue).trim() !== value) node.nodeValue = "\n      " + value + "\n      ";
+    } else if (attr) {
+      if (el.getAttribute(attr) !== value) el.setAttribute(attr, value);
+    } else if (String(el.textContent || "").trim() !== value) {
+      el.textContent = value;
+    }
+  }
+}
+/** Everything the UI says, again, in the language now resolved. */
+const ISLAND_IDS = ["decks", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box", "scale-parse", "about"];
+function syncLangIslands() {
+  const en = uiLang() === "en";
+  for (const id of ISLAND_IDS) {
+    const el = document.getElementById(id);
+    if (!el) continue;
+    if (en) el.removeAttribute("lang"); else el.setAttribute("lang", "en");
+  }
+}
+function applyLang() {
+  document.documentElement.lang = uiLang();
+  syncLangIslands();
+  applyStatic();
+  syncShuffleLabel();
+  disarmDelete();
+  disarmReset();
+  if (staticDirty) restoreBtn.textContent = RESET_IDLE();
+  buildChips();
+  render();
+  if (sheetOpen) {
+    const edit = !!editingId;
+    delBtn.textContent = DEL_IDLE();
+    if (genBtn.textContent !== t("sheet.generating") && genBtn.textContent !== t("sheet.saving")) {
+      genBtn.textContent = t(edit ? "sheet.save" : "sheet.generate");
+    }
+    titleEl.textContent = t(edit ? "sheet.title_edit" : "sheet.title_add");
+    buildSwatches();
+    paintLayout();
+    paintPassive();
+    paintFields(fieldValues(), false);
+    resyncSheet(false);
+    if (!lipBtn.hidden) lipBtn.setAttribute("aria-label", t("sheet.lip_show", { label: lipPrimary().textContent }));
+  }
+}
 // Both reads are TYPE-guarded, not just truthiness-guarded: "hpfc" is shared,
 // so a sibling feature (or a hand-edited value) can leave any JSON type here,
 // and a non-string id that reached the boot tail would throw on .indexOf and
@@ -9466,15 +9731,10 @@ let order = [], idx = 0, flipped = false;
 let seq = null;
 // The seven playing styles, in the app's own words (plan §2 Part B). Keyed by
 // HPE.sequence.STYLES ids.
-const SEQ_STYLE_COPY = {
-  "together": ["All at once", "Strike every note of the chord together, then let it ring before the next one"],
-  "arpeggio": ["Arpeggio", "Play the notes one at a time, low to high, then come back down"],
-  "three-over-two": ["3:2 polyrhythm", "One hand plays three even strokes while the other plays two, in the same span"],
-  "three-three-two": ["3-3-2", "Group your strokes 3 + 3 + 2 and keep the cycle going through each chord"],
-  "paradiddle": ["Paradiddle", "Right-left-right-right, left-right-left-left, moving the strokes across the chord's notes"],
-  "groove": ["Groove", "Keep one chord shape and add slaps, soft ghost notes, or move the accent around"],
-  "freestyle": ["Freestyle", "Mix the patterns, bring a different top note forward each time, and follow your ear"]
-};
+const SEQ_STYLE_COPY = {};
+for (const id of ["together", "arpeggio", "three-over-two", "three-three-two", "paradiddle", "groove", "freestyle"]) {
+  Object.defineProperty(SEQ_STYLE_COPY, id, { enumerable: true, get: () => [t("style." + id + ".name"), t("style." + id + ".tip")] });
+}
 
 // Generated decks live here, keyed by deck id, so the DECKS literal above stays
 // the built-ins on one line (tools/validate.py and tests/paths.py both
@@ -9674,10 +9934,10 @@ let bootStored = null;
 // composes a sentence of its own (ENGINE-SPEC sections 1 and 2).
 function openShare(text) {
   const res = HPE.share.decode(String(text));
-  if (!res.ok) { say(res.reason, "err"); return res; }
+  if (!res.ok) { say(reasonText(res), "err"); return res; }
   // Generation runs ONCE per restore, here, exactly as submit does (section 11).
   const built = generateDeck(HPE.core.formatSeed(res.value.fields), res.value.options);
-  if (!built.ok) { say(built.reason, "err"); return built; }
+  if (!built.ok) { say(reasonText(built), "err"); return built; }
   rememberScale(seedOf(built.value));
   selectDeck(built.value.id);
   if (built.value.id !== bootStored) track("share_open");
@@ -10275,21 +10535,22 @@ function downloadDeckPDF(variant, btn) {
   }
 }
 
-function headerHTML(d, ch, n) {
+const ISLAND = () => (uiLang() === "en" ? "" : ' lang="en"');
+function headerHTML(d, ch, n, uiSub) {
   const deg = d.degrees[String(pc(d, ch.roots[0]))] || "";
   // The card face carries no controls (menu-shell, 2026-09-28): the print
   // row moved into the settings panel's "Print this deck" group, so this
   // function never emits one. The `noPrints` parameter was removed (R1,
   // 2026-09-29) along with the legacy print-sheet call site that passed it.
   return `<div class="hdr">
-    <div class="l">${esc(d.name)}<br><span class="num">#${n}</span>
+    <div class="l"${ISLAND()}>${esc(d.name)}<br><span class="num">#${n}</span>
       ${deg ? `&nbsp;<span class="deg">${esc(deg)}</span>` : ""}</div>
-    <div class="r">${esc(ch.subtitle)}</div></div>`;
+    <div class="r"${uiSub ? "" : ISLAND()}>${esc(ch.subtitle)}</div></div>`;
 }
 function nameHTML(ch, big) {
   const len = (ch.main + ch.sup).length;
   const size = big ? `clamp(34px, ${Math.min(19, 120/len)}vw, ${len > 7 ? 64 : 92}px)` : "inherit";
-  return `<div class="bigname" style="font-size:${size}">${esc(ch.main)}${ch.sup ? `<sup>${esc(ch.sup)}</sup>` : ""}</div>`;
+  return `<div class="bigname"${ISLAND()} style="font-size:${size}">${esc(ch.main)}${ch.sup ? `<sup>${esc(ch.sup)}</sup>` : ""}</div>`;
 }
 function linesHTML(d, ch) {
   const C = d.colors, rpc = pc(d, ch.roots[0]);
@@ -10305,9 +10566,9 @@ function linesHTML(d, ch) {
   });
   const nb = ch.fields.filter(f => d.fields[f][3] === "bottom").length;
   return `<div class="lines">
-    ${nb ? `<div class="badge">${nb} BOTTOM NOTE${nb > 1 ? "S" : ""}</div>` : ""}
-    <div class="notesline">${notes}</div>
-    <div class="numline">${nums}</div></div>`;
+    ${nb ? `<div class="badge"${ISLAND()}>${nb} BOTTOM NOTE${nb > 1 ? "S" : ""}</div>` : ""}
+    <div class="notesline"${ISLAND()}>${notes}</div>
+    <div class="numline"${ISLAND()}>${nums}</div></div>`;
 }
 // Sequence mode (S2, §8 E3): an unsupported deck (pick() returned no chords)
 // clears BOTH faces to the same message, with no residue of a previous card,
@@ -10318,15 +10579,12 @@ function linesHTML(d, ch) {
 // that tier) gets a tier-named message naming the selected difficulty by its
 // button's own all-caps spelling; NO_HOME_CHORD/TOO_FEW_CHORDS (both basic-only
 // reasons - the deck itself can't support a progression) keep the original copy.
-const TIER_LABEL = { basic: "EASY", intermediate: "MEDIUM", advanced: "HARD" };
 function renderSeqEmpty() {
   const msg = (seq && seq.reason === "NO_TIER_SEQUENCE")
     ? `<div class="lines"><div class="hint" style="text-transform:none; letter-spacing:normal">`
-      + `This scale has no ${TIER_LABEL[tier]} progressions. `
-      + `Pick another difficulty or another scale.</div></div>`
+      + tHtml("seq.empty_tier", { tier: t("tier." + tier) }) + `</div></div>`
     : `<div class="lines"><div class="hint" style="text-transform:none; letter-spacing:normal">`
-      + `This scale doesn&rsquo;t have enough simple chords to make a progression. `
-      + `Pick another scale, or switch to NAME &rarr; NOTES in the menu.</div></div>`;
+      + tHtml("seq.empty_few") + `</div></div>`;
   document.getElementById("front").innerHTML = msg;
   document.getElementById("back").innerHTML = msg;
   const countEmpty = document.getElementById("count");
@@ -10378,7 +10636,7 @@ function railBuild(d) {
   });
   const live = document.createElement("span");
   live.className = "sr-only";
-  live.textContent = `${curCh.main}${curCh.sup || ""}, chord ${idx + 1} of ${seq.chords.length}`;
+  live.textContent = t("seq.live", { chord: `${curCh.main}${curCh.sup || ""}`, i: idx + 1, n: seq.chords.length });
   return { rail, live, curNode };
 }
 function renderSeqRail(d) {
@@ -10428,14 +10686,14 @@ function faceHTML(d, ch, n, kind) {
     case "question":
       return headerHTML(d, ch, n) +
         `<div class="prompt">${nameHTML(ch, true)}
-     <div class="hint">Tap to reveal the notes</div></div>`;
+     <div class="hint">${tHtml("card.hint_notes")}</div></div>`;
     case "backS":
       return headerHTML(d, ch, n) +
         `<div class="prompt">${nameHTML(ch, true)}</div>`;
     case "questionB":
-      return headerHTML(d, { ...ch, subtitle: "WHICH CHORD IS THIS?" }, n) +
+      return headerHTML(d, { ...ch, subtitle: t("card.which_chord") }, n, true) +
         `<div class="diagwrap">${pan(d, ch)}</div>
-     <div class="lines"><div class="hint" style="margin:0 0 12px">Tap to reveal the name</div></div>`;
+     <div class="lines"><div class="hint" style="margin:0 0 12px">${tHtml("card.hint_name")}</div></div>`;
     case "answerB":
     default:
       return headerHTML(d, ch, n) +
@@ -10572,7 +10830,7 @@ function buildChips() {
       // and an accessible name built from the full one stops containing the
       // visible string - WCAG 2.5.3 Label-in-Name, which is what Voice
       // Control matches "tap <the words I can see>" against.
-      b.setAttribute("aria-label", "Edit " + chipLabel(d.name));
+      b.setAttribute("aria-label", t("sheet.edit_aria", { name: chipLabel(d.name) }));
     }
     // [design-review 7A] the ALREADY-SELECTED chip is the one and only way into
     // the sheet; every other chip just selects its deck. Seeded and custom decks
@@ -10593,8 +10851,8 @@ function buildChips() {
  * through HPE.core.parseSeed, and Generate hands the text to generateDeck().
  * There is exactly ONE adapter from the engine's result shape to the message
  * area (say()), and nothing here composes a reason sentence of its own. */
-const OCTAVE_SENTENCE = "Octaves are optional: without one, we assume the notes run low to high.";
-const PARSE_HINT = "Type every note on one line, in any order. Put the ding in round brackets: (D) and each bottom note in square brackets: [C]. Put a | before inner notes. " + OCTAVE_SENTENCE;
+const OCTAVE_SENTENCE = () => t("sheet.octave_sentence");
+const PARSE_HINT = () => t("sheet.parse_hint") + " " + OCTAVE_SENTENCE();
 const sheet     = document.getElementById("scale-sheet");
 // The scrolling surface itself (.sheetsurf), looked up by DOM position rather
 // than by id: it is the one thing the iOS keyboard fix below has to move, and
@@ -10742,7 +11000,7 @@ let lastTyped = { rim: null, inner: null };
 let typedNow = null;
 let hintSaid = "";
 let hintQuiet = false;
-const ORDER_HINT = "Top notes take their seats in the order listed. Rearrange them on the Layout tab.";
+const ORDER_HINT = () => t("sheet.order_hint");
 let bandPad = "", plateRoom = "", pinPad = "";
 
 /* The seed row has exactly TWO writers, and each blanks the other. That is
@@ -10793,7 +11051,7 @@ function buildSwatches() {
     const b = document.createElement("button");
     b.type = "button";
     b.className = "dot" + (i === palette ? " sel" : "");
-    b.setAttribute("aria-label", "Palette " + (i + 1));
+    b.setAttribute("aria-label", t("sheet.palette_n", { n: i + 1 }));
     b.setAttribute("aria-pressed", String(i === palette));
     b.style.setProperty("--dga", p.root);
     b.style.setProperty("--dgb", p.tone);
@@ -10821,9 +11079,10 @@ function paintMirrors() {
 let drawerOpen = false;
 let sheetTab = "scale";
 let layoutBase = { anchor: "one", mirror: false, mb: false, seats: "", angles: "" };
-const HINT_EMPTY = "Type a scale to adjust its layout.";
-const DRAWER_HINT = "Tap a note, then tap another note in the same ring to swap them. Or hold a note and drag it.";
-const DRAWER_HINT_SLIDE = " Bottom notes also slide along their ring: hold one and drag it to where it sits on your pan.";
+const HINT_EMPTY = () => t("sheet.layout_hint_empty");
+const DRAWER_HINT = () => t("sheet.drawer_hint");
+const DRAWER_HINT_SLIDE = () => t("sheet.drawer_hint_slide");
+const ringWord = (ring) => t("sheet.ring_" + ring);
 
 /** One line under the plate, read once. The same sentence twice in a row is
  *  cleared first, or a live region would stay silent on the repeat. */
@@ -10841,19 +11100,18 @@ function layoutNoticeText() {
     (!hadBottom || bottomMirror() === layoutBase.mb) && seatsKey(layoutSeats) === layoutBase.seats &&
     anglesKey(layoutAngles) === layoutBase.angles;
   let text;
-  if (!same) text = editingId ? "Layout not saved yet. SAVE CHANGES keeps it."
-    : "Layout not saved yet. GENERATE CARDS keeps it.";
+  if (!same) text = t(editingId ? "sheet.layout_unsaved_edit" : "sheet.layout_unsaved_add");
   else {
     const custom = layoutBase.anchor !== "one" || layoutBase.mirror || (layoutBase.mb && hadBottom) ||
       layoutBase.seats !== "" || layoutBase.angles !== "";
-    text = editingId && !isBuiltIn(editingId) && custom ? "Layout changed from the default." : "";
+    text = editingId && !isBuiltIn(editingId) && custom ? t("sheet.layout_changed") : "";
   }
   if (editingId && (storedSeats || storedAngles) && ringCount)
     for (const ring of LAYOUT_RINGS) {
       if (ringCount[ring] === storedCounts[ring]) continue;
       const seated = !!(storedSeats && storedSeats[ring]), angled = ring === "bottom" && !!storedAngles;
       if (seated && !angled && followsTyped(ring)) continue;
-      if (seated || angled) text += ` The ${ring} ${seated && angled ? "seats and angles" : angled ? "angles" : "seats"} were reset.`;
+      if (seated || angled) text += t(seated && angled ? "sheet.seats_angles_reset" : angled ? "sheet.angles_reset" : "sheet.seats_reset", { ring: ringWord(ring) });
     }
   return text;
 }
@@ -10864,11 +11122,11 @@ function paintLayout() {
     pickRef = null;
     pickMoved = false;
   }
-  layoutHint.textContent = HINT_EMPTY;
+  layoutHint.textContent = HINT_EMPTY();
   layoutHint.hidden = boxOk || !(panState === "example" || !String(scaleBox.value || "").trim());
   drawerStatus.hidden = !drawerOpen || !boxOk;
-  paintNotes();
-  drawerHint.textContent = DRAWER_HINT + (ringCount && ringCount.bottom >= 1 ? DRAWER_HINT_SLIDE : "");
+  if (sheetOpen) paintNotes();
+  drawerHint.textContent = DRAWER_HINT() + (ringCount && ringCount.bottom >= 1 ? DRAWER_HINT_SLIDE() : "");
   drawerHint.hidden = !(drawerOpen && boxOk);
   notePrev.disabled = noteNext.disabled = !boxOk || !ringPickable();
   seatPrev.disabled = seatNext.disabled = !boxOk || !pickRef;
@@ -10879,7 +11137,7 @@ function paintLayout() {
   fineBox.hidden = !fineOpen;
   fineBtn.disabled = !boxOk;
   fineBtn.setAttribute("aria-expanded", String(fineOpen));
-  fineBtn.textContent = fineOpen ? "HIDE FINER CONTROLS" : "HARD TO TAP? SHOW FINER CONTROLS";
+  fineBtn.textContent = t(fineOpen ? "sheet.fine_hide" : "sheet.fine_show");
   layoutZone.classList.toggle("open", drawerOpen);
   fieldMsg.hidden = drawerOpen;
   syncMsgYield();
@@ -11086,7 +11344,7 @@ function collapseLip() {
   lipDirty = false;
   sheet.classList.add("lipnow", "lipped");
   lipBtn.hidden = false;
-  lipBtn.setAttribute("aria-label", "Show " + lipPrimary().textContent);
+  lipBtn.setAttribute("aria-label", t("sheet.lip_show", { label: lipPrimary().textContent }));
   lipWrite(open);
   lipFlush();
   sheet.classList.remove("lipnow");
@@ -11338,7 +11596,7 @@ function setTab(tab) {
   repaintPlate();
   bandPort.scrollTop = 0;
   setLip(false, { instant: true });
-  if (drawerOpen && boxOk && !hasTwoNoteRing() && !(ringCount && ringCount.bottom >= 1)) layoutStatus("This pan has no ring with two notes, so there is nothing to rearrange.");
+  if (drawerOpen && boxOk && !hasTwoNoteRing() && !(ringCount && ringCount.bottom >= 1)) layoutStatus(t("sheet.no_two_ring"));
 }
 /** Leaving the sheet or opening a fresh session: no focus, no status. */
 function dropDrawer() {
@@ -11365,13 +11623,12 @@ function parseLineText(fields) {
     else shells[f[3]].push(f);
   }
   const names = (list) => list.slice().sort((x, y) => x[2] - y[2]).map((f) => f[0] + f[1]).join(" ");
-  let line = "Ding " + ding + " \u00b7 " + shells.rim.length + " top \u00b7 " +
-    shells.inner.length + " inner \u00b7 " + shells.bottom.length + " bottom.";
-  for (const [key, label] of [["rim", "Top"], ["inner", "Inner"], ["bottom", "Bottom"]]) {
-    if (shells[key].length) line += " " + label + " " + names(shells[key]) + ".";
+  let line = t("sheet.parse_summary", { ding, top: shells.rim.length, inner: shells.inner.length, bottom: shells.bottom.length });
+  for (const [key, label] of [["rim", "sheet.zone_top"], ["inner", "sheet.zone_inner"], ["bottom", "sheet.zone_bottom"]]) {
+    if (shells[key].length) line += t("sheet.parse_zone", { label: t(label), names: names(shells[key]) });
   }
   const low = HPE.core.innerBelowRim(fields);
-  if (low.length) line += " " + low.join(", ") + (low.length > 1 ? " are" : " is") + " below the top notes: check the pan picture.";
+  if (low.length) line += t("sheet.inner_below", { names: low.join(", "), n: low.length });
   return line;
 }
 
@@ -11406,7 +11663,7 @@ function setRingSeats(ring, next) {
   layoutSeats = Object.keys(rest).length ? rest : null;
 }
 const seatsKey = (s) => LAYOUT_RINGS.filter((r) => s && s[r]).map((r) => r + ":" + s[r].join(",")).join(";");
-const anglesKey = (a) => (a && a.bottom ? a.bottom.map((v) => (v === null ? "" : v)).join(",") : "");
+const anglesKey = (a) => (a && a.bottom && a.bottom.some((v) => v !== null) ? a.bottom.map((v) => (v === null ? "" : v)).join(",") : "");
 const editedDeck = () => (editingId ? CUSTOM[editingId] || DECKS.find(d => d.id === editingId) : null) || null;
 const seeded = () => isBuiltIn(editingId);
 /** The tuple a seeded sheet is compared against to tell an unchanged SAVE. */
@@ -11462,8 +11719,9 @@ let gestureCancel = null;
 // The seat the dragged note would swap with, or null: drawn as .panarm.
 let armId = null;
 
-const PLACES = ["right", "upper right", "top", "upper left", "left", "lower left", "bottom", "lower right"];
-const placeOf = (ang) => PLACES[Math.floor(((((Number(ang) + 22.5) % 360) + 360) % 360) / 45)];
+const PLACES = ["right", "upper_right", "top", "upper_left", "left", "lower_left", "bottom", "lower_right"];
+const placeOf = (ang) => t("sheet.place." + PLACES[Math.floor(((((Number(ang) + 22.5) % 360) + 360) % 360) / 45)]);
+const dropRefusal = (n) => t("sheet.drop_swap", { name: n.name, ring: ringWord(n.ring) });
 
 /** Under angles a bottom note's seat is its rank by angle, so the arrows walk the ring round. */
 const angleSeats = (angs) => angs.map((a, i) => angs.filter((b, j) => b < a || (b === a && j < i)).length);
@@ -11521,7 +11779,7 @@ function hitLayer() {
   return { meta, picked: p ? p.id : null, rover: r ? r.id : null, flash: panFlash, arm: armId };
 }
 
-const countsLabel = (c) => `Pan layout: ${c.rim} rim, ${c.inner} inner, ${c.bottom} bottom notes.`;
+const countsLabel = (c) => t("sheet.counts", { rim: c.rim, inner: c.inner, bottom: c.bottom });
 
 function ringPickable() {
   return !!ringCount && (LAYOUT_RINGS.some((r) => ringCount[r] >= 2) || ringCount.bottom >= 1);
@@ -11543,16 +11801,17 @@ function syncRingCounts(fields) {
     setRingSeats(ring, had && seatMemo[ring][to] ? seatMemo[ring][to] : identityOrder(to));
     const slid = ring === "bottom" && !!layoutAngles;
     if (slid) layoutAngles = null;
-    const things = foldedBottom ? "seats and angles" : "angles";
+    const both = foldedBottom;
     if (slid) foldedBottom = false;
-    byRing[ring] = slid ? `The bottom now has ${to === 1 ? "1 note" : to + " notes"}, so its ${things} were reset.` : had ? `The ${ring} is back to ${to} notes, so its earlier seats were restored.`
-      : `The ${ring} now has ${to === 1 ? "1 note" : to + " notes"}, so its seats were reset.`;
-    said.push(byRing[ring]);
+    const sentence = slid ? t(both ? "sheet.bottom_now_has_both" : "sheet.bottom_now_has_angles", { n: to }) : had ? t("sheet.ring_back", { ring: ringWord(ring), n: to })
+      : t("sheet.ring_reset", { ring: ringWord(ring), n: to });
+    byRing[ring] = sentence;
+    said.push(sentence);
     if (pickRef && pickRef.ring === ring) putDown = true;
     ringCount[ring] = to;
   }
   if (putDown) { pickRef = null; pickMoved = false; }
-  return { text: said.join(" ") + (putDown ? " The picked note was put down." : ""), said: byRing, putDown };
+  return { text: said.join(" ") + (putDown ? t("sheet.put_down") : ""), said: byRing, putDown };
 }
 
 function cancelGesture() {
@@ -11636,20 +11895,20 @@ function slideNote(ref, want, how, dir) {
   const folding = !!(layoutSeats && layoutSeats.bottom);
   const base = folding ? cur.map(stepOf) : cur;
   if (folding && base.some((_, k) => clashAt(home, base, k) !== null)) {
-    layoutStatus(`Not moved. The bottom notes are too close to sit on the ${ANGLE_STEP}° steps.`, true);
+    layoutStatus(t("sheet.too_close_steps", { step: ANGLE_STEP }), true);
     return false;
   }
   let spot;
   if (how === "nudge") {
     const hit = clashAt(home, withAngle(base, n.i, want), n.i);
-    if (hit !== null) { layoutStatus(`${fieldName(hit)} is in the way.`, true); return false; }
+    if (hit !== null) { layoutStatus(t("sheet.in_way", { name: fieldName(hit) }), true); return false; }
     spot = { angle: want, hit: null };
   } else {
     spot = landAt(home, base, n.i, want, dir);
-    if (!spot) { layoutStatus(`Not moved. There is no free place for ${n.name}.`, true); return false; }
+    if (!spot) { layoutStatus(t("sheet.no_free_place", { name: n.name }), true); return false; }
   }
   if (spot.angle === cur[n.i] && !folding) {
-    layoutStatus(`${n.name} stays at ${spot.angle}°, ${placeOf(spot.angle)}.`);
+    layoutStatus(t("sheet.stays_at", { name: n.name, angle: spot.angle, place: placeOf(spot.angle) }));
     return true;
   }
   const entries = folding ? base.slice() : layoutAngles ? layoutAngles.bottom.slice() : cur.map(() => null);
@@ -11662,11 +11921,11 @@ function slideNote(ref, want, how, dir) {
   const moved = noteAt(ref);
   const at = `${spot.angle}°, ${moved.place}`;
   let text;
-  if (spot.hit !== null) text = `${moved.name} was too close to ${fieldName(spot.hit)}, so it sits at ${at}.`;
-  else if (how === "nudge") text = `${moved.name} at ${at}.`;
-  else text = `${moved.name} moved to ${at}.`;
-  if (folding) text += " Bottom seat numbers now run low to high.";
-  else if (how !== "nudge" && !slideTold && spot.hit === null) text += ` Seat ${moved.label} stays its number.`;
+  if (spot.hit !== null) text = t("sheet.too_close_so", { name: moved.name, other: fieldName(spot.hit), at });
+  else if (how === "nudge") text = t("sheet.at", { name: moved.name, at });
+  else text = t("sheet.moved_to", { name: moved.name, at });
+  if (folding) text += t("sheet.seat_numbers");
+  else if (how !== "nudge" && !slideTold && spot.hit === null) text += t("sheet.seat_stays", { label: moved.label });
   slideTold = true;
   layoutStatus(text, spot.hit !== null);
   return true;
@@ -11698,7 +11957,7 @@ function swapSeats(ring, i, j) {
   const a = before[i], b = before[j];
   if (!a || !b) return false;
   if (i !== j && ring === "bottom" && layoutAngles && !exchangeAngles(i, j)) {
-    layoutStatus(`Not moved. ${a.name} and ${b.name} cannot trade places on the ${ANGLE_STEP}° steps.`, true);
+    layoutStatus(t("sheet.cannot_trade", { a: a.name, b: b.name, step: ANGLE_STEP }), true);
     return false;
   }
   if (i !== j && !(ring === "bottom" && layoutAngles)) {
@@ -11711,20 +11970,18 @@ function swapSeats(ring, i, j) {
   paintLayout();
   resyncSheet(true);
   const moved = noteAt({ ring, i });
-  if (i === j) layoutStatus(`${moved.name} stays in ${ring} seat ${moved.label}.`);
-  else layoutStatus(`Swapped ${a.name} and ${b.name}. ${moved.name} is now in ${ring} seat ${moved.label}, ${moved.place}.`);
+  if (i === j) layoutStatus(t("sheet.stays", { name: moved.name, ring: ringWord(ring), label: moved.label }));
+  else layoutStatus(t("sheet.swapped", { a: a.name, b: b.name, m: moved.name, ring: ringWord(ring), label: moved.label, place: moved.place }));
   return true;
 }
 
 function pickAnnouncement(n, how) {
   if (how === "tap" && n.ring === "bottom") {
-    const tail = fineOpen ? ", or use the finer controls below." : ".";
-    return n.k < 2 ? `Picked up ${n.name}. Drag it along the ring to move it${tail}`
-      : `Picked up ${n.name}. Drag it along the ring to move it, or drop it on another bottom note to swap${tail}`;
+    return t("sheet.pick_bottom_" + (n.k < 2 ? "one" : "many") + (fineOpen ? "_fine" : ""), { name: n.name });
   }
-  if (how === "tap") return `Picked up ${n.name}. Tap or drop it on another ${n.ring} note to swap${fineOpen ? ", or use PREVIOUS SEAT and NEXT SEAT" : ""}.`;
-  if (how === "note") return `Picked up ${n.name}, ${n.ring} seat ${n.label}, ${n.place}. PREVIOUS SEAT and NEXT SEAT move it.`;
-  return `Picked up ${n.name}. Arrows choose a seat in the ${n.ring}. Space swaps. Escape cancels.`;
+  if (how === "tap") return t(fineOpen ? "sheet.pick_tap_seat" : "sheet.pick_tap", { name: n.name, ring: ringWord(n.ring) });
+  if (how === "note") return t("sheet.pick_note", { name: n.name, ring: ringWord(n.ring), label: n.label, place: n.place });
+  return t("sheet.pick_keys", { name: n.name, ring: ringWord(n.ring) });
 }
 /** A tap, Space or Enter on a note. `how` is "tap" or "key". */
 function activateNote(ref, how) {
@@ -11738,7 +11995,7 @@ function activateNote(ref, how) {
     return;
   }
   if (n.ring !== p.ring) {
-    layoutStatus(`Not moved. ${p.name} moves only within the ${p.ring}.`, true);
+    layoutStatus(t("sheet.not_moved", { name: p.name, ring: ringWord(p.ring) }), true);
     focusRef(pickRef);
     return;
   }
@@ -11791,7 +12048,7 @@ function putDownPick() {
   const moved = pickMoved;
   const slid = pickSlid;
   setPick(null);
-  layoutStatus(moved ? `${p.name} put down. The ${slid ? "moves" : "swaps"} you made are kept.` : "Cancelled. Nothing moved.");
+  layoutStatus(moved ? t(slid ? "sheet.put_down_kept_moves" : "sheet.put_down_kept", { name: p.name }) : t("sheet.cancelled"));
   if (fromSeatButton) { setRover(ref); focusRef(ref); }
 }
 function resetLayout() {
@@ -11808,7 +12065,7 @@ function resetLayout() {
   panFlash = null;
   paintLayout();
   resyncSheet(true);
-  layoutStatus("Layout reset.");
+  layoutStatus(t("sheet.layout_reset"));
   tabLayout.focus();
 }
 
@@ -11885,9 +12142,9 @@ function solvePreviewLayout(seed) {
  * Both dim the plate (#scale-preview.stale); the example, which nobody typed,
  * is greyed further by #scale-preview.example. */
 const PAN_NAMES = {
-  current: "Preview of where the notes sit on the pan",
-  example: "Example pan for the placeholder seed",
-  held: "Preview of the last seed that parsed",
+  get current() { return t("sheet.preview.aria"); },
+  get example() { return t("sheet.pan_example"); },
+  get held() { return t("sheet.pan_held"); },
 };
 
 /** The plate is always in the flow on both paths now: it entering and leaving
@@ -12005,12 +12262,10 @@ function noteCounts(fields, value) {
     const parts = [];
     for (const ring of LAYOUT_RINGS) {
       if (derived.includes(ring)) {
-        const moved = !!(layoutSeats && layoutSeats[ring]);
-        if (moved || !r.said[ring]) parts.push(ring === "rim" ? "The rim now follows the order listed." : "The inner notes now follow the order listed.");
-        else parts.push(r.said[ring]);
+        parts.push(t(ring === "rim" ? "sheet.rim_follows" : "sheet.inner_follows"));
       } else if (r.said[ring]) parts.push(r.said[ring]);
     }
-    text = parts.join(" ") + (putDown ? " The picked note was put down." : "");
+    text = parts.join(" ") + (putDown ? t("sheet.put_down") : "");
   }
   if (!text) return;
   if (putDown && wasOnNote) focusFirstNext = true;
@@ -12048,7 +12303,7 @@ function syncParseState({ paint }) {
   if (!text.trim()) {
     typedNow = null;
     paintLayout();
-    showParse(PARSE_HINT);
+    showParse(PARSE_HINT());
     scaleBox.classList.remove("bad");
     genBtn.disabled = true;
     if (paint) showPlaceholderPan();
@@ -12069,7 +12324,7 @@ function syncParseState({ paint }) {
     if (paint) showPanPreview(res.value);
     const solved = solvePreviewLayout(res.value);
     const crowded = solved && HPE.select.smallLabels(solved.geom);
-    if (crowded) { say(crowded.reason, "warn"); msgLine.classList.add("pan"); }
+    if (crowded) { say(reasonText(crowded), "warn"); msgLine.classList.add("pan"); }
     else say("", "");
   } else {
     const second = opts.name !== undefined ? HPE.core.parseSeed(text, layoutOptions()) : null;
@@ -12082,10 +12337,10 @@ function syncParseState({ paint }) {
       scaleBox.classList.add("bad");
       genBtn.disabled = true;
       if (paint) showPanPreview(second.value);
-      showRefusal(res.reason);
+      showRefusal(reasonText(res));
       const solved = solvePreviewLayout(second.value);
       const crowded = solved && HPE.select.smallLabels(solved.geom);
-      if (crowded) { say(crowded.reason, "warn"); msgLine.classList.add("pan"); }
+      if (crowded) { say(reasonText(crowded), "warn"); msgLine.classList.add("pan"); }
       else say("", "");
       return;
     }
@@ -12098,7 +12353,7 @@ function syncParseState({ paint }) {
     scaleBox.classList.add("bad");
     genBtn.disabled = true;
     if (paint) holdPanPreview();
-    showRefusal(res.reason);
+    showRefusal(reasonText(res));
   }
 }
 
@@ -12258,12 +12513,12 @@ function setSheetMode(edit) {
   disarmDelete();
   if (edit) delRow.removeAttribute("hidden");
   else delRow.setAttribute("hidden", "");
-  delBtn.textContent = DEL_IDLE;
-  genBtn.textContent = edit ? "SAVE CHANGES" : "GENERATE CARDS";
+  delBtn.textContent = DEL_IDLE();
+  genBtn.textContent = t(edit ? "sheet.save" : "sheet.generate");
   // The page is named by the title it shows (#scale-title, via
   // aria-labelledby), so there is one string and a sighted user and a screen
   // reader are told the same thing.
-  titleEl.textContent = edit ? "Edit this scale" : "Add a scale";
+  titleEl.textContent = t(edit ? "sheet.title_edit" : "sheet.title_add");
 }
 /* ---- the page's route (D3) ----
    Add and Edit are destinations, so each is a history entry: the phone's back
@@ -12396,7 +12651,7 @@ function openEditSheet(d, opener) {
   showSheet(opener);
   // [eng-review 2, 2A] warnings have ONE producer and were copied onto the deck
   // at generation time; the Edit sheet reads them and never rebuilds to re-derive.
-  const warned = (d.warnings || []).map(w => w.reason);
+  const warned = (d.warnings || []).map(w => reasonText(w));
   if (warned.length) { say(warned.join(" "), "warn"); msgLine.classList.add("pan"); }
 }
 /** Take the page down. The DOM half only - the route is the caller's. */
@@ -12468,7 +12723,7 @@ function deleteDeck(id) {
   if (!d) return;
   // R2: the picker is never emptied by a delete.
   if (wouldEmpty(id)) {
-    say("Keep at least one scale. Add a scale before deleting " + d.name + ".", "warn");
+    say(t("sheet.del_refusal", { name: d.name }), "warn");
     msgLine.classList.add("refusal");
     syncMsgYield();
     return;
@@ -12489,7 +12744,7 @@ function deleteDeck(id) {
   if (editingId === id) closeScaleSheet();
   if (!wasSelected) { save(); buildChips(); return; }
   selectDeck(fallbackDeck().id);
-  say("Removed " + gone + ". Showing " + deck().name + ".", "warn");
+  say(t("boot.removed", { a: gone, b: deck().name }), "warn");
 }
 
 function runGenerate() {
@@ -12498,7 +12753,7 @@ function runGenerate() {
   // minted, so the seed keeps its slot, its palette and its stored print overlay.
   if (seeded() && sheetKey() === seedPrefill) { closeScaleSheet(); return; }
   const label = genBtn.textContent;
-  genBtn.textContent = editingId ? "SAVING" : "GENERATING";
+  genBtn.textContent = t(editingId ? "sheet.saving" : "sheet.generating");
   genBtn.disabled = true;
   scaleBox.setAttribute("readonly", "");
   say("", "");
@@ -12552,13 +12807,13 @@ function runGenerate() {
     // section 2 code enum is closed and has no code for "that scale is taken",
     // so this composes no sentence that could pass for one and carries no code.
     scaleBox.classList.add("bad");
-    refusal = "Another scale already has these notes.";
+    refusal = t("sheet.duplicate");
     showRefusal(refusal);
     return;
   }
   if (!res.ok) {
     scaleBox.classList.add("bad");
-    refusal = res.reason;
+    refusal = reasonText(res);
     showRefusal(refusal);
     return;
   }
@@ -12573,9 +12828,9 @@ function runGenerate() {
   if (replaced) replaceRegistered(wasId, d);
   // [eng-review 2, 2A] the warnings are read off the deck the SAME generation
   // produced; nothing is rebuilt to re-derive them.
-  const warned = (d.warnings || []).map(w => w.reason);
+  const warned = (d.warnings || []).map(w => reasonText(w));
   let text = (replaced || known.has(d.id) || fromSeed)
-    ? `Updated ${d.name}` : `${d.chords.length} cards generated`;
+    ? t("sheet.updated", { name: d.name }) : t("sheet.generated", { n: d.chords.length });
   if (warned.length) text += " " + warned.join(" ");
 
   closeScaleSheet();
@@ -12617,8 +12872,8 @@ genBtn.onclick = runGenerate;
    like an idle one. setSheetMode() disarms on every open, and touching
    anything else on the page disarms it, so a confirmation never outlives the
    tap that gave it. */
-const DEL_IDLE = "DELETE THIS SCALE";
-const DEL_ARMED = "TAP AGAIN TO DELETE";
+const DEL_IDLE = () => t("sheet.del_idle");
+const DEL_ARMED = () => t("sheet.del_armed");
 let delArmed = false;
 function disarmDelete() {
   /* Nothing to undo when nothing is armed, and re-deriving anyway would be
@@ -12626,7 +12881,7 @@ function disarmDelete() {
      unguarded disarm would re-parse the seed on taps that cancelled nothing. */
   if (!delArmed) return;
   delArmed = false;
-  delBtn.textContent = DEL_IDLE;
+  delBtn.textContent = DEL_IDLE();
   delBtn.removeAttribute("data-armed");
   // The label and the warning say the same thing, so they stop saying it
   // together - ahead of the `refusal` early-return below, which leaves the
@@ -12672,14 +12927,14 @@ delBtn.onclick = () => {
      delete's own message should be the last thing said. */
   if (delArmed) { disarmDelete(); deleteDeck(target); return; }
   delArmed = true;
-  delBtn.textContent = DEL_ARMED;
+  delBtn.textContent = DEL_ARMED();
   delBtn.setAttribute("data-armed", "");
   const d = CUSTOM[target] || DECKS.find(x => x.id === target);
   const seat = d && d.options && d.options.replaces;
   const seatedDeck = isBuiltIn(target) || (typeof seat === "string" && replacements()[seat] === d);
   delNote.textContent = seatedDeck
-    ? "Tap again to remove " + d.name + ". RESET SEEDED SCALES in the menu brings the seeded scales back."
-    : "Tap again to remove " + (d ? d.name : "this scale") + ". This cannot be undone.";
+    ? t("sheet.del_note_seeded", { name: d.name })
+    : t("sheet.del_note_custom", { name: d ? d.name : t("sheet.this_scale") });
 };
 /* Looking away is a decision too, and on a phone the only way to see it is the
    pointer: iOS Safari gives a <button> no focus on tap, so `blur` never fires
@@ -12699,27 +12954,27 @@ delBtn.onblur = disarmDelete;
    desktop sidebar has no panel to close and a Safari tap focuses no button, so
    neither close nor blur would ever fire there), on blur and on closePanel().
    disarmReset is its own function: disarmDelete re-derives sheet state. */
-const RESET_IDLE = "RESET SEEDED SCALES";
-const RESET_ARMED = "TAP AGAIN TO RESET";
-const RESET_WARNING = "Tap again to restore all seeded scales. Your edits to them will be gone.";
+const RESET_IDLE = () => t("panel.reset_idle");
+const RESET_ARMED = () => t("panel.reset_armed");
+const RESET_WARNING = () => t("panel.reset_warning");
 let resetArmed = false;
 function disarmReset() {
   if (!resetArmed) return;
   resetArmed = false;
-  restoreBtn.textContent = RESET_IDLE;
+  restoreBtn.textContent = RESET_IDLE();
   restoreBtn.removeAttribute("data-armed");
-  if (announce.textContent === RESET_WARNING) say("", "");
+  if (announce.textContent === RESET_WARNING()) say("", "");
 }
 restoreBtn.onclick = () => {
   if (!resetArmed) {
     resetArmed = true;
-    restoreBtn.textContent = RESET_ARMED;
+    restoreBtn.textContent = RESET_ARMED();
     restoreBtn.setAttribute("data-armed", "");
-    say(RESET_WARNING, "warn");
+    say(RESET_WARNING(), "warn");
     return;
   }
   resetArmed = false;
-  restoreBtn.textContent = RESET_IDLE;
+  restoreBtn.textContent = RESET_IDLE();
   restoreBtn.removeAttribute("data-armed");
   hidden = [];
   for (const [id, d] of Object.entries(CUSTOM)) if (d.options && isBuiltIn(d.options.replaces)) delete CUSTOM[id];
@@ -12727,7 +12982,7 @@ restoreBtn.onclick = () => {
   const wasSelected = deckId;
   const stays = allDecks().some(d => d.id === wasSelected);
   if (!stays) selectDeck(fallbackDeck().id); else { save(); buildChips(); }
-  say("Seeded scales restored." + (stays ? "" : " Showing " + deck().name + "."), "ok");
+  say(t("panel.reset_done") + (stays ? "" : " " + t("boot.showing", { name: deck().name })), "ok");
   addChip.focus();
 };
 restoreBtn.onblur = disarmReset;
@@ -12739,26 +12994,26 @@ document.addEventListener("pointerdown", (e) => {
 // A toggle re-seats the whole pan, so moved bottom notes must still clear the floor after it
 // (HPE.layout.bottomClash): a toggle that would leave the sheet unbuildable is undone.
 const toggleFits = () => !layoutAngles || (!!lastSeed && solvePreviewLayout(lastSeed) !== null);
-const TOGGLE_REFUSED = "Not changed: it would put a note you moved too close to another. Reset layout first.";
+const TOGGLE_REFUSED = () => t("sheet.toggle_refused");
 mirrorTop.onclick = () => {
   mirror = !mirror;
-  if (!toggleFits()) { mirror = !mirror; layoutStatus(TOGGLE_REFUSED); return; }
+  if (!toggleFits()) { mirror = !mirror; layoutStatus(TOGGLE_REFUSED(), true); return; }
   paintLayout(); resyncSheet(true);
-  layoutStatus(mirror ? "Top mirror on." : "Top mirror off.");
+  layoutStatus(t(mirror ? "sheet.mirror_top_on" : "sheet.mirror_top_off"));
 };
 mirrorBot.onclick = () => {
   bottomHeld = !bottomHeld;
-  if (!toggleFits()) { bottomHeld = !bottomHeld; layoutStatus(TOGGLE_REFUSED); return; }
+  if (!toggleFits()) { bottomHeld = !bottomHeld; layoutStatus(TOGGLE_REFUSED(), true); return; }
   paintLayout(); resyncSheet(true);
-  layoutStatus(bottomMirror() ? "Bottom mirror on." : "Bottom mirror off.");
+  layoutStatus(t(bottomMirror() ? "sheet.mirror_bottom_on" : "sheet.mirror_bottom_off"));
 };
 const pickAnchor = (to) => () => {
   if (anchor === to) return;
   const was = anchor;
   anchor = to;
-  if (!toggleFits()) { anchor = was; layoutStatus(TOGGLE_REFUSED); return; }
+  if (!toggleFits()) { anchor = was; layoutStatus(TOGGLE_REFUSED(), true); return; }
   paintLayout(); resyncSheet(true);
-  layoutStatus(to === "one" ? "Note 1 is centred." : "Notes 1 and 2 are split.");
+  layoutStatus(t(to === "one" ? "sheet.anchor_one_on" : "sheet.anchor_between_on"));
 };
 anchorOne.onclick = pickAnchor("one");
 anchorBetween.onclick = pickAnchor("between");
@@ -13017,7 +13272,7 @@ function dropNote() {
     return;
   }
   if (t.kind === "other") activateNote(t.ref, "tap");
-  else layoutStatus(`Not moved. Drop ${n.name} on another ${n.ring} note to swap.`, true);
+  else layoutStatus(dropRefusal(n), true);
   setPick(p.pre ? p.pre.ref : null);
   pickMoved = p.pre ? p.pre.moved : false;
   returnGhost(g, p.ref);
@@ -13112,7 +13367,12 @@ scaleBox.addEventListener("keydown", e => {
    Fields to line goes through HPE.importer.compose, line to fields through
    parseSeed, so neither side owns a grammar of its own. */
 const FIELD_KEYS = ["ding", "top", "inner", "bottom"];
-const FIELD_SHORT = { ding: "DING", top: "TOP RIM NOTES", inner: "TOP INNER NOTES", bottom: "BOTTOM NOTES" };
+const FIELD_SHORT = {
+  get ding() { return t("sheet.ding"); },
+  get top() { return t("sheet.top"); },
+  get inner() { return t("sheet.inner_short"); },
+  get bottom() { return t("sheet.bottom"); },
+};
 function fireInput(el) {
   el.dispatchEvent(typeof Event === "function" ? new Event("input", { bubbles: true }) : { type: "input" });
 }
@@ -13145,8 +13405,10 @@ function renderFieldMessages(r, values, editing, shown) {
   const out = {};
   for (const k of FIELD_KEYS) {
     if (!values[k].trim()) continue;
-    const warnText = k === "bottom" && r.warn && r.warn.bottom ? r.warn.bottom.text : "";
-    const text = r.errors[k] || warnText || r.info[k];
+    const warnText = k === "bottom" && r.warn && r.warn.bottom
+      ? composeText(r.warnCodes && r.warnCodes.bottom, r.warn.bottom.text) : "";
+    const text = r.errors[k] ? composeText(r.codes && r.codes[k], r.errors[k])
+      : warnText || composeText(r.infoCodes && r.infoCodes[k], r.info[k]);
     if (!text) continue;
     const kind = r.errors[k] ? "error" : warnText ? "warn" : "info";
     if (editing === null) out[k] = { text, kind };
@@ -13170,7 +13432,7 @@ function paintFields(values, announceNew, composed) {
   }
   const first = FIELD_KEYS.find((k) => next[k] && next[k].kind === "error") ||
     FIELD_KEYS.find((k) => next[k] && next[k].kind === "warn") || FIELD_KEYS.find((k) => next[k]);
-  const text = first ? FIELD_SHORT[first] + ": " + next[first].text : "";
+  const text = first ? t("sheet.field_msg", { FIELD_SHORT: FIELD_SHORT[first], message: next[first].text }) : "";
   if (fieldMsg.textContent !== text) fieldMsg.textContent = text;
   fieldMsg.classList.toggle("info", !!first && next[first].kind === "info");
   fieldMsg.classList.toggle("warn", !!first && next[first].kind === "warn");
@@ -13199,7 +13461,7 @@ function paintPassive() {
  *  follows what was typed. */
 function orderHint() {
   if (!typedNow || (inputPath === "fields" && lineStale)) return "";
-  return followsTyped("rim") || followsTyped("inner") ? ORDER_HINT : "";
+  return followsTyped("rim") || followsTyped("inner") ? ORDER_HINT() : "";
 }
 function paintNotes() {
   const onFields = inputPath === "fields";
@@ -13207,11 +13469,11 @@ function paintNotes() {
   if (hintQuiet) hintSaid = hint;
   const set = (el, text) => { if (el.textContent !== text) el.textContent = text; };
   set(lineNote, onFields
-    ? (lineStale ? "Not updated: the notes above have a problem." : "Follows the notes above. Tap to type the line instead.")
+    ? t(lineStale ? "sheet.line_stale" : "sheet.line_follows")
     : hint);
   set(fieldsNote, !onFields
-    ? (fieldsStale ? "Not updated: the line below does not read as a scale yet." : "Follows the line below. Tap a field to type notes instead.")
-    : (hint || (scaleBox.value === "" ? OCTAVE_SENTENCE : "")));
+    ? t(fieldsStale ? "sheet.fields_stale" : "sheet.fields_follow")
+    : (hint || (scaleBox.value === "" ? OCTAVE_SENTENCE() : "")));
 }
 /** The hint to announce at settle: its text once per change, else "". */
 function hintToAnnounce() {
@@ -13597,11 +13859,11 @@ function syncShuffleLabel() {
   const shuffleBtn = document.getElementById("shuffle");
   if (mode === "S") {
     shuffleBtn.innerHTML = REFRESH_ICON_SVG;
-    shuffleBtn.setAttribute("aria-label", "New progression");
+    shuffleBtn.setAttribute("aria-label", t("seq.new_progression"));
     shuffleBtn.classList.remove("on");
     shuffleBtn.classList.add("reroll");
   } else {
-    shuffleBtn.textContent = "Shuffle: " + (shuffled ? "on" : "off");
+    shuffleBtn.textContent = t(shuffled ? "card.shuffle_on" : "card.shuffle_off");
     shuffleBtn.removeAttribute("aria-label");
     shuffleBtn.classList.toggle("on", shuffled);
     shuffleBtn.classList.remove("reroll");
@@ -14022,7 +14284,7 @@ function loadAnalytics() {
   el.async = true;
   el.src = "https://www.googletagmanager.com/gtag/js?id=" + GA_MEASUREMENT_ID;
   document.head.appendChild(el);
-  gtag("config", GA_MEASUREMENT_ID, {page_location: location.origin + location.pathname});
+  gtag("config", GA_MEASUREMENT_ID, {page_location: location.origin + location.pathname, ui_lang: uiLang()});
   analyticsLoaded = true;
 }
 function track(name, params) {
@@ -14054,7 +14316,7 @@ function routeInfo(d) {
     return { route: slug ? DECK_ROUTE + slug : "", reason: "" };
   }
   const code = shareCode(d);
-  return code.ok ? { route: SHARE_PREFIX + code.value, reason: "" } : { route: "", reason: code.reason };
+  return code.ok ? { route: SHARE_PREFIX + code.value, reason: "" } : { route: "", reason: reasonText(code) };
 }
 const routeFor = d => routeInfo(d).route;
 let routeRefused = false;
@@ -14092,11 +14354,11 @@ function copyLink() {
   const share = () => {
     if (!navigator.share) { reveal(); return; }
     Promise.resolve().then(() => navigator.share({ url: href }))
-      .then(() => done("LINK SHARED", "share"), e => { if (!e || e.name !== "AbortError") reveal(); });
+      .then(() => done(t("share.shared"), "share"), e => { if (!e || e.name !== "AbortError") reveal(); });
   };
   if (!navigator.clipboard || !navigator.clipboard.writeText) { share(); return; }
   Promise.resolve().then(() => navigator.clipboard.writeText(href))
-    .then(() => done("LINK COPIED", "clipboard"), share);
+    .then(() => done(t("share.copied"), "clipboard"), share);
 }
 shareCopy.onclick = copyLink;
 shareUrl.addEventListener("blur", () => shareUrl.setAttribute("hidden", ""));
@@ -14118,7 +14380,7 @@ function routeToDeck(routed) {
   // The same "gone" test the boot makes: a routed seed that is hidden shows the
   // fallback and says so; one that shows its replacement does not.
   if (routed !== shown && !(replacements()[routed] && replacements()[routed].id === shown) && hidden.includes(routed))
-    say("That scale is gone. Showing " + deck().name + ".", "warn");
+    say(t("boot.gone", { name: deck().name }), "warn");
   track("deck_route", { deck_id: routed });
   return shown;
 }
@@ -14149,7 +14411,7 @@ const routedDeck = routedDeckId();
 bootStored = typeof store.deck === "string" ? store.deck : null;
 if (routedDeck) deckId = routedDeck;
 const wantedDeck = deckId;
-deckId = deck().id; storedDeck = deckId; setOrder(); buildChips(); setMode(mode);
+deckId = deck().id; storedDeck = deckId; setOrder(); buildChips(); applyLang(); setMode(mode);
 // setMode() above saved the routed deck, as a chip tap does: a link that opens a
 // deck once keeps it, so the visitor does not land on the old one tomorrow.
 if (routedDeck && routedDeck !== bootStored) track("deck_route", { deck_id: routedDeck });
@@ -14159,7 +14421,7 @@ if (routedDeck && routedDeck !== bootStored) track("deck_route", { deck_id: rout
 // and a silent switch would look like the app lost their deck, so say so.
 if (wantedDeck !== deckId && !(replacements()[wantedDeck] && replacements()[wantedDeck].id === deckId) &&
     (wantedDeck.indexOf("custom:") === 0 || hidden.includes(wantedDeck)))
-  say("That scale is gone. Showing " + deck().name + ".", "warn");
+  say(t("boot.gone", { name: deck().name }), "warn");
 // A page route in the address bar at boot is a RELOAD of a page, or a link
 // someone pasted. Neither reopens it: #edit-<id> names a deck this session may
 // not have, and a page restored with no entry behind it is one the back

@@ -133,7 +133,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         reason = reason.split(key).join(substitutions[key]);
       }
     }
-    return { ok: false, code: code, reason: reason };
+    return { ok: false, code: code, reason: reason, variant: alternate || null, vars: substitutions || {} };
   }
 
   function badNote(token) {

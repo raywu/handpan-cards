@@ -1,0 +1,19 @@
+# kills: SN: the JSON-LD block is one @graph holding exactly one WebApplication and one WebSite node
+# suite: node --test --test-name-pattern ^SN:.the.JSON-LD.block.is.one tests/app.test.js
+# The WebSite node is removed, leaving a one-item @graph.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -55,12 +55,6 @@
+   "isAccessibleForFree": true,
+   "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
+   "featureList": "Chord flashcards; chord progressions; custom scale input; printable PDF"
+-  },
+-  {
+-  "@type": "WebSite",
+-  "name": "Handpan Chords",
+-  "alternateName": ["handpan.raywu.org"],
+-  "url": "https://handpan.raywu.org/"
+   }
+   ]
+ }

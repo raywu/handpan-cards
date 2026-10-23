@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9708,7 +9708,7 @@ function syncParseState({ paint }) {
-       showRefusal(res.reason);
+@@ -12205,7 +12205,7 @@ function syncParseState({ paint }) {
+       showRefusal(reasonText(res));
        const solved = solvePreviewLayout(second.value);
        const crowded = solved && HPE.select.smallLabels(solved.geom);
--      if (crowded) { say(crowded.reason, "warn"); msgLine.classList.add("pan"); }
-+      if (crowded) { say(crowded.reason, "warn"); }
+-      if (crowded) { say(reasonText(crowded), "warn"); msgLine.classList.add("pan"); }
++      if (crowded) { say(reasonText(crowded), "warn"); }
        else say("", "");
        return;
      }

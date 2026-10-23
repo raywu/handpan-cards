@@ -7,7 +7,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -3574,7 +3574,7 @@ function runGenerate() {
+@@ -12679,7 +12679,7 @@ function runGenerate() {
    // and the new one takes its chip position. An options-only edit never gets
    // here - the id is unchanged and generateDeck already replaced it in place.
    const replaced = !!wasId && d.id !== wasId;
@@ -15,4 +15,4 @@ diff --git a/index.html b/index.html
 +  if (replaced) replaceRegistered(wasId, d); else replaceRegistered(d.id, d);
    // [eng-review 2, 2A] the warnings are read off the deck the SAME generation
    // produced; nothing is rebuilt to re-derive them.
-   const warned = (d.warnings || []).map(w => w.reason);
+   const warned = (d.warnings || []).map(w => reasonText(w));

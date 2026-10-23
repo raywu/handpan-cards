@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10593,7 +10593,7 @@ function parseLineText(fields) {
-     if (shells[key].length) line += " " + label + " " + names(shells[key]) + ".";
+@@ -11530,7 +11530,7 @@ function parseLineText(fields) {
+     if (shells[key].length) line += t("sheet.parse_zone", { label: t(label), names: names(shells[key]) });
    }
    const low = HPE.core.innerBelowRim(fields);
--  if (low.length) line += " " + low.join(", ") + (low.length > 1 ? " are" : " is") + " below the top notes: check the pan picture.";
-+  if (false && low.length) line += " " + low.join(", ") + (low.length > 1 ? " are" : " is") + " below the top notes: check the pan picture.";
+-  if (low.length) line += t("sheet.inner_below", { names: low.join(", "), n: low.length });
++  if (false && low.length) line += t("sheet.inner_below", { names: low.join(", "), n: low.length });
    return line;
  }
  

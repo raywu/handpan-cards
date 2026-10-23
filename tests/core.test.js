@@ -1354,6 +1354,32 @@ test("DUP-1: HPE.core.fnv1a32 is the engine's one FNV loop and returns a uint32 
     "deckId is the zero-padded 8-hex form of the numeric hash");
 });
 
+test("err carries variant and vars and keeps its reason", () => {
+  const plain = core.parseSeed("A3 C4 D4");
+  assert.equal(plain.ok, false);
+  assert.equal(plain.code, "NO_DING");
+  assert.equal(plain.variant, "which");
+  assert.deepEqual(JSON.parse(JSON.stringify(plain.vars)), {});
+  assert.equal(typeof plain.reason, "string");
+  const slash = core.parseSeed("(D3) A3 / C4 D4");
+  const bar = core.parseSeed("(D3) | A3");
+  for (const r of [slash, bar]) {
+    assert.equal(r.ok, false);
+    assert.ok(r.variant === null || typeof r.variant === "string");
+    assert.equal(typeof r.vars, "object");
+  }
+  const fifth = core.parseSeed("(D3) B3 C4");
+  assert.equal(fifth.ok, false);
+  assert.equal(fifth.code, "NO_FIFTH");
+  assert.deepEqual(JSON.parse(JSON.stringify(fifth.vars)), { "<X>": "D3", "<fifth of X>": "A" });
+  const bad = core.parseSeed("(D3) Xx3 A3");
+  assert.equal(bad.ok, false);
+  assert.equal(bad.code, "BAD_NOTE");
+  assert.ok(Object.prototype.hasOwnProperty.call(bad, "variant"));
+  assert.ok(Object.prototype.hasOwnProperty.call(bad, "vars"));
+  assert.deepEqual(JSON.parse(JSON.stringify(bad.vars)), { "<X>": "Xx3" });
+});
+
 /* ---- Order-follow lane OF-E: typedSeats, formatTyped, and the base freeze ---- */
 
 const OF_FIXTURE_PATH = path.join(ROOT, "tests", "fixtures", "order_follow_base_aabcc0c.json");

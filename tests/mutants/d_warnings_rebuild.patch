@@ -7,13 +7,13 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10113,7 +10113,8 @@
+@@ -12682,7 +12682,8 @@ function runGenerate() {
    if (replaced) replaceRegistered(wasId, d);
    // [eng-review 2, 2A] the warnings are read off the deck the SAME generation
    // produced; nothing is rebuilt to re-derive them.
--  const warned = (d.warnings || []).map(w => w.reason);
+-  const warned = (d.warnings || []).map(w => reasonText(w));
 +  const __again = generateDeck(String(scaleBox.value || ""), { palette, mirror });
-+  const warned = ((__again.ok ? __again.value.warnings : d.warnings) || []).map(w => w.reason);
++  const warned = ((__again.ok ? __again.value.warnings : d.warnings) || []).map(w => reasonText(w));
    let text = (replaced || known.has(d.id) || fromSeed)
-     ? `Updated ${d.name}` : `${d.chords.length} cards generated`;
+     ? t("sheet.updated", { name: d.name }) : t("sheet.generated", { n: d.chords.length });
    if (warned.length) text += " " + warned.join(" ");
