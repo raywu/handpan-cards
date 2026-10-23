@@ -88,7 +88,7 @@ const SECTION9 = {
 
 // Parses the section 2 markdown table into {CODE: {kind, reason}}. The table is
 // the spec; core.js carries a verbatim copy and this holds it to the source.
-function specReasons() {
+function rawSpecReasons() {
   const start = SPEC.indexOf("\n## 2. ");
   const end = SPEC.indexOf("\n## 3. ", start);
   assert.ok(start > 0 && end > start, "ENGINE-SPEC has no section 2");
@@ -108,13 +108,25 @@ function specReasons() {
     table[m[1]].alternates[m[2]] = m[3];
   }
   delete table.TOO_MANY_RIM;
-  return Object.assign(table, JSON.parse(JSON.stringify(SECTION9)));
+  return table;
+}
+
+function specReasons() {
+  return Object.assign(rawSpecReasons(), JSON.parse(JSON.stringify(SECTION9)));
 }
 
 // An alternate sentence, selected by the condition named in the spec table.
 function alternate(code, name, subs) {
   return substitute(specReasons()[code].alternates[name], subs);
 }
+
+test("the raw ENGINE-SPEC section 2 table equals REASONS without the SECTION9 overlay", () => {
+  const raw = rawSpecReasons();
+  assert.deepEqual(raw, host(core.REASONS));
+  for (const code of ["NO_DING", "BAD_NOTE", "NOTE_OUT_OF_ORDER", "NOTE_REPEATED"]) {
+    assert.deepEqual(SECTION9[code], raw[code], code);
+  }
+});
 
 test("REASONS is the ENGINE-SPEC section 2 table, verbatim", () => {
   const spec = specReasons();
