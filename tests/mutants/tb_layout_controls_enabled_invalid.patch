@@ -4,9 +4,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10450,7 +10450,7 @@
-   seatPrev.disabled = seatNext.disabled = !boxOk || !pickRef;
-   resetBtn.disabled = !boxOk || !(layoutSeats || mirror || bottomMirror() || anchor !== "one");
+@@ -10778,7 +10778,7 @@ function paintLayout() {
+   anglePrev.disabled = angleNext.disabled = !boxOk || !slidable;
+   resetBtn.disabled = !boxOk || !(layoutSeats || layoutAngles || mirror || bottomMirror() || anchor !== "one");
    fineBox.hidden = !fineOpen;
 -  fineBtn.disabled = !boxOk;
 +  fineBtn.disabled = false;

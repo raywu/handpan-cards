@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9223,7 +9223,7 @@ function swapSeats(ring, i, j) {
-   if (i !== j) {
+@@ -11603,7 +11603,7 @@ function swapSeats(ring, i, j) {
+   if (i !== j && !(ring === "bottom" && layoutAngles)) {
      const next = before.map((n) => n.seat);
      next[i] = b.seat;
 -    next[j] = a.seat;
 +    next[j] = b.seat;
      setRingSeats(ring, next);
-     panFlash = [a.id, b.id];
-     clearTimeout(flashTimer);
+   }
+   if (i !== j) flashNotes([a.id, b.id]);
