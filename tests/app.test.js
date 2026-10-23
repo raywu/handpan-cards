@@ -2100,8 +2100,15 @@ test("Shift+Tab from the sheet's first stop wraps to the last, not off the front
   openEdit(app, d);
 
   app.els["scale-back"].focus();
-  app.els["scale-sheet"].dispatchEvent(
-    { type: "keydown", key: "Tab", shiftKey: true, preventDefault() {} });
+  let threw = null;
+  try {
+    app.els["scale-sheet"].dispatchEvent(
+      { type: "keydown", key: "Tab", shiftKey: true, preventDefault() {} });
+  } catch (e) {
+    threw = e;
+  }
+  assert.strictEqual(threw, null,
+    `Shift+Tab from the first stop did not wrap to the last stop: it threw ${threw}`);
   assert.strictEqual(app.activeId(), "scale-delete",
     "Shift+Tab from the first stop did not wrap to the last stop");
 });
