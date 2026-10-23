@@ -9417,6 +9417,109 @@ const LEGACY_SCALES_KEY = "hpfc.scales";
 const readStore = key => { try { return JSON.parse(localStorage.getItem(key) || "null"); } catch (e) { return null; } };
 let store = readStore(STORE_KEY) || {};
 if (typeof store !== "object" || Array.isArray(store)) store = {};
+
+/* ---------------- interface language ---------------- */
+// The tables are the generated I18N region above. English is the base: a
+// missing key falls back to it, and to the key itself only if it lacks it too.
+const LANG_ORDER = ["en", "de", "fr", "it", "es", "ja", "zh-Hant", "zh-Hans"];
+const LANGS = LANG_ORDER.filter(code => Object.prototype.hasOwnProperty.call(I18N, code));
+const ENDONYMS = { "en": "ENGLISH", "de": "DEUTSCH", "fr": "FRANÇAIS", "it": "ITALIANO", "es": "ESPAÑOL",
+  "ja": "日本語", "zh-Hant": "繁體中文", "zh-Hans": "简体中文" };
+/** One language tag to a code in LANG_ORDER, or null. Region and script decide Chinese. */
+function langOfTag(tag) {
+  const parts = String(tag).toLowerCase().split("-");
+  const base = parts[0];
+  if (base === "zh") {
+    return parts.includes("hant") || parts.includes("hk") || parts.includes("tw") || parts.includes("mo") ? "zh-Hant" : "zh-Hans";
+  }
+  return LANG_ORDER.includes(base) ? base : null;
+}
+/** The first tag that maps to a present table wins, else English. */
+function detectLang(list) {
+  for (const tag of list || []) {
+    const code = langOfTag(tag);
+    if (code && LANGS.includes(code)) return code;
+  }
+  return "en";
+}
+const browserLanguages = () => (navigator.languages && navigator.languages.length ? [...navigator.languages]
+  : navigator.language ? [navigator.language] : []);
+/** The stored choice if it names a present table, else what the browser asks for. */
+function uiLang() {
+  return typeof store.lang === "string" && LANGS.includes(store.lang) ? store.lang : detectLang(browserLanguages());
+}
+/** `null` is Auto: the stored field goes and nothing else is written. */
+function setLang(code) {
+  if (code === null || code === undefined) {
+    if ("lang" in store) {
+      delete store.lang;
+      try {
+        const base = readStore(STORE_KEY);
+        if (base && typeof base === "object" && !Array.isArray(base) && "lang" in base) {
+          delete base.lang;
+          localStorage.setItem(STORE_KEY, JSON.stringify(base));
+        }
+      } catch (e) {}
+    }
+  } else if (LANGS.includes(code)) {
+    store.lang = code;
+    try {
+      const base = readStore(STORE_KEY);
+      const next = (base && typeof base === "object" && !Array.isArray(base)) ? base : {};
+      next.lang = code;
+      localStorage.setItem(STORE_KEY, JSON.stringify(next));
+    } catch (e) {}
+  }
+  applyLang();
+}
+const hasKey = key => Object.prototype.hasOwnProperty.call(I18N[uiLang()] || {}, key) || Object.prototype.hasOwnProperty.call(I18N.en, key);
+/** The text for `key`: the UI table, then English, then the key itself. {name} is substituted; a {one, other} entry is chosen by vars.n. */
+function t(key, vars) {
+  const lang = uiLang();
+  let entry = (I18N[lang] || {})[key];
+  if (entry === undefined) entry = I18N.en[key];
+  if (entry === undefined) return key;
+  if (entry !== null && typeof entry === "object") {
+    let category = "other";
+    try { category = new Intl.PluralRules(lang).select(vars && vars.n); } catch (e) {}
+    entry = entry[category] !== undefined ? entry[category] : entry.other;
+  }
+  return String(entry).replace(/\{(\w+)\}/g, (m, name) => (vars && Object.prototype.hasOwnProperty.call(vars, name) ? String(vars[name]) : m));
+}
+const escapeText = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+/** t() for markup: escaped, with the two characters the English source wrote as entities. */
+const tHtml = (key, vars) => escapeText(t(key, vars)).replace(/’/g, "&rsquo;").replace(/→/g, "&rarr;");
+const tVars = vars => {
+  const out = {};
+  for (const k of Object.keys(vars || {})) out[k.replace(/^<|>$/g, "").replace("fifth of X", "fifth")] = vars[k];
+  return out;
+};
+/** An engine reason in the UI language; the engine's own English sentence when no key resolves. */
+function reasonText(r) {
+  if (!r || !r.code) return r && r.reason || "";
+  const key = "reason." + r.code + (r.variant ? "." + r.variant : "");
+  if (!hasKey(key)) return r.reason || "";
+  const vars = tVars(r.vars);
+  if (r.code === "SMALL_LABELS" && vars.N === undefined) {
+    const m = /print at ([\d.]+) pt/.exec(r.reason || "");
+    if (m) vars.N = m[1];
+  }
+  const text = t(key, vars);
+  return /\{\w+\}/.test(text) ? (r.reason || text) : text;
+}
+/** A compose message in the UI language, or `fallback` (the engine's English) when its code has no key. */
+function composeText(c, fallback) {
+  if (!c) return fallback;
+  if (c.code === "PARTS") return c.parts.map(p => composeText(p, "")).join(" ");
+  if (c.pass) return reasonText({ code: c.code, variant: c.variant, vars: c.vars, reason: fallback });
+  const key = "compose." + c.code + (c.variant ? "." + c.variant : "");
+  if (!hasKey(key)) return fallback;
+  const text = t(key, Object.assign({}, c.vars, { n: c.vars && c.vars.n }));
+  return /\{\w+\}/.test(text) ? fallback : text;
+}
+function applyLang() {
+  document.documentElement.lang = uiLang();
+}
 // Both reads are TYPE-guarded, not just truthiness-guarded: "hpfc" is shared,
 // so a sibling feature (or a hand-edited value) can leave any JSON type here,
 // and a non-string id that reached the boot tail would throw on .indexOf and
