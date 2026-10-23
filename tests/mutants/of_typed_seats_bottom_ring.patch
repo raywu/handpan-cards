@@ -1,0 +1,15 @@
+# kills: OF: a bottom-only reorder derives no seats, and a mixed reorder derives rim and inner only
+# suite: node --test --test-name-pattern ^OF..a.bottom.only.reorder.derives.no.seats..and.a.mixed.reorder.derives.rim.and.inner.only$ tests/core.test.js
+# typedSeats also seats the bottom ring.
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -1037,7 +1037,7 @@
+     if (!value || !value.typed || !value.fields) return null;
+     var out = {};
+     var any = false;
+-    ["rim", "inner"].forEach(function (zone) {
++    ["rim", "inner", "bottom"].forEach(function (zone) {
+       var ids = Object.keys(value.fields).filter(function (k) { return value.fields[k][3] === zone; })
+         .map(Number).sort(function (a, b) { return a - b; });
+       var typed = value.typed.filter(function (k) { return value.fields[k] && value.fields[k][3] === zone; })
