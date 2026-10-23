@@ -1493,6 +1493,46 @@ test("SV: the five built-in decks' v5 links are pinned", () => {
   }
 });
 
+const V6_LINKS = {
+  kurd: ["6/(D3)_A3_Bb3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+10/642785", "6/(D3)_A3_Bb3_C4_D4_E4_F4_G4_A4_C5/D+KURD+10/d20a36"],
+  amara10: ["6/(D3)_A3_C4_D4_E4_F4_G4_A4_C5_D5/*D+AEOLIAN+10/26725b", "6/(D3)_A3_C4_D4_E4_F4_G4_A4_C5_D5/D+AMARA+10/91c48e"],
+  amara: ["6/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/77d0e3", "6/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/D+AMARA+9/881b21"],
+  hijaz: ["6/(Cs3)_Gs3_B3_Cs4_D4_F4_Fs4_Gs4_B4/*C%23+HIJAZ+9/cfebf8", "6/(Cs3)_Gs3_B3_Cs4_D4_F4_Fs4_Gs4_B4/C%23+HIJAZ+9/d7bfad"],
+  pygmy: [`6/${PYGMY_SEG}/*F+AEOLIAN+12/between/a268bb`, `6/${PYGMY_SEG}/F3+LOW+PYGMY+18/between/68dd5a`],
+};
+
+test("FPS: the five built-in decks' v6 links are pinned", () => {
+  for (const [id, scale, options, label, auto5, named5] of V5_BUILTINS) {
+    const [auto, named] = V6_LINKS[id];
+    const plain = seedNew(scale, options);
+    assert.equal(encoded(plain), auto, `${id} auto link`);
+    assert.deepStrictEqual(decoded(auto), plain, `${id} auto link decodes`);
+    const typed = seedNew(scale, Object.assign({ name: label }, options));
+    assert.equal(encoded(typed), named, `${id} named link`);
+    assert.deepStrictEqual(decoded(named), typed, `${id} named link decodes`);
+    for (const [v5, v6] of [[auto5, auto], [named5, named]]) {
+      const a = v5.split("/");
+      const b = v6.split("/");
+      assert.equal(b[0], "6");
+      assert.deepEqual(b.slice(1, -1), a.slice(1, -1), `${id}: only the byte and the check differ`);
+      const typedName = a[2].startsWith("*") ? "\t" : a[2].split("+").join(" ").split("%23").join("#");
+      const meaning = ["6", a[1], typedName].concat(a.slice(3, -1)).join("\n");
+      assert.equal(b[b.length - 1], fnv24(meaning), `${id}: the check is over the byte 6`);
+    }
+  }
+});
+
+test("FPS: a v6 link is NEEDS_NEWER_APP to an app pinned at v5", () => {
+  for (const [auto, named] of Object.values(V6_LINKS)) {
+    for (const link of [auto, named]) {
+      const r = engineAtVersion(5).decode(link);
+      assert.equal(r.ok, false);
+      assert.equal(r.code, "NEEDS_NEWER_APP");
+      assert.equal(r.reason, specReason("NEEDS_NEWER_APP"));
+    }
+  }
+});
+
 test("SV: every option has one spelling and a default writes nothing", () => {
   const plain = encoded(seedNew(AMARA_SCALE));
   assert.equal(segsOf(plain).length, 4, "a default seed writes version, scale, name and check only");
