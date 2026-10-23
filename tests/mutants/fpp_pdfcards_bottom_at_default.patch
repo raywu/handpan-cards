@@ -1,5 +1,5 @@
 # kills: pdfcards draws a bottom note at its default slot, not at the angle the deck's field carries
-# suite: python3 -m unittest tests.test_pdf_parity.PrintParityTest.test_FPP_app_pdfcards_and_hifi_agree_per_field_to_half_a_point_on_moved_bottom_notes
+# suite: python3 -m unittest tests.test_pdf_parity.PrintParityTest.test_FPP_pdfcards_and_hifi_agree_per_field_to_half_a_point_on_moved_bottom_notes
 #
 # The bottom ring is drawn at the six solved-default angles, keyed by the
 # U-label, instead of field slot 4. On every deck whose bottom notes sit at

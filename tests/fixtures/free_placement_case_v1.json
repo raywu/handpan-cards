@@ -1,5 +1,5 @@
 {
- "_generated_by": "node -e loadEngine([core,voicing,layout,naming,select]); p=HPE.core.parseLegacySeed(seed,{}); b=HPE.select.build(p.value); s=HPE.layout.solve(p.value.fields,{angles:{bottom:[310,null,350,null,null,135]}}); b.value.geom=s.value.geom; b.value.fields=s.value.fields; write {angles,seed:HPE.core.formatSeed(p.value),deck:b.value}",
+ "_generated_by": "node -e 'const fs=require(\"fs\"),F=\"tests/fixtures/free_placement_case_v1.json\",{loadEngine}=require(\"./tools/engine_loader.js\"),H=loadEngine([\"core\",\"voicing\",\"layout\",\"naming\",\"select\"]),seed=\"(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5\",angles={bottom:[310,null,350,null,null,135]},p=H.core.parseLegacySeed(seed,{}),b=H.select.build(p.value),s=H.layout.solve(p.value.fields,{angles});b.value.geom=s.value.geom;b.value.fields=s.value.fields;fs.writeFileSync(F,JSON.stringify({_generated_by:JSON.parse(fs.readFileSync(F,\"utf8\"))._generated_by,angles,seed:H.core.formatSeed(p.value),deck:b.value},null,1)+\"\\n\")'",
  "angles": {
   "bottom": [
    310,

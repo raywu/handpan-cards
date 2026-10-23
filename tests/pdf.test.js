@@ -228,3 +228,59 @@ test("FPP: pdfcards draws each bottom note on its fixture angle, moved or not", 
     assert.ok(hit, `bottom note ${id} not drawn at ${angle} degrees`);
   });
 });
+
+test("FPP: the app pan(), pdfcards and the fixture put each bottom note at the same centre to 0.5 pt", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const { boot } = require("./helpers/sandbox.js");
+  const E = loadEngine(["core", "fontdata", "pdf", "pdfdeck", "pdfcards"]);
+  const payload = JSON.parse(fs.readFileSync(
+    path.join(__dirname, "fixtures", "free_placement_case_v1.json"), "utf8"));
+  const deck = payload.deck;
+  const g = deck.geom;
+
+  const circles = [];
+  const realDoc = E.pdf.doc;
+  E.pdf.doc = function (w, h) {
+    const doc = realDoc.call(this, w, h);
+    const realPage = doc.page;
+    doc.page = function () {
+      const p = realPage.call(this);
+      const realCircle = p.circle;
+      p.circle = function (x, y, r, m) {
+        circles.push({ x, y, r });
+        return realCircle.call(this, x, y, r, m);
+      };
+      return p;
+    };
+    return doc;
+  };
+  try {
+    E.pdfcards.build(E.pdfdeck.fromGenerated(payload), { variant: "shop", paper: "letter" });
+  } finally {
+    E.pdf.doc = realDoc;
+  }
+  const { x: cx, y: cy, r: R } = circles[0];
+
+  const app = boot();
+  const svg = app.get(`pan(${JSON.stringify(deck)}, ${JSON.stringify(deck.chords[0])})`);
+  const appCircles = [...svg.matchAll(/<circle cx="(-?[\d.e-]+)" cy="(-?[\d.e-]+)" r="([\d.e-]+)"/g)]
+    .map((m) => ({ x: Number(m[1]), y: Number(m[2]), r: Number(m[3]) }))
+    .filter((c) => Math.abs(c.r - 100 * g.r_bnote) < 1e-6);
+
+  const ids = Object.keys(deck.fields).filter((k) => deck.fields[k][3] === "bottom").sort();
+  assert.equal(ids.length, 6);
+  for (const id of ids) {
+    const angle = deck.fields[id][4];
+    const a = (angle * Math.PI) / 180;
+    const ex = 100 * g.bottom * Math.cos(a);
+    const ey = -100 * g.bottom * Math.sin(a);
+    const hit = appCircles.find((c) => Math.abs(c.x - ex) < 1e-6 && Math.abs(c.y - ey) < 1e-6);
+    assert.ok(hit, `app pan() has no bottom circle for ${id} at ${angle} degrees`);
+    const px = cx + (hit.x / 100) * R;
+    const py = cy - (hit.y / 100) * R;
+    const match = circles.find((c) => Math.abs(c.r - R * g.r_bnote) < 1e-6 &&
+      Math.abs(c.x - px) < 0.5 && Math.abs(c.y - py) < 0.5);
+    assert.ok(match, `pdfcards centre for ${id} differs from the app's by more than 0.5 pt`);
+  }
+});

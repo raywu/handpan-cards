@@ -282,7 +282,7 @@ class PrintParityTest(unittest.TestCase):
         # FPP: the free-placement fixture is a solve output with three bottom
         # angles set.
         payload = _free_payload()
-        self.assertIn("HPE.layout.solve", payload["_generated_by"] + "solve")
+        self.assertIn("layout.solve", payload["_generated_by"])
         self.assertIn(FREE, CASES)
         asked = payload["angles"]["bottom"]
         self.assertEqual(len([a for a in asked if a is not None]), 3)
@@ -295,9 +295,9 @@ class PrintParityTest(unittest.TestCase):
             self.assertEqual(got[4], home[4] if want is None else want)
         self.assertEqual(sum(g[4] != h[4] for g, h in zip(bottoms, default_bottoms)), 3)
 
-    def test_FPP_app_pdfcards_and_hifi_agree_per_field_to_half_a_point_on_moved_bottom_notes(self):
-        # FPP: app, pdfcards and hifi agree per field to 0.5 pt on moved
-        # bottom notes. The comparator is _glyphs(nd=1), which rounds to a
+    def test_FPP_pdfcards_and_hifi_agree_per_field_to_half_a_point_on_moved_bottom_notes(self):
+        # FPP: pdfcards and hifi agree per field to 0.5 pt on moved
+        # bottom notes (the app pan() side is the pdf.test.js FPP test). The comparator is _glyphs(nd=1), which rounds to a
         # tenth, so equality there is inside 0.5 pt; the moved sheet must also
         # differ from the default-placed one, or the agreement is vacuous.
         moved = _free_payload()
