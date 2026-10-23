@@ -1,0 +1,15 @@
+# suite: node --test --test-name-pattern ^every.permutation.of.a.fully.octaved tests/core.test.js
+# kills: every permutation of a fully octaved line reads as its ascending spelling and keeps its id
+# byPitch sorts descending, so the golden anchor reads the built-in decks in the wrong order.
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -732,7 +732,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       else if (e.zone === "rim") rims.push(e.note);
+       else inners.push(e.note);
+     });
+-    function byPitch(a, c) { return a.midi - c.midi || a.at - c.at; }
++    function byPitch(a, c) { return c.midi - a.midi || a.at - c.at; }
+     function later(a, c) { return a.at > c.at ? [a, c] : [c, a]; }
+     rims.sort(byPitch);
+     inners.sort(byPitch);

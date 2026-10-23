@@ -79,7 +79,7 @@ function sentenceMatcher(template) {
 }
 
 test("every row of the grammar table parses to its fields", () => {
-  assert.equal(grammar.rows.length, 33);
+  assert.equal(grammar.rows.length, 35);
   for (const row of grammar.rows.filter(r => r.accept)) {
     for (const str of row.strings) {
       const fields = scale(str);

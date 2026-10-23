@@ -88,7 +88,7 @@ const SECTION9 = {
 
 // Parses the section 2 markdown table into {CODE: {kind, reason}}. The table is
 // the spec; core.js carries a verbatim copy and this holds it to the source.
-function specReasons() {
+function rawSpecReasons() {
   const start = SPEC.indexOf("\n## 2. ");
   const end = SPEC.indexOf("\n## 3. ", start);
   assert.ok(start > 0 && end > start, "ENGINE-SPEC has no section 2");
@@ -108,13 +108,25 @@ function specReasons() {
     table[m[1]].alternates[m[2]] = m[3];
   }
   delete table.TOO_MANY_RIM;
-  return Object.assign(table, JSON.parse(JSON.stringify(SECTION9)));
+  return table;
+}
+
+function specReasons() {
+  return Object.assign(rawSpecReasons(), JSON.parse(JSON.stringify(SECTION9)));
 }
 
 // An alternate sentence, selected by the condition named in the spec table.
 function alternate(code, name, subs) {
   return substitute(specReasons()[code].alternates[name], subs);
 }
+
+test("the raw ENGINE-SPEC section 2 table equals REASONS without the SECTION9 overlay", () => {
+  const raw = rawSpecReasons();
+  assert.deepEqual(raw, host(core.REASONS));
+  for (const code of ["NO_DING", "BAD_NOTE", "NOTE_OUT_OF_ORDER", "NOTE_REPEATED"]) {
+    assert.deepEqual(SECTION9[code], raw[code], code);
+  }
+});
 
 test("REASONS is the ENGINE-SPEC section 2 table, verbatim", () => {
   const spec = specReasons();
@@ -1177,6 +1189,35 @@ test("IB: a rim pitch typed twice is NOTE_REPEATED naming the later one, in any 
   const ok = core.parseSeed("(D3) C4 A3 | E5");
   assert.equal(ok.ok, true);
   assert.equal(core.formatSeed(ok.value.fields), "(D3) A3 C4 | E5");
+  for (const [str, re] of [["(D3) A3 Db4 C#4", /^Db4 and C#4 are the same note/],
+                           ["(D3) A3 C#4 Db4", /^C#4 and Db4/]]) {
+    const e = core.parseSeed(str);
+    assert.equal(e.code, "NOTE_REPEATED", str);
+    assert.match(e.reason, re, str);
+  }
+});
+
+test("a repeated pitch is NOTE_REPEATED naming the later typed note on the inner and bottom shells, told apart by spelling", () => {
+  for (const [str, re] of [["(D3) A3 C4 | Gb4 F#4", /^Gb4 and F#4/],
+                           ["(D3) A3 C4 | F#4 Gb4", /^F#4 and Gb4/],
+                           ["(D3) A3 [Ab2] [G#2]", /^Ab2 and G#2/],
+                           ["(D3) A3 [G#2] [Ab2]", /^G#2 and Ab2/],
+                           ["(D3) A3 C#4 | Db4", /^C#4 and Db4/]]) {
+    const e = core.parseSeed(str);
+    assert.equal(e.code, "NOTE_REPEATED", str);
+    assert.match(e.reason, re, str);
+  }
+});
+
+test("an unoctaved note after the ding lands at or below it only after a note below the ding", () => {
+  for (const [str, code, re] of [["(D3) [A2] C E A", "NOTE_OUT_OF_ORDER", /^C3 is at or below the ding D3/],
+                                 ["(D3) B2 C", "NOTE_OUT_OF_ORDER", /^B2 is at or below the ding D3/],
+                                 ["(D3) C4 A3 C", "NOTE_REPEATED", /^C4 and C4/]]) {
+    const e = core.parseSeed(str);
+    assert.equal(e.ok, false, str);
+    assert.equal(e.code, code, str);
+    assert.match(e.reason, re, str);
+  }
 });
 
 test("the legacy reader keeps the default NOTE_OUT_OF_ORDER sentence", () => {
@@ -1190,8 +1231,21 @@ test("every permutation of a fully octaved line reads as its ascending spelling 
   const rnd = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
   const shuffle = (a) => { const b = a.slice(); for (let i = b.length - 1; i > 0; i -= 1) { const j = Math.floor(rnd() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
   const grammar = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "scale_grammar_v1.json"), "utf8"));
+  const octaved = /^[^A-G]*(?:[A-G][#b]?-?\d[^A-G]*)+$/;
   const lines = golden.decks.map(d => core.formatSeed(d.fields));
-  for (const row of grammar.rows) if (row.accept && /^[^A-G]*(?:[A-G][#b]?-?\d[^A-G]*)+$/.test(row.accept.canonical)) lines.push(row.accept.canonical);
+  for (const row of grammar.rows) if (row.accept && octaved.test(row.accept.canonical)) lines.push(row.accept.canonical);
+  for (const row of Object.values(synthetic)) {
+    if (!row.expect.ok) continue;
+    const legacy = core.parseLegacySeed(row.string);
+    if (!legacy.ok) continue;
+    const line = core.formatSeed(legacy.value.fields);
+    if (octaved.test(line)) lines.push(line);
+  }
+  const noAngle = (fields) => Object.fromEntries(Object.entries(host(fields)).map(([id, f]) => [id, f.filter((x, i) => i !== 4)]));
+  golden.decks.forEach((d, i) => {
+    const base = core.parseSeed(lines[i]);
+    assert.deepEqual(noAngle(base.value.fields), noAngle(d.fields), "golden anchor " + d.id);
+  });
   let checked = 0;
   for (const line of lines) {
     const base = core.parseSeed(line);
@@ -1201,18 +1255,18 @@ test("every permutation of a fully octaved line reads as its ascending spelling 
     const dingAt = head.findIndex(t => t.charAt(0) === "(");
     const rest = head.filter((t, i) => i !== dingAt);
     const inner = bar === -1 ? [] : line.slice(bar + 3).split(" ");
-    for (let k = 0; k < 100; k += 1) {
+    for (let k = 0; k < 300; k += 1) {
       const parts = [head[dingAt]].concat(shuffle(rest));
       if (inner.length) parts.push("|", ...shuffle(inner));
       const str = parts.join(" ");
       const r = core.parseSeed(str);
       assert.equal(r.ok, true, str + " " + r.code);
-      assert.deepEqual(host(r.value.fields), host(base.value.fields), str);
+      assert.deepEqual(host(r.value), host(base.value), str);
       assert.equal(core.deckId(r.value.fields), core.deckId(base.value.fields), str);
       checked += 1;
     }
   }
-  assert.ok(checked >= 1500, `only ${checked} permutations checked`);
+  assert.ok(checked >= 10500, `only ${checked} permutations checked`);
 });
 
 test("the frozen origin/main d8d2a2d accepted readings still read to the same fields and deck id", () => {
