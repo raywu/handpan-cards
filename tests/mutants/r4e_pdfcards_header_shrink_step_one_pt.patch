@@ -4,12 +4,12 @@
 diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
 --- a/src/engine/pdfcards.js
 +++ b/src/engine/pdfcards.js
-@@ -220,7 +220,7 @@
+@@ -230,7 +230,7 @@
      var size = 27.0;
      while (size > 8 && (tw(main, "Display", size, size * 0.02) +
-                         tw(sup, "Display", size * 0.52, 0)) > w * 0.62) {
+                         tw(sup, "Display", size * 0.52, 0)) > w * 0.80) {
 -      size -= 0.5;
 +      size -= 1.0;
      }
      var supw = sup ? tw(sup, "Display", size * 0.52, 0) : 0.0;
-     var base = y + h - 24 - size * 0.70;
+     var wm = tw(main, "Display", size, size * 0.02);

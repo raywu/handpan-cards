@@ -1,0 +1,15 @@
+# kills: test_committed_pdfs_place_every_glyph_where_a_fresh_build_does
+# suite: python3 -m unittest -k test_committed_pdfs_place_every_glyph_where_a_fresh_build_does tests.test_pdf_build
+# E3: the degree label rides one point lower than the subtitle's line.
+diff --git a/tools/hifi.py b/tools/hifi.py
+--- a/tools/hifi.py
++++ b/tools/hifi.py
+@@ -480,7 +480,7 @@
+                 warn_w)
+     deg = deck.get("degrees", {}).get(root_pc)
+     if deg:
+-        tracked(c, x + 9, y + CH - 13.5, deg, "LabelSB", 6.0, 0.4, "l", BLUE)
++        tracked(c, x + 9, y + CH - 14.5, deg, "LabelSB", 6.0, 0.4, "l", BLUE)
+     side_credit(c, x, y, CW, CH, deck["credit"])
+     draw_pan(c, x + CW / 2, y + deck["cy"], deck["R"], spec, active_all, roots_all)
+ 

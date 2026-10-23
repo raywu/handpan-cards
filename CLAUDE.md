@@ -358,13 +358,58 @@ changing the solver or the seed, never by hand.
   field**, and asserts the no-shrink baseline PER RENDERER (print vs `f_*`,
   app vs `f_* x 1.05`) on the sizes they actually emit. A single baseline
   there is a tautology that a 5% app-side shrink passes straight through.
-- **Card anatomy:** header (deck name, #index, root-coloured scale-degree
-  label, small-caps subtitle), Marcellus chord name with superscript,
-  diagram, optional bottom-note badge, note line, number line.
+- **Card anatomy:** header (root-coloured scale-degree label top-left,
+  small-caps subtitle centred on the same line), Marcellus chord name centred
+  with superscript, diagram, optional bottom-note badge, note line, number
+  line, footer (deck name and #index left, pan-warning badge right-aligned).
+  The PRINT card only; the app card keeps its own header. Print placement is
+  pinned by `tests/test_print.py` `CardWidthBudgetTest`
+  `test_drawn_subtitle_never_collides_with_the_deck_name` (subtitle clear of
+  the degree and the superscript on all 177 cards) and `HeaderWorstCaseTest`
+  `test_the_longest_name_on_the_busiest_pan_has_no_colliding_runs`, and in JS
+  by `tests/pdfcards.test.js` "P4 the E3 header: degree top-left, subtitle
+  centred above the name, footer deck name then #n". The chord name is sized
+  at up to 27 pt on a 0.80 x card-width budget (`CardWidthBudgetTest`
+  `test_drawn_subtitle_fits_the_header_budget_on_every_card` keeps the
+  subtitle budget). The header's placement is exempt from app/print agreement
+  (deck name, #n, degree, subtitle and warning positions);
+  `tests/test_render_agreement.py` `test_chord_names_line_up` compares the name
+  text only and says so in its docstring, and no field of the diagram, note
+  line, number line or badge is exempt.
+- **Committed PDF staleness has two gates.**
+  `tests/test_pdf_build.py` `test_committed_pdfs_match_a_fresh_build` is
+  text-only (whitespace is squeezed out), so it cannot see a glyph that moved;
+  `test_committed_pdfs_place_every_glyph_where_a_fresh_build_does` is the
+  position check, pairing every span of the committed and the fresh build in
+  stream order and comparing text, font, size and bbox corners within 0.5 pt.
+- **The footer deck name clips with ASCII `"..."`.** `hifi.fit_clip` and
+  `fitClip` in `pdfcards.js` shrink the name at its drawn tracking (0.5 pt a
+  gap) down to 3.6 pt, then drop trailing characters and end in three periods,
+  never U+2026, because the font subset's CHARSET
+  (`tools/inline_fonts.py`) is frozen to printable ASCII plus the degree sign
+  (`tests/test_print.py` `HeaderWorstCaseTest`
+  `test_a_forty_character_deck_name_with_a_warning_is_clipped_clear`; JS twin
+  "P2/D2 twin: a 40-character deck name on a no-thirds pan is clipped to ASCII
+  dots, clear of #n, the right-aligned warning and the credit" in
+  `tests/pdfcards.test.js`). A name that fits at a size below 4.6 pt draws
+  whole ("a 40-character deck name that fits below 4.6 pt draws whole at its
+  drawn tracking" and "fitClip agrees with hifi.fit_clip: the 40-character name
+  at budget 140.92 is whole at 4.35, the size hifi.fit_clip returns" in
+  `tests/pdfcards.test.js`; `test_a_forty_character_name_that_fits_below_4_6_draws_whole_at_its_drawn_tracking`
+  and `test_fit_clip_shrinks_at_the_drawn_tracking_before_it_clips` in
+  `tests/test_print.py`), and one too long even at 3.6 pt clips at exactly 3.6
+  pt ("a deck name too long even at 3.6 pt is clipped at exactly 3.6 pt" in
+  `tests/pdfcards.test.js`; `test_a_name_too_long_even_at_3_6_is_clipped_at_exactly_3_6`).
 - **Pan-wide warnings.** `NO_THIRDS` prints on the chord cards:
   `hifi.CARD_WARNINGS` maps it to a short orange badge at the foot of every
   chord card (`NO 3RDS ON THIS PAN`), the only place it survives, because
-  CHORD_ONLY omits the title card. `SMALL_LABELS` is title card only (decision
+  CHORD_ONLY omits the title card. The badge is right-aligned on the footer
+  line, 16 pt in from the card edge, and the deck name is clipped so that `#n`,
+  drawn 6 pt after it, ends at least 4 pt before the badge (`HeaderWorstCaseTest`
+  `test_a_forty_character_deck_name_with_a_warning_is_clipped_clear`, which also
+  asserts the warning's clearance from the rotated credit). One warning line
+  only: a second `CARD_WARNINGS` entry would draw on the frame and must
+  re-plan the footer (no test; true by the warning loop at the end of `hifi.chord_card` and `chordCard` in `pdfcards.js`). `SMALL_LABELS` is title card only (decision
   A16): `decks.TITLE_WARNINGS` gives it the short line `CROWDED PAN: SMALL
   LABELS`, and there is no chord-card badge for it. Any other code the title
   card meets falls back to the engine's reason string, uppercased

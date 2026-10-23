@@ -3599,12 +3599,12 @@ test("print CTA: the header carries no print controls; the settings panel carrie
 });
 
 const PM_SHOP_SHA256 = {
-  "hijaz/letter": "3c47f7d1ab8b85eb0e3d7c62845de03b057a44f641196e0b13e5015f1ae4c9b7",
-  "hijaz/a4": "826c0d7053f4e0d2c784b89f56c5030c65bad9fe8e7c9da57df097ecf6893489",
-  "pygmy/letter": "ec865b8f4954bfc2c89df62e2268ece336e0397999c7e1923bbf465f9ee9f34f",
-  "pygmy/a4": "82735f2ba2ad021c7402c3d0ad660825e8a651711fa6ef4764a1827d7578cf2c",
-  "amara/letter": "c6c72330c6c0ea5fc83ec331d5d81de8de1954b2858c3c6fd3058a3af7fac536",
-  "amara/a4": "755b079253b755ac97c0a81da55e56d2abaee29392fa4da4043aa92c80d67f89",
+  "hijaz/letter": "00ebc376e2084be5426b8e58bad3f6b1bee5924e697c4fba2aafb1767d4fecce",
+  "hijaz/a4": "ef497714ae36de8888d2164cfb876850c6348e16b9aad54b55f77f75efc3c79d",
+  "pygmy/letter": "b1424caaf649f64fe6c7b22c75396a73bed970e0aa252a310c53cafc43a6163b",
+  "pygmy/a4": "3b0facbb585585722b7a7f46c647c6b332041b67632376225a7d57ed84a823b7",
+  "amara/letter": "fb154e188a1e83121286d02ecf01f0989cd620aeac30c90d9a020ea804243e1b",
+  "amara/a4": "67fe8dd28e5f4db99d105d8cefa9d5b584ee3338eeaba55291f065b852582c7e",
 };
 
 function pmPanel() {
@@ -8312,9 +8312,9 @@ function dr3Surface(text) {
 }
 
 const DR3_UNMOVED = {
-  "D3 example": { record: "98fc2a3daf186423", faces: "f40c14454a44c68e", pdf: "c9d922c9737030d7" },
-  "D Kurd 10": { record: "a88c6144c4c59f10", faces: "2ffb8e4a89d70314", pdf: "819275e64958391e" },
-  "F3 Low Pygmy": { record: "d1ecde6dbdfa6f27", faces: "7d89a6a05bc946d8", pdf: "ef6939b0c40de12a" },
+  "D3 example": { record: "98fc2a3daf186423", faces: "f40c14454a44c68e", pdf: "1856c1443e4f94b5" },
+  "D Kurd 10": { record: "a88c6144c4c59f10", faces: "2ffb8e4a89d70314", pdf: "0f301fb6f96fd339" },
+  "F3 Low Pygmy": { record: "d1ecde6dbdfa6f27", faces: "7d89a6a05bc946d8", pdf: "ec89ff32a29a1e29" },
 };
 
 test("rule N: a deck with no moved seat is byte-identical in generateDeck output, card markup and PDF", () => {
