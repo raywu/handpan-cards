@@ -69,7 +69,7 @@ FLOORS = {
     "tests/layout.test.js": 103,
     "tests/naming.test.js": 37,
     "tests/select.test.js": 54,
-    "tests/share.test.js": 102,
+    "tests/share.test.js": 105,
     "tests/preview.test.js": 14,
     "tests/pdf.test.js": 14,
     "tests/pdfcards.test.js": 37,

@@ -1,0 +1,16 @@
+# kills: FPS: a mirrored deck's link under the floor of the mirrored ring is BAD_NOTE
+# suite: node --test --test-name-pattern ^FPS..a.mirrored.deck.s.link.under.the.floor.of.the.mirrored.ring.is.BAD.NOTE$ tests/share.test.js
+# decode solves the floor with mirrorBottom false when only mirror is set, so the bottom ring is checked unmirrored.
+diff --git a/src/engine/share.js b/src/engine/share.js
+--- a/src/engine/share.js
++++ b/src/engine/share.js
+@@ -538,8 +538,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       var angles = HPE.layout.readAngles({ bottom: carry.angles }, counts);
+       if (!angles.ok || !angles.value) return badNote(text);
+       var o = result.value.options;
+-      var mirrors = HPE.layout.resolveMirrors(o, {});
+-      var asked = { mirror: mirrors.top, mirrorBottom: mirrors.bottom, anchor: o.anchor, angles: angles.value };
++      var asked = { mirror: !!o.mirror, mirrorBottom: !!o.mirrorBottom, anchor: o.anchor, angles: angles.value };
+       if (o.seats) asked.seats = o.seats;
+       var placed = HPE.layout.solve({ fields: result.value.fields, options: {} }, asked);
+       if (!placed.ok) return badNote(text);
