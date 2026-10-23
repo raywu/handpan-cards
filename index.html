@@ -9327,6 +9327,7 @@ function generateDeck(text, options, guard) {
     }
     built.value.options.seats = JSON.parse(JSON.stringify(wanted));
   }
+  if (seed.value.options.parent == null) built.value.options.parent = null;
   // `replaces` is the record option that puts a custom deck in a seeded deck's
   // chip slot. select.build and core.parseSeed both drop it, so it is carried
   // back here from the raw argument, and from the registry entry this build is

@@ -79,3 +79,4 @@ real resize, so e2e drives the whole path against the shipped file.
 - **Cons:** a link would no longer restore the exact deck the sender sees, a standing decision (test "a share link restores the exact deck, and options never move the id"), and the share format would carry a dead field.
 - **Depends on:** nothing.
 - Decided 2026-10-15 (owner): keep as is.
+- Lane PI (2026-10-23) fixed the parentless case only: a deck built from a seed with no parent keeps `options.parent` null in the registry, the record and the share code. The explicit-parent case is unchanged.
