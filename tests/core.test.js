@@ -994,8 +994,15 @@ test("identitySeed orders by zone, not by field number", () => {
   assert.equal(core.identitySeed(renumbered), "(D3) A3 C4 D4 E4 F4 G4 A4 C5 | C3 E3");
 });
 
-test("parseLegacySeed is parseSeed", () => {
-  assert.equal(core.parseLegacySeed, core.parseLegacySeed);
+test("parseLegacySeed and parseSeed are distinct readers: a legacy bar-list string parses only through parseLegacySeed", () => {
+  assert.notEqual(core.parseLegacySeed, core.parseSeed);
+  const legacy = "(D3) A3 C4 D4 E4 F4 G4 A4 C5 | C3 E3";
+  const old = core.parseLegacySeed(legacy, {});
+  assert.equal(old.ok, true);
+  assert.deepEqual(Object.values(old.value.fields).filter(f => f[3] === "bottom").map(f => f[0] + f[1]), ["C3", "E3"]);
+  const now = core.parseSeed(legacy, {});
+  assert.equal(now.ok, false);
+  assert.equal(now.code, "NOTE_OUT_OF_ORDER");
 });
 
 test("G2b: the legacy reader refuses a bottom note that lands below octave -1 (pin)", () => {
