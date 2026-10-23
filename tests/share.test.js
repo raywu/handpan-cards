@@ -1657,6 +1657,35 @@ test("FPS: absent round-trips as absent and clearing restores the default link b
   assert.deepStrictEqual(decoded(encoded(moved)), moved);
 });
 
+const pygmyMirrorAngled = (list) => forgeN("6", PYGMY_SEG, "*x", ["mirror", "between", "at-" + list]);
+
+test("FPS: a mirrored deck's at- link round-trips and is floored against the mirrored bottom ring", () => {
+  const plain = seedNew(PYGMY_SCALE, { anchor: "between", mirror: true });
+  const moved = withAngles(plain, [240, null, null, null, null, null]);
+  const link = encoded(moved);
+  assert.ok(link.includes("/mirror/"), link);
+  const back = share.decode(link);
+  assert.equal(back.ok, true, back.reason);
+  assert.deepStrictEqual(host(back.value.options.angles), { bottom: [240, null, null, null, null, null] });
+  assert.equal(back.value.options.mirror, true);
+  assert.equal(share.decode(pygmyMirrorAngled("240,,,,,")).ok, true, "U1 at its mirrored home opens");
+});
+
+test("FPS: a mirrored deck's link under the floor of the mirrored ring is BAD_NOTE", () => {
+  const r = share.decode(pygmyMirrorAngled("290,,,,,"));
+  assert.equal(r.ok, false, "290 sits 10 degrees from the mirrored U2 at 300");
+  assert.equal(r.code, "BAD_NOTE");
+});
+
+test("FPS: an at- entry with a leading zero is BAD_NOTE, one spelling per angle", () => {
+  assert.equal(share.decode(pygmyAngled("90,,,,,")).ok, true);
+  for (const list of ["090,,,,,", "00,,,,,", ",,,,,090", ",,,20,,0130"]) {
+    const r = share.decode(pygmyAngled(list));
+    assert.equal(r.ok, false, list);
+    assert.equal(r.code, "BAD_NOTE", list);
+  }
+});
+
 test("FPS: an at- list with a wrong length, a bad entry, a bottom seats list beside it, or out of order is BAD_NOTE", () => {
   assert.equal(share.decode(pygmyAngled(",,,20,,")).ok, true, "the control opens");
   assert.equal(share.decode(pygmyAngled(",225,,20,,130")).ok, true);
