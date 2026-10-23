@@ -1,0 +1,15 @@
+# kills: P2/D2 twin: a 40-character deck name on a no-thirds pan is clipped to ASCII dots, clear of #n, the right-aligned warning and the credit
+# suite: node --test --test-name-pattern ^P2/D2.twin..a.40-character tests/pdfcards.test.js
+# E3: a clipped JS deck name gets no ASCII dots.
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -212,7 +212,7 @@
+     while (t.length > 1 && tw(t.replace(/\s+$/, "") + "...", font, s, track) > maxw) {
+       t = t.slice(0, -1);
+     }
+-    return { text: t.replace(/\s+$/, "") + "...", size: s };
++    return { text: t.replace(/\s+$/, ""), size: s };
+   }
+ 
+   function cardHeader(c, x, y, w, h, deck, num, subtitle, main, sup, warnW) {

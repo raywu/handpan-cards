@@ -996,7 +996,7 @@ test("an empty box shows the parse hint and Generate is disabled", () => {
   const app = boot();
   openSheet(app);
   app.type("");
-  assert.match(app.els["scale-parse"].textContent, /^Type every note low to high on one line\./);
+  assert.match(app.els["scale-parse"].textContent, /^Type every note on one line, in any order\./);
   assert.strictEqual(app.els["scale-generate"].disabled, true);
   assert.strictEqual(app.els["scale-refusal"].textContent, "");
 });
@@ -2243,8 +2243,8 @@ test("a field edit keeps the edited deck selected and renames its chip from the 
   // autoName lives in select.js and is the ONE producer of a generated name;
   // nothing here reimplements it and nothing disambiguates a duplicate.
   const auto = app.get(
-    `HPE.select.autoName(CUSTOM[${JSON.stringify(now)}].fields, ` +
-    `CUSTOM[${JSON.stringify(now)}].options.parent)`);
+    `HPE.select.deckName({ fields: CUSTOM[${JSON.stringify(now)}].fields, ` +
+    `options: { parent: CUSTOM[${JSON.stringify(now)}].options.parent } })`);
   assert.strictEqual(made.name, auto, "the auto name was pinned to the old fields");
   assert.notStrictEqual(made.name, a.name, "the chip label did not change with the notes");
   const on = chipRow(app).filter((c) => c.on).map((c) => c.label);
@@ -2437,8 +2437,8 @@ test("a user-typed name equal to the auto label survives a later field edit", ()
   const app = boot();
   const a = makeCustom(app);
   const auto = app.get(
-    `HPE.select.autoName(CUSTOM[${JSON.stringify(a.id)}].fields, ` +
-    `CUSTOM[${JSON.stringify(a.id)}].options.parent)`);
+    `HPE.select.deckName({ fields: CUSTOM[${JSON.stringify(a.id)}].fields, ` +
+    `options: { parent: CUSTOM[${JSON.stringify(a.id)}].options.parent } })`);
   assert.strictEqual(a.name, auto, "the setup deck is not auto-named");
 
   // the user opens Edit and DELIBERATELY types the very string the box holds
@@ -3599,12 +3599,12 @@ test("print CTA: the header carries no print controls; the settings panel carrie
 });
 
 const PM_SHOP_SHA256 = {
-  "hijaz/letter": "3c47f7d1ab8b85eb0e3d7c62845de03b057a44f641196e0b13e5015f1ae4c9b7",
-  "hijaz/a4": "826c0d7053f4e0d2c784b89f56c5030c65bad9fe8e7c9da57df097ecf6893489",
-  "pygmy/letter": "ec865b8f4954bfc2c89df62e2268ece336e0397999c7e1923bbf465f9ee9f34f",
-  "pygmy/a4": "82735f2ba2ad021c7402c3d0ad660825e8a651711fa6ef4764a1827d7578cf2c",
-  "amara/letter": "c6c72330c6c0ea5fc83ec331d5d81de8de1954b2858c3c6fd3058a3af7fac536",
-  "amara/a4": "755b079253b755ac97c0a81da55e56d2abaee29392fa4da4043aa92c80d67f89",
+  "hijaz/letter": "00ebc376e2084be5426b8e58bad3f6b1bee5924e697c4fba2aafb1767d4fecce",
+  "hijaz/a4": "ef497714ae36de8888d2164cfb876850c6348e16b9aad54b55f77f75efc3c79d",
+  "pygmy/letter": "b1424caaf649f64fe6c7b22c75396a73bed970e0aa252a310c53cafc43a6163b",
+  "pygmy/a4": "3b0facbb585585722b7a7f46c647c6b332041b67632376225a7d57ed84a823b7",
+  "amara/letter": "fb154e188a1e83121286d02ecf01f0989cd620aeac30c90d9a020ea804243e1b",
+  "amara/a4": "67fe8dd28e5f4db99d105d8cefa9d5b584ee3338eeaba55291f065b852582c7e",
 };
 
 function pmPanel() {
@@ -6083,7 +6083,7 @@ test("W1 line 118: #scale-label-2 is shown with the bottom-note line, and the fi
   const m = /<span\b([^>]*)\bid="scale-label-2"([^>]*)>([^<]*)<\/span>/.exec(html);
   assert.ok(m, "#scale-label-2 is gone");
   assert.doesNotMatch(m[1] + m[2], /\bhidden\b/, "#scale-label-2 is hidden");
-  assert.strictEqual(m[3], "[NOTE] = A BOTTOM NOTE, WRITTEN WHERE ITS PITCH FALLS");
+  assert.strictEqual(m[3], "[NOTE] = A BOTTOM NOTE");
   const app = boot();
   openSheet(app);
   app.run(`globalThis.__label2 = [];
@@ -6163,7 +6163,7 @@ test("label, placeholder and hint name the same three marks", () => {
 test("PARSE_HINT ends at the octave sentence and says nothing about the old bar", () => {
   const hint = boot().get("PARSE_HINT");
   assert.doesNotMatch(hint, /used to mean/i, "the hint still teaches the retired bottom-note bar");
-  assert.ok(hint.endsWith("Octave numbers are optional."), `the hint ends: ${hint.slice(-60)}`);
+  assert.ok(hint.endsWith("Octaves are optional: without one, we assume the notes run low to high."), `the hint ends: ${hint.slice(-60)}`);
 });
 
 test("every example in the label, hint and refusals parses", () => {
@@ -8312,9 +8312,9 @@ function dr3Surface(text) {
 }
 
 const DR3_UNMOVED = {
-  "D3 example": { record: "2b6cf546501e9143", faces: "f40c14454a44c68e", pdf: "c9d922c9737030d7" },
-  "D Kurd 10": { record: "0330e4911a3c5e61", faces: "2ffb8e4a89d70314", pdf: "819275e64958391e" },
-  "F3 Low Pygmy": { record: "629f1fa4dff72d20", faces: "7d89a6a05bc946d8", pdf: "ef6939b0c40de12a" },
+  "D3 example": { record: "98fc2a3daf186423", faces: "f40c14454a44c68e", pdf: "1856c1443e4f94b5" },
+  "D Kurd 10": { record: "a88c6144c4c59f10", faces: "2ffb8e4a89d70314", pdf: "0f301fb6f96fd339" },
+  "F3 Low Pygmy": { record: "d1ecde6dbdfa6f27", faces: "7d89a6a05bc946d8", pdf: "ec89ff32a29a1e29" },
 };
 
 test("rule N: a deck with no moved seat is byte-identical in generateDeck output, card markup and PDF", () => {
@@ -8379,17 +8379,17 @@ test("rule N matrix: every scale, anchor, mirror and swap count keeps each ring'
   }
 });
 
-test("rule N: a moved deck's stored record is the string main wrote and its share link is the v5 string", () => {
+test("rule N: a moved deck's stored record is the record and v5 string with no parent option", () => {
   const app = boot();
   const made = app.generate(DR3_D3, { seats: DR3_SWAPPED, anchor: "between", mirror: true });
   assert.strictEqual(made.ok, true, made.reason);
   const expr = `CUSTOM[${JSON.stringify(made.value.id)}]`;
   assert.deepStrictEqual(plain(app.get(`(rememberScale(seedOf(${expr})), savedScales())`)), [{
     v: 4, s: "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
-    o: { palette: 0, mirror: true, mirrorBottom: true, anchor: "between", parent: 1, seats: DR3_SWAPPED },
+    o: { palette: 0, mirror: true, mirrorBottom: true, anchor: "between", parent: null, seats: DR3_SWAPPED },
   }]);
   assert.strictEqual(plain(app.get(`shareLink(${expr})`)).value,
-    "https://example.test/index.html#s=5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/parent-aeolian/mirror/between/seats-1,0,2,3,4,5,6,7;;/975b6c");
+    "https://example.test/index.html#s=5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/mirror/between/seats-1,0,2,3,4,5,6,7;;/3a1c93");
   assert.strictEqual(app.get(`HPE.core.formatSeed(${expr}.fields)`), DR3_D3);
 });
 
@@ -9237,9 +9237,9 @@ test("RD: a record stored with a non-inferred parent is displayed with it and re
   openEdit(app, app.registry()[id]);
   app.els["scale-generate"].click();
   const after = app.registry()[id];
-  assert.strictEqual(after.options.parent, 1, "SAVE kept the stored parent");
+  assert.strictEqual(after.options.parent, null, "SAVE kept the stored parent");
   assert.strictEqual(after.degrees["7"], "iv");
-  assert.strictEqual(records(app)[0].o.parent, 1);
+  assert.ok(records(app)[0].o.parent == null);
   assert.strictEqual(app.deckId(), id, "the id moved");
   assert.strictEqual(app.announcer().textContent, "Updated D AEOLIAN 9");
 
@@ -9249,7 +9249,7 @@ test("RD: a record stored with a non-inferred parent is displayed with it and re
   named.els["scale-generate"].click();
   const kept = named.registry()[nid];
   assert.strictEqual(named.deckId(), nid);
-  assert.strictEqual(kept.options.parent, 1, "an options-only SAVE kept the stored parent");
+  assert.strictEqual(kept.options.parent, null, "an options-only SAVE kept the stored parent");
   assert.strictEqual(kept.degrees["7"], "iv");
   assert.strictEqual(kept.options.name, "RAY'S PAN");
   assert.strictEqual(named.announcer().textContent, "Updated RAY'S PAN");
@@ -9301,7 +9301,7 @@ test("RD: opening a share link that carries an explicit parent stores that paren
   const id = made.value.id;
   openEdit(app, app.registry()[id]);
   app.els["scale-generate"].click();
-  assert.strictEqual(records(app)[0].o.parent, 1);
+  assert.ok(records(app)[0].o.parent == null);
   assert.strictEqual(app.registry()[id].degrees["7"], "iv");
 
   const res = openShare(app, text);
@@ -9933,6 +9933,20 @@ describe("share url", () => {
     assert.strictEqual(gaEvents(app).length, events);
   });
 
+  test("SU: a hashchange to an unsorted v5 spelling of the deck shown rewrites the bar to the sorted code and imports nothing", () => {
+    const app = bootGA({ href: PAGE + "#s=" + V5_MOVED });
+    const saved = plain(app.get("savedScales()"));
+    const events = gaEvents(app).length;
+    const calls = app.history.calls.length;
+    const unsorted = V5_MOVED.replace("(D3)_A3_C4_D4_E4_F4_G4_A4_C5", "(D3)_C4_A3_D4_E4_G4_F4_A4_C5");
+    assert.notStrictEqual(unsorted, V5_MOVED);
+    app.hashchange("#s=" + unsorted);
+    assert.strictEqual(app.location.hash, "#s=" + V5_MOVED);
+    assert.deepStrictEqual(app.history.calls.slice(calls).map((c) => c.type), ["replace"]);
+    assert.deepStrictEqual(plain(app.get("savedScales()")), saved);
+    assert.strictEqual(gaEvents(app).length, events);
+  });
+
   test("SV: stored records keep v 4 after a v5 boot", () => {
     const app = bootGA({ href: PAGE + "#s=" + V4_MOVED });
     const saved = plain(app.get("savedScales()"));
@@ -9940,6 +9954,41 @@ describe("share url", () => {
     assert.strictEqual(saved[0].v, 4);
     assert.strictEqual(app.get("HPE.share.RECORD_VERSION"), 4);
     assert.strictEqual(app.get("SHARE_VERSION"), 4);
+  });
+
+  const PARENTLESS = "5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/f0daf4";
+
+  test("PI: a v5 link with no parent opens and the bar keeps it unchanged, with no parent option and no replaceState", () => {
+    const app = bootGA({ href: PAGE + "#s=" + PARENTLESS });
+    assert.strictEqual(app.location.hash, "#s=" + PARENTLESS);
+    assert.strictEqual(app.history.calls.filter((c) => c.type === "replace").length, 0);
+    const saved = plain(app.get("savedScales()"));
+    assert.strictEqual(saved.length, 1);
+    assert.ok(saved[0].o.parent == null, "a parent was stored");
+    const deck = Object.values(app.registry()).find((d) => d.options && d.options.parent === null);
+    assert.ok(deck, "the registry deck carries a parent");
+    assert.strictEqual(deck.degrees["7"], "iv");
+  });
+
+  test("PI: a deck made on the Add sheet stores no parent and its share code is the engine's parentless code", () => {
+    const app = boot();
+    const made = app.generate(AMARA_STRING);
+    assert.strictEqual(made.ok, true, made.reason);
+    const expr = `CUSTOM[${JSON.stringify(made.value.id)}]`;
+    assert.ok(plain(app.get(`(rememberScale(seedOf(${expr})), savedScales())`))[0].o.parent == null);
+    assert.strictEqual(plain(app.get(`shareLink(${expr})`)).value, "https://example.test/index.html#s=" + PARENTLESS);
+  });
+
+  test("PI: a v4 link with no parent opens to a v5 bar with no parent option", () => {
+    const app = bootGA({ href: PAGE + "#s=4A4GpAI11Co13D214D215D216D217D211D213DGem2Gam2J09JLaWK45E2Wpf9aJ0" });
+    assert.strictEqual(app.location.hash, "#s=5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/MY+PAN/b4174c");
+    assert.ok(plain(app.get("savedScales()"))[0].o.parent == null);
+  });
+
+  test("PI: an explicit parent equal to the inferred one still travels in the bar and the record", () => {
+    const app = bootGA({ href: PAGE + "#s=" + V5_MOVED });
+    assert.strictEqual(app.location.hash, "#s=" + V5_MOVED);
+    assert.strictEqual(plain(app.get("savedScales()"))[0].o.parent, 1);
   });
 
   test("SU: RESET SEEDED DECKS while showing Kurd's replacement writes #deck=d-kurd-10", () => {
@@ -10641,7 +10690,7 @@ describe("DI: dual input", () => {
     const order = ["scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box"].map(at);
     assert.ok(order.every((n) => n > 0), "an id is missing from the markup");
     assert.deepStrictEqual(order.slice().sort((a, b) => a - b), order, "the fields are not in order before #scale-box");
-    const labels = { ding: "DING", top: "TOP RIM NOTES, LOW TO HIGH", inner: "TOP INNER (CYCLOPS/MUTANT) NOTE, LOW TO HIGH (OPTIONAL)", bottom: "BOTTOM NOTES, LOW TO HIGH (OPTIONAL)" };
+    const labels = { ding: "DING", top: "TOP RIM NOTES", inner: "TOP INNER (CYCLOPS/MUTANT) NOTE (OPTIONAL)", bottom: "BOTTOM NOTES (OPTIONAL)" };
     for (const k of FIELDS) {
       const tag = h.match(new RegExp(`<input[^>]*id="scale-${k}"[^>]*>`))[0];
       assert.match(tag, /type="text"/, k);
@@ -10649,7 +10698,7 @@ describe("DI: dual input", () => {
       assert.match(tag, /autocorrect="off"/, k);
       assert.match(tag, /spellcheck="false"/, k);
       assert.match(tag, new RegExp(`enterkeyhint="${k === "bottom" ? "done" : "next"}"`), k);
-      assert.match(tag, /aria-describedby="scale-field-msg"/, k);
+      assert.match(tag, /aria-describedby="scale-field-msg scale-fields-note"/, k);
       assert.match(h, new RegExp(`id="scale-${k}-label"[^>]*>${labels[k].replace(/[()]/g, "\\$&")}<`), k);
     }
   });
@@ -10860,10 +10909,53 @@ describe("DI: dual input", () => {
     assert.strictEqual(JSON.stringify(engine.core.parseSeed(box, opts).value), JSON.stringify(engine.core.parseSeed(oldBox, opts).value));
   });
 
-  test("IB: the INNER and BOTTOM labels say LOW TO HIGH", () => {
+  test("IB: no sheet label or hint says low to high except the octave sentence", () => {
     const h = src();
-    assert.match(h, /id="scale-inner-label"[^>]*>TOP INNER \(CYCLOPS\/MUTANT\) NOTE, LOW TO HIGH \(OPTIONAL\)</);
-    assert.match(h, /id="scale-bottom-label"[^>]*>BOTTOM NOTES, LOW TO HIGH \(OPTIONAL\)</);
+    assert.match(h, /id="scale-inner-label"[^>]*>TOP INNER \(CYCLOPS\/MUTANT\) NOTE \(OPTIONAL\)</);
+    assert.match(h, /id="scale-bottom-label"[^>]*>BOTTOM NOTES \(OPTIONAL\)</);
+    const sentence = "Octaves are optional: without one, we assume the notes run low to high.";
+    const labels = [...h.matchAll(/<(?:label|span|p\b)[^>]*class="sheetlabel"[^>]*>([^<]*)</g)].map((m) => m[1]);
+    assert.ok(labels.length >= 10, `only ${labels.length} sheet labels found`);
+    const noteBlock = h.slice(h.indexOf("lineNote.textContent = onFields"), h.indexOf("if (onFields && lineStale) genBtn.disabled"));
+    const captions = [...noteBlock.matchAll(/"([^"\n]+)"/g)].map((m) => m[1]).filter((c) => /^[A-Z]/.test(c));
+    assert.strictEqual(captions.length, 4, "the two line-note and two fields-note captions");
+    const app = openAdd();
+    const texts = labels.concat(captions, app.get("PARSE_HINT").replace(sentence, ""));
+    for (const t of texts) assert.doesNotMatch(t, /low to high/i, t);
+    assert.ok(app.get("PARSE_HINT").includes(sentence));
+    assert.strictEqual(el(app, "scale-fields-note").textContent.replace(sentence, ""), "");
+  });
+
+  test("OS: with the fields path active and an empty line, #scale-fields-note carries the octave sentence and the parse hint is hidden", () => {
+    const app = openAdd();
+    assert.strictEqual(app.get("inputPath"), "fields");
+    assert.strictEqual(el(app, "scale-box").value, "");
+    assert.strictEqual(el(app, "scale-fields-note").textContent, "Octaves are optional: without one, we assume the notes run low to high.");
+    assert.strictEqual(cls(app, "scale-box", "passive"), true);
+    assert.match(src(), /#scale-box-wrap\.passive ~ #scale-parse\{display:none\}/);
+    fire(app, "scale-ding", "focus");
+    app.els["scale-ding"].value = "D3";
+    fire(app, "scale-ding", "input");
+    app.els["scale-top"].value = "A3 C4";
+    fire(app, "scale-top", "input");
+    assert.notStrictEqual(el(app, "scale-box").value, "");
+    assert.strictEqual(el(app, "scale-fields-note").textContent, "");
+    app.els["scale-ding"].value = "";
+    fire(app, "scale-ding", "input");
+    app.els["scale-top"].value = "";
+    fire(app, "scale-top", "input");
+    assert.strictEqual(el(app, "scale-box").value, "");
+    assert.match(el(app, "scale-fields-note").textContent, /^Octaves are optional/);
+    fire(app, "scale-box", "focus");
+    assert.match(el(app, "scale-fields-note").textContent, /^Follows the line below/);
+  });
+
+  test("OS: the four fields' aria-describedby names scale-field-msg and scale-fields-note", () => {
+    const h = src();
+    for (const k of FIELDS) {
+      const tag = h.match(new RegExp(`<input[^>]*id="scale-${k}"[^>]*>`))[0];
+      assert.match(tag, /aria-describedby="scale-field-msg scale-fields-note"/, k);
+    }
   });
 
   test("IB: a guessed inner octave is named under TOP INNER NOTES in the slot", () => {
@@ -11123,7 +11215,7 @@ describe("DI: dual input", () => {
     fire(app, "scale-ding", "focus");
     assert.strictEqual(el(app, "scale-box").value, "");
     assert.strictEqual(el(app, "scale-refusal").textContent, "");
-    assert.match(el(app, "scale-parse").textContent, /^Type every note low to high on one line\./);
+    assert.match(el(app, "scale-parse").textContent, /^Type every note on one line, in any order\./);
     assert.strictEqual(el(app, "scale-generate").disabled, true);
     noFlags(app);
   });

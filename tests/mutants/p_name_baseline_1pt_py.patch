@@ -1,0 +1,16 @@
+# kills: test_committed_pdfs_place_every_glyph_where_a_fresh_build_does
+# suite: python3 -m unittest -k test_committed_pdfs_place_every_glyph_where_a_fresh_build_does tests.test_pdf_build
+# E3: the centred chord name's baseline drops one point (y + h - 19).
+# The text-only staleness gate cannot see it; the position check can.
+diff --git a/tools/hifi.py b/tools/hifi.py
+--- a/tools/hifi.py
++++ b/tools/hifi.py
+@@ -236,7 +236,7 @@
+         size -= 0.5
+     supw = tw(sup, "Display", size * 0.52, 0) if sup else 0.0
+     wm = tw(main, "Display", size, size * 0.02)
+-    base = y + h - 18 - size * 0.70
++    base = y + h - 19 - size * 0.70
+     xe = x + w / 2 + (wm + supw) / 2 - supw
+     tracked(c, xe, base, main, "Display", size, size * 0.02, "r", NAME)
+     if sup:

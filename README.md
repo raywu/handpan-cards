@@ -22,7 +22,7 @@ Chord flashcards and chord progressions for handpan scales. It runs in the brows
 
 ## Your own scale
 
-- Menu, then + ADD A SCALE. Type the notes low to high on one line: the ding in round brackets, bottom notes in square brackets, a `|` before inner notes. Example: `[C] (D) A C D E F G A C`. Then GENERATE CARDS.
+- Menu, then + ADD A SCALE. Type the notes on one line in any order: the ding in round brackets, bottom notes in square brackets (before or after the ding), a `|` before inner notes. Example: `[C] (D) A C D E F G A C`. Octaves are optional: without one, we assume the notes run low to high. Then GENERATE CARDS.
 - ADJUST LAYOUT under the preview mirrors or reorders fields to match your pan.
 - Tap the selected scale's chip (it has a pencil) to edit or delete it. You can edit built-in scales the same way; RESET SEEDED SCALES brings them back.
 - Scales stay in this browser. The link icon in the header copies a link that opens the scale on any device.
@@ -74,7 +74,7 @@ Tests:
     python3 tests/suite_health.py   # per-file test-count floors
     ./tests/run.sh mutants          # mutation gate (slow)
 
-There are 25 node suites and 16 python suites. The mutation gate applies 1356 mutant patches from `tests/mutants/`, and a test must fail under each one. It edits the tree in place and refuses to start on uncommitted changes to a file a patch touches, `README.md` among them, so commit first.
+There are 25 node suites and 16 python suites. The mutation gate applies 1369 mutant patches from `tests/mutants/`, and a test must fail under each one. It edits the tree in place and refuses to start on uncommitted changes to a file a patch touches, `README.md` among them, so commit first.
 
 CI runs on pull requests into `main` and on pushes to `main`. A PR that changes only `docs/plans/` or `docs/prompts/` skips every job.
 

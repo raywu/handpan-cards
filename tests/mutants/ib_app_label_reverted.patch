@@ -1,15 +1,15 @@
-# kills: IB: the INNER and BOTTOM labels say LOW TO HIGH
-# suite: node --test --test-name-pattern ^IB:.the.INNER.and.BOTTOM.labels tests/app.test.js
-# The BOTTOM NOTES label loses LOW TO HIGH.
+# kills: IB: no sheet label or hint says low to high except the octave sentence
+# suite: node --test --test-name-pattern ^IB:.no.sheet.label.or.hint tests/app.test.js
+# The BOTTOM NOTES label gets LOW TO HIGH back.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1432,7 +1432,7 @@ html.about-open{overflow:hidden}
-                autocomplete="off" spellcheck="false" enterkeyhint="next" aria-describedby="scale-field-msg">
+@@ -1465,7 +1465,7 @@
+                autocomplete="off" spellcheck="false" enterkeyhint="next" aria-describedby="scale-field-msg scale-fields-note">
        </div>
        <div class="fieldrow">
--        <label class="sheetlabel" id="scale-bottom-label" for="scale-bottom">BOTTOM NOTES, LOW TO HIGH (OPTIONAL)</label>
-+        <label class="sheetlabel" id="scale-bottom-label" for="scale-bottom">BOTTOM NOTES (OPTIONAL)</label>
+-        <label class="sheetlabel" id="scale-bottom-label" for="scale-bottom">BOTTOM NOTES (OPTIONAL)</label>
++        <label class="sheetlabel" id="scale-bottom-label" for="scale-bottom">BOTTOM NOTES, LOW TO HIGH (OPTIONAL)</label>
          <input id="scale-bottom" type="text" placeholder="C3 Eb3" autocapitalize="off" autocorrect="off"
-                autocomplete="off" spellcheck="false" enterkeyhint="done" aria-describedby="scale-field-msg">
+                autocomplete="off" spellcheck="false" enterkeyhint="done" aria-describedby="scale-field-msg scale-fields-note">
        </div>

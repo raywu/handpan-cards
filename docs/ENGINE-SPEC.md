@@ -153,11 +153,21 @@ are. This adds SENTENCES, never codes: the enum above stays closed, and the
 | `BAD_NOTE` | `barEmpty` - a bar with no top notes before it or no inner notes after it | `A | needs top notes before it and inner notes after it, e.g. (D) A C D | E F.` |
 | `BAD_NOTE` | `barFirst` - a bar before the ding | `The | comes after the ding and the top notes, e.g. (D) A C D | E F.` |
 | `NOTE_OUT_OF_ORDER` | `ding` - the element before the offending note is the ding | `<A> is at or below the ding <B>. Top notes are above the ding; a lower note is a bottom note and goes before it in square brackets, e.g. [C3] (D3) A3.` |
-| `NOTE_OUT_OF_ORDER` | `afterBar` - the first inner note is below the note before it | `<A> comes after the | but is below <B>. Notes after | are inner notes now. For a bottom note, use square brackets where its pitch falls, e.g. [C3] (D3) A3 C4.` |
-| `NOTE_OUT_OF_ORDER` | `below` - a bottom note before the ding is not below the one after it | `<A> is not below <B>. Bottom notes before the ding also run low to high, e.g. [C3] [D3] (E3) B3.` |
 
 `src/engine/core.js` `REASONS` is the shipped copy of every sentence in this
 section; `tests/core.test.js` holds the two together.
+
+The current grammar emits only the `ding` alternate of `NOTE_OUT_OF_ORDER`: a
+top note, rim or inner, at or below the ding (rim: grammar rows 26 and 27,
+  through tests/scale.test.js "every refused row carries its code and its
+  sentence"; inner: "IB: an inner note at or below the ding gets the ding
+  sentence"). The default `reason` in the code table
+above is the legacy reader's sentence only (`outOfOrder`, called by
+`core.parseLegacySeed`), kept because that reader is frozen ("the legacy reader
+keeps the default NOTE_OUT_OF_ORDER sentence"). The `below` alternate of
+`NOTE_OUT_OF_ORDER` is gone, with the one place that emitted it, and the
+`afterBar` alternate went when an inner note could sit below the rim (092f0d7);
+`REASONS` holds neither (no test; true by `src/engine/core.js` `REASONS`).
 
 - DECIDED(plan [eng-review 7A], amended swarm-2026-09-10 and 2026-10, the caps
   code retired) The enum is exactly
@@ -190,7 +200,13 @@ section; `tests/core.test.js` holds the two together.
   ding D3`. The 12-character truncation of `<X>` does not apply: these values
   are engine-spelled note names, not user text. So the seed above now reads:
   `D2 is not above C3 (inferred from C), and the line runs low to high. Give D2
-  a higher octave or move it earlier, e.g. (D3) A3 C4 D4.` (the 2026-10 sentence)
+  a higher octave or move it earlier, e.g. (D3) A3 C4 D4.` (the 2026-10
+  sentence). Since the order-free reader it is the LEGACY reader's sentence only
+  ("a bottom note below the octave inferred for the note before it says so",
+  which reads the seed through `parseLegacySeed`); `parseSeed` answers the same
+  seed with the `ding` alternate (an explicit inner note under the ding: "IB: an
+  inner note at or below the ding gets the ding sentence"; the seed itself: no
+  test; true by `src/engine/core.js` `scaleInfer`)
 - DECIDED(swarm-2026-09-10 w39) BOTH positions are named whenever the fault is
   a relation between two notes, and either may carry the inference annotation.
   `NOTE_REPEATED` substitutes `<B>` for the earlier of the two and `<A>` for
@@ -209,11 +225,19 @@ section; `tests/core.test.js` holds the two together.
   equal case reads plainly, and offers only the fix the user can actually make.
   It covers every ding case, not just the equal one, because the advice half is
   wrong for `(F3) E3 C4` too.
-- DECIDED(swarm-2026-09-10) `NOTE_OUT_OF_ORDER` and `NOTE_REPEATED` are
-  reachable only from a token that carries an EXPLICIT octave, because
-  inference always places the next note strictly above the previous one. `<A>`
-  therefore always echoes the token the user typed; the surprising half of the
-  sentence is `<B>`.
+- DECIDED(swarm-2026-09-10, amended order-free 2026-10) In `parseSeed`,
+  `NOTE_OUT_OF_ORDER` and `NOTE_REPEATED` need a note with an explicit octave
+  somewhere in the line, but the note named as `<A>` may be one placed by
+  inference. An unoctaved note after the ding sits just above the note typed
+  before it, so it lands at or below the ding only when that note is itself
+  below the ding: a bottom typed after the ding (`(D3) [A2] C E A` is
+  `NOTE_OUT_OF_ORDER` `ding` naming C3), or a top note below the ding, which is
+  refused first (`(D3) B2 C` names B2). It lands on a pitch already placed only when an earlier-typed note
+  is higher than the one just before it (`(D3) C4 A3 C` is `NOTE_REPEATED`
+  naming C4) ("an unoctaved note after the ding lands at or below it only after
+  a note below the ding"). In the legacy
+  reader both codes fire only from an explicit-octave token, where `<A>` echoes
+  the token typed, and also for a break in the typed order (`outOfOrder`).
 - DECIDED(swarm-2026-09-08) The `NO_FIFTH` reason substitutes twice: `<X>` is
   the ding as `formatSeed` prints it (name plus octave, e.g. `C3`), and
   `<fifth of X>` is the pitch-class name 7 semitones above the ding, without an
@@ -253,7 +277,9 @@ section; `tests/core.test.js` holds the two together.
 ## 3. The scale string grammar (D13, rewritten 2026-10)
 
 The shipped reader is `core.parseSeed`, the shipped printer `core.formatSeed`.
-They read and print ONE ascending line, low to high, the way the pan is played.
+They read a line in ANY order (section 3, order-free rule below) and print ONE
+sorted line, low to high, the way the pan is played ("formatSeed prints the
+canonical D13 string with explicit octaves").
 
 ```
 line      := ( bottom | ding | note | "|" )+
@@ -269,10 +295,11 @@ note      := [A-G] ("#" | "b")? ("-1" | [0-9])?
   is taken after every token has lexed (see the error precedence below), and
   before bars and note placement are checked.
 - DECIDED(D13, 2026-10) Square brackets mark a BOTTOM note at its pitch
-  position: `[C] [D] (E) B` puts C and D below the ding E. A bottom note after
-  the ding sits where its pitch falls among the top notes (`(D) A [C] C`), and
-  a non-bottom note before the ding is `NO_DING` (alternate `below`). Bottom
-  notes need no octave of their own to be placed but print one.
+  position: `[C] [D] (E) B` puts C and D below the ding E. A bottom note may be
+  typed on either side of the ding (`(D) A [C] C`), and a non-bottom note
+  before the ding is `NO_DING` (alternate `below`; no test; true by
+  `src/engine/core.js` `scaleStructure`). Bottom notes need no octave of their
+  own to be placed but print one.
 - DECIDED(D13, 2026-10) A `|` after the ding and the top notes starts the INNER
   notes: everything between the ding and the bar is rim, everything after it is
   inner. With the ding marked by brackets or a slash, a second `|` is `BAD_NOTE`
@@ -293,23 +320,67 @@ note      := [A-G] ("#" | "b")? ("-1" | [0-9])?
   `midi = 12 * (octave + 1) + letter + accidental`, so `Cb4` = 59 and `B#3` = 60.
   A note whose MIDI is outside 0-127 is `NOTE_OUT_OF_RANGE`; one that spells an
   octave the lexer cannot read back (below -1) is `BAD_NOTE`.
-- DECIDED(swarm-2026-09-08) A ding with no octave is octave 3. Octave inference
-  runs in four passes left to right with no backtracking (tokenise, lex,
-  structure, infer): each top note takes the next instance of its pitch class
-  strictly above the previous note; a bottom note before the ding takes the
-  instance below the note after it; an explicit octave overrides inference and
-  reseeds it for the notes after.
-- DECIDED(swarm-2026-09-08) After inference the whole line must be strictly
-  ascending. A break is `NOTE_OUT_OF_ORDER` (alternates `ding`, `afterBar`,
-  `below`), or `NOTE_REPEATED` when the note is spelled as the one before it
-  on the same shell. This is what makes `parseSeed(formatSeed(x))` equal `x`.
+- DECIDED(swarm-2026-09-08) A ding with no octave is octave 3 ("an omitted ding
+  octave is octave 3 and reseeds the inference"). Octave inference runs in four
+  passes with no backtracking (tokenise, lex, structure, infer).
+- DECIDED(owner, order-free 2026-10) A line reads in any order. Inference is
+  unchanged: an unoctaved note after the ding takes the nearest instance above
+  the note typed before it ("IB: an octaveless inner note still climbs from the
+  note before it"), an unoctaved bottom before the ding the nearest instance
+  below the note after it (no test; true by `src/engine/core.js` `scaleInfer`),
+  and an explicit octave reseeds inference for the notes after. A bottom note
+  may be typed on either side of the ding: `[E3] (D3) A3` reads as
+  `(D3) [E3] A3` (tests/scale.test.js "every row of the grammar table parses to
+  its fields", row 28). After
+  inference each zone is sorted by MIDI, ids are
+  assigned in that order, and the zone checks run on the sorted sets ("every
+  permutation of a fully octaved line reads as its ascending spelling and
+  keeps its id"; "IB: inner notes typed in either order read as the same inner
+  pair, and an inner at or below the ding is NOTE_OUT_OF_ORDER ding"). A top
+  note (rim or inner) at or below the ding is `NOTE_OUT_OF_ORDER` with the
+  `ding` alternate, the only sentence the current grammar emits ("IB: an inner
+  note at or below the ding gets the ding sentence"; grammar rows 26 and 27,
+  through tests/scale.test.js "every refused row carries its code and its
+  sentence"). The same MIDI twice on
+  one shell is `NOTE_REPEATED` naming the later typed note ("IB: a rim pitch
+  typed twice is NOTE_REPEATED naming the later one, in any order"; "G2b: a
+  repeated bottom note after the ding is NOTE_REPEATED"; "a repeated pitch is
+  NOTE_REPEATED naming the later typed note on the inner and bottom shells, told
+  apart by spelling"). A bottom at the
+  ding's pitch is accepted: `[D3] (D3) A3` and `(D3) [D3] A3` both read
+  `[D3] (D3) A3` (no test in `tests/core.test.js`; true by
+  `src/engine/core.js` `scaleInfer` and `formatSeed`, and `parseSeed` accepts
+  `[C3] [D3] (D3) A3` in "O1: compose's seed and line are the same with and
+  without the warning: D3 c d and D3 C3 D3 give one line and one seed, and
+  parseSeed accepts [C3] [D3] (D3) A3 as on origin/main",
+  `tests/import.test.js`; grammar rows 13 and 34, same test).
+  `formatSeed` sorts, so `parseSeed(formatSeed(x))` equals `x` ("IB: formatSeed
+  writes a dip as bottoms, ding and rim, then the bar and the inner notes, and
+  it round-trips") and every accepted spelling of a field map has one canonical
+  string ("every permutation of a fully octaved line reads as its ascending
+  spelling and keeps its id"). `parseSeed` also reports the field ids in typed
+  order (`value.typed`, not enumerable), because the importer maps source notes
+  to fields by position ("parseSeed reports the field ids in typed order, tops
+  then bottoms"). Every accepted reading in the frozen origin/main d8d2a2d
+  corpus (tests/fixtures/engine_corpus_main_d8d2a2d_ok.json) still reads to the
+  same fields and deck id ("the frozen origin/main d8d2a2d accepted readings
+  still read to the same fields and deck id"). This replaces the swarm-2026-09-08
+  rule that the whole line must be strictly ascending after inference.
+- DECIDED(owner, order-free 2026-10) The legacy reader is untouched:
+  `parseLegacySeed` and `formatLegacySeed` still require the typed order, and
+  keep the default `NOTE_OUT_OF_ORDER` sentence, which is now legacy-only ("the
+  legacy reader keeps the default NOTE_OUT_OF_ORDER sentence"; "an explicit
+  octave that breaks the ascending order is NOTE_OUT_OF_ORDER").
 - DECIDED(owner-review 2026-09-08) Error precedence in `parseSeed`: (1) lexing
   of every token, so an unreadable token, a lone `/` or a malformed bracket is
   `BAD_NOTE` before anything else; (2) the ding count (`NO_DING`, alternates
   `two` and `which`); (3) bars and the run before the ding (`BAD_NOTE` for
   `bar` and `barFirst`, `NO_DING` `below`, `BAD_NOTE` `barEmpty`); (4)
-  positional codes per note in the order the parser reaches them
-  (`NOTE_OUT_OF_RANGE`, then `NOTE_REPEATED` or `NOTE_OUT_OF_ORDER`); (5)
+  `NOTE_OUT_OF_RANGE` per note in the order the parser places them, then the
+  zone checks on the sorted sets: rim (`NOTE_OUT_OF_ORDER` `ding` or
+  `NOTE_REPEATED`), inner (the same, and `NOTE_REPEATED` against a rim pitch),
+  then bottom (`NOTE_REPEATED`) (no test; true by `src/engine/core.js`
+  `scaleInfer`); (5)
   `NO_FIFTH`. Only `parseLegacySeed` counts dings before lexing. The ding is placed and range-checked before any other note.
 - DECIDED(refactor-4 lane D, stated as the code does them) Three corners of
   that precedence, checked against `src/engine/core.js` `parseSeed` and
@@ -380,14 +451,16 @@ The field id and label scheme, read off all three built-ins in `index.html`:
 | zone | ids | labels |
 |---|---|---|
 | ding | `"0"` | `Ding` |
-| rim, then inner | `"1"` .. `"N"`, one sequence ascending | `"1"` .. `"N"` |
+| rim, then inner | `"1"` .. `"N"`, one sequence: rim by MIDI, then inner by MIDI | `"1"` .. `"N"` |
 | bottom | `"101"` upward | `U1`, `U2`, ... |
 
 - DECIDED(CLAUDE.md "App data model") Zones are `ding | rim | inner | bottom`,
   exactly the built-in enum.
 - DECIDED(swarm-2026-09-08) Field ids are decimal strings: the ding is `"0"`;
-  the top notes are `"1"` through `"N"` in ascending order, rim first then
-  inner, in ONE sequence that does not restart at the inner ring; the bottom
+  the top notes are `"1"` through `"N"`, the rim sorted by MIDI first and then
+  the inner notes sorted by MIDI, in ONE sequence that does not restart at the
+  inner ring; an inner note may sit below the rim ("IB: an inner note below the
+  top notes parses, keeps its zone and numbers after the rim"); the bottom
   notes are `"101"` upward. Verified against all three built-ins,
   including Pygmy's inner pair at ids `"10"` and `"11"`.
 - DECIDED(swarm-2026-09-08) Labels are the strings the diagram prints: `Ding`
@@ -395,12 +468,16 @@ The field id and label scheme, read off all three built-ins in `index.html`:
   `U2`, ... for the bottom notes.
 - DECIDED(D13) The ding is its own zone and is assigned from the `( )` / `/`
   token only.
-- DECIDED(2026-10) Top notes are assigned in ascending order. The notes
-  between the ding and the `|` are `rim`, the notes after it `inner`; a string
-  with no `|` has no inner notes. Ids and labels are one ascending sequence,
-  rim first then inner (`(F3) A3 B3 | C5` is rim `"1"`, `"2"` and inner `"3"`).
-  Bottom ids are `"101"` upward, or one past the last top id when a pan has more
-  than 100 top notes (`U1`, `U2`, ... in ascending pitch).
+- DECIDED(2026-10, amended order-free 2026-10) Top notes are assigned in MIDI
+  order within their zone, whatever order they were typed in ("IB: a rim pitch
+  typed twice is NOTE_REPEATED naming the later one, in any order", which also
+  reads `(D3) C4 A3 | E5` as `(D3) A3 C4 | E5`). The notes between the ding and
+  the `|` are `rim`, the notes after it `inner`; a string with no `|` has no
+  inner notes. Ids and labels are one sequence, rim first then inner
+  (`(F3) A3 B3 | C5` is rim `"1"`, `"2"` and inner `"3"`). Bottom ids are
+  `"101"` upward, or one past the last top id when a pan has more than 100 top
+  notes (`U1`, `U2`, ... in ascending pitch; no test;
+  true by `src/engine/core.js` `scaleInfer` and `parseSeed`).
 - DECIDED(owner 2026-10, caps retired) There is no cap on any ring, so there is
   no maximum pan. The old 11 / 2 / 6 limits and their error code are gone; only
   the legacy reader (section 3.9) keeps the positional spill, to hold stored ids.
@@ -672,7 +749,7 @@ Verified against all three built-ins under the fixed list order of
   because list order is total.
 - DECIDED(D10, D14 as amended) The parent override is encoded as an INDEX into
   that list (0-10) and travels in the seed options; it changes degree labels
-  only, never the fields list, so the deck id is unchanged. Since 2026-10-14 the sheet writes no index (every deck saved from the sheet carries the inferred one); the encoding stays, and an explicit index from an older record or a share link is honoured and re-stored when that link is opened (`tests/share.test.js` "parent survives the round trip on its own, null included"; app test "RD: opening a share link that carries an explicit parent stores that parent again, after an inferred SAVE included").
+  only, never the fields list, so the deck id is unchanged. Since 2026-10-14 the sheet writes no index (every deck saved from the sheet, or opened from a link or record with no parent, stores no index, and the engine infers one at build); the encoding stays, and an explicit index from an older record or a share link is honoured and re-stored when that link is opened (`tests/share.test.js` "parent survives the round trip on its own, null included"; app test "RD: opening a share link that carries an explicit parent stores that parent again, after an inferred SAVE included").
 - DECIDED(swarm-2026-09-08) A parent is always inferred - every candidate has a
   finite distance, so there is no "no usable parent" branch. When the
   select-level `NO_THIRDS` warning fires (no root on the pan has a third), every
@@ -749,9 +826,15 @@ Verified against all three built-ins under the fixed list order of
 
 - DECIDED(D13, plan [design-review 8A], 2026-10) `core.formatSeed(seed)` prints a
   seed back into the section 3 grammar with EXPLICIT octaves everywhere: the
-  whole scale as one ascending line, the ding in round brackets, bottom notes in
-  square brackets at their pitch position, the `|` before the first inner note,
-  single spaces: `[C3] (D3) A3 C4 D4 E4 F4 G4 A4 C5`.
+  whole scale as one line sorted by MIDI, the ding in round brackets, bottom
+  notes in square brackets at their pitch position, the `|` before the first
+  inner note, single spaces: `[C3] (D3) A3 C4 D4 E4 F4 G4 A4 C5`. At one pitch a
+  bottom note comes before the ding and the ding before a top note, so a
+  bottom at the ding's pitch prints `[D3] (D3) A3`. A pan with an inner note
+  below its highest rim note prints the bottoms, ding and rim sorted, then the
+  `|`, then the inner notes sorted ("IB: formatSeed writes a dip as bottoms,
+  ding and rim, then the bar and the inner notes, and it round-trips"; "formatSeed
+  prints the canonical D13 string with explicit octaves").
 - DECIDED(swarm-2026-09-08) `formatSeed` walks the fields by the id scheme of
   section 4 - `"0"` first, then the top ids ascending, then the bottom ids - and
   orders by MIDI, so the canonical string is a pure function of the field map
@@ -781,7 +864,8 @@ Verified against all three built-ins under the fixed list order of
   Pygmy `Cm` x3).
 - DECIDED(plan P0d exit) `parseSeed(formatSeed(seed))` deep-equals `seed` for
   every entry of `synthetic_scales.json` whose expectation is ok, which the
-  strict-ascending rule of section 3 guarantees. A legacy string round-trips
+  sorting of section 3 guarantees ("IB: formatSeed writes a dip as bottoms,
+  ding and rim, then the bar and the inner notes, and it round-trips"). A legacy string round-trips
   through `parseLegacySeed` / `formatLegacySeed` in the same way.
 
 ## 13. Options: palette, mirror, name
@@ -977,8 +1061,8 @@ sheets); the rule is that phases APPEND, never renumber or rename.
 | ding pitch class absent from the top shell | ok; tonic still the ding | `core.parseSeed` (P0d) |
 | a very large pan | ok + `SMALL_LABELS` warning; never refused | `select.build`, via `smallLabels(geom)` in `src/engine/select.js` |
 | a note placed outside MIDI 0-127 | `NOTE_OUT_OF_RANGE` | `core.parseSeed` (P0d) |
-| an explicit octave that breaks the ascending order | `NOTE_OUT_OF_ORDER` | `core.parseSeed` (P0d) |
-| the same note twice in a row on one shell | `NOTE_REPEATED` | `core.parseSeed` (P0d) |
+| a top note, rim or inner, at or below the ding | `NOTE_OUT_OF_ORDER` (`ding`) | `core.parseSeed` (P0d) |
+| the same MIDI twice on one shell, in any typed order | `NOTE_REPEATED` | `core.parseSeed` (P0d) |
 | a newer share link | `NEEDS_NEWER_APP` | `share.decode` (Phase 4) |
 
 - DECIDED(plan "Degenerate cases", eng-review owners) Each parse-layer

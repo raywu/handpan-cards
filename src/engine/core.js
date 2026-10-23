@@ -46,10 +46,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     },
     NOTE_OUT_OF_ORDER: {
       kind: "error",
+      // The default sentence is the legacy reader's only (outOfOrder, called by
+      // parseLegacySeed); the current grammar emits the `ding` alternate alone.
       reason: "<A> is not above <B>, and the line runs low to high. Give <A> a higher octave or move it earlier, e.g. (D3) A3 C4 D4.",
       alternates: {
-        ding: "<A> is at or below the ding <B>. Top notes are above the ding; a lower note is a bottom note and goes before it in square brackets, e.g. [C3] (D3) A3.",
-        below: "<A> is not below <B>. Bottom notes before the ding also run low to high, e.g. [C3] [D3] (E3) B3."
+        ding: "<A> is at or below the ding <B>. Top notes are above the ding; a lower note is a bottom note and goes before it in square brackets, e.g. [C3] (D3) A3."
       }
     },
     NOTE_REPEATED: {
@@ -678,7 +679,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   }
 
   // Pass 4: octaves. Notes before the ding are placed from the ding downwards,
-  // notes after it from the previous note upwards.
+  // notes after it from the previous typed note upwards. Order carries meaning
+  // only for a note with no octave; once placed, each zone is sorted by pitch
+  // (ties by typed position) and the zone checks run on the sorted sets.
   function scaleInfer(layout) {
     var ding = layout.ding;
     var low = layout.before;
@@ -701,22 +704,13 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       }
       bad = scalePlaced(lo, m);
       if (bad) return bad;
-      if (m === right.midi && right !== ding) return scaleRepeated(lo, right);
-      if (right === ding ? m > right.midi : m >= right.midi) {
-        return scaleOrder(lo, right, "below");
-      }
+      lo.at = n;
       right = lo;
     }
 
     var prev = ding;
-    var lastRim = ding;
-    var lastInner = null;
-    var lastBottom = low.length ? low[low.length - 1] : null;
-    var rimNotes = {};
-    var seenInner = false;
     for (n = 0; n < high.length; n += 1) {
-      var entry = high[n];
-      var note = entry.note;
+      var note = high[n].note;
       var mm;
       if (note.octave === null) {
         mm = midiFromName(note.letter, note.accidental, -1) - 12;
@@ -726,30 +720,61 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       }
       bad = scalePlaced(note, mm);
       if (bad) return bad;
-      var restarts = entry.zone === "inner" && !seenInner;
-      if (entry.zone === "inner") seenInner = true;
-      if (mm < prev.midi && !restarts) {
-        return scaleOrder(note, prev, prev === ding ? "ding" : undefined);
-      }
-      if (entry.zone === "bottom") {
-        if (lastBottom && mm <= lastBottom.midi) return scaleRepeated(note, lastBottom);
-        if (mm <= ding.midi) return scaleOrder(note, ding, "ding");
-        lastBottom = note;
-      } else if (entry.zone === "rim") {
-        if (mm <= lastRim.midi) {
-          return lastRim === ding ? scaleOrder(note, ding, "ding") : scaleRepeated(note, lastRim);
-        }
-        lastRim = note;
-        rimNotes[mm] = note;
-      } else {
-        if (restarts && mm <= ding.midi) return scaleOrder(note, ding, "ding");
-        if (rimNotes[mm]) return scaleRepeated(note, rimNotes[mm]);
-        if (lastInner && mm <= lastInner.midi) return scaleRepeated(note, lastInner);
-        lastInner = note;
-      }
+      note.at = low.length + n;
       prev = note;
     }
-    return ok(layout);
+
+    var rims = [];
+    var inners = [];
+    var bottoms = low.slice();
+    high.forEach(function (e) {
+      if (e.zone === "bottom") bottoms.push(e.note);
+      else if (e.zone === "rim") rims.push(e.note);
+      else inners.push(e.note);
+    });
+    function byPitch(a, c) { return a.midi - c.midi || a.at - c.at; }
+    function later(a, c) { return a.at > c.at ? [a, c] : [c, a]; }
+    rims.sort(byPitch);
+    inners.sort(byPitch);
+    bottoms.sort(byPitch);
+    var i;
+    var pair;
+    for (i = 0; i < rims.length; i += 1) {
+      if (rims[i].midi <= ding.midi) return scaleOrder(rims[i], ding, "ding");
+      if (i > 0 && rims[i].midi === rims[i - 1].midi) {
+        pair = later(rims[i], rims[i - 1]);
+        return scaleRepeated(pair[0], pair[1]);
+      }
+    }
+    var rimAt = {};
+    rims.forEach(function (r) { rimAt[r.midi] = r; });
+    for (i = 0; i < inners.length; i += 1) {
+      if (inners[i].midi <= ding.midi) return scaleOrder(inners[i], ding, "ding");
+      if (rimAt[inners[i].midi]) {
+        pair = later(inners[i], rimAt[inners[i].midi]);
+        return scaleRepeated(pair[0], pair[1]);
+      }
+      if (i > 0 && inners[i].midi === inners[i - 1].midi) {
+        pair = later(inners[i], inners[i - 1]);
+        return scaleRepeated(pair[0], pair[1]);
+      }
+    }
+    for (i = 1; i < bottoms.length; i += 1) {
+      if (bottoms[i].midi === bottoms[i - 1].midi) {
+        pair = later(bottoms[i], bottoms[i - 1]);
+        return scaleRepeated(pair[0], pair[1]);
+      }
+    }
+    return ok({
+      ding: ding,
+      rims: rims,
+      inners: inners,
+      bottoms: bottoms,
+      typed: high.filter(function (e) { return e.zone !== "bottom"; })
+        .map(function (e) { return e.note; })
+        .concat(low, high.filter(function (e) { return e.zone === "bottom"; })
+          .map(function (e) { return e.note; }))
+    });
   }
 
   function parseSeed(input, options) {
@@ -767,11 +792,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
     var layout = inferred.value;
     var ding = layout.ding;
-    var tops = [];
-    var bottoms = layout.before.map(function (note) { return { note: note, zone: "bottom" }; });
-    layout.after.forEach(function (entry) {
-      (entry.zone === "bottom" ? bottoms : tops).push(entry);
-    });
+    var tops = layout.rims.map(function (note) { return { note: note, zone: "rim" }; })
+      .concat(layout.inners.map(function (note) { return { note: note, zone: "inner" }; }));
+    var bottoms = layout.bottoms.map(function (note) { return { note: note, zone: "bottom" }; });
 
     var wanted = pitchClass(ding.midi + 7);
     var hasFifth = false;
@@ -789,15 +812,24 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     fields["0"] = [spell(ding.letter, ding.accidental), ding.octave, ding.midi, "ding", null, "Ding"];
     tops.forEach(function (entry, n) {
       var id = String(n + 1);
+      entry.note.id = id;
       fields[id] = [spell(entry.note.letter, entry.note.accidental), entry.note.octave,
                     entry.note.midi, entry.zone, null, id];
     });
     var first = Math.max(101, tops.length + 1);
     bottoms.forEach(function (entry, n) {
+      entry.note.id = String(first + n);
       fields[String(first + n)] = [spell(entry.note.letter, entry.note.accidental),
                                    entry.note.octave, entry.note.midi, "bottom", null, "U" + (n + 1)];
     });
-    return ok({ fields: fields, options: opts.value });
+    // The field ids in typed order (tops, then bottoms), for the importer's
+    // source-to-field mapping. Not enumerable: it is a reading aid, not part of
+    // the seed, so equality, spreading and serialising of a seed ignore it.
+    var value = { fields: fields, options: opts.value };
+    Object.defineProperty(value, "typed", {
+      value: layout.typed.map(function (note) { return note.id; })
+    });
+    return ok(value);
   }
 
   // The names of the inner notes under the highest rim note, in field order.

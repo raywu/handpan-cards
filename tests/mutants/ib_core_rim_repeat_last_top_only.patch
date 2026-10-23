@@ -4,12 +4,12 @@
 diff --git a/src/engine/core.js b/src/engine/core.js
 --- a/src/engine/core.js
 +++ b/src/engine/core.js
-@@ -726,7 +726,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-         rimNotes[mm] = note;
-       } else {
-         if (restarts && mm <= ding.midi) return scaleOrder(note, ding, "ding");
--        if (rimNotes[mm]) return scaleRepeated(note, rimNotes[mm]);
-+        if (rimNotes[mm] === lastRim) return scaleRepeated(note, rimNotes[mm]);
-         if (lastInner && mm <= lastInner.midi) return scaleRepeated(note, lastInner);
-         lastInner = note;
+@@ -750,7 +750,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     rims.forEach(function (r) { rimAt[r.midi] = r; });
+     for (i = 0; i < inners.length; i += 1) {
+       if (inners[i].midi <= ding.midi) return scaleOrder(inners[i], ding, "ding");
+-      if (rimAt[inners[i].midi]) {
++      if (rimAt[inners[i].midi] && rims[rims.length - 1].midi === inners[i].midi) {
+         pair = later(inners[i], rimAt[inners[i].midi]);
+         return scaleRepeated(pair[0], pair[1]);
        }

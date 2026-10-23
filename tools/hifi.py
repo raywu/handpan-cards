@@ -208,25 +208,43 @@ def side_credit(c, x, y, w, h, text):
     c.restoreState()
 
 
-def card_header(c, x, y, w, h, deck, num, subtitle, main, sup):
-    tracked(c, x + 9, y + h - 13.5, deck, "Label", 4.6, 0.5, "l", INK)
+def fit_clip(text, font, size, maxw, track, floor=3.6):
+    """Shrink at the drawn tracking to the floor, then clip trailing characters and end in "..."."""
+    s = size
+    while s > floor and tw(text, font, s, track) > maxw:
+        s = max(floor, s - 0.25)
+    if tw(text, font, s, track) <= maxw:
+        return text, s
+    t = text
+    while len(t) > 1 and tw(t.rstrip() + "...", font, s, track) > maxw:
+        t = t[:-1]
+    return t.rstrip() + "...", s
+
+
+def card_header(c, x, y, w, h, deck, num, subtitle, main, sup, warn_w=0.0):
+    numw = tw(num, "Label", 4.4, 0.4) if num else 0.0
+    right = x + w - 16 - warn_w - 4 if warn_w else x + w - 16
+    t, s = fit_clip(deck, "Label", 4.6, right - (x + 9) - numw - 6, 0.5)
+    dw = tracked(c, x + 9, y + 6.5, t, "Label", s, 0.5, "l", INK)
     if num:
-        tracked(c, x + 9, y + h - 21.5, num, "Label", 4.6, 0.4, "l", SEP)
+        tracked(c, x + 9 + dw + 6, y + 6.5, num, "Label", 4.4, 0.4, "l", SEP)
     if subtitle:
-        s = fit(subtitle, "LabelSB", 4.2, w * 0.60, track=0.55)
-        tracked(c, x + w - 9, y + h - 12.5, subtitle, "LabelSB", s, s * 0.055 * 2.4,
-                "r", INK)
+        s = fit(subtitle, "LabelSB", 4.2, w * 0.65, track=0.55)
+        tracked(c, x + w / 2, y + h - 11.5, subtitle, "LabelSB", s, s * 0.055 * 2.4,
+                "c", INK)
     size = 27.0
     while size > 8 and (tw(main, "Display", size, size * 0.02)
-                        + tw(sup, "Display", size * 0.52, 0)) > w * 0.62:
+                        + tw(sup, "Display", size * 0.52, 0)) > w * 0.80:
         size -= 0.5
     supw = tw(sup, "Display", size * 0.52, 0) if sup else 0.0
-    base = y + h - 24 - size * 0.70
-    tracked(c, x + w - 9 - supw, base, main, "Display", size, size * 0.02, "r", NAME)
+    wm = tw(main, "Display", size, size * 0.02)
+    base = y + h - 18 - size * 0.70
+    xe = x + w / 2 + (wm + supw) / 2 - supw
+    tracked(c, xe, base, main, "Display", size, size * 0.02, "r", NAME)
     if sup:
         c.setFillColor(NAME)
         c.setFont("Display", size * 0.52)
-        c.drawString(x + w - 9 - supw, base + size * 0.46, sup)
+        c.drawString(xe, base + size * 0.46, sup)
 
 
 def bottom_lines(c, x, y, w, fields, roots, meta, y_names, y_nums):
@@ -458,10 +476,13 @@ def chord_card(c, x, y, deck, num, chord):
     roots_all = {k for k in every if spec[k][2] % 12 == root_pc}
     ga, gb = deck.get("grad", (None, None))
     duo_frame(c, x, y, CW, CH, ga=ga, gb=gb)
-    card_header(c, x, y, CW, CH, deck["name"], "#%d" % num, subtitle, main, sup)
+    warn_w = max([tw(line, "LabelSB", 4.0, 0.7) for line in card_warnings(deck)]
+                 or [0.0])
+    card_header(c, x, y, CW, CH, deck["name"], "#%d" % num, subtitle, main, sup,
+                warn_w)
     deg = deck.get("degrees", {}).get(root_pc)
     if deg:
-        tracked(c, x + 9, y + CH - 31.5, deg, "LabelSB", 6.0, 0.4, "l", BLUE)
+        tracked(c, x + 9, y + CH - 13.5, deg, "LabelSB", 6.0, 0.4, "l", BLUE)
     side_credit(c, x, y, CW, CH, deck["credit"])
     draw_pan(c, x + CW / 2, y + deck["cy"], deck["R"], spec, active_all, roots_all)
 
@@ -477,8 +498,8 @@ def chord_card(c, x, y, deck, num, chord):
     # the CARDS. CHORD_ONLY ships chord cards and nothing else, so a warning
     # drawn only on the title card is dropped by the file the print shop gets.
     for i, line in enumerate(card_warnings(deck)):
-        tracked(c, x + CW / 2, y + 6.0 - i * 5.5, line, "LabelSB", 4.0, 0.7,
-                "c", ORANGE)
+        tracked(c, x + CW - 16, y + 6.0 - i * 5.5, line, "LabelSB", 4.0, 0.7,
+                "r", ORANGE)
 
 
 # Title-card blurb: baseline of the first line, its size, step and tracking.

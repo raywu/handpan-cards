@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1431,32 +1431,6 @@ html.about-open{overflow:hidden}
+@@ -1447,32 +1447,6 @@
           parseSeed); focusing one dims the other. One variable, inputPath, says
           which is active. The live region is the last child so the order the
           SG: N-A2 tests pin is untouched. -->
@@ -13,22 +13,22 @@ diff --git a/index.html b/index.html
 -      <div class="fieldrow">
 -        <label class="sheetlabel" id="scale-ding-label" for="scale-ding">DING</label>
 -        <input id="scale-ding" type="text" placeholder="D3" autocapitalize="off" autocorrect="off"
--               autocomplete="off" spellcheck="false" enterkeyhint="next" aria-describedby="scale-field-msg">
+-               autocomplete="off" spellcheck="false" enterkeyhint="next" aria-describedby="scale-field-msg scale-fields-note">
 -      </div>
 -      <div class="fieldrow">
--        <label class="sheetlabel" id="scale-top-label" for="scale-top">TOP RIM NOTES, LOW TO HIGH</label>
+-        <label class="sheetlabel" id="scale-top-label" for="scale-top">TOP RIM NOTES</label>
 -        <input id="scale-top" type="text" placeholder="A3 Bb3 C4 D4 E4 F4 G4 A4" autocapitalize="off" autocorrect="off"
--               autocomplete="off" spellcheck="false" enterkeyhint="next" aria-describedby="scale-field-msg">
+-               autocomplete="off" spellcheck="false" enterkeyhint="next" aria-describedby="scale-field-msg scale-fields-note">
 -      </div>
 -      <div class="fieldrow">
--        <label class="sheetlabel" id="scale-inner-label" for="scale-inner">TOP INNER (CYCLOPS/MUTANT) NOTE, LOW TO HIGH (OPTIONAL)</label>
+-        <label class="sheetlabel" id="scale-inner-label" for="scale-inner">TOP INNER (CYCLOPS/MUTANT) NOTE (OPTIONAL)</label>
 -        <input id="scale-inner" type="text" placeholder="C5 D5" autocapitalize="off" autocorrect="off"
--               autocomplete="off" spellcheck="false" enterkeyhint="next" aria-describedby="scale-field-msg">
+-               autocomplete="off" spellcheck="false" enterkeyhint="next" aria-describedby="scale-field-msg scale-fields-note">
 -      </div>
 -      <div class="fieldrow">
--        <label class="sheetlabel" id="scale-bottom-label" for="scale-bottom">BOTTOM NOTES, LOW TO HIGH (OPTIONAL)</label>
+-        <label class="sheetlabel" id="scale-bottom-label" for="scale-bottom">BOTTOM NOTES (OPTIONAL)</label>
 -        <input id="scale-bottom" type="text" placeholder="C3 Eb3" autocapitalize="off" autocorrect="off"
--               autocomplete="off" spellcheck="false" enterkeyhint="done" aria-describedby="scale-field-msg">
+-               autocomplete="off" spellcheck="false" enterkeyhint="done" aria-describedby="scale-field-msg scale-fields-note">
 -      </div>
 -      <p class="sheethint" id="scale-fields-note"></p>
 -      <p class="sr-only" id="scale-fields-live" aria-live="polite"></p>
@@ -36,36 +36,37 @@ diff --git a/index.html b/index.html
 -    <div id="scale-or" role="separator" aria-label="or"><span>OR</span></div>
      <div class="fieldrow">
        <label class="sheetlabel" for="scale-box">SCALE: (DING) TOP NOTES | OPTIONAL INNER NOTES</label>
-       <span class="sheetlabel" id="scale-label-2">[NOTE] = A BOTTOM NOTE, WRITTEN WHERE ITS PITCH FALLS</span>
-@@ -1483,6 +1457,32 @@ html.about-open{overflow:hidden}
+       <span class="sheetlabel" id="scale-label-2">[NOTE] = A BOTTOM NOTE</span>
+@@ -1498,7 +1472,33 @@
+            the page-level .announce outside the dialog and out of reach. -->
        <div id="scale-refusal" aria-live="polite"></div>
        <p class="sheethint" id="scale-line-note"></p>
-     </div>
++    </div>
 +    <div id="scale-fields" role="group" aria-labelledby="scale-fields-head">
 +      <p class="sheetlabel" id="scale-fields-head">YOUR SCALE, NOTE BY NOTE</p>
 +      <div class="fieldrow">
 +        <label class="sheetlabel" id="scale-ding-label" for="scale-ding">DING</label>
 +        <input id="scale-ding" type="text" placeholder="D3" autocapitalize="off" autocorrect="off"
-+               autocomplete="off" spellcheck="false" enterkeyhint="next" aria-describedby="scale-field-msg">
++               autocomplete="off" spellcheck="false" enterkeyhint="next" aria-describedby="scale-field-msg scale-fields-note">
 +      </div>
 +      <div class="fieldrow">
-+        <label class="sheetlabel" id="scale-top-label" for="scale-top">TOP RIM NOTES, LOW TO HIGH</label>
++        <label class="sheetlabel" id="scale-top-label" for="scale-top">TOP RIM NOTES</label>
 +        <input id="scale-top" type="text" placeholder="A3 Bb3 C4 D4 E4 F4 G4 A4" autocapitalize="off" autocorrect="off"
-+               autocomplete="off" spellcheck="false" enterkeyhint="next" aria-describedby="scale-field-msg">
++               autocomplete="off" spellcheck="false" enterkeyhint="next" aria-describedby="scale-field-msg scale-fields-note">
 +      </div>
 +      <div class="fieldrow">
-+        <label class="sheetlabel" id="scale-inner-label" for="scale-inner">TOP INNER (CYCLOPS/MUTANT) NOTE, LOW TO HIGH (OPTIONAL)</label>
++        <label class="sheetlabel" id="scale-inner-label" for="scale-inner">TOP INNER (CYCLOPS/MUTANT) NOTE (OPTIONAL)</label>
 +        <input id="scale-inner" type="text" placeholder="C5 D5" autocapitalize="off" autocorrect="off"
-+               autocomplete="off" spellcheck="false" enterkeyhint="next" aria-describedby="scale-field-msg">
++               autocomplete="off" spellcheck="false" enterkeyhint="next" aria-describedby="scale-field-msg scale-fields-note">
 +      </div>
 +      <div class="fieldrow">
-+        <label class="sheetlabel" id="scale-bottom-label" for="scale-bottom">BOTTOM NOTES, LOW TO HIGH (OPTIONAL)</label>
++        <label class="sheetlabel" id="scale-bottom-label" for="scale-bottom">BOTTOM NOTES (OPTIONAL)</label>
 +        <input id="scale-bottom" type="text" placeholder="C3 Eb3" autocapitalize="off" autocorrect="off"
-+               autocomplete="off" spellcheck="false" enterkeyhint="done" aria-describedby="scale-field-msg">
++               autocomplete="off" spellcheck="false" enterkeyhint="done" aria-describedby="scale-field-msg scale-fields-note">
 +      </div>
 +      <p class="sheethint" id="scale-fields-note"></p>
 +      <p class="sr-only" id="scale-fields-live" aria-live="polite"></p>
-+    </div>
+     </div>
 +    <div id="scale-or" role="separator" aria-label="or"><span>OR</span></div>
      </div>
      <div id="scale-panel-layout" role="tabpanel" aria-labelledby="scale-tab-layout" hidden>

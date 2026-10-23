@@ -1234,17 +1234,15 @@
    "text": "Ding: D3 Top: A3 C4 Bottom: C3 F",
    "source": {
     "synthetic": true,
-    "note": "a mixed source whose octaved bottom sits below the tops is refused fail-closed (G6)"
+    "note": "a mixed source whose octaved bottom sits below the tops is accepted: bottoms may be typed in any order, and the unoctaved F still blocks (G6)"
    },
    "expect": {
     "status": "NEEDS_INPUT",
     "codes": [
      "BOTTOM_NO_OCTAVE",
-     "NO_OCTAVE",
-     "PROVISIONAL_REFUSED"
+     "NO_OCTAVE"
     ],
     "provisional": "(D3) A3 C4 [C3] [F]",
-    "refusalCode": "NOTE_OUT_OF_ORDER",
     "serialised": "",
     "fields": null
    }

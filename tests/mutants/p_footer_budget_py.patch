@@ -1,0 +1,15 @@
+# kills: test_a_forty_character_deck_name_with_a_warning_is_clipped_clear
+# suite: python3 -m unittest -k test_a_forty_character_deck_name_with_a_warning_is_clipped_clear tests.test_print
+# E3: the deck-name budget ignores the warning, so the name runs into it.
+diff --git a/tools/hifi.py b/tools/hifi.py
+--- a/tools/hifi.py
++++ b/tools/hifi.py
+@@ -221,7 +221,7 @@
+ 
+ def card_header(c, x, y, w, h, deck, num, subtitle, main, sup, warn_w=0.0):
+     numw = tw(num, "Label", 4.4, 0.4) if num else 0.0
+-    right = x + w - 16 - warn_w - 4 if warn_w else x + w - 16
++    right = x + w - 16
+     t, s = fit_clip(deck, "Label", 4.6, right - (x + 9) - numw - 6, 0.5)
+     dw = tracked(c, x + 9, y + 6.5, t, "Label", s, 0.5, "l", INK)
+     if num:

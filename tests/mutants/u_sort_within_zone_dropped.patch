@@ -1,0 +1,16 @@
+# suite: node --test --test-name-pattern ^every.permutation.of.a.fully.octaved.line.reads.as.its.ascending.spelling.and.keeps.its.id$ tests/core.test.js
+# kills: every permutation of a fully octaved line reads as its ascending spelling and keeps its id
+# The notes of a shell keep their typed order, so a shuffled line is not read as its ascending spelling.
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -734,9 +734,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     });
+     function byPitch(a, c) { return a.midi - c.midi || a.at - c.at; }
+     function later(a, c) { return a.at > c.at ? [a, c] : [c, a]; }
+-    rims.sort(byPitch);
+-    inners.sort(byPitch);
+-    bottoms.sort(byPitch);
+     var i;
+     var pair;
+     for (i = 0; i < rims.length; i += 1) {

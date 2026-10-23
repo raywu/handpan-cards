@@ -58,8 +58,7 @@ const SENTENCES = {
   },
   NOTE_OUT_OF_ORDER: {
     order: "<A> is not above <B>, and the line runs low to high. Give <A> a higher octave or move it earlier, e.g. (D3) A3 C4 D4.",
-    ding: "<A> is at or below the ding <B>. Top notes are above the ding; a lower note is a bottom note and goes before it in square brackets, e.g. [C3] (D3) A3.",
-    below: "<A> is not below <B>. Bottom notes before the ding also run low to high, e.g. [C3] [D3] (E3) B3."
+    ding: "<A> is at or below the ding <B>. Top notes are above the ding; a lower note is a bottom note and goes before it in square brackets, e.g. [C3] (D3) A3."
   },
   NOTE_REPEATED: {
     repeated: "<B> and <A> are the same note, and a note may appear only once per shell. A bottom copy takes square brackets and its octave, e.g. (D3) A3 [C4] C4."
@@ -80,7 +79,7 @@ function sentenceMatcher(template) {
 }
 
 test("every row of the grammar table parses to its fields", () => {
-  assert.equal(grammar.rows.length, 33);
+  assert.equal(grammar.rows.length, 35);
   for (const row of grammar.rows.filter(r => r.accept)) {
     for (const str of row.strings) {
       const fields = scale(str);
@@ -267,20 +266,22 @@ test("every legacy-reachable field map prints and re-parses unchanged", () => {
   }
 });
 
-test("a string with neither mark reads the same under both grammars", () => {
+test("a string with neither mark reads under the new grammar wherever the legacy grammar accepts it, to the same fields, and the new grammar also accepts strings the legacy one refuses", () => {
   const rand = rng(5150);
   let both = 0;
+  let onlyNew = 0;
   for (let i = 0; i < 60000; i += 1) {
     const str = randomLegacy(rand, false);
     const old = core.parseLegacySeed(str);
     const now = core.parseSeed(str);
-    assert.equal(now.ok, old.ok, `${str}: legacy ${old.ok}, new ${now.ok}`);
     if (old.ok) {
+      assert.equal(now.ok, true, `${str}: legacy ok, new ${now.code}`);
       assert.equal(JSON.stringify(host(now.value.fields)), JSON.stringify(host(old.value.fields)), str);
       both += 1;
-    }
+    } else if (now.ok) onlyNew += 1;
   }
   assert.ok(both > 1000, `only ${both} accepted by both: the sweep is vacuous`);
+  assert.ok(onlyNew > 100, `only ${onlyNew} accepted by the new grammar alone: the sweep is vacuous`);
 });
 
 test("every e.g. in REASONS parses", () => {

@@ -1452,22 +1452,22 @@ html.about-open{overflow:hidden}
       <div class="fieldrow">
         <label class="sheetlabel" id="scale-ding-label" for="scale-ding">DING</label>
         <input id="scale-ding" type="text" placeholder="D3" autocapitalize="off" autocorrect="off"
-               autocomplete="off" spellcheck="false" enterkeyhint="next" aria-describedby="scale-field-msg">
+               autocomplete="off" spellcheck="false" enterkeyhint="next" aria-describedby="scale-field-msg scale-fields-note">
       </div>
       <div class="fieldrow">
-        <label class="sheetlabel" id="scale-top-label" for="scale-top">TOP RIM NOTES, LOW TO HIGH</label>
+        <label class="sheetlabel" id="scale-top-label" for="scale-top">TOP RIM NOTES</label>
         <input id="scale-top" type="text" placeholder="A3 Bb3 C4 D4 E4 F4 G4 A4" autocapitalize="off" autocorrect="off"
-               autocomplete="off" spellcheck="false" enterkeyhint="next" aria-describedby="scale-field-msg">
+               autocomplete="off" spellcheck="false" enterkeyhint="next" aria-describedby="scale-field-msg scale-fields-note">
       </div>
       <div class="fieldrow">
-        <label class="sheetlabel" id="scale-inner-label" for="scale-inner">TOP INNER (CYCLOPS/MUTANT) NOTE, LOW TO HIGH (OPTIONAL)</label>
+        <label class="sheetlabel" id="scale-inner-label" for="scale-inner">TOP INNER (CYCLOPS/MUTANT) NOTE (OPTIONAL)</label>
         <input id="scale-inner" type="text" placeholder="C5 D5" autocapitalize="off" autocorrect="off"
-               autocomplete="off" spellcheck="false" enterkeyhint="next" aria-describedby="scale-field-msg">
+               autocomplete="off" spellcheck="false" enterkeyhint="next" aria-describedby="scale-field-msg scale-fields-note">
       </div>
       <div class="fieldrow">
-        <label class="sheetlabel" id="scale-bottom-label" for="scale-bottom">BOTTOM NOTES, LOW TO HIGH (OPTIONAL)</label>
+        <label class="sheetlabel" id="scale-bottom-label" for="scale-bottom">BOTTOM NOTES (OPTIONAL)</label>
         <input id="scale-bottom" type="text" placeholder="C3 Eb3" autocapitalize="off" autocorrect="off"
-               autocomplete="off" spellcheck="false" enterkeyhint="done" aria-describedby="scale-field-msg">
+               autocomplete="off" spellcheck="false" enterkeyhint="done" aria-describedby="scale-field-msg scale-fields-note">
       </div>
       <p class="sheethint" id="scale-fields-note"></p>
       <p class="sr-only" id="scale-fields-live" aria-live="polite"></p>
@@ -1475,7 +1475,7 @@ html.about-open{overflow:hidden}
     <div id="scale-or" role="separator" aria-label="or"><span>OR</span></div>
     <div class="fieldrow">
       <label class="sheetlabel" for="scale-box">SCALE: (DING) TOP NOTES | OPTIONAL INNER NOTES</label>
-      <span class="sheetlabel" id="scale-label-2">[NOTE] = A BOTTOM NOTE, WRITTEN WHERE ITS PITCH FALLS</span>
+      <span class="sheetlabel" id="scale-label-2">[NOTE] = A BOTTOM NOTE</span>
       <div id="scale-box-wrap" data-grow="[C3] [D3] (E3) [F#3] [G3] [A3] B3 [C4] D4 E4 F#4 G4 A4 B4 [C5] D5 E5 | F#5 G5 A5">
         <textarea id="scale-box" rows="1" wrap="soft" autocapitalize="off" autocorrect="off"
                   autocomplete="off" spellcheck="false" enterkeyhint="go"
@@ -3135,27 +3135,44 @@ HPE.pdfcards = (function () {
     c.restoreState();
   }
 
-  function cardHeader(c, x, y, w, h, deck, num, subtitle, main, sup) {
-    tracked(c, x + 9, y + h - 13.5, deck, "Label", 4.6, 0.5, "l", INK);
-    if (num) tracked(c, x + 9, y + h - 21.5, num, "Label", 4.6, 0.4, "l", SEP);
+  function fitClip(text, font, size, maxw, track, floor) {
+    floor = floor === undefined ? 3.6 : floor;
+    var s = size;
+    while (s > floor && tw(text, font, s, track) > maxw) s = Math.max(floor, s - 0.25);
+    if (tw(text, font, s, track) <= maxw) return { text: text, size: s };
+    var t = text;
+    while (t.length > 1 && tw(t.replace(/\s+$/, "") + "...", font, s, track) > maxw) {
+      t = t.slice(0, -1);
+    }
+    return { text: t.replace(/\s+$/, "") + "...", size: s };
+  }
+
+  function cardHeader(c, x, y, w, h, deck, num, subtitle, main, sup, warnW) {
+    warnW = warnW || 0;
+    var numw = num ? tw(num, "Label", 4.4, 0.4) : 0.0;
+    var right = warnW ? x + w - 16 - warnW - 4 : x + w - 16;
+    var clip = fitClip(deck, "Label", 4.6, right - (x + 9) - numw - 6, 0.5);
+    var dw = tracked(c, x + 9, y + 6.5, clip.text, "Label", clip.size, 0.5, "l", INK);
+    if (num) tracked(c, x + 9 + dw + 6, y + 6.5, num, "Label", 4.4, 0.4, "l", SEP);
     if (subtitle) {
-      var s = fit(subtitle, "LabelSB", 4.2, w * 0.60, 0.55);
-      tracked(c, x + w - 9, y + h - 12.5, subtitle, "LabelSB", s,
-              s * 0.055 * 2.4, "r", INK);
+      var s = fit(subtitle, "LabelSB", 4.2, w * 0.65, 0.55);
+      tracked(c, x + w / 2, y + h - 11.5, subtitle, "LabelSB", s,
+              s * 0.055 * 2.4, "c", INK);
     }
     var size = 27.0;
     while (size > 8 && (tw(main, "Display", size, size * 0.02) +
-                        tw(sup, "Display", size * 0.52, 0)) > w * 0.62) {
+                        tw(sup, "Display", size * 0.52, 0)) > w * 0.80) {
       size -= 0.5;
     }
     var supw = sup ? tw(sup, "Display", size * 0.52, 0) : 0.0;
-    var base = y + h - 24 - size * 0.70;
-    tracked(c, x + w - 9 - supw, base, main, "Display", size, size * 0.02, "r",
-            NAME);
+    var wm = tw(main, "Display", size, size * 0.02);
+    var base = y + h - 18 - size * 0.70;
+    var xe = x + w / 2 + (wm + supw) / 2 - supw;
+    tracked(c, xe, base, main, "Display", size, size * 0.02, "r", NAME);
     if (sup) {
       c.setFillColor(NAME);
       c.setFont("Display", size * 0.52);
-      c.drawString(x + w - 9 - supw, base + size * 0.46, sup);
+      c.drawString(xe, base + size * 0.46, sup);
     }
   }
 
@@ -3379,10 +3396,13 @@ HPE.pdfcards = (function () {
     });
     var ga = (deck.grad || [null, null])[0];
     duoFrame(c, x, y, CW, CH, undefined, undefined, ga);
-    cardHeader(c, x, y, CW, CH, deck.name, "#" + num, subtitle, main, sup);
+    var warnW = Math.max.apply(null, [0].concat(cardWarnings(deck).map(function (l) {
+      return tw(l, "LabelSB", 4.0, 0.7);
+    })));
+    cardHeader(c, x, y, CW, CH, deck.name, "#" + num, subtitle, main, sup, warnW);
     var deg = (deck.degrees || {})[String(rootPc)];
     if (deg) {
-      tracked(c, x + 9, y + CH - 31.5, deg, "LabelSB", 6.0, 0.4, "l", BLUE);
+      tracked(c, x + 9, y + CH - 13.5, deg, "LabelSB", 6.0, 0.4, "l", BLUE);
     }
     sideCredit(c, x, y, CW, CH, deck.credit);
     drawPan(c, x + CW / 2, y + deck.cy, deck.R, spec, activeAll, rootsAll);
@@ -3400,8 +3420,8 @@ HPE.pdfcards = (function () {
     // The shop variant ships chord cards and nothing else, so a warning drawn
     // only on the title card is dropped by the file the print shop gets.
     cardWarnings(deck).forEach(function (line, i) {
-      tracked(c, x + CW / 2, y + 6.0 - i * 5.5, line, "LabelSB", 4.0, 0.7,
-              "c", ORANGE);
+      tracked(c, x + CW - 16, y + 6.0 - i * 5.5, line, "LabelSB", 4.0, 0.7,
+              "r", ORANGE);
     });
   }
 
@@ -3580,7 +3600,8 @@ HPE.pdfcards = (function () {
     _internal: {
       Canvas: Canvas, tracked: tracked,
       tw: tw, fit: fit, labelSize: labelSize,
-      numSize: numSize, fitNote: fitNote, blurbLayout: blurbLayout
+      numSize: numSize, fitNote: fitNote, blurbLayout: blurbLayout,
+      cardHeader: cardHeader, chordCard: chordCard, fitClip: fitClip
     }
   };
 }());
@@ -3636,10 +3657,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     },
     NOTE_OUT_OF_ORDER: {
       kind: "error",
+      // The default sentence is the legacy reader's only (outOfOrder, called by
+      // parseLegacySeed); the current grammar emits the `ding` alternate alone.
       reason: "<A> is not above <B>, and the line runs low to high. Give <A> a higher octave or move it earlier, e.g. (D3) A3 C4 D4.",
       alternates: {
-        ding: "<A> is at or below the ding <B>. Top notes are above the ding; a lower note is a bottom note and goes before it in square brackets, e.g. [C3] (D3) A3.",
-        below: "<A> is not below <B>. Bottom notes before the ding also run low to high, e.g. [C3] [D3] (E3) B3."
+        ding: "<A> is at or below the ding <B>. Top notes are above the ding; a lower note is a bottom note and goes before it in square brackets, e.g. [C3] (D3) A3."
       }
     },
     NOTE_REPEATED: {
@@ -4268,7 +4290,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   }
 
   // Pass 4: octaves. Notes before the ding are placed from the ding downwards,
-  // notes after it from the previous note upwards.
+  // notes after it from the previous typed note upwards. Order carries meaning
+  // only for a note with no octave; once placed, each zone is sorted by pitch
+  // (ties by typed position) and the zone checks run on the sorted sets.
   function scaleInfer(layout) {
     var ding = layout.ding;
     var low = layout.before;
@@ -4291,22 +4315,13 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       }
       bad = scalePlaced(lo, m);
       if (bad) return bad;
-      if (m === right.midi && right !== ding) return scaleRepeated(lo, right);
-      if (right === ding ? m > right.midi : m >= right.midi) {
-        return scaleOrder(lo, right, "below");
-      }
+      lo.at = n;
       right = lo;
     }
 
     var prev = ding;
-    var lastRim = ding;
-    var lastInner = null;
-    var lastBottom = low.length ? low[low.length - 1] : null;
-    var rimNotes = {};
-    var seenInner = false;
     for (n = 0; n < high.length; n += 1) {
-      var entry = high[n];
-      var note = entry.note;
+      var note = high[n].note;
       var mm;
       if (note.octave === null) {
         mm = midiFromName(note.letter, note.accidental, -1) - 12;
@@ -4316,30 +4331,61 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       }
       bad = scalePlaced(note, mm);
       if (bad) return bad;
-      var restarts = entry.zone === "inner" && !seenInner;
-      if (entry.zone === "inner") seenInner = true;
-      if (mm < prev.midi && !restarts) {
-        return scaleOrder(note, prev, prev === ding ? "ding" : undefined);
-      }
-      if (entry.zone === "bottom") {
-        if (lastBottom && mm <= lastBottom.midi) return scaleRepeated(note, lastBottom);
-        if (mm <= ding.midi) return scaleOrder(note, ding, "ding");
-        lastBottom = note;
-      } else if (entry.zone === "rim") {
-        if (mm <= lastRim.midi) {
-          return lastRim === ding ? scaleOrder(note, ding, "ding") : scaleRepeated(note, lastRim);
-        }
-        lastRim = note;
-        rimNotes[mm] = note;
-      } else {
-        if (restarts && mm <= ding.midi) return scaleOrder(note, ding, "ding");
-        if (rimNotes[mm]) return scaleRepeated(note, rimNotes[mm]);
-        if (lastInner && mm <= lastInner.midi) return scaleRepeated(note, lastInner);
-        lastInner = note;
-      }
+      note.at = low.length + n;
       prev = note;
     }
-    return ok(layout);
+
+    var rims = [];
+    var inners = [];
+    var bottoms = low.slice();
+    high.forEach(function (e) {
+      if (e.zone === "bottom") bottoms.push(e.note);
+      else if (e.zone === "rim") rims.push(e.note);
+      else inners.push(e.note);
+    });
+    function byPitch(a, c) { return a.midi - c.midi || a.at - c.at; }
+    function later(a, c) { return a.at > c.at ? [a, c] : [c, a]; }
+    rims.sort(byPitch);
+    inners.sort(byPitch);
+    bottoms.sort(byPitch);
+    var i;
+    var pair;
+    for (i = 0; i < rims.length; i += 1) {
+      if (rims[i].midi <= ding.midi) return scaleOrder(rims[i], ding, "ding");
+      if (i > 0 && rims[i].midi === rims[i - 1].midi) {
+        pair = later(rims[i], rims[i - 1]);
+        return scaleRepeated(pair[0], pair[1]);
+      }
+    }
+    var rimAt = {};
+    rims.forEach(function (r) { rimAt[r.midi] = r; });
+    for (i = 0; i < inners.length; i += 1) {
+      if (inners[i].midi <= ding.midi) return scaleOrder(inners[i], ding, "ding");
+      if (rimAt[inners[i].midi]) {
+        pair = later(inners[i], rimAt[inners[i].midi]);
+        return scaleRepeated(pair[0], pair[1]);
+      }
+      if (i > 0 && inners[i].midi === inners[i - 1].midi) {
+        pair = later(inners[i], inners[i - 1]);
+        return scaleRepeated(pair[0], pair[1]);
+      }
+    }
+    for (i = 1; i < bottoms.length; i += 1) {
+      if (bottoms[i].midi === bottoms[i - 1].midi) {
+        pair = later(bottoms[i], bottoms[i - 1]);
+        return scaleRepeated(pair[0], pair[1]);
+      }
+    }
+    return ok({
+      ding: ding,
+      rims: rims,
+      inners: inners,
+      bottoms: bottoms,
+      typed: high.filter(function (e) { return e.zone !== "bottom"; })
+        .map(function (e) { return e.note; })
+        .concat(low, high.filter(function (e) { return e.zone === "bottom"; })
+          .map(function (e) { return e.note; }))
+    });
   }
 
   function parseSeed(input, options) {
@@ -4357,11 +4403,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
     var layout = inferred.value;
     var ding = layout.ding;
-    var tops = [];
-    var bottoms = layout.before.map(function (note) { return { note: note, zone: "bottom" }; });
-    layout.after.forEach(function (entry) {
-      (entry.zone === "bottom" ? bottoms : tops).push(entry);
-    });
+    var tops = layout.rims.map(function (note) { return { note: note, zone: "rim" }; })
+      .concat(layout.inners.map(function (note) { return { note: note, zone: "inner" }; }));
+    var bottoms = layout.bottoms.map(function (note) { return { note: note, zone: "bottom" }; });
 
     var wanted = pitchClass(ding.midi + 7);
     var hasFifth = false;
@@ -4379,15 +4423,24 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     fields["0"] = [spell(ding.letter, ding.accidental), ding.octave, ding.midi, "ding", null, "Ding"];
     tops.forEach(function (entry, n) {
       var id = String(n + 1);
+      entry.note.id = id;
       fields[id] = [spell(entry.note.letter, entry.note.accidental), entry.note.octave,
                     entry.note.midi, entry.zone, null, id];
     });
     var first = Math.max(101, tops.length + 1);
     bottoms.forEach(function (entry, n) {
+      entry.note.id = String(first + n);
       fields[String(first + n)] = [spell(entry.note.letter, entry.note.accidental),
                                    entry.note.octave, entry.note.midi, "bottom", null, "U" + (n + 1)];
     });
-    return ok({ fields: fields, options: opts.value });
+    // The field ids in typed order (tops, then bottoms), for the importer's
+    // source-to-field mapping. Not enumerable: it is a reading aid, not part of
+    // the seed, so equality, spreading and serialising of a seed ignore it.
+    var value = { fields: fields, options: opts.value };
+    Object.defineProperty(value, "typed", {
+      value: layout.typed.map(function (note) { return note.id; })
+    });
+    return ok(value);
   }
 
   // The names of the inner notes under the highest rim note, in field order.
@@ -5178,10 +5231,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         var fields = parsed.value.fields;
         var nameOf = function (id) { return fields[id][0] + fields[id][1]; };
         var rim = tops.concat(inner);
+        var typed = parsed.value.typed;
         octaves[ding.index] = nameOf("0");
-        rim.forEach(function (n, i) { octaves[n.index] = nameOf(String(i + 1)); });
-        var first = Math.max(101, rim.length + 1);
-        bottoms.forEach(function (n, i) { octaves[n.index] = nameOf(String(first + i)); });
+        rim.forEach(function (n, i) { octaves[n.index] = nameOf(typed[i]); });
+        bottoms.forEach(function (n, i) { octaves[n.index] = nameOf(typed[rim.length + i]); });
       }
     }
 
@@ -5296,7 +5349,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   var COMPOSE_HIGH = 10;
 
   function composeRange(x) { return x + " is outside C-1 to G9."; }
-  function composeLower(x, p) { return x + " is lower than " + p + ": list low to high."; }
 
   function composeMidi(n, octave) { return core().midiFromName(n.letter, n.acc, octave); }
   function composeFits(midi) { return midi >= 0 && midi <= 127; }
@@ -5332,7 +5384,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return COMPOSE_HIGH;
   }
 
-  function composeStage(head, notes, below, field, anchorName) {
+  function composeStage(head, notes, below, anchorName) {
     var names = [];
     var guessed = [];
     for (var k = 0; k < notes.length; k++) {
@@ -5346,15 +5398,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       var parsed = core().parseSeed(head + names.join(" "));
       if (!parsed.ok && parsed.code !== "NO_FIFTH") {
         names.pop();
-        var before = k ? names[k - 1] : null;
         var error = parsed.reason;
         if (parsed.code === "NOTE_OUT_OF_RANGE") error = composeRange(name);
         else if (parsed.code === "NOTE_REPEATED") error = name + " is already in the top or inner notes.";
-        else if (parsed.code === "NOTE_OUT_OF_ORDER") {
-          if (before) error = composeLower(name, before);
-          else if (field === "top") error = name + " is not above the ding, " + anchorName + ".";
-          else error = name + " is not above the ding, " + anchorName + ".";
-        }
+        else if (parsed.code === "NOTE_OUT_OF_ORDER") error = name + " is not above the ding, " + anchorName + ".";
         return { names: names, error: error };
       }
       below = midi;
@@ -5366,7 +5413,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var names = [];
     var guessed = [];
     var midis = [];
-    var below = null;
     var placed = core().inferBottoms(notes.map(function (x) {
       return { letter: x.letter, accidental: x.acc, octave: x.octave };
     }), ding.midi);
@@ -5379,12 +5425,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       if (i === placed.failAt) {
         return { names: [], guessed: [], error: guess ? n.letter + n.acc + " has no octave that fits: type one." : composeRange(name) };
       }
-      if (below !== null && midi === below) return { names: [], guessed: [], error: name + " is already in the bottom notes." };
-      if (below !== null && midi < below) return { names: [], guessed: [], error: composeLower(name, names[i - 1]) };
+      if (midis.indexOf(midi) !== -1) return { names: [], guessed: [], error: name + " is already in the bottom notes." };
       names.push(name);
       midis.push(midi);
       if (guess) guessed.push(name);
-      below = midi;
     }
     return { names: names, midis: midis, guessed: guessed, error: null };
   }
@@ -5439,16 +5483,16 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var topMidi = null;
     var inner = null;
     var innerGuessed = [];
-    if (!out.errors.top && !read.top.notes.length) out.errors.top = "Enter the top notes, low to high.";
+    if (!out.errors.top && !read.top.notes.length) out.errors.top = "Enter the top notes.";
     if (ding && !out.errors.top) {
-      var staged = composeStage("(" + ding.name + ") ", read.top.notes, ding.midi, "top", ding.name);
+      var staged = composeStage("(" + ding.name + ") ", read.top.notes, ding.midi, ding.name);
       if (staged.error) out.errors.top = staged.error;
       else { top = staged.names; topMidi = staged.last; }
     }
     if (top) {
       out.notes.top = top;
       if (read.inner.notes.length && !out.errors.inner) {
-        var upper = composeStage("(" + ding.name + ") " + top.join(" ") + " | ", read.inner.notes, topMidi, "inner", ding.name);
+        var upper = composeStage("(" + ding.name + ") " + top.join(" ") + " | ", read.inner.notes, topMidi, ding.name);
         if (upper.error) out.errors.inner = upper.error;
         else { inner = upper.names; innerGuessed = upper.guessed; }
       } else if (!out.errors.inner) inner = [];
@@ -5488,11 +5532,14 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     }
 
     if (ding && top && inner && bottom && COMPOSE_FIELDS.every(function (f) { return !out.errors[f]; })) {
+      var plain = function (names) {
+        return names.map(function (x) { return { note: x }; });
+      };
       var roles = {
         ding: { note: ding.name },
-        top: top.map(function (x) { return { note: x }; }),
-        inner: inner.map(function (x) { return { note: x }; }),
-        bottom: bottom.names.map(function (x) { return { note: x }; })
+        top: plain(top),
+        inner: plain(inner),
+        bottom: plain(bottom.names)
       };
       var line = serialise({ status: "REVIEW", roles: roles });
       var parsed = core().parseSeed(line);
@@ -9301,6 +9348,7 @@ function generateDeck(text, options, guard) {
     }
     built.value.options.seats = JSON.parse(JSON.stringify(wanted));
   }
+  if (seed.value.options.parent == null) built.value.options.parent = null;
   // `replaces` is the record option that puts a custom deck in a seeded deck's
   // chip slot. select.build and core.parseSeed both drop it, so it is carried
   // back here from the raw argument, and from the registry entry this build is
@@ -10276,7 +10324,8 @@ function buildChips() {
  * through HPE.core.parseSeed, and Generate hands the text to generateDeck().
  * There is exactly ONE adapter from the engine's result shape to the message
  * area (say()), and nothing here composes a reason sentence of its own. */
-const PARSE_HINT = "Type every note low to high on one line. Put the ding in round brackets: (D). Put each bottom note in square brackets where its pitch falls: [C]. If your pan has inner notes, put a | before them. Octave numbers are optional.";
+const OCTAVE_SENTENCE = "Octaves are optional: without one, we assume the notes run low to high.";
+const PARSE_HINT = "Type every note on one line, in any order. Put the ding in round brackets: (D) and each bottom note in square brackets: [C]. Put a | before inner notes. " + OCTAVE_SENTENCE;
 const sheet     = document.getElementById("scale-sheet");
 // The scrolling surface itself (.sheetsurf), looked up by DOM position rather
 // than by id: it is the one thing the iOS keyboard fix below has to move, and
@@ -12605,7 +12654,7 @@ function paintPassive() {
     : "";
   fieldsNote.textContent = !onFields
     ? (fieldsStale ? "Not updated: the line below does not read as a scale yet." : "Follows the line below. Tap a field to type notes instead.")
-    : "";
+    : (scaleBox.value === "" ? OCTAVE_SENTENCE : "");
   if (onFields && lineStale) genBtn.disabled = true;
 }
 function writeLine(text) {

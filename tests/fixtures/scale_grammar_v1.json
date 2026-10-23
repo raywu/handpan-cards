@@ -26,13 +26,15 @@
   {"row": 23, "strings": ["(D) A | C | E", "D | A | C | E"], "refuse": {"code": "BAD_NOTE", "alternate": "bar"}},
   {"row": 24, "strings": ["(D) | A C", "(D) A C |", "(D) A C [E] | [F]"], "refuse": {"code": "BAD_NOTE", "alternate": "barEmpty"}},
   {"row": 25, "strings": ["(D3) A3 C4 D4 | C3 E3"], "refuse": {"code": "NOTE_OUT_OF_ORDER", "alternate": "ding"}},
-  {"row": 26, "strings": ["(D3) A3 C3"], "refuse": {"code": "NOTE_OUT_OF_ORDER", "alternate": "order"}},
-  {"row": 27, "strings": ["(D3) C3 A3", "(D3) [D3] A3"], "refuse": {"code": "NOTE_OUT_OF_ORDER", "alternate": "ding"}},
-  {"row": 28, "strings": ["[E3] (D3) A3", "[D3] [C3] (E3) B3"], "refuse": {"code": "NOTE_OUT_OF_ORDER", "alternate": "below"}},
+  {"row": 26, "strings": ["(D3) A3 C3"], "refuse": {"code": "NOTE_OUT_OF_ORDER", "alternate": "ding"}},
+  {"row": 27, "strings": ["(D3) C3 A3"], "refuse": {"code": "NOTE_OUT_OF_ORDER", "alternate": "ding"}},
+  {"row": 28, "strings": ["[E3] (D3) A3"], "accept": {"ding": "D3", "rim": "A3", "inner": "", "bottom": "E3", "canonical": "(D3) [E3] A3"}},
   {"row": 29, "strings": ["(D3) A3 A3 C4", "(D) A C D E F G A C | C5"], "refuse": {"code": "NOTE_REPEATED", "alternate": "repeated"}},
   {"row": 30, "strings": ["(D) A H C"], "refuse": {"code": "BAD_NOTE", "alternate": "reason"}},
   {"row": 31, "strings": ["(D9) A9 C"], "refuse": {"code": "NOTE_OUT_OF_RANGE", "alternate": null}},
   {"row": 32, "strings": ["(D) C E F", "D |"], "refuse": {"code": "NO_FIFTH", "alternate": null}},
-  {"row": 33, "strings": ["(D3) A3 C4 D4 E4 | B3 F4"], "accept": {"ding": "D3", "rim": "A3 C4 D4 E4", "inner": "B3 F4", "bottom": "", "canonical": "(D3) A3 C4 D4 E4 | B3 F4"}}
+  {"row": 33, "strings": ["(D3) A3 C4 D4 E4 | B3 F4"], "accept": {"ding": "D3", "rim": "A3 C4 D4 E4", "inner": "B3 F4", "bottom": "", "canonical": "(D3) A3 C4 D4 E4 | B3 F4"}},
+  {"row": 34, "strings": ["(D3) [D3] A3"], "accept": {"ding": "D3", "rim": "A3", "inner": "", "bottom": "D3", "canonical": "[D3] (D3) A3"}},
+  {"row": 35, "strings": ["[D3] [C3] (E3) B3"], "accept": {"ding": "E3", "rim": "B3", "inner": "", "bottom": "C3 D3", "canonical": "[C3] [D3] (E3) B3"}}
  ]
 }
