@@ -444,6 +444,51 @@ class BuildTest(BuiltDecksTest):
             "committed PDFs are out of date - rerun `python3 tools/decks.py` "
             "and commit the result:\n  " + "\n  ".join(stale))
 
+    def test_committed_pdfs_place_every_glyph_where_a_fresh_build_does(self):
+        """Position-aware staleness: the text gate above is whitespace-blind.
+
+        Every text span of every page, in stream order, must match the fresh
+        build in text, font and size, with every bbox corner within 0.5 pt.
+        """
+        bad = []
+        for key, rel in {k: paths.PDFS[k] for k in paths.COMMITTED}.items():
+            dest = _committed_pdf_dest(self.tmp, rel)
+            with open(dest, "wb") as fh:
+                fh.write(_committed_pdf_bytes(rel, paths.ROOT))
+            with pymupdf.open(dest) as head:
+                a = _spans(head)
+                b = _spans(self.docs[key])
+            if len(a) != len(b):
+                bad.append("%s: %d committed spans vs %d rebuilt"
+                           % (rel, len(a), len(b)))
+                continue
+            for i, (s1, s2) in enumerate(zip(a, b)):
+                if s1[:3] != s2[:3]:
+                    bad.append("%s: span %d is %r committed vs %r rebuilt"
+                               % (rel, i, s1[:3], s2[:3]))
+                    break
+                drift = max(abs(p - q) for p, q in zip(s1[3], s2[3]))
+                if drift > 0.5:
+                    bad.append("%s: span %d %r moved %.2f pt"
+                               % (rel, i, s1[0], drift))
+                    break
+        self.assertEqual(
+            bad, [],
+            "committed PDFs place glyphs differently from a rebuild - rerun "
+            "`python3 tools/decks.py` and commit the result:\n  "
+            + "\n  ".join(bad))
+
+
+def _spans(doc):
+    out = []
+    for page in doc:
+        for block in page.get_text("dict")["blocks"]:
+            for line in block.get("lines", ()):
+                for span in line["spans"]:
+                    out.append((span["text"], span["font"],
+                                round(span["size"], 2), tuple(span["bbox"])))
+    return out
+
 
 if __name__ == "__main__":
     unittest.main()

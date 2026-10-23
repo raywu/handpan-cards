@@ -8118,8 +8118,8 @@ function run() {
     //
     // The one step that is NOT covered here is empty -> first valid parse:
     // PARSE_HINT was three wrapped lines at 380px and the note list is one, a
-    // 37px difference measured on 2026-09-11 (four lines since, 74px in real fonts). Reserving it would cost every
-    // phone 37px of sheet permanently to hold still at a moment BEFORE the
+    // 37px difference measured on 2026-09-11; PARSE_HINT has wrapped to four lines since, 74px with real fonts. Reserving it would cost every
+    // phone that height permanently to hold still at a moment BEFORE the
     // user has typed anything, so it is spent on the typing path instead.
     // The next test pins what the step is MADE of - nothing but the parse
     // line contributes to it - not its magnitude, which moves with how
@@ -9550,6 +9550,7 @@ function run() {
         }
       }
       } finally {
+        await rb.setViewport(900, 900, false);
         await rb.goto(URL);
         await rb.eval(`return document.fonts.ready.then(() => true);`);
       }

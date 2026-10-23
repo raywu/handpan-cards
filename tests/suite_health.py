@@ -36,9 +36,9 @@ from tests import paths  # noqa: E402
 FLOORS = {
     # python
     "tests/test_deck_data.py": 28,
-    "tests/test_pdf_build.py": 13,
+    "tests/test_pdf_build.py": 14,
     "tests/test_gen_deck.py": 31,
-    "tests/test_print.py": 44,
+    "tests/test_print.py": 46,
     "tests/test_render_agreement.py": 27,
     "tests/test_fixture_integrity.py": 8,
     "tests/test_failure_diagnosability.py": 23,
@@ -62,7 +62,7 @@ FLOORS = {
     "tests/drawer_seats.test.js": 28,
     "tests/drawer_drag.test.js": 33,
     # pre-seeded for the scale-engine lanes; each lane raises its own row only.
-    "tests/core.test.js": 89,
+    "tests/core.test.js": 92,
     "tests/import.test.js": 128,
     "tests/import_gold.test.js": 8,
     "tests/voicing.test.js": 18,
@@ -72,7 +72,7 @@ FLOORS = {
     "tests/share.test.js": 105,
     "tests/preview.test.js": 14,
     "tests/pdf.test.js": 14,
-    "tests/pdfcards.test.js": 37,
+    "tests/pdfcards.test.js": 39,
     "tests/coverage_merge.test.js": 18,
     "tests/mutation_harness.test.js": 54,
     "tests/pdf_builtin.test.js": 13,

@@ -158,8 +158,10 @@ are. This adds SENTENCES, never codes: the enum above stays closed, and the
 section; `tests/core.test.js` holds the two together.
 
 The current grammar emits only the `ding` alternate of `NOTE_OUT_OF_ORDER`: a
-top note, rim or inner, at or below the ding ("IB: an inner note at or below
-the ding gets the ding sentence"). The default `reason` in the code table
+top note, rim or inner, at or below the ding (rim: grammar rows 26 and 27,
+  through tests/scale.test.js "every refused row carries its code and its
+  sentence"; inner: "IB: an inner note at or below the ding gets the ding
+  sentence"). The default `reason` in the code table
 above is the legacy reader's sentence only (`outOfOrder`, called by
 `core.parseLegacySeed`), kept because that reader is frozen ("the legacy reader
 keeps the default NOTE_OUT_OF_ORDER sentence"). The `below` alternate of
@@ -199,12 +201,12 @@ keeps the default NOTE_OUT_OF_ORDER sentence"). The `below` alternate of
   are engine-spelled note names, not user text. So the seed above now reads:
   `D2 is not above C3 (inferred from C), and the line runs low to high. Give D2
   a higher octave or move it earlier, e.g. (D3) A3 C4 D4.` (the 2026-10
-  sentence; since the order-free reader it is the LEGACY reader's sentence
-  only, "a bottom note below the octave inferred for the note before it says
-  so", which reads the seed through `parseLegacySeed`, and `parseSeed` now
-  answers the same seed with the `ding` alternate, ("IB: an inner note at or below the ding gets the ding sentence" covers an
-  explicit inner note under the ding; the seed itself: no test; true by
-  `src/engine/core.js` `scaleInfer`))
+  sentence). Since the order-free reader it is the LEGACY reader's sentence only
+  ("a bottom note below the octave inferred for the note before it says so",
+  which reads the seed through `parseLegacySeed`); `parseSeed` answers the same
+  seed with the `ding` alternate (an explicit inner note under the ding: "IB: an
+  inner note at or below the ding gets the ding sentence"; the seed itself: no
+  test; true by `src/engine/core.js` `scaleInfer`)
 - DECIDED(swarm-2026-09-10 w39) BOTH positions are named whenever the fault is
   a relation between two notes, and either may carry the inference annotation.
   `NOTE_REPEATED` substitutes `<B>` for the earlier of the two and `<A>` for
@@ -227,11 +229,13 @@ keeps the default NOTE_OUT_OF_ORDER sentence"). The `below` alternate of
   `NOTE_OUT_OF_ORDER` and `NOTE_REPEATED` need a note with an explicit octave
   somewhere in the line, but the note named as `<A>` may be one placed by
   inference. An unoctaved note after the ding sits just above the note typed
-  before it, so it lands at or below the ding only when that note is a lower
-  bottom typed after the ding (`(D3) [A2] C E A` is `NOTE_OUT_OF_ORDER` `ding`
-  naming C3). It lands on a pitch already placed only when an earlier-typed note
+  before it, so it lands at or below the ding only when that note is itself
+  below the ding: a bottom typed after the ding (`(D3) [A2] C E A` is
+  `NOTE_OUT_OF_ORDER` `ding` naming C3), or a top note below the ding, which is
+  refused first (`(D3) B2 C` names B2). It lands on a pitch already placed only when an earlier-typed note
   is higher than the one just before it (`(D3) C4 A3 C` is `NOTE_REPEATED`
-  naming C4) (no test; true by `src/engine/core.js` `scaleInfer`). In the legacy
+  naming C4) ("an unoctaved note after the ding lands at or below it only after
+  a note below the ding"). In the legacy
   reader both codes fire only from an explicit-octave token, where `<A>` echoes
   the token typed, and also for a break in the typed order (`outOfOrder`).
 - DECIDED(swarm-2026-09-08) The `NO_FIFTH` reason substitutes twice: `<X>` is
@@ -326,24 +330,30 @@ note      := [A-G] ("#" | "b")? ("-1" | [0-9])?
   below the note after it (no test; true by `src/engine/core.js` `scaleInfer`),
   and an explicit octave reseeds inference for the notes after. A bottom note
   may be typed on either side of the ding: `[E3] (D3) A3` reads as
-  `(D3) [E3] A3` (no test; true by `src/engine/core.js` `scaleInfer`). After
-  inference each zone is sorted by MIDI (ties by typed position), ids are
+  `(D3) [E3] A3` (tests/scale.test.js "every row of the grammar table parses to
+  its fields", row 28). After
+  inference each zone is sorted by MIDI, ids are
   assigned in that order, and the zone checks run on the sorted sets ("every
   permutation of a fully octaved line reads as its ascending spelling and
   keeps its id"; "IB: inner notes typed in either order read as the same inner
   pair, and an inner at or below the ding is NOTE_OUT_OF_ORDER ding"). A top
   note (rim or inner) at or below the ding is `NOTE_OUT_OF_ORDER` with the
   `ding` alternate, the only sentence the current grammar emits ("IB: an inner
-  note at or below the ding gets the ding sentence"). The same MIDI twice on
+  note at or below the ding gets the ding sentence"; grammar rows 26 and 27,
+  through tests/scale.test.js "every refused row carries its code and its
+  sentence"). The same MIDI twice on
   one shell is `NOTE_REPEATED` naming the later typed note ("IB: a rim pitch
   typed twice is NOTE_REPEATED naming the later one, in any order"; "G2b: a
-  repeated bottom note after the ding is NOTE_REPEATED"). A bottom at the
+  repeated bottom note after the ding is NOTE_REPEATED"; "a repeated pitch is
+  NOTE_REPEATED naming the later typed note on the inner and bottom shells, told
+  apart by spelling"). A bottom at the
   ding's pitch is accepted: `[D3] (D3) A3` and `(D3) [D3] A3` both read
   `[D3] (D3) A3` (no test in `tests/core.test.js`; true by
   `src/engine/core.js` `scaleInfer` and `formatSeed`, and `parseSeed` accepts
   `[C3] [D3] (D3) A3` in "O1: compose's seed and line are the same with and
   without the warning: D3 c d and D3 C3 D3 give one line and one seed, and
-  parseSeed accepts [C3] [D3] (D3) A3 as on origin/main", `tests/import.test.js`).
+  parseSeed accepts [C3] [D3] (D3) A3 as on origin/main",
+  `tests/import.test.js`; grammar rows 13 and 34, same test).
   `formatSeed` sorts, so `parseSeed(formatSeed(x))` equals `x` ("IB: formatSeed
   writes a dip as bottoms, ding and rim, then the bar and the inner notes, and
   it round-trips") and every accepted spelling of a field map has one canonical
@@ -351,7 +361,8 @@ note      := [A-G] ("#" | "b")? ("-1" | [0-9])?
   spelling and keeps its id"). `parseSeed` also reports the field ids in typed
   order (`value.typed`, not enumerable), because the importer maps source notes
   to fields by position ("parseSeed reports the field ids in typed order, tops
-  then bottoms"). Every line the previous reader accepted still reads to the
+  then bottoms"). Every accepted reading in the frozen origin/main d8d2a2d
+  corpus (tests/fixtures/engine_corpus_main_d8d2a2d_ok.json) still reads to the
   same fields and deck id ("the frozen origin/main d8d2a2d accepted readings
   still read to the same fields and deck id"). This replaces the swarm-2026-09-08
   rule that the whole line must be strictly ascending after inference.
@@ -465,7 +476,7 @@ The field id and label scheme, read off all three built-ins in `index.html`:
   inner notes. Ids and labels are one sequence, rim first then inner
   (`(F3) A3 B3 | C5` is rim `"1"`, `"2"` and inner `"3"`). Bottom ids are
   `"101"` upward, or one past the last top id when a pan has more than 100 top
-  notes (`U1`, `U2`, ... in ascending pitch, ties by typed position; no test;
+  notes (`U1`, `U2`, ... in ascending pitch; no test;
   true by `src/engine/core.js` `scaleInfer` and `parseSeed`).
 - DECIDED(owner 2026-10, caps retired) There is no cap on any ring, so there is
   no maximum pan. The old 11 / 2 / 6 limits and their error code are gone; only

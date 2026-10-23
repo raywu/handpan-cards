@@ -237,6 +237,9 @@ class PaletteSafeTest(unittest.TestCase):
         hifi.BLUE = deck["col_root"]
         hifi.GREEN = deck["col_tone"]
 
+    def restore_palette(self):
+        hifi.BLUE, hifi.GREEN = self._palette
+
 
 # --------------------------------------------------------------------------
 # text units
@@ -330,7 +333,7 @@ class FitTest(unittest.TestCase):
 # --------------------------------------------------------------------------
 # call-site width budgets, across all 177 cards
 # --------------------------------------------------------------------------
-class CardWidthBudgetTest(unittest.TestCase):
+class CardWidthBudgetTest(PaletteSafeTest):
     """The budgets the card layout promises, checked against drawn ink.
 
     card_header() measures the subtitle with one tracking value and then draws
@@ -338,7 +341,7 @@ class CardWidthBudgetTest(unittest.TestCase):
     These tests measure the DRAWN run.
     """
 
-    SUBTITLE_BUDGET = 0.60      # of the card width - the header's own budget
+    SUBTITLE_BUDGET = 0.65      # of the card width - the header's own budget
 
     def test_drawn_subtitle_fits_the_header_budget_on_every_card(self):
         worst = None
@@ -364,26 +367,52 @@ class CardWidthBudgetTest(unittest.TestCase):
                          worst[1], worst[2], worst[3], worst[0]))
 
     def test_drawn_subtitle_never_collides_with_the_deck_name(self):
-        worst = None
+        """E3: the subtitle shares the degree's top line, centred, above the name.
+
+        Picked by baseline, not size: a warned deck's LabelSB 4.0 warning run
+        would match a size test.  Over all 177 cards: 4 pt between the degree's
+        right end and the subtitle's left, and the superscript's cap top at
+        least 2 pt below the subtitle baseline.
+        """
+        worst_gap = worst_sup = None
         for deck, index, chord in every_card():
             main, sup, subtitle, _fields, _roots = chord
-            canvas = RecordingCanvas()
-            hifi.card_header(canvas, 0.0, 0.0, SPEC_CARD_W, SPEC_CARD_H,
-                             deck["name"], "#%d" % index, subtitle, main, sup)
+            self.use_palette(deck)
+            try:
+                canvas = render_chord_card(deck, index, chord)
+            finally:
+                self.restore_palette()
             grouped = runs(canvas)
-            sub = [v for k, v in grouped.items() if k[1] == "LabelSB"][0]
-            name = [v for k, v in grouped.items()
-                    if k[1] == "Label" and v[2] == deck["name"]]
-            self.assertEqual(len(name), 1,
-                             "expected one deck-name run on %s %s"
-                             % (deck["name"], main))
-            gap = sub[0] - name[0][1]
-            if worst is None or gap < worst[0]:
-                worst = (gap, deck["name"], subtitle)
-        self.assertGreater(
-            worst[0], 0.0,
-            "the header subtitle overlapped the deck name. Worst case of all "
-            "177 cards: %s / %r, gap %.2f pt" % (worst[1], worst[2], worst[0]))
+            sub_y = round(hifi.CH - 11.5, 3)
+            deg_y = round(hifi.CH - 13.5, 3)
+            sub = [v for k, v in grouped.items()
+                   if k[0] == sub_y and k[1] == "LabelSB"]
+            self.assertEqual(len(sub), 1 if subtitle else 0,
+                             "%s %s" % (deck["name"], main))
+            deg = [v for k, v in grouped.items()
+                   if k[0] == deg_y and k[1:] == ("LabelSB", 6.0)]
+            if sub and deg:
+                gap = sub[0][0] - deg[0][1]
+                if worst_gap is None or gap < worst_gap[0]:
+                    worst_gap = (gap, deck["name"], main, subtitle)
+            if sub and sup:
+                sups = [k for k, v in grouped.items()
+                        if k[1] == "Display" and v[2] == sup]
+                self.assertEqual(len(sups), 1, "%s %s" % (deck["name"], main))
+                cap = sups[0][0] + 0.7 * sups[0][2]
+                room = sub_y - cap
+                if worst_sup is None or room < worst_sup[0]:
+                    worst_sup = (room, deck["name"], main)
+        self.assertGreaterEqual(
+            worst_gap[0], 4.0,
+            "the subtitle came within 4 pt of the degree. Worst case: %s / %s "
+            "/ %r, gap %.2f pt" % (worst_gap[1], worst_gap[2], worst_gap[3],
+                                   worst_gap[0]))
+        self.assertGreaterEqual(
+            worst_sup[0], 2.0,
+            "the superscript rose within 2 pt of the subtitle baseline. Worst "
+            "case: %s / %s, room %.2f pt" % (worst_sup[1], worst_sup[2],
+                                              worst_sup[0]))
 
     def test_all_drawn_card_text_stays_inside_the_card(self):
         worst = None
@@ -454,6 +483,105 @@ class CardWarningTest(PaletteSafeTest):
                                     MIN_TEXT_MARGIN, t["text"])
             self.assertGreaterEqual(t["y"], MIN_TEXT_MARGIN, t["text"])
             self.assertLessEqual(t["y"], SPEC_CARD_H - MIN_TEXT_MARGIN, t["text"])
+
+
+class HeaderWorstCaseTest(PaletteSafeTest):
+    """E3 (plan P2): the two worst synthetic cards print clean.
+
+    (a) the longest chord name on the busiest pan; (b) the same with a
+    40-character deck name and a NO_THIRDS warning.  A run "shares a band" with
+    another when their baselines differ by under 0.7 of the larger size, and
+    "intersects" when their horizontal spans overlap.  Only the header and
+    footer bands are swept: the diagram's own labels have their own tests (the
+    Pygmy badge over a bottom ring predates E3).
+    """
+
+    LONG_NAME = "D CELTIC MINOR 10 WITH SIX BOTTOM NOTESS"
+
+    def synth(self, name=None, warned=False):
+        deck = dict(decks.PYGMY)
+        src = decks.PYGMY["chords"][50]
+        deck["chords"] = [("Dbmaj7sus4add", "#11",
+                           "SUSPENDED MAJOR 7 ADD SHARP 11 LOW VOICED",
+                           src[3], src[4])]
+        if name:
+            deck["name"] = name
+        if warned:
+            deck["warnings"] = [{"code": "NO_THIRDS",
+                                 "reason": "No 3rds on this pan."}]
+        self.use_palette(deck)
+        return deck, render_chord_card(deck, 1, deck["chords"][0])
+
+    def assert_no_collision(self, canvas):
+        items = [(k, v) for k, v in runs(canvas).items()
+                 if k[1] in ("Label", "LabelSB", "Display")
+                 and (k[0] <= 12.0 or k[0] >= hifi.CH - 40.0)]
+        self.assertGreaterEqual(len(items), 4)
+        for i, (k1, v1) in enumerate(items):
+            for k2, v2 in items[i + 1:]:
+                band = abs(k1[0] - k2[0]) < 0.7 * max(k1[2], k2[2])
+                over = min(v1[1], v2[1]) - max(v1[0], v2[0]) > 0
+                self.assertFalse(band and over,
+                                 "runs %r and %r collide" % (v1[2], v2[2]))
+
+    def test_the_longest_name_on_the_busiest_pan_has_no_colliding_runs(self):
+        _deck, canvas = self.synth()
+        self.assert_no_collision(canvas)
+        name = [k for k, v in runs(canvas).items()
+                if k[1] == "Display" and v[2] == "Dbmaj7sus4add"]
+        self.assertEqual(len(name), 1)
+        self.assertGreaterEqual(name[0][2], 14.0)
+
+    WHOLE_NAME = "MOUNTAIN MAGIC WOMB HANDPAN MW MEMORY WA"
+
+    def footer_name(self, canvas):
+        (nk, nv), = [(k, v) for k, v in runs(canvas).items()
+                     if k[0] == 6.5 and k[1] == "Label" and k[2] >= 3.6
+                     and v[2] != "#1" and k[2] != 4.4]
+        return nk[2], nv[2]
+
+    def test_a_forty_character_name_that_fits_below_4_6_draws_whole_at_its_drawn_tracking(self):
+        deck, canvas = self.synth(self.WHOLE_NAME)
+        self.assertEqual(len(deck["name"]), 40)
+        size, text = self.footer_name(canvas)
+        self.assertEqual(text, self.WHOLE_NAME)
+        self.assertLess(size, 4.6)
+        self.assertGreaterEqual(size, 3.6)
+
+    def test_a_name_too_long_even_at_3_6_is_clipped_at_exactly_3_6(self):
+        _deck, canvas = self.synth(self.LONG_NAME, warned=True)
+        size, text = self.footer_name(canvas)
+        self.assertTrue(text.endswith("..."), text)
+        self.assertEqual(size, 3.6)
+
+    def test_fit_clip_shrinks_at_the_drawn_tracking_before_it_clips(self):
+        maxw = 140.92
+        text, size = hifi.fit_clip(self.WHOLE_NAME, "Label", 4.6, maxw, 0.5)
+        self.assertEqual(text, self.WHOLE_NAME)
+        self.assertEqual(size, 4.35)
+        self.assertLessEqual(hifi.tw(text, "Label", size, 0.5), maxw)
+        self.assertGreaterEqual(size, 3.6)
+
+    def test_a_forty_character_deck_name_with_a_warning_is_clipped_clear(self):
+        deck, canvas = self.synth(self.LONG_NAME, warned=True)
+        self.assertEqual(len(deck["name"]), 40)
+        self.assert_no_collision(canvas)
+        grouped = runs(canvas)
+        name = [(k, v) for k, v in grouped.items()
+                if k[0] == 6.5 and k[1] == "Label" and k[2] >= 3.6
+                and v[2] != "#1"]
+        self.assertEqual(len(name), 1)
+        (nk, nv), = name
+        self.assertGreaterEqual(nk[2], 3.6)
+        self.assertTrue(nv[2].endswith("..."), nv[2])
+        num = [v for k, v in grouped.items() if v[2] == "#1"][0]
+        warn_k, warn = [(k, v) for k, v in grouped.items()
+                        if k[1] == "LabelSB" and k[2] == 4.0][0]
+        self.assertGreaterEqual(num[0] - nv[1], 4.0)
+        self.assertGreaterEqual(warn[0] - num[1], 4.0)
+        credit_left = hifi.CW - 6.0 - 3.5
+        self.assertGreaterEqual(credit_left - warn[1], 4.0)
+        self.assertLess(warn_k[0] + 0.7 * 4.0, 12.0)
 
 
 # --------------------------------------------------------------------------
