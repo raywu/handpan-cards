@@ -11688,8 +11688,9 @@ function putDownPick() {
   const ref = pickRef;
   const fromSeatButton = document.activeElement === seatPrev || document.activeElement === seatNext;
   const moved = pickMoved;
+  const slid = pickSlid;
   setPick(null);
-  layoutStatus(moved ? `${p.name} put down. The ${pickSlid ? "moves" : "swaps"} you made are kept.` : "Cancelled. Nothing moved.");
+  layoutStatus(moved ? `${p.name} put down. The ${slid ? "moves" : "swaps"} you made are kept.` : "Cancelled. Nothing moved.");
   if (fromSeatButton) { setRover(ref); focusRef(ref); }
 }
 function resetLayout() {
@@ -12587,17 +12588,28 @@ document.addEventListener("pointerdown", (e) => {
 }, true);
 // The mirror is the choice the pan preview exists to make visible, so each
 // button re-solves the preview through the same parse path a keystroke uses.
+// A toggle re-seats the whole pan, so moved bottom notes must still clear the floor after it
+// (HPE.layout.bottomClash): a toggle that would leave the sheet unbuildable is undone.
+const toggleFits = () => !layoutAngles || (!!lastSeed && solvePreviewLayout(lastSeed) !== null);
+const TOGGLE_REFUSED = "Not changed: it would put a note you moved too close to another. Reset layout first.";
 mirrorTop.onclick = () => {
-  mirror = !mirror; paintLayout(); resyncSheet(true);
+  mirror = !mirror;
+  if (!toggleFits()) { mirror = !mirror; layoutStatus(TOGGLE_REFUSED); return; }
+  paintLayout(); resyncSheet(true);
   layoutStatus(mirror ? "Top mirror on." : "Top mirror off.");
 };
 mirrorBot.onclick = () => {
-  bottomHeld = !bottomHeld; paintLayout(); resyncSheet(true);
+  bottomHeld = !bottomHeld;
+  if (!toggleFits()) { bottomHeld = !bottomHeld; layoutStatus(TOGGLE_REFUSED); return; }
+  paintLayout(); resyncSheet(true);
   layoutStatus(bottomMirror() ? "Bottom mirror on." : "Bottom mirror off.");
 };
 const pickAnchor = (to) => () => {
   if (anchor === to) return;
-  anchor = to; paintLayout(); resyncSheet(true);
+  const was = anchor;
+  anchor = to;
+  if (!toggleFits()) { anchor = was; layoutStatus(TOGGLE_REFUSED); return; }
+  paintLayout(); resyncSheet(true);
   layoutStatus(to === "one" ? "Note 1 is centred." : "Notes 1 and 2 are split.");
 };
 anchorOne.onclick = pickAnchor("one");

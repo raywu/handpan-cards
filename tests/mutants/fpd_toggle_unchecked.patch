@@ -1,0 +1,15 @@
+# kills: FPD: a mirror or anchor toggle that would put a moved bottom note inside another's floor is refused, changes nothing and says why in plain words
+# suite: node --test --test-name-pattern ^FPD..a.mirror.or.anchor.toggle.that.would.put.a.moved.bottom.note.inside.another.s.floor.is.refused..changes.nothing.and.says.why.in.plain.words$ tests/app.test.js
+# A toggle never checks the floor.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12590,7 +12590,7 @@
+ // button re-solves the preview through the same parse path a keystroke uses.
+ // A toggle re-seats the whole pan, so moved bottom notes must still clear the floor after it
+ // (HPE.layout.bottomClash): a toggle that would leave the sheet unbuildable is undone.
+-const toggleFits = () => !layoutAngles || (!!lastSeed && solvePreviewLayout(lastSeed) !== null);
++const toggleFits = () => true || (!!lastSeed && solvePreviewLayout(lastSeed) !== null);
+ const TOGGLE_REFUSED = "Not changed: it would put a note you moved too close to another. Reset layout first.";
+ mirrorTop.onclick = () => {
+   mirror = !mirror;

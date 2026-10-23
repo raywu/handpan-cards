@@ -13700,5 +13700,39 @@ describe("FPD: seats, sole note, hint, nudge, notices and records", () => {
       assert.ok(d > 31 && d < 36, `a floor pair's hit target is ${d}px across, not the 44px floor`);
     }
   });
+
+  test("FPD: a mirror or anchor toggle that would put a moved bottom note inside another's floor is refused, changes nothing and says why in plain words", () => {
+    for (const btn of ["scale-mirror-bottom", "scale-mirror", "scale-anchor-between"]) {
+      const app = open();
+      slide(app, "C3", 320);
+      const before = JSON.stringify(ang(app));
+      const pressed = app.els[btn].getAttribute("aria-pressed");
+      app.els[btn].click();
+      const stuck = app.get("HPE.layout.solve(lastSeed, {mirror: mirror, mirrorBottom: bottomMirror(), anchor: anchor, seats: null, angles: layoutAngles}).ok");
+      assert.strictEqual(stuck, true, `${btn}: the sheet is still buildable`);
+      if (app.els[btn].getAttribute("aria-pressed") === pressed) {
+        assert.match(app.els["scale-drawer-status"].textContent, /too close/, `${btn}: plain refusal`);
+      }
+      assert.strictEqual(JSON.stringify(ang(app)), before);
+      app.els["scale-generate"].click();
+      assert.doesNotMatch(app.els["scale-refusal"].textContent, /is not a note/, `${btn}: no BAD_NOTE template`);
+    }
+    const app = open();
+    slide(app, "C3", 320);
+    app.els["scale-mirror-bottom"].click();
+    assert.strictEqual(app.els["scale-mirror-bottom"].getAttribute("aria-pressed"), "false");
+    assert.match(app.els["scale-drawer-status"].textContent, /too close/);
+  });
+
+  test("FPD: Escape on a picked bottom note that was nudged says the moves are kept", () => {
+    const app = open();
+    app.els["scale-fine-toggle"].click();
+    let g = 0;
+    do app.els["scale-note-prev"].click(); while (app.get("pickRef && pickRef.ring") !== "bottom" && g++ < 30);
+    app.els["scale-angle-next"].click();
+    app.els["scale-angle-next"].focus();
+    app.keydown("Escape");
+    assert.match(app.els["scale-drawer-status"].textContent, /The moves you made are kept\./);
+  });
 });
 
