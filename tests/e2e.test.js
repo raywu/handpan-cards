@@ -14785,6 +14785,107 @@ function run() {
       assert.deepStrictEqual(fails, [], fails.join("\n"));
     });
 
+    const OF_NAMED = "(D3) C4 A3 D4 E4 F4 G4 A4 C5";
+    const OF_HINT = "Top notes take their seats in the order listed. Rearrange them on the Layout tab.";
+
+    test("OF: at 320x568 and 380x780 with a 260px keyboard and the hint shown, each field typed in stays fully in view", { timeout: 240000 }, async () => {
+      try {
+        for (const [w, h] of [[320, 568], [380, 780]]) {
+          await diOpenAdd(w, h);
+          await typeScale(OF_NAMED);
+          for (const id of DI_FIELDS) {
+            await b.clearKeyboard();
+            await b.eval(`document.activeElement && document.activeElement.blur(); document.querySelector("#scale-sheet .sheetbody").scrollTop = 0; return true;`);
+            await b.fakeKeyboard(h - 260);
+            await b.eval(`document.getElementById(${JSON.stringify(id)}).focus(); return true;`);
+            await b.settle();
+            const note = await b.eval(`return document.getElementById("scale-fields-note").textContent;`);
+            assert.strictEqual(note, OF_HINT, `${w}x${h} ${id}: the hint is not shown`);
+            const f = await diVisible(id);
+            assert.ok(f.vis >= f.h - 0.5, `${w}x${h} ${id}: only ${f.vis} of ${f.h}px of the field is in view`);
+          }
+        }
+      } finally {
+        await b.clearKeyboard();
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("OF: with the hint shown, the Scale tab's last control still ends at least --sp-2 above the lip's tap zone with the footer shut", { timeout: 240000 }, async () => {
+      const fails = [];
+      try {
+        for (const [w, h] of [...VPS, [1280, 800]]) {
+          await spaOpen(w, h);
+          await typeScale(OF_NAMED);
+          const hint = await b.eval(`return document.getElementById("scale-line-note").textContent;`);
+          if (hint !== OF_HINT) { fails.push(`${w}x${h}: the hint is not shown`); continue; }
+          await shut();
+          const sp2 = await px("--sp-2");
+          const m = await lastControl();
+          if (m.zoneTop === null) { fails.push(`${w}x${h}: the lip did not shut`); continue; }
+          if (m.bottom > m.zoneTop - sp2 + 0.5) fails.push(`${w}x${h} (${m.id}): the last control ends ${(m.zoneTop - m.bottom).toFixed(1)}px above the zone, not ${sp2}`);
+          if (m.onLip) fails.push(`${w}x${h}: ${m.onLip} points of the last control hit-test to #scale-lip`);
+        }
+      } finally { await spaReset(); }
+      assert.deepStrictEqual(fails, [], fails.join("\n"));
+    });
+
+    test("OF: at 320x568, 380x780 and 844x390 typing C4 before A3 seats C4 at seat 1 on the plate, the hint is inside the scrollport, clear of the lip's tap zone with the footer shut, wraps inside its column with no horizontal scroll, and its contrast is at least 4.5:1", { timeout: 240000 }, async () => {
+      const fails = [];
+      try {
+        for (const [w, h] of [[320, 568], [380, 780], [844, 390]]) {
+          await spaOpen(w, h);
+          await typeScale(OF_NAMED);
+          const seat = await b.eval(`const f = Object.values(lastSolved.fields).find((x) => x[3] === "rim" && x[0] + x[1] === "C4"); return { label: f[5], angle: f[4] };`);
+          if (seat.label !== "1" || seat.angle !== 270) fails.push(`${w}x${h}: C4 is seat ${seat.label} at ${seat.angle}`);
+          await shut();
+          const m = await b.eval(`
+            const note = document.getElementById("scale-line-note");
+            note.scrollIntoView({ block: "center" });
+            const body = document.querySelector("#scale-sheet .sheetbody"), bb = body.getBoundingClientRect();
+            const r = note.getBoundingClientRect(), col = note.parentElement.getBoundingClientRect();
+            const lip = document.getElementById("scale-lip");
+            const parse = (c) => c.match(/[\\d.]+/g).map(Number);
+            const lin = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+            const lum = ([a, c, d]) => 0.2126 * lin(a) + 0.7152 * lin(c) + 0.0722 * lin(d);
+            const bg = (el) => { for (let e = el; e; e = e.parentElement) { const c = parse(getComputedStyle(e).backgroundColor); if (c.length < 4 || c[3] > 0.99) return c.slice(0, 3); } return [255, 255, 255]; };
+            const fg = parse(getComputedStyle(note).color).slice(0, 3), back = bg(note);
+            const ratio = (Math.max(lum(fg), lum(back)) + 0.05) / (Math.min(lum(fg), lum(back)) + 0.05);
+            return { text: note.textContent, top: r.top - bb.top, bottom: r.bottom - bb.top, room: bb.height, left: r.left - col.left, right: col.right - r.right,
+              zone: lip.hidden ? null : lip.getBoundingClientRect().top - bb.top, sw: body.scrollWidth - body.clientWidth, nw: note.scrollWidth - note.clientWidth, ratio };`);
+          const ctx = `${w}x${h}`;
+          if (m.text !== OF_HINT) fails.push(`${ctx}: the hint reads ${m.text}`);
+          if (m.top < -0.5 || m.bottom > m.room + 0.5) fails.push(`${ctx}: the hint is outside the scrollport (${m.top}..${m.bottom} of ${m.room})`);
+          if (m.zone !== null && m.bottom > m.zone + 0.5) fails.push(`${ctx}: the hint ends ${m.bottom}, under the lip zone at ${m.zone}`);
+          if (m.left < -0.5 || m.right < -0.5) fails.push(`${ctx}: the hint leaves its column (${m.left}, ${m.right})`);
+          if (m.sw > 0 || m.nw > 0) fails.push(`${ctx}: horizontal scroll (${m.sw}, ${m.nw})`);
+          if (m.ratio < 4.5) fails.push(`${ctx}: contrast ${m.ratio.toFixed(2)}:1`);
+        }
+      } finally { await spaReset(); }
+      assert.deepStrictEqual(fails, [], fails.join("\n"));
+    });
+
+    test("OF: under prefers-reduced-motion a typed reorder starts no animation or transition on the plate", { timeout: 120000 }, async () => {
+      try {
+        await spaOpen(380, 780);
+        await b.send("Emulation.setEmulatedMedia", { media: "", features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
+        await sleep(100);
+        await typeScale(OF_NAMED);
+        const n = await b.eval(`return document.getAnimations().filter((a) => { const t = a.effect && a.effect.target; return t && t.closest && t.closest("#scale-preview, #scale-plate-band"); }).length;`);
+        assert.strictEqual(n, 0, `${n} animations or transitions run on the plate`);
+      } finally { await spaReset(); }
+    });
+
+    test("OF: a typed reorder with the drawer open says 'The rim now follows the order listed.' in the drawer status", { timeout: 120000 }, async () => {
+      try {
+        await spaOpen(380, 780, { tab: "layout" });
+        await typeScale(OF_NAMED);
+        const st = await b.eval(`const e = document.getElementById("scale-drawer-status"); return { hidden: e.hidden, text: e.textContent };`);
+        assert.strictEqual(st.hidden, false);
+        assert.match(st.text, /The rim now follows the order listed\./);
+      } finally { await spaReset(); }
+    });
+
     test("SPA: the shut footer is 9px, the 32x3 pill sits 3px above the footer's bottom and is centred, and the tap zone is 25px with its bottom on the surface's bottom above the inset", { timeout: 90000 }, async () => {
       try {
         let inset = 0;

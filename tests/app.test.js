@@ -5416,7 +5416,7 @@ test("AP2-1 sheet open leaves the expected state per mode", () => {
   dirty();
   edit();
   assert.deepStrictEqual(state(), edited, "edit open restores the deck's identity and options");
-  assert.deepStrictEqual(boxes(), [app.get("HPE.core.formatSeed(CUSTOM[" + JSON.stringify(id) + "].fields)"), app.get(`CUSTOM[${JSON.stringify(id)}].name`), "SAVE CHANGES"]);
+  assert.deepStrictEqual(boxes(), [app.get("HPE.core.formatTyped(CUSTOM[" + JSON.stringify(id) + "].fields, CUSTOM[" + JSON.stringify(id) + "].options.seats)"), app.get(`CUSTOM[${JSON.stringify(id)}].name`), "SAVE CHANGES"]);
   app.run("closeScaleSheet()");
 
   app.run("openScaleSheet()");
@@ -7507,10 +7507,13 @@ test("DR2a item 6 (91): on Edit a changed count resets that ring only and the no
   assert.strictEqual(dr1Notice(app), "Layout changed from the default.");
   app.type(d2Build({ ...a, rim: 4 }).text);
   assert.strictEqual(dr1Notice(app), "Layout not saved yet. SAVE CHANGES keeps it. The rim seats were reset.");
-  assert.deepStrictEqual(d2Norm(d2Seats(app)), { inner: [2, 1, 0] });
+  // OF-A: Edit prefills the line in seat order, so this ascending retype is a
+  // typed change of the inner ring's order and the latest writer wins: the
+  // inner seats follow it (identity) instead of surviving the count change.
+  assert.strictEqual(d2Seats(app), null);
   app.type(d2Build(a).text);
-  assert.deepStrictEqual(d2Norm(d2Seats(app)), { rim: [1, 0, 2], inner: [2, 1, 0] });
-  assert.strictEqual(dr1Notice(app), "Layout changed from the default.");
+  assert.deepStrictEqual(d2Norm(d2Seats(app)), { rim: [1, 0, 2] });
+  assert.strictEqual(dr1Notice(app), "Layout not saved yet. SAVE CHANGES keeps it.");
   const add = boot();
   d2Open(add, D2_AMARA, false);
   d2Tap(add, "A3"); d2Tap(add, "C4");
@@ -10957,7 +10960,7 @@ describe("DI: dual input", () => {
     const sentence = "Octaves are optional: without one, we assume the notes run low to high.";
     const labels = [...h.matchAll(/<(?:label|span|p\b)[^>]*class="sheetlabel"[^>]*>([^<]*)</g)].map((m) => m[1]);
     assert.ok(labels.length >= 10, `only ${labels.length} sheet labels found`);
-    const noteBlock = h.slice(h.indexOf("lineNote.textContent = onFields"), h.indexOf("if (onFields && lineStale) genBtn.disabled"));
+    const noteBlock = h.slice(h.indexOf("function paintNotes()"), h.indexOf("/** The hint to announce at settle"));
     const captions = [...noteBlock.matchAll(/"([^"\n]+)"/g)].map((m) => m[1]).filter((c) => /^[A-Z]/.test(c));
     assert.strictEqual(captions.length, 4, "the two line-note and two fields-note captions");
     const app = openAdd();
@@ -11700,7 +11703,7 @@ describe("O1: sheet placement of octaveless bottoms", () => {
   test("O1: a v5 link and a stored record open with the same fields as before O1", () => {
     const link = boot({ href: "https://example.test/index.html#s=5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/parent-aeolian/mirror/between/seats-1,0,2,3,4,5,6,7;;/975b6c" });
     openEdit(link, link.registry()[link.deckId()]);
-    assert.deepStrictEqual(fieldsOf(link), ["D3", "A3 C4 D4 E4 F4 G4 A4 C5", "", ""]);
+    assert.deepStrictEqual(fieldsOf(link), ["D3", "C4 A3 D4 E4 F4 G4 A4 C5", "", ""]);
     const first = boot();
     const d = makeCustom(first, "[G2] [A2] (D3) A3 C4 E4");
     const again = reboot(first);
@@ -13738,3 +13741,331 @@ describe("FPD: seats, sole note, hint, nudge, notices and records", () => {
   });
 });
 
+
+/* ---- Lane OF-A: the sheet's seats follow the typed order (plan order-follow, 2026-10-23) ---- */
+describe("OF: the sheet's seats follow the typed order", () => {
+  const NAMED = "(D3) C4 A3 D4 E4 F4 G4 A4 C5";
+  const ASC = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
+  const RIM = [1, 0, 2, 3, 4, 5, 6, 7];
+  const HINT = "Top notes take their seats in the order listed. Rearrange them on the Layout tab.";
+  const ofPlain = (v) => JSON.parse(JSON.stringify(v));
+  const add = () => { const app = boot(); openSheet(app); return app; };
+  const fire = (app, id, type) => app.els[id].dispatchEvent({ type });
+  const fieldType = (app, k, text) => {
+    fire(app, "scale-" + k, "focus");
+    app.els["scale-" + k].value = text;
+    fire(app, "scale-" + k, "input");
+  };
+  const settle = (app, k) => fire(app, "scale-" + k, "blur");
+  const lineType = (app, text) => {
+    fire(app, "scale-box", "focus");
+    app.els["scale-box"].value = text;
+    fire(app, "scale-box", "input");
+  };
+  const fieldTexts = (app) => ["ding", "top", "inner", "bottom"].map((k) => app.els["scale-" + k].value);
+  const note = (app, which) => app.els[`scale-${which}-note`].textContent;
+  const live = (app) => { app.flushTimers(); return app.els["scale-fields-live"].textContent; };
+  const typedFields = (app, ding, top, inner = "") => {
+    fieldType(app, "ding", ding);
+    fieldType(app, "top", top);
+    if (inner) fieldType(app, "inner", inner);
+  };
+  const seated = (ascText, seats) => {
+    const app = boot();
+    const made = app.generate(ascText, { seats });
+    assert.strictEqual(made.ok, true, made.reason);
+    return { app, rec: app.registry()[made.value.id] };
+  };
+  const save = (app) => { app.els["scale-generate"].click(); return app.registry()[app.deckId()]; };
+  const rimLabelled = (app, label) => ofPlain(app.get(
+    `Object.values(lastSolved.fields).filter((f) => f[3] === "rim" && f[5] === ${JSON.stringify(label)})`));
+
+  test("OF: typing (D3) C4 A3 D4 E4 F4 G4 A4 C5 in the box seats C4 in rim seat 1, the plate shows 1 at 270 degrees on C4, and GENERATE CARDS saves seats.rim [1,0,2,3,4,5,6,7] with s in pitch order", () => {
+    const app = add();
+    app.type(NAMED);
+    assert.deepStrictEqual(d2Seats(app), { rim: RIM });
+    assert.deepStrictEqual(rimLabelled(app, "1").map((f) => [f[0] + f[1], f[4]]), [["C4", 270]]);
+    const rec = save(app);
+    assert.deepStrictEqual(ofPlain(rec.options.seats), { rim: RIM });
+    assert.deepStrictEqual([rec.fields["1"][0] + rec.fields["1"][1], rec.fields["2"][0] + rec.fields["2"][1]], ["A3", "C4"]);
+    assert.strictEqual(rec.fields["2"][4], 270);
+    assert.strictEqual(rec.fields["2"][5], "1");
+  });
+
+  test("OF: typing the same notes in the four fields writes the typed-order line into #scale-box and saves the same record", () => {
+    const app = add();
+    typedFields(app, "D3", "C4 A3 D4 E4 F4 G4 A4 C5");
+    assert.strictEqual(app.els["scale-box"].value, NAMED);
+    assert.deepStrictEqual(d2Seats(app), { rim: RIM });
+    const viaFields = save(app);
+    const viaBox = (() => { const b = add(); b.type(NAMED); return save(b); })();
+    assert.deepStrictEqual(ofPlain(viaFields), ofPlain(viaBox));
+  });
+
+  test("OF: a line typed in ascending order saves no seats key and the record equals the base's", () => {
+    const app = add();
+    app.type(ASC);
+    assert.strictEqual(d2Seats(app), null);
+    const rec = save(app);
+    assert.strictEqual("seats" in rec.options, false);
+    assert.deepStrictEqual(ofPlain(rec.options), { palette: 0, mirror: false, mirrorBottom: false, anchor: "one", parent: null });
+    const base = boot().generate(ASC, {});
+    assert.deepStrictEqual(ofPlain(rec.fields), ofPlain(base.value.fields));
+    assert.deepStrictEqual(ofPlain(rec.chords), ofPlain(base.value.chords));
+  });
+
+  test("OF: a count change while typing in ascending order restores the seatMemo arrangement exactly as before", () => {
+    const app = add();
+    app.type(ASC);
+    d2Seed(app, { rim: [2, 1, 0, 3, 4, 5, 6, 7] });
+    app.type("(D3) A3 C4 D4 E4 F4 G4 A4");
+    assert.strictEqual(d2Seats(app), null);
+    app.type(ASC);
+    assert.deepStrictEqual(d2Seats(app), { rim: [2, 1, 0, 3, 4, 5, 6, 7] });
+  });
+
+  test("OF: a count change back to an earlier count that also changes the typed order seats the typed order over the seatMemo arrangement, and the drawer status says the rim now follows the order listed", () => {
+    const app = add();
+    app.type(ASC);
+    app.click(app.els["scale-tab-layout"]);
+    d2Seed(app, { rim: [2, 1, 0, 3, 4, 5, 6, 7] });
+    app.type("(D3) A3 C4 D4 E4 F4 G4 A4");
+    assert.strictEqual(d2Seats(app), null);
+    app.type(NAMED);
+    assert.deepStrictEqual(d2Seats(app), { rim: RIM });
+    assert.strictEqual(d2Status(app), "The rim now follows the order listed.");
+  });
+
+  test("OF: a drawer swap after typing stands until a typed edit changes that ring's order, which re-derives only that ring", () => {
+    const app = add();
+    const rimHigh = "(D3) C4 A3 D4 E4 F4 G4 A4 C5";
+    app.type(`${rimHigh} | D5 E5`);
+    assert.deepStrictEqual(d2Seats(app), { rim: RIM });
+    d2Seed(app, { rim: [0, 1, 3, 2, 4, 5, 6, 7] });
+    app.type(`${rimHigh} | E5 D5`);
+    assert.deepStrictEqual(d2Seats(app), { rim: [0, 1, 3, 2, 4, 5, 6, 7], inner: [1, 0] });
+    app.type(`(D3) D4 A3 C4 E4 F4 G4 A4 C5 | E5 D5`);
+    assert.deepStrictEqual(d2Seats(app), { rim: [1, 2, 0, 3, 4, 5, 6, 7], inner: [1, 0] });
+  });
+
+  test("OF: a typed edit that keeps every ring's order (A3 to B3) keeps the drawer seats", () => {
+    const app = add();
+    app.type(NAMED);
+    d2Seed(app, { rim: [0, 1, 3, 2, 4, 5, 6, 7] });
+    app.type("(D3) C4 B3 D4 E4 F4 G4 A4 C5");
+    assert.deepStrictEqual(d2Seats(app), { rim: [0, 1, 3, 2, 4, 5, 6, 7] });
+  });
+
+  test("OF: a count change on a typed out-of-order ring seats the new typed order and the status line says so, not that the seats were reset", () => {
+    const app = add();
+    app.type(NAMED);
+    app.click(app.els["scale-tab-layout"]);
+    app.type("(D3) C4 A3 D4 E4 F4 G4 A4");
+    assert.deepStrictEqual(d2Seats(app), { rim: [1, 0, 2, 3, 4, 5, 6] });
+    assert.strictEqual(d2Status(app), "The rim now follows the order listed.");
+    assert.doesNotMatch(d2Status(app), /reset/);
+  });
+
+  test("OF: Edit then SAVE with no change writes a record with drawer rim and inner seats byte-identical, and a line typed in ascending order saves no seats key", () => {
+    const { app, rec } = seated(`${ASC} | D5 E5`, { rim: RIM, inner: [1, 0] });
+    const before = JSON.stringify(rec);
+    openEdit(app, rec);
+    assert.deepStrictEqual(d2Seats(app), { rim: RIM, inner: [1, 0] });
+    const same = save(app);
+    assert.strictEqual(JSON.stringify(same.options), JSON.stringify(rec.options));
+    assert.strictEqual(JSON.stringify(same.fields), JSON.stringify(rec.fields));
+    assert.strictEqual(before.length > 0, true);
+    openEdit(app, same);
+    app.type(`${ASC} | D5 E5`);
+    assert.strictEqual(d2Seats(app), null);
+    assert.strictEqual("seats" in save(app).options, false);
+    // a drawer swap stands through a name change: the parse repeats, the typed order does not
+    const again = seated(ASC, { rim: RIM });
+    openEdit(again.app, again.rec);
+    d2Seed(again.app, { rim: [0, 1, 3, 2, 4, 5, 6, 7] });
+    again.app.els["scale-name"].value = "Renamed";
+    again.app.els["scale-name"].dispatchEvent({ type: "input" });
+    assert.deepStrictEqual(ofPlain(save(again.app).options.seats), { rim: [0, 1, 3, 2, 4, 5, 6, 7] });
+  });
+
+  test("OF: Edit of a record with drawer rim seats shows the seat-order line in #scale-box and the fields in the same order", () => {
+    const { app, rec } = seated(`${ASC} | D5 E5`, { rim: RIM, inner: [1, 0] });
+    openEdit(app, rec);
+    assert.strictEqual(app.els["scale-box"].value, "(D3) C4 A3 D4 E4 F4 G4 A4 C5 | E5 D5");
+    assert.deepStrictEqual(fieldTexts(app), ["D3", "C4 A3 D4 E4 F4 G4 A4 C5", "E5 D5", ""]);
+    const plainEdit = seated(ASC, {});
+    openEdit(plainEdit.app, plainEdit.rec);
+    assert.strictEqual(plainEdit.app.els["scale-box"].value, ASC);
+    assert.deepStrictEqual(fieldTexts(plainEdit.app), ["D3", "A3 C4 D4 E4 F4 G4 A4 C5", "", ""]);
+  });
+
+  test("OF: a line that parses rewrites the four fields with the rim and inner in the order typed", () => {
+    const app = add();
+    app.type("[B2] [A2] (D3) C4 A3 D4 E4 F4 G4 A4 C5 | E5 D5");
+    assert.deepStrictEqual(fieldTexts(app), ["D3", "C4 A3 D4 E4 F4 G4 A4 C5", "E5 D5", "A2 B2"]);
+  });
+
+  test("OF: a field edit writes compose's typedLine into #scale-box through one input event", () => {
+    const app = add();
+    fieldType(app, "ding", "D3");
+    let inputs = 0;
+    app.els["scale-box"].addEventListener("input", () => { inputs += 1; });
+    fieldType(app, "top", "C4 A3 D4 E4 F4 G4 A4 C5");
+    assert.strictEqual(inputs, 1);
+    assert.strictEqual(app.els["scale-box"].value, NAMED);
+  });
+
+  test("OF: a boot or share open of a record carrying drawer seats, at- angles or a legacy order derives nothing and stores nothing new", () => {
+    const text = "[A2] [B2] " + ASC;
+    const made = seated(text, { rim: RIM });
+    const id = made.rec.id;
+    const code = made.app.get(`shareCode(CUSTOM[${JSON.stringify(id)}]).value`);
+    const opened = boot();
+    opened.hashchange("#s=" + code);
+    const got = Object.values(opened.registry())[0];
+    assert.deepStrictEqual(ofPlain(got.options.seats), { rim: RIM });
+    assert.deepStrictEqual(ofPlain(got.fields), ofPlain(made.rec.fields));
+    const stored = add();
+    stored.type("[A2] [B2] " + NAMED);
+    const savedRec = save(stored);
+    const key = stored.get("SCALES_KEY");
+    const rebooted = boot({ storage: { hpfc: stored.store.hpfc, [key]: stored.store[key] } });
+    assert.deepStrictEqual(ofPlain(rebooted.registry()[savedRec.id].options), ofPlain(savedRec.options));
+    assert.deepStrictEqual(ofPlain(rebooted.registry()[savedRec.id].options.seats), { rim: RIM });
+    const mismatched = seated(ASC, { rim: RIM });
+    mismatched.app.get(`(CUSTOM[${JSON.stringify(mismatched.rec.id)}].options.seats.rim = [1, 0, 2], 0)`);
+    openEdit(mismatched.app, mismatched.rec);
+    assert.deepStrictEqual(ofPlain(save(mismatched.app).options.seats), { rim: [1, 0, 2] });
+    const swapped = seated(ASC, { rim: RIM });
+    openEdit(swapped.app, swapped.rec);
+    d2Seed(swapped.app, { rim: [0, 1, 3, 2, 4, 5, 6, 7] });
+    swapped.app.type("(D3) C4 B3 D4 E4 F4 G4 A4 C5");
+    assert.deepStrictEqual(d2Seats(swapped.app), { rim: [0, 1, 3, 2, 4, 5, 6, 7] });
+  });
+
+  test("OF: chords, roots and note lines of a non-ascending line equal the ascending line's; only number lines differ", () => {
+    const cycle = "(D3) D4 A3 C4 E4 F4 G4 A4 C5";
+    const app = add();
+    app.type(cycle);
+    assert.deepStrictEqual(d2Seats(app), { rim: [1, 2, 0, 3, 4, 5, 6, 7] });
+    const rec = save(app);
+    const base = boot().generate(ASC, {}).value;
+    assert.deepStrictEqual(ofPlain(rec.chords), ofPlain(base.chords));
+    for (const id of Object.keys(base.fields)) {
+      assert.deepStrictEqual(ofPlain(rec.fields[id]).slice(0, 4), ofPlain(base.fields[id]).slice(0, 4), id);
+    }
+    const label = (d, name) => Object.values(d.fields).find((f) => f[0] + f[1] === name)[5];
+    assert.deepStrictEqual(["D4", "A3", "C4"].map((n) => label(rec, n)), ["1", "2", "3"]);
+    assert.deepStrictEqual(["A3", "C4", "D4"].map((n) => label(base, n)), ["1", "2", "3"]);
+  });
+
+  test("OF: the order hint shows in the active path's note only while a rim or inner ring's seats equal its typed out-of-order arrangement, and adds no Tab stop", () => {
+    const app = add();
+    assert.strictEqual(note(app, "fields"), "Octaves are optional: without one, we assume the notes run low to high.");
+    typedFields(app, "D3", "C4 A3 D4 E4 F4 G4 A4 C5");
+    assert.strictEqual(note(app, "fields"), HINT);
+    assert.strictEqual(note(app, "line"), "Follows the notes above. Tap to type the line instead.");
+    lineType(app, NAMED);
+    assert.strictEqual(note(app, "line"), HINT);
+    assert.strictEqual(note(app, "fields"), "Follows the line below. Tap a field to type notes instead.");
+    lineType(app, ASC);
+    assert.strictEqual(note(app, "line"), "");
+    fieldType(app, "top", "A3 C4 D4 E4 F4 G4 A4 C5");
+    assert.strictEqual(note(app, "fields"), "");
+    fieldType(app, "top", "C4 A3 D4 E4 F4 G4 A4 C5");
+    for (const w of ["fields", "line"]) {
+      assert.strictEqual(app.els[`scale-${w}-note`].getAttribute("tabindex"), null);
+      assert.strictEqual(app.els[`scale-${w}-note`].children.length, 0);
+    }
+  });
+
+  test("OF: a drawer swap or RESET LAYOUT hides the order hint, and a typed edit that changes that ring's order shows it again", () => {
+    const app = add();
+    typedFields(app, "D3", "C4 A3 D4 E4 F4 G4 A4 C5");
+    assert.strictEqual(note(app, "fields"), HINT);
+    app.click(app.els["scale-tab-layout"]);
+    d2Tap(app, "A3"); d2Tap(app, "D4");
+    assert.strictEqual(note(app, "fields"), "");
+    fieldType(app, "top", "D4 A3 C4 E4 F4 G4 A4 C5");
+    assert.strictEqual(note(app, "fields"), HINT);
+    app.els["scale-layout-reset"].click();
+    assert.strictEqual(note(app, "fields"), "");
+    fieldType(app, "top", "C4 A3 D4 E4 F4 G4 A4 C5");
+    assert.strictEqual(note(app, "fields"), HINT);
+  });
+
+  test("OF: a bottom-only reorder shows no order hint and no drawer status line", () => {
+    const app = add();
+    app.click(app.els["scale-tab-layout"]);
+    app.type("[B2] [A2] " + ASC);
+    assert.strictEqual(d2Seats(app), null);
+    assert.strictEqual(note(app, "line"), "");
+    assert.strictEqual(d2Status(app), "");
+  });
+
+  test("OF: the order hint is announced once through #scale-fields-live at settle, not while typing and not at open", () => {
+    const app = add();
+    fieldType(app, "ding", "D3");
+    fieldType(app, "top", "C4 A3 D4 E4 F4 G4 A4 C5");
+    assert.strictEqual(live(app), "");
+    settle(app, "top");
+    assert.strictEqual(live(app), HINT);
+    app.els["scale-fields-live"].textContent = "";
+    settle(app, "top");
+    assert.strictEqual(live(app), "", "announced twice");
+    const { app: edit, rec } = seated(ASC, { rim: RIM });
+    openEdit(edit, rec);
+    assert.strictEqual(note(edit, "fields"), HINT);
+    assert.strictEqual(live(edit), "");
+    const viaLine = add();
+    lineType(viaLine, NAMED);
+    assert.strictEqual(live(viaLine), "");
+    fire(viaLine, "scale-box", "blur");
+    assert.strictEqual(live(viaLine), HINT);
+  });
+
+  test("OF: the passive captions still read as before when the hint shows, and OCTAVE_SENTENCE still shows on an empty Add sheet", () => {
+    const app = add();
+    assert.strictEqual(note(app, "fields"), "Octaves are optional: without one, we assume the notes run low to high.");
+    assert.strictEqual(note(app, "line"), "Follows the notes above. Tap to type the line instead.");
+    typedFields(app, "D3", "C4 A3 D4 E4 F4 G4 A4 C5");
+    assert.strictEqual(note(app, "line"), "Follows the notes above. Tap to type the line instead.");
+    lineType(app, NAMED);
+    assert.strictEqual(note(app, "fields"), "Follows the line below. Tap a field to type notes instead.");
+    lineType(app, "");
+    assert.strictEqual(note(app, "line"), "");
+    assert.strictEqual(note(app, "fields"), "Follows the line below. Tap a field to type notes instead.");
+  });
+
+  test("OF: RESET LAYOUT seats the notes low to high and leaves the typed line as typed; the next typed reorder seats it again", () => {
+    const app = add();
+    app.type(NAMED);
+    app.click(app.els["scale-tab-layout"]);
+    app.els["scale-layout-reset"].click();
+    assert.strictEqual(d2Seats(app), null);
+    assert.strictEqual(app.els["scale-box"].value, NAMED);
+    app.type("(D3) D4 A3 C4 E4 F4 G4 A4 C5");
+    assert.deepStrictEqual(d2Seats(app), { rim: [1, 2, 0, 3, 4, 5, 6, 7] });
+  });
+
+  test("OF: after RESET LAYOUT a typed edit that keeps every ring's order (A3 to B3) keeps the notes low to high", () => {
+    const app = add();
+    app.type(NAMED);
+    app.click(app.els["scale-tab-layout"]);
+    app.els["scale-layout-reset"].click();
+    app.type("(D3) C4 B3 D4 E4 F4 G4 A4 C5");
+    assert.strictEqual(d2Seats(app), null);
+    assert.strictEqual(note(app, "line"), "");
+  });
+
+  test("OF: on Edit, a rim count change that comes with an out-of-order rim adds no 'The rim seats were reset.' to the layout notice", () => {
+    const { app, rec } = seated(ASC, { rim: RIM });
+    openEdit(app, rec);
+    app.click(app.els["scale-tab-layout"]);
+    app.type("(D3) C4 A3 D4 E4 F4 G4 A4");
+    assert.deepStrictEqual(d2Seats(app), { rim: [1, 0, 2, 3, 4, 5, 6] });
+    assert.doesNotMatch(dr1Notice(app), /seats were reset/);
+    app.type("(D3) A3 C4 D4 E4 F4 G4 A4");
+    assert.match(dr1Notice(app), /The rim seats were reset\./);
+  });
+});

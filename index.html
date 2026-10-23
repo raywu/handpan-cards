@@ -10732,6 +10732,17 @@ let mirroring = false;
 let fieldEditing = null;
 let fieldShown = {};
 let liveTimer = null;
+/* Order-follow (lane OF-A). lastTyped is the key of each ring's typed order at
+   the last ok parse (null is the identity at any count); the derive acts only
+   when a key changes, so a drawer write stands until a typed edit changes that
+   ring's order. It has exactly two writers: deriveTyped() and the sheet-open
+   prefill. typedNow is typedSeats() of the last ok parse (null otherwise);
+   hintSaid is the order hint last announced or shown at open. */
+let lastTyped = { rim: null, inner: null };
+let typedNow = null;
+let hintSaid = "";
+let hintQuiet = false;
+const ORDER_HINT = "Top notes take their seats in the order listed. Rearrange them on the Layout tab.";
 let bandPad = "", plateRoom = "", pinPad = "";
 
 /* The seed row has exactly TWO writers, and each blanks the other. That is
@@ -10841,6 +10852,7 @@ function layoutNoticeText() {
     for (const ring of LAYOUT_RINGS) {
       if (ringCount[ring] === storedCounts[ring]) continue;
       const seated = !!(storedSeats && storedSeats[ring]), angled = ring === "bottom" && !!storedAngles;
+      if (seated && !angled && followsTyped(ring)) continue;
       if (seated || angled) text += ` The ${ring} ${seated && angled ? "seats and angles" : angled ? "angles" : "seats"} were reset.`;
     }
   return text;
@@ -10855,6 +10867,7 @@ function paintLayout() {
   layoutHint.textContent = HINT_EMPTY;
   layoutHint.hidden = boxOk || !(panState === "example" || !String(scaleBox.value || "").trim());
   drawerStatus.hidden = !drawerOpen || !boxOk;
+  paintNotes();
   drawerHint.textContent = DRAWER_HINT + (ringCount && ringCount.bottom >= 1 ? DRAWER_HINT_SLIDE : "");
   drawerHint.hidden = !(drawerOpen && boxOk);
   notePrev.disabled = noteNext.disabled = !boxOk || !ringPickable();
@@ -11518,8 +11531,9 @@ function ringPickable() {
  *  count, or the default. Returns the sentence to say and whether the pick ended. */
 function syncRingCounts(fields) {
   const sizes = ringSizes(fields);
-  if (!ringCount) { ringCount = sizes; return { text: "", putDown: false }; }
+  if (!ringCount) { ringCount = sizes; return { text: "", said: {}, putDown: false }; }
   const said = [];
+  const byRing = {};
   let putDown = false;
   for (const ring of LAYOUT_RINGS) {
     const from = ringCount[ring], to = sizes[ring];
@@ -11531,13 +11545,14 @@ function syncRingCounts(fields) {
     if (slid) layoutAngles = null;
     const things = foldedBottom ? "seats and angles" : "angles";
     if (slid) foldedBottom = false;
-    said.push(slid ? `The bottom now has ${to === 1 ? "1 note" : to + " notes"}, so its ${things} were reset.` : had ? `The ${ring} is back to ${to} notes, so its earlier seats were restored.`
-      : `The ${ring} now has ${to === 1 ? "1 note" : to + " notes"}, so its seats were reset.`);
+    byRing[ring] = slid ? `The bottom now has ${to === 1 ? "1 note" : to + " notes"}, so its ${things} were reset.` : had ? `The ${ring} is back to ${to} notes, so its earlier seats were restored.`
+      : `The ${ring} now has ${to === 1 ? "1 note" : to + " notes"}, so its seats were reset.`;
+    said.push(byRing[ring]);
     if (pickRef && pickRef.ring === ring) putDown = true;
     ringCount[ring] = to;
   }
   if (putDown) { pickRef = null; pickMoved = false; }
-  return { text: said.join(" ") + (putDown ? " The picked note was put down." : ""), putDown };
+  return { text: said.join(" ") + (putDown ? " The picked note was put down." : ""), said: byRing, putDown };
 }
 
 function cancelGesture() {
@@ -11979,12 +11994,47 @@ let refusal = null;
 
 /** A parse changed the pan's ring sizes: take the seats for the new counts, say
  *  so (drawer open only), and keep focus on a real note. */
-function noteCounts(fields) {
+function noteCounts(fields, value) {
   const wasOnNote = isHit(document.activeElement);
   const r = syncRingCounts(fields);
-  if (!r.text) return;
-  if (r.putDown && wasOnNote) focusFirstNext = true;
-  if (drawerOpen) layoutStatus(r.text);
+  const derived = value ? deriveTyped(value, fields) : [];
+  let putDown = r.putDown;
+  if (pickRef && derived.includes(pickRef.ring)) { pickRef = null; pickMoved = false; putDown = true; }
+  let text = r.text;
+  if (derived.length) {
+    const parts = [];
+    for (const ring of LAYOUT_RINGS) {
+      if (derived.includes(ring)) {
+        const moved = !!(layoutSeats && layoutSeats[ring]);
+        if (moved || !r.said[ring]) parts.push(ring === "rim" ? "The rim now follows the order listed." : "The inner notes now follow the order listed.");
+        else parts.push(r.said[ring]);
+      } else if (r.said[ring]) parts.push(r.said[ring]);
+    }
+    text = parts.join(" ") + (putDown ? " The picked note was put down." : "");
+  }
+  if (!text) return;
+  if (putDown && wasOnNote) focusFirstNext = true;
+  if (drawerOpen) layoutStatus(text);
+}
+const typedKey = (k, ring) => (k && k[ring] ? k[ring].join(",") : null);
+const followsTyped = (ring) => !!(typedNow && typedNow[ring] && layoutSeats && layoutSeats[ring] &&
+  typedKey(typedNow, ring) === layoutSeats[ring].join(","));
+/** The one derive: a ring whose typed order changed since the last ok parse
+ *  takes that order as its seats (the typing is the newer write); a ring whose
+ *  order did not change keeps whatever the drawer left. Returns the rings it
+ *  wrote. */
+function deriveTyped(value, fields) {
+  typedNow = HPE.core.typedSeats(value);
+  const sizes = ringSizes(fields);
+  const out = [];
+  for (const ring of ["rim", "inner"]) {
+    const key = typedKey(typedNow, ring);
+    if (key === lastTyped[ring]) continue;
+    setRingSeats(ring, typedNow && typedNow[ring] ? typedNow[ring] : identityOrder(sizes[ring]));
+    lastTyped[ring] = key;
+    out.push(ring);
+  }
+  return out;
 }
 
 /** Re-derive the parse line, the box, GENERATE and the message from the seed.
@@ -11996,6 +12046,7 @@ function syncParseState({ paint }) {
   const text = String(scaleBox.value || "");
   boxOk = false;
   if (!text.trim()) {
+    typedNow = null;
     paintLayout();
     showParse(PARSE_HINT);
     scaleBox.classList.remove("bad");
@@ -12010,7 +12061,7 @@ function syncParseState({ paint }) {
     boxOk = true;
     const bottom = Object.values(res.value.fields).some((f) => f[3] === "bottom");
     if (bottom !== hadBottom) { bottomHeld = false; hadBottom = bottom; }
-    noteCounts(res.value.fields);
+    noteCounts(res.value.fields, res.value);
     paintLayout();
     showParse(parseLineText(res.value.fields));
     scaleBox.classList.remove("bad");
@@ -12026,7 +12077,7 @@ function syncParseState({ paint }) {
       boxOk = true;
       const bottom = Object.values(second.value.fields).some((f) => f[3] === "bottom");
       if (bottom !== hadBottom) { bottomHeld = false; hadBottom = bottom; }
-      noteCounts(second.value.fields);
+      noteCounts(second.value.fields, second.value);
       paintLayout();
       scaleBox.classList.add("bad");
       genBtn.disabled = true;
@@ -12042,6 +12093,7 @@ function syncParseState({ paint }) {
     // leans on the blank too - #scale-parse:empty steps out of the row and
     // #scale-refusal takes the identical box - so a half-typed seed neither
     // jumps the sheet nor costs the fieldrow a second reserved line.
+    typedNow = null;
     paintLayout();
     scaleBox.classList.add("bad");
     genBtn.disabled = true;
@@ -12281,8 +12333,18 @@ function resetSheetState(edit) {
     ? { anchor: edit.fields["1"] && edit.fields["1"][4] !== 270 ? "between" : "one" } : edit.options;
   nameBox.value = edit ? edit.name : "";
   nameDirty = false;                                 // prefilled, not typed
-  scaleBox.value = edit ? HPE.core.formatSeed(edit.fields) : "";  // 8A: the canonical string
-  writeFieldValues(edit ? decomposeFields(edit.fields) : null);
+  // The line lists the top notes in seat order (Q4 A), so a record with seats
+  // reads as it was typed; a seeded deck or a record without seats is the
+  // canonical string.
+  const line = edit ? HPE.core.formatTyped(edit.fields, o && o.seats) : "";
+  scaleBox.value = line;
+  const pre = edit ? HPE.core.parseSeed(line) : null;
+  const preTyped = pre && pre.ok ? HPE.core.typedSeats(pre.value) : null;
+  lastTyped = { rim: typedKey(preTyped, "rim"), inner: typedKey(preTyped, "inner") };
+  typedNow = null;
+  hintSaid = "";
+  hintQuiet = true;
+  writeFieldValues(edit ? (pre && pre.ok ? decomposeFields(pre.value.fields, pre.value.typed) : decomposeFields(edit.fields)) : null);
   syncGrow();
   palette = !edit ? 0 : seeded() ? seedPalette(edit.colors) : edit.options.palette;
   buildSwatches();
@@ -13025,6 +13087,7 @@ function syncGrow() {
   scaleWrap.setAttribute("data-grow", scaleWrap.dataset.grow);
 }
 scaleBox.addEventListener("input", () => {
+  hintQuiet = false;
   const raw = String(scaleBox.value || "");
   if (/[\r\n]/.test(raw)) {
     const at = scaleBox.selectionStart;
@@ -13063,10 +13126,17 @@ function writeFieldValues(v) {
 }
 /** The four field texts a parsed scale reads as: by zone, in pitch order, every
  *  note with its octave. */
-function decomposeFields(fields) {
+function decomposeFields(fields, order) {
   const zone = { ding: [], rim: [], inner: [], bottom: [] };
-  Object.keys(fields).sort((a, b) => fields[a][2] - fields[b][2])
-    .forEach((id) => zone[fields[id][3]].push(fields[id][0] + fields[id][1]));
+  const rank = {};
+  (order || []).forEach((id, i) => { rank[id] = i; });
+  const byZone = { ding: [], rim: [], inner: [], bottom: [] };
+  Object.keys(fields).forEach((id) => byZone[fields[id][3]].push(id));
+  for (const z of Object.keys(byZone)) {
+    const typed = (z === "rim" || z === "inner") && byZone[z].every((id) => rank[id] !== undefined);
+    byZone[z].sort((a, b) => (typed ? rank[a] - rank[b] : fields[a][2] - fields[b][2]))
+      .forEach((id) => zone[z].push(fields[id][0] + fields[id][1]));
+  }
   return { ding: zone.ding.join(" "), top: zone.rim.join(" "), inner: zone.inner.join(" "), bottom: zone.bottom.join(" ") };
 }
 /** Pure. Which message each field shows: settled shows every eligible message,
@@ -13107,8 +13177,10 @@ function paintFields(values, announceNew, composed) {
   fieldMsg.classList.toggle("stale", !!first && !!next[first].stale);
   syncMsgYield();
   if (announceNew) {
-    announceFields(FIELD_KEYS.filter((k) => next[k] && (!fieldShown[k] || fieldShown[k].text !== next[k].text))
-      .map((k) => next[k].text));
+    const said = FIELD_KEYS.filter((k) => next[k] && (!fieldShown[k] || fieldShown[k].text !== next[k].text))
+      .map((k) => next[k].text);
+    const hint = hintToAnnounce();
+    announceFields(hint ? said.concat(hint) : said);
   }
   fieldShown = next;
   syncBand();
@@ -13120,13 +13192,34 @@ function paintPassive() {
   scaleBox.classList.toggle("passive", onFields);
   scaleWrap.classList.toggle("passive", onFields);
   scaleBox.classList.toggle("stale", onFields && lineStale);
-  lineNote.textContent = onFields
-    ? (lineStale ? "Not updated: the notes above have a problem." : "Follows the notes above. Tap to type the line instead.")
-    : "";
-  fieldsNote.textContent = !onFields
-    ? (fieldsStale ? "Not updated: the line below does not read as a scale yet." : "Follows the line below. Tap a field to type notes instead.")
-    : (scaleBox.value === "" ? OCTAVE_SENTENCE : "");
+  paintNotes();
   if (onFields && lineStale) genBtn.disabled = true;
+}
+/** The order hint: shown on the active path's note only while a ring still
+ *  follows what was typed. */
+function orderHint() {
+  if (!typedNow || (inputPath === "fields" && lineStale)) return "";
+  return followsTyped("rim") || followsTyped("inner") ? ORDER_HINT : "";
+}
+function paintNotes() {
+  const onFields = inputPath === "fields";
+  const hint = orderHint();
+  if (hintQuiet) hintSaid = hint;
+  const set = (el, text) => { if (el.textContent !== text) el.textContent = text; };
+  set(lineNote, onFields
+    ? (lineStale ? "Not updated: the notes above have a problem." : "Follows the notes above. Tap to type the line instead.")
+    : hint);
+  set(fieldsNote, !onFields
+    ? (fieldsStale ? "Not updated: the line below does not read as a scale yet." : "Follows the line below. Tap a field to type notes instead.")
+    : (hint || (scaleBox.value === "" ? OCTAVE_SENTENCE : "")));
+}
+/** The hint to announce at settle: its text once per change, else "". */
+function hintToAnnounce() {
+  hintQuiet = false;
+  const hint = orderHint();
+  if (hint === hintSaid) return "";
+  hintSaid = hint;
+  return hint;
 }
 function writeLine(text) {
   mirroring = true;
@@ -13138,6 +13231,7 @@ function writeLine(text) {
   }
 }
 function fieldsInput(k) {
+  hintQuiet = false;
   inputPath = "fields";
   fieldEditing = k;
   fieldsStale = false;
@@ -13155,7 +13249,7 @@ function followFields(r, wasStale) {
     else if (wasStale) resyncSheet(true);
   } else if (r.ok) {
     lineStale = false;
-    if (scaleBox.value !== r.line) writeLine(r.line);
+    if (scaleBox.value !== r.typedLine) writeLine(r.typedLine);
     else if (wasStale) resyncSheet(true);
   } else {
     lineStale = true;
@@ -13165,6 +13259,7 @@ function followFields(r, wasStale) {
   }
 }
 function lineInput() {
+  hintQuiet = false;
   inputPath = "line";
   lineStale = false;
   const text = String(scaleBox.value || "");
@@ -13174,7 +13269,7 @@ function lineInput() {
   } else {
     const res = HPE.core.parseSeed(text);
     if (res.ok) {
-      writeFieldValues(decomposeFields(res.value.fields));
+      writeFieldValues(decomposeFields(res.value.fields, res.value.typed));
       fieldsStale = false;
     } else fieldsStale = true;
   }
@@ -13232,6 +13327,7 @@ FIELD_KEYS.forEach((k, i) => {
 });
 scaleBox.addEventListener("input", () => { if (!mirroring) lineInput(); });
 scaleBox.addEventListener("focus", () => pathFocus("line"));
+scaleBox.addEventListener("blur", () => { const hint = hintToAnnounce(); if (hint) announceFields([hint]); });
 // Shared by every modal Tab trap (the sheet below, the settings panel
 // further down): wrap-around cycling through a caller-built stop list, the
 // one piece of the two traps' keydown handlers that was byte-for-byte
