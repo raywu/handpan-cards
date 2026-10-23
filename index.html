@@ -13395,6 +13395,7 @@ let analyticsLoaded = false;
 function analyticsAllowed() {
   if (location.protocol === "file:") return false;
   if (["localhost", "127.0.0.1", "[::1]"].includes(location.hostname)) return false;
+  if (location.hostname.endsWith(".pages.dev")) return false;
   if (navigator.webdriver) return false;
   return GA_MEASUREMENT_ID !== "G-XXXXXXXXXX";
 }

@@ -46,6 +46,9 @@ class SiteFilesTest(unittest.TestCase):
         self.assertTrue(os.path.isfile(path))
         self.assertEqual(os.path.getsize(path), 0)
 
+    def test_headers_file_sends_noindex_for_every_path(self):
+        self.assertEqual(read("_headers"), "/*\n  X-Robots-Tag: noindex\n")
+
 
 if __name__ == "__main__":
     unittest.main()

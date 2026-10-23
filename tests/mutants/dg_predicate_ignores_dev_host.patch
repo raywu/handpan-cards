@@ -1,0 +1,14 @@
+# kills: analyticsAllowed is false for the DEV host on Cloudflare Pages: no gtag script, no config, no event
+# suite: node --test --test-name-pattern ^analyticsAllowed.is.false.for.*Cloudflare tests/app.test.js
+# The .pages.dev hosts (DEV and preview deploys) send hits to the production GA property.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13395,7 +13395,6 @@ let analyticsLoaded = false;
+ function analyticsAllowed() {
+   if (location.protocol === "file:") return false;
+   if (["localhost", "127.0.0.1", "[::1]"].includes(location.hostname)) return false;
+-  if (location.hostname.endsWith(".pages.dev")) return false;
+   if (navigator.webdriver) return false;
+   return GA_MEASUREMENT_ID !== "G-XXXXXXXXXX";
+ }
