@@ -14328,6 +14328,27 @@ function run() {
       assert.ok(!left.url.includes("?r=sv"), "Back did not leave the link's page");
     });
 
+    test("FPD: a v5 link opens, the bar ends on v6, and Back leaves the page", async () => {
+      const v5 = "5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/parent-aeolian/mirror/between/seats-1,0,2,3,4,5,6,7;;/975b6c";
+      const v6 = "#s=6/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/parent-aeolian/mirror/between/seats-1,0,2,3,4,5,6,7;;/61d4aa";
+      const nav = async () => {
+        const h = await b.send("Page.getNavigationHistory");
+        return { index: h.currentIndex, url: h.entries[h.currentIndex].url };
+      };
+      await freshLoad();
+      await b.settle();
+      await navigate(URL + "?r=fpd#s=" + v5);
+      await b.settle();
+      await waitHash(v6, "the bar to be rewritten to the v6 code");
+      const during = await nav();
+      assert.ok(during.url.includes("?r=fpd"), "the link's own page is not current");
+      await b.eval(`history.back(); return true`);
+      await new Promise((r) => setTimeout(r, 500));
+      const left = await nav();
+      assert.strictEqual(left.index, during.index - 1, "the rewrite added a history entry");
+      assert.ok(!left.url.includes("?r=fpd"), "Back did not leave the link's page");
+    });
+
     test("an about link clicked while a custom deck shows switches the deck and the bar", async () => {
       await freshLoad();
       await generate(SIX_SCALES[1]);
@@ -16892,4 +16913,129 @@ function run() {
       } finally { await reset(); }
     });
   });
+
+  describe("FPD: the bottom ring slides under a real finger and mouse", () => {
+    const FPD_SCALE = "[C3] [D3] [E3] (A3) C4 D4 E4 F4";
+    const open = async (w, h, mobile) => {
+      await freshLoad();
+      await b.setViewport(w, h, mobile);
+      await b.settle();
+      await openSheet();
+      await typeScale(FPD_SCALE);
+      await openDrawer();
+      await b.settle();
+    };
+    const hits = () => b.eval(`
+      const svg = document.querySelector("#scale-preview svg");
+      return [...document.querySelectorAll("#scale-preview .panhit")].map((h) => {
+        const r = h.getBoundingClientRect();
+        return { name: h.getAttribute("aria-label").split(",")[0], ring: h.getAttribute("data-ring"),
+          cx: Number(h.getAttribute("cx")), cy: Number(h.getAttribute("cy")), ar: Number(h.getAttribute("r")),
+          x: (r.left + r.right) / 2, y: (r.top + r.bottom) / 2, r: (r.right - r.left) / 2 };
+      });`);
+    const frame = async () => {
+      const all = await hits();
+      const h = all[0];
+      const k = h.r / h.ar;
+      const o = { x: h.x - k * h.cx, y: h.y - k * h.cy };
+      const bottom = all.filter((n) => n.ring === "bottom")[0];
+      return { all, k, o, orbit: Math.hypot(bottom.cx, bottom.cy) };
+    };
+    const at = (f, deg, rad = f.orbit) => ({ x: f.o.x + f.k * rad * Math.cos(deg * Math.PI / 180), y: f.o.y - f.k * rad * Math.sin(deg * Math.PI / 180) });
+    const named = (all, n) => all.find((x) => x.name === n);
+    const status = () => b.eval(`return document.getElementById("scale-drawer-status").textContent;`);
+    const warned = () => b.eval(`return document.getElementById("scale-drawer-status").classList.contains("warn");`);
+    const ghostCount = () => b.eval(`return document.querySelectorAll(".panghost").length;`);
+    const sheetState = () => b.eval(`const s = document.getElementById("scale-sheet"); const body = document.querySelector("#scale-sheet .sheetbody");
+      return { cls: ["lipped", "lipshut"].map((k) => s.classList.contains(k)).join(), top: body.scrollTop, drawer: document.getElementById("scale-panel-layout").scrollTop };`);
+    const touch = (type, pts) => b.send("Input.dispatchTouchEvent", {
+      type, touchPoints: pts.map((p, i) => ({ x: p.x, y: p.y, radiusX: 4, radiusY: 4, force: 1, id: i + 1 })) });
+    const touchPath = async (from, path, { hold = 320, release = true } = {}) => {
+      await touch("touchStart", [from]);
+      await sleep(hold);
+      for (const p of path) await touch("touchMove", [{ x: p.x, y: p.y + 36 }]);
+      if (release) await touch("touchEnd", []);
+      await sleep(120);
+    };
+    const arc = (f, a, c, n = 6) => Array.from({ length: n }, (_, i) => at(f, a + ((c - a) * (i + 1)) / n));
+    const mouse = (type, x, y, extra = {}) => b.send("Input.dispatchMouseEvent", { type, x, y, button: "left", buttons: type === "mouseReleased" ? 0 : 1, clickCount: 1, ...extra });
+    const near = (p, q, tol, msg) => assert.ok(Math.hypot(p.x - q.x, p.y - q.y) <= tol, `${msg}: ${JSON.stringify(p)} vs ${JSON.stringify(q)}`);
+
+    test("FPD: a touch drag on the bottom ring at 380x780 moves, swaps, snaps away and cancels without scrolling the drawer or touching the lip", { timeout: 90000 }, async () => {
+      try {
+        await open(380, 780, true);
+        const before = await sheetState();
+        let f = await frame();
+        const c3 = named(f.all, "C3");
+        await touchPath(c3, arc(f, 330, 300));
+        assert.strictEqual(await status(), "C3 moved to 300°, lower right. Seat U1 stays its number.");
+        f = await frame();
+        near(named(f.all, "C3"), at(f, 300), 3, "C3 sits on the 300 degree step");
+        assert.strictEqual(await ghostCount(), 0);
+        await touchPath(named(f.all, "D3"), [named(f.all, "E3")]);
+        assert.match(await status(), /^Swapped D3 and E3\./);
+        f = await frame();
+        near(named(f.all, "D3"), at(f, 90), 3, "D3 took E3's step");
+        near(named(f.all, "E3"), at(f, 210), 3, "E3 took D3's step");
+        await touchPath(named(f.all, "C3"), arc(f, 300, 222, 8));
+        assert.strictEqual(await status(), "C3 was too close to E3, so it sits at 225°, lower left.");
+        assert.strictEqual(await warned(), true);
+        f = await frame();
+        near(named(f.all, "C3"), at(f, 225), 3, "C3 snapped away to 225");
+        const keep = JSON.stringify(f.all.map((n) => [n.name, Math.round(n.x), Math.round(n.y)]));
+        const c3b = named(f.all, "C3");
+        await touch("touchStart", [c3b]);
+        await sleep(320);
+        await touch("touchMove", [{ x: at(f, 120).x, y: at(f, 120).y + 36 }]);
+        await touch("touchStart", [{ x: at(f, 120).x, y: at(f, 120).y + 36 }, { x: 40, y: 40 }]);
+        await touch("touchMove", [{ x: at(f, 110).x, y: at(f, 110).y + 36 }, { x: 44, y: 44 }]);
+        await touch("touchEnd", []);
+        await sleep(200);
+        f = await frame();
+        assert.strictEqual(JSON.stringify(f.all.map((n) => [n.name, Math.round(n.x), Math.round(n.y)])), keep, "a second touch moved a note");
+        assert.strictEqual(await ghostCount(), 0);
+        const after = await sheetState();
+        assert.strictEqual(after.cls, before.cls, "the lip or the sheet changed class");
+        assert.strictEqual(after.top, before.top, "the drawer scrolled");
+      } finally { await b.clearKeyboard().catch(() => {}); await b.setViewport(900, 900, false); }
+    });
+
+    test("FPD: at 844x390 a drag from 90° to 180° lands with the band pinned and the status heading the controls column", { timeout: 90000 }, async () => {
+      try {
+        await open(844, 390, true);
+        let f = await frame();
+        const bandTop = () => b.eval(`const r = document.getElementById("scale-plate-band").getBoundingClientRect(); return r.top;`);
+        const band0 = await bandTop();
+        await touchPath(named(f.all, "E3"), arc(f, 90, 180, 8));
+        f = await frame();
+        near(named(f.all, "E3"), at(f, 180), 3, "E3 landed on 180 degrees");
+        assert.match(await status(), /^E3 moved to 180°, left\./);
+        assert.ok(Math.abs((await bandTop()) - band0) < 1, "the band moved");
+        const rects = await b.eval(`const st = document.getElementById("scale-drawer-status").getBoundingClientRect(); const tabs = document.getElementById("scale-tab-layout").getBoundingClientRect(); const band = document.getElementById("scale-plate-band").getBoundingClientRect();
+          return { stTop: st.top, stLeft: st.left, tabsBottom: tabs.bottom, bandRight: band.right, sticky: getComputedStyle(document.getElementById("scale-plate-band")).position };`);
+        assert.strictEqual(rects.sticky, "sticky");
+        assert.ok(rects.stLeft >= rects.bandRight - 1, "the status is not in the controls column");
+        assert.ok(rects.stTop >= rects.tabsBottom - 1, "the status is not under the tab strip");
+      } finally { await b.setViewport(900, 900, false); }
+    });
+
+    test("FPD: at 1280x800 a mouse drag moves a bottom note", { timeout: 90000 }, async () => {
+      try {
+        await open(1280, 800, false);
+        let f = await frame();
+        const from = named(f.all, "C3");
+        await b.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: from.x, y: from.y, button: "none", buttons: 0 });
+        await mouse("mousePressed", from.x, from.y);
+        await mouse("mouseMoved", from.x + 6, from.y);
+        for (const p of arc(f, 330, 300)) await mouse("mouseMoved", p.x, p.y);
+        const end = at(f, 300);
+        await mouse("mouseReleased", end.x, end.y);
+        await sleep(120);
+        f = await frame();
+        near(named(f.all, "C3"), at(f, 300), 3, "C3 on the 300 degree step");
+        assert.strictEqual(await status(), "C3 moved to 300°, lower right. Seat U1 stays its number.");
+      } finally { await b.setViewport(900, 900, false); }
+    });
+  });
 }
+

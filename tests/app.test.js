@@ -13471,3 +13471,228 @@ describe("FPD: the drawer slides bottom notes", () => {
     }
   });
 });
+
+describe("FPD: seats, sole note, hint, nudge, notices and records", () => {
+  const FPD = "[C3] [D3] [E3] (A3) C4 D4 E4 F4";
+  const orbit = (a, r = 115) => ({ x: 200 + r * Math.cos(a * Math.PI / 180), y: 200 - r * Math.sin(a * Math.PI / 180) });
+  const ang = (app) => JSON.parse(app.get("JSON.stringify(layoutAngles)"));
+  const angleOf = (app, id) => app.get(`lastSolved.fields[${id}][4]`);
+  const labelOf = (app, id) => app.get(`lastSolved.fields[${id}][5]`);
+  const open = (text = FPD, edit = false) => dgOpen({}, text, edit);
+  const slide = (app, name, a) => {
+    const g = DG.down(app, name, "mouse");
+    DG.moveTo(app, g, g.x + 6, g.y);
+    const q = orbit(a);
+    DG.moveTo(app, g, q.x, q.y);
+    DG.release(app, g, q.x, q.y);
+  };
+
+  test("FPD: the first slide on a seated bottom ring folds seats into angles: no position changes, the record carries no seats.bottom, and the labels run U1..Un low to high", () => {
+    const app = open();
+    DG.mouseDrag(app, "C3", "D3");
+    assert.notStrictEqual(dgSeats(app), null);
+    const before = [101, 102, 103].map((id) => angleOf(app, id));
+    slide(app, "E3", 150);
+    assert.strictEqual(dgSeats(app), null);
+    const after = [101, 102, 103].map((id) => angleOf(app, id));
+    assert.deepStrictEqual(after.slice(0, 2), before.slice(0, 2));
+    assert.strictEqual(after[2], 150);
+    assert.deepStrictEqual(ang(app), { bottom: [before[0], before[1], 150] });
+    assert.deepStrictEqual([101, 102, 103].map((id) => labelOf(app, id)), ["U1", "U2", "U3"]);
+    assert.match(d2Status(app), /Bottom seat numbers now run low to high\.$/);
+    app.els["scale-generate"].click();
+    const o = app.registry()[app.deckId()].options;
+    assert.strictEqual(o.seats && o.seats.bottom, undefined);
+    assert.deepStrictEqual(o.angles, { bottom: [before[0], before[1], 150] });
+  });
+
+  test("FPD: a scale with one bottom note opens the drawer with it pickable, a drag moves it, and the nothing-to-rearrange line never shows", () => {
+    const app = open("[C3] (A3) C4 D4 E4 F4");
+    assert.doesNotMatch(app.els["scale-layout-state"].textContent + app.els["scale-drawer-status"].textContent, /nothing to rearrange/i);
+    d2Tap(app, "C3");
+    assert.strictEqual(d2Pick(app).ring, "bottom");
+    assert.strictEqual(app.els["scale-note-prev"].disabled, false);
+    app.els["scale-note-next"].click();
+    app.els["scale-note-next"].click();
+    d2Tap(app, "C3");
+    slide(app, "C3", 300);
+    assert.deepStrictEqual(ang(app), { bottom: [300] });
+    assert.match(d2Status(app), /^C3 moved to 300°, lower right\./);
+  });
+
+  test("FPD: the hint and the pick announcement name the slide only on a pan with bottom notes", () => {
+    const hintOf = (app) => app.els["scale-drawer-hint"].textContent;
+    const app = open();
+    assert.match(hintOf(app), /Bottom notes also slide along their ring/);
+    d2Tap(app, "C3");
+    assert.strictEqual(d2Status(app), "Picked up C3. Drag it along the ring to move it, or drop it on another bottom note to swap.");
+    const fine = open();
+    fine.els["scale-fine-toggle"].click();
+    d2Tap(fine, "C3");
+    assert.strictEqual(d2Status(fine), "Picked up C3. Drag it along the ring to move it, or drop it on another bottom note to swap, or use the finer controls below.");
+    const none = open("(A3) C4 D4 E4 F4 G4");
+    assert.doesNotMatch(hintOf(none), /slide along/);
+    d2Tap(none, "C4");
+    assert.doesNotMatch(d2Status(none), /along the ring/);
+  });
+
+  test("FPD: with a bottom note picked by PREVIOUS NOTE, CLOCKWISE moves it 5° and a nudge into the floor is refused", () => {
+    const app = open();
+    app.els["scale-fine-toggle"].click();
+    app.els["scale-note-prev"].click();
+    let guard = 0;
+    while (app.get("pickRef && pickRef.ring") !== "bottom" && guard++ < 30) app.els["scale-note-prev"].click();
+    assert.strictEqual(app.get("pickRef.ring"), "bottom");
+    const id = 101 + app.get("pickRef.i");
+    const name = app.get(`lastSolved.fields[${id}][0]`) + app.get(`lastSolved.fields[${id}][1]`);
+    assert.strictEqual(app.els["scale-angle-next"].hidden, false);
+    assert.strictEqual(app.els["scale-angle-next"].disabled, false);
+    const was = app.get(`lastSolved.fields[${id}][4]`);
+    app.els["scale-angle-next"].click();
+    assert.strictEqual(app.get(`lastSolved.fields[${id}][4]`), (was + 355) % 360);
+    assert.match(d2Status(app), new RegExp(`^${name} at ${(was + 355) % 360}°, `));
+    app.els["scale-angle-prev"].click();
+    assert.strictEqual(app.get(`lastSolved.fields[${id}][4]`), was);
+    app.run("layoutAngles = { bottom: [225, null, null] }; resyncSheet(true); pickRef = { ring: 'bottom', i: 0 }; paintLayout()");
+    app.els["scale-angle-next"].click();
+    assert.strictEqual(angleOf(app, 101), 225);
+    assert.strictEqual(d2Status(app), "D3 is in the way.");
+    assert.strictEqual(app.els["scale-drawer-status"].classList.contains("warn"), true);
+    assert.deepStrictEqual(ang(app), { bottom: [225, null, null] });
+  });
+
+  test("FPD: the angle pair is hidden for rim and inner picks and moves no existing control", () => {
+    const app = open("[C3] [D3] [E3] (A3) C4 D4 E4 F4 | G4 A4");
+    app.els["scale-fine-toggle"].click();
+    const ids = ["scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next", "scale-layout-reset"];
+    d2Tap(app, "C4");
+    assert.strictEqual(app.els["scale-angle-prev"].hidden, true);
+    assert.strictEqual(app.els["scale-angle-next"].hidden, true);
+    d2Tap(app, "C4");
+    d2Tap(app, "G4");
+    assert.strictEqual(app.els["scale-angle-prev"].hidden, true);
+    d2Tap(app, "G4");
+    d2Tap(app, "C3");
+    assert.strictEqual(app.els["scale-angle-prev"].hidden, false);
+    const html = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
+    assert.match(html, /id="scale-angle-prev" aria-label="Move 5 degrees anticlockwise"/);
+    assert.match(html, /id="scale-angle-next" aria-label="Move 5 degrees clockwise"/);
+    assert.strictEqual(ids.every((id) => app.els[id] && !app.els[id].hidden), true);
+  });
+
+  const saved = () => {
+    const app = open();
+    slide(app, "C3", 300);
+    app.els["scale-generate"].click();
+    const rec = app.registry()[app.deckId()];
+    openEdit(app, rec);
+    app.click(app.els["scale-tab-layout"]);
+    return app;
+  };
+
+  test("FPD: an angle-only change shows Layout not saved yet, and a reopened angle-only record shows Layout changed from the default with RESET enabled", () => {
+    const app = open();
+    assert.strictEqual(dr1Notice(app), "");
+    assert.strictEqual(app.els["scale-layout-reset"].disabled, true);
+    slide(app, "C3", 300);
+    assert.strictEqual(dr1Notice(app), "Layout not saved yet. GENERATE CARDS keeps it.");
+    assert.strictEqual(app.els["scale-layout-reset"].disabled, false);
+    const re = saved();
+    assert.deepStrictEqual(ang(re), { bottom: [300, null, null] });
+    assert.strictEqual(angleOf(re, 101), 300);
+    assert.strictEqual(dr1Notice(re), "Layout changed from the default.");
+    assert.strictEqual(re.els["scale-layout-reset"].disabled, false);
+    slide(re, "C3", 280);
+    assert.strictEqual(dr1Notice(re), "Layout not saved yet. SAVE CHANGES keeps it.");
+  });
+
+  test("FPD: RESET LAYOUT clears angles and a bottom count change resets them with one sentence", () => {
+    const app = open();
+    slide(app, "C3", 300);
+    app.els["scale-layout-reset"].click();
+    assert.strictEqual(app.get("layoutAngles"), null);
+    assert.strictEqual(angleOf(app, 101), 330);
+    assert.strictEqual(app.els["scale-layout-reset"].disabled, true);
+    const re = saved();
+    re.type("[C3] [D3] [E3] [F3] (A3) C4 D4 E4 F4");
+    assert.strictEqual(re.get("layoutAngles"), null);
+    assert.strictEqual(d2Status(re), "The bottom now has 4 notes, so its angles were reset.");
+    assert.match(dr1Notice(re), /The bottom angles were reset\.$/);
+    const withSeats = open();
+    DG.mouseDrag(withSeats, "C3", "D3");
+    slide(withSeats, "E3", 150);
+    withSeats.type("[C3] [D3] [E3] [F3] (A3) C4 D4 E4 F4");
+    assert.strictEqual(d2Status(withSeats), "The bottom now has 4 notes, so its seats and angles were reset.");
+  });
+
+  test("FPD: angles on a pan with no bottom notes are dropped silently", () => {
+    const app = open("(A3) C4 D4 E4 F4");
+    app.els["scale-generate"].click();
+    const rec = app.registry()[app.deckId()];
+    openEdit(app, { ...rec, options: { ...rec.options, angles: { bottom: [300, null, null] } } });
+    app.click(app.els["scale-tab-layout"]);
+    assert.strictEqual(app.get("layoutAngles"), null);
+    assert.strictEqual(d2Status(app) + dr1Notice(app), "");
+    assert.strictEqual(app.els["scale-layout-reset"].disabled, true);
+  });
+
+  test("FPD: SAVE after a move stores options.angles, Edit redraws it, and opening the bar's link stores the same record", () => {
+    const app = open();
+    slide(app, "C3", 300);
+    app.els["scale-generate"].click();
+    const rec = app.registry()[app.deckId()];
+    assert.deepStrictEqual(rec.options.angles, { bottom: [300, null, null] });
+    assert.strictEqual(rec.options.seats, undefined);
+    const hash = app.location.hash;
+    assert.match(hash, /^#s=6\/.*\/at-300,,\/[0-9a-f]{6}$/);
+    openEdit(app, rec);
+    app.click(app.els["scale-tab-layout"]);
+    assert.strictEqual(angleOf(app, 101), 300);
+    const fresh = boot({ href: "https://example.test/index.html" + hash });
+    const stored = JSON.parse(fresh.store[fresh.get("SCALES_KEY")]);
+    assert.strictEqual(stored.length, 1);
+    assert.deepStrictEqual(stored[0].o.angles, { bottom: [300, null, null] });
+    const drawn = Object.values(fresh.registry()[fresh.deckId()].fields).filter((f) => f[3] === "bottom");
+    assert.strictEqual(drawn[0][4], 300);
+  });
+
+  test("FPD: generateDeck carries options.angles into the solve and the record", () => {
+    const HPEs = require("./helpers/engine.js").loadEngine(["core", "voicing", "layout", "naming", "select", "share"]);
+    const seed = HPEs.core.parseSeed("[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]", { anchor: "between" });
+    assert.strictEqual(seed.ok, true);
+    const plain = JSON.parse(JSON.stringify(seed.value));
+    plain.options = Object.assign({}, plain.options, { angles: { bottom: [null, null, null, 20, null, null] } });
+    const enc = HPEs.share.encode(plain);
+    assert.strictEqual(enc.ok, true);
+    assert.match(enc.value, /\/between\/at-,,,20,,\/[0-9a-f]{6}$/);
+    const app = boot({ href: "https://example.test/index.html#s=" + enc.value });
+    const stored = JSON.parse(app.store[app.get("SCALES_KEY")]);
+    assert.deepStrictEqual(stored[0].o.angles, { bottom: [null, null, null, 20, null, null] });
+    const deck = app.registry()[app.deckId()];
+    const u4 = Object.values(deck.fields).filter((f) => f[3] === "bottom")[3];
+    assert.strictEqual(u4[4], 20);
+  });
+
+  test("FPD: after a move each hit target is centred on its drawn note, and two bottom notes at the floor at 380x780 get their actual pairwise size (about 35px)", () => {
+    const app = open();
+    slide(app, "C3", 300);
+    slide(app, "D3", 255);
+    const orbitR = 115;
+    const hitOf = (name) => DG.noteNode(app, name);
+    for (const [name, id] of [["C3", 101], ["D3", 102], ["E3", 103]]) {
+      const a = angleOf(app, id) * Math.PI / 180;
+      const h = hitOf(name);
+      assert.ok(Math.abs(Number(h.getAttribute("cx")) - orbitR * Math.cos(a)) < 0.01, `${name} cx`);
+      assert.ok(Math.abs(Number(h.getAttribute("cy")) + orbitR * Math.sin(a)) < 0.01, `${name} cy`);
+    }
+    app.run("layoutAngles = { bottom: [225, 210, null] }; resyncSheet(true)");
+    const pts = ["C3", "D3"].map((n) => [Number(hitOf(n).getAttribute("cx")), Number(hitOf(n).getAttribute("cy")), 15.01]);
+    const ext = 148.19, plate = 318;
+    const radii = app.get(`panHitRadii(${ext}, ${plate}, 44, ${JSON.stringify(pts)})`);
+    const px = [...radii].map((r) => 2 * r * plate / (2 * ext));
+    for (const d of px) {
+      assert.ok(d > 31 && d < 36, `a floor pair's hit target is ${d}px across, not the 44px floor`);
+    }
+  });
+});
+
