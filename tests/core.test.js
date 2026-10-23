@@ -1360,7 +1360,6 @@ test("err carries variant and vars and keeps its reason", () => {
   assert.equal(plain.code, "NO_DING");
   assert.equal(plain.variant, "which");
   assert.deepEqual(JSON.parse(JSON.stringify(plain.vars)), {});
-  assert.equal(core.parseSeed("(D3) A3 B3 C4 D4 ~").variant === null || true, true);
   assert.equal(typeof plain.reason, "string");
   const slash = core.parseSeed("(D3) A3 / C4 D4");
   const bar = core.parseSeed("(D3) | A3");
@@ -1374,7 +1373,6 @@ test("err carries variant and vars and keeps its reason", () => {
   const bad = core.parseSeed("(D3) Xx3 A3");
   assert.equal(bad.ok, false);
   assert.equal(bad.code, "BAD_NOTE");
-  assert.ok(Object.keys(core.REASONS || {}).length === 0 || true);
   assert.ok(Object.prototype.hasOwnProperty.call(bad, "variant"));
   assert.ok(Object.prototype.hasOwnProperty.call(bad, "vars"));
 });
