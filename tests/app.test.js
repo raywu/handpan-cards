@@ -9956,6 +9956,41 @@ describe("share url", () => {
     assert.strictEqual(app.get("SHARE_VERSION"), 4);
   });
 
+  const PARENTLESS = "5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/f0daf4";
+
+  test("PI: a v5 link with no parent opens and the bar keeps it unchanged, with no parent option and no replaceState", () => {
+    const app = bootGA({ href: PAGE + "#s=" + PARENTLESS });
+    assert.strictEqual(app.location.hash, "#s=" + PARENTLESS);
+    assert.strictEqual(app.history.calls.filter((c) => c.type === "replace").length, 0);
+    const saved = plain(app.get("savedScales()"));
+    assert.strictEqual(saved.length, 1);
+    assert.ok(saved[0].o.parent == null, "a parent was stored");
+    const deck = Object.values(app.registry()).find((d) => d.options && d.options.parent === null);
+    assert.ok(deck, "the registry deck carries a parent");
+    assert.strictEqual(deck.degrees["7"], "iv");
+  });
+
+  test("PI: a deck made on the Add sheet stores no parent and its share code is the engine's parentless code", () => {
+    const app = boot();
+    const made = app.generate(AMARA_STRING);
+    assert.strictEqual(made.ok, true, made.reason);
+    const expr = `CUSTOM[${JSON.stringify(made.value.id)}]`;
+    assert.ok(plain(app.get(`(rememberScale(seedOf(${expr})), savedScales())`))[0].o.parent == null);
+    assert.strictEqual(plain(app.get(`shareLink(${expr})`)).value, "https://example.test/index.html#s=" + PARENTLESS);
+  });
+
+  test("PI: a v4 link with no parent opens to a v5 bar with no parent option", () => {
+    const app = bootGA({ href: PAGE + "#s=4A4GpAI11Co13D214D215D216D217D211D213DGem2Gam2J09JLaWK45E2Wpf9aJ0" });
+    assert.strictEqual(app.location.hash, "#s=5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/MY+PAN/b4174c");
+    assert.ok(plain(app.get("savedScales()"))[0].o.parent == null);
+  });
+
+  test("PI: an explicit parent equal to the inferred one still travels in the bar and the record", () => {
+    const app = bootGA({ href: PAGE + "#s=" + V5_MOVED });
+    assert.strictEqual(app.location.hash, "#s=" + V5_MOVED);
+    assert.strictEqual(plain(app.get("savedScales()"))[0].o.parent, 1);
+  });
+
   test("SU: RESET SEEDED DECKS while showing Kurd's replacement writes #deck=d-kurd-10", () => {
     const app = boot();
     saveKurdRepainted(app);
