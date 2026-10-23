@@ -1,0 +1,19 @@
+# kills: FPS: an at- list with a wrong length, a bad entry, a bottom seats list beside it, or out of order is BAD_NOTE
+# suite: node --test --test-name-pattern ^FPS..an.at..list.with.a.wrong.length..a.bad.entry..a.bottom.seats.list.beside.it..or.out.of.order.is.BAD.NOTE$ tests/share.test.js
+# A bottom seats list beside at- is accepted on decode (neither the share check nor the floor call sees the seats).
+diff --git a/src/engine/share.js b/src/engine/share.js
+--- a/src/engine/share.js
++++ b/src/engine/share.js
+@@ -534,12 +534,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     }
+     if (carry.angles) {
+       var bottomSeats = carry.delta && carry.delta.seats && carry.delta.seats.bottom;
+-      if (bottomSeats && bottomSeats.length) return badNote(text);
+       var angles = HPE.layout.readAngles({ bottom: carry.angles }, counts);
+       if (!angles.ok || !angles.value) return badNote(text);
+       var o = result.value.options;
+       var asked = { mirror: !!o.mirror, mirrorBottom: !!o.mirrorBottom, anchor: o.anchor, angles: angles.value };
+-      if (o.seats) asked.seats = o.seats;
+       var placed = HPE.layout.solve({ fields: result.value.fields, options: {} }, asked);
+       if (!placed.ok) return badNote(text);
+       result.value.options.angles = { bottom: carry.angles };

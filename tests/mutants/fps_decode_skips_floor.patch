@@ -1,0 +1,14 @@
+# kills: FPS: a v6 link under the floor, or with a bottom seats list beside at-, is BAD_NOTE and the app imports nothing
+# suite: node --test --test-name-pattern ^FPS..a.v6.link.under.the.floor..or.with.a.bottom.seats.list.beside.at...is.BAD.NOTE.and.the.app.imports.nothing$ tests/share.test.js
+# decode never runs the floor, so a link with bottom notes closer than the floor opens.
+diff --git a/src/engine/share.js b/src/engine/share.js
+--- a/src/engine/share.js
++++ b/src/engine/share.js
+@@ -541,7 +541,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       var asked = { mirror: !!o.mirror, mirrorBottom: !!o.mirrorBottom, anchor: o.anchor, angles: angles.value };
+       if (o.seats) asked.seats = o.seats;
+       var placed = HPE.layout.solve({ fields: result.value.fields, options: {} }, asked);
+-      if (!placed.ok) return badNote(text);
+       result.value.options.angles = { bottom: carry.angles };
+     }
+     return result;

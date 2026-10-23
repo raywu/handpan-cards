@@ -1,0 +1,15 @@
+# kills: FPS: at- on a v5 link is BAD_NOTE, on a v6 link it is read
+# suite: node --test --test-name-pattern ^FPS..at..on.a.v5.link.is.BAD.NOTE..on.a.v6.link.it.is.read$ tests/share.test.js
+# A v5 link may carry the v6 at- option.
+diff --git a/src/engine/share.js b/src/engine/share.js
+--- a/src/engine/share.js
++++ b/src/engine/share.js
+@@ -495,7 +495,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+         var delta = readDeltaLine(o.slice(6), 3);
+         if (!delta) return badNote(text);
+         carry.delta = delta;
+-      } else if (text.charAt(0) === "6" && (m = ANGLES_RE.exec(o))) {
++      } else if (text.charAt(0) >= "5" && (m = ANGLES_RE.exec(o))) {
+         at = OPTION_ORDER.at;
+         var entries = m[1].split(",");
+         var list = entries.map(function (e) { return e === "" ? null : Number(e); });

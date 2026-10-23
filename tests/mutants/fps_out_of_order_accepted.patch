@@ -1,0 +1,15 @@
+# kills: FPS: an at- list with a wrong length, a bad entry, a bottom seats list beside it, or out of order is BAD_NOTE
+# suite: node --test --test-name-pattern ^FPS..an.at..list.with.a.wrong.length..a.bad.entry..a.bottom.seats.list.beside.it..or.out.of.order.is.BAD.NOTE$ tests/share.test.js
+# Any option may follow at-, so the order check no longer holds after it.
+diff --git a/src/engine/share.js b/src/engine/share.js
+--- a/src/engine/share.js
++++ b/src/engine/share.js
+@@ -504,7 +504,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       } else {
+         return badNote(text);
+       }
+-      if (at <= rank) return badNote(text);
++      if (at <= rank && rank !== OPTION_ORDER.at) return badNote(text);
+       rank = at;
+     }
+     return HPE.core.parseSeed(scaleString(scale), options);
