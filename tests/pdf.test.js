@@ -178,3 +178,53 @@ test("R4-E setDash with one number is a square dash, with none clears, and rect,
   p.rect(1, 2, 3, 4, "f");
   assert.equal(p.ops.at(-1), "f");
 });
+
+/* ---- FPP: moved bottom notes in the browser sheet ------------------------- */
+
+test("FPP: pdfcards draws each bottom note on its fixture angle, moved or not", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const E = loadEngine(["core", "fontdata", "pdf", "pdfdeck", "pdfcards"]);
+  const payload = JSON.parse(fs.readFileSync(
+    path.join(__dirname, "fixtures", "free_placement_case_v1.json"), "utf8"));
+  const moved = payload.angles.bottom;
+  assert.equal(moved.filter((a) => a !== null).length, 3);
+
+  const circles = [];
+  const realDoc = E.pdf.doc;
+  E.pdf.doc = function (w, h) {
+    const doc = realDoc.call(this, w, h);
+    const realPage = doc.page;
+    doc.page = function () {
+      const p = realPage.call(this);
+      const realCircle = p.circle;
+      p.circle = function (x, y, r, m) {
+        circles.push({ x, y, r });
+        return realCircle.call(this, x, y, r, m);
+      };
+      return p;
+    };
+    return doc;
+  };
+  try {
+    E.pdfcards.build(E.pdfdeck.fromGenerated(payload), { variant: "shop", paper: "letter" });
+  } finally {
+    E.pdf.doc = realDoc;
+  }
+
+  const g = payload.deck.geom;
+  const { x: cx, y: cy, r: R } = circles[0];
+  const ids = Object.keys(payload.deck.fields)
+    .filter((k) => payload.deck.fields[k][3] === "bottom").sort();
+  assert.equal(ids.length, moved.length);
+  ids.forEach((id, i) => {
+    const angle = payload.deck.fields[id][4];
+    if (moved[i] !== null) assert.equal(angle, moved[i], "the fixture carries the moved angle");
+    const a = (angle * Math.PI) / 180;
+    const ex = cx + R * g.bottom * Math.cos(a);
+    const ey = cy + R * g.bottom * Math.sin(a);
+    const hit = circles.some((c) => Math.abs(c.r - R * g.r_bnote) < 1e-6 &&
+      Math.abs(c.x - ex) < 0.005 && Math.abs(c.y - ey) < 0.005);
+    assert.ok(hit, `bottom note ${id} not drawn at ${angle} degrees`);
+  });
+});

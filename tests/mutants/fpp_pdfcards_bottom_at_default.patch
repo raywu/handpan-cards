@@ -1,0 +1,19 @@
+# kills: pdfcards draws a bottom note at its default slot, not at the angle the deck's field carries
+# suite: python3 -m unittest tests.test_pdf_parity.PrintParityTest.test_FPP_app_pdfcards_and_hifi_agree_per_field_to_half_a_point_on_moved_bottom_notes
+#
+# The bottom ring is drawn at the six solved-default angles, keyed by the
+# U-label, instead of field slot 4. On every deck whose bottom notes sit at
+# their defaults (Pygmy and the generated seeds) the two are identical, so only
+# a deck with moved bottom notes tells them apart. Standing in for
+# bottomAngles(): pdfcards has no such function, the defaults are inlined.
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -347,6 +347,7 @@ HPE.pdfcards = (function () {
+       var i = Number(key);
+       var val = spec[key];
+       var nm = val[0], ov = val[1], zone = val[3], ang = val[4], lab = val[5];
++      if (zone === "bottom") ang = {U1: 300, U2: 240, U3: 0, U4: 180, U5: 60, U6: 120}[lab];
+       if (zone === "ding") {
+         var rr0 = R * g.r_ding;
+         var dy = R * (g.ding_dy || 0.0);

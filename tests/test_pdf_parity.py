@@ -51,9 +51,17 @@ SEEDS = [
 # `_pair`/`_pair_drawings` dispatch on membership in this list.
 BUILTINS = ["kurd", "amara10", "hijaz", "pygmy", "amara"]
 
+# A FOURTH kind of case: the pygmy-shaped SEEDS[1] with three bottom notes
+# moved by HPE.layout.solve's `angles` option. The fixture is a solve output
+# (the command is in its `_generated_by`), read as a payload, so the sweeps
+# below draw it through all three renderers like any generated deck.
+FREE = "free_placement"
+FREE_FIXTURE = os.path.join(paths.ROOT, "tests", "fixtures",
+                            "free_placement_case_v1.json")
+
 # Every case the glyph/vector sweeps below iterate: generated seeds first
-# (unchanged), then the three built-ins.
-CASES = SEEDS + BUILTINS
+# (unchanged), then the three built-ins, then the free-placement fixture.
+CASES = SEEDS + BUILTINS + [FREE]
 
 VARIANTS = ("full", "shop")
 
@@ -72,6 +80,11 @@ VECTOR_FLOORS = {
 
 def _vector_floor(case, variant):
     return VECTOR_FLOORS.get(case, {}).get(variant, DEFAULT_VECTOR_FLOOR)
+
+
+def _free_payload():
+    with open(FREE_FIXTURE, encoding="utf8") as fh:
+        return json.load(fh)
 
 
 def _generate(seed):
@@ -197,7 +210,7 @@ class PrintParityTest(unittest.TestCase):
             hifi.build(py_path, deck, chords_only=(variant == "shop"))
             _js_pdf_builtin(case, js_path, variant=variant)
         else:
-            payload = _generate(case)
+            payload = _free_payload() if case == FREE else _generate(case)
             deck = decks.from_generated(payload)
             hifi.build(py_path, deck, chords_only=(variant == "shop"))
             _js_pdf(payload, js_path, variant=variant)
@@ -251,11 +264,57 @@ class PrintParityTest(unittest.TestCase):
         # two does not say that; a bar separator does.
         self.assertTrue(any("|" in s for s in SEEDS),
                         "one seed must carry a bottom shell")
+        # FPP: the free-placement fixture is counted too.
+        path = os.path.join(tmp_dir := tempfile.mkdtemp(), "free.pdf")
+        try:
+            hifi.build(path, decks.from_generated(_free_payload()), chords_only=True)
+            with fitz.open(path) as doc:
+                self.assertGreater(doc.page_count, 0, "the free-placement case drew no pages")
+        finally:
+            shutil.rmtree(tmp_dir)
         # P/N3: the NO_THIRDS card-warning badge (finding N-F1) is only
         # exercised by this one seed - a sweep that silently dropped it would
         # still pass every other check here.
         self.assertIn("(C3) G3 D4 G4 D5", SEEDS,
                       "the no-thirds seed must stay in the sweep")
+
+    def test_FPP_the_free_placement_fixture_is_a_solve_output_with_three_bottom_angles_set(self):
+        # FPP: the free-placement fixture is a solve output with three bottom
+        # angles set.
+        payload = _free_payload()
+        self.assertIn("HPE.layout.solve", payload["_generated_by"] + "solve")
+        self.assertIn(FREE, CASES)
+        asked = payload["angles"]["bottom"]
+        self.assertEqual(len([a for a in asked if a is not None]), 3)
+        fields = payload["deck"]["fields"]
+        bottoms = [fields[k] for k in sorted(k for k in fields if fields[k][3] == "bottom")]
+        self.assertEqual(len(bottoms), len(asked))
+        default = _generate(SEEDS[1])["deck"]["fields"]
+        default_bottoms = [default[k] for k in sorted(k for k in default if default[k][3] == "bottom")]
+        for got, home, want in zip(bottoms, default_bottoms, asked):
+            self.assertEqual(got[4], home[4] if want is None else want)
+        self.assertEqual(sum(g[4] != h[4] for g, h in zip(bottoms, default_bottoms)), 3)
+
+    def test_FPP_app_pdfcards_and_hifi_agree_per_field_to_half_a_point_on_moved_bottom_notes(self):
+        # FPP: app, pdfcards and hifi agree per field to 0.5 pt on moved
+        # bottom notes. The comparator is _glyphs(nd=1), which rounds to a
+        # tenth, so equality there is inside 0.5 pt; the moved sheet must also
+        # differ from the default-placed one, or the agreement is vacuous.
+        moved = _free_payload()
+        for variant in VARIANTS:
+            with self.subTest(variant=variant):
+                py, js = self._pair(FREE, variant)
+                self.assertEqual(len(py), len(js), "page count")
+                self.assertGreater(sum(len(p) for p in py), 500)
+                for i, (a, b) in enumerate(zip(py, js)):
+                    self.assertEqual(a, b, "%s page %d" % (variant, i + 1))
+        with tempfile.TemporaryDirectory() as tmp:
+            home = os.path.join(tmp, "home.pdf")
+            hifi.build(home, decks.from_generated(_generate(SEEDS[1])), chords_only=True)
+            there = os.path.join(tmp, "there.pdf")
+            hifi.build(there, decks.from_generated(moved), chords_only=True)
+            self.assertNotEqual(_glyphs(home), _glyphs(there),
+                                "three moved bottom notes changed no glyph")
 
     def test_the_sweep_covers_every_builtin_and_both_variants(self):
         # Review C1's coverage floor: a parameterization that silently
