@@ -1286,6 +1286,18 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 #about ul a, #about a[href^="mailto:"]{display:flex; align-items:center; min-height:44px}
 html.about-open{overflow:hidden}
 
+/* ---- CJK (i18n): Latin face first, then the system CJK families ------------ */
+:lang(ja) body, :lang(ja) .mode, :lang(ja) .prints button, :lang(ja) .prints select, :lang(ja) .panel-note, :lang(ja) .chip{
+  font-family:"Nunito Sans", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Noto Sans CJK JP", "Noto Sans JP", sans-serif}
+:lang(ja) .panel-heading{font-family:Marcellus, "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif CJK JP", serif}
+:lang(zh-Hant) body, :lang(zh-Hant) .mode, :lang(zh-Hant) .prints button, :lang(zh-Hant) .prints select, :lang(zh-Hant) .panel-note, :lang(zh-Hant) .chip{
+  font-family:"Nunito Sans", "PingFang TC", "Microsoft JhengHei", "Noto Sans CJK TC", "Noto Sans TC", sans-serif}
+:lang(zh-Hant) .panel-heading{font-family:Marcellus, "PingFang TC", "Microsoft JhengHei", "Noto Serif CJK TC", serif}
+:lang(zh-Hans) body, :lang(zh-Hans) .mode, :lang(zh-Hans) .prints button, :lang(zh-Hans) .prints select, :lang(zh-Hans) .panel-note, :lang(zh-Hans) .chip{
+  font-family:"Nunito Sans", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Noto Sans SC", sans-serif}
+:lang(zh-Hans) .panel-heading{font-family:Marcellus, "PingFang SC", "Microsoft YaHei", "Noto Serif CJK SC", serif}
+:lang(ja) .panel-heading, :lang(zh) .panel-heading{line-height:17px}
+
 /* ---- print (R1, 2026-09-29) -----------------------------------------------
    Forces print colour adjustment, clears the page background and padding for
    paper, and resets .scene's swipe transform so a card mid-flight never
