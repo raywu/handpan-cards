@@ -1,5 +1,5 @@
 # kills: I18N: a missing key falls back to English per key
-# suite: node --test --test-name-pattern ^I18N.a.missing.key.falls.back tests/app.test.js
+# suite: node --test --test-name-pattern ^I18N:.a.missing.key.falls.back tests/app.test.js
 # t() no longer falls back to English for a key a table lacks.
 diff --git a/index.html b/index.html
 --- a/index.html

@@ -1,5 +1,5 @@
 # kills: I18N: an unknown stored lang reads as Auto and is not rewritten
-# suite: node --test --test-name-pattern ^I18N.an.unknown.stored.lang tests/app.test.js
+# suite: node --test --test-name-pattern ^I18N:.an.unknown.stored.lang tests/app.test.js
 # A stored code with no table is trusted as the UI language.
 diff --git a/index.html b/index.html
 --- a/index.html

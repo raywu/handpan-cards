@@ -1375,4 +1375,5 @@ test("err carries variant and vars and keeps its reason", () => {
   assert.equal(bad.code, "BAD_NOTE");
   assert.ok(Object.prototype.hasOwnProperty.call(bad, "variant"));
   assert.ok(Object.prototype.hasOwnProperty.call(bad, "vars"));
+  assert.deepEqual(JSON.parse(JSON.stringify(bad.vars)), { "<X>": "Xx3" });
 });

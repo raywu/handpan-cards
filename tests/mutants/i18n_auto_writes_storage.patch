@@ -1,5 +1,5 @@
 # kills: I18N: a stored lang beats detection and Auto stores nothing
-# suite: node --test --test-name-pattern ^I18N.a.stored.lang.beats tests/app.test.js
+# suite: node --test --test-name-pattern ^I18N:.a.stored.lang.beats tests/app.test.js
 # Choosing Auto writes the detected language into storage instead of clearing the field.
 diff --git a/index.html b/index.html
 --- a/index.html

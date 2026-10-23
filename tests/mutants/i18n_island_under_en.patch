@@ -1,5 +1,5 @@
 # kills: I18N: the English DOM of the app equals the base
-# suite: node --test --test-name-pattern ^I18N.the.English.DOM tests/app.test.js
+# suite: node --test --test-name-pattern ^I18N:.the.English.DOM tests/app.test.js
 # English-only islands carry lang=en even when the UI is English.
 diff --git a/index.html b/index.html
 --- a/index.html
