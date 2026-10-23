@@ -4,12 +4,12 @@
 diff --git a/src/engine/importer.js b/src/engine/importer.js
 --- a/src/engine/importer.js
 +++ b/src/engine/importer.js
-@@ -725,7 +725,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -728,7 +728,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
        names.push(name);
        if (n.octave === null) guessed.push(name);
        var parsed = core().parseSeed(head + names.join(" "));
 -      if (!parsed.ok && parsed.code !== "NO_FIFTH") {
 +      if (!parsed.ok) {
          names.pop();
-         var before = k ? names[k - 1] : null;
          var error = parsed.reason;
+         if (parsed.code === "NOTE_OUT_OF_RANGE") error = composeRange(name);

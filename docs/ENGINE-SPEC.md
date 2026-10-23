@@ -154,7 +154,6 @@ are. This adds SENTENCES, never codes: the enum above stays closed, and the
 | `BAD_NOTE` | `barFirst` - a bar before the ding | `The | comes after the ding and the top notes, e.g. (D) A C D | E F.` |
 | `NOTE_OUT_OF_ORDER` | `ding` - the element before the offending note is the ding | `<A> is at or below the ding <B>. Top notes are above the ding; a lower note is a bottom note and goes before it in square brackets, e.g. [C3] (D3) A3.` |
 | `NOTE_OUT_OF_ORDER` | `afterBar` - the first inner note is below the note before it | `<A> comes after the | but is below <B>. Notes after | are inner notes now. For a bottom note, use square brackets where its pitch falls, e.g. [C3] (D3) A3 C4.` |
-| `NOTE_OUT_OF_ORDER` | `below` - a bottom note before the ding is not below the one after it | `<A> is not below <B>. Bottom notes before the ding also run low to high, e.g. [C3] [D3] (E3) B3.` |
 
 `src/engine/core.js` `REASONS` is the shipped copy of every sentence in this
 section; `tests/core.test.js` holds the two together.

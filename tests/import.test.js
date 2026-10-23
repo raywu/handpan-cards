@@ -138,7 +138,7 @@ test("a descending octaveless source lists every note under NO_OCTAVE and is not
 });
 
 test("a provisional string parseSeed refuses blocks the result with parseSeed's own refusal", () => {
-  for (const id of ["synthetic-labelled-refused", "synthetic-unlabelled-ding", "synthetic-mixed-bottom-below"]) {
+  for (const id of ["synthetic-labelled-refused", "synthetic-unlabelled-ding"]) {
     const c = byId(id);
     const r = run(c);
     const f = flagOf(r, "PROVISIONAL_REFUSED");
@@ -202,16 +202,22 @@ test("Sela SEHP401: the three bracketed notes stay unassigned and D3 is only a c
   assert.deepEqual(flagOf(r, "DING_CUE").notes, [0]);
 });
 
-test("conflicting dings: Medusa asks, and a pick of note 0 resolves it to a refused provisional", () => {
+test("conflicting dings: Medusa asks, and a pick of note 0 resolves it to a REVIEW string", () => {
   const c = byId("sanango-medusa-12");
   const r = run(c);
   assert.equal(r.status, "NEEDS_INPUT");
   assert.deepEqual(flagOf(r, "CONFLICTING_DING").notes, [0, 1]);
   const p = interpret(c.text, { title: c.title, ding: 0 });
-  assert.deepEqual(codes(p), ["COUNT_OK", "NO_OCTAVE", "PROVISIONAL_REFUSED"]);
-  assert.equal(p.status, "NEEDS_INPUT");
-  assert.equal(p.flags.find((f) => f.code === "PROVISIONAL_REFUSED").refusal.code, "NOTE_OUT_OF_ORDER");
-  assert.equal(importer.serialise(p), "");
+  assert.deepEqual(codes(p), ["COUNT_OK", "NO_OCTAVE"]);
+  assert.equal(p.status, "REVIEW");
+  assert.equal(importer.serialise(p), "(D3) [E3] F#3 G3 A3 B3 C#4 D4 E4 F#4 A4 B4");
+});
+
+test("IX: a mixed-octave top list typed out of pitch order keeps each source note its own octave: Ding: D3 Top: C E A3 serialises (D3) A3 C4 E4 with C4 and E4 inferred", () => {
+  const r = interpret("Ding: D3 Top: C E A3");
+  assert.equal(r.status, "REVIEW");
+  assert.equal(importer.serialise(r), "(D3) A3 C4 E4");
+  assert.deepEqual(r.roles.top.map((n) => [n.note, !!n.inferred]), [["C4", true], ["E4", true], ["A3", false]]);
 });
 
 test("a Main note or Hauptnote line that disagrees with a slash-marked ding blocks with CONFLICTING_DING", () => {
@@ -1271,11 +1277,12 @@ describe("IH: compose", () => {
     assert.equal(compose({ ding: "D3", top: "A3", bottom: "(C3)" }).errors.bottom, msg);
   });
 
-  test("IH: compose stages its parse: a top order error is under TOP with \"X is lower than Y: list low to high.\", a top note below the ding says so, a top pitch repeated in INNER is NOTE_REPEATED under INNER, and an octaveless inner Bb over top C4 reads Bb4", () => {
+  test("IH: compose stages its parse: top notes typed in any order are accepted, a top note below the ding says so, a top pitch repeated in INNER is NOTE_REPEATED under INNER, and an octaveless inner Bb over top C4 reads Bb4", () => {
     const order = compose({ ding: "D3", top: "A3 Bb3 G3" });
-    assert.equal(order.errors.top, "G3 is lower than Bb3: list low to high.");
+    assert.equal(order.errors.top, null);
     assert.equal(order.errors.ding, null);
     assert.equal(order.errors.inner, null);
+    assert.equal(order.line, "(D3) G3 A3 Bb3");
     const below = compose({ ding: "D3", top: "C3 A3" });
     assert.equal(below.errors.top, "C3 is not above the ding, D3.");
     const repeat = compose({ ding: "D3", top: "A3 Bb3 C4", inner: "C4" });
@@ -1287,7 +1294,8 @@ describe("IH: compose", () => {
     assert.equal(dip.errors.inner, null);
     assert.ok(dip.ok);
     const later = compose({ ding: "D3", top: "A3 Bb3 C4", inner: "D5 C5" });
-    assert.equal(later.errors.inner, "C5 is lower than D5: list low to high.");
+    assert.equal(later.errors.inner, null);
+    assert.equal(later.line, "(D3) A3 Bb3 C4 | C5 D5");
     const bare = compose({ ding: "D3", top: "A3 Bb3 C4", inner: "Bb" });
     assert.equal(bare.errors.inner, null);
     assert.deepEqual(bare.notes.inner, ["Bb4"]);
@@ -1335,14 +1343,14 @@ describe("IH: compose", () => {
   test("IH: compose puts NO_FIFTH under DING and never NO_FIFTH under TOP while a prefix is staged, and reports no NO_FIFTH while TOP is empty (DING F3 alone carries no DING error)", () => {
     const alone = compose({ ding: "F3" });
     assert.equal(alone.errors.ding, null);
-    assert.equal(alone.errors.top, "Enter the top notes, low to high.");
+    assert.equal(alone.errors.top, "Enter the top notes.");
     const none = compose({ ding: "F3", top: "G3 Ab3" });
     assert.equal(none.errors.ding, "No fifth above the ding F3: add C to the top notes, or check the ding.");
     assert.equal(none.errors.top, null);
     assert.equal(none.ok, false);
     assert.equal(none.line, "");
-    const order = compose({ ding: "D3", top: "Bb3 G3" });
-    assert.equal(order.errors.top, "G3 is lower than Bb3: list low to high.");
+    const order = compose({ ding: "D3", top: "Bb3 A3" });
+    assert.equal(order.errors.top, null);
     assert.equal(order.errors.ding, null);
     const inner = compose({ ding: "F3", top: "G3 Ab3", inner: "Bb4" });
     assert.equal(inner.errors.inner, null);
@@ -1351,14 +1359,15 @@ describe("IH: compose", () => {
     assert.ok(fixed.ok);
   });
 
-  test("IH: compose refuses bottoms out of order with \"X is lower than Y: list low to high.\", refuses a repeated bottom, and accepts a bottom copy of a rim pitch", () => {
+  test("IH: compose reads bottoms in any order, refuses a repeated bottom, and accepts a bottom copy of a rim pitch", () => {
     const order = compose({ ding: "D3", top: "A3", bottom: "Eb3 C3" });
-    assert.equal(order.errors.bottom, "C3 is lower than Eb3: list low to high.");
-    assert.equal(order.ok, false);
+    assert.equal(order.errors.bottom, null);
+    assert.equal(order.line, "[C3] (D3) [Eb3] A3");
     const repeat = compose({ ding: "D3", top: "A3", bottom: "C3 C3" });
     assert.equal(repeat.errors.bottom, "C3 is already in the bottom notes.");
     const typedLow = compose({ ding: "D3", top: "A3", bottom: "C Eb2" });
-    assert.equal(typedLow.errors.bottom, "Eb2 is lower than C3: list low to high.");
+    assert.equal(typedLow.errors.bottom, null);
+    assert.equal(typedLow.line, "[Eb2] [C3] (D3) A3");
     const copy = compose({ ding: "D3", top: "A3 Bb3", bottom: "A3" });
     assert.ok(copy.ok);
     assert.equal(copy.line, "(D3) [A3] A3 Bb3");
@@ -1439,10 +1448,35 @@ describe("IH: compose", () => {
     assert.deepEqual(b.notes.bottom, ["C3", "Db4"]);
   });
 
-  test("O1: a typed note below the one before it refuses with composeLower: D3 g A1 says A1 is lower than G2", () => {
+  test("O1: D3 g A1 composes with A1 sorted below G2 and a repeated bottom still refuses", () => {
     const r = compose({ ding: "D3", top: "A3", bottom: "g A1" });
-    assert.equal(r.ok, false);
-    assert.equal(r.errors.bottom, "A1 is lower than G2: list low to high.");
+    assert.equal(r.ok, true);
+    assert.deepEqual(r.notes.bottom, ["G2", "A1"]);
+    assert.equal(r.line, "[A1] [G2] (D3) A3");
+    const dup = compose({ ding: "D3", top: "A3", bottom: "g A1 G2" });
+    assert.equal(dup.errors.bottom, "G2 is already in the bottom notes.");
+  });
+
+  test("IH: compose reads TOP, INNER and BOTTOM in any order and gives the same line as the sorted fields", () => {
+    const sorted = compose({ ding: "D3", top: "A3 Bb3 C4 D4", inner: "E5 F5", bottom: "C3 Eb3" });
+    const shuffled = compose({ ding: "D3", top: "C4 A3 D4 Bb3", inner: "F5 E5", bottom: "Eb3 C3" });
+    assert.ok(sorted.ok && shuffled.ok);
+    assert.equal(shuffled.line, sorted.line);
+  });
+
+  test("IH: compose of a permutation of each built-in's decomposed fields equals formatSeed of that deck", () => {
+    let seed = 7;
+    const rnd = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+    const shuffle = (a) => { const b = a.slice(); for (let i = b.length - 1; i > 0; i -= 1) { const j = Math.floor(rnd() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
+    const decks = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "decks.json"), "utf8"));
+    for (const d of decks) {
+      const by = (zone) => Object.values(d.fields).filter((f) => f[3] === zone).map((f) => f[0] + f[1]);
+      const fields = { ding: by("ding")[0], top: by("rim"), inner: by("inner"), bottom: by("bottom") };
+      for (let k = 0; k < 20; k += 1) {
+        const r = compose({ ding: fields.ding, top: shuffle(fields.top).join(" "), inner: shuffle(fields.inner).join(" "), bottom: shuffle(fields.bottom).join(" ") });
+        assert.equal(r.line, core.formatSeed(d.fields), d.id);
+      }
+    }
   });
 
   test("O1: a repeated bottom refuses: D3 G2 G2 says G2 is already in the bottom notes", () => {
@@ -1475,7 +1509,7 @@ describe("IH: compose", () => {
     };
     assert.deepEqual(bottoms("(D3) [G] A3"), ["G3"]);
     assert.deepEqual(bottoms("(D3) A3 C5 [G]"), ["G5"]);
-    assert.equal(bottoms("(D3) A3 [G] C4"), "NOTE_OUT_OF_ORDER");
+    assert.deepEqual(bottoms("(D3) A3 [G] C4"), ["G4"]);
     assert.deepEqual(bottoms("[G] [A] [B] [C] (D3) A3 C4 E4"), ["G2", "A2", "B2", "C3"]);
   });
 

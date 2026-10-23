@@ -4,12 +4,12 @@
 diff --git a/src/engine/core.js b/src/engine/core.js
 --- a/src/engine/core.js
 +++ b/src/engine/core.js
-@@ -48,7 +48,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-       kind: "error",
+@@ -50,7 +50,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       // parseLegacySeed); the current grammar emits the `ding` alternate alone.
        reason: "<A> is not above <B>, and the line runs low to high. Give <A> a higher octave or move it earlier, e.g. (D3) A3 C4 D4.",
        alternates: {
--        ding: "<A> is at or below the ding <B>. Top notes are above the ding; a lower note is a bottom note and goes before it in square brackets, e.g. [C3] (D3) A3.",
-+        ding: "<A> is not above the ding <B>, and notes must ascend. Top notes are above the ding; a lower note is a bottom note and goes before it in square brackets, e.g. [C3] (D3) A3.",
-         below: "<A> is not below <B>. Bottom notes before the ding also run low to high, e.g. [C3] [D3] (E3) B3."
+-        ding: "<A> is at or below the ding <B>. Top notes are above the ding; a lower note is a bottom note and goes before it in square brackets, e.g. [C3] (D3) A3."
++        ding: "<A> is not above the ding <B>, and notes must ascend. Top notes are above the ding; a lower note is a bottom note and goes before it in square brackets, e.g. [C3] (D3) A3."
        }
      },
+     NOTE_REPEATED: {

@@ -4,12 +4,12 @@
 diff --git a/src/engine/importer.js b/src/engine/importer.js
 --- a/src/engine/importer.js
 +++ b/src/engine/importer.js
-@@ -320,7 +320,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -558,7 +558,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
        } else {
          var fields = parsed.value.fields;
          var nameOf = function (id) { return fields[id][0] + fields[id][1]; };
 -        var rim = tops.concat(inner);
 +        var rim = inner.concat(tops);
+         var typed = parsed.value.typed;
          octaves[ding.index] = nameOf("0");
-         rim.forEach(function (n, i) { octaves[n.index] = nameOf(String(i + 1)); });
-         var first = Math.max(101, rim.length + 1);
+         rim.forEach(function (n, i) { octaves[n.index] = nameOf(typed[i]); });

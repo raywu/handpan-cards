@@ -4,10 +4,10 @@
 diff --git a/src/engine/importer.js b/src/engine/importer.js
 --- a/src/engine/importer.js
 +++ b/src/engine/importer.js
-@@ -748,9 +748,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -745,9 +745,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     var names = [];
      var guessed = [];
      var midis = [];
-     var below = null;
 -    var placed = core().inferBottoms(notes.map(function (x) {
 -      return { letter: x.letter, accidental: x.acc, octave: x.octave };
 -    }), ding.midi);

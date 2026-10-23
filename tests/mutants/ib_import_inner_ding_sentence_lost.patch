@@ -1,15 +1,15 @@
-# kills: IB: compose says an inner note at or below the ding is not above the ding
 # suite: node --test --test-name-pattern ^IB..compose.says.an.inner.note.at.or.below.the.ding tests/import.test.js
-# An inner note at or below the ding gets the old top-note sentence.
+# kills: IB: compose says an inner note at or below the ding is not above the ding
+# An out-of-order note gets a sentence that does not name the ding.
 diff --git a/src/engine/importer.js b/src/engine/importer.js
 --- a/src/engine/importer.js
 +++ b/src/engine/importer.js
-@@ -734,7 +734,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-         else if (parsed.code === "NOTE_OUT_OF_ORDER") {
-           if (before) error = composeLower(name, before);
-           else if (field === "top") error = name + " is not above the ding, " + anchorName + ".";
--          else error = name + " is not above the ding, " + anchorName + ".";
-+          else error = name + " is below the highest top note, " + anchorName + ".";
-         }
+@@ -733,7 +733,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+         var error = parsed.reason;
+         if (parsed.code === "NOTE_OUT_OF_RANGE") error = composeRange(name);
+         else if (parsed.code === "NOTE_REPEATED") error = name + " is already in the top or inner notes.";
+-        else if (parsed.code === "NOTE_OUT_OF_ORDER") error = name + " is not above the ding, " + anchorName + ".";
++        else if (parsed.code === "NOTE_OUT_OF_ORDER") error = name + " is lower than the note before it, " + anchorName + ".";
          return { names: names, error: error };
        }
+       below = midi;

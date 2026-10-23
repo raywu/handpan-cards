@@ -1575,14 +1575,24 @@ test("SV: every v5 structural refusal is badNote of the whole link; a parseSeed 
     assert.equal(r.ok, false, link);
     assert.deepStrictEqual(host(r), host(core.badNote(link)), link);
   }
-  const link = forge5("(D3)_C4_A3_D4", "*x", []);
-  const refusal = core.parseSeed("(D3) C4 A3 D4", { palette: 0, parent: null, mirror: false, name: "" });
+  const link = forge5("(D3)_A3_C3", "*x", []);
+  const refusal = core.parseSeed("(D3) A3 C3", { palette: 0, parent: null, mirror: false, name: "" });
   assert.equal(refusal.ok, false);
   const r = share.decode(link);
   assert.equal(r.ok, false);
   assert.equal(r.code, refusal.code);
   assert.equal(r.reason, refusal.reason);
   assert.notEqual(r.code, "BAD_NOTE");
+});
+
+test("SV: a v5 link whose scale segment is typed out of pitch order decodes to the sorted deck and shareCode writes the sorted spelling", () => {
+  const sorted = share.decode(forge5("(D3)_A3_C4_D4_E4_F4_G4_A4_C5", "*x", []));
+  const shuffled = share.decode(forge5("(D3)_C4_A3_D4_G4_E4_F4_C5_A4", "*x", []));
+  assert.equal(sorted.ok, true);
+  assert.equal(shuffled.ok, true);
+  assert.deepEqual(host(shuffled.value.fields), host(sorted.value.fields));
+  assert.equal(share.encode(shuffled.value).value, share.encode(sorted.value).value);
+  assert.match(share.encode(shuffled.value).value, /^5\/\(D3\)_A3_C4_D4_E4_F4_G4_A4_C5\//);
 });
 
 test("SV: deckName never throws, and an out-of-range parent makes encode return BAD_NOTE", () => {

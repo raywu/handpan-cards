@@ -77,8 +77,7 @@ const SECTION9 = {
     kind: "error",
     reason: "<A> is not above <B>, and the line runs low to high. Give <A> a higher octave or move it earlier, e.g. (D3) A3 C4 D4.",
     alternates: {
-      ding: "<A> is at or below the ding <B>. Top notes are above the ding; a lower note is a bottom note and goes before it in square brackets, e.g. [C3] (D3) A3.",
-      below: "<A> is not below <B>. Bottom notes before the ding also run low to high, e.g. [C3] [D3] (E3) B3."
+      ding: "<A> is at or below the ding <B>. Top notes are above the ding; a lower note is a bottom note and goes before it in square brackets, e.g. [C3] (D3) A3."
     }
   },
   NOTE_REPEATED: {
@@ -1141,11 +1140,14 @@ test("IB: an octaveless inner note still climbs from the note before it", () => 
   assert.equal(g[6][0] + g[6][1], "F4");
 });
 
-test("IB: inner notes still run low to high among themselves", () => {
-  const r = core.parseSeed("(D3) A3 C4 D4 E4 | F4 B3");
-  assert.equal(r.ok, false);
-  assert.equal(r.code, "NOTE_OUT_OF_ORDER");
-  assert.match(r.reason, /^B3 is not above F4, and the line runs low to high/);
+test("IB: inner notes typed in either order read as the same inner pair, and an inner at or below the ding is NOTE_OUT_OF_ORDER ding", () => {
+  const a = core.parseSeed("(D3) A3 C4 D4 E4 | F4 B3");
+  const b = core.parseSeed("(D3) A3 C4 D4 E4 | B3 F4");
+  assert.equal(a.ok, true);
+  assert.deepEqual(host(a.value.fields), host(b.value.fields));
+  const low = core.parseSeed("(D3) A3 C4 D4 E4 | F4 C3");
+  assert.equal(low.code, "NOTE_OUT_OF_ORDER");
+  assert.match(low.reason, / is at or below the ding D3\./);
 });
 
 test("IB: an inner note at or below the ding gets the ding sentence", () => {
@@ -1167,9 +1169,70 @@ test("IB: an inner note on any rim pitch is NOTE_REPEATED", () => {
   }
 });
 
-test("IB: rim notes still climb and repeat-check among themselves", () => {
+test("IB: a rim pitch typed twice is NOTE_REPEATED naming the later one, in any order", () => {
   assert.equal(core.parseSeed("(D3) A3 C4 C4 | E5").code, "NOTE_REPEATED");
-  assert.equal(core.parseSeed("(D3) C4 A3 | E5").code, "NOTE_OUT_OF_ORDER");
+  const r = core.parseSeed("(D3) C4 A3 C4 | E5");
+  assert.equal(r.code, "NOTE_REPEATED");
+  assert.match(r.reason, /^C4 and C4 are the same note/);
+  const ok = core.parseSeed("(D3) C4 A3 | E5");
+  assert.equal(ok.ok, true);
+  assert.equal(core.formatSeed(ok.value.fields), "(D3) A3 C4 | E5");
+});
+
+test("the legacy reader keeps the default NOTE_OUT_OF_ORDER sentence", () => {
+  const r = core.parseLegacySeed("(D3) A3 C5 B3 E4");
+  assert.equal(r.code, "NOTE_OUT_OF_ORDER");
+  assert.equal(r.reason, "B3 is not above C5, and the line runs low to high. Give B3 a higher octave or move it earlier, e.g. (D3) A3 C4 D4.");
+});
+
+test("every permutation of a fully octaved line reads as its ascending spelling and keeps its id", () => {
+  let seed = 424242;
+  const rnd = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+  const shuffle = (a) => { const b = a.slice(); for (let i = b.length - 1; i > 0; i -= 1) { const j = Math.floor(rnd() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
+  const grammar = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "scale_grammar_v1.json"), "utf8"));
+  const lines = golden.decks.map(d => core.formatSeed(d.fields));
+  for (const row of grammar.rows) if (row.accept && /^[^A-G]*(?:[A-G][#b]?-?\d[^A-G]*)+$/.test(row.accept.canonical)) lines.push(row.accept.canonical);
+  let checked = 0;
+  for (const line of lines) {
+    const base = core.parseSeed(line);
+    assert.equal(base.ok, true, line);
+    const bar = line.indexOf(" | ");
+    const head = (bar === -1 ? line : line.slice(0, bar)).split(" ");
+    const dingAt = head.findIndex(t => t.charAt(0) === "(");
+    const rest = head.filter((t, i) => i !== dingAt);
+    const inner = bar === -1 ? [] : line.slice(bar + 3).split(" ");
+    for (let k = 0; k < 100; k += 1) {
+      const parts = [head[dingAt]].concat(shuffle(rest));
+      if (inner.length) parts.push("|", ...shuffle(inner));
+      const str = parts.join(" ");
+      const r = core.parseSeed(str);
+      assert.equal(r.ok, true, str + " " + r.code);
+      assert.deepEqual(host(r.value.fields), host(base.value.fields), str);
+      assert.equal(core.deckId(r.value.fields), core.deckId(base.value.fields), str);
+      checked += 1;
+    }
+  }
+  assert.ok(checked >= 1500, `only ${checked} permutations checked`);
+});
+
+test("the frozen origin/main d8d2a2d accepted readings still read to the same fields and deck id", () => {
+  const frozen = JSON.parse(fs.readFileSync(path.join(ROOT, "tests", "fixtures", "engine_corpus_main_d8d2a2d_ok.json"), "utf8"));
+  assert.ok(frozen.rows.length > 400, `only ${frozen.rows.length} frozen rows`);
+  for (const row of frozen.rows) {
+    const r = core.parseSeed(row.str);
+    assert.equal(r.ok, true, row.str);
+    assert.deepEqual(host(r.value.fields), row.fields, row.str);
+    assert.equal(core.deckId(r.value.fields), row.deckId, row.str);
+  }
+});
+
+test("parseSeed reports the field ids in typed order, tops then bottoms", () => {
+  const r = core.parseSeed("(D3) C4 A3 [G2] E4");
+  assert.equal(r.ok, true);
+  const f = host(r.value.fields);
+  const name = id => f[id][0] + f[id][1];
+  assert.deepEqual(host(r.value.typed).map(name), ["C4", "A3", "E4", "G2"]);
+  assert.equal(Object.keys(r.value).join(), "fields,options");
 });
 
 test("IB: formatSeed writes a dip as bottoms, ding and rim, then the bar and the inner notes, and it round-trips", () => {

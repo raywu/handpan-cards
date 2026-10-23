@@ -4,9 +4,9 @@
 diff --git a/src/engine/importer.js b/src/engine/importer.js
 --- a/src/engine/importer.js
 +++ b/src/engine/importer.js
-@@ -830,7 +830,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-         inner: inner.map(function (x) { return { note: x }; }),
-         bottom: bottom.names.map(function (x) { return { note: x }; })
+@@ -874,7 +874,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+         inner: byMidi(inner),
+         bottom: byMidi(bottom.names)
        };
 -      var line = serialise({ status: "REVIEW", roles: roles });
 +      var line = roles.bottom.map(function (x) { return "[" + x.note + "]"; }).concat(["(" + ding.name + ")"], top, inner.length ? ["|"].concat(inner) : []).join(" ");

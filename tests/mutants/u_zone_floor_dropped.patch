@@ -1,0 +1,14 @@
+# suite: node --test --test-name-pattern ^every.refused.row.carries.its.code.and.its.sentence$ tests/scale.test.js
+# kills: every refused row carries its code and its sentence
+# A rim note at or below the ding is no longer refused.
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -740,7 +740,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     var i;
+     var pair;
+     for (i = 0; i < rims.length; i += 1) {
+-      if (rims[i].midi <= ding.midi) return scaleOrder(rims[i], ding, "ding");
+       if (i > 0 && rims[i].midi === rims[i - 1].midi) {
+         pair = later(rims[i], rims[i - 1]);
+         return scaleRepeated(pair[0], pair[1]);
