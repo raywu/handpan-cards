@@ -8094,9 +8094,9 @@ describe("DR2b refused drops and reduced motion", () => {
 });
 
 describe("DR2b item 2: a ring of one note", () => {
-  const one = d2Build({ rim: 3, inner: 0, bottom: 1 });
+  const one = d2Build({ rim: 3, inner: 1, bottom: 0 });
   const ONE = one.text;
-  const [LONE] = one.names.bottom;
+  const [LONE] = one.names.inner;
   const [RIM0] = one.names.rim;
   test("DR2b (55, item 2): with nothing picked a hold, a drag start, Space and Enter on the lone note write row 2 and pick nothing", () => {
     for (const how of ["hold", "drag", "space", "enter", "tap"]) {
@@ -8108,7 +8108,7 @@ describe("DR2b item 2: a ring of one note", () => {
       else if (how === "enter") d2Key(app, LONE, "Enter");
       else d2Tap(app, LONE);
       assert.strictEqual(d2Pick(app), null, how);
-      assert.strictEqual(d2Status(app), `${LONE} is the only note in the bottom, so it has no other seat.`, how);
+      assert.strictEqual(d2Status(app), `${LONE} is the only note in the inner, so it has no other seat.`, how);
       assert.strictEqual(DG.ghostEls(app).length, 0, how);
     }
   });
@@ -13369,5 +13369,105 @@ describe("DS: the visible word is scale", () => {
     app.els["scale-delete"].click();
     app.els["scale-delete"].click();
     assert.strictEqual(app.els["scale-msg"].textContent, "Keep at least one scale. Add a scale before deleting D KURD 10.");
+  });
+});
+
+/* ---- Lane FP-D: the bottom ring slides (drawer drag and nudge) ----
+ * The fixture is three bottom notes, a ding and four rim notes. The sandbox plate
+ * sits at (200, 200) at scale 1 with R = 100 and the bottom orbit at 115, so a
+ * bottom note at angle a is at (200 + 115 cos a, 200 - 115 sin a). The floor
+ * between two bottom notes is 15 degrees here. */
+describe("FPD: the drawer slides bottom notes", () => {
+  const FPD = "[C3] [D3] [E3] (A3) C4 D4 E4 F4";
+  const orbit = (a, r = 115) => ({ x: 200 + r * Math.cos(a * Math.PI / 180), y: 200 - r * Math.sin(a * Math.PI / 180) });
+  const fpdAngles = (app) => JSON.parse(app.get("JSON.stringify(layoutAngles)"));
+  const fpdAngle = (app, id) => app.get(`lastSolved.fields[${id}][4]`);
+  const fpdLabel = (app, id) => app.get(`lastSolved.fields[${id}][5]`);
+  const fpdWarn = (app) => app.els["scale-drawer-status"].classList.contains("warn");
+  const fpdOpen = (text = FPD, opts = {}) => dgOpen(opts, text);
+  const near = (a, b, msg) => assert.ok(Math.abs(a - b) < 0.6, `${msg}: ${a} vs ${b}`);
+
+  test("FPD: a bottom note dragged clear of other notes lands on the nearest 5° step, the ghost sits on the orbit, and the status names note, angle and place", () => {
+    for (const how of ["mouse", "touch"]) {
+      const app = fpdOpen();
+      const g = DG.down(app, "C3", how);
+      if (how === "touch") app.advance(250);
+      DG.moveTo(app, g, g.x + 6, g.y);
+      const lift = how === "touch" ? 36 : 0;
+      const to = { x: 260, y: 296 };
+      DG.moveTo(app, g, to.x, to.y + lift);
+      const ghosts = DG.ghostEls(app);
+      assert.strictEqual(ghosts.length, 1, how);
+      const gc = DG.ghostCentre(ghosts[0]);
+      const want = orbit(300);
+      near(gc.x, want.x, `${how} ghost x`);
+      near(gc.y, want.y, `${how} ghost y`);
+      assert.strictEqual(String(ghosts[0].style.transition || ""), "", `${how}: the ghost has no transition`);
+      DG.release(app, g, to.x, to.y + lift);
+      assert.deepStrictEqual(fpdAngles(app), { bottom: [300, null, null] }, how);
+      assert.strictEqual(fpdAngle(app, 101), 300, how);
+      assert.strictEqual(fpdLabel(app, 101), "U1", how);
+      assert.strictEqual(DG.ghostEls(app).length, 0, how);
+      assert.strictEqual(d2Pick(app), null, how);
+      assert.strictEqual(d2Status(app), "C3 moved to 300°, lower right. Seat U1 stays its number.", how);
+      assert.strictEqual(fpdWarn(app), false, how);
+      const g2 = DG.down(app, "C3", how);
+      if (how === "touch") app.advance(250);
+      DG.moveTo(app, g2, g2.x + 6, g2.y);
+      const q = orbit(312);
+      DG.moveTo(app, g2, q.x, q.y + lift);
+      DG.release(app, g2, q.x, q.y + lift);
+      assert.deepStrictEqual(fpdAngles(app), { bottom: [310, null, null] }, how);
+      assert.strictEqual(d2Status(app), "C3 moved to 310°, lower right.", `${how}: the second sentence shows once`);
+    }
+  });
+
+  test("FPD: under active angles a drop on a bottom note exchanges the two angles and keeps each note's label", () => {
+    const app = fpdOpen();
+    app.run("layoutAngles = { bottom: [300, 200, null] }; resyncSheet(true)");
+    assert.strictEqual(fpdAngle(app, 101), 300);
+    DG.mouseDrag(app, "C3", "D3");
+    assert.deepStrictEqual(fpdAngles(app), { bottom: [200, 300, null] });
+    assert.strictEqual(fpdAngle(app, 101), 200);
+    assert.strictEqual(fpdAngle(app, 102), 300);
+    assert.strictEqual(fpdLabel(app, 101), "U1");
+    assert.strictEqual(fpdLabel(app, 102), "U2");
+    assert.strictEqual(app.get("JSON.stringify(layoutSeats)"), "null");
+    assert.match(d2Status(app), /^Swapped C3 and D3\./);
+  });
+
+  test("FPD: releasing a held bottom note over a rim note moves it, and a held rim note over a bottom note is still refused", () => {
+    const app = fpdOpen();
+    const g = DG.down(app, "C3", "mouse");
+    DG.moveTo(app, g, g.x + 6, g.y);
+    const rim = DG.centre(DG.noteNode(app, "C4"));
+    DG.moveTo(app, g, rim.x, rim.y);
+    DG.release(app, g, rim.x, rim.y);
+    const a = fpdAngles(app);
+    assert.ok(a && a.bottom[0] !== null && a.bottom[1] === null, "the bottom note moved");
+    assert.match(d2Status(app), /^C3 /);
+    const app2 = fpdOpen();
+    const bot = DG.centre(DG.noteNode(app2, "D3"));
+    DG.mouseDragTo(app2, "C4", bot.x, bot.y);
+    assert.strictEqual(d2Status(app2), "Not moved. C4 moves only within the rim.");
+    assert.strictEqual(fpdWarn(app2), true);
+    assert.strictEqual(app2.get("JSON.stringify(layoutAngles)"), "null");
+  });
+
+  test("FPD: a release under the floor snaps to the nearest free step on the approach side, warns and flashes", () => {
+    for (const reduced of [false, true]) {
+      const app = fpdOpen(FPD, { reducedMotion: reduced });
+      const g = DG.down(app, "C3", "mouse");
+      DG.moveTo(app, g, g.x + 6, g.y);
+      const path = [270, 235, 220].map((a) => orbit(a));
+      for (const p of path) DG.moveTo(app, g, p.x, p.y);
+      DG.release(app, g, path[2].x, path[2].y);
+      assert.deepStrictEqual(fpdAngles(app), { bottom: [225, null, null] }, `reduced ${reduced}`);
+      assert.strictEqual(d2Status(app), "C3 was too close to D3, so it sits at 225°, lower left.", `reduced ${reduced}`);
+      assert.strictEqual(fpdWarn(app), true);
+      assert.deepStrictEqual(JSON.parse(app.get("JSON.stringify(panFlash)")), ["101"], `reduced ${reduced}`);
+      app.advance(600);
+      assert.strictEqual(app.get("panFlash"), null, `reduced ${reduced}`);
+    }
   });
 });
