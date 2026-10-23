@@ -628,3 +628,7 @@ Approval readiness: PASS
 | VERDICT | APPROVED WITH AMENDMENTS — ready for /swarm once the owner answers Q1-Q12 and lane 0 checks the evidence in |
 
 NO UNRESOLVED DECISIONS
+
+## Owner answers (2026-10-22)
+
+- Q9 (`_headers` on `main`, retire the overlay): YES. The overlay retires after L8 is on `main`: the GA placeholder commit and the main-to-dev "restore the overlay" step stop after one verified sync. Deleting `claude/dev-overlay` needs a later owner OK.
