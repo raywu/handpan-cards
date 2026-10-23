@@ -1,0 +1,15 @@
+# kills: FPL: a numeric entry under the floor of a null neighbour's solved angle is BAD_NOTE
+# suite: node --test --test-name-pattern ^FPL:.a.numeric.entry.under.the.floor tests/layout.test.js
+# A null entry falls back to 0 instead of the angle the solver placed it at.
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -623,7 +623,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     var i;
+     for (i = 0; i < home.bottoms.length; i += 1) {
+       var asked = angles.value.bottom[i];
+-      effective.push(asked === null ? home.bottoms[i] : asked);
++      effective.push(asked === null ? 0 : asked);
+     }
+     var homeFields = merge(source, zones, home, null);
+     for (i = 0; i < effective.length; i += 1) {
