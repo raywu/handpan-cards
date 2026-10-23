@@ -344,8 +344,8 @@ class BorderAgreementTest(unittest.TestCase):
             app_pad, NEW_PAD, places=2,
             msg="app frame padding is %.3f, not the restyled %.3f"
                 % (app_pad, NEW_PAD))
-        print_ratio = NEW_BW / OLD_BW
-        app_ratio = NEW_PAD / OLD_PAD
+        print_ratio = print_bw / OLD_BW
+        app_ratio = app_pad / OLD_PAD
         self.assertAlmostEqual(
             print_ratio, app_ratio, delta=0.02,
             msg="border weight grew by a different relative amount in each "

@@ -234,6 +234,17 @@ class PrintParityTest(unittest.TestCase):
     def test_the_sweep_actually_ran(self):
         # An empty seed list is a passing parity test that proves nothing.
         self.assertGreaterEqual(len(SEEDS), 2)
+        with tempfile.TemporaryDirectory() as tmp:
+            produced = []
+            for n, seed in enumerate(SEEDS):
+                path = os.path.join(tmp, "seed%d.pdf" % n)
+                deck = decks.from_generated(_generate(seed))
+                hifi.build(path, deck, chords_only=True)
+                with fitz.open(path) as doc:
+                    produced.append(doc.page_count)
+            self.assertEqual(len(produced), len(SEEDS))
+            self.assertTrue(all(n > 0 for n in produced),
+                            "a swept seed produced no pages: %r" % (produced,))
         # Row 321: three of the pdfcards mutants (i, k, l) are all
         # bottom-ring and fire on a bottom-shell seed only, so the
         # oracle's kill power depends on one being present. A count of
