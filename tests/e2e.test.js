@@ -246,14 +246,6 @@ function run() {
     await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
       { label: "mode S to take effect" });
   }
-  const railText = () => b.eval(`return document.querySelector("#count .seq-rail")?.textContent ?? null;`);
-  const rectsOf = (sel) => `(() => {
-    const r = document.querySelector("${sel}").getBoundingClientRect();
-    return { l: r.left, t: r.top, w: r.width, h: r.height };
-  })()`;
-  async function waitElapsed(ms, label) {
-    await b.eval(`return new Promise((r) => setTimeout(r, ${ms}));`);
-  }
   /* Page timer constants the converted waits bound. They are written here on purpose, never read from the page: a wait that read the
    * constant back would move with it and could not fail when the constant grows. */
   const PIN_MS = 600, LIP_SLIDE_MS = 180;
@@ -279,6 +271,14 @@ function run() {
   async function waitFlingSettled(label) {
     await waitSheetRest(label);
     await waitElapsed(LIP_SLIDE_MS + 120, "a late lip flip after " + label);
+  }
+  const railText = () => b.eval(`return document.querySelector("#count .seq-rail")?.textContent ?? null;`);
+  const rectsOf = (sel) => `(() => {
+    const r = document.querySelector("${sel}").getBoundingClientRect();
+    return { l: r.left, t: r.top, w: r.width, h: r.height };
+  })()`;
+  async function waitElapsed(ms, label) {
+    await b.eval(`return new Promise((r) => setTimeout(r, ${ms}));`);
   }
   async function navigate(target) {
     if (navDead) throw navDead;
