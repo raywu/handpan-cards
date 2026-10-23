@@ -1,16 +1,16 @@
 # kills: W1 (20.9): a deck generated with MIRROR TOP on and MIRROR BOTTOM off re-solves to the same fields under a seat correction
-# suite: node --test --test-name-pattern ^W1.*20.9.*$ tests/app.test.js
+# suite: node --test --test-name-pattern ^W1..20.9...a.deck.generated.with.MIRROR.TOP.on.and.MIRROR.BOTTOM.off.re.solves.to.the.same.fields.under.a.seat.correction$ tests/app.test.js
 # The seat-correction re-solve forgets the bottom mirror, so the absent value
 # takes the top mirror's and the bottom ring flips on save.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7802,7 +7802,7 @@ function generateDeck(text, options, guard) {
-   if (wanted !== null) {
+@@ -9359,7 +9359,7 @@ function generateDeck(text, options, guard) {
+     options.angles.bottom.some(a => a !== null && a !== undefined) ? options.angles : null;
+   if (wanted !== null || bottomAngles !== null) {
      const o = built.value.options;
-     const moved = HPE.layout.solve({ fields: seed.value.fields, options: {} },
--      { mirror: !!o.mirror, mirrorBottom: !!o.mirrorBottom, anchor: o.anchor, seats: wanted });
-+      { mirror: !!o.mirror, anchor: o.anchor, seats: wanted });
-     if (!moved.ok) return moved;
-     for (const id of Object.keys(moved.value.fields)) {
-       if (built.value.fields[id]) {
+-    const asked = { mirror: !!o.mirror, mirrorBottom: !!o.mirrorBottom, anchor: o.anchor };
++    const asked = { mirror: !!o.mirror, anchor: o.anchor };
+     if (wanted !== null) asked.seats = wanted;
+     if (bottomAngles !== null) asked.angles = bottomAngles;
+     const moved = HPE.layout.solve({ fields: seed.value.fields, options: {} }, asked);

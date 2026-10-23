@@ -80,7 +80,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // line (the mirror of each ring, the anchor), v4 = the same payload with the
   // scale string on line 0 in the one-line grammar (v1 to v3 hold the legacy
   // one), v5 = the readable path in the header.
-  var VERSION = 5;
+  var VERSION = 6;
   // What a stored record carries. Records keep the v4 shape (formatSeed plus
   // options), so the wire version moves alone.
   var RECORD_VERSION = 4;
@@ -214,12 +214,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // shortens the link back to what it was.
   var RINGS = ["rim", "inner", "bottom"];
 
-  function seatsField(seats) {
+  function seatsField(seats, skipBottom) {
     if (!seats || typeof seats !== "object") return "";
     var parts = [];
     var any = false;
     for (var r = 0; r < RINGS.length; r += 1) {
-      var list = seats[RINGS[r]];
+      var list = skipBottom && RINGS[r] === "bottom" ? null : seats[RINGS[r]];
       if (list && list.length) {
         any = true;
         parts.push(list.join(","));
@@ -228,6 +228,20 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       }
     }
     return any ? parts.join(";") : "";
+  }
+
+  // v6: the bottom ring's angles, one entry per note, an empty entry for the
+  // solved angle. Written only when some entry is set.
+  function anglesField(angles) {
+    var list = angles && typeof angles === "object" ? angles.bottom : null;
+    if (!Array.isArray(list)) return "";
+    var any = false;
+    var parts = list.map(function (a) {
+      if (a === null || a === undefined) return "";
+      any = true;
+      return String(a);
+    });
+    return any ? parts.join(",") : "";
   }
 
   var UINT_RE = /^[0-9]{1,3}$/;
@@ -329,8 +343,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     else if (mirrors.top) option("mirror-top");
     else if (mirrors.bottom) option("mirror-bottom");
     if (opts.anchor === "between") option("between");
-    var seats = seatsField(opts.seats);
+    var angles = anglesField(opts.angles);
+    var seats = seatsField(opts.seats, angles !== "");
     if (seats !== "") option("seats-" + seats);
+    if (angles !== "") option("at-" + angles);
     segs.push(checkHex(meaning.join(SEP)));
     var out = segs.join("/");
     if (out.length > CAPS.payload) return badNote(out);
@@ -344,6 +360,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   var TYPED_RE = /^[A-Za-z0-9\-._~+%]+$/;
   var PALETTE_RE = /^palette-([2-6])$/;
   var PARENT_RE = /^parent-(.+)$/;
+  var ANGLES_RE = /^at-((?:0|[1-9][0-9]{0,2})?(?:,(?:0|[1-9][0-9]{0,2})?)*)$/;
 
   // By hand over the UTF-8 bytes: unreserved characters stay, a space is "+",
   // everything else is %XX in upper-case hex.
@@ -413,7 +430,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return HPE.naming.PARENTS[index].name.toLowerCase().split(" ").join("-");
   }
 
-  var OPTION_ORDER = { palette: 0, parent: 1, mirror: 2, between: 3, seats: 4 };
+  var OPTION_ORDER = { palette: 0, parent: 1, mirror: 2, between: 3, seats: 4, at: 5 };
 
   // Every structural refusal is badNote of the whole link; what
   // core.parseSeed says about the scale comes back unchanged.
@@ -424,7 +441,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var scale = percentDecode(segs[1], false);
     if (scale === null || scale === "") return badNote(text);
     var nameSeg = segs[2];
-    var meaning = ["5", scale];
+    var meaning = [text.charAt(0), scale];
     var name = "";
     if (nameSeg.charAt(0) === "*") {
       meaning.push(FIELD_SEP);
@@ -478,6 +495,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         var delta = readDeltaLine(o.slice(6), 3);
         if (!delta) return badNote(text);
         carry.delta = delta;
+      } else if (text.charAt(0) === "6" && (m = ANGLES_RE.exec(o))) {
+        at = OPTION_ORDER.at;
+        var entries = m[1].split(",");
+        var list = entries.map(function (e) { return e === "" ? null : Number(e); });
+        if (list.every(function (a) { return a === null; })) return badNote(text);
+        carry.angles = list;
       } else {
         return badNote(text);
       }
@@ -508,6 +531,19 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     if (read) {
       if (!read.ok) return badNote(text);
       if (read.value) result.value.options.seats = read.value;
+    }
+    if (carry.angles) {
+      var bottomSeats = carry.delta && carry.delta.seats && carry.delta.seats.bottom;
+      if (bottomSeats && bottomSeats.length) return badNote(text);
+      var angles = HPE.layout.readAngles({ bottom: carry.angles }, counts);
+      if (!angles.ok || !angles.value) return badNote(text);
+      var o = result.value.options;
+      var mirrors = HPE.layout.resolveMirrors(o, {});
+      var asked = { mirror: mirrors.top, mirrorBottom: mirrors.bottom, anchor: o.anchor, angles: angles.value };
+      if (o.seats) asked.seats = o.seats;
+      var placed = HPE.layout.solve({ fields: result.value.fields, options: {} }, asked);
+      if (!placed.ok) return badNote(text);
+      result.value.options.angles = { bottom: carry.angles };
     }
     return result;
   }
