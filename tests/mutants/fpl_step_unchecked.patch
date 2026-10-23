@@ -1,0 +1,15 @@
+# kills: FPL: readAngles refuses wrong length, non-integer, off-step and out-of-range entries with BAD_NOTE naming the value
+# suite: node --test --test-name-pattern ^FPL:.readAngles.refuses tests/layout.test.js
+# The 5 degree step is not enforced, so any integer angle is accepted.
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -264,7 +264,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       var entry = list[i];
+       if (entry === null) continue;
+       if (typeof entry !== "number" || !isFinite(entry) ||
+-          entry !== Math.floor(entry) || entry % ANGLE_STEP !== 0 ||
++          entry !== Math.floor(entry) || false ||
+           entry < 0 || entry >= 360) {
+         return badNote(entry);
+       }
