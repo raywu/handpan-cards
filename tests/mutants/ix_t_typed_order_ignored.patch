@@ -1,0 +1,15 @@
+# suite: node --test --test-name-pattern ^IX:.a.mixed.octave.top.list.typed.out.of.pitch.order tests/import.test.js
+# kills: IX: a mixed-octave top list typed out of pitch order keeps each source note its own octave: Ding: D3 Top: C E A3 serialises (D3) A3 C4 E4 with C4 and E4 inferred
+# The importer numbers the notes by position instead of through the typed order, so a list typed out of pitch order takes the wrong octaves.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -561,7 +561,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+         var rim = tops.concat(inner);
+         var typed = parsed.value.typed;
+         octaves[ding.index] = nameOf("0");
+-        rim.forEach(function (n, i) { octaves[n.index] = nameOf(typed[i]); });
++        rim.forEach(function (n, i) { octaves[n.index] = nameOf(String(i + 1)); });
+         bottoms.forEach(function (n, i) { octaves[n.index] = nameOf(typed[rim.length + i]); });
+       }
+     }

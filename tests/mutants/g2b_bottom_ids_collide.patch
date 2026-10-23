@@ -4,13 +4,12 @@
 diff --git a/src/engine/core.js b/src/engine/core.js
 --- a/src/engine/core.js
 +++ b/src/engine/core.js
-@@ -770,7 +770,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -816,7 +816,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
        fields[id] = [spell(entry.note.letter, entry.note.accidental), entry.note.octave,
                      entry.note.midi, entry.zone, null, id];
      });
 -    var first = Math.max(101, tops.length + 1);
 +    var first = 101;
      bottoms.forEach(function (entry, n) {
+       entry.note.id = String(first + n);
        fields[String(first + n)] = [spell(entry.note.letter, entry.note.accidental),
-                                    entry.note.octave, entry.note.midi, "bottom", null, "U" + (n + 1)];
-

@@ -1,15 +1,14 @@
 # suite: node --test --test-name-pattern ^IB..an.inner.note.at.or.below.the.ding.gets.the.ding.sentence$ tests/core.test.js
 # kills: IB: an inner note at or below the ding gets the ding sentence
-# The first inner note is no longer held above the ding.
+# An inner note is no longer held above the ding.
 diff --git a/src/engine/core.js b/src/engine/core.js
 --- a/src/engine/core.js
 +++ b/src/engine/core.js
-@@ -725,7 +725,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-         lastRim = note;
-         rimNotes[mm] = note;
-       } else {
--        if (restarts && mm <= ding.midi) return scaleOrder(note, ding, "ding");
-+        
-         if (rimNotes[mm]) return scaleRepeated(note, rimNotes[mm]);
-         if (lastInner && mm <= lastInner.midi) return scaleRepeated(note, lastInner);
-         lastInner = note;
+@@ -749,7 +749,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     var rimAt = {};
+     rims.forEach(function (r) { rimAt[r.midi] = r; });
+     for (i = 0; i < inners.length; i += 1) {
+-      if (inners[i].midi <= ding.midi) return scaleOrder(inners[i], ding, "ding");
+       if (rimAt[inners[i].midi]) {
+         pair = later(inners[i], rimAt[inners[i].midi]);
+         return scaleRepeated(pair[0], pair[1]);
