@@ -148,8 +148,11 @@ test("the ding's angle is null and every other field carries one", () => {
 test("geom carries the full solver shape, never a missing key", () => {
   for (const b of BUILTINS) {
     const deck = built(b.maker);
-    assert.deepEqual(Object.keys(deck.geom).sort(), host(layout.GEOM_KEYS).sort(),
-      `${b.id}: geom key set`);
+    assert.deepEqual(Object.keys(deck.geom).sort(), [
+      "rim", "inner", "bottom", "r_ding", "ding_dy", "r_note", "r_bnote",
+      "inner_ring", "f_ding", "f_note", "f_bnote", "f_num", "n_in", "n_out",
+      "rim_num_out", "ext",
+    ].sort(), `${b.id}: geom key set`);
   }
 });
 
@@ -434,9 +437,9 @@ test("names and subtitles respect the section 9 caps", () => {
   for (const row of synthetic) {
     if (!row.expect.ok) continue;
     for (const chord of built(row.string).chords) {
-      assert.ok(nameOf(chord).length <= naming.CAPS.name,
+      assert.ok(nameOf(chord).length <= 16,
         `${row.name} ${nameOf(chord)}: name over the cap`);
-      assert.ok(chord.subtitle.length <= naming.CAPS.subtitle,
+      assert.ok(chord.subtitle.length <= 41,
         `${row.name} ${JSON.stringify(chord.subtitle)}: subtitle over the cap`);
     }
   }
@@ -753,13 +756,21 @@ test("alternates sit beside their primary and none is dropped", () => {
 test("no chord name is half-present", () => {
   for (const seed of ALL_SEEDS) {
     const deck = built(seed);
+    const pcSet = (c) => [...new Set(c.fields.map((id) => deck.fields[id][2] % 12))].sort((x, y) => x - y).join(",");
     const byName = new Map();
     for (const c of deck.chords) {
       const n = c.main + c.sup;
-      byName.set(n, (byName.get(n) || 0) + 1);
+      byName.set(n, [...(byName.get(n) || []), c]);
     }
-    for (const [n, count] of byName) {
-      assert.ok(count >= 1 && count <= 3, `${seed}: ${n} has ${count} cards`);
+    for (const [n, cards] of byName) {
+      assert.ok(cards.length >= 1 && cards.length <= 3, `${seed}: ${n} has ${cards.length} cards`);
+      if (cards.length === 1) continue;
+      const classes = cards.map((c) => voicingClassOf(c.subtitle));
+      assert.equal(classes.filter((k) => k === "").length, 1, `${seed}: ${n} has no single home card (${classes})`);
+      assert.ok(classes.every((k, i) => k === "" || cards[i].subtitle.endsWith(` - ${k} VOICING`)));
+      assert.equal(new Set(cards.map(pcSet)).size, 1, `${seed}: ${n} alternates are not the same pitch classes`);
+      assert.equal(new Set(cards.map((c) => c.fields.join(","))).size, cards.length,
+        `${seed}: ${n} repeats a voicing`);
     }
   }
 });

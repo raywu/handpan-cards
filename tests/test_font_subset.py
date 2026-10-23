@@ -81,6 +81,12 @@ class FontSubsetTest(unittest.TestCase):
     def test_the_module_is_registered_as_an_inlined_engine_region(self):
         import inline_engine
         self.assertIn("fontdata", inline_engine.MODULES)
+        with open(os.path.join(paths.ROOT, "index.html"), encoding="utf-8") as fh:
+            html = fh.read()
+        begin = html.index("<!-- engine:fontdata begin")
+        end = html.index("<!-- engine:fontdata end -->")
+        self.assertGreater(end - begin, 1000,
+                           "the fontdata region in index.html is empty")
 
 
 if __name__ == "__main__":

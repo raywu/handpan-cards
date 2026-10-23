@@ -714,9 +714,9 @@ class GeneratedDeckPdfTest(unittest.TestCase):
         squeezed = "".join(text.split())
         self.assertIn("".join(self.deck["name"].split()), squeezed,
                       "the deck name must reach the printed cards")
-        printed = [ch for ch in self.deck["chords"]
-                   if "".join((ch[0] + ch[1]).split()) in squeezed]
-        self.assertTrue(printed, "no chord name reached the sheet")
+        for ch in self.deck["chords"]:
+            self.assertIn("".join((ch[0] + ch[1]).split()), squeezed,
+                          "chord %s%s never reached the sheet" % (ch[0], ch[1]))
         self.assertIn("".join(self.deck["chords"][0][2].split()), squeezed,
                       "the first card's subtitle must be printed")
 

@@ -610,6 +610,9 @@ test("generation runs once at submit, never inside deck() or render()", () => {
   const identity = app.get(
     "(() => { const d = deck(); render(); render(); step(1); return d === deck(); })()");
   assert.strictEqual(identity, true, "render() or step() replaced the registry object");
+  const builds = spyBuild(app);
+  app.run("deck(); deck(); render(); render(); step(1); step(-1);");
+  assert.strictEqual(builds(), 0, "deck() or render() ran select.build again");
 });
 
 // Q17: CLAUDE.md "Known pitfalls" says render()'s empty-order guard
@@ -2097,8 +2100,15 @@ test("Shift+Tab from the sheet's first stop wraps to the last, not off the front
   openEdit(app, d);
 
   app.els["scale-back"].focus();
-  app.els["scale-sheet"].dispatchEvent(
-    { type: "keydown", key: "Tab", shiftKey: true, preventDefault() {} });
+  let threw = null;
+  try {
+    app.els["scale-sheet"].dispatchEvent(
+      { type: "keydown", key: "Tab", shiftKey: true, preventDefault() {} });
+  } catch (e) {
+    threw = e;
+  }
+  assert.strictEqual(threw, null,
+    `Shift+Tab from the first stop did not wrap to the last stop: it threw ${threw}`);
   assert.strictEqual(app.activeId(), "scale-delete",
     "Shift+Tab from the first stop did not wrap to the last stop");
 });
@@ -2116,11 +2126,11 @@ test("Enter in the scale box submits, the same as clicking Generate", () => {
 
 test("the layout markup exists and only the selected chip of any deck opens the sheet", () => {
   const app = boot();
-  for (const id of LAYOUT_IDS) assert.ok(app.els[id], `#${id} is missing from the markup`);
-  // The slot list is gone: the pan IS the selection now (D1). The sandbox
-  // conjures an element for any id asked for, so this has to read the file.
-  assert.ok(!/id="scale-slots"/.test(fs.readFileSync(path.join(ROOT, "index.html"), "utf8")),
-    "the slot list is still in the markup");
+  // The sandbox pre-creates every id in ELEMENT_IDS, so "exists" is read from
+  // the served file. The slot list is gone: the pan IS the selection now (D1).
+  const served = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+  for (const id of LAYOUT_IDS) assert.ok(served.includes(`id="${id}"`), `#${id} is missing from the markup`);
+  assert.ok(!/id="scale-slots"/.test(served), "the slot list is still in the markup");
   app.clickChip("D AMARA 9");
   assert.strictEqual(app.sheetOpen(), false,
     "an unselected built-in chip opened the sheet, so it could be corrected");
@@ -3859,10 +3869,19 @@ test("the paper control drives the page box, not just the filename", () => {
  * closePanel() ("After an action": a PDF build closes the panel). */
 test("the CTA buttons call the emitter, built-in and custom alike", () => {
   const src = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
-  const panel = src.slice(src.indexOf('id="settings-panel"'), src.indexOf('id="settings-panel"') + 4000);
-  assert.match(panel, /onclick="downloadDeckPDF\('shop', this\); closePanel\(\);"/);
   assert.strictEqual((src.match(/id="settings-panel"/g) || []).length, 1,
     "exactly one settings panel serves every deck");
+  const onclick = src.match(/<button[^>]*id="print-download"[^>]*onclick="([^"]*)"/)[1];
+  for (const kind of ["built-in", "custom"]) {
+    const app = boot();
+    if (kind === "custom") customDeck(app);
+    app.run("openPanel()");
+    app.run(`(function () { ${onclick} }).call({ closest: () => null })`);
+    const blobs = app.blobs();
+    assert.strictEqual(blobs.length, 1, `${kind}: the CTA click built ${blobs.length} PDFs, not 1`);
+    assert.strictEqual(blobs[0].type, "application/pdf", `${kind}: the CTA click did not build a PDF`);
+    assert.strictEqual(app.get("panelOpen"), false, `${kind}: a PDF build closes the panel`);
+  }
 });
 
 test("the legacy print sheet is gone: no #printroot, no openPrintSheet, no window.print caller", () => {
@@ -4167,9 +4186,15 @@ test("the sequence source link: rel=noopener, target=_blank, the exact href, and
   assert.match(anchorOpen, /target="_blank"/);
   assert.match(anchorOpen, /href="https:\/\/www\.youtube\.com\/shorts\/YcmgdgZTpHc"/);
   assert.match(src, /#seq-source-link\{[^}]*min-height:44px/);
-  // panelStops()'s conditional inclusion of this link is exercised in the
-  // e2e "sequence mode" suite (querySelectorAll on a real DOM); this stub's
-  // elements do not implement it.
+  const app = boot();
+  app.run("settingsPanel.querySelectorAll = () => []");
+  app.run("openPanel()");
+  const stops = () => app.get("panelStops().map((e) => e.id)");
+  assert.ok(!stops().includes("seq-source-link"), "the hidden link is a Tab stop in mode A");
+  app.run('setMode("S")');
+  assert.ok(stops().includes("seq-source-link"), "the visible link is not a Tab stop in mode S");
+  app.run('setMode("A")');
+  assert.ok(!stops().includes("seq-source-link"), "the link stayed a Tab stop after leaving mode S");
 });
 
 test("card faces in mode S carry no a, button or select", () => {
@@ -6057,8 +6082,17 @@ test("W1 line 118: #scale-label-2 is shown with the bottom-note line, and the fi
   assert.match(html, /<textarea\b[^>]*\baria-describedby="scale-label-2"/);
   const m = /<span\b([^>]*)\bid="scale-label-2"([^>]*)>([^<]*)<\/span>/.exec(html);
   assert.ok(m, "#scale-label-2 is gone");
-  assert.doesNotMatch(m[1] + m[2], /\bhidden\b/, "#scale-label-2 is hidden");
   assert.strictEqual(m[3], "[NOTE] = A BOTTOM NOTE, WRITTEN WHERE ITS PITCH FALLS");
+  const app = boot();
+  openSheet(app);
+  app.run(`globalThis.__label2 = [];
+    const __gid = document.getElementById.bind(document);
+    document.getElementById = (id) => id === "scale-label-2"
+      ? new Proxy({}, { get: (t, k) => (...a) => { __label2.push(String(k)); }, set: (t, k) => { __label2.push("set " + String(k)); return true; } })
+      : __gid(id);`);
+  for (const line of [W1_NONE, W1_BOTTOM, W1_FULL, W1_NONE]) app.type(line);
+  assert.strictEqual(app.get("__label2.join()"), "",
+    "typing a line touched #scale-label-2, which the markup leaves shown for every line");
 });
 
 test("W1 line 119: the count line leads with the ding and all three counts, then the notes by shell", () => {
@@ -8750,7 +8784,7 @@ test("editable defaults: the fifth seeded delete with no custom deck is refused"
   app.els["scale-delete"].click();
   app.els["scale-delete"].click();
   assert.deepStrictEqual(labels(app), ["D KURD 10"], "the last visible deck was hidden");
-  assert.deepStrictEqual(hiddenKey(app) || four, four);
+  assert.deepStrictEqual(hiddenKey(app), four, "the refused hide rewrote or dropped the stored hidden list");
   assert.strictEqual(app.sheetOpen(), true, "the refused hide closed the sheet");
   assert.match(app.els["scale-msg"].textContent, /at least one scale/i);
   assert.match(app.els["scale-msg"].className, /warn/);
@@ -8903,11 +8937,17 @@ test("editable defaults: #deck-restore follows #deck-add, starts hidden and join
   const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
   assert.match(html, /id="deck-add"[^>]*>[^<]*<\/button>\s*<\/div>\s*<button[^>]*id="deck-restore"[^>]*\bhidden\b[^>]*>RESET SEEDED SCALES<\/button>/,
     "the restore button is not right after the Scales row, hidden, with its label");
-  assert.match(html, /document\.getElementById\("deck-add"\), restoreBtn,/, "panelStops() does not list the restore button right after + ADD A SCALE");
   const app = boot();
+  app.run("settingsPanel.querySelectorAll = () => []");
+  const stops = () => app.get("panelStops().map((e) => e.id)");
+  app.run("openPanel()");
   assert.strictEqual(app.els["deck-restore"].hidden, true, "the restore button shows on a fresh store");
+  assert.ok(!stops().includes("deck-restore"), "a hidden restore button is a Tab stop");
   hideViaSheet(app, "amara", "D AMARA 9");
   assert.ok(!app.els["deck-restore"].hidden, "the reset button stays hidden with a deck deleted");
+  const ids = stops();
+  assert.strictEqual(ids[ids.indexOf("deck-add") + 1], "deck-restore",
+    "panelStops() does not list the restore button right after + ADD A SCALE");
 });
 
 /* ------------------------------- 28. seeded decks: SAVE / DELETE, not FORK / HIDE */
@@ -10522,9 +10562,14 @@ describe("about overlay", () => {
     assert.strictEqual(last[1], "", "the ABOUT row is a plain modebar, full width");
     assert.match(last[2], /^\s*<button class="mode" type="button" id="about-open" aria-haspopup="dialog">ABOUT<\/button>\s*$/);
     assert.ok(group.lastIndexOf('id="about-open"') > group.lastIndexOf("res-handpan-101"), "ABOUT is not after HANDPAN 101");
-    const fn = INDEX_HTML().match(/function panelStops\(\) \{[\s\S]*?\.filter\(isStop\);/);
-    assert.ok(fn, "panelStops not found");
-    assert.match(fn[0], /res-"\]'\),\s*document\.getElementById\("about-open"\)\]\s*\.filter\(isStop\);$/, "about-open is not the last panel stop");
+    const app = boot();
+    const resIds = [...group.matchAll(/<a[^>]*id="(res-[\w-]+)"/g)].map((m) => m[1]);
+    assert.ok(resIds.length >= 6 && resIds.includes("res-handpan-101"), "the Resources links are in the markup");
+    app.run(`settingsPanel.querySelectorAll = (sel) => /res-/.test(sel) ? ${JSON.stringify(resIds)}.map((id) => ({ id, disabled: false, getClientRects: () => [{}] })) : []`);
+    app.run("openPanel()");
+    const ids = app.get("panelStops().map((e) => e.id)");
+    assert.strictEqual(ids[ids.length - 1], "about-open", "about-open is not the last panel stop");
+    assert.strictEqual(ids[ids.length - 2], "res-handpan-101", "HANDPAN 101 does not lead ABOUT");
   });
 
   test("AO: opening About tracks about_open with no params", () => {
