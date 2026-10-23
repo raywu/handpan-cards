@@ -2243,8 +2243,8 @@ test("a field edit keeps the edited deck selected and renames its chip from the 
   // autoName lives in select.js and is the ONE producer of a generated name;
   // nothing here reimplements it and nothing disambiguates a duplicate.
   const auto = app.get(
-    `HPE.select.autoName(CUSTOM[${JSON.stringify(now)}].fields, ` +
-    `CUSTOM[${JSON.stringify(now)}].options.parent)`);
+    `HPE.select.deckName({ fields: CUSTOM[${JSON.stringify(now)}].fields, ` +
+    `options: { parent: CUSTOM[${JSON.stringify(now)}].options.parent } })`);
   assert.strictEqual(made.name, auto, "the auto name was pinned to the old fields");
   assert.notStrictEqual(made.name, a.name, "the chip label did not change with the notes");
   const on = chipRow(app).filter((c) => c.on).map((c) => c.label);
@@ -2437,8 +2437,8 @@ test("a user-typed name equal to the auto label survives a later field edit", ()
   const app = boot();
   const a = makeCustom(app);
   const auto = app.get(
-    `HPE.select.autoName(CUSTOM[${JSON.stringify(a.id)}].fields, ` +
-    `CUSTOM[${JSON.stringify(a.id)}].options.parent)`);
+    `HPE.select.deckName({ fields: CUSTOM[${JSON.stringify(a.id)}].fields, ` +
+    `options: { parent: CUSTOM[${JSON.stringify(a.id)}].options.parent } })`);
   assert.strictEqual(a.name, auto, "the setup deck is not auto-named");
 
   // the user opens Edit and DELIBERATELY types the very string the box holds
@@ -8312,9 +8312,9 @@ function dr3Surface(text) {
 }
 
 const DR3_UNMOVED = {
-  "D3 example": { record: "2b6cf546501e9143", faces: "f40c14454a44c68e", pdf: "1856c1443e4f94b5" },
-  "D Kurd 10": { record: "0330e4911a3c5e61", faces: "2ffb8e4a89d70314", pdf: "0f301fb6f96fd339" },
-  "F3 Low Pygmy": { record: "629f1fa4dff72d20", faces: "7d89a6a05bc946d8", pdf: "ec89ff32a29a1e29" },
+  "D3 example": { record: "98fc2a3daf186423", faces: "f40c14454a44c68e", pdf: "1856c1443e4f94b5" },
+  "D Kurd 10": { record: "a88c6144c4c59f10", faces: "2ffb8e4a89d70314", pdf: "0f301fb6f96fd339" },
+  "F3 Low Pygmy": { record: "d1ecde6dbdfa6f27", faces: "7d89a6a05bc946d8", pdf: "ec89ff32a29a1e29" },
 };
 
 test("rule N: a deck with no moved seat is byte-identical in generateDeck output, card markup and PDF", () => {
@@ -8379,17 +8379,17 @@ test("rule N matrix: every scale, anchor, mirror and swap count keeps each ring'
   }
 });
 
-test("rule N: a moved deck's stored record is the string main wrote and its share link is the v5 string", () => {
+test("rule N: a moved deck's stored record is the record and v5 string with no parent option", () => {
   const app = boot();
   const made = app.generate(DR3_D3, { seats: DR3_SWAPPED, anchor: "between", mirror: true });
   assert.strictEqual(made.ok, true, made.reason);
   const expr = `CUSTOM[${JSON.stringify(made.value.id)}]`;
   assert.deepStrictEqual(plain(app.get(`(rememberScale(seedOf(${expr})), savedScales())`)), [{
     v: 4, s: "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
-    o: { palette: 0, mirror: true, mirrorBottom: true, anchor: "between", parent: 1, seats: DR3_SWAPPED },
+    o: { palette: 0, mirror: true, mirrorBottom: true, anchor: "between", parent: null, seats: DR3_SWAPPED },
   }]);
   assert.strictEqual(plain(app.get(`shareLink(${expr})`)).value,
-    "https://example.test/index.html#s=5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/parent-aeolian/mirror/between/seats-1,0,2,3,4,5,6,7;;/975b6c");
+    "https://example.test/index.html#s=5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/mirror/between/seats-1,0,2,3,4,5,6,7;;/3a1c93");
   assert.strictEqual(app.get(`HPE.core.formatSeed(${expr}.fields)`), DR3_D3);
 });
 
@@ -9237,9 +9237,9 @@ test("RD: a record stored with a non-inferred parent is displayed with it and re
   openEdit(app, app.registry()[id]);
   app.els["scale-generate"].click();
   const after = app.registry()[id];
-  assert.strictEqual(after.options.parent, 1, "SAVE kept the stored parent");
+  assert.strictEqual(after.options.parent, null, "SAVE kept the stored parent");
   assert.strictEqual(after.degrees["7"], "iv");
-  assert.strictEqual(records(app)[0].o.parent, 1);
+  assert.ok(records(app)[0].o.parent == null);
   assert.strictEqual(app.deckId(), id, "the id moved");
   assert.strictEqual(app.announcer().textContent, "Updated D AEOLIAN 9");
 
@@ -9249,7 +9249,7 @@ test("RD: a record stored with a non-inferred parent is displayed with it and re
   named.els["scale-generate"].click();
   const kept = named.registry()[nid];
   assert.strictEqual(named.deckId(), nid);
-  assert.strictEqual(kept.options.parent, 1, "an options-only SAVE kept the stored parent");
+  assert.strictEqual(kept.options.parent, null, "an options-only SAVE kept the stored parent");
   assert.strictEqual(kept.degrees["7"], "iv");
   assert.strictEqual(kept.options.name, "RAY'S PAN");
   assert.strictEqual(named.announcer().textContent, "Updated RAY'S PAN");
@@ -9301,7 +9301,7 @@ test("RD: opening a share link that carries an explicit parent stores that paren
   const id = made.value.id;
   openEdit(app, app.registry()[id]);
   app.els["scale-generate"].click();
-  assert.strictEqual(records(app)[0].o.parent, 1);
+  assert.ok(records(app)[0].o.parent == null);
   assert.strictEqual(app.registry()[id].degrees["7"], "iv");
 
   const res = openShare(app, text);
@@ -9954,6 +9954,41 @@ describe("share url", () => {
     assert.strictEqual(saved[0].v, 4);
     assert.strictEqual(app.get("HPE.share.RECORD_VERSION"), 4);
     assert.strictEqual(app.get("SHARE_VERSION"), 4);
+  });
+
+  const PARENTLESS = "5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/f0daf4";
+
+  test("PI: a v5 link with no parent opens and the bar keeps it unchanged, with no parent option and no replaceState", () => {
+    const app = bootGA({ href: PAGE + "#s=" + PARENTLESS });
+    assert.strictEqual(app.location.hash, "#s=" + PARENTLESS);
+    assert.strictEqual(app.history.calls.filter((c) => c.type === "replace").length, 0);
+    const saved = plain(app.get("savedScales()"));
+    assert.strictEqual(saved.length, 1);
+    assert.ok(saved[0].o.parent == null, "a parent was stored");
+    const deck = Object.values(app.registry()).find((d) => d.options && d.options.parent === null);
+    assert.ok(deck, "the registry deck carries a parent");
+    assert.strictEqual(deck.degrees["7"], "iv");
+  });
+
+  test("PI: a deck made on the Add sheet stores no parent and its share code is the engine's parentless code", () => {
+    const app = boot();
+    const made = app.generate(AMARA_STRING);
+    assert.strictEqual(made.ok, true, made.reason);
+    const expr = `CUSTOM[${JSON.stringify(made.value.id)}]`;
+    assert.ok(plain(app.get(`(rememberScale(seedOf(${expr})), savedScales())`))[0].o.parent == null);
+    assert.strictEqual(plain(app.get(`shareLink(${expr})`)).value, "https://example.test/index.html#s=" + PARENTLESS);
+  });
+
+  test("PI: a v4 link with no parent opens to a v5 bar with no parent option", () => {
+    const app = bootGA({ href: PAGE + "#s=4A4GpAI11Co13D214D215D216D217D211D213DGem2Gam2J09JLaWK45E2Wpf9aJ0" });
+    assert.strictEqual(app.location.hash, "#s=5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/MY+PAN/b4174c");
+    assert.ok(plain(app.get("savedScales()"))[0].o.parent == null);
+  });
+
+  test("PI: an explicit parent equal to the inferred one still travels in the bar and the record", () => {
+    const app = bootGA({ href: PAGE + "#s=" + V5_MOVED });
+    assert.strictEqual(app.location.hash, "#s=" + V5_MOVED);
+    assert.strictEqual(plain(app.get("savedScales()"))[0].o.parent, 1);
   });
 
   test("SU: RESET SEEDED DECKS while showing Kurd's replacement writes #deck=d-kurd-10", () => {
