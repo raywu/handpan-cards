@@ -1,0 +1,15 @@
+# kills: OF: every ascending line in the frozen base set reads, solves, shares and saves byte-identical, and typedSeats returns null
+# suite: node --test --test-name-pattern ^OF..every.ascending.line.in.the.frozen.base.set.reads..solves..shares.and.saves.byte.identical..and.typedSeats.returns.null$ tests/core.test.js
+# typedSeats writes an identity ring, so an ascending line derives seats instead of null.
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -1044,7 +1044,7 @@
+         .map(Number);
+       var seats = ids.map(function (id) { return typed.indexOf(id); });
+       var moved = seats.some(function (s, i) { return s !== i; });
+-      if (moved && seats.indexOf(-1) === -1) { out[zone] = seats; any = true; }
++      if (seats.indexOf(-1) === -1) { out[zone] = seats; any = true; }
+     });
+     return any ? out : null;
+   }

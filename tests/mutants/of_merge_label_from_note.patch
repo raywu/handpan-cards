@@ -1,0 +1,15 @@
+# kills: OF: seat numbers keep the zig-zag positions for a non-ascending typed line, every anchor and mirror
+# suite: node --test --test-name-pattern ^OF..seat.numbers.keep.the.zig.zag.positions.for.a.non.ascending.typed.line..every.anchor.and.mirror$ tests/layout.test.js
+# Each note keeps the number of its own default index, so a typed-order line numbers by pitch.
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -662,7 +662,7 @@
+         var list = seats[ZONES[z]];
+         if (!list) continue;
+         var ids = zones[ZONES[z]];
+-        for (i = 0; i < list.length; i += 1) fields[ids[i]][5] = source[ids[list[i]]][5];
++        for (i = 0; i < list.length; i += 1) fields[ids[i]][5] = source[ids[i]][5];
+       }
+     }
+     return fields;

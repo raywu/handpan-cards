@@ -1588,3 +1588,42 @@ describe("IH: compose", () => {
     assert.ok(core.parseSeed("[C3] [D3] (D3) A3").ok);
   });
 });
+
+describe("OF: compose typedLine", () => {
+  const compose = (f) => plain(importer.compose(Object.assign({ ding: "", top: "", inner: "", bottom: "" }, f)));
+  const RIM8 = "A3 C4 D4 E4 F4 G4 A4 C5";
+
+  test("OF: compose returns typedLine in the typed rim and inner order, and typedLine equals line when the fields are ascending", () => {
+    const rim = compose({ ding: "D3", top: "C4 A3 D4 E4 F4 G4 A4 C5" });
+    assert.ok(rim.ok);
+    assert.equal(rim.line, "(D3) A3 C4 D4 E4 F4 G4 A4 C5");
+    assert.equal(rim.typedLine, "(D3) C4 A3 D4 E4 F4 G4 A4 C5");
+    const inner = compose({ ding: "D3", top: RIM8, inner: "E5 D5", bottom: "C3" });
+    assert.ok(inner.ok);
+    assert.equal(inner.line, "[C3] (D3) " + RIM8 + " | D5 E5");
+    assert.equal(inner.typedLine, "(D3) " + RIM8 + " | E5 D5 [C3]");
+    const both = compose({ ding: "F3", top: "Ab3 G3 C4 Eb4 F4 G4 Ab4 C5 Eb5", inner: "G5 F5", bottom: "Bb3 C3 Db3 Eb3" });
+    assert.ok(both.ok);
+    assert.equal(both.typedLine, "(F3) Ab3 G3 C4 Eb4 F4 G4 Ab4 C5 Eb5 | G5 F5 [C3] [Db3] [Eb3] [Bb3]");
+    assert.equal(core.parseSeed(both.typedLine).ok, true);
+    const asc = compose({ ding: "D3", top: RIM8, inner: "D5 E5", bottom: "C3" });
+    assert.equal(asc.typedLine, asc.line);
+    const octaveless = compose({ ding: "D3", top: "A C D E F G A C", inner: "D E" });
+    assert.ok(octaveless.ok);
+    assert.equal(octaveless.typedLine, octaveless.line);
+    assert.equal(compose({}).typedLine, "");
+    assert.equal(compose({ ding: "D3", top: "" }).typedLine, "");
+  });
+
+  test("OF: compose of each built-in's decomposed fields has typedLine equal to formatSeed of that deck", () => {
+    const decks = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "decks.json"), "utf8"));
+    for (const d of decks) {
+      const ids = Object.keys(d.fields).map(Number).sort((a, b) => a - b);
+      const names = (zone) => ids.filter((i) => d.fields[i][3] === zone).map((i) => d.fields[i][0] + d.fields[i][1]).join(" ");
+      const r = compose({ ding: names("ding"), top: names("rim"), inner: names("inner"), bottom: names("bottom") });
+      assert.ok(r.ok, d.id);
+      assert.equal(r.typedLine, core.formatSeed(d.fields), d.id);
+      assert.equal(r.typedLine, r.line, d.id);
+    }
+  });
+});
