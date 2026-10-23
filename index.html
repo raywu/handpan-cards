@@ -11314,7 +11314,7 @@ function setRingSeats(ring, next) {
   layoutSeats = Object.keys(rest).length ? rest : null;
 }
 const seatsKey = (s) => LAYOUT_RINGS.filter((r) => s && s[r]).map((r) => r + ":" + s[r].join(",")).join(";");
-const anglesKey = (a) => (a && a.bottom ? a.bottom.map((v) => (v === null ? "" : v)).join(",") : "");
+const anglesKey = (a) => (a && a.bottom && a.bottom.some((v) => v !== null) ? a.bottom.map((v) => (v === null ? "" : v)).join(",") : "");
 const editedDeck = () => (editingId ? CUSTOM[editingId] || DECKS.find(d => d.id === editingId) : null) || null;
 const seeded = () => isBuiltIn(editingId);
 /** The tuple a seeded sheet is compared against to tell an unchanged SAVE. */
@@ -12601,13 +12601,13 @@ const toggleFits = () => !layoutAngles || (!!lastSeed && solvePreviewLayout(last
 const TOGGLE_REFUSED = "Not changed: it would put a note you moved too close to another. Reset layout first.";
 mirrorTop.onclick = () => {
   mirror = !mirror;
-  if (!toggleFits()) { mirror = !mirror; layoutStatus(TOGGLE_REFUSED); return; }
+  if (!toggleFits()) { mirror = !mirror; layoutStatus(TOGGLE_REFUSED, true); return; }
   paintLayout(); resyncSheet(true);
   layoutStatus(mirror ? "Top mirror on." : "Top mirror off.");
 };
 mirrorBot.onclick = () => {
   bottomHeld = !bottomHeld;
-  if (!toggleFits()) { bottomHeld = !bottomHeld; layoutStatus(TOGGLE_REFUSED); return; }
+  if (!toggleFits()) { bottomHeld = !bottomHeld; layoutStatus(TOGGLE_REFUSED, true); return; }
   paintLayout(); resyncSheet(true);
   layoutStatus(bottomMirror() ? "Bottom mirror on." : "Bottom mirror off.");
 };
@@ -12615,7 +12615,7 @@ const pickAnchor = (to) => () => {
   if (anchor === to) return;
   const was = anchor;
   anchor = to;
-  if (!toggleFits()) { anchor = was; layoutStatus(TOGGLE_REFUSED); return; }
+  if (!toggleFits()) { anchor = was; layoutStatus(TOGGLE_REFUSED, true); return; }
   paintLayout(); resyncSheet(true);
   layoutStatus(to === "one" ? "Note 1 is centred." : "Notes 1 and 2 are split.");
 };

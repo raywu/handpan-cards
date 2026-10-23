@@ -11,6 +11,6 @@ diff --git a/index.html b/index.html
  mirrorBot.onclick = () => {
 -  bottomHeld = !bottomHeld;
 +  bottomHeld = bottomHeld;
-   if (!toggleFits()) { bottomHeld = !bottomHeld; layoutStatus(TOGGLE_REFUSED); return; }
+   if (!toggleFits()) { bottomHeld = !bottomHeld; layoutStatus(TOGGLE_REFUSED, true); return; }
    paintLayout(); resyncSheet(true);
    layoutStatus(bottomMirror() ? "Bottom mirror on." : "Bottom mirror off.");

@@ -13439,6 +13439,22 @@ describe("FPD: the drawer slides bottom notes", () => {
     assert.match(d2Status(app), /^Swapped C3 and D3\./);
   });
 
+  test("FPD: an exchange of two bottom notes is refused when the snapped angle of either would sit inside the floor of a third note, whichever note is dragged", () => {
+    const n = 23;
+    const notes = Array.from({ length: n }, (_, k) => `[${"CDEFGAB"[k % 7]}${1 + Math.floor(k / 7)}]`).join(" ");
+    const app = fpdOpen(notes + " (A3) C4 D4 E4 F4");
+    const fixed = JSON.stringify({ bottom: Array.from({ length: n }, (_, k) => k === 22 ? 90 : null) });
+    for (const [a, b] of [[0, 2], [2, 0]]) {
+      app.run(`layoutAngles = ${fixed}; resyncSheet(true)`);
+      const probe = JSON.parse(app.get(`(() => { const home = homeFields(); const cur = bottomAngles(); const next = cur.slice(); next[${a}] = stepOf(cur[${b}]); next[${b}] = stepOf(cur[${a}]); return JSON.stringify([clashAt(home, next, ${a}), clashAt(home, next, ${b})]); })()`));
+      assert.ok(probe.some((id) => id === "105"), `${a},${b}: the clash is with the third note`);
+      assert.ok(!probe.some((id) => id === String(101 + a) || id === String(101 + b)), `${a},${b}: the two traded notes clear each other`);
+      assert.strictEqual(app.get(`swapSeats("bottom", ${a}, ${b})`), false, `${a},${b}`);
+      assert.strictEqual(JSON.stringify(fpdAngles(app)), fixed, `${a},${b}: nothing moved`);
+      assert.match(app.els["scale-drawer-status"].textContent, /^Not moved\. .* cannot trade places on the 5° steps\.$/, `${a},${b}`);
+    }
+  });
+
   test("FPD: releasing a held bottom note over a rim note moves it, and a held rim note over a bottom note is still refused", () => {
     const app = fpdOpen();
     const g = DG.down(app, "C3", "mouse");
@@ -13704,6 +13720,13 @@ describe("FPD: seats, sole note, hint, nudge, notices and records", () => {
   });
 
   test("FPD: a mirror or anchor toggle that would put a moved bottom note inside another's floor is refused, changes nothing and says why in plain words", () => {
+    const app0 = open();
+    slide(app0, "C3", 320);
+    app0.els["scale-mirror-bottom"].click();
+    assert.strictEqual(app0.els["scale-mirror-bottom"].getAttribute("aria-pressed"), "false");
+    assert.match(app0.els["scale-drawer-status"].textContent, /too close/);
+    assert.strictEqual(app0.els["scale-drawer-status"].textContent, app0.get("TOGGLE_REFUSED"));
+    assert.strictEqual(app0.els["scale-drawer-status"].classList.contains("warn"), true, "the refusal is styled as a warning");
     for (const btn of ["scale-mirror-bottom", "scale-mirror", "scale-anchor-between"]) {
       const app = open();
       slide(app, "C3", 320);
@@ -13712,18 +13735,66 @@ describe("FPD: seats, sole note, hint, nudge, notices and records", () => {
       app.els[btn].click();
       const stuck = app.get("HPE.layout.solve(lastSeed, {mirror: mirror, mirrorBottom: bottomMirror(), anchor: anchor, seats: null, angles: layoutAngles}).ok");
       assert.strictEqual(stuck, true, `${btn}: the sheet is still buildable`);
-      if (app.els[btn].getAttribute("aria-pressed") === pressed) {
+      if (btn === "scale-mirror-bottom") {
+        assert.strictEqual(app.els[btn].getAttribute("aria-pressed"), pressed, `${btn}: refused`);
         assert.match(app.els["scale-drawer-status"].textContent, /too close/, `${btn}: plain refusal`);
+      } else {
+        assert.notStrictEqual(app.els[btn].getAttribute("aria-pressed"), pressed, `${btn}: a top-shell toggle never moves a bottom note, so it is not refused`);
+        assert.doesNotMatch(app.els["scale-drawer-status"].textContent, /too close/, `${btn}: no refusal`);
       }
       assert.strictEqual(JSON.stringify(ang(app)), before);
       app.els["scale-generate"].click();
       assert.doesNotMatch(app.els["scale-refusal"].textContent, /is not a note/, `${btn}: no BAD_NOTE template`);
     }
+  });
+
+  test("FPD: a stored scale whose angles list is all null reads as unchanged: no notice, no changed-from-default line, and the same sheet key as no angles at all", () => {
+    const key = boot().get("SCALES_KEY");
+    const stored = (o) => boot({ storage: { [key]: JSON.stringify([{ v: 4, s: FPD, o }]) } });
+    const edit = (o) => {
+      const app = stored(o);
+      openEdit(app, Object.values(app.registry())[0]);
+      app.click(dr1Toggle(app));
+      return app;
+    };
+    const plain = edit({});
+    const nulls = edit({ angles: { bottom: [null, null, null] } });
+    assert.strictEqual(dr1Notice(nulls), "");
+    assert.strictEqual(dr1Notice(nulls), dr1Notice(plain));
+    assert.strictEqual(nulls.get("anglesKey(layoutAngles)"), "");
+    assert.strictEqual(nulls.get("layoutBase.angles"), "");
+    assert.strictEqual(nulls.get("sheetKey()"), plain.get("sheetKey()"));
+    nulls.run("layoutAngles = { bottom: [null, null, null] }; paintLayout()");
+    assert.strictEqual(nulls.get("anglesKey(layoutAngles)"), "", "an all-null list keys like no list");
+    assert.strictEqual(dr1Notice(nulls), "", "an all-null list in the sheet is not a change");
+    assert.strictEqual(nulls.get("sheetKey()"), plain.get("sheetKey()"));
+    const moved = edit({ angles: { bottom: [null, 200, null] } });
+    assert.strictEqual(dr1Notice(moved), "Layout changed from the default.");
+  });
+
+  test("FPD: a stale angles list of the wrong length is dropped by the repaint, which still draws the plate, and a list of the right length is kept", () => {
     const app = open();
-    slide(app, "C3", 320);
-    app.els["scale-mirror-bottom"].click();
-    assert.strictEqual(app.els["scale-mirror-bottom"].getAttribute("aria-pressed"), "false");
-    assert.match(app.els["scale-drawer-status"].textContent, /too close/);
+    slide(app, "C3", 300);
+    assert.strictEqual(app.get("fitAngles(lastSeed.fields) === layoutAngles"), true);
+    app.run("layoutAngles = { bottom: [200, null] }");
+    assert.strictEqual(app.get("fitAngles(lastSeed.fields)"), null);
+    assert.notStrictEqual(app.get("solvePreviewLayout(lastSeed)"), null, "the preview still solves");
+    app.run("paintLayout(); resyncSheet(true)");
+    assert.ok(app.get("lastSolved") !== null && app.hits().length > 0, "the plate is drawn");
+  });
+
+  test("FPD: closing the finer controls while one of them has focus hands focus to their toggle, and closing with focus elsewhere moves nothing", () => {
+    const app = open();
+    app.els["scale-fine-toggle"].click();
+    assert.strictEqual(app.els["scale-fine-toggle"].getAttribute("aria-expanded"), "true");
+    app.els["scale-angle-next"].focus();
+    app.els["scale-fine-toggle"].click();
+    assert.strictEqual(app.els["scale-fine-toggle"].getAttribute("aria-expanded"), "false");
+    assert.strictEqual(app.activeId(), "scale-fine-toggle");
+    app.els["scale-fine-toggle"].click();
+    app.els["scale-box"].focus();
+    app.els["scale-fine-toggle"].click();
+    assert.strictEqual(app.activeId(), "scale-box");
   });
 
   test("FPD: Escape on a picked bottom note that was nudged says the moves are kept", () => {
