@@ -17263,6 +17263,58 @@ function run() {
         assert.strictEqual(await status(), "C3 moved to 300°, lower right. Seat U1 stays its number.");
       } finally { await b.setViewport(900, 900, false); }
     });
+
+    test("SO: at 380x780, 844x390 and 1280x800 a drag swap of Db3 and Db4 on Pygmy leaves U2 drawn at 240 and U5 at 60, and the Bbm card reads U4-U2-5", { timeout: 150000 }, async () => {
+      const PYGMY = "[C3] [Db3] [Eb3] F3 | G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]";
+      const labelOf = (id) => b.eval(`return lastSolved.fields[${id}][5];`);
+      const angleOf = (id) => b.eval(`return lastSolved.fields[${id}][4];`);
+      try {
+        for (const [w, h, mobile] of [[380, 780, true], [844, 390, true], [1280, 800, false]]) {
+          await freshLoad();
+          await b.setViewport(w, h, mobile);
+          await b.settle();
+          await openSheet();
+          await typeScale(PYGMY);
+          await b.eval(`document.getElementById("scale-anchor-between").click(); return 1;`);
+          await openDrawer();
+          await b.settle();
+          await b.eval(`layoutAngles = { bottom: [300, null, null, null, null, null] }; resyncSheet(true); return 1;`);
+          await b.settle();
+          const f = await frame();
+          const from = named(f.all, "Db3");
+          const to = named(f.all, "Db4");
+          if (mobile) {
+            await touchPath(from, [to]);
+          } else {
+            await b.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: from.x, y: from.y, button: "none", buttons: 0 });
+            await mouse("mousePressed", from.x, from.y);
+            await mouse("mouseMoved", from.x + 6, from.y);
+            await mouse("mouseMoved", to.x, to.y);
+            await mouse("mouseReleased", to.x, to.y);
+            await sleep(60);
+          }
+          const tag = `${w}x${h}`;
+          assert.strictEqual(await status(), "Swapped Db3 and Db4. Db3 is now in bottom seat U5, upper right.", tag);
+          assert.strictEqual(await angleOf(102), 60, tag);
+          assert.strictEqual(await angleOf(105), 240, tag);
+          assert.strictEqual(await labelOf(102), "U5", tag);
+          assert.strictEqual(await labelOf(105), "U2", tag);
+          const names = (await b.eval(`return [...document.querySelectorAll("#scale-preview .panhit")].map((h) => h.getAttribute("aria-label"));`));
+          assert.ok(names.includes("Db3, bottom seat U5, upper right"), `${tag}: ${names}`);
+          const g = await frame();
+          near(named(g.all, "Db3"), at(g, 60), 3, `${tag} Db3 at 60`);
+          near(named(g.all, "Db4"), at(g, 240), 3, `${tag} Db4 at 240`);
+          if (w === 1280) {
+            const flashed = await b.eval(`return panFlash ? panFlash.length : 0;`);
+            assert.ok(flashed >= 2, `${tag}: flash count ${flashed}`);
+          }
+          await b.eval(`document.getElementById("scale-generate").click(); return 1;`);
+          await b.settle();
+          const bbm = await b.eval(`const d = Object.values(CUSTOM)[0]; const ch = d.chords.find((c) => c.main + (c.sup || "") === "Bbm"); return ch.fields.map((x) => d.fields[x][5]).join("-");`);
+          assert.strictEqual(bbm, "U4-U2-5", tag);
+        }
+      } finally { await b.clearKeyboard().catch(() => {}); await b.setViewport(900, 900, false); }
+    });
   });
 }
 
