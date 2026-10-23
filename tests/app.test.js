@@ -610,6 +610,9 @@ test("generation runs once at submit, never inside deck() or render()", () => {
   const identity = app.get(
     "(() => { const d = deck(); render(); render(); step(1); return d === deck(); })()");
   assert.strictEqual(identity, true, "render() or step() replaced the registry object");
+  const builds = spyBuild(app);
+  app.run("deck(); deck(); render(); render(); step(1); step(-1);");
+  assert.strictEqual(builds(), 0, "deck() or render() ran select.build again");
 });
 
 // Q17: CLAUDE.md "Known pitfalls" says render()'s empty-order guard
