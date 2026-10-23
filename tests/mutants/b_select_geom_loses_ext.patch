@@ -1,0 +1,15 @@
+# kills: geom carries the full solver shape, never a missing key
+# suite: node --test --test-name-pattern ^geom.carries.the.full.solver.shape..never.a.missing.key$ tests/select.test.js
+# MUT-B2. select.build hands back a geom without its `ext` key.
+diff --git a/src/engine/select.js b/src/engine/select.js
+--- a/src/engine/select.js
++++ b/src/engine/select.js
+@@ -598,7 +598,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       },
+       degrees: naming().degrees(panPcs, tonicPc, parentIndex,
+         {noThirds: thirdless}),
+-      geom: solved.value.geom,
++      geom: (function (g) { var c = Object.assign({}, g); delete c.ext; return c; })(solved.value.geom),
+       fields: solved.value.fields,
+       chords: chords,
+       warnings: warnings

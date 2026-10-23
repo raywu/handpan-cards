@@ -1,0 +1,16 @@
+# kills: css: a used range marks exactly its rule used, the rest are reported unused
+# suite: node --test --test-name-pattern ^css:.a.used.range.marks.exactly.its.rule.used..the.rest.are.reported.unused$ tests/coverage_merge.test.js
+# MUT-B6. The CSS isUsed predicate is inverted: a rule a recorded range covers
+# is reported unused and every other rule used.
+diff --git a/tools/coverage_merge.js b/tools/coverage_merge.js
+--- a/tools/coverage_merge.js
++++ b/tools/coverage_merge.js
+@@ -470,7 +470,7 @@ function buildReport(opts) {
+   const isUsed = (r) => {
+     let lo = 0, hi = used.length;
+     while (lo < hi) { const m = (lo + hi) >> 1; if (used[m][0] < r.wsStart) lo = m + 1; else hi = m; }
+-    return lo < used.length && used[lo][0] <= r.start;
++    return !(lo < used.length && used[lo][0] <= r.start);
+   };
+   const matched = new Map(), seen = new Set();
+   const vps = new Map();
