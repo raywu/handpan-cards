@@ -28,16 +28,23 @@
 <meta property="og:image" content="https://handpan.raywu.org/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
+<meta property="og:site_name" content="Handpan Chords">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Handpan Chords: Custom Scale Chord and Progression Practice">
 <meta name="twitter:image" content="https://handpan.raywu.org/og.png">
 <!-- Structured data (discoverability plan section 6): states only what the page
-     shows. No rating or review markup, so it earns no rich result; it is a
-     machine-readable statement of name, price and purpose. Pinned by
-     tests/app.test.js "the JSON-LD block parses and states only what the page shows". -->
+     shows. One block, one @graph: a WebApplication node (name, price, purpose) and
+     a WebSite node (name, alternateName, url) beside og:site_name. No rating or
+     review markup, so it earns no rich result. Pinned by tests/app.test.js
+     "SN: the JSON-LD block is one @graph holding exactly one WebApplication and one WebSite node",
+     "SN: the WebSite node is named as the h1, at the canonical and og:url, with only the lowercase subdomain as alternateName",
+     "SN: og:site_name equals the WebSite name and appears once" and
+     "the JSON-LD block parses and states only what the page shows". -->
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
+  "@graph": [
+  {
   "@type": "WebApplication",
   "name": "Handpan Chords",
   "url": "https://handpan.raywu.org/",
@@ -48,6 +55,14 @@
   "isAccessibleForFree": true,
   "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
   "featureList": "Chord flashcards; chord progressions; custom scale input; printable PDF"
+  },
+  {
+  "@type": "WebSite",
+  "name": "Handpan Chords",
+  "alternateName": ["handpan.raywu.org"],
+  "url": "https://handpan.raywu.org/"
+  }
+  ]
 }
 </script>
 <!-- Analytics consent defaults (discoverability plan section 7). Inline and inert: it

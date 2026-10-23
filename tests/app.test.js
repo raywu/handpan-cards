@@ -9387,25 +9387,65 @@ describe("discoverability: structured data", () => {
     return JSON.parse(blocks[0].replace(/^<script[^>]*>/, "").replace(/<\/script>$/, ""));
   };
 
+  const node = (type) => {
+    const ld = ldBlock();
+    assert.ok(Array.isArray(ld["@graph"]), "expected a @graph array");
+    const hits = ld["@graph"].filter((n) => n["@type"] === type);
+    assert.strictEqual(hits.length, 1, `expected exactly one ${type} node`);
+    return hits[0];
+  };
+  const SITE_NAME = "Handpan Chords";
+
+  test("SN: the JSON-LD block is one @graph holding exactly one WebApplication and one WebSite node", () => {
+    const ld = ldBlock();
+    assert.deepStrictEqual(Object.keys(ld).sort(), ["@context", "@graph"]);
+    assert.ok(Array.isArray(ld["@graph"]), "expected a @graph array");
+    assert.strictEqual(ld["@graph"].length, 2);
+    assert.deepStrictEqual(ld["@graph"].map((n) => n["@type"]).sort(), ["WebApplication", "WebSite"]);
+  });
+
+  test("SN: the WebSite node is named as the h1, at the canonical and og:url, with only the lowercase subdomain as alternateName", () => {
+    const html = INDEX_HTML();
+    const site = node("WebSite");
+    const h1 = /<h1>([^<]*)<\/h1>/.exec(html)[1];
+    assert.strictEqual(site.name, h1, `expected a WebSite node named ${SITE_NAME}`);
+    assert.strictEqual(site.name, SITE_NAME, `expected a WebSite node named ${SITE_NAME}`);
+    const canonical = /<link rel="canonical" href="([^"]*)">/.exec(html)[1];
+    assert.strictEqual(site.url, canonical);
+    assert.strictEqual(site.url, metaContent(html, "property", "og:url"));
+    assert.deepStrictEqual(site.alternateName, ["handpan.raywu.org"]);
+    for (const a of site.alternateName) {
+      assert.strictEqual(a, a.toLowerCase());
+      assert.strictEqual(a, new URL(canonical).host);
+    }
+    assert.deepStrictEqual(Object.keys(site).sort(), ["@type", "alternateName", "name", "url"]);
+  });
+
+  test("SN: og:site_name equals the WebSite name and appears once", () => {
+    const html = INDEX_HTML();
+    assert.strictEqual(metaContent(html, "property", "og:site_name"), node("WebSite").name);
+    assert.strictEqual((html.match(/property="og:site_name"/g) || []).length, 1);
+  });
+
   test("the JSON-LD block parses and states only what the page shows", () => {
     const html = INDEX_HTML();
     const ld = ldBlock();
     assert.strictEqual(ld["@context"], "https://schema.org");
-    assert.strictEqual(ld["@type"], "WebApplication");
-    assert.strictEqual(ld.url, "https://handpan.raywu.org/");
-    assert.strictEqual(ld.applicationCategory, "MusicApplication");
-    assert.strictEqual(ld.operatingSystem, "Any");
-    assert.strictEqual(ld.browserRequirements, "Requires JavaScript");
-    assert.strictEqual(ld.isAccessibleForFree, true);
-    assert.deepStrictEqual(ld.offers, { "@type": "Offer", price: "0", priceCurrency: "USD" });
-    assert.strictEqual(ld.featureList, "Chord flashcards; chord progressions; custom scale input; printable PDF");
-    assert.ok(!("aggregateRating" in ld) && !("review" in ld), "a rating or review is marked up but never shown");
+    const app = node("WebApplication");
+    assert.strictEqual(app.url, "https://handpan.raywu.org/");
+    assert.strictEqual(app.applicationCategory, "MusicApplication");
+    assert.strictEqual(app.operatingSystem, "Any");
+    assert.strictEqual(app.browserRequirements, "Requires JavaScript");
+    assert.strictEqual(app.isAccessibleForFree, true);
+    assert.deepStrictEqual(app.offers, { "@type": "Offer", price: "0", priceCurrency: "USD" });
+    assert.strictEqual(app.featureList, "Chord flashcards; chord progressions; custom scale input; printable PDF");
+    assert.ok(!("aggregateRating" in app) && !("review" in app), "a rating or review is marked up but never shown");
     const block = (html.match(/<script type="application\/ld\+json">[\s\S]*?<\/script>/) || [""])[0];
     assert.ok(!/"email"|@raywu\.org|mailto:/i.test(block), "the JSON-LD block carries an email address (G7)");
     assert.ok(!/aggregateRating|"review"/.test(html), "a rating or review appears in the page");
     const h1 = /<h1>([^<]*)<\/h1>/.exec(html)[1];
-    assert.strictEqual(ld.name, h1, "name differs from the h1");
-    assert.strictEqual(ld.description, metaContent(html, "name", "description"), "description differs from the meta description");
+    assert.strictEqual(app.name, h1, "name differs from the h1");
+    assert.strictEqual(app.description, metaContent(html, "name", "description"), "description differs from the meta description");
     assert.ok(/\bfree\b/i.test(textOf(aboutHtml())), "isAccessibleForFree is marked up but the about section does not say free");
   });
 });
