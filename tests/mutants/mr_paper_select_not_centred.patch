@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -557,7 +557,6 @@ main{overflow-x:clip}
+@@ -603,7 +603,6 @@ main{overflow-x:clip}
    white-space:nowrap; -webkit-appearance:none; appearance:none}
- .prints button, .prints select{flex:1 1 auto}
+ .prints button, .prints select, #lang-select{flex:1 1 auto}
  .prints #print-download{flex:3 1 auto; padding-left:6px; padding-right:6px}
--.prints button, .prints select{text-align:center; text-align-last:center}
+-.prints button, .prints select, #lang-select{text-align:center; text-align-last:center}
  .prints button:hover, .prints button:focus-visible,
- .prints select:hover, .prints select:focus-visible{background:#2a251c}
- .prints button:active, .prints select:active{color:#f1ece1}
+ .prints select:hover, .prints select:focus-visible, #lang-select:hover, #lang-select:focus-visible{background:#2a251c}
+ .prints button:active, .prints select:active, #lang-select:active{color:#f1ece1}

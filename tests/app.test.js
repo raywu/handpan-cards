@@ -12716,7 +12716,7 @@ describe("UX: the footer lip", () => {
         const from = html.indexOf('<div id="scale-sheet"');
         const sheetHtml = html.slice(from, html.indexOf('id="scale-lip"', from));
         assert.ok(!/<select\b/.test(sheetHtml), "the sheet holds no select");
-        assert.deepStrictEqual([...html.matchAll(/<select\b[^>]*id="([^"]+)"/g)].map((m) => m[1]), ["print-paper-select"]);
+        assert.deepStrictEqual([...html.matchAll(/<select\b[^>]*id="([^"]+)"/g)].map((m) => m[1]), ["print-paper-select", "lang-select"]);
       });
 
       const flingFrom = (a, { seed = 10, way = "up", start = 0 } = {}) => {
@@ -14221,14 +14221,12 @@ describe("I18N", () => {
     const app = bootLang(["de"], ["en"]);
     const select = app.els["lang-select"];
     const options = select.children.slice();
-    const heading = app.els["panel-lang-heading"];
     app.run("openPanel()");
     select.focus();
     app.els["settings-panel"].scrollTop = 123;
     select.value = "de";
     select.dispatchEvent({ type: "change" });
     assert.strictEqual(app.get("document.documentElement.lang"), "de");
-    assert.strictEqual(heading.textContent, wrapOne("Language"));
     assert.strictEqual(app.els["lang-select"], select, "the select was replaced");
     assert.deepStrictEqual(select.children, options, "an option was replaced");
     assert.strictEqual(select.children[0].textContent, wrapOne("AUTOMATIC ({lang})").replace("{lang}", "ENGLISH"));
