@@ -209,8 +209,10 @@ def side_credit(c, x, y, w, h, text):
 
 
 def fit_clip(text, font, size, maxw, track, floor=3.6):
-    """fit() to the floor, then clip trailing characters and end in "..."."""
-    s = fit(text, font, size, maxw, track, floor)
+    """Shrink at the drawn tracking to the floor, then clip trailing characters and end in "..."."""
+    s = size
+    while s > floor and tw(text, font, s, track) > maxw:
+        s = max(floor, s - 0.25)
     if tw(text, font, s, track) <= maxw:
         return text, s
     t = text
