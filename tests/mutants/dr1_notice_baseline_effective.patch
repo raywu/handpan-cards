@@ -5,13 +5,13 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11287,8 +11287,7 @@ function resetSheetState(edit) {
+@@ -12227,8 +12227,7 @@ function resetSheetState(edit) {
      ? o.mirrorBottom : mirror);
    boxOk = !!edit;
    dropDrawer();
 -  layoutBase = { anchor, mirror, mb: o && typeof o.mirrorBottom === "boolean"
--    ? o.mirrorBottom : mirror, seats: seatsKey(layoutSeats) };
-+  layoutBase = { anchor, mirror, mb: bottomMirror(), seats: seatsKey(layoutSeats) };
+-    ? o.mirrorBottom : mirror, seats: seatsKey(layoutSeats), angles: anglesKey(layoutAngles) };
++  layoutBase = { anchor, mirror, mb: bottomMirror(), seats: seatsKey(layoutSeats), angles: anglesKey(layoutAngles) };
    if (seeded()) seedPrefill = sheetKey();
    paintLayout();
    paintFieldsOpen();

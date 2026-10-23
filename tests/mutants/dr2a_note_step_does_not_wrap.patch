@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9285,7 +9285,7 @@ function stepNote(dir) {
-   const list = allNotes().filter((n) => n.k >= 2);
+@@ -11668,7 +11668,7 @@ function stepNote(dir) {
+   const list = allNotes().filter((n) => n.k >= 2 || n.ring === "bottom");
    if (!list.length) return;
    const at = list.findIndex((n) => sameRef(n, pickRef));
 -  const to = at < 0 ? (dir > 0 ? 0 : list.length - 1) : (at + dir + list.length) % list.length;

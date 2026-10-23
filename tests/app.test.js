@@ -6931,7 +6931,8 @@ test("DR1 rule S: notice, switches, anchors and hint match spec 16 for every she
       bad("drawer shown", M.open, shown("scale-drawer"));
       bad("status shown", M.open && M.valid, shown("scale-drawer-status"));
       if (!M.open) bad("status cleared", "", els["scale-drawer-status"].textContent);
-      bad("drawer hint", M.open && M.valid ? "Tap a note, then tap another note in the same ring to swap them. Or hold a note and drag it." : "",
+      bad("drawer hint", M.open && M.valid ? "Tap a note, then tap another note in the same ring to swap them. Or hold a note and drag it." +
+        (M.hasBottom ? " Bottom notes also slide along their ring: hold one and drag it to where it sits on your pan." : "") : "",
         shown("scale-drawer-hint") ? els["scale-drawer-hint"].textContent : "");
       for (const id of ["scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next"]) bad(`${id} shown`, false, shown(id));
       for (const id of ["scale-layout-reset", "scale-fine-toggle"]) bad(`${id} shown`, M.open, shown(id));
@@ -8093,9 +8094,9 @@ describe("DR2b refused drops and reduced motion", () => {
 });
 
 describe("DR2b item 2: a ring of one note", () => {
-  const one = d2Build({ rim: 3, inner: 0, bottom: 1 });
+  const one = d2Build({ rim: 3, inner: 1, bottom: 0 });
   const ONE = one.text;
-  const [LONE] = one.names.bottom;
+  const [LONE] = one.names.inner;
   const [RIM0] = one.names.rim;
   test("DR2b (55, item 2): with nothing picked a hold, a drag start, Space and Enter on the lone note write row 2 and pick nothing", () => {
     for (const how of ["hold", "drag", "space", "enter", "tap"]) {
@@ -8107,7 +8108,7 @@ describe("DR2b item 2: a ring of one note", () => {
       else if (how === "enter") d2Key(app, LONE, "Enter");
       else d2Tap(app, LONE);
       assert.strictEqual(d2Pick(app), null, how);
-      assert.strictEqual(d2Status(app), `${LONE} is the only note in the bottom, so it has no other seat.`, how);
+      assert.strictEqual(d2Status(app), `${LONE} is the only note in the inner, so it has no other seat.`, how);
       assert.strictEqual(DG.ghostEls(app).length, 0, how);
     }
   });
@@ -13373,3 +13374,367 @@ describe("DS: the visible word is scale", () => {
     assert.strictEqual(app.els["scale-msg"].textContent, "Keep at least one scale. Add a scale before deleting D KURD 10.");
   });
 });
+
+/* ---- Lane FP-D: the bottom ring slides (drawer drag and nudge) ----
+ * The fixture is three bottom notes, a ding and four rim notes. The sandbox plate
+ * sits at (200, 200) at scale 1 with R = 100 and the bottom orbit at 115, so a
+ * bottom note at angle a is at (200 + 115 cos a, 200 - 115 sin a). The floor
+ * between two bottom notes is 15 degrees here. */
+describe("FPD: the drawer slides bottom notes", () => {
+  const FPD = "[C3] [D3] [E3] (A3) C4 D4 E4 F4";
+  const orbit = (a, r = 115) => ({ x: 200 + r * Math.cos(a * Math.PI / 180), y: 200 - r * Math.sin(a * Math.PI / 180) });
+  const fpdAngles = (app) => JSON.parse(app.get("JSON.stringify(layoutAngles)"));
+  const fpdAngle = (app, id) => app.get(`lastSolved.fields[${id}][4]`);
+  const fpdLabel = (app, id) => app.get(`lastSolved.fields[${id}][5]`);
+  const fpdWarn = (app) => app.els["scale-drawer-status"].classList.contains("warn");
+  const fpdOpen = (text = FPD, opts = {}) => dgOpen(opts, text);
+  const near = (a, b, msg) => assert.ok(Math.abs(a - b) < 0.6, `${msg}: ${a} vs ${b}`);
+
+  test("FPD: a bottom note dragged clear of other notes lands on the nearest 5° step, the ghost sits on the orbit, and the status names note, angle and place", () => {
+    for (const how of ["mouse", "touch"]) {
+      const app = fpdOpen();
+      const g = DG.down(app, "C3", how);
+      if (how === "touch") app.advance(250);
+      DG.moveTo(app, g, g.x + 6, g.y);
+      const lift = how === "touch" ? 36 : 0;
+      const to = { x: 260, y: 296 };
+      DG.moveTo(app, g, to.x, to.y + lift);
+      const ghosts = DG.ghostEls(app);
+      assert.strictEqual(ghosts.length, 1, how);
+      const gc = DG.ghostCentre(ghosts[0]);
+      const want = orbit(300);
+      near(gc.x, want.x, `${how} ghost x`);
+      near(gc.y, want.y, `${how} ghost y`);
+      assert.strictEqual(String(ghosts[0].style.transition || ""), "", `${how}: the ghost has no transition`);
+      DG.release(app, g, to.x, to.y + lift);
+      assert.deepStrictEqual(fpdAngles(app), { bottom: [300, null, null] }, how);
+      assert.strictEqual(fpdAngle(app, 101), 300, how);
+      assert.strictEqual(fpdLabel(app, 101), "U1", how);
+      assert.strictEqual(DG.ghostEls(app).length, 0, how);
+      assert.strictEqual(d2Pick(app), null, how);
+      assert.strictEqual(d2Status(app), "C3 moved to 300°, lower right. Seat U1 stays its number.", how);
+      assert.strictEqual(fpdWarn(app), false, how);
+      const g2 = DG.down(app, "C3", how);
+      if (how === "touch") app.advance(250);
+      DG.moveTo(app, g2, g2.x + 6, g2.y);
+      const q = orbit(312);
+      DG.moveTo(app, g2, q.x, q.y + lift);
+      DG.release(app, g2, q.x, q.y + lift);
+      assert.deepStrictEqual(fpdAngles(app), { bottom: [310, null, null] }, how);
+      assert.strictEqual(d2Status(app), "C3 moved to 310°, lower right.", `${how}: the second sentence shows once`);
+    }
+  });
+
+  test("FPD: under active angles a drop on a bottom note exchanges the two angles and keeps each note's label", () => {
+    const app = fpdOpen();
+    app.run("layoutAngles = { bottom: [300, 200, null] }; resyncSheet(true)");
+    assert.strictEqual(fpdAngle(app, 101), 300);
+    DG.mouseDrag(app, "C3", "D3");
+    assert.deepStrictEqual(fpdAngles(app), { bottom: [200, 300, null] });
+    assert.strictEqual(fpdAngle(app, 101), 200);
+    assert.strictEqual(fpdAngle(app, 102), 300);
+    assert.strictEqual(fpdLabel(app, 101), "U1");
+    assert.strictEqual(fpdLabel(app, 102), "U2");
+    assert.strictEqual(app.get("JSON.stringify(layoutSeats)"), "null");
+    assert.match(d2Status(app), /^Swapped C3 and D3\./);
+  });
+
+  test("FPD: releasing a held bottom note over a rim note moves it, and a held rim note over a bottom note is still refused", () => {
+    const app = fpdOpen();
+    const g = DG.down(app, "C3", "mouse");
+    DG.moveTo(app, g, g.x + 6, g.y);
+    const rim = DG.centre(DG.noteNode(app, "C4"));
+    DG.moveTo(app, g, rim.x, rim.y);
+    DG.release(app, g, rim.x, rim.y);
+    const a = fpdAngles(app);
+    assert.ok(a && a.bottom[0] !== null && a.bottom[1] === null, "the bottom note moved");
+    assert.match(d2Status(app), /^C3 /);
+    const app2 = fpdOpen();
+    const bot = DG.centre(DG.noteNode(app2, "D3"));
+    DG.mouseDragTo(app2, "C4", bot.x, bot.y);
+    assert.strictEqual(d2Status(app2), "Not moved. C4 moves only within the rim.");
+    assert.strictEqual(fpdWarn(app2), true);
+    assert.strictEqual(app2.get("JSON.stringify(layoutAngles)"), "null");
+  });
+
+  test("FPD: a release under the floor snaps to the nearest free step on the approach side, warns and flashes", () => {
+    for (const reduced of [false, true]) {
+      const app = fpdOpen(FPD, { reducedMotion: reduced });
+      const g = DG.down(app, "C3", "mouse");
+      DG.moveTo(app, g, g.x + 6, g.y);
+      const path = [270, 235, 220].map((a) => orbit(a));
+      for (const p of path) DG.moveTo(app, g, p.x, p.y);
+      DG.release(app, g, path[2].x, path[2].y);
+      assert.deepStrictEqual(fpdAngles(app), { bottom: [225, null, null] }, `reduced ${reduced}`);
+      assert.strictEqual(d2Status(app), "C3 was too close to D3, so it sits at 225°, lower left.", `reduced ${reduced}`);
+      assert.strictEqual(fpdWarn(app), true);
+      assert.deepStrictEqual(JSON.parse(app.get("JSON.stringify(panFlash)")), ["101"], `reduced ${reduced}`);
+      app.advance(600);
+      assert.strictEqual(app.get("panFlash"), null, `reduced ${reduced}`);
+    }
+  });
+});
+
+describe("FPD: seats, sole note, hint, nudge, notices and records", () => {
+  const FPD = "[C3] [D3] [E3] (A3) C4 D4 E4 F4";
+  const orbit = (a, r = 115) => ({ x: 200 + r * Math.cos(a * Math.PI / 180), y: 200 - r * Math.sin(a * Math.PI / 180) });
+  const ang = (app) => JSON.parse(app.get("JSON.stringify(layoutAngles)"));
+  const angleOf = (app, id) => app.get(`lastSolved.fields[${id}][4]`);
+  const labelOf = (app, id) => app.get(`lastSolved.fields[${id}][5]`);
+  const open = (text = FPD, edit = false) => dgOpen({}, text, edit);
+  const slide = (app, name, a) => {
+    const g = DG.down(app, name, "mouse");
+    DG.moveTo(app, g, g.x + 6, g.y);
+    const q = orbit(a);
+    DG.moveTo(app, g, q.x, q.y);
+    DG.release(app, g, q.x, q.y);
+  };
+
+  test("FPD: the first slide on a seated bottom ring folds seats into angles: no position changes, the record carries no seats.bottom, and the labels run U1..Un low to high", () => {
+    const app = open();
+    DG.mouseDrag(app, "C3", "D3");
+    assert.notStrictEqual(dgSeats(app), null);
+    const before = [101, 102, 103].map((id) => angleOf(app, id));
+    slide(app, "E3", 150);
+    assert.strictEqual(dgSeats(app), null);
+    const after = [101, 102, 103].map((id) => angleOf(app, id));
+    assert.deepStrictEqual(after.slice(0, 2), before.slice(0, 2));
+    assert.strictEqual(after[2], 150);
+    assert.deepStrictEqual(ang(app), { bottom: [before[0], before[1], 150] });
+    assert.deepStrictEqual([101, 102, 103].map((id) => labelOf(app, id)), ["U1", "U2", "U3"]);
+    assert.match(d2Status(app), /Bottom seat numbers now run low to high\.$/);
+    app.els["scale-generate"].click();
+    const o = app.registry()[app.deckId()].options;
+    assert.strictEqual(o.seats && o.seats.bottom, undefined);
+    assert.deepStrictEqual(o.angles, { bottom: [before[0], before[1], 150] });
+  });
+
+  test("FPD: a scale with one bottom note opens the drawer with it pickable, a drag moves it, and the nothing-to-rearrange line never shows", () => {
+    const app = open("[C3] (A3) E4");
+    assert.doesNotMatch(app.els["scale-layout-state"].textContent + app.els["scale-drawer-status"].textContent, /nothing to rearrange/i);
+    d2Tap(app, "C3");
+    assert.strictEqual(d2Pick(app).ring, "bottom");
+    assert.strictEqual(app.els["scale-note-prev"].disabled, false);
+    app.els["scale-note-next"].click();
+    app.els["scale-note-next"].click();
+    d2Tap(app, "C3");
+    slide(app, "C3", 300);
+    assert.deepStrictEqual(ang(app), { bottom: [300] });
+    assert.match(d2Status(app), /^C3 moved to 300°, lower right\./);
+  });
+
+  test("FPD: the hint and the pick announcement name the slide only on a pan with bottom notes", () => {
+    const hintOf = (app) => app.els["scale-drawer-hint"].textContent;
+    const app = open();
+    assert.match(hintOf(app), /Bottom notes also slide along their ring/);
+    d2Tap(app, "C3");
+    assert.strictEqual(d2Status(app), "Picked up C3. Drag it along the ring to move it, or drop it on another bottom note to swap.");
+    const fine = open();
+    fine.els["scale-fine-toggle"].click();
+    d2Tap(fine, "C3");
+    assert.strictEqual(d2Status(fine), "Picked up C3. Drag it along the ring to move it, or drop it on another bottom note to swap, or use the finer controls below.");
+    const none = open("(A3) C4 D4 E4 F4 G4");
+    assert.doesNotMatch(hintOf(none), /slide along/);
+    d2Tap(none, "C4");
+    assert.doesNotMatch(d2Status(none), /along the ring/);
+  });
+
+  test("FPD: with a bottom note picked by PREVIOUS NOTE, CLOCKWISE moves it 5° and a nudge into the floor is refused", () => {
+    const app = open();
+    app.els["scale-fine-toggle"].click();
+    app.els["scale-note-prev"].click();
+    let guard = 0;
+    while (app.get("pickRef && pickRef.ring") !== "bottom" && guard++ < 30) app.els["scale-note-prev"].click();
+    assert.strictEqual(app.get("pickRef.ring"), "bottom");
+    const id = 101 + app.get("pickRef.i");
+    const name = app.get(`lastSolved.fields[${id}][0]`) + app.get(`lastSolved.fields[${id}][1]`);
+    assert.strictEqual(app.els["scale-angle-next"].hidden, false);
+    assert.strictEqual(app.els["scale-angle-next"].disabled, false);
+    const was = app.get(`lastSolved.fields[${id}][4]`);
+    app.els["scale-angle-next"].click();
+    assert.strictEqual(app.get(`lastSolved.fields[${id}][4]`), (was + 355) % 360);
+    assert.match(d2Status(app), new RegExp(`^${name} at ${(was + 355) % 360}°, `));
+    app.els["scale-angle-prev"].click();
+    assert.strictEqual(app.get(`lastSolved.fields[${id}][4]`), was);
+    app.run("layoutAngles = { bottom: [225, null, null] }; resyncSheet(true); pickRef = { ring: 'bottom', i: 0 }; paintLayout()");
+    app.els["scale-angle-next"].click();
+    assert.strictEqual(angleOf(app, 101), 225);
+    assert.strictEqual(d2Status(app), "D3 is in the way.");
+    assert.strictEqual(app.els["scale-drawer-status"].classList.contains("warn"), true);
+    assert.deepStrictEqual(ang(app), { bottom: [225, null, null] });
+  });
+
+  test("FPD: the angle pair is hidden for rim and inner picks and moves no existing control", () => {
+    const app = open("[C3] [D3] [E3] (A3) C4 D4 E4 F4 | G4 A4");
+    app.els["scale-fine-toggle"].click();
+    const ids = ["scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next", "scale-layout-reset"];
+    d2Tap(app, "C4");
+    assert.strictEqual(app.els["scale-angle-prev"].hidden, true);
+    assert.strictEqual(app.els["scale-angle-next"].hidden, true);
+    d2Tap(app, "C4");
+    d2Tap(app, "G4");
+    assert.strictEqual(app.els["scale-angle-prev"].hidden, true);
+    d2Tap(app, "G4");
+    d2Tap(app, "C3");
+    assert.strictEqual(app.els["scale-angle-prev"].hidden, false);
+    const html = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
+    assert.match(html, /id="scale-angle-prev" aria-label="Move 5 degrees anticlockwise"/);
+    assert.match(html, /id="scale-angle-next" aria-label="Move 5 degrees clockwise"/);
+    assert.strictEqual(ids.every((id) => app.els[id] && !app.els[id].hidden), true);
+  });
+
+  const saved = () => {
+    const app = open();
+    slide(app, "C3", 300);
+    app.els["scale-generate"].click();
+    const rec = app.registry()[app.deckId()];
+    openEdit(app, rec);
+    app.click(app.els["scale-tab-layout"]);
+    return app;
+  };
+
+  test("FPD: an angle-only change shows Layout not saved yet, and a reopened angle-only record shows Layout changed from the default with RESET enabled", () => {
+    const app = open();
+    assert.strictEqual(dr1Notice(app), "");
+    assert.strictEqual(app.els["scale-layout-reset"].disabled, true);
+    slide(app, "C3", 300);
+    assert.strictEqual(dr1Notice(app), "Layout not saved yet. GENERATE CARDS keeps it.");
+    assert.strictEqual(app.els["scale-layout-reset"].disabled, false);
+    const re = saved();
+    assert.deepStrictEqual(ang(re), { bottom: [300, null, null] });
+    assert.strictEqual(angleOf(re, 101), 300);
+    assert.strictEqual(dr1Notice(re), "Layout changed from the default.");
+    assert.strictEqual(re.els["scale-layout-reset"].disabled, false);
+    slide(re, "C3", 280);
+    assert.strictEqual(dr1Notice(re), "Layout not saved yet. SAVE CHANGES keeps it.");
+  });
+
+  test("FPD: RESET LAYOUT clears angles and a bottom count change resets them with one sentence", () => {
+    const app = open();
+    slide(app, "C3", 300);
+    app.els["scale-layout-reset"].click();
+    assert.strictEqual(app.get("layoutAngles"), null);
+    assert.strictEqual(angleOf(app, 101), 330);
+    assert.strictEqual(app.els["scale-layout-reset"].disabled, true);
+    const re = saved();
+    re.type("[C3] [D3] [E3] [F3] (A3) C4 D4 E4 F4");
+    assert.strictEqual(re.get("layoutAngles"), null);
+    assert.strictEqual(d2Status(re), "The bottom now has 4 notes, so its angles were reset.");
+    assert.match(dr1Notice(re), /The bottom angles were reset\.$/);
+    const withSeats = open();
+    DG.mouseDrag(withSeats, "C3", "D3");
+    slide(withSeats, "E3", 150);
+    withSeats.type("[C3] [D3] [E3] [F3] (A3) C4 D4 E4 F4");
+    assert.strictEqual(d2Status(withSeats), "The bottom now has 4 notes, so its seats and angles were reset.");
+  });
+
+  test("FPD: angles on a pan with no bottom notes are dropped silently", () => {
+    const app = open("(A3) C4 D4 E4 F4");
+    app.els["scale-generate"].click();
+    const rec = app.registry()[app.deckId()];
+    openEdit(app, { ...rec, options: { ...rec.options, angles: { bottom: [300, null, null] } } });
+    app.click(app.els["scale-tab-layout"]);
+    assert.strictEqual(app.get("layoutAngles"), null);
+    assert.strictEqual(d2Status(app) + dr1Notice(app), "");
+    assert.strictEqual(app.els["scale-layout-reset"].disabled, true);
+  });
+
+  test("FPD: SAVE after a move stores options.angles, Edit redraws it, and opening the bar's link stores the same record", () => {
+    const app = open();
+    slide(app, "C3", 300);
+    app.els["scale-generate"].click();
+    const rec = app.registry()[app.deckId()];
+    assert.deepStrictEqual(rec.options.angles, { bottom: [300, null, null] });
+    assert.strictEqual(rec.options.seats, undefined);
+    const hash = app.location.hash;
+    assert.match(hash, /^#s=6\/.*\/at-300,,\/[0-9a-f]{6}$/);
+    openEdit(app, rec);
+    app.click(app.els["scale-tab-layout"]);
+    assert.strictEqual(angleOf(app, 101), 300);
+    const fresh = boot({ href: "https://example.test/index.html" + hash });
+    const stored = JSON.parse(fresh.store[fresh.get("SCALES_KEY")]);
+    assert.strictEqual(stored.length, 1);
+    assert.deepStrictEqual(stored[0].o.angles, { bottom: [300, null, null] });
+    const drawn = Object.values(fresh.registry()[fresh.deckId()].fields).filter((f) => f[3] === "bottom");
+    assert.strictEqual(drawn[0][4], 300);
+  });
+
+  test("FPD: generateDeck carries options.angles into the solve and the record", () => {
+    const HPEs = require("./helpers/engine.js").loadEngine(["core", "voicing", "layout", "naming", "select", "share"]);
+    const seed = HPEs.core.parseSeed("[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]", { anchor: "between" });
+    assert.strictEqual(seed.ok, true);
+    const plain = JSON.parse(JSON.stringify(seed.value));
+    plain.options = Object.assign({}, plain.options, { angles: { bottom: [null, null, null, 20, null, null] } });
+    const enc = HPEs.share.encode(plain);
+    assert.strictEqual(enc.ok, true);
+    assert.match(enc.value, /\/between\/at-,,,20,,\/[0-9a-f]{6}$/);
+    const app = boot({ href: "https://example.test/index.html#s=" + enc.value });
+    const stored = JSON.parse(app.store[app.get("SCALES_KEY")]);
+    assert.deepStrictEqual(stored[0].o.angles, { bottom: [null, null, null, 20, null, null] });
+    const deck = app.registry()[app.deckId()];
+    const u4 = Object.values(deck.fields).filter((f) => f[3] === "bottom")[3];
+    assert.strictEqual(u4[4], 20);
+    const link = "#s=6/uC3_uDb3_uEb3_(F3)_G3_Ab3_uBb3_C4_uDb4_Eb4_F4_G4_Ab4_C5_Eb5_-_F5_G5_uAb5/*F+AEOLIAN+12/between/at-,225,,20,,130/5af123";
+    const app2 = boot({ href: "https://example.test/index.html" + link });
+    assert.strictEqual(app2.location.hash, link);
+    const stored2 = JSON.parse(app2.store[app2.get("SCALES_KEY")]);
+    assert.deepStrictEqual(stored2[0].o.angles.bottom, [null, 225, null, 20, null, 130]);
+  });
+
+  test("FPD: after a move each hit target is centred on its drawn note, and two bottom notes at the floor at 380x780 get their actual pairwise size (about 35px)", () => {
+    const app = open();
+    slide(app, "C3", 300);
+    slide(app, "D3", 255);
+    const orbitR = 115;
+    const hitOf = (name) => DG.noteNode(app, name);
+    for (const [name, id] of [["C3", 101], ["D3", 102], ["E3", 103]]) {
+      const a = angleOf(app, id) * Math.PI / 180;
+      const h = hitOf(name);
+      assert.ok(Math.abs(Number(h.getAttribute("cx")) - orbitR * Math.cos(a)) < 0.01, `${name} cx`);
+      assert.ok(Math.abs(Number(h.getAttribute("cy")) + orbitR * Math.sin(a)) < 0.01, `${name} cy`);
+    }
+    app.run("layoutAngles = { bottom: [225, 210, null] }; resyncSheet(true)");
+    const pts = ["C3", "D3"].map((n) => [Number(hitOf(n).getAttribute("cx")), Number(hitOf(n).getAttribute("cy")), 15.01]);
+    const ext = 148.19, plate = 318;
+    const radii = app.get(`panHitRadii(${ext}, ${plate}, 44, ${JSON.stringify(pts)})`);
+    const px = [...radii].map((r) => 2 * r * plate / (2 * ext));
+    for (const d of px) {
+      assert.ok(d > 31 && d < 36, `a floor pair's hit target is ${d}px across, not the 44px floor`);
+    }
+  });
+
+  test("FPD: a mirror or anchor toggle that would put a moved bottom note inside another's floor is refused, changes nothing and says why in plain words", () => {
+    for (const btn of ["scale-mirror-bottom", "scale-mirror", "scale-anchor-between"]) {
+      const app = open();
+      slide(app, "C3", 320);
+      const before = JSON.stringify(ang(app));
+      const pressed = app.els[btn].getAttribute("aria-pressed");
+      app.els[btn].click();
+      const stuck = app.get("HPE.layout.solve(lastSeed, {mirror: mirror, mirrorBottom: bottomMirror(), anchor: anchor, seats: null, angles: layoutAngles}).ok");
+      assert.strictEqual(stuck, true, `${btn}: the sheet is still buildable`);
+      if (app.els[btn].getAttribute("aria-pressed") === pressed) {
+        assert.match(app.els["scale-drawer-status"].textContent, /too close/, `${btn}: plain refusal`);
+      }
+      assert.strictEqual(JSON.stringify(ang(app)), before);
+      app.els["scale-generate"].click();
+      assert.doesNotMatch(app.els["scale-refusal"].textContent, /is not a note/, `${btn}: no BAD_NOTE template`);
+    }
+    const app = open();
+    slide(app, "C3", 320);
+    app.els["scale-mirror-bottom"].click();
+    assert.strictEqual(app.els["scale-mirror-bottom"].getAttribute("aria-pressed"), "false");
+    assert.match(app.els["scale-drawer-status"].textContent, /too close/);
+  });
+
+  test("FPD: Escape on a picked bottom note that was nudged says the moves are kept", () => {
+    const app = open();
+    app.els["scale-fine-toggle"].click();
+    let g = 0;
+    do app.els["scale-note-prev"].click(); while (app.get("pickRef && pickRef.ring") !== "bottom" && g++ < 30);
+    app.els["scale-angle-next"].click();
+    app.els["scale-angle-next"].focus();
+    app.keydown("Escape");
+    assert.match(app.els["scale-drawer-status"].textContent, /The moves you made are kept\./);
+  });
+});
+

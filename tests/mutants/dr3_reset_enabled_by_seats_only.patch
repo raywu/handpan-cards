@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10448,7 +10448,7 @@ function paintLayout() {
-   drawerHint.hidden = !(drawerOpen && boxOk);
-   notePrev.disabled = noteNext.disabled = !boxOk || !ringPickable();
-   seatPrev.disabled = seatNext.disabled = !boxOk || !pickRef;
--  resetBtn.disabled = !boxOk || !(layoutSeats || mirror || bottomMirror() || anchor !== "one");
+@@ -10776,7 +10776,7 @@ function paintLayout() {
+   const slidable = !!pickRef && pickRef.ring === "bottom";
+   anglePrev.hidden = angleNext.hidden = !slidable;
+   anglePrev.disabled = angleNext.disabled = !boxOk || !slidable;
+-  resetBtn.disabled = !boxOk || !(layoutSeats || layoutAngles || mirror || bottomMirror() || anchor !== "one");
 +  resetBtn.disabled = !boxOk || !layoutSeats;
    fineBox.hidden = !fineOpen;
    fineBtn.disabled = !boxOk;

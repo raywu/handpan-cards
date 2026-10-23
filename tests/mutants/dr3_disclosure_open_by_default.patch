@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9877,7 +9877,7 @@ function resetSheetState(edit, fork) {
-   // The correction is a seed option like the others, so Edit shows the one the
-   // deck already carries and RESET is what clears it.
-   layoutSeats = o && o.seats ? JSON.parse(JSON.stringify(o.seats)) : null;
+@@ -12209,7 +12209,7 @@ function resetSheetState(edit) {
+   slideTold = false;
+   pickSlid = false;
+   foldedBottom = false;
 -  fineOpen = false;
 +  fineOpen = true;
    pickRef = null;

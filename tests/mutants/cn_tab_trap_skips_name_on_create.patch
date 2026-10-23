@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12743,7 +12743,7 @@ sheet.addEventListener("keydown", e => {
-        notePrev, noteNext, seatPrev, seatNext, resetBtn,
+@@ -13163,7 +13163,7 @@ sheet.addEventListener("keydown", e => {
+        notePrev, noteNext, seatPrev, seatNext, anglePrev, angleNext, resetBtn,
         ...swatches.children, shut ? lipBtn : genBtn, editingId && !shut ? delBtn : null]
      : [backBtn, onTab,
 -       nameBox,

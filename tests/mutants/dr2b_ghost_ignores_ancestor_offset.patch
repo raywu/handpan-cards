@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10164,10 +10164,6 @@ function seatGhost(g, cx, cy) {
+@@ -12709,10 +12709,6 @@ function seatGhost(g, cx, cy) {
    g.style.left = (cx - d / 2) + "px";
    g.style.top = (cy - d / 2) + "px";
    const o = ghostShift(g);
@@ -14,4 +14,4 @@ diff --git a/index.html b/index.html
 -  }
  }
  function placeGhost(x, y) {
-   press.hx = x;
+   const o = press.ref.ring === "bottom" ? plateOrigin() : null;
