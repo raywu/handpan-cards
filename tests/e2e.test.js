@@ -248,7 +248,7 @@ function run() {
   }
   /* Page timer constants the converted waits bound. They are written here on purpose, never read from the page: a wait that read the
    * constant back would move with it and could not fail when the constant grows. */
-  const PIN_MS = 600, LIP_SLIDE_MS = 180;
+  const PIN_MS = 600, LIP_SLIDE_MS = 180, LIP_END_MS = 220;
   /* A9 (iii): the sheet's scrollers have stood still for six frames and nothing animates, then one slide longer, so a late lip flip is seen. */
   async function waitSheetRest(label) {
     const ok = await b.eval(`return new Promise((res) => {
@@ -16033,6 +16033,17 @@ function run() {
     };
     const collapse = async () => { await swipeBody(-140); };
     const restoreBySwipe = async () => { await swipeBody(140); };
+    const slideWithin = async (ms, label, act, doneExpr) => {
+      await b.eval(`window.__slideN0 = window.__lip.length; window.__slideEnd = new Promise((r) => { const f = document.getElementById("scale-footslide"); f.addEventListener("transitionend", function on(e) { if (e.target !== f) return; f.removeEventListener("transitionend", on); r(performance.now()); }); }); return true;`);
+      const t0 = Date.now();
+      await act();
+      await b.eval(`return Promise.race([window.__slideEnd, new Promise((_, rej) => setTimeout(() => rej(new Error(${JSON.stringify(label)} + ": no footslide transitionend within ${ms}ms")), ${ms}))]);`);
+      await b.waitFor(doneExpr, { timeout: Math.max(40, ms - (Date.now() - t0)), label: label + " within " + ms + "ms" });
+      const m = await b.eval(`const n = window.__lip.slice(window.__slideN0); return window.__slideEnd.then((end) => ({ start: n.length ? n[0].t : null, end, off: (n.find((e) => !e.lipped) || {}).t ?? null }));`);
+      assert.ok(m.start !== null, `${label}: no lip flip was logged`);
+      assert.ok(m.end - m.start <= LIP_SLIDE_MS + 80, `${label}: the footslide transition ended ${Math.round(m.end - m.start)}ms after the flip, over ${LIP_SLIDE_MS}ms + 80`);
+      assert.ok(m.off === null || m.off - m.start <= LIP_END_MS + 80, `${label}: the lipped class lapsed ${Math.round(m.off - m.start)}ms after the flip, over ${LIP_END_MS}ms + 80`);
+    };
     const tapAt = async (x, y) => {
       for (const type of ["mousePressed", "mouseReleased"]) {
         await b.send("Input.dispatchMouseEvent", { type, x, y, button: "left", clickCount: 1 });
@@ -16459,8 +16470,7 @@ function run() {
         await collapse();
         let ro = await b.eval(`return window.__ro.slice();`);
         assert.strictEqual(ro.length, 1, `the collapse resized the body ${ro.length} times`);
-        await restoreBySwipe();
-        await b.waitFor(`!document.getElementById("scale-sheet").classList.contains("lipped")`, { label: "the restore slide to end" });
+        await slideWithin(400, "the restore slide to end", restoreBySwipe, `!document.getElementById("scale-sheet").classList.contains("lipped")`);
         ro = await b.eval(`return new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r({ ro: window.__ro.slice(), lip: window.__lip.slice() }))));`);
         assert.strictEqual(ro.ro.length, 2, `a collapse and a restore resized the body ${ro.ro.length} times`);
         const start = ro.lip.find((e, i) => i > 0 && e.lipped && !e.shut);
@@ -16657,8 +16667,7 @@ function run() {
       try {
         await lipOpen(393, 852);
         await b.eval(`document.getElementById("scale-box").focus(); return true;`);
-        await b.fakeKeyboard(852 - 336);
-        await b.waitFor(`document.getElementById("scale-sheet").classList.contains("lipshut")`, { label: "the keyboard to shut the footer" });
+        await slideWithin(400, "the keyboard to shut the footer", () => b.fakeKeyboard(852 - 336), `document.getElementById("scale-sheet").classList.contains("lipshut")`);
         let m = await b.eval(`
           const s = document.getElementById("scale-sheet"), vvh = window.visualViewport.height;
           const lip = document.getElementById("scale-lip").getBoundingClientRect(), f = document.getElementById("scale-box").getBoundingClientRect();
@@ -16672,8 +16681,7 @@ function run() {
           const lip = document.getElementById("scale-lip").getBoundingClientRect(), f = document.getElementById("scale-bottom").getBoundingClientRect();
           return { lipTop: lip.top, fb: f.bottom, ft: f.top, vvh: window.visualViewport.height };`);
         assert.ok(m.fb <= m.lipTop + 1 && m.ft >= -1, `the revealed field ${m.ft}..${m.fb} is not above the tap zone at ${m.lipTop}`);
-        await b.clearKeyboard();
-        await b.waitFor(`!document.getElementById("scale-sheet").classList.contains("lipped")`, { label: "the footer to restore after the keyboard fell" });
+        await slideWithin(400, "the footer to restore after the keyboard fell", () => b.clearKeyboard(), `!document.getElementById("scale-sheet").classList.contains("lipped")`);
         const s = await lipState();
         assert.strictEqual(s.lipped, false, "dismissing the keyboard left the footer lipped");
         const p = await primaryRect();
