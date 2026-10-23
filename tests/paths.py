@@ -15,7 +15,11 @@ PDFS = {
     "amara_print": "D_Amara_9_CHORD_ONLY_Letter.pdf",
 }
 
-COMMITTED = ("hijaz_print", "pygmy_print", "amara_print")
+
+def root_pdfs(root=ROOT):
+    """Sorted names of the *.pdf files directly in `root`."""
+    return sorted(n for n in os.listdir(root) if n.endswith(".pdf")
+                  and os.path.isfile(os.path.join(root, n)))
 
 
 def app_decks():

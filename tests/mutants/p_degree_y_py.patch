@@ -1,5 +1,5 @@
-# kills: test_committed_pdfs_place_every_glyph_where_a_fresh_build_does
-# suite: python3 -m unittest -k test_committed_pdfs_place_every_glyph_where_a_fresh_build_does tests.test_pdf_build
+# kills: test_every_glyph_lands_where_print_puts_it
+# suite: python3 -m unittest -k test_every_glyph_lands_where_print_puts_it tests.test_pdf_parity
 # E3: the degree label rides one point lower than the subtitle's line.
 diff --git a/tools/hifi.py b/tools/hifi.py
 --- a/tools/hifi.py
