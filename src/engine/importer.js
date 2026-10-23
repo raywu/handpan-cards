@@ -679,10 +679,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   function composeRange(x) { return x + " is outside C-1 to G9."; }
 
   function composeMidi(n, octave) { return core().midiFromName(n.letter, n.acc, octave); }
-  function composeNameMidi(name) {
-    var m = COMPOSE_NOTE.exec(name);
-    return composeMidi({ letter: m[1], acc: m[2] || "" }, Number(m[3]));
-  }
   function composeFits(midi) { return midi >= 0 && midi <= 127; }
   function composeNamed(n, octave) { return n.letter + n.acc + octave; }
 
@@ -716,7 +712,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return COMPOSE_HIGH;
   }
 
-  function composeStage(head, notes, below, field, anchorName) {
+  function composeStage(head, notes, below, anchorName) {
     var names = [];
     var guessed = [];
     for (var k = 0; k < notes.length; k++) {
@@ -817,14 +813,14 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var innerGuessed = [];
     if (!out.errors.top && !read.top.notes.length) out.errors.top = "Enter the top notes.";
     if (ding && !out.errors.top) {
-      var staged = composeStage("(" + ding.name + ") ", read.top.notes, ding.midi, "top", ding.name);
+      var staged = composeStage("(" + ding.name + ") ", read.top.notes, ding.midi, ding.name);
       if (staged.error) out.errors.top = staged.error;
       else { top = staged.names; topMidi = staged.last; }
     }
     if (top) {
       out.notes.top = top;
       if (read.inner.notes.length && !out.errors.inner) {
-        var upper = composeStage("(" + ding.name + ") " + top.join(" ") + " | ", read.inner.notes, topMidi, "inner", ding.name);
+        var upper = composeStage("(" + ding.name + ") " + top.join(" ") + " | ", read.inner.notes, topMidi, ding.name);
         if (upper.error) out.errors.inner = upper.error;
         else { inner = upper.names; innerGuessed = upper.guessed; }
       } else if (!out.errors.inner) inner = [];
@@ -864,15 +860,14 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     }
 
     if (ding && top && inner && bottom && COMPOSE_FIELDS.every(function (f) { return !out.errors[f]; })) {
-      var byMidi = function (names) {
-        return names.slice().sort(function (a, b) { return composeNameMidi(a) - composeNameMidi(b); })
-          .map(function (x) { return { note: x }; });
+      var plain = function (names) {
+        return names.map(function (x) { return { note: x }; });
       };
       var roles = {
         ding: { note: ding.name },
-        top: byMidi(top),
-        inner: byMidi(inner),
-        bottom: byMidi(bottom.names)
+        top: plain(top),
+        inner: plain(inner),
+        bottom: plain(bottom.names)
       };
       var line = serialise({ status: "REVIEW", roles: roles });
       var parsed = core().parseSeed(line);
