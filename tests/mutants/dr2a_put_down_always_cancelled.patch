@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11689,7 +11689,7 @@ function putDownPick() {
-   const fromSeatButton = document.activeElement === seatPrev || document.activeElement === seatNext;
+@@ -11706,7 +11706,7 @@
    const moved = pickMoved;
+   const slid = pickSlid;
    setPick(null);
--  layoutStatus(moved ? `${p.name} put down. The ${pickSlid ? "moves" : "swaps"} you made are kept.` : "Cancelled. Nothing moved.");
+-  layoutStatus(moved ? `${p.name} put down. The ${slid ? "moves" : "swaps"} you made are kept.` : "Cancelled. Nothing moved.");
 +  layoutStatus("Cancelled. Nothing moved.");
    if (fromSeatButton) { setRover(ref); focusRef(ref); }
  }
