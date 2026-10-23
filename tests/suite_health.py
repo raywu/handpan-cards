@@ -62,7 +62,7 @@ FLOORS = {
     "tests/drawer_seats.test.js": 28,
     "tests/drawer_drag.test.js": 33,
     # pre-seeded for the scale-engine lanes; each lane raises its own row only.
-    "tests/core.test.js": 89,
+    "tests/core.test.js": 92,
     "tests/import.test.js": 128,
     "tests/import_gold.test.js": 8,
     "tests/voicing.test.js": 18,

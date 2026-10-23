@@ -4,12 +4,12 @@
 diff --git a/src/engine/importer.js b/src/engine/importer.js
 --- a/src/engine/importer.js
 +++ b/src/engine/importer.js
-@@ -871,7 +871,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -866,7 +866,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
        var roles = {
          ding: { note: ding.name },
-         top: byMidi(top),
--        inner: byMidi(inner),
-+        inner: byMidi(inner).slice(0, 1),
-         bottom: byMidi(bottom.names)
+         top: plain(top),
+-        inner: plain(inner),
++        inner: plain(inner).slice(0, 1),
+         bottom: plain(bottom.names)
        };
        var line = serialise({ status: "REVIEW", roles: roles });

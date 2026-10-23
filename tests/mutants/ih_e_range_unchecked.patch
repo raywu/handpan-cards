@@ -5,10 +5,10 @@
 diff --git a/src/engine/importer.js b/src/engine/importer.js
 --- a/src/engine/importer.js
 +++ b/src/engine/importer.js
-@@ -683,7 +683,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-     var m = COMPOSE_NOTE.exec(name);
-     return composeMidi({ letter: m[1], acc: m[2] || "" }, Number(m[3]));
-   }
+@@ -679,7 +679,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   function composeRange(x) { return x + " is outside C-1 to G9."; }
+ 
+   function composeMidi(n, octave) { return core().midiFromName(n.letter, n.acc, octave); }
 -  function composeFits(midi) { return midi >= 0 && midi <= 127; }
 +  function composeFits(midi) { return true; }
    function composeNamed(n, octave) { return n.letter + n.acc + octave; }
