@@ -1,0 +1,14 @@
+# kills: I18N: a missing key falls back to English per key
+# suite: node --test --test-name-pattern ^I18N.a.missing.key.falls.back tests/app.test.js
+# t() no longer falls back to English for a key a table lacks.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9489,7 +9489,6 @@ const hasKey = key => Object.prototype.hasOwnProperty.call(I18N[uiLang()] || {},
+ function t(key, vars) {
+   const lang = uiLang();
+   let entry = (I18N[lang] || {})[key];
+-  if (entry === undefined) entry = I18N.en[key];
+   if (entry === undefined) return key;
+   if (entry !== null && typeof entry === "object") {
+     let category = "other";

@@ -1,0 +1,15 @@
+# kills: I18N: the English DOM of the app equals the base
+# suite: node --test --test-name-pattern ^I18N.the.English.DOM tests/app.test.js
+# English-only islands carry lang=en even when the UI is English.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10450,7 +10450,7 @@ function downloadDeckPDF(variant, btn) {
+   }
+ }
+ 
+-const ISLAND = () => (uiLang() === "en" ? "" : ' lang="en"');
++const ISLAND = () => ' lang="en"';
+ function headerHTML(d, ch, n, uiSub) {
+   const deg = d.degrees[String(pc(d, ch.roots[0]))] || "";
+   // The card face carries no controls (menu-shell, 2026-09-28): the print

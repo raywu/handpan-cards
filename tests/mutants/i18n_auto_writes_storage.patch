@@ -1,0 +1,15 @@
+# kills: I18N: a stored lang beats detection and Auto stores nothing
+# suite: node --test --test-name-pattern ^I18N.a.stored.lang.beats tests/app.test.js
+# Choosing Auto writes the detected language into storage instead of clearing the field.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9468,7 +9468,7 @@ function setLang(code) {
+       try {
+         const base = readStore(STORE_KEY);
+         if (base && typeof base === "object" && !Array.isArray(base) && "lang" in base) {
+-          delete base.lang;
++          base.lang = detectLang(browserLanguages());
+           localStorage.setItem(STORE_KEY, JSON.stringify(base));
+         }
+       } catch (e) {}

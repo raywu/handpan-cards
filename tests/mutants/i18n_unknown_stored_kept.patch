@@ -1,0 +1,15 @@
+# kills: I18N: an unknown stored lang reads as Auto and is not rewritten
+# suite: node --test --test-name-pattern ^I18N.an.unknown.stored.lang tests/app.test.js
+# A stored code with no table is trusted as the UI language.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9458,7 +9458,7 @@ const browserLanguages = () => (navigator.languages && navigator.languages.lengt
+   : navigator.language ? [navigator.language] : []);
+ /** The stored choice if it names a present table, else what the browser asks for. */
+ function uiLang() {
+-  return typeof store.lang === "string" && LANGS.includes(store.lang) ? store.lang : detectLang(browserLanguages());
++  return typeof store.lang === "string" ? store.lang : detectLang(browserLanguages());
+ }
+ /** `null` is Auto: the stored field goes and nothing else is written. */
+ function setLang(code) {

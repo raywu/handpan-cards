@@ -755,3 +755,26 @@ class I18nRegionTest(unittest.TestCase):
                     tables[name[:-5]] = json.load(fh)
         inline = json.loads(m.group(1)[len("const I18N = "):-1])
         self.assertEqual(inline, tables)
+
+    def test_sync_i18n_check_reports_a_stale_region(self):
+        import contextlib
+        import io
+        import tempfile
+        import sync_i18n
+        with open(sync_i18n.INDEX, encoding="utf-8") as fh:
+            html = fh.read()
+        stale = html.replace('"header.settings": "Settings"', '"header.settings": "Settingz"', 1)
+        self.assertNotEqual(stale, html)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "index.html")
+            with open(path, "w", encoding="utf-8") as fh:
+                fh.write(stale)
+            real = sync_i18n.INDEX
+            sync_i18n.INDEX = path
+            try:
+                with contextlib.redirect_stderr(io.StringIO()):
+                    self.assertEqual(sync_i18n.main(["sync_i18n.py", "--check"]), 1)
+                with open(path, encoding="utf-8") as fh:
+                    self.assertEqual(fh.read(), stale, "--check writes nothing")
+            finally:
+                sync_i18n.INDEX = real
