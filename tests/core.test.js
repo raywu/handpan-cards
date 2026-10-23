@@ -1353,3 +1353,240 @@ test("DUP-1: HPE.core.fnv1a32 is the engine's one FNV loop and returns a uint32 
   assert.equal(core.deckId(parsed(seed).fields), "custom:" + hex,
     "deckId is the zero-padded 8-hex form of the numeric hash");
 });
+
+test("err carries variant and vars and keeps its reason", () => {
+  const plain = core.parseSeed("A3 C4 D4");
+  assert.equal(plain.ok, false);
+  assert.equal(plain.code, "NO_DING");
+  assert.equal(plain.variant, "which");
+  assert.deepEqual(JSON.parse(JSON.stringify(plain.vars)), {});
+  assert.equal(typeof plain.reason, "string");
+  const slash = core.parseSeed("(D3) A3 / C4 D4");
+  const bar = core.parseSeed("(D3) | A3");
+  for (const r of [slash, bar]) {
+    assert.equal(r.ok, false);
+    assert.ok(r.variant === null || typeof r.variant === "string");
+    assert.equal(typeof r.vars, "object");
+  }
+  const fifth = core.parseSeed("(D3) B3 C4");
+  assert.equal(fifth.ok, false);
+  assert.equal(fifth.code, "NO_FIFTH");
+  assert.deepEqual(JSON.parse(JSON.stringify(fifth.vars)), { "<X>": "D3", "<fifth of X>": "A" });
+  const bad = core.parseSeed("(D3) Xx3 A3");
+  assert.equal(bad.ok, false);
+  assert.equal(bad.code, "BAD_NOTE");
+  assert.ok(Object.prototype.hasOwnProperty.call(bad, "variant"));
+  assert.ok(Object.prototype.hasOwnProperty.call(bad, "vars"));
+  assert.deepEqual(JSON.parse(JSON.stringify(bad.vars)), { "<X>": "Xx3" });
+});
+
+/* ---- Order-follow lane OF-E: typedSeats, formatTyped, and the base freeze ---- */
+
+const OF_FIXTURE_PATH = path.join(ROOT, "tests", "fixtures", "order_follow_base_aabcc0c.json");
+const ofBase = JSON.parse(fs.readFileSync(OF_FIXTURE_PATH, "utf8"));
+const ofEngine = () => loadEngine(["core", "voicing", "layout", "naming", "select", "share"]);
+const ofHash = (x) => require("node:crypto").createHash("sha256").update(JSON.stringify(x)).digest("hex").slice(0, 16);
+
+// The typed order of one ring read straight off the text, independent of
+// value.typed: the notes between the ding and the bar are the rim, after the bar
+// the inner ring, in the order they were written.
+function ofTypedRings(text) {
+  const bar = text.indexOf("|");
+  const names = (s) => (s.match(/(?<![\[(])\b[A-G][#b]?-?\d(?![\])])/g) || []);
+  const head = bar < 0 ? text : text.slice(0, bar);
+  const tail = bar < 0 ? "" : text.slice(bar + 1);
+  const strip = (s) => s.replace(/\[[^\]]*\]/g, " ").replace(/\([^)]*\)/g, " ");
+  return { rim: names(strip(head)), inner: names(strip(tail)) };
+}
+
+test("OF: the order-follow base freeze holds at least 1312 cases from aabcc0c and names its sources", () => {
+  assert.equal(ofBase.base, "aabcc0c");
+  assert.ok(ofBase.cases.length >= 1312, `only ${ofBase.cases.length} cases`);
+  assert.equal(ofBase.count, ofBase.cases.length);
+  assert.deepEqual([...ofBase.sources].sort(), [
+    "builtin_strings", "deck_ids_v1", "engine_corpus_main_d8d2a2d_ok", "engine_corpus_v1",
+    "permutation_seed_20261023", "scale_grammar_v1", "synthetic_scales",
+  ]);
+  assert.equal(ofBase.cases.filter((c) => c.source === "permutation_seed_20261023").length, 200);
+  assert.equal(ofBase.combos.length, 12);
+  assert.equal(typeof ofBase.shareVersion, "number");
+  assert.ok(fs.statSync(OF_FIXTURE_PATH).size < 2 * 1024 * 1024, "the freeze must stay under 2 MB");
+});
+
+test("OF: every ascending line in the frozen base set reads, solves, shares and saves byte-identical, and typedSeats returns null", () => {
+  const started = Date.now();
+  const E = ofEngine();
+  const sameShare = E.share.VERSION === ofBase.shareVersion;
+  let compared = 0;
+  for (const c of ofBase.cases) {
+    const read = (c.reader === "legacy" ? E.core.parseLegacySeed : E.core.parseSeed)(c.string, c.options);
+    if (!c.parse.ok) {
+      assert.equal(read.ok, false, c.string);
+      assert.equal(read.code, c.parse.code, c.string);
+      continue;
+    }
+    assert.equal(read.ok, true, c.string);
+    const v = read.value;
+    assert.equal(JSON.stringify(host(v.fields)), JSON.stringify(c.fields), `${c.string}: fields`);
+    assert.equal(E.core.deckId(v), c.deckId, `${c.string}: deck id`);
+    assert.equal(E.core.formatSeed(v.fields), c.formatSeed, `${c.string}: formatSeed`);
+    if (c.source === "permutation_seed_20261023") continue;
+    assert.equal(c.seats, null, `${c.string}: the fixture says ascending`);
+    assert.equal(E.core.typedSeats(v), null, `${c.string}: typedSeats`);
+    ofBase.combos.forEach((o, i) => {
+      assert.equal(ofHash(host(E.layout.solve(v, o))), c.solve[i], `${c.string}: solve ${JSON.stringify(o)}`);
+    });
+    if (sameShare) {
+      const enc = E.share.encode(v);
+      assert.equal(enc.ok ? enc.value : enc.code, typeof c.share === "string" ? c.share : c.share.code, `${c.string}: share code`);
+    }
+    const reparsed = E.core.parseSeed(c.formatSeed, c.options);
+    if (reparsed.ok) {
+      const built = E.select.build(reparsed.value);
+      const record = built.ok
+        ? { v: E.share.RECORD_VERSION, s: c.formatSeed, o: ofHash(host(Object.assign({}, built.value.options, reparsed.value.options.name ? { name: reparsed.value.options.name } : {}))) }
+        : { code: built.code };
+      assert.deepEqual(host(record), c.record, `${c.string}: record`);
+    }
+    compared += 1;
+  }
+  assert.ok(compared >= 1000, `only ${compared} ascending cases compared`);
+  assert.ok(Date.now() - started < 30000, "the clause 1 test must finish under 30 s");
+});
+
+test("OF: a non-ascending line keeps its fields, deck id and formatSeed, and typedSeats is the inverse of the typed order per ring", () => {
+  const E = ofEngine();
+  const perms = ofBase.cases.filter((c) => c.source === "permutation_seed_20261023");
+  assert.equal(perms.length, 200);
+  for (const c of perms) {
+    const v = E.core.parseSeed(c.string).value;
+    const asc = E.core.parseSeed(c.ascending).value;
+    assert.equal(JSON.stringify(host(v.fields)), JSON.stringify(host(asc.fields)), `${c.string}: fields`);
+    assert.equal(E.core.deckId(v), E.core.deckId(asc));
+    assert.equal(E.core.formatSeed(v.fields), E.core.formatSeed(asc.fields));
+    assert.equal(JSON.stringify(host(E.select.build(v).value.chords)), JSON.stringify(host(E.select.build(asc).value.chords)), `${c.string}: chords`);
+    const typed = ofTypedRings(c.string);
+    const want = {};
+    for (const ring of ["rim", "inner"]) {
+      const sorted = Object.keys(v.fields).filter((k) => v.fields[k][3] === ring)
+        .sort((a, b) => Number(a) - Number(b)).map((k) => v.fields[k][0] + v.fields[k][1]);
+      const seats = sorted.map((n) => typed[ring].indexOf(n));
+      if (seats.some((s, i) => s !== i)) want[ring] = seats;
+    }
+    assert.deepEqual(host(E.core.typedSeats(v)), Object.keys(want).length ? want : null, c.string);
+    assert.deepEqual(host(E.core.typedSeats(v)), c.seats, `${c.string}: matches the freeze`);
+  }
+  const named = [
+    ["(D3) C4 A3 D4 E4 F4 G4 A4 C5", { rim: [1, 0, 2, 3, 4, 5, 6, 7] }],
+    ["(D3) C4 D4 A3 E4 F4 G4 A4 C5", { rim: [2, 0, 1, 3, 4, 5, 6, 7] }],
+    ["(D3) A3 C4 D4 E4 F4 G4 A4 C5 | E5 D5", { inner: [1, 0] }],
+    ["(D3) C4 D4 E4 F4 G4 A4 C5 A3", { rim: [7, 0, 1, 2, 3, 4, 5, 6] }],
+    ["(D3) C5 A4 G4 F4 E4 D4 C4 A3", { rim: [7, 6, 5, 4, 3, 2, 1, 0] }],
+  ];
+  for (const [line, seats] of named) {
+    assert.deepEqual(host(E.core.typedSeats(E.core.parseSeed(line).value)), seats, line);
+  }
+});
+
+test("OF: a note typed before the ding is a refused bottom, and a bracketed one takes no rim seat (the plan's E2 case does not exist at aabcc0c)", () => {
+  const E = ofEngine();
+  const bare = E.core.parseSeed("A3 (D3) C4 D4 E4 F4 G4 A4 C5");
+  assert.equal(bare.ok, false);
+  assert.equal(bare.code, "NO_DING");
+  const bracketed = E.core.parseSeed("[A3] (D3) C4 D4 E4 F4 G4 A4 C5");
+  assert.equal(bracketed.ok, true);
+  assert.equal(E.core.typedSeats(bracketed.value), null);
+});
+
+test("OF: a bottom-only reorder derives no seats, and a mixed reorder derives rim and inner only", () => {
+  const E = ofEngine();
+  const bottomsOnly = E.core.parseSeed("[Eb3] [C3] (F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5");
+  assert.equal(bottomsOnly.ok, true);
+  assert.equal(E.core.typedSeats(bottomsOnly.value), null);
+  const mixed = E.core.parseSeed("[Eb3] [C3] (F3) Ab3 G3 C4 Eb4 F4 G4 Ab4 C5 Eb5 | G5 F5");
+  assert.equal(mixed.ok, true);
+  const seats = host(E.core.typedSeats(mixed.value));
+  assert.deepEqual(Object.keys(seats).sort(), ["inner", "rim"]);
+  assert.deepEqual(seats, { rim: [1, 0, 2, 3, 4, 5, 6, 7, 8], inner: [1, 0] });
+});
+
+test("OF: typedSeats returns null for a parse with no typed order (parseLegacySeed, share decode)", () => {
+  const E = ofEngine();
+  const legacy = E.core.parseLegacySeed("(D3) A3 C4 D4 E4 F4 G4 A4 C5");
+  assert.equal(E.core.typedSeats(legacy.value), null);
+  const code = E.share.encode(E.core.parseSeed("(D3) A3 C4 D4 E4 F4 G4 A4 C5").value);
+  assert.equal(code.ok, true);
+  const decoded = E.share.decode(code.value);
+  assert.equal(decoded.ok, true);
+  assert.equal(E.core.typedSeats(decoded.value), null);
+  assert.equal(E.core.typedSeats({ fields: { 0: ["D", 3, 50, "ding", null, "Ding"] } }), null);
+  assert.equal(E.core.typedSeats(null), null);
+});
+
+test("OF: formatTyped equals formatSeed when no rim or inner seat moved, on every case of the frozen set", () => {
+  const E = ofEngine();
+  let n = 0;
+  for (const c of ofBase.cases) {
+    if (!c.parse.ok) continue;
+    const fields = host(c.fields);
+    assert.equal(E.core.formatTyped(fields, null), c.formatSeed, c.string);
+    assert.equal(E.core.formatTyped(fields, {}), c.formatSeed, c.string);
+    assert.equal(E.core.formatTyped(fields, { rim: [], inner: [] }), c.formatSeed, c.string);
+    n += 1;
+  }
+  assert.ok(n >= 1000);
+});
+
+test("OF: formatTyped round-trips: parseSeed of formatTyped gives the same fields and typedSeats gives back the seats, over 400 seeded cases", () => {
+  const E = ofEngine();
+  let seed = 99;
+  const rnd = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; };
+  const shuffle = (a) => { const b = a.slice(); for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
+  const bases = [
+    "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+    "(D3) A3 C4 D4 E4 F4 G4 A4 C5 | D5 E5",
+    "[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]",
+    "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5",
+  ];
+  let cases = 0;
+  let moved = 0;
+  for (const b of bases) {
+    const p0 = E.core.parseSeed(b).value;
+    const f = p0.fields;
+    const ring = (z) => Object.keys(f).filter((k) => f[k][3] === z).sort((a, c) => a - c).map((k) => f[k][0] + f[k][1]);
+    const rim = ring("rim"), inner = ring("inner"), bottom = ring("bottom");
+    const ding = "(" + f[0][0] + f[0][1] + ")";
+    for (let i = 0; i < 100; i++) {
+      const line = [ding, ...shuffle(rim)].join(" ") + (inner.length ? " | " + shuffle(inner).join(" ") : "") +
+        (bottom.length ? " " + bottom.map((x) => "[" + x + "]").join(" ") : "");
+      const p = E.core.parseSeed(line);
+      assert.equal(p.ok, true, line);
+      const seats = host(E.core.typedSeats(p.value));
+      const written = E.core.formatTyped(p.value.fields, seats);
+      const q = E.core.parseSeed(written);
+      assert.equal(q.ok, true, written);
+      assert.equal(JSON.stringify(host(q.value.fields)), JSON.stringify(host(p.value.fields)), written);
+      assert.deepEqual(host(E.core.typedSeats(q.value)), seats, written);
+      assert.equal(E.core.deckId(q.value), E.core.deckId(p0));
+      cases += 1;
+      if (seats) moved += 1;
+    }
+  }
+  assert.equal(cases, 400);
+  assert.ok(moved > 300, "the seeded shuffles must mostly move a ring");
+  const e = E.core.parseSeed("(D3) C4 A3 D4 E4 F4 G4 A4 C5").value;
+  assert.equal(E.core.formatTyped(e.fields, E.core.typedSeats(e)), "(D3) C4 A3 D4 E4 F4 G4 A4 C5");
+});
+
+test("OF: formatTyped writes a ring low to high when its stored seats are not a permutation of that ring", () => {
+  const E = ofEngine();
+  const f = E.core.parseSeed("(D3) A3 C4 D4 E4 F4 G4 A4 C5 | D5 E5").value.fields;
+  const ascending = E.core.formatSeed(f);
+  for (const bad of [[0, 1], [1, 1, 2, 3, 4, 5, 6, 7], [1, 0, 2, 3, 4, 5, 6, 8], [1, 0, 2, 3, 4, 5, 6, -1], [1, 0, 2, 3, 4, 5, 6, 7, 8], "x", [0.5, 1, 2, 3, 4, 5, 6, 7]]) {
+    assert.equal(E.core.formatTyped(f, { rim: bad }), ascending, JSON.stringify(bad));
+  }
+  assert.equal(E.core.formatTyped(f, { rim: [1, 1, 2, 3, 4, 5, 6, 7], inner: [1, 0] }),
+    "(D3) A3 C4 D4 E4 F4 G4 A4 C5 | E5 D5");
+  assert.equal(E.core.formatTyped(f, { rim: [1, 0, 2, 3, 4, 5, 6, 7], inner: [9, 9] }),
+    "(D3) C4 A3 D4 E4 F4 G4 A4 C5 | D5 E5");
+});

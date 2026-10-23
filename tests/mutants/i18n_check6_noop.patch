@@ -1,0 +1,15 @@
+# kills: test_sync_i18n_check_reports_a_stale_region
+# suite: python3 -m unittest -k test_sync_i18n_check_reports_a_stale_region tests.test_render_agreement
+# sync_i18n --check reports OK whatever the region holds.
+diff --git a/tools/sync_i18n.py b/tools/sync_i18n.py
+--- a/tools/sync_i18n.py
++++ b/tools/sync_i18n.py
+@@ -70,7 +70,7 @@ def main(argv):
+             fh.write(html)
+         print("i18n region inserted after the engine block")
+         return 0
+-    if match.group(2) == want:
++    if True:
+         print("i18n region in index.html matches data/i18n: OK")
+         return 0
+     if check:

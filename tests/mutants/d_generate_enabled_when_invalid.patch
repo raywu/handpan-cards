@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9352,7 +9352,7 @@
+@@ -12215,7 +12215,7 @@ function syncParseState({ paint }) {
      // jumps the sheet nor costs the fieldrow a second reserved line.
      paintLayout();
      scaleBox.classList.add("bad");
 -    genBtn.disabled = true;
 +    genBtn.disabled = false;
      if (paint) holdPanPreview();
-     showRefusal(res.reason);
+     showRefusal(reasonText(res));
    }

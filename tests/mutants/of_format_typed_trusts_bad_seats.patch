@@ -1,0 +1,16 @@
+# kills: OF: formatTyped writes a ring low to high when its stored seats are not a permutation of that ring
+# suite: node --test --test-name-pattern ^OF..formatTyped.writes.a.ring.low.to.high.when.its.stored.seats.are.not.a.permutation.of.that.ring$ tests/core.test.js
+# movedSeats trusts any array, so a malformed seat list reaches the line.
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -1052,7 +1052,8 @@
+   // A ring's stored seats, or null unless they are a permutation of 0..n-1 that
+   // moves something (layout.js readSeats ignores any other list when drawing).
+   function movedSeats(list, count) {
+-    if (!Array.isArray(list) || list.length !== count) return null;
++    if (!Array.isArray(list)) return null;
++    return list;
+     var seen = {};
+     var moved = false;
+     for (var i = 0; i < list.length; i += 1) {

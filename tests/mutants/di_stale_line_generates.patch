@@ -4,15 +4,15 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12638,7 +12638,6 @@ function paintPassive() {
+@@ -13304,7 +13304,6 @@ function paintPassive() {
    fieldsNote.textContent = !onFields
-     ? (fieldsStale ? "Not updated: the line below does not read as a scale yet." : "Follows the line below. Tap a field to type notes instead.")
-     : (scaleBox.value === "" ? OCTAVE_SENTENCE : "");
+     ? t(fieldsStale ? "sheet.fields_stale" : "sheet.fields_follow")
+     : (scaleBox.value === "" ? OCTAVE_SENTENCE() : "");
 -  if (onFields && lineStale) genBtn.disabled = true;
  }
  function writeLine(text) {
    mirroring = true;
-@@ -12672,7 +12671,6 @@ function followFields(r, wasStale) {
+@@ -13338,7 +13337,6 @@ function followFields(r, wasStale) {
    } else {
      lineStale = true;
      holdPanPreview();

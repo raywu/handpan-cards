@@ -2536,8 +2536,8 @@ test("with the presets gone, the standing hint teaches the whole seed grammar", 
   openSheet(app);
   // An empty box shows the hint and nothing else, so the hint is the only
   // teaching there is besides the label and the placeholder.
-  assert.strictEqual(app.els["scale-parse"].textContent, app.get("PARSE_HINT"));
-  const hint = app.get("PARSE_HINT");
+  assert.strictEqual(app.els["scale-parse"].textContent, app.get("PARSE_HINT()"));
+  const hint = app.get("PARSE_HINT()");
   assert.match(hint, /ding/i, "the hint does not name the ding");
   assert.match(hint, /\|/, "the hint does not mention the inner-note bar");
 
@@ -6153,14 +6153,14 @@ test("label, placeholder and hint name the same three marks", () => {
   const app = boot();
   const label = /<label class="sheetlabel" for="scale-box">([^<]*)</.exec(src)[1];
   const label2 = /id="scale-label-2"[^>]*>([^<]*)</.exec(src)[1];
-  const text = [label, label2, placeholderOf(), app.get("PARSE_HINT")].join(" ");
+  const text = [label, label2, placeholderOf(), app.get("PARSE_HINT()")].join(" ");
   for (const mark of ["(", "[", "|"]) assert.ok(text.includes(mark), `no ${mark} in the teaching text`);
-  assert.doesNotMatch(label + label2 + app.get("PARSE_HINT"), / \/ /, "a lone slash is still taught");
+  assert.doesNotMatch(label + label2 + app.get("PARSE_HINT()"), / \/ /, "a lone slash is still taught");
   assert.doesNotMatch(placeholderOf(), /\//);
 });
 
 test("PARSE_HINT ends at the octave sentence and says nothing about the old bar", () => {
-  const hint = boot().get("PARSE_HINT");
+  const hint = boot().get("PARSE_HINT()");
   assert.doesNotMatch(hint, /used to mean/i, "the hint still teaches the retired bottom-note bar");
   assert.ok(hint.endsWith("Octaves are optional: without one, we assume the notes run low to high."), `the hint ends: ${hint.slice(-60)}`);
 });
@@ -6168,7 +6168,7 @@ test("PARSE_HINT ends at the octave sentence and says nothing about the old bar"
 test("every example in the label, hint and refusals parses", () => {
   const app = boot();
   const src = indexSource();
-  const texts = [app.get("PARSE_HINT")];
+  const texts = [app.get("PARSE_HINT()")];
   texts.push(/<label class="sheetlabel" for="scale-box">([^<]*)</.exec(src)[1]);
   texts.push(/id="scale-label-2"[^>]*>([^<]*)</.exec(src)[1]);
   const reasons = app.get("HPE.core.REASONS");
@@ -8703,7 +8703,7 @@ test("LF F-3: #scale-drawer-hint is the first thing in #scale-drawer, and carrie
   const app = boot();
   d2Open(app, D2_AMARA, false);
   assert.strictEqual(app.els["scale-drawer-hint"].hidden, false);
-  assert.strictEqual(app.els["scale-drawer-hint"].textContent, app.get("DRAWER_HINT"));
+  assert.strictEqual(app.els["scale-drawer-hint"].textContent, app.get("DRAWER_HINT()"));
 });
 
 test("LF F-4: #scale-fine-toggle is underlined, offset .18em", () => {
@@ -9387,25 +9387,65 @@ describe("discoverability: structured data", () => {
     return JSON.parse(blocks[0].replace(/^<script[^>]*>/, "").replace(/<\/script>$/, ""));
   };
 
+  const node = (type) => {
+    const ld = ldBlock();
+    assert.ok(Array.isArray(ld["@graph"]), "expected a @graph array");
+    const hits = ld["@graph"].filter((n) => n["@type"] === type);
+    assert.strictEqual(hits.length, 1, `expected exactly one ${type} node`);
+    return hits[0];
+  };
+  const SITE_NAME = "Handpan Chords";
+
+  test("SN: the JSON-LD block is one @graph holding exactly one WebApplication and one WebSite node", () => {
+    const ld = ldBlock();
+    assert.deepStrictEqual(Object.keys(ld).sort(), ["@context", "@graph"]);
+    assert.ok(Array.isArray(ld["@graph"]), "expected a @graph array");
+    assert.strictEqual(ld["@graph"].length, 2);
+    assert.deepStrictEqual(ld["@graph"].map((n) => n["@type"]).sort(), ["WebApplication", "WebSite"]);
+  });
+
+  test("SN: the WebSite node is named as the h1, at the canonical and og:url, with only the lowercase subdomain as alternateName", () => {
+    const html = INDEX_HTML();
+    const site = node("WebSite");
+    const h1 = /<h1>([^<]*)<\/h1>/.exec(html)[1];
+    assert.strictEqual(site.name, h1, `expected a WebSite node named ${SITE_NAME}`);
+    assert.strictEqual(site.name, SITE_NAME, `expected a WebSite node named ${SITE_NAME}`);
+    const canonical = /<link rel="canonical" href="([^"]*)">/.exec(html)[1];
+    assert.strictEqual(site.url, canonical);
+    assert.strictEqual(site.url, metaContent(html, "property", "og:url"));
+    assert.deepStrictEqual(site.alternateName, ["handpan.raywu.org"]);
+    for (const a of site.alternateName) {
+      assert.strictEqual(a, a.toLowerCase());
+      assert.strictEqual(a, new URL(canonical).host);
+    }
+    assert.deepStrictEqual(Object.keys(site).sort(), ["@type", "alternateName", "name", "url"]);
+  });
+
+  test("SN: og:site_name equals the WebSite name and appears once", () => {
+    const html = INDEX_HTML();
+    assert.strictEqual(metaContent(html, "property", "og:site_name"), node("WebSite").name);
+    assert.strictEqual((html.match(/property="og:site_name"/g) || []).length, 1);
+  });
+
   test("the JSON-LD block parses and states only what the page shows", () => {
     const html = INDEX_HTML();
     const ld = ldBlock();
     assert.strictEqual(ld["@context"], "https://schema.org");
-    assert.strictEqual(ld["@type"], "WebApplication");
-    assert.strictEqual(ld.url, "https://handpan.raywu.org/");
-    assert.strictEqual(ld.applicationCategory, "MusicApplication");
-    assert.strictEqual(ld.operatingSystem, "Any");
-    assert.strictEqual(ld.browserRequirements, "Requires JavaScript");
-    assert.strictEqual(ld.isAccessibleForFree, true);
-    assert.deepStrictEqual(ld.offers, { "@type": "Offer", price: "0", priceCurrency: "USD" });
-    assert.strictEqual(ld.featureList, "Chord flashcards; chord progressions; custom scale input; printable PDF");
-    assert.ok(!("aggregateRating" in ld) && !("review" in ld), "a rating or review is marked up but never shown");
+    const app = node("WebApplication");
+    assert.strictEqual(app.url, "https://handpan.raywu.org/");
+    assert.strictEqual(app.applicationCategory, "MusicApplication");
+    assert.strictEqual(app.operatingSystem, "Any");
+    assert.strictEqual(app.browserRequirements, "Requires JavaScript");
+    assert.strictEqual(app.isAccessibleForFree, true);
+    assert.deepStrictEqual(app.offers, { "@type": "Offer", price: "0", priceCurrency: "USD" });
+    assert.strictEqual(app.featureList, "Chord flashcards; chord progressions; custom scale input; printable PDF");
+    assert.ok(!("aggregateRating" in app) && !("review" in app), "a rating or review is marked up but never shown");
     const block = (html.match(/<script type="application\/ld\+json">[\s\S]*?<\/script>/) || [""])[0];
     assert.ok(!/"email"|@raywu\.org|mailto:/i.test(block), "the JSON-LD block carries an email address (G7)");
     assert.ok(!/aggregateRating|"review"/.test(html), "a rating or review appears in the page");
     const h1 = /<h1>([^<]*)<\/h1>/.exec(html)[1];
-    assert.strictEqual(ld.name, h1, "name differs from the h1");
-    assert.strictEqual(ld.description, metaContent(html, "name", "description"), "description differs from the meta description");
+    assert.strictEqual(app.name, h1, "name differs from the h1");
+    assert.strictEqual(app.description, metaContent(html, "name", "description"), "description differs from the meta description");
     assert.ok(/\bfree\b/i.test(textOf(aboutHtml())), "isAccessibleForFree is marked up but the about section does not say free");
   });
 });
@@ -10958,12 +10998,14 @@ describe("DI: dual input", () => {
     const labels = [...h.matchAll(/<(?:label|span|p\b)[^>]*class="sheetlabel"[^>]*>([^<]*)</g)].map((m) => m[1]);
     assert.ok(labels.length >= 10, `only ${labels.length} sheet labels found`);
     const noteBlock = h.slice(h.indexOf("lineNote.textContent = onFields"), h.indexOf("if (onFields && lineStale) genBtn.disabled"));
-    const captions = [...noteBlock.matchAll(/"([^"\n]+)"/g)].map((m) => m[1]).filter((c) => /^[A-Z]/.test(c));
+    const en = JSON.parse(require("node:fs").readFileSync(path.join(ROOT, "data", "i18n", "en.json"), "utf8"));
+    const captions = [...noteBlock.matchAll(/t\(\w+ \? "(sheet\.\w+)" : "(sheet\.\w+)"|t\(\w+\s*\?\s*"([\w.]+)"\s*:\s*"([\w.]+)"\)/g)]
+      .flatMap((m) => m.slice(1).filter(Boolean)).map((k) => en[k]);
     assert.strictEqual(captions.length, 4, "the two line-note and two fields-note captions");
     const app = openAdd();
-    const texts = labels.concat(captions, app.get("PARSE_HINT").replace(sentence, ""));
+    const texts = labels.concat(captions, app.get("PARSE_HINT()").replace(sentence, ""));
     for (const t of texts) assert.doesNotMatch(t, /low to high/i, t);
-    assert.ok(app.get("PARSE_HINT").includes(sentence));
+    assert.ok(app.get("PARSE_HINT()").includes(sentence));
     assert.strictEqual(el(app, "scale-fields-note").textContent.replace(sentence, ""), "");
   });
 
@@ -13439,6 +13481,22 @@ describe("FPD: the drawer slides bottom notes", () => {
     assert.match(d2Status(app), /^Swapped C3 and D3\./);
   });
 
+  test("FPD: an exchange of two bottom notes is refused when the snapped angle of either would sit inside the floor of a third note, whichever note is dragged", () => {
+    const n = 23;
+    const notes = Array.from({ length: n }, (_, k) => `[${"CDEFGAB"[k % 7]}${1 + Math.floor(k / 7)}]`).join(" ");
+    const app = fpdOpen(notes + " (A3) C4 D4 E4 F4");
+    const fixed = JSON.stringify({ bottom: Array.from({ length: n }, (_, k) => k === 22 ? 90 : null) });
+    for (const [a, b] of [[0, 2], [2, 0]]) {
+      app.run(`layoutAngles = ${fixed}; resyncSheet(true)`);
+      const probe = JSON.parse(app.get(`(() => { const home = homeFields(); const cur = bottomAngles(); const next = cur.slice(); next[${a}] = stepOf(cur[${b}]); next[${b}] = stepOf(cur[${a}]); return JSON.stringify([clashAt(home, next, ${a}), clashAt(home, next, ${b})]); })()`));
+      assert.ok(probe.some((id) => id === "105"), `${a},${b}: the clash is with the third note`);
+      assert.ok(!probe.some((id) => id === String(101 + a) || id === String(101 + b)), `${a},${b}: the two traded notes clear each other`);
+      assert.strictEqual(app.get(`swapSeats("bottom", ${a}, ${b})`), false, `${a},${b}`);
+      assert.strictEqual(JSON.stringify(fpdAngles(app)), fixed, `${a},${b}: nothing moved`);
+      assert.match(app.els["scale-drawer-status"].textContent, /^Not moved\. .* cannot trade places on the 5° steps\.$/, `${a},${b}`);
+    }
+  });
+
   test("FPD: releasing a held bottom note over a rim note moves it, and a held rim note over a bottom note is still refused", () => {
     const app = fpdOpen();
     const g = DG.down(app, "C3", "mouse");
@@ -13704,6 +13762,13 @@ describe("FPD: seats, sole note, hint, nudge, notices and records", () => {
   });
 
   test("FPD: a mirror or anchor toggle that would put a moved bottom note inside another's floor is refused, changes nothing and says why in plain words", () => {
+    const app0 = open();
+    slide(app0, "C3", 320);
+    app0.els["scale-mirror-bottom"].click();
+    assert.strictEqual(app0.els["scale-mirror-bottom"].getAttribute("aria-pressed"), "false");
+    assert.match(app0.els["scale-drawer-status"].textContent, /too close/);
+    assert.strictEqual(app0.els["scale-drawer-status"].textContent, app0.get("TOGGLE_REFUSED")());
+    assert.strictEqual(app0.els["scale-drawer-status"].classList.contains("warn"), true, "the refusal is styled as a warning");
     for (const btn of ["scale-mirror-bottom", "scale-mirror", "scale-anchor-between"]) {
       const app = open();
       slide(app, "C3", 320);
@@ -13712,18 +13777,66 @@ describe("FPD: seats, sole note, hint, nudge, notices and records", () => {
       app.els[btn].click();
       const stuck = app.get("HPE.layout.solve(lastSeed, {mirror: mirror, mirrorBottom: bottomMirror(), anchor: anchor, seats: null, angles: layoutAngles}).ok");
       assert.strictEqual(stuck, true, `${btn}: the sheet is still buildable`);
-      if (app.els[btn].getAttribute("aria-pressed") === pressed) {
+      if (btn === "scale-mirror-bottom") {
+        assert.strictEqual(app.els[btn].getAttribute("aria-pressed"), pressed, `${btn}: refused`);
         assert.match(app.els["scale-drawer-status"].textContent, /too close/, `${btn}: plain refusal`);
+      } else {
+        assert.notStrictEqual(app.els[btn].getAttribute("aria-pressed"), pressed, `${btn}: a top-shell toggle never moves a bottom note, so it is not refused`);
+        assert.doesNotMatch(app.els["scale-drawer-status"].textContent, /too close/, `${btn}: no refusal`);
       }
       assert.strictEqual(JSON.stringify(ang(app)), before);
       app.els["scale-generate"].click();
       assert.doesNotMatch(app.els["scale-refusal"].textContent, /is not a note/, `${btn}: no BAD_NOTE template`);
     }
+  });
+
+  test("FPD: a stored scale whose angles list is all null reads as unchanged: no notice, no changed-from-default line, and the same sheet key as no angles at all", () => {
+    const key = boot().get("SCALES_KEY");
+    const stored = (o) => boot({ storage: { [key]: JSON.stringify([{ v: 4, s: FPD, o }]) } });
+    const edit = (o) => {
+      const app = stored(o);
+      openEdit(app, Object.values(app.registry())[0]);
+      app.click(dr1Toggle(app));
+      return app;
+    };
+    const plain = edit({});
+    const nulls = edit({ angles: { bottom: [null, null, null] } });
+    assert.strictEqual(dr1Notice(nulls), "");
+    assert.strictEqual(dr1Notice(nulls), dr1Notice(plain));
+    assert.strictEqual(nulls.get("anglesKey(layoutAngles)"), "");
+    assert.strictEqual(nulls.get("layoutBase.angles"), "");
+    assert.strictEqual(nulls.get("sheetKey()"), plain.get("sheetKey()"));
+    nulls.run("layoutAngles = { bottom: [null, null, null] }; paintLayout()");
+    assert.strictEqual(nulls.get("anglesKey(layoutAngles)"), "", "an all-null list keys like no list");
+    assert.strictEqual(dr1Notice(nulls), "", "an all-null list in the sheet is not a change");
+    assert.strictEqual(nulls.get("sheetKey()"), plain.get("sheetKey()"));
+    const moved = edit({ angles: { bottom: [null, 200, null] } });
+    assert.strictEqual(dr1Notice(moved), "Layout changed from the default.");
+  });
+
+  test("FPD: a stale angles list of the wrong length is dropped by the repaint, which still draws the plate, and a list of the right length is kept", () => {
     const app = open();
-    slide(app, "C3", 320);
-    app.els["scale-mirror-bottom"].click();
-    assert.strictEqual(app.els["scale-mirror-bottom"].getAttribute("aria-pressed"), "false");
-    assert.match(app.els["scale-drawer-status"].textContent, /too close/);
+    slide(app, "C3", 300);
+    assert.strictEqual(app.get("fitAngles(lastSeed.fields) === layoutAngles"), true);
+    app.run("layoutAngles = { bottom: [200, null] }");
+    assert.strictEqual(app.get("fitAngles(lastSeed.fields)"), null);
+    assert.notStrictEqual(app.get("solvePreviewLayout(lastSeed)"), null, "the preview still solves");
+    app.run("paintLayout(); resyncSheet(true)");
+    assert.ok(app.get("lastSolved") !== null && app.hits().length > 0, "the plate is drawn");
+  });
+
+  test("FPD: closing the finer controls while one of them has focus hands focus to their toggle, and closing with focus elsewhere moves nothing", () => {
+    const app = open();
+    app.els["scale-fine-toggle"].click();
+    assert.strictEqual(app.els["scale-fine-toggle"].getAttribute("aria-expanded"), "true");
+    app.els["scale-angle-next"].focus();
+    app.els["scale-fine-toggle"].click();
+    assert.strictEqual(app.els["scale-fine-toggle"].getAttribute("aria-expanded"), "false");
+    assert.strictEqual(app.activeId(), "scale-fine-toggle");
+    app.els["scale-fine-toggle"].click();
+    app.els["scale-box"].focus();
+    app.els["scale-fine-toggle"].click();
+    assert.strictEqual(app.activeId(), "scale-box");
   });
 
   test("FPD: Escape on a picked bottom note that was nudged says the moves are kept", () => {
@@ -13738,3 +13851,348 @@ describe("FPD: seats, sole note, hint, nudge, notices and records", () => {
   });
 });
 
+
+/* ------------------------------------------------------------------ I18N */
+
+describe("I18N", () => {
+  const EN_PATH = path.join(ROOT, "data", "i18n", "en.json");
+  const readEn = () => JSON.parse(fs.readFileSync(EN_PATH, "utf8"));
+  const wrapOne = (s) => "⟦" + s + "⟧";
+  const wrap = (v) => (typeof v === "string" ? wrapOne(v)
+    : Object.fromEntries(Object.entries(v).map(([k, s]) => [k, wrapOne(s)])));
+  /** index.html with every requested language table added, each value the en value in brackets. */
+  function pseudo(langs) {
+    const en = readEn();
+    const tables = { en };
+    for (const l of langs) tables[l] = Object.fromEntries(Object.entries(en).map(([k, v]) => [k, wrap(v)]));
+    const html = INDEX_HTML();
+    assert.ok(/const I18N = \{.*\};/.test(html), "index.html has no const I18N region");
+    return html.replace(/const I18N = \{.*\};/, () => "const I18N = " + JSON.stringify(tables) + ";");
+  }
+  const ALL = ["de", "fr", "it", "es", "ja", "zh-Hant", "zh-Hans"];
+  const bootLang = (langs, languages, extra = {}) => boot({ html: pseudo(langs), languages, ...extra });
+  const hasEnglishOnlyId = new Set(["decks", "front", "back", "count", "scale-ding", "scale-top", "scale-inner",
+    "scale-bottom", "scale-box", "scale-parse", "scale-name", "about", "scale-preview", "share-url", "seq-style-name",
+    "scale-refusal", "announce"]);
+
+  /** Every [id, kind, value] the app wrote to a UI element and left non-empty. */
+  function uiTexts(app) {
+    const out = [];
+    for (const [id, el] of Object.entries(app.els)) {
+      if (hasEnglishOnlyId.has(id)) continue;
+      if (String(el.textContent || "").trim()) out.push([id, "text", el.textContent]);
+      for (const a of ["aria-label", "title", "placeholder"]) {
+        const v = el.getAttribute(a);
+        if (v) out.push([id, a, v]);
+      }
+    }
+    return out;
+  }
+  const bare = (app) => uiTexts(app).filter(([, , v]) => !v.includes("⟦"));
+
+  test("I18N: the detection table", () => {
+    const cases = [
+      [[], "en"], [["pt-BR", "de"], "de"], [["en-US", "de"], "en"], [["en", "ja"], "en"], [["de-CH", "en"], "de"],
+      [["zh-HK"], "zh-Hant"], [["zh-TW"], "zh-Hant"], [["zh-Hant"], "zh-Hant"],
+      [["zh-CN"], "zh-Hans"], [["zh"], "zh-Hans"], [["zh-SG"], "zh-Hans"], [["pt-BR"], "en"],
+    ];
+    for (const [languages, want] of cases) {
+      const app = bootLang(ALL, languages);
+      assert.strictEqual(app.get("uiLang()"), want, JSON.stringify(languages));
+    }
+    assert.strictEqual(bootLang([], ["de"]).get("uiLang()"), "en", "a code with no table gives en");
+    assert.strictEqual(bootLang(["fr"], ["de", "fr"]).get("uiLang()"), "fr", "the first entry with a table wins");
+    assert.deepStrictEqual([...bootLang(["fr", "ja"], ["en"]).get("LANGS")], ["en", "fr", "ja"]);
+  });
+
+  test("I18N: a stored lang beats detection and Auto stores nothing", () => {
+    const stored = JSON.stringify({ deck: "kurd", lang: "ja" });
+    const app = bootLang(ALL, ["de"], { storage: { hpfc: stored } });
+    assert.strictEqual(app.get("uiLang()"), "ja");
+    app.run("setLang(null)");
+    assert.strictEqual(app.get("uiLang()"), "de");
+    assert.ok(!("lang" in JSON.parse(app.store.hpfc)), "Auto deletes the lang field");
+    assert.strictEqual(JSON.parse(app.store.hpfc).deck, "kurd", "and writes nothing else");
+    const fresh = bootLang(ALL, ["de"]);
+    const before = fresh.store.hpfc;
+    fresh.run("setLang(null)");
+    assert.strictEqual(fresh.store.hpfc, before, "Auto on a store with no lang writes nothing");
+    fresh.run('setLang("fr")');
+    assert.strictEqual(JSON.parse(fresh.store.hpfc).lang, "fr");
+    assert.strictEqual(fresh.get("uiLang()"), "fr");
+  });
+
+  test("I18N: an unknown stored lang reads as Auto and is not rewritten", () => {
+    for (const lang of ["xx", 123, null, ["de"], "pt"]) {
+      const raw = JSON.stringify({ deck: "kurd", lang });
+      const app = bootLang(["de"], ["de"], { storage: { hpfc: raw } });
+      assert.strictEqual(app.get("uiLang()"), "de", JSON.stringify(lang));
+      assert.deepStrictEqual(JSON.parse(app.store.hpfc).lang, lang, "the unknown value stays as stored");
+    }
+  });
+
+  test("I18N: <html lang> follows the UI language at boot and on change", () => {
+    const app = bootLang(["de", "fr"], ["de"]);
+    assert.strictEqual(app.get("document.documentElement.lang"), "de");
+    app.run('setLang("fr")');
+    assert.strictEqual(app.get("document.documentElement.lang"), "fr");
+    app.run('setLang("en")');
+    assert.strictEqual(app.get("document.documentElement.lang"), "en");
+    app.run("setLang(null)");
+    assert.strictEqual(app.get("document.documentElement.lang"), "de");
+  });
+
+  test("I18N: the first paint is already in the resolved language", () => {
+    const app = bootLang(["de"], ["de"]);
+    assert.deepStrictEqual(bare(app), [], "no in-scope text is the bare English value at the end of boot");
+    assert.ok(app.faces().includes("⟦Tap to reveal the notes⟧"), "the first card face is already in de");
+  });
+
+  test("I18N: under a pseudo table no visible UI text is English", () => {
+    const app = bootLang(["de"], ["de"]);
+    const seen = [];
+    const check = (label) => {
+      const left = bare(app);
+      assert.deepStrictEqual(left, [], label + ": " + JSON.stringify(left.slice(0, 5)));
+      seen.push(label);
+    };
+    check("home");
+    app.run("openPanel()");
+    check("panel");
+    app.run("closePanel()");
+    openSheet(app);
+    check("add sheet, empty");
+    app.type("(D3) A3 Bb3 C4 D4 E4 F4 G4 A4");
+    check("add sheet, typed");
+    app.click(app.els["scale-tab-layout"]);
+    app.els["scale-fine-toggle"].click();
+    check("layout tab");
+    app.type("(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5");
+    app.click(app.els["scale-tab-scale"]);
+    app.els["scale-top"].value = "A3 Xx";
+    app.els["scale-top"].dispatchEvent({ type: "input" });
+    app.els["scale-top"].dispatchEvent({ type: "blur" });
+    app.els["scale-generate"].click();
+    check("a refused line");
+    const edit = bootLang(["de"], ["de"]);
+    openEdit(edit, makeCustom(edit));
+    assert.deepStrictEqual(bare(edit), [], "edit sheet");
+    assert.strictEqual(seen.length, 6);
+  });
+
+  test("I18N: a positive sample renders the table value", () => {
+    const en = readEn();
+    const w = wrapOne;
+    const app = bootLang(["de"], ["de"]);
+    assert.strictEqual(app.els["scale-next"].textContent, w(en["sheet.next"]));
+    assert.strictEqual(app.els["share-copy"].getAttribute("aria-label"), w(en["header.share_copy"]));
+    assert.strictEqual(app.els["scale-ding"].getAttribute("placeholder"), null, "a note example is not translated");
+    assert.ok(app.faces().includes(w(en["card.hint_notes"])), "card.hint_notes");
+    assert.strictEqual(app.get('t("sheet.palette_n", {n: 3})'), w(en["sheet.palette_n"].replace("{n}", "3")));
+    const plural = en["sheet.ring_reset"];
+    assert.strictEqual(typeof plural, "object", "sheet.ring_reset is a plural entry");
+    const vars = (n) => `{ring: "rim", n: ${n}}`;
+    assert.strictEqual(app.get(`t("sheet.ring_reset", ${vars(1)})`),
+      w(plural.one.replace("{ring}", "rim").replace("{n}", "1")));
+    assert.strictEqual(app.get(`t("sheet.ring_reset", ${vars(2)})`),
+      w(plural.other.replace("{ring}", "rim").replace("{n}", "2")));
+    assert.strictEqual(app.get('reasonText({code: "NO_DING", variant: null, vars: {}, reason: "x"})'),
+      w(en["reason.NO_DING"]));
+    assert.strictEqual(app.get('reasonText({code: "BAD_NOTE", variant: "slash", vars: {}, reason: "x"})'),
+      w(en["reason.BAD_NOTE.slash"]));
+    assert.strictEqual(app.get('composeText({code: "SOLFEGE", variant: null, vars: {}}, "x")'), w(en["compose.SOLFEGE"]));
+    assert.strictEqual(app.get('composeText({code: "NOT_A_NOTE", variant: null, vars: {T: "Xx"}}, "x")'),
+      w(en["compose.NOT_A_NOTE"].replace("{T}", "Xx")));
+    assert.strictEqual(app.get('reasonText({code: "NOPE", vars: {}, reason: "kept"})'), "kept",
+      "an unknown reason code falls back to the engine's own sentence");
+  });
+
+  test("I18N: a missing key falls back to English per key", () => {
+    const en = readEn();
+    const tables = { en, de: { "sheet.next": "⟦NEXT⟧" } };
+    const html = INDEX_HTML().replace(/const I18N = \{.*\};/, () => "const I18N = " + JSON.stringify(tables) + ";");
+    const app = boot({ html, languages: ["de"] });
+    assert.strictEqual(app.get("uiLang()"), "de");
+    assert.strictEqual(app.get('t("sheet.next")'), "⟦NEXT⟧");
+    assert.strictEqual(app.get('t("sheet.generate")'), en["sheet.generate"], "absent in de: en answers");
+    assert.strictEqual(app.get('t("no.such.key")'), "no.such.key", "absent in both: the key itself");
+  });
+
+  test("I18N: under every present table the card face differs from English only in the .hint text", () => {
+    const en = readEn();
+    const strip = (s) => s
+      .replace(/ lang="en"/g, "")
+      .replace(/(<div class="hint"[^>]*>)[^<]*(<\/div>)/g, "$1$2")
+      .split(wrapOne(en["card.which_chord"])).join(en["card.which_chord"]);
+    const faces = (app, d, mode) => {
+      app.run("Math.random = () => 0.37");
+      app.select(d);
+      app.run(`setMode("${mode}")`);
+      const out = [];
+      for (let i = 0; i < 3; i++) {
+        out.push(app.faces());
+        app.run("step(1)");
+      }
+      return out;
+    };
+    const base = boot({ html: pseudo([]), languages: ["en"] });
+    const loc = bootLang(["de"], ["de"]);
+    for (const d of base.get("DECKS").map((x) => x.id)) {
+      for (const mode of ["A", "B", "S"]) {
+        const a = faces(base, d, mode), b = faces(loc, d, mode);
+        a.forEach((f, i) => assert.strictEqual(strip(b[i]), strip(f), `${d} ${mode} card ${i}`));
+      }
+    }
+    assert.ok(loc.get("DECKS").length >= 5);
+  });
+
+  test("I18N: config carries ui_lang from the eight-code set and page_location stays hash-free", () => {
+    const html = (langs) => pseudo(langs).replace(GA_LITERAL, 'const GA_MEASUREMENT_ID = "G-TEST123456";');
+    const cfg = (app) => JSON.parse(JSON.stringify(Array.from(app.get("window.dataLayer")))).find((e) => e[0] === "config");
+    const one = boot({ html: html(["de"]), languages: ["de"], webdriver: false, href: "https://example.test/index.html#s=SECRET" });
+    assert.strictEqual(cfg(one)[2].ui_lang, "de");
+    assert.strictEqual(cfg(one)[2].page_location, "https://example.test/index.html");
+    const two = boot({ html: html([]), languages: ["pt-BR"], webdriver: false, href: "https://example.test/index.html" });
+    assert.strictEqual(cfg(two)[2].ui_lang, "en");
+    const codes = new Set(["en", "de", "fr", "it", "es", "ja", "zh-Hant", "zh-Hans"]);
+    for (const l of ALL) {
+      const app = boot({ html: html(ALL), languages: [l], webdriver: false, href: "https://example.test/index.html" });
+      assert.ok(codes.has(cfg(app)[2].ui_lang), l);
+    }
+  });
+
+  test("I18N: every table has the keys of en and keeps every placeholder", () => {
+    const dir = path.join(ROOT, "data", "i18n");
+    const en = readEn();
+    const holes = (v) => (typeof v === "string" ? [v] : Object.values(v)).join("\u0000").match(/\{[A-Za-z]+\}/g) || [];
+    const set = (v) => [...new Set(holes(v))].sort();
+    for (const f of fs.readdirSync(dir).filter((x) => x.endsWith(".json"))) {
+      const table = JSON.parse(fs.readFileSync(path.join(dir, f), "utf8"));
+      assert.deepStrictEqual(Object.keys(table).sort(), Object.keys(en).sort(), f + ": key parity with en");
+      for (const k of Object.keys(en)) {
+        if (typeof en[k] === "object") assert.ok(typeof table[k] === "object" && "other" in table[k], f + " " + k + ": plural");
+        assert.deepStrictEqual(set(table[k]), set(en[k]), f + " " + k + ": placeholders");
+      }
+    }
+    assert.ok(Object.keys(en).length > 150);
+  });
+
+  test("I18N: no table value says deck", () => {
+    const dir = path.join(ROOT, "data", "i18n");
+    for (const f of fs.readdirSync(dir).filter((x) => x.endsWith(".json"))) {
+      const table = JSON.parse(fs.readFileSync(path.join(dir, f), "utf8"));
+      for (const [k, v] of Object.entries(table)) {
+        assert.ok(!/deck/i.test(JSON.stringify(v)), f + " " + k + " says deck");
+      }
+    }
+  });
+
+  test("I18N: under a non-English table every English-only island carries lang=en and the hint carries the UI language", () => {
+    const app = bootLang(["de"], ["de"]);
+    const lang = (id) => app.els[id].getAttribute("lang");
+    for (const id of ["decks", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box", "scale-parse", "about"]) {
+      assert.strictEqual(lang(id), "en", id);
+    }
+    for (const id of ["scale-next", "scale-generate", "settings-trigger", "share-copy", "scale-fields-note"]) {
+      assert.strictEqual(lang(id), null, id + " carries no island");
+    }
+    const faces = app.faces();
+    assert.ok(/<span lang="en"[^>]*>/.test(faces) || /lang="en"/.test(faces), "card face islands");
+    assert.ok(!/<div class="hint"[^>]*lang="en"/.test(faces), "the hint is the UI language");
+    app.run('setLang("en")');
+    for (const id of ["decks", "scale-box", "about"]) assert.strictEqual(lang(id), null, id + " under en");
+    assert.ok(!/lang="en"/.test(app.faces()), "no island under en");
+  });
+
+  test("I18N: applyLang with the sheet open rewrites the sheet title in the new language", () => {
+    const en = readEn();
+    const add = bootLang(["de"], ["de"]);
+    openSheet(add);
+    assert.strictEqual(add.els["scale-title"].textContent, wrapOne(en["sheet.title_add"]));
+    add.run('setLang("en")');
+    assert.strictEqual(add.els["scale-title"].textContent, en["sheet.title_add"]);
+    const edit = bootLang(["de"], ["de"]);
+    openEdit(edit, makeCustom(edit));
+    assert.strictEqual(edit.els["scale-title"].textContent, wrapOne(en["sheet.title_edit"]));
+    edit.run('setLang("en")');
+    assert.strictEqual(edit.els["scale-title"].textContent, en["sheet.title_edit"]);
+  });
+
+  test("I18N: a PARTS message joins its parts with one space, guessed octaves then below-rim notes", () => {
+    const en = readEn();
+    const app = boot({ html: pseudo([]), languages: ["en"] });
+    const got = app.get(`composeText({ code: "PARTS", variant: null, vars: {}, parts: [
+      { code: "OCTAVES_GUESSED_INNER", variant: null, vars: { list: "Bb" } },
+      { code: "INNER_BELOW_TOP", variant: null, vars: { list: "Bb", n: 1 } }] }, "")`);
+    const want = en["compose.OCTAVES_GUESSED_INNER"].replace("{list}", "Bb") + " " +
+      en["compose.INNER_BELOW_TOP"].one.replace("{list}", "Bb");
+    assert.strictEqual(got, want);
+    assert.strictEqual(got,
+      "Octaves guessed: Bb. An inner note can sit below the top notes: type its octave to put it there. Bb sits below the top notes. Check it on the pan picture.");
+  });
+
+  test("I18N: the WHICH CHORD IS THIS? subtitle carries the UI language, not an English island", () => {
+    const en = readEn();
+    const app = bootLang(["de"], ["de"]);
+    const wrapped = wrapOne(en["card.which_chord"]);
+    let seen = 0;
+    for (const mode of ["A", "B", "S"]) {
+      app.run(`setMode("${mode}")`);
+      const f = app.faces();
+      const at = f.indexOf(wrapped);
+      if (at < 0) continue;
+      seen++;
+      const open = f.lastIndexOf("<", at);
+      const tag = f.slice(open, f.indexOf(">", open) + 1);
+      assert.ok(!/lang="en"/.test(tag), mode + ": subtitle tag " + tag);
+    }
+    assert.ok(seen > 0, "the subtitle shows in some mode");
+  });
+
+  test("I18N: the English DOM of the app equals the base", () => {
+    const fixturePath = path.join(ROOT, "tests", "fixtures", "i18n_english_dom_v1.json");
+    const snap = (app) => {
+      const out = {};
+      for (const [id, el] of Object.entries(app.els)) {
+        out[id] = {
+          text: el.textContent, html: el.innerHTML, hidden: el.hidden,
+          attrs: Object.fromEntries(Object.entries(el.attributes).sort()),
+        };
+      }
+      return out;
+    };
+    if (process.env.I18N_REGEN_HTML) {
+      fs.writeFileSync(fixturePath, JSON.stringify(I18N_STATES(snap, fs.readFileSync(process.env.I18N_REGEN_HTML, "utf8")), null, 1) + "\n");
+    }
+    const fixture = JSON.parse(fs.readFileSync(fixturePath, "utf8"));
+    const states = I18N_STATES(snap);
+    assert.deepStrictEqual(Object.keys(states).sort(), Object.keys(fixture).sort());
+    for (const k of Object.keys(fixture)) assert.deepStrictEqual(states[k], fixture[k], "state " + k);
+  });
+});
+
+/** The states the English-DOM oracle visits, shared with tools that regenerate its fixture. */
+function I18N_STATES(snap, html) {
+  const opts = html === undefined ? { languages: ["en-US", "en"] } : { html, languages: ["en-US", "en"] };
+  const states = {};
+  let app = boot(opts);
+  states.home = snap(app);
+  app.run("openPanel()");
+  states.panel = snap(app);
+  app.run("closePanel()");
+  openSheet(app);
+  states.addEmpty = snap(app);
+  app.type("(D3) A3 Bb3 C4 D4 E4 F4 G4 A4");
+  states.addTyped = snap(app);
+  app.click(app.els["scale-tab-layout"]);
+  app.els["scale-fine-toggle"].click();
+  states.layout = snap(app);
+  app.click(app.els["scale-tab-scale"]);
+  app.type("(D3) A3 Qq");
+  app.els["scale-generate"].click();
+  states.refused = snap(app);
+  app = boot(opts);
+  openEdit(app, makeCustom(app));
+  states.edit = snap(app);
+  return states;
+}

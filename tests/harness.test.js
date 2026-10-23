@@ -755,3 +755,12 @@ test("every ANALYTICS_PATTERNS entry is a *literal* glob, the only shape matches
     assert.deepStrictEqual(sent.map(([m]) => m), ["Fetch.continueRequest"], "a dot is a dot, not a wildcard: " + p);
   }
 });
+
+test("the sandbox reports navigator.languages ['en-US','en'] unless told otherwise", () => {
+  const dflt = sandbox.boot({});
+  assert.deepStrictEqual(Array.from(dflt.get("navigator.languages")), ["en-US", "en"]);
+  assert.strictEqual(dflt.get("navigator.language"), "en-US");
+  const de = sandbox.boot({ languages: ["de-CH", "fr"] });
+  assert.deepStrictEqual(Array.from(de.get("navigator.languages")), ["de-CH", "fr"]);
+  assert.strictEqual(de.get("navigator.language"), "de-CH");
+});

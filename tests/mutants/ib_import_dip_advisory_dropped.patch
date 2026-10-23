@@ -4,12 +4,12 @@
 diff --git a/src/engine/importer.js b/src/engine/importer.js
 --- a/src/engine/importer.js
 +++ b/src/engine/importer.js
-@@ -828,7 +828,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -868,7 +868,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
            notes.push("Octaves guessed: " + innerGuessed.join(", ") + ". An inner note can sit below the top notes: type its octave to put it there.");
          }
          var low = core().innerBelowRim(full.value.fields);
 -        if (low.length) {
 +        if (false && low.length) {
+           infoParts.push(composeCode("INNER_BELOW_TOP", { list: low.join(", "), n: low.length }));
            notes.push(low.join(", ") + (low.length > 1 ? " sit" : " sits") + " below the top notes. Check " + (low.length > 1 ? "them" : "it") + " on the pan picture.");
          }
-         if (notes.length) out.info.inner = notes.join(" ");

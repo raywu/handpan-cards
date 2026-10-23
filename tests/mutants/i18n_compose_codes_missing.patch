@@ -1,0 +1,14 @@
+# kills: compose codes mirror errors, info and warn
+# suite: node --test --test-name-pattern ^compose.codes.mirror tests/import.test.js
+# compose stops returning the info code for a guessed bottom octave.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -890,7 +890,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       out.guessed = bottom.guessed;
+       if (bottom.guessed.length) {
+         out.info.bottom = "Octaves guessed: " + bottom.guessed.join(", ") + ". Type an octave to change a guess.";
+-        out.infoCodes.bottom = composeCode("OCTAVES_GUESSED", { list: bottom.guessed.join(", ") });
+         out.warn.bottom = composeDuplicate(bottom, read.bottom.notes, ding, top, inner);
+         if (out.warn.bottom) out.warnCodes.bottom = composeDuplicateCode(bottom, read.bottom.notes, ding, top, inner);
+       }

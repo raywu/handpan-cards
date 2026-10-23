@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12590,7 +12590,7 @@
+@@ -12847,7 +12847,7 @@ document.addEventListener("pointerdown", (e) => {
  // button re-solves the preview through the same parse path a keystroke uses.
  // A toggle re-seats the whole pan, so moved bottom notes must still clear the floor after it
  // (HPE.layout.bottomClash): a toggle that would leave the sheet unbuildable is undone.
 -const toggleFits = () => !layoutAngles || (!!lastSeed && solvePreviewLayout(lastSeed) !== null);
 +const toggleFits = () => true || (!!lastSeed && solvePreviewLayout(lastSeed) !== null);
- const TOGGLE_REFUSED = "Not changed: it would put a note you moved too close to another. Reset layout first.";
+ const TOGGLE_REFUSED = () => t("sheet.toggle_refused");
  mirrorTop.onclick = () => {
    mirror = !mirror;

@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9706,7 +9706,7 @@ function syncParseState({ paint }) {
-     if (crowded) { say(crowded.reason, "warn"); msgLine.classList.add("pan"); }
+@@ -12192,7 +12192,7 @@ function syncParseState({ paint }) {
+     if (crowded) { say(reasonText(crowded), "warn"); msgLine.classList.add("pan"); }
      else say("", "");
    } else {
 -    const second = opts.name !== undefined ? HPE.core.parseSeed(text, layoutOptions()) : null;

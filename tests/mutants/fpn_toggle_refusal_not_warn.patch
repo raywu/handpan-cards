@@ -1,0 +1,15 @@
+# kills: FPD: a mirror or anchor toggle that would put a moved bottom note inside another's floor is refused, changes nothing and says why in plain words
+# suite: node --test --test-name-pattern ^FPD..a.mirror.or.anchor.toggle.that.would.put.a.moved.bottom.note.inside.another.s.floor.is.refused..changes.nothing.and.says.why.in.plain.words$ tests/app.test.js
+# The toggle refusal is not styled as a warning.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12862,7 +12862,7 @@ mirrorTop.onclick = () => {
+ };
+ mirrorBot.onclick = () => {
+   bottomHeld = !bottomHeld;
+-  if (!toggleFits()) { bottomHeld = !bottomHeld; layoutStatus(TOGGLE_REFUSED(), true); return; }
++  if (!toggleFits()) { bottomHeld = !bottomHeld; layoutStatus(TOGGLE_REFUSED()); return; }
+   paintLayout(); resyncSheet(true);
+   layoutStatus(t(bottomMirror() ? "sheet.mirror_bottom_on" : "sheet.mirror_bottom_off"));
+ };

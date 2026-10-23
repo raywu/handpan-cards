@@ -1,0 +1,15 @@
+# kills: FPD: closing the finer controls while one of them has focus hands focus to their toggle, and closing with focus elsewhere moves nothing
+# suite: node --test --test-name-pattern ^FPD..closing.the.finer.controls.while.one.of.them.has.focus.hands.focus.to.their.toggle..and.closing.with.focus.elsewhere.moves.nothing$ tests/app.test.js
+# Closing the finer controls leaves focus on a hidden control.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12657,7 +12657,7 @@ seatNext.onclick = () => stepSeat(1);
+ resetBtn.onclick = resetLayout;
+ fineBtn.onclick = () => {
+   fineOpen = !fineOpen;
+-  if (!fineOpen && [notePrev, noteNext, seatPrev, seatNext, anglePrev, angleNext].includes(document.activeElement)) fineBtn.focus();
++  if (!fineOpen && [notePrev, noteNext, seatPrev, seatNext, anglePrev, angleNext].includes(document.activeElement)) void 0;
+   paintLayout();
+ };
+ // Delegated to the plate: the targets are rewritten on every repaint.

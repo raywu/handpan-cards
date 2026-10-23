@@ -4,12 +4,13 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12146,7 +12146,7 @@
+@@ -13251,8 +13251,7 @@ function renderFieldMessages(r, values, editing, shown) {
    const out = {};
    for (const k of FIELD_KEYS) {
      if (!values[k].trim()) continue;
--    const warnText = k === "bottom" && r.warn && r.warn.bottom ? r.warn.bottom.text : "";
+-    const warnText = k === "bottom" && r.warn && r.warn.bottom
+-      ? composeText(r.warnCodes && r.warnCodes.bottom, r.warn.bottom.text) : "";
 +    const warnText = "";
-     const text = r.errors[k] || warnText || r.info[k];
+     const text = r.errors[k] ? composeText(r.codes && r.codes[k], r.errors[k])
+       : warnText || composeText(r.infoCodes && r.infoCodes[k], r.info[k]);
      if (!text) continue;
-     const kind = r.errors[k] ? "error" : warnText ? "warn" : "info";

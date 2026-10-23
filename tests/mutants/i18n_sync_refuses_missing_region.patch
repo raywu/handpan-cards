@@ -1,0 +1,15 @@
+# kills: test_sync_i18n_inserts_a_missing_region_below_the_engine_block
+# suite: python3 -m unittest -k test_sync_i18n_inserts_a_missing_region_below_the_engine_block tests.test_render_agreement
+# sync_i18n refuses a missing region instead of inserting it.
+diff --git a/tools/sync_i18n.py b/tools/sync_i18n.py
+--- a/tools/sync_i18n.py
++++ b/tools/sync_i18n.py
+@@ -60,7 +60,7 @@ def main(argv):
+     match = PATTERN.search(html)
+     want = render(canonical())
+     if not match:
+-        if check or ANCHOR not in html:
++        if True:
+             print("index.html has no i18n region", file=sys.stderr)
+             return 1
+         at = html.index(ANCHOR) + len(ANCHOR)
