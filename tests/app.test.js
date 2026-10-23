@@ -2536,8 +2536,8 @@ test("with the presets gone, the standing hint teaches the whole seed grammar", 
   openSheet(app);
   // An empty box shows the hint and nothing else, so the hint is the only
   // teaching there is besides the label and the placeholder.
-  assert.strictEqual(app.els["scale-parse"].textContent, app.get("PARSE_HINT"));
-  const hint = app.get("PARSE_HINT");
+  assert.strictEqual(app.els["scale-parse"].textContent, app.get("PARSE_HINT()"));
+  const hint = app.get("PARSE_HINT()");
   assert.match(hint, /ding/i, "the hint does not name the ding");
   assert.match(hint, /\|/, "the hint does not mention the inner-note bar");
 
@@ -6154,14 +6154,14 @@ test("label, placeholder and hint name the same three marks", () => {
   const app = boot();
   const label = /<label class="sheetlabel" for="scale-box">([^<]*)</.exec(src)[1];
   const label2 = /id="scale-label-2"[^>]*>([^<]*)</.exec(src)[1];
-  const text = [label, label2, placeholderOf(), app.get("PARSE_HINT")].join(" ");
+  const text = [label, label2, placeholderOf(), app.get("PARSE_HINT()")].join(" ");
   for (const mark of ["(", "[", "|"]) assert.ok(text.includes(mark), `no ${mark} in the teaching text`);
-  assert.doesNotMatch(label + label2 + app.get("PARSE_HINT"), / \/ /, "a lone slash is still taught");
+  assert.doesNotMatch(label + label2 + app.get("PARSE_HINT()"), / \/ /, "a lone slash is still taught");
   assert.doesNotMatch(placeholderOf(), /\//);
 });
 
 test("PARSE_HINT ends at the octave sentence and says nothing about the old bar", () => {
-  const hint = boot().get("PARSE_HINT");
+  const hint = boot().get("PARSE_HINT()");
   assert.doesNotMatch(hint, /used to mean/i, "the hint still teaches the retired bottom-note bar");
   assert.ok(hint.endsWith("Octaves are optional: without one, we assume the notes run low to high."), `the hint ends: ${hint.slice(-60)}`);
 });
@@ -6169,7 +6169,7 @@ test("PARSE_HINT ends at the octave sentence and says nothing about the old bar"
 test("every example in the label, hint and refusals parses", () => {
   const app = boot();
   const src = indexSource();
-  const texts = [app.get("PARSE_HINT")];
+  const texts = [app.get("PARSE_HINT()")];
   texts.push(/<label class="sheetlabel" for="scale-box">([^<]*)</.exec(src)[1]);
   texts.push(/id="scale-label-2"[^>]*>([^<]*)</.exec(src)[1]);
   const reasons = app.get("HPE.core.REASONS");
@@ -8704,7 +8704,7 @@ test("LF F-3: #scale-drawer-hint is the first thing in #scale-drawer, and carrie
   const app = boot();
   d2Open(app, D2_AMARA, false);
   assert.strictEqual(app.els["scale-drawer-hint"].hidden, false);
-  assert.strictEqual(app.els["scale-drawer-hint"].textContent, app.get("DRAWER_HINT"));
+  assert.strictEqual(app.els["scale-drawer-hint"].textContent, app.get("DRAWER_HINT()"));
 });
 
 test("LF F-4: #scale-fine-toggle is underlined, offset .18em", () => {
@@ -10959,12 +10959,14 @@ describe("DI: dual input", () => {
     const labels = [...h.matchAll(/<(?:label|span|p\b)[^>]*class="sheetlabel"[^>]*>([^<]*)</g)].map((m) => m[1]);
     assert.ok(labels.length >= 10, `only ${labels.length} sheet labels found`);
     const noteBlock = h.slice(h.indexOf("lineNote.textContent = onFields"), h.indexOf("if (onFields && lineStale) genBtn.disabled"));
-    const captions = [...noteBlock.matchAll(/"([^"\n]+)"/g)].map((m) => m[1]).filter((c) => /^[A-Z]/.test(c));
+    const en = JSON.parse(require("node:fs").readFileSync(path.join(ROOT, "data", "i18n", "en.json"), "utf8"));
+    const captions = [...noteBlock.matchAll(/t\(\w+ \? "(sheet\.\w+)" : "(sheet\.\w+)"|t\(\w+\s*\?\s*"([\w.]+)"\s*:\s*"([\w.]+)"\)/g)]
+      .flatMap((m) => m.slice(1).filter(Boolean)).map((k) => en[k]);
     assert.strictEqual(captions.length, 4, "the two line-note and two fields-note captions");
     const app = openAdd();
-    const texts = labels.concat(captions, app.get("PARSE_HINT").replace(sentence, ""));
+    const texts = labels.concat(captions, app.get("PARSE_HINT()").replace(sentence, ""));
     for (const t of texts) assert.doesNotMatch(t, /low to high/i, t);
-    assert.ok(app.get("PARSE_HINT").includes(sentence));
+    assert.ok(app.get("PARSE_HINT()").includes(sentence));
     assert.strictEqual(el(app, "scale-fields-note").textContent.replace(sentence, ""), "");
   });
 
@@ -13909,9 +13911,11 @@ describe("I18N", () => {
   test("I18N: under every present table the card face differs from English only in the .hint text", () => {
     const en = readEn();
     const strip = (s) => s
+      .replace(/ lang="en"/g, "")
       .replace(/(<div class="hint"[^>]*>)[^<]*(<\/div>)/g, "$1$2")
       .split(wrapOne(en["card.which_chord"])).join(en["card.which_chord"]);
     const faces = (app, d, mode) => {
+      app.run("Math.random = () => 0.37");
       app.select(d);
       app.run(`setMode("${mode}")`);
       const out = [];
@@ -13991,7 +13995,7 @@ describe("I18N", () => {
   });
 
   test("I18N: the English DOM of the app equals the base", () => {
-    const fixture = JSON.parse(fs.readFileSync(path.join(ROOT, "tests", "fixtures", "i18n_english_dom_v1.json"), "utf8"));
+    const fixturePath = path.join(ROOT, "tests", "fixtures", "i18n_english_dom_v1.json");
     const snap = (app) => {
       const out = {};
       for (const [id, el] of Object.entries(app.els)) {
@@ -14002,6 +14006,10 @@ describe("I18N", () => {
       }
       return out;
     };
+    if (process.env.I18N_REGEN_HTML) {
+      fs.writeFileSync(fixturePath, JSON.stringify(I18N_STATES(snap, fs.readFileSync(process.env.I18N_REGEN_HTML, "utf8")), null, 1) + "\n");
+    }
+    const fixture = JSON.parse(fs.readFileSync(fixturePath, "utf8"));
     const states = I18N_STATES(snap);
     assert.deepStrictEqual(Object.keys(states).sort(), Object.keys(fixture).sort());
     for (const k of Object.keys(fixture)) assert.deepStrictEqual(states[k], fixture[k], "state " + k);
