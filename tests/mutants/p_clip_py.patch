@@ -1,0 +1,15 @@
+# kills: test_a_forty_character_deck_name_with_a_warning_is_clipped_clear
+# suite: python3 -m unittest -k test_a_forty_character_deck_name_with_a_warning_is_clipped_clear tests.test_print
+# E3: a clipped deck name gets no ASCII dots.
+diff --git a/tools/hifi.py b/tools/hifi.py
+--- a/tools/hifi.py
++++ b/tools/hifi.py
+@@ -216,7 +216,7 @@
+     t = text
+     while len(t) > 1 and tw(t.rstrip() + "...", font, s, track) > maxw:
+         t = t[:-1]
+-    return t.rstrip() + "...", s
++    return t.rstrip(), s
+ 
+ 
+ def card_header(c, x, y, w, h, deck, num, subtitle, main, sup, warn_w=0.0):

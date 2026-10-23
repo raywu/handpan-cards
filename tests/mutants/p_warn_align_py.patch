@@ -1,0 +1,17 @@
+# kills: test_a_forty_character_deck_name_with_a_warning_is_clipped_clear
+# suite: python3 -m unittest -k test_a_forty_character_deck_name_with_a_warning_is_clipped_clear tests.test_print
+# E3: the NO 3RDS warning goes back to centred instead of right-aligned.
+diff --git a/tools/hifi.py b/tools/hifi.py
+--- a/tools/hifi.py
++++ b/tools/hifi.py
+@@ -496,8 +496,8 @@
+     # the CARDS. CHORD_ONLY ships chord cards and nothing else, so a warning
+     # drawn only on the title card is dropped by the file the print shop gets.
+     for i, line in enumerate(card_warnings(deck)):
+-        tracked(c, x + CW - 16, y + 6.0 - i * 5.5, line, "LabelSB", 4.0, 0.7,
+-                "r", ORANGE)
++        tracked(c, x + CW / 2, y + 6.0 - i * 5.5, line, "LabelSB", 4.0, 0.7,
++                "c", ORANGE)
+ 
+ 
+ # Title-card blurb: baseline of the first line, its size, step and tracking.
