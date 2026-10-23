@@ -13749,6 +13749,55 @@ describe("FPD: seats, sole note, hint, nudge, notices and records", () => {
     }
   });
 
+  test("FPD: a stored scale whose angles list is all null reads as unchanged: no notice, no changed-from-default line, and the same sheet key as no angles at all", () => {
+    const key = boot().get("SCALES_KEY");
+    const stored = (o) => boot({ storage: { [key]: JSON.stringify([{ v: 4, s: FPD, o }]) } });
+    const edit = (o) => {
+      const app = stored(o);
+      openEdit(app, Object.values(app.registry())[0]);
+      app.click(dr1Toggle(app));
+      return app;
+    };
+    const plain = edit({});
+    const nulls = edit({ angles: { bottom: [null, null, null] } });
+    assert.strictEqual(dr1Notice(nulls), "");
+    assert.strictEqual(dr1Notice(nulls), dr1Notice(plain));
+    assert.strictEqual(nulls.get("anglesKey(layoutAngles)"), "");
+    assert.strictEqual(nulls.get("layoutBase.angles"), "");
+    assert.strictEqual(nulls.get("sheetKey()"), plain.get("sheetKey()"));
+    nulls.run("layoutAngles = { bottom: [null, null, null] }; paintLayout()");
+    assert.strictEqual(nulls.get("anglesKey(layoutAngles)"), "", "an all-null list keys like no list");
+    assert.strictEqual(dr1Notice(nulls), "", "an all-null list in the sheet is not a change");
+    assert.strictEqual(nulls.get("sheetKey()"), plain.get("sheetKey()"));
+    const moved = edit({ angles: { bottom: [null, 200, null] } });
+    assert.strictEqual(dr1Notice(moved), "Layout changed from the default.");
+  });
+
+  test("FPD: a stale angles list of the wrong length is dropped by the repaint, which still draws the plate, and a list of the right length is kept", () => {
+    const app = open();
+    slide(app, "C3", 300);
+    assert.strictEqual(app.get("fitAngles(lastSeed.fields) === layoutAngles"), true);
+    app.run("layoutAngles = { bottom: [200, null] }");
+    assert.strictEqual(app.get("fitAngles(lastSeed.fields)"), null);
+    assert.notStrictEqual(app.get("solvePreviewLayout(lastSeed)"), null, "the preview still solves");
+    app.run("paintLayout(); resyncSheet(true)");
+    assert.ok(app.get("lastSolved") !== null && app.hits().length > 0, "the plate is drawn");
+  });
+
+  test("FPD: closing the finer controls while one of them has focus hands focus to their toggle, and closing with focus elsewhere moves nothing", () => {
+    const app = open();
+    app.els["scale-fine-toggle"].click();
+    assert.strictEqual(app.els["scale-fine-toggle"].getAttribute("aria-expanded"), "true");
+    app.els["scale-angle-next"].focus();
+    app.els["scale-fine-toggle"].click();
+    assert.strictEqual(app.els["scale-fine-toggle"].getAttribute("aria-expanded"), "false");
+    assert.strictEqual(app.activeId(), "scale-fine-toggle");
+    app.els["scale-fine-toggle"].click();
+    app.els["scale-box"].focus();
+    app.els["scale-fine-toggle"].click();
+    assert.strictEqual(app.activeId(), "scale-box");
+  });
+
   test("FPD: Escape on a picked bottom note that was nudged says the moves are kept", () => {
     const app = open();
     app.els["scale-fine-toggle"].click();
