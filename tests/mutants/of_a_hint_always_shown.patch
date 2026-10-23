@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13207,7 +13207,7 @@ function paintNotes() {
+@@ -13469,7 +13469,7 @@ function paintNotes() {
    if (hintQuiet) hintSaid = hint;
    const set = (el, text) => { if (el.textContent !== text) el.textContent = text; };
    set(lineNote, onFields
--    ? (lineStale ? "Not updated: the notes above have a problem." : "Follows the notes above. Tap to type the line instead.")
-+    ? (hint || (lineStale ? "Not updated: the notes above have a problem." : "Follows the notes above. Tap to type the line instead."))
+-    ? t(lineStale ? "sheet.line_stale" : "sheet.line_follows")
++    ? (hint || t(lineStale ? "sheet.line_stale" : "sheet.line_follows"))
      : hint);
    set(fieldsNote, !onFields
-     ? (fieldsStale ? "Not updated: the line below does not read as a scale yet." : "Follows the line below. Tap a field to type notes instead.")
+     ? t(fieldsStale ? "sheet.fields_stale" : "sheet.fields_follow")

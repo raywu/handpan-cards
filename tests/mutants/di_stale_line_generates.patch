@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13457,7 +13457,7 @@ function paintPassive() {
+@@ -13455,7 +13455,7 @@ function paintPassive() {
    scaleWrap.classList.toggle("passive", onFields);
    scaleBox.classList.toggle("stale", onFields && lineStale);
    paintNotes();
@@ -13,7 +13,7 @@ diff --git a/index.html b/index.html
  }
  /** The order hint: shown on the active path's note only while a ring still
   *  follows what was typed. */
-@@ -13518,7 +13518,6 @@ function followFields(r, wasStale) {
+@@ -13516,7 +13516,6 @@ function followFields(r, wasStale) {
    } else {
      lineStale = true;
      holdPanPreview();

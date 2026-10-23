@@ -1,5 +1,5 @@
 # kills: OF: R3 a drawer rearrangement then an out-of-order ninth note then the ascending eight says the rim follows the order listed, never that earlier seats were restored
-# suite: node --test --test-name-pattern OF:.R3 tests/app.test.js
+# suite: node --test --test-name-pattern ^OF:.R3.a.drawer.rearrangement tests/app.test.js
 # A derived ring falls back to the count sentence when its seats are the identity, so the status claims earlier seats were restored.
 diff --git a/index.html b/index.html
 --- a/index.html

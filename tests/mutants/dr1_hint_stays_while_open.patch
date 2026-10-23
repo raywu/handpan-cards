@@ -11,5 +11,5 @@ diff --git a/index.html b/index.html
 -  layoutHint.hidden = boxOk || !(panState === "example" || !String(scaleBox.value || "").trim());
 +  layoutHint.hidden = false;
    drawerStatus.hidden = !drawerOpen || !boxOk;
-   paintNotes();
+   if (sheetOpen) paintNotes();
    drawerHint.textContent = DRAWER_HINT() + (ringCount && ringCount.bottom >= 1 ? DRAWER_HINT_SLIDE() : "");
