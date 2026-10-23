@@ -4,12 +4,12 @@
 diff --git a/src/engine/layout.js b/src/engine/layout.js
 --- a/src/engine/layout.js
 +++ b/src/engine/layout.js
-@@ -645,7 +645,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-       (options && "angles" in options) ? options.angles : seedOptions.angles,
-       counts);
+@@ -614,7 +614,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     var angles = readAngles(anglesValue, counts);
      if (!angles.ok) return angles;
--    if (angles.value && wanted.value && wanted.value.bottom && wanted.value.bottom.length) {
-+    if (false && angles.value && wanted.value && wanted.value.bottom && wanted.value.bottom.length) {
-       return badNote(wanted.value.bottom);
+     if (!angles.value) return seats;
+-    if (seats.value && seats.value.bottom && seats.value.bottom.length) {
++    if (false && seats.value && seats.value.bottom && seats.value.bottom.length) {
+       return badNote(seats.value.bottom);
      }
- 
+     var home = placeZones(counts, mirrors.top, mirrors.bottom, anchor);
