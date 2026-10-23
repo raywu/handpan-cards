@@ -1,0 +1,301 @@
+{
+ "states": [
+  "boot-380",
+  "flipped",
+  "mode-notes",
+  "seq-basic",
+  "after-seq-toggle",
+  "panel-open-380",
+  "panel-paper-focus",
+  "about-open",
+  "add-scale-tab",
+  "add-bad-line",
+  "add-good-line",
+  "add-field-error",
+  "add-fields-ok",
+  "add-crowded-warning",
+  "add-layout-tab-crowded",
+  "add-layout-noticed",
+  "add-drawer-open",
+  "add-drawer-fine",
+  "add-drawer-note-next",
+  "add-layout-lipshut",
+  "add-layout-restored",
+  "add-scale-tab-after-layout",
+  "add-scale-lipshut",
+  "add-keyboard-up",
+  "edit-scale-tab",
+  "edit-delete-armed",
+  "edit-layout-tab",
+  "edit-swatch",
+  "custom-deck-shown",
+  "share-url-revealed-forced",
+  "edit-custom",
+  "edit-custom-delete-armed",
+  "landscape-boot",
+  "landscape-panel",
+  "landscape-add-scale",
+  "landscape-add-layout",
+  "landscape-drawer",
+  "landscape-lipshut",
+  "desktop-boot",
+  "desktop-panel",
+  "desktop-about",
+  "desktop-add",
+  "desktop-add-layout",
+  "narrow-320",
+  "narrow-add"
+ ],
+ "never": [
+  {
+   "sel": "#share-copy:disabled",
+   "orig": [
+    "#share-copy:disabled",
+    "#share-copy:disabled:active"
+   ],
+   "media": [
+    ""
+   ]
+  },
+  {
+   "sel": ".prints button:disabled",
+   "orig": [
+    ".prints button:disabled"
+   ],
+   "media": [
+    ""
+   ]
+  },
+  {
+   "sel": ".bigname sup",
+   "orig": [
+    ".bigname sup"
+   ],
+   "media": [
+    ""
+   ]
+  },
+  {
+   "sel": ".badge",
+   "orig": [
+    ".badge"
+   ],
+   "media": [
+    ""
+   ]
+  },
+  {
+   "sel": ".shuffle.on",
+   "orig": [
+    ".shuffle.on"
+   ],
+   "media": [
+    ""
+   ]
+  },
+  {
+   "sel": "#scale-msg.err",
+   "orig": [
+    "#scale-msg.err"
+   ],
+   "media": [
+    ""
+   ]
+  },
+  {
+   "sel": ".announce.err",
+   "orig": [
+    ".announce.err"
+   ],
+   "media": [
+    ""
+   ]
+  },
+  {
+   "sel": "#scale-sheet.noticed #scale-msg.warn.pan",
+   "orig": [
+    "#scale-sheet.noticed #scale-msg.warn.pan"
+   ],
+   "media": [
+    ""
+   ]
+  },
+  {
+   "sel": "#scale-sheet.lipnow #scale-footslide",
+   "orig": [
+    "#scale-sheet.lipnow #scale-footslide"
+   ],
+   "media": [
+    ""
+   ]
+  },
+  {
+   "sel": "#scale-sheet.lipnow #scale-guidance",
+   "orig": [
+    "#scale-sheet.lipnow #scale-guidance"
+   ],
+   "media": [
+    ""
+   ]
+  },
+  {
+   "sel": "#scale-next:disabled",
+   "orig": [
+    "#scale-next:disabled",
+    "#scale-next:disabled:active"
+   ],
+   "media": [
+    ""
+   ]
+  },
+  {
+   "sel": "#scale-drawer[hidden]",
+   "orig": [
+    "#scale-drawer[hidden]"
+   ],
+   "media": [
+    ""
+   ]
+  },
+  {
+   "sel": ".sheetbody:has(#scale-layout-zone.nostick) #scale-drawer-status",
+   "orig": [
+    ".sheetbody:has(#scale-layout-zone.nostick) #scale-drawer-status"
+   ],
+   "media": [
+    ""
+   ]
+  },
+  {
+   "sel": "#scale-drawer-status.warn",
+   "orig": [
+    "#scale-drawer-status.warn"
+   ],
+   "media": [
+    ""
+   ]
+  },
+  {
+   "sel": ".sheetbody:has(#scale-layout-zone.nostick) #scale-plate-band",
+   "orig": [
+    ".sheetbody:has(#scale-layout-zone.nostick) #scale-plate-band"
+   ],
+   "media": [
+    ""
+   ]
+  },
+  {
+   "sel": "#scale-field-msg.info",
+   "orig": [
+    "#scale-field-msg.info"
+   ],
+   "media": [
+    ""
+   ]
+  },
+  {
+   "sel": "#scale-field-msg.stale",
+   "orig": [
+    "#scale-field-msg.stale"
+   ],
+   "media": [
+    ""
+   ]
+  },
+  {
+   "sel": "#scale-box-wrap.passive ~ #scale-line-note.stale",
+   "orig": [
+    "#scale-box-wrap.passive ~ #scale-line-note.stale"
+   ],
+   "media": [
+    ""
+   ]
+  },
+  {
+   "sel": "#scale-sheet.tiny .sheetbody",
+   "orig": [
+    "#scale-sheet.tiny .sheetbody"
+   ],
+   "media": [
+    ""
+   ]
+  },
+  {
+   "sel": "#scale-sheet.tiny .sheetsurf",
+   "orig": [
+    "#scale-sheet.tiny .sheetsurf"
+   ],
+   "media": [
+    ""
+   ]
+  },
+  {
+   "sel": "#scale-preview.dragging",
+   "orig": [
+    "#scale-preview.dragging"
+   ],
+   "media": [
+    ""
+   ]
+  },
+  {
+   "sel": "#scale-preview.dragging .panhit",
+   "orig": [
+    "#scale-preview.dragging .panhit"
+   ],
+   "media": [
+    ""
+   ]
+  },
+  {
+   "sel": ".panghost",
+   "orig": [
+    ".panghost"
+   ],
+   "media": [
+    ""
+   ]
+  }
+ ],
+ "pseudoOnly": [
+  {
+   "sel": ".chip.editable",
+   "orig": [
+    ".chip.editable::after"
+   ],
+   "max": 1
+  },
+  {
+   "sel": "#scale-lip",
+   "orig": [
+    "#scale-lip::after",
+    "#scale-lip:focus-visible"
+   ],
+   "max": 1
+  },
+  {
+   "sel": "#scale-swatches .dot.sel",
+   "orig": [
+    "#scale-swatches .dot.sel::after",
+    "#scale-swatches .dot.sel:active::after"
+   ],
+   "max": 1
+  },
+  {
+   "sel": "#scale-sheet.short #scale-box-wrap",
+   "orig": [
+    "#scale-sheet.short #scale-box-wrap::after"
+   ],
+   "max": 1
+  },
+  {
+   "sel": "#scale-preview .panhit + .panfocus",
+   "orig": [
+    "#scale-preview .panhit:focus-visible + .panfocus"
+   ],
+   "max": 23
+  }
+ ],
+ "errors": [],
+ "live": 242
+}
