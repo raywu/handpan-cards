@@ -249,6 +249,7 @@ function run() {
   /* Page timer constants the converted waits bound. They are written here on purpose, never read from the page: a wait that read the
    * constant back would move with it and could not fail when the constant grows. */
   const PIN_MS = 600, LIP_SLIDE_MS = 180, LIP_END_MS = 220;
+  const LIP_SLIDE_END_S = (LIP_SLIDE_MS - 10) / 1000; // mirrors index.html LIP_SLIDE_END_S: a transitionend under it is not the slide's end
   /* A9 (iii): the sheet's scrollers have stood still for six frames and nothing animates, then one slide longer, so a late lip flip is seen. */
   async function waitSheetRest(label) {
     const ok = await b.eval(`return new Promise((res) => {
@@ -16034,7 +16035,8 @@ function run() {
     const collapse = async () => { await swipeBody(-140); };
     const restoreBySwipe = async () => { await swipeBody(140); };
     const slideWithin = async (ms, label, act, doneExpr) => {
-      await b.eval(`window.__slideN0 = window.__lip.length; window.__slideEnd = new Promise((r) => { const f = document.getElementById("scale-footslide"); f.addEventListener("transitionend", function on(e) { if (e.target !== f) return; f.removeEventListener("transitionend", on); r(performance.now()); }); }); return true;`);
+      await b.waitFor(`document.getElementById("scale-footslide").getAnimations().length === 0`, { timeout: 3000, label: label + ": an earlier footslide transition to settle" });
+      await b.eval(`window.__slideN0 = window.__lip.length; window.__slideAct = performance.now(); window.__slideEnd = new Promise((r) => { const f = document.getElementById("scale-footslide"); f.addEventListener("transitionend", function on(e) { if (e.target !== f || e.propertyName !== "transform" || e.elapsedTime < ${LIP_SLIDE_END_S} || e.timeStamp < window.__slideAct) return; f.removeEventListener("transitionend", on); r(performance.now()); }); }); return true;`);
       const t0 = Date.now();
       await act();
       await b.eval(`return Promise.race([window.__slideEnd, new Promise((_, rej) => setTimeout(() => rej(new Error(${JSON.stringify(label)} + ": no footslide transitionend within ${ms}ms")), ${ms}))]);`);
