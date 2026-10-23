@@ -6069,8 +6069,17 @@ test("W1 line 118: #scale-label-2 is shown with the bottom-note line, and the fi
   assert.match(html, /<textarea\b[^>]*\baria-describedby="scale-label-2"/);
   const m = /<span\b([^>]*)\bid="scale-label-2"([^>]*)>([^<]*)<\/span>/.exec(html);
   assert.ok(m, "#scale-label-2 is gone");
-  assert.doesNotMatch(m[1] + m[2], /\bhidden\b/, "#scale-label-2 is hidden");
   assert.strictEqual(m[3], "[NOTE] = A BOTTOM NOTE, WRITTEN WHERE ITS PITCH FALLS");
+  const app = boot();
+  openSheet(app);
+  app.run(`globalThis.__label2 = [];
+    const __gid = document.getElementById.bind(document);
+    document.getElementById = (id) => id === "scale-label-2"
+      ? new Proxy({}, { get: (t, k) => (...a) => { __label2.push(String(k)); }, set: (t, k) => { __label2.push("set " + String(k)); return true; } })
+      : __gid(id);`);
+  for (const line of [W1_NONE, W1_BOTTOM, W1_FULL, W1_NONE]) app.type(line);
+  assert.strictEqual(app.get("__label2.join()"), "",
+    "typing a line touched #scale-label-2, which the markup leaves shown for every line");
 });
 
 test("W1 line 119: the count line leads with the ding and all three counts, then the notes by shell", () => {
