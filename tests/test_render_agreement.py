@@ -745,7 +745,7 @@ class I18nRegionTest(unittest.TestCase):
     def test_the_i18n_region_equals_data_i18n(self):
         with open(os.path.join(paths.ROOT, "index.html"), encoding="utf-8") as fh:
             html = fh.read()
-        m = re.search(r"<!-- i18n begin -->\s*<script>\s*(const I18N = .*?;)\s*</script>\s*<!-- i18n end -->", html, re.S)
+        m = re.search(r"<!-- i18n begin[^>]*-->\s*<script>(const I18N = .*?;)</script>\s*<!-- i18n end -->", html, re.S)
         self.assertIsNotNone(m, "index.html has no i18n region")
         directory = os.path.join(paths.ROOT, "data", "i18n")
         tables = {}
