@@ -13,15 +13,15 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10217,9 +10217,9 @@
+@@ -12786,9 +12786,9 @@ delBtn.onclick = () => {
    const d = CUSTOM[target] || DECKS.find(x => x.id === target);
    const seat = d && d.options && d.options.replaces;
    const seatedDeck = isBuiltIn(target) || (typeof seat === "string" && replacements()[seat] === d);
 -  delNote.textContent = seatedDeck
 +  showRefusal(seatedDeck
-     ? "Tap again to remove " + d.name + ". RESET SEEDED SCALES in the menu brings the seeded scales back."
--    : "Tap again to remove " + (d ? d.name : "this scale") + ". This cannot be undone.";
-+    : "Tap again to remove " + (d ? d.name : "this scale") + ". This cannot be undone.");
+     ? t("sheet.del_note_seeded", { name: d.name })
+-    : t("sheet.del_note_custom", { name: d ? d.name : t("sheet.this_scale") });
++    : t("sheet.del_note_custom", { name: d ? d.name : t("sheet.this_scale") }));
  };
  /* Looking away is a decision too, and on a phone the only way to see it is the
     pointer: iOS Safari gives a <button> no focus on tap, so `blur` never fires

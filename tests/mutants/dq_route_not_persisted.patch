@@ -4,18 +4,19 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11425,12 +11425,11 @@ sheet.setAttribute("hidden", ""); buildSwatches(); paintLayout(); resyncSheet(tr
+@@ -14227,13 +14227,12 @@ sheet.setAttribute("hidden", ""); buildSwatches(); paintLayout(); resyncSheet(tr
+ // deck that was selected last session is in the registry by the time deck()
  // looks for it.
  restoreScales();
++const wantedDeck0 = deckId;
  const routedDeck = routedDeckId();
-+const visitorDeck = deckId;
  bootStored = typeof store.deck === "string" ? store.deck : null;
  if (routedDeck) deckId = routedDeck;
  const wantedDeck = deckId;
--deckId = deck().id; storedDeck = deckId; setOrder(); buildChips(); setMode(mode);
+-deckId = deck().id; storedDeck = deckId; setOrder(); buildChips(); applyLang(); setMode(mode);
 -// setMode() above saved the routed deck, as a chip tap does: a link that opens a
 -// deck once keeps it, so the visitor does not land on the old one tomorrow.
-+deckId = deck().id; storedDeck = routedDeck ? visitorDeck : deckId; setOrder(); buildChips(); setMode(mode);
++deckId = deck().id; storedDeck = routedDeck ? wantedDeck0 : deckId; setOrder(); buildChips(); applyLang(); setMode(mode);
  if (routedDeck && routedDeck !== bootStored) track("deck_route", { deck_id: routedDeck });
  // Two fallbacks, deliberately different. An unknown BUILT-IN id is a stale or
  // renamed deck and falls back SILENTLY, as it always has. A missing custom: id

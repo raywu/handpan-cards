@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9232,7 +9232,7 @@ function swapSeats(ring, i, j) {
+@@ -11869,7 +11869,7 @@ function swapSeats(ring, i, j) {
    paintLayout();
    resyncSheet(true);
    const moved = noteAt({ ring, i });
--  if (i === j) layoutStatus(`${moved.name} stays in ${ring} seat ${moved.label}.`);
-+  if (i === j) layoutStatus(`${moved.name} stays in ${ring} seat ${moved.label}, ${moved.place}.`);
-   else layoutStatus(`Swapped ${a.name} and ${b.name}. ${moved.name} is now in ${ring} seat ${moved.label}, ${moved.place}.`);
+-  if (i === j) layoutStatus(t("sheet.stays", { name: moved.name, ring: ringWord(ring), label: moved.label }));
++  if (i === j) layoutStatus(t("sheet.stays", { name: moved.name, ring: ringWord(ring), label: moved.label }) + " " + moved.place + ".");
+   else layoutStatus(t("sheet.swapped", { a: a.name, b: b.name, m: moved.name, ring: ringWord(ring), label: moved.label, place: moved.place }));
    return true;
  }

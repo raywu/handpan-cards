@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -2455,7 +2455,7 @@ function shareLink(d) {
+@@ -9849,7 +9849,7 @@ let bootStored = null;
  // composes a sentence of its own (ENGINE-SPEC sections 1 and 2).
  function openShare(text) {
    const res = HPE.share.decode(String(text));
--  if (!res.ok) { say(res.reason, "err"); return res; }
+-  if (!res.ok) { say(reasonText(res), "err"); return res; }
 +  if (!res.ok) { say("Sorry, that link did not work.", "err"); return res; }
    // Generation runs ONCE per restore, here, exactly as submit does (section 11).
    const built = generateDeck(HPE.core.formatSeed(res.value.fields), res.value.options);
-   if (!built.ok) { say(built.reason, "err"); return built; }
+   if (!built.ok) { say(reasonText(built), "err"); return built; }
