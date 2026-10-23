@@ -52,11 +52,11 @@ FLOORS = {
     "tests/test_site_files.py": 8,
     "tests/test_ci_scope.py": 5,
     # node
-    "tests/app.test.js": 786,
+    "tests/app.test.js": 808,
     "tests/seat_sweeps_tap_add.test.js": 3,
     "tests/seat_sweeps_tap_edit.test.js": 3,
     "tests/seat_sweeps_keys.test.js": 4,
-    "tests/e2e.test.js": 464,
+    "tests/e2e.test.js": 469,
     "tests/harness.test.js": 27,
     "tests/drawer_grid.test.js": 3,
     "tests/drawer_seats.test.js": 28,
