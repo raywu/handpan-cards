@@ -1,5 +1,5 @@
-# kills: P2/D2 twin
-# suite: node --test --test-name-pattern ^P2/D2.twin.a.40-character.deck.name.on.a.no-thirds.pan.is.clipped.to.ASCII.dots.clear.of.#n.the.right-aligned.warning.and.the.credit$ tests/pdfcards.test.js
+# kills: P2/D2 twin: a 40-character deck name on a no-thirds pan is clipped to ASCII dots, clear of #n, the right-aligned warning and the credit
+# suite: node --test --test-name-pattern ^P2/D2.twin..a.40-character tests/pdfcards.test.js
 # E3: the JS deck-name budget ignores the warning, so the name runs into it.
 diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
 --- a/src/engine/pdfcards.js
