@@ -736,7 +736,22 @@ test("the Fetch.requestPaused handler fails a request to every ANALYTICS_PATTERN
   assert.deepStrictEqual(sent.map(([m]) => m), ["Fetch.continueRequest"], "any other request continues");
 });
 
-test("every ANALYTICS_PATTERNS entry is a *literal* glob, the only shape matchesAnalytics reads", () => {
+test("every ANALYTICS_PATTERNS entry is a *literal* glob, the only shape matchesAnalytics reads", async () => {
   assert.ok(ANALYTICS_PATTERNS.length >= 2);
-  for (const p of ANALYTICS_PATTERNS) assert.match(p, /^\*[^*?\[\]]+\*$/, p);
+  const b = Object.create(Browser.prototype);
+  b.eventHandlers = new Map();
+  const sent = [];
+  b.send = async (method, params) => { sent.push([method, params]); };
+  await b.enableRealFonts();
+  const handler = b.eventHandlers.get("Fetch.requestPaused");
+  for (const p of ANALYTICS_PATTERNS) {
+    assert.match(p, /^\*[^*?\[\]]+\*$/, p);
+    const core = p.replace(/\*/g, "");
+    sent.length = 0;
+    await handler({ requestId: "lit", request: { url: "https://" + core + "/x" } });
+    assert.deepStrictEqual(sent.map(([m]) => m), ["Fetch.failRequest"], "the literal host is blocked: " + p);
+    sent.length = 0;
+    await handler({ requestId: "dot", request: { url: "https://" + core.replace(".", "X") + "/x" } });
+    assert.deepStrictEqual(sent.map(([m]) => m), ["Fetch.continueRequest"], "a dot is a dot, not a wildcard: " + p);
+  }
 });
