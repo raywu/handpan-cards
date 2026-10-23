@@ -9516,6 +9516,7 @@ function run() {
     }
 
     test("the parse hint is at most four lines at 380x780 and five at 320x568 with real fonts", async () => {
+      try {
       for (const [w, h, hintBudget] of [[380, 780, 4], [320, 568, 5]]) {
         await rb.setViewport(w, h, true);
         await rb.goto(URL);
@@ -9547,6 +9548,10 @@ function run() {
             assert.strictEqual(await lines(id), 1, `${id} wraps at ${w}x${h}`);
           }
         }
+      }
+      } finally {
+        await rb.goto(URL);
+        await rb.eval(`return document.fonts.ready.then(() => true);`);
       }
     });
 
