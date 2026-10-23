@@ -4665,12 +4665,76 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     LABEL_WIDTH_RATIO: LABEL_WIDTH_RATIO
   });
 
+  // The seat each note of a ring takes when the line is typed out of pitch
+  // order: entry i is the typed position of the ring's i-th note low to high
+  // (the inverse of the typed order). Rim and inner only; null when no ring is
+  // out of order or the value carries no typed order.
+  function typedSeats(value) {
+    if (!value || !value.typed || !value.fields) return null;
+    var out = {};
+    var any = false;
+    ["rim", "inner"].forEach(function (zone) {
+      var ids = Object.keys(value.fields).filter(function (k) { return value.fields[k][3] === zone; })
+        .map(Number).sort(function (a, b) { return a - b; });
+      var typed = value.typed.filter(function (k) { return value.fields[k] && value.fields[k][3] === zone; })
+        .map(Number);
+      var seats = ids.map(function (id) { return typed.indexOf(id); });
+      var moved = seats.some(function (s, i) { return s !== i; });
+      if (moved && seats.indexOf(-1) === -1) { out[zone] = seats; any = true; }
+    });
+    return any ? out : null;
+  }
+
+  // A ring's stored seats, or null unless they are a permutation of 0..n-1 that
+  // moves something (layout.js readSeats ignores any other list when drawing).
+  function movedSeats(list, count) {
+    if (!Array.isArray(list) || list.length !== count) return null;
+    var seen = {};
+    var moved = false;
+    for (var i = 0; i < list.length; i += 1) {
+      var s = list[i];
+      if (typeof s !== "number" || s !== Math.floor(s) || s < 0 || s >= count || seen[s]) return null;
+      seen[s] = true;
+      if (s !== i) moved = true;
+    }
+    return moved ? list : null;
+  }
+
+  // The scale line of a field set in the order its seats give: the ding, the rim
+  // in seat order, a bar and the inner notes in seat order, then the bottoms low
+  // to high. With no moved rim or inner seat it is formatSeed, byte for byte.
+  function formatTyped(fields, seats) {
+    var names = function (zone) {
+      return Object.keys(fields).filter(function (k) { return fields[k][3] === zone; })
+        .map(Number).sort(function (a, b) { return a - b; });
+    };
+    var name = function (id) { return fields[id][0] + fields[id][1]; };
+    var rimIds = names("rim");
+    var innerIds = names("inner");
+    var rimSeats = seats ? movedSeats(seats.rim, rimIds.length) : null;
+    var innerSeats = seats ? movedSeats(seats.inner, innerIds.length) : null;
+    if (!rimSeats && !innerSeats) return formatSeed(fields);
+    var seated = function (ids, list) {
+      var out = [];
+      ids.forEach(function (id, i) { out[list ? list[i] : i] = name(id); });
+      return out;
+    };
+    var parts = ["(" + name(names("ding")[0]) + ")"].concat(seated(rimIds, rimSeats));
+    if (innerIds.length) parts.push("|");
+    parts = parts.concat(seated(innerIds, innerSeats));
+    names("bottom").sort(function (a, b) { return fields[a][2] - fields[b][2]; })
+      .forEach(function (id) { parts.push("[" + name(id) + "]"); });
+    return parts.join(" ");
+  }
+
   HPE.core = {
     LABEL_RULE: LABEL_RULE,
     parseSeed: parseSeed,
     parseLegacySeed: parseLegacySeed,
     inferBottoms: inferBottoms,
     formatSeed: formatSeed,
+    typedSeats: typedSeats,
+    formatTyped: formatTyped,
     innerBelowRim: innerBelowRim,
     formatLegacySeed: formatLegacySeed,
     identitySeed: identitySeed,
@@ -5499,10 +5563,24 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return null;
   }
 
+  function composeTyped(fields, top, inner) {
+    var ids = Object.keys(fields);
+    var typed = [];
+    [["rim", top], ["inner", inner]].forEach(function (pair) {
+      pair[1].forEach(function (name) {
+        for (var i = 0; i < ids.length; i++) {
+          var f = fields[ids[i]];
+          if (f[3] === pair[0] && f[0] + f[1] === name) { typed.push(ids[i]); return; }
+        }
+      });
+    });
+    return core().formatTyped(fields, core().typedSeats({ fields: fields, typed: typed }));
+  }
+
   function compose(fields) {
     fields = fields || {};
     var out = {
-      ok: false, empty: false, line: "", seed: null,
+      ok: false, empty: false, line: "", typedLine: "", seed: null,
       errors: { ding: null, top: null, inner: null, bottom: null },
       info: { bottom: null, inner: null }, warn: { bottom: null }, guessed: [],
       notes: { ding: [], top: [], inner: [], bottom: [] },
@@ -5608,6 +5686,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       if (parsed.ok) {
         out.ok = true;
         out.line = line;
+        out.typedLine = composeTyped(parsed.value.fields, top, inner);
         out.seed = parsed.value;
       } else {
         out.errors.bottom = parsed.reason;

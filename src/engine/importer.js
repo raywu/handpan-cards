@@ -802,10 +802,24 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return null;
   }
 
+  function composeTyped(fields, top, inner) {
+    var ids = Object.keys(fields);
+    var typed = [];
+    [["rim", top], ["inner", inner]].forEach(function (pair) {
+      pair[1].forEach(function (name) {
+        for (var i = 0; i < ids.length; i++) {
+          var f = fields[ids[i]];
+          if (f[3] === pair[0] && f[0] + f[1] === name) { typed.push(ids[i]); return; }
+        }
+      });
+    });
+    return core().formatTyped(fields, core().typedSeats({ fields: fields, typed: typed }));
+  }
+
   function compose(fields) {
     fields = fields || {};
     var out = {
-      ok: false, empty: false, line: "", seed: null,
+      ok: false, empty: false, line: "", typedLine: "", seed: null,
       errors: { ding: null, top: null, inner: null, bottom: null },
       info: { bottom: null, inner: null }, warn: { bottom: null }, guessed: [],
       notes: { ding: [], top: [], inner: [], bottom: [] },
@@ -911,6 +925,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       if (parsed.ok) {
         out.ok = true;
         out.line = line;
+        out.typedLine = composeTyped(parsed.value.fields, top, inner);
         out.seed = parsed.value;
       } else {
         out.errors.bottom = parsed.reason;

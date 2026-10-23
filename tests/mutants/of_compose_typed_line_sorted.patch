@@ -1,0 +1,15 @@
+# kills: OF: compose returns typedLine in the typed rim and inner order, and typedLine equals line when the fields are ascending
+# suite: node --test --test-name-pattern ^OF..compose.returns.typedLine.in.the.typed.rim.and.inner.order..and.typedLine.equals.line.when.the.fields.are.ascending$ tests/import.test.js
+# compose reports the sorted line as typedLine.
+diff --git a/src/engine/importer.js b/src/engine/importer.js
+--- a/src/engine/importer.js
++++ b/src/engine/importer.js
+@@ -888,7 +888,7 @@
+       if (parsed.ok) {
+         out.ok = true;
+         out.line = line;
+-        out.typedLine = composeTyped(parsed.value.fields, top, inner);
++        out.typedLine = line;
+         out.seed = parsed.value;
+       } else {
+         out.errors.bottom = parsed.reason;
