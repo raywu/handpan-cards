@@ -178,3 +178,109 @@ test("R4-E setDash with one number is a square dash, with none clears, and rect,
   p.rect(1, 2, 3, 4, "f");
   assert.equal(p.ops.at(-1), "f");
 });
+
+/* ---- FPP: moved bottom notes in the browser sheet ------------------------- */
+
+test("FPP: pdfcards draws each bottom note on its fixture angle, moved or not", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const E = loadEngine(["core", "fontdata", "pdf", "pdfdeck", "pdfcards"]);
+  const payload = JSON.parse(fs.readFileSync(
+    path.join(__dirname, "fixtures", "free_placement_case_v1.json"), "utf8"));
+  const moved = payload.angles.bottom;
+  assert.equal(moved.filter((a) => a !== null).length, 3);
+
+  const circles = [];
+  const realDoc = E.pdf.doc;
+  E.pdf.doc = function (w, h) {
+    const doc = realDoc.call(this, w, h);
+    const realPage = doc.page;
+    doc.page = function () {
+      const p = realPage.call(this);
+      const realCircle = p.circle;
+      p.circle = function (x, y, r, m) {
+        circles.push({ x, y, r });
+        return realCircle.call(this, x, y, r, m);
+      };
+      return p;
+    };
+    return doc;
+  };
+  try {
+    E.pdfcards.build(E.pdfdeck.fromGenerated(payload), { variant: "shop", paper: "letter" });
+  } finally {
+    E.pdf.doc = realDoc;
+  }
+
+  const g = payload.deck.geom;
+  const { x: cx, y: cy, r: R } = circles[0];
+  const ids = Object.keys(payload.deck.fields)
+    .filter((k) => payload.deck.fields[k][3] === "bottom").sort();
+  assert.equal(ids.length, moved.length);
+  ids.forEach((id, i) => {
+    const angle = payload.deck.fields[id][4];
+    if (moved[i] !== null) assert.equal(angle, moved[i], "the fixture carries the moved angle");
+    const a = (angle * Math.PI) / 180;
+    const ex = cx + R * g.bottom * Math.cos(a);
+    const ey = cy + R * g.bottom * Math.sin(a);
+    const hit = circles.some((c) => Math.abs(c.r - R * g.r_bnote) < 1e-6 &&
+      Math.abs(c.x - ex) < 0.005 && Math.abs(c.y - ey) < 0.005);
+    assert.ok(hit, `bottom note ${id} not drawn at ${angle} degrees`);
+  });
+});
+
+test("FPP: the app pan(), pdfcards and the fixture put each bottom note at the same centre to 0.5 pt", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const { boot } = require("./helpers/sandbox.js");
+  const E = loadEngine(["core", "fontdata", "pdf", "pdfdeck", "pdfcards"]);
+  const payload = JSON.parse(fs.readFileSync(
+    path.join(__dirname, "fixtures", "free_placement_case_v1.json"), "utf8"));
+  const deck = payload.deck;
+  const g = deck.geom;
+
+  const circles = [];
+  const realDoc = E.pdf.doc;
+  E.pdf.doc = function (w, h) {
+    const doc = realDoc.call(this, w, h);
+    const realPage = doc.page;
+    doc.page = function () {
+      const p = realPage.call(this);
+      const realCircle = p.circle;
+      p.circle = function (x, y, r, m) {
+        circles.push({ x, y, r });
+        return realCircle.call(this, x, y, r, m);
+      };
+      return p;
+    };
+    return doc;
+  };
+  try {
+    E.pdfcards.build(E.pdfdeck.fromGenerated(payload), { variant: "shop", paper: "letter" });
+  } finally {
+    E.pdf.doc = realDoc;
+  }
+  const { x: cx, y: cy, r: R } = circles[0];
+
+  const app = boot();
+  const svg = app.get(`pan(${JSON.stringify(deck)}, ${JSON.stringify(deck.chords[0])})`);
+  const appCircles = [...svg.matchAll(/<circle cx="(-?[\d.e-]+)" cy="(-?[\d.e-]+)" r="([\d.e-]+)"/g)]
+    .map((m) => ({ x: Number(m[1]), y: Number(m[2]), r: Number(m[3]) }))
+    .filter((c) => Math.abs(c.r - 100 * g.r_bnote) < 1e-6);
+
+  const ids = Object.keys(deck.fields).filter((k) => deck.fields[k][3] === "bottom").sort();
+  assert.equal(ids.length, 6);
+  for (const id of ids) {
+    const angle = deck.fields[id][4];
+    const a = (angle * Math.PI) / 180;
+    const ex = 100 * g.bottom * Math.cos(a);
+    const ey = -100 * g.bottom * Math.sin(a);
+    const hit = appCircles.find((c) => Math.abs(c.x - ex) < 1e-6 && Math.abs(c.y - ey) < 1e-6);
+    assert.ok(hit, `app pan() has no bottom circle for ${id} at ${angle} degrees`);
+    const px = cx + (hit.x / 100) * R;
+    const py = cy - (hit.y / 100) * R;
+    const match = circles.find((c) => Math.abs(c.r - R * g.r_bnote) < 1e-6 &&
+      Math.abs(c.x - px) < 0.5 && Math.abs(c.y - py) < 0.5);
+    assert.ok(match, `pdfcards centre for ${id} differs from the app's by more than 0.5 pt`);
+  }
+});
