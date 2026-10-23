@@ -1,0 +1,17 @@
+# kills: AO: ABOUT is the last panel stop, a full-width button alone in the last Resources row
+# suite: node --test --test-name-pattern ^AO:.ABOUT.is.the.last.panel.stop tests/app.test.js
+# MUT-B5. panelStops() lists null where #about-open was, so the filter drops
+# it. A second patch beside ao_open_not_a_stop, which removes the line: this
+# one keeps the array slot and breaks the lookup.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12810,7 +12810,7 @@ function panelStops() {
+           // Eng review amendment 1: the Resources links join the Tab trap
+           // after the print controls, in DOM order.
+           ...settingsPanel.querySelectorAll('#settings-panel a.mode[id^="res-"]'),
+-          document.getElementById("about-open")]
++          null]
+     .filter(isStop);
+ }
+ function openPanel() {

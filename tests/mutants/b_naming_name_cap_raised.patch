@@ -1,0 +1,16 @@
+# kills: the subtitle cap and the 16-character name cap are hard
+# suite: node --test --test-name-pattern ^the.subtitle.cap.and.the.16.character.name.cap.are.hard$ tests/naming.test.js
+# MUT-B3. NAME_MAX 16 becomes 99, so a 17-character chord name is no longer
+# refused.
+diff --git a/src/engine/naming.js b/src/engine/naming.js
+--- a/src/engine/naming.js
++++ b/src/engine/naming.js
+@@ -67,7 +67,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+ 
+   /* ---- caps (section 9) ------------------------------------------------- */
+ 
+-  var NAME_MAX = 16;      // main + sup
++  var NAME_MAX = 99;      // main + sup
+   // 41 (2026-09-16 ruling): the longest subtitle the engine can emit is a
+   // rooted display plus an equivalence plus a voicing-class suffix -
+   // "HALF-DIMINISHED ( = Bbm6 ) - HIGH VOICING" - measured at 101.20pt of the

@@ -1,0 +1,15 @@
+# kills: parseLegacySeed and parseSeed are distinct readers: a legacy bar-list string parses only through parseLegacySeed
+# suite: node --test --test-name-pattern ^parseLegacySeed.and.parseSeed.are.distinct.readers tests/core.test.js
+# MUT-B4. parseLegacySeed is a stub that refuses every input, so no legacy
+# string (a stored record or share link older than 2026-10) can be read.
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -518,6 +518,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   }
+ 
+   function parseLegacySeed(input, options) {
++    return badNote(String(input));
+     if (typeof input !== "string") return badNote(String(input));
+ 
+     var opts = readOptions(options);
