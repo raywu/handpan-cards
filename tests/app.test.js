@@ -4179,9 +4179,15 @@ test("the sequence source link: rel=noopener, target=_blank, the exact href, and
   assert.match(anchorOpen, /target="_blank"/);
   assert.match(anchorOpen, /href="https:\/\/www\.youtube\.com\/shorts\/YcmgdgZTpHc"/);
   assert.match(src, /#seq-source-link\{[^}]*min-height:44px/);
-  // panelStops()'s conditional inclusion of this link is exercised in the
-  // e2e "sequence mode" suite (querySelectorAll on a real DOM); this stub's
-  // elements do not implement it.
+  const app = boot();
+  app.run("settingsPanel.querySelectorAll = () => []");
+  app.run("openPanel()");
+  const stops = () => app.get("panelStops().map((e) => e.id)");
+  assert.ok(!stops().includes("seq-source-link"), "the hidden link is a Tab stop in mode A");
+  app.run('setMode("S")');
+  assert.ok(stops().includes("seq-source-link"), "the visible link is not a Tab stop in mode S");
+  app.run('setMode("A")');
+  assert.ok(!stops().includes("seq-source-link"), "the link stayed a Tab stop after leaving mode S");
 });
 
 test("card faces in mode S carry no a, button or select", () => {
