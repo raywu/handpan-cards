@@ -360,6 +360,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   var TYPED_RE = /^[A-Za-z0-9\-._~+%]+$/;
   var PALETTE_RE = /^palette-([2-6])$/;
   var PARENT_RE = /^parent-(.+)$/;
+  var ANGLES_RE = /^at-((?:0|[1-9][0-9]{0,2})?(?:,(?:0|[1-9][0-9]{0,2})?)*)$/;
 
   // By hand over the UTF-8 bytes: unreserved characters stay, a space is "+",
   // everything else is %XX in upper-case hex.
@@ -440,7 +441,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var scale = percentDecode(segs[1], false);
     if (scale === null || scale === "") return badNote(text);
     var nameSeg = segs[2];
-    var meaning = ["5", scale];
+    var meaning = [text.charAt(0), scale];
     var name = "";
     if (nameSeg.charAt(0) === "*") {
       meaning.push(FIELD_SEP);
@@ -494,6 +495,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         var delta = readDeltaLine(o.slice(6), 3);
         if (!delta) return badNote(text);
         carry.delta = delta;
+      } else if (text.charAt(0) === "6" && (m = ANGLES_RE.exec(o))) {
+        at = OPTION_ORDER.at;
+        var entries = m[1].split(",");
+        var list = entries.map(function (e) { return e === "" ? null : Number(e); });
+        if (list.every(function (a) { return a === null; })) return badNote(text);
+        carry.angles = list;
       } else {
         return badNote(text);
       }
@@ -524,6 +531,16 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     if (read) {
       if (!read.ok) return badNote(text);
       if (read.value) result.value.options.seats = read.value;
+    }
+    if (carry.angles) {
+      var bottomSeats = carry.delta && carry.delta.seats && carry.delta.seats.bottom;
+      if (bottomSeats && bottomSeats.length) return badNote(text);
+      if (carry.angles.length !== counts.bottom) return badNote(text);
+      var onStep = carry.angles.every(function (a) {
+        return a === null || (a % 5 === 0 && a < 360);
+      });
+      if (!onStep) return badNote(text);
+      result.value.options.angles = { bottom: carry.angles };
     }
     return result;
   }

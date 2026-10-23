@@ -1128,9 +1128,9 @@ test("per-ring seats ride on line 2 as rim;inner;bottom", () => {
   assert.equal(moved[moved.length - 2], `seats-${seats.rim.join(",")};;${seats.bottom.join(",")}`);
 });
 
-test("this app writes wire version 5", () => {
-  assert.equal(share.VERSION, 5);
-  assert.equal(encoded(parsed(BASE)).charAt(0), "5");
+test("this app writes wire version 6", () => {
+  assert.equal(share.VERSION, 6);
+  assert.equal(encoded(parsed(BASE)).charAt(0), "6");
   assert.equal(encoded(parsed(BASE)).charAt(0), VERSION_CHARS.charAt(share.VERSION));
 });
 
@@ -1449,13 +1449,46 @@ test("FPS: a deck with bottom angles encodes no bottom seats entry", () => {
     "bottom seats vanished without angles");
 });
 
+// A forged link of either version over the readable grammar.
+function forgeN(version, scale, name, options, check) {
+  const typed = name.startsWith("*") ? "\t" : name.split("+").join(" ");
+  const text = [version, scale, typed].concat(options).join("\n");
+  return [version, scale, name].concat(options, [check === undefined ? fnv24(text) : check]).join("/");
+}
+const PYGMY_SEG = "uC3_uDb3_uEb3_(F3)_G3_Ab3_uBb3_C4_uDb4_Eb4_F4_G4_Ab4_C5_Eb5_-_F5_G5_uAb5";
+
+test("FPS: at- on a v5 link is BAD_NOTE, on a v6 link it is read", () => {
+  const at = "at-0,5,10,15,20,25";
+  const v6 = forgeN("6", PYGMY_SEG, "*x", ["between", at]);
+  const r = share.decode(v6);
+  assert.equal(r.ok, true, r.reason);
+  assert.deepStrictEqual(host(r.value.options.angles), { bottom: [0, 5, 10, 15, 20, 25] });
+  const v5 = forgeN("5", PYGMY_SEG, "*x", ["between", at]);
+  const bad = reject(v5);
+  assert.equal(bad.code, "BAD_NOTE");
+  const v5plain = forgeN("5", PYGMY_SEG, "*x", ["between"]);
+  assert.equal(share.decode(v5plain).ok, true, "a v5 link without at- still opens");
+});
+
+test("FPS: a v6 check is computed over the byte 6", () => {
+  const options = ["between", "at-,125,,20,,355"];
+  const good = forgeN("6", PYGMY_SEG, "*x", options);
+  assert.equal(share.decode(good).ok, true);
+  const overFive = [good.split("/").slice(0, -1).join("/"),
+    fnv24(["5", PYGMY_SEG, "\t"].concat(options).join("\n"))].join("/");
+  assert.notEqual(overFive, good);
+  reject(overFive);
+  const link = encoded(withAngles(pygmyPlain(), [null, 125, null, 20, null, 355]));
+  assert.equal(link, good.replace("/*x/", "/" + link.split("/")[2] + "/").replace(/[0-9a-f]{6}$/, link.slice(-6)));
+  const meaning = ["6", PYGMY_SEG, "\t"].concat(options).join("\n");
+  assert.equal(link.slice(-6), fnv24(meaning));
+});
+
 test("SV: the five built-in decks' v5 links are pinned", () => {
   for (const [id, scale, options, label, auto, named] of V5_BUILTINS) {
     const plain = seedNew(scale, options);
-    assert.equal(encoded(plain), auto, `${id} auto link`);
     assert.deepStrictEqual(decoded(auto), plain, `${id} auto link decodes`);
     const typed = seedNew(scale, Object.assign({ name: label }, options));
-    assert.equal(encoded(typed), named, `${id} named link`);
     assert.deepStrictEqual(decoded(named), typed, `${id} named link decodes`);
   }
 });
@@ -1563,14 +1596,16 @@ test("SV: the auto label is ignored on receipt and lies outside the checksum", (
   }
 });
 
-test("SV: a 5 not followed by / is BAD_NOTE, and 6 or above is NEEDS_NEWER_APP", () => {
+test("SV: a 5 or 6 not followed by / is BAD_NOTE, and 7 or above is NEEDS_NEWER_APP", () => {
   const rest = V5_BUILTINS[0][4].slice(2);
-  for (const second of ["A", "x", "-", "5", "0", "%", "\\"]) {
-    const r = reject("5" + second + rest);
-    assert.equal(r.code, "BAD_NOTE");
+  for (const lead of ["5", "6"]) {
+    for (const second of ["A", "x", "-", "5", "0", "%", "\\"]) {
+      const r = reject(lead + second + rest);
+      assert.equal(r.code, "BAD_NOTE");
+    }
+    reject(lead + rest);
   }
-  reject("5" + rest);
-  for (const version of ["6", "7", "9", "A", "z", "_"]) {
+  for (const version of ["7", "8", "9", "A", "z", "_"]) {
     const r = share.decode(version + "/" + rest);
     assert.equal(r.ok, false);
     assert.equal(r.code, "NEEDS_NEWER_APP", version);
@@ -1634,7 +1669,7 @@ test("SV: a v5 link whose scale segment is typed out of pitch order decodes to t
   assert.equal(shuffled.ok, true);
   assert.deepEqual(host(shuffled.value.fields), host(sorted.value.fields));
   assert.equal(share.encode(shuffled.value).value, share.encode(sorted.value).value);
-  assert.match(share.encode(shuffled.value).value, /^5\/\(D3\)_A3_C4_D4_E4_F4_G4_A4_C5\//);
+  assert.match(share.encode(shuffled.value).value, /^6\/\(D3\)_A3_C4_D4_E4_F4_G4_A4_C5\//);
 });
 
 test("SV: deckName never throws, and an out-of-range parent makes encode return BAD_NOTE", () => {
@@ -1658,7 +1693,7 @@ test("SV: deckName never throws, and an out-of-range parent makes encode return 
   }
 });
 
-test("SV: every v5 link survives new URL(...).hash byte for byte", () => {
+test("SV: every v5 and v6 link survives new URL(...).hash byte for byte", () => {
   const links = [];
   for (const [, , , , auto, named] of V5_BUILTINS) links.push(auto, named);
   const p9 = withSeats(seedNew(HIJAZ_SCALE, {
@@ -1666,7 +1701,7 @@ test("SV: every v5 link survives new URL(...).hash byte for byte", () => {
     name: "My Hijaz" }), { rim: [1, 0, 2, 3, 4, 5, 6, 7] });
   links.push(encoded(p9));
   assert.equal(links[links.length - 1],
-    "5/(Cs3)_Gs3_B3_Cs4_D4_F4_Fs4_Gs4_B4/My+Hijaz/palette-3/parent-phrygian-dominant/mirror-top/between/seats-1,0,2,3,4,5,6,7;;/e3049a");
+    "6/(Cs3)_Gs3_B3_Cs4_D4_F4_Fs4_Gs4_B4/My+Hijaz/palette-3/parent-phrygian-dominant/mirror-top/between/seats-1,0,2,3,4,5,6,7;;/bfe3d7");
   assert.equal(links.length, 11);
   for (const link of links) {
     assert.equal(new URL("https://example.test/#s=" + link).hash, "#s=" + link);
