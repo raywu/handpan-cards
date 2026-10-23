@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11431,7 +11431,7 @@ const wantedDeck = deckId;
- deckId = deck().id; storedDeck = deckId; setOrder(); buildChips(); setMode(mode);
+@@ -14234,7 +14234,7 @@ const wantedDeck = deckId;
+ deckId = deck().id; storedDeck = deckId; setOrder(); buildChips(); applyLang(); setMode(mode);
  // setMode() above saved the routed deck, as a chip tap does: a link that opens a
  // deck once keeps it, so the visitor does not land on the old one tomorrow.
 -if (routedDeck && routedDeck !== bootStored) track("deck_route", { deck_id: routedDeck });

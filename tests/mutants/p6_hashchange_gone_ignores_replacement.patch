@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13510,7 +13510,7 @@ function routeToDeck(routed) {
+@@ -14199,7 +14199,7 @@ function routeToDeck(routed) {
    deckId = shown;
    // The same "gone" test the boot makes: a routed seed that is hidden shows the
    // fallback and says so; one that shows its replacement does not.
 -  if (routed !== shown && !(replacements()[routed] && replacements()[routed].id === shown) && hidden.includes(routed))
 +  if (routed !== shown && hidden.includes(routed))
-     say("That scale is gone. Showing " + deck().name + ".", "warn");
+     say(t("boot.gone", { name: deck().name }), "warn");
    track("deck_route", { deck_id: routed });
    return shown;

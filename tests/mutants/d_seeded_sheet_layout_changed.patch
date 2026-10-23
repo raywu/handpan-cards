@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10749,7 +10749,7 @@ function layoutNoticeText() {
+@@ -11008,7 +11008,7 @@ function layoutNoticeText() {
    else {
      const custom = layoutBase.anchor !== "one" || layoutBase.mirror || (layoutBase.mb && hadBottom) ||
        layoutBase.seats !== "" || layoutBase.angles !== "";
--    text = editingId && !isBuiltIn(editingId) && custom ? "Layout changed from the default." : "";
-+    text = editingId && custom ? "Layout changed from the default." : "";
+-    text = editingId && !isBuiltIn(editingId) && custom ? t("sheet.layout_changed") : "";
++    text = editingId && custom ? t("sheet.layout_changed") : "";
    }
    if (editingId && (storedSeats || storedAngles) && ringCount)
      for (const ring of LAYOUT_RINGS) {

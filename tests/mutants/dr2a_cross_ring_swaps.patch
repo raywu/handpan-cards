@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9253,7 +9253,7 @@ function activateNote(ref, how) {
+@@ -11893,7 +11893,7 @@ function activateNote(ref, how) {
      layoutStatus(pickAnnouncement(n, how));
      return;
    }
 -  if (n.ring !== p.ring) {
 +  if (false) {
-     layoutStatus(`Not moved. ${p.name} moves only within the ${p.ring}.`, true);
+     layoutStatus(t("sheet.not_moved", { name: p.name, ring: ringWord(p.ring) }), true);
      focusRef(pickRef);
      return;

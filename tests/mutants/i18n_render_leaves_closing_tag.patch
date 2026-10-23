@@ -1,0 +1,15 @@
+# kills: test_sync_i18n_writes_no_closing_tag_sequence
+# suite: python3 -m unittest -k test_sync_i18n_writes_no_closing_tag_sequence tests.test_render_agreement
+# render no longer escapes the closing-tag sequence.
+diff --git a/tools/sync_i18n.py b/tools/sync_i18n.py
+--- a/tools/sync_i18n.py
++++ b/tools/sync_i18n.py
+@@ -45,7 +45,7 @@ BEGIN = "<!-- i18n begin - synced from data/i18n/*.json by tools/sync_i18n.py --
+ 
+ 
+ def render(tables):
+-    return "const I18N = " + json.dumps(tables, ensure_ascii=False).replace("</", "<\\/") + ";"
++    return "const I18N = " + json.dumps(tables, ensure_ascii=False) + ";"
+ 
+ 
+ def main(argv):

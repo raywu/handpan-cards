@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11706,7 +11706,7 @@
+@@ -11947,7 +11947,7 @@ function putDownPick() {
    const moved = pickMoved;
    const slid = pickSlid;
    setPick(null);
--  layoutStatus(moved ? `${p.name} put down. The ${slid ? "moves" : "swaps"} you made are kept.` : "Cancelled. Nothing moved.");
-+  layoutStatus("Cancelled. Nothing moved.");
+-  layoutStatus(moved ? t(slid ? "sheet.put_down_kept_moves" : "sheet.put_down_kept", { name: p.name }) : t("sheet.cancelled"));
++  layoutStatus(t("sheet.cancelled"));
    if (fromSeatButton) { setRover(ref); focusRef(ref); }
  }
  function resetLayout() {

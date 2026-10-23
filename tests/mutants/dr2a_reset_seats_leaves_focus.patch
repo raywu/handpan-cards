@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10919,7 +10919,6 @@
+@@ -11965,7 +11965,6 @@ function resetLayout() {
    paintLayout();
    resyncSheet(true);
-   layoutStatus("Layout reset.");
+   layoutStatus(t("sheet.layout_reset"));
 -  tabLayout.focus();
  }
  

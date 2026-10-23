@@ -4,12 +4,12 @@
 diff --git a/src/engine/importer.js b/src/engine/importer.js
 --- a/src/engine/importer.js
 +++ b/src/engine/importer.js
-@@ -683,7 +683,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -697,7 +697,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
          var l = upper[1].toUpperCase();
-         return { notes: [], error: l + "B is not a note: write " + l + "-flat as " + l + "b." };
+         return { notes: [], error: l + "B is not a note: write " + l + "-flat as " + l + "b.", errorCode: composeCode("DOUBLE_B", { L: l }) };
        }
 -      var m = COMPOSE_NOTE.exec(t.replace(/♯/g, "#").replace(/♭/g, "b").replace(/^./, function (c) { return c.toUpperCase(); }));
 +      var m = COMPOSE_NOTE.exec(t.replace(/♯/g, "#").replace(/♭/g, "b").replace(/^./, function (c) { return c; }));
-       if (!m) return { notes: [], error: "\"" + t + "\" is not a note: try C, F# or Bb." };
+       if (!m) return { notes: [], error: "\"" + t + "\" is not a note: try C, F# or Bb.", errorCode: composeCode("NOT_A_NOTE", { T: t }) };
        var n = { letter: m[1], acc: m[2] || "", octave: m[3] === undefined ? null : Number(m[3]) };
        if (n.octave !== null && !composeFits(composeMidi(n, n.octave))) {

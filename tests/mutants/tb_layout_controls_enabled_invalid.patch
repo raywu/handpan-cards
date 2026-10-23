@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10778,7 +10778,7 @@ function paintLayout() {
+@@ -11037,7 +11037,7 @@ function paintLayout() {
    anglePrev.disabled = angleNext.disabled = !boxOk || !slidable;
    resetBtn.disabled = !boxOk || !(layoutSeats || layoutAngles || mirror || bottomMirror() || anchor !== "one");
    fineBox.hidden = !fineOpen;
 -  fineBtn.disabled = !boxOk;
 +  fineBtn.disabled = false;
    fineBtn.setAttribute("aria-expanded", String(fineOpen));
-   fineBtn.textContent = fineOpen ? "HIDE FINER CONTROLS" : "HARD TO TAP? SHOW FINER CONTROLS";
+   fineBtn.textContent = t(fineOpen ? "sheet.fine_hide" : "sheet.fine_show");
    layoutZone.classList.toggle("open", drawerOpen);
