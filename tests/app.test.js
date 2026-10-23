@@ -10879,10 +10879,13 @@ describe("DI: dual input", () => {
     assert.match(h, /id="scale-inner-label"[^>]*>TOP INNER \(CYCLOPS\/MUTANT\) NOTE \(OPTIONAL\)</);
     assert.match(h, /id="scale-bottom-label"[^>]*>BOTTOM NOTES \(OPTIONAL\)</);
     const sentence = "Octaves are optional: without one, we assume the notes run low to high.";
-    const labels = [...h.matchAll(/<(?:label|span)[^>]*class="sheetlabel"[^>]*>([^<]*)</g)].map((m) => m[1]);
-    assert.ok(labels.length >= 6, `only ${labels.length} sheet labels found`);
+    const labels = [...h.matchAll(/<(?:label|span|p\b)[^>]*class="sheetlabel"[^>]*>([^<]*)</g)].map((m) => m[1]);
+    assert.ok(labels.length >= 10, `only ${labels.length} sheet labels found`);
+    const noteBlock = h.slice(h.indexOf("lineNote.textContent = onFields"), h.indexOf("if (onFields && lineStale) genBtn.disabled"));
+    const captions = [...noteBlock.matchAll(/"([^"\n]+)"/g)].map((m) => m[1]).filter((c) => /^[A-Z]/.test(c));
+    assert.strictEqual(captions.length, 4, "the two line-note and two fields-note captions");
     const app = openAdd();
-    const texts = labels.concat(app.get("PARSE_HINT").replace(sentence, ""));
+    const texts = labels.concat(captions, app.get("PARSE_HINT").replace(sentence, ""));
     for (const t of texts) assert.doesNotMatch(t, /low to high/i, t);
     assert.ok(app.get("PARSE_HINT").includes(sentence));
     assert.strictEqual(el(app, "scale-fields-note").textContent.replace(sentence, ""), "");
