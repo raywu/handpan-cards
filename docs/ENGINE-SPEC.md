@@ -163,9 +163,9 @@ the ding gets the ding sentence"). The default `reason` in the code table
 above is the legacy reader's sentence only (`outOfOrder`, called by
 `core.parseLegacySeed`), kept because that reader is frozen ("the legacy reader
 keeps the default NOTE_OUT_OF_ORDER sentence"). The `below` alternate of
-`NOTE_OUT_OF_ORDER` is gone, with the one place that emitted it, and `afterBar`
-never had a sentence in `REASONS` (no test; true by `src/engine/core.js`
-`REASONS`).
+`NOTE_OUT_OF_ORDER` is gone, with the one place that emitted it, and the
+`afterBar` alternate went when an inner note could sit below the rim (092f0d7);
+`REASONS` holds neither (no test; true by `src/engine/core.js` `REASONS`).
 
 - DECIDED(plan [eng-review 7A], amended swarm-2026-09-10 and 2026-10, the caps
   code retired) The enum is exactly
@@ -202,8 +202,9 @@ never had a sentence in `REASONS` (no test; true by `src/engine/core.js`
   sentence; since the order-free reader it is the LEGACY reader's sentence
   only, "a bottom note below the octave inferred for the note before it says
   so", which reads the seed through `parseLegacySeed`, and `parseSeed` now
-  answers the same seed with the `ding` alternate, "IB: an inner note below the
-  top notes parses, keeps its zone and numbers after the rim")
+  answers the same seed with the `ding` alternate, ("IB: an inner note at or below the ding gets the ding sentence" covers an
+  explicit inner note under the ding; the seed itself: no test; true by
+  `src/engine/core.js` `scaleInfer`))
 - DECIDED(swarm-2026-09-10 w39) BOTH positions are named whenever the fault is
   a relation between two notes, and either may carry the inference annotation.
   `NOTE_REPEATED` substitutes `<B>` for the earlier of the two and `<A>` for
@@ -222,15 +223,17 @@ never had a sentence in `REASONS` (no test; true by `src/engine/core.js`
   equal case reads plainly, and offers only the fix the user can actually make.
   It covers every ding case, not just the equal one, because the advice half is
   wrong for `(F3) E3 C4` too.
-- DECIDED(swarm-2026-09-10, amended order-free 2026-10) `NOTE_OUT_OF_ORDER`
-  and `NOTE_REPEATED` are reachable from `parseSeed` only from a token that
-  carries an EXPLICIT octave, because inference places an unoctaved top note
-  strictly above the note typed before it, so it never lands at or below the
-  ding or on a pitch already placed there ("IB: a rim pitch typed twice is
-  NOTE_REPEATED naming the later one, in any order"). `<A>` therefore echoes the
-  token the user typed; the surprising half of the sentence is `<B>`. In the
-  legacy reader the same two codes also fire for a break in the typed order
-  (`outOfOrder`).
+- DECIDED(swarm-2026-09-10, amended order-free 2026-10) In `parseSeed`,
+  `NOTE_OUT_OF_ORDER` and `NOTE_REPEATED` need a note with an explicit octave
+  somewhere in the line, but the note named as `<A>` may be one placed by
+  inference. An unoctaved note after the ding sits just above the note typed
+  before it, so it lands at or below the ding only when that note is a lower
+  bottom typed after the ding (`(D3) [A2] C E A` is `NOTE_OUT_OF_ORDER` `ding`
+  naming C3). It lands on a pitch already placed only when an earlier-typed note
+  is higher than the one just before it (`(D3) C4 A3 C` is `NOTE_REPEATED`
+  naming C4) (no test; true by `src/engine/core.js` `scaleInfer`). In the legacy
+  reader both codes fire only from an explicit-octave token, where `<A>` echoes
+  the token typed, and also for a break in the typed order (`outOfOrder`).
 - DECIDED(swarm-2026-09-08) The `NO_FIFTH` reason substitutes twice: `<X>` is
   the ding as `formatSeed` prints it (name plus octave, e.g. `C3`), and
   `<fifth of X>` is the pitch-class name 7 semitones above the ding, without an
