@@ -1,0 +1,15 @@
+# kills: OF: PD a rim reorder typed in the fields on the Scale tab shows its sentence when the Layout tab opens, once
+# suite: node --test --test-name-pattern OF:.PD.a.rim.reorder tests/app.test.js
+# The derive sentence typed on the Scale tab is never shown when the Layout tab opens.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11599,7 +11599,7 @@ function setTab(tab) {
+   setLip(false, { instant: true });
+   const pending = pendingDerive;
+   pendingDerive = "";
+-  if (drawerOpen && boxOk && pending) layoutStatus(pending);
++  if (false && pending) layoutStatus(pending);
+   else if (drawerOpen && boxOk && !hasTwoNoteRing() && !(ringCount && ringCount.bottom >= 1)) layoutStatus(t("sheet.no_two_ring"));
+ }
+ /** Leaving the sheet or opening a fresh session: no focus, no status. */
