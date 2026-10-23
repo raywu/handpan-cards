@@ -6082,6 +6082,7 @@ test("W1 line 118: #scale-label-2 is shown with the bottom-note line, and the fi
   assert.match(html, /<textarea\b[^>]*\baria-describedby="scale-label-2"/);
   const m = /<span\b([^>]*)\bid="scale-label-2"([^>]*)>([^<]*)<\/span>/.exec(html);
   assert.ok(m, "#scale-label-2 is gone");
+  assert.doesNotMatch(m[1] + m[2], /\bhidden\b/, "#scale-label-2 is hidden");
   assert.strictEqual(m[3], "[NOTE] = A BOTTOM NOTE, WRITTEN WHERE ITS PITCH FALLS");
   const app = boot();
   openSheet(app);
