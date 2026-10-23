@@ -935,6 +935,23 @@ test("D5-5: seats change the share string but never the deckId", () => {
   }
 });
 
+test("FPS: angles change the share string but never the deckId", () => {
+  const seed = parsed(PYGMY);
+  const id = core.deckId(seed);
+  const seen = new Set([encoded(seed)]);
+  const bottoms = ringCounts(seed).bottom;
+  for (const first of [0, 5, 90, 355]) {
+    const list = Array(bottoms).fill(null);
+    list[0] = first;
+    const moved = withAngles(seed, list);
+    assert.equal(core.deckId(moved), id, "the deck id of the moved seed moved");
+    const str = encoded(moved);
+    assert.equal(seen.has(str), false, "two arrangements share one string");
+    seen.add(str);
+    assert.equal(core.deckId(decoded(str)), id, "the decoded deck id moved");
+  }
+});
+
 test("seats compose with every other option on the wire", () => {
   const seats = rotatedSeats(parsed(BASE), 1);
   for (const options of OPTION_CASES) {
@@ -1867,6 +1884,29 @@ test("SV: the 120-note worst case fits the cap", () => {
   assert.ok(r.value.includes("/" + "%2F".repeat(40) + "/"), "the worst-case name is 40 escapes");
   const seg = optionSegs(r.value).find(s => s.startsWith("seats-"));
   assert.deepEqual(seg.slice(6).split(";").map(s => s.split(",").length), [60, 30, 29]);
+});
+
+test("FPS: a 120-note pan with every bottom note moved stays under the cap", () => {
+  const letters = ["C", "D", "E", "F", "G", "A", "B"];
+  const fields = {};
+  const zones = ["ding"].concat(Array(60).fill("rim"), Array(30).fill("inner"), Array(29).fill("bottom"));
+  zones.forEach((zone, i) => {
+    const letter = letters[i % 7];
+    const octave = 1 + Math.floor(i / 7);
+    fields[String(i)] = [letter, octave, 12 * (octave + 1) + (i % 7) * 2, zone, null, letter];
+  });
+  const ring = (from, count) => Array.from({ length: count }, (_, i) => from + count - 1 - i);
+  const seats = { rim: ring(1, 60), inner: ring(61, 30), bottom: ring(91, 29) };
+  const r = share.encode({
+    fields,
+    options: { palette: 5, parent: 10, mirror: true, mirrorBottom: false, anchor: "between",
+               name: "/".repeat(40), seats, angles: { bottom: Array(29).fill(355) } },
+  });
+  assert.equal(r.ok, true, r.reason);
+  assert.ok(r.value.length <= share.CAPS.payload, `${r.value.length} chars`);
+  const segs = optionSegs(r.value);
+  assert.equal(segs.find(s => s.startsWith("seats-")).split(";")[2], "", "bottom seats written beside at-");
+  assert.deepEqual(segs[segs.length - 1].slice(3).split(","), Array(29).fill("355"));
 });
 
 test("IB: a dip round-trips through share encode/decode and its scale segment puts - where the rim ends", () => {
