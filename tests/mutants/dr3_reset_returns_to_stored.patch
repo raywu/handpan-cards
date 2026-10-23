@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9369,7 +9369,7 @@ function putDownPick() {
+@@ -11694,7 +11694,7 @@ function putDownPick() {
  }
  function resetLayout() {
    cancelGesture();
 -  layoutSeats = null;
 +  layoutSeats = storedSeats ? JSON.parse(JSON.stringify(storedSeats)) : null;
+   layoutAngles = null;
+   foldedBottom = false;
    mirror = false;
-   bottomHeld = false;
-   anchor = "one";

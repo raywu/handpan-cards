@@ -1,0 +1,15 @@
+# kills: FPS: changing any angle changes the check
+# suite: node --test --test-name-pattern ^FPS..changing.any.angle.changes.the.check$ tests/share.test.js
+# The at- option is written but left out of the check's meaning.
+diff --git a/src/engine/share.js b/src/engine/share.js
+--- a/src/engine/share.js
++++ b/src/engine/share.js
+@@ -346,7 +346,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     var angles = anglesField(opts.angles);
+     var seats = seatsField(opts.seats, angles !== "");
+     if (seats !== "") option("seats-" + seats);
+-    if (angles !== "") option("at-" + angles);
++    if (angles !== "") segs.push("at-" + angles);
+     segs.push(checkHex(meaning.join(SEP)));
+     var out = segs.join("/");
+     if (out.length > CAPS.payload) return badNote(out);

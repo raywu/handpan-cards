@@ -4,8 +4,8 @@
 diff --git a/src/engine/share.js b/src/engine/share.js
 --- a/src/engine/share.js
 +++ b/src/engine/share.js
-@@ -206,7 +206,7 @@
-       var list = seats[RINGS[r]];
+@@ -222,7 +222,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       var list = skipBottom && RINGS[r] === "bottom" ? null : seats[RINGS[r]];
        if (list && list.length) {
          any = true;
 -        parts.push(list.join(","));

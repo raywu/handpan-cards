@@ -1,7 +1,7 @@
 # kills: test_credit_strings_are_pinned
 # suite: python3 -m unittest -k test_credit_strings_are_pinned tests.test_print
 # Damages the hand-written Hijaz credit string (Q2) - a one-word swap that
-# a byte-diff of the six committed PDFs would not necessarily catch if a
+# a byte-diff of the six built PDFs would not necessarily catch if a
 # future refactor re-derived credits instead of carrying them verbatim.
 # Targets data/decks.json's print overlay (post-W1a), not tools/decks.py or
 # the index.html DECKS line.

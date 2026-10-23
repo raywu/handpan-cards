@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9294,7 +9294,7 @@ function stepSeat(dir) {
+@@ -11677,7 +11677,7 @@ function stepSeat(dir) {
    const p = pickedNote();
    if (!p) return;
    const ring = ringNotes(p.ring);
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +  const target = ring.find((n) => n.seat === Math.max(0, Math.min(p.k - 1, p.seat + dir)));
    pickMoved = true;
    setRover(pickRef);
-   swapSeats(p.ring, p.i, target.i);
+   if (swapSeats(p.ring, p.i, target.i) && p.ring === "bottom" && layoutAngles && p.i !== target.i) pickSlid = true;

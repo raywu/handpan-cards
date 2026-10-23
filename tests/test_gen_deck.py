@@ -17,7 +17,7 @@ Two halves:
 
 No layout constant is imported from ``hifi`` (CONTRACT rule 2); the PDF
 assertions are made against the built artifact, in a temp directory - never the
-repo root, whose three committed PDFs this file must not touch.
+repo root, which must hold no PDF before or after this file runs.
 """
 import hashlib
 import json
@@ -85,15 +85,6 @@ def generate(seed, *args):
         raise AssertionError("gen_deck.js rejected %r: %s"
                              % (seed, proc.stderr.strip()))
     return json.loads(proc.stdout)
-
-
-def repo_pdf_hashes():
-    """{filename: sha256} for the three committed PDFs in the repo root."""
-    out = {}
-    for name in sorted(paths.PDFS[k] for k in paths.COMMITTED):
-        with open(os.path.join(paths.ROOT, name), "rb") as fh:
-            out[name] = hashlib.sha256(fh.read()).hexdigest()
-    return out
 
 
 def builtin_deck_keys():
@@ -673,9 +664,8 @@ class GeneratedDeckPdfTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.tmp = tempfile.mkdtemp(prefix="handpan-gen-")
-        # Snapshot BEFORE anything is built: the oracle for the staleness test
-        # below is the sha256 of the three committed PDFs as they were on entry.
-        cls.pdfs_before = repo_pdf_hashes()
+        # Snapshot BEFORE anything is built: the repo root holds no PDF.
+        cls.pdfs_before = paths.root_pdfs(root=paths.ROOT)
         cls.deck = decks.from_generated(generate(SEED_TOP_ONLY))
         cls.bottom = decks.from_generated(generate(SEED_WITH_BOTTOM))
         cls.full = os.path.join(cls.tmp, "generated_full.pdf")
@@ -744,22 +734,29 @@ class GeneratedDeckPdfTest(unittest.TestCase):
         self.assertIn("NO3RDSONTHISPAN", squeezed,
                       "the print shop's file must carry the warning too")
 
-    def test_the_repo_pdfs_were_not_rebuilt(self):
-        """reportlab stamps a creation date - a rebuild churns the binaries.
+    def test_the_builds_leave_no_pdf_in_the_repo_root(self):
+        """Generated PDFs belong in a temp directory, never the repo root.
 
-        The oracle is a sha256 snapshot taken in setUpClass BEFORE the three
-        builds above ran, re-read here afterwards.  The previous version of
-        this test read no mtime and no hash: it asserted the committed PDFs
-        exist and that a `/var/folders/...` temp prefix is not a substring of a
-        repo path, neither of which can be false, so pointing hifi.build at the
-        repo root would have left it green.
+        The oracle is `paths.root_pdfs()`, read in setUpClass BEFORE the three
+        builds above ran and again here afterwards.
         """
-        self.assertEqual(len(self.pdfs_before), 3,
-                         "three committed PDFs are the thing being guarded")
         self.assertEqual(
-            repo_pdf_hashes(), self.pdfs_before,
-            "building a generated deck rewrote a committed PDF in the repo "
-            "root; generated PDFs belong in a temp directory")
+            self.pdfs_before, [],
+            "the repo root already holds a PDF before any build ran (a stray "
+            "untracked file, not a build regression): %r" % (self.pdfs_before,))
+        self.assertEqual(
+            paths.root_pdfs(root=paths.ROOT), self.pdfs_before,
+            "building a generated deck wrote a PDF into the repo root; "
+            "generated PDFs belong in a temp directory")
+
+
+class RootPdfsTest(unittest.TestCase):
+
+    def test_root_pdfs_lists_a_pdf_in_the_directory_it_is_given(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            open(os.path.join(tmp, "x.pdf"), "wb").close()
+            open(os.path.join(tmp, "y.txt"), "wb").close()
+            self.assertEqual(paths.root_pdfs(root=tmp), ["x.pdf"])
 
 
 if __name__ == "__main__":

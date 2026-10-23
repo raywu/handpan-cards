@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9845,7 +9845,7 @@
- // The mirror is the choice the pan preview exists to make visible, so each
- // button re-solves the preview through the same parse path a keystroke uses.
+@@ -12609,7 +12609,7 @@
+ const toggleFits = () => !layoutAngles || (!!lastSeed && solvePreviewLayout(lastSeed) !== null);
+ const TOGGLE_REFUSED = "Not changed: it would put a note you moved too close to another. Reset layout first.";
  mirrorTop.onclick = () => {
--  mirror = !mirror; paintLayout(); resyncSheet(true);
-+  paintLayout(); resyncSheet(true);
+-  mirror = !mirror;
++  mirror = mirror;
+   if (!toggleFits()) { mirror = !mirror; layoutStatus(TOGGLE_REFUSED); return; }
+   paintLayout(); resyncSheet(true);
    layoutStatus(mirror ? "Top mirror on." : "Top mirror off.");
- };
- mirrorBot.onclick = () => {

@@ -302,10 +302,6 @@ a.mode{text-decoration:none}
   background:#211d16; border:1px solid #433b2c; border-radius:8px; color:#eae6df}
 #share-url[hidden]{display:none}
 .modebar.duo .mode{min-width:0; padding-inline:6px; line-height:1.25}
-/* The three site links split their row equally; the padding trim lets HANDPANER
-   shrink to a third without ever going under its own content (no min-width:0).
-   The landscape panel grid (max-height:520px) below resets it to .mode's own. */
-.modebar.trio .mode{padding-inline:4px}
 #settings-trigger[aria-expanded="true"]{background:#f1ece1; color:#272219; border-color:#f1ece1}
 .sr-only{position:absolute; width:1px; height:1px; margin:-1px; padding:0; border:0;
   overflow:hidden; white-space:nowrap; clip:rect(0 0 0 0)}
@@ -329,7 +325,6 @@ a.mode{text-decoration:none}
   #settings-panel{display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));
     align-content:start; align-items:start}
   #settings-panel > .panel-group{width:auto}
-  .modebar.trio .mode{padding-inline:11px}
 }
 #settings-trigger[aria-expanded="true"] .glyph{background:transparent}
 #settings-trigger[aria-expanded="true"] .glyph::before{top:0; transform:rotate(45deg)}
@@ -355,7 +350,6 @@ a.mode{text-decoration:none}
    shows without JS ever clearing `hidden`. */
 @media (min-width:1024px) and (min-height:700px){
   #settings-trigger, #settings-scrim{display:none}
-  .modebar.trio .mode{flex-basis:40%}
   /* Reviewer finding F1: the 640px-only header rule above (line 163-165)
      lets header - and the deck-chip strip inside it - run out to
      min(92vw,900px), which at >=1024px overruns the right edge and sits
@@ -1193,6 +1187,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
    stays #scale-generate. */
 #scale-delete-row{align-items:center}
 #scale-fine:not([hidden]){display:flex; flex-direction:column; gap:var(--sp-2)}
+#scale-fine .ctlrow:has(#scale-angle-prev[hidden]){display:none}
 #scale-layout-reset{width:100%}
 /* Amber to match #scale-delete[data-armed] and #scale-msg.warn - one colour
    for "about to do something you cannot undo". :empty leaves the flow so an
@@ -1541,6 +1536,12 @@ html.about-open{overflow:hidden}
               <button class="mode" type="button" id="scale-seat-next" disabled>NEXT SEAT</button>
             </div>
           </div>
+          <div class="ctlrow">
+            <div class="mirror">
+              <button class="mode" type="button" id="scale-angle-prev" aria-label="Move 5 degrees anticlockwise" hidden disabled>ANTICLOCKWISE</button>
+              <button class="mode" type="button" id="scale-angle-next" aria-label="Move 5 degrees clockwise" hidden disabled>CLOCKWISE</button>
+            </div>
+          </div>
         </div>
         <div class="ctlrow">
           <button class="mode" type="button" id="scale-layout-reset" disabled>RESET LAYOUT</button>
@@ -1700,18 +1701,15 @@ html.about-open{overflow:hidden}
     <!-- Plan risk "no scroll budget", fallback 1: .modebar-style rows (same
          pattern as the Practice buttons) rather than stacked 44px rows -
          stacked overflowed the 320x568 fit test by 18px. Row one holds
-         the three sites (class trio: equal widths above the landscape grid, two
-         equal on line one in the sidebar), row two (class duo: one line, labels wrap inside their
-         boxes) the two Amy Naylor videos, row three HANDPAN 101 alone (2026-10-08,
+         the two sites (class duo: one line, labels wrap inside their boxes),
+         row two (class duo as well) the two Amy Naylor videos, row three HANDPAN 101 alone (2026-10-08,
          full width, so no existing control moves down), row four the ABOUT button
          (an in-app view, not an outbound link: no href, no res- id). -->
-    <div class="modebar trio">
+    <div class="modebar duo">
       <a class="mode" id="res-handpaner" href="https://handpaner.com/"
          target="_blank" rel="noopener">HANDPANER</a>
       <a class="mode" id="res-dingandtones" href="https://www.dingandtones.com/"
          target="_blank" rel="noopener">DING &amp; TONES</a>
-      <a class="mode" id="res-trainingcards" href="https://svenkirchhofer.de/handpan-training-cards/"
-         target="_blank" rel="noopener">HTC</a>
     </div>
     <div class="modebar duo">
       <a class="mode" id="res-amy-progressions" href="https://youtu.be/-BD13QhFJ-M"
@@ -5851,7 +5849,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     // chord only when it has no instance above the root AND its highest lower
     // instance is on the TOP shell. A tone whose highest lower instance is on
     // the bottom shell takes that instance and forces nothing. Amara and Hijaz have
-    // no bottom shell, so the commercial reference is unchanged by this.
+    // no bottom shell, so their forced cards are unchanged by this.
     var forced = false;
     for (var t = 0; t < tones.length; t += 1) {
       if (!tones[t].up.length && tones[t].down[0].top) forced = true;
@@ -6384,11 +6382,156 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return out;
   }
 
+  /* `options.angles` is the bottom ring's free-placement option: an object
+   * whose only key is `bottom`, a list with one entry per bottom note
+   * (ascending by id), each an integer multiple of ANGLE_STEP in [0, 360) or
+   * null for the solved angle. Shape only is checked here; the floor needs
+   * the geometry and the effective placement, so `solve` checks it through
+   * bottomClash. A missing, null or all-null option reads as absent. */
+  var ANGLE_STEP = 5;
+
+  function readAngles(value, counts) {
+    if (value === undefined || value === null) return { ok: true, value: null };
+    if (typeof value !== "object" || isArray(value)) return badNote(value);
+    var key;
+    for (key in value) {
+      if (Object.prototype.hasOwnProperty.call(value, key) && key !== "bottom") {
+        return badNote(value);
+      }
+    }
+    var list = value.bottom;
+    if (list === undefined || list === null) return { ok: true, value: null };
+    if (!isArray(list) || list.length !== counts.bottom) return badNote(list);
+    var any = false;
+    for (var i = 0; i < list.length; i += 1) {
+      var entry = list[i];
+      if (entry === null) continue;
+      if (typeof entry !== "number" || !isFinite(entry) ||
+          entry !== Math.floor(entry) || entry % ANGLE_STEP !== 0 ||
+          entry < 0 || entry >= 360) {
+        return badNote(entry);
+      }
+      any = true;
+    }
+    return { ok: true, value: any ? { bottom: list.slice() } : null };
+  }
+
+  /* The short way round between two angles, in degrees. */
+  function angleGap(a, b) {
+    var d = Math.abs(norm(a) - norm(b));
+    return Math.min(d, 360 - d);
+  }
+
+  /* The smallest short-way gap between bottom notes at the given angles - the
+   * default placement as solve rounds and mirrors it: infinite for one note. */
+  function defaultBottomGap(angles) {
+    var best = Infinity;
+    for (var i = 0; i < angles.length; i += 1) {
+      for (var j = i + 1; j < angles.length; j += 1) {
+        best = Math.min(best, angleGap(angles[i], angles[j]));
+      }
+    }
+    return best;
+  }
+
+  /* The floor between two bottom notes, in degrees: the smallest multiple of
+   * ANGLE_STEP strictly above the angle at which two bottom circles touch,
+   * capped by the default gap so the default placement always passes. */
+  function bottomFloor(geom, defaults) {
+    var count = defaults.length;
+    if (count < 2) return 0;
+    var touch = 2 * Math.asin(Math.min(1, geom.r_bnote / geom.bottom)) / DEG;
+    var strict = (Math.floor(touch / ANGLE_STEP + 1e-9) + 1) * ANGLE_STEP;
+    return Math.min(strict, defaultBottomGap(defaults));
+  }
+
+  var CLASH_EPS = 1e-9;
+
+  /* The one floor predicate. `list` holds the effective angle of each bottom
+   * note in ascending id order (a null entry keeps the field's own angle).
+   * Returns the id of the first field note `i` at `list[i]` is too close to -
+   * another bottom note under the floor, or a top-shell circle (rim, inner,
+   * ding, at the angles `fields` carries and the default radii) it would
+   * meet - or null. */
+  function bottomClash(geom, fields, list, i) {
+    var ids = collect(fields).bottom;
+    var angleOf = function (k) {
+      return list[k] === null || list[k] === undefined ? fields[ids[k]][4] : list[k];
+    };
+    var at = angleOf(i);
+    var floor = bottomFloor(geom, ids.map(function (id) { return fields[id][4]; }));
+    var k;
+    for (k = 0; k < ids.length; k += 1) {
+      if (k === i) continue;
+      if (angleGap(at, angleOf(k)) < floor - CLASH_EPS) return ids[k];
+    }
+    var mine = point(geom.bottom, at);
+    var id;
+    for (id in fields) {
+      if (!Object.prototype.hasOwnProperty.call(fields, id)) continue;
+      var zone = fields[id][3];
+      var there;
+      var reach;
+      if (zone === "rim" || zone === "inner") {
+        there = point(zone === "rim" ? geom.rim : geom.inner, fields[id][4]);
+        reach = geom.r_note;
+      } else if (zone === "ding") {
+        there = [0, -geom.ding_dy];
+        reach = geom.r_ding;
+      } else {
+        continue;
+      }
+      if (distance(mine, there) < geom.r_bnote + reach - CLASH_EPS) return id;
+    }
+    return null;
+  }
+
+  /* The layout corrections of one call: `seats` (readSeats) and `angles`
+   * (readAngles). With no angles this IS readSeats' result. With angles it is
+   * the seats value (or an empty one) carrying `angles`, the EFFECTIVE bottom
+   * list - given entries verbatim, null entries the solved angle after
+   * mirrorBottom - which `merge` writes last, after reseat. Geometry is
+   * computed from the default placement, so it is byte-identical with and
+   * without the option. A bottom seats list beside angles is refused, and so
+   * is any entry the floor (bottomClash) rejects. */
+  function readCorrections(source, zones, mirrors, anchor, seatsValue, anglesValue, counts) {
+    var seats = readSeats(seatsValue, counts);
+    if (!seats.ok) return seats;
+    var angles = readAngles(anglesValue, counts);
+    if (!angles.ok) return angles;
+    if (!angles.value) return seats;
+    if (seats.value && seats.value.bottom && seats.value.bottom.length) {
+      return badNote(seats.value.bottom);
+    }
+    var home = placeZones(counts, mirrors.top, mirrors.bottom, anchor);
+    var geom = geometry(counts, home);
+    var effective = [];
+    var i;
+    for (i = 0; i < home.bottoms.length; i += 1) {
+      var asked = angles.value.bottom[i];
+      effective.push(asked === null ? home.bottoms[i] : asked);
+    }
+    var homeFields = merge(source, zones, home, null);
+    for (i = 0; i < effective.length; i += 1) {
+      if (bottomClash(geom, homeFields, effective, i) !== null) return badNote(angles.value.bottom);
+    }
+    var out = {};
+    var key;
+    for (key in (seats.value || {})) {
+      if (Object.prototype.hasOwnProperty.call(seats.value, key)) out[key] = seats.value[key];
+    }
+    out.angles = effective;
+    return { ok: true, value: out };
+  }
+
   /* Merge: copy the source fields and write each zone's angle into slot 4.
    * Rule N: a seat's number is the default label of the note that sits there by
    * default, so the note in seat s carries seat s's label (slot 5). Labels are
    * read from `source`, never from the fields being written. */
   function merge(source, zones, placed, seats) {
+    if (seats && seats.angles) {
+      placed = { rims: placed.rims, inners: placed.inners, bottoms: seats.angles };
+    }
     var fields = {};
     var id;
     var i;
@@ -6420,8 +6563,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var anchor = resolveAnchor(options, seedOptions);
 
     var counts = countsOf(zones);
-    var wanted = readSeats(
+    var wanted = readCorrections(source, zones, mirrors, anchor,
       (options && "seats" in options) ? options.seats : seedOptions.seats,
+      (options && "angles" in options) ? options.angles : seedOptions.angles,
       counts);
     if (!wanted.ok) return wanted;
 
@@ -6437,6 +6581,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     slotOrder: slotOrder,
     seatsFromOrder: seatsFromOrder,
     readSeats: readSeats,
+    readAngles: readAngles,
+    bottomClash: bottomClash,
     rimAngles: rimAngles,
     resolveMirrors: resolveMirrors,
     bottomAngles: bottomAngles,
@@ -7038,7 +7184,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   //
   // An alternate earns its card only when a NON-ROOT tone moves field AND the
   // register class changes. A candidate where only the root moves is the
-  // shape the commercial Amara reference omits five times over, so
+  // shape the shipped Amara 9 cards omit five times over, so
   // reproducing Amara exactly and keeping those are not simultaneously
   // satisfiable (decision 3).
   var ALTERNATE_CAP = 3;                /* cards per chord name */
@@ -7513,7 +7659,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // line (the mirror of each ring, the anchor), v4 = the same payload with the
   // scale string on line 0 in the one-line grammar (v1 to v3 hold the legacy
   // one), v5 = the readable path in the header.
-  var VERSION = 5;
+  var VERSION = 6;
   // What a stored record carries. Records keep the v4 shape (formatSeed plus
   // options), so the wire version moves alone.
   var RECORD_VERSION = 4;
@@ -7647,12 +7793,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // shortens the link back to what it was.
   var RINGS = ["rim", "inner", "bottom"];
 
-  function seatsField(seats) {
+  function seatsField(seats, skipBottom) {
     if (!seats || typeof seats !== "object") return "";
     var parts = [];
     var any = false;
     for (var r = 0; r < RINGS.length; r += 1) {
-      var list = seats[RINGS[r]];
+      var list = skipBottom && RINGS[r] === "bottom" ? null : seats[RINGS[r]];
       if (list && list.length) {
         any = true;
         parts.push(list.join(","));
@@ -7661,6 +7807,20 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       }
     }
     return any ? parts.join(";") : "";
+  }
+
+  // v6: the bottom ring's angles, one entry per note, an empty entry for the
+  // solved angle. Written only when some entry is set.
+  function anglesField(angles) {
+    var list = angles && typeof angles === "object" ? angles.bottom : null;
+    if (!Array.isArray(list)) return "";
+    var any = false;
+    var parts = list.map(function (a) {
+      if (a === null || a === undefined) return "";
+      any = true;
+      return String(a);
+    });
+    return any ? parts.join(",") : "";
   }
 
   var UINT_RE = /^[0-9]{1,3}$/;
@@ -7762,8 +7922,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     else if (mirrors.top) option("mirror-top");
     else if (mirrors.bottom) option("mirror-bottom");
     if (opts.anchor === "between") option("between");
-    var seats = seatsField(opts.seats);
+    var angles = anglesField(opts.angles);
+    var seats = seatsField(opts.seats, angles !== "");
     if (seats !== "") option("seats-" + seats);
+    if (angles !== "") option("at-" + angles);
     segs.push(checkHex(meaning.join(SEP)));
     var out = segs.join("/");
     if (out.length > CAPS.payload) return badNote(out);
@@ -7777,6 +7939,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   var TYPED_RE = /^[A-Za-z0-9\-._~+%]+$/;
   var PALETTE_RE = /^palette-([2-6])$/;
   var PARENT_RE = /^parent-(.+)$/;
+  var ANGLES_RE = /^at-((?:0|[1-9][0-9]{0,2})?(?:,(?:0|[1-9][0-9]{0,2})?)*)$/;
 
   // By hand over the UTF-8 bytes: unreserved characters stay, a space is "+",
   // everything else is %XX in upper-case hex.
@@ -7846,7 +8009,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return HPE.naming.PARENTS[index].name.toLowerCase().split(" ").join("-");
   }
 
-  var OPTION_ORDER = { palette: 0, parent: 1, mirror: 2, between: 3, seats: 4 };
+  var OPTION_ORDER = { palette: 0, parent: 1, mirror: 2, between: 3, seats: 4, at: 5 };
 
   // Every structural refusal is badNote of the whole link; what
   // core.parseSeed says about the scale comes back unchanged.
@@ -7857,7 +8020,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var scale = percentDecode(segs[1], false);
     if (scale === null || scale === "") return badNote(text);
     var nameSeg = segs[2];
-    var meaning = ["5", scale];
+    var meaning = [text.charAt(0), scale];
     var name = "";
     if (nameSeg.charAt(0) === "*") {
       meaning.push(FIELD_SEP);
@@ -7911,6 +8074,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         var delta = readDeltaLine(o.slice(6), 3);
         if (!delta) return badNote(text);
         carry.delta = delta;
+      } else if (text.charAt(0) === "6" && (m = ANGLES_RE.exec(o))) {
+        at = OPTION_ORDER.at;
+        var entries = m[1].split(",");
+        var list = entries.map(function (e) { return e === "" ? null : Number(e); });
+        if (list.every(function (a) { return a === null; })) return badNote(text);
+        carry.angles = list;
       } else {
         return badNote(text);
       }
@@ -7941,6 +8110,19 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     if (read) {
       if (!read.ok) return badNote(text);
       if (read.value) result.value.options.seats = read.value;
+    }
+    if (carry.angles) {
+      var bottomSeats = carry.delta && carry.delta.seats && carry.delta.seats.bottom;
+      if (bottomSeats && bottomSeats.length) return badNote(text);
+      var angles = HPE.layout.readAngles({ bottom: carry.angles }, counts);
+      if (!angles.ok || !angles.value) return badNote(text);
+      var o = result.value.options;
+      var mirrors = HPE.layout.resolveMirrors(o, {});
+      var asked = { mirror: mirrors.top, mirrorBottom: mirrors.bottom, anchor: o.anchor, angles: angles.value };
+      if (o.seats) asked.seats = o.seats;
+      var placed = HPE.layout.solve({ fields: result.value.fields, options: {} }, asked);
+      if (!placed.ok) return badNote(text);
+      result.value.options.angles = { bottom: carry.angles };
     }
     return result;
   }
@@ -9335,18 +9517,26 @@ function generateDeck(text, options, guard) {
   // refused by layout.solve, which is where a cross-ring arrangement dies.
   const wanted = options && options.seats !== undefined && options.seats !== null
     ? options.seats : null;
-  if (wanted !== null) {
+  // The bottom angles ride the same way (decision 5): carried past parseSeed,
+  // handed to layout.solve beside the seats, and only slot 4 comes back from
+  // them, so a note keeps the label of the seat it left (rule N).
+  const bottomAngles = options && options.angles && Array.isArray(options.angles.bottom) &&
+    options.angles.bottom.some(a => a !== null && a !== undefined) ? options.angles : null;
+  if (wanted !== null || bottomAngles !== null) {
     const o = built.value.options;
-    const moved = HPE.layout.solve({ fields: seed.value.fields, options: {} },
-      { mirror: !!o.mirror, mirrorBottom: !!o.mirrorBottom, anchor: o.anchor, seats: wanted });
+    const asked = { mirror: !!o.mirror, mirrorBottom: !!o.mirrorBottom, anchor: o.anchor };
+    if (wanted !== null) asked.seats = wanted;
+    if (bottomAngles !== null) asked.angles = bottomAngles;
+    const moved = HPE.layout.solve({ fields: seed.value.fields, options: {} }, asked);
     if (!moved.ok) return moved;
     for (const id of Object.keys(moved.value.fields)) {
       if (built.value.fields[id]) {
         built.value.fields[id][4] = moved.value.fields[id][4];
-        built.value.fields[id][5] = moved.value.fields[id][5];
+        if (wanted !== null) built.value.fields[id][5] = moved.value.fields[id][5];
       }
     }
-    built.value.options.seats = JSON.parse(JSON.stringify(wanted));
+    if (wanted !== null) built.value.options.seats = JSON.parse(JSON.stringify(wanted));
+    if (bottomAngles !== null) built.value.options.angles = JSON.parse(JSON.stringify(bottomAngles));
   }
   if (seed.value.options.parent == null) built.value.options.parent = null;
   // `replaces` is the record option that puts a custom deck in a seeded deck's
@@ -9876,7 +10066,7 @@ const PANSEL_INK_PX = 1;
 /* ---------------- card faces ---------------- */
 // Print is fully client-side (since 2026-09-24): every deck, built-in or
 // generated, builds its own PDF in the browser via downloadDeckPDF() below.
-// There is no link to a committed PDF in the repo root and no lookup table
+// There is no link to a pre-built PDF and no lookup table
 // keyed by built-in deck id - pdfFileName() derives the download name from
 // the deck itself, so a built-in and a custom deck take the same path.
 /** D16's paper control. Only the PAGE BOX changes: A4 is 297mm against
@@ -9943,7 +10133,7 @@ function setPrintPaper(p) {
    against it by tests/test_pdf_parity.py. Nothing about the page layout is
    decided here - only delivery. */
 function pdfFileName(d, variant, paper) {
-  // tools/decks.py's main() names the three shipped CHORD_ONLY files. The
+  // The name is <Name>_CHORD_ONLY_<paper>.pdf, the shape tools/decks.py main() writes. The
   // "_Cards_" branch is not used by the UI since 2026-10-08 (no control asks for
   // the full deck), but it is kept and tested. A custom deck's
   // download joins that shelf rather than inventing a second shape, so a
@@ -10367,6 +10557,8 @@ const notePrev  = document.getElementById("scale-note-prev");
 const noteNext  = document.getElementById("scale-note-next");
 const seatPrev  = document.getElementById("scale-seat-prev");
 const seatNext  = document.getElementById("scale-seat-next");
+const anglePrev = document.getElementById("scale-angle-prev");
+const angleNext = document.getElementById("scale-angle-next");
 const resetBtn  = document.getElementById("scale-layout-reset");
 const fineBtn   = document.getElementById("scale-fine-toggle");
 const fineBox   = document.getElementById("scale-fine");
@@ -10436,6 +10628,11 @@ let nameDirty = false;
 // exactly the share string it had (D5-1, D5-3). A seat in another ring is not
 // expressible, which is how a cross-ring arrangement is refused everywhere.
 let layoutSeats = null;
+// The bottom ring's free placement, null or { bottom: [angle|null, ...] } (see sheetOptions).
+let layoutAngles = null;
+// Whether a slide has been announced this sheet session, and whether the pick has slid.
+let slideTold = false;
+let pickSlid = false;
 // The anchor is a seed option the sheet has no control for but must not lose on
 // a save. MIRROR BOTTOM is its own switch: `bottomHeld` is the value the user
 // chose, `hadBottom` is whether the last valid parse had bottom notes (the
@@ -10533,9 +10730,10 @@ function paintMirrors() {
    closing it never touches the layout, and leaving the sheet drops it. */
 let drawerOpen = false;
 let sheetTab = "scale";
-let layoutBase = { anchor: "one", mirror: false, mb: false, seats: "" };
+let layoutBase = { anchor: "one", mirror: false, mb: false, seats: "", angles: "" };
 const HINT_EMPTY = "Type a scale to adjust its layout.";
 const DRAWER_HINT = "Tap a note, then tap another note in the same ring to swap them. Or hold a note and drag it.";
+const DRAWER_HINT_SLIDE = " Bottom notes also slide along their ring: hold one and drag it to where it sits on your pan.";
 
 /** One line under the plate, read once. The same sentence twice in a row is
  *  cleared first, or a live region would stay silent on the repeat. */
@@ -10550,18 +10748,22 @@ function layoutStatus(text, warn) {
 }
 function layoutNoticeText() {
   const same = anchor === layoutBase.anchor && mirror === layoutBase.mirror &&
-    (!hadBottom || bottomMirror() === layoutBase.mb) && seatsKey(layoutSeats) === layoutBase.seats;
+    (!hadBottom || bottomMirror() === layoutBase.mb) && seatsKey(layoutSeats) === layoutBase.seats &&
+    anglesKey(layoutAngles) === layoutBase.angles;
   let text;
   if (!same) text = editingId ? "Layout not saved yet. SAVE CHANGES keeps it."
     : "Layout not saved yet. GENERATE CARDS keeps it.";
   else {
     const custom = layoutBase.anchor !== "one" || layoutBase.mirror || (layoutBase.mb && hadBottom) ||
-      layoutBase.seats !== "";
+      layoutBase.seats !== "" || layoutBase.angles !== "";
     text = editingId && !isBuiltIn(editingId) && custom ? "Layout changed from the default." : "";
   }
-  if (editingId && storedSeats && ringCount)
-    for (const ring of LAYOUT_RINGS)
-      if (storedSeats[ring] && ringCount[ring] !== storedCounts[ring]) text += ` The ${ring} seats were reset.`;
+  if (editingId && (storedSeats || storedAngles) && ringCount)
+    for (const ring of LAYOUT_RINGS) {
+      if (ringCount[ring] === storedCounts[ring]) continue;
+      const seated = !!(storedSeats && storedSeats[ring]), angled = ring === "bottom" && !!storedAngles;
+      if (seated || angled) text += ` The ${ring} ${seated && angled ? "seats and angles" : angled ? "angles" : "seats"} were reset.`;
+    }
   return text;
 }
 /** Everything the layout zone shows, from the session state alone. */
@@ -10574,11 +10776,14 @@ function paintLayout() {
   layoutHint.textContent = HINT_EMPTY;
   layoutHint.hidden = boxOk || !(panState === "example" || !String(scaleBox.value || "").trim());
   drawerStatus.hidden = !drawerOpen || !boxOk;
-  drawerHint.textContent = DRAWER_HINT;
+  drawerHint.textContent = DRAWER_HINT + (ringCount && ringCount.bottom >= 1 ? DRAWER_HINT_SLIDE : "");
   drawerHint.hidden = !(drawerOpen && boxOk);
   notePrev.disabled = noteNext.disabled = !boxOk || !ringPickable();
   seatPrev.disabled = seatNext.disabled = !boxOk || !pickRef;
-  resetBtn.disabled = !boxOk || !(layoutSeats || mirror || bottomMirror() || anchor !== "one");
+  const slidable = !!pickRef && pickRef.ring === "bottom";
+  anglePrev.hidden = angleNext.hidden = !slidable;
+  anglePrev.disabled = angleNext.disabled = !boxOk || !slidable;
+  resetBtn.disabled = !boxOk || !(layoutSeats || layoutAngles || mirror || bottomMirror() || anchor !== "one");
   fineBox.hidden = !fineOpen;
   fineBtn.disabled = !boxOk;
   fineBtn.setAttribute("aria-expanded", String(fineOpen));
@@ -11041,7 +11246,7 @@ function setTab(tab) {
   repaintPlate();
   bandPort.scrollTop = 0;
   setLip(false, { instant: true });
-  if (drawerOpen && boxOk && !hasTwoNoteRing()) layoutStatus("This pan has no ring with two notes, so there is nothing to rearrange.");
+  if (drawerOpen && boxOk && !hasTwoNoteRing() && !(ringCount && ringCount.bottom >= 1)) layoutStatus("This pan has no ring with two notes, so there is nothing to rearrange.");
 }
 /** Leaving the sheet or opening a fresh session: no focus, no status. */
 function dropDrawer() {
@@ -11109,15 +11314,22 @@ function setRingSeats(ring, next) {
   layoutSeats = Object.keys(rest).length ? rest : null;
 }
 const seatsKey = (s) => LAYOUT_RINGS.filter((r) => s && s[r]).map((r) => r + ":" + s[r].join(",")).join(";");
+const anglesKey = (a) => (a && a.bottom ? a.bottom.map((v) => (v === null ? "" : v)).join(",") : "");
 const editedDeck = () => (editingId ? CUSTOM[editingId] || DECKS.find(d => d.id === editingId) : null) || null;
 const seeded = () => isBuiltIn(editingId);
 /** The tuple a seeded sheet is compared against to tell an unchanged SAVE. */
 const sheetKey = () => JSON.stringify([scaleBox.value, nameBox.value, palette, mirror, bottomMirror(), anchor,
-  seatsKey(layoutSeats)]);
+  seatsKey(layoutSeats), anglesKey(layoutAngles)]);
 /** The palette whose pair a seeded deck's colours equal, else 0. */
 function seedPalette(colors) {
   const i = HPE.select.PALETTES.findIndex(p => p.root === colors.root && p.tone === colors.tone);
   return i < 0 ? 0 : i;
+}
+/** The angles that fit the bottom ring of `fields`, or null: a list of the wrong
+ *  length would be refused by layout.solve, and a repaint must never stop on that. */
+function fitAngles(fields) {
+  if (!layoutAngles || !layoutAngles.bottom) return null;
+  return layoutAngles.bottom.length === ringSizes(fields).bottom ? layoutAngles : null;
 }
 /** The seats that fit the notes of `fields`, or null: a list of the wrong length
  *  would be refused by layout.solve, and a repaint must never stop on that. */
@@ -11144,6 +11356,9 @@ let pickMoved = false;
 let seatMemo = { rim: {}, inner: {}, bottom: {} };
 let ringCount = null;
 let storedSeats = null;
+let storedAngles = null;
+// Whether this sheet session folded a seated bottom ring into angles.
+let foldedBottom = false;
 let storedCounts = null;
 // The two notes that just traded seats, for 600 ms.
 let panFlash = null;
@@ -11158,12 +11373,14 @@ let armId = null;
 const PLACES = ["right", "upper right", "top", "upper left", "left", "lower left", "bottom", "lower right"];
 const placeOf = (ang) => PLACES[Math.floor(((((Number(ang) + 22.5) % 360) + 360) % 360) / 45)];
 
+/** Under angles a bottom note's seat is its rank by angle, so the arrows walk the ring round. */
+const angleSeats = (angs) => angs.map((a, i) => angs.filter((b, j) => b < a || (b === a && j < i)).length);
 /** The notes of one ring, in ascending field id, with their seat and place. */
 function ringNotes(ring) {
   if (!lastSolved) return [];
   const f = lastSolved.fields;
   const ids = ringIds(f, ring);
-  const seats = seatsFor(ring, ids.length);
+  const seats = ring === "bottom" && layoutAngles ? angleSeats(ids.map((id) => f[id][4])) : seatsFor(ring, ids.length);
   return ids.map((id, i) => ({ ring, i, id, seat: seats[i], k: ids.length, label: String(f[id][5]), name: f[id][0] + f[id][1],
     place: placeOf(f[id][4]) }));
 }
@@ -11215,7 +11432,7 @@ function hitLayer() {
 const countsLabel = (c) => `Pan layout: ${c.rim} rim, ${c.inner} inner, ${c.bottom} bottom notes.`;
 
 function ringPickable() {
-  return !!ringCount && LAYOUT_RINGS.some((r) => ringCount[r] >= 2);
+  return !!ringCount && (LAYOUT_RINGS.some((r) => ringCount[r] >= 2) || ringCount.bottom >= 1);
 }
 
 /** A ring's note count changed: it takes the arrangement it last had at the new
@@ -11231,7 +11448,11 @@ function syncRingCounts(fields) {
     seatMemo[ring][from] = layoutSeats && layoutSeats[ring] ? layoutSeats[ring] : null;
     const had = Object.prototype.hasOwnProperty.call(seatMemo[ring], to);
     setRingSeats(ring, had && seatMemo[ring][to] ? seatMemo[ring][to] : identityOrder(to));
-    said.push(had ? `The ${ring} is back to ${to} notes, so its earlier seats were restored.`
+    const slid = ring === "bottom" && !!layoutAngles;
+    if (slid) layoutAngles = null;
+    const things = foldedBottom ? "seats and angles" : "angles";
+    if (slid) foldedBottom = false;
+    said.push(slid ? `The bottom now has ${to === 1 ? "1 note" : to + " notes"}, so its ${things} were reset.` : had ? `The ${ring} is back to ${to} notes, so its earlier seats were restored.`
       : `The ${ring} now has ${to === 1 ? "1 note" : to + " notes"}, so its seats were reset.`);
     if (pickRef && pickRef.ring === ring) putDown = true;
     ringCount[ring] = to;
@@ -11251,27 +11472,148 @@ function setPick(ref) {
   cancelGesture();
   pickRef = ref ? { ring: ref.ring, i: ref.i } : null;
   pickMoved = false;
+  pickSlid = false;
   if (ref) setRover(pickRef);
   paintLayout();
   repaintPlate();
 }
+/* ---- the bottom ring slides (Lane FP-D) ----
+ * A bottom note can sit at any 5 degree step of its ring that clears the floor
+ * (HPE.layout.bottomClash). layoutAngles holds the steps; a null entry is the
+ * solved angle. The floor is measured against the DEFAULT placement, so every
+ * check solves the pan without seats or angles first. */
+const ANGLE_STEP = 5;
+const turnTo = (a) => ((a % 360) + 360) % 360;
+const stepOf = (a) => turnTo(Math.round(a / ANGLE_STEP) * ANGLE_STEP);
+const gapOf = (a, b) => { const d = Math.abs(turnTo(a) - turnTo(b)); return Math.min(d, 360 - d); };
+const turnDir = (from, to) => { const d = turnTo(to - from); return d === 0 ? 0 : d <= 180 ? 1 : -1; };
+const bottomAngles = () => ringIds(lastSolved.fields, "bottom").map((id) => lastSolved.fields[id][4]);
+const fieldName = (id) => lastSolved.fields[id][0] + lastSolved.fields[id][1];
+function homeFields() {
+  if (!lastSeed) return null;
+  const r = HPE.layout.solve(lastSeed, { mirror: mirror, mirrorBottom: bottomMirror(), anchor: anchor, seats: null, angles: null });
+  return r.ok ? r.value.fields : null;
+}
+const clashAt = (home, list, i) => HPE.layout.bottomClash(lastSolved.geom, home, list, i);
+const withAngle = (list, i, a) => { const t = list.slice(); t[i] = a; return t; };
+/** Where bottom note `i` may sit when it is wanted at `want`: there if the floor allows, else the
+ *  nearest free step back the way the finger came (`dir` is its direction of travel). */
+function landAt(home, list, i, want, dir) {
+  const hit = clashAt(home, withAngle(list, i, want), i);
+  if (hit === null) return { angle: want, hit: null };
+  for (let k = 1; k <= 360 / ANGLE_STEP; k += 1) {
+    const a = turnTo(want - (dir || 1) * ANGLE_STEP * k);
+    if (clashAt(home, withAngle(list, i, a), i) === null) return { angle: a, hit };
+  }
+  return null;
+}
+/** Notes i and j of the bottom ring trade angles. False when the 5 degree steps cannot hold it. */
+function exchangeAngles(i, j) {
+  const home = homeFields();
+  if (!home) return false;
+  const cur = bottomAngles();
+  const next = cur.slice();
+  next[i] = stepOf(cur[j]);
+  next[j] = stepOf(cur[i]);
+  if (clashAt(home, next, i) !== null || clashAt(home, next, j) !== null) return false;
+  const entries = layoutAngles.bottom.slice();
+  entries[i] = next[i];
+  entries[j] = next[j];
+  layoutAngles = { bottom: entries };
+  return true;
+}
+/** Where the plate sits on the screen, read back from a hit target: its box is its viewBox circle
+ *  scaled by k about the viewBox centre. */
+function plateOrigin() {
+  const h = hitNodes()[0];
+  if (!h) return null;
+  const c = circleOf(h);
+  const k = c.r / (Number(h.getAttribute("r")) || 1);
+  return { x: c.x - k * Number(h.getAttribute("cx")), y: c.y - k * Number(h.getAttribute("cy")), k };
+}
+const angleAt = (o, x, y) => turnTo(Math.atan2(o.y - y, x - o.x) * 180 / Math.PI);
+/** Move bottom note `ref` to the step `want`. "drag" snaps away from a clash; "nudge" refuses one.
+ *  Returns false when nothing could be done (a warning is up), true otherwise. */
+function slideNote(ref, want, how, dir) {
+  const n = noteAt(ref);
+  const home = homeFields();
+  if (!n || !home) return false;
+  const cur = bottomAngles();
+  const folding = !!(layoutSeats && layoutSeats.bottom);
+  const base = folding ? cur.map(stepOf) : cur;
+  if (folding && base.some((_, k) => clashAt(home, base, k) !== null)) {
+    layoutStatus(`Not moved. The bottom notes are too close to sit on the ${ANGLE_STEP}° steps.`, true);
+    return false;
+  }
+  let spot;
+  if (how === "nudge") {
+    const hit = clashAt(home, withAngle(base, n.i, want), n.i);
+    if (hit !== null) { layoutStatus(`${fieldName(hit)} is in the way.`, true); return false; }
+    spot = { angle: want, hit: null };
+  } else {
+    spot = landAt(home, base, n.i, want, dir);
+    if (!spot) { layoutStatus(`Not moved. There is no free place for ${n.name}.`, true); return false; }
+  }
+  if (spot.angle === cur[n.i] && !folding) {
+    layoutStatus(`${n.name} stays at ${spot.angle}°, ${placeOf(spot.angle)}.`);
+    return true;
+  }
+  const entries = folding ? base.slice() : layoutAngles ? layoutAngles.bottom.slice() : cur.map(() => null);
+  entries[n.i] = spot.angle;
+  if (folding) { setRingSeats("bottom", identityOrder(cur.length)); foldedBottom = true; }
+  layoutAngles = { bottom: entries };
+  if (spot.hit !== null) flashNotes([n.id]);
+  paintLayout();
+  resyncSheet(true);
+  const moved = noteAt(ref);
+  const at = `${spot.angle}°, ${moved.place}`;
+  let text;
+  if (spot.hit !== null) text = `${moved.name} was too close to ${fieldName(spot.hit)}, so it sits at ${at}.`;
+  else if (how === "nudge") text = `${moved.name} at ${at}.`;
+  else text = `${moved.name} moved to ${at}.`;
+  if (folding) text += " Bottom seat numbers now run low to high.";
+  else if (how !== "nudge" && !slideTold && spot.hit === null) text += ` Seat ${moved.label} stays its number.`;
+  slideTold = true;
+  layoutStatus(text, spot.hit !== null);
+  return true;
+}
+/** CLOCKWISE and ANTICLOCKWISE: the picked bottom note moves to the next 5 degree step. */
+function nudgeAngle(dir) {
+  const p = pickedNote();
+  if (!p || p.ring !== "bottom") return;
+  const cur = lastSolved.fields[p.id][4];
+  const want = turnTo(dir > 0 ? Math.floor(cur / ANGLE_STEP + 1e-9) * ANGLE_STEP + ANGLE_STEP
+    : Math.ceil(cur / ANGLE_STEP - 1e-9) * ANGLE_STEP - ANGLE_STEP);
+  const was = pickMoved;
+  pickMoved = true;
+  setRover(pickRef);
+  if (slideNote({ ring: "bottom", i: p.i }, want, "nudge", dir)) pickSlid = true;
+  else pickMoved = was;
+}
 /** (b) The notes i and j of `ring` trade seats. Commits to layoutSeats, flashes
  *  both, repaints and writes row 7 (row 8 when i is j). The pick is the
  *  caller's. */
+function flashNotes(ids) {
+  panFlash = ids;
+  clearTimeout(flashTimer);
+  flashTimer = setTimeout(() => { panFlash = null; repaintPlate(); }, 600);
+}
 function swapSeats(ring, i, j) {
   cancelGesture();
   const before = ringNotes(ring);
   const a = before[i], b = before[j];
   if (!a || !b) return false;
-  if (i !== j) {
+  if (i !== j && ring === "bottom" && layoutAngles && !exchangeAngles(i, j)) {
+    layoutStatus(`Not moved. ${a.name} and ${b.name} cannot trade places on the ${ANGLE_STEP}° steps.`, true);
+    return false;
+  }
+  if (i !== j && !(ring === "bottom" && layoutAngles)) {
     const next = before.map((n) => n.seat);
     next[i] = b.seat;
     next[j] = a.seat;
     setRingSeats(ring, next);
-    panFlash = [a.id, b.id];
-    clearTimeout(flashTimer);
-    flashTimer = setTimeout(() => { panFlash = null; repaintPlate(); }, 600);
   }
+  if (i !== j) flashNotes([a.id, b.id]);
   paintLayout();
   resyncSheet(true);
   const moved = noteAt({ ring, i });
@@ -11281,6 +11623,11 @@ function swapSeats(ring, i, j) {
 }
 
 function pickAnnouncement(n, how) {
+  if (how === "tap" && n.ring === "bottom") {
+    const tail = fineOpen ? ", or use the finer controls below." : ".";
+    return n.k < 2 ? `Picked up ${n.name}. Drag it along the ring to move it${tail}`
+      : `Picked up ${n.name}. Drag it along the ring to move it, or drop it on another bottom note to swap${tail}`;
+  }
   if (how === "tap") return `Picked up ${n.name}. Tap or drop it on another ${n.ring} note to swap${fineOpen ? ", or use PREVIOUS SEAT and NEXT SEAT" : ""}.`;
   if (how === "note") return `Picked up ${n.name}, ${n.ring} seat ${n.label}, ${n.place}. PREVIOUS SEAT and NEXT SEAT move it.`;
   return `Picked up ${n.name}. Arrows choose a seat in the ${n.ring}. Space swaps. Escape cancels.`;
@@ -11291,7 +11638,7 @@ function activateNote(ref, how) {
   if (!n) return;
   const p = pickedNote();
   if (!p) {
-    if (n.k < 2) { layoutStatus(`${n.name} is the only note in the ${n.ring}, so it has no other seat.`); return; }
+    if (n.k < 2 && n.ring !== "bottom") { layoutStatus(`${n.name} is the only note in the ${n.ring}, so it has no other seat.`); return; }
     setPick(ref);
     layoutStatus(pickAnnouncement(n, how));
     return;
@@ -11325,7 +11672,7 @@ function walkFocus(ref, nav) {
 }
 /** PREVIOUS NOTE and NEXT NOTE: the pick moves along the pickable notes. */
 function stepNote(dir) {
-  const list = allNotes().filter((n) => n.k >= 2);
+  const list = allNotes().filter((n) => n.k >= 2 || n.ring === "bottom");
   if (!list.length) return;
   const at = list.findIndex((n) => sameRef(n, pickRef));
   const to = at < 0 ? (dir > 0 ? 0 : list.length - 1) : (at + dir + list.length) % list.length;
@@ -11340,7 +11687,7 @@ function stepSeat(dir) {
   const target = ring.find((n) => n.seat === (p.seat + dir + p.k) % p.k);
   pickMoved = true;
   setRover(pickRef);
-  swapSeats(p.ring, p.i, target.i);
+  if (swapSeats(p.ring, p.i, target.i) && p.ring === "bottom" && layoutAngles && p.i !== target.i) pickSlid = true;
 }
 /** Escape with a note picked: put it down and keep the drawer open. */
 function putDownPick() {
@@ -11348,13 +11695,16 @@ function putDownPick() {
   const ref = pickRef;
   const fromSeatButton = document.activeElement === seatPrev || document.activeElement === seatNext;
   const moved = pickMoved;
+  const slid = pickSlid;
   setPick(null);
-  layoutStatus(moved ? `${p.name} put down. The swaps you made are kept.` : "Cancelled. Nothing moved.");
+  layoutStatus(moved ? `${p.name} put down. The ${slid ? "moves" : "swaps"} you made are kept.` : "Cancelled. Nothing moved.");
   if (fromSeatButton) { setRover(ref); focusRef(ref); }
 }
 function resetLayout() {
   cancelGesture();
   layoutSeats = null;
+  layoutAngles = null;
+  foldedBottom = false;
   mirror = false;
   bottomHeld = false;
   anchor = "one";
@@ -11407,6 +11757,7 @@ function sheetOptions() {
     else if (d && d.options && d.options.replaces) o.replaces = d.options.replaces;
   }
   if (layoutSeats) o.seats = JSON.parse(JSON.stringify(layoutSeats));
+  if (layoutAngles) o.angles = JSON.parse(JSON.stringify(layoutAngles));
   return o;
 }
 
@@ -11427,7 +11778,7 @@ function sheetOptions() {
  *  show up as a mock that silently stopped repainting. */
 function solvePreviewLayout(seed) {
   const solveOptions = { mirror: mirror, mirrorBottom: bottomMirror(), anchor: anchor,
-    seats: fitSeats(seed.fields) };
+    seats: fitSeats(seed.fields), angles: fitAngles(seed.fields) };
   const res = HPE.layout.solve(seed, solveOptions);
   return res.ok ? res.value : null;
 }
@@ -11860,6 +12211,12 @@ function resetSheetState(edit) {
   // The correction is a seed option like the others, so Edit shows the one the
   // deck already carries and RESET is what clears it.
   layoutSeats = o && o.seats ? JSON.parse(JSON.stringify(o.seats)) : null;
+  // Angles on a pan with no bottom notes mean nothing: dropped without a word.
+  layoutAngles = o && o.angles && o.angles.bottom && o.angles.bottom.length && edit &&
+    Object.values(edit.fields).some((f) => f[3] === "bottom") ? JSON.parse(JSON.stringify(o.angles)) : null;
+  slideTold = false;
+  pickSlid = false;
+  foldedBottom = false;
   fineOpen = false;
   pickRef = null;
   roverRef = null;
@@ -11870,6 +12227,7 @@ function resetSheetState(edit) {
   ringCount = null;
   seatMemo = { rim: {}, inner: {}, bottom: {} };
   storedSeats = edit && layoutSeats ? JSON.parse(JSON.stringify(layoutSeats)) : null;
+  storedAngles = layoutAngles ? JSON.parse(JSON.stringify(layoutAngles)) : null;
   storedCounts = edit ? ringSizes(edit.fields) : null;
   anchor = o && o.anchor === "between" ? "between" : "one";
   hadBottom = !!edit && Object.values(edit.fields).some((f) => f[3] === "bottom");
@@ -11878,7 +12236,7 @@ function resetSheetState(edit) {
   boxOk = !!edit;
   dropDrawer();
   layoutBase = { anchor, mirror, mb: o && typeof o.mirrorBottom === "boolean"
-    ? o.mirrorBottom : mirror, seats: seatsKey(layoutSeats) };
+    ? o.mirrorBottom : mirror, seats: seatsKey(layoutSeats), angles: anglesKey(layoutAngles) };
   if (seeded()) seedPrefill = sheetKey();
   paintLayout();
   paintFieldsOpen();
@@ -12237,17 +12595,28 @@ document.addEventListener("pointerdown", (e) => {
 }, true);
 // The mirror is the choice the pan preview exists to make visible, so each
 // button re-solves the preview through the same parse path a keystroke uses.
+// A toggle re-seats the whole pan, so moved bottom notes must still clear the floor after it
+// (HPE.layout.bottomClash): a toggle that would leave the sheet unbuildable is undone.
+const toggleFits = () => !layoutAngles || (!!lastSeed && solvePreviewLayout(lastSeed) !== null);
+const TOGGLE_REFUSED = "Not changed: it would put a note you moved too close to another. Reset layout first.";
 mirrorTop.onclick = () => {
-  mirror = !mirror; paintLayout(); resyncSheet(true);
+  mirror = !mirror;
+  if (!toggleFits()) { mirror = !mirror; layoutStatus(TOGGLE_REFUSED); return; }
+  paintLayout(); resyncSheet(true);
   layoutStatus(mirror ? "Top mirror on." : "Top mirror off.");
 };
 mirrorBot.onclick = () => {
-  bottomHeld = !bottomHeld; paintLayout(); resyncSheet(true);
+  bottomHeld = !bottomHeld;
+  if (!toggleFits()) { bottomHeld = !bottomHeld; layoutStatus(TOGGLE_REFUSED); return; }
+  paintLayout(); resyncSheet(true);
   layoutStatus(bottomMirror() ? "Bottom mirror on." : "Bottom mirror off.");
 };
 const pickAnchor = (to) => () => {
   if (anchor === to) return;
-  anchor = to; paintLayout(); resyncSheet(true);
+  const was = anchor;
+  anchor = to;
+  if (!toggleFits()) { anchor = was; layoutStatus(TOGGLE_REFUSED); return; }
+  paintLayout(); resyncSheet(true);
   layoutStatus(to === "one" ? "Note 1 is centred." : "Notes 1 and 2 are split.");
 };
 anchorOne.onclick = pickAnchor("one");
@@ -12270,6 +12639,8 @@ tabStrip.addEventListener("keydown", (e) => {
   setTab(to === 0 ? "scale" : "layout");
   tabs[to].focus();
 });
+anglePrev.onclick = () => nudgeAngle(1);
+angleNext.onclick = () => nudgeAngle(-1);
 notePrev.onclick = () => stepNote(-1);
 noteNext.onclick = () => stepNote(1);
 seatPrev.onclick = () => stepSeat(-1);
@@ -12277,7 +12648,7 @@ seatNext.onclick = () => stepSeat(1);
 resetBtn.onclick = resetLayout;
 fineBtn.onclick = () => {
   fineOpen = !fineOpen;
-  if (!fineOpen && [notePrev, noteNext, seatPrev, seatNext].includes(document.activeElement)) fineBtn.focus();
+  if (!fineOpen && [notePrev, noteNext, seatPrev, seatNext, anglePrev, angleNext].includes(document.activeElement)) fineBtn.focus();
   paintLayout();
 };
 // Delegated to the plate: the targets are rewritten on every repaint.
@@ -12363,9 +12734,16 @@ function seatGhost(g, cx, cy) {
   }
 }
 function placeGhost(x, y) {
+  const o = press.ref.ring === "bottom" ? plateOrigin() : null;
   press.hx = x;
   press.hy = y - (press.type === "touch" ? GHOST_LIFT : 0);
-  seatGhost(ghostEl, press.hx, press.hy);
+  if (!o) { seatGhost(ghostEl, press.hx, press.hy); return; }
+  const raw = angleAt(o, press.hx, press.hy);
+  if (press.aNow === undefined) press.aNow = raw;
+  else if (gapOf(raw, press.aNow) >= ANGLE_STEP / 2) { press.aCame = press.aNow; press.aNow = raw; }
+  const a = stepOf(raw) * Math.PI / 180;
+  const rad = 100 * lastSolved.geom.bottom * o.k;
+  seatGhost(ghostEl, o.x + rad * Math.cos(a), o.y - rad * Math.sin(a));
 }
 function makeGhost(name, d) {
   const g = document.createElement("div");
@@ -12442,7 +12820,7 @@ function endPress(restore) {
 function liftNote() {
   const p = press;
   const n = noteAt(p.ref);
-  if (!n || n.k < 2) {
+  if (!n || (n.k < 2 && n.ring !== "bottom")) {
     p.state = "ignored";
     guardClick();
     activateNote(p.ref, "tap");
@@ -12483,6 +12861,20 @@ function dropNote() {
   if (t.kind === "swap") { dropGhost(g); activateNote(t.ref, "tap"); return; }
   if (t.kind === "own") { dropGhost(g); swapSeats(picked.ring, picked.i, picked.i); return; }
   const n = noteAt(picked);
+  if (picked.ring === "bottom") {
+    const o = plateOrigin();
+    const want = stepOf(angleAt(o, p.hx, p.hy));
+    const dir = p.aCame !== undefined ? turnDir(p.aCame, p.aNow) : turnDir(lastSolved.fields[n.id][4], want);
+    pickRef = null;
+    pickMoved = false;
+    pickSlid = false;
+    setRover(picked);
+    if (slideNote(picked, want, "drag", dir)) { dropGhost(g); return; }
+    setPick(p.pre ? p.pre.ref : null);
+    pickMoved = p.pre ? p.pre.moved : false;
+    returnGhost(g, p.ref);
+    return;
+  }
   if (t.kind === "other") activateNote(t.ref, "tap");
   else layoutStatus(`Not moved. Drop ${n.name} on another ${n.ring} note to swap.`, true);
   setPick(p.pre ? p.pre.ref : null);
@@ -12787,7 +13179,7 @@ sheet.addEventListener("keydown", e => {
   const stops = (sheetTab === "layout"
     ? [backBtn, onTab, previewBox.querySelector('.panhit[tabindex="0"]'),
        anchorOne, anchorBetween, mirrorTop, mirrorBot, fineBtn,
-       notePrev, noteNext, seatPrev, seatNext, resetBtn,
+       notePrev, noteNext, seatPrev, seatNext, anglePrev, angleNext, resetBtn,
        ...swatches.children, shut ? lipBtn : genBtn, editingId && !shut ? delBtn : null]
     : [backBtn, onTab,
        nameBox,

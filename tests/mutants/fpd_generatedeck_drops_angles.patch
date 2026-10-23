@@ -1,0 +1,14 @@
+# kills: FPD: generateDeck carries options.angles into the solve and the record
+# suite: node --test --test-name-pattern ^FPD..generateDeck.carries.options.angles.into.the.solve.and.the.record$ tests/app.test.js
+# generateDeck builds the record without options.angles.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9529,7 +9529,6 @@ function generateDeck(text, options, guard) {
+       }
+     }
+     if (wanted !== null) built.value.options.seats = JSON.parse(JSON.stringify(wanted));
+-    if (bottomAngles !== null) built.value.options.angles = JSON.parse(JSON.stringify(bottomAngles));
+   }
+   if (seed.value.options.parent == null) built.value.options.parent = null;
+   // `replaces` is the record option that puts a custom deck in a seeded deck's

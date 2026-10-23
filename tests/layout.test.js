@@ -1746,3 +1746,265 @@ test("R4-E solve ignores inherited keys and fields in a zone it does not know", 
     "and is carried through untouched");
   for (const id of Object.keys(own)) assert.deepStrictEqual(solvedOdd.fields[id], baseline.fields[id]);
 });
+
+/* ---- Lane FP-L: free placement of bottom notes (options.angles) --------- */
+
+const FPL_PYGMY = () => panFields(9, 2, 6);
+const bottomIds = (fields) =>
+  Object.keys(fields).filter((id) => fields[id][3] === "bottom").sort((a, b) => a - b);
+const bottomAnglesOf = (fields) => bottomIds(fields).map((id) => fields[id][4]);
+
+test("FPL: readAngles refuses wrong length, non-integer, off-step and out-of-range entries with BAD_NOTE naming the value", () => {
+  const counts = { rim: 9, inner: 2, bottom: 6 };
+  const bad = [
+    [[0, 5, 10], "wrong length"],
+    [[1.5, null, null, null, null, null], "non-integer"],
+    [[7, null, null, null, null, null], "off the 5 degree step"],
+    [[360, null, null, null, null, null], "360"],
+    [[-5, null, null, null, null, null], "negative"],
+    ["30", "a string"],
+    [["5", null, null, null, null, null], "a string entry"],
+    [[NaN, null, null, null, null, null], "NaN"],
+    [[Infinity, null, null, null, null, null], "Infinity"],
+  ];
+  for (const [list, why] of bad) {
+    const res = HPE.layout.readAngles({ bottom: list }, counts);
+    assert.equal(res.ok, false, why);
+    assert.equal(res.code, "BAD_NOTE", why);
+    const whole = HPE.layout.solve(FPL_PYGMY(), { angles: { bottom: list } });
+    assert.equal(whole.code, "BAD_NOTE", `solve: ${why}`);
+  }
+  const named = HPE.layout.readAngles({ bottom: [7, null, null, null, null, null] }, counts);
+  assert.ok(named.reason.includes("7"), `the reason names the value: ${named.reason}`);
+  for (const value of [[1, 2], "x", 5, { rim: [] }, { bottom: [], rim: [] }]) {
+    assert.equal(HPE.layout.readAngles(value, counts).code, "BAD_NOTE", JSON.stringify(value));
+  }
+});
+
+test("FPL: readAngles accepts nulls and an all-null list reads as absent", () => {
+  const counts = { rim: 9, inner: 2, bottom: 6 };
+  const some = HPE.layout.readAngles({ bottom: [0, null, 355, null, 125, 5] }, counts);
+  assert.equal(some.ok, true);
+  assert.deepStrictEqual(plain(some.value), { bottom: [0, null, 355, null, 125, 5] });
+  for (const absent of [undefined, null, {}, { bottom: null }, { bottom: [null, null, null, null, null, null] }]) {
+    const res = HPE.layout.readAngles(absent, counts);
+    assert.equal(res.ok, true);
+    assert.equal(res.value, null);
+  }
+  assert.equal(HPE.layout.readAngles({ bottom: [] }, { rim: 5, inner: 0, bottom: 0 }).value, null);
+  const base = HPE.layout.solve(FPL_PYGMY()).value;
+  const nulls = HPE.layout.solve(FPL_PYGMY(), { angles: { bottom: [null, null, null, null, null, null] } }).value;
+  assert.deepStrictEqual(nulls, base, "an all-null list solves as the default");
+});
+
+test("FPL: an entry under the floor of another bottom note is BAD_NOTE", () => {
+  const base = HPE.layout.solve(FPL_PYGMY()).value;
+  const home = bottomAnglesOf(base.fields);
+  assert.deepStrictEqual(home, [300, 240, 0, 180, 60, 120]);
+  const all = (first) => ({ angles: { bottom: [first, 240, 0, 180, 60, 120] } });
+  assert.equal(HPE.layout.solve(FPL_PYGMY(), all(250)).code, "BAD_NOTE", "10 degrees from 240");
+  assert.equal(HPE.layout.solve(FPL_PYGMY(), all(245)).code, "BAD_NOTE", "5 degrees from 240");
+  assert.equal(HPE.layout.solve(FPL_PYGMY(), all(240)).code, "BAD_NOTE", "on 240");
+  assert.equal(HPE.layout.solve(FPL_PYGMY(), all(255)).ok, true, "15 degrees from 240");
+});
+
+test("FPL: a numeric entry under the floor of a null neighbour's solved angle is BAD_NOTE", () => {
+  const res = HPE.layout.solve(FPL_PYGMY(), { angles: { bottom: [245, null, null, null, null, null] } });
+  assert.equal(res.code, "BAD_NOTE");
+  assert.equal(HPE.layout.solve(FPL_PYGMY(), { angles: { bottom: [255, null, null, null, null, null] } }).ok, true);
+});
+
+test("FPL: the wraparound pair (355 and 0) is checked", () => {
+  const low = HPE.layout.solve(FPL_PYGMY(), { angles: { bottom: [355, null, null, null, null, null] } });
+  assert.equal(low.code, "BAD_NOTE", "355 against the solved 0");
+  const pair = HPE.layout.solve(FPL_PYGMY(), { angles: { bottom: [null, null, 0, null, 355, null] } });
+  assert.equal(pair.code, "BAD_NOTE", "0 and 355 both set");
+  assert.equal(HPE.layout.solve(FPL_PYGMY(), { angles: { bottom: [345, null, null, null, null, null] } }).ok, true,
+    "345 is 15 from 0 the short way");
+});
+
+test("FPL: the floor is 15 at the standard bottom radius and never above the default gap", () => {
+  const fifteen = (list) => HPE.layout.solve(FPL_PYGMY(), { angles: { bottom: list } });
+  assert.equal(fifteen([null, null, 15, null, null, null]).ok, true, "15 from the solved 0 is the floor, not under it");
+  assert.equal(fifteen([null, null, 10, null, null, null]).ok, true, "10 from the solved 0 is moving away from nobody; 60 is far");
+  assert.equal(HPE.layout.solve(panFields(9, 2, 2), { angles: { bottom: [90, 105] } }).ok, true, "15 apart");
+  assert.equal(HPE.layout.solve(panFields(9, 2, 2), { angles: { bottom: [90, 100] } }).ok, false, "10 apart");
+  for (let n = 1; n <= 47; n += 1) {
+    const fields = panFields(9, 2, n);
+    const home = HPE.layout.solve(fields).value;
+    const explicit = bottomAnglesOf(home.fields);
+    const nulls = explicit.map(() => null);
+    for (let k = 0; k < n; k += 1) {
+      assert.equal(HPE.layout.bottomClash(home.geom, home.fields, nulls, k), null, `the default of ${n} bottoms is clear (U${k + 1})`);
+    }
+    explicit.forEach((a, k) => {
+      if (a % 5 !== 0) return;
+      const one = nulls.slice();
+      one[k] = a;
+      const res = HPE.layout.solve(fields, { angles: { bottom: one } });
+      assert.equal(res.ok, true, `${n} bottoms, U${k + 1} at its own default ${a}: ${res.reason}`);
+      assert.deepStrictEqual(plain(res.value), plain(home), `${n} bottoms, U${k + 1} at its own default is the default layout`);
+    });
+  }
+  const thirty = HPE.layout.solve(panFields(9, 2, 30)).value;
+  const own = bottomAnglesOf(thirty.fields);
+  own.forEach((_, k) => assert.equal(HPE.layout.bottomClash(thirty.geom, thirty.fields, own, k), null,
+    `30 bottoms sit 12 apart, under F=15, and the default placement is clear (U${k + 1})`));
+  const dense = HPE.layout.solve(panFields(9, 2, 36)).value;
+  assert.deepStrictEqual(bottomAnglesOf(dense.fields).slice(0, 2), [275, 265]);
+  const swapped = HPE.layout.solve(panFields(9, 2, 36), { angles: { bottom: bottomAnglesOf(dense.fields) } });
+  assert.equal(swapped.ok, true, "36 bottoms sit 10 apart and the floor yields to the gap");
+});
+
+test("FPL: geometry is solved from the default placement, not the override", () => {
+  const fields = panFields(9, 2, 35);
+  const plainRun = HPE.layout.solve(fields).value;
+  const moved = HPE.layout.solve(fields, { angles: { bottom: [275, ...Array(34).fill(null)] } });
+  assert.equal(moved.ok, true, moved.reason);
+  assert.equal(moved.value.geom.r_bnote, plainRun.geom.r_bnote, "r_bnote");
+  assert.equal(moved.value.geom.ext, plainRun.geom.ext, "ext");
+  assert.deepStrictEqual(plain(moved.value.geom), plain(plainRun.geom));
+});
+
+test("FPL: bottomClash names the note in the way, top shell included", () => {
+  const { geom, fields } = HPE.layout.solve(FPL_PYGMY()).value;
+  const ids = bottomIds(fields);
+  assert.equal(HPE.layout.bottomClash(geom, fields, [245, 240, 0, 180, 60, 120], 0), ids[1]);
+  assert.equal(HPE.layout.bottomClash(geom, fields, [255, 240, 0, 180, 60, 120], 0), null);
+  assert.equal(HPE.layout.bottomClash(geom, fields, [null, null, null, null, null, null], 3), null);
+  const lone = HPE.layout.solve(panFields(9, 0, 1)).value;
+  const rimAngle = lone.fields[1][4];
+  const rimId = "1";
+  const crowded = { ...lone.geom, bottom: lone.geom.rim };
+  assert.equal(HPE.layout.bottomClash(crowded, lone.fields, [rimAngle], 0), rimId, "a rim circle");
+  assert.equal(HPE.layout.bottomClash(lone.geom, lone.fields, [rimAngle], 0), null, "the real ring is clear");
+  const centre = { ...lone.geom, bottom: 0 };
+  assert.equal(HPE.layout.bottomClash(centre, lone.fields, [90], 0), "0", "the ding");
+});
+
+test("FPL: an override changes bottom slot 4 and nothing else", () => {
+  const plainRun = HPE.layout.solve(FPL_PYGMY()).value;
+  const asked = { angles: { bottom: [305, null, 5, null, 65, null] } };
+  const moved = HPE.layout.solve(FPL_PYGMY(), asked);
+  assert.equal(moved.ok, true, moved.reason);
+  assert.deepStrictEqual(moved.value.geom, plainRun.geom);
+  assert.equal(moved.value.geom.ext, plainRun.geom.ext, "ext by name");
+  assert.equal(moved.value.geom.r_bnote, plainRun.geom.r_bnote);
+  const ids = bottomIds(plainRun.fields);
+  for (const id of Object.keys(plainRun.fields)) {
+    if (ids.includes(id)) continue;
+    assert.deepStrictEqual(moved.value.fields[id], plainRun.fields[id], `non-bottom #${id}`);
+  }
+  const want = [305, 240, 5, 180, 65, 120];
+  ids.forEach((id, k) => {
+    const a = plainRun.fields[id];
+    const b = moved.value.fields[id];
+    assert.equal(b[4], want[k], `U${k + 1} angle`);
+    assert.deepStrictEqual(b.slice(0, 4), a.slice(0, 4));
+    assert.equal(b[5], a[5], `U${k + 1} keeps its label`);
+  });
+});
+
+test("FPL: mirrorBottom reflects, seats permute, then angles override last", () => {
+  const fields = () => panFields(7, 0, 5);
+  const call = { mirror: true, mirrorBottom: true, seats: { rim: [2, 0, 1, 3, 4, 5, 6] } };
+  const base = HPE.layout.solve(fields(), call).value;
+  assert.deepStrictEqual(bottomAnglesOf(base.fields), [234, 306, 162, 18, 90]);
+  const withAngles = HPE.layout.solve(fields(), { ...call, angles: { bottom: [230, null, null, null, 100] } });
+  assert.equal(withAngles.ok, true, withAngles.reason);
+  assert.deepStrictEqual(bottomAnglesOf(withAngles.value.fields), [230, 306, 162, 18, 100],
+    "given angles are verbatim, not reflected");
+  for (const id of Object.keys(base.fields).filter((i) => base.fields[i][3] !== "bottom")) {
+    assert.deepStrictEqual(withAngles.value.fields[id], base.fields[id], `#${id}`);
+  }
+  const rimPlain = HPE.layout.solve(fields(), { mirror: true, mirrorBottom: true }).value;
+  assert.notDeepEqual(rimPlain.fields[1], base.fields[1], "rim seats moved a rim note");
+  const unflipped = HPE.layout.solve(fields(), { ...call, mirrorBottom: false, angles: { bottom: [310, null, null, null, 100] } });
+  assert.equal(unflipped.ok, true, unflipped.reason);
+  assert.deepStrictEqual(bottomAnglesOf(unflipped.value.fields), [310, 234, 18, 162, 100],
+    "null entries follow mirrorBottom, set entries do not");
+});
+
+test("FPL: seats.bottom beside angles is BAD_NOTE, rim and inner seats beside angles are accepted", () => {
+  const angles = { bottom: [305, null, null, null, null, null] };
+  const both = HPE.layout.solve(FPL_PYGMY(), { angles, seats: { bottom: [0, 1, 2, 3, 4, 5] } });
+  assert.equal(both.code, "BAD_NOTE", "even the identity list");
+  const swapped = HPE.layout.solve(FPL_PYGMY(), { angles, seats: { bottom: [1, 0, 2, 3, 4, 5] } });
+  assert.equal(swapped.code, "BAD_NOTE");
+  const rimInner = HPE.layout.solve(FPL_PYGMY(), {
+    angles, seats: { rim: [1, 0, 2, 3, 4, 5, 6, 7, 8], inner: [1, 0] } });
+  assert.equal(rimInner.ok, true, rimInner.reason);
+  const idle = HPE.layout.solve(FPL_PYGMY(), {
+    angles: { bottom: [null, null, null, null, null, null] }, seats: { bottom: [1, 0, 2, 3, 4, 5] } });
+  assert.equal(idle.ok, true, "an all-null angles option is absent, so it excludes nothing");
+  const seeded = FPL_PYGMY();
+  const viaSeed = HPE.layout.solve({ fields: seeded, options: { angles, seats: { bottom: [1, 0, 2, 3, 4, 5] } } });
+  assert.equal(viaSeed.code, "BAD_NOTE", "the seed's own options are read too");
+});
+
+test("FPL: under random valid bottom angles no two circles overlap, every name fits and every circle and number sits inside ext", () => {
+  // ext is the outermost orbit plus r_bnote plus the number reach and never an
+  // angle, which is why an override cannot move it; this proves it on lists the
+  // predicate built rather than lists chosen to pass.
+  const app = boot();
+  const labelSize = (r, zone) => app.get(`labelSize(${r}, ${JSON.stringify(zone)})`);
+  let seed = 20261023;
+  const random = () => {
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  const entries = SWEEP.filter((e) => countZone(solved(e).fields, "bottom") > 0).map((e) => ({
+    label: e.label, make: () => e.seed }));
+  for (let n = 5; n <= 19; n += 1) {
+    for (let b = 1; b <= 6; b += 1) {
+      const rim = Math.min(13, n);
+      const inner = n > 13 ? n - 13 : 0;
+      entries.push({ label: `rim ${rim} inner ${inner} bottom ${b}`, make: () => panFields(rim, inner, b) });
+    }
+  }
+  let checked = 0;
+  for (const entry of entries) {
+    const base = HPE.layout.solve(entry.make()).value;
+    const count = bottomIds(base.fields).length;
+    const sizes = {
+      rim: labelSize(base.geom.r_note, "rim"), bottom: labelSize(base.geom.r_bnote, "bottom") };
+    let accepted = 0;
+    let attempts = 0;
+    while (accepted < 200 && attempts < 4000) {
+      attempts += 1;
+      const list = [];
+      for (let k = 0; k < count; k += 1) list.push(random() < 0.3 ? null : 5 * Math.floor(random() * 72));
+      if (list.every((a) => a === null)) continue;
+      let clear = true;
+      for (let k = 0; k < count && clear; k += 1) {
+        clear = HPE.layout.bottomClash(base.geom, base.fields, list, k) === null;
+      }
+      if (!clear) continue;
+      accepted += 1;
+      const res = HPE.layout.solve(entry.make(), { angles: { bottom: list } });
+      assert.equal(res.ok, true, `${entry.label} ${JSON.stringify(list)}: ${res.reason}`);
+      const { geom, fields } = res.value;
+      assert.deepStrictEqual(geom, base.geom, `${entry.label}: geometry`);
+      const cs = circles(geom, fields);
+      for (let i = 0; i < cs.length; i += 1) {
+        assert.ok(Math.hypot(cs[i].x, cs[i].y) + cs[i].r <= geom.ext, `${entry.label}: #${cs[i].id} past ext`);
+        for (let j = i + 1; j < cs.length; j += 1) {
+          const d = Math.hypot(cs[i].x - cs[j].x, cs[i].y - cs[j].y);
+          assert.ok(d >= cs[i].r + cs[j].r - 1e-9,
+            `${entry.label} ${JSON.stringify(list)}: #${cs[i].id} and #${cs[j].id} overlap`);
+        }
+      }
+      for (const id of bottomIds(fields)) {
+        const nr = labelRadius(geom, "bottom");
+        assert.ok(nr >= 0 && nr + geom.f_num <= geom.ext, `${entry.label}: #${id} number past ext`);
+        const reach = inkReach(inkBox(fields[id][0], fields[id][1], sizes.bottom));
+        assert.ok(reach <= geom.r_bnote, `${entry.label}: #${id} name outside its field`);
+      }
+      checked += 1;
+    }
+    assert.ok(accepted > 0, `${entry.label}: no valid list found`);
+  }
+  assert.ok(checked > 1000, `the sweep checked ${checked} lists`);
+});

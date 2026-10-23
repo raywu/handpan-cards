@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12537,7 +12537,7 @@ sheet.addEventListener("keydown", e => {
+@@ -13157,7 +13157,7 @@ sheet.addEventListener("keydown", e => {
    if (e.key !== "Tab") return;
    const onTab = sheetTab === "layout" ? tabLayout : tabScale;
    const shut = isLipShut();
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +  const stops = (false
      ? [backBtn, onTab, previewBox.querySelector('.panhit[tabindex="0"]'),
         anchorOne, anchorBetween, mirrorTop, mirrorBot, fineBtn,
-        notePrev, noteNext, seatPrev, seatNext, resetBtn,
+        notePrev, noteNext, seatPrev, seatNext, anglePrev, angleNext, resetBtn,

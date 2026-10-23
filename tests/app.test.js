@@ -3651,7 +3651,7 @@ test("PM rule 7: HANDPAN 101 is the last Resources link, a Google Doc in a new t
   const panel = pmPanel();
   const group = panel.slice(panel.indexOf('<h3 class="panel-heading">Resources</h3>'));
   const links = [...group.matchAll(/<a\b[^>]*>[\s\S]*?<\/a>/g)].map((m) => m[0]);
-  assert.ok(links.length >= 6, "six Resources links");
+  assert.ok(links.length >= 5, "five Resources links");
   const first = links[links.length - 1];
   assert.match(first, /\bid="res-handpan-101"/);
   assert.match(first, /href="https:\/\/docs\.google\.com\/document\/d\/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco\/edit\?usp=drivesdk"/);
@@ -3663,7 +3663,7 @@ test("PM rule 7: HANDPAN 101 is the last Resources link, a Google Doc in a new t
   assert.match(first, />HANDPAN 101<\/a>/);
   const rows = [...group.matchAll(/<div class="modebar([^"]*)">([\s\S]*?)<\/div>/g)];
   assert.strictEqual(rows.length, 4, "four modebar rows");
-  assert.strictEqual((rows[0][2].match(/<a\b/g) || []).length, 3, "the site row keeps three siblings");
+  assert.strictEqual((rows[0][2].match(/<a\b/g) || []).length, 2, "the site row keeps two siblings");
   assert.strictEqual((rows[1][2].match(/<a\b/g) || []).length, 2, "the Amy row keeps two");
   assert.strictEqual((rows[2][2].match(/<a\b/g) || []).length, 1, "HANDPAN 101 is alone in its row");
   assert.ok(rows[2][2].includes("res-handpan-101"));
@@ -3786,10 +3786,9 @@ test("the download is named the way the print pipeline names its files", () => {
   const full = anchor(app);
   assert.ok(full, "a desktop download is delivered through an <a download>");
   assert.strictEqual(full.clicks, 1, "the anchor was built but never activated");
-  // tools/decks.py's `if __name__ == "__main__":` block names the three shipped files, `<Name>_CHORD_ONLY_Letter.pdf`;
+  // pdfFileName() names a download `<Name>_CHORD_ONLY_<paper>.pdf`, the shape tools/decks.py main() writes;
   // the unused full-deck path names its output `<Name>_Cards_Letter.pdf`, with punctuation folded out of
-  // the deck name. A custom deck's download joins that shelf, so it takes the
-  // same shape rather than inventing a second one.
+  // the deck name. A custom deck's download takes the same shape rather than inventing a second one.
   assert.match(full.download, /^[A-Za-z0-9_]+_Cards_Letter\.pdf$/);
   app.run('downloadDeckPDF("shop")');
   assert.match(anchor(app).download, /^[A-Za-z0-9_]+_CHORD_ONLY_Letter\.pdf$/);
@@ -4652,7 +4651,7 @@ describe("panel fit judge", () => {
     delete candOver.controls["deck-add"];
     assert.strictEqual(judge(baseOver, candOver).rule2.fail.length, 1, "a base that overflows does not excuse it");
     assert.strictEqual(judge(cell(), withControl(cell(), "deck-add", { exists: false, rendered: false, disabled: false, bottom: 0 })).rule2.fail.length, 1, "exists:false counts as lacking");
-    assert.deepStrictEqual(pf.REMOVED_BY_DESIGN, ["modeS", "button:FULL DECK PDF", "button:CHORD-ONLY PDF", "share-copy"]);
+    assert.deepStrictEqual(pf.REMOVED_BY_DESIGN, ["modeS", "button:FULL DECK PDF", "button:CHORD-ONLY PDF", "share-copy", "res-trainingcards"]);
     const noS = judge(cell(), lacks("modeS"));
     assert.strictEqual(noS.rule2.fail.length, 0, "modeS is removed by design");
     assert.strictEqual(noS.rule2.reported.length, 0);
@@ -5680,7 +5679,7 @@ test("S3: seats, anchor and a one-ring mirror travel through a share link and re
   assert.strictEqual(made.ok, true, made.reason);
   const url = link(app, made.value.id);
   assert.strictEqual(url.ok, true, url.reason);
-  assert.strictEqual(payload(url.value).charAt(0), "5");
+  assert.strictEqual(payload(url.value).charAt(0), "6");
 
   const other = boot();
   const opened = openShare(other, payload(url.value));
@@ -6932,7 +6931,8 @@ test("DR1 rule S: notice, switches, anchors and hint match spec 16 for every she
       bad("drawer shown", M.open, shown("scale-drawer"));
       bad("status shown", M.open && M.valid, shown("scale-drawer-status"));
       if (!M.open) bad("status cleared", "", els["scale-drawer-status"].textContent);
-      bad("drawer hint", M.open && M.valid ? "Tap a note, then tap another note in the same ring to swap them. Or hold a note and drag it." : "",
+      bad("drawer hint", M.open && M.valid ? "Tap a note, then tap another note in the same ring to swap them. Or hold a note and drag it." +
+        (M.hasBottom ? " Bottom notes also slide along their ring: hold one and drag it to where it sits on your pan." : "") : "",
         shown("scale-drawer-hint") ? els["scale-drawer-hint"].textContent : "");
       for (const id of ["scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next"]) bad(`${id} shown`, false, shown(id));
       for (const id of ["scale-layout-reset", "scale-fine-toggle"]) bad(`${id} shown`, M.open, shown(id));
@@ -8094,9 +8094,9 @@ describe("DR2b refused drops and reduced motion", () => {
 });
 
 describe("DR2b item 2: a ring of one note", () => {
-  const one = d2Build({ rim: 3, inner: 0, bottom: 1 });
+  const one = d2Build({ rim: 3, inner: 1, bottom: 0 });
   const ONE = one.text;
-  const [LONE] = one.names.bottom;
+  const [LONE] = one.names.inner;
   const [RIM0] = one.names.rim;
   test("DR2b (55, item 2): with nothing picked a hold, a drag start, Space and Enter on the lone note write row 2 and pick nothing", () => {
     for (const how of ["hold", "drag", "space", "enter", "tap"]) {
@@ -8108,7 +8108,7 @@ describe("DR2b item 2: a ring of one note", () => {
       else if (how === "enter") d2Key(app, LONE, "Enter");
       else d2Tap(app, LONE);
       assert.strictEqual(d2Pick(app), null, how);
-      assert.strictEqual(d2Status(app), `${LONE} is the only note in the bottom, so it has no other seat.`, how);
+      assert.strictEqual(d2Status(app), `${LONE} is the only note in the inner, so it has no other seat.`, how);
       assert.strictEqual(DG.ghostEls(app).length, 0, how);
     }
   });
@@ -8379,7 +8379,7 @@ test("rule N matrix: every scale, anchor, mirror and swap count keeps each ring'
   }
 });
 
-test("rule N: a moved deck's stored record is the record and v5 string with no parent option", () => {
+test("rule N: a moved deck's stored record is the record and v6 string with no parent option", () => {
   const app = boot();
   const made = app.generate(DR3_D3, { seats: DR3_SWAPPED, anchor: "between", mirror: true });
   assert.strictEqual(made.ok, true, made.reason);
@@ -8389,7 +8389,7 @@ test("rule N: a moved deck's stored record is the record and v5 string with no p
     o: { palette: 0, mirror: true, mirrorBottom: true, anchor: "between", parent: null, seats: DR3_SWAPPED },
   }]);
   assert.strictEqual(plain(app.get(`shareLink(${expr})`)).value,
-    "https://example.test/index.html#s=5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/mirror/between/seats-1,0,2,3,4,5,6,7;;/3a1c93");
+    "https://example.test/index.html#s=6/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/mirror/between/seats-1,0,2,3,4,5,6,7;;/bbc2db");
   assert.strictEqual(app.get(`HPE.core.formatSeed(${expr}.fields)`), DR3_D3);
 });
 
@@ -9912,22 +9912,23 @@ describe("share url", () => {
   // between anchor and parent 1: the string main wrote for it (rule N).
   const V4_MOVED = "4A4GpAI11Co13D214D215D216D217D211D213DGem2J49CGan2GenB30iCYmpB3GiDImsB3SxEmgT2O_m";
   const V5_MOVED = "5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/parent-aeolian/mirror/between/seats-1,0,2,3,4,5,6,7;;/975b6c";
+  const V6_MOVED = "6/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/parent-aeolian/mirror/between/seats-1,0,2,3,4,5,6,7;;/61d4aa";
 
-  test("SV: a v4 #s= boot imports once and ends with the v5 code in the bar through one replaceState", () => {
+  test("SV: a v4 #s= boot imports once and ends with the v6 code in the bar through one replaceState", () => {
     const app = bootGA({ href: PAGE + "#s=" + V4_MOVED });
-    assert.strictEqual(app.location.hash, "#s=" + V5_MOVED);
+    assert.strictEqual(app.location.hash, "#s=" + V6_MOVED);
     assert.strictEqual(gaEvents(app).filter((e) => e === "share_open").length, 1);
     assert.deepStrictEqual(app.history.calls.map((c) => c.type), ["replace"]);
     assert.strictEqual(app.deckId(), plain(app.get("HPE.core.deckId(HPE.core.parseSeed(" + JSON.stringify(DR3_D3) + ", {}).value.fields)")));
   });
 
-  test("SV: a hashchange to the v4 spelling of the deck shown rewrites the bar to v5 and imports nothing", () => {
+  test("SV: a hashchange to the v4 spelling of the deck shown rewrites the bar to v6 and imports nothing", () => {
     const app = bootGA({ href: PAGE + "#s=" + V4_MOVED });
     const saved = plain(app.get("savedScales()"));
     const events = gaEvents(app).length;
     const calls = app.history.calls.length;
     app.hashchange("#s=" + V4_MOVED);
-    assert.strictEqual(app.location.hash, "#s=" + V5_MOVED);
+    assert.strictEqual(app.location.hash, "#s=" + V6_MOVED);
     assert.deepStrictEqual(app.history.calls.slice(calls).map((c) => c.type), ["replace"]);
     assert.deepStrictEqual(plain(app.get("savedScales()")), saved);
     assert.strictEqual(gaEvents(app).length, events);
@@ -9941,13 +9942,52 @@ describe("share url", () => {
     const unsorted = V5_MOVED.replace("(D3)_A3_C4_D4_E4_F4_G4_A4_C5", "(D3)_C4_A3_D4_E4_G4_F4_A4_C5");
     assert.notStrictEqual(unsorted, V5_MOVED);
     app.hashchange("#s=" + unsorted);
-    assert.strictEqual(app.location.hash, "#s=" + V5_MOVED);
+    assert.strictEqual(app.location.hash, "#s=" + V6_MOVED);
     assert.deepStrictEqual(app.history.calls.slice(calls).map((c) => c.type), ["replace"]);
     assert.deepStrictEqual(plain(app.get("savedScales()")), saved);
     assert.strictEqual(gaEvents(app).length, events);
   });
 
-  test("SV: stored records keep v 4 after a v5 boot", () => {
+  test("FPS: a v5 #s= boot imports once and ends with the v6 code in the bar through one replaceState", () => {
+    const app = bootGA({ href: PAGE + "#s=" + V5_MOVED });
+    assert.strictEqual(app.location.hash, "#s=" + V6_MOVED);
+    assert.strictEqual(gaEvents(app).filter((e) => e === "share_open").length, 1);
+    assert.deepStrictEqual(app.history.calls.map((c) => c.type), ["replace"]);
+    assert.strictEqual(plain(app.get("savedScales()")).length, 1);
+  });
+
+  test("FPS: a hashchange to the v5 spelling of the deck shown rewrites the bar to v6 and imports nothing", () => {
+    const app = bootGA({ href: PAGE + "#s=" + V6_MOVED });
+    const saved = plain(app.get("savedScales()"));
+    const events = gaEvents(app).length;
+    const calls = app.history.calls.length;
+    app.hashchange("#s=" + V5_MOVED);
+    assert.strictEqual(app.location.hash, "#s=" + V6_MOVED);
+    assert.deepStrictEqual(app.history.calls.slice(calls).map((c) => c.type), ["replace"]);
+    assert.deepStrictEqual(plain(app.get("savedScales()")), saved);
+    assert.strictEqual(gaEvents(app).length, events);
+  });
+
+  test("FPS: a v6 link under the floor, or with a bottom seats list beside at-, is BAD_NOTE and the app imports nothing", () => {
+    const seg = "uC3_uDb3_uEb3_(F3)_G3_Ab3_uBb3_C4_uDb4_Eb4_F4_G4_Ab4_C5_Eb5_-_F5_G5_uAb5";
+    const fnv = (text) => {
+      let h = 0x811c9dc5;
+      for (const b of Buffer.from(text, "utf8")) { h = ((h ^ b) >>> 0); h = Math.imul(h, 0x01000193) >>> 0; }
+      return (h >>> 8).toString(16).padStart(6, "0");
+    };
+    const forge = (options) =>
+      ["6", seg, "*x"].concat(options, fnv(["6", seg, "\t"].concat(options).join("\n"))).join("/");
+    const stored = plain(bootGA().get("savedScales()")).length;
+    for (const options of [["between", "at-5,,,,,"], ["between", "seats-;;5,4,3,2,1,0", "at-,,,20,,"]]) {
+      const app = bootGA({ href: PAGE + "#s=" + forge(options) });
+      assert.strictEqual(plain(app.get("savedScales()")).length, stored, options.join("/"));
+      assert.strictEqual(gaEvents(app).filter((e) => e === "share_open").length, 0);
+    }
+    const ok = bootGA({ href: PAGE + "#s=" + forge(["between", "at-,,,20,,"]) });
+    assert.strictEqual(plain(ok.get("savedScales()")).length, stored + 1, "the control imports");
+  });
+
+  test("FPS: stored records keep v 4 after a v6 boot", () => {
     const app = bootGA({ href: PAGE + "#s=" + V4_MOVED });
     const saved = plain(app.get("savedScales()"));
     assert.strictEqual(saved.length, 1);
@@ -9956,12 +9996,13 @@ describe("share url", () => {
     assert.strictEqual(app.get("SHARE_VERSION"), 4);
   });
 
-  const PARENTLESS = "5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/f0daf4";
+  const PARENTLESS_V5 = "5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/f0daf4";
+  const PARENTLESS = "6/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/77d0e3";
 
-  test("PI: a v5 link with no parent opens and the bar keeps it unchanged, with no parent option and no replaceState", () => {
-    const app = bootGA({ href: PAGE + "#s=" + PARENTLESS });
+  test("PI: a v5 link with no parent opens and the bar ends on its parentless v6 code through one replaceState, with no parent option", () => {
+    const app = bootGA({ href: PAGE + "#s=" + PARENTLESS_V5 });
     assert.strictEqual(app.location.hash, "#s=" + PARENTLESS);
-    assert.strictEqual(app.history.calls.filter((c) => c.type === "replace").length, 0);
+    assert.strictEqual(app.history.calls.filter((c) => c.type === "replace").length, 1);
     const saved = plain(app.get("savedScales()"));
     assert.strictEqual(saved.length, 1);
     assert.ok(saved[0].o.parent == null, "a parent was stored");
@@ -9979,15 +10020,15 @@ describe("share url", () => {
     assert.strictEqual(plain(app.get(`shareLink(${expr})`)).value, "https://example.test/index.html#s=" + PARENTLESS);
   });
 
-  test("PI: a v4 link with no parent opens to a v5 bar with no parent option", () => {
+  test("PI: a v4 link with no parent opens to a v6 bar with no parent option", () => {
     const app = bootGA({ href: PAGE + "#s=4A4GpAI11Co13D214D215D216D217D211D213DGem2Gam2J09JLaWK45E2Wpf9aJ0" });
-    assert.strictEqual(app.location.hash, "#s=5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/MY+PAN/b4174c");
+    assert.strictEqual(app.location.hash, "#s=6/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/MY+PAN/ebb622");
     assert.ok(plain(app.get("savedScales()"))[0].o.parent == null);
   });
 
   test("PI: an explicit parent equal to the inferred one still travels in the bar and the record", () => {
-    const app = bootGA({ href: PAGE + "#s=" + V5_MOVED });
-    assert.strictEqual(app.location.hash, "#s=" + V5_MOVED);
+    const app = bootGA({ href: PAGE + "#s=" + V6_MOVED });
+    assert.strictEqual(app.location.hash, "#s=" + V6_MOVED);
     assert.strictEqual(plain(app.get("savedScales()"))[0].o.parent, 1);
   });
 
@@ -10616,7 +10657,7 @@ describe("about overlay", () => {
     assert.ok(group.lastIndexOf('id="about-open"') > group.lastIndexOf("res-handpan-101"), "ABOUT is not after HANDPAN 101");
     const app = boot();
     const resIds = [...group.matchAll(/<a[^>]*id="(res-[\w-]+)"/g)].map((m) => m[1]);
-    assert.ok(resIds.length >= 6 && resIds.includes("res-handpan-101"), "the Resources links are in the markup");
+    assert.ok(resIds.length >= 5 && resIds.includes("res-handpan-101"), "the Resources links are in the markup");
     app.run(`settingsPanel.querySelectorAll = (sel) => /res-/.test(sel) ? ${JSON.stringify(resIds)}.map((id) => ({ id, disabled: false, getClientRects: () => [{}] })) : []`);
     app.run("openPanel()");
     const ids = app.get("panelStops().map((e) => e.id)");
@@ -13333,3 +13374,367 @@ describe("DS: the visible word is scale", () => {
     assert.strictEqual(app.els["scale-msg"].textContent, "Keep at least one scale. Add a scale before deleting D KURD 10.");
   });
 });
+
+/* ---- Lane FP-D: the bottom ring slides (drawer drag and nudge) ----
+ * The fixture is three bottom notes, a ding and four rim notes. The sandbox plate
+ * sits at (200, 200) at scale 1 with R = 100 and the bottom orbit at 115, so a
+ * bottom note at angle a is at (200 + 115 cos a, 200 - 115 sin a). The floor
+ * between two bottom notes is 15 degrees here. */
+describe("FPD: the drawer slides bottom notes", () => {
+  const FPD = "[C3] [D3] [E3] (A3) C4 D4 E4 F4";
+  const orbit = (a, r = 115) => ({ x: 200 + r * Math.cos(a * Math.PI / 180), y: 200 - r * Math.sin(a * Math.PI / 180) });
+  const fpdAngles = (app) => JSON.parse(app.get("JSON.stringify(layoutAngles)"));
+  const fpdAngle = (app, id) => app.get(`lastSolved.fields[${id}][4]`);
+  const fpdLabel = (app, id) => app.get(`lastSolved.fields[${id}][5]`);
+  const fpdWarn = (app) => app.els["scale-drawer-status"].classList.contains("warn");
+  const fpdOpen = (text = FPD, opts = {}) => dgOpen(opts, text);
+  const near = (a, b, msg) => assert.ok(Math.abs(a - b) < 0.6, `${msg}: ${a} vs ${b}`);
+
+  test("FPD: a bottom note dragged clear of other notes lands on the nearest 5° step, the ghost sits on the orbit, and the status names note, angle and place", () => {
+    for (const how of ["mouse", "touch"]) {
+      const app = fpdOpen();
+      const g = DG.down(app, "C3", how);
+      if (how === "touch") app.advance(250);
+      DG.moveTo(app, g, g.x + 6, g.y);
+      const lift = how === "touch" ? 36 : 0;
+      const to = { x: 260, y: 296 };
+      DG.moveTo(app, g, to.x, to.y + lift);
+      const ghosts = DG.ghostEls(app);
+      assert.strictEqual(ghosts.length, 1, how);
+      const gc = DG.ghostCentre(ghosts[0]);
+      const want = orbit(300);
+      near(gc.x, want.x, `${how} ghost x`);
+      near(gc.y, want.y, `${how} ghost y`);
+      assert.strictEqual(String(ghosts[0].style.transition || ""), "", `${how}: the ghost has no transition`);
+      DG.release(app, g, to.x, to.y + lift);
+      assert.deepStrictEqual(fpdAngles(app), { bottom: [300, null, null] }, how);
+      assert.strictEqual(fpdAngle(app, 101), 300, how);
+      assert.strictEqual(fpdLabel(app, 101), "U1", how);
+      assert.strictEqual(DG.ghostEls(app).length, 0, how);
+      assert.strictEqual(d2Pick(app), null, how);
+      assert.strictEqual(d2Status(app), "C3 moved to 300°, lower right. Seat U1 stays its number.", how);
+      assert.strictEqual(fpdWarn(app), false, how);
+      const g2 = DG.down(app, "C3", how);
+      if (how === "touch") app.advance(250);
+      DG.moveTo(app, g2, g2.x + 6, g2.y);
+      const q = orbit(312);
+      DG.moveTo(app, g2, q.x, q.y + lift);
+      DG.release(app, g2, q.x, q.y + lift);
+      assert.deepStrictEqual(fpdAngles(app), { bottom: [310, null, null] }, how);
+      assert.strictEqual(d2Status(app), "C3 moved to 310°, lower right.", `${how}: the second sentence shows once`);
+    }
+  });
+
+  test("FPD: under active angles a drop on a bottom note exchanges the two angles and keeps each note's label", () => {
+    const app = fpdOpen();
+    app.run("layoutAngles = { bottom: [300, 200, null] }; resyncSheet(true)");
+    assert.strictEqual(fpdAngle(app, 101), 300);
+    DG.mouseDrag(app, "C3", "D3");
+    assert.deepStrictEqual(fpdAngles(app), { bottom: [200, 300, null] });
+    assert.strictEqual(fpdAngle(app, 101), 200);
+    assert.strictEqual(fpdAngle(app, 102), 300);
+    assert.strictEqual(fpdLabel(app, 101), "U1");
+    assert.strictEqual(fpdLabel(app, 102), "U2");
+    assert.strictEqual(app.get("JSON.stringify(layoutSeats)"), "null");
+    assert.match(d2Status(app), /^Swapped C3 and D3\./);
+  });
+
+  test("FPD: releasing a held bottom note over a rim note moves it, and a held rim note over a bottom note is still refused", () => {
+    const app = fpdOpen();
+    const g = DG.down(app, "C3", "mouse");
+    DG.moveTo(app, g, g.x + 6, g.y);
+    const rim = DG.centre(DG.noteNode(app, "C4"));
+    DG.moveTo(app, g, rim.x, rim.y);
+    DG.release(app, g, rim.x, rim.y);
+    const a = fpdAngles(app);
+    assert.ok(a && a.bottom[0] !== null && a.bottom[1] === null, "the bottom note moved");
+    assert.match(d2Status(app), /^C3 /);
+    const app2 = fpdOpen();
+    const bot = DG.centre(DG.noteNode(app2, "D3"));
+    DG.mouseDragTo(app2, "C4", bot.x, bot.y);
+    assert.strictEqual(d2Status(app2), "Not moved. C4 moves only within the rim.");
+    assert.strictEqual(fpdWarn(app2), true);
+    assert.strictEqual(app2.get("JSON.stringify(layoutAngles)"), "null");
+  });
+
+  test("FPD: a release under the floor snaps to the nearest free step on the approach side, warns and flashes", () => {
+    for (const reduced of [false, true]) {
+      const app = fpdOpen(FPD, { reducedMotion: reduced });
+      const g = DG.down(app, "C3", "mouse");
+      DG.moveTo(app, g, g.x + 6, g.y);
+      const path = [270, 235, 220].map((a) => orbit(a));
+      for (const p of path) DG.moveTo(app, g, p.x, p.y);
+      DG.release(app, g, path[2].x, path[2].y);
+      assert.deepStrictEqual(fpdAngles(app), { bottom: [225, null, null] }, `reduced ${reduced}`);
+      assert.strictEqual(d2Status(app), "C3 was too close to D3, so it sits at 225°, lower left.", `reduced ${reduced}`);
+      assert.strictEqual(fpdWarn(app), true);
+      assert.deepStrictEqual(JSON.parse(app.get("JSON.stringify(panFlash)")), ["101"], `reduced ${reduced}`);
+      app.advance(600);
+      assert.strictEqual(app.get("panFlash"), null, `reduced ${reduced}`);
+    }
+  });
+});
+
+describe("FPD: seats, sole note, hint, nudge, notices and records", () => {
+  const FPD = "[C3] [D3] [E3] (A3) C4 D4 E4 F4";
+  const orbit = (a, r = 115) => ({ x: 200 + r * Math.cos(a * Math.PI / 180), y: 200 - r * Math.sin(a * Math.PI / 180) });
+  const ang = (app) => JSON.parse(app.get("JSON.stringify(layoutAngles)"));
+  const angleOf = (app, id) => app.get(`lastSolved.fields[${id}][4]`);
+  const labelOf = (app, id) => app.get(`lastSolved.fields[${id}][5]`);
+  const open = (text = FPD, edit = false) => dgOpen({}, text, edit);
+  const slide = (app, name, a) => {
+    const g = DG.down(app, name, "mouse");
+    DG.moveTo(app, g, g.x + 6, g.y);
+    const q = orbit(a);
+    DG.moveTo(app, g, q.x, q.y);
+    DG.release(app, g, q.x, q.y);
+  };
+
+  test("FPD: the first slide on a seated bottom ring folds seats into angles: no position changes, the record carries no seats.bottom, and the labels run U1..Un low to high", () => {
+    const app = open();
+    DG.mouseDrag(app, "C3", "D3");
+    assert.notStrictEqual(dgSeats(app), null);
+    const before = [101, 102, 103].map((id) => angleOf(app, id));
+    slide(app, "E3", 150);
+    assert.strictEqual(dgSeats(app), null);
+    const after = [101, 102, 103].map((id) => angleOf(app, id));
+    assert.deepStrictEqual(after.slice(0, 2), before.slice(0, 2));
+    assert.strictEqual(after[2], 150);
+    assert.deepStrictEqual(ang(app), { bottom: [before[0], before[1], 150] });
+    assert.deepStrictEqual([101, 102, 103].map((id) => labelOf(app, id)), ["U1", "U2", "U3"]);
+    assert.match(d2Status(app), /Bottom seat numbers now run low to high\.$/);
+    app.els["scale-generate"].click();
+    const o = app.registry()[app.deckId()].options;
+    assert.strictEqual(o.seats && o.seats.bottom, undefined);
+    assert.deepStrictEqual(o.angles, { bottom: [before[0], before[1], 150] });
+  });
+
+  test("FPD: a scale with one bottom note opens the drawer with it pickable, a drag moves it, and the nothing-to-rearrange line never shows", () => {
+    const app = open("[C3] (A3) E4");
+    assert.doesNotMatch(app.els["scale-layout-state"].textContent + app.els["scale-drawer-status"].textContent, /nothing to rearrange/i);
+    d2Tap(app, "C3");
+    assert.strictEqual(d2Pick(app).ring, "bottom");
+    assert.strictEqual(app.els["scale-note-prev"].disabled, false);
+    app.els["scale-note-next"].click();
+    app.els["scale-note-next"].click();
+    d2Tap(app, "C3");
+    slide(app, "C3", 300);
+    assert.deepStrictEqual(ang(app), { bottom: [300] });
+    assert.match(d2Status(app), /^C3 moved to 300°, lower right\./);
+  });
+
+  test("FPD: the hint and the pick announcement name the slide only on a pan with bottom notes", () => {
+    const hintOf = (app) => app.els["scale-drawer-hint"].textContent;
+    const app = open();
+    assert.match(hintOf(app), /Bottom notes also slide along their ring/);
+    d2Tap(app, "C3");
+    assert.strictEqual(d2Status(app), "Picked up C3. Drag it along the ring to move it, or drop it on another bottom note to swap.");
+    const fine = open();
+    fine.els["scale-fine-toggle"].click();
+    d2Tap(fine, "C3");
+    assert.strictEqual(d2Status(fine), "Picked up C3. Drag it along the ring to move it, or drop it on another bottom note to swap, or use the finer controls below.");
+    const none = open("(A3) C4 D4 E4 F4 G4");
+    assert.doesNotMatch(hintOf(none), /slide along/);
+    d2Tap(none, "C4");
+    assert.doesNotMatch(d2Status(none), /along the ring/);
+  });
+
+  test("FPD: with a bottom note picked by PREVIOUS NOTE, CLOCKWISE moves it 5° and a nudge into the floor is refused", () => {
+    const app = open();
+    app.els["scale-fine-toggle"].click();
+    app.els["scale-note-prev"].click();
+    let guard = 0;
+    while (app.get("pickRef && pickRef.ring") !== "bottom" && guard++ < 30) app.els["scale-note-prev"].click();
+    assert.strictEqual(app.get("pickRef.ring"), "bottom");
+    const id = 101 + app.get("pickRef.i");
+    const name = app.get(`lastSolved.fields[${id}][0]`) + app.get(`lastSolved.fields[${id}][1]`);
+    assert.strictEqual(app.els["scale-angle-next"].hidden, false);
+    assert.strictEqual(app.els["scale-angle-next"].disabled, false);
+    const was = app.get(`lastSolved.fields[${id}][4]`);
+    app.els["scale-angle-next"].click();
+    assert.strictEqual(app.get(`lastSolved.fields[${id}][4]`), (was + 355) % 360);
+    assert.match(d2Status(app), new RegExp(`^${name} at ${(was + 355) % 360}°, `));
+    app.els["scale-angle-prev"].click();
+    assert.strictEqual(app.get(`lastSolved.fields[${id}][4]`), was);
+    app.run("layoutAngles = { bottom: [225, null, null] }; resyncSheet(true); pickRef = { ring: 'bottom', i: 0 }; paintLayout()");
+    app.els["scale-angle-next"].click();
+    assert.strictEqual(angleOf(app, 101), 225);
+    assert.strictEqual(d2Status(app), "D3 is in the way.");
+    assert.strictEqual(app.els["scale-drawer-status"].classList.contains("warn"), true);
+    assert.deepStrictEqual(ang(app), { bottom: [225, null, null] });
+  });
+
+  test("FPD: the angle pair is hidden for rim and inner picks and moves no existing control", () => {
+    const app = open("[C3] [D3] [E3] (A3) C4 D4 E4 F4 | G4 A4");
+    app.els["scale-fine-toggle"].click();
+    const ids = ["scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next", "scale-layout-reset"];
+    d2Tap(app, "C4");
+    assert.strictEqual(app.els["scale-angle-prev"].hidden, true);
+    assert.strictEqual(app.els["scale-angle-next"].hidden, true);
+    d2Tap(app, "C4");
+    d2Tap(app, "G4");
+    assert.strictEqual(app.els["scale-angle-prev"].hidden, true);
+    d2Tap(app, "G4");
+    d2Tap(app, "C3");
+    assert.strictEqual(app.els["scale-angle-prev"].hidden, false);
+    const html = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
+    assert.match(html, /id="scale-angle-prev" aria-label="Move 5 degrees anticlockwise"/);
+    assert.match(html, /id="scale-angle-next" aria-label="Move 5 degrees clockwise"/);
+    assert.strictEqual(ids.every((id) => app.els[id] && !app.els[id].hidden), true);
+  });
+
+  const saved = () => {
+    const app = open();
+    slide(app, "C3", 300);
+    app.els["scale-generate"].click();
+    const rec = app.registry()[app.deckId()];
+    openEdit(app, rec);
+    app.click(app.els["scale-tab-layout"]);
+    return app;
+  };
+
+  test("FPD: an angle-only change shows Layout not saved yet, and a reopened angle-only record shows Layout changed from the default with RESET enabled", () => {
+    const app = open();
+    assert.strictEqual(dr1Notice(app), "");
+    assert.strictEqual(app.els["scale-layout-reset"].disabled, true);
+    slide(app, "C3", 300);
+    assert.strictEqual(dr1Notice(app), "Layout not saved yet. GENERATE CARDS keeps it.");
+    assert.strictEqual(app.els["scale-layout-reset"].disabled, false);
+    const re = saved();
+    assert.deepStrictEqual(ang(re), { bottom: [300, null, null] });
+    assert.strictEqual(angleOf(re, 101), 300);
+    assert.strictEqual(dr1Notice(re), "Layout changed from the default.");
+    assert.strictEqual(re.els["scale-layout-reset"].disabled, false);
+    slide(re, "C3", 280);
+    assert.strictEqual(dr1Notice(re), "Layout not saved yet. SAVE CHANGES keeps it.");
+  });
+
+  test("FPD: RESET LAYOUT clears angles and a bottom count change resets them with one sentence", () => {
+    const app = open();
+    slide(app, "C3", 300);
+    app.els["scale-layout-reset"].click();
+    assert.strictEqual(app.get("layoutAngles"), null);
+    assert.strictEqual(angleOf(app, 101), 330);
+    assert.strictEqual(app.els["scale-layout-reset"].disabled, true);
+    const re = saved();
+    re.type("[C3] [D3] [E3] [F3] (A3) C4 D4 E4 F4");
+    assert.strictEqual(re.get("layoutAngles"), null);
+    assert.strictEqual(d2Status(re), "The bottom now has 4 notes, so its angles were reset.");
+    assert.match(dr1Notice(re), /The bottom angles were reset\.$/);
+    const withSeats = open();
+    DG.mouseDrag(withSeats, "C3", "D3");
+    slide(withSeats, "E3", 150);
+    withSeats.type("[C3] [D3] [E3] [F3] (A3) C4 D4 E4 F4");
+    assert.strictEqual(d2Status(withSeats), "The bottom now has 4 notes, so its seats and angles were reset.");
+  });
+
+  test("FPD: angles on a pan with no bottom notes are dropped silently", () => {
+    const app = open("(A3) C4 D4 E4 F4");
+    app.els["scale-generate"].click();
+    const rec = app.registry()[app.deckId()];
+    openEdit(app, { ...rec, options: { ...rec.options, angles: { bottom: [300, null, null] } } });
+    app.click(app.els["scale-tab-layout"]);
+    assert.strictEqual(app.get("layoutAngles"), null);
+    assert.strictEqual(d2Status(app) + dr1Notice(app), "");
+    assert.strictEqual(app.els["scale-layout-reset"].disabled, true);
+  });
+
+  test("FPD: SAVE after a move stores options.angles, Edit redraws it, and opening the bar's link stores the same record", () => {
+    const app = open();
+    slide(app, "C3", 300);
+    app.els["scale-generate"].click();
+    const rec = app.registry()[app.deckId()];
+    assert.deepStrictEqual(rec.options.angles, { bottom: [300, null, null] });
+    assert.strictEqual(rec.options.seats, undefined);
+    const hash = app.location.hash;
+    assert.match(hash, /^#s=6\/.*\/at-300,,\/[0-9a-f]{6}$/);
+    openEdit(app, rec);
+    app.click(app.els["scale-tab-layout"]);
+    assert.strictEqual(angleOf(app, 101), 300);
+    const fresh = boot({ href: "https://example.test/index.html" + hash });
+    const stored = JSON.parse(fresh.store[fresh.get("SCALES_KEY")]);
+    assert.strictEqual(stored.length, 1);
+    assert.deepStrictEqual(stored[0].o.angles, { bottom: [300, null, null] });
+    const drawn = Object.values(fresh.registry()[fresh.deckId()].fields).filter((f) => f[3] === "bottom");
+    assert.strictEqual(drawn[0][4], 300);
+  });
+
+  test("FPD: generateDeck carries options.angles into the solve and the record", () => {
+    const HPEs = require("./helpers/engine.js").loadEngine(["core", "voicing", "layout", "naming", "select", "share"]);
+    const seed = HPEs.core.parseSeed("[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]", { anchor: "between" });
+    assert.strictEqual(seed.ok, true);
+    const plain = JSON.parse(JSON.stringify(seed.value));
+    plain.options = Object.assign({}, plain.options, { angles: { bottom: [null, null, null, 20, null, null] } });
+    const enc = HPEs.share.encode(plain);
+    assert.strictEqual(enc.ok, true);
+    assert.match(enc.value, /\/between\/at-,,,20,,\/[0-9a-f]{6}$/);
+    const app = boot({ href: "https://example.test/index.html#s=" + enc.value });
+    const stored = JSON.parse(app.store[app.get("SCALES_KEY")]);
+    assert.deepStrictEqual(stored[0].o.angles, { bottom: [null, null, null, 20, null, null] });
+    const deck = app.registry()[app.deckId()];
+    const u4 = Object.values(deck.fields).filter((f) => f[3] === "bottom")[3];
+    assert.strictEqual(u4[4], 20);
+    const link = "#s=6/uC3_uDb3_uEb3_(F3)_G3_Ab3_uBb3_C4_uDb4_Eb4_F4_G4_Ab4_C5_Eb5_-_F5_G5_uAb5/*F+AEOLIAN+12/between/at-,225,,20,,130/5af123";
+    const app2 = boot({ href: "https://example.test/index.html" + link });
+    assert.strictEqual(app2.location.hash, link);
+    const stored2 = JSON.parse(app2.store[app2.get("SCALES_KEY")]);
+    assert.deepStrictEqual(stored2[0].o.angles.bottom, [null, 225, null, 20, null, 130]);
+  });
+
+  test("FPD: after a move each hit target is centred on its drawn note, and two bottom notes at the floor at 380x780 get their actual pairwise size (about 35px)", () => {
+    const app = open();
+    slide(app, "C3", 300);
+    slide(app, "D3", 255);
+    const orbitR = 115;
+    const hitOf = (name) => DG.noteNode(app, name);
+    for (const [name, id] of [["C3", 101], ["D3", 102], ["E3", 103]]) {
+      const a = angleOf(app, id) * Math.PI / 180;
+      const h = hitOf(name);
+      assert.ok(Math.abs(Number(h.getAttribute("cx")) - orbitR * Math.cos(a)) < 0.01, `${name} cx`);
+      assert.ok(Math.abs(Number(h.getAttribute("cy")) + orbitR * Math.sin(a)) < 0.01, `${name} cy`);
+    }
+    app.run("layoutAngles = { bottom: [225, 210, null] }; resyncSheet(true)");
+    const pts = ["C3", "D3"].map((n) => [Number(hitOf(n).getAttribute("cx")), Number(hitOf(n).getAttribute("cy")), 15.01]);
+    const ext = 148.19, plate = 318;
+    const radii = app.get(`panHitRadii(${ext}, ${plate}, 44, ${JSON.stringify(pts)})`);
+    const px = [...radii].map((r) => 2 * r * plate / (2 * ext));
+    for (const d of px) {
+      assert.ok(d > 31 && d < 36, `a floor pair's hit target is ${d}px across, not the 44px floor`);
+    }
+  });
+
+  test("FPD: a mirror or anchor toggle that would put a moved bottom note inside another's floor is refused, changes nothing and says why in plain words", () => {
+    for (const btn of ["scale-mirror-bottom", "scale-mirror", "scale-anchor-between"]) {
+      const app = open();
+      slide(app, "C3", 320);
+      const before = JSON.stringify(ang(app));
+      const pressed = app.els[btn].getAttribute("aria-pressed");
+      app.els[btn].click();
+      const stuck = app.get("HPE.layout.solve(lastSeed, {mirror: mirror, mirrorBottom: bottomMirror(), anchor: anchor, seats: null, angles: layoutAngles}).ok");
+      assert.strictEqual(stuck, true, `${btn}: the sheet is still buildable`);
+      if (app.els[btn].getAttribute("aria-pressed") === pressed) {
+        assert.match(app.els["scale-drawer-status"].textContent, /too close/, `${btn}: plain refusal`);
+      }
+      assert.strictEqual(JSON.stringify(ang(app)), before);
+      app.els["scale-generate"].click();
+      assert.doesNotMatch(app.els["scale-refusal"].textContent, /is not a note/, `${btn}: no BAD_NOTE template`);
+    }
+    const app = open();
+    slide(app, "C3", 320);
+    app.els["scale-mirror-bottom"].click();
+    assert.strictEqual(app.els["scale-mirror-bottom"].getAttribute("aria-pressed"), "false");
+    assert.match(app.els["scale-drawer-status"].textContent, /too close/);
+  });
+
+  test("FPD: Escape on a picked bottom note that was nudged says the moves are kept", () => {
+    const app = open();
+    app.els["scale-fine-toggle"].click();
+    let g = 0;
+    do app.els["scale-note-prev"].click(); while (app.get("pickRef && pickRef.ring") !== "bottom" && g++ < 30);
+    app.els["scale-angle-next"].click();
+    app.els["scale-angle-next"].focus();
+    app.keydown("Escape");
+    assert.match(app.els["scale-drawer-status"].textContent, /The moves you made are kept\./);
+  });
+});
+

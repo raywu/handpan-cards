@@ -3,6 +3,7 @@ import copy
 import json
 import os
 import re
+import sys
 
 import hifi
 from reportlab.lib.colors import Color
@@ -410,9 +411,8 @@ def from_generated(payload):
 
 
 # The full-deck sheet (title card, legend card, blank padding) is no longer
-# written: the app has no control for it and the three "_Cards_Letter.pdf" seed
-# files left the repo. The path is kept and still tested - hifi.build(path, deck)
-# builds one - but nothing here uses it.
+# written: the app has no control for it. The path is kept and still tested -
+# hifi.build(path, deck) builds one - but nothing here uses it.
 def main(out):
     names = (
         ("CSharp_Hijaz_Orion_9_CHORD_ONLY_Letter.pdf", HIJAZ),
@@ -425,4 +425,7 @@ def main(out):
 
 
 if __name__ == "__main__":
-    main(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    if len(sys.argv) != 2:
+        print("usage: python3 tools/decks.py OUT_DIR", file=sys.stderr)
+        sys.exit(2)
+    main(sys.argv[1])

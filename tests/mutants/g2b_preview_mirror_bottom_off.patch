@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9367,7 +9367,7 @@ function sheetOptions() {
+@@ -11769,7 +11769,7 @@ function sheetOptions() {
   *  layout.solve refuses a seat list of the wrong length (BAD_NOTE) - which would
   *  show up as a mock that silently stopped repainting. */
  function solvePreviewLayout(seed) {
 -  const solveOptions = { mirror: mirror, mirrorBottom: bottomMirror(), anchor: anchor,
 +  const solveOptions = { mirror: mirror, mirrorBottom: false, anchor: anchor,
-     seats: fitSeats(seed.fields) };
+     seats: fitSeats(seed.fields), angles: fitAngles(seed.fields) };
    const res = HPE.layout.solve(seed, solveOptions);
    return res.ok ? res.value : null;

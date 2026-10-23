@@ -6,8 +6,8 @@
 diff --git a/src/engine/voicing.js b/src/engine/voicing.js
 --- a/src/engine/voicing.js
 +++ b/src/engine/voicing.js
-@@ -286,7 +286,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-     // no bottom shell, so the commercial reference is unchanged by this.
+@@ -288,7 +288,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     // no bottom shell, so their forced cards are unchanged by this.
      var forced = false;
      for (var t = 0; t < tones.length; t += 1) {
 -      if (!tones[t].up.length && tones[t].down[0].top) forced = true;

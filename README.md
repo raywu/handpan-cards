@@ -23,7 +23,7 @@ Chord flashcards and chord progressions for handpan scales. It runs in the brows
 ## Your own scale
 
 - Menu, then + ADD A SCALE. Type the notes on one line in any order: the ding in round brackets, bottom notes in square brackets (before or after the ding), a `|` before inner notes. Example: `[C] (D) A C D E F G A C`. Octaves are optional: without one, we assume the notes run low to high. Then GENERATE CARDS.
-- ADJUST LAYOUT under the preview mirrors or reorders fields to match your pan.
+- ADJUST LAYOUT under the preview mirrors or reorders fields to match your pan, and slides bottom notes around the dashed ring in 5-degree steps; shared links keep the positions.
 - Tap the selected scale's chip (it has a pencil) to edit or delete it. You can edit built-in scales the same way; RESET SEEDED SCALES brings them back.
 - Scales stay in this browser. The link icon in the header copies a link that opens the scale on any device.
 - A scale's id comes from a 32-bit hash of its notes. Two different scales can share an id, and then only one is kept.
@@ -31,8 +31,6 @@ Chord flashcards and chord progressions for handpan scales. It runs in the brows
 ## Printing
 
 DOWNLOAD PDF in the menu builds the chord cards for the shown scale in the browser. Pick Letter or A4. The cards are poker size, 3x3 per sheet. Print at 100% and check the calibration bar with a ruler.
-
-The three `*_CHORD_ONLY_Letter.pdf` files in the repo root are the print-shop copies, built by `python3 tools/decks.py`.
 
 ## Development
 
@@ -74,7 +72,7 @@ Tests:
     python3 tests/suite_health.py   # per-file test-count floors
     ./tests/run.sh mutants          # mutation gate (slow)
 
-There are 25 node suites and 16 python suites. The mutation gate applies 1369 mutant patches from `tests/mutants/`, and a test must fail under each one. It edits the tree in place and refuses to start on uncommitted changes to a file a patch touches, `README.md` among them, so commit first.
+There are 25 node suites and 16 python suites. The mutation gate applies 1395 mutant patches from `tests/mutants/`, and a test must fail under each one. It edits the tree in place and refuses to start on uncommitted changes to a file a patch touches, `README.md` among them, so commit first.
 
 CI runs on pull requests into `main` and on pushes to `main`. A PR that changes only `docs/plans/` or `docs/prompts/` skips every job.
 
@@ -84,4 +82,4 @@ More to read: `CLAUDE.md` (rules, verified layouts, design system, hosting), `te
 
 MIT, see `LICENSE`.
 
-The SIL Open Font License 1.1 covers the fonts in `tools/fonts/` and the subsets in `src/engine/fontdata.js`. It also covers their copies in `index.html` and the committed PDFs. See the `OFL-*.txt` files in `tools/fonts/`.
+The SIL Open Font License 1.1 covers the fonts in `tools/fonts/` and the subsets in `src/engine/fontdata.js`. It also covers their copies in `index.html`. See the `OFL-*.txt` files in `tools/fonts/`.

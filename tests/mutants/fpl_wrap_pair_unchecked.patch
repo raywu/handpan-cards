@@ -1,0 +1,15 @@
+# kills: FPL: the wraparound pair (355 and 0) is checked
+# suite: node --test --test-name-pattern ^FPL:.the.wraparound.pair tests/layout.test.js
+# The gap between two angles is taken the long way, so 355 against 0 reads as 355 degrees apart.
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -533,7 +533,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   /* The short way round between two angles, in degrees. */
+   function angleGap(a, b) {
+     var d = Math.abs(norm(a) - norm(b));
+-    return Math.min(d, 360 - d);
++    return d;
+   }
+ 
+   /* The smallest short-way gap between bottom notes at the given angles - the

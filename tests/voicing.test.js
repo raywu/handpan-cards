@@ -262,7 +262,7 @@ test("D2 forced chords cluster chord tones to the highest instance below the roo
   const amara = GOLDEN.decks.find((d) => d.id === "amara");
   // CLAUDE.md rule 3 / plan Premise 2: Amara Fmaj7 is forced (its 7th, E, has
   // no instance above F4 and E4 is on the top shell) and ships spelling order
-  // F A C E, all below the root. This is the commercial reference behaviour.
+  // F A C E, all below the root. This is the shipped Amara 9 card.
   const fmaj7 = amara.chords.find((c) => c.main === "Fmaj" && c.sup === "7");
   const got = V.choose(amara.fields, pc(midiOf(amara.fields, fmaj7.roots[0])),
     [0, 4, 7, 11]);

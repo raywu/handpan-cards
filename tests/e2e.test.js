@@ -960,9 +960,7 @@ function run() {
    * print controls (one-pdf-path plan): every deck - built-in and
    * generated - builds its PDF client-side through HPE.pdfdeck, so the
    * header's print row is the same markup everywhere: two <button>s and
-   * one paper <select>, never an <a href> to a pre-built file. The six
-   * committed PDFs still ship (print-shop artifact) but nothing in the
-   * app links them any more.
+   * one paper <select>, never an <a href> to a pre-built file.
    * ---------------------------------------------------------------- */
 
   /* Lane M1 (menu-shell, 2026-09-28): the print row moved into the one
@@ -1377,13 +1375,12 @@ function run() {
   // and only this list matters. "+ ADD A SCALE" (#deck-add) sits between the
   // mode buttons and the print controls in DOM order and must be one of the
   // stops.
-  // Resources menu links in DOM order: row one (three links), row two (the two
+  // Resources menu links in DOM order: row one (two links), row two (the two
   // Amy Naylor videos, docs/plans/2026-10-05-menu-resources-amy.md). Every
   // list of Resources ids in this file derives from here.
   const RESOURCES = [
     { id: "res-handpaner", href: "https://handpaner.com/", label: "HANDPANER", row: 0 },
     { id: "res-dingandtones", href: "https://www.dingandtones.com/", label: "DING & TONES", row: 0 },
-    { id: "res-trainingcards", href: "https://svenkirchhofer.de/handpan-training-cards/", label: "HTC", row: 0 },
     { id: "res-amy-progressions", href: "https://youtu.be/-BD13QhFJ-M", label: "AMY: PROGRESSIONS", row: 1,
       aria: "Amy Naylor: ten handpan chord progressions (YouTube)" },
     { id: "res-amy-bottom", href: "https://youtu.be/0hMIUnA5-OI", label: "AMY: BOTTOM NOTES", row: 1,
@@ -1778,7 +1775,7 @@ function run() {
   // Lane PM (2026-10-08): HANDPAN 101 adds a 44px row + one --sp-1 (47 here) to the
   // Resources column, which is the tall one in this cell; the one-line print row
   // is not in it. So the literal is the old one + 47: 418.75 Linux / 420.75 macOS.
-  const MAIN_NEEDED_667x375_S_FALLBACK = process.platform === "linux" ? 418.75 : 420.75;
+  const MAIN_NEEDED_667x375_S_FALLBACK = process.platform === "linux" ? 369 : 371;
 
   test("the full-screen settings panel fits with no scroll in every mode, at 320x568 and every landscape size",
     async () => {
@@ -1862,7 +1859,7 @@ function run() {
    * amendments 1-7)
    * ---------------------------------------------------------------- */
 
-  test("the settings panel has exactly one Resources group with its six outbound links in three rows", async () => {
+  test("the settings panel has exactly one Resources group with its five outbound links in three rows", async () => {
     await freshLoad();
     await openSettingsPanel();
     const m = await b.eval(`
@@ -1885,8 +1882,8 @@ function run() {
       };
     `);
     assert.strictEqual(m.headingCount, 1, "expected exactly one Resources heading");
-    assert.deepStrictEqual(m.rowSizes, [3, 2, 1, 0], "three link rows, then the ABOUT row with no link");
-    assert.strictEqual(m.links.length, 6, `expected 6 links in the Resources group, got ${JSON.stringify(m.links)}`);
+    assert.deepStrictEqual(m.rowSizes, [2, 2, 1, 0], "three link rows, then the ABOUT row with no link");
+    assert.strictEqual(m.links.length, 5, `expected 5 links in the Resources group, got ${JSON.stringify(m.links)}`);
     m.links.forEach((link, i) => {
       const expected = RESOURCES[i];
       assert.strictEqual(link.id, expected.id, `link ${i} id mismatch: ${JSON.stringify(link)}`);
@@ -1984,7 +1981,8 @@ function run() {
             // -112) and HANDPAN 101 adds a row (+50), so the 673.75 / 669.75 became
             // 611.75 / 607.75. With the heading that is 634.75 of 688 and the cell
             // no longer scrolls; the edge test pins the exact figure.
-            const mainNeeded = process.platform === "linux" ? 607.75 : 611.75;
+            // Lane W: the sites row is one line, 56px less in the sidebar.
+            const mainNeeded = (process.platform === "linux" ? 607.75 : 611.75) - 56;
             const want = Math.max(0, mainNeeded + hg - m.clientH);
             const wantWith = Math.max(0, mainNeeded + hg + amy.cost - m.clientH);
             assert.ok(Math.abs(m.scrollH - m.clientH - wantWith) <= 1,
@@ -2023,7 +2021,7 @@ function run() {
   // they check, and the gap sits strictly above it. A height sweep (every
   // integer 700-900 at 1024 and 1280 wide, modes A/B/S) found: modes A/B
   // overflow NOWHERE in that whole range; mode S overflows 746-757px, worst
-  // at 746 (+12px, res-trainingcards pushed offscreen), and is clean again
+  // at 746 (+12px, the last site link pushed offscreen), and is clean again
   // at 758+. This test samples that worst height (746), the coordinator's
   // named regression point (750), and a point past the old bound but still
   // inside the gap (757, the last still-overflowing height) at both
@@ -2225,11 +2223,11 @@ function run() {
       }
     });
 
-  test("TR-1: the three site links are equal in width on every line they share, and every label stays inside its box",
+  test("TR-1: the two site links are equal in width on every line they share, and every label stays inside its box",
     async () => {
       await freshLoad();
       const MEASURE = `
-        const ids = ["res-handpaner", "res-dingandtones", "res-trainingcards"];
+        const ids = ["res-handpaner", "res-dingandtones"];
         const els = ids.map(id => document.getElementById(id));
         const inside = (el) => {
           const k = el.getBoundingClientRect(), g = document.createRange(); g.selectNodeContents(el);
@@ -2253,9 +2251,9 @@ function run() {
           await openSettingsPanel();
           const m = await b.eval(MEASURE);
           const label = `${vw}x${vh}`;
-          assert.strictEqual(m.siblings, 3, `${label}: the first Resources row holds exactly three links`);
+          assert.strictEqual(m.siblings, 2, `${label}: the first Resources row holds exactly two links`);
           const shape = JSON.stringify(m.lines.map((w) => w.length));
-          const want = vw === 1024 && vh === 700 ? "[2,1]" : "[3]";
+          const want = "[2]";
           assert.strictEqual(shape, want, `${label}: line shape ${shape}, wanted ${want}: ${JSON.stringify(m.lines)}`);
           for (const w of m.lines) {
             assert.ok(Math.max(...w) - Math.min(...w) <= 1, `${label}: unequal widths on one line: ${JSON.stringify(w)}`);
@@ -2270,13 +2268,8 @@ function run() {
           await openSettingsPanel();
           const m = await b.eval(MEASURE);
           const label = `${vw}x${vh}`;
-          assert.deepStrictEqual(m.spill, [0, 0, 0], `${label}: a site link's content overflows its box`);
+          assert.deepStrictEqual(m.spill, [0, 0], `${label}: a site link's content overflows its box`);
           assert.ok(m.inside.every(Boolean), `${label}: a site label's text spills outside its link box`);
-          await b.eval(`document.getElementById("res-handpaner").parentElement.classList.remove("trio");`);
-          await b.settle();
-          const base = await b.eval(MEASURE);
-          await b.eval(`document.getElementById("res-handpaner").parentElement.classList.add("trio");`);
-          assert.deepStrictEqual(m.lines, base.lines, `${label}: the landscape row differs from the same row without the trio class`);
           await b.key("Escape", "Escape", 27);
         }
       } finally {
@@ -9624,7 +9617,7 @@ function run() {
           // Lane PM (2026-10-08): HANDPAN 101 (+47) and the one-line print row
           // (-50 where the print group was the tall column): 328.25 -> 375.25,
           // 310 -> 357, 251.75 unchanged, 313 -> 310.
-          [740, 360, "S", 375.25], [740, 340, "S", 375.25], [812, 330, "S", 357], [926, 310, "S", 251.75],
+          [740, 360, "S", 372.75], [740, 340, "S", 372.75], [812, 330, "S", 357], [926, 310, "S", 251.75],
           [568, 312, "A", 310],
         ];
         for (const [w, h, mode, mainNeeded] of cases) {
@@ -13168,6 +13161,11 @@ function run() {
     // tallest column moves (the other layouts derive it from the group heights below).
     // "fallback-linux" is measured on the CI runner (run 37890810855, 060e1c1).
     const PM_NEEDED_L = {"fallback":{"320x320":[-3,-3,-3],"320x375":[-3,-3,-3],"320x519":[-3,-3,-3],"320x520":[-3,-3,-3],"427x320":[47,47,47],"427x375":[47,47,47],"427x519":[47,47,47],"427x520":[47,47,47],"568x320":[44,44,44],"568x375":[44,44,44],"568x519":[44,44,44],"568x520":[44,44,44],"640x320":[17,17,47],"640x375":[17,17,47],"640x519":[17,17,47],"640x520":[17,17,47],"641x320":[17,17,47],"641x375":[17,17,47],"641x519":[17,17,47],"641x520":[17,17,47],"1023x320":[26.5,26.5,0],"1023x375":[26.5,26.5,0],"1023x519":[26.5,26.5,0],"1023x520":[26.5,26.5,0],"1024x320":[26.5,26.5,0],"1024x375":[26.5,26.5,0],"1024x519":[26.5,26.5,0],"1024x520":[26.5,26.5,0],"1280x320":[24,24,0],"1280x375":[24,24,0],"1280x519":[24,24,0],"1280x520":[24,24,0]},"real":{"320x320":[-3,-3,-3],"320x375":[-3,-3,-3],"320x519":[-3,-3,-3],"320x520":[-3,-3,-3],"427x320":[44,44,44],"427x375":[44,44,44],"427x519":[44,44,44],"427x520":[44,44,44],"568x320":[44,44,44],"568x375":[44,44,44],"568x519":[44,44,44],"568x520":[44,44,44],"640x320":[18,18,47],"640x375":[18,18,47],"640x519":[18,18,47],"640x520":[18,18,47],"641x320":[18,18,47],"641x375":[18,18,47],"641x519":[18,18,47],"641x520":[18,18,47],"1023x320":[23,23,0],"1023x375":[23,23,0],"1023x519":[23,23,0],"1023x520":[23,23,0],"1024x320":[23,23,0],"1024x375":[23,23,0],"1024x519":[23,23,0],"1024x520":[23,23,0],"1280x320":[23,23,0],"1280x375":[23,23,0],"1280x519":[23,23,0],"1280x520":[23,23,0]},"fallback-linux":{"320x320":[-3,-3,-3],"320x375":[-3,-3,-3],"320x519":[-3,-3,-3],"320x520":[-3,-3,-3],"427x320":[47,47,47],"427x375":[47,47,47],"427x519":[47,47,47],"427x520":[47,47,47],"568x320":[44,44,44],"568x375":[44,44,44],"568x519":[44,44,44],"568x520":[44,44,44],"640x320":[16,16,47],"640x375":[16,16,47],"640x519":[16,16,47],"640x520":[16,16,47],"641x320":[16,16,47],"641x375":[16,16,47],"641x519":[16,16,47],"641x520":[16,16,47],"1023x320":[27.5,27.5,0],"1023x375":[27.5,27.5,0],"1023x519":[27.5,27.5,0],"1023x520":[27.5,27.5,0],"1024x320":[27.5,27.5,0],"1024x375":[27.5,27.5,0],"1024x519":[27.5,27.5,0],"1024x520":[27.5,27.5,0],"1280x320":[25,25,0],"1280x375":[25,25,0],"1280x519":[25,25,0],"1280x520":[25,25,0]}};
+    // Lane W (PDF cleanup): removing the third site link takes the sites row from two lines to one in these
+    // cells, so `needed` and the Resources group both fall by this much (measured against b726b3f,
+    // the same figure in every mode; every cell not listed is unchanged). The 2.5px cells (1023x and
+    // 1024x at 320-520px tall) are landscape cells where only the Resources column shrinks by 2.5.
+    const SITE_DROP = {"fallback":{"1023x320":2.5,"1023x375":2.5,"1023x519":2.5,"1023x520":2.5,"1024x320":2.5,"1024x375":2.5,"1024x519":2.5,"1024x520":2.5,"1024x700":56.0,"1024x701":56.0,"1025x700":56.0,"1025x701":56.0,"1280x740":56.0,"1280x800":56.0,"427x320":50.0,"427x375":50.0,"427x519":50.0,"427x520":50.0,"640x320":50.0,"640x375":50.0,"640x519":50.0,"640x520":50.0,"641x320":50.0,"641x375":50.0,"641x519":50.0,"641x520":50.0},"real":{"1024x700":56.0,"1024x701":56.0,"1025x700":56.0,"1025x701":56.0,"1280x740":56.0,"1280x800":56.0,"427x320":50,"427x375":50,"427x519":50,"427x520":50,"640x320":50,"640x375":50,"640x519":50,"640x520":50,"641x320":50,"641x375":50,"641x519":50,"641x520":50}};
     const tableKey = (fm) => (fm === "fallback" && process.platform === "linux" ? "fallback-linux" : fm);
     const isLandscape = (w, h) => h <= 520;
     const isSidebar = (w, h) => w >= 1024 && h >= 700;
@@ -13266,12 +13264,15 @@ function run() {
             const dPrint = wantG[1] - wantG[2];
             const dRes = 44 + g.sp1;
             const dAbout = 44 + g.sp1;
+            const siteDrop = (SITE_DROP[fm] || {})[key] || 0;
+            // In landscape progression the About term (needed - neededNoAbout) already absorbs a 2.5px change.
+            const siteNeeded = delta && siteDrop < 5 && m === "S" ? 0 : siteDrop;
             const dPm = (delta ? PM_NEEDED_L[tableKey(fm)][key][i] : dPrint + dRes) + (delta ? g.needed - g.neededNoAbout : dAbout);
-            assert.ok(Math.abs(g.needed - (want[i] + d * g.hg + amyNeeded + dPm)) <= 0.5,
-              `${where}: needed ${g.needed}px, expected main ${want[i]} + ${d ? "H + g = " + g.hg : "0"} + the Amy row ${amyNeeded} + PM ${dPm}`);
+            assert.ok(Math.abs(g.needed - (want[i] + d * g.hg + amyNeeded + dPm - siteNeeded)) <= 0.5,
+              `${where}: needed ${g.needed}px, expected main ${want[i]} + ${d ? "H + g = " + g.hg : "0"} + the Amy row ${amyNeeded} + PM ${dPm} - site link ${siteNeeded}`);
             assert.ok(Math.abs(g.groups[0] - (wantG[0] + g.hg)) <= 0.5, `${where}: the first group is ${g.groups[0]}px, expected main ${wantG[0]} + ${g.hg}`);
             const plus = [0, 0, dPrint, amyRes + dRes + dAbout];
-            for (let k = 1; k < 4; k++) assert.ok(Math.abs(g.groups[k] - (wantG[k] + plus[k])) <= 0.5, `${where}: group ${k} is ${g.groups[k]}px, main has ${wantG[k]}px plus ${plus[k]}`);
+            for (let k = 1; k < 4; k++) assert.ok(Math.abs(g.groups[k] - (wantG[k] + plus[k] - (k === 3 ? siteDrop : 0))) <= 0.5, `${where}: group ${k} is ${g.groups[k]}px, main has ${wantG[k]}px plus ${plus[k]}`);
           });
         }
       }
@@ -14308,9 +14309,9 @@ function run() {
       assert.strictEqual(await b.eval(`return document.getElementById("share-copy").disabled`), false);
     });
 
-    test("SV: a v4 link opens, the bar ends on v5, and Back leaves the page", async () => {
+    test("SV: a v4 link opens, the bar ends on v6, and Back leaves the page", async () => {
       const v4 = "4A4GpAI11Co13D214D215D216D217D211D213DGem2J49CGan2GenB30iCYmpB3GiDImsB3SxEmgT2O_m";
-      const v5 = "#s=5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/parent-aeolian/mirror/between/seats-1,0,2,3,4,5,6,7;;/975b6c";
+      const v6 = "#s=6/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/parent-aeolian/mirror/between/seats-1,0,2,3,4,5,6,7;;/61d4aa";
       const nav = async () => {
         const h = await b.send("Page.getNavigationHistory");
         return { index: h.currentIndex, url: h.entries[h.currentIndex].url };
@@ -14319,7 +14320,7 @@ function run() {
       await b.settle();
       await navigate(URL + "?r=sv#s=" + v4);
       await b.settle();
-      await waitHash(v5, "the bar to be rewritten to the v5 code");
+      await waitHash(v6, "the bar to be rewritten to the v6 code");
       const during = await nav();
       assert.ok(during.url.includes("?r=sv"), "the link's own page is not current");
       await b.eval(`history.back(); return true`);
@@ -14327,6 +14328,27 @@ function run() {
       const left = await nav();
       assert.strictEqual(left.index, during.index - 1, "the rewrite added a history entry");
       assert.ok(!left.url.includes("?r=sv"), "Back did not leave the link's page");
+    });
+
+    test("FPD: a v5 link opens, the bar ends on v6, and Back leaves the page", async () => {
+      const v5 = "5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/parent-aeolian/mirror/between/seats-1,0,2,3,4,5,6,7;;/975b6c";
+      const v6 = "#s=6/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/parent-aeolian/mirror/between/seats-1,0,2,3,4,5,6,7;;/61d4aa";
+      const nav = async () => {
+        const h = await b.send("Page.getNavigationHistory");
+        return { index: h.currentIndex, url: h.entries[h.currentIndex].url };
+      };
+      await freshLoad();
+      await b.settle();
+      await navigate(URL + "?r=fpd#s=" + v5);
+      await b.settle();
+      await waitHash(v6, "the bar to be rewritten to the v6 code");
+      const during = await nav();
+      assert.ok(during.url.includes("?r=fpd"), "the link's own page is not current");
+      await b.eval(`history.back(); return true`);
+      await new Promise((r) => setTimeout(r, 500));
+      const left = await nav();
+      assert.strictEqual(left.index, during.index - 1, "the rewrite added a history entry");
+      assert.ok(!left.url.includes("?r=fpd"), "Back did not leave the link's page");
     });
 
     test("an about link clicked while a custom deck shows switches the deck and the bar", async () => {
@@ -16893,4 +16915,129 @@ function run() {
       } finally { await reset(); }
     });
   });
+
+  describe("FPD: the bottom ring slides under a real finger and mouse", () => {
+    const FPD_SCALE = "[C3] [D3] [E3] (A3) C4 D4 E4 F4";
+    const open = async (w, h, mobile) => {
+      await freshLoad();
+      await b.setViewport(w, h, mobile);
+      await b.settle();
+      await openSheet();
+      await typeScale(FPD_SCALE);
+      await openDrawer();
+      await b.settle();
+    };
+    const hits = () => b.eval(`
+      const svg = document.querySelector("#scale-preview svg");
+      return [...document.querySelectorAll("#scale-preview .panhit")].map((h) => {
+        const r = h.getBoundingClientRect();
+        return { name: h.getAttribute("aria-label").split(",")[0], ring: h.getAttribute("data-ring"),
+          cx: Number(h.getAttribute("cx")), cy: Number(h.getAttribute("cy")), ar: Number(h.getAttribute("r")),
+          x: (r.left + r.right) / 2, y: (r.top + r.bottom) / 2, r: (r.right - r.left) / 2 };
+      });`);
+    const frame = async () => {
+      const all = await hits();
+      const h = all[0];
+      const k = h.r / h.ar;
+      const o = { x: h.x - k * h.cx, y: h.y - k * h.cy };
+      const bottom = all.filter((n) => n.ring === "bottom")[0];
+      return { all, k, o, orbit: Math.hypot(bottom.cx, bottom.cy) };
+    };
+    const at = (f, deg, rad = f.orbit) => ({ x: f.o.x + f.k * rad * Math.cos(deg * Math.PI / 180), y: f.o.y - f.k * rad * Math.sin(deg * Math.PI / 180) });
+    const named = (all, n) => all.find((x) => x.name === n);
+    const status = () => b.eval(`return document.getElementById("scale-drawer-status").textContent;`);
+    const warned = () => b.eval(`return document.getElementById("scale-drawer-status").classList.contains("warn");`);
+    const ghostCount = () => b.eval(`return document.querySelectorAll(".panghost").length;`);
+    const sheetState = () => b.eval(`const s = document.getElementById("scale-sheet"); const body = document.querySelector("#scale-sheet .sheetbody");
+      return { cls: ["lipped", "lipshut"].map((k) => s.classList.contains(k)).join(), top: body.scrollTop, drawer: document.getElementById("scale-panel-layout").scrollTop };`);
+    const touch = (type, pts) => b.send("Input.dispatchTouchEvent", {
+      type, touchPoints: pts.map((p, i) => ({ x: p.x, y: p.y, radiusX: 4, radiusY: 4, force: 1, id: i + 1 })) });
+    const touchPath = async (from, path, { hold = 320, release = true } = {}) => {
+      await touch("touchStart", [from]);
+      await sleep(hold);
+      for (const p of path) await touch("touchMove", [{ x: p.x, y: p.y + 36 }]);
+      if (release) await touch("touchEnd", []);
+      await sleep(120);
+    };
+    const arc = (f, a, c, n = 6) => Array.from({ length: n }, (_, i) => at(f, a + ((c - a) * (i + 1)) / n));
+    const mouse = (type, x, y, extra = {}) => b.send("Input.dispatchMouseEvent", { type, x, y, button: "left", buttons: type === "mouseReleased" ? 0 : 1, clickCount: 1, ...extra });
+    const near = (p, q, tol, msg) => assert.ok(Math.hypot(p.x - q.x, p.y - q.y) <= tol, `${msg}: ${JSON.stringify(p)} vs ${JSON.stringify(q)}`);
+
+    test("FPD: a touch drag on the bottom ring at 380x780 moves, swaps, snaps away and cancels without scrolling the drawer or touching the lip", { timeout: 90000 }, async () => {
+      try {
+        await open(380, 780, true);
+        const before = await sheetState();
+        let f = await frame();
+        const c3 = named(f.all, "C3");
+        await touchPath(c3, arc(f, 330, 300));
+        assert.strictEqual(await status(), "C3 moved to 300°, lower right. Seat U1 stays its number.");
+        f = await frame();
+        near(named(f.all, "C3"), at(f, 300), 3, "C3 sits on the 300 degree step");
+        assert.strictEqual(await ghostCount(), 0);
+        await touchPath(named(f.all, "D3"), [named(f.all, "E3")]);
+        assert.match(await status(), /^Swapped D3 and E3\./);
+        f = await frame();
+        near(named(f.all, "D3"), at(f, 90), 3, "D3 took E3's step");
+        near(named(f.all, "E3"), at(f, 210), 3, "E3 took D3's step");
+        await touchPath(named(f.all, "C3"), arc(f, 300, 222, 8));
+        assert.strictEqual(await status(), "C3 was too close to E3, so it sits at 225°, lower left.");
+        assert.strictEqual(await warned(), true);
+        f = await frame();
+        near(named(f.all, "C3"), at(f, 225), 3, "C3 snapped away to 225");
+        const keep = JSON.stringify(f.all.map((n) => [n.name, Math.round(n.x), Math.round(n.y)]));
+        const c3b = named(f.all, "C3");
+        await touch("touchStart", [c3b]);
+        await sleep(320);
+        await touch("touchMove", [{ x: at(f, 120).x, y: at(f, 120).y + 36 }]);
+        await touch("touchStart", [{ x: at(f, 120).x, y: at(f, 120).y + 36 }, { x: 40, y: 40 }]);
+        await touch("touchMove", [{ x: at(f, 110).x, y: at(f, 110).y + 36 }, { x: 44, y: 44 }]);
+        await touch("touchEnd", []);
+        await sleep(200);
+        f = await frame();
+        assert.strictEqual(JSON.stringify(f.all.map((n) => [n.name, Math.round(n.x), Math.round(n.y)])), keep, "a second touch moved a note");
+        assert.strictEqual(await ghostCount(), 0);
+        const after = await sheetState();
+        assert.strictEqual(after.cls, before.cls, "the lip or the sheet changed class");
+        assert.strictEqual(after.top, before.top, "the drawer scrolled");
+      } finally { await b.clearKeyboard().catch(() => {}); await b.setViewport(900, 900, false); }
+    });
+
+    test("FPD: at 844x390 a drag from 90° to 180° lands with the band pinned and the status heading the controls column", { timeout: 90000 }, async () => {
+      try {
+        await open(844, 390, true);
+        let f = await frame();
+        const bandTop = () => b.eval(`const r = document.getElementById("scale-plate-band").getBoundingClientRect(); return r.top;`);
+        const band0 = await bandTop();
+        await touchPath(named(f.all, "E3"), arc(f, 90, 180, 8));
+        f = await frame();
+        near(named(f.all, "E3"), at(f, 180), 3, "E3 landed on 180 degrees");
+        assert.match(await status(), /^E3 moved to 180°, left\./);
+        assert.ok(Math.abs((await bandTop()) - band0) < 1, "the band moved");
+        const rects = await b.eval(`const st = document.getElementById("scale-drawer-status").getBoundingClientRect(); const tabs = document.getElementById("scale-tab-layout").getBoundingClientRect(); const band = document.getElementById("scale-plate-band").getBoundingClientRect();
+          return { stTop: st.top, stLeft: st.left, tabsBottom: tabs.bottom, bandRight: band.right, sticky: getComputedStyle(document.getElementById("scale-plate-band")).position };`);
+        assert.strictEqual(rects.sticky, "sticky");
+        assert.ok(rects.stLeft >= rects.bandRight - 1, "the status is not in the controls column");
+        assert.ok(rects.stTop >= rects.tabsBottom - 1, "the status is not under the tab strip");
+      } finally { await b.setViewport(900, 900, false); }
+    });
+
+    test("FPD: at 1280x800 a mouse drag moves a bottom note", { timeout: 90000 }, async () => {
+      try {
+        await open(1280, 800, false);
+        let f = await frame();
+        const from = named(f.all, "C3");
+        await b.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: from.x, y: from.y, button: "none", buttons: 0 });
+        await mouse("mousePressed", from.x, from.y);
+        await mouse("mouseMoved", from.x + 6, from.y);
+        for (const p of arc(f, 330, 300)) await mouse("mouseMoved", p.x, p.y);
+        const end = at(f, 300);
+        await mouse("mouseReleased", end.x, end.y);
+        await sleep(120);
+        f = await frame();
+        near(named(f.all, "C3"), at(f, 300), 3, "C3 on the 300 degree step");
+        assert.strictEqual(await status(), "C3 moved to 300°, lower right. Seat U1 stays its number.");
+      } finally { await b.setViewport(900, 900, false); }
+    });
+  });
 }
+
