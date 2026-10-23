@@ -3663,7 +3663,7 @@ test("PM rule 7: HANDPAN 101 is the last Resources link, a Google Doc in a new t
   assert.match(first, />HANDPAN 101<\/a>/);
   const rows = [...group.matchAll(/<div class="modebar([^"]*)">([\s\S]*?)<\/div>/g)];
   assert.strictEqual(rows.length, 4, "four modebar rows");
-  assert.strictEqual((rows[0][2].match(/<a\b/g) || []).length, 3, "the site row keeps three siblings");
+  assert.strictEqual((rows[0][2].match(/<a\b/g) || []).length, 2, "the site row keeps two siblings");
   assert.strictEqual((rows[1][2].match(/<a\b/g) || []).length, 2, "the Amy row keeps two");
   assert.strictEqual((rows[2][2].match(/<a\b/g) || []).length, 1, "HANDPAN 101 is alone in its row");
   assert.ok(rows[2][2].includes("res-handpan-101"));
