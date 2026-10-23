@@ -10,13 +10,13 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11678,9 +11678,6 @@ function panelStops() {
+@@ -13591,9 +13591,6 @@ function panelStops() {
            document.getElementById("tier-advanced"), document.getElementById("seq-source-link"),
            document.getElementById("deck-add"), restoreBtn,
            ...settingsPanel.querySelectorAll(".prints button, .prints select"),
 -          // Eng review amendment 1: the Resources links join the Tab trap
 -          // after the print controls, in DOM order.
 -          ...settingsPanel.querySelectorAll('#settings-panel a.mode[id^="res-"]'),
-           document.getElementById("about-open")]
+           document.getElementById("about-open"),
+           document.getElementById("lang-select")]
      .filter(isStop);
- }
