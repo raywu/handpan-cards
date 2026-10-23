@@ -8912,11 +8912,17 @@ test("editable defaults: #deck-restore follows #deck-add, starts hidden and join
   const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
   assert.match(html, /id="deck-add"[^>]*>[^<]*<\/button>\s*<\/div>\s*<button[^>]*id="deck-restore"[^>]*\bhidden\b[^>]*>RESET SEEDED SCALES<\/button>/,
     "the restore button is not right after the Scales row, hidden, with its label");
-  assert.match(html, /document\.getElementById\("deck-add"\), restoreBtn,/, "panelStops() does not list the restore button right after + ADD A SCALE");
   const app = boot();
+  app.run("settingsPanel.querySelectorAll = () => []");
+  const stops = () => app.get("panelStops().map((e) => e.id)");
+  app.run("openPanel()");
   assert.strictEqual(app.els["deck-restore"].hidden, true, "the restore button shows on a fresh store");
+  assert.ok(!stops().includes("deck-restore"), "a hidden restore button is a Tab stop");
   hideViaSheet(app, "amara", "D AMARA 9");
   assert.ok(!app.els["deck-restore"].hidden, "the reset button stays hidden with a deck deleted");
+  const ids = stops();
+  assert.strictEqual(ids[ids.indexOf("deck-add") + 1], "deck-restore",
+    "panelStops() does not list the restore button right after + ADD A SCALE");
 });
 
 /* ------------------------------- 28. seeded decks: SAVE / DELETE, not FORK / HIDE */
