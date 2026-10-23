@@ -239,6 +239,110 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   var ZONES = ["rim", "inner", "bottom"];
 
+  /* `options.angles` is the bottom ring's free-placement option: an object
+   * whose only key is `bottom`, a list with one entry per bottom note
+   * (ascending by id), each an integer multiple of ANGLE_STEP in [0, 360) or
+   * null for the solved angle. Shape only is checked here; the floor needs
+   * the geometry and the effective placement, so `solve` checks it through
+   * bottomClash. A missing, null or all-null option reads as absent. */
+  var ANGLE_STEP = 5;
+
+  function readAngles(value, counts) {
+    if (value === undefined || value === null) return { ok: true, value: null };
+    if (typeof value !== "object" || isArray(value)) return badNote(value);
+    var key;
+    for (key in value) {
+      if (Object.prototype.hasOwnProperty.call(value, key) && key !== "bottom") {
+        return badNote(value);
+      }
+    }
+    var list = value.bottom;
+    if (list === undefined || list === null) return { ok: true, value: null };
+    if (!isArray(list) || list.length !== counts.bottom) return badNote(list);
+    var any = false;
+    for (var i = 0; i < list.length; i += 1) {
+      var entry = list[i];
+      if (entry === null) continue;
+      if (typeof entry !== "number" || !isFinite(entry) ||
+          entry !== Math.floor(entry) || entry % ANGLE_STEP !== 0 ||
+          entry < 0 || entry >= 360) {
+        return badNote(entry);
+      }
+      any = true;
+    }
+    return { ok: true, value: any ? { bottom: list.slice() } : null };
+  }
+
+  /* The short way round between two angles, in degrees. */
+  function angleGap(a, b) {
+    var d = Math.abs(norm(a) - norm(b));
+    return Math.min(d, 360 - d);
+  }
+
+  /* The smallest short-way gap between two bottom notes in the DEFAULT
+   * placement of a ring of this size: infinite for one note. */
+  function defaultBottomGap(count) {
+    var angles = bottomAngles(count);
+    var best = Infinity;
+    for (var i = 0; i < angles.length; i += 1) {
+      for (var j = i + 1; j < angles.length; j += 1) {
+        best = Math.min(best, angleGap(angles[i], angles[j]));
+      }
+    }
+    return best;
+  }
+
+  /* The floor between two bottom notes, in degrees: the smallest multiple of
+   * ANGLE_STEP strictly above the angle at which two bottom circles touch,
+   * capped by the default gap so the default placement always passes. */
+  function bottomFloor(geom, count) {
+    if (count < 2) return 0;
+    var touch = 2 * Math.asin(Math.min(1, geom.r_bnote / geom.bottom)) / DEG;
+    var strict = (Math.floor(touch / ANGLE_STEP + 1e-9) + 1) * ANGLE_STEP;
+    return Math.min(strict, defaultBottomGap(count));
+  }
+
+  var CLASH_EPS = 1e-9;
+
+  /* The one floor predicate. `list` holds the effective angle of each bottom
+   * note in ascending id order (a null entry keeps the field's own angle).
+   * Returns the id of the first field note `i` at `list[i]` is too close to -
+   * another bottom note under the floor, or a top-shell circle (rim, inner,
+   * ding, at the angles `fields` carries and the default radii) it would
+   * meet - or null. */
+  function bottomClash(geom, fields, list, i) {
+    var ids = collect(fields).bottom;
+    var angleOf = function (k) {
+      return list[k] === null || list[k] === undefined ? fields[ids[k]][4] : list[k];
+    };
+    var at = angleOf(i);
+    var floor = bottomFloor(geom, ids.length);
+    var k;
+    for (k = 0; k < ids.length; k += 1) {
+      if (k === i) continue;
+      if (angleGap(at, angleOf(k)) < floor - CLASH_EPS) return ids[k];
+    }
+    var mine = point(geom.bottom, at);
+    var id;
+    for (id in fields) {
+      if (!Object.prototype.hasOwnProperty.call(fields, id)) continue;
+      var zone = fields[id][3];
+      var there;
+      var reach;
+      if (zone === "rim" || zone === "inner") {
+        there = point(zone === "rim" ? geom.rim : geom.inner, fields[id][4]);
+        reach = geom.r_note;
+      } else if (zone === "ding") {
+        there = [0, -geom.ding_dy];
+        reach = geom.r_ding;
+      } else {
+        continue;
+      }
+      if (distance(mine, there) < geom.r_bnote + reach - CLASH_EPS) return id;
+    }
+    return null;
+  }
+
   function isPermutation(list, n) {
     if (!isArray(list) || list.length !== n) return false;
     var seen = {};
@@ -537,9 +641,31 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       counts);
     if (!wanted.ok) return wanted;
 
+    var angles = readAngles(
+      (options && "angles" in options) ? options.angles : seedOptions.angles,
+      counts);
+    if (!angles.ok) return angles;
+    if (angles.value && wanted.value && wanted.value.bottom && wanted.value.bottom.length) {
+      return badNote(wanted.value.bottom);
+    }
+
     var placed = placeZones(counts, mirrors.top, mirrors.bottom, anchor);
     var geom = geometry(counts, placed);
     if (wanted.value) placed = reseat(placed, wanted.value);
+
+    if (angles.value) {
+      var effective = [];
+      for (var b = 0; b < placed.bottoms.length; b += 1) {
+        var asked = angles.value.bottom[b];
+        effective.push(asked === null ? placed.bottoms[b] : asked);
+      }
+      placed = { rims: placed.rims, inners: placed.inners, bottoms: effective };
+      var merged = merge(source, zones, placed, wanted.value);
+      for (var c = 0; c < effective.length; c += 1) {
+        if (bottomClash(geom, merged, effective, c) !== null) return badNote(angles.value.bottom);
+      }
+      return { ok: true, value: { geom: geom, fields: merged } };
+    }
 
     return { ok: true, value: { geom: geom, fields: merge(source, zones, placed, wanted.value) } };
   }
@@ -549,6 +675,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     slotOrder: slotOrder,
     seatsFromOrder: seatsFromOrder,
     readSeats: readSeats,
+    readAngles: readAngles,
+    bottomClash: bottomClash,
     rimAngles: rimAngles,
     resolveMirrors: resolveMirrors,
     bottomAngles: bottomAngles,
