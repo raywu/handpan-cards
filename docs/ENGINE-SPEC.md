@@ -947,7 +947,10 @@ The D6 palette set, index 0-5, from `CLAUDE.md` "Design system":
   `anchor`); line 2 the layout delta: empty in version 1, the flat `order`
   permutation in version 2, and from version 3 the per-ring `seats`
   `rim;inner;bottom`, each a comma list, an unmoved ring left empty. The
-  shipped `share.VERSION` is 4; versions 1 to 3 stay readable, and the version
+  shipped `share.VERSION` is 6 (`RECORD_VERSION` stays 4); version 6 adds the
+  last option `at-<list>`, the bottom notes' absolute angles on a 5-degree step
+  with an empty entry for a solved angle, valid on version 6 only and refused
+  beside a bottom seats list; versions 1 to 5 stay readable, and the version
   tag, not the string, selects the legacy or the shipped reader. The payload cap
   is 4096 characters. When the engine improves, an old link renders NEW cards:
   the seed is the contract, not the output.
