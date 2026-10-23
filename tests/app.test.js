@@ -10537,9 +10537,14 @@ describe("about overlay", () => {
     assert.strictEqual(last[1], "", "the ABOUT row is a plain modebar, full width");
     assert.match(last[2], /^\s*<button class="mode" type="button" id="about-open" aria-haspopup="dialog">ABOUT<\/button>\s*$/);
     assert.ok(group.lastIndexOf('id="about-open"') > group.lastIndexOf("res-handpan-101"), "ABOUT is not after HANDPAN 101");
-    const fn = INDEX_HTML().match(/function panelStops\(\) \{[\s\S]*?\.filter\(isStop\);/);
-    assert.ok(fn, "panelStops not found");
-    assert.match(fn[0], /res-"\]'\),\s*document\.getElementById\("about-open"\)\]\s*\.filter\(isStop\);$/, "about-open is not the last panel stop");
+    const app = boot();
+    const resIds = [...group.matchAll(/<a[^>]*id="(res-[\w-]+)"/g)].map((m) => m[1]);
+    assert.ok(resIds.length >= 6 && resIds.includes("res-handpan-101"), "the Resources links are in the markup");
+    app.run(`settingsPanel.querySelectorAll = (sel) => /res-/.test(sel) ? ${JSON.stringify(resIds)}.map((id) => ({ id, disabled: false, getClientRects: () => [{}] })) : []`);
+    app.run("openPanel()");
+    const ids = app.get("panelStops().map((e) => e.id)");
+    assert.strictEqual(ids[ids.length - 1], "about-open", "about-open is not the last panel stop");
+    assert.strictEqual(ids[ids.length - 2], "res-handpan-101", "HANDPAN 101 does not lead ABOUT");
   });
 
   test("AO: opening About tracks about_open with no params", () => {
