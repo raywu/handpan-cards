@@ -1202,8 +1202,21 @@ test("every permutation of a fully octaved line reads as its ascending spelling 
   const rnd = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
   const shuffle = (a) => { const b = a.slice(); for (let i = b.length - 1; i > 0; i -= 1) { const j = Math.floor(rnd() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
   const grammar = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "scale_grammar_v1.json"), "utf8"));
+  const octaved = /^[^A-G]*(?:[A-G][#b]?-?\d[^A-G]*)+$/;
   const lines = golden.decks.map(d => core.formatSeed(d.fields));
-  for (const row of grammar.rows) if (row.accept && /^[^A-G]*(?:[A-G][#b]?-?\d[^A-G]*)+$/.test(row.accept.canonical)) lines.push(row.accept.canonical);
+  for (const row of grammar.rows) if (row.accept && octaved.test(row.accept.canonical)) lines.push(row.accept.canonical);
+  for (const row of Object.values(synthetic)) {
+    if (!row.expect.ok) continue;
+    const legacy = core.parseLegacySeed(row.string);
+    if (!legacy.ok) continue;
+    const line = core.formatSeed(legacy.value.fields);
+    if (octaved.test(line)) lines.push(line);
+  }
+  const noAngle = (fields) => Object.fromEntries(Object.entries(host(fields)).map(([id, f]) => [id, f.filter((x, i) => i !== 4)]));
+  golden.decks.forEach((d, i) => {
+    const base = core.parseSeed(lines[i]);
+    assert.deepEqual(noAngle(base.value.fields), noAngle(d.fields), "golden anchor " + d.id);
+  });
   let checked = 0;
   for (const line of lines) {
     const base = core.parseSeed(line);
@@ -1213,18 +1226,18 @@ test("every permutation of a fully octaved line reads as its ascending spelling 
     const dingAt = head.findIndex(t => t.charAt(0) === "(");
     const rest = head.filter((t, i) => i !== dingAt);
     const inner = bar === -1 ? [] : line.slice(bar + 3).split(" ");
-    for (let k = 0; k < 100; k += 1) {
+    for (let k = 0; k < 300; k += 1) {
       const parts = [head[dingAt]].concat(shuffle(rest));
       if (inner.length) parts.push("|", ...shuffle(inner));
       const str = parts.join(" ");
       const r = core.parseSeed(str);
       assert.equal(r.ok, true, str + " " + r.code);
-      assert.deepEqual(host(r.value.fields), host(base.value.fields), str);
+      assert.deepEqual(host(r.value), host(base.value), str);
       assert.equal(core.deckId(r.value.fields), core.deckId(base.value.fields), str);
       checked += 1;
     }
   }
-  assert.ok(checked >= 1500, `only ${checked} permutations checked`);
+  assert.ok(checked >= 10500, `only ${checked} permutations checked`);
 });
 
 test("the frozen origin/main d8d2a2d accepted readings still read to the same fields and deck id", () => {
