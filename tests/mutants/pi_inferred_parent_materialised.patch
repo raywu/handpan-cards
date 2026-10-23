@@ -1,0 +1,13 @@
+# kills: PI: a v5 link with no parent opens and the bar ends on its parentless v6 code through one replaceState, with no parent option
+# suite: node --test --test-name-pattern ^PI:.a.v5.link.with.no.parent.opens tests/app.test.js
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9524,7 +9524,6 @@ function generateDeck(text, options, guard) {
+     if (wanted !== null) built.value.options.seats = JSON.parse(JSON.stringify(wanted));
+     if (bottomAngles !== null) built.value.options.angles = JSON.parse(JSON.stringify(bottomAngles));
+   }
+-  if (seed.value.options.parent == null) built.value.options.parent = null;
+   // `replaces` is the record option that puts a custom deck in a seeded deck's
+   // chip slot. select.build and core.parseSeed both drop it, so it is carried
+   // back here from the raw argument, and from the registry entry this build is
