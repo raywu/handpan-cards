@@ -1,0 +1,15 @@
+# kills: test_the_guard_flags_a_planted_line_for_every_pattern
+# suite: python3 -m unittest -k test_the_guard_flags_a_planted_line_for_every_pattern tests.test_site_files
+# Lane D. line_hits stops matching anything, so the scan passes blind; only the planted-line self-check can see it.
+diff --git a/tests/test_site_files.py b/tests/test_site_files.py
+--- a/tests/test_site_files.py
++++ b/tests/test_site_files.py
+@@ -46,7 +46,7 @@
+         line = BASE64_RUN.sub("", line)
+         for token in ALLOW.get(path, []):
+             line = re.sub(token, "", line, flags=re.I)
+-        if RX.search(line):
++        if None:
+             out.append("%s:%d: %s" % (path, n, line.strip()[:80]))
+     return out
+ 
