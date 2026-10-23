@@ -1829,14 +1829,22 @@ test("FPL: the floor is 15 at the standard bottom radius and never above the def
   assert.equal(fifteen([null, null, 10, null, null, null]).ok, true, "10 from the solved 0 is moving away from nobody; 60 is far");
   assert.equal(HPE.layout.solve(panFields(9, 2, 2), { angles: { bottom: [90, 105] } }).ok, true, "15 apart");
   assert.equal(HPE.layout.solve(panFields(9, 2, 2), { angles: { bottom: [90, 100] } }).ok, false, "10 apart");
-  for (const n of [24, 30, 36, 40]) {
+  for (let n = 1; n <= 47; n += 1) {
     const fields = panFields(9, 2, n);
     const home = HPE.layout.solve(fields).value;
     const explicit = bottomAnglesOf(home.fields);
-    const rounded = explicit.every((a) => a % 5 === 0);
-    if (!rounded) continue;
-    const res = HPE.layout.solve(fields, { angles: { bottom: explicit } });
-    assert.equal(res.ok, true, `the default placement of ${n} bottoms passes: ${res.reason}`);
+    const nulls = explicit.map(() => null);
+    for (let k = 0; k < n; k += 1) {
+      assert.equal(HPE.layout.bottomClash(home.geom, home.fields, nulls, k), null, `the default of ${n} bottoms is clear (U${k + 1})`);
+    }
+    explicit.forEach((a, k) => {
+      if (a % 5 !== 0) return;
+      const one = nulls.slice();
+      one[k] = a;
+      const res = HPE.layout.solve(fields, { angles: { bottom: one } });
+      assert.equal(res.ok, true, `${n} bottoms, U${k + 1} at its own default ${a}: ${res.reason}`);
+      assert.deepStrictEqual(plain(res.value), plain(home), `${n} bottoms, U${k + 1} at its own default is the default layout`);
+    });
   }
   const thirty = HPE.layout.solve(panFields(9, 2, 30)).value;
   const own = bottomAnglesOf(thirty.fields);
@@ -1846,6 +1854,16 @@ test("FPL: the floor is 15 at the standard bottom radius and never above the def
   assert.deepStrictEqual(bottomAnglesOf(dense.fields).slice(0, 2), [275, 265]);
   const swapped = HPE.layout.solve(panFields(9, 2, 36), { angles: { bottom: bottomAnglesOf(dense.fields) } });
   assert.equal(swapped.ok, true, "36 bottoms sit 10 apart and the floor yields to the gap");
+});
+
+test("FPL: geometry is solved from the default placement, not the override", () => {
+  const fields = panFields(9, 2, 35);
+  const plainRun = HPE.layout.solve(fields).value;
+  const moved = HPE.layout.solve(fields, { angles: { bottom: [275, ...Array(34).fill(null)] } });
+  assert.equal(moved.ok, true, moved.reason);
+  assert.equal(moved.value.geom.r_bnote, plainRun.geom.r_bnote, "r_bnote");
+  assert.equal(moved.value.geom.ext, plainRun.geom.ext, "ext");
+  assert.deepStrictEqual(plain(moved.value.geom), plain(plainRun.geom));
 });
 
 test("FPL: bottomClash names the note in the way, top shell included", () => {

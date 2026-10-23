@@ -66,7 +66,7 @@ FLOORS = {
     "tests/import.test.js": 128,
     "tests/import_gold.test.js": 8,
     "tests/voicing.test.js": 18,
-    "tests/layout.test.js": 102,
+    "tests/layout.test.js": 103,
     "tests/naming.test.js": 37,
     "tests/select.test.js": 54,
     "tests/share.test.js": 102,

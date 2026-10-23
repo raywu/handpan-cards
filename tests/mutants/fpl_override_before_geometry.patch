@@ -1,0 +1,15 @@
+# kills: FPL: geometry is solved from the default placement, not the override
+# suite: node --test --test-name-pattern ^FPL:.geometry.is.solved.from.the.default tests/layout.test.js
+# Geometry is solved from the overridden placement instead of the default one.
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -684,7 +684,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     if (!wanted.ok) return wanted;
+ 
+     var placed = placeZones(counts, mirrors.top, mirrors.bottom, anchor);
+-    var geom = geometry(counts, placed);
++    var geom = geometry(counts, wanted.value && wanted.value.angles ? { rims: placed.rims, inners: placed.inners, bottoms: wanted.value.angles } : placed);
+     if (wanted.value) placed = reseat(placed, wanted.value);
+ 
+     return { ok: true, value: { geom: geom, fields: merge(source, zones, placed, wanted.value) } };
