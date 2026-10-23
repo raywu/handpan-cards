@@ -2510,7 +2510,7 @@ function run() {
     assert.match(open.title, /Add a scale/i, "the page has no visible title");
     assert.match(open.backText, /BACK/, "the page has no visible way back");
     assert.strictEqual(open.overflowY, "auto", "the surface does not scroll internally");
-    assert.match(open.parseLine, /^Type every note low to high/);
+    assert.match(open.parseLine, /^Type every note on one line, in any order/);
     assert.strictEqual(open.msgLive, "polite");
     // #scale-sheet is aria-modal, so the page-level .announce is outside the
     // dialog and unreachable while the sheet is open. A refusal is announced
@@ -5981,7 +5981,7 @@ function run() {
         document.getElementById("scale-label-2").textContent,
         document.getElementById("scale-label-2").hidden,
         document.getElementById("scale-box").getAttribute("aria-describedby")]`),
-      [0, true, "[NOTE] = A BOTTOM NOTE, WRITTEN WHERE ITS PITCH FALLS", false, "scale-label-2"]);
+      [0, true, "[NOTE] = A BOTTOM NOTE", false, "scale-label-2"]);
 
       await typeScale("(D3) A3 C4");
       const one = await fieldMetrics();
@@ -8117,8 +8117,8 @@ function run() {
     // keystroke moves between.
     //
     // The one step that is NOT covered here is empty -> first valid parse:
-    // PARSE_HINT is three wrapped lines at 380px and the note list is one, a
-    // 37px difference measured on 2026-09-11. Reserving it would cost every
+    // PARSE_HINT was three wrapped lines at 380px and the note list is one, a
+    // 37px difference measured on 2026-09-11 (four lines since, 74px in real fonts). Reserving it would cost every
     // phone 37px of sheet permanently to hold still at a moment BEFORE the
     // user has typed anything, so it is spent on the typing path instead.
     // The next test pins what the step is MADE of - nothing but the parse
@@ -9514,6 +9514,41 @@ function run() {
       }
       return m;
     }
+
+    test("the parse hint is at most four lines at 380x780 and five at 320x568 with real fonts", async () => {
+      for (const [w, h, hintBudget] of [[380, 780, 4], [320, 568, 5]]) {
+        await rb.setViewport(w, h, true);
+        await rb.goto(URL);
+        await rb.eval(`return document.fonts.ready.then(() => true);`);
+        await rb.settle();
+        await rb.click("#settings-trigger");
+        await rb.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display !== "none"`,
+          { label: "panel open" });
+        await rb.click("#deck-add");
+        await rb.waitFor(`!document.getElementById("scale-sheet").hasAttribute("hidden")`,
+          { label: "the scale sheet to open" });
+        await rb.settle();
+        const lines = (id) => rb.eval(`
+          const el = document.getElementById(${JSON.stringify(id)});
+          const range = document.createRange(); range.selectNodeContents(el);
+          return new Set([...range.getClientRects()].map((r) => Math.round(r.top))).size;`);
+        const note = await rb.eval(`return document.getElementById("scale-fields-note").textContent;`);
+        assert.match(note, /^Octaves are optional/);
+        const noteLines = await lines("scale-fields-note");
+        assert.ok(noteLines >= 1 && noteLines <= 2, `the octave sentence wraps to ${noteLines} lines at ${w}x${h}`);
+        await rb.eval(`document.getElementById("scale-box").focus(); return true;`);
+        await rb.waitFor(`getComputedStyle(document.getElementById("scale-parse")).display !== "none"`,
+          { label: "the parse hint to show" });
+        const hintLines = await lines("scale-parse");
+        assert.ok(hintLines >= 1 && hintLines <= hintBudget, `the parse hint wraps to ${hintLines} lines at ${w}x${h}`);
+        console.log(`OS measured ${w}x${h}: parse hint ${hintLines} lines, fields note ${noteLines} lines`);
+        if (w === 380) {
+          for (const id of ["scale-top-label", "scale-inner-label", "scale-bottom-label"]) {
+            assert.strictEqual(await lines(id), 1, `${id} wraps at ${w}x${h}`);
+          }
+        }
+      }
+    });
 
     // The desktop sidebar cells reviewer #3 measured with real fonts:
     // 1024/1280 wide, heights 746-760 (overflow +16px->+2px under the OLD

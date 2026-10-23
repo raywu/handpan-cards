@@ -996,7 +996,7 @@ test("an empty box shows the parse hint and Generate is disabled", () => {
   const app = boot();
   openSheet(app);
   app.type("");
-  assert.match(app.els["scale-parse"].textContent, /^Type every note low to high on one line\./);
+  assert.match(app.els["scale-parse"].textContent, /^Type every note on one line, in any order\./);
   assert.strictEqual(app.els["scale-generate"].disabled, true);
   assert.strictEqual(app.els["scale-refusal"].textContent, "");
 });
@@ -6083,7 +6083,7 @@ test("W1 line 118: #scale-label-2 is shown with the bottom-note line, and the fi
   const m = /<span\b([^>]*)\bid="scale-label-2"([^>]*)>([^<]*)<\/span>/.exec(html);
   assert.ok(m, "#scale-label-2 is gone");
   assert.doesNotMatch(m[1] + m[2], /\bhidden\b/, "#scale-label-2 is hidden");
-  assert.strictEqual(m[3], "[NOTE] = A BOTTOM NOTE, WRITTEN WHERE ITS PITCH FALLS");
+  assert.strictEqual(m[3], "[NOTE] = A BOTTOM NOTE");
   const app = boot();
   openSheet(app);
   app.run(`globalThis.__label2 = [];
@@ -6163,7 +6163,7 @@ test("label, placeholder and hint name the same three marks", () => {
 test("PARSE_HINT ends at the octave sentence and says nothing about the old bar", () => {
   const hint = boot().get("PARSE_HINT");
   assert.doesNotMatch(hint, /used to mean/i, "the hint still teaches the retired bottom-note bar");
-  assert.ok(hint.endsWith("Octave numbers are optional."), `the hint ends: ${hint.slice(-60)}`);
+  assert.ok(hint.endsWith("Octaves are optional: without one, we assume the notes run low to high."), `the hint ends: ${hint.slice(-60)}`);
 });
 
 test("every example in the label, hint and refusals parses", () => {
@@ -9933,6 +9933,20 @@ describe("share url", () => {
     assert.strictEqual(gaEvents(app).length, events);
   });
 
+  test("SU: a hashchange to an unsorted v5 spelling of the deck shown rewrites the bar to the sorted code and imports nothing", () => {
+    const app = bootGA({ href: PAGE + "#s=" + V5_MOVED });
+    const saved = plain(app.get("savedScales()"));
+    const events = gaEvents(app).length;
+    const calls = app.history.calls.length;
+    const unsorted = V5_MOVED.replace("(D3)_A3_C4_D4_E4_F4_G4_A4_C5", "(D3)_C4_A3_D4_E4_G4_F4_A4_C5");
+    assert.notStrictEqual(unsorted, V5_MOVED);
+    app.hashchange("#s=" + unsorted);
+    assert.strictEqual(app.location.hash, "#s=" + V5_MOVED);
+    assert.deepStrictEqual(app.history.calls.slice(calls).map((c) => c.type), ["replace"]);
+    assert.deepStrictEqual(plain(app.get("savedScales()")), saved);
+    assert.strictEqual(gaEvents(app).length, events);
+  });
+
   test("SV: stored records keep v 4 after a v5 boot", () => {
     const app = bootGA({ href: PAGE + "#s=" + V4_MOVED });
     const saved = plain(app.get("savedScales()"));
@@ -10641,7 +10655,7 @@ describe("DI: dual input", () => {
     const order = ["scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box"].map(at);
     assert.ok(order.every((n) => n > 0), "an id is missing from the markup");
     assert.deepStrictEqual(order.slice().sort((a, b) => a - b), order, "the fields are not in order before #scale-box");
-    const labels = { ding: "DING", top: "TOP RIM NOTES, LOW TO HIGH", inner: "TOP INNER (CYCLOPS/MUTANT) NOTE, LOW TO HIGH (OPTIONAL)", bottom: "BOTTOM NOTES, LOW TO HIGH (OPTIONAL)" };
+    const labels = { ding: "DING", top: "TOP RIM NOTES", inner: "TOP INNER (CYCLOPS/MUTANT) NOTE (OPTIONAL)", bottom: "BOTTOM NOTES (OPTIONAL)" };
     for (const k of FIELDS) {
       const tag = h.match(new RegExp(`<input[^>]*id="scale-${k}"[^>]*>`))[0];
       assert.match(tag, /type="text"/, k);
@@ -10649,7 +10663,7 @@ describe("DI: dual input", () => {
       assert.match(tag, /autocorrect="off"/, k);
       assert.match(tag, /spellcheck="false"/, k);
       assert.match(tag, new RegExp(`enterkeyhint="${k === "bottom" ? "done" : "next"}"`), k);
-      assert.match(tag, /aria-describedby="scale-field-msg"/, k);
+      assert.match(tag, /aria-describedby="scale-field-msg scale-fields-note"/, k);
       assert.match(h, new RegExp(`id="scale-${k}-label"[^>]*>${labels[k].replace(/[()]/g, "\\$&")}<`), k);
     }
   });
@@ -10860,10 +10874,50 @@ describe("DI: dual input", () => {
     assert.strictEqual(JSON.stringify(engine.core.parseSeed(box, opts).value), JSON.stringify(engine.core.parseSeed(oldBox, opts).value));
   });
 
-  test("IB: the INNER and BOTTOM labels say LOW TO HIGH", () => {
+  test("IB: no sheet label or hint says low to high except the octave sentence", () => {
     const h = src();
-    assert.match(h, /id="scale-inner-label"[^>]*>TOP INNER \(CYCLOPS\/MUTANT\) NOTE, LOW TO HIGH \(OPTIONAL\)</);
-    assert.match(h, /id="scale-bottom-label"[^>]*>BOTTOM NOTES, LOW TO HIGH \(OPTIONAL\)</);
+    assert.match(h, /id="scale-inner-label"[^>]*>TOP INNER \(CYCLOPS\/MUTANT\) NOTE \(OPTIONAL\)</);
+    assert.match(h, /id="scale-bottom-label"[^>]*>BOTTOM NOTES \(OPTIONAL\)</);
+    const sentence = "Octaves are optional: without one, we assume the notes run low to high.";
+    const labels = [...h.matchAll(/<(?:label|span)[^>]*class="sheetlabel"[^>]*>([^<]*)</g)].map((m) => m[1]);
+    assert.ok(labels.length >= 6, `only ${labels.length} sheet labels found`);
+    const app = openAdd();
+    const texts = labels.concat(app.get("PARSE_HINT").replace(sentence, ""));
+    for (const t of texts) assert.doesNotMatch(t, /low to high/i, t);
+    assert.ok(app.get("PARSE_HINT").includes(sentence));
+    assert.strictEqual(el(app, "scale-fields-note").textContent.replace(sentence, ""), "");
+  });
+
+  test("OS: with the fields path active and an empty line, #scale-fields-note carries the octave sentence and the parse hint is hidden", () => {
+    const app = openAdd();
+    assert.strictEqual(app.get("inputPath"), "fields");
+    assert.strictEqual(el(app, "scale-box").value, "");
+    assert.strictEqual(el(app, "scale-fields-note").textContent, "Octaves are optional: without one, we assume the notes run low to high.");
+    assert.strictEqual(cls(app, "scale-box", "passive"), true);
+    assert.match(src(), /#scale-box-wrap\.passive ~ #scale-parse\{display:none\}/);
+    fire(app, "scale-ding", "focus");
+    app.els["scale-ding"].value = "D3";
+    fire(app, "scale-ding", "input");
+    app.els["scale-top"].value = "A3 C4";
+    fire(app, "scale-top", "input");
+    assert.notStrictEqual(el(app, "scale-box").value, "");
+    assert.strictEqual(el(app, "scale-fields-note").textContent, "");
+    app.els["scale-ding"].value = "";
+    fire(app, "scale-ding", "input");
+    app.els["scale-top"].value = "";
+    fire(app, "scale-top", "input");
+    assert.strictEqual(el(app, "scale-box").value, "");
+    assert.match(el(app, "scale-fields-note").textContent, /^Octaves are optional/);
+    fire(app, "scale-box", "focus");
+    assert.match(el(app, "scale-fields-note").textContent, /^Follows the line below/);
+  });
+
+  test("OS: the four fields' aria-describedby names scale-field-msg and scale-fields-note", () => {
+    const h = src();
+    for (const k of FIELDS) {
+      const tag = h.match(new RegExp(`<input[^>]*id="scale-${k}"[^>]*>`))[0];
+      assert.match(tag, /aria-describedby="scale-field-msg scale-fields-note"/, k);
+    }
   });
 
   test("IB: a guessed inner octave is named under TOP INNER NOTES in the slot", () => {
@@ -11123,7 +11177,7 @@ describe("DI: dual input", () => {
     fire(app, "scale-ding", "focus");
     assert.strictEqual(el(app, "scale-box").value, "");
     assert.strictEqual(el(app, "scale-refusal").textContent, "");
-    assert.match(el(app, "scale-parse").textContent, /^Type every note low to high on one line\./);
+    assert.match(el(app, "scale-parse").textContent, /^Type every note on one line, in any order\./);
     assert.strictEqual(el(app, "scale-generate").disabled, true);
     noFlags(app);
   });
