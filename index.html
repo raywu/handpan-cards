@@ -6424,10 +6424,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return Math.min(d, 360 - d);
   }
 
-  /* The smallest short-way gap between two bottom notes in the DEFAULT
-   * placement of a ring of this size: infinite for one note. */
-  function defaultBottomGap(count) {
-    var angles = bottomAngles(count);
+  /* The smallest short-way gap between bottom notes at the given angles - the
+   * default placement as solve rounds and mirrors it: infinite for one note. */
+  function defaultBottomGap(angles) {
     var best = Infinity;
     for (var i = 0; i < angles.length; i += 1) {
       for (var j = i + 1; j < angles.length; j += 1) {
@@ -6440,11 +6439,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   /* The floor between two bottom notes, in degrees: the smallest multiple of
    * ANGLE_STEP strictly above the angle at which two bottom circles touch,
    * capped by the default gap so the default placement always passes. */
-  function bottomFloor(geom, count) {
+  function bottomFloor(geom, defaults) {
+    var count = defaults.length;
     if (count < 2) return 0;
     var touch = 2 * Math.asin(Math.min(1, geom.r_bnote / geom.bottom)) / DEG;
     var strict = (Math.floor(touch / ANGLE_STEP + 1e-9) + 1) * ANGLE_STEP;
-    return Math.min(strict, defaultBottomGap(count));
+    return Math.min(strict, defaultBottomGap(defaults));
   }
 
   var CLASH_EPS = 1e-9;
@@ -6461,7 +6461,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       return list[k] === null || list[k] === undefined ? fields[ids[k]][4] : list[k];
     };
     var at = angleOf(i);
-    var floor = bottomFloor(geom, ids.length);
+    var floor = bottomFloor(geom, ids.map(function (id) { return fields[id][4]; }));
     var k;
     for (k = 0; k < ids.length; k += 1) {
       if (k === i) continue;
