@@ -4921,6 +4921,41 @@ describe("panel fit judge", () => {
     assert.strictEqual(judge(b, c(540)).rule2.fail.length, 1);
   });
 
+  test("panel fit: the Language-group allowance is 88, owed only for a lang-select control the base lacks", () => {
+    assert.strictEqual(pf.LANG_ALLOWANCE_PX, 88);
+    const keys = (...k) => Object.fromEntries(k.map((x) => [x, ctl(100)]));
+    assert.strictEqual(pf.langAllowance(keys("res-a"), keys("res-a", "lang-select")), 88, "a new lang-select key");
+    assert.strictEqual(pf.langAllowance(keys("res-a"), keys("res-a")), 0, "no new key");
+    assert.strictEqual(pf.langAllowance(keys("res-a"), keys("res-a", "about-open", "res-b")), 0, "other new controls earn nothing");
+    assert.strictEqual(pf.langAllowance(keys("lang-select"), keys("lang-select")), 0, "the allowance expires once main has the select");
+    const b = cell({ needed: 500, avail: 500 });
+    const withLang = (needed) => judge(b, withControl(cell({ needed, avail: 500 }), "lang-select", ctl(400))).rule1.fail.length;
+    assert.strictEqual(withLang(589), 0, "base + 88 + the 1px tolerance");
+    assert.strictEqual(withLang(590), 1, "one pixel beyond");
+    const lang = (bottom) => judge(b, withControl(cell({ needed: 550, avail: 500 }), "lang-select", ctl(bottom))).rule3.fail.length;
+    assert.strictEqual(lang(588.5), 0, "base needed + 88 + the 0.5 tolerance");
+    assert.strictEqual(lang(588.6), 1, "past the allowance");
+    const move = withControl(withControl(cell(), "lang-select", ctl(400)), "deck-add", ctl(540));
+    assert.strictEqual(judge(withControl(cell(), "deck-add", ctl(500)), move).rule2.fail.length, 1, "no existing control moves");
+  });
+
+  test("panel fit: --lang seeds the candidate's stored language and asserts the resolved lang", async () => {
+    assert.strictEqual(pf.parseArgs(["--lang", "de"]).lang, "de");
+    assert.strictEqual(pf.parseArgs([]).lang, null);
+    const fake = (resolved) => {
+      const calls = [];
+      return { calls, send: async () => {}, setViewport: async () => {}, goto: async (u) => { calls.push(["goto", u]); },
+        eval: async (src) => { calls.push(["eval", src]); return /documentElement\.lang/.test(src) ? resolved : true; } };
+    };
+    const ok = fake("de");
+    await pf.prepareBrowser(ok, "http://x/", "de");
+    assert.ok(ok.calls.some(([k, v]) => k === "eval" && /localStorage\.setItem\("hpfc".*"de"/.test(v)), "no stored language");
+    await assert.rejects(pf.prepareBrowser(fake("en"), "http://x/", "de"), (e) => e instanceof pf.PanelFitError && /resolved "en"/.test(e.message));
+    const plain = fake("en");
+    await pf.prepareBrowser(plain, "http://x/");
+    assert.ok(!plain.calls.some(([k, v]) => k === "eval" && /localStorage/.test(v)), "the base is seeded");
+  });
+
   test("panel fit: the threshold cell is the lowest height in the band where the base fits", () => {
     const b = cell({ needed: 373.8, avail: 320 });
     const c = cell({ needed: 395.8, avail: 320, overflowX: { panel: 0, doc: 0 } });
@@ -10687,7 +10722,7 @@ describe("about overlay", () => {
     assert.match(inner, /<h3>Privacy<\/h3>\s*<p>[^<]*<\/p>\s*<h3>Contact<\/h3>\s*<p><a href="mailto:handpan@raywu\.org">handpan@raywu\.org<\/a><\/p>\s*$/);
   });
 
-  test("AO: ABOUT is the last panel stop, a full-width button alone in the last Resources row", () => {
+  test("AO: ABOUT is a full-width button alone in the last Resources row, and the last stop before Language", () => {
     const panel = pmPanel();
     const group = panel.slice(panel.indexOf('<h3 class="panel-heading">Resources</h3>'));
     const rows = [...group.matchAll(/<div class="modebar([^"]*)">([\s\S]*?)<\/div>/g)];
@@ -10701,8 +10736,8 @@ describe("about overlay", () => {
     app.run(`settingsPanel.querySelectorAll = (sel) => /res-/.test(sel) ? ${JSON.stringify(resIds)}.map((id) => ({ id, disabled: false, getClientRects: () => [{}] })) : []`);
     app.run("openPanel()");
     const ids = app.get("panelStops().map((e) => e.id)");
-    assert.strictEqual(ids[ids.length - 1], "about-open", "about-open is not the last panel stop");
-    assert.strictEqual(ids[ids.length - 2], "res-handpan-101", "HANDPAN 101 does not lead ABOUT");
+    assert.strictEqual(ids[ids.length - 2], "about-open", "about-open is not the stop before Language");
+    assert.strictEqual(ids[ids.length - 3], "res-handpan-101", "HANDPAN 101 does not lead ABOUT");
   });
 
   test("AO: opening About tracks about_open with no params", () => {
@@ -14149,11 +14184,78 @@ describe("I18N", () => {
     assert.ok(seen > 0, "the subtitle shows in some mode");
   });
 
+  const langPanelStops = (app) => {
+    const panel = pmPanel();
+    const group = panel.slice(panel.indexOf('<h3 class="panel-heading">Resources</h3>'));
+    const resIds = [...group.matchAll(/<a[^>]*id="(res-[\w-]+)"/g)].map((m) => m[1]);
+    app.run(`settingsPanel.querySelectorAll = (sel) => /res-/.test(sel) ? ${JSON.stringify(resIds)}.map((id) => ({ id, disabled: false, getClientRects: () => [{}] })) : []`);
+    app.run("openPanel()");
+    return app.get("panelStops().map((e) => e.id)");
+  };
+
+  test("I18N: the Language group follows Resources, is named by its heading, and #lang-select is the last panel stop", () => {
+    const panel = pmPanel();
+    const resources = panel.indexOf('<h3 class="panel-heading">Resources</h3>');
+    const lang = panel.indexOf('<div class="panel-group"><h3 class="panel-heading" id="panel-lang-heading">Language</h3><select id="lang-select" aria-labelledby="panel-lang-heading"></select></div>');
+    assert.ok(resources > 0 && lang > panel.indexOf('id="about-open"'), "the Language group does not follow the Resources group");
+    assert.strictEqual(panel.slice(lang).includes("<h3"), true);
+    assert.strictEqual(panel.slice(lang + 10).includes('class="panel-group"'), false, "a group follows Language");
+    const ids = langPanelStops(boot());
+    assert.strictEqual(ids[ids.length - 1], "lang-select", "lang-select is not the last panel stop");
+    assert.strictEqual(ids[ids.length - 2], "about-open", "ABOUT does not lead Language");
+  });
+
+  test("I18N: the options are AUTOMATIC (<detected endonym>) then one endonym per present table, in the fixed order", () => {
+    const texts = (app) => app.els["lang-select"].children.map((o) => [o.value, o.textContent]);
+    assert.deepStrictEqual(texts(boot({ languages: ["en-US"] })), [["auto", "AUTOMATIC (ENGLISH)"], ["en", "ENGLISH"]]);
+    const app = bootLang(["zh-Hans", "fr", "de"], ["fr-CA", "en"]);
+    const en = readEn();
+    assert.deepStrictEqual(texts(app), [
+      ["auto", wrapOne(en["sel.auto"]).replace("{lang}", "FRANÇAIS")], ["en", "ENGLISH"], ["de", "DEUTSCH"], ["fr", "FRANÇAIS"], ["zh-Hans", "简体中文"]]);
+    assert.strictEqual(app.els["lang-select"].value, "auto");
+    const stored = bootLang(["de"], ["en"], { storage: { hpfc: JSON.stringify({ lang: "de" }) } });
+    assert.strictEqual(stored.els["lang-select"].value, "de");
+  });
+
+  test("I18N: a pick repaints in place: focus stays on #lang-select, the panel's scrollTop is unchanged, no element is replaced", () => {
+    const app = bootLang(["de"], ["en"]);
+    const select = app.els["lang-select"];
+    const options = select.children.slice();
+    const heading = app.els["panel-lang-heading"];
+    app.run("openPanel()");
+    select.focus();
+    app.els["settings-panel"].scrollTop = 123;
+    select.value = "de";
+    select.dispatchEvent({ type: "change" });
+    assert.strictEqual(app.get("document.documentElement.lang"), "de");
+    assert.strictEqual(heading.textContent, wrapOne("Language"));
+    assert.strictEqual(app.els["lang-select"], select, "the select was replaced");
+    assert.deepStrictEqual(select.children, options, "an option was replaced");
+    assert.strictEqual(select.children[0].textContent, wrapOne("AUTOMATIC ({lang})").replace("{lang}", "ENGLISH"));
+    assert.strictEqual(app.els["settings-panel"].scrollTop, 123, "the panel scrolled");
+    assert.strictEqual(app.get("panelOpen"), true, "a pick closed the panel");
+    assert.strictEqual(JSON.parse(app.store.hpfc).lang, "de");
+    select.value = "auto";
+    select.dispatchEvent({ type: "change" });
+    assert.strictEqual(app.get("document.documentElement.lang"), "en");
+    assert.strictEqual("lang" in JSON.parse(app.store.hpfc), false, "AUTOMATIC left a stored language");
+  });
+
+  test("I18N: Escape on the focused select with its picker closed closes the panel", () => {
+    const app = boot();
+    app.run("openPanel()");
+    app.els["lang-select"].focus();
+    assert.strictEqual(app.get("panelOpen"), true);
+    assert.strictEqual(app.keydown("Escape"), true);
+    assert.strictEqual(app.get("panelOpen"), false);
+  });
+
   test("I18N: the English DOM of the app equals the base", () => {
     const fixturePath = path.join(ROOT, "tests", "fixtures", "i18n_english_dom_v1.json");
     const snap = (app) => {
       const out = {};
       for (const [id, el] of Object.entries(app.els)) {
+        if (id === "lang-select" || id === "panel-lang-heading") continue;
         out[id] = {
           text: el.textContent, html: el.innerHTML, hidden: el.hidden,
           attrs: Object.fromEntries(Object.entries(el.attributes).sort()),
