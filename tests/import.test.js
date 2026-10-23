@@ -1598,11 +1598,13 @@ describe("compose codes", () => {
       if (bad.errors[f]) assert.ok(bad.codes[f] && typeof bad.codes[f].code === "string", f + " has a code");
       else assert.ok(!bad.codes[f], f + " has no code");
     }
-    assert.ok(Array.isArray(bad.infoCodes) && Array.isArray(bad.warnCodes));
+    assert.deepEqual(Object.keys(bad.infoCodes).sort(), ["bottom", "inner"]);
+    assert.deepEqual(Object.keys(bad.warnCodes), ["bottom"]);
+    assert.deepEqual(JSON.parse(JSON.stringify(bad.codes.top)), { code: "NOT_A_NOTE", variant: null, vars: { T: "Xx" } });
     const guessed = importer.compose({ ding: "D3", top: "A3 C4 D4", inner: "", bottom: "C" });
-    assert.equal(guessed.info ? guessed.infoCodes.length > 0 : guessed.infoCodes.length === 0, true);
+    assert.deepEqual(JSON.parse(JSON.stringify(guessed.infoCodes.bottom)), { code: "OCTAVES_GUESSED", variant: null, vars: { list: guessed.guessed.join(", ") } });
     const ok = importer.compose({ ding: "D3", top: "A3 C4 D4", inner: "", bottom: "" });
-    assert.deepEqual(ok.infoCodes, []);
+    assert.deepEqual(JSON.parse(JSON.stringify(ok.infoCodes)), { bottom: null, inner: null });
     assert.equal(typeof ok.line, "string");
   });
 });

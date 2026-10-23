@@ -13888,8 +13888,8 @@ describe("I18N", () => {
       w(en["reason.NO_DING"]));
     assert.strictEqual(app.get('reasonText({code: "BAD_NOTE", variant: "slash", vars: {}, reason: "x"})'),
       w(en["reason.BAD_NOTE.slash"]));
-    assert.strictEqual(app.get('composeText({code: "SOLFEGE", vars: {}}, "x")'), w(en["compose.SOLFEGE"]));
-    assert.strictEqual(app.get('composeText({code: "NOT_A_NOTE", vars: {T: "Xx"}}, "x")'),
+    assert.strictEqual(app.get('composeText({code: "SOLFEGE", variant: null, vars: {}}, "x")'), w(en["compose.SOLFEGE"]));
+    assert.strictEqual(app.get('composeText({code: "NOT_A_NOTE", variant: null, vars: {T: "Xx"}}, "x")'),
       w(en["compose.NOT_A_NOTE"].replace("{T}", "Xx")));
     assert.strictEqual(app.get('reasonText({code: "NOPE", vars: {}, reason: "kept"})'), "kept",
       "an unknown reason code falls back to the engine's own sentence");
