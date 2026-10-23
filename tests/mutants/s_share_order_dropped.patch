@@ -5,10 +5,10 @@
 diff --git a/src/engine/share.js b/src/engine/share.js
 --- a/src/engine/share.js
 +++ b/src/engine/share.js
-@@ -196,6 +196,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -215,6 +215,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
    var RINGS = ["rim", "inner", "bottom"];
  
-   function seatsField(seats) {
+   function seatsField(seats, skipBottom) {
 +    return "";
      if (!seats || typeof seats !== "object") return "";
      var parts = [];

@@ -5,7 +5,7 @@
 diff --git a/src/engine/share.js b/src/engine/share.js
 --- a/src/engine/share.js
 +++ b/src/engine/share.js
-@@ -337,8 +337,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -529,8 +529,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
        read = HPE.layout.readSeats(carry.delta.seats, counts);
      }
      if (read) {
@@ -13,5 +13,5 @@ diff --git a/src/engine/share.js b/src/engine/share.js
 -      if (read.value) result.value.options.seats = read.value;
 +      if (read.ok && read.value) result.value.options.seats = read.value;
      }
-     return result;
-   }
+     if (carry.angles) {
+       var bottomSeats = carry.delta && carry.delta.seats && carry.delta.seats.bottom;
