@@ -5680,7 +5680,7 @@ test("S3: seats, anchor and a one-ring mirror travel through a share link and re
   assert.strictEqual(made.ok, true, made.reason);
   const url = link(app, made.value.id);
   assert.strictEqual(url.ok, true, url.reason);
-  assert.strictEqual(payload(url.value).charAt(0), "5");
+  assert.strictEqual(payload(url.value).charAt(0), "6");
 
   const other = boot();
   const opened = openShare(other, payload(url.value));
@@ -8379,7 +8379,7 @@ test("rule N matrix: every scale, anchor, mirror and swap count keeps each ring'
   }
 });
 
-test("rule N: a moved deck's stored record is the record and v5 string with no parent option", () => {
+test("rule N: a moved deck's stored record is the record and v6 string with no parent option", () => {
   const app = boot();
   const made = app.generate(DR3_D3, { seats: DR3_SWAPPED, anchor: "between", mirror: true });
   assert.strictEqual(made.ok, true, made.reason);
@@ -8389,7 +8389,7 @@ test("rule N: a moved deck's stored record is the record and v5 string with no p
     o: { palette: 0, mirror: true, mirrorBottom: true, anchor: "between", parent: null, seats: DR3_SWAPPED },
   }]);
   assert.strictEqual(plain(app.get(`shareLink(${expr})`)).value,
-    "https://example.test/index.html#s=5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/mirror/between/seats-1,0,2,3,4,5,6,7;;/3a1c93");
+    "https://example.test/index.html#s=6/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/mirror/between/seats-1,0,2,3,4,5,6,7;;/bbc2db");
   assert.strictEqual(app.get(`HPE.core.formatSeed(${expr}.fields)`), DR3_D3);
 });
 
@@ -9912,22 +9912,23 @@ describe("share url", () => {
   // between anchor and parent 1: the string main wrote for it (rule N).
   const V4_MOVED = "4A4GpAI11Co13D214D215D216D217D211D213DGem2J49CGan2GenB30iCYmpB3GiDImsB3SxEmgT2O_m";
   const V5_MOVED = "5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/parent-aeolian/mirror/between/seats-1,0,2,3,4,5,6,7;;/975b6c";
+  const V6_MOVED = "6/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/parent-aeolian/mirror/between/seats-1,0,2,3,4,5,6,7;;/61d4aa";
 
-  test("SV: a v4 #s= boot imports once and ends with the v5 code in the bar through one replaceState", () => {
+  test("SV: a v4 #s= boot imports once and ends with the v6 code in the bar through one replaceState", () => {
     const app = bootGA({ href: PAGE + "#s=" + V4_MOVED });
-    assert.strictEqual(app.location.hash, "#s=" + V5_MOVED);
+    assert.strictEqual(app.location.hash, "#s=" + V6_MOVED);
     assert.strictEqual(gaEvents(app).filter((e) => e === "share_open").length, 1);
     assert.deepStrictEqual(app.history.calls.map((c) => c.type), ["replace"]);
     assert.strictEqual(app.deckId(), plain(app.get("HPE.core.deckId(HPE.core.parseSeed(" + JSON.stringify(DR3_D3) + ", {}).value.fields)")));
   });
 
-  test("SV: a hashchange to the v4 spelling of the deck shown rewrites the bar to v5 and imports nothing", () => {
+  test("SV: a hashchange to the v4 spelling of the deck shown rewrites the bar to v6 and imports nothing", () => {
     const app = bootGA({ href: PAGE + "#s=" + V4_MOVED });
     const saved = plain(app.get("savedScales()"));
     const events = gaEvents(app).length;
     const calls = app.history.calls.length;
     app.hashchange("#s=" + V4_MOVED);
-    assert.strictEqual(app.location.hash, "#s=" + V5_MOVED);
+    assert.strictEqual(app.location.hash, "#s=" + V6_MOVED);
     assert.deepStrictEqual(app.history.calls.slice(calls).map((c) => c.type), ["replace"]);
     assert.deepStrictEqual(plain(app.get("savedScales()")), saved);
     assert.strictEqual(gaEvents(app).length, events);
@@ -9941,13 +9942,52 @@ describe("share url", () => {
     const unsorted = V5_MOVED.replace("(D3)_A3_C4_D4_E4_F4_G4_A4_C5", "(D3)_C4_A3_D4_E4_G4_F4_A4_C5");
     assert.notStrictEqual(unsorted, V5_MOVED);
     app.hashchange("#s=" + unsorted);
-    assert.strictEqual(app.location.hash, "#s=" + V5_MOVED);
+    assert.strictEqual(app.location.hash, "#s=" + V6_MOVED);
     assert.deepStrictEqual(app.history.calls.slice(calls).map((c) => c.type), ["replace"]);
     assert.deepStrictEqual(plain(app.get("savedScales()")), saved);
     assert.strictEqual(gaEvents(app).length, events);
   });
 
-  test("SV: stored records keep v 4 after a v5 boot", () => {
+  test("FPS: a v5 #s= boot imports once and ends with the v6 code in the bar through one replaceState", () => {
+    const app = bootGA({ href: PAGE + "#s=" + V5_MOVED });
+    assert.strictEqual(app.location.hash, "#s=" + V6_MOVED);
+    assert.strictEqual(gaEvents(app).filter((e) => e === "share_open").length, 1);
+    assert.deepStrictEqual(app.history.calls.map((c) => c.type), ["replace"]);
+    assert.strictEqual(plain(app.get("savedScales()")).length, 1);
+  });
+
+  test("FPS: a hashchange to the v5 spelling of the deck shown rewrites the bar to v6 and imports nothing", () => {
+    const app = bootGA({ href: PAGE + "#s=" + V6_MOVED });
+    const saved = plain(app.get("savedScales()"));
+    const events = gaEvents(app).length;
+    const calls = app.history.calls.length;
+    app.hashchange("#s=" + V5_MOVED);
+    assert.strictEqual(app.location.hash, "#s=" + V6_MOVED);
+    assert.deepStrictEqual(app.history.calls.slice(calls).map((c) => c.type), ["replace"]);
+    assert.deepStrictEqual(plain(app.get("savedScales()")), saved);
+    assert.strictEqual(gaEvents(app).length, events);
+  });
+
+  test("FPS: a v6 link under the floor, or with a bottom seats list beside at-, is BAD_NOTE and the app imports nothing", () => {
+    const seg = "uC3_uDb3_uEb3_(F3)_G3_Ab3_uBb3_C4_uDb4_Eb4_F4_G4_Ab4_C5_Eb5_-_F5_G5_uAb5";
+    const fnv = (text) => {
+      let h = 0x811c9dc5;
+      for (const b of Buffer.from(text, "utf8")) { h = ((h ^ b) >>> 0); h = Math.imul(h, 0x01000193) >>> 0; }
+      return (h >>> 8).toString(16).padStart(6, "0");
+    };
+    const forge = (options) =>
+      ["6", seg, "*x"].concat(options, fnv(["6", seg, "\t"].concat(options).join("\n"))).join("/");
+    const stored = plain(bootGA().get("savedScales()")).length;
+    for (const options of [["between", "at-5,,,,,"], ["between", "seats-;;5,4,3,2,1,0", "at-,,,20,,"]]) {
+      const app = bootGA({ href: PAGE + "#s=" + forge(options) });
+      assert.strictEqual(plain(app.get("savedScales()")).length, stored, options.join("/"));
+      assert.strictEqual(gaEvents(app).filter((e) => e === "share_open").length, 0);
+    }
+    const ok = bootGA({ href: PAGE + "#s=" + forge(["between", "at-,,,20,,"]) });
+    assert.strictEqual(plain(ok.get("savedScales()")).length, stored + 1, "the control imports");
+  });
+
+  test("FPS: stored records keep v 4 after a v6 boot", () => {
     const app = bootGA({ href: PAGE + "#s=" + V4_MOVED });
     const saved = plain(app.get("savedScales()"));
     assert.strictEqual(saved.length, 1);
@@ -9956,12 +9996,13 @@ describe("share url", () => {
     assert.strictEqual(app.get("SHARE_VERSION"), 4);
   });
 
-  const PARENTLESS = "5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/f0daf4";
+  const PARENTLESS_V5 = "5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/f0daf4";
+  const PARENTLESS = "6/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/77d0e3";
 
-  test("PI: a v5 link with no parent opens and the bar keeps it unchanged, with no parent option and no replaceState", () => {
-    const app = bootGA({ href: PAGE + "#s=" + PARENTLESS });
+  test("PI: a v5 link with no parent opens and the bar ends on its parentless v6 code through one replaceState, with no parent option", () => {
+    const app = bootGA({ href: PAGE + "#s=" + PARENTLESS_V5 });
     assert.strictEqual(app.location.hash, "#s=" + PARENTLESS);
-    assert.strictEqual(app.history.calls.filter((c) => c.type === "replace").length, 0);
+    assert.strictEqual(app.history.calls.filter((c) => c.type === "replace").length, 1);
     const saved = plain(app.get("savedScales()"));
     assert.strictEqual(saved.length, 1);
     assert.ok(saved[0].o.parent == null, "a parent was stored");
@@ -9979,15 +10020,15 @@ describe("share url", () => {
     assert.strictEqual(plain(app.get(`shareLink(${expr})`)).value, "https://example.test/index.html#s=" + PARENTLESS);
   });
 
-  test("PI: a v4 link with no parent opens to a v5 bar with no parent option", () => {
+  test("PI: a v4 link with no parent opens to a v6 bar with no parent option", () => {
     const app = bootGA({ href: PAGE + "#s=4A4GpAI11Co13D214D215D216D217D211D213DGem2Gam2J09JLaWK45E2Wpf9aJ0" });
-    assert.strictEqual(app.location.hash, "#s=5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/MY+PAN/b4174c");
+    assert.strictEqual(app.location.hash, "#s=6/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/MY+PAN/ebb622");
     assert.ok(plain(app.get("savedScales()"))[0].o.parent == null);
   });
 
   test("PI: an explicit parent equal to the inferred one still travels in the bar and the record", () => {
-    const app = bootGA({ href: PAGE + "#s=" + V5_MOVED });
-    assert.strictEqual(app.location.hash, "#s=" + V5_MOVED);
+    const app = bootGA({ href: PAGE + "#s=" + V6_MOVED });
+    assert.strictEqual(app.location.hash, "#s=" + V6_MOVED);
     assert.strictEqual(plain(app.get("savedScales()"))[0].o.parent, 1);
   });
 

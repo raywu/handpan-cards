@@ -935,6 +935,23 @@ test("D5-5: seats change the share string but never the deckId", () => {
   }
 });
 
+test("FPS: angles change the share string but never the deckId", () => {
+  const seed = parsed(PYGMY);
+  const id = core.deckId(seed);
+  const seen = new Set([encoded(seed)]);
+  const bottoms = ringCounts(seed).bottom;
+  for (const first of [90, 95, 100, 105]) {
+    const list = Array(bottoms).fill(null);
+    list[0] = first;
+    const moved = withAngles(seed, list);
+    assert.equal(core.deckId(moved), id, "the deck id of the moved seed moved");
+    const str = encoded(moved);
+    assert.equal(seen.has(str), false, "two arrangements share one string");
+    seen.add(str);
+    assert.equal(core.deckId(decoded(str)), id, "the decoded deck id moved");
+  }
+});
+
 test("seats compose with every other option on the wire", () => {
   const seats = rotatedSeats(parsed(BASE), 1);
   for (const options of OPTION_CASES) {
@@ -1128,9 +1145,9 @@ test("per-ring seats ride on line 2 as rim;inner;bottom", () => {
   assert.equal(moved[moved.length - 2], `seats-${seats.rim.join(",")};;${seats.bottom.join(",")}`);
 });
 
-test("this app writes wire version 5", () => {
-  assert.equal(share.VERSION, 5);
-  assert.equal(encoded(parsed(BASE)).charAt(0), "5");
+test("this app writes wire version 6", () => {
+  assert.equal(share.VERSION, 6);
+  assert.equal(encoded(parsed(BASE)).charAt(0), "6");
   assert.equal(encoded(parsed(BASE)).charAt(0), VERSION_CHARS.charAt(share.VERSION));
 });
 
@@ -1401,20 +1418,148 @@ const seedNew = (str, options) => {
 const segsOf = (link) => link.split("/");
 const optionSegs = (link) => segsOf(link).slice(3, -1);
 
-test("SV: this app writes wire version 5 and keeps records at 4", () => {
-  assert.equal(share.VERSION, 5);
+test("SV: this app writes wire version 6 and keeps records at 4", () => {
+  assert.equal(share.VERSION, 6);
   assert.equal(share.RECORD_VERSION, 4);
-  assert.ok(encoded(parsed(BASE)).startsWith("5/"));
+  assert.ok(encoded(parsed(BASE)).startsWith("6/"));
+});
+
+const PYGMY_BOTTOMS = 6;
+const withAngles = (seed, list) => {
+  const copy = host(seed);
+  copy.options = Object.assign({}, copy.options, { angles: { bottom: list } });
+  return copy;
+};
+const pygmyPlain = () => seedNew(PYGMY_SCALE, { anchor: "between" });
+
+test("FPS: at- is the last option and appears only when an entry is set", () => {
+  const plain = pygmyPlain();
+  const base = encoded(plain);
+  for (const none of [undefined, null, {}, { bottom: [] }, { bottom: Array(PYGMY_BOTTOMS).fill(null) }]) {
+    const seed = host(plain);
+    seed.options = Object.assign({}, seed.options, { angles: none });
+    assert.equal(encoded(seed), base, JSON.stringify(none));
+  }
+  const moved = encoded(withAngles(plain, [null, 225, null, 20, null, 130]));
+  assert.deepEqual(optionSegs(moved), ["between", "at-,225,,20,,130"]);
+  const everything = encoded(withSeats(withAngles(seedNew(PYGMY_SCALE, {
+    palette: 2, parent: 9, mirror: true, mirrorBottom: false, anchor: "between", name: "My Pan" }),
+    [0, 5, 10, 15, 20, 25]), { rim: identity(9).reverse() }));
+  const segs = optionSegs(everything);
+  assert.equal(segs[segs.length - 1], "at-0,5,10,15,20,25");
+  assert.ok(segs[segs.length - 2].startsWith("seats-"));
+  assert.ok(everything.startsWith("6/"));
+});
+
+test("FPS: a deck with bottom angles encodes no bottom seats entry", () => {
+  const plain = pygmyPlain();
+  const angles = [null, 225, null, 20, null, 130];
+  const bottom = identity(PYGMY_BOTTOMS).reverse();
+  const both = encoded(withAngles(withSeats(plain, { bottom }), angles));
+  assert.equal(both, encoded(withAngles(plain, angles)), "a bottom seats list was written beside at-");
+  assert.equal(optionSegs(both).some(x => x.startsWith("seats-")), false);
+  const rimToo = encoded(withAngles(withSeats(plain, { rim: identity(9).reverse(), bottom }), angles));
+  const seatsSeg = optionSegs(rimToo).find(x => x.startsWith("seats-"));
+  assert.equal(seatsSeg, `seats-${identity(9).reverse().join(",")};;`);
+  const withoutAngles = encoded(withSeats(plain, { bottom }));
+  assert.ok(optionSegs(withoutAngles).some(x => x === `seats-;;${bottom.join(",")}`),
+    "bottom seats vanished without angles");
+});
+
+// A forged link of either version over the readable grammar.
+function forgeN(version, scale, name, options, check) {
+  const typed = name.startsWith("*") ? "\t" : name.split("+").join(" ");
+  const text = [version, scale, typed].concat(options).join("\n");
+  return [version, scale, name].concat(options, [check === undefined ? fnv24(text) : check]).join("/");
+}
+const PYGMY_SEG = "uC3_uDb3_uEb3_(F3)_G3_Ab3_uBb3_C4_uDb4_Eb4_F4_G4_Ab4_C5_Eb5_-_F5_G5_uAb5";
+
+test("FPS: at- on a v5 link is BAD_NOTE, on a v6 link it is read", () => {
+  const at = "at-,225,,20,,130";
+  const v6 = forgeN("6", PYGMY_SEG, "*x", ["between", at]);
+  const r = share.decode(v6);
+  assert.equal(r.ok, true, r.reason);
+  assert.deepStrictEqual(host(r.value.options.angles), { bottom: [null, 225, null, 20, null, 130] });
+  const v5 = forgeN("5", PYGMY_SEG, "*x", ["between", at]);
+  const bad = reject(v5);
+  assert.equal(bad.code, "BAD_NOTE");
+  const v5plain = forgeN("5", PYGMY_SEG, "*x", ["between"]);
+  assert.equal(share.decode(v5plain).ok, true, "a v5 link without at- still opens");
+});
+
+test("FPS: a v6 link under the floor, or with a bottom seats list beside at-, is BAD_NOTE and the app imports nothing", () => {
+  assert.equal(share.decode(pygmyAngled(",,,20,,")).ok, true, "the control opens");
+  for (const list of ["5,,,,,", ",,,,,10", "10,,,,,", "0,,,,,", ",,,,,5"]) {
+    const r = share.decode(pygmyAngled(list));
+    assert.equal(r.ok, false, list);
+    assert.equal(r.code, "BAD_NOTE", list);
+  }
+  const rimClash = share.decode(pygmyAngled("90,,,,,"));
+  assert.equal(rimClash.ok, true, "a clear step opens");
+  const beside = forgeN("6", PYGMY_SEG, "*x", ["between", "seats-;;5,4,3,2,1,0", "at-,,,20,,"]);
+  assert.equal(reject(beside).code, "BAD_NOTE");
+});
+
+test("FPS: a v6 check is computed over the byte 6", () => {
+  const options = ["between", "at-,225,,20,,130"];
+  const good = forgeN("6", PYGMY_SEG, "*x", options);
+  assert.equal(share.decode(good).ok, true);
+  const overFive = [good.split("/").slice(0, -1).join("/"),
+    fnv24(["5", PYGMY_SEG, "\t"].concat(options).join("\n"))].join("/");
+  assert.notEqual(overFive, good);
+  reject(overFive);
+  const link = encoded(withAngles(pygmyPlain(), [null, 225, null, 20, null, 130]));
+  assert.equal(link, good.replace("/*x/", "/" + link.split("/")[2] + "/").replace(/[0-9a-f]{6}$/, link.slice(-6)));
+  const meaning = ["6", PYGMY_SEG, "\t"].concat(options).join("\n");
+  assert.equal(link.slice(-6), fnv24(meaning));
 });
 
 test("SV: the five built-in decks' v5 links are pinned", () => {
   for (const [id, scale, options, label, auto, named] of V5_BUILTINS) {
+    const plain = seedNew(scale, options);
+    assert.deepStrictEqual(decoded(auto), plain, `${id} auto link decodes`);
+    const typed = seedNew(scale, Object.assign({ name: label }, options));
+    assert.deepStrictEqual(decoded(named), typed, `${id} named link decodes`);
+  }
+});
+
+const V6_LINKS = {
+  kurd: ["6/(D3)_A3_Bb3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+10/642785", "6/(D3)_A3_Bb3_C4_D4_E4_F4_G4_A4_C5/D+KURD+10/d20a36"],
+  amara10: ["6/(D3)_A3_C4_D4_E4_F4_G4_A4_C5_D5/*D+AEOLIAN+10/26725b", "6/(D3)_A3_C4_D4_E4_F4_G4_A4_C5_D5/D+AMARA+10/91c48e"],
+  amara: ["6/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/77d0e3", "6/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/D+AMARA+9/881b21"],
+  hijaz: ["6/(Cs3)_Gs3_B3_Cs4_D4_F4_Fs4_Gs4_B4/*C%23+HIJAZ+9/cfebf8", "6/(Cs3)_Gs3_B3_Cs4_D4_F4_Fs4_Gs4_B4/C%23+HIJAZ+9/d7bfad"],
+  pygmy: [`6/${PYGMY_SEG}/*F+AEOLIAN+12/between/a268bb`, `6/${PYGMY_SEG}/F3+LOW+PYGMY+18/between/68dd5a`],
+};
+
+test("FPS: the five built-in decks' v6 links are pinned", () => {
+  for (const [id, scale, options, label, auto5, named5] of V5_BUILTINS) {
+    const [auto, named] = V6_LINKS[id];
     const plain = seedNew(scale, options);
     assert.equal(encoded(plain), auto, `${id} auto link`);
     assert.deepStrictEqual(decoded(auto), plain, `${id} auto link decodes`);
     const typed = seedNew(scale, Object.assign({ name: label }, options));
     assert.equal(encoded(typed), named, `${id} named link`);
     assert.deepStrictEqual(decoded(named), typed, `${id} named link decodes`);
+    for (const [v5, v6] of [[auto5, auto], [named5, named]]) {
+      const a = v5.split("/");
+      const b = v6.split("/");
+      assert.equal(b[0], "6");
+      assert.deepEqual(b.slice(1, -1), a.slice(1, -1), `${id}: only the byte and the check differ`);
+      const typedName = a[2].startsWith("*") ? "\t" : a[2].split("+").join(" ").split("%23").join("#");
+      const meaning = ["6", a[1], typedName].concat(a.slice(3, -1)).join("\n");
+      assert.equal(b[b.length - 1], fnv24(meaning), `${id}: the check is over the byte 6`);
+    }
+  }
+});
+
+test("FPS: a v6 link is NEEDS_NEWER_APP to an app pinned at v5", () => {
+  for (const [auto, named] of Object.values(V6_LINKS)) {
+    for (const link of [auto, named]) {
+      const r = engineAtVersion(5).decode(link);
+      assert.equal(r.ok, false);
+      assert.equal(r.code, "NEEDS_NEWER_APP");
+      assert.equal(r.reason, specReason("NEEDS_NEWER_APP"));
+    }
   }
 });
 
@@ -1460,6 +1605,106 @@ test("SV: every option has one spelling and a default writes nothing", () => {
     name: "My Hijaz" }), { rim: identity(8).reverse() }));
   assert.deepEqual(optionSegs(every), ["palette-3", "parent-phrygian-dominant",
     "mirror-top", "between", "seats-7,6,5,4,3,2,1,0;;"]);
+  const angled = encoded(withAngles(pygmyPlain(), [null, null, 90, null, null, null]));
+  assert.deepEqual(optionSegs(angled), ["between", "at-,,90,,,"]);
+  assert.deepEqual(decoded(angled).options.angles, { bottom: [null, null, 90, null, null, null] });
+  const all = encoded(withAngles(withSeats(seedNew(PYGMY_SCALE, {
+    palette: 2, parent: 9, mirror: true, mirrorBottom: false, anchor: "between", name: "My Pan" }),
+    { rim: identity(9).reverse() }), [null, 225, null, 20, null, 130]));
+  assert.deepEqual(optionSegs(all), ["palette-3", "parent-phrygian-dominant", "mirror-top",
+    "between", `seats-${identity(9).reverse().join(",")};;`, "at-,225,,20,,130"]);
+});
+
+const ANGLE_CASES = [null, 225, null, 20, null, 130];
+const pygmyAngled = (list) => forgeN("6", PYGMY_SEG, "*x", ["between", "at-" + list]);
+
+test("FPS: changing any angle changes the check", () => {
+  const seen = new Set();
+  const checkOf = (list) => encoded(withAngles(pygmyPlain(), list)).split("/").pop();
+  seen.add(encoded(pygmyPlain()).split("/").pop());
+  seen.add(checkOf(ANGLE_CASES));
+  for (let i = 0; i < PYGMY_BOTTOMS; i += 1) {
+    for (const value of [0, 5, 180, 355]) {
+      if (ANGLE_CASES[i] === value) continue;
+      const list = ANGLE_CASES.slice();
+      list[i] = value;
+      const link = encoded(withAngles(pygmyPlain(), list));
+      assert.notEqual(link, encoded(withAngles(pygmyPlain(), ANGLE_CASES)), `${i}=${value}`);
+      seen.add(link.split("/").pop());
+      const forged = link.replace(/[0-9a-f]{6}$/, "000000");
+      reject(forged);
+    }
+  }
+  const list = ANGLE_CASES.slice();
+  list[3] = null;
+  assert.notEqual(checkOf(list), checkOf(ANGLE_CASES));
+  assert.ok(seen.size > 20, "checks collided");
+});
+
+test("FPS: absent round-trips as absent and clearing restores the default link byte for byte", () => {
+  const plain = pygmyPlain();
+  const base = encoded(plain);
+  const back = decoded(base);
+  assert.deepStrictEqual(back, plain);
+  assert.equal("angles" in back.options, false, "decode invented angles");
+  assert.ok(base.length < encoded(withAngles(plain, ANGLE_CASES)).length);
+  for (const empty of [undefined, null, {}, { bottom: [] }, { bottom: Array(PYGMY_BOTTOMS).fill(null) }]) {
+    const cleared = host(withAngles(plain, ANGLE_CASES));
+    cleared.options.angles = empty;
+    assert.equal(encoded(cleared), base, JSON.stringify(empty));
+  }
+  const moved = withAngles(plain, ANGLE_CASES);
+  assert.deepStrictEqual(decoded(encoded(moved)), moved);
+});
+
+const pygmyMirrorAngled = (list) => forgeN("6", PYGMY_SEG, "*x", ["mirror", "between", "at-" + list]);
+
+test("FPS: a mirrored deck's at- link round-trips and is floored against the mirrored bottom ring", () => {
+  const plain = seedNew(PYGMY_SCALE, { anchor: "between", mirror: true });
+  const moved = withAngles(plain, [240, null, null, null, null, null]);
+  const link = encoded(moved);
+  assert.ok(link.includes("/mirror/"), link);
+  const back = share.decode(link);
+  assert.equal(back.ok, true, back.reason);
+  assert.deepStrictEqual(host(back.value.options.angles), { bottom: [240, null, null, null, null, null] });
+  assert.equal(back.value.options.mirror, true);
+  assert.equal(share.decode(pygmyMirrorAngled("240,,,,,")).ok, true, "U1 at its mirrored home opens");
+});
+
+test("FPS: a mirrored deck's link under the floor of the mirrored ring is BAD_NOTE", () => {
+  const r = share.decode(pygmyMirrorAngled("290,,,,,"));
+  assert.equal(r.ok, false, "290 sits 10 degrees from the mirrored U2 at 300");
+  assert.equal(r.code, "BAD_NOTE");
+});
+
+test("FPS: an at- entry with a leading zero is BAD_NOTE, one spelling per angle", () => {
+  assert.equal(share.decode(pygmyAngled("90,,,,,")).ok, true);
+  for (const list of ["090,,,,,", "00,,,,,", ",,,,,090", ",,,20,,0130"]) {
+    const r = share.decode(pygmyAngled(list));
+    assert.equal(r.ok, false, list);
+    assert.equal(r.code, "BAD_NOTE", list);
+  }
+});
+
+test("FPS: an at- list with a wrong length, a bad entry, a bottom seats list beside it, or out of order is BAD_NOTE", () => {
+  assert.equal(share.decode(pygmyAngled(",,,20,,")).ok, true, "the control opens");
+  assert.equal(share.decode(pygmyAngled(",225,,20,,130")).ok, true);
+  const bads = ["5,,", "5,,,,,,", "5", "3,,,,,", "360,,,,,", "365,,,,,", "05,,,,,", "5,,,,,x", "-5,,,,,",
+    "5.5,,,,,", "1000,,,,,", ",,,,,", " 5,,,,,"];
+  for (const list of bads) {
+    const r = share.decode(pygmyAngled(list));
+    assert.equal(r.ok, false, list);
+    assert.equal(r.code, "BAD_NOTE", list);
+  }
+  const beside = forgeN("6", PYGMY_SEG, "*x", ["between", "seats-;;5,4,3,2,1,0", "at-,,,20,,"]);
+  assert.equal(reject(beside).code, "BAD_NOTE");
+  const rimBeside = forgeN("6", PYGMY_SEG, "*x", ["between", "seats-8,7,6,5,4,3,2,1,0;;", "at-,,,20,,"]);
+  assert.equal(share.decode(rimBeside).ok, true, "rim seats beside at- are legal");
+  const noBottoms = forgeN("6", "(D3)_A3_C4_D4_E4_F4_G4_A4_C5", "*x", ["at-5"]);
+  assert.equal(reject(noBottoms).code, "BAD_NOTE", "angles on a pan with no bottom notes");
+  for (const order of [["at-,,,20,,", "between"], ["at-,,,20,,", "seats-8,7,6,5,4,3,2,1,0;;"]]) {
+    assert.equal(reject(forgeN("6", PYGMY_SEG, "*x", order)).code, "BAD_NOTE");
+  }
 });
 
 test("SV: an unknown, duplicated or out-of-order option is BAD_NOTE", () => {
@@ -1475,6 +1720,17 @@ test("SV: an unknown, duplicated or out-of-order option is BAD_NOTE", () => {
   ];
   for (const options of bads) {
     reject(forge5(scale, "*x", options));
+  }
+  const pControl = forgeN("6", PYGMY_SEG, "*x", ["palette-3", "between", "seats-1,0,2,3,4,5,6,7,8;;", "at-,,,20,,"]);
+  assert.equal(share.decode(pControl).ok, true, "the v6 in-order control opens");
+  const v6bads = [
+    ["at-,,,20,,", "between"], ["at-,,,20,,", "seats-1,0,2,3,4,5,6,7,8;;"],
+    ["at-,,,20,,", "at-,,,20,,"], ["at-,,,20,,", "palette-3"], ["at-,,,20,,", "mirror"],
+    ["between", "AT-5,,,,,"], ["between", "at5,,,,,"], ["between", "at-"],
+    ["between", "at-,,,,,"], ["between", "at-,,,20,,", "at-"],
+  ];
+  for (const options of v6bads) {
+    reject(forgeN("6", PYGMY_SEG, "*x", options));
   }
 });
 
@@ -1521,14 +1777,16 @@ test("SV: the auto label is ignored on receipt and lies outside the checksum", (
   }
 });
 
-test("SV: a 5 not followed by / is BAD_NOTE, and 6 or above is NEEDS_NEWER_APP", () => {
+test("SV: a 5 or 6 not followed by / is BAD_NOTE, and 7 or above is NEEDS_NEWER_APP", () => {
   const rest = V5_BUILTINS[0][4].slice(2);
-  for (const second of ["A", "x", "-", "5", "0", "%", "\\"]) {
-    const r = reject("5" + second + rest);
-    assert.equal(r.code, "BAD_NOTE");
+  for (const lead of ["5", "6"]) {
+    for (const second of ["A", "x", "-", "5", "0", "%", "\\"]) {
+      const r = reject(lead + second + rest);
+      assert.equal(r.code, "BAD_NOTE");
+    }
+    reject(lead + rest);
   }
-  reject("5" + rest);
-  for (const version of ["6", "7", "9", "A", "z", "_"]) {
+  for (const version of ["7", "8", "9", "A", "z", "_"]) {
     const r = share.decode(version + "/" + rest);
     assert.equal(r.ok, false);
     assert.equal(r.code, "NEEDS_NEWER_APP", version);
@@ -1592,7 +1850,7 @@ test("SV: a v5 link whose scale segment is typed out of pitch order decodes to t
   assert.equal(shuffled.ok, true);
   assert.deepEqual(host(shuffled.value.fields), host(sorted.value.fields));
   assert.equal(share.encode(shuffled.value).value, share.encode(sorted.value).value);
-  assert.match(share.encode(shuffled.value).value, /^5\/\(D3\)_A3_C4_D4_E4_F4_G4_A4_C5\//);
+  assert.match(share.encode(shuffled.value).value, /^6\/\(D3\)_A3_C4_D4_E4_F4_G4_A4_C5\//);
 });
 
 test("SV: deckName never throws, and an out-of-range parent makes encode return BAD_NOTE", () => {
@@ -1616,7 +1874,7 @@ test("SV: deckName never throws, and an out-of-range parent makes encode return 
   }
 });
 
-test("SV: every v5 link survives new URL(...).hash byte for byte", () => {
+test("SV: every v5 and v6 link survives new URL(...).hash byte for byte", () => {
   const links = [];
   for (const [, , , , auto, named] of V5_BUILTINS) links.push(auto, named);
   const p9 = withSeats(seedNew(HIJAZ_SCALE, {
@@ -1624,7 +1882,7 @@ test("SV: every v5 link survives new URL(...).hash byte for byte", () => {
     name: "My Hijaz" }), { rim: [1, 0, 2, 3, 4, 5, 6, 7] });
   links.push(encoded(p9));
   assert.equal(links[links.length - 1],
-    "5/(Cs3)_Gs3_B3_Cs4_D4_F4_Fs4_Gs4_B4/My+Hijaz/palette-3/parent-phrygian-dominant/mirror-top/between/seats-1,0,2,3,4,5,6,7;;/e3049a");
+    "6/(Cs3)_Gs3_B3_Cs4_D4_F4_Fs4_Gs4_B4/My+Hijaz/palette-3/parent-phrygian-dominant/mirror-top/between/seats-1,0,2,3,4,5,6,7;;/bfe3d7");
   assert.equal(links.length, 11);
   for (const link of links) {
     assert.equal(new URL("https://example.test/#s=" + link).hash, "#s=" + link);
@@ -1668,6 +1926,29 @@ test("SV: the 120-note worst case fits the cap", () => {
   assert.ok(r.value.includes("/" + "%2F".repeat(40) + "/"), "the worst-case name is 40 escapes");
   const seg = optionSegs(r.value).find(s => s.startsWith("seats-"));
   assert.deepEqual(seg.slice(6).split(";").map(s => s.split(",").length), [60, 30, 29]);
+});
+
+test("FPS: a 120-note pan with every bottom note moved stays under the cap", () => {
+  const letters = ["C", "D", "E", "F", "G", "A", "B"];
+  const fields = {};
+  const zones = ["ding"].concat(Array(60).fill("rim"), Array(30).fill("inner"), Array(29).fill("bottom"));
+  zones.forEach((zone, i) => {
+    const letter = letters[i % 7];
+    const octave = 1 + Math.floor(i / 7);
+    fields[String(i)] = [letter, octave, 12 * (octave + 1) + (i % 7) * 2, zone, null, letter];
+  });
+  const ring = (from, count) => Array.from({ length: count }, (_, i) => from + count - 1 - i);
+  const seats = { rim: ring(1, 60), inner: ring(61, 30), bottom: ring(91, 29) };
+  const r = share.encode({
+    fields,
+    options: { palette: 5, parent: 10, mirror: true, mirrorBottom: false, anchor: "between",
+               name: "/".repeat(40), seats, angles: { bottom: Array(29).fill(355) } },
+  });
+  assert.equal(r.ok, true, r.reason);
+  assert.ok(r.value.length <= share.CAPS.payload, `${r.value.length} chars`);
+  const segs = optionSegs(r.value);
+  assert.equal(segs.find(s => s.startsWith("seats-")).split(";")[2], "", "bottom seats written beside at-");
+  assert.deepEqual(segs[segs.length - 1].slice(3).split(","), Array(29).fill("355"));
 });
 
 test("IB: a dip round-trips through share encode/decode and its scale segment puts - where the rim ends", () => {

@@ -1,10 +1,10 @@
-# kills: SV: a hashchange to the v4 spelling of the deck shown rewrites the bar to v5 and imports nothing
-# suite: node --test --test-name-pattern ^SV..a.hashchange.to.the.v4.spelling.of.the.deck.shown.rewrites.the.bar.to.v5.and.imports.nothing$ tests/app.test.js
+# kills: SV: a hashchange to the v4 spelling of the deck shown rewrites the bar to v6 and imports nothing
+# suite: node --test --test-name-pattern ^SV..a.hashchange.to.the.v4.spelling.of.the.deck.shown.rewrites.the.bar.to.v6.and.imports.nothing$ tests/app.test.js
 # The same-deck short circuit is gone: a v4 spelling of the deck shown is imported again.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12361,7 +12361,7 @@ window.addEventListener("hashchange", () => {
+@@ -13586,7 +13586,7 @@ window.addEventListener("hashchange", () => {
      const code = location.hash.slice(SHARE_PREFIX.length);
      const read = HPE.share.decode(code);
      const again = read.ok ? HPE.share.encode(read.value) : null;

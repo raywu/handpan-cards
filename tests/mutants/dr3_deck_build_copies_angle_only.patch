@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7807,7 +7807,6 @@ function generateDeck(text, options, guard) {
+@@ -9367,7 +9367,6 @@ function generateDeck(text, options, guard) {
      for (const id of Object.keys(moved.value.fields)) {
        if (built.value.fields[id]) {
          built.value.fields[id][4] = moved.value.fields[id][4];
--        built.value.fields[id][5] = moved.value.fields[id][5];
+-        if (wanted !== null) built.value.fields[id][5] = moved.value.fields[id][5];
        }
      }
-     built.value.options.seats = JSON.parse(JSON.stringify(wanted));
+     if (wanted !== null) built.value.options.seats = JSON.parse(JSON.stringify(wanted));

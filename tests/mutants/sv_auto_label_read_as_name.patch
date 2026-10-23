@@ -4,8 +4,8 @@
 diff --git a/src/engine/share.js b/src/engine/share.js
 --- a/src/engine/share.js
 +++ b/src/engine/share.js
-@@ -440,6 +440,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-     var meaning = ["5", scale];
+@@ -444,6 +444,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     var meaning = [text.charAt(0), scale];
      var name = "";
      if (nameSeg.charAt(0) === "*") {
 +      name = percentDecode(nameSeg.slice(1), true);
