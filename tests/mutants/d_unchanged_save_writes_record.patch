@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10038,7 +10038,6 @@
+@@ -12605,7 +12605,6 @@ function runGenerate() {
    if (genBtn.disabled) return;
    // SAVE on a seeded deck that was not changed writes nothing: no record is
    // minted, so the seed keeps its slot, its palette and its stored print overlay.
 -  if (seeded() && sheetKey() === seedPrefill) { closeScaleSheet(); return; }
    const label = genBtn.textContent;
-   genBtn.textContent = editingId ? "SAVING" : "GENERATING";
+   genBtn.textContent = t(editingId ? "sheet.saving" : "sheet.generating");
    genBtn.disabled = true;

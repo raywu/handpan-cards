@@ -4,8 +4,8 @@
 diff --git a/src/engine/importer.js b/src/engine/importer.js
 --- a/src/engine/importer.js
 +++ b/src/engine/importer.js
-@@ -760,7 +760,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-       if (midis.indexOf(midi) !== -1) return { names: [], guessed: [], error: name + " is already in the bottom notes." };
+@@ -763,7 +763,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       if (midis.indexOf(midi) !== -1) return { names: [], guessed: [], error: name + " is already in the bottom notes.", errorCode: composeCode("IN_BOTTOM", { name: name }) };
        names.push(name);
        midis.push(midi);
 -      if (guess) guessed.push(name);

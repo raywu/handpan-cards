@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12609,7 +12609,7 @@
+@@ -12850,7 +12850,7 @@ document.addEventListener("pointerdown", (e) => {
  const toggleFits = () => !layoutAngles || (!!lastSeed && solvePreviewLayout(lastSeed) !== null);
- const TOGGLE_REFUSED = "Not changed: it would put a note you moved too close to another. Reset layout first.";
+ const TOGGLE_REFUSED = () => t("sheet.toggle_refused");
  mirrorTop.onclick = () => {
 -  mirror = !mirror;
 +  mirror = mirror;
-   if (!toggleFits()) { mirror = !mirror; layoutStatus(TOGGLE_REFUSED); return; }
+   if (!toggleFits()) { mirror = !mirror; layoutStatus(TOGGLE_REFUSED()); return; }
    paintLayout(); resyncSheet(true);
-   layoutStatus(mirror ? "Top mirror on." : "Top mirror off.");
+   layoutStatus(t(mirror ? "sheet.mirror_top_on" : "sheet.mirror_top_off"));

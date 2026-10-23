@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12170,7 +12170,7 @@
+@@ -13277,7 +13277,7 @@ function paintFields(values, announceNew, composed) {
      fieldEls[k].setAttribute("aria-invalid", bad ? "true" : "false");
    }
    const first = FIELD_KEYS.find((k) => next[k] && next[k].kind === "error") ||
 -    FIELD_KEYS.find((k) => next[k] && next[k].kind === "warn") || FIELD_KEYS.find((k) => next[k]);
 +    FIELD_KEYS.find((k) => next[k]);
-   const text = first ? FIELD_SHORT[first] + ": " + next[first].text : "";
+   const text = first ? t("sheet.field_msg", { FIELD_SHORT: FIELD_SHORT[first], message: next[first].text }) : "";
    if (fieldMsg.textContent !== text) fieldMsg.textContent = text;
    fieldMsg.classList.toggle("info", !!first && next[first].kind === "info");

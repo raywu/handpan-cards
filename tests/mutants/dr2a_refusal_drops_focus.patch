@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9255,7 +9255,6 @@ function activateNote(ref, how) {
+@@ -11895,7 +11895,6 @@ function activateNote(ref, how) {
    }
    if (n.ring !== p.ring) {
-     layoutStatus(`Not moved. ${p.name} moves only within the ${p.ring}.`, true);
+     layoutStatus(t("sheet.not_moved", { name: p.name, ring: ringWord(p.ring) }), true);
 -    focusRef(pickRef);
      return;
    }
