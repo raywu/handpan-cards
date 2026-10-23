@@ -13440,6 +13440,22 @@ describe("FPD: the drawer slides bottom notes", () => {
     assert.match(d2Status(app), /^Swapped C3 and D3\./);
   });
 
+  test("FPD: an exchange of two bottom notes is refused when the snapped angle of either would sit inside the floor of a third note, whichever note is dragged", () => {
+    const n = 23;
+    const notes = Array.from({ length: n }, (_, k) => `[${"CDEFGAB"[k % 7]}${1 + Math.floor(k / 7)}]`).join(" ");
+    const app = fpdOpen(notes + " (A3) C4 D4 E4 F4");
+    const fixed = JSON.stringify({ bottom: Array.from({ length: n }, (_, k) => k === 22 ? 90 : null) });
+    for (const [a, b] of [[0, 2], [2, 0]]) {
+      app.run(`layoutAngles = ${fixed}; resyncSheet(true)`);
+      const probe = JSON.parse(app.get(`(() => { const home = homeFields(); const cur = bottomAngles(); const next = cur.slice(); next[${a}] = stepOf(cur[${b}]); next[${b}] = stepOf(cur[${a}]); return JSON.stringify([clashAt(home, next, ${a}), clashAt(home, next, ${b})]); })()`));
+      assert.ok(probe.some((id) => id === "105"), `${a},${b}: the clash is with the third note`);
+      assert.ok(!probe.some((id) => id === String(101 + a) || id === String(101 + b)), `${a},${b}: the two traded notes clear each other`);
+      assert.strictEqual(app.get(`swapSeats("bottom", ${a}, ${b})`), false, `${a},${b}`);
+      assert.strictEqual(JSON.stringify(fpdAngles(app)), fixed, `${a},${b}: nothing moved`);
+      assert.match(app.els["scale-drawer-status"].textContent, /^Not moved\. .* cannot trade places on the 5° steps\.$/, `${a},${b}`);
+    }
+  });
+
   test("FPD: releasing a held bottom note over a rim note moves it, and a held rim note over a bottom note is still refused", () => {
     const app = fpdOpen();
     const g = DG.down(app, "C3", "mouse");
@@ -13705,6 +13721,13 @@ describe("FPD: seats, sole note, hint, nudge, notices and records", () => {
   });
 
   test("FPD: a mirror or anchor toggle that would put a moved bottom note inside another's floor is refused, changes nothing and says why in plain words", () => {
+    const app0 = open();
+    slide(app0, "C3", 320);
+    app0.els["scale-mirror-bottom"].click();
+    assert.strictEqual(app0.els["scale-mirror-bottom"].getAttribute("aria-pressed"), "false");
+    assert.match(app0.els["scale-drawer-status"].textContent, /too close/);
+    assert.strictEqual(app0.els["scale-drawer-status"].textContent, app0.get("TOGGLE_REFUSED"));
+    assert.strictEqual(app0.els["scale-drawer-status"].classList.contains("warn"), true, "the refusal is styled as a warning");
     for (const btn of ["scale-mirror-bottom", "scale-mirror", "scale-anchor-between"]) {
       const app = open();
       slide(app, "C3", 320);
@@ -13713,18 +13736,17 @@ describe("FPD: seats, sole note, hint, nudge, notices and records", () => {
       app.els[btn].click();
       const stuck = app.get("HPE.layout.solve(lastSeed, {mirror: mirror, mirrorBottom: bottomMirror(), anchor: anchor, seats: null, angles: layoutAngles}).ok");
       assert.strictEqual(stuck, true, `${btn}: the sheet is still buildable`);
-      if (app.els[btn].getAttribute("aria-pressed") === pressed) {
+      if (btn === "scale-mirror-bottom") {
+        assert.strictEqual(app.els[btn].getAttribute("aria-pressed"), pressed, `${btn}: refused`);
         assert.match(app.els["scale-drawer-status"].textContent, /too close/, `${btn}: plain refusal`);
+      } else {
+        assert.notStrictEqual(app.els[btn].getAttribute("aria-pressed"), pressed, `${btn}: a top-shell toggle never moves a bottom note, so it is not refused`);
+        assert.doesNotMatch(app.els["scale-drawer-status"].textContent, /too close/, `${btn}: no refusal`);
       }
       assert.strictEqual(JSON.stringify(ang(app)), before);
       app.els["scale-generate"].click();
       assert.doesNotMatch(app.els["scale-refusal"].textContent, /is not a note/, `${btn}: no BAD_NOTE template`);
     }
-    const app = open();
-    slide(app, "C3", 320);
-    app.els["scale-mirror-bottom"].click();
-    assert.strictEqual(app.els["scale-mirror-bottom"].getAttribute("aria-pressed"), "false");
-    assert.match(app.els["scale-drawer-status"].textContent, /too close/);
   });
 
   test("FPD: Escape on a picked bottom note that was nudged says the moves are kept", () => {

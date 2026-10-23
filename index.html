@@ -12610,13 +12610,13 @@ const toggleFits = () => !layoutAngles || (!!lastSeed && solvePreviewLayout(last
 const TOGGLE_REFUSED = "Not changed: it would put a note you moved too close to another. Reset layout first.";
 mirrorTop.onclick = () => {
   mirror = !mirror;
-  if (!toggleFits()) { mirror = !mirror; layoutStatus(TOGGLE_REFUSED); return; }
+  if (!toggleFits()) { mirror = !mirror; layoutStatus(TOGGLE_REFUSED, true); return; }
   paintLayout(); resyncSheet(true);
   layoutStatus(mirror ? "Top mirror on." : "Top mirror off.");
 };
 mirrorBot.onclick = () => {
   bottomHeld = !bottomHeld;
-  if (!toggleFits()) { bottomHeld = !bottomHeld; layoutStatus(TOGGLE_REFUSED); return; }
+  if (!toggleFits()) { bottomHeld = !bottomHeld; layoutStatus(TOGGLE_REFUSED, true); return; }
   paintLayout(); resyncSheet(true);
   layoutStatus(bottomMirror() ? "Bottom mirror on." : "Bottom mirror off.");
 };
@@ -12624,7 +12624,7 @@ const pickAnchor = (to) => () => {
   if (anchor === to) return;
   const was = anchor;
   anchor = to;
-  if (!toggleFits()) { anchor = was; layoutStatus(TOGGLE_REFUSED); return; }
+  if (!toggleFits()) { anchor = was; layoutStatus(TOGGLE_REFUSED, true); return; }
   paintLayout(); resyncSheet(true);
   layoutStatus(to === "one" ? "Note 1 is centred." : "Notes 1 and 2 are split.");
 };
