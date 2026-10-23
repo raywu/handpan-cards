@@ -5,8 +5,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7297,7 +7297,9 @@ function faceHTML(d, ch, n, kind) {
-      <div class="hint">Tap to reveal the notes</div></div>`;
+@@ -10604,7 +10604,9 @@ function faceHTML(d, ch, n, kind) {
+      <div class="hint">${tHtml("card.hint_notes")}</div></div>`;
      case "backS":
        return headerHTML(d, ch, n) +
 -        `<div class="prompt">${nameHTML(ch, true)}</div>`;
@@ -14,5 +14,5 @@ diff --git a/index.html b/index.html
 +        + `<div class="style-name">${SEQ_STYLE_COPY[seq.style][0]}</div>`
 +        + `<div class="style-tip">${SEQ_STYLE_COPY[seq.style][1]}</div>`;
      case "questionB":
-       return headerHTML(d, { ...ch, subtitle: "WHICH CHORD IS THIS?" }, n) +
+       return headerHTML(d, { ...ch, subtitle: t("card.which_chord") }, n, true) +
          `<div class="diagwrap">${pan(d, ch)}</div>

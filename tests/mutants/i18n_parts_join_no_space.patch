@@ -1,0 +1,15 @@
+# kills: I18N: a PARTS message joins its parts with one space, guessed octaves then below-rim notes
+# suite: node --test --test-name-pattern=PARTS.message.joins tests/app.test.js
+# i18n_parts_join_no_space
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9522,7 +9522,7 @@ function reasonText(r) {
+ /** A compose message in the UI language, or `fallback` (the engine's English) when its code has no key. */
+ function composeText(c, fallback) {
+   if (!c) return fallback;
+-  if (c.code === "PARTS") return c.parts.map(p => composeText(p, "")).join(" ");
++  if (c.code === "PARTS") return c.parts.map(p => composeText(p, "")).join("");
+   if (c.pass) return reasonText({ code: c.code, variant: c.variant, vars: c.vars, reason: fallback });
+   const key = "compose." + c.code + (c.variant ? "." + c.variant : "");
+   if (!hasKey(key)) return fallback;

@@ -1,0 +1,15 @@
+# kills: I18N: the WHICH CHORD IS THIS? subtitle carries the UI language, not an English island
+# suite: node --test --test-name-pattern=WHICH.CHORD.IS.THIS tests/app.test.js
+# i18n_subtitle_island
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10606,7 +10606,7 @@ function faceHTML(d, ch, n, kind) {
+       return headerHTML(d, ch, n) +
+         `<div class="prompt">${nameHTML(ch, true)}</div>`;
+     case "questionB":
+-      return headerHTML(d, { ...ch, subtitle: t("card.which_chord") }, n, true) +
++      return headerHTML(d, { ...ch, subtitle: t("card.which_chord") }, n) +
+         `<div class="diagwrap">${pan(d, ch)}</div>
+      <div class="lines"><div class="hint" style="margin:0 0 12px">${tHtml("card.hint_name")}</div></div>`;
+     case "answerB":

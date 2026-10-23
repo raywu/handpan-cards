@@ -3,11 +3,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10029,7 +10029,6 @@ function deleteDeck(id) {
+@@ -12596,7 +12596,6 @@ function deleteDeck(id) {
      if (heldSeat && !hidden.includes(heldSeat)) hidden.push(heldSeat);
    }
    if (editingId === id) closeScaleSheet();
 -  if (!wasSelected) { save(); buildChips(); return; }
    selectDeck(fallbackDeck().id);
-   say("Removed " + gone + ". Showing " + deck().name + ".", "warn");
+   say(t("boot.removed", { a: gone, b: deck().name }), "warn");
  }

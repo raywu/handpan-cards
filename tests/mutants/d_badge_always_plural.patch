@@ -3,12 +3,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -243,7 +243,7 @@ function linesHTML(d, ch) {
+@@ -10481,7 +10481,7 @@ function linesHTML(d, ch) {
    });
    const nb = ch.fields.filter(f => d.fields[f][3] === "bottom").length;
    return `<div class="lines">
--    ${nb ? `<div class="badge">${nb} BOTTOM NOTE${nb > 1 ? "S" : ""}</div>` : ""}
-+    ${nb ? `<div class="badge">${nb} BOTTOM NOTES</div>` : ""}
-     <div class="notesline">${notes}</div>
-     <div class="numline">${nums}</div></div>`;
+-    ${nb ? `<div class="badge"${ISLAND()}>${nb} BOTTOM NOTE${nb > 1 ? "S" : ""}</div>` : ""}
++    ${nb ? `<div class="badge"${ISLAND()}>${nb} BOTTOM NOTES</div>` : ""}
+     <div class="notesline"${ISLAND()}>${notes}</div>
+     <div class="numline"${ISLAND()}>${nums}</div></div>`;
  }

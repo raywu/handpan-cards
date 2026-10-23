@@ -851,7 +851,7 @@ test("EG-3 warning shape equals core.err shape", () => {
   const error = host(core.err("NO_THIRDS"));
   assert.deepEqual(Object.keys(warning), ["code", "reason"]);
   assert.equal(error.ok, false, "core.err carries ok:false, a warning does not");
-  const { ok, ...errorWithoutOk } = error;
+  const { ok, variant, vars, ...errorWithoutOk } = error;
   assert.deepEqual(warning, errorWithoutOk,
     "same code and reason, but not the same shape: routing through core.err would add ok:false to every warning");
 });

@@ -4,12 +4,12 @@
 diff --git a/tools/sandbox.js b/tools/sandbox.js
 --- a/tools/sandbox.js
 +++ b/tools/sandbox.js
-@@ -522,7 +522,7 @@ function boot(opts = {}) {
+@@ -540,7 +540,7 @@ function boot(opts = {}) {
          ? "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36"
          : opts.userAgent,
        maxTouchPoints: opts.maxTouchPoints === undefined ? 0 : opts.maxTouchPoints,
 -      webdriver: opts.webdriver === undefined ? true : opts.webdriver,
 +      webdriver: opts.webdriver === undefined ? false : opts.webdriver,
+       languages: (opts.languages || ["en-US", "en"]).slice(),
+       language: (opts.languages || ["en-US", "en"])[0],
      },
-     // M3 (desktop sidebar, 2026-09-28): the app reads window.matchMedia once,
-     // at boot, to gate the settings panel's modal wiring to below the

@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11732,7 +11732,7 @@ function setSheetMode(edit) {
+@@ -12378,7 +12378,7 @@ function setSheetMode(edit) {
    if (edit) delRow.removeAttribute("hidden");
    else delRow.setAttribute("hidden", "");
-   delBtn.textContent = DEL_IDLE;
--  genBtn.textContent = edit ? "SAVE CHANGES" : "GENERATE CARDS";
-+  genBtn.textContent = edit ? (edit.options ? "SAVE CHANGES" : "FORK THIS DECK") : "GENERATE CARDS";
+   delBtn.textContent = DEL_IDLE();
+-  genBtn.textContent = t(edit ? "sheet.save" : "sheet.generate");
++  genBtn.textContent = edit ? (edit.options ? t("sheet.save") : "FORK THIS DECK") : t("sheet.generate");
    // The page is named by the title it shows (#scale-title, via
    // aria-labelledby), so there is one string and a sighted user and a screen
    // reader are told the same thing.

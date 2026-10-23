@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13512,7 +13512,7 @@ function routeToDeck(routed) {
+@@ -14201,7 +14201,7 @@ function routeToDeck(routed) {
    // fallback and says so; one that shows its replacement does not.
    if (routed !== shown && !(replacements()[routed] && replacements()[routed].id === shown) && hidden.includes(routed))
-     say("That scale is gone. Showing " + deck().name + ".", "warn");
+     say(t("boot.gone", { name: deck().name }), "warn");
 -  track("deck_route", { deck_id: routed });
 +
    return shown;

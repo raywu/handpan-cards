@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11425,7 +11425,7 @@ function hitLayer() {
- const countsLabel = (c) => `Pan layout: ${c.rim} rim, ${c.inner} inner, ${c.bottom} bottom notes.`;
+@@ -11684,7 +11684,7 @@ function hitLayer() {
+ const countsLabel = (c) => t("sheet.counts", { rim: c.rim, inner: c.inner, bottom: c.bottom });
  
  function ringPickable() {
 -  return !!ringCount && (LAYOUT_RINGS.some((r) => ringCount[r] >= 2) || ringCount.bottom >= 1);

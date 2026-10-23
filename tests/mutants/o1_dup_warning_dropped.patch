@@ -4,11 +4,11 @@
 diff --git a/src/engine/importer.js b/src/engine/importer.js
 --- a/src/engine/importer.js
 +++ b/src/engine/importer.js
-@@ -864,7 +864,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-       out.guessed = bottom.guessed;
+@@ -891,7 +891,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
        if (bottom.guessed.length) {
          out.info.bottom = "Octaves guessed: " + bottom.guessed.join(", ") + ". Type an octave to change a guess.";
+         out.infoCodes.bottom = composeCode("OCTAVES_GUESSED", { list: bottom.guessed.join(", ") });
 -        out.warn.bottom = composeDuplicate(bottom, read.bottom.notes, ding, top, inner);
+         if (out.warn.bottom) out.warnCodes.bottom = composeDuplicateCode(bottom, read.bottom.notes, ding, top, inner);
        }
      }
- 

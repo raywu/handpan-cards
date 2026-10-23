@@ -233,6 +233,7 @@ function makeLocation(href) {
  *   userAgent      - navigator.userAgent (default a desktop Chrome string)
  *   maxTouchPoints - navigator.maxTouchPoints (default 0)
  *   webdriver      - navigator.webdriver (default true, as under automation)
+ *   languages      - navigator.languages (default ["en-US", "en"]); navigator.language is its first entry
  *   html           - boot this markup instead of reading index.html
  */
 const JS_TYPES = new Set([
@@ -540,6 +541,8 @@ function boot(opts = {}) {
         : opts.userAgent,
       maxTouchPoints: opts.maxTouchPoints === undefined ? 0 : opts.maxTouchPoints,
       webdriver: opts.webdriver === undefined ? true : opts.webdriver,
+      languages: (opts.languages || ["en-US", "en"]).slice(),
+      language: (opts.languages || ["en-US", "en"])[0],
     },
     // M3 (desktop sidebar, 2026-09-28): the app reads window.matchMedia once,
     // at boot, to gate the settings panel's modal wiring to below the

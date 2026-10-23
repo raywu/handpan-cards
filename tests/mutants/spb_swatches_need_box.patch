@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10448,6 +10448,7 @@ function buildSwatches() {
+@@ -10954,6 +10954,7 @@ function buildSwatches() {
    HPE.select.PALETTES.forEach((p, i) => {
      const b = document.createElement("button");
      b.type = "button";
 +    b.disabled = !boxOk;
      b.className = "dot" + (i === palette ? " sel" : "");
-     b.setAttribute("aria-label", "Palette " + (i + 1));
+     b.setAttribute("aria-label", t("sheet.palette_n", { n: i + 1 }));
      b.setAttribute("aria-pressed", String(i === palette));
