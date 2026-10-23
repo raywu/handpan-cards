@@ -960,9 +960,7 @@ function run() {
    * print controls (one-pdf-path plan): every deck - built-in and
    * generated - builds its PDF client-side through HPE.pdfdeck, so the
    * header's print row is the same markup everywhere: two <button>s and
-   * one paper <select>, never an <a href> to a pre-built file. The six
-   * committed PDFs still ship (print-shop artifact) but nothing in the
-   * app links them any more.
+   * one paper <select>, never an <a href> to a pre-built file.
    * ---------------------------------------------------------------- */
 
   /* Lane M1 (menu-shell, 2026-09-28): the print row moved into the one
@@ -1377,13 +1375,12 @@ function run() {
   // and only this list matters. "+ ADD A SCALE" (#deck-add) sits between the
   // mode buttons and the print controls in DOM order and must be one of the
   // stops.
-  // Resources menu links in DOM order: row one (three links), row two (the two
+  // Resources menu links in DOM order: row one (two links), row two (the two
   // Amy Naylor videos, docs/plans/2026-10-05-menu-resources-amy.md). Every
   // list of Resources ids in this file derives from here.
   const RESOURCES = [
     { id: "res-handpaner", href: "https://handpaner.com/", label: "HANDPANER", row: 0 },
     { id: "res-dingandtones", href: "https://www.dingandtones.com/", label: "DING & TONES", row: 0 },
-    { id: "res-trainingcards", href: "https://svenkirchhofer.de/handpan-training-cards/", label: "HTC", row: 0 },
     { id: "res-amy-progressions", href: "https://youtu.be/-BD13QhFJ-M", label: "AMY: PROGRESSIONS", row: 1,
       aria: "Amy Naylor: ten handpan chord progressions (YouTube)" },
     { id: "res-amy-bottom", href: "https://youtu.be/0hMIUnA5-OI", label: "AMY: BOTTOM NOTES", row: 1,
@@ -1862,7 +1859,7 @@ function run() {
    * amendments 1-7)
    * ---------------------------------------------------------------- */
 
-  test("the settings panel has exactly one Resources group with its six outbound links in three rows", async () => {
+  test("the settings panel has exactly one Resources group with its five outbound links in three rows", async () => {
     await freshLoad();
     await openSettingsPanel();
     const m = await b.eval(`
@@ -1885,8 +1882,8 @@ function run() {
       };
     `);
     assert.strictEqual(m.headingCount, 1, "expected exactly one Resources heading");
-    assert.deepStrictEqual(m.rowSizes, [3, 2, 1, 0], "three link rows, then the ABOUT row with no link");
-    assert.strictEqual(m.links.length, 6, `expected 6 links in the Resources group, got ${JSON.stringify(m.links)}`);
+    assert.deepStrictEqual(m.rowSizes, [2, 2, 1, 0], "three link rows, then the ABOUT row with no link");
+    assert.strictEqual(m.links.length, 5, `expected 5 links in the Resources group, got ${JSON.stringify(m.links)}`);
     m.links.forEach((link, i) => {
       const expected = RESOURCES[i];
       assert.strictEqual(link.id, expected.id, `link ${i} id mismatch: ${JSON.stringify(link)}`);
@@ -2023,7 +2020,7 @@ function run() {
   // they check, and the gap sits strictly above it. A height sweep (every
   // integer 700-900 at 1024 and 1280 wide, modes A/B/S) found: modes A/B
   // overflow NOWHERE in that whole range; mode S overflows 746-757px, worst
-  // at 746 (+12px, res-trainingcards pushed offscreen), and is clean again
+  // at 746 (+12px, the last site link pushed offscreen), and is clean again
   // at 758+. This test samples that worst height (746), the coordinator's
   // named regression point (750), and a point past the old bound but still
   // inside the gap (757, the last still-overflowing height) at both
@@ -2225,11 +2222,11 @@ function run() {
       }
     });
 
-  test("TR-1: the three site links are equal in width on every line they share, and every label stays inside its box",
+  test("TR-1: the two site links are equal in width on every line they share, and every label stays inside its box",
     async () => {
       await freshLoad();
       const MEASURE = `
-        const ids = ["res-handpaner", "res-dingandtones", "res-trainingcards"];
+        const ids = ["res-handpaner", "res-dingandtones"];
         const els = ids.map(id => document.getElementById(id));
         const inside = (el) => {
           const k = el.getBoundingClientRect(), g = document.createRange(); g.selectNodeContents(el);
@@ -2253,9 +2250,9 @@ function run() {
           await openSettingsPanel();
           const m = await b.eval(MEASURE);
           const label = `${vw}x${vh}`;
-          assert.strictEqual(m.siblings, 3, `${label}: the first Resources row holds exactly three links`);
+          assert.strictEqual(m.siblings, 2, `${label}: the first Resources row holds exactly two links`);
           const shape = JSON.stringify(m.lines.map((w) => w.length));
-          const want = vw === 1024 && vh === 700 ? "[2,1]" : "[3]";
+          const want = "[2]";
           assert.strictEqual(shape, want, `${label}: line shape ${shape}, wanted ${want}: ${JSON.stringify(m.lines)}`);
           for (const w of m.lines) {
             assert.ok(Math.max(...w) - Math.min(...w) <= 1, `${label}: unequal widths on one line: ${JSON.stringify(w)}`);
@@ -2270,13 +2267,8 @@ function run() {
           await openSettingsPanel();
           const m = await b.eval(MEASURE);
           const label = `${vw}x${vh}`;
-          assert.deepStrictEqual(m.spill, [0, 0, 0], `${label}: a site link's content overflows its box`);
+          assert.deepStrictEqual(m.spill, [0, 0], `${label}: a site link's content overflows its box`);
           assert.ok(m.inside.every(Boolean), `${label}: a site label's text spills outside its link box`);
-          await b.eval(`document.getElementById("res-handpaner").parentElement.classList.remove("trio");`);
-          await b.settle();
-          const base = await b.eval(MEASURE);
-          await b.eval(`document.getElementById("res-handpaner").parentElement.classList.add("trio");`);
-          assert.deepStrictEqual(m.lines, base.lines, `${label}: the landscape row differs from the same row without the trio class`);
           await b.key("Escape", "Escape", 27);
         }
       } finally {
