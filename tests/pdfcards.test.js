@@ -609,6 +609,32 @@ test("P2/D2 twin: a 40-character deck name on a no-thirds pan is clipped to ASCI
   assert.ok(6.0 + 0.7 * 4.0 < 12, "warning cap top is below the credit's start");
 });
 
+test("a 40-character deck name that fits below 4.6 pt draws whole at its drawn tracking", () => {
+  const { deck, chord } = pygmyCard("Cm7", [3, 4, 6, 104]);
+  const name = "MOUNTAIN MAGIC WOMB HANDPAN MW MEMORY WA";
+  assert.equal(name.length, 40);
+  const foot = runAt(cardRuns(Object.assign({}, deck, { name: name }), chord), 6.5, "Label")
+    .filter((r) => r.size !== 4.4);
+  assert.equal(foot.length, 1);
+  assert.equal(foot[0].s, name);
+  assert.ok(foot[0].size < 4.6 && foot[0].size >= 3.6 - 1e-9, "got " + foot[0].size);
+});
+
+test("a deck name too long even at 3.6 pt is clipped at exactly 3.6 pt", () => {
+  const base = fixture("(C3) G3 D4 G4 D5");
+  const deck = Object.assign({}, base, { name: "D CELTIC MINOR 10 WITH SIX BOTTOM NOTESS" });
+  const foot = runAt(cardRuns(deck, deck.chords[0]), 6.5, "Label").filter((r) => r.size !== 4.4);
+  assert.equal(foot.length, 1);
+  assert.ok(foot[0].s.endsWith("..."), foot[0].s);
+  assert.equal(foot[0].size, 3.6);
+});
+
+test("fitClip agrees with hifi.fit_clip: the 40-character name at budget 140.92 is whole at 4.35, the size hifi.fit_clip returns", () => {
+  const r = P._internal.fitClip("MOUNTAIN MAGIC WOMB HANDPAN MW MEMORY WA", "Label", 4.6, 140.92, 0.5);
+  assert.equal(r.text, "MOUNTAIN MAGIC WOMB HANDPAN MW MEMORY WA");
+  assert.equal(r.size, 4.35);
+});
+
 function pygmyWith(main, sup, fields) {
   const deck = pygmyDeck();
   const chord = [main, sup, "", fields, [fields[0]]];

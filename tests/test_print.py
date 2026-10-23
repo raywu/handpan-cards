@@ -532,6 +532,36 @@ class HeaderWorstCaseTest(PaletteSafeTest):
         self.assertEqual(len(name), 1)
         self.assertGreaterEqual(name[0][2], 14.0)
 
+    WHOLE_NAME = "MOUNTAIN MAGIC WOMB HANDPAN MW MEMORY WA"
+
+    def footer_name(self, canvas):
+        (nk, nv), = [(k, v) for k, v in runs(canvas).items()
+                     if k[0] == 6.5 and k[1] == "Label" and k[2] >= 3.6
+                     and v[2] != "#1" and k[2] != 4.4]
+        return nk[2], nv[2]
+
+    def test_a_forty_character_name_that_fits_below_4_6_draws_whole_at_its_drawn_tracking(self):
+        deck, canvas = self.synth(self.WHOLE_NAME)
+        self.assertEqual(len(deck["name"]), 40)
+        size, text = self.footer_name(canvas)
+        self.assertEqual(text, self.WHOLE_NAME)
+        self.assertLess(size, 4.6)
+        self.assertGreaterEqual(size, 3.6)
+
+    def test_a_name_too_long_even_at_3_6_is_clipped_at_exactly_3_6(self):
+        _deck, canvas = self.synth(self.LONG_NAME, warned=True)
+        size, text = self.footer_name(canvas)
+        self.assertTrue(text.endswith("..."), text)
+        self.assertEqual(size, 3.6)
+
+    def test_fit_clip_shrinks_at_the_drawn_tracking_before_it_clips(self):
+        maxw = 140.92
+        text, size = hifi.fit_clip(self.WHOLE_NAME, "Label", 4.6, maxw, 0.5)
+        self.assertEqual(text, self.WHOLE_NAME)
+        self.assertEqual(size, 4.35)
+        self.assertLessEqual(hifi.tw(text, "Label", size, 0.5), maxw)
+        self.assertGreaterEqual(size, 3.6)
+
     def test_a_forty_character_deck_name_with_a_warning_is_clipped_clear(self):
         deck, canvas = self.synth(self.LONG_NAME, warned=True)
         self.assertEqual(len(deck["name"]), 40)
