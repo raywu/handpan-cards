@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12065,7 +12065,6 @@ function fieldsInput(k) {
+@@ -13248,7 +13248,6 @@ function followFields(r, wasStale) {
      if (scaleBox.value !== "") writeLine("");
      else if (wasStale) resyncSheet(true);
    } else if (r.ok) {
 -    lineStale = false;
-     if (scaleBox.value !== r.line) writeLine(r.line);
+     if (scaleBox.value !== r.typedLine) writeLine(r.typedLine);
      else if (wasStale) resyncSheet(true);
    } else {

@@ -72,7 +72,7 @@ Tests:
     python3 tests/suite_health.py   # per-file test-count floors
     ./tests/run.sh mutants          # mutation gate (slow)
 
-There are 25 node suites and 16 python suites. The mutation gate applies 1432 mutant patches from `tests/mutants/`, and a test must fail under each one. It edits the tree in place and refuses to start on uncommitted changes to a file a patch touches, `README.md` among them, so commit first.
+There are 25 node suites and 16 python suites. The mutation gate applies 1444 mutant patches from `tests/mutants/`, and a test must fail under each one. It edits the tree in place and refuses to start on uncommitted changes to a file a patch touches, `README.md` among them, so commit first.
 
 CI runs on pull requests into `main` and on pushes to `main`. A PR that changes only `docs/plans/` or `docs/prompts/` skips every job.
 

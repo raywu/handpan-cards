@@ -1,0 +1,14 @@
+# kills: OF: a drawer swap after typing stands until a typed edit changes that ring's order, which re-derives only that ring
+# suite: node --test --test-name-pattern OF:.a.drawer.swap.after.typing.stands tests/app.test.js
+# A drawer write beats a later typed reorder; the latest writer must win.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12030,6 +12030,7 @@ function deriveTyped(value, fields) {
+   for (const ring of ["rim", "inner"]) {
+     const key = typedKey(typedNow, ring);
+     if (key === lastTyped[ring]) continue;
++    if (layoutSeats && layoutSeats[ring]) { lastTyped[ring] = key; continue; }
+     setRingSeats(ring, typedNow && typedNow[ring] ? typedNow[ring] : identityOrder(sizes[ring]));
+     lastTyped[ring] = key;
+     out.push(ring);

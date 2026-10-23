@@ -1,0 +1,16 @@
+# kills: OF: a count change back to an earlier count that also changes the typed order seats the typed order over the seatMemo arrangement, and the drawer status says the rim now follows the order listed
+# suite: node --test --test-name-pattern OF:.a.count.change.back.to.an.earlier.count tests/app.test.js
+# The seatMemo restore runs after the derive and overwrites the typed order.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11996,8 +11996,8 @@ let refusal = null;
+  *  so (drawer open only), and keep focus on a real note. */
+ function noteCounts(fields, value) {
+   const wasOnNote = isHit(document.activeElement);
+-  const r = syncRingCounts(fields);
+   const derived = value ? deriveTyped(value, fields) : [];
++  const r = syncRingCounts(fields);
+   let putDown = r.putDown;
+   if (pickRef && derived.includes(pickRef.ring)) { pickRef = null; pickMoved = false; putDown = true; }
+   let text = r.text;

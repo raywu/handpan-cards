@@ -1,0 +1,16 @@
+# kills: OF: a drawer swap or RESET LAYOUT hides the order hint, and a typed edit that changes that ring's order shows it again
+# suite: node --test --test-name-pattern OF:.a.drawer.swap.or.RESET.LAYOUT.hides tests/app.test.js
+# The hint stays after a drawer swap or RESET LAYOUT moved the seats off the typed order.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12017,8 +12017,7 @@ function noteCounts(fields, value) {
+   if (drawerOpen) layoutStatus(text);
+ }
+ const typedKey = (k, ring) => (k && k[ring] ? k[ring].join(",") : null);
+-const followsTyped = (ring) => !!(typedNow && typedNow[ring] && layoutSeats && layoutSeats[ring] &&
+-  typedKey(typedNow, ring) === layoutSeats[ring].join(","));
++const followsTyped = (ring) => !!(typedNow && typedNow[ring]);
+ /** The one derive: a ring whose typed order changed since the last ok parse
+  *  takes that order as its seats (the typing is the newer write); a ring whose
+  *  order did not change keeps whatever the drawer left. Returns the rings it

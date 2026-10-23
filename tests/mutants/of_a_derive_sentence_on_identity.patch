@@ -1,0 +1,17 @@
+# kills: OF: R3 a drawer rearrangement then an out-of-order ninth note then the ascending eight says the rim follows the order listed, never that earlier seats were restored
+# suite: node --test --test-name-pattern ^OF:.R3.a.drawer.rearrangement tests/app.test.js
+# A derived ring falls back to the count sentence when its seats are the identity, so the status claims earlier seats were restored.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12262,7 +12262,9 @@ function noteCounts(fields, value) {
+     const parts = [];
+     for (const ring of LAYOUT_RINGS) {
+       if (derived.includes(ring)) {
+-        parts.push(t(ring === "rim" ? "sheet.rim_follows" : "sheet.inner_follows"));
++        const moved = !!(layoutSeats && layoutSeats[ring]);
++        if (moved || !r.said[ring]) parts.push(t(ring === "rim" ? "sheet.rim_follows" : "sheet.inner_follows"));
++        else parts.push(r.said[ring]);
+       } else if (r.said[ring]) parts.push(r.said[ring]);
+     }
+     text = parts.join(" ") + (putDown ? t("sheet.put_down") : "");
