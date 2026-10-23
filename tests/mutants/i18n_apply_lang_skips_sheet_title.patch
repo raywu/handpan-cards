@@ -1,0 +1,14 @@
+# kills: I18N: applyLang with the sheet open rewrites the sheet title in the new language
+# suite: node --test --test-name-pattern=applyLang.with.the.sheet.open tests/app.test.js
+# i18n_apply_lang_skips_sheet_title
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9617,7 +9617,6 @@ function applyLang() {
+     if (genBtn.textContent !== t("sheet.generating") && genBtn.textContent !== t("sheet.saving")) {
+       genBtn.textContent = t(edit ? "sheet.save" : "sheet.generate");
+     }
+-    titleEl.textContent = t(edit ? "sheet.title_edit" : "sheet.title_add");
+     buildSwatches();
+     paintLayout();
+     paintPassive();

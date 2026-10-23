@@ -4,11 +4,11 @@
 diff --git a/src/engine/importer.js b/src/engine/importer.js
 --- a/src/engine/importer.js
 +++ b/src/engine/importer.js
-@@ -767,7 +767,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -816,7 +816,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
      COMPOSE_FIELDS.forEach(function (f) { read[f] = composeRead(fields[f]); });
      if (COMPOSE_FIELDS.every(function (f) { return !read[f].error && !read[f].notes.length; })) {
        out.empty = true;
 -      return out;
      }
-     COMPOSE_FIELDS.forEach(function (f) { out.errors[f] = read[f].error; });
+     COMPOSE_FIELDS.forEach(function (f) { out.errors[f] = read[f].error; out.codes[f] = read[f].errorCode || null; });
  

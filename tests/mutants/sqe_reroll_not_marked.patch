@@ -6,11 +6,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7959,7 +7959,6 @@ function setMode(m) {
+@@ -13681,7 +13681,6 @@ function syncShuffleLabel() {
      shuffleBtn.innerHTML = REFRESH_ICON_SVG;
-     shuffleBtn.setAttribute("aria-label", "New progression");
+     shuffleBtn.setAttribute("aria-label", t("seq.new_progression"));
      shuffleBtn.classList.remove("on");
 -    shuffleBtn.classList.add("reroll");
    } else {
-     shuffleBtn.textContent = "Shuffle: " + (shuffled ? "on" : "off");
+     shuffleBtn.textContent = t(shuffled ? "card.shuffle_on" : "card.shuffle_off");
      shuffleBtn.removeAttribute("aria-label");

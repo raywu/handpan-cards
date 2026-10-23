@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11291,7 +11291,7 @@ function loadAnalytics() {
+@@ -14104,7 +14104,7 @@ function loadAnalytics() {
    el.async = true;
    el.src = "https://www.googletagmanager.com/gtag/js?id=" + GA_MEASUREMENT_ID;
    document.head.appendChild(el);
--  gtag("config", GA_MEASUREMENT_ID, {page_location: location.origin + location.pathname});
-+  gtag("config", GA_MEASUREMENT_ID, {page_location: location.href});
+-  gtag("config", GA_MEASUREMENT_ID, {page_location: location.origin + location.pathname, ui_lang: uiLang()});
++  gtag("config", GA_MEASUREMENT_ID, {page_location: location.href, ui_lang: uiLang()});
    analyticsLoaded = true;
  }
  function track(name, params) {

@@ -3,15 +3,15 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12014,6 +12014,7 @@ function runGenerate() {
+@@ -12661,6 +12661,7 @@ function runGenerate() {
      // section 2 code enum is closed and has no code for "that scale is taken",
      // so this composes no sentence that could pass for one and carries no code.
      scaleBox.classList.add("bad");
 +    scaleBox.dataset.dead = "1";
-     refusal = "Another scale already has these notes.";
+     refusal = t("sheet.duplicate");
      showRefusal(refusal);
      return;
-@@ -12522,7 +12523,7 @@ scaleBox.addEventListener("input", () => {
+@@ -13203,7 +13204,7 @@ scaleBox.addEventListener("input", () => {
      if (typeof at === "number" && scaleBox.setSelectionRange) scaleBox.setSelectionRange(at, at);
    }
    syncGrow();

@@ -12,4 +12,4 @@ diff --git a/tests/fixtures/app_surface_v1.json b/tests/fixtures/app_surface_v1.
 +    "usBogusSurfaceName",
      "CUSTOM",
      "DECKS",
-     "HPE",
+     "ENDONYMS",

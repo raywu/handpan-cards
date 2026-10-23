@@ -2008,3 +2008,48 @@ test("FPL: under random valid bottom angles no two circles overlap, every name f
   }
   assert.ok(checked > 1000, `the sweep checked ${checked} lists`);
 });
+
+/* ---- OF: order-follow, the seat numbers of a non-ascending typed line ---- */
+const OF_FROZEN = JSON.parse(fs.readFileSync(path.join(FIXTURES, "order_follow_base_aabcc0c.json"), "utf8"));
+const OF_E = loadEngine(["core", "voicing", "layout", "naming", "select"]);
+
+function ofLabelMap(fields, zone) {
+  const m = {};
+  for (const id of Object.keys(fields)) if (fields[id][3] === zone) m[fields[id][5]] = fields[id][4];
+  return m;
+}
+
+test("OF: seat numbers keep the zig-zag positions for a non-ascending typed line, every anchor and mirror", () => {
+  const cases = OF_FROZEN.cases.filter((c) => c.seatMap);
+  assert.ok(cases.length >= 100, "the frozen permutation cases");
+  for (const c of cases) {
+    const value = OF_E.core.parseSeed(c.string).value;
+    const seats = OF_E.core.typedSeats(value);
+    assert.ok(seats, c.string);
+    OF_FROZEN.combos.forEach((combo, k) => {
+      const res = OF_E.layout.solve(value, Object.assign({}, combo, { seats }));
+      const want = c.seatMap[k];
+      assert.equal(res.ok, want !== null, `${c.string} ${JSON.stringify(combo)}`);
+      if (!want) return;
+      for (const zone of ["rim", "inner", "bottom"]) {
+        assert.deepEqual(ofLabelMap(res.value.fields, zone), want[zone], `${c.string} ${JSON.stringify(combo)} ${zone}`);
+      }
+    });
+  }
+});
+
+test("OF: (D3) C4 A3 D4 E4 F4 G4 A4 C5 seats C4 at seat 1, 270 degrees, and A3 at seat 2, and the Am card reads 2-1-4", () => {
+  const value = OF_E.core.parseSeed("(D3) C4 A3 D4 E4 F4 G4 A4 C5").value;
+  const seats = OF_E.core.typedSeats(value);
+  assert.deepEqual(plain(seats), { rim: [1, 0, 2, 3, 4, 5, 6, 7] });
+  const res = OF_E.layout.solve(value, { seats });
+  assert.ok(res.ok);
+  const f = res.value.fields;
+  assert.deepEqual(plain([f["2"][0] + f["2"][1], f["2"][5], f["2"][4]]), ["C4", "1", 270]);
+  assert.deepEqual(plain([f["1"][0] + f["1"][1], f["1"][5]]), ["A3", "2"]);
+  const built = OF_E.select.build(value);
+  assert.ok(built.ok);
+  const am = built.value.chords.find((ch) => ch.main === "Am");
+  assert.ok(am, "an Am card");
+  assert.deepEqual(plain(am.fields.map((id) => f[id][5])), ["2", "1", "4"]);
+});

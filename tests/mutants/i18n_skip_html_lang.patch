@@ -1,0 +1,14 @@
+# kills: I18N: <html lang> follows the UI language at boot and on change
+# suite: node --test --test-name-pattern ^I18N:..html.lang..follows tests/app.test.js
+# applyLang never sets the document language.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9602,7 +9602,6 @@ function syncLangIslands() {
+   }
+ }
+ function applyLang() {
+-  document.documentElement.lang = uiLang();
+   syncLangIslands();
+   applyStatic();
+   syncShuffleLabel();

@@ -5,11 +5,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11728,7 +11728,6 @@ if (window.visualViewport) {
+@@ -12374,7 +12374,6 @@ if (window.visualViewport) {
  /** Show or hide the Edit-only DELETE row and relabel the single primary.
   *  `edit` is false (create) or true (Edit a seeded or a custom deck). */
  function setSheetMode(edit) {
 -  disarmDelete();
    if (edit) delRow.removeAttribute("hidden");
    else delRow.setAttribute("hidden", "");
-   delBtn.textContent = DEL_IDLE;
+   delBtn.textContent = DEL_IDLE();

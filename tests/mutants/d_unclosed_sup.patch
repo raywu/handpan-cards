@@ -3,12 +3,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -227,7 +227,7 @@ function headerHTML(d, ch, n) {
+@@ -10465,7 +10465,7 @@ function headerHTML(d, ch, n, uiSub) {
  function nameHTML(ch, big) {
    const len = (ch.main + ch.sup).length;
    const size = big ? `clamp(34px, ${Math.min(19, 120/len)}vw, ${len > 7 ? 64 : 92}px)` : "inherit";
--  return `<div class="bigname" style="font-size:${size}">${esc(ch.main)}${ch.sup ? `<sup>${esc(ch.sup)}</sup>` : ""}</div>`;
-+  return `<div class="bigname" style="font-size:${size}">${esc(ch.main)}${ch.sup ? `<sup>${esc(ch.sup)}` : ""}</div>`;
+-  return `<div class="bigname"${ISLAND()} style="font-size:${size}">${esc(ch.main)}${ch.sup ? `<sup>${esc(ch.sup)}</sup>` : ""}</div>`;
++  return `<div class="bigname"${ISLAND()} style="font-size:${size}">${esc(ch.main)}${ch.sup ? `<sup>${esc(ch.sup)}` : ""}</div>`;
  }
  function linesHTML(d, ch) {
    const C = d.colors, rpc = pc(d, ch.roots[0]);

@@ -1,0 +1,15 @@
+# kills: FPD: an exchange of two bottom notes is refused when the snapped angle of either would sit inside the floor of a third note, whichever note is dragged
+# suite: node --test --test-name-pattern ^FPD..an.exchange.of.two.bottom.notes.is.refused.when.the.snapped.angle.of.either.would.sit.inside.the.floor.of.a.third.note..whichever.note.is.dragged$ tests/app.test.js
+# The exchange never checks the first note's new angle.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11524,7 +11524,7 @@ function exchangeAngles(i, j) {
+   const next = cur.slice();
+   next[i] = stepOf(cur[j]);
+   next[j] = stepOf(cur[i]);
+-  if (clashAt(home, next, i) !== null || clashAt(home, next, j) !== null) return false;
++  if (clashAt(home, next, j) !== null) return false;
+   const entries = layoutAngles.bottom.slice();
+   entries[i] = next[i];
+   entries[j] = next[j];

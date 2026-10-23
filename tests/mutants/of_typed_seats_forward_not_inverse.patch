@@ -1,0 +1,15 @@
+# kills: OF: a non-ascending line keeps its fields, deck id and formatSeed, and typedSeats is the inverse of the typed order per ring
+# suite: node --test --test-name-pattern ^OF..a.non.ascending.line.keeps.its.fields..deck.id.and.formatSeed..and.typedSeats.is.the.inverse.of.the.typed.order.per.ring$ tests/core.test.js
+# typedSeats returns the typed order itself, not its inverse.
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -1042,7 +1042,7 @@
+         .map(Number).sort(function (a, b) { return a - b; });
+       var typed = value.typed.filter(function (k) { return value.fields[k] && value.fields[k][3] === zone; })
+         .map(Number);
+-      var seats = ids.map(function (id) { return typed.indexOf(id); });
++      var seats = typed.map(function (id) { return ids.indexOf(id); });
+       var moved = seats.some(function (s, i) { return s !== i; });
+       if (moved && seats.indexOf(-1) === -1) { out[zone] = seats; any = true; }
+     });

@@ -1,15 +1,14 @@
 # kills: the JSON-LD block parses and states only what the page shows
 # suite: node --test --test-name-pattern ^the.JSON-LD.block.parses tests/app.test.js
-# A fabricated rating is added to the structured data (plan section 6: never;
-# search policy treats invisible or invented markup as a manual-action risk).
+# A fabricated rating is added to the structured data (plan section 6: never; search policy treats invisible or invented markup as a manual-action risk).
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -46,6 +46,7 @@
+@@ -53,6 +53,7 @@
    "operatingSystem": "Any",
    "browserRequirements": "Requires JavaScript",
    "isAccessibleForFree": true,
 +  "aggregateRating": {"@type": "AggregateRating", "ratingValue": "4.9", "ratingCount": "120"},
    "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
    "featureList": "Chord flashcards; chord progressions; custom scale input; printable PDF"
- }
+   },

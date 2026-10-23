@@ -6,12 +6,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10210,7 +10210,7 @@ delBtn.onclick = () => {
+@@ -12779,7 +12779,7 @@ delBtn.onclick = () => {
    /* Disarm BEFORE the delete, not inside it: the state must not outlive the
       deck even when deleteDeck turns out to have nothing to remove, and the
       delete's own message should be the last thing said. */
 -  if (delArmed) { disarmDelete(); deleteDeck(target); return; }
 +  if (delArmed) { deleteDeck(target); return; }
    delArmed = true;
-   delBtn.textContent = DEL_ARMED;
+   delBtn.textContent = DEL_ARMED();
    delBtn.setAttribute("data-armed", "");

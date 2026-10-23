@@ -4,13 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8764,8 +8764,7 @@
+@@ -11525,7 +11525,7 @@ function parseLineText(fields) {
      else shells[f[3]].push(f);
    }
    const names = (list) => list.slice().sort((x, y) => x[2] - y[2]).map((f) => f[0] + f[1]).join(" ");
--  let line = "Ding " + ding + " \u00b7 " + shells.rim.length + " top \u00b7 " +
--    shells.inner.length + " inner \u00b7 " + shells.bottom.length + " bottom.";
+-  let line = t("sheet.parse_summary", { ding, top: shells.rim.length, inner: shells.inner.length, bottom: shells.bottom.length });
 +  let line = "Ding " + ding + ".";
-   for (const [key, label] of [["rim", "Top"], ["inner", "Inner"], ["bottom", "Bottom"]]) {
-     if (shells[key].length) line += " " + label + " " + names(shells[key]) + ".";
+   for (const [key, label] of [["rim", "sheet.zone_top"], ["inner", "sheet.zone_inner"], ["bottom", "sheet.zone_bottom"]]) {
+     if (shells[key].length) line += t("sheet.parse_zone", { label: t(label), names: names(shells[key]) });
    }

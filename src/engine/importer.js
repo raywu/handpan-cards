@@ -677,6 +677,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   var COMPOSE_HIGH = 10;
 
   function composeRange(x) { return x + " is outside C-1 to G9."; }
+  function composeCode(code, vars, variant) { return { code: code, variant: variant || null, vars: vars || {} }; }
+  function composeRangeCode(x) { return composeCode("OUT_OF_RANGE", { X: x }); }
 
   function composeMidi(n, octave) { return core().midiFromName(n.letter, n.acc, octave); }
   function composeFits(midi) { return midi >= 0 && midi <= 127; }
@@ -688,18 +690,18 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var notes = [];
     for (var i = 0; i < tokens.length; i++) {
       var t = tokens[i];
-      if (COMPOSE_BARRED.test(t)) return { notes: [], error: "Type notes only: the line is written for you." };
-      if (COMPOSE_SOLFEGE.test(t)) return { notes: [], error: "Use letter names, like D A Bb." };
+      if (COMPOSE_BARRED.test(t)) return { notes: [], error: "Type notes only: the line is written for you.", errorCode: composeCode("TYPE_NOTES_ONLY") };
+      if (COMPOSE_SOLFEGE.test(t)) return { notes: [], error: "Use letter names, like D A Bb.", errorCode: composeCode("SOLFEGE") };
       var upper = COMPOSE_UPPER_B.exec(t);
       if (upper) {
         var l = upper[1].toUpperCase();
-        return { notes: [], error: l + "B is not a note: write " + l + "-flat as " + l + "b." };
+        return { notes: [], error: l + "B is not a note: write " + l + "-flat as " + l + "b.", errorCode: composeCode("DOUBLE_B", { L: l }) };
       }
       var m = COMPOSE_NOTE.exec(t.replace(/♯/g, "#").replace(/♭/g, "b").replace(/^./, function (c) { return c.toUpperCase(); }));
-      if (!m) return { notes: [], error: "\"" + t + "\" is not a note: try C, F# or Bb." };
+      if (!m) return { notes: [], error: "\"" + t + "\" is not a note: try C, F# or Bb.", errorCode: composeCode("NOT_A_NOTE", { T: t }) };
       var n = { letter: m[1], acc: m[2] || "", octave: m[3] === undefined ? null : Number(m[3]) };
       if (n.octave !== null && !composeFits(composeMidi(n, n.octave))) {
-        return { notes: [], error: composeRange(composeNamed(n, n.octave)) };
+        return { notes: [], error: composeRange(composeNamed(n, n.octave)), errorCode: composeRangeCode(composeNamed(n, n.octave)) };
       }
       notes.push(n);
     }
@@ -720,17 +722,18 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       var octave = n.octave === null ? composeAbove(n, below) : n.octave;
       var midi = composeMidi(n, octave);
       var name = composeNamed(n, octave);
-      if (!composeFits(midi)) return { names: names, error: composeRange(name) };
+      if (!composeFits(midi)) return { names: names, error: composeRange(name), errorCode: composeRangeCode(name) };
       names.push(name);
       if (n.octave === null) guessed.push(name);
       var parsed = core().parseSeed(head + names.join(" "));
       if (!parsed.ok && parsed.code !== "NO_FIFTH") {
         names.pop();
         var error = parsed.reason;
-        if (parsed.code === "NOTE_OUT_OF_RANGE") error = composeRange(name);
-        else if (parsed.code === "NOTE_REPEATED") error = name + " is already in the top or inner notes.";
-        else if (parsed.code === "NOTE_OUT_OF_ORDER") error = name + " is not above the ding, " + anchorName + ".";
-        return { names: names, error: error };
+        var errorCode = { code: parsed.code, variant: parsed.variant || null, vars: parsed.vars || {}, pass: true };
+        if (parsed.code === "NOTE_OUT_OF_RANGE") { error = composeRange(name); errorCode = composeRangeCode(name); }
+        else if (parsed.code === "NOTE_REPEATED") { error = name + " is already in the top or inner notes."; errorCode = composeCode("IN_TOP", { name: name }); }
+        else if (parsed.code === "NOTE_OUT_OF_ORDER") { error = name + " is not above the ding, " + anchorName + "."; errorCode = composeCode("NOT_ABOVE_DING", { name: name, ding: anchorName }); }
+        return { names: names, error: error, errorCode: errorCode };
       }
       below = midi;
     }
@@ -751,9 +754,13 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       var octave = (midi - composeMidi(n, 0)) / 12;
       var name = composeNamed(n, octave);
       if (i === placed.failAt) {
-        return { names: [], guessed: [], error: guess ? n.letter + n.acc + " has no octave that fits: type one." : composeRange(name) };
+        return {
+          names: [], guessed: [],
+          error: guess ? n.letter + n.acc + " has no octave that fits: type one." : composeRange(name),
+          errorCode: guess ? composeCode("NO_OCTAVE_FITS", { L: n.letter + n.acc }) : composeRangeCode(name)
+        };
       }
-      if (midis.indexOf(midi) !== -1) return { names: [], guessed: [], error: name + " is already in the bottom notes." };
+      if (midis.indexOf(midi) !== -1) return { names: [], guessed: [], error: name + " is already in the bottom notes.", errorCode: composeCode("IN_BOTTOM", { name: name }) };
       names.push(name);
       midis.push(midi);
       if (guess) guessed.push(name);
@@ -779,13 +786,45 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return null;
   }
 
+  function composeDuplicateCode(bottom, read, ding, top, inner) {
+    var rows = [["ding", ding.name, 0]];
+    (top || []).forEach(function (x, k) { rows.push(["top", x, k + 1]); });
+    (inner || []).forEach(function (x, k) { rows.push(["inner", x, k + 1]); });
+    for (var i = 0; i < bottom.names.length; i++) {
+      if (read[i].octave !== null) continue;
+      for (var r = 0; r < rows.length; r++) {
+        var m = COMPOSE_NOTE.exec(rows[r][1]);
+        if (composeMidi({ letter: m[1], acc: m[2] || "" }, Number(m[3])) === bottom.midis[i]) {
+          return composeCode("DUPLICATE_NOTE", { name: bottom.names[i], k: rows[r][2] }, rows[r][0]);
+        }
+      }
+    }
+    return null;
+  }
+
+  function composeTyped(fields, top, inner) {
+    var ids = Object.keys(fields);
+    var typed = [];
+    [["rim", top], ["inner", inner]].forEach(function (pair) {
+      pair[1].forEach(function (name) {
+        for (var i = 0; i < ids.length; i++) {
+          var f = fields[ids[i]];
+          if (f[3] === pair[0] && f[0] + f[1] === name) { typed.push(ids[i]); return; }
+        }
+      });
+    });
+    return core().formatTyped(fields, core().typedSeats({ fields: fields, typed: typed }));
+  }
+
   function compose(fields) {
     fields = fields || {};
     var out = {
-      ok: false, empty: false, line: "", seed: null,
+      ok: false, empty: false, line: "", typedLine: "", seed: null,
       errors: { ding: null, top: null, inner: null, bottom: null },
       info: { bottom: null, inner: null }, warn: { bottom: null }, guessed: [],
-      notes: { ding: [], top: [], inner: [], bottom: [] }
+      notes: { ding: [], top: [], inner: [], bottom: [] },
+      codes: { ding: null, top: null, inner: null, bottom: null },
+      infoCodes: { bottom: null, inner: null }, warnCodes: { bottom: null }
     };
     var read = {};
     COMPOSE_FIELDS.forEach(function (f) { read[f] = composeRead(fields[f]); });
@@ -793,12 +832,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       out.empty = true;
       return out;
     }
-    COMPOSE_FIELDS.forEach(function (f) { out.errors[f] = read[f].error; });
+    COMPOSE_FIELDS.forEach(function (f) { out.errors[f] = read[f].error; out.codes[f] = read[f].errorCode || null; });
 
     var ding = null;
     if (!out.errors.ding) {
-      if (!read.ding.notes.length) out.errors.ding = "Enter the ding, like D3.";
-      else if (read.ding.notes.length > 1) out.errors.ding = "Enter one note for the ding.";
+      if (!read.ding.notes.length) { out.errors.ding = "Enter the ding, like D3."; out.codes.ding = composeCode("DING_EMPTY"); }
+      else if (read.ding.notes.length > 1) { out.errors.ding = "Enter one note for the ding."; out.codes.ding = composeCode("DING_ONE"); }
       else {
         var d = read.ding.notes[0];
         var dOctave = d.octave === null ? 3 : d.octave;
@@ -811,17 +850,17 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var topMidi = null;
     var inner = null;
     var innerGuessed = [];
-    if (!out.errors.top && !read.top.notes.length) out.errors.top = "Enter the top notes.";
+    if (!out.errors.top && !read.top.notes.length) { out.errors.top = "Enter the top notes."; out.codes.top = composeCode("TOP_EMPTY"); }
     if (ding && !out.errors.top) {
       var staged = composeStage("(" + ding.name + ") ", read.top.notes, ding.midi, ding.name);
-      if (staged.error) out.errors.top = staged.error;
+      if (staged.error) { out.errors.top = staged.error; out.codes.top = staged.errorCode; }
       else { top = staged.names; topMidi = staged.last; }
     }
     if (top) {
       out.notes.top = top;
       if (read.inner.notes.length && !out.errors.inner) {
         var upper = composeStage("(" + ding.name + ") " + top.join(" ") + " | ", read.inner.notes, topMidi, ding.name);
-        if (upper.error) out.errors.inner = upper.error;
+        if (upper.error) { out.errors.inner = upper.error; out.codes.inner = upper.errorCode; }
         else { inner = upper.names; innerGuessed = upper.guessed; }
       } else if (!out.errors.inner) inner = [];
     }
@@ -830,24 +869,34 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       var full = core().parseSeed("(" + ding.name + ") " + top.join(" ") + (inner.length ? " | " + inner.join(" ") : ""));
       if (!full.ok && full.code === "NO_FIFTH") {
         out.errors.ding = "No fifth above the ding " + ding.name + ": add " + core().fifthName(ding.letter, ding.acc) + " to the top notes, or check the ding.";
-      } else if (!full.ok) out.errors.top = full.reason;
+        out.codes.ding = composeCode("NO_FIFTH", { ding: ding.name, fifth: core().fifthName(ding.letter, ding.acc) });
+      } else if (!full.ok) {
+        out.errors.top = full.reason;
+        out.codes.top = { code: full.code, variant: full.variant || null, vars: full.vars || {}, pass: true };
+      }
       else {
         var notes = [];
+        var infoParts = [];
         if (innerGuessed.length) {
+          infoParts.push(composeCode("OCTAVES_GUESSED_INNER", { list: innerGuessed.join(", ") }));
           notes.push("Octaves guessed: " + innerGuessed.join(", ") + ". An inner note can sit below the top notes: type its octave to put it there.");
         }
         var low = core().innerBelowRim(full.value.fields);
         if (low.length) {
+          infoParts.push(composeCode("INNER_BELOW_TOP", { list: low.join(", "), n: low.length }));
           notes.push(low.join(", ") + (low.length > 1 ? " sit" : " sits") + " below the top notes. Check " + (low.length > 1 ? "them" : "it") + " on the pan picture.");
         }
-        if (notes.length) out.info.inner = notes.join(" ");
+        if (notes.length) {
+          out.info.inner = notes.join(" ");
+          out.infoCodes.inner = infoParts.length === 1 ? infoParts[0] : { code: "PARTS", variant: null, vars: {}, parts: infoParts };
+        }
       }
     }
 
     var bottom = null;
     if (ding && !out.errors.bottom) {
       var placed = composeBottoms(read.bottom.notes, ding);
-      if (placed.error) out.errors.bottom = placed.error;
+      if (placed.error) { out.errors.bottom = placed.error; out.codes.bottom = placed.errorCode; }
       else bottom = placed;
     }
     if (bottom) {
@@ -855,7 +904,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       out.guessed = bottom.guessed;
       if (bottom.guessed.length) {
         out.info.bottom = "Octaves guessed: " + bottom.guessed.join(", ") + ". Type an octave to change a guess.";
+        out.infoCodes.bottom = composeCode("OCTAVES_GUESSED", { list: bottom.guessed.join(", ") });
         out.warn.bottom = composeDuplicate(bottom, read.bottom.notes, ding, top, inner);
+        if (out.warn.bottom) out.warnCodes.bottom = composeDuplicateCode(bottom, read.bottom.notes, ding, top, inner);
       }
     }
 
@@ -874,9 +925,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       if (parsed.ok) {
         out.ok = true;
         out.line = line;
+        out.typedLine = composeTyped(parsed.value.fields, top, inner);
         out.seed = parsed.value;
       } else {
         out.errors.bottom = parsed.reason;
+        out.codes.bottom = { code: parsed.code, variant: parsed.variant || null, vars: parsed.vars || {}, pass: true };
       }
     }
     return out;

@@ -445,6 +445,43 @@ test("rule N: the browser PDF prints the seat number on the diagram and the numb
     "a moved deck printed the same bytes as the unmoved one, so the diagram numbers did not follow the seats");
 });
 
+test("OF: the browser PDF and the app print the same number line 2-1-4 on the Am card of (D3) C4 A3 D4 E4 F4 G4 A4 C5", () => {
+  const { boot } = require("./helpers/sandbox.js");
+  const E = loadEngine(["core", "voicing", "layout", "naming", "select"]);
+  const typed = "(D3) C4 A3 D4 E4 F4 G4 A4 C5";
+  const value = E.core.parseSeed(typed).value;
+  const seats = JSON.parse(JSON.stringify(E.core.typedSeats(value)));
+  assert.deepEqual(seats, { rim: [1, 0, 2, 3, 4, 5, 6, 7] });
+  const built = E.select.build(value);
+  assert.ok(built.ok);
+  const moved = E.layout.solve(value, { seats });
+  assert.ok(moved.ok);
+  for (const id of Object.keys(moved.value.fields)) {
+    built.value.fields[id][4] = moved.value.fields[id][4];
+    built.value.fields[id][5] = moved.value.fields[id][5];
+  }
+  const deck = HPE.pdfdeck.fromGenerated({ seed: E.core.formatSeed(value), deck: built.value });
+  const am = deck.chords.find((c) => c[0] === "Am");
+  assert.ok(am, "an Am card");
+  const pdfLabels = am[3].map((f) => String(deck.spec[String(f)][5]));
+  assert.deepEqual(pdfLabels, ["2", "1", "4"]);
+  const run = [];
+  pdfLabels.forEach((lab, i) => { run.push(lab); if (i < pdfLabels.length - 1) run.push(" - "); });
+  assert.ok(findTokenRun(pdfGlyphs(P.build(deck, { variant: "shop" })), run).length >= 1, "the PDF number line is 2-1-4");
+
+  const app = boot();
+  const made = app.generate("(D3) A3 C4 D4 E4 F4 G4 A4 C5", { seats });
+  assert.strictEqual(made.ok, true, made.reason);
+  const expr = `CUSTOM[${JSON.stringify(made.value.id)}]`;
+  const reg = JSON.parse(JSON.stringify(app.registry()[made.value.id]));
+  const idx = reg.chords.findIndex((ch) => ch.main === "Am");
+  assert.ok(idx >= 0, "an Am card in the app");
+  const line = app.get(`linesHTML(${expr}, ${expr}.chords[${idx}])`);
+  const numline = /<div class="numline">([\s\S]*)<\/div><\/div>/.exec(line)[1];
+  const got = [...numline.matchAll(/>(\d+)<\/span>/g)].map((m) => m[1]);
+  assert.deepEqual(got, pdfLabels);
+});
+
 /* ------------------------------------------------------------------ *
  * Lane E (refactor pass 4): the paths only index.html reached before
  * ------------------------------------------------------------------ */

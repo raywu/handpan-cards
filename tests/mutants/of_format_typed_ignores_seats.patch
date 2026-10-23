@@ -1,0 +1,15 @@
+# kills: OF: formatTyped round-trips: parseSeed of formatTyped gives the same fields and typedSeats gives back the seats, over 400 seeded cases
+# suite: node --test --test-name-pattern ^OF..formatTyped.round.trips..parseSeed.of.formatTyped.gives.the.same.fields.and.typedSeats.gives.back.the.seats..over.400.seeded.cases$ tests/core.test.js
+# formatTyped writes every ring low to high whatever the seats say.
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -1080,7 +1080,7 @@
+     if (!rimSeats && !innerSeats) return formatSeed(fields);
+     var seated = function (ids, list) {
+       var out = [];
+-      ids.forEach(function (id, i) { out[list ? list[i] : i] = name(id); });
++      ids.forEach(function (id, i) { out[i] = name(id); });
+       return out;
+     };
+     var parts = ["(" + name(names("ding")[0]) + ")"].concat(seated(rimIds, rimSeats));
