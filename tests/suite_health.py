@@ -36,8 +36,8 @@ from tests import paths  # noqa: E402
 FLOORS = {
     # python
     "tests/test_deck_data.py": 28,
-    "tests/test_pdf_build.py": 14,
-    "tests/test_gen_deck.py": 31,
+    "tests/test_pdf_build.py": 9,
+    "tests/test_gen_deck.py": 32,
     "tests/test_print.py": 46,
     "tests/test_render_agreement.py": 29,
     "tests/test_fixture_integrity.py": 8,
@@ -47,9 +47,9 @@ FLOORS = {
     "tests/test_font_subset.py": 7,
     "tests/test_pdf_emitter.py": 7,
     "tests/test_pdf_deck_adapter.py": 4,
-    "tests/test_pdf_parity.py": 13,
+    "tests/test_pdf_parity.py": 15,
     "tests/test_icons.py": 4,
-    "tests/test_site_files.py": 6,
+    "tests/test_site_files.py": 8,
     "tests/test_ci_scope.py": 5,
     # node
     "tests/app.test.js": 800,
@@ -71,7 +71,7 @@ FLOORS = {
     "tests/select.test.js": 54,
     "tests/share.test.js": 105,
     "tests/preview.test.js": 14,
-    "tests/pdf.test.js": 14,
+    "tests/pdf.test.js": 16,
     "tests/pdfcards.test.js": 39,
     "tests/coverage_merge.test.js": 18,
     "tests/mutation_harness.test.js": 54,

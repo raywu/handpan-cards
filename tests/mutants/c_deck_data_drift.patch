@@ -1,5 +1,5 @@
-# kills: test_committed_pdfs_match_a_fresh_build
-# suite: python3 -m unittest -k test_committed_pdfs_match_a_fresh_build tests.test_print tests.test_pdf_build
+# kills: test_deck_dicts_match_the_pre_refactor_snapshot
+# suite: python3 -m unittest -k test_deck_dicts_match_the_pre_refactor_snapshot tests.test_deck_data
 # Deck data changed without the print PDFs being rebuilt.
 diff --git a/data/decks.json b/data/decks.json
 --- a/data/decks.json

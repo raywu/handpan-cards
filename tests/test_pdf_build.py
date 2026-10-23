@@ -6,12 +6,7 @@ the crop marks drawn on the sheet, card inventory from the per-card credit
 stamp, and card copy from extracted text.  No layout constant is imported
 from ``hifi`` (CONTRACT rule 2) - the numbers below are CLAUDE.md's print
 spec, which the artifact has to hit.
-
-The last test is the staleness gate: the three CHORD_ONLY PDFs committed in the
-repo root must match a fresh build, so deck data cannot change without the printed
-sheets being regenerated.
 """
-import hashlib
 import os
 import re
 import shutil
@@ -75,89 +70,6 @@ def doc_text(doc):
     return "".join(page.get_text() for page in doc)
 
 
-def _committed_pdf_bytes(rel, root):
-    """The bytes of `rel` as committed at HEAD in the git checkout `root`.
-
-    Row 7: raises AssertionError with a diagnostic that distinguishes two
-    different failures a caller must not conflate: `root` is not a git
-    checkout at all (no git binary on PATH, or `root` sits outside any
-    repository - e.g. a source tarball) versus `root` IS a checkout but
-    `rel` simply is not committed at HEAD (edited deck data whose rebuilt
-    PDF was never committed). The old single message ("not committed at
-    HEAD") was wrong for the first case.
-    """
-    try:
-        is_repo = subprocess.run(
-            ["git", "rev-parse", "--is-inside-work-tree"],
-            cwd=root, capture_output=True)
-    except FileNotFoundError as exc:
-        raise AssertionError("no git or not a checkout: %s (%s)" % (root, exc))
-    if is_repo.returncode != 0:
-        raise AssertionError("no git or not a checkout: %s" % root)
-    proc = subprocess.run(
-        ["git", "show", "HEAD:%s" % rel], cwd=root, capture_output=True)
-    if proc.returncode != 0:
-        raise AssertionError(
-            "%s is not committed at HEAD in the repo root: %s"
-            % (rel, proc.stderr.decode(errors="replace")))
-    return proc.stdout
-
-
-def _committed_pdf_dest(tmp_dir, rel):
-    """Where `_committed_pdf_bytes(rel, ...)`'s bytes are written to compare.
-
-    N1 (PR 136 review): every `paths.PDFS` value is a bare basename, so
-    `os.path.join(tmp_dir, os.path.basename(rel))` lands on the SAME path
-    the gate already rebuilt into (`BuiltDecksTest.built[key]`, which
-    `cls.docs` still holds open via pymupdf). Writing the committed HEAD
-    bytes there overwrites the freshly built PDF out from under the open
-    document mid-comparison. The "head-" prefix keeps the two paths
-    distinct while still avoiding `os.path.join`-ing a path with
-    separators (`rel` itself) onto `tmp_dir`.
-    """
-    return os.path.join(tmp_dir, "head-" + os.path.basename(rel))
-
-
-def _stale_reason(rel, root, tmp_dir, built_doc, built_text):
-    """One committed-vs-rebuilt check, isolated so the gate and a test can
-    both drive it (row N2, PR 136 review: the gate's own accumulation loop
-    - `stale.append(...); continue` - was untested; only the test's own
-    hand-rolled loop was covered, so a mutant reverting the gate's
-    ``continue`` to a bare ``raise`` survived). Returns a reason string, or
-    None when `rel` matches the rebuild.
-    """
-    try:
-        data = _committed_pdf_bytes(rel, root)
-    except AssertionError as exc:
-        return str(exc)
-    dest = _committed_pdf_dest(tmp_dir, rel)
-    with open(dest, "wb") as fh:
-        fh.write(data)
-    with pymupdf.open(dest) as doc:
-        if doc.page_count != built_doc.page_count:
-            return ("%s: %d committed pages vs %d rebuilt"
-                    % (rel, doc.page_count, built_doc.page_count))
-        if squeeze(doc_text(doc)) != squeeze(built_text):
-            return "%s: committed text differs from a rebuild" % rel
-    return None
-
-
-def _stale_reasons(pdfs, root, tmp_dir, docs, texts):
-    """The gate's own accumulation over `pdfs` (key -> relative path).
-
-    Extracted so a test can drive the SAME wrapper the gate calls, rather
-    than a parallel loop of its own (row N2, PR 136 review): a mutant that
-    stopped the gate short - dropping a failure instead of collecting it -
-    is only caught by exercising this function directly.
-    """
-    stale = []
-    for key, rel in pdfs.items():
-        reason = _stale_reason(rel, root, tmp_dir, docs.get(key), texts.get(key))
-        if reason is not None:
-            stale.append(reason)
-    return stale
-
-
 def segments(page):
     """Straight line segments on a page, in PDF points (y measured from top)."""
     out = []
@@ -187,56 +99,7 @@ def crop_marks(page):
     return xs, ys
 
 
-class CommittedPdfBytesTest(unittest.TestCase):
-    """Row 7: `_committed_pdf_bytes` diagnostics and `_committed_pdf_dest`
-    naming, exercised directly - none of this needs a built PDF."""
-
-    def test_diagnoses_a_non_checkout_directory(self):
-        not_a_checkout = tempfile.mkdtemp()
-        try:
-            with self.assertRaises(AssertionError) as ctx:
-                _committed_pdf_bytes("whatever.pdf", not_a_checkout)
-            self.assertIn("no git or not a checkout", str(ctx.exception))
-        finally:
-            shutil.rmtree(not_a_checkout)
-
-    def test_two_missing_pdfs_are_both_reported_not_just_the_first(self):
-        """Drives `_stale_reasons` - the gate's OWN accumulation wrapper -
-        directly, not a loop of the test's own, so a mutant that stops the
-        gate short (e.g. dropping a failure instead of collecting it, or
-        turning the collection into a raise) is caught here (row N2, PR
-        136 review)."""
-        pdfs = {"a": "does-not-exist-1.pdf", "b": "does-not-exist-2.pdf"}
-        stale = _stale_reasons(pdfs, paths.ROOT, tempfile.gettempdir(),
-                               docs={}, texts={})
-        self.assertEqual(len(stale), 2,
-                         "both missing PDFs must be reported, not just the "
-                         "first: %r" % (stale,))
-        self.assertIn("does-not-exist-1.pdf", stale[0])
-        self.assertIn("is not committed at HEAD", stale[0])
-        self.assertIn("does-not-exist-2.pdf", stale[1])
-        self.assertIn("is not committed at HEAD", stale[1])
-
-    def test_dest_uses_the_basename_not_the_whole_relative_path(self):
-        self.assertEqual(
-            _committed_pdf_dest("/tmp/x", "sub/dir/whatever.pdf"),
-            os.path.join("/tmp/x", "head-whatever.pdf"))
-
-    def test_dest_never_collides_with_the_freshly_built_path(self):
-        """N1 (PR 136 review): the dest must never equal the path the gate
-        already built into, or writing HEAD's bytes there clobbers the
-        rebuilt PDF that ``cls.docs`` still holds open."""
-        for key, rel in paths.PDFS.items():
-            with self.subTest(pdf=key):
-                built_path = os.path.join("/tmp/x", rel)
-                self.assertNotEqual(_committed_pdf_dest("/tmp/x", rel),
-                                    built_path)
-                self.assertNotEqual(
-                    _committed_pdf_dest("/tmp/x", rel),
-                    os.path.join("/tmp/x", os.path.basename(rel)))
-
-
-THREE_COMMITTED = (
+THREE_CHORD_ONLY = (
     "CSharp_Hijaz_Orion_9_CHORD_ONLY_Letter.pdf",
     "F3_Low_Pygmy_18_CHORD_ONLY_Letter.pdf",
     "D_Amara_9_CHORD_ONLY_Letter.pdf",
@@ -247,18 +110,27 @@ class ShippedPdfsTest(unittest.TestCase):
     """PM-10 and PM-11: the repo ships the three chord-only sheets and no
     full-deck seed."""
 
-    def test_the_repo_root_holds_only_the_three_chord_only_pdfs(self):
+    def test_the_repo_tracks_no_pdf(self):
         tracked = subprocess.run(
             ["git", "ls-files", "*.pdf"], cwd=paths.ROOT,
             capture_output=True, text=True, check=True).stdout.split()
-        self.assertEqual(sorted(tracked), sorted(THREE_COMMITTED))
+        self.assertEqual(tracked, [])
+
+    def test_decks_main_refuses_to_run_without_an_out_dir(self):
+        proc = subprocess.run(
+            [sys.executable, "-B", os.path.join(paths.TOOLS, "decks.py")],
+            cwd=tempfile.gettempdir(), capture_output=True, text=True)
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn("usage", proc.stderr.lower())
+        self.assertEqual(paths.root_pdfs(), [],
+                         "decks.py without an OUT_DIR wrote a PDF into the repo root")
 
     def test_decks_main_writes_only_the_three_chord_only_pdfs(self):
         out = tempfile.mkdtemp(prefix="handpan-main-")
         try:
             with mock.patch.object(decks, "hifi", hifi):
                 decks.main(out)
-            self.assertEqual(sorted(os.listdir(out)), sorted(THREE_COMMITTED))
+            self.assertEqual(sorted(os.listdir(out)), sorted(THREE_CHORD_ONLY))
         finally:
             shutil.rmtree(out, ignore_errors=True)
 
@@ -269,7 +141,8 @@ class BuiltDecksTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.tmp = tempfile.mkdtemp(prefix="handpan-print-")
-        cls.pdfs_before = cls._repo_pdf_hashes()
+        cls.pdfs_before = paths.root_pdfs()
+        assert cls.pdfs_before == [], "a stray PDF sits in the repo root: %r" % (cls.pdfs_before,)
         cls.built = {}
         cls.returned = {}
         for key, deck, chords_only, _pages in JOBS:
@@ -285,18 +158,10 @@ class BuiltDecksTest(unittest.TestCase):
             doc.close()
         shutil.rmtree(cls.tmp, ignore_errors=True)
 
-    @staticmethod
-    def _repo_pdf_hashes():
-        out = {}
-        for name in sorted(paths.PDFS[k] for k in paths.COMMITTED):
-            with open(os.path.join(paths.ROOT, name), "rb") as fh:
-                out[name] = hashlib.sha256(fh.read()).hexdigest()
-        return out
-
     def assertRepoUntouched(self):
         self.assertTrue(self.tmp.startswith(tempfile.gettempdir()))
-        self.assertEqual(self._repo_pdf_hashes(), self.pdfs_before,
-                         "the build rewrote a committed PDF in the repo root")
+        self.assertEqual(paths.root_pdfs(), [],
+                         "the build wrote a PDF into the repo root")
 
 
 class BuildTest(BuiltDecksTest):
@@ -426,68 +291,6 @@ class BuildTest(BuiltDecksTest):
                 self.assertEqual(hits, [],
                                  "%s: German card copy is back: %r"
                                  % (key, hits))
-
-    def test_committed_pdfs_match_a_fresh_build(self):
-        """Staleness gate: the PDFs committed at HEAD must be current.
-
-        The reference bytes come from ``git show HEAD:<pdf>`` into a temp
-        file, not the worktree copy at ``paths.ROOT`` - so a rebuild that
-        was never committed cannot feed its own comparison. Edit deck data
-        and commit it without rerunning tools/decks.py and this goes red -
-        app and print would otherwise silently diverge.
-        """
-        stale = _stale_reasons({k: paths.PDFS[k] for k in paths.COMMITTED},
-                               paths.ROOT, self.tmp,
-                               self.docs, self.text)
-        self.assertEqual(
-            stale, [],
-            "committed PDFs are out of date - rerun `python3 tools/decks.py` "
-            "and commit the result:\n  " + "\n  ".join(stale))
-
-    def test_committed_pdfs_place_every_glyph_where_a_fresh_build_does(self):
-        """Position-aware staleness: the text gate above is whitespace-blind.
-
-        Every text span of every page, in stream order, must match the fresh
-        build in text, font and size, with every bbox corner within 0.5 pt.
-        """
-        bad = []
-        for key, rel in {k: paths.PDFS[k] for k in paths.COMMITTED}.items():
-            dest = _committed_pdf_dest(self.tmp, rel)
-            with open(dest, "wb") as fh:
-                fh.write(_committed_pdf_bytes(rel, paths.ROOT))
-            with pymupdf.open(dest) as head:
-                a = _spans(head)
-                b = _spans(self.docs[key])
-            if len(a) != len(b):
-                bad.append("%s: %d committed spans vs %d rebuilt"
-                           % (rel, len(a), len(b)))
-                continue
-            for i, (s1, s2) in enumerate(zip(a, b)):
-                if s1[:3] != s2[:3]:
-                    bad.append("%s: span %d is %r committed vs %r rebuilt"
-                               % (rel, i, s1[:3], s2[:3]))
-                    break
-                drift = max(abs(p - q) for p, q in zip(s1[3], s2[3]))
-                if drift > 0.5:
-                    bad.append("%s: span %d %r moved %.2f pt"
-                               % (rel, i, s1[0], drift))
-                    break
-        self.assertEqual(
-            bad, [],
-            "committed PDFs place glyphs differently from a rebuild - rerun "
-            "`python3 tools/decks.py` and commit the result:\n  "
-            + "\n  ".join(bad))
-
-
-def _spans(doc):
-    out = []
-    for page in doc:
-        for block in page.get_text("dict")["blocks"]:
-            for line in block.get("lines", ()):
-                for span in line["spans"]:
-                    out.append((span["text"], span["font"],
-                                round(span["size"], 2), tuple(span["bbox"])))
-    return out
 
 
 if __name__ == "__main__":

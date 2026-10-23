@@ -777,7 +777,7 @@ test("no chord name is half-present", () => {
 
 /* ---------------- the acceptance gates (D2) -------------------------------- */
 
-// The commercial D Amara reference ships no repeated-root card. The engine
+// The shipped D Amara 9 deck has no repeated-root card. The engine
 // must therefore emit no alternate there - that is the whole content of the
 // "Amara 16/16" gate, because enumeration contributes nothing on a pan with
 // no repeated roots.

@@ -1,0 +1,20 @@
+# kills: FPP: the app pan(), pdfcards and the fixture put each bottom note at the same centre to 0.5 pt
+# suite: node --test --test-name-pattern ^FPP:.the.app.pan.*,.pdfcards.and.the.fixture.put.each.bottom.note.at.the.same.centre.to.0.5.pt$ tests/pdf.test.js
+#
+# pan() re-solves the layout without angles on non-interactive pans and reads
+# the bottom angle from that, so a deck whose bottom notes were moved draws
+# them at home. Only a moved-bottom deck tells the two apart.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9871,7 +9871,9 @@ function pan(d, ch, opts) {
+     const isB = zone === "bottom";
+     const orb = R * (isB ? g.bottom : zone === "inner" ? g.inner : g.rim);
+     const rr  = R * (isB ? g.r_bnote : g.r_note);
+-    const [x, y] = P(orb, ang);
++    const o = Object.assign({}, d.options || {}); delete o.angles;
++    const home = (o.seats || interactive) ? null : HPE.layout.solve(d.fields, o).value;
++    const [x, y] = P(orb, isB && home ? home.fields[fid][4] : ang);
+     s += panField(sets, C, x, y, rr, id, isB);
+     const lit = blue.has(id) || green.has(id);
+     s += panLabel(x, y, name, oct, labelSize(rr, zone),

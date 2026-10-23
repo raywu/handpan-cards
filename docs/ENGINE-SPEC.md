@@ -559,7 +559,7 @@ These hold for EVERY voicing the engine emits, built-in fixture or generated.
   by the same test, not by a "bottom-only" reading). That is the operative test, exactly as
   `tests/test_deck_data.py::test_forced_tones_cluster_below_root` implements
   it. Amara and Hijaz have no bottom shell, so the clause is vacuous there and
-  the commercial reference's three forced cards (G5, Gsus4, Fmaj7) are
+  the Amara 9 deck's three forced cards (G5, Gsus4, Fmaj7) are
   preserved by construction, not by exception.
 - DECIDED(D2, CLAUDE.md rule 3) When the chord is forced, every CHORD TONE
   (3rd, 5th, 7th; the 4th of a sus chord; the 6th of a 6-chord) moves to its
@@ -947,7 +947,10 @@ The D6 palette set, index 0-5, from `CLAUDE.md` "Design system":
   `anchor`); line 2 the layout delta: empty in version 1, the flat `order`
   permutation in version 2, and from version 3 the per-ring `seats`
   `rim;inner;bottom`, each a comma list, an unmoved ring left empty. The
-  shipped `share.VERSION` is 4; versions 1 to 3 stay readable, and the version
+  shipped `share.VERSION` is 6 (`RECORD_VERSION` stays 4); version 6 adds the
+  last option `at-<list>`, the bottom notes' absolute angles on a 5-degree step
+  with an empty entry for a solved angle, valid on version 6 only and refused
+  beside a bottom seats list; versions 1 to 5 stay readable, and the version
   tag, not the string, selects the legacy or the shipped reader. The payload cap
   is 4096 characters. When the engine improves, an old link renders NEW cards:
   the seed is the contract, not the output.

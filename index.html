@@ -302,10 +302,6 @@ a.mode{text-decoration:none}
   background:#211d16; border:1px solid #433b2c; border-radius:8px; color:#eae6df}
 #share-url[hidden]{display:none}
 .modebar.duo .mode{min-width:0; padding-inline:6px; line-height:1.25}
-/* The three site links split their row equally; the padding trim lets HANDPANER
-   shrink to a third without ever going under its own content (no min-width:0).
-   The landscape panel grid (max-height:520px) below resets it to .mode's own. */
-.modebar.trio .mode{padding-inline:4px}
 #settings-trigger[aria-expanded="true"]{background:#f1ece1; color:#272219; border-color:#f1ece1}
 .sr-only{position:absolute; width:1px; height:1px; margin:-1px; padding:0; border:0;
   overflow:hidden; white-space:nowrap; clip:rect(0 0 0 0)}
@@ -329,7 +325,6 @@ a.mode{text-decoration:none}
   #settings-panel{display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));
     align-content:start; align-items:start}
   #settings-panel > .panel-group{width:auto}
-  .modebar.trio .mode{padding-inline:11px}
 }
 #settings-trigger[aria-expanded="true"] .glyph{background:transparent}
 #settings-trigger[aria-expanded="true"] .glyph::before{top:0; transform:rotate(45deg)}
@@ -355,7 +350,6 @@ a.mode{text-decoration:none}
    shows without JS ever clearing `hidden`. */
 @media (min-width:1024px) and (min-height:700px){
   #settings-trigger, #settings-scrim{display:none}
-  .modebar.trio .mode{flex-basis:40%}
   /* Reviewer finding F1: the 640px-only header rule above (line 163-165)
      lets header - and the deck-chip strip inside it - run out to
      min(92vw,900px), which at >=1024px overruns the right edge and sits
@@ -1719,18 +1713,15 @@ html.about-open{overflow:hidden}
     <!-- Plan risk "no scroll budget", fallback 1: .modebar-style rows (same
          pattern as the Practice buttons) rather than stacked 44px rows -
          stacked overflowed the 320x568 fit test by 18px. Row one holds
-         the three sites (class trio: equal widths above the landscape grid, two
-         equal on line one in the sidebar), row two (class duo: one line, labels wrap inside their
-         boxes) the two Amy Naylor videos, row three HANDPAN 101 alone (2026-10-08,
+         the two sites (class duo: one line, labels wrap inside their boxes),
+         row two (class duo as well) the two Amy Naylor videos, row three HANDPAN 101 alone (2026-10-08,
          full width, so no existing control moves down), row four the ABOUT button
          (an in-app view, not an outbound link: no href, no res- id). -->
-    <div class="modebar trio">
+    <div class="modebar duo">
       <a class="mode" id="res-handpaner" href="https://handpaner.com/"
          target="_blank" rel="noopener">HANDPANER</a>
       <a class="mode" id="res-dingandtones" href="https://www.dingandtones.com/"
          target="_blank" rel="noopener">DING &amp; TONES</a>
-      <a class="mode" id="res-trainingcards" href="https://svenkirchhofer.de/handpan-training-cards/"
-         target="_blank" rel="noopener">HTC</a>
     </div>
     <div class="modebar duo">
       <a class="mode" id="res-amy-progressions" href="https://youtu.be/-BD13QhFJ-M"
@@ -5908,7 +5899,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     // chord only when it has no instance above the root AND its highest lower
     // instance is on the TOP shell. A tone whose highest lower instance is on
     // the bottom shell takes that instance and forces nothing. Amara and Hijaz have
-    // no bottom shell, so the commercial reference is unchanged by this.
+    // no bottom shell, so their forced cards are unchanged by this.
     var forced = false;
     for (var t = 0; t < tones.length; t += 1) {
       if (!tones[t].up.length && tones[t].down[0].top) forced = true;
@@ -7243,7 +7234,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   //
   // An alternate earns its card only when a NON-ROOT tone moves field AND the
   // register class changes. A candidate where only the root moves is the
-  // shape the commercial Amara reference omits five times over, so
+  // shape the shipped Amara 9 cards omit five times over, so
   // reproducing Amara exactly and keeping those are not simultaneously
   // satisfiable (decision 3).
   var ALTERNATE_CAP = 3;                /* cards per chord name */
@@ -10320,7 +10311,7 @@ const PANSEL_INK_PX = 1;
 /* ---------------- card faces ---------------- */
 // Print is fully client-side (since 2026-09-24): every deck, built-in or
 // generated, builds its own PDF in the browser via downloadDeckPDF() below.
-// There is no link to a committed PDF in the repo root and no lookup table
+// There is no link to a pre-built PDF and no lookup table
 // keyed by built-in deck id - pdfFileName() derives the download name from
 // the deck itself, so a built-in and a custom deck take the same path.
 /** D16's paper control. Only the PAGE BOX changes: A4 is 297mm against
@@ -10387,7 +10378,7 @@ function setPrintPaper(p) {
    against it by tests/test_pdf_parity.py. Nothing about the page layout is
    decided here - only delivery. */
 function pdfFileName(d, variant, paper) {
-  // tools/decks.py's main() names the three shipped CHORD_ONLY files. The
+  // The name is <Name>_CHORD_ONLY_<paper>.pdf, the shape tools/decks.py main() writes. The
   // "_Cards_" branch is not used by the UI since 2026-10-08 (no control asks for
   // the full deck), but it is kept and tested. A custom deck's
   // download joins that shelf rather than inventing a second shape, so a

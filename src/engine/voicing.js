@@ -285,7 +285,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     // chord only when it has no instance above the root AND its highest lower
     // instance is on the TOP shell. A tone whose highest lower instance is on
     // the bottom shell takes that instance and forces nothing. Amara and Hijaz have
-    // no bottom shell, so the commercial reference is unchanged by this.
+    // no bottom shell, so their forced cards are unchanged by this.
     var forced = false;
     for (var t = 0; t < tones.length; t += 1) {
       if (!tones[t].up.length && tones[t].down[0].top) forced = true;
