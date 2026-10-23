@@ -23,7 +23,7 @@ Chord flashcards and chord progressions for handpan scales. It runs in the brows
 ## Your own scale
 
 - Menu, then + ADD A SCALE. Type the notes on one line in any order: the ding in round brackets, bottom notes in square brackets (before or after the ding), a `|` before inner notes. Example: `[C] (D) A C D E F G A C`. Octaves are optional: without one, we assume the notes run low to high. Then GENERATE CARDS.
-- ADJUST LAYOUT under the preview mirrors or reorders fields to match your pan.
+- ADJUST LAYOUT under the preview mirrors or reorders fields to match your pan, and slides bottom notes around the dashed ring in 5-degree steps; shared links keep the positions.
 - Tap the selected scale's chip (it has a pencil) to edit or delete it. You can edit built-in scales the same way; RESET SEEDED SCALES brings them back.
 - Scales stay in this browser. The link icon in the header copies a link that opens the scale on any device.
 - A scale's id comes from a 32-bit hash of its notes. Two different scales can share an id, and then only one is kept.
