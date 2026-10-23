@@ -370,6 +370,13 @@ class RenderAgreement(unittest.TestCase):
         self.assertEqual(sum(len(v) for v in self.print_.values()), 177)
 
     def test_chord_names_line_up(self):
+        """Compares the chord-name text only.
+
+        The print header's placement (deck name, #n, degree, subtitle and
+        warning positions) is print-only and exempt from app/print agreement;
+        tests/test_print.py (P2, P3) and tests/pdfcards.test.js (P4) pin it.
+        No field of the diagram, note line, number line or badge is exempt.
+        """
         for app_c, print_c in self.each_card():
             self.assertEqual(app_c["name"], print_c["name"],
                              "card %d of %s" % (app_c["index"], app_c["deck"]))

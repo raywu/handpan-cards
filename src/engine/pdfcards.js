@@ -205,27 +205,42 @@ HPE.pdfcards = (function () {
     c.restoreState();
   }
 
-  function cardHeader(c, x, y, w, h, deck, num, subtitle, main, sup) {
-    tracked(c, x + 9, y + h - 13.5, deck, "Label", 4.6, 0.5, "l", INK);
-    if (num) tracked(c, x + 9, y + h - 21.5, num, "Label", 4.6, 0.4, "l", SEP);
+  function fitClip(text, font, size, maxw, track, floor) {
+    var s = fit(text, font, size, maxw, track, floor);
+    if (tw(text, font, s, track) <= maxw) return { text: text, size: s };
+    var t = text;
+    while (t.length > 1 && tw(t.replace(/\s+$/, "") + "...", font, s, track) > maxw) {
+      t = t.slice(0, -1);
+    }
+    return { text: t.replace(/\s+$/, "") + "...", size: s };
+  }
+
+  function cardHeader(c, x, y, w, h, deck, num, subtitle, main, sup, warnW) {
+    warnW = warnW || 0;
+    var numw = num ? tw(num, "Label", 4.4, 0.4) : 0.0;
+    var right = warnW ? x + w - 16 - warnW - 4 : x + w - 16;
+    var clip = fitClip(deck, "Label", 4.6, right - (x + 9) - numw - 6, 0.5);
+    var dw = tracked(c, x + 9, y + 6.5, clip.text, "Label", clip.size, 0.5, "l", INK);
+    if (num) tracked(c, x + 9 + dw + 6, y + 6.5, num, "Label", 4.4, 0.4, "l", SEP);
     if (subtitle) {
-      var s = fit(subtitle, "LabelSB", 4.2, w * 0.60, 0.55);
-      tracked(c, x + w - 9, y + h - 12.5, subtitle, "LabelSB", s,
-              s * 0.055 * 2.4, "r", INK);
+      var s = fit(subtitle, "LabelSB", 4.2, w * 0.65, 0.55);
+      tracked(c, x + w / 2, y + h - 11.5, subtitle, "LabelSB", s,
+              s * 0.055 * 2.4, "c", INK);
     }
     var size = 27.0;
     while (size > 8 && (tw(main, "Display", size, size * 0.02) +
-                        tw(sup, "Display", size * 0.52, 0)) > w * 0.62) {
+                        tw(sup, "Display", size * 0.52, 0)) > w * 0.80) {
       size -= 0.5;
     }
     var supw = sup ? tw(sup, "Display", size * 0.52, 0) : 0.0;
-    var base = y + h - 24 - size * 0.70;
-    tracked(c, x + w - 9 - supw, base, main, "Display", size, size * 0.02, "r",
-            NAME);
+    var wm = tw(main, "Display", size, size * 0.02);
+    var base = y + h - 18 - size * 0.70;
+    var xe = x + w / 2 + (wm + supw) / 2 - supw;
+    tracked(c, xe, base, main, "Display", size, size * 0.02, "r", NAME);
     if (sup) {
       c.setFillColor(NAME);
       c.setFont("Display", size * 0.52);
-      c.drawString(x + w - 9 - supw, base + size * 0.46, sup);
+      c.drawString(xe, base + size * 0.46, sup);
     }
   }
 
@@ -449,10 +464,13 @@ HPE.pdfcards = (function () {
     });
     var ga = (deck.grad || [null, null])[0];
     duoFrame(c, x, y, CW, CH, undefined, undefined, ga);
-    cardHeader(c, x, y, CW, CH, deck.name, "#" + num, subtitle, main, sup);
+    var warnW = Math.max.apply(null, [0].concat(cardWarnings(deck).map(function (l) {
+      return tw(l, "LabelSB", 4.0, 0.7);
+    })));
+    cardHeader(c, x, y, CW, CH, deck.name, "#" + num, subtitle, main, sup, warnW);
     var deg = (deck.degrees || {})[String(rootPc)];
     if (deg) {
-      tracked(c, x + 9, y + CH - 31.5, deg, "LabelSB", 6.0, 0.4, "l", BLUE);
+      tracked(c, x + 9, y + CH - 13.5, deg, "LabelSB", 6.0, 0.4, "l", BLUE);
     }
     sideCredit(c, x, y, CW, CH, deck.credit);
     drawPan(c, x + CW / 2, y + deck.cy, deck.R, spec, activeAll, rootsAll);
@@ -470,8 +488,8 @@ HPE.pdfcards = (function () {
     // The shop variant ships chord cards and nothing else, so a warning drawn
     // only on the title card is dropped by the file the print shop gets.
     cardWarnings(deck).forEach(function (line, i) {
-      tracked(c, x + CW / 2, y + 6.0 - i * 5.5, line, "LabelSB", 4.0, 0.7,
-              "c", ORANGE);
+      tracked(c, x + CW - 16, y + 6.0 - i * 5.5, line, "LabelSB", 4.0, 0.7,
+              "r", ORANGE);
     });
   }
 
@@ -650,7 +668,8 @@ HPE.pdfcards = (function () {
     _internal: {
       Canvas: Canvas, tracked: tracked,
       tw: tw, fit: fit, labelSize: labelSize,
-      numSize: numSize, fitNote: fitNote, blurbLayout: blurbLayout
+      numSize: numSize, fitNote: fitNote, blurbLayout: blurbLayout,
+      cardHeader: cardHeader, chordCard: chordCard, fitClip: fitClip
     }
   };
 }());

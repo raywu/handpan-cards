@@ -539,6 +539,76 @@ test("a card voicing bottom-shell fields says how many, in orange, singular for 
   assert.ok(!/BOTTOM NOTE/.test(joined(none.bytes)), "Ab voices the top shell only");
 });
 
+// Runs of one recorded card: glyphs regrouped by baseline, face and size,
+// with the left and right ink edge. The rotated credit is drawn at local y 0
+// (the recorder ignores translate/rotate), so y 0 is dropped.
+function cardRuns(deck, chord) {
+  const page = recorder();
+  P._internal.chordCard(new P._internal.Canvas(page), 0, 0, deck, 1, chord);
+  const out = {};
+  page.ops.filter((o) => o.op === "text" && o.y !== 0).forEach((o) => {
+    const k = o.y.toFixed(3) + "|" + o.face + "|" + o.size;
+    const w = HPE.pdf.stringWidth(o.s, o.face, o.size);
+    const r = out[k] || (out[k] = { y: o.y, face: o.face, size: o.size,
+                                    left: o.x, right: o.x, s: "" });
+    r.left = Math.min(r.left, o.x);
+    r.right = Math.max(r.right, o.x + w);
+    r.s += o.s;
+  });
+  return Object.values(out);
+}
+const runAt = (runs, y, face) =>
+  runs.filter((r) => Math.abs(r.y - y) < 1e-6 && r.face === face);
+
+test("P4 the E3 header: degree top-left, subtitle centred above the name, footer deck name then #n", () => {
+  const { deck, chord } = pygmyCard("Cm7", [3, 4, 6, 104]);
+  assert.ok(chord[2], "fixture assumption: Cm7 carries a subtitle");
+  const CH = P.GEOM.CH, CW = P.GEOM.CW;
+  const runs = cardRuns(deck, chord);
+  const deg = runAt(runs, CH - 13.5, "LabelSB").filter((r) => r.size === 6.0);
+  assert.equal(deg.length, 1, "the degree sits at y + CH - 13.5");
+  assert.ok(Math.abs(deg[0].left - 9) < 1e-6);
+  const sub = runAt(runs, CH - 11.5, "LabelSB");
+  assert.equal(sub.length, 1, "the subtitle sits at y + CH - 11.5");
+  assert.ok(Math.abs((sub[0].left + sub[0].right) / 2 - CW / 2) < 0.5, "centred");
+  assert.ok(sub[0].left - deg[0].right >= 4, "4 pt between degree and subtitle");
+  const foot = runAt(runs, 6.5, "Label");
+  const name = foot.filter((r) => r.s === deck.name);
+  const num = foot.filter((r) => r.s === "#1" && r.size === 4.4);
+  assert.equal(name.length, 1, "deck name in the footer");
+  assert.equal(num.length, 1, "#n in the footer at 4.4");
+  assert.ok(Math.abs(name[0].left - 9) < 1e-6);
+  assert.ok(Math.abs(num[0].left - (name[0].left +
+    P._internal.tw(deck.name, "Label", name[0].size, 0.5) + 6)) < 1e-6, "#n 6 pt after the name");
+  assert.equal(runAt(runs, 6.0, "LabelSB").length, 0, "no warning on a warned-free pan");
+});
+
+test("P2/D2 twin: a 40-character deck name on a no-thirds pan is clipped to ASCII dots, clear of #n, the right-aligned warning and the credit", () => {
+  const base = fixture("(C3) G3 D4 G4 D5");
+  assert.deepEqual(base.warnings.map((w) => w.code), ["NO_THIRDS"]);
+  const long = "D CELTIC MINOR 10 WITH SIX BOTTOM NOTESS";
+  assert.equal(long.length, 40);
+  const deck = Object.assign({}, base, { name: long });
+  const CW = P.GEOM.CW;
+  const runs = cardRuns(deck, deck.chords[0]);
+  const foot = runAt(runs, 6.5, "Label");
+  const name = foot.filter((r) => r.size !== 4.4);
+  const num = foot.filter((r) => r.s === "#1" && r.size === 4.4);
+  assert.equal(name.length, 1);
+  assert.equal(num.length, 1);
+  assert.ok(name[0].s.endsWith("..."), "clipped with three ASCII periods: " + name[0].s);
+  assert.ok(name[0].size >= 3.6 - 1e-9, "the 3.6 pt floor, got " + name[0].size);
+  const warn = runAt(runs, 6.0, "LabelSB");
+  assert.equal(warn.length, 1);
+  assert.equal(warn[0].s, P.CARD_WARNINGS.NO_THIRDS);
+  assert.ok(Math.abs(warn[0].right - (CW - 16)) < 1e-6, "right-aligned to x + CW - 16");
+  assert.ok(num[0].left - name[0].right >= 4, "name ends 4 pt before #n");
+  assert.ok(warn[0].left - num[0].right >= 4, "#n ends 4 pt before the warning");
+  const creditLeft = CW - 6.0 - 3.5;
+  assert.ok(creditLeft - warn[0].right >= 4, "warning clears the rotated credit");
+  assert.ok(6.0 + 0.7 * 4.0 < 12, "warning cap top is below the credit's start");
+});
+
 function pygmyWith(main, sup, fields) {
   const deck = pygmyDeck();
   const chord = [main, sup, "", fields, [fields[0]]];
@@ -548,7 +618,7 @@ function pygmyWith(main, sup, fields) {
 
 test("a chord name too wide for the header steps down in 0.5 pt until name and superscript fit", () => {
   let shrunk = 0;
-  for (let n = 4; n <= 9; n++) {
+  for (let n = 4; n <= 12; n++) {
     const name = "Z".repeat(n);
     const { bytes } = pygmyWith(name, "maj7", [3, 4, 6]);
     const sizes = textRuns(bytes).filter((r) => r.s === "Z").map((r) => r.size);
@@ -556,7 +626,7 @@ test("a chord name too wide for the header steps down in 0.5 pt until name and s
     assert.ok(sizes.every((s) => s === sizes[0]), "one size for the whole name");
     const size = sizes[0];
     const fits = (sz) => P._internal.tw(name, "Display", sz, sz * 0.02) +
-      P._internal.tw("maj7", "Display", sz * 0.52, 0) <= P.GEOM.CW * 0.62;
+      P._internal.tw("maj7", "Display", sz * 0.52, 0) <= P.GEOM.CW * 0.80;
     assert.ok(fits(size), n + " letters fit at the size drawn, " + size);
     if (size < 27) {
       shrunk++;
