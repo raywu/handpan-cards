@@ -1368,8 +1368,10 @@ test("err carries variant and vars and keeps its reason", () => {
     assert.ok(r.variant === null || typeof r.variant === "string");
     assert.equal(typeof r.vars, "object");
   }
-  const fifth = core.parseSeed("(D3) A3");
-  if (!fifth.ok && fifth.code === "NO_FIFTH") assert.ok("<X>" in fifth.vars || "X" in fifth.vars);
+  const fifth = core.parseSeed("(D3) B3 C4");
+  assert.equal(fifth.ok, false);
+  assert.equal(fifth.code, "NO_FIFTH");
+  assert.deepEqual(JSON.parse(JSON.stringify(fifth.vars)), { "<X>": "D3", "<fifth of X>": "A" });
   const bad = core.parseSeed("(D3) Xx3 A3");
   assert.equal(bad.ok, false);
   assert.equal(bad.code, "BAD_NOTE");

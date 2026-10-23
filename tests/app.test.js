@@ -13994,6 +13994,51 @@ describe("I18N", () => {
     assert.ok(!/lang="en"/.test(app.faces()), "no island under en");
   });
 
+  test("I18N: applyLang with the sheet open rewrites the sheet title in the new language", () => {
+    const en = readEn();
+    const add = bootLang(["de"], ["de"]);
+    openSheet(add);
+    assert.strictEqual(add.els["scale-title"].textContent, wrapOne(en["sheet.title_add"]));
+    add.run('setLang("en")');
+    assert.strictEqual(add.els["scale-title"].textContent, en["sheet.title_add"]);
+    const edit = bootLang(["de"], ["de"]);
+    openEdit(edit, makeCustom(edit));
+    assert.strictEqual(edit.els["scale-title"].textContent, wrapOne(en["sheet.title_edit"]));
+    edit.run('setLang("en")');
+    assert.strictEqual(edit.els["scale-title"].textContent, en["sheet.title_edit"]);
+  });
+
+  test("I18N: a PARTS message joins its parts with one space, guessed octaves then below-rim notes", () => {
+    const en = readEn();
+    const app = boot({ html: pseudo([]), languages: ["en"] });
+    const got = app.get(`composeText({ code: "PARTS", variant: null, vars: {}, parts: [
+      { code: "OCTAVES_GUESSED_INNER", variant: null, vars: { list: "Bb" } },
+      { code: "INNER_BELOW_TOP", variant: null, vars: { list: "Bb", n: 1 } }] }, "")`);
+    const want = en["compose.OCTAVES_GUESSED_INNER"].replace("{list}", "Bb") + " " +
+      en["compose.INNER_BELOW_TOP"].one.replace("{list}", "Bb");
+    assert.strictEqual(got, want);
+    assert.strictEqual(got,
+      "Octaves guessed: Bb. An inner note can sit below the top notes: type its octave to put it there. Bb sits below the top notes. Check it on the pan picture.");
+  });
+
+  test("I18N: the WHICH CHORD IS THIS? subtitle carries the UI language, not an English island", () => {
+    const en = readEn();
+    const app = bootLang(["de"], ["de"]);
+    const wrapped = wrapOne(en["card.which_chord"]);
+    let seen = 0;
+    for (const mode of ["A", "B", "S"]) {
+      app.run(`setMode("${mode}")`);
+      const f = app.faces();
+      const at = f.indexOf(wrapped);
+      if (at < 0) continue;
+      seen++;
+      const open = f.lastIndexOf("<", at);
+      const tag = f.slice(open, f.indexOf(">", open) + 1);
+      assert.ok(!/lang="en"/.test(tag), mode + ": subtitle tag " + tag);
+    }
+    assert.ok(seen > 0, "the subtitle shows in some mode");
+  });
+
   test("I18N: the English DOM of the app equals the base", () => {
     const fixturePath = path.join(ROOT, "tests", "fixtures", "i18n_english_dom_v1.json");
     const snap = (app) => {
