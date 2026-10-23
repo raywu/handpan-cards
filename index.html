@@ -8100,11 +8100,13 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     if (carry.angles) {
       var bottomSeats = carry.delta && carry.delta.seats && carry.delta.seats.bottom;
       if (bottomSeats && bottomSeats.length) return badNote(text);
-      if (carry.angles.length !== counts.bottom) return badNote(text);
-      var onStep = carry.angles.every(function (a) {
-        return a === null || (a % 5 === 0 && a < 360);
-      });
-      if (!onStep) return badNote(text);
+      var angles = HPE.layout.readAngles({ bottom: carry.angles }, counts);
+      if (!angles.ok || !angles.value) return badNote(text);
+      var o = result.value.options;
+      var asked = { mirror: !!o.mirror, mirrorBottom: !!o.mirrorBottom, anchor: o.anchor, angles: angles.value };
+      if (o.seats) asked.seats = o.seats;
+      var placed = HPE.layout.solve({ fields: result.value.fields, options: {} }, asked);
+      if (!placed.ok) return badNote(text);
       result.value.options.angles = { bottom: carry.angles };
     }
     return result;

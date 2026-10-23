@@ -940,7 +940,7 @@ test("FPS: angles change the share string but never the deckId", () => {
   const id = core.deckId(seed);
   const seen = new Set([encoded(seed)]);
   const bottoms = ringCounts(seed).bottom;
-  for (const first of [0, 5, 90, 355]) {
+  for (const first of [90, 95, 100, 105]) {
     const list = Array(bottoms).fill(null);
     list[0] = first;
     const moved = withAngles(seed, list);
@@ -1440,8 +1440,8 @@ test("FPS: at- is the last option and appears only when an entry is set", () => 
     seed.options = Object.assign({}, seed.options, { angles: none });
     assert.equal(encoded(seed), base, JSON.stringify(none));
   }
-  const moved = encoded(withAngles(plain, [null, 125, null, 20, null, 355]));
-  assert.deepEqual(optionSegs(moved), ["between", "at-,125,,20,,355"]);
+  const moved = encoded(withAngles(plain, [null, 225, null, 20, null, 130]));
+  assert.deepEqual(optionSegs(moved), ["between", "at-,225,,20,,130"]);
   const everything = encoded(withSeats(withAngles(seedNew(PYGMY_SCALE, {
     palette: 2, parent: 9, mirror: true, mirrorBottom: false, anchor: "between", name: "My Pan" }),
     [0, 5, 10, 15, 20, 25]), { rim: identity(9).reverse() }));
@@ -1453,7 +1453,7 @@ test("FPS: at- is the last option and appears only when an entry is set", () => 
 
 test("FPS: a deck with bottom angles encodes no bottom seats entry", () => {
   const plain = pygmyPlain();
-  const angles = [null, 125, null, 20, null, 355];
+  const angles = [null, 225, null, 20, null, 130];
   const bottom = identity(PYGMY_BOTTOMS).reverse();
   const both = encoded(withAngles(withSeats(plain, { bottom }), angles));
   assert.equal(both, encoded(withAngles(plain, angles)), "a bottom seats list was written beside at-");
@@ -1475,11 +1475,11 @@ function forgeN(version, scale, name, options, check) {
 const PYGMY_SEG = "uC3_uDb3_uEb3_(F3)_G3_Ab3_uBb3_C4_uDb4_Eb4_F4_G4_Ab4_C5_Eb5_-_F5_G5_uAb5";
 
 test("FPS: at- on a v5 link is BAD_NOTE, on a v6 link it is read", () => {
-  const at = "at-0,5,10,15,20,25";
+  const at = "at-,225,,20,,130";
   const v6 = forgeN("6", PYGMY_SEG, "*x", ["between", at]);
   const r = share.decode(v6);
   assert.equal(r.ok, true, r.reason);
-  assert.deepStrictEqual(host(r.value.options.angles), { bottom: [0, 5, 10, 15, 20, 25] });
+  assert.deepStrictEqual(host(r.value.options.angles), { bottom: [null, 225, null, 20, null, 130] });
   const v5 = forgeN("5", PYGMY_SEG, "*x", ["between", at]);
   const bad = reject(v5);
   assert.equal(bad.code, "BAD_NOTE");
@@ -1487,15 +1487,28 @@ test("FPS: at- on a v5 link is BAD_NOTE, on a v6 link it is read", () => {
   assert.equal(share.decode(v5plain).ok, true, "a v5 link without at- still opens");
 });
 
+test("FPS: a v6 link under the floor, or with a bottom seats list beside at-, is BAD_NOTE and the app imports nothing", () => {
+  assert.equal(share.decode(pygmyAngled(",,,20,,")).ok, true, "the control opens");
+  for (const list of ["5,,,,,", ",,,,,10", "10,,,,,", "0,,,,,", ",,,,,5"]) {
+    const r = share.decode(pygmyAngled(list));
+    assert.equal(r.ok, false, list);
+    assert.equal(r.code, "BAD_NOTE", list);
+  }
+  const rimClash = share.decode(pygmyAngled("90,,,,,"));
+  assert.equal(rimClash.ok, true, "a clear step opens");
+  const beside = forgeN("6", PYGMY_SEG, "*x", ["between", "seats-;;5,4,3,2,1,0", "at-,,,20,,"]);
+  assert.equal(reject(beside).code, "BAD_NOTE");
+});
+
 test("FPS: a v6 check is computed over the byte 6", () => {
-  const options = ["between", "at-,125,,20,,355"];
+  const options = ["between", "at-,225,,20,,130"];
   const good = forgeN("6", PYGMY_SEG, "*x", options);
   assert.equal(share.decode(good).ok, true);
   const overFive = [good.split("/").slice(0, -1).join("/"),
     fnv24(["5", PYGMY_SEG, "\t"].concat(options).join("\n"))].join("/");
   assert.notEqual(overFive, good);
   reject(overFive);
-  const link = encoded(withAngles(pygmyPlain(), [null, 125, null, 20, null, 355]));
+  const link = encoded(withAngles(pygmyPlain(), [null, 225, null, 20, null, 130]));
   assert.equal(link, good.replace("/*x/", "/" + link.split("/")[2] + "/").replace(/[0-9a-f]{6}$/, link.slice(-6)));
   const meaning = ["6", PYGMY_SEG, "\t"].concat(options).join("\n");
   assert.equal(link.slice(-6), fnv24(meaning));
@@ -1597,12 +1610,12 @@ test("SV: every option has one spelling and a default writes nothing", () => {
   assert.deepEqual(decoded(angled).options.angles, { bottom: [null, null, 90, null, null, null] });
   const all = encoded(withAngles(withSeats(seedNew(PYGMY_SCALE, {
     palette: 2, parent: 9, mirror: true, mirrorBottom: false, anchor: "between", name: "My Pan" }),
-    { rim: identity(9).reverse() }), [0, 5, 10, 15, 20, 355]));
+    { rim: identity(9).reverse() }), [null, 225, null, 20, null, 130]));
   assert.deepEqual(optionSegs(all), ["palette-3", "parent-phrygian-dominant", "mirror-top",
-    "between", `seats-${identity(9).reverse().join(",")};;`, "at-0,5,10,15,20,355"]);
+    "between", `seats-${identity(9).reverse().join(",")};;`, "at-,225,,20,,130"]);
 });
 
-const ANGLE_CASES = [null, 125, null, 20, null, 355];
+const ANGLE_CASES = [null, 225, null, 20, null, 130];
 const pygmyAngled = (list) => forgeN("6", PYGMY_SEG, "*x", ["between", "at-" + list]);
 
 test("FPS: changing any angle changes the check", () => {
@@ -1645,8 +1658,8 @@ test("FPS: absent round-trips as absent and clearing restores the default link b
 });
 
 test("FPS: an at- list with a wrong length, a bad entry, a bottom seats list beside it, or out of order is BAD_NOTE", () => {
-  assert.equal(share.decode(pygmyAngled("5,,,,,")).ok, true, "the control opens");
-  assert.equal(share.decode(pygmyAngled("0,5,10,15,20,355")).ok, true);
+  assert.equal(share.decode(pygmyAngled(",,,20,,")).ok, true, "the control opens");
+  assert.equal(share.decode(pygmyAngled(",225,,20,,130")).ok, true);
   const bads = ["5,,", "5,,,,,,", "5", "3,,,,,", "360,,,,,", "365,,,,,", "05,,,,,", "5,,,,,x", "-5,,,,,",
     "5.5,,,,,", "1000,,,,,", ",,,,,", " 5,,,,,"];
   for (const list of bads) {
@@ -1654,13 +1667,13 @@ test("FPS: an at- list with a wrong length, a bad entry, a bottom seats list bes
     assert.equal(r.ok, false, list);
     assert.equal(r.code, "BAD_NOTE", list);
   }
-  const beside = forgeN("6", PYGMY_SEG, "*x", ["between", "seats-;;5,4,3,2,1,0", "at-5,,,,,"]);
+  const beside = forgeN("6", PYGMY_SEG, "*x", ["between", "seats-;;5,4,3,2,1,0", "at-,,,20,,"]);
   assert.equal(reject(beside).code, "BAD_NOTE");
-  const rimBeside = forgeN("6", PYGMY_SEG, "*x", ["between", "seats-8,7,6,5,4,3,2,1,0;;", "at-5,,,,,"]);
+  const rimBeside = forgeN("6", PYGMY_SEG, "*x", ["between", "seats-8,7,6,5,4,3,2,1,0;;", "at-,,,20,,"]);
   assert.equal(share.decode(rimBeside).ok, true, "rim seats beside at- are legal");
   const noBottoms = forgeN("6", "(D3)_A3_C4_D4_E4_F4_G4_A4_C5", "*x", ["at-5"]);
   assert.equal(reject(noBottoms).code, "BAD_NOTE", "angles on a pan with no bottom notes");
-  for (const order of [["at-5,,,,,", "between"], ["at-5,,,,,", "seats-8,7,6,5,4,3,2,1,0;;"]]) {
+  for (const order of [["at-,,,20,,", "between"], ["at-,,,20,,", "seats-8,7,6,5,4,3,2,1,0;;"]]) {
     assert.equal(reject(forgeN("6", PYGMY_SEG, "*x", order)).code, "BAD_NOTE");
   }
 });
@@ -1679,13 +1692,13 @@ test("SV: an unknown, duplicated or out-of-order option is BAD_NOTE", () => {
   for (const options of bads) {
     reject(forge5(scale, "*x", options));
   }
-  const pControl = forgeN("6", PYGMY_SEG, "*x", ["palette-3", "between", "seats-1,0,2,3,4,5,6,7,8;;", "at-5,,,,,"]);
+  const pControl = forgeN("6", PYGMY_SEG, "*x", ["palette-3", "between", "seats-1,0,2,3,4,5,6,7,8;;", "at-,,,20,,"]);
   assert.equal(share.decode(pControl).ok, true, "the v6 in-order control opens");
   const v6bads = [
-    ["at-5,,,,,", "between"], ["at-5,,,,,", "seats-1,0,2,3,4,5,6,7,8;;"],
-    ["at-5,,,,,", "at-5,,,,,"], ["at-5,,,,,", "palette-3"], ["at-5,,,,,", "mirror"],
+    ["at-,,,20,,", "between"], ["at-,,,20,,", "seats-1,0,2,3,4,5,6,7,8;;"],
+    ["at-,,,20,,", "at-,,,20,,"], ["at-,,,20,,", "palette-3"], ["at-,,,20,,", "mirror"],
     ["between", "AT-5,,,,,"], ["between", "at5,,,,,"], ["between", "at-"],
-    ["between", "at-,,,,,"], ["between", "at-5,,,,,", "at-"],
+    ["between", "at-,,,,,"], ["between", "at-,,,20,,", "at-"],
   ];
   for (const options of v6bads) {
     reject(forgeN("6", PYGMY_SEG, "*x", options));

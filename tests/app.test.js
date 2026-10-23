@@ -9968,6 +9968,25 @@ describe("share url", () => {
     assert.strictEqual(gaEvents(app).length, events);
   });
 
+  test("FPS: a v6 link under the floor, or with a bottom seats list beside at-, is BAD_NOTE and the app imports nothing", () => {
+    const seg = "uC3_uDb3_uEb3_(F3)_G3_Ab3_uBb3_C4_uDb4_Eb4_F4_G4_Ab4_C5_Eb5_-_F5_G5_uAb5";
+    const fnv = (text) => {
+      let h = 0x811c9dc5;
+      for (const b of Buffer.from(text, "utf8")) { h = ((h ^ b) >>> 0); h = Math.imul(h, 0x01000193) >>> 0; }
+      return (h >>> 8).toString(16).padStart(6, "0");
+    };
+    const forge = (options) =>
+      ["6", seg, "*x"].concat(options, fnv(["6", seg, "\t"].concat(options).join("\n"))).join("/");
+    const stored = plain(bootGA().get("savedScales()")).length;
+    for (const options of [["between", "at-5,,,,,"], ["between", "seats-;;5,4,3,2,1,0", "at-,,,20,,"]]) {
+      const app = bootGA({ href: PAGE + "#s=" + forge(options) });
+      assert.strictEqual(plain(app.get("savedScales()")).length, stored, options.join("/"));
+      assert.strictEqual(gaEvents(app).filter((e) => e === "share_open").length, 0);
+    }
+    const ok = bootGA({ href: PAGE + "#s=" + forge(["between", "at-,,,20,,"]) });
+    assert.strictEqual(plain(ok.get("savedScales()")).length, stored + 1, "the control imports");
+  });
+
   test("FPS: stored records keep v 4 after a v6 boot", () => {
     const app = bootGA({ href: PAGE + "#s=" + V4_MOVED });
     const saved = plain(app.get("savedScales()"));
