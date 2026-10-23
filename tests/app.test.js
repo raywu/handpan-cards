@@ -8777,7 +8777,7 @@ test("editable defaults: the fifth seeded delete with no custom deck is refused"
   app.els["scale-delete"].click();
   app.els["scale-delete"].click();
   assert.deepStrictEqual(labels(app), ["D KURD 10"], "the last visible deck was hidden");
-  assert.deepStrictEqual(hiddenKey(app) || four, four);
+  assert.deepStrictEqual(hiddenKey(app), four, "the refused hide rewrote or dropped the stored hidden list");
   assert.strictEqual(app.sheetOpen(), true, "the refused hide closed the sheet");
   assert.match(app.els["scale-msg"].textContent, /at least one scale/i);
   assert.match(app.els["scale-msg"].className, /warn/);
