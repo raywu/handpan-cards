@@ -559,10 +559,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         var fields = parsed.value.fields;
         var nameOf = function (id) { return fields[id][0] + fields[id][1]; };
         var rim = tops.concat(inner);
+        var typed = parsed.value.typed;
         octaves[ding.index] = nameOf("0");
-        rim.forEach(function (n, i) { octaves[n.index] = nameOf(String(i + 1)); });
-        var first = Math.max(101, rim.length + 1);
-        bottoms.forEach(function (n, i) { octaves[n.index] = nameOf(String(first + i)); });
+        rim.forEach(function (n, i) { octaves[n.index] = nameOf(typed[i]); });
+        bottoms.forEach(function (n, i) { octaves[n.index] = nameOf(typed[rim.length + i]); });
       }
     }
 
@@ -677,9 +677,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   var COMPOSE_HIGH = 10;
 
   function composeRange(x) { return x + " is outside C-1 to G9."; }
-  function composeLower(x, p) { return x + " is lower than " + p + ": list low to high."; }
 
   function composeMidi(n, octave) { return core().midiFromName(n.letter, n.acc, octave); }
+  function composeNameMidi(name) {
+    var m = COMPOSE_NOTE.exec(name);
+    return composeMidi({ letter: m[1], acc: m[2] || "" }, Number(m[3]));
+  }
   function composeFits(midi) { return midi >= 0 && midi <= 127; }
   function composeNamed(n, octave) { return n.letter + n.acc + octave; }
 
@@ -727,15 +730,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       var parsed = core().parseSeed(head + names.join(" "));
       if (!parsed.ok && parsed.code !== "NO_FIFTH") {
         names.pop();
-        var before = k ? names[k - 1] : null;
         var error = parsed.reason;
         if (parsed.code === "NOTE_OUT_OF_RANGE") error = composeRange(name);
         else if (parsed.code === "NOTE_REPEATED") error = name + " is already in the top or inner notes.";
-        else if (parsed.code === "NOTE_OUT_OF_ORDER") {
-          if (before) error = composeLower(name, before);
-          else if (field === "top") error = name + " is not above the ding, " + anchorName + ".";
-          else error = name + " is not above the ding, " + anchorName + ".";
-        }
+        else if (parsed.code === "NOTE_OUT_OF_ORDER") error = name + " is not above the ding, " + anchorName + ".";
         return { names: names, error: error };
       }
       below = midi;
@@ -747,7 +745,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var names = [];
     var guessed = [];
     var midis = [];
-    var below = null;
     var placed = core().inferBottoms(notes.map(function (x) {
       return { letter: x.letter, accidental: x.acc, octave: x.octave };
     }), ding.midi);
@@ -760,12 +757,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       if (i === placed.failAt) {
         return { names: [], guessed: [], error: guess ? n.letter + n.acc + " has no octave that fits: type one." : composeRange(name) };
       }
-      if (below !== null && midi === below) return { names: [], guessed: [], error: name + " is already in the bottom notes." };
-      if (below !== null && midi < below) return { names: [], guessed: [], error: composeLower(name, names[i - 1]) };
+      if (midis.indexOf(midi) !== -1) return { names: [], guessed: [], error: name + " is already in the bottom notes." };
       names.push(name);
       midis.push(midi);
       if (guess) guessed.push(name);
-      below = midi;
     }
     return { names: names, midis: midis, guessed: guessed, error: null };
   }
@@ -820,7 +815,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var topMidi = null;
     var inner = null;
     var innerGuessed = [];
-    if (!out.errors.top && !read.top.notes.length) out.errors.top = "Enter the top notes, low to high.";
+    if (!out.errors.top && !read.top.notes.length) out.errors.top = "Enter the top notes.";
     if (ding && !out.errors.top) {
       var staged = composeStage("(" + ding.name + ") ", read.top.notes, ding.midi, "top", ding.name);
       if (staged.error) out.errors.top = staged.error;
@@ -869,11 +864,15 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     }
 
     if (ding && top && inner && bottom && COMPOSE_FIELDS.every(function (f) { return !out.errors[f]; })) {
+      var byMidi = function (names) {
+        return names.slice().sort(function (a, b) { return composeNameMidi(a) - composeNameMidi(b); })
+          .map(function (x) { return { note: x }; });
+      };
       var roles = {
         ding: { note: ding.name },
-        top: top.map(function (x) { return { note: x }; }),
-        inner: inner.map(function (x) { return { note: x }; }),
-        bottom: bottom.names.map(function (x) { return { note: x }; })
+        top: byMidi(top),
+        inner: byMidi(inner),
+        bottom: byMidi(bottom.names)
       };
       var line = serialise({ status: "REVIEW", roles: roles });
       var parsed = core().parseSeed(line);
