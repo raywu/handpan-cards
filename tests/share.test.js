@@ -1575,6 +1575,77 @@ test("SV: every option has one spelling and a default writes nothing", () => {
     name: "My Hijaz" }), { rim: identity(8).reverse() }));
   assert.deepEqual(optionSegs(every), ["palette-3", "parent-phrygian-dominant",
     "mirror-top", "between", "seats-7,6,5,4,3,2,1,0;;"]);
+  const angled = encoded(withAngles(pygmyPlain(), [null, null, 90, null, null, null]));
+  assert.deepEqual(optionSegs(angled), ["between", "at-,,90,,,"]);
+  assert.deepEqual(decoded(angled).options.angles, { bottom: [null, null, 90, null, null, null] });
+  const all = encoded(withAngles(withSeats(seedNew(PYGMY_SCALE, {
+    palette: 2, parent: 9, mirror: true, mirrorBottom: false, anchor: "between", name: "My Pan" }),
+    { rim: identity(9).reverse() }), [0, 5, 10, 15, 20, 355]));
+  assert.deepEqual(optionSegs(all), ["palette-3", "parent-phrygian-dominant", "mirror-top",
+    "between", `seats-${identity(9).reverse().join(",")};;`, "at-0,5,10,15,20,355"]);
+});
+
+const ANGLE_CASES = [null, 125, null, 20, null, 355];
+const pygmyAngled = (list) => forgeN("6", PYGMY_SEG, "*x", ["between", "at-" + list]);
+
+test("FPS: changing any angle changes the check", () => {
+  const seen = new Set();
+  const checkOf = (list) => encoded(withAngles(pygmyPlain(), list)).split("/").pop();
+  seen.add(encoded(pygmyPlain()).split("/").pop());
+  seen.add(checkOf(ANGLE_CASES));
+  for (let i = 0; i < PYGMY_BOTTOMS; i += 1) {
+    for (const value of [0, 5, 180, 355]) {
+      if (ANGLE_CASES[i] === value) continue;
+      const list = ANGLE_CASES.slice();
+      list[i] = value;
+      const link = encoded(withAngles(pygmyPlain(), list));
+      assert.notEqual(link, encoded(withAngles(pygmyPlain(), ANGLE_CASES)), `${i}=${value}`);
+      seen.add(link.split("/").pop());
+      const forged = link.replace(/[0-9a-f]{6}$/, "000000");
+      reject(forged);
+    }
+  }
+  const list = ANGLE_CASES.slice();
+  list[3] = null;
+  assert.notEqual(checkOf(list), checkOf(ANGLE_CASES));
+  assert.ok(seen.size > 20, "checks collided");
+});
+
+test("FPS: absent round-trips as absent and clearing restores the default link byte for byte", () => {
+  const plain = pygmyPlain();
+  const base = encoded(plain);
+  const back = decoded(base);
+  assert.deepStrictEqual(back, plain);
+  assert.equal("angles" in back.options, false, "decode invented angles");
+  assert.ok(base.length < encoded(withAngles(plain, ANGLE_CASES)).length);
+  for (const empty of [undefined, null, {}, { bottom: [] }, { bottom: Array(PYGMY_BOTTOMS).fill(null) }]) {
+    const cleared = host(withAngles(plain, ANGLE_CASES));
+    cleared.options.angles = empty;
+    assert.equal(encoded(cleared), base, JSON.stringify(empty));
+  }
+  const moved = withAngles(plain, ANGLE_CASES);
+  assert.deepStrictEqual(decoded(encoded(moved)), moved);
+});
+
+test("FPS: an at- list with a wrong length, a bad entry, a bottom seats list beside it, or out of order is BAD_NOTE", () => {
+  assert.equal(share.decode(pygmyAngled("5,,,,,")).ok, true, "the control opens");
+  assert.equal(share.decode(pygmyAngled("0,5,10,15,20,355")).ok, true);
+  const bads = ["5,,", "5,,,,,,", "5", "3,,,,,", "360,,,,,", "365,,,,,", "05,,,,,", "5,,,,,x", "-5,,,,,",
+    "5.5,,,,,", "1000,,,,,", ",,,,,", " 5,,,,,"];
+  for (const list of bads) {
+    const r = share.decode(pygmyAngled(list));
+    assert.equal(r.ok, false, list);
+    assert.equal(r.code, "BAD_NOTE", list);
+  }
+  const beside = forgeN("6", PYGMY_SEG, "*x", ["between", "seats-;;5,4,3,2,1,0", "at-5,,,,,"]);
+  assert.equal(reject(beside).code, "BAD_NOTE");
+  const rimBeside = forgeN("6", PYGMY_SEG, "*x", ["between", "seats-8,7,6,5,4,3,2,1,0;;", "at-5,,,,,"]);
+  assert.equal(share.decode(rimBeside).ok, true, "rim seats beside at- are legal");
+  const noBottoms = forgeN("6", "(D3)_A3_C4_D4_E4_F4_G4_A4_C5", "*x", ["at-5"]);
+  assert.equal(reject(noBottoms).code, "BAD_NOTE", "angles on a pan with no bottom notes");
+  for (const order of [["at-5,,,,,", "between"], ["at-5,,,,,", "seats-8,7,6,5,4,3,2,1,0;;"]]) {
+    assert.equal(reject(forgeN("6", PYGMY_SEG, "*x", order)).code, "BAD_NOTE");
+  }
 });
 
 test("SV: an unknown, duplicated or out-of-order option is BAD_NOTE", () => {
@@ -1590,6 +1661,17 @@ test("SV: an unknown, duplicated or out-of-order option is BAD_NOTE", () => {
   ];
   for (const options of bads) {
     reject(forge5(scale, "*x", options));
+  }
+  const pControl = forgeN("6", PYGMY_SEG, "*x", ["palette-3", "between", "seats-1,0,2,3,4,5,6,7,8;;", "at-5,,,,,"]);
+  assert.equal(share.decode(pControl).ok, true, "the v6 in-order control opens");
+  const v6bads = [
+    ["at-5,,,,,", "between"], ["at-5,,,,,", "seats-1,0,2,3,4,5,6,7,8;;"],
+    ["at-5,,,,,", "at-5,,,,,"], ["at-5,,,,,", "palette-3"], ["at-5,,,,,", "mirror"],
+    ["between", "AT-5,,,,,"], ["between", "at5,,,,,"], ["between", "at-"],
+    ["between", "at-,,,,,"], ["between", "at-5,,,,,", "at-"],
+  ];
+  for (const options of v6bads) {
+    reject(forgeN("6", PYGMY_SEG, "*x", options));
   }
 });
 
