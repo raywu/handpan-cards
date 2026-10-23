@@ -395,8 +395,8 @@ changing the solver or the seed, never by hand.
   `hifi.CARD_WARNINGS` maps it to a short orange badge at the foot of every
   chord card (`NO 3RDS ON THIS PAN`), the only place it survives, because
   CHORD_ONLY omits the title card. The badge is right-aligned on the footer
-  line, 16 pt in from the card edge, and the deck name is clipped to end 4 pt
-  before it (`HeaderWorstCaseTest`
+  line, 16 pt in from the card edge, and the deck name is clipped so that `#n`,
+  drawn 6 pt after it, ends at least 4 pt before the badge (`HeaderWorstCaseTest`
   `test_a_forty_character_deck_name_with_a_warning_is_clipped_clear`, which also
   asserts the warning's clearance from the rotated credit). One warning line
   only: a second `CARD_WARNINGS` entry would draw on the frame and must

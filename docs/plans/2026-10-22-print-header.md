@@ -182,7 +182,7 @@ restate it.
   `n = 4..12`, `shrunk >= 3`. New test: footer runs (deck name at `y + 6.5` from
   `x + 9`, `#n` 6 pt after it at 4.4), degree at `y + CH - 13.5`, subtitle
   centred at `y + CH - 11.5`, and on the no-thirds fixture the warning
-  right-aligned to `x + CW - 16` with the deck name ending 4 pt before it. "a no
+  right-aligned to `x + CW - 16` with the deck name clipped so that `#n`, drawn 6 pt after it, ends at least 4 pt before the badge. "a no
   thirds pan draws the NO 3RDS warning badge, in orange, on every chord card"
   (line 208) asserts COUNT and COLOUR only (`coloursOf` reads glyph colour, not
   position), so it STAYS as written and is not re-pinned; evidence2.md section 2
