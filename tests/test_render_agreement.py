@@ -778,3 +778,70 @@ class I18nRegionTest(unittest.TestCase):
                     self.assertEqual(fh.read(), stale, "--check writes nothing")
             finally:
                 sync_i18n.INDEX = real
+
+    def test_the_i18n_region_sits_below_the_engine_wrapper(self):
+        with open(os.path.join(paths.ROOT, "index.html"), encoding="utf-8") as fh:
+            html = fh.read()
+        self.assertGreater(html.index("<!-- i18n begin"), html.index("<!-- engine end -->"),
+                           "inline_engine rewrites everything inside the engine wrapper")
+
+    def test_inline_engine_sync_keeps_the_i18n_region(self):
+        import contextlib
+        import io
+        import tempfile
+        import inline_engine
+        import sync_i18n
+        with open(inline_engine.INDEX, encoding="utf-8") as fh:
+            html = fh.read()
+        start = html.index("<!-- engine:core begin")
+        stale = html[:start] + html[start:].replace("var HPE", "var HPE_STALE", 1)
+        self.assertNotEqual(stale, html)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "index.html")
+            with open(path, "w", encoding="utf-8") as fh:
+                fh.write(stale)
+            real = (inline_engine.INDEX, sync_i18n.INDEX)
+            inline_engine.INDEX = sync_i18n.INDEX = path
+            try:
+                with contextlib.redirect_stdout(io.StringIO()):
+                    inline_engine.sync()
+                with open(path, encoding="utf-8") as fh:
+                    after = fh.read()
+                self.assertIn("<!-- i18n begin", after, "the engine sync dropped the i18n region")
+                with contextlib.redirect_stdout(io.StringIO()):
+                    self.assertEqual(sync_i18n.main(["sync_i18n.py", "--check"]), 0)
+            finally:
+                inline_engine.INDEX, sync_i18n.INDEX = real
+
+    def test_sync_i18n_inserts_a_missing_region_below_the_engine_block(self):
+        import contextlib
+        import io
+        import tempfile
+        import sync_i18n
+        with open(sync_i18n.INDEX, encoding="utf-8") as fh:
+            html = fh.read()
+        bare = sync_i18n.PATTERN.sub("", html, count=1)
+        self.assertNotIn("<!-- i18n begin", bare)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "index.html")
+            with open(path, "w", encoding="utf-8") as fh:
+                fh.write(bare)
+            real = sync_i18n.INDEX
+            sync_i18n.INDEX = path
+            try:
+                with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                    self.assertEqual(sync_i18n.main(["sync_i18n.py", "--check"]), 1)
+                    self.assertEqual(sync_i18n.main(["sync_i18n.py"]), 0)
+                    self.assertEqual(sync_i18n.main(["sync_i18n.py", "--check"]), 0)
+                with open(path, encoding="utf-8") as fh:
+                    after = fh.read()
+                self.assertGreater(after.index("<!-- i18n begin"), after.index("<!-- engine end -->"))
+                self.assertLess(after.index("<!-- i18n end -->"), after.index("const DECKS"))
+            finally:
+                sync_i18n.INDEX = real
+
+    def test_sync_i18n_writes_no_closing_tag_sequence(self):
+        import sync_i18n
+        text = sync_i18n.render({"en": {"k": "a </script> b"}})
+        self.assertNotIn("</", text)
+        self.assertEqual(json.loads(text[len("const I18N = "):-1]), {"en": {"k": "a </script> b"}})

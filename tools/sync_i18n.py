@@ -40,8 +40,12 @@ def canonical():
     return tables
 
 
+ANCHOR = "<!-- engine end -->\n"
+BEGIN = "<!-- i18n begin - synced from data/i18n/*.json by tools/sync_i18n.py -->"
+
+
 def render(tables):
-    return "const I18N = " + json.dumps(tables, ensure_ascii=False) + ";"
+    return "const I18N = " + json.dumps(tables, ensure_ascii=False).replace("</", "<\\/") + ";"
 
 
 def main(argv):
@@ -54,11 +58,18 @@ def main(argv):
     with open(INDEX, encoding="utf-8") as fh:
         html = fh.read()
     match = PATTERN.search(html)
-    if not match:
-        print("index.html has no i18n region", file=sys.stderr)
-        return 1
-
     want = render(canonical())
+    if not match:
+        if check or ANCHOR not in html:
+            print("index.html has no i18n region", file=sys.stderr)
+            return 1
+        at = html.index(ANCHOR) + len(ANCHOR)
+        html = (html[:at] + BEGIN + "\n<script>" + want + "</script>\n<!-- i18n end -->\n"
+                + html[at:])
+        with open(INDEX, "w", encoding="utf-8") as fh:
+            fh.write(html)
+        print("i18n region inserted after the engine block")
+        return 0
     if match.group(2) == want:
         print("i18n region in index.html matches data/i18n: OK")
         return 0
