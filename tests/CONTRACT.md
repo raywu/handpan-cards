@@ -162,5 +162,6 @@ row is a failure - add a row (0 is a fine start). Node counts come from
   no two chords in a deck share an identical `fields` list (49/29/27/19/53 all
   distinct, verified over all 177 cards). Kurd 10 and Amara 10 are not counted
   in the duplicate-set figures above.
-- Page counts: full 3/7/4, printer-only 3/6/3 (the six committed PDFs; Kurd 10
-  and Amara 10 have none). 177 cards total.
+- Page counts: full 3/7/4, printer-only 3/6/3 (the six PDFs built by
+  `test_all_six_pdfs_build_with_the_expected_page_counts` in `tests/test_pdf_build.py`,
+  of which the three printer-only ones are committed; Kurd 10 and Amara 10 have none). 177 cards total.
