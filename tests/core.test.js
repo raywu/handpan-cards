@@ -1189,6 +1189,35 @@ test("IB: a rim pitch typed twice is NOTE_REPEATED naming the later one, in any 
   const ok = core.parseSeed("(D3) C4 A3 | E5");
   assert.equal(ok.ok, true);
   assert.equal(core.formatSeed(ok.value.fields), "(D3) A3 C4 | E5");
+  for (const [str, re] of [["(D3) A3 Db4 C#4", /^Db4 and C#4 are the same note/],
+                           ["(D3) A3 C#4 Db4", /^C#4 and Db4/]]) {
+    const e = core.parseSeed(str);
+    assert.equal(e.code, "NOTE_REPEATED", str);
+    assert.match(e.reason, re, str);
+  }
+});
+
+test("a repeated pitch is NOTE_REPEATED naming the later typed note on the inner and bottom shells, told apart by spelling", () => {
+  for (const [str, re] of [["(D3) A3 C4 | Gb4 F#4", /^Gb4 and F#4/],
+                           ["(D3) A3 C4 | F#4 Gb4", /^F#4 and Gb4/],
+                           ["(D3) A3 [Ab2] [G#2]", /^Ab2 and G#2/],
+                           ["(D3) A3 [G#2] [Ab2]", /^G#2 and Ab2/],
+                           ["(D3) A3 C#4 | Db4", /^C#4 and Db4/]]) {
+    const e = core.parseSeed(str);
+    assert.equal(e.code, "NOTE_REPEATED", str);
+    assert.match(e.reason, re, str);
+  }
+});
+
+test("an unoctaved note after the ding lands at or below it only after a note below the ding", () => {
+  for (const [str, code, re] of [["(D3) [A2] C E A", "NOTE_OUT_OF_ORDER", /^C3 is at or below the ding D3/],
+                                 ["(D3) B2 C", "NOTE_OUT_OF_ORDER", /^B2 is at or below the ding D3/],
+                                 ["(D3) C4 A3 C", "NOTE_REPEATED", /^C4 and C4/]]) {
+    const e = core.parseSeed(str);
+    assert.equal(e.ok, false, str);
+    assert.equal(e.code, code, str);
+    assert.match(e.reason, re, str);
+  }
 });
 
 test("the legacy reader keeps the default NOTE_OUT_OF_ORDER sentence", () => {
