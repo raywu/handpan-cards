@@ -2119,11 +2119,11 @@ test("Enter in the scale box submits, the same as clicking Generate", () => {
 
 test("the layout markup exists and only the selected chip of any deck opens the sheet", () => {
   const app = boot();
-  for (const id of LAYOUT_IDS) assert.ok(app.els[id], `#${id} is missing from the markup`);
-  // The slot list is gone: the pan IS the selection now (D1). The sandbox
-  // conjures an element for any id asked for, so this has to read the file.
-  assert.ok(!/id="scale-slots"/.test(fs.readFileSync(path.join(ROOT, "index.html"), "utf8")),
-    "the slot list is still in the markup");
+  // The sandbox pre-creates every id in ELEMENT_IDS, so "exists" is read from
+  // the served file. The slot list is gone: the pan IS the selection now (D1).
+  const served = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+  for (const id of LAYOUT_IDS) assert.ok(served.includes(`id="${id}"`), `#${id} is missing from the markup`);
+  assert.ok(!/id="scale-slots"/.test(served), "the slot list is still in the markup");
   app.clickChip("D AMARA 9");
   assert.strictEqual(app.sheetOpen(), false,
     "an unselected built-in chip opened the sheet, so it could be corrected");
