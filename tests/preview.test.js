@@ -101,12 +101,32 @@ test("every seed note is drawn in the preview, ding and bottom shell included", 
   }
 });
 
+/** The circle drawn directly under the label `note` (e.g. "D3"), in document order. */
+function circleOf(svg, note) {
+  let last = null;
+  for (const m of svg.matchAll(/<circle([^>]*)\/>|<text[^>]*>([\s\S]*?)<\/text>/g)) {
+    if (m[1] !== undefined) {
+      const at = {};
+      for (const a of m[1].matchAll(/([\w-]+)="([^"]*)"/g)) at[a[1]] = a[2];
+      if ("cx" in at) last = at;
+    } else if (m[2].replace(/<[^>]*>/g, "").replace(/\s+/g, "") === note) return last;
+  }
+  return null;
+}
+
 test("the ding sits at the centre of the preview", () => {
-  const app = boot();
-  typeInSheet(app, FULL);
-  const svg = previewHTML(app);
-  const centred = circles(svg).filter((c) => c.cx === "0");
-  assert.ok(centred.length >= 1, "the ding circle should sit on the vertical axis");
+  const plain = boot();
+  typeInSheet(plain, PLAIN);
+  const ding = circleOf(previewHTML(plain), "D3");
+  assert.ok(ding, "the circle labelled D3 (the ding) is missing");
+  assert.strictEqual(Number(ding.cx), 0, "the ding is off the vertical axis");
+  assert.strictEqual(Number(ding.cy), 0, "a pan with no inner notes centres its ding");
+  // With an inner pair the ding is pushed toward the player by 0.1425 R (R = 100).
+  const full = boot();
+  typeInSheet(full, FULL);
+  const pushed = circleOf(previewHTML(full), "F3");
+  assert.strictEqual(Number(pushed.cx), 0, "the pushed ding is off the vertical axis");
+  assert.ok(Math.abs(Number(pushed.cy) - 14.25) < 1e-6, `the pushed ding sits at cy ${pushed.cy}, not 14.25`);
 });
 
 test("a seed with bottom notes draws the dashed bottom ring; one without does not", () => {
