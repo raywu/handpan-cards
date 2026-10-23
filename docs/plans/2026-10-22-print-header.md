@@ -89,7 +89,7 @@ restate it.
 - Footer: `numw = tw(num, "Label", 4.4, 0.4)`; `right = x + w - 16 - warn_w - 4`
   when `warn_w` else `x + w - 16`; deck name through the NEW helper
   `fit_clip(text, font, size, maxw, track, floor=3.6)` / `fitClip(...)` in both
-  renderers (AM5): `fit` to the floor 3.6, then, while still too wide, drop
+  renderers (AM5): shrink at the drawn tracking to the floor 3.6, then, while still too wide, drop
   trailing characters and append `"..."` (three ASCII periods, NOT U+2026: the
   font subset's CHARSET is frozen to printable ASCII plus the degree sign, so
   `pdfcards.js` has neither glyph nor advance for the ellipsis and
@@ -377,7 +377,7 @@ beside, not inside, the text test.
 
 ### Section 2: Code Quality
 Constants are plain literals as today; none collide with the once-per-language
-figures (verified by regex). `fit_clip` mirrors `fit` (0.25 steps to 3.6) then
+figures (verified by regex). `fit_clip` steps 0.25 at the drawn tracking to 3.6 then
 clips; its JS twin must use the same width table.
 
 ### Section 3: Tests
