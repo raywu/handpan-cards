@@ -1,0 +1,14 @@
+# kills: FPD: SAVE after a move stores options.angles, Edit redraws it, and opening the bar's link stores the same record
+# suite: node --test --test-name-pattern ^FPD..SAVE.after.a.move.stores.options.angles..Edit.redraws.it..and.opening.the.bar.s.link.stores.the.same.record$ tests/app.test.js
+# SAVE writes no options.angles.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11749,7 +11749,6 @@ function sheetOptions() {
+     else if (d && d.options && d.options.replaces) o.replaces = d.options.replaces;
+   }
+   if (layoutSeats) o.seats = JSON.parse(JSON.stringify(layoutSeats));
+-  if (layoutAngles) o.angles = JSON.parse(JSON.stringify(layoutAngles));
+   return o;
+ }
+ 

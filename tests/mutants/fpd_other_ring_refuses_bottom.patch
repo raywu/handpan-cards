@@ -1,0 +1,15 @@
+# kills: FPD: releasing a held bottom note over a rim note moves it, and a held rim note over a bottom note is still refused
+# suite: node --test --test-name-pattern ^FPD..releasing.a.held.bottom.note.over.a.rim.note.moves.it..and.a.held.rim.note.over.a.bottom.note.is.still.refused$ tests/app.test.js
+# A held bottom note released over a rim note is refused instead of moved.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12842,7 +12842,7 @@ function dropNote() {
+   if (t.kind === "swap") { dropGhost(g); activateNote(t.ref, "tap"); return; }
+   if (t.kind === "own") { dropGhost(g); swapSeats(picked.ring, picked.i, picked.i); return; }
+   const n = noteAt(picked);
+-  if (picked.ring === "bottom") {
++  if (picked.ring === "bottom" && t.kind !== "other") {
+     const o = plateOrigin();
+     const want = stepOf(angleAt(o, p.hx, p.hy));
+     const dir = p.aCame !== undefined ? turnDir(p.aCame, p.aNow) : turnDir(lastSolved.fields[n.id][4], want);

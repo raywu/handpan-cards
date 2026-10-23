@@ -6932,7 +6932,8 @@ test("DR1 rule S: notice, switches, anchors and hint match spec 16 for every she
       bad("drawer shown", M.open, shown("scale-drawer"));
       bad("status shown", M.open && M.valid, shown("scale-drawer-status"));
       if (!M.open) bad("status cleared", "", els["scale-drawer-status"].textContent);
-      bad("drawer hint", M.open && M.valid ? "Tap a note, then tap another note in the same ring to swap them. Or hold a note and drag it." : "",
+      bad("drawer hint", M.open && M.valid ? "Tap a note, then tap another note in the same ring to swap them. Or hold a note and drag it." +
+        (M.hasBottom ? " Bottom notes also slide along their ring: hold one and drag it to where it sits on your pan." : "") : "",
         shown("scale-drawer-hint") ? els["scale-drawer-hint"].textContent : "");
       for (const id of ["scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next"]) bad(`${id} shown`, false, shown(id));
       for (const id of ["scale-layout-reset", "scale-fine-toggle"]) bad(`${id} shown`, M.open, shown(id));
@@ -13507,7 +13508,7 @@ describe("FPD: seats, sole note, hint, nudge, notices and records", () => {
   });
 
   test("FPD: a scale with one bottom note opens the drawer with it pickable, a drag moves it, and the nothing-to-rearrange line never shows", () => {
-    const app = open("[C3] (A3) C4 D4 E4 F4");
+    const app = open("[C3] (A3) E4");
     assert.doesNotMatch(app.els["scale-layout-state"].textContent + app.els["scale-drawer-status"].textContent, /nothing to rearrange/i);
     d2Tap(app, "C3");
     assert.strictEqual(d2Pick(app).ring, "bottom");
@@ -13671,6 +13672,11 @@ describe("FPD: seats, sole note, hint, nudge, notices and records", () => {
     const deck = app.registry()[app.deckId()];
     const u4 = Object.values(deck.fields).filter((f) => f[3] === "bottom")[3];
     assert.strictEqual(u4[4], 20);
+    const link = "#s=6/uC3_uDb3_uEb3_(F3)_G3_Ab3_uBb3_C4_uDb4_Eb4_F4_G4_Ab4_C5_Eb5_-_F5_G5_uAb5/*F+AEOLIAN+12/between/at-,225,,20,,130/5af123";
+    const app2 = boot({ href: "https://example.test/index.html" + link });
+    assert.strictEqual(app2.location.hash, link);
+    const stored2 = JSON.parse(app2.store[app2.get("SCALES_KEY")]);
+    assert.deepStrictEqual(stored2[0].o.angles.bottom, [null, 225, null, 20, null, 130]);
   });
 
   test("FPD: after a move each hit target is centred on its drawn note, and two bottom notes at the floor at 380x780 get their actual pairwise size (about 35px)", () => {
