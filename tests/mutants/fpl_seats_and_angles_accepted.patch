@@ -1,0 +1,15 @@
+# kills: FPL: seats.bottom beside angles is BAD_NOTE, rim and inner seats beside angles are accepted
+# suite: node --test --test-name-pattern ^FPL:.seats.bottom.beside.angles tests/layout.test.js
+# A bottom seats list beside angles is accepted instead of refused.
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -645,7 +645,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       (options && "angles" in options) ? options.angles : seedOptions.angles,
+       counts);
+     if (!angles.ok) return angles;
+-    if (angles.value && wanted.value && wanted.value.bottom && wanted.value.bottom.length) {
++    if (false && angles.value && wanted.value && wanted.value.bottom && wanted.value.bottom.length) {
+       return badNote(wanted.value.bottom);
+     }
+ 

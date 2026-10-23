@@ -1,0 +1,15 @@
+# kills: FPL: an entry under the floor of another bottom note is BAD_NOTE
+# suite: node --test --test-name-pattern ^FPL:.an.entry.under.the.floor tests/layout.test.js
+# Overrides are never checked against the floor, so two bottom notes can be set on top of each other.
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -662,7 +662,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       placed = { rims: placed.rims, inners: placed.inners, bottoms: effective };
+       var merged = merge(source, zones, placed, wanted.value);
+       for (var c = 0; c < effective.length; c += 1) {
+-        if (bottomClash(geom, merged, effective, c) !== null) return badNote(angles.value.bottom);
++        if (false && bottomClash(geom, merged, effective, c) !== null) return badNote(angles.value.bottom);
+       }
+       return { ok: true, value: { geom: geom, fields: merged } };
+     }
