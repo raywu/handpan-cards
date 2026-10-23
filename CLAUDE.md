@@ -693,7 +693,15 @@ card-size and host-block titles below are in `tests/e2e.test.js`.
   wrapper) stands and the card-size test still pins it, but its reason (About as
   a fourth flex child of `body`) is gone; D21 (in-page `#deck=` links): the `hashchange` listener stands for typed and external fragments, and links inside About go through `aboutLink()` (see above); D22 (classic scrollbars) is moot because
   the page no longer scrolls to About.
-- **Structured data.** One `application/ld+json` WebApplication block; it states
+- **Structured data.** One `application/ld+json` block holds a `@graph` with a
+  WebApplication node and a WebSite node under one top-level `@context`
+  ("SN: the JSON-LD block is one @graph holding exactly one WebApplication and one WebSite node").
+  The WebSite node is named as the `<h1>`, carries the canonical `url` (equal to `og:url`)
+  and has the lowercase subdomain as its only `alternateName`
+  ("SN: the WebSite node is named as the h1, at the canonical and og:url, with only the lowercase subdomain as alternateName"),
+  and `og:site_name` appears once and equals that name ("SN: og:site_name equals the WebSite name and appears once").
+  Google's use of this markup for the displayed site name is not tested and not guaranteed
+  (no test; Google's site-names documentation). The WebApplication node states
   only what the page shows: name equals the `<h1>`, description equals the meta
   description, no rating or review, and the about section, now behind the
   ABOUT row rather than on the page, still says "free" (owner gate G5: keep
