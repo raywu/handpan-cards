@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12856,7 +12856,7 @@ mirrorTop.onclick = () => {
-   layoutStatus(t(mirror ? "sheet.mirror_top_on" : "sheet.mirror_top_off"));
+@@ -13055,7 +13055,7 @@ mirrorTop.onclick = () => {
  };
  mirrorBot.onclick = () => {
+   const was = bottomLabels();
 -  bottomHeld = !bottomHeld;
 +  bottomHeld = bottomHeld;
    if (!toggleFits()) { bottomHeld = !bottomHeld; layoutStatus(TOGGLE_REFUSED(), true); return; }
    paintLayout(); resyncSheet(true);
-   layoutStatus(t(bottomMirror() ? "sheet.mirror_bottom_on" : "sheet.mirror_bottom_off"));
+   let text = t(bottomMirror() ? "sheet.mirror_bottom_on" : "sheet.mirror_bottom_off");

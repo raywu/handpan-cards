@@ -1,0 +1,15 @@
+# kills: SO: a slide that crosses a note keeps the cyclic order: Eb3 to 90 reads Eb3 U5 and Db4 U3
+# suite: node --test --test-name-pattern ^SO..a.slide.that.crosses.a.note.keeps.the.cyclic.order..Eb3.to.90.reads.Eb3.U5.and.Db4.U3$ tests/layout.test.js
+# The cyclic match never rotates.
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -702,7 +702,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+         bestR = r;
+       }
+     }
+-    for (i = 0; i < n; i += 1) fields[ids[P[(i + bestR) % n].i]][5] = H[i].label;
++    for (i = 0; i < n; i += 1) fields[ids[P[i].i]][5] = H[i].label;
+   }
+ 
+   function solve(seedOrFields, options) {
