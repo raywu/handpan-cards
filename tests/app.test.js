@@ -3651,7 +3651,7 @@ test("PM rule 7: HANDPAN 101 is the last Resources link, a Google Doc in a new t
   const panel = pmPanel();
   const group = panel.slice(panel.indexOf('<h3 class="panel-heading">Resources</h3>'));
   const links = [...group.matchAll(/<a\b[^>]*>[\s\S]*?<\/a>/g)].map((m) => m[0]);
-  assert.ok(links.length >= 6, "six Resources links");
+  assert.ok(links.length >= 5, "five Resources links");
   const first = links[links.length - 1];
   assert.match(first, /\bid="res-handpan-101"/);
   assert.match(first, /href="https:\/\/docs\.google\.com\/document\/d\/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco\/edit\?usp=drivesdk"/);
@@ -3663,7 +3663,7 @@ test("PM rule 7: HANDPAN 101 is the last Resources link, a Google Doc in a new t
   assert.match(first, />HANDPAN 101<\/a>/);
   const rows = [...group.matchAll(/<div class="modebar([^"]*)">([\s\S]*?)<\/div>/g)];
   assert.strictEqual(rows.length, 4, "four modebar rows");
-  assert.strictEqual((rows[0][2].match(/<a\b/g) || []).length, 3, "the site row keeps three siblings");
+  assert.strictEqual((rows[0][2].match(/<a\b/g) || []).length, 2, "the site row keeps two siblings");
   assert.strictEqual((rows[1][2].match(/<a\b/g) || []).length, 2, "the Amy row keeps two");
   assert.strictEqual((rows[2][2].match(/<a\b/g) || []).length, 1, "HANDPAN 101 is alone in its row");
   assert.ok(rows[2][2].includes("res-handpan-101"));
@@ -3786,10 +3786,9 @@ test("the download is named the way the print pipeline names its files", () => {
   const full = anchor(app);
   assert.ok(full, "a desktop download is delivered through an <a download>");
   assert.strictEqual(full.clicks, 1, "the anchor was built but never activated");
-  // tools/decks.py's `if __name__ == "__main__":` block names the three shipped files, `<Name>_CHORD_ONLY_Letter.pdf`;
+  // pdfFileName() names a download `<Name>_CHORD_ONLY_<paper>.pdf`, the shape tools/decks.py main() writes;
   // the unused full-deck path names its output `<Name>_Cards_Letter.pdf`, with punctuation folded out of
-  // the deck name. A custom deck's download joins that shelf, so it takes the
-  // same shape rather than inventing a second one.
+  // the deck name. A custom deck's download takes the same shape rather than inventing a second one.
   assert.match(full.download, /^[A-Za-z0-9_]+_Cards_Letter\.pdf$/);
   app.run('downloadDeckPDF("shop")');
   assert.match(anchor(app).download, /^[A-Za-z0-9_]+_CHORD_ONLY_Letter\.pdf$/);
@@ -4652,7 +4651,7 @@ describe("panel fit judge", () => {
     delete candOver.controls["deck-add"];
     assert.strictEqual(judge(baseOver, candOver).rule2.fail.length, 1, "a base that overflows does not excuse it");
     assert.strictEqual(judge(cell(), withControl(cell(), "deck-add", { exists: false, rendered: false, disabled: false, bottom: 0 })).rule2.fail.length, 1, "exists:false counts as lacking");
-    assert.deepStrictEqual(pf.REMOVED_BY_DESIGN, ["modeS", "button:FULL DECK PDF", "button:CHORD-ONLY PDF", "share-copy"]);
+    assert.deepStrictEqual(pf.REMOVED_BY_DESIGN, ["modeS", "button:FULL DECK PDF", "button:CHORD-ONLY PDF", "share-copy", "res-trainingcards"]);
     const noS = judge(cell(), lacks("modeS"));
     assert.strictEqual(noS.rule2.fail.length, 0, "modeS is removed by design");
     assert.strictEqual(noS.rule2.reported.length, 0);
@@ -10658,7 +10657,7 @@ describe("about overlay", () => {
     assert.ok(group.lastIndexOf('id="about-open"') > group.lastIndexOf("res-handpan-101"), "ABOUT is not after HANDPAN 101");
     const app = boot();
     const resIds = [...group.matchAll(/<a[^>]*id="(res-[\w-]+)"/g)].map((m) => m[1]);
-    assert.ok(resIds.length >= 6 && resIds.includes("res-handpan-101"), "the Resources links are in the markup");
+    assert.ok(resIds.length >= 5 && resIds.includes("res-handpan-101"), "the Resources links are in the markup");
     app.run(`settingsPanel.querySelectorAll = (sel) => /res-/.test(sel) ? ${JSON.stringify(resIds)}.map((id) => ({ id, disabled: false, getClientRects: () => [{}] })) : []`);
     app.run("openPanel()");
     const ids = app.get("panelStops().map((e) => e.id)");

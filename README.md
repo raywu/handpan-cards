@@ -32,8 +32,6 @@ Chord flashcards and chord progressions for handpan scales. It runs in the brows
 
 DOWNLOAD PDF in the menu builds the chord cards for the shown scale in the browser. Pick Letter or A4. The cards are poker size, 3x3 per sheet. Print at 100% and check the calibration bar with a ruler.
 
-The three `*_CHORD_ONLY_Letter.pdf` files in the repo root are the print-shop copies, built by `python3 tools/decks.py`.
-
 ## Development
 
 Clone and run:
@@ -74,7 +72,7 @@ Tests:
     python3 tests/suite_health.py   # per-file test-count floors
     ./tests/run.sh mutants          # mutation gate (slow)
 
-There are 25 node suites and 16 python suites. The mutation gate applies 1397 mutant patches from `tests/mutants/`, and a test must fail under each one. It edits the tree in place and refuses to start on uncommitted changes to a file a patch touches, `README.md` among them, so commit first.
+There are 25 node suites and 16 python suites. The mutation gate applies 1395 mutant patches from `tests/mutants/`, and a test must fail under each one. It edits the tree in place and refuses to start on uncommitted changes to a file a patch touches, `README.md` among them, so commit first.
 
 CI runs on pull requests into `main` and on pushes to `main`. A PR that changes only `docs/plans/` or `docs/prompts/` skips every job.
 
@@ -84,4 +82,4 @@ More to read: `CLAUDE.md` (rules, verified layouts, design system, hosting), `te
 
 MIT, see `LICENSE`.
 
-The SIL Open Font License 1.1 covers the fonts in `tools/fonts/` and the subsets in `src/engine/fontdata.js`. It also covers their copies in `index.html` and the committed PDFs. See the `OFL-*.txt` files in `tools/fonts/`.
+The SIL Open Font License 1.1 covers the fonts in `tools/fonts/` and the subsets in `src/engine/fontdata.js`. It also covers their copies in `index.html`. See the `OFL-*.txt` files in `tools/fonts/`.

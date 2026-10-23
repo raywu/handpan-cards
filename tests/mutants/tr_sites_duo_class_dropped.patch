@@ -1,0 +1,15 @@
+# kills: TR-1: the two site links are equal in width on every line they share, and every label stays inside its box
+# suite: node --test --test-name-pattern TR-1:.the.two.site.links.are.equal.in.width.on.every.line.they.share..and.every.label.stays.inside.its.box tests/e2e.test.js
+# TR-2. The first Resources row loses class duo, so no duo rule reaches it (equal widths and the padding trim go).
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1698,7 +1698,7 @@ html.about-open{overflow:hidden}
+          row two (class duo as well) the two Amy Naylor videos, row three HANDPAN 101 alone (2026-10-08,
+          full width, so no existing control moves down), row four the ABOUT button
+          (an in-app view, not an outbound link: no href, no res- id). -->
+-    <div class="modebar duo">
++    <div class="modebar">
+       <a class="mode" id="res-handpaner" href="https://handpaner.com/"
+          target="_blank" rel="noopener">HANDPANER</a>
+       <a class="mode" id="res-dingandtones" href="https://www.dingandtones.com/"

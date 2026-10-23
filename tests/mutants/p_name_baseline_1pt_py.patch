@@ -1,7 +1,7 @@
-# kills: test_committed_pdfs_place_every_glyph_where_a_fresh_build_does
-# suite: python3 -m unittest -k test_committed_pdfs_place_every_glyph_where_a_fresh_build_does tests.test_pdf_build
+# kills: test_every_glyph_lands_where_print_puts_it
+# suite: python3 -m unittest -k test_every_glyph_lands_where_print_puts_it tests.test_pdf_parity
 # E3: the centred chord name's baseline drops one point (y + h - 19).
-# The text-only staleness gate cannot see it; the position check can.
+# A text-only comparison cannot see it; the position check can.
 diff --git a/tools/hifi.py b/tools/hifi.py
 --- a/tools/hifi.py
 +++ b/tools/hifi.py

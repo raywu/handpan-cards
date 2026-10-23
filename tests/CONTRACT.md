@@ -1,7 +1,7 @@
 # Test contract
 
 Read before adding a test. These rules exist because this repo's data was
-verified against physical instruments and a commercial deck; tests here LOCK
+verified against physical instruments and fixed by the owner; tests here LOCK
 that in, they do not re-derive it.
 
 ## How to run
@@ -80,7 +80,7 @@ row is a failure - add a row (0 is a fine start). Node counts come from
    a test.
    A mutant may patch a file under `tests/` when the thing that has to be proved
    live is a TEST'S OWN ORACLE rather than production code - see
-   `c_gen_pdf_oracle_blind.patch` (blinds a staleness oracle),
+   `c_gen_pdf_oracle_blind.patch` (blinds the repo-root PDF oracle),
    `f_fixture_sha.patch` (patches a fixture) and
    `d_caller_scan_counts_lines.patch` (makes the replaceRegistered caller scan
    count lines instead of occurrences). "No mutant patches tests/" is not a rule
@@ -113,8 +113,7 @@ row is a failure - add a row (0 is a fine start). Node counts come from
    `git diff --quiet origin/main -- data/decks.json index.html tools/decks.py \
    tools/hifi.py`.
    This is a reviewer check, not a CI job: making it permanent would forbid all
-   future deck-data changes, which the PDF staleness gate already handles
-   correctly by requiring a rebuild in the same commit. Bugs found are reported
+   future deck-data changes. Bugs found are reported
    with a failing-test repro, not fixed here.
 7. **Assert structure, not styling.** Read colours and fonts from the deck data;
    never hardcode a hex or a font name. A future restyle must not turn tests red.
@@ -159,4 +158,4 @@ row is a failure - add a row (0 is a fine start). Node counts come from
   in the duplicate-set figures above.
 - Page counts: full 3/7/4, printer-only 3/6/3 (the six PDFs built by
   `test_all_six_pdfs_build_with_the_expected_page_counts` in `tests/test_pdf_build.py`,
-  of which the three printer-only ones are committed; Kurd 10 and Amara 10 have none). 177 cards total.
+  none is committed). 177 cards total.

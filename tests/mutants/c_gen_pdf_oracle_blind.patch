@@ -1,22 +1,17 @@
-# kills: test_the_repo_pdfs_were_not_rebuilt
-# suite: python3 -m unittest -k test_the_repo_pdfs_were_not_rebuilt tests.test_gen_deck
-# The staleness oracle stops reading the committed PDFs, which is exactly
-# what the old version of that test did: it hashed nothing, so pointing a build
-# at the repo root would have left it green.
-# Re-cut 2026-10-08 (lane PM): three committed PDFs now. The mutation itself is unchanged.
-diff --git a/tests/test_gen_deck.py b/tests/test_gen_deck.py
---- a/tests/test_gen_deck.py
-+++ b/tests/test_gen_deck.py
-@@ -88,11 +88,7 @@ def generate(seed, *args):
+# kills: test_root_pdfs_lists_a_pdf_in_the_directory_it_is_given
+# suite: python3 -m unittest -k test_root_pdfs_lists_a_pdf_in_the_directory_it_is_given tests.test_gen_deck
+# The no-PDF-in-the-repo-root oracle goes blind: root_pdfs lists nothing, so a
+# build that wrote a PDF into the repo root would leave its tests green.
+diff --git a/tests/paths.py b/tests/paths.py
+--- a/tests/paths.py
++++ b/tests/paths.py
+@@ -18,8 +18,7 @@ PDFS = {
+ 
+ def root_pdfs(root=ROOT):
+     """Sorted names of the *.pdf files directly in `root`."""
+-    return sorted(n for n in os.listdir(root) if n.endswith(".pdf")
+-                  and os.path.isfile(os.path.join(root, n)))
++    return []
  
  
- def repo_pdf_hashes():
-     """{filename: sha256} for the three committed PDFs in the repo root."""
--    out = {}
--    for name in sorted(paths.PDFS[k] for k in paths.COMMITTED):
--        with open(os.path.join(paths.ROOT, name), "rb") as fh:
--            out[name] = hashlib.sha256(fh.read()).hexdigest()
--    return out
-+    return {}
- 
- 
+ def app_decks():
