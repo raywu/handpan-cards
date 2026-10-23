@@ -1,4 +1,4 @@
-# kills: the app pan() draws a bottom note at a re-solved default angle, not at the angle the deck's field carries
+# kills: FPP: the app pan(), pdfcards and the fixture put each bottom note at the same centre to 0.5 pt
 # suite: node --test --test-name-pattern ^FPP:.the.app.pan.*,.pdfcards.and.the.fixture.put.each.bottom.note.at.the.same.centre.to.0.5.pt$ tests/pdf.test.js
 #
 # pan() re-solves the layout without angles on non-interactive pans and reads
