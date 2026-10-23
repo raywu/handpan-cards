@@ -1,0 +1,15 @@
+# kills: FPD: a stale angles list of the wrong length is dropped by the repaint, which still draws the plate, and a list of the right length is kept
+# suite: node --test --test-name-pattern ^FPD..a.stale.angles.list.of.the.wrong.length.is.dropped.by.the.repaint..which.still.draws.the.plate..and.a.list.of.the.right.length.is.kept$ tests/app.test.js
+# fitAngles hands back a list of the wrong length.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11338,7 +11338,7 @@ function seedPalette(colors) {
+  *  length would be refused by layout.solve, and a repaint must never stop on that. */
+ function fitAngles(fields) {
+   if (!layoutAngles || !layoutAngles.bottom) return null;
+-  return layoutAngles.bottom.length === ringSizes(fields).bottom ? layoutAngles : null;
++  return layoutAngles;
+ }
+ /** The seats that fit the notes of `fields`, or null: a list of the wrong length
+  *  would be refused by layout.solve, and a repaint must never stop on that. */
