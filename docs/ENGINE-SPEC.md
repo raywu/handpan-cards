@@ -59,8 +59,8 @@ err     = {ok: false, code: <CODE>, reason: <English sentence>}
   `core.parseSeed`), plus `share.encode` below and `layout.solve` and
   `voicing.choose` under the amendment below that. They never throw on user
   input. Untrusted input reaches `core.parseSeed` and `share.decode`, and also
-  `layout.solve`, whose `options.seats` arrives from a decoded share payload or
-  a restored localStorage record and is validated by `readSeats` (section 14);
+  `layout.solve`, whose `options.seats` and `options.angles` arrive from a decoded share payload or
+  a restored localStorage record and are validated by `readSeats` and `readAngles` (section 14);
   `select.build` by contrast is handed an already-parsed seed.
 - DECIDED(swarm-2026-09-08) `core.parseSeed(string, options?)` returns, on
   success, `value` = the SEED: `{fields, options}` where `fields` is the map
@@ -69,7 +69,7 @@ err     = {ok: false, code: <CODE>, reason: <English sentence>}
   strings of section 4) and `options` is `{palette, parent, name, mirror}`
   (palette index 0-5, parent index 0-10 or `null` for "infer", name string,
   mirror boolean) plus the optional layout options `mirrorBottom` (boolean),
-  `anchor` (`"one"` or `"between"`) and `seats` (section 13), validated per
+  `anchor` (`"one"` or `"between"`), `seats` and `angles` (section 13), validated per
   section 14 and defaulting to
   `{palette: 0, parent: null, name: '', mirror: false}` when the second
   argument is omitted. `core.parseLegacySeed(string, options?)` returns the same
@@ -492,7 +492,9 @@ The field id and label scheme, read off all three built-ins in `index.html`:
   bottom ring and, when absent, follows `mirror`.
 - DECIDED(owner 2026-10, Rule N) A seat's index number belongs to the position,
   not to the note: moving a note (`options.seats`) changes the name drawn there
-  and nothing else, on the plate and on the generated cards alike.
+  and nothing else, on the plate and on the generated cards alike. The same
+  holds for `options.angles`: a bottom note placed at a chosen angle keeps its
+  seat's number.
 
 ## 5. Legality invariants for a voicing
 
@@ -776,7 +778,8 @@ Verified against all three built-ins under the fixed list order of
   id:       "custom:<8 lowercase hex>",
   name:     "<auto or user name>",
   options:  {palette: <0-5>, mirror: <bool>, parent: <0-10>,
-             mirrorBottom?: <bool>, anchor?: "one"|"between", seats?: {rim, inner, bottom}},
+             mirrorBottom?: <bool>, anchor?: "one"|"between", seats?: {rim, inner, bottom},
+             angles?: {bottom: [<multiple of 5 in 0-355 | null> per bottom note]}},
   colors:   {root, tone, ga, gb},
   degrees:  {"<pitch class 0-11 as string>": "<label>"},
   geom:     {...},
@@ -879,7 +882,7 @@ The D6 palette set, index 0-5, from `CLAUDE.md` "Design system":
   string; colours never come from the URL. Extending the set later appends
   indices and never renumbers.
 - DECIDED(owner 2026-10, replacing the right-first / left-first polarity bullet)
-  The layout options are `mirror`, `mirrorBottom`, `anchor` and `seats`.
+  The layout options are `mirror`, `mirrorBottom`, `anchor`, `seats` and `angles`.
   `mirror` (boolean, default false) reflects the rim and the inner ring about
   the vertical axis; false puts odd-numbered notes on the right, even on the
   left, on every deck. `mirrorBottom` (boolean) reflects the bottom ring and,
@@ -895,6 +898,18 @@ The D6 palette set, index 0-5, from `CLAUDE.md` "Design system":
   converts the legacy flat `order` of share versions 1 and 2; `layout.reseat`
   applies a correction last, to the note-to-seat assignment. Rule N applies:
   seat numbers belong to positions.
+- DECIDED(plan 2026-10-23, free note placement) `angles` is `{bottom: [...]}`:
+  one entry per bottom note (ascending id), each an integer multiple of 5 in
+  [0, 360) or `null` for the solved angle, validated by `layout.readAngles`
+  (any other shape is `BAD_NOTE`; an absent or all-null list reads as absent).
+  The override is written last, after `mirrorBottom` and `seats`, into slot 4 of
+  the bottom fields only; geometry is computed from the default placement, so
+  `geom` is byte-identical with and without it. A floor applies to the
+  effective list (`layout.bottomClash`): two bottom notes closer than the
+  smallest multiple of 5 strictly above their touching angle (capped by the
+  default gap), or a bottom note meeting a rim, inner or ding circle, is
+  `BAD_NOTE`. `seats.bottom` beside `angles` is `BAD_NOTE`; rim and inner seats
+  are accepted.
 - DECIDED(owner-review 2026-09-08) The built-ins never consult the layout
   options, because their `geom` and angles are literals that bypass the solver.
 - DECIDED(plan [design-review 5A]) The auto deck name is
