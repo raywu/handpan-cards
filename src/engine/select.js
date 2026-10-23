@@ -230,7 +230,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   //
   // An alternate earns its card only when a NON-ROOT tone moves field AND the
   // register class changes. A candidate where only the root moves is the
-  // shape the commercial Amara reference omits five times over, so
+  // shape the shipped Amara 9 cards omit five times over, so
   // reproducing Amara exactly and keeping those are not simultaneously
   // satisfiable (decision 3).
   var ALTERNATE_CAP = 3;                /* cards per chord name */
