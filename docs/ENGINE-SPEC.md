@@ -559,7 +559,7 @@ These hold for EVERY voicing the engine emits, built-in fixture or generated.
   by the same test, not by a "bottom-only" reading). That is the operative test, exactly as
   `tests/test_deck_data.py::test_forced_tones_cluster_below_root` implements
   it. Amara and Hijaz have no bottom shell, so the clause is vacuous there and
-  the commercial reference's three forced cards (G5, Gsus4, Fmaj7) are
+  the Amara 9 deck's three forced cards (G5, Gsus4, Fmaj7) are
   preserved by construction, not by exception.
 - DECIDED(D2, CLAUDE.md rule 3) When the chord is forced, every CHORD TONE
   (3rd, 5th, 7th; the 4th of a sus chord; the 6th of a 6-chord) moves to its
