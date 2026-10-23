@@ -3136,7 +3136,9 @@ HPE.pdfcards = (function () {
   }
 
   function fitClip(text, font, size, maxw, track, floor) {
-    var s = fit(text, font, size, maxw, track, floor);
+    floor = floor === undefined ? 3.6 : floor;
+    var s = size;
+    while (s > floor && tw(text, font, s, track) > maxw) s = Math.max(floor, s - 0.25);
     if (tw(text, font, s, track) <= maxw) return { text: text, size: s };
     var t = text;
     while (t.length > 1 && tw(t.replace(/\s+$/, "") + "...", font, s, track) > maxw) {
