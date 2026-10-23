@@ -49,7 +49,7 @@ FLOORS = {
     "tests/test_pdf_deck_adapter.py": 4,
     "tests/test_pdf_parity.py": 13,
     "tests/test_icons.py": 4,
-    "tests/test_site_files.py": 6,
+    "tests/test_site_files.py": 8,
     "tests/test_ci_scope.py": 5,
     # node
     "tests/app.test.js": 766,
