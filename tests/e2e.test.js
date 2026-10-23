@@ -49,6 +49,15 @@ function run() {
   let server = null;
   let spawnError = null;
   let b = null;
+  /** index.html with a de table whose every value is the English value in brackets (the app.test.js pseudo table). */
+  function pseudoDeHtml() {
+    const en = JSON.parse(fs.readFileSync(path.join(REPO, "data", "i18n", "en.json"), "utf8"));
+    const wrap = (v) => (typeof v === "string" ? "\u27e6" + v + "\u27e7"
+      : Object.fromEntries(Object.entries(v).map(([k, x]) => [k, "\u27e6" + x + "\u27e7"])));
+    const de = Object.fromEntries(Object.entries(en).map(([k, v]) => [k, wrap(v)]));
+    return fs.readFileSync(path.join(REPO, "index.html"), "utf8")
+      .replace(/const I18N = \{.*\};/, () => "const I18N = " + JSON.stringify({ en, de }) + ";");
+  }
 
   /* ---------------------------------------------------------------- *
    * server + browser lifecycle
@@ -65,6 +74,11 @@ function run() {
       // NB: the URL const above shadows the global URL class here, so the path
       // is split by hand rather than parsed.
       const rel = decodeURIComponent((req.url || "/").split("?")[0]).replace(/^\/+/, "");
+      if (rel === "__pseudo_de.html") {
+        res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
+        res.end(pseudoDeHtml());
+        return;
+      }
       const file = path.resolve(REPO, rel || "index.html");
       if (!file.startsWith(REPO + path.sep)) { res.writeHead(403).end(); return; }
       fs.readFile(file, (err, buf) => {
@@ -1400,8 +1414,11 @@ function run() {
     const g = row.closest(".panel-group"), p = document.getElementById("settings-panel");
     const read = () => ({ over: p.scrollHeight - p.clientHeight, g: g.getBoundingClientRect().height });
     const ab = document.getElementById("about-open").parentElement;
-    const w = read(); row.style.display = "none"; ab.style.display = "none"; const wo = read(); row.style.display = ""; ab.style.display = "";
-    return { cost: w.g - wo.g, overWith: w.over, overWithout: wo.over };
+    const lg = document.getElementById("lang-select").closest(".panel-group");
+    const lr = lg.getBoundingClientRect(), rr = g.getBoundingClientRect();
+    const langCost = lr.top >= rr.bottom - 1 ? lr.height + (lr.top - rr.bottom) : 0;
+    const w = read(); row.style.display = "none"; ab.style.display = "none"; lg.style.display = "none"; const wo = read(); row.style.display = ""; ab.style.display = ""; lg.style.display = "";
+    return { cost: w.g - wo.g, langCost, overWith: w.over, overWithout: wo.over };
   })()`;
   // The Amy row's own contribution to the scroll, within 1px: it adds between
   // nothing (a landscape grid column other than the tallest one) and its full
@@ -1409,8 +1426,8 @@ function run() {
   const assertAmyScroll = (label, a) => {
     assert.ok(a.cost > 40, `${label}: the Amy row costs ${a.cost}px, it is not rendered`);
     const d = a.overWith - Math.max(a.overWithout, 0);
-    assert.ok(d >= -1 && d <= a.cost + 1,
-      `${label}: the panel scrolls by ${a.overWith}px, expected main's ${a.overWithout}px plus at most the Amy row's ${a.cost}px`);
+    assert.ok(d >= -1 && d <= a.cost + a.langCost + 1,
+      `${label}: the panel scrolls by ${a.overWith}px, expected main's ${a.overWithout}px plus at most the Amy row's ${a.cost}px and the Language group's ${a.langCost}px`);
   };
 
   test("Tab is trapped inside the settings panel and cycles every stop, wrapping both ways",
@@ -1829,11 +1846,11 @@ function run() {
               assert.ok(Math.abs(amy.overWithout - want) <= 1,
                 `${label}: without the Amy row the panel scrolls by ${amy.overWithout}px, expected main's spare used up plus H + g = ${want}px`);
               assert.ok(m.scrollH - m.clientH > 0, `${label}: the cell must really scroll (two-sided)`);
-              assert.deepStrictEqual(m.offscreen.filter((id) => !id.startsWith("res-") && id !== "about-open"), [],
-                `${label}: only the Resources links and ABOUT may be below the fold`);
+              assert.deepStrictEqual(m.offscreen.filter((id) => !id.startsWith("res-") && id !== "about-open" && id !== "lang-select"), [],
+                `${label}: only the Resources links, ABOUT and Language may be below the fold`);
             } else if (newlyScrolls) {
-              assert.deepStrictEqual(m.offscreen.filter((id) => !id.startsWith("res-") && id !== "about-open"), [],
-                `${label}: only the Resources links and ABOUT may be below the fold once the Amy row makes the panel scroll`);
+              assert.deepStrictEqual(m.offscreen.filter((id) => !id.startsWith("res-") && id !== "about-open" && id !== "lang-select"), [],
+                `${label}: only the Resources links, ABOUT and Language may be below the fold once the Amy row makes the panel scroll`);
             } else {
               assert.ok(m.scrollH <= m.clientH + 1,
                 `${label}: panel content (${m.scrollH}px) overflows its own box (${m.clientH}px) vertically`);
@@ -1984,7 +2001,7 @@ function run() {
             // Lane W: the sites row is one line, 56px less in the sidebar.
             const mainNeeded = (process.platform === "linux" ? 607.75 : 611.75) - 56;
             const want = Math.max(0, mainNeeded + hg - m.clientH);
-            const wantWith = Math.max(0, mainNeeded + hg + amy.cost - m.clientH);
+            const wantWith = Math.max(0, mainNeeded + hg + amy.cost + amy.langCost - m.clientH);
             assert.ok(Math.abs(m.scrollH - m.clientH - wantWith) <= 1,
               `${label}: with the Amy row the cell scrolls by ${m.scrollH - m.clientH}px, expected ${wantWith}px`);
             assert.ok(Math.abs(amy.overWithout - want) <= 1,
@@ -9653,8 +9670,8 @@ function run() {
           if (m.over > 1) {
             assert.deepStrictEqual(m.reach, [], `${label}: a control lies beyond the scrollable height`);
             if (m.amy.overWithout <= 1) {
-              assert.deepStrictEqual(m.off.filter((id) => !id.startsWith("res-")), [],
-                `${label}: only the Resources links and ABOUT may be below the fold once the Amy row makes the cell scroll`);
+              assert.deepStrictEqual(m.off.filter((id) => !id.startsWith("res-") && id !== "lang-select"), [],
+                `${label}: only the Resources links, ABOUT and Language may be below the fold once the Amy row makes the cell scroll`);
             }
           } else {
             assert.deepStrictEqual(m.off, [], `${label}: controls offscreen: ${JSON.stringify(m.off)}`);
@@ -9933,7 +9950,7 @@ function run() {
     // exclusive practice buttons. There is no #modeS and no disabled state.
     const FLASH_STOPS = ["settings-trigger", "modeA", "modeB", "tier-basic", "tier-intermediate",
       "tier-advanced", "deck-add", "print-download", "print-paper-select", ...RES_IDS,
-      "about-open"];
+      "about-open", "lang-select"];
     const PROG_STOPS = [...FLASH_STOPS.slice(0, 6), "seq-source-link", ...FLASH_STOPS.slice(6)];
     const MODAL_VIEWPORTS = [[320, 568, true], [768, 1024, true], [568, 320, true], [683, 330, true], [844, 390, true]];
     const pressedFive = () => b.eval(`return ["modeA", "modeB", "tier-basic", "tier-intermediate", "tier-advanced"]
@@ -10100,7 +10117,7 @@ function run() {
         assert.deepStrictEqual(r.groupHeadings, [["H3", "panel-heading", "Flash cards"], ["H3", "panel-heading", "Chord progression"]], `mode ${mode}`);
         assert.deepStrictEqual(r.order, [true, true, true], `mode ${mode}: Flash cards before modeA, Chord progression between modeB and the tiers`);
         assert.strictEqual(r.secondRendered, true, `mode ${mode}: the second heading renders in both states`);
-        assert.strictEqual(r.h3Count, 5, `mode ${mode}: five h3 in all`);
+        assert.strictEqual(r.h3Count, 6, `mode ${mode}: six h3 in all`);
         assert.ok(!r.h3Texts.includes("Practice"), `mode ${mode}: no heading is named Practice`);
         assert.ok(r.stops[0].every((t) => t === -1), `mode ${mode}: a heading is a Tab stop`);
       }
@@ -13242,9 +13259,13 @@ function run() {
               ar.style.display = "none";
               const neededNoAbout = window.__pf.one(m).needed;
               ar.style.display = "";
+              const lg = document.getElementById("lang-select").parentElement;
+              lg.style.display = "none";
+              const neededNoLang = window.__pf.one(m).needed;
+              lg.style.display = "";
               window.__pf.one(m);
               const ph = document.getElementById("panel-prog-heading");
-              return { needed: c.needed, neededNoAbout,
+              return { needed: c.needed, neededNoAbout, langCost: c.needed - neededNoLang,
                 groups: [...document.querySelectorAll("#settings-panel > .panel-group")].map((g) => g.getBoundingClientRect().height),
                 mt: ph ? parseFloat(getComputedStyle(ph).marginTop) : null,
                 sp1: parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--sp-1")),
@@ -13268,8 +13289,9 @@ function run() {
             // In landscape progression the About term (needed - neededNoAbout) already absorbs a 2.5px change.
             const siteNeeded = delta && siteDrop < 5 && m === "S" ? 0 : siteDrop;
             const dPm = (delta ? PM_NEEDED_L[tableKey(fm)][key][i] : dPrint + dRes) + (delta ? g.needed - g.neededNoAbout : dAbout);
-            assert.ok(Math.abs(g.needed - (want[i] + d * g.hg + amyNeeded + dPm - siteNeeded)) <= 0.5,
-              `${where}: needed ${g.needed}px, expected main ${want[i]} + ${d ? "H + g = " + g.hg : "0"} + the Amy row ${amyNeeded} + PM ${dPm} - site link ${siteNeeded}`);
+            assert.ok(g.langCost >= 0, where + ": the Language group shrinks the panel");
+            assert.ok(Math.abs(g.needed - (want[i] + d * g.hg + amyNeeded + dPm - siteNeeded + g.langCost)) <= 0.5,
+              `${where}: needed ${g.needed}px, expected main ${want[i]} + ${d ? "H + g = " + g.hg : "0"} + the Amy row ${amyNeeded} + PM ${dPm} + Language ${g.langCost} - site link ${siteNeeded}`);
             assert.ok(Math.abs(g.groups[0] - (wantG[0] + g.hg)) <= 0.5, `${where}: the first group is ${g.groups[0]}px, expected main ${wantG[0]} + ${g.hg}`);
             const plus = [0, 0, dPrint, amyRes + dRes + dAbout];
             for (let k = 1; k < 4; k++) assert.ok(Math.abs(g.groups[k] - (wantG[k] + plus[k] - (k === 3 ? siteDrop : 0))) <= 0.5, `${where}: group ${k} is ${g.groups[k]}px, main has ${wantG[k]}px plus ${plus[k]}`);
@@ -14006,6 +14028,71 @@ function run() {
         assert.deepStrictEqual(urls.filter((u) => !/^data:/.test(u)), [], "setting lang made a request");
       } finally {
         await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("I18N: under every present table the panel, sheet and About fit at 320, 380, 844 and 1280", async () => {
+      const pseudoUrl = URL.replace(/index\.html$/, "__pseudo_de.html");
+      const SEL = ".mode, .prints button, .prints select, .panel-heading, .panel-note";
+      const measure = (scope) => b.eval(`
+        const root = document.querySelector(${JSON.stringify(scope)});
+        const lines = (el) => {
+          const r = document.createRange();
+          r.selectNodeContents(el);
+          return new Set(Array.from(r.getClientRects()).filter((x) => x.width > 0).map((x) => Math.round(x.top / 4))).size;
+        };
+        const els = Array.from(root.querySelectorAll(${JSON.stringify(SEL)})).filter((e) => e.getClientRects().length);
+        const paper = document.getElementById("print-paper-select");
+        const ctx = document.createElement("canvas").getContext("2d");
+        const cs = getComputedStyle(paper);
+        ctx.font = cs.fontWeight + " " + cs.fontSize + " " + cs.fontFamily;
+        const widest = Math.max(...Array.from(paper.options).map((o) => ctx.measureText(o.text).width + o.text.length * parseFloat(cs.letterSpacing || 0)));
+        return { rows: els.map((e) => [e.id || e.className + ":" + e.tagName, lines(e), e.scrollWidth <= e.clientWidth + 1]),
+                 paperRoom: paper.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - widest,
+                 sw: root.scrollWidth - root.clientWidth, dsw: document.documentElement.scrollWidth - document.documentElement.clientWidth };`);
+      const pass = async (url, lang, w, h) => {
+        await b.setViewport(w, h, false);
+        await b.eval(`try { localStorage.clear(); } catch (e) {} return true;`);
+        await navigate(url);
+        await b.settle();
+        await openSettingsPanel();
+        if (lang !== "en") {
+          await b.eval(`const s = document.getElementById("lang-select"); s.value = ${JSON.stringify(lang)}; s.dispatchEvent(new Event("change", { bubbles: true })); return true;`);
+          await b.waitFor(`document.documentElement.lang === ${JSON.stringify(lang)}`, { label: "the language to apply" });
+        }
+        const out = { panel: await measure("#settings-panel") };
+        await b.click("#deck-add");
+        await b.waitFor(`document.getElementById("scale-sheet") && !document.getElementById("scale-sheet").hidden`, { label: "the sheet to open" });
+        out.sheet = await b.eval(`const s = document.getElementById("scale-sheet");
+          return { sw: s.scrollWidth - s.clientWidth, dsw: document.documentElement.scrollWidth - document.documentElement.clientWidth };`);
+        await b.click("#scale-back");
+        await b.waitFor(`document.getElementById("scale-sheet").hidden`, { label: "the sheet to close" });
+        await openSettingsPanel();
+        await b.eval(`document.getElementById("about-open").scrollIntoView({ block: "center" }); return true;`);
+        await b.settle();
+        await b.click("#about-open");
+        await b.waitFor(`document.getElementById("about").hidden === false`, { label: "About to open" });
+        out.about = await b.eval(`const a = document.getElementById("about");
+          return { sw: a.scrollWidth - a.clientWidth, dsw: document.documentElement.scrollWidth - document.documentElement.clientWidth };`);
+        return out;
+      };
+      try {
+        for (const [w, h] of [[320, 568], [380, 780], [844, 390], [1280, 800]]) {
+          const base = await pass(URL, "en", w, h);
+          const de = await pass(pseudoUrl, "de", w, h);
+          for (const [label, m] of [["en", base], ["de", de]]) {
+            const where = `${label} ${w}x${h}`;
+            assert.ok(m.panel.sw <= 0 && m.panel.dsw <= 0, `${where}: the panel scrolls horizontally`);
+            if (label === "en") for (const [id, , fits] of m.panel.rows) assert.ok(fits, `${where}: ${id} overflows its box`);
+            if (label === "en") assert.ok(m.panel.paperRoom >= -0.5, `${where}: the paper select does not show its full option text (${m.panel.paperRoom}px)`);
+            for (const k of ["sheet", "about"]) assert.ok(m[k].sw <= 0 && m[k].dsw <= 0, `${where}: ${k} scrolls horizontally`);
+          }
+          de.panel.rows.forEach(([id, n], i) => assert.ok(n <= base.panel.rows[i][1] + 1,
+            `${w}x${h}: ${id} takes ${n} lines against English ${base.panel.rows[i][1]} (the brackets of the pseudo table may add one)`));
+        }
+      } finally {
+        await b.setViewport(900, 900, false);
+        await b.eval(`try { localStorage.clear(); } catch (e) {} return true;`).catch(() => {});
       }
     });
 
