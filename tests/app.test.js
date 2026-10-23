@@ -5680,7 +5680,7 @@ test("S3: seats, anchor and a one-ring mirror travel through a share link and re
   assert.strictEqual(made.ok, true, made.reason);
   const url = link(app, made.value.id);
   assert.strictEqual(url.ok, true, url.reason);
-  assert.strictEqual(payload(url.value).charAt(0), "5");
+  assert.strictEqual(payload(url.value).charAt(0), "6");
 
   const other = boot();
   const opened = openShare(other, payload(url.value));
@@ -8379,7 +8379,7 @@ test("rule N matrix: every scale, anchor, mirror and swap count keeps each ring'
   }
 });
 
-test("rule N: a moved deck's stored record is the string main wrote and its share link is the v5 string", () => {
+test("rule N: a moved deck's stored record is the string main wrote and its share link is the v6 string", () => {
   const app = boot();
   const made = app.generate(DR3_D3, { seats: DR3_SWAPPED, anchor: "between", mirror: true });
   assert.strictEqual(made.ok, true, made.reason);
@@ -8389,7 +8389,7 @@ test("rule N: a moved deck's stored record is the string main wrote and its shar
     o: { palette: 0, mirror: true, mirrorBottom: true, anchor: "between", parent: 1, seats: DR3_SWAPPED },
   }]);
   assert.strictEqual(plain(app.get(`shareLink(${expr})`)).value,
-    "https://example.test/index.html#s=5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/parent-aeolian/mirror/between/seats-1,0,2,3,4,5,6,7;;/975b6c");
+    "https://example.test/index.html#s=6/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/parent-aeolian/mirror/between/seats-1,0,2,3,4,5,6,7;;/61d4aa");
   assert.strictEqual(app.get(`HPE.core.formatSeed(${expr}.fields)`), DR3_D3);
 });
 
@@ -9912,22 +9912,23 @@ describe("share url", () => {
   // between anchor and parent 1: the string main wrote for it (rule N).
   const V4_MOVED = "4A4GpAI11Co13D214D215D216D217D211D213DGem2J49CGan2GenB30iCYmpB3GiDImsB3SxEmgT2O_m";
   const V5_MOVED = "5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/parent-aeolian/mirror/between/seats-1,0,2,3,4,5,6,7;;/975b6c";
+  const V6_MOVED = "6/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/parent-aeolian/mirror/between/seats-1,0,2,3,4,5,6,7;;/61d4aa";
 
-  test("SV: a v4 #s= boot imports once and ends with the v5 code in the bar through one replaceState", () => {
+  test("SV: a v4 #s= boot imports once and ends with the v6 code in the bar through one replaceState", () => {
     const app = bootGA({ href: PAGE + "#s=" + V4_MOVED });
-    assert.strictEqual(app.location.hash, "#s=" + V5_MOVED);
+    assert.strictEqual(app.location.hash, "#s=" + V6_MOVED);
     assert.strictEqual(gaEvents(app).filter((e) => e === "share_open").length, 1);
     assert.deepStrictEqual(app.history.calls.map((c) => c.type), ["replace"]);
     assert.strictEqual(app.deckId(), plain(app.get("HPE.core.deckId(HPE.core.parseSeed(" + JSON.stringify(DR3_D3) + ", {}).value.fields)")));
   });
 
-  test("SV: a hashchange to the v4 spelling of the deck shown rewrites the bar to v5 and imports nothing", () => {
+  test("SV: a hashchange to the v4 spelling of the deck shown rewrites the bar to v6 and imports nothing", () => {
     const app = bootGA({ href: PAGE + "#s=" + V4_MOVED });
     const saved = plain(app.get("savedScales()"));
     const events = gaEvents(app).length;
     const calls = app.history.calls.length;
     app.hashchange("#s=" + V4_MOVED);
-    assert.strictEqual(app.location.hash, "#s=" + V5_MOVED);
+    assert.strictEqual(app.location.hash, "#s=" + V6_MOVED);
     assert.deepStrictEqual(app.history.calls.slice(calls).map((c) => c.type), ["replace"]);
     assert.deepStrictEqual(plain(app.get("savedScales()")), saved);
     assert.strictEqual(gaEvents(app).length, events);
@@ -9941,13 +9942,33 @@ describe("share url", () => {
     const unsorted = V5_MOVED.replace("(D3)_A3_C4_D4_E4_F4_G4_A4_C5", "(D3)_C4_A3_D4_E4_G4_F4_A4_C5");
     assert.notStrictEqual(unsorted, V5_MOVED);
     app.hashchange("#s=" + unsorted);
-    assert.strictEqual(app.location.hash, "#s=" + V5_MOVED);
+    assert.strictEqual(app.location.hash, "#s=" + V6_MOVED);
     assert.deepStrictEqual(app.history.calls.slice(calls).map((c) => c.type), ["replace"]);
     assert.deepStrictEqual(plain(app.get("savedScales()")), saved);
     assert.strictEqual(gaEvents(app).length, events);
   });
 
-  test("SV: stored records keep v 4 after a v5 boot", () => {
+  test("FPS: a v5 #s= boot imports once and ends with the v6 code in the bar through one replaceState", () => {
+    const app = bootGA({ href: PAGE + "#s=" + V5_MOVED });
+    assert.strictEqual(app.location.hash, "#s=" + V6_MOVED);
+    assert.strictEqual(gaEvents(app).filter((e) => e === "share_open").length, 1);
+    assert.deepStrictEqual(app.history.calls.map((c) => c.type), ["replace"]);
+    assert.strictEqual(plain(app.get("savedScales()")).length, 1);
+  });
+
+  test("FPS: a hashchange to the v5 spelling of the deck shown rewrites the bar to v6 and imports nothing", () => {
+    const app = bootGA({ href: PAGE + "#s=" + V6_MOVED });
+    const saved = plain(app.get("savedScales()"));
+    const events = gaEvents(app).length;
+    const calls = app.history.calls.length;
+    app.hashchange("#s=" + V5_MOVED);
+    assert.strictEqual(app.location.hash, "#s=" + V6_MOVED);
+    assert.deepStrictEqual(app.history.calls.slice(calls).map((c) => c.type), ["replace"]);
+    assert.deepStrictEqual(plain(app.get("savedScales()")), saved);
+    assert.strictEqual(gaEvents(app).length, events);
+  });
+
+  test("FPS: stored records keep v 4 after a v6 boot", () => {
     const app = bootGA({ href: PAGE + "#s=" + V4_MOVED });
     const saved = plain(app.get("savedScales()"));
     assert.strictEqual(saved.length, 1);
