@@ -11,12 +11,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8796,7 +8796,7 @@ function buildChips() {
+@@ -10745,7 +10745,7 @@ function buildChips() {
        // and an accessible name built from the full one stops containing the
        // visible string - WCAG 2.5.3 Label-in-Name, which is what Voice
        // Control matches "tap <the words I can see>" against.
--      b.setAttribute("aria-label", "Edit " + chipLabel(d.name));
-+      b.setAttribute("aria-label", "Edit " + d.name);
+-      b.setAttribute("aria-label", t("sheet.edit_aria", { name: chipLabel(d.name) }));
++      b.setAttribute("aria-label", t("sheet.edit_aria", { name: d.name }));
      }
      // [design-review 7A] the ALREADY-SELECTED chip is the one and only way into
      // the sheet; every other chip just selects its deck. Seeded and custom decks

@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -5952,7 +5952,7 @@ let seq = null;
- const SEQ_STYLE_COPY = {
-   "together": ["All at once", "Strike every note of the chord together, then let it ring before the next one"],
-   "arpeggio": ["Arpeggio", "Play the notes one at a time, low to high, then come back down"],
--  "three-over-two": ["3:2 polyrhythm", "One hand plays three even strokes while the other plays two, in the same span"],
-+  "three-over-two": ["3 over 2", "One hand plays three even strokes while the other plays two, in the same span"],
-   "three-three-two": ["3-3-2", "Group your strokes 3 + 3 + 2 and keep the cycle going through each chord"],
-   "paradiddle": ["Paradiddle", "Right-left-right-right, left-right-left-left, moving the strokes across the chord's notes"],
-   "groove": ["Groove", "Keep one chord shape and add slaps, soft ghost notes, or move the accent around"],
+@@ -9648,7 +9648,7 @@ let seq = null;
+ // HPE.sequence.STYLES ids.
+ const SEQ_STYLE_COPY = {};
+ for (const id of ["together", "arpeggio", "three-over-two", "three-three-two", "paradiddle", "groove", "freestyle"]) {
+-  Object.defineProperty(SEQ_STYLE_COPY, id, { enumerable: true, get: () => [t("style." + id + ".name"), t("style." + id + ".tip")] });
++  Object.defineProperty(SEQ_STYLE_COPY, id, { enumerable: true, get: () => [id === "three-over-two" ? "3 over 2" : t("style." + id + ".name"), t("style." + id + ".tip")] });
+ }
+ 
+ // Generated decks live here, keyed by deck id, so the DECKS literal above stays

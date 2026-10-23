@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10738,7 +10738,7 @@ function collapseLip() {
+@@ -11246,7 +11246,7 @@ function collapseLip() {
    lipDirty = false;
    sheet.classList.add("lipnow", "lipped");
    lipBtn.hidden = false;
--  lipBtn.setAttribute("aria-label", "Show " + lipPrimary().textContent);
-+  lipBtn.setAttribute("aria-label", "Show GENERATE CARDS");
+-  lipBtn.setAttribute("aria-label", t("sheet.lip_show", { label: lipPrimary().textContent }));
++  lipBtn.setAttribute("aria-label", t("sheet.lip_show", { label: "GENERATE CARDS" }));
    lipWrite(open);
    lipFlush();
    sheet.classList.remove("lipnow");

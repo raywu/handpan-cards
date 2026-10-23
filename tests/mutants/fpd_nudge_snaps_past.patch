@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11541,7 +11541,7 @@ function slideNote(ref, want, how, dir) {
+@@ -11800,7 +11800,7 @@ function slideNote(ref, want, how, dir) {
    let spot;
    if (how === "nudge") {
      const hit = clashAt(home, withAngle(base, n.i, want), n.i);
--    if (hit !== null) { layoutStatus(`${fieldName(hit)} is in the way.`, true); return false; }
-+    if (false) { layoutStatus(`${fieldName(hit)} is in the way.`, true); return false; }
+-    if (hit !== null) { layoutStatus(t("sheet.in_way", { name: fieldName(hit) }), true); return false; }
++    if (false) { layoutStatus(t("sheet.in_way", { name: fieldName(hit) }), true); return false; }
      spot = { angle: want, hit: null };
    } else {
      spot = landAt(home, base, n.i, want, dir);
