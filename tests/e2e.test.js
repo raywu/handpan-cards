@@ -15010,6 +15010,17 @@ function run() {
       } finally { await spaReset(); }
     });
 
+    test("OF: PD a reorder typed on the Scale tab shows 'The rim now follows the order listed.' in the drawer status when the Layout tab is opened", { timeout: 120000 }, async () => {
+      try {
+        await spaOpen(380, 780);
+        await typeScale(OF_NAMED);
+        await b.click("#scale-tab-layout");
+        const st = await b.eval(`const e = document.getElementById("scale-drawer-status"); return { hidden: e.hidden, text: e.textContent };`);
+        assert.strictEqual(st.hidden, false);
+        assert.match(st.text, /The rim now follows the order listed\./);
+      } finally { await spaReset(); }
+    });
+
     test("SPA: the shut footer is 9px, the 32x3 pill sits 3px above the footer's bottom and is centred, and the tap zone is 25px with its bottom on the surface's bottom above the inset", { timeout: 90000 }, async () => {
       try {
         let inset = 0;
