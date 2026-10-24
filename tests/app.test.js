@@ -14481,12 +14481,12 @@ describe("I18N", () => {
     const contract = JSON.parse(fs.readFileSync(path.join(ROOT, "tests", "fixtures", "i18n_contract_v1.json"), "utf8"));
     const locales = ["en", ...ALL];
     const counts = (s) => {
-      const out = {};
+      const out = new Map();
       for (const token of s.match(/\{\w+\}/g) || []) {
         const name = token.slice(1, -1);
-        out[name] = (out[name] || 0) + 1;
+        out.set(name, (out.get(name) || 0) + 1);
       }
-      return out;
+      return Object.fromEntries(out);
     };
     const edges = (s) => [s.match(/^\s*/u)[0], s.match(/\s*$/u)[0]];
     const isPlural = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
