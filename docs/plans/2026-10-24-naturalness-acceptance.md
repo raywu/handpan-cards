@@ -1,22 +1,20 @@
-# Reviewed Naturalness acceptance artifact
+# Reviewed Naturalness acceptance artifact — v5
 
-This preserves the exact temporary script for fresh-session reproducibility.
-Extract the JavaScript block verbatim to a disposable directory, verify its
-SHA256, and follow the plan below. It requires an inspected clean project
-checkout, existing Node/CDP helper, installed Chrome and project fonts. Reserve
-the integrator's sole browser lease. This is an acceptance artifact, not an
-installed workflow, production helper repair or full-Mac-suite fix.
+Preserved for fresh-session reproducibility. Extract the JavaScript verbatim,
+verify SHA256 and follow the plan below. Reserve the sole host browser lease.
+This is an acceptance experiment, not an installed workflow or Mac-suite repair.
 
-Script SHA256: `8bb0b39891b07391f6c924e0c551fdf51dcdd0efdbfe769769a4b2c61ab4c3ac`.
-Plan SHA256: `91b4652a897419d1e3b75d52697a4bc96e810fef36ec0f2ab882914b8ab8bbca`.
-Independent engineering9.5 and UX/spec9.8 source reviews cleared this revision.
-The script follows binding sheet-tabs S1: Scale has no preview; positive fields
-are checked there and96positive Layout preview/SVG checks are separate. A prior
-English-only run exposed the superseded/vacuous DI pan check; no app/tab/CSS
-change was made. Its failure and independently verified stale-lease recovery
-remain retained. The earlier reviewed source is recoverable from commit16302bfd.
-This revised snapshot precedes execution; source review is not runtime acceptance.
-Final results and exact refs belong in the workstream receipt.
+Script SHA256: `1bc5cb48e2bf09273c1f0e8e05a6f0cd4d3afaae0a1b12251feb38d6824c71cc`.
+Plan SHA256: `ab45cb83c03d3a2647dcdece9f3fd7bb43552f3f03719f1c67bd56128977a56f`.
+Independent engineering9.5 and UX/spec9.8 source reviews cleared v5 before execution.
+Earlier source and failure evidence remain preserved: v3 at16302bfd, v4 at8de49558.
+Run3 passed English380 and failed English844 on center-hit reachability after
+field focus pinning. V5 adds causal metrics and one trusted bounded wheel
+handoff; strict visibility, focus and matrix checks remain. Source clearance
+is not runtime acceptance; no partial run is a48-journey pass.
+
+Claude compatibility: no CLAUDE.md changes or Claude behavior changes are
+permitted. Any CLAUDE.md proposal needs explicit owner approval.
 
 ## Exact script
 
@@ -79,7 +77,7 @@ const report = {
   languages, views, fonts: ['real', 'fallback'], fixture: { fields: VALUES, line: LINE, name: NAME },
   environment: { node: process.version, platform: process.platform, arch: process.arch, chrome: helper.findBrowser(), controlledOverridesAbsent: controlled },
   lease: { path: leasePath, owner: opt['--lease-owner'], nodePid: process.pid, cooperative: true },
-  passed: false, skipped: 0, records: [], identities: [], ownedBrowsers: [], helperLaunchCalls: [], cleanup: [], errors: [],
+  passed: false, skipped: 0, records: [], reachDiagnostics: [], identities: [], ownedBrowsers: [], helperLaunchCalls: [], cleanup: [], errors: [],
   limitations: [
     'Targeted48-cell acceptance only; does not establish full Mac-suite repair, full Linux CI, or native-human language quality.',
     'Page.bringToFront is an explicit foreground-interaction precondition; the existing20s CDP request and500ms settle ceiling are unchanged.',
@@ -158,6 +156,13 @@ function finalize(reason) {
     // returned Browser objects. Wait briefly for ownership, otherwise retain lease.
     if (launchPromise) await Promise.race([launchPromise.catch(() => {}), sleep(3000)]);
     if (restoreLaunchObservation) restoreLaunchObservation();
+    if (report.errors.length && browser) {
+      try {
+        const shot = await browser.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
+        const file = OUT.replace(/\.json$/, '') + '-failure.png';
+        fs.writeFileSync(file, Buffer.from(shot.data, 'base64'), { flag: 'wx' }); report.failureScreenshot = file;
+      } catch (e) { report.failureScreenshotError = e.message; }
+    }
     try { await closeBrowser(); } catch (e) { report.errors.push({ context: 'cleanup', message: e.message }); }
     try { await closeServer(); } catch (e) { report.errors.push({ context: 'server cleanup', message: e.message }); }
     releaseLease();
@@ -174,13 +179,45 @@ const timer = setTimeout(() => { void finalize('internal wall deadline'); }, sec
 for (const signal of ['SIGTERM', 'SIGINT', 'SIGHUP']) process.on(signal, () => { void finalize(signal); });
 function requireRunning() { assert(!stopping, 'acceptance interrupted during teardown'); }
 async function settle() { await browser.send('Page.bringToFront'); await browser.settle(); }
-async function reach(selector) {
-  await browser.eval(`const e=document.querySelector(${stringify(selector)});if(!e)throw Error('missing control');e.scrollIntoView({block:'center',inline:'nearest'});return true;`);
-  await settle();
-  const m = await browser.eval(`const e=document.querySelector(${stringify(selector)}),r=e.getBoundingClientRect();return {w:r.width,h:r.height,l:r.left,r:r.right,t:r.top,b:r.bottom,vw:innerWidth,vh:innerHeight,hit:e.contains(document.elementFromPoint((r.left+r.right)/2,(r.top+r.bottom)/2))};`);
-  assert(m.w > 0 && m.h > 0 && m.l >= -.5 && m.r <= m.vw + .5 && m.t >= -.5 && m.b <= m.vh + .5 && m.hit, 'unreachable control ' + selector + ': ' + stringify(m));
+// Causal observations only: no application private state/functions are called.
+const REACH_SNAPSHOT = `function snapshot(selector) {
+  const e=document.querySelector(selector);if(!e)throw Error('missing control');
+  const rect=e=>{if(!e)return null;const r=e.getBoundingClientRect(),c=getComputedStyle(e);return {id:e.id,tag:e.tagName,classes:e.className&&String(e.className),l:r.left,r:r.right,t:r.top,b:r.bottom,w:r.width,h:r.height,scrollTop:e.scrollTop,scrollLeft:e.scrollLeft,scrollHeight:e.scrollHeight,clientHeight:e.clientHeight,scrollWidth:e.scrollWidth,clientWidth:e.clientWidth,overflowX:c.overflowX,overflowY:c.overflowY,display:c.display,position:c.position};};
+  const r=e.getBoundingClientRect(),v=visualViewport,viewport={l:v?v.offsetLeft:0,t:v?v.offsetTop:0,r:v?v.offsetLeft+v.width:innerWidth,b:v?v.offsetTop+v.height:innerHeight};
+  const ancestors=[];let clip={...viewport};
+  for(let p=e.parentElement;p;p=p.parentElement){const c=getComputedStyle(p),q=rect(p);if(/^(auto|scroll|hidden|clip)$/.test(c.overflowX)){clip.l=Math.max(clip.l,q.l+p.clientLeft);clip.r=Math.min(clip.r,q.l+p.clientLeft+p.clientWidth);}if(/^(auto|scroll|hidden|clip)$/.test(c.overflowY)){clip.t=Math.max(clip.t,q.t+p.clientTop);clip.b=Math.min(clip.b,q.t+p.clientTop+p.clientHeight);}if(p.closest('#scale-sheet')&&(/^(auto|scroll|hidden|clip)$/.test(c.overflowX)||/^(auto|scroll|hidden|clip)$/.test(c.overflowY)))ancestors.push(q);}
+  const hit=document.elementFromPoint((r.left+r.right)/2,(r.top+r.bottom)/2),body=document.querySelector('#scale-sheet .sheetbody'),surface=document.querySelector('#scale-sheet .sheetsurf');
+  return {target:rect(e),viewport,clip,clippingAncestors:ancestors,activeId:document.activeElement&&document.activeElement.id,sheetClasses:document.getElementById('scale-sheet').className,inSheet:!!e.closest('#scale-sheet'),body:rect(body),surface:rect(surface),footer:rect(document.getElementById('scale-foot')),guidance:rect(document.getElementById('scale-guidance')),hit:!!hit&&e.contains(hit),occludingElement:rect(hit),occludingHTML:hit?hit.outerHTML.slice(0,1000):null,wheel:window.__naturalReachWheel||null};
+}`;
+function reachable(m) {
+  const r=m.target,c=m.clip;
+  return r.w>0&&r.h>0&&r.l>=c.l-.5&&r.r<=c.r+.5&&r.t>=c.t-.5&&r.b<=c.b+.5&&m.hit;
 }
-async function click(selector) { await reach(selector); await browser.click(selector); await settle(); }
+async function reach(selector) {
+  const measure=()=>browser.eval(REACH_SNAPSHOT+`return snapshot(${stringify(selector)});`);
+  const d={context,selector,before:await measure()}; report.reachDiagnostics.push(d); write();
+  if(reachable(d.before)){d.repositioned=false;write();return;}
+  d.repositioned=true;
+  if(d.before.inSheet){
+    // A real wheel turn is the documented reader gesture that releases focus
+    // pinning; pick only a currently visible, hit-tested sheet-body point.
+    const point=await browser.eval(`const body=document.querySelector('#scale-sheet .sheetbody'),surf=document.querySelector('#scale-sheet .sheetsurf'),a=body.getBoundingClientRect(),b=surf.getBoundingClientRect(),v=visualViewport,L=Math.max(a.left,b.left,v.offsetLeft),R=Math.min(a.right,b.right,v.offsetLeft+v.width),T=Math.max(a.top,b.top,v.offsetTop),B=Math.min(a.bottom,b.bottom,v.offsetTop+v.height);if(!(R>L&&B>T))return null;for(const fy of [.5,.25,.75])for(const fx of [.5,.25,.75]){const x=L+(R-L)*fx,y=T+(B-T)*fy,hit=document.elementFromPoint(x,y);if(hit&&body.contains(hit)){window.__naturalReachWheel=null;document.getElementById('scale-sheet').addEventListener('wheel',e=>{window.__naturalReachWheel={trusted:e.isTrusted,deltaY:e.deltaY,targetId:e.target.id};},{once:true,passive:true});return {x,y,visiblePort:{l:L,r:R,t:T,b:B},hitId:hit.id,hitTag:hit.tagName};}}return null;`);
+    d.wheelPoint=point;write();assert(point,'no visible hit-tested sheet scrollport point for reader handoff');
+    const deltaY=(d.before.target.t+d.before.target.b>point.visiblePort.t+point.visiblePort.b?1:-1)*Math.min(40,(point.visiblePort.b-point.visiblePort.t)/4);
+    d.wheelDeltaY=deltaY;
+    await browser.send('Input.dispatchMouseEvent',{type:'mouseWheel',x:point.x,y:point.y,deltaX:0,deltaY});
+    await settle();d.afterWheel=await measure();write();
+    assert(d.afterWheel.wheel&&d.afterWheel.wheel.trusted&&d.afterWheel.wheel.deltaY===deltaY,'trusted reader wheel handoff not observed');
+  }
+  d.immediateAfter=await browser.eval(REACH_SNAPSHOT+`document.querySelector(${stringify(selector)}).scrollIntoView({block:'center',inline:'nearest'});return snapshot(${stringify(selector)});`);write();
+  await settle();d.settled=await measure();write();
+  assert(reachable(d.settled),'unreachable control after single reader handoff; possible existing accessibility defect: '+selector+': '+stringify(d.settled));
+}
+async function click(selector) {
+  await reach(selector); await browser.click(selector); await settle();
+  const f=await browser.eval(`const e=document.querySelector(${stringify(selector)});return {field:e.matches('input,textarea,select'),focused:document.activeElement===e,activeId:document.activeElement&&document.activeElement.id};`);
+  if(f.field)assert(f.focused,'pointer did not focus requested field: '+selector+': '+stringify(f));
+}
 async function replaceText(id, value) {
   await click('#' + id);
   assert.equal(await browser.eval('return document.activeElement.id;'), id, 'field not focused');
@@ -415,7 +452,7 @@ async function main() {
 main().then(() => finalize(), e => finalize(e.stack || e.message));
 ```
 
-## Execution and limits
+## Exact reviewed plan
 
 # Naturalness targeted browser acceptance — author draft
 
@@ -670,3 +707,43 @@ and removed only the owned stale lease; provenance is
 `naturalness-local-run2-recovery.json`. Those prior failed logs/recovery records
 are preserved. The revised metadata query must be reviewed before another run;
 there is no automatic retry of this failed acceptance assertion.
+
+## Run3 reachability diagnosis and next experiment
+
+Prior run3 reports are preserved. Root reports the English380×780 full journey
+passed, while English844×390 failed reaching `#scale-inner` (502×44px at
+left171/right673/top319.5/bottom363.5, center hit false); cleanup and lease release
+were both verified. This is evidence of failed reachability, not yet an app
+defect diagnosis. Inspected `index.html` focus-pinning behavior at11291–11328
+restores sheet-body/surface scroll for600ms after trusted field focus; a new
+reader touch/wheel releases it. Calling `scrollIntoView` before another pointer
+interaction can therefore oppose intentional focus pinning. Footer lip behavior
+also distinguishes reader scrolling. No pin timer is extended or bypassed.
+
+The next reviewed experiment records target, body and surface rectangles, scroll
+positions/ranges, clipping ancestors, actual visual viewport, active element,
+sheet classes, footer/guidance and actual center occluder. It measures before,
+immediately after positioning and after settlement, plus after the wheel handoff
+when one is needed. These records are written before assertions. Already fully
+visible, hit-tested targets are not repositioned.
+
+For a sheet target that needs positioning, the harness finds one **actually
+visible and hit-tested sheet-body point**, intersected with surface and visual
+viewport. It dispatches one trusted CDP wheel input there (direction toward the
+target, magnitude at most40px and at most one quarter of the visible port),
+records the actual trusted event, then positions and settles the requested
+control once. The40px bound limits this diagnostic gesture; it is not a new
+layout allowance. Final positive dimensions, full viewport/ancestor-scrollport
+visibility under the existing0.5px criterion and actual center hit remain
+required. Field pointer interaction must yield the requested active element.
+No repeated assertion/reach retry is performed.
+
+On failure the finalizer attempts one bounded existing-CDP screenshot before
+owned-resource teardown; screenshot failure is recorded without suppressing the
+original failed acceptance. If the single reader handoff cannot expose the
+control, fail with causal metrics and report a possible existing accessibility
+defect for investigation. There are no private `releasePin`/app-function calls,
+synthetic clicks, arbitrary600ms sleeps, CSS changes, raised budgets or relaxed
+tolerances. This is a harness interaction experiment requiring independent
+engineering/design review before execution, not evidence of a repaired app or
+Mac suite. The48-cell matrix and separately counted Layout checks are unchanged.
