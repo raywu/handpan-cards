@@ -68,6 +68,18 @@ OD4 follows global tone; it does not mandate a Chinese pronoun in every sentence
 OD5 gets concrete semantic evidence/spot-check if unresolved; do not reask broad
 settled tone questions. Any unresolved meaning-critical item blocks that wording.
 
+`NAT-FREESTYLE-MEANING`: independent review found that the existing English
+"top note" had been interpreted inconsistently across locales. Integrator asked
+one concrete optional owner clarification and, under the same explicit autonomy
+delegation, adopted the recommendation for reversible drafting: **foreground a
+different high chord tone/upper voice each time**, rather than selecting a note
+by physical top-shell location. This is a delegated product-copy interpretation,
+not an asserted dictionary fact or fabricated interview answer. The pending
+owner question remains an override path. All seven translations must express
+this chosen musical meaning consistently; English wording, parser and behavior
+remain unchanged. This resolves the former unknown-meaning drafting hold;
+independent re-review of the actual revised wording is still required.
+
 Pre-existing coverage gap, verified in `activateNote` near `index.html:12055`:
 selecting a lone non-bottom field emits a hardcoded English singleton sentence
 despite existing `sheet.only_note`. JSON authors must not change that binding.
@@ -264,3 +276,28 @@ including475e2e with0fail/skip/cancel; mergeddev via565. Runbook source review9.
 fullCI40129764065 all12pass,473e2e with0fail/skip/cancel; mergeddev via563.
 MainPR562 ready/HELD; CI-only564 remains draft and MUST NOT MERGE MAIN.
 Language authors are newly dispatched; their work is not yet reviewed or delivered.
+
+### Source-language review closure
+
+All seven source tables now have independent all-key/context review and frozen
+sample assessment. Cleared source heads: DE `d5359d07a914a9a411f4bab320f627a2034609c6`;
+FR/IT/ES `e152f3f1be91fd29a9fed0fce62b603d570d9676`;
+JA `c780a9926684951e693704f11cd350b9f4cc9def`;
+Hant/Hans `e5b006b9c32222a0c6932036ceea4a732b275bc2`.
+Every locale's sample dimensions mean>=4, no unresolved material language issue.
+These model reviews do not establish native-human certification or runtime fit.
+DE/JA composed renumbering grammar, Spanish screen-vs-playing verbs and a stale
+reset-action reference were caught and corrected; exact-head re-review cleared.
+Review fragments in actual one/two/three-plus compositions, and referenced control
+labels against displayed labels. Never apply a screen-action verb replacement
+across music instructions or globally capitalize text inside placeholders.
+
+Integrator assembled only those canonical commits and synced once. Combined
+I18N21/21pass,0fail/skip/cancel; all250keys remain. English+decks+12engine files
+and app bytes outside generated I18N are identical to accepteddevdba61154.
+Changed top-level key counts: DE129,FR51,IT92,ES100,JA95,Hant91,Hans103 (661total).
+Source-only approval does not clear mutation regeneration, browser48-cell input/
+locale acceptance, seven-language both-font full fit, final review, CI or dev gates.
+The temporary acceptance harness and any execution supervisor must be independently
+source-reviewed before browser execution. Explicit foreground activation is a
+documented active-target precondition, never a claim that the full Mac suite is fixed.
