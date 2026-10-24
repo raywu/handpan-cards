@@ -9,12 +9,13 @@ global workflows.
 
 ## Current limits
 
-As of 2026-10-24, targeted Mac browser checks and HTC's separate deployed DEV
-checks have passed. A historical full Mac run timed out at the 900-second
-per-file bound with CDP errors. The cause is unresolved; the suite timeout and
-individual CDP request deadlines are distinct. Changing agents does not repair
-the host. Full Linux `validate` passed for the recorded final HTC heads, which
-does not establish green CI for another head or a successful full Mac run.
+As of 2026-10-24, targeted Mac browser checks and the completed Resources
+restoration's separate deployed DEV checks have passed. A historical full Mac run
+timed out at the 900-second per-file bound with CDP errors. The cause is unresolved;
+the suite timeout and individual CDP request deadlines are distinct. Changing agents does not repair
+the host. Full Linux `validate` passed for that workstream's final reviewed
+commits, which does not establish green CI for another head or a successful full
+Mac run.
 The active diagnosis plan is
 [Shared browser validation and Mac diagnosis](../plans/2026-10-24-browser-portability.md).
 Its evidence must qualify any later claim that this limitation has been resolved.
