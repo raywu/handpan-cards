@@ -1,5 +1,5 @@
-# kills: SO: a slide that crosses a note keeps the cyclic order: Eb3 to 90 reads Eb3 U5 and Db4 U3
-# suite: node --test --test-name-pattern ^SO..a.slide.that.crosses.a.note.keeps.the.cyclic.order..Eb3.to.90.reads.Eb3.U5.and.Db4.U3$ tests/layout.test.js
+# kills: SO: a 5 degree nudge can rotate the numbering while the order around the ring is kept: Db3 240 to 235 relabels all six
+# suite: node --test --test-name-pattern ^SO..a.5.degree.nudge.can.rotate.the.numbering.while.the.order.around.the.ring.is.kept..Db3.240.to.235.relabels.all.six$ tests/layout.test.js
 # The cyclic match never rotates.
 diff --git a/src/engine/layout.js b/src/engine/layout.js
 --- a/src/engine/layout.js
