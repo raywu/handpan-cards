@@ -14207,11 +14207,14 @@ describe("I18N", () => {
 
   test("I18N: the options are AUTOMATIC (<detected endonym>) then one endonym per present table, in the fixed order", () => {
     const texts = (app) => app.els["lang-select"].children.map((o) => [o.value, o.textContent]);
-    assert.deepStrictEqual(texts(boot({ languages: ["en-US"] })), [["auto", "AUTOMATIC (ENGLISH)"], ["en", "ENGLISH"]]);
+    const endonyms = { en: "ENGLISH", de: "DEUTSCH", fr: "FRANÇAIS", it: "ITALIANO", es: "ESPAÑOL", ja: "日本語", "zh-Hant": "繁體中文", "zh-Hans": "简体中文" };
+    const present = Object.keys(endonyms).filter((code) => fs.existsSync(path.join(__dirname, "..", "data", "i18n", code + ".json")));
+    const listed = (codes) => codes.map((code) => [code, endonyms[code]]);
+    assert.deepStrictEqual(texts(boot({ languages: ["en-US"] })), [["auto", "AUTOMATIC (ENGLISH)"], ...listed(present)]);
     const app = bootLang(["zh-Hans", "fr", "de"], ["fr-CA", "en"]);
     const en = readEn();
     assert.deepStrictEqual(texts(app), [
-      ["auto", wrapOne(en["sel.auto"]).replace("{lang}", "FRANÇAIS")], ["en", "ENGLISH"], ["de", "DEUTSCH"], ["fr", "FRANÇAIS"], ["zh-Hans", "简体中文"]]);
+      ["auto", wrapOne(en["sel.auto"]).replace("{lang}", "FRANÇAIS")], ...listed(["en", "de", "fr", "zh-Hans"])]);
     assert.strictEqual(app.els["lang-select"].value, "auto");
     const stored = bootLang(["de"], ["en"], { storage: { hpfc: JSON.stringify({ lang: "de" }) } });
     assert.strictEqual(stored.els["lang-select"].value, "de");
