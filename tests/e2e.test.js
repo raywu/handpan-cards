@@ -13994,6 +13994,33 @@ function run() {
       }
     });
 
+    test("I18N: a chosen language survives closing and reopening the panel, a mode tap and a reload", async () => {
+      await freshLoad();
+      await b.setViewport(380, 800, false);
+      try {
+        await b.settle();
+        await openSettingsPanel();
+        await b.eval(`const s = document.getElementById("lang-select"); s.value = "de"; s.dispatchEvent(new Event("change", { bubbles: true })); return true;`);
+        await b.waitFor(`document.documentElement.lang === "de"`, { label: "the language to apply" });
+        const stored = () => b.eval(`try { return JSON.parse(localStorage.getItem("hpfc")).lang || null; } catch (e) { return "ERR"; }`);
+        assert.strictEqual(await stored(), "de", "stored after choosing");
+        await b.click("#settings-trigger");
+        await b.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display === "none"`, { label: "settings panel to close" });
+        await openSettingsPanel();
+        assert.strictEqual(await stored(), "de", "stored after close and reopen");
+        assert.strictEqual(await b.eval(`return document.getElementById("lang-select").value;`), "de", "select after reopen");
+        await b.click("#modeB");
+        await b.settle();
+        assert.strictEqual(await stored(), "de", "stored after a mode tap");
+        await navigate(URL);
+        await b.settle();
+        assert.strictEqual(await b.eval(`return document.documentElement.lang;`), "de", "lang after reload");
+      } finally {
+        await b.eval(`try { localStorage.clear(); } catch (e) {} return true;`);
+        await b.setViewport(900, 900, false);
+      }
+    });
+
     test("I18N: the CJK stacks resolve to a CJK family under ja and zh-Hant, the panel headings are 17px, and the page makes no new request", async () => {
       await freshLoad();
       await b.setViewport(380, 800, false);
