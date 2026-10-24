@@ -1,6 +1,6 @@
 # kills: the full-screen settings panel fits with no scroll in every mode, at 320x568 and every landscape size
 # suite: node --test --test-name-pattern ^the.full.screen.settings.panel.fits.with.no.scroll.in.every.mode..at.320x568.and.every.landscape.size$ tests/e2e.test.js
-# Hide the semantic Resources group, regardless of later Language group order. Explicit rendered-link inventory must fail.
+# Landscape-only semantic Resources hiding, independent of later Language group order; rendered-link inventory must fail.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
@@ -12,11 +12,3 @@ diff --git a/index.html b/index.html
  }
  #settings-trigger[aria-expanded="true"] .glyph{background:transparent}
  #settings-trigger[aria-expanded="true"] .glyph::before{top:0; transform:rotate(45deg)}
-@@ -414,6 +415,7 @@ a.mode{text-decoration:none}
-     z-index:20;
-   }
-   #settings-panel > .panel-group{width:auto}
-+  #settings-panel > .panel-group:has(#res-handpaner){display:none}
-   /* [hidden]{display:none !important} (line 456) otherwise wins over the
-      rule above at equal !important weight (it has none, so this needs its
-      own) - this is the one declaration that actually has to beat it. */

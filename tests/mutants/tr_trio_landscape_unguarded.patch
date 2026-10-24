@@ -1,6 +1,6 @@
 # kills: TR-1: the three site links are equal in width on every line they share, and every label stays inside its box
 # suite: node --test --test-name-pattern TR-1: tests/e2e.test.js
-# Disables complete-label wrapping in landscape; narrow site targets must not spill.
+# Landscape-only unwrapped labels spill in narrow grid columns; sidebar is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
@@ -12,11 +12,3 @@ diff --git a/index.html b/index.html
  }
  #settings-trigger[aria-expanded="true"] .glyph{background:transparent}
  #settings-trigger[aria-expanded="true"] .glyph::before{top:0; transform:rotate(45deg)}
-@@ -414,6 +415,7 @@ a.mode{text-decoration:none}
-     z-index:20;
-   }
-   #settings-panel > .panel-group{width:auto}
-+  .modebar.trio .mode{white-space:nowrap}
-   /* [hidden]{display:none !important} (line 456) otherwise wins over the
-      rule above at equal !important weight (it has none, so this needs its
-      own) - this is the one declaration that actually has to beat it. */

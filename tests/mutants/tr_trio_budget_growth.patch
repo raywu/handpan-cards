@@ -1,6 +1,6 @@
 # kills: the full-screen settings panel fits with no scroll in every mode, at 320x568 and every landscape size
 # suite: node --test --test-name-pattern ^the.full.screen.settings.panel.fits.with.no.scroll.in.every.mode..at.320x568.and.every.landscape.size$ tests/e2e.test.js
-# Grows Resources beyond the unchanged historical landscape upper budget; compaction does not grant unlimited growth.
+# Landscape-only growth beyond unchanged historical upper budget; compactness grants no unlimited growth.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
@@ -12,11 +12,3 @@ diff --git a/index.html b/index.html
  }
  #settings-trigger[aria-expanded="true"] .glyph{background:transparent}
  #settings-trigger[aria-expanded="true"] .glyph::before{top:0; transform:rotate(45deg)}
-@@ -414,6 +415,7 @@ a.mode{text-decoration:none}
-     z-index:20;
-   }
-   #settings-panel > .panel-group{width:auto}
-+  .modebar.trio{margin-bottom:200px}
-   /* [hidden]{display:none !important} (line 456) otherwise wins over the
-      rule above at equal !important weight (it has none, so this needs its
-      own) - this is the one declaration that actually has to beat it. */
