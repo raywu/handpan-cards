@@ -505,7 +505,11 @@ The field id and label scheme, read off all three built-ins in `index.html`:
   not to the note: moving a note (`options.seats`) changes the name drawn there
   and nothing else, on the plate and on the generated cards alike. The same
   holds for `options.angles`: a bottom note placed at a chosen angle keeps its
-  seat's number.
+  seat's number. Under `options.angles` the bottom labels follow the
+  cyclic-order rule: sort the home seats and the placed angles, pick the
+  rotation of least total angular gap; on a tie, the one that turns the notes
+  furthest anticlockwise in total, then the lowest; give each home label to its
+  matched angle ("SO: the cyclic match wraps through 0 degrees: Eb3 at 355 keeps U3, and C3 at 20 with Eb3 at 0 reads C3 U3 and Eb3 U1"; "SO: on a cost tie the bottom labels take the rotation that turns the notes furthest anticlockwise: Pygmy at 75 285 0 180 60 120 reads C3 U5 Db3 U2 Eb3 U1 Bb3 U4 Db4 U3 Ab5 U6, and mirrored at 75 285 180 0 120 60 reads C3 U6 Db3 U1 Eb3 U3 Bb3 U2 Db4 U5 Ab5 U4"; "SO: whole-ring turns of +30, +25 and -25 on Pygmy keep the home labels, and -30 puts the same seat numbers at the same angles, with MIRROR BOTTOM off and on").
 
 ## 5. Legality invariants for a voicing
 
@@ -914,7 +918,7 @@ The D6 palette set, index 0-5, from `CLAUDE.md` "Design system":
   [0, 360) or `null` for the solved angle, validated by `layout.readAngles`
   (any other shape is `BAD_NOTE`; an absent or all-null list reads as absent).
   The override is written last, after `mirrorBottom` and `seats`, into slot 4 of
-  the bottom fields only; geometry is computed from the default placement, so
+  the bottom fields, then relabels slot 5 of the bottom fields by the cyclic-order rule (Rule N; "SO: the five built-ins solve to byte-identical fields with no angles, all-null angles and their home angles written explicitly"); geometry is computed from the default placement, so
   `geom` is byte-identical with and without it. A floor applies to the
   effective list (`layout.bottomClash`): two bottom notes closer than the
   smallest multiple of 5 strictly above their touching angle (capped by the
