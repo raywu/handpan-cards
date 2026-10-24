@@ -1389,12 +1389,13 @@ function run() {
   // and only this list matters. "+ ADD A SCALE" (#deck-add) sits between the
   // mode buttons and the print controls in DOM order and must be one of the
   // stops.
-  // Resources menu links in DOM order: row one (two links), row two (the two
+  // Resources menu links in DOM order: row one (three links), row two (the two
   // Amy Naylor videos, docs/plans/2026-10-05-menu-resources-amy.md). Every
   // list of Resources ids in this file derives from here.
   const RESOURCES = [
     { id: "res-handpaner", href: "https://handpaner.com/", label: "HANDPANER", row: 0 },
     { id: "res-dingandtones", href: "https://www.dingandtones.com/", label: "DING & TONES", row: 0 },
+    { id: "res-trainingcards", href: "https://svenkirchhofer.de/handpan-training-cards/", label: "HTC", row: 0 },
     { id: "res-amy-progressions", href: "https://youtu.be/-BD13QhFJ-M", label: "AMY: PROGRESSIONS", row: 1,
       aria: "Amy Naylor: ten handpan chord progressions (YouTube)" },
     { id: "res-amy-bottom", href: "https://youtu.be/0hMIUnA5-OI", label: "AMY: BOTTOM NOTES", row: 1,
@@ -1792,7 +1793,7 @@ function run() {
   // Lane PM (2026-10-08): HANDPAN 101 adds a 44px row + one --sp-1 (47 here) to the
   // Resources column, which is the tall one in this cell; the one-line print row
   // is not in it. So the literal is the old one + 47: 418.75 Linux / 420.75 macOS.
-  const MAIN_NEEDED_667x375_S_FALLBACK = process.platform === "linux" ? 369 : 371;
+  const MAIN_NEEDED_667x375_S_FALLBACK = process.platform === "linux" ? 418.75 : 420.75;
 
   test("the full-screen settings panel fits with no scroll in every mode, at 320x568 and every landscape size",
     async () => {
@@ -1876,7 +1877,7 @@ function run() {
    * amendments 1-7)
    * ---------------------------------------------------------------- */
 
-  test("the settings panel has exactly one Resources group with its five outbound links in three rows", async () => {
+  test("the settings panel has exactly one Resources group with its six outbound links in three rows", async () => {
     await freshLoad();
     await openSettingsPanel();
     const m = await b.eval(`
@@ -1899,8 +1900,8 @@ function run() {
       };
     `);
     assert.strictEqual(m.headingCount, 1, "expected exactly one Resources heading");
-    assert.deepStrictEqual(m.rowSizes, [2, 2, 1, 0], "three link rows, then the ABOUT row with no link");
-    assert.strictEqual(m.links.length, 5, `expected 5 links in the Resources group, got ${JSON.stringify(m.links)}`);
+    assert.deepStrictEqual(m.rowSizes, [3, 2, 1, 0], "three link rows, then the ABOUT row with no link");
+    assert.strictEqual(m.links.length, 6, `expected 6 links in the Resources group, got ${JSON.stringify(m.links)}`);
     m.links.forEach((link, i) => {
       const expected = RESOURCES[i];
       assert.strictEqual(link.id, expected.id, `link ${i} id mismatch: ${JSON.stringify(link)}`);
@@ -1998,8 +1999,7 @@ function run() {
             // -112) and HANDPAN 101 adds a row (+50), so the 673.75 / 669.75 became
             // 611.75 / 607.75. With the heading that is 634.75 of 688 and the cell
             // no longer scrolls; the edge test pins the exact figure.
-            // Lane W: the sites row is one line, 56px less in the sidebar.
-            const mainNeeded = (process.platform === "linux" ? 607.75 : 611.75) - 56;
+            const mainNeeded = process.platform === "linux" ? 607.75 : 611.75;
             const want = Math.max(0, mainNeeded + hg - m.clientH);
             const wantWith = Math.max(0, mainNeeded + hg + amy.cost + amy.langCost - m.clientH);
             assert.ok(Math.abs(m.scrollH - m.clientH - wantWith) <= 1,
@@ -2240,11 +2240,11 @@ function run() {
       }
     });
 
-  test("TR-1: the two site links are equal in width on every line they share, and every label stays inside its box",
+  test("TR-1: the three site links are equal in width on every line they share, and every label stays inside its box",
     async () => {
       await freshLoad();
       const MEASURE = `
-        const ids = ["res-handpaner", "res-dingandtones"];
+        const ids = ["res-handpaner", "res-dingandtones", "res-trainingcards"];
         const els = ids.map(id => document.getElementById(id));
         const inside = (el) => {
           const k = el.getBoundingClientRect(), g = document.createRange(); g.selectNodeContents(el);
@@ -2268,9 +2268,9 @@ function run() {
           await openSettingsPanel();
           const m = await b.eval(MEASURE);
           const label = `${vw}x${vh}`;
-          assert.strictEqual(m.siblings, 2, `${label}: the first Resources row holds exactly two links`);
+          assert.strictEqual(m.siblings, 3, `${label}: the first Resources row holds exactly three links`);
           const shape = JSON.stringify(m.lines.map((w) => w.length));
-          const want = "[2]";
+          const want = vw === 1024 && vh === 700 ? "[2,1]" : "[3]";
           assert.strictEqual(shape, want, `${label}: line shape ${shape}, wanted ${want}: ${JSON.stringify(m.lines)}`);
           for (const w of m.lines) {
             assert.ok(Math.max(...w) - Math.min(...w) <= 1, `${label}: unequal widths on one line: ${JSON.stringify(w)}`);
@@ -2285,8 +2285,13 @@ function run() {
           await openSettingsPanel();
           const m = await b.eval(MEASURE);
           const label = `${vw}x${vh}`;
-          assert.deepStrictEqual(m.spill, [0, 0], `${label}: a site link's content overflows its box`);
+          assert.deepStrictEqual(m.spill, [0, 0, 0], `${label}: a site link's content overflows its box`);
           assert.ok(m.inside.every(Boolean), `${label}: a site label's text spills outside its link box`);
+          await b.eval(`document.getElementById("res-handpaner").parentElement.classList.remove("trio");`);
+          await b.settle();
+          const base = await b.eval(MEASURE);
+          await b.eval(`document.getElementById("res-handpaner").parentElement.classList.add("trio");`);
+          assert.deepStrictEqual(m.lines, base.lines, `${label}: the landscape row differs from the same row without the trio class`);
           await b.key("Escape", "Escape", 27);
         }
       } finally {
@@ -9634,7 +9639,7 @@ function run() {
           // Lane PM (2026-10-08): HANDPAN 101 (+47) and the one-line print row
           // (-50 where the print group was the tall column): 328.25 -> 375.25,
           // 310 -> 357, 251.75 unchanged, 313 -> 310.
-          [740, 360, "S", 372.75], [740, 340, "S", 372.75], [812, 330, "S", 357], [926, 310, "S", 251.75],
+          [740, 360, "S", 375.25], [740, 340, "S", 375.25], [812, 330, "S", 357], [926, 310, "S", 251.75],
           [568, 312, "A", 310],
         ];
         for (const [w, h, mode, mainNeeded] of cases) {
@@ -13178,11 +13183,6 @@ function run() {
     // tallest column moves (the other layouts derive it from the group heights below).
     // "fallback-linux" is measured on the CI runner (run 37890810855, 060e1c1).
     const PM_NEEDED_L = {"fallback":{"320x320":[-3,-3,-3],"320x375":[-3,-3,-3],"320x519":[-3,-3,-3],"320x520":[-3,-3,-3],"427x320":[47,47,47],"427x375":[47,47,47],"427x519":[47,47,47],"427x520":[47,47,47],"568x320":[44,44,44],"568x375":[44,44,44],"568x519":[44,44,44],"568x520":[44,44,44],"640x320":[17,17,47],"640x375":[17,17,47],"640x519":[17,17,47],"640x520":[17,17,47],"641x320":[17,17,47],"641x375":[17,17,47],"641x519":[17,17,47],"641x520":[17,17,47],"1023x320":[26.5,26.5,0],"1023x375":[26.5,26.5,0],"1023x519":[26.5,26.5,0],"1023x520":[26.5,26.5,0],"1024x320":[26.5,26.5,0],"1024x375":[26.5,26.5,0],"1024x519":[26.5,26.5,0],"1024x520":[26.5,26.5,0],"1280x320":[24,24,0],"1280x375":[24,24,0],"1280x519":[24,24,0],"1280x520":[24,24,0]},"real":{"320x320":[-3,-3,-3],"320x375":[-3,-3,-3],"320x519":[-3,-3,-3],"320x520":[-3,-3,-3],"427x320":[44,44,44],"427x375":[44,44,44],"427x519":[44,44,44],"427x520":[44,44,44],"568x320":[44,44,44],"568x375":[44,44,44],"568x519":[44,44,44],"568x520":[44,44,44],"640x320":[18,18,47],"640x375":[18,18,47],"640x519":[18,18,47],"640x520":[18,18,47],"641x320":[18,18,47],"641x375":[18,18,47],"641x519":[18,18,47],"641x520":[18,18,47],"1023x320":[23,23,0],"1023x375":[23,23,0],"1023x519":[23,23,0],"1023x520":[23,23,0],"1024x320":[23,23,0],"1024x375":[23,23,0],"1024x519":[23,23,0],"1024x520":[23,23,0],"1280x320":[23,23,0],"1280x375":[23,23,0],"1280x519":[23,23,0],"1280x520":[23,23,0]},"fallback-linux":{"320x320":[-3,-3,-3],"320x375":[-3,-3,-3],"320x519":[-3,-3,-3],"320x520":[-3,-3,-3],"427x320":[47,47,47],"427x375":[47,47,47],"427x519":[47,47,47],"427x520":[47,47,47],"568x320":[44,44,44],"568x375":[44,44,44],"568x519":[44,44,44],"568x520":[44,44,44],"640x320":[16,16,47],"640x375":[16,16,47],"640x519":[16,16,47],"640x520":[16,16,47],"641x320":[16,16,47],"641x375":[16,16,47],"641x519":[16,16,47],"641x520":[16,16,47],"1023x320":[27.5,27.5,0],"1023x375":[27.5,27.5,0],"1023x519":[27.5,27.5,0],"1023x520":[27.5,27.5,0],"1024x320":[27.5,27.5,0],"1024x375":[27.5,27.5,0],"1024x519":[27.5,27.5,0],"1024x520":[27.5,27.5,0],"1280x320":[25,25,0],"1280x375":[25,25,0],"1280x519":[25,25,0],"1280x520":[25,25,0]}};
-    // Lane W (PDF cleanup): removing the third site link takes the sites row from two lines to one in these
-    // cells, so `needed` and the Resources group both fall by this much (measured against b726b3f,
-    // the same figure in every mode; every cell not listed is unchanged). The 2.5px cells (1023x and
-    // 1024x at 320-520px tall) are landscape cells where only the Resources column shrinks by 2.5.
-    const SITE_DROP = {"fallback":{"1023x320":2.5,"1023x375":2.5,"1023x519":2.5,"1023x520":2.5,"1024x320":2.5,"1024x375":2.5,"1024x519":2.5,"1024x520":2.5,"1024x700":56.0,"1024x701":56.0,"1025x700":56.0,"1025x701":56.0,"1280x740":56.0,"1280x800":56.0,"427x320":50.0,"427x375":50.0,"427x519":50.0,"427x520":50.0,"640x320":50.0,"640x375":50.0,"640x519":50.0,"640x520":50.0,"641x320":50.0,"641x375":50.0,"641x519":50.0,"641x520":50.0},"real":{"1024x700":56.0,"1024x701":56.0,"1025x700":56.0,"1025x701":56.0,"1280x740":56.0,"1280x800":56.0,"427x320":50,"427x375":50,"427x519":50,"427x520":50,"640x320":50,"640x375":50,"640x519":50,"640x520":50,"641x320":50,"641x375":50,"641x519":50,"641x520":50}};
     const tableKey = (fm) => (fm === "fallback" && process.platform === "linux" ? "fallback-linux" : fm);
     const isLandscape = (w, h) => h <= 520;
     const isSidebar = (w, h) => w >= 1024 && h >= 700;
@@ -13285,16 +13285,13 @@ function run() {
             const dPrint = wantG[1] - wantG[2];
             const dRes = 44 + g.sp1;
             const dAbout = 44 + g.sp1;
-            const siteDrop = (SITE_DROP[fm] || {})[key] || 0;
-            // In landscape progression the About term (needed - neededNoAbout) already absorbs a 2.5px change.
-            const siteNeeded = delta && siteDrop < 5 && m === "S" ? 0 : siteDrop;
             const dPm = (delta ? PM_NEEDED_L[tableKey(fm)][key][i] : dPrint + dRes) + (delta ? g.needed - g.neededNoAbout : dAbout);
             assert.ok(g.langCost >= 0, where + ": the Language group shrinks the panel");
-            assert.ok(Math.abs(g.needed - (want[i] + d * g.hg + amyNeeded + dPm - siteNeeded + g.langCost)) <= 0.5,
-              `${where}: needed ${g.needed}px, expected main ${want[i]} + ${d ? "H + g = " + g.hg : "0"} + the Amy row ${amyNeeded} + PM ${dPm} + Language ${g.langCost} - site link ${siteNeeded}`);
+            assert.ok(Math.abs(g.needed - (want[i] + d * g.hg + amyNeeded + dPm + g.langCost)) <= 0.5,
+              `${where}: needed ${g.needed}px, expected main ${want[i]} + ${d ? "H + g = " + g.hg : "0"} + the Amy row ${amyNeeded} + PM ${dPm} + Language ${g.langCost}`);
             assert.ok(Math.abs(g.groups[0] - (wantG[0] + g.hg)) <= 0.5, `${where}: the first group is ${g.groups[0]}px, expected main ${wantG[0]} + ${g.hg}`);
             const plus = [0, 0, dPrint, amyRes + dRes + dAbout];
-            for (let k = 1; k < 4; k++) assert.ok(Math.abs(g.groups[k] - (wantG[k] + plus[k] - (k === 3 ? siteDrop : 0))) <= 0.5, `${where}: group ${k} is ${g.groups[k]}px, main has ${wantG[k]}px plus ${plus[k]}`);
+            for (let k = 1; k < 4; k++) assert.ok(Math.abs(g.groups[k] - (wantG[k] + plus[k])) <= 0.5, `${where}: group ${k} is ${g.groups[k]}px, main has ${wantG[k]}px plus ${plus[k]}`);
           });
         }
       }
