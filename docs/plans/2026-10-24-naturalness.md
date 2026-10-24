@@ -302,3 +302,11 @@ locale acceptance, seven-language both-font full fit, final review, CI or dev ga
 The temporary acceptance harness and any execution supervisor must be independently
 source-reviewed before browser execution. Explicit foreground activation is a
 documented active-target precondition, never a claim that the full Mac suite is fixed.
+The [reviewed acceptance source](2026-10-24-naturalness-acceptance.md) follows
+binding sheet-tabs S1: Scale draws no pan. It checks positive focused fields on
+Scale and96separate positive Layout wrapper/SVG checks within the accepted
+160..480px clamp. A failed first English run exposed the obsolete DI whole-pan
+assertion's zero-area false-green; that legacy-test follow-up stays separate.
+Cleanup uses bounded owned-PGID metadata because signal-zero returned EPERM;
+the failed job's retained lease was removed only after independent owned-resource
+verification. No application code, tab design or accepted budget was altered.

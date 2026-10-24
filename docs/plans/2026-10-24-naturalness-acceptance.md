@@ -1,19 +1,22 @@
 # Reviewed Naturalness acceptance artifact
 
 This preserves the exact temporary script for fresh-session reproducibility.
-It is a reviewed acceptance artifact, not an installed workflow or full-Mac
-helper fix. Extract the JavaScript block verbatim to a disposable directory,
-verify its SHA256, and follow the plan below. It requires an inspected clean
-project checkout, the existing Node/CDP helper, installed Chrome and project fonts.
-Never run it without the integrator's exclusive browser lease.
+Extract the JavaScript block verbatim to a disposable directory, verify its
+SHA256, and follow the plan below. It requires an inspected clean project
+checkout, existing Node/CDP helper, installed Chrome and project fonts. Reserve
+the integrator's sole browser lease. This is an acceptance artifact, not an
+installed workflow, production helper repair or full-Mac-suite fix.
 
-Script SHA256: `5a96f17e04aebc6f63e3b401454515cfbf37dd93dd0d74a4047f5a2df4859e5d`.
-Plan SHA256 at review: `fd0ed58695d15a29e9e97c524dc4fca46e3b0655682b2df5f1d570b35d2acc73`.
-Independent engineering source review9.5 cleared the latest script, after fixing
-six initial defects and one internal-launch-retry accounting gap. Independent
-UX/spec review9.8 cleared the unchanged matrix/assertions with strict44px targets.
-This snapshot precedes runtime execution; source loading/syntax review is not
-acceptance. Actual results and exact source refs belong in the workstream receipt.
+Script SHA256: `8bb0b39891b07391f6c924e0c551fdf51dcdd0efdbfe769769a4b2c61ab4c3ac`.
+Plan SHA256: `91b4652a897419d1e3b75d52697a4bc96e810fef36ec0f2ab882914b8ab8bbca`.
+Independent engineering9.5 and UX/spec9.8 source reviews cleared this revision.
+The script follows binding sheet-tabs S1: Scale has no preview; positive fields
+are checked there and96positive Layout preview/SVG checks are separate. A prior
+English-only run exposed the superseded/vacuous DI pan check; no app/tab/CSS
+change was made. Its failure and independently verified stale-lease recovery
+remain retained. The earlier reviewed source is recoverable from commit16302bfd.
+This revised snapshot precedes execution; source review is not runtime acceptance.
+Final results and exact refs belong in the workstream receipt.
 
 ## Exact script
 
@@ -72,7 +75,7 @@ fs.closeSync(fs.openSync(OUT, 'wx'));
 const report = {
   sourceRef: ref, rootHead: git('rev-parse', 'HEAD').toString().trim(), target,
   sourceSHA256: hash(html), scriptSHA256: hash(fs.readFileSync(__filename)),
-  started: new Date().toISOString(), expectedCells: 48, expectedKeyboardCases: 16, expectedErrorKeyboardCases: 16,
+  started: new Date().toISOString(), expectedCells: 48, expectedKeyboardCases: 16, expectedErrorKeyboardCases: 16, expectedLayoutPreviewChecks: 96,
   languages, views, fonts: ['real', 'fallback'], fixture: { fields: VALUES, line: LINE, name: NAME },
   environment: { node: process.version, platform: process.platform, arch: process.arch, chrome: helper.findBrowser(), controlledOverridesAbsent: controlled },
   lease: { path: leasePath, owner: opt['--lease-owner'], nodePid: process.pid, cooperative: true },
@@ -97,7 +100,19 @@ const write = () => {
   fs.writeFileSync(temp, JSON.stringify(report, null, 2) + '\n'); fs.renameSync(temp, OUT);
 };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-function groupPresent(pid) { try { process.kill(-pid, 0); return true; } catch (e) { if (e.code === 'ESRCH') return false; throw e; } }
+function groupMembers(pgid) {
+  assert(Number.isSafeInteger(pgid) && pgid > 0, 'invalid owned PGID');
+  // Read metadata only: signal-zero may return EPERM even for an absent group.
+  // A failed/truncated/malformed query is uncertainty, never absence evidence.
+  const text = execFileSync('ps', ['-axo', 'pid=,ppid=,pgid=,comm='], { encoding: 'utf8', timeout: 1000, maxBuffer: 4 * 1024 * 1024 });
+  const rows = text.split('\n').filter(line => line.trim()).map(line => {
+    const match = line.trim().match(/^(\d+)\s+(\d+)\s+(\d+)\s+(.+)$/);
+    assert(match, 'malformed process metadata');
+    return { pid: Number(match[1]), ppid: Number(match[2]), pgid: Number(match[3]), command: match[4] };
+  });
+  assert(rows.some(row => row.pid === process.pid), 'process metadata omitted current harness');
+  return rows.filter(row => row.pgid === pgid);
+}
 async function closeBrowser() {
   if (closePromise) return closePromise;
   if (!browser) return;
@@ -107,8 +122,9 @@ async function closeBrowser() {
     let closeError = null;
     try { await b.close(); } catch (e) { closeError = e.message; }
     const deadline = Date.now() + 3000;
-    while (Date.now() < deadline && (groupPresent(entry.pid) || fs.existsSync(entry.profile))) await sleep(50);
-    const state = { ...entry, groupAbsent: !groupPresent(entry.pid), profileAbsent: !fs.existsSync(entry.profile), closeError };
+    let members = groupMembers(entry.pid);
+    while (Date.now() < deadline && (members.length || fs.existsSync(entry.profile))) { await sleep(50); members = groupMembers(entry.pid); }
+    const state = { ...entry, groupAbsent: members.length === 0, observedGroupMembers: members, processQuery: 'ps -axo pid=,ppid=,pgid=,comm= (1s timeout per query)', profileAbsent: !fs.existsSync(entry.profile), closeError };
     report.cleanup.push(state); write();
     assert(state.groupAbsent && state.profileAbsent && !closeError, 'owned browser cleanup incomplete');
   })();
@@ -243,12 +259,12 @@ async function keyboard(rows) {
       await browser.eval(`document.activeElement&&document.activeElement.blur();document.querySelector('#scale-sheet .sheetbody').scrollTop=0;return true;`);
       await browser.fakeKeyboard(520);
       await browser.eval(`document.getElementById(${stringify(id)}).focus();return true;`); await settle();
-      const m = await browser.eval(`const visible=id=>{const e=document.getElementById(id),r=e.getBoundingClientRect(),s=document.querySelector('#scale-sheet .sheetbody').getBoundingClientRect(),vv=visualViewport,band=document.getElementById('scale-plate-band'),br=band.getBoundingClientRect(),under=id!=='scale-preview'&&getComputedStyle(band).position==='sticky'&&r.left<br.right-1?br.bottom:0;return {w:r.width,h:r.height,visible:Math.max(0,Math.min(r.bottom,s.bottom,vv.offsetTop+vv.height)-Math.max(r.top,s.top,vv.offsetTop,under))};};return {activeId:document.activeElement.id,field:visible(${stringify(id)}),pan:visible('scale-preview')};`);
+      const m = await browser.eval(`const id=${stringify(id)},e=document.getElementById(id),r=e.getBoundingClientRect(),s=document.querySelector('#scale-sheet .sheetbody').getBoundingClientRect(),v=visualViewport;return {activeId:document.activeElement.id,tab:document.getElementById('scale-sheet').dataset.tab,scaleHidden:document.getElementById('scale-panel-scale').hidden,layoutHidden:document.getElementById('scale-panel-layout').hidden,field:{w:r.width,h:r.height,visible:Math.max(0,Math.min(r.bottom,s.bottom,v.offsetTop+v.height)-Math.max(r.top,s.top,v.offsetTop))}};`);
       rows.push({ id, ...m }); write();
       assert.equal(m.activeId, id, 'simulated keyboard field did not receive focus: ' + stringify(m));
-      assert(m.field.w > 0 && m.field.h > 0 && m.pan.w > 0 && m.pan.h > 0, 'keyboard field/pan has no positive area: ' + stringify(m));
+      assert.equal(m.tab, 'scale'); assert.equal(m.scaleHidden, false); assert.equal(m.layoutHidden, true);
+      assert(m.field.w > 0 && m.field.h > 0, 'keyboard field has no positive area: ' + stringify(m));
       assert(m.field.visible >= m.field.h - .5, 'focused field clipped above simulated keyboard: ' + id);
-      assert(m.pan.visible >= m.pan.h - .5, 'whole small pan not visible at380x780');
     }
   } finally { await browser.eval('document.activeElement&&document.activeElement.blur();return true;'); await browser.clearKeyboard(); await settle(); }
   return rows;
@@ -259,10 +275,15 @@ async function dataSnapshot() {
   s.dataSHA256 = hash(s.data); delete s.data; return s;
 }
 function interpolate(lang, key, vars) { return tables[lang][key].replace(/\{(\w+)\}/g, (m, k) => Object.hasOwn(vars, k) ? String(vars[k]) : m); }
-async function primary(lang, edit) {
+async function primary(lang, edit, rec) {
   if (await browser.eval('return !document.getElementById("scale-next").hidden;')) {
     await click('#scale-next'); await browser.waitFor(`!document.getElementById('scale-panel-layout').hidden`);
   } else if (await browser.eval('return document.getElementById("scale-panel-layout").hidden;')) await click('#scale-tab-layout');
+  const preview = await browser.eval(`const e=document.getElementById('scale-preview'),r=e.getBoundingClientRect(),svg=e.querySelector('svg'),sr=svg&&svg.getBoundingClientRect();return {tab:document.getElementById('scale-sheet').dataset.tab,scaleHidden:document.getElementById('scale-panel-scale').hidden,layoutHidden:document.getElementById('scale-panel-layout').hidden,wrapper:{w:r.width,h:r.height,cssWidth:parseFloat(getComputedStyle(e).width)},svg:sr?{w:sr.width,h:sr.height}:null};`);
+  (rec.layoutPreviews ||= []).push({ phase: edit ? 'edit' : 'add', ...preview }); write();
+  assert.equal(preview.tab, 'layout'); assert.equal(preview.scaleHidden, true); assert.equal(preview.layoutHidden, false);
+  assert(preview.wrapper.w > 0 && preview.wrapper.h > 0 && preview.svg && preview.svg.w > 0 && preview.svg.h > 0, 'Layout wrapper/real SVG has no positive area: ' + stringify(preview));
+  assert(preview.wrapper.cssWidth >= 160 && preview.wrapper.cssWidth <= 480, 'Layout preview outside accepted160..480px CSS width clamp: ' + stringify(preview));
   assert.equal(await browser.eval('return document.getElementById("scale-generate").textContent.trim();'), tables[lang][edit ? 'sheet.save' : 'sheet.generate'].trim());
   await geometry(); await click('#scale-generate');
   await browser.waitFor(`document.getElementById('scale-sheet').hidden`, { label: edit ? 'saved sheet closes' : 'generated sheet closes' }); await settle();
@@ -292,7 +313,7 @@ async function journey(font, lang, w, h) {
   const inputEvents = await browser.eval('return window.__naturalInputs;');
   for (const id of ['scale-name', ...Object.keys(VALUES)]) assert(inputEvents.some(e => e.id === id && e.trusted), 'missing trusted input event: ' + id);
   if (w === 380) { rec.keyboard = []; await keyboard(rec.keyboard); }
-  await primary(lang, false); const made = await dataSnapshot();
+  await primary(lang, false, rec); const made = await dataSnapshot();
   if (expectedData === null) { assert.equal(lang, 'en'); expectedData = made; }
   else assert.deepEqual(made, expectedData, 'language/font/viewport changed generated scale data');
   rec.generated = made;
@@ -310,7 +331,7 @@ async function journey(font, lang, w, h) {
     const file = OUT.replace(/\.json$/, '') + '-' + lang + '-' + w + 'x' + h + '.png';
     const image = await browser.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false }); fs.writeFileSync(file, Buffer.from(image.data, 'base64'), { flag: 'wx' }); rec.editScreenshot = file;
   }
-  await primary(lang, true); assert.deepEqual(await dataSnapshot(), made, 'unchanged Edit save altered user data');
+  await primary(lang, true, rec); assert.deepEqual(await dataSnapshot(), made, 'unchanged Edit save altered user data');
   assert((await browser.eval('return document.querySelector(".announce").textContent;')).includes(interpolate(lang, 'sheet.updated', { name: NAME })), 'localized update status/name absent');
   helper.assertNoUncaught(); rec.passed = true; rec.finished = new Date().toISOString(); write();
 }
@@ -388,6 +409,7 @@ async function main() {
   assert(report.records.every(r => r.passed)); assert.equal(report.identities.length, report.expectedCells);
   assert.equal(report.records.filter(r => r.keyboard).length, report.expectedKeyboardCases);
   assert.equal(report.records.filter(r => r.errorKeyboard).length, report.expectedErrorKeyboardCases);
+  assert.equal(report.records.reduce((n, r) => n + (r.layoutPreviews || []).length, 0), report.expectedLayoutPreviewChecks);
   assert.equal(report.errors.length, 0, 'browser console errors'); report.passed = true;
 }
 main().then(() => finalize(), e => finalize(e.stack || e.message));
@@ -397,10 +419,11 @@ main().then(() => finalize(), e => finalize(e.stack || e.message));
 
 # Naturalness targeted browser acceptance — author draft
 
-Status: source authored and syntax-checked only. Independent engineering review
+Status: revised after the integrator-run local failure described below; this
+author has only syntax-checked the revised source. Independent engineering review
 and root browser-lease allocation are required before execution. No browser,
 test journey, server, network request, repository edit or Git mutation was run
-by this author.
+by this author. Prior integrator-run evidence remains intact.
 
 Source: `naturalness-acceptance.cjs` in this directory. This is an external
 acceptance artifact, not a production helper repair or a permanent CI test suite.
@@ -418,6 +441,7 @@ Read the candidate's shared browser runbook and Naturalness plan first.
 | Focused-field checks in those cases | ding, top, inner, bottom | **64** |
 | Translated error above simulated keyboard | each locale/font at380×780 | **16** |
 | Exact browser-document identities | one fresh document per journey | **48** |
+| Layout preview checks | actual Layout tab, Add and Edit in each journey | **96** |
 | Real-font Edit screenshots | every real-font locale/viewport | **24** |
 
 Each journey:
@@ -442,13 +466,18 @@ Each journey:
 6. Replaces all four fields with the literal valid fixture below, checks raw
    field values remain exact and trusted `input` events occurred, and requires
    the literal composed English line with generation enabled.
-7. At380×780, uses existing `fakeKeyboard` and the DI visibility criterion to
-   check all four focused fields and the whole small pan. The active element must
-   equal the requested field, and both field and pan must have positive width
-   and height before checking visibility. Raw metrics are recorded before
-   assertions, including on failure. Focus is programmatic
-   for this wiring check, not a physical keyboard claim.
-8. Activates NEXT/Generate through real click dispatch. It checks the named
+7. At380×780, uses existing `fakeKeyboard` and the DI field visibility criterion
+   to check all four focused fields. The active element must equal the requested
+   field and have positive width/height. The Scale tab must be active, its panel
+   visible and Layout panel hidden. Raw metrics are recorded before assertions,
+   including on failure. The Scale tab intentionally has no pan (accepted sheet-tabs
+   supersession S1); no hidden preview is used to claim keyboard visibility.
+   Focus is programmatic for this wiring check, not a physical keyboard claim.
+8. Activates NEXT/Generate through real click dispatch. On the actual Layout
+   tab, separately requires a positive rendered preview wrapper and real SVG,
+   and CSS width within the accepted160..480px clamp, on both Add and Edit
+   (**96checks**). This measures the actual Layout state without borrowing the
+   superseded small-pan Scale-tab keyboard expectation. It checks the named
    custom scale's canonical line/name and compares fields/chords/geometry/options
    identity to the first English journey. It requires a localized multi-card
    generation status with the actual observed chord count.
@@ -558,6 +587,12 @@ are never retried, and an observed launch retry cannot produce a passing report.
 The report remains failed and the lease is retained for root
 inspection; there is no broad process scan, kill or profile deletion. A returned
 browser's group and profile must both be absent after its bounded owned cleanup.
+Group absence uses read-only `ps -axo pid=,ppid=,pgid=,comm=` metadata, matching
+the inspected supervisor approach, with a1s timeout/4MiB bound per query and a3s
+polling window. Every nonempty row must parse and the current harness PID must
+be present. Query errors, incomplete/malformed output or an omitted harness PID
+are uncertainty, not absence; failure retains the lease. The script neither
+uses signal-zero as a metadata query nor signals unknown processes.
 The local HTTP server's close callback must complete before lease release.
 
 The lease is released only after verified owned-browser and server cleanup and
@@ -570,8 +605,8 @@ If a failure may be pre-existing (especially known Mac viewport/keyboard
 assertions), classify it by inspecting source and an appropriate isolated
 baseline reproduction. Do not weaken the expected behavior or silently replace
 the failed acceptance check. Preserve raw stdout/stderr, report, source hash,
-ref and cleanup evidence. The script is not yet executed, so its commands and
-48-case behavior remain operationally unverified.
+ref and cleanup evidence. The revised script is not yet executed, so the corrected48-case behavior
+remains operationally unverified.
 
 ## Limits
 
@@ -611,3 +646,27 @@ SLOW_START retry. The outer-call ledger now distinguishes observed actual
 attempts, and exact retry-notice observation conservatively blocks success and
 lease release. This instrumentation is syntax-checked only, with no runtime
 validation claimed.
+
+## First integrator-run failure and scope correction
+
+The retained local run2 logs failed in the first English journey because this
+harness incorrectly expected a pan on the Scale tab. The accepted
+`docs/plans/2026-10-19-sheet-tabs.md` supersession S1 explicitly says that tab draws
+no pan; `index.html` places `#scale-preview` under hidden `#scale-panel-layout`.
+Existing DI pan visibility tests can pass vacuously on zero height and are stale
+against this later accepted design. Follow-up owner: browser-suite maintenance
+lane should review/update those obsolete DI expectations under its own reviewed
+plan; no app/CSS or repository test change belongs to this acceptance correction.
+
+The revised keyboard scope checks real Scale-tab inputs and tab state; preview
+existence/accepted size is tested separately on Layout. The48 journeys,16keyboard
+cases,64field checks and16error checks remain, plus96explicit Layout preview
+checks. This is a harness-state correction to the current spec, not tolerance
+relief or an application regression waiver.
+
+Run2 teardown also reported signal-zero `EPERM`; it did not establish absence.
+Root separately verified the owned Node56080, Chrome56148 group and profile absent
+and removed only the owned stale lease; provenance is
+`naturalness-local-run2-recovery.json`. Those prior failed logs/recovery records
+are preserved. The revised metadata query must be reviewed before another run;
+there is no automatic retry of this failed acceptance assertion.
