@@ -58,13 +58,12 @@ Corpus paraphrases are not verbatim primary quotations or native certification.
 
 Settled: Du; natural respectful tone elsewhere; include seven ordering messages;
 UI-only boundary; no main merge; parallel Mac/runbook work now authorized.
-OD1/OD2 have no direct interview answers. On2026-10-24 the integrator exercised
-the owner's standing explicit autonomy delegation and adopted the reviewed
-recommendations for drafting: **das Ding**, and attested community terms with
-compact natural native labels. This is delegated decision provenance, never an
-invented owner answer or elapsed-time consent. Author dispatch may proceed;
-owner corrections override these reversible choices. No main-release consent
-is inferred. Unresolved meaning questions remain blocked individually.
+Owner explicitly answered OD1 **das Ding** and OD2 **community terms where
+appropriate, native short labels**, and reaffirmed already-settled capitalized
+**Du**. These match the earlier documented delegated drafting defaults; no
+translation change is needed for this confirmation. Do not re-interview Du.
+No main-release consent is inferred. Unresolved meaning questions remain blocked
+individually unless a separately documented delegated decision resolves them.
 OD4 follows global tone; it does not mandate a Chinese pronoun in every sentence.
 OD5 gets concrete semantic evidence/spot-check if unresolved; do not reask broad
 settled tone questions. Any unresolved meaning-critical item blocks that wording.
