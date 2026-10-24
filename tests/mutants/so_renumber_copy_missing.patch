@@ -1,0 +1,14 @@
+# kills: SO: a slide or nudge that changes any bottom seat number says which numbers moved to which notes and flashes those notes
+# suite: node --test --test-name-pattern ^SO..a.slide.or.nudge.that.changes.any.bottom.seat.number.says.which.numbers.moved.to.which.notes.and.flashes.those.notes$ tests/app.test.js
+# A renumbering slide says nothing about the new numbers.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11931,6 +11931,7 @@ function renumbered(was, first) {
+ function renumberClause(list) {
+   const items = list.map((n) => t("sheet.seat_is_now", { name: n.name, label: n.label }));
+   const last = items.pop();
++  if (last) return "";
+   return t("sheet.seat_renumber", { list: items.length ? t("sheet.list_and", { rest: items.join(", "), last }) : last });
+ }
+ /** Move bottom note `ref` to the step `want`. "drag" snaps away from a clash; "nudge" refuses one.

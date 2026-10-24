@@ -1,0 +1,15 @@
+# kills: SO: MIRROR BOTTOM after the fold re-flows the seat numbers, moves no note and says so, and MIRROR TOP leaves every bottom number alone
+# suite: node --test --test-name-pattern ^SO..MIRROR.BOTTOM.after.the.fold.re.flows.the.seat.numbers..moves.no.note.and.says.so..and.MIRROR.TOP.leaves.every.bottom.number.alone$ tests/app.test.js
+# MIRROR BOTTOM re-flows the numbers without saying so.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13060,7 +13060,7 @@ mirrorBot.onclick = () => {
+   paintLayout(); resyncSheet(true);
+   let text = t(bottomMirror() ? "sheet.mirror_bottom_on" : "sheet.mirror_bottom_off");
+   const changed = layoutAngles ? renumbered(was, -1) : [];
+-  if (changed.length) { text += t("sheet.mirror_reflow"); flashNotes(changed.map((c) => c.id)); repaintPlate(); }
++  if (changed.length) { text += ""; flashNotes(changed.map((c) => c.id)); repaintPlate(); }
+   layoutStatus(text);
+ };
+ const pickAnchor = (to) => () => {

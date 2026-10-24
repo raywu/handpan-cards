@@ -635,6 +635,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       if (Object.prototype.hasOwnProperty.call(seats.value, key)) out[key] = seats.value[key];
     }
     out.angles = effective;
+    out.home = home.bottoms;
     return { ok: true, value: out };
   }
 
@@ -664,8 +665,44 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         var ids = zones[ZONES[z]];
         for (i = 0; i < list.length; i += 1) fields[ids[i]][5] = source[ids[list[i]]][5];
       }
+      if (seats.angles && seats.home) cyclicLabels(source, zones.bottom, seats.home, seats.angles, fields);
     }
     return fields;
+  }
+
+  function turnOf(from, to) {
+    var d = norm(to - from);
+    return d > 180 ? d - 360 : d;
+  }
+
+  function cyclicLabels(source, ids, home, placed, fields) {
+    var n = ids.length;
+    var H = [];
+    var P = [];
+    var i;
+    for (i = 0; i < n; i += 1) H.push({ a: norm(home[i]), label: source[ids[i]][5] });
+    for (i = 0; i < n; i += 1) P.push({ a: norm(placed[i]), i: i });
+    H.sort(function (x, y) { return x.a - y.a; });
+    P.sort(function (x, y) { return x.a - y.a || x.i - y.i; });
+    var bestR = 0;
+    var bestCost = null;
+    var bestTurn = 0;
+    for (var r = 0; r < n; r += 1) {
+      var cost = 0;
+      var turn = 0;
+      for (i = 0; i < n; i += 1) {
+        var d = turnOf(H[i].a, P[(i + r) % n].a);
+        cost += Math.abs(d);
+        turn += d;
+      }
+      if (bestCost === null || cost < bestCost - 1e-9 ||
+          (cost < bestCost + 1e-9 && turn > bestTurn + 1e-9)) {
+        bestCost = cost;
+        bestTurn = turn;
+        bestR = r;
+      }
+    }
+    for (i = 0; i < n; i += 1) fields[ids[P[(i + bestR) % n].i]][5] = H[i].label;
   }
 
   function solve(seedOrFields, options) {

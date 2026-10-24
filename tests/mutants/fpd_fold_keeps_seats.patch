@@ -1,15 +1,15 @@
-# kills: FPD: the first slide on a seated bottom ring folds seats into angles: no position changes, the record carries no seats.bottom, and the labels run U1..Un low to high
-# suite: node --test --test-name-pattern ^FPD..the.first.slide.on.a.seated.bottom.ring.folds.seats.into.angles..no.position.changes..the.record.carries.no.seats.bottom..and.the.labels.run.U1..Un.low.to.high$ tests/app.test.js
+# kills: SO: the first slide on a seated bottom ring folds seats into angles: no position changes, the record carries no seats.bottom, and every seat keeps its number
+# suite: node --test --test-name-pattern ^SO..the.first.slide.on.a.seated.bottom.ring.folds.seats.into.angles..no.position.changes..the.record.carries.no.seats.bottom..and.every.seat.keeps.its.number$ tests/app.test.js
 # The first slide keeps the bottom seats beside the angles.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11553,7 +11553,7 @@ function slideNote(ref, want, how, dir) {
+@@ -11962,7 +11962,7 @@ function slideNote(ref, want, how, dir) {
    }
    const entries = folding ? base.slice() : layoutAngles ? layoutAngles.bottom.slice() : cur.map(() => null);
    entries[n.i] = spot.angle;
 -  if (folding) { setRingSeats("bottom", identityOrder(cur.length)); foldedBottom = true; }
 +  if (folding) { foldedBottom = true; }
    layoutAngles = { bottom: entries };
-   if (spot.hit !== null) flashNotes([n.id]);
    paintLayout();
+   resyncSheet(true);
