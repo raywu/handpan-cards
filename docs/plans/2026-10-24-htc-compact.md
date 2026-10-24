@@ -2,6 +2,8 @@
 
 Owner authorized autonomous implementation, tests, lane commits/pushes, PRs and dev integration on 2026-10-24 after reviewed near-10 plans, proper TDD, independent addressed PR review and exact-head CI. Main merges remain owner-only. Ignore gog. This authorization supersedes the earlier diagnostic-only restriction; do not re-request ordinary scoped lane actions.
 
+**Current baseline correction:** preserve accepted main/dev budget literals and exact equations. Earlier historical-HTC ceiling interpretations below are superseded; no increased budget or relaxed minimum-growth oracle remains in current source.
+
 ## Goal and acceptance
 
 Restore HTC beside HANDPANER and DING & TONES on the sites row while preserving current panel fit limits, visual system, readable complete labels, minimum44px targets, Resources activation/Tab behavior and all other existing controls. The actual deployed DEV must satisfy the reviewed requirements before the main PR is handed to the owner. No main merge.
@@ -156,6 +158,31 @@ Closure targeted receipt:14pass0fail/skip/cancel, including real-font bounce-5; 
 
 Final closuremutation receipt: sixcorrected/exact selectors each ran exactlyone named test, baseline1pass0skip/cancel, fault1assertionfailure0skip/cancel. Separate real-font clipped-target companion generatedfromcleancommitted110f036source in detachedscratch. Observedcurrentcorpus1463; original1462union remains historical, not final proof. New final-headfullCI and freshindependentreview pending; application bytes unchanged.
 
+## Correct-baseline regression-guard amendment — review before execution
+
+Combined independent review P2 found a contradiction: inherited HTC ceilings are looser than existing dev/main, despite this plan's no-increase rule. Prior historical-HTC justification is superseded. No rendered regression was observed (full probes independently pass), but preserving existing regression protection requires currentdev/main oracles, not interrupted-branch values. Relevant differences:667fallback369/371→418.75/420.75; sidebar−56 removed; realbounce372.75→375.25 (and associated cases); SITE_DROP deductions removed. Restore all corresponding accepted-dev budget code/literals/comments, including original exact equations where the compact row satisfies them; do not derive replacement numbers from candidate output. Preserve new Resources inventory/activation/compact-row oracles and strict mutant header contracts. No app CSS, font, data, i18n or probe-budget change.
+
+| Lane | Action and dependency | Acceptance |
+|---|---|---|
+| ENG independent | Audit baseline budget sections vs existingdev and this correction before source edits | Correct baseline identified completely, no increased ceiling/allowance, all unrelated constraints retained; near10 plan clearance |
+| Root sole source author | Restore budget-only sections from immutable existingdev source; keep new trio geometry/visibility and6-link semantics; expand targeted14 checks | Originaldev budget equations/literals match accepted source,14tests pass0skip/cancel; if any tighter bound fails, stop for a reviewed product-layout investigation, never inflate bound |
+| Mutation reviewer | Check unchanged/direct fault guards still fail, no weakened lint or missing group | Existing1463 corpus preserved; budget-growth and clipped-font cases baselinegreen/faultassertionred |
+| Root candidate assembler | Commit reviewed test-tightening in feature; update already-isolated combined candidate with test-only correction, preserving all21canonical/all8table hashes | No actualdev/main write; floor474feature/475combined; candidates reviewed at exactheads |
+| Fresh review and CI | Final source reviews plus fullCI on BOTH candidates, all8language candidateprobes | Every final-head CI job/shard/union green; no prior green run reused |
+| Actualdev integration | Wait BOTH final-headCI and combinedreview/probes, then authorizeddevPRmerge and actualserved528-cell acceptance | Mainheld; owner-only release remains |
+
+Sequencing refinement: already-created isolated combined candidate may absorb reviewed **test-tightening only** while feature and combined fullCI run in parallel. This is candidate assembly, not a dev-branch merge; actual dev remains gated on BOTH CI conclusions, fresh review and language probes. It avoids serial duplicate waiting without weakening any release gate. If any production change becomes necessary, regroup into a separate reviewed plan before edits.
+
+Correct-baseline amendment independently cleared9.5/9.6 before implementation. Allfour budget sections and completeSITE_DROP table now match immutable accepteddev code ignoring comments; originalexact guards and positive-scroll assertion retained. Newdirect bothfont geometry/visibility/six-link tests remain. Targeted14pass0fail/skip/cancel under stricter baseline, without anyapp change. ApplicationSHA256 unchanged frome227e3a. Previous combined5ea language probes all8x2fonts8019cells0skip/regression, but both correctedcandidateheads still need freshCI/review. Budget-growth/real-clipping negative checks follow in isolated committed-source scratch.
+
+
+## Preserved first combined-candidate receipt (historical5ea3238)
+
+The following receipt is retained; its historical budget interpretation is superseded by the correct-baseline amendment above. Current candidate restores all accepted-dev equations.
+
 ## Combined dev candidate receipt
 
 Featuree227e3a has completed successful exact-head workflow40118477527, all12jobs including fullJS/suitehealth/allmutation shards+union. Independentreview9.4 no materialfinding. Currentdev/main heads reverifiede8dc127/3caf5e2 unchanged. Dedicated`codex/htc-dev-20261024` fromdev merges feature textually clean; original branches untouched. All21canonical i18n/deck/engine file hashes and every embeddedlanguage-table hash matchdevbaseline, same8language set. Dev addsone language-persistence test relative tofeature; combined owned e2eFLOOR475 reflects474feature+thatone, without loweringanyrow. Existingdevpreflightall8languagesbothfonts8019cells/language/font0skip/regression establishes unchangedbaseline. Combined-tree fullCI, languageprobes, freshreview and actualservedDEV remain pending; no dev/main merge claimed.
+
+
+Current combined revision absorbs reviewed test-tightening only, with no application/data change. Both feature and combined fullCI must pass at their final heads before actualdev merge.
