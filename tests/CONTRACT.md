@@ -4,6 +4,10 @@ Read before adding a test. These rules exist because this repo's data was
 verified against physical instruments and fixed by the owner; tests here LOCK
 that in, they do not re-derive it.
 
+For browser execution, check selection, Mac limitations, shared-host scheduling,
+evidence and cleanup, read the shared [browser validation runbook](../docs/testing/browser.md).
+This contract remains authoritative for test design, floors and mutation proof.
+
 ## How to run
 
     ./tests/run.sh                                   # everything
