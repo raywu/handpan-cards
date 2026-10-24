@@ -13994,6 +13994,33 @@ function run() {
       }
     });
 
+    test("I18N: a chosen language survives closing and reopening the panel, a mode tap and a reload", async () => {
+      await freshLoad();
+      await b.setViewport(380, 800, false);
+      try {
+        await b.settle();
+        await openSettingsPanel();
+        await b.eval(`const s = document.getElementById("lang-select"); s.value = "de"; s.dispatchEvent(new Event("change", { bubbles: true })); return true;`);
+        await b.waitFor(`document.documentElement.lang === "de"`, { label: "the language to apply" });
+        const stored = () => b.eval(`try { return JSON.parse(localStorage.getItem("hpfc")).lang || null; } catch (e) { return "ERR"; }`);
+        assert.strictEqual(await stored(), "de", "stored after choosing");
+        await b.click("#settings-trigger");
+        await b.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display === "none"`, { label: "settings panel to close" });
+        await openSettingsPanel();
+        assert.strictEqual(await stored(), "de", "stored after close and reopen");
+        assert.strictEqual(await b.eval(`return document.getElementById("lang-select").value;`), "de", "select after reopen");
+        await b.click("#modeB");
+        await b.settle();
+        assert.strictEqual(await stored(), "de", "stored after a mode tap");
+        await navigate(URL);
+        await b.settle();
+        assert.strictEqual(await b.eval(`return document.documentElement.lang;`), "de", "lang after reload");
+      } finally {
+        await b.eval(`try { localStorage.clear(); } catch (e) {} return true;`);
+        await b.setViewport(900, 900, false);
+      }
+    });
+
     test("I18N: the CJK stacks resolve to a CJK family under ja and zh-Hant, the panel headings are 17px, and the page makes no new request", async () => {
       await freshLoad();
       await b.setViewport(380, 800, false);
@@ -14048,6 +14075,8 @@ function run() {
         ctx.font = cs.fontWeight + " " + cs.fontSize + " " + cs.fontFamily;
         const widest = Math.max(...Array.from(paper.options).map((o) => ctx.measureText(o.text).width + o.text.length * parseFloat(cs.letterSpacing || 0)));
         return { rows: els.map((e) => [e.id || e.className + ":" + e.tagName, lines(e), e.scrollWidth <= e.clientWidth + 1]),
+                 tops: els.map((e) => Math.round(e.getBoundingClientRect().top)),
+                 height: root.scrollHeight,
                  paperRoom: paper.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - widest,
                  sw: root.scrollWidth - root.clientWidth, dsw: document.documentElement.scrollWidth - document.documentElement.clientWidth };`);
       const pass = async (url, lang, w, h) => {
@@ -14077,19 +14106,35 @@ function run() {
         return out;
       };
       try {
+        const tables = fs.readdirSync(path.join(REPO, "data", "i18n")).map((f) => f.replace(/\.json$/, "")).filter((c) => c !== "en");
+        const bad = [];
+        const check = (ok, msg) => { if (!ok) bad.push(msg); };
         for (const [w, h] of [[320, 568], [380, 780], [844, 390], [1280, 800]]) {
           const base = await pass(URL, "en", w, h);
-          const de = await pass(pseudoUrl, "de", w, h);
-          for (const [label, m] of [["en", base], ["de", de]]) {
+          const runs = [["en", base]];
+          for (const lang of tables) runs.push([lang, await pass(URL, lang, w, h)]);
+          for (const [label, m] of runs) {
             const where = `${label} ${w}x${h}`;
-            assert.ok(m.panel.sw <= 0 && m.panel.dsw <= 0, `${where}: the panel scrolls horizontally`);
-            if (label === "en") for (const [id, , fits] of m.panel.rows) assert.ok(fits, `${where}: ${id} overflows its box`);
-            if (label === "en") assert.ok(m.panel.paperRoom >= -0.5, `${where}: the paper select does not show its full option text (${m.panel.paperRoom}px)`);
-            for (const k of ["sheet", "about"]) assert.ok(m[k].sw <= 0 && m[k].dsw <= 0, `${where}: ${k} scrolls horizontally`);
+            check(m.panel.sw <= 0 && m.panel.dsw <= 0, `${where}: the panel scrolls horizontally`);
+            for (const [id, , fits] of m.panel.rows) check(fits, `${where}: ${id} overflows its box`);
+            check(m.panel.paperRoom >= -0.5, `${where}: the paper select does not show its full option text (${m.panel.paperRoom}px)`);
+            for (const k of ["sheet", "about"]) check(m[k].sw <= 0 && m[k].dsw <= 0, `${where}: ${k} scrolls horizontally`);
+            if (label !== "en") m.panel.rows.forEach(([id, n], i) => check(n <= base.panel.rows[i][1],
+              `${where}: ${id} takes ${n} lines against English ${base.panel.rows[i][1]}`));
+            if (label !== "en") {
+              const t = m.panel.tops, bt = base.panel.tops;
+              for (let i = 0; i < bt.length; i++) for (let j = i + 1; j < bt.length; j++)
+                check(bt[i] !== bt[j] || t[i] === t[j], `${where}: ${base.panel.rows[i][0]} and ${base.panel.rows[j][0]} share a row in English and stack here`);
+              check(m.panel.height <= base.panel.height + 16, `${where}: the panel is ${m.panel.height - base.panel.height}px taller than English`);
+            }
           }
-          de.panel.rows.forEach(([id, n], i) => assert.ok(n <= base.panel.rows[i][1] + 1,
+          const de = await pass(pseudoUrl, "de", w, h);
+          check(de.panel.sw <= 0 && de.panel.dsw <= 0, `pseudo de ${w}x${h}: the panel scrolls horizontally`);
+          for (const k of ["sheet", "about"]) check(de[k].sw <= 0 && de[k].dsw <= 0, `pseudo de ${w}x${h}: ${k} scrolls horizontally`);
+          de.panel.rows.forEach(([id, n], i) => check(n <= base.panel.rows[i][1] + 1,
             `${w}x${h}: ${id} takes ${n} lines against English ${base.panel.rows[i][1]} (the brackets of the pseudo table may add one)`));
         }
+        assert.deepStrictEqual(bad, [], "tables overflow");
       } finally {
         await b.setViewport(900, 900, false);
         await b.eval(`try { localStorage.clear(); } catch (e) {} return true;`).catch(() => {});
