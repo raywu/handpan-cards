@@ -14238,6 +14238,63 @@ describe("OF: the sheet's seats follow the typed order", () => {
     assert.match(said, /The rim now follows the order listed\./);
     assert.doesNotMatch(said, /seats were reset|earlier seats were restored/);
   });
+
+  const RIM_SAID = "The rim now follows the order listed.";
+  const INNER_SAID = "The inner notes now follow the order listed.";
+  const INNER_NAMED = "(D3) A3 C4 D4 E4 F4 | G5 F5";
+
+  test("OF: PD a rim reorder typed in the fields on the Scale tab shows its sentence when the Layout tab opens, once", () => {
+    const app = add();
+    typedFields(app, "D3", "C4 A3 D4 E4 F4 G4 A4 C5");
+    assert.strictEqual(d2Status(app), "");
+    app.click(app.els["scale-tab-layout"]);
+    assert.strictEqual(d2Status(app), RIM_SAID);
+    app.click(app.els["scale-tab-scale"]);
+    app.click(app.els["scale-tab-layout"]);
+    assert.strictEqual(d2Status(app), "");
+  });
+
+  test("OF: PD an inner reorder typed on the Scale tab shows the inner sentence when the Layout tab opens", () => {
+    const app = add();
+    lineType(app, INNER_NAMED);
+    app.click(app.els["scale-tab-layout"]);
+    assert.strictEqual(d2Status(app), INNER_SAID);
+  });
+
+  test("OF: PD a typed edit that derives nothing leaves no sentence at the Layout tab", () => {
+    const app = add();
+    typedFields(app, "D3", "A3 C4 D4 E4 F4 G4 A4 C5");
+    app.click(app.els["scale-tab-layout"]);
+    assert.strictEqual(d2Status(app), "");
+  });
+
+  test("OF: PD RESET LAYOUT clears a pending sentence", () => {
+    const app = add();
+    typedFields(app, "D3", "C4 A3 D4 E4 F4 G4 A4 C5");
+    app.click(app.els["scale-layout-reset"]);
+    app.click(app.els["scale-tab-layout"]);
+    assert.doesNotMatch(d2Status(app), /follows? the order listed/);
+  });
+
+  test("OF: PD closing the sheet clears a pending sentence", () => {
+    const app = add();
+    typedFields(app, "D3", "C4 A3 D4 E4 F4 G4 A4 C5");
+    app.run("closeScaleSheet()");
+    openSheet(app);
+    app.click(app.els["scale-tab-layout"]);
+    assert.strictEqual(d2Status(app), "");
+  });
+
+  test("OF: PD a drawer action's own status wins over a pending sentence, and the sentence does not return", () => {
+    const app = add();
+    typedFields(app, "D3", "C4 A3 D4 E4 F4 G4 A4 C5");
+    app.click(app.els["scale-tab-layout"]);
+    app.run("layoutStatus(t('sheet.layout_reset'))");
+    assert.strictEqual(d2Status(app), "Layout reset.");
+    app.click(app.els["scale-tab-scale"]);
+    app.click(app.els["scale-tab-layout"]);
+    assert.strictEqual(d2Status(app), "");
+  });
 });
 
 /* ------------------------------------------------------------------ I18N */
