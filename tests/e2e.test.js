@@ -14075,6 +14075,8 @@ function run() {
         ctx.font = cs.fontWeight + " " + cs.fontSize + " " + cs.fontFamily;
         const widest = Math.max(...Array.from(paper.options).map((o) => ctx.measureText(o.text).width + o.text.length * parseFloat(cs.letterSpacing || 0)));
         return { rows: els.map((e) => [e.id || e.className + ":" + e.tagName, lines(e), e.scrollWidth <= e.clientWidth + 1]),
+                 tops: els.map((e) => Math.round(e.getBoundingClientRect().top)),
+                 height: root.scrollHeight,
                  paperRoom: paper.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - widest,
                  sw: root.scrollWidth - root.clientWidth, dsw: document.documentElement.scrollWidth - document.documentElement.clientWidth };`);
       const pass = async (url, lang, w, h) => {
@@ -14119,6 +14121,12 @@ function run() {
             for (const k of ["sheet", "about"]) check(m[k].sw <= 0 && m[k].dsw <= 0, `${where}: ${k} scrolls horizontally`);
             if (label !== "en") m.panel.rows.forEach(([id, n], i) => check(n <= base.panel.rows[i][1],
               `${where}: ${id} takes ${n} lines against English ${base.panel.rows[i][1]}`));
+            if (label !== "en") {
+              const t = m.panel.tops, bt = base.panel.tops;
+              for (let i = 0; i < bt.length; i++) for (let j = i + 1; j < bt.length; j++)
+                check(bt[i] !== bt[j] || t[i] === t[j], `${where}: ${base.panel.rows[i][0]} and ${base.panel.rows[j][0]} share a row in English and stack here`);
+              check(m.panel.height <= base.panel.height + 16, `${where}: the panel is ${m.panel.height - base.panel.height}px taller than English`);
+            }
           }
           const de = await pass(pseudoUrl, "de", w, h);
           check(de.panel.sw <= 0 && de.panel.dsw <= 0, `pseudo de ${w}x${h}: the panel scrolls horizontally`);
