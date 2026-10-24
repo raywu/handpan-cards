@@ -58,6 +58,7 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", 
   // controls, plus its header trigger and scrim.
   "settings-trigger", "settings-scrim", "settings-panel",
   "print-paper-select",
+  "lang-select",
   // Lane S2: the sequence-mode toggle, its credit paragraph and source link.
   "panel-seq-note", "seq-source-link",
   "seq-style", "seq-style-name", "seq-style-tip", "foot",

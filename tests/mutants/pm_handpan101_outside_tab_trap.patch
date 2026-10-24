@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10827,7 +10827,7 @@
+@@ -13593,7 +13593,7 @@ function panelStops() {
            ...settingsPanel.querySelectorAll(".prints button, .prints select"),
            // Eng review amendment 1: the Resources links join the Tab trap
            // after the print controls, in DOM order.
 -          ...settingsPanel.querySelectorAll('#settings-panel a.mode[id^="res-"]'),
 +          ...settingsPanel.querySelectorAll('#settings-panel a.mode[id^="res-"]:not(#res-handpan-101)'),
-           document.getElementById("about-open")]
+           document.getElementById("about-open"),
+           document.getElementById("lang-select")]
      .filter(isStop);
- }

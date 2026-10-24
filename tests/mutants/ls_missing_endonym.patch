@@ -1,0 +1,14 @@
+# kills: I18N: the options are AUTOMATIC (<detected endonym>) then one endonym per present table, in the fixed order
+# suite: node --test --test-name-pattern ^I18N:.the.options.are.AUTOMATIC tests/app.test.js
+# i18n B. A language option carries no endonym.
+--- a/index.html
++++ b/index.html
+@@ -13732,7 +13732,7 @@
+ const langSelect = document.getElementById("lang-select");
+ function paintLangSelect() {
+   const detected = detectLang(browserLanguages());
+-  const labels = [["auto", t("sel.auto", { lang: ENDONYMS[detected] })], ...LANGS.map(code => [code, ENDONYMS[code]])];
++  const labels = [["auto", t("sel.auto", { lang: ENDONYMS[detected] })], ...LANGS.map(code => [code, ""])];
+   if (langSelect.children.length !== labels.length) {
+     while (langSelect.children.length) langSelect.removeChild(langSelect.children[0]);
+     for (const [value] of labels) {

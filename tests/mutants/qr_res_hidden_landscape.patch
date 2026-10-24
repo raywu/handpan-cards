@@ -12,7 +12,7 @@ diff --git a/index.html b/index.html
    #settings-panel{display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));
      align-content:start; align-items:start}
    #settings-panel > .panel-group{width:auto}
-+  #settings-panel > .panel-group:last-child{display:none}
++  #settings-panel > .panel-group:nth-last-child(2){display:none}
  }
  #settings-trigger[aria-expanded="true"] .glyph{background:transparent}
  #settings-trigger[aria-expanded="true"] .glyph::before{top:0; transform:rotate(45deg)}
