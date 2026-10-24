@@ -401,7 +401,7 @@ changing the solver or the seed, never by hand.
   card past that, by owner decision 2026-10-07; nothing is refused and no row is
   dropped (`TitleBlurbLimitTest`, and its twin in `tests/pdfcards.test.js`).
 - **Menu Resources** (2026-10-05): the settings panel's Resources group has three
-  `.modebar` rows - two sites (`HANDPANER`, `DING & TONES`, class `duo`: one line at every width, equal widths; `tests/e2e.test.js` "TR-1: the two site links are equal in width on every line they share, and every label stays inside its box"), then two Amy Naylor videos (`AMY: PROGRESSIONS`,
+  `.modebar` rows - three sites (`HANDPANER`, `DING & TONES`, `HTC`, class `trio`: three equal widths above the landscape grid, in the sidebar two equal on line one and HTC full width below; `tests/e2e.test.js` "TR-1: the three site links are equal in width on every line they share, and every label stays inside its box"), then two Amy Naylor videos (`AMY: PROGRESSIONS`,
   `AMY: BOTTOM NOTES`, class `duo`: one line at every width, equal widths,
   labels wrap inside their boxes), then `HANDPAN 101` alone (2026-10-08, lane PM:
   a Google Doc link, `#res-handpan-101`, full width, the last panel stop, so no
