@@ -317,10 +317,10 @@ a.mode{text-decoration:none}
   background:#211d16; border:1px solid #433b2c; border-radius:8px; color:#eae6df}
 #share-url[hidden]{display:none}
 .modebar.duo .mode{min-width:0; padding-inline:6px; line-height:1.25}
-/* The three site links split their row equally; the padding trim lets HANDPANER
-   shrink to a third without ever going under its own content (no min-width:0).
-   The landscape panel grid (max-height:520px) below resets it to .mode's own. */
-.modebar.trio .mode{padding-inline:4px}
+/* The three sites share one equal-width row, including the narrow sidebar.
+   Complete labels wrap inside their targets without changing typography. */
+.modebar.trio{flex-wrap:nowrap}
+.modebar.trio .mode{min-width:0; padding-inline:4px; line-height:1.25; overflow-wrap:anywhere}
 #settings-trigger[aria-expanded="true"]{background:#f1ece1; color:#272219; border-color:#f1ece1}
 .sr-only{position:absolute; width:1px; height:1px; margin:-1px; padding:0; border:0;
   overflow:hidden; white-space:nowrap; clip:rect(0 0 0 0)}
@@ -344,7 +344,6 @@ a.mode{text-decoration:none}
   #settings-panel{display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));
     align-content:start; align-items:start}
   #settings-panel > .panel-group{width:auto}
-  .modebar.trio .mode{padding-inline:11px}
 }
 #settings-trigger[aria-expanded="true"] .glyph{background:transparent}
 #settings-trigger[aria-expanded="true"] .glyph::before{top:0; transform:rotate(45deg)}
@@ -370,7 +369,6 @@ a.mode{text-decoration:none}
    shows without JS ever clearing `hidden`. */
 @media (min-width:1024px) and (min-height:700px){
   #settings-trigger, #settings-scrim{display:none}
-  .modebar.trio .mode{flex-basis:40%}
   /* Reviewer finding F1: the 640px-only header rule above (line 163-165)
      lets header - and the deck-chip strip inside it - run out to
      min(92vw,900px), which at >=1024px overruns the right edge and sits
@@ -1734,8 +1732,8 @@ html.about-open{overflow:hidden}
     <!-- Plan risk "no scroll budget", fallback 1: .modebar-style rows (same
          pattern as the Practice buttons) rather than stacked 44px rows -
          stacked overflowed the 320x568 fit test by 18px. Row one holds
-         the three sites (class trio: equal widths above the landscape grid, two
-         equal on line one in the sidebar), row two (class duo: one line, labels wrap inside their
+         the three sites (class trio: one equal-width row at every viewport,
+         complete labels wrap inside their targets), row two (class duo: one line, labels wrap inside their
          boxes) the two Amy Naylor videos, row three HANDPAN 101 alone (2026-10-08,
          full width, so no existing control moves down), row four the ABOUT button
          (an in-app view, not an outbound link: no href, no res- id). -->

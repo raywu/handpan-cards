@@ -1844,9 +1844,10 @@ function run() {
               const hg = await b.eval(`const h = document.getElementById("panel-prog-heading");
                 return h.getBoundingClientRect().height + parseFloat(getComputedStyle(h).marginTop);`);
               const want = MAIN_NEEDED_667x375_S_FALLBACK + hg - m.clientH;
-              assert.ok(Math.abs(amy.overWithout - want) <= 1,
-                `${label}: without the Amy row the panel scrolls by ${amy.overWithout}px, expected main's spare used up plus H + g = ${want}px`);
-              assert.ok(m.scrollH - m.clientH > 0, `${label}: the cell must really scroll (two-sided)`);
+              // Compact sites may recover space; retain the historical upper
+              // budget, while the content/target checks prohibit hiding it.
+              assert.ok(Number.isFinite(amy.overWithout) && amy.overWithout >= 0 && amy.overWithout <= want + 1,
+                `${label}: without the Amy row the panel scrolls by ${amy.overWithout}px, budget ${want}px`);
               assert.deepStrictEqual(m.offscreen.filter((id) => !id.startsWith("res-") && id !== "about-open" && id !== "lang-select"), [],
                 `${label}: only the Resources links, ABOUT and Language may be below the fold`);
             } else if (newlyScrolls) {
@@ -1990,8 +1991,8 @@ function run() {
           if (mode === "S") {
             // D2 step 6b (H-9): progression at 1024x700 needed 673.75 (macOS; 669.75 on the Linux runner) of 688 on
             // main (fallback fonts, which this harness loads) and now needs the
-            // second heading's H + g more, so it scrolls by exactly that much
-            // less main's spare: two-sided within 1px, and every control is
+            // second heading's H + g more, which defines its upper scroll budget
+            // less main's spare (1px tolerance); compaction can reduce it. Every control is
             // still reachable by scrolling (its bottom is inside scrollHeight).
             const hg = await b.eval(`const h = document.getElementById("panel-prog-heading");
               return h.getBoundingClientRect().height + parseFloat(getComputedStyle(h).marginTop);`);
@@ -2002,9 +2003,9 @@ function run() {
             const mainNeeded = process.platform === "linux" ? 607.75 : 611.75;
             const want = Math.max(0, mainNeeded + hg - m.clientH);
             const wantWith = Math.max(0, mainNeeded + hg + amy.cost + amy.langCost - m.clientH);
-            assert.ok(Math.abs(m.scrollH - m.clientH - wantWith) <= 1,
+            assert.ok(Number.isFinite(m.scrollH) && m.scrollH >= m.clientH && m.scrollH - m.clientH <= wantWith + 1,
               `${label}: with the Amy row the cell scrolls by ${m.scrollH - m.clientH}px, expected ${wantWith}px`);
-            assert.ok(Math.abs(amy.overWithout - want) <= 1,
+            assert.ok(Number.isFinite(amy.overWithout) && amy.overWithout >= 0 && amy.overWithout <= want + 1,
               `${label}: without the Amy row the sidebar scrolls by ${amy.overWithout}px, expected ${want}px`);
             const unreachable = await b.eval(`
               const p = document.getElementById("settings-panel");
@@ -2240,63 +2241,98 @@ function run() {
       }
     });
 
+  // Owner compact-row contract. Reused with independently verified real fonts
+  // below; all assertions describe rendered outcomes, not a CSS mechanism.
+  async function assertCompactSites(browser, fontMode) {
+    require("../tools/probe/panel_fit.js").checkFontMode(fontMode, await browser.eval(`return {size: document.fonts.size, faces: [...document.fonts].map(f => ({family: f.family, weight: f.weight, status: f.status}))};`));
+    let primaryError;
+    const cells = [[1024, 700, false], [320, 568, true], [380, 700, true], [768, 1024, false],
+      [640, 360, true], [667, 375, true], [844, 390, true], [932, 430, true],
+      [1280, 320, true], [1024, 746, false], [1280, 746, false]];
+    try {
+      for (const [vw, vh, mobile] of cells) {
+        await browser.setViewport(vw, vh, mobile);
+        // This headless target can stop delivering animation frames after a
+        // desktop/mobile emulation switch. Activate it before frame sync.
+        await browser.send("Page.bringToFront");
+        await browser.settle();
+        for (const mode of ["A", "B", "S"]) {
+          const open = async () => {
+            if (await browser.eval(`return getComputedStyle(document.getElementById("settings-panel")).display === "none";`)) {
+              await browser.click("#settings-trigger");
+              await browser.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display !== "none"`, { label: "Resources panel open" });
+            }
+          };
+          await open();
+          await browser.click(`#${modeBtn(mode)}`);
+          await browser.waitFor(`document.getElementById("${modeBtn(mode)}").getAttribute("aria-pressed") === "true"`, { label: `mode ${mode}` });
+          await open();
+          await browser.settle();
+          const m = await browser.eval(`
+            const ids = ["res-handpaner", "res-dingandtones", "res-trainingcards"];
+            const els = ids.map(id => document.getElementById(id));
+            const row = els[0].parentElement, rr = row.getBoundingClientRect();
+            const panel = document.getElementById("settings-panel").getBoundingClientRect();
+            return { ids: [...row.children].map(e => e.id), row: {left: rr.left, right: rr.right},
+              links: els.map(e => {
+                const r = e.getBoundingClientRect(), g = document.createRange(); g.selectNodeContents(e);
+                const rects = [...g.getClientRects()].filter(t => t.width > 0 && t.height > 0);
+                const cs = getComputedStyle(e);
+                let ancestorsVisible = true, unclipped = true;
+                for (let a = e.parentElement; a; a = a.parentElement) {
+                  const ac = getComputedStyle(a), ar = a.getBoundingClientRect();
+                  ancestorsVisible &&= ac.display !== "none" && ac.visibility === "visible" && Number(ac.opacity) === 1;
+                  for (const t of rects) {
+                    if (/hidden|clip|auto|scroll/.test(ac.overflowX)) unclipped &&= t.left >= ar.left + a.clientLeft - .5 && t.right <= ar.left + a.clientLeft + a.clientWidth + .5;
+                    if (/hidden|clip|auto|scroll/.test(ac.overflowY)) unclipped &&= t.top >= ar.top + a.clientTop - .5 && t.bottom <= ar.top + a.clientTop + a.clientHeight + .5;
+                  }
+                }
+                const hit = (x, y) => e.contains(document.elementFromPoint(x, y));
+                const exposed = hit((r.left + r.right) / 2, (r.top + r.bottom) / 2) && rects.every(t =>
+                  hit(t.left + .5, (t.top + t.bottom) / 2) && hit(t.right - .5, (t.top + t.bottom) / 2));
+                return { text: e.textContent.trim(), left: r.left, right: r.right, top: r.top, bottom: r.bottom, w: r.width, h: r.height,
+                  rects: rects.length, visible: ancestorsVisible && exposed && unclipped && cs.visibility === "visible" && cs.display !== "none" && Number(cs.opacity) === 1,
+                  inside: rects.every(t => t.left >= r.left - .5 && t.right <= r.right + .5 && t.top >= r.top - .5 && t.bottom <= r.bottom + .5),
+                  inPanel: r.left >= panel.left - .5 && r.right <= panel.right + .5 && r.top >= panel.top - .5 && r.bottom <= panel.bottom + .5,
+                  spill: e.scrollWidth - e.clientWidth, ellipsis: cs.textOverflow === "ellipsis",
+                  font: cs.fontSize, weight: cs.fontWeight, family: cs.fontFamily, leading: parseFloat(cs.lineHeight) };
+              }) };
+          `);
+          const label = `${vw}x${vh} mode ${mode}`;
+          assert.deepStrictEqual(m.ids, ["res-handpaner", "res-dingandtones", "res-trainingcards"], `${label}: exact sites row order`);
+          assert.deepStrictEqual(m.links.map(e => e.text), ["HANDPANER", "DING & TONES", "HTC"], `${label}: complete labels`);
+          assert.ok(m.links.every(e => e.visible && e.rects > 0 && e.w >= 44 && e.h >= 44), `${label}: visible text and 44px targets: ${JSON.stringify(m)}`);
+          assert.ok(Math.max(...m.links.map(e => e.top)) - Math.min(...m.links.map(e => e.top)) <= 1, `${label}: sites must share one row: ${JSON.stringify(m)}`);
+          assert.ok(Math.max(...m.links.map(e => e.w)) - Math.min(...m.links.map(e => e.w)) <= 1, `${label}: equal widths`);
+          assert.ok(Math.abs(m.links[0].left - m.row.left) <= 1 && Math.abs(m.links[2].right - m.row.right) <= 1, `${label}: sites span their row`);
+          assert.ok(m.links.every((e, i) => !i || e.left >= m.links[i - 1].right), `${label}: links do not overlap`);
+          for (const e of m.links) {
+            assert.ok(e.inside && e.inPanel && e.spill === 0 && !e.ellipsis, `${label} ${e.text}: complete unclipped label: ${JSON.stringify(e)}`);
+            assert.strictEqual(e.font, "10.5px", `${label}: preserve label size`);
+            assert.strictEqual(e.weight, "600", `${label}: preserve label weight`);
+            assert.ok(e.family.includes("Nunito Sans"), `${label}: preserve label family`);
+            if (e.rects > 1) assert.ok(e.leading >= 13, `${label}: readable wrapped-label leading`);
+          }
+        }
+      }
+    } catch (error) {
+      primaryError = error;
+      throw error;
+    } finally {
+      try {
+        await browser.setViewport(900, 900, false);
+        await browser.send("Page.bringToFront");
+      } catch (cleanupError) {
+        if (!primaryError) throw cleanupError;
+        primaryError.message += `; cleanup also failed: ${cleanupError.message}`;
+      }
+    }
+  }
+
   test("TR-1: the three site links are equal in width on every line they share, and every label stays inside its box",
     async () => {
       await freshLoad();
-      const MEASURE = `
-        const ids = ["res-handpaner", "res-dingandtones", "res-trainingcards"];
-        const els = ids.map(id => document.getElementById(id));
-        const inside = (el) => {
-          const k = el.getBoundingClientRect(), g = document.createRange(); g.selectNodeContents(el);
-          return [...g.getClientRects()].every(t => t.left >= k.left - 0.5 && t.right <= k.right + 0.5 && t.top >= k.top - 0.5 && t.bottom <= k.bottom + 0.5);
-        };
-        const lines = [];
-        for (const el of els) {
-          const r = el.getBoundingClientRect();
-          let l = lines.find(x => Math.abs(x.top - r.top) <= 2);
-          if (!l) { l = { top: r.top, widths: [] }; lines.push(l); }
-          l.widths.push(r.width);
-        }
-        return { siblings: els[0].parentElement.children.length, lines: lines.map(l => l.widths),
-          tall: Math.min(...els.map(e => e.getBoundingClientRect().height)),
-          inside: els.map(inside), spill: els.map(e => e.scrollWidth - e.clientWidth) };
-      `;
-      try {
-        for (const [vw, vh, over] of MENU_VIEWPORTS.filter(([, h]) => h > 520)) {
-          await b.setViewport(vw, vh, over);
-          await b.settle();
-          await openSettingsPanel();
-          const m = await b.eval(MEASURE);
-          const label = `${vw}x${vh}`;
-          assert.strictEqual(m.siblings, 3, `${label}: the first Resources row holds exactly three links`);
-          const shape = JSON.stringify(m.lines.map((w) => w.length));
-          const want = vw === 1024 && vh === 700 ? "[2,1]" : "[3]";
-          assert.strictEqual(shape, want, `${label}: line shape ${shape}, wanted ${want}: ${JSON.stringify(m.lines)}`);
-          for (const w of m.lines) {
-            assert.ok(Math.max(...w) - Math.min(...w) <= 1, `${label}: unequal widths on one line: ${JSON.stringify(w)}`);
-          }
-          assert.ok(m.tall >= 44, `${label}: a site link is under the 44px target`);
-          assert.ok(m.inside.every(Boolean), `${label}: a site label's text spills outside its link box`);
-          await b.key("Escape", "Escape", 27);
-        }
-        for (const [vw, vh, over] of [[640, 360, true], [667, 375, true], [844, 390, true], [932, 430, true]]) {
-          await b.setViewport(vw, vh, over);
-          await b.settle();
-          await openSettingsPanel();
-          const m = await b.eval(MEASURE);
-          const label = `${vw}x${vh}`;
-          assert.deepStrictEqual(m.spill, [0, 0, 0], `${label}: a site link's content overflows its box`);
-          assert.ok(m.inside.every(Boolean), `${label}: a site label's text spills outside its link box`);
-          await b.eval(`document.getElementById("res-handpaner").parentElement.classList.remove("trio");`);
-          await b.settle();
-          const base = await b.eval(MEASURE);
-          await b.eval(`document.getElementById("res-handpaner").parentElement.classList.add("trio");`);
-          assert.deepStrictEqual(m.lines, base.lines, `${label}: the landscape row differs from the same row without the trio class`);
-          await b.key("Escape", "Escape", 27);
-        }
-      } finally {
-        await b.setViewport(900, 900, false);
-      }
+      await assertCompactSites(b, "fallback");
     });
 
   test("#seq-source-link and the Amy links are each a panel stop exactly once, and Amy carries no onclick",
@@ -9493,6 +9529,10 @@ function run() {
     });
     after(async () => { if (rb) await rb.close(); });
 
+    test("TR-1: compact sites preserve single-row labels and targets with real fonts in modes A, B and S", async () => {
+      await assertCompactSites(rb, "real");
+    });
+
     async function panelOverflow(w, h, mode, mobile) {
       await rb.setViewport(w, h, mobile);
       await rb.settle();
@@ -13287,11 +13327,17 @@ function run() {
             const dAbout = 44 + g.sp1;
             const dPm = (delta ? PM_NEEDED_L[tableKey(fm)][key][i] : dPrint + dRes) + (delta ? g.needed - g.neededNoAbout : dAbout);
             assert.ok(g.langCost >= 0, where + ": the Language group shrinks the panel");
-            assert.ok(Math.abs(g.needed - (want[i] + d * g.hg + amyNeeded + dPm + g.langCost)) <= 0.5,
+            const budget = want[i] + d * g.hg + amyNeeded + dPm + g.langCost;
+            const compactBand = label === "landscape" || label === "the sidebar";
+            assert.ok(Number.isFinite(g.needed) && g.needed >= 0 && (compactBand ? g.needed <= budget + 0.5 : Math.abs(g.needed - budget) <= 0.5),
               `${where}: needed ${g.needed}px, expected main ${want[i]} + ${d ? "H + g = " + g.hg : "0"} + the Amy row ${amyNeeded} + PM ${dPm} + Language ${g.langCost}`);
             assert.ok(Math.abs(g.groups[0] - (wantG[0] + g.hg)) <= 0.5, `${where}: the first group is ${g.groups[0]}px, expected main ${wantG[0]} + ${g.hg}`);
             const plus = [0, 0, dPrint, amyRes + dRes + dAbout];
-            for (let k = 1; k < 4; k++) assert.ok(Math.abs(g.groups[k] - (wantG[k] + plus[k])) <= 0.5, `${where}: group ${k} is ${g.groups[k]}px, main has ${wantG[k]}px plus ${plus[k]}`);
+            for (let k = 1; k < 4; k++) {
+              const groupBudget = wantG[k] + plus[k];
+              // Only Resources can shrink under the compact-sites requirement.
+              assert.ok(Number.isFinite(g.groups[k]) && g.groups[k] > 0 && (compactBand && k === 3 ? g.groups[k] <= groupBudget + 0.5 : Math.abs(g.groups[k] - groupBudget) <= 0.5), `${where}: group ${k} is ${g.groups[k]}px, main has ${wantG[k]}px plus ${plus[k]}`);
+            }
           });
         }
       }
