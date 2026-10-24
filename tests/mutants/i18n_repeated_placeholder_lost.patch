@@ -6,10 +6,10 @@ diff --git a/data/i18n/fr.json b/data/i18n/fr.json
 +++ b/data/i18n/fr.json
 @@ -177,7 +177,7 @@
    "sheet.lip_show": "Afficher {label}",
-   "compose.TYPE_NOTES_ONLY": "Saisissez uniquement des notes : la ligne s’écrit pour vous.",
+   "compose.TYPE_NOTES_ONLY": "Saisissez seulement les notes : la ligne se remplit automatiquement.",
    "compose.SOLFEGE": "Utilisez les lettres, comme D A Bb.",
 -  "compose.DOUBLE_B": "{L}B n’est pas une note : pour {L} bémol, écrivez {L}b.",
 +  "compose.DOUBLE_B": "DB n’est pas une note : pour {L} bémol, écrivez {L}b.",
    "compose.NOT_A_NOTE": "« {T} » n’est pas une note : essayez C, F# ou Bb.",
    "compose.OUT_OF_RANGE": "{X} est hors de la plage C-1 à G9.",
-   "compose.IN_TOP": "{name} figure déjà dans les notes du dessus ou intérieures.",
+   "compose.IN_TOP": "{name} est déjà dans les notes du dessus ou les notes intérieures.",

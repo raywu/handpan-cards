@@ -10,6 +10,6 @@ diff --git a/data/i18n/de.json b/data/i18n/de.json
    "sheet.generate": "KARTEN ERSTELLEN",
 -  "sheet.save": "ÄNDERUNGEN SPEICHERN",
 +  "sheet.save": "ÄNDERUNGEN SPEICHERN {__proto__}",
-   "sheet.generating": "WIRD ERSTELLT",
-   "sheet.saving": "WIRD GESPEICHERT",
+   "sheet.generating": "KARTEN WERDEN ERSTELLT …",
+   "sheet.saving": "ÄNDERUNGEN WERDEN GESPEICHERT …",
    "sheet.del_idle": "DIESE SKALA LÖSCHEN",
