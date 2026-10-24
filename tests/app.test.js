@@ -13505,20 +13505,6 @@ describe("FPD: the drawer slides bottom notes", () => {
     }
   });
 
-  test("FPD: under active angles a drop on a bottom note exchanges the two angles and keeps each note's label", () => {
-    const app = fpdOpen();
-    app.run("layoutAngles = { bottom: [300, 200, null] }; resyncSheet(true)");
-    assert.strictEqual(fpdAngle(app, 101), 300);
-    DG.mouseDrag(app, "C3", "D3");
-    assert.deepStrictEqual(fpdAngles(app), { bottom: [200, 300, null] });
-    assert.strictEqual(fpdAngle(app, 101), 200);
-    assert.strictEqual(fpdAngle(app, 102), 300);
-    assert.strictEqual(fpdLabel(app, 101), "U1");
-    assert.strictEqual(fpdLabel(app, 102), "U2");
-    assert.strictEqual(app.get("JSON.stringify(layoutSeats)"), "null");
-    assert.match(d2Status(app), /^Swapped C3 and D3\./);
-  });
-
   test("FPD: an exchange of two bottom notes is refused when the snapped angle of either would sit inside the floor of a third note, whichever note is dragged", () => {
     const n = 23;
     const notes = Array.from({ length: n }, (_, k) => `[${"CDEFGAB"[k % 7]}${1 + Math.floor(k / 7)}]`).join(" ");
@@ -13585,25 +13571,6 @@ describe("FPD: seats, sole note, hint, nudge, notices and records", () => {
     DG.moveTo(app, g, q.x, q.y);
     DG.release(app, g, q.x, q.y);
   };
-
-  test("FPD: the first slide on a seated bottom ring folds seats into angles: no position changes, the record carries no seats.bottom, and the labels run U1..Un low to high", () => {
-    const app = open();
-    DG.mouseDrag(app, "C3", "D3");
-    assert.notStrictEqual(dgSeats(app), null);
-    const before = [101, 102, 103].map((id) => angleOf(app, id));
-    slide(app, "E3", 150);
-    assert.strictEqual(dgSeats(app), null);
-    const after = [101, 102, 103].map((id) => angleOf(app, id));
-    assert.deepStrictEqual(after.slice(0, 2), before.slice(0, 2));
-    assert.strictEqual(after[2], 150);
-    assert.deepStrictEqual(ang(app), { bottom: [before[0], before[1], 150] });
-    assert.deepStrictEqual([101, 102, 103].map((id) => labelOf(app, id)), ["U1", "U2", "U3"]);
-    assert.match(d2Status(app), /Bottom seat numbers now run low to high\.$/);
-    app.els["scale-generate"].click();
-    const o = app.registry()[app.deckId()].options;
-    assert.strictEqual(o.seats && o.seats.bottom, undefined);
-    assert.deepStrictEqual(o.angles, { bottom: [before[0], before[1], 150] });
-  });
 
   test("FPD: a scale with one bottom note opens the drawer with it pickable, a drag moves it, and the nothing-to-rearrange line never shows", () => {
     const app = open("[C3] (A3) E4");
@@ -14706,3 +14673,166 @@ function I18N_STATES(snap, html) {
   states.edit = snap(app);
   return states;
 }
+
+/* ---- Lane SO-C: bottom seat numbers belong to ring positions ----
+ * Pygmy under anchor "between": U1 C3 @300, U2 Db3 @240, U3 Eb3 @0, U4 Bb3 @180,
+ * U5 Db4 @60, U6 Ab5 @120. Swapping Db3 and Db4 leaves U2 at 240 and U5 at 60. */
+describe("SO: bottom seat numbers stay on their seats", () => {
+  const SO_ANGLES = { bottom: [null, 60, null, null, 240, null] };
+  const soOpen = () => {
+    const app = dgOpen({}, DR1_PYGMY_MAKER);
+    app.els["scale-anchor-between"].click();
+    return app;
+  };
+  const soAngles = (app) => app.get("JSON.stringify(layoutAngles)");
+  const soLabel = (app, id) => app.get(`lastSolved.fields[${id}][5]`);
+  const soAngle = (app, id) => app.get(`lastSolved.fields[${id}][4]`);
+  const soLabels = (app) => [101, 102, 103, 104, 105, 106].map((id) => soLabel(app, id));
+  const soFlash = (app) => (JSON.parse(app.get("JSON.stringify(panFlash)")) || []).slice().sort();
+  const soSwapped = (app) => {
+    app.run("layoutAngles = { bottom: [300, null, null, null, null, null] }; resyncSheet(true)");
+    DG.mouseDrag(app, "Db3", "Db4");
+    return app;
+  };
+  const soHit = (app, prefix) => app.hits().map((h) => h.getAttribute("aria-label")).find((l) => l.startsWith(prefix));
+
+  test("SO: generateDeck under angles alone gives the seat numbers: Bbm U4-U2-5, Db U2-5-7, Db LOW VOICING U5-5-2", () => {
+    const app = boot();
+    const made = app.generate(DR1_PYGMY_MAKER, { anchor: "between", angles: SO_ANGLES });
+    assert.strictEqual(made.ok, true, made.reason);
+    const deck = app.registry()[made.value.id];
+    const line = (ch) => ch.fields.map((f) => deck.fields[f][5]).join("-");
+    const named = (n) => deck.chords.filter((ch) => ch.main + (ch.sup || "") === n).map(line);
+    assert.deepStrictEqual(named("Bbm"), ["U4-U2-5"]);
+    assert.deepStrictEqual(named("Db"), ["U2-5-7", "U5-5-2"]);
+  });
+
+  test("SO: under active angles a drop on a bottom note exchanges the two angles and the seat numbers stay on their seats", () => {
+    const app = soSwapped(soOpen());
+    assert.strictEqual(soAngle(app, 102), 60);
+    assert.strictEqual(soAngle(app, 105), 240);
+    assert.strictEqual(soLabel(app, 102), "U5");
+    assert.strictEqual(soLabel(app, 105), "U2");
+    assert.strictEqual(soLabel(app, 101), "U1");
+    assert.strictEqual(soLabel(app, 104), "U4");
+    assert.strictEqual(app.get("JSON.stringify(layoutSeats)"), "null");
+    assert.ok(soHit(app, "Db3, bottom seat U5, upper right"), "Db3 hit name");
+    assert.ok(soHit(app, "Db4, bottom seat U2, lower left"), "Db4 hit name");
+  });
+
+  test("SO: the swap status names the seat the note moved into: Swapped Db3 and Db4. Db3 is now in bottom seat U5, upper right.", () => {
+    const app = soSwapped(soOpen());
+    assert.strictEqual(d2Status(app), "Swapped Db3 and Db4. Db3 is now in bottom seat U5, upper right.");
+  });
+
+  test("SO: the first slide on a seated bottom ring folds seats into angles: no position changes, the record carries no seats.bottom, and every seat keeps its number", () => {
+    const app = dgOpen({}, "[C3] [D3] [E3] (A3) C4 D4 E4 F4");
+    DG.mouseDrag(app, "C3", "D3");
+    assert.notStrictEqual(dgSeats(app), null);
+    const ids = [101, 102, 103];
+    const labels = ids.map((id) => soLabel(app, id));
+    const angles = ids.map((id) => soAngle(app, id));
+    app.run("slideNote({ ring: 'bottom', i: 2 }, stepOf(lastSolved.fields[103][4]), 'drag', 1)");
+    assert.strictEqual(dgSeats(app), null);
+    assert.deepStrictEqual(ids.map((id) => soLabel(app, id)), labels);
+    assert.deepStrictEqual(ids.map((id) => soAngle(app, id)), angles);
+    assert.doesNotMatch(d2Status(app), /Bottom seat numbers now run/);
+    app.els["scale-generate"].click();
+    const o = app.registry()[app.deckId()].options;
+    assert.strictEqual(o.seats && o.seats.bottom, undefined);
+  });
+
+  test("SO: a slide or nudge that changes any bottom seat number says which numbers moved to which notes and flashes those notes", () => {
+    const tail = " Seat numbers keep their order around the ring, so ";
+    const app = soOpen();
+    app.run("slideNote({ ring: 'bottom', i: 2 }, 90, 'drag', 1)");
+    assert.strictEqual(d2Status(app), "Eb3 moved to 90°, top." + tail + "Eb3 is now U5 and Db4 is now U3.");
+    assert.deepStrictEqual(soFlash(app), ["103", "105"]);
+    assert.strictEqual(app.els["scale-drawer-status"].classList.contains("warn"), false);
+
+    const two = soOpen();
+    two.run("slideNote({ ring: 'bottom', i: 3 }, 30, 'drag', 1)");
+    assert.strictEqual(d2Status(two), "Bb3 moved to 30°, upper right." + tail + "Bb3 is now U5, Ab5 is now U4 and Db4 is now U6.");
+    assert.deepStrictEqual(soFlash(two), ["104", "105", "106"]);
+
+    const nudge = soOpen();
+    nudge.run("layoutAngles = { bottom: [300, 240, 0, 140, 285, 120] }; resyncSheet(true)");
+    nudge.run("pickRef = { ring: 'bottom', i: 1 }; paintLayout(); nudgeAngle(-1)");
+    assert.strictEqual(d2Status(nudge), "Db3 at 235°, lower left." + tail +
+      "Db3 is now U4, C3 is now U1, Db4 is now U2, Eb3 is now U3, Ab5 is now U5 and Bb3 is now U6.");
+    assert.deepStrictEqual(soFlash(nudge), ["101", "102", "103", "104", "105", "106"]);
+
+    const quiet = soOpen();
+    quiet.run("slideNote({ ring: 'bottom', i: 0 }, 295, 'drag', 1)");
+    assert.strictEqual(d2Status(quiet), "C3 moved to 295°, lower right. Seat U1 stays its number.");
+    assert.strictEqual(soFlash(quiet).length, 0);
+    quiet.run("slideNote({ ring: 'bottom', i: 0 }, 290, 'drag', 1)");
+    assert.strictEqual(d2Status(quiet), "C3 moved to 290°, bottom.");
+  });
+
+  test("SO: under active angles the drawer walk and the seat buttons follow U1..Un, as they do under seats", () => {
+    const app = soOpen();
+    app.run("layoutAngles = { bottom: [300, null, null, null, null, null] }; resyncSheet(true)");
+    assert.deepStrictEqual(plain(app.get("allNotes().filter((n) => n.ring === 'bottom').map((n) => n.label)")),
+      ["U1", "U2", "U3", "U4", "U5", "U6"]);
+    app.els["scale-fine-toggle"].click();
+    d2Tap(app, "Db3");
+    app.els["scale-seat-next"].click();
+    assert.match(d2Status(app), /^Swapped Db3 and Eb3\./);
+    assert.strictEqual(soLabel(app, 102), "U3");
+    assert.strictEqual(soLabel(app, 103), "U2");
+  });
+
+  test("SO: RESET LAYOUT after an angles swap puts every bottom note back with its home number", () => {
+    const app = soSwapped(soOpen());
+    app.els["scale-layout-reset"].click();
+    assert.strictEqual(app.get("layoutAngles"), null);
+    assert.deepStrictEqual(soLabels(app), ["U1", "U2", "U3", "U4", "U5", "U6"]);
+    assert.deepStrictEqual([101, 102, 103, 104, 105, 106].map((id) => soAngle(app, id)), [300, 240, 0, 180, 60, 120]);
+  });
+
+  test("SO: SAVE, Edit and the bar's link round-trip an angles swap with the record and the v6 code unchanged and the seat numbers on the card and in the PDF number line", () => {
+    const app = soSwapped(soOpen());
+    app.els["scale-generate"].click();
+    const rec = app.registry()[app.deckId()];
+        assert.deepStrictEqual(plain(rec.options.angles), { bottom: [300, 60, null, null, 240, null] });
+    assert.strictEqual(rec.options.seats && rec.options.seats.bottom, undefined);
+    const ref = boot();
+    const made = ref.generate(DR1_PYGMY_MAKER, { anchor: "between", angles: rec.options.angles });
+    const refDeck = ref.registry()[made.value.id];
+    const code = app.get(`shareCode(CUSTOM[${JSON.stringify(rec.id)}]).value`);
+    assert.strictEqual(code, ref.get(`shareCode(CUSTOM[${JSON.stringify(refDeck.id)}]).value`));
+    assert.match(code, /^6\/.*\/at-300,60,,,240,\/[0-9a-f]{6}$/);
+    const bbm = rec.chords.find((ch) => ch.main + (ch.sup || "") === "Bbm");
+    assert.strictEqual(bbm.fields.map((f) => rec.fields[f][5]).join("-"), "U4-U2-5");
+    const expr = `CUSTOM[${JSON.stringify(rec.id)}]`;
+    const idx = rec.chords.indexOf(bbm);
+    const line = app.get(`linesHTML(${expr}, ${expr}.chords[${idx}])`);
+    const numline = /<div class="numline">([\s\S]*)<\/div><\/div>/.exec(line)[1];
+    assert.deepStrictEqual([...numline.matchAll(/>([^<>]+)<\/span>/g)].map((m) => m[1]).filter((s) => /\d/.test(s)),
+      ["U4", "U2", "5"]);
+    openEdit(app, rec);
+    app.click(app.els["scale-tab-layout"]);
+    assert.strictEqual(soLabel(app, 102), "U5");
+    assert.strictEqual(soLabel(app, 105), "U2");
+  });
+
+  test("SO: MIRROR BOTTOM after the fold re-flows the seat numbers, moves no note and says so, and MIRROR TOP leaves every bottom number alone", () => {
+    const app = soOpen();
+    app.run("layoutAngles = { bottom: [300, 60, 0, 180, 240, 120] }; resyncSheet(true)");
+    const ang = [101, 102, 103, 104, 105, 106].map((id) => soAngle(app, id));
+    const labels = soLabels(app);
+    app.els["scale-mirror"].click();
+    assert.deepStrictEqual(soLabels(app), labels);
+    app.els["scale-mirror"].click();
+    app.els["scale-mirror-bottom"].click();
+    assert.strictEqual(d2Status(app),
+      "Bottom mirror on. The notes you placed stay put, and their seat numbers now run the other way round.");
+    assert.deepStrictEqual([101, 102, 103, 104, 105, 106].map((id) => soAngle(app, id)), ang);
+    const after = soLabels(app);
+    assert.deepStrictEqual(after, ["U2", "U6", "U4", "U3", "U1", "U5"]);
+    const changed = [101, 102, 103, 104, 105, 106].filter((id, k) => after[k] !== labels[k]).map(String);
+    assert.ok(changed.length > 0, "the mirror renumbered");
+    assert.deepStrictEqual(soFlash(app), changed.sort());
+  });
+});
