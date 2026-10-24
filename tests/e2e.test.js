@@ -2273,7 +2273,11 @@ function run() {
             const els = ids.map(id => document.getElementById(id));
             const row = els[0].parentElement, rr = row.getBoundingClientRect();
             const panel = document.getElementById("settings-panel").getBoundingClientRect();
-            return { ids: [...row.children].map(e => e.id), row: {left: rr.left, right: rr.right},
+            const peer = getComputedStyle(document.getElementById("modeA"));
+            const wrappedPeer = getComputedStyle(document.getElementById("res-amy-progressions"));
+            const reference = {font: peer.fontSize, weight: peer.fontWeight, family: peer.fontFamily, tracking: peer.letterSpacing,
+              leading: parseFloat(wrappedPeer.lineHeight)};
+            return { reference, ids: [...row.children].map(e => e.id), row: {left: rr.left, right: rr.right},
               links: els.map(e => {
                 const r = e.getBoundingClientRect(), g = document.createRange(); g.selectNodeContents(e);
                 const rects = [...g.getClientRects()].filter(t => t.width > 0 && t.height > 0);
@@ -2288,14 +2292,21 @@ function run() {
                   }
                 }
                 const hit = (x, y) => e.contains(document.elementFromPoint(x, y));
-                const exposed = hit((r.left + r.right) / 2, (r.top + r.bottom) / 2) && rects.every(t =>
+                const cx = (r.left + r.right) / 2, cy = (r.top + r.bottom) / 2;
+                // Probe a central44px target, including each edge, allowing
+                // the existing rounded corners. A short readable label alone
+                // must not make clipped padding look like a usable target.
+                const offsets = [-21.5, -14, -7, 0, 7, 14, 21.5];
+                const targetExposed = offsets.every(x => offsets.every(y =>
+                  (Math.abs(x) > 14 && Math.abs(y) > 14) || hit(cx + x, cy + y)));
+                const exposed = targetExposed && rects.every(t =>
                   hit(t.left + .5, (t.top + t.bottom) / 2) && hit(t.right - .5, (t.top + t.bottom) / 2));
                 return { text: e.textContent.trim(), left: r.left, right: r.right, top: r.top, bottom: r.bottom, w: r.width, h: r.height,
                   rects: rects.length, visible: ancestorsVisible && exposed && unclipped && cs.visibility === "visible" && cs.display !== "none" && Number(cs.opacity) === 1,
                   inside: rects.every(t => t.left >= r.left - .5 && t.right <= r.right + .5 && t.top >= r.top - .5 && t.bottom <= r.bottom + .5),
                   inPanel: r.left >= panel.left - .5 && r.right <= panel.right + .5 && r.top >= panel.top - .5 && r.bottom <= panel.bottom + .5,
                   spill: e.scrollWidth - e.clientWidth, ellipsis: cs.textOverflow === "ellipsis",
-                  font: cs.fontSize, weight: cs.fontWeight, family: cs.fontFamily, leading: parseFloat(cs.lineHeight) };
+                  font: cs.fontSize, weight: cs.fontWeight, family: cs.fontFamily, tracking: cs.letterSpacing, leading: parseFloat(cs.lineHeight) };
               }) };
           `);
           const label = `${vw}x${vh} mode ${mode}`;
@@ -2308,10 +2319,10 @@ function run() {
           assert.ok(m.links.every((e, i) => !i || e.left >= m.links[i - 1].right), `${label}: links do not overlap`);
           for (const e of m.links) {
             assert.ok(e.inside && e.inPanel && e.spill === 0 && !e.ellipsis, `${label} ${e.text}: complete unclipped label: ${JSON.stringify(e)}`);
-            assert.strictEqual(e.font, "10.5px", `${label}: preserve label size`);
-            assert.strictEqual(e.weight, "600", `${label}: preserve label weight`);
-            assert.ok(e.family.includes("Nunito Sans"), `${label}: preserve label family`);
-            if (e.rects > 1) assert.ok(e.leading >= 13, `${label}: readable wrapped-label leading`);
+            for (const property of ["font", "weight", "family", "tracking"]) {
+              assert.strictEqual(e[property], m.reference[property], `${label}: preserve peer-control ${property}`);
+            }
+            if (e.rects > 1) assert.ok(e.leading >= m.reference.leading - .01, `${label}: preserve peer-control wrapped-label leading`);
           }
         }
       }

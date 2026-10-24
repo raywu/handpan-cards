@@ -128,3 +128,7 @@ Generated from clean committed source6113804 in separate detached scratch. Bodie
 | tr_trio_budget_growth (new) | Proves upper budget still constrains growth | Add200px landscape row margin; unchanged historical budget assertion fails |
 
 Corpus count1461 (1459+2). No existing mutant removed; no budget constant or test floor lowered. Targeted reviewed browser run13pass0fail0skip/cancel; Python gate274ran0skip/fail/error; data/boot/engine/deck/i18n checks pass. Full exact-head CI, final independent PR review, combined-tree dev checks and actual deployed DEV still pending.
+
+## Fresh adversarial PR review — addressed refinements
+
+Atd18791b, independent engineering found no actionable product regression and conditionally cleared source (CI/DEV still required). Independent test review found threeP2 issues, addressed before dev: peer-control typography reference replaces font literals per CONTRACT7; hit-testing samples central44px target edges/interior with rounded-corner allowance, alongside full label checks; landscape-only faults are scoped to the landscape block, not every matching panel-width rule. A clipped-HTC-padding counterexample passed the old oracle on bothfonts (no skip), proving the gap before repair. Its generated mutant now requires assertion-red under the stronger oracle. Fresh final-head review/CI remain required.
