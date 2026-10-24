@@ -66,6 +66,12 @@ The engine is twelve modules under `src/engine/`:
 
 Requirements: Node 22 and Python 3.12 (what CI uses), `pip install -r requirements-ci.txt` (reportlab, pymupdf, fonttools), and Chrome or Chromium for the browser tests. `CHROME_BIN` overrides where the tests look for it.
 
+For browser checks, start with the shared [browser validation runbook](docs/testing/browser.md):
+it covers check selection, Mac setup and the unresolved full Mac timeout,
+serialized browser access, commands, evidence and cleanup. It is usable by
+humans, Claude, Codex and other command-capable harnesses; targeted local checks
+do not replace full exact-head CI and deployed DEV verification.
+
 Tests:
 
     ./tests/run.sh                  # validate, boot sim, python and node suites
