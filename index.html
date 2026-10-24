@@ -11078,6 +11078,7 @@ function paintMirrors() {
    Its state is a session let like `mirror` and `anchor`: it opens closed,
    closing it never touches the layout, and leaving the sheet drops it. */
 let drawerOpen = false;
+let pendingDerive = "";
 let sheetTab = "scale";
 let layoutBase = { anchor: "one", mirror: false, mb: false, seats: "", angles: "" };
 const HINT_EMPTY = () => t("sheet.layout_hint_empty");
@@ -11606,6 +11607,7 @@ function dropDrawer() {
   drawerHint.textContent = "";
   drawerHint.hidden = true;
   drawerOpen = false;
+  pendingDerive = "";
   sheetTab = "scale";
   paintTabs();
   pickRef = null;
@@ -12270,6 +12272,7 @@ function noteCounts(fields, value) {
   }
   if (!text) return;
   if (putDown && wasOnNote) focusFirstNext = true;
+  if (!drawerOpen && derived.length) pendingDerive = text;
   if (drawerOpen) layoutStatus(text);
 }
 const typedKey = (k, ring) => (k && k[ring] ? k[ring].join(",") : null);
@@ -13038,6 +13041,13 @@ tabStrip.addEventListener("keydown", (e) => {
 });
 anglePrev.onclick = () => nudgeAngle(1);
 angleNext.onclick = () => nudgeAngle(-1);
+function showPendingDerive() {
+  if (drawerOpen && boxOk && pendingDerive) { layoutStatus(pendingDerive); pendingDerive = ""; }
+}
+tabLayout.addEventListener("click", showPendingDerive);
+nextBtn.addEventListener("click", showPendingDerive);
+tabStrip.addEventListener("keydown", showPendingDerive);
+resetBtn.addEventListener("click", () => { pendingDerive = ""; });
 notePrev.onclick = () => stepNote(-1);
 noteNext.onclick = () => stepNote(1);
 seatPrev.onclick = () => stepSeat(-1);
