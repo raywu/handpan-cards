@@ -14476,17 +14476,60 @@ describe("I18N", () => {
   test("I18N: every table has the keys of en and keeps every placeholder", () => {
     const dir = path.join(ROOT, "data", "i18n");
     const en = readEn();
-    const holes = (v) => (typeof v === "string" ? [v] : Object.values(v)).join("\u0000").match(/\{[A-Za-z]+\}/g) || [];
-    const set = (v) => [...new Set(holes(v))].sort();
-    for (const f of fs.readdirSync(dir).filter((x) => x.endsWith(".json"))) {
-      const table = JSON.parse(fs.readFileSync(path.join(dir, f), "utf8"));
-      assert.deepStrictEqual(Object.keys(table).sort(), Object.keys(en).sort(), f + ": key parity with en");
+    // Frozen before Naturalness, not inferred from the candidate being checked.
+    // See the fixture's source commit/hashes and the reviewed Naturalness plan.
+    const contract = JSON.parse(fs.readFileSync(path.join(ROOT, "tests", "fixtures", "i18n_contract_v1.json"), "utf8"));
+    const locales = ["en", ...ALL];
+    const counts = (s) => {
+      const out = {};
+      for (const token of s.match(/\{\w+\}/g) || []) {
+        const name = token.slice(1, -1);
+        out[name] = (out[name] || 0) + 1;
+      }
+      return out;
+    };
+    const edges = (s) => [s.match(/^\s*/u)[0], s.match(/\s*$/u)[0]];
+    const isPlural = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
+    assert.strictEqual(contract.version, 1);
+    assert.strictEqual(contract.provenance.baselineCommit, "1510ea369573078e6296fe873edb6f538c3212a3");
+    assert.strictEqual(contract.keyCount, 250);
+    assert.strictEqual(Object.keys(en).length, contract.keyCount, "frozen key count");
+    assert.strictEqual(require("node:crypto").createHash("sha256")
+      .update(JSON.stringify(Object.keys(en).sort())).digest("hex"), contract.sortedKeySha256, "frozen key identities");
+    assert.deepStrictEqual(Object.keys(en).filter((k) => isPlural(en[k])).sort(),
+      [...contract.pluralKeys].sort(), "frozen plural keys");
+    assert.deepStrictEqual(Object.keys(contract.pluralFormsByLocale).sort(), [...locales].sort());
+    // This is the single independently reviewed baseline exception. Adding an
+    // exception to make a changed table pass requires a new semantic decision.
+    assert.deepStrictEqual(contract.placeholderCountExceptions, { de: { "compose.DOUBLE_B": { L: 2 } } });
+    assert.deepStrictEqual(counts(en["compose.DOUBLE_B"]), { L: 3 }, "English syntax explanation uses L three times");
+    assert.deepStrictEqual(fs.readdirSync(dir).filter((x) => x.endsWith(".json")).sort(),
+      locales.map((l) => l + ".json").sort(), "the frozen eight locale files");
+    for (const locale of locales) {
+      const table = JSON.parse(fs.readFileSync(path.join(dir, locale + ".json"), "utf8"));
+      assert.deepStrictEqual(Object.keys(table).sort(), Object.keys(en).sort(), locale + ": key parity with en");
       for (const k of Object.keys(en)) {
-        if (typeof en[k] === "object") assert.ok(typeof table[k] === "object" && "other" in table[k], f + " " + k + ": plural");
-        assert.deepStrictEqual(set(table[k]), set(en[k]), f + " " + k + ": placeholders");
+        const plural = contract.pluralKeys.includes(k);
+        const label = locale + " " + k;
+        assert.strictEqual(isPlural(table[k]), plural, label + ": scalar/plural type");
+        if (plural) {
+          assert.deepStrictEqual(Object.keys(table[k]).sort(), [...contract.pluralFormsByLocale[locale]].sort(), label + ": named plural forms");
+          assert.ok(Object.hasOwn(table[k], "other"), label + ": other form required");
+        }
+        for (const form of plural ? contract.pluralFormsByLocale[locale] : [null]) {
+          const value = plural ? table[k][form] : table[k];
+          const english = plural ? (Object.hasOwn(en[k], form) ? en[k][form] : en[k].other) : en[k];
+          const where = label + (form ? "." + form : "");
+          assert.strictEqual(typeof value, "string", where + ": string leaf");
+          assert.strictEqual(typeof english, "string", where + ": English reference leaf");
+          const expectedCounts = { ...counts(english), ...(contract.placeholderCountExceptions[locale]?.[k] || {}) };
+          assert.deepStrictEqual(Object.keys(counts(value)).sort(), Object.keys(counts(english)).sort(), where + ": per-form placeholder identities");
+          assert.deepStrictEqual(counts(value), expectedCounts, where + ": per-form placeholder multiplicity");
+          const fixedEdges = plural ? contract.nonemptyEdgeWhitespace[k]?.[form] : contract.nonemptyEdgeWhitespace[k];
+          assert.deepStrictEqual(edges(value), fixedEdges || ["", ""], where + ": exact baseline edge whitespace");
+        }
       }
     }
-    assert.ok(Object.keys(en).length > 150);
   });
 
   test("I18N: no table value says deck", () => {
