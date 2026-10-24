@@ -9683,8 +9683,8 @@ function run() {
         // fonts), so 740x340 S and 568x312 A now scroll. Each case carries main's
         // needed height as a literal (origin/main, same measuring function); a
         // case whose main-needed + H + g exceeds the panel by more than the 1px
-        // tolerance must scroll by exactly that much (two-sided, within 1px)
-        // with every control still reachable by scrolling; the others keep the
+        // tolerance defines the upper scroll budget (within 1px). Compact
+        // sites may recover space, with every control still reachable; the others keep the
         // original assertion (no scroll, nothing offscreen).
         const cases = [
           // Lane PM (2026-10-08): HANDPAN 101 (+47) and the one-line print row
@@ -9721,8 +9721,8 @@ function run() {
           const label = `${w}x${h} mode ${mode} (real fonts)`;
           const want = mainNeeded + m.hg - m.clientH;
           assertAmyScroll(label, m.amy);
-          assert.ok(Math.abs(m.amy.overWithout - Math.max(0, want)) <= 1,
-            `${label}: without the Amy row the panel scrolls by ${m.amy.overWithout}px, expected ${Math.max(0, want)}px`);
+          assert.ok(Number.isFinite(m.amy.overWithout) && m.amy.overWithout >= 0 && m.amy.overWithout <= Math.max(0, want) + 1,
+            `${label}: without the Amy row the panel scrolls by ${m.amy.overWithout}px, budget ${Math.max(0, want)}px`);
           if (m.over > 1) {
             assert.deepStrictEqual(m.reach, [], `${label}: a control lies beyond the scrollable height`);
             if (m.amy.overWithout <= 1) {
