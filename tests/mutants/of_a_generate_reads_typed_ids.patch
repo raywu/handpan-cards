@@ -1,0 +1,15 @@
+# kills: OF: typing (D3) C4 A3 D4 E4 F4 G4 A4 C5 in the box seats C4 in rim seat 1, the plate shows 1 at 270 degrees on C4, and GENERATE CARDS saves seats.rim [1,0,2,3,4,5,6,7] with s in pitch order
+# suite: node --test --test-name-pattern OF:.typing.*seats.C4.in.rim.seat.1 tests/app.test.js
+# GENERATE CARDS drops the derived seats for a parsed line, so the record loses the typed order.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11850,7 +11850,7 @@ function sheetOptions() {
+     if (seeded()) o.replaces = editingId;
+     else if (d && d.options && d.options.replaces) o.replaces = d.options.replaces;
+   }
+-  if (layoutSeats) o.seats = JSON.parse(JSON.stringify(layoutSeats));
++  if (layoutSeats && !typedNow) o.seats = JSON.parse(JSON.stringify(layoutSeats));
+   if (layoutAngles) o.angles = JSON.parse(JSON.stringify(layoutAngles));
+   return o;
+ }

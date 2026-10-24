@@ -261,5 +261,10 @@
     "other": "The bottom now has {n} notes, so its seats and angles were reset."
   },
   "sheet.pan_example": "Example pan for the placeholder seed",
-  "sheet.pan_held": "Preview of the last seed that parsed"
+  "sheet.pan_held": "Preview of the last seed that parsed",
+  "sel.language": "Language",
+  "sel.auto": "AUTOMATIC ({lang})",
+  "sheet.order_hint": "Top notes take their seats in the order listed. Rearrange them on the Layout tab.",
+  "sheet.rim_follows": "The rim now follows the order listed.",
+  "sheet.inner_follows": "The inner notes now follow the order listed."
 }

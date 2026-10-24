@@ -1,0 +1,15 @@
+# kills: OF: PD a rim reorder typed in the fields on the Scale tab shows its sentence when the Layout tab opens, once
+# suite: node --test --test-name-pattern OF:.PD.a.rim.reorder tests/app.test.js
+# The derive sentence typed on the Scale tab is never shown when the Layout tab opens.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13041,7 +13041,7 @@
+ anglePrev.onclick = () => nudgeAngle(1);
+ angleNext.onclick = () => nudgeAngle(-1);
+ function showPendingDerive() {
+-  if (drawerOpen && boxOk && pendingDerive) { layoutStatus(pendingDerive); pendingDerive = ""; }
++  if (false && pendingDerive) { layoutStatus(pendingDerive); pendingDerive = ""; }
+ }
+ tabLayout.addEventListener("click", showPendingDerive);
+ nextBtn.addEventListener("click", showPendingDerive);

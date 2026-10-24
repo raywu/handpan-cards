@@ -4921,6 +4921,41 @@ describe("panel fit judge", () => {
     assert.strictEqual(judge(b, c(540)).rule2.fail.length, 1);
   });
 
+  test("panel fit: the Language-group allowance is 88, owed only for a lang-select control the base lacks", () => {
+    assert.strictEqual(pf.LANG_ALLOWANCE_PX, 88);
+    const keys = (...k) => Object.fromEntries(k.map((x) => [x, ctl(100)]));
+    assert.strictEqual(pf.langAllowance(keys("res-a"), keys("res-a", "lang-select")), 88, "a new lang-select key");
+    assert.strictEqual(pf.langAllowance(keys("res-a"), keys("res-a")), 0, "no new key");
+    assert.strictEqual(pf.langAllowance(keys("res-a"), keys("res-a", "about-open", "res-b")), 0, "other new controls earn nothing");
+    assert.strictEqual(pf.langAllowance(keys("lang-select"), keys("lang-select")), 0, "the allowance expires once main has the select");
+    const b = cell({ needed: 500, avail: 500 });
+    const withLang = (needed) => judge(b, withControl(cell({ needed, avail: 500 }), "lang-select", ctl(400))).rule1.fail.length;
+    assert.strictEqual(withLang(589), 0, "base + 88 + the 1px tolerance");
+    assert.strictEqual(withLang(590), 1, "one pixel beyond");
+    const lang = (bottom) => judge(b, withControl(cell({ needed: 550, avail: 500 }), "lang-select", ctl(bottom))).rule3.fail.length;
+    assert.strictEqual(lang(588.5), 0, "base needed + 88 + the 0.5 tolerance");
+    assert.strictEqual(lang(588.6), 1, "past the allowance");
+    const move = withControl(withControl(cell(), "lang-select", ctl(400)), "deck-add", ctl(540));
+    assert.strictEqual(judge(withControl(cell(), "deck-add", ctl(500)), move).rule2.fail.length, 1, "no existing control moves");
+  });
+
+  test("panel fit: --lang seeds the candidate's stored language and asserts the resolved lang", async () => {
+    assert.strictEqual(pf.parseArgs(["--lang", "de"]).lang, "de");
+    assert.strictEqual(pf.parseArgs([]).lang, null);
+    const fake = (resolved) => {
+      const calls = [];
+      return { calls, send: async () => {}, setViewport: async () => {}, goto: async (u) => { calls.push(["goto", u]); },
+        eval: async (src) => { calls.push(["eval", src]); return /documentElement\.lang/.test(src) ? resolved : true; } };
+    };
+    const ok = fake("de");
+    await pf.prepareBrowser(ok, "http://x/", "de");
+    assert.ok(ok.calls.some(([k, v]) => k === "eval" && /localStorage\.setItem\("hpfc".*"de"/.test(v)), "no stored language");
+    await assert.rejects(pf.prepareBrowser(fake("en"), "http://x/", "de"), (e) => e instanceof pf.PanelFitError && /resolved "en"/.test(e.message));
+    const plain = fake("en");
+    await pf.prepareBrowser(plain, "http://x/");
+    assert.ok(!plain.calls.some(([k, v]) => k === "eval" && /localStorage/.test(v)), "the base is seeded");
+  });
+
   test("panel fit: the threshold cell is the lowest height in the band where the base fits", () => {
     const b = cell({ needed: 373.8, avail: 320 });
     const c = cell({ needed: 395.8, avail: 320, overflowX: { panel: 0, doc: 0 } });
@@ -5416,7 +5451,7 @@ test("AP2-1 sheet open leaves the expected state per mode", () => {
   dirty();
   edit();
   assert.deepStrictEqual(state(), edited, "edit open restores the deck's identity and options");
-  assert.deepStrictEqual(boxes(), [app.get("HPE.core.formatSeed(CUSTOM[" + JSON.stringify(id) + "].fields)"), app.get(`CUSTOM[${JSON.stringify(id)}].name`), "SAVE CHANGES"]);
+  assert.deepStrictEqual(boxes(), [app.get("HPE.core.formatTyped(CUSTOM[" + JSON.stringify(id) + "].fields, CUSTOM[" + JSON.stringify(id) + "].options.seats)"), app.get(`CUSTOM[${JSON.stringify(id)}].name`), "SAVE CHANGES"]);
   app.run("closeScaleSheet()");
 
   app.run("openScaleSheet()");
@@ -7497,7 +7532,7 @@ for (const edit of [false, true]) {
   });
 }
 
-test("DR2a item 6 (91): on Edit a changed count resets that ring only and the notice says so until the count returns; Add and Edit notices by value", () => {
+test("DR2a item 6 (91): on Edit a changed count resets the rim and the notice says so until the count returns, an ascending retype is a typed change that reseats the inner ring; Add and Edit notices by value", () => {
   const app = boot();
   const a = { rim: 3, inner: 3, bottom: 3 };
   const d = makeCustom(app, d2Build(a).text);
@@ -7507,10 +7542,13 @@ test("DR2a item 6 (91): on Edit a changed count resets that ring only and the no
   assert.strictEqual(dr1Notice(app), "Layout changed from the default.");
   app.type(d2Build({ ...a, rim: 4 }).text);
   assert.strictEqual(dr1Notice(app), "Layout not saved yet. SAVE CHANGES keeps it. The rim seats were reset.");
-  assert.deepStrictEqual(d2Norm(d2Seats(app)), { inner: [2, 1, 0] });
+  // OF-A: Edit prefills the line in seat order, so this ascending retype is a
+  // typed change of the inner ring's order and the latest writer wins: the
+  // inner seats follow it (identity) instead of surviving the count change.
+  assert.strictEqual(d2Seats(app), null);
   app.type(d2Build(a).text);
-  assert.deepStrictEqual(d2Norm(d2Seats(app)), { rim: [1, 0, 2], inner: [2, 1, 0] });
-  assert.strictEqual(dr1Notice(app), "Layout changed from the default.");
+  assert.deepStrictEqual(d2Norm(d2Seats(app)), { rim: [1, 0, 2] });
+  assert.strictEqual(dr1Notice(app), "Layout not saved yet. SAVE CHANGES keeps it.");
   const add = boot();
   d2Open(add, D2_AMARA, false);
   d2Tap(add, "A3"); d2Tap(add, "C4");
@@ -10687,7 +10725,7 @@ describe("about overlay", () => {
     assert.match(inner, /<h3>Privacy<\/h3>\s*<p>[^<]*<\/p>\s*<h3>Contact<\/h3>\s*<p><a href="mailto:handpan@raywu\.org">handpan@raywu\.org<\/a><\/p>\s*$/);
   });
 
-  test("AO: ABOUT is the last panel stop, a full-width button alone in the last Resources row", () => {
+  test("AO: ABOUT is a full-width button alone in the last Resources row, and the last stop before Language", () => {
     const panel = pmPanel();
     const group = panel.slice(panel.indexOf('<h3 class="panel-heading">Resources</h3>'));
     const rows = [...group.matchAll(/<div class="modebar([^"]*)">([\s\S]*?)<\/div>/g)];
@@ -10701,8 +10739,8 @@ describe("about overlay", () => {
     app.run(`settingsPanel.querySelectorAll = (sel) => /res-/.test(sel) ? ${JSON.stringify(resIds)}.map((id) => ({ id, disabled: false, getClientRects: () => [{}] })) : []`);
     app.run("openPanel()");
     const ids = app.get("panelStops().map((e) => e.id)");
-    assert.strictEqual(ids[ids.length - 1], "about-open", "about-open is not the last panel stop");
-    assert.strictEqual(ids[ids.length - 2], "res-handpan-101", "HANDPAN 101 does not lead ABOUT");
+    assert.strictEqual(ids[ids.length - 2], "about-open", "about-open is not the stop before Language");
+    assert.strictEqual(ids[ids.length - 3], "res-handpan-101", "HANDPAN 101 does not lead ABOUT");
   });
 
   test("AO: opening About tracks about_open with no params", () => {
@@ -10997,7 +11035,7 @@ describe("DI: dual input", () => {
     const sentence = "Octaves are optional: without one, we assume the notes run low to high.";
     const labels = [...h.matchAll(/<(?:label|span|p\b)[^>]*class="sheetlabel"[^>]*>([^<]*)</g)].map((m) => m[1]);
     assert.ok(labels.length >= 10, `only ${labels.length} sheet labels found`);
-    const noteBlock = h.slice(h.indexOf("lineNote.textContent = onFields"), h.indexOf("if (onFields && lineStale) genBtn.disabled"));
+    const noteBlock = h.slice(h.indexOf("function paintNotes()"), h.indexOf("/** The hint to announce at settle"));
     const en = JSON.parse(require("node:fs").readFileSync(path.join(ROOT, "data", "i18n", "en.json"), "utf8"));
     const captions = [...noteBlock.matchAll(/t\(\w+ \? "(sheet\.\w+)" : "(sheet\.\w+)"|t\(\w+\s*\?\s*"([\w.]+)"\s*:\s*"([\w.]+)"\)/g)]
       .flatMap((m) => m.slice(1).filter(Boolean)).map((k) => en[k]);
@@ -11742,7 +11780,7 @@ describe("O1: sheet placement of octaveless bottoms", () => {
   test("O1: a v5 link and a stored record open with the same fields as before O1", () => {
     const link = boot({ href: "https://example.test/index.html#s=5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/parent-aeolian/mirror/between/seats-1,0,2,3,4,5,6,7;;/975b6c" });
     openEdit(link, link.registry()[link.deckId()]);
-    assert.deepStrictEqual(fieldsOf(link), ["D3", "A3 C4 D4 E4 F4 G4 A4 C5", "", ""]);
+    assert.deepStrictEqual(fieldsOf(link), ["D3", "C4 A3 D4 E4 F4 G4 A4 C5", "", ""]);
     const first = boot();
     const d = makeCustom(first, "[G2] [A2] (D3) A3 C4 E4");
     const again = reboot(first);
@@ -12681,7 +12719,7 @@ describe("UX: the footer lip", () => {
         const from = html.indexOf('<div id="scale-sheet"');
         const sheetHtml = html.slice(from, html.indexOf('id="scale-lip"', from));
         assert.ok(!/<select\b/.test(sheetHtml), "the sheet holds no select");
-        assert.deepStrictEqual([...html.matchAll(/<select\b[^>]*id="([^"]+)"/g)].map((m) => m[1]), ["print-paper-select"]);
+        assert.deepStrictEqual([...html.matchAll(/<select\b[^>]*id="([^"]+)"/g)].map((m) => m[1]), ["print-paper-select", "lang-select"]);
       });
 
       const flingFrom = (a, { seed = 10, way = "up", start = 0 } = {}) => {
@@ -13852,6 +13890,413 @@ describe("FPD: seats, sole note, hint, nudge, notices and records", () => {
 });
 
 
+/* ---- Lane OF-A: the sheet's seats follow the typed order (plan order-follow, 2026-10-23) ---- */
+describe("OF: the sheet's seats follow the typed order", () => {
+  const NAMED = "(D3) C4 A3 D4 E4 F4 G4 A4 C5";
+  const ASC = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
+  const RIM = [1, 0, 2, 3, 4, 5, 6, 7];
+  const HINT = "Top notes take their seats in the order listed. Rearrange them on the Layout tab.";
+  const ofPlain = (v) => JSON.parse(JSON.stringify(v));
+  const add = () => { const app = boot(); openSheet(app); return app; };
+  const fire = (app, id, type) => app.els[id].dispatchEvent({ type });
+  const fieldType = (app, k, text) => {
+    fire(app, "scale-" + k, "focus");
+    app.els["scale-" + k].value = text;
+    fire(app, "scale-" + k, "input");
+  };
+  const settle = (app, k) => fire(app, "scale-" + k, "blur");
+  const lineType = (app, text) => {
+    fire(app, "scale-box", "focus");
+    app.els["scale-box"].value = text;
+    fire(app, "scale-box", "input");
+  };
+  const fieldTexts = (app) => ["ding", "top", "inner", "bottom"].map((k) => app.els["scale-" + k].value);
+  const note = (app, which) => app.els[`scale-${which}-note`].textContent;
+  const live = (app) => { app.flushTimers(); return app.els["scale-fields-live"].textContent; };
+  const typedFields = (app, ding, top, inner = "") => {
+    fieldType(app, "ding", ding);
+    fieldType(app, "top", top);
+    if (inner) fieldType(app, "inner", inner);
+  };
+  const seated = (ascText, seats) => {
+    const app = boot();
+    const made = app.generate(ascText, { seats });
+    assert.strictEqual(made.ok, true, made.reason);
+    return { app, rec: app.registry()[made.value.id] };
+  };
+  const save = (app) => { app.els["scale-generate"].click(); return app.registry()[app.deckId()]; };
+  const rimLabelled = (app, label) => ofPlain(app.get(
+    `Object.values(lastSolved.fields).filter((f) => f[3] === "rim" && f[5] === ${JSON.stringify(label)})`));
+
+  test("OF: typing (D3) C4 A3 D4 E4 F4 G4 A4 C5 in the box seats C4 in rim seat 1, the plate shows 1 at 270 degrees on C4, and GENERATE CARDS saves seats.rim [1,0,2,3,4,5,6,7] with s in pitch order", () => {
+    const app = add();
+    app.type(NAMED);
+    assert.deepStrictEqual(d2Seats(app), { rim: RIM });
+    assert.deepStrictEqual(rimLabelled(app, "1").map((f) => [f[0] + f[1], f[4]]), [["C4", 270]]);
+    const rec = save(app);
+    assert.deepStrictEqual(ofPlain(rec.options.seats), { rim: RIM });
+    assert.deepStrictEqual([rec.fields["1"][0] + rec.fields["1"][1], rec.fields["2"][0] + rec.fields["2"][1]], ["A3", "C4"]);
+    assert.strictEqual(rec.fields["2"][4], 270);
+    assert.strictEqual(rec.fields["2"][5], "1");
+  });
+
+  test("OF: typing the same notes in the four fields writes the typed-order line into #scale-box and saves the same record", () => {
+    const app = add();
+    typedFields(app, "D3", "C4 A3 D4 E4 F4 G4 A4 C5");
+    assert.strictEqual(app.els["scale-box"].value, NAMED);
+    assert.deepStrictEqual(d2Seats(app), { rim: RIM });
+    const viaFields = save(app);
+    const viaBox = (() => { const b = add(); b.type(NAMED); return save(b); })();
+    assert.deepStrictEqual(ofPlain(viaFields), ofPlain(viaBox));
+  });
+
+  test("OF: a line typed in ascending order saves no seats key and the record equals the base's", () => {
+    const app = add();
+    app.type(ASC);
+    assert.strictEqual(d2Seats(app), null);
+    const rec = save(app);
+    assert.strictEqual("seats" in rec.options, false);
+    assert.deepStrictEqual(ofPlain(rec.options), { palette: 0, mirror: false, mirrorBottom: false, anchor: "one", parent: null });
+    const base = boot().generate(ASC, {});
+    assert.deepStrictEqual(ofPlain(rec.fields), ofPlain(base.value.fields));
+    assert.deepStrictEqual(ofPlain(rec.chords), ofPlain(base.value.chords));
+  });
+
+  test("OF: a count change while typing in ascending order restores the seatMemo arrangement exactly as before", () => {
+    const app = add();
+    app.type(ASC);
+    d2Seed(app, { rim: [2, 1, 0, 3, 4, 5, 6, 7] });
+    app.type("(D3) A3 C4 D4 E4 F4 G4 A4");
+    assert.strictEqual(d2Seats(app), null);
+    app.type(ASC);
+    assert.deepStrictEqual(d2Seats(app), { rim: [2, 1, 0, 3, 4, 5, 6, 7] });
+  });
+
+  test("OF: a count change back to an earlier count that also changes the typed order seats the typed order over the seatMemo arrangement, and the drawer status says the rim now follows the order listed", () => {
+    const app = add();
+    app.type(ASC);
+    app.click(app.els["scale-tab-layout"]);
+    d2Seed(app, { rim: [2, 1, 0, 3, 4, 5, 6, 7] });
+    app.type("(D3) A3 C4 D4 E4 F4 G4 A4");
+    assert.strictEqual(d2Seats(app), null);
+    app.type(NAMED);
+    assert.deepStrictEqual(d2Seats(app), { rim: RIM });
+    assert.strictEqual(d2Status(app), "The rim now follows the order listed.");
+  });
+
+  test("OF: a drawer swap after typing stands until a typed edit changes that ring's order, which re-derives only that ring", () => {
+    const app = add();
+    const rimHigh = "(D3) C4 A3 D4 E4 F4 G4 A4 C5";
+    app.type(`${rimHigh} | D5 E5`);
+    assert.deepStrictEqual(d2Seats(app), { rim: RIM });
+    d2Seed(app, { rim: [0, 1, 3, 2, 4, 5, 6, 7] });
+    app.type(`${rimHigh} | E5 D5`);
+    assert.deepStrictEqual(d2Seats(app), { rim: [0, 1, 3, 2, 4, 5, 6, 7], inner: [1, 0] });
+    app.type(`(D3) D4 A3 C4 E4 F4 G4 A4 C5 | E5 D5`);
+    assert.deepStrictEqual(d2Seats(app), { rim: [1, 2, 0, 3, 4, 5, 6, 7], inner: [1, 0] });
+  });
+
+  test("OF: a typed edit that keeps every ring's order (A3 to B3) keeps the drawer seats", () => {
+    const app = add();
+    app.type(NAMED);
+    d2Seed(app, { rim: [0, 1, 3, 2, 4, 5, 6, 7] });
+    app.type("(D3) C4 B3 D4 E4 F4 G4 A4 C5");
+    assert.deepStrictEqual(d2Seats(app), { rim: [0, 1, 3, 2, 4, 5, 6, 7] });
+  });
+
+  test("OF: a count change on a typed out-of-order ring seats the new typed order and the status line says so, not that the seats were reset", () => {
+    const app = add();
+    app.type(NAMED);
+    app.click(app.els["scale-tab-layout"]);
+    app.type("(D3) C4 A3 D4 E4 F4 G4 A4");
+    assert.deepStrictEqual(d2Seats(app), { rim: [1, 0, 2, 3, 4, 5, 6] });
+    assert.strictEqual(d2Status(app), "The rim now follows the order listed.");
+    assert.doesNotMatch(d2Status(app), /reset/);
+  });
+
+  test("OF: Edit then SAVE with no change writes a record with drawer rim and inner seats byte-identical, and a line typed in ascending order saves no seats key", () => {
+    const { app, rec } = seated(`${ASC} | D5 E5`, { rim: RIM, inner: [1, 0] });
+    const before = JSON.stringify(rec);
+    openEdit(app, rec);
+    assert.deepStrictEqual(d2Seats(app), { rim: RIM, inner: [1, 0] });
+    const same = save(app);
+    assert.strictEqual(JSON.stringify(same.options), JSON.stringify(rec.options));
+    assert.strictEqual(JSON.stringify(same.fields), JSON.stringify(rec.fields));
+    assert.strictEqual(before.length > 0, true);
+    openEdit(app, same);
+    app.type(`${ASC} | D5 E5`);
+    assert.strictEqual(d2Seats(app), null);
+    assert.strictEqual("seats" in save(app).options, false);
+    // a drawer swap stands through a name change: the parse repeats, the typed order does not
+    const again = seated(ASC, { rim: RIM });
+    openEdit(again.app, again.rec);
+    d2Seed(again.app, { rim: [0, 1, 3, 2, 4, 5, 6, 7] });
+    again.app.els["scale-name"].value = "Renamed";
+    again.app.els["scale-name"].dispatchEvent({ type: "input" });
+    assert.deepStrictEqual(ofPlain(save(again.app).options.seats), { rim: [0, 1, 3, 2, 4, 5, 6, 7] });
+  });
+
+  test("OF: Edit of a record with drawer rim seats shows the seat-order line in #scale-box and the fields in the same order", () => {
+    const { app, rec } = seated(`${ASC} | D5 E5`, { rim: RIM, inner: [1, 0] });
+    openEdit(app, rec);
+    assert.strictEqual(app.els["scale-box"].value, "(D3) C4 A3 D4 E4 F4 G4 A4 C5 | E5 D5");
+    assert.deepStrictEqual(fieldTexts(app), ["D3", "C4 A3 D4 E4 F4 G4 A4 C5", "E5 D5", ""]);
+    const plainEdit = seated(ASC, {});
+    openEdit(plainEdit.app, plainEdit.rec);
+    assert.strictEqual(plainEdit.app.els["scale-box"].value, ASC);
+    assert.deepStrictEqual(fieldTexts(plainEdit.app), ["D3", "A3 C4 D4 E4 F4 G4 A4 C5", "", ""]);
+  });
+
+  test("OF: a line that parses rewrites the four fields with the rim and inner in the order typed", () => {
+    const app = add();
+    app.type("[B2] [A2] (D3) C4 A3 D4 E4 F4 G4 A4 C5 | E5 D5");
+    assert.deepStrictEqual(fieldTexts(app), ["D3", "C4 A3 D4 E4 F4 G4 A4 C5", "E5 D5", "A2 B2"]);
+  });
+
+  test("OF: a field edit writes compose's typedLine into #scale-box through one input event", () => {
+    const app = add();
+    fieldType(app, "ding", "D3");
+    let inputs = 0;
+    app.els["scale-box"].addEventListener("input", () => { inputs += 1; });
+    fieldType(app, "top", "C4 A3 D4 E4 F4 G4 A4 C5");
+    assert.strictEqual(inputs, 1);
+    assert.strictEqual(app.els["scale-box"].value, NAMED);
+  });
+
+  test("OF: a boot or share open of a record carrying drawer seats, at- angles or a legacy order derives nothing and stores nothing new", () => {
+    const text = "[A2] [B2] " + ASC;
+    const made = seated(text, { rim: RIM });
+    const id = made.rec.id;
+    const code = made.app.get(`shareCode(CUSTOM[${JSON.stringify(id)}]).value`);
+    const opened = boot();
+    opened.hashchange("#s=" + code);
+    const got = Object.values(opened.registry())[0];
+    assert.deepStrictEqual(ofPlain(got.options.seats), { rim: RIM });
+    assert.deepStrictEqual(ofPlain(got.fields), ofPlain(made.rec.fields));
+    const stored = add();
+    stored.type("[A2] [B2] " + NAMED);
+    const savedRec = save(stored);
+    const key = stored.get("SCALES_KEY");
+    const rebooted = boot({ storage: { hpfc: stored.store.hpfc, [key]: stored.store[key] } });
+    assert.deepStrictEqual(ofPlain(rebooted.registry()[savedRec.id].options), ofPlain(savedRec.options));
+    assert.deepStrictEqual(ofPlain(rebooted.registry()[savedRec.id].options.seats), { rim: RIM });
+    const mismatched = seated(ASC, { rim: RIM });
+    mismatched.app.get(`(CUSTOM[${JSON.stringify(mismatched.rec.id)}].options.seats.rim = [1, 0, 2], 0)`);
+    openEdit(mismatched.app, mismatched.rec);
+    assert.deepStrictEqual(ofPlain(save(mismatched.app).options.seats), { rim: [1, 0, 2] });
+    const swapped = seated(ASC, { rim: RIM });
+    openEdit(swapped.app, swapped.rec);
+    d2Seed(swapped.app, { rim: [0, 1, 3, 2, 4, 5, 6, 7] });
+    swapped.app.type("(D3) C4 B3 D4 E4 F4 G4 A4 C5");
+    assert.deepStrictEqual(d2Seats(swapped.app), { rim: [0, 1, 3, 2, 4, 5, 6, 7] });
+  });
+
+  test("OF: chords, roots and note lines of a non-ascending line equal the ascending line's; only number lines differ", () => {
+    const cycle = "(D3) D4 A3 C4 E4 F4 G4 A4 C5";
+    const app = add();
+    app.type(cycle);
+    assert.deepStrictEqual(d2Seats(app), { rim: [1, 2, 0, 3, 4, 5, 6, 7] });
+    const rec = save(app);
+    const base = boot().generate(ASC, {}).value;
+    assert.deepStrictEqual(ofPlain(rec.chords), ofPlain(base.chords));
+    for (const id of Object.keys(base.fields)) {
+      assert.deepStrictEqual(ofPlain(rec.fields[id]).slice(0, 4), ofPlain(base.fields[id]).slice(0, 4), id);
+    }
+    const label = (d, name) => Object.values(d.fields).find((f) => f[0] + f[1] === name)[5];
+    assert.deepStrictEqual(["D4", "A3", "C4"].map((n) => label(rec, n)), ["1", "2", "3"]);
+    assert.deepStrictEqual(["A3", "C4", "D4"].map((n) => label(base, n)), ["1", "2", "3"]);
+  });
+
+  test("OF: the order hint shows in the active path's note only while a rim or inner ring's seats equal its typed out-of-order arrangement, and adds no Tab stop", () => {
+    const app = add();
+    assert.strictEqual(note(app, "fields"), "Octaves are optional: without one, we assume the notes run low to high.");
+    typedFields(app, "D3", "C4 A3 D4 E4 F4 G4 A4 C5");
+    assert.strictEqual(note(app, "fields"), HINT);
+    assert.strictEqual(note(app, "line"), "Follows the notes above. Tap to type the line instead.");
+    lineType(app, NAMED);
+    assert.strictEqual(note(app, "line"), HINT);
+    assert.strictEqual(note(app, "fields"), "Follows the line below. Tap a field to type notes instead.");
+    lineType(app, ASC);
+    assert.strictEqual(note(app, "line"), "");
+    fieldType(app, "top", "A3 C4 D4 E4 F4 G4 A4 C5");
+    assert.strictEqual(note(app, "fields"), "");
+    fieldType(app, "top", "C4 A3 D4 E4 F4 G4 A4 C5");
+    for (const w of ["fields", "line"]) {
+      assert.strictEqual(app.els[`scale-${w}-note`].getAttribute("tabindex"), null);
+      assert.strictEqual(app.els[`scale-${w}-note`].children.length, 0);
+    }
+  });
+
+  test("OF: a drawer swap or RESET LAYOUT hides the order hint, and a typed edit that changes that ring's order shows it again", () => {
+    const app = add();
+    typedFields(app, "D3", "C4 A3 D4 E4 F4 G4 A4 C5");
+    assert.strictEqual(note(app, "fields"), HINT);
+    app.click(app.els["scale-tab-layout"]);
+    d2Tap(app, "A3"); d2Tap(app, "D4");
+    assert.strictEqual(note(app, "fields"), "");
+    fieldType(app, "top", "D4 A3 C4 E4 F4 G4 A4 C5");
+    assert.strictEqual(note(app, "fields"), HINT);
+    app.els["scale-layout-reset"].click();
+    assert.strictEqual(note(app, "fields"), "");
+    fieldType(app, "top", "C4 A3 D4 E4 F4 G4 A4 C5");
+    assert.strictEqual(note(app, "fields"), HINT);
+  });
+
+  test("OF: a bottom-only reorder shows no order hint and no drawer status line", () => {
+    const app = add();
+    app.click(app.els["scale-tab-layout"]);
+    app.type("[B2] [A2] " + ASC);
+    assert.strictEqual(d2Seats(app), null);
+    assert.strictEqual(note(app, "line"), "");
+    assert.strictEqual(d2Status(app), "");
+  });
+
+  test("OF: the order hint is announced once through #scale-fields-live at settle, not while typing and not at open", () => {
+    const app = add();
+    fieldType(app, "ding", "D3");
+    fieldType(app, "top", "C4 A3 D4 E4 F4 G4 A4 C5");
+    assert.strictEqual(live(app), "");
+    settle(app, "top");
+    assert.strictEqual(live(app), HINT);
+    app.els["scale-fields-live"].textContent = "";
+    settle(app, "top");
+    assert.strictEqual(live(app), "", "announced twice");
+    const { app: edit, rec } = seated(ASC, { rim: RIM });
+    openEdit(edit, rec);
+    assert.strictEqual(note(edit, "fields"), HINT);
+    assert.strictEqual(live(edit), "");
+    const viaLine = add();
+    lineType(viaLine, NAMED);
+    assert.strictEqual(live(viaLine), "");
+    fire(viaLine, "scale-box", "blur");
+    assert.strictEqual(live(viaLine), HINT);
+  });
+
+  test("OF: the passive captions still read as before when the hint shows, and OCTAVE_SENTENCE still shows on an empty Add sheet", () => {
+    const app = add();
+    assert.strictEqual(note(app, "fields"), "Octaves are optional: without one, we assume the notes run low to high.");
+    assert.strictEqual(note(app, "line"), "Follows the notes above. Tap to type the line instead.");
+    typedFields(app, "D3", "C4 A3 D4 E4 F4 G4 A4 C5");
+    assert.strictEqual(note(app, "line"), "Follows the notes above. Tap to type the line instead.");
+    lineType(app, NAMED);
+    assert.strictEqual(note(app, "fields"), "Follows the line below. Tap a field to type notes instead.");
+    lineType(app, "");
+    assert.strictEqual(note(app, "line"), "");
+    assert.strictEqual(note(app, "fields"), "Follows the line below. Tap a field to type notes instead.");
+  });
+
+  test("OF: RESET LAYOUT seats the notes low to high and leaves the typed line as typed; the next typed reorder seats it again", () => {
+    const app = add();
+    app.type(NAMED);
+    app.click(app.els["scale-tab-layout"]);
+    app.els["scale-layout-reset"].click();
+    assert.strictEqual(d2Seats(app), null);
+    assert.strictEqual(app.els["scale-box"].value, NAMED);
+    app.type("(D3) D4 A3 C4 E4 F4 G4 A4 C5");
+    assert.deepStrictEqual(d2Seats(app), { rim: [1, 2, 0, 3, 4, 5, 6, 7] });
+  });
+
+  test("OF: after RESET LAYOUT a typed edit that keeps every ring's order (A3 to B3) keeps the notes low to high", () => {
+    const app = add();
+    app.type(NAMED);
+    app.click(app.els["scale-tab-layout"]);
+    app.els["scale-layout-reset"].click();
+    app.type("(D3) C4 B3 D4 E4 F4 G4 A4 C5");
+    assert.strictEqual(d2Seats(app), null);
+    assert.strictEqual(note(app, "line"), "");
+  });
+
+  test("OF: on Edit, a rim count change that comes with an out-of-order rim adds no 'The rim seats were reset.' to the layout notice", () => {
+    const { app, rec } = seated(ASC, { rim: RIM });
+    openEdit(app, rec);
+    app.click(app.els["scale-tab-layout"]);
+    app.type("(D3) C4 A3 D4 E4 F4 G4 A4");
+    assert.deepStrictEqual(d2Seats(app), { rim: [1, 0, 2, 3, 4, 5, 6] });
+    assert.doesNotMatch(dr1Notice(app), /seats were reset/);
+    app.type("(D3) A3 C4 D4 E4 F4 G4 A4");
+    assert.match(dr1Notice(app), /The rim seats were reset\./);
+  });
+
+  test("OF: R3 a drawer rearrangement then an out-of-order ninth note then the ascending eight says the rim follows the order listed, never that earlier seats were restored", () => {
+    const app = add();
+    app.type(ASC);
+    app.click(app.els["scale-tab-layout"]);
+    app.run("setPick(null); layoutSeats = {rim:[2,1,0,3,4,5,6,7]}; resyncSheet(true)");
+    app.type("(D3) D5 A3 C4 D4 E4 F4 G4 A4 C5");
+    app.type(ASC);
+    const said = app.els["scale-drawer-status"].textContent;
+    assert.match(said, /The rim now follows the order listed\./);
+    assert.doesNotMatch(said, /earlier seats were restored/);
+  });
+
+  test("OF: R3 an out-of-order eight retyped as the ascending seven says the rim follows the order listed", () => {
+    const app = add();
+    app.type(NAMED);
+    app.click(app.els["scale-tab-layout"]);
+    app.type("(D3) A3 C4 D4 E4 F4 G4 A4");
+    const said = app.els["scale-drawer-status"].textContent;
+    assert.match(said, /The rim now follows the order listed\./);
+    assert.doesNotMatch(said, /seats were reset|earlier seats were restored/);
+  });
+
+  const RIM_SAID = "The rim now follows the order listed.";
+  const INNER_SAID = "The inner notes now follow the order listed.";
+  const INNER_NAMED = "(D3) A3 C4 D4 E4 F4 | G5 F5";
+
+  test("OF: PD a rim reorder typed in the fields on the Scale tab shows its sentence when the Layout tab opens, once", () => {
+    const app = add();
+    typedFields(app, "D3", "C4 A3 D4 E4 F4 G4 A4 C5");
+    assert.strictEqual(d2Status(app), "");
+    app.click(app.els["scale-tab-layout"]);
+    assert.strictEqual(d2Status(app), RIM_SAID);
+    app.click(app.els["scale-tab-scale"]);
+    app.click(app.els["scale-tab-layout"]);
+    assert.strictEqual(d2Status(app), "");
+  });
+
+  test("OF: PD an inner reorder typed on the Scale tab shows the inner sentence when the Layout tab opens", () => {
+    const app = add();
+    lineType(app, INNER_NAMED);
+    app.click(app.els["scale-tab-layout"]);
+    assert.strictEqual(d2Status(app), INNER_SAID);
+  });
+
+  test("OF: PD a typed edit that derives nothing leaves no sentence at the Layout tab", () => {
+    const app = add();
+    typedFields(app, "D3", "A3 C4 D4 E4 F4 G4 A4 C5");
+    app.click(app.els["scale-tab-layout"]);
+    assert.strictEqual(d2Status(app), "");
+  });
+
+  test("OF: PD RESET LAYOUT clears a pending sentence", () => {
+    const app = add();
+    typedFields(app, "D3", "C4 A3 D4 E4 F4 G4 A4 C5");
+    app.click(app.els["scale-layout-reset"]);
+    app.click(app.els["scale-tab-layout"]);
+    assert.doesNotMatch(d2Status(app), /follows? the order listed/);
+  });
+
+  test("OF: PD closing the sheet clears a pending sentence", () => {
+    const app = add();
+    typedFields(app, "D3", "C4 A3 D4 E4 F4 G4 A4 C5");
+    app.run("closeScaleSheet()");
+    openSheet(app);
+    app.click(app.els["scale-tab-layout"]);
+    assert.strictEqual(d2Status(app), "");
+  });
+
+  test("OF: PD a drawer action's own status wins over a pending sentence, and the sentence does not return", () => {
+    const app = add();
+    typedFields(app, "D3", "C4 A3 D4 E4 F4 G4 A4 C5");
+    app.click(app.els["scale-tab-layout"]);
+    app.run("layoutStatus(t('sheet.layout_reset'))");
+    assert.strictEqual(d2Status(app), "Layout reset.");
+    app.click(app.els["scale-tab-scale"]);
+    app.click(app.els["scale-tab-layout"]);
+    assert.strictEqual(d2Status(app), "");
+  });
+});
+
 /* ------------------------------------------------------------------ I18N */
 
 describe("I18N", () => {
@@ -14149,11 +14594,76 @@ describe("I18N", () => {
     assert.ok(seen > 0, "the subtitle shows in some mode");
   });
 
+  const langPanelStops = (app) => {
+    const panel = pmPanel();
+    const group = panel.slice(panel.indexOf('<h3 class="panel-heading">Resources</h3>'));
+    const resIds = [...group.matchAll(/<a[^>]*id="(res-[\w-]+)"/g)].map((m) => m[1]);
+    app.run(`settingsPanel.querySelectorAll = (sel) => /res-/.test(sel) ? ${JSON.stringify(resIds)}.map((id) => ({ id, disabled: false, getClientRects: () => [{}] })) : []`);
+    app.run("openPanel()");
+    return app.get("panelStops().map((e) => e.id)");
+  };
+
+  test("I18N: the Language group follows Resources, is named by its heading, and #lang-select is the last panel stop", () => {
+    const panel = pmPanel();
+    const resources = panel.indexOf('<h3 class="panel-heading">Resources</h3>');
+    const lang = panel.indexOf('<div class="panel-group"><h3 class="panel-heading" id="panel-lang-heading">Language</h3><select id="lang-select" aria-labelledby="panel-lang-heading"></select></div>');
+    assert.ok(resources > 0 && lang > panel.indexOf('id="about-open"'), "the Language group does not follow the Resources group");
+    assert.strictEqual(panel.slice(lang).includes("<h3"), true);
+    assert.strictEqual(panel.slice(lang + 10).includes('class="panel-group"'), false, "a group follows Language");
+    const ids = langPanelStops(boot());
+    assert.strictEqual(ids[ids.length - 1], "lang-select", "lang-select is not the last panel stop");
+    assert.strictEqual(ids[ids.length - 2], "about-open", "ABOUT does not lead Language");
+  });
+
+  test("I18N: the options are AUTOMATIC (<detected endonym>) then one endonym per present table, in the fixed order", () => {
+    const texts = (app) => app.els["lang-select"].children.map((o) => [o.value, o.textContent]);
+    assert.deepStrictEqual(texts(boot({ languages: ["en-US"] })), [["auto", "AUTOMATIC (ENGLISH)"], ["en", "ENGLISH"]]);
+    const app = bootLang(["zh-Hans", "fr", "de"], ["fr-CA", "en"]);
+    const en = readEn();
+    assert.deepStrictEqual(texts(app), [
+      ["auto", wrapOne(en["sel.auto"]).replace("{lang}", "FRANÇAIS")], ["en", "ENGLISH"], ["de", "DEUTSCH"], ["fr", "FRANÇAIS"], ["zh-Hans", "简体中文"]]);
+    assert.strictEqual(app.els["lang-select"].value, "auto");
+    const stored = bootLang(["de"], ["en"], { storage: { hpfc: JSON.stringify({ lang: "de" }) } });
+    assert.strictEqual(stored.els["lang-select"].value, "de");
+  });
+
+  test("I18N: a pick repaints in place: focus stays on #lang-select, the panel's scrollTop is unchanged, no element is replaced", () => {
+    const app = bootLang(["de"], ["en"]);
+    const select = app.els["lang-select"];
+    const options = select.children.slice();
+    app.run("openPanel()");
+    select.focus();
+    app.els["settings-panel"].scrollTop = 123;
+    select.value = "de";
+    select.dispatchEvent({ type: "change" });
+    assert.strictEqual(app.get("document.documentElement.lang"), "de");
+    assert.strictEqual(app.els["lang-select"], select, "the select was replaced");
+    assert.deepStrictEqual(select.children, options, "an option was replaced");
+    assert.strictEqual(select.children[0].textContent, wrapOne("AUTOMATIC ({lang})").replace("{lang}", "ENGLISH"));
+    assert.strictEqual(app.els["settings-panel"].scrollTop, 123, "the panel scrolled");
+    assert.strictEqual(app.get("panelOpen"), true, "a pick closed the panel");
+    assert.strictEqual(JSON.parse(app.store.hpfc).lang, "de");
+    select.value = "auto";
+    select.dispatchEvent({ type: "change" });
+    assert.strictEqual(app.get("document.documentElement.lang"), "en");
+    assert.strictEqual("lang" in JSON.parse(app.store.hpfc), false, "AUTOMATIC left a stored language");
+  });
+
+  test("I18N: Escape on the focused select with its picker closed closes the panel", () => {
+    const app = boot();
+    app.run("openPanel()");
+    app.els["lang-select"].focus();
+    assert.strictEqual(app.get("panelOpen"), true);
+    assert.strictEqual(app.keydown("Escape"), true);
+    assert.strictEqual(app.get("panelOpen"), false);
+  });
+
   test("I18N: the English DOM of the app equals the base", () => {
     const fixturePath = path.join(ROOT, "tests", "fixtures", "i18n_english_dom_v1.json");
     const snap = (app) => {
       const out = {};
       for (const [id, el] of Object.entries(app.els)) {
+        if (id === "lang-select" || id === "panel-lang-heading") continue;
         out[id] = {
           text: el.textContent, html: el.innerHTML, hidden: el.hidden,
           attrs: Object.fromEntries(Object.entries(el.attributes).sort()),

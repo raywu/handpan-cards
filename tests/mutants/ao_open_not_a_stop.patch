@@ -1,16 +1,14 @@
-# kills: AO: ABOUT is the last panel stop, a full-width button alone in the last Resources row
-# suite: node --test --test-name-pattern ^AO:.ABOUT.is.the.last.panel.stop tests/app.test.js
+# kills: AO: ABOUT is a full-width button alone in the last Resources row, and the last stop before Language
+# suite: node --test --test-name-pattern ^AO:.ABOUT.is.a.full-width.button tests/app.test.js
 # Lane O. panelStops() leaves #about-open out of the Tab trap.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10827,8 +10827,7 @@
-           ...settingsPanel.querySelectorAll(".prints button, .prints select"),
+@@ -13594,7 +13594,6 @@ function panelStops() {
            // Eng review amendment 1: the Resources links join the Tab trap
            // after the print controls, in DOM order.
--          ...settingsPanel.querySelectorAll('#settings-panel a.mode[id^="res-"]'),
--          document.getElementById("about-open")]
-+          ...settingsPanel.querySelectorAll('#settings-panel a.mode[id^="res-"]')]
+           ...settingsPanel.querySelectorAll('#settings-panel a.mode[id^="res-"]'),
+-          document.getElementById("about-open"),
+           document.getElementById("lang-select")]
      .filter(isStop);
  }
- function openPanel() {

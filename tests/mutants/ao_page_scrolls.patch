@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1284,7 +1284,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+@@ -1293,7 +1293,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
  #about li{margin:0 0 4px}
  #about a{color:#eae6df}
  #about ul a, #about a[href^="mailto:"]{display:flex; align-items:center; min-height:44px}
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +html.about-open{overflow:auto}
  
  /* ---- CJK (i18n): Latin face first, then the system CJK families ------------ */
- :lang(ja) body, :lang(ja) .mode, :lang(ja) .prints button, :lang(ja) .prints select, :lang(ja) .panel-note, :lang(ja) .chip{
+ :lang(ja) body, :lang(ja) .mode, :lang(ja) .prints button, :lang(ja) .prints select, :lang(ja) #lang-select, :lang(ja) .panel-note, :lang(ja) .chip{

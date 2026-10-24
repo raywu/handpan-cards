@@ -1,0 +1,14 @@
+# kills: OF: RESET LAYOUT seats the notes low to high and leaves the typed line as typed; the next typed reorder seats it again
+# suite: node --test --test-name-pattern OF:.RESET.LAYOUT.seats.the.notes.low.to.high tests/app.test.js
+# RESET LAYOUT forgets the typed key, so the resync re-derives the typed order straight back.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11803,6 +11803,7 @@ function resetLayout() {
+   bottomHeld = false;
+   anchor = "one";
+   seatMemo = { rim: {}, inner: {}, bottom: {} };
++  lastTyped = { rim: null, inner: null };
+   pickRef = null;
+   pickMoved = false;
+   panFlash = null;
