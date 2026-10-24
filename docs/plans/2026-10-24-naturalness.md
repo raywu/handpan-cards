@@ -1,6 +1,6 @@
 # Naturalness: UI wording with unchanged scale input
 
-Status: mechanics/contract stage cleared after independent review; translation decisions held explicitly.
+Status: independently reviewed mechanics/contract stage implemented; delegated draft terminology recorded before author dispatch.
 Original evidence: `~/Projects/i18n-kit/naturalness/{plan.md,plan.eng-review.md,prompt.md,research.md,corpus/}`.
 Those files remain read-only evidence, not execution instructions. Old 6/10
 engineering clearance and self-assessed language scores do not clear this plan.
@@ -25,8 +25,14 @@ suite remains unresolved, Linux full CI remains required; no silent substitution
 
 ## Verified baseline and corrections
 
-Remote dev confirmed `1510ea369573078e6296fe873edb6f538c3212a3`; main confirmed
-`3caf5e28fa4f965d81d90a4f80d53b15f82f39fc` this turn. Recheck before execution.
+Canonical/app baseline is `1510ea369573078e6296fe873edb6f538c3212a3`. Runbook
+PR563 and contract prerequisite PR565 subsequently merged into accepted dev
+`dba61154730558930c8d0660c138fe210edfb6a4`; canonical/app/engine bytes are identical
+to that baseline. Both reviewed heads passed all12fullCIjobs; served app, runbook,
+AGENTS, plan and fixture bytes match merged source, with noindex. The integrator
+candidate and Japanese author start at dba61154; earlier canonical-only authors
+start5e1bd9e4 with identical language inputs. Main last verified
+`3caf5e28fa4f965d81d90a4f80d53b15f82f39fc`. Recheck before integration/release.
 Owner will release HTC#559 themselves; this is not agent main consent. i18n C
 and SO-D remain held main releases. Never PR all of dev to main incidentally.
 
@@ -51,15 +57,23 @@ Corpus paraphrases are not verbatim primary quotations or native certification.
 
 Settled: Du; natural respectful tone elsewhere; include seven ordering messages;
 UI-only boundary; no main merge; parallel Mac/runbook work now authorized.
-OD1 (das/der Ding) and OD2 (community loans/native labels) remain pending in the
-existing interview. Recommended defaults are das Ding and attested community
-terms with compact natural native labels. They are recommendations, not invented
-owner answers. While pending, continue guards/evidence/review; do not dispatch
-policy-dependent translations. If exercising the owner's AFK delegation later,
-record an explicit delegated decision before dispatch, never fabricate an answer.
+OD1/OD2 have no direct interview answers. On2026-10-24 the integrator exercised
+the owner's standing explicit autonomy delegation and adopted the reviewed
+recommendations for drafting: **das Ding**, and attested community terms with
+compact natural native labels. This is delegated decision provenance, never an
+invented owner answer or elapsed-time consent. Author dispatch may proceed;
+owner corrections override these reversible choices. No main-release consent
+is inferred. Unresolved meaning questions remain blocked individually.
 OD4 follows global tone; it does not mandate a Chinese pronoun in every sentence.
 OD5 gets concrete semantic evidence/spot-check if unresolved; do not reask broad
 settled tone questions. Any unresolved meaning-critical item blocks that wording.
+
+Pre-existing coverage gap, verified in `activateNote` near `index.html:12055`:
+selecting a lone non-bottom field emits a hardcoded English singleton sentence
+despite existing `sheet.only_note`. JSON authors must not change that binding.
+Track its trigger/key/location as a separate reviewed i18n follow-up; this pass
+does not claim to close every pre-existing untranslated runtime path. It remains
+relevant to the held i18n release audit, not an excuse to broaden source ownership.
 
 ## Swarm and file ownership
 
@@ -242,4 +256,11 @@ Independent engineering and language/design reviewer
 `naturalness_corrected_plan_review` cleared draft v1 at9.5/10, no material findings;
 all40keys and sample leaf counts verified. Nonblocking provenance/edge-oracle
 clarifications folded in. Mechanics/guard execution is cleared; translation
-dispatch remains held on explicit OD1/OD2 decision provenance. No translation authored.
+dispatch was initially held on OD1/OD2 provenance; the explicit delegated choices
+above now resolve that drafting gate without fabricating interview answers.
+Contract prerequisite source review9.5 at5e1bd9e4;853app/21I18N pass,17faults
+assertion-red and5actualmutants proven. FullCI40129424063 passed all12jobs,
+including475e2e with0fail/skip/cancel; mergeddev via565. Runbook source review9.5,
+fullCI40129764065 all12pass,473e2e with0fail/skip/cancel; mergeddev via563.
+MainPR562 ready/HELD; CI-only564 remains draft and MUST NOT MERGE MAIN.
+Language authors are newly dispatched; their work is not yet reviewed or delivered.
