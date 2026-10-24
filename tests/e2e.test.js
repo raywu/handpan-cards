@@ -14077,19 +14077,29 @@ function run() {
         return out;
       };
       try {
+        const tables = fs.readdirSync(path.join(REPO, "data", "i18n")).map((f) => f.replace(/\.json$/, "")).filter((c) => c !== "en");
+        const bad = [];
+        const check = (ok, msg) => { if (!ok) bad.push(msg); };
         for (const [w, h] of [[320, 568], [380, 780], [844, 390], [1280, 800]]) {
           const base = await pass(URL, "en", w, h);
-          const de = await pass(pseudoUrl, "de", w, h);
-          for (const [label, m] of [["en", base], ["de", de]]) {
+          const runs = [["en", base]];
+          for (const lang of tables) runs.push([lang, await pass(URL, lang, w, h)]);
+          for (const [label, m] of runs) {
             const where = `${label} ${w}x${h}`;
-            assert.ok(m.panel.sw <= 0 && m.panel.dsw <= 0, `${where}: the panel scrolls horizontally`);
-            if (label === "en") for (const [id, , fits] of m.panel.rows) assert.ok(fits, `${where}: ${id} overflows its box`);
-            if (label === "en") assert.ok(m.panel.paperRoom >= -0.5, `${where}: the paper select does not show its full option text (${m.panel.paperRoom}px)`);
-            for (const k of ["sheet", "about"]) assert.ok(m[k].sw <= 0 && m[k].dsw <= 0, `${where}: ${k} scrolls horizontally`);
+            check(m.panel.sw <= 0 && m.panel.dsw <= 0, `${where}: the panel scrolls horizontally`);
+            for (const [id, , fits] of m.panel.rows) check(fits, `${where}: ${id} overflows its box`);
+            check(m.panel.paperRoom >= -0.5, `${where}: the paper select does not show its full option text (${m.panel.paperRoom}px)`);
+            for (const k of ["sheet", "about"]) check(m[k].sw <= 0 && m[k].dsw <= 0, `${where}: ${k} scrolls horizontally`);
+            if (label !== "en") m.panel.rows.forEach(([id, n], i) => check(n <= base.panel.rows[i][1],
+              `${where}: ${id} takes ${n} lines against English ${base.panel.rows[i][1]}`));
           }
-          de.panel.rows.forEach(([id, n], i) => assert.ok(n <= base.panel.rows[i][1] + 1,
+          const de = await pass(pseudoUrl, "de", w, h);
+          check(de.panel.sw <= 0 && de.panel.dsw <= 0, `pseudo de ${w}x${h}: the panel scrolls horizontally`);
+          for (const k of ["sheet", "about"]) check(de[k].sw <= 0 && de[k].dsw <= 0, `pseudo de ${w}x${h}: ${k} scrolls horizontally`);
+          de.panel.rows.forEach(([id, n], i) => check(n <= base.panel.rows[i][1] + 1,
             `${w}x${h}: ${id} takes ${n} lines against English ${base.panel.rows[i][1]} (the brackets of the pseudo table may add one)`));
         }
+        assert.deepStrictEqual(bad, [], "tables overflow");
       } finally {
         await b.setViewport(900, 900, false);
         await b.eval(`try { localStorage.clear(); } catch (e) {} return true;`).catch(() => {});
