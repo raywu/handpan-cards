@@ -111,3 +111,20 @@ Independent engineering review approved retaining historical fit/scroll/Resource
 Timeout receipt: traced `settle()` first rAF after desktop→mobile starved; original measurement finished. External target-activation diagnostic passed unchanged original TR1; reload-only did not. Local `Page.bringToFront` in TR1 preserves same-document resize and avoids shared-helper/timeout changes. New oracle verifies registered font mode, ancestor visibility/clipping and hit-tested exposure; cleanup preserves the primary failure.
 
 TDD R1: unchanged app at282f065, both fonts reject1024x700 A because HTC is on row2 (2failed,0skip/cancel); G1 compact oracle passes after CSS. First full main-comparison probe:8019cells/font,0skips,0regressions/reported-only,0invariance failures. These are intermediate receipts, not finalCI/PR/DEV readiness.
+
+## Mutation intent ledger and local regression receipts
+
+Generated from clean committed source6113804 in separate detached scratch. Bodies are actual `git diff`, blob headers stripped. Eight selected commands passed on clean source and failed with ERR_ASSERTION under each fault; all fault runs had0skip/cancel and source restored. This is targeted evidence, not the full corpus gate.
+
+| Patch | Old intent / disposition | Current fault and required detection |
+|---|---|---|
+| tr_trio_sidebar_basis | Removed40% basis was historically bad; retired minimum mechanism | Restore old wrap+40% two-row sidebar; direct one-row oracle fails |
+| tr_trio_landscape_unguarded | Historical remove-trio parity retired | Disable landscape label wrapping; complete-text containment fails |
+| tr_trio_padding_default | Default11px padding can now be behaviorally valid | Excess40px site padding overflows narrow row; geometry/containment fails |
+| tr_trio_class_dropped | Retained, patch still applies | Drop trio class; direct layout/leading oracle fails |
+| qr_res_hidden_landscape | Previously hid Language accidentally | Semantic :has(#res-handpaner) Resources selector; rendered-link inventory fails |
+| e_panel_moved_into_header | Retained ancestry fault, moved markup regenerated | Move current panel+scrim under header; independent ancestry assertion fails |
+| tr_trio_clipped_ancestor (new) | Adds missing visibility negative case | clip-path at row ancestor leaves rects intact; hit-tested exposure fails (both fonts) |
+| tr_trio_budget_growth (new) | Proves upper budget still constrains growth | Add200px landscape row margin; unchanged historical budget assertion fails |
+
+Corpus count1461 (1459+2). No existing mutant removed; no budget constant or test floor lowered. Targeted reviewed browser run13pass0fail0skip/cancel; Python gate274ran0skip/fail/error; data/boot/engine/deck/i18n checks pass. Full exact-head CI, final independent PR review, combined-tree dev checks and actual deployed DEV still pending.

@@ -1,14 +1,22 @@
 # kills: TR-1: the three site links are equal in width on every line they share, and every label stays inside its box
-# suite: node --test --test-name-pattern TR-1:.the.three.site.links.are.equal.in.width.on.every.line.they.share..and.every.label.stays.inside.its.box tests/e2e.test.js
-# TR-5. Removes the landscape reset: landscape phones keep the 4px trim, so 640x360 no longer matches the row without the trio class.
+# suite: node --test --test-name-pattern TR-1: tests/e2e.test.js
+# Disables complete-label wrapping in landscape; narrow site targets must not spill.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -291,7 +291,6 @@ a.mode{text-decoration:none}
+@@ -344,6 +344,7 @@ a.mode{text-decoration:none}
    #settings-panel{display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));
      align-content:start; align-items:start}
    #settings-panel > .panel-group{width:auto}
--  .modebar.trio .mode{padding-inline:11px}
++  .modebar.trio .mode{white-space:nowrap}
  }
  #settings-trigger[aria-expanded="true"] .glyph{background:transparent}
  #settings-trigger[aria-expanded="true"] .glyph::before{top:0; transform:rotate(45deg)}
+@@ -414,6 +415,7 @@ a.mode{text-decoration:none}
+     z-index:20;
+   }
+   #settings-panel > .panel-group{width:auto}
++  .modebar.trio .mode{white-space:nowrap}
+   /* [hidden]{display:none !important} (line 456) otherwise wins over the
+      rule above at equal !important weight (it has none, so this needs its
+      own) - this is the one declaration that actually has to beat it. */
