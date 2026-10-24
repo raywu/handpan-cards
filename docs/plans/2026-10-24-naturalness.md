@@ -39,7 +39,8 @@ and SO-D remain held main releases. Never PR all of dev to main incidentally.
 Dev has250 top-level keys,257 scalar leaves for en/de/fr/it/es and250 for
 ja/zh-Hant/zh-Hans. Seven plural objects have named forms, not positional pairs.
 `tools/sync_i18n.py` checks top-level keys, not the full structural contract.
-Existing app I18N test unions plural placeholders and can miss per-form losses.
+Before Stage1, the app I18N test unioned plural placeholders and missed per-form
+losses. The delivered prerequisite now checks named forms and multiplicity.
 DE `compose.DOUBLE_B` existing baseline uses `{L}` twice versus English three times;
 preserve the accepted locale baseline instead of assuming English multiplicity.
 
@@ -275,7 +276,8 @@ assertion-red and5actualmutants proven. FullCI40129424063 passed all12jobs,
 including475e2e with0fail/skip/cancel; mergeddev via565. Runbook source review9.5,
 fullCI40129764065 all12pass,473e2e with0fail/skip/cancel; mergeddev via563.
 MainPR562 ready/HELD; CI-only564 remains draft and MUST NOT MERGE MAIN.
-Language authors are newly dispatched; their work is not yet reviewed or delivered.
+Source-language review is completed below; runtime, final-head CI and delivery
+gates for the assembled wording candidate remain pending.
 
 ### Source-language review closure
 
