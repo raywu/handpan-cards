@@ -1,0 +1,15 @@
+# kills: I18N: every table has the keys of en and keeps every placeholder
+# suite: node --test --test-reporter=tap --test-name-pattern ^I18N:.every.table.has.the.keys.of.en.and.keeps.every.placeholder$ tests/app.test.js
+# edge-tab: frozen per-form UI translation contract.
+diff --git a/data/i18n/de.json b/data/i18n/de.json
+--- a/data/i18n/de.json
++++ b/data/i18n/de.json
+@@ -235,7 +235,7 @@
+   "sheet.too_close_so": "{name} war zu nah an {other}, daher liegt sie bei {at}.",
+   "sheet.at": "{name} bei {at}.",
+   "sheet.moved_to": "{name} nach {at} verschoben.",
+-  "sheet.seat_renumber": " Die Platznummern behalten ihre Reihenfolge um den Ring, also {list}.",
++  "sheet.seat_renumber": "\tDie Platznummern behalten ihre Reihenfolge um den Ring, also {list}.",
+   "sheet.seat_is_now": "{name} ist jetzt {label}",
+   "sheet.list_and": "{rest} und {last}",
+   "sheet.mirror_reflow": " Die Noten, die du platziert hast, bleiben stehen; ihre Platznummern laufen jetzt andersherum.",
