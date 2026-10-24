@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11599,7 +11599,7 @@ function setTab(tab) {
-   setLip(false, { instant: true });
-   const pending = pendingDerive;
-   pendingDerive = "";
--  if (drawerOpen && boxOk && pending) layoutStatus(pending);
-+  if (false && pending) layoutStatus(pending);
-   else if (drawerOpen && boxOk && !hasTwoNoteRing() && !(ringCount && ringCount.bottom >= 1)) layoutStatus(t("sheet.no_two_ring"));
+@@ -13041,7 +13041,7 @@
+ anglePrev.onclick = () => nudgeAngle(1);
+ angleNext.onclick = () => nudgeAngle(-1);
+ function showPendingDerive() {
+-  if (drawerOpen && boxOk && pendingDerive) { layoutStatus(pendingDerive); pendingDerive = ""; }
++  if (false && pendingDerive) { layoutStatus(pendingDerive); pendingDerive = ""; }
  }
- /** Leaving the sheet or opening a fresh session: no focus, no status. */
+ tabLayout.addEventListener("click", showPendingDerive);
+ nextBtn.addEventListener("click", showPendingDerive);

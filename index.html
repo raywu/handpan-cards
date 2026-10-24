@@ -11597,10 +11597,7 @@ function setTab(tab) {
   repaintPlate();
   bandPort.scrollTop = 0;
   setLip(false, { instant: true });
-  const pending = pendingDerive;
-  pendingDerive = "";
-  if (drawerOpen && boxOk && pending) layoutStatus(pending);
-  else if (drawerOpen && boxOk && !hasTwoNoteRing() && !(ringCount && ringCount.bottom >= 1)) layoutStatus(t("sheet.no_two_ring"));
+  if (drawerOpen && boxOk && !hasTwoNoteRing() && !(ringCount && ringCount.bottom >= 1)) layoutStatus(t("sheet.no_two_ring"));
 }
 /** Leaving the sheet or opening a fresh session: no focus, no status. */
 function dropDrawer() {
@@ -12058,7 +12055,6 @@ function putDownPick() {
 }
 function resetLayout() {
   cancelGesture();
-  pendingDerive = "";
   layoutSeats = null;
   layoutAngles = null;
   foldedBottom = false;
@@ -12275,8 +12271,8 @@ function noteCounts(fields, value) {
   }
   if (!text) return;
   if (putDown && wasOnNote) focusFirstNext = true;
-  if (drawerOpen) { pendingDerive = ""; layoutStatus(text); }
-  else if (derived.length) pendingDerive = text;
+  if (!drawerOpen && derived.length) pendingDerive = text;
+  if (drawerOpen) layoutStatus(text);
 }
 const typedKey = (k, ring) => (k && k[ring] ? k[ring].join(",") : null);
 const followsTyped = (ring) => !!(typedNow && typedNow[ring] && layoutSeats && layoutSeats[ring] &&
@@ -13044,6 +13040,13 @@ tabStrip.addEventListener("keydown", (e) => {
 });
 anglePrev.onclick = () => nudgeAngle(1);
 angleNext.onclick = () => nudgeAngle(-1);
+function showPendingDerive() {
+  if (drawerOpen && boxOk && pendingDerive) { layoutStatus(pendingDerive); pendingDerive = ""; }
+}
+tabLayout.addEventListener("click", showPendingDerive);
+nextBtn.addEventListener("click", showPendingDerive);
+tabStrip.addEventListener("keydown", showPendingDerive);
+resetBtn.addEventListener("click", () => { pendingDerive = ""; });
 notePrev.onclick = () => stepNote(-1);
 noteNext.onclick = () => stepNote(1);
 seatPrev.onclick = () => stepSeat(-1);

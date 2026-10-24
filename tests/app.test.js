@@ -14236,7 +14236,7 @@ describe("OF: the sheet's seats follow the typed order", () => {
   test("OF: PD RESET LAYOUT clears a pending sentence", () => {
     const app = add();
     typedFields(app, "D3", "C4 A3 D4 E4 F4 G4 A4 C5");
-    app.run("resetLayout()");
+    app.click(app.els["scale-layout-reset"]);
     app.click(app.els["scale-tab-layout"]);
     assert.doesNotMatch(d2Status(app), /follows? the order listed/);
   });
