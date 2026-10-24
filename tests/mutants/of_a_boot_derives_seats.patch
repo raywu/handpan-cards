@@ -1,0 +1,15 @@
+# kills: OF: a boot or share open of a record carrying drawer seats, at- angles or a legacy order derives nothing and stores nothing new
+# suite: node --test --test-name-pattern OF:.a.boot.or.share.open.of.a.record tests/app.test.js
+# The sheet-open prefill sets a key no parse can match, so the first parse derives over the record's own drawer seats.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12340,7 +12340,7 @@ function resetSheetState(edit) {
+   scaleBox.value = line;
+   const pre = edit ? HPE.core.parseSeed(line) : null;
+   const preTyped = pre && pre.ok ? HPE.core.typedSeats(pre.value) : null;
+-  lastTyped = { rim: typedKey(preTyped, "rim"), inner: typedKey(preTyped, "inner") };
++  lastTyped = { rim: "x", inner: "x" };
+   typedNow = null;
+   hintSaid = "";
+   hintQuiet = true;

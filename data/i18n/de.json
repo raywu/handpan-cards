@@ -235,7 +235,10 @@
   "sheet.too_close_so": "{name} war zu nah an {other}, daher liegt sie bei {at}.",
   "sheet.at": "{name} bei {at}.",
   "sheet.moved_to": "{name} nach {at} verschoben.",
-  "sheet.seat_numbers": " Die Platznummern im Bottom-Ring laufen jetzt von tief nach hoch.",
+  "sheet.seat_renumber": " Die Platznummern behalten ihre Reihenfolge um den Ring, also {list}.",
+  "sheet.seat_is_now": "{name} ist jetzt {label}",
+  "sheet.list_and": "{rest} und {last}",
+  "sheet.mirror_reflow": " Die Noten, die du platziert hast, bleiben stehen; ihre Platznummern laufen jetzt andersherum.",
   "sheet.seat_stays": " Platz {label} behält seine Nummer.",
   "sheet.cannot_trade": "Nicht verschoben. {a} und {b} können auf den {step}°-Schritten nicht die Plätze tauschen.",
   "sheet.pick_bottom_one": "{name} aufgenommen. Ziehe sie am Ring entlang, um sie zu verschieben.",
@@ -263,5 +266,8 @@
   "sheet.pan_example": "Beispiel-Handpan für die Platzhalter-Eingabe",
   "sheet.pan_held": "Vorschau der letzten lesbaren Eingabe",
   "sel.language": "Sprache",
-  "sel.auto": "AUTOMATISCH ({lang})"
+  "sel.auto": "AUTOMATISCH ({lang})",
+  "sheet.order_hint": "Die oberen Noten nehmen ihre Plätze in der aufgelisteten Reihenfolge ein. Ordne sie im Tab Layout neu an.",
+  "sheet.rim_follows": "Der Randring folgt jetzt der aufgelisteten Reihenfolge.",
+  "sheet.inner_follows": "Die Innennoten folgen jetzt der aufgelisteten Reihenfolge."
 }

@@ -235,7 +235,10 @@
   "sheet.too_close_so": "{name} era troppo vicina a {other}, quindi si trova a {at}.",
   "sheet.at": "{name} a {at}.",
   "sheet.moved_to": "{name} spostata a {at}.",
-  "sheet.seat_numbers": " I numeri dei posti sul fondo ora vanno dal più grave al più acuto.",
+  "sheet.seat_renumber": " I numeri dei posti mantengono il loro ordine intorno all'anello, quindi {list}.",
+  "sheet.seat_is_now": "{name} ora è {label}",
+  "sheet.list_and": "{rest} e {last}",
+  "sheet.mirror_reflow": " Le note che hai posizionato restano dove sono e i loro numeri di posto ora vanno nell'altro senso.",
   "sheet.seat_stays": " Il posto {label} mantiene il suo numero.",
   "sheet.cannot_trade": "Non spostate. {a} e {b} non possono scambiarsi i posti sui passi di {step}°.",
   "sheet.pick_bottom_one": "Hai preso {name}. Trascinala lungo l'anello per spostarla.",
@@ -263,5 +266,8 @@
   "sheet.pan_example": "Handpan di esempio per il testo segnaposto",
   "sheet.pan_held": "Anteprima dell'ultima riga valida",
   "sel.language": "Lingua",
-  "sel.auto": "AUTOMATICA ({lang})"
+  "sel.auto": "AUTOMATICA ({lang})",
+  "sheet.order_hint": "Le note superiori prendono posto nell'ordine indicato. Riordinale nella scheda Layout.",
+  "sheet.rim_follows": "Il bordo ora segue l'ordine indicato.",
+  "sheet.inner_follows": "Le note interne ora seguono l'ordine indicato."
 }

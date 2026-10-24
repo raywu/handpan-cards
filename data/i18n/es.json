@@ -235,7 +235,10 @@
   "sheet.too_close_so": "{name} estaba demasiado cerca de {other}, así que queda en {at}.",
   "sheet.at": "{name} en {at}.",
   "sheet.moved_to": "{name} movida a {at}.",
-  "sheet.seat_numbers": " Los números de los lugares inferiores ahora van de grave a agudo.",
+  "sheet.seat_renumber": " Los números de lugar conservan su orden alrededor del anillo, así que {list}.",
+  "sheet.seat_is_now": "{name} ahora es {label}",
+  "sheet.list_and": "{rest} y {last}",
+  "sheet.mirror_reflow": " Las notas que colocaste se quedan donde están y sus números de lugar ahora van en sentido contrario.",
   "sheet.seat_stays": " El lugar {label} conserva su número.",
   "sheet.cannot_trade": "No se movieron. {a} y {b} no pueden intercambiar lugares en los pasos de {step}°.",
   "sheet.pick_bottom_one": "Recogiste {name}. Arrástrala por el anillo para moverla.",
@@ -263,5 +266,8 @@
   "sheet.pan_example": "Handpan de ejemplo para el texto de muestra",
   "sheet.pan_held": "Vista previa de la última línea válida",
   "sel.language": "Idioma",
-  "sel.auto": "AUTOMÁTICO ({lang})"
+  "sel.auto": "AUTOMÁTICO ({lang})",
+  "sheet.order_hint": "Las notas de arriba ocupan sus lugares en el orden indicado. Reordénalas en la pestaña Disposición.",
+  "sheet.rim_follows": "El borde ahora sigue el orden indicado.",
+  "sheet.inner_follows": "Las notas interiores ahora siguen el orden indicado."
 }

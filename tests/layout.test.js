@@ -2053,3 +2053,224 @@ test("OF: (D3) C4 A3 D4 E4 F4 G4 A4 C5 seats C4 at seat 1, 270 degrees, and A3 a
   assert.ok(am, "an Am card");
   assert.deepEqual(plain(am.fields.map((id) => f[id][5])), ["2", "1", "4"]);
 });
+
+/* Seat order (lane SO-C): a bottom seat's number belongs to the seat. */
+const SO_SEED = HPE.core.parseSeed("[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]", {}).value;
+const soSolve = (o) => HPE.layout.solve(SO_SEED, { anchor: "between", ...o });
+const soBottom = (r) => {
+  assert.ok(r.ok, r.ok ? "" : `refused ${r.code}`);
+  const f = r.value.fields;
+  return Object.keys(f).filter((id) => f[id][3] === "bottom").sort((a, b) => a - b)
+    .map((id) => ({ id, name: f[id][0] + f[id][1], angle: f[id][4], label: f[id][5] }));
+};
+const soLine = (r) => soBottom(r).map((n) => `${n.name}@${n.angle}=${n.label}`).join(" ");
+const soShow = (o) => {
+  const r = soSolve(o);
+  return r.ok ? soLine(r) : `REFUSED ${r.code}`;
+};
+const soHome = (mirrorBottom) => soBottom(soSolve({ mirrorBottom })).map((n) => n.angle);
+const soNorm = (v) => ((v % 360) + 360) % 360;
+const soByAngle = (list) => list.map((n) => `${n.angle}=${n.label}`).sort().join(" ");
+const soLcg = (seed) => {
+  let s = seed;
+  return () => (s = (s * 1103515245 + 12345) % 2147483648) / 2147483648;
+};
+
+test("SO: an angles swap of Db3 and Db4 on Pygmy draws U5 at 60 and U2 at 240, as the seats swap does", () => {
+  const swapped = soShow({ angles: { bottom: [null, 60, null, null, 240, null] } });
+  assert.equal(swapped, "C3@300=U1 Db3@60=U5 Eb3@0=U3 Bb3@180=U4 Db4@240=U2 Ab5@120=U6");
+  assert.equal(swapped, soShow({ seats: { bottom: [0, 4, 2, 3, 1, 5] } }));
+});
+
+test("SO: every bottom pair swapped through angles labels the ring as the same swap through seats, with MIRROR BOTTOM off and on", () => {
+  for (const mirrorBottom of [false, true]) {
+    const home = soHome(mirrorBottom);
+    let pairs = 0;
+    for (let i = 0; i < 6; i += 1) {
+      for (let j = i + 1; j < 6; j += 1) {
+        const entries = home.slice();
+        entries[i] = home[j];
+        entries[j] = home[i];
+        const order = [0, 1, 2, 3, 4, 5];
+        order[i] = j;
+        order[j] = i;
+        const viaAngles = soBottom(soSolve({ mirrorBottom, angles: { bottom: entries } }));
+        const viaSeats = soBottom(soSolve({ mirrorBottom, seats: { bottom: order } }));
+        assert.deepEqual(viaAngles.map((n) => [n.angle, n.label]), viaSeats.map((n) => [n.angle, n.label]),
+          `swap ${i} ${j} mirrorBottom ${mirrorBottom}`);
+        pairs += 1;
+      }
+    }
+    assert.equal(pairs, 15);
+  }
+});
+
+test("SO: a slide from the home layout that passes no other note keeps every bottom label", () => {
+  const home = soHome(false);
+  const labels = soBottom(soSolve({})).map((n) => n.label);
+  assert.equal(soShow({ angles: { bottom: [305, null, 5, null, 65, null] } }),
+    "C3@305=U1 Db3@240=U2 Eb3@5=U3 Bb3@180=U4 Db4@65=U5 Ab5@120=U6");
+  let accepted = 0;
+  for (let i = 0; i < 6; i += 1) {
+    for (const d of [-5, 5, -10, 10]) {
+      const entries = home.map(() => null);
+      entries[i] = soNorm(home[i] + d);
+      const r = soSolve({ angles: { bottom: entries } });
+      if (!r.ok) continue;
+      accepted += 1;
+      assert.deepEqual(soBottom(r).map((n) => n.label), labels, `note ${i} by ${d}`);
+    }
+  }
+  assert.ok(accepted > 10);
+});
+
+test("SO: a slide that crosses a note keeps the cyclic order: Eb3 to 90 reads Eb3 U5 and Db4 U3", () => {
+  assert.equal(soShow({ angles: { bottom: [null, null, 90, null, null, null] } }),
+    "C3@300=U1 Db3@240=U2 Eb3@90=U5 Bb3@180=U4 Db4@60=U3 Ab5@120=U6");
+  assert.equal(soShow({ angles: { bottom: [null, null, null, 30, null, null] } }),
+    "C3@300=U1 Db3@240=U2 Eb3@0=U3 Bb3@30=U5 Db4@60=U6 Ab5@120=U4");
+});
+
+test("SO: the cyclic match wraps through 0 degrees: Eb3 at 355 keeps U3, and C3 at 20 with Eb3 at 0 reads C3 U3 and Eb3 U1", () => {
+  assert.equal(soShow({ angles: { bottom: [null, null, 355, null, null, null] } }),
+    "C3@300=U1 Db3@240=U2 Eb3@355=U3 Bb3@180=U4 Db4@60=U5 Ab5@120=U6");
+  assert.equal(soShow({ angles: { bottom: [20, null, null, null, null, null] } }),
+    "C3@20=U3 Db3@240=U2 Eb3@0=U1 Bb3@180=U4 Db4@60=U5 Ab5@120=U6");
+});
+
+test("SO: whole-ring turns of +30, +25 and -25 on Pygmy keep the home labels, and -30 puts the same seat numbers at the same angles, with MIRROR BOTTOM off and on", () => {
+  const minus30 = {
+    false: "C3@270=U2 Db3@210=U4 Eb3@330=U1 Bb3@150=U6 Db4@30=U3 Ab5@90=U5",
+    true: "C3@210=U3 Db3@270=U1 Eb3@150=U5 Bb3@330=U2 Db4@90=U6 Ab5@30=U4",
+  };
+  for (const mirrorBottom of [false, true]) {
+    const home = soHome(mirrorBottom);
+    const homeLabels = soBottom(soSolve({ mirrorBottom })).map((n) => n.label);
+    for (const d of [30, 25, -25]) {
+      const r = soBottom(soSolve({ mirrorBottom, angles: { bottom: home.map((a) => soNorm(a + d)) } }));
+      assert.deepEqual(r.map((n) => n.label), homeLabels, `turn ${d} mirrorBottom ${mirrorBottom}`);
+    }
+    const back = soSolve({ mirrorBottom, angles: { bottom: home.map((a) => soNorm(a - 30)) } });
+    assert.equal(soLine(back), minus30[mirrorBottom]);
+    const forward = soSolve({ mirrorBottom, angles: { bottom: home.map((a) => soNorm(a + 30)) } });
+    assert.equal(soByAngle(soBottom(back)), soByAngle(soBottom(forward)));
+  }
+});
+
+test("SO: under MIRROR BOTTOM the swap labels against the mirrored home: Db3 at 120 reads U5 and Db4 at 300 reads U2", () => {
+  assert.equal(soShow({ mirrorBottom: true, angles: { bottom: [null, 120, null, null, 300, null] } }),
+    "C3@240=U1 Db3@120=U5 Eb3@180=U3 Bb3@0=U4 Db4@300=U2 Ab5@60=U6");
+});
+
+test("SO: rim seats and a bottom angles swap together label both rings by position", () => {
+  const rimOrder = [1, 0, 2, 3, 4, 5, 6, 7, 8];
+  const both = soSolve({ seats: { rim: rimOrder }, angles: { bottom: [null, 60, null, null, 240, null] } });
+  assert.equal(soLine(both), "C3@300=U1 Db3@60=U5 Eb3@0=U3 Bb3@180=U4 Db4@240=U2 Ab5@120=U6");
+  const rimOnly = soSolve({ seats: { rim: rimOrder } });
+  const plainRim = (r) => Object.keys(r.value.fields).filter((id) => r.value.fields[id][3] === "rim")
+    .sort((a, b) => a - b).map((id) => r.value.fields[id].slice(0, 6));
+  assert.deepEqual(plainRim(both), plainRim(rimOnly));
+  assert.notDeepEqual(plainRim(both), plainRim(soSolve({})));
+});
+
+test("SO: across every accepted single slide on Pygmy the bottom labels are a permutation in home cyclic order and depend only on the final angles", () => {
+  for (const mirrorBottom of [false, true]) {
+    const homeNotes = soBottom(soSolve({ mirrorBottom }));
+    const ringLabels = homeNotes.slice().sort((a, b) => a.angle - b.angle).map((n) => n.label);
+    const home = homeNotes.map((n) => n.angle);
+    let accepted = 0;
+    for (let i = 0; i < 6; i += 1) {
+      for (let a = 0; a < 360; a += 5) {
+        const entries = home.slice();
+        entries[i] = a;
+        const r = soSolve({ mirrorBottom, angles: { bottom: entries } });
+        if (!r.ok) continue;
+        accepted += 1;
+        const notes = soBottom(r);
+        const around = notes.slice().sort((x, y) => x.angle - y.angle).map((n) => n.label);
+        const k = around.indexOf(ringLabels[0]);
+        assert.deepEqual(around.slice(k).concat(around.slice(0, k)), ringLabels, `note ${i} to ${a}`);
+        const again = soBottom(soSolve({ mirrorBottom, angles: { bottom: entries.slice().reverse() } }));
+        assert.equal(soByAngle(again), soByAngle(notes), `final angles only: note ${i} to ${a}`);
+      }
+    }
+    assert.ok(accepted > 100);
+  }
+});
+
+test("SO: the five built-ins solve to byte-identical fields with no angles, all-null angles and their home angles written explicitly", () => {
+  const bottomIds = (fields) => Object.keys(fields).filter((id) => fields[id][3] === "bottom").sort((a, b) => a - b);
+  const seeds = [
+    ["pygmy", SO_SEED, "between"],
+    ["hijaz", HPE.core.parseSeed("(C#3) G#3 B3 C#4 D4 F4 F#4 G#4 B4", {}).value, "one"],
+    ["amara", HPE.core.parseSeed("(D3) A3 C4 D4 E4 F4 G4 A4 C5", {}).value, "one"],
+  ];
+  for (const [name, seed, anchor] of seeds) {
+    const base = HPE.layout.solve(seed, { anchor });
+    assert.ok(base.ok, name);
+    const ids = bottomIds(base.value.fields);
+    if (!ids.length) continue;
+    const nulls = HPE.layout.solve(seed, { anchor, angles: { bottom: ids.map(() => null) } });
+    assert.deepEqual(plain(nulls.value), plain(base.value), name);
+    const explicit = HPE.layout.solve(seed, { anchor, angles: { bottom: ids.map((id) => base.value.fields[id][4]) } });
+    assert.deepEqual(plain(explicit.value.fields), plain(base.value.fields), name);
+  }
+});
+
+test("SO: MIRROR BOTTOM over six explicit angles re-flows the numbers into the mirrored order and moves no note", () => {
+  const entries = [300, 60, 0, 180, 240, 120];
+  const off = soBottom(soSolve({ angles: { bottom: entries } }));
+  const on = soBottom(soSolve({ mirrorBottom: true, angles: { bottom: entries } }));
+  assert.deepEqual(on.map((n) => n.angle), off.map((n) => n.angle));
+  assert.equal(on.map((n) => `${n.name}@${n.angle}=${n.label}`).join(" "),
+    "C3@300=U2 Db3@60=U6 Eb3@0=U4 Bb3@180=U3 Db4@240=U1 Ab5@120=U5");
+  assert.notDeepEqual(on.map((n) => n.label), off.map((n) => n.label));
+});
+
+test("SO: on a cost tie the bottom labels take the rotation that turns the notes furthest anticlockwise: Pygmy at 75 285 0 180 60 120 reads C3 U5 Db3 U2 Eb3 U1 Bb3 U4 Db4 U3 Ab5 U6, and mirrored at 75 285 180 0 120 60 reads C3 U6 Db3 U1 Eb3 U3 Bb3 U2 Db4 U5 Ab5 U4", () => {
+  assert.equal(soShow({ angles: { bottom: [75, 285, 0, 180, 60, 120] } }),
+    "C3@75=U5 Db3@285=U2 Eb3@0=U1 Bb3@180=U4 Db4@60=U3 Ab5@120=U6");
+  assert.equal(soShow({ mirrorBottom: true, angles: { bottom: [75, 285, 180, 0, 120, 60] } }),
+    "C3@75=U6 Db3@285=U1 Eb3@180=U3 Bb3@0=U2 Db4@120=U5 Ab5@60=U4");
+});
+
+test("SO: a swap from any accepted bottom layout trades only the two swapped labels, pinned at C3 140 and Bb3 105, with MIRROR BOTTOM off and on", () => {
+  const state = [140, 80, 305, 105, 65, 340];
+  const swapped = state.slice();
+  swapped[0] = state[3];
+  swapped[3] = state[0];
+  assert.equal(soShow({ angles: { bottom: state } }), "C3@140=U4 Db3@80=U5 Eb3@305=U2 Bb3@105=U6 Db4@65=U3 Ab5@340=U1");
+  assert.equal(soShow({ angles: { bottom: swapped } }), "C3@105=U6 Db3@80=U5 Eb3@305=U2 Bb3@140=U4 Db4@65=U3 Ab5@340=U1");
+  for (const mirrorBottom of [false, true]) {
+    const rand = soLcg(777);
+    let checked = 0;
+    for (let round = 0; round < 400; round += 1) {
+      const entries = [0, 1, 2, 3, 4, 5].map(() => Math.floor(rand() * 72) * 5);
+      const before = soSolve({ mirrorBottom, angles: { bottom: entries } });
+      const i = Math.floor(rand() * 6);
+      const j = (i + 1 + Math.floor(rand() * 5)) % 6;
+      if (!before.ok) continue;
+      const after = entries.slice();
+      after[i] = entries[j];
+      after[j] = entries[i];
+      const next = soSolve({ mirrorBottom, angles: { bottom: after } });
+      if (!next.ok) continue;
+      const a = soBottom(before).map((n) => n.label);
+      const b = soBottom(next).map((n) => n.label);
+      for (let k = 0; k < 6; k += 1) {
+        if (k === i) assert.equal(b[k], a[j]);
+        else if (k === j) assert.equal(b[k], a[i]);
+        else assert.equal(b[k], a[k]);
+      }
+      checked += 1;
+    }
+    assert.ok(checked > 5, `only ${checked} accepted layouts`);
+  }
+});
+
+test("SO: a 5 degree nudge can rotate the numbering while the order around the ring is kept: Db3 240 to 235 relabels all six", () => {
+  assert.equal(soShow({ angles: { bottom: [300, 240, 0, 140, 285, 120] } }),
+    "C3@300=U3 Db3@240=U2 Eb3@0=U5 Bb3@140=U4 Db4@285=U1 Ab5@120=U6");
+  assert.equal(soShow({ angles: { bottom: [300, 235, 0, 140, 285, 120] } }),
+    "C3@300=U1 Db3@235=U4 Eb3@0=U3 Bb3@140=U6 Db4@285=U2 Ab5@120=U5");
+});

@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11261,7 +11261,7 @@ function resetSheetState(edit) {
-     ? { anchor: edit.fields["1"] && edit.fields["1"][4] !== 270 ? "between" : "one" } : edit.options;
-   nameBox.value = edit ? edit.name : "";
-   nameDirty = false;                                 // prefilled, not typed
--  scaleBox.value = edit ? HPE.core.formatSeed(edit.fields) : "";  // 8A: the canonical string
-+  scaleBox.value = "";  // 8A: the canonical string
-   writeFieldValues(edit ? decomposeFields(edit.fields) : null);
-   syncGrow();
-   palette = !edit ? 0 : seeded() ? seedPalette(edit.colors) : edit.options.palette;
+@@ -12337,7 +12337,7 @@ function resetSheetState(edit) {
+   // reads as it was typed; a seeded deck or a record without seats is the
+   // canonical string.
+   const line = edit ? HPE.core.formatTyped(edit.fields, o && o.seats) : "";
+-  scaleBox.value = line;
++  scaleBox.value = "";
+   const pre = edit ? HPE.core.parseSeed(line) : null;
+   const preTyped = pre && pre.ok ? HPE.core.typedSeats(pre.value) : null;
+   lastTyped = { rim: typedKey(preTyped, "rim"), inner: typedKey(preTyped, "inner") };

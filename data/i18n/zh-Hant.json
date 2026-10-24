@@ -230,7 +230,10 @@
   "sheet.too_close_so": "{name} 離 {other} 太近，所以停在 {at}。",
   "sheet.at": "{name} 在 {at}。",
   "sheet.moved_to": "{name} 已移到 {at}。",
-  "sheet.seat_numbers": " 底部位置編號現在由低到高排列。",
+  "sheet.seat_renumber": " 位置編號沿圈保持原有順序，因此{list}。",
+  "sheet.seat_is_now": "{name} 現在是 {label}",
+  "sheet.list_and": "{rest} 和 {last}",
+  "sheet.mirror_reflow": " 你放好的音保持不動，它們的位置編號現在反向排列。",
   "sheet.seat_stays": " 位置 {label} 的編號不變。",
   "sheet.cannot_trade": "未移動。{a} 與 {b} 無法在 {step}° 的單位下互換位置。",
   "sheet.pick_bottom_one": "已拿起 {name}。沿著圈拖曳即可移動。",
@@ -256,5 +259,8 @@
   "sheet.pan_example": "範例文字所用的手碟示意",
   "sheet.pan_held": "上一次有效輸入的預覽",
   "sel.language": "語言",
-  "sel.auto": "自動（{lang}）"
+  "sel.auto": "自動（{lang}）",
+  "sheet.order_hint": "上殼音符會依列出的順序就位。可在「排列」分頁重新調整。",
+  "sheet.rim_follows": "外圈現在依列出的順序排列。",
+  "sheet.inner_follows": "內圈音現在依列出的順序排列。"
 }

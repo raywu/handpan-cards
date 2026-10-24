@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12086,7 +12086,6 @@ function lineInput() {
+@@ -13269,7 +13269,6 @@ function lineInput() {
    } else {
      const res = HPE.core.parseSeed(text);
      if (res.ok) {
--      writeFieldValues(decomposeFields(res.value.fields));
+-      writeFieldValues(decomposeFields(res.value.fields, res.value.typed));
        fieldsStale = false;
      } else fieldsStale = true;
    }

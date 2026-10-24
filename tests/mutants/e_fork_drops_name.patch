@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11259,7 +11259,7 @@ function resetSheetState(edit) {
+@@ -12331,7 +12331,7 @@ function resetSheetState(edit) {
    // Everything else starts as a new scale would: mirror off.
    const o = !edit ? null : seeded()
      ? { anchor: edit.fields["1"] && edit.fields["1"][4] !== 270 ? "between" : "one" } : edit.options;
 -  nameBox.value = edit ? edit.name : "";
 +  nameBox.value = edit ? edit.name.replace(/\d/g, "") : "";
    nameDirty = false;                                 // prefilled, not typed
-   scaleBox.value = edit ? HPE.core.formatSeed(edit.fields) : "";  // 8A: the canonical string
-   writeFieldValues(edit ? decomposeFields(edit.fields) : null);
+   // The line lists the top notes in seat order (Q4 A), so a record with seats
+   // reads as it was typed; a seeded deck or a record without seats is the

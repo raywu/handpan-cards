@@ -235,7 +235,10 @@
   "sheet.too_close_so": "{name} was too close to {other}, so it sits at {at}.",
   "sheet.at": "{name} at {at}.",
   "sheet.moved_to": "{name} moved to {at}.",
-  "sheet.seat_numbers": " Bottom seat numbers now run low to high.",
+  "sheet.seat_renumber": " Seat numbers keep their order around the ring, so {list}.",
+  "sheet.seat_is_now": "{name} is now {label}",
+  "sheet.list_and": "{rest} and {last}",
+  "sheet.mirror_reflow": " The notes you placed stay put, and their seat numbers now run the other way round.",
   "sheet.seat_stays": " Seat {label} stays its number.",
   "sheet.cannot_trade": "Not moved. {a} and {b} cannot trade places on the {step}° steps.",
   "sheet.pick_bottom_one": "Picked up {name}. Drag it along the ring to move it.",
@@ -263,5 +266,8 @@
   "sheet.pan_example": "Example pan for the placeholder seed",
   "sheet.pan_held": "Preview of the last seed that parsed",
   "sel.language": "Language",
-  "sel.auto": "AUTOMATIC ({lang})"
+  "sel.auto": "AUTOMATIC ({lang})",
+  "sheet.order_hint": "Top notes take their seats in the order listed. Rearrange them on the Layout tab.",
+  "sheet.rim_follows": "The rim now follows the order listed.",
+  "sheet.inner_follows": "The inner notes now follow the order listed."
 }

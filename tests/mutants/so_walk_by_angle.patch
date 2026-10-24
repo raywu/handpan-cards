@@ -1,0 +1,15 @@
+# kills: SO: under active angles the drawer walk and the seat buttons follow U1..Un, as they do under seats
+# suite: node --test --test-name-pattern ^SO..under.active.angles.the.drawer.walk.and.the.seat.buttons.follow.U1..Un..as.they.do.under.seats$ tests/app.test.js
+# The walk follows the angle order, not U1..Un.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11766,7 +11766,7 @@ function ringNotes(ring) {
+   if (!lastSolved) return [];
+   const f = lastSolved.fields;
+   const ids = ringIds(f, ring);
+-  const seats = ring === "bottom" && layoutAngles ? ids.map((id) => Number(String(f[id][5]).slice(1)) - 1) : seatsFor(ring, ids.length);
++  const seats = ring === "bottom" && layoutAngles ? ids.map((id) => ids.filter((o) => f[o][4] < f[id][4]).length) : seatsFor(ring, ids.length);
+   return ids.map((id, i) => ({ ring, i, id, seat: seats[i], k: ids.length, label: String(f[id][5]), name: f[id][0] + f[id][1],
+     place: placeOf(f[id][4]) }));
+ }

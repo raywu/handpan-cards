@@ -1,0 +1,15 @@
+# kills: SO: on a cost tie the bottom labels take the rotation that turns the notes furthest anticlockwise: Pygmy at 75 285 0 180 60 120 reads C3 U5 Db3 U2 Eb3 U1 Bb3 U4 Db4 U3 Ab5 U6, and mirrored at 75 285 180 0 120 60 reads C3 U6 Db3 U1 Eb3 U3 Bb3 U2 Db4 U5 Ab5 U4
+# suite: node --test --test-name-pattern ^SO..on.a.cost.tie.the.bottom.labels.take.the.rotation.that.turns.the.notes.furthest.anticlockwise..Pygmy.at.75.285.0.180.60.120.reads.C3.U5.Db3.U2.Eb3.U1.Bb3.U4.Db4.U3.Ab5.U6..and.mirrored.at.75.285.180.0.120.60.reads.C3.U6.Db3.U1.Eb3.U3.Bb3.U2.Db4.U5.Ab5.U4$ tests/layout.test.js
+# A cost tie keeps the first rotation.
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -696,7 +696,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+         turn += d;
+       }
+       if (bestCost === null || cost < bestCost - 1e-9 ||
+-          (cost < bestCost + 1e-9 && turn > bestTurn + 1e-9)) {
++          false) {
+         bestCost = cost;
+         bestTurn = turn;
+         bestR = r;

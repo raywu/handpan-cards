@@ -230,7 +230,10 @@
   "sheet.too_close_so": "{name} 离 {other} 太近，所以停在 {at}。",
   "sheet.at": "{name} 在 {at}。",
   "sheet.moved_to": "{name} 已移到 {at}。",
-  "sheet.seat_numbers": " 底部位置编号现在由低到高排列。",
+  "sheet.seat_renumber": " 位置编号沿圈保持原有顺序，因此{list}。",
+  "sheet.seat_is_now": "{name} 现在是 {label}",
+  "sheet.list_and": "{rest} 和 {last}",
+  "sheet.mirror_reflow": " 你放好的音保持不动，它们的位置编号现在反向排列。",
   "sheet.seat_stays": " 位置 {label} 的编号不变。",
   "sheet.cannot_trade": "未移动。{a} 与 {b} 无法在 {step}° 的单位下互换位置。",
   "sheet.pick_bottom_one": "已拿起 {name}。沿着圈拖动即可移动。",
@@ -256,5 +259,8 @@
   "sheet.pan_example": "占位示例对应的手碟示意图",
   "sheet.pan_held": "上一次有效输入的预览",
   "sel.language": "语言",
-  "sel.auto": "自动（{lang}）"
+  "sel.auto": "自动（{lang}）",
+  "sheet.order_hint": "正面音符会按列出的顺序就位。可在“布局”标签页重新调整。",
+  "sheet.rim_follows": "外圈现在按列出的顺序排列。",
+  "sheet.inner_follows": "内圈音现在按列出的顺序排列。"
 }

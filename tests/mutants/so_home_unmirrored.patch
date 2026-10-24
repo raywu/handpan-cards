@@ -1,0 +1,15 @@
+# kills: SO: under MIRROR BOTTOM the swap labels against the mirrored home: Db3 at 120 reads U5 and Db4 at 300 reads U2
+# suite: node --test --test-name-pattern ^SO..under.MIRROR.BOTTOM.the.swap.labels.against.the.mirrored.home..Db3.at.120.reads.U5.and.Db4.at.300.reads.U2$ tests/layout.test.js
+# The home seats ignore MIRROR BOTTOM.
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -635,7 +635,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       if (Object.prototype.hasOwnProperty.call(seats.value, key)) out[key] = seats.value[key];
+     }
+     out.angles = effective;
+-    out.home = home.bottoms;
++    out.home = placeZones(counts, mirrors.top, !mirrors.bottom, anchor).bottoms;
+     return { ok: true, value: out };
+   }
+ 

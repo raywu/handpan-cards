@@ -1,6 +1,6 @@
 # kills: rule N: generateDeck gives the plate and the card number line the seat number
 # suite: node --test --test-name-pattern ^rule.N..generateDeck.gives.the.plate.and.the.card.number.line.the.seat.number$ tests/app.test.js
-# generateDeck copies the seated angle but not the seat number.
+# generateDeck copies the solved angle but not the seat number.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
@@ -8,7 +8,7 @@ diff --git a/index.html b/index.html
      for (const id of Object.keys(moved.value.fields)) {
        if (built.value.fields[id]) {
          built.value.fields[id][4] = moved.value.fields[id][4];
--        if (wanted !== null) built.value.fields[id][5] = moved.value.fields[id][5];
+-        built.value.fields[id][5] = moved.value.fields[id][5];
        }
      }
      if (wanted !== null) built.value.options.seats = JSON.parse(JSON.stringify(wanted));

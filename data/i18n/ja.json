@@ -230,7 +230,10 @@
   "sheet.too_close_so": "{name}が{other}に近すぎたため、{at}に置きました。",
   "sheet.at": "{name}：{at}。",
   "sheet.moved_to": "{name}を{at}に移動しました。",
-  "sheet.seat_numbers": " ボトムの位置番号が低い方から高い方へ振り直されました。",
+  "sheet.seat_renumber": " 位置番号はリングに沿った順序を保つため、{list}。",
+  "sheet.seat_is_now": "{name}は{label}になります",
+  "sheet.list_and": "{rest}と{last}",
+  "sheet.mirror_reflow": " 配置した音はそのままで、位置番号は逆回りになりました。",
   "sheet.seat_stays": " 位置{label}の番号はそのままです。",
   "sheet.cannot_trade": "移動しませんでした。{a}と{b}は{step}°刻みでは位置を入れ替えられません。",
   "sheet.pick_bottom_one": "{name}を持ちました。リングに沿ってドラッグして動かします。",
@@ -256,5 +259,8 @@
   "sheet.pan_example": "入力例のハンドパン",
   "sheet.pan_held": "最後に有効だった行のプレビュー",
   "sel.language": "言語",
-  "sel.auto": "自動（{lang}）"
+  "sel.auto": "自動（{lang}）",
+  "sheet.order_hint": "表面のノートは記載した順に位置が決まります。並べ替えは「配置」タブで行えます。",
+  "sheet.rim_follows": "リムは記載した順になりました。",
+  "sheet.inner_follows": "内側のノートは記載した順になりました。"
 }

@@ -235,7 +235,10 @@
   "sheet.too_close_so": "{name} était trop proche de {other}, elle se place donc à {at}.",
   "sheet.at": "{name} à {at}.",
   "sheet.moved_to": "{name} déplacée à {at}.",
-  "sheet.seat_numbers": " Les numéros de place du dessous vont maintenant du grave à l’aigu.",
+  "sheet.seat_renumber": " Les numéros de place gardent leur ordre autour de l’anneau, donc {list}.",
+  "sheet.seat_is_now": "{name} devient {label}",
+  "sheet.list_and": "{rest} et {last}",
+  "sheet.mirror_reflow": " Les notes que vous avez placées ne bougent pas ; leurs numéros de place vont maintenant dans l’autre sens.",
   "sheet.seat_stays": " La place {label} garde son numéro.",
   "sheet.cannot_trade": "Non déplacées. {a} et {b} ne peuvent pas échanger leurs places sur les pas de {step}°.",
   "sheet.pick_bottom_one": "{name} saisie. Faites-la glisser le long de l’anneau pour la déplacer.",
@@ -263,5 +266,8 @@
   "sheet.pan_example": "Handpan d’exemple pour la gamme indicative",
   "sheet.pan_held": "Aperçu de la dernière saisie lisible",
   "sel.language": "Langue",
-  "sel.auto": "AUTOMATIQUE ({lang})"
+  "sel.auto": "AUTOMATIQUE ({lang})",
+  "sheet.order_hint": "Les notes du dessus prennent leur place dans l’ordre indiqué. Réorganisez-les dans l’onglet Disposition.",
+  "sheet.rim_follows": "Le bord suit maintenant l’ordre indiqué.",
+  "sheet.inner_follows": "Les notes intérieures suivent maintenant l’ordre indiqué."
 }
