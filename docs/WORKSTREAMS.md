@@ -1,5 +1,28 @@
 # Shared workstream ledger
 
+## Priority SHARE-CUSTOMIZATION-HOTFIX — owner-authorized investigation and conditional execution
+
+Owner prioritizes the reported saved-customization/URL/LINK mismatch over SPS.
+Owner confirms SAVE CHANGES preceded fresh LINK. First standalone production VM
+SAVE→LINK control passes after awaiting clipboard Promise; no reproduced real-UI
+bug yet. Draft [prompt](prompts/2026-10-25-share-customization-hotfix.md) and
+[coordination](plans/2026-10-25-share-customization-hotfix-coordination.md) define
+independent lanes, evidence and review gates. No plan/feature success claimed.
+
+Root branch codex/share-customization-hotfix-20261025, host-local /private/tmp/handpan-share-hotfix.urAbvO/integration;
+base DEV667bbf8b. Next independently critique/freeze prompt, investigate actual
+state/history/two-tab/serialization edges, produce/review plan and execute only
+a sound scoped fix. Main and CLAUDE changes require explicit owner consent.
+Same-inventory import replacement is verified existing behavior, separate from
+URL mismatch; no identity redesign automatically authorized. Private links/photo/
+names remain outside public docs. DUP plan is finalized and EXECUTIONHELD; owner
+warning choice is narrow, retained on codex/duplicate-notes-plan-20261025.
+
+SPS is deferred for this hotfix priority, not discarded. Source/proofadc80b12 has
+completed59 driver-reported assertion pairs; aggregate/raw independent review,
+finalCI/DEV/physicalQA remain. Preserve worktrees and evidence; root alone owns
+browser lease. Older 'current' snapshots below are historical; resolve live refs.
+
 ## 2026-10-25 all-workstream recovery checkpoint
 
 Newest checkpoint: remote DEV independently read at
