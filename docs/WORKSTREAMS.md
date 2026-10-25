@@ -1,5 +1,33 @@
 # Shared workstream ledger
 
+## 2026-10-25 SPS execution checkpoint
+
+Owner-approved **feedback then swipe through DEV** has reached the swipe stage.
+Feedback is independently complete: DEV576 mergebccff5a2b9ffd88f772517740cbab3ea66a50fbb,
+sourcea90fce8c/tree141a2807, fullCI40216007898 and corrected actualDEV3journeys/
+12fontcells/28bytepaths/noindex. [Portable final receipt](https://github.com/raywu/handpan-cards/pull/575#issuecomment-6401041842).
+Earlier A0 temporary-runner registration error is invalidated/retained; A1 clean
+raw audit passed. Main575 remains HELD; old pendingCI prose below is historical.
+
+- **Plan:** [approved SPS](plans/2026-10-25-sheet-tab-swipe.md),
+  [reviewed fixture amendment](plans/2026-10-25-sheet-tab-swipe-fixtures.md),
+  [coordination](plans/2026-10-25-sheet-tab-swipe-coordination.md).
+- **Owner/ref/worktree:** root on ray-Mac; codex/sheet-tab-swipe-20261025;
+  /private/tmp/handpan-sps-z8gaznu2/integration; basebccff5a2. Separate T/A trees
+  and file ownership are defined in coordination; not another agent's takeover grant.
+- **Last/next:** original plan and narrow fixture amendment ENG/design-cleared;
+  no swipe code written. T freezes helper oracle tests first; root demonstrates
+  helper-red, then fixture-green/default regression, then primary feature-red
+  against unchanged app before A writes production code.
+- **Acceptance:** original SPS1–8, genuine independent reviewers, everynewgroup
+  generated mutants/floors, full exact-headCI/combinedDEV/actualbytes+journeys;
+  new swipe-specific physical QA remains. Main/CLAUDE/global changes excluded.
+- **Parallel SEO:** reviewed SEO-LONGTAIL planning branch
+  codex/seo-longtail-plan-20261025 at1c5344e0; mainCI577held/DEV578pending.
+  Resolve live state; no content/generator/app/provider publication authorization.
+  Broader SEO and queue-empty general audit retain their separate gates.
+
+
 ## 2026-10-25 feedback then swipe — owner-approved continuation
 
 This later checkpoint supersedes older planning-only/app-unapproved labels below
