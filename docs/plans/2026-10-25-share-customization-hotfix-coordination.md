@@ -137,3 +137,45 @@ variants pending. Source lane assigned read-only architecture/dependency researc
 no migration/engine/storage implementation grant inferred. Track separately as
 SAVED-SCALE-VARIANTS, not a covert expansion of async plan. T/App async lanes keep
 their exclusive ownership and reviewed scope. Owner main-release answer pending.
+
+## TDD, integration and regression checkpoint
+
+T0576e2bb added8unit groups, T7746ccf7 added2native journeys; T57400443 added
+local trusted-input preflight after root review found click() does not scroll or
+verify hit targets. NativeA0 E1 failed an incorrect front-face-only SVG oracle,
+not the intended bug; retained INVALID for E1. T89e1c06c corrects to either card
+face DOM presence and preserves literal pitch-keyed Edit geometry. NativeA1 has
+two intended assertion REDs on unmodified DEV: old A overwrites B fallback; old
+LINK reveals manual URL under Edit. UnitA0 has all8 intended assertion REDs.
+No timeout/exception/skip/cancel; raw logs/exit/cleanup and browser census checked.
+
+Root integrated T then independent App84bcac10 (rootb24917a0) only after all10
+intended REDs retained. Actual app source SHA256
+5628f31deed911e7e406ce852fe0daee5d6fcf1caa26d2fb0f182a823c0894b3.
+Same8unit+2native GREEN; native receiver has distinct owned profile/no inherited
+storage and literal pitch-keyed positions. Native early-before-pop timing remains
+UNTESTED; U7 covers only explicit VM model. Native copy/share APIs are controlled
+sinks, not OS clipboard/native picker. Source ENG/design early reviews of84bc
+provisionally clear; not final acceptance.
+
+First full appA0:881run/880pass/1fail. Existing SI panelStops fixture clicks inert
+mobile-background LINK while panel remains open. Root stopped/triaged; independent
+ENG/design clear minimal fixture correction closePanel before click, retaining
+all loop/assertions and modal app guard. T4c2d1a1d integratedrootda9023ec. FullA1
+881/881pass, no skip/cancel/errors. Share codec105/105pass. Original failing raw
+receipt retained. Unchanged si_icon_in_panel_stops mutant must still assertion-kill.
+
+Mdc83f2ef integratedroot2a1be980:10new generated faults +20 necessary preserved-
+intent context refreshes; no app source change. All legacy suite headers retained;
+root reviewed every body and meaningful adaptations. Static refresh --check clear.
+Proof-final sibling clean2a1be980, root/source index hash unchanged. Frozen private
+manifest share-mutant-manifest-31.json SHA3173fa7577b3b172f990962cfb734f102e630baa00373716bc0b4ab69155bb6e
+contains10new+20refreshed+unchanged SI oracle, each expected1selected. Driver V1
+unexecuted after ENG caught path/deletion validation and partial-artifact collision
+gaps; V2c74c27d2 awaiting independent recheck before mutation execution.
+
+Root raises app floor873→881 (full observed) and e2e478→480 (existing478 plus2new
+executed, full480 must be observed in final Linux CI). No other floor lowered or
+assertion removed. Next prove31 clean/fault pairs, inspect raw wrong-reason failures,
+independent final source/evidence review, full exact-head CI, then actual DEV.
+No hotfix PR/DEV delivery or original omission/variant-support resolution claimed.
