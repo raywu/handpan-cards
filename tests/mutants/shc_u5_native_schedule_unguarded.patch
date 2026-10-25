@@ -1,0 +1,14 @@
+# kills: SHC U5: native branches keep captured URLs and never start fallback after retirement
+# suite: node --test --test-reporter=tap --test-name-pattern ^SHC.U5: tests/app.test.js
+# Native share starts after ownership retires between rejection and scheduling.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14519,7 +14519,6 @@ function copyLink() {
+     if (!navigator.share) { reveal(); return; }
+     let started = false;
+     Promise.resolve().then(() => {
+-      if (!current()) return;
+       started = true;
+       return navigator.share({ url: href });
+     }).then(() => {

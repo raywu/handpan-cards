@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10829,7 +10829,6 @@ function closePanel() {
+@@ -13834,7 +13834,6 @@ function closePanel() {
    settingsPanel.removeAttribute("role");
    settingsPanel.removeAttribute("aria-modal");
    setInert(false, panelBackground);
 -  disarmReset();
-   shareUrl.setAttribute("hidden", "");
+   retireLinkUI();
    settingsTrigger.focus();
  }

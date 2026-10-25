@@ -1,5 +1,65 @@
 # Shared workstream ledger
 
+## Priority SHARE-CUSTOMIZATION-HOTFIX — owner-authorized investigation and conditional execution
+
+Owner prioritizes the reported saved-customization/URL/LINK mismatch over SPS.
+Owner confirms SAVE CHANGES preceded fresh LINK. Ordinary native desktop/phone
+SAVE→LINK→clean-receiver controls pass; the original missing-angle report remains
+unresolved. A separate native production bug is confirmed: an older clipboard
+failure replaces/focuses the newer post-SAVE manual fallback URL while committed
+registry, durable record and bar stay correct. Controlled API promises; no owner
+clipboard/profile or Safari/native-picker validation. Finalized [prompt](prompts/2026-10-25-share-customization-hotfix.md) and
+[coordination](plans/2026-10-25-share-customization-hotfix-coordination.md) define
+independent lanes, evidence and review gates. Generated [plan](plans/2026-10-25-share-customization-hotfix.md)
+V2 edcd2a23 independently ENG/design-rechecked CLEAR; separate T/A/M lanes completed.
+Root integrated only after8unit+2native intended baseline RED. Main CI [581](https://github.com/raywu/handpan-cards/pull/581)
+is DRAFT/HELD; DEV [582](https://github.com/raywu/handpan-cards/pull/582) remains UNMERGED.
+
+Root branch codex/share-customization-hotfix-20261025, host-local /private/tmp/handpan-share-hotfix.urAbvO/integration;
+base DEV667bbf8b (live ref rechecked). Prompt1489e53d independently critiqued/rechecked
+clear. Reviewed plan V2 edcd2a23 specifies minimal asynchronous ownership guards,
+spec-first separate T/A/M lanes, generated mutants/fullCI/actual DEV checks. Next
+preserve current source/evidence for final exact-head review/CI and actual DEV.
+All8unit+2native intended RED→GREEN, full app881 and codec105 pass. First fullCI
+40239404703 FAILED mutation verification at9e47e06a; actual app881/browser480 passed.
+Ten quoted mutation headers did not follow the real runner's word-splitting, and
+two legacy hide faults became redundant. Corrected patches retain all app/tests/
+harness standards; full local mutation_harness54 passes. Faithful word-split
+re-proof33 named assertion kills/32 clean commands plus actual unit/native runner
+partitions pass at22bdcbd8. App source5628f31d unchanged. Renewed exact-head review,
+fullCI and actual DEV still required. Main and CLAUDE changes require
+explicit owner consent. No original omitted-angle/variants resolution claimed.
+Same-inventory import replacement is verified existing behavior, separate from
+URL mismatch; no identity redesign automatically authorized. Private links/photo/
+names remain outside public docs. DUP plan is finalized and EXECUTIONHELD; owner
+warning choice is narrow, retained on codex/duplicate-notes-plan-20261025.
+
+### SAVED-SCALE-VARIANTS — newly corroborated requirement gap; investigation only
+
+Separate planning branch codex/saved-scale-variants-plan-20261025, host-local
+/private/tmp/handpan-saved-variants.HVUKbE/planning. Frozen independently critiqued
+promptcd9dbb77 and three independent source/UX/platform research lanes; proposed
+plan in independent ENG/design iteration. Portable locator is that branch, not
+this hotfix's inherited plan copy. No app/storage migration or CLAUDE approval.
+
+Owner confirms separate tabs and inability to retain two differently named/layout
+variants next to one another, even after Add/new LINK. Latest supplied link decoded
+valid with changed absolute positions but unchanged inventory identity. This
+explains replacement; it does not establish the original omitted-angle cause.
+Recommendation: preserve distinct named/layout saved variants, Edit updates the
+selected variant, unchanged-link reopening deduplicates. Design interview pending;
+no identity/storage migration or variants implementation authorized by the narrow
+async hotfix plan. Independent source/UX findings retained in the
+[investigation checkpoint](plans/2026-10-25-saved-scale-variants-investigation.md).
+Create a separate reviewed plan and migration/compatibility acceptance before code;
+do not conflate this user-facing limitation with the fixed async completion bug.
+Current async repair is not yet tested/delivered; no claim either issue is fixed.
+
+SPS is deferred for this hotfix priority, not discarded. Source/proofadc80b12 has
+completed59 driver-reported assertion pairs; aggregate/raw independent review,
+finalCI/DEV/physicalQA remain. Preserve worktrees and evidence; root alone owns
+browser lease. Older 'current' snapshots below are historical; resolve live refs.
+
 ## 2026-10-25 all-workstream recovery checkpoint
 
 Newest checkpoint: remote DEV independently read at

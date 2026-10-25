@@ -4,7 +4,16 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10934,7 +10934,6 @@ function openScaleSheet(opener) {
+@@ -12651,7 +12651,7 @@ function setInert(on, targets) {
+   }
+ }
+ function showSheet(opener) {
+-  retireLinkUI();
++  ++linkUIGeneration;
+   sheetOpener = opener || addChip;
+   sheet.removeAttribute("hidden");
+   sheetOpen = true;
+@@ -12746,7 +12746,6 @@ function openScaleSheet(opener) {
  // The Edit path [design-review 7A]: the SAME sheet, prefilled from the selected
  // deck, seeded or custom.
  function openEditSheet(d, opener) {

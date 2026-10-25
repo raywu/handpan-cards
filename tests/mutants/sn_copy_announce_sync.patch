@@ -4,12 +4,14 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12339,7 +12339,7 @@ function copyLink() {
-   const done = (text, method) => {
+@@ -14497,9 +14497,7 @@ function copyLink() {
+     if (!current() || noticeRevision !== announcementRevision) return;
      say("", "");
-     track("share_copy", { deck_kind, method });
--    setTimeout(() => { if (announce.textContent === "") say(text, "ok"); }, 0);
-+    say(text, "ok");
+     noticeRevision = announcementRevision;
+-    setTimeout(() => {
+-      if (current() && noticeRevision === announcementRevision) say(text, "ok");
+-    }, 0);
++    if (current() && noticeRevision === announcementRevision) say(text, "ok");
    };
    const reveal = () => {
-     shareUrl.value = href;
+     if (!current()) return;
