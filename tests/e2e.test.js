@@ -17567,5 +17567,181 @@ function run() {
       } finally { await b.clearKeyboard().catch(() => {}); await b.setViewport(900, 900, false); }
     });
   });
+  /* SHC: two native journeys. API sinks never touch the OS clipboard/picker.
+   * Promise drains finish even when suppression causes no DOM mutation. */
+  describe("SHC native LINK ownership", () => {
+    const HASH = "#s=6/uC3_uDb3_uEb3_(F3)_G3_Ab3_uBb3_C4_uDb4_Eb4_F4_G4_Ab4_C5_Eb5_-_F5_G5_uAb5/*F+AEOLIAN+12/between/at-,225,,20,,130/5af123";
+    const query = "?share=public-control";
+    const expectedOptions = [295, 225, null, 20, null, 130];
+    const expectedPositions = { C3: 295, Db3: 225, Eb3: 0, Bb3: 20, Db4: 60, Ab5: 130 };
+    const install = () => b.eval(`
+      window.__shc = { calls: [], order: [] };
+      Object.defineProperty(navigator, "share", { configurable: true, value: undefined });
+      Object.defineProperty(navigator, "clipboard", { configurable: true, value: {
+        writeText: (payload) => new Promise((resolve, reject) => {
+          __shc.calls.push({payload, href: location.href, resolve, reject});
+          __shc.order.push("copy" + __shc.calls.length);
+        })
+      }});
+      window.addEventListener("popstate", () => __shc.order.push("pop"));
+      return true;
+    `);
+    const clickLink = async (count) => {
+      await b.click("#share-copy");
+      await b.waitFor(`__shc.calls.length === ${count}`, { label: "SHC intercepted LINK " + count });
+    };
+    const complete = (index, success) => b.eval(`return (async () => {
+      __shc.calls[${index}].${success ? "resolve()" : 'reject(new Error("controlled denial"))'};
+      await Promise.resolve();
+      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise(resolve => setTimeout(resolve, 0));
+      return true;
+    })();`);
+    const snapshot = () => b.eval(`
+      const input = document.getElementById("share-url");
+      return { hidden: input.hidden, value: input.value, focus: document.activeElement.id,
+        notice: document.querySelector(".announce").textContent,
+        start: input.selectionStart, end: input.selectionEnd, readonly: input.readOnly,
+        href: location.href, options: deck().options.angles.bottom,
+        records: JSON.parse(localStorage.getItem(SCALES_KEY)),
+        calls: __shc.calls.map(c => ({payload:c.payload,href:c.href})), order: __shc.order.slice() };
+    `);
+    const showFine = async () => {
+      await openDrawer();
+      await b.eval(`document.getElementById("scale-fine-toggle").scrollIntoView({block:"center"}); return true;`);
+      await b.click("#scale-fine-toggle");
+      await b.waitFor(`!document.getElementById("scale-fine").hidden`, { label: "SHC finer controls" });
+    };
+    const assertDrawnPositions = async () => {
+      const positions = await b.eval(`return Object.fromEntries([...document.querySelectorAll('#scale-preview .panhit[data-ring="bottom"]')].map(el => {
+        const pitch = el.getAttribute("aria-label").split(",")[0];
+        const angle = (Math.atan2(-Number(el.getAttribute("cy")), Number(el.getAttribute("cx"))) * 180 / Math.PI + 360) % 360;
+        return [pitch, angle];
+      }));`);
+      assert.deepStrictEqual(Object.keys(positions).sort(), Object.keys(expectedPositions).sort());
+      for (const [pitch, angle] of Object.entries(expectedPositions)) {
+        const delta = Math.abs(((positions[pitch] - angle + 540) % 360) - 180);
+        assert.ok(delta < 0.1, "fresh receiver drawn pitch " + pitch + " must be at " + angle + " degrees");
+      }
+    };
+
+    test("SHC E1: saved fine nudge keeps B fallback after A rejects and opens B in a fresh profile", { timeout: 90000 }, async () => {
+      await freshLoad();
+      await b.setViewport(1280, 800, false);
+      await b.goto(URL + query + HASH);
+      await b.waitFor(`document.querySelector("#decks .chip.on") && location.hash.startsWith("#s=6/")`, { label: "SHC public layout boot" });
+      await install();
+      await clickLink(1);
+      await openEdit();
+      await showFine();
+      const hit = '#scale-preview .panhit[data-ring="bottom"][aria-label^="C3,"]';
+      await b.click(hit);
+      await b.eval(`document.getElementById("scale-angle-next").scrollIntoView({block:"center"}); return true;`);
+      await b.click("#scale-angle-next");
+      assert.strictEqual(await b.eval(`return lastSolved.fields[101][4];`), 295, "actual fine nudge moves C3 to literal 295 degrees");
+      await b.click("#scale-generate");
+      await b.waitFor(`document.getElementById("scale-sheet").hidden && location.hash.startsWith("#s=6/")`, { label: "SHC committed SAVE and canonical bar" });
+      // This click follows the observed canonical bar. It does not claim to
+      // beat native popstate; U7 separately covers the modelled pending pop.
+      await clickLink(2);
+      const before = await snapshot();
+      assert.deepStrictEqual(before.options, expectedOptions);
+      assert.deepStrictEqual(before.records[0].o.angles.bottom, expectedOptions);
+      assert.strictEqual(before.calls[0].payload, URL + query + HASH, "A captures the original public fixture");
+      assert.strictEqual(before.calls[1].payload, before.calls[1].href, "B captures literal invocation href");
+      assert.strictEqual(before.calls[1].payload, before.href);
+      assert.ok(before.calls[1].payload.includes(query + "#s=6/"));
+      assert.notStrictEqual(before.calls[0].payload, before.calls[1].payload);
+      const decoded = await b.eval(`return HPE.share.decode(__shc.calls[1].payload.split("#s=")[1]);`);
+      assert.strictEqual(decoded.ok, true);
+      assert.deepStrictEqual(decoded.value.options.angles.bottom, expectedOptions);
+      await complete(1, false);
+      const newer = await snapshot();
+      assert.strictEqual(newer.value, before.calls[1].payload);
+      assert.strictEqual(newer.focus, "share-url");
+      await complete(0, false);
+      const after = await snapshot();
+      // Retain the race observation while still exercising the receiver on
+      // baseline RED: stale UI is an assertion, never a wait-for-DOM timeout.
+      const copiedB = before.calls[1].payload;
+      const senderProfile = b.profileDir;
+      await b.close(); b = null;
+      b = await launch({ foregroundSettle: true });
+      assert.ok(b, "SHC fresh receiver browser must launch");
+      assert.notStrictEqual(b.profileDir, senderProfile, "receiver owns a genuinely fresh profile");
+      await b.setViewport(1280, 800, false);
+      // Observe storage before ANY application script on the receiver's first
+      // origin visit, without a same-profile wipe or a blank-page endpoint.
+      const { identifier: receiverPrelude } = await b.send("Page.addScriptToEvaluateOnNewDocument", {
+        source: "window.__shcReceiverBefore = localStorage.length;"
+      });
+      try { await b.goto(copiedB); }
+      finally { await b.send("Page.removeScriptToEvaluateOnNewDocument", { identifier: receiverPrelude }); }
+      await b.waitFor(`document.querySelector("#decks .chip.on") && location.hash.startsWith("#s=6/")`, { label: "SHC fresh receiver import" });
+      assert.strictEqual(await b.eval(`return window.__shcReceiverBefore;`), 0, "fresh receiver has no inherited sender storage");
+      assert.deepStrictEqual(await b.eval(`return deck().options.angles.bottom;`), expectedOptions);
+      assert.deepStrictEqual(await b.eval(`return JSON.parse(localStorage.getItem(SCALES_KEY))[0].o.angles.bottom;`), expectedOptions);
+      assert.strictEqual(await b.eval(`return !!document.querySelector("#front svg");`), true, "receiver renders the practice scale");
+      await openEdit(); await openDrawer();
+      await assertDrawnPositions();
+      assert.strictEqual(after.value, copiedB, "old A must not overwrite B's visible fallback");
+      assert.strictEqual(after.focus, "share-url", "new fallback keeps focus after A settles");
+      assert.strictEqual(after.hidden, false);
+      assert.strictEqual(after.notice, newer.notice);
+      assert.strictEqual(after.href, before.href);
+      assert.deepStrictEqual(after.options, expectedOptions);
+      assert.deepStrictEqual(after.records, before.records);
+    });
+
+    test("SHC E2: phone Edit protects focus and notices from old LINK and fresh fallback remains selectable", { timeout: 90000 }, async () => {
+      for (const success of [false, true]) {
+        await freshLoad();
+        await b.setViewport(380, 780, true);
+        await b.goto(URL + query + HASH);
+        await b.waitFor(`document.querySelector("#decks .chip.on")`, { label: "SHC phone public layout" });
+        await install();
+        await clickLink(1);
+        await openEdit();
+        const focused = await activeId();
+        const notice = await b.eval(`return document.querySelector(".announce").textContent;`);
+        await complete(0, success);
+        assert.strictEqual(await activeId(), focused, "old LINK must not steal focus from actual Edit");
+        assert.strictEqual(await b.eval(`return document.getElementById("share-url").hidden;`), true);
+        assert.strictEqual(await b.eval(`return document.querySelector(".announce").textContent;`), notice);
+        await b.click("#scale-back");
+        await b.waitFor(`document.getElementById("scale-sheet").hidden && location.hash.startsWith("#s=")`, { label: "SHC cancel Edit" });
+        // A separate old request settles only AFTER the open→cancel cycle.
+        await clickLink(2); await openEdit(); await b.click("#scale-back");
+        await b.waitFor(`document.getElementById("scale-sheet").hidden && location.hash.startsWith("#s=")`, { label: "SHC second cancel Edit" });
+        const afterCancelFocus = await activeId();
+        const afterCancelNotice = await b.eval(`return document.querySelector(".announce").textContent;`);
+        await complete(1, success);
+        assert.strictEqual(await activeId(), afterCancelFocus, "cancel must not revive old focus ownership");
+        assert.strictEqual(await b.eval(`return document.getElementById("share-url").hidden;`), true);
+        assert.strictEqual(await b.eval(`return document.querySelector(".announce").textContent;`), afterCancelNotice);
+        await clickLink(3);
+        // Real window blur is deliberately benign (permission UI may blur).
+        await b.eval(`window.dispatchEvent(new Event("blur")); return true;`);
+        await complete(2, false);
+        const fallback = await snapshot();
+        assert.strictEqual(fallback.hidden, false);
+        assert.strictEqual(fallback.readonly, true);
+        assert.strictEqual(fallback.focus, "share-url");
+        assert.strictEqual(fallback.start, 0);
+        assert.strictEqual(fallback.end, fallback.value.length, "fallback selects every character");
+        const target = await b.eval(`const el = document.getElementById("share-copy"), r = el.getBoundingClientRect();
+          return {w:r.width,h:r.height,hit:!!document.elementFromPoint(r.left+r.width/2,r.top+r.height/2).closest("#share-copy")};`);
+        assert.ok(target.w >= 44 && target.h >= 44 && target.hit, "phone LINK retains its usable target");
+        await b.send("Input.dispatchKeyEvent", { type: "keyDown", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
+        await b.send("Input.dispatchKeyEvent", { type: "keyUp", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
+        assert.strictEqual(await activeId(), "share-copy");
+        assert.strictEqual(await b.eval(`return document.getElementById("share-url").hidden;`), true);
+        await clickLink(4); await complete(3, false);
+        await b.click("#settings-trigger");
+        assert.strictEqual(await b.eval(`return document.getElementById("share-url").hidden;`), true, "real focus transfer/blur hides the manual field");
+      }
+    });
+  });
+
 }
 
