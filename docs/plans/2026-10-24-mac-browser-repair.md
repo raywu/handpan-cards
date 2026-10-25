@@ -106,6 +106,52 @@ dependent writes and preserve evidence; no reset/unlock or unknown-process clean
 
 ---
 
+## Execution evidence checkpoint — 2026-10-25, before final CI/DEV
+
+The preimplementation amendment is retained at commita0a26eacc7d4d2eb73aa6ab3b85641ae03a985a3;
+its reviewed SHA256b7383d1e6c4f3010659a4ff9e4df17f9c59d7dbfe67467d28c647300477fe9b6
+does not claim to hash this subsequently extended file. Independent ENG and
+design/interaction reviewers cleared it before source edits. T and H authored in
+separate worktrees; H waited for root's verified controlled assertion-red gate.
+
+| Evidence | Actual source / result | Limits |
+|---|---|---|
+| T baseline | tests2dcd1ab5; unchanged helper714785d5;9 executed,1 pass/8 ERR_ASSERTION,0 skip/cancel | Prompt assertion-red, not timeouts masquerading as kills |
+| Integrated controlled green | d8d85080; same9 assertions pass | Deterministic model plus actual native corroboration, not full-suite proof |
+| Native correct target | d8d85080; real same-process two-target case1 pass | Later default-launch assertion additionally passed via exact FG10 header at6ff541c9 |
+| Original print reduction | d8d85080;1 pass, all original click/build/panel/flip assertions unchanged | Main interactive launch explicitly opts in; no preload |
+| Full harness | d8d85080;38 pass,0 skip/cancel | Later added default-launch assertion changes no case count; final CI must run actual final source |
+| Existing pointer/capture guards |3443d19a;5 pass including C1 mouse sentinel | No claim to fix C1's historical intermittent cause or deferred frame paths |
+| Existing font/background checks |6ff541c9;16 pass (14 paint-background,2 TR-1 font cases) | Paint tests do not prove real target visibility; native fixture supplies that separate evidence |
+| New mutant proof |6ff541c9;16 assertion kills,10 unique clean-green header commands | No timeout/skip/cancel/startup error credited; full Linux corpus gate remains pending |
+| Static corpus |1484 patches apply-check, no existing stale contexts | Static applicability is not runtime mutant proof |
+
+The initial targeted-proof runner parsed only TAP but exact header commands on
+Node25 defaulted to SPEC. It stopped after a genuine clean1/1 pass, before any
+fault. Original receipt/failure retained; independently reviewed parser revision
+recognized both formats and used fresh filenames. Actual header commands,
+assertions, timeouts and kill criteria were unchanged. Each native-capable job
+records process-root/profile census to compensate for1s supervisor sampling;
+unknown/pre-existing processes are never signalled. These are qualified snapshots,
+not complete historical process tracking or a hard180s total guarantee.
+
+Private raw receipts/proof index/checkpoints are under
+`/private/tmp/handpan-mac-repair.c94d3kno/evidence/`; the disposable proof checkout
+was restored after every helper fault. Recover portable source from the actual
+live branch/PRs rather than assuming host-local evidence exists on another machine.
+
+Live main-target CI [PR573](https://github.com/raywu/handpan-cards/pull/573) is HELD;
+same-head [DEV574](https://github.com/raywu/handpan-cards/pull/574) is gated on fresh
+independent addressed source review, full exact-head Linux CI and combined DEV
+identity/affected-journey verification. Initial plan-only skips are not acceptance.
+No new main consent, app/CLAUDE/global edit or larger full-Mac collection follows
+from local green results. Final delivery receipts are external to this pre-CI
+checkpoint; resolve current PR state rather than redoing shipped work or inventing
+completion. The app-plan relevance/SEO/future-task documents are independently
+reviewed planning outputs; they contain no app implementation grant.
+
+---
+
 Status: **draft for fresh independent engineering and design review**. This Mac
 author lane is planning-only: no diagnostics, browser/test runs, helper/application/
 test edits, commits, pushes, merges, installation or global configuration changes.
