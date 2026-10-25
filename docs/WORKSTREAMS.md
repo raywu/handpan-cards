@@ -30,8 +30,11 @@ labels below. No main merge, installs or global configuration changes authorized
   in coordination). H support amendment independently ENG-cleared after event-
   dispatch clarification. A1 proved12 required real HTTPS API checks; optional file
   navigation then failed, so whole run stays FAILED and file behavior unverified.
-  Cleanup/census clear. Next independent evidence review, frozen schema/T acceptance
-  and intended baseline RED before any variants app edits. Root alone runs browsers.
+  Cleanup/census clear. Concrete schema9c56dce6 independently ENG-cleared after
+  lifetime ID-history/slot-proof refinements; H50/app881/shipping177-card defaults
+  PASS, prechange60selection baseline independently CLEAR (RAF opportunity only).
+  T authors acceptance, M generated helper faults in separate /mutants tree.
+  Next intended baseline RED before any variants app edits. Root alone runs browsers.
 - Recovery: [coordination](plans/2026-10-25-saved-scale-variants-coordination.md)
   records last/next, ownership and evidence. Any larger contract or exact CLAUDE
   wording change requires renewed review/approval. Runtime/migration/concurrency/

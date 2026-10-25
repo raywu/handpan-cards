@@ -209,3 +209,38 @@ Root retains exclusive lease, no application changes before meaningful T RED.
 
 Owner reaffirmed custom diagram still visible at fresh LINK; this repeats settled
 human evidence, does not resolve/dismiss original omission. No reinterview needed.
+
+## Pre-implementation baseline and helper compatibility gates complete
+
+The candidate payload spelling was clarified to validated app-owned {record,deck};
+newrecord=scaleRecord(seedOf(deck)), engine build once outside lock, record-only
+persistence, imports never inherit replacement authority. Independent schema ENG
+recheck CLEAR at final contract SHA256
+9c56dce6a2f97a264e85d98cc7587fd509498ed1167e2b9b1eda3257edeccaa1.
+T uses these literal fields and the reviewed helper; unit acceptance authoring
+active. S remains code-held until root verifies useful baseline assertion RED.
+
+Corrected selection baselineA1 completed ONEfresh60-sample run (30desktop900x900,
+30phone380x780). Actual2loaded Network documents match app5628f31d, every trusted
+click selects expected literal built-in, Edit remains closed. Independently
+recomputed firstRAF p95desktop18.600ms/phone17.000ms, secondRAF33.700/33.800ms,
+frame median16.634ms/p9516.700ms each. These are RAF opportunities, not compositor
+presentation; five-built-in baseline differs from future large saved collections.
+Same instrumentation must be used for candidate comparison. Exit0/no timeout,
+empty stderr/owned cleanup/unchanged680+7profiles. Source90da474d; full source SHA
+and raw logs in evidence. A0 failure remains retained, no stitching of samples.
+
+Root ran full harness at19fb5e8f under180s supervisor:50/50PASS,0fail/skip/cancel,
+9.56s cleanup/census clear. Existing app881/881PASS under60s (33.29s) and shipping
+boot_sim177cards×2modesPASS. No variants app source changes; default helper callers
+remain compatible. Raise ONLY harness floor38→50 from observed count; app881/e2e480
+stay unchanged until feature results justify increases. Full LinuxCI still future.
+Root qualification evidence/sv-helper-root-verification.json; rawsupervisors/TAP
+beside SHC supervisor, named sv-helper-full-a0/app-compat-a0/bootsim-a0.
+
+New independent M lane /private/tmp/handpan-saved-variants.HVUKbE/mutants, branch
+codex/saved-variants-mutants-20261025 starts19fb5e8f. Own only generated svh_*.patch
+for12helper groups, faithful literal header selectors, private disposable source
+edits restored exactly. No app/helper/editor mutation or browser jobs. T continues
+app/e2e acceptance separately; root alone owns floors/browser and delivery. All
+helper mutation intent/proof and full finalCI/DEV remain required; no parity claim.
