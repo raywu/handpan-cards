@@ -1,0 +1,15 @@
+# kills: SPS7: a closing Add and superseding Edit cannot inherit an old gesture
+# suite: node --test --test-reporter=tap --test-name-pattern='SPS7:\ a\ closing\ Add\ and\ superseding\ Edit\ cannot\ inherit\ an\ old\ gesture$' tests/app.test.js
+# Old Add gesture survives close and superseding Edit and wrongly completes.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11746,7 +11746,7 @@ function setTab(tab) {
+ }
+ /** Leaving the sheet or opening a fresh session: no focus, no status. */
+ function dropDrawer() {
+-  sheetSwipe = null;
++  // Previous sheet gesture is retained.
+   cancelGesture();
+   previewBox.removeEventListener("touchmove", plateTouchMove, { passive: false });
+   drawerHint.textContent = "";

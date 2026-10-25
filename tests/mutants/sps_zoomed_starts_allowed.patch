@@ -1,0 +1,24 @@
+# kills: SPS zoom: normal residue and missing API allow shortcuts while deliberate zoom excludes starts
+# suite: node --test --test-reporter=tap --test-name-pattern='SPS\ zoom:\ normal\ residue\ and\ missing\ API\ allow\ shortcuts\ while\ deliberate\ zoom\ excludes\ starts$' tests/app.test.js
+# Deliberate-zoom starts can complete; normal/residue/missing-API controls stay covered.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11673,7 +11673,7 @@ function setTab(tab) {
+     const check = () => {
+       const S = sheetSwipe;
+       if (!S) return false;
+-      if (!sheetOpen || S.tab !== sheetTab || sheetZoomed() || sheet.classList.contains("kbup") ||
++      if (!sheetOpen || S.tab !== sheetTab || sheet.classList.contains("kbup") ||
+           Math.abs(scrollOf(body) - S.bodyTop) > 8 || Math.abs(scrollOf(sheetSurf) - S.surfTop) > 8 ||
+           (S.field && (document.activeElement === S.field || selected(S.field))) ||
+           (S.box && (scrollOf(S.box) !== S.boxTop || (S.box.scrollLeft || 0) !== S.boxLeft))) {
+@@ -11697,7 +11697,7 @@ function setTab(tab) {
+       cancel();
+       const ts = e.touches, t = e.target;
+       const p = ts && ts.length === 1 && ts[0];
+-      if (!sheetOpen || !p || sheetZoomed() || !Number.isFinite(p.clientX) || !Number.isFinite(p.clientY) ||
++      if (!sheetOpen || !p || !Number.isFinite(p.clientX) || !Number.isFinite(p.clientY) ||
+           p.clientX < 24 || p.clientX > window.innerWidth - 24 || sheet.classList.contains("kbup") ||
+           previewBox.contains(t) || (t && t.closest && t.closest("#scale-lip, select"))) return;
+       const field = t && t.closest ? t.closest("input, textarea") : null;

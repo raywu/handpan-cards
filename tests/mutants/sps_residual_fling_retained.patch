@@ -1,0 +1,15 @@
+# kills: SPS4: vertical-first hook is restored and residual fling cannot revive after the quiet interval
+# suite: node --test --test-reporter=tap --test-name-pattern='SPS4:\ vertical\-first\ hook\ is\ restored\ and\ residual\ fling\ cannot\ revive\ after\ the\ quiet\ interval$' tests/app.test.js
+# Retained fling gains momentum after quiet interval and collapses lip.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11727,7 +11727,7 @@ function setTab(tab) {
+       if (tab === sheetTab) return;
+       lipDrag = null;
+       lipParked = null;
+-      lipFling = null;
++      // Residual pre-swipe fling retained.
+       lipTouching = false;
+       lipDragEnd = 0;
+       userWindowUntil = 0;

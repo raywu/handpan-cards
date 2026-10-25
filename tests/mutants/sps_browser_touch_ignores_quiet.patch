@@ -1,0 +1,15 @@
+# kills: SPS browser: real capture handoff restores the lip and viewport events preserve its quiet window
+# suite: node --test --test-reporter=tap --test-name-pattern='SPS\ browser:\ real\ capture\ handoff\ restores\ the\ lip\ and\ viewport\ events\ preserve\ its\ quiet\ window$' tests/e2e.test.js
+# Real fresh vertical input collapses lip within swipe quiet interval.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11571,7 +11571,7 @@ sheet.addEventListener("touchmove", (e) => {
+   if ((L.dir > 0 && p.clientY < L.y) || (L.dir < 0 && p.clientY > L.y)) { L.y = p.clientY; L.x = p.clientX; return; }
+   const dy = L.y - p.clientY;
+   if (Math.abs(dy) < LIP_PX || Math.abs(dy) <= Math.abs(p.clientX - L.x)) return;
+-  if (!sheetOpen || sheet.classList.contains("kbup") || Date.now() < lipQuietUntil) return;
++  if (!sheetOpen || sheet.classList.contains("kbup")) return;
+   L.dir = dy > 0 ? 1 : -1;
+   L.y = p.clientY;
+   L.x = p.clientX;

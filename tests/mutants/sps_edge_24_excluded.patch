@@ -1,0 +1,15 @@
+# kills: SPS1: the 24 pixel margins are inclusive and closer starts stay excluded
+# suite: node --test --test-reporter=tap --test-name-pattern='SPS1:\ the\ 24\ pixel\ margins\ are\ inclusive\ and\ closer\ starts\ stay\ excluded$' tests/app.test.js
+# Inclusive24px start boundary incorrectly rejected.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11698,7 +11698,7 @@ function setTab(tab) {
+       const ts = e.touches, t = e.target;
+       const p = ts && ts.length === 1 && ts[0];
+       if (!sheetOpen || !p || sheetZoomed() || !Number.isFinite(p.clientX) || !Number.isFinite(p.clientY) ||
+-          p.clientX < 24 || p.clientX > window.innerWidth - 24 || sheet.classList.contains("kbup") ||
++          p.clientX <= 24 || p.clientX >= window.innerWidth - 24 || sheet.classList.contains("kbup") ||
+           previewBox.contains(t) || (t && t.closest && t.closest("#scale-lip, select"))) return;
+       const field = t && t.closest ? t.closest("input, textarea") : null;
+       if ((field && document.activeElement === field) || selected(field)) return;

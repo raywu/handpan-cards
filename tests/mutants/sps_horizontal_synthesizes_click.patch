@@ -1,0 +1,14 @@
+# kills: SPS6: button-origin traces do not invoke actions while genuine clicks remain effective
+# suite: node --test --test-reporter=tap --test-name-pattern='SPS6:\ button\-origin\ traces\ do\ not\ invoke\ actions\ while\ genuine\ clicks\ remain\ effective$' tests/app.test.js
+# Non-tap horizontal gesture incorrectly invokes original action click handler.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11720,6 +11720,7 @@ function setTab(tab) {
+       const changed = e.changedTouches;
+       const p = changed && changed.length === 1 && changed[0].identifier === S.id && changed[0];
+       if (!p || (e.touches && e.touches.length) || !point(p)) { cancel(); return; }
++      if (e.target && e.target.click) e.target.click();
+       const elapsed = Date.now() - S.at, dx = p.clientX - S.x, dy = p.clientY - S.y;
+       cancel();
+       if (elapsed < 0 || elapsed > 600 || Math.abs(dx) < 48 || Math.abs(dx) < 2 * Math.abs(dy)) return;

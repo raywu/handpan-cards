@@ -1,0 +1,15 @@
+# kills: SPS7: repeated Add sessions each accept one transition and retain ordinary tab and NEXT routes
+# suite: node --test --test-reporter=tap --test-name-pattern='SPS7:\ repeated\ Add\ sessions\ each\ accept\ one\ transition\ and\ retain\ ordinary\ tab\ and\ NEXT\ routes$' tests/app.test.js
+# Fresh Add after prior session opens on wrong tab.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11753,7 +11753,7 @@ function dropDrawer() {
+   drawerHint.hidden = true;
+   drawerOpen = false;
+   pendingDerive = {};
+-  sheetTab = "scale";
++  sheetTab = "layout";
+   paintTabs();
+   pickRef = null;
+   pickMoved = false;

@@ -1,0 +1,15 @@
+# kills: SPS3: selection appearing then clearing between samples stays cancelled
+# suite: node --test --test-reporter=tap --test-name-pattern='SPS3:\ selection\ appearing\ then\ clearing\ between\ samples\ stays\ cancelled$' tests/app.test.js
+# Selection then clearing between samples wrongly allows navigation.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11739,7 +11739,7 @@ function setTab(tab) {
+       if (sheetSwipe && e.target && e.target.matches && e.target.matches("input, textarea")) cancel();
+     }, { capture: true });
+     document.addEventListener("selectionchange", () => {
+-      if (sheetSwipe && selected(sheetSwipe.field)) cancel();
++      // Transient selection no longer cancels the record.
+     });
+     sheet.addEventListener("scroll", check, { capture: true, passive: true });
+   }

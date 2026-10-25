@@ -1,0 +1,15 @@
+# kills: SPS7: body-origin switching blurs a now-hidden field without forcing destination focus
+# suite: node --test --test-reporter=tap --test-name-pattern='SPS7:\ body\-origin\ switching\ blurs\ a\ now\-hidden\ field\ without\ forcing\ destination\ focus$' tests/app.test.js
+# Transition leaves original hidden field focused.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11648,7 +11648,7 @@ function setTab(tab) {
+   drawerOpen = tab === "layout";
+   paintTabs();
+   const held = document.activeElement;
+-  if (held && held !== document.body && !held.getClientRects().length) held.blur();
++  if (held && held !== document.body && !held.getClientRects().length) { /* hidden focus retained */ }
+   paintLayout();
+   repaintPlate();
+   bandPort.scrollTop = 0;

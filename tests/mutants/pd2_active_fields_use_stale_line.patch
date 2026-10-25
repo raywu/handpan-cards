@@ -11,5 +11,5 @@ diff --git a/index.html b/index.html
 -const currentScaleInput = () => boxOk && !(inputPath === "fields" && lineStale);
 +const currentScaleInput = () => boxOk;
  let sheetTab = "scale";
- let layoutBase = { anchor: "one", mirror: false, mb: false, seats: "", angles: "" };
- const HINT_EMPTY = () => t("sheet.layout_hint_empty");
+ let sheetSwipe = null;
+ const sheetZoomed = () => !!(window.visualViewport && window.visualViewport.scale > 1.01);

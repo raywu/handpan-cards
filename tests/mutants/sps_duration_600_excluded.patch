@@ -1,0 +1,15 @@
+# kills: SPS1: elapsed 599 and 600 qualify while 601 milliseconds is refused
+# suite: node --test --test-reporter=tap --test-name-pattern='SPS1:\ elapsed\ 599\ and\ 600\ qualify\ while\ 601\ milliseconds\ is\ refused$' tests/app.test.js
+# 600ms inclusive gesture incorrectly rejected.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11722,7 +11722,7 @@ function setTab(tab) {
+       if (!p || (e.touches && e.touches.length) || !point(p)) { cancel(); return; }
+       const elapsed = Date.now() - S.at, dx = p.clientX - S.x, dy = p.clientY - S.y;
+       cancel();
+-      if (elapsed < 0 || elapsed > 600 || Math.abs(dx) < 48 || Math.abs(dx) < 2 * Math.abs(dy)) return;
++      if (elapsed < 0 || elapsed >= 600 || Math.abs(dx) < 48 || Math.abs(dx) < 2 * Math.abs(dy)) return;
+       const tab = dx < 0 ? "layout" : "scale";
+       if (tab === sheetTab) return;
+       lipDrag = null;

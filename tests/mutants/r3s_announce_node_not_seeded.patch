@@ -5,10 +5,10 @@
 diff --git a/tools/sandbox.js b/tools/sandbox.js
 --- a/tools/sandbox.js
 +++ b/tools/sandbox.js
-@@ -291,7 +291,7 @@ function boot(opts = {}) {
+@@ -419,7 +419,7 @@ function boot(opts = {}) {
+     }
    }
    const created = [];
-   const markupNodes = [];
 -  if (html.includes('<div class="announce"')) {
 +  if (false && html.includes('<div class="announce"')) {
      const node = bindFocus(makeElement("announce"));

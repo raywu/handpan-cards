@@ -1,0 +1,15 @@
+# kills: SPS3: a wrong changed identifier and touchcancel never commit navigation
+# suite: node --test --test-reporter=tap --test-name-pattern='SPS3:\ a\ wrong\ changed\ identifier\ and\ touchcancel\ never\ commit\ navigation$' tests/app.test.js
+# A cancelled gesture can still commit on later touchend.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11734,7 +11734,7 @@ function setTab(tab) {
+       setTab(tab);
+       lipQuietUntil = Math.max(lipQuietUntil, Date.now() + LIP_END_MS);
+     }, { passive: true });
+-    body.addEventListener("touchcancel", cancel, { passive: true });
++    body.addEventListener("touchcancel", () => {}, { passive: true });
+     body.addEventListener("focusin", e => {
+       if (sheetSwipe && e.target && e.target.matches && e.target.matches("input, textarea")) cancel();
+     }, { capture: true });

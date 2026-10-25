@@ -1,0 +1,15 @@
+# kills: SPS4: fresh vertical touches stay quiet through 219 milliseconds and work at 220
+# suite: node --test --test-reporter=tap --test-name-pattern='SPS4:\ fresh\ vertical\ touches\ stay\ quiet\ through\ 219\ milliseconds\ and\ work\ at\ 220$' tests/app.test.js
+# Fresh vertical touch at219ms wrongly collapses lip.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11732,7 +11732,7 @@ function setTab(tab) {
+       lipDragEnd = 0;
+       userWindowUntil = 0;
+       setTab(tab);
+-      lipQuietUntil = Math.max(lipQuietUntil, Date.now() + LIP_END_MS);
++      lipQuietUntil = Math.max(lipQuietUntil, Date.now() + LIP_WINDOW);
+     }, { passive: true });
+     body.addEventListener("touchcancel", cancel, { passive: true });
+     body.addEventListener("focusin", e => {

@@ -1,0 +1,15 @@
+# kills: SPS browser: passive registrations stay singular and real Add Edit swipes preserve routes across viewports
+# suite: node --test --test-reporter=tap --test-name-pattern='SPS\ browser:\ passive\ registrations\ stay\ singular\ and\ real\ Add\ Edit\ swipes\ preserve\ routes\ across\ viewports$' tests/e2e.test.js
+# Actual startup registration is passive:false, violating passive policy.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11706,7 +11706,7 @@ function setTab(tab) {
+       sheetSwipe = { id: p.identifier, x: p.clientX, y: p.clientY, at: Date.now(), tab: sheetTab,
+         field, box, boxTop: scrollOf(box), boxLeft: box ? box.scrollLeft || 0 : 0,
+         bodyTop: scrollOf(body), surfTop: scrollOf(sheetSurf), moved: false };
+-    }, { passive: true });
++    }, { passive: false });
+     body.addEventListener("touchmove", e => {
+       const S = sheetSwipe, ts = e.touches;
+       if (!S) return;

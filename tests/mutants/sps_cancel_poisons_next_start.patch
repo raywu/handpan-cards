@@ -1,0 +1,31 @@
+# kills: SPS3: cancellation clears only at a new eligible one-finger start
+# suite: node --test --test-reporter=tap --test-name-pattern='SPS3:\ cancellation\ clears\ only\ at\ a\ new\ eligible\ one\-finger\ start$' tests/app.test.js
+# Cancellation permanently poisons a new eligible start.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11129,6 +11129,7 @@ let pendingDerive = {};
+ const currentScaleInput = () => boxOk && !(inputPath === "fields" && lineStale);
+ let sheetTab = "scale";
+ let sheetSwipe = null;
++let sheetSwipePoisoned = false;
+ const sheetZoomed = () => !!(window.visualViewport && window.visualViewport.scale > 1.01);
+ let layoutBase = { anchor: "one", mirror: false, mb: false, seats: "", angles: "" };
+ const HINT_EMPTY = () => t("sheet.layout_hint_empty");
+@@ -11662,7 +11663,7 @@ function setTab(tab) {
+ {
+   const body = document.querySelector(".sheetbody");
+   if (body) {
+-    const cancel = () => { sheetSwipe = null; };
++    const cancel = () => { if (sheetSwipe) sheetSwipePoisoned = true; sheetSwipe = null; };
+     const scrollOf = el => el ? el.scrollTop || 0 : 0;
+     const selected = field => {
+       if (field && field.selectionStart != null && field.selectionEnd !== field.selectionStart) return true;
+@@ -11694,6 +11695,7 @@ function setTab(tab) {
+       return true;
+     };
+     body.addEventListener("touchstart", e => {
++      if (sheetSwipePoisoned) return;
+       cancel();
+       const ts = e.touches, t = e.target;
+       const p = ts && ts.length === 1 && ts[0];
