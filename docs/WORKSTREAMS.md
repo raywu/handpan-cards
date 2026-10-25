@@ -1,5 +1,25 @@
 # Shared workstream ledger
 
+## 2026-10-25 owner pause — DUPLICATE-NOTES: stop at finalized prompt
+
+**PAUSED by explicit owner instruction.** Stop at the finalized prompt; do not
+execute it to generate a plan automatically. No further duplicate-note research,
+plan generation/revision/review, implementation or release progression until the
+owner explicitly resumes the relevant step. Do not ask further duplicate-note
+interview questions while paused. Other workstreams keep their existing authority.
+
+The finalized prompt is [retained here](prompts/2026-10-25-duplicate-notes-plan.md), SHA256
+`be2677f0f32e23a1ae4ccda2ad3c07c711eed7c24e938b41c063dcc192dec3cb`.
+A plan had already been generated/reviewed and delivered before this pause
+(source43486f5d, DEV580667bbf8b); preserve it as **HELD historical work**, do not
+regenerate, revise, execute or release it automatically. Later owner choices at
+ae84f69f remain retained and settled. This pause supersedes all older 'next' and
+active/planning instructions for DUPLICATE-NOTES below. Main579 remains held.
+
+Next action: await explicit owner request to resume; do not treat AFK, existing
+plans, settled design answers or another stream's authorization as a resume grant.
+This record is a status/recovery update only, not continued plan work.
+
 ## 2026-10-25 owner decisions — DUPLICATE-NOTES
 
 Confirmed: exact same pitch/octave may occupy any physical positions, including
