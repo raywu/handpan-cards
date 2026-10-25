@@ -15426,11 +15426,15 @@ function run() {
         await b.settle();await sleep(250);
         const start=await spsSpot(-100);assert.ok(start);
         const point=(x,y)=>[{x,y,id:7,radiusX:4,radiusY:4,force:1}];
+        await b.waitForPendingSettle();
         await b.send("Input.dispatchTouchEvent",{type:"touchStart",touchPoints:point(start.x,start.y)});
         await b.send("Input.dispatchTouchEvent",{type:"touchMove",touchPoints:point(start.x,start.y-30)});
         assert.strictEqual((await state()).shut,true,"the existing vertical hook must actually collapse before the horizontal leg");
         await b.send("Input.dispatchTouchEvent",{type:"touchMove",touchPoints:point(start.x-100,start.y-30)});
-        await b.releasing(()=>b.send("Input.dispatchTouchEvent",{type:"touchEnd",touchPoints:[]}));
+        // The selected origin is sheet-only, outside preview/practice-card
+        // capture. Like the existing SPA sheet drag traces, release raw here:
+        // a card lostpointercapture drain would consume the guard under test.
+        await b.send("Input.dispatchTouchEvent",{type:"touchEnd",touchPoints:[]});
         assert.strictEqual(await spsTab(),"layout");
         const order=await b.eval("return window.__spsOrder;");
         assert.deepStrictEqual(order.map(e=>e.phase),["sheet-capture","body-after"]);
@@ -15441,9 +15445,18 @@ function run() {
         await b.eval(`visualViewport.dispatchEvent(new Event("resize"));visualViewport.dispatchEvent(new Event("scroll"));return true;`);
         const early=await spsSpot(-80);assert.ok(early);
         assert.ok(await b.eval("return Date.now()-window.__spsEndAt<220;"),"early-input fixture must still be inside the actual quiet interval");
-        await spsTouch(early,0,-30);
+        // Keep this immediate second press test-local and sheet-only: there
+        // is deliberately no unrelated pending-capture wait between the two
+        // presses. Real elapsed-time assertions below remain authoritative.
+        await b.send("Input.dispatchTouchEvent",{type:"touchStart",touchPoints:point(early.x,early.y)});
+        for(let i=1;i<=4;i++){
+          await sleep(8);
+          await b.send("Input.dispatchTouchEvent",{type:"touchMove",touchPoints:point(early.x,early.y-30*i/4)});
+        }
+        await b.releasing(()=>b.send("Input.dispatchTouchEvent",{type:"touchEnd",touchPoints:[]}));
         assert.ok(await b.eval("return window.__spsLastMoveElapsed<220;"),"the actual early moves, not only setup, must remain inside the quiet interval");
         assert.strictEqual((await state()).shut,false,"fresh vertical input remains quiet after public viewport events");
+        await b.waitForPendingSettle();
         await sleep(260);
         const later=await spsSpot(-80);assert.ok(later);await spsTouch(later,0,-30);
         assert.strictEqual((await state()).shut,true,"normal vertical input works again after the guard");
@@ -15465,7 +15478,7 @@ function run() {
         assert.strictEqual(focused.visible,true,"no newly hidden lip may retain focus");
         assert.strictEqual(focused.body,true,"a swipe forces no replacement destination focus");
         t.diagnostic("SPS_FOOTER_FOCUS "+JSON.stringify(focused));
-      }finally{await spaReset();}
+      }finally{await b.waitForPendingSettle();await spaReset();}
     });
 
     test("SPS probe: pre-zoom native panning records viewport and tab outcomes including edge attempts", {timeout:90000}, async (t) => {
