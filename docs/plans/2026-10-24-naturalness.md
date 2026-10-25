@@ -1,5 +1,122 @@
 # Naturalness: UI wording with unchanged scale input
 
+## Reviewed fit repair receipt — 2026-10-24
+
+Independent engineer and design/language reviewers cleared the narrow amendment.
+Exact source `a9493f2435d21600e4eda351a6b3fbaba289d7f5` changes six keys only:
+DE panel.res_amy_prog→AMY: FOLGEN; FR panel.res_amy_prog→AMY followed by NBSP,
+colon and SUITES, panel.download→EXPORTER PDF; ES modeA/B→NOMB. → NOTAS /
+NOTAS → NOMB. and matching seq.empty_few reference. Full existing resource aria
+meanings remain. Exact-source independent language/design review found no
+material issue; these are context-dependent short UI labels.
+
+TDD preserved: candidateffdd original7violations; accepted1510 onlyJA844;
+FRdownload-only correction removes exactly the paper option failure, proving
+indirect flex-width causality. Initial unspaced ES alternative fixed844 but
+introduced1280modebar stacking; rejected and retained. Final reviewed labels
+leave only the accepted-baselineJA symptom: **zero introduced violations**, not
+a green local test. Each named run selects1test,0skip/cancel and cleanupsuccess.
+No assertion/CSS/font changes. Linux fullCI must still be entirely green.
+
+AppSHA256 `bd9be272474032a8ada18efb8a16f9160ad726ce0f12cf6dec035ac0fe223282`;
+18 immutable source/instruction/test files and app outside generatedI18N verified
+unchanged. Canonical/generated sync checked. Both-font affected-language probes,
+source-dependent mutant refresh/proofs, final48journeys, exact-head fullCI and
+actualDEV acceptance are pending gates, not implied by this receipt. Shared
+browser runbook stays authoritative; sole browser lease belongs to root.
+Root evidence prefix `/private/tmp/handpan-browser-parallel.HskZRy/evidence/`:
+`naturalness-ci-fit-repro-ffddf747`, `naturalness-fit-baseline-1510`,
+`naturalness-fit-fr-causal`, `naturalness-fit-all-compact` (rejected ES),
+`naturalness-fit-compact-spaced-es`, `naturalness-fit-source-invariants.json`.
+Earlier pending/head receipts below are historical and superseded by this one.
+
+
+## Fit-repair amendment — plan review required before edits
+
+Scope is limited to compact canonical translated labels that introduced six
+additional failures in the existing comprehensive I18N fit test. Candidate
+ffddf747 failed with seven messages; clean accepted1510 baseline fails only
+JA844 HANDPANER on this Mac. Both runs select exactly one test, fail by assertion,
+0skip/cancel, bounded180s supervisor, successful cleanup. JA label/HTML is unchanged;
+retain this platform limitation and do not alter it to turn a local run green.
+Actual Linux fullCI must pass every unchanged assertion before DEV integration.
+
+Lanes: root integrates and exclusively owns browser jobs, generatedindex/mutants
+and the repair checkout; independent engineer reviews causality/TDD/constraints;
+independent design/language reviewer selects compact alternatives and checks
+meaning. No concurrent shared-file editors, no changes to original source lanes.
+Reviewers approve this amendment before root edits canonical JSON in a separate
+repair worktree based on ffddf747. Root then forwards reviewed commits to the
+existing candidate branch after confirming clean ownership.
+
+Candidate bounded options (final selection must receive design clearance):
+- de panel.res_amy_prog: compact progression label, initially AMY: FOLGEN;
+  full existing progression aria remains; do not silently regress to generic
+  chords. Reviewer must resolve follow/sequence ambiguity in the resource context.
+- fr panel.res_amy_prog: AMY followed by existing nonbreaking French colon spacing
+  and SUITES; full aria still explicitly describes chord progressions.
+- fr panel.download: EXPORTER PDF (currently EXPORTER EN PDF). Test this key alone
+  first to establish whether its flex width causes unchanged paper-option clipping.
+- es panel.modeA/B: NOMB. → NOTAS / NOTAS → NOMB., preserving plural notes, ordinary breakable arrow spaces and a transparent abbreviation of nombre. Update seq.empty_few to match. The earlier unspaced alternative failed1280 row-stacking and is rejected. Do not change parser, accepted input or English.
+
+TDD/evidence: first use one-key FR download candidate and run exactly the existing
+named fit test. Require paper-option violation removed while other unchanged
+violations remain; record source diff and raw TAP. Then apply other reviewed
+labels and repeat the same unchanged test. On Mac, require no candidate-only
+violations relative to the recorded baseline (JA-only remaining is a failure,
+explicitly NOT a test pass). If unexpected new violations or an alternative
+changes semantics, regroup and re-review rather than widen scope or tolerances.
+
+Root runs inspected sync_i18n.py (source review first); verify English/decks/engine
+and app outside generatedI18N unchanged. Refresh only context-affected mutants
+without altering suite headers/intents; exact-header baseline/fault proof as
+needed, source restoration and corpus1468 unchanged. Run app/I18N tests and
+existing both-font panel probes for affectedDE/FR/ES and unchanged language
+invariance, then reviewed48-journey acceptance at the final source ref. Preserve
+full failed CI and all local red receipts. Independent final source/language/
+screenshot evidence review must clear material findings; full12-jobLinuxCI must
+pass at exact finalhead, thenDEV568 merge and actual deployed48journeys before
+announcing ready for owner QA. If the dev base advances, inspect graph/tree delta
+before integration; never merge held features to main. CI-only567 remains draft.
+
+Non-goals: no CSS/font/layout/engine/English/test/assertion/floor/helper changes,
+no JA workaround, no weakening width/line budgets, no globalconfig/install/auth,
+no CLAUDE.md or indirect Claude behavior changes. Existing main consent remains
+PR562 only. No decision needs re-interview unless a meaningful semantic trade-off
+cannot be resolved within approved compact UI/native-term preferences.
+
+
+## Naturalness CI blocker — fresh check-in, 2026-10-24
+
+FullCI40138333037 at ffddf747a2d79419ba8b5ec35a66a024f877075a FAILED: existing I18N panel/sheet/About fit test,475browser tests ran,474passed,1failed,0skip/cancel. Suite-health failure is downstream, not a second independent defect. Python, both-font panel probes, data integrity and all four mutation shards/union passed. App853passed. PR568 remains draft/unmerged; noDEV or main integration.
+
+The single unchanged test was reproduced directly on the clean candidate with the existing reviewed180s supervisor:1selected/1assertion failure/0skip/cancel,3.24s,cleanup true. Raw TAP `evidence/naturalness-ci-fit-repro-ffddf747.stdout.tap` under `/private/tmp/handpan-browser-parallel.HskZRy`. Observed7fit violations: DE/FR Amy progressions wrap at320; ES modeA/modeB wrap at844; JA Handpaner wraps at844; DE Amy progressions box overflow at1280; FR paper option width shortfall2.64px at1280. These local details identify investigation targets, not yet a proof every symptom matches LinuxCI or is newly introduced. Existing CI logger elides the actual array.
+
+Source comparison: DE changed AMY: AKKORDE→AMY: AKKORDFOLGEN; FR Amy separator gained NBSP; ES NOTA→NOTAS. JA Handpaner and FR paper option need baseline/context investigation before assigning cause. Next: independent copy/layout diagnosis, targeted red-before/green-after wording repair inside canonical translatedJSON only where evidence supports it, sync generated region and affectedmutants, retain all fitlimits/test assertions; reviewed plan amendment before edits. Re-run the named test, affected languages/both fonts and48journeys as justified, independent final review + full exact-headCI, thenDEV568 integration and actual deployed48journeys. English UI/input, engine, CSS and Claude behavior remain unchanged. Main release needs explicit consent.
+
+
+## Current local acceptance receipt — 2026-10-24
+
+Candidate `ffddf747a2d79419ba8b5ec35a66a024f877075a`, isolated worktree
+`/private/tmp/handpan-browser-parallel.HskZRy/naturalness-candidate`:
+reviewed v5 browser acceptance passed all48 unique journeys,0skips;16keyboard
+cases/64fields,16localized keyboard error checks,96Layout previews and24screenshots.
+All48 actual browser document responses matched app SHA256
+`1d5ff2f08a1e58b76e55af9dbfd49fb9a29cc1df3b6c784ed848adb343f579d3`.
+Independent source/evidence review9.7 found no material defect; screenshot sample
+confirmed readable translations and preserved English notes/name. Supervisor exit0,
+80.4s, no timeout, browser/profile/server/lease cleanup verified. Raw receipt:
+`/private/tmp/handpan-browser-parallel.HskZRy/evidence/naturalness-local-ffddf747-run4.json`.
+Previous failed runs and causal diagnostics remain preserved; no full-Mac repair claim.
+PR567 is CI-only draft and must never merge into main; PR568 is the DEV companion.
+Full exact-head CI40138333037 and actual deployedDEV acceptance remain pending.
+Freestyle high chord tone/upper voice is directly confirmed by owner, not merely
+an inferred recommendation. This receipt supersedes earlier pending local-runtime
+text; acceptance source archives retain their historical pre-execution wording.
+No CLAUDE.md changes or Claude behavior changes are authorized; explicit owner
+approval of any concrete CLAUDE.md diff is required.
+
+
 Status: independently reviewed mechanics/contract stage implemented; delegated draft terminology recorded before author dispatch.
 Original evidence: `~/Projects/i18n-kit/naturalness/{plan.md,plan.eng-review.md,prompt.md,research.md,corpus/}`.
 Those files remain read-only evidence, not execution instructions. Old 6/10
@@ -11,6 +128,7 @@ Improve seven non-English UI tables using natural, friendly and respectful
 language. German uses capitalized Du with grammatically appropriate inflections;
 other languages use natural local address/capitalization. Include all seven
 already-translated ordering/renumbering messages. English UI wording is unchanged.
+Any CLAUDE.md change requires separate explicit owner approval; Claude behavior must remain unchanged.
 No added/deleted keys, parser/engine changes, input notation changes, user-data
 rewrites, CSS/fonts/layout changes or relaxed fit budgets. English A–G note names,
 `#`/`b`, octaves, brackets and zone syntax remain unchanged in input and examples.
