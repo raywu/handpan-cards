@@ -142,6 +142,30 @@ Existing [repository instructions](../AGENTS.md), [CLAUDE.md](../CLAUDE.md),
 remain unchanged. [Workflow references and explicit session bootstrap](agents/workflows.md)
 are an index, not activated skills or changed Claude lifecycle requirements.
 
+## 2026-10-25 DUPLICATE-NOTES planning checkpoint
+
+Owner requested a high-quality research prompt and reviewed plan to allow repeated
+notes anywhere with a warning rather than duplicate-based refusal. The screenshot
+shows repeated bottom E4. This is **planning only**, no parser/engine/app/record/
+share changes or raw-photo publication. Scope/voicing/warning interview is pending.
+
+- **Owner/ref/worktree:** root, codex/duplicate-notes-plan-20261025;
+  /private/tmp/handpan-duplicate-notes-qgvz59ns/planning; baseDEVac97a9d6.
+- **Artifacts:** [prompt](prompts/2026-10-25-duplicate-notes-plan.md),
+  [coordination](plans/2026-10-25-duplicate-notes-coordination.md). Final plan not
+  generated yet; do not infer a completed research/review or implementation grant.
+- **Last/next:** private image inspected and current duplicate validators located;
+  V1 prompt under independent critique. Freeze revised prompt, assign isolated
+  core/identity, engine/layout and UX research lanes; synthesize and independently
+  engineering/design-review before proposing implementation. Preserve all physical
+  occurrences, unrelated validation, old valid instruments and version/rollback data.
+- **Parallel streams:** SEO-LONGTAIL reviewed/delivered through DEV578ac97;
+  feedback through DEV576bcc and Mac through DEV574f5 are complete. Their main
+  PRs577/575/573 remain held. SPS remains authorized active work in separate
+  codex/sheet-tab-swipe-20261025; resolve that ref and live reporting checkpoint
+  for current code/test/zoom-review gates. No duplicate-note implementation follows
+  from the SPS app grant. Future general audit remains queue-empty gated.
+
 ## 2026-10-25 SEO-LONGTAIL planning checkpoint
 
 The owner's newer explicit request authorizes **long-tail strategy research and a
