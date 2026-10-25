@@ -128,3 +128,19 @@ freeze public fixtures/SV acceptance, authorize reviewed helper file ownership,
 demonstrate intended baseline assertion RED, then exclusive S→U index ownership.
 All migration/concurrency/failure/performance/native checks remain NOT RUN. Keep
 raw receipts host-local and publish sanitized recovery refs in existing571 thread.
+
+## H support amendment reviewed before implementation
+
+Independent acceptance audit proposed the [minimal test support amendment](2026-10-25-saved-variants-test-support.md).
+ENG found event-dispatch/async-completion ambiguity; root clarified synchronous
+EVERY-listener dispatch with separately observed app acknowledgment, and explicit
+crypto fixtures/no Math.random. Independent ENG recheck CLEAR. H owns only
+ tools/sandbox.js and tests/harness.test.js, T owns separate fixtures/app/e2e after
+helper handoff; no CDP helper change. Production ready publication waits for durable
+init/import; default synchronous session consumers remain supported.
+
+CapabilityA0 failed BEFORE any checks: fixture demanded exact root href while app
+normally canonicalizes its hash. Supervisor cleanup passed and host census unchanged;
+no API failure conclusion. Author preserved949a24c3, revised to02056af4 with origin/
+path/query plus fresh frame/loader checks, target-list correction and explicit
+per-target cleanup errors. Independent review required before A1; deadline unchanged.
