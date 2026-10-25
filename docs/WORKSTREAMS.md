@@ -36,11 +36,17 @@ warning choice is narrow, retained on codex/duplicate-notes-plan-20261025.
 
 ### SAVED-SCALE-VARIANTS — newly corroborated requirement gap; investigation only
 
-Separate planning branch codex/saved-scale-variants-plan-20261025, host-local
-/private/tmp/handpan-saved-variants.HVUKbE/planning. Frozen independently critiqued
-promptcd9dbb77 and three independent source/UX/platform research lanes; proposed
-plan in independent ENG/design iteration. Portable locator is that branch, not
-this hotfix's inherited plan copy. No app/storage migration or CLAUDE approval.
+Planning branch codex/saved-scale-variants-plan-20261025, host-local
+/private/tmp/handpan-saved-variants.HVUKbE/planning. Independently critiqued/rechecked
+[prompt](prompts/2026-10-25-saved-scale-variants-plan.md) frozen atcd9dbb77;
+[coordination](plans/2026-10-25-saved-scale-variants-coordination.md) tracks lanes and
+approval limits. Three independent research lanes complete; generated
+[plan](plans/2026-10-25-saved-scale-variants.md) V2 SHA9a96ed6d and concrete
+[instruction approval packet](plans/2026-10-25-saved-variants-instruction-approval.md)
+SHA5d0700f7 independently ENG/design-rechecked CLEAR. Planning only; owner contract/
+fallback/exact CLAUDE approval and implementation remain held. Corrected SHC
+92d6516b is integrated here; actual accepted DEV remains a gate. Publish/interview/await required approvals;
+no variants code or storage migration. SHC CI581/DEV582 remains separate.
 
 Owner confirms separate tabs and inability to retain two differently named/layout
 variants next to one another, even after Add/new LINK. Latest supplied link decoded
@@ -51,9 +57,10 @@ selected variant, unchanged-link reopening deduplicates. Design interview pendin
 no identity/storage migration or variants implementation authorized by the narrow
 async hotfix plan. Independent source/UX findings retained in the
 [investigation checkpoint](plans/2026-10-25-saved-scale-variants-investigation.md).
-Create a separate reviewed plan and migration/compatibility acceptance before code;
+The separate reviewed plan exists; migration/compatibility acceptance is required before code;
 do not conflate this user-facing limitation with the fixed async completion bug.
-Current async repair is not yet tested/delivered; no claim either issue is fixed.
+Async app/browser regressions and targeted proof pass; renewed full CI/DEV remain
+pending. Neither the original omitted-angle report nor variant support is delivered.
 
 SPS is deferred for this hotfix priority, not discarded. Source/proofadc80b12 has
 completed59 driver-reported assertion pairs; aggregate/raw independent review,
