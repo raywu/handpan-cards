@@ -1,5 +1,9 @@
 # SAVED-SCALE-VARIANTS coordination
 
+Current state: reviewed planning deliverable and exact approval packet complete;
+owner approval/implementation remain held. Latest receipts below supersede the
+initial prompt/research checkpoints. No variants runtime execution has occurred.
+
 Planning only. No migration, app/test/storage/global/CLAUDE/main edits. User reports
 same-note named/layout instruments cannot coexist, confirms separate tabs and a
 new valid customized link still replaces the entry. Independent source/UX baseline
@@ -69,3 +73,16 @@ do not reintroduce9e's old mutation headers from an inherited planning snapshot.
 Next: preserve/publish reviewed plan and concrete packet, recheck accepted DEV
 base, interview/obtain required exact approval, STOP before variants code or data
 migration. Any change to reviewed contract/packet needs independent recheck.
+
+## Corrected baseline reconciliation
+
+Root committed reviewed plan/packet at990cce08, then merged reviewed SHC92d6516b
+into this planning branch. Merge08dbf880 preserved both histories; sole conflict
+was ledger metadata, resolved by retaining SHC's current CI/proof facts and this
+stream's more-current reviewed-plan/packet locator. No owner decisions discarded.
+Compared with92d6516b, this stream changes ONLY8 documentation files; index,
+all tests/mutants/floors, data/src/tools and actual CLAUDE/ENGINE-SPEC are identical.
+Plan9a96ed6d/packet5d0700f7 hashes remain unchanged. Exact head metadata recheck and
+branch publication next. Actual DEV acceptance still must be resolved before code;
+corrected SHC run40242635186 remains the independent fullCI gate, not a variants
+execution test. Do not run this plan from its obsolete9e mutation snapshot.
