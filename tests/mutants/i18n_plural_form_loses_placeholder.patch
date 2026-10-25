@@ -1,0 +1,15 @@
+# kills: I18N: every table has the keys of en and keeps every placeholder
+# suite: node --test --test-reporter=tap --test-name-pattern ^I18N:.every.table.has.the.keys.of.en.and.keeps.every.placeholder$ tests/app.test.js
+# per-form-loss: frozen per-form UI translation contract.
+diff --git a/data/i18n/de.json b/data/i18n/de.json
+--- a/data/i18n/de.json
++++ b/data/i18n/de.json
+@@ -119,7 +119,7 @@
+   "sheet.hit_label": "{name}, {ring}, Platz {label}, {place}",
+   "sheet.ring_back": "Anzahl der Töne ({ring}): wieder {n}. Die früheren Plätze wurden wiederhergestellt.",
+   "sheet.ring_reset": {
+-    "one": "{ring}: jetzt {n} Ton. Die Plätze wurden zurückgesetzt.",
++    "one": "{ring}: jetzt  Ton. Die Plätze wurden zurückgesetzt.",
+     "other": "{ring}: jetzt {n} Töne. Die Plätze wurden zurückgesetzt."
+   },
+   "sheet.put_down": " Das Tonfeld ist nicht mehr ausgewählt.",

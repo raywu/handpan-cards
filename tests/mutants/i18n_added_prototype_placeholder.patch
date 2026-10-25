@@ -1,0 +1,15 @@
+# kills: I18N: every table has the keys of en and keeps every placeholder
+# suite: node --test --test-reporter=tap --test-name-pattern ^I18N:.every.table.has.the.keys.of.en.and.keeps.every.placeholder$ tests/app.test.js
+# prototype: frozen per-form UI translation contract.
+diff --git a/data/i18n/de.json b/data/i18n/de.json
+--- a/data/i18n/de.json
++++ b/data/i18n/de.json
+@@ -97,7 +97,7 @@
+   "sheet.palette_n": "Farbpalette {n}",
+   "sheet.next": "WEITER",
+   "sheet.generate": "KARTEN ERSTELLEN",
+-  "sheet.save": "ÄNDERUNGEN SPEICHERN",
++  "sheet.save": "ÄNDERUNGEN SPEICHERN {__proto__}",
+   "sheet.generating": "KARTEN WERDEN ERSTELLT …",
+   "sheet.saving": "ÄNDERUNGEN WERDEN GESPEICHERT …",
+   "sheet.del_idle": "DIESE SKALA LÖSCHEN",
