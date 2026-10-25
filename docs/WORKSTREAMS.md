@@ -3,14 +3,14 @@
 ## Priority SHARE-CUSTOMIZATION-HOTFIX — owner-authorized investigation and conditional execution
 
 Owner prioritizes the reported saved-customization/URL/LINK mismatch over SPS.
-Owner confirms SAVE CHANGES preceded fresh LINK. First standalone production VM
+Owner confirms SAVE CHANGES preceded fresh LINK. Isolated production VM
 SAVE→LINK control passes after awaiting clipboard Promise; no reproduced real-UI
-bug yet. Draft [prompt](prompts/2026-10-25-share-customization-hotfix.md) and
+bug yet. Finalized [prompt](prompts/2026-10-25-share-customization-hotfix.md) and
 [coordination](plans/2026-10-25-share-customization-hotfix-coordination.md) define
 independent lanes, evidence and review gates. No plan/feature success claimed.
 
 Root branch codex/share-customization-hotfix-20261025, host-local /private/tmp/handpan-share-hotfix.urAbvO/integration;
-base DEV667bbf8b. Next independently critique/freeze prompt, investigate actual
+base DEV667bbf8b. Prompt1489e53d independently critiqued/rechecked clear. Next investigate actual
 state/history/two-tab/serialization edges, produce/review plan and execute only
 a sound scoped fix. Main and CLAUDE changes require explicit owner consent.
 Same-inventory import replacement is verified existing behavior, separate from

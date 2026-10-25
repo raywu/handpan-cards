@@ -10,6 +10,8 @@ selected saved instrument, displayed layout, canonical address-bar URL and LINK
 clipboard/native-share/fallback payload must describe the same customization.
 Do not execute the separate DUPLICATE-NOTES plan; it remains explicitly held.
 Never merge main or edit CLAUDE.md without separate explicit owner consent.
+Base the hotfix on current accepted DEV; do not bundle unreleased SPS application,
+test or mutant changes. Preserve that lane's checkpoints for later resumption.
 
 Prompt quality is a source/evidence/coverage gate, not a numeric self-score. Before
 running this prompt to synthesize its plan, obtain independent critique, fix all
@@ -66,6 +68,12 @@ resetSheetState/fitAngles/noteCounts/followTyped/runGenerate; selectDeck/syncRou
 closeScaleSheet/pendingPop/popstate/hashchange; copyLink/clipboard/native-share/
 manual selection; browser helper lifecycle and existing route/save/angles tests.
 Do not assume a test source assertion has run or that VM DOM models native history.
+Current CLAUDE/SU contract deliberately copies location.href to retain pathname,
+query and page context; su_copy_reencodes.patch protects this. Do not blindly
+replace it with shareLink(deck()). Trace and repair source/route coherence first.
+Any necessary contract/CLAUDE change requires a reviewed exact diff and separate
+explicit owner approval. Explicit parent removal on Edit SAVE and bottom-count
+angle reset are already pinned intentional behaviors; do not label them bugs.
 
 ## Independent lanes and investigation matrix
 
@@ -90,22 +98,57 @@ Cover these observable cases, marking each executed, source-only or untested:
    reload/focus/events. Preserve each tab's dirty edits and distinguish observed
    overwriting from stale display or route. Do not access owner's browser/profile.
 5. Clipboard Promise success/rejection/missing capability; native share success,
-   AbortError and other failure; selected-text fallback. Payload consistency and
-   no stale URL/success notice across asynchronous selection/commit changes.
-6. Current versus legacy links, explicit/auto names, same-ID replacement and
+   AbortError and other failure; selected-text fallback. Keep each operation's
+   payload consistent across asynchronous selection/commit changes. Before
+   judging staleness, freeze operation semantics in the plan: default proposal is
+   the selected COMMITTED scale snapshot at LINK invocation, consistent through
+   all fallback branches. A later selection does not invalidate the original
+   click's payload. Define separately what delayed completion/fallback can reveal
+   or announce after selection, SAVE, modal transition or a newer copy intent;
+   do not steal focus or claim success for the current context incorrectly.
+6. A fresh receiver journey: open the ACTUAL captured outbound URL in a clean
+   owned receiver profile without sender storage. Compare pitch-keyed field
+   positions, relevant saved options, rendered geometry, receiver record and
+   canonical rewritten URL with the committed sender snapshot. Capture before a
+   later same-ID import can mask a loss. Include default/custom controls; do not
+   compare U-labels alone because seats may renumber.
+7. Current versus legacy links, explicit/auto names, same-ID replacement and
    collision veto, angles/seats/default/null lists, unknown newer stored records,
    malformed/over-cap links/refusals and disabled LINK behavior. No lost records.
-7. Modal Add/Edit/About routes, query/path/origin preservation, save-cancel/invalid
+8. Modal Add/Edit/About routes, query/path/origin preservation, save-cancel/invalid
    Save, repeated LINK clicks, keyboard/focus accessibility, phone/desktop/Safari
    coverage limitations and eight-language UI conventions. English notes unchanged.
-8. Distinguish data loss BEFORE encode from stale route AFTER commit and stale
+9. Distinguish data loss BEFORE encode from stale route AFTER commit and stale
    capture AT copy. Never merely refresh the URL while persisted/displayed data
    are already inconsistent; do not silently serialize unsaved draft state.
+
+## Persistence and asynchronous ownership contracts
+
+Investigate storage read/write/JSON refusal and a pre-existing old record versus
+unavailable storage. writeScales updates scalesMemory then catches write failure,
+while savedScales may still prefer an older stored array. Snapshot registry,
+in-memory fallback and actual persisted bytes separately. Distinguish durable save
+from session-only state; this is a diagnostic lead, not an established root cause
+or automatic global persistence rewrite. Any repair needs reachable evidence and
+its own reviewed scope/rollback.
+
+Freeze LINK operation semantics before judging an async race: the recommended
+contract is the selected committed snapshot at invocation, retaining its pathname/
+search/origin and one payload through clipboard/native/fallback. Later selection
+alone does not prove the older click was wrong. Define completion UI/focus and
+cancel/supersede handling after SAVE/selection/modal/newer-copy intent explicitly;
+do not replace the payload halfway through a request to follow a new selection.
 
 ## Diagnostic and evidence rules
 
 Only reviewed diagnostics, isolated copied/in-memory data and owned temporary
-browser profiles. Freeze command/selector/count/runtime/supervisor/deadline first.
+browser profiles. Use anonymized fixtures in every browser diagnostic and committed
+test; sanitize raw logs/screenshots/receipts before publishing or attaching them.
+Never read or write the owner's OS clipboard. Use controlled page-owned payload
+sinks to observe async browser calls, explicitly labeling intercepted coverage;
+real native clipboard permission behavior needs isolated CI or separately cleared
+environment. Two launch() calls use separate profiles and do not model shared
+storage tabs: use two owned targets in one profile for the two-tab case. Freeze command/selector/count/runtime/supervisor/deadline first.
 Root alone transfers the existing SPS browser lease after proving no job active;
 unknown processes/profiles are never killed. Read all raw output: registration,
 startup, TypeError, timeout, skipped/cancelled or empty selection is not a success
