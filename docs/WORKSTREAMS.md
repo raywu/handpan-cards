@@ -1,5 +1,42 @@
 # Shared workstream ledger
 
+## 2026-10-25 feedback then swipe — owner-approved continuation
+
+This later checkpoint supersedes older planning-only/app-unapproved labels below
+for the two named scopes. Owner explicitly authorized **latest-per-ring feedback,
+then Scale↔Layout swipe, through DEV** after independently reviewed plans. Main
+merges and exact CLAUDE.md edits remain separate decisions; future whole-codebase
+prompt/investigation stays queued until other work is resolved.
+
+- **Plans:** [feedback](plans/2026-10-25-layout-feedback.md), reviewed body at217
+  SHAbdf530e39cae3bc0904c701f6afdf46f4bcdf6f2dd134666e14b4904d2df6b9f;
+  [swipe](plans/2026-10-25-sheet-tab-swipe.md), reviewed body at217 SHA4f133ae0…3c57c.
+- **Root/host/branch:** ray-Mac; `/private/tmp/handpan-feedback.ha43y5cy/integration`,
+  codex/layout-feedback-20261025; base217609075a14e6ca4799497210af27d9df842c5e.
+  Separate test/app branches start at that base; private assignment/ownership
+  receipts are under sibling evidence/. Paths are not automatic takeover grants.
+- **Last:** exact plans and independent source reviews cleared. T's primary2 cases
+  were assertion-red on unchanged appbd9; after A's app-block-only patch, all20 new
+  unit cases, all873 app tests and all3 new native journeys passed. Native coverage
+  includes12 en/de/it ×portrait/landscape ×fallback/real-font cells with English
+  note input preserved. Two sandbox-driver failures were corrected by invoking
+  actual inline control handlers; behavior assertions were not weakened.
+- **Mac prerequisite delivered:** DEV574 is merged atf5df7942, source21760907/tree0a11a151.
+  Independent full CI40209344599:12 jobs,2238JS/274Python/1484kills,0bad verdicts.
+  ActualDEV28/28 served resources/noindex and print journey1/1 passed, with cleanup
+  and independent delivery review. Main573 remains HELD; full Mac is unverified.
+- **Next:** prove16 new feedback mutants and5 preserved-intent legacy context
+  refreshes clean-green/fault-assertion-red. Static1500-patch applicability passed;
+  runtime proof/full final-head CI/DEV are not yet claimed. Then exact-head reviews,
+  full CI and actual DEV verification precede feedback delivery. Root alone runs
+  host browsers; preserve active invalid-input gating and mixed auxiliary text.
+- **Sequencing:** integrate feedback through full CI/review/actual DEV, then start
+  SPS from the accepted lane source with the shared tab-entry contract. Credit
+  original adapted phone QA; new feature-native checks remain outstanding.
+- **Recovery:** unknown scope/owner, dirty conflict or unexpected regression stops
+  dependent writes; retain raw failures and original trees. No reset/unlock,
+  instruction changes, global setup or main merge follows from this checkpoint.
+
 ## 2026-10-25 Mac repair execution checkpoint
 
 **Additional owner-requested plan discovery:** the
