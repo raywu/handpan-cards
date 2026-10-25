@@ -1,0 +1,20 @@
+# kills: SPS fixture: moved tabs follow supplied markup instead of a control-id membership list
+# suite: node --test --test-name-pattern='SPS fixture: moved tabs follow supplied markup instead of a control-id membership list' tests/sandbox_events.test.js
+# The tab strip is adopted by control id even when supplied markup places it outside the body.
+diff --git a/tools/sandbox.js b/tools/sandbox.js
+--- a/tools/sandbox.js
++++ b/tools/sandbox.js
+@@ -418,6 +418,13 @@ function boot(opts = {}) {
+       if (!VOID.has(name) && !selfClose) stack.push({ tag: name, id: id && id[1], bodyNode });
+     }
+   }
++  if (opts.layout && opts.sheetBody) {
++    const bodyNode = markupNodes.find((n) => n.classList.contains("sheetbody"));
++    if (bodyNode) {
++      els["scale-tabs"].parentNode = bodyNode;
++      els["scale-tabs"]._markupParent = bodyNode;
++    }
++  }
+   const created = [];
+   if (html.includes('<div class="announce"')) {
+     const node = bindFocus(makeElement("announce"));

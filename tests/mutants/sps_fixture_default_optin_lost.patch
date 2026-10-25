@@ -1,0 +1,15 @@
+# kills: SPS fixture: omitted and false opt-in preserve the existing body-free layout fixture
+# suite: node --test --test-name-pattern='SPS fixture: omitted and false opt-in preserve the existing body-free layout fixture' tests/sandbox_events.test.js
+# The body is exposed for every layout boot, ignoring omitted or false sheetBody opt-in.
+diff --git a/tools/sandbox.js b/tools/sandbox.js
+--- a/tools/sandbox.js
++++ b/tools/sandbox.js
+@@ -392,7 +392,7 @@ function boot(opts = {}) {
+       }
+       const id = /\bid="([^"]+)"/.exec(attrText);
+       const classes = /\bclass="([^"]*)"/.exec(attrText);
+-      const isSheetBody = opts.layout && opts.sheetBody && classes &&
++      const isSheetBody = opts.layout && classes &&
+         classes[1].split(/\s+/).includes("sheetbody");
+       const bodyNode = isSheetBody ? bindFocus(makeElement("", name)) : null;
+       if (bodyNode) {
