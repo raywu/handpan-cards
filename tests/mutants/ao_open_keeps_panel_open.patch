@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10875,7 +10875,6 @@
-   return [aboutCloseBtn, ...document.querySelectorAll('#about a[href^="#deck="], #about a[href^="mailto:"]')].filter(isStop);
+@@ -13860,7 +13860,6 @@ function aboutStops() {
  }
  function openAbout() {
+   retireLinkUI();
 -  closePanel();
    aboutSection.removeAttribute("hidden");
    aboutOpen = true;

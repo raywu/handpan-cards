@@ -1,0 +1,15 @@
+# kills: SHC E2: phone Edit protects focus and notices from old LINK and fresh fallback remains selectable
+# suite: node --test --test-reporter=tap --test-name-pattern='SHC E2:' tests/e2e.test.js
+# A fresh phone fallback focuses the URL without selecting every character.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14507,7 +14507,7 @@ function copyLink() {
+     shareUrl.removeAttribute("hidden");
+     shareUrl.focus();
+     if (!current()) return;
+-    shareUrl.select();
++    // Fault: leave the URL unselected.
+     if (noticeRevision === announcementRevision) {
+       say("SELECT THE LINK AND COPY IT", "warn");
+       noticeRevision = announcementRevision;

@@ -4,12 +4,17 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12329,7 +12329,7 @@ function syncRoute() {
-   routeRefused = refused;
- }
- function copyLink() {
+@@ -14485,10 +14485,11 @@ function copyLink() {
+   observeLinkRoute();
+   retireLinkUI();
+   const generation = linkUIGeneration;
 -  const href = location.href;
++  const contextHref = location.href;
 +  const href = shareLink(deck()).value;
    const deck_kind = deckKind(deck());
-   const done = (text, method) => {
-     say("", "");
+   let noticeRevision = announcementRevision;
+-  const current = () => generation === linkUIGeneration && href === location.href &&
++  const current = () => generation === linkUIGeneration && contextHref === location.href &&
+     !shareCopy.disabled && !sheetOpen && !aboutOpen &&
+     !(panelOpen && !desktopMQ.matches) && !document.hidden;
+   if (!current()) return;
