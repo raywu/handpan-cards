@@ -15,13 +15,13 @@ raw audit passed. Main575 remains HELD; old pendingCI prose below is historical.
 - **Owner/ref/worktree:** root on ray-Mac; codex/sheet-tab-swipe-20261025;
   /private/tmp/handpan-sps-z8gaznu2/integration; basebccff5a2. Separate T/A trees
   and file ownership are defined in coordination; not another agent's takeover grant.
-- **Last/next:** helper red→5green/873compatibility and primary feature2red→2green
-  completed;95line app prototype under independent tests. Browser route/passivity,
-  genuine taps/control gestures and strengthened native-scroll/quiet/focus paths
-  passed at unchanged app index97e498b9. Reviewed zoom amendmented8 now requires
-  3new expected-red unit groups before a conservative zoom guard; final full
-  matrix/mutants/source review/CI/DEV/nativeQA remain pending. Read coordination
-  Cycle state first; older planning-only snapshots below are history.
+- **Last/next:** zoom TDD3unit+1native assertion-RED completed before minimal
+  guard954fc761, index25e740ad. Same40unit/full913app/5helper now green. Targeted
+  native5selected4pass1fail: normal1x actual-origin precondition failed after zoomed
+  exclusion passed; preserve raw failure, do not claim green. Fresh independent
+  read-only diagnosis assigned; root next distinguishes fixture/observer versus
+  app before correction and reruns same5. Mutants/8preserved-context refreshes,
+  final review/fullCI/DEV/nativeQA remain pending. Read coordination Cycle state.
 - **Acceptance:** original SPS1–8, genuine independent reviewers, everynewgroup
   generated mutants/floors, full exact-headCI/combinedDEV/actualbytes+journeys;
   new swipe-specific physical QA remains. Main/CLAUDE/global changes excluded.

@@ -10,31 +10,34 @@ feedback independently delivered atbccff5a2, completing that prerequisite.
 
 ## Cycle state — current before historical snapshots
 
-Root integration has the95line swipe prototype (index97e498b9), unchanged app
-through all fixture/driver corrections. Original feature2assertion-red→2green
-passed. Full37matrix first exposed two fixture limitations: missing native
-matches() and missing UA focus fixup. Matches driver is corrected; actualChrome
-positively focused GEN→lip→Scale then BODY, so no app focus change is justified.
-The unit model now checks no destination focus call and retains native BODY guard.
+Root integrated A's minimal zoom guard at954fc761 (original792f15b5), index SHA256
+25e740adff69d962299b6642fa99839cbe814d4e076839486120f24870c57a92. Same3zoom-unit
+and1native expected assertion-RED were verified before code. After guard all40SPS
+unit groups, full913app and5helper tests passed with0fail/skip/cancel/raw errors.
+Receipts/raw logs are in sibling evidence/, guard-unit-default-verified.json.
 
-Browser evidence: ten Add/Edit viewport route cells/passive singular bindings and
-real button gestures/taps passed. Stronger scroll fixtures passed65px native scroll
-and86px during112ms quiet observation, plus actual capture order and visible focus.
-Earlier poor-room scroll fixture failure retained; application unchanged.
+Same-head targeted browser run selected5:4pass/1fail, no skips/cancels/timeout.
+Route/passivity10AddEditcells, native scroll65px, genuine control swipes/taps,
+quiet native scroll92px at107ms, capture order and BODY focus passed. The zoomed
+negative now passed, but normal1x positive origin precondition failed at
+ e2e.test.js15522 (normalOrigin eligible/scale), before its tab-transition assertion.
+This run is NOT green. Preserve sps-native-five-guard-green raw TAP/receipt despite
+its prospective filename; do not credit its name as outcome. Supervisor teardown
+clean; before/after Chrome680 and7priorprofiles unchanged. No actual viewport
+panning was demonstrated or repaired. Fresh read-only diagnosis assigned to
+sps_zoom_gate_diagnosis; no fixture/app correction authorized from inference alone.
 
-Current bounded policy amendment SHA256
-ed8dae7bcae3951a3db7c2f2f75fd9304693b2b0fc7517a1ccff965b34a4bd8e was independently
-ENG/design-cleared. At2x the candidate changes tabs and baseline does not; neither
-probe proved visual-viewport panning. Conservative zoom guard preserves existing
-reading policy; T's3new zoom-unit groups and one asserted native replacement are
-ready for root expected-red BEFORE A code. Normal1x/residue/missing-API positives,
-end-time sampling and sticky observed rise/fall are explicit. No zoom guard yet.
+Next root inspects diagnostic findings, freezes a bounded distinguishing observation
+before any correction; retain the positive actual-origin and restored1x assertions.
+Then require same5native green, meaningful generated mutants/8preserved context
+refreshes, independent final source/design review, full exact-headCI/DEV and new
+physical ownerQA. NoSPSPR/CI/DEV/main delivery yet. Root sole host browser operator,
+owned lease retained; no full Mac budget or Safari/AT proof is implied.
 
-Next: integrate/freeze zoom oracles; rootprove expected assertion-red; A minimal
-zoom guard; samegreen/full40unit+helper/defaultapp regressions; generated app/native
-faults and8preserved-context refreshes; independent final review/fullCI/DEV/native
-ownerQA. NoSPSCI/DEV/main delivery yet. Root keeps one owned browser lease; physical
-Safari/keyboard/edge/selection/smoothness and actual panning remain unverified.
+Parallel DUPLICATE-NOTES final plan585fa248 cleared independent ENG/design after
+four material fixes; source43486f5d pushed, docs PR579 mainHELD /580 DEV under fullCI.
+This is planning only. SEO delivered578ac97; feedback576bcc; Mac574f5. Their main
+PRs577/575/573 remain held. Preserve all newer DEV ledger records on integration.
 
 ## Hard rules
 
