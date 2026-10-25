@@ -1,5 +1,53 @@
 # Shared workstream ledger
 
+## 2026-10-25 DUPLICATE-NOTES — revised plan finalized; EXECUTION HELD
+
+Owner requested finishing/revising the plan without execution. Completed that
+bounded work. Final plan SHA256 `781540f4e19a25c63cd003fa89acbd40c947f676de4bd676157a8b000a118b9a`
+cleared independent ENG and design rechecks after the findings below were fixed.
+[Final plan](plans/2026-10-25-duplicate-notes.md). Existing finalized prompt is unchanged.
+
+Confirmed choices: duplicates at any physical position including matching Ding;
+one chosen position per chord tone with existing all-position diagram highlights;
+nonblocking warning naming repeat/positions, without confirmation. No re-interview.
+The plan retains an explicit warning-coverage fork and staged identity/protocol/
+recovery/performance/fit acceptance work for a future execution grant.
+
+**STOP: no implementation or proposed StageA–F execution.** No application, tests,
+configuration, dependency, storage or deployment changes were made in this revision.
+No new duplicate-feature diagnostics, prototype, test/browser/AT run or regression
+success is claimed. Documentation-only branch retention/reporting is not execution.
+Await explicit execution authorization. Other streams keep separate permissions.
+
+| Independent review | Material finding resolved | Final disposition |
+|---|---|---|
+| duplicate_plan_eng_audit | Circular kickoff/delivery gates split into pregrant policy, future authorized StageA baselines, pre-app-code contracts and post-code evidence; serialized disclosure ownership; DEV PR580/merge reference corrected. | Exact final hash cleared, no remaining material ENG finding; report-only. |
+| duplicate_plan_design_audit | Explicit modal summary Tab-stop and retirement; native tap/keyboard/SPS/scroll behavior; invalid active-input versus stale last-good detail semantics. | Exact final hash cleared, no remaining material design finding; report-only. |
+
+Initial revised candidate d1c78951891784297ef295c447dfda15c43fcc1b33629a240446273e08b7cc42
+was not final clearance; fixes were independently rechecked at the hash above.
+Prior reviewed body585fa248/source434 and delivered DEV PR580 merge667bbf8b are
+historical evidence. This later finalization is retained on the advertised branch
+and reporting threads pending the next normal gated documentation DEV batch; do
+not claim the existing DEV667 blob already contains it. Resolve live branch
+codex/duplicate-notes-plan-20261025 before recovery. Older pause/resume/next records
+below are history; this finalized-held status supersedes their task directions.
+
+## 2026-10-25 owner resume — finish/revise plan only, do not execute
+
+The owner explicitly superseded the prompt-only pause: “Finish and revise the plan
+but don't execute.” Resume existing plan revision and independent ENG/design
+review only. Do not rerun the research prompt unnecessarily or start any
+implementation/validation stage from the proposed plan. No application/test/
+configuration/dependency/storage/deployment/main/CLAUDE.md changes are authorized
+by this request. Retain the three settled owner choices. Remaining warning coverage
+and implementation-entry contracts are explicit in the revised plan.
+
+Next: finalize exact revised artifact, independently review/recheck material
+findings, record source/review refs, then STOP awaiting execution authorization.
+Older pause and implementation-next labels below are history, not current scope.
+Other streams retain their own existing permissions and recovery checkpoints.
+
 ## 2026-10-25 owner pause — DUPLICATE-NOTES: stop at finalized prompt
 
 **PAUSED by explicit owner instruction.** Stop at the finalized prompt; do not

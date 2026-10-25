@@ -1,12 +1,16 @@
 # DUPLICATE-NOTES: preserve repeated physical notes, warn without refusal
 
-2026-10-25. Research and execution proposal only. **No feature implementation is
-authorized.** Pending owner choices are explicit; defaults below are recommendations.
+2026-10-25, revised after the owner's three confirmed choices. **Plan finalization
+only; do not execute this plan.** The owner explicitly resumed finishing/revising
+this document after the prompt-only pause, without authorizing implementation.
+Pending choices and mandatory entry gates are explicit below.
 
 ## Decision brief
 
-**Conditional Proceed to implementation after scope, compatibility and warning
-choices are accepted and the validation gates are met.** Technical feasibility is
+**Conditional technical feasibility; execution is HELD by owner instruction.**
+Scope, musical presentation and no-confirmation policy are settled. Warning
+coverage, compatibility/recovery and measured acceptance gates must be resolved
+before any later separately authorized implementation. Technical feasibility is
 supported by inspected architecture and bounded data probes. Current app acceptance,
 round-trip compatibility, actual UI/print behavior and regression freedom are not
 validated for the proposed change. A near10/10 target means source-backed scope,
@@ -52,7 +56,7 @@ is not a passing test result. Raw photo and instrument name are not published.
 |---|---|---|
 | Several independent duplicate gates exist | Verified: core.scaleInfer; importer.composeStage/composeBottoms; freeform flags | One warning-string change or one deleted guard is insufficient |
 | Current cross-shell unisons already work | Verified: `(D3) A3 [A3]` and `[D3] (D3) A3` parse | Preserve existing valid inputs, IDs, ties, cards and links |
-| Equal-Ding upper notes hit ordering | Verified: core uses <=Ding | Explicit equality exception if all-zone scope accepted; below-Ding rule is separate |
+| Equal-Ding upper notes hit ordering | Verified: core uses <=Ding | Owner-approved equality exception required; below-Ding rule is separate |
 | composeTyped reuses first matching ID | Verified: importer805–816 | Make typed/canonical correspondence multiplicity-aware before enabling input |
 | Layout/hit identity is field/ring/seat based | Verified source and bounded layout probe | Retain existing IDs; no evidence for introducing UUID infrastructure |
 | Diagrams and written voicings differ | Verified CLAUDE rules1–3, voicing.js, chordSets/PDF | Do not change established all-PC highlighting to implement duplicate input |
@@ -89,7 +93,7 @@ change English A–G/accidental/zone grammar, or rename a user instrument.
 |---|---|
 | Two+ same MIDI within rim, inner or bottom | Accept each physical occurrence; new warning |
 | Same MIDI rim and inner | Accept distinct upper positions; new warning |
-| Ding plus equal-MIDI rim/inner field | Accept separate upper field if owner scope accepted; new warning; Ding ID itself still never voices |
+| Ding plus equal-MIDI rim/inner field | Accept separate upper field under confirmed scope; new warning; Ding ID itself still never voices |
 | Existing accepted top/bottom or Ding/bottom copy | Preserve admission; explicit copies quiet under narrow policy; existing inferred-bottom notice retained |
 | Enharmonic same MIDI | Same policy as equivalent spelling, preserve input spellings |
 | Same pitch class in different octaves | Preserve current behavior; not an exact-unison warning |
@@ -257,11 +261,58 @@ to list every group. Whenever a compact summary omits groups, provide discoverab
 complete grouped detail: original spellings, resolved equivalent-pitch grouping
 (including E4/Fb4), counts and zone/seat context. The editable inventory and Layout
 labels alone do not explain those relationships and are not a substitute.
-Stage A must select and independently review the bounded detail presentation before
-UI implementation; recommended candidate is an inline body-flow disclosure, outside
-the fixed footer. Freeze its keyboard/focus access, accessible summary/detail
-relationship, update/clearing behavior, all8locales and scroll/SPS/fit tests. If no
-acceptable presentation is selected, stop UI implementation. Never create an
+Recommended presentation for implementation review: a native details/summary
+disclosure in normal flow at the end of #scale-panel-scale, after the combined-line
+fieldrow and before that panel closes, outside #scale-guidance and the fixed
+footer. The pinned summary remains compact; the disclosure supplies all groups
+and position context and is available for either input path. Hide/remove the whole
+disclosure when there are no covered duplicate groups. It must not reuse the
+seed-refusal-only #scale-refusal element or turn the details list into a live region.
+
+Use a localized accessible summary (draft “Repeated notes: details”) and semantic
+list items; no custom accordion keyboard framework. Start collapsed on a fresh
+Add/Edit session. Preserve the open state while that session's groups update and
+when switching tabs; clear it on close/new session. Do not auto-open, scroll or
+move focus when a repeat appears. If all groups disappear while focus is within
+the soon-removed disclosure, defer its removal until focus leaves and show a short
+“no repeated notes” state, then clear it; do not strand focus on a hidden node.
+Announce the settled compact status once through the existing polite mechanism,
+not both the summary and the full list.
+
+Disclosure validity is tied to the currently active input path, never merely to
+lastGood/boxOk. During a genuine invalid or unresolved active-input state, suppress
+the duplicate summary and retire grouped details; the retained last-good pan may
+remain under existing rules but must not make its groups look current. If focus
+is inside the disclosure, retain a clearly labeled stale/last-successful-input
+context until focus leaves, without presenting it as current validity, then hide
+it. Preserve the primary error. Once input becomes valid, recompute facts from
+that resolved input and restore only current groups; no partial parse supplies a
+false valid list. Freeze valid→invalid→valid, paths, empty/unique correction and
+focus-safe retirement cases in the oracle set.
+
+The modal currently traps Tab using an explicit list (index.html13714–13731), so
+native HTML alone is insufficient. U/root must add the rendered operable summary
+after scaleBox in the Scale stop list, including focused deferred-retirement state;
+exclude it when hidden/no groups, in Layout and after close. Preserve all existing
+forward/reverse order and wrap behavior. Enter/Space use the native disclosure
+semantics, with no custom accordion keyboard framework.
+
+Freeze native interaction outcomes before later code: a genuine summary tap or
+Enter/Space toggles once without a tab transition; a deliberate short horizontal
+trace (the existing40px cancellation case) or touchcancel toggles neither disclosure
+nor tab; a qualifying horizontal gesture from the summary follows the accepted SPS
+route exactly once without toggling the disclosure. Preserve its open state on
+return. Vertical gestures keep native scrolling without toggling/navigating, and
+selection/keyboard behavior remains intact. Browser probes that require neutral
+body input must exclude summary/details controls as interactive origins and still
+assert the actual dispatched origin. Test real touch/click synthesis, not synthetic
+click counts alone. If native arbitration fails, stop for the smallest independently
+reviewed fix; do not blanket preventDefault, suppress all clicks, or broaden
+production gesture exclusions without evidence and a reviewed scope decision. Freeze keyboard/touch/AT relationships,
+update/clearing, all8locales, body scroll and SPS interaction in StageA static review.
+The expanded body content must remain reachable without hiding the action or
+violating existing fit budgets. If the actual prototype cannot satisfy those
+constraints, stop UI implementation and review the smallest presentation revision. Never create an
 unbounded fixed footer, shrink targets/type or reinstate a cap to fit text. This
 summary/detail policy remains an explicit design approval item.
 
@@ -292,7 +343,7 @@ interpolation and language changes must be tested. No raw photo/name publication
 
 | Stage | Objective / owned deliverables | Exit / stop / fallback |
 |---|---|---|
-| A Scope/contracts | Root+owner settle admission/voicing/warning choices; freeze physical mapping, protocol/rollback matrix, grouped-detail presentation and numeric performance protocol/thresholds | No code for unresolved behavioral forks; retain current app until accepted |
+| A Scope/contracts and authorized baseline validation | Carry forward confirmed choices; resolve warning coverage; paper-review protocol/rollback and disclosure; after future execution approval only, benchmark existing code, inspect copied stores and validate isolated prototypes within that grant | No shipped app/storage implementation for unresolved contracts; freeze literal mappings, protocol matrix and numerical performance thresholds before StageC; stop when evidence/scope is insufficient |
 | B Independent oracles | T separate tree: core/import/share/app fixtures and meaningful baseline failures, compatibility snapshots | Screenshot/identity/version failures by intended assertion; no startup/empty selection; unchanged baseline preserved |
 | C Core and protocols | E separate tree: eligibility/structured facts, occurrence mapping, explicit reader/writer capability and safe storage adapters | Same tests green; all copies kept, old valid bytes stable; storage-loss evidence stops rollout |
 | D Warning UI/locales | U separate tree: active-path success, message aggregation, precise copy/ARIA,8tables; root serializes index changes | Measured fit/state/announcement and no stale residue; no type/target concessions |
@@ -300,7 +351,10 @@ interpolation and language changes must be tested. No raw photo/name publication
 | F Integration/delivery | Root source sync, whole affected suites/full exact-headCI, combinedDEV and actual served journeys | No CI skip substitute; new-device/AT limits explicit; main and exact CLAUDE changes separately approved |
 
 E owns src/engine/core.js, importer.js and share.js only if selected by accepted
-design. U owns data/i18n/*.json and later index.html **app warning block only**.
+design. U owns data/i18n/*.json and later index.html duplicate-warning logic,
+#scale-panel-scale disclosure markup/lifecycle and its bounded Scale Tab-stop
+integration only. Root serializes these edits with generated-region/protocol sync;
+no other application markup or gesture rewrite is included by default.
 Root alone owns index generated-region sync and integration, source specs/ledger
 and applicable floor rows. T owns assigned test files, M only generated patches;
 no two active editors write index.html. If protocol application adapters also
@@ -368,17 +422,86 @@ decode alone. Full final-head CI and actual DEV bytes/journeys remain mandatory.
 No passing suite or self-review alone establishes physical playability or safety
 of a data migration. No such future checks ran during this planning task.
 
-## Delivery readiness, continuation and unresolved work
+## Sequenced gates — future, separately authorized work
 
-Feasibility is conditional; critical gates are scope, deterministic identity,
-protocol/old-writer recovery, warning aggregation and independent plan review.
-Next root: reconcile interviews, obtain fresh exact-plan ENG/design review,
-resolve material findings/recheck, publish final source+review refs in shared DEV
-ledger, then stop this workstream awaiting separate implementation authorization.
-No application feature, dependency or global change follows from this document.
+This completed proposal is not an instruction to begin StageA now. Preconditions
+and later acceptance evidence are separate; future tests need code and therefore
+are not prerequisites for receiving an execution grant. A future grant may cover
+A–F or a bounded subset; stop at its stated boundary, without inventing repeated
+per-step approvals for already authorized ordinary work.
 
-DUPLICATE-NOTES remains a distinct planning stream because it changes core input/
-identity/protocol contracts, unlike SEO content or the authorized SPS gesture.
-Keep all streams in the shared ledger; plan/worktree/ref/last/next/approval belongs
-in [coordination](2026-10-25-duplicate-notes-coordination.md), not session memory.
-Existing main573/575/577 remain held; this plan does not authorize releasing them.
+### Before execution authorization: policy and scope
+
+Carry forward all three settled owner choices. Resolve warning coverage before
+implementing warning behavior: recommended minimal coverage is newly admitted
+repeats plus existing inferred-bottom notices. Warning every exact duplicate is
+a bounded UX fork requiring explicit quiet-prefill/line-path expectations, not a
+change to admission or musical behavior. Present the protocol/recovery proposal,
+concrete disclosure contract, lane ownership, diagnostic budget and required
+acceptance evidence. Current authorization ends at finalizing/reviewing this plan.
+No diagnostic, prototype, TDD or application stage is launched by this document.
+
+### After a future execution grant: StageA and pre-application-code gates
+
+Root re-resolves current DEV/SPS and source versions, preserves old goldens and
+creates assigned clean isolated worktrees; no takeover of another owned/dirty tree.
+Under the scope of that future grant only, StageA may benchmark existing code,
+exercise copied/temporary stores and evaluate an isolated UI prototype. These are
+bounded validation activities, not shipped application/storage implementation.
+If the grant excludes diagnostics/prototypes, propose their exact scope and stop
+those activities rather than execute them implicitly.
+
+Freeze the capability/wire/record specification, old-reader meanings and the
+old/new operation matrix before production storage code. Candidate7/5 must be
+checked for allocation conflicts. Define the lossless backup/export/restore
+contract and fixtures now; proof covering the new implemented formats follows
+StageC on disposable data, before any owner-data write or release.
+
+Freeze literal occurrence/seat mappings, distinct tone/HOME ties and zero-card
+controls. Review the disclosure/focus/gesture/priority/localization contract and
+its measured prototype fit. Establish numerical performance thresholds from the
+bounded existing-code baseline and reviewed product budget before application
+implementation; do not infer a pass from the single feasibility probe or introduce
+a hard note cap. Unresolved behavioral/protocol/identity forks stop the affected
+code lane. StageB independently authors meaningful intended-red oracles after
+its scope is authorized; no application change precedes its required red evidence.
+
+### After code exists: regression, recovery and delivery gates
+
+StagesC–E must prove new-input multiplicity, supported round trips and the complete
+old/new writer/reader operation matrix, including lossless snapshot/export/restore
+and unknown-record protections on disposable data. Boot preservation alone never
+establishes safe downgrade. Recovery or isolation failure blocks real-data writes
+and rollout, even if parse/build tests pass.
+
+Each new group needs a generated mutant, exact clean-header green and intended
+assertion failure. Startup/registration/timeout failures are not kills; retain
+raw failures and do not weaken tests/floors. Independent final exact-head source/
+design review, fullCI, combinedDEV and actual served affected journeys precede
+delivery claims. Physical device/AT limitations stay visible. Main release and
+any exact CLAUDE.md edit remain separate explicit owner approvals. None of these
+post-code checks is represented as already complete or required before a future
+execution grant can be considered.
+
+## Delivery readiness and stopping point
+
+Current requested outcome: finalize this revised plan, obtain independent ENG/design
+review and address material findings, retain exact plan/review refs in coordination
+and the shared ledger, then **STOP without executing any implementation stage**.
+Do not automatically run the finalized research prompt again, create feature code,
+change tests/configuration/dependencies, migrate records or deploy/release a feature.
+Documentation status/recovery updates do not create implementation authority.
+
+Technical feasibility remains conditional because duplicate identity/protocols and
+warning state need coordinated changes. No duplicate acceptance, UI/print/AT,
+performance, rollback or regression tests have been executed for the proposed
+feature. Prior CI40227969263 and DEV PR580 at merge
+667bbf8b1459ba03de1f010e806891071ef1456c validate the earlier documentation delivery
+and unchanged app baseline; they do not validate this feature or this revised plan's
+future execution. The reviewed pre-decision plan585fa248 remains retained at43486f5d.
+The latest exact revision and review disposition belong in coordination, not a
+self-assessed numeric score.
+
+DUPLICATE-NOTES remains distinct from SEO and the authorized SPS gesture stream.
+Keep all streams in the shared ledger; preserve their separate permissions. Existing
+main573/575/577/579 remain held unless the owner explicitly authorizes a release.
