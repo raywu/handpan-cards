@@ -1019,3 +1019,179 @@ test("the sandbox reports navigator.languages ['en-US','en'] unless told otherwi
   assert.deepStrictEqual(Array.from(de.get("navigator.languages")), ["de-CH", "fr"]);
   assert.strictEqual(de.get("navigator.language"), "de-CH");
 });
+
+// Literal synthetic scripts exercise the helper, not the application that will
+// consume it. These tests are unit-only; the SVH selector never launches Chrome.
+const svhHTML = '<script>window.marker = "synchronous";</script>';
+const svhTurn = () => new Promise(resolve => setImmediate(resolve));
+const svhGate = () => { let resolve, reject; const promise = new Promise((a,b) => { resolve=a;reject=b; }); return {promise,resolve,reject}; };
+
+test("SVH1 shared raw storage crosses opted-in realms and isolates other origins", () => {
+  const origin = {};
+  const a = sandbox.boot({html:svhHTML,origin,storage:{sample:'  raw seed  '}});
+  const b = sandbox.boot({html:svhHTML,origin});
+  a.run('localStorage.setItem("sample", "  changed raw  ")');
+  assert.strictEqual(b.get('localStorage.getItem("sample")'), '  changed raw  ', 'an acknowledged raw write must be visible to the other opted-in realm');
+  const c = sandbox.boot({html:svhHTML,origin,href:'https://another.test/'});
+  assert.strictEqual(c.get('localStorage.getItem("sample")'),null);
+  assert.strictEqual(sandbox.boot({html:svhHTML}).get('localStorage.getItem("sample")'),null);
+});
+
+test("SVH2 exclusive requests are asynchronous FIFO and hold through callback settlement", async () => {
+  const origin=sandbox.createOrigin();
+  const a=sandbox.boot({html:svhHTML,origin,locks:true}), b=sandbox.boot({html:svhHTML,origin,locks:true});
+  const other=sandbox.boot({html:svhHTML,origin,locks:true,href:'https://another.test/'});
+  const gate=svhGate(), order=[];
+  const first=a.sandbox.navigator.locks.request('collection',{mode:'exclusive'},lock=>{order.push('A');assert.strictEqual(lock.mode,'exclusive');return gate.promise;});
+  const second=b.sandbox.navigator.locks.request('collection',()=>{order.push('B');return 'second';});
+  const third=a.sandbox.navigator.locks.request('collection',()=>{order.push('C');return 'third';});
+  assert.deepStrictEqual(order,[],'callbacks cannot acquire inline');
+  await svhTurn();assert.deepStrictEqual(order,['A'],'a pending callback promise still owns the lock');
+  assert.strictEqual(await other.sandbox.navigator.locks.request('collection',()=> 'other origin'),'other origin');
+  const queued=await b.sandbox.navigator.locks.query();
+  assert.deepStrictEqual(queued.held.map(x=>x.name),['collection']);
+  assert.deepStrictEqual(queued.pending.map(x=>x.name),['collection','collection']);
+  assert.notStrictEqual(queued.held[0].clientId,queued.pending[0].clientId);
+  gate.resolve('first');
+  assert.deepStrictEqual(await Promise.all([first,second,third]),['first','second','third']);
+  assert.deepStrictEqual(order,['A','B','C']);
+  assert.deepStrictEqual(await a.sandbox.navigator.locks.query(),{held:[],pending:[]});
+});
+
+test("SVH3 rejected lock callbacks release ownership and retain their exact error", async () => {
+  const origin=sandbox.createOrigin(), app=sandbox.boot({html:svhHTML,origin,locks:true});
+  const failure=new Error('callback rejected');
+  const first=app.sandbox.navigator.locks.request('one',()=>Promise.reject(failure));
+  const caught=assert.rejects(first,error=>error===failure);
+  const second=app.sandbox.navigator.locks.request('one',()=>17);
+  await caught;assert.strictEqual(await second,17);
+  const syncFailure=new Error('synchronous callback throw');
+  await assert.rejects(app.sandbox.navigator.locks.request('one',()=>{throw syncFailure;}),error=>error===syncFailure);
+  assert.strictEqual(await app.sandbox.navigator.locks.request('one',()=>23),23);
+});
+
+test("SVH4 pending abort rejects without entering while abort after grant cannot undo a commit", async () => {
+  const origin=sandbox.createOrigin(), app=sandbox.boot({html:svhHTML,origin,locks:true,abortController:true});
+  const hold=svhGate(), held=app.sandbox.navigator.locks.request('one',()=>hold.promise);
+  await svhTurn();
+  const controller=new app.sandbox.AbortController();let entered=false;
+  const queued=app.sandbox.navigator.locks.request('one',{signal:controller.signal},()=>{entered=true;});
+  const rejected=assert.rejects(queued,error=>error.name==='AbortError');controller.abort();await rejected;
+  hold.resolve();await held;assert.strictEqual(entered,false);
+  const granted=new app.sandbox.AbortController(), completion=svhGate();let commits=0;
+  const active=app.sandbox.navigator.locks.request('one',{signal:granted.signal},()=>{commits++;granted.abort();return completion.promise;});
+  await svhTurn();assert.strictEqual(commits,1);completion.resolve('ack');assert.strictEqual(await active,'ack');
+  const preAborted=new app.sandbox.AbortController();preAborted.abort(new Error('owner canceled'));
+  await assert.rejects(app.sandbox.navigator.locks.request('one',{signal:preAborted.signal},()=>{entered=true;}),/owner canceled/);
+  assert.strictEqual(entered,false);
+});
+
+test("SVH5 storage events carry recipient area and writer URL only to other same-origin realms", () => {
+  const origin=sandbox.createOrigin({events:'manual'});
+  const a=sandbox.boot({html:svhHTML,origin,href:'https://example.test/a#writer'});
+  const b=sandbox.boot({html:svhHTML,origin,href:'https://example.test/b'});
+  const c=sandbox.boot({html:svhHTML,origin,href:'https://other.test/c'});
+  const own=[],received=[],foreign=[];
+  a.sandbox.addEventListener('storage',e=>own.push(e));
+  b.sandbox.addEventListener('storage',e=>received.push(e));
+  c.sandbox.addEventListener('storage',e=>foreign.push(e));
+  a.run('localStorage.setItem("pan", "first");localStorage.setItem("pan", "first");localStorage.setItem("pan", "second");localStorage.removeItem("absent");');
+  assert.strictEqual(received.length,0,'manual events remain delayed');
+  origin.flushStorageEvents();
+  assert.deepStrictEqual(received.map(e=>({key:e.key,oldValue:e.oldValue,newValue:e.newValue,url:e.url})),[
+    {key:'pan',oldValue:null,newValue:'first',url:'https://example.test/a#writer'},
+    {key:'pan',oldValue:'first',newValue:'second',url:'https://example.test/a#writer'}]);
+  assert.ok(received.every(e=>e.storageArea===b.sandbox.localStorage));
+  assert.deepStrictEqual(own,[]);assert.deepStrictEqual(foreign,[]);
+  const removed=()=>{throw new Error('removed listener ran');};b.sandbox.addEventListener('storage',removed);
+  a.run('localStorage.removeItem("pan")');b.sandbox.removeEventListener('storage',removed);origin.flushStorageEvents();
+  assert.strictEqual(received.at(-1).newValue,null);
+});
+
+test("SVH6 automatic and deliberately omitted storage events leave raw shared reads authoritative", async () => {
+  for(const mode of ['auto','omit']) {
+    const origin=sandbox.createOrigin({events:mode});
+    const a=sandbox.boot({html:svhHTML,origin}),b=sandbox.boot({html:svhHTML,origin});
+    const events=[];b.sandbox.addEventListener('storage',e=>events.push(e));
+    a.run('localStorage.setItem("latest", "yes")');
+    assert.strictEqual(events.length,0,'events are never delivered inline');
+    assert.strictEqual(b.get('localStorage.getItem("latest")'),'yes');
+    await new Promise(resolve=>setTimeout(resolve,10));
+    assert.strictEqual(events.length,mode==='auto'?1:0);
+  }
+});
+
+test("SVH7 failed storage acknowledgments are separate from successful writes and preserve raw data", () => {
+  const origin=sandbox.createOrigin({storage:{pan:'original'},events:'manual'});
+  const quota=Object.assign(new Error('quota'),{name:'QuotaExceededError'});
+  const app=sandbox.boot({html:svhHTML,origin,storageFault:op=>op.operation==='setItem'&&op.value==='refused'?quota:null});
+  assert.throws(()=>app.run('localStorage.setItem("pan", "refused")'),error=>error===quota);
+  assert.strictEqual(app.get('localStorage.getItem("pan")'),'original');
+  app.run('localStorage.setItem("pan", "acknowledged")');
+  assert.deepStrictEqual(origin.writeAttempts.map(x=>[x.operation,x.key,x.value,x.success]),[
+    ['setItem','pan','refused',false],['setItem','pan','acknowledged',true]]);
+  assert.deepStrictEqual(origin.successfulWrites.map(x=>[x.key,x.value]),[['pan','acknowledged']]);
+  const denied=Object.assign(new Error('access denied'),{name:'SecurityError'});
+  const inaccessible=sandbox.boot({html:svhHTML,origin,storageAccessError:denied});
+  assert.throws(()=>inaccessible.get('localStorage'),error=>error===denied);
+  assert.strictEqual(app.get('localStorage.getItem("pan")'),'acknowledged');
+});
+
+test("SVH8 capabilities are explicit and support missing throwing and deterministic collision cases", async () => {
+  const missing=sandbox.boot({html:svhHTML});
+  assert.strictEqual(missing.get('typeof crypto'),'undefined');
+  assert.strictEqual(missing.get('typeof navigator.locks'),'undefined');
+  assert.strictEqual(missing.get('typeof AbortController'),'undefined');
+  const repeated='00000000-0000-4000-8000-000000000001';
+  const sequence=[repeated,repeated,'00000000-0000-4000-8000-000000000002'];
+  const app=sandbox.boot({html:svhHTML,crypto:{randomUUID:()=>sequence.shift(),getRandomValues:bytes=>{bytes.fill(7);return bytes;}},isSecureContext:true,abortController:true});
+  assert.deepStrictEqual([app.get('crypto.randomUUID()'),app.get('crypto.randomUUID()'),app.get('crypto.randomUUID()')],[repeated,repeated,'00000000-0000-4000-8000-000000000002']);
+  assert.deepStrictEqual(sandbox.plain(app.get('Array.from(crypto.getRandomValues(new Uint8Array(3)))')),[7,7,7]);
+  assert.strictEqual(app.get('isSecureContext'),true);
+  const failure=new Error('guarded access denied');
+  for(const [option,expression] of [['locksAccessError','navigator.locks'],['cryptoAccessError','crypto']]) {
+    const bad=sandbox.boot({html:svhHTML,[option]:failure});assert.throws(()=>bad.get(expression),error=>error===failure);
+  }
+  const refused=sandbox.boot({html:svhHTML,locks:true,locksRequestError:failure});
+  let called=false;await assert.rejects(refused.sandbox.navigator.locks.request('x',()=>{called=true;}),error=>error===failure);
+  assert.strictEqual(called,false);
+});
+
+test("SVH9 async evaluation and generation normalize only their settled values", async () => {
+  const app=sandbox.boot({html:'<script>function generateDeck(text,options){return Promise.resolve({ok:true,text,options});}</script>'});
+  assert.deepStrictEqual(await app.getAsync('Promise.resolve({nested:["settled"]})'),{nested:['settled']});
+  assert.deepStrictEqual(await app.generateAsync('public',{palette:2}),{ok:true,text:'public',options:{palette:2}});
+  await assert.rejects(app.getAsync('Promise.reject(new Error("actual async failure"))'),/actual async failure/);
+});
+
+test("SVH10 async clicks dispatch every listener before waiting for actual completion without draining timers", async () => {
+  const app=sandbox.boot({html:`<script>
+    window.order=[];window.complete=false;window.timerFired=false;
+    setTimeout(()=>window.timerFired=true,5000);
+    document.getElementById('next').addEventListener('click',()=>new Promise(resolve=>{window.release=()=>{order.push('ack');complete=true;resolve();};order.push('first');}));
+    document.getElementById('next').addEventListener('click',()=>order.push('second'));
+  </script>`});
+  const pending=app.clickAsync(app.els.next,{until:'window.complete'});
+  assert.deepStrictEqual(sandbox.plain(app.get('order')),['first','second'],'listeners dispatch synchronously before the first handler settles');
+  assert.strictEqual(app.get('timerFired'),false);app.run('release()');await pending;
+  assert.deepStrictEqual(sandbox.plain(app.get('order')),['first','second','ack']);assert.strictEqual(app.get('timerFired'),false);
+});
+
+test("SVH11 explicit readiness rejects errors and bounded incomplete state instead of treating microtasks as ready", async () => {
+  const app=sandbox.boot({html:svhHTML});
+  await assert.rejects(app.waitFor('false',{timeout:20}),/readiness.*timed out/i);
+  await assert.rejects(app.waitFor('(()=>{throw new Error("readiness fault")})()'),/readiness fault/);
+  await assert.rejects(app.waitFor('new Promise(()=>{})',{timeout:20}),/readiness.*timed out/i);
+  await assert.rejects(app.waitFor('(()=>{while(true){}})()',{timeout:20}),/timed out/i);
+  await assert.rejects(app.clickAsync(app.els.next),/until/);
+  assert.strictEqual(await app.waitFor('Promise.resolve(true)'),true);
+});
+
+test("SVH12 default boot stays synchronous with isolated storage and no durable capability injection", () => {
+  const seed={literal:'original'};
+  const app=sandbox.boot({html:svhHTML,storage:seed});
+  assert.strictEqual(app.get('marker'),'synchronous');assert.strictEqual(typeof app.then,'undefined');
+  app.run('localStorage.setItem("literal", "changed")');assert.deepStrictEqual(seed,{literal:'original'});
+  assert.strictEqual(sandbox.boot({html:svhHTML,storage:seed}).get('localStorage.getItem("literal")'),'original');
+  assert.strictEqual(app.get('typeof navigator.locks'),'undefined');assert.strictEqual(app.get('typeof crypto'),'undefined');
+});

@@ -73,6 +73,91 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", 
 /** Copy a value out of the vm realm, so assert.deepStrictEqual can compare it. */
 const plain = (v) => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
 
+// Opt-in browser-origin model. Defaults below still boot synchronously with
+// isolated storage and no injected durable APIs. This is deliberately a model,
+// not evidence about real browser partitioning, quotas or crash durability.
+const ORIGINS = new WeakMap();
+function createOrigin(options = {}) {
+  const origin = {};
+  originState(origin, options);
+  return origin;
+}
+function originState(origin, options = {}) {
+  if (!origin || typeof origin !== "object") throw new TypeError("origin must be an explicit object");
+  if (ORIGINS.has(origin)) return ORIGINS.get(origin);
+  const state = { buckets: new Map(), seed: options.storage || {}, events: [], nextClient: 1,
+    writeAttempts: [], successfulWrites: [] };
+  ORIGINS.set(origin, state);
+  origin.events = options.events || "manual";
+  if (!["manual", "auto", "omit"].includes(origin.events)) throw new TypeError("unknown storage event mode");
+  origin.writeAttempts = state.writeAttempts;
+  origin.successfulWrites = state.successfulWrites;
+  origin.flushStorageEvents = ({ limit = Infinity, omit = false } = {}) => {
+    if (!(limit === Infinity || Number.isInteger(limit) && limit >= 0)) throw new TypeError("event limit must be nonnegative");
+    const pending = state.events.splice(0, limit);
+    if (!omit) for (const { recipient, event } of pending) recipient.dispatch(event);
+    return pending.length;
+  };
+  return state;
+}
+function originBucket(state, name, seed) {
+  if (!state.buckets.has(name)) {
+    const store = Object.fromEntries(Object.entries(seed || state.seed).map(([k, v]) => [k, String(v)]));
+    state.buckets.set(name, { store, realms: new Set(), locks: new Map() });
+  }
+  return state.buckets.get(name);
+}
+function locksFor(bucket, clientId, rejection) {
+  const pump = name => queueMicrotask(() => {
+    const queue = bucket.locks.get(name);
+    if (!queue || queue.held || !queue.pending.length) return;
+    const item = queue.pending.shift();
+    queue.held = item;
+    if (item.signal) item.signal.removeEventListener("abort", item.abort);
+    Promise.resolve().then(() => item.callback({ name, mode: "exclusive" })).then(
+      value => { queue.held = null; item.resolve(value); pump(name); },
+      error => { queue.held = null; item.reject(error); pump(name); });
+  });
+  return {
+    request(name, options, callback) {
+      if (typeof options === "function") { callback = options; options = {}; }
+      options = options || {};
+      if (rejection) return Promise.reject(typeof rejection === "function" ? rejection() : rejection);
+      if (typeof callback !== "function") return Promise.reject(new TypeError("lock callback required"));
+      if (options.mode && options.mode !== "exclusive" || options.steal || options.ifAvailable) {
+        return Promise.reject(new TypeError("sandbox models exclusive queued locks only"));
+      }
+      name = String(name);
+      const signal = options.signal;
+      if (signal && signal.aborted) return Promise.reject(signal.reason || Object.assign(new Error("aborted"), { name: "AbortError" }));
+      if (!bucket.locks.has(name)) bucket.locks.set(name, { held: null, pending: [] });
+      const queue = bucket.locks.get(name);
+      return new Promise((resolve, reject) => {
+        const item = { clientId, callback, resolve, reject, signal };
+        item.abort = () => {
+          const index = queue.pending.indexOf(item);
+          if (index < 0) return; // A granted callback/commit cannot be canceled retroactively.
+          queue.pending.splice(index, 1);
+          signal.removeEventListener("abort", item.abort);
+          reject(signal.reason || Object.assign(new Error("aborted"), { name: "AbortError" }));
+          pump(name);
+        };
+        if (signal) signal.addEventListener("abort", item.abort, { once: true });
+        queue.pending.push(item);
+        pump(name);
+      });
+    },
+    async query() {
+      const held = [], pending = [];
+      for (const [name, queue] of bucket.locks) {
+        if (queue.held) held.push({ name, mode: "exclusive", clientId: queue.held.clientId });
+        for (const item of queue.pending) pending.push({ name, mode: "exclusive", clientId: item.clientId });
+      }
+      return { held, pending };
+    },
+  };
+}
+
 function makeElement(id, tag = "div") {
   const attrs = {};
   return {
@@ -236,6 +321,13 @@ function makeLocation(href) {
  *   webdriver      - navigator.webdriver (default true, as under automation)
  *   languages      - navigator.languages (default ["en-US", "en"]); navigator.language is its first entry
  *   html           - boot this markup instead of reading index.html
+ *   origin         - explicit shared handle (createOrigin() or {}), partitioned by URL origin
+ *   locks          - true injects asynchronous exclusive FIFO navigator.locks
+ *   crypto         - explicitly supplied {randomUUID,getRandomValues}; functions may throw/repeat
+ *   abortController/isSecureContext - explicit host AbortController/secure-context surface
+ *   storageAccessError/locksAccessError/cryptoAccessError - throwing API getters
+ *   storageFault   - ({operation,key,value}) => error|null, evaluated before each operation
+ *   locksRequestError - rejects request before acquisition, without invoking its callback
  */
 const JS_TYPES = new Set([
   "text/javascript", "application/javascript", "application/x-javascript", "text/ecmascript",
@@ -332,7 +424,7 @@ function boot(opts = {}) {
   preview.querySelector = (sel) => queryHits(sel)[0] || null;
   /** Deliver an event the way a browser would: to the target, then up the
    *  markup chain, then to the document. Returns the event. */
-  const fire = (el, ev) => {
+  const fire = (el, ev, pending) => {
     ev.target = ev.target || el;
     ev.defaultPrevented = false;
     ev.stopped = false;
@@ -340,9 +432,15 @@ function boot(opts = {}) {
     ev.preventDefault = () => { ev.defaultPrevented = true; if (origPrevent) origPrevent.call(ev); };
     ev.stopPropagation = () => { ev.stopped = true; };
     for (let n = el; n && !ev.stopped; n = n.parentNode || n._markupParent) {
-      for (const fn of n.listeners[ev.type] || []) fn(ev);
+      for (const fn of n.listeners[ev.type] || []) {
+        const result = fn(ev);
+        if (pending && result && typeof result.then === "function") pending.push(Promise.resolve(result));
+      }
     }
-    if (!ev.stopped) for (const fn of sandbox.document._l[ev.type] || []) fn(ev);
+    if (!ev.stopped) for (const fn of sandbox.document._l[ev.type] || []) {
+      const result = fn(ev);
+      if (pending && result && typeof result.then === "function") pending.push(Promise.resolve(result));
+    }
     return ev;
   };
   // Layout boot: #card sits inside a .scene, #scale-sheet has its surface child
@@ -402,7 +500,9 @@ function boot(opts = {}) {
     node.className = "announce";
     markupNodes.push(node);
   }
-  const store = { ...(opts.storage || {}) };
+  const origin = opts.origin ? originState(opts.origin) : null;
+  const bucket = origin ? originBucket(origin, new URL(opts.href || "https://example.test/index.html").origin, opts.storage) : null;
+  const store = bucket ? bucket.store : { ...(opts.storage || {}) };
   const docEl = makeElement("root", "html");
   const headEl = makeElement("head", "head");
 
@@ -582,6 +682,71 @@ function boot(opts = {}) {
     const i = l.indexOf(fn);
     if (i >= 0) l.splice(i, 1);
   };
+  // All injection is explicit: an origin alone shares raw storage/events; locks,
+  // crypto, secure-context and AbortController remain separate capabilities.
+  if (origin) {
+    const clientId = "sandbox-client-" + origin.nextClient++;
+    const recipient = { storage: null, dispatch: event => {
+      for (const fn of [...(winListeners.storage || [])]) fn(event);
+    } };
+    const notify = (key, oldValue, newValue) => {
+      if (opts.origin.events === "omit") return;
+      for (const other of bucket.realms) if (other !== recipient) {
+        origin.events.push({ recipient: other, event: { type: "storage", key, oldValue, newValue,
+          url: location.href, storageArea: other.storage } });
+      }
+      if (opts.origin.events === "auto") setTimeout(() => opts.origin.flushStorageEvents(), 0);
+    };
+    const check = (operation, key, value) => {
+      if (opts.throwOnStorage) throw new Error("denied");
+      const failure = opts.storageFault && opts.storageFault({ operation, key, value });
+      if (failure) throw failure;
+    };
+    const write = (operation, key, value, apply) => {
+      const attempt = { operation, key, value, url: location.href, success: false };
+      origin.writeAttempts.push(attempt);
+      check(operation, key, value);
+      apply();
+      attempt.success = true;
+      origin.successfulWrites.push({ ...attempt });
+    };
+    const storage = {
+      get length() { check("length", null, null); return Object.keys(store).length; },
+      key(index) { check("key", null, null); return Object.keys(store)[index] ?? null; },
+      getItem(key) { key = String(key); check("getItem", key, null); return Object.hasOwn(store, key) ? store[key] : null; },
+      setItem(key, value) {
+        key = String(key); value = String(value);
+        write("setItem", key, value, () => {
+          const oldValue = Object.hasOwn(store, key) ? store[key] : null;
+          Object.defineProperty(store, key, { value, enumerable: true, configurable: true, writable: true });
+          if (oldValue !== value) notify(key, oldValue, value);
+        });
+      },
+      removeItem(key) {
+        key = String(key);
+        write("removeItem", key, null, () => {
+          if (Object.hasOwn(store, key)) { const oldValue = store[key]; delete store[key]; notify(key, oldValue, null); }
+        });
+      },
+      clear() {
+        write("clear", null, null, () => {
+          if (Object.keys(store).length) { for (const key of Object.keys(store)) delete store[key]; notify(null, null, null); }
+        });
+      },
+    };
+    sandbox.localStorage = storage;
+    recipient.storage = storage;
+    bucket.realms.add(recipient);
+    if (opts.locks === true) sandbox.navigator.locks = locksFor(bucket, clientId, opts.locksRequestError);
+  } else if (opts.locks === true) {
+    sandbox.navigator.locks = locksFor({ locks: new Map() }, "isolated-client", opts.locksRequestError);
+  }
+  if (opts.locksAccessError) Object.defineProperty(sandbox.navigator, "locks", {
+    configurable: true, get() { throw opts.locksAccessError; },
+  });
+  if (opts.crypto && !opts.cryptoAccessError) sandbox.crypto = opts.crypto;
+  if (opts.isSecureContext !== undefined) sandbox.isSecureContext = !!opts.isSecureContext;
+  if (opts.abortController === true) sandbox.AbortController = AbortController;
   if (opts.clock) {
     sandbox.Date = class ClockDate extends Date {
       static now() { return CLOCK_BASE + now; }
@@ -591,6 +756,18 @@ function boot(opts = {}) {
   sandbox.window = sandbox;
   sandbox.globalThis = sandbox;
   vm.createContext(sandbox);
+  // Define throwing GLOBAL accessors from inside the context. A throwing host
+  // accessor on the context backing object is treated as a missing identifier
+  // by node:vm; that would falsely turn SecurityError into ReferenceError.
+  if (opts.storageAccessError || opts.cryptoAccessError) {
+    sandbox.__sandboxAccessFaults = { ...(opts.storageAccessError ? { localStorage: opts.storageAccessError } : {}),
+      ...(opts.cryptoAccessError ? { crypto: opts.cryptoAccessError } : {}) };
+    vm.runInContext(`(() => {
+      for (const [property, error] of Object.entries(__sandboxAccessFaults))
+        Object.defineProperty(globalThis, property, { configurable:true, get() { throw error; } });
+      delete globalThis.__sandboxAccessFaults;
+    })()`, sandbox);
+  }
   vm.runInContext(combinedSrc, sandbox, { filename: APP });
 
   /** Move the virtual clock forward, running every timer that falls due on the way. */
@@ -617,10 +794,35 @@ function boot(opts = {}) {
     return timers.size;
   }
 
+  // Await actual returned promises before normalizing cross-realm values.
+  // Readiness uses a bounded host clock, never virtual timer advancement.
+  const getAsync = async (expr, { timeout } = {}) =>
+    plain(await vm.runInContext(expr, sandbox, timeout ? { timeout } : {}));
+  function bounded(promise, timeout) {
+    let timer;
+    return Promise.race([promise, new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error("sandbox readiness timed out")), timeout);
+    })]).finally(() => clearTimeout(timer));
+  }
+  async function waitFor(expression, { timeout = 1000 } = {}) {
+    if (typeof expression !== "string" || !expression) throw new TypeError("readiness expression required");
+    if (!Number.isFinite(timeout) || timeout <= 0) throw new TypeError("readiness timeout must be positive");
+    return bounded((async () => {
+      const deadline = Date.now() + timeout;
+      do {
+        const value = await getAsync(expression, { timeout: Math.max(1, deadline - Date.now()) });
+        if (value) return value;
+        await new Promise(resolve => setTimeout(resolve, 1));
+      } while (Date.now() < deadline);
+      throw new Error("sandbox readiness timed out");
+    })(), timeout);
+  }
+
   return {
     els, store, sandbox, created, head: headEl, location, history, blocks, flushTimers, advance, plate,
     /** Evaluate an expression inside the app's scope. */
     get: (expr) => vm.runInContext(expr, sandbox),
+    getAsync, waitFor,
     run: (stmt) => vm.runInContext(stmt, sandbox),
     faces: () => els.front._html + els.back._html,
     clickChip: (deckName) => {
@@ -646,6 +848,8 @@ function boot(opts = {}) {
       plain(vm.runInContext(
         `generateDeck(${JSON.stringify(String(text))}, ${JSON.stringify(options || {})})`,
         sandbox)),
+    generateAsync: (text, options) => getAsync(
+      `generateDeck(${JSON.stringify(String(text))}, ${JSON.stringify(options || {})})`),
     /** Select a deck by id through the app's own path (built-in or generated). */
     select: (id) => vm.runInContext(`selectDeck(${JSON.stringify(String(id))})`, sandbox),
     /** The id of the deck currently on screen. */
@@ -683,6 +887,12 @@ function boot(opts = {}) {
       ? focusState.active.getAttribute("data-field") : null),
     /** Deliver a click or a key to an element, bubbling like a browser. */
     click: (el, init = {}) => fire(el, { type: "click", ...init }),
+    clickAsync: async (el, { until, timeout = 1000, ...init } = {}) => {
+      if (typeof until !== "string" || !until) throw new TypeError("clickAsync requires explicit until readiness expression");
+      const pending = [];
+      fire(el, { type: "click", ...init }, pending);
+      return bounded(Promise.all(pending).then(() => waitFor(until, { timeout })), timeout);
+    },
     press: (el, key, init = {}) => fire(el, { type: "keydown", key, shiftKey: false, ...init }),
     /** A pointer event. Once the plate has captured the pointer the event goes
      *  to the plate, as a browser would deliver it; `el` is where it would have
@@ -721,4 +931,4 @@ function boot(opts = {}) {
   };
 }
 
-module.exports = { boot, plain, ELEMENT_IDS, APP };
+module.exports = { boot, plain, ELEMENT_IDS, APP, createOrigin };
