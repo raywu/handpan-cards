@@ -1,5 +1,5 @@
 # kills: SHC U8: hidden and refused LINK consume stale UI without replay and analytics stay nonsecret
-# suite: node --test --test-reporter=tap --test-name-pattern='SHC U8:' tests/app.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SHC.U8: tests/app.test.js
 # Successful LINK analytics include the captured URL outside the allowlist.
 diff --git a/index.html b/index.html
 --- a/index.html

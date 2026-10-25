@@ -1,5 +1,5 @@
 # kills: SHC E1: saved fine nudge keeps B fallback after A rejects and opens B in a fresh profile
-# suite: node --test --test-reporter=tap --test-name-pattern='SHC E1:' tests/e2e.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SHC.E1: tests/e2e.test.js
 # Old A may overwrite the manual URL after saved B has completed.
 diff --git a/index.html b/index.html
 --- a/index.html

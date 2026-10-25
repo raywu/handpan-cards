@@ -1,5 +1,5 @@
 # kills: SHC U3: Add Edit About and mobile settings retire LINK through open and cancel
-# suite: node --test --test-reporter=tap --test-name-pattern='SHC U3:' tests/app.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SHC.U3: tests/app.test.js
 # An open sheet incorrectly authorizes completion from an old LINK.
 diff --git a/index.html b/index.html
 --- a/index.html

@@ -1,5 +1,5 @@
 # kills: SHC U6: blur Escape and panel dismissal stay closed and a new LINK still works
-# suite: node --test --test-reporter=tap --test-name-pattern='SHC U6:' tests/app.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SHC.U6: tests/app.test.js
 # Blurring the revealed manual URL no longer dismisses it.
 diff --git a/index.html b/index.html
 --- a/index.html

@@ -11,19 +11,23 @@ registry, durable record and bar stay correct. Controlled API promises; no owner
 clipboard/profile or Safari/native-picker validation. Finalized [prompt](prompts/2026-10-25-share-customization-hotfix.md) and
 [coordination](plans/2026-10-25-share-customization-hotfix-coordination.md) define
 independent lanes, evidence and review gates. Generated [plan](plans/2026-10-25-share-customization-hotfix.md)
-V2 edcd2a23 independently ENG/design-rechecked CLEAR; separate T/A lanes are active
-in sibling tests/ and app/ trees from root ebe5d302. Root integrates no app repair
-before reviewed tests demonstrate intended baseline RED. No hotfix PR/DEV yet.
+V2 edcd2a23 independently ENG/design-rechecked CLEAR; separate T/A/M lanes completed.
+Root integrated only after8unit+2native intended baseline RED. Main CI [581](https://github.com/raywu/handpan-cards/pull/581)
+is DRAFT/HELD; DEV [582](https://github.com/raywu/handpan-cards/pull/582) remains UNMERGED.
 
 Root branch codex/share-customization-hotfix-20261025, host-local /private/tmp/handpan-share-hotfix.urAbvO/integration;
 base DEV667bbf8b (live ref rechecked). Prompt1489e53d independently critiqued/rechecked
 clear. Reviewed plan V2 edcd2a23 specifies minimal asynchronous ownership guards,
 spec-first separate T/A/M lanes, generated mutants/fullCI/actual DEV checks. Next
 preserve current source/evidence for final exact-head review/CI and actual DEV.
-All8unit+2native intended RED→GREEN, full app881 and codec105 pass. Thirty-one
-targeted clean/fault pairs independently audited clear (10new,20legacyrefresh,
-unchanged SI fixture oracle); no wrong-reason kills/skips/cancels/timeouts. App
-source5628f31d; proof2a1be980. Final CI/DEV pending. Main and CLAUDE changes require
+All8unit+2native intended RED→GREEN, full app881 and codec105 pass. First fullCI
+40239404703 FAILED mutation verification at9e47e06a; actual app881/browser480 passed.
+Ten quoted mutation headers did not follow the real runner's word-splitting, and
+two legacy hide faults became redundant. Corrected patches retain all app/tests/
+harness standards; full local mutation_harness54 passes. Faithful word-split
+re-proof33 named assertion kills/32 clean commands plus actual unit/native runner
+partitions pass at22bdcbd8. App source5628f31d unchanged. Renewed exact-head review,
+fullCI and actual DEV still required. Main and CLAUDE changes require
 explicit owner consent. No original omitted-angle/variants resolution claimed.
 Same-inventory import replacement is verified existing behavior, separate from
 URL mismatch; no identity redesign automatically authorized. Private links/photo/
@@ -40,8 +44,8 @@ approval limits. Three independent research lanes complete; generated
 [plan](plans/2026-10-25-saved-scale-variants.md) V2 SHA9a96ed6d and concrete
 [instruction approval packet](plans/2026-10-25-saved-variants-instruction-approval.md)
 SHA5d0700f7 independently ENG/design-rechecked CLEAR. Planning only; owner contract/
-fallback/exact CLAUDE approval and implementation remain held. Next reconcile SHC
-corrected92d6516b/actual accepted DEV, publish/interview/await required approvals;
+fallback/exact CLAUDE approval and implementation remain held. Corrected SHC
+92d6516b is integrated here; actual accepted DEV remains a gate. Publish/interview/await required approvals;
 no variants code or storage migration. SHC CI581/DEV582 remains separate.
 
 Owner confirms separate tabs and inability to retain two differently named/layout
@@ -53,9 +57,10 @@ selected variant, unchanged-link reopening deduplicates. Design interview pendin
 no identity/storage migration or variants implementation authorized by the narrow
 async hotfix plan. Independent source/UX findings retained in the
 [investigation checkpoint](plans/2026-10-25-saved-scale-variants-investigation.md).
-Create a separate reviewed plan and migration/compatibility acceptance before code;
+The separate reviewed plan exists; migration/compatibility acceptance is required before code;
 do not conflate this user-facing limitation with the fixed async completion bug.
-Current async repair is not yet tested/delivered; no claim either issue is fixed.
+Async app/browser regressions and targeted proof pass; renewed full CI/DEV remain
+pending. Neither the original omitted-angle report nor variant support is delivered.
 
 SPS is deferred for this hotfix priority, not discarded. Source/proofadc80b12 has
 completed59 driver-reported assertion pairs; aggregate/raw independent review,

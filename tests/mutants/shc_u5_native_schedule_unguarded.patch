@@ -1,5 +1,5 @@
 # kills: SHC U5: native branches keep captured URLs and never start fallback after retirement
-# suite: node --test --test-reporter=tap --test-name-pattern='SHC U5:' tests/app.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SHC.U5: tests/app.test.js
 # Native share starts after ownership retires between rejection and scheduling.
 diff --git a/index.html b/index.html
 --- a/index.html

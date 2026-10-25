@@ -203,3 +203,50 @@ completion and answered separate-tabs fact in docs; technical V2 acceptance
 contract unchanged. Exact final docs-head rechecks next, then main-target DRAFT/
 HELD fullCI PR and same-head DEV PR; no main merge permission. No hotfix PR exists
 at this checkpoint; don't infer a CI/deployment success from local evidence.
+
+## Full CI failure, protocol correction and faithful re-proof
+
+Created main581 DRAFT/HELD and same-head DEV582 at9e47e06a. FullCI40239404703
+FAILED: app881/e2e480 and other application/codec suites passed, but mutation-
+harness selector lint failed and12 of1510 faults survived (1498killed). Root
+downloaded all6 artifacts and failed logs; exact verdict audit retained privately.
+No DEV merge occurred. Initial custom shlex proof was not faithful to actual
+mutation_check.sh's intentional unquoted word-split header contract. Root and
+reviewers missed that boundary; do not treat initial31 proof as CI-protocol parity.
+
+M correctiond401f7e7 integratedroot22bdcbd8: ten new headers use canonical unquoted
+space-free regex words; app/test/harness/floors unchanged. Two existing create/
+Edit hide faults now remove both explicit and new centralized hide paths while
+retaining generation retirement. Generated git diff, original kill/suite intent
+preserved. Full mutation_harness54/54 now green; no assertion weakened.
+
+Driver V3SHA6b72ea9ff8f8fd4e2db66381c9c9a1d77213a0791af9552eedde46f2fdf92450
+uses literal header.split and rejects any shlex difference. Independently ENG
+rechecked with33manifestSHA800e3426e3fbe79f04d68f8d34e5341e01adb1f78531b7b2ad86de86de2434cc.
+Proof-final fast-forwarded clean to22bdcbd8, no reset/discard. shc-proof-a1 completed
+exit0:33 intended assertion kills/32 exact clean PASS commands, each1selected;
+10new,22legacyrefresh,1unchanged oracle. Zero skips/cancels/timeouts/wrong-reason
+errors/stderr; full resource censuses unchanged and source restored. ProofSHA
+6cb58d0e1c2c012862e9eb1a9582887b1ee0c834ef39a9027c25a8d4bff4457e.
+
+Root additionally ran the ACTUAL unchanged mutation_check.sh: full partition
+911/1510 (U1only) killed1/1 under60s outer bound; full223/1510 (E1+safe VM DEV
+predicate counterpart) killed2/2 under180s. Entire corpus retained, no filtering/
+deletion; reported members exactly match frozen partition lists, no skipped or
+bad verdict. Actual script hides intentional failure details, so named assertion
+intent comes from V3 raw proof, not killed totals alone. Both actual jobs exit0/
+cleanup, original Chrome680/seven profiles preserved. Targeted partitions are
+not a full corpus run; full exact-head CI rerun remains mandatory.
+
+Owner later confirms diagram still showed custom positions at fresh LINK time;
+retain as unresolved reported mismatch. Separate-tabs/Add replacement is explained
+by inventory dedup; new variants planning branch is separate and implementation
+held. No speculative URL-only or identity repair included here. Next renewed
+final exact-head source/docs reviews, push corrected CI head, inspect ALL required
+CI jobs/artifacts/verdicts, then merge DEV582 and validate actual served documents.
+
+Private actual DEV runner c4e73cfa12d87d1dd1039257c93998e18cfa72bc68bd1f1700029331a5a71c0e
+independently ENG-reviewed, not executed. It preserves both exact SHC journeys and
+binds8actual loaded DEV documents by CDP request/frame/loader/body SHA, no separate
+fetch substitute. Must wait CI success, DEV merge and served byte identity, then
+owned lease/180s supervisor/census and exact2TAP passes; no owner clipboard/profile.

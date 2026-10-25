@@ -4,6 +4,8 @@
 Technical V2 plan edcd2a23 was independently ENG/design-rechecked clear before code;
 see coordination for immutable review/execution receipts and proof limits.
 Owner authorizes a sound reviewed hotfix through DEV.
+First full CI failed mutation protocol checks despite passing app/browser suites;
+corrected headers/legacy faults are being revalidated. DEV582 remains unmerged.
 Main release and any exact CLAUDE.md change require separate explicit consent.
 DUPLICATE-NOTES implementation remains held; SPS is preserved and deferred.
 
