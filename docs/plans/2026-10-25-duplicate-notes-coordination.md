@@ -1,5 +1,39 @@
 # DUPLICATE-NOTES coordination
 
+## Cycle state — current before historical snapshots
+
+Research and independent plan review are complete. Final plan SHA256
+585fa248cb1271d271b4c0a47ba89df0345c9fc42f73b51460e7ca2352f5db7c cleared fresh
+non-author ENG and design rechecks. No feature implementation or regression success
+is claimed. Next root publishes final docs/ledger through independent delivery
+review/fullCI/DEV verification, then this planning stream awaits separate feature
+implementation approval and unresolved behavioral/protocol/performance choices.
+
+| Independent review | Initial finding / revision | Exact final recheck |
+|---|---|---|
+| duplicate_plan_eng_audit | Zero-card parse-valid controls must retain musical refusal before registry/storage/selection mutation; split lower-ID tone tie from highest-ID bottom-only HOME tie; freeze numeric performance thresholds/protocol before implementation. | All3 addressed, no remaining material ENG omission at585fa248. Read-only source review; no tests executed. |
+| duplicate_plan_design_audit | Count-only summary must expose complete duplicate relationships, not rely on position labels; select bounded accessible grouped detail before UI implementation. | Addressed; no remaining material design finding at585fa248. No browser/AT execution. |
+
+Three independent research contexts completed in separate owned worktrees. Root
+retained core744feb3b and UX7dfd2127; engine note SHA256
+4db7cfb6980f0b6497ef0086e288e402f565480f460dacf9b596e9d95e8e7b85 is byte-exact
+from its author. Initial plan SHA256
+81655b49dcc84dc2cf28128faab737cd4b1c3a8c4c7513841546d69184bcd1e7 received the
+findings above; final plan retains source-backed fixes. Prompt V2 remains frozen.
+Pending interview defaults are recommendations, not owner answers.
+
+| Lane | Actual host-local tree / branch | Completed artifact / boundary |
+|---|---|---|
+| Core/identity | /private/tmp/handpan-duplicate-notes-qgvz59ns/core; codex/duplicate-notes-core-research-20261025 | core research original2837b001, retained744feb3b |
+| Engine/layout | /private/tmp/handpan-duplicate-notes-qgvz59ns/engine; codex/duplicate-notes-engine-research-20261025 | engine note exact SHA above; root retains/publishes it |
+| UX/warnings | /private/tmp/handpan-duplicate-notes-qgvz59ns/ux; codex/duplicate-notes-ux-research-20261025 | UX originalee76d89a, retained7dfd2127 |
+| Independent review | duplicate_plan_eng_audit / duplicate_plan_design_audit; report-only contexts | Exact first-plan review; no code/browser/remote writes |
+
+Ownership must be rechecked before takeover. Temporary diagnostics are not portable
+proof; source notes and named retained refs are the recovery evidence. All streams
+are indexed in [shared ledger](../WORKSTREAMS.md); remote DEV is canonical only
+once the normal publication gate completes. Original snapshots below are history.
+
 ## Goal
 
 Produce an independently reviewed, source-backed plan to permit repeated physical
@@ -85,3 +119,16 @@ Independent reviewer duplicate_prompt_review cleared exact V2 after recheck with
 no remaining material prompt omissions. Near10/10 is an objective coverage/review
 target, no numeric quality score or no-regression guarantee. Next assign isolated
 research worktrees at this frozen source; owner interview remains pending.
+
+## Pending decisions — current interview and implementation entry gate
+
+Initial question2 mixed diagram highlighting and voicing alternatives; it was
+explicitly replaced after source inspection. Preserve the settled distinction:
+diagrams already highlight all matching fields, written voicings select one perPC.
+The current pending questions are all-zone/equal-Ding scope, current voicing versus
+alternate-fingering feature, nonblocking no-ack warning, and warning coverage only
+newly admitted cases versus all repeats. Recommendations in the plan are not owner
+answers. Grouped-detail presentation, exact protocol/old-writer recovery contract
+and numeric performance thresholds are mandatory StageA decisions after scoped
+implementation approval. Existing cross-shell unisons/grammar/inference and
+English note input remain protected. Nothing in ledger publication grants code.

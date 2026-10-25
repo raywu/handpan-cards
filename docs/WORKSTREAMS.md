@@ -1,5 +1,33 @@
 # Shared workstream ledger
 
+## 2026-10-25 all-workstream recovery checkpoint
+
+Newest checkpoint: remote DEV independently read at
+`ac97a9d60edadc73b8766ec3f514de909eeb05cf`, main at
+`96c4c589cec0950723b3b5323dc1df5bbc359329` on2026-10-25. This table supersedes
+older status prose below; keep the historical evidence. This feature copy becomes
+canonical only through reviewed DEV publication. Resolve live refs before resuming.
+Root is integrator on ray-Mac. Each stream retains its own authority; AFK is not a
+new scope, main-release or CLAUDE.md edit grant.
+
+| Stream | Current state / evidence | Continuation / authority |
+|---|---|---|
+| DUPLICATE-NOTES | Three isolated research lanes complete; revised plan independently ENG/design-cleared at585fa248. [Plan](plans/2026-10-25-duplicate-notes.md), [coordination](plans/2026-10-25-duplicate-notes-coordination.md), detailed checkpoint below. | Publish independently cleared plan through fullCI/DEV gates. Owner scope/warning/voicing interviews pending; recommendations provisional. Planning only, no duplicate-note feature edits. |
+| SPS / Scale↔Layout swipe | Active authorized implementation. Root branch `codex/sheet-tab-swipe-20261025` last pushed `0db6c02275e695537ccf8ec5461d70bc3aea2ad2`; host-local `/private/tmp/handpan-sps-z8gaznu2/integration`. [Retained plan](https://github.com/raywu/handpan-cards/blob/0db6c02275e695537ccf8ec5461d70bc3aea2ad2/docs/plans/2026-10-25-sheet-tab-swipe.md), [fixture amendment](https://github.com/raywu/handpan-cards/blob/0db6c02275e695537ccf8ec5461d70bc3aea2ad2/docs/plans/2026-10-25-sheet-tab-swipe-fixtures.md), [coordination](https://github.com/raywu/handpan-cards/blob/0db6c02275e695537ccf8ec5461d70bc3aea2ad2/docs/plans/2026-10-25-sheet-tab-swipe-coordination.md). | Primary2 TDD and bounded native route/tap/scroll/quiet/focus checks passed on prototype index97e498b9. New zoom guard has3unit+1native assertion-RED before code; A's minimal guard commit `792f15b566e345a09e9d2a38ba2b174286d5a4bd` is local, NOT yet integrated/green. Next integrate that exact guard, require same40unit/5native plus helper/default regressions, generated mutants/8preserved context refreshes, final review/fullCI/DEV. Physical Safari/keyboard/edge/selection/zoom QA remains. No SPS PR/CI/DEV success yet. |
+| Latest-per-ring feedback | Complete through DEV576 `bccff5a2b9ffd88f772517740cbab3ea66a50fbb`; source `a90fce8c19887e44e6bbaf38741b97553b795026`. [Plan](plans/2026-10-25-layout-feedback.md), [final evidence/recovery](https://github.com/raywu/handpan-cards/pull/575#issuecomment-6401041842). Root tree `/private/tmp/handpan-feedback.ha43y5cy/integration`, branch `codex/layout-feedback-20261025`. | FullCI40216007898 and actual DEV verification complete. Earlier A0 registration error invalidated/retained; corrected A1 clean. Main575 HELD; do not redo delivered implementation or treat old pending prose as current. |
+| MAC-M1 repair | Complete through DEV574 `f5df7942d097167013a3bf2baf05a6497ac73613`; source `217609075a14e6ca4799497210af27d9df842c5e`. [Plan](plans/2026-10-24-mac-browser-repair.md), [final receipt](https://github.com/raywu/handpan-cards/pull/573#issuecomment-6400445041). Root tree `/private/tmp/handpan-mac-repair.c94d3kno/integration`, branch `codex/mac-foreground-20261025`. | FullCI40209344599 and DEV bytes/print verified. Main573 HELD. Narrow opt-in foreground settle only; full Mac/M2/M3/C1 remain unverified/separate, not silently repaired. |
+| SEO → SEO-LONGTAIL | Reviewed subplan delivered through DEV578 `ac97a9d60edadc73b8766ec3f514de909eeb05cf`; source `1c5344e05c4cf3dcc66f12bd61c1b6665e10303d`. [Subplan](plans/2026-10-25-seo-longtail-content.md), [coordination](plans/2026-10-25-seo-longtail-coordination.md), [delivery receipt](https://github.com/raywu/handpan-cards/pull/577#issuecomment-6401147051). Root tree `/private/tmp/handpan-seo-longtail.rpqmbt6_/planning`, branch `codex/seo-longtail-plan-20261025`. | FullCI40216920481 and served docs/noindex verified. Main577 HELD. Interview audience/scales, music reviewer, publishing home, budget and measurement; no content/generator/provider implementation or publishing authority. Broader SEO research remains separately queued. |
+| DRY-LOCAL / BROWSER-RUNBOOK / released UI | Bounded reference/ledger batch released main570 at96c4c589 and synchronized via572; original runbook and Naturalness/HTC/i18n releases complete. [Release history](#rel-20261024--completed-release-and-settled-owner-decisions). Owner reported released UI verified/all good, exact device coverage unspecified. | Preserve Claude behavior and existing instructions. Global skill/runtime parity is not established by documentation. Do not rerun or reinstall. Further CLAUDE.md changes require explicit exact-diff approval. |
+| NITS → OF-D / I18N-D / Q9 / CLEANUP | Relevance audit and recovered inventory retained; historical candidates are not current implementation grants. [Audit](plans/2026-10-25-plan-relevance-audit.md), [deep search](plans/2026-10-25-outstanding-plan-deep-search.md), [backlog](plans/2026-10-24-continuity-backlog.md). Feedback finding now delivered separately. | Revalidate remaining candidates and authorization; retain NITS→OF-D sequencing. No cleanup/discard/unlock/agent-rule edit. Owner-stopped Audio/stats/SM2/PWA scopes remain stopped. |
+| Future robustness/code/test audit | [Explicit queued task](plans/2026-10-25-future-codebase-audit.md). | Start its prompt→swarm plan→independent ENG/design review only after other outstanding work is resolved; excludes itself from queue-empty check. No dead-code/test deletion or audit execution now. |
+
+Recovery: plans, refs, last/next and approval limits above are portable; temporary
+paths and raw evidence are host-local. A new agent must inspect live branch heads,
+CI/review/reporting and ownership before writes. Missing refs/evidence are blockers,
+not completed checks. Never reset the original dirty/locked checkout. Publish
+meaningful checkpoints, not just creation/final PRs, through normal review/CI/DEV
+gates and the authorized [shared reporting thread](https://github.com/raywu/handpan-cards/pull/571).
+
 ## 2026-10-25 feedback then swipe — owner-approved continuation
 
 This later checkpoint supersedes older planning-only/app-unapproved labels below
@@ -144,28 +172,36 @@ are an index, not activated skills or changed Claude lifecycle requirements.
 
 ## 2026-10-25 DUPLICATE-NOTES planning checkpoint
 
-Owner requested a high-quality research prompt and reviewed plan to allow repeated
-notes anywhere with a warning rather than duplicate-based refusal. The screenshot
-shows repeated bottom E4. This is **planning only**, no parser/engine/app/record/
-share changes or raw-photo publication. Scope/voicing/warning interview is pending.
+Owner requested a research prompt and independently reviewed plan to permit repeated
+physical notes with nonblocking warnings, plus explicit all-workstream ledger coverage.
+This is **planning only**: no parser/engine/app/record/share edits or raw-photo
+publication. Pending interviews are not answered by AFK; no feature implementation.
 
-- **Owner/ref/worktree:** root, codex/duplicate-notes-plan-20261025;
-  /private/tmp/handpan-duplicate-notes-qgvz59ns/planning; baseDEVac97a9d6.
-- **Artifacts:** [prompt](prompts/2026-10-25-duplicate-notes-plan.md),
-  [coordination](plans/2026-10-25-duplicate-notes-coordination.md). Final plan not
-  generated yet; do not infer a completed research/review or implementation grant.
-- **Last/next:** private image inspected and current duplicate validators located;
-  V2 prompt independently critiqued, revised and cleared at SHA256
-  be2677f0f32e23a1ae4ccda2ad3c07c711eed7c24e938b41c063dcc192dec3cb. Assign isolated
-  core/identity, engine/layout and UX research lanes; synthesize and independently
-  engineering/design-review before proposing implementation. Preserve all physical
-  occurrences, unrelated validation, old valid instruments and version/rollback data.
-- **Parallel streams:** SEO-LONGTAIL reviewed/delivered through DEV578ac97;
-  feedback through DEV576bcc and Mac through DEV574f5 are complete. Their main
-  PRs577/575/573 remain held. SPS remains authorized active work in separate
-  codex/sheet-tab-swipe-20261025; resolve that ref and live reporting checkpoint
-  for current code/test/zoom-review gates. No duplicate-note implementation follows
-  from the SPS app grant. Future general audit remains queue-empty gated.
+- **Owner/ref/worktree:** root on ray-Mac, `codex/duplicate-notes-plan-20261025`;
+  `/private/tmp/handpan-duplicate-notes-qgvz59ns/planning`; baseDEVac97a9d6.
+- **Artifacts:** [plan](plans/2026-10-25-duplicate-notes.md),
+  [prompt](prompts/2026-10-25-duplicate-notes-plan.md),
+  [coordination and owned research trees](plans/2026-10-25-duplicate-notes-coordination.md).
+  Three research notes linked from the plan preserve independent sources.
+- **Last confirmed:** prompt V2 independently critiqued/rechecked, frozen SHA256
+  `be2677f0f32e23a1ae4ccda2ad3c07c711eed7c24e938b41c063dcc192dec3cb` at2f01c3ac.
+  Core research retained744feb3b, UX7dfd2127; engine note independently produced
+  SHA2564db7cfb6980f0b6497ef0086e288e402f565480f460dacf9b596e9d95e8e7b85.
+  Final plan SHA256585fa248cb1271d271b4c0a47ba89df0345c9fc42f73b51460e7ca2352f5db7c
+  cleared fresh independent ENG/design rechecks after4material findings were fixed;
+  review receipts and initial-plan hash are retained in coordination.
+- **Material findings:** deleting duplicate refusals alone is unsafe: typed-field
+  occurrence mapping can reuse an ID; existing share writers can encode seeds old
+  readers reject; older writers/reset/dedup require a recovery matrix. Current
+  all-position diagram highlighting differs from one-field-per-pitch-class written
+  voicings and must be preserved. New warning fit/priority/accessibility and legacy
+  valid formats require explicit independent acceptance tests.
+- **Next:** publish independently reviewed docs/ledger; reconcile pending scope,
+  voicing, warning/no-confirmation and warning-coverage interviews; publish reviewed
+  docs/ledger through fullCI/DEV. Stop this planning stream awaiting separately
+  scoped implementation approval. No no-regression or operational parity claim.
+- **Parallel/recovery:** use the current top table, not historical pending statuses.
+  Each stream's live ref and own permission gate governs continuation.
 
 ## 2026-10-25 SEO-LONGTAIL planning checkpoint
 
