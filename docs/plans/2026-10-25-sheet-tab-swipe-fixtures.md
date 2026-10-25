@@ -92,6 +92,30 @@ consent; exact CLAUDE documentation proposal remains separately approval-gated.
 Unknown resource/file ownership or incompatible fixture/event semantics stops
 dependent edits; preserve failures/source and continue unblocked investigation.
 
+## Source-backed native-scroll and quiet clarifications
+
+Read-only A preflight found .sheetsurf is the outer native-scroll backstop on tiny/
+degenerate viewports. A body-origin gesture is also sticky-cancelled when this
+active outer scroll container moves more than8px from its start at any point,
+including out-and-back before another touch sample. Use the existing same8px
+scroll tolerance, not a new threshold. This is conservative native-scroll
+preservation, not recognition outside .sheetbody. Unit and actual DOM coverage
+must include this case; native scrolling itself must remain usable.
+
+Current lipQuiet() can overwrite a longer quiet deadline on viewport resize/
+scroll. The original never-shorten220ms contract must survive these public events:
+max-extend existing deadlines instead of resetting them shorter; retain all old
+quiet/lip regressions. Do not introduce timers or change any gesture constant.
+Test via resize/scroll followed by actual fresh touch and scroll before the end
+of the window, with appropriate virtual-clock unit boundaries and real-browser
+corroboration; reading a private deadline alone is not the oracle.
+
+For deterministic edge tests, eligible start x is24 through innerWidth−24 inclusive;
+points closer to either viewport edge are excluded. This states the existing24px
+margin concretely; do not infer iOS back-navigation quality from synthetic events.
+These clarifications require independent ENG/design recheck before feature tests/
+app implementation, without reopening settled scope or historical baseline QA.
+
 ## Coordination and current state
 
 Root owns branch codex/sheet-tab-swipe-20261025 in the integration path above,

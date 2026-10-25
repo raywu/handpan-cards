@@ -25,7 +25,7 @@ feedback independently delivered atbccff5a2, completing that prerequisite.
 [Original approved swipe contract](2026-10-25-sheet-tab-swipe.md), body at21760907
 SHA2564f133ae01efc9f99add6fd62e6a7089c382a43521b77ab0dae7a447553e3c57c.
 [Bounded fixture amendment](2026-10-25-sheet-tab-swipe-fixtures.md), final
-SHA2566bb31bdd0c8da757eb583a644ebcd0a2a7116dbaf0ca4a090e47548308fe7189.
+SHA2564378e805bb48a237ce3a6ef924d1c1b9c47fee7dcdd50dc2bd75dfc5f244ad3b.
 Fresh engineering/design reviews independently cleared that exact amendment.
 ENG finding added helper-red→minimalfixture-green/defaultregression→feature-red→
 app edit gates; design contract unchanged. No helper/app implementation yet.
@@ -89,3 +89,28 @@ Resolve current remote DEV ledger and live advertised branch/PR/head/reviews bef
 continuation; local paths are host-specific. Root public reporting thread is571;
 feedback final delivery proof is575#issuecomment-6401041842. Preserve dirty/locked
 original trees. Unknown ownership stops dependent writes, never reset/unlock/kill.
+
+## Fixture gate and bounded source clarification
+
+Helper oracle commit9d693981 was executed before helper implementation:5selected,
+4 expected assertion failures and1 compatibility pass,0skip/cancel/startup errors.
+Minimal26line opt-in fixture commit48ab06fc then passed the unchanged5oracles and
+all873default app tests,0fail/skip/cancel/raw errors. Application bytes unchanged.
+Root receipts are under sibling evidence/, helper-oracle-red-verified.json and
+fixture-green-default-verified.json; root owns execution and oracle acceptance.
+
+A's read-only preflight found outer .sheetsurf scrolling and viewport events that
+could shorten quietUntil. Revised amendment SHA256
+4378e805bb48a237ce3a6ef924d1c1b9c47fee7dcdd50dc2bd75dfc5f244ad3b adds
+same8px outer-scroll sticky cancellation, public-event never-shortened220ms proof
+and inclusive24px edge boundary. Fresh ENG/design rechecks both cleared this exact
+revision; original constants/recognition surface/nativeQA/main/CLAUDE gates intact.
+Next T authors/freeze primary feature pair only; root executes expected assertion-
+red on unchanged app, then A may implement while T expands independent SPS1–8 tests.
+
+Parallel SEO documentation delivery is complete on DEV578 ac97a9d6; immutableplan,
+research and tracking are available in the shared DEV ledger. It adds only7docs
+and preserves feedback app/engine/data, source reviewed/CI/actual bytes verified.
+SEO content/app/provider implementation remains unapproved. Current SPS branch
+starts from earlier verified feedbackDEVbcc; preserve later SEO records on DEV
+integration, and resolve current refs rather than treating this snapshot as tip.
