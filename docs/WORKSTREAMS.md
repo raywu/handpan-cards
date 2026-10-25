@@ -1,5 +1,48 @@
 # Shared workstream ledger
 
+## 2026-10-25 Mac repair execution checkpoint
+
+This newer checkpoint supplements the historical bootstrap snapshot below.
+PR570 is released at main96c4c589cec0950723b3b5323dc1df5bbc359329;
+sync572 delivered DEVc79af08c90750d350e70344c0835303c3f6bb822. There are no pending
+merges for that batch. Resolve current remote refs and this branch's live PRs
+before proceeding; a local feature snapshot is not canonical DEV.
+
+- **MAC-M1 owner/authority:** root on ray-Mac. Owner explicitly authorized narrow
+  contract reviews, separate TDD/helper lanes, independent review, full Linux CI
+  and DEV validation. No app, CLAUDE.md, global setting or main change; larger
+  full-Mac collection budget still requires a separate decision.
+- **Current plan:** [Mac repair](plans/2026-10-24-mac-browser-repair.md), dated
+  execution amendment; preimplementation reviewed amendment SHA256
+  b7383d1e6c4f3010659a4ff9e4df17f9c59d7dbfe67467d28c647300477fe9b6.
+  The current live plan file may later add factual execution receipts; retain the
+  reviewed source as a commit before implementation rather than imply stable hash.
+- **Worktree:** /private/tmp/handpan-mac-repair.c94d3kno/integration, branch
+  codex/mac-foreground-20261025, base96c4c589. Evidence is sibling evidence/;
+  original dirty/locked trees untouched. Host-local paths are not takeover grants.
+- **Last completed:** bounded P1 current-source baseline/passive red, after-launch
+  activation insufficient, before-settle activation pass, passive reversal red.
+  Exactly1 executed each,0 required skips/cancels. Independent evidence review
+  cleared narrow mitigation inference, with cleanup/sampling qualifications.
+  [Published P1 receipt](https://github.com/raywu/handpan-cards/pull/571#issuecomment-6398951284).
+- **Next:** finalize engineering/design clearance of the exact opt-in contract,
+  record separate T/H worktrees, demonstrate meaningful controlled-oracle red
+  against unchanged helper, then implement minimal foregroundSettle policy.
+  No repair/runtime/full-Mac readiness has been established at this checkpoint.
+- **Scope/risks:** explicit interactive instance policy prepares only settle's
+  first real frame, every call. Neutral helpers/deferred capture remain unchanged;
+  M2/M3/C1 and arbitrary/drawer rAF paths remain separate. Final review, generated
+  mutants, exact-head Linux CI and actual DEV validation remain required. Main is
+  held until repair-specific owner consent. Unknown ownership/conflict or bad
+  diagnostic oracle stops dependent writes, never triggers reset/unlock.
+- **Parallel NITS investigation:** source audit completed read-only at96c4c589.
+  Single pendingDerive string can overwrite an earlier ring's feedback, but
+  current-state-summary versus event-history UX is not settled. NEXT/keyboard
+  routing is wired; some lifecycle tests use weak or synthetic oracles. Plain
+  slide flashing without renumbering conflicts with accepted existing behavior.
+  No app fix is authorized by the Mac scope; next is a separate reviewed plan
+  and discriminating reproduction. Keep NITS→OF-D order; other backlog remains.
+
 **Authority:** this file is the canonical locator only when read at a freshly
 resolved remote `dev` commit in `raywu/handpan-cards`. Main, feature branches and
 local copies are snapshots. The publication revision is that external DEV commit;
