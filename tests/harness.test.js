@@ -215,6 +215,13 @@ if (!BROWSER) {
 
 function run() {
   test("FG-10 opted-in native settle advances only its target after repeated hiding", async () => {
+    const neutral = await launch();
+    try {
+      assert.strictEqual(neutral.foregroundSettle, false,
+        "omitting the launch option must preserve a neutral instance policy");
+    } finally {
+      await neutral.close();
+    }
     const b = await launch({ foregroundSettle: true });
     const firstSession = b.sessionId;
     const page = (name) => "data:text/html," + encodeURIComponent(
