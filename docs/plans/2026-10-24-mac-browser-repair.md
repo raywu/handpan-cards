@@ -94,12 +94,13 @@ do not isolate the visibility-changing operation; extra-RPC timing is a confound
   affected journeys; helper-only delivery is not a new app feature. Report any
   unapproved full-Mac gate as incomplete rather than full-host readiness.
 
-### Ownership and recovery checkpoint
+### Preimplementation ownership checkpoint (retained at a0a26eac)
 
 Root integration worktree `/private/tmp/handpan-mac-repair.c94d3kno/integration`,
 branch `codex/mac-foreground-20261025`, base96c4c589; host ray-Mac. Private artifacts
 are under sibling evidence/. Original dirty/locked worktrees are untouched.
-At this checkpoint only the plan is edited. Next: independent contract review,
+At that historical checkpoint only the plan was edited. The next action then was
+independent contract review,
 then allocate T/H worktrees, preserve TDD red receipt and integrate bounded source.
 On lost ownership, dirty conflict, unavailable dependency or failed oracle, stop
 dependent writes and preserve evidence; no reset/unlock or unknown-process cleanup.

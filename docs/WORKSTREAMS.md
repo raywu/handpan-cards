@@ -80,8 +80,8 @@ before proceeding; a local feature snapshot is not canonical DEV.
   held until repair-specific owner consent. Unknown ownership/conflict or bad
   diagnostic oracle stops dependent writes, never triggers reset/unlock.
 - **Parallel NITS investigation:** source audit completed read-only at96c4c589.
-  Single pendingDerive string can overwrite an earlier ring's feedback, but
-  current-state-summary versus event-history UX is not settled. NEXT/keyboard
+  Single pendingDerive string can overwrite an earlier ring's feedback. Owner
+  settled latest outcome per ring, once rim→inner, rather than event history. NEXT/keyboard
   routing is wired; some lifecycle tests use weak or synthetic oracles. Plain
   slide flashing without renumbering conflicts with accepted existing behavior.
   No app fix is authorized by the Mac scope; next is a separate reviewed plan
