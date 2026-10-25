@@ -1,5 +1,33 @@
 # SPS coordination
 
+## Current mutation protocol checkpoint — delivery still deferred
+
+SHC's full CI exposed a proof-driver/actual-runner header mismatch. Root audited
+this preserved SPS tree with the existing read-only mutation_harness selector lint:
+A0 fails exactly50newSPSheaders, while earlier functional40unit/5native checks
+remain observed evidence. The59custom-driver assertion pairs do NOT establish
+actual mutation_check.sh command protocol parity; retain them and their limits.
+
+Separate header lane /private/tmp/handpan-sps-z8gaznu2/headers,
+codex/sheet-tab-swipe-headers-20261025, author snapshoteca573d4 independently reviewed
+CLEAR and integratedroot568662e4. Exactly50suite-header lines changed to unquoted
+space-free literal regex; every kills line, diff body and other byte unchanged.
+Root staticA1 selects1lintcase/PASS/no skips/cancels; app/tests/helpers/floors/data
+unchanged. Agent commit approval lacked trusted session context; root established
+the existing owner swipe-through-DEV grant and committed the reviewed metadata.
+No extra owner grant, app change or authorization bypass was used.
+
+Next resumption: integrate accepted SHC baseline (DEV5826165c873; actual delivery
+verification underway), regenerate only necessary changed context, then redo all
+59fault proofs using actual literal header splitting and early mutation_harness
+gate. Do not blanket-ban valid literal backslashes/apostrophes merely because
+shlex interprets them differently. Include representative actual script partitions,
+full exact-head CI and actual DEV before delivery. None has newly run for SPS.
+No browser lease transfer: root/share-hotfix owns it; old SPS token is invalid.
+SPS remains deferred behind the prioritized saved-scale/sharing work; the new
+SAVED-SCALE-VARIANTS plan/precise instruction patch is owner-approved through DEV,
+with no main consent. Do not discard trees or claim swipe is ready for QA.
+
 ## Owner priority change — SHARE-CUSTOMIZATION-HOTFIX takes precedence
 
 Owner explicitly prioritized reported post-SAVE URL/LINK fidelity investigation

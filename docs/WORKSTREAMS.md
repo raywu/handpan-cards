@@ -1,5 +1,18 @@
 # Shared workstream ledger
 
+## Current SPS validation checkpoint — header protocol corrected, delivery deferred
+
+Root cross-audit found50newSPSmutant headers unselectable by the actual runner.
+Earlier59custom-driver assertion pairs remain retained but are not actual-runner
+parity. Fifty header-only corrections independently reviewed eca573d4, integrated
+568662e4; static selector-lint A0FAIL50→A1PASS1case, no app/test/helper/floor edits.
+Header lane /private/tmp/handpan-sps-z8gaznu2/headers; root source branch/worktree
+below retains all earlier work. Next merge accepted SHC base6165c873 after delivery
+validation, use literal-word-split proof/early harness gate, reprove59 on combined
+source, final independent review/fullCI/DEV. No new SPS PR or QA-ready claim.
+SPS stays deferred behind priority sharing/saved-variants work; new variants plan
+and exact instruction patch approved through DEV, main still requires consent.
+
 ## 2026-10-25 SPS execution checkpoint
 
 Owner-approved **feedback then swipe through DEV** has reached the swipe stage.
