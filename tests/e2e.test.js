@@ -17574,6 +17574,37 @@ function run() {
     const query = "?share=public-control";
     const expectedOptions = [295, 225, null, 20, null, 130];
     const expectedPositions = { C3: 295, Db3: 225, Eb3: 0, Bb3: 20, Db4: 60, Ab5: 130 };
+    // b.click dispatches trusted mouse input at the element's centre; it
+    // neither scrolls nor checks that another layer would receive that input.
+    // Keep this preflight local to these journeys and fail with an assertion
+    // before any input if the intended target is not actually usable.
+    const trustedClick = async (selector) => {
+      await b.eval(`const el = document.querySelector(${JSON.stringify(selector)});
+        if (el) el.scrollIntoView({block:"nearest",inline:"nearest",behavior:"instant"});
+        return !!el;`);
+      await b.settle();
+      const target = await b.eval(`
+        const el = document.querySelector(${JSON.stringify(selector)});
+        if (!el) return {found:false};
+        const r = el.getBoundingClientRect(), x = r.left + r.width/2, y = r.top + r.height/2;
+        const style = getComputedStyle(el), hit = document.elementFromPoint(x,y);
+        return {found:true, enabled:!el.matches(":disabled"), inert:!!el.closest("[inert]"),
+          visible:el.getClientRects().length>0 && style.display!=="none" && style.visibility!=="hidden" && r.width>0 && r.height>0,
+          inViewport:x>=0 && y>=0 && x<innerWidth && y<innerHeight,
+          hit:!!hit && (hit===el || el.contains(hit))};
+      `);
+      assert.deepStrictEqual(target, {found:true,enabled:true,inert:false,visible:true,inViewport:true,hit:true},
+        "SHC trusted click target must be enabled, visible and hit-testable: " + selector);
+      await b.click(selector);
+    };
+    const enterEdit = async () => {
+      await trustedClick("#decks .chip.on");
+      await b.waitFor(`!document.getElementById("scale-sheet").hidden`, {label:"SHC actual Edit entry"});
+    };
+    const enterLayout = async () => {
+      await trustedClick("#scale-tab-layout");
+      await b.waitFor(`!document.getElementById("scale-panel-layout").hidden`, {label:"SHC actual Layout tab"});
+    };
     const install = () => b.eval(`
       window.__shc = { calls: [], order: [] };
       Object.defineProperty(navigator, "share", { configurable: true, value: undefined });
@@ -17587,7 +17618,7 @@ function run() {
       return true;
     `);
     const clickLink = async (count) => {
-      await b.click("#share-copy");
+      await trustedClick("#share-copy");
       await b.waitFor(`__shc.calls.length === ${count}`, { label: "SHC intercepted LINK " + count });
     };
     const complete = (index, success) => b.eval(`return (async () => {
@@ -17607,9 +17638,8 @@ function run() {
         calls: __shc.calls.map(c => ({payload:c.payload,href:c.href})), order: __shc.order.slice() };
     `);
     const showFine = async () => {
-      await openDrawer();
-      await b.eval(`document.getElementById("scale-fine-toggle").scrollIntoView({block:"center"}); return true;`);
-      await b.click("#scale-fine-toggle");
+      await enterLayout();
+      await trustedClick("#scale-fine-toggle");
       await b.waitFor(`!document.getElementById("scale-fine").hidden`, { label: "SHC finer controls" });
     };
     const assertDrawnPositions = async () => {
@@ -17632,14 +17662,13 @@ function run() {
       await b.waitFor(`document.querySelector("#decks .chip.on") && location.hash.startsWith("#s=6/")`, { label: "SHC public layout boot" });
       await install();
       await clickLink(1);
-      await openEdit();
+      await enterEdit();
       await showFine();
       const hit = '#scale-preview .panhit[data-ring="bottom"][aria-label^="C3,"]';
-      await b.click(hit);
-      await b.eval(`document.getElementById("scale-angle-next").scrollIntoView({block:"center"}); return true;`);
-      await b.click("#scale-angle-next");
+      await trustedClick(hit);
+      await trustedClick("#scale-angle-next");
       assert.strictEqual(await b.eval(`return lastSolved.fields[101][4];`), 295, "actual fine nudge moves C3 to literal 295 degrees");
-      await b.click("#scale-generate");
+      await trustedClick("#scale-generate");
       await b.waitFor(`document.getElementById("scale-sheet").hidden && location.hash.startsWith("#s=6/")`, { label: "SHC committed SAVE and canonical bar" });
       // This click follows the observed canonical bar. It does not claim to
       // beat native popstate; U7 separately covers the modelled pending pop.
@@ -17682,7 +17711,7 @@ function run() {
       assert.deepStrictEqual(await b.eval(`return deck().options.angles.bottom;`), expectedOptions);
       assert.deepStrictEqual(await b.eval(`return JSON.parse(localStorage.getItem(SCALES_KEY))[0].o.angles.bottom;`), expectedOptions);
       assert.strictEqual(await b.eval(`return !!document.querySelector("#front svg");`), true, "receiver renders the practice scale");
-      await openEdit(); await openDrawer();
+      await enterEdit(); await enterLayout();
       await assertDrawnPositions();
       assert.strictEqual(after.value, copiedB, "old A must not overwrite B's visible fallback");
       assert.strictEqual(after.focus, "share-url", "new fallback keeps focus after A settles");
@@ -17701,17 +17730,17 @@ function run() {
         await b.waitFor(`document.querySelector("#decks .chip.on")`, { label: "SHC phone public layout" });
         await install();
         await clickLink(1);
-        await openEdit();
+        await enterEdit();
         const focused = await activeId();
         const notice = await b.eval(`return document.querySelector(".announce").textContent;`);
         await complete(0, success);
         assert.strictEqual(await activeId(), focused, "old LINK must not steal focus from actual Edit");
         assert.strictEqual(await b.eval(`return document.getElementById("share-url").hidden;`), true);
         assert.strictEqual(await b.eval(`return document.querySelector(".announce").textContent;`), notice);
-        await b.click("#scale-back");
+        await trustedClick("#scale-back");
         await b.waitFor(`document.getElementById("scale-sheet").hidden && location.hash.startsWith("#s=")`, { label: "SHC cancel Edit" });
         // A separate old request settles only AFTER the open→cancel cycle.
-        await clickLink(2); await openEdit(); await b.click("#scale-back");
+        await clickLink(2); await enterEdit(); await trustedClick("#scale-back");
         await b.waitFor(`document.getElementById("scale-sheet").hidden && location.hash.startsWith("#s=")`, { label: "SHC second cancel Edit" });
         const afterCancelFocus = await activeId();
         const afterCancelNotice = await b.eval(`return document.querySelector(".announce").textContent;`);
@@ -17737,7 +17766,7 @@ function run() {
         assert.strictEqual(await activeId(), "share-copy");
         assert.strictEqual(await b.eval(`return document.getElementById("share-url").hidden;`), true);
         await clickLink(4); await complete(3, false);
-        await b.click("#settings-trigger");
+        await trustedClick("#settings-trigger");
         assert.strictEqual(await b.eval(`return document.getElementById("share-url").hidden;`), true, "real focus transfer/blur hides the manual field");
       }
     });
