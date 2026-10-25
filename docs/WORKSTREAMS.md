@@ -11,13 +11,14 @@ registry, durable record and bar stay correct. Controlled API promises; no owner
 clipboard/profile or Safari/native-picker validation. Finalized [prompt](prompts/2026-10-25-share-customization-hotfix.md) and
 [coordination](plans/2026-10-25-share-customization-hotfix-coordination.md) define
 independent lanes, evidence and review gates. Generated [plan](plans/2026-10-25-share-customization-hotfix.md)
-is in fresh independent ENG/design review; no app/test edits yet.
+V2 edcd2a23 independently ENG/design-rechecked CLEAR; separate T/A lanes are next.
+No app/test edits yet.
 
 Root branch codex/share-customization-hotfix-20261025, host-local /private/tmp/handpan-share-hotfix.urAbvO/integration;
 base DEV667bbf8b (live ref rechecked). Prompt1489e53d independently critiqued/rechecked
-clear. Plan draft d853958f proposes minimal asynchronous ownership guards,
+clear. Reviewed plan V2 edcd2a23 specifies minimal asynchronous ownership guards,
 spec-first separate T/A/M lanes, generated mutants/fullCI/actual DEV checks. Next
-resolve independent plan findings, preserve intended baseline RED, execute only a
+preserve intended baseline RED, execute only a
 sound scoped fix. Main and CLAUDE changes require explicit owner consent.
 Same-inventory import replacement is verified existing behavior, separate from
 URL mismatch; no identity redesign automatically authorized. Private links/photo/

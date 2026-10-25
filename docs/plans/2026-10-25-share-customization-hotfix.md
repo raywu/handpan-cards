@@ -1,7 +1,7 @@
 # SHARE-CUSTOMIZATION-HOTFIX — saved links and asynchronous ownership
 
 2026-10-25. Status: generated investigation plan; independent ENG/design review
-required before code. Owner authorizes a sound reviewed hotfix through DEV.
+completed on V1, clarified V2 awaiting exact-hash recheck before code. Owner authorizes a sound reviewed hotfix through DEV.
 Main release and any exact CLAUDE.md change require separate explicit consent.
 DUPLICATE-NOTES implementation remains held; SPS is preserved and deferred.
 
@@ -76,7 +76,9 @@ receipts. Source and UX notes below have precise inspected symbols/test names.
    behavior, readonly selection, Escape→LINK focus, blur hide and inertness stay.
 7. Do not introduce window-blur cancellation: OS permission/picker UI can blur.
    Suppress focus/reveal while document.hidden; do not add automatic replay on
-   return. Visibility/platform behavior is qualified by actual tested coverage.
+   return. Hidden completion is consumed without deferred replay on return;
+   window blur alone must preserve current completion. Visibility/platform
+   behavior is qualified by actual tested coverage.
 
 ```mermaid
 stateDiagram-v2
@@ -100,14 +102,18 @@ small invalidate/hide helper. Each copy owns a generation and original href;
 validity also checks URL/context, enabled LINK, modal state and hidden document.
 Invalidate at actual semantic boundaries, not every render or syncRoute no-op.
 Hook selectDeck even when identity stays the same, showSheet, openAbout, mobile
-openPanel, changed route and popstate/hashchange, and fallback blur/Escape. Check
+openPanel, changed route/history context, and fallback blur/Escape/closePanel's
+existing dismissal. Do not unconditionally cancel on a pending SAVE popstate that
+only reaffirms the same committed route: an immediate post-SAVE LINK must retain
+its completion. Test that positive explicitly. Real away/back context must retire
+ownership even if it later returns to the identical URL. Check
 initialization before any boot selection to avoid a TDZ/startup failure.
 
 Guard reveal before every UI effect; guard native fallback before scheduling AND
 inside its Promise; guard success before clearing feedback AND inside the timer.
 Use a monotonic announcement revision updated by say() to preserve intervening
-notices (text equality alone fails repeated-text/ABA). Capture the revision before
-async completion and after the request's own clear. Retiring UI hides the fallback
+notices (text equality alone fails repeated-text/ABA). Capture the revision at
+LINK invocation and refresh it after that request's own clear. Retiring UI hides the fallback
 without moving focus, clearing notices or invoking platform APIs. Analyze blur
 ordering so a new revealed field cannot retire itself during focus transfer.
 Existing direct announcement reset occurs during sheet teardown; its context is
@@ -146,14 +152,14 @@ row. Baseline inspected floors app873/e2e478. Existing share105 and other rows s
 
 | Group | Inputs / observable acceptance | Failure detection |
 |---|---|---|
-| U1 latest fallback | Two delayed LINKs; newer rejects then older rejects, and reverse completion order | Newest URL/selection/focus/notice retained; both original captured payloads exact, query preserved. Baseline intended RED. |
+| U1 latest fallback | Two delayed LINKs; newer rejects then older rejects, reverse completion order, and identical-URL old rejection after new success | Newest URL/selection/focus/notice retained; both original captured payloads exact, query preserved. Baseline intended RED. |
 | U2 commit identity | Custom layout SAVE with same id, selection away/back, repeated same selection | Old callbacks never reveal; new LINK encodes committed options; no draft serialization. Literal independently fixed fixture. |
 | U3 modal lifecycle | Add, Edit, About, mobile panel; open/cancel/return, both old reject and success | No old fallback/focus/notice/native fallback; visible current modal focus preserved. Desktop nonmodal positive control. |
 | U4 success/timer ownership | Old/new successes, tick queued before new LINK/context; unrelated new notice incl identical text | No old clear or notice; normal repeated current clear/deferred success still works. |
-| U5 native branches | Missing clipboard; rejected clipboard; share resolved/non-abort/AbortError; retired between rejection and scheduled native call | Current immutable URL through branches, Abort silent, no new native API after retirement, already-started completion silent. |
+| U5 native branches | Missing clipboard; rejected clipboard; share resolved/non-abort/AbortError; retired between rejection and scheduled native call; window-blur positive | Current immutable URL through branches, Abort silent, no new native API after retirement, already-started completion silent; window blur alone preserves current completion. |
 | U6 dismissal | Revealed field blur/Escape, queued old callbacks, new LINK afterward | Dismissal stays closed; Escape returns LINK focus; new operation works. |
-| U7 route/history | Real handler boundaries in VM with explicit model limitations: changes, pending SAVE pop, away/back; no-op sync positive | No ownership resurrection or extra history pushes; query retained. Do not count VM as native history. |
-| U8 visibility/refusal/privacy | Hidden document; disabled/refused link; unchanged positive paths and analytics allowlist | No hidden focus/reveal; no secret URL/name/id analytics; restore allows new operation, refusal unchanged. |
+| U7 route/history | Real handler boundaries in VM with explicit model limitations: changes, pending SAVE pop, away/back; no-op sync positive | No ownership resurrection or extra history pushes; query retained; pending SAVE pop reaffirming the same selection must not cancel a fresh LINK. Do not count VM as native history. |
+| U8 visibility/refusal/privacy | Hidden document; disabled/refused link; unchanged positive paths and analytics allowlist | No hidden focus/reveal or return replay; no secret URL/name/id analytics; restore allows new operation, refusal unchanged. |
 | E1 saved-layout + race | Actual Edit/fine/SAVE, two LINK clicks, controlled promises B→A | Saved geometry/record/bar/new fallback remain B after old settlement; query and both invocation payloads literal. Fresh receiver of captured B renders matching pitch-keyed geometry without sender storage. Desktop. |
 | E2 modal/focus | Phone380×780, real Edit entry/cancel; old success and failure settled, fresh LINK afterward | No focus stealing or stale announcement/fallback; current LINK works, field readonly/full selection, blur/Escape and hit targets retain existing behavior. |
 

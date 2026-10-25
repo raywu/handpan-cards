@@ -80,3 +80,26 @@ share_plan_eng_review and share_plan_design_review are reviewing exact plan and
 source read-only. No app/test edits, no new tool/global/CLAUDE action. Next resolve
 material findings/recheck, then create isolated T/A/M lanes and retain intended
 baseline assertion RED before integrating any repair. Main remains excluded.
+
+## Independent plan review clearance
+
+Fresh non-author ENG/design reviewed V1d853958f against actual source/contracts
+and private native evidence. No blocking design/engineering defect; requested
+identical-URL old/new request coverage, positive window-blur pending operation,
+and announcement revision captured at invocation then after its own clear.
+Root incorporated all three, hidden completion consumed/no replay, closePanel's
+existing dismissal and pending-SAVE-pop positive (do not cancel a fresh LINK for
+the no-op reassertion of committed route). V2 plan exact SHA256
+edcd2a230f8121be70fe7f50667ea491a807e66e02cf18e270a0622c13bdaa3b
+independently rechecked CLEAR by both reviewers. Status line inside frozen V2
+predates recheck; this receipt is the current clearance, without rewriting hash.
+ENG execution note: capture immediate post-SAVE LINK before later pending pop in
+native E1 if deterministically feasible; VM positive alone does not establish
+that browser timing. If not achieved, retain explicit coverage limitation.
+
+Next T/A separate worktrees and source-independent ownership; T freezes exact
+selector counts, root alone runs baseline intended assertion RED before any A
+repair integration. No test/helper weakening, no full Mac claim. Root retains
+all browser/CI/DEV integration; M generated-mutant work follows committed app/test
+head. Owner's conditional reviewed-hotfix execution authorization now applies;
+main/CLAUDE and DUP feature execution remain excluded.
