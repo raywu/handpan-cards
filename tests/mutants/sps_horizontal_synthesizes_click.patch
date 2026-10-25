@@ -1,5 +1,5 @@
 # kills: SPS6: button-origin traces do not invoke actions while genuine clicks remain effective
-# suite: node --test --test-reporter=tap --test-name-pattern='SPS6:\ button\-origin\ traces\ do\ not\ invoke\ actions\ while\ genuine\ clicks\ remain\ effective$' tests/app.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS6:.button\-origin.traces.do.not.invoke.actions.while.genuine.clicks.remain.effective$ tests/app.test.js
 # Non-tap horizontal gesture incorrectly invokes original action click handler.
 diff --git a/index.html b/index.html
 --- a/index.html

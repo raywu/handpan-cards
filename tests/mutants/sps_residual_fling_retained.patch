@@ -1,5 +1,5 @@
 # kills: SPS4: vertical-first hook is restored and residual fling cannot revive after the quiet interval
-# suite: node --test --test-reporter=tap --test-name-pattern='SPS4:\ vertical\-first\ hook\ is\ restored\ and\ residual\ fling\ cannot\ revive\ after\ the\ quiet\ interval$' tests/app.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS4:.vertical\-first.hook.is.restored.and.residual.fling.cannot.revive.after.the.quiet.interval$ tests/app.test.js
 # Retained fling gains momentum after quiet interval and collapses lip.
 diff --git a/index.html b/index.html
 --- a/index.html

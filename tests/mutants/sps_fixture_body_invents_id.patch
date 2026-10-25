@@ -1,5 +1,5 @@
 # kills: SPS fixture: opt-in exposes one anonymous body inside the existing sheet surface
-# suite: node --test --test-name-pattern='SPS fixture: opt-in exposes one anonymous body inside the existing sheet surface' tests/sandbox_events.test.js
+# suite: node --test --test-name-pattern ^SPS.fixture:.opt\-in.exposes.one.anonymous.body.inside.the.existing.sheet.surface$ tests/sandbox_events.test.js
 # An anonymous shipped body is assigned a fictitious control id.
 diff --git a/tools/sandbox.js b/tools/sandbox.js
 --- a/tools/sandbox.js

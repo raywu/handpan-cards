@@ -1,5 +1,5 @@
 # kills: SPS7: a closing Add and superseding Edit cannot inherit an old gesture
-# suite: node --test --test-reporter=tap --test-name-pattern='SPS7:\ a\ closing\ Add\ and\ superseding\ Edit\ cannot\ inherit\ an\ old\ gesture$' tests/app.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS7:.a.closing.Add.and.superseding.Edit.cannot.inherit.an.old.gesture$ tests/app.test.js
 # Old Add gesture survives close and superseding Edit and wrongly completes.
 diff --git a/index.html b/index.html
 --- a/index.html

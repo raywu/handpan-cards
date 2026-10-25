@@ -1,5 +1,5 @@
 # kills: SPS1: elapsed 599 and 600 qualify while 601 milliseconds is refused
-# suite: node --test --test-reporter=tap --test-name-pattern='SPS1:\ elapsed\ 599\ and\ 600\ qualify\ while\ 601\ milliseconds\ is\ refused$' tests/app.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS1:.elapsed.599.and.600.qualify.while.601.milliseconds.is.refused$ tests/app.test.js
 # 600ms inclusive gesture incorrectly rejected.
 diff --git a/index.html b/index.html
 --- a/index.html

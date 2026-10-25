@@ -1,5 +1,5 @@
 # kills: SPS zoom: observed resize and scroll zoom rises stay cancelled after falling back to normal
-# suite: node --test --test-reporter=tap --test-name-pattern='SPS\ zoom:\ observed\ resize\ and\ scroll\ zoom\ rises\ stay\ cancelled\ after\ falling\ back\ to\ normal$' tests/app.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS.zoom:.observed.resize.and.scroll.zoom.rises.stay.cancelled.after.falling.back.to.normal$ tests/app.test.js
 # Observed zoom rise/fall no longer cancels in-flight record.
 diff --git a/index.html b/index.html
 --- a/index.html

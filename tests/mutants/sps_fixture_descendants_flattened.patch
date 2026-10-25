@@ -1,5 +1,5 @@
 # kills: SPS fixture: tabs panels fields preview and Layout controls share body ancestry
-# suite: node --test --test-name-pattern='SPS fixture: tabs panels fields preview and Layout controls share body ancestry' tests/sandbox_events.test.js
+# suite: node --test --test-name-pattern ^SPS.fixture:.tabs.panels.fields.preview.and.Layout.controls.share.body.ancestry$ tests/sandbox_events.test.js
 # Body descendants lose their nearest panel ancestry when flattened directly under the body.
 diff --git a/tools/sandbox.js b/tools/sandbox.js
 --- a/tools/sandbox.js

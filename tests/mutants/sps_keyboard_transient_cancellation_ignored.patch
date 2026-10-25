@@ -1,5 +1,5 @@
 # kills: SPS3: keyboard rising and falling between samples stays cancelled
-# suite: node --test --test-reporter=tap --test-name-pattern='SPS3:\ keyboard\ rising\ and\ falling\ between\ samples\ stays\ cancelled$' tests/app.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS3:.keyboard.rising.and.falling.between.samples.stays.cancelled$ tests/app.test.js
 # Keyboard rise/fall preserves stale shortcut record despite lip behavior.
 diff --git a/index.html b/index.html
 --- a/index.html

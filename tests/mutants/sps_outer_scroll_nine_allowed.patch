@@ -1,5 +1,5 @@
 # kills: SPS3: active outer-surface maximum excursion uses the same 8 pixel fence
-# suite: node --test --test-reporter=tap --test-name-pattern='SPS3:\ active\ outer\-surface\ maximum\ excursion\ uses\ the\ same\ 8\ pixel\ fence$' tests/app.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS3:.active.outer\-surface.maximum.excursion.uses.the.same.8.pixel.fence$ tests/app.test.js
 # 9px active outer-surface excursion is incorrectly allowed.
 diff --git a/index.html b/index.html
 --- a/index.html

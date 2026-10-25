@@ -1,5 +1,5 @@
 # kills: SPS5: empty and refused input can swipe into Layout and still use its palette
-# suite: node --test --test-reporter=tap --test-name-pattern='SPS5:\ empty\ and\ refused\ input\ can\ swipe\ into\ Layout\ and\ still\ use\ its\ palette$' tests/app.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS5:.empty.and.refused.input.can.swipe.into.Layout.and.still.use.its.palette$ tests/app.test.js
 # Empty/refused input cannot enter Layout despite existing palette availability.
 diff --git a/index.html b/index.html
 --- a/index.html

@@ -1,5 +1,5 @@
 # kills: SPS7: repeated Add sessions each accept one transition and retain ordinary tab and NEXT routes
-# suite: node --test --test-reporter=tap --test-name-pattern='SPS7:\ repeated\ Add\ sessions\ each\ accept\ one\ transition\ and\ retain\ ordinary\ tab\ and\ NEXT\ routes$' tests/app.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS7:.repeated.Add.sessions.each.accept.one.transition.and.retain.ordinary.tab.and.NEXT.routes$ tests/app.test.js
 # Fresh Add after prior session opens on wrong tab.
 diff --git a/index.html b/index.html
 --- a/index.html

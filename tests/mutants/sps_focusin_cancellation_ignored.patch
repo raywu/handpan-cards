@@ -1,5 +1,5 @@
 # kills: SPS3: a start field focused then blurred between touch samples stays cancelled
-# suite: node --test --test-reporter=tap --test-name-pattern='SPS3:\ a\ start\ field\ focused\ then\ blurred\ between\ touch\ samples\ stays\ cancelled$' tests/app.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS3:.a.start.field.focused.then.blurred.between.touch.samples.stays.cancelled$ tests/app.test.js
 # Focus then blur between samples wrongly allows navigation.
 diff --git a/index.html b/index.html
 --- a/index.html

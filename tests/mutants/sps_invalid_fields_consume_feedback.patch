@@ -1,5 +1,5 @@
 # kills: SPS5: invalid active fields defer outcomes and a later valid swipe consumes them once
-# suite: node --test --test-reporter=tap --test-name-pattern='SPS5:\ invalid\ active\ fields\ defer\ outcomes\ and\ a\ later\ valid\ swipe\ consumes\ them\ once$' tests/app.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS5:.invalid.active.fields.defer.outcomes.and.a.later.valid.swipe.consumes.them.once$ tests/app.test.js
 # Last-good line wrongly authorizes feedback consumption for invalid active fields.
 diff --git a/index.html b/index.html
 --- a/index.html

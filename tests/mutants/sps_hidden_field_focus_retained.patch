@@ -1,5 +1,5 @@
 # kills: SPS7: body-origin switching blurs a now-hidden field without forcing destination focus
-# suite: node --test --test-reporter=tap --test-name-pattern='SPS7:\ body\-origin\ switching\ blurs\ a\ now\-hidden\ field\ without\ forcing\ destination\ focus$' tests/app.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS7:.body\-origin.switching.blurs.a.now\-hidden.field.without.forcing.destination.focus$ tests/app.test.js
 # Transition leaves original hidden field focused.
 diff --git a/index.html b/index.html
 --- a/index.html

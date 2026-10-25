@@ -1,5 +1,5 @@
 # kills: SPS3: a late second finger cancels even when it lifts before the final move
-# suite: node --test --test-reporter=tap --test-name-pattern='SPS3:\ a\ late\ second\ finger\ cancels\ even\ when\ it\ lifts\ before\ the\ final\ move$' tests/app.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS3:.a.late.second.finger.cancels.even.when.it.lifts.before.the.final.move$ tests/app.test.js
 # Outside-body second contact lifts without cancelling original shortcut.
 diff --git a/index.html b/index.html
 --- a/index.html

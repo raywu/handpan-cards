@@ -1,5 +1,5 @@
 # kills: SPS zoom: normal residue and missing API allow shortcuts while deliberate zoom excludes starts
-# suite: node --test --test-reporter=tap --test-name-pattern='SPS\ zoom:\ normal\ residue\ and\ missing\ API\ allow\ shortcuts\ while\ deliberate\ zoom\ excludes\ starts$' tests/app.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS.zoom:.normal.residue.and.missing.API.allow.shortcuts.while.deliberate.zoom.excludes.starts$ tests/app.test.js
 # Deliberate-zoom starts can complete; normal/residue/missing-API controls stay covered.
 diff --git a/index.html b/index.html
 --- a/index.html

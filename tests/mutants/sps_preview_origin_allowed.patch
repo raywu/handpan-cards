@@ -1,5 +1,5 @@
 # kills: SPS2: preview and preview-descendant origins stay excluded after leaving their original coordinates
-# suite: node --test --test-reporter=tap --test-name-pattern='SPS2:\ preview\ and\ preview\-descendant\ origins\ stay\ excluded\ after\ leaving\ their\ original\ coordinates$' tests/app.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS2:.preview.and.preview\-descendant.origins.stay.excluded.after.leaving.their.original.coordinates$ tests/app.test.js
 # Preview-origin gesture changes tab after leaving preview.
 diff --git a/index.html b/index.html
 --- a/index.html

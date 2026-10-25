@@ -1,5 +1,5 @@
 # kills: SPS2: keyboard-up and initial multi-touch starts cannot recover into a shortcut
-# suite: node --test --test-reporter=tap --test-name-pattern='SPS2:\ keyboard\-up\ and\ initial\ multi\-touch\ starts\ cannot\ recover\ into\ a\ shortcut$' tests/app.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS2:.keyboard\-up.and.initial.multi\-touch.starts.cannot.recover.into.a.shortcut$ tests/app.test.js
 # Keyboard-up origin survives subsequent keyboard fall and wrongly navigates.
 diff --git a/index.html b/index.html
 --- a/index.html

@@ -1,5 +1,5 @@
 # kills: SPS3: body maximum excursion allows 8 pixels but cancels 9 including out and back
-# suite: node --test --test-reporter=tap --test-name-pattern='SPS3:\ body\ maximum\ excursion\ allows\ 8\ pixels\ but\ cancels\ 9\ including\ out\ and\ back$' tests/app.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS3:.body.maximum.excursion.allows.8.pixels.but.cancels.9.including.out.and.back$ tests/app.test.js
 # 9px body excursion is incorrectly allowed.
 diff --git a/index.html b/index.html
 --- a/index.html

@@ -1,5 +1,5 @@
 # kills: SPS fixture: header guidance and pinned footer controls remain outside the body
-# suite: node --test --test-name-pattern='SPS fixture: header guidance and pinned footer controls remain outside the body' tests/sandbox_events.test.js
+# suite: node --test --test-name-pattern ^SPS.fixture:.header.guidance.and.pinned.footer.controls.remain.outside.the.body$ tests/sandbox_events.test.js
 # The closing body frame remains on the tag stack and incorrectly adopts later pinned controls.
 diff --git a/tools/sandbox.js b/tools/sandbox.js
 --- a/tools/sandbox.js

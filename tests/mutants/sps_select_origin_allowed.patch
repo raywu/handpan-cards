@@ -1,5 +1,5 @@
 # kills: SPS2: lip and select origins cannot become a sheet shortcut
-# suite: node --test --test-reporter=tap --test-name-pattern='SPS2:\ lip\ and\ select\ origins\ cannot\ become\ a\ sheet\ shortcut$' tests/app.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS2:.lip.and.select.origins.cannot.become.a.sheet.shortcut$ tests/app.test.js
 # Select-origin gesture changes tab instead of preserving native control.
 diff --git a/index.html b/index.html
 --- a/index.html

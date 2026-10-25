@@ -1,5 +1,5 @@
 # kills: SPS2: already-focused input and textarea origins preserve the current tab
-# suite: node --test --test-reporter=tap --test-name-pattern='SPS2:\ already\-focused\ input\ and\ textarea\ origins\ preserve\ the\ current\ tab$' tests/app.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS2:.already\-focused.input.and.textarea.origins.preserve.the.current.tab$ tests/app.test.js
 # Focused field allowed at start and later check; current-tab assertion fails.
 diff --git a/index.html b/index.html
 --- a/index.html

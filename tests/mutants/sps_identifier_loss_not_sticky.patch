@@ -1,5 +1,5 @@
 # kills: SPS3: losing or replacing the original identifier on a move is sticky
-# suite: node --test --test-reporter=tap --test-name-pattern='SPS3:\ losing\ or\ replacing\ the\ original\ identifier\ on\ a\ move\ is\ sticky$' tests/app.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS3:.losing.or.replacing.the.original.identifier.on.a.move.is.sticky$ tests/app.test.js
 # Lost/replaced original identifier can recover on later good move.
 diff --git a/index.html b/index.html
 --- a/index.html

@@ -1,5 +1,5 @@
 # kills: SPS4: fresh vertical touches stay quiet through 219 milliseconds and work at 220
-# suite: node --test --test-reporter=tap --test-name-pattern='SPS4:\ fresh\ vertical\ touches\ stay\ quiet\ through\ 219\ milliseconds\ and\ work\ at\ 220$' tests/app.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS4:.fresh.vertical.touches.stay.quiet.through.219.milliseconds.and.work.at.220$ tests/app.test.js
 # Fresh vertical touch at219ms wrongly collapses lip.
 diff --git a/index.html b/index.html
 --- a/index.html

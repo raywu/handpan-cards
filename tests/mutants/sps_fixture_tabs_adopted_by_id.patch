@@ -1,5 +1,5 @@
 # kills: SPS fixture: moved tabs follow supplied markup instead of a control-id membership list
-# suite: node --test --test-name-pattern='SPS fixture: moved tabs follow supplied markup instead of a control-id membership list' tests/sandbox_events.test.js
+# suite: node --test --test-name-pattern ^SPS.fixture:.moved.tabs.follow.supplied.markup.instead.of.a.control\-id.membership.list$ tests/sandbox_events.test.js
 # The tab strip is adopted by control id even when supplied markup places it outside the body.
 diff --git a/tools/sandbox.js b/tools/sandbox.js
 --- a/tools/sandbox.js

@@ -1,5 +1,5 @@
 # kills: SPS5: cancelled and same-tab gestures retain pending feedback for a real Layout entry
-# suite: node --test --test-reporter=tap --test-name-pattern='SPS5:\ cancelled\ and\ same\-tab\ gestures\ retain\ pending\ feedback\ for\ a\ real\ Layout\ entry$' tests/app.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS5:.cancelled.and.same\-tab.gestures.retain.pending.feedback.for.a.real.Layout.entry$ tests/app.test.js
 # Cancelled gesture drops pending feedback needed on later actual Layout entry.
 diff --git a/index.html b/index.html
 --- a/index.html

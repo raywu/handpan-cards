@@ -1,5 +1,5 @@
 # kills: SPS3: cancellation clears only at a new eligible one-finger start
-# suite: node --test --test-reporter=tap --test-name-pattern='SPS3:\ cancellation\ clears\ only\ at\ a\ new\ eligible\ one\-finger\ start$' tests/app.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS3:.cancellation.clears.only.at.a.new.eligible.one\-finger.start$ tests/app.test.js
 # Cancellation permanently poisons a new eligible start.
 diff --git a/index.html b/index.html
 --- a/index.html

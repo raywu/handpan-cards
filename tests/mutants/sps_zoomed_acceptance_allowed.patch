@@ -1,5 +1,5 @@
 # kills: SPS zoom: acceptance samples a zoom rise after the last move without a viewport notification
-# suite: node --test --test-reporter=tap --test-name-pattern='SPS\ zoom:\ acceptance\ samples\ a\ zoom\ rise\ after\ the\ last\ move\ without\ a\ viewport\ notification$' tests/app.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS.zoom:.acceptance.samples.a.zoom.rise.after.the.last.move.without.a.viewport.notification$ tests/app.test.js
 # No-notification zoom rise at touchend wrongly commits navigation.
 diff --git a/index.html b/index.html
 --- a/index.html

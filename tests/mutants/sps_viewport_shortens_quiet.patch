@@ -1,5 +1,5 @@
 # kills: SPS4: public viewport resize and scroll cannot shorten the swipe quiet deadline
-# suite: node --test --test-reporter=tap --test-name-pattern='SPS4:\ public\ viewport\ resize\ and\ scroll\ cannot\ shorten\ the\ swipe\ quiet\ deadline$' tests/app.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS4:.public.viewport.resize.and.scroll.cannot.shorten.the.swipe.quiet.deadline$ tests/app.test.js
 # Public viewport event shortens swipe220ms quiet to150ms.
 diff --git a/index.html b/index.html
 --- a/index.html

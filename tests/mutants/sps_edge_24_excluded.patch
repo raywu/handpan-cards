@@ -1,5 +1,5 @@
 # kills: SPS1: the 24 pixel margins are inclusive and closer starts stay excluded
-# suite: node --test --test-reporter=tap --test-name-pattern='SPS1:\ the\ 24\ pixel\ margins\ are\ inclusive\ and\ closer\ starts\ stay\ excluded$' tests/app.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS1:.the.24.pixel.margins.are.inclusive.and.closer.starts.stay.excluded$ tests/app.test.js
 # Inclusive24px start boundary incorrectly rejected.
 diff --git a/index.html b/index.html
 --- a/index.html

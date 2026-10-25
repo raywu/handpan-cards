@@ -1,5 +1,5 @@
 # kills: SPS3: a wrong changed identifier and touchcancel never commit navigation
-# suite: node --test --test-reporter=tap --test-name-pattern='SPS3:\ a\ wrong\ changed\ identifier\ and\ touchcancel\ never\ commit\ navigation$' tests/app.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS3:.a.wrong.changed.identifier.and.touchcancel.never.commit.navigation$ tests/app.test.js
 # A cancelled gesture can still commit on later touchend.
 diff --git a/index.html b/index.html
 --- a/index.html

@@ -1,5 +1,5 @@
 # kills: SPS browser: native scrolling excluded origins keyboard and outer excursion preserve the current tab
-# suite: node --test --test-reporter=tap --test-name-pattern='SPS\ browser:\ native\ scrolling\ excluded\ origins\ keyboard\ and\ outer\ excursion\ preserve\ the\ current\ tab$' tests/e2e.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS.browser:.native.scrolling.excluded.origins.keyboard.and.outer.excursion.preserve.the.current.tab$ tests/e2e.test.js
 # Real preview-descendant horizontal gesture incorrectly switches tab.
 diff --git a/index.html b/index.html
 --- a/index.html

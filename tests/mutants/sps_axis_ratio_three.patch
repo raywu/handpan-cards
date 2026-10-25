@@ -1,5 +1,5 @@
 # kills: SPS1: the two to one axis ratio includes its boundary and rejects a more diagonal trace
-# suite: node --test --test-reporter=tap --test-name-pattern='SPS1:\ the\ two\ to\ one\ axis\ ratio\ includes\ its\ boundary\ and\ rejects\ a\ more\ diagonal\ trace$' tests/app.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS1:.the.two.to.one.axis.ratio.includes.its.boundary.and.rejects.a.more.diagonal.trace$ tests/app.test.js
 # Exact2:1 diagonal boundary incorrectly rejected.
 diff --git a/index.html b/index.html
 --- a/index.html

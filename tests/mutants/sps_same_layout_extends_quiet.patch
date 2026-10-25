@@ -1,5 +1,5 @@
 # kills: SPS4: a same-Layout left gesture does not extend an existing quiet deadline
-# suite: node --test --test-reporter=tap --test-name-pattern='SPS4:\ a\ same\-Layout\ left\ gesture\ does\ not\ extend\ an\ existing\ quiet\ deadline$' tests/app.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS4:.a.same\-Layout.left.gesture.does.not.extend.an.existing.quiet.deadline$ tests/app.test.js
 # Same-Layout no-op extends previous swipe quiet window.
 diff --git a/index.html b/index.html
 --- a/index.html

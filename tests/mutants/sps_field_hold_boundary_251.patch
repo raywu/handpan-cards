@@ -1,5 +1,5 @@
 # kills: SPS3: unfocused-field hold observes 250 milliseconds and the 8 pixel slop boundary
-# suite: node --test --test-reporter=tap --test-name-pattern='SPS3:\ unfocused\-field\ hold\ observes\ 250\ milliseconds\ and\ the\ 8\ pixel\ slop\ boundary$' tests/app.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS3:.unfocused\-field.hold.observes.250.milliseconds.and.the.8.pixel.slop.boundary$ tests/app.test.js
 # 250ms unfocused hold is incorrectly eligible.
 diff --git a/index.html b/index.html
 --- a/index.html

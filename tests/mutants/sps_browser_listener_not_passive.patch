@@ -1,5 +1,5 @@
 # kills: SPS browser: passive registrations stay singular and real Add Edit swipes preserve routes across viewports
-# suite: node --test --test-reporter=tap --test-name-pattern='SPS\ browser:\ passive\ registrations\ stay\ singular\ and\ real\ Add\ Edit\ swipes\ preserve\ routes\ across\ viewports$' tests/e2e.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS.browser:.passive.registrations.stay.singular.and.real.Add.Edit.swipes.preserve.routes.across.viewports$ tests/e2e.test.js
 # Actual startup registration is passive:false, violating passive policy.
 diff --git a/index.html b/index.html
 --- a/index.html

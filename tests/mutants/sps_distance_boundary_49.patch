@@ -1,5 +1,5 @@
 # kills: SPS1: 47 48 and 49 pixel boundaries hold in both directions for Add and Edit
-# suite: node --test --test-reporter=tap --test-name-pattern='SPS1:\ 47\ 48\ and\ 49\ pixel\ boundaries\ hold\ in\ both\ directions\ for\ Add\ and\ Edit$' tests/app.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS1:.47.48.and.49.pixel.boundaries.hold.in.both.directions.for.Add.and.Edit$ tests/app.test.js
 # 48px inclusive transition is incorrectly rejected.
 diff --git a/index.html b/index.html
 --- a/index.html

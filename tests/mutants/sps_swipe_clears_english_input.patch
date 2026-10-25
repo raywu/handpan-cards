@@ -1,5 +1,5 @@
 # kills: SPS8: accepted switching creates no sheet animation and preserves English note input
-# suite: node --test --test-reporter=tap --test-name-pattern='SPS8:\ accepted\ switching\ creates\ no\ sheet\ animation\ and\ preserves\ English\ note\ input$' tests/app.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS8:.accepted.switching.creates.no.sheet.animation.and.preserves.English.note.input$ tests/app.test.js
 # Accepted switch improperly clears English scale input.
 diff --git a/index.html b/index.html
 --- a/index.html

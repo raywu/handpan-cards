@@ -1,5 +1,5 @@
 # kills: SPS browser: real capture handoff restores the lip and viewport events preserve its quiet window
-# suite: node --test --test-reporter=tap --test-name-pattern='SPS\ browser:\ real\ capture\ handoff\ restores\ the\ lip\ and\ viewport\ events\ preserve\ its\ quiet\ window$' tests/e2e.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS.browser:.real.capture.handoff.restores.the.lip.and.viewport.events.preserve.its.quiet.window$ tests/e2e.test.js
 # Real fresh vertical input collapses lip within swipe quiet interval.
 diff --git a/index.html b/index.html
 --- a/index.html
