@@ -10,34 +10,42 @@ feedback independently delivered atbccff5a2, completing that prerequisite.
 
 ## Cycle state — current before historical snapshots
 
-Root integrated A's minimal zoom guard at954fc761 (original792f15b5), index SHA256
-25e740adff69d962299b6642fa99839cbe814d4e076839486120f24870c57a92. Same3zoom-unit
-and1native expected assertion-RED were verified before code. After guard all40SPS
-unit groups, full913app and5helper tests passed with0fail/skip/cancel/raw errors.
-Receipts/raw logs are in sibling evidence/, guard-unit-default-verified.json.
+Current tested source2a6852b2e1432781238bc7e9dae20c113343508a, app index SHA256
+25e740adff69d962299b6642fa99839cbe814d4e076839486120f24870c57a92. Guard954fc761
+(original792f15b5) follows verified3unit+1native assertion-RED. After guard all40SPS
+unit groups/full913app/5helper passed; final same-head5native gates now allPASS,
+0fail/skip/cancel/timeout/raw errors,10AddEdit route cells and4actual-origin zoom
+cells. Native scroll65px, quiet scroll92pxat107ms, capture order and BODY focus
+verified. Supervisor/before-after census preserved Chrome680/7priorprofiles.
+Receipts/raw logs in sibling evidence/: guard-unit-default-verified.json,
+native-five-final-verified.json and sps-native-five-final-a0.*. No actual viewport
+panning or physical Safari/native-keyboard behavior is established.
 
-Same-head targeted browser run selected5:4pass/1fail, no skips/cancels/timeout.
-Route/passivity10AddEditcells, native scroll65px, genuine control swipes/taps,
-quiet native scroll92px at107ms, capture order and BODY focus passed. The zoomed
-negative now passed, but normal1x positive origin precondition failed at
- e2e.test.js15522 (normalOrigin eligible/scale), before its tab-transition assertion.
-This run is NOT green. Preserve sps-native-five-guard-green raw TAP/receipt despite
-its prospective filename; do not credit its name as outcome. Supervisor teardown
-clean; before/after Chrome680 and7priorprofiles unchanged. No actual viewport
-panning was demonstrated or repaired. Fresh read-only diagnosis assigned to
-sps_zoom_gate_diagnosis; no fixture/app correction authorized from inference alone.
+Retain earlier4pass1fail native run and diagnostic1fail. At restored1x, a point
+hit-tested to body but realtouch targeted nearby tabbutton6pxaway; same rects and
+offsets rule out the hypothesized geometry drift for that run. Browser touch
+adjustment is consistent with evidence, exact internal mechanism unverified. T's
+diagnostic33a98564 then zoom-test-only24pxclearance2a6852b2 preserves every actual-
+origin/scale/transition assertion and touchradius; no app correction was made.
+Same1case and final5case matrix green. A raw-audit regex initially matched the
+passing title 'passive registrations'; corrected error matching after inspecting
+raw output, no test changed. Both failed runs remain failed, not aggregate success.
 
-Next root inspects diagnostic findings, freezes a bounded distinguishing observation
-before any correction; retain the positive actual-origin and restored1x assertions.
-Then require same5native green, meaningful generated mutants/8preserved context
-refreshes, independent final source/design review, full exact-headCI/DEV and new
-physical ownerQA. NoSPSPR/CI/DEV/main delivery yet. Root sole host browser operator,
-owned lease retained; no full Mac budget or Safari/AT proof is implied.
+M lane now active in /private/tmp/handpan-sps-z8gaznu2/mutants-final, branch
+codex/sheet-tab-swipe-mutants-final-20261025, committed baseline2a6852b2. Agent
+sps_mutation_author_final owns ONLY generated tests/mutants patches:40newunit+
+5native target coverage, preserving existing5fixture patches,8old context refreshes
+with every original header/semantic fault intact. No worker tests/browser/remote
+writes. Root next reviews/freeze exact headers and proves cleanheadergreen then
+intended assertionred on disposable trees; no untested kill credited. All old
+floors retained until observed counts are raised by root. Final independent
+source/design review, full exact-headCI/DEV and physical ownerQA still required.
+NoSPSPR/CI/DEV/main delivery yet; root alone owns browser lease/integration.
 
-Parallel DUPLICATE-NOTES final plan585fa248 cleared independent ENG/design after
-four material fixes; source43486f5d pushed, docs PR579 mainHELD /580 DEV under fullCI.
-This is planning only. SEO delivered578ac97; feedback576bcc; Mac574f5. Their main
-PRs577/575/573 remain held. Preserve all newer DEV ledger records on integration.
+Parallel DUPLICATE-NOTES plan585fa248 independently ENG/design-cleared after4fixes;
+source43486f5d, docs PR579 mainHELD/580DEV under fullCI. Planning only. SEO578ac97,
+feedback576bcc and Mac574f5 delivered; main577/575/573held. Preserve newer DEV ledger
+records during integration. Resolve live refs before recovery/takeover.
 
 ## Hard rules
 

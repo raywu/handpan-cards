@@ -15,13 +15,14 @@ raw audit passed. Main575 remains HELD; old pendingCI prose below is historical.
 - **Owner/ref/worktree:** root on ray-Mac; codex/sheet-tab-swipe-20261025;
   /private/tmp/handpan-sps-z8gaznu2/integration; basebccff5a2. Separate T/A trees
   and file ownership are defined in coordination; not another agent's takeover grant.
-- **Last/next:** zoom TDD3unit+1native assertion-RED completed before minimal
-  guard954fc761, index25e740ad. Same40unit/full913app/5helper now green. Targeted
-  native5selected4pass1fail: normal1x actual-origin precondition failed after zoomed
-  exclusion passed; preserve raw failure, do not claim green. Fresh independent
-  read-only diagnosis assigned; root next distinguishes fixture/observer versus
-  app before correction and reruns same5. Mutants/8preserved-context refreshes,
-  final review/fullCI/DEV/nativeQA remain pending. Read coordination Cycle state.
+- **Last/next:** current tested source2a6852b2, app25e740ad:40SPSunit/full913app/
+  5helper and final5native gates green,0requiredskips/cancels;4actualzoomcells.
+  Prior normal-origin failure retained, corrected with zoom-test-only neutral
+  clearance after realevent diagnostic, no production change. New M tree
+  /private/tmp/handpan-sps-z8gaznu2/mutants-final, branch
+  codex/sheet-tab-swipe-mutants-final-20261025 at2a6852b2 owns generated45group
+  faults/8preservedcontextrefreshes; root next verifies cleanheaders/assertionkills.
+  Final review/fullCI/DEV/physicalQA remain pending; read coordination Cycle state.
 - **Acceptance:** original SPS1–8, genuine independent reviewers, everynewgroup
   generated mutants/floors, full exact-headCI/combinedDEV/actualbytes+journeys;
   new swipe-specific physical QA remains. Main/CLAUDE/global changes excluded.
