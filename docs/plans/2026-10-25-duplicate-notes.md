@@ -1,6 +1,6 @@
 # DUPLICATE-NOTES: preserve repeated physical notes, warn without refusal
 
-2026-10-25, revised after the owner's three confirmed choices. **Plan finalization
+2026-10-25, revised after the owner's four confirmed choices. **Plan finalization
 only; do not execute this plan.** The owner explicitly resumed finishing/revising
 this document after the prompt-only pause, without authorizing implementation.
 Pending choices and mandatory entry gates are explicit below.
@@ -8,8 +8,8 @@ Pending choices and mandatory entry gates are explicit below.
 ## Decision brief
 
 **Conditional technical feasibility; execution is HELD by owner instruction.**
-Scope, musical presentation and no-confirmation policy are settled. Warning
-coverage, compatibility/recovery and measured acceptance gates must be resolved
+Scope, musical presentation, no-confirmation and narrow warning coverage are
+settled. Compatibility/recovery and measured acceptance gates must be resolved
 before any later separately authorized implementation. Technical feasibility is
 supported by inspected architecture and bounded data probes. Current app acceptance,
 round-trip compatibility, actual UI/print behavior and regression freedom are not
@@ -68,10 +68,11 @@ is not a passing test result. Raw photo and instrument name are not published.
 
 Owner confirmed on2026-10-25: exact duplicates everywhere (including matching
 Ding), one chosen position per chord tone, and a nonblocking warning with no
-confirmation. These settle the first three decisions below; do not re-interview
-them. Existing diagrams still highlight all matching physical positions. Warning
-coverage and remaining implementation contracts are unresolved; this reply is not
-an implementation grant. The original mixed voicing/highlighting question is now
+confirmation. The owner also confirmed warning coverage: only newly allowed
+repeats plus existing inferred-note warnings. These four choices are settled; do not
+re-interview them. Existing diagrams still highlight all matching physical
+positions. Remaining implementation contracts are future gates, not execution
+authority. The original mixed voicing/highlighting question is now
 resolved consistently with the separately verified existing behaviors.
 
 | Decision | Choice / status | Stop/fork |
@@ -79,7 +80,7 @@ resolved consistently with the separately verified existing behaviors.
 | Admission — owner confirmed | Exact resolved-MIDI copies in any ring, including a non-Ding copy of Ding; one Ding marker only | Preserve unrelated grammar/layout validation; no duplicate-based refusal |
 | Musical presentation — owner confirmed | One position per chord tone; preserve existing all-position diagram highlights | Alternate fingering cards or simultaneous unison voicings are separate scope |
 | Acknowledgement — owner confirmed | Clear non-blocking warning naming repeated notes/positions; no confirmation solely for a declared repeat | Other independent generation/save guards remain |
-| Warning coverage | Newly admitted formerly refused cases plus current inferred-bottom notices; explicit accepted cross-shell copies remain quiet | Owner was asked narrow versus all-repeat coverage; broad coverage needs affected-prefill inventory |
+| Warning coverage — owner confirmed | Newly admitted formerly refused cases plus current inferred-bottom notices; explicit accepted cross-shell copies remain quiet | Broader all-repeat warnings are outside confirmed scope |
 | New-warning visibility | New formerly-refused-repeat summary available on Scale in both fields and combined-line paths | This is a proposed deliberate extension; old inferred-only notices remain field-path scoped |
 | Compatibility | Feature-specific wire/record capability, preserving current-valid writer outputs | ENG/owner accept detailed version/rollback contract before storage changes |
 
@@ -343,7 +344,7 @@ interpolation and language changes must be tested. No raw photo/name publication
 
 | Stage | Objective / owned deliverables | Exit / stop / fallback |
 |---|---|---|
-| A Scope/contracts and authorized baseline validation | Carry forward confirmed choices; resolve warning coverage; paper-review protocol/rollback and disclosure; after future execution approval only, benchmark existing code, inspect copied stores and validate isolated prototypes within that grant | No shipped app/storage implementation for unresolved contracts; freeze literal mappings, protocol matrix and numerical performance thresholds before StageC; stop when evidence/scope is insufficient |
+| A Scope/contracts and authorized baseline validation | Carry forward confirmed choices; retain confirmed warning coverage; paper-review protocol/rollback and disclosure; after future execution approval only, benchmark existing code, inspect copied stores and validate isolated prototypes within that grant | No shipped app/storage implementation for unresolved contracts; freeze literal mappings, protocol matrix and numerical performance thresholds before StageC; stop when evidence/scope is insufficient |
 | B Independent oracles | T separate tree: core/import/share/app fixtures and meaningful baseline failures, compatibility snapshots | Screenshot/identity/version failures by intended assertion; no startup/empty selection; unchanged baseline preserved |
 | C Core and protocols | E separate tree: eligibility/structured facts, occurrence mapping, explicit reader/writer capability and safe storage adapters | Same tests green; all copies kept, old valid bytes stable; storage-loss evidence stops rollout |
 | D Warning UI/locales | U separate tree: active-path success, message aggregation, precise copy/ARIA,8tables; root serializes index changes | Measured fit/state/announcement and no stale residue; no type/target concessions |
@@ -432,11 +433,11 @@ per-step approvals for already authorized ordinary work.
 
 ### Before execution authorization: policy and scope
 
-Carry forward all three settled owner choices. Resolve warning coverage before
-implementing warning behavior: recommended minimal coverage is newly admitted
-repeats plus existing inferred-bottom notices. Warning every exact duplicate is
-a bounded UX fork requiring explicit quiet-prefill/line-path expectations, not a
-change to admission or musical behavior. Present the protocol/recovery proposal,
+Carry forward all four settled owner choices, including narrow warning coverage:
+newly admitted repeats plus existing inferred-bottom notices. Do not re-interview
+these choices or add warnings to already accepted explicit cross-shell copies.
+Any future broadening to every repeat is a separate policy change. Present the
+protocol/recovery proposal,
 concrete disclosure contract, lane ownership, diagnostic budget and required
 acceptance evidence. Current authorization ends at finalizing/reviewing this plan.
 No diagnostic, prototype, TDD or application stage is launched by this document.

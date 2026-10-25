@@ -1,3 +1,11 @@
+## Latest owner answer — narrow warning coverage confirmed
+
+Owner selected “Only newly allowed repeats.” Preserve current inferred-note
+warnings and quiet explicit cross-shell pairs. All four product choices are now
+settled; do not re-interview. This records the already recommended narrow policy;
+implementation remains HELD. Plan confirmation text updated only; the previous
+reviewed technical body781540f4 remains atd8101654 for comparison.
+
 ## 2026-10-25 DUPLICATE-NOTES — revised plan finalized; EXECUTION HELD
 
 Owner requested finishing/revising the plan without execution. Completed that

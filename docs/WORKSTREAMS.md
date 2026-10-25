@@ -1,5 +1,35 @@
 # Shared workstream ledger
 
+## Latest check-in — SHARE-IDENTITY investigation / DUP warning decision
+
+**SHARE-IDENTITY: read-only investigation, no fix/plan execution authorized.**
+Owner reports two links replacing one another and an apparently unchanged URL
+after an edit. Verified on public production HTML SHA256
+bd9be272474032a8ada18efb8a16f9160ad726ce0f12cf6dec035ac0fe223282, matching main96c4:
+the supplied links decode to the same18physical-note inventory, seven bottom
+pitches and saved ID custom:e6bd34c7; their names, angles and parent options differ.
+Both import orders in an isolated VM retain one registry/storage record with the
+last link's options/name. Sources: core.identitySeed/deckId; openShare/generateDeck/
+rememberScale/sameDeck; share angles/identity tests. Different link checksums are
+not separate saved IDs. This is existing field-based deduplication, distinct from
+repeat-note admission inside one instrument. No owner browser/storage was accessed.
+
+The supplied first link already encodes custom bottom angles. A successful SAVE
+retaining an old freshly copied URL was NOT reproduced. Need owner clarification:
+actual pitch/count change versus position/order, and fresh post-SAVE copy versus
+old clipboard/bookmark. Normal source path syncs after SAVE/popstate; old copied
+links are immutable. Do not attribute the reported anomaly to local storage,
+invalid drafts or caching without evidence. Private host-only diagnostic:
+/private/tmp/handpan-share-links-diagnostic.json. Do not publish raw links/names.
+Next: reconcile owner reply, then propose separately scoped variant/import or URL
+work only if requested. No identity migration, app/test edit or feature grant.
+
+**DUPLICATE-NOTES:** owner confirmed narrow warning coverage: only newly allowed
+repeats plus existing inferred-note warnings; accepted explicit cross-shell copies
+stay quiet. All four product choices settled. [Plan](plans/2026-10-25-duplicate-notes.md)
+and coordination updated; implementation remains HELD. This answer does not resume
+proposed StageA–F. Other streams retain their own existing scope.
+
 ## 2026-10-25 DUPLICATE-NOTES — revised plan finalized; EXECUTION HELD
 
 Owner requested finishing/revising the plan without execution. Completed that
