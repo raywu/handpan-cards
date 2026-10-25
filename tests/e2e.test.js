@@ -15337,16 +15337,23 @@ function run() {
       }
     });
 
-    test("SPS browser: native scrolling excluded origins keyboard and outer excursion preserve the current tab", {timeout:120000}, async () => {
+    test("SPS browser: native scrolling excluded origins keyboard and outer excursion preserve the current tab", {timeout:120000}, async (t) => {
       try{
         await spaOpen(380,780);
-        const point=await spsSpot(-80);assert.ok(point);
-        const before=await b.eval(`const e=document.querySelector(".sheetbody");return {top:e.scrollTop,range:e.scrollHeight-e.clientHeight};`);
-        assert.ok(before.range>8,"native scrolling needs an actual scroll range");
-        await spsTouch(point,0,-80);
+        // Like the existing lipOpen(spacer:900) fixture, provide enough real
+        // content that folding the footer cannot consume all remaining room.
+        await b.eval(`const spacer=document.createElement("div");spacer.id="sps-scroll-room";spacer.style.cssText="height:900px;flex:0 0 900px";document.getElementById("scale-panel-scale").appendChild(spacer);const body=document.querySelector(".sheetbody");body.scrollTop=Math.max(0,body.scrollHeight-body.clientHeight-400);window.__spsVerticalOrigin=null;document.addEventListener("touchstart",e=>{window.__spsVerticalOrigin={body:body.contains(e.target),excluded:!!e.target.closest("button,input,textarea,select,#scale-preview,#scale-lip"),tag:e.target.tagName,id:e.target.id};},{capture:true,passive:true,once:true});return true;`);
+        await b.settle();
+        const before=await b.eval(`const body=document.querySelector(".sheetbody"),r=body.getBoundingClientRect(),surface=document.querySelector(".sheetsurf"),css=getComputedStyle(body);let point=null;for(let y=Math.min(r.bottom-16,innerHeight-16);y-80>=Math.max(8,r.top+8);y-=4){const x=r.left+r.width/2,a=document.elementFromPoint(x,y),z=document.elementFromPoint(x,y-80);if(a&&z&&body.contains(a)&&body.contains(z)&&!a.closest("button,input,textarea,select,#scale-preview,#scale-lip")){point={x,y};break;}}return{point,top:body.scrollTop,range:body.scrollHeight-body.clientHeight,remaining:body.scrollHeight-body.clientHeight-body.scrollTop,rect:{top:r.top,bottom:r.bottom},surface:{top:surface.scrollTop,range:surface.scrollHeight-surface.clientHeight},overflow:css.overflowY,touchAction:css.touchAction,scale:visualViewport.scale};`);
+        t.diagnostic("SPS_NATIVE_SCROLL_BEFORE "+JSON.stringify(before));
+        assert.ok(before.point,"the full upward touch path must fit inside an eligible scrollport surface");
+        assert.ok(before.remaining>=200,"native scrolling needs ample real remaining room after footer folding");
+        await spsTouch(before.point,0,-80);
         assert.strictEqual(await spsTab(),"scale");
-        const scrolled=await b.eval(`return document.querySelector(".sheetbody").scrollTop;`);
-        assert.ok(scrolled>before.top+8,"real vertical touch must continue native scrolling");
+        const after=await b.eval(`const body=document.querySelector(".sheetbody"),r=body.getBoundingClientRect(),surface=document.querySelector(".sheetsurf");return{top:body.scrollTop,range:body.scrollHeight-body.clientHeight,remaining:body.scrollHeight-body.clientHeight-body.scrollTop,rect:{top:r.top,bottom:r.bottom},surface:{top:surface.scrollTop,range:surface.scrollHeight-surface.clientHeight},origin:window.__spsVerticalOrigin,lip:document.getElementById("scale-sheet").className,scale:visualViewport.scale};`);
+        t.diagnostic("SPS_NATIVE_SCROLL_AFTER "+JSON.stringify(after));
+        assert.ok(after.origin&&after.origin.body&&!after.origin.excluded,"the actual native start must match the intended eligible body origin");
+        assert.ok(after.top>before.top+8,"real vertical touch must continue native scrolling");
         await spaOpen(380,780);
         const diagonal=await spsSpot(-80);assert.ok(diagonal);
         await spsTouch(diagonal,-40,-80);
@@ -15422,7 +15429,7 @@ function run() {
         // This hook-order fixture is deliberately unscrollable: a qualifying
         // vertical-first trace must not exceed the independent scroll fence.
         // The preceding browser test proves ordinary native scrolling instead.
-        await b.eval(`const body=document.querySelector(".sheetbody"),surface=document.querySelector(".sheetsurf");body.style.flex="0 0 300px";body.style.height="300px";body.style.overflow="hidden";surface.style.overflow="hidden";body.scrollTop=0;surface.scrollTop=0;window.__spsOrder=[];const snap=phase=>({phase,tab:document.getElementById("scale-tab-layout").getAttribute("aria-selected")==="true"?"layout":"scale",shut:document.getElementById("scale-sheet").classList.contains("lipshut")});document.getElementById("scale-sheet").addEventListener("touchend",()=>{window.__spsOrder.push(snap("sheet-capture"));},true);body.addEventListener("touchend",()=>{if(window.__spsEndAt===undefined)window.__spsEndAt=Date.now();window.__spsOrder.push(snap("body-after"));});document.getElementById("scale-sheet").addEventListener("touchmove",()=>{if(window.__spsEndAt!==undefined)window.__spsLastMoveElapsed=Date.now()-window.__spsEndAt;},{capture:true,passive:true});return true;`);
+        await b.eval(`const body=document.querySelector(".sheetbody"),surface=document.querySelector(".sheetsurf");body.style.flex="0 0 300px";body.style.height="300px";body.style.overflow="hidden";surface.style.overflow="hidden";const spacer=document.createElement("div");spacer.style.cssText="height:900px;flex:0 0 900px";document.getElementById("scale-panel-layout").appendChild(spacer);body.scrollTop=0;surface.scrollTop=0;window.__spsOrder=[];const snap=phase=>({phase,tab:document.getElementById("scale-tab-layout").getAttribute("aria-selected")==="true"?"layout":"scale",shut:document.getElementById("scale-sheet").classList.contains("lipshut")});document.getElementById("scale-sheet").addEventListener("touchend",()=>{window.__spsOrder.push(snap("sheet-capture"));},true);body.addEventListener("touchend",()=>{if(window.__spsEndAt===undefined)window.__spsEndAt=Date.now();window.__spsOrder.push(snap("body-after"));});document.getElementById("scale-sheet").addEventListener("touchmove",()=>{if(window.__spsEndAt!==undefined)window.__spsLastMoveElapsed=Date.now()-window.__spsEndAt;},{capture:true,passive:true});return true;`);
         await b.settle();await sleep(250);
         const start=await spsSpot(-100);assert.ok(start);
         const point=(x,y)=>[{x,y,id:7,radiusX:4,radiusY:4,force:1}];
@@ -15442,20 +15449,25 @@ function run() {
         assert.strictEqual((await state()).lipped,false);
         // Exact 219/220 boundaries are unit-clock oracles. This corroborates
         // the real public viewport hooks and a genuinely early native gesture.
-        await b.eval(`visualViewport.dispatchEvent(new Event("resize"));visualViewport.dispatchEvent(new Event("scroll"));return true;`);
-        const early=await spsSpot(-80);assert.ok(early);
-        assert.ok(await b.eval("return Date.now()-window.__spsEndAt<220;"),"early-input fixture must still be inside the actual quiet interval");
+        const early=await b.eval(`visualViewport.dispatchEvent(new Event("resize"));visualViewport.dispatchEvent(new Event("scroll"));const body=document.querySelector(".sheetbody");body.style.overflowY="auto";body.scrollTop=Math.max(0,body.scrollHeight-body.clientHeight-400);const r=body.getBoundingClientRect();let point=null;for(let y=Math.min(r.bottom-16,innerHeight-16);y-80>=Math.max(8,r.top+8);y-=4){const x=r.left+r.width/2,a=document.elementFromPoint(x,y),z=document.elementFromPoint(x,y-80);if(a&&z&&body.contains(a)&&body.contains(z)&&!a.closest("button,input,textarea,select,#scale-preview,#scale-lip")){point={x,y};break;}}return{point,top:body.scrollTop,range:body.scrollHeight-body.clientHeight,remaining:body.scrollHeight-body.clientHeight-body.scrollTop,elapsed:Date.now()-window.__spsEndAt};`);
+        assert.ok(early.point,"the early native scroll path must fit inside the real scrollport");
+        assert.ok(early.remaining>=200,"quiet-window scrolling needs real remaining Layout scroll room");
+        assert.ok(early.elapsed<220,"early-input fixture must still be inside the actual quiet interval");
         // Keep this immediate second press test-local and sheet-only: there
         // is deliberately no unrelated pending-capture wait between the two
         // presses. Real elapsed-time assertions below remain authoritative.
-        await b.send("Input.dispatchTouchEvent",{type:"touchStart",touchPoints:point(early.x,early.y)});
+        await b.send("Input.dispatchTouchEvent",{type:"touchStart",touchPoints:point(early.point.x,early.point.y)});
         for(let i=1;i<=4;i++){
           await sleep(8);
-          await b.send("Input.dispatchTouchEvent",{type:"touchMove",touchPoints:point(early.x,early.y-30*i/4)});
+          await b.send("Input.dispatchTouchEvent",{type:"touchMove",touchPoints:point(early.point.x,early.point.y-80*i/4)});
         }
         await b.releasing(()=>b.send("Input.dispatchTouchEvent",{type:"touchEnd",touchPoints:[]}));
-        assert.ok(await b.eval("return window.__spsLastMoveElapsed<220;"),"the actual early moves, not only setup, must remain inside the quiet interval");
-        assert.strictEqual((await state()).shut,false,"fresh vertical input remains quiet after public viewport events");
+        const earlyAfter=await b.eval(`return new Promise(resolve=>requestAnimationFrame(()=>resolve({top:document.querySelector(".sheetbody").scrollTop,elapsed:Date.now()-window.__spsEndAt,lastMoveElapsed:window.__spsLastMoveElapsed,shut:document.getElementById("scale-sheet").classList.contains("lipshut")})));`);
+        t.diagnostic("SPS_QUIET_NATIVE_SCROLL "+JSON.stringify({before:early,after:earlyAfter}));
+        assert.ok(earlyAfter.lastMoveElapsed<220,"the actual early moves, not only setup, must remain inside the quiet interval");
+        assert.ok(earlyAfter.elapsed<220,"the scroll and lip observation must still be inside the real quiet interval");
+        assert.ok(earlyAfter.top>early.top+8,"real native scrolling must remain usable during the quiet interval");
+        assert.strictEqual(earlyAfter.shut,false,"fresh vertical input remains quiet after public viewport events");
         await b.waitForPendingSettle();
         await sleep(260);
         const later=await spsSpot(-80);assert.ok(later);await spsTouch(later,0,-30);
