@@ -103,3 +103,27 @@ repair integration. No test/helper weakening, no full Mac claim. Root retains
 all browser/CI/DEV integration; M generated-mutant work follows committed app/test
 head. Owner's conditional reviewed-hotfix execution authorization now applies;
 main/CLAUDE and DUP feature execution remain excluded.
+
+## Implementation lanes and check-in
+
+Reviewed plan retained at root ebe5d302. Created isolated tests branch
+codex/share-customization-tests-20261025, tree sibling tests/, and app branch
+codex/share-customization-app-20261025, sibling app/, both from ebe5d302.
+share_test_lane owns only app/e2e test files; share_app_lane owns only app JS in
+index.html outside generated regions. Neither executes tests/browser; root must
+review new diagnostics/tests before execution and retain baseline RED before app
+integration. share_mutant_lane completed read-only preparation, no tree or edits
+yet; waits for committed app/test head. Root sole browser lease remains held idle.
+
+Check-in live refs: DEV667bbf8b/main96c4c589 unchanged; SPS5c0239ed, DUPb849b6d6.
+All four outstanding main PRs573/575/577/579 remain DRAFT/HELD; current check-run
+lists all successful. DUP579 latest run40233705537 now complete; artifact/final
+delivery review for that latest documentation head has not been repeated here.
+Do not confuse check-run success with fresh reviewed publication of later docs.
+Mac/feedback/SEO have prior fullCI and actualDEV receipts; main permission still
+required. SPS and DUP local trees clean at retained heads. No hotfix PR yet.
+
+Interview pending: owner original variants in one versus separate tabs; owner
+choice to hold or explicitly release573→575→577. Recommendation hold releases
+while priority hotfix proceeds. No answer/elapsed time is permission. Other
+SEO content decisions remain pending; broader robustness audit remains queued.

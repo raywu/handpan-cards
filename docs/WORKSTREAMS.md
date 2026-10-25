@@ -11,8 +11,9 @@ registry, durable record and bar stay correct. Controlled API promises; no owner
 clipboard/profile or Safari/native-picker validation. Finalized [prompt](prompts/2026-10-25-share-customization-hotfix.md) and
 [coordination](plans/2026-10-25-share-customization-hotfix-coordination.md) define
 independent lanes, evidence and review gates. Generated [plan](plans/2026-10-25-share-customization-hotfix.md)
-V2 edcd2a23 independently ENG/design-rechecked CLEAR; separate T/A lanes are next.
-No app/test edits yet.
+V2 edcd2a23 independently ENG/design-rechecked CLEAR; separate T/A lanes are active
+in sibling tests/ and app/ trees from root ebe5d302. Root integrates no app repair
+before reviewed tests demonstrate intended baseline RED. No hotfix PR/DEV yet.
 
 Root branch codex/share-customization-hotfix-20261025, host-local /private/tmp/handpan-share-hotfix.urAbvO/integration;
 base DEV667bbf8b (live ref rechecked). Prompt1489e53d independently critiqued/rechecked
