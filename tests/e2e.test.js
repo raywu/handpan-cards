@@ -15517,8 +15517,17 @@ function run() {
           const normalBefore=await snapshot();
           assert.ok(Math.abs(normalBefore.scale-1)<0.001,"normal positive control must really restore1x");
           const normalStart=await spsSpot(dx);assert.ok(normalStart);
+          // Observe the selected hit and the actual dispatch after spsTouch's
+          // pending-settle wait; do not change that wait or the acceptance oracle.
+          const normalSelected=await b.eval(`const p=${JSON.stringify(normalStart)},body=document.querySelector(".sheetbody"),surface=document.querySelector(".sheetsurf"),v=visualViewport;
+            const describe=el=>{if(!el)return null;const r=el.getBoundingClientRect();return{tag:el.tagName,id:el.id,rect:{left:r.left,top:r.top,right:r.right,bottom:r.bottom}};};
+            const selectedAt=performance.now();window.__spsZoomNormalDispatch=null;
+            document.addEventListener("touchstart",e=>{const q=e.touches[0],vv=visualViewport;window.__spsZoomNormalDispatch={elapsed:performance.now()-selectedAt,target:describe(e.target),hit:q?describe(document.elementFromPoint(q.clientX,q.clientY)):null,point:q?{x:q.clientX,y:q.clientY}:null,body:describe(body),surface:describe(surface),scale:vv.scale,left:vv.offsetLeft,top:vv.offsetTop};},{capture:true,passive:true,once:true});
+            return{point:p,hit:describe(document.elementFromPoint(p.x,p.y)),body:describe(body),surface:describe(surface),scale:v.scale,left:v.offsetLeft,top:v.offsetTop};`);
           await observeOrigin();await spsTouch(normalStart,dx);
           const normalOrigin=await b.eval("return window.__spsZoomOrigin;"),normalAfter=await snapshot();
+          const normalDispatch=await b.eval("return window.__spsZoomNormalDispatch;");
+          t.diagnostic("SPS_ZOOM_NORMAL_ORIGIN "+JSON.stringify({from,normalBefore,normalStart,normalSelected,normalDispatch,normalOrigin,normalAfter}));
           assert.ok(normalOrigin&&normalOrigin.eligible&&Math.abs(normalOrigin.scale-1)<0.001);
           assert.strictEqual(normalAfter.tab,to,"the same direction remains available at normal scale");
           cells.push({from,mode:"normal",before:normalBefore,origin:normalOrigin,after:normalAfter});
