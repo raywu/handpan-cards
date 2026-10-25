@@ -1,8 +1,11 @@
 # SAVED-SCALE-VARIANTS coordination
 
-Current state: reviewed planning deliverable and exact approval packet complete;
-owner approval/implementation remain held. Latest receipts below supersede the
-initial prompt/research checkpoints. No variants runtime execution has occurred.
+Current state: owner explicitly approved reviewed plan and exact instruction/spec
+patch through DEV. StageA is active; no variants app implementation or runtime
+success claimed. The approval checkpoint at the end supersedes historical held/
+pending labels below. Main/install/global boundaries remain unchanged.
+
+## Historical planning checkpoints
 
 Planning only. No migration, app/test/storage/global/CLAUDE/main edits. User reports
 same-note named/layout instruments cannot coexist, confirms separate tabs and a
@@ -86,3 +89,42 @@ Plan9a96ed6d/packet5d0700f7 hashes remain unchanged. Exact head metadata recheck
 branch publication next. Actual DEV acceptance still must be resolved before code;
 corrected SHC run40242635186 remains the independent fullCI gate, not a variants
 execution test. Do not run this plan from its obsolete9e mutation snapshot.
+
+## Owner-approved transition and accepted delivery baseline
+
+Owner answer: “Approve reviewed plan and exact patch through DEV (Recommended)”.
+Approval binds immutable planning0e349967, plan9a96ed6d and packet5d0700f7; it
+settles coexistence/fallback/conflict behavior and the exact two-file instruction/
+spec diff. No renewed interview needed for those settled choices. No main merge,
+installs/global changes or unrelated CLAUDE edits authorized.
+
+SHC fullCI40242635186 independently CLEAR (2271JS/274Python/1510kills/8019cells each
+font), DEV582 merged6165c873 with source92d6516b tree identical. Actual DEV14HTTP
+hashes/noindex plus2native PASS/8loadedDocument bindings independently CLEAR; root
+source checkout clean. Original omission report unresolved; variants not delivered.
+Root created integration branch codex/saved-scale-variants-20261025 at6165c873,
+merged planning0e history, preserved immutable reviewed artifacts. Both original
+CLAUDE/ENGINE base SHA256 values exactly matched packet; git apply --check passed;
+root applied ONLY approved packet. This changes required product/storage facts,
+not Claude engineering workflow/global behavior. No feature runtime executed yet.
+
+Reserved collection hpfc.saved-scales.v1/schema1 and exclusive WebLock
+handpan-cards:saved-scales:v1. Wire6/record4 untouched; DUP candidate7/5 not claimed.
+Parallel author lanes: variants_capability_probe writes private diagnostic only;
+variants_test_contract_audit investigates acceptance/helper requirements read-only.
+They do not own app code, browser lease or remote writes. Root owns integration,
+exact packet application, ledger and all supervised browser execution.
+
+New material dependency found: sandbox tests currently boot synchronously with no
+locks/crypto/shared storage-event model, while many legacy assertions inspect old
+storage arrays and inventory-keyed CUSTOM. A default no-lock sandbox would test
+only fallback, not durable parity. Before T/S production work, review a distinct
+minimal helper-support window and explicit spec-oracle amendments; preserve all
+behavior assertions/floors, no test-only production path. Diagnostic authoring and
+read-only test audit can continue while this is resolved.
+
+Next: independent review then real bounded API diagnostics in disposable profiles;
+freeze public fixtures/SV acceptance, authorize reviewed helper file ownership,
+demonstrate intended baseline assertion RED, then exclusive S→U index ownership.
+All migration/concurrency/failure/performance/native checks remain NOT RUN. Keep
+raw receipts host-local and publish sanitized recovery refs in existing571 thread.

@@ -856,9 +856,13 @@ Verified against all three built-ins under the fixed list order of
   8-hex FNV-1a 32-bit hash of the UTF-8 bytes of `core.identitySeed(seed)`
   (offset basis `0x811c9dc5`, prime `0x01000193`, multiplication taken modulo
   2^32), giving the same result in Node and in the browser.
-- DECIDED(2026-10) The id is 32 bits, so two different scales can collide. The
-  records store holds one record per id: saving a second scale with a colliding id overwrites the earlier record in place (the later save wins), while the boot dedupe in `restoreScales` keeps the first; a collision is
-  accepted as vanishingly rare and is documented in the README.
+- DECIDED(saved-variants contract) The 32-bit id identifies musical inventory,
+  not a unique saved instance. Saved instances have separate stable local
+  handles. Import equality compares full validated portable meaning, including
+  identitySeed spelling and option intent; hash equality alone never discards or
+  overwrites a saved instance. Edit/delete target one instance. Preserve genuine
+  different-inventory collision defenses and recovery data rather than silently
+  treating a hash collision as an exact duplicate.
 - DECIDED(D14 as amended) The id is a pure function of `identitySeed(seed)` -
   notes, octaves, zones and order - and nothing else; `select.build` is never
   consulted for it.
@@ -976,12 +980,26 @@ The D6 palette set, index 0-5, from `CLAUDE.md` "Design system":
   rather than one is deliberate and safe here: no path reaches a solve with an
   unvalidated layout correction.
 - DECIDED(plan Phase 4) A flipped byte or an over-cap payload is rejected.
-- DECIDED(owner 2026-10, R7) Saved scales live in localStorage under
-  `hpfc.scales.v3`. On first boot the old `hpfc.scales` list is copied there
-  verbatim as a whole list (`copyLegacyScales`), and each record is read through
-  its own version reader and rewritten as v4 later, in `restoreScales`; the old key
-  is never written again. A scale saved in a tab still running the old app
-  lands under the old key and does not appear in the new app.
+- DECIDED(saved-variants contract) Saved collections use `hpfc.saved-scales.v1`,
+  envelope schema1, with instance wrappers outside capability-tagged `{v,s,o}`
+  records. Wire6 and current record4 writers do not change for local metadata.
+  The envelope stores ordered instances, tagged preferred selection, explicit
+  slots/hidden state, collection identity/revisions and immutable raw migration
+  source strings. A single acknowledged envelope replacement is the commit;
+  all durable writers serialize through the same exclusive Web Lock and reread
+  inside it. No unlocked durable fallback. Successful setItem acknowledges the
+  API write, not disk flush; a later diagnostic readback error does not roll it
+  back or authorize duplicate allocation.
+- DECIDED(saved-variants contract) Legacy `hpfc.scales.v3`, `hpfc.scales` and
+  relevant old selection/hidden source remain untouched by the new collection.
+  Legacy R7 builds copied `hpfc.scales` into `hpfc.scales.v3` and normalized known
+  records through their version readers. New migration preserves exact raw source
+  for recovery, converts known legacy records in the new envelope only and keeps
+  opaque/newer values unmodified. A valid committed new envelope is authoritative;
+  later old-client writes are a separate recovery branch, never automatic
+  re-migration. Quota/denied/corrupt/newer states must not be treated as an empty
+  durable store. Explicit session-only fallback is local to this tab and cannot
+  silently promote itself into persistent data when capabilities recover.
 - DECIDED(plan "Encoding") The encoder is pure JS: `node:vm` has no
   `CompressionStream`, so the engine may not depend on it. The test realm
   (`tools/engine_loader.js`) does inject `btoa`, `atob`, `TextEncoder` and

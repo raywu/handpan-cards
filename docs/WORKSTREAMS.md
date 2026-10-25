@@ -1,71 +1,85 @@
 # Shared workstream ledger
 
-## Priority SHARE-CUSTOMIZATION-HOTFIX — owner-authorized investigation and conditional execution
+## Current priority — SAVED-SCALE-VARIANTS, authorized through DEV
 
-Owner prioritizes the reported saved-customization/URL/LINK mismatch over SPS.
-Owner confirms SAVE CHANGES preceded fresh LINK. Ordinary native desktop/phone
-SAVE→LINK→clean-receiver controls pass; the original missing-angle report remains
-unresolved. A separate native production bug is confirmed: an older clipboard
-failure replaces/focuses the newer post-SAVE manual fallback URL while committed
-registry, durable record and bar stay correct. Controlled API promises; no owner
-clipboard/profile or Safari/native-picker validation. Finalized [prompt](prompts/2026-10-25-share-customization-hotfix.md) and
-[coordination](plans/2026-10-25-share-customization-hotfix-coordination.md) define
-independent lanes, evidence and review gates. Generated [plan](plans/2026-10-25-share-customization-hotfix.md)
-V2 edcd2a23 independently ENG/design-rechecked CLEAR; separate T/A/M lanes completed.
-Root integrated only after8unit+2native intended baseline RED. Main CI [581](https://github.com/raywu/handpan-cards/pull/581)
-is DRAFT/HELD; DEV [582](https://github.com/raywu/handpan-cards/pull/582) remains UNMERGED.
+Owner explicitly approved the reviewed plan and its exact instruction/spec patch
+through DEV on2026-10-25. This supersedes historical planning-only/interview-pending
+labels below. No main merge, installs or global configuration changes authorized.
 
-Root branch codex/share-customization-hotfix-20261025, host-local /private/tmp/handpan-share-hotfix.urAbvO/integration;
-base DEV667bbf8b (live ref rechecked). Prompt1489e53d independently critiqued/rechecked
-clear. Reviewed plan V2 edcd2a23 specifies minimal asynchronous ownership guards,
-spec-first separate T/A/M lanes, generated mutants/fullCI/actual DEV checks. Next
-preserve current source/evidence for final exact-head review/CI and actual DEV.
-All8unit+2native intended RED→GREEN, full app881 and codec105 pass. First fullCI
-40239404703 FAILED mutation verification at9e47e06a; actual app881/browser480 passed.
-Ten quoted mutation headers did not follow the real runner's word-splitting, and
-two legacy hide faults became redundant. Corrected patches retain all app/tests/
-harness standards; full local mutation_harness54 passes. Faithful word-split
-re-proof33 named assertion kills/32 clean commands plus actual unit/native runner
-partitions pass at22bdcbd8. App source5628f31d unchanged. Renewed exact-head review,
-fullCI and actual DEV still required. Main and CLAUDE changes require
-explicit owner consent. No original omitted-angle/variants resolution claimed.
-Same-inventory import replacement is verified existing behavior, separate from
-URL mismatch; no identity redesign automatically authorized. Private links/photo/
-names remain outside public docs. DUP plan is finalized and EXECUTIONHELD; owner
-warning choice is narrow, retained on codex/duplicate-notes-plan-20261025.
+- Reviewed [plan](plans/2026-10-25-saved-scale-variants.md) SHA256
+  `9a96ed6dc10f2598359efb5450e14de91239ecf39fa9664141ab2b45fc4346fb`;
+  [exact approved packet](plans/2026-10-25-saved-variants-instruction-approval.md)
+  `5d0700f76f734f63ae025ed2463b4d069d04f0842ca2cfa0d7e8e4916dfc9cda`,
+  immutable planning ref `0e3499678a19b65181584ab21ef9b98b7bacb64d`.
+- Accepted contract: distinct named/layout variants coexist; exact portable-meaning
+  imports deduplicate; Edit changes only its selected stable instance; conflicts
+  preserve drafts/winners; unsupported persistence is explicitly THIS-TAB session
+  only. Existing recognized seeded RESET deletion/promotion remains.
+- Root integration: branch `codex/saved-scale-variants-20261025`, host-local
+  `/private/tmp/handpan-saved-variants.HVUKbE/integration`, based on accepted DEV
+  `6165c8739f11c8d00c4b27ea6512ef1278275748`; planning history merged without
+  app/test changes. Original dirty/locked checkout stays untouched.
+- Root verified both exact source hashes and packet, checked the patch, then
+  applied ONLY its CLAUDE.md and ENGINE-SPEC diff. Packet/plan remain immutable
+  historical approval artifacts. No variants application implementation yet.
+- Reserved: collection key `hpfc.saved-scales.v1`, envelope schema1, exclusive lock
+  `handpan-cards:saved-scales:v1`. Wire6/record4 remain; DUP's candidate7/5 is not
+  consumed or activated. DUP feature implementation remains held.
+- Current parallel lanes: capability-probe author (private diagnostic only),
+  independent acceptance/helper-contract audit (read-only). Root alone runs host
+  browsers after diagnostic review. Next validate real API operations in owned
+  profiles, review the minimal faithful async sandbox support window, freeze T
+  acceptance/fixtures and demonstrate intended baseline RED before app changes.
+- Recovery: [coordination](plans/2026-10-25-saved-scale-variants-coordination.md)
+  records last/next, ownership and evidence. Any larger contract or exact CLAUDE
+  wording change requires renewed review/approval. Runtime/migration/concurrency/
+  performance parity is not yet validated. No owner data/profile migration used.
 
-### SAVED-SCALE-VARIANTS — newly corroborated requirement gap; investigation only
+### SHARE-CUSTOMIZATION-HOTFIX — delivered to DEV; main581 held
 
-Planning branch codex/saved-scale-variants-plan-20261025, host-local
-/private/tmp/handpan-saved-variants.HVUKbE/planning. Independently critiqued/rechecked
-[prompt](prompts/2026-10-25-saved-scale-variants-plan.md) frozen atcd9dbb77;
-[coordination](plans/2026-10-25-saved-scale-variants-coordination.md) tracks lanes and
-approval limits. Three independent research lanes complete; generated
-[plan](plans/2026-10-25-saved-scale-variants.md) V2 SHA9a96ed6d and concrete
-[instruction approval packet](plans/2026-10-25-saved-variants-instruction-approval.md)
-SHA5d0700f7 independently ENG/design-rechecked CLEAR. Planning only; owner contract/
-fallback/exact CLAUDE approval and implementation remain held. Corrected SHC
-92d6516b is integrated here; actual accepted DEV remains a gate. Publish/interview/await required approvals;
-no variants code or storage migration. SHC CI581/DEV582 remains separate.
+Source `92d6516bd533abb4a1e4fb7c8116b9836f648296`, branch
+`codex/share-customization-hotfix-20261025`, host-local
+`/private/tmp/handpan-share-hotfix.urAbvO/integration`. [Plan](plans/2026-10-25-share-customization-hotfix.md)
+and [coordination](plans/2026-10-25-share-customization-hotfix-coordination.md)
+retain intended8unit+2native RED→GREEN and failed first CI/protocol correction.
+FullCI [40242635186](https://github.com/raywu/handpan-cards/actions/runs/40242635186)
+independently audited CLEAR:2271JS/274Python/1510unique kills,8019cells each font
+mode; zero required skips/failures. Synthetic CI tree equals source tree.
+DEV [582](https://github.com/raywu/handpan-cards/pull/582) merged at
+`6165c8739f11c8d00c4b27ea6512ef1278275748`, identical source tree.
+Actual DEV:14resource hashes200 match immutable merged files; noindex;2required
+native journeys PASS,8actual loaded-document request/frame/loader/body bindings
+match appSHA256 `5628f31deed911e7e406ce852fe0daee5d6fcf1caa26d2fb0f182a823c0894b3`.
+Supervisor exit0/no timeout/cleanup, zero skips/cancels and identical host census.
+Independent delivery audit CLEAR. Raw host-local receipts under evidence/:
+`shc-dev-delivery-a0.json`, `shc-dev-actual-a0.stdout.tap`, supervisor/census and
+`shc-dev-actual-a0-root-verified.json`. HTTP receipts preserve hashes/statuses,
+not all14raw bodies. A first postprocessor missed TAP escaping; corrected reader
+inspected the SAME successful run, no browser retry.
 
-Owner confirms separate tabs and inability to retain two differently named/layout
-variants next to one another, even after Add/new LINK. Latest supplied link decoded
-valid with changed absolute positions but unchanged inventory identity. This
-explains replacement; it does not establish the original omitted-angle cause.
-Recommendation: preserve distinct named/layout saved variants, Edit updates the
-selected variant, unchanged-link reopening deduplicates. Design interview pending;
-no identity/storage migration or variants implementation authorized by the narrow
-async hotfix plan. Independent source/UX findings retained in the
-[investigation checkpoint](plans/2026-10-25-saved-scale-variants-investigation.md).
-The separate reviewed plan exists; migration/compatibility acceptance is required before code;
-do not conflate this user-facing limitation with the fixed async completion bug.
-Async app/browser regressions and targeted proof pass; renewed full CI/DEV remain
-pending. Neither the original omitted-angle report nor variant support is delivered.
+Ready for affected DEV QA. Main [581](https://github.com/raywu/handpan-cards/pull/581)
+remains DRAFT/HELD. Controlled API sinks/fallback fonts/Chromium only; no Safari/
+native OS clipboard/share-picker claim. Prevents obsolete async LINK completion
+UI; does not deliver saved variants or reproduce/explain the original omitted-
+angle report. Owner confirmed SAVE and still-custom diagram; preserve that human
+report. Latest valid customized link proves changed positions, unchanged inventory
+identity; inventory-keyed replacement is a separate verified limitation.
 
-SPS is deferred for this hotfix priority, not discarded. Source/proofadc80b12 has
-completed59 driver-reported assertion pairs; aggregate/raw independent review,
-finalCI/DEV/physicalQA remain. Preserve worktrees and evidence; root alone owns
-browser lease. Older 'current' snapshots below are historical; resolve live refs.
+### Preserved parallel/deferred streams
+
+SPS remains deferred behind sharing/variants. Latest pushed root ref `3a8467ff`
+on `codex/sheet-tab-swipe-20261025`, host-local
+`/private/tmp/handpan-sps-z8gaznu2/integration`. All50 suite-header-only corrections
+independently reviewed; no app/test/floor/body changes. Prior59 direct proof pairs
+used shlex and do NOT establish real runner protocol parity. Next merge accepted
+SHC base, faithful literal-header59 reproof, final review/fullCI/DEV/physical QA;
+no SPS release/QA-ready claim. Old browser lease token is invalid; root owns lease.
+DUP finalized reviewed technical plan SHA781540f4 retained at branch
+`codex/duplicate-notes-plan-20261025`, latest `b849b6d6149e883ce4b280a2616fd20cf7b6a21e`.
+All four answers settled (including warnings only newly allowed repeats); execution
+HELD. Main573/575/577/579/581 remain held pending explicit main consent. Other
+recovery tables below retain historical evidence; these current facts supersede
+older pending approval/status labels without discarding their investigation.
 
 ## 2026-10-25 all-workstream recovery checkpoint
 
