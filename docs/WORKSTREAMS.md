@@ -15,16 +15,21 @@ raw audit passed. Main575 remains HELD; old pendingCI prose below is historical.
 - **Owner/ref/worktree:** root on ray-Mac; codex/sheet-tab-swipe-20261025;
   /private/tmp/handpan-sps-z8gaznu2/integration; basebccff5a2. Separate T/A trees
   and file ownership are defined in coordination; not another agent's takeover grant.
-- **Last/next:** original plan and narrow fixture amendment ENG/design-cleared;
-  no swipe code written. T freezes helper oracle tests first; root demonstrates
-  helper-red, then fixture-green/default regression, then primary feature-red
-  against unchanged app before A writes production code.
+- **Last/next:** helper red→5green/873compatibility and primary feature2red→2green
+  completed;95line app prototype under independent tests. Browser route/passivity,
+  genuine taps/control gestures and strengthened native-scroll/quiet/focus paths
+  passed at unchanged app index97e498b9. Reviewed zoom amendmented8 now requires
+  3new expected-red unit groups before a conservative zoom guard; final full
+  matrix/mutants/source review/CI/DEV/nativeQA remain pending. Read coordination
+  Cycle state first; older planning-only snapshots below are history.
 - **Acceptance:** original SPS1–8, genuine independent reviewers, everynewgroup
   generated mutants/floors, full exact-headCI/combinedDEV/actualbytes+journeys;
   new swipe-specific physical QA remains. Main/CLAUDE/global changes excluded.
 - **Parallel SEO:** reviewed SEO-LONGTAIL planning branch
-  codex/seo-longtail-plan-20261025 at1c5344e0; mainCI577held/DEV578pending.
+  codex/seo-longtail-plan-20261025 at1c5344e0; mainCI577held/DEV578delivered ac97a9d6.
   Resolve live state; no content/generator/app/provider publication authorization.
+  DUPLICATE-NOTES research planning is separately tracked on
+  codex/duplicate-notes-plan-20261025 at2f01c3ac; no implementation grant.
   Broader SEO and queue-empty general audit retain their separate gates.
 
 

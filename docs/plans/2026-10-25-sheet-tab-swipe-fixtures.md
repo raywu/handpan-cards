@@ -116,6 +116,41 @@ margin concretely; do not infer iOS back-navigation quality from synthetic event
 These clarifications require independent ENG/design recheck before feature tests/
 app implementation, without reopening settled scope or historical baseline QA.
 
+## Pre-zoom observation and conservative reading-policy guard
+
+Bounded candidate/baseline diagnostics used the same reviewed touch probe and
+accepted baselinebcc versus candidateb3, eight verified eligible body attempts at
+two distinct start positions and visualViewport.scale2 in each. Candidate switched Scale→Layout and back; baseline
+kept Scale. Neither run observed visual-viewport pan/clamp movement, so **native
+panning coverage remains incomplete**: no claim that SPS broke or repaired actual
+viewport panning is justified. Raw observations and cleanup are retained outside
+source; source policy in applyKbOffset explicitly leaves deliberate zoom alone
+and permits the reader to pan.
+
+Recommended bounded preservation decision under the owner's AFK autonomy grant:
+while visualViewport.scale>1.01, do not recognize the optional sheet-tab shortcut.
+Sample the current scale at start and at acceptance/touchend, so a rise whose
+viewport notification has not arrived cannot slip through. A missing visualViewport
+API preserves normal navigation as before. Reuse the existing sheet zoom tolerance,
+not a new gesture constant. At scale1
+and tolerated residue through1.01 the original shortcut remains available. A zoom
+rise observed through existing viewport resize/scroll hooks cancels an in-flight
+record sticky, including a rise/fall before another touch sample. Do not change
+zoom, keyboard caps/lift, native panning, CSS, copy or browser settings; do not
+promise OS/Safari panning correctness from this guard.
+
+Before code, fresh ENG/design review this exact clarification. T then adds
+spec-first unit oracles for zoomed starts versus normal/residue/missing API, a
+normal start followed by zoomed acceptance before any viewport hook, and a transient
+observed zoom rise, and replaces the temporary observational test with an asserted real-
+browser no-tab-change-at2x plus normal1x-positive control. Root demonstrates
+expected assertion-red against current candidate before A implements the smallest
+shared-policy guard. Preserve the raw exploratory probe outside final regression
+suites; do not ship an unasserted observation as a claimed quality gate. Each new
+executable group gets a generated meaningful mutant, clean green/assertion proof
+and observed floor updates. All original regression/CI/DEV/physical QA and main/
+CLAUDE approval boundaries remain unchanged.
+
 ## Coordination and current state
 
 Root owns branch codex/sheet-tab-swipe-20261025 in the integration path above,

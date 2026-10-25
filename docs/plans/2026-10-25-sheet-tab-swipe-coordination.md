@@ -8,6 +8,34 @@ NON-goals: parser/engine/data/geometry/CSS/copy changes, global/CDP changes, mai
 release or CLAUDE.md edits. Owner approved feedback first then SPS through DEV;
 feedback independently delivered atbccff5a2, completing that prerequisite.
 
+## Cycle state — current before historical snapshots
+
+Root integration has the95line swipe prototype (index97e498b9), unchanged app
+through all fixture/driver corrections. Original feature2assertion-red→2green
+passed. Full37matrix first exposed two fixture limitations: missing native
+matches() and missing UA focus fixup. Matches driver is corrected; actualChrome
+positively focused GEN→lip→Scale then BODY, so no app focus change is justified.
+The unit model now checks no destination focus call and retains native BODY guard.
+
+Browser evidence: ten Add/Edit viewport route cells/passive singular bindings and
+real button gestures/taps passed. Stronger scroll fixtures passed65px native scroll
+and86px during112ms quiet observation, plus actual capture order and visible focus.
+Earlier poor-room scroll fixture failure retained; application unchanged.
+
+Current bounded policy amendment SHA256
+ed8dae7bcae3951a3db7c2f2f75fd9304693b2b0fc7517a1ccff965b34a4bd8e was independently
+ENG/design-cleared. At2x the candidate changes tabs and baseline does not; neither
+probe proved visual-viewport panning. Conservative zoom guard preserves existing
+reading policy; T's3new zoom-unit groups and one asserted native replacement are
+ready for root expected-red BEFORE A code. Normal1x/residue/missing-API positives,
+end-time sampling and sticky observed rise/fall are explicit. No zoom guard yet.
+
+Next: integrate/freeze zoom oracles; rootprove expected assertion-red; A minimal
+zoom guard; samegreen/full40unit+helper/defaultapp regressions; generated app/native
+faults and8preserved-context refreshes; independent final review/fullCI/DEV/native
+ownerQA. NoSPSCI/DEV/main delivery yet. Root keeps one owned browser lease; physical
+Safari/keyboard/edge/selection/smoothness and actual panning remain unverified.
+
 ## Hard rules
 
 1. Root alone integrates and operates the one host-browser lease; no worker deploys.
@@ -25,7 +53,7 @@ feedback independently delivered atbccff5a2, completing that prerequisite.
 [Original approved swipe contract](2026-10-25-sheet-tab-swipe.md), body at21760907
 SHA2564f133ae01efc9f99add6fd62e6a7089c382a43521b77ab0dae7a447553e3c57c.
 [Bounded fixture amendment](2026-10-25-sheet-tab-swipe-fixtures.md), final
-SHA2564378e805bb48a237ce3a6ef924d1c1b9c47fee7dcdd50dc2bd75dfc5f244ad3b.
+SHA256ed8dae7bcae3951a3db7c2f2f75fd9304693b2b0fc7517a1ccff965b34a4bd8e.
 Fresh engineering/design reviews independently cleared that exact amendment.
 ENG finding added helper-red→minimalfixture-green/defaultregression→feature-red→
 app edit gates; design contract unchanged. No helper/app implementation yet.
@@ -114,3 +142,12 @@ and preserves feedback app/engine/data, source reviewed/CI/actual bytes verified
 SEO content/app/provider implementation remains unapproved. Current SPS branch
 starts from earlier verified feedbackDEVbcc; preserve later SEO records on DEV
 integration, and resolve current refs rather than treating this snapshot as tip.
+
+## New parallel planning request
+
+DUPLICATE-NOTES is planning-only on codex/duplicate-notes-plan-20261025, retained
+source2f01c3ac; [prompt/ledger checkpoint](https://github.com/raywu/handpan-cards/blob/2f01c3ac/docs/WORKSTREAMS.md).
+Owner asks duplicates accepted with warning; exact scope/voicing/warning interview
+pending. Separate core/engine/UX worktrees and source-reviewed prompt are used;
+no duplicate-note app/engine/record/share implementation is authorized. Preserve
+this stream and completed SEO in later DEV ledger merges. Future audit stays queued.
