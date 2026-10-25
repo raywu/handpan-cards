@@ -1,6 +1,6 @@
 # Research prompt: repeated physical notes without duplicate-based rejection
 
-Version1 for independent critique before plan generation. Planning only.
+Version2 after independent critique; freeze before plan generation. Planning only.
 
 ## Mission and authority
 
@@ -25,7 +25,10 @@ The owner asks duplicates “anywhere in the scale.” Distinguish identical MID
 (including enharmonic spellings) from the same pitch class in different octaves,
 which is already often valid. Separate duplicate tone fields from multiple Ding
 markers. Do not silently remove unrelated grammar, range, capacity, geometry,
-minimum-musical-content or no-chord safeguards. Explain any interaction where a
+minimum-musical-content or no-chord safeguards that actually exist. Current spec
+explicitly retired ring/total note caps: do not invent or reinstate them. Separate
+legacy positional limits, wire-payload bounds and measured resource behavior.
+Explain any interaction where a
 rule such as upper notes strictly above Ding prevents a requested unison copy;
 identify the minimal equality/placement policy rather than deleting all checks.
 
@@ -113,7 +116,10 @@ identical cards, inflate harmonic scores or progression counts, alter root
 preference, suppress valid alternatives or cause combinatorial growth. Distinguish
 same MIDI duplicate positions from intentionally different-register voicings and
 pitch-class doublings. Musical equivalence is not physical field identity.
-Compare deterministic one-position choice, separately surfaced alternate physical
+Preserve existing equal-MIDI voicing ties: current voicing.js chooses upper-shell
+fields first, then field ID. Pin accepted cross-shell-unison outputs before
+extending eligibility to new copies; define deterministic ties without silently
+changing old cards. Compare deterministic one-position choice, separately surfaced alternate physical
 fingerings, and all-position highlighting; quantify costs/ergonomic limits, don't
 pretend the engine models hand reach or sound. Inspect print/PDF parity and note
 hit/drag/anchor/free-placement/seat-order feedback paths with duplicate labels.
@@ -121,9 +127,15 @@ hit/drag/anchor/free-placement/seat-order feedback paths with duplicate labels.
 Evaluate grammar octaveless inference explicitly. Repeating bare E may infer E in
 a different octave; preserve existing accepted readings/IDs unless a separately
 approved semantic change is justified. Enharmonic unisons should be consistently
-recognized without replacing English note conventions. Test equal-Ding copies,
+recognized without replacing English note conventions. For freeform imports, distinguish repeated textual mentions, alternative/conflicting
+inventories and explicitly declared physical copies. Trace importer provenance/
+ambiguity handling; do not turn prose repetition into extra physical fields or
+discard intentional list occurrences. Preserve unrelated ambiguity safeguards.
+Test equal-Ding copies,
 rim/inner/bottom same and cross zones, repeated runs, many copies and unsupported
-or zero-chord inventories. Do not claim unlimited counts beyond actual safe caps.
+or zero-chord inventories. Establish actual uncapped-input behavior and protocol/
+resource limits; propose measurements/efficient algorithms before any new hard
+limit, which would need explicit owner approval.
 
 Compatibility is a first-class decision. A currently representable duplicate wire
 string can still be unreadable by older code. Assess new wire/record versions or
@@ -158,7 +170,10 @@ warning state and copied links; production output cannot be its own sole oracle.
 Use proper TDD before later code: meaningful assertion-red for screenshot and core
 contract, green same assertions, everynewgroup generated killing mutants and
 applicable floors without lowering old rows. Retain malformed/range/capacity/
-legacy-invalid negative controls and all unaffected pinned deck/share/print facts.
+unrelated legacy-invalid negative controls and all unaffected pinned deck/share/
+print facts. Deliberate duplicate-policy expansion is the intended semantic delta:
+identify which old duplicate-refusal tests change versus which version-specific
+legacy meanings stay frozen, rather than demanding contradictory compatibility.
 A broad catch/delete of validators or weaker existing assertions is not the fix.
 
 No-regression is a future validation obligation, not a planning result. Specify

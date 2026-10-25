@@ -155,7 +155,8 @@ share changes or raw-photo publication. Scope/voicing/warning interview is pendi
   [coordination](plans/2026-10-25-duplicate-notes-coordination.md). Final plan not
   generated yet; do not infer a completed research/review or implementation grant.
 - **Last/next:** private image inspected and current duplicate validators located;
-  V1 prompt under independent critique. Freeze revised prompt, assign isolated
+  V2 prompt independently critiqued, revised and cleared at SHA256
+  be2677f0f32e23a1ae4ccda2ad3c07c711eed7c24e938b41c063dcc192dec3cb. Assign isolated
   core/identity, engine/layout and UX research lanes; synthesize and independently
   engineering/design-review before proposing implementation. Preserve all physical
   occurrences, unrelated validation, old valid instruments and version/rollback data.
