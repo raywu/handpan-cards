@@ -69,3 +69,38 @@ Current limitations: ledger/index not yet published at this checkpoint; actual
 workflow loading/parity, automatic startup discovery, Mac repair and cross-clone
 continuation are not demonstrated. No additional main or Claude-change consent is
 inferred from the completed production release or AFK mode.
+
+## Prepublication recovery control
+
+A separate fresh native context used an independent HTTPS shallow clone and
+unauthenticated public repository reads, without conversation or private-global
+context. At2026-10-25T03:54:55Z it resolved remoteDEV e3473d60 and correctly
+observed canonical docs/WORKSTREAMS.md HTTP404. It rejected the locally present
+feature snapshot as unpublished authority, retrieved both immutable P documents
+HTTP200 with their advertised Git blobs, and recovered the correct bounded root
+continuation/owner decisions. It also rejected initial validate40159553762's
+plans-only success as the full gate because substantive jobs were skipped.
+
+This is a passed prepublication/cached-state control, not successful published
+recovery or automatic discovery. The independent clone is on the same host, not
+a second machine. Initial sandbox DNS failure was followed by permitted public
+network reads; authentication/global settings were not changed. Postpublication
+positive recovery and other failure controls must be reported separately.
+
+## Candidate preparation receipt
+
+Both preliminary continuity-source reviews found no material issue in the new
+ledger/index/backlog. Final commit-bound source review remains required. Mac
+planning revision Q98dafd8e5f69c0698da83cea2aac8a5324052c82 is retained on
+`codex/mac-repair-plan-20261024` and integrated, with exact file SHA256
+`dedd4ad1984ead3673b27e8f80f0541b0c13886dedfdfd839b20c1c50b4e9c1e`.
+Independent engineering and design reviewers cleared Q's body. Its two addressed
+findings distinguish plan-publication authority and require a reviewed numeric
+whole-collection deadline/cleanup envelope in addition to unchanged per-file900s.
+No Mac runtime experiment or implementation ran.
+
+The candidate's publication status will be resolved through live PR570/571 and
+SHA-bound review/CI/DEV receipts. Do not edit a tested source head solely to embed
+its own CI run or publication SHA; external metadata binds those results. The
+first ledger remains a snapshot with explicit last-confirmed state and live-state
+resolution, not an automatically updated database.
