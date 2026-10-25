@@ -32,6 +32,13 @@ warning choice is narrow, retained on codex/duplicate-notes-plan-20261025.
 
 ### SAVED-SCALE-VARIANTS — newly corroborated requirement gap; investigation only
 
+Planning branch codex/saved-scale-variants-plan-20261025, host-local
+/private/tmp/handpan-saved-variants.HVUKbE/planning. Independently critiqued/rechecked
+[prompt](prompts/2026-10-25-saved-scale-variants-plan.md) frozen atcd9dbb77;
+[coordination](plans/2026-10-25-saved-scale-variants-coordination.md) tracks lanes and
+approval limits. Next run independent research→plan→ENG/design review; no variants
+code/migration or CLAUDE edit. Parent SHC9e47e06a CI581/DEV582 remains separate.
+
 Owner confirms separate tabs and inability to retain two differently named/layout
 variants next to one another, even after Add/new LINK. Latest supplied link decoded
 valid with changed absolute positions but unchanged inventory identity. This
