@@ -109,7 +109,7 @@ function run() {
     URL = `http://127.0.0.1:${server.address().port}/index.html`;
     await waitForServer();
 
-    b = await launch();
+    b = await launch({ foregroundSettle: true });
     assert.ok(b, "browser found by findBrowser() but launch() returned null");
     await b.setViewport(900, 900, false);
     await b.goto(URL);
