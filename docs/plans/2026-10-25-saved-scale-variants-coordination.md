@@ -29,3 +29,43 @@ Next: run frozen prompt as independent source/schema, UX/migration and platform
 research; synthesize plan with explicit provisional recommendations; fresh ENG/
 design review and iterate. Stop at planning deliverable pending scope/instruction
 approval; never infer permission from unanswered interviews.
+
+## Frozen prompt run and independent plan iteration
+
+Three separate native research contexts/trees completed: source/schemaa3e6a8cf,
+UX/recoveryd32e5ef1, primary-platform094b8aa0. Integratedroot2d1bb495/5dde26b9/
+a7a6a210. Public authoritative browsing only, no app/runtime/storage/API execution
+or private owner context uploaded. Source favors stable wrappers/single atomic
+envelope; platform confirms locked writers or transactional alternative required;
+UX flags label/conflict/RESET/recovery policy. Root chose existing recognized
+RESET deletion/promotion for minimum compatibility; optional retention redesign
+is not silently adopted. Raw baseline stays inside the first committed envelope,
+avoiding a separate multi-key backup/marker protocol.
+
+Generated V1plan327bd9be received fresh non-author ENG/design reviews. ENG material
+findings: stale destructive group/slot preconditions, successful-write/readback-
+error semantics, and missing executable measurement gate. Design findings: final
+rendered-label collisions (including literal suffix names/presets), remote selected-
+instance removal fallback, and boot session-source/unknown-data lifetime rules.
+Root revised all six, updated actual failed-SHC-CI evidence, and produced exact
+proposed instruction/spec patch with source files untouched.
+
+Reviewed V2plan SHA256
+9a96ed6dc10f2598359efb5450e14de91239ecf39fa9664141ab2b45fc4346fb,
+packet SHA2565d0700f76f734f63ae025ed2463b4d069d04f0842ca2cfa0d7e8e4916dfc9cda.
+Independent variants_plan_eng_review and variants_plan_design_review rechecked
+both exact hashes CLEAR: no remaining material planning finding. Clearance is
+design only; owner contract/fallback/exact CLAUDE and implementation gates remain.
+No source CLAUDE/ENGINE change or new runtime/compatibility claim. ENG execution
+note: measure store costs in C, then repeat selection-input→paint after UI stage D
+before final E clearance. This is required by the existing measurement gate.
+
+SHC originalCI40239404703 failed despite app881/e2e480 passing; corrected reviewed
+head92d6516b has33 faithful proof kills/32 cleancommands and actual runner unit/
+native partitions clear. New fullCI40242635186 pending; DEV582unmerged at this
+checkpoint. Reconcile its corrected base before publishing/running this plan;
+do not reintroduce9e's old mutation headers from an inherited planning snapshot.
+
+Next: preserve/publish reviewed plan and concrete packet, recheck accepted DEV
+base, interview/obtain required exact approval, STOP before variants code or data
+migration. Any change to reviewed contract/packet needs independent recheck.

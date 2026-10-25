@@ -36,8 +36,13 @@ Planning branch codex/saved-scale-variants-plan-20261025, host-local
 /private/tmp/handpan-saved-variants.HVUKbE/planning. Independently critiqued/rechecked
 [prompt](prompts/2026-10-25-saved-scale-variants-plan.md) frozen atcd9dbb77;
 [coordination](plans/2026-10-25-saved-scale-variants-coordination.md) tracks lanes and
-approval limits. Next run independent research→plan→ENG/design review; no variants
-code/migration or CLAUDE edit. Parent SHC9e47e06a CI581/DEV582 remains separate.
+approval limits. Three independent research lanes complete; generated
+[plan](plans/2026-10-25-saved-scale-variants.md) V2 SHA9a96ed6d and concrete
+[instruction approval packet](plans/2026-10-25-saved-variants-instruction-approval.md)
+SHA5d0700f7 independently ENG/design-rechecked CLEAR. Planning only; owner contract/
+fallback/exact CLAUDE approval and implementation remain held. Next reconcile SHC
+corrected92d6516b/actual accepted DEV, publish/interview/await required approvals;
+no variants code or storage migration. SHC CI581/DEV582 remains separate.
 
 Owner confirms separate tabs and inability to retain two differently named/layout
 variants next to one another, even after Add/new LINK. Latest supplied link decoded
