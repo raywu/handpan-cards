@@ -15657,4 +15657,28 @@ describe("SPS: primary public-event traces", () => {
     assert.strictEqual(app.els["scale-box"].value, before);
   });
 
+
+  test("SPS7: vertical-first Layout to Scale blurs the newly hidden lip without destination focus", () => {
+    const app = ready("add", "layout");
+    // The bounded fixture skips anonymous footer wrappers by default. Supply
+    // this one literal shipped path through public DOM operations so the
+    // existing footer focus hand-off can genuinely see its focused primary.
+    const clip = app.sandbox.document.createElement("div");
+    clip.id = "scale-footclip";
+    app.els["scale-foot"].appendChild(clip);
+    clip.appendChild(app.els["scale-footslide"]);
+    app.els["scale-footslide"].appendChild(app.els["scale-generate"]);
+    assert.strictEqual(app.els["scale-generate"].hidden, false);
+    app.els["scale-generate"].focus();
+    assert.strictEqual(app.activeId(), "scale-generate");
+    emit(app, "touchstart", { x: 140, y: 400 }); app.advance(20);
+    emit(app, "touchmove", { x: 140, y: 360 });
+    assert.strictEqual(shut(app), true, "the vertical hook must really collapse the lip");
+    assert.strictEqual(app.activeId(), "scale-lip", "the real footer hand-off must first focus the lip");
+    app.advance(20); emit(app, "touchmove", { x: 240, y: 360 }); emit(app, "touchend", { x: 240, y: 360 });
+    assert.strictEqual(on(app, "scale"), "true");
+    assert.strictEqual(app.els["scale-lip"].hidden, true);
+    assert.strictEqual(app.activeId(), null, "the newly hidden lip is blurred; swipe selects no replacement focus target");
+  });
+
 });
