@@ -36,3 +36,21 @@ Lanes: source/unique source-research note; ux/unique ux-research note; diagnosti
 reviewed temporary native probes only. Root alone edits plan/ledger/coordination,
 operates lease and integrates. All three trees are separate under this root.
 No app/test implementation is authorized before the plan review gate.
+
+## Research checkpoint
+
+Source749ded11 retainedroot63cb4b04 and UX38fea37c retainedroot683d90fc completed
+source-only notes. Both find coherent ordinary angle SAVE, no unconditional loss;
+owner report stays unresolved. Intentional count/parent reset and same-inventory
+replacement are controls, not bug findings. Potential persistence-failure and
+async completion-context hazards need reachable evidence. COPYcurrenthref/query
+contract remains protected; no blind reencode fix.
+
+Native diagnostic author share_prompt_critic owns only private probe artifacts
+in evidence/. Root next verifies frozen script and independent safety/oracle
+review before supervised jobs. Initial jobs: desktopno-opSave, phonefine-nudge
+Save, sameprofiletwotabs; freshreceiver uses actualcapturedpayload. Rootlease
+transferred from idleSPS after censusChrome680/7profiles preserved, tokenrotated;
+no ownerprofile/OSclipboard access. No probe executed yet; no plan synthesized or
+application/test change. Parent/count intentional semantics and privatefixture
+handling remain explicit. SPS latestprioritycheckpoint5c0239ed; no swipebundling.
