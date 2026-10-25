@@ -2,15 +2,19 @@
 # suite: node --test --test-name-pattern ^SB-3.the.announcer.is.a.markup.node..not.one.the.app.created$ tests/app.test.js
 # The sandbox stops seeding the announce node, so the app creates its own fallback and the stub no longer
 # matches the shipped markup.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10981,3 +10981,3 @@ const anchorOne  = document.getElementById("scale-anchor-one");
+ const anchorBetween = document.getElementById("scale-anchor-between");
+-const announce = document.querySelector(".announce");
++const announce = document.querySelector(".announce") || document.body.appendChild(document.createElement("div"));
+ announce.className = "announce";
 diff --git a/tools/sandbox.js b/tools/sandbox.js
 --- a/tools/sandbox.js
 +++ b/tools/sandbox.js
-@@ -419,7 +419,7 @@ function boot(opts = {}) {
-     }
-   }
+@@ -421,3 +421,3 @@ function boot(opts = {}) {
    const created = [];
 -  if (html.includes('<div class="announce"')) {
 +  if (false && html.includes('<div class="announce"')) {
      const node = bindFocus(makeElement("announce"));
-     node.className = "announce";
-     markupNodes.push(node);
