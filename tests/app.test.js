@@ -14422,7 +14422,7 @@ describe("OF: the sheet's seats follow the typed order", () => {
       pd2Layout(app);
       assert.strictEqual(app.els["scale-panel-layout"].hidden, false, "the action is on the visible Layout tab");
       assert.strictEqual(app.els[action].disabled, false, action + " is usable");
-      app.click(app.els[action]);
+      app.els[action].click(); // These controls use onclick; app.click dispatches registered listeners only.
       assert.ok(d2Status(app).length > 0, action + " must display its own result");
       assert.doesNotMatch(d2Status(app), /follows? the order listed/, action);
       if (action === "scale-layout-reset") assert.strictEqual(d2Status(app), "Layout reset.");
@@ -14454,7 +14454,8 @@ describe("OF: the sheet's seats follow the typed order", () => {
     openEdit(app, rec);
     pd2InnerThenRim(app);
     assert.strictEqual(app.els["scale-generate"].hidden, false, "Edit SAVE is a visible control on Scale");
-    app.click(app.els["scale-generate"]);
+    assert.strictEqual(app.els["scale-generate"].disabled, false, "valid Edit SAVE is enabled before activation");
+    app.els["scale-generate"].click(); // Activate its onclick, matching the existing SAVE driver convention.
     assert.strictEqual(app.sheetOpen(), false);
     const savedRecord = app.registry()[app.deckId()];
     openEdit(app, savedRecord);
