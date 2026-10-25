@@ -15402,7 +15402,13 @@ function run() {
           assert.deepStrictEqual(after,before,selector+" changed an option during a non-tap");
           if(dx>=48)await b.click("#scale-tab-layout");
           await b.eval(`document.querySelector(${JSON.stringify(selector)}).scrollIntoView({block:"center"});return true;`);
-          await b.settle();await b.click(selector);
+          await b.settle();
+          const tap=await b.eval(`const e=document.querySelector(${JSON.stringify(selector)}),r=e.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2;return{x,y,visible:r.width>0&&r.height>0&&e.contains(document.elementFromPoint(x,y))};`);
+          assert.strictEqual(tap.visible,true,"the positive touch tap must target the visible control center");
+          await b.waitForPendingSettle();
+          await b.send("Input.dispatchTouchEvent",{type:"touchStart",touchPoints:[{x:tap.x,y:tap.y,id:7,radiusX:4,radiusY:4,force:1}]});
+          await b.releasing(()=>b.send("Input.dispatchTouchEvent",{type:"touchEnd",touchPoints:[]}));
+          await b.waitFor("window.__spsControlClicks>=1",{label:"the genuine touch tap activates its control"});
           assert.strictEqual(await b.eval("return window.__spsControlClicks;"),1,selector+" genuine tap remains effective");
           if(selector==="#scale-layout-reset")assert.strictEqual((await pd2Status()).text,"Layout reset.");
           else assert.strictEqual(await b.eval(`return document.querySelector(${JSON.stringify(selector)}).getAttribute("aria-pressed");`),"true");
@@ -15469,18 +15475,23 @@ function run() {
         await b.setPageScale(2);await b.settle();
         const snap=()=>b.eval(`const v=visualViewport;return{scale:v.scale,left:v.offsetLeft,top:v.offsetTop,width:v.width,height:v.height,tab:document.getElementById("scale-tab-layout").getAttribute("aria-selected")==="true"?"layout":"scale",body:document.querySelector(".sheetbody").scrollTop,surface:document.querySelector(".sheetsurf").scrollTop};`);
         assert.ok((await snap()).scale>1.99,"the probe must actually zoom");
-        await b.eval(`window.__spsProbeTouches=[];document.addEventListener("touchstart",e=>{window.__spsProbeTouches.push({body:!!(e.target.closest&&e.target.closest(".sheetbody")),tag:e.target.tagName,id:e.target.id});},{capture:true,passive:true});return true;`);
+        await b.eval(`window.__spsProbeTouches=[];document.addEventListener("touchstart",e=>{const body=!!(e.target.closest&&e.target.closest(".sheetbody")),excluded=!!(e.target.closest&&e.target.closest("button,input,textarea,select,#scale-preview,#scale-lip"));window.__spsProbeTouches.push({body,eligible:body&&!excluded,tag:e.target.tagName,id:e.target.id,clientX:e.touches[0]&&e.touches[0].clientX,clientY:e.touches[0]&&e.touches[0].clientY});},{capture:true,passive:true});return true;`);
         for(const dx of [-100,-100,-100,-100,100,100,100,100]){
-          const before=await snap();
-          await spsTouch({x:dx<0?240:120,y:300},dx);
-          await sleep(80);records.push({dx,before,after:await snap()});
+          const before=await snap(),start=await spsSpot(dx);
+          if(!start){records.push({dx,before,after:before,origin:null,incomplete:"no eligible visible body surface at this zoom/pan"});continue;}
+          const ordinal=await b.eval("return window.__spsProbeTouches.length;");
+          await spsTouch(start,dx);
+          await sleep(80);
+          const origin=await b.eval(`return window.__spsProbeTouches[${ordinal}]||null;`);
+          records.push({dx,start,before,after:await snap(),origin,incomplete:!origin||!origin.eligible?"actual touch did not originate on the intended eligible body surface":null});
         }
-        const moved=records.some(r=>Math.abs(r.after.left-r.before.left)>1);
-        const clampedAfterMove=records.some((r,i)=>i>0&&records.slice(0,i).some(p=>Math.abs(p.after.left-p.before.left)>1)&&Math.abs(r.after.left-r.before.left)<1);
+        const covered=records.filter(r=>r.origin&&r.origin.eligible);
+        const moved=covered.some(r=>Math.abs(r.after.left-r.before.left)>1);
+        const clampedAfterMove=covered.some((r,i)=>i>0&&covered.slice(0,i).some(p=>Math.abs(p.after.left-p.before.left)>1)&&Math.abs(r.after.left-r.before.left)<1);
         // This is a bounded observation, not a new zoom exclusion or a claim
         // that a changed tab proves a new requirement. Root compares baseline
         // and candidate and reports absent pan/clamp coverage as incomplete.
-        t.diagnostic("SPS_ZOOM_PAN_PROBE "+JSON.stringify({moved,clampedAfterMove,origins:await b.eval("return window.__spsProbeTouches;"),records}));
+        t.diagnostic("SPS_ZOOM_PAN_PROBE "+JSON.stringify({requested:8,coveredOrigins:covered.length,moved,clampedAfterMove,incomplete:covered.length<8||!moved||!clampedAfterMove,origins:await b.eval("return window.__spsProbeTouches;"),records}));
       }finally{await b.setPageScale(1);await spaReset();}
     });
 
