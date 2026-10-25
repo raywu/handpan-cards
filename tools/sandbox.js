@@ -236,6 +236,8 @@ function makeLocation(href) {
  *   webdriver      - navigator.webdriver (default true, as under automation)
  *   languages      - navigator.languages (default ["en-US", "en"]); navigator.language is its first entry
  *   html           - boot this markup instead of reading index.html
+ *   sheetBody      - with layout, expose the anonymous sheet body and its markup ancestry;
+ *                    event capture/bubble and native focus/selection remain unsimulated
  */
 const JS_TYPES = new Set([
   "text/javascript", "application/javascript", "application/x-javascript", "text/ecmascript",
@@ -373,6 +375,7 @@ function boot(opts = {}) {
   }
   // Ancestry from a tag-stack walk of the shipped markup, so a control inside a
   // hidden container has no client rects without a hand-kept table.
+  const markupNodes = [];
   {
     const VOID = new Set(["input", "br", "img", "meta", "link", "hr", "source", "wbr", "area", "col"]);
     const body = html.replace(/<!--[\s\S]*?-->/g, "")
@@ -388,15 +391,34 @@ function boot(opts = {}) {
         continue;
       }
       const id = /\bid="([^"]+)"/.exec(attrText);
+      const classes = /\bclass="([^"]*)"/.exec(attrText);
+      const isSheetBody = opts.layout && opts.sheetBody && classes &&
+        classes[1].split(/\s+/).includes("sheetbody");
+      const bodyNode = isSheetBody ? bindFocus(makeElement("", name)) : null;
+      if (bodyNode) {
+        bodyNode.className = classes[1];
+        const surface = els["scale-sheet"].firstElementChild;
+        surface.classList.add("sheetsurf");
+        surface.appendChild(bodyNode);
+        markupNodes.push(bodyNode);
+      }
       if (id && els[id[1]]) {
         const up = [...stack].reverse().find((f) => f.id && els[f.id]);
         if (up) els[id[1]]._markupParent = els[up.id];
+        // The opt-in body is the only anonymous container added here. Keep the
+        // existing nearest-ID chain within it, but make contains/closest/fire
+        // agree on that ancestry. Controls outside it retain the old fixture.
+        if (opts.layout && opts.sheetBody && stack.some((f) => f.bodyNode)) {
+          const parent = [...stack].reverse().find((f) => f.bodyNode || (f.id && els[f.id]));
+          const node = parent.bodyNode || els[parent.id];
+          els[id[1]].parentNode = node;
+          els[id[1]]._markupParent = node;
+        }
       }
-      if (!VOID.has(name) && !selfClose) stack.push({ tag: name, id: id && id[1] });
+      if (!VOID.has(name) && !selfClose) stack.push({ tag: name, id: id && id[1], bodyNode });
     }
   }
   const created = [];
-  const markupNodes = [];
   if (html.includes('<div class="announce"')) {
     const node = bindFocus(makeElement("announce"));
     node.className = "announce";
