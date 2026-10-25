@@ -11129,6 +11129,7 @@ let pendingDerive = {};
 const currentScaleInput = () => boxOk && !(inputPath === "fields" && lineStale);
 let sheetTab = "scale";
 let sheetSwipe = null;
+const sheetZoomed = () => !!(window.visualViewport && window.visualViewport.scale > 1.01);
 let layoutBase = { anchor: "one", mirror: false, mb: false, seats: "", angles: "" };
 const HINT_EMPTY = () => t("sheet.layout_hint_empty");
 const DRAWER_HINT = () => t("sheet.drawer_hint");
@@ -11672,7 +11673,7 @@ function setTab(tab) {
     const check = () => {
       const S = sheetSwipe;
       if (!S) return false;
-      if (!sheetOpen || S.tab !== sheetTab || sheet.classList.contains("kbup") ||
+      if (!sheetOpen || S.tab !== sheetTab || sheetZoomed() || sheet.classList.contains("kbup") ||
           Math.abs(scrollOf(body) - S.bodyTop) > 8 || Math.abs(scrollOf(sheetSurf) - S.surfTop) > 8 ||
           (S.field && (document.activeElement === S.field || selected(S.field))) ||
           (S.box && (scrollOf(S.box) !== S.boxTop || (S.box.scrollLeft || 0) !== S.boxLeft))) {
@@ -11696,7 +11697,7 @@ function setTab(tab) {
       cancel();
       const ts = e.touches, t = e.target;
       const p = ts && ts.length === 1 && ts[0];
-      if (!sheetOpen || !p || !Number.isFinite(p.clientX) || !Number.isFinite(p.clientY) ||
+      if (!sheetOpen || !p || sheetZoomed() || !Number.isFinite(p.clientX) || !Number.isFinite(p.clientY) ||
           p.clientX < 24 || p.clientX > window.innerWidth - 24 || sheet.classList.contains("kbup") ||
           previewBox.contains(t) || (t && t.closest && t.closest("#scale-lip, select"))) return;
       const field = t && t.closest ? t.closest("input, textarea") : null;
@@ -12634,7 +12635,8 @@ function applyKbOffset(e) {
    * deliberate fingers, and the reader who zoomed can pan.
    * The tolerance is for scales that do not land exactly on 1 coming back from
    * a pinch; a sub-percent residue is not a zoom. */
-  const zoomed = vv.scale > 1.01;
+  const zoomed = sheetZoomed();
+  if (zoomed) sheetSwipe = null;
   /* The keyboard-free baseline is the sheet's own height, not innerHeight:
    * #scale-sheet is position:fixed; inset:0, so it is the layout viewport's
    * height and does not depend on the cap or translate written below. iOS can
