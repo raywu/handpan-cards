@@ -122,6 +122,11 @@ instrument is18 notes; no maker endorsement/popularity proof. Current links load
 instruments, not frozen progressions. No content/app/provider/global changes.
 
 Final docs-scope review: ENG independently confirmed six new SEO documents plus
-ledger-only prefix, frozen plan hash unchanged and all prior ledger bytes preserved.
+ledger-only insertion, frozen plan hash unchanged and all prior ledger bytes preserved.
 Reviewer ownership labels corrected; planning-draft pending-review prose is a
 historical snapshot superseded by the exact final review receipts above.
+
+Publication integration note: locate SEO checkpoint before the shared read/resume
+section, preserving all prior ledger bytes. This avoids overlapping the feedback
+stream’s independently published top-of-file checkpoint during serialized DEV
+merges. Plan and research bytes remain unchanged; no application scope is added.

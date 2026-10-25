@@ -1,41 +1,5 @@
 # Shared workstream ledger
 
-## 2026-10-25 SEO-LONGTAIL planning checkpoint
-
-The owner's newer explicit request authorizes **long-tail strategy research and a
-reviewed subplan now**, in parallel with existing app work. This supersedes the
-older deferred research label only for this bounded SEO-LONGTAIL substream.
-Broader SEO investigation remains queued; future queue-empty code/test audit stays
-queued. No article/generator/app implementation, publication, provider/analytics
-write, CLAUDE.md change or main release is authorized by this planning request.
-
-- **Umbrella/status:** SEO → SEO-LONGTAIL; research/subplan independently reviewed, implementation unapproved.
-- **Plan:** [long-tail content subplan](plans/2026-10-25-seo-longtail-content.md).
-  [Prompt](prompts/2026-10-25-seo-longtail-subplan.md), three linked research notes
-  and [coordination](plans/2026-10-25-seo-longtail-coordination.md) retain evidence.
-- **Owner/location:** Codex root on ray-Mac; branch
-  codex/seo-longtail-plan-20261025; host-local worktree
-  /private/tmp/handpan-seo-longtail.rpqmbt6_/planning. Base217609075a14e6ca4799497210af27d9df842c5e;
-  fresh DEV observedf5df7942d097167013a3bf2baf05a6497ac73613 on2026-10-25.
-  Resolve the advertised branch/PR and immutable published plan commit before
-  recovery; local paths are not portable or permission to disturb another lane.
-- **Last confirmed:** independent prompt critique incorporated arrival/RNG/repeat-
-  measurement gaps; three genuine research contexts completed source/web audit.
-  Canonical diagnostic verifies supplied18-note link, not illustrative20-note query.
-  Current link loads instrument, not exact progression/tier/view. Search demand,
-  musical suitability, publishing setup and full attribution remain unverified.
-- **Review:** final plan SHA256 f2be3a0275642f07eb53aa0b1e627bc6d23f1085ec1efa0463f9702534e51fd8; fresh ENG/design reviews cleared after seven material/wording fixes.
-- **Next:** interview unresolved audience/reviewer/home/budget/data choices; then await
-  separately scoped implementation approval. No manufactured numeric quality score.
-- **Recommended proposal:** useful family guide first, at most two independently
-  distinct layout lessons; reviewed drafts and human music validation, not bulk
-  publishing. Defaults are provisional until owner answers. Existing Domain
-  verification/site-name implementation must not be repeated from stale records.
-- **Recovery:** creation/checkpoints/plan/review/source refs belong in this DEV
-  ledger and authorized existing reporting thread. Preserve unrelated concurrent
-  ledger rows during merge. Main remains held without explicit feature consent.
-
-
 ## 2026-10-25 Mac repair execution checkpoint
 
 **Additional owner-requested plan discovery:** the
@@ -135,6 +99,42 @@ Existing [repository instructions](../AGENTS.md), [CLAUDE.md](../CLAUDE.md),
 [test contract](../tests/CONTRACT.md) and [browser runbook](testing/browser.md)
 remain unchanged. [Workflow references and explicit session bootstrap](agents/workflows.md)
 are an index, not activated skills or changed Claude lifecycle requirements.
+
+## 2026-10-25 SEO-LONGTAIL planning checkpoint
+
+The owner's newer explicit request authorizes **long-tail strategy research and a
+reviewed subplan now**, in parallel with existing app work. This supersedes the
+older deferred research label only for this bounded SEO-LONGTAIL substream.
+Broader SEO investigation remains queued; future queue-empty code/test audit stays
+queued. No article/generator/app implementation, publication, provider/analytics
+write, CLAUDE.md change or main release is authorized by this planning request.
+
+- **Umbrella/status:** SEO → SEO-LONGTAIL; research/subplan independently reviewed, implementation unapproved.
+- **Plan:** [long-tail content subplan](plans/2026-10-25-seo-longtail-content.md).
+  [Prompt](prompts/2026-10-25-seo-longtail-subplan.md), three linked research notes
+  and [coordination](plans/2026-10-25-seo-longtail-coordination.md) retain evidence.
+- **Owner/location:** Codex root on ray-Mac; branch
+  codex/seo-longtail-plan-20261025; host-local worktree
+  /private/tmp/handpan-seo-longtail.rpqmbt6_/planning. Base217609075a14e6ca4799497210af27d9df842c5e;
+  fresh DEV observedf5df7942d097167013a3bf2baf05a6497ac73613 on2026-10-25.
+  Resolve the advertised branch/PR and immutable published plan commit before
+  recovery; local paths are not portable or permission to disturb another lane.
+- **Last confirmed:** independent prompt critique incorporated arrival/RNG/repeat-
+  measurement gaps; three genuine research contexts completed source/web audit.
+  Canonical diagnostic verifies supplied18-note link, not illustrative20-note query.
+  Current link loads instrument, not exact progression/tier/view. Search demand,
+  musical suitability, publishing setup and full attribution remain unverified.
+- **Review:** final plan SHA256 f2be3a0275642f07eb53aa0b1e627bc6d23f1085ec1efa0463f9702534e51fd8; fresh ENG/design reviews cleared after seven material/wording fixes.
+- **Next:** interview unresolved audience/reviewer/home/budget/data choices; then await
+  separately scoped implementation approval. No manufactured numeric quality score.
+- **Recommended proposal:** useful family guide first, at most two independently
+  distinct layout lessons; reviewed drafts and human music validation, not bulk
+  publishing. Defaults are provisional until owner answers. Existing Domain
+  verification/site-name implementation must not be repeated from stale records.
+- **Recovery:** creation/checkpoints/plan/review/source refs belong in this DEV
+  ledger and authorized existing reporting thread. Preserve unrelated concurrent
+  ledger rows during merge. Main remains held without explicit feature consent.
+
 
 ## Read and resume safely
 
