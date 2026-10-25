@@ -15144,3 +15144,320 @@ describe("SO: bottom seat numbers stay on their seats", () => {
     assert.deepStrictEqual(soFlash(app), changed.sort());
   });
 });
+
+/* SHARE-CUSTOMIZATION-HOTFIX: eight observable groups, no helper/app seams.
+ * Promise completion is drained independently of DOM mutation. The VM's history
+ * has no stack and focus() emits no blur: native ordering/selection is E1/E2. */
+describe("SHC asynchronous LINK ownership", () => {
+  const PAGE = "https://example.test/index.html?share=public-control";
+  // Existing public FPS fixture, frozen before this repair (test above).
+  const HASH = "#s=6/uC3_uDb3_uEb3_(F3)_G3_Ab3_uBb3_C4_uDb4_Eb4_F4_G4_Ab4_C5_Eb5_-_F5_G5_uAb5/*F+AEOLIAN+12/between/at-,225,,20,,130/5af123";
+  const drain = () => new Promise((resolve) => setImmediate(resolve));
+  const deferred = () => {
+    let resolve, reject;
+    const promise = new Promise((yes, no) => { resolve = yes; reject = no; });
+    return { promise, resolve, reject };
+  };
+  const sink = (app, method = "clipboard") => {
+    const calls = [];
+    const accept = (payload) => { const d = deferred(); calls.push({ payload, ...d }); return d.promise; };
+    if (method === "clipboard") app.sandbox.navigator.clipboard = { writeText: accept };
+    else { delete app.sandbox.navigator.clipboard; app.sandbox.navigator.share = accept; }
+    return calls;
+  };
+  const copy = async (app, calls) => {
+    const count = calls.length;
+    app.els["share-copy"].click();
+    await drain();
+    assert.strictEqual(calls.length, count + 1, "LINK must reach its intercepted API exactly once");
+    return calls[count];
+  };
+  const settle = async (call, success = false) => { call[success ? "resolve" : "reject"](success ? undefined : new Error("controlled denial")); await drain(); };
+  const hidden = (app, why) => assert.strictEqual(app.els["share-url"].hidden, true, why);
+  const fresh = () => boot({ href: PAGE + HASH });
+  const leaveSheet = (app, href) => { app.els["scale-back"].click(); app.location.href = href; app.popstate(); };
+  const live = (app) => app.announcer().textContent;
+  const nudgeSave = (app) => {
+    // Click the already-selected chip: openEdit() would select first and could
+    // conceal a missing Edit-entry cancellation hook.
+    app.clickChip(app.currentDeck().name);
+    app.click(app.els["scale-tab-layout"]);
+    app.els["scale-fine-toggle"].click();
+    d2Tap(app, "C3");
+    app.els["scale-angle-next"].click();
+    app.els["scale-generate"].click();
+  };
+
+  test("SHC U1: latest LINK owns fallback in both completion orders and at identical URLs", async () => {
+    for (const order of [[1, 0], [0, 1]]) {
+      const app = boot({ href: PAGE });
+      const calls = sink(app);
+      let selections = 0;
+      app.els["share-url"].select = () => { selections++; };
+      const a = await copy(app, calls);
+      app.clickChip("D AMARA 10");
+      const b = await copy(app, calls);
+      assert.deepStrictEqual(calls.map((c) => c.payload), [PAGE + "#deck=d-kurd-10", PAGE + "#deck=d-amara-10"]);
+      await settle(calls[order[0]]);
+      if (order[0] === 0) hidden(app, "retired A must not reveal before current B settles");
+      await settle(calls[order[1]]);
+      assert.strictEqual(app.els["share-url"].value, b.payload, "old A must not overwrite B's manual URL");
+      assert.strictEqual(app.activeId(), "share-url");
+      assert.strictEqual(selections, 1, "only B may select the manual URL");
+      assert.strictEqual(live(app), "SELECT THE LINK AND COPY IT");
+      assert.notStrictEqual(a.payload, b.payload);
+    }
+    const app = boot({ href: PAGE });
+    const calls = sink(app);
+    const a = await copy(app, calls), b = await copy(app, calls);
+    assert.strictEqual(a.payload, b.payload);
+    await settle(b, true); app.flushTimers();
+    await settle(a);
+    hidden(app, "same-URL older rejection must not revive fallback after B succeeds");
+    assert.strictEqual(live(app), "LINK COPIED");
+  });
+
+  test("SHC U2: same-ID SAVE and selection retire old LINK while new LINK carries committed angles", async () => {
+    const app = fresh(), calls = sink(app), id = app.deckId(), pre = app.location.href;
+    const a = await copy(app, calls);
+    nudgeSave(app);
+    assert.strictEqual(app.deckId(), id, "a layout SAVE must keep identity");
+    assert.deepStrictEqual(app.currentDeck().options.angles.bottom, [295, 225, null, 20, null, 130]);
+    // Complete the VM's explicitly modelled history pop before asking for B.
+    app.location.href = pre; app.popstate();
+    const b = await copy(app, calls);
+    assert.strictEqual(a.payload, PAGE + HASH, "A keeps its invocation payload, not the later draft");
+    assert.strictEqual(b.payload, app.location.href);
+    const read = plain(app.get("HPE.share.decode(" + JSON.stringify(b.payload.split("#s=")[1]) + ")"));
+    assert.strictEqual(read.ok, true);
+    assert.deepStrictEqual(read.value.options.angles.bottom, [295, 225, null, 20, null, 130]);
+    const records = JSON.parse(app.store[app.get("SCALES_KEY")]);
+    assert.deepStrictEqual(records[0].o.angles.bottom, [295, 225, null, 20, null, 130]);
+    await settle(a);
+    hidden(app, "same-ID SAVE must permanently retire A");
+    await settle(b); assert.strictEqual(app.els["share-url"].value, b.payload);
+    for (const select of [() => app.select(id), () => { app.clickChip("D AMARA 10"); app.select(id); }]) {
+      const old = await copy(app, calls);
+      select();
+      await settle(old);
+      hidden(app, "reselection and A→B→A must not revive ownership");
+    }
+  });
+
+  test("SHC U3: Add Edit About and mobile settings retire LINK through open and cancel", async () => {
+    for (const modal of ["add", "edit", "about", "panel"]) for (const success of [false, true]) {
+      const app = fresh(), calls = sink(app), pre = app.location.href;
+      let shared = 0;
+      app.sandbox.navigator.share = async () => { shared++; };
+      app.run("settingsPanel.querySelectorAll = () => []");
+      const old = await copy(app, calls);
+      if (modal === "add") openSheet(app);
+      if (modal === "edit") app.clickChip(app.currentDeck().name);
+      if (modal === "about") app.run("openAbout()");
+      if (modal === "panel") { app.run("openPanel()"); app.els["settings-trigger"].focus(); }
+      const focused = app.activeId();
+      const before = live(app);
+      await settle(old, success); app.flushTimers();
+      hidden(app, modal + " must suppress old fallback");
+      assert.strictEqual(app.activeId(), focused, modal + " focus must survive settlement");
+      assert.strictEqual(live(app), before, modal + " notice must survive settlement");
+      assert.strictEqual(shared, 0, modal + " must not start native fallback");
+      if (modal === "add" || modal === "edit") leaveSheet(app, pre);
+      if (modal === "about") { app.run("closeAbout()"); app.location.href = pre; app.popstate(); }
+      if (modal === "panel") app.run("closePanel()");
+      await drain(); app.flushTimers();
+      hidden(app, "open→cancel cannot revive " + modal + " ownership");
+    }
+    const app = boot({ href: PAGE }), calls = sink(app);
+    app.run("desktopMQ.matches = true; settingsPanel.querySelectorAll = () => []");
+    const current = await copy(app, calls);
+    app.run("openPanel()");
+    await settle(current);
+    assert.strictEqual(app.els["share-url"].hidden, false, "desktop nonmodal settings preserve current LINK");
+  });
+
+  test("SHC U4: stale success and deferred ticks preserve newer and identical-text notices", async () => {
+    for (const notice of ["Unrelated notice", "LINK COPIED", ""]) {
+      const app = boot(), calls = sink(app);
+      app.run("say(" + JSON.stringify(notice) + ", 'warn')");
+      const old = await copy(app, calls);
+      // Repeating the same text is a new notice, including empty text (ABA).
+      app.run("say(" + JSON.stringify(notice) + ", 'warn')");
+      await settle(old, true);
+      assert.strictEqual(live(app), notice, "old success must not clear an intervening notice");
+      app.flushTimers();
+      assert.strictEqual(live(app), notice, "old tick must not replace an identical-text notice");
+    }
+    for (const retire of ["new", "context", "notice"]) {
+      const app = boot(), calls = sink(app), old = await copy(app, calls);
+      await settle(old, true); // queues success tick without running virtual timers
+      if (retire === "new") await copy(app, calls);
+      if (retire === "context") app.select(app.deckId());
+      if (retire === "notice") app.run("say('', 'warn')");
+      app.flushTimers();
+      assert.strictEqual(live(app), "", retire + " must retire the old deferred tick");
+    }
+    const app = boot(), calls = sink(app);
+    for (let i = 0; i < 2; i++) {
+      const current = await copy(app, calls);
+      await settle(current, true);
+      assert.strictEqual(live(app), "", "current repeated success clears before its tick");
+      app.flushTimers(); assert.strictEqual(live(app), "LINK COPIED");
+    }
+    const old = await copy(app, calls), current = await copy(app, calls);
+    await settle(current); const warning = live(app);
+    await settle(old, true); app.flushTimers();
+    assert.strictEqual(live(app), warning, "old success cannot clear current fallback's notice");
+  });
+
+  test("SHC U5: native branches keep captured URLs and never start fallback after retirement", async () => {
+    for (const outcome of ["success", "failure", "abort"]) {
+      const app = boot({ href: PAGE }), calls = sink(app, "share");
+      const call = await copy(app, calls);
+      assert.deepStrictEqual(plain(call.payload), { url: PAGE + "#deck=d-kurd-10" });
+      if (outcome === "abort") { const e = new Error("cancel"); e.name = "AbortError"; call.reject(e); await drain(); }
+      else await settle(call, outcome === "success");
+      app.flushTimers();
+      if (outcome === "failure") assert.strictEqual(app.els["share-url"].value, call.payload.url);
+      else { hidden(app); assert.strictEqual(live(app), outcome === "success" ? "LINK SHARED" : ""); }
+    }
+    const app = boot({ href: PAGE }), calls = sink(app);
+    const shared = [];
+    app.sandbox.navigator.share = async (payload) => { shared.push(payload); };
+    const call = await copy(app, calls);
+    await settle(call); app.flushTimers();
+    assert.deepStrictEqual(plain(shared), [{ url: call.payload }], "clipboard rejection uses the same captured URL");
+    assert.strictEqual(live(app), "LINK SHARED");
+    const late = boot(), lateCalls = sink(late);
+    let invoked = 0;
+    // Access occurs between rejection and Promise-scheduled native invocation.
+    // Retire there, without depending on callback-chain microtask depth.
+    Object.defineProperty(late.sandbox.navigator, "share", { configurable: true, get() {
+      late.select(late.deckId()); return async () => { invoked++; };
+    } });
+    await settle(await copy(late, lateCalls));
+    assert.strictEqual(invoked, 0, "retirement at native scheduling boundary must suppress a new native operation");
+    for (const success of [false, true]) {
+      const active = boot(), nativeCalls = sink(active, "share"), pending = await copy(active, nativeCalls);
+      active.select(active.deckId());
+      await settle(pending, success); active.flushTimers();
+      hidden(active, "an already-started native operation must finish without stale UI");
+      assert.strictEqual(live(active), "");
+    }
+    // This test-local prelude records actual registrations; the shared stub has
+    // no window.dispatchEvent. It models only event delivery, never OS UI.
+    const blurHtml = indexSource().replace("<head>", `<head><script>
+      globalThis.__shcBlur = [];
+      const __shcAdd = window.addEventListener;
+      window.addEventListener = (type, fn, ...rest) => {
+        if (type === "blur") __shcBlur.push(fn);
+        return __shcAdd(type, fn, ...rest);
+      };
+    </script>`);
+    const blurred = boot({ html: blurHtml }), blurCalls = sink(blurred), pending = await copy(blurred, blurCalls);
+    blurred.run("__shcBlur.forEach(fn => fn({type:'blur'}))");
+    blurred.els["share-copy"].blur();
+    await settle(pending, true); blurred.flushTimers();
+    assert.strictEqual(live(blurred), "LINK COPIED", "window/permission blur alone must preserve completion");
+  });
+
+  test("SHC U6: blur Escape and panel dismissal stay closed and a new LINK still works", async () => {
+    for (const dismissal of ["blur", "escape", "panel"]) {
+      const app = boot(), calls = sink(app);
+      app.run("settingsPanel.querySelectorAll = () => []");
+      const old = await copy(app, calls), current = await copy(app, calls);
+      await settle(current);
+      assert.strictEqual(app.els["share-url"].hidden, false);
+      if (dismissal === "blur") app.els["share-url"].dispatchEvent({ type: "blur" });
+      if (dismissal === "escape") {
+        app.press(app.els["share-url"], "Escape");
+        assert.strictEqual(app.activeId(), "share-copy", "Escape returns focus to LINK");
+      }
+      if (dismissal === "panel") { app.run("desktopMQ.matches = true; openPanel(); closePanel()"); }
+      const focused = app.activeId(), before = live(app);
+      await settle(old); app.flushTimers();
+      hidden(app, dismissal + " must permanently dismiss old callbacks");
+      assert.strictEqual(app.activeId(), focused);
+      assert.strictEqual(live(app), before);
+      await settle(await copy(app, calls));
+      assert.strictEqual(app.els["share-url"].hidden, false, "new LINK remains usable after " + dismissal);
+    }
+  });
+
+  test("SHC U7: route transitions retire LINK but no-op sync and pending SAVE pop keep fresh intent", async () => {
+    for (const transition of ["hash", "pop"]) {
+      const app = boot({ href: PAGE }), calls = sink(app), original = app.location.href;
+      const pending = await copy(app, calls);
+      const pushesBefore = app.history.calls.filter((c) => c.type === "push").length;
+      if (transition === "hash") { app.hashchange("#deck=d-amara-10"); app.hashchange("#deck=d-kurd-10"); }
+      else {
+        // Explicit VM event model, not native navigation evidence.
+        app.location.href = PAGE + "#deck=d-amara-10"; app.popstate();
+        app.location.href = original; app.popstate();
+      }
+      await settle(pending);
+      hidden(app, transition + " away/back must not resurrect ownership");
+      assert.strictEqual(app.history.calls.filter((c) => c.type === "push").length, pushesBefore);
+      assert.strictEqual(app.location.search, "?share=public-control");
+    }
+    const app = fresh(), calls = sink(app), pre = app.location.href;
+    const unchanged = await copy(app, calls);
+    app.run("syncRoute()");
+    await settle(unchanged);
+    assert.strictEqual(app.els["share-url"].hidden, false, "no-op sync preserves current LINK");
+    nudgeSave(app);
+    // SAVE hides the sheet immediately, but history.back's reply is later.
+    // Model the committed canonical bar before the pending pop reaffirms it.
+    app.run("syncRoute()");
+    const committed = app.location.href;
+    assert.notStrictEqual(committed, pre);
+    const immediate = await copy(app, calls);
+    app.popstate();
+    assert.strictEqual(app.location.href, committed);
+    await settle(immediate);
+    assert.strictEqual(app.els["share-url"].value, committed, "pending SAVE pop must not cancel fresh same-route LINK");
+    assert.strictEqual(app.els["share-url"].hidden, false);
+  });
+
+  test("SHC U8: hidden and refused LINK consume stale UI without replay and analytics stay nonsecret", async () => {
+    for (const success of [false, true]) {
+      const app = fresh(), calls = sink(app), pending = await copy(app, calls);
+      app.sandbox.document.hidden = true;
+      app.sandbox.document.dispatchEvent({ type: "visibilitychange" });
+      const focused = app.activeId(), before = live(app);
+      await settle(pending, success); app.flushTimers();
+      hidden(app, "hidden document must never reveal manual fallback");
+      assert.strictEqual(app.activeId(), focused, "hidden completion cannot steal focus");
+      assert.strictEqual(live(app), before);
+      app.sandbox.document.hidden = false;
+      app.sandbox.document.dispatchEvent({ type: "visibilitychange" });
+      await drain(); app.flushTimers(); hidden(app, "returning visible must not replay completion");
+      await settle(await copy(app, calls));
+      assert.strictEqual(app.els["share-url"].hidden, false, "a fresh visible LINK works");
+    }
+    const app = fresh(), calls = sink(app), pending = await copy(app, calls);
+    app.run("globalThis.__shcEncode = HPE.share.encode; HPE.share.encode = () => ({ok:false,code:'OVER',reason:'Too big to share.'}); syncRoute()");
+    assert.strictEqual(app.els["share-copy"].disabled, true);
+    const refusal = live(app);
+    await settle(pending); app.flushTimers();
+    hidden(app, "refused LINK cannot reveal an earlier payload");
+    assert.strictEqual(live(app), refusal);
+    app.run("HPE.share.encode = globalThis.__shcEncode; syncRoute()");
+    assert.strictEqual(app.els["share-copy"].disabled, false);
+    await settle(await copy(app, calls), true); app.flushTimers();
+    assert.strictEqual(live(app), "LINK COPIED");
+    const ga = boot({ html: withGaId("G-TEST123456"), webdriver: false, href: PAGE + HASH });
+    const events = () => plain(Array.from(ga.get("window.dataLayer"))).filter((e) => e[0] === "event" && e[1] === "share_copy").map((e) => e[2]);
+    const gaCalls = sink(ga), first = await copy(ga, gaCalls);
+    ga.select(ga.deckId()); await settle(first, true); ga.flushTimers();
+    delete ga.sandbox.navigator.clipboard; delete ga.sandbox.navigator.share;
+    ga.els["share-copy"].click(); await drain();
+    ga.sandbox.navigator.share = async () => {};
+    ga.els["share-copy"].click(); await drain(); ga.flushTimers();
+    assert.deepStrictEqual(events(), [
+      { deck_kind: "custom", method: "clipboard" },
+      { deck_kind: "custom", method: "select" },
+      { deck_kind: "custom", method: "share" },
+    ], "analytics payload allowlist excludes URL, scale name and identity");
+  });
+});
