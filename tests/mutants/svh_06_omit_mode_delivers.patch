@@ -1,0 +1,15 @@
+# kills: SVH6 automatic and deliberately omitted storage events leave raw shared reads authoritative
+# suite: node --test --test-reporter=tap --test-name-pattern ^SVH6.automatic tests/harness.test.js
+# fault: Deliberately omitted storage notifications are delivered automatically.
+diff --git a/tools/sandbox.js b/tools/sandbox.js
+--- a/tools/sandbox.js
++++ b/tools/sandbox.js
+@@ -690,7 +690,7 @@ function boot(opts = {}) {
+       for (const fn of [...(winListeners.storage || [])]) fn(event);
+     } };
+     const notify = (key, oldValue, newValue) => {
+-      if (opts.origin.events === "omit") return;
++      if (opts.origin.events === "omit") opts.origin.events = "auto";
+       for (const other of bucket.realms) if (other !== recipient) {
+         origin.events.push({ recipient: other, event: { type: "storage", key, oldValue, newValue,
+           url: location.href, storageArea: other.storage } });

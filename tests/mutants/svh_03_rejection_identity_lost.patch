@@ -1,0 +1,15 @@
+# kills: SVH3 rejected lock callbacks release ownership and retain their exact error
+# suite: node --test --test-reporter=tap --test-name-pattern ^SVH3.rejected tests/harness.test.js
+# fault: Rejected lock callbacks replace the exact error object.
+diff --git a/tools/sandbox.js b/tools/sandbox.js
+--- a/tools/sandbox.js
++++ b/tools/sandbox.js
+@@ -116,7 +116,7 @@ function locksFor(bucket, clientId, rejection) {
+     if (item.signal) item.signal.removeEventListener("abort", item.abort);
+     Promise.resolve().then(() => item.callback({ name, mode: "exclusive" })).then(
+       value => { queue.held = null; item.resolve(value); pump(name); },
+-      error => { queue.held = null; item.reject(error); pump(name); });
++      error => { queue.held = null; item.reject(new Error(error.message)); pump(name); });
+   });
+   return {
+     request(name, options, callback) {

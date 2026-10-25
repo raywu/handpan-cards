@@ -1,0 +1,15 @@
+# kills: SVH1 shared raw storage crosses opted-in realms and isolates other origins
+# suite: node --test --test-reporter=tap --test-name-pattern ^SVH1.shared tests/harness.test.js
+# fault: Shared-origin storage is copied per realm instead of shared.
+diff --git a/tools/sandbox.js b/tools/sandbox.js
+--- a/tools/sandbox.js
++++ b/tools/sandbox.js
+@@ -502,7 +502,7 @@ function boot(opts = {}) {
+   }
+   const origin = opts.origin ? originState(opts.origin) : null;
+   const bucket = origin ? originBucket(origin, new URL(opts.href || "https://example.test/index.html").origin, opts.storage) : null;
+-  const store = bucket ? bucket.store : { ...(opts.storage || {}) };
++  const store = bucket ? { ...bucket.store } : { ...(opts.storage || {}) };
+   const docEl = makeElement("root", "html");
+   const headEl = makeElement("head", "head");
+ 
