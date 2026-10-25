@@ -15144,3 +15144,119 @@ describe("SO: bottom seat numbers stay on their seats", () => {
     assert.deepStrictEqual(soFlash(app), changed.sort());
   });
 });
+
+/* ---- SPS primary feature oracles: public sheet state, not recognizer state ---- */
+describe("SPS: primary public-event traces", () => {
+  const BASE = "(D3) A3 C4 D4 E4 F4 | F5 G5";
+  const INNER = "(D3) A3 C4 D4 E4 F4 | G5 F5";
+  const BOTH = "(D3) C4 A3 D4 E4 F4 | G5 F5";
+  const BOTH_SAID = "The rim now follows the order listed. The inner notes now follow the order listed.";
+  const rect = (top, bottom) => () => ({ left: 0, right: 380, top, bottom, width: 380, height: bottom - top });
+  const fresh = () => {
+    const app = boot({ layout: true, clock: true, sheetBody: true, innerHeight: 800,
+      visualViewport: { height: 800, offsetTop: 0, scale: 1 } });
+    app.sandbox.innerWidth = 380;
+    const body = app.sandbox.document.querySelector(".sheetbody");
+    assert.ok(body, "the independently validated body fixture is required");
+    body.scrollTop = 0;
+    body.scrollHeight = 1400;
+    body.clientHeight = 500;
+    body.getBoundingClientRect = rect(100, 600);
+    const surface = app.els["scale-sheet"].firstElementChild;
+    surface.scrollTop = 0;
+    surface.scrollHeight = 700;
+    surface.clientHeight = 700;
+    surface.getBoundingClientRect = rect(0, 700);
+    app.els["scale-foot"].getBoundingClientRect = rect(600, 700);
+    return app;
+  };
+  const line = (app, text) => {
+    const box = app.els["scale-box"];
+    box.dispatchEvent({ type: "focus", target: box });
+    box.value = text;
+    box.dispatchEvent({ type: "input", target: box });
+  };
+  // The sandbox does not model capture ordering. Deliver the actual registered
+  // sheet-capture callbacks before the body callbacks explicitly; this is a
+  // bounded unit trace, not proof of DOM propagation or native touch behavior.
+  const touch = (app, type, x) => {
+    const body = app.sandbox.document.querySelector(".sheetbody");
+    const point = { identifier: 7, clientX: x, clientY: 300 };
+    const event = { type, target: body, touches: type === "touchend" ? [] : [point],
+      changedTouches: [point], cancelable: true, defaultPrevented: false,
+      preventDefault() { this.defaultPrevented = true; }, stopPropagation() {} };
+    app.els["scale-sheet"].dispatchEvent(event);
+    body.dispatchEvent(event);
+    assert.strictEqual(event.defaultPrevented, false, "optional navigation must leave the native gesture passive");
+  };
+  const on = (app, tab) => app.els["scale-tab-" + tab].getAttribute("aria-selected");
+  const status = (app) => app.els["scale-drawer-status"].textContent;
+
+  test("SPS primary: Add left touchend enters Layout and consumes both ring outcomes once", () => {
+    const app = fresh();
+    openSheet(app);
+    line(app, BASE);
+    line(app, INNER);
+    line(app, BOTH);
+    app.advance(300);
+    assert.strictEqual(app.els["scale-generate"].disabled, false, "valid active input exposes a missed transition");
+    assert.strictEqual(on(app, "scale"), "true");
+    assert.strictEqual(status(app), "", "Scale does not announce Layout feedback early");
+    const history = JSON.stringify(app.history.calls), focus = app.activeId();
+    touch(app, "touchstart", 220);
+    app.advance(100);
+    touch(app, "touchmove", 140);
+    assert.strictEqual(on(app, "scale"), "true", "navigation waits for the matching touchend");
+    touch(app, "touchend", 140);
+    assert.strictEqual(on(app, "layout"), "true", "a completed left swipe enters Layout");
+    assert.strictEqual(on(app, "scale"), "false");
+    assert.strictEqual(app.els["scale-panel-layout"].hidden, false);
+    assert.strictEqual(app.els["scale-panel-scale"].hidden, true);
+    assert.strictEqual(status(app), BOTH_SAID);
+    assert.strictEqual(app.els["scale-drawer-status"].hidden, false);
+    assert.strictEqual(JSON.stringify(app.history.calls), history, "swipe adds no history operation");
+    assert.strictEqual(app.activeId(), focus, "swipe forces no focus transfer");
+    app.click(app.els["scale-tab-scale"]);
+    app.click(app.els["scale-tab-layout"]);
+    assert.strictEqual(status(app), "", "later ordinary tab entry cannot replay the consumed outcomes");
+  });
+
+  test("SPS primary: Edit right touchend returns to Scale preserving input options and history", () => {
+    const app = fresh();
+    const made = makeCustom(app, BASE);
+    openEdit(app, made);
+    app.els["scale-name"].value = "SPS RETAINED SCALE";
+    app.els["scale-name"].dispatchEvent({ type: "input", target: app.els["scale-name"] });
+    app.click(app.els["scale-tab-layout"]);
+    app.els["scale-anchor-between"].click();
+    app.els["scale-mirror"].click();
+    assert.ok(app.els["scale-swatches"].children.length > 1);
+    app.els["scale-swatches"].children[1].click();
+    app.advance(300);
+    assert.strictEqual(on(app, "layout"), "true");
+    assert.strictEqual(app.els["scale-anchor-between"].getAttribute("aria-pressed"), "true");
+    assert.strictEqual(app.els["scale-mirror"].getAttribute("aria-pressed"), "true");
+    const values = () => ({
+      line: app.els["scale-box"].value, name: app.els["scale-name"].value,
+      fields: ["ding", "top", "inner", "bottom"].map((id) => app.els["scale-" + id].value),
+      anchors: ["one", "between"].map((id) => app.els["scale-anchor-" + id].getAttribute("aria-pressed")),
+      mirror: app.els["scale-mirror"].getAttribute("aria-pressed"),
+      palettes: app.els["scale-swatches"].children.map((el) => el.getAttribute("aria-pressed")),
+    });
+    const before = values(), stored = JSON.stringify(app.registry()),
+      history = JSON.stringify(app.history.calls), focus = app.activeId();
+    touch(app, "touchstart", 140);
+    app.advance(100);
+    touch(app, "touchmove", 220);
+    assert.strictEqual(on(app, "layout"), "true", "navigation waits for touchend");
+    touch(app, "touchend", 220);
+    assert.strictEqual(on(app, "scale"), "true", "a completed right swipe returns to Scale");
+    assert.strictEqual(on(app, "layout"), "false");
+    assert.strictEqual(app.els["scale-panel-scale"].hidden, false);
+    assert.strictEqual(app.els["scale-panel-layout"].hidden, true);
+    assert.deepStrictEqual(values(), before, "the pending Edit values and nondefault options survive");
+    assert.strictEqual(JSON.stringify(app.registry()), stored, "navigation never saves or replaces the scale");
+    assert.strictEqual(JSON.stringify(app.history.calls), history);
+    assert.strictEqual(app.activeId(), focus, "swipe has no route-specific focus transfer");
+  });
+});
