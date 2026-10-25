@@ -1,5 +1,23 @@
 # SPS coordination
 
+## Owner priority change — SHARE-CUSTOMIZATION-HOTFIX takes precedence
+
+Owner explicitly prioritized reported post-SAVE URL/LINK fidelity investigation
+and a reviewed sound hotfix. Defer SPS implementation/final delivery while that
+priority is active; do not discard or restart this lane. Sourceadc80b12 and proof
+receipts A0/A1/A2 now contain59 driver-reported intended-assertion pairs (3+54+2).
+A0startup failure/A1clean-scroll failure remain invalid and retained; zero-baseline
+fixture correction and last2proofs completed. Final aggregate/raw independent
+review, full exact-headCI/DEV and physicalQA remain unperformed. NoSPSPR/DEV yet.
+
+Next on resumption: audit/aggregate all59 against current source and scoped
+quiet-test changes, rerun affected final native matrix as needed, finalreviews/
+fullCI/DEV. Rootbrowserlease is being transferred to the separate hotfix; stale
+SPSownedtoken must not be reused. Verify current owner/census before any browser.
+Hotfix branch codex/share-customization-hotfix-20261025 atff81ffe3 carries priority
+ledger/prompt. DUPLICATE-NOTES execution remains HELD. This is a recovery update,
+not a main merge or new app/test change.
+
 ## Goal
 
 Deliver the approved optional Scale↔Layout touch shortcut through DEV without
