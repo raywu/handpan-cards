@@ -1,0 +1,115 @@
+{
+  "version": 1,
+  "provenance": {
+    "baselineCommit": "1510ea369573078e6296fe873edb6f538c3212a3",
+    "purpose": "Frozen structural and concatenation contract before the UI-only Naturalness pass; locale source hashes identify inspected evidence, not candidate wording requirements.",
+    "localeSourceSha256": {
+      "en": "bdebe6f1d2125033fff1d490df7a973dd19e535f65cf0258f9dc28c907573b8d",
+      "de": "a306a49a8ce0cb2c6540fe0a647c6b38f4b5ccc5311c2838b62e1eb0014279fd",
+      "fr": "cc6948155be3fe19e66e844cf3b6ae6215e0da2c6be45f661eadbf71ddbab77d",
+      "it": "9d6744537ee7ebed5aa59930c36b0e67b5662081f0818420dbc21fd12c7aed9b",
+      "es": "c61b8de1b712619512092bbe98a47b0ff9de26dd2827e75af3b310a51bdb1b51",
+      "ja": "7a9a349fe8d26b9b399b7c50777444d2e4b20a3f563399c0416755c62e86a2f5",
+      "zh-Hant": "803a54c63b7b981ab7eb0abfceac46c59b9650cded972076575a5073fb095fe4",
+      "zh-Hans": "676f603d5e9fe186cae976543e831aa3054e0d54580a93998d66d1682d66a817"
+    }
+  },
+  "keyCount": 250,
+  "sortedKeySha256": "5e1d07ecba55fd5db4eea62f0fd87f5ba5638b39a787627c082c1c46e4385432",
+  "pluralKeys": [
+    "sheet.generated",
+    "sheet.ring_reset",
+    "sheet.bottom_now_has",
+    "sheet.bottom_now_has_angles",
+    "compose.INNER_BELOW_TOP",
+    "sheet.inner_below",
+    "sheet.bottom_now_has_both"
+  ],
+  "pluralFormsByLocale": {
+    "en": [
+      "one",
+      "other"
+    ],
+    "de": [
+      "one",
+      "other"
+    ],
+    "fr": [
+      "one",
+      "other"
+    ],
+    "it": [
+      "one",
+      "other"
+    ],
+    "es": [
+      "one",
+      "other"
+    ],
+    "ja": [
+      "other"
+    ],
+    "zh-Hant": [
+      "other"
+    ],
+    "zh-Hans": [
+      "other"
+    ]
+  },
+  "nonemptyEdgeWhitespace": {
+    "sheet.seats_reset": [
+      " ",
+      ""
+    ],
+    "sheet.put_down": [
+      " ",
+      ""
+    ],
+    "sheet.angles_reset": [
+      " ",
+      ""
+    ],
+    "sheet.seats_angles_reset": [
+      " ",
+      ""
+    ],
+    "sheet.drawer_hint_slide": [
+      " ",
+      ""
+    ],
+    "sheet.seat_renumber": [
+      " ",
+      ""
+    ],
+    "sheet.mirror_reflow": [
+      " ",
+      ""
+    ],
+    "sheet.seat_stays": [
+      " ",
+      ""
+    ],
+    "sheet.parse_zone": [
+      " ",
+      ""
+    ],
+    "sheet.inner_below": {
+      "one": [
+        " ",
+        ""
+      ],
+      "other": [
+        " ",
+        ""
+      ]
+    }
+  },
+  "placeholderCountExceptions": {
+    "de": {
+      "compose.DOUBLE_B": {
+        "L": 2
+      }
+    }
+  },
+  "exceptionReason": "Existing German compose.DOUBLE_B states the same English note syntax with two {L} interpolations; other locales use three. This is an accepted baseline wording exception, not permission to drop later repetitions."
+}

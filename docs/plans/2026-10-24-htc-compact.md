@@ -174,3 +174,15 @@ Combined independent review P2 found a contradiction: inherited HTC ceilings are
 Sequencing refinement: already-created isolated combined candidate may absorb reviewed **test-tightening only** while feature and combined fullCI run in parallel. This is candidate assembly, not a dev-branch merge; actual dev remains gated on BOTH CI conclusions, fresh review and language probes. It avoids serial duplicate waiting without weakening any release gate. If any production change becomes necessary, regroup into a separate reviewed plan before edits.
 
 Correct-baseline amendment independently cleared9.5/9.6 before implementation. Allfour budget sections and completeSITE_DROP table now match immutable accepteddev code ignoring comments; originalexact guards and positive-scroll assertion retained. Newdirect bothfont geometry/visibility/six-link tests remain. Targeted14pass0fail/skip/cancel under stricter baseline, without anyapp change. ApplicationSHA256 unchanged frome227e3a. Previous combined5ea language probes all8x2fonts8019cells0skip/regression, but both correctedcandidateheads still need freshCI/review. Budget-growth/real-clipping negative checks follow in isolated committed-source scratch.
+
+
+## Preserved first combined-candidate receipt (historical5ea3238)
+
+The following receipt is retained; its historical budget interpretation is superseded by the correct-baseline amendment above. Current candidate restores all accepted-dev equations.
+
+## Combined dev candidate receipt
+
+Featuree227e3a has completed successful exact-head workflow40118477527, all12jobs including fullJS/suitehealth/allmutation shards+union. Independentreview9.4 no materialfinding. Currentdev/main heads reverifiede8dc127/3caf5e2 unchanged. Dedicated`codex/htc-dev-20261024` fromdev merges feature textually clean; original branches untouched. All21canonical i18n/deck/engine file hashes and every embeddedlanguage-table hash matchdevbaseline, same8language set. Dev addsone language-persistence test relative tofeature; combined owned e2eFLOOR475 reflects474feature+thatone, without loweringanyrow. Existingdevpreflightall8languagesbothfonts8019cells/language/font0skip/regression establishes unchangedbaseline. Combined-tree fullCI, languageprobes, freshreview and actualservedDEV remain pending; no dev/main merge claimed.
+
+
+Current combined revision absorbs reviewed test-tightening only, with no application/data change. Both feature and combined fullCI must pass at their final heads before actualdev merge.

@@ -1,0 +1,16 @@
+# kills: I18N: every table has the keys of en and keeps every placeholder
+# suite: node --test --test-reporter=tap --test-name-pattern ^I18N:.every.table.has.the.keys.of.en.and.keeps.every.placeholder$ tests/app.test.js
+# extra-form: frozen per-form UI translation contract.
+diff --git a/data/i18n/ja.json b/data/i18n/ja.json
+--- a/data/i18n/ja.json
++++ b/data/i18n/ja.json
+@@ -118,7 +118,8 @@
+   "sheet.hit_label": "{name}、{ring}、位置{label}、{place}",
+   "sheet.ring_back": "{ring}が{n}音に戻ったので、以前の位置に戻しました。",
+   "sheet.ring_reset": {
+-    "other": "{ring}が{n}音になったので、位置をリセットしました。"
++    "other": "{ring}が{n}音になったので、位置をリセットしました。",
++    "one": "{ring}が{n}音になったので、位置をリセットしました。"
+   },
+   "sheet.put_down": " 選択を解除しました。",
+   "sheet.stays": "{name}は{ring}の位置{label}のままです。",
