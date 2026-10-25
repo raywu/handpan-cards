@@ -15463,3 +15463,476 @@ describe("SHC asynchronous LINK ownership", () => {
     ], "analytics payload allowlist excludes URL, scale name and identity");
   });
 });
+
+/* SAVED-SCALE-VARIANTS — independent literal fixtures and approved schema1.
+ * Existing policy oracles remain above until U's reviewed adapter handoff. These
+ * additions do not replace them or lower floors. Backend cases first prove the
+ * selected readable fixture is rendered; baseline RED is an observable ignored
+ * collection/overwrite/legacy-write assertion, never a missing proposed API.
+ */
+{
+  const SV = JSON.parse(fs.readFileSync(path.join(ROOT, "tests/fixtures/saved_variants_v1.json"), "utf8"));
+  const SV_KEY = "hpfc.saved-scales.v1", SV_LOCK = "handpan-cards:saved-scales:v1";
+  const { createOrigin } = require("./helpers/sandbox.js");
+  const copy = v => JSON.parse(JSON.stringify(v));
+  const iid = n => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+  function cryptoFixture(sequence = []) {
+    let draws = 0;
+    return { get draws() { return draws; }, randomUUID() { return sequence[draws++] || iid(1000 + draws); },
+      getRandomValues(a) { for (let i = 0; i < a.length; i++) a[i] = (draws + i + 17) & 255; draws++; return a; } };
+  }
+  function envelope(records, extra = {}) {
+    return { schema: 1, collectionId: SV.ids.collectionA, revision: 1, slotStateRevision: 0,
+      entries: records.map((record, i) => ({ instanceId: iid(i + 1), revision: 1, displayOrdinal: i + 1, record: copy(record) })),
+      usedInstanceIds: records.map((_, i) => iid(i + 1)), nextDisplayOrdinal: records.length + 1,
+      preferredSelection: records.length ? { kind: "saved", id: iid(1) } : { kind: "builtin", id: "kurd" },
+      slots: {}, hidden: [], migration: { sourceKey: null, raw: { hpfc: null, "hpfc.scales": null, "hpfc.scales.v3": null }, instanceIds: [] },
+      ...copy(extra) };
+  }
+  async function load(opts = {}) {
+    const origin = opts.origin || createOrigin();
+    const crypto = opts.crypto || cryptoFixture();
+    const app = boot({ origin, locks: true, crypto, abortController: true, isSecureContext: true, ...opts });
+    await app.waitFor("typeof booted !== 'undefined' && booted === true", { timeout: 2000 });
+    return { app, origin, crypto };
+  }
+  const snapshot = app => {
+    const raw = app.store[SV_KEY];
+    assert.strictEqual(typeof raw, "string", "an acknowledged collection must have one serialized envelope");
+    const e = JSON.parse(raw);
+    assert.strictEqual(e.schema, 1, "the frozen collection schema is 1");
+    return e;
+  };
+  const names = app => chipRow(app).map(c => c.label);
+  const notices = app => [app.announcer()?.textContent, app.els["scale-msg"]?.textContent,
+    app.els["scale-refusal"]?.textContent, app.els["saved-status"]?.textContent].filter(Boolean).join(" ");
+  async function seeded(records, extra = {}, opts = {}) {
+    const e = envelope(records, extra);
+    const ctx = await load({ storage: { [SV_KEY]: JSON.stringify(e) }, ...opts });
+    const wanted = e.entries.find(x => x.instanceId === e.preferredSelection.id);
+    if (wanted) assert.strictEqual(ctx.app.currentDeck().name, wanted.record.o.name,
+      "a readable saved instance selected in the committed collection must render, rather than silently falling back to a preset");
+    return { ...ctx, initial: e };
+  }
+  async function imported(app, record) {
+    const encoded = plain(app.get(`(() => { const r = ${JSON.stringify(record)};
+      const s = HPE.core.parseSeed(r.s); if (!s.ok) return s;
+      return HPE.share.encode({ fields:s.value.fields, options:r.o || {} }); })()`));
+    assert.strictEqual(encoded.ok, true, "public fixture share must encode: " + encoded.reason);
+    return app.getAsync(`openShare(${JSON.stringify(encoded.value)})`);
+  }
+  async function submit(app) { return app.getAsync("document.getElementById('scale-generate').onclick()"); }
+  function editSelected(app) {
+    const selected = app.els.decks.children.find(c => c.classList.contains("on"));
+    assert.ok(selected, "selected instance has a chip"); selected.onclick();
+    assert.strictEqual(app.sheetOpen(), true, "selected chip opens Edit");
+  }
+  async function clickAt(app, index) {
+    const chip = app.els.decks.children[index]; assert.ok(chip, "literal expected chip index exists");
+    await chip.onclick();
+  }
+  function rename(app, name) {
+    app.els["scale-name"].value = name;
+    app.els["scale-name"].dispatchEvent({ type: "input" });
+  }
+  async function command(app, cmd, record, options = {}) {
+    // Build exactly once outside commit, in the app realm. No second equality
+    // implementation or production-derived expected snapshot lives here.
+    return app.getAsync(`(async () => { const cmd = ${JSON.stringify(cmd)};
+      ${record ? `const r = ${JSON.stringify(record)}; const b = buildGenerated(r.s, r.o || {});
+        if (!b.ok) return b; cmd.candidate = { record:scaleRecord(seedOf(b.value)), deck:b.value };` : ""}
+      return commitSaved(cmd, ${options.signal ? "{signal:globalThis.__svSignal}" : "{}"}); })()`);
+  }
+  const slotProof = e => ({ slotStateRevision: e.slotStateRevision, slots: copy(e.slots), hidden: copy(e.hidden) });
+  const affected = e => ({ ...slotProof(e), replacements: e.entries.filter(x =>
+    x.record && x.record.v === 4 && typeof x.record.s === "string" &&
+    ["kurd", "amara10", "amara", "hijaz", "pygmy"].includes(x.record.o?.replaces) && !x.record.s.includes("not-a-scale"))
+    .map(x => ({ id:x.instanceId, revision:x.revision })) });
+
+  test("SV1 U1: differently named same-inventory imports coexist in either order", async () => {
+    for (const pair of [[SV.portableRecords.amaraA, SV.portableRecords.amaraB], [SV.portableRecords.amaraB, SV.portableRecords.amaraA]]) {
+      const { app } = await load();
+      const a = await imported(app, pair[0]), b = await imported(app, pair[1]);
+      assert.strictEqual(a.ok, true); assert.strictEqual(b.ok, true);
+      assert.deepStrictEqual(names(app).filter(n => n.startsWith("PUBLIC PAN")).sort(), ["PUBLIC PAN A", "PUBLIC PAN B"],
+        "same notes must not overwrite the other named instrument");
+      const before = snapshot(app);
+      assert.strictEqual(before.entries.length, 2);
+      assert.strictEqual(new Set(before.entries.map(x => x.instanceId)).size, 2);
+      assert.strictEqual(a.value.id, "custom:977311b5"); assert.strictEqual(b.value.id, a.value.id);
+      await imported(app, pair[1]);
+      assert.deepStrictEqual(snapshot(app).entries, before.entries, "unchanged import reuses rather than cloning");
+      assert.strictEqual(app.store["hpfc.scales.v3"], undefined, "new imports never write the legacy array");
+      assert.ok(!JSON.stringify(JSON.parse(app.store.hpfc || "{}")).includes(before.entries[0].instanceId));
+    }
+  });
+
+  test("SV1 U2: layout-only variants coexist and exact portable repeats reuse the selected match", async () => {
+    const { app } = await load();
+    await imported(app, SV.portableRecords.pygmyLayoutA); await imported(app, SV.portableRecords.pygmyLayoutB);
+    assert.strictEqual(names(app).length, 7, "two layouts of the same named inventory need two saved chips");
+    const before = snapshot(app);
+    assert.strictEqual(before.entries.length, 2);
+    assert.deepStrictEqual(before.entries.map(x => x.record.o.angles.bottom), [[null,225,null,20,null,130], [295,225,null,20,null,130]]);
+    await imported(app, SV.portableRecords.pygmyLayoutA);
+    assert.strictEqual(snapshot(app).preferredSelection.id, before.entries[0].instanceId);
+    assert.deepStrictEqual(snapshot(app).entries, before.entries);
+    const identical = await seeded([SV.portableRecords.amaraA, SV.portableRecords.amaraA], { preferredSelection:{kind:"saved",id:iid(2)} });
+    await imported(identical.app, SV.portableRecords.amaraA);
+    assert.strictEqual(snapshot(identical.app).preferredSelection.id, iid(2), "selected exact match outranks earlier equal sibling");
+    assert.strictEqual(snapshot(identical.app).entries.length, 2);
+  });
+
+  test("SV1 U3: default normalization preserves explicit name parent and absolute-angle intent", async () => {
+    for (const c of SV.portableMeaningCases) {
+      const { app } = await load();
+      await imported(app, SV.portableRecords[c.left]); await imported(app, SV.portableRecords[c.right]);
+      assert.strictEqual(names(app).length, 5 + (c.equivalent ? 1 : 2), c.reason);
+      assert.strictEqual(snapshot(app).entries.length, c.equivalent ? 1 : 2, c.reason);
+    }
+  });
+
+  test("SV2 U1: Edit preserves its instance and position while sibling bytes remain unchanged", async () => {
+    const a = { ...copy(SV.portableRecords.amaraA), unknown:{keep:[null,17,"literal"]} };
+    a.o.future = { keep:true };
+    const { app } = await seeded([a, SV.portableRecords.amaraB]);
+    const before = snapshot(app), sibling = JSON.stringify(before.entries[1]);
+    editSelected(app); rename(app, "PUBLIC EDITED"); app.type(SV.inventories.other.seed);
+    app.els["scale-swatches"].children[4].click(); await submit(app);
+    const after = snapshot(app);
+    assert.deepStrictEqual(after.entries.map(x => x.instanceId), before.entries.map(x => x.instanceId));
+    assert.deepStrictEqual(after.entries.map(x => x.displayOrdinal), [1,2]);
+    assert.strictEqual(after.entries[0].revision, 2);
+    assert.strictEqual(after.entries[0].record.s, SV.inventories.other.seed);
+    assert.strictEqual(after.entries[0].record.o.name, "PUBLIC EDITED");
+    assert.deepStrictEqual(after.entries[0].record.unknown, a.unknown);
+    assert.deepStrictEqual(after.entries[0].record.o.future, a.o.future);
+    assert.strictEqual(JSON.stringify(after.entries[1]), sibling, "editing one instance cannot mutate a sibling");
+    const again = await load({ storage:copy(app.store) });
+    assert.strictEqual(again.app.currentDeck().name, "PUBLIC EDITED");
+    assert.deepStrictEqual(snapshot(again.app).entries, after.entries);
+  });
+
+  test("SV2 U2: converging Edit keeps both instances across reload", async () => {
+    const { app } = await seeded([SV.portableRecords.amaraA, SV.portableRecords.amaraB]);
+    const before = snapshot(app);
+    editSelected(app); rename(app, "PUBLIC PAN B"); await submit(app);
+    const after = snapshot(app);
+    assert.strictEqual(after.entries.length, 2, "Edit convergence never deduplicates saved handles");
+    assert.deepStrictEqual(after.entries.map(x => x.instanceId), before.entries.map(x => x.instanceId));
+    assert.deepStrictEqual(after.entries[1], before.entries[1]);
+    const again = await load({ storage:copy(app.store) });
+    assert.strictEqual(snapshot(again.app).entries.length, 2);
+    assert.strictEqual(names(again.app).length, 7);
+  });
+
+  test("SV2 U3: distinct inventory cannot overwrite through a colliding engine handle", async () => {
+    const { app } = await load();
+    await imported(app, SV.portableRecords.amaraA);
+    const before = JSON.stringify(app.store), prior = app.currentDeck();
+    // Synthetic hash-collision injection only: these public seeds do not
+    // naturally collide. Independent seed text, not a hash, defines meaning.
+    app.run(`HPE.core.deckId = () => "custom:977311b5";`);
+    const res = await imported(app, {v:4,s:SV.inventories.other.seed,o:{name:"PUBLIC COLLISION"}});
+    assert.strictEqual(res.ok, false, "a different-inventory hash collision must be refused, never overwrite the saved instrument");
+    assert.strictEqual(res.kind, "inventory-collision");
+    assert.strictEqual(JSON.stringify(app.store), before);
+    assert.deepStrictEqual(app.currentDeck(), prior);
+  });
+
+  test("SV3 U1: selection Edit and deletion target the chosen instance despite equal names and URLs", async () => {
+    const { app } = await seeded([SV.portableRecords.amaraA, SV.portableRecords.amaraA]);
+    const before = snapshot(app);
+    await clickAt(app, 0); // newest custom is ordinal2; literal contract, not a view-derived oracle
+    assert.deepStrictEqual(plain(app.get("selection")), {kind:"saved",id:iid(2)});
+    editSelected(app); rename(app, "PUBLIC SECOND"); await submit(app);
+    assert.strictEqual(snapshot(app).entries[0].record.o.name, "PUBLIC PAN A");
+    assert.strictEqual(snapshot(app).entries[1].record.o.name, "PUBLIC SECOND");
+    await clickAt(app, 1); editSelected(app);
+    app.els["scale-delete"].click(); await app.getAsync("document.getElementById('scale-delete').onclick()");
+    assert.deepStrictEqual(snapshot(app).entries.map(x => x.instanceId), [before.entries[1].instanceId]);
+    assert.strictEqual(app.currentDeck().name, "D KURD 10", "deleted selection falls back to the visible default");
+  });
+
+  test("SV3 U2: instance selection retires pending LINK UI when the route is identical", async () => {
+    const { app } = await seeded([SV.portableRecords.amaraA, SV.portableRecords.amaraA]);
+    let reject, calls = 0;
+    app.sandbox.navigator.clipboard = { writeText: () => { calls++; return new Promise((_, r) => { reject = r; }); } };
+    delete app.sandbox.navigator.share;
+    app.els["share-copy"].click();
+    await new Promise(resolve => setImmediate(resolve));
+    assert.strictEqual(calls, 1);
+    const href = app.location.href;
+    await clickAt(app, 0);
+    assert.strictEqual(app.location.href, href, "two equal portable instances have the same route");
+    const focus = app.activeId(), notice = notices(app);
+    reject(new Error("controlled denial")); await new Promise(resolve => setImmediate(resolve));
+    assert.strictEqual(app.els["share-url"].hidden, true, "old completion must not reveal fallback on the newly selected instance");
+    assert.strictEqual(app.activeId(), focus); assert.strictEqual(notices(app), notice);
+  });
+
+  test("SV4 U1: migration preserves source text row order opaque values and known version meanings", async () => {
+    const source = SV.migration.mixedRaw;
+    const { app } = await load({ storage:copy(source.sources) });
+    for (const [key, raw] of Object.entries(source.sources)) assert.strictEqual(app.store[key], raw, "migration cannot rewrite recovery source " + key);
+    const e = snapshot(app);
+    assert.deepStrictEqual(e.migration.raw, source.sources);
+    assert.strictEqual(e.migration.sourceKey, "hpfc.scales.v3");
+    assert.strictEqual(e.entries.length, 11);
+    assert.deepStrictEqual(e.entries.map(x => x.instanceId), e.migration.instanceIds);
+    assert.deepStrictEqual(e.entries.map(x => x.displayOrdinal), [1,2,3,4,5,6,7,8,9,10,11]);
+    assert.deepStrictEqual(e.usedInstanceIds, e.migration.instanceIds);
+    for (const i of source.expectedOpaqueRowIndices) assert.deepStrictEqual(e.entries[i].record, source.expectedInputRows[i], "opaque row " + i);
+    for (const i of [1,2,3,4]) assert.deepStrictEqual(e.entries[i].record, source.expectedInputRows[i], "v4 unknown data row " + i);
+    assert.strictEqual(e.entries[0].record.v, 4); assert.strictEqual(e.entries[0].record.s, SV.inventories.pygmyInner18.seed);
+    assert.strictEqual(e.entries[10].record.v, 4); assert.strictEqual(e.entries[10].record.s, SV.inventories.pygmyRim18.seed);
+    assert.strictEqual(app.currentDeck().name, "PUBLIC PAN A");
+  });
+
+  test("SV4 U2: repeated boot resumes the same committed collection without allocation", async () => {
+    const raw = SV.migration.duplicatesRaw.source, crypto = cryptoFixture(), origin = createOrigin();
+    const first = await load({ storage:{"hpfc.scales.v3":raw}, crypto, origin });
+    assert.strictEqual(first.app.store["hpfc.scales.v3"], raw, "duplicate legacy rows cannot be collapsed during migration");
+    const initial = snapshot(first.app), draws = crypto.draws;
+    assert.strictEqual(initial.entries.length, 2);
+    for (let i = 0; i < 2; i++) {
+      const next = await load({ origin, crypto });
+      assert.deepStrictEqual(snapshot(next.app), initial, "acknowledged migration cannot be replayed at another boot");
+      assert.strictEqual(crypto.draws, draws, "reload must not allocate new identities");
+    }
+  });
+
+  test("SV4 U3: absent denied corrupt and newer sources are distinct", async () => {
+    // Begin with the observable protection warning, not an absent new API.
+    const bad = await load({ storage:{"hpfc.scales.v3":"{not-json"} });
+    assert.ok(notices(bad.app).length > 0, "a corrupt active source must visibly offer recovery rather than silently pretending there were no saved scales");
+    assert.strictEqual(bad.app.get("savedMode"), "protected");
+    assert.strictEqual(bad.app.store["hpfc.scales.v3"], "{not-json");
+    assert.strictEqual(bad.app.store[SV_KEY], undefined);
+    for (const c of SV.migration.invalidWholeSources) {
+      const storage = c.raw === null ? {} : {"hpfc.scales.v3":c.raw};
+      const { app } = await load({ storage });
+      assert.strictEqual(app.get("savedMode"), c.state === "absent" ? "durable" : "protected", c.id);
+      if (c.raw !== null) { assert.strictEqual(app.store["hpfc.scales.v3"], c.raw); assert.strictEqual(app.store[SV_KEY], undefined); }
+    }
+    for (const raw of [SV.migration.newerEnvelopeRaw, SV.migration.corruptEnvelopeRaw]) {
+      const { app } = await load({ storage:{[SV_KEY]:raw,"hpfc.scales.v3":JSON.stringify([SV.portableRecords.amaraA])} });
+      assert.strictEqual(app.get("savedMode"), "protected"); assert.strictEqual(app.store[SV_KEY], raw);
+      assert.ok(!names(app).includes("PUBLIC PAN A"), "protected newer collection never silently substitutes stale legacy content");
+    }
+    const denied = await load({ storageAccessError:new Error("controlled denied read") });
+    assert.strictEqual(denied.app.get("savedMode"), "session"); assert.ok(notices(denied.app).length > 0);
+  });
+
+  test("SV5 U1: no lock or denied storage gives this-tab-only operation without persistent writes", async () => {
+    for (const opts of [{locks:false},{locksAccessError:new Error("controlled lock access")},
+      {locksRequestError:new Error("controlled lock rejection")},{storageAccessError:new Error("controlled denied storage")}]) {
+      const { app, origin } = await load(opts);
+      openSheet(app); app.type(SV.inventories.amara9.seed); await submit(app);
+      assert.strictEqual(origin.successfulWrites.filter(x => x.key === "hpfc.scales.v3" || x.key === SV_KEY).length, 0,
+        "unsupported persistence cannot silently write an unlocked legacy/new saved store");
+      assert.strictEqual(app.get("savedMode"), "session");
+      assert.match(notices(app), /this tab|session|reload|clos/i, "temporary changes must be clearly scoped to this tab");
+      assert.strictEqual(app.sheetOpen(), false); assert.match(app.faces(), /<svg /);
+      assert.strictEqual(plain(app.get("shareCode(deck())")).ok, true);
+    }
+  });
+
+  test("SV5 U2: failed durable Save preserves draft and acknowledged winner", async () => {
+    for (const failure of ["write", "serialization", "lock"]) {
+      let failWrite = false;
+      const { app } = await seeded([SV.portableRecords.amaraA], {}, {storageFault:({operation,key}) =>
+        failWrite && operation === "setItem" && key === SV_KEY ? new Error("controlled quota") : null});
+      const before = app.store[SV_KEY]; editSelected(app); rename(app, "UNSAVED DRAFT");
+      if (failure === "write") failWrite = true;
+      else if (failure === "lock") app.sandbox.navigator.locks.request = () => Promise.reject(new Error("controlled lock rejected"));
+      else app.run(`const __svStringify = JSON.stringify; JSON.stringify = function(v,...args) {
+        if (v && v.schema === 1 && Array.isArray(v.entries)) throw new Error("controlled serialization");
+        return __svStringify(v,...args); };`);
+      await submit(app);
+      assert.strictEqual(app.sheetOpen(), true, failure + " cannot close the unsaved draft");
+      assert.strictEqual(app.els["scale-name"].value, "UNSAVED DRAFT");
+      assert.strictEqual(app.store[SV_KEY], before); assert.strictEqual(app.currentDeck().name, "PUBLIC PAN A");
+      assert.strictEqual(app.get("savedMode"), "durable", "mid-session failure cannot silently change backend mode");
+      assert.ok(notices(app).length > 0); assert.doesNotMatch(notices(app), /^Saved|^Created|^Updated/);
+    }
+  });
+
+  test("SV5 U3: successful setItem followed by failed diagnostic readback is committed exactly once", async () => {
+    const origin = createOrigin(); let refuseReads = true;
+    const legacy = SV.migration.duplicatesRaw.source;
+    const { app } = await load({ origin,storage:{"hpfc.scales.v3":legacy},storageFault:({operation,key}) =>
+      refuseReads && operation === "getItem" && key === SV_KEY && origin.successfulWrites.some(x=>x.key===SV_KEY)
+        ? new Error("controlled post-ack readback") : null });
+    assert.strictEqual(app.store["hpfc.scales.v3"], legacy, "acknowledged migration must leave its legacy source intact");
+    const initial = snapshot(app); assert.strictEqual(initial.entries.length, 2);
+    assert.strictEqual(origin.successfulWrites.filter(x=>x.key===SV_KEY).length, 1);
+    refuseReads = false;
+    const add = await imported(app, SV.portableRecords.amaraB); assert.strictEqual(add.ok, true);
+    const added = snapshot(app); assert.strictEqual(added.entries.length, 3);
+    // Inject only a diagnostic read AFTER the next successful write, retaining
+    // lock-time authoritative reads before the commit boundary.
+    const write = app.sandbox.localStorage.setItem.bind(app.sandbox.localStorage);
+    app.sandbox.localStorage.setItem = (k,v) => { write(k,v); if(k===SV_KEY)refuseReads=true; };
+    const target = added.entries[2];
+    const res = await command(app,{type:"edit",collectionId:added.collectionId,instanceId:target.instanceId,expectedRevision:target.revision},
+      {...copy(SV.portableRecords.amaraB),o:{name:"ACKNOWLEDGED EDIT"}});
+    assert.strictEqual(res.ok,true); assert.strictEqual(res.created,false);
+    const edited=snapshot(app); assert.strictEqual(edited.entries.length,3);
+    assert.strictEqual(edited.entries[2].instanceId,target.instanceId);
+    assert.strictEqual(edited.entries[2].record.o.name,"ACKNOWLEDGED EDIT");
+    assert.strictEqual(origin.successfulWrites.filter(x=>x.key===SV_KEY).length,3,"migration/Add/Edit each commit once");
+  });
+
+  test("SV5 U4: UUID collisions and exhausted allocation preserve all prior data", async () => {
+    const a=SV.portableRecords.amaraA, b=SV.portableRecords.amaraB;
+    const crypto=cryptoFixture([iid(1),iid(2),iid(3),iid(3),iid(4)]);
+    const {app,origin}=await seeded([a],{usedInstanceIds:[iid(1),iid(2)],nextDisplayOrdinal:3},{crypto});
+    const e=snapshot(app);
+    const added=await command(app,{type:"import",collectionId:e.collectionId,selectedInstanceId:iid(1)},b);
+    assert.strictEqual(added.ok,true); assert.strictEqual(added.instanceId,iid(3));
+    assert.strictEqual(snapshot(app).entries[1].displayOrdinal,3,"deleted ordinal2 cannot be reused");
+    const gone=await command(app,{type:"delete",collectionId:e.collectionId,instanceId:iid(3),expectedRevision:1});
+    assert.strictEqual(gone.ok,true);
+    const again=await load({origin,crypto});
+    assert.ok(snapshot(again.app).usedInstanceIds.includes(iid(3)),"reload retains deleted lifetime handles");
+    const fresh=await command(again.app,{type:"import",collectionId:e.collectionId,selectedInstanceId:iid(1)},b);
+    assert.strictEqual(fresh.instanceId,iid(4),"forced deleted-handle draw must be rejected after reload");
+    const after=again.app.store[SV_KEY];
+    for(const type of ["edit","delete"]) {
+      const stale=await command(again.app,{type,collectionId:e.collectionId,instanceId:iid(3),expectedRevision:1},type==="edit"?a:undefined);
+      assert.strictEqual(stale.ok,false); assert.strictEqual(stale.kind,"conflict"); assert.strictEqual(again.app.store[SV_KEY],after);
+    }
+    again.app.sandbox.crypto.randomUUID=()=>iid(1);
+    const exhausted=await command(again.app,{type:"import",collectionId:e.collectionId,selectedInstanceId:iid(1)},
+      {v:4,s:SV.inventories.other.seed,o:{name:"NO ID AVAILABLE"}});
+    assert.strictEqual(exhausted.ok,false); assert.strictEqual(exhausted.kind,"allocation");
+    assert.strictEqual(again.app.store[SV_KEY],after);
+  });
+
+  test("SV7 U1: late old-client writes remain a separate recovery branch", async () => {
+    const source=SV.migration.mixedRaw, {app,origin}=await load({storage:copy(source.sources)});
+    assert.strictEqual(app.store["hpfc.scales.v3"],source.sources["hpfc.scales.v3"],"old writer source must not be normalized in place");
+    const before=snapshot(app), raw=JSON.stringify([SV.portableRecords.amaraB]);
+    const writer=boot({origin,html:"<script>window.writerOnly=true;</script>"});
+    writer.sandbox.localStorage.setItem("hpfc.scales.v3",raw); origin.flushStorageEvents();
+    await new Promise(resolve=>setImmediate(resolve));
+    assert.deepStrictEqual(snapshot(app).entries,before.entries,"legacy divergence cannot replace authoritative variants");
+    assert.deepStrictEqual(snapshot(app).migration,before.migration,"captured recovery baseline is immutable");
+    assert.strictEqual(app.store["hpfc.scales.v3"],raw);
+    assert.match(notices(app),/older|legacy|recover/i,"late old-client writes require a recovery branch notice");
+  });
+
+  test("SV7 U2: downgrade and re-upgrade preserve both namespaces", async () => {
+    const old=JSON.stringify([SV.portableRecords.amaraA]);
+    const {app,origin}=await seeded([SV.portableRecords.amaraA],{}, {storage:{[SV_KEY]:JSON.stringify(envelope([SV.portableRecords.amaraA])),"hpfc.scales.v3":old}});
+    const before=app.store[SV_KEY],writer=boot({origin,html:"<script>window.writerOnly=true;</script>"});
+    const late=JSON.stringify([SV.portableRecords.amaraB]); writer.sandbox.localStorage.setItem("hpfc.scales.v3",late);
+    const upgraded=await load({origin});
+    assert.strictEqual(upgraded.app.store[SV_KEY],before,"re-upgrade must resume the committed collection instead of re-migrating later legacy data");
+    assert.strictEqual(upgraded.app.store["hpfc.scales.v3"],late); assert.strictEqual(upgraded.app.currentDeck().name,"PUBLIC PAN A");
+  });
+
+  test("SV7 U3: a stale collection epoch cannot mutate a replacement store", async () => {
+    const {app}=await seeded([SV.portableRecords.amaraA]);
+    const replacement=envelope([SV.portableRecords.amaraA],{collectionId:SV.ids.collectionB});
+    app.sandbox.localStorage.setItem(SV_KEY,JSON.stringify(replacement));
+    const raw=app.store[SV_KEY];
+    const res=await command(app,{type:"edit",collectionId:SV.ids.collectionA,instanceId:iid(1),expectedRevision:1},SV.portableRecords.amaraB);
+    assert.strictEqual(res.ok,false); assert.strictEqual(res.kind,"conflict");
+    assert.strictEqual(app.store[SV_KEY],raw,"coincidentally equal handle/revision cannot bypass collection epoch");
+  });
+
+  test("SV8 U1: plain imports never inherit replacement authority", async () => {
+    const rep={...copy(SV.portableRecords.amaraA),o:{name:"SLOT OWNER",replaces:"kurd",palette:2}};
+    const {app}=await seeded([rep],{slots:{kurd:iid(1)},slotStateRevision:1});
+    const e=snapshot(app);
+    const res=await command(app,{type:"import",collectionId:e.collectionId,selectedInstanceId:iid(1)},
+      {...copy(SV.portableRecords.amaraB),o:{name:"PLAIN IMPORT",replaces:"kurd",palette:3}});
+    assert.strictEqual(res.ok,true);
+    const after=snapshot(app),plain=after.entries.find(x=>x.instanceId===res.instanceId);
+    assert.strictEqual(plain.record.o.replaces,undefined,"ordinary import must strip replacement authority");
+    assert.deepStrictEqual(after.slots,{kurd:iid(1)}); assert.deepStrictEqual(after.entries[0],e.entries[0]);
+  });
+
+  test("SV8 U2: deleting a slot owner promotes the newest recognized survivor", async () => {
+    const old={v:4,s:SV.inventories.amara9.seed,o:{name:"OLDER REPLACEMENT",replaces:"kurd"}};
+    const current={v:4,s:SV.inventories.other.seed,o:{name:"NEWER REPLACEMENT",replaces:"kurd"}};
+    const plain=SV.portableRecords.amaraB,opaque=SV.migration.slots.expectedRows[3];
+    const {app}=await seeded([old,current,plain,opaque],{slots:{kurd:iid(2)},slotStateRevision:1,preferredSelection:{kind:"saved",id:iid(2)}});
+    const before=snapshot(app),staleProofless={type:"delete",collectionId:before.collectionId,instanceId:iid(1),expectedRevision:1};
+    const del=await command(app,{type:"delete",collectionId:before.collectionId,instanceId:iid(2),expectedRevision:1,...slotProof(before)});
+    assert.strictEqual(del.ok,true); const promoted=snapshot(app);
+    assert.strictEqual(promoted.slots.kurd,iid(1)); assert.ok(promoted.hidden.includes("kurd"));
+    const stale=await command(app,staleProofless);
+    assert.strictEqual(stale.ok,false); assert.strictEqual(stale.kind,"conflict","promotion requires captured owner proof even if entry revision did not change");
+    const armed=affected(promoted);
+    const unrelated=await command(app,{type:"import",collectionId:before.collectionId,selectedInstanceId:null},
+      {v:4,s:SV.inventories.other.seed,o:{name:"UNRELATED PUBLIC PAN"}});
+    assert.strictEqual(unrelated.ok,true);
+    const reset=await command(app,{type:"reset",collectionId:before.collectionId,affectedScope:armed});
+    assert.strictEqual(reset.ok,true,"unrelated plain Add cannot invalidate a replacement-scope proof");
+    const after=snapshot(app);
+    assert.deepStrictEqual(after.slots,{}); assert.deepStrictEqual(after.hidden,[]);
+    assert.deepStrictEqual(after.entries.find(x=>x.instanceId===iid(4)).record,opaque);
+    assert.ok(after.entries.some(x=>x.instanceId===iid(3))); assert.ok(after.entries.some(x=>x.instanceId===unrelated.instanceId));
+    assert.strictEqual(after.entries.some(x=>x.instanceId===iid(1)),false);
+    assert.deepStrictEqual(after.migration,promoted.migration);
+  });
+
+  test("SV9 U1: cancelled waiting Save never commits and duplicate submit is disabled", async () => {
+    const {app,origin}=await seeded([SV.portableRecords.amaraA]);
+    let release,acquired;
+    const held=new Promise(resolve=>{acquired=resolve;});
+    const blocker=app.sandbox.navigator.locks.request(SV_LOCK,()=>{acquired();return new Promise(resolve=>{release=resolve;});});
+    await held; const before=app.store[SV_KEY],writes=origin.successfulWrites.length;
+    try {
+      editSelected(app); rename(app,"CANCELLED DRAFT");
+      const pending=app.getAsync("document.getElementById('scale-generate').onclick()");
+      await app.waitFor("navigator.locks.query().then(q => q.pending.length === 1)");
+      assert.strictEqual(app.els["scale-generate"].disabled,true);
+      app.els["scale-generate"].click();
+      const q=await app.sandbox.navigator.locks.query(); assert.strictEqual(q.pending.length,1,"duplicate submit must not enqueue another command");
+      app.els["scale-back"].click(); await pending;
+      assert.strictEqual(app.store[SV_KEY],before); assert.strictEqual(origin.successfulWrites.length,writes);
+      assert.strictEqual((await app.sandbox.navigator.locks.query()).pending.length,0);
+    } finally {release();await blocker;}
+    assert.strictEqual(app.store[SV_KEY],before,"cancelled pending write cannot commit after release");
+  });
+
+  test("SV9 U2: an obsolete completed Save cannot close or select a newer context", async () => {
+    const {app}=await seeded([SV.portableRecords.amaraA]);
+    editSelected(app); rename(app,"ACKNOWLEDGED FIRST");
+    const real=app.sandbox.localStorage.setItem.bind(app.sandbox.localStorage);
+    let opened=false;
+    app.sandbox.localStorage.setItem=(k,v)=>{real(k,v);if(k===SV_KEY&&!opened){opened=true;openSheet(app);app.type(SV.inventories.other.seed);app.els["scale-box"].focus();}};
+    await submit(app);
+    assert.strictEqual(opened,true); assert.strictEqual(app.sheetOpen(),true,"old success must not close the new Add sheet");
+    assert.strictEqual(app.els["scale-box"].value,SV.inventories.other.seed);
+    assert.strictEqual(app.activeId(),"scale-box");
+    assert.strictEqual(snapshot(app).entries[0].record.o.name,"ACKNOWLEDGED FIRST","already acknowledged commit stays saved");
+    assert.doesNotMatch(notices(app),/ACKNOWLEDGED FIRST/,"obsolete success cannot announce into the newer context");
+  });
+
+  test("SV10 U1: final chip labels remain unique through literal suffix and built-in collisions", async () => {
+    for(const lang of SV.labels.locales)for(const c of SV.labels.cases) {
+      const records=c.names.map(name=>({v:4,s:SV.inventories.amara9.seed,o:{name}}));
+      const raw=JSON.stringify(records);
+      const {app}=await load({storage:{hpfc:JSON.stringify({lang,mode:"A"}),"hpfc.scales.v3":raw}});
+      const labels=names(app);
+      assert.strictEqual(labels.length,5+c.names.length,"migration keeps every same-inventory label candidate in "+lang+"/"+c.id);
+      assert.strictEqual(new Set(labels).size,labels.length,"final rendered labels must be collision-free in "+lang+"/"+c.id);
+      const e=snapshot(app);
+      assert.deepStrictEqual(e.entries.map(x=>x.record.o.name),c.names,"disambiguation never edits stored names");
+      if(c.names.length>1)for(const x of e.entries) {
+        const token="S"+x.displayOrdinal;
+        const chip=app.els.decks.children.find(n=>(n._html||n._text||"").includes(token));
+        assert.ok(chip,"collision suffix is visible: "+token);
+        assert.ok((chip.getAttribute("aria-label")||strip(chip.innerHTML)).includes(token),"accessible label retains discriminator");
+      }
+      for(const id of e.usedInstanceIds)assert.strictEqual(labels.some(n=>n.includes(id)),false,"opaque local handles never appear as labels");
+      openSheet(app);app.type(SV.inventories.amara9.seed);
+      assert.strictEqual(app.els["scale-generate"].disabled,false,"English note input remains accepted in "+lang);
+    }
+  });
+}
