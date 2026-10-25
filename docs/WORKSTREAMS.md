@@ -1,5 +1,22 @@
 # Shared workstream ledger
 
+## SHARE-IDENTITY — fresh LINK copy clarification
+
+Owner confirms the newest supplied link was freshly copied using LINK, ruling
+out an old clipboard/bookmark for that copy. Independently decoded new link is
+valid and still has the same18fields/saved identity, with no custom bottom-angle
+option or parent override. It describes default bottom placement. This does not
+establish what the owner's current displayed/saved diagram contains.
+
+Current question: did the displayed pan still show custom placement at copy time,
+or had the second same-identity import already changed it? If custom display is
+retained, investigate current-data/address-bar mismatch; if default, replacement
+explains the encoded link. copyLink uses current location.href directly. Do not
+assert stale clipboard, lost local data or a proven synchronization defect. Avoid
+reimporting a default-position link into an owner's retained custom state merely
+for diagnosis: existing imports replace the same identity. Read-only investigation
+only; no app/test edits, duplicate-plan execution or fix authorization.
+
 ## Latest check-in — SHARE-IDENTITY investigation / DUP warning decision
 
 **SHARE-IDENTITY: read-only investigation, no fix/plan execution authorized.**
