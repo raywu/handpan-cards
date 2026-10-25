@@ -10143,6 +10143,7 @@ function restoreScales() {
 }
 
 function selectDeck(id) {
+  retireLinkUI();
   // buildChips() below throws the whole strip away and builds it again, so any
   // focus resting ON the strip is about to be invalidated: the chip that was
   // clicked is detached outright. Either way the caret must be re-homed onto
@@ -10922,6 +10923,20 @@ const restoreBtn = document.getElementById("deck-restore");
 const shareCopy = document.getElementById("share-copy");
 const shareUrl = document.getElementById("share-url");
 shareUrl.setAttribute("hidden", "");
+// LINK owns UI only until a newer request, context change or dismissal. These
+// counters are initialized before boot can select a scale or announce a notice.
+let linkUIGeneration = 0;
+let linkUIHref = location.href;
+let announcementRevision = 0;
+function retireLinkUI() {
+  ++linkUIGeneration;
+  shareUrl.setAttribute("hidden", "");
+}
+function observeLinkRoute() {
+  if (linkUIHref === location.href) return;
+  retireLinkUI();
+  linkUIHref = location.href;
+}
 // The page header (Stage 2). backBtn is the page's way out AND where focus
 // lands on open; titleEl is the page's accessible name, not decoration.
 const backBtn   = document.getElementById("scale-back");
@@ -11078,6 +11093,7 @@ function showRefusal(text) {
  *  showRefusal() instead, because a refusal belongs directly under the seed
  *  field it is about, not down in #scale-guidance by the primary. */
 function say(text, tier) {
+  ++announcementRevision;
   for (const el of [msgLine, announce]) {
     el.className = (el === announce ? "announce" : "") + (tier ? " " + tier : "");
     el.textContent = text;
@@ -12635,6 +12651,7 @@ function setInert(on, targets) {
   }
 }
 function showSheet(opener) {
+  retireLinkUI();
   sheetOpener = opener || addChip;
   sheet.removeAttribute("hidden");
   sheetOpen = true;
@@ -12788,7 +12805,10 @@ let pendingPop = false;
 // The browser's way out: the back gesture, or a swipe. The entry is already
 // gone, so this only takes the page down.
 window.addEventListener("popstate", () => {
+  // SAVE already selected and synced the committed scale. Observe the final
+  // route after this app-owned pop, not its temporary pre-SAVE destination.
   if (pendingPop) { pendingPop = false; syncRoute(); return; }
+  observeLinkRoute();
   if (aboutOpen) { hideAbout(); return; }
   if (location.hash === ABOUT_ROUTE) { syncRoute(); return; }
   if (!sheetOpen) return;
@@ -13799,6 +13819,7 @@ function openPanel() {
   panelOpen = true;
   settingsTrigger.setAttribute("aria-expanded", "true");
   if (desktopMQ.matches) return;
+  retireLinkUI();
   settingsScrim.removeAttribute("hidden");
   settingsPanel.setAttribute("role", "dialog");
   settingsPanel.setAttribute("aria-modal", "true");
@@ -13814,7 +13835,7 @@ function closePanel() {
   settingsPanel.removeAttribute("aria-modal");
   setInert(false, panelBackground);
   disarmReset();
-  shareUrl.setAttribute("hidden", "");
+  retireLinkUI();
   settingsTrigger.focus();
 }
 /* ---------------- about overlay ---------------- */
@@ -13838,6 +13859,7 @@ function aboutStops() {
   return [aboutCloseBtn, ...document.querySelectorAll('#about a[href^="#deck="], #about a[href^="mailto:"]')].filter(isStop);
 }
 function openAbout() {
+  retireLinkUI();
   closePanel();
   aboutSection.removeAttribute("hidden");
   aboutOpen = true;
@@ -14451,8 +14473,8 @@ function syncRoute() {
   const want = location.pathname + location.search + route;
   if (location.pathname + location.search + location.hash !== want) {
     history.replaceState(history.state, "", want);
-    shareUrl.setAttribute("hidden", "");
   }
+  observeLinkRoute();
   const refused = route === "";
   shareCopy.disabled = refused;
   shareCopy.title = refused ? reason : "";
@@ -14460,34 +14482,67 @@ function syncRoute() {
   routeRefused = refused;
 }
 function copyLink() {
+  observeLinkRoute();
+  retireLinkUI();
+  const generation = linkUIGeneration;
   const href = location.href;
   const deck_kind = deckKind(deck());
+  let noticeRevision = announcementRevision;
+  const current = () => generation === linkUIGeneration && href === location.href &&
+    !shareCopy.disabled && !sheetOpen && !aboutOpen &&
+    !(panelOpen && !desktopMQ.matches) && !document.hidden;
+  if (!current()) return;
   const done = (text, method) => {
-    say("", "");
     track("share_copy", { deck_kind, method });
-    setTimeout(() => { if (announce.textContent === "") say(text, "ok"); }, 0);
+    if (!current() || noticeRevision !== announcementRevision) return;
+    say("", "");
+    noticeRevision = announcementRevision;
+    setTimeout(() => {
+      if (current() && noticeRevision === announcementRevision) say(text, "ok");
+    }, 0);
   };
   const reveal = () => {
+    if (!current()) return;
     shareUrl.value = href;
     shareUrl.removeAttribute("hidden");
     shareUrl.focus();
+    if (!current()) return;
     shareUrl.select();
-    say("SELECT THE LINK AND COPY IT", "warn");
+    if (noticeRevision === announcementRevision) {
+      say("SELECT THE LINK AND COPY IT", "warn");
+      noticeRevision = announcementRevision;
+    }
     track("share_copy", { deck_kind, method: "select" });
   };
   const share = () => {
+    if (!current()) return;
     if (!navigator.share) { reveal(); return; }
-    Promise.resolve().then(() => navigator.share({ url: href }))
-      .then(() => done(t("share.shared"), "share"), e => { if (!e || e.name !== "AbortError") reveal(); });
+    let started = false;
+    Promise.resolve().then(() => {
+      if (!current()) return;
+      started = true;
+      return navigator.share({ url: href });
+    }).then(() => {
+      if (started) done(t("share.shared"), "share");
+    }, e => { if (!e || e.name !== "AbortError") reveal(); });
   };
   if (!navigator.clipboard || !navigator.clipboard.writeText) { share(); return; }
   Promise.resolve().then(() => navigator.clipboard.writeText(href))
     .then(() => done(t("share.copied"), "clipboard"), share);
 }
 shareCopy.onclick = copyLink;
-shareUrl.addEventListener("blur", () => shareUrl.setAttribute("hidden", ""));
+shareUrl.addEventListener("blur", () => {
+  // Hiding an older field can itself release focus. Its blur must not retire
+  // the newer request that already hid it before starting platform work.
+  if (!shareUrl.hasAttribute("hidden")) retireLinkUI();
+});
 shareUrl.addEventListener("keydown", e => {
-  if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); shareUrl.setAttribute("hidden", ""); shareCopy.focus(); }
+  if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); retireLinkUI(); shareCopy.focus(); }
+});
+// OS share/permission UI may blur the window. Only hidden-page transitions
+// retire UI, so a completion cannot replay after the page becomes visible.
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) retireLinkUI();
 });
 // An in-page link (the about section) changes the hash without a reload, so no
 // boot code runs. selectDeck gets the id deck() returns for the mapped seed,
@@ -14509,6 +14564,7 @@ function routeToDeck(routed) {
   return shown;
 }
 window.addEventListener("hashchange", () => {
+  observeLinkRoute();
   if (sheetOpen || aboutOpen) return;
   if (location.hash === routeFor(deck())) return;
   if (location.hash.indexOf(SHARE_PREFIX) === 0) {
