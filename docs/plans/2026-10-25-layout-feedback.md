@@ -38,10 +38,16 @@ The consumer also checks active field validity: an invalid composition may retai
 the last valid line/boxOk. This implements the reviewed invalid-active-input rule,
 without disabling Layout or palette access.
 
-Sixteen new mutants and five equivalent legacy context refreshes are generated;
-all1500 patches apply-check. Runtime clean/fault proof, final exact-head review,
-full Linux CI and actual feedback DEV delivery remain required. Mac prerequisite
-DEV574 delivery is separately complete atf5df7942; main573 remains HELD.
+Sixteen new mutants and five equivalent legacy context refreshes were generated;
+all1500 patches apply-check. All21 changed patches are assertion-killed after18
+distinct clean-green exact header commands at source4e4bff4c, with identical
+selected counts,0 skip/cancel/timeout/startup kills, resource census and byte
+restoration. Every failing leaf is an assertion; suite wrappers are not evidence.
+Final exact-head review, full Linux CI and actual feedback DEV delivery remain
+required. Mac prerequisite DEV574 delivery is separately complete atf5df7942;
+main573 remains HELD. Live feedback PRs are resolved from the published branch
+and [shared checkpoint thread](https://github.com/raywu/handpan-cards/pull/571#issuecomment-6400489132),
+not a guessed PR number or this pre-CI snapshot.
 
 Draft for independent engineering and design review — 2026-10-25.
 

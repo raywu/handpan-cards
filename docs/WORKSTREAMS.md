@@ -25,11 +25,16 @@ prompt/investigation stays queued until other work is resolved.
   Independent full CI40209344599:12 jobs,2238JS/274Python/1484kills,0bad verdicts.
   ActualDEV28/28 served resources/noindex and print journey1/1 passed, with cleanup
   and independent delivery review. Main573 remains HELD; full Mac is unverified.
-- **Next:** prove16 new feedback mutants and5 preserved-intent legacy context
-  refreshes clean-green/fault-assertion-red. Static1500-patch applicability passed;
-  runtime proof/full final-head CI/DEV are not yet claimed. Then exact-head reviews,
-  full CI and actual DEV verification precede feedback delivery. Root alone runs
-  host browsers; preserve active invalid-input gating and mixed auxiliary text.
+- **Mutation proof:**16 new feedback mutants and5 preserved-intent legacy context
+  refreshes are assertion-killed after18 distinct clean-green exact header commands
+  at source4e4bff4c. All failing test leaves are ERR_ASSERTION; nested suite wrappers
+  do not count as kills. Static1500-patch applicability, per-job resource census
+  and restored clean proof checkout verified. Full final-head CI/DEV still pending.
+- **Next:** exact-head addressed reviews, full CI through a held main-target PR
+  and same-head DEV companion, then actual served DEV/affected journeys. Resolve
+  live PRs for branch codex/layout-feedback-20261025 and the latest shared thread
+  [checkpoint](https://github.com/raywu/handpan-cards/pull/571#issuecomment-6400489132).
+  Root alone runs host browsers. No feedback CI/DEV success is claimed here.
 - **Sequencing:** integrate feedback through full CI/review/actual DEV, then start
   SPS from the accepted lane source with the shared tab-entry contract. Credit
   original adapted phone QA; new feature-native checks remain outstanding.
