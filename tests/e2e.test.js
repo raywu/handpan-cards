@@ -17710,7 +17710,8 @@ function run() {
       assert.strictEqual(await b.eval(`return window.__shcReceiverBefore;`), 0, "fresh receiver has no inherited sender storage");
       assert.deepStrictEqual(await b.eval(`return deck().options.angles.bottom;`), expectedOptions);
       assert.deepStrictEqual(await b.eval(`return JSON.parse(localStorage.getItem(SCALES_KEY))[0].o.angles.bottom;`), expectedOptions);
-      assert.strictEqual(await b.eval(`return !!document.querySelector("#front svg");`), true, "receiver renders the practice scale");
+      assert.strictEqual(await b.eval(`return !!document.querySelector("#card .diagwrap svg");`), true,
+        "receiver practice card contains diagram SVG (DOM presence, not visible ink)");
       await enterEdit(); await enterLayout();
       await assertDrawnPositions();
       assert.strictEqual(after.value, copiedB, "old A must not overwrite B's visible fallback");
@@ -17735,7 +17736,8 @@ function run() {
         const notice = await b.eval(`return document.querySelector(".announce").textContent;`);
         await complete(0, success);
         assert.strictEqual(await activeId(), focused, "old LINK must not steal focus from actual Edit");
-        assert.strictEqual(await b.eval(`return document.getElementById("share-url").hidden;`), true);
+        assert.strictEqual(await b.eval(`return document.getElementById("share-url").hidden;`), true,
+          "old LINK must not reveal the manual URL under Edit");
         assert.strictEqual(await b.eval(`return document.querySelector(".announce").textContent;`), notice);
         await trustedClick("#scale-back");
         await b.waitFor(`document.getElementById("scale-sheet").hidden && location.hash.startsWith("#s=")`, { label: "SHC cancel Edit" });
