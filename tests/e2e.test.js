@@ -15453,7 +15453,7 @@ function run() {
         // zero baseline, without a programmatic jump inside the quiet interval.
         const early=await b.eval(`visualViewport.dispatchEvent(new Event("resize"));visualViewport.dispatchEvent(new Event("scroll"));const body=document.querySelector(".sheetbody");body.style.overflowY="auto";
           window.__spsQuietTrace=[];
-          const sample=(phase,e)=>{const r=body.getBoundingClientRect(),p=e&&e.touches&&e.touches[0],target=e&&e.target,active=document.activeElement;window.__spsQuietTrace.push({phase,elapsed:Date.now()-window.__spsEndAt,top:body.scrollTop,range:body.scrollHeight-body.clientHeight,rect:{left:r.left,top:r.top,right:r.right,bottom:r.bottom},target:target?{tag:target.tagName,id:target.id}:null,point:p?{x:p.clientX,y:p.clientY}:null,focus:active?{tag:active.tagName,id:active.id}:null});};
+          const sample=(phase,e)=>{const r=body.getBoundingClientRect(),p=e&&e.touches&&e.touches[0],target=e&&e.target,active=document.activeElement,inBody=!!(target&&body.contains(target)),eligible=inBody&&!(target.closest&&target.closest("button,input,textarea,select,#scale-preview,#scale-lip"));window.__spsQuietTrace.push({phase,body:inBody,eligible,elapsed:Date.now()-window.__spsEndAt,top:body.scrollTop,range:body.scrollHeight-body.clientHeight,rect:{left:r.left,top:r.top,right:r.right,bottom:r.bottom},target:target?{tag:target.tagName,id:target.id}:null,point:p?{x:p.clientX,y:p.clientY}:null,focus:active?{tag:active.tagName,id:active.id}:null});};
           for(const type of ["touchstart","touchmove","scroll"])body.addEventListener(type,e=>sample(type,e),{capture:true,passive:true});
           sample("setup");
           const r=body.getBoundingClientRect();let point=null;for(let y=Math.min(r.bottom-16,innerHeight-16);y-80>=Math.max(8,r.top+8);y-=4){const x=r.left+r.width/2,a=document.elementFromPoint(x,y),z=document.elementFromPoint(x,y-80);if(a&&z&&body.contains(a)&&body.contains(z)&&!a.closest("button,input,textarea,select,#scale-preview,#scale-lip")){point={x,y};break;}}return{point,top:body.scrollTop,range:body.scrollHeight-body.clientHeight,remaining:body.scrollHeight-body.clientHeight-body.scrollTop,elapsed:Date.now()-window.__spsEndAt};`);
@@ -15472,6 +15472,9 @@ function run() {
         await b.releasing(()=>b.send("Input.dispatchTouchEvent",{type:"touchEnd",touchPoints:[]}));
         const earlyAfter=await b.eval(`return new Promise(resolve=>requestAnimationFrame(()=>resolve({top:document.querySelector(".sheetbody").scrollTop,elapsed:Date.now()-window.__spsEndAt,lastMoveElapsed:window.__spsLastMoveElapsed,shut:document.getElementById("scale-sheet").classList.contains("lipshut"),trace:window.__spsQuietTrace})));`);
         t.diagnostic("SPS_QUIET_NATIVE_SCROLL "+JSON.stringify({before:early,after:earlyAfter}));
+        const actualStart=earlyAfter.trace.find(sample=>sample.phase==="touchstart");
+        assert.ok(actualStart&&actualStart.body&&actualStart.eligible,"the actual early touch must begin on neutral body content");
+        assert.strictEqual(actualStart.top,early.top,"native input starts at the observed zero tab-entry baseline");
         assert.ok(earlyAfter.lastMoveElapsed<220,"the actual early moves, not only setup, must remain inside the quiet interval");
         assert.ok(earlyAfter.elapsed<220,"the scroll and lip observation must still be inside the real quiet interval");
         assert.ok(earlyAfter.top>early.top+8,"real native scrolling must remain usable during the quiet interval");
