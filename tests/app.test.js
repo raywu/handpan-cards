@@ -15259,4 +15259,402 @@ describe("SPS: primary public-event traces", () => {
     assert.strictEqual(JSON.stringify(app.history.calls), history);
     assert.strictEqual(app.activeId(), focus, "swipe has no route-specific focus transfer");
   });
+
+  // Each trace below models the public sheet-capture -> body observer order.
+  // It does not simulate browser event propagation or native selection/clicks.
+  const bodyOf = (app) => app.sandbox.document.querySelector(".sheetbody");
+  const surfOf = (app) => app.els["scale-sheet"].firstElementChild;
+  const emit = (app, type, o = {}) => {
+    const target = o.target || bodyOf(app);
+    const point = { identifier: o.id === undefined ? 7 : o.id,
+      clientX: o.x === undefined ? 220 : o.x, clientY: o.y === undefined ? 300 : o.y };
+    const ended = type === "touchend" || type === "touchcancel";
+    const e = { type, target, touches: o.touches === undefined ? (ended ? [] : [point]) : o.touches,
+      changedTouches: o.changed === undefined ? [point] : o.changed, cancelable: true,
+      defaultPrevented: false, preventDefault() { this.defaultPrevented = true; }, stopPropagation() {} };
+    app.els["scale-sheet"].dispatchEvent(e);
+    if (bodyOf(app).contains(target)) bodyOf(app).dispatchEvent(e);
+    return e;
+  };
+  const ready = (kind = "add", tab = "scale") => {
+    const app = fresh();
+    if (kind === "edit") openEdit(app, makeCustom(app, BASE));
+    else { openSheet(app); line(app, BASE); }
+    app.els["scale-box"].tagName = "TEXTAREA";
+    for (const id of ["ding", "top", "inner", "bottom", "name"]) app.els["scale-" + id].tagName = "INPUT";
+    if (tab === "layout") app.click(app.els["scale-tab-layout"]);
+    app.advance(300);
+    return app;
+  };
+  const gesture = (app, { x = 220, dx = -80, y = 300, dy = 0, ms = 100, target } = {}) => {
+    emit(app, "touchstart", { x, y, target });
+    app.advance(ms);
+    emit(app, "touchmove", { x: x + dx, y: y + dy, target });
+    emit(app, "touchend", { x: x + dx, y: y + dy, target });
+  };
+  const vertical = (app) => {
+    emit(app, "touchstart", { x: 200, y: 400 });
+    emit(app, "touchmove", { x: 200, y: 360 });
+    emit(app, "touchend", { x: 200, y: 360 });
+  };
+  const scroll = (app, el, top) => {
+    el.scrollTop = top;
+    const e = { type: "scroll", target: el };
+    el.dispatchEvent(e);
+    // Scroll does not bubble. Explicitly model only the body capture observer
+    // for a descendant scroller; native wiring is covered in the browser lane.
+    if (el !== bodyOf(app) && bodyOf(app).contains(el)) bodyOf(app).dispatchEvent(e);
+  };
+  const focusEvent = (app, el, focused) => {
+    if (focused) el.focus(); else el.blur();
+    const e = { type: focused ? "focusin" : "focusout", target: el };
+    app.sandbox.document.dispatchEvent(e);
+    bodyOf(app).dispatchEvent(e);
+    el.dispatchEvent({ type: focused ? "focus" : "blur", target: el });
+  };
+  const keyboard = (app, up) => {
+    app.sandbox.visualViewport.height = up ? 500 : 800;
+    app.sandbox.visualViewport.dispatchEvent({ type: "resize" });
+    assert.strictEqual(app.els["scale-sheet"].classList.contains("kbup"), up, "the keyboard fixture must actually change public sheet state");
+  };
+  const selected = (app, field, selected) => {
+    field.selectionStart = 0;
+    field.selectionEnd = selected ? 1 : 0;
+    const get = () => ({ isCollapsed: !selected, anchorNode: field, focusNode: field,
+      toString: () => selected ? "D" : "" });
+    app.sandbox.getSelection = get;
+    app.sandbox.document.getSelection = get;
+    app.sandbox.document.dispatchEvent({ type: "selectionchange", target: field });
+  };
+  const finishLeft = (app, target) => {
+    emit(app, "touchmove", { x: 140, target });
+    emit(app, "touchend", { x: 140, target });
+  };
+  const shut = (app) => app.els["scale-sheet"].classList.contains("lipshut");
+
+  test("SPS1: 47 48 and 49 pixel boundaries hold in both directions for Add and Edit", () => {
+    for (const kind of ["add", "edit"]) for (const way of ["left", "right"]) for (const pixels of [47, 48, 49]) {
+      const from = way === "left" ? "scale" : "layout", to = way === "left" ? "layout" : "scale";
+      const app = ready(kind, from);
+      gesture(app, { x: way === "left" ? 220 : 140, dx: (way === "left" ? -1 : 1) * pixels });
+      assert.strictEqual(on(app, pixels >= 48 ? to : from), "true", `${kind} ${way} ${pixels}px`);
+    }
+  });
+
+  test("SPS1: the two to one axis ratio includes its boundary and rejects a more diagonal trace", () => {
+    for (const dy of [-25, -24, -23, 23, 24, 25]) {
+      const app = ready();
+      gesture(app, { dx: -48, dy });
+      assert.strictEqual(on(app, Math.abs(dy) <= 24 ? "layout" : "scale"), "true", "dy=" + dy);
+    }
+  });
+
+  test("SPS1: elapsed 599 and 600 qualify while 601 milliseconds is refused", () => {
+    for (const ms of [599, 600, 601]) {
+      const app = ready();
+      gesture(app, { ms });
+      assert.strictEqual(on(app, ms <= 600 ? "layout" : "scale"), "true", ms + "ms");
+    }
+  });
+
+  test("SPS1: normal touchend uses matching changedTouches final coordinates even without a move sample", () => {
+    const app = ready();
+    emit(app, "touchstart", { x: 220 });
+    app.advance(100);
+    emit(app, "touchend", { x: 140, touches: [] });
+    assert.strictEqual(on(app, "layout"), "true");
+  });
+
+  test("SPS1: the 24 pixel margins are inclusive and closer starts stay excluded", () => {
+    for (const [x, from, dx, allowed] of [[23, "layout", 80, false], [24, "layout", 80, true],
+      [356, "scale", -80, true], [357, "scale", -80, false]]) {
+      const app = ready("add", from);
+      gesture(app, { x, dx });
+      assert.strictEqual(on(app, allowed ? (from === "scale" ? "layout" : "scale") : from), "true", "start x=" + x);
+    }
+  });
+
+  test("SPS2: preview and preview-descendant origins stay excluded after leaving their original coordinates", () => {
+    for (const child of [false, true]) {
+      const app = ready("add", "layout"), preview = app.els["scale-preview"];
+      const target = child ? preview.appendChild(app.sandbox.document.createElement("span")) : preview;
+      gesture(app, { x: 140, dx: 100, target });
+      assert.strictEqual(on(app, "layout"), "true", child ? "preview child" : "preview");
+    }
+  });
+
+  test("SPS2: lip and select origins cannot become a sheet shortcut", () => {
+    const lip = ready();
+    gesture(lip, { target: lip.els["scale-lip"] });
+    assert.strictEqual(on(lip, "scale"), "true");
+    const app = ready(), select = bodyOf(app).appendChild(app.sandbox.document.createElement("select"));
+    gesture(app, { target: select });
+    assert.strictEqual(on(app, "scale"), "true");
+  });
+
+  test("SPS2: already-focused input and textarea origins preserve the current tab", () => {
+    for (const id of ["scale-top", "scale-box"]) {
+      const app = ready(), field = app.els[id];
+      focusEvent(app, field, true);
+      gesture(app, { target: field });
+      assert.strictEqual(on(app, "scale"), "true", id);
+      assert.strictEqual(app.activeId(), id);
+    }
+  });
+
+  test("SPS2: keyboard-up and initial multi-touch starts cannot recover into a shortcut", () => {
+    const kb = ready();
+    keyboard(kb, true);
+    emit(kb, "touchstart"); keyboard(kb, false); finishLeft(kb);
+    assert.strictEqual(on(kb, "scale"), "true");
+    const app = ready(), p = { identifier: 7, clientX: 220, clientY: 300 };
+    emit(app, "touchstart", { touches: [p, { ...p, identifier: 8 }] });
+    finishLeft(app);
+    assert.strictEqual(on(app, "scale"), "true");
+  });
+
+  test("SPS3: a late second finger cancels even when it lifts before the final move", () => {
+    for (const type of ["touchstart", "touchmove"]) {
+      const app = ready(), p = { identifier: 7, clientX: 220, clientY: 300 };
+      emit(app, "touchstart");
+      emit(app, type, { touches: [p, { ...p, identifier: 8 }] });
+      app.advance(100); finishLeft(app);
+      assert.strictEqual(on(app, "scale"), "true", "second finger seen in " + type);
+    }
+  });
+
+  test("SPS3: losing or replacing the original identifier on a move is sticky", () => {
+    for (const touches of [[], [{ identifier: 8, clientX: 200, clientY: 300 }]]) {
+      const app = ready(); emit(app, "touchstart");
+      emit(app, "touchmove", { touches }); finishLeft(app);
+      assert.strictEqual(on(app, "scale"), "true");
+    }
+  });
+
+  test("SPS3: a wrong changed identifier and touchcancel never commit navigation", () => {
+    for (const how of ["wrong-end", "cancel"]) {
+      const app = ready(); emit(app, "touchstart"); app.advance(100);
+      emit(app, "touchmove", { x: 140 });
+      if (how === "cancel") emit(app, "touchcancel", { x: 140 });
+      else emit(app, "touchend", { x: 140, changed: [{ identifier: 8, clientX: 140, clientY: 300 }] });
+      assert.strictEqual(on(app, "scale"), "true", how);
+    }
+  });
+
+  test("SPS3: a start field focused then blurred between touch samples stays cancelled", () => {
+    const app = ready(), field = app.els["scale-top"];
+    emit(app, "touchstart", { target: field });
+    focusEvent(app, field, true); focusEvent(app, field, false);
+    app.els["scale-back"].focus();
+    finishLeft(app, field);
+    assert.strictEqual(on(app, "scale"), "true");
+  });
+
+  test("SPS3: selection appearing then clearing between samples stays cancelled", () => {
+    const app = ready(), field = app.els["scale-box"];
+    selected(app, field, false);
+    emit(app, "touchstart", { target: field });
+    selected(app, field, true); selected(app, field, false);
+    finishLeft(app, field);
+    assert.strictEqual(on(app, "scale"), "true");
+  });
+
+  test("SPS3: keyboard rising and falling between samples stays cancelled", () => {
+    const app = ready(); emit(app, "touchstart");
+    keyboard(app, true); keyboard(app, false);
+    finishLeft(app);
+    assert.strictEqual(on(app, "scale"), "true");
+  });
+
+  test("SPS3: unfocused-field hold observes 250 milliseconds and the 8 pixel slop boundary", () => {
+    for (const [wait, early, expected] of [[249, null, "layout"], [250, null, "scale"],
+      [249, 8, "scale"], [249, 9, "layout"]]) {
+      const app = ready(), field = app.els["scale-box"];
+      emit(app, "touchstart", { target: field }); app.advance(wait);
+      if (early !== null) { emit(app, "touchmove", { x: 220 - early, target: field }); app.advance(1); }
+      finishLeft(app, field);
+      assert.strictEqual(on(app, expected), "true", `hold=${wait}, first move=${early}`);
+    }
+  });
+
+  test("SPS3: internal textarea scroll out and back cancels before another touch sample", () => {
+    const app = ready(), field = app.els["scale-box"];
+    field.scrollTop = 0; field.scrollHeight = 300; field.clientHeight = 60;
+    emit(app, "touchstart", { target: field });
+    scroll(app, field, 10); scroll(app, field, 0);
+    finishLeft(app, field);
+    assert.strictEqual(on(app, "scale"), "true");
+  });
+
+  test("SPS3: body maximum excursion allows 8 pixels but cancels 9 including out and back", () => {
+    for (const [max, expected] of [[8, "layout"], [9, "scale"]]) {
+      const app = ready(); emit(app, "touchstart");
+      scroll(app, bodyOf(app), max); scroll(app, bodyOf(app), 0); finishLeft(app);
+      assert.strictEqual(on(app, expected), "true", "body maximum=" + max);
+    }
+  });
+
+  test("SPS3: active outer-surface maximum excursion uses the same 8 pixel fence", () => {
+    for (const [max, expected] of [[8, "layout"], [9, "scale"]]) {
+      const app = ready(), surface = surfOf(app); surface.scrollHeight = 1200;
+      emit(app, "touchstart"); scroll(app, surface, max); scroll(app, surface, 0); finishLeft(app);
+      assert.strictEqual(on(app, expected), "true", "outer maximum=" + max);
+    }
+  });
+
+  test("SPS3: cancellation clears only at a new eligible one-finger start", () => {
+    const app = ready(); emit(app, "touchstart"); emit(app, "touchcancel"); finishLeft(app);
+    assert.strictEqual(on(app, "scale"), "true");
+    gesture(app);
+    assert.strictEqual(on(app, "layout"), "true", "a cancelled record must not poison a fresh gesture");
+  });
+
+  test("SPS4: vertical-first hook is restored and residual fling cannot revive after the quiet interval", () => {
+    const app = ready();
+    emit(app, "touchstart", { x: 220, y: 400 }); app.advance(20);
+    emit(app, "touchmove", { x: 220, y: 360 });
+    assert.strictEqual(shut(app), true, "the existing vertical hook really collapsed the lip");
+    app.advance(20); emit(app, "touchmove", { x: 140, y: 360 }); emit(app, "touchend", { x: 140, y: 360 });
+    assert.strictEqual(on(app, "layout"), "true");
+    assert.strictEqual(shut(app), false);
+    app.advance(60); scroll(app, bodyOf(app), 30);
+    assert.strictEqual(shut(app), false, "early native-scroll observation stays quiet");
+    assert.strictEqual(bodyOf(app).scrollTop, 30, "quiet does not clamp the modeled native scroll");
+    app.advance(161); scroll(app, bodyOf(app), 60);
+    assert.strictEqual(shut(app), false, "an old fling cannot gain new momentum after the swipe");
+  });
+
+  test("SPS4: fresh vertical touches stay quiet through 219 milliseconds and work at 220", () => {
+    const app = ready(); gesture(app);
+    app.advance(219); vertical(app);
+    assert.strictEqual(shut(app), false);
+    app.advance(1); vertical(app);
+    assert.strictEqual(shut(app), true, "fresh input works after the agreed quiet interval");
+  });
+
+  test("SPS4: public viewport resize and scroll cannot shorten the swipe quiet deadline", () => {
+    for (const type of ["resize", "scroll"]) {
+      const app = ready(); gesture(app); app.advance(20);
+      app.sandbox.visualViewport.dispatchEvent({ type });
+      app.advance(170); vertical(app);
+      assert.strictEqual(shut(app), false, type + " must not shorten 220ms to 150ms");
+      app.advance(30); vertical(app);
+      assert.strictEqual(shut(app), true, type + " must not permanently suppress later input");
+    }
+  });
+
+  test("SPS4: a same-Scale right gesture creates no quiet reset or other navigation effect", () => {
+    const app = ready(), history = JSON.stringify(app.history.calls), focus = app.activeId();
+    gesture(app, { x: 140, dx: 80 });
+    assert.strictEqual(on(app, "scale"), "true");
+    assert.strictEqual(JSON.stringify(app.history.calls), history); assert.strictEqual(app.activeId(), focus);
+    vertical(app); assert.strictEqual(shut(app), true, "a no-op must not create a new 220ms guard");
+  });
+
+  test("SPS4: a same-Layout left gesture does not extend an existing quiet deadline", () => {
+    const app = ready(); gesture(app); app.advance(100);
+    gesture(app, { ms: 10 }); app.advance(111);
+    vertical(app);
+    assert.strictEqual(shut(app), true, "the first switch's 220ms window has ended");
+  });
+
+  test("SPS5: empty and refused input can swipe into Layout and still use its palette", () => {
+    for (const text of ["", "not-a-note"]) {
+      const app = fresh(); openSheet(app); line(app, text); app.advance(300);
+      gesture(app);
+      assert.strictEqual(on(app, "layout"), "true", JSON.stringify(text));
+      assert.strictEqual(status(app), "");
+      const swatches = app.els["scale-swatches"];
+      assert.ok(swatches.children.length > 1);
+      assert.notStrictEqual(swatches.children[1].disabled, true);
+      swatches.children[1].click();
+      assert.strictEqual(app.els["scale-swatches"].children[1].getAttribute("aria-pressed"), "true");
+    }
+  });
+
+  test("SPS5: invalid active fields defer outcomes and a later valid swipe consumes them once", () => {
+    const app = ready(); line(app, INNER); line(app, BOTH);
+    const top = app.els["scale-top"]; top.dispatchEvent({ type: "focus", target: top });
+    top.value = "not-a-note"; top.dispatchEvent({ type: "input", target: top });
+    assert.strictEqual(app.els["scale-box"].value, BOTH);
+    gesture(app); assert.strictEqual(on(app, "layout"), "true"); assert.strictEqual(status(app), "");
+    app.click(app.els["scale-tab-scale"]); line(app, BOTH); gesture(app);
+    assert.strictEqual(status(app), BOTH_SAID);
+    app.click(app.els["scale-tab-scale"]); app.click(app.els["scale-tab-layout"]);
+    assert.strictEqual(status(app), "");
+  });
+
+  test("SPS5: cancelled and same-tab gestures retain pending feedback for a real Layout entry", () => {
+    for (const how of ["cancel", "same-tab"]) {
+      const app = ready(); line(app, INNER); line(app, BOTH);
+      if (how === "cancel") { emit(app, "touchstart"); emit(app, "touchcancel"); finishLeft(app); }
+      else gesture(app, { x: 140, dx: 80 });
+      assert.strictEqual(on(app, "scale"), "true"); assert.strictEqual(status(app), "");
+      gesture(app); assert.strictEqual(status(app), BOTH_SAID, how);
+    }
+  });
+
+  test("SPS5: a same-tab Layout gesture retains its current action status", () => {
+    const app = ready("add", "layout"); app.els["scale-mirror"].click();
+    const before = status(app); assert.ok(before);
+    gesture(app); assert.strictEqual(status(app), before);
+  });
+
+  test("SPS6: button-origin traces do not invoke actions while genuine clicks remain effective", () => {
+    for (const name of ["reset", "anchor", "palette"]) for (const dx of [40, 80]) {
+      const app = ready("add", "layout"); app.els["scale-anchor-between"].click();
+      const control = name === "reset" ? app.els["scale-layout-reset"]
+        : name === "anchor" ? app.els["scale-anchor-one"] : app.els["scale-swatches"].children[1];
+      control.tagName = "BUTTON";
+      let calls = 0; const original = control.onclick;
+      assert.strictEqual(typeof original, "function");
+      control.onclick = function (...args) { calls += 1; return original.apply(this, args); };
+      gesture(app, { x: 140, dx, target: control });
+      assert.strictEqual(calls, 0, name + " gesture must not fake a click");
+      assert.strictEqual(on(app, dx >= 48 ? "scale" : "layout"), "true");
+      if (dx >= 48) app.click(app.els["scale-tab-layout"]);
+      control.click(); assert.strictEqual(calls, 1, name + " genuine click remains live");
+    }
+  });
+
+  test("SPS7: a closing Add and superseding Edit cannot inherit an old gesture", () => {
+    const app = ready(); emit(app, "touchstart");
+    app.els["scale-back"].click();
+    assert.strictEqual(app.sheetOpen(), false);
+    const made = makeCustom(app, BASE); openEdit(app, made); app.advance(300);
+    finishLeft(app);
+    assert.strictEqual(on(app, "scale"), "true");
+    gesture(app); assert.strictEqual(on(app, "layout"), "true");
+  });
+
+  test("SPS7: body-origin switching blurs a now-hidden field without forcing destination focus", () => {
+    const app = ready(), field = app.els["scale-top"];
+    focusEvent(app, field, true);
+    assert.strictEqual(app.els["scale-sheet"].classList.contains("kbup"), false);
+    gesture(app);
+    assert.strictEqual(on(app, "layout"), "true");
+    assert.strictEqual(app.activeId(), null, "existing hidden-field blur remains; swipe focuses no replacement");
+  });
+
+  test("SPS7: repeated Add sessions each accept one transition and retain ordinary tab and NEXT routes", () => {
+    const app = ready();
+    for (let i = 0; i < 3; i++) {
+      gesture(app); assert.strictEqual(on(app, "layout"), "true");
+      app.click(app.els["scale-tab-scale"]); app.click(app.els["scale-next"]);
+      assert.strictEqual(on(app, "layout"), "true");
+      app.els["scale-back"].click(); openSheet(app); line(app, BASE); app.advance(300);
+      assert.strictEqual(on(app, "scale"), "true");
+    }
+  });
+
+  test("SPS8: accepted switching creates no sheet animation and preserves English note input", () => {
+    const app = ready(), before = app.els["scale-box"].value;
+    gesture(app);
+    assert.strictEqual(on(app, "layout"), "true");
+    for (const el of [bodyOf(app), surfOf(app), app.els["scale-panel-scale"], app.els["scale-panel-layout"]]) {
+      assert.strictEqual(el.getAnimations().length, 0, "no added JS animation on the sheet containers");
+    }
+    assert.strictEqual(app.els["scale-box"].value, before);
+  });
+
 });
