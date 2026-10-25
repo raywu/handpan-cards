@@ -127,3 +127,13 @@ Interview pending: owner original variants in one versus separate tabs; owner
 choice to hold or explicitly release573→575→577. Recommendation hold releases
 while priority hotfix proceeds. No answer/elapsed time is permission. Other
 SEO content decisions remain pending; broader robustness audit remains queued.
+
+Owner answered tabs: SEPARATE. Owner additionally reports Add/new LINK still
+replaces the other named variant. Root independently decoded latest supplied link:
+valid/18fields/changed positions, unchanged inventory identity. Raw owner link is
+not published. This explains saved-list replacement; original omitted-angle report
+remains unresolved. Owner design interview to preserve separate named/layout
+variants pending. Source lane assigned read-only architecture/dependency research;
+no migration/engine/storage implementation grant inferred. Track separately as
+SAVED-SCALE-VARIANTS, not a covert expansion of async plan. T/App async lanes keep
+their exclusive ownership and reviewed scope. Owner main-release answer pending.

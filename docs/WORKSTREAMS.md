@@ -26,6 +26,20 @@ URL mismatch; no identity redesign automatically authorized. Private links/photo
 names remain outside public docs. DUP plan is finalized and EXECUTIONHELD; owner
 warning choice is narrow, retained on codex/duplicate-notes-plan-20261025.
 
+### SAVED-SCALE-VARIANTS — newly corroborated requirement gap; investigation only
+
+Owner confirms separate tabs and inability to retain two differently named/layout
+variants next to one another, even after Add/new LINK. Latest supplied link decoded
+valid with changed absolute positions but unchanged inventory identity. This
+explains replacement; it does not establish the original omitted-angle cause.
+Recommendation: preserve distinct named/layout saved variants, Edit updates the
+selected variant, unchanged-link reopening deduplicates. Design interview pending;
+no identity/storage migration or variants implementation authorized by the narrow
+async hotfix plan. Root/source lane investigating affected contracts read-only.
+Create a separate reviewed plan and migration/compatibility acceptance before code;
+do not conflate this user-facing limitation with the fixed async completion bug.
+Current async repair is not yet tested/delivered; no claim either issue is fixed.
+
 SPS is deferred for this hotfix priority, not discarded. Source/proofadc80b12 has
 completed59 driver-reported assertion pairs; aggregate/raw independent review,
 finalCI/DEV/physicalQA remain. Preserve worktrees and evidence; root alone owns
