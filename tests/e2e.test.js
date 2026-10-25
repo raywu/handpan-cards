@@ -15261,6 +15261,229 @@ function run() {
       t.diagnostic("PD2_FONT_CELLS " + JSON.stringify(cells));
     });
 
+    /* SPS browser oracles: real DOM/touch evidence, separate from unit phases. */
+    const spsSpot = (dx) => b.eval(`
+      const body=document.querySelector(".sheetbody"),r=body.getBoundingClientRect();
+      const lo=Math.max(24,r.left+8),hi=Math.min(innerWidth-24,r.right-8);
+      for(let y=Math.max(8,r.top+8);y<Math.min(innerHeight-8,r.bottom-8);y+=6){
+        for(let x=lo;x<=hi;x+=8){
+          if(x+${dx}<lo||x+${dx}>hi)continue;
+          const a=document.elementFromPoint(x,y),z=document.elementFromPoint(x+${dx},y);
+          if(a&&z&&body.contains(a)&&body.contains(z)&&!a.closest("button,input,textarea,select,#scale-preview,#scale-lip"))
+            return {x,y,tag:a.tagName,id:a.id};
+        }
+      }
+      return null;`);
+    const spsTouch = async (start, dx, dy = 0, { release = true } = {}) => {
+      await b.waitForPendingSettle();
+      const points=(x,y)=>[{x,y,id:7,radiusX:4,radiusY:4,force:1}];
+      await b.send("Input.dispatchTouchEvent",{type:"touchStart",touchPoints:points(start.x,start.y)});
+      for(let i=1;i<=4;i++){
+        await sleep(8);
+        await b.send("Input.dispatchTouchEvent",{type:"touchMove",touchPoints:points(start.x+dx*i/4,start.y+dy*i/4)});
+      }
+      if(release)await b.releasing(()=>b.send("Input.dispatchTouchEvent",{type:"touchEnd",touchPoints:[]}));
+    };
+    const spsSwipe = async (dx) => {
+      const start=await spsSpot(dx);
+      assert.ok(start,"an eligible visible body surface must exist for the optional shortcut");
+      await spsTouch(start,dx);
+    };
+    const spsTab = () => b.eval(`return document.getElementById("scale-tab-layout").getAttribute("aria-selected")==="true"?"layout":"scale";`);
+
+    test("SPS browser: passive registrations stay singular and real Add Edit swipes preserve routes across viewports", {timeout:120000}, async (t) => {
+      const hook=await b.send("Page.addScriptToEvaluateOnNewDocument",{source:`(()=>{
+        const original=EventTarget.prototype.addEventListener;
+        window.__spsRegistrations=[];
+        EventTarget.prototype.addEventListener=function(type,listener,options){
+          if(this instanceof Element&&this.matches(".sheetbody")&&["touchstart","touchmove","touchend","touchcancel"].includes(type)){
+            window.__spsRegistrations.push({type,passive:!!(options&&typeof options==="object"&&options.passive===true),capture:typeof options==="boolean"?options:!!(options&&options.capture),once:!!(options&&options.once)});
+          }
+          return original.apply(this,arguments);
+        };
+      })();`});
+      const cells=[];
+      try{
+        for(const [w,h] of [[320,568],[380,780],[390,844],[844,390],[1280,800]])for(const edit of [false,true]){
+          await spaOpen(w,h,{edit});
+          const regs=await b.eval("return window.__spsRegistrations;");
+          assert.strictEqual(regs.length,4,`${w}x${h}: four startup body touch registrations`);
+          assert.deepStrictEqual(regs.map(r=>r.type).sort(),["touchcancel","touchend","touchmove","touchstart"]);
+          assert.ok(regs.every(r=>r.passive),"all four recognizer listeners must actually register passive:true");
+          // Reopening by real controls must not reinstall lifecycle listeners.
+          await b.click("#scale-back");
+          if(edit)await openEdit();else{await openSheet();await typeScale(SPA_SCALE);}
+          assert.deepStrictEqual(await b.eval("return window.__spsRegistrations;"),regs);
+          await pd2Edits();
+          await b.eval(`document.getElementById("scale-back").focus();return true;`);
+          const before=await b.eval(`return {history:history.length,hash:location.hash,focus:document.activeElement.id,input:document.getElementById("scale-box").value};`);
+          await spsSwipe(-80);
+          assert.strictEqual(await spsTab(),"layout",`${w}x${h} ${edit?"Edit":"Add"} left`);
+          assert.deepStrictEqual(await pd2Status(),{text:PD2_SAID,hidden:false});
+          const entered=await b.eval(`return {history:history.length,hash:location.hash,focus:document.activeElement.id,input:document.getElementById("scale-box").value};`);
+          assert.deepStrictEqual(entered,before,"a swipe changes no route, input or forced focus");
+          await spsSwipe(80);
+          assert.strictEqual(await spsTab(),"scale");
+          await b.click("#scale-tab-layout");
+          assert.strictEqual((await pd2Status()).text,"","ordinary entry must not replay swipe-consumed feedback");
+          cells.push(`${edit?"Edit":"Add"} ${w}x${h}`);
+        }
+        assert.strictEqual(cells.length,10);
+        t.diagnostic("SPS_ROUTE_CELLS "+JSON.stringify(cells));
+      }finally{
+        await b.send("Page.removeScriptToEvaluateOnNewDocument",{identifier:hook.identifier});
+        await freshLoad(); // removes the page-local wrapper from the current document too
+        await spaReset();
+      }
+    });
+
+    test("SPS browser: native scrolling excluded origins keyboard and outer excursion preserve the current tab", {timeout:120000}, async () => {
+      try{
+        await spaOpen(380,780);
+        const point=await spsSpot(-80);assert.ok(point);
+        const before=await b.eval(`const e=document.querySelector(".sheetbody");return {top:e.scrollTop,range:e.scrollHeight-e.clientHeight};`);
+        assert.ok(before.range>8,"native scrolling needs an actual scroll range");
+        await spsTouch(point,0,-80);
+        assert.strictEqual(await spsTab(),"scale");
+        const scrolled=await b.eval(`return document.querySelector(".sheetbody").scrollTop;`);
+        assert.ok(scrolled>before.top+8,"real vertical touch must continue native scrolling");
+        await spaOpen(380,780);
+        const diagonal=await spsSpot(-80);assert.ok(diagonal);
+        await spsTouch(diagonal,-40,-80);
+        assert.strictEqual(await spsTab(),"scale","diagonal scroll is not a shortcut");
+
+        await spaOpen(380,780,{tab:"layout"});
+        const pan=await b.eval(`const e=document.querySelector("#scale-preview .panhit");const r=e.getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2};`);
+        await spsTouch(pan,80);
+        assert.strictEqual(await spsTab(),"layout","a preview descendant cannot start the shortcut");
+
+        await spaOpen(380,780);
+        await b.eval(`const e=document.getElementById("scale-top");e.focus();e.setSelectionRange(0,1);return true;`);
+        const field=await b.eval(`const r=document.getElementById("scale-top").getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2};`);
+        await spsTouch(field,-80);
+        assert.strictEqual(await spsTab(),"scale","focused text/caret gestures remain on Scale");
+        assert.strictEqual(await activeId(),"scale-top");
+        await b.fakeKeyboard(500);
+        assert.strictEqual(await kbOn(),true);
+        const bodyStart=await spsSpot(-80);assert.ok(bodyStart);
+        await spsTouch(bodyStart,-80);
+        assert.strictEqual(await spsTab(),"scale","keyboard-up navigation is excluded");
+        await b.clearKeyboard();
+
+        await spaOpen(380,780);
+        // Controlled real-DOM outer overflow exercises the existing tiny-view
+        // backstop without assuming ordinary phone geometry always uses it.
+        await b.eval(`const e=document.querySelector(".sheetsurf"),body=document.querySelector(".sheetbody");body.style.flex="0 0 250px";body.style.height="250px";e.style.maxHeight="450px";e.style.overflowY="auto";const spacer=document.createElement("div");spacer.style.cssText="height:200px;flex:0 0 200px";e.appendChild(spacer);return true;`);
+        await b.settle();
+        const safe=await spsSpot(-80);assert.ok(safe);
+        await b.send("Input.dispatchTouchEvent",{type:"touchStart",touchPoints:[{x:safe.x,y:safe.y,id:7,radiusX:4,radiusY:4,force:1}]});
+        const excursion=await b.eval(`const e=document.querySelector(".sheetsurf");const before=e.scrollTop;e.scrollTop=before+12;const away=e.scrollTop;e.dispatchEvent(new Event("scroll"));e.scrollTop=before;e.dispatchEvent(new Event("scroll"));return{before,away,range:e.scrollHeight-e.clientHeight};`);
+        assert.ok(excursion.away-excursion.before>8,"the active outer fixture must actually scroll beyond the fence");
+        await b.send("Input.dispatchTouchEvent",{type:"touchMove",touchPoints:[{x:safe.x-80,y:safe.y,id:7,radiusX:4,radiusY:4,force:1}]});
+        await b.releasing(()=>b.send("Input.dispatchTouchEvent",{type:"touchEnd",touchPoints:[]}));
+        assert.strictEqual(await spsTab(),"scale","outer out-and-back cannot be missed between touch samples");
+      }finally{await spaReset();}
+    });
+
+    test("SPS browser: horizontal button gestures never activate actions and genuine taps still do", {timeout:120000}, async () => {
+      try{
+        for(const selector of ["#scale-layout-reset","#scale-anchor-one","#scale-swatches button:nth-child(2)"])for(const dx of [40,80]){
+          await spaOpen(380,780,{tab:"layout"});
+          await b.click("#scale-anchor-between");
+          await b.eval(`const e=document.querySelector(${JSON.stringify(selector)});e.scrollIntoView({block:"center"});window.__spsControlClicks=0;e.addEventListener("click",()=>{window.__spsControlClicks++;},true);return true;`);
+          await b.settle();await sleep(250);
+          const before=await b.eval(`return{one:document.getElementById("scale-anchor-one").getAttribute("aria-pressed"),between:document.getElementById("scale-anchor-between").getAttribute("aria-pressed"),palette:[...document.querySelectorAll("#scale-swatches button")].map(e=>e.getAttribute("aria-pressed"))};`);
+          const start=await b.eval(`const e=document.querySelector(${JSON.stringify(selector)}),r=e.getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2};`);
+          assert.ok(start.x>=24&&start.x<=356&&start.y>0&&start.y<780,"the action target must be visible and inside the eligible margin");
+          await spsTouch(start,dx);
+          assert.strictEqual(await b.eval("return window.__spsControlClicks;"),0,selector+" horizontal gesture must not synthesize an action");
+          assert.strictEqual(await spsTab(),dx>=48?"scale":"layout");
+          const after=await b.eval(`return{one:document.getElementById("scale-anchor-one").getAttribute("aria-pressed"),between:document.getElementById("scale-anchor-between").getAttribute("aria-pressed"),palette:[...document.querySelectorAll("#scale-swatches button")].map(e=>e.getAttribute("aria-pressed"))};`);
+          assert.deepStrictEqual(after,before,selector+" changed an option during a non-tap");
+          if(dx>=48)await b.click("#scale-tab-layout");
+          await b.eval(`document.querySelector(${JSON.stringify(selector)}).scrollIntoView({block:"center"});return true;`);
+          await b.settle();await b.click(selector);
+          assert.strictEqual(await b.eval("return window.__spsControlClicks;"),1,selector+" genuine tap remains effective");
+          if(selector==="#scale-layout-reset")assert.strictEqual((await pd2Status()).text,"Layout reset.");
+          else assert.strictEqual(await b.eval(`return document.querySelector(${JSON.stringify(selector)}).getAttribute("aria-pressed");`),"true");
+        }
+      }finally{await spaReset();}
+    });
+
+    test("SPS browser: real capture handoff restores the lip and viewport events preserve its quiet window", {timeout:120000}, async (t) => {
+      try{
+        await spaOpen(380,780);
+        // This hook-order fixture is deliberately unscrollable: a qualifying
+        // vertical-first trace must not exceed the independent scroll fence.
+        // The preceding browser test proves ordinary native scrolling instead.
+        await b.eval(`const body=document.querySelector(".sheetbody"),surface=document.querySelector(".sheetsurf");body.style.flex="0 0 300px";body.style.height="300px";body.style.overflow="hidden";surface.style.overflow="hidden";body.scrollTop=0;surface.scrollTop=0;window.__spsOrder=[];const snap=phase=>({phase,tab:document.getElementById("scale-tab-layout").getAttribute("aria-selected")==="true"?"layout":"scale",shut:document.getElementById("scale-sheet").classList.contains("lipshut")});document.getElementById("scale-sheet").addEventListener("touchend",()=>{window.__spsOrder.push(snap("sheet-capture"));},true);body.addEventListener("touchend",()=>{if(window.__spsEndAt===undefined)window.__spsEndAt=Date.now();window.__spsOrder.push(snap("body-after"));});document.getElementById("scale-sheet").addEventListener("touchmove",()=>{if(window.__spsEndAt!==undefined)window.__spsLastMoveElapsed=Date.now()-window.__spsEndAt;},{capture:true,passive:true});return true;`);
+        await b.settle();await sleep(250);
+        const start=await spsSpot(-100);assert.ok(start);
+        const point=(x,y)=>[{x,y,id:7,radiusX:4,radiusY:4,force:1}];
+        await b.send("Input.dispatchTouchEvent",{type:"touchStart",touchPoints:point(start.x,start.y)});
+        await b.send("Input.dispatchTouchEvent",{type:"touchMove",touchPoints:point(start.x,start.y-30)});
+        assert.strictEqual((await state()).shut,true,"the existing vertical hook must actually collapse before the horizontal leg");
+        await b.send("Input.dispatchTouchEvent",{type:"touchMove",touchPoints:point(start.x-100,start.y-30)});
+        await b.releasing(()=>b.send("Input.dispatchTouchEvent",{type:"touchEnd",touchPoints:[]}));
+        assert.strictEqual(await spsTab(),"layout");
+        const order=await b.eval("return window.__spsOrder;");
+        assert.deepStrictEqual(order.map(e=>e.phase),["sheet-capture","body-after"]);
+        assert.strictEqual(order[0].shut,true);assert.strictEqual(order[1].shut,false);
+        assert.strictEqual((await state()).lipped,false);
+        // Exact 219/220 boundaries are unit-clock oracles. This corroborates
+        // the real public viewport hooks and a genuinely early native gesture.
+        await b.eval(`visualViewport.dispatchEvent(new Event("resize"));visualViewport.dispatchEvent(new Event("scroll"));return true;`);
+        const early=await spsSpot(-80);assert.ok(early);
+        assert.ok(await b.eval("return Date.now()-window.__spsEndAt<220;"),"early-input fixture must still be inside the actual quiet interval");
+        await spsTouch(early,0,-30);
+        assert.ok(await b.eval("return window.__spsLastMoveElapsed<220;"),"the actual early moves, not only setup, must remain inside the quiet interval");
+        assert.strictEqual((await state()).shut,false,"fresh vertical input remains quiet after public viewport events");
+        await sleep(260);
+        const later=await spsSpot(-80);assert.ok(later);await spsTouch(later,0,-30);
+        assert.strictEqual((await state()).shut,true,"normal vertical input works again after the guard");
+        t.diagnostic("SPS_CAPTURE_ORDER "+JSON.stringify(order));
+
+        await spaOpen(380,780,{tab:"layout"});
+        await b.eval(`const body=document.querySelector(".sheetbody"),surface=document.querySelector(".sheetsurf");body.style.flex="0 0 300px";body.style.height="300px";body.style.overflow="hidden";surface.style.overflow="hidden";body.scrollTop=0;surface.scrollTop=0;document.getElementById("scale-generate").focus();return true;`);
+        assert.strictEqual(await activeId(),"scale-generate","the enabled footer primary must start focused");
+        await sleep(250);
+        const right=await spsSpot(100);assert.ok(right);
+        await b.send("Input.dispatchTouchEvent",{type:"touchStart",touchPoints:point(right.x,right.y)});
+        await b.send("Input.dispatchTouchEvent",{type:"touchMove",touchPoints:point(right.x,right.y-30)});
+        assert.strictEqual((await state()).shut,true);
+        assert.strictEqual(await activeId(),"scale-lip","positive focus hand-off precondition must occur in real Chrome");
+        await b.send("Input.dispatchTouchEvent",{type:"touchMove",touchPoints:point(right.x+100,right.y-30)});
+        await b.releasing(()=>b.send("Input.dispatchTouchEvent",{type:"touchEnd",touchPoints:[]}));
+        assert.strictEqual(await spsTab(),"scale");
+        const focused=await b.eval(`const a=document.activeElement;return{body:a===document.body,id:a&&a.id,visible:!a||a===document.body||a.getClientRects().length>0};`);
+        assert.strictEqual(focused.visible,true,"no newly hidden lip may retain focus");
+        assert.strictEqual(focused.body,true,"a swipe forces no replacement destination focus");
+        t.diagnostic("SPS_FOOTER_FOCUS "+JSON.stringify(focused));
+      }finally{await spaReset();}
+    });
+
+    test("SPS probe: pre-zoom native panning records viewport and tab outcomes including edge attempts", {timeout:90000}, async (t) => {
+      const records=[];
+      try{
+        await spaOpen(380,780);
+        await b.setPageScale(2);await b.settle();
+        const snap=()=>b.eval(`const v=visualViewport;return{scale:v.scale,left:v.offsetLeft,top:v.offsetTop,width:v.width,height:v.height,tab:document.getElementById("scale-tab-layout").getAttribute("aria-selected")==="true"?"layout":"scale",body:document.querySelector(".sheetbody").scrollTop,surface:document.querySelector(".sheetsurf").scrollTop};`);
+        assert.ok((await snap()).scale>1.99,"the probe must actually zoom");
+        await b.eval(`window.__spsProbeTouches=[];document.addEventListener("touchstart",e=>{window.__spsProbeTouches.push({body:!!(e.target.closest&&e.target.closest(".sheetbody")),tag:e.target.tagName,id:e.target.id});},{capture:true,passive:true});return true;`);
+        for(const dx of [-100,-100,-100,-100,100,100,100,100]){
+          const before=await snap();
+          await spsTouch({x:dx<0?240:120,y:300},dx);
+          await sleep(80);records.push({dx,before,after:await snap()});
+        }
+        const moved=records.some(r=>Math.abs(r.after.left-r.before.left)>1);
+        const clampedAfterMove=records.some((r,i)=>i>0&&records.slice(0,i).some(p=>Math.abs(p.after.left-p.before.left)>1)&&Math.abs(r.after.left-r.before.left)<1);
+        // This is a bounded observation, not a new zoom exclusion or a claim
+        // that a changed tab proves a new requirement. Root compares baseline
+        // and candidate and reports absent pan/clamp coverage as incomplete.
+        t.diagnostic("SPS_ZOOM_PAN_PROBE "+JSON.stringify({moved,clampedAfterMove,origins:await b.eval("return window.__spsProbeTouches;"),records}));
+      }finally{await b.setPageScale(1);await spaReset();}
+    });
+
     test("SPA: the shut footer is 9px, the 32x3 pill sits 3px above the footer's bottom and is centred, and the tap zone is 25px with its bottom on the surface's bottom above the inset", { timeout: 90000 }, async () => {
       try {
         let inset = 0;
