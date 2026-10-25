@@ -14262,6 +14262,95 @@ describe("OF: the sheet's seats follow the typed order", () => {
     app.click(app.els["scale-tab-layout"]);
     assert.strictEqual(d2Status(app), "");
   });
+
+  // PD2 fixtures describe actual listed notes, not pending-state internals.
+  // English note input stays unchanged; only the existing UI sentences combine.
+  const PD2_BASE = "(D3) A3 C4 D4 E4 F4 | F5 G5";
+  const PD2_RIM = "(D3) C4 A3 D4 E4 F4 | F5 G5";
+  const PD2_INNER = "(D3) A3 C4 D4 E4 F4 | G5 F5";
+  const PD2_BOTH = "(D3) C4 A3 D4 E4 F4 | G5 F5";
+  const PD2_SAID = RIM_SAID + " " + INNER_SAID;
+  const pd2Open = () => { const app = add(); lineType(app, PD2_BASE); return app; };
+  const pd2InnerThenRim = (app) => { lineType(app, PD2_INNER); lineType(app, PD2_BOTH); };
+  const pd2Layout = (app) => app.click(app.els["scale-tab-layout"]);
+
+  test("PD2: inner then rim edits retain both final outcomes in rim then inner order", () => {
+    const app = pd2Open();
+    pd2InnerThenRim(app);
+    assert.strictEqual(d2Status(app), "", "Scale must not prematurely announce Layout feedback");
+    pd2Layout(app);
+    assert.strictEqual(d2Status(app), PD2_SAID);
+  });
+
+  test("PD2: rim then inner field edits retain the same final ring order", () => {
+    const app = pd2Open();
+    fieldType(app, "top", "C4 A3 D4 E4 F4");
+    fieldType(app, "inner", "G5 F5");
+    pd2Layout(app);
+    assert.strictEqual(d2Status(app), PD2_SAID);
+  });
+
+  test("PD2: repeated edits of one ring replace its outcome without losing the other ring", () => {
+    const app = pd2Open();
+    pd2InnerThenRim(app);
+    lineType(app, "(D3) D4 A3 C4 E4 F4 | G5 F5");
+    lineType(app, PD2_BOTH);
+    pd2Layout(app);
+    assert.strictEqual(d2Status(app), PD2_SAID, "one sentence per ring, not edit history");
+  });
+
+  test("PD2: returning a ring to identity keeps its latest truthful follows-listed outcome", () => {
+    const app = pd2Open();
+    lineType(app, PD2_RIM);
+    lineType(app, PD2_BASE);
+    pd2Layout(app);
+    assert.strictEqual(d2Status(app), RIM_SAID);
+  });
+
+  test("PD2: a later ascending count-only change invalidates an older ring outcome", () => {
+    const app = pd2Open();
+    lineType(app, PD2_RIM);
+    lineType(app, PD2_BASE);
+    // The latest order is already ascending; changing only its count must not
+    // replay the earlier ordering event or create a deferred count-only feature.
+    lineType(app, "(D3) A3 C4 D4 E4 | F5 G5");
+    pd2Layout(app);
+    assert.strictEqual(d2Status(app), "");
+  });
+
+  test("PD2: removing the inner ring removes its outcome and retains a current rim outcome", () => {
+    const app = pd2Open();
+    pd2InnerThenRim(app);
+    lineType(app, "(D3) C4 A3 D4 E4 F4");
+    pd2Layout(app);
+    assert.strictEqual(d2Status(app), RIM_SAID, "nonexistent inner notes cannot follow a list");
+  });
+
+  test("PD2: bottom-only edits and unchanged reparses preserve current rim and inner outcomes", () => {
+    const app = pd2Open();
+    pd2InnerThenRim(app);
+    lineType(app, "[C3] " + PD2_BOTH);
+    lineType(app, "[C3] " + PD2_BOTH);
+    pd2Layout(app);
+    assert.strictEqual(d2Status(app), PD2_SAID);
+  });
+
+  test("PD2: invalid active fields suspend feedback even while the line retains its last valid input", () => {
+    for (const [field, bad] of [["top", "not-a-note"], ["ding", ""]]) {
+      const app = pd2Open();
+      pd2InnerThenRim(app);
+      fieldType(app, field, bad);
+      assert.strictEqual(app.els["scale-box"].value, PD2_BOTH, "the last valid line is retained");
+      pd2Layout(app);
+      assert.strictEqual(app.els["scale-tab-layout"].getAttribute("aria-selected"), "true", "invalid input must not block Layout");
+      assert.strictEqual(d2Status(app), "", "invalid active fields must not consume stale-valid feedback");
+      assert.ok([...app.els["scale-swatches"].children].every((button) => !button.disabled), "the palette remains usable");
+      app.click(app.els["scale-tab-scale"]);
+      fieldType(app, field, field === "top" ? "C4 A3 D4 E4 F4" : "D3");
+      pd2Layout(app);
+      assert.strictEqual(d2Status(app), PD2_SAID, "recovery must not lose the suspended current outcomes");
+    }
+  });
 });
 
 /* ------------------------------------------------------------------ I18N */
