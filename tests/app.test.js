@@ -15434,6 +15434,23 @@ describe("SPS: primary public-event traces", () => {
       app.advance(100); finishLeft(app);
       assert.strictEqual(on(app, "scale"), "true", "second finger seen in " + type);
     }
+    for (const [id, x, y] of [["scale-back", 80, 40], ["scale-next", 190, 650]]) {
+      const app = ready(), target = app.els[id];
+      const original = { identifier: 7, clientX: 220, clientY: 300 };
+      const secondary = { identifier: 8, clientX: x, clientY: y };
+      assert.strictEqual(bodyOf(app).contains(target), false, id + " must be outside the body observer");
+      assert.ok(target.getClientRects().length > 0, id + " is a visible header/footer target");
+      emit(app, "touchstart");
+      // The second contact starts and ends outside the body while the first
+      // body finger remains. emit therefore delivers only sheet capture for
+      // these two events; body observers cannot mask a missing global fence.
+      emit(app, "touchstart", { target, id: 8, x, y,
+        touches: [original, secondary], changed: [secondary] });
+      emit(app, "touchend", { target, id: 8, x, y,
+        touches: [original], changed: [secondary] });
+      app.advance(100); finishLeft(app);
+      assert.strictEqual(on(app, "scale"), "true", "outside-body secondary contact at " + id + " stays cancelled");
+    }
   });
 
   test("SPS3: losing or replacing the original identifier on a move is sticky", () => {
