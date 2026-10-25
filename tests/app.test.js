@@ -15300,10 +15300,13 @@ describe("SPS: primary public-event traces", () => {
   const scroll = (app, el, top) => {
     el.scrollTop = top;
     const e = { type: "scroll", target: el };
-    el.dispatchEvent(e);
-    // Scroll does not bubble. Explicitly model only the body capture observer
-    // for a descendant scroller; native wiring is covered in the browser lane.
+    // Scroll does not bubble: model its actual ancestor capture -> target order,
+    // including the outer surface, rather than selecting a listener location.
+    // The sandbox still does not distinguish callback options; native wiring
+    // remains separate browser evidence.
+    app.els["scale-sheet"].dispatchEvent(e);
     if (el !== bodyOf(app) && bodyOf(app).contains(el)) bodyOf(app).dispatchEvent(e);
+    el.dispatchEvent(e);
   };
   const focusEvent = (app, el, focused) => {
     if (focused) el.focus(); else el.blur();
