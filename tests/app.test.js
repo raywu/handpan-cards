@@ -15724,4 +15724,53 @@ describe("SPS: primary public-event traces", () => {
     // to reproduce that browser cleanup inside this bounded unit fixture.
   });
 
+
+  test("SPS zoom: normal residue and missing API allow shortcuts while deliberate zoom excludes starts", () => {
+    for (const [scale, expected] of [[1, "layout"], [1.01, "layout"], [1.0101, "scale"], [2, "scale"]]) {
+      const app = ready();
+      app.sandbox.visualViewport.scale = scale;
+      app.sandbox.visualViewport.dispatchEvent({ type: "resize" });
+      app.advance(300);
+      gesture(app);
+      assert.strictEqual(on(app, expected), "true", "start scale=" + scale);
+    }
+    // Boot without the API from the outset: removing an already-captured
+    // visualViewport object would not test the supported missing-API path.
+    const app = boot({ layout: true, clock: true, sheetBody: true, innerHeight: 800 });
+    assert.strictEqual(app.sandbox.visualViewport, undefined);
+    app.sandbox.innerWidth = 380;
+    const body = bodyOf(app), surface = surfOf(app);
+    body.scrollTop = 0; body.scrollHeight = 1400; body.clientHeight = 500;
+    body.getBoundingClientRect = rect(100, 600);
+    surface.scrollTop = 0; surface.scrollHeight = 700; surface.clientHeight = 700;
+    surface.getBoundingClientRect = rect(0, 700);
+    app.els["scale-foot"].getBoundingClientRect = rect(600, 700);
+    openSheet(app); line(app, BASE); app.advance(300);
+    gesture(app);
+    assert.strictEqual(on(app, "layout"), "true", "an absent visualViewport API preserves navigation");
+  });
+
+  test("SPS zoom: acceptance samples a zoom rise after the last move without a viewport notification", () => {
+    const app = ready();
+    assert.strictEqual(app.sandbox.visualViewport.scale, 1);
+    emit(app, "touchstart"); app.advance(100);
+    emit(app, "touchmove", { x: 140 });
+    app.sandbox.visualViewport.scale = 2;
+    // No resize/scroll dispatch: the current scale must be checked at acceptance.
+    emit(app, "touchend", { x: 140 });
+    assert.strictEqual(on(app, "scale"), "true");
+  });
+
+  test("SPS zoom: observed resize and scroll zoom rises stay cancelled after falling back to normal", () => {
+    for (const type of ["resize", "scroll"]) {
+      const app = ready(); emit(app, "touchstart");
+      app.sandbox.visualViewport.scale = 2;
+      app.sandbox.visualViewport.dispatchEvent({ type });
+      app.sandbox.visualViewport.scale = 1;
+      app.sandbox.visualViewport.dispatchEvent({ type });
+      app.advance(100); finishLeft(app);
+      assert.strictEqual(on(app, "scale"), "true", type + " must retain observed cancellation");
+    }
+  });
+
 });
