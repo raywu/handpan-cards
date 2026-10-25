@@ -15,19 +15,13 @@ raw audit passed. Main575 remains HELD; old pendingCI prose below is historical.
 - **Owner/ref/worktree:** root on ray-Mac; codex/sheet-tab-swipe-20261025;
   /private/tmp/handpan-sps-z8gaznu2/integration; basebccff5a2. Separate T/A trees
   and file ownership are defined in coordination; not another agent's takeover grant.
-- **Last/next:** current tested source2a6852b2, app25e740ad:40SPSunit/full913app/
-  5helper and final5native gates green,0requiredskips/cancels;4actualzoomcells.
-  Prior normal-origin failure retained, corrected with zoom-test-only neutral
-  clearance after realevent diagnostic, no production change. New M tree
-  /private/tmp/handpan-sps-z8gaznu2/mutants-final, branch
-  codex/sheet-tab-swipe-mutants-final-20261025 at2a6852b2 owns generated45group
-  faults/8preservedcontextrefreshes authored2a26fef0/root1eb92d18 and independently
-  source-reviewed. Sticky-cancel oracle strengthenedc955cba2, same40green. Root next
-  froze59affected headers atproofsource76fff6d9. A0stopped atlegacyr3s null-node
-  startupfailure (notcredited);3prior patches assertion-killed. Clean source restored.
-  Next resolve originalfallback/provenancefault through independentintentreview,
-  then resume remainingproof without weakeningtest/header. See coordination.
-  Final review/fullCI/DEV/physicalQA remain pending; read coordination Cycle state.
+- **Last/next:** app25e unchanged,40SPSunit/full913app/5helper and prior5native
+  baseline green. At proofsource6a5f142f,57/59affected patches now have intended
+  assertion proof; composite r3s reaches unchanged provenance assertion. A1stopped
+  on a CLEAN quiet-window native scroll failure (1080→1064,elapsed174<220), not a
+  kill. Source restored; Tread-only triage/rootboundeddiagnostic next, no blind
+  retry/assertion weakening. Quiet/zoom fault proofs, final review/fullCI/DEV and
+  physicalQA remain. DUPfinalplan d8101654/781540f4 held, no execution permission.
 - **Acceptance:** original SPS1–8, genuine independent reviewers, everynewgroup
   generated mutants/floors, full exact-headCI/combinedDEV/actualbytes+journeys;
   new swipe-specific physical QA remains. Main/CLAUDE/global changes excluded.

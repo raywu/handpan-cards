@@ -10,6 +10,32 @@ feedback independently delivered atbccff5a2, completing that prerequisite.
 
 ## Cycle state — current before historical snapshots
 
+Latest mutation checkpoint: proofsource6a5f142fc3c26862221752f7a0096ec54bd51264,
+app25e740ad unchanged. Regenerated composite r3s fault2c84/root6a retains exact
+header and actual app-created fallback ONLY inside the generated two-file patch;
+independent intent/source review cleared. Clean1green, intended SB3assertion
+`!app.created.includes(app.announcer())` red; original TypeError remains invalid.
+No production fallback was introduced.
+
+A0 retains3valid prior kills; A1 added54valid clean-green/assertion-red pairs,
+so57/59affected patches have proof. A1 STOPPED before fault55 because its CLEAN
+native quiet-window header failed: observed scroll1080→1064 while actualmoves162ms/
+observation174ms remained under220 and lipstayedopen. This is not a mutation kill
+or accepted baseline. No change/retry has been made from inference. Separate T
+read-only triage examines fixture/compositor timing versus application causes;
+root next freezes a bounded distinguishing diagnostic, preserves actualscroll>8,
+realelapsed<220 and lip-open assertions, then corrects only demonstrated cause.
+Remaining quiet/zoom native faults require cleanheadergreen before assertionproof.
+
+Proof restored clean; owned-resource census preserved Chrome680/7priorprofiles.
+Raw A0/A1 driver/perjob logs and manifests retained under sibling evidence/.
+No fullmutation/CI/SPSDEV success claimed. Root alone operates browsers. DUP plan
+is independently finalized atd8101654/plan781540f4 and EXECUTIONHELD by owner;
+its latest status/confirmed choices do not authorize code. Current DEV667bbf8b
+contains earlier plan delivery only; latest finalization remains branch checkpoint.
+
+### Earlier retained preparation and failure evidence
+
 Current tested source2a6852b2e1432781238bc7e9dae20c113343508a, app index SHA256
 25e740adff69d962299b6642fa99839cbe814d4e076839486120f24870c57a92. Guard954fc761
 (original792f15b5) follows verified3unit+1native assertion-RED. After guard all40SPS
