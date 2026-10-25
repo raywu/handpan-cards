@@ -31,16 +31,25 @@ Same1case and final5case matrix green. A raw-audit regex initially matched the
 passing title 'passive registrations'; corrected error matching after inspecting
 raw output, no test changed. Both failed runs remain failed, not aggregate success.
 
-M lane now active in /private/tmp/handpan-sps-z8gaznu2/mutants-final, branch
-codex/sheet-tab-swipe-mutants-final-20261025, committed baseline2a6852b2. Agent
-sps_mutation_author_final owns ONLY generated tests/mutants patches:40newunit+
-5native target coverage, preserving existing5fixture patches,8old context refreshes
-with every original header/semantic fault intact. No worker tests/browser/remote
-writes. Root next reviews/freeze exact headers and proves cleanheadergreen then
-intended assertionred on disposable trees; no untested kill credited. All old
-floors retained until observed counts are raised by root. Final independent
-source/design review, full exact-headCI/DEV and physical ownerQA still required.
-NoSPSPR/CI/DEV/main delivery yet; root alone owns browser lease/integration.
+M authored2a26fef0 (root1eb92d18):45new generated faults (40unit/5native),8legacy
+context refreshes,5existingfixturepatches byte-unchanged. Source-only review caught
+one weak cancellation oracle before runtime: T908d5ff2/rootc955cba2 adds later
+matching move/end after wrong-ID/cancel before the same assertion. Same40groups
+green, count unchanged. ENG reviewed all53patches and revised proof driver
+SHA25639acf32595fcebe163eae0e809ace240d57643d1280237e6d05499febdb9d9fa;
+requires empty stderr for both clean/fault, raw positive counts, intended assertion
+leaves, exact restoration, owned supervisor/lease and resource preservation.
+Early ENG/design reviews at15616338 cleared app25e source; final recheck required.
+
+M source tree /private/tmp/handpan-sps-z8gaznu2/mutants-final, branch
+codex/sheet-tab-swipe-mutants-final-20261025; root integrates only committed changes.
+Root next creates clean committed proof-final tree, freezes58affectedpatch headers
+(45new+5fixture+8refresh), proves each exact cleanheadergreen then intended assertion-
+red; fullcorpus1550applycheck and floors913app/483e2e/5helper must be validated.
+483e2e is baseline478 plus5observednewnative groups, not a claimed local full483run.
+No runtimekills credited yet. Final exact-head reviews/fullCI/combinedDEV/actual
+served journeys and new physical ownerQA remain. NoSPSPR/CI/DEV/main delivery yet;
+root alone owns browserlease/integration. No fullMac or actualpanning proof.
 
 Parallel DUPLICATE-NOTES plan585fa248 independently ENG/design-cleared after4fixes;
 source43486f5d, docs PR579 mainHELD/580DEV under fullCI. Planning only. SEO578ac97,

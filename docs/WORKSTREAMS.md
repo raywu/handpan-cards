@@ -21,7 +21,9 @@ raw audit passed. Main575 remains HELD; old pendingCI prose below is historical.
   clearance after realevent diagnostic, no production change. New M tree
   /private/tmp/handpan-sps-z8gaznu2/mutants-final, branch
   codex/sheet-tab-swipe-mutants-final-20261025 at2a6852b2 owns generated45group
-  faults/8preservedcontextrefreshes; root next verifies cleanheaders/assertionkills.
+  faults/8preservedcontextrefreshes authored2a26fef0/root1eb92d18 and independently
+  source-reviewed. Sticky-cancel oracle strengthenedc955cba2, same40green. Root next
+  freezes/proves58affected cleanheaders/assertionkills; none credited yet.
   Final review/fullCI/DEV/physicalQA remain pending; read coordination Cycle state.
 - **Acceptance:** original SPS1–8, genuine independent reviewers, everynewgroup
   generated mutants/floors, full exact-headCI/combinedDEV/actualbytes+journeys;
