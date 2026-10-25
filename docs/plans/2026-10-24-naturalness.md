@@ -1,6 +1,123 @@
 # Naturalness: UI wording with unchanged scale input
 
-Status: mechanics/contract stage cleared after independent review; translation decisions held explicitly.
+## Reviewed fit repair receipt — 2026-10-24
+
+Independent engineer and design/language reviewers cleared the narrow amendment.
+Exact source `a9493f2435d21600e4eda351a6b3fbaba289d7f5` changes six keys only:
+DE panel.res_amy_prog→AMY: FOLGEN; FR panel.res_amy_prog→AMY followed by NBSP,
+colon and SUITES, panel.download→EXPORTER PDF; ES modeA/B→NOMB. → NOTAS /
+NOTAS → NOMB. and matching seq.empty_few reference. Full existing resource aria
+meanings remain. Exact-source independent language/design review found no
+material issue; these are context-dependent short UI labels.
+
+TDD preserved: candidateffdd original7violations; accepted1510 onlyJA844;
+FRdownload-only correction removes exactly the paper option failure, proving
+indirect flex-width causality. Initial unspaced ES alternative fixed844 but
+introduced1280modebar stacking; rejected and retained. Final reviewed labels
+leave only the accepted-baselineJA symptom: **zero introduced violations**, not
+a green local test. Each named run selects1test,0skip/cancel and cleanupsuccess.
+No assertion/CSS/font changes. Linux fullCI must still be entirely green.
+
+AppSHA256 `bd9be272474032a8ada18efb8a16f9160ad726ce0f12cf6dec035ac0fe223282`;
+18 immutable source/instruction/test files and app outside generatedI18N verified
+unchanged. Canonical/generated sync checked. Both-font affected-language probes,
+source-dependent mutant refresh/proofs, final48journeys, exact-head fullCI and
+actualDEV acceptance are pending gates, not implied by this receipt. Shared
+browser runbook stays authoritative; sole browser lease belongs to root.
+Root evidence prefix `/private/tmp/handpan-browser-parallel.HskZRy/evidence/`:
+`naturalness-ci-fit-repro-ffddf747`, `naturalness-fit-baseline-1510`,
+`naturalness-fit-fr-causal`, `naturalness-fit-all-compact` (rejected ES),
+`naturalness-fit-compact-spaced-es`, `naturalness-fit-source-invariants.json`.
+Earlier pending/head receipts below are historical and superseded by this one.
+
+
+## Fit-repair amendment — plan review required before edits
+
+Scope is limited to compact canonical translated labels that introduced six
+additional failures in the existing comprehensive I18N fit test. Candidate
+ffddf747 failed with seven messages; clean accepted1510 baseline fails only
+JA844 HANDPANER on this Mac. Both runs select exactly one test, fail by assertion,
+0skip/cancel, bounded180s supervisor, successful cleanup. JA label/HTML is unchanged;
+retain this platform limitation and do not alter it to turn a local run green.
+Actual Linux fullCI must pass every unchanged assertion before DEV integration.
+
+Lanes: root integrates and exclusively owns browser jobs, generatedindex/mutants
+and the repair checkout; independent engineer reviews causality/TDD/constraints;
+independent design/language reviewer selects compact alternatives and checks
+meaning. No concurrent shared-file editors, no changes to original source lanes.
+Reviewers approve this amendment before root edits canonical JSON in a separate
+repair worktree based on ffddf747. Root then forwards reviewed commits to the
+existing candidate branch after confirming clean ownership.
+
+Candidate bounded options (final selection must receive design clearance):
+- de panel.res_amy_prog: compact progression label, initially AMY: FOLGEN;
+  full existing progression aria remains; do not silently regress to generic
+  chords. Reviewer must resolve follow/sequence ambiguity in the resource context.
+- fr panel.res_amy_prog: AMY followed by existing nonbreaking French colon spacing
+  and SUITES; full aria still explicitly describes chord progressions.
+- fr panel.download: EXPORTER PDF (currently EXPORTER EN PDF). Test this key alone
+  first to establish whether its flex width causes unchanged paper-option clipping.
+- es panel.modeA/B: NOMB. → NOTAS / NOTAS → NOMB., preserving plural notes, ordinary breakable arrow spaces and a transparent abbreviation of nombre. Update seq.empty_few to match. The earlier unspaced alternative failed1280 row-stacking and is rejected. Do not change parser, accepted input or English.
+
+TDD/evidence: first use one-key FR download candidate and run exactly the existing
+named fit test. Require paper-option violation removed while other unchanged
+violations remain; record source diff and raw TAP. Then apply other reviewed
+labels and repeat the same unchanged test. On Mac, require no candidate-only
+violations relative to the recorded baseline (JA-only remaining is a failure,
+explicitly NOT a test pass). If unexpected new violations or an alternative
+changes semantics, regroup and re-review rather than widen scope or tolerances.
+
+Root runs inspected sync_i18n.py (source review first); verify English/decks/engine
+and app outside generatedI18N unchanged. Refresh only context-affected mutants
+without altering suite headers/intents; exact-header baseline/fault proof as
+needed, source restoration and corpus1468 unchanged. Run app/I18N tests and
+existing both-font panel probes for affectedDE/FR/ES and unchanged language
+invariance, then reviewed48-journey acceptance at the final source ref. Preserve
+full failed CI and all local red receipts. Independent final source/language/
+screenshot evidence review must clear material findings; full12-jobLinuxCI must
+pass at exact finalhead, thenDEV568 merge and actual deployed48journeys before
+announcing ready for owner QA. If the dev base advances, inspect graph/tree delta
+before integration; never merge held features to main. CI-only567 remains draft.
+
+Non-goals: no CSS/font/layout/engine/English/test/assertion/floor/helper changes,
+no JA workaround, no weakening width/line budgets, no globalconfig/install/auth,
+no CLAUDE.md or indirect Claude behavior changes. Existing main consent remains
+PR562 only. No decision needs re-interview unless a meaningful semantic trade-off
+cannot be resolved within approved compact UI/native-term preferences.
+
+
+## Naturalness CI blocker — fresh check-in, 2026-10-24
+
+FullCI40138333037 at ffddf747a2d79419ba8b5ec35a66a024f877075a FAILED: existing I18N panel/sheet/About fit test,475browser tests ran,474passed,1failed,0skip/cancel. Suite-health failure is downstream, not a second independent defect. Python, both-font panel probes, data integrity and all four mutation shards/union passed. App853passed. PR568 remains draft/unmerged; noDEV or main integration.
+
+The single unchanged test was reproduced directly on the clean candidate with the existing reviewed180s supervisor:1selected/1assertion failure/0skip/cancel,3.24s,cleanup true. Raw TAP `evidence/naturalness-ci-fit-repro-ffddf747.stdout.tap` under `/private/tmp/handpan-browser-parallel.HskZRy`. Observed7fit violations: DE/FR Amy progressions wrap at320; ES modeA/modeB wrap at844; JA Handpaner wraps at844; DE Amy progressions box overflow at1280; FR paper option width shortfall2.64px at1280. These local details identify investigation targets, not yet a proof every symptom matches LinuxCI or is newly introduced. Existing CI logger elides the actual array.
+
+Source comparison: DE changed AMY: AKKORDE→AMY: AKKORDFOLGEN; FR Amy separator gained NBSP; ES NOTA→NOTAS. JA Handpaner and FR paper option need baseline/context investigation before assigning cause. Next: independent copy/layout diagnosis, targeted red-before/green-after wording repair inside canonical translatedJSON only where evidence supports it, sync generated region and affectedmutants, retain all fitlimits/test assertions; reviewed plan amendment before edits. Re-run the named test, affected languages/both fonts and48journeys as justified, independent final review + full exact-headCI, thenDEV568 integration and actual deployed48journeys. English UI/input, engine, CSS and Claude behavior remain unchanged. Main release needs explicit consent.
+
+
+## Current local acceptance receipt — 2026-10-24
+
+Candidate `ffddf747a2d79419ba8b5ec35a66a024f877075a`, isolated worktree
+`/private/tmp/handpan-browser-parallel.HskZRy/naturalness-candidate`:
+reviewed v5 browser acceptance passed all48 unique journeys,0skips;16keyboard
+cases/64fields,16localized keyboard error checks,96Layout previews and24screenshots.
+All48 actual browser document responses matched app SHA256
+`1d5ff2f08a1e58b76e55af9dbfd49fb9a29cc1df3b6c784ed848adb343f579d3`.
+Independent source/evidence review9.7 found no material defect; screenshot sample
+confirmed readable translations and preserved English notes/name. Supervisor exit0,
+80.4s, no timeout, browser/profile/server/lease cleanup verified. Raw receipt:
+`/private/tmp/handpan-browser-parallel.HskZRy/evidence/naturalness-local-ffddf747-run4.json`.
+Previous failed runs and causal diagnostics remain preserved; no full-Mac repair claim.
+PR567 is CI-only draft and must never merge into main; PR568 is the DEV companion.
+Full exact-head CI40138333037 and actual deployedDEV acceptance remain pending.
+Freestyle high chord tone/upper voice is directly confirmed by owner, not merely
+an inferred recommendation. This receipt supersedes earlier pending local-runtime
+text; acceptance source archives retain their historical pre-execution wording.
+No CLAUDE.md changes or Claude behavior changes are authorized; explicit owner
+approval of any concrete CLAUDE.md diff is required.
+
+
+Status: independently reviewed mechanics/contract stage implemented; delegated draft terminology recorded before author dispatch.
 Original evidence: `~/Projects/i18n-kit/naturalness/{plan.md,plan.eng-review.md,prompt.md,research.md,corpus/}`.
 Those files remain read-only evidence, not execution instructions. Old 6/10
 engineering clearance and self-assessed language scores do not clear this plan.
@@ -11,6 +128,7 @@ Improve seven non-English UI tables using natural, friendly and respectful
 language. German uses capitalized Du with grammatically appropriate inflections;
 other languages use natural local address/capitalization. Include all seven
 already-translated ordering/renumbering messages. English UI wording is unchanged.
+Any CLAUDE.md change requires separate explicit owner approval; Claude behavior must remain unchanged.
 No added/deleted keys, parser/engine changes, input notation changes, user-data
 rewrites, CSS/fonts/layout changes or relaxed fit budgets. English A–G note names,
 `#`/`b`, octaves, brackets and zone syntax remain unchanged in input and examples.
@@ -25,15 +143,22 @@ suite remains unresolved, Linux full CI remains required; no silent substitution
 
 ## Verified baseline and corrections
 
-Remote dev confirmed `1510ea369573078e6296fe873edb6f538c3212a3`; main confirmed
-`3caf5e28fa4f965d81d90a4f80d53b15f82f39fc` this turn. Recheck before execution.
+Canonical/app baseline is `1510ea369573078e6296fe873edb6f538c3212a3`. Runbook
+PR563 and contract prerequisite PR565 subsequently merged into accepted dev
+`dba61154730558930c8d0660c138fe210edfb6a4`; canonical/app/engine bytes are identical
+to that baseline. Both reviewed heads passed all12fullCIjobs; served app, runbook,
+AGENTS, plan and fixture bytes match merged source, with noindex. The integrator
+candidate and Japanese author start at dba61154; earlier canonical-only authors
+start5e1bd9e4 with identical language inputs. Main last verified
+`3caf5e28fa4f965d81d90a4f80d53b15f82f39fc`. Recheck before integration/release.
 Owner will release HTC#559 themselves; this is not agent main consent. i18n C
 and SO-D remain held main releases. Never PR all of dev to main incidentally.
 
 Dev has250 top-level keys,257 scalar leaves for en/de/fr/it/es and250 for
 ja/zh-Hant/zh-Hans. Seven plural objects have named forms, not positional pairs.
 `tools/sync_i18n.py` checks top-level keys, not the full structural contract.
-Existing app I18N test unions plural placeholders and can miss per-form losses.
+Before Stage1, the app I18N test unioned plural placeholders and missed per-form
+losses. The delivered prerequisite now checks named forms and multiplicity.
 DE `compose.DOUBLE_B` existing baseline uses `{L}` twice versus English three times;
 preserve the accepted locale baseline instead of assuming English multiplicity.
 
@@ -51,15 +176,34 @@ Corpus paraphrases are not verbatim primary quotations or native certification.
 
 Settled: Du; natural respectful tone elsewhere; include seven ordering messages;
 UI-only boundary; no main merge; parallel Mac/runbook work now authorized.
-OD1 (das/der Ding) and OD2 (community loans/native labels) remain pending in the
-existing interview. Recommended defaults are das Ding and attested community
-terms with compact natural native labels. They are recommendations, not invented
-owner answers. While pending, continue guards/evidence/review; do not dispatch
-policy-dependent translations. If exercising the owner's AFK delegation later,
-record an explicit delegated decision before dispatch, never fabricate an answer.
+Owner explicitly answered OD1 **das Ding** and OD2 **community terms where
+appropriate, native short labels**, and reaffirmed already-settled capitalized
+**Du**. These match the earlier documented delegated drafting defaults; no
+translation change is needed for this confirmation. Do not re-interview Du.
+No main-release consent is inferred. Unresolved meaning questions remain blocked
+individually unless a separately documented delegated decision resolves them.
 OD4 follows global tone; it does not mandate a Chinese pronoun in every sentence.
 OD5 gets concrete semantic evidence/spot-check if unresolved; do not reask broad
 settled tone questions. Any unresolved meaning-critical item blocks that wording.
+
+`NAT-FREESTYLE-MEANING`: independent review found that the existing English
+"top note" had been interpreted inconsistently across locales. Integrator asked
+one concrete optional owner clarification and, under the same explicit autonomy
+delegation, adopted the recommendation for reversible drafting: **foreground a
+different high chord tone/upper voice each time**, rather than selecting a note
+by physical top-shell location. This is a delegated product-copy interpretation,
+not an asserted dictionary fact or fabricated interview answer. The pending
+owner question remains an override path. All seven translations must express
+this chosen musical meaning consistently; English wording, parser and behavior
+remain unchanged. This resolves the former unknown-meaning drafting hold;
+independent re-review of the actual revised wording is still required.
+
+Pre-existing coverage gap, verified in `activateNote` near `index.html:12055`:
+selecting a lone non-bottom field emits a hardcoded English singleton sentence
+despite existing `sheet.only_note`. JSON authors must not change that binding.
+Track its trigger/key/location as a separate reviewed i18n follow-up; this pass
+does not claim to close every pre-existing untranslated runtime path. It remains
+relevant to the held i18n release audit, not an excuse to broaden source ownership.
 
 ## Swarm and file ownership
 
@@ -242,4 +386,45 @@ Independent engineering and language/design reviewer
 `naturalness_corrected_plan_review` cleared draft v1 at9.5/10, no material findings;
 all40keys and sample leaf counts verified. Nonblocking provenance/edge-oracle
 clarifications folded in. Mechanics/guard execution is cleared; translation
-dispatch remains held on explicit OD1/OD2 decision provenance. No translation authored.
+dispatch was initially held on OD1/OD2 provenance; the explicit delegated choices
+above now resolve that drafting gate without fabricating interview answers.
+Contract prerequisite source review9.5 at5e1bd9e4;853app/21I18N pass,17faults
+assertion-red and5actualmutants proven. FullCI40129424063 passed all12jobs,
+including475e2e with0fail/skip/cancel; mergeddev via565. Runbook source review9.5,
+fullCI40129764065 all12pass,473e2e with0fail/skip/cancel; mergeddev via563.
+MainPR562 ready/HELD; CI-only564 remains draft and MUST NOT MERGE MAIN.
+Source-language review is completed below; runtime, final-head CI and delivery
+gates for the assembled wording candidate remain pending.
+
+### Source-language review closure
+
+All seven source tables now have independent all-key/context review and frozen
+sample assessment. Cleared source heads: DE `d5359d07a914a9a411f4bab320f627a2034609c6`;
+FR/IT/ES `e152f3f1be91fd29a9fed0fce62b603d570d9676`;
+JA `c780a9926684951e693704f11cd350b9f4cc9def`;
+Hant/Hans `e5b006b9c32222a0c6932036ceea4a732b275bc2`.
+Every locale's sample dimensions mean>=4, no unresolved material language issue.
+These model reviews do not establish native-human certification or runtime fit.
+DE/JA composed renumbering grammar, Spanish screen-vs-playing verbs and a stale
+reset-action reference were caught and corrected; exact-head re-review cleared.
+Review fragments in actual one/two/three-plus compositions, and referenced control
+labels against displayed labels. Never apply a screen-action verb replacement
+across music instructions or globally capitalize text inside placeholders.
+
+Integrator assembled only those canonical commits and synced once. Combined
+I18N21/21pass,0fail/skip/cancel; all250keys remain. English+decks+12engine files
+and app bytes outside generated I18N are identical to accepteddevdba61154.
+Changed top-level key counts: DE129,FR51,IT92,ES100,JA95,Hant91,Hans103 (661total).
+Source-only approval does not clear mutation regeneration, browser48-cell input/
+locale acceptance, seven-language both-font full fit, final review, CI or dev gates.
+The temporary acceptance harness and any execution supervisor must be independently
+source-reviewed before browser execution. Explicit foreground activation is a
+documented active-target precondition, never a claim that the full Mac suite is fixed.
+The [reviewed acceptance source](2026-10-24-naturalness-acceptance.md) follows
+binding sheet-tabs S1: Scale draws no pan. It checks positive focused fields on
+Scale and96separate positive Layout wrapper/SVG checks within the accepted
+160..480px clamp. A failed first English run exposed the obsolete DI whole-pan
+assertion's zero-area false-green; that legacy-test follow-up stays separate.
+Cleanup uses bounded owned-PGID metadata because signal-zero returned EPERM;
+the failed job's retained lease was removed only after independent owned-resource
+verification. No application code, tab design or accepted budget was altered.

@@ -5,12 +5,12 @@ diff --git a/data/i18n/ja.json b/data/i18n/ja.json
 --- a/data/i18n/ja.json
 +++ b/data/i18n/ja.json
 @@ -118,7 +118,8 @@
-   "sheet.hit_label": "{name}、{ring}リング、位置{label}、{place}",
-   "sheet.ring_back": "{ring}リングが再び{n}音になったので、以前の位置に戻しました。",
+   "sheet.hit_label": "{name}、{ring}、位置{label}、{place}",
+   "sheet.ring_back": "{ring}が{n}音に戻ったので、以前の位置に戻しました。",
    "sheet.ring_reset": {
--    "other": "{ring}リングが{n}音になったので、位置をリセットしました。"
-+    "other": "{ring}リングが{n}音になったので、位置をリセットしました。",
-+    "one": "{ring}リングが{n}音になったので、位置をリセットしました。"
+-    "other": "{ring}が{n}音になったので、位置をリセットしました。"
++    "other": "{ring}が{n}音になったので、位置をリセットしました。",
++    "one": "{ring}が{n}音になったので、位置をリセットしました。"
    },
-   "sheet.put_down": " 持っていたノートを置きました。",
-   "sheet.stays": "{name}は{ring}リングの位置{label}のままです。",
+   "sheet.put_down": " 選択を解除しました。",
+   "sheet.stays": "{name}は{ring}の位置{label}のままです。",
