@@ -51,6 +51,32 @@ in evidence/. Root next verifies frozen script and independent safety/oracle
 review before supervised jobs. Initial jobs: desktopno-opSave, phonefine-nudge
 Save, sameprofiletwotabs; freshreceiver uses actualcapturedpayload. Rootlease
 transferred from idleSPS after censusChrome680/7profiles preserved, tokenrotated;
-no ownerprofile/OSclipboard access. No probe executed yet; no plan synthesized or
-application/test change. Parent/count intentional semantics and privatefixture
+no ownerprofile/OSclipboard access. At this historical checkpoint no probe had
+executed. Parent/count intentional semantics and privatefixture
 handling remain explicit. SPS latestprioritycheckpoint5c0239ed; no swipebundling.
+
+## Native and VM investigation completed; plan review in progress
+
+Root ran three reviewed V2 native jobs (desktop no-op SAVE, phone fine nudge,
+same-profile two-target storage control). All passed their one required journey,
+raw output/exit/cleanup/census checked. First actual outbound custom URL opened in
+a clean receiver in the first two. Correct geometry persisted and copied; no
+original missing-angle reproduction. VM five cases establish stale async UI and
+injected refused-persistence differences; storage is outside repair scope.
+
+Native V3 observer-selector error was caught before execution; UNEXECUTED archive
+retained. V4 d8b667bd independently UX-rechecked clear and root read before running
+sh-native-async-a0 under known180s supervisor. One actual browser journey completed:
+LINK A pending→actual fine edit/SAVE→LINK B pending→reject B→reject A. Old A URL
+overwrote/focused newer B fallback while registry/record/bar stayed B. Exit0,
+one observation PASS (not endorsement of old behavior), no skips/cancels, empty
+stderr, owned profile removed, original Chrome680/seven profiles unchanged.
+Private raw source/fixtures/URLs stay in evidence/; native-async-a0-verified.json
+records sanitized interpretation. This does not establish owner-report root cause.
+
+Root generated plan draft d853958fab8524203f7f9dbc2824911d67a0a9bccca8a98ac914f380b4631e86
+from frozen prompt and independent investigations. Fresh non-author agents
+share_plan_eng_review and share_plan_design_review are reviewing exact plan and
+source read-only. No app/test edits, no new tool/global/CLAUDE action. Next resolve
+material findings/recheck, then create isolated T/A/M lanes and retain intended
+baseline assertion RED before integrating any repair. Main remains excluded.

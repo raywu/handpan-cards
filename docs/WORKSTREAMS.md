@@ -3,16 +3,22 @@
 ## Priority SHARE-CUSTOMIZATION-HOTFIX — owner-authorized investigation and conditional execution
 
 Owner prioritizes the reported saved-customization/URL/LINK mismatch over SPS.
-Owner confirms SAVE CHANGES preceded fresh LINK. Isolated production VM
-SAVE→LINK control passes after awaiting clipboard Promise; no reproduced real-UI
-bug yet. Finalized [prompt](prompts/2026-10-25-share-customization-hotfix.md) and
+Owner confirms SAVE CHANGES preceded fresh LINK. Ordinary native desktop/phone
+SAVE→LINK→clean-receiver controls pass; the original missing-angle report remains
+unresolved. A separate native production bug is confirmed: an older clipboard
+failure replaces/focuses the newer post-SAVE manual fallback URL while committed
+registry, durable record and bar stay correct. Controlled API promises; no owner
+clipboard/profile or Safari/native-picker validation. Finalized [prompt](prompts/2026-10-25-share-customization-hotfix.md) and
 [coordination](plans/2026-10-25-share-customization-hotfix-coordination.md) define
-independent lanes, evidence and review gates. No plan/feature success claimed.
+independent lanes, evidence and review gates. Generated [plan](plans/2026-10-25-share-customization-hotfix.md)
+is in fresh independent ENG/design review; no app/test edits yet.
 
 Root branch codex/share-customization-hotfix-20261025, host-local /private/tmp/handpan-share-hotfix.urAbvO/integration;
-base DEV667bbf8b. Prompt1489e53d independently critiqued/rechecked clear. Next investigate actual
-state/history/two-tab/serialization edges, produce/review plan and execute only
-a sound scoped fix. Main and CLAUDE changes require explicit owner consent.
+base DEV667bbf8b (live ref rechecked). Prompt1489e53d independently critiqued/rechecked
+clear. Plan draft d853958f proposes minimal asynchronous ownership guards,
+spec-first separate T/A/M lanes, generated mutants/fullCI/actual DEV checks. Next
+resolve independent plan findings, preserve intended baseline RED, execute only a
+sound scoped fix. Main and CLAUDE changes require explicit owner consent.
 Same-inventory import replacement is verified existing behavior, separate from
 URL mismatch; no identity redesign automatically authorized. Private links/photo/
 names remain outside public docs. DUP plan is finalized and EXECUTIONHELD; owner
