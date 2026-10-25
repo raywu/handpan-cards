@@ -1,3 +1,20 @@
+# Owner decision update — 2026-10-25
+
+Owner answered the three original interview questions: allow exact duplicates in
+all physical positions including matching Ding; choose one position per chord tone;
+nonblocking warning naming note/positions, no confirmation. This supersedes older
+pending labels for those three items, including the replacement voicing question.
+Existing all-position diagram highlighting and unrelated validation remain.
+Warning coverage (newly admitted cases versus all repeats), detail presentation,
+protocol/recovery and performance contracts remain unresolved. No implementation
+approval was given. The previously reviewed body585fa248 is retained at43486f5d;
+this update records owner confirmations of its recommended choices.
+
+Planning delivery complete: DEV580 merge667bbf8b; fullCI40227969263 and8servedbytes/
+noindex independently verified. Final receipt:
+https://github.com/raywu/handpan-cards/pull/579#issuecomment-6402685930
+Further decision-ledger updates are feature checkpoints until next gated DEV batch.
+
 # DUPLICATE-NOTES coordination
 
 ## Cycle state — current before historical snapshots

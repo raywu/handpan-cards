@@ -1,5 +1,22 @@
 # Shared workstream ledger
 
+## 2026-10-25 owner decisions — DUPLICATE-NOTES
+
+Confirmed: exact same pitch/octave may occupy any physical positions, including
+within one surface and matching Ding; one chosen position per chord tone; clear
+nonblocking warning naming repeated notes/positions, without confirmation. Existing
+all-position diagram highlighting and unrelated grammar/layout/musical guards stay.
+These three decisions supersede older pending labels below; do not re-interview.
+Warning coverage and exact UI/compatibility/recovery/performance contracts remain
+open. No duplicate-note implementation authority follows from these answers.
+
+[Plan](plans/2026-10-25-duplicate-notes.md) and
+[coordination](plans/2026-10-25-duplicate-notes-coordination.md) retain decisions.
+Reviewed plan/ledger delivery is complete on DEV580667bbf8b, source43486f5d,
+fullCI40227969263; [final receipt and newer SPS recovery](https://github.com/raywu/handpan-cards/pull/579#issuecomment-6402685930).
+This later owner-decision checkpoint awaits the next normal gated DEV publication;
+resolve live branch codex/duplicate-notes-plan-20261025 for current replies.
+
 ## 2026-10-25 all-workstream recovery checkpoint
 
 Newest checkpoint: remote DEV independently read at

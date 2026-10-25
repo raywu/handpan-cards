@@ -62,15 +62,19 @@ is not a passing test result. Raw photo and instrument name are not published.
 
 ## Owner decisions and proposed scope
 
-Interviews are pending. Reuse replies when they arrive; AFK is not an answer or an
-implementation grant. Initial mixed voicing/highlighting question was explicitly
-replaced after the source audit clarified those separate existing behaviors.
+Owner confirmed on2026-10-25: exact duplicates everywhere (including matching
+Ding), one chosen position per chord tone, and a nonblocking warning with no
+confirmation. These settle the first three decisions below; do not re-interview
+them. Existing diagrams still highlight all matching physical positions. Warning
+coverage and remaining implementation contracts are unresolved; this reply is not
+an implementation grant. The original mixed voicing/highlighting question is now
+resolved consistently with the separately verified existing behaviors.
 
-| Decision | Recommended provisional choice | Stop/fork |
+| Decision | Choice / status | Stop/fork |
 |---|---|---|
-| Admission | Exact resolved-MIDI copies in any ring, including a non-Ding copy of Ding; one Ding marker only | Narrower owner choice changes table below before code |
-| Musical presentation | Preserve chosen voicing and all-position diagram contracts | Alternate fingering cards or simultaneous unison voicings are separate scope |
-| Acknowledgement | Clear non-blocking warning, no confirmation solely for a declared repeat | Any acknowledgement choice requires explicit UX acceptance |
+| Admission — owner confirmed | Exact resolved-MIDI copies in any ring, including a non-Ding copy of Ding; one Ding marker only | Preserve unrelated grammar/layout validation; no duplicate-based refusal |
+| Musical presentation — owner confirmed | One position per chord tone; preserve existing all-position diagram highlights | Alternate fingering cards or simultaneous unison voicings are separate scope |
+| Acknowledgement — owner confirmed | Clear non-blocking warning naming repeated notes/positions; no confirmation solely for a declared repeat | Other independent generation/save guards remain |
 | Warning coverage | Newly admitted formerly refused cases plus current inferred-bottom notices; explicit accepted cross-shell copies remain quiet | Owner was asked narrow versus all-repeat coverage; broad coverage needs affected-prefill inventory |
 | New-warning visibility | New formerly-refused-repeat summary available on Scale in both fields and combined-line paths | This is a proposed deliberate extension; old inferred-only notices remain field-path scoped |
 | Compatibility | Feature-specific wire/record capability, preserving current-valid writer outputs | ENG/owner accept detailed version/rollback contract before storage changes |
@@ -78,7 +82,7 @@ replaced after the source audit clarified those separate existing behaviors.
 “Anywhere” here concerns duplicates, not removal of unrelated validation. Keep
 malformed/range/single-Ding/fifth/ambiguity and genuine layout/wire refusals. Top
 notes below Ding remain outside this proposal; equal-to-Ding copies are explicitly
-included only under the recommended scope. Do not reinterpret omitted octaves,
+included under the owner-confirmed scope. Do not reinterpret omitted octaves,
 change English A–G/accidental/zone grammar, or rename a user instrument.
 
 | Resolved relationship | Recommended admission / notice |
