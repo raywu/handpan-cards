@@ -1,7 +1,9 @@
 # SHARE-CUSTOMIZATION-HOTFIX — saved links and asynchronous ownership
 
-2026-10-25. Status: generated investigation plan; independent ENG/design review
-completed on V1, clarified V2 awaiting exact-hash recheck before code. Owner authorizes a sound reviewed hotfix through DEV.
+2026-10-25. Status: scoped async repair implemented; final CI/DEV delivery pending.
+Technical V2 plan edcd2a23 was independently ENG/design-rechecked clear before code;
+see coordination for immutable review/execution receipts and proof limits.
+Owner authorizes a sound reviewed hotfix through DEV.
 Main release and any exact CLAUDE.md change require separate explicit consent.
 DUPLICATE-NOTES implementation remains held; SPS is preserved and deferred.
 
@@ -220,9 +222,11 @@ do not invent nonexistent historical records. Production rollback requires owner
 
 ## Open questions and stop conditions
 
-Owner confirmed saved positions before LINK; do not reinterview that. Whether the
-two variants were in separate tabs remains pending, useful to original diagnosis
-but not a blocker for this independently reproduced race. Original omission needs
+Owner confirmed saved positions before LINK and later confirmed SEPARATE TABS;
+do not reinterview either. A further fresh link encodes updated positions correctly
+but still replaces the same inventory entry. Track that requirement separately in
+[SAVED-SCALE-VARIANTS](2026-10-25-saved-scale-variants-investigation.md); no identity
+migration is included in this repair. Original omission needs
 a minimal reproducible sequence or a voluntarily supplied sanitized export/current
 saved state; no private browser inspection. Keep-both variant policy is separate
 unapproved scope. Missing native capability or CI evidence blocks the respective

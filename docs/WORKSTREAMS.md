@@ -19,8 +19,12 @@ Root branch codex/share-customization-hotfix-20261025, host-local /private/tmp/h
 base DEV667bbf8b (live ref rechecked). Prompt1489e53d independently critiqued/rechecked
 clear. Reviewed plan V2 edcd2a23 specifies minimal asynchronous ownership guards,
 spec-first separate T/A/M lanes, generated mutants/fullCI/actual DEV checks. Next
-preserve intended baseline RED, execute only a
-sound scoped fix. Main and CLAUDE changes require explicit owner consent.
+preserve current source/evidence for final exact-head review/CI and actual DEV.
+All8unit+2native intended RED→GREEN, full app881 and codec105 pass. Thirty-one
+targeted clean/fault pairs independently audited clear (10new,20legacyrefresh,
+unchanged SI fixture oracle); no wrong-reason kills/skips/cancels/timeouts. App
+source5628f31d; proof2a1be980. Final CI/DEV pending. Main and CLAUDE changes require
+explicit owner consent. No original omitted-angle/variants resolution claimed.
 Same-inventory import replacement is verified existing behavior, separate from
 URL mismatch; no identity redesign automatically authorized. Private links/photo/
 names remain outside public docs. DUP plan is finalized and EXECUTIONHELD; owner

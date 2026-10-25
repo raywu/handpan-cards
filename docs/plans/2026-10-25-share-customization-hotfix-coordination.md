@@ -179,3 +179,27 @@ executed, full480 must be observed in final Linux CI). No other floor lowered or
 assertion removed. Next prove31 clean/fault pairs, inspect raw wrong-reason failures,
 independent final source/evidence review, full exact-head CI, then actual DEV.
 No hotfix PR/DEV delivery or original omission/variant-support resolution claimed.
+
+## Completed targeted mutation proof and final review staging
+
+Proof driver V2c74c27d255853000aaba3389ae28ee6cfa1ea5ae4091595934c1fcbf1ce67b10
+and manifest3173fa75 independently ENG-rechecked CLEAR before root execution.
+shc-proof-a0 completed exit0:31 named intended assertion kills against30 unique
+clean-header PASS commands, exactly1selected each, zero required skips/cancels/
+timeouts/wrong-reason errors/stderr. Includes10new groups,20refreshed legacy faults
+and unchanged SI panelStops oracle. Every owned cleanup/census preserved resources;
+proof tree clean and source restored. Receipt SHA256
+72cd77ffe1af1a7cd05a2c60ecd6d514e80d9fbbdd77bf3733b14714d3d2d992.
+Root inspected raw named failures; independent ENG auditor read all raw streams,
+supervisor/census receipts and exact headers, confirms all31 and legacy intent.
+Proof index/app/e2e bytes match integrationd6b8a974; only floors/docs differ.
+
+Fresh non-author share_final_source_review and share_final_design_review inspected
+exact source d6b8a97407e93290d64f7cc84ba0b4ae7c58ab56: no material source/UX finding.
+Design read native/unit raw evidence and explicitly qualifies native picker,
+Safari/hidden transition and immediate-pre-pop coverage. Source read all30changed
+mutant bodies and retained headers, fixture assertions intact. Root now records
+completion and answered separate-tabs fact in docs; technical V2 acceptance
+contract unchanged. Exact final docs-head rechecks next, then main-target DRAFT/
+HELD fullCI PR and same-head DEV PR; no main merge permission. No hotfix PR exists
+at this checkpoint; don't infer a CI/deployment success from local evidence.
