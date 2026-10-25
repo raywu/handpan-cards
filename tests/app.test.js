@@ -14351,6 +14351,177 @@ describe("OF: the sheet's seats follow the typed order", () => {
       assert.strictEqual(d2Status(app), PD2_SAID, "recovery must not lose the suspended current outcomes");
     }
   });
+
+  test("PD2: invalid or empty line input leaves Layout and palette available without consuming outcomes", () => {
+    for (const bad of ["(D3) zzz", ""]) {
+      const app = pd2Open();
+      pd2InnerThenRim(app);
+      lineType(app, bad);
+      pd2Layout(app);
+      assert.strictEqual(app.els["scale-tab-layout"].getAttribute("aria-selected"), "true");
+      assert.strictEqual(d2Status(app), "");
+      app.els["scale-swatches"].children[4].click();
+      assert.strictEqual(app.els["scale-swatches"].children[4].getAttribute("aria-pressed"), "true");
+      app.click(app.els["scale-tab-scale"]);
+      lineType(app, PD2_BOTH);
+      pd2Layout(app);
+      assert.strictEqual(d2Status(app), PD2_SAID);
+    }
+  });
+
+  test("PD2: tab click NEXT and cyclic keyboard entries consume both outcomes once", () => {
+    for (const route of ["click", "next", "ArrowRight", "ArrowLeft", "End"]) {
+      const app = pd2Open();
+      pd2InnerThenRim(app);
+      if (route === "click") pd2Layout(app);
+      else if (route === "next") app.click(app.els["scale-next"]);
+      else { app.els["scale-tab-scale"].focus(); app.press(app.els["scale-tab-scale"], route); }
+      assert.strictEqual(app.els["scale-tab-layout"].getAttribute("aria-selected"), "true", route);
+      assert.strictEqual(d2Status(app), PD2_SAID, route);
+      if (route !== "click") assert.strictEqual(app.activeId(), "scale-tab-layout", route + " preserves the entry focus contract");
+      app.click(app.els["scale-tab-scale"]);
+      pd2Layout(app);
+      assert.strictEqual(d2Status(app), "", route + " consumed exactly once");
+    }
+  });
+
+  test("PD2: a same-tab Home or modified arrow does not consume pending Layout feedback", () => {
+    const app = pd2Open();
+    pd2InnerThenRim(app);
+    app.els["scale-tab-scale"].focus();
+    app.press(app.els["scale-tab-scale"], "Home");
+    app.press(app.els["scale-tab-scale"], "ArrowRight", { ctrlKey: true });
+    assert.strictEqual(app.els["scale-tab-scale"].getAttribute("aria-selected"), "true");
+    assert.strictEqual(d2Status(app), "");
+    app.press(app.els["scale-tab-scale"], "ArrowLeft");
+    assert.strictEqual(d2Status(app), PD2_SAID, "Left wraps into Layout and is a real consumer");
+  });
+
+  test("PD2: consumed outcomes stay silent until a new meaningful edit creates a fresh outcome", () => {
+    const app = pd2Open();
+    pd2InnerThenRim(app);
+    pd2Layout(app);
+    assert.strictEqual(d2Status(app), PD2_SAID);
+    app.click(app.els["scale-tab-scale"]);
+    lineType(app, PD2_BOTH);
+    app.els["scale-name"].value = "My pan";
+    app.els["scale-name"].dispatchEvent({ type: "input" });
+    pd2Layout(app);
+    assert.strictEqual(d2Status(app), "", "unchanged parse and name edits do not replay old outcomes");
+    app.click(app.els["scale-tab-scale"]);
+    lineType(app, "(D3) C4 A3 D4 E4 F4 | F5 G5");
+    pd2Layout(app);
+    assert.strictEqual(d2Status(app), INNER_SAID);
+  });
+
+  test("PD2: visible RESET and anchor actions win and cannot resurrect consumed feedback", () => {
+    for (const action of ["scale-layout-reset", "scale-anchor-between"]) {
+      const app = pd2Open();
+      pd2InnerThenRim(app);
+      pd2Layout(app);
+      assert.strictEqual(app.els["scale-panel-layout"].hidden, false, "the action is on the visible Layout tab");
+      assert.strictEqual(app.els[action].disabled, false, action + " is usable");
+      app.click(app.els[action]);
+      assert.ok(d2Status(app).length > 0, action + " must display its own result");
+      assert.doesNotMatch(d2Status(app), /follows? the order listed/, action);
+      if (action === "scale-layout-reset") assert.strictEqual(d2Status(app), "Layout reset.");
+      app.click(app.els["scale-tab-scale"]);
+      lineType(app, PD2_BOTH);
+      pd2Layout(app);
+      assert.strictEqual(d2Status(app), "", action + " cannot replay consumed derivations");
+    }
+  });
+
+  test("PD2: Back and Escape discard pending outcomes before a valid seated Edit reopens", () => {
+    for (const how of ["back", "escape"]) {
+      const { app, rec } = seated(PD2_BASE, { rim: [1, 0, 2, 3, 4], inner: [1, 0] });
+      openSheet(app);
+      lineType(app, PD2_BASE);
+      pd2InnerThenRim(app);
+      if (how === "back") app.els["scale-back"].click();
+      else app.keydown("Escape");
+      assert.strictEqual(app.sheetOpen(), false, how);
+      openEdit(app, rec);
+      assert.strictEqual(app.els["scale-generate"].disabled, false, "reopened Edit is valid, so invalid input cannot mask leaked state");
+      pd2Layout(app);
+      assert.strictEqual(d2Status(app), "", how + " clears the prior session's outcomes");
+    }
+  });
+
+  test("PD2: saving from Scale discards unconsumed outcomes before the saved valid Edit reopens", () => {
+    const { app, rec } = seated(PD2_BASE, {});
+    openEdit(app, rec);
+    pd2InnerThenRim(app);
+    assert.strictEqual(app.els["scale-generate"].hidden, false, "Edit SAVE is a visible control on Scale");
+    app.click(app.els["scale-generate"]);
+    assert.strictEqual(app.sheetOpen(), false);
+    const savedRecord = app.registry()[app.deckId()];
+    openEdit(app, savedRecord);
+    assert.strictEqual(app.els["scale-generate"].disabled, false);
+    pd2Layout(app);
+    assert.strictEqual(d2Status(app), "");
+  });
+
+  test("PD2: a seated Edit prefill and blur without an edit do not announce an order hint", () => {
+    const { app, rec } = seated(PD2_BASE, { rim: [1, 0, 2, 3, 4], inner: [1, 0] });
+    openEdit(app, rec);
+    assert.strictEqual(note(app, "fields"), HINT);
+    assert.strictEqual(live(app), "");
+    fire(app, "scale-top", "focus");
+    settle(app, "top");
+    assert.strictEqual(live(app), "", "a blur without typing is still prefill, not a new edit");
+  });
+
+  const PD2_BOTTOM_BASE = "[C3] [D3] [E3] (A3) C4 D4 E4 F4 | G4 A4";
+  const PD2_BOTTOM_FOUR = "[C3] [D3] [E3] [F3] (A3) D4 C4 E4 F4 | G4 A4";
+  const PD2_BOTTOM_RESET = "The bottom now has 4 notes, so its angles were reset.";
+  const pd2BottomEdit = (options) => {
+    const app = boot();
+    const made = app.generate(PD2_BOTTOM_BASE, options);
+    assert.strictEqual(made.ok, true, made.reason);
+    openEdit(app, app.registry()[made.value.id]);
+    return app;
+  };
+
+  test("PD2: a same-parse rim derive retains its deferred bottom-angle reset payload", () => {
+    const app = pd2BottomEdit({ angles: { bottom: [300, null, null] } });
+    lineType(app, PD2_BOTTOM_FOUR);
+    pd2Layout(app);
+    assert.strictEqual(d2Status(app), RIM_SAID + " " + PD2_BOTTOM_RESET);
+  });
+
+  test("PD2: a same-parse rim derive retains an existing deferred bottom-seat restoration", () => {
+    const app = pd2BottomEdit({ seats: { bottom: [1, 0, 2] } });
+    lineType(app, "[C3] [D3] [E3] [F3] (A3) C4 D4 E4 F4 | G4 A4");
+    lineType(app, "[C3] [D3] [E3] (A3) D4 C4 E4 F4 | G4 A4");
+    pd2Layout(app);
+    assert.strictEqual(d2Status(app), RIM_SAID + " The bottom is back to 3 notes, so its earlier seats were restored.");
+  });
+
+  test("PD2: an independent inner edit retains current auxiliary text but later bottom changes invalidate it", () => {
+    const keep = pd2BottomEdit({ angles: { bottom: [300, null, null] } });
+    lineType(keep, PD2_BOTTOM_FOUR);
+    lineType(keep, "[C3] [D3] [E3] [F3] (A3) D4 C4 E4 F4 | A4 G4");
+    pd2Layout(keep);
+    assert.strictEqual(d2Status(keep), PD2_SAID + " " + PD2_BOTTOM_RESET);
+    const clear = pd2BottomEdit({ angles: { bottom: [300, null, null] } });
+    lineType(clear, PD2_BOTTOM_FOUR);
+    lineType(clear, "[C3] [D3] [E3] [F3] (A3) D4 C4 E4 F4 | A4 G4");
+    lineType(clear, "[C3] [D3] [E3] [F3] [G3] (A3) D4 C4 E4 F4 | A4 G4");
+    pd2Layout(clear);
+    assert.strictEqual(d2Status(clear), PD2_SAID, "do not replay a four-note reset for the current five-note bottom or invent a new count-only notification");
+  });
+
+  test("PD2: both outcomes use the selected locale while scale input remains English note notation", () => {
+    const de = JSON.parse(fs.readFileSync(path.join(ROOT, "data/i18n/de.json"), "utf8"));
+    const app = boot({ languages: ["de-DE"] });
+    openSheet(app);
+    lineType(app, PD2_BASE);
+    pd2InnerThenRim(app);
+    pd2Layout(app);
+    assert.strictEqual(d2Status(app), de["sheet.rim_follows"] + " " + de["sheet.inner_follows"]);
+    assert.strictEqual(app.els["scale-box"].value, PD2_BOTH, "UI language never rewrites the scale input grammar");
+  });
 });
 
 /* ------------------------------------------------------------------ I18N */
