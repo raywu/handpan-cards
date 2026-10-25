@@ -795,7 +795,12 @@ function boot(opts = {}) {
   }
 
   // Await actual returned promises before normalizing cross-realm values.
-  // Readiness uses a bounded host clock, never virtual timer advancement.
+  // Readiness observes cooperative predicates/promises with a host deadline,
+  // never virtual timer advancement. The vm timeout bounds initial synchronous
+  // evaluation only: a later Promise callback that spins CPU can starve the
+  // host timer. These utilities do not isolate arbitrary async execution.
+  // Run helper tests under an outer process supervisor (as suite_health does)
+  // even when waitFor/clickAsync has its own readiness timeout.
   const getAsync = async (expr, { timeout } = {}) =>
     plain(await vm.runInContext(expr, sandbox, timeout ? { timeout } : {}));
   function bounded(promise, timeout) {
