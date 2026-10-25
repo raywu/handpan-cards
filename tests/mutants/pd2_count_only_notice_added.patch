@@ -1,0 +1,15 @@
+# kills: PD2: a later ascending count-only change invalidates an older ring outcome
+# suite: node --test --test-reporter=tap --test-name-pattern=PD2:.a.later.ascending.count-only.change.invalidates tests/app.test.js
+# A count-only parse starts a new deferred notification feature that the contract excludes.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12333,7 +12333,7 @@ function noteCounts(fields, value) {
+       if (derived.includes(ring)) {
+         if (ringCount[ring] > 0) pendingDerive[ring] = true;
+         else delete pendingDerive[ring];
+-      } else if (derived.length && r.said[ring]) {
++      } else if (r.said[ring]) {
+         // Keep existing mixed derivation/count payloads, not count-only notices.
+         pendingDerive[ring] = r.said[ring];
+       }

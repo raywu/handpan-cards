@@ -1,0 +1,16 @@
+# kills: PD2: removing the inner ring removes its outcome and retains a current rim outcome
+# suite: node --test --test-reporter=tap --test-name-pattern=PD2:.removing.the.inner.ring.removes.its.outcome tests/app.test.js
+# A removed ring still receives a follows-listed outcome.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12331,8 +12331,7 @@ function noteCounts(fields, value) {
+       // typed key stays the identity. A different ring's edit does not.
+       if (r.said[ring]) delete pendingDerive[ring];
+       if (derived.includes(ring)) {
+-        if (ringCount[ring] > 0) pendingDerive[ring] = true;
+-        else delete pendingDerive[ring];
++        pendingDerive[ring] = true;
+       } else if (derived.length && r.said[ring]) {
+         // Keep existing mixed derivation/count payloads, not count-only notices.
+         pendingDerive[ring] = r.said[ring];

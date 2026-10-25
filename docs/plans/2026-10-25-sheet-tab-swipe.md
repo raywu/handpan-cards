@@ -1,5 +1,17 @@
 # Scale↔Layout swipe: refreshed SPS proposal
 
+## Later owner approval — 2026-10-25
+
+Owner explicitly authorized **feedback first, then this swipe through DEV** after
+independent ENG/design review. The reviewed proposal is retained at21760907,
+SHA2564f133ae01efc9f99add6fd62e6a7089c382a43521b77ab0dae7a447553e3c57c.
+This supersedes the planning-only/deferred implementation status below for the
+new bounded scope; original2026-10-21 deferral remains historical evidence.
+Do not start swipe implementation before feedback's verified DEV delivery. Keep
+separate oracle/app lanes, meaningful TDD/mutants, independent final review, full
+exact-head CI/DEV and new swipe-specific native QA. Main and exact CLAUDE.md edits
+still require separate consent. No other app feature or broad cleanup is authorized.
+
 Status: planning/reconsideration only, 2026-10-25. No app implementation grant.
 Original source: [sheet polish](2026-10-21-sheet-polish.md), §3.4, §5.4, §7.5,
 and the owner answer in §10.1. The owner explicitly deferred SPS on2026-10-21;

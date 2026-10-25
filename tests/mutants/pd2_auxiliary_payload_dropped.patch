@@ -1,0 +1,15 @@
+# kills: PD2: a same-parse rim derive retains its deferred bottom-angle reset payload
+# suite: node --test --test-reporter=tap --test-name-pattern=PD2:.a.same-parse.rim.derive.retains.its.deferred.bottom-angle.reset.payload tests/app.test.js
+# The existing non-derived ring reset payload is discarded from a mixed successful parse.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12335,7 +12335,7 @@ function noteCounts(fields, value) {
+         else delete pendingDerive[ring];
+       } else if (derived.length && r.said[ring]) {
+         // Keep existing mixed derivation/count payloads, not count-only notices.
+-        pendingDerive[ring] = r.said[ring];
++        delete pendingDerive[ring];
+       }
+     }
+     if (derived.length) pendingDerive.putDown = putDown;

@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11996,8 +11996,8 @@ let refusal = null;
+@@ -12321,8 +12321,8 @@ let refusal = null;
   *  so (drawer open only), and keep focus on a real note. */
  function noteCounts(fields, value) {
    const wasOnNote = isHit(document.activeElement);
@@ -13,4 +13,4 @@ diff --git a/index.html b/index.html
 +  const r = syncRingCounts(fields);
    let putDown = r.putDown;
    if (pickRef && derived.includes(pickRef.ring)) { pickRef = null; pickMoved = false; putDown = true; }
-   let text = r.text;
+   if (!drawerOpen) {

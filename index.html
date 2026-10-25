@@ -11122,7 +11122,11 @@ function paintMirrors() {
    Its state is a session let like `mirror` and `anchor`: it opens closed,
    closing it never touches the layout, and leaving the sheet drops it. */
 let drawerOpen = false;
-let pendingDerive = "";
+// At most one outcome per ring: true follows the typed list; a string keeps an
+// existing same-parse count/reset notice. putDown is that parse's legacy suffix.
+// This is session feedback only, never a history or a stored layout option.
+let pendingDerive = {};
+const currentScaleInput = () => boxOk && !(inputPath === "fields" && lineStale);
 let sheetTab = "scale";
 let layoutBase = { anchor: "one", mirror: false, mb: false, seats: "", angles: "" };
 const HINT_EMPTY = () => t("sheet.layout_hint_empty");
@@ -11133,6 +11137,9 @@ const ringWord = (ring) => t("sheet.ring_" + ring);
 /** One line under the plate, read once. The same sentence twice in a row is
  *  cleared first, or a live region would stay silent on the repeat. */
 function layoutStatus(text, warn) {
+  // An actual drawer result supersedes deferred feedback; passive empty paints
+  // leave it alone (including an invalid-input visit to Layout).
+  if (text) pendingDerive = {};
   drawerStatus.classList.toggle("warn", !!warn);
   if (warn && text && drawerStatus.textContent === text) {
     drawerStatus.textContent = "";
@@ -11642,7 +11649,7 @@ function setTab(tab) {
   repaintPlate();
   bandPort.scrollTop = 0;
   setLip(false, { instant: true });
-  if (drawerOpen && boxOk && !hasTwoNoteRing() && !(ringCount && ringCount.bottom >= 1)) layoutStatus(t("sheet.no_two_ring"));
+  if (drawerOpen && !showPendingDerive() && currentScaleInput() && !hasTwoNoteRing() && !(ringCount && ringCount.bottom >= 1)) layoutStatus(t("sheet.no_two_ring"));
 }
 /** Leaving the sheet or opening a fresh session: no focus, no status. */
 function dropDrawer() {
@@ -11651,7 +11658,7 @@ function dropDrawer() {
   drawerHint.textContent = "";
   drawerHint.hidden = true;
   drawerOpen = false;
-  pendingDerive = "";
+  pendingDerive = {};
   sheetTab = "scale";
   paintTabs();
   pickRef = null;
@@ -12318,6 +12325,21 @@ function noteCounts(fields, value) {
   const derived = value ? deriveTyped(value, fields) : [];
   let putDown = r.putDown;
   if (pickRef && derived.includes(pickRef.ring)) { pickRef = null; pickMoved = false; putDown = true; }
+  if (!drawerOpen) {
+    for (const ring of LAYOUT_RINGS) {
+      // Count changes invalidate that ring's earlier outcome, even when its
+      // typed key stays the identity. A different ring's edit does not.
+      if (r.said[ring]) delete pendingDerive[ring];
+      if (derived.includes(ring)) {
+        if (ringCount[ring] > 0) pendingDerive[ring] = true;
+        else delete pendingDerive[ring];
+      } else if (derived.length && r.said[ring]) {
+        // Keep existing mixed derivation/count payloads, not count-only notices.
+        pendingDerive[ring] = r.said[ring];
+      }
+    }
+    if (derived.length) pendingDerive.putDown = putDown;
+  }
   let text = r.text;
   if (derived.length) {
     const parts = [];
@@ -12330,7 +12352,6 @@ function noteCounts(fields, value) {
   }
   if (!text) return;
   if (putDown && wasOnNote) focusFirstNext = true;
-  if (!drawerOpen && derived.length) pendingDerive = text;
   if (drawerOpen) layoutStatus(text);
 }
 const typedKey = (k, ring) => (k && k[ring] ? k[ring].join(",") : null);
@@ -13104,12 +13125,20 @@ tabStrip.addEventListener("keydown", (e) => {
 anglePrev.onclick = () => nudgeAngle(1);
 angleNext.onclick = () => nudgeAngle(-1);
 function showPendingDerive() {
-  if (drawerOpen && boxOk && pendingDerive) { layoutStatus(pendingDerive); pendingDerive = ""; }
+  // Invalid active fields can retain a last-good line and boxOk. Keep Layout
+  // accessible, but do not consume its feedback until the active input is valid.
+  if (!drawerOpen || !currentScaleInput()) return false;
+  const parts = LAYOUT_RINGS.filter((ring) => pendingDerive[ring]).map((ring) =>
+    pendingDerive[ring] === true
+      ? t(ring === "rim" ? "sheet.rim_follows" : "sheet.inner_follows")
+      : pendingDerive[ring]);
+  const text = parts.join(" ") + (parts.length && pendingDerive.putDown ? t("sheet.put_down") : "");
+  pendingDerive = {};
+  if (!text) return false;
+  layoutStatus(text);
+  return true;
 }
-tabLayout.addEventListener("click", showPendingDerive);
-nextBtn.addEventListener("click", showPendingDerive);
-tabStrip.addEventListener("keydown", showPendingDerive);
-resetBtn.addEventListener("click", () => { pendingDerive = ""; });
+resetBtn.addEventListener("click", () => { pendingDerive = {}; });
 notePrev.onclick = () => stepNote(-1);
 noteNext.onclick = () => stepNote(1);
 seatPrev.onclick = () => stepSeat(-1);

@@ -1,0 +1,15 @@
+# kills: PD2: consumed outcomes stay silent until a new meaningful edit creates a fresh outcome
+# suite: node --test --test-reporter=tap --test-name-pattern=PD2:.consumed.outcomes.stay.silent.until.a.new.meaningful.edit tests/app.test.js
+# Every parse queues ring outcomes even when typed order did not change.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12330,7 +12330,7 @@ function noteCounts(fields, value) {
+       // Count changes invalidate that ring's earlier outcome, even when its
+       // typed key stays the identity. A different ring's edit does not.
+       if (r.said[ring]) delete pendingDerive[ring];
+-      if (derived.includes(ring)) {
++      if (ring !== "bottom") {
+         if (ringCount[ring] > 0) pendingDerive[ring] = true;
+         else delete pendingDerive[ring];
+       } else if (derived.length && r.said[ring]) {

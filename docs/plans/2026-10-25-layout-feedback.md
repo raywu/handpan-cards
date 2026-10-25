@@ -1,5 +1,54 @@
 # App: latest Layout feedback per ring
 
+## Execution authorization — 2026-10-25
+
+Owner explicitly authorized **feedback first, then Scale↔Layout swipe through DEV**
+after both independently reviewed proposals. This supersedes planning-only status
+below for these bounded scopes; the reviewed behavioral contract is retained at
+commit217609075a14e6ca4799497210af27d9df842c5e, SHA256
+bdf530e39cae3bc0904c701f6afdf46f4bcdf6f2dd134666e14b4904d2df6b9f.
+Separate T/app lanes must demonstrate meaningful assertion-red before app edits,
+then green/mutants, independent addressed final review, full CI and actual DEV
+validation. No main merge or CLAUDE.md edit is included. Swipe waits for feedback's
+verified DEV delivery; new swipe-specific native QA remains required.
+
+Root on ray-Mac owns `/private/tmp/handpan-feedback.ha43y5cy/integration`, branch
+`codex/layout-feedback-20261025`, base21760907. Independent test/app lanes start at
+that same reviewed source, with private ownership receipts under sibling evidence/.
+Mac PR573/574 remain frozen at217 and proceed through their separate CI/DEV gates.
+Last step: owned lanes created, tests being authored; app author waits for root's
+TDD-red gate. On unknown ownership/conflict, stop dependent writes and preserve
+uncommitted work. This authorization does not activate the future whole-codebase audit.
+
+### Later execution checkpoint
+
+Primary2 independent tests failed by assertion against unchanged indexbd9be272;
+A then changed only the app block (commitad991aad). Current integrated source4e4bff4c
+retains generated engine/deck bytes, CSS, translations and instructions. Corrected
+unit oracles pass20/20, full app873/873; native journeys3/3 and12 font/locale/viewport
+cells pass with0 required skips/cancels. Two lifecycle fixture failures were traced
+to sandbox app.click dispatching listeners but not inline onclick; test-only driver
+correction retained all expected behavior. Actual native control paths corroborate.
+
+Pending put-down queuing is not reachable through current public Layout→Scale
+flow because it clears the pick. Preserve existing defensive/immediate behavior;
+do not fabricate internal state solely for a new mutant. Actual mixed bottom
+angle-reset/restoration auxiliary payloads are covered through public fixtures.
+The consumer also checks active field validity: an invalid composition may retain
+the last valid line/boxOk. This implements the reviewed invalid-active-input rule,
+without disabling Layout or palette access.
+
+Sixteen new mutants and five equivalent legacy context refreshes were generated;
+all1500 patches apply-check. All21 changed patches are assertion-killed after18
+distinct clean-green exact header commands at source4e4bff4c, with identical
+selected counts,0 skip/cancel/timeout/startup kills, resource census and byte
+restoration. Every failing leaf is an assertion; suite wrappers are not evidence.
+Final exact-head review, full Linux CI and actual feedback DEV delivery remain
+required. Mac prerequisite DEV574 delivery is separately complete atf5df7942;
+main573 remains HELD. Live feedback PRs are resolved from the published branch
+and [shared checkpoint thread](https://github.com/raywu/handpan-cards/pull/571#issuecomment-6400489132),
+not a guessed PR number or this pre-CI snapshot.
+
 Draft for independent engineering and design review — 2026-10-25.
 
 Related: [refreshed SPS proposal](2026-10-25-sheet-tab-swipe.md). Any shared
