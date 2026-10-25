@@ -78,6 +78,7 @@ FLOORS = {
     "tests/pdf_builtin.test.js": 13,
     "tests/sequence.test.js": 52,
     "tests/scale.test.js": 14,
+    "tests/sandbox_events.test.js": 5,
 }
 
 # The e2e suites are the only ones allowed to vanish: they skip themselves
