@@ -15280,8 +15280,18 @@ describe("SPS: primary public-event traces", () => {
     const app = fresh();
     if (kind === "edit") openEdit(app, makeCustom(app, BASE));
     else { openSheet(app); line(app, BASE); }
-    app.els["scale-box"].tagName = "TEXTAREA";
-    for (const id of ["ding", "top", "inner", "bottom", "name"]) app.els["scale-" + id].tagName = "INPUT";
+    // This bounded fixture supplies the native tag selectors used by public
+    // focus handlers. It is not a general selector engine or an app test seam.
+    const fieldTag = (el, tag) => {
+      el.tagName = tag;
+      el.matches = (selector) => {
+        const tags = String(selector).split(",").map((s) => s.trim());
+        assert.ok(tags.every((s) => /^[a-z]+$/i.test(s)), "the field fixture supports literal tag selectors only");
+        return tags.some((s) => s.toUpperCase() === el.tagName);
+      };
+    };
+    fieldTag(app.els["scale-box"], "TEXTAREA");
+    for (const id of ["ding", "top", "inner", "bottom", "name"]) fieldTag(app.els["scale-" + id], "INPUT");
     if (tab === "layout") app.click(app.els["scale-tab-layout"]);
     app.advance(300);
     return app;
