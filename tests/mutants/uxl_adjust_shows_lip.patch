@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11497,7 +11497,7 @@ function setTab(tab) {
+@@ -11648,7 +11648,7 @@ function setTab(tab) {
    paintLayout();
    repaintPlate();
    bandPort.scrollTop = 0;
 -  setLip(false, { instant: true });
 +  setLip(false);
-   if (drawerOpen && boxOk && !hasTwoNoteRing() && !(ringCount && ringCount.bottom >= 1)) layoutStatus(t("sheet.no_two_ring"));
+   if (drawerOpen && !showPendingDerive() && currentScaleInput() && !hasTwoNoteRing() && !(ringCount && ringCount.bottom >= 1)) layoutStatus(t("sheet.no_two_ring"));
  }
  /** Leaving the sheet or opening a fresh session: no focus, no status. */

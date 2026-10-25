@@ -1,0 +1,22 @@
+# kills: PD2: tab click NEXT and cyclic keyboard entries consume both outcomes once
+# suite: node --test --test-reporter=tap --test-name-pattern=PD2:.tab.click.NEXT.and.cyclic.keyboard.entries.consume tests/app.test.js
+# Both consumption clearing paths are dropped, so a second entry replays the same outcomes.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11139,7 +11139,6 @@ const ringWord = (ring) => t("sheet.ring_" + ring);
+ function layoutStatus(text, warn) {
+   // An actual drawer result supersedes deferred feedback; passive empty paints
+   // leave it alone (including an invalid-input visit to Layout).
+-  if (text) pendingDerive = {};
+   drawerStatus.classList.toggle("warn", !!warn);
+   if (warn && text && drawerStatus.textContent === text) {
+     drawerStatus.textContent = "";
+@@ -13133,7 +13132,6 @@ function showPendingDerive() {
+       ? t(ring === "rim" ? "sheet.rim_follows" : "sheet.inner_follows")
+       : pendingDerive[ring]);
+   const text = parts.join(" ") + (parts.length && pendingDerive.putDown ? t("sheet.put_down") : "");
+-  pendingDerive = {};
+   if (!text) return false;
+   layoutStatus(text);
+   return true;

@@ -1,0 +1,14 @@
+# kills: PD2: an independent inner edit retains current auxiliary text but later bottom changes invalidate it
+# suite: node --test --test-reporter=tap --test-name-pattern=PD2:.an.independent.inner.edit.retains.current.auxiliary.text tests/app.test.js
+# A later different-ring derive erases still-current auxiliary messages.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12326,6 +12326,7 @@ function noteCounts(fields, value) {
+   let putDown = r.putDown;
+   if (pickRef && derived.includes(pickRef.ring)) { pickRef = null; pickMoved = false; putDown = true; }
+   if (!drawerOpen) {
++    if (derived.length) for (const ring of LAYOUT_RINGS) { if (typeof pendingDerive[ring] === "string") delete pendingDerive[ring]; }
+     for (const ring of LAYOUT_RINGS) {
+       // Count changes invalidate that ring's earlier outcome, even when its
+       // typed key stays the identity. A different ring's edit does not.

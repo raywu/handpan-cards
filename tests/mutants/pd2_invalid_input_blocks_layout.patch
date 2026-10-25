@@ -1,0 +1,14 @@
+# kills: PD2: invalid or empty line input leaves Layout and palette available without consuming outcomes
+# suite: node --test --test-reporter=tap --test-name-pattern=PD2:.invalid.or.empty.line.input.leaves.Layout tests/app.test.js
+# An invalid-input guard blocks the Layout tab and its otherwise-available palette.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11630,6 +11630,7 @@ function paintTabs() {
+ }
+ function setTab(tab) {
+   if (tab === sheetTab) return;
++  if (tab === "layout" && !currentScaleInput()) return;
+   if (sheetTab === "layout") {
+     cancelGesture();
+     previewBox.removeEventListener("touchmove", plateTouchMove, { passive: false });

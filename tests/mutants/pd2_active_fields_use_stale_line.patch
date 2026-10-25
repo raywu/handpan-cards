@@ -1,0 +1,15 @@
+# kills: PD2: invalid active fields suspend feedback even while the line retains its last valid input
+# suite: node --test --test-reporter=tap --test-name-pattern=PD2:.invalid.active.fields.suspend.feedback tests/app.test.js
+# Last-good line validity incorrectly authorizes feedback while active fields are invalid.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11126,7 +11126,7 @@ let drawerOpen = false;
+ // existing same-parse count/reset notice. putDown is that parse's legacy suffix.
+ // This is session feedback only, never a history or a stored layout option.
+ let pendingDerive = {};
+-const currentScaleInput = () => boxOk && !(inputPath === "fields" && lineStale);
++const currentScaleInput = () => boxOk;
+ let sheetTab = "scale";
+ let layoutBase = { anchor: "one", mirror: false, mb: false, seats: "", angles: "" };
+ const HINT_EMPTY = () => t("sheet.layout_hint_empty");
