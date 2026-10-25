@@ -35,7 +35,8 @@ explains replacement; it does not establish the original omitted-angle cause.
 Recommendation: preserve distinct named/layout saved variants, Edit updates the
 selected variant, unchanged-link reopening deduplicates. Design interview pending;
 no identity/storage migration or variants implementation authorized by the narrow
-async hotfix plan. Root/source lane investigating affected contracts read-only.
+async hotfix plan. Independent source/UX findings retained in the
+[investigation checkpoint](plans/2026-10-25-saved-scale-variants-investigation.md).
 Create a separate reviewed plan and migration/compatibility acceptance before code;
 do not conflate this user-facing limitation with the fixed async completion bug.
 Current async repair is not yet tested/delivered; no claim either issue is fixed.
