@@ -230,6 +230,11 @@ function run() {
     const state = (session) => inSession(session, () => b.eval(
       "return {name:window.targetName,visible:document.visibilityState,frames:window.frameCount};"));
     try {
+      // The instance policy is an explicit contract input, independently of
+      // native scheduling. Dropped launch forwarding must fail promptly here;
+      // the target/frame assertions below still prove the policy's real effect.
+      assert.strictEqual(b.foregroundSettle, true,
+        "launch must preserve the requested foreground-settle instance policy");
       await b.send("Page.navigate", { url: page("A") });
       await b.waitFor("window.targetName === 'A'", { label: "foreground fixture A" });
       const { targetId } = await b.send("Target.createTarget", { url: page("B") }, false);
