@@ -15495,6 +15495,22 @@ function run() {
 
     test("SPS browser: deliberate zoom excludes shortcuts and normal scale restores both directions", {timeout:90000}, async (t) => {
       const cells=[];
+      // This gate needs neutral body input. Native touch targeting may select a
+      // nearby control even when elementFromPoint hits the gap beside it.
+      const zoomSpot=(dx)=>b.eval(`
+        const body=document.querySelector(".sheetbody"),r=body.getBoundingClientRect();
+        const selector="button,input,textarea,select,label,a[href],#scale-preview,#scale-lip";
+        const obstacles=[...document.querySelectorAll(selector)].filter(el=>el.getClientRects().length&&getComputedStyle(el).visibility!=="hidden").map(el=>el.getBoundingClientRect()).filter(q=>q.width>0&&q.height>0);
+        const clear=(x,y)=>obstacles.every(q=>Math.hypot(Math.max(q.left-x,0,x-q.right),Math.max(q.top-y,0,y-q.bottom))>=24);
+        const lo=Math.max(24,r.left+8),hi=Math.min(innerWidth-24,r.right-8);
+        for(let y=Math.max(8,r.top+8);y<Math.min(innerHeight-8,r.bottom-8);y+=6){
+          for(let x=lo;x<=hi;x+=8){
+            if(x+${dx}<lo||x+${dx}>hi||!clear(x,y)||!clear(x+${dx},y))continue;
+            const a=document.elementFromPoint(x,y),z=document.elementFromPoint(x+${dx},y);
+            if(a&&z&&body.contains(a)&&body.contains(z)&&!a.closest(selector)&&!z.closest(selector))return{x,y,tag:a.tagName,id:a.id};
+          }
+        }
+        return null;`);
       const snapshot=()=>b.eval(`const v=visualViewport;return{scale:v.scale,left:v.offsetLeft,top:v.offsetTop,tab:document.getElementById("scale-tab-layout").getAttribute("aria-selected")==="true"?"layout":"scale"};`);
       const observeOrigin=()=>b.eval(`window.__spsZoomOrigin=null;document.addEventListener("touchstart",e=>{const body=!!(e.target.closest&&e.target.closest(".sheetbody")),excluded=!!e.target.closest("button,input,textarea,select,#scale-preview,#scale-lip");window.__spsZoomOrigin={body,eligible:body&&!excluded,tag:e.target.tagName,id:e.target.id,scale:visualViewport.scale,left:visualViewport.offsetLeft,top:visualViewport.offsetTop};},{capture:true,passive:true,once:true});return true;`);
       try{
@@ -15505,7 +15521,7 @@ function run() {
           const before=await snapshot();
           assert.ok(before.scale>1.99,"the negative gate must actually be at2x");
           assert.strictEqual(before.tab,from);
-          const zoomStart=await spsSpot(dx);assert.ok(zoomStart,"zoomed exclusion needs a genuinely eligible body origin");
+          const zoomStart=await zoomSpot(dx);assert.ok(zoomStart,"zoomed exclusion needs a genuinely eligible body origin");
           await observeOrigin();await spsTouch(zoomStart,dx);
           const origin=await b.eval("return window.__spsZoomOrigin;"),after=await snapshot();
           assert.ok(origin&&origin.eligible&&origin.scale>1.01,"actual touch origin and scale must establish the zoomed case");
@@ -15516,7 +15532,7 @@ function run() {
           await b.setPageScale(1);await b.settle();
           const normalBefore=await snapshot();
           assert.ok(Math.abs(normalBefore.scale-1)<0.001,"normal positive control must really restore1x");
-          const normalStart=await spsSpot(dx);assert.ok(normalStart);
+          const normalStart=await zoomSpot(dx);assert.ok(normalStart);
           // Observe the selected hit and the actual dispatch after spsTouch's
           // pending-settle wait; do not change that wait or the acceptance oracle.
           const normalSelected=await b.eval(`const p=${JSON.stringify(normalStart)},body=document.querySelector(".sheetbody"),surface=document.querySelector(".sheetsurf"),v=visualViewport;
