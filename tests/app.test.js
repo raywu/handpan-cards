@@ -10364,6 +10364,8 @@ describe("share icon", () => {
       if (open) app.run("openPanel()");
       assert.ok(!ids().includes("share-copy") && !ids().includes("share-url"));
     }
+    // Close the mobile panel so LINK is reachable outside its inert background.
+    app.run("closePanel()");
     app.els["share-copy"].click();
     await new Promise((r) => setImmediate(r));
     assert.strictEqual(app.els["share-url"].hasAttribute("hidden"), false);
