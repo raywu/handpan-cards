@@ -60,6 +60,9 @@ Root alone runs host browser jobs. Independent reviewer authors none of H/T/S/U.
   bounded actual app completion/error (or separately captured handler Promise,
   without delaying other listeners). Awaiting an event return or merely draining
   microtasks is not commit readiness. Never blanket-advance virtual timers.
+  Bounds cover initial synchronous VM evaluation and cooperative promises only;
+  an async CPU runaway can block the host timer. All test/helper invocations need
+  an outer process supervisor; no arbitrary async thread-isolation claim.
 - Default session tests which generate instances need explicitly supplied working
   cryptographic capability fixtures, or reviewed test adaptation. Absence remains
   a negative case. Never use a Math.random production fallback or fake synchronous

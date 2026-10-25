@@ -144,3 +144,68 @@ normally canonicalizes its hash. Supervisor cleanup passed and host census uncha
 no API failure conclusion. Author preserved949a24c3, revised to02056af4 with origin/
 path/query plus fresh frame/loader checks, target-list correction and explicit
 per-target cleanup errors. Independent review required before A1; deadline unchanged.
+
+## StageA capability evidence and lane ownership
+
+A1 probe02056af4 independently reviewed before execution. All12 REQUIRED HTTPS
+checks passed: two distinct actual attached targets and lock client IDs in one
+owned profile, secure origin, both crypto operations, storage acknowledgment/
+cross-target reads, held exclusive lock plus queued second target unable to enter,
+predecessor commit reread after release, fresh document reload and empty queue/key
+removal. Optional file-origin navigation THEN failed; whole supervisor run remains
+FAILED exit1, no timeout. Do not advertise an all-green probe or file support.
+All owned cleanup flags true/errors empty and before/after census identical.
+Root qualification evidence/sv-capability-a1-root-qualified.json under stream root;
+raw stdout/stderr/supervisor under SHC evidence/sv-capability-a1.* because the known
+supervisor writes beside itself. This is HTTPS API evidence, not storage-event
+proof, app concurrency/migration, quota/performance, disk flush or Safari/iOS.
+File generation/session support remains a later actual UI validation requirement;
+no need to repeat successful API checks merely to conceal optional fixture failure.
+
+H worktree /private/tmp/handpan-saved-variants.HVUKbE/helper, branch
+codex/saved-variants-helper-20261025; owns tools/sandbox.js+tests/harness.test.js.
+T worktree /private/tmp/handpan-saved-variants.HVUKbE/tests, branch
+codex/saved-variants-tests-20261025; first public fixture only while H prepares API.
+S worktree /private/tmp/handpan-saved-variants.HVUKbE/store, branch
+codex/saved-variants-store-20261025; READ-ONLY exact schema/command interface proposal
+only, no index writes until frozen T acceptance and intended RED. All start1454b181.
+Root alone owns integration/CLAUDE/ledger/floors/browser/remote reporting. Private
+probe author now H; final helper review must be by a different agent. No2index
+editors; U not assigned yet. No variants application source edit has occurred.
+
+## Concrete contract freeze and H/T handoff
+
+Root selected [schema/command contract](2026-10-25-saved-variants-schema-contract.md).
+Fresh independent variants_schema_eng_review found deleted UUID reuse/ABA and
+optional latest-owner delete proof. Root added immutable usedInstanceIds lifetime
+ordinal mapping and mandatory captured proof when latest target owns a slot;
+missing/stale proof conflicts. Recheck CLEAR at exact SHA256
+ d3989593a89b3d1ca2981d3148524b4f75fe3bed9f090d6eb73b9b4d2e71af53.
+T must freeze corresponding stale-command/reload/promotion tests before S code.
+Unknown readable target metadata is preserved on Edit while supported fields are
+replaced; malformed active preference data protects migration. No new CLAUDE edit.
+
+H handoff3ce7a466/902b3d59 independently source/TDD reviewed. Review caught that
+host promise timers cannot isolate runaway async CPU; comments and amendment now
+state cooperative-only scope plus mandatory outer supervisor. Final H recheck
+CLEAR902b3d59. Integrated6b6da4e2/24e30ef8; only tools/sandbox.js+harness tests.
+12new helper groups GREEN zero skips/cancels; initial intended visibility assertion
+RED and intermediate two VM-accessor failures retained.11existing default helper
+checks pass. Root full harness/shipping consumers and generated mutants remain.
+T fixture4f444517 integrated5257b0f8, SHA959d41749b42e124ceb651dc0e1a1d32cb3a2f8b81c23d63cf5a73be9e839286.
+Independent Python/Node raw accounting agrees2/20/200 input675/2934/25524UTF8bytes,
+exact1MiB legacy-input recipe (not final envelope stress); final-envelope gate still
+required. Private frozen T oracle mapf24497d5 proposes23unit+6native groups.
+No variants app/e2e acceptance bodies or application edits yet.
+
+Capability A1 independent actual review CLEAR only for12completed HTTPS checks;
+whole run stillFAILED optional file navigation. Final assertNoUncaught was NOT
+reached and must not be claimed passed. File UI/migration/Safari still unverified.
+Prechange selection baselineA0 desktop30pass then phone appnavigation was same-doc
+(no new loader); wholeexit1, cleanup/censusclear. Author preserved9ff34096 and
+added completed about:blank transition before each strict app load, A1SHA90da474d
+independently reviewed before fresh60-sample job. No deadline/metric relaxation.
+Root retains exclusive lease, no application changes before meaningful T RED.
+
+Owner reaffirmed custom diagram still visible at fresh LINK; this repeats settled
+human evidence, does not resolve/dismiss original omission. No reinterview needed.

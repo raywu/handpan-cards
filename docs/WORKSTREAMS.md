@@ -25,11 +25,13 @@ labels below. No main merge, installs or global configuration changes authorized
 - Reserved: collection key `hpfc.saved-scales.v1`, envelope schema1, exclusive lock
   `handpan-cards:saved-scales:v1`. Wire6/record4 remain; DUP's candidate7/5 is not
   consumed or activated. DUP feature implementation remains held.
-- Current parallel lanes: capability-probe author (private diagnostic only),
-  independent acceptance/helper-contract audit (read-only). Root alone runs host
-  browsers after diagnostic review. Next validate real API operations in owned
-  profiles, review the minimal faithful async sandbox support window, freeze T
-  acceptance/fixtures and demonstrate intended baseline RED before app changes.
+- Current parallel lanes: H helper/T public fixtures/S read-only store contract,
+  each separate /helper,/tests,/store tree under the stream root (branches recorded
+  in coordination). H support amendment independently ENG-cleared after event-
+  dispatch clarification. A1 proved12 required real HTTPS API checks; optional file
+  navigation then failed, so whole run stays FAILED and file behavior unverified.
+  Cleanup/census clear. Next independent evidence review, frozen schema/T acceptance
+  and intended baseline RED before any variants app edits. Root alone runs browsers.
 - Recovery: [coordination](plans/2026-10-25-saved-scale-variants-coordination.md)
   records last/next, ownership and evidence. Any larger contract or exact CLAUDE
   wording change requires renewed review/approval. Runtime/migration/concurrency/
