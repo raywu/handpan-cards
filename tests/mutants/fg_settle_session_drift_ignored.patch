@@ -1,0 +1,16 @@
+# kills: FG-6 foregroundSettle rejects session drift during preparation
+# suite: node --test --test-name-pattern=^FG-6.foregroundSettle tests/harness.test.js
+# Lets a replacement session inherit readiness earned by another target.
+diff --git a/tests/helpers/cdp.js b/tests/helpers/cdp.js
+--- a/tests/helpers/cdp.js
++++ b/tests/helpers/cdp.js
+@@ -385,9 +385,6 @@ class Browser {
+       // close() can begin while that RPC is pending. Do not start frame work on
+       // a closed browser or a different session when its response arrives.
+       if (this._closed) throw new Error("cannot settle a closed browser");
+-      if (this.sessionId !== sessionId) {
+-        throw new Error("foreground settle session changed during preparation");
+-      }
+     }
+     await this.eval(`return new Promise(r => requestAnimationFrame(r));`);
+     const deadline = Date.now() + 500;

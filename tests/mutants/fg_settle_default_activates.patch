@@ -1,0 +1,15 @@
+# kills: FG-2 neutral Browser operations preserve the foreground target
+# suite: node --test --test-name-pattern=^FG-2.neutral tests/harness.test.js
+# Makes neutral Browser instances acquire foreground side effects.
+diff --git a/tests/helpers/cdp.js b/tests/helpers/cdp.js
+--- a/tests/helpers/cdp.js
++++ b/tests/helpers/cdp.js
+@@ -275,7 +275,7 @@ class Browser {
+     this.id = 0; this.pending = new Map(); this.sessionId = null;
+     this.eventHandlers = new Map();      // CDP method -> async handler(params)
+     this.coverage = null;                // CoverageHook, only under HPC_COVERAGE_DIR
+-    this.foregroundSettle = false;       // Neutral unless launch explicitly opts in.
++    this.foregroundSettle = true;        // Fault: neutral instances activate.
+     this._closed = false;
+     ws.addEventListener("message", (ev) => {
+       const msg = JSON.parse(ev.data);

@@ -1,0 +1,14 @@
+# kills: FG-7 close wins pending readiness before coverage cleanup finishes
+# suite: node --test --test-name-pattern=^FG-7.close tests/harness.test.js
+# Allows frame work after close has won a pending preparation.
+diff --git a/tests/helpers/cdp.js b/tests/helpers/cdp.js
+--- a/tests/helpers/cdp.js
++++ b/tests/helpers/cdp.js
+@@ -384,7 +384,6 @@ class Browser {
+       await this.send("Page.bringToFront");
+       // close() can begin while that RPC is pending. Do not start frame work on
+       // a closed browser or a different session when its response arrives.
+-      if (this._closed) throw new Error("cannot settle a closed browser");
+       if (this.sessionId !== sessionId) {
+         throw new Error("foreground settle session changed during preparation");
+       }

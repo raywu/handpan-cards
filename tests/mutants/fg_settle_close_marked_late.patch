@@ -1,0 +1,16 @@
+# kills: FG-7 close wins pending readiness before coverage cleanup finishes
+# suite: node --test --test-name-pattern=^FG-7.close tests/harness.test.js
+# Marks close only after asynchronous coverage cleanup, allowing a pending preparation to resume frame work.
+diff --git a/tests/helpers/cdp.js b/tests/helpers/cdp.js
+--- a/tests/helpers/cdp.js
++++ b/tests/helpers/cdp.js
+@@ -619,8 +619,8 @@ class Browser {
+     `);
+   }
+   async close() {
+-    this._closed = true;
+     if (this.coverage) await this.coverage.finish();
++    this._closed = true;
+     try { this.ws.close(); } catch {}
+     // Deregisters as well as kills, so a normally-closed browser is not killed
+     // a second time at process exit.

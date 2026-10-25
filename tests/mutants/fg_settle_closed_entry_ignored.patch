@@ -1,0 +1,14 @@
+# kills: FG-9 settle after close rejects without transport work
+# suite: node --test --test-name-pattern=^FG-9.settle tests/harness.test.js
+# Begins preparation on an already closed browser instead of rejecting before transport.
+diff --git a/tests/helpers/cdp.js b/tests/helpers/cdp.js
+--- a/tests/helpers/cdp.js
++++ b/tests/helpers/cdp.js
+@@ -372,7 +372,6 @@ class Browser {
+   // stuck/never-clearing animation still bounds the suite the way the fixed
+   // sleep always did, instead of hanging it.
+   async settle() {
+-    if (this._closed) throw new Error("cannot settle a closed browser");
+     if (this.foregroundSettle) {
+       // Interactive callers opt in to preparing this session before EACH first
+       // frame. Neutral eval/send and deferred capture drains never activate it.
