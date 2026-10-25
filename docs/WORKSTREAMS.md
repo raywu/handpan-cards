@@ -1,5 +1,92 @@
 # Shared workstream ledger
 
+## 2026-10-25 Mac repair execution checkpoint
+
+**Additional owner-requested plan discovery:** the
+[current relevance audit](plans/2026-10-25-plan-relevance-audit.md) and
+[109-file inventory](plans/2026-10-25-plan-inventory.json) restore missing deferred
+SPS and broader historical-nit locators. The
+[SPS successor](plans/2026-10-25-sheet-tab-swipe.md) and
+[per-ring feedback proposal](plans/2026-10-25-layout-feedback.md) are planning
+artifacts, not app implementation grants. Owner selected latest outcome per ring,
+once rim→inner. Deep recovery matched the original first-five phone scripts to
+direct2026-10-22 owner acceptance: the adapted baseline was historically passed,
+including lip/messages/palette/landscape, with a later font follow-up also passed.
+Credit that evidence; do not require a blanket repeat or certify today's native
+SPS behavior. Old SPS build deferral remains distinct from baseline QA. SEO is a
+retained research prompt whose research/reviewed plan has not yet been produced;
+[SEO recovery](plans/2026-10-25-seo-plan-recovery.md) and
+[deep plan search](plans/2026-10-25-outstanding-plan-deep-search.md) preserve the
+missing deliverable, three unapproved P3 TODOs, Q9 and historical candidate debt.
+
+**Future queue item:** [codebase/test robustness investigation](plans/2026-10-25-future-codebase-audit.md).
+Owner explicitly requests this only after other outstanding work is resolved:
+iterate a high-quality investigation prompt, run it to draft a swarm-shaped plan,
+independently engineering/design-review and refine that plan before execution.
+Do not start that investigation now, delete code/tests or infer main/CLAUDE consent.
+The future item excludes itself from the queue-empty check; unresolved work or
+missing evidence is not completion. Preserve these instructions across agents.
+
+This newer checkpoint supplements the historical bootstrap snapshot below.
+PR570 is released at main96c4c589cec0950723b3b5323dc1df5bbc359329;
+sync572 delivered DEVc79af08c90750d350e70344c0835303c3f6bb822. There are no pending
+merges for that batch. Resolve current remote refs and this branch's live PRs
+before proceeding; a local feature snapshot is not canonical DEV.
+
+- **MAC-M1 owner/authority:** root on ray-Mac. Owner explicitly authorized narrow
+  contract reviews, separate TDD/helper lanes, independent review, full Linux CI
+  and DEV validation. No app, CLAUDE.md, global setting or main change; larger
+  full-Mac collection budget still requires a separate decision.
+- **Current plan:** [Mac repair](plans/2026-10-24-mac-browser-repair.md), dated
+  execution amendment; preimplementation reviewed amendment SHA256
+  b7383d1e6c4f3010659a4ff9e4df17f9c59d7dbfe67467d28c647300477fe9b6.
+  The current live plan file may later add factual execution receipts; retain the
+  reviewed source as a commit before implementation rather than imply stable hash.
+- **Worktree:** /private/tmp/handpan-mac-repair.c94d3kno/integration, branch
+  codex/mac-foreground-20261025, base96c4c589. Evidence is sibling evidence/;
+  original dirty/locked trees untouched. Host-local paths are not takeover grants.
+- **Last completed:** bounded P1 current-source baseline/passive red, after-launch
+  activation insufficient, before-settle activation pass, passive reversal red.
+  Exactly1 executed each,0 required skips/cancels. Independent evidence review
+  cleared narrow mitigation inference, with cleanup/sampling qualifications.
+  [Published P1 receipt](https://github.com/raywu/handpan-cards/pull/571#issuecomment-6398951284).
+- **Live delivery:** [main CI PR573](https://github.com/raywu/handpan-cards/pull/573)
+  is HELD without main consent; [DEV companion574](https://github.com/raywu/handpan-cards/pull/574)
+  uses the same branch. Resolve their actual current head/state; an initial
+  plan-only CI skip is not repair acceptance. Canonical DEV has not received this
+  feature checkpoint until574 actually merges and its delivery is verified.
+- **Local implementation gate:** T asserted9 controlled cases against unchanged
+  helper714785d5:1 pass/8 ERR_ASSERTION failures,0 skips/cancels. H then added21
+  helper lines for opt-in settle. Same controlled cases9/9 green; original print1,
+  native two-target1, full harness38, pointer/capture5 and font/background16 passed
+  with required0 skips/cancels. Full harness was atd8d85080; the later FG10 default-
+  launch assertion was separately green through its exact header at6ff541c9.
+- **Mutation gate:**16 new generated helper mutants were assertion-killed after
+  10 distinct clean-green header commands in disposable source6ff541c9. All1484
+  current patches apply-check; no existing context changed. The first proof parser
+  stopped after a successful clean run because Node25 default output was SPEC;
+  raw receipts retained, parser independently corrected to read SPEC/TAP, no test
+  or kill threshold changed. Per-run process/profile census supplements fast-run
+  supervisor sampling. Local receipts remain host-local, not fresh-host capability.
+- **Next:** inspect final exact-head independent source/interaction reviews and
+  full Linux validate, then gate574 against the actual combined DEV tree and verify
+  served bytes/affected journeys. Final CI/DEV receipts belong on the linked live
+  PRs; pending evidence is not completion. Larger full-Mac collection remains
+  unapproved/unrun, and other frame paths/M2/M3/C1 causes remain unrepaired.
+- **Scope/risks:** explicit interactive instance policy prepares only settle's
+  first real frame, every call. Neutral helpers/deferred capture remain unchanged;
+  M2/M3/C1 and arbitrary/drawer rAF paths remain separate. Final review, generated
+  mutants, exact-head Linux CI and actual DEV validation remain required. Main is
+  held until repair-specific owner consent. Unknown ownership/conflict or bad
+  diagnostic oracle stops dependent writes, never triggers reset/unlock.
+- **Parallel NITS investigation:** source audit completed read-only at96c4c589.
+  Single pendingDerive string can overwrite an earlier ring's feedback. Owner
+  settled latest outcome per ring, once rim→inner, rather than event history. NEXT/keyboard
+  routing is wired; some lifecycle tests use weak or synthetic oracles. Plain
+  slide flashing without renumbering conflicts with accepted existing behavior.
+  No app fix is authorized by the Mac scope; next is a separate reviewed plan
+  and discriminating reproduction. Keep NITS→OF-D order; other backlog remains.
+
 **Authority:** this file is the canonical locator only when read at a freshly
 resolved remote `dev` commit in `raywu/handpan-cards`. Main, feature branches and
 local copies are snapshots. The publication revision is that external DEV commit;

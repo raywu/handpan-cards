@@ -1,0 +1,15 @@
+# kills: FG-4 foregroundSettle preserves activation refusal without retry or frame work
+# suite: node --test --test-name-pattern=^FG-4.foregroundSettle tests/harness.test.js
+# Retries a real preparation rejection instead of preserving the one-attempt contract.
+diff --git a/tests/helpers/cdp.js b/tests/helpers/cdp.js
+--- a/tests/helpers/cdp.js
++++ b/tests/helpers/cdp.js
+@@ -381,7 +381,7 @@ class Browser {
+       if (typeof sessionId !== "string" || !sessionId) {
+         throw new Error("foreground settle requires an attached session");
+       }
+-      await this.send("Page.bringToFront");
++      await this.send("Page.bringToFront").catch(() => this.send("Page.bringToFront"));
+       // close() can begin while that RPC is pending. Do not start frame work on
+       // a closed browser or a different session when its response arrives.
+       if (this._closed) throw new Error("cannot settle a closed browser");

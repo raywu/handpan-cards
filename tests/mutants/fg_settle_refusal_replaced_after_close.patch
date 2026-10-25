@@ -1,0 +1,18 @@
+# kills: FG-8 close preserves an in-flight activation refusal
+# suite: node --test --test-name-pattern=^FG-8.close tests/harness.test.js
+# Masks the original activation rejection with a later close error.
+diff --git a/tests/helpers/cdp.js b/tests/helpers/cdp.js
+--- a/tests/helpers/cdp.js
++++ b/tests/helpers/cdp.js
+@@ -381,7 +381,10 @@ class Browser {
+       if (typeof sessionId !== "string" || !sessionId) {
+         throw new Error("foreground settle requires an attached session");
+       }
+-      await this.send("Page.bringToFront");
++      await this.send("Page.bringToFront").catch((error) => {
++        if (this._closed) throw new Error("cannot settle a closed browser");
++        throw error;
++      });
+       // close() can begin while that RPC is pending. Do not start frame work on
+       // a closed browser or a different session when its response arrives.
+       if (this._closed) throw new Error("cannot settle a closed browser");

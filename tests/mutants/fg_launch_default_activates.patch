@@ -1,0 +1,16 @@
+# kills: FG-10 opted-in native settle advances only its target after repeated hiding
+# suite: node --test --test-name-pattern=^FG-10.opted-in.native.settle tests/harness.test.js
+# Makes default launch callers opt in, violating their explicit neutral-default policy assertion.
+diff --git a/tests/helpers/cdp.js b/tests/helpers/cdp.js
+--- a/tests/helpers/cdp.js
++++ b/tests/helpers/cdp.js
+@@ -747,8 +747,7 @@ async function launchOnce(opts = {}) {
+     ws = new WebSocket(wsUrl);
+     await new Promise((res, rej) => { ws.addEventListener("open", res); ws.addEventListener("error", rej); });
+     const b = new Browser(proc, ws, profileDir, entry);
+-    b.foregroundSettle = opts.foregroundSettle === true;
+-
++    b.foregroundSettle = opts.foregroundSettle !== false;
+     // Fresh target per launch => no service-worker or storage carry-over.
+     const { targetId } = await b.send("Target.createTarget", { url: "about:blank" }, false);
+     const { sessionId } = await b.send("Target.attachToTarget", { targetId, flatten: true }, false);

@@ -1,0 +1,16 @@
+# kills: FG-5 foregroundSettle rejects a missing session before transport work
+# suite: node --test --test-name-pattern=^FG-5.foregroundSettle tests/harness.test.js
+# Lets missing session preparation fall through to browser-wide transport work.
+diff --git a/tests/helpers/cdp.js b/tests/helpers/cdp.js
+--- a/tests/helpers/cdp.js
++++ b/tests/helpers/cdp.js
+@@ -378,9 +378,6 @@ class Browser {
+       // frame. Neutral eval/send and deferred capture drains never activate it.
+       // This RPC has its existing 20s limit; 500ms is not a total settle bound.
+       const sessionId = this.sessionId;
+-      if (typeof sessionId !== "string" || !sessionId) {
+-        throw new Error("foreground settle requires an attached session");
+-      }
+       await this.send("Page.bringToFront");
+       // close() can begin while that RPC is pending. Do not start frame work on
+       // a closed browser or a different session when its response arrives.
