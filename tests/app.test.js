@@ -15467,6 +15467,8 @@ describe("SPS: primary public-event traces", () => {
       emit(app, "touchmove", { x: 140 });
       if (how === "cancel") emit(app, "touchcancel", { x: 140 });
       else emit(app, "touchend", { x: 140, changed: [{ identifier: 8, clientX: 140, clientY: 300 }] });
+      // A later matching sample/end must not revive the cancelled gesture.
+      finishLeft(app);
       assert.strictEqual(on(app, "scale"), "true", how);
     }
   });
