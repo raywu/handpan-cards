@@ -15493,30 +15493,41 @@ function run() {
       }finally{await b.waitForPendingSettle();await spaReset();}
     });
 
-    test("SPS probe: pre-zoom native panning records viewport and tab outcomes including edge attempts", {timeout:90000}, async (t) => {
-      const records=[];
+    test("SPS browser: deliberate zoom excludes shortcuts and normal scale restores both directions", {timeout:90000}, async (t) => {
+      const cells=[];
+      const snapshot=()=>b.eval(`const v=visualViewport;return{scale:v.scale,left:v.offsetLeft,top:v.offsetTop,tab:document.getElementById("scale-tab-layout").getAttribute("aria-selected")==="true"?"layout":"scale"};`);
+      const observeOrigin=()=>b.eval(`window.__spsZoomOrigin=null;document.addEventListener("touchstart",e=>{const body=!!(e.target.closest&&e.target.closest(".sheetbody")),excluded=!!e.target.closest("button,input,textarea,select,#scale-preview,#scale-lip");window.__spsZoomOrigin={body,eligible:body&&!excluded,tag:e.target.tagName,id:e.target.id,scale:visualViewport.scale,left:visualViewport.offsetLeft,top:visualViewport.offsetTop};},{capture:true,passive:true,once:true});return true;`);
       try{
-        await spaOpen(380,780);
-        await b.setPageScale(2);await b.settle();
-        const snap=()=>b.eval(`const v=visualViewport;return{scale:v.scale,left:v.offsetLeft,top:v.offsetTop,width:v.width,height:v.height,tab:document.getElementById("scale-tab-layout").getAttribute("aria-selected")==="true"?"layout":"scale",body:document.querySelector(".sheetbody").scrollTop,surface:document.querySelector(".sheetsurf").scrollTop};`);
-        assert.ok((await snap()).scale>1.99,"the probe must actually zoom");
-        await b.eval(`window.__spsProbeTouches=[];document.addEventListener("touchstart",e=>{const body=!!(e.target.closest&&e.target.closest(".sheetbody")),excluded=!!(e.target.closest&&e.target.closest("button,input,textarea,select,#scale-preview,#scale-lip"));window.__spsProbeTouches.push({body,eligible:body&&!excluded,tag:e.target.tagName,id:e.target.id,clientX:e.touches[0]&&e.touches[0].clientX,clientY:e.touches[0]&&e.touches[0].clientY});},{capture:true,passive:true});return true;`);
-        for(const dx of [-100,-100,-100,-100,100,100,100,100]){
-          const before=await snap(),start=await spsSpot(dx);
-          if(!start){records.push({dx,before,after:before,origin:null,incomplete:"no eligible visible body surface at this zoom/pan"});continue;}
-          const ordinal=await b.eval("return window.__spsProbeTouches.length;");
-          await spsTouch(start,dx);
-          await sleep(80);
-          const origin=await b.eval(`return window.__spsProbeTouches[${ordinal}]||null;`);
-          records.push({dx,start,before,after:await snap(),origin,incomplete:!origin||!origin.eligible?"actual touch did not originate on the intended eligible body surface":null});
+        for(const from of ["scale","layout"]){
+          await spaOpen(380,780,{tab:from});
+          const dx=from==="scale"?-80:80,to=from==="scale"?"layout":"scale";
+          await b.setPageScale(2);await b.settle();
+          const before=await snapshot();
+          assert.ok(before.scale>1.99,"the negative gate must actually be at2x");
+          assert.strictEqual(before.tab,from);
+          const zoomStart=await spsSpot(dx);assert.ok(zoomStart,"zoomed exclusion needs a genuinely eligible body origin");
+          await observeOrigin();await spsTouch(zoomStart,dx);
+          const origin=await b.eval("return window.__spsZoomOrigin;"),after=await snapshot();
+          assert.ok(origin&&origin.eligible&&origin.scale>1.01,"actual touch origin and scale must establish the zoomed case");
+          assert.ok(after.scale>1.01,"the gesture must not silently reset zoom");
+          assert.strictEqual(after.tab,from,"deliberate zoom leaves optional tab navigation inactive");
+          cells.push({from,mode:"zoomed",before,origin,after});
+
+          await b.setPageScale(1);await b.settle();
+          const normalBefore=await snapshot();
+          assert.ok(Math.abs(normalBefore.scale-1)<0.001,"normal positive control must really restore1x");
+          const normalStart=await spsSpot(dx);assert.ok(normalStart);
+          await observeOrigin();await spsTouch(normalStart,dx);
+          const normalOrigin=await b.eval("return window.__spsZoomOrigin;"),normalAfter=await snapshot();
+          assert.ok(normalOrigin&&normalOrigin.eligible&&Math.abs(normalOrigin.scale-1)<0.001);
+          assert.strictEqual(normalAfter.tab,to,"the same direction remains available at normal scale");
+          cells.push({from,mode:"normal",before:normalBefore,origin:normalOrigin,after:normalAfter});
         }
-        const covered=records.filter(r=>r.origin&&r.origin.eligible);
-        const moved=covered.some(r=>Math.abs(r.after.left-r.before.left)>1);
-        const clampedAfterMove=covered.some((r,i)=>i>0&&covered.slice(0,i).some(p=>Math.abs(p.after.left-p.before.left)>1)&&Math.abs(r.after.left-r.before.left)<1);
-        // This is a bounded observation, not a new zoom exclusion or a claim
-        // that a changed tab proves a new requirement. Root compares baseline
-        // and candidate and reports absent pan/clamp coverage as incomplete.
-        t.diagnostic("SPS_ZOOM_PAN_PROBE "+JSON.stringify({requested:8,coveredOrigins:covered.length,moved,clampedAfterMove,incomplete:covered.length<8||!moved||!clampedAfterMove,origins:await b.eval("return window.__spsProbeTouches;"),records}));
+        assert.strictEqual(cells.length,4);
+        // This is an asserted shortcut-preservation gate. It does not certify
+        // native visual-viewport panning/clamps, which the retired exploratory
+        // baseline/candidate probe did not observe. Physical Safari QA remains.
+        t.diagnostic("SPS_ZOOM_GUARD_CELLS "+JSON.stringify(cells));
       }finally{await b.setPageScale(1);await spaReset();}
     });
 
