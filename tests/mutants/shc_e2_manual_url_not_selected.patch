@@ -1,5 +1,5 @@
 # kills: SHC E2: phone Edit protects focus and notices from old LINK and fresh fallback remains selectable
-# suite: node --test --test-reporter=tap --test-name-pattern='SHC E2:' tests/e2e.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SHC.E2: tests/e2e.test.js
 # A fresh phone fallback focuses the URL without selecting every character.
 diff --git a/index.html b/index.html
 --- a/index.html

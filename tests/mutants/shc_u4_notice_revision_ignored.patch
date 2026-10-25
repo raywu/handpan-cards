@@ -1,5 +1,5 @@
 # kills: SHC U4: stale success and deferred ticks preserve newer and identical-text notices
-# suite: node --test --test-reporter=tap --test-name-pattern='SHC U4:' tests/app.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SHC.U4: tests/app.test.js
 # Success clears an intervening notice even when its text repeats.
 diff --git a/index.html b/index.html
 --- a/index.html

@@ -1,5 +1,5 @@
 # kills: SHC U7: route transitions retire LINK but no-op sync and pending SAVE pop keep fresh intent
-# suite: node --test --test-reporter=tap --test-name-pattern='SHC U7:' tests/app.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern ^SHC.U7: tests/app.test.js
 # A real pop away and back resurrects ownership at the original URL.
 diff --git a/index.html b/index.html
 --- a/index.html

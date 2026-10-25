@@ -4,7 +4,16 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10927,7 +10927,6 @@ function resetSheetState(edit) {
+@@ -12651,7 +12651,7 @@ function setInert(on, targets) {
+   }
+ }
+ function showSheet(opener) {
+-  retireLinkUI();
++  ++linkUIGeneration;
+   sheetOpener = opener || addChip;
+   sheet.removeAttribute("hidden");
+   sheetOpen = true;
+@@ -12739,7 +12739,6 @@ function resetSheetState(edit) {
  }
  // The create path.
  function openScaleSheet(opener) {
