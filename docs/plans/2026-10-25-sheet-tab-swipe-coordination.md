@@ -31,28 +31,40 @@ Same1case and final5case matrix green. A raw-audit regex initially matched the
 passing title 'passive registrations'; corrected error matching after inspecting
 raw output, no test changed. Both failed runs remain failed, not aggregate success.
 
-M authored2a26fef0 (root1eb92d18):45new generated faults (40unit/5native),8legacy
-context refreshes,5existingfixturepatches byte-unchanged. Source-only review caught
-one weak cancellation oracle before runtime: T908d5ff2/rootc955cba2 adds later
-matching move/end after wrong-ID/cancel before the same assertion. Same40groups
-green, count unchanged. ENG reviewed all53patches and revised proof driver
-SHA25639acf32595fcebe163eae0e809ace240d57643d1280237e6d05499febdb9d9fa;
-requires empty stderr for both clean/fault, raw positive counts, intended assertion
-leaves, exact restoration, owned supervisor/lease and resource preservation.
-Early ENG/design reviews at15616338 cleared app25e source; final recheck required.
+M authored2a26fef0/root1eb92d18:45new generated faults,8legacyrefreshes;
+full1550applycheck then found one extra stale zoom-keyboard patch. M b3067427/
+root76fff6d9 refreshes that ninth patch while keeping actual swipe cancellation.
+Original headers preserved,5fixturepatches unchanged. Early ENG/design source
+reviews clear; generatedfault/driver39acf325 source review clear. Tstrengthened
+stickycancel oracle c955cba2 after review; same40groups green, count unchanged.
 
-M source tree /private/tmp/handpan-sps-z8gaznu2/mutants-final, branch
-codex/sheet-tab-swipe-mutants-final-20261025; root integrates only committed changes.
-Root next creates clean committed proof-final tree, freezes58affectedpatch headers
-(45new+5fixture+8refresh), proves each exact cleanheadergreen then intended assertion-
-red; fullcorpus1550applycheck and floors913app/483e2e/5helper must be validated.
-483e2e is baseline478 plus5observednewnative groups, not a claimed local full483run.
-No runtimekills credited yet. Final exact-head reviews/fullCI/combinedDEV/actual
-served journeys and new physical ownerQA remain. NoSPSPR/CI/DEV/main delivery yet;
-root alone owns browserlease/integration. No fullMac or actualpanning proof.
+Root created clean proof-final tree /private/tmp/handpan-sps-z8gaznu2/proof-final,
+branchcodex/sheet-tab-swipe-proof-20261025, immutableproofsource
+76fff6d9d08b90f5891ed2122a4ee03b5e87a72b. Frozen59headers (45new+5fixture+9legacy),
+allselected1; root owns execution and browserlease. A0 proof STOPPED at fourth
+patch:3prior legacy patches clean-green/intendedassertion-red; r3s_announce_node_
+not_seeded clean1green but fault TypeError at index10983, NOT a kill. Proof restored
+clean. Raw sps-proof-a0-driver.* and perjob logs/receipts retained in evidence/.
+
+Concrete legacy contradiction: header promises app-created fallback after missing
+markup seed; current app directly dereferences announce, no fallback. M/ENG are
+assessing a regenerated composite mutant that retains missing-seed fault plus an
+app-created fallback solely inside the patch, so the unchanged SB3provenance
+assertion can discriminate original intent. No app/test/header weakening or fix
+has been made. Next root gets independent intent review, regenerates/proves that
+fault, then resumes remaining59proof with3validprior outcomes retained. Do not
+credit startup/timeout/registration failures or unexecuted faults. Existing CI's
+killed classifications never established all-corpus assertion-leaf causality.
+
+Root floor rows raised913app/483e2e/5helper;483 is478acceptedbaseline+5observednew
+nativegroups, not a claimed local full483run. Final exact-head review/fullCI,
+combinedDEV/actualservedjourneys and physicalownerQA remain. NoSPSPR/CI/DEV/main
+success yet. No fullMac/actualviewportpan claim. M tree mutants-final and branch
+codex/sheet-tab-swipe-mutants-final-20261025 remain separate; no worker browsers.
 
 Parallel DUPLICATE-NOTES plan585fa248 independently ENG/design-cleared after4fixes;
-source43486f5d, docs PR579 mainHELD/580DEV under fullCI. Planning only. SEO578ac97,
+source43486f5d, docs579mainHELD/580DEV merged667bbf8b; fullCI40227969263
+and8servedresources/noindex independently verified. Follow finalreceipt on579/571. Planning only. SEO578ac97,
 feedback576bcc and Mac574f5 delivered; main577/575/573held. Preserve newer DEV ledger
 records during integration. Resolve live refs before recovery/takeover.
 
