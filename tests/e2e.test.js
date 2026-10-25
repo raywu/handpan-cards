@@ -15127,6 +15127,140 @@ function run() {
       } finally { await spaReset(); }
     });
 
+    const PD2_BASE = "(D3) A3 C4 D4 E4 F4 | F5 G5";
+    const PD2_INNER = "(D3) A3 C4 D4 E4 F4 | G5 F5";
+    const PD2_BOTH = "(D3) C4 A3 D4 E4 F4 | G5 F5";
+    const PD2_SAID = "The rim now follows the order listed. The inner notes now follow the order listed.";
+    const pd2Status = () => b.eval(`const e = document.getElementById("scale-drawer-status"); return {text:e.textContent,hidden:e.hidden};`);
+    const pd2Edits = async () => { await typeScale(PD2_BASE); await typeScale(PD2_INNER); await typeScale(PD2_BOTH); };
+
+    test("PD2: browser click NEXT and cyclic keyboard entries show both outcomes once and recover invalid fields", { timeout: 120000 }, async () => {
+      try {
+        for (const route of ["click", "next", "ArrowRight", "ArrowLeft", "End"]) {
+          await spaOpen(380, 780);
+          await pd2Edits();
+          if (route === "click") await b.click("#scale-tab-layout");
+          else if (route === "next") await b.click("#scale-next");
+          else {
+            await b.eval(`document.getElementById("scale-tab-scale").focus(); return true;`);
+            await b.key(route, route, { ArrowRight: 39, ArrowLeft: 37, End: 35 }[route]);
+          }
+          await b.settle();
+          assert.deepStrictEqual(await pd2Status(), { text: PD2_SAID, hidden: false }, route);
+          if (route !== "click") assert.strictEqual(await activeId(), "scale-tab-layout", route + " keeps its existing focus behavior");
+          await b.click("#scale-tab-scale");
+          await b.click("#scale-tab-layout");
+          assert.strictEqual((await pd2Status()).text, "", route + " consumed only once");
+        }
+        await spaOpen(380, 780);
+        await pd2Edits();
+        await b.eval(`const e=document.getElementById("scale-top");e.focus();e.value="not-a-note";e.dispatchEvent(new Event("input",{bubbles:true}));return true;`);
+        await b.click("#scale-tab-layout");
+        assert.strictEqual((await pd2Status()).text, "", "the retained valid line cannot mask invalid active fields");
+        assert.strictEqual(await b.eval(`return document.getElementById("scale-tab-layout").getAttribute("aria-selected");`), "true");
+        await b.click("#scale-tab-scale");
+        await b.eval(`const e=document.getElementById("scale-top");e.focus();e.value="C4 A3 D4 E4 F4";e.dispatchEvent(new Event("input",{bubbles:true}));return true;`);
+        await b.click("#scale-tab-layout");
+        await b.settle();
+        assert.deepStrictEqual(await pd2Status(), { text: PD2_SAID, hidden: false });
+      } finally { await spaReset(); }
+    });
+
+    test("PD2: browser valid Edit reopen SAVE and visible RESET preserve feedback lifecycle", { timeout: 120000 }, async () => {
+      try {
+        await freshLoad();
+        await b.setViewport(380, 780, true);
+        await generate(PD2_BASE);
+        await openEdit();
+        await pd2Edits();
+        await b.click("#scale-back");
+        await b.waitFor(`document.getElementById("scale-sheet").hidden`, { label: "closing pending Edit through BACK" });
+        await openEdit();
+        assert.strictEqual(await b.eval(`return document.getElementById("scale-generate").disabled;`), false, "valid Edit is necessary to expose leaked state");
+        await b.click("#scale-tab-layout");
+        assert.strictEqual((await pd2Status()).text, "", "a valid reopen must not hide a stale message behind an invalid-input guard");
+        await b.click("#scale-tab-scale");
+        await pd2Edits();
+        await b.click("#scale-generate");
+        await b.waitFor(`document.getElementById("scale-sheet").hidden`, { label: "SAVE directly from Scale" });
+        await openEdit();
+        await b.click("#scale-tab-layout");
+        assert.strictEqual((await pd2Status()).text, "", "saved prefill is not a new typed derivation");
+        await b.eval(`document.getElementById("scale-layout-reset").scrollIntoView({block:"center"});return true;`);
+        await b.settle();
+        assert.strictEqual(await b.eval(`return document.getElementById("scale-layout-reset").disabled;`), false);
+        await b.click("#scale-layout-reset");
+        assert.strictEqual((await pd2Status()).text, "Layout reset.");
+        await b.click("#scale-tab-scale");
+        await b.click("#scale-tab-layout");
+        assert.strictEqual((await pd2Status()).text, "", "the reset result cannot resurrect an old derive");
+      } finally { await spaReset(); }
+    });
+
+    test("PD2: combined localized feedback fits portrait and landscape with fallback and real fonts", { timeout: 120000 }, async (t) => {
+      const tables = Object.fromEntries(fs.readdirSync(path.join(REPO, "data/i18n"))
+        .filter((name) => name.endsWith(".json"))
+        .map((name) => [name.slice(0, -5), JSON.parse(fs.readFileSync(path.join(REPO, "data/i18n", name), "utf8"))]));
+      const messages = Object.fromEntries(Object.entries(tables).map(([lang, table]) =>
+        [lang, table["sheet.rim_follows"] + " " + table["sheet.inner_follows"]]));
+      const longestText = Object.keys(messages).reduce((a, lang) => messages[lang].length > messages[a].length ? lang : a, "en");
+      const cells = [];
+      for (const realFonts of [false, true]) {
+        const c = await launch({ realFonts, foregroundSettle: true });
+        assert.ok(c, "font-mode validation requires a real browser, not a silent skip");
+        try {
+          await c.goto(URL);
+          await c.eval(`return document.fonts.ready.then(() => true);`);
+          const widest = await c.eval(`
+            const style=getComputedStyle(document.getElementById("scale-drawer-status"));
+            const ctx=document.createElement("canvas").getContext("2d");
+            ctx.font=style.fontStyle+" "+style.fontWeight+" "+style.fontSize+" "+style.fontFamily;
+            const texts=${JSON.stringify(messages)};
+            return Object.keys(texts).reduce((best,lang)=>ctx.measureText(texts[lang]).width>ctx.measureText(texts[best]).width?lang:best,"en");`);
+          const languages = [...new Set(["en", "de", longestText, widest])];
+          for (const [width, height] of [[380, 780], [844, 390]]) for (const lang of languages) {
+            await c.setViewport(width, height, width < 600);
+            await c.goto(URL);
+            await c.settle();
+            const hiddenTrigger = await c.eval(`return getComputedStyle(document.getElementById("settings-trigger")).display === "none";`);
+            if (!hiddenTrigger) await c.click("#settings-trigger");
+            await c.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display !== "none"`, { label: "localized feedback settings" });
+            await c.eval(`const e=document.getElementById("lang-select");e.value=${JSON.stringify(lang)};e.dispatchEvent(new Event("change",{bubbles:true}));return true;`);
+            await c.waitFor(`document.documentElement.lang === ${JSON.stringify(lang)}`, { label: "the requested locale actually applied" });
+            await c.click("#deck-add");
+            await c.waitFor(`!document.getElementById("scale-sheet").hidden`, { label: "localized Add sheet" });
+            for (const text of [PD2_BASE, PD2_INNER, PD2_BOTH]) {
+              await c.eval(`const e=document.getElementById("scale-box");e.value=${JSON.stringify(text)};e.dispatchEvent(new Event("input",{bubbles:true}));return true;`);
+            }
+            await c.click("#scale-tab-layout");
+            await c.settle();
+            await c.eval(`return document.fonts.ready.then(() => true);`);
+            const measured = await c.eval(`
+              const e=document.getElementById("scale-drawer-status"),r=e.getBoundingClientRect();
+              const family=getComputedStyle(e).fontFamily.split(",")[0].replace(/["']/g,"").trim();
+              const loaded=[...document.fonts].some(f=>f.family.replace(/["']/g,"").trim()===family&&f.status==="loaded");
+              return {text:e.textContent,hidden:e.hidden,scrollX:e.scrollWidth-e.clientWidth,
+                scrollY:e.scrollHeight-e.clientHeight,top:r.top,bottom:r.bottom,primary:document.getElementById("scale-generate").getBoundingClientRect().top,
+                pageOverflow:document.documentElement.scrollWidth-document.documentElement.clientWidth,
+                language:document.documentElement.lang,loaded,scale:document.getElementById("scale-box").value};`);
+            const where = `${realFonts ? "real" : "fallback"} ${lang} ${width}x${height}`;
+            assert.strictEqual(measured.language, lang, where);
+            assert.strictEqual(measured.text, messages[lang], where + " both localized outcomes");
+            assert.strictEqual(measured.hidden, false, where);
+            assert.ok(measured.scrollX <= 1 && measured.scrollY <= 1, where + " status is clipped: " + JSON.stringify(measured));
+            assert.ok(measured.top >= -0.5 && measured.bottom <= height + 0.5 && measured.bottom <= measured.primary + 0.5, where + " status leaves the usable view or overlaps the primary");
+            assert.ok(measured.pageOverflow <= 0, where + " horizontal page overflow");
+            if (realFonts) assert.strictEqual(measured.loaded, true, where + " the status's checked-in font must actually be loaded");
+            assert.strictEqual(measured.scale, PD2_BOTH, where + " UI translation must not rewrite English note input");
+            cells.push(where);
+          }
+          for (const lang of ["en", "de", longestText, widest]) assert.ok(cells.some((cell) => cell.startsWith(realFonts ? "real " : "fallback ") && cell.includes(" " + lang + " ")), "missing required font/locale cell " + lang);
+        } finally { await c.close(); }
+      }
+      assert.ok(cells.length >= 12, "both font modes, both viewports and at least English/German/the longest current text must be exercised");
+      t.diagnostic("PD2_FONT_CELLS " + JSON.stringify(cells));
+    });
+
     test("SPA: the shut footer is 9px, the 32x3 pill sits 3px above the footer's bottom and is centred, and the tap zone is 25px with its bottom on the surface's bottom above the inset", { timeout: 90000 }, async () => {
       try {
         let inset = 0;

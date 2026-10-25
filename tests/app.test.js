@@ -14344,6 +14344,7 @@ describe("OF: the sheet's seats follow the typed order", () => {
       pd2Layout(app);
       assert.strictEqual(app.els["scale-tab-layout"].getAttribute("aria-selected"), "true", "invalid input must not block Layout");
       assert.strictEqual(d2Status(app), "", "invalid active fields must not consume stale-valid feedback");
+      assert.strictEqual(app.els["scale-swatches"].children.length, 6, "the enabled-palette assertion must not pass on an empty group");
       assert.ok([...app.els["scale-swatches"].children].every((button) => !button.disabled), "the palette remains usable");
       app.click(app.els["scale-tab-scale"]);
       fieldType(app, field, field === "top" ? "C4 A3 D4 E4 F4" : "D3");
