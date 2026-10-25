@@ -11128,6 +11128,7 @@ let drawerOpen = false;
 let pendingDerive = {};
 const currentScaleInput = () => boxOk && !(inputPath === "fields" && lineStale);
 let sheetTab = "scale";
+let sheetSwipe = null;
 let layoutBase = { anchor: "one", mirror: false, mb: false, seats: "", angles: "" };
 const HINT_EMPTY = () => t("sheet.layout_hint_empty");
 const DRAWER_HINT = () => t("sheet.drawer_hint");
@@ -11315,6 +11316,7 @@ sheet.addEventListener("pointerdown", (e) => {
 const dropTap = () => { scrollPin = null; tapSnap = null; };
 let touchFrom = null;
 sheet.addEventListener("touchstart", (e) => {
+  if (sheetSwipe && !(e.touches && e.touches.length === 1)) sheetSwipe = null;
   const t = e.target, p = e.touches && e.touches[0];
   touchFrom = p ? { x: p.clientX, y: p.clientY } : null;
   if (!(t && t.matches && t.matches("input, textarea, select"))) releasePin();
@@ -11349,7 +11351,7 @@ const lipPrimary = () => (nextBtn.hidden ? genBtn : nextBtn);
 const isLipped = () => sheet.classList.contains("lipped");
 const isLipShut = () => sheet.classList.contains("lipshut");
 const lipFlush = () => { if (footSlide.getBoundingClientRect) footSlide.getBoundingClientRect(); };
-const lipQuiet = () => { lipQuietUntil = Date.now() + LIP_WINDOW; };
+const lipQuiet = () => { lipQuietUntil = Math.max(lipQuietUntil, Date.now() + LIP_WINDOW); };
 function lipRead() {
   const lead = lipPrimary();
   return {
@@ -11469,7 +11471,7 @@ function setLip(on, o) {
 }
 function lipKbEdge(was, kb) {
   if (was === kb) return;
-  if (kb) collapseLip(); else restoreLip();
+  if (kb) { sheetSwipe = null; collapseLip(); } else restoreLip();
 }
 function lipScroll() {
   const M = Math.max(0, bandPort.scrollHeight - bandPort.clientHeight);
@@ -11630,6 +11632,7 @@ function paintTabs() {
 }
 function setTab(tab) {
   if (tab === sheetTab) return;
+  sheetSwipe = null;
   if (sheetTab === "layout") {
     cancelGesture();
     previewBox.removeEventListener("touchmove", plateTouchMove, { passive: false });
@@ -11651,8 +11654,98 @@ function setTab(tab) {
   setLip(false, { instant: true });
   if (drawerOpen && !showPendingDerive() && currentScaleInput() && !hasTwoNoteRing() && !(ringCount && ringCount.bottom >= 1)) layoutStatus(t("sheet.no_two_ring"));
 }
+/* ---- the optional Scale / Layout touch shortcut ----
+ * Native scrolling and selection keep their events. Only a completed eligible
+ * one-finger gesture chooses a tab; lifecycle cancellations stay cancelled until
+ * the next start. The lip's capture handlers keep their own independent state. */
+{
+  const body = document.querySelector(".sheetbody");
+  if (body) {
+    const cancel = () => { sheetSwipe = null; };
+    const scrollOf = el => el ? el.scrollTop || 0 : 0;
+    const selected = field => {
+      if (field && field.selectionStart != null && field.selectionEnd !== field.selectionStart) return true;
+      const sel = typeof document.getSelection === "function" ? document.getSelection()
+        : typeof window.getSelection === "function" ? window.getSelection() : null;
+      return !!(sel && !sel.isCollapsed && (body.contains(sel.anchorNode) || body.contains(sel.focusNode)));
+    };
+    const check = () => {
+      const S = sheetSwipe;
+      if (!S) return false;
+      if (!sheetOpen || S.tab !== sheetTab || sheet.classList.contains("kbup") ||
+          Math.abs(scrollOf(body) - S.bodyTop) > 8 || Math.abs(scrollOf(sheetSurf) - S.surfTop) > 8 ||
+          (S.field && (document.activeElement === S.field || selected(S.field))) ||
+          (S.box && (scrollOf(S.box) !== S.boxTop || (S.box.scrollLeft || 0) !== S.boxLeft))) {
+        cancel();
+        return false;
+      }
+      return true;
+    };
+    const point = p => {
+      if (!check()) return false;
+      const S = sheetSwipe;
+      if (!Number.isFinite(p.clientX) || !Number.isFinite(p.clientY) ||
+          (S.field && !S.moved && Date.now() - S.at >= HOLD_MS)) {
+        cancel();
+        return false;
+      }
+      if (Math.hypot(p.clientX - S.x, p.clientY - S.y) > HOLD_SLOP) S.moved = true;
+      return true;
+    };
+    body.addEventListener("touchstart", e => {
+      cancel();
+      const ts = e.touches, t = e.target;
+      const p = ts && ts.length === 1 && ts[0];
+      if (!sheetOpen || !p || !Number.isFinite(p.clientX) || !Number.isFinite(p.clientY) ||
+          p.clientX < 24 || p.clientX > window.innerWidth - 24 || sheet.classList.contains("kbup") ||
+          previewBox.contains(t) || (t && t.closest && t.closest("#scale-lip, select"))) return;
+      const field = t && t.closest ? t.closest("input, textarea") : null;
+      if ((field && document.activeElement === field) || selected(field)) return;
+      const box = field && field.tagName === "TEXTAREA" ? field : null;
+      sheetSwipe = { id: p.identifier, x: p.clientX, y: p.clientY, at: Date.now(), tab: sheetTab,
+        field, box, boxTop: scrollOf(box), boxLeft: box ? box.scrollLeft || 0 : 0,
+        bodyTop: scrollOf(body), surfTop: scrollOf(sheetSurf), moved: false };
+    }, { passive: true });
+    body.addEventListener("touchmove", e => {
+      const S = sheetSwipe, ts = e.touches;
+      if (!S) return;
+      const p = ts && ts.length === 1 && ts[0].identifier === S.id && ts[0];
+      if (!p) { cancel(); return; }
+      point(p);
+    }, { passive: true });
+    body.addEventListener("touchend", e => {
+      const S = sheetSwipe;
+      if (!S) return;
+      const changed = e.changedTouches;
+      const p = changed && changed.length === 1 && changed[0].identifier === S.id && changed[0];
+      if (!p || (e.touches && e.touches.length) || !point(p)) { cancel(); return; }
+      const elapsed = Date.now() - S.at, dx = p.clientX - S.x, dy = p.clientY - S.y;
+      cancel();
+      if (elapsed < 0 || elapsed > 600 || Math.abs(dx) < 48 || Math.abs(dx) < 2 * Math.abs(dy)) return;
+      const tab = dx < 0 ? "layout" : "scale";
+      if (tab === sheetTab) return;
+      lipDrag = null;
+      lipParked = null;
+      lipFling = null;
+      lipTouching = false;
+      lipDragEnd = 0;
+      userWindowUntil = 0;
+      setTab(tab);
+      lipQuietUntil = Math.max(lipQuietUntil, Date.now() + LIP_END_MS);
+    }, { passive: true });
+    body.addEventListener("touchcancel", cancel, { passive: true });
+    body.addEventListener("focusin", e => {
+      if (sheetSwipe && e.target && e.target.matches && e.target.matches("input, textarea")) cancel();
+    }, { capture: true });
+    document.addEventListener("selectionchange", () => {
+      if (sheetSwipe && selected(sheetSwipe.field)) cancel();
+    });
+    sheet.addEventListener("scroll", check, { capture: true, passive: true });
+  }
+}
 /** Leaving the sheet or opening a fresh session: no focus, no status. */
 function dropDrawer() {
+  sheetSwipe = null;
   cancelGesture();
   previewBox.removeEventListener("touchmove", plateTouchMove, { passive: false });
   drawerHint.textContent = "";
