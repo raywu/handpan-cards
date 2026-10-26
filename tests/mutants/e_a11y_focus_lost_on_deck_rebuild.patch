@@ -3,17 +3,12 @@
 # The chip strip is rebuilt without re-homing focus, so the caret lands on
 # <body> (DELETE) or is left on "+ ADD" (GENERATE / SAVE CHANGES) instead of
 # on the deck that is now showing.
+# Retained behavior re-anchored for saved instances; exact intent is recorded in the lane evidence.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8214,10 +8214,6 @@ function selectDeck(id) {
-   save(); setOrder(); buildChips(); render();
-   syncRoute();
-   track("deck_select", isBuiltIn(id) ? { deck_kind: "seeded", deck_id: id } : { deck_kind: "custom" });
--  if (rehome) {
--    const chip = document.querySelector("#decks .chip.on");
--    if (chip) chip.focus();
--  }
+@@ -10589,3 +10589,3 @@ function selectDeck(wanted, persist = true, trackSelection = true) {
+   if(trackSelection)track("deck_select", selection.kind === "builtin" ? {deck_kind:"seeded",deck_id:selection.id} : {deck_kind:"custom"});
+-  if (rehome) document.querySelector("#decks .chip.on")?.focus();
++
  }
- 
- /* ---------------- helpers ---------------- */

@@ -1,14 +1,16 @@
 # kills: SU: a hashless boot on a stored custom deck ends with its #s= in the bar
 # suite: node --test --test-name-pattern ^SU:.a.hashless.boot.on.a.stored tests/app.test.js
 # The go block no longer ends with syncRoute(), so a hashless boot has no route (edge 6).
+# Retained behavior re-anchored for saved instances; exact intent is recorded in the lane evidence.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11452,7 +11452,6 @@ if (wantedDeck !== deckId && !(replacements()[wantedDeck] && replacements()[want
- if (location.hash.indexOf(SHARE_PREFIX) === 0)
-   openShare(location.hash.slice(SHARE_PREFIX.length));
- bootStored = null;
--syncRoute();
- booted = true;
- </script>
- </body>
+@@ -15035,7 +15035,7 @@ function finishSavedBoot() {
+   const incomingShare=location.hash.indexOf(SHARE_PREFIX)===0;
+   const wanted=routed || storedAtBoot;
+   const finish=()=>{
+-    setOrder();applyLang();paintLangSelect();setMode(mode,false);updateSavedStatus();syncRoute();
++    setOrder();applyLang();paintLangSelect();setMode(mode,false);updateSavedStatus();
+     if(routed && routed!==storedAtBoot)track("deck_route",{deck_id:routed});
+     if(savedState && !incomingShare && wanted && wanted!==deck().id &&
+         !(savedState?.slots[wanted] && savedState.slots[wanted]===selection.id) &&

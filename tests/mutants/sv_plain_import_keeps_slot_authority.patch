@@ -1,0 +1,22 @@
+# kills: SV8 U1: plain imports never inherit replacement authority
+# suite: node --test --test-name-pattern=^SV8.U1: tests/app.test.js
+# fault: Ordinary imports retain replacement provenance rather than stripping slot authority.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10377,14 +10377,13 @@ function savedCandidate(command) {
+   if (!candidate || !candidate.deck || !candidate.deck.fields || !candidate.deck.options ||
+       !savedObject(candidate.record) || candidate.record.v !== SHARE_VERSION || typeof candidate.record.s !== "string")
+     return savedFailure("invalid", "staged-candidate");
+   const record = savedClone(candidate.record);
+   const deckValue = { ...candidate.deck, options: { ...candidate.deck.options } };
+   if (command.type === "import" || command.type === "save-as-separate") {
+-    if (savedObject(record.o)) delete record.o.replaces;
+-    delete deckValue.options.replaces;
++    if (savedObject(record.o)) record.o.replaces = record.o.replaces;
+   }
+   return { ok: true, record, deck: deckValue, meaning: savedMeaning(deckValue), identity: HPE.core.identitySeed(deckValue.fields) };
+ }
+ const SAVED_PORTABLE_OPTIONS = ["name", "palette", "parent", "mirror", "mirrorBottom", "anchor", "seats", "angles"];
+ function savedEditedRecord(target, candidate) {
+   const out = { ...savedClone(target), v: SHARE_VERSION, s: candidate.record.s };

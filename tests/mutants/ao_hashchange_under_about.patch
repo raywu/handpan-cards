@@ -1,12 +1,13 @@
 # kills: AO: syncRoute and hashchange write nothing while About is open
 # suite: node --test --test-name-pattern ^AO:.syncRoute.and.hashchange.write.nothing tests/app.test.js
 # Lane O. The hashchange listener routes while About is open.
+# Retained behavior re-anchored for saved instances; exact intent is recorded in the lane evidence.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14565,7 +14565,7 @@ function routeToDeck(routed) {
- }
- window.addEventListener("hashchange", () => {
+@@ -15002,7 +15002,7 @@ function routeToDeck(routed) {
+
+ window.addEventListener("hashchange", async () => {
    observeLinkRoute();
 -  if (sheetOpen || aboutOpen) return;
 +  if (sheetOpen) return;

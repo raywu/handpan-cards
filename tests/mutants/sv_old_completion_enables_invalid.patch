@@ -1,0 +1,21 @@
+# kills: SV12 U3: a draft becoming invalid during pending Save stays disabled after completion
+# suite: node --test --test-name-pattern=^SV12.U3: tests/app.test.js
+# fault: An older Save completion enables Generate after the current editable draft has become invalid.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13331,13 +13331,13 @@ async function runGenerate(separate = false) {
+     const d=savedEntries.get(result.instanceId).deck;
+     const warned=(d.warnings||[]).map(w=>reasonText(w));
+     closeScaleSheet();selectDeck({kind:"saved",id:result.instanceId},false);
+     track("scale_create",{note_count:Object.keys(d.fields).length,has_bottom:Object.values(d.fields).some(f=>f[3]==="bottom")?1:0});
+     say((base?t("sheet.updated",{name:d.name}):t("sheet.generated",{n:d.chords.length}))+(warned.length?" "+warned.join(" "):""),warned.length?"warn":"ok");
+   } finally {
+-    if(savePending===operation){savePending=null;if(generation===sheetGeneration){genBtn.textContent=label;refreshSavedSubmit();}}
++    if(savePending===operation){savePending=null;if(generation===sheetGeneration){genBtn.textContent=label;genBtn.disabled=false;}}
+   }
+ }
+ document.getElementById("scale-conflict-separate").onclick=()=>runGenerate(true);
+ document.getElementById("saved-temporary-use").onclick=()=>{
+   if(savedMode!=="protected")return;
+   const temporary=makeSavedMigration({rows:[],sourceKey:null,raw:{hpfc:null,"hpfc.scales":null,"hpfc.scales.v3":null},preferences:{}});

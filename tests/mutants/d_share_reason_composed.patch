@@ -2,15 +2,16 @@
 # suite: node --test --test-name-pattern ^a.corrupt.share.string.surfaces.BAD_NOTE.s.reason.and.changes.nothing$ tests/app.test.js
 # The UI composes a sentence of its own instead of surfacing the engine's
 # reason verbatim (ENGINE-SPEC sections 1 and 2).
+# Retained behavior re-anchored for saved instances; exact intent is recorded in the lane evidence.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9849,7 +9849,7 @@ let bootStored = null;
- // composes a sentence of its own (ENGINE-SPEC sections 1 and 2).
- function openShare(text) {
+@@ -9954,7 +9954,7 @@ function openShare(text) {
+   const current=()=>request===shareRequestGeneration && context===navigationGeneration;
+   pendingRecoveryShare=String(text);
    const res = HPE.share.decode(String(text));
--  if (!res.ok) { say(reasonText(res), "err"); return res; }
-+  if (!res.ok) { say("Sorry, that link did not work.", "err"); return res; }
-   // Generation runs ONCE per restore, here, exactly as submit does (section 11).
-   const built = generateDeck(HPE.core.formatSeed(res.value.fields), res.value.options);
-   if (!built.ok) { say(reasonText(built), "err"); return built; }
+-  if (!res.ok) { if(current()){pendingRecoveryShare=null;say(reasonText(res), "err");} return res; }
++  if (!res.ok) { if(current()){pendingRecoveryShare=null;say("Sorry, that link did not work.", "err");} return res; }
+   const finish = built => {
+     if(!current())return built;
+     if (!built.ok) {

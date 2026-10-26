@@ -1,14 +1,21 @@
-# kills: a field edit replaces the deck and the new one takes the old chip position
-# suite: node --test --test-name-pattern ^a.field.edit.replaces.the.deck.and.the.new.one.takes.the.old.chip.position$ tests/app.test.js
+# kills: a field edit replaces only its stable instance and keeps the old chip position
+# suite: node --test --test-name-pattern=^a.field.edit.replaces.only.its.stable.instance.and.keeps.the.old.chip.position$ tests/app.test.js
+# former kills: a field edit replaces the deck and the new one takes the old chip position
+# fault: Stable instance Edit moves its existing row to the end instead of retaining its chip position.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -2661,7 +2661,7 @@ function replaceRegistered(oldId, next) {
-   for (const k of Object.keys(CUSTOM)) delete CUSTOM[k];
-   let placed = false;
-   for (const [k, v] of was) {
--    if (k === oldId) { CUSTOM[next.id] = next; placed = true; }
-+    if (k === oldId) { placed = false; }
-     else if (k !== next.id) CUSTOM[k] = v;
-   }
-   if (!placed) CUSTOM[next.id] = next;
+@@ -10437,12 +10437,13 @@ function applySavedCommand(staged, command, candidate) {
+       row.record = record; row.revision++;
+     }
+     const deckValue = { ...candidate.deck, options: { ...candidate.deck.options } };
+     if (isBuiltIn(record.o && record.o.replaces)) deckValue.options.replaces = record.o.replaces;
+     else delete deckValue.options.replaces;
+     attachCandidate(row, deckValue);
++    next.entries = next.entries.filter(entry => entry.instanceId !== row.instanceId); next.entries.push(row);
+     targetId = row.instanceId; desired = { kind: "saved", id: targetId };
+   } else if (command.type === "replace-builtin") {
+     if (!isBuiltIn(command.seedId) || command.expectedSlotStateRevision !== current.slotStateRevision ||
+         command.expectedOwnerId !== (current.slots[command.seedId] || null)) return conflict();
+     const record = savedClone(candidate.record);
+     record.o = { ...(record.o || {}), replaces: command.seedId };

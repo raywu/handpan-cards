@@ -1,0 +1,15 @@
+# kills: IDB10 E1: reconciliation after external deletion leaves the database absent without allocation
+# suite: node --test --test-reporter=tap --test-name-pattern=IDB10.E1: tests/e2e.test.js
+# A missing authority after startup never permits schema recreation.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10042,7 +10042,7 @@ function openSavedDatabase(create) {
+ function existingSavedDatabase() {
+   if(savedDatabase)return Promise.resolve({ok:true,db:savedDatabase});
+   if(savedDatabaseOpening)return savedDatabaseOpening;
+-  const pending=openSavedDatabase(false).then(opened=>{
++  const pending=openSavedDatabase(true).then(opened=>{
+     if(!opened.ok)return opened;
+     if(opened.absent)return savedFailure("protected","collection-missing");
+     savedDatabase=opened.db;

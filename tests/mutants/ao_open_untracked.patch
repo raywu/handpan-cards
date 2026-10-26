@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10884,7 +10884,6 @@
+@@ -14306,7 +14306,6 @@ function openAbout() {
    aboutSection.scrollTop = 0;
    syncAboutHead();
    aboutCloseBtn.focus();
 -  track("about_open");
  }
  function hideAbout() {
-   aboutSection.setAttribute("hidden", "");
+   navigationGeneration++;

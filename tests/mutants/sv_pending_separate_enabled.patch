@@ -1,0 +1,21 @@
+# kills: SV12 U2: pending save-as-separate disables both submitting actions
+# suite: node --test --test-name-pattern=^SV12.U2: tests/app.test.js
+# fault: The explicit save-as-separate action stays enabled while its own submission is queued.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11486,13 +11486,13 @@ let bandPad = "", plateRoom = "", pinPad = "";
+    summary says the seed parsed; the refusal says the app will not take it,
+    which is the more recent and the more actionable of the two, and the
+    summary comes straight back on the next keystroke. */
+ function refreshSavedSubmit() {
+   const disabled=!!savePending || buildRefused || !submitParseValid || (inputPath === "fields" && lineStale) || scaleBox.hasAttribute("readonly");
+   genBtn.disabled=disabled;
+-  document.getElementById("scale-conflict-separate").disabled=disabled;
++  document.getElementById("scale-conflict-separate").disabled=false;
+ }
+ function showParse(text) {
+   refusalLine.textContent = "";
+   parseLine.textContent = text;
+ }
+ function showRefusal(text) {

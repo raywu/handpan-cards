@@ -7,13 +7,13 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12682,7 +12682,8 @@ function runGenerate() {
-   if (replaced) replaceRegistered(wasId, d);
-   // [eng-review 2, 2A] the warnings are read off the deck the SAME generation
-   // produced; nothing is rebuilt to re-derive them.
--  const warned = (d.warnings || []).map(w => reasonText(w));
-+  const __again = generateDeck(String(scaleBox.value || ""), { palette, mirror });
-+  const warned = ((__again.ok ? __again.value.warnings : d.warnings) || []).map(w => reasonText(w));
-   let text = (replaced || known.has(d.id) || fromSeed)
-     ? t("sheet.updated", { name: d.name }) : t("sheet.generated", { n: d.chords.length });
-   if (warned.length) text += " " + warned.join(" ");
+@@ -13502,7 +13502,8 @@ async function runGenerate(separate = false) {
+     if(!result.ok){if(result.kind==="conflict"){await reconcileSavedCollection();if(generation===sheetGeneration)showSavedConflict(true);}else if(result.kind!=="cancelled")showRefusal(savedErrorText(result));return;}
+     if(result.published===false){showRefusal(savedPublicationText(result));return;}
+     const d=savedEntries.get(result.instanceId).deck;
+-    const warned=(d.warnings||[]).map(w=>reasonText(w));
++    const __again=generateDeck(String(scaleBox.value||""),{palette,mirror});
++    const warned=((__again.ok?__again.value.warnings:d.warnings)||[]).map(w=>reasonText(w));
+     closeScaleSheet();selectDeck({kind:"saved",id:result.instanceId},false);
+     track("scale_create",{note_count:Object.keys(d.fields).length,has_bottom:Object.values(d.fields).some(f=>f[3]==="bottom")?1:0});
+     say((base?t("sheet.updated",{name:d.name}):t("sheet.generated",{n:d.chords.length}))+(warned.length?" "+warned.join(" "):""),warned.length?"warn":"ok");

@@ -1,15 +1,14 @@
 # kills: selecting a custom deck tracks deck_kind custom and no deck_id
 # suite: node --test --test-name-pattern ^selecting.a.custom.deck.tracks tests/app.test.js
 # A custom deck id (a hash of the visitor's scale) is sent to Google as deck_id.
+# Retained behavior re-anchored for saved instances; exact intent is recorded in the lane evidence.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8213,7 +8213,7 @@ function selectDeck(id) {
-   storedDeck = id;
-   save(); setOrder(); buildChips(); render();
-   syncRoute();
--  track("deck_select", isBuiltIn(id) ? { deck_kind: "seeded", deck_id: id } : { deck_kind: "custom" });
-+  track("deck_select", { deck_kind: isBuiltIn(id) ? "seeded" : "custom", deck_id: id });
-   if (rehome) {
-     const chip = document.querySelector("#decks .chip.on");
-     if (chip) chip.focus();
+@@ -10587,5 +10587,5 @@ function selectDeck(wanted, persist = true, trackSelection = true) {
+   if (persist && savedState) commitSaved({type:"prefer",collectionId:savedState.collectionId,selection:savedClone(selection)});
+   setOrder(); buildChips(); render(); syncRoute();
+-  if(trackSelection)track("deck_select", selection.kind === "builtin" ? {deck_kind:"seeded",deck_id:selection.id} : {deck_kind:"custom"});
++  if(trackSelection)track("deck_select", {deck_kind:selection.kind === "builtin"?"seeded":"custom",deck_id:selection.id});
+   if (rehome) document.querySelector("#decks .chip.on")?.focus();
+ }

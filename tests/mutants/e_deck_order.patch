@@ -4,15 +4,16 @@
 # guard now ALSO recognises "deck-add" (F2), so the condition spans two
 # lines. The mutation itself is unchanged: dropping setOrder() from the
 # save/rebuild line.
+# Retained behavior re-anchored for saved instances; exact intent is recorded in the lane evidence.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8211,7 +8211,7 @@ function selectDeck(id) {
-       !!(a.closest && a.closest("#decks")));
-   deckId = id;
-   storedDeck = id;
--  save(); setOrder(); buildChips(); render();
-+  save(); buildChips(); render();
-   syncRoute();
-   track("deck_select", isBuiltIn(id) ? { deck_kind: "seeded", deck_id: id } : { deck_kind: "custom" });
-   if (rehome) {
+@@ -10585,7 +10585,7 @@ function selectDeck(wanted, persist = true, trackSelection = true) {
+   const rehome = !!a && (a.id === "settings-trigger" || a.id === "deck-add" || [...document.getElementById("decks").children].includes(a));
+   selection = savedState ? savedResolve(wanted,savedState,savedEntries) : wanted;
+   if (persist && savedState) commitSaved({type:"prefer",collectionId:savedState.collectionId,selection:savedClone(selection)});
+-  setOrder(); buildChips(); render(); syncRoute();
++  buildChips(); render(); syncRoute();
+   if(trackSelection)track("deck_select", selection.kind === "builtin" ? {deck_kind:"seeded",deck_id:selection.id} : {deck_kind:"custom"});
+   if (rehome) document.querySelector("#decks .chip.on")?.focus();
+ }

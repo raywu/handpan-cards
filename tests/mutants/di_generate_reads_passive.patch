@@ -1,15 +1,16 @@
 # kills: DI: GENERATE CARDS follows the active path: a stale line never generates, and a line that parses generates while the fields are stale
 # suite: node --test --test-name-pattern ^DI:.GENERATE.CARDS.follows tests/app.test.js
 # Mutant di_generate_reads_passive.
+# Retained behavior re-anchored for saved instances; exact intent is recorded in the lane evidence.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11013,7 +11013,7 @@ function syncParseState({ paint }) {
-     paintLayout();
-     showParse(parseLineText(res.value.fields));
-     scaleBox.classList.remove("bad");
--    genBtn.disabled = inputPath === "fields" && lineStale;
-+    genBtn.disabled = fieldsStale;
-     if (paint) showPanPreview(res.value);
-     const solved = solvePreviewLayout(res.value);
-     const crowded = solved && HPE.select.smallLabels(solved.geom);
+@@ -11487,7 +11487,7 @@ let bandPad = "", plateRoom = "", pinPad = "";
+    which is the more recent and the more actionable of the two, and the
+    summary comes straight back on the next keystroke. */
+ function refreshSavedSubmit() {
+-  const disabled=!!savePending || buildRefused || !submitParseValid || (inputPath === "fields" && lineStale) || scaleBox.hasAttribute("readonly");
++  const disabled=!!savePending || buildRefused || !submitParseValid || fieldsStale || scaleBox.hasAttribute("readonly");
+   genBtn.disabled=disabled;
+   document.getElementById("scale-conflict-separate").disabled=disabled;
+ }

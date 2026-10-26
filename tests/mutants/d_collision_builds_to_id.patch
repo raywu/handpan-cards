@@ -1,14 +1,21 @@
-# kills: a refused save still runs select.build exactly once (13A)
-# suite: node --test --test-name-pattern ^a.refused.save.still.runs.select.build.exactly.once..13A.$ tests/app.test.js
+# kills: a converging same-inventory Edit builds once and preserves both instances (13A)
+# suite: node --test --test-name-pattern=^a.converging.same\-inventory.Edit.builds.once.and.preserves.both.instances.\(13A\)$ tests/app.test.js
+# former kills: a refused save still runs select.build exactly once (13A)
+# fault: Superseded collision-veto build-count fault now performs a second build during accepted converging Edit.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10080,7 +10080,7 @@ function runGenerate() {
-       // benign dedupe below.
-       if (fromSeed && CUSTOM[HPE.core.deckId(seed.fields)]) { taken = CUSTOM[HPE.core.deckId(seed.fields)]; return { ok: false }; }
-       if (!wasId) return null;
--      const id = HPE.core.deckId(seed.fields);
-+      const id = HPE.select.build(seed).value.id;
-       if (id === wasId || !CUSTOM[id]) return null;
-       taken = CUSTOM[id];
-       return { ok: false };
+@@ -13314,12 +13314,13 @@ async function runGenerate(separate = false) {
+   const generation=sheetGeneration, draft=sheetKey(), base=editingBase;
+   const controller=new AbortController(), operation={controller,generation};savePending=operation;
+   const label=genBtn.textContent; refreshSavedSubmit();genBtn.textContent=t(editingId?"sheet.saving":"sheet.generating");
+   say("","");
+   try {
+     buildRefused=true;
++    buildGenerated(String(scaleBox.value||""),sheetOptions());
+     const built=buildGenerated(String(scaleBox.value||""),sheetOptions());
+     if(!built.ok){refusal=reasonText(built);showRefusal(refusal);return;}
+     buildRefused=false;
+     const candidate={record:scaleRecord(seedOf(built.value)),deck:built.value};
+     const command=separate ? {type:"save-as-separate"} : !base ? {type:"import",selectedInstanceId:selection.kind==="saved"?selection.id:null} :
+       base.selection.kind === "builtin" ? {type:"replace-builtin",seedId:base.selection.id,expectedSlotStateRevision:base.slotStateRevision,expectedOwnerId:base.ownerId} :

@@ -1,0 +1,21 @@
+# kills: SV6 E2: stale Edit and delete-versus-Save preserve the winner without resurrection
+# suite: node --test --test-name-pattern=^SV6.E2: tests/e2e.test.js
+# fault: Stale same-instance Edit no longer checks the captured revision.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10427,13 +10427,13 @@ function applySavedCommand(staged, command, candidate) {
+     const row = match ? next.entries.find(entry => entry.instanceId === match.instanceId) : allocate(savedClone(candidate.record));
+     if (!row) return savedFailure("allocation", "instance-id");
+     if (!match) attachCandidate(row);
+     targetId = row.instanceId; desired = { kind: "saved", id: targetId };
+   } else if (command.type === "edit") {
+     const row = existing();
+-    if (!row || !views.has(row.instanceId) || row.revision !== command.expectedRevision) return conflict();
++    if (!row || !views.has(row.instanceId)) return conflict();
+     const record = savedEditedRecord(row.record, candidate);
+     if (!savedEqual(record, row.record)) {
+       if (row.revision >= Number.MAX_SAFE_INTEGER) return savedFailure("invalid", "revision-overflow");
+       row.record = record; row.revision++;
+     }
+     const deckValue = { ...candidate.deck, options: { ...candidate.deck.options } };

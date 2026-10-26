@@ -1,29 +1,22 @@
-# kills: replaceRegistered refuses to overwrite a DIFFERENT deck holding the new id
-# suite: node --test --test-name-pattern ^replaceRegistered.refuses.to.overwrite.a.DIFFERENT.deck.holding.the.new.id$ tests/app.test.js
-# Queue row 161. d_replace_registered_undefended trips the order-blind
-# deepStrictEqual first, so the key-ORDER assertion added alongside it was
-# itself unmutated. This refusal keeps every entry - so the order-blind check
-# still passes - and only rebuilds the registry in sorted order. The registry's
-# insertion order IS the chip order, so this reshuffles the user's chips on a
-# path that is supposed to change nothing at all.
-# (The reviewer suggested SORTED order; that was tried first and SURVIVED,
-# because the two custom ids in the test already sort into insertion order.
-# Reversal is the same mutation - a content-preserving rebuild - and is
-# order-changing for any registry with two or more entries.)
+# kills: instance Edit rejects a stale target without changing either instance
+# suite: node --test --test-name-pattern=^instance.Edit.rejects.a.stale.target.without.changing.either.instance$ tests/app.test.js
+# former kills: replaceRegistered refuses to overwrite a DIFFERENT deck holding the new id
+# fault: Retargeted primitive refusal invariant: a rejected stale Edit reorders the accepted cached collection.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -2727,7 +2727,12 @@ const registerDeck = d => (CUSTOM[d.id] = d);
- // reintroduce row 131 silently. Returns whether the replacement happened.
- function replaceRegistered(oldId, next) {
-   const sitting = next.id !== oldId ? CUSTOM[next.id] : null;
--  if (sitting && sitting !== next) return false;
-+  if (sitting && sitting !== next) {
-+    const kept = Object.entries(CUSTOM).reverse();
-+    for (const k of Object.keys(CUSTOM)) delete CUSTOM[k];
-+    for (const [k, v] of kept) CUSTOM[k] = v;
-+    return false;
-+  }
-   const was = Object.entries(CUSTOM);
-   for (const k of Object.keys(CUSTOM)) delete CUSTOM[k];
-   let placed = false;
+@@ -10427,13 +10427,13 @@ function applySavedCommand(staged, command, candidate) {
+     const row = match ? next.entries.find(entry => entry.instanceId === match.instanceId) : allocate(savedClone(candidate.record));
+     if (!row) return savedFailure("allocation", "instance-id");
+     if (!match) attachCandidate(row);
+     targetId = row.instanceId; desired = { kind: "saved", id: targetId };
+   } else if (command.type === "edit") {
+     const row = existing();
+-    if (!row || !views.has(row.instanceId) || row.revision !== command.expectedRevision) return conflict();
++    if (!row || !views.has(row.instanceId) || row.revision !== command.expectedRevision) { current.entries.reverse(); return conflict(); }
+     const record = savedEditedRecord(row.record, candidate);
+     if (!savedEqual(record, row.record)) {
+       if (row.revision >= Number.MAX_SAFE_INTEGER) return savedFailure("invalid", "revision-overflow");
+       row.record = record; row.revision++;
+     }
+     const deckValue = { ...candidate.deck, options: { ...candidate.deck.options } };

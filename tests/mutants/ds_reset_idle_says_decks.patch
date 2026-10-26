@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12808,7 +12808,7 @@ delBtn.onblur = disarmDelete;
+@@ -13488,7 +13488,7 @@ delBtn.onblur = disarmDelete;
     desktop sidebar has no panel to close and a Safari tap focuses no button, so
     neither close nor blur would ever fire there), on blur and on closePanel().
     disarmReset is its own function: disarmDelete re-derives sheet state. */
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +const RESET_IDLE = () => "RESET SEEDED DECKS";
  const RESET_ARMED = () => t("panel.reset_armed");
  const RESET_WARNING = () => t("panel.reset_warning");
- let resetArmed = false;
+ let resetArmed = false, resetProof = null;

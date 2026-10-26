@@ -2,14 +2,12 @@
 # suite: node --test --test-name-pattern ^a.generated.deck.survives.a.reload..rebuilt.from.its.saved.seed$ tests/app.test.js
 # Boot stops rebuilding the saved scales, so a custom deck does not survive a
 # reload and its stored id silently falls back to a built-in.
+# Approved retained contract mapped to the transactional instance adapter.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11423,7 +11423,6 @@ sheet.setAttribute("hidden", ""); buildSwatches(); paintLayout(); resyncSheet(tr
- // Saved scales are rebuilt BEFORE the stored deck id is resolved, so a custom
- // deck that was selected last session is in the registry by the time deck()
- // looks for it.
--restoreScales();
- const routedDeck = routedDeckId();
- bootStored = typeof store.deck === "string" ? store.deck : null;
- if (routedDeck) deckId = routedDeck;
+@@ -10303,3 +10303,3 @@ function applySavedSnapshot(envelope, suppliedViews, source = "commit") {
+   savedEntries.clear();
+-  for (const [id, view] of staged.views) savedEntries.set(id, { ...view, record: rows.get(id).record });
++  if(source!=="initialization")for (const [id, view] of staged.views) savedEntries.set(id, { ...view, record: rows.get(id).record });
+   knownSavedCollections.add(savedState.collectionId);

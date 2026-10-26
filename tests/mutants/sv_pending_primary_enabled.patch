@@ -1,0 +1,21 @@
+# kills: SV9 U1: cancelled waiting Save never commits and duplicate submit is disabled
+# suite: node --test --test-name-pattern=^SV9.U1: tests/app.test.js
+# fault: Leaves a valid Generate action enabled while its first save is queued.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11484,13 +11484,13 @@ let bandPad = "", plateRoom = "", pinPad = "";
+    the 26.59px pan step: three separate call sites each looked locally right.
+    A refusal supersedes the parse summary rather than stacking under it. The
+    summary says the seed parsed; the refusal says the app will not take it,
+    which is the more recent and the more actionable of the two, and the
+    summary comes straight back on the next keystroke. */
+ function refreshSavedSubmit() {
+-  const disabled=!!savePending || buildRefused || !submitParseValid || (inputPath === "fields" && lineStale) || scaleBox.hasAttribute("readonly");
++  const disabled=buildRefused || !submitParseValid || (inputPath === "fields" && lineStale) || scaleBox.hasAttribute("readonly");
+   genBtn.disabled=disabled;
+   document.getElementById("scale-conflict-separate").disabled=disabled;
+ }
+ function showParse(text) {
+   refusalLine.textContent = "";
+   parseLine.textContent = text;

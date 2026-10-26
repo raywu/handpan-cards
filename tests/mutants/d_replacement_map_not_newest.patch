@@ -1,15 +1,12 @@
 # kills: SD: duplicate and unknown replaces targets are never unreachable
 # suite: node --test --test-name-pattern ^SD..duplicate.and.unknown.replaces.targets.are.never.unreachable$ tests/app.test.js
 # The seed-to-replacement map keeps the OLDEST record naming a seed instead of the newest.
+# Approved retained contract mapped to the transactional instance adapter.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7764,7 +7764,7 @@
-   const out = Object.create(null);
-   for (const d of Object.values(CUSTOM)) {
-     const r = d.options && d.options.replaces;
--    if (typeof r === "string") out[r] = d;
-+    if (typeof r === "string" && !(r in out)) out[r] = d;
+@@ -10369,3 +10369,3 @@ function makeSavedMigration(staged) {
+     const seed = view.record && view.record.o && view.record.o.replaces;
+-    if (isBuiltIn(seed)) e.slots[seed] = view.instanceId;
++    if (isBuiltIn(seed) && !e.slots[seed]) e.slots[seed] = view.instanceId;
    }
-   return out;
- }

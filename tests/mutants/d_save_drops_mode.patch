@@ -1,13 +1,10 @@
 # kills: deck and mode round-trip through localStorage (subset semantics)
 # suite: node --test --test-name-pattern ^deck.and.mode.round.trip.through.localStorage..subset.semantics.$ tests/app.test.js
+# Approved retained contract mapped to the transactional instance adapter.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7736,7 +7736,6 @@ const save = () => {
-     const base = readStore(STORE_KEY);
-     const next = (base && typeof base === "object" && !Array.isArray(base)) ? base : {};
-     next.deck = storedDeck;
--    next.mode = mode;
-     next.tier = tier;
-     next.printPaper = printPaper;
-     if (hidden.length) next.hidden = [...hidden]; else delete next.hidden;
+@@ -9806,3 +9806,2 @@ const save = () => updateSettings(next => {
+   // legacy deck/hidden fields untouched for old clients and recovery.
+-  next.mode = mode;
+   next.tier = tier;

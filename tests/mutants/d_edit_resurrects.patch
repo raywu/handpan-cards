@@ -1,14 +1,21 @@
-# kills: a boot after a field edit shows exactly one deck, in the same chip position
-# suite: node --test --test-name-pattern ^a.boot.after.a.field.edit.shows.exactly.one.deck..in.the.same.chip.position$ tests/app.test.js
+# kills: a boot after a field edit shows one updated instance in the same chip position
+# suite: node --test --test-name-pattern=^a.boot.after.a.field.edit.shows.one.updated.instance.in.the.same.chip.position$ tests/app.test.js
+# former kills: a boot after a field edit shows exactly one deck, in the same chip position
+# fault: Edit retains a resurrected pre-edit record as an additional instance across reload.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7274,7 +7274,7 @@ function replaceScale(oldStr, seed) {
-   const newId = HPE.core.deckId(seed.fields);
-   const oldId = stringDeckId(oldStr);
-   const list = savedScales();
--  const at = list.findIndex(r => r && sameDeck(r, oldId, oldStr));
-+  const at = list.length - 1;
-   if (at < 0) { rememberScale(seed); return; }
-   const out = [];
-   list.forEach((r, i) => {
+@@ -10437,12 +10437,13 @@ function applySavedCommand(staged, command, candidate) {
+       row.record = record; row.revision++;
+     }
+     const deckValue = { ...candidate.deck, options: { ...candidate.deck.options } };
+     if (isBuiltIn(record.o && record.o.replaces)) deckValue.options.replaces = record.o.replaces;
+     else delete deckValue.options.replaces;
+     attachCandidate(row, deckValue);
++    allocate(savedClone(current.entries.find(entry => entry.instanceId === row.instanceId).record));
+     targetId = row.instanceId; desired = { kind: "saved", id: targetId };
+   } else if (command.type === "replace-builtin") {
+     if (!isBuiltIn(command.seedId) || command.expectedSlotStateRevision !== current.slotStateRevision ||
+         command.expectedOwnerId !== (current.slots[command.seedId] || null)) return conflict();
+     const record = savedClone(candidate.record);
+     record.o = { ...(record.o || {}), replaces: command.seedId };

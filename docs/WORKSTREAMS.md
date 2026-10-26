@@ -44,6 +44,41 @@ executes this already-planned internal alternative under through-DEV and
 reaffirmed AFK authority; no CLAUDE change/install/main merge.
 
 2026-10-26 continuation checkpoint:
+- **Current blocking finding (P1):** final independent ENG reproduced startup
+  TypeError when Object.hasOwn is unavailable; baseline preserved that browser
+  capability boundary. The independently ENG/design-cleared compatibility plan
+  uses an app-local hasOwnProperty.call helper and meaningful missing-API TDD.
+  No raised browser requirement/global polyfill/CLAUDE change. Earlier a394
+  runtime receipts remain historical until refreshed against repaired source.
+- Existing planned selection/frame gate remains unexecuted, separate from backend
+  lock timing and geometry. Matched A–B–A protocol at empty/2/20/200 inputs and
+  two viewports is specified in the selection-performance amendment; fixed
+  actual-preference drains, math, quiet window and baseline-drift handling have
+  been added for independent plan re-review. No timing success claimed.
+- Complete1600-fault corpus now reconciled: M124 and R91 bulk audits independently
+  CLEAR,178 nonbrowser proof pairs meaningful;36 retained native faults still
+  require full final CI. Every1600 patch currently applies. Metadata checks pass:
+  mutation harness54/54; suite/CI Python36/36. No faults dropped, physical/device
+  QA/full Mac suite/main permission inferred. Through-DEV scope stays active.
+- Current strengthened app tests
+  `cf3a53203a49fdd24099c7406ba1b713963a4bd0fa0c95aac7731fc6bf2d9e53`
+  pass936/936, zero skip/cancel,41.58s supervised. Four legacy assertion/fixture
+  gaps repaired and direct/concurrent last-visible command coverage added; app
+  source unchanged. Expected browser floor481 reflects the independently counted
+  preserved455 literal titles plus the one new native deletion registration;
+  actual full browser count is still a Linux CI gate, not a local full-Mac claim.
+- Native7/7 and all120 benchmark samples independently audited CLEAR. Ten further
+  unchanged SV6 E1 repetitions passed (each distinct and duplicate two-target
+  imports),10.42s total with clean cleanup; still not exhaustive scheduling proof.
+  Native deletion and lost-save fault patches have exact-header clean baselines
+  and intended named assertion kills, no skip/cancel/timeout; app bytes restored.
+- Mutation reconciliation: M124 isolated patches independently cleared,107
+  nonbrowser proof pairs plus the root-proven new concurrency fault;16 others
+  remain native author-only until final CI. R91 retained patches are completing
+  current-test reproofs. No faults dropped; controlled validator/production throws
+  are separately qualified rather than mislabeled as assertion errors. Integration
+  corpus1600 including all new generated faults. All final exact-head CI/DEV
+  gates remain pending; no feature DEV delivery or main grant.
 - Transactional profiling completed120/120 acknowledged samples:30 each at2,
   20,200 records and exact1MiB final envelope, all source/Document/reset/count
   assertions passed. Async lock lifetime p95/max ms:2/14.9,1.7/2.1,1.9/2.8,

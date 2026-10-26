@@ -13,13 +13,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10768,8 +10768,8 @@ const settingsScrim   = document.getElementById("settings-scrim");
+@@ -14225,7 +14225,7 @@ const settingsScrim   = document.getElementById("settings-scrim");
  // inert the trigger along with it and the panel could never be closed by a
  // second tap on it.
  const panelBackground = [document.querySelector("main"), document.querySelector("footer"),
 -                          document.getElementById("decks"), document.querySelector("#about"),
 +                          document.querySelector("#about"),
-                           document.getElementById("share-copy")].filter(Boolean);
+                           document.getElementById("share-copy"), document.getElementById("saved-temporary-use")].filter(Boolean);
  let panelOpen = false;
  // M3 (desktop sidebar, 2026-09-28): the same breakpoint the CSS media query
- // above uses. Below it the panel is the modal drawer M1 built - role="dialog",

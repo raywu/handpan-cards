@@ -1,22 +1,21 @@
-# kills: an edit onto another deck's scale is refused at 380px and both chips stay
-# suite: node --test --test-name-pattern ^an.edit.onto.another.deck.s.scale.is.refused.at.380px.and.both.chips.stay$ tests/e2e.test.js
+# kills: an edit onto another scale's inventory preserves both chips at 380px and remains editable
+# suite: node --test --test-name-pattern=^an.edit.onto.another.scale's.inventory.preserves.both.chips.at.380px.and.remains.editable$ tests/e2e.test.js
+# former kills: an edit onto another deck's scale is refused at 380px and both chips stay
+# fault: Superseded collision-refusal state sticks when reopening a valid converged instance and blocks normal editing.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12661,6 +12661,7 @@ function runGenerate() {
-     // section 2 code enum is closed and has no code for "that scale is taken",
-     // so this composes no sentence that could pass for one and carries no code.
-     scaleBox.classList.add("bad");
-+    scaleBox.dataset.dead = "1";
-     refusal = t("sheet.duplicate");
-     showRefusal(refusal);
-     return;
-@@ -13203,7 +13204,7 @@ scaleBox.addEventListener("input", () => {
-     if (typeof at === "number" && scaleBox.setSelectionRange) scaleBox.setSelectionRange(at, at);
-   }
-   syncGrow();
--  updateParse();
-+  if (!scaleBox.dataset.dead) updateParse();
- });
- // The name is a seed option, so an unusable one is rejected by core.parseSeed
- // through the same parse line every other input goes through.
+@@ -13182,12 +13182,13 @@ function openScaleSheet(opener) {
+ // The Edit path [design-review 7A]: the SAME sheet, prefilled from the selected
+ // deck, seeded or custom.
+ function openEditSheet(d, opener) {
+   shareUrl.setAttribute("hidden", "");
+   resetSheetState(d);
+   showSheet(opener);
++  if ([...savedEntries.values()].filter(view => view.deck.id === d.id).length > 1) { refusal="Another scale has these notes."; showRefusal(refusal); scaleBox.classList.add("bad"); }
+   // [eng-review 2, 2A] warnings have ONE producer and were copied onto the deck
+   // at generation time; the Edit sheet reads them and never rebuilds to re-derive.
+   const warned = (d.warnings || []).map(w => reasonText(w));
+   if (warned.length) { say(warned.join(" "), "warn"); msgLine.classList.add("pan"); }
+ }
+ /** Take the page down. The DOM half only - the route is the caller's. */

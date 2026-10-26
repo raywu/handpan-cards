@@ -76,13 +76,13 @@
 # Re-cut 2026-10-16 (share url, lane SU-A): the Scales group gained #share-copy and #share-url; the moved copy was regenerated from the current panel. The mutation itself is unchanged.
 # Re-cut 2026-10-17 (share icon, lane I): #share-copy left the Scales row for the header and #share-url left the panel; the moved copy was regenerated from the current panel. The mutation itself is unchanged.
 # Refreshed from committed compact-sites source; ancestry fault unchanged.
+# Approved retained contract mapped to the transactional instance adapter.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1362,6 +1362,98 @@ html.about-open{overflow:hidden}
-   <!-- "+ Add a scale" lives in the settings panel's Scales group now (M2,
-        2026-09-28); #decks holds deck chips only. -->
-   <nav class="decks" id="decks"></nav>
+@@ -1370,4 +1370,95 @@ html.about-open{overflow:hidden}
+   <p id="saved-status" role="status" hidden></p>
+   <button type="button" id="saved-temporary-use" class="mode" hidden>USE THIS TAB TEMPORARILY</button>
 +<div id="settings-scrim" hidden></div>
 +<div id="settings-panel" aria-labelledby="settings-title" hidden>
 +  <h2 id="settings-title" class="sr-only">Settings</h2>
@@ -174,12 +174,9 @@ diff --git a/index.html b/index.html
 +  </div>
 +  <div class="panel-group"><h3 class="panel-heading" id="panel-lang-heading">Language</h3><select id="lang-select" aria-labelledby="panel-lang-heading"></select></div>
 +</div>
-+
  </header>
- 
- <main>
-@@ -1674,98 +1766,6 @@ html.about-open{overflow:hidden}
-      below-breakpoint, modal presentation. At >=1024x700 the trigger that
+
+@@ -1683,95 +1774,5 @@ html.about-open{overflow:hidden}
       calls openPanel() is display:none, so the panel never gains them and
       the static sidebar is correctly plain, non-modal markup. -->
 -<div id="settings-scrim" hidden></div>
@@ -273,7 +270,6 @@ diff --git a/index.html b/index.html
 -  </div>
 -  <div class="panel-group"><h3 class="panel-heading" id="panel-lang-heading">Language</h3><select id="lang-select" aria-labelledby="panel-lang-heading"></select></div>
 -</div>
--
++
+
  <!-- The scale engine, inlined verbatim from src/engine/*.js. The app is
-      single-file by contract, so these are copies rather than external script
-      references: index.html ships with the engine already in it and needs no

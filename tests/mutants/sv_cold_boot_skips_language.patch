@@ -1,0 +1,21 @@
+# kills: SV11 U4: stored and detected non-English cold boots localize before ready
+# suite: node --test --test-name-pattern=^SV11.U4: tests/app.test.js
+# fault: Cold boot publishes ready UI before applying the stored or browser-selected language.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15027,13 +15027,13 @@ function finishSavedBoot() {
+   const storedAtBoot=hadSavedCollectionAtBoot ? savedState?.preferredSelection?.id || null : legacyBootSelection;
+   bootStored=storedAtBoot===null?null:selection.id;
+   const routed=routedDeckId();
+   const incomingShare=location.hash.indexOf(SHARE_PREFIX)===0;
+   const wanted=routed || storedAtBoot;
+   const finish=()=>{
+-    setOrder();applyLang();paintLangSelect();setMode(mode,false);updateSavedStatus();syncRoute();
++    setOrder();paintLangSelect();setMode(mode,false);updateSavedStatus();syncRoute();
+     if(routed && routed!==storedAtBoot)track("deck_route",{deck_id:routed});
+     if(savedState && !incomingShare && wanted && wanted!==deck().id &&
+         !(savedState?.slots[wanted] && savedState.slots[wanted]===selection.id) &&
+         (wanted.indexOf("custom:")===0 || savedState?.hidden.includes(wanted)))
+       say(t("boot.gone",{name:deck().name}),"warn");
+     booted=true;bootStored=null;

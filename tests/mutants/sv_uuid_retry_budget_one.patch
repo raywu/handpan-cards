@@ -1,0 +1,21 @@
+# kills: SV5 U4: UUID collisions and exhausted allocation preserve all prior data
+# suite: node --test --test-name-pattern=^SV5.U4: tests/app.test.js
+# fault: Refuses allocation after the first colliding draw instead of trying the accepted collision budget.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10018,13 +10018,13 @@ function savedEqual(a, b) {
+   if (a === b) return true;
+   if (!a || !b || typeof a !== "object" || typeof b !== "object" || Array.isArray(a) !== Array.isArray(b)) return false;
+   const ak = Object.keys(a), bk = Object.keys(b);
+   return ak.length === bk.length && ak.every(k => Object.hasOwn(b, k) && savedEqual(a[k], b[k]));
+ }
+ function savedCryptoId(used) {
+-  for (let attempt = 0; attempt < 8; attempt++) {
++  for (let attempt = 0; attempt < 1; attempt++) {
+     let id = null;
+     try {
+       const source = globalThis.crypto;
+       if (source && typeof source.randomUUID === "function") id = source.randomUUID();
+       else if (source && typeof source.getRandomValues === "function") {
+         const bytes = new Uint8Array(16);

@@ -2,14 +2,16 @@
 # suite: node --test --test-name-pattern the.selected.deck.and.the.active.mode.carry.accessible.state tests/e2e.test.js
 # The selected deck chip goes back to signalling itself with colour alone, so
 # a screen reader cannot tell which deck is loaded.
+# Retained behavior re-anchored for saved instances; exact intent is recorded in the lane evidence.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8779,7 +8779,6 @@ function buildChips() {
-     b.className = "chip" + (d.id === deckId ? " on" : "");
-     // Same rule as the mode bar: the .on colour is not state a screen reader
-     // can see, so the selected chip says so out loud.
--    if (d.id === deckId) b.setAttribute("aria-current", "true");
-     b.style.setProperty("--dga", d.colors.ga);
-     b.style.setProperty("--dgb", d.colors.gb);
-     // [row 218] The one chip with a SECOND action says so. The selected chip,
+@@ -11286,7 +11286,7 @@ function buildChips() {
+     const d=view.deck,b=document.createElement("button"),on=savedEqual(view.selection,selection);
+     b.type="button"; b.className="chip"+(on?" on editable":"");
+     b.setAttribute("data-selection-kind",view.selection.kind);b.setAttribute("data-selection-id",view.selection.id);
+-    if(on)b.setAttribute("aria-current","true");
++
+     b.style.setProperty("--dga",d.colors.ga);b.style.setProperty("--dgb",d.colors.gb);
+     b.innerHTML='<span class="dot"></span>'+esc(labels[i]);
+     let accessible=on?t("sheet.edit_aria",{name:labels[i]}):labels[i];

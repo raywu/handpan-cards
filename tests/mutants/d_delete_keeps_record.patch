@@ -1,13 +1,11 @@
 # kills: deleting the SELECTED custom deck falls back to a built-in, says so, and stays gone
 # suite: node --test --test-name-pattern ^deleting.the.SELECTED.custom.deck.falls.back.to.a.built.in..says.so..and.stays.gone$ tests/app.test.js
+# Approved retained contract mapped to the transactional instance adapter.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10025,7 +10025,6 @@ function deleteDeck(id) {
-   if (builtin) hidden.push(id);
-   else {
-     delete CUSTOM[id];
--    forgetScale(HPE.core.formatSeed(d.fields));
-     if (heldSeat && !hidden.includes(heldSeat)) hidden.push(heldSeat);
-   }
-   if (editingId === id) closeScaleSheet();
+@@ -10602,3 +10602,3 @@ function applySavedCommand(staged, command, candidate) {
+     if (heldSlot && !savedSlotProof(command, current)) return conflict();
+-    next.entries = next.entries.filter(entry => entry.instanceId !== row.instanceId); views.delete(row.instanceId);
++    views.delete(row.instanceId);
+     if (heldSlot) {

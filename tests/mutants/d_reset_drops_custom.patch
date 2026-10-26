@@ -1,17 +1,14 @@
 # kills: editable defaults: RESET arms, then clears hidden and replacements and keeps custom decks
 # suite: node --test --test-name-pattern ^editable.defaults..RESET.arms..then.clears.hidden.and.replacements.and.keeps.custom.decks$ tests/app.test.js
 # RESET deletes every custom deck, not only the records that replace a seeded deck.
+# Approved retained contract mapped to the transactional instance adapter.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12831,8 +12831,8 @@ restoreBtn.onclick = () => {
-   restoreBtn.textContent = RESET_IDLE();
-   restoreBtn.removeAttribute("data-armed");
-   hidden = [];
--  for (const [id, d] of Object.entries(CUSTOM)) if (d.options && isBuiltIn(d.options.replaces)) delete CUSTOM[id];
--  writeScales(savedScales().filter(r => !(r && r.o && isBuiltIn(r.o.replaces))));
-+  for (const id of Object.keys(CUSTOM)) delete CUSTOM[id];
-+  writeScales([]);
-   const wasSelected = deckId;
-   const stays = allDecks().some(d => d.id === wasSelected);
-   if (!stays) selectDeck(fallbackDeck().id); else { save(); buildChips(); }
+@@ -10619,4 +10619,4 @@ function applySavedCommand(staged, command, candidate) {
+     const removed = new Set(savedScope(current, staged.views).replacements.map(row => row.id));
+-    next.entries = next.entries.filter(row => !removed.has(row.instanceId));
+-    for (const id of removed) views.delete(id);
++    next.entries = [];
++    views.clear();
+     next.slots = {}; next.hidden = [];

@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7862,7 +7862,6 @@ function generateDeck(text, options, guard) {
-   const sitting = CUSTOM[built.value.id];
-   const inherited = sitting && sitting.options && sitting.options.replaces;
-   const replaces = (options && options.replaces) || inherited;
+@@ -9895,7 +9895,6 @@ function buildGenerated(text, options, guard) {
+   // Local replacement provenance is explicit; an inventory sibling has no
+   // authority to grant it. Import commands strip it before committing.
+   const replaces = options && options.replaces;
 -  if (typeof replaces === "string" && isBuiltIn(replaces)) built.value.options.replaces = replaces;
-   registerDeck(built.value);
    return built;
  }
+ /* ---------------- share links ---------------- */

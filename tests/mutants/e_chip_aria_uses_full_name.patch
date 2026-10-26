@@ -8,15 +8,16 @@
 # matches nothing. This is the mutant the old /^Edit .+/ assertion could not
 # catch: it passes on both spellings, which is why it was tightened to a
 # substring check against a name long enough to be elided.
+# Retained behavior re-anchored for saved instances; exact intent is recorded in the lane evidence.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10745,7 +10745,7 @@ function buildChips() {
-       // and an accessible name built from the full one stops containing the
-       // visible string - WCAG 2.5.3 Label-in-Name, which is what Voice
-       // Control matches "tap <the words I can see>" against.
--      b.setAttribute("aria-label", t("sheet.edit_aria", { name: chipLabel(d.name) }));
-+      b.setAttribute("aria-label", t("sheet.edit_aria", { name: d.name }));
-     }
-     // [design-review 7A] the ALREADY-SELECTED chip is the one and only way into
-     // the sheet; every other chip just selects its deck. Seeded and custom decks
+@@ -11289,7 +11289,7 @@ function buildChips() {
+     if(on)b.setAttribute("aria-current","true");
+     b.style.setProperty("--dga",d.colors.ga);b.style.setProperty("--dgb",d.colors.gb);
+     b.innerHTML='<span class="dot"></span>'+esc(labels[i]);
+-    let accessible=on?t("sheet.edit_aria",{name:labels[i]}):labels[i];
++    let accessible=on?t("sheet.edit_aria",{name:d.name}):labels[i];
+     if(labels[i]!==chipLabel(d.name)) {
+       const saved=view.selection.kind==="saved";
+       const token=saved?"S"+view.displayOrdinal:"P"+(DECKS.findIndex(preset=>preset.id===view.selection.id)+1);

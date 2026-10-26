@@ -1,14 +1,11 @@
 # kills: a field edit keeps the edited deck selected and renames its chip from the new fields
 # suite: node --test --test-name-pattern ^a.field.edit.keeps.the.edited.deck.selected.and.renames.its.chip.from.the.new.fields$ tests/app.test.js
+# Approved retained contract mapped to the transactional instance adapter.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4811,7 +4811,7 @@ function runGenerate() {
- 
-   closeScaleSheet();
-   if (replaced) replaceScale(wasSeed, seedOf(d)); else rememberScale(seedOf(d));
--  selectDeck(d.id);
-+  selectDeck(replaced ? DECKS[0].id : d.id);
-   say(text, warned.length ? "warn" : "ok");
-   genBtn.disabled = false;
- }
+@@ -13505,3 +13505,3 @@ async function runGenerate(separate = false) {
+     const warned=(d.warnings||[]).map(w=>reasonText(w));
+-    closeScaleSheet();selectDeck({kind:"saved",id:result.instanceId},false);
++    closeScaleSheet();selectDeck(base?{kind:"builtin",id:DEFAULT_DECK}:{kind:"saved",id:result.instanceId},false);
+     track("scale_create",{note_count:Object.keys(d.fields).length,has_bottom:Object.values(d.fields).some(f=>f[3]==="bottom")?1:0});

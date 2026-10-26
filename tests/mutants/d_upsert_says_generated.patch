@@ -1,18 +1,22 @@
-# kills: a same-id generate replaces the deck in place, keeps the id and says Updated
-# suite: node --test --test-name-pattern ^a.same.id.generate.replaces.the.deck.in.place..keeps.the.id.and.says.Updated$ tests/app.test.js
-# A regenerate of a deck that already exists reports it as newly generated,
-# so the user cannot tell a replacement from an addition.
-# Re-anchored 2026-10-13 (seeded SAVE / DELETE, lane app) against the current source. The mutation itself is unchanged.
+# kills: same-inventory Add preserves the earlier palette variant and exact repeats reuse the selected instance
+# suite: node --test --test-name-pattern=^same\-inventory.Add.preserves.the.earlier.palette.variant.and.exact.repeats.reuse.the.selected.instance$ tests/app.test.js
+# former kills: a same-id generate replaces the deck in place, keeps the id and says Updated
+# fault: Superseded same-inventory upsert now ignores palette intent and reuses the earlier distinct saved meaning.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12683,8 +12683,7 @@ function runGenerate() {
-   // [eng-review 2, 2A] the warnings are read off the deck the SAME generation
-   // produced; nothing is rebuilt to re-derive them.
-   const warned = (d.warnings || []).map(w => reasonText(w));
--  let text = (replaced || known.has(d.id) || fromSeed)
--    ? t("sheet.updated", { name: d.name }) : t("sheet.generated", { n: d.chords.length });
-+  let text = t("sheet.generated", { n: d.chords.length });
-   if (warned.length) text += " " + warned.join(" ");
- 
-   closeScaleSheet();
+@@ -10114,13 +10114,13 @@ function savedMeaning(deckValue) {
+   const seatValue = seats.value || {};
+   const normalizedSeats = ["rim", "inner", "bottom"].map(ring => {
+     const list = seatValue[ring];
+     return !list || list.every((seat, i) => seat === i) ? null : list;
+   });
+   return JSON.stringify([HPE.core.identitySeed(deckValue.fields), o.name ? [true, o.name] : [false, ""],
+-    o.parent == null ? [false, null] : [true, o.parent], o.palette, mirrors.top, mirrors.bottom,
++    o.parent == null ? [false, null] : [true, o.parent], 0, mirrors.top, mirrors.bottom,
+     o.anchor === "between" ? "between" : "one",
+     normalizedSeats,
+     angles.value ? angles.value.bottom : null]);
+ }
+ function readSavedRecord(record) {
+   if (!savedObject(record) || typeof record.s !== "string" || !checkShareVersion(record.v).ok) return savedFailure("protected", "opaque-record");

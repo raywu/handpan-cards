@@ -1,18 +1,21 @@
-# kills: replaceRegistered has exactly one call site, and a new one must read the return
-# suite: node --test --test-name-pattern ^replaceRegistered.has.exactly.one.call.site..and.a.new.one.must.read.the.return$ tests/app.test.js
-# Queue row 159. Distinct from d_replace_registered_second_caller: that one adds
-# a whole new LINE, this one appends the second call to the line that already
-# names the function. A scan that filters lines rather than counting
-# occurrences sees no change at all and lets this through silently.
+# kills: the retired inventory writer is absent and durable writes stay behind the locked boundaries
+# suite: node --test --test-name-pattern=^the.retired.inventory.writer.is.absent.and.durable.writes.stay.behind.the.locked.boundaries$ tests/app.test.js
+# former kills: replaceRegistered has exactly one call site, and a new one must read the return
+# fault: Retired inventory mutation primitive reappears; the source tripwire must refuse even an unused declaration.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12679,7 +12679,7 @@ function runGenerate() {
-   // and the new one takes its chip position. An options-only edit never gets
-   // here - the id is unchanged and generateDeck already replaced it in place.
-   const replaced = !!wasId && d.id !== wasId;
--  if (replaced) replaceRegistered(wasId, d);
-+  if (replaced) replaceRegistered(wasId, d); else replaceRegistered(d.id, d);
-   // [eng-review 2, 2A] the warnings are read off the deck the SAME generation
-   // produced; nothing is rebuilt to re-derive them.
-   const warned = (d.warnings || []).map(w => reasonText(w));
+@@ -10011,12 +10011,13 @@ const SAVED_RETRY = Symbol("saved collection changed while staging");
+ const savedClone = value => JSON.parse(JSON.stringify(value));
+ const savedObject = value => value !== null && typeof value === "object" && !Array.isArray(value);
+ const savedUUIDPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+ const isSavedUUID = value => typeof value === "string" && value.length === 36 && savedUUIDPattern.test(value);
+ const savedPositive = n => Number.isSafeInteger(n) && n > 0;
+ const savedFailure = (kind, detail) => ({ ok: false, kind, ...(detail ? { detail } : {}) });
++function replaceRegistered() {}
+ function savedEqual(a, b) {
+   if (a === b) return true;
+   if (!a || !b || typeof a !== "object" || typeof b !== "object" || Array.isArray(a) !== Array.isArray(b)) return false;
+   const ak = Object.keys(a), bk = Object.keys(b);
+   return ak.length === bk.length && ak.every(k => Object.hasOwn(b, k) && savedEqual(a[k], b[k]));
+ }

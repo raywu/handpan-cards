@@ -1,0 +1,21 @@
+# kills: SV14 U1: unpublished session Save keeps its draft and never recommends destructive reload
+# suite: node --test --test-name-pattern=^SV14.U1: tests/app.test.js
+# fault: Advises reloading after a session-only unpublished Save, discarding the only draft recovery context.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13262,13 +13262,13 @@ window.addEventListener("popstate", () => {
+
+ // Removing a deck the user is LOOKING AT would otherwise leave the practice
+ // screen on a deck that no longer exists, so it falls back to the default
+ // deck and says so. That sentence is UI copy, not an engine reason: the
+ // section 2 code enum is closed and has no code for "you deleted this".
+ function savedPublicationText(result, context = "save") {
+-  return t(result.persistence==="session"?(context==="import"?"saved.sessionImportAckPending":"saved.sessionAckPending"):"saved.ackPending");
++  return t("saved.ackPending");
+ }
+ function savedErrorText(result) {
+   if(result.reason || result.code)return reasonText(result);
+   return t(result.kind === "conflict" ? "saved.conflict" : "saved.failure");
+ }
+ function updateSavedStatus() {

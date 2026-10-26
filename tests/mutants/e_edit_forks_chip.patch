@@ -1,13 +1,27 @@
 # kills: a field edit leaves one chip for the deck, selected and relabelled, at 380px
 # suite: node --test --test-name-pattern ^a.field.edit.leaves.one.chip.for.the.deck..selected.and.relabelled..at.380px$ tests/e2e.test.js
+# Approved retained contract mapped to the transactional instance adapter.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12679,7 +12679,6 @@ function runGenerate() {
-   // and the new one takes its chip position. An options-only edit never gets
-   // here - the id is unchanged and generateDeck already replaced it in place.
-   const replaced = !!wasId && d.id !== wasId;
--  if (replaced) replaceRegistered(wasId, d);
-   // [eng-review 2, 2A] the warnings are read off the deck the SAME generation
-   // produced; nothing is rebuilt to re-derive them.
-   const warned = (d.warnings || []).map(w => reasonText(w));
+@@ -10574,8 +10574,11 @@ function applySavedCommand(staged, command, candidate) {
+   } else if (command.type === "edit") {
+-    const row = existing();
++    const original = existing();
++    const row = original;
+     if (!row || !views.has(row.instanceId) || row.revision !== command.expectedRevision) return conflict();
+     const record = savedEditedRecord(row.record, candidate);
++    const fork=allocate(savedClone(record));
++    if(!fork)return savedFailure("allocation","instance-id");
+     if (!savedEqual(record, row.record)) {
+       if (row.revision >= Number.MAX_SAFE_INTEGER) return savedFailure("invalid", "revision-overflow");
+-      row.record = record; row.revision++;
++      fork.record = record;
+     }
+@@ -10584,4 +10587,4 @@ function applySavedCommand(staged, command, candidate) {
+     else delete deckValue.options.replaces;
+-    attachCandidate(row, deckValue);
+-    targetId = row.instanceId; desired = { kind: "saved", id: targetId };
++    attachCandidate(fork, deckValue);
++    targetId = fork.instanceId; desired = { kind: "saved", id: targetId };
+   } else if (command.type === "replace-builtin") {

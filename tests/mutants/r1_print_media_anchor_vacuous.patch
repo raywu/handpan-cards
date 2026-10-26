@@ -20,7 +20,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -55,6 +55,7 @@
+@@ -124,6 +124,7 @@ html{-webkit-text-size-adjust:100%; text-size-adjust:100%}
     the box the user is typing into out of sight. The ramp keeps its proportions
     and gives back roughly a third; the rhythm still reads because it is the
     RATIOS that group things, not the absolute values. */
@@ -28,9 +28,8 @@ diff --git a/index.html b/index.html
  @media (max-height:520px){
    :root{--sp-1:3px; --sp-2:6px; --sp-3:9px; --sp-4:14px}
  }
-@@ -941,7 +942,7 @@
-    once the owner's device gate (item 1, iPhone ruler check) passed; every
-    deck now downloads a client-built PDF instead. ---------------------------- */
+@@ -1331,7 +1332,7 @@ html.about-open{overflow:hidden}
+
  @media print{
    *{-webkit-print-color-adjust:exact; print-color-adjust:exact}
 -  html,body{height:100%; min-height:0; overflow:visible; background:#fff}

@@ -3,20 +3,16 @@
 # runGenerate restores readonly and the label in a finally; this restores them only on
 # the non-throwing path, so a generate that throws leaves the box read-only and the
 # button reading GENERATING.
+# Retained behavior re-anchored for saved instances; exact intent is recorded in the lane evidence.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9952,10 +9952,9 @@ function runGenerate() {
-       taken = CUSTOM[id];
-       return { ok: false };
-     });
--  } finally {
--    scaleBox.removeAttribute("readonly");
--    genBtn.textContent = label;
--  }
-+  } catch (e) { throw e; }
-+  scaleBox.removeAttribute("readonly");
-+  genBtn.textContent = label;
-   if (taken) {
-     // UI copy, like the delete fallback above it - NOT an engine reason. The
-     // section 2 code enum is closed and has no code for "that scale is taken",
+@@ -13334,7 +13334,7 @@ async function runGenerate(separate = false) {
+     track("scale_create",{note_count:Object.keys(d.fields).length,has_bottom:Object.values(d.fields).some(f=>f[3]==="bottom")?1:0});
+     say((base?t("sheet.updated",{name:d.name}):t("sheet.generated",{n:d.chords.length}))+(warned.length?" "+warned.join(" "):""),warned.length?"warn":"ok");
+   } finally {
+-    if(savePending===operation){savePending=null;if(generation===sheetGeneration){genBtn.textContent=label;refreshSavedSubmit();}}
++    if(!buildRefused && savePending===operation){savePending=null;if(generation===sheetGeneration){genBtn.textContent=label;refreshSavedSubmit();}}
+   }
+ }
+ document.getElementById("scale-conflict-separate").onclick=()=>runGenerate(true);

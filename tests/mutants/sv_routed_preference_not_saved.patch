@@ -1,0 +1,21 @@
+# kills: SV11 U5: a built-in boot route persists tagged preference without rewriting legacy selection
+# suite: node --test --test-name-pattern=^SV11.U5: tests/app.test.js
+# fault: An explicit built-in route no longer becomes the stored tagged preference for later visits.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15039,13 +15039,13 @@ function finishSavedBoot() {
+     booted=true;bootStored=null;
+   };
+   if(savedMode==="protected" && location.hash.indexOf(SHARE_PREFIX)===0){pendingRecoveryShare=location.hash.slice(SHARE_PREFIX.length);finish();return;}
+   if(location.hash.indexOf(SHARE_PREFIX)===0){
+     const result=openShare(location.hash.slice(SHARE_PREFIX.length));
+     if(result&&typeof result.then==="function")return result.then(finish);
+-  }else if(routed)selectDeck({kind:"builtin",id:routed},true,false);
++  }else if(routed)selectDeck({kind:"builtin",id:routed},false,false);
+   finish();
+ }
+ const initialization=initializeSavedCollection();
+ const savedReady=initialization&&typeof initialization.then==="function" ? initialization.then(finishSavedBoot) : Promise.resolve(finishSavedBoot());
+
+ </script>

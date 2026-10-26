@@ -2,15 +2,16 @@
 # suite: node --test --test-name-pattern ^the.selected.chip.carries.a.pencil.on.every.deck..no.unselected.chip.does$ tests/e2e.test.js
 # The pencil drops its SELECTED half and appears on every chip. The glyph then promises an Edit sheet
 # that an unselected chip never opens, the lie row 218 removed.
+# Retained behavior re-anchored for saved instances; exact intent is recorded in the lane evidence.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8788,7 +8788,7 @@
-     // chip's text stays the deck's name - and the accessible name says it in
-     // words. Only ever on the chip that is selected: row 262 is a live focus
-     // trap on any path that opens Edit from an unselected chip.
--    const editable = d.id === deckId;
-+    const editable = true;
-     b.innerHTML = `<span class="dot"></span>${esc(chipLabel(d.name))}`;
-     if (editable) {
-       b.classList.add("editable");
+@@ -11284,7 +11284,7 @@ function buildChips() {
+   let active=null;
+   views.forEach((view,i)=>{
+     const d=view.deck,b=document.createElement("button"),on=savedEqual(view.selection,selection);
+-    b.type="button"; b.className="chip"+(on?" on editable":"");
++    b.type="button"; b.className="chip editable"+(on?" on":"");
+     b.setAttribute("data-selection-kind",view.selection.kind);b.setAttribute("data-selection-id",view.selection.id);
+     if(on)b.setAttribute("aria-current","true");
+     b.style.setProperty("--dga",d.colors.ga);b.style.setProperty("--dgb",d.colors.gb);

@@ -1,0 +1,15 @@
+# kills: SV7 U1: late old-client writes remain a separate recovery branch
+# suite: node --test --test-name-pattern=^SV7.U1: tests/app.test.js
+# fault: Suppresses recovery guidance when a late older client changes the preserved legacy namespace.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13448,7 +13448,7 @@ function updateSavedStatus() {
+   const protectedData=savedMode === "protected" || !!savedRecovery;
+   let text=protectedData?t("saved.recovery"):savedMode === "session"?t("saved.session"):"";
+   if(!text && savedIssue?.detail==="acknowledged-publication-pending")text=t("saved.ackPending");
+-  if(legacyBranchStatus==="changed")text+=(text?" ":"")+t("saved.legacy");
++  if(false)text+=(text?" ":"")+t("saved.legacy");
+   if(el.textContent!==text)el.textContent=text;
+   el.hidden=!text;temporary.hidden=savedMode!=="protected";temporary.textContent=t("saved.temporary");
+   document.getElementById("scale-conflict-separate").textContent=t("saved.separate");

@@ -1,13 +1,22 @@
-# kills: renaming keeps the id, relabels the chip and survives a reload
-# suite: node --test --test-name-pattern ^renaming.keeps.the.id..relabels.the.chip.and.survives.a.reload$ tests/app.test.js
+# kills: renaming keeps both identities, relabels its chip and survives a reload
+# suite: node --test --test-name-pattern=^renaming.keeps.both.identities,.relabels.its.chip.and.survives.a.reload$ tests/app.test.js
+# former kills: renaming keeps the id, relabels the chip and survives a reload
+# fault: Renaming appears in the immediate view but omits the name from the acknowledged edited record.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7673,7 +7673,6 @@ function generateDeck(text, options, guard) {
-   // URL and into the saved record - so the app carries it back, which is why a
-   // rename survives a reload while the id, which hashes fields only, does not
-   // move (D14).
--  if (seed.value.options.name) built.value.options.name = seed.value.options.name;
-   // The layout correction (D5-1/D5-2) is the same story one step further on:
-   // core.parseSeed's option whitelist drops `seats`, and select.build solves the
-   // GENERATED layout knowing nothing about it, so the correction is applied here
+@@ -10387,13 +10387,13 @@ function savedCandidate(command) {
+ }
+ const SAVED_PORTABLE_OPTIONS = ["name", "palette", "parent", "mirror", "mirrorBottom", "anchor", "seats", "angles"];
+ function savedEditedRecord(target, candidate) {
+   const out = { ...savedClone(target), v: SHARE_VERSION, s: candidate.record.s };
+   const options = savedObject(target.o) ? { ...savedClone(target.o) } : {};
+   for (const name of SAVED_PORTABLE_OPTIONS) delete options[name];
+-  for (const name of SAVED_PORTABLE_OPTIONS) if (Object.hasOwn(candidate.record.o || {}, name)) options[name] = savedClone(candidate.record.o[name]);
++  for (const name of SAVED_PORTABLE_OPTIONS) if (name !== "name" && Object.hasOwn(candidate.record.o || {}, name)) options[name] = savedClone(candidate.record.o[name]);
+   out.o = options;
+   return out;
+ }
+ function applySavedCommand(staged, command, candidate) {
+   const current = staged.envelope;
+   if (!command || command.collectionId !== current.collectionId) return savedFailure("conflict", "collection-epoch");

@@ -2,14 +2,16 @@
 # suite: node --test --test-name-pattern ^AP2-3.a.refused.generate.restores.readonly.and.the.label.and.leaves.the.button.disabled.until.the.seed.changes$ tests/app.test.js
 # The finally block re-enables GENERATE, so a refused seed can be resubmitted
 # unchanged.
+# Retained behavior re-anchored for saved instances; exact intent is recorded in the lane evidence.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8256,6 +8256,7 @@ function runGenerate() {
-   } finally {
-     scaleBox.removeAttribute("readonly");
-     genBtn.textContent = label;
-+    genBtn.disabled = false;
-   }
-   if (taken) {
-     // UI copy, like the delete fallback above it - NOT an engine reason. The
+@@ -11487,7 +11487,7 @@ let bandPad = "", plateRoom = "", pinPad = "";
+    which is the more recent and the more actionable of the two, and the
+    summary comes straight back on the next keystroke. */
+ function refreshSavedSubmit() {
+-  const disabled=!!savePending || buildRefused || !submitParseValid || (inputPath === "fields" && lineStale) || scaleBox.hasAttribute("readonly");
++  const disabled=!!savePending || !submitParseValid || (inputPath === "fields" && lineStale) || scaleBox.hasAttribute("readonly");
+   genBtn.disabled=disabled;
+   document.getElementById("scale-conflict-separate").disabled=disabled;
+ }

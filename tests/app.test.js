@@ -8920,11 +8920,28 @@ test("SD: a replacement takes the seeded slot across a reload and a field edit",
 
   again.select(rep.instanceId || rep.id);
   again.clickChip("D KURD 10");
-  again.type(again.els["scale-box"].value.replace(/A3/, "A#3"));
+  const handle=rep.instanceId || rep.id,before=savedEnvelope(again);
+  const expectedSeed="(D3) Ab3 Bb3 C4 D4 E4 F4 G4 A4 C5";
+  // A#3 would duplicate the existing Bb3 and rightly refuse Save. Ab3 is a
+  // valid, distinct field change under the existing duplicate-note policy.
+  again.type(again.els["scale-box"].value.replace(/A3/,"Ab3"));
   await generateClick(again);
+  assert.strictEqual(again.sheetOpen(),false,"the valid field edit actually completes Save");
+  const changed=savedEnvelope(again);
+  assert.strictEqual(changed.entries[0].instanceId,handle);
+  assert.strictEqual(changed.entries[0].record.s,expectedSeed,"the replacement commits the literal changed note content");
+  assert.notStrictEqual(changed.entries[0].record.s,before.entries[0].record.s);
+  assert.strictEqual(changed.entries[0].record.o.replaces,"kurd","the committed edited record retains its seeded slot authority");
+  const rim=Object.values(again.currentDeck().fields).filter(field=>field[3]==="rim").map(field=>field[2]);
+  assert.deepStrictEqual(rim,[56,58,60,62,64,65,67,69,72],"the edited rim contains Ab3 and has no former A3/MIDI57");
+  assert.ok(!rim.includes(57));
   assert.deepStrictEqual(labels(again), BUILTIN_NAMES, "a field edit moved the replacement out of the slot");
   assert.deepStrictEqual(Object.keys(savedViews(again)).length, 1);
-  assert.deepStrictEqual(labels(await reboot(again)), BUILTIN_NAMES);
+  const reloaded=await reboot(again);
+  assert.strictEqual(savedEnvelope(reloaded).entries[0].instanceId,handle);
+  assert.strictEqual(savedEnvelope(reloaded).entries[0].record.s,expectedSeed);
+  assert.strictEqual(savedEnvelope(reloaded).entries[0].record.o.replaces,"kurd");
+  assert.deepStrictEqual(labels(reloaded), BUILTIN_NAMES);
 });
 
 test("SD: deleting a replacement does not bring the seed back", async () => {
@@ -9728,13 +9745,40 @@ describe("share url", () => {
   };
 
   test("SU: tapping three chips writes three replaceState hashes and no pushState", async () => {
-    const app = boot();
-    const n = replaces(app).length;
-    for (const name of ["D AMARA 10", "D AMARA 9", "F3 LOW PYGMY 18"]) app.clickChip(name);
-    assert.deepStrictEqual(pushes(app), []);
-    const made = replaces(app).slice(n).map((c) => c.url);
-    assert.deepStrictEqual(made, [
-      "/index.html#deck=d-amara-10", "/index.html#deck=d-amara-9", "/index.html#deck=f-low-pygmy-18"]);
+    const app=await durableBoot(),n=replaces(app).length,copied=[];
+    app.sandbox.navigator.clipboard={writeText:href=>{copied.push(href);return Promise.resolve();}};
+    let release,acquired;
+    const held=new Promise(resolve=>{acquired=resolve;});
+    const blocker=app.sandbox.navigator.locks.request("handpan-cards:saved-scales:v1",()=>{
+      acquired();return new Promise(resolve=>{release=resolve;});
+    });
+    await held;
+    const routes=["#deck=d-amara-10","#deck=d-amara-9","#deck=f-low-pygmy-18"];
+    try {
+      // No await between tap and route assertion/LINK activation: preference
+      // publication cannot mask an omitted immediate selectDeck syncRoute.
+      for(const [i,name] of ["D AMARA 10","D AMARA 9","F3 LOW PYGMY 18"].entries()) {
+        app.clickChip(name);
+        assert.strictEqual(app.location.hash,routes[i],"the selected chip updates its route in the same stack before its preference ACK");
+        assert.strictEqual(app.els["share-copy"].disabled,false);
+        app.els["share-copy"].click();
+      }
+      // Clipboard dispatch is a microtask, but each LINK captured its URL at
+      // the same-stack activation above while the real commit stays blocked.
+      await Promise.resolve();
+      assert.deepStrictEqual(copied,routes.map(route=>PAGE+route),"each LINK copies its selected chip before preference acknowledgment");
+      await app.waitFor('navigator.locks.query().then(q=>q.pending.filter(x=>x.name==="handpan-cards:saved-scales:v1").length===3)');
+      const queue=await app.sandbox.navigator.locks.query();
+      assert.strictEqual(queue.held.filter(x=>x.name==="handpan-cards:saved-scales:v1").length,1);
+      assert.strictEqual(queue.pending.filter(x=>x.name==="handpan-cards:saved-scales:v1").length,3,"all actual preference commits remain blocked");
+      assert.deepStrictEqual(savedEnvelope(app).preferredSelection,{kind:"builtin",id:"kurd"},"the immediate routes did not rely on an acknowledged preference");
+      assert.deepStrictEqual(pushes(app),[]);
+      assert.deepStrictEqual(replaces(app).slice(n).map(c=>c.url),routes.map(route=>"/index.html"+route));
+    } finally {release();await blocker;await writeBarrier(app);}
+    await committedPreference(app,{kind:"builtin",id:"pygmy"});
+    assert.deepStrictEqual(pushes(app),[]);
+    assert.deepStrictEqual(replaces(app).slice(n).map(c=>c.url),routes.map(route=>"/index.html"+route),"preference completion adds no extra navigation");
+
   });
 
   test("SU: opening ADD from a #s= bar pushes #add and the pop restores #s= with the deck unchanged", async () => {
@@ -11226,19 +11270,30 @@ describe("DI: dual input", () => {
   });
 
   test("DI: SAVE from Edit after a field edit stores the same record as typing the composed line", async () => {
-    const viaFields = boot();
-    const d = await makeCustom(viaFields);
-    openEdit(viaFields, d);
-    fieldType(viaFields, "top", "A3 C4 D4 E4 F4 G4 A4");
-    el(viaFields, "scale-generate").click();
-    const viaLine = boot();
-    const d2 = await makeCustom(viaLine);
-    openEdit(viaLine, d2);
-    viaLine.type(el(viaFields, "scale-box").value || viaFields.get("deck().id && HPE.core.formatSeed(deck().fields)"));
-    el(viaLine, "scale-generate").click();
-    const a = savedViews(viaFields), b = savedViews(viaLine);
-    assert.deepStrictEqual(Object.values(a).map((r) => r.fields), Object.values(b).map((r) => r.fields));
-    assert.deepStrictEqual(Object.values(a).map((r) => r.options), Object.values(b).map((r) => r.options));
+    const expectedLine="(D3) A3 C4 D4 E4 F4 G4 A4",expectedMidis=[50,57,60,62,64,65,67,69];
+    const viaFields=await durableBoot(),d=await makeCustom(viaFields);
+    const beforeFields=savedEnvelope(viaFields);
+    assert.strictEqual(beforeFields.entries[0].record.s,"(D3) A3 C4 D4 E4 F4 G4 A4 C5");
+    openEdit(viaFields,d);
+    fieldType(viaFields,"top","A3 C4 D4 E4 F4 G4 A4");
+    assert.strictEqual(el(viaFields,"scale-box").value,expectedLine,"the fields compose the literal edited scale before Save");
+    await generateClick(viaFields);
+    const afterFields=savedEnvelope(viaFields);
+    assert.strictEqual(afterFields.entries[0].instanceId,d.instanceId);
+    assert.strictEqual(afterFields.entries[0].record.s,expectedLine,"field Save commits the edited canonical line, rather than comparing two unchanged views");
+    assert.notStrictEqual(afterFields.entries[0].record.s,beforeFields.entries[0].record.s);
+    assert.deepStrictEqual(Object.values(viaFields.currentDeck().fields).map(field=>field[2]),expectedMidis,"field Save actually removes the final C5");
+    const viaLine=await durableBoot(),d2=await makeCustom(viaLine);
+    openEdit(viaLine,d2);viaLine.type(expectedLine);
+    await generateClick(viaLine);
+    const afterLine=savedEnvelope(viaLine);
+    assert.strictEqual(afterLine.entries[0].instanceId,d2.instanceId);
+    assert.strictEqual(afterLine.entries[0].record.s,expectedLine,"line Save commits the same literal edited content");
+    assert.deepStrictEqual(Object.values(viaLine.currentDeck().fields).map(field=>field[2]),expectedMidis);
+    const a=savedViews(viaFields),b=savedViews(viaLine);
+    assert.deepStrictEqual(Object.values(a).map(r=>r.fields),Object.values(b).map(r=>r.fields));
+    assert.deepStrictEqual(Object.values(a).map(r=>r.options),Object.values(b).map(r=>r.options));
+
   });
 });
 
@@ -16025,12 +16080,16 @@ describe("SHC asynchronous LINK ownership", () => {
   });
 
   test("SV11 U6: missed-event conflict preserves draft then Back shows the acknowledged winner", async () => {
-    const origin=createOrigin({events:"omit"});
+    const origin=createOrigin({events:"omit",broadcastEvents:"omit"});
     const {app,crypto}=await seeded([SV.portableRecords.amaraA],{}, {origin});
     editSelected(app);rename(app,"LOSING LOCAL DRAFT");
     const peer=(await load({origin,crypto})).app,e=snapshot(peer);
     const changed=await command(peer,{type:"edit",collectionId:e.collectionId,instanceId:iid(1),expectedRevision:1},SV.portableRecords.amaraB);
     assert.strictEqual(changed.ok,true);const winner=savedRaw(app);
+    assert.strictEqual(snapshot(peer).entries[0].record.o.name,"PUBLIC PAN B","the peer winner is really committed before the missed-event Save");
+    await new Promise(resolve=>setImmediate(resolve));
+    assert.strictEqual(app.get(`savedEntries.get(${JSON.stringify(iid(1))}).deck.name`),"PUBLIC PAN A","both notification transports are omitted: the losing tab has not already reconciled the winner");
+    assert.strictEqual(app.get(`savedState.entries[0].revision`),1,"the conflict fallback must discover the peer revision itself");
     await submit(app);
     assert.strictEqual(app.sheetOpen(),true);assert.strictEqual(app.els["scale-name"].value,"LOSING LOCAL DRAFT");
     assert.strictEqual(app.els["scale-conflict"].hidden,false);assert.strictEqual(savedRaw(app),winner);
@@ -16575,6 +16634,55 @@ describe("SHC asynchronous LINK ownership", () => {
     assert.strictEqual(app.store["hpfc.scales.v3"],source);
     assert.strictEqual(app.currentDeck().name,"PUBLIC PAN A");
     assert.ok(!names(app).includes("PUBLIC PAN B"),"branch detection does not import or replay the late client collection");
+  });
+
+
+  test("IDB11 U1: direct and concurrent removals never empty the collection", async () => {
+    const allHidden=["kurd","amara10","amara","hijaz","pygmy"];
+    const refuseLast=result=>{
+      assert.strictEqual(result.ok,false,"the direct command cannot remove the final visible scale");
+      assert.strictEqual(result.kind,"invalid");assert.strictEqual(result.detail,"last-visible");
+    };
+    // Bypass UI wouldEmpty guards: the transactional command boundary itself
+    // must refuse removing the last saved scale or hiding the last built-in.
+    const lastSaved=await seeded([SV.portableRecords.amaraA],{hidden:allHidden});
+    const savedBefore=savedRaw(lastSaved.app);
+    refuseLast(await command(lastSaved.app,{type:"delete",collectionId:SV.ids.collectionA,instanceId:iid(1),expectedRevision:1}));
+    assert.strictEqual(savedRaw(lastSaved.app),savedBefore,"refused last-saved removal preserves exact committed bytes");
+    assert.strictEqual(snapshot(lastSaved.app).entries.length,1);
+    const lastBuiltin=await seeded([],{hidden:["amara10","amara","hijaz","pygmy"]});
+    const builtinBefore=savedRaw(lastBuiltin.app);
+    refuseLast(await command(lastBuiltin.app,{type:"hide-builtin",collectionId:SV.ids.collectionA,seedId:"kurd",expectedSlotStateRevision:0,expectedOwnerId:null}));
+    assert.strictEqual(savedRaw(lastBuiltin.app),builtinBefore,"refused last-builtin removal preserves exact committed bytes");
+    assert.deepStrictEqual(snapshot(lastBuiltin.app).hidden,["amara10","amara","hijaz","pygmy"]);
+
+    const origin=createOrigin({events:"omit",broadcastEvents:"omit"});
+    const {app,crypto}=await seeded([SV.portableRecords.amaraA,SV.portableRecords.amaraB],{hidden:allHidden},{origin});
+    const peer=(await load({origin,crypto})).app;
+    const initial=snapshot(app);let release,acquired;
+    const held=new Promise(resolve=>{acquired=resolve;});
+    const blocker=app.sandbox.navigator.locks.request(SV_LOCK,()=>{acquired();return new Promise(resolve=>{release=resolve;});});
+    await held;let pending;
+    try {
+      pending=[command(app,{type:"delete",collectionId:initial.collectionId,instanceId:iid(1),expectedRevision:1}),
+        command(peer,{type:"delete",collectionId:initial.collectionId,instanceId:iid(2),expectedRevision:1})];
+      await app.waitFor(`navigator.locks.query().then(q=>q.pending.filter(x=>x.name===${JSON.stringify(SV_LOCK)}).length===2)`);
+      const queue=await app.sandbox.navigator.locks.query();
+      assert.strictEqual(queue.held.filter(x=>x.name===SV_LOCK).length,1);
+      assert.strictEqual(queue.pending.filter(x=>x.name===SV_LOCK).length,2,"both distinct direct deletions stage before either can acquire the commit lock");
+      assert.deepStrictEqual(snapshot(app),initial,"neither pending deletion has committed before release");
+    }finally{release();await blocker;await Promise.allSettled(pending||[]);}
+    const results=await Promise.all(pending),accepted=results.findIndex(result=>result.ok);
+    assert.strictEqual(results.filter(result=>result.ok).length,1,"only one concurrent removal may be acknowledged");
+    refuseLast(results.find(result=>!result.ok));
+    const committed=snapshot(app),expectedRemaining=accepted===0?iid(2):iid(1);
+    assert.strictEqual(committed.entries.length,1,"actual committed authority retains one visible saved scale");
+    assert.strictEqual(committed.entries[0].instanceId,expectedRemaining);
+    assert.deepStrictEqual(committed.entries[0],initial.entries.find(entry=>entry.instanceId===expectedRemaining));
+    assert.strictEqual(committed.revision,initial.revision+1);
+    assert.deepStrictEqual(committed.hidden,allHidden);
+    assert.deepStrictEqual(committed.usedInstanceIds,initial.usedInstanceIds);
+    assert.strictEqual(committed.nextDisplayOrdinal,initial.nextDisplayOrdinal);
   });
 
 }

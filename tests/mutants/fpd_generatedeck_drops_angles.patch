@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9529,7 +9529,6 @@ function generateDeck(text, options, guard) {
+@@ -9889,7 +9889,6 @@ function buildGenerated(text, options, guard) {
        }
      }
      if (wanted !== null) built.value.options.seats = JSON.parse(JSON.stringify(wanted));
 -    if (bottomAngles !== null) built.value.options.angles = JSON.parse(JSON.stringify(bottomAngles));
    }
    if (seed.value.options.parent == null) built.value.options.parent = null;
-   // `replaces` is the record option that puts a custom deck in a seeded deck's
+   // Local replacement provenance is explicit; an inventory sibling has no

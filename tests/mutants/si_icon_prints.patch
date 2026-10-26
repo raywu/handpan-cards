@@ -1,15 +1,16 @@
 # kills: SI: the print block hides #share-copy and #share-url
 # suite: node --test --test-name-pattern ^SI:.the.print.block tests/app.test.js
 # The print block no longer hides the icon and the field.
+# Retained behavior re-anchored for saved instances; exact intent is recorded in the lane evidence.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1225,7 +1225,7 @@ html.about-open{overflow:hidden}
+@@ -1338,7 +1338,7 @@ html.about-open{overflow:hidden}
    .scene{transform:none!important}
    #app{display:block; height:auto}
    #about{display:none}
--  #share-copy, #share-url{display:none}
-+  #share-url{display:none}
+-  #share-copy, #share-url, #saved-status, #saved-temporary-use{display:none}
++  #share-url, #saved-status, #saved-temporary-use{display:none}
  }
+
  </style>
- </head>

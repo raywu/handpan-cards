@@ -4,15 +4,16 @@
 # unit-tested against the sandbox (never navigates), and every other e2e test
 # navigates through a plain URL with no hash - none of them touch this line -
 # so only a real, fresh navigation to a share link sees the app never boot it.
+# Retained behavior re-anchored for saved instances; exact intent is recorded in the lane evidence.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11450,7 +11450,7 @@ if (wantedDeck !== deckId && !(replacements()[wantedDeck] && replacements()[want
- // followed it. "#s=" is disjoint from the page routes, so the reads never see
- // each other's hash. A deck link was read above, by routedDeckId().
- if (location.hash.indexOf(SHARE_PREFIX) === 0)
--  openShare(location.hash.slice(SHARE_PREFIX.length));
-+  void 0;
- bootStored = null;
- syncRoute();
- booted = true;
+@@ -15045,7 +15045,7 @@ function finishSavedBoot() {
+   };
+   if(savedMode==="protected" && location.hash.indexOf(SHARE_PREFIX)===0){pendingRecoveryShare=location.hash.slice(SHARE_PREFIX.length);finish();return;}
+   if(location.hash.indexOf(SHARE_PREFIX)===0){
+-    const result=openShare(location.hash.slice(SHARE_PREFIX.length));
++    const result=null;
+     if(result&&typeof result.then==="function")return result.then(finish);
+   }else if(routed)selectDeck({kind:"builtin",id:routed},true,false);
+   finish();

@@ -1,14 +1,16 @@
 # kills: SD: saving a seeded deck unchanged closes the sheet and writes nothing
 # suite: node --test --test-name-pattern ^SD..saving.a.seeded.deck.unchanged.closes.the.sheet.and.writes.nothing$ tests/app.test.js
 # An unchanged SAVE on a seeded deck mints a replacement record instead of closing.
+# Retained behavior re-anchored for saved instances; exact intent is recorded in the lane evidence.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12605,7 +12605,6 @@ function runGenerate() {
-   if (genBtn.disabled) return;
-   // SAVE on a seeded deck that was not changed writes nothing: no record is
-   // minted, so the seed keeps its slot, its palette and its stored print overlay.
--  if (seeded() && sheetKey() === seedPrefill) { closeScaleSheet(); return; }
-   const label = genBtn.textContent;
-   genBtn.textContent = t(editingId ? "sheet.saving" : "sheet.generating");
-   genBtn.disabled = true;
+@@ -13310,7 +13310,7 @@ async function deleteDeck(id) {
+ async function runGenerate(separate = false) {
+   separate = separate === true;
+   if(genBtn.disabled || savePending)return;
+-  if(!separate && seeded() && sheetKey()===seedPrefill){closeScaleSheet();return;}
++  if(false && !separate && seeded() && sheetKey()===seedPrefill){closeScaleSheet();return;}
+   const generation=sheetGeneration, draft=sheetKey(), base=editingBase;
+   const controller=new AbortController(), operation={controller,generation};savePending=operation;
+   const label=genBtn.textContent; refreshSavedSubmit();genBtn.textContent=t(editingId?"sheet.saving":"sheet.generating");

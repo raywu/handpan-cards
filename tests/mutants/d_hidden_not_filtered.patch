@@ -1,15 +1,12 @@
 # kills: editable defaults: deleting a seeded deck removes its chip, stores hidden and selects Kurd
 # suite: node --test --test-name-pattern ^editable.defaults..deleting.a.seeded.deck.removes.its.chip..stores.hidden.and.selects.Kurd$ tests/app.test.js
 # The picker ignores the stored hidden list: a deleted seeded deck keeps its chip.
+# Approved retained contract mapped to the transactional instance adapter.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8761,7 +8761,7 @@
-   const rep = replacements();
-   const slotted = new Set(Object.values(rep));
-   return [...Object.values(CUSTOM).reverse().filter(d => !slotted.has(d)),
--    ...DECKS.map(s => rep[s.id] || (hidden.includes(s.id) ? null : s)).filter(Boolean)];
-+    ...DECKS.map(s => rep[s.id] || s).filter(Boolean)];
- };
- // [5A] chip labels are capped at 16 characters with an ellipsis.
- const CHIP_CAP = 16;
+@@ -10280,3 +10280,3 @@ function savedViewsFor(e, views) {
+       return owner ? { selection: { kind: "saved", id: owner.instanceId }, deck: owner.deck, displayOrdinal: owner.displayOrdinal, slotId: d.id } :
+-        e.hidden.includes(d.id) ? null : { selection: { kind: "builtin", id: d.id }, deck: d, slotId: d.id };
++        { selection: { kind: "builtin", id: d.id }, deck: d, slotId: d.id };
+     }).filter(Boolean));

@@ -1,15 +1,14 @@
 # kills: hashchange to a deck link selects that deck and clears the hash
 # suite: node --test --test-name-pattern ^hashchange.to.a.deck.link tests/app.test.js
 # An in-page deck link changes the hash and nothing listens, so the about-section links do nothing.
+# Approved retained contract mapped to the transactional instance adapter.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14563,7 +14563,7 @@ function routeToDeck(routed) {
-   track("deck_route", { deck_id: routed });
-   return shown;
+@@ -15174,5 +15174,5 @@ function routeToDeck(routed) {
  }
--window.addEventListener("hashchange", () => {
-+window.addEventListener("hashchange_off", () => {
+
+-window.addEventListener("hashchange", async () => {
++window.addEventListener("hashchange_off", async () => {
    observeLinkRoute();
    if (sheetOpen || aboutOpen) return;
-   if (location.hash === routeFor(deck())) return;

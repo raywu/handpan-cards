@@ -1,12 +1,14 @@
-# kills: deleting a deck that is already gone leaves no armed button behind
-# suite: node --test --test-name-pattern ^deleting.a.deck.that.is.already.gone.leaves.no.armed.button.behind$ tests/app.test.js
-# deleteDeck returns on a deck that is already gone and leaves the button
-# armed over it, so the next tap is a confirmation of nothing wearing the
-# label of a confirmation of something.
+# kills: deleting an instance that disappeared leaves no armed button and preserves explicit conflict recovery
+# suite: node --test --test-name-pattern=^deleting.an.instance.that.disappeared.leaves.no.armed.button.and.preserves.explicit.conflict.recovery$ tests/app.test.js
+# former kills: deleting a deck that is already gone leaves no armed button behind
+# fault: A confirming delete leaves its old arming state behind when the instance already disappeared.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12779,7 +12779,7 @@ delBtn.onclick = () => {
+@@ -13456,13 +13456,13 @@ delBtn.onclick = () => {
+      no id set through a synthetic .onclick(). */
+   const target = editingId;
+   if (!target) return;
    /* Disarm BEFORE the delete, not inside it: the state must not outlive the
       deck even when deleteDeck turns out to have nothing to remove, and the
       delete's own message should be the last thing said. */
@@ -15,3 +17,6 @@ diff --git a/index.html b/index.html
    delArmed = true;
    delBtn.textContent = DEL_ARMED();
    delBtn.setAttribute("data-armed", "");
+   const d = editedDeck();
+   const seat = d && d.options && d.options.replaces;
+   const seatedDeck = seeded() || (typeof seat === "string" && savedState.slots[seat] === target);

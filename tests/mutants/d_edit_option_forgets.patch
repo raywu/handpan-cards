@@ -1,14 +1,10 @@
 # kills: an options-only edit still replaces in place and keeps its stored record
 # suite: node --test --test-name-pattern ^an.options.only.edit.still.replaces.in.place.and.keeps.its.stored.record$ tests/app.test.js
+# Approved retained contract mapped to the transactional instance adapter.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4810,7 +4810,7 @@ function runGenerate() {
-   if (warned.length) text += " " + warned.join(" ");
- 
-   closeScaleSheet();
--  if (replaced) replaceScale(wasSeed, seedOf(d)); else rememberScale(seedOf(d));
-+  rememberScale(seedOf(d)); if (wasId) forgetScale(wasSeed);
-   selectDeck(d.id);
-   say(text, warned.length ? "warn" : "ok");
-   genBtn.disabled = false;
+@@ -10585,2 +10585,3 @@ function applySavedCommand(staged, command, candidate) {
+     attachCandidate(row, deckValue);
++    next.entries=next.entries.filter(entry=>entry.instanceId!==row.instanceId);
+     targetId = row.instanceId; desired = { kind: "saved", id: targetId };

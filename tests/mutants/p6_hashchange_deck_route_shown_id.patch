@@ -1,15 +1,16 @@
 # kills: a hashchange to an edited seed's link tracks deck_route with the seed id, not the replacement's
 # suite: node --test --test-name-pattern ^a.hashchange.to.an.edited.seed.s.link tests/app.test.js
 # routeToDeck sends the shown deck id instead of the routed one, so an edited seed reports its custom replacement id.
+# Retained behavior re-anchored for saved instances; exact intent is recorded in the lane evidence.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14201,7 +14201,7 @@ function routeToDeck(routed) {
-   // fallback and says so; one that shows its replacement does not.
-   if (routed !== shown && !(replacements()[routed] && replacements()[routed].id === shown) && hidden.includes(routed))
-     say(t("boot.gone", { name: deck().name }), "warn");
--  track("deck_route", { deck_id: routed });
-+  track("deck_route", { deck_id: shown });
-   return shown;
+@@ -14997,7 +14997,7 @@ function routeToDeck(routed) {
+   if(!routed)return null;
+   selectDeck({kind:"builtin",id:routed});
+   if(savedState.hidden.includes(routed) && !savedState.slots[routed])say(t("boot.gone",{name:deck().name}),"warn");
+-  track("deck_route",{deck_id:routed});return deck().id;
++  track("deck_route",{deck_id:deck().id});return deck().id;
  }
- window.addEventListener("hashchange", () => {
+
+ window.addEventListener("hashchange", async () => {

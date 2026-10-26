@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11323,7 +11323,7 @@ function setRingSeats(ring, next) {
+@@ -12152,7 +12152,7 @@ function setRingSeats(ring, next) {
    layoutSeats = Object.keys(rest).length ? rest : null;
  }
  const seatsKey = (s) => LAYOUT_RINGS.filter((r) => s && s[r]).map((r) => r + ":" + s[r].join(",")).join(";");
 -const anglesKey = (a) => (a && a.bottom && a.bottom.some((v) => v !== null) ? a.bottom.map((v) => (v === null ? "" : v)).join(",") : "");
 +const anglesKey = (a) => (a && a.bottom ? a.bottom.map((v) => (v === null ? "" : v)).join(",") : "");
- const editedDeck = () => (editingId ? CUSTOM[editingId] || DECKS.find(d => d.id === editingId) : null) || null;
- const seeded = () => isBuiltIn(editingId);
+ const editedDeck = () => editingBase ? editingBase.deck : null;
+ const seeded = () => !!editingBase && editingBase.selection.kind === "builtin";
  /** The tuple a seeded sheet is compared against to tell an unchanged SAVE. */

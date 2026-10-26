@@ -1,14 +1,16 @@
 # kills: editing the seed after a collision clears the refusal cleanly (queue row 116)
 # suite: node --test --test-name-pattern ^editing.the.seed.after.a.collision.clears.the.refusal.cleanly..queue.row.116.$ tests/e2e.test.js
 # updateParse() no longer clears a standing refusal, so a fixed collision never lets go.
+# Retained behavior re-anchored for saved instances; exact intent is recorded in the lane evidence.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11171,7 +11171,6 @@
- /** Re-parse on every input: the parse line, the outline and Generate follow.
+@@ -12884,7 +12884,7 @@ function syncParseState({ paint }) {
   *  An edit is also the one event that can clear a standing refusal. */
  function updateParse() {
+   buildRefused=false;
 -  refusal = null;
++
    if (drawerOpen) layoutStatus("");
    syncParseState({ paint: true });
  }

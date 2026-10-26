@@ -1,0 +1,25 @@
+# kills: SV3 U1: selection Edit and deletion target the chosen instance despite equal names and URLs
+# suite: node --test --test-name-pattern=^SV3.U1: tests/app.test.js
+# fault: Treats a sibling with the same musical inventory as the selected local instance.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11291,17 +11291,17 @@ function buildChips() {
+     b.innerHTML='<span class="dot"></span>'+esc(labels[i]);
+     let accessible=on?t("sheet.edit_aria",{name:labels[i]}):labels[i];
+     if(labels[i]!==chipLabel(d.name)) {
+       const saved=view.selection.kind==="saved";
+       const token=saved?"S"+view.displayOrdinal:"P"+(DECKS.findIndex(preset=>preset.id===view.selection.id)+1);
+       accessible+=". "+t(saved?"saved.savedToken":"saved.presetToken",{token});
+     }
+     b.setAttribute("aria-label",accessible);
+-    b.onclick=()=>savedEqual(view.selection,selection)?openEditSheet(d,b):selectDeck(view.selection);
++    b.onclick=()=>d.id===deck().id?openEditSheet(d,b):selectDeck(view.selection);
+     nav.appendChild(b);if(on)active=b;
+   });
+   restoreBtn.hidden=!(hiddenDecks().length || Object.keys(replacements()).length);
+   if(active&&active.scrollIntoView)active.scrollIntoView({block:"nearest",inline:"nearest"});
+ }
+
+
+ /* ---------------- scale sheet ----------------

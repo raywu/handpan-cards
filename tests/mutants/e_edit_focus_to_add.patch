@@ -7,15 +7,16 @@
 # on document.body with no visible focus ring at all - worse than the stated
 # defect, not merely a wrong destination. Either way, focus is not returned
 # to the chip that opened the Edit sheet, which is what the test asserts.
+# Retained behavior re-anchored for saved instances; exact intent is recorded in the lane evidence.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11477,7 +11477,7 @@ function hideSheet() {
-   seedPrefill = null;
-   dropDrawer();
-   setInert(false, background);
--  (sheetOpener || addChip).focus();
+@@ -13230,7 +13230,7 @@ function hideSheet() {
+   const openerTag=sheetOpenerSelection;
+   if(savedState){selection=savedResolve(selection,savedState,savedEntries);setOrder();buildChips();render();}
+   const liveOpener=openerTag?[...document.getElementById("decks").children].find(chip=>chip.getAttribute("data-selection-kind")===openerTag.kind && chip.getAttribute("data-selection-id")===openerTag.id):sheetOpener;
+-  (liveOpener || document.querySelector("#decks .chip.on") || addChip).focus();
 +  addChip.focus();
-   sheetOpener = null;
+   sheetOpener = null;sheetOpenerSelection=null;
  }
  // The app's own way out: BACK, Escape, or a save that finishes. It pops the

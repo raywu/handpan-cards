@@ -12,10 +12,11 @@
 # case this mutant used to drop is deleted; the same fault is now panelStops()
 # filtering on !disabled only, so the hidden credit paragraph's link is a stop
 # again. The killing test is unchanged.
+# Retained behavior re-anchored for saved instances; exact intent is recorded in the lane evidence.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13596,7 +13596,7 @@ function panelStops() {
+@@ -14251,7 +14251,7 @@ function panelStops() {
            ...settingsPanel.querySelectorAll('#settings-panel a.mode[id^="res-"]'),
            document.getElementById("about-open"),
            document.getElementById("lang-select")]
@@ -23,4 +24,4 @@ diff --git a/index.html b/index.html
 +    .filter(el => el && !el.disabled);
  }
  function openPanel() {
-   settingsPanel.removeAttribute("hidden");
+   navigationGeneration++;

@@ -1,14 +1,21 @@
-# kills: a field edit drops the old seed record instead of adding a second one
-# suite: node --test --test-name-pattern ^a.field.edit.drops.the.old.seed.record.instead.of.adding.a.second.one$ tests/app.test.js
+# kills: a field edit updates its one envelope record instead of adding a second one
+# suite: node --test --test-name-pattern=^a.field.edit.updates.its.one.envelope.record.instead.of.adding.a.second.one$ tests/app.test.js
+# former kills: a field edit drops the old seed record instead of adding a second one
+# fault: Edit allocates a second copy instead of updating only its one stable envelope row.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7275,7 +7275,7 @@ function replaceScale(oldStr, seed) {
-   const oldId = stringDeckId(oldStr);
-   const list = savedScales();
-   const at = list.findIndex(r => r && sameDeck(r, oldId, oldStr));
--  if (at < 0) { rememberScale(seed); return; }
-+  rememberScale(seed); return;
-   const out = [];
-   list.forEach((r, i) => {
-     if (i === at) out.push(rec);
+@@ -10437,12 +10437,13 @@ function applySavedCommand(staged, command, candidate) {
+       row.record = record; row.revision++;
+     }
+     const deckValue = { ...candidate.deck, options: { ...candidate.deck.options } };
+     if (isBuiltIn(record.o && record.o.replaces)) deckValue.options.replaces = record.o.replaces;
+     else delete deckValue.options.replaces;
+     attachCandidate(row, deckValue);
++    allocate(savedClone(record));
+     targetId = row.instanceId; desired = { kind: "saved", id: targetId };
+   } else if (command.type === "replace-builtin") {
+     if (!isBuiltIn(command.seedId) || command.expectedSlotStateRevision !== current.slotStateRevision ||
+         command.expectedOwnerId !== (current.slots[command.seedId] || null)) return conflict();
+     const record = savedClone(candidate.record);
+     record.o = { ...(record.o || {}), replaces: command.seedId };

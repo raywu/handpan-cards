@@ -1,0 +1,14 @@
+# kills: SV6 E1: two real targets serialize different Adds and deduplicate identical imports
+# suite: node --test --test-name-pattern=^SV6.E1: tests/e2e.test.js
+# fault: Ignores the fresh RW snapshot and applies stale staged bytes, overwriting an earlier acknowledged Add.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10690,7 +10690,6 @@ async function commitSavedDurable(command, options) {
+       result=await locks.request(SAVED_LOCK,{mode:"exclusive",...(options.signal?{signal:options.signal}:{})},()=>{
+         callbackEntered=true;
+         return savedTransaction(opened.db,"readwrite",(fresh,store)=>{
+-          if(!sameSavedSnapshot(fresh,snapshot))return SAVED_RETRY;
+           const applied=applySavedCommand(staged,command,candidate);
+           if(applied.ok && applied.changed)store.put(JSON.stringify(applied.envelope),SAVED_RECORD);
+           return applied;

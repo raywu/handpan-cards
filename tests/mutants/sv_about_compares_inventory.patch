@@ -1,0 +1,21 @@
+# kills: SV11 U7: About seed routing selects the slot owner rather than an equal-inventory sibling
+# suite: node --test --test-name-pattern=^SV11.U7: tests/app.test.js
+# fault: About treats a same-inventory plain sibling as the seeded slot owner and fails to select the intended saved instance.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14333,13 +14333,13 @@ aboutCloseBtn.onclick = closeAbout;
+ // through the fallback takes the other path so its "gone" warning still fires.
+ function aboutLink(href) {
+   const slug = href.slice(DECK_ROUTE.length);
+   const routed = Object.prototype.hasOwnProperty.call(DECK_SLUGS, slug) ? DECK_SLUGS[slug] : null;
+   if (routed) {
+     const resolvedSelection=savedState?savedResolve({kind:"builtin",id:routed},savedState,savedEntries):{kind:"builtin",id:routed};
+-    if (savedEqual(resolvedSelection,selection) && (selection.kind==="builtin" && selection.id===routed || savedState?.slots[routed]===selection.id)) { closeAbout(); return; }
++    if ((resolvedSelection.kind==="saved" ? savedEntries.get(resolvedSelection.id)?.deck : DECKS.find(d=>d.id===resolvedSelection.id))?.id===deck().id) { closeAbout(); return; }
+   }
+   hideAbout();
+   history.replaceState(null, "", href);
+   routeToDeck(routed);
+   syncRoute();
+ }

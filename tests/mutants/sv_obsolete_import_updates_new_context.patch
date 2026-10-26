@@ -1,0 +1,21 @@
+# kills: SV11 U1: acknowledged old imports cannot steal a newer view or Add sheet
+# suite: node --test --test-name-pattern=^SV11.U1: tests/app.test.js
+# fault: A delayed acknowledged import steals the newer selected view or editor context.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9948,13 +9948,13 @@ function generateDeck(text, options, guard) {
+     candidate: { record: scaleRecord(seedOf(built.value)), deck: built.value } };
+   const finish = result => result.ok ? { ...built, ...result, value: savedEntries.get(result.instanceId)?.deck || built.value } : result;
+   return savedMode === "session" ? finish(commitSavedSession(command)) : commitSaved(command).then(finish);
+ }
+ function openShare(text) {
+   const request=++shareRequestGeneration, context=navigationGeneration;
+-  const current=()=>request===shareRequestGeneration && context===navigationGeneration;
++  const current=()=>true;
+   pendingRecoveryShare=String(text);
+   const res = HPE.share.decode(String(text));
+   if (!res.ok) { if(current()){pendingRecoveryShare=null;say(reasonText(res), "err");} return res; }
+   const finish = built => {
+     if(!current())return built;
+     if (!built.ok) {

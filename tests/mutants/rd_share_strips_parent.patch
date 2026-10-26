@@ -1,14 +1,22 @@
-# kills: RD: opening a share link that carries an explicit parent stores that parent again, after an inferred SAVE included
-# suite: node --test --test-name-pattern ^RD:.opening.a.share.link tests/app.test.js
-# openShare drops the decoded parent before generating, so a link's explicit index is no longer stored.
+# kills: RD: an older explicit-parent link creates a separate variant after inferred-parent Edit
+# suite: node --test --test-name-pattern=^RD:.an.older.explicit\-parent.link.creates.a.separate.variant.after.inferred\-parent.Edit$ tests/app.test.js
+# former kills: RD: opening a share link that carries an explicit parent stores that parent again, after an inferred SAVE included
+# fault: An older explicit-parent link is merged into the now-inferred edited instance rather than retained separately.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9851,6 +9851,7 @@ function openShare(text) {
-   const res = HPE.share.decode(String(text));
-   if (!res.ok) { say(reasonText(res), "err"); return res; }
-   // Generation runs ONCE per restore, here, exactly as submit does (section 11).
-+  delete res.value.options.parent;
-   const built = generateDeck(HPE.core.formatSeed(res.value.fields), res.value.options);
-   if (!built.ok) { say(reasonText(built), "err"); return built; }
-   rememberScale(seedOf(built.value));
+@@ -10114,13 +10114,13 @@ function savedMeaning(deckValue) {
+   const seatValue = seats.value || {};
+   const normalizedSeats = ["rim", "inner", "bottom"].map(ring => {
+     const list = seatValue[ring];
+     return !list || list.every((seat, i) => seat === i) ? null : list;
+   });
+   return JSON.stringify([HPE.core.identitySeed(deckValue.fields), o.name ? [true, o.name] : [false, ""],
+-    o.parent == null ? [false, null] : [true, o.parent], o.palette, mirrors.top, mirrors.bottom,
++    [false, null], o.palette, mirrors.top, mirrors.bottom,
+     o.anchor === "between" ? "between" : "one",
+     normalizedSeats,
+     angles.value ? angles.value.bottom : null]);
+ }
+ function readSavedRecord(record) {
+   if (!savedObject(record) || typeof record.s !== "string" || !checkShareVersion(record.v).ok) return savedFailure("protected", "opaque-record");

@@ -1,0 +1,21 @@
+# kills: SV2 U1: Edit preserves its instance and position while sibling bytes remain unchanged
+# suite: node --test --test-name-pattern=^SV2.U1: tests/app.test.js
+# fault: Rebuilding an edited record discards preserved unknown top-level metadata.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10384,13 +10384,13 @@ function savedCandidate(command) {
+     delete deckValue.options.replaces;
+   }
+   return { ok: true, record, deck: deckValue, meaning: savedMeaning(deckValue), identity: HPE.core.identitySeed(deckValue.fields) };
+ }
+ const SAVED_PORTABLE_OPTIONS = ["name", "palette", "parent", "mirror", "mirrorBottom", "anchor", "seats", "angles"];
+ function savedEditedRecord(target, candidate) {
+-  const out = { ...savedClone(target), v: SHARE_VERSION, s: candidate.record.s };
++  const out = { v: SHARE_VERSION, s: candidate.record.s };
+   const options = savedObject(target.o) ? { ...savedClone(target.o) } : {};
+   for (const name of SAVED_PORTABLE_OPTIONS) delete options[name];
+   for (const name of SAVED_PORTABLE_OPTIONS) if (Object.hasOwn(candidate.record.o || {}, name)) options[name] = savedClone(candidate.record.o[name]);
+   out.o = options;
+   return out;
+ }

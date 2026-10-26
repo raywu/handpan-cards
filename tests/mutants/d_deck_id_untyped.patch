@@ -1,17 +1,22 @@
-# kills: a non-string stored deck id is ignored and never eats a share link
-# suite: node --test --test-name-pattern ^a.non.string.stored.deck.id.is.ignored.and.never.eats.a.share.link$ tests/app.test.js
-# The stored deck id goes back to a truthiness check, so a non-string value
-# reaches the boot tail and throws on .indexOf - taking the share-link handler
-# at the end of the script with it.
+# kills: malformed legacy selection is protected without losing an incoming link or overwriting preferences
+# suite: node --test --test-name-pattern=^malformed.legacy.selection.is.protected.without.losing.an.incoming.link.or.overwriting.preferences$ tests/app.test.js
+# former kills: a non-string stored deck id is ignored and never eats a share link
+# fault: Malformed legacy selection bypasses explicit protection before incoming-share recovery.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -6818,7 +6818,7 @@ if (typeof store !== "object" || Array.isArray(store)) store = {};
- // so a sibling feature (or a hand-edited value) can leave any JSON type here,
- // and a non-string id that reached the boot tail would throw on .indexOf and
- // take the share-link handler at the end of the script down with it.
--let deckId = typeof store.deck === "string" ? store.deck : DEFAULT_DECK;
-+let deckId = store.deck || DEFAULT_DECK;
- let storedDeck = deckId;              // built-in or custom:; see save()
- // S2: only "A"/"B"/"S" survive the read; a future-version or corrupted value
- // (a stray "C", a non-string, etc.) reads back as "A" instead of propagating.
+@@ -10049,13 +10049,13 @@ function savedCryptoId(used) {
+   return null;
+ }
+ function savedPreference(raw) {
+   if (raw === null) return { ok: true, value: {} };
+   try {
+     const value = JSON.parse(raw);
+-    if (!savedObject(value) || (Object.hasOwn(value, "deck") && typeof value.deck !== "string") ||
++    if (!savedObject(value) || false ||
+         (Object.hasOwn(value, "hidden") && (!Array.isArray(value.hidden) || value.hidden.some(x => typeof x !== "string"))))
+       return savedFailure("protected", "legacy-preferences");
+     return { ok: true, value };
+   } catch (e) { return savedFailure("protected", "legacy-preferences"); }
+ }
+ function savedLegacyProjection(raw) {

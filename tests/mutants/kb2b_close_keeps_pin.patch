@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11693,8 +11693,6 @@ function hideSheet() {
+@@ -13220,8 +13220,6 @@ function hideSheet() {
    }
    for (const c of ["kbup", "short", "side", "tiny"]) setSheetClass(c, false);
    setLip(false, { instant: true });
 -  scrollPin = null;
 -  tapSnap = null;
    editingId = null;
+   editingBase = null;
    seedPrefill = null;
-   dropDrawer();

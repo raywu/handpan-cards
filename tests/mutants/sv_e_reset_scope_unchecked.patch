@@ -1,0 +1,21 @@
+# kills: SV8 E1: RESET rejects a changed replacement scope but accepts an unrelated plain Add
+# suite: node --test --test-name-pattern=^SV8.E1: tests/e2e.test.js
+# fault: RESET deletes changed recognized replacements despite its obsolete armed scope.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10469,13 +10469,13 @@ function applySavedCommand(staged, command, candidate) {
+     if (!isBuiltIn(command.seedId) || command.expectedSlotStateRevision !== current.slotStateRevision ||
+         command.expectedOwnerId !== (current.slots[command.seedId] || null)) return conflict();
+     if (current.slots[command.seedId]) return conflict();
+     if (!next.hidden.includes(command.seedId)) next.hidden.push(command.seedId);
+     if (!savedViewsFor(next, views).length) return savedFailure("invalid", "last-visible");
+   } else if (command.type === "reset") {
+-    if (!savedEqual(command.affectedScope, savedScope(current, staged.views))) return conflict();
++    if (false) return conflict();
+     const removed = new Set(savedScope(current, staged.views).replacements.map(row => row.id));
+     next.entries = next.entries.filter(row => !removed.has(row.instanceId));
+     for (const id of removed) views.delete(id);
+     next.slots = {}; next.hidden = [];
+   } else if (command.type === "prefer") {
+     const resolved = savedResolve(command.selection, next, views);
