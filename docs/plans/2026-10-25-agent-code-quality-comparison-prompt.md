@@ -14,7 +14,7 @@ independently critique this prompt, revise omissions, then hold until activation
 At activation resolve current DEV/PR/ledger refs and assign a dedicated planning
 worktree; do not reuse an actively edited tree.
 
-## Refined planning prompt — v1
+## Refined planning prompt — v2
 
 You are designing an investigation to compare the quality of changes committed
 through Codex and Claude in this repository. **Output a plan, not the comparison
@@ -41,6 +41,11 @@ operational outcomes. Define whose decisions the study can assess. A change
 remaining unmerged, a held release, a long-running task or a discovered preexisting
 bug is not automatically low quality. Report delivered snapshots separately from
 interrupted work. Equal word count, commit count and test count are not quality.
+
+For each case reconstruct the contemporaneous requirements, instructions and
+verification obligations. Report historical compliance separately from a shared
+retrospective quality standard; later-added rules cannot become retroactive
+violations. Missing historical context stays qualified, not inferred from today.
 
 Freeze eligibility, sampling/stratification, time horizon, defect severity,
 attribution confidence, rubric anchors, weighting policy, review independence
@@ -114,6 +119,12 @@ pass without author labels/history, then a contextual pass with requirements and
 provenance; document unavoidable recognition and missing historical context.
 Do not remove context needed to judge correctness merely to claim blinding.
 
+Record each evaluator model/harness where evidenced, prior involvement, likely
+author recognition and possible agent-family allegiance. Seek cross-harness or
+human pilot calibration when available; do not install tools or message people
+without authorization. If all evaluators come from one agent family, disclose
+that bias limitation explicitly rather than calling the study neutral.
+
 Separate author self-review, automated checks, independent agents and human
 review. Use dual independent assessment of the same pilot samples, reconcile
 disagreements against evidence while preserving minority judgments, and document
@@ -179,5 +190,11 @@ deliverables; plan-review gate; ledger recovery.
 v1 incorporated an internal adversarial pass before storage: rejected naive
 Git-author attribution, LOC/test counts as scores, date-only cohorts, treating
 held work as defects, unadjusted escaped-bug rates, invented costs and a single
-weighted winner. Independent prompt critique is pending. No plan has been
-generated, reviewed or executed; do not mark those gates passed.
+weighted winner. Independent non-author prompt review identified two material refinements, both
+incorporated in v2: distinguish contemporaneous compliance from retrospective
+standards, and disclose evaluator-family/recognition bias with cross-harness or
+human calibration where available. Remaining criteria were supported by reviewer;
+no comparison or plan generation performed. No plan has been generated, reviewed
+or executed; do not mark those gates passed. Review artifact: root agent mailbox
+/root/variants_schema_eng_review, this task’s prompt-only review. At activation
+freeze final prompt SHA in the ledger and repeat plan review on actual output.
