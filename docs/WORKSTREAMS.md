@@ -4,11 +4,20 @@
 
 Latest check-in: owner explicitly selected **keep573→575→577→579→581main releases
 held; finish saved variants first**. Read-only live PR states verified OPEN/DRAFT.
-S backend b425/indexf90 independently reviewed, edge6GREEN and C10model10PASS;
-T9f4 nativeOLD6intended assertion RED, not feature Green. Current integration has
-INCOMPLETE UI and cannot reach DEV. Performance V1input correctly refused one
-invalid mirrored-angle row before timing; corrected V2full-builder inputs now ready
-for30samples each2/20/200/final1MiB. Root alone owns browsers; U not started.
+S backend b425/indexf90 independently reviewed, edge6GREEN and C10model10PASS.
+V2 backend profiling completed: 120/120 acknowledged samples (30 each at 2/20/200
+records and an exact final 1MiB envelope), independently audited CLEAR; callback
+p95/max milliseconds: .6/.6, .7/.7, 1.6/1.7, 4.1/4.1. These are pre-UI API-ACK
+measurements, not disk-flush or UI-paint claims.
+First UI candidate `94aa234d2dd3a8d5bdc7a0d1f34c37c8079bb36e` in `/ui` reports
+23 new unit cases passing. Independent ENG review is NOT CLEAR: stale async import
+completion, cross-tab editor target coherence/unnecessary reset, cold-start locale,
+routed preference persistence, missed-notification conflict recovery, About tagged
+identity and modal inertness need focused regression tests and repairs. UI design
+source review is pending (first attempt unavailable). Integration remains partial
+and MUST NOT reach DEV. Root owns browsers; full regressions, native acceptance,
+mutants, final CI and actual DEV verification remain outstanding. See the latest
+coordination checkpoint for file ownership and exact continuation.
 
 
 Owner explicitly approved the reviewed plan and its exact instruction/spec patch

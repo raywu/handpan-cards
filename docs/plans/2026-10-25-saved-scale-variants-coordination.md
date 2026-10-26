@@ -385,3 +385,39 @@ priority saved-variants repair. Read-only live GitHub check confirms all5OPEN/DR
 and582DEVmerged. Continue authorized saved variants through DEV; main still needs
 separate explicit consent. No new blocking owner input; retain original custom-
 diagram-at-LINK evidence and unresolved original omission report.
+
+## Check-in — UI candidate requires repairs; main queue remains held
+
+Supersedes earlier next-step statements: four SERIAL V2 profiling jobs completed
+120/120 ACKs, all actual loaded-document bindings and expected bytes checked, no
+quota/timeout/stderr failures, owned cleanup/census preserved. Independent audit
+CLEAR for backend-to-UI transition only. Callback p95/max: records2 .6/.6ms,
+20 .7/.7ms, 200 1.6/1.7ms, exact final1MiB 4.1/4.1ms. Raw receipts remain in
+/private/tmp/handpan-share-hotfix.urAbvO/evidence/sv-backend-*-a1.*; root verification
+sv-backend-measurement-a1-root-verification.json. Private runner is not yet the
+planned versioned reusable probe deliverable.
+
+U candidate94aa234d2dd3a8d5bdc7a0d1f34c37c8079bb36e is frozen in
+/private/tmp/handpan-saved-variants.HVUKbE/ui, branch codex/saved-variants-ui-20261025.
+Author reports23 new unit PASS, shipping177x2 PASS; these do not establish full
+feature readiness. Independent source ENG NOT CLEAR found seven P1 groups:
+pending openShare ownership; remote clean-editor deck/target mixing and unrelated
+interaction reset; missing boot applyLang; builtin route preference not persisted;
+missed-event conflict Back showing stale loser; About comparing inventory IDs;
+temporary-use action outside modal inertness. Also clear consumed bootStored.
+No source fix begun pending focused TDD regressions. Original12 nonempty engine
+regions and generated DECKS independently unchanged. UI design review first failed
+for model capacity and is retried; no design clearance inferred.
+
+T tests tree now clean merged200b114d with actual94aa UI. Agent
+/root/variants_test_repair_lane owns tests/app.test.js, tests/e2e.test.js and saved
+fixture only: first capture meaningful assertion RED for review findings, then port
+explicitly superseded legacy storage/identity oracles without reducing881 original
+registrations or meaningful invariants. No worker browser execution. U owns only
+index/eight locale JSON and stays frozen until regression batch. Root integration
+0f9dcdb3 adds five UI IDs to the sandbox list only; app remains backend-onlyf90 and
+cannot be deployed. Next: regression RED -> U repairs -> independent ENG/design
+recheck -> root native acceptance/regressions/mutants -> full CI -> actual DEV.
+Main573/575/577/579/581 remain HELD per owner. No new owner decision blocks repairs;
+no current DEV QA invitation for variants. Preserve original custom-layout-at-LINK
+report as unresolved; do not classify it as an unsaved draft.
