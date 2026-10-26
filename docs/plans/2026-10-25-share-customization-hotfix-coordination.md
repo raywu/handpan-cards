@@ -250,3 +250,17 @@ independently ENG-reviewed, not executed. It preserves both exact SHC journeys a
 binds8actual loaded DEV documents by CDP request/frame/loader/body SHA, no separate
 fetch substitute. Must wait CI success, DEV merge and served byte identity, then
 owned lease/180s supervisor/census and exact2TAP passes; no owner clipboard/profile.
+
+## Owner DEV QA result — passed
+
+2026-10-25: owner supplied before/after DEV links and reported 'all passed' for
+the provided step-by-step LINK QA. After link includes an updated name and an
+explicit seven-angle `at-` segment; before link has no explicit-angle segment.
+Keep private names/fullURLs in the conversation rather than public recovery docs.
+Device/browser details were not supplied; this is owner-reported checklist success,
+not independent exhaustive Safari/clipboard/share-picker or timing coverage.
+
+Scope:581 async LINK UI repair onDEV. Saved-variant coexistence is not delivered
+and the original omitted-angle cause is not established by this successful run.
+No new main consent:581 and other releases remain held under existing decisions.
+Duplicate-note workstream/PR579 stays paused until further notice.

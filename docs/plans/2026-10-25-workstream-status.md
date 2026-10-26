@@ -28,7 +28,7 @@ release documents, not SEO or duplicate-note functionality.
 |575| Latest Layout outcome per ring |576merged/fullCI/DEVchecks; implementation complete. |
 |577| Reviewed SEO long-tail research/content subplan |578merged/fullCI/docdelivery; no articles/generator/publishing implemented. |
 |579| Reviewed duplicate-note plan |580 merged; owner now PAUSED the entire workstream and PR until further notice. Preserve artifacts; no release or implementation until explicit resumption. |
-|581| Async LINK completion ownership hotfix |582merged/fullCI/servedDEVchecks; safe toQA affectedLINKbehavior. Does not deliver variants or establish original missing-angle cause. |
+|581| Async LINK completion ownership hotfix |582merged/fullCI/servedDEVchecks; owner reported all supplied DEV QA steps passed, with before/after links. Does not deliver variants or establish original missing-angle cause. |
 
 ## Released/completed work
 

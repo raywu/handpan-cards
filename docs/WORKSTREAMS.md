@@ -104,7 +104,12 @@ Independent delivery audit CLEAR. Raw host-local receipts under evidence/:
 not all14raw bodies. A first postprocessor missed TAP escaping; corrected reader
 inspected the SAME successful run, no browser retry.
 
-Ready for affected DEV QA. Main [581](https://github.com/raywu/handpan-cards/pull/581)
+Owner reported **all provided DEV QA steps passed** on2026-10-25 and supplied
+before/after links. The after link carries explicit custom bottom angles and the
+updated name; private payloads remain in the conversation. Device/browser details
+were not supplied, so no specific physical-device matrix is inferred. This closes
+the requested owner smoke QA for581, not saved-variants acceptance or proof of the
+original missing-angle cause. Main [581](https://github.com/raywu/handpan-cards/pull/581)
 remains DRAFT/HELD. Controlled API sinks/fallback fonts/Chromium only; no Safari/
 native OS clipboard/share-picker claim. Prevents obsolete async LINK completion
 UI; does not deliver saved variants or reproduce/explain the original omitted-
