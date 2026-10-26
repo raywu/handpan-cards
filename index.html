@@ -9993,7 +9993,7 @@ function scaleReader(v) {
 }
 
 function recordOptions(rec) {
-  const o = rec.o && typeof rec.o === "object" ? Object.assign({}, rec.o) : undefined;
+  const o = rec.o && typeof rec.o === "object" ? { ...rec.o } : undefined;
   if (!o || !("order" in o)) return o;
   const legacy = o.order;
   delete o.order;
