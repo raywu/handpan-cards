@@ -3660,7 +3660,7 @@ test("PM rule 7: HANDPAN 101 is the last Resources link, a Google Doc in a new t
   assert.match(first, /aria-label="Handpan 101 \(Google Doc\)"/);
   assert.match(first, /class="mode"/);
   assert.ok(!/onclick/.test(first), "a link click must not close the panel");
-  assert.match(first, />HANDPAN 101<\/a>/);
+  assert.strictEqual(strip(first).replace(/\s+/g, " ").trim(), "HANDPAN 101", "the complete name survives presentational wrapping");
   const rows = [...group.matchAll(/<div class="modebar([^"]*)">([\s\S]*?)<\/div>/g)];
   assert.strictEqual(rows.length, 4, "four modebar rows");
   assert.strictEqual((rows[0][2].match(/<a\b/g) || []).length, 3, "the site row keeps three siblings");
@@ -3686,7 +3686,7 @@ test("HHR: the Helpers resource is a native new-tab link immediately before HAND
   assert.match(link, /\btarget="_blank"/, "Helpers opens in a separate tab");
   assert.match(link, /\brel="noopener"/, "Helpers cannot access the app through window.opener");
   assert.match(link, /\bclass="mode"/, "Helpers shares the existing control treatment");
-  assert.match(link, />HANDPAN HELPERS<\/a>/, "the complete proper name is the native accessible label");
+  assert.strictEqual(strip(link).replace(/\s+/g, " ").trim(), "HANDPAN HELPERS", "the complete proper name survives presentational wrapping");
   assert.ok(!/\bon(?:click|keydown)\s*=/.test(link), "the resource uses native activation without inline script");
   assert.ok(!/\b(?:hidden|disabled|aria-hidden|tabindex)(?=\s|=|>)/.test(link), "Helpers remains a normal keyboard-reachable anchor");
   const index = links.indexOf(link);

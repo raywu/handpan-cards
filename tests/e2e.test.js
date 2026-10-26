@@ -2279,10 +2279,22 @@ function run() {
       }
     });
 
+  // FontFace objects can be recreated after viewport/mode changes. Prepare the
+  // CURRENT real registry before each independent workflow/geometry state, then
+  // keep the existing strict oracle. Fallback measurements never request loads.
+  async function prepareResourcesFonts(browser, fontMode) {
+    const pf = require("../tools/probe/panel_fit.js");
+    const fonts = fontMode === "real"
+      ? await browser.eval(`return (${pf.MEASURE_SRC}).fonts();`)
+      : await browser.eval(`return {size: document.fonts.size,
+          faces: [...document.fonts].map(f => ({family: f.family, weight: f.weight, status: f.status}))};`);
+    pf.checkFontMode(fontMode, fonts);
+  }
+
   // Owner compact-row contract. Reused with independently verified real fonts
   // below; all assertions describe rendered outcomes, not a CSS mechanism.
   async function assertCompactSites(browser, fontMode) {
-    require("../tools/probe/panel_fit.js").checkFontMode(fontMode, await browser.eval(`return {size: document.fonts.size, faces: [...document.fonts].map(f => ({family: f.family, weight: f.weight, status: f.status}))};`));
+    await prepareResourcesFonts(browser, fontMode);
     let primaryError;
     const cells = [[1024, 700, false], [320, 568, true], [380, 700, true], [768, 1024, false],
       [640, 360, true], [667, 375, true], [844, 390, true], [932, 430, true],
@@ -2306,6 +2318,7 @@ function run() {
           await browser.waitFor(`document.getElementById("${modeBtn(mode)}").getAttribute("aria-pressed") === "true"`, { label: `mode ${mode}` });
           await open();
           await browser.settle();
+          await prepareResourcesFonts(browser, fontMode);
           const m = await browser.eval(`
             const ids = ["res-handpaner", "res-dingandtones", "res-trainingcards"];
             const els = ids.map(id => document.getElementById(id));
@@ -2378,11 +2391,27 @@ function run() {
     }
   }
 
+  // Shared browser-side line reader: count text glyph rows, not the boxes
+  // of wrappers around those rows. Keep the existing width filter/top bins.
+  function renderedTextLineCount(el) {
+    const tops = new Set();
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    let node;
+    while ((node = walker.nextNode())) {
+      if (!node.nodeValue.trim()) continue;
+      const r = document.createRange();
+      r.selectNodeContents(node);
+      for (const x of r.getClientRects()) {
+        if (x.width > 0) tops.add(Math.round(x.top / 4));
+      }
+    }
+    return tops.size;
+  }
+
   // Owner-approved Helpers pair. This is rendered candidate coverage in English;
   // the separately recorded baseline/candidate locale matrix is not inferred here.
   async function assertHelpersPair(browser, fontMode) {
-    require("../tools/probe/panel_fit.js").checkFontMode(fontMode, await browser.eval(`return {
-      size: document.fonts.size, faces: [...document.fonts].map(f => ({family: f.family, weight: f.weight, status: f.status})) };`));
+    await prepareResourcesFonts(browser, fontMode);
     const cells = [[320, 568, true], [380, 700, true], [380, 740, true], [844, 390, true],
       [1280, 320, true], [1024, 700, false], [1024, 746, false], [1280, 746, false]];
     let primaryError;
@@ -2411,6 +2440,7 @@ function run() {
             if(a) a.scrollIntoView({block:"center", inline:"nearest"});
             return true;`);
           await browser.settle();
+          await prepareResourcesFonts(browser, fontMode);
           const m = await browser.eval(`
             const ids = ["res-handpan-helpers", "res-handpan-101"], els = ids.map(id => document.getElementById(id));
             if (els.some(e => !e)) return {missing: ids.filter((id, i) => !els[i])};
@@ -2443,7 +2473,8 @@ function run() {
                 const cx=(r.left+r.right)/2, cy=(r.top+r.bottom)/2, offsets=[-21.5,-14,-7,0,7,14,21.5];
                 const targetExposed=offsets.every(x=>offsets.every(y=>(Math.abs(x)>14 && Math.abs(y)>14)||hit(cx+x,cy+y)));
                 const textExposed=rects.every(t=>hit(t.left+.5,(t.top+t.bottom)/2)&&hit(t.right-.5,(t.top+t.bottom)/2));
-                return {id:e.id,text:e.textContent.trim(),left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height,
+                return {id:e.id,text:e.textContent.replace(/\\s+/g," ").trim(),visibleText:e.innerText.replace(/\\s+/g," ").trim(),
+                  physicalLines:lines.length,lineBoxes:lines,left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height,
                   rects:rects.length,visible,unclipped,targetExposed,textExposed,spill:e.scrollWidth-e.clientWidth,
                   ellipsis:cs.textOverflow==="ellipsis",inside:rects.every(t=>t.left>=r.left-.5&&t.right<=r.right+.5&&t.top>=r.top-.5&&t.bottom<=r.bottom+.5),
                   centered:lines.every(l=>Math.abs((l.left-r.left)-(r.right-l.right))<=2),
@@ -2452,7 +2483,10 @@ function run() {
           const label = `${fontMode} ${width}x${height} mode ${mode}`;
           assert.deepStrictEqual(m.missing, [], `${label}: both Helpers and HANDPAN 101 must exist`);
           assert.deepStrictEqual(m.ids, ["res-handpan-helpers", "res-handpan-101"], `${label}: exact third-row pair and order`);
-          assert.deepStrictEqual(m.links.map(e=>e.text), ["HANDPAN HELPERS", "HANDPAN 101"], `${label}: complete link labels`);
+          assert.deepStrictEqual(m.links.map(e=>e.text), ["HANDPAN HELPERS", "HANDPAN 101"], `${label}: complete semantic link labels`);
+          assert.deepStrictEqual(m.links.map(e=>e.visibleText), ["HANDPAN HELPERS", "HANDPAN 101"], `${label}: both complete names are visibly rendered`);
+          assert.deepStrictEqual(m.links.map(e=>e.physicalLines), [2, 2],
+            `${label}: both names occupy exactly two physical rendered lines: ${JSON.stringify(m.links)}`);
           assert.ok(m.links.every(e=>e.width>=44 && e.height>=44 && e.rects>0 && e.visible && e.targetExposed && e.textExposed),
             `${label}: both links have exposed 44px targets and readable text: ${JSON.stringify(m)}`);
           assert.ok(Math.abs(m.links[0].top-m.links[1].top)<=1, `${label}: Helpers and HANDPAN 101 share one row`);
@@ -2466,6 +2500,27 @@ function run() {
             for(const property of ["font","family","weight","tracking"])
               assert.strictEqual(link[property],m.reference[property],`${label} ${link.id}: existing peer ${property}`);
             if(link.rects>1) assert.ok(link.leading>=m.reference.leading-.01,`${label}: preserve readable wrapped-label leading`);
+          }
+          if(width===320 && height===568 && mode==="A"){
+            let accessibilityError;
+            try {
+              await browser.send("Accessibility.enable");
+              const {root}=await browser.send("DOM.getDocument",{depth:0});
+              const {nodeId}=await browser.send("DOM.querySelector",{nodeId:root.nodeId,selector:"#res-handpan-helpers"});
+              assert.ok(nodeId,`${label}: Helpers has a DOM node for accessibility inspection`);
+              const {nodes}=await browser.send("Accessibility.getPartialAXTree",{nodeId,fetchRelatives:false});
+              const links=nodes.filter(node=>!node.ignored && node.role?.value==="link");
+              assert.strictEqual(links.length,1,`${label}: one exposed accessible Helpers link`);
+              assert.strictEqual(String(links[0].name?.value||"").replace(/\s+/g," ").trim(),"HANDPAN HELPERS",
+                `${label}: computed accessible name retains the complete proper name`);
+            } catch(error) { accessibilityError=error; throw error; }
+            finally {
+              try { await browser.send("Accessibility.disable"); }
+              catch(cleanupError) {
+                if(!accessibilityError)throw cleanupError;
+                accessibilityError.message+=`; accessibility cleanup also failed: ${cleanupError.message}`;
+              }
+            }
           }
           const stops=await browser.eval(`return panelStops().map(e=>e.id);`);
           assert.deepStrictEqual(stops.slice(-4), ["res-handpan-helpers","res-handpan-101","about-open","lang-select"],
@@ -2497,6 +2552,54 @@ function run() {
   test("HHR: Helpers and HANDPAN 101 remain equal usable targets with complete labels and keyboard order", async () => {
     await freshLoad();
     await assertHelpersPair(b,"fallback");
+  });
+
+  // These literal fixtures specify actual text rows independently of the
+  // reader. The padded nested wrapper exposes a container rectangle that is
+  // not a third text line; THREE remains a real third-line witness.
+  test("HHR oracle: rendered text lines stay literal through wrappers and retain a genuine third line", async () => {
+    await freshLoad();
+    let fixtureError;
+    try {
+      const rows = await b.eval(`
+        const old = document.getElementById("hhr-line-oracle-fixtures"); if(old)old.remove();
+        const host = document.createElement("section"); host.id = "hhr-line-oracle-fixtures";
+        host.style.cssText = "position:fixed;left:24px;top:24px;z-index:2147483647;width:260px;background:white;color:black;font:400 16px/24px sans-serif;pointer-events:none";
+        const fixtures = [
+          ["one", "ONE"],
+          ["two", "FIRST<br>SECOND"],
+          ["three", "FIRST<br>SECOND<br>THIRD"],
+          ["wrapped-two", '<span style="display:block;padding-top:12px;font:400 16px/24px sans-serif"><span>FIRST<br>SECOND</span></span>'],
+        ];
+        for(const [id, html] of fixtures){
+          const el=document.createElement("div"); el.id="hhr-line-fixture-"+id; el.innerHTML=html; host.appendChild(el);
+        }
+        document.body.appendChild(host);
+        const read = (${renderedTextLineCount.toString()});
+        return fixtures.map(([id])=>{
+          const el=document.getElementById("hhr-line-fixture-"+id),r=el.getBoundingClientRect();
+          const range=document.createRange();range.selectNodeContents(el);
+          const wrapper=id==="wrapped-two"?getComputedStyle(el.firstElementChild):null;
+          return {id,lines:read(el),text:el.innerText.replace(/\\s+/g," ").trim(),width:r.width,height:r.height,
+            wrapper:wrapper?{paddingTop:wrapper.paddingTop,fontSize:wrapper.fontSize,lineHeight:wrapper.lineHeight}:null,
+            rects:[...range.getClientRects()].map(rect=>({left:rect.left,top:rect.top,width:rect.width,height:rect.height}))};
+        });`);
+      assert.deepStrictEqual(rows.map(row=>row.id),["one","two","three","wrapped-two"],"all four independent line fixtures are measured");
+      assert.deepStrictEqual(rows.map(row=>row.text),["ONE","FIRST SECOND","FIRST SECOND THIRD","FIRST SECOND"],"all literal fixture words are visible");
+      assert.ok(rows.every(row=>row.width>0 && row.height>0),"every fixture is rendered with positive dimensions");
+      assert.deepStrictEqual(rows[3].wrapper,{paddingTop:"12px",fontSize:"16px",lineHeight:"24px"},"the independent wrapper witness retains its declared geometry");
+      assert.strictEqual(rows[0].lines,1,`the one-line witness has one text line: ${JSON.stringify(rows[0])}`);
+      assert.strictEqual(rows[1].lines,2,`the two-line witness has two text lines: ${JSON.stringify(rows[1])}`);
+      assert.strictEqual(rows[2].lines,3,`the genuine third-line witness must retain all three text lines: ${JSON.stringify(rows[2])}`);
+      assert.strictEqual(rows[3].lines,2,`the nested padded wrapper preserves exactly two text lines: ${JSON.stringify(rows[3])}`);
+    } catch(error) { fixtureError=error; throw error; }
+    finally {
+      try { await b.eval(`document.getElementById("hhr-line-oracle-fixtures")?.remove(); return true;`); }
+      catch(cleanupError) {
+        if(!fixtureError)throw cleanupError;
+        fixtureError.message+=`; fixture cleanup also failed: ${cleanupError.message}`;
+      }
+    }
   });
 
   test("TR-1: the three site links are equal in width on every line they share, and every label stays inside its box",
@@ -14284,11 +14387,7 @@ function run() {
       const SEL = ".mode, .prints button, .prints select, .panel-heading, .panel-note";
       const measure = (scope) => b.eval(`
         const root = document.querySelector(${JSON.stringify(scope)});
-        const lines = (el) => {
-          const r = document.createRange();
-          r.selectNodeContents(el);
-          return new Set(Array.from(r.getClientRects()).filter((x) => x.width > 0).map((x) => Math.round(x.top / 4))).size;
-        };
+        const lines = (${renderedTextLineCount.toString()});
         const els = Array.from(root.querySelectorAll(${JSON.stringify(SEL)})).filter((e) => e.getClientRects().length);
         const paper = document.getElementById("print-paper-select");
         const ctx = document.createElement("canvas").getContext("2d");
