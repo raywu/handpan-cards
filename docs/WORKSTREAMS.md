@@ -451,3 +451,21 @@ released. No further CLAUDE edit or main consent is inherited. The
 accounts for exact application bytes plus one frozen insertion; original raw-source
 failures remain failed evidence. Headless evidence and owner QA do not establish
 unspecified device coverage or a repaired full Mac suite.
+
+## HANDPAN-HELPERS activation — 2026-10-26
+
+Owner approved the reviewed resource plan and exact Resources-only CLAUDE patch
+through DEV, targeting the next release only after fit/tests/independent review/
+fullCI/actualDEV gates. Main requires separate consent. Saved variants retains
+priority and its unfinished code is excluded from this DEV6165c873-based branch.
+
+Plan: docs/plans/2026-10-25-handpan-helpers.md. Root integration/worktree:
+/private/tmp/handpan-helpers.HUZs5u/integration, codex/helpers-integration-20261026.
+File-owned lanes: tests/ (helpers_tests; app/e2e tests), markup/ (helpers_markup;
+index Resources markup), root (exact instruction patch, support, faults, ledger,
+sole browser lease). Last: liveDEV/preimage verified, lanes created/briefed.
+Next: literal acceptanceRED before U edits, then same testsGREEN and full gates.
+No application or delivery success is claimed by this activation entry.
+
+SEO owner decisions also settled: plan /learn/ publication home and owner musical
+review for pilot articles; no SEO article implementation/publication authorized.
