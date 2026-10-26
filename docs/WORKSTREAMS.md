@@ -44,6 +44,15 @@ executes this already-planned internal alternative under through-DEV and
 reaffirmed AFK authority; no CLAUDE change/install/main merge.
 
 2026-10-26 continuation checkpoint:
+- **Current delivery blocker:** exact-head Linux validate40312402295 at65e29107
+  found obsolete native collision-veto and unselected aria-label expectations.
+  Four mutation shards reject clean baselines; data, Python and both panel-fit
+  jobs pass. Full JS job still running. DEV584 remains unmerged; CI-only draft583
+  must never merge main. Independent ENG/design-cleared
+  [test-only native contract refresh](plans/2026-10-26-saved-variants-native-contract-refresh.md)
+  preserves six real build-refusal protections and accessibility checks. Separate
+  test/fault lanes are active; sourceab90 stays frozen. Next: exact-header proof,
+  full final CI, actual DEV verification. Earlier local successes do not pass CI.
 - Final metadata caught canonical data-patch context constraints missed by the
   postimage audit. Restore13 original generated data-patch representations after
   exact postimage equivalence; independently cleared. Refreshed metadata54/54
