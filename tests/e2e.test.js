@@ -18137,6 +18137,9 @@ function run() {
               await ink(p,"#saved-status",{text:expected.session,live:true});
               await p.click("#settings-trigger");await p.click("#deck-add");await p.type("#scale-box",SV.inventories.other.seed);
               assert.strictEqual(await p.eval("return document.getElementById('scale-generate').disabled;"),false,"note input stays English in every locale");
+              assert.strictEqual(await p.eval("return sheetTab==='scale'&&document.getElementById('scale-generate').hidden;"),true,"Add keeps Generate hidden until the Layout step");
+              await p.click("#scale-next");
+              await p.wait("sheetTab==='layout'&&!document.getElementById('scale-generate').hidden","NEXT opens Layout and exposes Generate");
               await p.click("#scale-generate");await p.wait("document.getElementById('scale-sheet').hidden","session-only scale generation completes");
               assert.strictEqual(await p.eval("return HPE.core.formatSeed(deck().fields);"),SV.inventories.other.seed,"actual temporary scale becomes the selected view");
               assert.strictEqual(await p.eval("return savedMode;"),"session");await ink(p,"#saved-status",{text:expected.session,live:true});
