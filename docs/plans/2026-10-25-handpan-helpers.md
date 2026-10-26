@@ -302,3 +302,46 @@ created and briefed. Next: T literal acceptance RED, then minimal U markup;
 inspect support necessities, run unchanged acceptance GREEN, generate meaningful
 faults, perform bounded fit/usability checks and independent final reviews.
 Full final-head CI and actual DEV verification remain required; not QA-ready.
+
+## Current local validation checkpoint — 2026-10-26
+
+Frozen app source08a6ed02, SHA0bfc1f9b2fb67a5329144d2170277e7b44228ffa620af96dbf613531af662a6e;
+only approved Resources markup/factual comments changed. All scripts, functional
+CSS and six existing outbound anchors retain baseline bytes. Exact approved
+CLAUDE packet is applied only in this Helpers branch.
+
+- Spec-first unitRED2 and nativeRED1 fail their literal missing-link assertions
+  on unchangedDEV6165; candidate unit2 and full app882/882 pass.
+- Native candidate4/4 pass: seven-anchor inventory, A/B/S click/Enter preserving
+  practice, English fallback/realfont geometry and keyboard order across48states.
+  Initial failures exposed scoped fixture assumptions (blindly toggling an open
+  panel, unrevealed mode buttons); fixes preserve all acceptance assertions.
+  Nearest-scroll target samples at844x390 reached the viewport edge. Independent
+  design cleared ordinary center scrolling for reachability; prior failures are
+  retained, and this is not default-layout/fit or physical-device proof.
+- Independently ENG-reviewed/audited private pairedprobe a1 passes all1344unique
+  pairs:384representative fixed +960at20CSSOM-derived boundary/corner viewports,
+  all8locales/twofonts/three modes. All actual stamps, strict unchanged judges and
+  raw pairs retained; zero skipped/retried/excluded.32owned browser/server cleanups
+  complete. Minimum measured target93.5×44px, zero failed sampled hits/textspill.
+  Reachability scrolling occurs AFTER unscrolled paired fit measurements.
+- Existing full-domain panel probe English/bothfonts passes8019cells perfont,
+  with1200/1260extra invariance cells, zero skipped/rule/invariance/gutter failures.
+  Remainingseven locale probe runs remain pending, distinct from paired coverage.
+- All1513patches apply (1510originalidentities +3newHHR);15affected/new literal
+  suite clean/fault/restored triples pass expected counts and intended assertions,
+  no setup/timeout/skip credit. Metadata54/54 passes. App/native own floors882/482
+  reflect +1/+2registrations; full native count still requires final LinuxCI.
+
+Private reproducible receipts: /private/tmp/handpan-helpers.HUZs5u/evidence;
+supervisor/raw logs: /private/tmp/handpan-share-hotfix.urAbvO/evidence.
+Key basenames: helpers-full-app-a0, helpers-unit-red-a1/green-a0,
+helpers-native-red-a0/green-a3, helpers-paired-probe-a1.report.json +journal,
+helpers-panel-en-a0, helpers-mutant-proofs-a0.json and
+helpers-proof-assertions-a0.json, helpers-mutants-freeze-a0.json,
+helpers-metadata-a0.tap. These local receipts do not establish portable or served
+DEV publication; publish sanitized immutable refs in authorized recovery thread.
+
+Next: remaining locale probes, independent exact-head ENG/design final review,
+full exact-head Linux validate/allmutation gates, actual servedDEV bytes and
+journeys. No DEV QA-ready or main-release claim yet. Saved variants stays priority.

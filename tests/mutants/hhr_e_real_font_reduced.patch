@@ -1,0 +1,15 @@
+# kills: HHR: Helpers and HANDPAN 101 preserve complete labels, targets and keyboard order with real fonts
+# suite: node --test --test-name-pattern=^HHR:.Helpers.and.HANDPAN.101.preserve.complete.labels,.targets.and.keyboard.order.with.real.fonts$ tests/e2e.test.js
+# fault: The Helpers label is shrunk below the existing peer typography, violating readable consistent labeling.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1754,7 +1754,7 @@ html.about-open{overflow:hidden}
+          target="_blank" rel="noopener">AMY: BOTTOM NOTES</a>
+     </div>
+     <div class="modebar duo">
+-      <a class="mode" id="res-handpan-helpers"
++      <a class="mode" id="res-handpan-helpers" style="font-size:1px"
+          href="https://handpanhelpers.klangzeug.de/"
+          target="_blank" rel="noopener">HANDPAN HELPERS</a>
+       <a class="mode" id="res-handpan-101"

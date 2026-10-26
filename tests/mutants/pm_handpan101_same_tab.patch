@@ -1,4 +1,4 @@
-# kills: PM rule 7: HANDPAN 101 is the last Resources link, a Google Doc in a new tab, alone in its row
+# kills: PM rule 7: HANDPAN 101 is the last Resources link, a Google Doc in a new tab, beside Handpan Helpers
 # suite: node --test --test-name-pattern PM.rule.7 tests/app.test.js
 # Lane PM. HANDPAN 101 loses target=_blank, so it replaces the app in the same tab.
 diff --git a/index.html b/index.html

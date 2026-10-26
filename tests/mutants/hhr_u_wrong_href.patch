@@ -1,0 +1,15 @@
+# kills: HHR: the Helpers resource is a native new-tab link immediately before HANDPAN 101
+# suite: node --test --test-name-pattern=^HHR:.the.Helpers.resource.is.a.native.new-tab.link.immediately.before.HANDPAN.101$ tests/app.test.js
+# fault: The Helpers resource points at a different literal destination.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1755,7 +1755,7 @@ html.about-open{overflow:hidden}
+     </div>
+     <div class="modebar duo">
+       <a class="mode" id="res-handpan-helpers"
+-         href="https://handpanhelpers.klangzeug.de/"
++         href="https://handpanhelpers.klangzeug.de/wrong/"
+          target="_blank" rel="noopener">HANDPAN HELPERS</a>
+       <a class="mode" id="res-handpan-101"
+          href="https://docs.google.com/document/d/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco/edit?usp=drivesdk"
