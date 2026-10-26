@@ -1,19 +1,40 @@
-# All-workstream status — 2026-10-25
+# All-workstream status — 2026-10-26
 
-Live GitHub read: DEV6165c8739f11c8d00c4b27ea6512ef1278275748;
-main96c4c589cec0950723b3b5323dc1df5bbc359329. Open PR query returned exactly
-five draft main PRs573/575/577/579/581, all HELD per owner; no main consent.
-Canonical DEV ledger was read at that exact ref: it contains historical premerge/
-planning snapshots. Newer feature checkpoints and receipts supersede those labels;
-current local ledger is ahead of DEV publication. Do not silently claim canonical
-DEV already carries these updates. Owner's last release instruction: finish saved
-variants first. Existing scope/approval limits persist.
+Fresh GitHub check-in on 2026-10-26: DEV remains6165c8739f11c8d00c4b27ea6512ef1278275748
+and main remains96c4c589cec0950723b3b5323dc1df5bbc359329.
+Saved variants is published at6a691c6854add59a703816dad118b10897abad2b with an
+unmerged DEV PR and a CI-only held main draft. The five earlier main-release
+drafts remain held. The CI-only draft is not a release candidate and must never
+merge main. Canonical DEV does not yet contain the newer local ledger updates.
+
+Full validate40320711507 completed FAILURE. All unit files (including937 app,
+66harness,57preview/PDF and10seat-sweep tests), Python, data integrity and both
+font panel-fit jobs passed. Native487 ran with485pass/2fail, zero skipped.
+Failed native cases: generated-scale tier Settings reopening and Pygmy bottom
+swap fixture lookup. Mutation shard2 passed; shard1 has a surviving seeded-slot
+re-save fault, shard3 rejects clean deck switching and shard4 rejects a clean
+post-drag click case. These remain delivery blockers; local17native passes do not
+override fullCI. No DEV QA-ready claim or main authorization follows.
+
+Latest local continuation: source c55aab4e fixes a natively reproduced lost-click
+race by preserving existing scale chips across preference-only acknowledgments.
+Independent source and fixture reviews cleared the changes; all938 app tests pass.
+Four current-source mutation pairs pass clean/restored and fail at their intended
+assertions, and all1616 patches apply. Refreshed performance audit cleared720
+selection rows across24Documents/eight comparisons within unchanged budgets.
+The earlier plain combined mouse-drag failure remains unresolved despite green
+instrumented diagnostics; full final-head CI and actual DEV delivery are pending.
+
+Owner interview is open on Handpan Helpers implementation/exact instruction
+approval (desired next release only if fit, usability, review and CI pass), SEO
+publication home and pilot musical reviewer. Silence does not authorize those
+changes. Saved variants continues independently as the priority.
 
 ## Active and interrupted
 
 | Workstream | Verified current status | Next / limits |
 |---|---|---|
-| Saved-scale variants | Distinct named/layout versions must coexist without lost saves; approved through DEV. Transactional repair independently reviewed;937app/66harness and7native journeys pass, plus120profile saves and720 selection samples; no skips in those runs. Reviewed full-suite fixture repair now passes937 app,67 preview/PDF/seat tests and17 affected native cases; all1614 faults apply with metadata54/54. Final exact-head CI/DEV remain required; DEV not delivered. | Finish final patch-format metadata checks and independent head review, then full exact-head Linux CI and actual DEV validation. Not yet DEV-delivered; main held. See latest shared ledger and recovery thread. |
+| Saved-scale variants | Distinct named/layout versions must coexist without lost saves; approved through DEV. Transactional repair independently reviewed;937app/66harness and7native journeys pass, plus120profile saves and720 selection samples; no skips in those runs. Reviewed full-suite fixture repair now passes937 app,67 preview/PDF/seat tests and17 affected native cases; all1614 faults apply with metadata54/54. Final exact-head CI/DEV remain required; DEV not delivered. | Reproduce chip replacement during a held click, investigate two remaining browser fixtures and the post-drag baseline, and prove the seeded replacement re-save fault; independently review repairs, rerun full exact-head CI, then verify actual DEV. Not yet DEV-delivered; main held. See latest shared ledger and recovery thread. |
 | Handpan Helpers | Prompt refined; independent engineering/frontend reconnaissance recommends existing thirdrow pair Helpers BEFORE101, preservingAboutalone. Swarm-shaped plan independently ENG/design-cleared after correcting locale-baseline coverage. No app changes. | Planning/review complete; implementation awaits scope and exact instruction approval. ExactCLAUDE101-alone update needs separateapproval before any implementation. Existingbudgets preserved; fit not measured. |
 | Scale↔Layout swipe SPS | Authorized throughDEV, interrupted behind sharing/variants; isolatedtree /private/tmp/handpan-sps-z8gaznu2/integration clean3a8467ff. Headercorrections reviewed; earlier59proofpairs usedincompatibleprotocol, not finalproof. | Mergeacceptedsharingbase, faithful literal-header reproof, finalreview/fullCI/DEV, newnativeQA. No PR or DEVcompletion. CLAUDEexactdiff gate persists. |
 
@@ -81,3 +102,14 @@ Published recovery checkpoint: [coordination comment](https://github.com/raywu/h
 links immutable feature-ref2a5ec1d2 and distinguishes current progress from the
 older canonical DEV ledger. Subsequent Helpers plan review clearance is recorded
 in the plan and will be published on the same existing feature branch.
+
+
+### Repository rename — newly reviewed planning workstream
+
+Rename both local and GitHub repository identities to handpan-chords, preserving
+existing app, public URLs, browser storage/locking, worktrees and Claude behavior.
+Prompt v3 was refined, run, and its plan independently engineering-reviewed;
+execution and rehearsal are held. Local plan:
+2026-10-26-repository-rename-handpan-chords.md; prompt under docs/prompts.
+Next: separately approved maintenance/backup/provider/host-readiness intake.
+No rename, config change or main release has occurred.

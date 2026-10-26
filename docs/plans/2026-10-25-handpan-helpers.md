@@ -6,6 +6,10 @@ engineering and frontend reconnaissance. Independent engineering/design plan
 reviews are CLEAR on the revised substantive plan. Engineering identified a
 language-baseline coverage correction; it is incorporated and independently
 rechecked. Plan clearance does not authorize implementation.
+Owner's 2026-10-26 check-in requests a next-release target if this is quick and
+low-risk, while saved variants continues. This is a scheduling preference, not a
+waiver of fit/review/CI gates or the explicit CLAUDE.md approval boundary. A scoped
+implementation and exact-patch interview question is open; no answer is assumed.
 Saved-variants delivery retains priority. No application, test, instruction, skill
 or integration changes have been made by this task.
 

@@ -44,6 +44,36 @@ executes this already-planned internal alternative under through-DEV and
 reaffirmed AFK authority; no CLAUDE change/install/main merge.
 
 2026-10-26 continuation checkpoint:
+- **Current local interaction repair:** native causal RED confirmed that a
+  preference acknowledgment could detach a pressed scale chip before release.
+  Reviewed source c55aab4e preserves chip nodes for unchanged visible collection
+  and selection; native causal GREEN and all938 app tests pass. Targeted tier,
+  Pygmy, deck-switch and new held-chip cases pass. The post-drag browser case
+  remains unresolved: instrumented isolated passes do not override the original
+  combined-run failure. Source-pinned refreshed selection/backend campaigns report
+  PASS; independent receipt audit and full exact-head CI/served DEV remain gates.
+- **Owner interview pending:** Helpers is a desired next-release candidate only
+  if quick/low-risk and verified within existing fit limits. Requested scoped
+  through-DEV implementation and the plan's exact CLAUDE Resources patch approval;
+  no answer or new approval is assumed. SEO publication home and pilot musical
+  reviewer are also pending. Continue authorized variants while awaiting inputs.
+- **Fresh check-in:** full validate40320711507 at6a691c68 completed FAILURE.
+  Every unit file, Python, data and real/fallback panel fit passed. Browser487 ran:
+  485pass/2fail, zero skipped. Remaining native failures are generated-scale tier
+  Settings reopening and Pygmy bottom-swap fixture lookup. Mutation shard2 passes;
+  shard1 has surviving d_resave_drops_replaces, shard3 clean deck-switch baseline
+  fails, shard4 clean post-drag-click baseline fails. Preserve failed logs under
+  evidence/ci-40320711507-*. No DEV delivery/main release. Next: causal diagnosis
+  and reviewed repairs, not weaker assertions or successful-retry-only claims.
+- **Current CI blocker:** final-head run40320711507 at6a691c68 rejected the
+  clean "deck chips switch the deck" baseline (Hijaz19 expected, priorAmara27
+  remained). Independent source review identifies a plausible real lost-click
+  path: preference ACK/no-op reconciliation rebuilds chip nodes between press and
+  release. Do not hide it by draining preferences in the ordinary switching test.
+  Native causal diagnostic authoring was interrupted by model capacity before
+  producing a runnable draft; next lane/root should author and independently review
+  the bounded real-ACK/held-pointer reproduction before any runtime change. Earlier
+  fixture repairs remain valid; fullCI and actual DEV still block delivery.
 - **Latest final local checkpoint:** full app937, preview14/PDF43, all10 seat
   sweep groups and17 affected native cases pass after reviewed fixture repairs.
   Metadata54/54, suite/CI Python36/36 and all1614 apply checks pass. Independent
@@ -678,3 +708,27 @@ released. No further CLAUDE edit or main consent is inherited. The
 accounts for exact application bytes plus one frozen insertion; original raw-source
 failures remain failed evidence. Headless evidence and owner QA do not establish
 unspecified device coverage or a repaired full Mac suite.
+
+
+## REPOSITORY-RENAME — reviewed planning, execution held
+
+Objective: rename the GitHub repository and canonical local checkout to
+handpan-chords while preserving runtime/browser protocols, public hosts, all
+worktree state and Claude behavior. Owner authorized prompt refinement, a generated
+plan and engineering review; no rename or rehearsal is authorized.
+[Prompt v3](prompts/2026-10-26-repository-rename-handpan-chords.md) was revised after
+independent critique and rerun to refine the [plan](plans/2026-10-26-repository-rename-handpan-chords.md).
+Independent engineering review cleared the revised substantive plan, with two P1
+findings addressed. These local planning artifacts are not yet a canonical DEV
+publication; do not infer that other hosts already have them.
+
+Continuation: preserve the plan, then obtain a separately approved maintenance/
+execution packet after current writers are quiescent. Gates include live provider
+binding, real renamed-repo DEV Git delivery before local move, verified private
+backup/restore rehearsal, safe destination/move semantics and new-path harness
+permissions/memory continuity. Any CLAUDE.md edit still requires exact owner
+approval; main merges remain separately gated. Do not change storage keys or the
+old-spelling browser Web Lock. No preference interview is needed to finish this
+planning; later timing/backup/config decisions belong to execution intake.
+
+Final local plan SHA256: dc3442c847b6f7dbfef9c87cb798ef029775e4153451d4d92c5ee868f1257c21. Prompt SHA256: 1bb8ea534a6e5cad3efc9097f74a44ca622014a7c6c3863af4e638e0a892d656.

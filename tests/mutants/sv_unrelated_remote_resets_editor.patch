@@ -11,5 +11,5 @@ diff --git a/index.html b/index.html
 -    if(changed && latest){const opener=sheetOpener;resetSheetState(latest,target);sheetOpener=opener;resyncSheet(false);}
 +    if(latest){const opener=sheetOpener;resetSheetState(latest,target);sheetOpener=opener;resyncSheet(false);}
    }
-   buildChips();updateSavedStatus();
-   if(!dirty && !sheetOpen){
+   // Preference ACKs and unchanged rereads must not detach an active pointer
+   // target. Rebuild only when the visible collection or local selection changes.

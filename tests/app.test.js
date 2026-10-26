@@ -9061,19 +9061,52 @@ test("SD: a seeded deck's sheet never reports a layout change on open", async ()
 test("SD: re-saving a replacement keeps its seeded slot", async () => {
   const app = await durableBoot();
   const rep = await saveKurdRepainted(app);
+  const owner = app.get("selection.id");
+  const originalSeed = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5";
+  const editedSeed = "(D3) Ab3 Bb3 C4 D4 E4 F4 G4 A4 C5";
+  const initialRevision = savedEnvelope(app).entries[0].revision;
+  const assertSavedSlot = (realm, seed, rim, revision) => {
+    const envelope = savedEnvelope(realm);
+    assert.strictEqual(envelope.entries.length, 1, "the durable collection still has one replacement");
+    assert.strictEqual(envelope.slots.kurd, owner, "the committed Kurd slot keeps its owner");
+    const row = envelope.entries[0];
+    assert.strictEqual(row.instanceId, owner, "re-saving keeps the saved instance");
+    assert.strictEqual(row.revision, revision, "the acknowledged edit revision survives reboot");
+    assert.strictEqual(row.record.o.replaces, "kurd", "the durable record keeps its seeded slot authority");
+    assert.strictEqual(row.record.o.palette, 4, "the requested palette is durably saved");
+    assert.strictEqual(row.record.s, seed, "the durable record contains the literal requested notes");
+    assert.strictEqual(realm.get("selection.id"), owner);
+    assert.strictEqual(realm.get("savedState.slots.kurd"), owner);
+    assert.deepStrictEqual(Object.values(realm.currentDeck().fields)
+      .filter(field => field[3] === "rim").map(field => field[2]), rim,
+      "the selected replacement renders the requested note pitches");
+  };
   app.clickChip("D KURD 10");
   app.els["scale-swatches"].children[4].click();
   await generateClick(app);
+  const paletteRevision = savedEnvelope(app).entries[0].revision;
+  assertSavedSlot(app, originalSeed, [57,58,60,62,64,65,67,69,72], paletteRevision);
+  assert.ok(paletteRevision > initialRevision, "the palette change advances the saved revision");
   assert.strictEqual(records(app).length, 1);
   assert.strictEqual(records(app)[0].o.replaces, "kurd", "an options-only re-save dropped replaces");
-  assert.deepStrictEqual(labels(await reboot(app)), BUILTIN_NAMES);
+  assert.strictEqual(app.sheetOpen(), false, "the palette re-save completes");
+  const afterPalette = await reboot(app);
+  assert.deepStrictEqual(labels(afterPalette), BUILTIN_NAMES);
+  assertSavedSlot(afterPalette, originalSeed, [57,58,60,62,64,65,67,69,72], paletteRevision);
 
   app.clickChip("D KURD 10");
-  app.type(app.els["scale-box"].value.replace(/C5$/, "D5"));
+  app.type(app.els["scale-box"].value.replace(/A3/, "Ab3"));
   await generateClick(app);
+  const editedRevision = savedEnvelope(app).entries[0].revision;
+  assertSavedSlot(app, editedSeed, [56,58,60,62,64,65,67,69,72], editedRevision);
+  assert.ok(editedRevision > paletteRevision, "the note change advances the saved revision");
+  assert.notStrictEqual(savedEnvelope(app).entries[0].record.s, originalSeed, "the field re-save changes note content");
   assert.strictEqual(records(app).length, 1);
   assert.strictEqual(records(app)[0].o.replaces, "kurd", "a field-edit re-save dropped replaces");
-  assert.deepStrictEqual(labels(await reboot(app)), BUILTIN_NAMES);
+  assert.strictEqual(app.sheetOpen(), false, "the valid field re-save completes");
+  const afterEdit = await reboot(app);
+  assert.deepStrictEqual(labels(afterEdit), BUILTIN_NAMES);
+  assertSavedSlot(afterEdit, editedSeed, [56,58,60,62,64,65,67,69,72], editedRevision);
   assert.ok(rep);
 });
 
@@ -16801,6 +16834,75 @@ describe("SHC asynchronous LINK ownership", () => {
       assert.strictEqual(Object.hasOwn,hostHasOwn,"all compatibility cases leave the host intrinsic intact");
       console.log("IDB12_PATH "+(missing?"missing-primitive":"normal-primitive")+" assertions complete");
     }
+  });
+
+  test("SV17 U1: preference acknowledgments and unchanged rereads preserve chip nodes while collection changes remain visible", async () => {
+    const {app}=await seeded([SV.portableRecords.amaraA,SV.portableRecords.amaraB]);
+    const nodes=()=>[...app.els.decks.children];
+    const ids=()=>nodes().map(chip=>chip.getAttribute("data-selection-id"));
+    const unchanged=(before,label)=>{
+      const after=nodes();assert.strictEqual(after.length,before.length,label+": chip count");
+      after.forEach((node,i)=>assert.ok(node===before[i],label+": an existing pointer target must retain its identity"));
+    };
+    const rebuilt=(before,label)=>{
+      assert.ok(nodes().length>0,label+": controls remain available");
+      assert.notStrictEqual(nodes()[0],before[0],label+": changed collection controls are refreshed");
+    };
+    const initial=nodes(),local=plain(app.get("selection"));
+    const preferred=await command(app,{type:"prefer",collectionId:snapshot(app).collectionId,selection:{kind:"builtin",id:"amara"}});
+    assert.strictEqual(preferred.ok,true);assert.strictEqual(preferred.persistence,"durable");
+    assert.deepStrictEqual(snapshot(app).preferredSelection,{kind:"builtin",id:"amara"});
+    assert.deepStrictEqual(plain(app.get("selection")),local,"persisted preference cannot hijack the current instrument");
+    unchanged(initial,"actual preference acknowledgment");
+    assert.strictEqual((await app.getAsync("reconcileSavedCollection()")).ok,true);
+    unchanged(initial,"unchanged authoritative reread");
+
+    let before=nodes(),e=snapshot(app);
+    const changed={...copy(SV.portableRecords.amaraA),o:{...copy(SV.portableRecords.amaraA.o),name:"RENAMED PAN A"}};
+    assert.strictEqual((await command(app,{type:"edit",collectionId:e.collectionId,instanceId:iid(1),expectedRevision:1},changed)).ok,true);
+    rebuilt(before,"changed selected record");assert.strictEqual(app.currentDeck().name,"RENAMED PAN A");
+    assert.ok(names(app).includes("RENAMED PAN A"),"the renamed instrument has its new visible label");
+
+    before=nodes();
+    const third={v:4,s:SV.inventories.other.seed,o:{name:"PUBLIC PAN B"}};
+    const added=await imported(app,third);assert.strictEqual(added.ok,true);
+    rebuilt(before,"new lifetime ordinal");
+    assert.strictEqual(snapshot(app).entries.find(row=>row.instanceId===added.instanceId).displayOrdinal,3);
+    assert.ok(names(app).some(label=>label.endsWith(" / S3")),"a new colliding label exposes its literal new ordinal");
+
+    // A supported external snapshot may change entry order without changing
+    // identities or their immutable ordinal/history assignments.
+    before=nodes();e=snapshot(app);e.entries.reverse();e.revision++;
+    await idbRecord(app,{write:true,value:JSON.stringify(e)});
+    assert.strictEqual((await app.getAsync("reconcileSavedCollection()")).ok,true);
+    rebuilt(before,"changed authoritative entry order");
+    assert.deepStrictEqual(ids().slice(0,3),[iid(1),iid(2),added.instanceId],"the externally reordered saved controls appear in their literal order");
+
+    before=nodes();e=snapshot(app);
+    const replacement=await command(app,{type:"replace-builtin",collectionId:e.collectionId,seedId:"kurd",expectedSlotStateRevision:e.slotStateRevision,expectedOwnerId:null},
+      {v:4,s:SV.inventories.other.seed,o:{name:"PUBLIC SEEDED REPLACEMENT"}});
+    assert.strictEqual(replacement.ok,true);rebuilt(before,"changed seeded slot");
+    assert.strictEqual(snapshot(app).slots.kurd,replacement.instanceId);
+    assert.ok(ids().includes(replacement.instanceId));assert.ok(!ids().includes("kurd"),"replacement occupies the preset's visible slot");
+
+    before=nodes();e=snapshot(app);
+    assert.strictEqual((await command(app,{type:"hide-builtin",collectionId:e.collectionId,seedId:"hijaz",expectedSlotStateRevision:e.slotStateRevision,expectedOwnerId:null})).ok,true);
+    rebuilt(before,"changed hidden presets");assert.ok(!ids().includes("hijaz"));
+
+    before=nodes();e=snapshot(app);e.collectionId=SV.ids.collectionB;e.revision++;
+    await idbRecord(app,{write:true,value:JSON.stringify(e)});
+    assert.strictEqual((await app.getAsync("reconcileSavedCollection()")).ok,true);
+    rebuilt(before,"changed collection epoch");assert.strictEqual(app.get("savedState.collectionId"),SV.ids.collectionB);
+
+    // Delete a genuinely selected plain instance through the normal command.
+    await app.getAsync(`selectDeck({kind:"saved",id:${JSON.stringify(iid(1))}},false)`);
+    before=nodes();e=snapshot(app);
+    const row=e.entries.find(entry=>entry.instanceId===iid(1));
+    assert.strictEqual((await command(app,{type:"delete",collectionId:e.collectionId,instanceId:row.instanceId,expectedRevision:row.revision})).ok,true);
+    rebuilt(before,"resolved selection after deletion");
+    assert.deepStrictEqual(plain(app.get("selection")),{kind:"saved",id:replacement.instanceId},"deleted selection resolves to the surviving seeded replacement");
+    assert.strictEqual(nodes().find(chip=>chip.classList.contains("on")).getAttribute("data-selection-id"),replacement.instanceId);
+    assert.ok(!ids().includes(iid(1)),"the removed target cannot remain visible");
   });
 
 }

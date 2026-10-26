@@ -11273,8 +11273,16 @@ function run() {
           return true;
         `);
         await clickGenerate();
-        await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`,
-          { label: "the generated deck chip" });
+        await b.waitFor("document.getElementById('scale-sheet').hidden && selection.kind==='saved'",
+          { label: "the tier fixture's real Generate acknowledgment" });
+        const generatedSelection=await b.eval("return {...selection};");
+        await nativeCommittedPreference(b,generatedSelection);
+        const generatedEnvelope=await nativeSavedEnvelope(b);
+        const generatedEntry=generatedEnvelope.entries.find(entry=>entry.instanceId===generatedSelection.id);
+        assert.ok(generatedEntry,"the tier fixture has an actual committed saved instrument");
+        assert.strictEqual(generatedEntry.record.s,"(D3) A3 C4 D4 E4 F4 G4 A4 C5","tier checks use the literal intended inventory");
+        assert.deepStrictEqual(generatedEnvelope.preferredSelection,generatedSelection);
+        assert.deepStrictEqual(await b.eval("return {...selection};"),generatedSelection,"the generated instrument stays selected before Settings opens");
         await openSettingsPanel();
         await b.click("#tier-basic");
         await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
@@ -11557,6 +11565,8 @@ function run() {
 
     test("card swipe: a mouse drag commits without flipping, a mouse click still flips, a short mouse drag springs back without flipping", async () => {
       await freshLoad();
+      assert.strictEqual(await b.eval("return Promise.resolve(savedReady).then(()=>booted);"),true,
+        "this post-boot drag/click case starts after actual saved initialization completes");
       const n = (await bootMeta()).chords;
       await b.drag("#card", [[-60, 100], [-120, 200]], { pointer: "mouse" });
       await b.finishAnimations();
@@ -17718,9 +17728,22 @@ function run() {
             assert.ok(flashed >= 2, `${tag}: flash count ${flashed}`);
           }
           await b.eval(`document.getElementById("scale-generate").click(); return 1;`);
+          await b.waitFor("document.getElementById('scale-sheet').hidden && selection.kind==='saved'",
+            { label: "the rearranged Pygmy's real Generate acknowledgment" });
+          const generatedSelection=await b.eval("return {...selection};");
+          await nativeCommittedPreference(b,generatedSelection);
+          const generatedEnvelope=await nativeSavedEnvelope(b);
+          const generatedEntry=generatedEnvelope.entries.find(entry=>entry.instanceId===generatedSelection.id);
+          assert.ok(generatedEntry,`${tag}: the rearranged Pygmy has a committed saved instance`);
+          assert.strictEqual(generatedEntry.record.s,"[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]",
+            `${tag}: the saved instance has the complete literal Pygmy inventory`);
+          assert.deepStrictEqual(generatedEnvelope.preferredSelection,generatedSelection);
+          assert.deepStrictEqual(await b.eval("return {...selection};"),generatedSelection,`${tag}: the acknowledged Pygmy stays selected`);
           await b.settle();
-          const bbm = await b.eval(`const d = selectedDeck(); const ch = d.chords.find((c) => c.main + (c.sup || "") === "Bbm"); return ch.fields.map((x) => d.fields[x][5]).join("-");`);
-          assert.strictEqual(bbm, "U4-U2-5", tag);
+          const bbm = await b.eval(`const d = selectedDeck(); const ch = d.chords.find((c) => c.main + (c.sup || "") === "Bbm");
+            return {found:!!ch,numbers:ch?ch.fields.map((x) => d.fields[x][5]).join("-"):null};`);
+          assert.strictEqual(bbm.found,true,`${tag}: the acknowledged Pygmy must contain its Bbm chord`);
+          assert.strictEqual(bbm.numbers, "U4-U2-5", tag);
         }
       } finally { await b.clearKeyboard().catch(() => {}); await b.setViewport(900, 900, false); }
     });
@@ -18089,6 +18112,76 @@ function run() {
         window.__svOperationDone=false;window.__svResult=null;window.__svOperation=Promise.resolve(openShare(code.value))
           .then(result=>{window.__svResult=result;window.__svOperationDone=true;},error=>{window.__svResult={ok:false,error:String(error)};window.__svOperationDone=true;});return true;`);
     }
+
+    test("SV11 E1: preference acknowledgments and unchanged rereads preserve a pressed chip through release",{timeout:90000},async()=>{
+      const previous={kind:"builtin",id:"amara"},target={kind:"builtin",id:"hijaz"};
+      const selector=id=>`#decks .chip[data-selection-kind="builtin"][data-selection-id="${id}"]`;
+      for(const arm of ["control","queued-preference-ack","unchanged-reread"])await withTwo([],{},async(a,peer)=>{
+        let held=false,pressed=false,point=null;
+        try {
+          if(arm==="queued-preference-ack"){await hold(peer);held=true;}
+          await a.click(selector(previous.id));
+          assert.deepStrictEqual(await a.eval("return {selection:{...selection},count:document.getElementById('count').textContent.trim()};"),
+            {selection:previous,count:"1 / 27"},"the prior trusted selection renders before its asynchronous preference acknowledgment");
+          if(arm==="queued-preference-ack"){
+            await a.wait(`navigator.locks.query().then(q=>q.pending.filter(row=>row.name===${JSON.stringify(LOCK)}).length===1)`,
+              "one actual prior preference is queued behind the peer's exclusive lock");
+            assert.notDeepStrictEqual((await read(a)).preferredSelection,previous,"the race must not drain the prior preference before pressing the next chip");
+          }else{
+            await nativeCommittedPreference(a,previous);
+            const committed=await read(a);
+            await a.wait(`savedState.revision===${committed.revision} && savedState.preferredSelection.kind==='builtin' && savedState.preferredSelection.id==='amara'`,
+              "control setup completes actual preference publication before the next gesture");
+          }
+          point=await a.eval(`const el=document.querySelector(${JSON.stringify(selector(target.id))});
+            el.scrollIntoView({block:'nearest',inline:'nearest',behavior:'instant'});
+            const r=el.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2,hit=document.elementFromPoint(x,y);
+            window.__svPressedChip=el;window.__svChipTrace=[];window.__svChipPhase='press';
+            window.__svChipTypes=['pointerdown','pointermove','pointerup','pointercancel','gotpointercapture','lostpointercapture','mousedown','mouseup','click'];
+            window.__svChipObserver=event=>{const chip=event.target.closest?.('#decks .chip');
+              __svChipTrace.push({phase:__svChipPhase,type:event.type,trusted:event.isTrusted,pointerId:event.pointerId,
+                target:chip?.getAttribute('data-selection-id')||null,heldConnected:__svPressedChip.isConnected});};
+            for(const type of __svChipTypes)document.addEventListener(type,__svChipObserver,true);
+            let visible=!!el.getClientRects().length&&r.width>=44&&r.height>=44&&!el.closest('[inert]');
+            for(let n=el;n;n=n.parentElement){const css=getComputedStyle(n);if(css.display==='none'||css.visibility==='hidden'||Number(css.opacity)===0)visible=false;}
+            return {x,y,visible,inViewport:x>=0&&y>=0&&x<innerWidth&&y<innerHeight,hit:!!hit&&(hit===el||el.contains(hit))};`);
+          assert.ok(point.visible&&point.inViewport&&point.hit,"the next chip is an actually usable trusted input target");
+          await a.send("Input.dispatchMouseEvent",{type:"mousePressed",x:point.x,y:point.y,button:"left",clickCount:1});pressed=true;
+          const before=await a.eval("return {connected:__svPressedChip.isConnected,selection:{...selection},trace:__svChipTrace};");
+          assert.strictEqual(before.connected,true);assert.deepStrictEqual(before.selection,previous);
+          assert.ok(before.trace.some(event=>event.type==='pointerdown'&&event.trusted&&event.target==='hijaz'),"trusted pointerdown reaches the intended next chip");
+          if(arm==="queued-preference-ack"){
+            await a.eval("window.__svChipPhase='prior-ack-while-held';return true;");await release(peer);held=false;
+            await nativeCommittedPreference(a,previous);
+            const committed=await read(a);
+            await a.wait(`savedState.revision===${committed.revision} && savedState.preferredSelection.kind==='builtin' && savedState.preferredSelection.id==='amara'`,
+              "the real prior preference acknowledgment is published while the next chip remains pressed");
+          }else if(arm==="unchanged-reread"){
+            const committed=await read(a);await a.eval("window.__svChipPhase='unchanged-reread-while-held';return true;");
+            const result=await a.eval("return reconcileSavedCollection();");assert.strictEqual(result.ok,true);
+            assert.deepStrictEqual(await read(a),committed,"an actual unchanged reread leaves the complete collection intact");
+          }
+          const during=await a.eval(`const current=document.querySelector(${JSON.stringify(selector(target.id))});
+            return {connected:__svPressedChip.isConnected,sameNode:current===__svPressedChip};`);
+          await a.eval("window.__svChipPhase='release';return true;");
+          await a.send("Input.dispatchMouseEvent",{type:"mouseReleased",x:point.x,y:point.y,button:"left",clickCount:1});pressed=false;
+          await a.eval("return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));");
+          const after=await a.eval("return {selection:{...selection},count:document.getElementById('count').textContent.trim(),hash:location.hash,trace:__svChipTrace};");
+          console.log("SV_CHIP_GESTURE "+JSON.stringify({arm,before,during,after}));
+          assert.deepStrictEqual(after.selection,target,arm+": a trusted press/release selects the intended chip despite the intervening snapshot");
+          assert.strictEqual(after.count,"1 / 19",arm+": Hijaz renders its own cards");
+          assert.strictEqual(after.hash,"#deck=c-sharp-hijaz-9",arm+": canonical URL describes the actually selected scale");
+          assert.deepStrictEqual(during,{connected:true,sameNode:true},arm+": unchanged content preserves the node held by the user");
+          assert.ok(after.trace.some(event=>event.type==='click'&&event.trusted&&event.target==='hijaz'),arm+": the original gesture delivers a trusted click to Hijaz");
+        }finally{
+          try{if(held)await release(peer);}
+          finally{
+            try{if(pressed&&point)await a.send("Input.dispatchMouseEvent",{type:"mouseReleased",x:point.x,y:point.y,button:"left",clickCount:1});}
+            finally{await a.eval("if(window.__svChipTypes&&window.__svChipObserver)for(const type of __svChipTypes)document.removeEventListener(type,__svChipObserver,true);return true;");}
+          }
+        }
+      });
+    });
 
     test("SV3 E1: copied saved layout opens the selected variant in a fresh profile",{timeout:90000},async()=>{
       await freshLoad();await b.setViewport(1280,800,false);const p=session(b.sessionId);
