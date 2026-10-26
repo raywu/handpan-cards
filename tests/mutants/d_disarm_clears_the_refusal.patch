@@ -1,8 +1,7 @@
-# kills: disarming DELETE leaves a standing collision refusal up (queue row 91)
-# suite: node --test --test-name-pattern ^disarming.DELETE.leaves.a.standing.collision.refusal.up..queue.row.91.$ tests/e2e.test.js
-# The standing refusal stops being honoured, so a disarm re-derives the sheet
-# from the seed alone. The collision veto is the registry's, not the seed's:
-# the box goes clean and SAVE CHANGES is offered for an edit the app refuses.
+# kills: disarming DELETE leaves a standing build refusal up (queue row 91)
+# suite: node --test --test-name-pattern=^disarming.DELETE.leaves.a.standing.build.refusal.up..queue.row.91.$ tests/e2e.test.js
+# fault: Disarming DELETE reparses the valid seed instead of preserving its standing build refusal; grammar alone cannot rederive this refusal.
+# Reviewed contract migration: retain the existing fault identity while replacing the superseded inventory-collision fixture with a real zero-chord build refusal.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html

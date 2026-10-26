@@ -1,21 +1,16 @@
-# kills: a refused SAVE onto another deck's scale does not move the pan
-# suite: node --test --test-name-pattern ^a.refused.SAVE.onto.another.deck.s.scale.does.not.move.the.pan$ tests/e2e.test.js
-# The duplicate-scale refusal goes back through say(), which writes below the
-# pan. Second half of the reviewer's FAIL, 2026-09-21: this refusal fires on a
-# seed that PARSED FINE, so the parse line is full and the message area adds a
-# second row - the pan steps 26.59px and the seed's own refusal lands below the
-# fold on an iPhone 14 with the keyboard up, which is the failure the owner
-# reported in the first place. showRefusal() is what puts a refusal beside the
-# field it is about; say() is for messages that are not about the seed.
+# kills: a zero-chord build refusal on SAVE does not move the pan
+# suite: node --test --test-name-pattern=^a.zero.chord.build.refusal.on.SAVE.does.not.move.the.pan$ tests/e2e.test.js
+# fault: Route a real grammar-valid zero-chord submit refusal through the general message channel instead of the seed refusal row; preserve the historical placement and pan-stability protection.
+# Reviewed contract migration: retain the existing fault identity while replacing the superseded inventory-collision fixture with a real zero-chord build refusal.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13071,7 +13071,7 @@ function updateParse() {
- function resyncSheet(paint) {
-   if (paint) cancelGesture();
-   if (refusal) {
--    showRefusal(refusal);
-+    say(refusal, "err");
-     if (paint) {
-       const res = HPE.core.parseSeed(String(scaleBox.value || ""), layoutOptions());
-       if (res.ok) { noteCounts(res.value.fields); paintPan(res.value, "current"); }
+@@ -13491,7 +13491,7 @@ async function runGenerate(separate = false) {
+   try {
+     buildRefused=true;
+     const built=buildGenerated(String(scaleBox.value||""),sheetOptions());
+-    if(!built.ok){refusal=reasonText(built);showRefusal(refusal);return;}
++    if(!built.ok){refusal=reasonText(built);say(refusal,"err");return;}
+     buildRefused=false;
+     const candidate={record:scaleRecord(seedOf(built.value)),deck:built.value};
+     const command=separate ? {type:"save-as-separate"} : !base ? {type:"import",selectedInstanceId:selection.kind==="saved"?selection.id:null} :

@@ -2,7 +2,11 @@
 
 ## Scope and continuation point
 
-Implementation and planned local checks are complete for the frozen runtime below.
+The frozen runtime and planned local checks below were completed. Subsequent
+full CI exposed obsolete legacy native expectations; the independently reviewed
+[native contract refresh](2026-10-26-saved-variants-native-contract-refresh.md)
+is active. This receipt preserves earlier source-qualified results, not a
+claim that all browser tests or mutation checks pass.
 Full exact-head Linux validate, independent final-head continuity review and actual
 DEV delivery remain required. This receipt does not assert deployment, production
 release, physical Safari/iOS support, or successful full Mac-suite execution.
@@ -117,3 +121,25 @@ missing evidence; never infer success from a missing original-host artifact.
    silence. Record immutable CI/DEV receipts in the authorized workstream thread.
 4. Notify owner when DEV is ready for physical/browser QA. Keep all main releases
    held until separate explicit consent and preserve original queue ordering.
+
+## Native contract refresh — independently verified local completion
+
+The reviewed test-only amendment now passes all seven affected native cases on
+e2e SHA90cacf6c1be248058b76bbfecd8f96c795dcf521106ce907ac0007eef478cab0.
+Runtime remainsab90. Six registrations preserve genuine build-refusal geometry,
+interaction and recovery contracts; the pencil case covers real same-name
+variants, visible labels and selected-only Edit affordances. Floors remain937/66/481.
+All1601 prior fault identities remain and two action-specific faults bring the
+corpus to1603. Metadata54/54 passes; all1603 bare-apply checks pass.
+
+Independent raw-evidence review cleared seven exact-header clean/assertion-kill
+pairs: first five from native-contract-fault-proof-a1.json, pan/pencil from
+native-contract-fault-proof-a2.json. Current patch hashes match; each selects one
+test, zero skips/cancellations/timeouts, empty stderr, successful cleanup and an
+intended assertion. The a0 default-reporter parser failure and a1 pan survivor
+remain preserved failures, not successful proofs. Node25's default spec summary
+was normalized only in the parser; literal header commands/raw logs are unchanged.
+
+Original failed CI40312402295 and any newly discovered full-browser failures
+still require triage. Full final-head validate and actual DEV verification remain
+mandatory. This local amendment does not establish full1603-fault kills or deployment.

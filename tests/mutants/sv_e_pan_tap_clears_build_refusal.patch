@@ -1,0 +1,15 @@
+# kills: tapping a pan note does not wipe a build refusal (queue row 115)
+# suite: node --test --test-name-pattern=^tapping.a.pan.note.does.not.wipe.a.build.refusal..queue.row.115.$ tests/e2e.test.js
+# fault: The actual setPick action reparses the valid seed after painting its selection, clearing the standing zero-chord build refusal and re-enabling submission.
+# Reviewed remap: the prior resyncSheet shared-guard fault survived this first-pick path; preserve that survivor receipt. This fault targets setPick, which the real pan tap executes, without changing the test or the runtime.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12488,6 +12488,7 @@ function setPick(ref) {
+   if (ref) setRover(pickRef);
+   paintLayout();
+   repaintPlate();
++  updateParse();
+ }
+ /* ---- the bottom ring slides (Lane FP-D) ----
+  * A bottom note can sit at any 5 degree step of its ring that clears the floor

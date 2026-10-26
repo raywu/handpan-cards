@@ -51,8 +51,10 @@ reaffirmed AFK authority; no CLAUDE change/install/main merge.
   must never merge main. Independent ENG/design-cleared
   [test-only native contract refresh](plans/2026-10-26-saved-variants-native-contract-refresh.md)
   preserves six real build-refusal protections and accessibility checks. Separate
-  test/fault lanes are active; sourceab90 stays frozen. Next: exact-header proof,
-  full final CI, actual DEV verification. Earlier local successes do not pass CI.
+  test/fault repair is locally complete; sourceab90 stays frozen. Seven native
+  cases and seven independently audited exact-header proof pairs pass; metadata54
+  and all1603 apply checks pass. Next: full final CI, then actual DEV verification.
+  Earlier local successes do not pass CI.
 - Final metadata caught canonical data-patch context constraints missed by the
   postimage audit. Restore13 original generated data-patch representations after
   exact postimage equivalence; independently cleared. Refreshed metadata54/54

@@ -4191,24 +4191,48 @@ function run() {
           `the pencil leaked into a chip's text: ${JSON.stringify(c.text)}`);
       }
 
-      // Every OTHER chip - the three built-ins, all unselected here - is
-      // untouched: no glyph, no Edit name.
-      for (const c of after.filter((x) => !x.on)) {
+      // A second real saved instrument with the same full name makes the
+      // accessible discriminator checks non-vacuous, without changing the
+      // earlier unique-name elision and glyph checks.
+      await openSheet();
+      await typeScale(SIX_SCALES[2]);
+      await b.eval(`const el=document.getElementById('scale-name');el.value=${JSON.stringify(LONG_NAME)};
+        el.dispatchEvent(new Event('input',{bubbles:true}));return true;`);
+      await clickGenerate();
+      await b.waitFor("document.getElementById('scale-sheet').hidden",{label:"second named instrument committed"});
+      const colliding=await chipProbe();
+      const sameName=colliding.filter(c=>/ \/ S[12]$/.test(c.text));
+      assert.strictEqual(sameName.length,2,"both literal named saved instances need visible discriminators");
+      assert.deepStrictEqual(sameName.map(c=>c.text.match(/ \/ (S[12])$/)[1]).sort(),["S1","S2"]);
+      for(const c of sameName) {
+        const token=c.text.match(/ \/ (S[12])$/)[1];
+        assert.ok(c.label.includes(c.text),"discriminated visible label stays in the accessible name");
+        assert.ok(c.label.includes(`${token} identifies this saved scale in this browser.`),
+          `a collision discriminator needs its accessible explanation: ${JSON.stringify(c.label)}`);
+        assert.strictEqual(/^Edit(?:\s|$)/.test(c.label),c.on,"only the selected discriminated chip offers Edit");
+        assert.strictEqual(c.marked,c.on,"only the selected discriminated chip has a pencil");
+      }
+      // Every OTHER chip is selectable, without a pencil or Edit name. A
+      // visible label always remains part of its accessible name.
+      for (const c of colliding.filter((x) => !x.on)) {
         assert.strictEqual(c.marked, false,
           `an unselected chip ("${c.text}") carries a pencil - Edit must be ` +
           "offered only where it actually works (row 262)");
-        assert.strictEqual(c.label, null,
-          `an unselected chip ("${c.text}") has aria-label ${JSON.stringify(c.label)}`);
+        assert.ok(typeof c.label === "string" && c.label.includes(c.text),
+          `an unselected chip must include its visible label in its accessible name: ${JSON.stringify(c)}`);
+        assert.ok(!/^Edit(?:\s|$)/.test(c.label),
+          `an unselected chip must not offer Edit: ${JSON.stringify(c.label)}`);
       }
 
-      // And a SELECTED seeded deck carries one too: every deck edits the same way.
-      // A custom deck takes chip 1, so Kurd (meta[0]) is chip 2.
-      await b.eval(`document.querySelector("#decks .chip:nth-child(2)")
+      // And a SELECTED seeded scale carries one too. Saved variants add
+      // independent chips, so identify Kurd by its explicit built-in handle.
+      const kurdChip='#decks .chip[data-selection-kind="builtin"][data-selection-id="kurd"]';
+      await b.eval(`document.querySelector(${JSON.stringify(kurdChip)})
                       .scrollIntoView({ block: "nearest", inline: "nearest" }); return true;`);
-      await b.click("#decks .chip:nth-child(2)");
+      await b.click(kurdChip);
       await expectCount(`1 / ${meta[0].chords}`, "Kurd selected");
       const builtin = (await chipProbe()).find((c) => c.on);
-      assert.ok(/KURD/.test(builtin.text), `chip 2 is "${builtin.text}", not Kurd`);
+      assert.ok(/KURD/.test(builtin.text), `selected chip is "${builtin.text}", not Kurd`);
       assert.ok(builtin, "no chip is selected after switching to a built-in deck");
       assert.strictEqual(builtin.marked, true,
         `the selected seeded chip "${builtin.text}" has no pencil - it opens the Edit sheet`);
@@ -4217,7 +4241,7 @@ function run() {
       for (const c of (await chipProbe()).filter((x) => !x.on)) {
         assert.strictEqual(c.marked, false, `an unselected chip ("${c.text}") carries a pencil`);
       }
-      await b.click("#decks .chip:nth-child(2)");
+      await b.click(kurdChip);
       await b.waitFor(`!document.getElementById("scale-sheet").hasAttribute("hidden")`,
         { label: "the Edit sheet to open on a selected seeded chip" });
       assert.strictEqual(await b.eval(`return document.getElementById("scale-generate").textContent.trim();`),
@@ -5703,10 +5727,52 @@ function run() {
       msg: msg.textContent.trim(),
       msgVisible: msg.getBoundingClientRect().height > 0,
       primaries: [...document.querySelectorAll("#scale-sheet button")]
-        .filter(el => !el.disabled && el.textContent.trim().match(/^(GENERATE|SAVE)/)).length,
+        .filter(el => !el.disabled && el.getClientRects().length > 0 && el.textContent.trim().match(/^(GENERATE|SAVE)/)).length,
       body: { sw: document.body.scrollWidth, cw: document.body.clientWidth },
     };
   `);
+
+  // A valid seed can still have no playable chords: its submit refusal is a
+  // real non-parser error, independent of the removed inventory veto.
+  const BUILD_REFUSAL_SEED = "(F3) C4 Ab4 Bb4";
+  const BUILD_REFUSAL_TEXT = "This pan has no playable chords - try a different scale.";
+  const nativeRefusalSelection = () => b.eval(`
+    const chip=document.querySelector('#decks .chip.on');
+    return {kind:chip.getAttribute('data-selection-kind'),id:chip.getAttribute('data-selection-id')};
+  `);
+  async function stageBuildRefusal() {
+    await typeScale(BUILD_REFUSAL_SEED);
+    const parsed=await b.eval(`return {
+      summary:document.getElementById('scale-parse').textContent.trim(),
+      refusal:document.getElementById('scale-refusal').textContent.trim(),
+      disabled:document.getElementById('scale-generate').disabled,
+      bad:document.getElementById('scale-box').classList.contains('bad')};`);
+    assert.ok(parsed.summary.length>0,"the literal seed must produce a successful parse summary before submit");
+    assert.strictEqual(parsed.refusal,"");assert.strictEqual(parsed.bad,false);
+    assert.strictEqual(parsed.disabled,false,"grammar-valid zero-chord input must reach real generation");
+    const selection=await nativeRefusalSelection();
+    assert.strictEqual(selection.kind,"saved","the refusal fixture edits an existing saved instrument");
+    await nativeCommittedPreference(b,selection);
+    return {envelope:await nativeSavedEnvelope(b),selection};
+  }
+  async function assertRefusalSavedUnchanged(before) {
+    assert.deepStrictEqual(await nativeSavedEnvelope(b),before.envelope,"refused generation and draft actions cannot mutate committed saved data");
+    assert.deepStrictEqual(await nativeRefusalSelection(),before.selection,"refused generation and draft actions cannot change selection");
+  }
+  async function assertStandingBuildRefusal(before) {
+    assert.strictEqual(await b.eval("return document.getElementById('scale-refusal').textContent.trim();"),BUILD_REFUSAL_TEXT);
+    assert.strictEqual(await b.eval("return document.getElementById('scale-generate').disabled;"),true,"a standing build refusal stays disabled until the seed changes");
+    await assertRefusalSavedUnchanged(before);
+  }
+  async function submitBuildRefusal(before) {
+    const actionLabel=await b.eval("return document.getElementById('scale-generate').textContent;");
+    await clickGenerate();
+    // Wait for handler completion, not the expected error channel or state:
+    // a fault that routes the message incorrectly must fail an assertion.
+    await b.waitFor(`savePending===null && document.getElementById('scale-generate').textContent===${JSON.stringify(actionLabel)}`,
+      {label:"the submit handler completes and restores its action label"});
+    await assertStandingBuildRefusal(before);
+  }
 
   // Approved variants policy replaces inventory-collision refusal with
   // instance-targeted Edit. Preserve sibling bytes and usable re-entry.
@@ -5817,7 +5883,7 @@ function run() {
     }
   });
 
-  test("a refused SAVE onto another deck's scale does not move the pan", async () => {
+  test("a zero-chord build refusal on SAVE does not move the pan", async () => {
     // Path (b): runGenerate() refuses a seed that PARSED FINE, so the parse
     // line is full when the refusal arrives - the one case where a refusal and
     // the parse summary are both live at once.
@@ -5828,7 +5894,6 @@ function run() {
       await b.setViewport(380, 800, true);
       await generate(EDIT_SCALE);
       await generate(COLLIDE_SCALE);
-      const chips = await chipReport();
       await selectChipAt(1);   // the FIRST custom deck, now chip 2
       await openEdit();
 
@@ -5844,14 +5909,14 @@ function run() {
       `);
       // Baseline AFTER typing, so the only thing that changes across the SAVE
       // is the refusal itself.
-      await typeScale(COLLIDE_SCALE);
+      const savedBefore = await stageBuildRefusal();
       await b.settle();
       const before = await read();
 
-      await clickGenerate();
+      await submitBuildRefusal(savedBefore);
       await b.settle();
       const after = await read();
-      assert.match(after.refusal, /Another scale already has these notes/,
+      assert.strictEqual(after.refusal, BUILD_REFUSAL_TEXT,
         `the refused save says "${after.refusal}" in the seed's row`);
       assert.strictEqual(after.msg, "",
         `the seed refusal was written below the pan as well: "${after.msg}"`);
@@ -5913,26 +5978,23 @@ function run() {
     }
   });
 
-  test("disarming DELETE leaves a standing collision refusal up (queue row 91)", async () => {
-    /* The collision veto is decided by the REGISTRY, not by the seed text, so
-       updateParse() cannot re-derive it: re-running it on disarm clears the red
-       box and the refusal for a seed the app will still refuse, and the sheet
-       then presents SAVE CHANGES as if the edit were fine. */
+  test("disarming DELETE leaves a standing build refusal up (queue row 91)", async () => {
+    /* The seed parses, but building produces no playable chords. Only a
+       real seed edit can clear this submit refusal; layout and pointer actions
+       must retain the actionable explanation and committed saved state. */
     try {
       await freshLoad();
       await b.setViewport(380, 780, true);
       await generate(EDIT_SCALE);
       await generate(COLLIDE_SCALE);
-      const before = await chipReport();
 
       await selectChipAt(1);
       await openEdit();
-      await typeScale(COLLIDE_SCALE);
-      await clickGenerate();
+      const savedBefore = await stageBuildRefusal();
+      await submitBuildRefusal(savedBefore);
 
       const refused = await sheetState();
-      assert.strictEqual(refused.bad, true, "the collision did not mark the box bad");
-      assert.match(refused.msg, /Another scale already has these notes/,
+      assert.strictEqual(refused.msg, BUILD_REFUSAL_TEXT,
         `the sheet says "${refused.msg}"`);
 
       await b.click("#scale-delete");           // arm DELETE on the refused seed
@@ -5942,9 +6004,8 @@ function run() {
       await clickPoint(8, 8);                   // and look away again
 
       const after = await sheetState();
-      assert.strictEqual(after.bad, true,
-        "disarming DELETE cleared the collision's red box");
-      assert.match(after.msg, /Another scale already has these notes/,
+      await assertStandingBuildRefusal(savedBefore);
+      assert.strictEqual(after.msg, BUILD_REFUSAL_TEXT,
         `after disarming DELETE the sheet says "${after.msg}"`);
     } finally {
       await b.key("Escape", "Escape", 27);
@@ -5952,39 +6013,33 @@ function run() {
     }
   });
 
-  test("an ordinary unarmed tap does not wipe a collision refusal (queue row 91 guard)", async () => {
-    /* disarmDelete() runs on every pointerdown in the sheet, armed or not, and
-       now re-syncs the sheet through updateParse() when it DOES run. Its
-       early-return guard exists so an ordinary tap while DELETE is not armed
-       never calls updateParse() at all - because updateParse() only sees the
-       PARSE-level verdict, and a collision refusal is bad for a reason
-       parseSeed knows nothing about: the seed itself still parses fine, so
-       recomputing from it would wrongly clear .bad and the refusal message
-       for an edit that was never fixed. */
+  test("an ordinary unarmed tap does not wipe a build refusal (queue row 91 guard)", async () => {
+    /* The seed parses, but building produces no playable chords. Only a
+       real seed edit can clear this submit refusal; layout and pointer actions
+       must retain the actionable explanation and committed saved state. */
     try {
       await freshLoad();
       await b.setViewport(380, 780, true);
       await generate(EDIT_SCALE);
       await generate(COLLIDE_SCALE);
-      const before = await chipReport();
 
       // EDIT_SCALE's chip: generated before COLLIDE_SCALE, so chip 2 (newest custom first).
       await selectChipAt(1);
       await openEdit();
-      await typeScale(COLLIDE_SCALE);
-      await clickGenerate();
+      const savedBefore = await stageBuildRefusal();
+      await submitBuildRefusal(savedBefore);
 
       const st1 = await sheetState();
-      assert.strictEqual(st1.bad, true, "the scale box was not marked bad");
-      assert.match(st1.msg, /Another scale already has these notes/,
+      assert.strictEqual(st1.msg, BUILD_REFUSAL_TEXT,
         `the sheet says "${st1.msg}"`);
 
       // an ordinary tap elsewhere in the sheet - DELETE was never armed
       await clickPoint(8, 8);
 
       const st2 = await sheetState();
+      await assertStandingBuildRefusal(savedBefore);
       assert.strictEqual(st2.bad, st1.bad,
-        "an ordinary tap while unarmed changed .bad on a collision refusal");
+        "an ordinary tap while unarmed changed .bad on a build refusal");
       assert.strictEqual(st2.msg, st1.msg,
         `an ordinary tap while unarmed changed the refusal message: "${st1.msg}" -> "${st2.msg}"`);
     } finally {
@@ -5993,39 +6048,37 @@ function run() {
     }
   });
 
-  test("flipping the mirror does not wipe a collision refusal (queue row 115)", async () => {
-    /* Mirror is a layout OPTION, not a field: it cannot change what a seed
-       hashes to, so it cannot resolve a collision the registry vetoed.
-       updateParse() clears `refusal` unconditionally though, and the mirror
-       buttons called it directly - so flipping the mirror over a refused
-       seed silently cleared the red box and re-offered SAVE CHANGES for an
-       edit the app still refuses. */
+  test("flipping the mirror does not wipe a build refusal (queue row 115)", async () => {
+    /* The seed parses, but building produces no playable chords. Only a
+       real seed edit can clear this submit refusal; layout and pointer actions
+       must retain the actionable explanation and committed saved state. */
     try {
       await freshLoad();
       await b.setViewport(380, 780, true);
       await generate(EDIT_SCALE);
       await generate(COLLIDE_SCALE);
-      const before = await chipReport();
 
       await selectChipAt(1);
       await openEdit();
-      await typeScale(COLLIDE_SCALE);
-      await clickGenerate();
+      const savedBefore = await stageBuildRefusal();
+      await submitBuildRefusal(savedBefore);
 
       const refused = await sheetState();
-      assert.strictEqual(refused.bad, true, "the collision did not mark the box bad");
-      assert.match(refused.msg, /Another scale already has these notes/,
+      assert.strictEqual(refused.msg, BUILD_REFUSAL_TEXT,
         `the sheet says "${refused.msg}"`);
 
       await b.eval(`document.getElementById("scale-tab-layout").click(); return true;`);
       await b.eval(`document.getElementById("scale-mirror")
         .scrollIntoView({ block: "nearest", inline: "nearest" }); return true;`);
+      const mirrorBefore=await b.eval("return document.getElementById('scale-mirror').getAttribute('aria-pressed');");
+      assert.ok(["true","false"].includes(mirrorBefore),"mirror exposes its current pressed state");
       await b.click("#scale-mirror");
+      assert.strictEqual(await b.eval("return document.getElementById('scale-mirror').getAttribute('aria-pressed');"),
+        mirrorBefore==="true"?"false":"true","the real mirror control must actually flip");
 
       const after = await sheetState();
-      assert.strictEqual(after.bad, true,
-        "flipping the mirror cleared the collision's red box");
-      assert.match(after.msg, /Another scale already has these notes/,
+      await assertStandingBuildRefusal(savedBefore);
+      assert.strictEqual(after.msg, BUILD_REFUSAL_TEXT,
         `after flipping the mirror the sheet says "${after.msg}"`);
     } finally {
       await b.key("Escape", "Escape", 27);
@@ -6243,27 +6296,23 @@ function run() {
     }
   });
 
-  test("tapping a pan note does not wipe a collision refusal (queue row 115)", async () => {
-    /* previewLayout() re-derives the sheet on every layout tap so the mock
-       pan stays in sync, but a layout tap changes `order`, never the fields
-       a seed hashes to - it cannot fix a collision either, and calling
-       updateParse() from it dropped the refusal the same way the mirror
-       buttons did. */
+  test("tapping a pan note does not wipe a build refusal (queue row 115)", async () => {
+    /* The seed parses, but building produces no playable chords. Only a
+       real seed edit can clear this submit refusal; layout and pointer actions
+       must retain the actionable explanation and committed saved state. */
     try {
       await freshLoad();
       await b.setViewport(380, 780, true);
       await generate(EDIT_SCALE);
       await generate(COLLIDE_SCALE);
-      const before = await chipReport();
 
       await selectChipAt(1);
       await openEdit();
-      await typeScale(COLLIDE_SCALE);
-      await clickGenerate();
+      const savedBefore = await stageBuildRefusal();
+      await submitBuildRefusal(savedBefore);
 
       const refused = await sheetState();
-      assert.strictEqual(refused.bad, true, "the collision did not mark the box bad");
-      assert.match(refused.msg, /Another scale already has these notes/,
+      assert.strictEqual(refused.msg, BUILD_REFUSAL_TEXT,
         `the sheet says "${refused.msg}"`);
 
       await openDrawer();
@@ -6271,11 +6320,11 @@ function run() {
       const target = pan.notes.find(n => n !== pan.selected);
       assert.ok(target, `the pan drew nothing to tap: ${JSON.stringify(pan.notes)}`);
       await tapPanNote(target);
+      assert.strictEqual((await panState()).selected,target,"the real pan tap must select its target");
 
       const after = await sheetState();
-      assert.strictEqual(after.bad, true,
-        "tapping a pan note cleared the collision's red box");
-      assert.match(after.msg, /Another scale already has these notes/,
+      await assertStandingBuildRefusal(savedBefore);
+      assert.strictEqual(after.msg, BUILD_REFUSAL_TEXT,
         `after tapping a pan note the sheet says "${after.msg}"`);
     } finally {
       await b.key("Escape", "Escape", 27);
@@ -6283,31 +6332,26 @@ function run() {
     }
   });
 
-  test("editing the seed after a collision clears the refusal cleanly (queue row 116)", async () => {
-    /* Row 116's repro: the seed box is the ONE re-derive that can actually
-       resolve a collision, so updateParse() keeping `refusal = null` is
-       load-bearing there even though the other seven callers must not do
-       the same thing. Arm-then-cancel DELETE afterward and the sheet must
-       show nothing stale - a live SAVE CHANGES over a clean box and an
-       empty message, never the old collision text. */
+  test("editing the seed after a build refusal clears it cleanly (queue row 116)", async () => {
+    /* The seed parses, but building produces no playable chords. Only a
+       real seed edit can clear this submit refusal; layout and pointer actions
+       must retain the actionable explanation and committed saved state. */
     try {
       await freshLoad();
       await b.setViewport(380, 780, true);
       await generate(EDIT_SCALE);
       await generate(COLLIDE_SCALE);
-      const before = await chipReport();
 
       await selectChipAt(1);
       await openEdit();
-      await typeScale(COLLIDE_SCALE);
-      await clickGenerate();
+      const savedBefore = await stageBuildRefusal();
+      await submitBuildRefusal(savedBefore);
 
       const refused = await sheetState();
-      assert.strictEqual(refused.bad, true, "the collision did not mark the box bad");
-      assert.match(refused.msg, /Another scale already has these notes/,
+      assert.strictEqual(refused.msg, BUILD_REFUSAL_TEXT,
         `the sheet says "${refused.msg}"`);
 
-      await typeScale(SIX_SCALES[4]);   // a free scale: the collision is over
+      await typeScale(SIX_SCALES[4]);   // a playable seed resolves the build refusal
 
       await b.click("#scale-delete");   // arm DELETE on the now-clean seed
       assert.strictEqual(
@@ -6315,13 +6359,20 @@ function run() {
         true, "DELETE never armed");
       await clickPoint(8, 8);           // and cancel it
 
+      const action=await b.eval(`return {
+        enabled:!document.getElementById('scale-generate').disabled,
+        conflictHidden:document.getElementById('scale-conflict').hidden &&
+          document.getElementById('scale-conflict-separate').getClientRects().length===0};`);
+      assert.strictEqual(action.enabled,true,"the real SAVE CHANGES action re-enables after a playable seed edit");
+      assert.strictEqual(action.conflictHidden,true,"save-as-separate remains hidden without a concurrency conflict");
       const after = await sheetState();
+      await assertRefusalSavedUnchanged(savedBefore);
       assert.strictEqual(after.bad, false,
-        "the box is still marked bad after the collision was fixed");
+        "the box is still marked bad after the build refusal was fixed");
       assert.strictEqual(after.msg, "",
-        `the sheet still says "${after.msg}" after the collision was fixed`);
+        `the sheet still says "${after.msg}" after the build refusal was fixed`);
       assert.strictEqual(after.primaries, 1,
-        "SAVE CHANGES is not live after the collision was fixed");
+        "SAVE CHANGES is not live after the build refusal was fixed");
     } finally {
       await b.key("Escape", "Escape", 27);
       await b.setViewport(900, 900, false);

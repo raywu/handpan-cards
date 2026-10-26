@@ -1,7 +1,7 @@
-# kills: editing the seed after a collision clears the refusal cleanly (queue row 116)
-# suite: node --test --test-name-pattern ^editing.the.seed.after.a.collision.clears.the.refusal.cleanly..queue.row.116.$ tests/e2e.test.js
-# updateParse() no longer clears a standing refusal, so a fixed collision never lets go.
-# Retained behavior re-anchored for saved instances; exact intent is recorded in the lane evidence.
+# kills: editing the seed after a build refusal clears it cleanly (queue row 116)
+# suite: node --test --test-name-pattern=^editing.the.seed.after.a.build.refusal.clears.it.cleanly..queue.row.116.$ tests/e2e.test.js
+# fault: A genuine seed edit no longer clears the standing build refusal; later re-derivation incorrectly restores an obsolete error.
+# Reviewed contract migration: retain the existing fault identity while replacing the superseded inventory-collision fixture with a real zero-chord build refusal.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
