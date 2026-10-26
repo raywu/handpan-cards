@@ -27,7 +27,7 @@ release documents, not SEO or duplicate-note functionality.
 |573| Narrow Mac browser foreground-settle helper |574merged/fullCI/DEVchecks; fullMac suite and broaderM2/M3/C1 not established. |
 |575| Latest Layout outcome per ring |576merged/fullCI/DEVchecks; implementation complete. |
 |577| Reviewed SEO long-tail research/content subplan |578merged/fullCI/docdelivery; no articles/generator/publishing implemented. |
-|579| Reviewed duplicate-note plan |580merged/fullCI/docdelivery; feature execution explicitly held. |
+|579| Reviewed duplicate-note plan |580 merged; owner now PAUSED the entire workstream and PR until further notice. Preserve artifacts; no release or implementation until explicit resumption. |
 |581| Async LINK completion ownership hotfix |582merged/fullCI/servedDEVchecks; safe toQA affectedLINKbehavior. Does not deliver variants or establish original missing-angle cause. |
 
 ## Released/completed work
@@ -52,7 +52,7 @@ release documents, not SEO or duplicate-note functionality.
 
 | Scope | Artifact and status | Trigger / decision |
 |---|---|---|
-| Duplicate notes | Final reviewedplan; allowexactrepeatsanywhere, onepositionpertone forcards/allphysicalpositions retained, nonblockingwarningonlynewlyallowedrepeats. | ExplicitEXECUTIONHELD; do notreinterview settledchoices orimplement. |
+| Duplicate notes | Final reviewedplan; allowexactrepeatsanywhere, onepositionpertone forcards/allphysicalpositions retained, nonblockingwarningonlynewlyallowedrepeats. | PAUSED UNTIL FURTHER NOTICE, including planning and PR579 release. Do not re-interview settled choices or implement; await explicit resumption. |
 | SEO long-tail | Reviewedsubplan research/operations/engineevidence. Usefulfamilyguide first, fewdistinctlayoutlessons, humanmusicreview. | Audience/scales/reviewer/publishinghome/budget/measurement inputs and scopedexecutionapproval stillrequired. No massgeneratedarticles. |
 | Broader SEO | RecoveredoriginalSEOplan/researchkitcontinuation. Domainverification/site-name workalreadydelivered. | Researchplan only afterprioritywork; do notrepeat shippedmetadata/setup. |
 | Codex vsClaude quality | Refinedpromptv2 independentlycritiqued, trackedseparately. Holisticmatrix/fairprovenance/matchedsamples/bias safeguards. | QUEUED; promptnotrun, nocomparisonplan orstudyexecution yet. FutureplanENG/designreview required. |

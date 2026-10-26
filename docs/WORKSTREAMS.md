@@ -4,6 +4,14 @@
 reconciles current live refs, delivered/held releases, historical completions and
 queued prompts/plans. Local checkpoint is ahead of canonical DEV publication.
 
+## Owner decision — duplicate notes paused
+
+PR579 / DUPLICATE-NOTES is **PAUSED UNTIL FURTHER NOTICE**. Preserve its finalized
+plan, prompt, research, settled choices and review evidence. Do not resume plan
+work, feature implementation or main release until the owner explicitly resumes
+it. This is not cancellation; do not discard its worktree or artifacts. Other
+workstreams retain their own authorization; no main release is implied.
+
 ## Current priority — SAVED-SCALE-VARIANTS, authorized through DEV
 
 Latest check-in: owner explicitly selected **keep573→575→577→579→581main releases
@@ -53,7 +61,7 @@ labels below. No main merge, installs or global configuration changes authorized
   /store lane after reviewed acceptance RED; incomplete UI cannot reach DEV.
 - Reserved: collection key `hpfc.saved-scales.v1`, envelope schema1, exclusive lock
   `handpan-cards:saved-scales:v1`. Wire6/record4 remain; DUP's candidate7/5 is not
-  consumed or activated. DUP feature implementation remains held.
+  consumed or activated. DUP workstream and main PR579 are PAUSED UNTIL FURTHER NOTICE by owner; do not resume planning, implementation or release without explicit owner resumption.
 - Current parallel lanes: S store implementation/T native acceptance repair;
   completed H support and M helper proof retained in /helper,/mutants. Separate
   /tests,/store trees under the stream root (branches recorded
@@ -115,8 +123,7 @@ SHC base, faithful literal-header59 reproof, final review/fullCI/DEV/physical QA
 no SPS release/QA-ready claim. Old browser lease token is invalid; root owns lease.
 DUP finalized reviewed technical plan SHA781540f4 retained at branch
 `codex/duplicate-notes-plan-20261025`, latest `b849b6d6149e883ce4b280a2616fd20cf7b6a21e`.
-All four answers settled (including warnings only newly allowed repeats); execution
-HELD. Main573/575/577/579/581 remain held pending explicit main consent. Other
+All four answers settled (including warnings only newly allowed repeats); workstream/PR579 PAUSED UNTIL FURTHER NOTICE by owner (planning, implementation and release). Main573/575/577/579/581 remain held pending explicit main consent. Other
 recovery tables below retain historical evidence; these current facts supersede
 older pending approval/status labels without discarding their investigation.
 
@@ -132,7 +139,7 @@ new scope, main-release or CLAUDE.md edit grant.
 
 | Stream | Current state / evidence | Continuation / authority |
 |---|---|---|
-| DUPLICATE-NOTES | Three isolated research lanes complete; revised plan independently ENG/design-cleared at585fa248. [Plan](plans/2026-10-25-duplicate-notes.md), [coordination](plans/2026-10-25-duplicate-notes-coordination.md), detailed checkpoint below. | Publish independently cleared plan through fullCI/DEV gates. Owner scope/warning/voicing interviews pending; recommendations provisional. Planning only, no duplicate-note feature edits. |
+| DUPLICATE-NOTES | PAUSED UNTIL FURTHER NOTICE by owner; later pause supersedes historical continuation below. Three isolated research lanes complete; revised plan independently ENG/design-cleared at585fa248. [Plan](plans/2026-10-25-duplicate-notes.md), [coordination](plans/2026-10-25-duplicate-notes-coordination.md), detailed checkpoint below. | Publish independently cleared plan through fullCI/DEV gates. Owner scope/warning/voicing interviews pending; recommendations provisional. Planning only, no duplicate-note feature edits. |
 | SPS / Scale↔Layout swipe | Active authorized implementation. Root branch `codex/sheet-tab-swipe-20261025` last pushed `0db6c02275e695537ccf8ec5461d70bc3aea2ad2`; host-local `/private/tmp/handpan-sps-z8gaznu2/integration`. [Retained plan](https://github.com/raywu/handpan-cards/blob/0db6c02275e695537ccf8ec5461d70bc3aea2ad2/docs/plans/2026-10-25-sheet-tab-swipe.md), [fixture amendment](https://github.com/raywu/handpan-cards/blob/0db6c02275e695537ccf8ec5461d70bc3aea2ad2/docs/plans/2026-10-25-sheet-tab-swipe-fixtures.md), [coordination](https://github.com/raywu/handpan-cards/blob/0db6c02275e695537ccf8ec5461d70bc3aea2ad2/docs/plans/2026-10-25-sheet-tab-swipe-coordination.md). | Primary2 TDD and bounded native route/tap/scroll/quiet/focus checks passed on prototype index97e498b9. New zoom guard has3unit+1native assertion-RED before code; A's minimal guard commit `792f15b566e345a09e9d2a38ba2b174286d5a4bd` is local, NOT yet integrated/green. Next integrate that exact guard, require same40unit/5native plus helper/default regressions, generated mutants/8preserved context refreshes, final review/fullCI/DEV. Physical Safari/keyboard/edge/selection/zoom QA remains. No SPS PR/CI/DEV success yet. |
 | Latest-per-ring feedback | Complete through DEV576 `bccff5a2b9ffd88f772517740cbab3ea66a50fbb`; source `a90fce8c19887e44e6bbaf38741b97553b795026`. [Plan](plans/2026-10-25-layout-feedback.md), [final evidence/recovery](https://github.com/raywu/handpan-cards/pull/575#issuecomment-6401041842). Root tree `/private/tmp/handpan-feedback.ha43y5cy/integration`, branch `codex/layout-feedback-20261025`. | FullCI40216007898 and actual DEV verification complete. Earlier A0 registration error invalidated/retained; corrected A1 clean. Main575 HELD; do not redo delivered implementation or treat old pending prose as current. |
 | MAC-M1 repair | Complete through DEV574 `f5df7942d097167013a3bf2baf05a6497ac73613`; source `217609075a14e6ca4799497210af27d9df842c5e`. [Plan](plans/2026-10-24-mac-browser-repair.md), [final receipt](https://github.com/raywu/handpan-cards/pull/573#issuecomment-6400445041). Root tree `/private/tmp/handpan-mac-repair.c94d3kno/integration`, branch `codex/mac-foreground-20261025`. | FullCI40209344599 and DEV bytes/print verified. Main573 HELD. Narrow opt-in foreground settle only; full Mac/M2/M3/C1 remain unverified/separate, not silently repaired. |
