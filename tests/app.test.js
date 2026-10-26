@@ -14537,8 +14537,8 @@ describe("I18N", () => {
     assert.strictEqual(contract.version, 1);
     assert.strictEqual(contract.provenance.baselineCommit, "1510ea369573078e6296fe873edb6f538c3212a3");
     assert.strictEqual(contract.keyCount, 250);
-    const savedKeys=["saved.ackPending","saved.conflict","saved.conflictDeleted","saved.failure","saved.importFailure","saved.legacy","saved.presetToken","saved.recovery","saved.resetConflict","saved.resetFailure","saved.savedToken","saved.separate","saved.session","saved.temporary"];
-    assert.strictEqual(Object.keys(en).length,contract.keyCount+14,"frozen base plus the fourteen approved saved-variants messages");
+    const savedKeys=["saved.ackPending","saved.conflict","saved.conflictDeleted","saved.failure","saved.importFailure","saved.legacy","saved.presetToken","saved.recovery","saved.resetConflict","saved.resetFailure","saved.savedToken","saved.separate","saved.session","saved.sessionAckPending","saved.sessionImportAckPending","saved.temporary"];
+    assert.strictEqual(Object.keys(en).length,contract.keyCount+16,"frozen base plus the sixteen approved saved-variants messages");
     for(const key of savedKeys)assert.strictEqual(typeof en[key],"string",key+" is a required new scalar message");
     const baseKeys=Object.keys(en).filter(key=>!savedKeys.includes(key));
     assert.strictEqual(require("node:crypto").createHash("sha256")
