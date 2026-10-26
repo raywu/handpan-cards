@@ -30,35 +30,48 @@ V2 backend profiling completed: 120/120 acknowledged samples (30 each at 2/20/20
 records and an exact final 1MiB envelope), independently audited CLEAR; callback
 p95/max milliseconds: .6/.6, .7/.7, 1.6/1.7, 4.1/4.1. These are pre-UI API-ACK
 measurements, not disk-flush or UI-paint claims.
-Current integrated source index SHA `0d0845fccb44a4e775763daad5e9fed5acbc1710bee74e129e20e072f1d715ad`.
-All925 app unit tests and51 harness tests PASS with0skips; new same-epoch
-ACK regression3PASS and helper faults3clean/3assertion kills verified. Existing
-card/gen-face goldens and177x2boot unchanged. ENG source recheck and design source
-review clear with runtime limitations. Reproducible backend probe/case producer
-source-reviewed and integrated; final-candidate measurement not yet run.
+Current old-adapter source SHA `d449ea31ca2a5ebcf54d75471d1a61fe54ae8c4fdcc33bc2cc5e517d02923dc0`.
+Its latest complete unit run passed926/926; harness51/51 passed. Those results
+predate the transactional adapter and are historical, not a release gate for it.
 
-**P0 release blocker:** real browser concurrent distinct imports sometimes both
-ACK at revision2 but only the later entry remains, even after both targets' storage
-events/next tasks/foreground frames. Diagnostic runs0–2passed,3reproduced loss;
-not merely an early observation. No app/DEV release until investigated and repaired.
-Native lock/get/set tracing independently confirms sequential exclusive callbacks
-yet a stale second-tab read after the first ACK. The [transactional storage
-amendment](plans/2026-10-25-saved-variants-transactional-storage.md) is now independently
-ENG/design-cleared after four data-preservation/session/reconciliation refinements.
-Root authorizes the already-planned internal atomic-store alternative under the
-owner's through-DEV and reaffirmed AFK grant; no CLAUDE edit/install/new policy or
-main merge. H model/T assertions/S adapter lanes start next; no IDB runtime claim.
-No timing workaround is approved. Raw `sv-native-concurrent-import-diagnostic-a3` is retained.
+**P0 release blocker:** native distinct concurrent imports both acknowledged
+revision2, but only the later entry survived. Source-pinned tracing confirmed
+nonoverlapping Web Lock callbacks and a stale second-renderer localStorage read.
+The independently ENG/design-cleared [transactional storage amendment](plans/2026-10-25-saved-variants-transactional-storage.md)
+replaces that unshipped adapter with one authoritative IndexedDB transaction,
+retaining the approved product/schema/session/data-preservation contract. Root
+executes this already-planned internal alternative under through-DEV and
+reaffirmed AFK authority; no CLAUDE change/install/main merge.
 
-Native copied-layout/fresh-profile1PASS and staleEdit/delete1PASS. Three other
-native failures: concurrent import loss above; RESET test targeted persistent
-status instead of the actual announcer (test interface correction reviewed);
-remote deletion leaves existing conflict banner stale (unitRED captured). UI
-matrix reached keyboard activation then a readiness deadline; Enter CDP protocol
-lacked the established char event, adapter correction reviewed, not a source pass.
-T owns frozen corrections in /tests; root owns source integration/sole browser.
-Mutation lane retains44new unit faultproofs and46context/data refreshes; legacy
-policy refresh/native faults/fullCI remain. Main queue held, duplicate notes paused.
+2026-10-26 continuation checkpoint:
+- Integration `cd9d1e51` contains the independently reviewed explicit IDB model and
+  minimal ENGINE-SPEC persistence amendment. Fourteen new model groups passed
+  independent focused verification; native transaction activity is not modeled.
+- T's corrected frozen regression checkpoint `e2009fd258986c9a46224c619bbbaf151e5cfef3fb096e9e85b4c2dc25e29251`
+  produced two meaningful old-app assertion failures: save ACK without completed
+  IDB commit, and stale localStorage B overriding authoritative IDB A. Invalid
+  first setup attempts are retained and are not counted as RED evidence.
+- `/idb-adapter` owns index.html; first candidate passes five new protocol groups,
+  full unit checks/review still pending. `/idb-tests` owns committed-store oracle
+  and native fixture ports; independent review requires boot-route completion
+  barriers, final trailing-read outcome assertion and retained full legacy-store
+  comparison. `/idb-model` owns fourteen generated fault proofs. All lane branches
+  are `codex/saved-variants-idb-{adapter,tests,model}-20261026` under the root above.
+- Root alone runs native browsers. Earlier copied-layout fresh-profile and stale
+  Edit/delete passed; corrected RESET/reconciliation pair passed. UI matrix body
+  completed48geometry/528control/16state checks, but the process did not exit;
+  whole run remains failed. Source-pinned lifecycle observation confirms browser
+  close and server close settle; open pipes remain under investigation. No
+  timeout increase, weakened checks or physical iOS claim.
+- Retained mutation checkpoint `45ef0edf` preserves46 UI reanchors separately:
+  32 assertion kills,12 native-author-only and2 genuine survivors needing triage.
+  Other44 unit proofs,46 context/data refreshes,29 policy drafts and5 native
+  authored faults remain qualified pre-IDB work, not final-candidate proof.
+
+Next: address test review, independently review adapter, prove real native
+transaction/concurrency and cleanup, update bounded measurement, regenerate and
+prove all relevant mutants, then exact-head full CI and actual DEV validation.
+Not QA-ready; no DEV feature delivery. Main queue held; duplicate notes paused.
 
 
 

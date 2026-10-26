@@ -1,0 +1,15 @@
+# kills: IDBH8 BroadcastChannel hints are asynchronous other-channel partitioned cloned and optional
+# suite: node --test --test-name-pattern=^IDBH8\s tests/harness.test.js
+# fault: Deliver a hint to unrelated channel names in the same origin.
+diff --git a/tools/sandbox.js b/tools/sandbox.js
+--- a/tools/sandbox.js
++++ b/tools/sandbox.js
+@@ -371,7 +371,7 @@ function broadcastChannelFor(bucket, origin, publicOrigin) {
+       if (this._closed) throw idbError('InvalidStateError');
+       const data = idbClone(value);
+       if (publicOrigin.broadcastEvents === 'omit') return;
+-      for (const channel of bucket.channels) if (channel !== this && channel.name === this.name && !channel._closed) origin.messages.push({ channel, data: idbClone(data) });
++      for (const channel of bucket.channels) if (channel !== this && !channel._closed) origin.messages.push({ channel, data: idbClone(data) });
+       if (publicOrigin.broadcastEvents === 'auto') setImmediate(() => publicOrigin.flushBroadcastMessages());
+     }
+     close() { this._closed = true; bucket.channels.delete(this); }
