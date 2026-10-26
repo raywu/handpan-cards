@@ -74,6 +74,19 @@ held. Branch `codex/saved-scale-variants-20261025`, integration worktree
   protocol. This is a separate timing-sanity failure, not a repeat of equalRAF
   nor an explanation of the app result. Performance gate remains held for
   independent assessment; no retries/waiver. Backend refresh has not run.
+- Independently ENG/design-cleared [timing-oracle correction](plans/2026-10-26-saved-variants-timing-oracle.md)
+  completed isolated timing-tests/timing-source TDD: intended validzero pureVM
+  RED/GREEN/generatedfault/restored, fullapp939, metadata54 and all1618apply pass.
+  Probe bd6 accepts raw0 only for the unbudgeted diagnostic; every actual response/
+  frame/sample budget remains strict. Independently accepted v2control90/90 pass.
+  The ONE current200 campaign FAILED after17rows during baseline sample18, before
+  candidate loaded, at the unchanged5s observer wait. Cleanup true; no comparisons.
+  **Performance remains INCOMPLETE/HELD, no more automatic measurement retries.**
+  Cause unknown; new reviewed failure-only diagnostics and explicit environment/
+  budget decision are needed before furthermeasurement. See linked plan/receipts.
+  Current exacthead fullCI is separate:2ff71cf5 has all4mutation shards/aggregate,
+  data/Python/bothfit PASS while JS still runs; this tool/test amendment still
+  needs its own finalhead validate. No DEV delivery is claimed.
 - Helpers remains a separate approved branch/worktree
   `codex/helpers-integration-20261026` /
   `/private/tmp/handpan-helpers.HUZs5u/integration`. Old2f4db8af CI failed two

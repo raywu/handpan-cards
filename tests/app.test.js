@@ -4458,6 +4458,72 @@ test("every built-in card face still matches the committed digest of card_face_v
   }
 });
 
+// The selection probe is an executable script, so exercise only its actual
+// marked pure oracle block. No full script, CLI, browser or runtime is loaded.
+test("SV-TIME-1: the actual selection timing oracle accepts observed zero capture elapsed while preserving strict latency and RAF boundaries", () => {
+  const fs = require("node:fs"), path = require("node:path"), vm = require("node:vm");
+  const source = fs.readFileSync(path.resolve(__dirname, "../tools/probe/saved_variants_selection.js"), "utf8");
+  const begin = "// BEGIN literal timing preflight: no browser, app or timestamp mutation.";
+  const end = "// END literal timing preflight.";
+  assert.strictEqual(source.split(begin).length, 2, "the actual pure oracle has exactly one begin marker");
+  assert.strictEqual(source.split(end).length, 2, "the actual pure oracle has exactly one end marker");
+  const start = source.indexOf(begin), finish = source.indexOf(end);
+  assert.ok(finish > start, "the actual pure oracle markers are ordered");
+  const context = vm.createContext({ assert: require("node:assert/strict") });
+  new vm.Script(source.slice(start, finish + end.length) +
+    "\nglobalThis.__sourceControls = timingPreflightControls;", { filename: "actual-selection-timing-oracle.js" })
+    .runInContext(context, { timeout: 1000 });
+  // These are independent literal acceptance baselines, not expectations
+  // inferred from the implementation's formulas or preflight declarations.
+  const priorControls = [
+    ["retained-a0-row", true], ["first-exact1ns-boundary", true], ["second-exact1ns-boundary", true],
+    ["first-just-over1ns", false], ["second-just-over1ns", false], ["cross-api2ns", false],
+    ["cross-api1us", false], ["zero-RAF-interval", false], ["backwards-RAF-interval", false],
+    ["zero-first-opportunity", false], ["observation-clock-reversal", false], ["first-RAF-NaN", false],
+    ["second-RAF-Infinity", false], ["first-callback-Infinity", false], ["second-callback-NaN", false],
+    ["cross-row-clock-reversal", false],
+  ];
+  for (const [name, accepted] of priorControls) {
+    const actual = context.__sourceControls.filter(control => control.name === name);
+    assert.strictEqual(actual.length, 1, "the real preflight retains literal control " + name);
+    assert.strictEqual(actual[0].accepted, accepted, "prior literal preflight outcome " + name);
+  }
+  const zero = { eventTimestamp: 1143.7999999523163, captureAt: 1144, firstRAF: 1141.9,
+    firstCallbackAt: 1144, secondRAF: 1158.6, secondCallbackAt: 1159 };
+  const cases = [
+    { name: "valid-zero-capture-elapsed", row: zero, accepted: true, captureElapsed: 0 },
+    { name: "smallest-representable-positive-capture-elapsed", row: { ...zero, firstCallbackAt: 1144.0000000000002 },
+      accepted: true, captureElapsed: 2.2737367544323206e-13 },
+    { name: "representable-negative-capture-elapsed", row: { ...zero, firstCallbackAt: 1143.9999999999998 }, accepted: false },
+    { name: "zero-event-to-first-still-invalid", row: { ...zero, eventTimestamp: 1144 }, accepted: false },
+    { name: "retained-records200-equal-RAF-still-invalid", row: { eventTimestamp: 215.10000014305115,
+      captureAt: 215.5, firstRAF: 244.932, firstCallbackAt: 247.80000019073486, secondRAF: 244.932, secondCallbackAt: 249 }, accepted: false },
+    { name: "backwards-RAF-still-invalid", row: { ...zero, secondRAF: 1141.8 }, accepted: false },
+    { name: "backwards-callback-clock-still-invalid", row: { ...zero, secondCallbackAt: 1143.9 }, accepted: false },
+    { name: "cross-row-clock-reversal-still-invalid", row: zero, accepted: false,
+      previous: { eventTimestamp: 1143, secondCallbackAt: 1143, secondRAF: 1142 } },
+    ...["eventTimestamp", "captureAt", "firstRAF", "firstCallbackAt", "secondRAF", "secondCallbackAt"]
+      .flatMap(key => [NaN, Infinity].map(value => ({ name: "nonfinite-" + key + "-" + String(value),
+        row: { ...zero, [key]: value }, accepted: false }))),
+  ];
+  const evaluate = new vm.Script(`
+    (() => {
+      try { return { accepted: true, intervals: validateSelectionTiming(__row, __previous) }; }
+      catch (error) { return { accepted: false, code: error.code, message: error.message }; }
+    })();`, { filename: "independent-selection-timing-boundary.js" });
+  for (const fixture of cases) {
+    context.__row = structuredClone(fixture.row);
+    context.__previous = fixture.previous ? structuredClone(fixture.previous) : undefined;
+    const before = structuredClone(context.__row);
+    const actual = evaluate.runInContext(context, { timeout: 1000 });
+    assert.deepStrictEqual(context.__row, before, "raw boundary timestamps stay untouched: " + fixture.name);
+    if (!actual.accepted) assert.strictEqual(actual.code, "ERR_ASSERTION", "boundary rejection must be an assertion: " + fixture.name);
+    assert.strictEqual(actual.accepted, fixture.accepted, "literal timing boundary acceptance: " + fixture.name);
+    if (fixture.accepted) assert.strictEqual(actual.intervals.capturedDispatchToFirstOpportunityMs, fixture.captureElapsed,
+      "literal observed elapsed remains unchanged: " + fixture.name);
+  }
+});
+
 /* ------------------------------------------------------------ panel fit judge
  * The acceptance oracle of docs/plans/2026-10-02-difficulty-d2-replan.md section
  * 4.3 / 4.3.1. These tests exercise the JUDGE only (pure functions over
