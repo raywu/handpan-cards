@@ -113,3 +113,19 @@ execution and rehearsal are held. Local plan:
 2026-10-26-repository-rename-handpan-chords.md; prompt under docs/prompts.
 Next: separately approved maintenance/backup/provider/host-readiness intake.
 No rename, config change or main release has occurred.
+
+
+## Owner queue addition — 2026-10-26
+
+PALETTE-DEFAULTS-10: add the canonical D KURD10/D AMARA10 palettes and each inverse
+to available defaults, preserving existing option indices/defaults and all old
+URLs/saved scales. Prompt+swarm plan are being independently ENG/design reviewed
+in codex/palette-defaults-plan-20261026 at/private/tmp/handpan-palette-defaults-plan.20261026.
+Fast-track AFTER existing active workstreams for the next main release; no palette
+application edits or CLAUDE changes yet. See sharedledger and the paired
+2026-10-26-built-in-palette-defaults prompt/plan for exact release/approval gates.
+
+Palette planning completion: acceptedpromptV2 executed; independentENG/design
+reviews and re-reviews CLEAR revisedplan5c5a1f3d after fixing Cancel/draft semantics
+and exactlegacyrefusal/client-fixture details. No feature/CLAUDE changes. Queue
+activation after currentactivework, preserveexactpatchapproval andlatermainconsent.

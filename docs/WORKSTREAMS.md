@@ -4,6 +4,40 @@
 reconciles current live refs, delivered/held releases, historical completions and
 queued prompts/plans. Local checkpoint is ahead of canonical DEV publication.
 
+## Queued next-release app change — PALETTE-DEFAULTS-10
+
+Owner request2026-10-26: expose the existing D KURD10 and D AMARA10 colour pairs,
+and each role-swapped inverse, in the built-in palette selector. Add options;
+retain existing six palette identities and the current new-scale default. Source
+colours are canonical data, not newly designed substitutes. Inversion means
+root/tone role swap as in the current palette pairs; it does not mirror the pan
+or change musical voicings. No seeded geometry/note/chord/data edits are implied.
+
+**Priority:** fast-track after the already-active authorized workstreams, aiming
+for the next main release. Saved variants keeps priority; Helpers and existing
+swipe obligations keep their established sequence. This does not resume paused
+notes, elevate this task over existing work, or authorize a main merge. Plan now
+in a separate documentation lane; application implementation has not begun.
+
+Deliverables: [iterated planning prompt](prompts/2026-10-26-built-in-palette-defaults.md)
+and [engineering/design-reviewed swarm plan](plans/2026-10-26-built-in-palette-defaults.md).
+Review actual share-link/storage/version boundaries and 10-swatch mobile fit before
+calling this a quick change. A speed target cannot waive compatibility, TDD,
+mutants, independent review, exact-head CI or servedDEV/owner QA. Any necessary
+CLAUDE.md patch must be presented exactly for explicit owner approval; no actual
+CLAUDE edit is included in this planning task.
+
+Recovery lane: branchcodex/palette-defaults-plan-20261026,
+worktree/private/tmp/handpan-palette-defaults-plan.20261026, investigationbase0d36b1f4.
+Current step COMPLETED: V1→V2 prompt refinements, independent ENG/design prompt
+critique, accepted prompt execution, independent output-plan ENG/design reviews,
+Cancel/draft plus compatibility revisions, and both re-review CLEAR at5c5a1f3d.
+Implementation remains queued/unapproved pending activation and exactCLAUDEpacket
+approval after preceding activework. Actual10-choice fit/behavior is untested.
+Next publish immutable plan/ledger refs in existing coordination thread. Do not merge this investigationbase
+(which contains unshipped saved variants) into DEV merely to deliver documents;
+use a documentation-only publication path or the appropriate approved delivery.
+
 ## Check-in reporting requirement
 
 Owner clarified that every check-in must cover active development, interrupted
