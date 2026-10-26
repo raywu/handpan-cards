@@ -16685,4 +16685,97 @@ describe("SHC asynchronous LINK ownership", () => {
     assert.strictEqual(committed.nextDisplayOrdinal,initial.nextDisplayOrdinal);
   });
 
+
+  test("IDB12 U1: saved-scale temporary and durable workflows preserve own-property behavior without Object.hasOwn", async () => {
+    const hostHasOwn=Object.hasOwn,source=fs.readFileSync(path.join(ROOT,"index.html"),"utf8");
+    const seed="(D3) A3 C4 D4 E4 F4 G4 A4 C5";
+    const checkLink=(app,name)=>{
+      const shared=plain(app.get("shareLink(deck())"));assert.strictEqual(shared.ok,true);
+      assert.ok(shared.value.includes("#s=6/"),"a usable portable link is generated");
+      const code=shared.value.split("#s=")[1];
+      const decoded=plain(app.get(`HPE.share.decode(${JSON.stringify(code)})`));
+      assert.strictEqual(decoded.ok,true);assert.strictEqual(decoded.value.options.name,name);
+    };
+    // The first iteration is a normal-API positive control for these same
+    // workflows. The prefix changes only the application's VM intrinsic.
+    for(const missing of [false,true]) {
+      const html=(missing?"<script>Object.hasOwn=undefined;</script>":"")+source;
+      const context=missing?"missing Object.hasOwn":"normal Object.hasOwn";
+      let temporary;
+      assert.doesNotThrow(()=>{temporary=boot({html});},context+": ordinary temporary startup must not throw");
+      assert.strictEqual(Object.hasOwn,hostHasOwn,"the host intrinsic remains untouched");
+      assert.strictEqual(temporary.get("typeof Object.hasOwn"),missing?"undefined":"function");
+      assert.strictEqual(temporary.get("booted"),true);assert.strictEqual(temporary.get("savedMode"),"session");
+      await assert.doesNotReject(async()=>{await makeCustom(temporary,seed);},context+": temporary Add completes");
+      assert.strictEqual(plain(temporary.get("savedState.entries"))[0].record.s,seed);
+      editSelected(temporary);rename(temporary,"COMPAT TEMP EDIT");
+      await assert.doesNotReject(()=>submit(temporary),context+": temporary Edit completes");
+      assert.strictEqual(temporary.sheetOpen(),false);assert.strictEqual(temporary.currentDeck().name,"COMPAT TEMP EDIT");
+      checkLink(temporary,"COMPAT TEMP EDIT");
+
+      const origin=createOrigin();let durable;
+      assert.doesNotThrow(()=>{durable=boot({origin,html,indexedDB:true,broadcastChannel:true,locks:true,crypto:cryptoFixture(),abortController:true,isSecureContext:true});},context+": durable script startup must not throw");
+      await assert.doesNotReject(()=>durable.getAsync("savedReady"),context+": actual durable initialization must resolve");
+      assert.strictEqual(durable.get("booted"),true);assert.strictEqual(durable.get("savedMode"),"durable");
+      assert.strictEqual(durable.get("typeof Object.hasOwn"),missing?"undefined":"function");
+      const initialized=await idbRecord(durable);assert.strictEqual(initialized.present,true);
+      assert.deepStrictEqual(JSON.parse(initialized.raw).entries,[],"ordinary initialization commits an empty supported collection");
+      let added;
+      await assert.doesNotReject(async()=>{added=await imported(durable,SV.portableRecords.amaraA);},context+": durable import resolves");
+      assert.strictEqual(added.ok,true);assert.strictEqual(added.persistence,"durable");
+      const afterAdd=JSON.parse((await idbRecord(durable)).raw);
+      assert.strictEqual(afterAdd.entries.length,1);assert.strictEqual(afterAdd.entries[0].instanceId,added.instanceId);
+      assert.strictEqual(afterAdd.entries[0].record.o.name,"PUBLIC PAN A");
+      editSelected(durable);rename(durable,"COMPAT DURABLE EDIT");
+      await assert.doesNotReject(()=>submit(durable),context+": durable Edit resolves");
+      assert.strictEqual(durable.sheetOpen(),false);
+      const edited=JSON.parse((await idbRecord(durable)).raw);
+      assert.strictEqual(edited.entries[0].instanceId,added.instanceId);
+      assert.strictEqual(edited.entries[0].record.o.name,"COMPAT DURABLE EDIT");
+      checkLink(durable,"COMPAT DURABLE EDIT");
+
+      // An own JSON __proto__ value and a shadowing hasOwnProperty value are
+      // inert future data; they must survive a real commit without becoming
+      // prototype authority or breaking the intrinsic-based ownership check.
+      const unknown={name:"UNTRUSTED PROTOTYPE NAME",keep:[null,17]};
+      Object.defineProperty(edited.entries[0].record.o,"__proto__",{value:unknown,enumerable:true});
+      edited.entries[0].record.o.hasOwnProperty="not a method";
+      edited.entries[0].hasOwnProperty="also inert";
+      edited.revision++;edited.entries[0].revision++;
+      await idbRecord(durable,{write:true,value:JSON.stringify(edited)});
+      assert.strictEqual((await durable.getAsync("reconcileSavedCollection()")).ok,true);
+      editSelected(durable);rename(durable,"COMPAT OWN DATA");
+      await assert.doesNotReject(()=>submit(durable),context+": Edit with prototype-looking JSON resolves");
+      assert.strictEqual(durable.sheetOpen(),false);
+      const final=JSON.parse((await idbRecord(durable)).raw);
+      assert.strictEqual(final.entries[0].record.o.name,"COMPAT OWN DATA");
+      assert.strictEqual(Object.prototype.hasOwnProperty.call(final.entries[0].record.o,"__proto__"),true);
+      assert.deepStrictEqual(final.entries[0].record.o.__proto__,unknown);
+      assert.strictEqual(final.entries[0].record.o.hasOwnProperty,"not a method");
+      assert.strictEqual(final.entries[0].hasOwnProperty,"also inert");
+      assert.strictEqual(durable.get("({}).name"),undefined,"prototype-looking data does not pollute the app realm");
+      checkLink(durable,"COMPAT OWN DATA");
+      const ownership=plain(durable.get(`(() => {
+        const input=${JSON.stringify(final)};
+        const valid=Object.assign(Object.create(null),input);
+        valid.entries=input.entries.map(row=>Object.assign(Object.create(null),row));
+        valid.migration=Object.assign(Object.create(null),input.migration);
+        valid.migration.raw=Object.assign(Object.create(null),input.migration.raw);
+        const nullPrototype=stageSavedEnvelope(valid).ok;
+        const inheritedRow=JSON.parse(${JSON.stringify(JSON.stringify(final))});
+        const record=inheritedRow.entries[0].record;delete inheritedRow.entries[0].record;
+        Object.setPrototypeOf(inheritedRow.entries[0],{record});
+        const inheritedRecord=stageSavedEnvelope(inheritedRow).ok;
+        const inheritedRaw=JSON.parse(${JSON.stringify(JSON.stringify(final))});
+        delete inheritedRaw.migration.raw['hpfc.scales.v3'];
+        Object.setPrototypeOf(inheritedRaw.migration.raw,{'hpfc.scales.v3':null});
+        return {nullPrototype,inheritedRecord,inheritedRaw:stageSavedEnvelope(inheritedRaw).ok};
+      })()`));
+      assert.deepStrictEqual(ownership,{nullPrototype:true,inheritedRecord:false,inheritedRaw:false},context+": valid own fields work without prototypes while inherited required fields are refused");
+      assert.strictEqual(durable.store[SV_KEY],undefined,"compatibility does not introduce a localStorage mirror");
+      assert.strictEqual(Object.hasOwn,hostHasOwn,"all compatibility cases leave the host intrinsic intact");
+      console.log("IDB12_PATH "+(missing?"missing-primitive":"normal-primitive")+" assertions complete");
+    }
+  });
+
 }

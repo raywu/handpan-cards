@@ -9793,12 +9793,12 @@ for (const id of ["together", "arpeggio", "three-over-two", "three-three-two", "
   Object.defineProperty(SEQ_STYLE_COPY, id, { enumerable: true, get: () => [t("style." + id + ".name"), t("style." + id + ".tip")] });
 }
 
-// Generated decks live here, keyed by deck id, so the DECKS literal above stays
+// Saved instance wrappers keep local IDs separate from engine inventory IDs; DECKS stays
 // the built-ins on one line (tools/validate.py and tests/paths.py both
-// need that). deck() resolves a custom id out of the registry; it never builds.
+// need that). deck() resolves a stable local selection from saved instances; it never builds.
 const deck = () => selectedDeck();
-// Any deck id persists, built-in or custom: a custom deck is rebuilt at boot
-// from its saved seed, so restoring one is no longer a dangling reference.
+// Saved selection and hidden state belong to the IndexedDB collection; saved
+// instances rebuild from their seeds at boot, independently of engine inventory IDs.
 // READ-MODIFY-WRITE: "hpfc" is one object shared with whatever else stores
 // settings there, so writing our two keys must not drop a sibling's.
 const save = () => updateSettings(next => {
@@ -9814,10 +9814,9 @@ const save = () => updateSettings(next => {
 // (ENGINE-SPEC section 11). generateDeck returns the engine's result shape
 // unchanged: {ok:true, value, warnings} or {ok:false, code, reason}.
 const isBuiltIn = id => DECKS.some(d => d.id === id);
-// Built-ins the player has hidden: ids in the `hidden` field of the one "hpfc"
-// blob, built-in ids only, written only while non-empty (save()). A hidden deck is still in DECKS - the
-// literal is generated and never altered - it just leaves the strip, the
-// fallbacks and the picker.
+// Built-ins the player has hidden: built-in ids in savedState.hidden, persisted
+// with the saved collection. A hidden deck stays in generated DECKS; visibility
+// changes only the strip, fallbacks and picker.
 const hiddenDecks = () => DECKS.filter(d => savedState && savedState.hidden.includes(d.id));
 function replacements() {
   const out = Object.create(null);
@@ -10103,6 +10102,7 @@ const knownSavedCollections = new Set();
 const SAVED_RETRY = Symbol("saved collection changed while staging");
 const savedClone = value => JSON.parse(JSON.stringify(value));
 const savedObject = value => value !== null && typeof value === "object" && !Array.isArray(value);
+const savedOwn = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
 const savedUUIDPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const isSavedUUID = value => typeof value === "string" && value.length === 36 && savedUUIDPattern.test(value);
 const savedPositive = n => Number.isSafeInteger(n) && n > 0;
@@ -10111,7 +10111,7 @@ function savedEqual(a, b) {
   if (a === b) return true;
   if (!a || !b || typeof a !== "object" || typeof b !== "object" || Array.isArray(a) !== Array.isArray(b)) return false;
   const ak = Object.keys(a), bk = Object.keys(b);
-  return ak.length === bk.length && ak.every(k => Object.hasOwn(b, k) && savedEqual(a[k], b[k]));
+  return ak.length === bk.length && ak.every(k => savedOwn(b, k) && savedEqual(a[k], b[k]));
 }
 function savedCryptoId(used) {
   for (let attempt = 0; attempt < 8; attempt++) {
@@ -10145,8 +10145,8 @@ function savedPreference(raw) {
   if (raw === null) return { ok: true, value: {} };
   try {
     const value = JSON.parse(raw);
-    if (!savedObject(value) || (Object.hasOwn(value, "deck") && typeof value.deck !== "string") ||
-        (Object.hasOwn(value, "hidden") && (!Array.isArray(value.hidden) || value.hidden.some(x => typeof x !== "string"))))
+    if (!savedObject(value) || (savedOwn(value, "deck") && typeof value.deck !== "string") ||
+        (savedOwn(value, "hidden") && (!Array.isArray(value.hidden) || value.hidden.some(x => typeof x !== "string"))))
       return savedFailure("protected", "legacy-preferences");
     return { ok: true, value };
   } catch (e) { return savedFailure("protected", "legacy-preferences"); }
@@ -10154,8 +10154,8 @@ function savedPreference(raw) {
 function savedLegacyProjection(raw) {
   const read = savedPreference(raw);
   if (!read.ok) return null;
-  return [Object.hasOwn(read.value, "deck"), read.value.deck || "",
-    Object.hasOwn(read.value, "hidden"), read.value.hidden || []];
+  return [savedOwn(read.value, "deck"), read.value.deck || "",
+    savedOwn(read.value, "hidden"), read.value.hidden || []];
 }
 function inspectLegacyBranch() {
   if (!savedState) { legacyBranchStatus = "unknown"; return legacyBranchStatus; }
@@ -10165,7 +10165,7 @@ function inspectLegacyBranch() {
       "hpfc.scales": localStorage.getItem(LEGACY_SCALES_KEY), "hpfc.scales.v3": localStorage.getItem(SCALES_KEY) };
     const beforePreference = savedLegacyProjection(baseline.hpfc), afterPreference = savedLegacyProjection(now.hpfc);
     const backend=savedState.migration.backendSource;
-    const backendChanged=localStorage.getItem(SAVED_KEY)!==(Object.hasOwn(savedState.migration,"backendSource")?backend.raw:null);
+    const backendChanged=localStorage.getItem(SAVED_KEY)!==(savedOwn(savedState.migration,"backendSource")?backend.raw:null);
     legacyBranchStatus = beforePreference === null || afterPreference === null ? "unknown" :
       backendChanged || now[LEGACY_SCALES_KEY] !== baseline[LEGACY_SCALES_KEY] || now[SCALES_KEY] !== baseline[SCALES_KEY] ||
       !savedEqual(beforePreference, afterPreference) ? "changed" : "unchanged";
@@ -10180,19 +10180,19 @@ function savedEnvelopeShape(e) {
       !savedObject(e.preferredSelection) || !["builtin", "saved"].includes(e.preferredSelection.kind) ||
       typeof e.preferredSelection.id !== "string" || !savedObject(e.migration) || !savedObject(e.migration.raw) ||
       !Array.isArray(e.migration.instanceIds) || ![null, SCALES_KEY, LEGACY_SCALES_KEY].includes(e.migration.sourceKey)) return false;
-  if (Object.hasOwn(e.migration,"backendSource")) {
+  if (savedOwn(e.migration,"backendSource")) {
     const source=e.migration.backendSource;
-    if(!savedObject(source) || Object.keys(source).length!==2 || !Object.hasOwn(source,"key") ||
-        source.key!==SAVED_KEY || !Object.hasOwn(source,"raw") || typeof source.raw!=="string")return false;
+    if(!savedObject(source) || Object.keys(source).length!==2 || !savedOwn(source,"key") ||
+        source.key!==SAVED_KEY || !savedOwn(source,"raw") || typeof source.raw!=="string")return false;
   }
   const used = new Set(e.usedInstanceIds);
   if (used.size !== e.usedInstanceIds.length || used.has(e.collectionId) ||
       e.usedInstanceIds.some(id => !isSavedUUID(id))) return false;
   const entries = new Set(), ordinals = new Set();
   for (const row of e.entries) {
-    if (!savedObject(row) || !Object.hasOwn(row, "instanceId") || !isSavedUUID(row.instanceId) ||
+    if (!savedObject(row) || !savedOwn(row, "instanceId") || !isSavedUUID(row.instanceId) ||
         !savedPositive(row.revision) || !savedPositive(row.displayOrdinal) || row.displayOrdinal >= e.nextDisplayOrdinal ||
-        !used.has(row.instanceId) || !Object.hasOwn(row, "record") || e.usedInstanceIds[row.displayOrdinal - 1] !== row.instanceId ||
+        !used.has(row.instanceId) || !savedOwn(row, "record") || e.usedInstanceIds[row.displayOrdinal - 1] !== row.instanceId ||
         entries.has(row.instanceId) || ordinals.has(row.displayOrdinal)) return false;
     entries.add(row.instanceId); ordinals.add(row.displayOrdinal);
   }
@@ -10200,7 +10200,7 @@ function savedEnvelopeShape(e) {
       Object.keys(e.slots).some(id => !isBuiltIn(id) || typeof e.slots[id] !== "string" || !entries.has(e.slots[id])) ||
       new Set(Object.values(e.slots)).size !== Object.values(e.slots).length) return false;
   if (e.preferredSelection.kind === "builtin" ? !isBuiltIn(e.preferredSelection.id) : !entries.has(e.preferredSelection.id)) return false;
-  if ([STORE_KEY, SCALES_KEY, LEGACY_SCALES_KEY].some(key => !Object.hasOwn(e.migration.raw, key) ||
+  if ([STORE_KEY, SCALES_KEY, LEGACY_SCALES_KEY].some(key => !savedOwn(e.migration.raw, key) ||
       (e.migration.raw[key] !== null && typeof e.migration.raw[key] !== "string")) ||
       new Set(e.migration.instanceIds).size !== e.migration.instanceIds.length ||
       e.migration.instanceIds.some(id => !used.has(id))) return false;
@@ -10429,7 +10429,7 @@ function stageSavedMigrationSource() {
   if(raw===null)return stageLegacySaved();
   let envelope;
   try{envelope=JSON.parse(raw);}catch(e){return {...savedFailure("protected","collection-json"),raw};}
-  if(savedObject(envelope) && savedObject(envelope.migration) && Object.hasOwn(envelope.migration,"backendSource"))
+  if(savedObject(envelope) && savedObject(envelope.migration) && savedOwn(envelope.migration,"backendSource"))
     return {...savedFailure("protected","backend-source-collision"),raw};
   const staged=stageSavedEnvelope(envelope);
   if(!staged.ok)return {...staged,raw};
@@ -10460,7 +10460,7 @@ async function initializeSavedDurable(locks) {
     hadSavedCollectionAtBoot=snapshot.present;
     const staged=snapshot.present?stageSavedSnapshot(snapshot):stageSavedMigrationSource();
     if(!staged.ok){if(staged.kind==="storage")return initializeSavedSession(staged);return savedProtect(staged,typeof staged.raw==="string"?staged.raw:snapshot.raw);}
-    const migration=snapshot.present?null:Object.hasOwn(staged,"backendRaw")?staged:makeSavedMigration(staged);
+    const migration=snapshot.present?null:savedOwn(staged,"backendRaw")?staged:makeSavedMigration(staged);
     if(migration && !migration.ok)return savedProtect(migration,snapshot.raw);
     let committed,callbackEntered=false;
     try{
@@ -10470,7 +10470,7 @@ async function initializeSavedDurable(locks) {
         return savedTransaction(opened.db,"readwrite",(fresh,store)=>{
           if(!sameSavedSnapshot(fresh,snapshot))return SAVED_RETRY;
           if(snapshot.present)return staged;
-          if(Object.hasOwn(staged,"backendRaw")) {
+          if(savedOwn(staged,"backendRaw")) {
             if(localStorage.getItem(SAVED_KEY)!==staged.backendRaw)return SAVED_RETRY;
           }else if(localStorage.getItem(SAVED_KEY)!==null || [STORE_KEY,SCALES_KEY,LEGACY_SCALES_KEY].some(key=>localStorage.getItem(key)!==staged.raw[key]))return SAVED_RETRY;
           const migrated=migration;
@@ -10533,7 +10533,7 @@ function savedEditedRecord(target, candidate) {
   const out = { ...savedClone(target), v: SHARE_VERSION, s: candidate.record.s };
   const options = savedObject(target.o) ? { ...savedClone(target.o) } : {};
   for (const name of SAVED_PORTABLE_OPTIONS) delete options[name];
-  for (const name of SAVED_PORTABLE_OPTIONS) if (Object.hasOwn(candidate.record.o || {}, name)) options[name] = savedClone(candidate.record.o[name]);
+  for (const name of SAVED_PORTABLE_OPTIONS) if (savedOwn(candidate.record.o || {}, name)) options[name] = savedClone(candidate.record.o[name]);
   out.o = options;
   return out;
 }
