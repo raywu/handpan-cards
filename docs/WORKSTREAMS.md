@@ -44,6 +44,20 @@ executes this already-planned internal alternative under through-DEV and
 reaffirmed AFK authority; no CLAUDE change/install/main merge.
 
 2026-10-26 continuation checkpoint:
+- Transactional candidate source `7eba9b27158a460543c2fa18c05bee385fd177efe3bd152b2556693fcd54b489`
+  plus app tests `7cd09396b7baa1670fb6562ace4140b918622d332203609232f16fdaa75fc8bb`
+  now passes935/935 (zero skip/cancel). Four independent review findings received
+  meaningful assertion RED then repair: owned connection retirement, visible
+  reconciliation failure, acknowledged-publication guidance and newly appearing
+  legacy-branch warning. App floor raised only after observed935 passes.
+- Additional native recovery RED: after actual owned-profile database deletion,
+  reconciliation recreated an empty schema outside the migration lock (1!==0,
+  1.10s, no timeout, cleanup true). Fifth repair is active; no release clearance.
+- Browser stderr-retirement amendment independently ENG/design reviewed; scoped
+  helper `178e034c3d9395bd92a7250b50b8ec5858bb177bb6678e500870699701b50826`
+  has meaningful unit RED→GREEN/generated assertion kill and independent source
+  clearance. Diagnostic process now exits and cleans normally; original matrix
+  rerun and final refined-fixture mutation proof remain pending.
 - Integration `cd9d1e51` contains the independently reviewed explicit IDB model and
   minimal ENGINE-SPEC persistence amendment. Fourteen new model groups passed
   independent focused verification; native transaction activity is not modeled.

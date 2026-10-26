@@ -18,15 +18,92 @@ const { boot: sandboxBoot } = require("./helpers/sandbox.js");
 const boot = (options = {}) => sandboxBoot({ crypto: require("node:crypto").webcrypto,
   abortController: true, ...options });
 
-// Durable persistence cases opt in explicitly and await actual boot/lock ACK.
-async function durableBoot(options = {}) {
-  const { createOrigin } = require("./helpers/sandbox.js");
-  const app = boot({ origin: createOrigin(), locks: true, isSecureContext: true, ...options });
-  await app.waitFor("typeof booted !== 'undefined' && booted === true", {timeout:2000});
+async function idbConnection(realm) {
+  assert.ok(realm.sandbox.indexedDB, "precondition: reviewed model exposes the standard IndexedDB API");
+  return new Promise((resolve, reject) => {
+    const request = realm.sandbox.indexedDB.open("hpfc.saved-scales.v1", 1);
+    request.onupgradeneeded = () => request.result.createObjectStore("collections");
+    request.onerror = () => reject(request.error || new Error("fixture database open failed"));
+    request.onblocked = () => reject(new Error("fixture database open was unexpectedly blocked"));
+    request.onsuccess = () => resolve(request.result);
+  });
+}
+async function idbRecord(realm, {write = false, value} = {}) {
+  const db = await idbConnection(realm);
+  try {
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction("collections", write ? "readwrite" : "readonly");
+      const store = tx.objectStore("collections");
+      let key, raw;
+      tx.oncomplete = () => resolve(write ? undefined : {present:key !== undefined, raw});
+      tx.onabort = () => reject(tx.error || new Error("fixture transaction aborted"));
+      tx.onerror = () => {}; // The transaction abort is the failure oracle.
+      if (write) store.put(value, "current");
+      else {
+        const exists = store.getKey("current"), get = store.get("current");
+        exists.onsuccess = () => { key = exists.result; };
+        get.onsuccess = () => { raw = get.result; };
+      }
+    });
+  } finally { db.close(); }
+}
+function idbFixtureRealm(origin, storage = {}) {
+  return boot({origin, storage, indexedDB:true, broadcastChannel:true,
+    html:"<script>window.__savedIdbFixtureOnly=true;</script>"});
+}
+
+// Durable persistence cases opt in explicitly and await actual transaction ACK.
+function observeSavedOperations(app) {
+  app.run(`{
+    const original=commitSaved;
+    globalThis.__testSavedOperations=new Set();
+    commitSaved=function(...args) {
+      const operation=original.apply(this,args);
+      if(operation && typeof operation.then==="function") {
+        __testSavedOperations.add(operation);
+        operation.then(()=>__testSavedOperations.delete(operation),()=>__testSavedOperations.delete(operation));
+      }
+      return operation;
+    };
+  }`);
   return app;
 }
-const savedEnvelope = app => JSON.parse(app.store["hpfc.saved-scales.v1"]);
-const writeBarrier = app => app.getAsync('navigator.locks.request("handpan-cards:saved-scales:v1",()=>true)');
+async function durableBoot(options = {}) {
+  const { createOrigin } = require("./helpers/sandbox.js");
+  const origin=options.origin || createOrigin({storage:options.storage});
+  if(Object.prototype.hasOwnProperty.call(options,"idbRaw")) {
+    await idbRecord(idbFixtureRealm(origin,options.storage),{write:true,value:options.idbRaw});
+  }
+  const app=boot({origin,indexedDB:true,broadcastChannel:true,locks:true,isSecureContext:true,...options});
+  if(options.idbFault) app.idb.fault(options.idbFault.operation,options.idbFault.error,{once:true});
+  await app.waitFor("typeof booted !== 'undefined' && booted === true", {timeout:2000});
+  app.fixtureOrigin=origin;
+  return observeSavedOperations(app);
+}
+const savedRaw = app => {
+  assert.ok(app.idb && typeof app.idb.inspect==="function","persistent oracle requires the independently reviewed IDB model");
+  const db=app.idb.inspect("hpfc.saved-scales.v1");
+  const store=db?.stores.find(s=>s.name==="collections");
+  const record=store?.entries.find(([key])=>key==="current");
+  return record ? record[1] : undefined;
+};
+const savedEnvelope = app => JSON.parse(savedRaw(app));
+async function committedPreference(app, expected) {
+  const deadline=Date.now()+2000;
+  let actual;
+  do {
+    const raw=savedRaw(app);
+    actual=typeof raw==="string" ? JSON.parse(raw).preferredSelection : undefined;
+    if(JSON.stringify(actual)===JSON.stringify(expected)) break;
+    await new Promise(resolve=>setImmediate(resolve));
+  } while(Date.now()<deadline);
+  assert.deepStrictEqual(actual,expected,"the literal expected boot-route preference is committed in IDB");
+}
+
+const writeBarrier = app => app.getAsync(`(async()=>{
+  while(globalThis.__testSavedOperations?.size) await Promise.all([...__testSavedOperations]);
+  return true;
+})()`);
 async function generateClick(app) {
   const control=app.els["scale-generate"],handler=control.onclick;
   assert.strictEqual(typeof handler,"function","the real Generate handler is bound");
@@ -391,7 +468,7 @@ test("deck and mode round-trip through localStorage (subset semantics)", async (
   assert.deepStrictEqual(savedEnvelope(app).preferredSelection,{kind:"builtin",id:"amara"});
   assert.strictEqual(JSON.parse(app.store.hpfc).mode,"B");
   assert.strictEqual(JSON.parse(app.store.hpfc).deck,undefined,"tagged selection is never copied into legacy hpfc.deck");
-  const again=await durableBoot({storage:{...app.store}});
+  const again=await durableBoot({origin:app.fixtureOrigin});
   assert.strictEqual(again.get("selection.id"),"amara");assert.strictEqual(again.get("mode"),"B");
   assert.strictEqual(again.els.count.textContent,`1 / ${amara.chords.length}`);
 });
@@ -417,7 +494,7 @@ test("a stored custom deck wins over the default", async () => {
   const app=await durableBoot();openSheet(app);app.type(AMARA_STRING);await generateClick(app);
   const selection=plain(app.get("selection"));assert.strictEqual(selection.kind,"saved");
   assert.match(app.currentDeck().id,/^custom:/,"musical inventory keeps the canonical engine id");
-  const again=await durableBoot({storage:{...app.store}});
+  const again=await durableBoot({origin:app.fixtureOrigin});
   assert.deepStrictEqual(plain(again.get("selection")),selection);assert.deepStrictEqual(again.currentDeck(),app.currentDeck());
 });
 
@@ -434,11 +511,11 @@ test("a share link wins over the stored deck and becomes the stored deck", async
 test("two boots over one store: the last selection wins and sibling keys survive", async () => {
   const raw=JSON.stringify({deck:"hijaz",mode:"A",sibling:"keep"});
   const first=await durableBoot({storage:{hpfc:raw}});first.clickChip(decks(first).find(d=>d.id==="amara").name);await writeBarrier(first);
-  const second=await durableBoot({storage:{...first.store}});assert.strictEqual(second.get("selection.id"),"amara");
+  const second=await durableBoot({origin:first.fixtureOrigin});assert.strictEqual(second.get("selection.id"),"amara");
   second.clickChip(decks(second).find(d=>d.id==="pygmy").name);await writeBarrier(second);
   assert.strictEqual(second.store.hpfc,raw,"tagged preference preserves all old sibling values byte-for-byte");
   assert.deepStrictEqual(savedEnvelope(second).preferredSelection,{kind:"builtin",id:"pygmy"});
-  assert.strictEqual(boot({storage:{...second.store}}).get("selection.id"),"pygmy");
+  assert.strictEqual((await durableBoot({origin:second.fixtureOrigin})).get("selection.id"),"pygmy");
 });
 
 test("a throwing localStorage breaks neither boot nor navigation", async () => {
@@ -1379,7 +1456,7 @@ test("a generated deck survives a reload, rebuilt from its saved seed", async ()
   const saved=savedEnvelope(app);assert.strictEqual(saved.entries.length,1);assert.strictEqual(saved.entries[0].instanceId,id);
   assert.strictEqual(JSON.stringify(saved).includes('"chords"'),false,"only portable seed metadata is persisted");
   assert.deepStrictEqual(saved.preferredSelection,{kind:"saved",id});
-  const again=await durableBoot({storage:{...app.store}});assert.ok(savedViews(again)[id]);
+  const again=await durableBoot({origin:app.fixtureOrigin});assert.ok(savedViews(again)[id]);
   assert.strictEqual(again.get("selection.id"),id);assert.strictEqual(again.currentDeck().id,inventory);
   assert.strictEqual(again.els.count.textContent,`1 / ${app.currentDeck().chords.length}`);assert.match(again.faces(),/<svg /);assert.strictEqual(again.announcer().textContent,"");
 });
@@ -1578,7 +1655,7 @@ test("renaming keeps both identities, relabels its chip and survives a reload", 
   const app=await durableBoot(),d=await makeCustom(app);openEdit(app,d);app.els["scale-name"].value="RAY'S PAN";app.els["scale-name"].dispatchEvent({type:"input"});await generateClick(app);
   assert.strictEqual(app.get("selection.id"),d.instanceId);assert.strictEqual(app.currentDeck().id,d.id);
   assert.ok(chipRow(app).some(c=>c.label==="RAY'S PAN"&&c.on));
-  const again=await durableBoot({storage:{...app.store}});assert.strictEqual(savedViews(again)[d.instanceId].name,"RAY'S PAN");assert.strictEqual(again.currentDeck().id,d.id);
+  const again=await durableBoot({origin:app.fixtureOrigin});assert.strictEqual(savedViews(again)[d.instanceId].name,"RAY'S PAN");assert.strictEqual(again.currentDeck().id,d.id);
 });
 
 // Q29: core.js's NAME_RE is ASCII-only (`/^[\x20-\x7E]*$/`), so a name typed
@@ -1602,7 +1679,7 @@ test("a name containing a curly apostrophe (U+2019) saves, normalised to ASCII",
     `the chip row still reads ${JSON.stringify(row.map((c) => c.label))}`);
 
   const key = app.get("SCALES_KEY");
-  const again = await durableBoot({ storage: { ...app.store } });
+  const again = await durableBoot({origin:app.fixtureOrigin});
   assert.strictEqual(savedViews(again)[d.instanceId || d.id].name, "RAY'S PAN",
     "the curly-quote name was not stored, or was stored un-normalised");
 });
@@ -1628,7 +1705,7 @@ test("a name typed with iOS dashes and ellipsis saves, normalised to ASCII", asy
     `the chip row still reads ${JSON.stringify(row.map((c) => c.label))}`);
 
   const key = app.get("SCALES_KEY");
-  const again = await durableBoot({ storage: { ...app.store } });
+  const again = await durableBoot({origin:app.fixtureOrigin});
   assert.strictEqual(savedViews(again)[d.instanceId || d.id].name, "A - B - C...",
     "the dash/ellipsis name was not stored, or was stored un-normalised");
 });
@@ -1656,7 +1733,7 @@ test("deleting the SELECTED custom deck falls back to a built-in, says so, and s
   const key = app.get("SCALES_KEY");
   assert.deepStrictEqual(savedEnvelope(app).entries.map(row=>row.record), [],
     "the seed record survived the delete");
-  const again = await durableBoot({ storage: { ...app.store } });
+  const again = await durableBoot({origin:app.fixtureOrigin});
   assert.deepStrictEqual(savedViews(again), {}, "the deleted deck came back on the next boot");
   assert.strictEqual(again.get("selection.id"), first.instanceId || first.id);
   assert.strictEqual(again.announcer().textContent, "",
@@ -1986,7 +2063,7 @@ test("a correction survives a save, a reopen and a reload", async () => {
   app.keydown("Escape");
 
   const key = app.get("SCALES_KEY");
-  const again = await durableBoot({ storage: { ...app.store } });
+  const again = await durableBoot({origin:app.fixtureOrigin});
   assert.deepStrictEqual(savedViews(again)[d.instanceId || d.id].fields, savedViews(app)[d.instanceId || d.id].fields,
     "the correction did not survive a reload");
 });
@@ -2115,7 +2192,7 @@ test("a field edit updates its one envelope record instead of adding a second on
 
 test("a boot after a field edit shows one updated instance in the same chip position", async () => {
   const app=await durableBoot(),a=await makeCustom(app),b=await makeCustom(app,OTHER_STRING),at=chipRow(app).map(c=>c.label).indexOf(a.name);
-  await editFields(app,a,EDIT_MORE);const current=app.currentDeck(),again=await durableBoot({storage:{...app.store}});
+  await editFields(app,a,EDIT_MORE);const current=app.currentDeck(),again=await durableBoot({origin:app.fixtureOrigin});
   assert.deepStrictEqual(Object.keys(savedViews(again)),[a.instanceId,b.instanceId]);assert.strictEqual(again.get("selection.id"),a.instanceId);assert.strictEqual(again.currentDeck().id,current.id);
   const row=chipRow(again).map(c=>c.label);assert.strictEqual(row[at],current.name);assert.ok(row.includes(b.name));
 });
@@ -2269,7 +2346,7 @@ test("an options-only edit keeps its chip index across a reload with three insta
   const app=await durableBoot(),one=await makeCustom(app),two=await makeCustom(app,OTHER_STRING),three=await makeCustom(app,THIRD_STRING),before=chipRow(app).map(c=>c.label),at=before.indexOf(two.name);
   assert.ok(at>before.indexOf(three.name)&&at<before.indexOf(one.name));const keys=savedEnvelope(app).entries.map(e=>e.instanceId);
   await editOptions(app,two,undefined);assert.strictEqual(app.get("selection.id"),two.instanceId);assert.strictEqual(app.currentDeck().id,two.id);
-  const again=await durableBoot({storage:{...app.store}});assert.deepStrictEqual(savedEnvelope(again).entries.map(e=>e.instanceId),keys);
+  const again=await durableBoot({origin:app.fixtureOrigin});assert.deepStrictEqual(savedEnvelope(again).entries.map(e=>e.instanceId),keys);
   assert.strictEqual(chipRow(again)[at].label,two.name);assert.strictEqual(savedViews(again)[two.instanceId].options.palette,4);assert.strictEqual(savedViews(again)[two.instanceId].options.mirror,true);
 });
 
@@ -2474,7 +2551,8 @@ function scanNames(source, name) {
 test("the retired inventory writer is absent and durable writes stay behind the locked boundaries", async () => {
   const html=fs.readFileSync(path.join(ROOT,"index.html"),"utf8");
   assert.strictEqual(scanNames(html,"replaceRegistered").total,0,"retired inventory-based mutation cannot reappear");
-  const writes=[...html.matchAll(/localStorage\.setItem\(SAVED_KEY,/g)];
+  assert.strictEqual((html.match(/localStorage\.setItem\(SAVED_KEY,/g)||[]).length,0,"the live collection has no localStorage mirror writer");
+  const writes=[...html.matchAll(/\bstore\.put\([^;\n]*,\s*SAVED_RECORD\)/g)];
   assert.strictEqual(writes.length,2,"migration and changed-command acknowledgment are the only durable envelope writers");
   assert.strictEqual((html.match(/await locks\.request\(SAVED_LOCK,/g)||[]).length,2,"both durable writers require exclusive origin coordination");
 });
@@ -5579,9 +5657,20 @@ test("S3: legacy v3 precedence preserves both exact sources in the new envelope"
 
 test("S3: refused migration write retains the old list and serves an explicit session copy", async () => {
   const old=JSON.stringify([{v:2,s:AMARA_STRING,o:{name:"Old"}}]);
-  const app=await durableBoot({storage:{"hpfc.scales":old},storageFault:({operation,key})=>operation==="setItem"&&key==="hpfc.saved-scales.v1"?new Error("public test quota refusal"):null});
-  assert.strictEqual(app.get("savedMode"),"session");assert.deepStrictEqual(Object.values(savedViews(app)).map(d=>d.name),["Old"]);
-  assert.strictEqual(app.store["hpfc.scales"],old);assert.strictEqual(app.store["hpfc.saved-scales.v1"],undefined);assert.ok(app.els["saved-status"].textContent.length>0,"session limitation is visible");
+  const app=await durableBoot({storage:{"hpfc.scales":old},idbFault:{operation:"put",error:new Error("public test quota refusal")}});
+  // Transactional amendment: attempted migration failure is protected until
+  // an explicit temporary choice. Historical registration remains unchanged.
+  assert.strictEqual(app.get("savedMode"),"protected");assert.deepStrictEqual(Object.values(savedViews(app)),[]);
+  assert.strictEqual(app.store["hpfc.scales"],old);assert.strictEqual(savedRaw(app),undefined);
+  assert.strictEqual(app.els["saved-temporary-use"].hidden,false);
+  const writes=app.idb.operations.filter(x=>x.operation==="put").length;
+  app.els["saved-temporary-use"].click();assert.strictEqual(app.get("savedMode"),"session");
+  openSheet(app);app.type(AMARA_STRING);app.els["scale-name"].value="Old";app.els["scale-name"].dispatchEvent({type:"input"});
+  await generateClick(app);
+  assert.deepStrictEqual(Object.values(savedViews(app)).map(d=>d.name),["Old"],"explicit recovery still permits a usable temporary copy");
+  assert.strictEqual(app.store["hpfc.scales"],old);assert.strictEqual(savedRaw(app),undefined);
+  assert.strictEqual(app.idb.operations.filter(x=>x.operation==="put").length,writes,"temporary recovery never retries a durable write");
+  assert.ok(app.els["saved-status"].textContent.length>0,"session limitation is visible");
 });
 
 test("S3: a stored v2 record's flat order becomes per-ring seats at boot", async () => {
@@ -6079,8 +6168,17 @@ test("migration retains both same-inventory records and their source order acros
 
 test("a throwing migration write leaves the old list and its session view intact", async () => {
   const key="hpfc.scales.v3",raw=JSON.stringify([{v:2,s:"(D3) A3 C4 D4 E4 F4 G4 A4 C5",o:{}}]);
-  const app=await durableBoot({storage:{[key]:raw},storageFault:({operation,key})=>operation==="setItem"&&key==="hpfc.saved-scales.v1"?new Error("public test denied"):null});
-  assert.strictEqual(app.store[key],raw);assert.strictEqual(app.get("savedMode"),"session");assert.strictEqual(Object.keys(savedViews(app)).length,1);assert.strictEqual(app.store["hpfc.saved-scales.v1"],undefined);
+  const app=await durableBoot({storage:{[key]:raw},idbFault:{operation:"put",error:new Error("public test denied")}});
+  // Preserve exact recovery bytes; attempted IDB failure does not silently
+  // declare the legacy copy current. Temporary operation is explicit.
+  assert.strictEqual(app.store[key],raw);assert.strictEqual(app.get("savedMode"),"protected");assert.strictEqual(savedRaw(app),undefined);
+  assert.strictEqual(app.els["saved-temporary-use"].hidden,false);
+  const writes=app.idb.operations.filter(x=>x.operation==="put").length;
+  app.els["saved-temporary-use"].click();assert.strictEqual(app.get("savedMode"),"session");
+  openSheet(app);app.type(JSON.parse(raw)[0].s);await generateClick(app);
+  assert.strictEqual(Object.keys(savedViews(app)).length,1,"explicit recovery can regenerate the old scale temporarily");
+  assert.strictEqual(app.store[key],raw);assert.strictEqual(savedRaw(app),undefined);
+  assert.strictEqual(app.idb.operations.filter(x=>x.operation==="put").length,writes);
 });
 
 test("the boot rewrite of a legacy record with a hundred and one top notes keeps every note", async () => {
@@ -8575,7 +8673,7 @@ test("editable defaults: a generated deck is chip 1 and a second pushes the firs
   const two = await makeCustom(app, OTHER_STRING);
   assert.deepStrictEqual(labels(app), [two.name, one.name, ...BUILTIN_NAMES]);
   assert.strictEqual(chipRow(app)[0].on, true, "the new deck's chip is not the selected one");
-  const again = await durableBoot({storage:{...app.store}});
+  const again = await durableBoot({origin:app.fixtureOrigin});
   assert.deepStrictEqual(labels(again), labels(app), "chip order changed across a reload");
 });
 
@@ -8587,7 +8685,7 @@ test("editable defaults: deleting a seeded deck removes its chip, stores hidden 
   assert.strictEqual(app.get("selection.id"), "kurd");
   assert.strictEqual(app.sheetOpen(), false, "the sheet stayed open after the hide");
   assert.strictEqual(app.els["deck-restore"].hasAttribute("hidden"), false, "no reset button while a deck is deleted");
-  const again = await durableBoot({storage:{...app.store}});
+  const again = await durableBoot({origin:app.fixtureOrigin});
   assert.deepStrictEqual(labels(again), labels(app), "a hidden built-in came back on reload");
   assert.strictEqual(again.announcer().textContent, "", "a hidden deck that was not selected warned at boot");
 });
@@ -8776,7 +8874,7 @@ test("editable defaults: #deck-restore follows #deck-add, starts hidden and join
 //
 // docs/plans/2026-10-13-seeded-save-delete.md, lane app (SD-A2..A6, A15..A20).
 
-const reboot = async app => {await writeBarrier(app);return durableBoot({storage:{...app.store}});};
+const reboot = async app => {await writeBarrier(app);return durableBoot({origin:app.fixtureOrigin});};
 const kurdString = (app) => app.get("HPE.core.formatSeed(DECKS[0].fields)");
 const records = app => plain(app.get("savedState.entries.map(row=>row.record)"));
 
@@ -9443,7 +9541,13 @@ describe("discoverability: analytics events", () => {
 describe("discoverability: deck route", () => {
   const REAL_ID = "G-TEST123456";
   const SLUGS = { "d-kurd-10": "kurd", "d-amara-10": "amara10", "d-amara-9": "amara", "f-low-pygmy-18": "pygmy", "c-sharp-hijaz-9": "hijaz" };
-  const at = async (hash,opts={})=>{const app=await durableBoot({href:"https://example.test/index.html"+hash,...opts});await writeBarrier(app);return app;};
+  const at = async (hash,opts={},expectedPreference=null)=>{
+    const app=await durableBoot({href:"https://example.test/index.html"+hash,...opts});
+    // Boot-route prefer started before the observer was installed. A fresh
+    // lock cannot order that staged operation; assert its actual committed key.
+    if(expectedPreference) await committedPreference(app,expectedPreference);
+    return app;
+  };
   const stored = (app) => JSON.parse(app.store.hpfc || "{}");
   const replaceCalls = (app) => app.history.calls.filter((c) => c.type === "replace");
   const editedSeed = (seed, name) => {
@@ -9455,7 +9559,7 @@ describe("discoverability: deck route", () => {
 
   test("every slug opens its built-in deck, persists it, and leaves a clean address", async () => {
     for (const [slug, id] of Object.entries(SLUGS)) {
-      const app = await at("#deck=" + slug, { storage: { hpfc: JSON.stringify({ deck: "kurd", mode: "A" }) } });
+      const app = await at("#deck=" + slug, { storage: { hpfc: JSON.stringify({ deck: "kurd", mode: "A" }) } }, {kind:"builtin",id});
       assert.strictEqual(app.get("selection.id"), id, slug);
       assert.strictEqual(savedEnvelope(app).preferredSelection.id, id, slug + " was not persisted");
       assert.strictEqual(app.location.hash, "#deck=" + slug, slug + " left the wrong hash");
@@ -9464,7 +9568,7 @@ describe("discoverability: deck route", () => {
   });
 
   test("the route is consumed with replaceState, never pushState", async () => {
-    const app = await at("#deck=f-low-pygmy-18");
+    const app = await at("#deck=f-low-pygmy-18",{}, {kind:"builtin",id:"pygmy"});
     assert.deepStrictEqual(app.history.calls.filter((c) => c.type === "push"), []);
     assert.deepStrictEqual(replaceCalls(app), [], "a bar that already holds the canonical route was rewritten");
     assert.strictEqual(app.location.hash, "#deck=f-low-pygmy-18");
@@ -9475,7 +9579,7 @@ describe("discoverability: deck route", () => {
   });
 
   test("a route beats the stored deck", async () => {
-    const app = await at("#deck=c-sharp-hijaz-9", { storage: { hpfc: JSON.stringify({ deck: "pygmy", mode: "A" }) } });
+    const app = await at("#deck=c-sharp-hijaz-9", { storage: { hpfc: JSON.stringify({ deck: "pygmy", mode: "A" }) } }, {kind:"builtin",id:"hijaz"});
     assert.strictEqual(app.get("selection.id"), "hijaz");
   });
 
@@ -9545,12 +9649,12 @@ describe("discoverability: deck route", () => {
 
   test("a routed boot queues config before deck_route", async () => {
     for(const storage of [{},{hpfc:JSON.stringify({deck:"hijaz",mode:"A"})}]) {
-      const app=await durableBoot({html:withGaId(REAL_ID),webdriver:false,href:"https://example.test/index.html#deck=d-kurd-10",storage});await writeBarrier(app);
+      const app=await durableBoot({html:withGaId(REAL_ID),webdriver:false,href:"https://example.test/index.html#deck=d-kurd-10",storage});await committedPreference(app,{kind:"builtin",id:"kurd"});
       const q=JSON.parse(JSON.stringify(Array.from(app.get("window.dataLayer")))),names=q.map(e=>e[0]==="js"?"js":e[0]+":"+e[1]);
       assert.deepStrictEqual(names.slice(0,5),["consent:default","consent:default","js","config:"+REAL_ID,"event:deck_route"]);
       assert.deepStrictEqual(q[4][2],{deck_id:"kurd"});assert.strictEqual(q.filter(e=>e[0]==="event"&&e[1]==="deck_route").length,1);
     }
-    const same=await durableBoot({html:withGaId(REAL_ID),webdriver:false,href:"https://example.test/index.html#deck=d-kurd-10",storage:{hpfc:JSON.stringify({deck:"kurd",mode:"A"})}});await writeBarrier(same);
+    const same=await durableBoot({html:withGaId(REAL_ID),webdriver:false,href:"https://example.test/index.html#deck=d-kurd-10",storage:{hpfc:JSON.stringify({deck:"kurd",mode:"A"})}});await committedPreference(same,{kind:"builtin",id:"kurd"});
     const events=JSON.parse(JSON.stringify(Array.from(same.get("window.dataLayer"))));assert.strictEqual(events.filter(e=>e[0]==="event"&&e[1]==="deck_route").length,0,"same stored selection is a reload, not another routed arrival");
   });
 
@@ -9620,7 +9724,7 @@ describe("share url", () => {
   };
   const customShown = async () => {
     const first=await durableBoot(),d=await makeCustom(first);
-    return {first,d,app:await durableBoot({storage:storageOf(first),href:PAGE})};
+    return {first,d,app:await durableBoot({origin:first.fixtureOrigin,href:PAGE})};
   };
 
   test("SU: tapping three chips writes three replaceState hashes and no pushState", async () => {
@@ -10081,11 +10185,11 @@ describe("share url", () => {
     const first = await durableBoot({html:withGaId(REAL_ID),webdriver:false,href:PAGE});
     const d = await makeCustom(first);
     const hash = "#s=" + payload(link(first, d.instanceId || d.id).value);
-    const again = await durableBoot({html:withGaId(REAL_ID),webdriver:false,storage:storageOf(first),href:PAGE+hash});
+    const again = await durableBoot({html:withGaId(REAL_ID),webdriver:false,origin:first.fixtureOrigin,href:PAGE+hash});
     assert.deepStrictEqual(gaEvents(again).filter((e) => e === "share_open" || e === "deck_route"), []);
-    const otherStorage=storageOf(first),otherEnvelope=JSON.parse(otherStorage["hpfc.saved-scales.v1"]);
-    otherEnvelope.preferredSelection={kind:"builtin",id:"kurd"};otherStorage["hpfc.saved-scales.v1"]=JSON.stringify(otherEnvelope);
-    const other=await durableBoot({html:withGaId(REAL_ID),webdriver:false,storage:otherStorage,href:PAGE+hash});
+    const otherStorage=storageOf(first),otherEnvelope=savedEnvelope(first);
+    otherEnvelope.preferredSelection={kind:"builtin",id:"kurd"};
+    const other=await durableBoot({html:withGaId(REAL_ID),webdriver:false,storage:otherStorage,idbRaw:JSON.stringify(otherEnvelope),href:PAGE+hash});
     assert.deepStrictEqual(gaEvents(other).filter((e) => e === "share_open"), ["share_open"]);
 
     const stored = { hpfc: JSON.stringify({ deck: "pygmy", mode: "A" }) };
@@ -10212,6 +10316,7 @@ describe("share url: edges", () => {
   test("SU: a routed boot to the default deck beats a different stored deck and persists it", async () => {
     const legacy=JSON.stringify({deck:"pygmy",mode:"A"});
     const app=await durableBoot({href:PAGE+"#deck=d-kurd-10",storage:{hpfc:legacy}});
+    await committedPreference(app,{kind:"builtin",id:"kurd"});
     assert.strictEqual(app.get("selection.id"), "kurd");
     assert.deepStrictEqual(savedEnvelope(app).preferredSelection,{kind:"builtin",id:"kurd"});
     assert.strictEqual(app.store.hpfc,legacy,"legacy recovery bytes remain untouched");
@@ -10235,10 +10340,10 @@ describe("share url: edges", () => {
     await makeCustom(first);
     const storage={...first.store},envelope=savedEnvelope(first);
     envelope.preferredSelection={kind:"builtin",id:"kurd"};envelope.hidden=["kurd"];
-    storage["hpfc.saved-scales.v1"]=JSON.stringify(envelope);
+    const idbRaw=JSON.stringify(envelope);
     const html = INDEX_HTML().replace("var CAPS = { payload: 4096 };", "var CAPS = { payload: 40 };");
     assert.notStrictEqual(html, INDEX_HTML(), "the share cap literal moved");
-    const app = await durableBoot({ html, href: PAGE, storage });
+    const app = await durableBoot({ html, href: PAGE, storage, idbRaw });
     assert.match(app.currentDeck().id, /^custom:/);
     assert.strictEqual(app.els["share-copy"].disabled, true, "the custom deck's code was not refused");
     assert.match(app.announcer().textContent, /^That scale is gone\./);
@@ -10249,7 +10354,7 @@ describe("share url: edges", () => {
     await makeCustom(first);
     const hash = first.location.hash;
     assert.match(hash, /^#s=/);
-    const app = await durableBoot({html:withGaId(REAL_ID),webdriver:false,storage:storageOf(first),href:PAGE});
+    const app = await durableBoot({html:withGaId(REAL_ID),webdriver:false,origin:first.fixtureOrigin,href:PAGE});
     assert.match(app.currentDeck().id, /^custom:/);
     app.run('selectDeck("kurd")');
     assert.strictEqual(app.get("selection.id"), "kurd");
@@ -13825,7 +13930,7 @@ describe("OF: the sheet's seats follow the typed order", () => {
     const savedRec = await save(stored);
     const key = stored.get("SCALES_KEY");
     const beforeReload=savedEnvelope(stored);
-    const rebooted=await durableBoot({storage:{...stored.store}});
+    const rebooted=await durableBoot({origin:stored.fixtureOrigin});
     assert.deepStrictEqual(savedEnvelope(rebooted),beforeReload,"restoring unchanged drawer state cannot write a new record or revision");
     assert.deepStrictEqual(ofPlain(savedViews(rebooted)[savedRec.instanceId || savedRec.id].options), ofPlain(savedRec.options));
     assert.deepStrictEqual(ofPlain(savedViews(rebooted)[savedRec.instanceId || savedRec.id].options.seats), { rim: RIM });
@@ -15275,12 +15380,17 @@ describe("SHC asynchronous LINK ownership", () => {
   async function load(opts = {}) {
     const origin = opts.origin || createOrigin();
     const crypto = opts.crypto || cryptoFixture();
-    const app = boot({ origin, locks: true, crypto, abortController: true, isSecureContext: true, ...opts });
+    if(Object.prototype.hasOwnProperty.call(opts,"idbRaw")) {
+      await idbRecord(idbFixtureRealm(origin,opts.storage),{write:true,value:opts.idbRaw});
+    }
+    const app = boot({ origin, indexedDB:true, broadcastChannel:true, locks:true, crypto, abortController:true, isSecureContext:true, ...opts });
+    if(opts.idbFault) app.idb.fault(opts.idbFault.operation,opts.idbFault.error,{once:true});
     await app.waitFor("typeof booted !== 'undefined' && booted === true", { timeout: 2000 });
+    app.fixtureOrigin=origin;observeSavedOperations(app);
     return { app, origin, crypto };
   }
   const snapshot = app => {
-    const raw = app.store[SV_KEY];
+    const raw = savedRaw(app);
     assert.strictEqual(typeof raw, "string", "an acknowledged collection must have one serialized envelope");
     const e = JSON.parse(raw);
     assert.strictEqual(e.schema, 1, "the frozen collection schema is 1");
@@ -15291,7 +15401,7 @@ describe("SHC asynchronous LINK ownership", () => {
     app.els["scale-refusal"]?.textContent, app.els["saved-status"]?.textContent].filter(Boolean).join(" ");
   async function seeded(records, extra = {}, opts = {}) {
     const e = envelope(records, extra);
-    const ctx = await load({ storage: { [SV_KEY]: JSON.stringify(e) }, ...opts });
+    const ctx = await idbSeeded(records, extra, opts);
     const wanted = e.entries.find(x => x.instanceId === e.preferredSelection.id);
     if (wanted) assert.strictEqual(ctx.app.currentDeck().name, wanted.record.o.name,
       "a readable saved instance selected in the committed collection must render, rather than silently falling back to a preset");
@@ -15327,6 +15437,23 @@ describe("SHC asynchronous LINK ownership", () => {
       ${record ? `const r = ${JSON.stringify(record)}; const b = buildGenerated(r.s, r.o || {});
         if (!b.ok) return b; cmd.candidate = { record:scaleRecord(seedOf(b.value)), deck:b.value };` : ""}
       return commitSaved(cmd, ${options.signal ? "{signal:globalThis.__svSignal}" : "{}"}); })()`);
+  }
+  /* Transactional-storage acceptance addition, frozen before adapter changes.
+   * IDB1: request success followed by transaction abort must not acknowledge.
+   * IDB2: readable authority outranks stale LS in a no-lock session; no promotion.
+   * IDB3: present undefined/null/object is protected, not an absent record.
+   * IDB4: an own backendSource property is a collision on initial LS import.
+   * IDB5: an in-flight snapshot must not swallow a later notification hint.
+   * Intended faults: early request ACK; LS-as-authority; get(undefined)-as-absence;
+   * overwritten provenance; coalescing that drops a trailing read. These groups
+   * supplement all926 original registrations; no product oracle is weakened.
+   */
+  async function idbSeeded(records, extra = {}, opts = {}) {
+    const origin = opts.origin || createOrigin(), initial = envelope(records, extra);
+    const fixture = idbFixtureRealm(origin, opts.storage);
+    await idbRecord(fixture, {write:true, value:JSON.stringify(initial)});
+    const ctx = await load({origin, indexedDB:true, broadcastChannel:true, ...opts});
+    return {...ctx, fixture, initial};
   }
   const slotProof = e => ({ slotStateRevision: e.slotStateRevision, slots: copy(e.slots), hidden: copy(e.hidden) });
   const affected = e => ({ ...slotProof(e), replacements: e.entries.filter(x =>
@@ -15393,7 +15520,7 @@ describe("SHC asynchronous LINK ownership", () => {
     assert.deepStrictEqual(after.entries[0].record.unknown, a.unknown);
     assert.deepStrictEqual(after.entries[0].record.o.future, a.o.future);
     assert.strictEqual(JSON.stringify(after.entries[1]), sibling, "editing one instance cannot mutate a sibling");
-    const again = await load({ storage:copy(app.store) });
+    const again = await load({origin:app.fixtureOrigin});
     assert.strictEqual(again.app.currentDeck().name, "PUBLIC EDITED");
     assert.deepStrictEqual(snapshot(again.app).entries, after.entries);
   });
@@ -15406,7 +15533,7 @@ describe("SHC asynchronous LINK ownership", () => {
     assert.strictEqual(after.entries.length, 2, "Edit convergence never deduplicates saved handles");
     assert.deepStrictEqual(after.entries.map(x => x.instanceId), before.entries.map(x => x.instanceId));
     assert.deepStrictEqual(after.entries[1], before.entries[1]);
-    const again = await load({ storage:copy(app.store) });
+    const again = await load({origin:app.fixtureOrigin});
     assert.strictEqual(snapshot(again.app).entries.length, 2);
     assert.strictEqual(names(again.app).length, 7);
   });
@@ -15414,14 +15541,15 @@ describe("SHC asynchronous LINK ownership", () => {
   test("SV2 U3: distinct inventory cannot overwrite through a colliding engine handle", async () => {
     const { app } = await load();
     await imported(app, SV.portableRecords.amaraA);
-    const before = JSON.stringify(app.store), prior = app.currentDeck();
+    const before = savedRaw(app), beforeLegacy = JSON.stringify(app.store), prior = app.currentDeck();
     // Synthetic hash-collision injection only: these public seeds do not
     // naturally collide. Independent seed text, not a hash, defines meaning.
     app.run(`HPE.core.deckId = () => "custom:977311b5";`);
     const res = await imported(app, {v:4,s:SV.inventories.other.seed,o:{name:"PUBLIC COLLISION"}});
     assert.strictEqual(res.ok, false, "a different-inventory hash collision must be refused, never overwrite the saved instrument");
     assert.strictEqual(res.kind, "inventory-collision");
-    assert.strictEqual(JSON.stringify(app.store), before);
+    assert.strictEqual(savedRaw(app), before);
+    assert.strictEqual(JSON.stringify(app.store),beforeLegacy,"collision refusal preserves the complete localStorage snapshot too");
     assert.deepStrictEqual(app.currentDeck(), prior);
   });
 
@@ -15435,8 +15563,8 @@ describe("SHC asynchronous LINK ownership", () => {
     assert.strictEqual(snapshot(app).entries[1].record.o.name, "PUBLIC SECOND");
     await clickAt(app, 1); editSelected(app);
     app.els["scale-delete"].click(); app.els["scale-delete"].click();
-    await app.waitFor(`(() => { const raw=localStorage.getItem("${SV_KEY}");
-      return raw && JSON.parse(raw).entries.length === 1 && document.getElementById('scale-sheet').hidden; })()`);
+    await writeBarrier(app);
+    await app.waitFor("document.getElementById('scale-sheet').hidden");
     assert.deepStrictEqual(snapshot(app).entries.map(x => x.instanceId), [before.entries[1].instanceId]);
     assert.strictEqual(app.currentDeck().name, "D KURD 10", "deleted selection falls back to the visible default");
   });
@@ -15550,6 +15678,7 @@ describe("SHC asynchronous LINK ownership", () => {
       assert.strictEqual(origin.successfulWrites.filter(x => x.key === "hpfc.scales.v3" || x.key === SV_KEY).length, 0,
         "unsupported persistence cannot silently write an unlocked legacy/new saved store");
       assert.strictEqual(app.get("savedMode"), "session");
+      assert.deepStrictEqual(app.idb.operations.filter(x=>x.operation==="put"||x.operation==="createObjectStore"),[],"temporary operation does not attempt new-backend writes");
       assert.match(notices(app), /this tab|session|reload|clos/i, "temporary changes must be clearly scoped to this tab");
       assert.strictEqual(app.sheetOpen(), false); assert.match(app.faces(), /<svg /);
       assert.strictEqual(plain(app.get("shareCode(deck())")).ok, true);
@@ -15558,11 +15687,9 @@ describe("SHC asynchronous LINK ownership", () => {
 
   test("SV5 U2: failed durable Save preserves draft and acknowledged winner", async () => {
     for (const failure of ["write", "serialization", "lock"]) {
-      let failWrite = false;
-      const { app } = await seeded([SV.portableRecords.amaraA], {}, {storageFault:({operation,key}) =>
-        failWrite && operation === "setItem" && key === SV_KEY ? new Error("controlled quota") : null});
-      const before = app.store[SV_KEY]; editSelected(app); rename(app, "UNSAVED DRAFT");
-      if (failure === "write") failWrite = true;
+      const { app } = await seeded([SV.portableRecords.amaraA]);
+      const before = savedRaw(app); editSelected(app); rename(app, "UNSAVED DRAFT");
+      if (failure === "write") app.idb.fault("put",new Error("controlled quota"),{once:true});
       else if (failure === "lock") app.sandbox.navigator.locks.request = () => Promise.reject(new Error("controlled lock rejected"));
       else app.run(`const __svStringify = JSON.stringify; JSON.stringify = function(v,...args) {
         if (v && v.schema === 1 && Array.isArray(v.entries)) throw new Error("controlled serialization");
@@ -15570,38 +15697,36 @@ describe("SHC asynchronous LINK ownership", () => {
       await submit(app);
       assert.strictEqual(app.sheetOpen(), true, failure + " cannot close the unsaved draft");
       assert.strictEqual(app.els["scale-name"].value, "UNSAVED DRAFT");
-      assert.strictEqual(app.store[SV_KEY], before); assert.strictEqual(app.currentDeck().name, "PUBLIC PAN A");
+      assert.strictEqual(savedRaw(app), before); assert.strictEqual(app.currentDeck().name, "PUBLIC PAN A");
       assert.strictEqual(app.get("savedMode"), "durable", "mid-session failure cannot silently change backend mode");
       assert.ok(notices(app).length > 0); assert.doesNotMatch(notices(app), /^Saved|^Created|^Updated/);
     }
   });
 
   test("SV5 U3: successful setItem followed by failed diagnostic readback is committed exactly once", async () => {
-    const origin = createOrigin(); let refuseReads = true;
-    const legacy = SV.migration.duplicatesRaw.source;
-    const { app } = await load({ origin,storage:{"hpfc.scales.v3":legacy},storageFault:({operation,key}) =>
-      refuseReads && operation === "getItem" && key === SV_KEY && origin.successfulWrites.some(x=>x.key===SV_KEY)
-        ? new Error("controlled post-ack readback") : null });
-    assert.strictEqual(app.store["hpfc.scales.v3"], legacy, "acknowledged migration must leave its legacy source intact");
-    const initial = snapshot(app); assert.strictEqual(initial.entries.length, 2);
-    assert.strictEqual(origin.successfulWrites.filter(x=>x.key===SV_KEY).length, 1);
-    // Each command can read its authoritative pre-write snapshot. Only after
-    // that command's setItem returns does the controlled diagnostic read fail.
-    // Install before Add so migration, Add AND Edit exercise this boundary.
-    const write = app.sandbox.localStorage.setItem.bind(app.sandbox.localStorage);
-    app.sandbox.localStorage.setItem = (k,v) => { write(k,v); if(k===SV_KEY)refuseReads=true; };
-    refuseReads = false;
-    const add = await imported(app, SV.portableRecords.amaraB); assert.strictEqual(add.ok, true);
-    const added = snapshot(app); assert.strictEqual(added.entries.length, 3);
-    refuseReads = false;
-    const target = added.entries[2];
-    const res = await command(app,{type:"edit",collectionId:added.collectionId,instanceId:target.instanceId,expectedRevision:target.revision},
+    // Historical title retained; the acknowledged primitive is now Txcomplete.
+    const legacy=SV.migration.duplicatesRaw.source;
+    const {app}=await load({storage:{"hpfc.scales.v3":legacy}});
+    const diagnosticRefusal=async()=>{
+      app.idb.fault("read",new Error("controlled post-ack readback"),{once:true});
+      const result=await app.getAsync("reconcileSavedCollection()");
+      assert.strictEqual(result.ok,false,"the diagnostic really encountered a failed backend read");
+    };
+    assert.strictEqual(app.store["hpfc.scales.v3"],legacy);
+    const initial=snapshot(app);assert.strictEqual(initial.entries.length,2);
+    await diagnosticRefusal();
+    const add=await imported(app,SV.portableRecords.amaraB);assert.strictEqual(add.ok,true);
+    const added=snapshot(app);assert.strictEqual(added.entries.length,3);
+    await diagnosticRefusal();
+    const target=added.entries[2];
+    const res=await command(app,{type:"edit",collectionId:added.collectionId,instanceId:target.instanceId,expectedRevision:target.revision},
       {...copy(SV.portableRecords.amaraB),o:{name:"ACKNOWLEDGED EDIT"}});
-    assert.strictEqual(res.ok,true); assert.strictEqual(res.created,false);
-    const edited=snapshot(app); assert.strictEqual(edited.entries.length,3);
+    assert.strictEqual(res.ok,true);assert.strictEqual(res.created,false);
+    await diagnosticRefusal();
+    const edited=snapshot(app);assert.strictEqual(edited.entries.length,3);
     assert.strictEqual(edited.entries[2].instanceId,target.instanceId);
     assert.strictEqual(edited.entries[2].record.o.name,"ACKNOWLEDGED EDIT");
-    assert.strictEqual(origin.successfulWrites.filter(x=>x.key===SV_KEY).length,3,"migration/Add/Edit each commit once");
+    assert.strictEqual(app.idb.operations.filter(x=>x.operation==="put").length,3,"migration/Add/Edit each commit once");
   });
 
   test("SV5 U4: UUID collisions and exhausted allocation preserve all prior data", async () => {
@@ -15618,10 +15743,10 @@ describe("SHC asynchronous LINK ownership", () => {
     assert.ok(snapshot(again.app).usedInstanceIds.includes(iid(3)),"reload retains deleted lifetime handles");
     const fresh=await command(again.app,{type:"import",collectionId:e.collectionId,selectedInstanceId:iid(1)},b);
     assert.strictEqual(fresh.instanceId,iid(4),"forced deleted-handle draw must be rejected after reload");
-    const after=again.app.store[SV_KEY];
+    const after=savedRaw(again.app);
     for(const type of ["edit","delete"]) {
       const stale=await command(again.app,{type,collectionId:e.collectionId,instanceId:iid(3),expectedRevision:1},type==="edit"?a:undefined);
-      assert.strictEqual(stale.ok,false); assert.strictEqual(stale.kind,"conflict"); assert.strictEqual(again.app.store[SV_KEY],after);
+      assert.strictEqual(stale.ok,false); assert.strictEqual(stale.kind,"conflict"); assert.strictEqual(savedRaw(again.app),after);
     }
     let exhaustedDraws=0;
     again.app.sandbox.crypto.randomUUID=()=>{exhaustedDraws++;return iid(1);};
@@ -15629,7 +15754,7 @@ describe("SHC asynchronous LINK ownership", () => {
       {v:4,s:SV.inventories.other.seed,o:{name:"NO ID AVAILABLE"}});
     assert.strictEqual(exhausted.ok,false); assert.strictEqual(exhausted.kind,"allocation");
     assert.strictEqual(exhaustedDraws,8,"allocation refuses after exactly eight colliding UUID draws");
-    assert.strictEqual(again.app.store[SV_KEY],after);
+    assert.strictEqual(savedRaw(again.app),after);
   });
 
   test("SV7 U1: late old-client writes remain a separate recovery branch", async () => {
@@ -15648,21 +15773,21 @@ describe("SHC asynchronous LINK ownership", () => {
   test("SV7 U2: downgrade and re-upgrade preserve both namespaces", async () => {
     const old=JSON.stringify([SV.portableRecords.amaraA]);
     const {app,origin}=await seeded([SV.portableRecords.amaraA],{}, {storage:{[SV_KEY]:JSON.stringify(envelope([SV.portableRecords.amaraA])),"hpfc.scales.v3":old}});
-    const before=app.store[SV_KEY],writer=boot({origin,html:"<script>window.writerOnly=true;</script>"});
+    const before=savedRaw(app),writer=boot({origin,html:"<script>window.writerOnly=true;</script>"});
     const late=JSON.stringify([SV.portableRecords.amaraB]); writer.sandbox.localStorage.setItem("hpfc.scales.v3",late);
     const upgraded=await load({origin});
-    assert.strictEqual(upgraded.app.store[SV_KEY],before,"re-upgrade must resume the committed collection instead of re-migrating later legacy data");
+    assert.strictEqual(savedRaw(upgraded.app),before,"re-upgrade must resume the committed collection instead of re-migrating later legacy data");
     assert.strictEqual(upgraded.app.store["hpfc.scales.v3"],late); assert.strictEqual(upgraded.app.currentDeck().name,"PUBLIC PAN A");
   });
 
   test("SV7 U3: a stale collection epoch cannot mutate a replacement store", async () => {
     const {app}=await seeded([SV.portableRecords.amaraA]);
     const replacement=envelope([SV.portableRecords.amaraA],{collectionId:SV.ids.collectionB});
-    app.sandbox.localStorage.setItem(SV_KEY,JSON.stringify(replacement));
-    const raw=app.store[SV_KEY];
+    await idbRecord(app,{write:true,value:JSON.stringify(replacement)});
+    const raw=savedRaw(app);
     const res=await command(app,{type:"edit",collectionId:SV.ids.collectionA,instanceId:iid(1),expectedRevision:1},SV.portableRecords.amaraB);
     assert.strictEqual(res.ok,false); assert.strictEqual(res.kind,"conflict");
-    assert.strictEqual(app.store[SV_KEY],raw,"coincidentally equal handle/revision cannot bypass collection epoch");
+    assert.strictEqual(savedRaw(app),raw,"coincidentally equal handle/revision cannot bypass collection epoch");
     // The old API write may already be acknowledged while the caller's lock
     // Promise completion is delayed. Accepting epochB in between cannot let
     // that earlier completion roll the runtime cache back to epochA.
@@ -15681,8 +15806,8 @@ describe("SHC asynchronous LINK ownership", () => {
       await late.app.waitFor("globalThis.__svAckCaptured===true",{timeout:1000});
       const committedA=snapshot(late.app);assert.strictEqual(committedA.entries.length,2,"actual API write happened before the delayed acknowledgment is released");
       const currentB={...copy(committedA),collectionId:SV.ids.collectionB};
-      late.app.sandbox.localStorage.setItem(SV_KEY,JSON.stringify(currentB));
-      const currentRaw=late.app.store[SV_KEY];
+      await idbRecord(late.app,{write:true,value:JSON.stringify(currentB)});
+      const currentRaw=savedRaw(late.app);
       const accepted=await late.app.getAsync("reconcileSavedCollection()");assert.strictEqual(accepted.ok,true);
       assert.strictEqual(late.app.get("savedState.collectionId"),SV.ids.collectionB);
       releaseAck();releaseAck=null;
@@ -15690,7 +15815,7 @@ describe("SHC asynchronous LINK ownership", () => {
       assert.strictEqual(acknowledged.ok,true,"a successful earlier API write remains acknowledged");
       assert.strictEqual(acknowledged.published,false,"acknowledged success cannot publish over a newly accepted epoch");
       assert.strictEqual(late.app.get("savedState.collectionId"),SV.ids.collectionB,"late epochA completion cannot roll the cache back");
-      assert.strictEqual(late.app.store[SV_KEY],currentRaw,"old completion cannot rewrite newer persistent bytes");
+      assert.strictEqual(savedRaw(late.app),currentRaw,"old completion cannot rewrite newer persistent bytes");
       assert.deepStrictEqual(plain(late.app.get("savedState")),currentB);
     }finally{if(releaseAck)releaseAck();locks.request=request;if(pending)await pending.catch(()=>{});}
   });
@@ -15721,11 +15846,11 @@ describe("SHC asynchronous LINK ownership", () => {
         : {type:"edit",collectionId:captured.collectionId,instanceId:iid(2),expectedRevision:1},
         {v:4,s:SV.inventories.other.seed,o:{name:"CHANGED REPLACEMENT"}});
       assert.strictEqual(changed.ok,true,action+" competitor setup must commit");
-      const winner=race.app.store[SV_KEY];
+      const winner=savedRaw(race.app);
       const staleReset=await command(race.app,{type:"reset",collectionId:captured.collectionId,affectedScope:scope});
       assert.strictEqual(staleReset.ok,false,action+" after arming must protect the newer replacement");
       assert.strictEqual(staleReset.kind,"conflict");
-      assert.strictEqual(race.app.store[SV_KEY],winner,"stale RESET cannot delete or rewrite the acknowledged winner");
+      assert.strictEqual(savedRaw(race.app),winner,"stale RESET cannot delete or rewrite the acknowledged winner");
     }
     const {app}=await seeded([old,current,plain,opaque],{slots:{kurd:iid(2)},slotStateRevision:1,preferredSelection:{kind:"saved",id:iid(2)}});
     const before=snapshot(app),staleProofless={type:"delete",collectionId:before.collectionId,instanceId:iid(1),expectedRevision:1};
@@ -15753,7 +15878,7 @@ describe("SHC asynchronous LINK ownership", () => {
     let release,acquired;
     const held=new Promise(resolve=>{acquired=resolve;});
     const blocker=app.sandbox.navigator.locks.request(SV_LOCK,()=>{acquired();return new Promise(resolve=>{release=resolve;});});
-    await held; const before=app.store[SV_KEY],writes=origin.successfulWrites.length;
+    await held; const before=savedRaw(app),writes=app.idb.operations.filter(x=>x.operation==="put").length;
     try {
       editSelected(app); rename(app,"CANCELLED DRAFT");
       const pending=app.getAsync("runGenerate()");
@@ -15762,18 +15887,21 @@ describe("SHC asynchronous LINK ownership", () => {
       app.els["scale-generate"].click();
       const q=await app.sandbox.navigator.locks.query(); assert.strictEqual(q.pending.length,1,"duplicate submit must not enqueue another command");
       app.els["scale-back"].click(); await pending;
-      assert.strictEqual(app.store[SV_KEY],before); assert.strictEqual(origin.successfulWrites.length,writes);
+      assert.strictEqual(savedRaw(app),before); assert.strictEqual(app.idb.operations.filter(x=>x.operation==="put").length,writes);
       assert.strictEqual((await app.sandbox.navigator.locks.query()).pending.length,0);
     } finally {release();await blocker;}
-    assert.strictEqual(app.store[SV_KEY],before,"cancelled pending write cannot commit after release");
+    assert.strictEqual(savedRaw(app),before,"cancelled pending write cannot commit after release");
   });
 
   test("SV9 U2: an obsolete completed Save cannot close or select a newer context", async () => {
     const {app}=await seeded([SV.portableRecords.amaraA]);
     editSelected(app); rename(app,"ACKNOWLEDGED FIRST");
-    const real=app.sandbox.localStorage.setItem.bind(app.sandbox.localStorage);
+    const request=app.sandbox.navigator.locks.request.bind(app.sandbox.navigator.locks);
     let opened=false;
-    app.sandbox.localStorage.setItem=(k,v)=>{real(k,v);if(k===SV_KEY&&!opened){opened=true;openSheet(app);app.type(SV.inventories.other.seed);app.els["scale-box"].focus();}};
+    app.sandbox.navigator.locks.request=(...args)=>request(...args).then(result=>{
+      if(result?.ok&&!opened){opened=true;openSheet(app);app.type(SV.inventories.other.seed);app.els["scale-box"].focus();}
+      return result;
+    });
     await submit(app);
     assert.strictEqual(opened,true); assert.strictEqual(app.sheetOpen(),true,"old success must not close the new Add sheet");
     assert.strictEqual(app.els["scale-box"].value,SV.inventories.other.seed);
@@ -15847,7 +15975,8 @@ describe("SHC asynchronous LINK ownership", () => {
     const peer=(await load({origin,crypto})).app, before=snapshot(peer);
     const rec=copy(SV.portableRecords.amaraB);rec.o.replaces="kurd";
     const added=await command(peer,{type:"replace-builtin",collectionId:before.collectionId,seedId:"kurd",expectedSlotStateRevision:0,expectedOwnerId:null},rec);
-    assert.strictEqual(added.ok,true);origin.flushStorageEvents();
+    assert.strictEqual(added.ok,true);origin.flushBroadcastMessages();
+    await app.waitFor(`savedEntries.has(${JSON.stringify(added.instanceId)})`);
     assert.strictEqual(app.els["scale-name"].value,"PUBLIC PAN B","clean editor must display the replacement it is now bound to");
     const base=plain(app.get("({selection:editingBase.selection,name:editingBase.deck.name,revision:editingBase.revision})"));
     assert.deepStrictEqual(base,{selection:{kind:"saved",id:added.instanceId},name:"PUBLIC PAN B",revision:1});
@@ -15862,13 +15991,15 @@ describe("SHC asynchronous LINK ownership", () => {
     app.els["scale-box"].focus();const state=plain(app.get("({drawerOpen,fineOpen,pickRef,base:editingBase})"));
     const peer=(await load({origin,crypto})).app;
     assert.strictEqual((await imported(peer,SV.portableRecords.amaraB)).ok,true);
-    origin.flushStorageEvents();
+    origin.flushBroadcastMessages();
+    await app.waitFor(`savedEntries.size === 2`);
     assert.deepStrictEqual(plain(app.get("({drawerOpen,fineOpen,pickRef,base:editingBase})")),state,"unrelated Add cannot reset open Layout interaction");
     assert.strictEqual(app.activeId(),"scale-box");
     rename(app,"UNSAVED LOCAL DRAFT");const dirtyBase=plain(app.get("editingBase"));
     const e=snapshot(peer);
     const changed=await command(peer,{type:"edit",collectionId:e.collectionId,instanceId:iid(1),expectedRevision:1},SV.portableRecords.pygmyLayoutB);
-    assert.strictEqual(changed.ok,true);origin.flushStorageEvents();
+    assert.strictEqual(changed.ok,true);origin.flushBroadcastMessages();
+    await app.waitFor(`savedState.revision === ${snapshot(peer).revision}`);
     assert.strictEqual(app.els["scale-name"].value,"UNSAVED LOCAL DRAFT");
     assert.deepStrictEqual(plain(app.get("editingBase")),dirtyBase,"remote winner cannot rebind a dirty draft's original revision");
   });
@@ -15887,7 +16018,7 @@ describe("SHC asynchronous LINK ownership", () => {
     const legacy=JSON.stringify({deck:"kurd",other:{keep:true}});
     const {app,origin,crypto}=await load({href:"https://example.test/index.html#deck=f-low-pygmy-18",storage:{hpfc:legacy}});
     assert.strictEqual(app.currentDeck().id,"pygmy");
-    await app.getAsync('navigator.locks.request("handpan-cards:saved-scales:v1",()=>true)');
+    await committedPreference(app,{kind:"builtin",id:"pygmy"});
     assert.deepStrictEqual(snapshot(app).preferredSelection,{kind:"builtin",id:"pygmy"},"opening a seed route persists the selected view for the next visit");
     assert.strictEqual(app.store.hpfc,legacy,"new selection authority does not rewrite legacy preferences");
     const reloaded=(await load({origin,crypto})).app;assert.strictEqual(reloaded.currentDeck().id,"pygmy");
@@ -15899,13 +16030,13 @@ describe("SHC asynchronous LINK ownership", () => {
     editSelected(app);rename(app,"LOSING LOCAL DRAFT");
     const peer=(await load({origin,crypto})).app,e=snapshot(peer);
     const changed=await command(peer,{type:"edit",collectionId:e.collectionId,instanceId:iid(1),expectedRevision:1},SV.portableRecords.amaraB);
-    assert.strictEqual(changed.ok,true);const winner=app.store[SV_KEY];
+    assert.strictEqual(changed.ok,true);const winner=savedRaw(app);
     await submit(app);
     assert.strictEqual(app.sheetOpen(),true);assert.strictEqual(app.els["scale-name"].value,"LOSING LOCAL DRAFT");
-    assert.strictEqual(app.els["scale-conflict"].hidden,false);assert.strictEqual(app.store[SV_KEY],winner);
+    assert.strictEqual(app.els["scale-conflict"].hidden,false);assert.strictEqual(savedRaw(app),winner);
     app.els["scale-back"].click();
     assert.strictEqual(app.currentDeck().name,"PUBLIC PAN B","explicit Back reviews the real saved winner even with all events omitted");
-    assert.strictEqual(app.store[SV_KEY],winner,"review/cancel cannot rewrite the winner");
+    assert.strictEqual(savedRaw(app),winner,"review/cancel cannot rewrite the winner");
   });
 
   test("SV11 U7: About seed routing selects the slot owner rather than an equal-inventory sibling", async () => {
@@ -15984,14 +16115,14 @@ describe("SHC asynchronous LINK ownership", () => {
     const record=SV.portableRecords.amaraB;
     const code=plain(probe.app.get(`HPE.share.encode({fields:HPE.core.parseSeed(${JSON.stringify(record.s)}).value.fields,options:${JSON.stringify(record.o)}})`));
     assert.strictEqual(code.ok,true);const hash="#s="+code.value;
-    const initial=envelope([SV.portableRecords.amaraA]);let refuse=true;
-    const {app}=await load({href:"https://example.test/index.html"+hash,storage:{[SV_KEY]:JSON.stringify(initial)},
-      storageFault:({operation,key})=>refuse&&operation==="setItem"&&key===SV_KEY?new Error("public test write refused"):null});
+    const initial=envelope([SV.portableRecords.amaraA]);
+    const {app}=await load({href:"https://example.test/index.html"+hash,idbRaw:JSON.stringify(initial),
+      idbFault:{operation:"put",error:new Error("public test write refused")}});
     assert.strictEqual(app.currentDeck().name,"PUBLIC PAN A","failed import cannot falsely replace the saved selection");
     assert.strictEqual(app.location.hash,hash,"failed incoming content stays available for explicit retry");
     assert.strictEqual(app.els["share-copy"].disabled,true,"LINK cannot copy the previous scale while the incoming link is unresolved");
     assert.deepStrictEqual(snapshot(app).entries.map(e=>e.record.o.name),["PUBLIC PAN A"]);
-    refuse=false;const retried=await app.getAsync(`openShare(${JSON.stringify(code.value)})`);
+    const retried=await app.getAsync(`openShare(${JSON.stringify(code.value)})`);
     assert.strictEqual(retried.ok,true);assert.strictEqual(app.currentDeck().name,"PUBLIC PAN B");
     assert.strictEqual(app.els["share-copy"].disabled,false);assert.strictEqual(app.location.hash,hash);
   });
@@ -16064,7 +16195,7 @@ describe("SHC asynchronous LINK ownership", () => {
     assert.strictEqual(ack.ok,true,"real session command reached its publication boundary");
     assert.strictEqual(ack.persistence,"session");assert.strictEqual(ack.published,false);
     assert.ok(ack.envelope.entries.some(e=>e.record.o.name==="SESSION DRAFT RETAINED"));
-    assert.strictEqual(app.store[SV_KEY],undefined,"session ACK never implied a durable recovery copy");
+    assert.strictEqual(savedRaw(app),undefined,"session ACK never implied a durable recovery copy");
     assert.strictEqual(app.sheetOpen(),true);assert.strictEqual(app.els["scale-box"].value,draft);
     assert.strictEqual(app.els["scale-name"].value,"SESSION DRAFT RETAINED");
     assert.deepStrictEqual(plain(app.get("selection")),before,"unpublished view cannot claim selection changed");
@@ -16081,7 +16212,7 @@ describe("SHC asynchronous LINK ownership", () => {
     failPublication(app,"session");const ack=await app.getAsync(`openShare(${JSON.stringify(code.value)})`);
     assert.strictEqual(ack.ok,true);assert.strictEqual(ack.persistence,"session");assert.strictEqual(ack.published,false);
     assert.ok(ack.envelope.entries.some(e=>e.record.o.name==="PUBLIC PAN B"));
-    assert.strictEqual(app.store[SV_KEY],undefined);assert.deepStrictEqual(plain(app.get("selection")),before);
+    assert.strictEqual(savedRaw(app),undefined);assert.deepStrictEqual(plain(app.get("selection")),before);
     assert.strictEqual(app.location.hash,hash,"incoming portable content remains recoverable");
     assert.strictEqual(app.els["share-copy"].disabled,true,"unpublished incoming content cannot share the previous view");
     assert.ok(app.announcer().textContent.length>0);
@@ -16097,7 +16228,7 @@ describe("SHC asynchronous LINK ownership", () => {
     assert.strictEqual(app.currentDeck().name,"PUBLIC PAN A","publication failure has not updated the current view");
     assert.strictEqual(app.sheetOpen(),true);assert.strictEqual(app.els["scale-name"].value,"DURABLE ACK RETAINED");
     assert.match(app.els["scale-refusal"].textContent,/reload/i,"durable ACK can truthfully guide review by reload");
-    const reopened=await load({storage:{...app.store}});
+    const reopened=await load({origin:app.fixtureOrigin});
     assert.strictEqual(reopened.app.currentDeck().name,"DURABLE ACK RETAINED","fresh boot independently recovers the acknowledged durable command");
   });
 
@@ -16131,14 +16262,14 @@ describe("SHC asynchronous LINK ownership", () => {
     const removed=await command(peer,{type:"delete",collectionId:actualAck.envelope.collectionId,instanceId:iid(1),expectedRevision:2});
     assert.strictEqual(removed.ok,true);assert.ok(!snapshot(peer).entries.some(e=>e.instanceId===iid(1)));
     await app.getAsync("reconcileSavedCollection()");
-    const winner=app.store[SV_KEY],before=plain(app.get("selection")),route=app.location.href;
+    const winner=savedRaw(app),before=plain(app.get("selection")),route=app.location.href;
     assert.ok(app.get("savedState.revision")>actualAck.envelope.revision);
     app.run("__releaseAck()");const completion=await settled;
     assert.strictEqual(completion.ok,true,"older successful Save ACK must not dereference a target removed by the acknowledged newer winner: "+completion.error);
     const published=plain(app.get("globalThis.__publishedRealAck"));
     assert.strictEqual(published.ok,true,"the original actual storage ACK remains successful");
     assert.strictEqual(published.published,false,"ignored same-epoch older snapshot is not a published current view");
-    assert.strictEqual(app.store[SV_KEY],winner);assert.deepStrictEqual(plain(app.get("selection")),before);
+    assert.strictEqual(savedRaw(app),winner);assert.deepStrictEqual(plain(app.get("selection")),before);
     assert.strictEqual(app.location.href,route);assert.strictEqual(app.sheetOpen(),true);
     assert.strictEqual(app.els["scale-name"].value,"ACKED LOCAL DRAFT","late ACK never discards the retained losing draft");
   });
@@ -16156,12 +16287,12 @@ describe("SHC asynchronous LINK ownership", () => {
     const peer=(await load({origin,crypto})).app,winnerRecord=copy(SV.portableRecords.amaraB);winnerRecord.o.name="NEWER IMPORT WINNER";
     const changed=await command(peer,{type:"edit",collectionId:actualAck.envelope.collectionId,instanceId:target,expectedRevision:1},winnerRecord);
     assert.strictEqual(changed.ok,true);await app.getAsync("reconcileSavedCollection()");
-    const winner=app.store[SV_KEY],before=plain(app.get("selection")),route=app.location.href;
+    const winner=savedRaw(app),before=plain(app.get("selection")),route=app.location.href;
     assert.ok(app.get("savedState.revision")>actualAck.envelope.revision);
     app.run("__releaseAck()");const result=await pending;
     assert.strictEqual(result.ok,true,"old actual import ACK remains acknowledged");
     assert.strictEqual(result.published,false,"same-epoch newer revision prevents old import publication and selection");
-    assert.strictEqual(app.store[SV_KEY],winner);assert.deepStrictEqual(plain(app.get("selection")),before);
+    assert.strictEqual(savedRaw(app),winner);assert.deepStrictEqual(plain(app.get("selection")),before);
     assert.strictEqual(app.location.href,route);
     assert.strictEqual(app.get(`savedEntries.get(${JSON.stringify(target)}).deck.name`),"NEWER IMPORT WINNER");
   });
@@ -16192,7 +16323,8 @@ describe("SHC asynchronous LINK ownership", () => {
     let reveals=0;app.els["scale-conflict"].scrollIntoView=()=>{reveals++;};
     const winner=snapshot(peer);
     assert.strictEqual((await command(peer,{type:"delete",collectionId:winner.collectionId,instanceId:iid(1),expectedRevision:2})).ok,true);
-    origin.flushStorageEvents();
+    origin.flushBroadcastMessages();
+    await app.waitFor(`!savedEntries.has(${JSON.stringify(iid(1))})`);
     assert.strictEqual(app.get("savedEntries.has("+JSON.stringify(iid(1))+")"),false,"remote deletion really reconciled");
     assert.strictEqual(app.els["scale-conflict-msg"].textContent,SV.uiContract.copy.en.conflictDeleted,"visible recovery guidance reflects the target's current removed state");
     assert.strictEqual(app.els["scale-conflict"].hidden,false);assert.strictEqual(app.sheetOpen(),true);
@@ -16200,6 +16332,249 @@ describe("SHC asynchronous LINK ownership", () => {
       name:name.value,start:name.selectionStart,end:name.selectionEnd,scroll:box.scrollTop,focus:app.activeId(),route:app.location.href},before,
       "background copy refresh preserves original revision proof, local draft/caret/scroll/focus and route");
     assert.strictEqual(reveals,0,"a background banner refresh must not scroll the owner's working view");
+  });
+
+
+  test("IDB1 U1: successful put followed by transaction abort never acknowledges or spends history", async () => {
+    const {app}=await load({indexedDB:true,broadcastChannel:true});
+    // Normal application readiness precedes the fault. A missing model API is
+    // a precondition failure, never the old-adapter behavioral RED evidence.
+    assert.ok(app.idb && typeof app.idb.fault === "function", "precondition: reviewed model supports the transaction fault");
+    const before=await idbRecord(app);
+    app.idb.fault("abortAfterPut", new Error("controlled abort after successful put"), {once:true});
+    const result=await command(app,{type:"import",collectionId:app.get("savedState.collectionId")},SV.portableRecords.amaraA);
+    assert.strictEqual(result.ok,false,"put request success cannot acknowledge a transaction that did not complete");
+    assert.deepStrictEqual(await idbRecord(app),before,"aborted working bytes and lifetime allocation history never become committed authority");
+    assert.ok(!names(app).includes("PUBLIC PAN A"),"an aborted import cannot publish a chip");
+    const retry=await command(app,{type:"import",collectionId:app.get("savedState.collectionId")},SV.portableRecords.amaraA);
+    assert.strictEqual(retry.ok,true);assert.strictEqual(retry.persistence,"durable");
+    const durable=await idbRecord(app);
+    assert.strictEqual(durable.present,true);
+    const committed=JSON.parse(durable.raw);
+    assert.strictEqual(committed.entries.length,1);assert.strictEqual(committed.entries[0].displayOrdinal,1);
+    assert.strictEqual(committed.usedInstanceIds.length,1);assert.strictEqual(committed.nextDisplayOrdinal,2);
+    assert.strictEqual(app.store[SV_KEY],undefined,"successful IDB writes never create a live LS collection mirror");
+  });
+
+  test("IDB2 U1: no-lock session hydrates authoritative IDB over stale LS and never promotes", async () => {
+    const stale = JSON.stringify(envelope([SV.portableRecords.amaraB]));
+    const {app, origin, fixture, initial} = await idbSeeded([SV.portableRecords.amaraA], {},
+      {locks:false, storage:{[SV_KEY]:stale}});
+    assert.strictEqual(app.get("savedMode"), "session");
+    assert.strictEqual(app.currentDeck().name, "PUBLIC PAN A", "readable IDB, rather than stale LS, seeds the temporary clone");
+    assert.deepStrictEqual(await idbRecord(fixture), {present:true, raw:JSON.stringify(initial)});
+    editSelected(app); rename(app, "THIS TAB EDIT"); await submit(app);
+    assert.strictEqual(app.currentDeck().name, "THIS TAB EDIT");
+    await app.getAsync("reconcileSavedCollection()");
+    assert.strictEqual(app.currentDeck().name, "THIS TAB EDIT", "focus/notification reconciliation cannot promote over a temporary edit");
+    assert.deepStrictEqual(await idbRecord(fixture), {present:true, raw:JSON.stringify(initial)}, "session commands never change committed IDB");
+    assert.strictEqual(app.store[SV_KEY], stale, "the experimental source remains exact recovery evidence");
+    assert.deepStrictEqual(app.idb.operations.filter(x=>x.operation==="put"||x.operation==="createObjectStore"||x.operation==="transaction"&&x.mode==="readwrite"),[],"session authority never attempts a durable or schema write");
+    assert.strictEqual(origin.successfulWrites.filter(x=>x.key===SV_KEY).length, 0);
+    const absent=await load({locks:false,storage:{[SV_KEY]:stale}});
+    assert.strictEqual(absent.app.get("savedMode"),"session");
+    assert.strictEqual(absent.app.currentDeck().name,"PUBLIC PAN B","truly absent authority may supply only a temporary recovery copy");
+    assert.strictEqual(absent.app.idb.inspect(SV_KEY),undefined,"absence probe cannot commit a database schema without locks");
+    assert.deepStrictEqual(absent.app.idb.operations.filter(x=>x.operation==="put"||x.operation==="createObjectStore"),[]);
+  });
+
+  test("IDB3 U1: present undefined null and object records protect authority and legacy bytes", async () => {
+    for (const raw of [undefined, null, {schema:1}]) {
+      const stale=JSON.stringify(envelope([SV.portableRecords.amaraB]));
+      const origin=createOrigin(), fixture=idbFixtureRealm(origin,{[SV_KEY]:stale});
+      await idbRecord(fixture, {write:true, value:raw});
+      assert.deepStrictEqual(await idbRecord(fixture), {present:true, raw}, "getKey proves that undefined is a present value");
+      const {app}=await load({origin,indexedDB:true,broadcastChannel:true,storage:{[SV_KEY]:stale}});
+      assert.strictEqual(app.get("savedMode"), "protected", "malformed present authority never authorizes stale-source migration");
+      assert.ok(!names(app).includes("PUBLIC PAN B"));
+      assert.deepStrictEqual(await idbRecord(fixture), {present:true, raw}, "malformed authoritative values are not repaired or replaced");
+      assert.strictEqual(app.store[SV_KEY], stale);
+      assert.strictEqual(origin.successfulWrites.filter(x=>x.key===SV_KEY).length, 0);
+    }
+    for(const backendSource of [null,{key:"__sv_untrusted_source__",raw:"untrusted"},{key:SV_KEY,raw:null}]) {
+      const initial=envelope([SV.portableRecords.amaraA]);initial.migration.backendSource=backendSource;
+      const raw=JSON.stringify(initial),{app}=await load({idbRaw:raw});
+      assert.strictEqual(app.get("savedMode"),"protected","malformed or non-whitelisted authoritative provenance is protected");
+      assert.strictEqual(savedRaw(app),raw,"recognized invalid provenance is not repaired or followed");
+      assert.strictEqual(app.idb.operations.filter(x=>x.operation==="put").length,0,"application cannot write while authoritative provenance is malformed");
+    }
+    const stale=JSON.stringify(envelope([SV.portableRecords.amaraB]));
+    const denied=await load({storage:{[SV_KEY]:stale},idbFault:{operation:"open",error:new Error("controlled IDB access denied")}});
+    assert.strictEqual(denied.app.get("savedMode"),"protected","an attempted denied authoritative backend cannot masquerade as an absent collection");
+    assert.ok(!names(denied.app).includes("PUBLIC PAN B"),"denied authority cannot automatically publish a stale localStorage recovery copy");
+    assert.strictEqual(denied.app.store[SV_KEY],stale);
+    assert.strictEqual(denied.app.idb.inspect(SV_KEY),undefined);
+
+  });
+
+  test("IDB4 U1: any own backendSource collision protects exact experimental source", async () => {
+    for (const collision of [null, {key:SV_KEY,raw:"already-owned"}]) {
+      const initial=envelope([SV.portableRecords.amaraA]);
+      initial.migration.backendSource=collision;
+      const raw=" "+JSON.stringify(initial)+"\n", origin=createOrigin(), fixture=idbFixtureRealm(origin,{[SV_KEY]:raw});
+      // An existing empty supported DB avoids making absence depend on any
+      // model-only inspection API. It has no committed current record.
+      assert.deepStrictEqual(await idbRecord(fixture), {present:false, raw:undefined});
+      const {app}=await load({origin,indexedDB:true,broadcastChannel:true,storage:{[SV_KEY]:raw}});
+      assert.strictEqual(app.get("savedMode"), "protected", "initial import must not overwrite an unknown provenance property");
+      assert.strictEqual(app.store[SV_KEY],raw);
+      assert.deepStrictEqual(await idbRecord(fixture), {present:false, raw:undefined}, "collision leaves current uninitialized");
+      assert.strictEqual(origin.successfulWrites.filter(x=>x.key===SV_KEY).length,0);
+    }
+    const initial=envelope([SV.portableRecords.amaraA]);
+    const unknown={backendSource:{key:"__sv_untrusted_source__",raw:"prototype-looking data"}};
+    Object.defineProperty(initial.migration,"__proto__",{value:unknown,enumerable:true});
+    const raw=JSON.stringify(initial),{app}=await load({storage:{[SV_KEY]:raw}});
+    assert.strictEqual(app.get("savedMode"),"durable","an own __proto__ JSON key cannot invent an own backendSource collision");
+    const migrated=snapshot(app);
+    assert.deepStrictEqual(migrated.migration.backendSource,{key:SV_KEY,raw});
+    assert.strictEqual(Object.prototype.hasOwnProperty.call(migrated.migration,"__proto__"),true);
+    assert.deepStrictEqual(migrated.migration.__proto__,unknown,"unknown prototype-looking JSON remains inert data");
+    assert.strictEqual(app.store[SV_KEY],raw);
+
+  });
+
+
+  test("IDB5 U1: a hint during a completed held read triggers a trailing authoritative read", async () => {
+    for (const dirty of [false,true]) {
+      const origin=createOrigin({broadcastEvents:"manual"}), {app,fixture,initial}=await idbSeeded([SV.portableRecords.amaraA],{}, {origin});
+      const peer=(await load({origin,indexedDB:true,broadcastChannel:true})).app;
+      let interaction;
+      if(dirty) {
+        editSelected(app);rename(app,"TRAILING READ DRAFT");
+        const name=app.els["scale-name"];name.selectionStart=2;name.selectionEnd=8;name.focus();
+        app.els["scale-box"].scrollTop=27;
+        interaction={name:name.value,start:name.selectionStart,end:name.selectionEnd,scroll:app.els["scale-box"].scrollTop,focus:app.activeId(),route:app.location.href};
+      }
+      assert.ok(app.idb && typeof app.idb.hold==="function", "precondition: reviewed model can delay a completed read event");
+      app.idb.hold("complete");
+      const readN=app.getAsync("reconcileSavedCollection()");
+      try {
+        const deadline=Date.now()+2000;
+        while(!app.idb.pending("complete")) {
+          assert.ok(Date.now()<deadline,"precondition: real read transaction reached completion before hint injection");
+          await new Promise(resolve=>setImmediate(resolve));
+        }
+        const result=await command(peer,{type:"edit",collectionId:initial.collectionId,instanceId:iid(1),expectedRevision:1},SV.portableRecords.amaraB);
+        assert.strictEqual(result.ok,true);
+        assert.strictEqual(JSON.parse((await idbRecord(fixture)).raw).entries[0].record.o.name,"PUBLIC PAN B", "peer committed N+1 while old completion delivery was held");
+        origin.flushBroadcastMessages();
+      } finally {app.idb.release("complete");}
+      await readN;
+      const trailingDeadline=Date.now()+2000;
+      let finalName;
+      do {
+        finalName=app.get(`savedEntries.get(${JSON.stringify(iid(1))})?.deck.name`);
+        if(finalName==="PUBLIC PAN B") break;
+        await new Promise(resolve=>setImmediate(resolve));
+      } while(Date.now()<trailingDeadline);
+      assert.strictEqual(finalName,"PUBLIC PAN B","the trailing hint publishes authoritative N+1 without another focus or command");
+      if(dirty) {
+        const name=app.els["scale-name"];
+        assert.deepStrictEqual({name:name.value,start:name.selectionStart,end:name.selectionEnd,scroll:app.els["scale-box"].scrollTop,focus:app.activeId(),route:app.location.href},interaction,
+          "trailing reconciliation preserves the complete working draft interaction");
+        assert.strictEqual(app.sheetOpen(),true);
+      } else assert.strictEqual(app.currentDeck().name,"PUBLIC PAN B","clean view reaches N+1 without another focus or command");
+    }
+  });
+
+
+  /* Review regressions frozen against c512f95f before repair.
+   * IDB6 fault: successful initialization connection escapes retirement.
+   * IDB7 fault: failed reconciliation has no persistent visible recovery copy.
+   * IDB8 fault: acknowledged initial publication failure silently shows fallback.
+   * IDB9 fault: an initially absent experimental source is never monitored.
+   */
+  test("IDB6 U1: protected initialization closes its owned readable connection on temporary choice", async () => {
+    const raw="{not-json",{app}=await load({idbRaw:raw});
+    assert.strictEqual(app.get("savedMode"),"protected");
+    assert.strictEqual(savedRaw(app),raw);
+    assert.strictEqual(app.els["saved-temporary-use"].hidden,false);
+    app.els["saved-temporary-use"].click();
+    assert.strictEqual(app.get("savedMode"),"session");
+    const operations=app.idb.operations;
+    const opens=operations.filter(x=>x.operation==="open"&&x.db===SV_KEY).length;
+    const closes=operations.filter(x=>x.operation==="close"&&x.db===SV_KEY).length;
+    assert.ok(opens>0,"precondition: the app successfully inspected a present readable backend, not a denied open");
+    assert.strictEqual(closes,opens,"every successfully opened owned connection is closed when protected authority is retired");
+    assert.strictEqual(savedRaw(app),raw,"temporary recovery does not repair or delete malformed authority");
+  });
+
+  test("IDB7 U1: failed reconciliation visibly warns and preserves dirty interaction without promotion", async () => {
+    for(const failure of ["open","read","malformed"]) {
+      const {app,origin}=await seeded([SV.portableRecords.amaraA]);
+      assert.strictEqual(app.els["saved-status"].hidden,true,"healthy durable view starts without recovery guidance");
+      editSelected(app);rename(app,"RECOVERY DRAFT");
+      const name=app.els["scale-name"],box=app.els["scale-box"];
+      name.selectionStart=2;name.selectionEnd=7;box.scrollTop=29;name.focus();
+      const before={name:name.value,start:name.selectionStart,end:name.selectionEnd,scroll:box.scrollTop,focus:app.activeId(),route:app.location.href,selection:plain(app.get("selection"))};
+      if(failure==="malformed")await idbRecord(app,{write:true,value:"{not-json"});
+      else {
+        if(failure==="open") {
+          // A real external versionchange retires the app's cached connection;
+          // otherwise a configured open failure would never be exercised.
+          const fixture=idbFixtureRealm(origin);
+          await new Promise((resolve,reject)=>{
+            const request=fixture.sandbox.indexedDB.open(SV_KEY,2);
+            request.onerror=()=>reject(request.error);request.onblocked=()=>reject(new Error("external upgrade blocked despite owned versionchange handler"));
+            request.onsuccess=()=>{request.result.close();resolve();};
+          });
+          assert.strictEqual(app.get("savedDatabase"),null,"precondition: actual versionchange retired the owned connection before the injected open");
+        }
+        app.idb.fault(failure,new Error("controlled reconciliation "+failure),{once:true});
+      }
+      const raw=savedRaw(app),result=await app.getAsync("reconcileSavedCollection()");
+      assert.strictEqual(result.ok,false,"precondition: the reconciliation operation actually failed");
+      assert.strictEqual(app.els["saved-status"].textContent,SV.uiContract.copy.en.recovery,"read failure must show the existing persistent recovery guidance");
+      assert.strictEqual(app.els["saved-status"].hidden,false,"recovery guidance is visible rather than only internal issue state");
+      assert.strictEqual(app.get("savedMode"),"durable","reconciliation refusal cannot silently switch to temporary writes");
+      assert.strictEqual(app.sheetOpen(),true);
+      assert.deepStrictEqual({name:name.value,start:name.selectionStart,end:name.selectionEnd,scroll:box.scrollTop,focus:app.activeId(),route:app.location.href,selection:plain(app.get("selection"))},before);
+      assert.strictEqual(savedRaw(app),raw,"reconciliation errors never modify committed authority");
+    }
+  });
+
+  test("IDB8 U1: failed initial publication shows acknowledged-save guidance and reloads without allocation", async () => {
+    const origin=createOrigin(),crypto=cryptoFixture(),source=JSON.stringify([SV.portableRecords.amaraA]);
+    const app=boot({origin,indexedDB:true,broadcastChannel:true,locks:true,crypto,abortController:true,isSecureContext:true,storage:{"hpfc.scales.v3":source,hpfc:JSON.stringify({deck:"custom:977311b5"})}});
+    // Existing replaceable lexical publication boundary: the transaction still
+    // executes normally. No production test hook or counterfeit ACK is used.
+    app.run(`{
+      const original=applySavedSnapshot;globalThis.__initialPublicationFault=false;
+      applySavedSnapshot=function(...args){
+        if(args[2]==="initialization"&&!__initialPublicationFault){__initialPublicationFault=true;throw new Error("controlled initial publication failure");}
+        return original.apply(this,args);
+      };
+    }`);
+    await app.waitFor("typeof booted !== 'undefined' && booted === true",{timeout:2000});
+    assert.strictEqual(app.get("globalThis.__initialPublicationFault"),true,"precondition: initial publication really failed after the normal durable commit");
+    const raw=savedRaw(app),committed=JSON.parse(raw),draws=crypto.draws;
+    assert.strictEqual(committed.entries[0].record.o.name,"PUBLIC PAN A","the initial transaction actually committed the source record");
+    assert.strictEqual(app.els["saved-status"].textContent,"The save completed, but this view could not be refreshed. Reload to review your saved scales.","acknowledged initialization cannot silently display an unrelated fallback");
+    assert.strictEqual(app.els["saved-status"].hidden,false);
+    assert.strictEqual(app.get("savedMode"),"durable","publication failure does not undo the durable ACK");
+    assert.strictEqual(app.store["hpfc.scales.v3"],source);
+    const again=await load({origin,crypto});
+    assert.strictEqual(again.app.currentDeck().name,"PUBLIC PAN A");
+    assert.strictEqual(savedRaw(again.app),raw,"reload resumes the exact committed envelope");
+    assert.strictEqual(crypto.draws,draws,"publication failure and reload never allocate a second identity");
+  });
+
+  test("IDB9 U1: a newly created experimental legacy branch warns without replaying over IDB", async () => {
+    const source=JSON.stringify([SV.portableRecords.amaraA]),{app,origin}=await load({storage:{"hpfc.scales.v3":source,hpfc:JSON.stringify({deck:"custom:977311b5"})}});
+    const before=savedRaw(app),committed=snapshot(app);
+    assert.strictEqual(Object.prototype.hasOwnProperty.call(committed.migration,"backendSource"),false,"normal migration captured absence of the experimental source");
+    assert.strictEqual(app.store[SV_KEY],undefined);
+    const late=JSON.stringify(envelope([SV.portableRecords.amaraB]));
+    const writer=boot({origin,html:"<script>window.__olderExperimentalWriter=true;</script>"});
+    writer.sandbox.localStorage.setItem(SV_KEY,late);origin.flushStorageEvents();
+    assert.strictEqual(app.els["saved-status"].textContent,"An older app changed its saved scales. Those changes are kept separately for recovery.","a newly appearing experimental branch must be visible recovery evidence");
+    assert.strictEqual(app.els["saved-status"].hidden,false);
+    assert.strictEqual(savedRaw(app),before,"legacy notifications cannot replace authoritative IDB");
+    assert.strictEqual(app.store[SV_KEY],late,"the late branch remains exact and separate");
+    assert.strictEqual(app.store["hpfc.scales.v3"],source);
+    assert.strictEqual(app.currentDeck().name,"PUBLIC PAN A");
+    assert.ok(!names(app).includes("PUBLIC PAN B"),"branch detection does not import or replay the late client collection");
   });
 
 }

@@ -10000,6 +10000,84 @@ function recordOptions(rec) {
 // Application metadata is independent of the engine inventory and wire versions.
 const SAVED_KEY = "hpfc.saved-scales.v1";
 const SAVED_LOCK = "handpan-cards:saved-scales:v1";
+const SAVED_STORE = "collections", SAVED_RECORD = "current";
+let savedDatabase = null, savedDatabaseOpening = null, savedChannel = null;
+let savedReconciliation = null, savedReconcileDirty = false, savedAuthorityGeneration = 0;
+// Requests only stage results. A transaction's complete event is the API ACK.
+function openSavedDatabase(create) {
+  if (create && savedDatabase) return Promise.resolve({ok:true,db:savedDatabase});
+  if (create && savedDatabaseOpening) return savedDatabaseOpening;
+  const pending = new Promise(resolve => {
+    let request, retired=false, absent=false;
+    const finish=result=>{if(retired)return;retired=true;resolve(result);};
+    try { request=indexedDB.open(SAVED_KEY); }
+    catch(e){finish(savedFailure("storage","database-open"));return;}
+    request.onupgradeneeded=event=>{
+      if(retired || !create){absent=!retired && event.oldVersion===0;try{request.transaction.abort();}catch(e){}return;}
+      try {
+        if(event.oldVersion!==0 || request.result.version!==1)throw new Error("unsupported schema");
+        request.result.createObjectStore(SAVED_STORE);
+      }catch(e){try{request.transaction.abort();}catch(unused){}finish(savedFailure("protected","database-schema"));}
+    };
+    request.onblocked=()=>finish(savedFailure("storage","database-blocked"));
+    request.onerror=()=>finish(absent?{ok:true,absent:true}:savedFailure("storage","database-open"));
+    request.onsuccess=()=>{
+      const db=request.result;
+      if(retired){db.close();return;}
+      try {
+        if(db.version!==1 || !db.objectStoreNames.contains(SAVED_STORE))throw new Error("unsupported schema");
+        const tx=db.transaction(SAVED_STORE,"readonly"), store=tx.objectStore(SAVED_STORE);
+        if(store.keyPath!==null || store.autoIncrement){try{tx.abort();}catch(e){}throw new Error("unsupported store");}
+        db.onversionchange=()=>{db.close();if(savedDatabase===db)savedDatabase=null;};
+        if(create)savedDatabase=db;
+        finish({ok:true,db});
+      }catch(e){db.close();finish(savedFailure("protected","database-schema"));}
+    };
+  });
+  if(create){savedDatabaseOpening=pending;pending.then(()=>{if(savedDatabaseOpening===pending)savedDatabaseOpening=null;});}
+  return pending;
+}
+function savedTransaction(db, mode, apply, signal) {
+  return new Promise(resolve=>{
+    let tx, result, firstError=null, done=false, hasValue=false, hasKey=false, raw, key;
+    const fail=result=>{if(!firstError)firstError=result;};
+    const finish=result=>{if(done)return;done=true;signal?.removeEventListener?.("abort",cancel);resolve(result);};
+    const cancel=()=>{if(done)return;fail(savedFailure("cancelled"));try{tx?.abort();}catch(e){/* complete already won */}};
+    try {
+      if(signal?.aborted){finish(savedFailure("cancelled"));return;}
+      tx=db.transaction(SAVED_STORE,mode);
+      tx.oncomplete=()=>finish(result===undefined?savedFailure("storage","transaction-result"):result);
+      tx.onabort=()=>finish(firstError || savedFailure("storage","transaction-abort"));
+      tx.onerror=()=>fail(savedFailure("storage","transaction-error"));
+      signal?.addEventListener?.("abort",cancel,{once:true});
+      const store=tx.objectStore(SAVED_STORE);
+      const ready=()=>{
+        if(!hasValue || !hasKey)return;
+        try { result=apply({present:key!==undefined,raw},store);if(result===SAVED_RETRY){fail(SAVED_RETRY);tx.abort();} }
+        catch(e){fail(savedFailure("storage","transaction-command"));try{tx.abort();}catch(unused){finish(firstError);}}
+      };
+      const read=store.get(SAVED_RECORD), presence=store.getKey(SAVED_RECORD);
+      read.onsuccess=()=>{raw=read.result;hasValue=true;ready();};
+      presence.onsuccess=()=>{key=presence.result;hasKey=true;ready();};
+      read.onerror=presence.onerror=()=>fail(savedFailure("storage","collection-read"));
+    }catch(e){fail(savedFailure("storage","transaction-access"));if(tx){try{tx.abort();}catch(unused){finish(firstError);}}else finish(firstError);}
+  });
+}
+function readSavedSnapshot(db){return savedTransaction(db,"readonly",snapshot=>({ok:true,...snapshot}));}
+function sameSavedSnapshot(a,b){return a.present===b.present && (!a.present || a.raw===b.raw);}
+function stageSavedSnapshot(snapshot){return snapshot.present?typeof snapshot.raw==="string"?stageSavedRaw(snapshot.raw):savedFailure("protected","collection-value"):savedFailure("conflict","collection-missing");}
+function notifySavedCommit(envelope){
+  try{savedChannel?.postMessage({schema:1,collectionId:envelope.collectionId,revision:envelope.revision});}catch(e){}
+}
+function startSavedNotifications(){
+  if(savedChannel || savedMode!=="durable")return;
+  try{if(typeof BroadcastChannel!=="undefined"){savedChannel=new BroadcastChannel(SAVED_LOCK);savedChannel.onmessage=()=>{reconcileSavedCollection();};}}catch(e){}
+}
+function retireSavedAuthority(){
+  savedAuthorityGeneration++;savedReconcileDirty=false;
+  try{savedDatabase?.close();}catch(e){}savedDatabase=null;
+  try{savedChannel?.close();}catch(e){}savedChannel=null;
+}
 const savedEntries = new Map();
 let savedState = null, savedMode = "starting", savedIssue = null;
 let savedRecovery = null, legacyBranchStatus = "unknown";
@@ -10071,8 +10149,10 @@ function inspectLegacyBranch() {
     const now = { hpfc: localStorage.getItem(STORE_KEY),
       "hpfc.scales": localStorage.getItem(LEGACY_SCALES_KEY), "hpfc.scales.v3": localStorage.getItem(SCALES_KEY) };
     const beforePreference = savedLegacyProjection(baseline.hpfc), afterPreference = savedLegacyProjection(now.hpfc);
+    const backend=savedState.migration.backendSource;
+    const backendChanged=localStorage.getItem(SAVED_KEY)!==(Object.hasOwn(savedState.migration,"backendSource")?backend.raw:null);
     legacyBranchStatus = beforePreference === null || afterPreference === null ? "unknown" :
-      now[LEGACY_SCALES_KEY] !== baseline[LEGACY_SCALES_KEY] || now[SCALES_KEY] !== baseline[SCALES_KEY] ||
+      backendChanged || now[LEGACY_SCALES_KEY] !== baseline[LEGACY_SCALES_KEY] || now[SCALES_KEY] !== baseline[SCALES_KEY] ||
       !savedEqual(beforePreference, afterPreference) ? "changed" : "unchanged";
   } catch (e) { legacyBranchStatus = "unknown"; }
   return legacyBranchStatus;
@@ -10085,6 +10165,11 @@ function savedEnvelopeShape(e) {
       !savedObject(e.preferredSelection) || !["builtin", "saved"].includes(e.preferredSelection.kind) ||
       typeof e.preferredSelection.id !== "string" || !savedObject(e.migration) || !savedObject(e.migration.raw) ||
       !Array.isArray(e.migration.instanceIds) || ![null, SCALES_KEY, LEGACY_SCALES_KEY].includes(e.migration.sourceKey)) return false;
+  if (Object.hasOwn(e.migration,"backendSource")) {
+    const source=e.migration.backendSource;
+    if(!savedObject(source) || Object.keys(source).length!==2 || !Object.hasOwn(source,"key") ||
+        source.key!==SAVED_KEY || !Object.hasOwn(source,"raw") || typeof source.raw!=="string")return false;
+  }
   const used = new Set(e.usedInstanceIds);
   if (used.size !== e.usedInstanceIds.length || used.has(e.collectionId) ||
       e.usedInstanceIds.some(id => !isSavedUUID(id))) return false;
@@ -10323,45 +10408,88 @@ function initializeSavedSession(issue, previouslyRead) {
   selection = savedResolve(savedState.preferredSelection, savedState, savedEntries);
   return { ok: true, persistence: "session" };
 }
+function stageSavedMigrationSource() {
+  let raw;
+  try{raw=localStorage.getItem(SAVED_KEY);}catch(e){return savedFailure("storage","legacy-access");}
+  if(raw===null)return stageLegacySaved();
+  let envelope;
+  try{envelope=JSON.parse(raw);}catch(e){return {...savedFailure("protected","collection-json"),raw};}
+  if(savedObject(envelope) && savedObject(envelope.migration) && Object.hasOwn(envelope.migration,"backendSource"))
+    return {...savedFailure("protected","backend-source-collision"),raw};
+  const staged=stageSavedEnvelope(envelope);
+  if(!staged.ok)return {...staged,raw};
+  const copy=savedClone(envelope);
+  copy.migration.backendSource={key:SAVED_KEY,raw};
+  return {...staged,envelope:copy,backendRaw:raw};
+}
+async function initializeSavedIDBSession() {
+  const opened=await openSavedDatabase(false);
+  if(!opened.ok)return savedProtect(opened,null);
+  if(opened.absent)return initializeSavedSession(savedFailure("lock","session-only"));
+  let snapshot;
+  try{snapshot=await readSavedSnapshot(opened.db);}finally{opened.db.close();}
+  if(!snapshot.ok)return savedProtect(snapshot,null);
+  hadSavedCollectionAtBoot=snapshot.present;
+  if(!snapshot.present)return initializeSavedSession(savedFailure("lock","session-only"));
+  const staged=stageSavedSnapshot(snapshot);
+  if(!staged.ok)return savedProtect(staged,snapshot.raw);
+  return initializeSavedSession(savedFailure("lock","session-only"),staged);
+}
 async function initializeSavedDurable(locks) {
+  let opened=await openSavedDatabase(false),adopted=false;
+  if(!opened.ok)return savedProtect(opened,null);
+  try{
   for (;;) {
-    let raw;
-    try { raw = localStorage.getItem(SAVED_KEY); }
-    catch (e) { return initializeSavedSession(savedFailure("storage", "session-only-access")); }
-    const staged = raw !== null ? stageSavedRaw(raw) : stageLegacySaved();
-    if (!staged.ok) return staged.kind === "storage" ? initializeSavedSession(staged) : savedProtect(staged, raw);
-    let committed, callbackEntered = false;
-    try {
-      committed = await locks.request(SAVED_LOCK, { mode: "exclusive" }, () => {
-        callbackEntered = true;
-        if (localStorage.getItem(SAVED_KEY) !== raw) return SAVED_RETRY;
-        if (raw !== null) return staged;
-        if ([STORE_KEY, SCALES_KEY, LEGACY_SCALES_KEY].some(key => localStorage.getItem(key) !== staged.raw[key])) return SAVED_RETRY;
-        const migrated = makeSavedMigration(staged);
-        if (!migrated.ok) return migrated;
-        const encoded = JSON.stringify(migrated.envelope);
-        localStorage.setItem(SAVED_KEY, encoded);
-        return migrated;
+    const snapshot=opened.absent?{ok:true,present:false,raw:undefined}:await readSavedSnapshot(opened.db);
+    if(!snapshot.ok)return savedProtect(snapshot,null);
+    hadSavedCollectionAtBoot=snapshot.present;
+    const staged=snapshot.present?stageSavedSnapshot(snapshot):stageSavedMigrationSource();
+    if(!staged.ok){if(staged.kind==="storage")return initializeSavedSession(staged);return savedProtect(staged,typeof staged.raw==="string"?staged.raw:snapshot.raw);}
+    const migration=snapshot.present?null:Object.hasOwn(staged,"backendRaw")?staged:makeSavedMigration(staged);
+    if(migration && !migration.ok)return savedProtect(migration,snapshot.raw);
+    let committed,callbackEntered=false;
+    try{
+      committed=await locks.request(SAVED_LOCK,{mode:"exclusive"},async()=>{
+        callbackEntered=true;
+        if(opened.absent){opened=await openSavedDatabase(true);if(!opened.ok)return opened;}
+        return savedTransaction(opened.db,"readwrite",(fresh,store)=>{
+          if(!sameSavedSnapshot(fresh,snapshot))return SAVED_RETRY;
+          if(snapshot.present)return staged;
+          if(Object.hasOwn(staged,"backendRaw")) {
+            if(localStorage.getItem(SAVED_KEY)!==staged.backendRaw)return SAVED_RETRY;
+          }else if(localStorage.getItem(SAVED_KEY)!==null || [STORE_KEY,SCALES_KEY,LEGACY_SCALES_KEY].some(key=>localStorage.getItem(key)!==staged.raw[key]))return SAVED_RETRY;
+          const migrated=migration;
+          if(!migrated.ok)return migrated;
+          store.put(JSON.stringify(migrated.envelope),SAVED_RECORD);
+          return migrated;
+        });
       });
-    } catch (e) { return initializeSavedSession(savedFailure(callbackEntered ? "storage" : "lock", "session-only-initialization"), raw !== null ? staged : null); }
-    if (committed === SAVED_RETRY) continue;
-    if (!committed.ok) { savedMode = "session"; savedIssue = committed; return committed; }
-    // All work after successful setItem is publication/diagnostic work. A failed
-    // optional readback never causes rollback or a second migration allocation.
-    savedMode = "durable"; savedIssue = null;
-    applySavedSnapshot(committed.envelope, committed.views, "initialization");
-    selection = savedResolve(savedState.preferredSelection, savedState, savedEntries);
-    return { ok: true, persistence: "durable" };
+    }catch(e){if(!callbackEntered)return initializeSavedSession(savedFailure("lock","session-only-initialization"),snapshot.present?staged:null);return savedProtect(savedFailure("storage","initialization-refused"),snapshot.raw);}
+    if(committed===SAVED_RETRY)continue;
+    if(!committed.ok)return savedProtect(committed,snapshot.raw);
+    savedDatabase=opened.db;adopted=true;savedMode="durable";savedIssue=null;
+    let published=false;
+    try{
+      const publication=applySavedSnapshot(committed.envelope,committed.views,"initialization");
+      published=publication.ok && !publication.ignored;
+      if(publication.ok && savedState)selection=savedResolve(savedState.preferredSelection,savedState,savedEntries);
+      else savedIssue=publication;
+    }catch(e){savedIssue=savedFailure("storage","acknowledged-publication-pending");}
+    if(!published)savedIssue=savedFailure("storage","acknowledged-publication-pending");
+    startSavedNotifications();notifySavedCommit(committed.envelope);
+    return {ok:true,persistence:"durable",published};
+  }
+  }finally{
+    if(!adopted && opened.db){opened.db.close();if(savedDatabase===opened.db)savedDatabase=null;}
   }
 }
 function initializeSavedCollection() {
-  if (savedInitialization) return savedInitialization;
-  let locks = null;
-  try { const available = navigator.locks; if (available && typeof available.request === "function") locks = available; }
-  catch (e) {}
-  savedInitialization = locks &&
-    !(typeof isSecureContext === "boolean" && !isSecureContext)
-    ? initializeSavedDurable(locks) : initializeSavedSession(savedFailure("lock", "session-only"));
+  if(savedInitialization)return savedInitialization;
+  let locks=null,available=false;
+  try{const candidate=navigator.locks;if(candidate && typeof candidate.request==="function")locks=candidate;}catch(e){}
+  try{available=typeof indexedDB!=="undefined" && indexedDB && typeof indexedDB.open==="function";}catch(e){savedInitialization=savedProtect(savedFailure("storage","database-access"),null);return savedInitialization;}
+  savedInitialization=!available?initializeSavedSession(savedFailure("storage","session-only")):
+    locks && !(typeof isSecureContext==="boolean" && !isSecureContext)?initializeSavedDurable(locks):initializeSavedIDBSession();
   return savedInitialization;
 }
 function savedScope(e, views) {
@@ -10530,51 +10658,80 @@ function commitSavedSession(command, options = {}) {
 }
 async function commitSavedDurable(command, options) {
   let candidate;
-  try { candidate = ["import", "save-as-separate", "edit", "replace-builtin"].includes(command.type) ? savedCandidate(command) : null; }
-  catch (e) { return savedFailure("invalid", "candidate"); }
-  for (;;) {
-    if (options.signal && options.signal.aborted) return savedFailure("cancelled");
-    let staged;
-    try { staged = stageSavedRaw(localStorage.getItem(SAVED_KEY)); }
-    catch (e) { return savedFailure("storage", "collection-access"); }
-    if (!staged.ok) return staged;
-    let result, callbackEntered = false;
-    try {
-      const locks = navigator.locks;
-      if (!locks || typeof locks.request !== "function") return savedFailure("lock");
-      result = await locks.request(SAVED_LOCK, { mode: "exclusive", ...(options.signal ? { signal: options.signal } : {}) }, () => {
-        callbackEntered = true;
-        if (options.signal && options.signal.aborted) return savedFailure("cancelled");
-        if (localStorage.getItem(SAVED_KEY) !== staged.raw) return SAVED_RETRY;
-        const applied = applySavedCommand(staged, command, candidate);
-        if (applied.ok && applied.changed) localStorage.setItem(SAVED_KEY, JSON.stringify(applied.envelope));
-        return applied;
+  try{candidate=["import","save-as-separate","edit","replace-builtin"].includes(command.type)?savedCandidate(command):null;}
+  catch(e){return savedFailure("invalid","candidate");}
+  for(;;){
+    if(options.signal?.aborted)return savedFailure("cancelled");
+    const opened=await openSavedDatabase(true);
+    if(!opened.ok)return opened;
+    const snapshot=await readSavedSnapshot(opened.db);
+    if(!snapshot.ok)return snapshot;
+    const staged=stageSavedSnapshot(snapshot);
+    if(!staged.ok)return staged;
+    let result,callbackEntered=false;
+    try{
+      const locks=navigator.locks;
+      if(!locks || typeof locks.request!=="function")return savedFailure("lock");
+      result=await locks.request(SAVED_LOCK,{mode:"exclusive",...(options.signal?{signal:options.signal}:{})},()=>{
+        callbackEntered=true;
+        return savedTransaction(opened.db,"readwrite",(fresh,store)=>{
+          if(!sameSavedSnapshot(fresh,snapshot))return SAVED_RETRY;
+          const applied=applySavedCommand(staged,command,candidate);
+          if(applied.ok && applied.changed)store.put(JSON.stringify(applied.envelope),SAVED_RECORD);
+          return applied;
+        },options.signal);
       });
-    } catch (e) { return savedFailure(options.signal && options.signal.aborted ? "cancelled" : callbackEntered ? "storage" : "lock", "commit-refused"); }
-    if (result === SAVED_RETRY) continue;
-    return publishSavedCommand(result, "durable");
+    }catch(e){return savedFailure(options.signal?.aborted?"cancelled":callbackEntered?"storage":"lock","commit-refused");}
+    if(result===SAVED_RETRY)continue;
+    if(result.ok)notifySavedCommit(result.envelope);
+    return publishSavedCommand(result,"durable");
   }
 }
 function commitSaved(command, options = {}) {
-  // The public boundary always returns a Promise. The session helper above is
-  // the same real in-memory command path, available to synchronous disk/session UI.
-  if (savedMode === "session") return Promise.resolve(commitSavedSession(command, options));
-  if (savedMode !== "durable") return Promise.resolve(savedFailure("protected"));
-  return commitSavedDurable(command, options);
+  if(savedMode==="session")return Promise.resolve(commitSavedSession(command,options));
+  if(savedMode!=="durable")return Promise.resolve(savedFailure("protected"));
+  return commitSavedDurable(command,options);
 }
-async function reconcileSavedCollection() {
-  if (savedMode !== "durable") return { ok: true, persistence: savedMode };
-  try {
-    const raw = localStorage.getItem(SAVED_KEY), staged = stageSavedRaw(raw);
-    if (!staged.ok) { savedIssue = staged; savedRecovery = { collection: raw }; return staged; }
-    applySavedSnapshot(staged.envelope, staged.views, "remote");
-    return { ok: true, envelope: savedClone(staged.envelope), persistence: "durable" };
-  } catch (e) { savedIssue = savedFailure("storage", "reconciliation-access"); return savedIssue; }
+function savedReconciliationFailure(result,raw) {
+  savedIssue=result;
+  savedRecovery={collection:typeof raw==="string"?raw:null,access:"unknown"};
+  updateSavedStatus();
+  return result;
 }
-window.addEventListener("storage", event => {
-  if (event.key === SAVED_KEY || event.key === null) reconcileSavedCollection();
-  else if ([STORE_KEY, SCALES_KEY, LEGACY_SCALES_KEY].includes(event.key)) {inspectLegacyBranch();updateSavedStatus();}
+function reconcileSavedCollection() {
+  if(savedMode!=="durable")return Promise.resolve({ok:true,persistence:savedMode});
+  savedReconcileDirty=true;
+  if(savedReconciliation)return savedReconciliation;
+  const generation=savedAuthorityGeneration;
+  const pending=(async()=>{
+    try{
+    let result={ok:true,persistence:"durable"};
+    do{
+      savedReconcileDirty=false;
+      const opened=await openSavedDatabase(true);
+      if(!opened.ok)return savedReconciliationFailure(opened);
+      const snapshot=await readSavedSnapshot(opened.db);
+      if(savedMode!=="durable" || generation!==savedAuthorityGeneration)return {ok:true,persistence:savedMode};
+      if(!snapshot.ok)return savedReconciliationFailure(snapshot);
+      const staged=stageSavedSnapshot(snapshot);
+      if(!staged.ok)return savedReconciliationFailure(staged,snapshot.raw);
+      savedIssue=null;savedRecovery=null;
+      applySavedSnapshot(staged.envelope,staged.views,"remote");
+      result={ok:true,envelope:savedClone(staged.envelope),persistence:"durable"};
+    }while(savedReconcileDirty && savedMode==="durable" && generation===savedAuthorityGeneration);
+    return result;
+    }catch(e){return savedReconciliationFailure(savedFailure("storage","reconciliation-access"));}
+  })();
+  savedReconciliation=pending;
+  pending.then(()=>{if(savedReconciliation===pending)savedReconciliation=null;},()=>{if(savedReconciliation===pending)savedReconciliation=null;});
+  return pending;
+}
+window.addEventListener("storage",event=>{
+  if(event.key===null || [STORE_KEY,SCALES_KEY,LEGACY_SCALES_KEY,SAVED_KEY].includes(event.key)){inspectLegacyBranch();updateSavedStatus();}
 });
+window.addEventListener("focus",()=>{reconcileSavedCollection();});
+window.addEventListener("pageshow",()=>{reconcileSavedCollection();});
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)reconcileSavedCollection();});
 
 function selectDeck(wanted, persist = true, trackSelection = true) {
   navigationGeneration++;
@@ -13275,6 +13432,7 @@ function updateSavedStatus() {
   const el=document.getElementById("saved-status"), temporary=document.getElementById("saved-temporary-use");
   const protectedData=savedMode === "protected" || !!savedRecovery;
   let text=protectedData?t("saved.recovery"):savedMode === "session"?t("saved.session"):"";
+  if(!text && savedIssue?.detail==="acknowledged-publication-pending")text=t("saved.ackPending");
   if(legacyBranchStatus==="changed")text+=(text?" ":"")+t("saved.legacy");
   if(el.textContent!==text)el.textContent=text;
   el.hidden=!text;temporary.hidden=savedMode!=="protected";temporary.textContent=t("saved.temporary");
@@ -13342,7 +13500,7 @@ document.getElementById("saved-temporary-use").onclick=()=>{
   if(savedMode!=="protected")return;
   const temporary=makeSavedMigration({rows:[],sourceKey:null,raw:{hpfc:null,"hpfc.scales":null,"hpfc.scales.v3":null},preferences:{}});
   if(!temporary.ok){savedIssue=temporary;updateSavedStatus();return;}
-  savedMode="session";applySavedSnapshot(temporary.envelope,temporary.views,"temporary");updateSavedStatus();
+  retireSavedAuthority();savedMode="session";applySavedSnapshot(temporary.envelope,temporary.views,"temporary");updateSavedStatus();
   if(pendingRecoveryShare!==null){const result=openShare(pendingRecoveryShare);if(result.ok)pendingRecoveryShare=null;}
 };
 savedSnapshotListener=event=>{
