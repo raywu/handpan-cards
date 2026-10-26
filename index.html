@@ -9564,8 +9564,9 @@ if (typeof store !== "object" || Array.isArray(store)) store = {};
 function updateSettings(change) {
   try {
     const raw = localStorage.getItem(STORE_KEY);
-    const base = raw === null ? {} : JSON.parse(raw);
-    if (!base || typeof base !== "object" || Array.isArray(base)) return false;
+    const guarded = savedPreference(raw);
+    if (!guarded.ok) return false;
+    const base = guarded.value;
     const next = { ...base };
     change(next);
     const encoded = JSON.stringify(next);
@@ -10020,6 +10021,7 @@ const SAVED_RETRY = Symbol("saved collection changed while staging");
 const savedClone = value => JSON.parse(JSON.stringify(value));
 const savedObject = value => value !== null && typeof value === "object" && !Array.isArray(value);
 const savedUUIDPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+const isSavedUUID = value => typeof value === "string" && value.length === 36 && savedUUIDPattern.test(value);
 const savedPositive = n => Number.isSafeInteger(n) && n > 0;
 const savedFailure = (kind, detail) => ({ ok: false, kind, ...(detail ? { detail } : {}) });
 function savedEqual(a, b) {
@@ -10052,7 +10054,7 @@ function savedCryptoId(used) {
         id = h.slice(0, 8) + "-" + h.slice(8, 12) + "-" + h.slice(12, 16) + "-" + h.slice(16, 20) + "-" + h.slice(20);
       } catch (unused) {}
     }
-    if (typeof id === "string" && savedUUIDPattern.test(id) && !used.has(id) && !knownSavedCollections.has(id)) return id;
+    if (isSavedUUID(id) && !used.has(id) && !knownSavedCollections.has(id)) return id;
   }
   return null;
 }
@@ -10086,7 +10088,7 @@ function inspectLegacyBranch() {
   return legacyBranchStatus;
 }
 function savedEnvelopeShape(e) {
-  if (!savedObject(e) || e.schema !== 1 || !savedUUIDPattern.test(e.collectionId || "") ||
+  if (!savedObject(e) || e.schema !== 1 || !isSavedUUID(e.collectionId) ||
       !savedPositive(e.revision) || !Number.isSafeInteger(e.slotStateRevision) || e.slotStateRevision < 0 ||
       !Array.isArray(e.entries) || !Array.isArray(e.usedInstanceIds) || !savedPositive(e.nextDisplayOrdinal) ||
       e.nextDisplayOrdinal !== e.usedInstanceIds.length + 1 || !savedObject(e.slots) || !Array.isArray(e.hidden) ||
@@ -10095,11 +10097,12 @@ function savedEnvelopeShape(e) {
       !Array.isArray(e.migration.instanceIds) || ![null, SCALES_KEY, LEGACY_SCALES_KEY].includes(e.migration.sourceKey)) return false;
   const used = new Set(e.usedInstanceIds);
   if (used.size !== e.usedInstanceIds.length || used.has(e.collectionId) ||
-      e.usedInstanceIds.some(id => typeof id !== "string" || !savedUUIDPattern.test(id))) return false;
+      e.usedInstanceIds.some(id => !isSavedUUID(id))) return false;
   const entries = new Set(), ordinals = new Set();
   for (const row of e.entries) {
-    if (!savedObject(row) || !savedPositive(row.revision) || !savedPositive(row.displayOrdinal) ||
-        !Object.hasOwn(row, "record") || e.usedInstanceIds[row.displayOrdinal - 1] !== row.instanceId ||
+    if (!savedObject(row) || !Object.hasOwn(row, "instanceId") || !isSavedUUID(row.instanceId) ||
+        !savedPositive(row.revision) || !savedPositive(row.displayOrdinal) || row.displayOrdinal >= e.nextDisplayOrdinal ||
+        !used.has(row.instanceId) || !Object.hasOwn(row, "record") || e.usedInstanceIds[row.displayOrdinal - 1] !== row.instanceId ||
         entries.has(row.instanceId) || ordinals.has(row.displayOrdinal)) return false;
     entries.add(row.instanceId); ordinals.add(row.displayOrdinal);
   }
@@ -10507,6 +10510,11 @@ function applySavedCommand(staged, command, candidate) {
 function publishSavedCommand(result, persistence) {
   if (!result.ok) return result;
   const { views, ...plainResult } = result;
+  // A successful old-epoch write may return after another epoch was accepted.
+  // Keep its API acknowledgment, but do not republish its obsolete local cache.
+  if (savedState && savedState.collectionId !== result.envelope.collectionId &&
+      knownSavedCollections.has(result.envelope.collectionId))
+    return { ...plainResult, persistence, published: false };
   try {
     const published = applySavedSnapshot(result.envelope, views, persistence === "session" ? "session" : "commit");
     if (!published.ok) savedIssue = published;
