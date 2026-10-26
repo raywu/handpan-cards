@@ -9559,6 +9559,20 @@ const LEGACY_SCALES_KEY = "hpfc.scales";
 const readStore = key => { try { return JSON.parse(localStorage.getItem(key) || "null"); } catch (e) { return null; } };
 let store = readStore(STORE_KEY) || {};
 if (typeof store !== "object" || Array.isArray(store)) store = {};
+// Only unrelated preferences use hpfc now. Invalid source bytes are recovery
+// evidence: neither a language choice nor practice settings may replace them.
+function updateSettings(change) {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    const base = raw === null ? {} : JSON.parse(raw);
+    if (!base || typeof base !== "object" || Array.isArray(base)) return false;
+    const next = { ...base };
+    change(next);
+    const encoded = JSON.stringify(next);
+    if (encoded !== JSON.stringify(base)) localStorage.setItem(STORE_KEY, encoded);
+    return true;
+  } catch (e) { return false; }
+}
 
 /* ---------------- interface language ---------------- */
 // The tables are the generated I18N region above. English is the base: a
@@ -9595,22 +9609,11 @@ function setLang(code) {
   if (code === null || code === undefined) {
     if ("lang" in store) {
       delete store.lang;
-      try {
-        const base = readStore(STORE_KEY);
-        if (base && typeof base === "object" && !Array.isArray(base) && "lang" in base) {
-          delete base.lang;
-          localStorage.setItem(STORE_KEY, JSON.stringify(base));
-        }
-      } catch (e) {}
+      updateSettings(base => { delete base.lang; });
     }
   } else if (LANGS.includes(code)) {
     store.lang = code;
-    try {
-      const base = readStore(STORE_KEY);
-      const next = (base && typeof base === "object" && !Array.isArray(base)) ? base : {};
-      next.lang = code;
-      localStorage.setItem(STORE_KEY, JSON.stringify(next));
-    } catch (e) {}
+    updateSettings(next => { next.lang = code; });
   }
   applyLang();
 }
@@ -9791,18 +9794,13 @@ const deck = () => CUSTOM[deckId] || allDecks().find(d => d.id === deckId) || re
 // from its saved seed, so restoring one is no longer a dangling reference.
 // READ-MODIFY-WRITE: "hpfc" is one object shared with whatever else stores
 // settings there, so writing our two keys must not drop a sibling's.
-const save = () => {
-  try {
-    const base = readStore(STORE_KEY);
-    const next = (base && typeof base === "object" && !Array.isArray(base)) ? base : {};
-    next.deck = storedDeck;
-    next.mode = mode;
-    next.tier = tier;
-    next.printPaper = printPaper;
-    if (hidden.length) next.hidden = [...hidden]; else delete next.hidden;
-    localStorage.setItem(STORE_KEY, JSON.stringify(next));
-  } catch (e) {}
-};
+const save = () => updateSettings(next => {
+  // Saved selection/hidden state has one authority in the collection. Keep
+  // legacy deck/hidden fields untouched for old clients and recovery.
+  next.mode = mode;
+  next.tier = tier;
+  next.printPaper = printPaper;
+});
 
 /* ---------------- generated decks ---------------- */
 // Generation runs ONCE, here, at submit - never inside deck() or render()
@@ -9866,7 +9864,7 @@ function replaceRegistered(oldId, next) {
 // and the build: it is how the submit path can refuse a save without a second
 // parse, a second build (13A pins exactly one) or any registry write. It returns
 // a falsy value to let generation run, or the result to return instead.
-function generateDeck(text, options, guard) {
+function buildGenerated(text, options, guard) {
   const seed = HPE.core.parseSeed(text, options);
   if (!seed.ok) return seed;
   const vetoed = guard ? guard(seed.value) : null;
@@ -9923,17 +9921,10 @@ function generateDeck(text, options, guard) {
     if (bottomAngles !== null) built.value.options.angles = JSON.parse(JSON.stringify(bottomAngles));
   }
   if (seed.value.options.parent == null) built.value.options.parent = null;
-  // `replaces` is the record option that puts a custom deck in a seeded deck's
-  // chip slot. select.build and core.parseSeed both drop it, so it is carried
-  // back here from the raw argument, and from the registry entry this build is
-  // about to replace in place (an ADD or a share link onto a replacement's own
-  // scale must not detach it). A name that is no seed is dropped: the deck is
-  // then a plain custom one.
-  const sitting = CUSTOM[built.value.id];
-  const inherited = sitting && sitting.options && sitting.options.replaces;
-  const replaces = (options && options.replaces) || inherited;
+  // Local replacement provenance is explicit; an inventory sibling has no
+  // authority to grant it. Import commands strip it before committing.
+  const replaces = options && options.replaces;
   if (typeof replaces === "string" && isBuiltIn(replaces)) built.value.options.replaces = replaces;
-  registerDeck(built.value);
   return built;
 }
 /* ---------------- share links ---------------- */
@@ -9989,38 +9980,6 @@ function openShare(text) {
   return built;
 }
 
-/* ---------------- saved scales ---------------- */
-// A list of seed records under SCALES_KEY, each {v, s, o}: the format version,
-// the canonical scale string and the seed options. Rebuilt into CUSTOM at boot,
-// so a custom deck survives a reload.
-let scalesMemory = [];
-function savedScales() {
-  const raw = readStore(SCALES_KEY);
-  return Array.isArray(raw) ? raw : scalesMemory;
-}
-function writeScales(list) {
-  scalesMemory = list;
-  try { localStorage.setItem(SCALES_KEY, JSON.stringify(list)); } catch (e) {}
-}
-// R7: the records changed shape (per-ring seats), so they live under a new key.
-// The first boot with no list under it COPIES the old one across - the old key
-// is read, never written and never deleted, so an older app on the same origin
-// keeps its list. If the write is refused the copy still serves this session.
-function copyLegacyScales() {
-  let have = null;
-  try { have = localStorage.getItem(SCALES_KEY); } catch (e) { return; }
-  if (have !== null) return;
-  const old = readStore(LEGACY_SCALES_KEY);
-  if (Array.isArray(old)) writeScales(old);
-}
-// Queue row 132: an EXISTING record is rewritten AT ITS INDEX, and only a
-// genuinely new one is appended. restoreScales rebuilds the registry in list
-// order, so the index is the chip position across a reload - filtering the old
-// record out and pushing the new one would send an options-only edit to the end
-// of the row on the next boot while it sat in place until then.
-// Shared by rememberScale and replaceScale: the stored shape of a seed, byte-
-// for-byte identical between the two before this extraction (finding 13,
-// quality-refactor plan 2026-09-30).
 function scaleRecord(seed) {
   return { v: SHARE_VERSION, s: HPE.core.formatSeed(seed.fields), o: seed.options };
 }
@@ -10032,68 +9991,7 @@ function scaleRecord(seed) {
 function scaleReader(v) {
   return v >= 4 ? HPE.core.parseSeed : HPE.core.parseLegacySeed;
 }
-// The deck id a record's string resolves to, or null for a record this build
-// cannot read (it is kept, never matched).
-function recordDeckId(r) {
-  if (!r || typeof r !== "object" || typeof r.s !== "string") return null;
-  try {
-    const res = scaleReader(r.v)(r.s);
-    return res.ok ? HPE.core.deckId(res.value.fields) : null;
-  } catch (e) { return null; }
-}
-// The deck id a bare scale string resolves to, through the current reader.
-function stringDeckId(str) {
-  const res = scaleReader(SHARE_VERSION)(str);
-  return res.ok ? HPE.core.deckId(res.value.fields) : null;
-}
-// A null id never matches: when either side has no id (a record this build
-// cannot read, or a string that does not re-parse) the exact string decides.
-function sameDeck(r, id, str) {
-  const rid = recordDeckId(r);
-  return rid !== null && id !== null ? rid === id : !!r && r.s === str;
-}
-function rememberScale(seed) {
-  const rec = scaleRecord(seed);
-  const id = HPE.core.deckId(seed.fields);
-  const out = [];
-  let placed = false;
-  for (const r of savedScales()) {
-    if (sameDeck(r, id, rec.s)) { if (!placed) { out.push(rec); placed = true; } }
-    else out.push(r);                     // a duplicate of the key is collapsed
-  }
-  if (!placed) out.push(rec);
-  writeScales(out);
-}
-// The deck id IS the record's key (D14), and a record is matched by the id its
-// own string resolves to, so dropping it is a filter on that id whatever
-// spelling the record holds.
-function forgetScale(str) {
-  const id = stringDeckId(str);
-  writeScales(savedScales().filter(r => !r || !sameDeck(r, id, str)));
-}
-// Queue row 73: editing the NOTES replaces the deck, so the old record leaves
-// storage and the new one takes ITS INDEX - restoreScales rebuilds the registry
-// in list order, so the index is what carries the chip position across a
-// reload. Appending would move the deck to the end of the row on the next boot
-// while it sat in place until then.
-function replaceScale(oldStr, seed) {
-  const rec = scaleRecord(seed);
-  const newId = HPE.core.deckId(seed.fields);
-  const oldId = stringDeckId(oldStr);
-  const list = savedScales();
-  const at = list.findIndex(r => r && sameDeck(r, oldId, oldStr));
-  if (at < 0) { rememberScale(seed); return; }
-  const out = [];
-  list.forEach((r, i) => {
-    if (i === at) out.push(rec);
-    else if (!r || !sameDeck(r, newId, rec.s)) out.push(r);   // never a duplicate of the new record
-  });
-  writeScales(out);
-}
-// A record written before wire version 3 carries its arrangement as the flat
-// `order`. It is converted per ring here; one that crosses a ring is not an
-// arrangement this app can draw, so the record is kept with the generated
-// layout instead of being dropped.
+
 function recordOptions(rec) {
   const o = rec.o && typeof rec.o === "object" ? Object.assign({}, rec.o) : undefined;
   if (!o || !("order" in o)) return o;
@@ -10106,41 +10004,577 @@ function recordOptions(rec) {
   if (converted.ok && converted.value) o.seats = converted.value;
   return o;
 }
-// Boot must stay resilient, and it must never lose a record. A record this build
-// cannot read (a newer version, a parse failure, a non-object) is neither built
-// nor touched: it stays in the list byte for byte, at its index. A readable
-// record of an older version is rewritten in place, at the same index, as a
-// version 4 record holding the new canonical string. Two records that resolve to
-// the same deck id collapse to the first. The rewrite is one write and only when
-// the list changed; a write the browser refuses leaves the stored list as it was
-// and the decks still open from memory.
-function restoreScales() {
-  copyLegacyScales();
-  const list = savedScales();
-  const out = [];
-  const seen = new Set();
-  for (const rec of list) {
-    let keep = rec;
-    try {
-      const readable = rec && typeof rec === "object" && typeof rec.s === "string" &&
-        checkShareVersion(rec.v).ok;
-      const res = readable ? scaleReader(rec.v)(rec.s) : null;
-      if (res && res.ok) {
-        const id = HPE.core.deckId(res.value.fields);
-        if (seen.has(id)) continue;
-        const canonical = HPE.core.formatSeed(res.value.fields);
-        const options = recordOptions(rec);
-        const built = generateDeck(canonical, options);
-        if (built.ok && built.value.id === id) {
-          seen.add(id);
-          if (rec.v < SHARE_VERSION) keep = { v: SHARE_VERSION, s: canonical, o: options };
-        }
-      }
-    } catch (e) {}
-    out.push(keep);
-  }
-  if (JSON.stringify(out) !== JSON.stringify(list)) writeScales(out);
+
+/* ---------------- saved instances ---------------- */
+// Application metadata is independent of the engine inventory and wire versions.
+const SAVED_KEY = "hpfc.saved-scales.v1";
+const SAVED_LOCK = "handpan-cards:saved-scales:v1";
+const savedEntries = new Map();
+let savedState = null, savedMode = "starting", savedIssue = null;
+let savedRecovery = null, legacyBranchStatus = "unknown";
+let savedSnapshotListener = null;
+let selection = { kind: "builtin", id: DEFAULT_DECK };
+let savedInitialization = null;
+const knownSavedCollections = new Set();
+const SAVED_RETRY = Symbol("saved collection changed while staging");
+const savedClone = value => JSON.parse(JSON.stringify(value));
+const savedObject = value => value !== null && typeof value === "object" && !Array.isArray(value);
+const savedUUIDPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+const savedPositive = n => Number.isSafeInteger(n) && n > 0;
+const savedFailure = (kind, detail) => ({ ok: false, kind, ...(detail ? { detail } : {}) });
+function savedEqual(a, b) {
+  if (a === b) return true;
+  if (!a || !b || typeof a !== "object" || typeof b !== "object" || Array.isArray(a) !== Array.isArray(b)) return false;
+  const ak = Object.keys(a), bk = Object.keys(b);
+  return ak.length === bk.length && ak.every(k => Object.hasOwn(b, k) && savedEqual(a[k], b[k]));
 }
+function savedCryptoId(used) {
+  for (let attempt = 0; attempt < 8; attempt++) {
+    let id = null;
+    try {
+      const source = globalThis.crypto;
+      if (source && typeof source.randomUUID === "function") id = source.randomUUID();
+      else if (source && typeof source.getRandomValues === "function") {
+        const bytes = new Uint8Array(16);
+        source.getRandomValues(bytes);
+        bytes[6] = (bytes[6] & 15) | 64;
+        bytes[8] = (bytes[8] & 63) | 128;
+        const h = Array.from(bytes, n => n.toString(16).padStart(2, "0")).join("");
+        id = h.slice(0, 8) + "-" + h.slice(8, 12) + "-" + h.slice(12, 16) + "-" + h.slice(16, 20) + "-" + h.slice(20);
+      }
+    } catch (e) {
+      // A throwing UUID method may still have an operating getRandomValues.
+      try {
+        const bytes = new Uint8Array(16);
+        globalThis.crypto.getRandomValues(bytes);
+        bytes[6] = (bytes[6] & 15) | 64; bytes[8] = (bytes[8] & 63) | 128;
+        const h = Array.from(bytes, n => n.toString(16).padStart(2, "0")).join("");
+        id = h.slice(0, 8) + "-" + h.slice(8, 12) + "-" + h.slice(12, 16) + "-" + h.slice(16, 20) + "-" + h.slice(20);
+      } catch (unused) {}
+    }
+    if (typeof id === "string" && savedUUIDPattern.test(id) && !used.has(id) && !knownSavedCollections.has(id)) return id;
+  }
+  return null;
+}
+function savedPreference(raw) {
+  if (raw === null) return { ok: true, value: {} };
+  try {
+    const value = JSON.parse(raw);
+    if (!savedObject(value) || (Object.hasOwn(value, "deck") && typeof value.deck !== "string") ||
+        (Object.hasOwn(value, "hidden") && (!Array.isArray(value.hidden) || value.hidden.some(x => typeof x !== "string"))))
+      return savedFailure("protected", "legacy-preferences");
+    return { ok: true, value };
+  } catch (e) { return savedFailure("protected", "legacy-preferences"); }
+}
+function savedLegacyProjection(raw) {
+  const read = savedPreference(raw);
+  if (!read.ok) return null;
+  return [Object.hasOwn(read.value, "deck"), read.value.deck || "",
+    Object.hasOwn(read.value, "hidden"), read.value.hidden || []];
+}
+function inspectLegacyBranch() {
+  if (!savedState) { legacyBranchStatus = "unknown"; return legacyBranchStatus; }
+  try {
+    const baseline = savedState.migration.raw;
+    const now = { hpfc: localStorage.getItem(STORE_KEY),
+      "hpfc.scales": localStorage.getItem(LEGACY_SCALES_KEY), "hpfc.scales.v3": localStorage.getItem(SCALES_KEY) };
+    const beforePreference = savedLegacyProjection(baseline.hpfc), afterPreference = savedLegacyProjection(now.hpfc);
+    legacyBranchStatus = beforePreference === null || afterPreference === null ? "unknown" :
+      now[LEGACY_SCALES_KEY] !== baseline[LEGACY_SCALES_KEY] || now[SCALES_KEY] !== baseline[SCALES_KEY] ||
+      !savedEqual(beforePreference, afterPreference) ? "changed" : "unchanged";
+  } catch (e) { legacyBranchStatus = "unknown"; }
+  return legacyBranchStatus;
+}
+function savedEnvelopeShape(e) {
+  if (!savedObject(e) || e.schema !== 1 || !savedUUIDPattern.test(e.collectionId || "") ||
+      !savedPositive(e.revision) || !Number.isSafeInteger(e.slotStateRevision) || e.slotStateRevision < 0 ||
+      !Array.isArray(e.entries) || !Array.isArray(e.usedInstanceIds) || !savedPositive(e.nextDisplayOrdinal) ||
+      e.nextDisplayOrdinal !== e.usedInstanceIds.length + 1 || !savedObject(e.slots) || !Array.isArray(e.hidden) ||
+      !savedObject(e.preferredSelection) || !["builtin", "saved"].includes(e.preferredSelection.kind) ||
+      typeof e.preferredSelection.id !== "string" || !savedObject(e.migration) || !savedObject(e.migration.raw) ||
+      !Array.isArray(e.migration.instanceIds) || ![null, SCALES_KEY, LEGACY_SCALES_KEY].includes(e.migration.sourceKey)) return false;
+  const used = new Set(e.usedInstanceIds);
+  if (used.size !== e.usedInstanceIds.length || used.has(e.collectionId) ||
+      e.usedInstanceIds.some(id => typeof id !== "string" || !savedUUIDPattern.test(id))) return false;
+  const entries = new Set(), ordinals = new Set();
+  for (const row of e.entries) {
+    if (!savedObject(row) || !savedPositive(row.revision) || !savedPositive(row.displayOrdinal) ||
+        !Object.hasOwn(row, "record") || e.usedInstanceIds[row.displayOrdinal - 1] !== row.instanceId ||
+        entries.has(row.instanceId) || ordinals.has(row.displayOrdinal)) return false;
+    entries.add(row.instanceId); ordinals.add(row.displayOrdinal);
+  }
+  if (new Set(e.hidden).size !== e.hidden.length || e.hidden.some(id => !isBuiltIn(id)) ||
+      Object.keys(e.slots).some(id => !isBuiltIn(id) || typeof e.slots[id] !== "string" || !entries.has(e.slots[id])) ||
+      new Set(Object.values(e.slots)).size !== Object.values(e.slots).length) return false;
+  if (e.preferredSelection.kind === "builtin" ? !isBuiltIn(e.preferredSelection.id) : !entries.has(e.preferredSelection.id)) return false;
+  if ([STORE_KEY, SCALES_KEY, LEGACY_SCALES_KEY].some(key => !Object.hasOwn(e.migration.raw, key) ||
+      (e.migration.raw[key] !== null && typeof e.migration.raw[key] !== "string")) ||
+      new Set(e.migration.instanceIds).size !== e.migration.instanceIds.length ||
+      e.migration.instanceIds.some(id => !used.has(id))) return false;
+  return true;
+}
+function savedMeaning(deckValue) {
+  const o = deckValue.options || {}, mirrors = HPE.layout.resolveMirrors(o), counts = ringSizes(deckValue.fields);
+  const seats = HPE.layout.readSeats(o.seats, counts);
+  const angles = HPE.layout.readAngles(o.angles, counts);
+  if (!seats.ok || !angles.ok) throw new Error("invalid staged layout");
+  const seatValue = seats.value || {};
+  const normalizedSeats = ["rim", "inner", "bottom"].map(ring => {
+    const list = seatValue[ring];
+    return !list || list.every((seat, i) => seat === i) ? null : list;
+  });
+  return JSON.stringify([HPE.core.identitySeed(deckValue.fields), o.name ? [true, o.name] : [false, ""],
+    o.parent == null ? [false, null] : [true, o.parent], o.palette, mirrors.top, mirrors.bottom,
+    o.anchor === "between" ? "between" : "one",
+    normalizedSeats,
+    angles.value ? angles.value.bottom : null]);
+}
+function readSavedRecord(record) {
+  if (!savedObject(record) || typeof record.s !== "string" || !checkShareVersion(record.v).ok) return savedFailure("protected", "opaque-record");
+  try {
+    let canonical = record.s;
+    if (record.v < SHARE_VERSION) {
+      const old = scaleReader(record.v)(record.s);
+      if (!old.ok) return savedFailure("protected", "opaque-record");
+      canonical = HPE.core.formatSeed(old.value.fields);
+    }
+    const options = recordOptions(record);
+    const built = buildGenerated(canonical, options);
+    if (!built.ok) return built;
+    const normalized = record.v < SHARE_VERSION ? { ...savedClone(record), v: SHARE_VERSION, s: canonical, o: options } : savedClone(record);
+    return { ok: true, value: built.value, record: normalized,
+      meaning: savedMeaning(built.value), identity: HPE.core.identitySeed(built.value.fields) };
+  } catch (e) { return savedFailure("protected", "opaque-record"); }
+}
+function stageSavedEnvelope(envelope, supplied = new Map()) {
+  if (!savedEnvelopeShape(envelope)) return savedFailure("protected", "collection-shape");
+  const views = new Map(), meanings = new Map(), identities = new Map();
+  for (const row of envelope.entries) {
+    const held = supplied.get(row.instanceId) || savedEntries.get(row.instanceId);
+    if (held && held.opaque && savedEqual(held.record, row.record)) continue;
+    let read;
+    if (held && savedEqual(held.record, row.record)) read = { ok: true, value: held.deck,
+      meaning: held.meaning || savedMeaning(held.deck), identity: held.identity || HPE.core.identitySeed(held.deck.fields) };
+    else read = readSavedRecord(row.record);
+    if (!read.ok) continue;
+    const inventory = read.value.id;
+    const previousIdentity = identities.get(inventory);
+    if (previousIdentity !== undefined && previousIdentity !== read.identity) continue; // keep the row, not an unsafe engine view
+    identities.set(inventory, read.identity);
+    const view = { instanceId: row.instanceId, revision: row.revision, displayOrdinal: row.displayOrdinal,
+      record: row.record, deck: read.value, meaning: read.meaning, identity: read.identity };
+    views.set(row.instanceId, view); meanings.set(row.instanceId, read.meaning);
+  }
+  for (const [seed, id] of Object.entries(envelope.slots)) {
+    const owner = views.get(id);
+    if (!owner || !owner.record.o || owner.record.o.replaces !== seed) return savedFailure("protected", "slot-authority");
+  }
+  return { ok: true, envelope, views, meanings, identities };
+}
+function stageSavedRaw(raw) {
+  if (typeof raw !== "string") return savedFailure("conflict", "collection-missing");
+  try {
+    const staged = stageSavedEnvelope(JSON.parse(raw));
+    return staged.ok ? { ...staged, raw } : staged;
+  } catch (e) { return savedFailure("protected", "collection-json"); }
+}
+function savedViewsFor(e, views) {
+  const slotted = new Set(Object.values(e.slots));
+  return [...e.entries].reverse().filter(row => views.has(row.instanceId) && !slotted.has(row.instanceId))
+    .map(row => ({ selection: { kind: "saved", id: row.instanceId }, deck: views.get(row.instanceId).deck, displayOrdinal: row.displayOrdinal }))
+    .concat(DECKS.map(d => {
+      const owner = e.slots[d.id] && views.get(e.slots[d.id]);
+      return owner ? { selection: { kind: "saved", id: owner.instanceId }, deck: owner.deck, displayOrdinal: owner.displayOrdinal, slotId: d.id } :
+        e.hidden.includes(d.id) ? null : { selection: { kind: "builtin", id: d.id }, deck: d, slotId: d.id };
+    }).filter(Boolean));
+}
+function savedFallback(e, views) {
+  const visible = savedViewsFor(e, views);
+  return (visible.find(view => view.slotId === DEFAULT_DECK) || visible[0] ||
+    { selection: { kind: "builtin", id: DEFAULT_DECK } }).selection;
+}
+function savedResolve(wanted, e, views) {
+  const visible = savedViewsFor(e, views);
+  if (wanted && wanted.kind === "builtin" && e.slots[wanted.id] && views.has(e.slots[wanted.id]))
+    return { kind: "saved", id: e.slots[wanted.id] };
+  return visible.some(view => savedEqual(view.selection, wanted)) ? savedClone(wanted) : savedFallback(e, views);
+}
+function applySavedSnapshot(envelope, suppliedViews, source = "commit") {
+  const staged = stageSavedEnvelope(envelope, suppliedViews || new Map());
+  if (!staged.ok) return staged;
+  const before = savedState;
+  if (savedState && savedState.collectionId === envelope.collectionId && savedState.revision > envelope.revision)
+    return { ok: true, ignored: true }; // an older completion cannot roll the cache back
+  savedState = savedClone(envelope);
+  const rows = new Map(savedState.entries.map(row => [row.instanceId, row]));
+  savedEntries.clear();
+  for (const [id, view] of staged.views) savedEntries.set(id, { ...view, record: rows.get(id).record });
+  knownSavedCollections.add(savedState.collectionId);
+  inspectLegacyBranch(); // diagnostic failure cannot reverse an acknowledged command
+  if (typeof savedSnapshotListener === "function") {
+    try { savedSnapshotListener({ source, previous: before, current: savedState }); } catch (e) {}
+  }
+  return { ok: true };
+}
+function allDeckViews() {
+  const visible = savedState ? savedViewsFor(savedState, savedEntries) :
+    DECKS.map(d => ({ selection: { kind: "builtin", id: d.id }, deck: d, slotId: d.id }));
+  return visible.length ? visible : [{ selection: { kind: "builtin", id: DEFAULT_DECK },
+    deck: DECKS.find(d => d.id === DEFAULT_DECK) || DECKS[0], slotId: DEFAULT_DECK }];
+}
+function fallbackSelection() { return savedState ? savedFallback(savedState, savedEntries) : { kind: "builtin", id: DEFAULT_DECK }; }
+function selectedEntry() { return selection.kind === "saved" ? savedEntries.get(selection.id) || null : null; }
+function selectedDeck() {
+  const entry = selectedEntry();
+  if (entry) return entry.deck;
+  const resolved = savedState ? savedResolve(selection, savedState, savedEntries) : selection;
+  return resolved.kind === "saved" ? savedEntries.get(resolved.id).deck : DECKS.find(d => d.id === resolved.id) || DECKS[0];
+}
+function stageLegacySaved() {
+  let raw;
+  try { raw = { hpfc: localStorage.getItem(STORE_KEY), "hpfc.scales": localStorage.getItem(LEGACY_SCALES_KEY),
+    "hpfc.scales.v3": localStorage.getItem(SCALES_KEY) }; }
+  catch (e) { return savedFailure("storage", "legacy-access"); }
+  const preferences = savedPreference(raw.hpfc);
+  if (!preferences.ok) return { ...preferences, raw };
+  const sourceKey = raw[SCALES_KEY] !== null ? SCALES_KEY : raw[LEGACY_SCALES_KEY] !== null ? LEGACY_SCALES_KEY : null;
+  let records = [];
+  try { if (sourceKey) records = JSON.parse(raw[sourceKey]); }
+  catch (e) { return { ...savedFailure("protected", "legacy-json"), raw }; }
+  if (!Array.isArray(records)) return { ...savedFailure("protected", "legacy-list"), raw };
+  const rows = records.map(record => {
+    const read = readSavedRecord(record);
+    return { record: read.ok ? read.record : savedClone(record), read };
+  });
+  return { ok: true, raw, sourceKey, rows, preferences: preferences.value };
+}
+function makeSavedMigration(staged) {
+  const used = new Set();
+  const collectionId = savedCryptoId(used);
+  if (!collectionId) return savedFailure("allocation", "collection-id");
+  used.add(collectionId);
+  const e = { schema: 1, collectionId, revision: 1, slotStateRevision: 0, entries: [], usedInstanceIds: [], nextDisplayOrdinal: 1,
+    preferredSelection: { kind: "builtin", id: DEFAULT_DECK }, slots: {},
+    hidden: [...new Set((staged.preferences.hidden || []).filter(isBuiltIn))],
+    migration: { sourceKey: staged.sourceKey, raw: savedClone(staged.raw), instanceIds: [] } };
+  const supplied = new Map(), oldVisible = new Map();
+  for (const row of staged.rows) {
+    const id = savedCryptoId(used);
+    if (!id) return savedFailure("allocation", "instance-id");
+    used.add(id);
+    const entry = { instanceId: id, revision: 1, displayOrdinal: e.nextDisplayOrdinal++, record: savedClone(row.record) };
+    e.entries.push(entry); e.usedInstanceIds.push(id); e.migration.instanceIds.push(id);
+    if (row.read.ok) {
+      const view = { ...entry, deck: row.read.value, meaning: row.read.meaning, identity: row.read.identity };
+      supplied.set(id, view);
+      if (!oldVisible.has(view.deck.id)) oldVisible.set(view.deck.id, view);
+    } else supplied.set(id, { record: entry.record, opaque: true });
+  }
+  // The old registry displayed the first readable row per inventory, then its
+  // newest recognized replacement per seed. Preserve that chosen slot exactly.
+  for (const view of oldVisible.values()) {
+    const seed = view.record && view.record.o && view.record.o.replaces;
+    if (isBuiltIn(seed)) e.slots[seed] = view.instanceId;
+  }
+  const prepared = stageSavedEnvelope(e, supplied);
+  if (!prepared.ok) return prepared;
+  const wanted = staged.preferences.deck;
+  if (isBuiltIn(wanted)) e.preferredSelection = { kind: "builtin", id: wanted };
+  else if (oldVisible.has(wanted)) e.preferredSelection = { kind: "saved", id: oldVisible.get(wanted).instanceId };
+  e.preferredSelection = savedResolve(e.preferredSelection, e, prepared.views);
+  return { ...prepared, envelope: e };
+}
+function savedProtect(result, raw) {
+  savedMode = "protected"; savedIssue = result;
+  savedRecovery = { collection: typeof raw === "string" ? raw : null, legacy: result.raw || null };
+  return result;
+}
+function initializeSavedSession(issue, previouslyRead) {
+  savedMode = "session"; savedIssue = issue || savedFailure("lock", "session-only");
+  if (previouslyRead && previouslyRead.ok) {
+    applySavedSnapshot(previouslyRead.envelope, previouslyRead.views, "initialization");
+    selection = savedResolve(savedState.preferredSelection, savedState, savedEntries);
+    return { ok: true, persistence: "session" };
+  }
+  try {
+    const raw = localStorage.getItem(SAVED_KEY);
+    if (raw !== null) {
+      const staged = stageSavedRaw(raw);
+      if (!staged.ok) return savedProtect(staged, raw);
+      return initializeSavedSession(issue, staged);
+    }
+  } catch (e) {
+    const temporary = makeSavedMigration({ rows: [], sourceKey: null, raw: { hpfc: null, "hpfc.scales": null, "hpfc.scales.v3": null }, preferences: {} });
+    savedRecovery = { collection: null, legacy: null, access: "unknown" };
+    savedIssue = savedFailure("storage", "session-only-access-unknown");
+    if (!temporary.ok) return temporary;
+    temporary.envelope.migration.temporary = true;
+    temporary.envelope.migration.sourceAccess = "unknown";
+    applySavedSnapshot(temporary.envelope, temporary.views, "initialization");
+    return { ok: true, persistence: "session" };
+  }
+  const legacy = stageLegacySaved();
+  if (!legacy.ok) {
+    if (legacy.kind === "protected") return savedProtect(legacy, null);
+    savedRecovery = { collection: null, legacy: null, access: "unknown" };
+    const temporary = makeSavedMigration({ rows: [], sourceKey: null, raw: { hpfc: null, "hpfc.scales": null, "hpfc.scales.v3": null }, preferences: {} });
+    savedIssue = savedFailure("storage", "session-only-access-unknown");
+    if (!temporary.ok) return temporary;
+    temporary.envelope.migration.temporary = true; temporary.envelope.migration.sourceAccess = "unknown";
+    applySavedSnapshot(temporary.envelope, temporary.views, "initialization");
+    return { ok: true, persistence: "session" };
+  }
+  const temporary = makeSavedMigration(legacy);
+  if (!temporary.ok) { savedIssue = temporary; return temporary; }
+  applySavedSnapshot(temporary.envelope, temporary.views, "initialization");
+  selection = savedResolve(savedState.preferredSelection, savedState, savedEntries);
+  return { ok: true, persistence: "session" };
+}
+async function initializeSavedDurable(locks) {
+  for (;;) {
+    let raw;
+    try { raw = localStorage.getItem(SAVED_KEY); }
+    catch (e) { return initializeSavedSession(savedFailure("storage", "session-only-access")); }
+    const staged = raw !== null ? stageSavedRaw(raw) : stageLegacySaved();
+    if (!staged.ok) return staged.kind === "storage" ? initializeSavedSession(staged) : savedProtect(staged, raw);
+    let committed, callbackEntered = false;
+    try {
+      committed = await locks.request(SAVED_LOCK, { mode: "exclusive" }, () => {
+        callbackEntered = true;
+        if (localStorage.getItem(SAVED_KEY) !== raw) return SAVED_RETRY;
+        if (raw !== null) return staged;
+        if ([STORE_KEY, SCALES_KEY, LEGACY_SCALES_KEY].some(key => localStorage.getItem(key) !== staged.raw[key])) return SAVED_RETRY;
+        const migrated = makeSavedMigration(staged);
+        if (!migrated.ok) return migrated;
+        const encoded = JSON.stringify(migrated.envelope);
+        localStorage.setItem(SAVED_KEY, encoded);
+        return migrated;
+      });
+    } catch (e) { return initializeSavedSession(savedFailure(callbackEntered ? "storage" : "lock", "session-only-initialization"), raw !== null ? staged : null); }
+    if (committed === SAVED_RETRY) continue;
+    if (!committed.ok) { savedMode = "session"; savedIssue = committed; return committed; }
+    // All work after successful setItem is publication/diagnostic work. A failed
+    // optional readback never causes rollback or a second migration allocation.
+    savedMode = "durable"; savedIssue = null;
+    applySavedSnapshot(committed.envelope, committed.views, "initialization");
+    selection = savedResolve(savedState.preferredSelection, savedState, savedEntries);
+    return { ok: true, persistence: "durable" };
+  }
+}
+function initializeSavedCollection() {
+  if (savedInitialization) return savedInitialization;
+  let locks = null;
+  try { const available = navigator.locks; if (available && typeof available.request === "function") locks = available; }
+  catch (e) {}
+  savedInitialization = locks &&
+    !(typeof isSecureContext === "boolean" && !isSecureContext)
+    ? initializeSavedDurable(locks) : initializeSavedSession(savedFailure("lock", "session-only"));
+  return savedInitialization;
+}
+function savedScope(e, views) {
+  return { slotStateRevision: e.slotStateRevision, slots: savedClone(e.slots), hidden: savedClone(e.hidden),
+    replacements: e.entries.filter(row => views.has(row.instanceId) && isBuiltIn(row.record && row.record.o && row.record.o.replaces))
+      .map(row => ({ id: row.instanceId, revision: row.revision })) };
+}
+function savedSlotProof(command, e) {
+  return command.slotStateRevision === e.slotStateRevision && savedEqual(command.slots, e.slots) && savedEqual(command.hidden, e.hidden);
+}
+function savedCandidate(command) {
+  const candidate = command.candidate;
+  if (!candidate || !candidate.deck || !candidate.deck.fields || !candidate.deck.options ||
+      !savedObject(candidate.record) || candidate.record.v !== SHARE_VERSION || typeof candidate.record.s !== "string")
+    return savedFailure("invalid", "staged-candidate");
+  const record = savedClone(candidate.record);
+  const deckValue = { ...candidate.deck, options: { ...candidate.deck.options } };
+  if (command.type === "import" || command.type === "save-as-separate") {
+    if (savedObject(record.o)) delete record.o.replaces;
+    delete deckValue.options.replaces;
+  }
+  return { ok: true, record, deck: deckValue, meaning: savedMeaning(deckValue), identity: HPE.core.identitySeed(deckValue.fields) };
+}
+const SAVED_PORTABLE_OPTIONS = ["name", "palette", "parent", "mirror", "mirrorBottom", "anchor", "seats", "angles"];
+function savedEditedRecord(target, candidate) {
+  const out = { ...savedClone(target), v: SHARE_VERSION, s: candidate.record.s };
+  const options = savedObject(target.o) ? { ...savedClone(target.o) } : {};
+  for (const name of SAVED_PORTABLE_OPTIONS) delete options[name];
+  for (const name of SAVED_PORTABLE_OPTIONS) if (Object.hasOwn(candidate.record.o || {}, name)) options[name] = savedClone(candidate.record.o[name]);
+  out.o = options;
+  return out;
+}
+function applySavedCommand(staged, command, candidate) {
+  const current = staged.envelope;
+  if (!command || command.collectionId !== current.collectionId) return savedFailure("conflict", "collection-epoch");
+  const next = savedClone(current), views = new Map(staged.views);
+  let targetId = null, created = false, desired = null;
+  const existing = () => next.entries.find(row => row.instanceId === command.instanceId);
+  const conflict = () => savedFailure("conflict", "target-or-scope");
+  const allocate = record => {
+    const used = new Set([next.collectionId, ...next.usedInstanceIds]);
+    const id = savedCryptoId(used);
+    if (!id || !savedPositive(next.nextDisplayOrdinal) || next.nextDisplayOrdinal >= Number.MAX_SAFE_INTEGER) return null;
+    const row = { instanceId: id, revision: 1, displayOrdinal: next.nextDisplayOrdinal++, record };
+    next.usedInstanceIds.push(id); next.entries.push(row); created = true;
+    return row;
+  };
+  // Meaning/correction validation was staged before the lock; attach below uses
+  // that staged value, never invokes parse/build/layout work in the commit.
+  const attachCandidate = (row, deckValue = candidate.deck) => views.set(row.instanceId,
+    { ...row, deck: deckValue, meaning: candidate.meaning, identity: candidate.identity });
+  if (["import", "save-as-separate", "edit", "replace-builtin"].includes(command.type)) {
+    if (!candidate || !candidate.ok) return candidate || savedFailure("invalid", "candidate");
+    const inventoryIdentity = staged.identities.get(candidate.deck.id);
+    if (inventoryIdentity !== undefined && inventoryIdentity !== candidate.identity) return savedFailure("inventory-collision");
+  }
+  if (command.type === "import" || command.type === "save-as-separate") {
+    let match = null;
+    if (command.type === "import") {
+      const matches = current.entries.filter(row => staged.meanings.get(row.instanceId) === candidate.meaning);
+      match = matches.find(row => row.instanceId === command.selectedInstanceId) || matches[0] || null;
+    }
+    const row = match ? next.entries.find(entry => entry.instanceId === match.instanceId) : allocate(savedClone(candidate.record));
+    if (!row) return savedFailure("allocation", "instance-id");
+    if (!match) attachCandidate(row);
+    targetId = row.instanceId; desired = { kind: "saved", id: targetId };
+  } else if (command.type === "edit") {
+    const row = existing();
+    if (!row || !views.has(row.instanceId) || row.revision !== command.expectedRevision) return conflict();
+    const record = savedEditedRecord(row.record, candidate);
+    if (!savedEqual(record, row.record)) {
+      if (row.revision >= Number.MAX_SAFE_INTEGER) return savedFailure("invalid", "revision-overflow");
+      row.record = record; row.revision++;
+    }
+    const deckValue = { ...candidate.deck, options: { ...candidate.deck.options } };
+    if (isBuiltIn(record.o && record.o.replaces)) deckValue.options.replaces = record.o.replaces;
+    else delete deckValue.options.replaces;
+    attachCandidate(row, deckValue);
+    targetId = row.instanceId; desired = { kind: "saved", id: targetId };
+  } else if (command.type === "replace-builtin") {
+    if (!isBuiltIn(command.seedId) || command.expectedSlotStateRevision !== current.slotStateRevision ||
+        command.expectedOwnerId !== (current.slots[command.seedId] || null)) return conflict();
+    const record = savedClone(candidate.record);
+    record.o = { ...(record.o || {}), replaces: command.seedId };
+    const row = allocate(record);
+    if (!row) return savedFailure("allocation", "instance-id");
+    const deckValue = { ...candidate.deck, options: { ...candidate.deck.options, replaces: command.seedId } };
+    attachCandidate(row, deckValue);
+    next.slots[command.seedId] = row.instanceId;
+    targetId = row.instanceId; desired = { kind: "saved", id: targetId };
+  } else if (command.type === "delete") {
+    const row = existing();
+    if (!row || !views.has(row.instanceId) || row.revision !== command.expectedRevision) return conflict();
+    const heldSlot = Object.keys(current.slots).find(seed => current.slots[seed] === row.instanceId);
+    if (heldSlot && !savedSlotProof(command, current)) return conflict();
+    next.entries = next.entries.filter(entry => entry.instanceId !== row.instanceId); views.delete(row.instanceId);
+    if (heldSlot) {
+      if (!next.hidden.includes(heldSlot)) next.hidden.push(heldSlot);
+      const survivors = next.entries.filter(entry => views.has(entry.instanceId) && entry.record && entry.record.o && entry.record.o.replaces === heldSlot);
+      if (survivors.length) next.slots[heldSlot] = survivors[survivors.length - 1].instanceId;
+      else delete next.slots[heldSlot];
+    }
+    if (!savedViewsFor(next, views).length) return savedFailure("invalid", "last-visible");
+  } else if (command.type === "hide-builtin") {
+    if (!isBuiltIn(command.seedId) || command.expectedSlotStateRevision !== current.slotStateRevision ||
+        command.expectedOwnerId !== (current.slots[command.seedId] || null)) return conflict();
+    if (current.slots[command.seedId]) return conflict();
+    if (!next.hidden.includes(command.seedId)) next.hidden.push(command.seedId);
+    if (!savedViewsFor(next, views).length) return savedFailure("invalid", "last-visible");
+  } else if (command.type === "reset") {
+    if (!savedEqual(command.affectedScope, savedScope(current, staged.views))) return conflict();
+    const removed = new Set(savedScope(current, staged.views).replacements.map(row => row.id));
+    next.entries = next.entries.filter(row => !removed.has(row.instanceId));
+    for (const id of removed) views.delete(id);
+    next.slots = {}; next.hidden = [];
+  } else if (command.type === "prefer") {
+    const resolved = savedResolve(command.selection, next, views);
+    if (!savedEqual(command.selection, resolved)) return conflict();
+    desired = resolved;
+  } else return savedFailure("invalid", "command-type");
+  if (desired) next.preferredSelection = desired;
+  else next.preferredSelection = savedResolve(next.preferredSelection, next, views);
+  const slotsChanged = !savedEqual(next.slots, current.slots) || !savedEqual(next.hidden, current.hidden);
+  if (slotsChanged) {
+    if (next.slotStateRevision >= Number.MAX_SAFE_INTEGER) return savedFailure("invalid", "revision-overflow");
+    next.slotStateRevision++;
+  }
+  const changed = !savedEqual(next, current);
+  if (changed) {
+    if (next.revision >= Number.MAX_SAFE_INTEGER) return savedFailure("invalid", "revision-overflow");
+    next.revision++;
+  }
+  return { ok: true, changed, created, ...(targetId ? { instanceId: targetId } : {}),
+    ...(desired ? { selection: desired } : {}), envelope: next, views };
+}
+function publishSavedCommand(result, persistence) {
+  if (!result.ok) return result;
+  const { views, ...plainResult } = result;
+  try {
+    const published = applySavedSnapshot(result.envelope, views, persistence === "session" ? "session" : "commit");
+    if (!published.ok) savedIssue = published;
+    return { ...plainResult, persistence, published: published.ok };
+  } catch (e) {
+    // The API commit already succeeded. Retain that acknowledgment even if
+    // local publication fails; never retry allocation or claim rollback.
+    savedIssue = savedFailure("storage", "acknowledged-publication-pending");
+    return { ...plainResult, persistence, published: false };
+  }
+}
+function commitSavedSession(command, options = {}) {
+  if (savedMode !== "session" || !savedState) return savedFailure(savedMode === "protected" ? "protected" : "allocation");
+  if (options.signal && options.signal.aborted) return savedFailure("cancelled");
+  try {
+    const staged = stageSavedEnvelope(savedState);
+    if (!staged.ok) return staged;
+    const candidate = ["import", "save-as-separate", "edit", "replace-builtin"].includes(command.type) ? savedCandidate(command) : null;
+    return publishSavedCommand(applySavedCommand(staged, command, candidate), "session");
+  } catch (e) { return savedFailure("storage", "session-command"); }
+}
+async function commitSavedDurable(command, options) {
+  let candidate;
+  try { candidate = ["import", "save-as-separate", "edit", "replace-builtin"].includes(command.type) ? savedCandidate(command) : null; }
+  catch (e) { return savedFailure("invalid", "candidate"); }
+  for (;;) {
+    if (options.signal && options.signal.aborted) return savedFailure("cancelled");
+    let staged;
+    try { staged = stageSavedRaw(localStorage.getItem(SAVED_KEY)); }
+    catch (e) { return savedFailure("storage", "collection-access"); }
+    if (!staged.ok) return staged;
+    let result, callbackEntered = false;
+    try {
+      const locks = navigator.locks;
+      if (!locks || typeof locks.request !== "function") return savedFailure("lock");
+      result = await locks.request(SAVED_LOCK, { mode: "exclusive", ...(options.signal ? { signal: options.signal } : {}) }, () => {
+        callbackEntered = true;
+        if (options.signal && options.signal.aborted) return savedFailure("cancelled");
+        if (localStorage.getItem(SAVED_KEY) !== staged.raw) return SAVED_RETRY;
+        const applied = applySavedCommand(staged, command, candidate);
+        if (applied.ok && applied.changed) localStorage.setItem(SAVED_KEY, JSON.stringify(applied.envelope));
+        return applied;
+      });
+    } catch (e) { return savedFailure(options.signal && options.signal.aborted ? "cancelled" : callbackEntered ? "storage" : "lock", "commit-refused"); }
+    if (result === SAVED_RETRY) continue;
+    return publishSavedCommand(result, "durable");
+  }
+}
+function commitSaved(command, options = {}) {
+  // The public boundary always returns a Promise. The session helper above is
+  // the same real in-memory command path, available to synchronous disk/session UI.
+  if (savedMode === "session") return Promise.resolve(commitSavedSession(command, options));
+  if (savedMode !== "durable") return Promise.resolve(savedFailure("protected"));
+  return commitSavedDurable(command, options);
+}
+async function reconcileSavedCollection() {
+  if (savedMode !== "durable") return { ok: true, persistence: savedMode };
+  try {
+    const raw = localStorage.getItem(SAVED_KEY), staged = stageSavedRaw(raw);
+    if (!staged.ok) { savedIssue = staged; savedRecovery = { collection: raw }; return staged; }
+    applySavedSnapshot(staged.envelope, staged.views, "remote");
+    return { ok: true, envelope: savedClone(staged.envelope), persistence: "durable" };
+  } catch (e) { savedIssue = savedFailure("storage", "reconciliation-access"); return savedIssue; }
+}
+window.addEventListener("storage", event => {
+  if (event.key === SAVED_KEY || event.key === null) reconcileSavedCollection();
+  else if ([STORE_KEY, SCALES_KEY, LEGACY_SCALES_KEY].includes(event.key)) inspectLegacyBranch();
+});
 
 function selectDeck(id) {
   retireLinkUI();
@@ -14581,42 +15015,12 @@ window.addEventListener("hashchange", () => {
 });
 
 /* ---------------- go ---------------- */
+// Stage C owns store initialization. Instance/chip/sheet integration follows in
+// lane U; this intermediate source intentionally publishes no ready card count.
+// Do not deploy or claim a functioning UI from this partial integration stage.
 loadAnalytics();
-sheet.setAttribute("hidden", ""); buildSwatches(); paintLayout(); resyncSheet(true);
-// Saved scales are rebuilt BEFORE the stored deck id is resolved, so a custom
-// deck that was selected last session is in the registry by the time deck()
-// looks for it.
-restoreScales();
-const routedDeck = routedDeckId();
-bootStored = typeof store.deck === "string" ? store.deck : null;
-if (routedDeck) deckId = routedDeck;
-const wantedDeck = deckId;
-deckId = deck().id; storedDeck = deckId; setOrder(); buildChips(); applyLang(); setMode(mode);
-// setMode() above saved the routed deck, as a chip tap does: a link that opens a
-// deck once keeps it, so the visitor does not land on the old one tomorrow.
-if (routedDeck && routedDeck !== bootStored) track("deck_route", { deck_id: routedDeck });
-// Two fallbacks, deliberately different. An unknown BUILT-IN id is a stale or
-// renamed deck and falls back SILENTLY, as it always has. A missing custom: id
-// means the user's own saved scale is gone - deleted, or dropped as corrupt -
-// and a silent switch would look like the app lost their deck, so say so.
-if (wantedDeck !== deckId && !(replacements()[wantedDeck] && replacements()[wantedDeck].id === deckId) &&
-    (wantedDeck.indexOf("custom:") === 0 || hidden.includes(wantedDeck)))
-  say(t("boot.gone", { name: deck().name }), "warn");
-// A page route in the address bar at boot is a RELOAD of a page, or a link
-// someone pasted. Neither reopens it: #edit-<id> names a deck this session may
-// not have, and a page restored with no entry behind it is one the back
-// gesture cannot leave. Nothing reads it; the syncRoute() below replaces it
-// with the shown deck's route - replaceState, not pushState, or the route that
-// was just rejected would stay an entry of its own.
-// A share link in the address bar is consumed once, at boot, through the same
-// single entry point; it wins over the stored deck because the user just
-// followed it. "#s=" is disjoint from the page routes, so the reads never see
-// each other's hash. A deck link was read above, by routedDeckId().
-if (location.hash.indexOf(SHARE_PREFIX) === 0)
-  openShare(location.hash.slice(SHARE_PREFIX.length));
-bootStored = null;
-syncRoute();
-booted = true;
+sheet.setAttribute("hidden", "");
+const savedReady = Promise.resolve(initializeSavedCollection());
 </script>
 </body>
 </html>
