@@ -960,6 +960,7 @@
         "name",
         "palette",
         "mirror",
+        "mirrorBottom",
         "anchor",
         "angles"
       ],
@@ -977,34 +978,35 @@
       "anchor": "between for odd i, one for even i",
       "angles": "only i=1: bottom [295,225,null,20,null,130]",
       "recordVersion": 4,
-      "measurementMetadata": "測定 🎵"
+      "measurementMetadata": "測定 🎵",
+      "mirrorBottom": "only i=1: explicitly false, preserving the known unmirrored absolute bottom angles while top mirror remains true; absent otherwise"
     },
     "samples": [
       {
         "id": "legacy-records-2",
         "recordCount": 2,
         "expected": {
-          "utf8Bytes": 739,
-          "utf16CodeUnits": 727,
-          "sha256Utf8": "7d3f2d55ab1984226f87505b473883f2eb0b2c86f22401e2d88b4fb2cf8c3ea4"
+          "utf8Bytes": 760,
+          "utf16CodeUnits": 748,
+          "sha256Utf8": "de0d1475bca0c572ab148014fb9c9332b4fe323ac2215f218c0274b396b321e0"
         }
       },
       {
         "id": "legacy-records-20",
         "recordCount": 20,
         "expected": {
-          "utf8Bytes": 3574,
-          "utf16CodeUnits": 3454,
-          "sha256Utf8": "8d36657ccfab2fae25db1671f7932797f9a2594fb48b824f5b6fe2aff850cae4"
+          "utf8Bytes": 3595,
+          "utf16CodeUnits": 3475,
+          "sha256Utf8": "21594156c6cea581d3205e8d5836e78c8486a6e7c9a83e1a5880abb032ca7fa0"
         }
       },
       {
         "id": "legacy-records-200",
         "recordCount": 200,
         "expected": {
-          "utf8Bytes": 31924,
-          "utf16CodeUnits": 30724,
-          "sha256Utf8": "acef37d3452f78ca3f2f373f34edef5c1a82019e4db08505921e92db0b5de207"
+          "utf8Bytes": 31945,
+          "utf16CodeUnits": 30745,
+          "sha256Utf8": "df0d9da06a4f831b349960e4ae450ece62abdf7912d2893eeb1c486ed2480609"
         }
       }
     ],
