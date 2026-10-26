@@ -985,17 +985,30 @@ The D6 palette set, index 0-5, from `CLAUDE.md` "Design system":
   records. Wire6 and current record4 writers do not change for local metadata.
   The envelope stores ordered instances, tagged preferred selection, explicit
   slots/hidden state, collection identity/revisions and immutable raw migration
-  source strings. A single acknowledged envelope replacement is the commit;
-  all durable writers serialize through the same exclusive Web Lock and reread
-  inside it. No unlocked durable fallback. Successful setItem acknowledges the
-  API write, not disk flush; a later diagnostic readback error does not roll it
-  back or authorize duplicate allocation.
+  source strings. The authoritative envelope is a JSON string at key `current`
+  in IndexedDB database `hpfc.saved-scales.v1`, version1, object store
+  `collections` (out-of-line keys, no autoIncrement). Durable writers retain the
+  same exclusive Web Lock and perform fresh existence/value comparison and any
+  replacement in one readwrite transaction; `getKey` distinguishes an absent key
+  from a present invalid value. Acknowledgment requires transaction completion,
+  never request/put success alone. No unlocked durable fallback or live
+  localStorage mirror. Completion acknowledges the API transaction, not disk
+  flush; later publication/readback failure does not roll it back or authorize
+  duplicate allocation. See the reviewed
+  [transactional storage amendment](plans/2026-10-25-saved-variants-transactional-storage.md)
+  for staging, retries, capability boundaries and recovery proofs.
 - DECIDED(saved-variants contract) Legacy `hpfc.scales.v3`, `hpfc.scales` and
   relevant old selection/hidden source remain untouched by the new collection.
   Legacy R7 builds copied `hpfc.scales` into `hpfc.scales.v3` and normalized known
   records through their version readers. New migration preserves exact raw source
   for recovery, converts known legacy records in the new envelope only and keeps
-  opaque/newer values unmodified. A valid committed new envelope is authoritative;
+  opaque/newer values unmodified. A valid committed IndexedDB envelope is
+  authoritative. An experimental localStorage `hpfc.saved-scales.v1` envelope is
+  imported only when the authoritative key is proven absent, with its exact raw
+  source retained in optional immutable `migration.backendSource`; any existing
+  own property of that name on initial import is protected as a collision rather
+  than overwritten. Existing authoritative provenance accepts only that exact
+  source key and a string raw value. The experimental source stays untouched;
   later old-client writes are a separate recovery branch, never automatic
   re-migration. Quota/denied/corrupt/newer states must not be treated as an empty
   durable store. Explicit session-only fallback is local to this tab and cannot

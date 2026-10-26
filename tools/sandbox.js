@@ -88,10 +88,18 @@ function originState(origin, options = {}) {
   if (!origin || typeof origin !== "object") throw new TypeError("origin must be an explicit object");
   if (ORIGINS.has(origin)) return ORIGINS.get(origin);
   const state = { buckets: new Map(), seed: options.storage || {}, events: [], nextClient: 1,
-    writeAttempts: [], successfulWrites: [] };
+    writeAttempts: [], successfulWrites: [], messages: [] };
   ORIGINS.set(origin, state);
   origin.events = options.events || "manual";
   if (!["manual", "auto", "omit"].includes(origin.events)) throw new TypeError("unknown storage event mode");
+  origin.broadcastEvents = options.broadcastEvents || "auto";
+  if (!["manual", "auto", "omit"].includes(origin.broadcastEvents)) throw new TypeError("unknown broadcast mode");
+  origin.flushBroadcastMessages = ({ limit = Infinity, omit = false } = {}) => {
+    if (!(limit === Infinity || Number.isInteger(limit) && limit >= 0)) throw new TypeError('message limit must be nonnegative');
+    const pending = state.messages.splice(0, limit);
+    if (!omit) for (const { channel, data } of pending) if (!channel._closed) channel._emit("message", { data });
+    return pending.length;
+  };
   origin.writeAttempts = state.writeAttempts;
   origin.successfulWrites = state.successfulWrites;
   origin.flushStorageEvents = ({ limit = Infinity, omit = false } = {}) => {
@@ -109,6 +117,267 @@ function originBucket(state, name, seed) {
   }
   return state.buckets.get(name);
 }
+// Explicit, deliberately limited IndexedDB model. Host tasks model asynchronous
+// request settlement; VM virtual timers and app state never supply authority.
+const idbClone = value => structuredClone(value);
+const idbError = (name, message = name) => Object.assign(new Error(message), { name });
+function idbEvents(target = {}) {
+  const listeners = new Map();
+  target.addEventListener = (type, fn) => {
+    if (!listeners.has(type)) listeners.set(type, new Set());
+    listeners.get(type).add(fn);
+  };
+  target.removeEventListener = (type, fn) => listeners.get(type)?.delete(fn);
+  Object.defineProperty(target, '_emit', { value(type, details = {}) {
+    const event = { type, target, currentTarget: target, defaultPrevented: false,
+      preventDefault() { this.defaultPrevented = true; }, ...details };
+    if (typeof target['on' + type] === 'function') target['on' + type].call(target, event);
+    for (const fn of [...(listeners.get(type) || [])]) fn.call(target, event);
+    return event;
+  } });
+  return target;
+}
+function indexedDBFor(bucket) {
+  bucket.databases ||= new Map();
+  bucket.openQueues ||= new Map();
+  const faults = new Map(), holds = new Set(), waiting = new Map(), operations = [];
+  const dispatch = (operation, callback) => setImmediate(() => {
+    if (holds.has(operation)) {
+      if (!waiting.has(operation)) waiting.set(operation, []);
+      waiting.get(operation).push(callback);
+    } else callback();
+  });
+  const failure = operation => {
+    const item = faults.get(operation);
+    if (!item) return null;
+    if (item.once) faults.delete(operation);
+    return item.error;
+  };
+  const snapshot = stores => new Map([...stores].map(([name, s]) => [name, {
+    name, keyPath: idbClone(s.keyPath), autoIncrement: s.autoIncrement, entries: idbClone(s.entries), nextKey: s.nextKey,
+  }]));
+  const names = get => ({ contains: name => get().has(String(name)),
+    get length() { return get().size; }, item: index => [...get().keys()][index] ?? null,
+    [Symbol.iterator]: function* () { yield* get().keys(); } });
+  function transaction(db, record, storeNames, mode, upgrade = false) {
+    if (db._closed) throw idbError('InvalidStateError');
+    if (!['readonly', 'readwrite', 'versionchange'].includes(mode)) throw new TypeError('unsupported transaction mode');
+    const scope = typeof storeNames === 'string' ? [storeNames] : Array.from(storeNames);
+    if (!upgrade && scope.some(name => !record.stores.has(name))) throw idbError('NotFoundError');
+    operations.push({ operation: 'transaction', db: db.name, mode });
+    const tx = idbEvents({ db, mode, error: null, _done: false, _started: false,
+      _queue: [], _requests: new Set(), _busy: false, _idle: 0, _stores: snapshot(record.stores) });
+    db._transactions.add(tx);
+    const finish = () => {
+      db._transactions.delete(tx);
+      if (db._closed && !db._transactions.size) db._finishClose();
+      if (record.running === tx) record.running = null;
+      pump(record);
+    };
+    tx.abort = () => {
+      if (tx._done) throw idbError('InvalidStateError');
+      tx._done = true;
+      operations.push({ operation: 'abort', db: db.name, mode });
+      dispatch('abort', () => {
+        for (const req of tx._requests) if (req.readyState === 'pending') {
+          req.error = idbError('AbortError'); req.readyState = 'done'; req._emit('error');
+        }
+        finish(); tx._emit('abort');
+      });
+    };
+    const fail = error => { if (tx._done) return; tx.error = error; tx.abort(); };
+    const next = () => {
+      if (tx._done || !tx._started || tx._busy) return;
+      const operation = tx._queue.shift();
+      if (operation) {
+        tx._busy = true;
+        dispatch(operation.kind, () => {
+          tx._busy = false;
+          if (tx._done) return;
+          const err = failure(operation.kind);
+          if (err) {
+            operation.request.error = err; operation.request.readyState = 'done';
+            const event = operation.request._emit('error');
+            tx._emit('error', { target: operation.request });
+            if (!event.defaultPrevented) fail(err);
+          } else {
+            try {
+              operation.request.result = operation.apply();
+              operation.request.readyState = 'done';
+              operation.request._emit('success');
+              if (operation.kind === 'put') { const abort = failure('abortAfterPut'); if (abort) fail(abort); }
+            } catch (error) { fail(error); }
+          }
+          next();
+        });
+      } else {
+        const idle = ++tx._idle;
+        dispatch('commit', () => {
+          if (tx._done || tx._busy || tx._queue.length || idle !== tx._idle) return next();
+          const error = failure('commit');
+          if (error) return fail(error);
+          if (mode !== 'readonly') record.stores = snapshot(tx._stores);
+          operations.push({ operation: 'commit', db: db.name, mode });
+          tx._done = true;
+          if (tx._commit) tx._commit();
+          finish();
+          // Commit releases authority before its completion event is delivered.
+          // A realm-local hold can model an old read resolving after a peer commit.
+          dispatch('complete', () => tx._emit('complete'));
+        });
+      }
+    };
+    tx.objectStore = name => {
+      name = String(name);
+      if (tx._done) throw idbError('InvalidStateError');
+      if (!upgrade && !scope.includes(name)) throw idbError('NotFoundError');
+      const schema = tx._stores.get(name);
+      if (!schema) throw idbError('NotFoundError');
+      const request = (kind, apply) => {
+        if (tx._done) throw idbError('TransactionInactiveError');
+        operations.push({ operation: kind, db: db.name, mode, store: name });
+        const req = idbEvents({ result: undefined, error: null, readyState: 'pending', transaction: tx });
+        tx._requests.add(req); tx._queue.push({ kind, apply, request: req }); tx._idle++; next(); return req;
+      };
+      return { name, keyPath: schema.keyPath, autoIncrement: schema.autoIncrement,
+        get: key => request('read', () => idbClone(tx._stores.get(name).entries.get(key))),
+        getKey: key => request('read', () => tx._stores.get(name).entries.has(key) ? idbClone(key) : undefined),
+        put(value, key) {
+          if (mode === 'readonly') throw idbError('ReadOnlyError');
+          const copy = idbClone(value);
+          if (key === undefined && schema.keyPath !== null) key = copy[schema.keyPath];
+          if (key === undefined && !schema.autoIncrement) throw idbError('DataError');
+          return request('put', () => {
+            const store = tx._stores.get(name);
+            const actual = key === undefined ? store.nextKey++ : key;
+            if (store.autoIncrement && typeof actual === 'number' && actual >= store.nextKey) store.nextKey = Math.floor(actual) + 1;
+            if (store.keyPath !== null && key === undefined) copy[store.keyPath] = actual;
+            store.entries.set(idbClone(actual), copy); return idbClone(actual);
+          });
+        },
+      };
+    };
+    tx._start = () => { if (!upgrade) tx._stores = snapshot(record.stores); tx._started = true; next(); };
+    if (upgrade) { tx._started = true; }
+    else { record.queue.push(tx); pump(record); }
+    return tx;
+  }
+  function pump(record) {
+    if (record.running || !record.queue.length) return;
+    const tx = record.queue.shift(); record.running = tx;
+    setImmediate(() => { if (tx._done) { record.running = null; pump(record); } else tx._start(); });
+  }
+  function connection(name, record) {
+    const db = idbEvents({ name, version: record.version, _closed: false, _transactions: new Set() });
+    Object.defineProperty(db, 'objectStoreNames', { get: () => names(() => db._upgrade?._stores || record.stores) });
+    db.transaction = (stores, mode = 'readonly') => transaction(db, record, stores, mode);
+    db._finishClose = () => {
+      record.connections.delete(db);
+      for (const retry of [...record.blocked]) setImmediate(retry);
+    };
+    db.close = () => {
+      if (db._closed) return;
+      db._closed = true;
+      operations.push({ operation: 'close', db: name });
+      if (!db._transactions.size) db._finishClose();
+    };
+    db.createObjectStore = (storeName, options = {}) => {
+      const tx = db._upgrade;
+      if (!tx || tx._done) throw idbError('InvalidStateError');
+      if (tx._stores.has(storeName)) throw idbError('ConstraintError');
+      operations.push({ operation: 'createObjectStore', db: name, store: storeName });
+      tx._stores.set(storeName, { name: storeName, keyPath: idbClone(options.keyPath ?? null),
+        autoIncrement: !!options.autoIncrement, entries: new Map(), nextKey: 1 });
+      return tx.objectStore(storeName);
+    };
+    record.connections.add(db); return db;
+  }
+  const api = { open(name, version) {
+    name = String(name);
+    operations.push({ operation: 'open', db: name });
+    if (version !== undefined && (!Number.isInteger(version) || version < 1)) throw new TypeError('invalid database version');
+    const req = idbEvents({ result: undefined, error: null, readyState: 'pending', transaction: null });
+    const begin = () => {
+      const doneOpen = () => {
+        const queue = bucket.openQueues.get(name);
+        queue.shift();
+        if (queue.length) setImmediate(queue[0]);
+        else bucket.openQueues.delete(name);
+      };
+      const err = failure('open');
+      if (err) { req.error = err; req.readyState = 'done'; req._emit('error'); doneOpen(); return; }
+      let record = bucket.databases.get(name);
+      const oldVersion = record?.version || 0, desired = version ?? (oldVersion || 1);
+      if (desired < oldVersion) { req.error = idbError('VersionError'); req.readyState = 'done'; req._emit('error'); doneOpen(); return; }
+      if (!record) { record = { version: 0, stores: new Map(), connections: new Set(), queue: [], running: null, blocked: new Set() }; }
+      const upgrade = desired > oldVersion;
+      if (upgrade) for (const other of [...record.connections]) other._emit('versionchange', { oldVersion, newVersion: desired });
+      let blockedSent = false, settled = false;
+      const proceed = () => {
+        if (settled) return;
+        if (upgrade && record.connections.size) {
+          record.blocked.add(proceed);
+          if (!blockedSent) { blockedSent = true; req._emit('blocked', { oldVersion, newVersion: desired }); }
+          return;
+        }
+        settled = true; record.blocked.delete(proceed);
+        const db = connection(name, record); db.version = desired; req.result = db;
+        if (!upgrade) { req.readyState = 'done'; req._emit('success'); doneOpen(); return; }
+        const tx = transaction(db, record, [], 'versionchange', true);
+        db._upgrade = tx; req.transaction = tx;
+        tx._commit = () => { record.version = desired; bucket.databases.set(name, record); };
+        tx.addEventListener('complete', () => {
+          db._upgrade = null; req.transaction = null; req.readyState = 'done'; req._emit('success'); doneOpen();
+        });
+        tx.addEventListener('abort', () => {
+          db._upgrade = null; db.close(); req.transaction = null;
+          req.error = tx.error || idbError('AbortError'); req.readyState = 'done'; req._emit('error'); doneOpen();
+        });
+        operations.push({ operation: 'upgrade', db: name, oldVersion, newVersion: desired });
+        req._emit('upgradeneeded', { oldVersion, newVersion: desired });
+        // Upgrade handlers can queue requests or abort before schema commits.
+        setImmediate(() => tx._start());
+      };
+      proceed();
+    };
+    dispatch('open', () => {
+      if (!bucket.openQueues.has(name)) bucket.openQueues.set(name, []);
+      const queue = bucket.openQueues.get(name); queue.push(begin);
+      if (queue.length === 1) begin();
+    });
+    return req;
+  } };
+  const control = {
+    get operations() { return idbClone(operations); },
+    inspect(name) {
+      const record = bucket.databases.get(name);
+      return record && { name, version: record.version, stores: [...record.stores.values()].map(s => ({
+        name: s.name, keyPath: idbClone(s.keyPath), autoIncrement: s.autoIncrement, entries: [...idbClone(s.entries)],
+      })) };
+    },
+    fault(operation, error = idbError('UnknownError'), { once = true } = {}) { faults.set(operation, { error, once }); },
+    hold(operation) { holds.add(operation); },
+    release(operation) { holds.delete(operation); const pending = waiting.get(operation) || []; waiting.delete(operation); for (const fn of pending) setImmediate(fn); return pending.length; },
+    pending(operation) { return (waiting.get(operation) || []).length; },
+    closeConnections(name) { for (const db of [...(bucket.databases.get(name)?.connections || [])]) db.close(); },
+  };
+  return { api, control };
+}
+function broadcastChannelFor(bucket, origin, publicOrigin) {
+  bucket.channels ||= new Set();
+  return class BroadcastChannel {
+    constructor(name) { this.name = String(name); this._closed = false; idbEvents(this); bucket.channels.add(this); }
+    postMessage(value) {
+      if (this._closed) throw idbError('InvalidStateError');
+      const data = idbClone(value);
+      if (publicOrigin.broadcastEvents === 'omit') return;
+      for (const channel of bucket.channels) if (channel !== this && channel.name === this.name && !channel._closed) origin.messages.push({ channel, data: idbClone(data) });
+      if (publicOrigin.broadcastEvents === 'auto') setImmediate(() => publicOrigin.flushBroadcastMessages());
+    }
+    close() { this._closed = true; bucket.channels.delete(this); }
+  };
+}
+
 function locksFor(bucket, clientId, rejection) {
   const pump = name => queueMicrotask(() => {
     const queue = bucket.locks.get(name);
@@ -761,6 +1030,13 @@ function boot(opts = {}) {
   } else if (opts.locks === true) {
     sandbox.navigator.locks = locksFor({ locks: new Map() }, "isolated-client", opts.locksRequestError);
   }
+  const capabilityBucket = bucket || { locks: new Map() };
+  const idb = opts.indexedDB === true ? indexedDBFor(capabilityBucket) : null;
+  if (idb) sandbox.indexedDB = idb.api;
+  if (opts.broadcastChannel === true) {
+    const channelOrigin = opts.origin || createOrigin();
+    sandbox.BroadcastChannel = broadcastChannelFor(capabilityBucket, originState(channelOrigin), channelOrigin);
+  }
   if (opts.locksAccessError) Object.defineProperty(sandbox.navigator, "locks", {
     configurable: true, get() { throw opts.locksAccessError; },
   });
@@ -844,7 +1120,7 @@ function boot(opts = {}) {
   }
 
   return {
-    els, store, sandbox, created, head: headEl, location, history, blocks, flushTimers, advance, plate,
+    idb: idb?.control, els, store, sandbox, created, head: headEl, location, history, blocks, flushTimers, advance, plate,
     /** Evaluate an expression inside the app's scope. */
     get: (expr) => vm.runInContext(expr, sandbox),
     getAsync, waitFor,

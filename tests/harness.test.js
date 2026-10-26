@@ -1218,3 +1218,212 @@ test("SVH13 compound descendant queries require every class and live ancestry", 
   assert.strictEqual(app.get('document.querySelector("section") === wrapper'),true);
   assert.deepStrictEqual(sandbox.plain(app.get('Array.from(document.querySelectorAll("#decks, #card"),n=>n.id).sort()')),["card","decks"],"simple and comma selectors retain their existing results");
 });
+
+// The opt-in model uses the native API shape. These are model semantics, not
+// evidence of a real browser's IndexedDB or BroadcastChannel implementation.
+const idbhOpen = (app, name = 'model', version = 1, upgrade = db => db.createObjectStore('collections')) => new Promise((resolve, reject) => {
+  const request = app.sandbox.indexedDB.open(name, version);
+  request.onupgradeneeded = () => upgrade(request.result, request.transaction);
+  request.onsuccess = () => resolve(request.result);
+  request.onerror = () => reject(request.error);
+});
+const idbhDone = tx => new Promise((resolve, reject) => {
+  tx.addEventListener('complete', resolve); tx.addEventListener('abort', () => reject(tx.error || new Error('aborted')));
+});
+const idbhResult = req => new Promise((resolve, reject) => {
+  req.onsuccess = () => resolve(req.result); req.onerror = () => reject(req.error);
+});
+const idbhBoot = options => sandbox.boot({ html: svhHTML, indexedDB: true, ...options });
+
+test('IDBH1 explicit capability asynchronous upgrade and committed raw value presence', async () => {
+  const plain = sandbox.boot({ html: svhHTML });
+  assert.strictEqual(plain.get('typeof indexedDB'), 'undefined');
+  assert.strictEqual(plain.get('typeof BroadcastChannel'), 'undefined');
+  const app = idbhBoot(); let sync = true;
+  const open = idbhOpen(app).then(db => { assert.strictEqual(sync, false); return db; });
+  sync = false; const db = await open;
+  assert.strictEqual(db.version, 1); assert.strictEqual(db.objectStoreNames.contains('collections'), true);
+  const tx = db.transaction('collections', 'readwrite'), done = idbhDone(tx), store = tx.objectStore('collections');
+  assert.strictEqual(store.keyPath, null); assert.strictEqual(store.autoIncrement, false);
+  store.put(undefined, 'present'); store.put({ opaque: new Uint8Array([3, 8]) }, 'raw'); await done;
+  const raw = app.idb.inspect('model');
+  assert.strictEqual(raw.stores[0].entries.some(([key]) => key === 'present'), true);
+  assert.strictEqual(raw.stores[0].entries.find(([key]) => key === 'present')[1], undefined);
+  raw.stores[0].entries.find(([key]) => key === 'raw')[1].opaque[0] = 99;
+  assert.strictEqual(app.idb.inspect('model').stores[0].entries.find(([key]) => key === 'raw')[1].opaque[0], 3);
+  const read = db.transaction('collections'), completed = idbhDone(read), s = read.objectStore('collections');
+  const present = idbhResult(s.getKey('present')), missing = idbhResult(s.getKey('absent'));
+  assert.strictEqual(await present, 'present'); assert.strictEqual(await missing, undefined); await completed;
+});
+
+test('IDBH2 overlapping transactions see predecessor commit at grant and preserve both writes', async () => {
+  const origin = sandbox.createOrigin(), a = idbhBoot({ origin }), b = idbhBoot({ origin });
+  const dbA = await idbhOpen(a), dbB = await idbhOpen(b);
+  a.idb.hold('commit');
+  const first = dbA.transaction('collections', 'readwrite'), firstDone = idbhDone(first);
+  const put = idbhResult(first.objectStore('collections').put('A', 'first'));
+  await put;
+  const second = dbB.transaction('collections', 'readwrite'), secondDone = idbhDone(second);
+  const observed = idbhResult(second.objectStore('collections').get('first'));
+  second.objectStore('collections').put('B', 'second');
+  assert.deepStrictEqual(a.idb.inspect('model').stores[0].entries, []);
+  a.idb.release('commit'); await firstDone;
+  assert.strictEqual(await observed, 'A', 'later overlapping transaction must read preceding committed write');
+  await secondDone;
+  assert.deepStrictEqual(a.idb.inspect('model').stores[0].entries, [['first', 'A'], ['second', 'B']]);
+});
+
+test('IDBH3 successful put is not commit and post-put abort rolls back', async () => {
+  const app = idbhBoot(), db = await idbhOpen(app);
+  app.idb.fault('abortAfterPut', new Error('rollback after request success'));
+  const tx = db.transaction('collections', 'readwrite'), done = idbhDone(tx);
+  const result = await idbhResult(tx.objectStore('collections').put('candidate', 'current'));
+  assert.strictEqual(result, 'current');
+  await assert.rejects(done, /rollback after request success/);
+  assert.deepStrictEqual(app.idb.inspect('model').stores[0].entries, []);
+  const good = db.transaction('collections', 'readwrite'), committed = idbhDone(good);
+  good.objectStore('collections').put('safe', 'current'); await committed;
+  assert.throws(() => good.abort(), { name: 'InvalidStateError' });
+  assert.deepStrictEqual(app.idb.inspect('model').stores[0].entries, [['current', 'safe']]);
+});
+
+test('IDBH4 aborted first-open probe leaves no committed schema and open errors remain distinct', async () => {
+  const app = idbhBoot();
+  await assert.rejects(idbhOpen(app, 'probe', undefined, (db, tx) => tx.abort()), /AbortError/);
+  assert.strictEqual(app.idb.inspect('probe'), undefined);
+  app.idb.fault('open', new Error('denied open'));
+  await assert.rejects(idbhOpen(app, 'probe'), /denied open/);
+  assert.strictEqual(app.idb.inspect('probe'), undefined);
+  const db = await idbhOpen(app, 'probe'); db.close();
+  await assert.rejects(idbhOpen(app, 'probe', 0), /invalid database version/);
+});
+
+test('IDBH5 versionchange blocks upgrade until close and closed connection refuses new transactions', async () => {
+  const origin = sandbox.createOrigin(), a = idbhBoot({ origin }), b = idbhBoot({ origin });
+  const db = await idbhOpen(a); const events = [];
+  db.onversionchange = event => events.push(['versionchange', event.newVersion]);
+  const request = b.sandbox.indexedDB.open('model', 2);
+  const completed = new Promise((resolve, reject) => { request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error); });
+  request.onblocked = () => { events.push(['blocked']); db.close(); };
+  request.onupgradeneeded = () => events.push(['upgrade']);
+  const upgraded = await completed;
+  assert.deepStrictEqual(events, [['versionchange', 2], ['blocked'], ['upgrade']]);
+  assert.strictEqual(upgraded.version, 2);
+  assert.throws(() => db.transaction('collections'), { name: 'InvalidStateError' });
+  await assert.rejects(idbhOpen(a, 'model', 1), { name: 'VersionError' });
+});
+
+test('IDBH6 read put and commit faults abort without changing committed data', async () => {
+  const app = idbhBoot(), db = await idbhOpen(app);
+  for (const operation of ['read', 'put', 'commit']) {
+    app.idb.fault(operation, new Error(operation + ' denied'));
+    const tx = db.transaction('collections', 'readwrite'), done = idbhDone(tx);
+    if (operation === 'read') { const read = tx.objectStore('collections').get('current'); read.onerror = () => {}; }
+    else { const put = tx.objectStore('collections').put('bad', 'current'); put.onerror = () => {}; }
+    await assert.rejects(done, new RegExp(operation + ' denied'));
+    assert.deepStrictEqual(app.idb.inspect('model').stores[0].entries, []);
+  }
+});
+
+test('IDBH7 held late open and read settlement are explicit host controls', async () => {
+  const app = idbhBoot(); app.idb.hold('open');
+  let opened = false; const pending = idbhOpen(app).then(db => { opened = true; return db; });
+  await svhTurn(); assert.strictEqual(opened, false); assert.strictEqual(app.idb.pending('open'), 1);
+  app.idb.release('open'); const db = await pending;
+  app.idb.hold('read'); const tx = db.transaction('collections'), done = idbhDone(tx);
+  const result = idbhResult(tx.objectStore('collections').get('current'));
+  await svhTurn(); await svhTurn(); assert.strictEqual(app.idb.pending('read'), 1);
+  app.idb.release('read'); assert.strictEqual(await result, undefined); await done;
+});
+
+test('IDBH8 BroadcastChannel hints are asynchronous other-channel partitioned cloned and optional', async () => {
+  const origin = sandbox.createOrigin({ broadcastEvents: 'manual' });
+  const a = idbhBoot({ origin, broadcastChannel: true }), b = idbhBoot({ origin, broadcastChannel: true });
+  const x = idbhBoot({ origin, broadcastChannel: true, href: 'https://elsewhere.test/' });
+  const ca = new a.sandbox.BroadcastChannel('updates'), cb = new b.sandbox.BroadcastChannel('updates');
+  const wrongName = new b.sandbox.BroadcastChannel('other'), wrongOrigin = new x.sandbox.BroadcastChannel('updates');
+  const messages = []; ca.onmessage = () => messages.push('self'); cb.onmessage = event => messages.push(event.data);
+  wrongName.onmessage = () => messages.push('name'); wrongOrigin.onmessage = () => messages.push('origin');
+  const hint = { revision: 7 }; ca.postMessage(hint); hint.revision = 99;
+  assert.deepStrictEqual(messages, []); origin.flushBroadcastMessages();
+  assert.deepStrictEqual(messages, [{ revision: 7 }]);
+  ca.postMessage({ revision: 8 }); origin.flushBroadcastMessages({ omit: true }); assert.strictEqual(messages.length, 1);
+  ca.postMessage({ revision: 9 }); cb.close(); origin.flushBroadcastMessages(); assert.strictEqual(messages.length, 1);
+  assert.strictEqual(a.idb.inspect('model'), undefined, 'notification alone cannot create authority');
+});
+
+test('IDBH9 concurrent first opens share one committed database and aborting a probe does not strand later open', async () => {
+  const origin = sandbox.createOrigin(), a = idbhBoot({ origin }), b = idbhBoot({ origin });
+  let upgrades = 0;
+  const create = db => { upgrades++; db.createObjectStore('collections'); };
+  const [dbA, dbB] = await Promise.all([idbhOpen(a, 'race', 1, create), idbhOpen(b, 'race', 1, create)]);
+  assert.strictEqual(upgrades, 1, 'one first-open upgrade owns schema creation');
+  const tx = dbA.transaction('collections', 'readwrite'), done = idbhDone(tx);
+  tx.objectStore('collections').put('A', 'current'); await done;
+  const read = dbB.transaction('collections'), readDone = idbhDone(read);
+  assert.strictEqual(await idbhResult(read.objectStore('collections').get('current')), 'A'); await readDone;
+  const probe = idbhOpen(a, 'probed', undefined, (db, upgrade) => upgrade.abort());
+  const retry = idbhOpen(b, 'probed'); await assert.rejects(probe, /AbortError/); await retry;
+});
+
+test('IDBH10 close waits for active transaction and upgrade cannot bypass its commit', async () => {
+  const origin = sandbox.createOrigin(), a = idbhBoot({ origin }), b = idbhBoot({ origin });
+  const db = await idbhOpen(a); a.idb.hold('commit');
+  const tx = db.transaction('collections', 'readwrite'), done = idbhDone(tx);
+  await idbhResult(tx.objectStore('collections').put('kept', 'current')); db.close();
+  let upgraded = false;
+  const future = idbhOpen(b, 'model', 2, () => { upgraded = true; });
+  await svhTurn(); await svhTurn(); assert.strictEqual(upgraded, false);
+  a.idb.release('commit'); await done; const next = await future;
+  const read = next.transaction('collections'), readDone = idbhDone(read);
+  assert.strictEqual(await idbhResult(read.objectStore('collections').get('current')), 'kept'); await readDone;
+});
+
+test('IDBH11 completed read can resolve late while peer commits without changing captured result', async () => {
+  const origin = sandbox.createOrigin(), a = idbhBoot({ origin }), b = idbhBoot({ origin });
+  const dbA = await idbhOpen(a), dbB = await idbhOpen(b);
+  a.idb.hold('complete');
+  const read = dbA.transaction('collections'), readDone = idbhDone(read);
+  assert.strictEqual(await idbhResult(read.objectStore('collections').get('current')), undefined);
+  const write = dbB.transaction('collections', 'readwrite'), writeDone = idbhDone(write);
+  write.objectStore('collections').put('new', 'current'); await writeDone;
+  assert.deepStrictEqual(a.idb.inspect('model').stores[0].entries, [['current', 'new']]);
+  assert.strictEqual(a.idb.pending('complete'), 1); a.idb.release('complete'); await readDone;
+});
+
+test('IDBH12 schema metadata and autoincrement round trip without crossing origin partitions', async () => {
+  const origin = sandbox.createOrigin(), a = idbhBoot({ origin });
+  const db = await idbhOpen(a, 'schema', 3, db => db.createObjectStore('collections', { keyPath: 'id', autoIncrement: true }));
+  const tx = db.transaction('collections', 'readwrite'), done = idbhDone(tx), store = tx.objectStore('collections');
+  assert.strictEqual(store.keyPath, 'id'); assert.strictEqual(store.autoIncrement, true);
+  const first = idbhResult(store.put({ text: 'one' })), second = idbhResult(store.put({ id: 7, text: 'seven' }));
+  assert.strictEqual(await first, 1); assert.strictEqual(await second, 7); await done;
+  const other = idbhBoot({ origin, href: 'https://other.test/' });
+  assert.strictEqual(other.idb.inspect('schema'), undefined);
+  assert.strictEqual(a.idb.inspect('schema').version, 3);
+});
+
+test('IDBH13 abort settles queued requests as errors and request handlers can append atomic writes', async () => {
+  const app = idbhBoot(), db = await idbhOpen(app);
+  const aborted = db.transaction('collections', 'readwrite'), done = idbhDone(aborted);
+  const pending = idbhResult(aborted.objectStore('collections').get('missing'));
+  aborted.abort(); await assert.rejects(pending, { name: 'AbortError' }); await assert.rejects(done, /aborted/);
+  const tx = db.transaction('collections', 'readwrite'), committed = idbhDone(tx), store = tx.objectStore('collections');
+  const read = store.get('current');
+  read.onsuccess = () => store.put('handler-write', 'current');
+  await committed;
+  assert.deepStrictEqual(app.idb.inspect('model').stores[0].entries, [['current', 'handler-write']]);
+});
+
+test('IDBH14 host operation evidence distinguishes readonly probing from durable write attempts', async () => {
+  const origin = sandbox.createOrigin(), writer = idbhBoot({ origin });
+  const db = await idbhOpen(writer); db.close();
+  const reader = idbhBoot({ origin }), readDB = await idbhOpen(reader);
+  const tx = readDB.transaction('collections'), done = idbhDone(tx);
+  tx.objectStore('collections').get('current'); await done; readDB.close();
+  assert.strictEqual(reader.idb.operations.some(event => ['put', 'upgrade', 'createObjectStore'].includes(event.operation)), false);
+  assert.strictEqual(reader.idb.operations.some(event => event.operation === 'transaction' && event.mode !== 'readonly'), false);
+  const evidence = reader.idb.operations; evidence.push({ operation: 'put' });
+  assert.strictEqual(reader.idb.operations.some(event => event.operation === 'put'), false, 'inspection cannot mutate model evidence');
+  assert.strictEqual(writer.idb.operations.some(event => event.operation === 'createObjectStore'), true);
+});
