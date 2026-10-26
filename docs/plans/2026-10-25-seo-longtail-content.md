@@ -1,7 +1,8 @@
 # SEO-LONGTAIL: exact-instrument progression lessons
 
 2026-10-25. Research subplan; implementation and publication are **not authorized**.
-Owner interview pending; recommended defaults below are provisional.
+Owner decisions on publishing home and musical reviewer are recorded below;
+other provisional defaults and publication gates remain unresolved.
 
 ## Decision brief
 
@@ -46,6 +47,17 @@ streams do not authorize SEO app edits or publishing.
 | Site-name markup and Domain verification | Implementation/source and prior owner verification recorded in SEO recovery | Do not restart verification/markup; Google adoption remains unverified |
 
 ## Owner interview and default proposal
+
+**Settled 2026-10-26:** owner accepted the latest interview recommendations:
+plan articles under `https://handpan.raywu.org/learn/`, and owner reviews the pilot
+articles for musical accuracy. This selects the design location and review role;
+host feasibility, actual playability/review and publishing readiness remain
+unverified. No article, infrastructure, analytics or app implementation/publication
+is authorized by these choices. No further publishing-home/reviewer interview is
+needed unless new evidence changes feasibility or capacity. The approved
+recommendation is to refine the plan next, preserving independent reviews before
+any future implementation.
+
 
 Already asked: editorial/automation appetite; lesson-first versus direct landing
 reader offer; languages/countries/scales/makers and available aggregate data.
@@ -346,10 +358,12 @@ obtain a separately approved hosting change, not a fabricated runbook.
 ## Current readiness and continuation
 
 Project continuity: source/context recovered. Workflow: real research lanes run;
-ENG/design review pending. Tools: read-only source/web validated; authenticated
-GSC/GA4, publishing architecture and future generator unverified. Quality: source
-and canonical diagnostic verified, musical/learner/physical assessment untested.
-Operations: editorial owner/reviewer/budget/rollback execution unassigned/untested.
+Independent ENG/design planning reviews cleared the revised plan per coordination
+receipts; no runtime/publishing parity is inferred. Tools: read-only source/web
+validated; authenticated GSC/GA4, /learn/ hosting feasibility and future generator
+unverified. Quality: source/canonical diagnostics verified; owner musical reviewer
+assigned, actual musical/learner/physical assessment untested. Operations:
+accountable publisher/budget/recovery execution remain unassigned or untested.
 **This is not publication readiness or a completed migration.**
 
 Root next: reconcile research, get fresh exact-artifact ENG/design reviews, fix
