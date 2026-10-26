@@ -16040,4 +16040,65 @@ describe("SHC asynchronous LINK ownership", () => {
     assert.strictEqual(app.get("pendingPop"),false);
   });
 
+
+  // DESIGN P1: an acknowledged session command has no durable copy to reload.
+  // Fail only local snapshot publication after the real command computation;
+  // do not fake a durable ACK or bypass candidate validation/allocation.
+  function failPublication(app, persistence) {
+    app.run(`globalThis.__publicationOriginal=applySavedSnapshot;
+      applySavedSnapshot=function(envelope,views,source){
+        if(source===${JSON.stringify(persistence==="session"?"session":"commit")})throw new Error("public test publication failure");
+        return __publicationOriginal(envelope,views,source);
+      };
+      globalThis.__publishCommandOriginal=publishSavedCommand;
+      publishSavedCommand=function(...args){return globalThis.__publicationAck=__publishCommandOriginal(...args);};`);
+  }
+
+  test("SV14 U1: unpublished session Save keeps its draft and never recommends destructive reload", async () => {
+    const {app}=await load({locks:false});
+    assert.strictEqual(app.get("savedMode"),"session");
+    openSheet(app);app.type(AMARA_STRING);rename(app,"SESSION DRAFT RETAINED");
+    const draft=app.els["scale-box"].value,before=plain(app.get("selection"));
+    failPublication(app,"session");await submit(app);
+    const ack=plain(app.get("globalThis.__publicationAck"));
+    assert.strictEqual(ack.ok,true,"real session command reached its publication boundary");
+    assert.strictEqual(ack.persistence,"session");assert.strictEqual(ack.published,false);
+    assert.ok(ack.envelope.entries.some(e=>e.record.o.name==="SESSION DRAFT RETAINED"));
+    assert.strictEqual(app.store[SV_KEY],undefined,"session ACK never implied a durable recovery copy");
+    assert.strictEqual(app.sheetOpen(),true);assert.strictEqual(app.els["scale-box"].value,draft);
+    assert.strictEqual(app.els["scale-name"].value,"SESSION DRAFT RETAINED");
+    assert.deepStrictEqual(plain(app.get("selection")),before,"unpublished view cannot claim selection changed");
+    assert.ok(app.els["scale-refusal"].textContent.length>0,"retained draft has actionable failure feedback");
+    assert.doesNotMatch(app.els["scale-refusal"].textContent,/(?:^|[.!?]\s*)(?:please\s+)?reload\b|\breload\s+to\s+(?:review|recover|restore)\b/i,"reloading would discard the only recoverable session draft");
+  });
+
+  test("SV14 U2: unpublished session import keeps incoming content without advising reload", async () => {
+    const {app}=await load({locks:false});
+    const r=SV.portableRecords.amaraB;
+    const code=plain(app.get(`HPE.share.encode({fields:HPE.core.parseSeed(${JSON.stringify(r.s)}).value.fields,options:${JSON.stringify(r.o)}})`));
+    assert.strictEqual(code.ok,true);const hash="#s="+code.value;
+    const before=plain(app.get("selection"));app.location.hash=hash;
+    failPublication(app,"session");const ack=await app.getAsync(`openShare(${JSON.stringify(code.value)})`);
+    assert.strictEqual(ack.ok,true);assert.strictEqual(ack.persistence,"session");assert.strictEqual(ack.published,false);
+    assert.ok(ack.envelope.entries.some(e=>e.record.o.name==="PUBLIC PAN B"));
+    assert.strictEqual(app.store[SV_KEY],undefined);assert.deepStrictEqual(plain(app.get("selection")),before);
+    assert.strictEqual(app.location.hash,hash,"incoming portable content remains recoverable");
+    assert.strictEqual(app.els["share-copy"].disabled,true,"unpublished incoming content cannot share the previous view");
+    assert.ok(app.announcer().textContent.length>0);
+    assert.doesNotMatch(app.announcer().textContent,/(?:^|[.!?]\s*)(?:please\s+)?reload\b|\breload\s+to\s+(?:review|recover|restore)\b/i,"session-only publication failure cannot recommend reload recovery");
+  });
+
+  test("SV14 U3: unpublished durable Save really commits and offers the approved reload review", async () => {
+    const {app}=await seeded([SV.portableRecords.amaraA]);editSelected(app);rename(app,"DURABLE ACK RETAINED");
+    failPublication(app,"durable");await submit(app);
+    const ack=plain(app.get("globalThis.__publicationAck"));
+    assert.strictEqual(ack.ok,true);assert.strictEqual(ack.persistence,"durable");assert.strictEqual(ack.published,false);
+    assert.strictEqual(snapshot(app).entries[0].record.o.name,"DURABLE ACK RETAINED","durable success must exist in serialized storage before reload advice");
+    assert.strictEqual(app.currentDeck().name,"PUBLIC PAN A","publication failure has not updated the current view");
+    assert.strictEqual(app.sheetOpen(),true);assert.strictEqual(app.els["scale-name"].value,"DURABLE ACK RETAINED");
+    assert.match(app.els["scale-refusal"].textContent,/reload/i,"durable ACK can truthfully guide review by reload");
+    const reopened=await load({storage:{...app.store}});
+    assert.strictEqual(reopened.app.currentDeck().name,"DURABLE ACK RETAINED","fresh boot independently recovers the acknowledged durable command");
+  });
+
 }
