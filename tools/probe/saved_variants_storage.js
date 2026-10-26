@@ -59,7 +59,7 @@ assert.ok(sourceKey,'prepared legacy-migration source required, not a preloaded 
 const sourceRows=JSON.parse(input.sources[sourceKey]);assert.ok(Array.isArray(sourceRows));assert.equal(sourceRows.length,input.recordCount);
 // Independently cleared stderr-drain repair helper. Keep this exact pin; a
 // later helper change needs fresh review, never bypass a mismatch.
-const helperPath=path.join(REPO,'tests/helpers/cdp.js'),HELPER_SHA='178e034c3d9395bd92a7250b50b8ec5858bb177bb6678e500870699701b50826';
+const helperPath=path.join(REPO,'tests/helpers/cdp.js'),HELPER_SHA='3369d0b0df433335d5191ed6d3ce4b4fdbdd699df2afbf1e3701afe7db3d02e3';
 assert.equal(sha(fs.readFileSync(helperPath)),HELPER_SHA,'reviewed browser helper');
 for(const key of ['NODE_OPTIONS','E2E_PORT','HPC_COVERAGE_DIR','NODE_V8_COVERAGE','NODE_SUITE_TIMEOUT','HPFC_CDP_PORT_TIMEOUT_MS'])assert.ok(!process.env[key],'unset inherited '+key);
 const helper=require(helperPath);assert.ok(helper.findBrowser(),'required browser, no skip');

@@ -429,8 +429,38 @@ function run() {
         `(document.getElementById("count").textContent || "").trim() === ${JSON.stringify(text)}`,
         { timeout: 5000, label },
       );
-    } catch {
-      assert.fail(`${label}: expected the counter to read "${text}", saw "${await countText()}"`);
+    } catch (waitFailure) {
+      const observed = await countText();
+      const message = `${label}: expected the counter to read "${text}", saw "${observed}"`;
+      if (label !== "a mouse drag past the threshold should commit") assert.fail(message);
+      // Freeze the original observation and assertion before diagnostic RPCs.
+      // A late animation or a failed diagnostic cannot change this verdict.
+      let originalFailure;
+      try { assert.fail(message); } catch (error) { originalFailure = error; }
+      try {
+        const failure = await b.eval(`
+          const card=document.getElementById('card'),r=card.getBoundingClientRect(),scene=document.querySelector('.scene');
+          const x=r.left+r.width/2,y=r.top+r.height/2,hit=document.elementFromPoint(x,y);
+          const anim=a=>({currentTime:a.currentTime,startTime:a.startTime,playState:a.playState,pending:a.pending,
+            timing:a.effect?a.effect.getTiming():null,computedTiming:a.effect?a.effect.getComputedTiming():null});
+          return {clock:performance.now(),readyState:document.readyState,viewport:{width:innerWidth,height:innerHeight},
+            card:{left:r.left,right:r.right,top:r.top,bottom:r.bottom,hitOnCard:!!hit&&(hit===card||card.contains(hit)),inert:!!card.closest('[inert]')},
+            visibility:document.visibilityState,focused:document.hasFocus(),activeElement:document.activeElement?.id||null,
+            reducedMotion:matchMedia('(prefers-reduced-motion: reduce)').matches,
+            booted,savedMode,selection:{...selection},mode,tier,orderLength:order.length,idx,
+            count:document.getElementById('count').textContent.trim(),panelOpen,sheetOpen,flipped,eatClick,
+            ownLostPointerCaptureSeen:window.__cdpLpcSeen??null,
+            drag:drag?{id:drag.id,pointerType:drag.pointerType,x0:drag.x0,y0:drag.y0,last:drag.last,lastY:drag.lastY,moved:drag.moved,pts:drag.pts.map(point=>({...point}))}:null,
+            flight:flight?{dir:flight.dir,restRect:flight.rect,animation:anim(flight.anim)}:null,
+            sceneInlineTransform:scene.style.transform,sceneComputedTransform:getComputedStyle(scene).transform,
+            sceneAnimations:scene.getAnimations().map(anim),allAnimations:document.getAnimations().map(anim)};
+        `);
+        console.log("POST_DRAG_FAILURE_ONLY_STATE " + JSON.stringify({label,expected:text,observed,waitFailure:String(waitFailure),failure,
+          helper:{foregroundSettle:b.foregroundSettle,pendingSettle:!!b._pendingSettle,lastViewport:b.lastViewport}}));
+      } catch (diagnosticError) {
+        console.log("POST_DRAG_FAILURE_ONLY_STATE " + JSON.stringify({label,expected:text,observed,waitFailure:String(waitFailure),diagnosticError:String(diagnosticError)}));
+      }
+      throw originalFailure;
     }
   }
 
@@ -12221,6 +12251,89 @@ function run() {
           console.log("MOUSE_BUTTON_TRANSPORT "+JSON.stringify({cleanupError:String(cleanupError)}));
           if(!problem)throw cleanupError;
         }
+      }
+
+      // Controlled missing-OS-release coverage. The native transport above is
+      // retained; this DOM event is explicitly untrusted and proves only the
+      // guard's same-pointer branch, not a physical off-window OS delivery.
+      await b.settle();
+      await b.waitForPendingSettle();
+      const controlledBefore = { count: await countText(), flipped: await cardFlipped() };
+      const controlledPoint = await b.eval(`
+        const card=document.getElementById('card'),r=card.getBoundingClientRect();
+        const x=r.left+r.width/2,y=r.top+r.height/2,hit=document.elementFromPoint(x,y);
+        window.__swControlledCard=card;window.__swControlledNative=[];
+        window.__swControlledObserver=e=>__swControlledNative.push({type:e.type,trusted:e.isTrusted,pointerId:e.pointerId,
+          pointerType:e.pointerType,button:e.button,buttons:e.buttons,isPrimary:e.isPrimary,timeStamp:e.timeStamp,
+          x:e.clientX,y:e.clientY,targetId:e.target.id||null,targetTag:e.target.tagName||null,
+          onCard:e.target===card||card.contains(e.target),sameCard:document.getElementById('card')===card,
+          captured:card.hasPointerCapture(e.pointerId),
+          dragBefore:drag?{id:drag.id,pointerType:drag.pointerType,moved:drag.moved,last:drag.last}:null});
+        window.__swControlledTypes=['pointerdown','pointermove','pointerup','pointercancel','gotpointercapture','lostpointercapture','mousedown','mousemove','mouseup','click'];
+        for(const type of __swControlledTypes)document.addEventListener(type,__swControlledObserver,true);
+        return {x,y,usable:!!card.getClientRects().length&&r.width>0&&r.height>0&&!card.closest('[inert]'),
+          hit:!!hit&&(hit===card||card.contains(hit)),inViewport:x>=0&&y>=0&&x<innerWidth&&y<innerHeight};
+      `);
+      assert.ok(controlledPoint.usable&&controlledPoint.hit&&controlledPoint.inViewport,"the controlled phase starts on an actually usable card");
+      let controlledPressAttempted=false,controlledReleased=false,controlledProblem=null;
+      try {
+        controlledPressAttempted=true;
+        await b.send("Input.dispatchMouseEvent",{type:"mousePressed",x:controlledPoint.x,y:controlledPoint.y,button:"left",clickCount:1});
+        const captured=await b.eval(`const card=document.getElementById('card');
+          return {id:drag?drag.id:null,pointerType:drag?drag.pointerType:null,captured:!!drag&&card.hasPointerCapture(drag.id),
+            sameCard:card===window.__swControlledCard,events:__swControlledNative};`);
+        assert.notStrictEqual(captured.id,null,"a fresh trusted press creates an actual live drag");
+        assert.strictEqual(captured.pointerType,"mouse");assert.strictEqual(captured.captured,true);assert.strictEqual(captured.sameCard,true);
+        assert.ok(captured.events.some(event=>event.type==='pointerdown'&&event.trusted&&event.pointerId===captured.id&&event.onCard),"the controlled drag begins with a trusted pointerdown on this card");
+        await b.send("Input.dispatchMouseEvent",{type:"mouseMoved",x:controlledPoint.x+24,y:controlledPoint.y,button:"left",buttons:1});
+        await b.waitFor(`drag&&drag.id===${JSON.stringify(captured.id)}&&drag.moved&&Math.abs(drag.last-24)<=1`,
+          {label:"the genuine buttons-one move establishes the captured drag"});
+        const moved=await sceneXform();assert.ok(Math.abs(moved.m41-24)<=1,"the captured trusted move visibly translates the card by24px");
+        const controlled=await b.eval(`const card=document.getElementById('card'),id=${JSON.stringify(captured.id)};
+          const before=drag?{id:drag.id,pointerType:drag.pointerType,moved:drag.moved,last:drag.last}:null;
+          const sameCard=card===window.__swControlledCard,captured=!!drag&&card.hasPointerCapture(drag.id);
+          if(!before||before.id!==id||before.pointerType!=='mouse'||!before.moved||Math.abs(before.last-24)>1||!sameCard||!captured){
+            const r=card.getBoundingClientRect(),hit=document.elementFromPoint(${controlledPoint.x+24},${controlledPoint.y});
+            const state={before,expectedId:id,sameCard,captured,connected:card.isConnected,
+              oldCardConnected:!!window.__swControlledCard&&__swControlledCard.isConnected,
+              nativeEvents:__swControlledNative,booted,savedMode,visibility:document.visibilityState,focused:document.hasFocus(),
+              panelOpen,sheetOpen,eatClick,flight:flight?{dir:flight.dir}:null,
+              viewport:{width:innerWidth,height:innerHeight},rect:{x:r.x,y:r.y,width:r.width,height:r.height},
+              hit:{id:hit?.id||null,tag:hit?.tagName||null,onCard:!!hit&&(hit===card||card.contains(hit))},
+              sceneTransform:getComputedStyle(document.querySelector('.scene')).transform,
+              animations:document.querySelector('.scene').getAnimations().map(a=>({playState:a.playState,currentTime:a.currentTime}))};
+            console.log('MOUSE_BUTTON_CONTROLLED_SETUP_FAILURE '+JSON.stringify(state));
+            throw new Error('controlled move requires the same actually moved captured mouse drag; state='+JSON.stringify(state));
+          }
+          const events=[],observe=e=>events.push({type:e.type,trusted:e.isTrusted,pointerId:e.pointerId,pointerType:e.pointerType,buttons:e.buttons,onCard:e.target===card});
+          const types=['pointermove','pointerup','lostpointercapture','pointercancel'];for(const type of types)card.addEventListener(type,observe,true);
+          const event=new PointerEvent('pointermove',{pointerId:id,pointerType:'mouse',isPrimary:true,button:-1,buttons:0,
+            clientX:${controlledPoint.x+60},clientY:${controlledPoint.y},bubbles:true,cancelable:true});
+          try{card.dispatchEvent(event);}finally{for(const type of types)card.removeEventListener(type,observe,true);}
+          return {before,sameCard,captured,syntheticTrusted:event.isTrusted,nativeEvents:__swControlledNative,events,
+            after:drag?{id:drag.id,pointerType:drag.pointerType,moved:drag.moved,last:drag.last}:null};`);
+        console.log("MOUSE_BUTTON_CONTROLLED " + JSON.stringify({scope:"real trusted moved/captured drag; untrusted same-task missing-release DOM signal; not physical OS coverage",controlled}));
+        assert.ok(controlled.nativeEvents.some(event=>event.type==='pointermove'&&event.trusted&&event.pointerId===captured.id&&event.buttons===1&&event.onCard),"the precondition includes a genuine buttons-one pointermove on the captured card");
+        assert.strictEqual(controlled.syntheticTrusted,false,"the controlled missing-release signal is honestly synthetic");
+        assert.deepStrictEqual(controlled.events,[{type:"pointermove",trusted:false,pointerId:captured.id,pointerType:"mouse",buttons:0,onCard:true}],
+          "no pointerup, lost capture or cancellation may compete in the same dispatch task");
+        assert.strictEqual(controlled.after,null,"the isolated buttons-zero signal must release the same live mouse drag");
+        assert.strictEqual(await countText(),controlledBefore.count,"controlled cancellation cannot navigate");
+        await b.finishAnimations();await b.settle();
+        assert.strictEqual((await sceneXform()).none,true,"the controlled cancellation's spring settles completely");
+        assert.strictEqual(await countText(),controlledBefore.count,"the settled cancelled drag keeps its card");
+        assert.strictEqual(await cardFlipped(),controlledBefore.flipped,"the controlled signal does not itself flip the card");
+        await b.releasing(()=>b.send("Input.dispatchMouseEvent",{type:"mouseReleased",x:controlledPoint.x+60,y:controlledPoint.y,button:"left",clickCount:1}));
+        controlledReleased=true;
+        assert.strictEqual(await cardFlipped(),!controlledBefore.flipped,"the next genuine release click still flips relative to the pre-phase state");
+        assert.strictEqual(await countText(),controlledBefore.count,"the genuine release after cancellation does not navigate");
+      }catch(error){controlledProblem=error;throw error;}
+      finally {
+        try {
+          if(controlledPressAttempted&&!controlledReleased)await b.releasing(()=>b.send("Input.dispatchMouseEvent",{type:"mouseReleased",x:controlledPoint.x+60,y:controlledPoint.y,button:"left",clickCount:1}));
+          await b.waitForPendingSettle();
+          await b.eval("if(window.__swControlledObserver)for(const type of window.__swControlledTypes||[])document.removeEventListener(type,__swControlledObserver,true);return true;");
+        }catch(cleanupError){console.log("MOUSE_BUTTON_CONTROLLED_CLEANUP " + JSON.stringify({error:String(cleanupError)}));if(!controlledProblem)throw cleanupError;}
       }
     });
 

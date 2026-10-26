@@ -25,17 +25,17 @@ selection rows across24Documents/eight comparisons within unchanged budgets.
 The earlier plain combined mouse-drag failure remains unresolved despite green
 instrumented diagnostics; full final-head CI and actual DEV delivery are pending.
 
-Owner interview is open on Handpan Helpers implementation/exact instruction
-approval (desired next release only if fit, usability, review and CI pass), SEO
-publication home and pilot musical reviewer. Silence does not authorize those
-changes. Saved variants continues independently as the priority.
+Owner approved Helpers implementation through DEV and its exact Resources-only
+CLAUDE patch on2026-10-26; target next release only if fit/usability/review/CI pass.
+SEO design targets /learn/ with owner musical review of pilot articles; no article
+implementation/publication grant. Saved variants remains the priority.
 
 ## Active and interrupted
 
 | Workstream | Verified current status | Next / limits |
 |---|---|---|
 | Saved-scale variants | Distinct named/layout versions must coexist without lost saves; approved through DEV. Transactional repair independently reviewed;937app/66harness and7native journeys pass, plus120profile saves and720 selection samples; no skips in those runs. Reviewed full-suite fixture repair now passes937 app,67 preview/PDF/seat tests and17 affected native cases; all1614 faults apply with metadata54/54. Final exact-head CI/DEV remain required; DEV not delivered. | Reproduce chip replacement during a held click, investigate two remaining browser fixtures and the post-drag baseline, and prove the seeded replacement re-save fault; independently review repairs, rerun full exact-head CI, then verify actual DEV. Not yet DEV-delivered; main held. See latest shared ledger and recovery thread. |
-| Handpan Helpers | Prompt refined; independent engineering/frontend reconnaissance recommends existing thirdrow pair Helpers BEFORE101, preservingAboutalone. Swarm-shaped plan independently ENG/design-cleared after correcting locale-baseline coverage. No app changes. | Planning/review complete; implementation awaits scope and exact instruction approval. ExactCLAUDE101-alone update needs separateapproval before any implementation. Existingbudgets preserved; fit not measured. |
+| Handpan Helpers | Prompt refined; independent engineering/frontend reconnaissance recommends existing thirdrow pair Helpers BEFORE101, preservingAboutalone. Swarm-shaped plan independently ENG/design-cleared after correcting locale-baseline coverage. No app changes. | Scoped throughDEV implementation and exact Resources CLAUDE patch now approved; isolated T/U lanes activated at /private/tmp/handpan-helpers.HUZs5u. Existingbudgets preserved; fit not measured; noDEVdelivery/main grant. |
 | Scale↔Layout swipe SPS | Authorized throughDEV, interrupted behind sharing/variants; isolatedtree /private/tmp/handpan-sps-z8gaznu2/integration clean3a8467ff. Headercorrections reviewed; earlier59proofpairs usedincompatibleprotocol, not finalproof. | Mergeacceptedsharingbase, faithful literal-header reproof, finalreview/fullCI/DEV, newnativeQA. No PR or DEVcompletion. CLAUDEexactdiff gate persists. |
 
 ## Delivered to DEV; main releases held
@@ -74,7 +74,7 @@ release documents, not SEO or duplicate-note functionality.
 | Scope | Artifact and status | Trigger / decision |
 |---|---|---|
 | Duplicate notes | Final reviewedplan; allowexactrepeatsanywhere, onepositionpertone forcards/allphysicalpositions retained, nonblockingwarningonlynewlyallowedrepeats. | PAUSED UNTIL FURTHER NOTICE, including planning and PR579 release. Do not re-interview settled choices or implement; await explicit resumption. |
-| SEO long-tail | Reviewedsubplan research/operations/engineevidence. Usefulfamilyguide first, fewdistinctlayoutlessons, humanmusicreview. | Audience/scales/reviewer/publishinghome/budget/measurement inputs and scopedexecutionapproval stillrequired. No massgeneratedarticles. |
+| SEO long-tail | Reviewedsubplan research/operations/engineevidence. Usefulfamilyguide first, fewdistinctlayoutlessons, humanmusicreview. | Publishing design /learn/ and owner musicalreview settled. Audience/pilotinventory/provenance/publisher/budget/measurement and scopedexecutionapproval remain. No articles published. |
 | Broader SEO | RecoveredoriginalSEOplan/researchkitcontinuation. Domainverification/site-name workalreadydelivered. | Researchplan only afterprioritywork; do notrepeat shippedmetadata/setup. |
 | Codex vsClaude quality | Refinedpromptv2 independentlycritiqued, trackedseparately. Holisticmatrix/fairprovenance/matchedsamples/bias safeguards. | QUEUED; promptnotrun, nocomparisonplan orstudyexecution yet. FutureplanENG/designreview required. |
 | Linear roadmap migration investigation | Would replace the live Git ledger with Linear as the owner/agent roadmap source of truth across harnesses, piloting handpan-cards and assessing reuse. | Queued prompt; future deep research and CEO/ENG-reviewed plan, then separate setup/cutover approval. No current migration or protected instruction change. |

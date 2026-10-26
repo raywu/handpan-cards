@@ -73,7 +73,7 @@ for(const key of KEYS)assert.ok(input.sources[key]===null||typeof input.sources[
 if(input.recordCount===0){assert.equal(input.kind,'selection-empty');for(const key of KEYS)assert.equal(input.sources[key],null);}
 else {assert.equal(input.kind,'records');assert.equal(JSON.parse(input.sources['hpfc.scales.v3']).length,input.recordCount);}
 const expectedCounts={baseline:({0:5,2:7,20:8,200:8})[input.recordCount],candidate:5+input.recordCount};
-const HELPER_SHA='178e034c3d9395bd92a7250b50b8ec5858bb177bb6678e500870699701b50826',helperPath=path.join(REPO,'tests/helpers/cdp.js');assert.equal(sha(fs.readFileSync(helperPath)),HELPER_SHA,'independently reviewed browser helper');
+const HELPER_SHA='3369d0b0df433335d5191ed6d3ce4b4fdbdd699df2afbf1e3701afe7db3d02e3',helperPath=path.join(REPO,'tests/helpers/cdp.js');assert.equal(sha(fs.readFileSync(helperPath)),HELPER_SHA,'independently reviewed browser helper');
 for(const key of ['NODE_OPTIONS','E2E_PORT','HPC_COVERAGE_DIR','NODE_V8_COVERAGE','NODE_SUITE_TIMEOUT','HPFC_CDP_PORT_TIMEOUT_MS'])assert.ok(!process.env[key],'unset inherited '+key);
 const helper=require(helperPath);assert.ok(helper.findBrowser(),'required browser, no skip');
 const BUILTINS=[{id:'kurd',name:'D KURD 10',cards:49},{id:'amara10',name:'D AMARA 10',cards:29},{id:'amara',name:'D AMARA 9',cards:27},{id:'hijaz',name:'C# HIJAZ 9',cards:19},{id:'pygmy',name:'F3 LOW PYGMY 18',cards:53}];

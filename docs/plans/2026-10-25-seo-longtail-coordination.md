@@ -130,3 +130,13 @@ Publication integration note: locate SEO checkpoint before the shared read/resum
 section, preserving all prior ledger bytes. This avoids overlapping the feedback
 stream’s independently published top-of-file checkpoint during serialized DEV
 merges. Plan and research bytes remain unchanged; no application scope is added.
+
+## Owner decisions — 2026-10-26
+
+Accepted recommendations: publishing design targets handpan.raywu.org/learn/;
+owner is musical reviewer for pilot articles. Scope remains planning only, no
+articles/publishing/config changes. Before future execution reconcile the remaining
+pilot inventory/provenance, audience, publisher/budget and measurement decisions;
+do not repeat the two settled questions. Update technical feasibility against live
+app after the priority saved-variants delivery, then independently review material
+plan changes before implementation.

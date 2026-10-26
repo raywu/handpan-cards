@@ -1,6 +1,6 @@
 # Handpan Helpers resource — implementation plan
 
-**Planning draft; implementation is not authorized.** Produced by running the
+**Implementation authorized through DEV on 2026-10-26; main release remains held.** Produced by running the
 refined [planning prompt](2026-10-25-handpan-helpers-prompt.md), after independent
 engineering and frontend reconnaissance. Independent engineering/design plan
 reviews are CLEAR on the revised substantive plan. Engineering identified a
@@ -8,10 +8,11 @@ language-baseline coverage correction; it is incorporated and independently
 rechecked. Plan clearance does not authorize implementation.
 Owner's 2026-10-26 check-in requests a next-release target if this is quick and
 low-risk, while saved variants continues. This is a scheduling preference, not a
-waiver of fit/review/CI gates or the explicit CLAUDE.md approval boundary. A scoped
-implementation and exact-patch interview question is open; no answer is assumed.
-Saved-variants delivery retains priority. No application, test, instruction, skill
-or integration changes have been made by this task.
+waiver of fit/review/CI gates or the explicit CLAUDE.md approval boundary. The owner approved scoped
+implementation and the exact instruction patch by answering “follow your
+recommendations on all” to the three-item interview.
+Saved-variants delivery retains priority. The activation record below separates
+authorized implementation from unverified delivery.
 
 ## Decision, scope and evidence
 
@@ -277,3 +278,27 @@ receipt changes document bytes after review; it does not claim its own final
 file hash was the substantive review target. No original gstack runtime or
 outside-provider review is credited. Next: owner implementation/exact-CLAUDE
 approval, then the specified TDD and measured usability gates.
+
+## Activation and owner authorization — 2026-10-26
+
+Owner accepted all three recommendations from the latest interview: Helpers
+implementation through DEV and this exact Resources-only CLAUDE patch; SEO
+publishing design under /learn/; owner musical review of pilot articles. Helpers
+is a next-release target conditional on all checks, not a main-merge grant.
+
+Verified live DEV baseline6165c8739f11c8d00c4b27ea6512ef1278275748.
+Root integration: /private/tmp/handpan-helpers.HUZs5u/integration,
+branch codex/helpers-integration-20261026. T lane owns only app/e2e tests in
+/private/tmp/handpan-helpers.HUZs5u/tests (codex/helpers-tests-20261026).
+U lane owns only Resources markup/factual comments in
+/private/tmp/handpan-helpers.HUZs5u/markup (codex/helpers-markup-20261026),
+waiting for root-confirmed acceptance RED. Root applies the exact approved
+CLAUDE packet, owns support/ledger/fault integration and sole host-browser lease.
+No source from unfinished saved variants enters this baseline. Skills, globals,
+installs, auth and main remain outside this grant.
+
+Last completed: fresh DEV and exact unchanged preimage checked; isolated lanes
+created and briefed. Next: T literal acceptance RED, then minimal U markup;
+inspect support necessities, run unchanged acceptance GREEN, generate meaningful
+faults, perform bounded fit/usability checks and independent final reviews.
+Full final-head CI and actual DEV verification remain required; not QA-ready.

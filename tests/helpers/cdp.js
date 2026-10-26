@@ -536,7 +536,7 @@ class Browser {
       await this.send("Input.dispatchMouseEvent", { type: "mousePressed", x: p0.x, y: p0.y, button: "left", clickCount: 1, timestamp: t0 });
       for (const [dx, ms, dy] of pts) {
         const p = at(dx, dy);
-        await this.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: p.x, y: p.y, buttons: 1, timestamp: t0 + ms / 1000 });
+        await this.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: p.x, y: p.y, button: "left", buttons: 1, timestamp: t0 + ms / 1000 });
       }
       if (release) {
         const p = at(last[0], last[2]);

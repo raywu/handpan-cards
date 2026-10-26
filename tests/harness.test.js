@@ -301,6 +301,124 @@ if (!BROWSER) {
 }
 
 function run() {
+  test("CDP-MOUSE-HELD: Browser.drag retains actual pointer capture until genuine release", async () => {
+    const b = await launch({ foregroundSettle: true });
+    let pressAttempted = false, released = false, primaryFailure = null;
+    let releasePoint = null;
+    try {
+      // This pure native fixture has no application state or synthetic input.
+      const html = `<!doctype html><meta charset="utf-8"><style>
+        #card{position:fixed;left:100px;top:100px;width:200px;height:200px;
+          background:#aaa;touch-action:none;user-select:none}
+        </style><div id="card">Held pointer fixture</div><script>
+        const card=document.getElementById('card');
+        window.heldFixture={ready:true,id:null,held:false,clicks:0,events:[]};
+        const f=window.heldFixture;
+        for(const type of ['pointerdown','pointermove','pointerup','pointercancel',
+          'gotpointercapture','lostpointercapture','click']){
+          document.addEventListener(type,e=>{
+            if(f.events.length<32)f.events.push({type:e.type,trusted:e.isTrusted,
+              id:e.pointerId,pointerType:e.pointerType,primary:e.isPrimary,
+              button:e.button,buttons:e.buttons,x:e.clientX,y:e.clientY,
+              onCard:e.target===card,captured:card.hasPointerCapture(e.pointerId)});
+          },true);
+        }
+        card.addEventListener('pointerdown',e=>{
+          f.id=e.pointerId;f.held=true;card.setPointerCapture(e.pointerId);
+        });
+        card.addEventListener('pointerup',()=>{f.held=false;});
+        card.addEventListener('pointercancel',()=>{f.held=false;});
+        card.addEventListener('click',()=>{f.clicks++;});
+        <\/script>`;
+      await b.send("Page.navigate", { url: "data:text/html," + encodeURIComponent(html) });
+      await b.waitFor("window.heldFixture && heldFixture.ready === true", {
+        timeout: 2000, label: "pure held-pointer fixture readiness",
+      });
+      await b.settle();
+      const point = await b.eval(`
+        const card=document.getElementById('card'),r=card.getBoundingClientRect();
+        const x=r.left+r.width/2,y=r.top+r.height/2;
+        return {x,y,visible:document.visibilityState==='visible',connected:card.isConnected,
+          hit:document.elementFromPoint(x,y)===card,
+          usable:r.width>0&&r.height>0&&x>=0&&y>=0&&x<innerWidth&&y<innerHeight};
+      `);
+      assert.ok(point.visible && point.connected && point.hit && point.usable,
+        "the real native fixture target must be visible, connected and hit-testable");
+      releasePoint = { x: point.x + 24, y: point.y };
+      pressAttempted = true;
+      await b.drag("#card", [[24, 20]], { pointer: "mouse", release: false });
+      const held = await b.eval(`
+        const f=window.heldFixture,card=document.getElementById('card');
+        return {id:f.id,held:f.held,clicks:f.clicks,events:f.events.slice(),
+          connected:card.isConnected,captured:f.id!==null&&card.hasPointerCapture(f.id)};
+      `);
+      console.log("CDP_MOUSE_HELD_SNAPSHOT " + JSON.stringify(held));
+      const down = held.events.find(e => e.type === "pointerdown");
+      const move = held.events.find(e => e.type === "pointermove");
+      assert.ok(down && down.trusted && down.primary && down.onCard && down.pointerType === "mouse" && down.buttons === 1,
+        "the fixture must receive an actual trusted primary mouse press on its card");
+      assert.ok(move && move.trusted && move.primary && move.onCard && move.pointerType === "mouse" && move.buttons === 1,
+        "the helper must deliver an actual trusted primary buttons-one mouse move to the same card");
+      assert.strictEqual(move.id, down.id, "the held move uses the actual pressed pointer");
+      assert.strictEqual(held.id, down.id);
+      assert.ok(Math.abs(move.x - down.x - 24) <= 1 && Math.abs(move.y - down.y) <= 1,
+        "the genuine held pointer must move24px horizontally without vertical drift");
+      assert.strictEqual(held.connected, true);
+      assert.strictEqual(held.held, true, "no real release has occurred before the capture oracle");
+      // Intended RED: validate actual input first, then inspect native capture.
+      assert.strictEqual(held.captured, true,
+        "Browser.drag release:false must retain actual pointer capture after its held mouse move");
+      const gotIndex = held.events.findIndex(e => e.type === "gotpointercapture" && e.id === down.id && e.trusted && e.onCard);
+      const moveIndex = held.events.indexOf(move);
+      assert.ok(gotIndex >= 0 && gotIndex < moveIndex,
+        "native capture must be acquired for this actual pointer before the held move");
+      assert.deepStrictEqual(held.events.filter(e => ["pointerup", "pointercancel", "lostpointercapture"].includes(e.type)), [],
+        "no release, cancellation or capture loss may compete with the held gesture");
+      assert.strictEqual(held.clicks, 0);
+      await b.releasing(() => b.send("Input.dispatchMouseEvent", {
+        type: "mouseReleased", ...releasePoint, button: "left", clickCount: 1,
+      }));
+      released = true;
+      await b.waitForPendingSettle();
+      const ended = await b.eval(`
+        const f=window.heldFixture,card=document.getElementById('card');
+        return {held:f.held,captured:card.hasPointerCapture(f.id),clicks:f.clicks,
+          lpcSeen:window.__cdpLpcSeen,events:f.events.slice()};
+      `);
+      console.log("CDP_MOUSE_RELEASED_SNAPSHOT " + JSON.stringify(ended));
+      assert.ok(ended.events.some(e => e.type === "pointerup" && e.trusted && e.id === down.id && e.pointerType === "mouse" && e.onCard),
+        "the same actual mouse pointer must receive its genuine release");
+      assert.ok(ended.events.some(e => e.type === "lostpointercapture" && e.trusted && e.id === down.id && e.onCard),
+        "the actual captured pointer must genuinely lose capture after release");
+      assert.strictEqual(ended.lpcSeen, true, "the helper's own real-release observer must see capture loss");
+      assert.strictEqual(ended.held, false);
+      assert.strictEqual(ended.captured, false);
+      const clicks = ended.events.filter(e => e.type === "click");
+      assert.strictEqual(ended.clicks, 1, "one genuine release must produce exactly one fixture click");
+      assert.strictEqual(clicks.length, 1);
+      assert.ok(clicks[0].trusted && clicks[0].onCard, "the release click must be genuine and target this card");
+    } catch (error) {
+      primaryFailure = error;
+      throw error;
+    } finally {
+      const cleanupFailures = [];
+      if (pressAttempted && !released && releasePoint) {
+        try {
+          await b.releasing(() => b.send("Input.dispatchMouseEvent", {
+            type: "mouseReleased", ...releasePoint, button: "left", clickCount: 1,
+          }));
+        } catch (error) { cleanupFailures.push(error); }
+      }
+      try { await b.waitForPendingSettle(); } catch (error) { cleanupFailures.push(error); }
+      try { await b.close(); } catch (error) { cleanupFailures.push(error); }
+      if (cleanupFailures.length) {
+        const failure = new AggregateError(cleanupFailures, "owned held-pointer fixture cleanup failed");
+        if (primaryFailure) primaryFailure.cause = failure;
+        else throw failure;
+      }
+    }
+  });
+
   test("FG-10 opted-in native settle advances only its target after repeated hiding", async () => {
     const neutral = await launch();
     try {

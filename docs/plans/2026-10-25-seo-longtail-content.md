@@ -1,7 +1,8 @@
 # SEO-LONGTAIL: exact-instrument progression lessons
 
 2026-10-25. Research subplan; implementation and publication are **not authorized**.
-Owner interview pending; recommended defaults below are provisional.
+Owner decisions on publishing home and musical reviewer are recorded below;
+other provisional defaults and publication gates remain unresolved.
 
 ## Decision brief
 
@@ -47,16 +48,29 @@ streams do not authorize SEO app edits or publishing.
 
 ## Owner interview and default proposal
 
+**Settled 2026-10-26:** owner accepted the latest interview recommendations:
+plan articles under `https://handpan.raywu.org/learn/`, and owner reviews the pilot
+articles for musical accuracy. This selects the design location and review role;
+host feasibility, actual playability/review and publishing readiness remain
+unverified. No article, infrastructure, analytics or app implementation/publication
+is authorized by these choices. No further publishing-home/reviewer interview is
+needed unless new evidence changes feasibility or capacity. The approved
+recommendation is to refine the plan next, preserving independent reviews before
+any future implementation.
+
+
 Already asked: editorial/automation appetite; lesson-first versus direct landing
 reader offer; languages/countries/scales/makers and available aggregate data.
-Additional questions ask musical reviewer capacity and publishing-home preference.
-No answer is inferred from AFK or elapsed time. Research proceeds with reversible
+Publishing-home and musical-review-role questions are now settled above; actual
+review capacity and hosting validation remain to be established. No other answer
+is inferred from AFK or elapsed time. Research proceeds with reversible
 proposals: English first, reviewed drafts, lesson before CTA, source-verified layouts,
 compare publishing options and recommend the simplest. No articles go live yet.
 
-Before execution owner must name: accountable publisher/editor; actual musical
-reviewer; pilot instruments/provenance; publishing home; human-hour/cost cap; success
-priority and data source. Default recommendation: owner reviews a tiny pilot,
+Before execution establish: accountable publisher/editor; owner musical-review
+capacity and acceptance; pilot instruments/provenance; `/learn/` hosting feasibility;
+human-hour/cost cap; success priority and data source. The design home and musical
+review role are settled, rather than pending owner selections. Default recommendation: owner reviews a tiny pilot,
 first draft is timed, then decide sustainable monthly capacity. A 90-day aggregate
 baseline and8–12-week review after observed indexing are hypotheses, not promised
 traffic windows. No multilingual rollout without native editorial capacity/demand.
@@ -346,10 +360,12 @@ obtain a separately approved hosting change, not a fabricated runbook.
 ## Current readiness and continuation
 
 Project continuity: source/context recovered. Workflow: real research lanes run;
-ENG/design review pending. Tools: read-only source/web validated; authenticated
-GSC/GA4, publishing architecture and future generator unverified. Quality: source
-and canonical diagnostic verified, musical/learner/physical assessment untested.
-Operations: editorial owner/reviewer/budget/rollback execution unassigned/untested.
+Independent ENG/design planning reviews cleared the revised plan per coordination
+receipts; no runtime/publishing parity is inferred. Tools: read-only source/web
+validated; authenticated GSC/GA4, /learn/ hosting feasibility and future generator
+unverified. Quality: source/canonical diagnostics verified; owner musical reviewer
+assigned, actual musical/learner/physical assessment untested. Operations:
+accountable publisher/budget/recovery execution remain unassigned or untested.
 **This is not publication readiness or a completed migration.**
 
 Root next: reconcile research, get fresh exact-artifact ENG/design reviews, fix

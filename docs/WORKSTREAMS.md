@@ -43,6 +43,51 @@ retaining the approved product/schema/session/data-preservation contract. Root
 executes this already-planned internal alternative under through-DEV and
 reaffirmed AFK authority; no CLAUDE change/install/main merge.
 
+## Latest recovery checkpoint — 2026-10-26, after held-mouse repair
+
+This checkpoint supersedes pending/blocking labels in the chronological notes
+below. Saved variants remains first; DEV delivery and all main releases remain
+held. Branch `codex/saved-scale-variants-20261025`, integration worktree
+`/private/tmp/handpan-saved-variants.HVUKbE/integration`; plan and raw-proof links:
+[held-mouse repair](plans/2026-10-26-held-mouse-capture-helper-repair.md) and
+[gesture gates](plans/2026-10-26-saved-variants-gesture-gates.md).
+
+- Runtime index SHA3b07a272 is unchanged. A minimal native fixture independently
+  proves the separate CDP held-mouse capture defect; the one-field helper3369
+  repair has intended capture RED→GREEN→fault→restored, full harness67/67 and
+  affected native18/18 passing. Existing Q15 clean/fault/restored is also proven.
+  All1617 fault patches apply; original intermittent post-drag cause remains
+  unproven. Passing targeted tests does not establish that cause or full CI.
+- Latest completed full CI40358865648 at3239eafd failed:487/488 native pass and
+  one Q15 mutation survivor; all other jobs/shards passed. The reviewed local
+  helper/test changes above are not yet validated by exact-head full CI. Next
+  publish that immutable candidate and run the full required validate workflow.
+- Fresh helper3369 selection profiling: empty/2/20-record cases pass; the
+  200-record case stops at retained row121 (first phone/candidate sample), where
+  firstRAF equals secondRAF244.932. Both callbacks progressed; strict increasing
+  RAF guard correctly fails. No timing waiver, row exclusion or inferred rounding
+  error. Historical720 old-helper rows do not supersede this current failed run.
+  Cause is unresolved; low free memory is not causal proof. The independently
+  reviewed one-shot pure-data clock control also failed at retained row25 because
+  captureAt equaled firstCallbackAt, yielding a zero dispatch-to-frame interval.
+  It stopped with owned cleanup true; no200-record rerun is allowed by that
+  protocol. This is a separate timing-sanity failure, not a repeat of equalRAF
+  nor an explanation of the app result. Performance gate remains held for
+  independent assessment; no retries/waiver. Backend refresh has not run.
+- Helpers remains a separate approved branch/worktree
+  `codex/helpers-integration-20261026` /
+  `/private/tmp/handpan-helpers.HUZs5u/integration`. Old2f4db8af CI failed two
+  native checks despite all1513 mutants and other jobs passing. Reviewed two-line
+  labels/current-font setup amendment is in local TDD. Its first combined run
+  passes five checks but exposes extra CJK line counts; investigate before
+  further source changes. Not delivered to DEV; never fold a failing Helpers
+  candidate into priority saved variants.
+- Owner recommendations are accepted: Helpers through DEV including only the
+  exact Resources CLAUDE packet; SEO design at `/learn/`; owner musical review
+  of pilot articles. SEO remains planning-only. No main merge is authorized.
+
+### Earlier continuation checkpoints — historical, preserve evidence
+
 2026-10-26 continuation checkpoint:
 - **Current local interaction repair:** native causal RED confirmed that a
   preference acknowledgment could detach a pressed scale chip before release.
@@ -52,11 +97,14 @@ reaffirmed AFK authority; no CLAUDE change/install/main merge.
   remains unresolved: instrumented isolated passes do not override the original
   combined-run failure. Source-pinned refreshed selection/backend campaigns report
   PASS; independent receipt audit and full exact-head CI/served DEV remain gates.
-- **Owner interview pending:** Helpers is a desired next-release candidate only
-  if quick/low-risk and verified within existing fit limits. Requested scoped
-  through-DEV implementation and the plan's exact CLAUDE Resources patch approval;
-  no answer or new approval is assumed. SEO publication home and pilot musical
-  reviewer are also pending. Continue authorized variants while awaiting inputs.
+- **Owner decisions settled 2026-10-26:** Helpers implementation through DEV
+  and its exact Resources-only CLAUDE patch are approved; separate test/markup
+  lanes start from verifiedDEV6165c873 under /private/tmp/handpan-helpers.HUZs5u.
+  Plan: docs/plans/2026-10-25-handpan-helpers.md. Root sole browser/integration;
+  saved variants retains priority. Next release remains conditional on fit/tests/
+  independent review/CI/servedDEV; no main grant. SEO publishing design uses
+  handpan.raywu.org/learn/ and owner reviews pilot musical accuracy. SEO articles,
+  publishing/provider/app implementation remain unauthorized.
 - **Fresh check-in:** full validate40320711507 at6a691c68 completed FAILURE.
   Every unit file, Python, data and real/fallback panel fit passed. Browser487 ran:
   485pass/2fail, zero skipped. Remaining native failures are generated-scale tier
