@@ -2836,7 +2836,7 @@ function run() {
       await b.setViewport(380, 800, true);
       await generate(SIX_SCALES[1]);
       const shared = await b.eval(`
-        const d = CUSTOM[deckId];
+        const d = selectedDeck();
         const res = shareLink(d);
         return {
           ok: res.ok, reason: res.ok ? null : res.reason, url: res.ok ? res.value : null,
@@ -4662,7 +4662,7 @@ function run() {
       assert.strictEqual(m.gen, false);
       await clickGenerate();
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet to close after Generate" });
-      const shared = await b.eval(`const d = CUSTOM[deckId]; const res = shareLink(d);
+      const shared = await b.eval(`const d = selectedDeck(); const res = shareLink(d);
         return { ok: res.ok, url: res.ok ? res.value : null, chords: d.chords.length };`);
       assert.strictEqual(shared.ok, true);
       const hash = shared.url.slice(shared.url.indexOf("#s="));
@@ -5243,7 +5243,7 @@ function run() {
 
       await clickGenerate();
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet to close after GENERATE CARDS" });
-      const saved = await b.eval(`return JSON.parse(localStorage.getItem("hpfc.scales.v3") || "[]").map(r => r.o && r.o.palette);`);
+      const saved = await b.eval(`return JSON.parse(localStorage.getItem("hpfc.saved-scales.v1")).entries.map(row=>row.record.o&&row.record.o.palette);`);
       assert.deepStrictEqual(saved, [PICK], "the saved deck record does not carry the picked palette");
     } finally {
       await b.setViewport(900, 900, false);
@@ -5639,68 +5639,30 @@ function run() {
     };
   `);
 
-  test("an edit onto another deck's scale is refused at 380px and both chips stay", async () => {
+  // Approved variants policy replaces inventory-collision refusal with
+  // instance-targeted Edit. Preserve sibling bytes and usable re-entry.
+  test("an edit onto another scale's inventory preserves both chips at 380px and remains editable", async () => {
     try {
-      await freshLoad();
-      await b.setViewport(380, 780, true);
-      await generate(EDIT_SCALE);
-      await generate(COLLIDE_SCALE);
-
-      // name the second deck, so the loss the refusal prevents is visible
-      await openEdit();
-      await b.eval(`
-        const el = document.getElementById("scale-name");
-        el.value = "RAY'S PAN";
-        el.dispatchEvent(new Event("input", { bubbles: true }));
-        return el.value;
-      `);
-      await clickGenerate();
-      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
-        { label: "the Edit sheet to close after the rename" });
-
-      const before = await chipReport();
-      const storedBefore = await b.eval(`return localStorage.getItem("hpfc.scales.v3");`);
-      assert.ok(before.chips.includes("RAY'S PAN"), JSON.stringify(before.chips));
-
-      await selectChipAt(before.chips.indexOf("RAY'S PAN") + 1);   // the FIRST custom deck, now after the newer one
-      await openEdit();
-      await typeScale(COLLIDE_SCALE);
-      await clickGenerate();
-
-      const st = await sheetState();
-      assert.strictEqual(st.open, true, "the refused save closed the sheet");
-      assert.strictEqual(st.bad, true, "the scale box was not marked bad");
-      assert.match(st.msg, /Another scale already has these notes/,
-        `the sheet says "${st.msg}"`);
-      assert.strictEqual(st.msgVisible, true, "the refusal message has no height");
-      assert.ok(st.primaries <= 1, `${st.primaries} enabled primaries while the sheet is open`);
-      assert.ok(st.body.sw <= st.body.cw + 1, "the refusal scrolls the page horizontally");
-
-      // Queue row 142: `primaries <= 1` also holds with the primary stuck at 0
-      // forever, so it cannot fail in the direction that matters. The refusal
-      // must be RECOVERABLE - retyping brings the primary back and clears the
-      // message, without closing and reopening the sheet.
-      await typeScale(SIX_SCALES[3]);
-      const back = await sheetState();
-      assert.strictEqual(back.open, true, "retyping closed the sheet");
-      assert.strictEqual(back.primaries, 1,
-        `${back.primaries} enabled primaries after retyping past the refusal - ` +
-        "the refusal is a dead end");
-      assert.strictEqual(back.bad, false, "the box is still marked bad after a valid retype");
-      assert.strictEqual(back.msg, "", `the refusal message survived the retype: "${back.msg}"`);
-
-      await b.eval(`document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })); return true;`);
-      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
-        { label: "the Edit sheet to close on Escape" });
-      const after = await chipReport();
-      assert.deepStrictEqual(after.chips, before.chips,
-        `a deck was destroyed by the refused edit: ${JSON.stringify(after.chips)}`);
-      assert.strictEqual(
-        await b.eval(`return localStorage.getItem("hpfc.scales.v3");`), storedBefore,
-        "a refused save wrote to hpfc.scales.v3");
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
+      await freshLoad();await b.setViewport(380,780,true);await generate(EDIT_SCALE);await generate(COLLIDE_SCALE);
+      await openEdit();await b.eval(`const el=document.getElementById('scale-name');el.value="RAY'S PAN";el.dispatchEvent(new Event('input',{bubbles:true}));return true;`);
+      await clickGenerate();await b.waitFor("document.getElementById('scale-sheet').hidden",{label:"sibling rename acknowledgment"});
+      const before=await chipReport(),saved=await b.eval("return JSON.parse(localStorage.getItem('hpfc.saved-scales.v1'));");
+      const sibling=saved.entries.find(row=>row.record.o.name==="RAY'S PAN");assert.ok(sibling);
+      const siblingInventory=await b.eval(`return savedEntries.get(${JSON.stringify(sibling.instanceId)}).deck.id;`);
+      await selectChipAt(before.chips.indexOf("RAY'S PAN")+1);
+      const target=await b.eval("return {selection:{...selection},inventory:deck().id};");assert.notStrictEqual(target.selection.id,sibling.instanceId);
+      await openEdit();await typeScale(COLLIDE_SCALE);await clickGenerate();
+      await b.waitFor("document.getElementById('scale-sheet').hidden",{label:"converging Edit acknowledgment"});
+      const after=await b.eval("return {selection:{...selection},inventory:deck().id,envelope:JSON.parse(localStorage.getItem('hpfc.saved-scales.v1'))};");
+      assert.deepStrictEqual(after.selection,target.selection);assert.notStrictEqual(after.inventory,target.inventory);assert.strictEqual(after.inventory,siblingInventory,"converging Edit reaches the sibling musical inventory");
+      assert.strictEqual(after.envelope.entries.length,saved.entries.length);assert.deepStrictEqual(after.envelope.entries.find(row=>row.instanceId===sibling.instanceId),sibling,"converging Edit cannot rewrite a named sibling");
+      assert.ok((await chipReport()).chips.includes("RAY'S PAN"));
+      await openEdit();const initial=await sheetState();assert.strictEqual(initial.open,true);assert.strictEqual(initial.bad,false);assert.strictEqual(initial.primaries,1);
+      await typeScale(SIX_SCALES[3]);const retyped=await sheetState();assert.strictEqual(retyped.open,true);assert.strictEqual(retyped.primaries,1);assert.strictEqual(retyped.bad,false);assert.strictEqual(retyped.msg,"");assert.ok(retyped.body.sw<=retyped.body.cw+1);
+      await b.eval("document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));return true;");
+      await b.waitFor("document.getElementById('scale-sheet').hidden",{label:"Escape discards later draft"});
+      assert.deepStrictEqual(await b.eval("return JSON.parse(localStorage.getItem('hpfc.saved-scales.v1'));"),after.envelope,"cancelled later draft never rewrites either saved instance");
+    }finally{await b.setViewport(900,900,false);}
   });
 
   /* Both tests below are the reviewer's, 2026-09-21. The first cut of the
@@ -11187,7 +11149,7 @@ function run() {
             { label: `tier ${t} to take effect` });
           const check = await b.eval(`
             return {
-              deckIsCustom: deckId.startsWith("custom:"),
+              deckIsCustom: selection.kind === "saved",
               empty: !(seq && seq.chords),
               reason: seq && seq.reason,
               tierOf: (seq && seq.chords) ? HPE.sequence.tierOf(deck(), seq.chords) : null,
@@ -14303,20 +14265,20 @@ function run() {
       await b.settle();
       const pre = await href();
       assert.match(await hash(), /^#s=/);
-      const id = await b.eval(`return deckId`);
+      const id = await b.eval(`return selection.id`);
       await openSheet();
       assert.strictEqual(await hash(), "#add");
       await b.click("#scale-back");
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet to close" });
       await b.waitFor(`location.href === ${JSON.stringify(pre)}`, { label: "the bar to return to the custom deck's link" });
-      assert.strictEqual(await b.eval(`return deckId`), id);
+      assert.strictEqual(await b.eval(`return selection.id`), id);
     });
 
     test("edge 4: SAVE with new fields rewrites the bar to the new code and nothing re-imports the old one", async () => {
       await freshLoad();
       await generate(SIX_SCALES[1]);
       await b.settle();
-      const before = await b.eval(`return { hash: location.hash, id: deckId, chips: document.querySelectorAll("#decks .chip:not(#deck-add)").length }`);
+      const before = await b.eval(`return { hash: location.hash, id: selection.id, inventory:deck().id, chips: document.querySelectorAll("#decks .chip:not(#deck-add)").length }`);
       assert.match(before.hash, /^#s=/);
       await b.eval(`window.__hc = 0; window.addEventListener("hashchange", () => { window.__hc++; }); return true`);
       await b.click("#decks .chip.on");
@@ -14325,9 +14287,10 @@ function run() {
       await b.waitFor(`location.hash !== ${JSON.stringify(before.hash)} && location.hash.indexOf("#s=") === 0`, { label: "the bar to carry the new code" });
       await b.settle();
       await new Promise((r) => setTimeout(r, 300));
-      const after = await b.eval(`return { hash: location.hash, id: deckId, chips: document.querySelectorAll("#decks .chip:not(#deck-add)").length,
-        want: "#s=" + shareCode(CUSTOM[deckId]).value }`);
-      assert.notStrictEqual(after.id, before.id, "the new fields did not give the deck a new id");
+      const after = await b.eval(`return { hash: location.hash, id: selection.id, inventory:deck().id, chips: document.querySelectorAll("#decks .chip:not(#deck-add)").length,
+        want: "#s=" + shareCode(selectedDeck()).value }`);
+      assert.strictEqual(after.id,before.id,"Edit preserves the stable local instance");
+      assert.notStrictEqual(after.inventory,before.inventory,"different fields change the canonical inventory id");
       assert.strictEqual(after.hash, after.want, "the bar does not carry the shown deck's own code");
       assert.strictEqual(after.chips, before.chips, "a stale hashchange re-imported the old deck as a second chip");
       assert.notStrictEqual(after.hash, before.hash);
@@ -17561,7 +17524,7 @@ function run() {
           }
           await b.eval(`document.getElementById("scale-generate").click(); return 1;`);
           await b.settle();
-          const bbm = await b.eval(`const d = Object.values(CUSTOM)[0]; const ch = d.chords.find((c) => c.main + (c.sup || "") === "Bbm"); return ch.fields.map((x) => d.fields[x][5]).join("-");`);
+          const bbm = await b.eval(`const d = selectedDeck(); const ch = d.chords.find((c) => c.main + (c.sup || "") === "Bbm"); return ch.fields.map((x) => d.fields[x][5]).join("-");`);
           assert.strictEqual(bbm, "U4-U2-5", tag);
         }
       } finally { await b.clearKeyboard().catch(() => {}); await b.setViewport(900, 900, false); }
@@ -17634,7 +17597,8 @@ function run() {
         notice: document.querySelector(".announce").textContent,
         start: input.selectionStart, end: input.selectionEnd, readonly: input.readOnly,
         href: location.href, options: deck().options.angles.bottom,
-        records: JSON.parse(localStorage.getItem(SCALES_KEY)),
+        records: JSON.parse(localStorage.getItem("hpfc.saved-scales.v1")).entries,
+        selectedRecord: JSON.parse(localStorage.getItem("hpfc.saved-scales.v1")).entries.find(row=>row.instanceId===selection.id).record,
         calls: __shc.calls.map(c => ({payload:c.payload,href:c.href})), order: __shc.order.slice() };
     `);
     const showFine = async () => {
@@ -17675,7 +17639,7 @@ function run() {
       await clickLink(2);
       const before = await snapshot();
       assert.deepStrictEqual(before.options, expectedOptions);
-      assert.deepStrictEqual(before.records[0].o.angles.bottom, expectedOptions);
+      assert.deepStrictEqual(before.selectedRecord.o.angles.bottom, expectedOptions);
       assert.strictEqual(before.calls[0].payload, URL + query + HASH, "A captures the original public fixture");
       assert.strictEqual(before.calls[1].payload, before.calls[1].href, "B captures literal invocation href");
       assert.strictEqual(before.calls[1].payload, before.href);
@@ -17709,7 +17673,7 @@ function run() {
       await b.waitFor(`document.querySelector("#decks .chip.on") && location.hash.startsWith("#s=6/")`, { label: "SHC fresh receiver import" });
       assert.strictEqual(await b.eval(`return window.__shcReceiverBefore;`), 0, "fresh receiver has no inherited sender storage");
       assert.deepStrictEqual(await b.eval(`return deck().options.angles.bottom;`), expectedOptions);
-      assert.deepStrictEqual(await b.eval(`return JSON.parse(localStorage.getItem(SCALES_KEY))[0].o.angles.bottom;`), expectedOptions);
+      assert.deepStrictEqual(await b.eval(`return JSON.parse(localStorage.getItem("hpfc.saved-scales.v1")).entries.find(row=>row.instanceId===selection.id).record.o.angles.bottom;`), expectedOptions);
       assert.strictEqual(await b.eval(`return !!document.querySelector("#card .diagwrap svg");`), true,
         "receiver practice card contains diagram SVG (DOM presence, not visible ink)");
       await enterEdit(); await enterLayout();
@@ -17913,6 +17877,11 @@ function run() {
       }finally{await release(blocker);}
       await p.wait(`navigator.locks.query().then(q=>q.pending.filter(x=>x.name===${JSON.stringify(LOCK)}).length===0&&document.getElementById('scale-generate').disabled===false)`,"Save operation releases its queue and returns from pending");
       assert.strictEqual(await p.eval("return document.getElementById('scale-sheet').hidden;"),false,"conflict keeps the draft page open");
+      // Observe natural post-Save visibility BEFORE ink()/click helpers scroll.
+      const recoveryVisible=await p.eval(`const body=document.querySelector('#scale-sheet .sheetbody'),br=body.getBoundingClientRect();
+        return ['scale-conflict-msg','scale-conflict-separate'].map(id=>{const el=document.getElementById(id),r=el.getBoundingClientRect();
+          return {id,visible:!!el.getClientRects().length&&r.height>0&&r.width>0&&r.top>=Math.max(0,br.top+body.clientTop)-1&&r.bottom<=Math.min(innerHeight,br.top+body.clientTop+body.clientHeight)+1};});`);
+      assert.ok(recoveryVisible.every(item=>item.visible),"failed Save reveals recovery copy and action without test-driven scrolling: "+JSON.stringify(recoveryVisible));
       await ink(p,"#scale-conflict-msg",{text:SV.uiContract.copy[lang][kind],live});
       await ink(p,"#scale-conflict-separate",{text:SV.uiContract.copy[lang].separate,control:true});
       await ink(p,"#scale-back",{control:true});
@@ -18122,6 +18091,9 @@ function run() {
             await openEdit(p);await p.type("#scale-name",matrix.draftName);const base=await read(p);
             const conflict={...clone(base),revision:base.revision+1,entries:base.entries.map(x=>x.instanceId===uid(202)?{...x,revision:x.revision+1,record:{...x.record,o:{...x.record.o,name:"REMOTE LABEL"}}}:x)};
             await p.eval(`localStorage.setItem(${JSON.stringify(KEY)},${JSON.stringify(JSON.stringify(conflict))});return true;`);
+            await p.click("#scale-tab-layout");
+            const scrolled=await p.eval("const body=document.querySelector('#scale-sheet .sheetbody');body.scrollTop=body.scrollHeight;return {top:body.scrollTop,max:body.scrollHeight-body.clientHeight};");
+            assert.ok(scrolled.max>0&&scrolled.top>0,"conflict recovery starts from a genuinely scrolled Layout panel");
             await conflictSave(p,peer.p,lang,"conflict",true);
             assert.strictEqual(await p.eval("return document.getElementById('scale-name').value;"),matrix.draftName);
             assert.deepStrictEqual(await read(p),conflict,"failed Save cannot modify the winner or discard the draft");
