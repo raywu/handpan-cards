@@ -17795,7 +17795,7 @@ function run() {
         try{return owner.rawSend(method,params);}finally{owner.sessionId=previous;}};
       const evaluate=async body=>{const r=await send("Runtime.evaluate",{expression:`(() => { ${body} })()`,awaitPromise:true,returnByValue:true});
         assert.ok(!r.exceptionDetails,"SV page evaluation must complete without an uncaught error: "+JSON.stringify(r.exceptionDetails));return r.result.value;};
-      const wait=async(expr,label,timeout=5000)=>{const deadline=Date.now()+timeout;for(;;){if(await evaluate(`return !!(${expr});`))return;
+      const wait=async(expr,label,timeout=5000)=>{const deadline=Date.now()+timeout;for(;;){if(await evaluate(`return Promise.resolve(${expr}).then(Boolean);`))return;
         if(Date.now()>deadline)throw new Error("SV readiness deadline: "+label);await sleep(20);}};
       const click=async selector=>{await send("Page.bringToFront");
         const point=await evaluate(`const el=document.querySelector(${JSON.stringify(selector)});if(!el)return null;
@@ -17868,7 +17868,7 @@ function run() {
         return {p,close:()=>owner.send("Target.closeTarget",{targetId},false)};
       } catch(error){await owner.send("Target.closeTarget",{targetId},false);throw error;}
     }
-    async function ink(p,selector,{text,control=false}={}) {
+    async function ink(p,selector,{text,control=false,live=false}={}) {
       await p.send("Page.bringToFront");
       await p.eval(`const n=document.querySelector(${JSON.stringify(selector)});if(n)n.scrollIntoView({block:'nearest',inline:'nearest',behavior:'instant'});return true;`);
       await p.eval("return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));");
@@ -17887,15 +17887,24 @@ function run() {
           }
         }
         const hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);
-        return {found:true,visible,text:el.textContent.trim(),aria:el.getAttribute('aria-label')||el.textContent.trim(),width:r.width,height:r.height,
+        let announcement=null,ariaHidden=false;
+        for(let n=el;n;n=n.parentElement){
+          if((n.getAttribute('aria-hidden')||'').trim().toLowerCase()==='true')ariaHidden=true;
+          if(announcement===null){const a=(n.getAttribute('aria-live')||'').trim().toLowerCase(),role=(n.getAttribute('role')||'').trim().toLowerCase();
+            if(['off','polite','assertive'].includes(a))announcement=a;
+            else if(role==='status'||role==='alert')announcement=role==='status'?'polite':'assertive';}
+        }
+        return {found:true,visible,announcement,ariaHidden,text:el.textContent.trim(),aria:el.getAttribute('aria-label')||el.textContent.trim(),width:r.width,height:r.height,
           disabled:el.disabled===true,hit:!!hit&&(el===hit||el.contains(hit)),clips};`);
       assert.ok(m.found&&m.visible,"required message/control has visible computed ink: "+selector);
       if(text!==undefined)assert.strictEqual(m.text,text,"independent frozen copy: "+selector);
+      if(live){assert.strictEqual(m.ariaHidden,false,"announcement has no aria-hidden suppression: "+selector);
+        assert.ok(m.announcement==='polite'||m.announcement==='assertive',"message has an effective live region, respecting explicit off: "+selector);}
       assert.deepStrictEqual(m.clips,[],"text Range and ancestor x/y clipping: "+selector);
       if(control){assert.ok(m.width>=44&&m.height>=44,"action is at least44x44: "+selector);assert.ok(m.hit&&!m.disabled,"action target is usable: "+selector);}
       return m;
     }
-    async function conflictSave(p,blocker,lang="en",kind="conflict") {
+    async function conflictSave(p,blocker,lang="en",kind="conflict",live=false) {
       await hold(blocker);
       try {
         await p.click("#scale-generate");
@@ -17904,7 +17913,7 @@ function run() {
       }finally{await release(blocker);}
       await p.wait(`navigator.locks.query().then(q=>q.pending.filter(x=>x.name===${JSON.stringify(LOCK)}).length===0&&document.getElementById('scale-generate').disabled===false)`,"Save operation releases its queue and returns from pending");
       assert.strictEqual(await p.eval("return document.getElementById('scale-sheet').hidden;"),false,"conflict keeps the draft page open");
-      await ink(p,"#scale-conflict-msg",{text:SV.uiContract.copy[lang][kind]});
+      await ink(p,"#scale-conflict-msg",{text:SV.uiContract.copy[lang][kind],live});
       await ink(p,"#scale-conflict-separate",{text:SV.uiContract.copy[lang].separate,control:true});
       await ink(p,"#scale-back",{control:true});
     }
@@ -18113,7 +18122,7 @@ function run() {
             await openEdit(p);await p.type("#scale-name",matrix.draftName);const base=await read(p);
             const conflict={...clone(base),revision:base.revision+1,entries:base.entries.map(x=>x.instanceId===uid(202)?{...x,revision:x.revision+1,record:{...x.record,o:{...x.record.o,name:"REMOTE LABEL"}}}:x)};
             await p.eval(`localStorage.setItem(${JSON.stringify(KEY)},${JSON.stringify(JSON.stringify(conflict))});return true;`);
-            await conflictSave(p,peer.p,lang);
+            await conflictSave(p,peer.p,lang,"conflict",true);
             assert.strictEqual(await p.eval("return document.getElementById('scale-name').value;"),matrix.draftName);
             assert.deepStrictEqual(await read(p),conflict,"failed Save cannot modify the winner or discard the draft");
             await p.click("#scale-name");await rb.fakeKeyboard(520);await rb.settle();
@@ -18150,20 +18159,20 @@ function run() {
             const unsupported=await rb.send("Page.addScriptToEvaluateOnNewDocument",{source:"Object.defineProperty(navigator,'locks',{configurable:true,value:undefined});"});
             try {
               await reload();assert.strictEqual(await p.eval("return savedMode;"),"session");
-              await ink(p,"#saved-status",{text:expected.session});
+              await ink(p,"#saved-status",{text:expected.session,live:true});
               await p.click("#settings-trigger");await p.click("#deck-add");await p.type("#scale-box",SV.inventories.other.seed);
               assert.strictEqual(await p.eval("return document.getElementById('scale-generate').disabled;"),false,"note input stays English in every locale");
               await p.click("#scale-generate");await p.wait("document.getElementById('scale-sheet').hidden","session-only scale generation completes");
               assert.strictEqual(await p.eval("return HPE.core.formatSeed(deck().fields);"),SV.inventories.other.seed,"actual temporary scale becomes the selected view");
-              assert.strictEqual(await p.eval("return savedMode;"),"session");await ink(p,"#saved-status",{text:expected.session});
+              assert.strictEqual(await p.eval("return savedMode;"),"session");await ink(p,"#saved-status",{text:expected.session,live:true});
               assert.deepStrictEqual(await p.eval(`return {current:localStorage.getItem(${JSON.stringify(KEY)}),old:localStorage.getItem('hpfc.scales.v3'),legacy:localStorage.getItem('hpfc.scales')};`),durable,"temporary generation performs no durable saved-store write");
               await reload();
               assert.strictEqual(await p.eval(`return savedState.entries.some(x=>x.record?.s===${JSON.stringify(SV.inventories.other.seed)});`),false,"temporary scale is lost after reload, never silently promoted");
-              assert.strictEqual(await p.eval(`return localStorage.getItem(${JSON.stringify(KEY)});`),durable.current);await ink(p,"#saved-status",{text:expected.session});
+              assert.strictEqual(await p.eval(`return localStorage.getItem(${JSON.stringify(KEY)});`),durable.current);await ink(p,"#saved-status",{text:expected.session,live:true});
             }finally{await rb.send("Page.removeScriptToEvaluateOnNewDocument",{identifier:unsupported.identifier});}
             await p.eval(`localStorage.setItem(${JSON.stringify(KEY)},'{not-json');return true;`);await reload();
             assert.strictEqual(await p.eval("return savedMode;"),"protected");
-            await ink(p,"#saved-status",{text:expected.recovery});
+            await ink(p,"#saved-status",{text:expected.recovery,live:true});
             assert.strictEqual(await p.eval(`return localStorage.getItem(${JSON.stringify(KEY)});`),"{not-json","recovery cannot overwrite unreadable source");states++;
           }
         } finally{if(peer)await peer.close();await rb.close();}
