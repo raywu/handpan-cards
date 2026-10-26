@@ -13539,7 +13539,16 @@ savedSnapshotListener=event=>{
     const changed=!savedEqual(target,editingBase.selection) || editingBase.collectionId!==savedState.collectionId || entry?.revision!==editingBase.revision;
     if(changed && latest){const opener=sheetOpener;resetSheetState(latest,target);sheetOpener=opener;resyncSheet(false);}
   }
-  buildChips();updateSavedStatus();
+  // Preference ACKs and unchanged rereads must not detach an active pointer
+  // target. Rebuild only when the visible collection or local selection changes.
+  const chipsChanged = !event.previous ||
+    event.previous.collectionId !== savedState.collectionId ||
+    !savedEqual(event.previous.entries, savedState.entries) ||
+    !savedEqual(event.previous.slots, savedState.slots) ||
+    !savedEqual(event.previous.hidden, savedState.hidden) ||
+    !savedEqual(oldSelection, selection);
+  if (chipsChanged) buildChips();
+  updateSavedStatus();
   if(!dirty && !sheetOpen){
     if(!savedEqual(oldSelection,selection) || beforeRow?.revision!==afterRow?.revision){setOrder();render();}
     syncRoute();
