@@ -227,6 +227,69 @@
           ]
         }
       }
+    },
+    "pygmySemanticBase": {
+      "v": 4,
+      "s": "[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]",
+      "o": {
+        "name": "PUBLIC OPTIONS",
+        "mirror": false,
+        "mirrorBottom": false,
+        "anchor": "one"
+      }
+    },
+    "pygmyTopMirrorOnly": {
+      "v": 4,
+      "s": "[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]",
+      "o": {
+        "name": "PUBLIC OPTIONS",
+        "mirror": true,
+        "mirrorBottom": false,
+        "anchor": "one"
+      }
+    },
+    "pygmyBottomMirrorOnly": {
+      "v": 4,
+      "s": "[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]",
+      "o": {
+        "name": "PUBLIC OPTIONS",
+        "mirror": false,
+        "mirrorBottom": true,
+        "anchor": "one"
+      }
+    },
+    "pygmyAnchorOnly": {
+      "v": 4,
+      "s": "[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]",
+      "o": {
+        "name": "PUBLIC OPTIONS",
+        "mirror": false,
+        "mirrorBottom": false,
+        "anchor": "between"
+      }
+    },
+    "pygmySeatsOnly": {
+      "v": 4,
+      "s": "[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]",
+      "o": {
+        "name": "PUBLIC OPTIONS",
+        "mirror": false,
+        "mirrorBottom": false,
+        "anchor": "one",
+        "seats": {
+          "rim": [
+            1,
+            0,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ]
+        }
+      }
     }
   },
   "portableMeaningCases": [
@@ -271,6 +334,30 @@
       "right": "pygmyExplicitDefaultAngles",
       "equivalent": false,
       "reason": "explicit absolute-angle intent is retained"
+    },
+    {
+      "left": "pygmySemanticBase",
+      "right": "pygmyTopMirrorOnly",
+      "equivalent": false,
+      "reason": "pygmyTopMirrorOnly differs in exactly its named portable option"
+    },
+    {
+      "left": "pygmySemanticBase",
+      "right": "pygmyBottomMirrorOnly",
+      "equivalent": false,
+      "reason": "pygmyBottomMirrorOnly differs in exactly its named portable option"
+    },
+    {
+      "left": "pygmySemanticBase",
+      "right": "pygmyAnchorOnly",
+      "equivalent": false,
+      "reason": "pygmyAnchorOnly differs in exactly its named portable option"
+    },
+    {
+      "left": "pygmySemanticBase",
+      "right": "pygmySeatsOnly",
+      "equivalent": false,
+      "reason": "pygmySeatsOnly differs in exactly its named portable option"
     }
   ],
   "share": {

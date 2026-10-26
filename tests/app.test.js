@@ -15521,7 +15521,9 @@ describe("SHC asynchronous LINK ownership", () => {
     assert.strictEqual(encoded.ok, true, "public fixture share must encode: " + encoded.reason);
     return app.getAsync(`openShare(${JSON.stringify(encoded.value)})`);
   }
-  async function submit(app) { return app.getAsync("document.getElementById('scale-generate').onclick()"); }
+  // runGenerate is the frozen Promise-returning app entrypoint. DOM click
+  // dispatch never promises to return asynchronous listener completion.
+  async function submit(app) { return app.getAsync("runGenerate()"); }
   function editSelected(app) {
     const selected = app.els.decks.children.find(c => c.classList.contains("on"));
     assert.ok(selected, "selected instance has a chip"); selected.onclick();
@@ -15649,7 +15651,9 @@ describe("SHC asynchronous LINK ownership", () => {
     assert.strictEqual(snapshot(app).entries[0].record.o.name, "PUBLIC PAN A");
     assert.strictEqual(snapshot(app).entries[1].record.o.name, "PUBLIC SECOND");
     await clickAt(app, 1); editSelected(app);
-    app.els["scale-delete"].click(); await app.getAsync("document.getElementById('scale-delete').onclick()");
+    app.els["scale-delete"].click(); app.els["scale-delete"].click();
+    await app.waitFor(`(() => { const raw=localStorage.getItem("${SV_KEY}");
+      return raw && JSON.parse(raw).entries.length === 1 && document.getElementById('scale-sheet').hidden; })()`);
     assert.deepStrictEqual(snapshot(app).entries.map(x => x.instanceId), [before.entries[1].instanceId]);
     assert.strictEqual(app.currentDeck().name, "D KURD 10", "deleted selection falls back to the visible default");
   });
@@ -15805,10 +15809,12 @@ describe("SHC asynchronous LINK ownership", () => {
       const stale=await command(again.app,{type,collectionId:e.collectionId,instanceId:iid(3),expectedRevision:1},type==="edit"?a:undefined);
       assert.strictEqual(stale.ok,false); assert.strictEqual(stale.kind,"conflict"); assert.strictEqual(again.app.store[SV_KEY],after);
     }
-    again.app.sandbox.crypto.randomUUID=()=>iid(1);
+    let exhaustedDraws=0;
+    again.app.sandbox.crypto.randomUUID=()=>{exhaustedDraws++;return iid(1);};
     const exhausted=await command(again.app,{type:"import",collectionId:e.collectionId,selectedInstanceId:iid(1)},
       {v:4,s:SV.inventories.other.seed,o:{name:"NO ID AVAILABLE"}});
     assert.strictEqual(exhausted.ok,false); assert.strictEqual(exhausted.kind,"allocation");
+    assert.strictEqual(exhaustedDraws,8,"allocation refuses after exactly eight colliding UUID draws");
     assert.strictEqual(again.app.store[SV_KEY],after);
   });
 
@@ -15861,6 +15867,22 @@ describe("SHC asynchronous LINK ownership", () => {
     const old={v:4,s:SV.inventories.amara9.seed,o:{name:"OLDER REPLACEMENT",replaces:"kurd"}};
     const current={v:4,s:SV.inventories.other.seed,o:{name:"NEWER REPLACEMENT",replaces:"kurd"}};
     const plain=SV.portableRecords.amaraB,opaque=SV.migration.slots.expectedRows[3];
+    // RESET proofs are captured before the competing mutation. Creation AND
+    // Edit of a recognized replacement must invalidate that exact proof.
+    for(const action of ["create","edit"]) {
+      const race=await seeded([old,current,plain,opaque],{slots:{kurd:iid(2)},slotStateRevision:1,preferredSelection:{kind:"saved",id:iid(2)}});
+      const captured=snapshot(race.app),scope=affected(captured);
+      const changed=await command(race.app,action==="create"
+        ? {type:"replace-builtin",collectionId:captured.collectionId,seedId:"kurd",expectedSlotStateRevision:captured.slotStateRevision,expectedOwnerId:iid(2)}
+        : {type:"edit",collectionId:captured.collectionId,instanceId:iid(2),expectedRevision:1},
+        {v:4,s:SV.inventories.other.seed,o:{name:"CHANGED REPLACEMENT"}});
+      assert.strictEqual(changed.ok,true,action+" competitor setup must commit");
+      const winner=race.app.store[SV_KEY];
+      const staleReset=await command(race.app,{type:"reset",collectionId:captured.collectionId,affectedScope:scope});
+      assert.strictEqual(staleReset.ok,false,action+" after arming must protect the newer replacement");
+      assert.strictEqual(staleReset.kind,"conflict");
+      assert.strictEqual(race.app.store[SV_KEY],winner,"stale RESET cannot delete or rewrite the acknowledged winner");
+    }
     const {app}=await seeded([old,current,plain,opaque],{slots:{kurd:iid(2)},slotStateRevision:1,preferredSelection:{kind:"saved",id:iid(2)}});
     const before=snapshot(app),staleProofless={type:"delete",collectionId:before.collectionId,instanceId:iid(1),expectedRevision:1};
     const del=await command(app,{type:"delete",collectionId:before.collectionId,instanceId:iid(2),expectedRevision:1,...slotProof(before)});
@@ -15890,7 +15912,7 @@ describe("SHC asynchronous LINK ownership", () => {
     await held; const before=app.store[SV_KEY],writes=origin.successfulWrites.length;
     try {
       editSelected(app); rename(app,"CANCELLED DRAFT");
-      const pending=app.getAsync("document.getElementById('scale-generate').onclick()");
+      const pending=app.getAsync("runGenerate()");
       await app.waitFor("navigator.locks.query().then(q => q.pending.length === 1)");
       assert.strictEqual(app.els["scale-generate"].disabled,true);
       app.els["scale-generate"].click();
@@ -15919,18 +15941,32 @@ describe("SHC asynchronous LINK ownership", () => {
   test("SV10 U1: final chip labels remain unique through literal suffix and built-in collisions", async () => {
     for(const lang of SV.labels.locales)for(const c of SV.labels.cases) {
       const records=c.names.map(name=>({v:4,s:SV.inventories.amara9.seed,o:{name}}));
-      const raw=JSON.stringify(records);
-      const {app}=await load({storage:{hpfc:JSON.stringify({lang,mode:"A"}),"hpfc.scales.v3":raw}});
+      // Literal fixture ordinals include11/12 and101/102. Full lifetime
+      // history makes those post-delete gaps a valid schema1 input.
+      const input=envelope(records),highest=Math.max(...c.ordinals);
+      input.entries.forEach((entry,i)=>{entry.instanceId=iid(c.ordinals[i]);entry.displayOrdinal=c.ordinals[i];});
+      input.usedInstanceIds=Array.from({length:highest},(_,i)=>iid(i+1));
+      input.nextDisplayOrdinal=highest+1;input.preferredSelection={kind:"saved",id:iid(c.ordinals[0])};
+      const {app}=await load({storage:{hpfc:JSON.stringify({lang,mode:"A"}),[SV_KEY]:JSON.stringify(input)}});
       const labels=names(app);
-      assert.strictEqual(labels.length,5+c.names.length,"migration keeps every same-inventory label candidate in "+lang+"/"+c.id);
+      assert.strictEqual(labels.length,5+c.names.length,"every committed same-inventory label candidate must render in "+lang+"/"+c.id);
       assert.strictEqual(new Set(labels).size,labels.length,"final rendered labels must be collision-free in "+lang+"/"+c.id);
       const e=snapshot(app);
       assert.deepStrictEqual(e.entries.map(x=>x.record.o.name),c.names,"disambiguation never edits stored names");
-      if(c.names.length>1)for(const x of e.entries) {
-        const token="S"+x.displayOrdinal;
-        const chip=app.els.decks.children.find(n=>(n._html||n._text||"").includes(token));
-        assert.ok(chip,"collision suffix is visible: "+token);
-        assert.ok((chip.getAttribute("aria-label")||strip(chip.innerHTML)).includes(token),"accessible label retains discriminator");
+      assert.deepStrictEqual(e.entries.map(x=>x.displayOrdinal),c.ordinals,"fixture ordinals survive rather than being silently compacted");
+      for(const [i,token] of c.expectedSavedTokens.entries()) {
+        // Literal fixture input order is oldest first; custom strip is newest
+        // first. Bind each expected token to its own control, not a substring
+        // search that could accidentally find a sibling's literal name.
+        const chip=app.els.decks.children[c.names.length-1-i];
+        assert.ok(chip && strip(chip.innerHTML||chip.textContent).includes(token),"literal fixture collision suffix is visible on its own control: "+token);
+        assert.ok((chip.getAttribute("aria-label")||strip(chip.innerHTML)).includes(token),"accessible label retains "+token);
+      }
+      if(c.expectedPresetToken) {
+        assert.strictEqual(c.presetId,"amara","this frozen preset case targets the third built-in slot");
+        const preset=app.els.decks.children[c.names.length+2];
+        assert.ok(preset && strip(preset.innerHTML||preset.textContent).includes(c.expectedPresetToken),"preset disambiguation retains literal fixture token "+c.expectedPresetToken);
+        assert.ok((preset.getAttribute("aria-label")||strip(preset.innerHTML)).includes(c.expectedPresetToken));
       }
       for(const id of e.usedInstanceIds)assert.strictEqual(labels.some(n=>n.includes(id)),false,"opaque local handles never appear as labels");
       openSheet(app);app.type(SV.inventories.amara9.seed);
