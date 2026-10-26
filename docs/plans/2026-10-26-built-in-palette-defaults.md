@@ -1,7 +1,8 @@
 # Built-in palette choices — proposed implementation plan
 
 **Independently ENG/design-reviewed plan; queued behind existing active workstreams.**
-Implementation, the exact CLAUDE.md patch and main release remain held. Produced from
+Owner approved queued DEV implementation and the exact proposed CLAUDE.md packet;
+implementation has not started and main release remains held. Produced from
 accepted prompt V2 (instruction-body SHA
 `f1c2f461221c395bcf0ed8650c33c47e02401fd232ce10fe50d65adc90be0a10`).
 The prompt was independently engineering/design-critiqued, then executed. This
@@ -25,9 +26,9 @@ existing queue and all quality gates; it does not authorize implementation,
 change release ordering, resume paused work or grant main-merge consent. Root
 retains the shared ledger and publication ownership.
 
-Implementation activation requires approval of this reviewed scope and the exact
-CLAUDE packet below. Resolve the actual delivered DEV base and current worktree
-ownership then; do not start from a partial active-feature branch merely because
+Owner approved this reviewed DEV scope and exact CLAUDE packet on2026-10-26.
+Implementation activation remains queued until preceding active work is resolved.
+Resolve the actual delivered DEV base and current worktree ownership then; do not start from a partial active-feature branch merely because
 this research checkout contains it. Original dirty/locked worktrees stay intact.
 
 ## Exact requirement and append table
@@ -316,11 +317,12 @@ its own reviewed/tested patch; do not invent an untested universal git-revert
 runbook, delete new records or silently substitute palette0. Owner controls any
 production/main change. This limitation is part of release approval, not hidden.
 
-Current decision: **conditional feasibility, implementation held**. The code path
+Current decision: **conditional feasibility; DEV implementation approved and queued**. The code path
 is small and append-only policy supports it, but wire/persistence compatibility,
 actual grid fit, native behavior and quality outcomes are not yet validated.
-Required remaining approvals are reviewed implementation scope/exact CLAUDE packet
-and later explicit main merge; no additional naming preference is needed now.
+The reviewed implementation scope and exact CLAUDE packet are approved; later
+explicit main merge consent remains required. A materially different CLAUDE patch
+still needs renewed exact approval. No additional naming preference is needed.
 
 Author adversarial review (self-review, not independent):
 
@@ -383,9 +385,21 @@ StaticexactCLAUDEpacket applicability passed without applying it; feature tests,
 actualgridfit, mixedclient operation, implementation and deployment are untested.
 
 Next action is QUEUED ACTIVATION after existing active workstreams: refresh DEV/
-source/instruction context, confirm reviewed scope and obtain explicit approval
-for the exact CLAUDE packet before any implementation. No owner interview is
+source/instruction context, confirm the already-approved scope and verify that the
+approved exact CLAUDE packet still matches the target. Renew approval only if the
+packet materially changes. No owner interview is
 needed to settle the canonical colors, inverse meaning or existing default.
 Preserve the release's old-client limitation in later implementation approval.
 Main still needs separate explicit consent at release. Do not turn this planning
 completion into a feature readiness or delivery claim.
+
+
+## Owner authorization receipt — 2026-10-26
+
+Owner answered the new palette approval interview: “Follow your rec on palettes;
+afk means follow your recs.” This approves the recommended queued implementation
+throughDEV AND ONLY the exact palette-paragraph CLAUDE packet reviewed/published
+in commit a41a3bb782d38753fa0020055dfb233a98866d78. It does not start this work
+before existing active streams, modify any instruction now, or authorize main.
+Do not re-interview the owner for this same approval. Preserve all runtime/TDD/
+independentreview/CI/servedDEV gates and verify exact packet continuity at activation.

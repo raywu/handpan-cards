@@ -32,8 +32,9 @@ worktree/private/tmp/handpan-palette-defaults-plan.20261026, investigationbase0d
 Current step COMPLETED: V1→V2 prompt refinements, independent ENG/design prompt
 critique, accepted prompt execution, independent output-plan ENG/design reviews,
 Cancel/draft plus compatibility revisions, and both re-review CLEAR at5c5a1f3d.
-Implementation remains queued/unapproved pending activation and exactCLAUDEpacket
-approval after preceding activework. Actual10-choice fit/behavior is untested.
+Owner approved queued throughDEV implementation and the exact paletteparagraph
+CLAUDE packet at a41a3bb7. Activation remains AFTER preceding activework; verify
+packet continuity and do not ask for the same approval again. Actual10-choice fit/behavior is untested.
 Next publish immutable plan/ledger refs in existing coordination thread. Do not merge this investigationbase
 (which contains unshipped saved variants) into DEV merely to deliver documents;
 use a documentation-only publication path or the appropriate approved delivery.
@@ -827,3 +828,21 @@ old-spelling browser Web Lock. No preference interview is needed to finish this
 planning; later timing/backup/config decisions belong to execution intake.
 
 Final local plan SHA256: dc3442c847b6f7dbfef9c87cb798ef029775e4153451d4d92c5ee868f1257c21. Prompt SHA256: 1bb8ea534a6e5cad3efc9097f74a44ca622014a7c6c3863af4e638e0a892d656.
+
+
+## Settled owner interview — 2026-10-26, follow recommendations during AFK
+
+- PALETTE-DEFAULTS-10: reviewed plan and exact CLAUDE paletteparagraph patch at
+  a41a3bb7 approved for queued DEV implementation AFTER current active streams.
+  No implementation/CLAUDE edit yet; no main consent; changed packet needs approval.
+- Saved variants performance: use the recommended bounded existingLinuxCI design
+  for the next reviewed PROPOSAL (one90scontrol then, onlyifvalid, one180smatched
+  200-record case; no retries/relaxedthresholds). CurrentMacgate staysHELD. This
+  direction is planning, not permission for unreviewed configuration/global changes.
+- SEO: use the recommended exact18-note EAmara13+5 example for pilotplanning;
+  verify maker/model/provenance before public content. /learn/ home and owner
+  musicalreview role were already settled. No articles/publishing approval.
+
+User reaffirmed AFK means follow recommendations. Make routine in-scope decisions
+and record them rather than re-asking settled choices; preserve explicit main,
+CLAUDE exact-diff, review/test/security and owner musical/physicalQA boundaries.

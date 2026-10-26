@@ -129,3 +129,9 @@ Palette planning completion: acceptedpromptV2 executed; independentENG/design
 reviews and re-reviews CLEAR revisedplan5c5a1f3d after fixing Cancel/draft semantics
 and exactlegacyrefusal/client-fixture details. No feature/CLAUDE changes. Queue
 activation after currentactivework, preserveexactpatchapproval andlatermainconsent.
+
+Owner update2026-10-26: palette plan+exactpaletteCLAUDEpacket at a41a3bb7 approved
+for DEV implementation when precedingactiveworkfinishes. Keep queued; no main.
+Under reaffirmed AFK recommendations, Linuxboundedperformanceproposal and exact
+18-note EAmarapilotplanning directions are selected; other existing approval/
+validation boundaries persist. Do not ask the settled Helpers/home/reviewer again.
