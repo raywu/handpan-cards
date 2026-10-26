@@ -269,5 +269,14 @@
   "sel.auto": "AUTOMATICA ({lang})",
   "sheet.order_hint": "Le note del bordo prendono posto nello stesso ordine della lista. Riordinale nella scheda Disposizione.",
   "sheet.rim_follows": "Le note del bordo ora seguono lo stesso ordine della lista.",
-  "sheet.inner_follows": "Le note interne ora seguono lo stesso ordine della lista."
+  "sheet.inner_follows": "Le note interne ora seguono lo stesso ordine della lista.",
+  "saved.session": "Le modifiche in questa scheda sono temporanee. Si perdono se ricarichi o chiudi questa scheda.",
+  "saved.recovery": "Impossibile leggere le scale salvate. Le scale salvate non sono state modificate. Le modifiche temporanee in questa scheda si perdono quando la ricarichi o la chiudi.",
+  "saved.conflict": "Questa scala è stata modificata in un’altra scheda. La tua bozza è ancora qui. Salvala come scala separata oppure torna alla versione salvata.",
+  "saved.conflictDeleted": "Questa scala è stata eliminata in un’altra scheda. La tua bozza è ancora qui. Salvala come scala separata oppure torna indietro.",
+  "saved.separate": "SALVA COME SCALA SEPARATA",
+  "saved.resetConflict": "Le scale predefinite sono state modificate in un’altra scheda. Non è stato ripristinato nulla. Controllale prima di ripristinarle di nuovo.",
+  "saved.temporary": "USA TEMPORANEAMENTE QUESTA SCHEDA",
+  "saved.failure": "Impossibile salvare le modifiche. La tua bozza è ancora qui. Riprova.",
+  "saved.legacy": "Una versione precedente ha modificato le scale salvate. Le modifiche sono conservate separatamente per il recupero."
 }

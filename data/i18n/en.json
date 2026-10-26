@@ -269,5 +269,14 @@
   "sel.auto": "AUTOMATIC ({lang})",
   "sheet.order_hint": "Top notes take their seats in the order listed. Rearrange them on the Layout tab.",
   "sheet.rim_follows": "The rim now follows the order listed.",
-  "sheet.inner_follows": "The inner notes now follow the order listed."
+  "sheet.inner_follows": "The inner notes now follow the order listed.",
+  "saved.session": "Changes in this tab are temporary. They disappear when you reload or close this tab.",
+  "saved.recovery": "Saved scales could not be read. Your saved scales have not been changed. Temporary changes in this tab disappear when you reload or close it.",
+  "saved.conflict": "This scale changed in another tab. Your draft is still here. Save it as a separate scale or go back to the saved version.",
+  "saved.conflictDeleted": "This scale was removed in another tab. Your draft is still here. Save it as a separate scale or go back.",
+  "saved.separate": "SAVE AS A SEPARATE SCALE",
+  "saved.resetConflict": "Seeded scales changed in another tab. Nothing was reset. Review them before tapping RESET SEEDED SCALES again.",
+  "saved.temporary": "USE THIS TAB TEMPORARILY",
+  "saved.failure": "Could not save these changes. Your draft is still here. Try again.",
+  "saved.legacy": "An older app changed its saved scales. Those changes are kept separately for recovery."
 }
