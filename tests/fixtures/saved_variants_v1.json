@@ -188,7 +188,8 @@
       "v": 4,
       "s": "[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]",
       "o": {
-        "name": "PUBLIC LAYOUT"
+        "name": "PUBLIC LAYOUT",
+        "anchor": "between"
       }
     },
     "pygmyAnglesAllNull": {
@@ -205,7 +206,8 @@
             null,
             null
           ]
-        }
+        },
+        "anchor": "between"
       }
     },
     "pygmyExplicitDefaultAngles": {
