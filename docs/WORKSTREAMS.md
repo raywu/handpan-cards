@@ -4,6 +4,15 @@
 reconciles current live refs, delivered/held releases, historical completions and
 queued prompts/plans. Local checkpoint is ahead of canonical DEV publication.
 
+## Check-in reporting requirement
+
+Owner clarified that every check-in must cover active development, interrupted
+work, DEV deliveries awaiting main, completed/released work, and upcoming prompts
+and plans. Give each workstream a plain-language one-sentence description plus
+current status and next step; PR numbers alone are not a status report. Preserve
+settled decisions and interview only genuine unresolved decisions/blockers.
+Do not change CLAUDE.md to install this clarification without exact approval.
+
 ## Owner decision — duplicate notes paused
 
 PR579 / DUPLICATE-NOTES is **PAUSED UNTIL FURTHER NOTICE**. Preserve its finalized
@@ -30,7 +39,8 @@ with identical reviewed test hashes and unchanged source368ed. Remaining failure
 include source routing/announcement/focus regressions and separate fixture-tool
 session capability gaps. New design P1: session publication failure must not advise
 reload (would lose session data/draft). T captured real session Save/import2RED
-and durable recovery1PASS before repair. U repair and independent recheck continue.
+and durable recovery1PASS before repair. Further source repairs are committed in U069035fd (index3cfc3c93); SV14tests
+committed4a28e17e. Combined re-test and independent recheck remain outstanding.
 Integration remains backend-only; no feature DEV or release claim.
 UI author reports shipping177x2/syntax/i18n/engine data checks PASS; full regression,
 native acceptance, mutants, exact-head CI and actual DEV remain outstanding.
