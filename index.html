@@ -13551,7 +13551,11 @@ savedSnapshotListener=event=>{
   updateSavedStatus();
   if(!dirty && !sheetOpen){
     if(!savedEqual(oldSelection,selection) || beforeRow?.revision!==afterRow?.revision){setOrder();render();}
-    syncRoute();
+    // A navigation fragment can precede its hashchange handler. Snapshot
+    // publication must not replace that destination with the previous scale.
+    const pendingRoute = location.hash !== lastAcknowledgedRouteHash &&
+      (location.hash.indexOf(DECK_ROUTE) === 0 || location.hash.indexOf(SHARE_PREFIX) === 0);
+    if (!pendingRoute) syncRoute();
   }
   if(focusedTag && !focusedRemoved){
     const chip=[...document.getElementById("decks").children].find(el=>el.getAttribute("data-selection-id")===focusedTag.id && el.getAttribute("data-selection-kind")===focusedTag.kind);
@@ -15088,6 +15092,7 @@ function routeInfo(d) {
 const routeFor = d => routeInfo(d).route;
 let routeRefused = false;
 let booted = false;
+let lastAcknowledgedRouteHash = null;
 function syncRoute() {
   if (sheetOpen || aboutOpen) return;
   if(pendingRecoveryShare!==null && location.hash===SHARE_PREFIX+pendingRecoveryShare){
@@ -15101,6 +15106,7 @@ function syncRoute() {
   if (location.pathname + location.search + location.hash !== want) {
     history.replaceState(history.state, "", want);
   }
+  lastAcknowledgedRouteHash = location.hash;
   observeLinkRoute();
   const refused = route === "";
   shareCopy.disabled = refused;
@@ -15185,7 +15191,10 @@ function routeToDeck(routed) {
 window.addEventListener("hashchange", async () => {
   observeLinkRoute();
   if (sheetOpen || aboutOpen) return;
-  if (location.hash === routeFor(deck())) return;
+  if (location.hash === routeFor(deck())) {
+    lastAcknowledgedRouteHash = location.hash;
+    return;
+  }
   if (location.hash.indexOf(SHARE_PREFIX) === 0) {
     const code = location.hash.slice(SHARE_PREFIX.length);
     const read = HPE.share.decode(code);

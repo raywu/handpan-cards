@@ -1,3 +1,41 @@
+# All-workstream status — latest2026-10-26
+
+LatestverifiedDEV3542d6ea868bf08e81a0b4f06c4bc71bbc20cbcb; main96c4c589 remains
+held/unchanged. [Sharedledger](../WORKSTREAMS.md) hascurrentauthorizations and
+[route-repair plan](2026-10-26-saved-variants-route-intent.md) has preciseactiveproofs.
+This section supersedes the archivedearlierstatus below; preserve its evidence.
+
+| Workstream | Description/currentstate | Nextaction/authority |
+|---|---|---|
+| Savedvariants FIRST | Distinctnamed/layout versions withsafeEdit/conflicts; latestpublished0d36CIfailedonlyFIRSTPygmyhashwait, allotherjobs/all1618faultspassed. Localreviewed0322repair/T224 now17modeledcasesGREENaftermeaningfulRED/review. | Commit/integrateHelpers, fourfaultproofs, unchangednative/lifecycle, fullfinalCI/servedDEV; notQAready, nomain. |
+| Linuxperformance | GateHELDafterMacbaseline-onlyincompletecase. Ownerselectedone90scontrol→eligibleone180s200recordLinuxproposal; private3de57389draftprepared. | Independentreview, applicableconfigurationactivation, frozenfinalsource/matchedbaseline; notconfigured/run/validated. |
+| Helpers | Nativeexternalresourcebeside101 deliveredDEV3542 after4eaFULLCIandactualHTTPSsource7fe/9states/publicpopup validation. | OwnerdeviceQA pending; mainheld; no repeatedimplementation/Resourcespatchapproval. |
+| Swipe | DeliberateScale↔Layouthorizontalnavigation authorized/interruptedbehindvariants. | Updatedbase/literalproofs/independentreview/fullCI/DEV/nativeQA; preservelane. |
+| Palette10 | Reviewedappend-onlyfourchoicesplan/exactCLAUDEpacketat a41a3bb7 APPROVEDbyowner, sourceapprovalreceipt08169310. | QUEUEDAFTERactivework, nextmainreleasetargetsubjectgates; verifyunchangedpacketatactivation, nomain/nocodeyet. |
+| Macforegroundhelper | ScopedsettlehelperonDEV, mainheld. | ReleaseseparatefrombroaderMacM2/M3/C1/fullsuite. |
+| Per-ringfeedback | LatestoutcomeperringdeliveredDEV, mainheld. | Preservecompletedimplementation; releasequeuehold. |
+| LINKasyncownership | StalecallbacksrepaireddeliveredDEV, ownerQApassed. | Mainheld; doesn'tsolvevariantidentityorproveoriginalanglecause. |
+| SEOlongtail | ReviewedplanonDEV; /learn/, ownermusicreview andexact18-noteEAmarapilotplanning settled. | Provenance/hosting/music/data verification; noarticles/generator/publishinggrant; broaderSEOresearchqueued. |
+| Duplicatenotes | Finalplanchoicesretained, ENTIREstream/mainreleasePAUSED. | Awaitexplicitresumption; do notimplement/re-interview. |
+| ReleasedUI | Naturalness/i18nC/HTC/seat-orderfixesreleased, ownerverified; Englishscalegrammarunchanged. | Preservedecisions; no rerunfromstaleoldplans. |
+| Browserrunbook/DRY | Repolocalsharedguidance/ledger/bootstrapreleased. | Globalnativeparity/newhost/recovery stillunvalidated. |
+| Auditedhistory | Engine/print/tiers/numerals/Amy/About/privacy/discoverability/default-edit/delete/share/order/free-placement/refactorfamiliescompletedper38-sourceaudit. | Historicalclosures, notfreshretests; retainremainingnitsseparately. |
+| Rename | handpan-chords promptv3/ENG-reviewedplanready, no rename/rehearsal. | Separatemaintenance/backup/providerbinding/executionintake. |
+| Agentqualitycomparison | CodexvsClaudeholisticcomparisonpromptqueued. | Runplanningandindependentreviewsbeforestudy; no comparisonresults. |
+| LinearSoT | Crossharnessroadmap/priority/visibility/freeplanresearchpromptqueued. | CEO+ENG-reviewedplanthenapprovedsetup/cutover; currentledgerretained. |
+| Wholecode/testaudit | Robustness/DRY/deadcode/deadtestauditqueued. | Onlyafterotheroutstandingworkresolved; no removals. |
+| NITS→OF-D/I18N-D/Q9 | Deferredcoverage/docs/newfeaturei18n/phoneRESETARIAcandidates. | Revalidatecurrentevidenceandscopes; exactCLAUDEapprovalwhereapplicable. |
+| BroaderMac/recovery | FullMacbudget/M2/M3/C1, operationalrollback/newhost/globalworkflowparity remainseparate. | Reviewedscopedproposals; no installs/globalchangesimplicit. |
+| Cleanup/optionalP3 | Worktreeinventoryonly; optionalDESIGN/stylevariables/bottom-labeloracleunscheduled. | Noremoval/reset/unlock; no automaticqueueblockforoptionalideas. |
+| Ownerstopped | Audio/statistics/SM2/PWA. | Remainstopped. |
+
+Mainqueuepreservedinorder; duplicateplanstayspaused. CI-onlydraftsarenotmainrelease
+authorizations. HelpersphysicalQAistheonlycurrentownerfollow-up; itdoesn'tblock
+ongoingSVGengineering. Otherownerchoicesaresettled; AFKmeansfollowrecommendations
+withinexistinggrant/review/test/exactCLAUDE/mainboundaries, notinventedQAresults.
+
+## Archived earliercheck-in — historical, superseded wherecontradicted
+
 # All-workstream status — 2026-10-26
 
 Fresh GitHub check-in on 2026-10-26: DEV remains6165c8739f11c8d00c4b27ea6512ef1278275748

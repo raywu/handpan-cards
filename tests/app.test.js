@@ -9843,6 +9843,281 @@ describe("share url", () => {
     return {first,d,app:await durableBoot({origin:first.fixtureOrigin,href:PAGE})};
   };
 
+  test("SV-ROUTE-1: modeled prior preference ACKs and unchanged rereads preserve a pending hash destination", async () => {
+    const HIJAZ = "#deck=c-sharp-hijaz-9", PYGMY = "#deck=f-low-pygmy-18";
+    const literalShown = (app, id, total, route, label) => {
+      assert.strictEqual(app.currentDeck().id, id, label + ": literal displayed deck");
+      assert.strictEqual(app.get("order.length"), total, label + ": literal card inventory");
+      assert.strictEqual(app.els.count.textContent, "1 / " + total, label + ": literal card counter");
+      assert.strictEqual(app.location.hash, route, label + ": canonical route");
+    };
+    const dispatchCurrent = app => app.hashchange(app.location.hash, { force: true });
+    const completed = [];
+    const complete = name => { completed.push(name); console.log("HASH_INTENT_MODEL_CASE_COMPLETE " + JSON.stringify({ name, completed: completed.length })); };
+    const requiredCases = ["immediate-delivery", "prior-preference-ACK", "unchanged-reread",
+      "edit-pending", "edit-canonical", "delete-pending", "delete-canonical", "slot-pending", "slot-canonical",
+      "ignored-#something-edit", "ignored-#something-delete", "ignored-#add-edit", "ignored-#add-delete",
+      "ignored-#edit-x-edit", "ignored-#edit-x-delete", "equal-current-ack-then-second-edit",
+      "unresolved-cold-share-then-pending-route-peer-edit"];
+    // Independent literal public-record URLs: decoded meaning and FNV24 are
+    // specified by share-readable plan2.2; no routeFor/encode oracle is used.
+    const records = {
+      A: { v: 4, s: "(D3) A3 C4 D4 E4 F4 G4 A4 C5", o: { name: "PUBLIC PAN A", palette: 0 } },
+      B: { v: 4, s: "(D3) A3 C4 D4 E4 F4 G4 A4 C5", o: { name: "PUBLIC PAN B", palette: 0 } },
+      C: { v: 4, s: "(D3) A3 C4 D4 E4 F4 G4 A4 C5", o: { name: "PUBLIC PAN C", palette: 0 } },
+    };
+    const routes = {
+      A: "#s=6/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/PUBLIC+PAN+A/0ce2c5",
+      B: "#s=6/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/PUBLIC+PAN+B/0fe2ca",
+      C: "#s=6/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/PUBLIC+PAN+C/0ee2c8",
+      kurd: "#deck=d-kurd-10", amara: "#deck=d-amara-9",
+    };
+    const freshLink = async (target, expected, label) => {
+      const copied = [];
+      target.sandbox.navigator.clipboard = { writeText: href => { copied.push(href); return Promise.resolve(); } };
+      assert.strictEqual(target.els["share-copy"].disabled, false, label + ": LINK remains available");
+      target.els["share-copy"].click();
+      await Promise.resolve(); await Promise.resolve();
+      assert.deepStrictEqual(copied, [PAGE + expected], label + ": fresh LINK contains the independent literal route");
+    };
+    const pair = async (builtin = false) => {
+      const { createOrigin } = require("./helpers/sandbox.js");
+      const origin = createOrigin({ events: "omit", broadcastEvents: "omit" });
+      // Missed transport hints make the real explicit reconciliation the
+      // publication boundary. They do not fake a collection or app callback.
+      const local = await durableBoot({ origin, href: PAGE + (builtin ? routes.amara : routes.A) });
+      await writeBarrier(local);
+      const peer = await durableBoot({ origin, href: PAGE });
+      await writeBarrier(peer);
+      if (builtin) literalShown(local, "amara", 27, routes.amara, "builtin slot fixture");
+      else {
+        assert.strictEqual(local.currentDeck().name, "PUBLIC PAN A");
+        assert.strictEqual(local.location.hash, routes.A);
+        assert.strictEqual(savedEnvelope(local).entries.length, 1);
+        assert.strictEqual(savedEnvelope(local).entries[0].revision, 1);
+      }
+      return { local, peer };
+    };
+    const peerCommand = async (ctx, kind, record = records.B) => {
+      const before = savedEnvelope(ctx.peer), row = before.entries[0];
+      const command = kind === "slot" ? { type: "replace-builtin", collectionId: before.collectionId,
+        seedId: "amara", expectedSlotStateRevision: 0, expectedOwnerId: null } :
+        { type: kind, collectionId: before.collectionId, instanceId: row.instanceId, expectedRevision: row.revision };
+      const result = await ctx.peer.getAsync(`(async()=>{
+        const command=${JSON.stringify(command)};
+        ${kind === "delete" ? "" : `const record=${JSON.stringify(record)},built=buildGenerated(record.s,record.o);
+          if(!built.ok)return built;
+          command.candidate={record:scaleRecord(seedOf(built.value)),deck:built.value};`}
+        return commitSaved(command);
+      })()`);
+      assert.strictEqual(result.ok, true, "actual peer modeled command commits: " + kind);
+      assert.strictEqual(result.published, true, "the acknowledged peer cache is really published");
+      const after = savedEnvelope(ctx.peer);
+      assert.strictEqual(after.revision, before.revision + 1, "exactly one peer command commits its next model revision");
+      if (kind === "delete") assert.strictEqual(after.entries.length, 0);
+      else if (kind === "slot") {
+        assert.strictEqual(after.entries.length, 1);assert.strictEqual(after.slotStateRevision, 1);
+        assert.strictEqual(after.slots.amara, result.instanceId);
+        assert.strictEqual(after.entries[0].record.o.name, "PUBLIC PAN B");
+        assert.strictEqual(after.entries[0].record.o.replaces, "amara");
+      } else {
+        assert.strictEqual(after.entries[0].revision, row.revision + 1);
+        assert.strictEqual(after.entries[0].record.o.name, record.o.name);
+      }
+      const read = await ctx.local.getAsync("reconcileSavedCollection()");
+      assert.strictEqual(read.ok, true, "the local app performs the actual modeled read");
+      assert.strictEqual(ctx.local.get("savedState.revision"), after.revision, "the peer model revision is applied locally");
+      return after;
+    };
+    const resultShown = (target, kind, record = records.B) => {
+      if (kind === "delete") {
+        assert.strictEqual(target.currentDeck().id, "kurd");assert.strictEqual(target.get("order.length"), 49);
+        return routes.kurd;
+      }
+      assert.strictEqual(target.currentDeck().name, record.o.name);
+      assert.strictEqual(target.get("order.length"), 27);
+      return record.o.name === "PUBLIC PAN C" ? routes.C : routes.B;
+    };
+    // The sandbox origin supplies modeled IDB/WebLocks. These are actual app
+    // commands under an explicit captured schedule, not native browser proof.
+    const immediate = await durableBoot({ href: PAGE });
+    immediate.hashchange(HIJAZ);
+    literalShown(immediate, "hijaz", 19, HIJAZ, "immediate Hijaz control");
+    await writeBarrier(immediate);
+    await committedPreference(immediate, { kind: "builtin", id: "hijaz" });
+    const immediateIntent = { oldURL: immediate.location.href, newURL: PAGE + PYGMY };
+    immediate.location.hash = PYGMY;
+    dispatchCurrent(immediate);
+    literalShown(immediate, "pygmy", 53, PYGMY, "immediate destination delivery control");
+    await writeBarrier(immediate);
+    await committedPreference(immediate, { kind: "builtin", id: "pygmy" });
+    console.log("HASH_INTENT_MODEL_CONTROL " + JSON.stringify({ intended: immediateIntent,
+      actualURL: immediate.location.href, revision: savedEnvelope(immediate).revision,
+      qualification: "modeled event delivery; force dispatch reassigns only the current hash" }));
+    complete("immediate-delivery");
+
+    const app = await durableBoot({ href: PAGE });
+    const initial = savedEnvelope(app);
+    assert.strictEqual(initial.revision, 1, "the fresh modeled collection starts at its literal initial revision");
+    assert.deepStrictEqual(initial.preferredSelection, { kind: "builtin", id: "kurd" });
+    let release, acquiredResolve;
+    const acquired = new Promise(resolve => { acquiredResolve = resolve; });
+    const blocker = app.sandbox.navigator.locks.request("handpan-cards:saved-scales:v1", () => {
+      acquiredResolve();
+      return new Promise(resolve => { release = resolve; });
+    });
+    await acquired;
+    try {
+      app.hashchange(HIJAZ);
+      literalShown(app, "hijaz", 19, HIJAZ, "prior Hijaz selection while modeled ACK held");
+      await app.waitFor('navigator.locks.query().then(q=>q.pending.filter(x=>x.name==="handpan-cards:saved-scales:v1").length===1)');
+      const held = await app.sandbox.navigator.locks.query();
+      assert.strictEqual(held.held.filter(lock => lock.name === "handpan-cards:saved-scales:v1").length, 1);
+      assert.strictEqual(held.pending.filter(lock => lock.name === "handpan-cards:saved-scales:v1").length, 1,
+        "one actual app preference command waits behind the acquired model barrier");
+      assert.strictEqual(savedEnvelope(app).revision, 1);
+      assert.deepStrictEqual(savedEnvelope(app).preferredSelection, { kind: "builtin", id: "kurd" });
+      const intended = { oldURL: app.location.href, newURL: PAGE + PYGMY };
+      app.location.hash = PYGMY; // URL write before explicitly delayed modeled delivery.
+      assert.strictEqual(app.location.hash, PYGMY, "the destination was really written before releasing the ACK");
+      release();
+      await blocker;
+      await writeBarrier(app);
+      await committedPreference(app, { kind: "builtin", id: "hijaz" });
+      const acknowledged = savedEnvelope(app);
+      assert.strictEqual(acknowledged.revision, 2, "the one prior preference command really committed its next revision");
+      assert.strictEqual(app.get("savedState.revision"), 2, "the prior ACK was published into the application model");
+      assert.strictEqual(app.currentDeck().id, "hijaz", "the delayed destination handler has not selected Pygmy yet");
+      assert.strictEqual(app.get("order.length"), 19);
+      console.log("HASH_INTENT_MODEL_ACK " + JSON.stringify({ intended, actualURL: app.location.href,
+        revision: acknowledged.revision, preferredSelection: acknowledged.preferredSelection,
+        shown: app.currentDeck().id, qualification: "modeled durable ACK between raw URL write and delayed handler, not native scheduling" }));
+      // Intended original-source RED. Do not heal an erased destination by
+      // calling app.hashchange(PYGMY) before this actual-location assertion.
+      assert.strictEqual(app.location.hash, PYGMY,
+        "a prior preference ACK must preserve the actual pending Pygmy destination before handler delivery");
+      dispatchCurrent(app);
+      literalShown(app, "pygmy", 53, PYGMY, "destination delivered after prior ACK");
+    } finally {
+      if (release) release();
+      await blocker;
+      await writeBarrier(app);
+    }
+    complete("prior-preference-ACK");
+
+    const reread = await durableBoot({ href: PAGE });
+    reread.hashchange(HIJAZ);
+    await writeBarrier(reread);
+    await committedPreference(reread, { kind: "builtin", id: "hijaz" });
+    literalShown(reread, "hijaz", 19, HIJAZ, "unchanged reread setup");
+    const beforeRead = savedEnvelope(reread);
+    const readIntent = { oldURL: reread.location.href, newURL: PAGE + PYGMY };
+    reread.location.hash = PYGMY;
+    const result = await reread.getAsync("reconcileSavedCollection()");
+    assert.strictEqual(result.ok, true, "the actual application performs the modeled durable reread");
+    assert.strictEqual(savedEnvelope(reread).revision, beforeRead.revision, "an unchanged reread performs no new commit");
+    assert.deepStrictEqual(savedEnvelope(reread).preferredSelection, { kind: "builtin", id: "hijaz" });
+    assert.strictEqual(reread.currentDeck().id, "hijaz");
+    console.log("HASH_INTENT_MODEL_REREAD " + JSON.stringify({ intended: readIntent,
+      actualURL: reread.location.href, revision: savedEnvelope(reread).revision,
+      qualification: "modeled no-op reconciliation before delayed handler, not native scheduling" }));
+    assert.strictEqual(reread.location.hash, PYGMY,
+      "an unchanged reread must preserve the actual pending Pygmy destination before handler delivery");
+    dispatchCurrent(reread);
+    literalShown(reread, "pygmy", 53, PYGMY, "destination delivered after unchanged reread");
+    await writeBarrier(reread);
+    complete("unchanged-reread");
+
+    for (const kind of ["edit", "delete", "slot"]) for (const pending of [true, false]) {
+      const ctx = await pair(kind === "slot");
+      const name = kind + (pending ? "-pending" : "-canonical");
+      const intended = { oldURL: ctx.local.location.href, newURL: PAGE + PYGMY };
+      if (pending) ctx.local.location.hash = PYGMY;
+      await peerCommand(ctx, kind);
+      const canonical = resultShown(ctx.local, kind);
+      console.log("HASH_INTENT_MODEL_REMOTE " + JSON.stringify({ name, intended,
+        actualURL: ctx.local.location.href, shown: ctx.local.currentDeck().name,
+        revision: savedEnvelope(ctx.local).revision }));
+      if (pending) {
+        assert.strictEqual(ctx.local.location.hash, PYGMY, name + ": a real peer update preserves the actual pending destination");
+        dispatchCurrent(ctx.local);
+        literalShown(ctx.local, "pygmy", 53, PYGMY, name + " resolved destination");
+        await writeBarrier(ctx.local);
+        await freshLink(ctx.local, PYGMY, name);
+      } else {
+        assert.strictEqual(ctx.local.location.hash, canonical, name + ": normal peer update canonicalizes the live URL");
+        await freshLink(ctx.local, canonical, name);
+      }
+      complete(name);
+    }
+    for (const fragment of ["#something", "#add", "#edit-x"]) for (const kind of ["edit", "delete"]) {
+      const ctx = await pair();
+      const name = "ignored-" + fragment + "-" + kind;
+      ctx.local.location.hash = fragment;
+      const historyBefore = JSON.stringify(ctx.local.history.calls);
+      dispatchCurrent(ctx.local);
+      assert.strictEqual(ctx.local.location.hash, fragment, name + ": handler keeps the ignored raw fragment");
+      assert.strictEqual(JSON.stringify(ctx.local.history.calls), historyBefore, name + ": ignored handler writes no history");
+      await peerCommand(ctx, kind);
+      const canonical = resultShown(ctx.local, kind);
+      assert.strictEqual(ctx.local.location.hash, canonical, name + ": later peer publication still canonicalizes the URL");
+      await freshLink(ctx.local, canonical, name);
+      complete(name);
+    }
+    {
+      const ctx = await pair();
+      ctx.local.location.hash = routes.B;
+      await peerCommand(ctx, "edit", records.B);
+      resultShown(ctx.local, "edit", records.B);
+      assert.strictEqual(ctx.local.location.hash, routes.B, "peer recordB now matches the pending literal routeB exactly");
+      const historyBefore = JSON.stringify(ctx.local.history.calls);
+      dispatchCurrent(ctx.local);
+      assert.strictEqual(ctx.local.location.hash, routes.B);
+      assert.strictEqual(JSON.stringify(ctx.local.history.calls), historyBefore, "an exact-current route handler acknowledges without history writes");
+      await peerCommand(ctx, "edit", records.C);
+      resultShown(ctx.local, "edit", records.C);
+      assert.strictEqual(ctx.local.location.hash, routes.C, "after the equality acknowledgment a second peer edit must update the live URL");
+      await freshLink(ctx.local, routes.C, "equality acknowledgment then second peer edit");
+      complete("equal-current-ack-then-second-edit");
+    }
+    {
+      // Existing SV12 U5 recovery contract: cold import failure retains its
+      // incoming share and disabled LINK without publishing a canonical route.
+      // This reaches the unacknowledged-route lifecycle naturally, with no
+      // marker inspection/injection and no newer temporary-use action.
+      const ctx = await pair();
+      const beforeRecovery = savedRaw(ctx.local);
+      const cold = await durableBoot({ origin: ctx.local.fixtureOrigin, href: PAGE + routes.B,
+        idbFault: { operation: "put", error: new Error("public route recovery import refusal") } });
+      assert.strictEqual(cold.get("booted"), true);
+      assert.strictEqual(cold.get("savedMode"), "durable");
+      assert.strictEqual(cold.currentDeck().name, "PUBLIC PAN A", "failed cold import keeps its acknowledged old record visible");
+      assert.strictEqual(cold.location.hash, routes.B, "the unresolved incoming share remains in the bar");
+      assert.strictEqual(cold.els["share-copy"].disabled, true, "unresolved cold import cannot share the old selected record");
+      assert.strictEqual(savedRaw(cold), beforeRecovery, "the refused import commits no record or revision");
+      assert.deepStrictEqual(savedEnvelope(cold).entries.map(row => row.record.o.name), ["PUBLIC PAN A"]);
+      assert.strictEqual(cold.history.calls.length, 0, "the unresolved cold route has never been canonicalized by a history write");
+      ctx.local = cold;
+      const intended = { oldURL: cold.location.href, newURL: PAGE + PYGMY };
+      cold.location.hash = PYGMY;
+      await peerCommand(ctx, "edit", records.C);
+      resultShown(cold, "edit", records.C);
+      console.log("HASH_INTENT_MODEL_RECOVERY_PENDING " + JSON.stringify({ intended,
+        actualURL: cold.location.href, shown: cold.currentDeck().name, revision: savedEnvelope(cold).revision,
+        qualification: "modeled peer publication after naturally unresolved cold import; no newer recovery action" }));
+      assert.strictEqual(cold.location.hash, PYGMY,
+        "a peer publication after an unresolved cold share must preserve the newer actual pending Pygmy destination");
+      dispatchCurrent(cold);
+      literalShown(cold, "pygmy", 53, PYGMY, "new destination supersedes unresolved cold share after handler delivery");
+      await writeBarrier(cold);
+      await freshLink(cold, PYGMY, "resolved destination after failed cold import");
+      complete("unresolved-cold-share-then-pending-route-peer-edit");
+    }
+    assert.deepStrictEqual(completed, requiredCases, "all seventeen frozen modeled route cases execute in order with no omissions");
+    console.log("HASH_INTENT_MODEL_MANIFEST " + JSON.stringify({ required: requiredCases, completed,
+      count: completed.length, qualification: "actual app commands via sandbox IDB/WebLocks MODEL, not native scheduling proof" }));
+  });
+
   test("SU: tapping three chips writes three replaceState hashes and no pushState", async () => {
     const app=await durableBoot(),n=replaces(app).length,copied=[];
     app.sandbox.navigator.clipboard={writeText:href=>{copied.push(href);return Promise.resolve();}};

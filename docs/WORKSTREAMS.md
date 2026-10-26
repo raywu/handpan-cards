@@ -1,5 +1,51 @@
 # Shared workstream ledger
 
+## Current continuation and settled decisions — 2026-10-26
+
+This section supersedes older pending/blocking labels below. Preserve historic
+proofs; readliveheads/CI/reporting before resuming. Rootsoleintegrator/browserowner;
+originaldirty/lockedcheckout staysuntouched. Main96c4c589 remainsunmerged.
+
+- **Saved variants FIRST PRIORITY:** current0d36 FULLCI40387134731 FAILEDonly
+  nativeBack/Forwardfixture FIRSTPygmy-onwait (487/488nativepass; all939app/67harness,
+  data/Python/bothfit/all1618faults pass). No pointerinput inthisfixture. Modeled
+  realapppriorHijazpreferenceACK erasedpendingPygmyhash: intendedliteralRED50dc
+  confirmed, immediatecontrolpass, notnativecausalityproof. [Reviewedrouteplan](plans/2026-10-26-saved-variants-route-intent.md)
+  A2e50b independentlyENG/designclear aftertwo lifecyclefindings. Expandedtestlane
+  /private/tmp/handpan-saved-variants.HVUKbE/hash-tests, branchcodex/variants-hash-tests-20261026,
+  base0d36; onlyapp.test.js/floor940. Source3b07 STILLFROZEN untilexpandedT/REDreview;
+  nextsourceguardmustpreservependingknownroutes, ignoredhashpolicy andrealpeerupdates.
+- **Performance validation separately HELD:** stoppedMaccomparison17rowsbaseline
+  timeout, candidateunrun; no moreautomaticmeasurements. Ownerselectedbounded
+  existingLinuxCI PROPOSAL direction (90scontrol→onlyifvalid180sfull200case,
+  noexperimentretries/relaxedthresholds). Privateproposalresearch inparallel;
+  configuration/codeexecutionrequiresitsreviews/applicablescope, notassumedpassed.
+- **Helpers DELIVEREDDEV/ownerQAready:** feature4ea8e0f7 FULLCI40392258100SUCCESS,
+  mergedDEV3542d6ea868bf08e81a0b4f06c4bc71bbc20cbcb. Cloudflarecheckforthatcommit
+  SUCCESS andactualHTTPSmainDocumentbodySHA7fe verified. Live9EN/fallbackstates,
+  keyboard/44px/two-linepair/actualpublicnewtab/noopener/practiceinvariance pass,
+  ownedcleanuptrue5.631s. Existinglocal8locale/bothfont+1344pairedchecksindependently
+  accepted; physicaldevice/ownerQA stillpending. Mainheld. Do not askimplementation
+  orResourcesCLAUDEapprovalagain; it wasalreadygrantedandused.
+- **Palette defaults APPROVED/QUEUED:** ownerexplicitapprovedrecommendedthroughDEV
+  plan ANDexactCLAUDEpaletteparagraphpacket at[a41a3bb7](https://github.com/raywu/handpan-cards/blob/a41a3bb782d38753fa0020055dfb233a98866d78/docs/plans/2026-10-26-built-in-palette-defaults.md).
+  [Authorizationreceipt08169310](https://github.com/raywu/handpan-cards/blob/08169310/docs/WORKSTREAMS.md)
+  preservesgrant. StartONLYafterexistingactivework(SV/Helpers/swipe), targetnextmain
+  release ifgatespass. No palettecode/CLAUDEedit now; verifyapprovedpacketcontinuity
+  atactivation, don'tre-askunchangedgrant. Preserveold6/default0; fourappendedpairs.
+- **SEO choices settled:** /learn/ publishingDESIGN, ownerpilotmusicalreview, exact
+ 18-noteEAmara13+5firstpilotplanning selected. Provenance/music/hosting/data still
+  needverification; noarticles/generator/publishingauthorization. Don'tre-askthese.
+- **Otherstreams unchanged:** swipeauthorized/interruptedbehindprioritysharingwork;
+  duplicate-noteENTIREstream/releasePAUSEDuntilownerresumes; existingDEVmainqueue
+  heldinorder; releasedNaturalness/HTC/i18n/seat/runbook/DRYwork stayscomplete.
+  FutureLinear/qualitycomparison/rename/robustnessauditqueuesretainownscope.
+
+OwnerreaffirmedAFKmeansfollowrecommendations: makeroutinein-scopedecisions, record
+choices andcontinue. Preserveindependentreview/TDD/CI/actualDEVgates, exactCLAUDE
+approvalboundary andexplicitmainconsent. ReportinginexistingGitHubthreads authorized.
+
+
 [All-workstream status and future queue](plans/2026-10-25-workstream-status.md)
 reconciles current live refs, delivered/held releases, historical completions and
 queued prompts/plans. Local checkpoint is ahead of canonical DEV publication.
@@ -793,3 +839,26 @@ old-spelling browser Web Lock. No preference interview is needed to finish this
 planning; later timing/backup/config decisions belong to execution intake.
 
 Final local plan SHA256: dc3442c847b6f7dbfef9c87cb798ef029775e4153451d4d92c5ee868f1257c21. Prompt SHA256: 1bb8ea534a6e5cad3efc9097f74a44ca622014a7c6c3863af4e638e0a892d656.
+
+
+## Routing diagnostic and Helpers delivery — latest recovery
+
+ExpandedT lane/hash-tests appSHAe77fe76f froze16explicitmodelcases and re-proved
+original3b07 prior-ACK-erases-Pygmy ERR_ASSERTION once (onlyimmediatecontrolcompleted;
+15downstreamcases unrun). No healinghash, source/helper unchanged; floor940 only.
+IndependentT/REDreview precedes sourceactivation. Sourceworktreeprepared
+/private/tmp/handpan-saved-variants.HVUKbE/hash-source,
+branchcodex/variants-hash-source-20261026/base0d36, STILLUNEDITED.
+
+HelpersactualDEVdeliveryverified in [delivery/QA checkpoint](https://github.com/raywu/handpan-cards/pull/585#issuecomment-6427367137).
+DEV3542d6ea, fullCI4eaSUCCESS, actualservedsource7fe/9states/publicpopup/noindex/
+noanalytics/cleanup confirmed. OwnerQA pending; mainstill96c4/no consent.
+Owner's explicit3interviewanswers confirmpalettequeuedDEV/exactpacketapproval,
+boundedLinuxCIperformancePROPOSAL andexact18-noteEAmarapilotPLANNING; no re-ask.
+
+
+Latestsourceproof: final0322/T224 ALL17modelcasesGREEN andindependentENGCLEAR after
+NULLexemptionwasidentifiedandprovenlateREDusingnaturalfailedcoldincomingimport.
+No directstateinjection. Source/testchangesreadyforcommitandapprovedHelpersmerge;
+thenfourfaultvectors/native/fullCI/servedDEV/performancegatesremain. This supersedes
+older'3b07frozen'checkpointlabels; originalsource/CI failures stayhistorical.

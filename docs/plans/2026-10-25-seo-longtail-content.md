@@ -380,3 +380,13 @@ Read the three research notes for direct sources, code symbols, diagnostic limit
 and source hashes; [SEO recovery](2026-10-25-seo-plan-recovery.md) records historical
 queue/site-name/auth facts. Coordination retains prompt critique and subsequent
 independent review dispositions. No private data or credentials are included.
+
+
+## Settled first pilot — owner answer2026-10-26
+
+Use the exact18-note EAmara13+5 example supplied byowner for FIRSTPILOTPLANNING.
+Do not labelit20notes; a distinct20-note lesson requiresits ownverifiedinventory.
+/learn/ publishinghomeDESIGN andowner musical-reviewrole werealreadysettled.
+Verify maker/model/sourceprovenance andusefulplayableexamples before anypublic
+content; actualhumanmusicQA remainsunperformed. No article/generator/hosting/
+analyticsimplementation orpublishing isauthorized bythis planningchoice.
