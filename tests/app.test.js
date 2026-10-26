@@ -15767,13 +15767,15 @@ describe("SHC asynchronous LINK ownership", () => {
     assert.strictEqual(app.store["hpfc.scales.v3"], legacy, "acknowledged migration must leave its legacy source intact");
     const initial = snapshot(app); assert.strictEqual(initial.entries.length, 2);
     assert.strictEqual(origin.successfulWrites.filter(x=>x.key===SV_KEY).length, 1);
+    // Each command can read its authoritative pre-write snapshot. Only after
+    // that command's setItem returns does the controlled diagnostic read fail.
+    // Install before Add so migration, Add AND Edit exercise this boundary.
+    const write = app.sandbox.localStorage.setItem.bind(app.sandbox.localStorage);
+    app.sandbox.localStorage.setItem = (k,v) => { write(k,v); if(k===SV_KEY)refuseReads=true; };
     refuseReads = false;
     const add = await imported(app, SV.portableRecords.amaraB); assert.strictEqual(add.ok, true);
     const added = snapshot(app); assert.strictEqual(added.entries.length, 3);
-    // Inject only a diagnostic read AFTER the next successful write, retaining
-    // lock-time authoritative reads before the commit boundary.
-    const write = app.sandbox.localStorage.setItem.bind(app.sandbox.localStorage);
-    app.sandbox.localStorage.setItem = (k,v) => { write(k,v); if(k===SV_KEY)refuseReads=true; };
+    refuseReads = false;
     const target = added.entries[2];
     const res = await command(app,{type:"edit",collectionId:added.collectionId,instanceId:target.instanceId,expectedRevision:target.revision},
       {...copy(SV.portableRecords.amaraB),o:{name:"ACKNOWLEDGED EDIT"}});
