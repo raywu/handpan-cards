@@ -16101,4 +16101,78 @@ describe("SHC asynchronous LINK ownership", () => {
     assert.strictEqual(reopened.app.currentDeck().name,"DURABLE ACK RETAINED","fresh boot independently recovers the acknowledged durable command");
   });
 
+
+  // Hold only settlement of a real exclusive-lock result: setItem already
+  // succeeded and the origin lock has been released before another tab writes.
+  function holdAcknowledgedPublication(app) {
+    app.run(`globalThis.__ackGate=new Promise(resolve=>globalThis.__releaseAck=resolve);
+      globalThis.__holdNextAck=true;globalThis.__heldRealAck=null;
+      const request=navigator.locks.request.bind(navigator.locks);
+      navigator.locks.request=(...args)=>request(...args).then(async result=>{
+        if(__holdNextAck&&result&&result.ok&&result.envelope){
+          __holdNextAck=false;globalThis.__heldRealAck=result;await __ackGate;
+        }
+        return result;
+      });
+      globalThis.__publishAckOriginal=publishSavedCommand;
+      publishSavedCommand=function(...args){return globalThis.__publishedRealAck=__publishAckOriginal(...args);};`);
+  }
+
+  test("SV15 U1: delayed same-epoch Save ACK cannot republish a deleted target or discard its draft", async () => {
+    const origin=createOrigin({events:"omit"});
+    const {app,crypto}=await seeded([SV.portableRecords.amaraA,SV.portableRecords.amaraB],{}, {origin});
+    editSelected(app);rename(app,"ACKED LOCAL DRAFT");holdAcknowledgedPublication(app);
+    const settled=submit(app).then(()=>({ok:true}),error=>({ok:false,error}));
+    await app.waitFor("globalThis.__heldRealAck!==null");
+    const actualAck=plain(app.get("globalThis.__heldRealAck"));
+    assert.strictEqual(actualAck.ok,true);assert.strictEqual(actualAck.envelope.collectionId,snapshot(app).collectionId);
+    assert.strictEqual(snapshot(app).entries.find(e=>e.instanceId===iid(1)).record.o.name,"ACKED LOCAL DRAFT","real exclusive write completed before settlement is held");
+    const peer=(await load({origin,crypto})).app;
+    const removed=await command(peer,{type:"delete",collectionId:actualAck.envelope.collectionId,instanceId:iid(1),expectedRevision:2});
+    assert.strictEqual(removed.ok,true);assert.ok(!snapshot(peer).entries.some(e=>e.instanceId===iid(1)));
+    await app.getAsync("reconcileSavedCollection()");
+    const winner=app.store[SV_KEY],before=plain(app.get("selection")),route=app.location.href;
+    assert.ok(app.get("savedState.revision")>actualAck.envelope.revision);
+    app.run("__releaseAck()");const completion=await settled;
+    assert.strictEqual(completion.ok,true,"older successful Save ACK must not dereference a target removed by the acknowledged newer winner: "+completion.error);
+    const published=plain(app.get("globalThis.__publishedRealAck"));
+    assert.strictEqual(published.ok,true,"the original actual storage ACK remains successful");
+    assert.strictEqual(published.published,false,"ignored same-epoch older snapshot is not a published current view");
+    assert.strictEqual(app.store[SV_KEY],winner);assert.deepStrictEqual(plain(app.get("selection")),before);
+    assert.strictEqual(app.location.href,route);assert.strictEqual(app.sheetOpen(),true);
+    assert.strictEqual(app.els["scale-name"].value,"ACKED LOCAL DRAFT","late ACK never discards the retained losing draft");
+  });
+
+  test("SV15 U2: delayed same-epoch import ACK cannot select over a newer reconciled edit", async () => {
+    const origin=createOrigin({events:"omit"});
+    const {app,crypto}=await seeded([SV.portableRecords.amaraA],{}, {origin});holdAcknowledgedPublication(app);
+    const r=SV.portableRecords.amaraB;
+    const encoded=plain(app.get(`HPE.share.encode({fields:HPE.core.parseSeed(${JSON.stringify(r.s)}).value.fields,options:${JSON.stringify(r.o)}})`));
+    assert.strictEqual(encoded.ok,true);app.location.hash="#s="+encoded.value;
+    const pending=app.getAsync(`openShare(${JSON.stringify(encoded.value)})`);
+    await app.waitFor("globalThis.__heldRealAck!==null");
+    const actualAck=plain(app.get("globalThis.__heldRealAck")),target=actualAck.instanceId;
+    assert.strictEqual(snapshot(app).entries.find(e=>e.instanceId===target).record.o.name,"PUBLIC PAN B","incoming import was genuinely committed before holding its publication");
+    const peer=(await load({origin,crypto})).app,winnerRecord=copy(SV.portableRecords.amaraB);winnerRecord.o.name="NEWER IMPORT WINNER";
+    const changed=await command(peer,{type:"edit",collectionId:actualAck.envelope.collectionId,instanceId:target,expectedRevision:1},winnerRecord);
+    assert.strictEqual(changed.ok,true);await app.getAsync("reconcileSavedCollection()");
+    const winner=app.store[SV_KEY],before=plain(app.get("selection")),route=app.location.href;
+    assert.ok(app.get("savedState.revision")>actualAck.envelope.revision);
+    app.run("__releaseAck()");const result=await pending;
+    assert.strictEqual(result.ok,true,"old actual import ACK remains acknowledged");
+    assert.strictEqual(result.published,false,"same-epoch newer revision prevents old import publication and selection");
+    assert.strictEqual(app.store[SV_KEY],winner);assert.deepStrictEqual(plain(app.get("selection")),before);
+    assert.strictEqual(app.location.href,route);
+    assert.strictEqual(app.get(`savedEntries.get(${JSON.stringify(target)}).deck.name`),"NEWER IMPORT WINNER");
+  });
+
+  test("SV15 U3: a current newer-revision real ACK still publishes and renders its committed Edit", async () => {
+    const {app}=await seeded([SV.portableRecords.amaraA]),before=snapshot(app);
+    const result=await command(app,{type:"edit",collectionId:before.collectionId,instanceId:iid(1),expectedRevision:1},SV.portableRecords.amaraB);
+    assert.strictEqual(result.ok,true);assert.strictEqual(result.persistence,"durable");assert.strictEqual(result.published,true);
+    assert.ok(result.envelope.revision>before.revision);assert.strictEqual(app.get("savedState.revision"),result.envelope.revision);
+    assert.strictEqual(snapshot(app).entries[0].record.o.name,"PUBLIC PAN B");
+    assert.strictEqual(app.currentDeck().name,"PUBLIC PAN B");
+  });
+
 }
