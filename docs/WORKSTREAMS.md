@@ -2,6 +2,15 @@
 
 ## Current priority — SAVED-SCALE-VARIANTS, authorized through DEV
 
+Latest check-in: owner explicitly selected **keep573→575→577→579→581main releases
+held; finish saved variants first**. Read-only live PR states verified OPEN/DRAFT.
+S backend b425/indexf90 independently reviewed, edge6GREEN and C10model10PASS;
+T9f4 nativeOLD6intended assertion RED, not feature Green. Current integration has
+INCOMPLETE UI and cannot reach DEV. Performance V1input correctly refused one
+invalid mirrored-angle row before timing; corrected V2full-builder inputs now ready
+for30samples each2/20/200/final1MiB. Root alone owns browsers; U not started.
+
+
 Owner explicitly approved the reviewed plan and its exact instruction/spec patch
 through DEV on2026-10-25. This supersedes historical planning-only/interview-pending
 labels below. No main merge, installs or global configuration changes authorized.

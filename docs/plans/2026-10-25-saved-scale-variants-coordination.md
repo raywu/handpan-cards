@@ -317,3 +317,71 @@ fresh ENG CLEAR: validated candidate/truecollision/lifetimeallocation/epoch/lock
 remain, source revision intentionally irrelevant, strip slot authority, alwaysfresh;
 normalimportsunchanged. Minimal UI uses Save-as-separate plus existing BackCancel;
 no optional Review complexity/ambiguous draft replacement. No CLAUDE re-edit.
+
+## S reviewed backend integration and independent acceptance evidence
+
+S1e9123c4/e6041e5b installed store only; source ENG found malformed row/epoch typing,
+malformed relevant preference writes and cross-epoch stale ACK publication. Root
+private edge probee6b71d8b independently reviewed before execution:4intended named
+ASSERTION failures plus2already-passing LF controls at frozen e604. Earlier static
+LF concern was incorrect for this JavaScript regex; no newline repair claim.
+S repaired in b42551f8, indexf90bf720fbd1e7f26153548216944642a9c550ea875f07f91202a2730871189d.
+Independent delta CLEAR then SAMEprobe6/6GREEN, including both bad deck/hidden
+preferences and ACKok/publishedfalse/cacheB; non-author actual audit CLEAR.
+All12engine regions and canonical DECKS/I18N bytes remain unchanged. Root reader
+initially rejected unmatched start format/script prefix, inspected actual syntax,
+then required12real matched regions/one actual generated line; no zero-match pass.
+
+T native9f4db3af independently ENG/design CLEAR after Promise-wait and live-region
+repairs. Whole old-app6selected browser cases produced6intended ASSERTION failures,
+0startup/skip/cancel/timeout/stderr; host census/cleanup clear. Separate actual audit
+CLEAR. Initial missing coexistence/locking/views/controls are proved; deeper native
+paths/48cells/528controls/16states NOT executed. No feature Green claim.
+T fixture1f79 corrected ASCII≤40/Unicode metadata/prototype-looking JSON row12 and
+froze eight-locale copy/ASCII ' / ' suffix; source/helper/root guards unchanged.
+Root integrated127b3168/d6eec774/85e853b2 and merged Sb425 at ec6892b0.
+Source UI is deliberately INCOMPLETE (#countempty/bootedfalse); never DEV this head.
+
+Refreshed private C10probe5eb2dd0c on clean ec6892b0/indexf90/helper677/F1f79:
+10/10PASS under60s, actual independent audit CLEAR. Literal raw/opaque/prototype/
+idempotence/2VMrealm/no-event queue/dedup/fresh-separate/revision/epoch/used-ID/
+promotion/RESET cases passed. C2denial was ARMED but no optional readbacks occurred
+(0refusals); do not claim a readback-error branch ran. Real app cross-tab/UI/CI/
+performance checks remain distinct. Raw s-stage-c-a0.* under SHC evidence.
+
+## Performance input refinement — no latency result yet
+
+Independent private probe review required strict mode inside generated timing
+prelude to preserve native callback receiver; final script6adfe1d7 reviewed CLEAR.
+Delegates real Web Locks,30samples/case, actual Network frame/loader/body binding,
+fixed≤50p95/≤100max bounds and FINAL1MiB preservation; no app function patch.
+T froze separate source/golden envelope accounting; template UUID hashes differ
+from runtime random UUID hashes. First V1records2 job stopped BEFORE timings:
+readable1vs2. Mirrored top inherited mirrored bottom, invalidating known absolute
+angles. Correct app refusal; not a performance failure or reason to lower counts.
+Cleanup/census clear. Preserve sv-backend-records-2-a0.* and bundle7b63/artifactsV1.
+
+T corrected ONLY measurement i=1 with explicit mirrorBottom:false, preserving
+known bottom positions and top mirror. F b264b2ecb626947ff7cdb93bc61554f4edd6a7ad57b7166ec4004206902c24d2;
+commitf4c69035 integrated3c1d8a56. Existing nonmeasurement fixtures/copy/C1data are
+unchanged from1f79; prior C10receipt remains for its actual1f79 input, not rebranded.
+V2bundlea717d710, independently checked source760/3595/31945bytes; final envelopes
+2268/11496/103938bytes; stressFINAL1048576bytes/1048564UTF16 unchanged. Fresh extracted
+/evidence/backend-case-inputs-v2 files/manifest preserve V1. Full old builder5628
+validation269+223positive playable inputs; root additionally preserved JSON metadata,
+full pins and raw60s-supervised receipt t-sv-full-builder-root-v2-a0 exit0/stderr0.
+Original author report lacked separate raw bounded receipt; do not infer one.
+
+Next: run4SERIALV2cases under reviewed180s each; verify30actualsamples/bytes/readables/
+raw sources/cleanup/budgets, independent result review. Only then U UI ownership.
+Reusable planned tools/probe/saved_variants_storage.js still needs versioned handoff;
+private evidence alone does not complete the reproducible-tool deliverable.
+
+## Check-in owner decision — main queue held
+
+Owner explicitly chose “Keep held; finish saved variants first (Recommended)”.
+Keep573→575→577→579→581main releases HELD, do not prepare/merge them ahead of the
+priority saved-variants repair. Read-only live GitHub check confirms all5OPEN/DRAFT
+and582DEVmerged. Continue authorized saved variants through DEV; main still needs
+separate explicit consent. No new blocking owner input; retain original custom-
+diagram-at-LINK evidence and unresolved original omission report.
