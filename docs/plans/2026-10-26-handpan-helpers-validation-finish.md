@@ -188,3 +188,19 @@ candidate in a separate M scratch, preserve/reconcile all1513oldfaults, prove
 changed/new exactheaders, refresh882unit/fullpairedlocale+8fitprobes, independently
 review finalbytes, full exactheadLinuxCI, then servedDEV. No new app/CLAUDE/global
 changes authorized by this checkpoint. Saved variants keeps priority.
+
+
+Pre-proof assertion-order correction: independentENG cleared moving unchanged
+peerfont/family/weight/tracking/leading checks before the newly added physical2line
+assertion, after semantic/visible-name prerequisites. This keeps the existing1px
+font fault reaching its original typography assertion. All geometry/line/target
+conditions remain, app7fe/floor483 unchanged. FinalT6d89f4 replaces869 only by
+this reordering; raw869 RED/GREEN remain historical, not erased. Freeze/rebind
+mutation provenance before proofs; require intendedfont andphysical-line kills.
+
+Fullapp882/882 passed. FullEnglish panelbothfont refresh PASS (SHC/helpers-panel-en-a1,
+55.273s cleanuptrue). PairedA2 stopped after420passing pairs/5groups due to owned
+profile cleanup verification; no geometry failure and outercleanuptrue. Result
+remainsFAILED. Root reviews a narrow post-exit ownedprofile cleanup correction
+before fresh complete1344pair run; no partial pairs reused. Sevenremaining locale
+full-domain probes are running serially under their existing180s bounds.

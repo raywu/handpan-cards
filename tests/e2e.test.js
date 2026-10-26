@@ -2485,6 +2485,11 @@ function run() {
           assert.deepStrictEqual(m.ids, ["res-handpan-helpers", "res-handpan-101"], `${label}: exact third-row pair and order`);
           assert.deepStrictEqual(m.links.map(e=>e.text), ["HANDPAN HELPERS", "HANDPAN 101"], `${label}: complete semantic link labels`);
           assert.deepStrictEqual(m.links.map(e=>e.visibleText), ["HANDPAN HELPERS", "HANDPAN 101"], `${label}: both complete names are visibly rendered`);
+          for(const link of m.links){
+            for(const property of ["font","family","weight","tracking"])
+              assert.strictEqual(link[property],m.reference[property],`${label} ${link.id}: existing peer ${property}`);
+            if(link.rects>1) assert.ok(link.leading>=m.reference.leading-.01,`${label}: preserve readable wrapped-label leading`);
+          }
           assert.deepStrictEqual(m.links.map(e=>e.physicalLines), [2, 2],
             `${label}: both names occupy exactly two physical rendered lines: ${JSON.stringify(m.links)}`);
           assert.ok(m.links.every(e=>e.width>=44 && e.height>=44 && e.rects>0 && e.visible && e.targetExposed && e.textExposed),
@@ -2497,9 +2502,6 @@ function run() {
           for(const link of m.links){
             assert.ok(link.inside && link.unclipped && link.centered && link.spill===0 && !link.ellipsis,
               `${label} ${link.id}: complete centered label stays within its target and clipping ancestors: ${JSON.stringify(link)}`);
-            for(const property of ["font","family","weight","tracking"])
-              assert.strictEqual(link[property],m.reference[property],`${label} ${link.id}: existing peer ${property}`);
-            if(link.rects>1) assert.ok(link.leading>=m.reference.leading-.01,`${label}: preserve readable wrapped-label leading`);
           }
           if(width===320 && height===568 && mode==="A"){
             let accessibilityError;
