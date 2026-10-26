@@ -30,22 +30,31 @@ V2 backend profiling completed: 120/120 acknowledged samples (30 each at 2/20/20
 records and an exact final 1MiB envelope), independently audited CLEAR; callback
 p95/max milliseconds: .6/.6, .7/.7, 1.6/1.7, 4.1/4.1. These are pre-UI API-ACK
 measurements, not disk-flush or UI-paint claims.
-UI repair candidate `b035a65a` / combined regression head `9a11cb3a` is frozen in
-`/ui`, index SHA `368ed11c306b27f91e867ac74b06455868895f33fd49bc7c29b593abfdc6f965`.
-Latest broader unit run `t-sv-newsource-full-a1`:919 executed,908PASS/11FAIL,
-0skip/cancel/timeout. Test checkpoint independently reviewed and committed
-`dc6d6c92`; all881 original registrations preserved. Delivered to U at4263c045,
-with identical reviewed test hashes and unchanged source368ed. Remaining failures
-include source routing/announcement/focus regressions and separate fixture-tool
-session capability gaps. New design P1: session publication failure must not advise
-reload (would lose session data/draft). T captured real session Save/import2RED
-and durable recovery1PASS before repair. Further source repairs are committed in U069035fd (index3cfc3c93); SV14tests
-committed4a28e17e. Combined re-test and independent recheck remain outstanding.
-Integration remains backend-only; no feature DEV or release claim.
-UI author reports shipping177x2/syntax/i18n/engine data checks PASS; full regression,
-native acceptance, mutants, exact-head CI and actual DEV remain outstanding.
-Integration still partial, MUST NOT reach DEV. Root owns browsers. No owner
-question currently blocks repairs. See coordination for exact next and evidence.
+Current integrated source index SHA `0d0845fccb44a4e775763daad5e9fed5acbc1710bee74e129e20e072f1d715ad`.
+All925 app unit tests and51 harness tests PASS with0skips; new same-epoch
+ACK regression3PASS and helper faults3clean/3assertion kills verified. Existing
+card/gen-face goldens and177x2boot unchanged. ENG source recheck and design source
+review clear with runtime limitations. Reproducible backend probe/case producer
+source-reviewed and integrated; final-candidate measurement not yet run.
+
+**P0 release blocker:** real browser concurrent distinct imports sometimes both
+ACK at revision2 but only the later entry remains, even after both targets' storage
+events/next tasks/foreground frames. Diagnostic runs0–2passed,3reproduced loss;
+not merely an early observation. No app/DEV release until investigated and repaired.
+Fresh independent storage-consistency investigation active, preserving original
+spec/approval boundaries; no timing workaround or revised storage architecture
+implemented. Raw `sv-native-concurrent-import-diagnostic-a3` is retained.
+
+Native copied-layout/fresh-profile1PASS and staleEdit/delete1PASS. Three other
+native failures: concurrent import loss above; RESET test targeted persistent
+status instead of the actual announcer (test interface correction reviewed);
+remote deletion leaves existing conflict banner stale (unitRED captured). UI
+matrix reached keyboard activation then a readiness deadline; Enter CDP protocol
+lacked the established char event, adapter correction reviewed, not a source pass.
+T owns frozen corrections in /tests; root owns source integration/sole browser.
+Mutation lane retains44new unit faultproofs and46context/data refreshes; legacy
+policy refresh/native faults/fullCI remain. Main queue held, duplicate notes paused.
+
 
 
 Owner explicitly approved the reviewed plan and its exact instruction/spec patch

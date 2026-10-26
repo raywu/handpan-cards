@@ -546,3 +546,37 @@ output/.part destinations within the real candidate root even via outside symlin
 and check freshness before browser launch. Add a negative CLI symlink-parent case
 with unchanged candidate and no browser spawn. This resolves ENG's identified
 lexical guard gap without changing measurement or permissions.
+
+## Integrated unit/support GREEN; real-browser release blocker
+
+Root integration30a58f23 merged U/T/support plusgenerated3helperfaults; observed
+app925/harness51floors raised a8c6dee3. Appsource0d0845... actualfull925PASS
+sv-full-app-final-support-a0,0skip/timeout,cleanuptrue39.452s. Fullharness51PASS
+sv-final-harness-a0,0skip,cleanuptrue10.944s andbefore/afterChrome680/7profiles unchanged.
+All6rawhelperfaultproofs independentlyrootcheckedhashes/3clean+3namedassertions.
+Source1linepublicationfix independentlyENG CLEAR, source DESIGN clear withlimits.
+
+NativeSV3savedlayout+freshprofilePASS. Concurrencyselection4native actual
+sv-native-concurrency-a0:1PASS(SV6E2 staleEdit/delete),3FAIL(no skip/timeout):
+SV6E1 distinctimportcountloss;SV8E1 wrongpersistentstatusselector;SV9E1 stale
+changed-vs-deletedconflictbanner. NativeSV10matrix firstlocalegeometry advanced
+butkeyboardselectiondeadline (notassertionRED): missingchar EnterCDPstage versus
+establishednativeEntersequence, narrowtestadaptercorrectionrootreviewed.
+
+Rootreviewed pinnedSV6diagnosticpreload10456... preservesoriginalread/assertion,
+adds observationalhooks+intentionalnexttask/foregroundRAF scheduling. Runsa0/a1/a2
+PASS buta3actual1testASSERTIONFAIL: AACKrev2entryA, BACKrev2entryB, bothrawstores
+onlyB throughnexttask/2RAF, bothnativeevents recorded. Therefore actualdata-loss
+releaseblocker, notdisplaylag. Preserveallruns anddo notacceptsuccessfulretries
+asclosure. Agentvariants_storage_consistency_research investigating mechanism and
+safeoptions; no newstorageprotocol implemented, largercontractrequiresreview/approval.
+
+Portableprobe2files7e6ae687 independentlyENGsourceCLEAR (canonicalparent guard
+andatomic nooverwritepublication), exact4casehashes/12prebrowsercontrols verified
+byproducer; integrated separately. Not a newmeasurementrun orconcurrencyproof.
+TnewSV16remoteconflictunitRED/correctedRESETactualannouncer+liveassertion pending
+commit; keyboardadapter proposal matchesexisting CDPrawDown/char/Up. Rootwill
+commit onlyreviewedtests, repairbanner afterRED and re-review; no messageweakening.
+M44unitfaults44clean/44namedASSERTIONkills at21dcf288;34mechanical+13dataregeneration
+(withoneoverlap)=46uniquecontextrefreshes,29policyreplacements rootapprovedbyTmap.
+No drops, nativeproofheld untilactualbaselineGREEN.
