@@ -11,12 +11,15 @@ p95/max milliseconds: .6/.6, .7/.7, 1.6/1.7, 4.1/4.1. These are pre-UI API-ACK
 measurements, not disk-flush or UI-paint claims.
 UI repair candidate `b035a65a` / combined regression head `9a11cb3a` is frozen in
 `/ui`, index SHA `368ed11c306b27f91e867ac74b06455868895f33fd49bc7c29b593abfdc6f965`.
-Root bounded focused run:40 executed,37PASS/3FAIL,0skip/timeout, cleanup clear.
-Failures concern cold-boot selector representation, surviving opener focus and
-post-Back route; test lane is distinguishing source defects from sandbox/oracle
-limitations without relaxing user behavior. ENG/design source re-review active.
-Actual repaired source handed into `/tests` at `5f5d9acf`; extensive legacy test
-port remains uncommitted (last old-source fullrun853/919PASS, not new-source Green).
+Latest broader unit run `t-sv-newsource-full-a1`:919 executed,908PASS/11FAIL,
+0skip/cancel/timeout. Test checkpoint independently reviewed and committed
+`dc6d6c92`; all881 original registrations preserved. Delivered to U at4263c045,
+with identical reviewed test hashes and unchanged source368ed. Remaining failures
+include source routing/announcement/focus regressions and separate fixture-tool
+session capability gaps. New design P1: session publication failure must not advise
+reload (would lose session data/draft). T captured real session Save/import2RED
+and durable recovery1PASS before repair. U repair and independent recheck continue.
+Integration remains backend-only; no feature DEV or release claim.
 UI author reports shipping177x2/syntax/i18n/engine data checks PASS; full regression,
 native acceptance, mutants, exact-head CI and actual DEV remain outstanding.
 Integration still partial, MUST NOT reach DEV. Root owns browsers. No owner

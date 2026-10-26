@@ -487,3 +487,27 @@ No helper-heading registration needed: test uses existing Settings aria label.
 Proposed2line regen_card_fixture session adaptation needs independent review;
 never regenerate golden output to hide drift. Next actual newsource regression
 run -> address findings -> native/mutants -> full CI -> DEV. Main queue held.
+
+## Latest acceptance checkpoint — 908/919; source/tool failures retained
+
+Actualraw t-sv-newsource-full-a1:919executed/908PASS/11FAIL/0skip. Independent
+test review found no additional material oracle defects;881originalregistrations
+preserved. Root verified hashes591de969138a7ea4e6abf0c2260a7a00f7234a7b1383bdaffb20854f9a0050a6
+andd8bbc5e067affecf6ec939bf6557b6cda90a6b8c2551d1466127406c0b99c812, committed
+Tdc6d6c92, merged intoU4263c045. Duplicate-cherry-pick conflicts resolved only after
+proving UI9a11/shared17bef/test5f5 app.test blobs identicalc9859a99 anddc6descends17bef;
+no UI-side independent edits discarded. Source368ed remains unchanged.
+
+Remaining failures:2fixturetoolcapability checks; RESETannouncement; refusedshare
+boot/hash route and warning priority; sameinventory validshare normalization; About
+same-instance exit; delete-refusal field message; oldEnglishDOM; connectedopener
+focus. Classify precisely before fixes, do notweakenoracles. U owns source fixes;
+T owns extra regressions; root handles minimal independently reviewedtool fix.
+New DESIGNP1 sessionpublishedfalse reload advice unsafe: T real publicationfailure
+tests t-sv-session-publication-red-a0=2intendedassertionRED(sessionSave/import) and
+1durablerecoverypositivePASS; draft/incomingcontent retention alreadyreached.
+Repaircopy must distinguish session/durable; no protocolweakening.
+
+Owner re-interview reconfirmed custom Yvonne positions visible at LINK after an
+accidental selection concern; original evidence remains confirmed. Main queueheld,
+comparison investigation queued/unrun. No new ownerdecision blocks currentwork.
