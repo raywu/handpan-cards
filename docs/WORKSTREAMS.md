@@ -61,7 +61,13 @@ reaffirmed AFK authority; no CLAUDE change/install/main merge.
   full actual validate, then actual served DEV verification. No feature DEV or
   main delivery is claimed by this local checkpoint. Exact source/tool hashes,
   raw locators, limitations and recovery procedure are in that receipt.
-- **Current blocking finding (P1):** final independent ENG reproduced startup
+
+### Historical checkpoints — superseded by the latest results above
+
+The entries below preserve investigations and stopping points. Their pending or
+blocking labels describe the earlier checkpoint, not current readiness.
+
+- **Resolved compatibility finding (formerly P1):** final independent ENG reproduced startup
   TypeError when Object.hasOwn is unavailable; baseline preserved that browser
   capability boundary. The independently ENG/design-cleared compatibility plan
   uses an app-local hasOwnProperty.call helper and meaningful missing-API TDD.
