@@ -15733,6 +15733,30 @@ describe("SHC asynchronous LINK ownership", () => {
     }
     const denied = await load({ storageAccessError:new Error("controlled denied read") });
     assert.strictEqual(denied.app.get("savedMode"), "session"); assert.ok(notices(denied.app).length > 0);
+    // Exact UUID strings and lifetime ordinal mappings are structural data,
+    // never regex-coercible values or missing/undefined aliases.
+    const malformed = [
+      ["missing own instance identity", e => { delete e.entries[0].instanceId; e.usedInstanceIds=[]; e.nextDisplayOrdinal=1; }],
+      ["array collection UUID", e => { e.collectionId=[SV.ids.collectionA]; }],
+      ["collection UUID trailing newline", e => { e.collectionId=SV.ids.collectionA+"\n"; }],
+      ["array row/lifetime UUID", e => { e.entries[0].instanceId=[iid(1)]; e.usedInstanceIds=[[iid(1)]]; }],
+      ["row/lifetime UUID trailing newline", e => { e.entries[0].instanceId=iid(1)+"\n"; e.usedInstanceIds=[iid(1)+"\n"]; }],
+      ["ordinal/history mismatch", e => { e.entries[0].displayOrdinal=2; e.usedInstanceIds=[iid(1),iid(2)]; e.nextDisplayOrdinal=3; }],
+      ["array preferred saved UUID", e => { e.preferredSelection.id=[iid(1)]; }],
+    ];
+    for(const [label,mutate] of malformed) {
+      const invalid=envelope([SV.portableRecords.amaraA]);mutate(invalid);
+      const raw=JSON.stringify(invalid),ctx=await load({storage:{[SV_KEY]:raw}});
+      assert.strictEqual(ctx.app.get("savedMode"),"protected",label+" protects rather than coercing/repairing the collection");
+      assert.strictEqual(ctx.app.store[SV_KEY],raw,label+" source bytes remain unchanged");
+      assert.strictEqual(ctx.origin.successfulWrites.filter(x=>x.key===SV_KEY).length,0,label+" cannot be normalized into a durable empty store");
+    }
+    for(const raw of [' { "deck": 7, "mode": "A" }\n',' { "hidden": "bad", "mode": "A" }\n']) {
+      const ctx=await seeded([SV.portableRecords.amaraA],{}, {storage:{[SV_KEY]:JSON.stringify(envelope([SV.portableRecords.amaraA])),hpfc:raw}});
+      const changed=ctx.app.run('updateSettings(next => { next.mode="B"; })');
+      assert.strictEqual(changed,false,"unrelated settings cannot claim to save through malformed relevant recovery metadata");
+      assert.strictEqual(ctx.app.store.hpfc,raw,"malformed deck/hidden preference bytes stay exact until explicit recovery");
+    }
   });
 
   test("SV5 U1: no lock or denied storage gives this-tab-only operation without persistent writes", async () => {
@@ -15856,6 +15880,36 @@ describe("SHC asynchronous LINK ownership", () => {
     const res=await command(app,{type:"edit",collectionId:SV.ids.collectionA,instanceId:iid(1),expectedRevision:1},SV.portableRecords.amaraB);
     assert.strictEqual(res.ok,false); assert.strictEqual(res.kind,"conflict");
     assert.strictEqual(app.store[SV_KEY],raw,"coincidentally equal handle/revision cannot bypass collection epoch");
+    // The old API write may already be acknowledged while the caller's lock
+    // Promise completion is delayed. Accepting epochB in between cannot let
+    // that earlier completion roll the runtime cache back to epochA.
+    const late=await seeded([SV.portableRecords.amaraA]),locks=late.app.sandbox.navigator.locks;
+    const request=locks.request;let armed=true,releaseAck,pending;
+    locks.request=function(...args) {
+      const result=request.apply(this,args);
+      if(armed&&args[0]===SV_LOCK) {armed=false;return result.then(value=>new Promise(resolve=>{
+        late.app.sandbox.__svAckCaptured=true;releaseAck=()=>resolve(value);
+      }));}
+      return result;
+    };
+    try {
+      pending=command(late.app,{type:"import",collectionId:SV.ids.collectionA,selectedInstanceId:iid(1)},SV.portableRecords.amaraB);
+      pending.catch(()=>{});
+      await late.app.waitFor("globalThis.__svAckCaptured===true",{timeout:1000});
+      const committedA=snapshot(late.app);assert.strictEqual(committedA.entries.length,2,"actual API write happened before the delayed acknowledgment is released");
+      const currentB={...copy(committedA),collectionId:SV.ids.collectionB};
+      late.app.sandbox.localStorage.setItem(SV_KEY,JSON.stringify(currentB));
+      const currentRaw=late.app.store[SV_KEY];
+      const accepted=await late.app.getAsync("reconcileSavedCollection()");assert.strictEqual(accepted.ok,true);
+      assert.strictEqual(late.app.get("savedState.collectionId"),SV.ids.collectionB);
+      releaseAck();releaseAck=null;
+      const acknowledged=await pending;
+      assert.strictEqual(acknowledged.ok,true,"a successful earlier API write remains acknowledged");
+      assert.strictEqual(acknowledged.published,false,"acknowledged success cannot publish over a newly accepted epoch");
+      assert.strictEqual(late.app.get("savedState.collectionId"),SV.ids.collectionB,"late epochA completion cannot roll the cache back");
+      assert.strictEqual(late.app.store[SV_KEY],currentRaw,"old completion cannot rewrite newer persistent bytes");
+      assert.deepStrictEqual(plain(late.app.get("savedState")),currentB);
+    }finally{if(releaseAck)releaseAck();locks.request=request;if(pending)await pending.catch(()=>{});}
   });
 
   test("SV8 U1: plain imports never inherit replacement authority", async () => {
