@@ -143,3 +143,40 @@ was normalized only in the parser; literal header commands/raw logs are unchange
 Original failed CI40312402295 and any newly discovered full-browser failures
 still require triage. Full final-head validate and actual DEV verification remain
 mandatory. This local amendment does not establish full1603-fault kills or deployment.
+
+## Final full-suite fixture completion checkpoint
+
+Current runtime is unchanged at ab90. App source tests are63e7e1b249bca3026850fe2fe98936a573dae3debb45bef78c9c836d37db8177;
+native tests are6fba5656c6f39da6a5a9bc573c2fed2706af6d4bf05aaeabc118471b9535339b.
+The earlier table/receipts retain their historical test-source qualifications.
+Full app937/937 passes with zero skips/cancellations (39.682s test report,
+40.477s supervised). Preview14/PDF43 and seat sweeps4+3+3 all pass; original loops,
+independent PDF2–1–4 and layout assertions remain intact. Combined17 affected
+native cases pass, zero skips/cancellations/stderr,41.038s supervised/cleanup true.
+This includes the original seven transactional journeys, seven refusal/accessibility
+cases, two full-CI fixture repairs and the native mouse guard.
+
+Metadata54/54 passes; suite/CI Python36/36 passes; generated engine/deck/i18n checks
+and all1614 bare applies pass. Floors are937 app,66 harness and487 native. Actual
+original full CI reported487 registrations (not all passed); current test/describe
+registration lines are byte-identical to2ca0. Raising the native floor reflects
+that observed count, not a local full-Mac success claim.
+
+Independent audits cleared3 new VM proof pairs, all10 seat-group pairs, the unchanged
+SU guard fault and the unchanged native mouse-release fault. Eight new seat group
+owners share one real swap fault mechanism; do not call them independent mechanisms.
+No original fault is dropped; final corpus1614. Mouse transport proves a trusted
+live drag exists after actual saved boot and a trusted zero-buttons pointermove
+reaches it before release; the mutant fails its intended assertion. No synthetic
+fallback was needed. Physical OS off-window behavior and early-start interaction
+remain unverified. SU retains actual durable boot evidence and separately stages
+the lifecycle guard/positive control; it does not prove natural boot ordering.
+
+Raw proof receipts: vm-fixture-fault-proof-a0, seat-group-fault-proof-a0,
+su-guard-fault-proof-a0 and mouse-transport-proof-a0. Supplemental
+fixture-proof-suite-source-bindings-a0.json identifies actual selected suite/helper
+hashes; generic testsSHA256 in original receipts is an E2E file pin, not every
+selected suite. Preflight/postflight and sole-owner interval are qualified; no
+continuous filesystem watcher is claimed. Original failed fixtures, surviving
+faults and CI runs remain preserved. Final exact-head full validate and actual
+DEV delivery are still required; no main release is authorized.

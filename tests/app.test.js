@@ -10391,6 +10391,31 @@ describe("share url: edges", () => {
     assert.match(app.currentDeck().id, /^custom:/);
     assert.strictEqual(app.els["share-copy"].disabled, true, "the custom deck's code was not refused");
     assert.match(app.announcer().textContent, /^That scale is gone\./);
+
+    // The real durable boot above proves the end-to-end result. Separately
+    // stage the lifecycle guard's branch inputs; this does not assert that
+    // asynchronous initialization naturally reaches this exact ordering.
+    const bootMessage = "That scale is gone. Showing D AEOLIAN 9.";
+    assert.strictEqual(app.announcer().textContent, bootMessage,
+      "the actual hidden-preference boot retained its literal fallback message");
+    assert.strictEqual(app.get("savedMode"), "durable");
+    assert.strictEqual(app.get("selection.kind"), "saved");
+    const refusedRoute = plain(app.get("routeInfo(deck())"));
+    assert.strictEqual(refusedRoute.route, "", "the current saved scale still has an over-cap share route");
+    assert.ok(refusedRoute.reason.length > 0, "the over-cap route has a real refusal reason");
+    assert.notStrictEqual(refusedRoute.reason, bootMessage);
+    app.run("booted = false; routeRefused = false;");
+    assert.strictEqual(app.get("booted"), false, "explicit lifecycle-guard precondition");
+    assert.strictEqual(app.get("routeRefused"), false, "the refusal has not yet been announced in this guard case");
+    assert.strictEqual(app.announcer().textContent, bootMessage, "the existing boot message is present before synchronization");
+    app.run("syncRoute()");
+    assert.strictEqual(app.announcer().textContent, bootMessage,
+      "pre-boot route synchronization must preserve an existing boot message");
+    assert.strictEqual(app.get("routeRefused"), true, "the refused route was actually processed");
+
+    app.run("booted = true; routeRefused = false; syncRoute();");
+    assert.strictEqual(app.announcer().textContent, refusedRoute.reason,
+      "after boot the same refused route may announce its warning");
   });
 
   test("SU: following a link to the custom deck shown at boot after switching away tracks share_open", async () => {

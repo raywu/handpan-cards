@@ -1,0 +1,16 @@
+# kills: DR2a rule W (60, 61): NEXT SEAT and PREVIOUS SEAT swap with the adjacent seat, wrap, keep the pick, every start seat, Edit
+# suite: node --test --test-name-pattern ^DR2a.rule.W.\(60,.61\):.NEXT.SEAT.and.PREVIOUS.SEAT.swap.with.the.adjacent.seat,.wrap,.keep.the.pick,.every.start.seat,.Edit$ tests/seat_sweeps_keys.test.js
+# Shares the reviewed second-seat corruption mechanism: swap writes the first seat but leaves the second unchanged.
+# This selector protects the named input path; it does not claim an independent fault mechanism.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12638,7 +12638,7 @@ function swapSeats(ring, i, j) {
+   if (i !== j && !(ring === "bottom" && layoutAngles)) {
+     const next = before.map((n) => n.seat);
+     next[i] = b.seat;
+-    next[j] = a.seat;
++    next[j] = b.seat;
+     setRingSeats(ring, next);
+   }
+   if (i !== j) flashNotes([a.id, b.id]);

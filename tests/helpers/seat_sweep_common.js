@@ -2,20 +2,31 @@
 // tests/app.test.js keeps for the rest of DR2a's unit layer.
 const assert = require("node:assert");
 const { boot } = require("./sandbox.js");
+const { webcrypto } = require("node:crypto");
 
 function openSheet(app) {
   app.els["deck-add"].click();
   return app.els;
 }
-function makeCustom(app, text) {
+async function makeCustom(app, text) {
   openSheet(app);
   app.type(text);
-  app.els["scale-generate"].click();
-  return app.registry()[app.deckId()];
+  assert.strictEqual(app.els["scale-generate"].disabled, false, "the sweep's literal fixture reaches generation");
+  await app.getAsync("runGenerate()");
+  assert.strictEqual(app.els["scale-sheet"].hidden, true, "the sweep fixture is saved before Edit opens");
+  const selection = JSON.parse(app.get("JSON.stringify(selection)"));
+  assert.strictEqual(selection.kind, "saved", "Edit sweeps target a stable saved instance");
+  const row = JSON.parse(app.get(`JSON.stringify(savedEntries.get(${JSON.stringify(selection.id)}))`));
+  assert.ok(row, "the selected fixture has a real saved entry");
+  assert.strictEqual(row.instanceId, selection.id);
+  assert.strictEqual(row.record.s, text, "the complete intended scale was saved");
+  return { selection, deck: app.currentDeck() };
 }
-function openEdit(app, d) {
-  app.select(d.id);
-  app.clickChip(d.name);
+async function openEdit(app, fixture) {
+  await app.getAsync(`selectDeck(${JSON.stringify(fixture.selection)})`);
+  assert.deepStrictEqual(JSON.parse(app.get("JSON.stringify(selection)")), fixture.selection);
+  app.clickChip(fixture.deck.name);
+  assert.strictEqual(app.els["scale-sheet"].hidden, false, "the selected saved instance opens Edit");
 }
 
 const D2_NAT = ["C", "D", "E", "F", "G", "A", "B"];
@@ -44,8 +55,8 @@ function d2Build(sz) {
 const D2_RINGS = ["rim", "inner", "bottom"];
 const d2Sizes = (ring, n) => ({ rim: 3, inner: 3, bottom: 3, [ring]: n });
 const d2Id = (n) => Array.from({ length: n }, (_, i) => i);
-function d2Open(app, text, edit) {
-  if (edit) openEdit(app, makeCustom(app, text));
+async function d2Open(app, text, edit) {
+  if (edit) await openEdit(app, await makeCustom(app, text));
   else { openSheet(app); app.type(text); }
   app.click(app.els["scale-tab-layout"]);
 }
@@ -80,10 +91,10 @@ const d2Starts = (k) => {
   return out;
 };
 const D2_OTHER = [1, 0, 2];
-function d2Case(ring, n, start, edit) {
-  const app = boot();
+async function d2Case(ring, n, start, edit) {
+  const app = boot(edit ? { crypto: webcrypto, abortController: true } : {});
   const sc = d2Build(d2Sizes(ring, n));
-  d2Open(app, sc.text, edit);
+  await d2Open(app, sc.text, edit);
   const seats = {};
   for (const r of D2_RINGS) seats[r] = r === ring ? start : D2_OTHER;
   d2Seed(app, seats);

@@ -44,6 +44,13 @@ executes this already-planned internal alternative under through-DEV and
 reaffirmed AFK authority; no CLAUDE change/install/main merge.
 
 2026-10-26 continuation checkpoint:
+- **Latest final local checkpoint:** full app937, preview14/PDF43, all10 seat
+  sweep groups and17 affected native cases pass after reviewed fixture repairs.
+  Metadata54/54, suite/CI Python36/36 and all1614 apply checks pass. Independent
+  intended-assertion proofs cover3 VM groups, all10 seat groups, SU boot-message
+  and native live-mouse guards. Runtime remainsab90; app tests63e7/native6fba.
+  Floor487 reflects the observed original full count; final LinuxCI/DEV remain
+  gates. The older failed CI checkpoints below are historical, not current claims.
 - **Current delivery blocker:** exact-head Linux validate40312402295 at65e29107
   found obsolete native collision-veto and unselected aria-label expectations.
   Four mutation shards reject clean baselines; data, Python and both panel-fit

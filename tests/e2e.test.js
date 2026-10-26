@@ -10932,8 +10932,16 @@ function run() {
           return true;
         `);
         await clickGenerate();
-        await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`,
-          { label: "the generated deck chip" });
+        await b.waitFor("document.getElementById('scale-sheet').hidden && selection.kind==='saved'",
+          { label: "the unsupported instrument's Generate acknowledgment" });
+        const generatedSelection=await b.eval("return {...selection};");
+        await nativeCommittedPreference(b,generatedSelection);
+        const generatedEnvelope=await nativeSavedEnvelope(b);
+        const generatedEntry=generatedEnvelope.entries.find(entry=>entry.instanceId===generatedSelection.id);
+        assert.ok(generatedEntry,"the intended generated scale has an actual committed saved instance");
+        assert.strictEqual(generatedEntry.record.s,"(C3) G3 D4 G4 D5","the empty-sequence case runs against its literal generated inventory");
+        assert.deepStrictEqual(generatedEnvelope.preferredSelection,generatedSelection);
+        assert.deepStrictEqual(await b.eval("return {...selection};"),generatedSelection,"the acknowledged scale stays selected before opening Settings");
         await openSettingsPanel();
         await b.click("#tier-basic");
         await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
@@ -10952,6 +10960,11 @@ function run() {
         await b.eval(`document.getElementById("card").click(); return true;`);
         await b.key("ArrowRight", "ArrowRight", 39);
         await b.settle();
+        assert.deepStrictEqual(await b.eval(`return {
+          front: document.getElementById("front").innerHTML,
+          back: document.getElementById("back").innerHTML,
+          countChildren: document.getElementById("count").children.length,
+        };`),m,"stepping and flipping an empty sequence leave its card and count unchanged");
       });
 
   });
@@ -12141,34 +12154,64 @@ function run() {
 
     test("card swipe: a mouse button released off-window during a drag is recognised and releases it", async () => {
       await freshLoad();
-      const box = await b.eval(`
-        const r = document.getElementById("card").getBoundingClientRect();
-        return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
-      `);
-      // A fresh test's first real press - same cross-test-boundary race as
-      // drag()/startDrag()/startMouseDrag(), see waitForPendingSettle.
+      const ready=await b.eval("return Promise.resolve(savedReady).then(()=>({booted,mode:savedMode}));");
+      assert.deepStrictEqual(ready,{booted:true,mode:"durable"},"the gesture starts after actual saved boot, not a transient initial render");
+      // A fresh test's first real press must drain any prior capture release.
       await b.waitForPendingSettle();
-      // Q15: a mouse button released outside the browser window (or a native
-      // context menu opened over it) delivers no pointerup/lostpointercapture
-      // at all - the OS eats it - and the drag stays live, following the
-      // pointer forever. A CDP mouseMoved with buttons: 0 after a left
-      // mousePressed arrives as a real pointermove with buttons === 0, which
-      // is the only signal available.
-      await b.send("Input.dispatchMouseEvent", { type: "mousePressed", x: box.x, y: box.y, button: "left", clickCount: 1 });
-      await b.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: box.x + 60, y: box.y, buttons: 0 });
-      const dragState = await b.eval(`return drag;`);
-      assert.strictEqual(dragState, null, "a pointermove with no buttons held must release a live mouse drag");
-      await b.finishAnimations();
-      const xf = await b.eval(`return getComputedStyle(document.querySelector(".scene")).transform;`);
-      assert.strictEqual(xf, "none", "the scene must settle with no inline transform");
-      // End the press for real (both to leave no stuck button state for later
-      // tests, and because this mouseup - same target throughout, since
-      // pointer capture kept routing to #card - is itself a genuine click:
-      // an extra explicit b.click() here would be a SECOND click, toggling
-      // the flip right back and hiding a real eatClick-stuck failure behind
-      // an even number of flips).
-      await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: box.x + 60, y: box.y, button: "left", clickCount: 1 });
-      assert.strictEqual(await cardFlipped(), true, "the release's own click must still flip the card, proving eatClick was not left stuck");
+      const box = await b.eval(`
+        const card=document.getElementById("card"),r=card.getBoundingClientRect();
+        const x=r.left+r.width/2,y=r.top+r.height/2,hit=document.elementFromPoint(x,y);
+        return {x,y,width:r.width,height:r.height,hit:!!hit&&(hit===card||card.contains(hit)),
+          usable:r.width>0&&r.height>0&&x>=0&&y>=0&&x<innerWidth&&y<innerHeight&&!card.closest('[inert]')};
+      `);
+      assert.strictEqual(box.usable,true,"the actual card is in view and not inert");
+      assert.strictEqual(box.hit,true,"the real press point must hit the card");
+      await b.eval(`window.__swMouseTransport=[];window.__swMousePhase='press';
+        window.__swMouseTypes=['pointerdown','pointermove','pointerup','pointercancel','gotpointercapture','lostpointercapture','mousedown','mousemove','mouseup','click'];
+        window.__swMouseObserver=e=>{const card=document.getElementById('card');
+          window.__swMouseTransport.push({phase:window.__swMousePhase,type:e.type,isTrusted:e.isTrusted,
+            pointerId:e.pointerId,pointerType:e.pointerType,isPrimary:e.isPrimary,button:e.button,buttons:e.buttons,
+            x:e.clientX,y:e.clientY,timeStamp:e.timeStamp,onCard:e.target===card||card.contains(e.target),
+            dragBefore:drag?{id:drag.id,pointerType:drag.pointerType}:null});};
+        for(const type of window.__swMouseTypes)document.addEventListener(type,window.__swMouseObserver,true);return true;`);
+      let realReleaseSent=false,problem=null;
+      try {
+        // Preserve the native CDP transport experiment. Its events establish
+        // whether this Chrome also supplies a competing release/capture signal.
+        await b.send("Input.dispatchMouseEvent", { type: "mousePressed", x: box.x, y: box.y, button: "left", clickCount: 1 });
+        const live=await b.eval("return drag?{id:drag.id,pointerType:drag.pointerType}:null;");
+        assert.ok(live,"a trusted press must establish a live drag before the zero-buttons move");
+        assert.strictEqual(live.pointerType,"mouse");
+        await b.eval("window.__swMousePhase='zero-buttons-move';return true;");
+        await b.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: box.x + 60, y: box.y, buttons: 0 });
+        const dragState = await b.eval(`return drag;`);
+        assert.strictEqual(dragState, null, "a pointermove with no buttons held must release a live mouse drag");
+        await b.finishAnimations();
+        const xf = await b.eval(`return getComputedStyle(document.querySelector(".scene")).transform;`);
+        assert.strictEqual(xf, "none", "the scene must settle with no inline transform");
+        // The release's own click is the next real click. An extra b.click()
+        // would toggle twice and could conceal a stuck eatClick state.
+        await b.eval("window.__swMousePhase='real-release';return true;");
+        await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: box.x + 60, y: box.y, button: "left", clickCount: 1 });
+        realReleaseSent=true;
+        assert.strictEqual(await cardFlipped(), true, "the release's own click must still flip the card, proving eatClick was not left stuck");
+      }catch(error){problem=error;throw error;}
+      finally {
+        try {
+          if(!realReleaseSent){
+            await b.eval("window.__swMousePhase='failure-cleanup-release';return true;");
+            await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: box.x + 60, y: box.y, button: "left", clickCount: 1 });
+          }
+          const transport=await b.eval(`for(const type of window.__swMouseTypes)document.removeEventListener(type,window.__swMouseObserver,true);
+            return {events:window.__swMouseTransport,finalDrag:drag?{id:drag.id,pointerType:drag.pointerType}:null,
+              booted,savedMode,visibility:document.visibilityState,focused:document.hasFocus(),
+              viewport:{width:innerWidth,height:innerHeight},phase:window.__swMousePhase};`);
+          console.log("MOUSE_BUTTON_TRANSPORT "+JSON.stringify(transport));
+        }catch(cleanupError){
+          console.log("MOUSE_BUTTON_TRANSPORT "+JSON.stringify({cleanupError:String(cleanupError)}));
+          if(!problem)throw cleanupError;
+        }
+      }
     });
 
     test("card swipe: a synthetic contextmenu on #card releases a live drag", async () => {
@@ -12952,19 +12995,42 @@ function run() {
       }
 
       test("card swipe (mouse momentum): a fast release flies on at its release speed, leaves the viewport, then the next card enters", async () => {
+        async function waitForLiveSample() {
+          try {
+            await b.waitFor(`window.__anims.length >= 1 && window.__anims[0].sample !== null`,
+              { label: "the out animation's live RAF sample to be taken" });
+          } catch(error) {
+            let state;
+            try {
+              state=await b.eval(`const scene=document.querySelector('.scene');
+                const animationState=a=>({currentTime:a.currentTime,playState:a.playState,pending:a.pending,
+                  timing:a.effect?a.effect.getTiming():null,computedTiming:a.effect?a.effect.getComputedTiming():null});
+                return {viewport:{width:innerWidth,height:innerHeight,visualWidth:visualViewport.width,visualHeight:visualViewport.height},
+                  visibility:document.visibilityState,focus:document.hasFocus(),
+                  reducedMotion:matchMedia('(prefers-reduced-motion: reduce)').matches,
+                  panelOpen:typeof panelOpen==='undefined'?null:panelOpen,sheetOpen:typeof sheetOpen==='undefined'?null:sheetOpen,
+                  orderLength:typeof order==='undefined'?null:order.length,savedMode:typeof savedMode==='undefined'?null:savedMode,
+                  flight:typeof flight==='undefined'||!flight?null:{dir:flight.dir,animation:animationState(flight.anim)},
+                  sceneAnimations:scene?scene.getAnimations().map(animationState):[],recorded:window.__anims||null};`);
+            }catch(diagnosticError){state={diagnosticError:String(diagnosticError)};}
+            console.log("MOMENTUM_FAILURE_STATE "+JSON.stringify(state));
+            throw error;
+          }
+        }
         async function flick(width, height, legs, v) {
-          await b.setViewport(width, height, false);
           try {
             await freshLoad();
+            await b.setViewport(width, height, false);
+            assert.deepStrictEqual(await b.eval("return {width:innerWidth,height:innerHeight};"),{width,height},
+              "the momentum case uses its advertised viewport after freshLoad");
             const n = (await bootMeta()).chords;
             await installRecorder();
             await b.drag("#card", legs, { pointer: "mouse" });
-            await b.waitFor(`window.__anims.length >= 1 && window.__anims[0].sample !== null`,
-              { label: "the out animation's 30ms sample to be taken" });
+            await waitForLiveSample();
             const out = (await recordedAnims())[0];
-            assert.ok(out.sample, "the 30ms sample must have been taken");
+            assert.ok(out.sample, "the live RAF sample must have been taken");
             assert.strictEqual(out.sample.alive, true,
-              "the flight must still be live 30ms after release (D180-7)");
+              "the flight must still be live at the sampled animation frame (D180-7)");
             assert.ok(out.sample.currentTime > 0, "currentTime must not be 0 (an animation frame must have run)");
             const dx = dxOf(out.kf);
             const liveV = (out.sample.m41 - dx) / out.sample.currentTime;
@@ -13002,16 +13068,17 @@ function run() {
 
         // The rightward (dir = -1) leg runs from the SECOND card, reached by
         // one #next click, so the "go back" path is covered too.
-        await b.setViewport(1024, 700, false);
         try {
           await freshLoad();
+          await b.setViewport(1024, 700, false);
+          assert.deepStrictEqual(await b.eval("return {width:innerWidth,height:innerHeight};"),{width:1024,height:700},
+            "the rightward momentum case uses its advertised viewport after freshLoad");
           await b.click("#next");
           await b.waitFor(`(document.getElementById("count").textContent || "").trim() === "2 / ${(await bootMeta()).chords}"`,
             { label: "the #next click to land" });
           await installRecorder();
           await b.drag("#card", [[40, 16], [100, 32], [180, 48]], { pointer: "mouse" });
-          await b.waitFor(`window.__anims.length >= 1 && window.__anims[0].sample !== null`,
-            { label: "the out animation's 30ms sample to be taken" });
+          await waitForLiveSample();
           const out = (await recordedAnims())[0];
           assert.strictEqual(out.sample.alive, true);
           assert.ok(out.sample.currentTime > 0, "currentTime must not be 0 (an animation frame must have run)");
