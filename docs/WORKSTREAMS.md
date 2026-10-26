@@ -1,8 +1,49 @@
 # Shared workstream ledger
 
+## Saved variants recovery — execution checkpoint, 2026-10-26
+
+Recovery execution is active under the owner's reaffirmed AFK authorization.
+Plan: [reviewed recovery subplan](plans/2026-10-26-saved-variants-regroup.md).
+Integration: `codex/saved-scale-variants-20261025`, host-local
+`/private/tmp/handpan-saved-variants.HVUKbE/integration`.
+
+- **Gate1 complete:** preserved all conflict-stage blobs and both parents; merged
+  approved Helpers at `b7439303`. The only instruction delta is its already-approved
+  Resources packet. App source `dc6af752…`; engine unchanged.
+- **Gate2:** full app **941/941**, browser-enabled harness **67/67**, original
+  Back/Forward **1/1**, variants/LINK/conflict journeys **9/9**, gesture checks
+  **3/3** all pass without required skips. All browser supervisors confirm cleanup.
+- **Mutation reconciliation:** `dc1e0842` integrates ten faithful context refreshes
+  and four new route faults. All **1,627 patches apply**, all 1,623 old identities
+  remain; 39 unit clean/fault/restored phases and the panel native triple passed
+  their intended assertions. Earlier 'panel proof pending' handoffs are historical.
+- **Floor reconciliation:** Helpers adds one new HHR registration, strengthening
+  existing PM7; independently reviewed correction of provisional942 to941 still
+  increases parent940. No removed tests or weaker acceptance.
+- **Metadata:** initial run52/54 failed two temporary-Git-worktree checks because
+  sandbox denied metadata writes; failed receipt retained. Permission-corrected
+  a1 run **54/54 PASS**, zero failures/skips; no source or test change to repair it.
+- **Review:** independent engineering cleared source and mutation scope for final
+  CI publication conditional on metadata passing. Full exact-head CI, performance,
+  final delivery review and actual served-DEV verification remain mandatory.
+- **Performance:** A1 bounded Linux protocol independently cleared. Concrete
+  workflow/controller packet is being drafted privately; no setup or measurement
+  is activated, and prior incomplete Mac data remains incomplete.
+
+Next: freeze final delivery manifest/commit, publish this feature
+head and run full CI; do not merge DEV until all required gates pass. No main merge
+is authorized. Helpers owner QA passed; duplicates remain paused and swipe/palettes
+retain their existing sequencing. Raw receipts stay in host-local `HV/evidence`
+and `handpan-share-hotfix.urAbvO/evidence`; publish sanitized immutable checkpoints.
+This local record must not be mistaken for canonical DEV publication.
+
 ## Recovery Gate1 ACTIVE — 2026-10-26
 
 Owner reaffirmed AFK continuation. Reviewed [regroup subplan](plans/2026-10-26-saved-variants-regroup.md) activated: stage blobs and working conflict copies preserved privately in HV/evidence/regroup-gate1-premerge before resolution. Coordinator is resolving approved Helpers integration, preserving both parents/owner decisions. No reset/abort or original checkout edits. Application freeze and mutation/native/full-CI/performance gates remain pending; no DEV or main claim. Current regroup review record: round1 revise, round2 both CLEAR; no new failed execution round. Parallel Linux proposal review only, no measurements/setup yet.
+
+### Recovery validation checkpoint — Gate2 in progress
+
+Combined app941/941 PASS (0 failed/cancelled/skipped), raw regroup-app-a0.tap. Provisional942 arithmetic corrected to941 after independent review: Helpers adds one HHR test and strengthens/renames existing PM7; no registration removed; still increases saved-variants parent940. Unchanged original Back/Forward native case PASS under90s supervisor in3.493s with cleanup true; this is regression evidence, not original CI causality proof. M lane /private/tmp/handpan-saved-variants.HVUKbE/regroup-mutants owns ten generated context refreshes and four new route faults; proofs pending. Linux proposal review found three execution ambiguities; private a1 revision in progress before setup/run. All main/DEV delivery gates remain.
 
 ### Gate1 resolution checkpoint
 

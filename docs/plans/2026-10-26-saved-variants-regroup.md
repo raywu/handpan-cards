@@ -238,3 +238,14 @@ Gate1 may now activate under existing through-DEV authority; this planning task
 has not resolved the merge, run tests, configured Linux CI or changed app source. Helpers owner QA passed; main queue held, duplicates paused, swipe and
 palettes retain their sequencing and authorization. No owner input is needed to
 complete this planning/review step.
+
+## Execution checkpoint — owner reaffirmed AFK continuation
+
+Execution started 2026-10-26. Gate1 integrated at b7439303, mutation lane at
+dc1e0842; app remains dc6af752. App941/harness67/native1+9+3 and mutation39unit
+phases+panelnative triple pass. Provisional942 floor corrected to941 after
+independent test-continuity review (one new HHR, existing PM7 retained). Metadata
+a0 has two sandbox-worktree failures and is preserved; approved-access a1 **54/54 PASS** with no skips or source/test change. Final exact-head CI and qualified performance have NOT passed. Private
+Linux protocol A1 is independently clear; concrete setup remains draft/unactivated.
+See newest shared ledger checkpoint for exact continuation; earlier execution-
+not-started labels describe plan review time, not this subsequent activation.

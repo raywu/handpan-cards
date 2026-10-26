@@ -2,7 +2,7 @@
 
 ## Saved-variants regroup — 2026-10-26
 
-[Recovery subplan](2026-10-26-saved-variants-regroup.md) now independently ENG/design CLEAR after one revision round. Next: preserve and resolve existing integration, freeze application source, reconcile mutation proofs, then separate correctness and performance/CI gates. More than three failed review rounds requires regroup across workstreams; no main permission or test waiver. Helpers owner device QA passed. This is a local checkpoint, not DEV publication.
+[Recovery subplan](2026-10-26-saved-variants-regroup.md) now independently ENG/design CLEAR after one revision round. Execution active: integration resolved at b7439303; mutation reconciliation at dc1e0842. App941, harness67, native1+9+3 and intended mutation proofs passed; metadata permission-corrected54/54 passed; next final CI. Performance setup remains separately unactivated. More than three failed review rounds requires regroup across workstreams; no main permission or test waiver. Helpers owner device QA passed. This is a local checkpoint, not DEV publication.
 
 LatestverifiedDEV3542d6ea868bf08e81a0b4f06c4bc71bbc20cbcb; main96c4c589 remains
 held/unchanged. [Sharedledger](../WORKSTREAMS.md) hascurrentauthorizations and
