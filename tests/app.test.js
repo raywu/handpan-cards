@@ -5491,34 +5491,23 @@ test("AP2-2 setInert applies each caller's own background set", () => {
   assert.deepStrictEqual(inertIds(), []);
 });
 
-test("AP2-3 a refused generate restores readonly and the label and leaves the button disabled until the seed changes", () => {
-  const app = boot({ layout: true });
-  const a = app.generate(AMARA_STRING).value.id;
-  const b = app.generate(scale("builtin hijaz")).value.id;
-  assert.notStrictEqual(a, b);
-  app.run(`openEditSheet(CUSTOM[${JSON.stringify(b)}])`);
-  app.type(AMARA_STRING);
-  assert.strictEqual(app.get("genBtn.disabled"), false, "a parseable seed enables SAVE");
-  app.run("runGenerate()");
-  assert.strictEqual(app.get("scaleBox.hasAttribute('readonly')"), false, "readonly restored");
-  assert.strictEqual(app.get("genBtn.textContent"), "SAVE CHANGES", "label restored");
-  assert.strictEqual(app.get("genBtn.disabled"), true, "a refused seed stays disabled");
-  assert.strictEqual(app.get("refusal"), "Another scale already has these notes.");
-  assert.strictEqual(app.get("scaleBox.classList.contains('bad')"), true);
-  app.type(scale("builtin hijaz"));
-  assert.strictEqual(app.get("genBtn.disabled"), false, "changing the seed re-enables it");
-  assert.strictEqual(app.get("refusal"), null);
+test("AP2-3 a refused generate restores readonly and the label and leaves the button disabled until the seed changes", async () => {
+  const app=boot({layout:true,crypto:require("node:crypto").webcrypto,abortController:true});openSheet(app);app.type("(F3) C4 Ab4 Bb4");
+  assert.strictEqual(app.get("genBtn.disabled"),false,"valid grammar reaches the real zero-chord build refusal");
+  await app.getAsync("runGenerate()");
+  assert.strictEqual(app.sheetOpen(),true);assert.strictEqual(app.get("scaleBox.hasAttribute('readonly')"),false);
+  assert.strictEqual(app.get("genBtn.textContent"),"GENERATE CARDS");assert.ok(app.get("refusal"),"actual non-grammar build refusal remains actionable");
+  assert.strictEqual(app.get("genBtn.disabled"),true,"rejected build stays disabled until new input addresses it");
+  assert.ok(app.els["scale-refusal"].textContent.length>0);app.type(AMARA_STRING);
+  assert.strictEqual(app.get("genBtn.disabled"),false);assert.strictEqual(app.get("refusal"),null);
 });
 
-test("AP2-3 a throwing generate still restores readonly and the label and leaves the button disabled", () => {
-  const app = boot({ layout: true });
-  app.run("openScaleSheet()");
-  app.type(AMARA_STRING);
-  app.run(`generateDeck = () => { throw new Error("boom"); }`);
-  assert.throws(() => app.run("runGenerate()"), /boom/);
-  assert.strictEqual(app.get("scaleBox.hasAttribute('readonly')"), false);
-  assert.strictEqual(app.get("genBtn.textContent"), "GENERATE CARDS");
-  assert.strictEqual(app.get("genBtn.disabled"), true);
+test("AP2-3 a throwing generate still restores readonly and the label and leaves the button disabled", async () => {
+  const app=boot({layout:true,crypto:require("node:crypto").webcrypto,abortController:true});openSheet(app);app.type(AMARA_STRING);
+  app.run('buildGenerated=()=>{throw new Error("public test build failure");}');
+  await assert.rejects(app.getAsync("runGenerate()"),/public test build failure/);
+  assert.strictEqual(app.get("scaleBox.hasAttribute('readonly')"),false);assert.strictEqual(app.get("genBtn.textContent"),"GENERATE CARDS");
+  assert.strictEqual(app.get("genBtn.disabled"),true,"unexpected build failure cannot leave a stale enabled action");
 });
 
 test("AP2-4 setMode and shuffle produce the same label", () => {
@@ -16095,7 +16084,7 @@ describe("SHC asynchronous LINK ownership", () => {
     for(const storage of [{hpfc:JSON.stringify({lang:"de"})},{}]) {
       const {app}=await load({storage,languages:["de-DE","en"]});
       assert.strictEqual(app.get("document.documentElement.lang"),"de","ready UI declares its resolved language");
-      assert.strictEqual(app.els["panel-lang-heading"].textContent,de["sel.language"],"static settings copy is localized at first ready");
+      assert.strictEqual(app.els["settings-trigger"].getAttribute("aria-label"),de["header.settings"],"static settings control copy is localized at first ready");
       assert.ok(app.els["lang-select"].children.some(option=>option.textContent==="Deutsch"),"language selector is populated before ready");
     }
   });
@@ -16141,6 +16130,114 @@ describe("SHC asynchronous LINK ownership", () => {
     assert.strictEqual(app.els["saved-temporary-use"].inert,true,"background action must be inert while Settings owns modal focus");
     app.run("closePanel()");
     assert.strictEqual(app.els["saved-temporary-use"].inert,false,"closing Settings restores the explicit action");
+  });
+
+
+  test("SV12 U1: Back Escape and Save return focus to a connected surviving instance chip", async () => {
+    for(const action of ["back","escape","save"]) {
+      const {app}=await seeded([SV.portableRecords.amaraA]);
+      const original=app.els.decks.children.find(c=>c.classList.contains("on"));original.focus();
+      editSelected(app);
+      if(action==="save"){rename(app,"FOCUS RETURN");await submit(app);}
+      else if(action==="back")app.els["scale-back"].click();
+      else app.key("Escape");
+      assert.strictEqual(app.sheetOpen(),false);
+      const active=app.sandbox.document.activeElement;
+      assert.ok(app.els.decks.children.includes(active),action+" focus must belong to the current chip strip, never a detached opener");
+      assert.strictEqual(active.getAttribute("data-selection-id"),iid(1));
+    }
+  });
+
+  test("SV12 U2: pending save-as-separate disables both submitting actions", async () => {
+    const {app,origin,crypto}=await seeded([SV.portableRecords.amaraA]);
+    editSelected(app);rename(app,"LOCAL CONFLICT");
+    const peer=(await load({origin,crypto})).app,e=snapshot(peer);
+    assert.strictEqual((await command(peer,{type:"edit",collectionId:e.collectionId,instanceId:iid(1),expectedRevision:1},SV.portableRecords.amaraB)).ok,true);
+    await submit(app);assert.strictEqual(app.els["scale-conflict"].hidden,false);
+    let release,acquired;const held=new Promise(resolve=>{acquired=resolve;});
+    const blocker=app.sandbox.navigator.locks.request(SV_LOCK,()=>{acquired();return new Promise(resolve=>{release=resolve;});});await held;
+    const pending=app.getAsync("runGenerate(true)");
+    try {
+      await app.waitFor("navigator.locks.query().then(q=>q.pending.length===1)");
+      assert.strictEqual(app.els["scale-generate"].disabled,true);
+      assert.strictEqual(app.els["scale-conflict-separate"].disabled,true,"separate recovery action must communicate that its submission is pending");
+    } finally {release();await blocker;await pending;}
+  });
+
+  test("SV12 U3: a draft becoming invalid during pending Save stays disabled after completion", async () => {
+    const {app}=await seeded([SV.portableRecords.amaraA]);editSelected(app);rename(app,"PENDING VALID");
+    let release,acquired;const held=new Promise(resolve=>{acquired=resolve;});
+    const blocker=app.sandbox.navigator.locks.request(SV_LOCK,()=>{acquired();return new Promise(resolve=>{release=resolve;});});await held;
+    const pending=submit(app);await app.waitFor("navigator.locks.query().then(q=>q.pending.length===1)");
+    app.type("xyz");assert.strictEqual(app.els["scale-generate"].disabled,true,"invalid draft cannot submit while pending");
+    release();await blocker;await pending;
+    assert.strictEqual(app.sheetOpen(),true);assert.strictEqual(app.els["scale-box"].value,"xyz");
+    assert.strictEqual(app.els["scale-generate"].disabled,true,"old completion cannot re-enable an invalid current draft");
+  });
+
+  test("SV12 U4: unchanged session status is not written again into its live region", async () => {
+    const {app}=await load({locks:false});const status=app.els["saved-status"];
+    assert.ok(status.textContent.length>0,"this-tab status has readable current copy");
+    const descriptor=Object.getOwnPropertyDescriptor(status,"textContent");let writes=0;
+    Object.defineProperty(status,"textContent",{configurable:true,get:descriptor.get,set(value){writes++;descriptor.set.call(this,value);}});
+    app.run("updateSavedStatus();updateSavedStatus()");
+    assert.strictEqual(writes,0,"unchanged status must not generate repeated live-region mutations");
+  });
+
+
+  test("SV12 U5: failed incoming link remains recoverable and LINK cannot silently share the previous scale", async () => {
+    const probe=await load();
+    const record=SV.portableRecords.amaraB;
+    const code=plain(probe.app.get(`HPE.share.encode({fields:HPE.core.parseSeed(${JSON.stringify(record.s)}).value.fields,options:${JSON.stringify(record.o)}})`));
+    assert.strictEqual(code.ok,true);const hash="#s="+code.value;
+    const initial=envelope([SV.portableRecords.amaraA]);let refuse=true;
+    const {app}=await load({href:"https://example.test/index.html"+hash,storage:{[SV_KEY]:JSON.stringify(initial)},
+      storageFault:({operation,key})=>refuse&&operation==="setItem"&&key===SV_KEY?new Error("public test write refused"):null});
+    assert.strictEqual(app.currentDeck().name,"PUBLIC PAN A","failed import cannot falsely replace the saved selection");
+    assert.strictEqual(app.location.hash,hash,"failed incoming content stays available for explicit retry");
+    assert.strictEqual(app.els["share-copy"].disabled,true,"LINK cannot copy the previous scale while the incoming link is unresolved");
+    assert.deepStrictEqual(snapshot(app).entries.map(e=>e.record.o.name),["PUBLIC PAN A"]);
+    refuse=false;const retried=await app.getAsync(`openShare(${JSON.stringify(code.value)})`);
+    assert.strictEqual(retried.ok,true);assert.strictEqual(app.currentDeck().name,"PUBLIC PAN B");
+    assert.strictEqual(app.els["share-copy"].disabled,false);assert.strictEqual(app.location.hash,hash);
+  });
+
+
+  test("SV12 U6: accessible collision labels explain stable saved and preset tokens in each locale", async () => {
+    for(const lang of SV.labels.locales)for(const c of SV.labels.cases) {
+      const input=envelope(c.names.map(name=>({v:4,s:SV.inventories.amara9.seed,o:{name}})));
+      const highest=Math.max(...c.ordinals);
+      input.entries.forEach((entry,i)=>{entry.instanceId=iid(c.ordinals[i]);entry.displayOrdinal=c.ordinals[i];});
+      input.usedInstanceIds=Array.from({length:highest},(_,i)=>iid(i+1));input.nextDisplayOrdinal=highest+1;
+      input.preferredSelection={kind:"saved",id:iid(c.ordinals[0])};
+      const {app}=await load({storage:{hpfc:JSON.stringify({lang}),[SV_KEY]:JSON.stringify(input)}});
+      const locale=JSON.parse(fs.readFileSync(path.join(ROOT,"data/i18n",lang+".json"),"utf8"));
+      for(const [i,token] of c.expectedSavedTokens.entries()) {
+        const chip=app.els.decks.children[c.names.length-1-i],visible=strip(chip.innerHTML||chip.textContent);
+        const accessible=chip.getAttribute("aria-label")||visible;
+        assert.ok(accessible.includes(visible),"accessible name retains the entire visible label");
+        assert.notStrictEqual(accessible,visible,"saved discriminator needs a readable explanation beyond its unexplained token");
+        if(lang==="en")assert.ok(accessible.includes(token+" identifies this saved scale in this browser."),"saved token explanation is readable beyond the existing Edit prefix");
+        assert.strictEqual(typeof locale["saved.savedToken"],"string");
+        assert.ok(accessible.includes(locale["saved.savedToken"].replace("{token}",token)),lang+" explains literal saved token "+token);
+      }
+      if(c.expectedPresetToken) {
+        const chip=app.els.decks.children[c.names.length+2],visible=strip(chip.innerHTML||chip.textContent),accessible=chip.getAttribute("aria-label")||visible;
+        assert.ok(accessible.includes(visible));assert.notStrictEqual(accessible,visible,"preset token also needs explanation");
+        assert.strictEqual(typeof locale["saved.presetToken"],"string");
+        assert.ok(accessible.includes(locale["saved.presetToken"].replace("{token}",c.expectedPresetToken)));
+      }
+    }
+  });
+
+
+  test("SV13 U1: opening Edit never puts a local collection or instance handle in the URL", async () => {
+    const {app}=await seeded([SV.portableRecords.amaraA]);const e=snapshot(app);
+    const inventory=app.currentDeck().id;editSelected(app);
+    for(const handle of [e.collectionId,...e.usedInstanceIds])assert.strictEqual(app.location.href.includes(handle),false,"opaque local handles are never route metadata");
+    assert.strictEqual(app.location.hash,"#edit-"+inventory,"Edit keeps the portable canonical inventory route while targeting its instance internally");
+    assert.deepStrictEqual(plain(app.get("editingBase.selection")),{kind:"saved",id:iid(1)});
+    app.els["scale-back"].click();assert.ok(app.location.hash.startsWith("#s="));
   });
 
 }
