@@ -41,9 +41,14 @@ source-reviewed and integrated; final-candidate measurement not yet run.
 ACK at revision2 but only the later entry remains, even after both targets' storage
 events/next tasks/foreground frames. Diagnostic runs0–2passed,3reproduced loss;
 not merely an early observation. No app/DEV release until investigated and repaired.
-Fresh independent storage-consistency investigation active, preserving original
-spec/approval boundaries; no timing workaround or revised storage architecture
-implemented. Raw `sv-native-concurrent-import-diagnostic-a3` is retained.
+Native lock/get/set tracing independently confirms sequential exclusive callbacks
+yet a stale second-tab read after the first ACK. The [transactional storage
+amendment](plans/2026-10-25-saved-variants-transactional-storage.md) is now independently
+ENG/design-cleared after four data-preservation/session/reconciliation refinements.
+Root authorizes the already-planned internal atomic-store alternative under the
+owner's through-DEV and reaffirmed AFK grant; no CLAUDE edit/install/new policy or
+main merge. H model/T assertions/S adapter lanes start next; no IDB runtime claim.
+No timing workaround is approved. Raw `sv-native-concurrent-import-diagnostic-a3` is retained.
 
 Native copied-layout/fresh-profile1PASS and staleEdit/delete1PASS. Three other
 native failures: concurrent import loss above; RESET test targeted persistent

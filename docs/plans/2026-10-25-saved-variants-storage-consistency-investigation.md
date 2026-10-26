@@ -126,7 +126,7 @@ passing yields/RAF/timeouts are not a supported production consistency guarantee
 | Option | Correctness basis / scope | Recommendation |
 |---|---|---|
 | Repair a specific source/lock error while retaining localStorage | Appropriate only if callback-level trace identifies a concrete error with an enforceable invariant and discriminating negative control. Merely moving staging, re-reading twice, or yielding lacks a documented cache flush/CAS guarantee. | Investigate first; do not approve a timing workaround from passing repetitions. |
-| One authoritative IndexedDB envelope in one overlapping readwrite transaction | The storage engine provides serialization and conditional update in the same transaction. Keep the validated schema1 envelope and instance/UI contract; replace persistence adapter, initialization/reconciliation/notification and tests. | Preferred durable fallback if trace confirms correct lock use but stale shared-storage reads. Requires reviewed amendment and owner approval where protected contract text changes. |
+| One authoritative IndexedDB envelope in one overlapping readwrite transaction | The storage engine provides serialization and conditional update in the same transaction. Keep the validated schema1 envelope and instance/UI contract; replace persistence adapter, initialization/reconciliation/notification and tests. | Preferred durable fallback if trace confirms correct lock use but stale shared-storage reads. Requires a concrete reviewed amendment and an explicit authority assessment; any new CLAUDE diff still needs exact owner approval. |
 | Explicit THIS-TAB-only operation while a durable fix is held | No shared writes and no claimed persistence; preserve recoverable drafts and clear session-only UI. This is a product limitation rather than a durable cross-tab solution. | Safe fallback only if owner explicitly accepts a narrower delivery; not equivalent to the current requested saved-variants outcome. |
 
 No second verified durable alternative is being invented to make the option
@@ -162,13 +162,45 @@ not overwrite data, silently fall back to unlocked durable writes or claim an
 empty collection. Reconciliation reads IDB; notifications are hints, not authority.
 A minimal notification/visibility strategy needs its own focused review.
 
-The approved schema currently requires a localStorage namespace, one setItem ACK
-and exclusive Web Locks; see schema contract, parent plan107–150 and the exact
-instruction packet98–108. IDB is named as a fallback **design alternative**, not
-automatically activated. Parent should first produce a concrete amendment and
-exact protected-instruction diff, obtain independent engineering/design review,
-then seek the required owner approval. Do not edit CLAUDE.md now. Even preserving
-JSON fields does not make this merely an internal one-line change.
+The current schema/ENGINE-SPEC contract requires the namespace, one setItem ACK
+and exclusive Web Locks; see `docs/ENGINE-SPEC.md:983–990`, schema contract, parent
+plan107–150 and the exact instruction packet98–108. CLAUDE.md's approved saved-
+instance paragraph refers to ENGINE-SPEC12/14 rather than naming setItem or Web
+Locks itself. IDB is named as a fallback **design alternative**, not an already
+implemented second backend. Even preserving JSON fields does not make this a
+one-line source fix: a concrete amendment and fresh ENG/design review are required.
+
+### Authority assessment — avoid inventing a new approval requirement
+
+The explicit owner hard gate applies to **every CLAUDE.md edit** and main merge;
+it must not be silently generalized to every engineering document or internal
+adapter choice. The parent plan assigns ENGINE-SPEC/README to root and explicitly
+contemplates IDB if the required context/performance fails. The owner subsequently
+approved the reviewed plan through DEV and standing autonomous recommended
+decisions. Historical planning-only STOP prose is superseded by that approval.
+
+Recommended interpretation for root to confirm against the exact approval record:
+if the amendment retains the approved observable coexistence/equality/Edit/slot/
+conflict/recovery contract, existing record/wire formats, no-destructive-migration
+rules and honest session fallback, then replacing the **unshipped internal adapter**
+with the already-listed transactional alternative can remain within through-DEV
+implementation authority after independent review. The reproduced native failure
+is evidence that the present required context fails. Root should record the
+interpretation and amended evidence/acceptance contract; do not ask again solely
+because an agent-authored checkpoint used generic 'review/approval' wording.
+
+Do not change CLAUDE.md: its existing high-level ENGINE-SPEC references can remain
+accurate. Update the concrete proposed ENGINE-SPEC contract in the amendment;
+this is not permission to reapply a modified version of the previously exact-
+approved CLAUDE patch. If review finds a necessary CLAUDE wording change, different
+product semantics (such as a deliberately session-only release), destructive
+retention policy, new dependencies/installs, extra permissions or broader scope,
+prepare the exact reviewable decision and obtain the specifically required owner
+approval before that action. No main merge is authorized.
+
+This assessment is a research recommendation, not a new permission grant. It
+allows useful investigation/review now while preserving the owner's explicit
+guardrail and avoids a premature permission question before a concrete solution.
 
 ## Required validation and measurement changes
 
@@ -203,3 +235,42 @@ architecture; documented the decision boundary. Next: root's callback/get/set
 trace, then evidence-specific repair or a concrete reviewed transactional-store
 amendment. Release remains blocked; no implementation, wider scope, main merge
 or additional CLAUDE approval is granted by this research artifact.
+
+## Callback-level trace independently audited — release blocker confirmed
+
+Successor root run `sv-native-lock-storage-trace-a0` reproduced the original
+assertion on its first attempt: one selected test, zero passes, one intended
+ERR_ASSERTION failure, no skip/timeout, cleanup true. This research lane read the
+actual raw trace and the trace-preload source (not merely root's summary). The
+preload preserves native receivers/options, one get/set delegation, synchronous
+callback results and the original request Promise; it adds no operation-phase
+readback or yield. The held barrier returns a Promise, so its callback-return
+marker is not its release; the request-resolved marker correctly identifies
+release before the two commit callbacks.
+
+Relative milliseconds, derived from the recorded timeOrigin+now values:
+
+| Event | Time | Observed state |
+|---|---:|---|
+| A barrier request resolved |7.2| Exclusive barrier released. |
+| A commit entered |7.3| Exclusive lock; getItem returns revision1/zero entries. |
+| A setItem returned and callback/request completed |7.5| Input revision2, only A; API ACK returned. |
+| B commit entered |7.6| Exclusive lock, after A completion; getItem STILL returns revision1/zero entries. |
+| B setItem returned and callback/request completed |7.9| Input revision2, only B; API ACK returned. |
+| B received A storage event |10.1| Event reports old revision1 -> A revision2, after B already wrote. |
+| A received B storage event |11.5| Event reports old A revision2 -> B revision2. |
+
+No extra collection-key writer appears between these two observed writes. Both
+results contain distinct IDs and published:true; both subsequent raw collections
+contain B only through the later task/frame diagnostics. The callbacks did not
+overlap; they requested/granted the same exact lock in exclusive mode. The
+in-callback stale read is now directly observed. Source after fresh getItem still
+applied the staged revision it had compared, so this trace does not point to an
+extra stale-stage variable bug. Browser internal implementation details remain
+unproved, but the API boundary is sufficient to reject the current durable
+localStorage protocol on this host. A timing yield is not a principled repair.
+
+A concrete successor is now drafted in
+[transactional storage amendment](2026-10-25-saved-variants-transactional-storage.md).
+It needs fresh independent engineering/design review before code; root owns
+authority assessment and sequencing under the standing through-DEV scope.
