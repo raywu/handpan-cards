@@ -17774,5 +17774,268 @@ function run() {
     });
   });
 
+  /* SAVED-SCALE-VARIANTS — six actual browser groups. Two-target tests use one
+   * owned Chrome/profile and real Web Locks, not two isolated launch() profiles.
+   * Peer RPCs reuse the existing driver's pending map. rawSend creates its CDP
+   * payload synchronously; restore sessionId before awaiting any response.
+   * Root alone executes this suite under the serialized host-browser lease.
+   */
+  {
+    const SV = JSON.parse(fs.readFileSync(path.join(REPO,"tests/fixtures/saved_variants_v1.json"),"utf8"));
+    const KEY="hpfc.saved-scales.v1",LOCK="handpan-cards:saved-scales:v1";
+    const clone=v=>JSON.parse(JSON.stringify(v));
+    const uid=n=>`00000000-0000-4000-8000-${String(n).padStart(12,"0")}`;
+    const makeEnvelope=(records,extra={})=>({schema:1,collectionId:SV.ids.collectionA,revision:1,slotStateRevision:0,
+      entries:records.map((record,i)=>({instanceId:uid(i+1),revision:1,displayOrdinal:i+1,record:clone(record)})),
+      usedInstanceIds:records.map((_,i)=>uid(i+1)),nextDisplayOrdinal:records.length+1,
+      preferredSelection:records.length?{kind:"saved",id:uid(1)}:{kind:"builtin",id:"kurd"},slots:{},hidden:[],
+      migration:{sourceKey:null,raw:{hpfc:null,"hpfc.scales":null,"hpfc.scales.v3":null},instanceIds:[]},...clone(extra)});
+    function session(id,owner=b) {
+      const send=(method,params={})=>{const previous=owner.sessionId;owner.sessionId=id;
+        try{return owner.rawSend(method,params);}finally{owner.sessionId=previous;}};
+      const evaluate=async body=>{const r=await send("Runtime.evaluate",{expression:`(() => { ${body} })()`,awaitPromise:true,returnByValue:true});
+        assert.ok(!r.exceptionDetails,"SV page evaluation must complete without an uncaught error: "+JSON.stringify(r.exceptionDetails));return r.result.value;};
+      const wait=async(expr,label,timeout=5000)=>{const deadline=Date.now()+timeout;for(;;){if(await evaluate(`return !!(${expr});`))return;
+        if(Date.now()>deadline)throw new Error("SV readiness deadline: "+label);await sleep(20);}};
+      const click=async selector=>{await send("Page.bringToFront");
+        const point=await evaluate(`const el=document.querySelector(${JSON.stringify(selector)});if(!el)return null;
+          el.scrollIntoView({block:'nearest',inline:'nearest'});const r=el.getBoundingClientRect();
+          const x=r.left+r.width/2,y=r.top+r.height/2,hit=document.elementFromPoint(x,y);
+          return {x,y,w:r.width,h:r.height,hit:!!hit&&(el===hit||el.contains(hit)),disabled:el.disabled===true};`);
+        assert.ok(point&&point.w>0&&point.h>0&&point.hit&&!point.disabled,"SV trusted click target must be visible/enabled: "+selector);
+        await send("Input.dispatchMouseEvent",{type:"mousePressed",x:point.x,y:point.y,button:"left",clickCount:1});
+        await send("Input.dispatchMouseEvent",{type:"mouseReleased",x:point.x,y:point.y,button:"left",clickCount:1});};
+      const type=async(selector,text)=>{await click(selector);await send("Input.dispatchKeyEvent",{type:"keyDown",key:"a",code:"KeyA",commands:["selectAll"]});
+        await send("Input.dispatchKeyEvent",{type:"keyUp",key:"a",code:"KeyA"});await send("Input.insertText",{text});};
+      return {id,send,eval:evaluate,wait,click,type};
+    }
+    const read=p=>p.eval(`return JSON.parse(localStorage.getItem(${JSON.stringify(KEY)}));`);
+    const importRecord=(p,record)=>p.eval(`const r=${JSON.stringify(record)},s=HPE.core.parseSeed(r.s);
+      const code=HPE.share.encode({fields:s.value.fields,options:r.o||{}});return openShare(code.value);`);
+    const commit=(p,cmd,record)=>p.eval(`const command=${JSON.stringify(cmd)};
+      ${record?`const r=${JSON.stringify(record)},built=buildGenerated(r.s,r.o||{});if(!built.ok)return built;
+        command.candidate={record:scaleRecord(seedOf(built.value)),deck:built.value};`:""}
+      return commitSaved(command);`);
+    const scope=e=>({slotStateRevision:e.slotStateRevision,slots:clone(e.slots),hidden:clone(e.hidden),
+      replacements:e.entries.filter(x=>x.record?.v===4&&x.record.o?.replaces==="kurd")
+        .map(x=>({id:x.instanceId,revision:x.revision}))});
+    async function withTwo(records,extra,body) {
+      await freshLoad();await b.setViewport(1280,800,false);
+      if(records){await b.eval(`localStorage.setItem(${JSON.stringify(KEY)},${JSON.stringify(JSON.stringify(makeEnvelope(records,extra)))});return true;`);await navigate();}
+      const primary=session(b.sessionId);let targetId=null;
+      try {
+        const first=await primary.send("Target.getTargetInfo");
+        ({targetId}=await b.send("Target.createTarget",{url:"about:blank"},false));
+        const attached=await b.send("Target.attachToTarget",{targetId,flatten:true},false),peer=session(attached.sessionId);
+        assert.notStrictEqual(peer.id,primary.id,"actual distinct CDP sessions are required");
+        assert.notStrictEqual(targetId,first.targetInfo.targetId,"actual distinct targets are required");
+        await peer.send("Page.enable");await peer.send("Runtime.enable");await peer.send("Network.enable");
+        await peer.send("Network.setBlockedURLs",{urls:b.blockedUrls});
+        await peer.send("Emulation.setDeviceMetricsOverride",{width:1280,height:800,deviceScaleFactor:1,mobile:false});
+        await peer.send("Page.navigate",{url:URL});
+        await peer.wait(APP_READY_EXPR,"peer document boot");
+        const probe="__sv_public_same_origin_probe__";
+        await primary.eval(`localStorage.setItem(${JSON.stringify(probe)},"same-profile-origin");return true;`);
+        assert.strictEqual(await peer.eval(`return localStorage.getItem(${JSON.stringify(probe)});`),"same-profile-origin","both actual targets must share storage");
+        await primary.eval(`localStorage.removeItem(${JSON.stringify(probe)});return true;`);
+        console.log("SV_TARGETS "+JSON.stringify({first:first.targetInfo.targetId,second:targetId,distinctSessions:true,sharedOrigin:true}));
+        await body(primary,peer);
+      } finally {if(targetId)await b.send("Target.closeTarget",{targetId},false);}
+    }
+    async function openEdit(p) {await p.click("#decks .chip.on");await p.wait("!document.getElementById('scale-sheet').hidden","Edit open");}
+    async function save(p) {await p.click("#scale-generate");await p.wait("document.getElementById('scale-sheet').hidden","saved sheet closed");
+      await p.wait("location.hash===routeFor(deck())","saved canonical route");}
+    async function hold(p) {
+      await p.eval(`window.__svHeld=false;window.__svRelease=null;
+        window.__svBarrier=navigator.locks.request(${JSON.stringify(LOCK)},()=>{window.__svHeld=true;
+          return new Promise(resolve=>{window.__svRelease=resolve;});});return true;`);
+      await p.wait("window.__svHeld===true","real exclusive barrier acquired");
+    }
+    const release=p=>p.eval("if(window.__svRelease)window.__svRelease();return true;");
+    async function startImport(p,record) {
+      await p.eval(`const r=${JSON.stringify(record)},seed=HPE.core.parseSeed(r.s),code=HPE.share.encode({fields:seed.value.fields,options:r.o||{}});
+        window.__svOperationDone=false;window.__svResult=null;window.__svOperation=Promise.resolve(openShare(code.value))
+          .then(result=>{window.__svResult=result;window.__svOperationDone=true;},error=>{window.__svResult={ok:false,error:String(error)};window.__svOperationDone=true;});return true;`);
+    }
+
+    test("SV3 E1: copied saved layout opens the selected variant in a fresh profile",{timeout:90000},async()=>{
+      await freshLoad();await b.setViewport(1280,800,false);const p=session(b.sessionId);
+      const a=clone(SV.portableRecords.pygmyLayoutA),variant=clone(a);a.o.name="PUBLIC LAYOUT A";variant.o.name="PUBLIC LAYOUT B";
+      assert.strictEqual((await importRecord(p,a)).ok,true);assert.strictEqual((await importRecord(p,variant)).ok,true);
+      assert.strictEqual(await p.eval("return document.querySelectorAll('#decks .chip').length;"),7,"both named versions must remain in the picker");
+      const before=await read(p),aEntry=before.entries.find(x=>x.record.o.name==="PUBLIC LAYOUT A");
+      await openEdit(p);await p.click("#scale-tab-layout");await p.click("#scale-fine-toggle");
+      await p.click('#scale-preview .panhit[data-ring="bottom"][aria-label^="C3,"]');await p.click("#scale-angle-next");
+      assert.strictEqual(await p.eval("return lastSolved.fields[101][4];"),295,"actual fine nudge moves the public C3 to295 degrees");
+      await save(p);
+      const after=await read(p);assert.deepStrictEqual(after.entries.find(x=>x.instanceId===aEntry.instanceId),aEntry,"editing B leaves A byte-for-value unchanged");
+      await p.eval(`window.__svCopied=null;Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.__svCopied=text;}}});return true;`);
+      await p.click("#share-copy");await p.wait("typeof window.__svCopied==='string'","actual copied payload");
+      const copied=await p.eval("return {value:window.__svCopied,href:location.href};");assert.strictEqual(copied.value,copied.href);
+      for(const id of after.usedInstanceIds)assert.ok(!copied.value.includes(id),"portable links cannot contain a local instance handle");
+      assert.deepStrictEqual(await p.eval("return HPE.share.decode(window.__svCopied.split('#s=')[1]).value.options.angles.bottom;"),SV.share.expectedEditedBottomOptions);
+      const senderProfile=b.profileDir;await b.close();b=null;b=await launch({foregroundSettle:true});assert.ok(b);
+      assert.notStrictEqual(b.profileDir,senderProfile,"receiver must own a genuinely fresh profile");
+      const prelude=await b.send("Page.addScriptToEvaluateOnNewDocument",{source:"window.__svStorageBefore=localStorage.length;"});
+      try{await b.goto(copied.value);}finally{await b.send("Page.removeScriptToEvaluateOnNewDocument",{identifier:prelude.identifier});}
+      const receiver=session(b.sessionId);assert.strictEqual(await receiver.eval("return window.__svStorageBefore;"),0);
+      assert.deepStrictEqual(await receiver.eval("return deck().options.angles.bottom;"),SV.share.expectedEditedBottomOptions);
+      await openEdit(receiver);await receiver.click("#scale-tab-layout");
+      const points=await receiver.eval(`return Object.fromEntries([...document.querySelectorAll('#scale-preview .panhit[data-ring="bottom"]')].map(n=>[
+        n.getAttribute('aria-label').split(',')[0],(Math.atan2(-Number(n.getAttribute('cy')),Number(n.getAttribute('cx')))*180/Math.PI+360)%360]));`);
+      assert.deepStrictEqual(Object.keys(points).sort(),Object.keys(SV.share.expectedEditedPositions).sort());
+      for(const [pitch,angle]of Object.entries(SV.share.expectedEditedPositions))assert.ok(Math.abs(((points[pitch]-angle+540)%360)-180)<0.1,pitch+" receiver position");
+    });
+
+    test("SV6 E1: two real targets serialize different Adds and deduplicate identical imports",{timeout:90000},async()=>{
+      for(const equal of [false,true])await withTwo([],{},async(a,bPeer)=>{
+        await hold(a);
+        try {
+          await startImport(a,SV.portableRecords.amaraA);await startImport(bPeer,equal?SV.portableRecords.amaraA:SV.portableRecords.amaraB);
+          const q=await a.eval("return navigator.locks.query();");
+          assert.strictEqual(q.held.filter(x=>x.name===LOCK).length,1);
+          assert.strictEqual(q.pending.filter(x=>x.name===LOCK).length,2,"both actual imports must wait for the same exclusive commit lock");
+          await release(a);await a.wait("window.__svOperationDone===true","first acknowledged import");await bPeer.wait("window.__svOperationDone===true","second acknowledged import");
+          assert.strictEqual((await a.eval("return window.__svResult;")).ok,true);assert.strictEqual((await bPeer.eval("return window.__svResult;")).ok,true);
+          const e=await read(a);assert.strictEqual(e.entries.length,equal?1:2,"both acknowledged distinct Adds survive; exact concurrent import allocates once");
+          assert.deepStrictEqual(e.entries.map(x=>x.record.o.name).sort(),equal?["PUBLIC PAN A"]:["PUBLIC PAN A","PUBLIC PAN B"]);
+          assert.strictEqual(new Set(e.entries.map(x=>x.instanceId)).size,e.entries.length);
+        }finally{await release(a);}
+      });
+    });
+
+    test("SV6 E2: stale Edit and delete-versus-Save preserve the winner without resurrection",{timeout:90000},async()=>{
+      await withTwo([SV.portableRecords.amaraA],{},async(a,bPeer)=>{
+        assert.strictEqual(await a.eval("return deck().name;"),"PUBLIC PAN A","the committed selected instance must render");
+        await openEdit(a);await openEdit(bPeer);await a.type("#scale-name","FIRST WINNER");await bPeer.type("#scale-name","STALE DRAFT");
+        await save(a);const winner=await read(a);
+        await bPeer.click("#scale-generate");
+        await bPeer.wait("document.getElementById('scale-generate').disabled===false","conflicting Save completes");
+        assert.strictEqual(await bPeer.eval("return document.getElementById('scale-sheet').hidden;"),false);
+        assert.strictEqual(await bPeer.eval("return document.getElementById('scale-name').value;"),"STALE DRAFT");
+        assert.deepStrictEqual(await read(bPeer),winner,"stale same-target Edit never overwrites the winner");
+        const target=winner.entries[0],stale={type:"edit",collectionId:winner.collectionId,instanceId:target.instanceId,expectedRevision:target.revision};
+        assert.strictEqual((await commit(a,{type:"delete",collectionId:winner.collectionId,instanceId:target.instanceId,expectedRevision:target.revision})).ok,true);
+        const gone=await read(a),refused=await commit(bPeer,stale,SV.portableRecords.amaraB);
+        assert.strictEqual(refused.ok,false);assert.strictEqual(refused.kind,"conflict");assert.deepStrictEqual(await read(bPeer),gone,"deleted local handle cannot be resurrected by stale Save");
+      });
+    });
+
+    test("SV8 E1: RESET rejects a changed replacement scope but accepts an unrelated plain Add",{timeout:90000},async()=>{
+      const older={v:4,s:SV.inventories.amara9.seed,o:{name:"OLDER REPLACEMENT",replaces:"kurd"}},newer={v:4,s:SV.inventories.other.seed,o:{name:"NEWER REPLACEMENT",replaces:"kurd"}};
+      for(const change of ["create","edit","plain"])await withTwo([older,newer],{slots:{kurd:uid(2)},slotStateRevision:1,preferredSelection:{kind:"saved",id:uid(2)}},async(a,bPeer)=>{
+        assert.strictEqual(await a.eval("return deck().name;"),"NEWER REPLACEMENT");
+        const e=await read(a),armed=scope(e);await a.click("#deck-restore");
+        const cmd=change==="create"?{type:"replace-builtin",collectionId:e.collectionId,seedId:"kurd",expectedSlotStateRevision:1,expectedOwnerId:uid(2)}:
+          change==="edit"?{type:"edit",collectionId:e.collectionId,instanceId:uid(2),expectedRevision:1}:{type:"import",collectionId:e.collectionId,selectedInstanceId:null};
+        const changed=await commit(bPeer,cmd,{v:4,s:SV.inventories.other.seed,o:{name:change==="plain"?"UNRELATED PUBLIC PAN":"CHANGED REPLACEMENT"}});assert.strictEqual(changed.ok,true);
+        const winner=await read(bPeer),result=await commit(a,{type:"reset",collectionId:e.collectionId,affectedScope:armed});
+        if(change==="plain") {assert.strictEqual(result.ok,true);const after=await read(a);assert.ok(after.entries.some(x=>x.record.o?.name==="UNRELATED PUBLIC PAN"));assert.deepStrictEqual(after.slots,{});}
+        else {assert.strictEqual(result.ok,false);assert.strictEqual(result.kind,"conflict");assert.deepStrictEqual(await read(a),winner,"stale armed RESET preserves newer replacement");}
+      });
+      await withTwo([older,newer],{slots:{kurd:uid(2)},slotStateRevision:1,preferredSelection:{kind:"saved",id:uid(2)}},async(a,bPeer)=>{
+        assert.strictEqual(await a.eval("return deck().name;"),"NEWER REPLACEMENT");const e=await read(a);
+        assert.strictEqual((await commit(bPeer,{type:"delete",collectionId:e.collectionId,instanceId:uid(2),expectedRevision:1,slotStateRevision:1,slots:{kurd:uid(2)},hidden:[]})).ok,true);
+        const winner=await read(bPeer);assert.strictEqual(winner.slots.kurd,uid(1));
+        const refused=await commit(a,{type:"delete",collectionId:e.collectionId,instanceId:uid(1),expectedRevision:1});
+        assert.strictEqual(refused.ok,false);assert.strictEqual(refused.kind,"conflict");assert.deepStrictEqual(await read(a),winner,"promotion cannot authorize a previously proofless delete");
+      });
+    });
+
+    test("SV9 E1: clean reconciliation updates content and route while dirty reconciliation preserves caret pick and scroll",{timeout:90000},async()=>{
+      await withTwo([SV.portableRecords.pygmyLayoutA],{},async(a,bPeer)=>{
+        assert.strictEqual(await a.eval("return deck().name;"),"PUBLIC LAYOUT");const initial=await read(a);
+        await a.eval("document.getElementById('share-copy').focus();return true;"); // no OS clipboard/share invocation
+        const focus=await a.eval("return document.activeElement.id;");
+        assert.strictEqual(focus,"share-copy");
+        const edit=await commit(bPeer,{type:"edit",collectionId:initial.collectionId,instanceId:uid(1),expectedRevision:1},SV.portableRecords.pygmyLayoutB);assert.strictEqual(edit.ok,true);
+        await a.wait("deck().options.angles && deck().options.angles.bottom[0]===295","clean remote content refresh");
+        assert.strictEqual(await a.eval("return location.hash===routeFor(deck());"),true);
+        assert.strictEqual(await a.eval("return document.activeElement.id;"),focus,"clean data refresh cannot steal focus");
+        const beforeDirty=await read(a);await openEdit(a);await a.type("#scale-name","DIRTY LOCAL DRAFT");
+        await a.eval("document.getElementById('scale-name').setSelectionRange(2,7);return true;");
+        await a.click("#scale-tab-layout");await a.click("#scale-fine-toggle");
+        await a.click('#scale-preview .panhit[data-ring="bottom"][aria-label^="C3,"]');
+        await a.eval("document.getElementById('scale-panel-layout').scrollTop=20;return true;");
+        const draft=await a.eval("return {name:document.getElementById('scale-name').value,start:document.getElementById('scale-name').selectionStart,end:document.getElementById('scale-name').selectionEnd,pick:JSON.stringify(pickRef),scroll:document.getElementById('scale-panel-layout').scrollTop,focus:document.activeElement.getAttribute('data-field')};");
+        assert.notStrictEqual(draft.pick,"null","dirty reconciliation fixture must have a genuinely picked note");
+        assert.strictEqual(draft.focus,"101","fixture retains actual note focus rather than an empty/body focus ID");
+        const remote={...clone(SV.portableRecords.pygmyLayoutB),o:{...clone(SV.portableRecords.pygmyLayoutB.o),name:"REMOTE WINNER"}};
+        assert.strictEqual((await commit(bPeer,{type:"edit",collectionId:beforeDirty.collectionId,instanceId:uid(1),expectedRevision:beforeDirty.entries[0].revision},remote)).ok,true);
+        await a.wait("savedState.entries[0].revision===3","dirty tab observes remote revision");
+        assert.deepStrictEqual(await a.eval("return {name:document.getElementById('scale-name').value,start:document.getElementById('scale-name').selectionStart,end:document.getElementById('scale-name').selectionEnd,pick:JSON.stringify(pickRef),scroll:document.getElementById('scale-panel-layout').scrollTop,focus:document.activeElement.getAttribute('data-field')};"),draft,"dirty caret/pick/scroll/focus remain local");
+        await a.click("#scale-generate");await a.wait("document.getElementById('scale-generate').disabled===false","dirty conflict completion");assert.strictEqual(await a.eval("return document.getElementById('scale-sheet').hidden;"),false);
+        const remoteWinner=await read(bPeer);assert.strictEqual(remoteWinner.entries[0].record.o.name,"REMOTE WINNER");
+        assert.strictEqual((await commit(bPeer,{type:"delete",collectionId:remoteWinner.collectionId,instanceId:uid(1),expectedRevision:remoteWinner.entries[0].revision})).ok,true);
+        await a.wait("savedState.entries.length===0","dirty remote deletion observed");
+        assert.strictEqual(await a.eval("return document.getElementById('scale-name').value;"),"DIRTY LOCAL DRAFT","remote deletion cannot erase draft");
+      });
+      // Repair only genuinely removed-chip focus. A surviving outside control
+      // has the same remote deletion and must retain focus instead.
+      for(const chipFocus of [true,false])await withTwo([SV.portableRecords.amaraA],{},async(a,bPeer)=>{
+        assert.strictEqual(await a.eval("return deck().name;"),"PUBLIC PAN A");const e=await read(a);
+        await a.eval(chipFocus?"document.querySelector('#decks .chip.on').focus();return true;":"document.getElementById('share-copy').focus();return true;");
+        assert.strictEqual((await commit(bPeer,{type:"delete",collectionId:e.collectionId,instanceId:uid(1),expectedRevision:1})).ok,true);
+        await a.wait("deck().id==='kurd'","clean removed selection fallback");
+        if(chipFocus)assert.strictEqual(await a.eval("return document.activeElement===document.querySelector('#decks .chip.on');"),true);
+        else assert.strictEqual(await a.eval("return document.activeElement.id;"),"share-copy","surviving outside focus must never be stolen");
+        assert.strictEqual((await read(a)).entries.length,0,"background reconciliation cannot reimport the deleted route");
+      });
+    });
+
+    test("SV10 E1: variants conflict and session states preserve targets clipping focus and eight-locale copy",{timeout:180000},async()=>{
+      let cells=0,states=0;
+      for(const mode of ["fallback","real"]) {
+        const rb=await launch({foregroundSettle:true,realFonts:mode==="real"});assert.ok(rb,"owned font-mode browser must launch");
+        try {
+          const p=session(rb.sessionId,rb);let generation=0;
+          async function reload() {
+            const stamp="sv-font-"+(++generation);
+            const hook=await rb.send("Page.addScriptToEvaluateOnNewDocument",{source:"window.__svFontDocument="+JSON.stringify(stamp)+";"});
+            try {await rb.send("Page.navigate",{url:URL});await p.wait("window.__svFontDocument==="+JSON.stringify(stamp)+" && "+APP_READY_EXPR,"fresh font-mode document");}
+            finally{await rb.send("Page.removeScriptToEvaluateOnNewDocument",{identifier:hook.identifier});}
+            const fonts=await p.eval(`return document.fonts.ready.then(()=>Promise.all(["14px Marcellus","400 14px Bitter","700 14px Bitter","400 14px 'Nunito Sans'","600 14px 'Nunito Sans'"].map(x=>document.fonts.load(x)))).then(()=>({size:document.fonts.size,faces:[...document.fonts].map(f=>({family:f.family,weight:f.weight,status:f.status}))}));`);
+            require("../tools/probe/panel_fit.js").checkFontMode(mode,fonts);
+          }
+          await rb.goto(URL);
+          for(const lang of SV.labels.locales) {
+            const collision=makeEnvelope([{v:4,s:SV.inventories.amara9.seed,o:{name:"Pan"}},{v:4,s:SV.inventories.amara9.seed,o:{name:"Pan"}},{v:4,s:SV.inventories.amara9.seed,o:{name:"Pan · S2"}}]);
+            await p.eval(`localStorage.clear();localStorage.setItem(${JSON.stringify(KEY)},${JSON.stringify(JSON.stringify(collision))});localStorage.setItem('hpfc',JSON.stringify({lang:${JSON.stringify(lang)},mode:'A'}));return true;`);await reload();
+            assert.strictEqual(await p.eval("return document.getElementById('lang-select').value;"),lang,"requested locale must actually be active");
+            for(const [w,h,mobile]of [[380,780,true],[844,390,true],[1280,800,false]]) {
+              await rb.setViewport(w,h,mobile);await rb.settle();
+              const labels=await p.eval("return [...document.querySelectorAll('#decks .chip')].map(n=>n.textContent.trim());");
+              assert.strictEqual(labels.length,8,"all collision candidates render in "+lang+"/"+mode);assert.strictEqual(new Set(labels).size,8);
+              const metrics=await p.eval(`return [...document.querySelectorAll('#decks .chip')].slice(0,3).map(n=>{const r=n.getBoundingClientRect();return {text:n.textContent.trim(),aria:n.getAttribute('aria-label')||n.textContent.trim(),h:r.height,scroll:n.scrollWidth,client:n.clientWidth};});`);
+              for(const [i,token]of ["S3","S2","S1"].entries()){assert.ok(metrics[i].text.includes(token));assert.ok(metrics[i].aria.includes(token));assert.ok(metrics[i].h>=44);assert.ok(metrics[i].scroll<=metrics[i].client+1,"full discriminator cannot clip in "+lang+"/"+mode+"/"+w);}
+              cells++;
+            }
+            await rb.setViewport(380,780,true);await openEdit(p);await p.type("#scale-name","PUBLIC LOCAL DRAFT");const base=await read(p);
+            const conflict={...clone(base),revision:base.revision+1,entries:base.entries.map((x,i)=>i===0?{...x,revision:x.revision+1,record:{...x.record,o:{...x.record.o,name:"REMOTE LABEL"}}}:x)};
+            await p.eval(`localStorage.setItem(${JSON.stringify(KEY)},${JSON.stringify(JSON.stringify(conflict))});return true;`);
+            await p.click("#scale-generate");await p.wait("document.getElementById('scale-generate').disabled===false","localized conflict completes");
+            assert.strictEqual(await p.eval("return document.getElementById('scale-sheet').hidden;"),false);assert.strictEqual(await p.eval("return document.getElementById('scale-name').value;"),"PUBLIC LOCAL DRAFT");
+            const clipping=await p.eval("return [...document.querySelectorAll('#scale-guidance,#scale-refusal,#scale-msg')].filter(n=>n.getClientRects().length).map(n=>({scroll:n.scrollWidth,client:n.clientWidth,text:n.textContent}));");
+            assert.ok(clipping.some(x=>x.text.trim().length));for(const m of clipping)assert.ok(m.scroll<=m.client+1,"localized conflict cannot clip");
+            await p.click("#scale-name");await rb.fakeKeyboard(520);await rb.settle();
+            const input=await p.eval("const n=document.getElementById('scale-name'),r=n.getBoundingClientRect();return {top:r.top,bottom:r.bottom,limit:visualViewport.offsetTop+visualViewport.height,focus:document.activeElement===n};");
+            assert.strictEqual(input.focus,true);assert.ok(input.top>=0&&input.bottom<=input.limit+1,"conflict keeps focused input above simulated keyboard");await rb.clearKeyboard();
+            await p.click("#scale-back");await p.wait("document.getElementById('scale-sheet').hidden","leave conflict");
+            const prelude=await rb.send("Page.addScriptToEvaluateOnNewDocument",{source:"Object.defineProperty(navigator,'locks',{configurable:true,value:undefined});"});
+            try{await reload();}finally{await rb.send("Page.removeScriptToEvaluateOnNewDocument",{identifier:prelude.identifier});}
+            assert.strictEqual(await p.eval("return savedMode;"),"session");
+            const status=await p.eval("return [...document.querySelectorAll('[role=status],.announce,#saved-status')].map(n=>({text:n.textContent,visible:!!n.getClientRects().length}));");
+            assert.ok(status.some(x=>x.visible&&x.text.trim().length),"localized this-tab status must be visible in "+lang+"/"+mode);
+            await p.click("#settings-trigger");await p.click("#deck-add");await p.type("#scale-box",SV.inventories.amara9.seed);
+            assert.strictEqual(await p.eval("return document.getElementById('scale-generate').disabled;"),false,"scale input stays English in "+lang);states++;
+          }
+        } finally{await rb.close();}
+      }
+      assert.strictEqual(cells,48,"all2font x8locale x3viewport geometry cells execute");
+      assert.strictEqual(states,16,"conflict/session/keyboard states execute in every font/locale");
+      console.log("SV_COPY_MATRIX "+JSON.stringify({geometryCells:cells,conflictSessionStates:states,fontModes:["fallback","real"],simulatedKeyboard:true,physicalIOS:false}));
+    });
+  }
+
 }
 
