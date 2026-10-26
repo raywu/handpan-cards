@@ -9,15 +9,18 @@ V2 backend profiling completed: 120/120 acknowledged samples (30 each at 2/20/20
 records and an exact final 1MiB envelope), independently audited CLEAR; callback
 p95/max milliseconds: .6/.6, .7/.7, 1.6/1.7, 4.1/4.1. These are pre-UI API-ACK
 measurements, not disk-flush or UI-paint claims.
-First UI candidate `94aa234d2dd3a8d5bdc7a0d1f34c37c8079bb36e` in `/ui` reports
-23 new unit cases passing. Independent ENG review is NOT CLEAR: stale async import
-completion, cross-tab editor target coherence/unnecessary reset, cold-start locale,
-routed preference persistence, missed-notification conflict recovery, About tagged
-identity and modal inertness need focused regression tests and repairs. UI design
-source review is pending (first attempt unavailable). Integration remains partial
-and MUST NOT reach DEV. Root owns browsers; full regressions, native acceptance,
-mutants, final CI and actual DEV verification remain outstanding. See the latest
-coordination checkpoint for file ownership and exact continuation.
+UI repair candidate `b035a65a` / combined regression head `9a11cb3a` is frozen in
+`/ui`, index SHA `368ed11c306b27f91e867ac74b06455868895f33fd49bc7c29b593abfdc6f965`.
+Root bounded focused run:40 executed,37PASS/3FAIL,0skip/timeout, cleanup clear.
+Failures concern cold-boot selector representation, surviving opener focus and
+post-Back route; test lane is distinguishing source defects from sandbox/oracle
+limitations without relaxing user behavior. ENG/design source re-review active.
+Actual repaired source handed into `/tests` at `5f5d9acf`; extensive legacy test
+port remains uncommitted (last old-source fullrun853/919PASS, not new-source Green).
+UI author reports shipping177x2/syntax/i18n/engine data checks PASS; full regression,
+native acceptance, mutants, exact-head CI and actual DEV remain outstanding.
+Integration still partial, MUST NOT reach DEV. Root owns browsers. No owner
+question currently blocks repairs. See coordination for exact next and evidence.
 
 
 Owner explicitly approved the reviewed plan and its exact instruction/spec patch

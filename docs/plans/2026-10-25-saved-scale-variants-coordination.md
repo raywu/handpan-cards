@@ -421,3 +421,69 @@ recheck -> root native acceptance/regressions/mutants -> full CI -> actual DEV.
 Main573/575/577/579/581 remain HELD per owner. No new owner decision blocks repairs;
 no current DEV QA invitation for variants. Preserve original custom-layout-at-LINK
 report as unresolved; do not classify it as an unsaved draft.
+
+## Reproducible backend probe handoff — bounded file-owned amendment
+
+The approved backend gate already requires tools/probe/saved_variants_storage.js;
+private evidence alone is insufficient. Proposed minimal port, pending independent
+ENG review before edits: root owns that JS probe and
+tools/probe/saved_variants_cases.py, with run instructions in this coordination
+document. Other lanes retain exclusive index/locale/test ownership. No app/helper,
+Claude instruction, install, auth, global or deployment changes.
+
+Port reviewed private runner6adfe1d714fc4eff26e18ec1e4af334623f08f23f2333adae66e3e2f39268387
+without changing its30-sample/native-lock delegation/strict page-prelude/actual
+Document binding/size-accounting/ACK/cleanup assertions. Explicit source/case SHA
+arguments remain mandatory. Keep reviewed CDP-helper pin; do not silently accept a
+changed helper. Retain external sole-browser lease/supervisor requirements and
+no-overwrite/outside-candidate evidence output. Explain it measures backend
+initialization, not UI selection paint or disk flush. A later UI-generated extra
+lock is a measurement mismatch requiring review, never a reason to filter it away.
+
+Port the independent Python literal-case producer using stdlib only, explicit
+--fixture and --out-dir, no absolute host paths or production imports, exclusive
+fresh directory creation and four individually addressable case JSON outputs.
+Retain ASCII names and independently specified golden schema1 envelope, exact raw
+legacy strings, mirrorBottom:false repair, UTF8/UTF16 accounting and exact1MiB
+recipe. Assert frozen fixture SHA b264b2ecb626947ff7cdb93bc61554f4edd6a7ad57b7166ec4004206902c24d2
+and four public case byte hashes: d0a409b66497543be0c75b33a6ec2b065b7ee02425a0a30f242e028e90cfb815,
+0416c0a3b81d1a041e215b7f167e5bcf2773c5169efd6b5f0f6350fde5ff39ee,
+fe4d93aa04799755efbec31273cd778444ca9fada264cb958096b479ded7b320,
+f8feeea4057e003a3c92fd271ca7b49a1106dde08d09b81a3118625ca36dadd5
+(records2/20/200/exact1MiB respectively). Template UUID SHA never compared to actual
+random UUID envelope SHA. A differing fixture/hash fails before browser launch;
+updating these requires independent oracle review.
+
+Acceptance: independent source review, Python syntax/Node syntax; fresh output
+reproduces all four exact known case hashes and literal sizes; re-run to same
+output refuses without modifications; changed fixture refuses before creation;
+JS invalid/missing hashes and existing outputs refuse before browser launch.
+Existing120 actual browser samples remain tied to original runner/source and
+are not relabeled as runs of the port. Run reviewed port on final candidate only
+with root browser lease and bounded supervisor. No gratuitous CI wall-clock test
+or new product limits. If port scope changes, stop for review; rollback only these
+new unmerged files, preserve all raw evidence and other lanes.
+
+## Latest check-in — repaired source handed to acceptance lane
+
+Root froze sourceb035a65a in /ui and combined regression head9a11cb3a; index
+368ed11c306b27f91e867ac74b06455868895f33fd49bc7c29b593abfdc6f965. Independent
+ENG/design source rechecks active. Isolated test regression patch40bb was committed
+as17bef7b9, preserving extensive legacy-port working delta unstaged. Root actual
+focused supervisor sv-ui-repaired-focused-a0 ran40,37PASS/3FAIL,0skip/cancel/timeout,
+cleanup clear in4.224s. Failures: language selector populated assertion, post-Back
+connected opener focus, post-Back share route. Do not claim source Green; T/U
+separately diagnose model/oracle versus actual source. Raw receipts in SHC evidence.
+
+Root cherry-picked exact sourceb035 into /tests as5f5d9acf (9files only), preserving
+tests/app.test.js and tests/e2e.test.js WIP. Before source handoff frozen test hashes
+were91177f139e6eb5becf8211bcc1654528852e3e0cbe04479034373d4defe3eec4 and
+d8bbc5e067affecf6ec939bf6557b6cda90a6b8c2551d1466127406c0b99c812 respectively.
+Last full old-source94aa runa9=853/919PASS,66FAIL,0skip; later test edits and newsource
+not yet full rerun. Explicitly preserve unchanged build-refusal disabling, portable
+canonical Edit URL, missing-selection warning and route analytics requirements;
+these are genuine regressions found during port, not obsolete storage policy.
+No helper-heading registration needed: test uses existing Settings aria label.
+Proposed2line regen_card_fixture session adaptation needs independent review;
+never regenerate golden output to hide drift. Next actual newsource regression
+run -> address findings -> native/mutants -> full CI -> DEV. Main queue held.
