@@ -3,7 +3,9 @@
 **Planning draft; implementation is not authorized.** Produced by running the
 refined [planning prompt](2026-10-25-handpan-helpers-prompt.md), after independent
 engineering and frontend reconnaissance. Independent engineering/design plan
-reviews are **not yet completed**; root will append their findings and revisions.
+reviews are CLEAR on the revised substantive plan. Engineering identified a
+language-baseline coverage correction; it is incorporated and independently
+rechecked. Plan clearance does not authorize implementation.
 Saved-variants delivery retains priority. No application, test, instruction, skill
 or integration changes have been made by this task.
 
@@ -165,7 +167,20 @@ Capture actual element/text rectangles and focus state. Do not infer success fro
 verified real and fallback font modes. Required representative cells include
 320×568,380×700,380×740,844×390,1280×320,1024×700,1024×746,1280×746, and actual
 CSSOM-derived media-query edges from both frozen baseline and candidate. Run the
-existing complete panel-fit domain, not only those examples. Include desktop
+existing complete panel-fit domain, not only those examples. The current probe
+constructs an English/default-language base and passes `--lang` only to the
+candidate (`runFont()` at tools/probe/panel_fit.js:595–598). Therefore its full-domain
+report is English-base versus requested-locale candidate, not proof of a full
+same-locale paired matrix. Preserve that existing tool/oracle unchanged. Add
+bounded native paired baseline/candidate checks at all eight named representative
+cells above, each of8locales ×2fontmodes ×3practicemodes:384paired observations
+(768individual page states), plus the affected CSS-derived edge cells discovered
+at activation. Assert resolved locale/font on BOTH pages and measure the unchanged
+controls against their same-locale baseline, in addition to the new pair geometry.
+Record added edge count separately; freeze totals before runs. This is representative
+paired coverage, not full-domain paired coverage. If that stronger claim becomes
+necessary, stop for a separately reviewed probe amendment rather than silently
+changing the base-language semantics. Include desktop
 sidebar and modal transitions, zoom/text enlargement within existing supported
 behavior; explicitly report uncovered native Safari/device/screenreader behavior.
 Retain existing tolerances and allowance equations. Nonresource controls must not
@@ -191,7 +206,9 @@ capture test proves the remote application is usable.
    font, from candidate tree with immutable `--base <DEV_SHA>` and explicit
    `--candidate <CANDIDATE_SHA> --font both --lang <code>`, plus native journeys.
    Example CLI is a template: replace both placeholders; freeze exact commands,
-   expected nonzero cell/test counts and outer bounds before execution. No worker
+   expected nonzero cell/test counts and outer bounds before execution. The full
+   CLI is English-base/requested-candidate language; separately run the same-locale
+   paired native matrix specified above and retain both sets of receipts. No worker
    browser jobs, shared-owner profile use or unknown process cleanup.
 4. **Mutation/final review:** all new-group meaningful mutants proved with actual
    runner protocol; independent non-author ENG/design final review at exact
@@ -219,11 +236,40 @@ approved change if the feature is reverted; no broader Claude behavior change.
 - Current last completed action: prompt executed to this plan using inspected
   source and independent reconnaissance; no application or usability execution.
 - Next: independent engineering and design plan review, address/re-review findings
-  at final plan hash, then root publishes plan/ledger through authorized document
+  at the reviewed substantive plan hash (completed; receipts below), then root publishes plan/ledger through authorized document
   workflow. Do not let this optional Resources addition interrupt saved variants.
 - Required owner decisions before code: implementation scope and the exact
   CLAUDE patch above. No new resource label/content preference needs interviewing
   now: owner specified destination and permits pairing a full-width row.
 - Current quality status: evidence-grounded plan drafted; runtime feasibility and
-  independent plan clearance **not yet demonstrated**. “Near10/10” means no
+  independent plan clearance demonstrated; runtime feasibility is still **untested**. “Near10/10” means no
   unresolved material omission against the prompt criteria, never a self-score.
+
+## Independent plan review and revisions
+
+Review target initial plan SHA f192297af887efe7aa0f14b3c97b3879b9d7197bd275e77cea10c630b295b53a.
+Independent native reviewer contexts /root/helpers_plan_eng_review and
+/root/helpers_plan_design_review consulted the source skills and project rules;
+no global gstack helpers/config/telemetry, external-provider review, mockup or
+browser evidence is claimed.
+
+- Design: seven passes CLEAR with runtime limitations; source-feasible layout,
+  state/journey/brand restraint and observable accessibility requirements supported.
+- Engineering: identified current probe's asymmetric language setup. Revision adds
+  explicit honest labeling of the full existing domain and same-locale paired
+  representative native controls, preserving tool semantics and budgets. Final
+  review of this revision CLEAR; no runtime validation inferred.
+
+Original prototype fit/destination usability/device/screenreader/CI/DEV evidence
+remains untested. No code execution authorized by plan clearance.
+
+Final substantive review target SHA:
+`37a2c705f83b0ca66ad824bd5d14a9523d07595c081229f45cb869ca6f7fbba4`.
+Both independent ENG and design re-reviews CLEAR with runtime limitations; no
+remaining material planning findings. ENG notes native activation must explicitly
+run in modes A, B and S rather than infer mode coverage from the expanded link
+table. The matrix already requires those modes. This appended review/status
+receipt changes document bytes after review; it does not claim its own final
+file hash was the substantive review target. No original gstack runtime or
+outside-provider review is credited. Next: owner implementation/exact-CLAUDE
+approval, then the specified TDD and measured usability gates.

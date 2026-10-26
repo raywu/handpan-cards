@@ -14,7 +14,7 @@ variants first. Existing scope/approval limits persist.
 | Workstream | Verified current status | Next / limits |
 |---|---|---|
 | Saved-scale variants | Owner-approved through DEV and exact instruction packet. Backend reviewed;120profile samples ACK. Broader candidate unitrun908/919PASS,0skip; all881originaltests retained. Reviewed testcheckpointdc6d6c92; session-recovery3newtests4a28e17e have2intendedRED/1durablepositive. Newrepairsource069035fd/index3cfc3c93 awaits combinedchecks. | Address remaining source/helper/tool checks, independent re-review, native/mutants, exactheadCI and actualDEV. Not QA-ready. Root /private/tmp/handpan-saved-variants.HVUKbE; no main. |
-| Handpan Helpers | Prompt refined; independent engineering/frontend reconnaissance recommends existing thirdrow pair Helpers BEFORE101, preservingAboutalone. Plan author running, no app changes. | Generate swarmplan -> independentENG/designreviews -> revise. ExactCLAUDE101-alone update needs separateapproval before any implementation. Existingbudgets preserved; fit not measured. |
+| Handpan Helpers | Prompt refined; independent engineering/frontend reconnaissance recommends existing thirdrow pair Helpers BEFORE101, preservingAboutalone. Swarm-shaped plan independently ENG/design-cleared after correcting locale-baseline coverage. No app changes. | Planning/review complete; implementation awaits scope and exact instruction approval. ExactCLAUDE101-alone update needs separateapproval before any implementation. Existingbudgets preserved; fit not measured. |
 | Scale↔Layout swipe SPS | Authorized throughDEV, interrupted behind sharing/variants; isolatedtree /private/tmp/handpan-sps-z8gaznu2/integration clean3a8467ff. Headercorrections reviewed; earlier59proofpairs usedincompatibleprotocol, not finalproof. | Mergeacceptedsharingbase, faithful literal-header reproof, finalreview/fullCI/DEV, newnativeQA. No PR or DEVcompletion. CLAUDEexactdiff gate persists. |
 
 ## Delivered to DEV; main releases held
@@ -75,3 +75,8 @@ Publish sanitized immutable checkpointrefs and refresh canonicalDEVledger throug
 normalreview/CI/DEVgates; no statusreport substitutes fordelivery. Detailedportable
 requirements and sourcelocators: WORKSTREAMS.md, plan-relevance-audit, outstanding-
 plan-deep-search, continuity-backlog and each workstreamcoordinationdocument.
+
+Published recovery checkpoint: [coordination comment](https://github.com/raywu/handpan-cards/pull/571#issuecomment-6408607052)
+links immutable feature-ref2a5ec1d2 and distinguishes current progress from the
+older canonical DEV ledger. Subsequent Helpers plan review clearance is recorded
+in the plan and will be published on the same existing feature branch.

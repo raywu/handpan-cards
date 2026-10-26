@@ -128,3 +128,10 @@ v2 execution: delegated to independent planning author /root/helpers_plan_author
 with two read-only engineering/frontend research lanes supplying evidence. Author
 may write only the plan document. No app change/browser run. Separate independent
 ENG and design plan reviewers follow; plan-author self-review cannot clear them.
+
+Output plan generated and independently ENG/design reviewed. First ENG pass
+identified the asymmetric locale baseline in the existing fit probe; revised
+plan adds honest coverage labels and same-locale paired representative controls.
+Final substantive plan SHA37a2c705f83b0ca66ad824bd5d14a9523d07595c081229f45cb869ca6f7fbba4
+cleared both independent reviewers. Runtime usability remains untested. No
+application change, implementation approval or original gstack activation.
