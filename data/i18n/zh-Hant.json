@@ -271,5 +271,10 @@
   "saved.resetConflict": "內建音階已在另一個分頁中變更。目前沒有重設任何音階。請先確認內容，再重新按下「還原內建音階」。",
   "saved.temporary": "暫時使用此分頁",
   "saved.failure": "無法儲存這些變更。你的編輯內容仍然保留。請再試一次。",
-  "saved.legacy": "舊版應用程式變更了已儲存的音階。這些變更會另行保留，以供復原。"
+  "saved.legacy": "舊版應用程式變更了已儲存的音階。這些變更會另行保留，以供復原。",
+  "saved.savedToken": "{token} 是此瀏覽器中這個已儲存音階的識別標記。",
+  "saved.presetToken": "{token} 是這個內建音階的識別標記。",
+  "saved.importFailure": "無法加入這個分享的音階。連結仍在網址列中，請嘗試重新開啟。",
+  "saved.resetFailure": "無法還原內建音階。請先確認內容，再試一次。",
+  "saved.ackPending": "儲存已完成，但無法更新此畫面。請重新載入頁面，以確認已儲存的音階。"
 }

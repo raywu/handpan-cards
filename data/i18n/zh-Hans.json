@@ -271,5 +271,10 @@
   "saved.resetConflict": "内置音阶已在另一个标签页中更改。目前没有重置任何音阶。请先确认内容，再重新点击“恢复内置音阶”。",
   "saved.temporary": "临时使用此标签页",
   "saved.failure": "无法保存这些更改。你的编辑内容仍然保留。请重试。",
-  "saved.legacy": "旧版应用更改了已保存的音阶。这些更改会单独保留，以供恢复。"
+  "saved.legacy": "旧版应用更改了已保存的音阶。这些更改会单独保留，以供恢复。",
+  "saved.savedToken": "{token} 是此浏览器中这个已保存音阶的标识。",
+  "saved.presetToken": "{token} 是这个内置音阶的标识。",
+  "saved.importFailure": "无法添加这个分享的音阶。链接仍在地址栏中，请尝试重新打开。",
+  "saved.resetFailure": "无法恢复内置音阶。请先确认内容，再重试。",
+  "saved.ackPending": "保存已完成，但无法更新此画面。请重新加载页面，以确认已保存的音阶。"
 }

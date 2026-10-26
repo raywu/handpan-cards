@@ -278,5 +278,10 @@
   "saved.resetConflict": "Le scale predefinite sono state modificate in un’altra scheda. Non è stato ripristinato nulla. Controllale prima di ripristinarle di nuovo.",
   "saved.temporary": "USA TEMPORANEAMENTE QUESTA SCHEDA",
   "saved.failure": "Impossibile salvare le modifiche. La tua bozza è ancora qui. Riprova.",
-  "saved.legacy": "Una versione precedente ha modificato le scale salvate. Le modifiche sono conservate separatamente per il recupero."
+  "saved.legacy": "Una versione precedente ha modificato le scale salvate. Le modifiche sono conservate separatamente per il recupero.",
+  "saved.savedToken": "{token} identifica questa scala salvata in questo browser.",
+  "saved.presetToken": "{token} identifica questa scala predefinita.",
+  "saved.importFailure": "Impossibile aggiungere questa scala condivisa. Il link è ancora nella barra degli indirizzi. Prova ad aprirlo di nuovo.",
+  "saved.resetFailure": "Impossibile ripristinare le scale predefinite. Controllale e riprova.",
+  "saved.ackPending": "Il salvataggio è completato, ma non è stato possibile aggiornare questa vista. Ricarica la pagina per controllare le scale salvate."
 }

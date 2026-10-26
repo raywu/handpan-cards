@@ -278,5 +278,10 @@
   "saved.resetConflict": "Seeded scales changed in another tab. Nothing was reset. Review them before tapping RESET SEEDED SCALES again.",
   "saved.temporary": "USE THIS TAB TEMPORARILY",
   "saved.failure": "Could not save these changes. Your draft is still here. Try again.",
-  "saved.legacy": "An older app changed its saved scales. Those changes are kept separately for recovery."
+  "saved.legacy": "An older app changed its saved scales. Those changes are kept separately for recovery.",
+  "saved.savedToken": "{token} identifies this saved scale in this browser.",
+  "saved.presetToken": "{token} identifies this preset scale.",
+  "saved.importFailure": "Could not add this shared scale. Its link is still in the address bar. Try opening it again.",
+  "saved.resetFailure": "Could not reset the seeded scales. Review them and try again.",
+  "saved.ackPending": "The save completed, but this view could not be refreshed. Reload to review your saved scales."
 }
