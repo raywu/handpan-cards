@@ -17799,15 +17799,20 @@ function run() {
         if(Date.now()>deadline)throw new Error("SV readiness deadline: "+label);await sleep(20);}};
       const click=async selector=>{await send("Page.bringToFront");
         const point=await evaluate(`const el=document.querySelector(${JSON.stringify(selector)});if(!el)return null;
-          el.scrollIntoView({block:'nearest',inline:'nearest'});const r=el.getBoundingClientRect();
+          el.scrollIntoView({block:'nearest',inline:'nearest',behavior:'instant'});const r=el.getBoundingClientRect();
           const x=r.left+r.width/2,y=r.top+r.height/2,hit=document.elementFromPoint(x,y);
           return {x,y,w:r.width,h:r.height,hit:!!hit&&(el===hit||el.contains(hit)),disabled:el.disabled===true};`);
-        assert.ok(point&&point.w>0&&point.h>0&&point.hit&&!point.disabled,"SV trusted click target must be visible/enabled: "+selector);
+        const usable=await evaluate(`const el=document.querySelector(${JSON.stringify(selector)});if(!el)return false;
+          for(let n=el;n;n=n.parentElement){const s=getComputedStyle(n);if(s.display==='none'||s.visibility==='hidden'||Number(s.opacity)===0)return false;}
+          const r=el.getBoundingClientRect();return !el.closest('[inert]')&&r.left+r.width/2>=0&&r.top+r.height/2>=0&&r.left+r.width/2<innerWidth&&r.top+r.height/2<innerHeight;`);
+        assert.ok(point&&point.w>0&&point.h>0&&point.hit&&!point.disabled&&usable,"SV trusted click target must be visible/enabled/not inert and hit-testable: "+selector);
         await send("Input.dispatchMouseEvent",{type:"mousePressed",x:point.x,y:point.y,button:"left",clickCount:1});
         await send("Input.dispatchMouseEvent",{type:"mouseReleased",x:point.x,y:point.y,button:"left",clickCount:1});};
       const type=async(selector,text)=>{await click(selector);await send("Input.dispatchKeyEvent",{type:"keyDown",key:"a",code:"KeyA",commands:["selectAll"]});
         await send("Input.dispatchKeyEvent",{type:"keyUp",key:"a",code:"KeyA"});await send("Input.insertText",{text});};
-      return {id,send,eval:evaluate,wait,click,type};
+      const key=async(key,code,keyCode)=>{await send("Page.bringToFront");for(const type of ["keyDown","keyUp"])
+        await send("Input.dispatchKeyEvent",{type,key,code,windowsVirtualKeyCode:keyCode,nativeVirtualKeyCode:keyCode});};
+      return {id,send,eval:evaluate,wait,click,type,key};
     }
     const read=p=>p.eval(`return JSON.parse(localStorage.getItem(${JSON.stringify(KEY)}));`);
     const importRecord=(p,record)=>p.eval(`const r=${JSON.stringify(record)},s=HPE.core.parseSeed(r.s);
@@ -17852,6 +17857,58 @@ function run() {
       await p.wait("window.__svHeld===true","real exclusive barrier acquired");
     }
     const release=p=>p.eval("if(window.__svRelease)window.__svRelease();return true;");
+    async function openPeer(owner) {
+      const {targetId}=await owner.send("Target.createTarget",{url:"about:blank"},false);
+      try {
+        const {sessionId}=await owner.send("Target.attachToTarget",{targetId,flatten:true},false),p=session(sessionId,owner);
+        assert.notStrictEqual(sessionId,owner.sessionId,"barrier must be owned by another actual target/session");
+        await p.send("Page.enable");await p.send("Runtime.enable");await p.send("Network.enable");
+        await p.send("Network.setBlockedURLs",{urls:owner.blockedUrls});await p.send("Page.navigate",{url:URL});
+        await p.wait(APP_READY_EXPR,"actual peer barrier document");
+        return {p,close:()=>owner.send("Target.closeTarget",{targetId},false)};
+      } catch(error){await owner.send("Target.closeTarget",{targetId},false);throw error;}
+    }
+    async function ink(p,selector,{text,control=false}={}) {
+      await p.send("Page.bringToFront");
+      await p.eval(`const n=document.querySelector(${JSON.stringify(selector)});if(n)n.scrollIntoView({block:'nearest',inline:'nearest',behavior:'instant'});return true;`);
+      await p.eval("return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));");
+      const m=await p.eval(`const el=document.querySelector(${JSON.stringify(selector)});if(!el)return {found:false};
+        const r=el.getBoundingClientRect();let visible=!!el.getClientRects().length&&r.width>0&&r.height>0&&!el.closest('[inert]');
+        for(let n=el;n;n=n.parentElement){const s=getComputedStyle(n);if(s.display==='none'||s.visibility==='hidden'||Number(s.opacity)===0)visible=false;}
+        const clips=[],walker=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);let node;
+        while((node=walker.nextNode()))if(node.textContent.trim()){
+          const range=document.createRange();range.selectNodeContents(node);
+          for(const t of range.getClientRects()){
+            if(t.left<-1||t.top<-1||t.right>innerWidth+1||t.bottom>innerHeight+1)clips.push('viewport');
+            if(t.left<r.left-1||t.top<r.top-1||t.right>r.right+1||t.bottom>r.bottom+1)clips.push('control bounds');
+            for(let n=node.parentElement;n;n=n.parentElement){const s=getComputedStyle(n),a=n.getBoundingClientRect(),l=a.left+n.clientLeft,top=a.top+n.clientTop;
+              if(/hidden|clip|auto|scroll/.test(s.overflowX)&&(t.left<l-1||t.right>l+n.clientWidth+1))clips.push('ancestor-x:'+n.className);
+              if(/hidden|clip|auto|scroll/.test(s.overflowY)&&(t.top<top-1||t.bottom>top+n.clientHeight+1))clips.push('ancestor-y:'+n.className);}
+          }
+        }
+        const hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);
+        return {found:true,visible,text:el.textContent.trim(),aria:el.getAttribute('aria-label')||el.textContent.trim(),width:r.width,height:r.height,
+          disabled:el.disabled===true,hit:!!hit&&(el===hit||el.contains(hit)),clips};`);
+      assert.ok(m.found&&m.visible,"required message/control has visible computed ink: "+selector);
+      if(text!==undefined)assert.strictEqual(m.text,text,"independent frozen copy: "+selector);
+      assert.deepStrictEqual(m.clips,[],"text Range and ancestor x/y clipping: "+selector);
+      if(control){assert.ok(m.width>=44&&m.height>=44,"action is at least44x44: "+selector);assert.ok(m.hit&&!m.disabled,"action target is usable: "+selector);}
+      return m;
+    }
+    async function conflictSave(p,blocker,lang="en",kind="conflict") {
+      await hold(blocker);
+      try {
+        await p.click("#scale-generate");
+        const q=await p.eval("return navigator.locks.query();");
+        assert.strictEqual(q.pending.filter(x=>x.name===LOCK).length,1,"trusted Save must actually enqueue its commit; a no-op cannot pass");
+      }finally{await release(blocker);}
+      await p.wait(`navigator.locks.query().then(q=>q.pending.filter(x=>x.name===${JSON.stringify(LOCK)}).length===0&&document.getElementById('scale-generate').disabled===false)`,"Save operation releases its queue and returns from pending");
+      assert.strictEqual(await p.eval("return document.getElementById('scale-sheet').hidden;"),false,"conflict keeps the draft page open");
+      await ink(p,"#scale-conflict-msg",{text:SV.uiContract.copy[lang][kind]});
+      await ink(p,"#scale-conflict-separate",{text:SV.uiContract.copy[lang].separate,control:true});
+      await ink(p,"#scale-back",{control:true});
+    }
+
     async function startImport(p,record) {
       await p.eval(`const r=${JSON.stringify(record)},seed=HPE.core.parseSeed(r.s),code=HPE.share.encode({fields:seed.value.fields,options:r.o||{}});
         window.__svOperationDone=false;window.__svResult=null;window.__svOperation=Promise.resolve(openShare(code.value))
@@ -17909,8 +17966,7 @@ function run() {
         assert.strictEqual(await a.eval("return deck().name;"),"PUBLIC PAN A","the committed selected instance must render");
         await openEdit(a);await openEdit(bPeer);await a.type("#scale-name","FIRST WINNER");await bPeer.type("#scale-name","STALE DRAFT");
         await save(a);const winner=await read(a);
-        await bPeer.click("#scale-generate");
-        await bPeer.wait("document.getElementById('scale-generate').disabled===false","conflicting Save completes");
+        await conflictSave(bPeer,a);
         assert.strictEqual(await bPeer.eval("return document.getElementById('scale-sheet').hidden;"),false);
         assert.strictEqual(await bPeer.eval("return document.getElementById('scale-name').value;"),"STALE DRAFT");
         assert.deepStrictEqual(await read(bPeer),winner,"stale same-target Edit never overwrites the winner");
@@ -17929,9 +17985,19 @@ function run() {
         const cmd=change==="create"?{type:"replace-builtin",collectionId:e.collectionId,seedId:"kurd",expectedSlotStateRevision:1,expectedOwnerId:uid(2)}:
           change==="edit"?{type:"edit",collectionId:e.collectionId,instanceId:uid(2),expectedRevision:1}:{type:"import",collectionId:e.collectionId,selectedInstanceId:null};
         const changed=await commit(bPeer,cmd,{v:4,s:SV.inventories.other.seed,o:{name:change==="plain"?"UNRELATED PUBLIC PAN":"CHANGED REPLACEMENT"}});assert.strictEqual(changed.ok,true);
-        const winner=await read(bPeer),result=await commit(a,{type:"reset",collectionId:e.collectionId,affectedScope:armed});
-        if(change==="plain") {assert.strictEqual(result.ok,true);const after=await read(a);assert.ok(after.entries.some(x=>x.record.o?.name==="UNRELATED PUBLIC PAN"));assert.deepStrictEqual(after.slots,{});}
-        else {assert.strictEqual(result.ok,false);assert.strictEqual(result.kind,"conflict");assert.deepStrictEqual(await read(a),winner,"stale armed RESET preserves newer replacement");}
+        const winner=await read(bPeer);
+        // Confirm with a second TRUSTED click on the button already armed
+        // before the other target's mutation. Do not recapture a fresh proof.
+        await a.click("#deck-restore");
+        if(change==="plain") {
+          await a.wait("savedState.entries.every(x=>!x.record?.o?.replaces)","original armed RESET acknowledges unchanged replacement scope");
+          const after=await read(a);assert.ok(after.entries.some(x=>x.record.o?.name==="UNRELATED PUBLIC PAN"));assert.deepStrictEqual(after.slots,{});assert.deepStrictEqual(after.hidden,[]);
+        } else {
+          await ink(a,"#saved-status",{text:SV.uiContract.copy.en.resetConflict});
+          assert.deepStrictEqual(await read(a),winner,"actual stale second RESET click preserves the newer replacement");
+          const result=await commit(a,{type:"reset",collectionId:e.collectionId,affectedScope:armed});
+          assert.strictEqual(result.ok,false);assert.strictEqual(result.kind,"conflict");assert.deepStrictEqual(await read(a),winner,"backend proof refusal supplements the actual UI check");
+        }
       });
       await withTwo([older,newer],{slots:{kurd:uid(2)},slotStateRevision:1,preferredSelection:{kind:"saved",id:uid(2)}},async(a,bPeer)=>{
         assert.strictEqual(await a.eval("return deck().name;"),"NEWER REPLACEMENT");const e=await read(a);
@@ -17956,19 +18022,25 @@ function run() {
         await a.eval("document.getElementById('scale-name').setSelectionRange(2,7);return true;");
         await a.click("#scale-tab-layout");await a.click("#scale-fine-toggle");
         await a.click('#scale-preview .panhit[data-ring="bottom"][aria-label^="C3,"]');
-        await a.eval("document.getElementById('scale-panel-layout').scrollTop=20;return true;");
-        const draft=await a.eval("return {name:document.getElementById('scale-name').value,start:document.getElementById('scale-name').selectionStart,end:document.getElementById('scale-name').selectionEnd,pick:JSON.stringify(pickRef),scroll:document.getElementById('scale-panel-layout').scrollTop,focus:document.activeElement.getAttribute('data-field')};");
+        // The tab panels are display:contents. Exercise the REAL sheet
+        // scroller with positive overflow and a nonzero captured scroll.
+        await a.send("Emulation.setDeviceMetricsOverride",{width:380,height:667,deviceScaleFactor:1,mobile:true});
+        await a.eval("return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));");
+        const scrolling=await a.eval("const candidates=['#scale-sheet .sheetbody','#scale-sheet .sheetsurf'];window.__svScrollSelector=candidates.find(q=>{const n=document.querySelector(q);return n&&/auto|scroll/.test(getComputedStyle(n).overflowY)&&n.scrollHeight>n.clientHeight;});if(!window.__svScrollSelector)return {max:0,top:0};const n=document.querySelector(window.__svScrollSelector),max=n.scrollHeight-n.clientHeight;n.scrollTop=Math.min(40,max);return {max,top:n.scrollTop};");
+        assert.ok(scrolling.max>0&&scrolling.top>0,"dirty preservation fixture must genuinely overflow and scroll");
+        const draft=await a.eval("return {name:document.getElementById('scale-name').value,start:document.getElementById('scale-name').selectionStart,end:document.getElementById('scale-name').selectionEnd,pick:JSON.stringify(pickRef),scroll:document.querySelector(window.__svScrollSelector).scrollTop,focus:document.activeElement.getAttribute('data-field')};");
         assert.notStrictEqual(draft.pick,"null","dirty reconciliation fixture must have a genuinely picked note");
         assert.strictEqual(draft.focus,"101","fixture retains actual note focus rather than an empty/body focus ID");
         const remote={...clone(SV.portableRecords.pygmyLayoutB),o:{...clone(SV.portableRecords.pygmyLayoutB.o),name:"REMOTE WINNER"}};
         assert.strictEqual((await commit(bPeer,{type:"edit",collectionId:beforeDirty.collectionId,instanceId:uid(1),expectedRevision:beforeDirty.entries[0].revision},remote)).ok,true);
         await a.wait("savedState.entries[0].revision===3","dirty tab observes remote revision");
-        assert.deepStrictEqual(await a.eval("return {name:document.getElementById('scale-name').value,start:document.getElementById('scale-name').selectionStart,end:document.getElementById('scale-name').selectionEnd,pick:JSON.stringify(pickRef),scroll:document.getElementById('scale-panel-layout').scrollTop,focus:document.activeElement.getAttribute('data-field')};"),draft,"dirty caret/pick/scroll/focus remain local");
-        await a.click("#scale-generate");await a.wait("document.getElementById('scale-generate').disabled===false","dirty conflict completion");assert.strictEqual(await a.eval("return document.getElementById('scale-sheet').hidden;"),false);
+        assert.deepStrictEqual(await a.eval("return {name:document.getElementById('scale-name').value,start:document.getElementById('scale-name').selectionStart,end:document.getElementById('scale-name').selectionEnd,pick:JSON.stringify(pickRef),scroll:document.querySelector(window.__svScrollSelector).scrollTop,focus:document.activeElement.getAttribute('data-field')};"),draft,"dirty caret/pick/scroll/focus remain local");
+        await conflictSave(a,bPeer);
         const remoteWinner=await read(bPeer);assert.strictEqual(remoteWinner.entries[0].record.o.name,"REMOTE WINNER");
         assert.strictEqual((await commit(bPeer,{type:"delete",collectionId:remoteWinner.collectionId,instanceId:uid(1),expectedRevision:remoteWinner.entries[0].revision})).ok,true);
         await a.wait("savedState.entries.length===0","dirty remote deletion observed");
         assert.strictEqual(await a.eval("return document.getElementById('scale-name').value;"),"DIRTY LOCAL DRAFT","remote deletion cannot erase draft");
+        await ink(a,"#scale-conflict-msg",{text:SV.uiContract.copy.en.conflictDeleted});
       });
       // Repair only genuinely removed-chip focus. A surviving outside control
       // has the same remote deletion and must retain focus instead.
@@ -17984,9 +18056,17 @@ function run() {
     });
 
     test("SV10 E1: variants conflict and session states preserve targets clipping focus and eight-locale copy",{timeout:180000},async()=>{
-      let cells=0,states=0;
+      let cells=0,states=0,discriminatorControls=0;
+      const matrix=SV.labels.nativeMatrix;
+      function matrixEnvelope() {
+        const e=makeEnvelope(matrix.entries.map(x=>x.record));
+        e.entries.forEach((x,i)=>{x.displayOrdinal=matrix.entries[i].displayOrdinal;x.instanceId=uid(x.displayOrdinal);});
+        const highest=203;e.usedInstanceIds=Array.from({length:highest},(_,i)=>uid(i+1));e.nextDisplayOrdinal=highest+1;
+        e.preferredSelection={kind:'saved',id:uid(matrix.initialSelectedOrdinal)};return e;
+      }
       for(const mode of ["fallback","real"]) {
         const rb=await launch({foregroundSettle:true,realFonts:mode==="real"});assert.ok(rb,"owned font-mode browser must launch");
+        let peer=null;
         try {
           const p=session(rb.sessionId,rb);let generation=0;
           async function reload() {
@@ -17997,43 +18077,101 @@ function run() {
             const fonts=await p.eval(`return document.fonts.ready.then(()=>Promise.all(["14px Marcellus","400 14px Bitter","700 14px Bitter","400 14px 'Nunito Sans'","600 14px 'Nunito Sans'"].map(x=>document.fonts.load(x)))).then(()=>({size:document.fonts.size,faces:[...document.fonts].map(f=>({family:f.family,weight:f.weight,status:f.status}))}));`);
             require("../tools/probe/panel_fit.js").checkFontMode(mode,fonts);
           }
-          await rb.goto(URL);
-          for(const lang of SV.labels.locales) {
-            const collision=makeEnvelope([{v:4,s:SV.inventories.amara9.seed,o:{name:"Pan"}},{v:4,s:SV.inventories.amara9.seed,o:{name:"Pan"}},{v:4,s:SV.inventories.amara9.seed,o:{name:"Pan · S2"}}]);
+          await rb.goto(URL);peer=await openPeer(rb);
+          for(const [localeIndex,lang]of SV.labels.locales.entries()) {
+            const expected=SV.uiContract.copy[lang],collision=matrixEnvelope();
             await p.eval(`localStorage.clear();localStorage.setItem(${JSON.stringify(KEY)},${JSON.stringify(JSON.stringify(collision))});localStorage.setItem('hpfc',JSON.stringify({lang:${JSON.stringify(lang)},mode:'A'}));return true;`);await reload();
             assert.strictEqual(await p.eval("return document.getElementById('lang-select').value;"),lang,"requested locale must actually be active");
             for(const [w,h,mobile]of [[380,780,true],[844,390,true],[1280,800,false]]) {
               await rb.setViewport(w,h,mobile);await rb.settle();
               const labels=await p.eval("return [...document.querySelectorAll('#decks .chip')].map(n=>n.textContent.trim());");
-              assert.strictEqual(labels.length,8,"all collision candidates render in "+lang+"/"+mode);assert.strictEqual(new Set(labels).size,8);
-              const metrics=await p.eval(`return [...document.querySelectorAll('#decks .chip')].slice(0,3).map(n=>{const r=n.getBoundingClientRect();return {text:n.textContent.trim(),aria:n.getAttribute('aria-label')||n.textContent.trim(),h:r.height,scroll:n.scrollWidth,client:n.clientWidth};});`);
-              for(const [i,token]of ["S3","S2","S1"].entries()){assert.ok(metrics[i].text.includes(token));assert.ok(metrics[i].aria.includes(token));assert.ok(metrics[i].h>=44);assert.ok(metrics[i].scroll<=metrics[i].client+1,"full discriminator cannot clip in "+lang+"/"+mode+"/"+w);}
+              assert.strictEqual(labels.length,matrix.expectedVisibleControlCount,"all frozen multi-digit/preset/long-name controls render");
+              assert.strictEqual(new Set(labels).size,labels.length,"FINAL labels, including literal suffix names, must be distinct");
+              for(const row of matrix.entries.filter(x=>x.expectedToken)) {
+                const index=matrix.expectedCustomOrdinalsNewestFirst.indexOf(row.displayOrdinal);
+                const selector="#decks .chip:nth-child("+(index+1)+")",m=await ink(p,selector,{control:true});
+                assert.ok(m.text.endsWith(SV.labels.separator+row.expectedToken),"literal full ASCII suffix on its own control: "+row.expectedToken);
+                assert.ok(m.aria.includes(row.expectedToken),"accessible name includes the same full suffix");discriminatorControls++;
+              }
+              const presetSelector="#decks .chip:nth-child("+(matrix.entries.length+3)+")",preset=await ink(p,presetSelector,{control:true});
+              assert.ok(preset.text.endsWith(SV.labels.separator+"P3")&&preset.aria.includes("P3"),"literal third-preset discriminator survives layout");discriminatorControls++;
               cells++;
             }
-            await rb.setViewport(380,780,true);await openEdit(p);await p.type("#scale-name","PUBLIC LOCAL DRAFT");const base=await read(p);
-            const conflict={...clone(base),revision:base.revision+1,entries:base.entries.map((x,i)=>i===0?{...x,revision:x.revision+1,record:{...x.record,o:{...x.record.o,name:"REMOTE LABEL"}}}:x)};
+            await rb.setViewport(380,780,true);
+            // Exact normal imports still deduplicate. The resolution action
+            // below has different trusted semantics and must allocate freshly.
+            const exact=await importRecord(p,matrix.entries.find(x=>x.displayOrdinal===203).record);
+            assert.strictEqual(exact.ok,true);assert.strictEqual((await read(p)).entries.length,matrix.entries.length);
+            // Native keyboard activation selects the colliding S202 control,
+            // then opens its Edit sheet; Escape restores that control's focus.
+            await p.eval(`document.querySelectorAll('#decks .chip')[${matrix.keyboardChipIndex}].focus();return true;`);
+            await p.key("Enter","Enter",13);await p.wait(`selection.kind==='saved'&&selection.id===${JSON.stringify(uid(202))}`,"keyboard selects literal S202");
+            await p.key("Enter","Enter",13);await p.wait("!document.getElementById('scale-sheet').hidden","keyboard opens selected Edit");
+            assert.strictEqual(await p.eval("return document.getElementById('scale-name').value;"),matrix.entries.find(x=>x.displayOrdinal===202).record.o.name);
+            await p.key("Escape","Escape",27);await p.wait("document.getElementById('scale-sheet').hidden","Escape closes Edit");
+            assert.strictEqual(await p.eval("return document.activeElement===document.querySelector('#decks .chip.on');"),true,"Escape returns focus to the rebuilt selected chip");
+            await openEdit(p);await p.type("#scale-name",matrix.draftName);const base=await read(p);
+            const conflict={...clone(base),revision:base.revision+1,entries:base.entries.map(x=>x.instanceId===uid(202)?{...x,revision:x.revision+1,record:{...x.record,o:{...x.record.o,name:"REMOTE LABEL"}}}:x)};
             await p.eval(`localStorage.setItem(${JSON.stringify(KEY)},${JSON.stringify(JSON.stringify(conflict))});return true;`);
-            await p.click("#scale-generate");await p.wait("document.getElementById('scale-generate').disabled===false","localized conflict completes");
-            assert.strictEqual(await p.eval("return document.getElementById('scale-sheet').hidden;"),false);assert.strictEqual(await p.eval("return document.getElementById('scale-name').value;"),"PUBLIC LOCAL DRAFT");
-            const clipping=await p.eval("return [...document.querySelectorAll('#scale-guidance,#scale-refusal,#scale-msg')].filter(n=>n.getClientRects().length).map(n=>({scroll:n.scrollWidth,client:n.clientWidth,text:n.textContent}));");
-            assert.ok(clipping.some(x=>x.text.trim().length));for(const m of clipping)assert.ok(m.scroll<=m.client+1,"localized conflict cannot clip");
+            await conflictSave(p,peer.p,lang);
+            assert.strictEqual(await p.eval("return document.getElementById('scale-name').value;"),matrix.draftName);
+            assert.deepStrictEqual(await read(p),conflict,"failed Save cannot modify the winner or discard the draft");
             await p.click("#scale-name");await rb.fakeKeyboard(520);await rb.settle();
             const input=await p.eval("const n=document.getElementById('scale-name'),r=n.getBoundingClientRect();return {top:r.top,bottom:r.bottom,limit:visualViewport.offsetTop+visualViewport.height,focus:document.activeElement===n};");
-            assert.strictEqual(input.focus,true);assert.ok(input.top>=0&&input.bottom<=input.limit+1,"conflict keeps focused input above simulated keyboard");await rb.clearKeyboard();
-            await p.click("#scale-back");await p.wait("document.getElementById('scale-sheet').hidden","leave conflict");
-            const prelude=await rb.send("Page.addScriptToEvaluateOnNewDocument",{source:"Object.defineProperty(navigator,'locks',{configurable:true,value:undefined});"});
-            try{await reload();}finally{await rb.send("Page.removeScriptToEvaluateOnNewDocument",{identifier:prelude.identifier});}
-            assert.strictEqual(await p.eval("return savedMode;"),"session");
-            const status=await p.eval("return [...document.querySelectorAll('[role=status],.announce,#saved-status')].map(n=>({text:n.textContent,visible:!!n.getClientRects().length}));");
-            assert.ok(status.some(x=>x.visible&&x.text.trim().length),"localized this-tab status must be visible in "+lang+"/"+mode);
-            await p.click("#settings-trigger");await p.click("#deck-add");await p.type("#scale-box",SV.inventories.amara9.seed);
-            assert.strictEqual(await p.eval("return document.getElementById('scale-generate').disabled;"),false,"scale input stays English in "+lang);states++;
+            assert.strictEqual(input.focus,true);assert.ok(input.top>=0&&input.bottom<=input.limit+1,"conflict keeps the focused input above simulated keyboard");await rb.clearKeyboard();
+            if(lang==="en") {
+              // This draft already equals ordinal203. Normal import above
+              // reused it; explicit Save-as-separate must create another handle.
+              const prior=await read(p);await hold(peer.p);
+              try {
+                await p.eval("document.getElementById('scale-conflict-separate').focus();return true;");
+                await p.key("Enter","Enter",13);
+                let q=await p.eval("return navigator.locks.query();");assert.strictEqual(q.pending.filter(x=>x.name===LOCK).length,1,"resolution actually queues a distinct save command");
+                assert.strictEqual(await p.eval("return document.getElementById('scale-conflict-separate').disabled;"),true);
+                await p.key("Enter","Enter",13);q=await p.eval("return navigator.locks.query();");assert.strictEqual(q.pending.filter(x=>x.name===LOCK).length,1,"repeated activation cannot enqueue duplicate resolution");
+              }finally{await release(peer.p);}
+              await p.wait("document.getElementById('scale-sheet').hidden&&location.hash===routeFor(deck())","separate save acknowledgment and canonical route");
+              const after=await read(p);assert.strictEqual(after.entries.length,prior.entries.length+1);
+              const fresh=after.entries.find(x=>!prior.usedInstanceIds.includes(x.instanceId));assert.ok(fresh,"explicit separate action allocates a fresh lifetime handle");
+              assert.strictEqual(fresh.record.o.name,matrix.draftName);assert.strictEqual(fresh.record.o.replaces,undefined);
+              assert.strictEqual(after.entries.filter(x=>x.record.o?.name===matrix.draftName).length,2,"equal content versions coexist after explicit resolution");
+              assert.deepStrictEqual(after.entries.find(x=>x.instanceId===uid(203)),prior.entries.find(x=>x.instanceId===uid(203)));
+              assert.deepStrictEqual(after.entries.find(x=>x.instanceId===uid(202)),prior.entries.find(x=>x.instanceId===uid(202)));
+              assert.strictEqual(await p.eval("return document.activeElement===document.querySelector('#decks .chip.on');"),true);
+            } else {
+              if(localeIndex%2)await p.key("Escape","Escape",27);else await p.click("#scale-back");
+              await p.wait("document.getElementById('scale-sheet').hidden&&location.hash===routeFor(deck())","explicit cancel returns to winner");
+              assert.strictEqual(await p.eval("return deck().name;"),"REMOTE LABEL","Back discards the draft only by explicit owner action and displays the winner");
+              assert.strictEqual(await p.eval("return HPE.share.decode(location.hash.slice(3)).value.options.name;"),"REMOTE LABEL","canonical URL reflects the acknowledged winner");
+              assert.deepStrictEqual((await read(p)).entries,conflict.entries);
+              assert.strictEqual(await p.eval("return document.activeElement===document.querySelector('#decks .chip.on');"),true,"Back restores the selected chip's focus");
+            }
+            const durable=await p.eval(`return {current:localStorage.getItem(${JSON.stringify(KEY)}),old:localStorage.getItem('hpfc.scales.v3'),legacy:localStorage.getItem('hpfc.scales')};`);
+            const unsupported=await rb.send("Page.addScriptToEvaluateOnNewDocument",{source:"Object.defineProperty(navigator,'locks',{configurable:true,value:undefined});"});
+            try {
+              await reload();assert.strictEqual(await p.eval("return savedMode;"),"session");
+              await ink(p,"#saved-status",{text:expected.session});
+              await p.click("#settings-trigger");await p.click("#deck-add");await p.type("#scale-box",SV.inventories.other.seed);
+              assert.strictEqual(await p.eval("return document.getElementById('scale-generate').disabled;"),false,"note input stays English in every locale");
+              await p.click("#scale-generate");await p.wait("document.getElementById('scale-sheet').hidden","session-only scale generation completes");
+              assert.strictEqual(await p.eval("return HPE.core.formatSeed(deck().fields);"),SV.inventories.other.seed,"actual temporary scale becomes the selected view");
+              assert.strictEqual(await p.eval("return savedMode;"),"session");await ink(p,"#saved-status",{text:expected.session});
+              assert.deepStrictEqual(await p.eval(`return {current:localStorage.getItem(${JSON.stringify(KEY)}),old:localStorage.getItem('hpfc.scales.v3'),legacy:localStorage.getItem('hpfc.scales')};`),durable,"temporary generation performs no durable saved-store write");
+              await reload();
+              assert.strictEqual(await p.eval(`return savedState.entries.some(x=>x.record?.s===${JSON.stringify(SV.inventories.other.seed)});`),false,"temporary scale is lost after reload, never silently promoted");
+              assert.strictEqual(await p.eval(`return localStorage.getItem(${JSON.stringify(KEY)});`),durable.current);await ink(p,"#saved-status",{text:expected.session});
+            }finally{await rb.send("Page.removeScriptToEvaluateOnNewDocument",{identifier:unsupported.identifier});}
+            await p.eval(`localStorage.setItem(${JSON.stringify(KEY)},'{not-json');return true;`);await reload();
+            assert.strictEqual(await p.eval("return savedMode;"),"protected");
+            await ink(p,"#saved-status",{text:expected.recovery});
+            assert.strictEqual(await p.eval(`return localStorage.getItem(${JSON.stringify(KEY)});`),"{not-json","recovery cannot overwrite unreadable source");states++;
           }
-        } finally{await rb.close();}
+        } finally{if(peer)await peer.close();await rb.close();}
       }
       assert.strictEqual(cells,48,"all2font x8locale x3viewport geometry cells execute");
-      assert.strictEqual(states,16,"conflict/session/keyboard states execute in every font/locale");
-      console.log("SV_COPY_MATRIX "+JSON.stringify({geometryCells:cells,conflictSessionStates:states,fontModes:["fallback","real"],simulatedKeyboard:true,physicalIOS:false}));
+      assert.strictEqual(discriminatorControls,528,"every frozen suffix/preset control gets child-text/ancestor x/y clipping and target checks");
+      assert.strictEqual(states,16,"conflict/session/recovery/keyboard states execute in every font/locale");
+      console.log("SV_COPY_MATRIX "+JSON.stringify({geometryCells:cells,discriminatorControls,conflictSessionRecoveryStates:states,fontModes:["fallback","real"],simulatedKeyboard:true,physicalIOS:false}));
     });
   }
 
