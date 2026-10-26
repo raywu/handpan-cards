@@ -513,10 +513,28 @@ function boot(opts = {}) {
   if (opts.random) mathStub.random = opts.random;
 
   const all = () => [...Object.values(els), docEl, ...(layoutMain ? [layoutMain] : []), ...markupNodes, ...created];
+  // Only the ID/tag/class compounds and descendant combinator used by the app.
+  // This is a selector model, not a CSS layout engine or full selector parser.
+  const matchSimple = (el, sel) => {
+    const parsed = /^([a-zA-Z][\w-]*)?((?:[#.][\w-]+)*)$/.exec(sel);
+    if (!parsed || (!parsed[1] && !parsed[2])) return false;
+    if (parsed[1] && el.tagName !== parsed[1].toUpperCase()) return false;
+    return [...parsed[2].matchAll(/([#.])([\w-]+)/g)].every(([, kind, value]) =>
+      kind === "#" ? el.id === value : el.classList.contains(value));
+  };
   const match = (el, sel) => {
-    if (sel.startsWith("#")) return el.id === sel.slice(1);
-    if (sel.startsWith(".")) return el.classList.contains(sel.slice(1));
-    return el.tagName === sel.toUpperCase();
+    const chain = sel.split(/\s+/);
+    if (!matchSimple(el, chain.pop())) return false;
+    let ancestor = el;
+    while (chain.length) {
+      const wanted = chain.pop();
+      ancestor = ancestor.parentNode || ancestor._markupParent;
+      while (ancestor && !matchSimple(ancestor, wanted)) {
+        ancestor = ancestor.parentNode || ancestor._markupParent;
+      }
+      if (!ancestor) return false;
+    }
+    return true;
   };
   const queryAll = (sel) => {
     const parts = String(sel).split(",").map((s) => s.trim()).filter(Boolean);
