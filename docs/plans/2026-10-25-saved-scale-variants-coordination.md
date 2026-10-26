@@ -209,3 +209,179 @@ Root retains exclusive lease, no application changes before meaningful T RED.
 
 Owner reaffirmed custom diagram still visible at fresh LINK; this repeats settled
 human evidence, does not resolve/dismiss original omission. No reinterview needed.
+
+## Pre-implementation baseline and helper compatibility gates complete
+
+The candidate payload spelling was clarified to validated app-owned {record,deck};
+newrecord=scaleRecord(seedOf(deck)), engine build once outside lock, record-only
+persistence, imports never inherit replacement authority. Independent schema ENG
+recheck CLEAR at final contract SHA256
+9c56dce6a2f97a264e85d98cc7587fd509498ed1167e2b9b1eda3257edeccaa1.
+T uses these literal fields and the reviewed helper; unit acceptance authoring
+active. S remains code-held until root verifies useful baseline assertion RED.
+
+Corrected selection baselineA1 completed ONEfresh60-sample run (30desktop900x900,
+30phone380x780). Actual2loaded Network documents match app5628f31d, every trusted
+click selects expected literal built-in, Edit remains closed. Independently
+recomputed firstRAF p95desktop18.600ms/phone17.000ms, secondRAF33.700/33.800ms,
+frame median16.634ms/p9516.700ms each. These are RAF opportunities, not compositor
+presentation; five-built-in baseline differs from future large saved collections.
+Same instrumentation must be used for candidate comparison. Exit0/no timeout,
+empty stderr/owned cleanup/unchanged680+7profiles. Source90da474d; full source SHA
+and raw logs in evidence. A0 failure remains retained, no stitching of samples.
+
+Root ran full harness at19fb5e8f under180s supervisor:50/50PASS,0fail/skip/cancel,
+9.56s cleanup/census clear. Existing app881/881PASS under60s (33.29s) and shipping
+boot_sim177cards×2modesPASS. No variants app source changes; default helper callers
+remain compatible. Raise ONLY harness floor38→50 from observed count; app881/e2e480
+stay unchanged until feature results justify increases. Full LinuxCI still future.
+Root qualification evidence/sv-helper-root-verification.json; rawsupervisors/TAP
+beside SHC supervisor, named sv-helper-full-a0/app-compat-a0/bootsim-a0.
+
+New independent M lane /private/tmp/handpan-saved-variants.HVUKbE/mutants, branch
+codex/saved-variants-mutants-20261025 starts19fb5e8f. Own only generated svh_*.patch
+for12helper groups, faithful literal header selectors, private disposable source
+edits restored exactly. No app/helper/editor mutation or browser jobs. T continues
+app/e2e acceptance separately; root alone owns floors/browser and delivery. All
+helper mutation intent/proof and full finalCI/DEV remain required; no parity claim.
+
+## StageB reviewed acceptance RED and S implementation grant
+
+T initial23unit groups01464442 produced23named ERR_ASSERTION failures, no startup/
+skip/cancel/timeout. Self-review408a34bb fixed isolated angle intent and migration/
+Add/Edit post-ack readback injection. Independent ENG found missing mirror/anchor/
+seats equality, literal multi-digit/preset label oracle and stale RESET cases;
+T27e1085e corrected all, plus exactly8UUIDdraws and explicit delete acknowledgment.
+Fresh independent ENG recheck CLEAR27e1085e; final app-testSHA986f283683202e4bc56157b5cae9e04821d78b66f5e11c8fc7601ad8247d42e6,
+fixtureSHA4c0635cd3d9eef7f1bab84e2485d6eedb9d3f59f374d92c6cb92f112b243918e.
+A2rawSHA d1a14897bd5ac26ec376b835301830f235366dca4aa28aaa3167df4880e0e0e9.
+IMPORTANT: baseline proves coexistence/legacy-write/new-envelope readability
+failures; deeper backend assertions behind that prerequisite were NOT executed.
+Do not claim23distinct mechanisms proven. StageC actual backend diagnostics remain
+required. Root integrated425d7961/c766d6b3/7da929cb. No floors raised for RED tests.
+
+T native authorshipbed1e06c adds6groups (fileSHA2b0224b7218a71602f0f0f9421f26e00692689212b69bab0fff6c122885a41a4),
+syntax/whitespace only; NO browser execution. Fresh ENG/design review pending and
+already identified weak status/locale/scroll oracles; repair before native RED.
+Planned48font/locale/viewport cells+16states are coverage INTENT, not executed or
+accepted counts. Root must use unchanged-old-app checkout for baseline, not S's
+intentionally incomplete UI stage. T paused source edits for exact checkpoint review.
+
+M12generated helper faults0ef07f5f integrated0d4ab2c2. Independent source/driver
+review CLEAR7e809c7f, full12clean+12named assertion proofs then separate non-author
+ALL24raw-run review CLEAR. ReceiptSHAd294018da71ea2fef6ef23c737b94da3a4e101398c0938df4de86cf1cf333673;
+source restored exactly/clean. No browser runs. Root unchanged actual runner shard
+255/1522 selected svh_01 and dq_route_accepts_custom_id,2/2killed/no timeout/cleanup,
+confirming literal-header protocol rather than shlex. Full mutation_harness54/54
+PASS,0skip/cancel, corpus now1522; full corpus/CI still pending. All evidence named
+svh-proof12-a0*, svh-actual-runner-a0*, svh-header-harness-a0* in stream/SHC evidence.
+Read-only legacy reference inventory82mutants mention retired identity/store symbols;
+this is NOT proven staleness or permission to discard them. Preserve/refresh intents
+and explicitly review superseded policy oracles later.
+
+Root advanced S /store to7da929cb and explicitly granted implementation after T RED/
+review gates. S owns index APPregions and planned backend probe tool ONLY. No other
+index editor. Fresh ENG boundary CLEAR: S actual HTML initializes store and retires
+legacy writers, intentionally #countEMPTY/bootedFALSE until U completes adapters.
+This incomplete stage CANNOT reach DEV. No fake inventory compat registry/readiness.
+Preferences write only unrelated hpfc fields preserving legacydeck/hidden; malformed
+blob/relevant projection is recovery uncertainty. Legacy divergence compares full
+oldscale strings plus relevantdeck/hidden meaning, ignoring unrelated prefs/format;
+immutable raw snapshots remain exact. PubliccommitSaved remainsPromise; the SAME
+real memory-adapter command core can serve synchronous session entrypoints, never
+inline WebLocks or test-only registration. U later restores completeboot/route/UI
+before full Green/CI/DEV. Private actualHTML backend diagnostic authored from frozen
+contract, no selected-deck/UI prerequisite; pending independent review/execution.
+Current diagnostic SHAa1e180c05f13ce374e6c23218bfff31dbf51dda1341510638b20d7144e212948.
+
+Next: S committedstore+non-author review+StageC faults/interleavings/measurement;
+T native oracle repairs/review/old-app RED; then exclusive U UI adaptation. Root
+alone owns browser lease, no current job. Last full881PASS was BEFORE feature
+acceptance/source changes, not current feature Green. Main/install/global held.
+
+## Native review findings and recovery API clarification
+
+Both independent native reviews rejected bed1e06c before execution: no-op Save
+could satisfy disabled=false, RESET second-tap UI was bypassed, status/conflict copy
+could be unrelated/hidden, scroll could stay zero on display:contents, and label/
+keyboard/resolution geometry coverage was incomplete. T is repairing all against
+frozen independent localized fixtures, explicit visible targets, real queued Save,
+actual original-proof RESET confirmation, positive real scroll, literal multi-digit/
+preset suffixes/textRange clipping and native keyboard/cancel/separate-save actions.
+48/16remain coverage intent, no native execution yet. Findings do not block isolated
+S backend code; they block native acceptance/UI completion and any delivery.
+
+S found that ordinary import dedups, so approved fresh conflict-save needs a distinct
+command. Root selected [save-as-separate clarification](2026-10-25-saved-variants-recovery-command.md);
+fresh ENG CLEAR: validated candidate/truecollision/lifetimeallocation/epoch/lock/ACK
+remain, source revision intentionally irrelevant, strip slot authority, alwaysfresh;
+normalimportsunchanged. Minimal UI uses Save-as-separate plus existing BackCancel;
+no optional Review complexity/ambiguous draft replacement. No CLAUDE re-edit.
+
+## S reviewed backend integration and independent acceptance evidence
+
+S1e9123c4/e6041e5b installed store only; source ENG found malformed row/epoch typing,
+malformed relevant preference writes and cross-epoch stale ACK publication. Root
+private edge probee6b71d8b independently reviewed before execution:4intended named
+ASSERTION failures plus2already-passing LF controls at frozen e604. Earlier static
+LF concern was incorrect for this JavaScript regex; no newline repair claim.
+S repaired in b42551f8, indexf90bf720fbd1e7f26153548216944642a9c550ea875f07f91202a2730871189d.
+Independent delta CLEAR then SAMEprobe6/6GREEN, including both bad deck/hidden
+preferences and ACKok/publishedfalse/cacheB; non-author actual audit CLEAR.
+All12engine regions and canonical DECKS/I18N bytes remain unchanged. Root reader
+initially rejected unmatched start format/script prefix, inspected actual syntax,
+then required12real matched regions/one actual generated line; no zero-match pass.
+
+T native9f4db3af independently ENG/design CLEAR after Promise-wait and live-region
+repairs. Whole old-app6selected browser cases produced6intended ASSERTION failures,
+0startup/skip/cancel/timeout/stderr; host census/cleanup clear. Separate actual audit
+CLEAR. Initial missing coexistence/locking/views/controls are proved; deeper native
+paths/48cells/528controls/16states NOT executed. No feature Green claim.
+T fixture1f79 corrected ASCII≤40/Unicode metadata/prototype-looking JSON row12 and
+froze eight-locale copy/ASCII ' / ' suffix; source/helper/root guards unchanged.
+Root integrated127b3168/d6eec774/85e853b2 and merged Sb425 at ec6892b0.
+Source UI is deliberately INCOMPLETE (#countempty/bootedfalse); never DEV this head.
+
+Refreshed private C10probe5eb2dd0c on clean ec6892b0/indexf90/helper677/F1f79:
+10/10PASS under60s, actual independent audit CLEAR. Literal raw/opaque/prototype/
+idempotence/2VMrealm/no-event queue/dedup/fresh-separate/revision/epoch/used-ID/
+promotion/RESET cases passed. C2denial was ARMED but no optional readbacks occurred
+(0refusals); do not claim a readback-error branch ran. Real app cross-tab/UI/CI/
+performance checks remain distinct. Raw s-stage-c-a0.* under SHC evidence.
+
+## Performance input refinement — no latency result yet
+
+Independent private probe review required strict mode inside generated timing
+prelude to preserve native callback receiver; final script6adfe1d7 reviewed CLEAR.
+Delegates real Web Locks,30samples/case, actual Network frame/loader/body binding,
+fixed≤50p95/≤100max bounds and FINAL1MiB preservation; no app function patch.
+T froze separate source/golden envelope accounting; template UUID hashes differ
+from runtime random UUID hashes. First V1records2 job stopped BEFORE timings:
+readable1vs2. Mirrored top inherited mirrored bottom, invalidating known absolute
+angles. Correct app refusal; not a performance failure or reason to lower counts.
+Cleanup/census clear. Preserve sv-backend-records-2-a0.* and bundle7b63/artifactsV1.
+
+T corrected ONLY measurement i=1 with explicit mirrorBottom:false, preserving
+known bottom positions and top mirror. F b264b2ecb626947ff7cdb93bc61554f4edd6a7ad57b7166ec4004206902c24d2;
+commitf4c69035 integrated3c1d8a56. Existing nonmeasurement fixtures/copy/C1data are
+unchanged from1f79; prior C10receipt remains for its actual1f79 input, not rebranded.
+V2bundlea717d710, independently checked source760/3595/31945bytes; final envelopes
+2268/11496/103938bytes; stressFINAL1048576bytes/1048564UTF16 unchanged. Fresh extracted
+/evidence/backend-case-inputs-v2 files/manifest preserve V1. Full old builder5628
+validation269+223positive playable inputs; root additionally preserved JSON metadata,
+full pins and raw60s-supervised receipt t-sv-full-builder-root-v2-a0 exit0/stderr0.
+Original author report lacked separate raw bounded receipt; do not infer one.
+
+Next: run4SERIALV2cases under reviewed180s each; verify30actualsamples/bytes/readables/
+raw sources/cleanup/budgets, independent result review. Only then U UI ownership.
+Reusable planned tools/probe/saved_variants_storage.js still needs versioned handoff;
+private evidence alone does not complete the reproducible-tool deliverable.
+
+## Check-in owner decision — main queue held
+
+Owner explicitly chose “Keep held; finish saved variants first (Recommended)”.
+Keep573→575→577→579→581main releases HELD, do not prepare/merge them ahead of the
+priority saved-variants repair. Read-only live GitHub check confirms all5OPEN/DRAFT
+and582DEVmerged. Continue authorized saved variants through DEV; main still needs
+separate explicit consent. No new blocking owner input; retain original custom-
+diagram-at-LINK evidence and unresolved original omission report.

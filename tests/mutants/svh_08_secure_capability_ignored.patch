@@ -1,0 +1,15 @@
+# kills: SVH8 capabilities are explicit and support missing throwing and deterministic collision cases
+# suite: node --test --test-reporter=tap --test-name-pattern ^SVH8.capabilities tests/harness.test.js
+# fault: Explicit secure-context capability is reported false.
+diff --git a/tools/sandbox.js b/tools/sandbox.js
+--- a/tools/sandbox.js
++++ b/tools/sandbox.js
+@@ -745,7 +745,7 @@ function boot(opts = {}) {
+     configurable: true, get() { throw opts.locksAccessError; },
+   });
+   if (opts.crypto && !opts.cryptoAccessError) sandbox.crypto = opts.crypto;
+-  if (opts.isSecureContext !== undefined) sandbox.isSecureContext = !!opts.isSecureContext;
++  if (opts.isSecureContext !== undefined) sandbox.isSecureContext = false;
+   if (opts.abortController === true) sandbox.AbortController = AbortController;
+   if (opts.clock) {
+     sandbox.Date = class ClockDate extends Date {

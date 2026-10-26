@@ -124,9 +124,16 @@ Failure: `{ok:false,kind:'conflict'|'storage'|'lock'|'protected'|'allocation'|
 UI localizes the reason; failure never closes draft or announces saved success.
 No raw owner record/source/UUID diagnostic is emitted to analytics.
 
-All commands carry `collectionId` from the caller's accepted epoch. Input record/
-meaning/deck is staged by buildGenerated outside the lock, not rebuilt in commit.
-Suggested command discriminators:
+All commands carry `collectionId` from the caller's accepted epoch. The exact
+staged candidate shape is `{record:<current-v4 JSON>,deck:<buildGenerated.value>}`.
+For new UI/import content, record is scaleRecord(seedOf(deck)); the payload comes
+from successful validated app-owned staging, never directly from untrusted wire
+metadata. Do not persist the generated deck. Edit merges unknown target metadata
+inside its command as specified below. Build once outside the lock; do not rebuild
+in commit merely to validate the internal staging interface. Imports strip replaces
+regardless of candidate metadata. Full portable meaning derives from validated
+record/deck, never a supplied hash/fingerprint or encoded URL. Current-row staging
+must still satisfy the exact-raw recheck below. Command discriminators:
 
 | type | Fields / precondition | Result |
 |---|---|---|

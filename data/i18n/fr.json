@@ -269,5 +269,14 @@
   "sel.auto": "AUTOMATIQUE ({lang})",
   "sheet.order_hint": "Les notes du dessus occupent leurs places dans l’ordre de saisie. Réorganisez-les dans l’onglet Disposition.",
   "sheet.rim_follows": "Les notes du bord suivent maintenant l’ordre de saisie.",
-  "sheet.inner_follows": "Les notes intérieures suivent maintenant l’ordre de saisie."
+  "sheet.inner_follows": "Les notes intérieures suivent maintenant l’ordre de saisie.",
+  "saved.session": "Les modifications dans cet onglet sont temporaires. Elles disparaissent si vous rechargez ou fermez cet onglet.",
+  "saved.recovery": "Impossible de lire les gammes enregistrées. Vos gammes enregistrées n’ont pas été modifiées. Les modifications temporaires dans cet onglet disparaissent si vous le rechargez ou le fermez.",
+  "saved.conflict": "Cette gamme a été modifiée dans un autre onglet. Votre brouillon est conservé. Enregistrez-le comme une autre gamme ou revenez à la version enregistrée.",
+  "saved.conflictDeleted": "Cette gamme a été supprimée dans un autre onglet. Votre brouillon est conservé. Enregistrez-le comme une autre gamme ou revenez en arrière.",
+  "saved.separate": "ENREGISTRER UNE AUTRE GAMME",
+  "saved.resetConflict": "Les gammes d’origine ont été modifiées dans un autre onglet. Rien n’a été réinitialisé. Vérifiez-les avant de les rétablir.",
+  "saved.temporary": "UTILISER CET ONGLET TEMPORAIREMENT",
+  "saved.failure": "Impossible d’enregistrer ces modifications. Votre brouillon est conservé. Réessayez.",
+  "saved.legacy": "Une ancienne version a modifié ses gammes enregistrées. Ces modifications sont conservées séparément pour les récupérer."
 }

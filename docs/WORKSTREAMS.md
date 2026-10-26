@@ -2,6 +2,15 @@
 
 ## Current priority — SAVED-SCALE-VARIANTS, authorized through DEV
 
+Latest check-in: owner explicitly selected **keep573→575→577→579→581main releases
+held; finish saved variants first**. Read-only live PR states verified OPEN/DRAFT.
+S backend b425/indexf90 independently reviewed, edge6GREEN and C10model10PASS;
+T9f4 nativeOLD6intended assertion RED, not feature Green. Current integration has
+INCOMPLETE UI and cannot reach DEV. Performance V1input correctly refused one
+invalid mirrored-angle row before timing; corrected V2full-builder inputs now ready
+for30samples each2/20/200/final1MiB. Root alone owns browsers; U not started.
+
+
 Owner explicitly approved the reviewed plan and its exact instruction/spec patch
 through DEV on2026-10-25. This supersedes historical planning-only/interview-pending
 labels below. No main merge, installs or global configuration changes authorized.
@@ -21,17 +30,26 @@ labels below. No main merge, installs or global configuration changes authorized
   app/test changes. Original dirty/locked checkout stays untouched.
 - Root verified both exact source hashes and packet, checked the patch, then
   applied ONLY its CLAUDE.md and ENGINE-SPEC diff. Packet/plan remain immutable
-  historical approval artifacts. No variants application implementation yet.
+  historical approval artifacts. Store implementation is now active in its isolated
+  /store lane after reviewed acceptance RED; incomplete UI cannot reach DEV.
 - Reserved: collection key `hpfc.saved-scales.v1`, envelope schema1, exclusive lock
   `handpan-cards:saved-scales:v1`. Wire6/record4 remain; DUP's candidate7/5 is not
   consumed or activated. DUP feature implementation remains held.
-- Current parallel lanes: H helper/T public fixtures/S read-only store contract,
-  each separate /helper,/tests,/store tree under the stream root (branches recorded
+- Current parallel lanes: S store implementation/T native acceptance repair;
+  completed H support and M helper proof retained in /helper,/mutants. Separate
+  /tests,/store trees under the stream root (branches recorded
   in coordination). H support amendment independently ENG-cleared after event-
   dispatch clarification. A1 proved12 required real HTTPS API checks; optional file
   navigation then failed, so whole run stays FAILED and file behavior unverified.
-  Cleanup/census clear. Next independent evidence review, frozen schema/T acceptance
-  and intended baseline RED before any variants app edits. Root alone runs browsers.
+  Cleanup/census clear. Concrete schema9c56dce6 independently ENG-cleared after
+  lifetime ID-history/slot-proof refinements; H50/app881/shipping177-card defaults
+  PASS, prechange60selection baseline independently CLEAR (RAF opportunity only).
+  T27e1085e corrected23unit groups independently cleared/qualified assertion RED;
+  deeper backend branches not yet exercised. M12helperproof independently CLEAR,
+  actual runner2/2kills/headerharness54PASS. Six native bodies bed1e06c unexecuted,
+  ENG/design oracle repairs pending. Next S backend review/fault/measurement gates
+  and native RED before exclusive U UI. Root alone runs browsers. Last full881PASS
+  predates feature tests/source and is not a current-feature Green claim.
 - Recovery: [coordination](plans/2026-10-25-saved-scale-variants-coordination.md)
   records last/next, ownership and evidence. Any larger contract or exact CLAUDE
   wording change requires renewed review/approval. Runtime/migration/concurrency/

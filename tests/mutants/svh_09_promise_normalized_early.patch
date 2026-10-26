@@ -1,0 +1,15 @@
+# kills: SVH9 async evaluation and generation normalize only their settled values
+# suite: node --test --test-reporter=tap --test-name-pattern ^SVH9.async tests/harness.test.js
+# fault: Async values are JSON-normalized before promise settlement.
+diff --git a/tools/sandbox.js b/tools/sandbox.js
+--- a/tools/sandbox.js
++++ b/tools/sandbox.js
+@@ -802,7 +802,7 @@ function boot(opts = {}) {
+   // Run helper tests under an outer process supervisor (as suite_health does)
+   // even when waitFor/clickAsync has its own readiness timeout.
+   const getAsync = async (expr, { timeout } = {}) =>
+-    plain(await vm.runInContext(expr, sandbox, timeout ? { timeout } : {}));
++    plain(vm.runInContext(expr, sandbox, timeout ? { timeout } : {}));
+   function bounded(promise, timeout) {
+     let timer;
+     return Promise.race([promise, new Promise((_, reject) => {

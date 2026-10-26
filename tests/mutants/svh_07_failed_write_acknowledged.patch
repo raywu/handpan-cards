@@ -1,0 +1,15 @@
+# kills: SVH7 failed storage acknowledgments are separate from successful writes and preserve raw data
+# suite: node --test --test-reporter=tap --test-name-pattern ^SVH7.failed tests/harness.test.js
+# fault: A refused write attempt is labeled successful before acknowledgment.
+diff --git a/tools/sandbox.js b/tools/sandbox.js
+--- a/tools/sandbox.js
++++ b/tools/sandbox.js
+@@ -703,7 +703,7 @@ function boot(opts = {}) {
+       if (failure) throw failure;
+     };
+     const write = (operation, key, value, apply) => {
+-      const attempt = { operation, key, value, url: location.href, success: false };
++      const attempt = { operation, key, value, url: location.href, success: true };
+       origin.writeAttempts.push(attempt);
+       check(operation, key, value);
+       apply();

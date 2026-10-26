@@ -269,5 +269,14 @@
   "sel.auto": "AUTOMÁTICO ({lang})",
   "sheet.order_hint": "Las notas del contorno ocupan sus posiciones en el orden de la lista. Reordénalas en la pestaña Disposición.",
   "sheet.rim_follows": "Las notas del contorno ahora siguen el orden de la lista.",
-  "sheet.inner_follows": "Las notas interiores ahora siguen el orden de la lista."
+  "sheet.inner_follows": "Las notas interiores ahora siguen el orden de la lista.",
+  "saved.session": "Los cambios en esta pestaña son temporales. Se pierden si recargas o cierras esta pestaña.",
+  "saved.recovery": "No se pudieron leer las escalas guardadas. Tus escalas guardadas no han cambiado. Los cambios temporales en esta pestaña se pierden al recargarla o cerrarla.",
+  "saved.conflict": "Esta escala cambió en otra pestaña. Tu borrador sigue aquí. Guárdalo como otra escala o vuelve a la versión guardada.",
+  "saved.conflictDeleted": "Esta escala se eliminó en otra pestaña. Tu borrador sigue aquí. Guárdalo como otra escala o vuelve atrás.",
+  "saved.separate": "GUARDAR COMO OTRA ESCALA",
+  "saved.resetConflict": "Las escalas iniciales cambiaron en otra pestaña. No se restableció nada. Revísalas antes de restablecerlas de nuevo.",
+  "saved.temporary": "USAR ESTA PESTAÑA TEMPORALMENTE",
+  "saved.failure": "No se pudieron guardar los cambios. Tu borrador sigue aquí. Inténtalo de nuevo.",
+  "saved.legacy": "Una versión anterior cambió sus escalas guardadas. Esos cambios se conservan por separado para recuperarlos."
 }
