@@ -7,7 +7,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -238,7 +238,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
+@@ -476,7 +476,7 @@ a.mode{text-decoration:none}
     in landscape and hands the room to the card" measures the gain, and
     "portrait is byte-identical" measures the absence of a cost.
     ------------------------------------------------------------------------ */

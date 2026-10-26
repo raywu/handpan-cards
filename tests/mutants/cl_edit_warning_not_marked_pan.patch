@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12506,7 +12506,7 @@ function openEditSheet(d, opener) {
+@@ -13360,7 +13360,7 @@ function openEditSheet(d, opener) {
    // [eng-review 2, 2A] warnings have ONE producer and were copied onto the deck
    // at generation time; the Edit sheet reads them and never rebuilds to re-derive.
    const warned = (d.warnings || []).map(w => reasonText(w));

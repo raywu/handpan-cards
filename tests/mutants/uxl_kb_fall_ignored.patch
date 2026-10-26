@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10722,7 +10722,7 @@ function setLip(on, o) {
+@@ -12076,7 +12076,7 @@ function setLip(on, o) {
  }
  function lipKbEdge(was, kb) {
    if (was === kb) return;

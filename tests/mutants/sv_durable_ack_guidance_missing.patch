@@ -4,10 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13262,13 +13262,13 @@ window.addEventListener("popstate", () => {
-
- // Removing a deck the user is LOOKING AT would otherwise leave the practice
- // screen on a deck that no longer exists, so it falls back to the default
+@@ -13437,7 +13437,7 @@ window.addEventListener("popstate", () => {
  // deck and says so. That sentence is UI copy, not an engine reason: the
  // section 2 code enum is closed and has no code for "you deleted this".
  function savedPublicationText(result, context = "save") {
@@ -16,6 +13,3 @@ diff --git a/index.html b/index.html
  }
  function savedErrorText(result) {
    if(result.reason || result.code)return reasonText(result);
-   return t(result.kind === "conflict" ? "saved.conflict" : "saved.failure");
- }
- function updateSavedStatus() {

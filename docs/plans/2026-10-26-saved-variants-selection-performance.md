@@ -100,3 +100,32 @@ reviewed diagnosis, retaining the full attempt, rather than retrying for a pass.
 Read-only VM fixture-count preflight independently confirmed baseline/candidate
 counts5/5,7/7,8/25,8/205 on the frozen sources/cases; this is not browser or timing
 validation. Root still requires independent tool-source review before launch.
+
+## Precision amendment after the retained first campaign
+
+The a0 empty and2-record jobs passed. The20-record attempt stopped at phone
+baseline-before sample17 (107 retained rows/four Documents): RAF timestamp1006.1
+versus separately read callback clock1006.0999999046326, a lead of
+9.536745437799254e-8ms (0.095367454ns). Its16.668ms RAF interval, state and
+foreground checks were valid; the completed desktop comparison passed. The200
+case was not run. Keep every a0 artifact and its FAILED status; do not combine
+selected a0 rows with the next campaign.
+
+Independent engineering review approves exactly1ns (0.000001ms) representation
+allowance ONLY in the two RAF-timestamp <= corresponding performance.now callback
+sanity comparisons. Compare the finite raw difference against the fixed allowance;
+record raw differences and the allowance. Do not round, clamp or alter timestamps,
+filter samples, relax strict RAF increase/same-clock order/positive intervals, or
+change p95, frame allowance, baseline drift, counts, viewport or latency budgets.
+Literal regression controls must accept the retained0.095ns case and <=1ns
+boundary, reject >1ns and nonfinite values, and retain rejection of zero/backwards
+intervals. Independent source review precedes a fresh run of ALL four cases under
+the same quiet protocol; no favorable old-arm reuse or blind retry.
+
+[High Resolution Time](https://www.w3.org/TR/hr-time-3/) describes double-valued
+millisecond durations and coarsened exposure; [HTML](https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#run-the-animation-frame-callbacks)
+passes a supplied timestamp into RAF callbacks. The observed difference is
+consistent with representation/conversion precision; its exact Chromium cause is
+not proven. Those sources do not prescribe this1ns engineering cap or guarantee
+bit-identical values across these two readings. This changes a diagnostic sanity
+check, not the application or its accepted latency budget.

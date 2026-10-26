@@ -16,7 +16,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14251,7 +14251,7 @@ function panelStops() {
+@@ -14424,7 +14424,7 @@ function panelStops() {
            ...settingsPanel.querySelectorAll('#settings-panel a.mode[id^="res-"]'),
            document.getElementById("about-open"),
            document.getElementById("lang-select")]

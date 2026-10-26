@@ -12,7 +12,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11289,7 +11289,7 @@ function buildChips() {
+@@ -11461,7 +11461,7 @@ function buildChips() {
      if(on)b.setAttribute("aria-current","true");
      b.style.setProperty("--dga",d.colors.ga);b.style.setProperty("--dgb",d.colors.gb);
      b.innerHTML='<span class="dot"></span>'+esc(labels[i]);

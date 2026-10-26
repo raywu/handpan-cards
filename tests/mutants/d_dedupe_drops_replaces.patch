@@ -5,10 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10418,13 +10418,13 @@ function applySavedCommand(staged, command, candidate) {
-     const inventoryIdentity = staged.identities.get(candidate.deck.id);
-     if (inventoryIdentity !== undefined && inventoryIdentity !== candidate.identity) return savedFailure("inventory-collision");
-   }
+@@ -10564,7 +10564,7 @@ function applySavedCommand(staged, command, candidate) {
    if (command.type === "import" || command.type === "save-as-separate") {
      let match = null;
      if (command.type === "import") {
@@ -17,6 +14,3 @@ diff --git a/index.html b/index.html
        match = matches.find(row => row.instanceId === command.selectedInstanceId) || matches[0] || null;
      }
      const row = match ? next.entries.find(entry => entry.instanceId === match.instanceId) : allocate(savedClone(candidate.record));
-     if (!row) return savedFailure("allocation", "instance-id");
-     if (!match) attachCandidate(row);
-     targetId = row.instanceId; desired = { kind: "saved", id: targetId };

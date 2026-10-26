@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14476,7 +14476,7 @@ function syncRoute() {
+@@ -15094,7 +15094,7 @@ function syncRoute() {
    }
    observeLinkRoute();
    const refused = route === "";

@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12189,7 +12189,7 @@ function syncParseState({ paint }) {
+@@ -13017,7 +13017,7 @@ function syncParseState({ paint }) {
      if (paint) showPanPreview(res.value);
      const solved = solvePreviewLayout(res.value);
      const crowded = solved && HPE.select.smallLabels(solved.geom);

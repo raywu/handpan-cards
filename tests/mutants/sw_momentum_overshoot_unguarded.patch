@@ -10,7 +10,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8176,7 +8176,7 @@ function swipeDecision(dx, dy, vx) {
+@@ -14735,7 +14735,7 @@ function swipeDecision(dx, dy, vx) {
  // so the curve is monotone for every input (unit-tested with a 101-sample sweep).
  function swipeOutTiming(vx, dir, dx, dist) {
    const v = Math.max(-dir * vx, SWIPE_MOMENTUM_FLOOR_PX_MS);

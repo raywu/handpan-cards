@@ -8,7 +8,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -557,14 +557,6 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -721,14 +721,6 @@ footer.seq{row-gap:var(--sp-1)}
     The arrows and the refresh button span both rows and stay on one centre
     line; the style line sits under the rail inside the footer box, so it never
     reaches the .announce row below it. */

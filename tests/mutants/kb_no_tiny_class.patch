@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11519,7 +11519,7 @@ function applyKbOffset(e) {
+@@ -13187,7 +13187,7 @@ function applyKbOffset(e) {
    setSheetClass("kbup", kb);
    setSheetClass("short", high > 0 && high < 560);
    setSheetClass("side", high > 0 && high < 420);

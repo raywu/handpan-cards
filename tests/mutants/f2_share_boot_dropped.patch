@@ -8,7 +8,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15045,7 +15045,7 @@ function finishSavedBoot() {
+@@ -15218,7 +15218,7 @@ function finishSavedBoot() {
    };
    if(savedMode==="protected" && location.hash.indexOf(SHARE_PREFIX)===0){pendingRecoveryShare=location.hash.slice(SHARE_PREFIX.length);finish();return;}
    if(location.hash.indexOf(SHARE_PREFIX)===0){

@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -595,14 +595,14 @@ main{overflow-x:clip}
+@@ -599,14 +599,14 @@ main{overflow-x:clip}
     panel's own .mode-sized controls, which is also what clears the 44px
     target floor (eng review C4). No new colour: these reuse `.mode`'s own
     surface, border and text tokens. */

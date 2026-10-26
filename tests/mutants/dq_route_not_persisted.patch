@@ -5,8 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15222,3 +15222,3 @@ function finishSavedBoot() {
+@@ -15220,7 +15220,7 @@ function finishSavedBoot() {
+   if(location.hash.indexOf(SHARE_PREFIX)===0){
+     const result=openShare(location.hash.slice(SHARE_PREFIX.length));
      if(result&&typeof result.then==="function")return result.then(finish);
 -  }else if(routed)selectDeck({kind:"builtin",id:routed},true,false);
 +  }else if(routed)selectDeck({kind:"builtin",id:routed},false,false);
    finish();
+ }
+ const initialization=initializeSavedCollection();

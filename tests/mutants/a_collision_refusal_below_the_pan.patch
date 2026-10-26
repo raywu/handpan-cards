@@ -10,7 +10,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12899,7 +12899,7 @@ function updateParse() {
+@@ -13071,7 +13071,7 @@ function updateParse() {
  function resyncSheet(paint) {
    if (paint) cancelGesture();
    if (refusal) {

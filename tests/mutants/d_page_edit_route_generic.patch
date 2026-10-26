@@ -7,7 +7,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13059,7 +13059,7 @@ function setSheetMode(edit) {
+@@ -13231,7 +13231,7 @@ function setSheetMode(edit) {
  const ADD_ROUTE  = "#add";
  const EDIT_ROUTE = "#edit-";
  function sheetRoute() {

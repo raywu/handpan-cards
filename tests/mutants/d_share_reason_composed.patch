@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9954,7 +9954,7 @@ function openShare(text) {
+@@ -9953,7 +9953,7 @@ function openShare(text) {
    const current=()=>request===shareRequestGeneration && context===navigationGeneration;
    pendingRecoveryShare=String(text);
    const res = HPE.share.decode(String(text));

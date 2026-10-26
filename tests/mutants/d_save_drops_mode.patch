@@ -4,7 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9806,3 +9806,2 @@ const save = () => updateSettings(next => {
+@@ -9804,7 +9804,6 @@ const deck = () => selectedDeck();
+ const save = () => updateSettings(next => {
+   // Saved selection/hidden state has one authority in the collection. Keep
    // legacy deck/hidden fields untouched for old clients and recovery.
 -  next.mode = mode;
    next.tier = tier;
+   next.printPaper = printPaper;
+ });

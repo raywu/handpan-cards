@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12227,8 +12227,7 @@ function resetSheetState(edit) {
+@@ -13338,8 +13338,7 @@ function resetSheetState(edit, target = selection) {
      ? o.mirrorBottom : mirror);
    boxOk = !!edit;
    dropDrawer();

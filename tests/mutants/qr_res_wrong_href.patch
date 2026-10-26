@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1537,7 +1537,7 @@ html.about-open{overflow:hidden}
+@@ -1746,7 +1746,7 @@ html.about-open{overflow:hidden}
           full width, so no existing control moves down), row four the ABOUT button
           (an in-app view, not an outbound link: no href, no res- id). -->
      <div class="modebar trio">

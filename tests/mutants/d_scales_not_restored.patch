@@ -6,8 +6,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10303,3 +10303,3 @@ function applySavedSnapshot(envelope, suppliedViews, source = "commit") {
+@@ -10301,7 +10301,7 @@ function applySavedSnapshot(envelope, suppliedViews, source = "commit") {
+   savedState = savedClone(envelope);
+   const rows = new Map(savedState.entries.map(row => [row.instanceId, row]));
    savedEntries.clear();
 -  for (const [id, view] of staged.views) savedEntries.set(id, { ...view, record: rows.get(id).record });
 +  if(source!=="initialization")for (const [id, view] of staged.views) savedEntries.set(id, { ...view, record: rows.get(id).record });
    knownSavedCollections.add(savedState.collectionId);
+   inspectLegacyBranch(); // diagnostic failure cannot reverse an acknowledged command
+   if (typeof savedSnapshotListener === "function") {

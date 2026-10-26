@@ -5,10 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10232,13 +10232,13 @@ function stageLegacySaved() {
-   if (!preferences.ok) return { ...preferences, raw };
-   const sourceKey = raw[SCALES_KEY] !== null ? SCALES_KEY : raw[LEGACY_SCALES_KEY] !== null ? LEGACY_SCALES_KEY : null;
-   let records = [];
+@@ -10335,7 +10335,7 @@ function stageLegacySaved() {
    try { if (sourceKey) records = JSON.parse(raw[sourceKey]); }
    catch (e) { return { ...savedFailure("protected", "legacy-json"), raw }; }
    if (!Array.isArray(records)) return { ...savedFailure("protected", "legacy-list"), raw };
@@ -17,6 +14,3 @@ diff --git a/index.html b/index.html
      const read = readSavedRecord(record);
      return { record: read.ok ? read.record : savedClone(record), read };
    });
-   return { ok: true, raw, sourceKey, rows, preferences: preferences.value };
- }
- function makeSavedMigration(staged) {

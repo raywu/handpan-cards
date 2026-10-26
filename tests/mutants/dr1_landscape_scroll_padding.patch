@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1130,7 +1130,7 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1143,7 +1143,7 @@ footer.seq{row-gap:var(--sp-1)}
    #scale-sheet[data-tab="layout"].lipped #scale-next, #scale-sheet[data-tab="layout"].lipped #scale-generate,
    #scale-sheet[data-tab="layout"].lipped #scale-delete-row{margin-left:0}
    #scale-sheet[data-tab="layout"].lipped #scale-next, #scale-sheet[data-tab="layout"].lipped #scale-generate{width:100%}

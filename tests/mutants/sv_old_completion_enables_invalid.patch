@@ -4,10 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13331,13 +13331,13 @@ async function runGenerate(separate = false) {
-     const d=savedEntries.get(result.instanceId).deck;
-     const warned=(d.warnings||[]).map(w=>reasonText(w));
-     closeScaleSheet();selectDeck({kind:"saved",id:result.instanceId},false);
+@@ -13507,7 +13507,7 @@ async function runGenerate(separate = false) {
      track("scale_create",{note_count:Object.keys(d.fields).length,has_bottom:Object.values(d.fields).some(f=>f[3]==="bottom")?1:0});
      say((base?t("sheet.updated",{name:d.name}):t("sheet.generated",{n:d.chords.length}))+(warned.length?" "+warned.join(" "):""),warned.length?"warn":"ok");
    } finally {
@@ -16,6 +13,3 @@ diff --git a/index.html b/index.html
    }
  }
  document.getElementById("scale-conflict-separate").onclick=()=>runGenerate(true);
- document.getElementById("saved-temporary-use").onclick=()=>{
-   if(savedMode!=="protected")return;
-   const temporary=makeSavedMigration({rows:[],sourceKey:null,raw:{hpfc:null,"hpfc.scales":null,"hpfc.scales.v3":null},preferences:{}});

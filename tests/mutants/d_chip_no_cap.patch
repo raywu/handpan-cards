@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11260,7 +11260,7 @@ function setOrder() {
+@@ -11432,7 +11432,7 @@ function setOrder() {
  // leaves that replacement out; a seed with no replacement is dropped when hidden.
  const allDecks = () => allDeckViews().map(view => view.deck);
  const CHIP_CAP = 16;

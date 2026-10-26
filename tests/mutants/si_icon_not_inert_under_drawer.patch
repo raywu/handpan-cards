@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14231,7 +14231,7 @@ const settingsScrim   = document.getElementById("settings-scrim");
+@@ -14404,7 +14404,7 @@ const settingsScrim   = document.getElementById("settings-scrim");
  // second tap on it.
  const panelBackground = [document.querySelector("main"), document.querySelector("footer"),
                            document.getElementById("decks"), document.querySelector("#about"),

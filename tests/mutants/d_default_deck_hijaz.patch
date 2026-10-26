@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7557,7 +7557,7 @@ const DECKS = [{"id": "kurd", "name": "D KURD 10", "sub": "9 + 1", "colors": {"r
+@@ -9561,7 +9561,7 @@ const DECKS = [{"id": "kurd", "name": "D KURD 10", "sub": "9 + 1", "colors": {"r
  // are a list, own their own key, and hold the SEED - the canonical scale string
  // plus its options - never the built deck, which is derived (D14).
  const STORE_KEY = "hpfc";

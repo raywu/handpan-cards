@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -212,7 +212,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
+@@ -283,7 +283,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
     used to be. The heading's margin-top is twice its margin-bottom, the gap
     main had between the group's two button rows. Internal tier values and ids
     stay basic / intermediate / advanced. */

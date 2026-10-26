@@ -4,10 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10427,13 +10427,13 @@ function applySavedCommand(staged, command, candidate) {
-     const row = match ? next.entries.find(entry => entry.instanceId === match.instanceId) : allocate(savedClone(candidate.record));
-     if (!row) return savedFailure("allocation", "instance-id");
-     if (!match) attachCandidate(row);
+@@ -10573,7 +10573,7 @@ function applySavedCommand(staged, command, candidate) {
      targetId = row.instanceId; desired = { kind: "saved", id: targetId };
    } else if (command.type === "edit") {
      const row = existing();
@@ -16,6 +13,3 @@ diff --git a/index.html b/index.html
      const record = savedEditedRecord(row.record, candidate);
      if (!savedEqual(record, row.record)) {
        if (row.revision >= Number.MAX_SAFE_INTEGER) return savedFailure("invalid", "revision-overflow");
-       row.record = record; row.revision++;
-     }
-     const deckValue = { ...candidate.deck, options: { ...candidate.deck.options } };

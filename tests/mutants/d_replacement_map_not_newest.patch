@@ -5,8 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10369,3 +10369,3 @@ function makeSavedMigration(staged) {
+@@ -10367,7 +10367,7 @@ function makeSavedMigration(staged) {
+   // newest recognized replacement per seed. Preserve that chosen slot exactly.
+   for (const view of oldVisible.values()) {
      const seed = view.record && view.record.o && view.record.o.replaces;
 -    if (isBuiltIn(seed)) e.slots[seed] = view.instanceId;
 +    if (isBuiltIn(seed) && !e.slots[seed]) e.slots[seed] = view.instanceId;
    }
+   const prepared = stageSavedEnvelope(e, supplied);
+   if (!prepared.ok) return prepared;

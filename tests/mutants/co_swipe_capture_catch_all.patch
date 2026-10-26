@@ -7,7 +7,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8926,7 +8926,7 @@ function startDrag(e) {
+@@ -14878,7 +14878,7 @@ function startDrag(e) {
    scene.getAnimations().forEach(a => a.cancel());
    drag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, last: 0, lastY: 0, moved: false, pts: [{ x: e.clientX, t: e.timeStamp }], pointerType: e.pointerType };
    // NotFoundError: a synthetic or already-released pointer id has nothing to capture.

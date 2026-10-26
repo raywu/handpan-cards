@@ -8,7 +8,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8230,7 +8230,7 @@ card.addEventListener("contextmenu", e => { if (drag) release(e, true); });
+@@ -14910,7 +14910,7 @@ card.addEventListener("contextmenu", e => { if (drag) release(e, true); });
  // <main> holds only .scene (index.html's header/#decks and the settings
  // panel are outside it), so a wheel listener here cannot catch an unrelated
  // horizontal-scroll element.

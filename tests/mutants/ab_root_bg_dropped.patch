@@ -10,7 +10,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -75,7 +75,6 @@
+@@ -144,7 +144,6 @@ html{overscroll-behavior-x:none}
     shows the canvas's default white. This gives html its own solid colour so
     nothing shows through. body keeps its gradient; that box is at least
     100dvh (below), so nothing visible moves. */

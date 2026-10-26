@@ -5,12 +5,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14997,7 +14997,7 @@ function routeToDeck(routed) {
-   if(!routed)return null;
-   selectDeck({kind:"builtin",id:routed});
+@@ -15172,3 +15172,3 @@ function routeToDeck(routed) {
    if(savedState.hidden.includes(routed) && !savedState.slots[routed])say(t("boot.gone",{name:deck().name}),"warn");
 -  track("deck_route",{deck_id:routed});return deck().id;
 +  return deck().id;
  }
-
- window.addEventListener("hashchange", async () => {

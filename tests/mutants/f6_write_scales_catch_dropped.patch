@@ -8,8 +8,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10483,3 +10483,3 @@ async function initializeSavedDurable(locks) {
+@@ -10481,7 +10481,7 @@ async function initializeSavedDurable(locks) {
+       });
+     }catch(e){if(!callbackEntered)return initializeSavedSession(savedFailure("lock","session-only-initialization"),snapshot.present?staged:null);return savedProtect(savedFailure("storage","initialization-refused"),snapshot.raw);}
      if(committed===SAVED_RETRY)continue;
 -    if(!committed.ok)return savedProtect(committed,snapshot.raw);
 +    if(!committed.ok){savedMode="durable";return committed;}
      savedDatabase=opened.db;adopted=true;savedMode="durable";savedIssue=null;
+     let published=false;
+     try{

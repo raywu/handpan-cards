@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13681,7 +13681,6 @@ function syncShuffleLabel() {
+@@ -14619,7 +14619,6 @@ function syncShuffleLabel() {
      shuffleBtn.innerHTML = REFRESH_ICON_SVG;
      shuffleBtn.setAttribute("aria-label", t("seq.new_progression"));
      shuffleBtn.classList.remove("on");

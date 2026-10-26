@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -257,7 +257,6 @@ a.mode{text-decoration:none}
+@@ -306,7 +306,6 @@ a.mode{text-decoration:none}
  .mode.on{background:#f1ece1; color:#272219; border-color:#f1ece1}
  /* A5 (audit): NAME->NOTES and NOTES->NAME were sized by their own text, so a
     ragged pair sat side by side. */

@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -297,7 +297,7 @@ a.mode{text-decoration:none}
+@@ -313,7 +313,7 @@ a.mode{text-decoration:none}
     inside the link box (menu-resources AD7); no other row takes this class. */
  .modebar.duo{flex-wrap:nowrap}
  #share-url{box-sizing:border-box; width:100%; min-height:44px; padding:0 10px; font:inherit; font-size:16px;

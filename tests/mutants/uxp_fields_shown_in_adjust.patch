@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10569,7 +10569,7 @@
+@@ -12229,7 +12229,7 @@ function paintTabs() {
      tab.classList.toggle("on", on);
      tab.setAttribute("aria-selected", String(on));
      tab.setAttribute("tabindex", on ? "0" : "-1");

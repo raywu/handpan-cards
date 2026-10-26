@@ -4,10 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11484,13 +11484,13 @@ let bandPad = "", plateRoom = "", pinPad = "";
-    the 26.59px pan step: three separate call sites each looked locally right.
-    A refusal supersedes the parse summary rather than stacking under it. The
-    summary says the seed parsed; the refusal says the app will not take it,
+@@ -11659,7 +11659,7 @@ let bandPad = "", plateRoom = "", pinPad = "";
     which is the more recent and the more actionable of the two, and the
     summary comes straight back on the next keystroke. */
  function refreshSavedSubmit() {
@@ -16,6 +13,3 @@ diff --git a/index.html b/index.html
    genBtn.disabled=disabled;
    document.getElementById("scale-conflict-separate").disabled=disabled;
  }
- function showParse(text) {
-   refusalLine.textContent = "";
-   parseLine.textContent = text;

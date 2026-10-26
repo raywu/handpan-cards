@@ -5,7 +5,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15213,3 +15213,2 @@ function finishSavedBoot() {
+@@ -15211,7 +15211,6 @@ function finishSavedBoot() {
+     setOrder();applyLang();paintLangSelect();setMode(mode,false);updateSavedStatus();syncRoute();
+     if(routed && routed!==storedAtBoot)track("deck_route",{deck_id:routed});
      if(savedState && !incomingShare && wanted && wanted!==deck().id &&
 -        !(savedState?.slots[wanted] && savedState.slots[wanted]===selection.id) &&
          (wanted.indexOf("custom:")===0 || savedState?.hidden.includes(wanted)))
+       say(t("boot.gone",{name:deck().name}),"warn");
+     booted=true;bootStored=null;

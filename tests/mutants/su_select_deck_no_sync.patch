@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10585,7 +10585,7 @@ function selectDeck(wanted, persist = true, trackSelection = true) {
+@@ -10757,7 +10757,7 @@ function selectDeck(wanted, persist = true, trackSelection = true) {
    const rehome = !!a && (a.id === "settings-trigger" || a.id === "deck-add" || [...document.getElementById("decks").children].includes(a));
    selection = savedState ? savedResolve(wanted,savedState,savedEntries) : wanted;
    if (persist && savedState) commitSaved({type:"prefer",collectionId:savedState.collectionId,selection:savedClone(selection)});

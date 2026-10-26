@@ -80,7 +80,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1370,4 +1370,95 @@ html.about-open{overflow:hidden}
+@@ -1369,6 +1369,97 @@ html.about-open{overflow:hidden}
+   <nav class="decks" id="decks"></nav>
    <p id="saved-status" role="status" hidden></p>
    <button type="button" id="saved-temporary-use" class="mode" hidden>USE THIS TAB TEMPORARILY</button>
 +<div id="settings-scrim" hidden></div>
@@ -176,7 +177,9 @@ diff --git a/index.html b/index.html
 +</div>
  </header>
 
-@@ -1683,95 +1774,5 @@ html.about-open{overflow:hidden}
+ <main>
+@@ -1682,97 +1773,7 @@ html.about-open{overflow:hidden}
+      below-breakpoint, modal presentation. At >=1024x700 the trigger that
       calls openPanel() is display:none, so the panel never gains them and
       the static sidebar is correctly plain, non-modal markup. -->
 -<div id="settings-scrim" hidden></div>
@@ -273,3 +276,4 @@ diff --git a/index.html b/index.html
 +
 
  <!-- The scale engine, inlined verbatim from src/engine/*.js. The app is
+      single-file by contract, so these are copies rather than external script

@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8680,7 +8680,6 @@ function syncTierUI() {
+@@ -14589,7 +14589,6 @@ function syncTierUI() {
      const el = document.getElementById("tier-" + t);
      const on = mode === "S" && tier === t;
      el.classList.toggle("on", on);

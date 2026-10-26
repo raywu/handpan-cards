@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12378,7 +12378,7 @@ function setSheetMode(edit) {
+@@ -13210,7 +13210,7 @@ function setSheetMode(edit) {
    if (edit) delRow.removeAttribute("hidden");
    else delRow.setAttribute("hidden", "");
    delBtn.textContent = DEL_IDLE();

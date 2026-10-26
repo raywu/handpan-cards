@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1501,10 +1501,10 @@ html.about-open{overflow:hidden}
+@@ -1535,10 +1535,10 @@ html.about-open{overflow:hidden}
      </div>
      </div>
      <div id="scale-panel-layout" role="tabpanel" aria-labelledby="scale-tab-layout" hidden>

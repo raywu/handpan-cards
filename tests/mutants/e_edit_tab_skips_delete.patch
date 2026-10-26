@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14173,13 +14173,12 @@ sheet.addEventListener("keydown", e => {
+@@ -14351,13 +14351,12 @@ sheet.addEventListener("keydown", e => {
      ? [backBtn, document.getElementById("scale-conflict-separate"), onTab, previewBox.querySelector('.panhit[tabindex="0"]'),
         anchorOne, anchorBetween, mirrorTop, mirrorBot, fineBtn,
         notePrev, noteNext, seatPrev, seatNext, anglePrev, angleNext, resetBtn,

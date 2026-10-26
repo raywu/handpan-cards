@@ -4,10 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14333,13 +14333,13 @@ aboutCloseBtn.onclick = closeAbout;
- // through the fallback takes the other path so its "gone" warning still fires.
- function aboutLink(href) {
-   const slug = href.slice(DECK_ROUTE.length);
+@@ -14514,7 +14514,7 @@ function aboutLink(href) {
    const routed = Object.prototype.hasOwnProperty.call(DECK_SLUGS, slug) ? DECK_SLUGS[slug] : null;
    if (routed) {
      const resolvedSelection=savedState?savedResolve({kind:"builtin",id:routed},savedState,savedEntries):{kind:"builtin",id:routed};
@@ -16,6 +13,3 @@ diff --git a/index.html b/index.html
    }
    hideAbout();
    history.replaceState(null, "", href);
-   routeToDeck(routed);
-   syncRoute();
- }

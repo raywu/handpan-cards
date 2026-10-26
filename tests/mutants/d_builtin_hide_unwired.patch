@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10205,7 +10205,7 @@
+@@ -13632,7 +13632,7 @@ delBtn.onclick = () => {
       delRow carries `hidden` whenever setSheetMode() has run for a create, and
       `[hidden]` is `display:none !important`, so a click can only get here with
       no id set through a synthetic .onclick(). */

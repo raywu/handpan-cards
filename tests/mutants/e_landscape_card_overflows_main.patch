@@ -20,7 +20,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -452,8 +452,7 @@ main{overflow-x:clip}
+@@ -547,8 +547,7 @@ main{overflow-x:clip}
     every viewport, portrait included. Every control hit-tests clean with no card
     on the page - which is why the test asserts the card is MAXIMAL, not merely
     contained. */

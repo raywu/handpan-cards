@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11493,7 +11493,7 @@ const withAngle = (list, i, a) => { const t = list.slice(); t[i] = a; return t;
+@@ -12512,7 +12512,7 @@ const withAngle = (list, i, a) => { const t = list.slice(); t[i] = a; return t;
   *  nearest free step back the way the finger came (`dir` is its direction of travel). */
  function landAt(home, list, i, want, dir) {
    const hit = clashAt(home, withAngle(list, i, want), i);

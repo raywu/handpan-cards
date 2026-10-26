@@ -4,10 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11271,13 +11271,13 @@ function savedChipLabels(views) {
-   };
-   for (let pass=0;pass<=views.length;pass++) {
-     const groups = new Map();
+@@ -11446,7 +11446,7 @@ function savedChipLabels(views) {
      views.forEach((view,i)=>{ const text=label(view,i); if(!groups.has(text)) groups.set(text,[]); groups.get(text).push(i); });
      let added=false;
      for(const group of groups.values()) if(group.length>1) for(const i of group) if(!marked.has(i)){marked.add(i);added=true;}
@@ -16,6 +13,3 @@ diff --git a/index.html b/index.html
    }
    return views.map(label);
  }
- function buildChips() {
-   const nav=document.getElementById("decks"), views=allDeckViews(), labels=savedChipLabels(views);
-   nav.innerHTML="";

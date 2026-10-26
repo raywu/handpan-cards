@@ -11,7 +11,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -493,7 +493,7 @@
+@@ -622,7 +622,7 @@ main{overflow-x:clip}
     #6f6658 is the same warm grey darkened to 5.65:1, comfortably past the 4.5:1
     WCAG AA needs at this size. It is a UI grey, not a deck palette colour, so
     the design system is untouched. */

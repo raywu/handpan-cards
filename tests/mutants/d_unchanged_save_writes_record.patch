@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13310,7 +13310,7 @@ async function deleteDeck(id) {
+@@ -13483,7 +13483,7 @@ async function deleteDeck(id) {
  async function runGenerate(separate = false) {
    separate = separate === true;
    if(genBtn.disabled || savePending)return;

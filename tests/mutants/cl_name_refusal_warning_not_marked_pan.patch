@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12205,7 +12205,7 @@ function syncParseState({ paint }) {
+@@ -13034,7 +13034,7 @@ function syncParseState({ paint }) {
        showRefusal(reasonText(res));
        const solved = solvePreviewLayout(second.value);
        const crowded = solved && HPE.select.smallLabels(solved.geom);

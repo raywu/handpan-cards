@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -3759,7 +3759,7 @@
+@@ -10891,7 +10891,7 @@ function pan(d, ch, opts) {
  
    if (hasBottom)
      s += `<circle r="${R*g.bottom}" fill="none" stroke="#e2e2e2" stroke-width="1.4" stroke-dasharray="4 4"/>`;

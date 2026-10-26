@@ -44,6 +44,23 @@ executes this already-planned internal alternative under through-DEV and
 reaffirmed AFK authority; no CLAUDE change/install/main merge.
 
 2026-10-26 continuation checkpoint:
+- Final metadata caught canonical data-patch context constraints missed by the
+  postimage audit. Restore13 original generated data-patch representations after
+  exact postimage equivalence; independently cleared. Refreshed metadata54/54
+  and suite/CI Python36/36 pass, with no source/test waiver.
+- **Latest:** compatibility P1 is closed on final sourceab90;937app,66harness,
+  refreshed7native/2capability arms/120backend samples all pass. Independent
+  audits cleared all720 fresh selection rows/24Documents/eight comparisons under
+  the unchanged frame budget. The a0 baseline clock failure is retained; reviewed
+  1ns sanity precision fix changes no measured values or latency thresholds.
+- All1600 original faults plus one compatibility fault are present; exact
+  postimage/projection audits cleared all1601, with no dropped filenames or
+  changed fault semantics. Full exact-head Linux corpus proof remains pending.
+- Continue from the [reviewed local validation receipt](plans/2026-10-26-saved-variants-validation.md):
+  final metadata/diff checks, CI-only held main-target draft plus same-head DEV PR,
+  full actual validate, then actual served DEV verification. No feature DEV or
+  main delivery is claimed by this local checkpoint. Exact source/tool hashes,
+  raw locators, limitations and recovery procedure are in that receipt.
 - **Current blocking finding (P1):** final independent ENG reproduced startup
   TypeError when Object.hasOwn is unavailable; baseline preserved that browser
   capability boundary. The independently ENG/design-cleared compatibility plan

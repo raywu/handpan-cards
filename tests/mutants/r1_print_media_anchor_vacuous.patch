@@ -20,20 +20,16 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -124,6 +124,7 @@ html{-webkit-text-size-adjust:100%; text-size-adjust:100%}
-    the box the user is typing into out of sight. The ramp keeps its proportions
+@@ -125,4 +125,5 @@ html{-webkit-text-size-adjust:100%; text-size-adjust:100%}
     and gives back roughly a third; the rhythm still reads because it is the
     RATIOS that group things, not the absolute values. */
 +/* @media print rules for html,body live at the foot */
  @media (max-height:520px){
    :root{--sp-1:3px; --sp-2:6px; --sp-3:9px; --sp-4:14px}
- }
-@@ -1331,7 +1332,7 @@ html.about-open{overflow:hidden}
-
+@@ -1332,5 +1333,5 @@ html.about-open{overflow:hidden}
  @media print{
    *{-webkit-print-color-adjust:exact; print-color-adjust:exact}
 -  html,body{height:100%; min-height:0; overflow:visible; background:#fff}
 +  html,body{height:840pt; min-height:0; overflow:visible; background:#fff}
    /* The safe-area padding is an on-screen notch reservation and has no meaning
       on paper; left in, it shifts every page by the device's insets. */
-   body{margin:0; padding:0; background:#fff; display:block}

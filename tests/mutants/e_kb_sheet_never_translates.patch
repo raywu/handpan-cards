@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4662,7 +4662,7 @@ function applyKbOffset() {
+@@ -13174,7 +13174,7 @@ function applyKbOffset(e) {
    /* Written only on change: this handler is bound to visualViewport's `scroll`
     * as well, which fires at frame rate while a zoomed page is panned, and each
     * unconditional style write forces a style recalc for no reason. */

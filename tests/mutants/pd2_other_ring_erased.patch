@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12326,6 +12326,7 @@ function noteCounts(fields, value) {
+@@ -12933,6 +12933,7 @@ function noteCounts(fields, value) {
    let putDown = r.putDown;
    if (pickRef && derived.includes(pickRef.ring)) { pickRef = null; pickMoved = false; putDown = true; }
    if (!drawerOpen) {

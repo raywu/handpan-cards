@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13220,8 +13220,6 @@ function hideSheet() {
+@@ -13392,8 +13392,6 @@ function hideSheet() {
    }
    for (const c of ["kbup", "short", "side", "tiny"]) setSheetClass(c, false);
    setLip(false, { instant: true });

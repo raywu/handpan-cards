@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9963,7 +9963,7 @@ function openShare(text) {
+@@ -9962,7 +9962,7 @@ function openShare(text) {
      }
      if(built.published===false){say(savedPublicationText(built,"import"),"warn");syncRoute();return built;}
      if (built.published !== false) selectDeck({kind:"saved",id:built.instanceId}, false);
@@ -14,7 +14,7 @@ diff --git a/index.html b/index.html
      return built;
    };
    const built = generateDeck(HPE.core.formatSeed(res.value.fields),res.value.options);
-@@ -15036,7 +15036,7 @@ function finishSavedBoot() {
+@@ -15209,7 +15209,7 @@ function finishSavedBoot() {
    const wanted=routed || storedAtBoot;
    const finish=()=>{
      setOrder();applyLang();paintLangSelect();setMode(mode,false);updateSavedStatus();syncRoute();

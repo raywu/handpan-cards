@@ -4,10 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10275,13 +10275,13 @@ function makeSavedMigration(staged) {
-   if (isBuiltIn(wanted)) e.preferredSelection = { kind: "builtin", id: wanted };
-   else if (oldVisible.has(wanted)) e.preferredSelection = { kind: "saved", id: oldVisible.get(wanted).instanceId };
-   e.preferredSelection = savedResolve(e.preferredSelection, e, prepared.views);
+@@ -10378,7 +10378,7 @@ function makeSavedMigration(staged) {
    return { ...prepared, envelope: e };
  }
  function savedProtect(result, raw) {
@@ -16,6 +13,3 @@ diff --git a/index.html b/index.html
    savedRecovery = { collection: typeof raw === "string" ? raw : null, legacy: result.raw || null };
    return result;
  }
- function initializeSavedSession(issue, previouslyRead) {
-   savedMode = "session"; savedIssue = issue || savedFailure("lock", "session-only");
-   if (previouslyRead && previouslyRead.ok) {

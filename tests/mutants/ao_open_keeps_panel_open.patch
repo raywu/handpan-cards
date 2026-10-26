@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14302,7 +14302,7 @@ function aboutStops() {
+@@ -14475,7 +14475,7 @@ function aboutStops() {
  function openAbout() {
    navigationGeneration++;
    retireLinkUI();

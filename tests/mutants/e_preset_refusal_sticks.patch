@@ -5,10 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13182,12 +13182,13 @@ function openScaleSheet(opener) {
- // The Edit path [design-review 7A]: the SAME sheet, prefilled from the selected
- // deck, seeded or custom.
- function openEditSheet(d, opener) {
+@@ -13357,6 +13357,7 @@ function openEditSheet(d, opener) {
    shareUrl.setAttribute("hidden", "");
    resetSheetState(d);
    showSheet(opener);
@@ -16,6 +13,3 @@ diff --git a/index.html b/index.html
    // [eng-review 2, 2A] warnings have ONE producer and were copied onto the deck
    // at generation time; the Edit sheet reads them and never rebuilds to re-derive.
    const warned = (d.warnings || []).map(w => reasonText(w));
-   if (warned.length) { say(warned.join(" "), "warn"); msgLine.classList.add("pan"); }
- }
- /** Take the page down. The DOM half only - the route is the caller's. */

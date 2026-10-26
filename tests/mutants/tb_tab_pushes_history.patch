@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10588,6 +10588,7 @@
+@@ -12248,6 +12248,7 @@ function setTab(tab) {
      previewBox.addEventListener("touchmove", plateTouchMove, { passive: false });
    }
    sheetTab = tab;

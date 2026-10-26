@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1255,8 +1255,8 @@
+@@ -1407,8 +1407,8 @@ html.about-open{overflow:hidden}
  <!-- The practice-screen live region. It is a sibling of the landmarks the
       sheet makes inert, so a success message announced as the sheet closes is
       still read out. -->

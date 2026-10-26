@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10738,11 +10738,6 @@ function lipHandOff() {
+@@ -11988,11 +11988,6 @@ function lipHandOff() {
  let lipFocusing = false;
  function lipTakeFocus() {
    const a = document.activeElement;

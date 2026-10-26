@@ -4,10 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10469,13 +10469,13 @@ function applySavedCommand(staged, command, candidate) {
-     if (!isBuiltIn(command.seedId) || command.expectedSlotStateRevision !== current.slotStateRevision ||
-         command.expectedOwnerId !== (current.slots[command.seedId] || null)) return conflict();
-     if (current.slots[command.seedId]) return conflict();
+@@ -10615,7 +10615,7 @@ function applySavedCommand(staged, command, candidate) {
      if (!next.hidden.includes(command.seedId)) next.hidden.push(command.seedId);
      if (!savedViewsFor(next, views).length) return savedFailure("invalid", "last-visible");
    } else if (command.type === "reset") {
@@ -16,6 +13,3 @@ diff --git a/index.html b/index.html
      const removed = new Set(savedScope(current, staged.views).replacements.map(row => row.id));
      next.entries = next.entries.filter(row => !removed.has(row.instanceId));
      for (const id of removed) views.delete(id);
-     next.slots = {}; next.hidden = [];
-   } else if (command.type === "prefer") {
-     const resolved = savedResolve(command.selection, next, views);

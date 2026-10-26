@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8787,7 +8787,7 @@ const seatsFor = (ring, size) => (layoutSeats && layoutSeats[ring]) || identityO
+@@ -12319,7 +12319,7 @@ const seatsFor = (ring, size) => (layoutSeats && layoutSeats[ring]) || identityO
   *  a pan with no ring left. */
  function setRingSeats(ring, next) {
    const rest = Object.assign({}, layoutSeats);

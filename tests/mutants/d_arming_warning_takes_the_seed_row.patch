@@ -13,7 +13,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13466,9 +13466,9 @@ delBtn.onclick = () => {
+@@ -13644,9 +13644,9 @@ delBtn.onclick = () => {
    const d = editedDeck();
    const seat = d && d.options && d.options.replaces;
    const seatedDeck = seeded() || (typeof seat === "string" && savedState.slots[seat] === target);

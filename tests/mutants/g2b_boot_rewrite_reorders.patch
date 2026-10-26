@@ -5,8 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10337,3 +10337,3 @@ function stageLegacySaved() {
+@@ -10335,7 +10335,7 @@ function stageLegacySaved() {
+   try { if (sourceKey) records = JSON.parse(raw[sourceKey]); }
+   catch (e) { return { ...savedFailure("protected", "legacy-json"), raw }; }
    if (!Array.isArray(records)) return { ...savedFailure("protected", "legacy-list"), raw };
 -  const rows = records.map(record => {
 +  const rows = [...records].reverse().map(record => {
      const read = readSavedRecord(record);
+     return { record: read.ok ? read.record : savedClone(record), read };
+   });

@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11284,7 +11284,7 @@ function buildChips() {
+@@ -11456,7 +11456,7 @@ function buildChips() {
    let active=null;
    views.forEach((view,i)=>{
      const d=view.deck,b=document.createElement("button"),on=savedEqual(view.selection,selection);

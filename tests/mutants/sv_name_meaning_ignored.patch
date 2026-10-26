@@ -4,10 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10113,13 +10113,13 @@ function savedMeaning(deckValue) {
-   if (!seats.ok || !angles.ok) throw new Error("invalid staged layout");
-   const seatValue = seats.value || {};
-   const normalizedSeats = ["rim", "inner", "bottom"].map(ring => {
+@@ -10216,7 +10216,7 @@ function savedMeaning(deckValue) {
      const list = seatValue[ring];
      return !list || list.every((seat, i) => seat === i) ? null : list;
    });
@@ -16,6 +13,3 @@ diff --git a/index.html b/index.html
      o.parent == null ? [false, null] : [true, o.parent], o.palette, mirrors.top, mirrors.bottom,
      o.anchor === "between" ? "between" : "one",
      normalizedSeats,
-     angles.value ? angles.value.bottom : null]);
- }
- function readSavedRecord(record) {

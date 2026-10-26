@@ -10,7 +10,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9187,7 +9187,7 @@ function release(e, cancelled, pushPoint = true) {
+@@ -14839,7 +14839,7 @@ function release(e, cancelled, pushPoint = true) {
    const d = releaseDecision({ dx, dy: drag.lastY, vx, moved: drag.moved, cancelled,
      blocked: cancelled || panelOpen || sheetOpen, reducedMotion: reducedMotion.matches });
    drag = null;

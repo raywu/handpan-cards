@@ -5,10 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10477,13 +10477,13 @@ function applySavedCommand(staged, command, candidate) {
-     next.entries = next.entries.filter(row => !removed.has(row.instanceId));
-     for (const id of removed) views.delete(id);
-     next.slots = {}; next.hidden = [];
+@@ -10623,7 +10623,7 @@ function applySavedCommand(staged, command, candidate) {
    } else if (command.type === "prefer") {
      const resolved = savedResolve(command.selection, next, views);
      if (!savedEqual(command.selection, resolved)) return conflict();
@@ -17,6 +14,3 @@ diff --git a/index.html b/index.html
    } else return savedFailure("invalid", "command-type");
    if (desired) next.preferredSelection = desired;
    else next.preferredSelection = savedResolve(next.preferredSelection, next, views);
-   const slotsChanged = !savedEqual(next.slots, current.slots) || !savedEqual(next.hidden, current.hidden);
-   if (slotsChanged) {
-     if (next.slotStateRevision >= Number.MAX_SAFE_INTEGER) return savedFailure("invalid", "revision-overflow");

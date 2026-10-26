@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13076,7 +13076,7 @@ function setInert(on, targets) {
+@@ -13248,7 +13248,7 @@ function setInert(on, targets) {
    }
  }
  function showSheet(opener) {
@@ -14,7 +14,7 @@ diff --git a/index.html b/index.html
    sheetOpener = opener || addChip;
    sheetOpenerSelection=[...document.getElementById("decks").children].includes(sheetOpener)?{kind:sheetOpener.getAttribute("data-selection-kind"),id:sheetOpener.getAttribute("data-selection-id")}:null;
    sheet.removeAttribute("hidden");
-@@ -13175,7 +13175,7 @@ function resetSheetState(edit, target = selection) {
+@@ -13347,7 +13347,7 @@ function resetSheetState(edit, target = selection) {
  }
  // The create path.
  function openScaleSheet(opener) {

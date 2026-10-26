@@ -4,8 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10602,3 +10602,3 @@ function applySavedCommand(staged, command, candidate) {
+@@ -10600,7 +10600,7 @@ function applySavedCommand(staged, command, candidate) {
+     if (!row || !views.has(row.instanceId) || row.revision !== command.expectedRevision) return conflict();
+     const heldSlot = Object.keys(current.slots).find(seed => current.slots[seed] === row.instanceId);
      if (heldSlot && !savedSlotProof(command, current)) return conflict();
 -    next.entries = next.entries.filter(entry => entry.instanceId !== row.instanceId); views.delete(row.instanceId);
 +    views.delete(row.instanceId);
      if (heldSlot) {
+       if (!next.hidden.includes(heldSlot)) next.hidden.push(heldSlot);
+       const survivors = next.entries.filter(entry => views.has(entry.instanceId) && entry.record && entry.record.o && entry.record.o.replaces === heldSlot);

@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11603,7 +11603,7 @@ function swapSeats(ring, i, j) {
+@@ -12638,7 +12638,7 @@ function swapSeats(ring, i, j) {
    if (i !== j && !(ring === "bottom" && layoutAngles)) {
      const next = before.map((n) => n.seat);
      next[i] = b.seat;

@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14341,7 +14341,7 @@ function aboutLink(href) {
+@@ -14514,7 +14514,7 @@ function aboutLink(href) {
    const routed = Object.prototype.hasOwnProperty.call(DECK_SLUGS, slug) ? DECK_SLUGS[slug] : null;
    if (routed) {
      const resolvedSelection=savedState?savedResolve({kind:"builtin",id:routed},savedState,savedEntries):{kind:"builtin",id:routed};

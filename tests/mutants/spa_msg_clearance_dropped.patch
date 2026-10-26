@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -955,7 +955,7 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -969,7 +969,7 @@ footer.seq{row-gap:var(--sp-1)}
    margin-top:calc(-1 * var(--sp-4))}
  @media (max-height:520px){#scale-sheet.lipped #scale-foot{margin-top:calc(-1 * var(--sp-3))}}
  #scale-sheet.short.lipped #scale-foot{margin-top:calc(-1 * var(--sp-2))}

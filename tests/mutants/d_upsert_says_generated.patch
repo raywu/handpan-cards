@@ -5,10 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10114,13 +10114,13 @@ function savedMeaning(deckValue) {
-   const seatValue = seats.value || {};
-   const normalizedSeats = ["rim", "inner", "bottom"].map(ring => {
-     const list = seatValue[ring];
+@@ -10217,7 +10217,7 @@ function savedMeaning(deckValue) {
      return !list || list.every((seat, i) => seat === i) ? null : list;
    });
    return JSON.stringify([HPE.core.identitySeed(deckValue.fields), o.name ? [true, o.name] : [false, ""],
@@ -17,6 +14,3 @@ diff --git a/index.html b/index.html
      o.anchor === "between" ? "between" : "one",
      normalizedSeats,
      angles.value ? angles.value.bottom : null]);
- }
- function readSavedRecord(record) {
-   if (!savedObject(record) || typeof record.s !== "string" || !checkShareVersion(record.v).ok) return savedFailure("protected", "opaque-record");

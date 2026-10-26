@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11244,7 +11244,7 @@ function collapseLip() {
+@@ -12002,7 +12002,7 @@ function collapseLip() {
    if (isLipped()) { sheet.classList.add("lipshut"); lipSettled = false; const g = lipGen; lipTimer = setTimeout(() => { if (g === lipGen) { lipSettled = true; if (lipDirty) { lipDirty = false; lipMeasure(); } } }, LIP_END_MS); lipTakeFocus(); return; }
    const open = lipRead();
    lipDirty = false;
@@ -13,7 +13,7 @@ diff --git a/index.html b/index.html
    lipBtn.hidden = false;
    lipBtn.setAttribute("aria-label", t("sheet.lip_show", { label: lipPrimary().textContent }));
    lipWrite(open);
-@@ -11253,7 +11253,7 @@ function collapseLip() {
+@@ -12011,7 +12011,7 @@ function collapseLip() {
    sheet.classList.add("lipshut");
    lipSettled = false;
    const gen = lipGen;

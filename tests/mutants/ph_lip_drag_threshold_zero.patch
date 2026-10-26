@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10836,7 +10836,7 @@
+@@ -12174,7 +12174,7 @@ sheet.addEventListener("touchmove", (e) => {
    L.py = p.clientY;
    if ((L.dir > 0 && p.clientY < L.y) || (L.dir < 0 && p.clientY > L.y)) { L.y = p.clientY; L.x = p.clientX; return; }
    const dy = L.y - p.clientY;

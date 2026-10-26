@@ -7,9 +7,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7845,10 +7845,10 @@ function flip() { if (!order.length) return; flipped = !flipped; render(); }
- function step(dir) {
-   if (!order.length) return;
+@@ -14374,7 +14374,7 @@ function step(dir) {
    idx = (idx + dir + order.length) % order.length;
    // N40/OV2: suppress .card's reverse-flip transition across every reset.
    card.style.transition = "none";
@@ -18,4 +16,3 @@ diff --git a/index.html b/index.html
    card.offsetHeight;
    card.style.transition = "";
  }
- card.addEventListener("click", flip);

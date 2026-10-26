@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12374,7 +12374,6 @@ if (window.visualViewport) {
+@@ -13206,7 +13206,6 @@ if (window.visualViewport) {
  /** Show or hide the Edit-only DELETE row and relabel the single primary.
   *  `edit` is false (create) or true (Edit a seeded or a custom deck). */
  function setSheetMode(edit) {

@@ -5,10 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10437,12 +10437,13 @@ function applySavedCommand(staged, command, candidate) {
-       row.record = record; row.revision++;
-     }
-     const deckValue = { ...candidate.deck, options: { ...candidate.deck.options } };
+@@ -10583,6 +10583,7 @@ function applySavedCommand(staged, command, candidate) {
      if (isBuiltIn(record.o && record.o.replaces)) deckValue.options.replaces = record.o.replaces;
      else delete deckValue.options.replaces;
      attachCandidate(row, deckValue);
@@ -16,6 +13,3 @@ diff --git a/index.html b/index.html
      targetId = row.instanceId; desired = { kind: "saved", id: targetId };
    } else if (command.type === "replace-builtin") {
      if (!isBuiltIn(command.seedId) || command.expectedSlotStateRevision !== current.slotStateRevision ||
-         command.expectedOwnerId !== (current.slots[command.seedId] || null)) return conflict();
-     const record = savedClone(candidate.record);
-     record.o = { ...(record.o || {}), replaces: command.seedId };

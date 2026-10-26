@@ -5,10 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10011,12 +10011,13 @@ const SAVED_RETRY = Symbol("saved collection changed while staging");
- const savedClone = value => JSON.parse(JSON.stringify(value));
- const savedObject = value => value !== null && typeof value === "object" && !Array.isArray(value);
- const savedUUIDPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+@@ -10107,6 +10107,7 @@ const savedUUIDPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3
  const isSavedUUID = value => typeof value === "string" && value.length === 36 && savedUUIDPattern.test(value);
  const savedPositive = n => Number.isSafeInteger(n) && n > 0;
  const savedFailure = (kind, detail) => ({ ok: false, kind, ...(detail ? { detail } : {}) });
@@ -16,6 +13,3 @@ diff --git a/index.html b/index.html
  function savedEqual(a, b) {
    if (a === b) return true;
    if (!a || !b || typeof a !== "object" || typeof b !== "object" || Array.isArray(a) !== Array.isArray(b)) return false;
-   const ak = Object.keys(a), bk = Object.keys(b);
-   return ak.length === bk.length && ak.every(k => Object.hasOwn(b, k) && savedEqual(a[k], b[k]));
- }

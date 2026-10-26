@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10326,7 +10326,7 @@ previewBox.addEventListener("pointerup", (e) => {
+@@ -14065,7 +14065,7 @@ previewBox.addEventListener("pointerup", (e) => {
    endPress(false);
  });
  previewBox.addEventListener("pointercancel", (e) => {

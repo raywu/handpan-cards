@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11524,7 +11524,7 @@ function exchangeAngles(i, j) {
+@@ -12527,7 +12527,7 @@ function exchangeAngles(i, j) {
    const next = cur.slice();
    next[i] = stepOf(cur[j]);
    next[j] = stepOf(cur[i]);

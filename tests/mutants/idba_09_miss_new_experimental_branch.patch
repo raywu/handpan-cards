@@ -8,8 +8,8 @@ diff --git a/index.html b/index.html
        "hpfc.scales": localStorage.getItem(LEGACY_SCALES_KEY), "hpfc.scales.v3": localStorage.getItem(SCALES_KEY) };
      const beforePreference = savedLegacyProjection(baseline.hpfc), afterPreference = savedLegacyProjection(now.hpfc);
      const backend=savedState.migration.backendSource;
--    const backendChanged=localStorage.getItem(SAVED_KEY)!==(Object.hasOwn(savedState.migration,"backendSource")?backend.raw:null);
-+    const backendChanged=Object.hasOwn(savedState.migration,"backendSource") && localStorage.getItem(SAVED_KEY)!==backend.raw;
+-    const backendChanged=localStorage.getItem(SAVED_KEY)!==(savedOwn(savedState.migration,"backendSource")?backend.raw:null);
++    const backendChanged=savedOwn(savedState.migration,"backendSource") && localStorage.getItem(SAVED_KEY)!==backend.raw;
      legacyBranchStatus = beforePreference === null || afterPreference === null ? "unknown" :
        backendChanged || now[LEGACY_SCALES_KEY] !== baseline[LEGACY_SCALES_KEY] || now[SCALES_KEY] !== baseline[SCALES_KEY] ||
        !savedEqual(beforePreference, afterPreference) ? "changed" : "unchanged";

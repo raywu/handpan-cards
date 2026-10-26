@@ -4,7 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10563,2 +10563,3 @@ function applySavedCommand(staged, command, candidate) {
+@@ -10561,6 +10561,7 @@ function applySavedCommand(staged, command, candidate) {
+     const inventoryIdentity = staged.identities.get(candidate.deck.id);
+     if (inventoryIdentity !== undefined && inventoryIdentity !== candidate.identity) return savedFailure("inventory-collision");
    }
 +  if (command.type === "import" && current.entries.some(row=>staged.views.get(row.instanceId)?.deck.id===candidate.deck.id)) return savedFailure("conflict","wrong-inventory-uniqueness");
    if (command.type === "import" || command.type === "save-as-separate") {
+     let match = null;
+     if (command.type === "import") {

@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8853,7 +8853,7 @@ scaleBox.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDe
+@@ -14334,7 +14334,7 @@ scaleBox.addEventListener("blur", () => { const hint = hintToAnnounce(); if (hin
  // A stop is a control the page renders and the user can operate. Rendering is
  // asked of the browser (a control inside a hidden ancestor, or unrendered by
  // CSS, has no client rects), never of a hand-kept mode table.

@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1087,7 +1087,7 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1103,7 +1103,7 @@ footer.seq{row-gap:var(--sp-1)}
  #scale-tabs [role=tab].on::after{background:#f1ece1}
  #scale-sheet.kbup.side #scale-tabs{display:none}
  #scale-panel-scale, #scale-panel-layout{display:flex; flex-direction:column; gap:var(--sp-3); min-width:0;

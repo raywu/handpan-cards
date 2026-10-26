@@ -4,7 +4,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10574,8 +10574,11 @@ function applySavedCommand(staged, command, candidate) {
+@@ -10572,18 +10572,21 @@ function applySavedCommand(staged, command, candidate) {
+     if (!match) attachCandidate(row);
+     targetId = row.instanceId; desired = { kind: "saved", id: targetId };
    } else if (command.type === "edit") {
 -    const row = existing();
 +    const original = existing();
@@ -18,10 +20,13 @@ diff --git a/index.html b/index.html
 -      row.record = record; row.revision++;
 +      fork.record = record;
      }
-@@ -10584,4 +10587,4 @@ function applySavedCommand(staged, command, candidate) {
+     const deckValue = { ...candidate.deck, options: { ...candidate.deck.options } };
+     if (isBuiltIn(record.o && record.o.replaces)) deckValue.options.replaces = record.o.replaces;
      else delete deckValue.options.replaces;
 -    attachCandidate(row, deckValue);
 -    targetId = row.instanceId; desired = { kind: "saved", id: targetId };
 +    attachCandidate(fork, deckValue);
 +    targetId = fork.instanceId; desired = { kind: "saved", id: targetId };
    } else if (command.type === "replace-builtin") {
+     if (!isBuiltIn(command.seedId) || command.expectedSlotStateRevision !== current.slotStateRevision ||
+         command.expectedOwnerId !== (current.slots[command.seedId] || null)) return conflict();

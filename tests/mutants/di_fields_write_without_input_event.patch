@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12047,7 +12047,6 @@ function writeLine(text) {
+@@ -14221,7 +14221,6 @@ function writeLine(text) {
    mirroring = true;
    try {
      scaleBox.value = text;

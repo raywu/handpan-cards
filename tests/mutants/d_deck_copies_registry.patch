@@ -7,8 +7,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10321,3 +10321,3 @@ function selectedDeck() {
+@@ -10319,7 +10319,7 @@ function fallbackSelection() { return savedState ? savedFallback(savedState, sav
+ function selectedEntry() { return selection.kind === "saved" ? savedEntries.get(selection.id) || null : null; }
+ function selectedDeck() {
    const entry = selectedEntry();
 -  if (entry) return entry.deck;
 +  if (entry) return {...entry.deck};
    const resolved = savedState ? savedResolve(selection, savedState, savedEntries) : selection;
+   return resolved.kind === "saved" ? savedEntries.get(resolved.id).deck : DECKS.find(d => d.id === resolved.id) || DECKS[0];
+ }

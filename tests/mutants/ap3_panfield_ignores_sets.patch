@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -6839,7 +6839,7 @@ function numSize(rNote) { return rNote * NUM_RATIO; }
+@@ -10831,7 +10831,7 @@ const OCTAVE_RATIO = HPE.core.LABEL_RULE.OCTAVE_RATIO;
  /* pan()'s two per-field emitters, hoisted so pan() is the loop only. `sets` is
   * chordSets()'s {blue, green}; C is the deck's colours. */
  function panField(sets, C, x, y, r, id, isBottom) {

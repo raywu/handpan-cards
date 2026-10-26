@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10652,7 +10652,7 @@ function lipWrite(o) {
+@@ -11971,7 +11971,7 @@ function lipWrite(o) {
    set("--lip-h", (lipRect(footEl).top - (o.body - 1)) + "px");
    set("--lip-pad", (o.top - (o.body - 1)) + "px");
    set("--lip-gd", (o.del === null ? 0 : o.del - o.bottom) + "px");

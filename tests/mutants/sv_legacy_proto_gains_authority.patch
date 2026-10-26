@@ -4,18 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9981,13 +9981,13 @@ function scaleRecord(seed) {
- // prints.
- function scaleReader(v) {
-   return v >= 4 ? HPE.core.parseSeed : HPE.core.parseLegacySeed;
- }
-
+@@ -9985,3 +9985,3 @@ function scaleReader(v) {
  function recordOptions(rec) {
 -  const o = rec.o && typeof rec.o === "object" ? { ...rec.o } : undefined;
 +  const o = rec.o && typeof rec.o === "object" ? Object.assign({}, rec.o) : undefined;
    if (!o || !("order" in o)) return o;
-   const legacy = o.order;
-   delete o.order;
-   if (o.seats) return o;
-   const read = scaleReader(rec.v)(rec.s);
-   if (!read.ok) return o;

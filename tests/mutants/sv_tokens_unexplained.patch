@@ -4,10 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11290,13 +11290,13 @@ function buildChips() {
-     b.style.setProperty("--dga",d.colors.ga);b.style.setProperty("--dgb",d.colors.gb);
-     b.innerHTML='<span class="dot"></span>'+esc(labels[i]);
-     let accessible=on?t("sheet.edit_aria",{name:labels[i]}):labels[i];
+@@ -11465,7 +11465,7 @@ function buildChips() {
      if(labels[i]!==chipLabel(d.name)) {
        const saved=view.selection.kind==="saved";
        const token=saved?"S"+view.displayOrdinal:"P"+(DECKS.findIndex(preset=>preset.id===view.selection.id)+1);
@@ -16,6 +13,3 @@ diff --git a/index.html b/index.html
      }
      b.setAttribute("aria-label",accessible);
      b.onclick=()=>savedEqual(view.selection,selection)?openEditSheet(d,b):selectDeck(view.selection);
-     nav.appendChild(b);if(on)active=b;
-   });
-   restoreBtn.hidden=!(hiddenDecks().length || Object.keys(replacements()).length);

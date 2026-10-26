@@ -5,8 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10290,3 +10290,3 @@ function savedResolve(wanted, e, views) {
+@@ -10288,7 +10288,7 @@ function savedFallback(e, views) {
+ }
+ function savedResolve(wanted, e, views) {
    const visible = savedViewsFor(e, views);
 -  if (wanted && wanted.kind === "builtin" && e.slots[wanted.id] && views.has(e.slots[wanted.id]))
 +  if (false && wanted && wanted.kind === "builtin" && e.slots[wanted.id] && views.has(e.slots[wanted.id]))
      return { kind: "saved", id: e.slots[wanted.id] };
+   return visible.some(view => savedEqual(view.selection, wanted)) ? savedClone(wanted) : savedFallback(e, views);
+ }

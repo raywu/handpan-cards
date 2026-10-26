@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11123,7 +11123,7 @@ function paintLayout() {
+@@ -11783,7 +11783,7 @@ function paintLayout() {
      pickMoved = false;
    }
    layoutHint.textContent = HINT_EMPTY();

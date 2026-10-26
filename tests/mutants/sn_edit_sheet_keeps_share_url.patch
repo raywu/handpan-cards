@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13076,7 +13076,7 @@ function setInert(on, targets) {
+@@ -13248,7 +13248,7 @@ function setInert(on, targets) {
    }
  }
  function showSheet(opener) {
@@ -14,7 +14,7 @@ diff --git a/index.html b/index.html
    sheetOpener = opener || addChip;
    sheetOpenerSelection=[...document.getElementById("decks").children].includes(sheetOpener)?{kind:sheetOpener.getAttribute("data-selection-kind"),id:sheetOpener.getAttribute("data-selection-id")}:null;
    sheet.removeAttribute("hidden");
-@@ -13182,7 +13182,7 @@ function openScaleSheet(opener) {
+@@ -13354,7 +13354,7 @@ function openScaleSheet(opener) {
  // The Edit path [design-review 7A]: the SAME sheet, prefilled from the selected
  // deck, seeded or custom.
  function openEditSheet(d, opener) {

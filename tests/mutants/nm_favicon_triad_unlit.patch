@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -37,7 +37,7 @@
+@@ -84,7 +84,7 @@ gtag("js", new Date());
       rendered from it by tools/make_icons.py (a sync step; --check reports
       drift). The PNG rel=icon reuses the touch icon for Safari before 26, which
       loads no SVG favicon. -->

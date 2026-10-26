@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14224,7 +14224,7 @@ const settingsScrim   = document.getElementById("settings-scrim");
+@@ -14402,7 +14402,7 @@ const settingsScrim   = document.getElementById("settings-scrim");
  // tap, OR the trigger) lives inside the header. Inerting the header would
  // inert the trigger along with it and the panel could never be closed by a
  // second tap on it.

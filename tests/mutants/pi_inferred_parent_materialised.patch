@@ -3,7 +3,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9891,7 +9891,6 @@ function buildGenerated(text, options, guard) {
+@@ -9890,7 +9890,6 @@ function buildGenerated(text, options, guard) {
      if (wanted !== null) built.value.options.seats = JSON.parse(JSON.stringify(wanted));
      if (bottomAngles !== null) built.value.options.angles = JSON.parse(JSON.stringify(bottomAngles));
    }

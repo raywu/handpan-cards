@@ -6,12 +6,19 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10275,3 +10275,3 @@ function savedViewsFor(e, views) {
+@@ -10273,13 +10273,14 @@ function stageSavedRaw(raw) {
+ }
+ function savedViewsFor(e, views) {
    const slotted = new Set(Object.values(e.slots));
 -  return [...e.entries].reverse().filter(row => views.has(row.instanceId) && !slotted.has(row.instanceId))
 +  const output = [...e.entries].reverse().filter(row => views.has(row.instanceId) && !slotted.has(row.instanceId))
      .map(row => ({ selection: { kind: "saved", id: row.instanceId }, deck: views.get(row.instanceId).deck, displayOrdinal: row.displayOrdinal }))
-@@ -10282,2 +10282,3 @@ function savedViewsFor(e, views) {
+     .concat(DECKS.map(d => {
+       const owner = e.slots[d.id] && views.get(e.slots[d.id]);
+       return owner ? { selection: { kind: "saved", id: owner.instanceId }, deck: owner.deck, displayOrdinal: owner.displayOrdinal, slotId: d.id } :
+         e.hidden.includes(d.id) ? null : { selection: { kind: "builtin", id: d.id }, deck: d, slotId: d.id };
      }).filter(Boolean));
 +  return [...output.filter(v=>v.slotId),...output.filter(v=>!v.slotId)];
  }
+ function savedFallback(e, views) {
+   const visible = savedViewsFor(e, views);

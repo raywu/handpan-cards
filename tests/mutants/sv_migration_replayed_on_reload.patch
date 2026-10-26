@@ -10,6 +10,6 @@ diff --git a/index.html b/index.html
            if(!sameSavedSnapshot(fresh,snapshot))return SAVED_RETRY;
 -          if(snapshot.present)return staged;
 +          if(snapshot.present){const replay=makeSavedMigration(stageLegacySaved());if(replay.ok)store.put(JSON.stringify(replay.envelope),SAVED_RECORD);return replay;}
-           if(Object.hasOwn(staged,"backendRaw")) {
+           if(savedOwn(staged,"backendRaw")) {
              if(localStorage.getItem(SAVED_KEY)!==staged.backendRaw)return SAVED_RETRY;
            }else if(localStorage.getItem(SAVED_KEY)!==null || [STORE_KEY,SCALES_KEY,LEGACY_SCALES_KEY].some(key=>localStorage.getItem(key)!==staged.raw[key]))return SAVED_RETRY;

@@ -7,7 +7,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10589,3 +10589,3 @@ function selectDeck(wanted, persist = true, trackSelection = true) {
+@@ -10761,3 +10761,3 @@ function selectDeck(wanted, persist = true, trackSelection = true) {
    if(trackSelection)track("deck_select", selection.kind === "builtin" ? {deck_kind:"seeded",deck_id:selection.id} : {deck_kind:"custom"});
 -  if (rehome) document.querySelector("#decks .chip.on")?.focus();
 +

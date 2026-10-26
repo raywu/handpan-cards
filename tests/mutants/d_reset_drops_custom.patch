@@ -5,10 +5,14 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10619,4 +10619,4 @@ function applySavedCommand(staged, command, candidate) {
+@@ -10617,8 +10617,8 @@ function applySavedCommand(staged, command, candidate) {
+   } else if (command.type === "reset") {
+     if (!savedEqual(command.affectedScope, savedScope(current, staged.views))) return conflict();
      const removed = new Set(savedScope(current, staged.views).replacements.map(row => row.id));
 -    next.entries = next.entries.filter(row => !removed.has(row.instanceId));
 -    for (const id of removed) views.delete(id);
 +    next.entries = [];
 +    views.clear();
      next.slots = {}; next.hidden = [];
+   } else if (command.type === "prefer") {
+     const resolved = savedResolve(command.selection, next, views);

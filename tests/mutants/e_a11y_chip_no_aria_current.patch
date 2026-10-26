@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11286,7 +11286,7 @@ function buildChips() {
+@@ -11458,7 +11458,7 @@ function buildChips() {
      const d=view.deck,b=document.createElement("button"),on=savedEqual(view.selection,selection);
      b.type="button"; b.className="chip"+(on?" on editable":"");
      b.setAttribute("data-selection-kind",view.selection.kind);b.setAttribute("data-selection-id",view.selection.id);

@@ -5,10 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10443,13 +10443,15 @@ function applySavedCommand(staged, command, candidate) {
-     targetId = row.instanceId; desired = { kind: "saved", id: targetId };
-   } else if (command.type === "replace-builtin") {
-     if (!isBuiltIn(command.seedId) || command.expectedSlotStateRevision !== current.slotStateRevision ||
+@@ -10589,7 +10589,9 @@ function applySavedCommand(staged, command, candidate) {
          command.expectedOwnerId !== (current.slots[command.seedId] || null)) return conflict();
      const record = savedClone(candidate.record);
      record.o = { ...(record.o || {}), replaces: command.seedId };
@@ -19,6 +16,3 @@ diff --git a/index.html b/index.html
      if (!row) return savedFailure("allocation", "instance-id");
      const deckValue = { ...candidate.deck, options: { ...candidate.deck.options, replaces: command.seedId } };
      attachCandidate(row, deckValue);
-     next.slots[command.seedId] = row.instanceId;
-     targetId = row.instanceId; desired = { kind: "saved", id: targetId };
-   } else if (command.type === "delete") {

@@ -8,8 +8,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -429,7 +429,6 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
-    accumulated vertical drift crossed ~10-11.7px, well under the ~6.3px seen
+@@ -519,7 +519,6 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
     on swipes that committed cleanly. A touch on the card must never scroll or
     zoom the page, so both main and .scene drop to touch-action:none - main
     for the same mid-flight-hit-test reason as above. */

@@ -4,10 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13227,13 +13227,13 @@ function hideSheet() {
-   seedPrefill = null;
-   dropDrawer();
-   setInert(false, background);
+@@ -13402,7 +13402,7 @@ function hideSheet() {
    const openerTag=sheetOpenerSelection;
    if(savedState){selection=savedResolve(selection,savedState,savedEntries);setOrder();buildChips();render();}
    const liveOpener=openerTag?[...document.getElementById("decks").children].find(chip=>chip.getAttribute("data-selection-kind")===openerTag.kind && chip.getAttribute("data-selection-id")===openerTag.id):sheetOpener;
@@ -16,6 +13,3 @@ diff --git a/index.html b/index.html
    sheetOpener = null;sheetOpenerSelection=null;
  }
  // The app's own way out: BACK, Escape, or a save that finishes. It pops the
- // entry showSheet() pushed, so the address bar and the stack end where they
- // started and the next back press belongs to whatever came before the page.
- function closeScaleSheet() {

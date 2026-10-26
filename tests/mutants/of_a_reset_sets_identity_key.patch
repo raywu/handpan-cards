@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11803,6 +11803,7 @@ function resetLayout() {
+@@ -12735,6 +12735,7 @@ function resetLayout() {
    bottomHeld = false;
    anchor = "one";
    seatMemo = { rim: {}, inner: {}, bottom: {} };

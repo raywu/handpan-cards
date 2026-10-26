@@ -1,0 +1,15 @@
+# kills: IDB12 U1: saved-scale temporary and durable workflows preserve own-property behavior without Object.hasOwn
+# suite: node --test --test-reporter=tap --test-name-pattern=^IDB12.U1: tests/app.test.js
+# fault: Saved ownership depends on Object.hasOwn again, breaking the missing-API workflow while the normal-API positive control still works.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10102,7 +10102,7 @@ const knownSavedCollections = new Set();
+ const SAVED_RETRY = Symbol("saved collection changed while staging");
+ const savedClone = value => JSON.parse(JSON.stringify(value));
+ const savedObject = value => value !== null && typeof value === "object" && !Array.isArray(value);
+-const savedOwn = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
++const savedOwn = (object, key) => Object.hasOwn(object, key);
+ const savedUUIDPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+ const isSavedUUID = value => typeof value === "string" && value.length === 36 && savedUUIDPattern.test(value);
+ const savedPositive = n => Number.isSafeInteger(n) && n > 0;

@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12330,7 +12330,7 @@ function noteCounts(fields, value) {
+@@ -12937,7 +12937,7 @@ function noteCounts(fields, value) {
        // Count changes invalidate that ring's earlier outcome, even when its
        // typed key stays the identity. A different ring's edit does not.
        if (r.said[ring]) delete pendingDerive[ring];

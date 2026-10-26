@@ -4,10 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1324,13 +1324,13 @@ html.about-open{overflow:hidden}
-    tests/test_render_agreement.py::test_print_block_is_last_in_the_style_element.
-    The legacy browser-print sheet (the old printing body class) was retired
-    once the owner's device gate (item 1, iPhone ruler check) passed; every
+@@ -1327,7 +1327,7 @@ html.about-open{overflow:hidden}
     deck now downloads a client-built PDF instead. ---------------------------- */
  #saved-status{font-size:14px;line-height:1.5;margin:8px 0;color:#c4bcab;max-width:70ch}
  #scale-conflict{font-size:15px;line-height:1.5;margin:12px 0}
@@ -16,6 +13,3 @@ diff --git a/index.html b/index.html
 
  @media print{
    *{-webkit-print-color-adjust:exact; print-color-adjust:exact}
-   html,body{height:100%; min-height:0; overflow:visible; background:#fff}
-   /* The safe-area padding is an on-screen notch reservation and has no meaning
-      on paper; left in, it shifts every page by the device's insets. */

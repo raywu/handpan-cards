@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9966,6 +9966,7 @@ function openShare(text) {
+@@ -9965,6 +9965,7 @@ function openShare(text) {
      if (built.instanceId !== bootStored) track("share_open");
      return built;
    };

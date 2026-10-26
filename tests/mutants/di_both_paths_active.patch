@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12030,7 +12030,7 @@ function paintFields(values, announceNew, composed) {
+@@ -14183,7 +14183,7 @@ function paintFields(values, announceNew, composed) {
  }
  function paintPassive() {
    const onFields = inputPath === "fields";

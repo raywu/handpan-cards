@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15041,7 +15041,7 @@ function finishSavedBoot() {
+@@ -15214,7 +15214,7 @@ function finishSavedBoot() {
          !(savedState?.slots[wanted] && savedState.slots[wanted]===selection.id) &&
          (wanted.indexOf("custom:")===0 || savedState?.hidden.includes(wanted)))
        say(t("boot.gone",{name:deck().name}),"warn");

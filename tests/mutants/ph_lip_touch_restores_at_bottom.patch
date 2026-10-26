@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10783,9 +10783,9 @@
+@@ -12121,9 +12121,9 @@ function lipFlingStep(now) {
  function lipScrollEvent() {
    const now = Date.now();
    if (lipFling && now >= lipFling.until) lipFling = null;

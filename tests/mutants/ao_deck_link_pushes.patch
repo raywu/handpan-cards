@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14339,7 +14339,7 @@ function aboutLink(href) {
+@@ -14517,7 +14517,7 @@ function aboutLink(href) {
      if (savedEqual(resolvedSelection,selection) && (selection.kind==="builtin" && selection.id===routed || savedState?.slots[routed]===selection.id)) { closeAbout(); return; }
    }
    hideAbout();

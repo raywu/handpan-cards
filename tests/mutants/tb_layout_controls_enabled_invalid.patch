@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11037,7 +11037,7 @@ function paintLayout() {
+@@ -11795,7 +11795,7 @@ function paintLayout() {
    anglePrev.disabled = angleNext.disabled = !boxOk || !slidable;
    resetBtn.disabled = !boxOk || !(layoutSeats || layoutAngles || mirror || bottomMirror() || anchor !== "one");
    fineBox.hidden = !fineOpen;

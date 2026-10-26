@@ -8,7 +8,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -915,7 +915,7 @@
+@@ -1006,7 +1006,7 @@ footer.seq{row-gap:var(--sp-1)}
       sheet there are two of them above the fold and the box the caret lands in
       is the lower one, so four pixels each is the difference between opening at
       rest and opening already scrolled. */

@@ -6,8 +6,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15215,3 +15215,3 @@ function finishSavedBoot() {
+@@ -15213,7 +15213,7 @@ function finishSavedBoot() {
+     if(savedState && !incomingShare && wanted && wanted!==deck().id &&
+         !(savedState?.slots[wanted] && savedState.slots[wanted]===selection.id) &&
          (wanted.indexOf("custom:")===0 || savedState?.hidden.includes(wanted)))
 -      say(t("boot.gone",{name:deck().name}),"warn");
 +      void wanted;
      booted=true;bootStored=null;
+   };
+   if(savedMode==="protected" && location.hash.indexOf(SHARE_PREFIX)===0){pendingRecoveryShare=location.hash.slice(SHARE_PREFIX.length);finish();return;}

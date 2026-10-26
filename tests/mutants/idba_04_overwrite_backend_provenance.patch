@@ -8,7 +8,7 @@ diff --git a/index.html b/index.html
    if(raw===null)return stageLegacySaved();
    let envelope;
    try{envelope=JSON.parse(raw);}catch(e){return {...savedFailure("protected","collection-json"),raw};}
--  if(savedObject(envelope) && savedObject(envelope.migration) && Object.hasOwn(envelope.migration,"backendSource"))
+-  if(savedObject(envelope) && savedObject(envelope.migration) && savedOwn(envelope.migration,"backendSource"))
 -    return {...savedFailure("protected","backend-source-collision"),raw};
    const staged=stageSavedEnvelope(envelope);
    if(!staged.ok)return {...staged,raw};

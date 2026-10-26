@@ -9,7 +9,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -992,13 +992,13 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1045,13 +1045,13 @@ footer.seq{row-gap:var(--sp-1)}
     A target that IS the element has neither failure mode, at any alignment.
     The dot keeps its 14px spec; the visible gap widens to 30px, which is the
     pitch 44px targets require. */

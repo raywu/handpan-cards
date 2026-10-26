@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1249,7 +1249,7 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1749,7 +1749,7 @@ html.about-open{overflow:hidden}
        <a class="mode" id="res-handpaner" href="https://handpaner.com/"
           target="_blank" rel="noopener">HANDPANER</a>
        <a class="mode" id="res-dingandtones" href="https://www.dingandtones.com/"

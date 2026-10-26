@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9889,7 +9889,6 @@ function buildGenerated(text, options, guard) {
+@@ -9888,7 +9888,6 @@ function buildGenerated(text, options, guard) {
        }
      }
      if (wanted !== null) built.value.options.seats = JSON.parse(JSON.stringify(wanted));

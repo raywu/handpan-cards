@@ -4,10 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13323,13 +13323,13 @@ async function runGenerate(separate = false) {
-     const candidate={record:scaleRecord(seedOf(built.value)),deck:built.value};
-     const command=separate ? {type:"save-as-separate"} : !base ? {type:"import",selectedInstanceId:selection.kind==="saved"?selection.id:null} :
-       base.selection.kind === "builtin" ? {type:"replace-builtin",seedId:base.selection.id,expectedSlotStateRevision:base.slotStateRevision,expectedOwnerId:base.ownerId} :
+@@ -13499,7 +13499,7 @@ async function runGenerate(separate = false) {
        {type:"edit",instanceId:base.selection.id,expectedRevision:base.revision};
      const result=await commitSaved({...command,collectionId:base?base.collectionId:savedState?.collectionId,candidate},{signal:controller.signal});
      if(generation!==sheetGeneration || !sheetOpen || draft!==sheetKey())return;
@@ -16,6 +13,3 @@ diff --git a/index.html b/index.html
      if(result.published===false){showRefusal(savedPublicationText(result));return;}
      const d=savedEntries.get(result.instanceId).deck;
      const warned=(d.warnings||[]).map(w=>reasonText(w));
-     closeScaleSheet();selectDeck({kind:"saved",id:result.instanceId},false);
-     track("scale_create",{note_count:Object.keys(d.fields).length,has_bottom:Object.values(d.fields).some(f=>f[3]==="bottom")?1:0});
-     say((base?t("sheet.updated",{name:d.name}):t("sheet.generated",{n:d.chords.length}))+(warned.length?" "+warned.join(" "):""),warned.length?"warn":"ok");

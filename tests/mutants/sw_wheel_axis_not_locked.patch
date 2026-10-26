@@ -7,7 +7,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8935,7 +8935,7 @@ function wheelDecision(w, { deltaX, deltaY, deltaMode, innerHeight }) {
+@@ -14926,7 +14926,7 @@ function wheelDecision(w, { deltaX, deltaY, deltaMode, innerHeight }) {
    if (w.skip) return { kind: "skip", axis: w.axis, sx: w.sx, dir: 0 };
    const scale = deltaMode === 1 ? 16 : deltaMode === 2 ? innerHeight : 1;
    const dx = deltaX * scale, dy = deltaY * scale;

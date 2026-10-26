@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11692,7 +11692,6 @@ function hideSheet() {
+@@ -13391,7 +13391,6 @@ function hideSheet() {
      sheetSurf.style.maxHeight = "";
    }
    for (const c of ["kbup", "short", "side", "tiny"]) setSheetClass(c, false);

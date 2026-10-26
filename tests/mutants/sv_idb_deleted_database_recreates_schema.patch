@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10042,7 +10042,7 @@ function openSavedDatabase(create) {
+@@ -10041,7 +10041,7 @@ function openSavedDatabase(create) {
  function existingSavedDatabase() {
    if(savedDatabase)return Promise.resolve({ok:true,db:savedDatabase});
    if(savedDatabaseOpening)return savedDatabaseOpening;

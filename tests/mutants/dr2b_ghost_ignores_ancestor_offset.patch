@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12709,10 +12709,6 @@ function seatGhost(g, cx, cy) {
+@@ -13858,10 +13858,6 @@ function seatGhost(g, cx, cy) {
    g.style.left = (cx - d / 2) + "px";
    g.style.top = (cy - d / 2) + "px";
    const o = ghostShift(g);

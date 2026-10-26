@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1029,7 +1029,7 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1199,7 +1199,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
     the press flash fills it rather than restyling the note. */
  #scale-preview .panhit:active{fill:rgba(226,112,5,.22)}
  #scale-fine-toggle{background:none; border:none; color:#a79d8b; cursor:pointer; align-self:flex-start;

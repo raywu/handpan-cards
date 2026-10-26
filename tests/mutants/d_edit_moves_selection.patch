@@ -4,8 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13505,3 +13505,3 @@ async function runGenerate(separate = false) {
+@@ -13503,7 +13503,7 @@ async function runGenerate(separate = false) {
+     if(result.published===false){showRefusal(savedPublicationText(result));return;}
+     const d=savedEntries.get(result.instanceId).deck;
      const warned=(d.warnings||[]).map(w=>reasonText(w));
 -    closeScaleSheet();selectDeck({kind:"saved",id:result.instanceId},false);
 +    closeScaleSheet();selectDeck(base?{kind:"builtin",id:DEFAULT_DECK}:{kind:"saved",id:result.instanceId},false);
      track("scale_create",{note_count:Object.keys(d.fields).length,has_bottom:Object.values(d.fields).some(f=>f[3]==="bottom")?1:0});
+     say((base?t("sheet.updated",{name:d.name}):t("sheet.generated",{n:d.chords.length}))+(warned.length?" "+warned.join(" "):""),warned.length?"warn":"ok");
+   } finally {

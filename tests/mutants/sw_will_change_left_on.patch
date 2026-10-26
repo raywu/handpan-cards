@@ -8,7 +8,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8085,7 +8085,7 @@ function swipeTilt(dx) {
+@@ -14749,7 +14749,7 @@ function swipeTilt(dx) {
  }
  function swipeXf(dx) { return `translate3d(${dx}px,0,0) rotate(${swipeTilt(dx)}deg)`; }
  let drag = null, flight = null, eatClick = false, eatClickTimer = null;

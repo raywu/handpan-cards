@@ -5,10 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10249,12 +10249,13 @@ function makeSavedMigration(staged) {
-   const e = { schema: 1, collectionId, revision: 1, slotStateRevision: 0, entries: [], usedInstanceIds: [], nextDisplayOrdinal: 1,
-     preferredSelection: { kind: "builtin", id: DEFAULT_DECK }, slots: {},
-     hidden: [...new Set((staged.preferences.hidden || []).filter(isBuiltIn))],
+@@ -10352,6 +10352,7 @@ function makeSavedMigration(staged) {
      migration: { sourceKey: staged.sourceKey, raw: savedClone(staged.raw), instanceIds: [] } };
    const supplied = new Map(), oldVisible = new Map();
    for (const row of staged.rows) {
@@ -16,6 +13,3 @@ diff --git a/index.html b/index.html
      const id = savedCryptoId(used);
      if (!id) return savedFailure("allocation", "instance-id");
      used.add(id);
-     const entry = { instanceId: id, revision: 1, displayOrdinal: e.nextDisplayOrdinal++, record: savedClone(row.record) };
-     e.entries.push(entry); e.usedInstanceIds.push(id); e.migration.instanceIds.push(id);
-     if (row.read.ok) {

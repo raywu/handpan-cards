@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11658,7 +11658,6 @@ function dropDrawer() {
+@@ -12265,7 +12265,6 @@ function dropDrawer() {
    drawerHint.textContent = "";
    drawerHint.hidden = true;
    drawerOpen = false;

@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13684,7 +13684,6 @@ function syncShuffleLabel() {
+@@ -14622,7 +14622,6 @@ function syncShuffleLabel() {
      shuffleBtn.classList.add("reroll");
    } else {
      shuffleBtn.textContent = t(shuffled ? "card.shuffle_on" : "card.shuffle_off");

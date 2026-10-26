@@ -1,5 +1,12 @@
 # SAVED-SCALE-VARIANTS coordination
 
+Latest2026-10-26 continuation supersedes historical checkpoints below: read the
+[local validation receipt](2026-10-26-saved-variants-validation.md) and
+[shared ledger](../WORKSTREAMS.md). Final runtimeab90 has937 app tests and refreshed
+native/backend/frame evidence; full exact-head CI and actual DEV verification
+remain the next gates. Main releases are held; duplicate notes remain paused.
+
+
 Current state: owner explicitly approved reviewed plan and exact instruction/spec
 patch through DEV. StageA is active; no variants app implementation or runtime
 success claimed. The approval checkpoint at the end supersedes historical held/

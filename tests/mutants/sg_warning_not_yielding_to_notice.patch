@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -941,7 +941,6 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -958,7 +958,6 @@ footer.seq{row-gap:var(--sp-1)}
     The aria-live copy of the warning (.announce) is a separate element and still speaks. The class is on
     #scale-sheet, not the wrapper: paintLayout() reaches the sheet through a variable the sandbox already
     has, and say() rewrites #scale-msg's own className on every call, which also clears .pan. */

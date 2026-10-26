@@ -4,10 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9920,13 +9920,13 @@ function checkShareVersion(v) {
- // D14: what travels is the SEED, never the generated deck, so an old link
- // renders NEW cards once the engine improves.
- const seedOf = d => ({ fields: d.fields, options: d.options });
+@@ -9922,7 +9922,7 @@ const seedOf = d => ({ fields: d.fields, options: d.options });
  const SHARE_PREFIX = "#s=";
  // The one place the engine is asked for a code: {ok, value: code} or its refusal.
  function shareCode(d) {
@@ -16,6 +13,3 @@ diff --git a/index.html b/index.html
  }
  function shareLink(d) {
    const res = shareCode(d);
-   return res.ok
-     ? { ok: true, value: location.origin + location.pathname + SHARE_PREFIX + res.value }
-     : res;

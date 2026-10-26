@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10587,5 +10587,5 @@ function selectDeck(wanted, persist = true, trackSelection = true) {
+@@ -10759,5 +10759,5 @@ function selectDeck(wanted, persist = true, trackSelection = true) {
    if (persist && savedState) commitSaved({type:"prefer",collectionId:savedState.collectionId,selection:savedClone(selection)});
    setOrder(); buildChips(); render(); syncRoute();
 -  if(trackSelection)track("deck_select", selection.kind === "builtin" ? {deck_kind:"seeded",deck_id:selection.id} : {deck_kind:"custom"});

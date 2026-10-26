@@ -4,7 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10301,2 +10301,3 @@ function applySavedSnapshot(envelope, suppliedViews, source = "commit") {
+@@ -10299,6 +10299,7 @@ function applySavedSnapshot(envelope, suppliedViews, source = "commit") {
+   if (savedState && savedState.collectionId === envelope.collectionId && savedState.revision > envelope.revision)
+     return { ok: true, ignored: true }; // an older completion cannot roll the cache back
    savedState = savedClone(envelope);
 +  if(source==="initialization")savedState.hidden=[];
    const rows = new Map(savedState.entries.map(row => [row.instanceId, row]));
+   savedEntries.clear();
+   for (const [id, view] of staged.views) savedEntries.set(id, { ...view, record: rows.get(id).record });

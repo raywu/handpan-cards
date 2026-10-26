@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1421,7 +1421,7 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1758,7 +1758,7 @@ html.about-open{overflow:hidden}
           aria-label="Amy Naylor: ten handpan chord progressions (YouTube)"
           target="_blank" rel="noopener">AMY: PROGRESSIONS</a>
        <a class="mode" id="res-amy-bottom" href="https://youtu.be/0hMIUnA5-OI"

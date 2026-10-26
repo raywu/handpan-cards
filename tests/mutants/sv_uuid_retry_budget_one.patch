@@ -4,11 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10018,13 +10018,13 @@ function savedEqual(a, b) {
-   if (a === b) return true;
-   if (!a || !b || typeof a !== "object" || typeof b !== "object" || Array.isArray(a) !== Array.isArray(b)) return false;
-   const ak = Object.keys(a), bk = Object.keys(b);
-   return ak.length === bk.length && ak.every(k => Object.hasOwn(b, k) && savedEqual(a[k], b[k]));
+@@ -10114,7 +10114,7 @@ function savedEqual(a, b) {
+   return ak.length === bk.length && ak.every(k => savedOwn(b, k) && savedEqual(a[k], b[k]));
  }
  function savedCryptoId(used) {
 -  for (let attempt = 0; attempt < 8; attempt++) {
@@ -16,6 +13,3 @@ diff --git a/index.html b/index.html
      let id = null;
      try {
        const source = globalThis.crypto;
-       if (source && typeof source.randomUUID === "function") id = source.randomUUID();
-       else if (source && typeof source.getRandomValues === "function") {
-         const bytes = new Uint8Array(16);

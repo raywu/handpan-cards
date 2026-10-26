@@ -8,7 +8,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8963,7 +8963,6 @@ function wheelGestureEnd() {
+@@ -14954,7 +14954,6 @@ function wheelGestureEnd() {
    else if (end === "spring") springBack(-w.sx);
  }
  if (wheelMain) wheelMain.addEventListener("wheel", e => {

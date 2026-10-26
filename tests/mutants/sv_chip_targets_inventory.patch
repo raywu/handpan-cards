@@ -4,12 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11291,17 +11291,17 @@ function buildChips() {
-     b.innerHTML='<span class="dot"></span>'+esc(labels[i]);
-     let accessible=on?t("sheet.edit_aria",{name:labels[i]}):labels[i];
-     if(labels[i]!==chipLabel(d.name)) {
-       const saved=view.selection.kind==="saved";
-       const token=saved?"S"+view.displayOrdinal:"P"+(DECKS.findIndex(preset=>preset.id===view.selection.id)+1);
+@@ -11468,7 +11468,7 @@ function buildChips() {
        accessible+=". "+t(saved?"saved.savedToken":"saved.presetToken",{token});
      }
      b.setAttribute("aria-label",accessible);
@@ -18,8 +13,3 @@ diff --git a/index.html b/index.html
      nav.appendChild(b);if(on)active=b;
    });
    restoreBtn.hidden=!(hiddenDecks().length || Object.keys(replacements()).length);
-   if(active&&active.scrollIntoView)active.scrollIntoView({block:"nearest",inline:"nearest"});
- }
-
-
- /* ---------------- scale sheet ----------------

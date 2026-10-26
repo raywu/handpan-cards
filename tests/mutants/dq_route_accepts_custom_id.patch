@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11340,7 +11340,7 @@ const DECK_SLUGS = {"d-kurd-10": "kurd", "d-amara-10": "amara10", "d-amara-9": "
+@@ -15061,7 +15061,7 @@ const DECK_SLUGS = {"d-kurd-10": "kurd", "d-amara-10": "amara10", "d-amara-9": "
  function routedDeckId() {
    if (location.hash.indexOf(DECK_ROUTE) !== 0) return null;
    const slug = location.hash.slice(DECK_ROUTE.length);

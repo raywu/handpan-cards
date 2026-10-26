@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12127,7 +12127,7 @@ FIELD_KEYS.forEach((k, i) => {
+@@ -14314,7 +14314,7 @@ FIELD_KEYS.forEach((k, i) => {
      if (e.key !== "Enter" || e.isComposing) return;
      e.preventDefault();
      const next = FIELD_KEYS[i + 1];

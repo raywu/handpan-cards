@@ -5,8 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10279,3 +10279,3 @@ function savedViewsFor(e, views) {
+@@ -10277,7 +10277,7 @@ function savedViewsFor(e, views) {
+     .map(row => ({ selection: { kind: "saved", id: row.instanceId }, deck: views.get(row.instanceId).deck, displayOrdinal: row.displayOrdinal }))
+     .concat(DECKS.map(d => {
        const owner = e.slots[d.id] && views.get(e.slots[d.id]);
 -      return owner ? { selection: { kind: "saved", id: owner.instanceId }, deck: owner.deck, displayOrdinal: owner.displayOrdinal, slotId: d.id } :
 +      return e.hidden.includes(d.id) ? null : owner ? { selection: { kind: "saved", id: owner.instanceId }, deck: owner.deck, displayOrdinal: owner.displayOrdinal, slotId: d.id } :
          e.hidden.includes(d.id) ? null : { selection: { kind: "builtin", id: d.id }, deck: d, slotId: d.id };
+     }).filter(Boolean));
+ }

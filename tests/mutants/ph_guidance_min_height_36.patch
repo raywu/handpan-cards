@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -932,10 +932,9 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -946,10 +946,9 @@ footer.seq{row-gap:var(--sp-1)}
     shows, the negative margin trimming the surface's two --sp-4 gaps to --sp-2.
     flex:0 0 auto is load-bearing: as a shrinkable item a three-line message
     spills over the button. */

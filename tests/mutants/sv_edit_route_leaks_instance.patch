@@ -4,11 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13055,15 +13055,15 @@ function setSheetMode(edit) {
-    site, or leaves a dead entry that swallows the next back press.
-    SHARE_PREFIX is "#s=", so these prefixes cannot shadow a share link - but
-    that is exactly the kind of "cannot" that stops being true quietly, so it is
-    asserted in tests rather than trusted here. */
+@@ -13231,7 +13231,7 @@ function setSheetMode(edit) {
  const ADD_ROUTE  = "#add";
  const EDIT_ROUTE = "#edit-";
  function sheetRoute() {
@@ -17,7 +13,3 @@ diff --git a/index.html b/index.html
  }
  // True while OUR history entry is on the stack. Not derived from the hash: a
  // user can edit the address bar, and the question this answers is "did we push
- // something that still needs popping", which only we know.
- let sheetRouted = false;
-
- /** Make one caller's own background set inert (or live again). The sheet and

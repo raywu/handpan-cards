@@ -5,10 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13314,12 +13314,13 @@ async function runGenerate(separate = false) {
-   const generation=sheetGeneration, draft=sheetKey(), base=editingBase;
-   const controller=new AbortController(), operation={controller,generation};savePending=operation;
-   const label=genBtn.textContent; refreshSavedSubmit();genBtn.textContent=t(editingId?"sheet.saving":"sheet.generating");
+@@ -13490,6 +13490,7 @@ async function runGenerate(separate = false) {
    say("","");
    try {
      buildRefused=true;
@@ -16,6 +13,3 @@ diff --git a/index.html b/index.html
      const built=buildGenerated(String(scaleBox.value||""),sheetOptions());
      if(!built.ok){refusal=reasonText(built);showRefusal(refusal);return;}
      buildRefused=false;
-     const candidate={record:scaleRecord(seedOf(built.value)),deck:built.value};
-     const command=separate ? {type:"save-as-separate"} : !base ? {type:"import",selectedInstanceId:selection.kind==="saved"?selection.id:null} :
-       base.selection.kind === "builtin" ? {type:"replace-builtin",seedId:base.selection.id,expectedSlotStateRevision:base.slotStateRevision,expectedOwnerId:base.ownerId} :

@@ -10,7 +10,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10229,7 +10229,7 @@ delBtn.onclick = () => {
+@@ -13656,7 +13656,7 @@ delBtn.onclick = () => {
     owner's device actually makes. The pointerdown that lands ON the button is
     not: it is the confirming tap's own first half. */
  sheet.addEventListener("pointerdown", (e) => {

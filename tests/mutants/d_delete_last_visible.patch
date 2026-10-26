@@ -5,8 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10609,3 +10609,3 @@ function applySavedCommand(staged, command, candidate) {
+@@ -10607,7 +10607,7 @@ function applySavedCommand(staged, command, candidate) {
+       if (survivors.length) next.slots[heldSlot] = survivors[survivors.length - 1].instanceId;
+       else delete next.slots[heldSlot];
      }
 -    if (!savedViewsFor(next, views).length) return savedFailure("invalid", "last-visible");
 +
    } else if (command.type === "hide-builtin") {
+     if (!isBuiltIn(command.seedId) || command.expectedSlotStateRevision !== current.slotStateRevision ||
+         command.expectedOwnerId !== (current.slots[command.seedId] || null)) return conflict();

@@ -8,7 +8,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8192,7 +8192,7 @@ function pan(d, ch, opts) {
+@@ -10946,7 +10946,7 @@ function pan(d, ch, opts) {
            + ` stroke-width="3" vector-effect="non-scaling-stroke" pointer-events="none"/>`);
        const node = `<circle class="panhit" data-field="${id}" data-ring="${m.ring}" ${at} r="${rr}"`
          + ` data-r="${rr}" fill="transparent" tabindex="${String(hit.rover) === String(id) ? 0 : -1}"`

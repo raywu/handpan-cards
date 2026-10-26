@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1156,7 +1156,7 @@
+@@ -1278,7 +1278,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
     The 520px measure comes only from the inline padding, so the fixed overlay
     fills the viewport at every width. Both rules sit BEFORE the print block
     (it must stay last). */

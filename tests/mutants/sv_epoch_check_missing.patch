@@ -4,10 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10393,13 +10393,13 @@ function savedEditedRecord(target, candidate) {
-   for (const name of SAVED_PORTABLE_OPTIONS) if (Object.hasOwn(candidate.record.o || {}, name)) options[name] = savedClone(candidate.record.o[name]);
-   out.o = options;
-   return out;
+@@ -10539,7 +10539,7 @@ function savedEditedRecord(target, candidate) {
  }
  function applySavedCommand(staged, command, candidate) {
    const current = staged.envelope;
@@ -16,6 +13,3 @@ diff --git a/index.html b/index.html
    const next = savedClone(current), views = new Map(staged.views);
    let targetId = null, created = false, desired = null;
    const existing = () => next.entries.find(row => row.instanceId === command.instanceId);
-   const conflict = () => savedFailure("conflict", "target-or-scope");
-   const allocate = record => {
-     const used = new Set([next.collectionId, ...next.usedInstanceIds]);

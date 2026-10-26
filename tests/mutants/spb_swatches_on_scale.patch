@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1483,6 +1483,12 @@ html.about-open{overflow:hidden}
+@@ -1533,6 +1533,12 @@ html.about-open{overflow:hidden}
        <div id="scale-refusal" aria-live="polite"></div>
        <p class="sheethint" id="scale-line-note"></p>
      </div>
@@ -17,7 +17,7 @@ diff --git a/index.html b/index.html
      </div>
      <div id="scale-panel-layout" role="tabpanel" aria-labelledby="scale-tab-layout" hidden>
      <div id="scale-plate-band">
-@@ -1564,12 +1570,6 @@ html.about-open{overflow:hidden}
+@@ -1620,12 +1626,6 @@ html.about-open{overflow:hidden}
           tests/mutants/e_sheet_primary_back_in_the_scroll.patch, which dies on
           "GENERATE CARDS is reachable without scrolling at every phone
           viewport". -->

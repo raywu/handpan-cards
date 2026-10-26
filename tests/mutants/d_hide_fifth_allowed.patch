@@ -5,8 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10615,3 +10615,3 @@ function applySavedCommand(staged, command, candidate) {
+@@ -10613,7 +10613,7 @@ function applySavedCommand(staged, command, candidate) {
+         command.expectedOwnerId !== (current.slots[command.seedId] || null)) return conflict();
+     if (current.slots[command.seedId]) return conflict();
      if (!next.hidden.includes(command.seedId)) next.hidden.push(command.seedId);
 -    if (!savedViewsFor(next, views).length) return savedFailure("invalid", "last-visible");
 +
    } else if (command.type === "reset") {
+     if (!savedEqual(command.affectedScope, savedScope(current, staged.views))) return conflict();
+     const removed = new Set(savedScope(current, staged.views).replacements.map(row => row.id));

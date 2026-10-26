@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13317,6 +13317,7 @@ async function runGenerate(separate = false) {
+@@ -13490,6 +13490,7 @@ async function runGenerate(separate = false) {
    say("","");
    try {
      buildRefused=true;

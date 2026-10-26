@@ -4,10 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13322,13 +13322,13 @@ async function runGenerate(separate = false) {
-     buildRefused=false;
-     const candidate={record:scaleRecord(seedOf(built.value)),deck:built.value};
-     const command=separate ? {type:"save-as-separate"} : !base ? {type:"import",selectedInstanceId:selection.kind==="saved"?selection.id:null} :
+@@ -13498,7 +13498,7 @@ async function runGenerate(separate = false) {
        base.selection.kind === "builtin" ? {type:"replace-builtin",seedId:base.selection.id,expectedSlotStateRevision:base.slotStateRevision,expectedOwnerId:base.ownerId} :
        {type:"edit",instanceId:base.selection.id,expectedRevision:base.revision};
      const result=await commitSaved({...command,collectionId:base?base.collectionId:savedState?.collectionId,candidate},{signal:controller.signal});
@@ -16,6 +13,3 @@ diff --git a/index.html b/index.html
      if(!result.ok){if(result.kind==="conflict"){await reconcileSavedCollection();if(generation===sheetGeneration)showSavedConflict(true);}else if(result.kind!=="cancelled")showRefusal(savedErrorText(result));return;}
      if(result.published===false){showRefusal(savedPublicationText(result));return;}
      const d=savedEntries.get(result.instanceId).deck;
-     const warned=(d.warnings||[]).map(w=>reasonText(w));
-     closeScaleSheet();selectDeck({kind:"saved",id:result.instanceId},false);
-     track("scale_create",{note_count:Object.keys(d.fields).length,has_bottom:Object.values(d.fields).some(f=>f[3]==="bottom")?1:0});

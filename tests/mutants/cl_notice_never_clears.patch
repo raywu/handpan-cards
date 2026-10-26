@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10519,7 +10519,7 @@ function paintLayout() {
+@@ -11805,7 +11805,7 @@ function paintLayout() {
    const noteChanged = layoutNote.textContent !== note;
    if (noteChanged) layoutNote.textContent = note;
    layoutNote.hidden = !note;

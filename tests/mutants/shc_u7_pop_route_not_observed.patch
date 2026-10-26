@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12808,7 +12808,6 @@ window.addEventListener("popstate", () => {
+@@ -13424,7 +13424,6 @@ window.addEventListener("popstate", () => {
    // SAVE already selected and synced the committed scale. Observe the final
    // route after this app-owned pop, not its temporary pre-SAVE destination.
    if (pendingPop) { pendingPop = false; syncRoute(); return; }

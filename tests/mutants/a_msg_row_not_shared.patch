@@ -9,7 +9,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -823,7 +823,7 @@
+@@ -875,7 +875,7 @@ footer.seq{row-gap:var(--sp-1)}
     against a 780px viewport - below the fold, the exact cost this row exists
     to avoid. #scale-msg lives in #scale-guidance, below the scroll, and never
     enters this row. */

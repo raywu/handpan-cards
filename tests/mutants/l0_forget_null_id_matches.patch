@@ -5,10 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10451,13 +10451,13 @@ function applySavedCommand(staged, command, candidate) {
-     const deckValue = { ...candidate.deck, options: { ...candidate.deck.options, replaces: command.seedId } };
-     attachCandidate(row, deckValue);
-     next.slots[command.seedId] = row.instanceId;
+@@ -10597,7 +10597,7 @@ function applySavedCommand(staged, command, candidate) {
      targetId = row.instanceId; desired = { kind: "saved", id: targetId };
    } else if (command.type === "delete") {
      const row = existing();
@@ -17,6 +14,3 @@ diff --git a/index.html b/index.html
      const heldSlot = Object.keys(current.slots).find(seed => current.slots[seed] === row.instanceId);
      if (heldSlot && !savedSlotProof(command, current)) return conflict();
      next.entries = next.entries.filter(entry => entry.instanceId !== row.instanceId); views.delete(row.instanceId);
-     if (heldSlot) {
-       if (!next.hidden.includes(heldSlot)) next.hidden.push(heldSlot);
-       const survivors = next.entries.filter(entry => views.has(entry.instanceId) && entry.record && entry.record.o && entry.record.o.replaces === heldSlot);

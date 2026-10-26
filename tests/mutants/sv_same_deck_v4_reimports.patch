@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15008,7 +15008,7 @@ window.addEventListener("hashchange", async () => {
+@@ -15181,7 +15181,7 @@ window.addEventListener("hashchange", async () => {
      const code = location.hash.slice(SHARE_PREFIX.length);
      const read = HPE.share.decode(code);
      const again = read.ok ? HPE.share.encode(read.value) : null;

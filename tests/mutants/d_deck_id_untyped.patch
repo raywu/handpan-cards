@@ -5,18 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10049,13 +10049,13 @@ function savedCryptoId(used) {
-   return null;
- }
- function savedPreference(raw) {
+@@ -10145,7 +10145,7 @@ function savedPreference(raw) {
    if (raw === null) return { ok: true, value: {} };
    try {
      const value = JSON.parse(raw);
--    if (!savedObject(value) || (Object.hasOwn(value, "deck") && typeof value.deck !== "string") ||
+-    if (!savedObject(value) || (savedOwn(value, "deck") && typeof value.deck !== "string") ||
 +    if (!savedObject(value) || false ||
-         (Object.hasOwn(value, "hidden") && (!Array.isArray(value.hidden) || value.hidden.some(x => typeof x !== "string"))))
+         (savedOwn(value, "hidden") && (!Array.isArray(value.hidden) || value.hidden.some(x => typeof x !== "string"))))
        return savedFailure("protected", "legacy-preferences");
      return { ok: true, value };
-   } catch (e) { return savedFailure("protected", "legacy-preferences"); }
- }
- function savedLegacyProjection(raw) {

@@ -6,8 +6,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9577,3 +9577,3 @@ function updateSettings(change) {
+@@ -9575,7 +9575,7 @@ function updateSettings(change) {
+     const guarded = savedPreference(raw);
+     if (!guarded.ok) return false;
      const base = guarded.value;
 -    const next = { ...base };
 +    const next = {};
      change(next);
+     const encoded = JSON.stringify(next);
+     if (encoded !== JSON.stringify(base)) localStorage.setItem(STORE_KEY, encoded);

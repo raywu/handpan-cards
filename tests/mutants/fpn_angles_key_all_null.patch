@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12152,7 +12152,7 @@ function setRingSeats(ring, next) {
+@@ -12324,7 +12324,7 @@ function setRingSeats(ring, next) {
    layoutSeats = Object.keys(rest).length ? rest : null;
  }
  const seatsKey = (s) => LAYOUT_RINGS.filter((r) => s && s[r]).map((r) => r + ":" + s[r].join(",")).join(";");

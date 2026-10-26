@@ -4,10 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11486,13 +11486,13 @@ let bandPad = "", plateRoom = "", pinPad = "";
-    summary says the seed parsed; the refusal says the app will not take it,
-    which is the more recent and the more actionable of the two, and the
-    summary comes straight back on the next keystroke. */
+@@ -11661,7 +11661,7 @@ let bandPad = "", plateRoom = "", pinPad = "";
  function refreshSavedSubmit() {
    const disabled=!!savePending || buildRefused || !submitParseValid || (inputPath === "fields" && lineStale) || scaleBox.hasAttribute("readonly");
    genBtn.disabled=disabled;
@@ -16,6 +13,3 @@ diff --git a/index.html b/index.html
  }
  function showParse(text) {
    refusalLine.textContent = "";
-   parseLine.textContent = text;
- }
- function showRefusal(text) {

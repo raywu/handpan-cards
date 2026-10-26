@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -45,6 +45,7 @@
+@@ -52,6 +52,7 @@
    "applicationCategory": "MusicApplication",
    "operatingSystem": "Any",
    "browserRequirements": "Requires JavaScript",

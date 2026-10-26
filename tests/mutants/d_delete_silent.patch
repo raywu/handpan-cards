@@ -5,8 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13480,3 +13480,3 @@ async function deleteDeck(id) {
+@@ -13478,7 +13478,7 @@ async function deleteDeck(id) {
+   if(result.published===false)return;
+   const gone=base.deck.name;
    closeScaleSheet();selectDeck(fallbackSelection(),false);
 -  say(t("boot.removed",{a:gone,b:deck().name}),"warn");
 +
  }
+ async function runGenerate(separate = false) {
+   separate = separate === true;

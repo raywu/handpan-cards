@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11522,7 +11522,6 @@ function applyKbOffset(e) {
+@@ -13190,7 +13190,6 @@ function applyKbOffset(e) {
    setSheetClass("tiny", kb && high > 0 && high < 200);
    lipKbEdge(wasUp, kb);
    syncBand();

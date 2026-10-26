@@ -5,10 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10454,13 +10454,15 @@ function applySavedCommand(staged, command, candidate) {
-     targetId = row.instanceId; desired = { kind: "saved", id: targetId };
-   } else if (command.type === "delete") {
-     const row = existing();
+@@ -10600,7 +10600,9 @@ function applySavedCommand(staged, command, candidate) {
      if (!row || !views.has(row.instanceId) || row.revision !== command.expectedRevision) return conflict();
      const heldSlot = Object.keys(current.slots).find(seed => current.slots[seed] === row.instanceId);
      if (heldSlot && !savedSlotProof(command, current)) return conflict();
@@ -19,6 +16,3 @@ diff --git a/index.html b/index.html
      if (heldSlot) {
        if (!next.hidden.includes(heldSlot)) next.hidden.push(heldSlot);
        const survivors = next.entries.filter(entry => views.has(entry.instanceId) && entry.record && entry.record.o && entry.record.o.replaces === heldSlot);
-       if (survivors.length) next.slots[heldSlot] = survivors[survivors.length - 1].instanceId;
-       else delete next.slots[heldSlot];
-     }

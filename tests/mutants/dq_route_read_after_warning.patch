@@ -5,8 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15208,3 +15208,3 @@ function finishSavedBoot() {
+@@ -15206,7 +15206,7 @@ function finishSavedBoot() {
+   bootStored=storedAtBoot===null?null:selection.id;
+   const routed=routedDeckId();
    const incomingShare=location.hash.indexOf(SHARE_PREFIX)===0;
 -  const wanted=routed || storedAtBoot;
 +  const wanted=storedAtBoot;
    const finish=()=>{
+     setOrder();applyLang();paintLangSelect();setMode(mode,false);updateSavedStatus();syncRoute();
+     if(routed && routed!==storedAtBoot)track("deck_route",{deck_id:routed});

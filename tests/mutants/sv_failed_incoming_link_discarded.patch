@@ -4,10 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9949,13 +9949,13 @@ function generateDeck(text, options, guard) {
-   const finish = result => result.ok ? { ...built, ...result, value: savedEntries.get(result.instanceId)?.deck || built.value } : result;
-   return savedMode === "session" ? finish(commitSavedSession(command)) : commitSaved(command).then(finish);
- }
+@@ -9951,7 +9951,7 @@ function generateDeck(text, options, guard) {
  function openShare(text) {
    const request=++shareRequestGeneration, context=navigationGeneration;
    const current=()=>request===shareRequestGeneration && context===navigationGeneration;
@@ -16,6 +13,3 @@ diff --git a/index.html b/index.html
    const res = HPE.share.decode(String(text));
    if (!res.ok) { if(current()){pendingRecoveryShare=null;say(reasonText(res), "err");} return res; }
    const finish = built => {
-     if(!current())return built;
-     if (!built.ok) {
-       if(built.reason||built.code)pendingRecoveryShare=null;

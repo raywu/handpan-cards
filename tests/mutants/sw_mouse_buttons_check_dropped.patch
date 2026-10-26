@@ -11,8 +11,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8152,7 +8152,6 @@
-   // eats it - so a `pointermove` with no buttons held is the only signal
+@@ -14854,7 +14854,6 @@ function swipeMove(e) {
    // that the drag should have ended. An active touch/pen contact reports
    // `e.buttons === 1` too, so the `pointerType === "mouse"` guard is what
    // actually restricts this to mouse, not any quirk of `e.buttons` itself.

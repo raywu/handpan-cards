@@ -6,8 +6,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11473,3 +11473,3 @@ function buildChips() {
+@@ -11472,5 +11472,5 @@ function buildChips() {
+     nav.appendChild(b);if(on)active=b;
    });
 -  restoreBtn.hidden=!(hiddenDecks().length || Object.keys(replacements()).length);
 +  restoreBtn.hidden=true;
    if(active&&active.scrollIntoView)active.scrollIntoView({block:"nearest",inline:"nearest"});
+ }

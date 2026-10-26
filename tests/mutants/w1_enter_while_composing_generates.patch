@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10591,7 +10591,7 @@ scaleBox.addEventListener("input", () => {
+@@ -14090,7 +14090,7 @@ scaleBox.addEventListener("input", () => {
  // through the same parse line every other input goes through.
  nameBox.addEventListener("input", () => { nameDirty = true; resyncSheet(true); });
  scaleBox.addEventListener("keydown", e => {

@@ -6,7 +6,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9807,3 +9807,2 @@ const save = () => updateSettings(next => {
+@@ -9806,5 +9806,4 @@ const save = () => updateSettings(next => {
+   // legacy deck/hidden fields untouched for old clients and recovery.
    next.mode = mode;
 -  next.tier = tier;
    next.printPaper = printPaper;
+ });

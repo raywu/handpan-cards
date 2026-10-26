@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1067,7 +1067,7 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1080,7 +1080,7 @@ footer.seq{row-gap:var(--sp-1)}
     appears and disappears in one frame. */
  #scale-layout-zone{display:flex; flex-direction:column; gap:var(--sp-2)}
  #scale-plate-band{display:flex; flex-direction:column; gap:var(--sp-1)}

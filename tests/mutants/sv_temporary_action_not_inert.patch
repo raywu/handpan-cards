@@ -4,10 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14223,13 +14223,13 @@ const settingsScrim   = document.getElementById("settings-scrim");
- // that must stay clickable to CLOSE the panel (dismissal: Escape, a scrim
- // tap, OR the trigger) lives inside the header. Inerting the header would
- // inert the trigger along with it and the panel could never be closed by a
+@@ -14404,7 +14404,7 @@ const settingsScrim   = document.getElementById("settings-scrim");
  // second tap on it.
  const panelBackground = [document.querySelector("main"), document.querySelector("footer"),
                            document.getElementById("decks"), document.querySelector("#about"),
@@ -16,6 +13,3 @@ diff --git a/index.html b/index.html
  let panelOpen = false;
  // M3 (desktop sidebar, 2026-09-28): the same breakpoint the CSS media query
  // above uses. Below it the panel is the modal drawer M1 built - role="dialog",
- // aria-modal, an inert background and a Tab-stop trap, all applied here, never
- // in markup. At/above it the trigger is display:none, so openPanel() is never
- // reached by a click and the modal state above is never applied; the panel is

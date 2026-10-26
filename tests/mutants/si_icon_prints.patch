@@ -5,12 +5,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1338,7 +1338,7 @@ html.about-open{overflow:hidden}
-   .scene{transform:none!important}
-   #app{display:block; height:auto}
+@@ -1340,3 +1340,3 @@ html.about-open{overflow:hidden}
    #about{display:none}
 -  #share-copy, #share-url, #saved-status, #saved-temporary-use{display:none}
 +  #share-url, #saved-status, #saved-temporary-use{display:none}
  }
-
- </style>

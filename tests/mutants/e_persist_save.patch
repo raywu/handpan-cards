@@ -4,8 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10758,3 +10758,3 @@ function selectDeck(wanted, persist = true, trackSelection = true) {
+@@ -10756,7 +10756,7 @@ function selectDeck(wanted, persist = true, trackSelection = true) {
+   const a = document.activeElement;
+   const rehome = !!a && (a.id === "settings-trigger" || a.id === "deck-add" || [...document.getElementById("decks").children].includes(a));
    selection = savedState ? savedResolve(wanted,savedState,savedEntries) : wanted;
 -  if (persist && savedState) commitSaved({type:"prefer",collectionId:savedState.collectionId,selection:savedClone(selection)});
 +  if (false && persist && savedState) commitSaved({type:"prefer",collectionId:savedState.collectionId,selection:savedClone(selection)});
    setOrder(); buildChips(); render(); syncRoute();
+   if(trackSelection)track("deck_select", selection.kind === "builtin" ? {deck_kind:"seeded",deck_id:selection.id} : {deck_kind:"custom"});
+   if (rehome) document.querySelector("#decks .chip.on")?.focus();

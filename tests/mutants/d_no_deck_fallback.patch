@@ -5,8 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10349,3 +10349,3 @@ function makeSavedMigration(staged) {
+@@ -10347,7 +10347,7 @@ function makeSavedMigration(staged) {
+   if (!collectionId) return savedFailure("allocation", "collection-id");
+   used.add(collectionId);
    const e = { schema: 1, collectionId, revision: 1, slotStateRevision: 0, entries: [], usedInstanceIds: [], nextDisplayOrdinal: 1,
 -    preferredSelection: { kind: "builtin", id: DEFAULT_DECK }, slots: {},
 +    preferredSelection: { kind: "builtin", id: "pygmy" }, slots: {},
      hidden: [...new Set((staged.preferences.hidden || []).filter(isBuiltIn))],
+     migration: { sourceKey: staged.sourceKey, raw: savedClone(staged.raw), instanceIds: [] } };
+   const supplied = new Map(), oldVisible = new Map();

@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12329,7 +12329,7 @@ function noteCounts(fields, value) {
+@@ -12936,7 +12936,7 @@ function noteCounts(fields, value) {
      for (const ring of LAYOUT_RINGS) {
        // Count changes invalidate that ring's earlier outcome, even when its
        // typed key stays the identity. A different ring's edit does not.

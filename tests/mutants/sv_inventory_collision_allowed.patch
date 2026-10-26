@@ -4,10 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10413,13 +10413,13 @@ function applySavedCommand(staged, command, candidate) {
-   // that staged value, never invokes parse/build/layout work in the commit.
-   const attachCandidate = (row, deckValue = candidate.deck) => views.set(row.instanceId,
-     { ...row, deck: deckValue, meaning: candidate.meaning, identity: candidate.identity });
+@@ -10559,7 +10559,7 @@ function applySavedCommand(staged, command, candidate) {
    if (["import", "save-as-separate", "edit", "replace-builtin"].includes(command.type)) {
      if (!candidate || !candidate.ok) return candidate || savedFailure("invalid", "candidate");
      const inventoryIdentity = staged.identities.get(candidate.deck.id);
@@ -16,6 +13,3 @@ diff --git a/index.html b/index.html
    }
    if (command.type === "import" || command.type === "save-as-separate") {
      let match = null;
-     if (command.type === "import") {
-       const matches = current.entries.filter(row => staged.meanings.get(row.instanceId) === candidate.meaning);
-       match = matches.find(row => row.instanceId === command.selectedInstanceId) || matches[0] || null;

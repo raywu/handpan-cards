@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13469,7 +13469,7 @@ function paintNotes() {
+@@ -14203,7 +14203,7 @@ function paintNotes() {
    if (hintQuiet) hintSaid = hint;
    const set = (el, text) => { if (el.textContent !== text) el.textContent = text; };
    set(lineNote, onFields

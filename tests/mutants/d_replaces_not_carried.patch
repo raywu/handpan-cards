@@ -5,7 +5,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10577,2 +10577,3 @@ function applySavedCommand(staged, command, candidate) {
+@@ -10575,6 +10575,7 @@ function applySavedCommand(staged, command, candidate) {
+     const row = existing();
+     if (!row || !views.has(row.instanceId) || row.revision !== command.expectedRevision) return conflict();
      const record = savedEditedRecord(row.record, candidate);
 +    if(record.o)delete record.o.replaces;
      if (!savedEqual(record, row.record)) {
+       if (row.revision >= Number.MAX_SAFE_INTEGER) return savedFailure("invalid", "revision-overflow");
+       row.record = record; row.revision++;
