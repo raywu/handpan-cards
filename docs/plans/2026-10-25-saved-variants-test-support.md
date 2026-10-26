@@ -105,3 +105,43 @@ semantics. Complete mandatory model AND real-browser interleavings, then full ex
 head validate/DEV per parent plan. If synchronous shipping consumers need changes,
 stop for a narrow reviewed extension rather than silently broadening H. Roll back
 unmerged owned helper commits only; preserve current accepted base and all data.
+
+## Final support extension — proposed, ENG review before edits
+
+Observed remaining failures are model/tool adaptation, not permission to weaken
+source/tests: sandbox document.querySelector cannot match the standard compound
+descendant selector #decks .chip.on used by actual focus recovery; fixture tool
+boots without explicit crypto, then selects canonical inventory instead of the
+saved instance. Existing immutable card-face digests must stay unchanged.
+
+H-final owns tools/sandbox.js, tests/harness.test.js and
+tools/regen_card_fixture.js in separate /private/tmp/handpan-saved-variants.HVUKbE/support-final
+branch codex/saved-variants-support-final-20261025, based on frozen U069035fd.
+No index, locale, CDP-helper, app/e2e-test or instruction edits. Root owns observed
+floor update; M later generates meaningful helper mutant in disposable scratch.
+
+Minimal support: document query matching for simple compound ID/tag/class tokens
+and descendant ancestry using actual parentNode/markup ancestry; require every
+class and ancestor token, never match same-class nodes elsewhere or detached old
+chips. Keep existing simple/comma selectors and default boot behavior. Do not
+pretend to implement CSS layout or a complete selector engine. Add one spec-derived
+synthetic fixture group covering positive, compound-class negative, wrong ancestor,
+detached/rebuilt nodes and unchanged simple/comma paths. Capture intended assertion
+RED before helper edit, then same GREEN; no missing-method/syntax kill credit.
+
+Fixture tool: only explicit real Node crypto.webcrypto/AbortController capability
+in its existing boot adapter, plus selecting res.instanceId || res.value.id, so
+current instances and historical --html inputs both work. Preserve synchronous
+actual session path; no fake registry/UUID as inventory, no generated fixture
+updates. Existing node tools/regen_card_fixture.js --check and --gen --check must
+compare all committed digests successfully, not regenerate them. No gratuitous
+new tests mirroring these two adapter lines: the existing full-face contracts
+are meaningful behavioral verification. Existing historical --html behavior is
+checked separately against a frozen prefeature index.
+
+Acceptance: new focused helper RED/GREEN; all actual harness groups with existing
+strict controls; unchanged boot177x2; original face/generation digests check;
+combined app922 groups (881legacy+feature/review groups) with no skips or floor
+lowering; real native focus remains mandatory, model success is not browser proof.
+No broad DOM model or compatibility registry. If more shared APIs are needed,
+stop for review. Preserve failed logs and rollback only owned unmerged files.

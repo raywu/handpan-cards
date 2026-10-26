@@ -511,3 +511,38 @@ Repaircopy must distinguish session/durable; no protocolweakening.
 Owner re-interview reconfirmed custom Yvonne positions visible at LINK after an
 accidental selection concern; original evidence remains confirmed. Main queueheld,
 comparison investigation queued/unrun. No new ownerdecision blocks currentwork.
+
+## Resumption — final support and concurrent ACK review
+
+Owner requested continuation. Root combined U069035fd and T4a28e17e; actual full
+unit run sv-full-repaired-before-support-a0=918/922PASS,4FAIL,0skip/cancel/timeout,
+cleanup clear38.405s. Remaining4: two card-fixture capability adapters, known
+compound-selector focus model, exactlytwo new session-guidance locale keys. T
+explicitly amended allowlist14->16 at e80d1a75, original250keyhash unchanged.
+
+Final support amendment independently ENG-cleared before H code. H-final
+/support-final branchcodex/saved-variants-support-final-20261025 owns sandbox,
+harness and regen_card_fixture only. NewSVH13 first intendedASSERTION RED before
+helper, rawsvh13-selector-red-a0. After support13SVHgroupsGREEN,0skip; intermediate
+author test normalization typo afterfirstassertion corrected (plain->sandbox.plain),
+not a source failure or claimedGreen. Current and historical prefeature92d6516b
+--html card_face/gen_face checks PASS with unchangedgoldens; boot177x2PASS.
+No nativefocus or fullharness success inferred. Source review pending.
+
+Independent DESIGN CLEAR for U069 with runtime limits. Independent ENG found
+new P1: older SAME-epoch ACK ignoredby applySavedSnapshot can stillmap publishedtrue,
+then crash Edit on removedinstance or importfallback incorrectly. T capturing
+realACKdelay/newerdelete regression andpositivecontrol before sourcefix. APIACK
+mustremainok whileobsoletepublicationfalse, currentwinner/draft retained.
+
+Probeport amendment P2: lexical outside-outputguard is insufficient withsymlink.
+Before browser resolve existingoutputparentrealpath and reject canonicaldestination
+insidecandidate; preservefreshoutput/.part, addsymlinknegativeCLI. Otherport
+semantics retained; no benchmarkportcode yet. Main/paused/queued scopes unchanged.
+
+Probe port P2 resolution before implementation: canonicalize the existing output
+parent with realpath, construct the canonical output basename destination, refuse
+output/.part destinations within the real candidate root even via outside symlink,
+and check freshness before browser launch. Add a negative CLI symlink-parent case
+with unchanged candidate and no browser spawn. This resolves ENG's identified
+lexical guard gap without changing measurement or permissions.
