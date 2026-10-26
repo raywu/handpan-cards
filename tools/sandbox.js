@@ -68,7 +68,9 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", 
   // Share URL lane SU-A: the COPY LINK control and its readonly fallback input.
   "share-copy", "share-url", "about", "about-open", "about-close",
   "scale-fields", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-ding-label", "scale-top-label",
-  "scale-inner-label", "scale-bottom-label", "scale-field-msg", "scale-fields-live", "scale-fields-note", "scale-line-note"];
+  "scale-inner-label", "scale-bottom-label", "scale-field-msg", "scale-fields-live", "scale-fields-note", "scale-line-note",
+  // Saved variants: the reviewed status, conflict action and explicit temporary-use controls.
+  "saved-status", "scale-conflict", "scale-conflict-msg", "scale-conflict-separate", "saved-temporary-use"];
 
 /** Copy a value out of the vm realm, so assert.deepStrictEqual can compare it. */
 const plain = (v) => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
