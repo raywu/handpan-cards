@@ -1485,8 +1485,8 @@ function run() {
   // mode buttons and the print controls in DOM order and must be one of the
   // stops.
   // Resources menu links in DOM order: row one (three links), row two (the two
-  // Amy Naylor videos, docs/plans/2026-10-05-menu-resources-amy.md). Every
-  // list of Resources ids in this file derives from here.
+  // Amy Naylor videos), then Helpers beside HANDPAN 101. Every list of
+  // Resources ids in this file derives from this literal acceptance inventory.
   const RESOURCES = [
     { id: "res-handpaner", href: "https://handpaner.com/", label: "HANDPANER", row: 0 },
     { id: "res-dingandtones", href: "https://www.dingandtones.com/", label: "DING & TONES", row: 0 },
@@ -1495,6 +1495,7 @@ function run() {
       aria: "Amy Naylor: ten handpan chord progressions (YouTube)" },
     { id: "res-amy-bottom", href: "https://youtu.be/0hMIUnA5-OI", label: "AMY: BOTTOM NOTES", row: 1,
       aria: "Amy Naylor: more interesting chords with bottom notes (YouTube)" },
+    { id: "res-handpan-helpers", href: "https://handpanhelpers.klangzeug.de/", label: "HANDPAN HELPERS", row: 2 },
     { id: "res-handpan-101", href: "https://docs.google.com/document/d/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco/edit?usp=drivesdk", label: "HANDPAN 101", row: 2,
       aria: "Handpan 101 (Google Doc)" },
   ];
@@ -1974,7 +1975,7 @@ function run() {
    * amendments 1-7)
    * ---------------------------------------------------------------- */
 
-  test("the settings panel has exactly one Resources group with its six outbound links in three rows", async () => {
+  test("the settings panel has exactly one Resources group with its seven outbound links in three rows", async () => {
     await freshLoad();
     await openSettingsPanel();
     const m = await b.eval(`
@@ -1997,8 +1998,8 @@ function run() {
       };
     `);
     assert.strictEqual(m.headingCount, 1, "expected exactly one Resources heading");
-    assert.deepStrictEqual(m.rowSizes, [3, 2, 1, 0], "three link rows, then the ABOUT row with no link");
-    assert.strictEqual(m.links.length, 6, `expected 6 links in the Resources group, got ${JSON.stringify(m.links)}`);
+    assert.deepStrictEqual(m.rowSizes, [3, 2, 2, 0], "three link rows, then the ABOUT row with no link");
+    assert.strictEqual(m.links.length, 7, `expected 7 links in the Resources group, got ${JSON.stringify(m.links)}`);
     m.links.forEach((link, i) => {
       const expected = RESOURCES[i];
       assert.strictEqual(link.id, expected.id, `link ${i} id mismatch: ${JSON.stringify(link)}`);
@@ -2211,43 +2212,77 @@ function run() {
         document.addEventListener("click", window.__resCapture, true);
         return true;
       `);
-      const before = await b.eval(`return {
-        modeA: document.getElementById("modeA").getAttribute("aria-pressed"),
-        front: document.getElementById("front").textContent,
-      };`);
+      const ensureResourcesPanelOpen = async () => {
+        if (await b.eval(`return getComputedStyle(document.getElementById("settings-panel")).display === "none";`))
+          await openSettingsPanel();
+        await b.settle();
+      };
+      for (const mode of ["A", "B", "S"]) {
+        await ensureResourcesPanelOpen();
+        await b.eval(`document.getElementById("${modeBtn(mode)}").scrollIntoView({block:"nearest", inline:"nearest"}); return true;`);
+        await b.click(`#${modeBtn(mode)}`);
+        await b.waitFor(`document.getElementById("${modeBtn(mode)}").getAttribute("aria-pressed") === "true"`,
+          { label: `Resources activation mode ${mode}` });
+        await ensureResourcesPanelOpen();
+        const before = await b.eval(`return {
+          modeA: document.getElementById("modeA").getAttribute("aria-pressed"),
+          modeB: document.getElementById("modeB").getAttribute("aria-pressed"),
+          modeS: document.getElementById("tier-basic").getAttribute("aria-pressed"),
+          count: document.getElementById("count").textContent,
+          front: document.getElementById("front").textContent,
+        };`);
 
-      for (const r of RESOURCES) {
-        await b.eval(`window.__resActivations = []; return true;`);
-        await b.click(`#${r.id}`);
-        const afterClick = await b.eval(`return window.__resActivations;`);
-        assert.strictEqual(afterClick.length, 1,
-          `clicking #${r.id} should produce exactly one activation, got ${JSON.stringify(afterClick)}`);
-        assert.strictEqual(afterClick[0].href, r.href, `#${r.id} click activation had the wrong href`);
-        assert.strictEqual(afterClick[0].target, "_blank", `#${r.id} click activation had the wrong target`);
-        const panelOpenAfterClick = await b.eval(
-          `return getComputedStyle(document.getElementById("settings-panel")).display !== "none";`);
-        assert.strictEqual(panelOpenAfterClick, true,
-          `clicking #${r.id} must not close the settings panel`);
+        for (const r of RESOURCES) {
+          await b.eval(`document.getElementById(${JSON.stringify(r.id)}).scrollIntoView({block:"nearest", inline:"nearest"});
+            window.__resActivations = []; return true;`);
+          await b.click(`#${r.id}`);
+          const afterClick = await b.eval(`return window.__resActivations;`);
+          assert.strictEqual(afterClick.length, 1,
+            `clicking #${r.id} should produce exactly one activation, got ${JSON.stringify(afterClick)}`);
+          assert.strictEqual(afterClick[0].href, r.href, `#${r.id} click activation had the wrong href`);
+          assert.strictEqual(afterClick[0].target, "_blank", `#${r.id} click activation had the wrong target`);
+          assert.deepStrictEqual(await b.eval(`return { modeA: document.getElementById("modeA").getAttribute("aria-pressed"),
+            modeB: document.getElementById("modeB").getAttribute("aria-pressed"), modeS: document.getElementById("tier-basic").getAttribute("aria-pressed"),
+            count: document.getElementById("count").textContent, front: document.getElementById("front").textContent };`), before,
+            `mode ${mode}: #${r.id} click preserves practice state`);
+          const panelOpenAfterClick = await b.eval(
+            `return getComputedStyle(document.getElementById("settings-panel")).display !== "none";`);
+          assert.strictEqual(panelOpenAfterClick, true,
+            `clicking #${r.id} must not close the settings panel`);
 
-        await b.eval(`
-          window.__resActivations = [];
-          document.getElementById(${JSON.stringify(r.id)}).focus();
-          return document.activeElement.id;
-        `);
-        await b.key("Enter", "Enter", 13);
-        const afterEnter = await b.eval(`return window.__resActivations;`);
-        assert.strictEqual(afterEnter.length, 1,
-          `pressing Enter on #${r.id} should produce exactly one activation, got ${JSON.stringify(afterEnter)}`);
-        assert.strictEqual(afterEnter[0].href, r.href, `#${r.id} Enter activation had the wrong href`);
-        assert.strictEqual(afterEnter[0].target, "_blank", `#${r.id} Enter activation had the wrong target`);
+          const focused = await b.eval(`
+            window.__resActivations = [];
+            document.getElementById(${JSON.stringify(r.id)}).focus();
+            return document.activeElement.id;
+          `);
+          assert.strictEqual(focused, r.id, `mode ${mode}: #${r.id} receives keyboard focus`);
+          await b.key("Enter", "Enter", 13);
+          const afterEnter = await b.eval(`return window.__resActivations;`);
+          assert.strictEqual(afterEnter.length, 1,
+            `pressing Enter on #${r.id} should produce exactly one activation, got ${JSON.stringify(afterEnter)}`);
+          assert.strictEqual(afterEnter[0].href, r.href, `#${r.id} Enter activation had the wrong href`);
+          assert.strictEqual(afterEnter[0].target, "_blank", `#${r.id} Enter activation had the wrong target`);
+          assert.deepStrictEqual(await b.eval(`return { modeA: document.getElementById("modeA").getAttribute("aria-pressed"),
+            modeB: document.getElementById("modeB").getAttribute("aria-pressed"), modeS: document.getElementById("tier-basic").getAttribute("aria-pressed"),
+            count: document.getElementById("count").textContent, front: document.getElementById("front").textContent };`), before,
+            `mode ${mode}: #${r.id} Enter preserves practice state`);
+          assert.strictEqual(await b.eval(`return getComputedStyle(document.getElementById("settings-panel")).display !== "none";`), true,
+            `mode ${mode}: #${r.id} Enter keeps Settings open`);
+        }
+
+        const after = await b.eval(`return {
+          modeA: document.getElementById("modeA").getAttribute("aria-pressed"),
+          modeB: document.getElementById("modeB").getAttribute("aria-pressed"),
+          modeS: document.getElementById("tier-basic").getAttribute("aria-pressed"),
+          count: document.getElementById("count").textContent,
+          front: document.getElementById("front").textContent,
+        };`);
+        assert.strictEqual(after.modeA, before.modeA, "a Resources link changed mode A");
+        assert.strictEqual(after.modeB, before.modeB, "a Resources link changed mode B");
+        assert.strictEqual(after.modeS, before.modeS, "a Resources link changed mode S");
+        assert.strictEqual(after.count, before.count, "a Resources link changed the current card position");
+        assert.strictEqual(after.front, before.front, "a Resources link changed the displayed card");
       }
-
-      const after = await b.eval(`return {
-        modeA: document.getElementById("modeA").getAttribute("aria-pressed"),
-        front: document.getElementById("front").textContent,
-      };`);
-      assert.strictEqual(after.modeA, before.modeA, "a Resources link changed the practice mode");
-      assert.strictEqual(after.front, before.front, "a Resources link changed the displayed card");
     });
 
   const MENU_VIEWPORTS = [[320, 568, true], [380, 700, true], [768, 1024, false], [844, 390, true], [1024, 700, false]];
@@ -2339,10 +2374,22 @@ function run() {
       }
     });
 
+  // FontFace objects can be recreated after viewport/mode changes. Prepare the
+  // CURRENT real registry before each independent workflow/geometry state, then
+  // keep the existing strict oracle. Fallback measurements never request loads.
+  async function prepareResourcesFonts(browser, fontMode) {
+    const pf = require("../tools/probe/panel_fit.js");
+    const fonts = fontMode === "real"
+      ? await browser.eval(`return (${pf.MEASURE_SRC}).fonts();`)
+      : await browser.eval(`return {size: document.fonts.size,
+          faces: [...document.fonts].map(f => ({family: f.family, weight: f.weight, status: f.status}))};`);
+    pf.checkFontMode(fontMode, fonts);
+  }
+
   // Owner compact-row contract. Reused with independently verified real fonts
   // below; all assertions describe rendered outcomes, not a CSS mechanism.
   async function assertCompactSites(browser, fontMode) {
-    require("../tools/probe/panel_fit.js").checkFontMode(fontMode, await browser.eval(`return {size: document.fonts.size, faces: [...document.fonts].map(f => ({family: f.family, weight: f.weight, status: f.status}))};`));
+    await prepareResourcesFonts(browser, fontMode);
     let primaryError;
     const cells = [[1024, 700, false], [320, 568, true], [380, 700, true], [768, 1024, false],
       [640, 360, true], [667, 375, true], [844, 390, true], [932, 430, true],
@@ -2366,6 +2413,7 @@ function run() {
           await browser.waitFor(`document.getElementById("${modeBtn(mode)}").getAttribute("aria-pressed") === "true"`, { label: `mode ${mode}` });
           await open();
           await browser.settle();
+          await prepareResourcesFonts(browser, fontMode);
           const m = await browser.eval(`
             const ids = ["res-handpaner", "res-dingandtones", "res-trainingcards"];
             const els = ids.map(id => document.getElementById(id));
@@ -2437,6 +2485,219 @@ function run() {
       }
     }
   }
+
+  // Shared browser-side line reader: count text glyph rows, not the boxes
+  // of wrappers around those rows. Keep the existing width filter/top bins.
+  function renderedTextLineCount(el) {
+    const tops = new Set();
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    let node;
+    while ((node = walker.nextNode())) {
+      if (!node.nodeValue.trim()) continue;
+      const r = document.createRange();
+      r.selectNodeContents(node);
+      for (const x of r.getClientRects()) {
+        if (x.width > 0) tops.add(Math.round(x.top / 4));
+      }
+    }
+    return tops.size;
+  }
+
+  // Owner-approved Helpers pair. This is rendered candidate coverage in English;
+  // the separately recorded baseline/candidate locale matrix is not inferred here.
+  async function assertHelpersPair(browser, fontMode) {
+    await prepareResourcesFonts(browser, fontMode);
+    const cells = [[320, 568, true], [380, 700, true], [380, 740, true], [844, 390, true],
+      [1280, 320, true], [1024, 700, false], [1024, 746, false], [1280, 746, false]];
+    let primaryError;
+    try {
+      for (const [width, height, mobile] of cells) {
+        await browser.setViewport(width, height, mobile);
+        await browser.send("Page.bringToFront");
+        await browser.settle();
+        const open = async () => {
+          if (await browser.eval(`return getComputedStyle(document.getElementById("settings-panel")).display === "none";`)) {
+            await browser.click("#settings-trigger");
+            await browser.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display !== "none"`,
+              { label: "Helpers Resources panel open" });
+          }
+        };
+        for (const mode of ["A", "B", "S"]) {
+          await open();
+          await browser.eval(`document.getElementById("${modeBtn(mode)}").scrollIntoView({block:"nearest", inline:"nearest"}); return true;`);
+          await browser.settle();
+          await browser.click(`#${modeBtn(mode)}`);
+          await browser.waitFor(`document.getElementById("${modeBtn(mode)}").getAttribute("aria-pressed") === "true"`,
+            { label: `Helpers mode ${mode}` });
+          await open();
+          await browser.eval(`
+            const a = document.getElementById("res-handpan-helpers");
+            if(a) a.scrollIntoView({block:"center", inline:"nearest"});
+            return true;`);
+          await browser.settle();
+          await prepareResourcesFonts(browser, fontMode);
+          const m = await browser.eval(`
+            const ids = ["res-handpan-helpers", "res-handpan-101"], els = ids.map(id => document.getElementById(id));
+            if (els.some(e => !e)) return {missing: ids.filter((id, i) => !els[i])};
+            const row = els[0].parentElement, rr = row.getBoundingClientRect(), rc = getComputedStyle(row);
+            const peer = getComputedStyle(document.getElementById("modeA"));
+            const wrapped = getComputedStyle(document.getElementById("res-amy-progressions"));
+            const reference = {font:peer.fontSize, family:peer.fontFamily, weight:peer.fontWeight,
+              tracking:peer.letterSpacing, leading:parseFloat(wrapped.lineHeight)};
+            return {missing:[], ids:[...row.children].map(e=>e.id),
+              row:{left:rr.left+parseFloat(rc.paddingLeft), right:rr.right-parseFloat(rc.paddingRight)}, reference,
+              links:els.map(e=>{
+                const r=e.getBoundingClientRect(), cs=getComputedStyle(e), range=document.createRange(); range.selectNodeContents(e);
+                const rects=[...range.getClientRects()].filter(t=>t.width>0 && t.height>0);
+                const lines=[];
+                for(const t of rects){
+                  let line=lines.find(l=>Math.abs(l.top-t.top)<4);
+                  if(!line){line={top:t.top,left:t.left,right:t.right};lines.push(line);}
+                  line.left=Math.min(line.left,t.left);line.right=Math.max(line.right,t.right);
+                }
+                let visible=cs.display!=="none" && cs.visibility==="visible" && Number(cs.opacity)===1, unclipped=true;
+                for(let a=e.parentElement;a;a=a.parentElement){
+                  const ac=getComputedStyle(a), ar=a.getBoundingClientRect();
+                  visible &&= ac.display!=="none" && ac.visibility==="visible" && Number(ac.opacity)===1;
+                  for(const t of rects){
+                    if(/hidden|clip|auto|scroll/.test(ac.overflowX)) unclipped &&= t.left>=ar.left+a.clientLeft-.5 && t.right<=ar.left+a.clientLeft+a.clientWidth+.5;
+                    if(/hidden|clip|auto|scroll/.test(ac.overflowY)) unclipped &&= t.top>=ar.top+a.clientTop-.5 && t.bottom<=ar.top+a.clientTop+a.clientHeight+.5;
+                  }
+                }
+                const hit=(x,y)=>e.contains(document.elementFromPoint(x,y));
+                const cx=(r.left+r.right)/2, cy=(r.top+r.bottom)/2, offsets=[-21.5,-14,-7,0,7,14,21.5];
+                const targetExposed=offsets.every(x=>offsets.every(y=>(Math.abs(x)>14 && Math.abs(y)>14)||hit(cx+x,cy+y)));
+                const textExposed=rects.every(t=>hit(t.left+.5,(t.top+t.bottom)/2)&&hit(t.right-.5,(t.top+t.bottom)/2));
+                return {id:e.id,text:e.textContent.replace(/\\s+/g," ").trim(),visibleText:e.innerText.replace(/\\s+/g," ").trim(),
+                  physicalLines:lines.length,lineBoxes:lines,left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height,
+                  rects:rects.length,visible,unclipped,targetExposed,textExposed,spill:e.scrollWidth-e.clientWidth,
+                  ellipsis:cs.textOverflow==="ellipsis",inside:rects.every(t=>t.left>=r.left-.5&&t.right<=r.right+.5&&t.top>=r.top-.5&&t.bottom<=r.bottom+.5),
+                  centered:lines.every(l=>Math.abs((l.left-r.left)-(r.right-l.right))<=2),
+                  font:cs.fontSize,family:cs.fontFamily,weight:cs.fontWeight,tracking:cs.letterSpacing,leading:parseFloat(cs.lineHeight)};
+              })};`);
+          const label = `${fontMode} ${width}x${height} mode ${mode}`;
+          assert.deepStrictEqual(m.missing, [], `${label}: both Helpers and HANDPAN 101 must exist`);
+          assert.deepStrictEqual(m.ids, ["res-handpan-helpers", "res-handpan-101"], `${label}: exact third-row pair and order`);
+          assert.deepStrictEqual(m.links.map(e=>e.text), ["HANDPAN HELPERS", "HANDPAN 101"], `${label}: complete semantic link labels`);
+          assert.deepStrictEqual(m.links.map(e=>e.visibleText), ["HANDPAN HELPERS", "HANDPAN 101"], `${label}: both complete names are visibly rendered`);
+          for(const link of m.links){
+            for(const property of ["font","family","weight","tracking"])
+              assert.strictEqual(link[property],m.reference[property],`${label} ${link.id}: existing peer ${property}`);
+            if(link.rects>1) assert.ok(link.leading>=m.reference.leading-.01,`${label}: preserve readable wrapped-label leading`);
+          }
+          assert.deepStrictEqual(m.links.map(e=>e.physicalLines), [2, 2],
+            `${label}: both names occupy exactly two physical rendered lines: ${JSON.stringify(m.links)}`);
+          assert.ok(m.links.every(e=>e.width>=44 && e.height>=44 && e.rects>0 && e.visible && e.targetExposed && e.textExposed),
+            `${label}: both links have exposed 44px targets and readable text: ${JSON.stringify(m)}`);
+          assert.ok(Math.abs(m.links[0].top-m.links[1].top)<=1, `${label}: Helpers and HANDPAN 101 share one row`);
+          assert.ok(Math.abs(m.links[0].width-m.links[1].width)<=1, `${label}: the two links have equal width`);
+          assert.ok(Math.abs(m.links[0].left-m.row.left)<=1 && Math.abs(m.links[1].right-m.row.right)<=1,
+            `${label}: the pair spans its existing row`);
+          assert.ok(m.links[1].left>=m.links[0].right, `${label}: targets do not overlap`);
+          for(const link of m.links){
+            assert.ok(link.inside && link.unclipped && link.centered && link.spill===0 && !link.ellipsis,
+              `${label} ${link.id}: complete centered label stays within its target and clipping ancestors: ${JSON.stringify(link)}`);
+          }
+          if(width===320 && height===568 && mode==="A"){
+            let accessibilityError;
+            try {
+              await browser.send("Accessibility.enable");
+              const {root}=await browser.send("DOM.getDocument",{depth:0});
+              const {nodeId}=await browser.send("DOM.querySelector",{nodeId:root.nodeId,selector:"#res-handpan-helpers"});
+              assert.ok(nodeId,`${label}: Helpers has a DOM node for accessibility inspection`);
+              const {nodes}=await browser.send("Accessibility.getPartialAXTree",{nodeId,fetchRelatives:false});
+              const links=nodes.filter(node=>!node.ignored && node.role?.value==="link");
+              assert.strictEqual(links.length,1,`${label}: one exposed accessible Helpers link`);
+              assert.strictEqual(String(links[0].name?.value||"").replace(/\s+/g," ").trim(),"HANDPAN HELPERS",
+                `${label}: computed accessible name retains the complete proper name`);
+            } catch(error) { accessibilityError=error; throw error; }
+            finally {
+              try { await browser.send("Accessibility.disable"); }
+              catch(cleanupError) {
+                if(!accessibilityError)throw cleanupError;
+                accessibilityError.message+=`; accessibility cleanup also failed: ${cleanupError.message}`;
+              }
+            }
+          }
+          const stops=await browser.eval(`return panelStops().map(e=>e.id);`);
+          assert.deepStrictEqual(stops.slice(-4), ["res-handpan-helpers","res-handpan-101","about-open","lang-select"],
+            `${label}: Helpers is one new stop immediately before HANDPAN 101, ABOUT and Language`);
+          assert.strictEqual(stops.filter(id=>id==="res-handpan-helpers").length,1,`${label}: Helpers appears exactly once in panel stops`);
+          await browser.eval(`document.getElementById("res-handpan-helpers").focus(); return true;`);
+          for(const id of ["res-handpan-101","about-open","lang-select"]){
+            await browser.key("Tab","Tab",9);
+            assert.strictEqual(await browser.eval(`return document.activeElement.id;`),id,`${label}: forward Tab reaches ${id}`);
+          }
+          for(const id of ["about-open","res-handpan-101","res-handpan-helpers"]){
+            await browser.send("Input.dispatchKeyEvent",{type:"keyDown",key:"Tab",code:"Tab",windowsVirtualKeyCode:9,nativeVirtualKeyCode:9,modifiers:8});
+            await browser.send("Input.dispatchKeyEvent",{type:"keyUp",key:"Tab",code:"Tab",windowsVirtualKeyCode:9,nativeVirtualKeyCode:9,modifiers:8});
+            const focused=await browser.eval(`const e=document.activeElement,cs=getComputedStyle(e),r=e.getBoundingClientRect();
+              return {id:e.id,visible:e.matches(":focus-visible")&&cs.outlineStyle!=="none"&&parseFloat(cs.outlineWidth)>0,
+                exposed:e.contains(document.elementFromPoint((r.left+r.right)/2,(r.top+r.bottom)/2))};`);
+            assert.strictEqual(focused.id,id,`${label}: reverse Tab reaches ${id}`);
+            assert.ok(focused.visible&&focused.exposed,`${label}: ${id} retains exposed visible keyboard focus`);
+          }
+        }
+      }
+    } catch(error){primaryError=error;throw error;}
+    finally {
+      try {await browser.setViewport(900,900,false);await browser.send("Page.bringToFront");}
+      catch(cleanupError){if(!primaryError)throw cleanupError;primaryError.message+=`; cleanup also failed: ${cleanupError.message}`;}
+    }
+  }
+
+  test("HHR: Helpers and HANDPAN 101 remain equal usable targets with complete labels and keyboard order", async () => {
+    await freshLoad();
+    await assertHelpersPair(b,"fallback");
+  });
+
+  // These literal fixtures specify actual text rows independently of the
+  // reader. The padded nested wrapper exposes a container rectangle that is
+  // not a third text line; THREE remains a real third-line witness.
+  test("HHR oracle: rendered text lines stay literal through wrappers and retain a genuine third line", async () => {
+    await freshLoad();
+    let fixtureError;
+    try {
+      const rows = await b.eval(`
+        const old = document.getElementById("hhr-line-oracle-fixtures"); if(old)old.remove();
+        const host = document.createElement("section"); host.id = "hhr-line-oracle-fixtures";
+        host.style.cssText = "position:fixed;left:24px;top:24px;z-index:2147483647;width:260px;background:white;color:black;font:400 16px/24px sans-serif;pointer-events:none";
+        const fixtures = [
+          ["one", "ONE"],
+          ["two", "FIRST<br>SECOND"],
+          ["three", "FIRST<br>SECOND<br>THIRD"],
+          ["wrapped-two", '<span style="display:block;padding-top:12px;font:400 16px/24px sans-serif"><span>FIRST<br>SECOND</span></span>'],
+        ];
+        for(const [id, html] of fixtures){
+          const el=document.createElement("div"); el.id="hhr-line-fixture-"+id; el.innerHTML=html; host.appendChild(el);
+        }
+        document.body.appendChild(host);
+        const read = (${renderedTextLineCount.toString()});
+        return fixtures.map(([id])=>{
+          const el=document.getElementById("hhr-line-fixture-"+id),r=el.getBoundingClientRect();
+          const range=document.createRange();range.selectNodeContents(el);
+          const wrapper=id==="wrapped-two"?getComputedStyle(el.firstElementChild):null;
+          return {id,lines:read(el),text:el.innerText.replace(/\\s+/g," ").trim(),width:r.width,height:r.height,
+            wrapper:wrapper?{paddingTop:wrapper.paddingTop,fontSize:wrapper.fontSize,lineHeight:wrapper.lineHeight}:null,
+            rects:[...range.getClientRects()].map(rect=>({left:rect.left,top:rect.top,width:rect.width,height:rect.height}))};
+        });`);
+      assert.deepStrictEqual(rows.map(row=>row.id),["one","two","three","wrapped-two"],"all four independent line fixtures are measured");
+      assert.deepStrictEqual(rows.map(row=>row.text),["ONE","FIRST SECOND","FIRST SECOND THIRD","FIRST SECOND"],"all literal fixture words are visible");
+      assert.ok(rows.every(row=>row.width>0 && row.height>0),"every fixture is rendered with positive dimensions");
+      assert.deepStrictEqual(rows[3].wrapper,{paddingTop:"12px",fontSize:"16px",lineHeight:"24px"},"the independent wrapper witness retains its declared geometry");
+      assert.strictEqual(rows[0].lines,1,`the one-line witness has one text line: ${JSON.stringify(rows[0])}`);
+      assert.strictEqual(rows[1].lines,2,`the two-line witness has two text lines: ${JSON.stringify(rows[1])}`);
+      assert.strictEqual(rows[2].lines,3,`the genuine third-line witness must retain all three text lines: ${JSON.stringify(rows[2])}`);
+      assert.strictEqual(rows[3].lines,2,`the nested padded wrapper preserves exactly two text lines: ${JSON.stringify(rows[3])}`);
+    } catch(error) { fixtureError=error; throw error; }
+    finally {
+      try { await b.eval(`document.getElementById("hhr-line-oracle-fixtures")?.remove(); return true;`); }
+      catch(cleanupError) {
+        if(!fixtureError)throw cleanupError;
+        fixtureError.message+=`; fixture cleanup also failed: ${cleanupError.message}`;
+      }
+    }
+  });
 
   test("TR-1: the three site links are equal in width on every line they share, and every label stays inside its box",
     async () => {
@@ -9657,6 +9918,10 @@ function run() {
     });
     after(async () => { if (rb) await rb.close(); });
 
+    test("HHR: Helpers and HANDPAN 101 preserve complete labels, targets and keyboard order with real fonts", async () => {
+      await assertHelpersPair(rb,"real");
+    });
+
     test("TR-1: compact sites preserve single-row labels and targets with real fonts in modes A, B and S", async () => {
       await assertCompactSites(rb, "real");
     });
@@ -14402,11 +14667,7 @@ function run() {
       const SEL = ".mode, .prints button, .prints select, .panel-heading, .panel-note";
       const measure = (scope) => b.eval(`
         const root = document.querySelector(${JSON.stringify(scope)});
-        const lines = (el) => {
-          const r = document.createRange();
-          r.selectNodeContents(el);
-          return new Set(Array.from(r.getClientRects()).filter((x) => x.width > 0).map((x) => Math.round(x.top / 4))).size;
-        };
+        const lines = (${renderedTextLineCount.toString()});
         const els = Array.from(root.querySelectorAll(${JSON.stringify(SEL)})).filter((e) => e.getClientRects().length);
         const paper = document.getElementById("print-paper-select");
         const ctx = document.createElement("canvas").getContext("2d");

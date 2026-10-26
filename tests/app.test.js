@@ -3538,11 +3538,11 @@ test("PM rule 3: DOWNLOAD PDF names and builds the chord-only file, byte for byt
   }
 });
 
-test("PM rule 7: HANDPAN 101 is the last Resources link, a Google Doc in a new tab, alone in its row", async () => {
+test("PM rule 7: HANDPAN 101 is the last Resources link, a Google Doc in a new tab, beside Handpan Helpers", () => {
   const panel = pmPanel();
   const group = panel.slice(panel.indexOf('<h3 class="panel-heading">Resources</h3>'));
   const links = [...group.matchAll(/<a\b[^>]*>[\s\S]*?<\/a>/g)].map((m) => m[0]);
-  assert.ok(links.length >= 6, "six Resources links");
+  assert.strictEqual(links.length, 7, "seven Resources links");
   const first = links[links.length - 1];
   assert.match(first, /\bid="res-handpan-101"/);
   assert.match(first, /href="https:\/\/docs\.google\.com\/document\/d\/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco\/edit\?usp=drivesdk"/);
@@ -3551,15 +3551,43 @@ test("PM rule 7: HANDPAN 101 is the last Resources link, a Google Doc in a new t
   assert.match(first, /aria-label="Handpan 101 \(Google Doc\)"/);
   assert.match(first, /class="mode"/);
   assert.ok(!/onclick/.test(first), "a link click must not close the panel");
-  assert.match(first, />HANDPAN 101<\/a>/);
+  assert.strictEqual(strip(first).replace(/\s+/g, " ").trim(), "HANDPAN 101", "the complete name survives presentational wrapping");
   const rows = [...group.matchAll(/<div class="modebar([^"]*)">([\s\S]*?)<\/div>/g)];
   assert.strictEqual(rows.length, 4, "four modebar rows");
   assert.strictEqual((rows[0][2].match(/<a\b/g) || []).length, 3, "the site row keeps three siblings");
   assert.strictEqual((rows[1][2].match(/<a\b/g) || []).length, 2, "the Amy row keeps two");
-  assert.strictEqual((rows[2][2].match(/<a\b/g) || []).length, 1, "HANDPAN 101 is alone in its row");
-  assert.ok(rows[2][2].includes("res-handpan-101"));
+  assert.strictEqual((rows[2][2].match(/<a\b/g) || []).length, 2, "Helpers and HANDPAN 101 share the third row");
+  assert.deepStrictEqual([...rows[2][2].matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]),
+    ["res-handpan-helpers", "res-handpan-101"], "Helpers immediately precedes HANDPAN 101");
   assert.ok(rows[3][2].includes('id="about-open"'), "the fourth row holds ABOUT");
   assert.ok(!/<a\b/.test(rows[3][2]), "the ABOUT row holds no link");
+});
+
+
+// Owner-approved Resources addition: the destination and safe native anchor
+// semantics are literal requirements, independent of the app's link table.
+test("HHR: the Helpers resource is a native new-tab link immediately before HANDPAN 101", () => {
+  const panel = pmPanel();
+  const group = panel.slice(panel.indexOf('<h3 class="panel-heading">Resources</h3>'));
+  const links = [...group.matchAll(/<a\b[^>]*>[\s\S]*?<\/a>/g)].map((m) => m[0]);
+  const helpers = links.filter((link) => /\bid="res-handpan-helpers"/.test(link));
+  assert.strictEqual(helpers.length, 1, "exactly one Helpers resource anchor must exist");
+  const link = helpers[0];
+  assert.match(link, /\bhref="https:\/\/handpanhelpers\.klangzeug\.de\/"/, "the literal Helpers destination");
+  assert.match(link, /\btarget="_blank"/, "Helpers opens in a separate tab");
+  assert.match(link, /\brel="noopener"/, "Helpers cannot access the app through window.opener");
+  assert.match(link, /\bclass="mode"/, "Helpers shares the existing control treatment");
+  assert.strictEqual(strip(link).replace(/\s+/g, " ").trim(), "HANDPAN HELPERS", "the complete proper name survives presentational wrapping");
+  assert.ok(!/\bon(?:click|keydown)\s*=/.test(link), "the resource uses native activation without inline script");
+  assert.ok(!/\b(?:hidden|disabled|aria-hidden|tabindex)(?=\s|=|>)/.test(link), "Helpers remains a normal keyboard-reachable anchor");
+  const index = links.indexOf(link);
+  assert.match(links[index + 1] || "", /\bid="res-handpan-101"/, "Helpers immediately precedes HANDPAN 101");
+  assert.strictEqual(index, links.length - 2, "HANDPAN 101 stays the final outbound Resources link");
+  const rows = [...group.matchAll(/<div class="modebar([^"]*)">([\s\S]*?)<\/div>/g)];
+  assert.strictEqual(rows.length, 4, "adding Helpers does not add a Resources row");
+  assert.match(rows[2][1], /\bduo\b/, "the approved third row is an equal-width duo");
+  assert.deepStrictEqual([...rows[2][2].matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]),
+    ["res-handpan-helpers", "res-handpan-101"], "the third row contains only the approved pair");
 });
 
 /* D-3's type guard on printPaper must reject a TRUTHY but invalid stored

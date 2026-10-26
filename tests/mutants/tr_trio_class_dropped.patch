@@ -4,9 +4,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1745,7 +1745,7 @@ html.about-open{overflow:hidden}
-          boxes) the two Amy Naylor videos, row three HANDPAN 101 alone (2026-10-08,
-          full width, so no existing control moves down), row four the ABOUT button
+@@ -1737,7 +1737,7 @@ html.about-open{overflow:hidden}
+          boxes) the two Amy Naylor videos, row three (class duo) HANDPAN HELPERS
+          then HANDPAN 101, row four the ABOUT button
           (an in-app view, not an outbound link: no href, no res- id). -->
 -    <div class="modebar trio">
 +    <div class="modebar">

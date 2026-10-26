@@ -1,5 +1,28 @@
 # Shared workstream ledger
 
+## Recovery Gate1 ACTIVE — 2026-10-26
+
+Owner reaffirmed AFK continuation. Reviewed [regroup subplan](plans/2026-10-26-saved-variants-regroup.md) activated: stage blobs and working conflict copies preserved privately in HV/evidence/regroup-gate1-premerge before resolution. Coordinator is resolving approved Helpers integration, preserving both parents/owner decisions. No reset/abort or original checkout edits. Application freeze and mutation/native/full-CI/performance gates remain pending; no DEV or main claim. Current regroup review record: round1 revise, round2 both CLEAR; no new failed execution round. Parallel Linux proposal review only, no measurements/setup yet.
+
+### Gate1 resolution checkpoint
+
+All11 conflict paths/stages preserved; text resolutions retain both histories and approved Helpers test behavior. App source SHA dc6af7528c7d326a129402458f9acc9adb9f524e3bc23453290c71f46dd292c5. Exact instruction-delta audit confirms only approved Resources packet over saved-variants HEAD; engine unchanged. All1623 required prior fault identities present;1613 apply and10 stale context patches require generated reconciliation in M lane. Combined app suite currently running, not yet passed. Expected floors942/491/67 retained; actual results pending. Local merge checkpoint intentionally precedes M regeneration and final delivery gates; do not publish as a green release.
+
+## AFK regroup rule and saved-variants recovery — 2026-10-26
+
+Owner requires regrouping after more than three failed review rounds: stop the affected implementation scope, synthesize learnings and independently review a replacement subplan before proceeding. This is now applied to saved variants at owner request; historical CI/measurement failures are not mislabeled as review counts. [Recovery subplan](plans/2026-10-26-saved-variants-regroup.md) has independent ENG/design CLEAR after one revision round (round1 revise, round2 clear). Current integration merge is preserved; regroup complete; next is Gate1 integration under existing through-DEV authority, with new Linux setup separately qualified. No implementation or new browser/performance run occurred in the regroup task. Existing authorizations, main consent and exact CLAUDE approval boundaries remain. No CLAUDE.md edit.
+
+## Owner device QA confirmation — Handpan Helpers, 2026-10-26
+
+The owner reports: “Tested on my devices; all good” for the DEV Resources
+HANDPAN HELPERS button, including the requested labels/fit, new-tab opening and
+practice-state preservation checks. Owner device QA is now **PASSED**; this
+supersedes pending owner/device-QA labels in earlier checkpoints below. Device
+models and browser versions were not supplied; do not infer additional coverage.
+Implementation and automated/served-DEV validation evidence remain in the
+[Helpers validation plan](plans/2026-10-26-handpan-helpers-validation-finish.md).
+Main release remains held; this QA confirmation grants no main merge.
+
 ## Current continuation and settled decisions — 2026-10-26
 
 This section supersedes older pending/blocking labels below. Preserve historic
@@ -862,3 +885,32 @@ NULLexemptionwasidentifiedandprovenlateREDusingnaturalfailedcoldincomingimport.
 No directstateinjection. Source/testchangesreadyforcommitandapprovedHelpersmerge;
 thenfourfaultvectors/native/fullCI/servedDEV/performancegatesremain. This supersedes
 older'3b07frozen'checkpointlabels; originalsource/CI failures stayhistorical.
+
+## Historical Helpers activation — superseded by delivery and owner QA above
+
+## HANDPAN-HELPERS activation — 2026-10-26
+
+Owner approved the reviewed resource plan and exact Resources-only CLAUDE patch
+through DEV, targeting the next release only after fit/tests/independent review/
+fullCI/actualDEV gates. Main requires separate consent. Saved variants retains
+priority and its unfinished code is excluded from this DEV6165c873-based branch.
+
+Plan: docs/plans/2026-10-25-handpan-helpers.md. Root integration/worktree:
+/private/tmp/handpan-helpers.HUZs5u/integration, codex/helpers-integration-20261026.
+File-owned lanes: tests/ (helpers_tests; app/e2e tests), markup/ (helpers_markup;
+index Resources markup), root (exact instruction patch, support, faults, ledger,
+sole browser lease). Last: liveDEV/preimage verified, lanes created/briefed.
+Next: literal acceptanceRED before U edits, then same testsGREEN and full gates.
+No application or delivery success is claimed by this activation entry.
+
+SEO owner decisions also settled: plan /learn/ publication home and owner musical
+review for pilot articles; no SEO article implementation/publication authorized.
+
+### Helpers local checkpoint
+
+Minimal source08a6ed02 is implemented with the owner's exact approved Resources
+instruction patch.882app and4native tests pass; independently audited1344same-
+locale pairs and15meaningful mutation triples pass; metadata54/54 and1513allapply
+pass. Full English panel probe passes; seven locale probes/final independent
+review/fullCI/servedDEV remain pending. Local implementation is not DEV delivery.
+SEO choices are recorded in the separate SEO plan; no articles are implemented.

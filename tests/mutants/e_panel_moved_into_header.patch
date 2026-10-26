@@ -76,14 +76,13 @@
 # Re-cut 2026-10-16 (share url, lane SU-A): the Scales group gained #share-copy and #share-url; the moved copy was regenerated from the current panel. The mutation itself is unchanged.
 # Re-cut 2026-10-17 (share icon, lane I): #share-copy left the Scales row for the header and #share-url left the panel; the moved copy was regenerated from the current panel. The mutation itself is unchanged.
 # Refreshed from committed compact-sites source; ancestry fault unchanged.
-# Approved retained contract mapped to the transactional instance adapter.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1369,6 +1369,97 @@ html.about-open{overflow:hidden}
+@@ -1362,6 +1362,101 @@ html.about-open{overflow:hidden}
+   <!-- "+ Add a scale" lives in the settings panel's Scales group now (M2,
+        2026-09-28); #decks holds deck chips only. -->
    <nav class="decks" id="decks"></nav>
-   <p id="saved-status" role="status" hidden></p>
-   <button type="button" id="saved-temporary-use" class="mode" hidden>USE THIS TAB TEMPORARILY</button>
 +<div id="settings-scrim" hidden></div>
 +<div id="settings-panel" aria-labelledby="settings-title" hidden>
 +  <h2 id="settings-title" class="sr-only">Settings</h2>
@@ -131,7 +130,7 @@ diff --git a/index.html b/index.html
 +    </div>
 +  </div>
 +  <!-- Resources (docs/plans/2026-10-01-resources-menu.md, eng review
-+       amendments 1-7; docs/plans/2026-10-05-menu-resources-amy.md): six
++       amendments 1-7; docs/plans/2026-10-05-menu-resources-amy.md): seven
 +       outbound links in three rows plus a fourth row holding the ABOUT button, styled as .mode (no new colour
 +       or typeface, N15). They deliberately carry no onclick - a link click
 +       must NOT call closePanel() (amendment 3), unlike the print buttons
@@ -144,8 +143,8 @@ diff --git a/index.html b/index.html
 +         stacked overflowed the 320x568 fit test by 18px. Row one holds
 +         the three sites (class trio: one equal-width row at every viewport,
 +         complete labels wrap inside their targets), row two (class duo: one line, labels wrap inside their
-+         boxes) the two Amy Naylor videos, row three HANDPAN 101 alone (2026-10-08,
-+         full width, so no existing control moves down), row four the ABOUT button
++         boxes) the two Amy Naylor videos, row three (class duo) HANDPAN HELPERS
++         then HANDPAN 101, row four the ABOUT button
 +         (an in-app view, not an outbound link: no href, no res- id). -->
 +    <div class="modebar trio">
 +      <a class="mode" id="res-handpaner" href="https://handpaner.com/"
@@ -163,11 +162,14 @@ diff --git a/index.html b/index.html
 +         aria-label="Amy Naylor: more interesting chords with bottom notes (YouTube)"
 +         target="_blank" rel="noopener">AMY: BOTTOM NOTES</a>
 +    </div>
-+    <div class="modebar">
++    <div class="modebar duo">
++      <a class="mode" id="res-handpan-helpers"
++         href="https://handpanhelpers.klangzeug.de/"
++         target="_blank" rel="noopener"><span>HANDPAN <br>HELPERS</span></a>
 +      <a class="mode" id="res-handpan-101"
 +         href="https://docs.google.com/document/d/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco/edit?usp=drivesdk"
 +         aria-label="Handpan 101 (Google Doc)"
-+         target="_blank" rel="noopener">HANDPAN 101</a>
++         target="_blank" rel="noopener"><span>HANDPAN <br>101</span></a>
 +    </div>
 +    <div class="modebar">
 +      <button class="mode" type="button" id="about-open" aria-haspopup="dialog">ABOUT</button>
@@ -175,10 +177,11 @@ diff --git a/index.html b/index.html
 +  </div>
 +  <div class="panel-group"><h3 class="panel-heading" id="panel-lang-heading">Language</h3><select id="lang-select" aria-labelledby="panel-lang-heading"></select></div>
 +</div>
++
  </header>
-
+ 
  <main>
-@@ -1682,97 +1773,7 @@ html.about-open{overflow:hidden}
+@@ -1674,101 +1769,6 @@ html.about-open{overflow:hidden}
       below-breakpoint, modal presentation. At >=1024x700 the trigger that
       calls openPanel() is display:none, so the panel never gains them and
       the static sidebar is correctly plain, non-modal markup. -->
@@ -229,7 +232,7 @@ diff --git a/index.html b/index.html
 -    </div>
 -  </div>
 -  <!-- Resources (docs/plans/2026-10-01-resources-menu.md, eng review
--       amendments 1-7; docs/plans/2026-10-05-menu-resources-amy.md): six
+-       amendments 1-7; docs/plans/2026-10-05-menu-resources-amy.md): seven
 -       outbound links in three rows plus a fourth row holding the ABOUT button, styled as .mode (no new colour
 -       or typeface, N15). They deliberately carry no onclick - a link click
 -       must NOT call closePanel() (amendment 3), unlike the print buttons
@@ -242,8 +245,8 @@ diff --git a/index.html b/index.html
 -         stacked overflowed the 320x568 fit test by 18px. Row one holds
 -         the three sites (class trio: one equal-width row at every viewport,
 -         complete labels wrap inside their targets), row two (class duo: one line, labels wrap inside their
--         boxes) the two Amy Naylor videos, row three HANDPAN 101 alone (2026-10-08,
--         full width, so no existing control moves down), row four the ABOUT button
+-         boxes) the two Amy Naylor videos, row three (class duo) HANDPAN HELPERS
+-         then HANDPAN 101, row four the ABOUT button
 -         (an in-app view, not an outbound link: no href, no res- id). -->
 -    <div class="modebar trio">
 -      <a class="mode" id="res-handpaner" href="https://handpaner.com/"
@@ -261,11 +264,14 @@ diff --git a/index.html b/index.html
 -         aria-label="Amy Naylor: more interesting chords with bottom notes (YouTube)"
 -         target="_blank" rel="noopener">AMY: BOTTOM NOTES</a>
 -    </div>
--    <div class="modebar">
+-    <div class="modebar duo">
+-      <a class="mode" id="res-handpan-helpers"
+-         href="https://handpanhelpers.klangzeug.de/"
+-         target="_blank" rel="noopener"><span>HANDPAN <br>HELPERS</span></a>
 -      <a class="mode" id="res-handpan-101"
 -         href="https://docs.google.com/document/d/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco/edit?usp=drivesdk"
 -         aria-label="Handpan 101 (Google Doc)"
--         target="_blank" rel="noopener">HANDPAN 101</a>
+-         target="_blank" rel="noopener"><span>HANDPAN <br>101</span></a>
 -    </div>
 -    <div class="modebar">
 -      <button class="mode" type="button" id="about-open" aria-haspopup="dialog">ABOUT</button>
@@ -273,7 +279,7 @@ diff --git a/index.html b/index.html
 -  </div>
 -  <div class="panel-group"><h3 class="panel-heading" id="panel-lang-heading">Language</h3><select id="lang-select" aria-labelledby="panel-lang-heading"></select></div>
 -</div>
-+
-
+-
  <!-- The scale engine, inlined verbatim from src/engine/*.js. The app is
       single-file by contract, so these are copies rather than external script
+      references: index.html ships with the engine already in it and needs no

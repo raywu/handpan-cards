@@ -1,5 +1,9 @@
 # All-workstream status — latest2026-10-26
 
+## Saved-variants regroup — 2026-10-26
+
+[Recovery subplan](2026-10-26-saved-variants-regroup.md) now independently ENG/design CLEAR after one revision round. Next: preserve and resolve existing integration, freeze application source, reconcile mutation proofs, then separate correctness and performance/CI gates. More than three failed review rounds requires regroup across workstreams; no main permission or test waiver. Helpers owner device QA passed. This is a local checkpoint, not DEV publication.
+
 LatestverifiedDEV3542d6ea868bf08e81a0b4f06c4bc71bbc20cbcb; main96c4c589 remains
 held/unchanged. [Sharedledger](../WORKSTREAMS.md) hascurrentauthorizations and
 [route-repair plan](2026-10-26-saved-variants-route-intent.md) has preciseactiveproofs.
@@ -9,7 +13,7 @@ This section supersedes the archivedearlierstatus below; preserve its evidence.
 |---|---|---|
 | Savedvariants FIRST | Distinctnamed/layout versions withsafeEdit/conflicts; latestpublished0d36CIfailedonlyFIRSTPygmyhashwait, allotherjobs/all1618faultspassed. Localreviewed0322repair/T224 now17modeledcasesGREENaftermeaningfulRED/review. | Commit/integrateHelpers, fourfaultproofs, unchangednative/lifecycle, fullfinalCI/servedDEV; notQAready, nomain. |
 | Linuxperformance | GateHELDafterMacbaseline-onlyincompletecase. Ownerselectedone90scontrol→eligibleone180s200recordLinuxproposal; private3de57389draftprepared. | Independentreview, applicableconfigurationactivation, frozenfinalsource/matchedbaseline; notconfigured/run/validated. |
-| Helpers | Nativeexternalresourcebeside101 deliveredDEV3542 after4eaFULLCIandactualHTTPSsource7fe/9states/publicpopup validation. | OwnerdeviceQA pending; mainheld; no repeatedimplementation/Resourcespatchapproval. |
+| Helpers | Nativeexternalresourcebeside101 deliveredDEV3542 after4eaFULLCIandactualHTTPSsource7fe/9states/publicpopup validation. | Owner reports tested on their devices/all good: owner device QA PASSED on 2026-10-26; main held; no new implementation approval needed. |
 | Swipe | DeliberateScale↔Layouthorizontalnavigation authorized/interruptedbehindvariants. | Updatedbase/literalproofs/independentreview/fullCI/DEV/nativeQA; preservelane. |
 | Palette10 | Reviewedappend-onlyfourchoicesplan/exactCLAUDEpacketat a41a3bb7 APPROVEDbyowner, sourceapprovalreceipt08169310. | QUEUEDAFTERactivework, nextmainreleasetargetsubjectgates; verifyunchangedpacketatactivation, nomain/nocodeyet. |
 | Macforegroundhelper | ScopedsettlehelperonDEV, mainheld. | ReleaseseparatefrombroaderMacM2/M3/C1/fullsuite. |
@@ -30,8 +34,8 @@ This section supersedes the archivedearlierstatus below; preserve its evidence.
 | Ownerstopped | Audio/statistics/SM2/PWA. | Remainstopped. |
 
 Mainqueuepreservedinorder; duplicateplanstayspaused. CI-onlydraftsarenotmainrelease
-authorizations. HelpersphysicalQAistheonlycurrentownerfollow-up; itdoesn'tblock
-ongoingSVGengineering. Otherownerchoicesaresettled; AFKmeansfollowrecommendations
+authorizations. Helpers owner device QA PASSED on 2026-10-26; no current owner QA follow-up
+blocks ongoing saved-variants engineering. Otherownerchoicesaresettled; AFKmeansfollowrecommendations
 withinexistinggrant/review/test/exactCLAUDE/mainboundaries, notinventedQAresults.
 
 ## Archived earliercheck-in — historical, superseded wherecontradicted
