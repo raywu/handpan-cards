@@ -68,6 +68,9 @@ function reap(entry) {
   // the browser leads its own group and the whole tree dies at once.
   try { process.kill(-entry.proc.pid, "SIGKILL"); }
   catch { try { entry.proc.kill("SIGKILL"); } catch {} }
+  // A terminated browser's descendants can retain its debug-port pipe. Once
+  // this owned launch is retired, explicitly close our reader as well.
+  try { entry.proc.stderr?.destroy(); } catch {}
   // And then remove the profile, retrying briefly in case a dying child wins
   // the race anyway. Bounded at 100ms: this runs on the way out of a killed
   // suite, which must never become a hang.

@@ -10037,6 +10037,21 @@ function openSavedDatabase(create) {
   if(create){savedDatabaseOpening=pending;pending.then(()=>{if(savedDatabaseOpening===pending)savedDatabaseOpening=null;});}
   return pending;
 }
+// After initialization, a missing database is a refusal, never permission to
+// recreate schema or replay legacy sources outside the migration lock.
+function existingSavedDatabase() {
+  if(savedDatabase)return Promise.resolve({ok:true,db:savedDatabase});
+  if(savedDatabaseOpening)return savedDatabaseOpening;
+  const pending=openSavedDatabase(false).then(opened=>{
+    if(!opened.ok)return opened;
+    if(opened.absent)return savedFailure("protected","collection-missing");
+    savedDatabase=opened.db;
+    return opened;
+  });
+  savedDatabaseOpening=pending;
+  pending.then(()=>{if(savedDatabaseOpening===pending)savedDatabaseOpening=null;},()=>{if(savedDatabaseOpening===pending)savedDatabaseOpening=null;});
+  return pending;
+}
 function savedTransaction(db, mode, apply, signal) {
   return new Promise(resolve=>{
     let tx, result, firstError=null, done=false, hasValue=false, hasKey=false, raw, key;
@@ -10662,7 +10677,7 @@ async function commitSavedDurable(command, options) {
   catch(e){return savedFailure("invalid","candidate");}
   for(;;){
     if(options.signal?.aborted)return savedFailure("cancelled");
-    const opened=await openSavedDatabase(true);
+    const opened=await existingSavedDatabase();
     if(!opened.ok)return opened;
     const snapshot=await readSavedSnapshot(opened.db);
     if(!snapshot.ok)return snapshot;
@@ -10708,7 +10723,7 @@ function reconcileSavedCollection() {
     let result={ok:true,persistence:"durable"};
     do{
       savedReconcileDirty=false;
-      const opened=await openSavedDatabase(true);
+      const opened=await existingSavedDatabase();
       if(!opened.ok)return savedReconciliationFailure(opened);
       const snapshot=await readSavedSnapshot(opened.db);
       if(savedMode!=="durable" || generation!==savedAuthorityGeneration)return {ok:true,persistence:savedMode};

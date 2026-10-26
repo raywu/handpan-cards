@@ -203,6 +203,93 @@ test("FG-9 settle after close rejects without transport work", async () => {
   assert.deepStrictEqual(f.messages, []);
 });
 
+// Retiring a launch must release its own debug-port pipe as well as its OS
+// process. SIGKILL alone cannot guarantee EOF when another descriptor holder
+// inherited that pipe. This controlled Node fixture requires no browser.
+test("CDP-STDERR retirement closes only the owned launch stream before process exit", async () => {
+  const { spawn } = require("node:child_process");
+  const os = require("node:os");
+  for (const streamState of ["live", "already-destroyed", "absent", "throwing"]) {
+    const profile = fs.mkdtempSync(path.join(os.tmpdir(), "hpfc-stderr-retirement-"));
+    const env = { ...process.env };
+    delete env.NODE_TEST_CONTEXT;
+    const proc = spawn(process.execPath, ["-e",
+      "process.stderr.write('stderr-retirement-ready\\n');setInterval(()=>{},1000);"],
+      { detached:true, stdio:["ignore", "ignore", "pipe"], env });
+    const stderr = proc.stderr;
+    const originalDestroy = stderr.destroy;
+    const exited = new Promise(resolve => proc.once("exit", (code, signal) => resolve({code, signal})));
+    let wsCloses = 0, destroyThrows = 0;
+    const ws = { addEventListener() {}, close() { wsCloses++; } };
+    const browser = new Browser(proc, ws, profile, {proc, profileDir:profile});
+    async function boundedExit() {
+      let timer;
+      try {
+        return await Promise.race([exited, new Promise((resolve, reject) => {
+          timer = setTimeout(() => reject(new Error("owned stderr fixture did not exit within 2s")), 2000);
+        })]);
+      } finally { clearTimeout(timer); }
+    }
+    let primaryFailure;
+    try {
+      await new Promise((resolve, reject) => {
+        let text = "";
+        const timer = setTimeout(() => { cleanup(); reject(new Error("owned stderr fixture never became ready")); }, 2000);
+        const data = chunk => { text += chunk.toString(); if (text.includes("stderr-retirement-ready\n")) { cleanup(); resolve(); } };
+        const error = err => { cleanup(); reject(err); };
+        const exit = () => { cleanup(); reject(new Error("owned stderr fixture exited before readiness")); };
+        const cleanup = () => { clearTimeout(timer); stderr.off("data", data); proc.off("error", error); proc.off("exit", exit); };
+        stderr.on("data", data); proc.once("error", error); proc.once("exit", exit);
+      });
+      assert.strictEqual(stderr.destroyed, false, "the owned launch pipe must be open before retirement");
+      if (streamState === "already-destroyed") stderr.destroy();
+      if (streamState === "absent") proc.stderr = null;
+      if (streamState === "throwing") stderr.destroy = () => {
+        // One owned cleanup call throws; later Node stream teardown must regain
+        // its real destroy method instead of receiving our failure injection.
+        stderr.destroy = originalDestroy;
+        destroyThrows++;
+        throw new Error("controlled retirement failure");
+      };
+      await assert.doesNotReject(browser.close(), "owned stream cleanup cannot mask browser retirement");
+      // Do not await process exit/close first: close itself must retire its pipe,
+      // even when EOF could otherwise remain pending indefinitely.
+      if (streamState === "live" || streamState === "already-destroyed") {
+        assert.strictEqual(stderr.destroyed, true, "retirement must destroy its owned stderr before awaiting process exit");
+      }
+      if (streamState === "throwing") assert.strictEqual(destroyThrows, 1, "the guarded retirement call must exercise the cleanup failure");
+      assert.strictEqual(wsCloses, 1, "normal websocket retirement remains intact");
+      assert.strictEqual(fs.existsSync(profile), false, "owned profile removal still completes");
+      const result = await boundedExit();
+      assert.strictEqual(result.signal, "SIGKILL", "only the owned fixture must be terminated by retirement");
+    } catch (error) {
+      primaryFailure = error;
+      throw error;
+    } finally {
+      // Cleanup remains effective on the intended old-helper assertion failure;
+      // never sweep profiles/processes or wait for close before releasing a pipe.
+      const cleanupFailures = [];
+      try {
+        try { stderr.destroy = originalDestroy; originalDestroy.call(stderr); }
+        catch (error) { cleanupFailures.push(error); }
+        if (proc.exitCode === null && proc.signalCode === null) {
+          try { process.kill(-proc.pid, "SIGKILL"); } catch { try { proc.kill("SIGKILL"); } catch {} }
+        }
+        try { await boundedExit(); } catch (error) { cleanupFailures.push(error); }
+      } finally {
+        // Even a failed exit wait must not strand this fixture's directory.
+        try { fs.rmSync(profile, {recursive:true, force:true}); }
+        catch (error) { cleanupFailures.push(error); }
+      }
+      if (cleanupFailures.length) {
+        const cleanupFailure = new AggregateError(cleanupFailures, "owned stderr fixture cleanup failed");
+        if (primaryFailure) primaryFailure.cause = cleanupFailure;
+        else throw cleanupFailure;
+      }
+    }
+  }
+});
+
 if (!BROWSER) {
   const why =
     "harness self-tests skipped: no Chromium binary found (set CHROME_BIN to " +

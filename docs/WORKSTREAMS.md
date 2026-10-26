@@ -44,6 +44,15 @@ executes this already-planned internal alternative under through-DEV and
 reaffirmed AFK authority; no CLAUDE change/install/main merge.
 
 2026-10-26 continuation checkpoint:
+- Final adapter source `a394217ec15626d96455c1b746dfbf001578201c34dbb4e01461b3d019bd88bf`
+  independently ENG-cleared after the fifth existing-only reopen repair. Exact
+  native deletion probe now passes with absent database retained, no timeout and
+  clean cleanup. Nine focused IDB groups pass on this source. Full935 result
+  below belongs to its preceding four-fix source; final full CI remains required.
+- Integrated scoped stderr repair plus refined owned-child fixture and generated
+  fault: final fixture clean1PASS/mutant1ERR_ASSERTION, zero skip/cancel; complete
+  harness66/66PASS, zero skip/cancel,10.82s supervised, cleanup true. Harness floor
+  raised after actual66 observed. UI matrix/concurrency reruns remain pending.
 - Transactional candidate source `7eba9b27158a460543c2fa18c05bee385fd177efe3bd152b2556693fcd54b489`
   plus app tests `7cd09396b7baa1670fb6562ace4140b918622d332203609232f16fdaa75fc8bb`
   now passes935/935 (zero skip/cancel). Four independent review findings received

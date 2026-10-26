@@ -57,7 +57,7 @@ FLOORS = {
     "tests/seat_sweeps_tap_edit.test.js": 3,
     "tests/seat_sweeps_keys.test.js": 4,
     "tests/e2e.test.js": 480,
-    "tests/harness.test.js": 51,
+    "tests/harness.test.js": 66,
     "tests/drawer_grid.test.js": 3,
     "tests/drawer_seats.test.js": 28,
     "tests/drawer_drag.test.js": 33,
