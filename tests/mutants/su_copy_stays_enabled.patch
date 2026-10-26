@@ -4,12 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15094,7 +15094,7 @@ function syncRoute() {
-   }
-   observeLinkRoute();
+@@ -15114,3 +15114,3 @@ function syncRoute() {
    const refused = route === "";
 -  shareCopy.disabled = refused;
 +  shareCopy.disabled = false;
    shareCopy.title = refused ? reason : "";
-   if (refused && !routeRefused && (booted || announce.textContent === "")) say(reason, "warn");
-   routeRefused = refused;

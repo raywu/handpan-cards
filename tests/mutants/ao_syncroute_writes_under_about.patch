@@ -5,12 +5,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15080,7 +15080,7 @@ const routeFor = d => routeInfo(d).route;
- let routeRefused = false;
- let booted = false;
+@@ -15099,3 +15099,3 @@ let lastAcknowledgedRouteHash = null;
  function syncRoute() {
 -  if (sheetOpen || aboutOpen) return;
 +  if (sheetOpen) return;
    if(pendingRecoveryShare!==null && location.hash===SHARE_PREFIX+pendingRecoveryShare){
-     shareCopy.disabled=true;
-     shareCopy.title=t("saved.importFailure");

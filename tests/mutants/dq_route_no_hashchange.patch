@@ -5,12 +5,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15173,7 +15173,7 @@ function routeToDeck(routed) {
-   track("deck_route",{deck_id:routed});return deck().id;
+@@ -15192,4 +15192,3 @@ function routeToDeck(routed) {
  }
-
+-
 -window.addEventListener("hashchange", async () => {
 +window.addEventListener("hashchange_off", async () => {
    observeLinkRoute();
-   if (sheetOpen || aboutOpen) return;
-   if (location.hash === routeFor(deck())) return;
