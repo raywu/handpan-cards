@@ -13354,6 +13354,11 @@ savedSnapshotListener=event=>{
   const focusedRemoved=!!focused?.closest?.("#decks") && !allDeckViews().some(view=>view.selection.id===focused.getAttribute("data-selection-id"));
   selection=savedResolve(selection,savedState,savedEntries);
   const dirty=sheetOpen && sheetBaseline!==sheetKey();
+  if(dirty && conflictVisible && event.source==="remote"){
+    const deleted=editingBase?.selection.kind==="saved" && !savedEntries.has(editingBase.selection.id);
+    const message=t(deleted?"saved.conflictDeleted":"saved.conflict");
+    if(document.getElementById("scale-conflict-msg").textContent!==message)showSavedConflict();
+  }
   if(sheetOpen && editingBase && event.source==="remote" && !dirty && !savePending){
     const target=savedResolve(editingBase.selection,savedState,savedEntries);
     const entry=target.kind==="saved"?savedEntries.get(target.id):null;
