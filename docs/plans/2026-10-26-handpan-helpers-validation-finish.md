@@ -249,3 +249,21 @@ Remaining: finalindependentDESIGNreview, immutablecandidatecontinuity, FULLexact
 Linuxvalidate allgreen, thenactualservedDEVrevision/journeys andownerQA. FullMac
 I18N stillFAILED withonlyknownbaselineJapaneseHandpaner debt; no waive/exemption.
 No mainmerge, newCLAUDE/global/auth/toolsetup orphysical-device claim.
+
+
+Representation-only cap2 fault correction: git diff check flagged a whitespace-only
+context row inside the generated patch after b438e566 commit. Regenerated from
+committed15be/T6d89 via `git diff -U1`, with no manual body edits; newpatchSHAea16c860
+has the SAMEheader/command and actualappliedfaultpostimage7af1ee09 as old5997.
+Original proof/patch artifacts remain immutable. Applied-byte equivalence is
+recorded in evidence/helpers-cap2-context-a2.json, not mislabeled as a newrun.
+Finaldiffcheck/applycheck must pass before renewedCI publication.
+
+
+Finalartifactea16 equivalence independentlyENG CLEAR: old5997 andnewU1patch both
+reconstruct EXACTfaultpostimage7af1ee09 againstT6d89, headers/payloadidentical.
+Existing24nativeproofs remain behavioral/postimage evidence via this explicit
+mapping, not a newexecutionofea16. Finalartifactmetadata54/54 refresh passes under
+helpers-label-metadata-a1,60.142s/no timeout/cleanuptrue; applycheck/diffcheck pass.
+No app/test behavior changed. FinalDESIGN conditionalCLEAR also recorded for
+7fe/T6d89, with immutablefinalhead/fullCI/servedDEV/ownerQA remaininggates.
