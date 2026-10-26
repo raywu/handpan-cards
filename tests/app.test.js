@@ -16034,4 +16034,113 @@ describe("SHC asynchronous LINK ownership", () => {
       assert.strictEqual(app.els["scale-generate"].disabled,false,"English note input remains accepted in "+lang);
     }
   });
+
+  // Independent review regressions: approved async-ownership, coherent editor,
+  // route persistence, recovery and localization contracts; not output-derived.
+  test("SV11 U1: acknowledged old imports cannot steal a newer view or Add sheet", async () => {
+    for (const newer of ["selection", "sheet"]) {
+      const {app}=await load(); let release, acquired;
+      const held=new Promise(resolve=>{acquired=resolve;});
+      const blocker=app.sandbox.navigator.locks.request(SV_LOCK,()=>{acquired();return new Promise(resolve=>{release=resolve;});});
+      await held;
+      const pending=imported(app,SV.portableRecords.amaraA);
+      await app.waitFor("navigator.locks.query().then(q=>q.pending.length===1)");
+      if(newer==="selection")app.run('selectDeck({kind:"builtin",id:"pygmy"},false)');
+      else {openSheet(app);app.type(SV.inventories.other.seed);app.els["scale-box"].focus();}
+      const route=app.location.hash, selected=plain(app.get("selection"));
+      release();await blocker; const result=await pending;
+      assert.strictEqual(result.ok,true,"an already queued import remains a legitimate acknowledged record");
+      assert.ok(snapshot(app).entries.some(e=>e.record.o.name==="PUBLIC PAN A"));
+      assert.deepStrictEqual(plain(app.get("selection")),selected,"obsolete import must not select over newer "+newer);
+      assert.strictEqual(app.location.hash,route,"obsolete import must not replace newer route");
+      if(newer==="sheet") {assert.strictEqual(app.sheetOpen(),true);assert.strictEqual(app.els["scale-box"].value,SV.inventories.other.seed);assert.strictEqual(app.activeId(),"scale-box");}
+      const fresh=await imported(app,SV.portableRecords.amaraB);
+      assert.strictEqual(fresh.ok,true);assert.strictEqual(app.currentDeck().name,"PUBLIC PAN B","current import still selects its acknowledged version");
+    }
+  });
+
+  test("SV11 U2: remote replacement keeps a clean built-in editor target and fields coherent", async () => {
+    const {app,origin,crypto}=await load(); editSelected(app);
+    const peer=(await load({origin,crypto})).app, before=snapshot(peer);
+    const rec=copy(SV.portableRecords.amaraB);rec.o.replaces="kurd";
+    const added=await command(peer,{type:"replace-builtin",collectionId:before.collectionId,seedId:"kurd",expectedSlotStateRevision:0,expectedOwnerId:null},rec);
+    assert.strictEqual(added.ok,true);origin.flushStorageEvents();
+    assert.strictEqual(app.els["scale-name"].value,"PUBLIC PAN B","clean editor must display the replacement it is now bound to");
+    const base=plain(app.get("({selection:editingBase.selection,name:editingBase.deck.name,revision:editingBase.revision})"));
+    assert.deepStrictEqual(base,{selection:{kind:"saved",id:added.instanceId},name:"PUBLIC PAN B",revision:1});
+    rename(app,"COHERENT REPLACEMENT");await submit(app);
+    assert.strictEqual(snapshot(app).entries.find(e=>e.instanceId===added.instanceId).record.o.name,"COHERENT REPLACEMENT");
+  });
+
+  test("SV11 U3: unrelated remote writes preserve clean Layout interaction and dirty editor base", async () => {
+    const {app,origin,crypto}=await seeded([SV.portableRecords.pygmyLayoutA]);
+    editSelected(app);app.click(app.els["scale-tab-layout"]);app.els["scale-fine-toggle"].click();
+    assert.strictEqual(app.get("drawerOpen && fineOpen"),true,"real Layout and fine controls open before unrelated event");
+    app.els["scale-box"].focus();const state=plain(app.get("({drawerOpen,fineOpen,pickRef,base:editingBase})"));
+    const peer=(await load({origin,crypto})).app;
+    assert.strictEqual((await imported(peer,SV.portableRecords.amaraB)).ok,true);
+    origin.flushStorageEvents();
+    assert.deepStrictEqual(plain(app.get("({drawerOpen,fineOpen,pickRef,base:editingBase})")),state,"unrelated Add cannot reset open Layout interaction");
+    assert.strictEqual(app.activeId(),"scale-box");
+    rename(app,"UNSAVED LOCAL DRAFT");const dirtyBase=plain(app.get("editingBase"));
+    const e=snapshot(peer);
+    const changed=await command(peer,{type:"edit",collectionId:e.collectionId,instanceId:iid(1),expectedRevision:1},SV.portableRecords.pygmyLayoutB);
+    assert.strictEqual(changed.ok,true);origin.flushStorageEvents();
+    assert.strictEqual(app.els["scale-name"].value,"UNSAVED LOCAL DRAFT");
+    assert.deepStrictEqual(plain(app.get("editingBase")),dirtyBase,"remote winner cannot rebind a dirty draft's original revision");
+  });
+
+  test("SV11 U4: stored and detected non-English cold boots localize before ready", async () => {
+    const de=JSON.parse(fs.readFileSync(path.join(ROOT,"data/i18n/de.json"),"utf8"));
+    for(const storage of [{hpfc:JSON.stringify({lang:"de"})},{}]) {
+      const {app}=await load({storage,languages:["de-DE","en"]});
+      assert.strictEqual(app.get("document.documentElement.lang"),"de","ready UI declares its resolved language");
+      assert.strictEqual(app.els["panel-lang-heading"].textContent,de["sel.language"],"static settings copy is localized at first ready");
+      assert.ok(app.els["lang-select"].children.some(option=>option.textContent==="Deutsch"),"language selector is populated before ready");
+    }
+  });
+
+  test("SV11 U5: a built-in boot route persists tagged preference without rewriting legacy selection", async () => {
+    const legacy=JSON.stringify({deck:"kurd",other:{keep:true}});
+    const {app,origin,crypto}=await load({href:"https://example.test/index.html#deck=f-low-pygmy-18",storage:{hpfc:legacy}});
+    assert.strictEqual(app.currentDeck().id,"pygmy");
+    await app.getAsync('navigator.locks.request("handpan-cards:saved-scales:v1",()=>true)');
+    assert.deepStrictEqual(snapshot(app).preferredSelection,{kind:"builtin",id:"pygmy"},"opening a seed route persists the selected view for the next visit");
+    assert.strictEqual(app.store.hpfc,legacy,"new selection authority does not rewrite legacy preferences");
+    const reloaded=(await load({origin,crypto})).app;assert.strictEqual(reloaded.currentDeck().id,"pygmy");
+  });
+
+  test("SV11 U6: missed-event conflict preserves draft then Back shows the acknowledged winner", async () => {
+    const origin=createOrigin({events:"omit"});
+    const {app,crypto}=await seeded([SV.portableRecords.amaraA],{}, {origin});
+    editSelected(app);rename(app,"LOSING LOCAL DRAFT");
+    const peer=(await load({origin,crypto})).app,e=snapshot(peer);
+    const changed=await command(peer,{type:"edit",collectionId:e.collectionId,instanceId:iid(1),expectedRevision:1},SV.portableRecords.amaraB);
+    assert.strictEqual(changed.ok,true);const winner=app.store[SV_KEY];
+    await submit(app);
+    assert.strictEqual(app.sheetOpen(),true);assert.strictEqual(app.els["scale-name"].value,"LOSING LOCAL DRAFT");
+    assert.strictEqual(app.els["scale-conflict"].hidden,false);assert.strictEqual(app.store[SV_KEY],winner);
+    app.els["scale-back"].click();
+    assert.strictEqual(app.currentDeck().name,"PUBLIC PAN B","explicit Back reviews the real saved winner even with all events omitted");
+    assert.strictEqual(app.store[SV_KEY],winner,"review/cancel cannot rewrite the winner");
+  });
+
+  test("SV11 U7: About seed routing selects the slot owner rather than an equal-inventory sibling", async () => {
+    const owner=copy(SV.portableRecords.amaraA);owner.o.replaces="kurd";
+    const {app}=await seeded([owner,SV.portableRecords.amaraB],{slots:{kurd:iid(1)},slotStateRevision:1,preferredSelection:{kind:"saved",id:iid(2)}});
+    assert.strictEqual(app.currentDeck().name,"PUBLIC PAN B");app.run("openAbout()");
+    app.run("aboutLink('#deck=d-kurd-10')");
+    assert.strictEqual(app.currentDeck().name,"PUBLIC PAN A","seed link targets its owner, not any scale with the same notes");
+    assert.deepStrictEqual(plain(app.get("selection")),{kind:"saved",id:iid(1)});
+  });
+
+  test("SV11 U8: protected temporary-use action is inert behind modal Settings", async () => {
+    const {app}=await load({storage:{[SV_KEY]:'{"schema":99}'}});
+    assert.strictEqual(app.els["saved-temporary-use"].hidden,false,"protected recovery exposes explicit temporary operation");
+    app.run("openPanel()");
+    assert.strictEqual(app.els["saved-temporary-use"].inert,true,"background action must be inert while Settings owns modal focus");
+    app.run("closePanel()");
+    assert.strictEqual(app.els["saved-temporary-use"].inert,false,"closing Settings restores the explicit action");
+  });
+
 }
