@@ -10508,7 +10508,9 @@ function publishSavedCommand(result, persistence) {
   try {
     const published = applySavedSnapshot(result.envelope, views, persistence === "session" ? "session" : "commit");
     if (!published.ok) savedIssue = published;
-    return { ...plainResult, persistence, published: published.ok };
+    // An acknowledged older same-epoch revision may already have been superseded.
+    // Retain its API ACK without claiming that the ignored view was published.
+    return { ...plainResult, persistence, published: published.ok && !published.ignored };
   } catch (e) {
     // The API commit already succeeded. Retain that acknowledgment even if
     // local publication fails; never retry allocation or claim rollback.
