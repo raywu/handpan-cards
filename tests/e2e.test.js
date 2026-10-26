@@ -17774,8 +17774,9 @@ function run() {
         await send("Input.dispatchMouseEvent",{type:"mouseReleased",x:point.x,y:point.y,button:"left",clickCount:1});};
       const type=async(selector,text)=>{await click(selector);await send("Input.dispatchKeyEvent",{type:"keyDown",key:"a",code:"KeyA",commands:["selectAll"]});
         await send("Input.dispatchKeyEvent",{type:"keyUp",key:"a",code:"KeyA"});await send("Input.insertText",{text});};
-      const key=async(key,code,keyCode)=>{await send("Page.bringToFront");for(const type of ["keyDown","keyUp"])
-        await send("Input.dispatchKeyEvent",{type,key,code,windowsVirtualKeyCode:keyCode,nativeVirtualKeyCode:keyCode});};
+      const key=async(key,code,keyCode)=>{await send("Page.bringToFront");
+        for(const type of key==="Enter"?["rawKeyDown","char","keyUp"]:["keyDown","keyUp"])
+          await send("Input.dispatchKeyEvent",{type,key,code,...(type==="char"?{text:"\r",unmodifiedText:"\r"}:{}),windowsVirtualKeyCode:keyCode,nativeVirtualKeyCode:keyCode});};
       return {id,send,eval:evaluate,wait,click,type,key};
     }
     const read=p=>p.eval(`return JSON.parse(localStorage.getItem(${JSON.stringify(KEY)}));`);
@@ -17971,7 +17972,8 @@ function run() {
           await a.wait("savedState.entries.every(x=>!x.record?.o?.replaces)","original armed RESET acknowledges unchanged replacement scope");
           const after=await read(a);assert.ok(after.entries.some(x=>x.record.o?.name==="UNRELATED PUBLIC PAN"));assert.deepStrictEqual(after.slots,{});assert.deepStrictEqual(after.hidden,[]);
         } else {
-          await ink(a,"#saved-status",{text:SV.uiContract.copy.en.resetConflict});
+          await a.wait(`document.querySelector('.announce').textContent===${JSON.stringify(SV.uiContract.copy.en.resetConflict)}`,"actual stale RESET refusal announcement");
+          await ink(a,".announce",{text:SV.uiContract.copy.en.resetConflict,live:true});
           assert.deepStrictEqual(await read(a),winner,"actual stale second RESET click preserves the newer replacement");
           const result=await commit(a,{type:"reset",collectionId:e.collectionId,affectedScope:armed});
           assert.strictEqual(result.ok,false);assert.strictEqual(result.kind,"conflict");assert.deepStrictEqual(await read(a),winner,"backend proof refusal supplements the actual UI check");

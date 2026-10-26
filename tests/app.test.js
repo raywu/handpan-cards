@@ -16175,4 +16175,31 @@ describe("SHC asynchronous LINK ownership", () => {
     assert.strictEqual(app.currentDeck().name,"PUBLIC PAN B");
   });
 
+
+  test("SV16 U1: a visible changed conflict refreshes to removed after remote deletion without disturbing the draft", async () => {
+    const {app,origin,crypto}=await seeded([SV.portableRecords.pygmyLayoutA],{}, {layout:true});
+    editSelected(app);rename(app,"DIRTY RETAINED DRAFT");
+    const peer=(await load({origin,crypto})).app,e=snapshot(peer);
+    assert.strictEqual((await command(peer,{type:"edit",collectionId:e.collectionId,instanceId:iid(1),expectedRevision:1},SV.portableRecords.pygmyLayoutB)).ok,true);
+    await submit(app);
+    assert.strictEqual(app.els["scale-conflict"].hidden,false);
+    assert.strictEqual(app.els["scale-conflict-msg"].textContent,SV.uiContract.copy.en.conflict);
+    app.click(app.els["scale-tab-layout"]);app.els["scale-fine-toggle"].click();
+    const name=app.els["scale-name"],box=app.els["scale-box"];
+    name.selectionStart=2;name.selectionEnd=7;box.scrollTop=31;name.focus();
+    const before={base:plain(app.get("editingBase")),interaction:plain(app.get("({drawerOpen,fineOpen,pickRef})")),
+      name:name.value,start:name.selectionStart,end:name.selectionEnd,scroll:box.scrollTop,focus:app.activeId(),route:app.location.href};
+    let reveals=0;app.els["scale-conflict"].scrollIntoView=()=>{reveals++;};
+    const winner=snapshot(peer);
+    assert.strictEqual((await command(peer,{type:"delete",collectionId:winner.collectionId,instanceId:iid(1),expectedRevision:2})).ok,true);
+    origin.flushStorageEvents();
+    assert.strictEqual(app.get("savedEntries.has("+JSON.stringify(iid(1))+")"),false,"remote deletion really reconciled");
+    assert.strictEqual(app.els["scale-conflict-msg"].textContent,SV.uiContract.copy.en.conflictDeleted,"visible recovery guidance reflects the target's current removed state");
+    assert.strictEqual(app.els["scale-conflict"].hidden,false);assert.strictEqual(app.sheetOpen(),true);
+    assert.deepStrictEqual({base:plain(app.get("editingBase")),interaction:plain(app.get("({drawerOpen,fineOpen,pickRef})")),
+      name:name.value,start:name.selectionStart,end:name.selectionEnd,scroll:box.scrollTop,focus:app.activeId(),route:app.location.href},before,
+      "background copy refresh preserves original revision proof, local draft/caret/scroll/focus and route");
+    assert.strictEqual(reveals,0,"a background banner refresh must not scroll the owner's working view");
+  });
+
 }
