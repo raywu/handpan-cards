@@ -283,5 +283,7 @@
   "saved.presetToken": "{token} identifica questa scala predefinita.",
   "saved.importFailure": "Impossibile aggiungere questa scala condivisa. Il link è ancora nella barra degli indirizzi. Prova ad aprirlo di nuovo.",
   "saved.resetFailure": "Impossibile ripristinare le scale predefinite. Controllale e riprova.",
-  "saved.ackPending": "Il salvataggio è completato, ma non è stato possibile aggiornare questa vista. Ricarica la pagina per controllare le scale salvate."
+  "saved.ackPending": "Il salvataggio è completato, ma non è stato possibile aggiornare questa vista. Ricarica la pagina per controllare le scale salvate.",
+  "saved.sessionAckPending": "Il salvataggio è solo in questa scheda e non è stato possibile aggiornare la vista. Tieni aperta la scheda e conserva la bozza. Ricaricando o chiudendo la scheda perdi le modifiche temporanee.",
+  "saved.sessionImportAckPending": "Questa scala condivisa è temporanea e non è stato possibile aggiornarne la vista. Tieni aperta la scheda e conserva il link ricevuto. Ricaricando o chiudendo la scheda perdi le modifiche temporanee."
 }

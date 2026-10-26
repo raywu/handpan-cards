@@ -283,5 +283,7 @@
   "saved.presetToken": "{token} identifies this preset scale.",
   "saved.importFailure": "Could not add this shared scale. Its link is still in the address bar. Try opening it again.",
   "saved.resetFailure": "Could not reset the seeded scales. Review them and try again.",
-  "saved.ackPending": "The save completed, but this view could not be refreshed. Reload to review your saved scales."
+  "saved.ackPending": "The save completed, but this view could not be refreshed. Reload to review your saved scales.",
+  "saved.sessionAckPending": "The save is only in this tab, and this view could not be refreshed. Keep this tab open and keep your draft. Reloading or closing the tab loses temporary changes.",
+  "saved.sessionImportAckPending": "This shared scale is temporary, and its view could not be refreshed. Keep this tab open and keep the incoming link. Reloading or closing the tab loses temporary changes."
 }
