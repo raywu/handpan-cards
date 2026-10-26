@@ -10,6 +10,6 @@ diff --git a/index.html b/index.html
        <a class="mode" id="res-handpan-helpers"
 -         href="https://handpanhelpers.klangzeug.de/"
 +         href="https://handpanhelpers.klangzeug.de/wrong/"
-          target="_blank" rel="noopener">HANDPAN HELPERS</a>
+          target="_blank" rel="noopener"><span>HANDPAN <br>HELPERS</span></a>
        <a class="mode" id="res-handpan-101"
           href="https://docs.google.com/document/d/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco/edit?usp=drivesdk"

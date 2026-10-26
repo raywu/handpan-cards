@@ -1,0 +1,15 @@
+# kills: HHR oracle: rendered text lines stay literal through wrappers and retain a genuine third line
+# suite: node --test --test-name-pattern=^HHR.oracle:.rendered.text.lines.stay.literal.through.wrappers.and.retain.a.genuine.third.line$ tests/e2e.test.js
+# fault: Cap the actual shared rendered text-line reader at two, discarding a genuine third text line.
+diff --git a/tests/e2e.test.js b/tests/e2e.test.js
+--- a/tests/e2e.test.js
++++ b/tests/e2e.test.js
+@@ -2405,7 +2405,7 @@ function run() {
+         if (x.width > 0) tops.add(Math.round(x.top / 4));
+       }
+     }
+-    return tops.size;
++    return Math.min(2,tops.size);
+   }
+ 
+   // Owner-approved Helpers pair. This is rendered candidate coverage in English;

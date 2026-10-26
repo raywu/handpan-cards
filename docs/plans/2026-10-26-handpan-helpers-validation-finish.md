@@ -204,3 +204,48 @@ profile cleanup verification; no geometry failure and outercleanuptrue. Result
 remainsFAILED. Root reviews a narrow post-exit ownedprofile cleanup correction
 before fresh complete1344pair run; no partial pairs reused. Sevenremaining locale
 full-domain probes are running serially under their existing180s bounds.
+
+
+## Final local validation receipt — 2026-10-26
+
+Currentapp7fe75f54 and T6d89f4e preserve approvedplacement, names,44px targets and
+allapplication scripts/deckdata. IndependentENG accepted finalcode andall8generated
+patches:6necessaryoldcontextrefreshes+2newfaults,1513oldIDs retained/1515totalapply.
+Fullapp882/882 andmutationmetadata54/54 pass; floors882app/483native/38harness.
+Rootliteralheader proofs24/24:8cleanGREEN/intendednamedERR_ASSERTIONRED/restoredGREEN,
+0skip/cancel/todo/timeout/stderr, allownedcleanuptrue. Fontfault retains its original
+peer-fontfailure, newlabel fault actualHelpers3/sibling2 rows, cap2fault genuine
+three-linefixture incorrectlyreads2. Allsourcepostimages/restorations independently
+audited. HVsourcechangesarenotbundled: Helpers branch remains separatefromvariants.
+
+ALL8freshfullpanel jobs helpers-panel-{en,de,fr,it,es,ja,zh-Hant,zh-Hans}-a1 pass;
+16real/fallback reports,128304primarycells plus19866extra-invariance cells and82032
+thresholdjudgements (distinctcategories),0skip/all6rules/report-only/invariance/
+gutterfailures0. Independentaudit verifiedaggregateoutputs, notunemittedpercellraw.
+Theseprobes compareEnglishbaseline/requestedcandidate; same-locale evidencebelow.
+Allsourcebindingsbase5628/candidate7fe/tool876/helper66f correct; candidateRef80
+appbytes equalcurrent15be, testorder not exercisedbyfitprobe. All32ownedprofiles
+removed/emptygroups, supervisors52.7–60.9s/no timeout/empty stderr.
+
+PairedA4 f5d02d9b passedall1344rawunique pairs:384fixed+960from20CSSOMedgecells,
+16actualsame-locale/fontgroups×3modes,0skip/retry/exclusion. IndependentENG recomputed
+all1344candidate+base-selfjudges fromraw andvalidatedallgeometry/stamps. Bothnames
+visible/semanticallycomplete/twophysicalrows; minwidth93.5/minheight44, no clip/
+spill/hitfailure. Reachabilityscroll896pairs occursAFTER unscrolledfitmeasurements.
+All32ownedcleanuprecords requireactualexit/emptyPGID/profilegone/serverclosed;
+no manualresidualRM occurredinA4. Supervisor92.321s/cleanuptrue. A2cleanupfailure
+remainsFAILED; A3unexecuted. NarrowreviewedA4cleanupalwaysattemptsnormalclose,
+allowsresidualRM onlyaftercompletecapturedpath/child/processguards; no rule/budget
+change or claimofactualresidualcause. This is sampled1344paircoverage, notfull
+uniformdomain orphysicalSafari/device proof.
+
+FinalmarkupoutboundA3 (script8adf9f0d) proves nativeclick opensEXACTpublicHTTPS
+Helpersdocument inONE newpage withnullopener, knownsiteidentity, unchangedpractice/
+panelstate andownpopup/browser/servercleanup. Supervisor3.403s/cleanuptrue. No
+third-partyfeature/functionality claim. Metadata/appchecksandrawreceipts under
+/private/tmp/handpan-helpers.HUZs5u/evidence and the namedSHCsupervisors.
+
+Remaining: finalindependentDESIGNreview, immutablecandidatecontinuity, FULLexacthead
+Linuxvalidate allgreen, thenactualservedDEVrevision/journeys andownerQA. FullMac
+I18N stillFAILED withonlyknownbaselineJapaneseHandpaner debt; no waive/exemption.
+No mainmerge, newCLAUDE/global/auth/toolsetup orphysical-device claim.

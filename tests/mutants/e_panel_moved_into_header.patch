@@ -165,11 +165,11 @@ diff --git a/index.html b/index.html
 +    <div class="modebar duo">
 +      <a class="mode" id="res-handpan-helpers"
 +         href="https://handpanhelpers.klangzeug.de/"
-+         target="_blank" rel="noopener">HANDPAN HELPERS</a>
++         target="_blank" rel="noopener"><span>HANDPAN <br>HELPERS</span></a>
 +      <a class="mode" id="res-handpan-101"
 +         href="https://docs.google.com/document/d/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco/edit?usp=drivesdk"
 +         aria-label="Handpan 101 (Google Doc)"
-+         target="_blank" rel="noopener">HANDPAN 101</a>
++         target="_blank" rel="noopener"><span>HANDPAN <br>101</span></a>
 +    </div>
 +    <div class="modebar">
 +      <button class="mode" type="button" id="about-open" aria-haspopup="dialog">ABOUT</button>
@@ -267,11 +267,11 @@ diff --git a/index.html b/index.html
 -    <div class="modebar duo">
 -      <a class="mode" id="res-handpan-helpers"
 -         href="https://handpanhelpers.klangzeug.de/"
--         target="_blank" rel="noopener">HANDPAN HELPERS</a>
+-         target="_blank" rel="noopener"><span>HANDPAN <br>HELPERS</span></a>
 -      <a class="mode" id="res-handpan-101"
 -         href="https://docs.google.com/document/d/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco/edit?usp=drivesdk"
 -         aria-label="Handpan 101 (Google Doc)"
--         target="_blank" rel="noopener">HANDPAN 101</a>
+-         target="_blank" rel="noopener"><span>HANDPAN <br>101</span></a>
 -    </div>
 -    <div class="modebar">
 -      <button class="mode" type="button" id="about-open" aria-haspopup="dialog">ABOUT</button>

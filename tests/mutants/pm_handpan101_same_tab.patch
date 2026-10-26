@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1556,7 +1556,7 @@ html.about-open{overflow:hidden}
+@@ -1760,7 +1760,7 @@ html.about-open{overflow:hidden}
        <a class="mode" id="res-handpan-101"
           href="https://docs.google.com/document/d/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco/edit?usp=drivesdk"
           aria-label="Handpan 101 (Google Doc)"
--         target="_blank" rel="noopener">HANDPAN 101</a>
-+         rel="noopener">HANDPAN 101</a>
+-         target="_blank" rel="noopener"><span>HANDPAN <br>101</span></a>
++         rel="noopener"><span>HANDPAN <br>101</span></a>
      </div>
      <div class="modebar">
        <button class="mode" type="button" id="about-open" aria-haspopup="dialog">ABOUT</button>

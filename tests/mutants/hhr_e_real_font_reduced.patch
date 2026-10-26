@@ -11,5 +11,5 @@ diff --git a/index.html b/index.html
 -      <a class="mode" id="res-handpan-helpers"
 +      <a class="mode" id="res-handpan-helpers" style="font-size:1px"
           href="https://handpanhelpers.klangzeug.de/"
-          target="_blank" rel="noopener">HANDPAN HELPERS</a>
+          target="_blank" rel="noopener"><span>HANDPAN <br>HELPERS</span></a>
        <a class="mode" id="res-handpan-101"

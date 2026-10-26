@@ -1,5 +1,35 @@
 # Shared workstream ledger
 
+## Latest cross-workstream checkpoint — 2026-10-26
+
+This checkpoint supersedes conflicting pending/approval labels in the historical
+notes below. Keep their evidence; re-resolve live heads/ownership before work.
+No main merge is authorized by this checkpoint. Do not touch the original dirty
+locked checkout. Routine nonsecret progress/recovery reporting in the existing
+[coordination thread](https://github.com/raywu/handpan-cards/pull/571) is authorized.
+
+| Workstream | Description, current state and next action |
+|---|---|
+| Saved-scale variants — FIRST PRIORITY | Let distinct named/layout versions coexist while Edit updates only the selected version and conflicts preserve drafts. Authorized throughDEV/exact earlier instruction packet. Currentbranchcodex/saved-scale-variants-20261025 at0d36b1f4; host/private/tmp/handpan-saved-variants.HVUKbE/integration. [Immutable latest plan/hold](https://github.com/raywu/handpan-cards/blob/0d36b1f4ace31dd5f8978f2ed51741fe78049c36/docs/plans/2026-10-26-saved-variants-timing-oracle.md) and [currentCI](https://github.com/raywu/handpan-cards/actions/runs/40387134731). Previous2ff71cf5 FULLCI succeeded; currentheadCI still running. Fullapp939/metadata54/all1618apply locally pass. Performance validation remains INCOMPLETE: one allowed200case stopped during baseline sample18 before candidate loaded; no automatic retries. Read-only diagnosis/new reviewed measurement protocol and explicit environment/budget decision precede more measurement; owner must accept any limitation. Not deliveredDEV. |
+| Handpan Helpers — approved parallel app lane | Add a native new-tab resource beside HANDPAN101 while preserving fit/targets/order. Exact Resources-only CLAUDE packet already approved/applied, no additional instruction edits. Currentbranchcodex/helpers-integration-20261026, host/private/tmp/handpan-helpers.HUZs5u/integration; [reviewed finish plan](plans/2026-10-26-handpan-helpers-validation-finish.md). App7fe/T6d89; full882unit,54metadata,1515apply,24 intendedclean/fault/restored proofs, fresh8fullpanelprobes/bothfonts and1344same-locale/font pairs pass. Actual outbound newtab/opener-null/appstate journey passes on finalmarkup. FullMacI18N remainsFAILED only for separately documented pre-existingJapaneseHandpaner line debt; no exemption. Nextimmutablefinalreview/fullLinuxCI (mustALLpass), actualservedDEV andownerQA; no main delivery. |
+| Scale↔Layout swipe — authorized, interrupted | Add deliberate horizontal switching without stealing drawer/field/scroll gestures. Keep source/proofs in/private/tmp/handpan-sps-z8gaznu2/integration; sync finalsharingbase, reprove literaltestheaders and finish independentreview/fullCI/DEV/nativeQA after prioritywork. ExistingthroughDEV authority persists; no main or unapproved CLAUDE edit. |
+| Palette defaults — queued fast-track | Expose D KURD10/D AMARA10 colour pairs and each root/tone inverse alongside existing six choices, preserving oldIDs/default0. Ownerrequests prompt→swarmplan→independentENG/designreviews now; implementation AFTER existingactiveworkstreams, targetnextmainrelease subjectgates/explicitmainconsent. Documentationlane codex/palette-defaults-plan-20261026 at/private/tmp/handpan-palette-defaults-plan.20261026. PromptV2 independentlycritiqueCLEAR, planningrun underway; no paletteapp/CLAUDE edit. Finalplan/proposedexactinstructionpacket and approvaldisposition mustbetracked beforeexecution. This doesnotresume pausedwork ordelay existingdeliveries. |
+| SEO long-tail — planning only | Investigate targeted useful scale lessons and instrument-loading CTAs. Ownerchose designhome handpan.raywu.org/learn/ and owner musical-review role forpilotarticles. These selections doNOTauthorize articles/generator/hosting/analytics/publication; actualprovenance/capacity/data/hosting remainqualified. Reviewedsubplan deliveredDEV, mainheld; keep broaderSEO research separate. |
+| Duplicate notes — PAUSED UNTIL FURTHER NOTICE | Preserve finalized researched/reviewed plan and choices: exactduplicates anywhere, onepositionpertone, nonblockingwarning onlynewlyallowedrepeats. No featurework, planresume or mainrelease untilownerresumes explicitly. |
+| DEV deliveries awaiting main | Macforeground helper, latest-per-ring feedback, SEOplan, duplicate-noteplan(PAUSED) andLINKasync ownership repair are deliveredDEV; releasequeueheld while variants finishes. Preserveorder andexplicitmainconsent; doNOTcallLINKrepair a saved-variants solution. |
+| Released/completed | Naturalness/UIlocalization (GermanDu/Dein/dasDing; scaleinputstillEnglishgrammar), HTC, seat-order repairs, sharedbrowserrunbook and repo-localDRY/ledger bootstrap are released; ownerreported UIQA allgood. Global/runtimeparity and fullMacsuite not established by that result. |
+| Future prompts/plans | Keep LinearSoT investigation/CEO+ENGreview, Codex-vs-Claude qualitycomparison investigation, reviewed repositoryrename plan, remainingNITS→OF-D/I18N-D/Q9/Mac/recovery candidates and cleanupinventory queued at their established authority. Wholecode/testrobustness/DRY/deadcodeaudit starts only after otherwork isresolved. No blanketimplementationgrant; Audio/stats/SM2/PWA ownerstops persist. |
+
+Every check-in must cover active, interrupted, DEV-held, released and queued work
+with a one-sentence description/status/nextstep; numbers alone are insufficient.
+Interview only genuine unresolved decisions, recommendationfirst; reuse settled
+answers. Each newworktree/checkpoint needs plan+branch+worktree+last/next+proofrefs.
+Main and each exactCLAUDE patch require explicitowner approval. AFK allows routine
+autonomous decisions within approvedscope, never inventedpermission or waivedgates.
+
+## Historical checkpoints — preserve evidence, later explicit decisions govern
+
+
 ## Priority SHARE-CUSTOMIZATION-HOTFIX — owner-authorized investigation and conditional execution
 
 Owner prioritizes the reported saved-customization/URL/LINK mismatch over SPS.
