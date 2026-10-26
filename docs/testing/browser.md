@@ -287,3 +287,51 @@ Source references: `tests/run.sh`; `tests/suite_health.py`; `tests/e2e.test.js`;
 `tests/helpers/cdp.js`; `tools/probe/panel_fit.js`; `tests/CONTRACT.md`;
 `.github/workflows/validate.yml`; `requirements-ci.txt`. Read the versions in the
 tested worktree, not stale excerpts or another branch's counts.
+
+## Saved-variants storage probe (scoped diagnostic)
+
+`tools/probe/saved_variants_cases.py` creates the four frozen public migration
+cases from `tests/fixtures/saved_variants_v1.json` in a fresh output directory.
+`tools/probe/saved_variants_storage.js` measures one case per invocation. Neither
+tool grants browser access or replaces the sole-host lease, approved supervisor,
+source review, process/profile census and actual execution-evidence checks above.
+No owner storage/profile data is used. Refuse to run if those prerequisites or
+a reviewed bounded supervisor are unavailable; do not install tools implicitly.
+
+Example preparation (choose a fresh owned absolute directory):
+
+```sh
+python3 tools/probe/saved_variants_cases.py \
+  --fixture "$PWD/tests/fixtures/saved_variants_v1.json" \
+  --out-dir /private/tmp/owned-sv-cases-UNIQUE
+```
+
+Read the emitted manifest, verify the fixture/case hashes against the reviewed
+contract, and freeze the candidate's actual `index.html` SHA before any browser
+launch. Under the reviewed external supervisor, serialize one command per case:
+
+```sh
+node tools/probe/saved_variants_storage.js \
+  --repo "$PWD" \
+  --case /private/tmp/owned-sv-cases-UNIQUE/records-2.json \
+  --case-sha REVIEWED_64_CHARACTER_CASE_SHA \
+  --source-sha REVIEWED_64_CHARACTER_INDEX_SHA \
+  --out /private/tmp/owned-sv-receipts-UNIQUE/records-2.json
+```
+
+These are templates, not runnable placeholder hashes. Use2/20/200-record and
+exact-final1MiB cases; each invocation requires30 actual Document-bound samples
+and exactly one native migration lock callback. Extra callbacks, thenable lock
+results, missing fonts/capabilities where required, incorrect bytes, timeouts and
+cleanup failure are failures, not measurements to filter away. The output parent
+must already exist outside the candidate, including after symlink resolution;
+output and `.part` must be fresh. Atomic output publication refuses a concurrent
+writer rather than overwriting it. Preserve failed `.part`/logs for investigation.
+
+The probe measures migration/backend callback walltime and independent component
+benches. It does not prove disk flush, UI paint, two-tab correctness, Safari or
+owner-device behavior. The pre-UI120-sample receipt remains tied to its original
+source/runner. A later real-browser concurrent-import data-loss finding blocks
+release independently of any successful single-page performance measurement.
+Do not run a final-candidate measurement or claim parity until its actual source
+and persistence contract are reviewed.
