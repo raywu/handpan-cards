@@ -244,3 +244,76 @@ for12helper groups, faithful literal header selectors, private disposable source
 edits restored exactly. No app/helper/editor mutation or browser jobs. T continues
 app/e2e acceptance separately; root alone owns floors/browser and delivery. All
 helper mutation intent/proof and full finalCI/DEV remain required; no parity claim.
+
+## StageB reviewed acceptance RED and S implementation grant
+
+T initial23unit groups01464442 produced23named ERR_ASSERTION failures, no startup/
+skip/cancel/timeout. Self-review408a34bb fixed isolated angle intent and migration/
+Add/Edit post-ack readback injection. Independent ENG found missing mirror/anchor/
+seats equality, literal multi-digit/preset label oracle and stale RESET cases;
+T27e1085e corrected all, plus exactly8UUIDdraws and explicit delete acknowledgment.
+Fresh independent ENG recheck CLEAR27e1085e; final app-testSHA986f283683202e4bc56157b5cae9e04821d78b66f5e11c8fc7601ad8247d42e6,
+fixtureSHA4c0635cd3d9eef7f1bab84e2485d6eedb9d3f59f374d92c6cb92f112b243918e.
+A2rawSHA d1a14897bd5ac26ec376b835301830f235366dca4aa28aaa3167df4880e0e0e9.
+IMPORTANT: baseline proves coexistence/legacy-write/new-envelope readability
+failures; deeper backend assertions behind that prerequisite were NOT executed.
+Do not claim23distinct mechanisms proven. StageC actual backend diagnostics remain
+required. Root integrated425d7961/c766d6b3/7da929cb. No floors raised for RED tests.
+
+T native authorshipbed1e06c adds6groups (fileSHA2b0224b7218a71602f0f0f9421f26e00692689212b69bab0fff6c122885a41a4),
+syntax/whitespace only; NO browser execution. Fresh ENG/design review pending and
+already identified weak status/locale/scroll oracles; repair before native RED.
+Planned48font/locale/viewport cells+16states are coverage INTENT, not executed or
+accepted counts. Root must use unchanged-old-app checkout for baseline, not S's
+intentionally incomplete UI stage. T paused source edits for exact checkpoint review.
+
+M12generated helper faults0ef07f5f integrated0d4ab2c2. Independent source/driver
+review CLEAR7e809c7f, full12clean+12named assertion proofs then separate non-author
+ALL24raw-run review CLEAR. ReceiptSHAd294018da71ea2fef6ef23c737b94da3a4e101398c0938df4de86cf1cf333673;
+source restored exactly/clean. No browser runs. Root unchanged actual runner shard
+255/1522 selected svh_01 and dq_route_accepts_custom_id,2/2killed/no timeout/cleanup,
+confirming literal-header protocol rather than shlex. Full mutation_harness54/54
+PASS,0skip/cancel, corpus now1522; full corpus/CI still pending. All evidence named
+svh-proof12-a0*, svh-actual-runner-a0*, svh-header-harness-a0* in stream/SHC evidence.
+Read-only legacy reference inventory82mutants mention retired identity/store symbols;
+this is NOT proven staleness or permission to discard them. Preserve/refresh intents
+and explicitly review superseded policy oracles later.
+
+Root advanced S /store to7da929cb and explicitly granted implementation after T RED/
+review gates. S owns index APPregions and planned backend probe tool ONLY. No other
+index editor. Fresh ENG boundary CLEAR: S actual HTML initializes store and retires
+legacy writers, intentionally #countEMPTY/bootedFALSE until U completes adapters.
+This incomplete stage CANNOT reach DEV. No fake inventory compat registry/readiness.
+Preferences write only unrelated hpfc fields preserving legacydeck/hidden; malformed
+blob/relevant projection is recovery uncertainty. Legacy divergence compares full
+oldscale strings plus relevantdeck/hidden meaning, ignoring unrelated prefs/format;
+immutable raw snapshots remain exact. PubliccommitSaved remainsPromise; the SAME
+real memory-adapter command core can serve synchronous session entrypoints, never
+inline WebLocks or test-only registration. U later restores completeboot/route/UI
+before full Green/CI/DEV. Private actualHTML backend diagnostic authored from frozen
+contract, no selected-deck/UI prerequisite; pending independent review/execution.
+Current diagnostic SHAa1e180c05f13ce374e6c23218bfff31dbf51dda1341510638b20d7144e212948.
+
+Next: S committedstore+non-author review+StageC faults/interleavings/measurement;
+T native oracle repairs/review/old-app RED; then exclusive U UI adaptation. Root
+alone owns browser lease, no current job. Last full881PASS was BEFORE feature
+acceptance/source changes, not current feature Green. Main/install/global held.
+
+## Native review findings and recovery API clarification
+
+Both independent native reviews rejected bed1e06c before execution: no-op Save
+could satisfy disabled=false, RESET second-tap UI was bypassed, status/conflict copy
+could be unrelated/hidden, scroll could stay zero on display:contents, and label/
+keyboard/resolution geometry coverage was incomplete. T is repairing all against
+frozen independent localized fixtures, explicit visible targets, real queued Save,
+actual original-proof RESET confirmation, positive real scroll, literal multi-digit/
+preset suffixes/textRange clipping and native keyboard/cancel/separate-save actions.
+48/16remain coverage intent, no native execution yet. Findings do not block isolated
+S backend code; they block native acceptance/UI completion and any delivery.
+
+S found that ordinary import dedups, so approved fresh conflict-save needs a distinct
+command. Root selected [save-as-separate clarification](2026-10-25-saved-variants-recovery-command.md);
+fresh ENG CLEAR: validated candidate/truecollision/lifetimeallocation/epoch/lock/ACK
+remain, source revision intentionally irrelevant, strip slot authority, alwaysfresh;
+normalimportsunchanged. Minimal UI uses Save-as-separate plus existing BackCancel;
+no optional Review complexity/ambiguous draft replacement. No CLAUDE re-edit.
