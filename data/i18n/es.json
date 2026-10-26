@@ -278,5 +278,10 @@
   "saved.resetConflict": "Las escalas iniciales cambiaron en otra pestaña. No se restableció nada. Revísalas antes de restablecerlas de nuevo.",
   "saved.temporary": "USAR ESTA PESTAÑA TEMPORALMENTE",
   "saved.failure": "No se pudieron guardar los cambios. Tu borrador sigue aquí. Inténtalo de nuevo.",
-  "saved.legacy": "Una versión anterior cambió sus escalas guardadas. Esos cambios se conservan por separado para recuperarlos."
+  "saved.legacy": "Una versión anterior cambió sus escalas guardadas. Esos cambios se conservan por separado para recuperarlos.",
+  "saved.savedToken": "{token} identifica esta escala guardada en este navegador.",
+  "saved.presetToken": "{token} identifica esta escala predefinida.",
+  "saved.importFailure": "No se pudo añadir esta escala compartida. El enlace sigue en la barra de direcciones. Intenta abrirlo de nuevo.",
+  "saved.resetFailure": "No se pudieron restablecer las escalas iniciales. Revísalas e inténtalo de nuevo.",
+  "saved.ackPending": "Se ha completado el guardado, pero no se pudo actualizar esta vista. Recarga la página para revisar tus escalas guardadas."
 }

@@ -278,5 +278,10 @@
   "saved.resetConflict": "Standardskalen wurden in einem anderen Tab geändert. Es wurde nichts zurückgesetzt. Prüfe sie, bevor Du erneut auf STANDARDSKALEN ZURÜCKSETZEN tippst.",
   "saved.temporary": "DIESEN TAB VORÜBERGEHEND NUTZEN",
   "saved.failure": "Diese Änderungen konnten nicht gespeichert werden. Dein Entwurf bleibt erhalten. Versuche es erneut.",
-  "saved.legacy": "Eine ältere App hat ihre gespeicherten Skalen geändert. Diese Änderungen bleiben zur Wiederherstellung getrennt erhalten."
+  "saved.legacy": "Eine ältere App hat ihre gespeicherten Skalen geändert. Diese Änderungen bleiben zur Wiederherstellung getrennt erhalten.",
+  "saved.savedToken": "{token} kennzeichnet diese gespeicherte Skala in diesem Browser.",
+  "saved.presetToken": "{token} kennzeichnet diese Standardskala.",
+  "saved.importFailure": "Diese geteilte Skala konnte nicht hinzugefügt werden. Ihr Link steht weiterhin in der Adressleiste. Versuche, ihn erneut zu öffnen.",
+  "saved.resetFailure": "Die Standardskalen konnten nicht zurückgesetzt werden. Prüfe sie und versuche es erneut.",
+  "saved.ackPending": "Das Speichern wurde abgeschlossen, aber diese Ansicht konnte nicht aktualisiert werden. Lade die Seite neu, um Deine gespeicherten Skalen zu prüfen."
 }

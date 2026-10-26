@@ -278,5 +278,10 @@
   "saved.resetConflict": "Les gammes d’origine ont été modifiées dans un autre onglet. Rien n’a été réinitialisé. Vérifiez-les avant de les rétablir.",
   "saved.temporary": "UTILISER CET ONGLET TEMPORAIREMENT",
   "saved.failure": "Impossible d’enregistrer ces modifications. Votre brouillon est conservé. Réessayez.",
-  "saved.legacy": "Une ancienne version a modifié ses gammes enregistrées. Ces modifications sont conservées séparément pour les récupérer."
+  "saved.legacy": "Une ancienne version a modifié ses gammes enregistrées. Ces modifications sont conservées séparément pour les récupérer.",
+  "saved.savedToken": "{token} identifie cette gamme enregistrée dans ce navigateur.",
+  "saved.presetToken": "{token} identifie cette gamme prédéfinie.",
+  "saved.importFailure": "Impossible d’ajouter cette gamme partagée. Son lien reste dans la barre d’adresse. Essayez de l’ouvrir à nouveau.",
+  "saved.resetFailure": "Impossible de rétablir les gammes d’origine. Vérifiez-les et réessayez.",
+  "saved.ackPending": "L’enregistrement est terminé, mais cette vue n’a pas pu être actualisée. Rechargez la page pour vérifier vos gammes enregistrées."
 }
