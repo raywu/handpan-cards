@@ -15682,14 +15682,21 @@ describe("SHC asynchronous LINK ownership", () => {
     const e = snapshot(app);
     assert.deepStrictEqual(e.migration.raw, source.sources);
     assert.strictEqual(e.migration.sourceKey, "hpfc.scales.v3");
-    assert.strictEqual(e.entries.length, 11);
+    assert.strictEqual(e.entries.length, source.expectedRowCount);
     assert.deepStrictEqual(e.entries.map(x => x.instanceId), e.migration.instanceIds);
-    assert.deepStrictEqual(e.entries.map(x => x.displayOrdinal), [1,2,3,4,5,6,7,8,9,10,11]);
+    assert.deepStrictEqual(e.entries.map(x => x.displayOrdinal), source.expectedDisplayOrdinals);
     assert.deepStrictEqual(e.usedInstanceIds, e.migration.instanceIds);
     for (const i of source.expectedOpaqueRowIndices) assert.deepStrictEqual(e.entries[i].record, source.expectedInputRows[i], "opaque row " + i);
     for (const i of [1,2,3,4]) assert.deepStrictEqual(e.entries[i].record, source.expectedInputRows[i], "v4 unknown data row " + i);
     assert.strictEqual(e.entries[0].record.v, 4); assert.strictEqual(e.entries[0].record.s, SV.inventories.pygmyInner18.seed);
     assert.strictEqual(e.entries[10].record.v, 4); assert.strictEqual(e.entries[10].record.s, SV.inventories.pygmyRim18.seed);
+    const prototype=e.entries[source.prototypeRowIndex];
+    assert.deepStrictEqual(prototype.record, source.expectedInputRows[source.prototypeRowIndex], "own __proto__ JSON values remain data, byte-for-value");
+    const view=plain(app.get(`savedEntries.get(${JSON.stringify(prototype.instanceId)}).deck`));
+    assert.strictEqual(view.name, source.expectedPrototypeMeaning.name, "unknown __proto__ cannot inject a typed name");
+    assert.strictEqual(view.options.palette, source.expectedPrototypeMeaning.palette, "unknown __proto__ cannot inject palette");
+    assert.strictEqual(view.options.replaces, undefined, "unknown __proto__ cannot acquire slot authority");
+    assert.deepStrictEqual(e.slots, source.expectedPrototypeMeaning.slots);
     assert.strictEqual(app.currentDeck().name, "PUBLIC PAN A");
   });
 
@@ -15959,13 +15966,13 @@ describe("SHC asynchronous LINK ownership", () => {
         // first. Bind each expected token to its own control, not a substring
         // search that could accidentally find a sibling's literal name.
         const chip=app.els.decks.children[c.names.length-1-i];
-        assert.ok(chip && strip(chip.innerHTML||chip.textContent).includes(token),"literal fixture collision suffix is visible on its own control: "+token);
+        assert.ok(chip && strip(chip.innerHTML||chip.textContent).endsWith(SV.labels.separator+token),"literal fixture collision suffix is visible on its own control: "+token);
         assert.ok((chip.getAttribute("aria-label")||strip(chip.innerHTML)).includes(token),"accessible label retains "+token);
       }
       if(c.expectedPresetToken) {
         assert.strictEqual(c.presetId,"amara","this frozen preset case targets the third built-in slot");
         const preset=app.els.decks.children[c.names.length+2];
-        assert.ok(preset && strip(preset.innerHTML||preset.textContent).includes(c.expectedPresetToken),"preset disambiguation retains literal fixture token "+c.expectedPresetToken);
+        assert.ok(preset && strip(preset.innerHTML||preset.textContent).endsWith(SV.labels.separator+c.expectedPresetToken),"preset disambiguation retains literal fixture token "+c.expectedPresetToken);
         assert.ok((preset.getAttribute("aria-label")||strip(preset.innerHTML)).includes(c.expectedPresetToken));
       }
       for(const id of e.usedInstanceIds)assert.strictEqual(labels.some(n=>n.includes(id)),false,"opaque local handles never appear as labels");
