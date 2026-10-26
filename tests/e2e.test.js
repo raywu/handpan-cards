@@ -18099,6 +18099,7 @@ function run() {
             await conflictSave(p,peer.p,lang,"conflict",true);
             assert.strictEqual(await p.eval("return document.getElementById('scale-name').value;"),matrix.draftName);
             assert.deepStrictEqual(await read(p),conflict,"failed Save cannot modify the winner or discard the draft");
+            await p.click("#scale-tab-scale");
             await p.click("#scale-name");await rb.fakeKeyboard(520);await rb.settle();
             const input=await p.eval("const n=document.getElementById('scale-name'),r=n.getBoundingClientRect();return {top:r.top,bottom:r.bottom,limit:visualViewport.offsetTop+visualViewport.height,focus:document.activeElement===n};");
             assert.strictEqual(input.focus,true);assert.ok(input.top>=0&&input.bottom<=input.limit+1,"conflict keeps the focused input above simulated keyboard");await rb.clearKeyboard();
