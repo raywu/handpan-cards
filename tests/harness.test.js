@@ -1195,3 +1195,26 @@ test("SVH12 default boot stays synchronous with isolated storage and no durable 
   assert.strictEqual(sandbox.boot({html:svhHTML,storage:seed}).get('localStorage.getItem("literal")'),'original');
   assert.strictEqual(app.get('typeof navigator.locks'),'undefined');assert.strictEqual(app.get('typeof crypto'),'undefined');
 });
+
+test("SVH13 compound descendant queries require every class and live ancestry", () => {
+  const app=sandbox.boot({html:svhHTML});
+  app.run(`
+    var root=document.getElementById("decks"), other=document.getElementById("card");
+    var outside=document.createElement("button");outside.id="outside";outside.className="chip on";other.appendChild(outside);
+    var partial=document.createElement("button");partial.id="partial";partial.className="chip";root.appendChild(partial);
+    var wrapper=document.createElement("section");root.appendChild(wrapper);
+    var target=document.createElement("button");target.id="target";target.className="chip on";wrapper.appendChild(target);
+  `);
+  assert.strictEqual(app.get('document.querySelector("#decks .chip.on") === target'),true,"compound descendant lookup must find the actual nested active chip");
+  assert.strictEqual(app.get('document.querySelector("#decks button.on.chip") === target'),true,"tag and reversed class tokens keep their meanings");
+  assert.deepStrictEqual(sandbox.plain(app.get('Array.from(document.querySelectorAll("#decks .chip.on"),n=>n.id)')),["target"],"wrong ancestor and missing class are excluded");
+  assert.strictEqual(app.get('document.querySelector("#scale-sheet .chip.on")'),null);
+  assert.strictEqual(app.get('document.querySelector("#decks .chip.off")'),null);
+  app.run('wrapper.removeChild(target)');
+  assert.strictEqual(app.get('document.querySelector("#decks .chip.on")'),null,"detached old active chip cannot receive focus");
+  app.run('var replacement=document.createElement("button");replacement.id="replacement";replacement.className="chip on";wrapper.appendChild(replacement)');
+  assert.strictEqual(app.get('document.querySelector("#decks .chip.on") === replacement'),true,"rebuilt strip resolves its current connected node");
+  assert.strictEqual(app.get('document.querySelector("#decks") === root'),true);
+  assert.strictEqual(app.get('document.querySelector("section") === wrapper'),true);
+  assert.deepStrictEqual(sandbox.plain(app.get('Array.from(document.querySelectorAll("#decks, #card"),n=>n.id).sort()')),["card","decks"],"simple and comma selectors retain their existing results");
+});

@@ -269,5 +269,21 @@
   "sel.auto": "AUTOMÁTICO ({lang})",
   "sheet.order_hint": "Las notas del contorno ocupan sus posiciones en el orden de la lista. Reordénalas en la pestaña Disposición.",
   "sheet.rim_follows": "Las notas del contorno ahora siguen el orden de la lista.",
-  "sheet.inner_follows": "Las notas interiores ahora siguen el orden de la lista."
+  "sheet.inner_follows": "Las notas interiores ahora siguen el orden de la lista.",
+  "saved.session": "Los cambios en esta pestaña son temporales. Se pierden si recargas o cierras esta pestaña.",
+  "saved.recovery": "No se pudieron leer las escalas guardadas. Tus escalas guardadas no han cambiado. Los cambios temporales en esta pestaña se pierden al recargarla o cerrarla.",
+  "saved.conflict": "Esta escala cambió en otra pestaña. Tu borrador sigue aquí. Guárdalo como otra escala o vuelve a la versión guardada.",
+  "saved.conflictDeleted": "Esta escala se eliminó en otra pestaña. Tu borrador sigue aquí. Guárdalo como otra escala o vuelve atrás.",
+  "saved.separate": "GUARDAR COMO OTRA ESCALA",
+  "saved.resetConflict": "Las escalas iniciales cambiaron en otra pestaña. No se restableció nada. Revísalas antes de restablecerlas de nuevo.",
+  "saved.temporary": "USAR ESTA PESTAÑA TEMPORALMENTE",
+  "saved.failure": "No se pudieron guardar los cambios. Tu borrador sigue aquí. Inténtalo de nuevo.",
+  "saved.legacy": "Una versión anterior cambió sus escalas guardadas. Esos cambios se conservan por separado para recuperarlos.",
+  "saved.savedToken": "{token} identifica esta escala guardada en este navegador.",
+  "saved.presetToken": "{token} identifica esta escala predefinida.",
+  "saved.importFailure": "No se pudo añadir esta escala compartida. El enlace sigue en la barra de direcciones. Intenta abrirlo de nuevo.",
+  "saved.resetFailure": "No se pudieron restablecer las escalas iniciales. Revísalas e inténtalo de nuevo.",
+  "saved.ackPending": "Se ha completado el guardado, pero no se pudo actualizar esta vista. Recarga la página para revisar tus escalas guardadas.",
+  "saved.sessionAckPending": "El guardado es solo para esta pestaña y no se pudo actualizar la vista. Mantén la pestaña abierta y conserva tu borrador. Recargarla o cerrarla borra los cambios temporales.",
+  "saved.sessionImportAckPending": "Esta escala compartida es temporal y no se pudo actualizar su vista. Mantén la pestaña abierta y conserva el enlace recibido. Recargarla o cerrarla borra los cambios temporales."
 }
