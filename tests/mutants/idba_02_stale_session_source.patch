@@ -1,0 +1,14 @@
+# kills: IDB2 U1: no-lock session hydrates authoritative IDB over stale LS and never promotes
+# suite: node --test --test-reporter=tap --test-name-pattern=^IDB2\s tests/app.test.js
+# Frozen transactional-storage contract: stale session source.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10438,6 +10438,7 @@ function stageSavedMigrationSource() {
+   return {...staged,envelope:copy,backendRaw:raw};
+ }
+ async function initializeSavedIDBSession() {
++  return initializeSavedSession(savedFailure("lock","session-only"));
+   const opened=await openSavedDatabase(false);
+   if(!opened.ok)return savedProtect(opened,null);
+   if(opened.absent)return initializeSavedSession(savedFailure("lock","session-only"));

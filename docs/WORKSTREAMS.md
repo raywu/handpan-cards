@@ -44,6 +44,22 @@ executes this already-planned internal alternative under through-DEV and
 reaffirmed AFK authority; no CLAUDE change/install/main merge.
 
 2026-10-26 continuation checkpoint:
+- Transactional profiling completed120/120 acknowledged samples:30 each at2,
+  20,200 records and exact1MiB final envelope, all source/Document/reset/count
+  assertions passed. Async lock lifetime p95/max ms:2/14.9,1.7/2.1,1.9/2.8,
+  5.2/5.9. All supervised jobs clean/no timeout; independent runtime audit pending.
+  These API-transaction measurements are not disk flush or UI/frame timing.
+- First combined native7 run exited cleanly with4PASS/3FAIL: copied layout,
+  concurrent imports/dedup, RESET and deletion passed; three immediate lock-queue
+  assumptions failed before async staging enqueued a request. Three bounded
+  actual-queue waits independently reviewed, keeping exact counts/no-op guards/
+  trusted input/deadlines. Corrected e2e source
+  `9f26e4ae9e4dc6d08c14d770ffe9e4cbbe1e1120864f59c2e68ec93395702835`
+  now under root's serialized rerun; no result claimed yet.
+- Nine generated application protocol faults independently cleared: each exact
+  clean baseline1PASS and intended named assertion kill, no skips/cancellations;
+  all original source bytes restored. These supplement the fourteen model faults
+  and browser-stderr fault, not full-corpus compatibility proof.
 - Final adapter source `a394217ec15626d96455c1b746dfbf001578201c34dbb4e01461b3d019bd88bf`
   independently ENG-cleared after the fifth existing-only reopen repair. Exact
   native deletion probe now passes with absent database retained, no timeout and

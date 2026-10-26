@@ -333,6 +333,9 @@ function run() {
     if (navDead) throw navDead;
     await b.setViewport(...DEFAULT_VIEWPORT);
     await b.eval(`try { localStorage.clear(); } catch (e) {} return true;`).catch(() => {});
+    const origin = new globalThis.URL(URL).origin;
+    assert.ok(/^http:\/\/127\.0\.0\.1:\d+$/.test(origin), "freshLoad only clears the owned loopback test origin");
+    await b.send("Storage.clearDataForOrigin", {origin, storageTypes:"indexeddb"});
     await navigate();
     // "+ ADD" ships in the markup, so waiting on ".chip" alone can be satisfied
     // before the app has booted. Wait for a real deck chip.
@@ -340,6 +343,64 @@ function run() {
       label: "deck chips to be built",
     });
   }
+
+  // ENGINE-SPEC sections12/14 and the transactional-storage amendment:
+  // legacy selection/hidden state migrates only when current IDB authority is
+  // absent. These explicit fixture resets belong before migration navigation;
+  // ordinary reloads must retain the database and prove persistence instead.
+  async function clearSavedIdbForLegacyMigrationFixture() {
+    const origin=new globalThis.URL(URL).origin;
+    assert.ok(/^http:\/\/127\.0\.0\.1:\d+$/.test(origin),"legacy fixture only clears the owned loopback test origin");
+    await b.send("Storage.clearDataForOrigin",{origin,storageTypes:"indexeddb"});
+  }
+
+  // Fixture authority is the actual same-origin IndexedDB record. Both
+  // existence and value are observed in one transaction and returned only on
+  // complete; a successful request alone never counts as seeded/persisted.
+  async function nativeSavedRecord(options = {}) {
+    return new Promise((resolve,reject) => {
+      const request=indexedDB.open("hpfc.saved-scales.v1",1);
+      request.onupgradeneeded=()=>request.result.createObjectStore("collections");
+      request.onerror=()=>reject(request.error || new Error("native fixture open failed"));
+      request.onblocked=()=>reject(new Error("native fixture open blocked"));
+      request.onsuccess=()=>{
+        const db=request.result;let key,raw;
+        let tx;
+        try {tx=db.transaction("collections",options.write?"readwrite":"readonly");}
+        catch(error){db.close();reject(error);return;}
+        tx.oncomplete=()=>{db.close();resolve(options.write?null:{present:key!==undefined,raw});};
+        tx.onabort=()=>{db.close();reject(tx.error || new Error("native fixture transaction aborted"));};
+        tx.onerror=()=>{};
+        const store=tx.objectStore("collections");
+        if(options.write)store.put(options.raw,"current");
+        else {
+          const exists=store.getKey("current"),get=store.get("current");
+          exists.onsuccess=()=>{key=exists.result;};get.onsuccess=()=>{raw=get.result;};
+        }
+      };
+    });
+  }
+  const nativeSavedExpression=options=>`(${nativeSavedRecord.toString()})(${JSON.stringify(options||{})})`;
+  const nativeSavedEnvelope=async target=>{
+    const record=await target.eval(`return ${nativeSavedExpression()};`);
+    assert.strictEqual(record.present,true,"an acknowledged collection has a real persistent current key");
+    assert.strictEqual(typeof record.raw,"string","persistent collection is serialized schema1");
+    return JSON.parse(record.raw);
+  };
+
+  // Preference commands can stage an asynchronous read before requesting the
+  // lock. Observe the literal expected committed preference, never a new lock.
+  async function nativeCommittedPreference(target,expected) {
+    const deadline=Date.now()+5000;let actual;
+    do {
+      actual=(await nativeSavedEnvelope(target)).preferredSelection;
+      if(JSON.stringify(actual)===JSON.stringify(expected))break;
+      await sleep(20);
+    }while(Date.now()<deadline);
+    assert.deepStrictEqual(actual,expected,"literal expected preference is committed in the actual IDB transaction");
+    return actual;
+  }
+  const nativeLegacySavedSources=target=>target.eval(`return {hpfc:localStorage.getItem('hpfc'),scales:localStorage.getItem('hpfc.scales'),v3:localStorage.getItem('hpfc.scales.v3')};`);
 
   // Lane M1: the print controls and the mode toggle both live behind the
   // header's settings trigger now. Real interaction opens the panel first,
@@ -809,7 +870,8 @@ function run() {
 
     const before = await stored();
     assert.ok(before && typeof before === "object", `nothing saved under "hpfc": ${JSON.stringify(before)}`);
-    assert.strictEqual(before.deck, meta[target].id, "saved deck id");
+    assert.deepStrictEqual(await nativeCommittedPreference(b,{kind:"builtin",id:meta[target].id}),{kind:"builtin",id:meta[target].id},"saved deck selection lives in IDB");
+    assert.strictEqual(before.deck,undefined,"selection must not write a legacy hpfc.deck");
     assert.strictEqual(before.mode, "B", "saved mode");
 
     await navigate(); // reload
@@ -835,7 +897,8 @@ function run() {
     assert.deepStrictEqual(modes, { a: false, b: true }, "saved mode survives the reload");
 
     const after = await stored();
-    assert.strictEqual(after.deck, meta[target].id);
+    assert.deepStrictEqual((await nativeSavedEnvelope(b)).preferredSelection,{kind:"builtin",id:meta[target].id});
+    assert.strictEqual(after.deck,before.deck,"reload preserves the legacy selection field");
     assert.strictEqual(after.mode, "B");
   });
 
@@ -844,12 +907,14 @@ function run() {
     const meta = await decksMeta();
     const kurd = meta.findIndex((d) => d.id === "kurd");
     assert.ok(kurd >= 0, "Kurd must ship as a built-in deck");
-    assert.strictEqual((await stored()).deck, "kurd", "a first visit stores the default");
+    assert.deepStrictEqual((await nativeSavedEnvelope(b)).preferredSelection,{kind:"builtin",id:"kurd"},"a first visit stores the default tagged preference");
+    assert.strictEqual((await stored())?.deck,undefined,"first visit does not invent a legacy hpfc.deck");
     assert.strictEqual(await countText(), `1 / ${meta[kurd].chords}`, "cold start is on Kurd");
     assert.deepStrictEqual((await chipStates()).map((c) => c.on), meta.map((_, k) => k === kurd));
 
     const other = meta.findIndex((d) => d.id === "hijaz");
     await selectDeck(other, meta);
+    await nativeCommittedPreference(b,{kind:"builtin",id:meta[other].id});
     await navigate();
     await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`, {
       label: "chips after reload",
@@ -2848,6 +2913,8 @@ function run() {
       assert.strictEqual(hash.indexOf("#s="), 0, `no #s= payload in "${shared.url}"`);
 
       await b.eval(`try { localStorage.clear(); } catch (e) {} return true;`).catch(() => {});
+      // Restore the original empty-receiver premise for IDB authority too.
+      await clearSavedIdbForLegacyMigrationFixture();
       // A hash-only change from the SAME document is an in-page fragment
       // navigation in Chrome - no Page.loadEventFired, no fresh boot. A cache-
       // busting query forces a REAL navigation, so this test covers the boot
@@ -4667,6 +4734,8 @@ function run() {
       assert.strictEqual(shared.ok, true);
       const hash = shared.url.slice(shared.url.indexOf("#s="));
       await b.eval(`try { localStorage.clear(); } catch (e) {} return true;`).catch(() => {});
+      // Empty-receiver round trip, rather than reusing a saved local match.
+      await clearSavedIdbForLegacyMigrationFixture();
       await navigate(`${URL}?share=${Date.now()}${hash}`);
       await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`, { label: "chips after the share link boots" });
       const after = await b.eval(`return (document.getElementById("count").textContent || "").trim();`);
@@ -5243,7 +5312,7 @@ function run() {
 
       await clickGenerate();
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet to close after GENERATE CARDS" });
-      const saved = await b.eval(`return JSON.parse(localStorage.getItem("hpfc.saved-scales.v1")).entries.map(row=>row.record.o&&row.record.o.palette);`);
+      const saved = (await nativeSavedEnvelope(b)).entries.map(row=>row.record.o&&row.record.o.palette);
       assert.deepStrictEqual(saved, [PICK], "the saved deck record does not carry the picked palette");
     } finally {
       await b.setViewport(900, 900, false);
@@ -5646,14 +5715,14 @@ function run() {
       await freshLoad();await b.setViewport(380,780,true);await generate(EDIT_SCALE);await generate(COLLIDE_SCALE);
       await openEdit();await b.eval(`const el=document.getElementById('scale-name');el.value="RAY'S PAN";el.dispatchEvent(new Event('input',{bubbles:true}));return true;`);
       await clickGenerate();await b.waitFor("document.getElementById('scale-sheet').hidden",{label:"sibling rename acknowledgment"});
-      const before=await chipReport(),saved=await b.eval("return JSON.parse(localStorage.getItem('hpfc.saved-scales.v1'));");
+      const before=await chipReport(),saved=await nativeSavedEnvelope(b);
       const sibling=saved.entries.find(row=>row.record.o.name==="RAY'S PAN");assert.ok(sibling);
       const siblingInventory=await b.eval(`return savedEntries.get(${JSON.stringify(sibling.instanceId)}).deck.id;`);
       await selectChipAt(before.chips.indexOf("RAY'S PAN")+1);
       const target=await b.eval("return {selection:{...selection},inventory:deck().id};");assert.notStrictEqual(target.selection.id,sibling.instanceId);
       await openEdit();await typeScale(COLLIDE_SCALE);await clickGenerate();
       await b.waitFor("document.getElementById('scale-sheet').hidden",{label:"converging Edit acknowledgment"});
-      const after=await b.eval("return {selection:{...selection},inventory:deck().id,envelope:JSON.parse(localStorage.getItem('hpfc.saved-scales.v1'))};");
+      const after=await b.eval(`return ${nativeSavedExpression()}.then(saved=>({selection:{...selection},inventory:deck().id,envelope:JSON.parse(saved.raw)}));`);
       assert.deepStrictEqual(after.selection,target.selection);assert.notStrictEqual(after.inventory,target.inventory);assert.strictEqual(after.inventory,siblingInventory,"converging Edit reaches the sibling musical inventory");
       assert.strictEqual(after.envelope.entries.length,saved.entries.length);assert.deepStrictEqual(after.envelope.entries.find(row=>row.instanceId===sibling.instanceId),sibling,"converging Edit cannot rewrite a named sibling");
       assert.ok((await chipReport()).chips.includes("RAY'S PAN"));
@@ -5661,7 +5730,7 @@ function run() {
       await typeScale(SIX_SCALES[3]);const retyped=await sheetState();assert.strictEqual(retyped.open,true);assert.strictEqual(retyped.primaries,1);assert.strictEqual(retyped.bad,false);assert.strictEqual(retyped.msg,"");assert.ok(retyped.body.sw<=retyped.body.cw+1);
       await b.eval("document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));return true;");
       await b.waitFor("document.getElementById('scale-sheet').hidden",{label:"Escape discards later draft"});
-      assert.deepStrictEqual(await b.eval("return JSON.parse(localStorage.getItem('hpfc.saved-scales.v1'));"),after.envelope,"cancelled later draft never rewrites either saved instance");
+      assert.deepStrictEqual(await nativeSavedEnvelope(b),after.envelope,"cancelled later draft never rewrites either saved instance");
     }finally{await b.setViewport(900,900,false);}
   });
 
@@ -7008,7 +7077,9 @@ function run() {
     try {
       await freshLoad();
       await b.eval(`localStorage.setItem("hpfc", ${JSON.stringify(JSON.stringify({ deck: "kurd", mode: "A", hidden: ["amara10", "amara", "hijaz", "pygmy"] }))}); return true;`);
+      await clearSavedIdbForLegacyMigrationFixture();
       await navigate();
+      assert.deepStrictEqual((await nativeSavedEnvelope(b)).hidden,["amara10","amara","hijaz","pygmy"],"fixture actually migrates the four hidden seeds, leaving only Kurd");
       await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`, { label: "the chips" });
       await b.setViewport(380, 800, true);
       await openEdit();
@@ -10619,7 +10690,9 @@ function run() {
           await b.setViewport(w, h, false);
           await b.eval(`localStorage.clear();
             localStorage.setItem("hpfc", JSON.stringify({ mode: "S", deck: "custom:gone" })); return true;`);
+          await clearSavedIdbForLegacyMigrationFixture();
           await navigate();
+          assert.strictEqual(await b.eval("return document.querySelector('.announce').textContent;"),"That scale is gone. Showing D KURD 10.","fixture must produce the genuine missing-legacy-selection notice before the overlap measurement");
           await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`,
             { label: "deck chips to be built" });
           await b.eval(`return document.fonts.ready.then(() => true);`);
@@ -13344,6 +13417,7 @@ function run() {
   test("a deleted seeded deck stays gone across a reload at 380px", async () => {
     try {
       await freshLoad();
+      const legacyBefore=await nativeLegacySavedSources(b);
       await b.setViewport(380, 780, true);
       const meta = await decksMeta();
       const kurd = await bootMeta(meta);
@@ -13357,8 +13431,8 @@ function run() {
         { label: "chips after reload" });
       const after = await chipTexts();
       assert.deepStrictEqual(after, before, "the reload changed the chip strip");
-      assert.deepStrictEqual(await b.eval(`return JSON.parse(localStorage.getItem("hpfc")).hidden;`),
-        [kurd.id], "the deleted list is not stored");
+      assert.deepStrictEqual((await nativeSavedEnvelope(b)).hidden,[kurd.id],"the deleted list is not stored in IDB");
+      assert.deepStrictEqual(await nativeLegacySavedSources(b),legacyBefore,"deletion preserves the original legacy recovery sources");
     } finally {
       await b.setViewport(900, 900, false);
     }
@@ -13414,7 +13488,9 @@ function run() {
       await freshLoad();
       await b.setViewport(320, 568, true);
       await b.eval(`localStorage.setItem("hpfc", JSON.stringify({ deck: "pygmy", mode: "A" })); return true;`);
+      await clearSavedIdbForLegacyMigrationFixture();
       await navigate();
+      assert.deepStrictEqual((await nativeSavedEnvelope(b)).preferredSelection,{kind:"builtin",id:"pygmy"},"fixture actually migrates the selected Pygmy before measuring its DELETE arming note");
       await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`, { label: "chips" });
       await openEdit();
       await b.click("#scale-delete");
@@ -13440,6 +13516,7 @@ function run() {
   test("RESET SEEDED DECKS is absent until a seeded deck is edited or deleted, arms, and restores all five", async () => {
     try {
       await freshLoad();
+      const legacyBefore=await nativeLegacySavedSources(b);
       await b.setViewport(380, 780, true);
       const meta = await decksMeta();
       const probe = () => b.eval(`
@@ -13479,8 +13556,8 @@ function run() {
       await b.waitFor(`document.getElementById("deck-restore").hasAttribute("hidden")`,
         { label: "the reset control to go away" });
       assert.strictEqual((await chipTexts()).length, meta.length, "restore did not bring back every deck");
-      assert.strictEqual(await b.eval(`return JSON.parse(localStorage.getItem("hpfc")).hidden;`), undefined,
-        "the hidden list is still stored");
+      assert.deepStrictEqual((await nativeSavedEnvelope(b)).hidden,[],"the hidden list is still stored in IDB");
+      assert.deepStrictEqual(await nativeLegacySavedSources(b),legacyBefore,"RESET preserves legacy recovery source bytes");
       assert.strictEqual(await b.eval(`return document.activeElement.id;`), "deck-add");
     } finally {
       await b.setViewport(900, 900, false);
@@ -13520,6 +13597,7 @@ function run() {
   test("SD: RESET arms, then restores all five at 380px and focuses #deck-add", async () => {
     try {
       await freshLoad();
+      const legacyBefore=await nativeLegacySavedSources(b);
       await b.setViewport(380, 780, true);
       const meta = await decksMeta();
       const seeded = await b.eval(`return DECKS.map(d => chipLabel(d.name));`);
@@ -13545,10 +13623,10 @@ function run() {
 
       await openSettingsPanel();
       await b.click("#deck-restore");
-      const armed = await b.eval(`
-        const el = document.getElementById("deck-restore");
-        return { text: el.textContent.trim(), armed: el.hasAttribute("data-armed"), hidden: el.hasAttribute("hidden"),
-                 stored: JSON.parse(localStorage.getItem("hpfc")).hidden, reps: Object.keys(replacements()).length };`);
+      const armed = await b.eval(`return ${nativeSavedExpression()}.then(persisted=>{
+        const el=document.getElementById("deck-restore");
+        return {text:el.textContent.trim(),armed:el.hasAttribute("data-armed"),hidden:el.hasAttribute("hidden"),
+          stored:JSON.parse(persisted.raw).hidden,reps:Object.keys(replacements()).length};});`);
       assert.deepStrictEqual([armed.text, armed.armed, armed.hidden], ["TAP AGAIN TO RESET", true, false],
         "the first tap did not arm RESET");
       assert.strictEqual(armed.stored.length, 1, "the first tap already changed the stored hidden list");
@@ -13559,11 +13637,10 @@ function run() {
         { label: "the reset control to go away" });
       assert.deepStrictEqual(await chipTexts(), seeded, "RESET did not restore the five seeded chips in order");
       assert.strictEqual(await b.eval(`return Object.keys(replacements()).length;`), 0, "a replacement survived RESET");
-      assert.strictEqual(await b.eval(`return JSON.parse(localStorage.getItem("hpfc")).hidden;`), undefined,
-        "the hidden list is still stored");
+      assert.deepStrictEqual((await nativeSavedEnvelope(b)).hidden,[],"the hidden list is still stored in IDB");
+      assert.deepStrictEqual(await nativeLegacySavedSources(b),legacyBefore,"RESET preserves legacy recovery source bytes");
       assert.strictEqual(await b.eval(`return document.activeElement.id;`), "deck-add");
-      assert.strictEqual(await b.eval(`return (JSON.parse(localStorage.getItem(SCALES_KEY)) || [])
-        .filter((r) => r && r.o && r.o.replaces).length;`), 0, "a stored record still names a seed after RESET");
+      assert.strictEqual((await nativeSavedEnvelope(b)).entries.filter(row=>row.record?.o?.replaces).length,0,"a stored record still names a seed after RESET");
     } finally {
       await b.setViewport(900, 900, false);
     }
@@ -13749,15 +13826,14 @@ function run() {
         await b.settle();
         const m = await b.eval(`
           const chip = document.querySelector("#decks .chip.on");
-          let stored = null;
-          try { stored = JSON.parse(localStorage.getItem("hpfc")).deck; } catch (e) {}
-          return { hash: location.hash, search: location.search, chip: chip ? chip.textContent : null, stored,
+          return { hash: location.hash, search: location.search, chip: chip ? chip.textContent : null,
                    sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth };
         `);
         assert.strictEqual(m.hash, "#deck=f-low-pygmy-18");
         assert.strictEqual(m.search, "?r=route");
         assert.match(m.chip, /pygmy/i);
-        assert.strictEqual(m.stored, "pygmy");
+        assert.deepStrictEqual(await nativeCommittedPreference(b,{kind:"builtin",id:"pygmy"}),{kind:"builtin",id:"pygmy"});
+        assert.strictEqual((await stored())?.deck,undefined,"routed selection preserves the absent legacy hpfc.deck");
         assert.ok(m.sw <= m.cw + 1, "horizontal overflow at 380px");
       } finally {
         await b.setViewport(900, 900, false);
@@ -13776,15 +13852,14 @@ function run() {
         await b.click('#about a[href="#deck=c-sharp-hijaz-9"]');
         await b.waitFor(`/hijaz/i.test((document.querySelector("#decks .chip.on") || {}).textContent || "")`, { label: "Hijaz chip on" });
         const m = await b.eval(`
-          let stored = null;
-          try { stored = JSON.parse(localStorage.getItem("hpfc")).deck; } catch (e) {}
-          return { hash: location.hash, kept: window.__noReload === true, stored,
+          return { hash: location.hash, kept: window.__noReload === true,
                    navs: performance.getEntriesByType("navigation").length };
         `);
         assert.strictEqual(m.hash, "#deck=c-sharp-hijaz-9");
         assert.strictEqual(m.kept, true, "the page reloaded");
         assert.strictEqual(m.navs, 1);
-        assert.strictEqual(m.stored, "hijaz");
+        assert.deepStrictEqual(await nativeCommittedPreference(b,{kind:"builtin",id:"hijaz"}),{kind:"builtin",id:"hijaz"});
+        assert.strictEqual((await stored())?.deck,undefined,"About navigation preserves the absent legacy hpfc.deck");
       } finally {
         await b.setViewport(900, 900, false);
       }
@@ -15551,7 +15626,9 @@ function run() {
     const spcEdit = async (w = 844, h = 390) => {
       await freshLoad();
       await b.eval(`localStorage.setItem("hpfc", ${JSON.stringify(JSON.stringify({ deck: "kurd", mode: "A", hidden: ["amara10", "amara", "hijaz", "pygmy"] }))}); return true;`);
+      await clearSavedIdbForLegacyMigrationFixture();
       await navigate();
+      assert.deepStrictEqual((await nativeSavedEnvelope(b)).hidden,["amara10","amara","hijaz","pygmy"],"fixture actually migrates the four hidden seeds, leaving only Kurd");
       await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`, { label: "the chips" });
       await b.setViewport(w, h, true);
       await b.settle();
@@ -17591,16 +17668,16 @@ function run() {
       await new Promise(resolve => setTimeout(resolve, 0));
       return true;
     })();`);
-    const snapshot = () => b.eval(`
-      const input = document.getElementById("share-url");
+    const snapshot = () => b.eval(`return ${nativeSavedExpression()}.then(persisted=>{
+      const saved=JSON.parse(persisted.raw),input = document.getElementById("share-url");
       return { hidden: input.hidden, value: input.value, focus: document.activeElement.id,
         notice: document.querySelector(".announce").textContent,
         start: input.selectionStart, end: input.selectionEnd, readonly: input.readOnly,
         href: location.href, options: deck().options.angles.bottom,
-        records: JSON.parse(localStorage.getItem("hpfc.saved-scales.v1")).entries,
-        selectedRecord: JSON.parse(localStorage.getItem("hpfc.saved-scales.v1")).entries.find(row=>row.instanceId===selection.id).record,
+        records: saved.entries,
+        selectedRecord: saved.entries.find(row=>row.instanceId===selection.id).record,
         calls: __shc.calls.map(c => ({payload:c.payload,href:c.href})), order: __shc.order.slice() };
-    `);
+    });`);
     const showFine = async () => {
       await enterLayout();
       await trustedClick("#scale-fine-toggle");
@@ -17673,7 +17750,7 @@ function run() {
       await b.waitFor(`document.querySelector("#decks .chip.on") && location.hash.startsWith("#s=6/")`, { label: "SHC fresh receiver import" });
       assert.strictEqual(await b.eval(`return window.__shcReceiverBefore;`), 0, "fresh receiver has no inherited sender storage");
       assert.deepStrictEqual(await b.eval(`return deck().options.angles.bottom;`), expectedOptions);
-      assert.deepStrictEqual(await b.eval(`return JSON.parse(localStorage.getItem("hpfc.saved-scales.v1")).entries.find(row=>row.instanceId===selection.id).record.o.angles.bottom;`), expectedOptions);
+      assert.deepStrictEqual(await b.eval(`return ${nativeSavedExpression()}.then(saved=>JSON.parse(saved.raw).entries.find(row=>row.instanceId===selection.id).record.o.angles.bottom);`), expectedOptions);
       assert.strictEqual(await b.eval(`return !!document.querySelector("#card .diagwrap svg");`), true,
         "receiver practice card contains diagram SVG (DOM presence, not visible ink)");
       await enterEdit(); await enterLayout();
@@ -17779,7 +17856,7 @@ function run() {
           await send("Input.dispatchKeyEvent",{type,key,code,...(type==="char"?{text:"\r",unmodifiedText:"\r"}:{}),windowsVirtualKeyCode:keyCode,nativeVirtualKeyCode:keyCode});};
       return {id,send,eval:evaluate,wait,click,type,key};
     }
-    const read=p=>p.eval(`return JSON.parse(localStorage.getItem(${JSON.stringify(KEY)}));`);
+    const read=p=>nativeSavedEnvelope(p);
     const importRecord=(p,record)=>p.eval(`const r=${JSON.stringify(record)},s=HPE.core.parseSeed(r.s);
       const code=HPE.share.encode({fields:s.value.fields,options:r.o||{}});return openShare(code.value);`);
     const commit=(p,cmd,record)=>p.eval(`const command=${JSON.stringify(cmd)};
@@ -17791,7 +17868,7 @@ function run() {
         .map(x=>({id:x.instanceId,revision:x.revision}))});
     async function withTwo(records,extra,body) {
       await freshLoad();await b.setViewport(1280,800,false);
-      if(records){await b.eval(`localStorage.setItem(${JSON.stringify(KEY)},${JSON.stringify(JSON.stringify(makeEnvelope(records,extra)))});return true;`);await navigate();}
+      if(records){await b.eval(`return ${nativeSavedExpression({write:true,raw:JSON.stringify(makeEnvelope(records,extra))})};`);await navigate();}
       const primary=session(b.sessionId);let targetId=null;
       try {
         const first=await primary.send("Target.getTargetInfo");
@@ -17804,10 +17881,8 @@ function run() {
         await peer.send("Emulation.setDeviceMetricsOverride",{width:1280,height:800,deviceScaleFactor:1,mobile:false});
         await peer.send("Page.navigate",{url:URL});
         await peer.wait(APP_READY_EXPR,"peer document boot");
-        const probe="__sv_public_same_origin_probe__";
-        await primary.eval(`localStorage.setItem(${JSON.stringify(probe)},"same-profile-origin");return true;`);
-        assert.strictEqual(await peer.eval(`return localStorage.getItem(${JSON.stringify(probe)});`),"same-profile-origin","both actual targets must share storage");
-        await primary.eval(`localStorage.removeItem(${JSON.stringify(probe)});return true;`);
+        assert.strictEqual(await primary.eval("return location.origin;"),await peer.eval("return location.origin;"),"actual targets share the loopback origin");
+        assert.deepStrictEqual(await read(peer),await read(primary),"both actual targets observe the same completed IDB current record");
         console.log("SV_TARGETS "+JSON.stringify({first:first.targetInfo.targetId,second:targetId,distinctSessions:true,sharedOrigin:true}));
         await body(primary,peer);
       } finally {if(targetId)await b.send("Target.closeTarget",{targetId},false);}
@@ -17873,6 +17948,9 @@ function run() {
       await hold(blocker);
       try {
         await p.click("#scale-generate");
+        // IDB staging precedes lock acquisition. Keep the real blocker held
+        // until the trusted action has actually queued its single request.
+        await p.wait(`navigator.locks.query().then(q=>q.pending.filter(x=>x.name===${JSON.stringify(LOCK)}).length===1)`,"trusted Save reaches the real exclusive commit queue");
         const q=await p.eval("return navigator.locks.query();");
         assert.strictEqual(q.pending.filter(x=>x.name===LOCK).length,1,"trusted Save must actually enqueue its commit; a no-op cannot pass");
       }finally{await release(blocker);}
@@ -17928,6 +18006,7 @@ function run() {
         await hold(a);
         try {
           await startImport(a,SV.portableRecords.amaraA);await startImport(bPeer,equal?SV.portableRecords.amaraA:SV.portableRecords.amaraB);
+          await a.wait(`navigator.locks.query().then(q=>q.pending.filter(x=>x.name===${JSON.stringify(LOCK)}).length===2)`,"both imports finish IDB staging and reach the real exclusive commit queue");
           const q=await a.eval("return navigator.locks.query();");
           assert.strictEqual(q.held.filter(x=>x.name===LOCK).length,1);
           assert.strictEqual(q.pending.filter(x=>x.name===LOCK).length,2,"both actual imports must wait for the same exclusive commit lock");
@@ -18035,6 +18114,31 @@ function run() {
       });
     });
 
+    // Real native-only deletion regression: the scoped model has no delete
+    // API. Metadata inspection below must not open the missing DB itself.
+    // Transactional amendment: post-boot readonly reconciliation cannot create
+    // schema or allocate identities outside a granted initialization lock.
+    test("IDB10 E1: reconciliation after external deletion leaves the database absent without allocation",{timeout:30000},async()=>{
+      await freshLoad();const p=session(b.sessionId);
+      const before=await p.eval(`return indexedDB.databases().then(rows=>rows.filter(row=>row.name==='hpfc.saved-scales.v1').map(row=>({name:row.name,version:row.version})));`);
+      assert.deepStrictEqual(before,[{name:"hpfc.saved-scales.v1",version:1}],"precondition: ordinary durable boot created the supported owned database");
+      await p.eval(`window.__idbDeletionDraws={uuid:0,random:0};
+        const uuid=crypto.randomUUID.bind(crypto),random=crypto.getRandomValues.bind(crypto);
+        Object.defineProperty(crypto,'randomUUID',{configurable:true,value:(...args)=>{__idbDeletionDraws.uuid++;return uuid(...args);}});
+        Object.defineProperty(crypto,'getRandomValues',{configurable:true,value:(...args)=>{__idbDeletionDraws.random++;return random(...args);}});
+        return new Promise((resolve,reject)=>{
+          const request=indexedDB.deleteDatabase('hpfc.saved-scales.v1');
+          request.onsuccess=()=>resolve(true);request.onerror=()=>reject(request.error);
+          request.onblocked=()=>reject(new Error('owned deletion blocked despite the application versionchange handler'));
+        });`);
+      assert.strictEqual(await p.eval(`return indexedDB.databases().then(rows=>rows.filter(row=>row.name==='hpfc.saved-scales.v1').length);`),0,"actual native deletion completed before reconciliation");
+      const result=await p.eval("return reconcileSavedCollection();");
+      const after=await p.eval(`return indexedDB.databases().then(rows=>rows.filter(row=>row.name==='hpfc.saved-scales.v1').map(row=>({name:row.name,version:row.version})));`);
+      assert.deepStrictEqual(after,[],"readonly reconciliation must not recreate schema after external deletion");
+      assert.strictEqual(result.ok,false,"missing authority is a truthful reconciliation refusal, never an acknowledged empty collection");
+      assert.deepStrictEqual(await p.eval("return window.__idbDeletionDraws;"),{uuid:0,random:0},"readonly absence never allocates an epoch or instance identity");
+    });
+
     test("SV10 E1: variants conflict and session states preserve targets clipping focus and eight-locale copy",{timeout:180000},async()=>{
       let cells=0,states=0,discriminatorControls=0;
       const matrix=SV.labels.nativeMatrix;
@@ -18060,7 +18164,7 @@ function run() {
           await rb.goto(URL);peer=await openPeer(rb);
           for(const [localeIndex,lang]of SV.labels.locales.entries()) {
             const expected=SV.uiContract.copy[lang],collision=matrixEnvelope();
-            await p.eval(`localStorage.clear();localStorage.setItem(${JSON.stringify(KEY)},${JSON.stringify(JSON.stringify(collision))});localStorage.setItem('hpfc',JSON.stringify({lang:${JSON.stringify(lang)},mode:'A'}));return true;`);await reload();
+            await p.eval(`localStorage.clear();localStorage.setItem('hpfc',JSON.stringify({lang:${JSON.stringify(lang)},mode:'A'}));return ${nativeSavedExpression({write:true,raw:JSON.stringify(collision)})};`);await reload();
             assert.strictEqual(await p.eval("return document.getElementById('lang-select').value;"),lang,"requested locale must actually be active");
             for(const [w,h,mobile]of [[380,780,true],[844,390,true],[1280,800,false]]) {
               await rb.setViewport(w,h,mobile);await rb.settle();
@@ -18092,7 +18196,7 @@ function run() {
             assert.strictEqual(await p.eval("return document.activeElement===document.querySelector('#decks .chip.on');"),true,"Escape returns focus to the rebuilt selected chip");
             await openEdit(p);await p.type("#scale-name",matrix.draftName);const base=await read(p);
             const conflict={...clone(base),revision:base.revision+1,entries:base.entries.map(x=>x.instanceId===uid(202)?{...x,revision:x.revision+1,record:{...x.record,o:{...x.record.o,name:"REMOTE LABEL"}}}:x)};
-            await p.eval(`localStorage.setItem(${JSON.stringify(KEY)},${JSON.stringify(JSON.stringify(conflict))});return true;`);
+            await p.eval(`return ${nativeSavedExpression({write:true,raw:JSON.stringify(conflict)})};`);
             await p.click("#scale-tab-layout");
             const scrolled=await p.eval("const body=document.querySelector('#scale-sheet .sheetbody');body.scrollTop=body.scrollHeight;return {top:body.scrollTop,max:body.scrollHeight-body.clientHeight};");
             assert.ok(scrolled.max>0&&scrolled.top>0,"conflict recovery starts from a genuinely scrolled Layout panel");
@@ -18110,6 +18214,7 @@ function run() {
               try {
                 await p.eval("document.getElementById('scale-conflict-separate').focus();return true;");
                 await p.key("Enter","Enter",13);
+                await p.wait(`navigator.locks.query().then(q=>q.pending.filter(x=>x.name===${JSON.stringify(LOCK)}).length===1)`,"trusted separate-save activation reaches the real exclusive commit queue");
                 let q=await p.eval("return navigator.locks.query();");assert.strictEqual(q.pending.filter(x=>x.name===LOCK).length,1,"resolution actually queues a distinct save command");
                 assert.strictEqual(await p.eval("return document.getElementById('scale-conflict-separate').disabled;"),true);
                 await p.key("Enter","Enter",13);q=await p.eval("return navigator.locks.query();");assert.strictEqual(q.pending.filter(x=>x.name===LOCK).length,1,"repeated activation cannot enqueue duplicate resolution");
@@ -18130,7 +18235,7 @@ function run() {
               assert.deepStrictEqual((await read(p)).entries,conflict.entries);
               assert.strictEqual(await p.eval("return document.activeElement===document.querySelector('#decks .chip.on');"),true,"Back restores the selected chip's focus");
             }
-            const durable=await p.eval(`return {current:localStorage.getItem(${JSON.stringify(KEY)}),old:localStorage.getItem('hpfc.scales.v3'),legacy:localStorage.getItem('hpfc.scales')};`);
+            const durable=await p.eval(`return ${nativeSavedExpression()}.then(record=>({current:record,old:localStorage.getItem('hpfc.scales.v3'),legacy:localStorage.getItem('hpfc.scales')}));`);
             const unsupported=await rb.send("Page.addScriptToEvaluateOnNewDocument",{source:"Object.defineProperty(navigator,'locks',{configurable:true,value:undefined});"});
             try {
               await reload();assert.strictEqual(await p.eval("return savedMode;"),"session");
@@ -18143,15 +18248,15 @@ function run() {
               await p.click("#scale-generate");await p.wait("document.getElementById('scale-sheet').hidden","session-only scale generation completes");
               assert.strictEqual(await p.eval("return HPE.core.formatSeed(deck().fields);"),SV.inventories.other.seed,"actual temporary scale becomes the selected view");
               assert.strictEqual(await p.eval("return savedMode;"),"session");await ink(p,"#saved-status",{text:expected.session,live:true});
-              assert.deepStrictEqual(await p.eval(`return {current:localStorage.getItem(${JSON.stringify(KEY)}),old:localStorage.getItem('hpfc.scales.v3'),legacy:localStorage.getItem('hpfc.scales')};`),durable,"temporary generation performs no durable saved-store write");
+              assert.deepStrictEqual(await p.eval(`return ${nativeSavedExpression()}.then(record=>({current:record,old:localStorage.getItem('hpfc.scales.v3'),legacy:localStorage.getItem('hpfc.scales')}));`),durable,"temporary generation performs no durable saved-store write");
               await reload();
               assert.strictEqual(await p.eval(`return savedState.entries.some(x=>x.record?.s===${JSON.stringify(SV.inventories.other.seed)});`),false,"temporary scale is lost after reload, never silently promoted");
-              assert.strictEqual(await p.eval(`return localStorage.getItem(${JSON.stringify(KEY)});`),durable.current);await ink(p,"#saved-status",{text:expected.session,live:true});
+              assert.deepStrictEqual(await p.eval(`return ${nativeSavedExpression()};`),durable.current);await ink(p,"#saved-status",{text:expected.session,live:true});
             }finally{await rb.send("Page.removeScriptToEvaluateOnNewDocument",{identifier:unsupported.identifier});}
-            await p.eval(`localStorage.setItem(${JSON.stringify(KEY)},'{not-json');return true;`);await reload();
+            await p.eval(`return ${nativeSavedExpression({write:true,raw:"{not-json"})};`);await reload();
             assert.strictEqual(await p.eval("return savedMode;"),"protected");
             await ink(p,"#saved-status",{text:expected.recovery,live:true});
-            assert.strictEqual(await p.eval(`return localStorage.getItem(${JSON.stringify(KEY)});`),"{not-json","recovery cannot overwrite unreadable source");states++;
+            assert.strictEqual((await p.eval(`return ${nativeSavedExpression()};`)).raw,"{not-json","recovery cannot overwrite unreadable source");states++;
           }
         } finally{if(peer)await peer.close();await rb.close();}
       }

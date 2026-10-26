@@ -1,0 +1,15 @@
+# kills: IDB4 U1: any own backendSource collision protects exact experimental source
+# suite: node --test --test-reporter=tap --test-name-pattern=^IDB4\s tests/app.test.js
+# Frozen transactional-storage contract: overwrite backend provenance.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10429,8 +10429,6 @@ function stageSavedMigrationSource() {
+   if(raw===null)return stageLegacySaved();
+   let envelope;
+   try{envelope=JSON.parse(raw);}catch(e){return {...savedFailure("protected","collection-json"),raw};}
+-  if(savedObject(envelope) && savedObject(envelope.migration) && Object.hasOwn(envelope.migration,"backendSource"))
+-    return {...savedFailure("protected","backend-source-collision"),raw};
+   const staged=stageSavedEnvelope(envelope);
+   if(!staged.ok)return {...staged,raw};
+   const copy=savedClone(envelope);

@@ -1,0 +1,14 @@
+# kills: IDB7 U1: failed reconciliation visibly warns and preserves dirty interaction without promotion
+# suite: node --test --test-reporter=tap --test-name-pattern=^IDB7\s tests/app.test.js
+# Frozen transactional-storage contract: invisible reconciliation failure.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10710,7 +10710,6 @@ function commitSaved(command, options = {}) {
+ function savedReconciliationFailure(result,raw) {
+   savedIssue=result;
+   savedRecovery={collection:typeof raw==="string"?raw:null,access:"unknown"};
+-  updateSavedStatus();
+   return result;
+ }
+ function reconcileSavedCollection() {
