@@ -1,6 +1,6 @@
 # Claude takeover plan — 2026-10-26
 
-Status: independent ENG/operational cold-read CLEAR, publication closure pending. Documentation only.
+Status: independent ENG/operational cold-read CLEAR; original handoff published to DEVc040. This post-release update awaits its own publication receipt. Documentation only.
 Owner requests safe stopping points and a recoverable return to Claude. Startup
 means read-only orientation, not automatic feature resumption. RC target21:11PDT,
 handoff23:00PDT; verify clock and later decisions rather than treating targets as
@@ -8,12 +8,12 @@ passed gates. Existing Claude behavior and CLAUDE.md remain unchanged.
 
 ## Immediate state and evidence precedence
 
-**RC587 is ready for owner QA; whole-RC QA and exact main consent remain pending.**
+**RC587 owner QA passed and exact main release was approved and merged7d80d65d.**
 Root reports fullCI40437293981 success/all12jobs and independent final review clear
 on exact deployedDEV3542. Immutable QA URL:https://071f74cd.handpan-cards-dev.pages.dev/.
 Helpers device QA passed earlier; that is not blanket RC signoff. Variants is NOT
 on DEV/in RC: its separate fullCI passed, performance remains unqualified, and it
-missed19:00 inclusion cutoff. No main merge is authorized by this handoff.
+missed19:00 inclusion cutoff. No additional main merge is authorized by this handoff.
 
 Source order: current owner decisions → applicable project/scoped instructions →
 verified Git/API/deployment evidence → newest explicit ledger checkpoint → plan/
@@ -39,8 +39,9 @@ blindly replay instructions or overwrite them. No global loader/bootstrap is nee
 
 | Alias | Full commit / source |
 |---|---|
-| MAIN |96c4c589cec0950723b3b5323dc1df5bbc359329 |
-| DEV/RC |3542d6ea868bf08e81a0b4f06c4bc71bbc20cbcb; app7fe75f5407d67b2985405c89db55f7d95882313fea016af8814728c9436db946 |
+| MAIN |7d80d65d603d9e8ab468a08d616d59dfac0245ce (approved RC release; prior rollback anchor96c4) |
+| DEV |c040e881e8c31eea95d01ed36691156210f451a9, published handoff; reconciliation pending |
+| RC-source |3542d6ea868bf08e81a0b4f06c4bc71bbc20cbcb; released app7fe75f5407d67b2985405c89db55f7d95882313fea016af8814728c9436db946 |
 | SV |2a260d212ec8e14394b7198f075366d13bf372ec; appdc6af7528c7d326a129402458f9acc9adb9f524e3bc23453290c71f46dd292c5 |
 | SV-TEST-RED |cab63c9dc47a6ce983218cf113822feb6810eb64; local frozen tests on old0d36 source, intentionally RED, not a release head |
 | MAC |217609075a14e6ca4799497210af27d9df842c5e |
@@ -58,9 +59,11 @@ blindly replay instructions or overwrite them. No global loader/bootstrap is nee
 
 Host aliases: HV=/private/tmp/handpan-saved-variants.HVUKbE;
 HH=/private/tmp/handpan-helpers.HUZs5u; SHC=/private/tmp/handpan-share-hotfix.urAbvO.
-New handoff tree:/private/tmp/handpan-claude-takeover-20261026,
-branch codex/claude-takeover-20261026, initially DEV3542 plus uncommitted docs.
-Final published handoff SHA is a **closure gap until coordinator records/verifies it**;
+Current handoff tree:/private/tmp/handpan-release-reconcile-20261026,
+prior /private/tmp/handpan-claude-takeover-20261026 historical,
+original branch codex/claude-takeover-20261026 delivered as DEVc040; current post-release
+revision is on codex/release-reconcile-20261026, preserving that handoff tree.
+Original published handoff is DEVc040; this new revision needs its own external publication receipt;
 never invent it or treat the mutable branch name as an immutable receipt.
 
 ## All-stream continuation matrix
@@ -70,15 +73,15 @@ unless explicitly host-local. Each row's next action remains subject to pause.
 
 | Stream / objective | Checkpoint, status and next permitted action |
 |---|---|
-| RC release: ship completed DEV changes | DEV/RC, codex/release-rc-20261026, /private/tmp/handpan-release-rc-20261026, PR587. Plan2026-10-26-release-candidate-and-claude-handoff.md. Last: fullCI/served source/review and QA notification. Next: receive wholeRC QA and exact main decision; no automatic merge. |
+| RC release: ship completed DEV changes | RC-source, released main7d80d65d, codex/release-rc-20261026, /private/tmp/handpan-release-rc-20261026, PR587. Plan2026-10-26-release-candidate-and-claude-handoff.md. Last: wholeRC QA passed, exact main approval received, RC587 merged. Next: finish actual-main CI and DEV reconciliation; no additional main action authorized. |
 | Saved variants: preserve independently named/layout versions | SV, codex/saved-scale-variants-20261025, HV/integration, DEV584/open; CI-only583 NEVER MERGE. Regroup/route plans2026-10-26-saved-variants-*.md. Last: fullCI40417818176 green, source freeze. Next: performance simplification audit only when resumed; no DEV delivery or partial storage rollout. |
 | Performance: qualify responsiveness fairly | Same SV/head, HV/evidence private packet; plan2026-10-26-performance-validation-simplification.md. Direction independently clear, implementation/activation unbuilt. Mac stopped in baseline before candidate. Next: smallest reviewed adapter/setup scope, not rerun-to-green or controller rebuild by default. |
 | Mac helper: opted-in foreground settling | MAC, codex/mac-foreground-20261025; resolve local path from manifest. Main573/DEV574. Plan2026-10-24-mac-browser-repair.md. Delivered in RC; broader Mac-suite failure not closed. Next: release handling, not general harness redesign. |
-| Per-ring feedback: retain latest result for both rings | FEEDBACK, codex/layout-feedback-20261025, /private/tmp/handpan-feedback.ha43y5cy/integration, main575/DEV576. Plan2026-10-25-layout-feedback.md. Implementation done/in RC; preserve existing proof/QA. |
-| LINK ownership: retire obsolete async share UI | LINK, codex/share-customization-hotfix-20261025, SHC/integration, main581/DEV582. Plan2026-10-25-share-customization-hotfix.md. Owner DEV QA passed/in RC; does not solve variant identity or prove original missing-angle cause. |
-| Helpers: add external resource beside Handpan101 | HELPERS, codex/helpers-integration-20261026, HH/integration, DEV585. Plan2026-10-26-handpan-helpers-validation-finish.md. Owner device QA passed/in RC. CI-only586 NEVER MERGE; no new resource implementation needed. |
-| SEO: long-tail useful scale lessons | SEO, codex/seo-longtail-plan-20261025, /private/tmp/handpan-seo-longtail.rpqmbt6_/planning, main577/DEV578. Plan2026-10-25-seo-longtail-content.md. Existing docs in RC; NEW research/articles paused. /learn/, owner musical review and exact18-note EAmara13+5 pilot settled; no publication. |
-| Duplicate notes: allow repeats with nonblocking warnings | DUP-PLAN, codex/duplicate-notes-plan-20261025; local path in manifest, main579/DEV580. Plan2026-10-25-duplicate-notes.md. Owner permits existing PLAN DOCS in RC; FEATURE remains paused. Exact duplicates everywhere/one position per tone/warn only newly allowed repeats settled. |
+| Per-ring feedback: retain latest result for both rings | FEEDBACK, codex/layout-feedback-20261025, /private/tmp/handpan-feedback.ha43y5cy/integration, main575/DEV576. Plan2026-10-25-layout-feedback.md. Released through RC587; preserve existing proof/QA. |
+| LINK ownership: retire obsolete async share UI | LINK, codex/share-customization-hotfix-20261025, SHC/integration, main581/DEV582. Plan2026-10-25-share-customization-hotfix.md. Owner QA passed/released through RC587; does not solve variant identity or prove original missing-angle cause. |
+| Helpers: add external resource beside Handpan101 | HELPERS, codex/helpers-integration-20261026, HH/integration, DEV585. Plan2026-10-26-handpan-helpers-validation-finish.md. Owner device QA passed/released through RC587. CI-only586 NEVER MERGE; no new resource implementation needed. |
+| SEO: long-tail useful scale lessons | SEO, codex/seo-longtail-plan-20261025, /private/tmp/handpan-seo-longtail.rpqmbt6_/planning, main577/DEV578. Plan2026-10-25-seo-longtail-content.md. Existing docs released through RC587; NEW research/articles paused. /learn/, owner musical review and exact18-note EAmara13+5 pilot settled; no publication. |
+| Duplicate notes: allow repeats with nonblocking warnings | DUP-PLAN, codex/duplicate-notes-plan-20261025; local path in manifest, main579/DEV580. Plan2026-10-25-duplicate-notes.md. Owner permitted existing PLAN DOCS, now released through RC587; FEATURE remains paused. Exact duplicates everywhere/one position per tone/warn only newly allowed repeats settled. |
 | Swipe: switch Scale↔Layout deliberately | SWIPE, codex/sheet-tab-swipe-20261025, /private/tmp/handpan-sps-z8gaznu2/integration. Plan2026-10-25-sheet-tab-swipe.md. Started/approved throughDEV but HELD. Next after resume: accepted base and literal59proof reconciliation, review/CI/native QA; old proofs not final. |
 | Palettes: append Kurd/Amara pairs and inverses | PALETTE, codex/palette-defaults-plan-20261026, /private/tmp/handpan-palette-defaults-plan.20261026. Plan2026-10-26-built-in-palette-defaults.md exists at retained ref, not necessarily this tree. ThroughDEV/exact packet approved but unstarted PAUSED; preserve old six/default0. |
 | Rename: handpan-chords local/remote safely | Plan/prompt2026-10-26-repository-rename-handpan-chords.md, ENG-reviewed planning only. RENAME ref is recoverable via SV; original worktree is a manifest locator, not required if that ref is available. No rehearsal/rename; PAUSED. |
@@ -139,12 +142,12 @@ are not proof of native skill/tool parity. Never copy credentials across harness
 | Phase | Prerequisite → output / acceptance | Stop, input and recovery |
 |---|---|---|
 | A: orient read-only | Read sources above; resolve live main/DEV/RC/SV and timestamp, inspect scoped status and manifest. Output short evidence/authority map with exact refs and stale gaps. | Missing remote access remains unavailable; preserve local state, use explicitly qualified retained refs. No startup installs or feature writes. |
-| B: release decision | A complete; check owner QA and PR587/currentCI/deployment on exact head. Output included/excluded manifest and owner decision needed. | Without exact consent, no main merge. QA pending is not permission; retain candidate and notify once, do not re-ask settled Helpers QA. |
+| B: release verification | A complete; verify merged RC587/main7d80, actual-mainCI40448555197, served production and DEV reconciliation. Output actual gate state with settled QA/consent. | No repeat request for already-granted QA/RC consent; unexpected source movement or failed gate stops dependent claim. No further main changes authorized. |
 | C: audit one selected stream | Owner chooses/resumes work or existing unpaused release handling applies; read its plan/ref/source/failures/approvals, verify worktree ownership. Output exact last/next/acceptance. | Paused grants remain paused; missing source/private evidence stops dependent claim. Recover in isolated authorized checkout, never reset old tree. |
 | D: review changed scope | Reconcile stale requirements and minimum plan; use file-owned swarm plus independent ENG/design as applicable. Output addressed plan, exact scope/commands/budgets. | New CLAUDE patch/setup/global/main action needs applicable explicit grant. Fourth failed review round triggers regroup; no fabricated score. |
 | E: execute only resumed scope | Frozen reviewed base/tests/ownership, meaningful TDD/generated mutants, sole browser lease. Output exact-head fullCI, independent final review, servedDEV and owner/device QA qualifications. | Failed gate is triaged and retained; no retries-to-green/waivers or automatic performance restart. Restore only owned fault bytes and preserve drafts/data. |
 
-If owner later approves release, use exact approved manifest/head and current
+For any future release with its own exact owner approval, use the approved manifest/head and current
 repository release/sync procedures; do not infer authority to merge older overlap
 PRs automatically. Older main573/575/577/579/581 can become superseded only after
 verified release; inspect containment and preserve evidence/order before proposing
@@ -166,8 +169,8 @@ unreviewed new content; refresh scope after handoff docs/other refs move.
 | Model passes/native cause unknown | Retain distinction and existing native coverage; do not upgrade causality claims. |
 
 These are onboarding acceptance scenarios, not tests executed by this drafting lane.
-Open owner decisions: wholeRC QA/exact main consent now; which paused stream to
-resume later; Neotone hardware/semantics/export and truly new setup grants only
+WholeRC QA/exact RC main consent are settled. Open owner decisions: which paused
+stream to resume later; Neotone hardware/semantics/export and truly new setup grants only
 when relevant. Settled language, duplicate policy, SEO and palette answers stand.
 
 ## Closure checklist and first takeover report
@@ -187,3 +190,12 @@ V2 executed to generate this plan/paste prompt, then source-locator/selected-bac
 clarifications incorporated before independent review. Both independent reviews CLEAR
 after the stale process-audit wording was corrected; publication remains pending;
 no self-scored quality or operational-parity claim.
+
+## Post-release checkpoint
+
+WholeRC QA passed; owner explicitly approved exact3542 release, mergedmain7d80d65d.
+Production21resources/headers andPagesdeploy passed; actualmainCI40448555197 is
+running. Landscape Settings/Resources threecolumns acceptednonblocking andqueued
+for researchedprompt/plan/reviews only; Add/Editexcluded. DEVreconcile mustretain
+newerhandoffdocs. Current phaseB verifies the completed approval/release; firstaction now check
+mainCI/synccompletion and latestownerpriorities, never mergeoldoverlapPRs again.

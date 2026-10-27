@@ -1,23 +1,24 @@
 # All-workstream status — authoritative takeover checkpoint, 2026-10-26
 
-Use live refs/owner replies to refresh this snapshot. Main96c4 unchanged. RC587
-exactDEV3542/fullCI40437293981 PASSED; immutableDEV071/source7fe verified. Owner
-notified for20min QA: wholeRC QA and main consent PENDING. Existing duplicate-note
+Use live refs/owner replies to refresh this snapshot. Main7d80d65d now contains approvedRC587; fullCI candidate passed and wholeRC
+ownerQA/mainconsent explicitly granted. Production21resources/headers passed,
+actualmainCI40448555197 running. DEVhandoffc040 preserved; reconciliation pending. Existing duplicate-note
 DOCS explicitly allowed; implementation paused. Saved variants excluded tonight.
 
 | Workstream | Stopping point / next permitted action |
 |---|---|
-| RC release | READYFOROWNERQA, cleanbranch3542; observe reply, obtain exactmainconsent before any merge. |
+| RC release | Released via approvedmain7d80; finishactualmainCI/sync, no furthermainconsent implied. |
 | Saved variants | Clean application2a260d21/greenfullCI; performanceHELD, noDEVdelivery, missed19:00cutoff. Preserve forClaude. |
 | Performance | A0unactivatedrunnerhasfourdefects; reduceddesignplanningclear, no newcampaign/setup grant. |
 | Helpers | DeliveredDEV, fullCI/deviceQApassed; mainreleasecandidateincludesit. |
 | Mac helper | ScopedrepairdeliveredDEV; broaderMacsuite unresolved. |
-| Layout feedback | LatestoutcomeperringdeliveredDEV; includedRC. |
-| LINK repair | AsyncownershipfixdeliveredDEV/ownerQApassed; includedRC, coexistenceNOTfixed. |
+| Layout feedback | LatestoutcomeperringdeliveredDEV; releasedRC. |
+| LINK repair | AsyncownershipfixdeliveredDEV/ownerQApassed; releasedRC, coexistenceNOTfixed. |
 | SEO | Existingplandelivered/inRC; newresearch/contentpaused. /learn/, ownerreview,18-notepilotsettled. |
 | Duplicate notes | PlanDOCSinRCbyexplicitapproval; FEATUREPAUSED, noimplementation. |
 | Swipe | Startedbutheld, clean3a8467ff; refreshbase/proofs/gatesonlyafterresumption. |
 | Palettes | Reviewed/approved08169310, exacta41packet; unstartedimplementationPAUSED. |
+| Landscape Settings | Researchprompt/plan independentlyENG/designclear; Settings/ResourcesONLY, AddEditexcluded; implementationpaused, exactspec/oracle approvalfuturegate. |
 | Neotone | V3prompt+reviewedplanpublished6c62e758; FUTURE/implementationPAUSED. |
 | Rename | Reviewedplan/prompt, noexecution/rehearsal; PAUSED. |
 | Linear | Researchpromptunrun; PAUSED, ledgerretained. |

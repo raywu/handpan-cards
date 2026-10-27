@@ -5,11 +5,13 @@ conversation memory. First perform read-only orientation and report your propose
 next action. This prompt does not resume paused features, approve a main merge,
 change CLAUDE.md, authorize tool installation, or alter existing Claude behavior.
 
-The handoff branch is codex/claude-takeover-20261026. Resolve its advertised
+Current post-release handoff branch is codex/release-reconcile-20261026; the prior
+codex/claude-takeover-20261026 checkpoint was delivered as DEVc040. Resolve its advertised
 immutable publication commit and current remote main/dev before using snapshots.
 Final handoff SHA must come from the coordinator's publication receipt; if absent,
 report that gap rather than inventing a hash. Local host handoff tree is
-/private/tmp/handpan-claude-takeover-20261026, originally based on DEV3542.
+/private/tmp/handpan-release-reconcile-20261026, based on DEVc040 plus main ancestry.
+Prior /private/tmp/handpan-claude-takeover-20261026 is historical.
 Do not assume that this path or private evidence exists on your host.
 
 Read, in order:
@@ -29,12 +31,13 @@ Read accessible Claude global definitions if relevant, but never run unfamiliar
 bootstrap scripts or change skills/hooks/MCP/auth/global memory just to start.
 
 Known anchors, to re-verify:
-- main96c4c589cec0950723b3b5323dc1df5bbc359329.
-- DEV/RC3542d6ea868bf08e81a0b4f06c4bc71bbc20cbcb;
+- main7d80d65d603d9e8ab468a08d616d59dfac0245ce (approved RC587 release).
+- Published DEV handoffc040e881e8c31eea95d01ed36691156210f451a9 (reconciliation pending);
+  RC-source3542d6ea868bf08e81a0b4f06c4bc71bbc20cbcb;
   app SHA7fe75f5407d67b2985405c89db55f7d95882313fea016af8814728c9436db946.
 - RC587, branch codex/release-rc-20261026: fullCI40437293981 passed, independent
-  release review clear, owner notified for wholeRC QA. QA and main consent remain
-  pending unless newer evidence says otherwise. Exact QA URL:
+  release review clear; owner wholeRCQA passed and exactmainconsent granted.
+  Main7d80d65d merged; actualmainCI40448555197/synccompletion must be refreshed. Exact QA URL:
   https://071f74cd.handpan-cards-dev.pages.dev/ . Previous Helpers QA passed.
 - Saved variants2a260d212ec8e14394b7198f075366d13bf372ec: fullCI40417818176 passed
   but performance unqualified; NOT on DEV/inRC. Any CI-only PR (including583/586 and handoff-validation drafts) NEVER MERGE.
@@ -74,8 +77,12 @@ After orientation give a short check-in: actual refs/time, evidence freshness,
 RC QA/main state, each active/held/queued/completed stream with a plain-language
 sentence, missing recovery context and the single recommended next permitted action.
 Interview only genuine unresolved inputs; retain settled product/language choices.
-Do not automatically restart all streams. Release owner decision comes first;
+Do not automatically restart all streams. Verify actual-main CI and DEV reconciliation first; settled QA/main approval must
+not be requested again.
 any later resumed work uses file-owned swarm lanes, meaningful TDD/generated
 mutants, independent engineering/design review as applicable, exact-head fullCI,
 actual servedDEV and honest owner/device QA gates. Await the owner's stream
 selection if every development stream remains paused.
+
+Latest follow-on: landscape Settings/Resources menu researchprompt/plan only,
+acceptednonblocking, Add/Editexcluded. No UIimplementation automaticallyresumes.
