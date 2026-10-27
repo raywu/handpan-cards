@@ -18501,12 +18501,14 @@ function run() {
             const id=uid(i+1),name='SVPG '+String(i+1).padStart(3,'0'),chip=document.querySelector('#decks .chip[data-selection-id="'+id+'"]');
             if(!chip)return {error:'missing chip '+i};
             const ok=()=>selection.kind==='saved'&&selection.id===id&&deck().name===name
-              &&!!document.querySelector('#decks .chip.on[data-selection-id="'+id+'"]');
+              &&!!document.querySelector('#decks .chip.on[data-selection-id="'+id+'"]')
+              &&savedState.preferredSelection.kind==='saved'&&savedState.preferredSelection.id===id;
             const t0=performance.now();chip.click();
             while(!ok()){
               if(performance.now()-t0>5000)return {error:'tap '+i+' never selected '+name};
-              await new Promise(resolve=>requestAnimationFrame(resolve));
+              await new Promise(resolve=>setTimeout(resolve,0));
             }
+            await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
             out.push({i,ms:performance.now()-t0});
           }
           return {rows:out};
