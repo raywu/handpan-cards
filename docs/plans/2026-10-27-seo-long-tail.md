@@ -24,7 +24,7 @@ All of these are commercial or generic; none found is a free, per-scale, printab
 |---|---|---|
 | Handpan Temple | Free D Kurd chord chart download (beginner, note map, inversions) | https://www.skool.com/the-handpan-temple-3021 |
 | Master the Handpan | Paid course, lesson on basic D Kurd chords | https://www.masterthehandpan.com/masterclass/the-handpan-cookbook |
-| Sven Kirchhofer card decks | Paid (about 16 to 25 EUR) chord card sets per scale: D Kurd 13 (24 cards), D Amara 10 (17), D Aegean 18, F# Nordlys 17 | https://www.digistore24.com/product/578022 |
+| Sven Kirchhofer card decks | Paid chord card sets per scale. Digistore24 product 578022 shows E3 Amara 20 Ayasa Layout, 24 cards, EUR 24.90; product 554153 shows D Kurd 10, 24 cards, EUR 24.90 | https://www.digistore24.com/product/578022, https://www.digistore24.com/product/554153 |
 | Handpan Chordbook | Chords mapped to standard scales (natural minor, Dorian, major, harmonic minor) plus fill-in cards | https://handpanchordbook.com/cards |
 | Open Hijaz playing cards | 22-card Hijaz deck for sale | https://www.thegamecrafter.com/games/open-hijaz-handpan-playing-cards |
 | Instruments du Monde | How-to-play blog; Hijaz product page | https://instruments-du-monde.com/en/blogs/handpan/how-to-play-handpan |
@@ -49,7 +49,7 @@ Intent: I = informational, T = transactional. Volume is UNVERIFIED for all; Phas
 | 9 | "handpan chord flashcards" / "printable handpan chord cards" | T/I | Sold on Digistore24 and soundjourneystore: https://soundjourneystore.com/blogs/tongue-drums-hand-pans/hand-pan-flash-cards | Hub copy plus PDF call to action; our differentiator |
 | 10 | "handpan chords for custom scale" | I | Already position 1 per owner (seo-kit prompt); defend, do not rebuild | Keep the app; one internal link from the hub |
 | 11 | "D Kurd handpan notes layout" / "Hijaz handpan scale notes" | I | Retailer pages list notes: https://www.thomann.co.uk/patera_hpdm_12_d_kurd_es_compact.htm (curl 404/403, possibly bot-blocked) | Notes and layout section on each scale page |
-| 12 | "handpan scales" | I | Broad; maker catalogues dominate | Hub only; not a primary target |
+| 12 | "handpan scales" | I | Broad; ASSUMPTION: maker catalogues dominate | Hub only; not a primary target |
 
 Priority: 1, 2, 4, 6, then 7 only if Phase 0 shows impressions (per-scale, little free competition), then 3, 8, 9. Queries 5, 11, 12 are secondary phrases for the same pages. Drop a candidate whose page has zero impressions for two straight weeks after indexing.
 
@@ -108,15 +108,15 @@ Steps: export Search Console queries (28 days, positions 1-3 vs 4-30) and GA4 la
 Acceptance: a section headed exactly `## Appendix: Search Console impressions` is appended to this plan, holding an impressions table per candidate and at least three cited developers.google.com/search URLs. That heading must exist.
 Verify: `sed -n '/^## Appendix: Search Console impressions/,$p' docs/plans/2026-10-27-seo-long-tail.md | grep -c 'developers.google.com/search'` prints at least 3 (it prints 0 while the heading is absent, so the check cannot pass on this lane's own text).
 
-### Lane P1: generator and tests (owns `tools/sync_seo_pages.py`, `tests/test_seo_pages.py`, `tools/validate.py`, the generated `scales/*/index.html` and `chords/index.html`, and the `tests/suite_health.py` FLOORS row for `tests/test_seo_pages.py` (a new row) plus the raised `tests/test_site_files.py` row; the sitemap and its two tests are handed to P2, see below)
-Steps: 1) tests first: every chord in `data/decks.json` appears in its page; one `<h1>`; canonical link; no `<script src>`; no "deck" in visible text; `--check` fails on drift; a prose test (stub until P2 supplies copy): count words outside `<table>` per page, at least 300; and pairwise Jaccard similarity of word 5-grams of the prose between any two pages below 0.3. 2) implement the generator and template. 3) wire `tools/validate.py` to run `--check`.
+### Lane P1: generator and tests (owns `tools/sync_seo_pages.py`, `tests/test_seo_pages.py`, `tools/validate.py`, the generated `scales/*/index.html` and `chords/index.html`, and the `tests/suite_health.py` FLOORS row for `tests/test_seo_pages.py` (a new row) plus the raised `tests/test_site_files.py` row; and `tests/test_site_files.py` itself for extending its provenance guard (`ProvenanceGuardTest`) to the new pages; the sitemap and its two tests are handed to P2, see below)
+Steps: 1) tests first: every chord in `data/decks.json` appears in its page; one `<h1>`; canonical link; no `<script src>`; no "deck" in visible text; `--check` fails on drift; a prose test that activates by itself once a prose source exists (no unconditional skip; with no prose source it asserts that fact rather than skipping): count words outside `<table>` per page, at least 300; and pairwise Jaccard similarity of word 5-grams of the prose between any two pages below 0.3. 2) implement the generator and template. 3) wire `tools/validate.py` to run `--check`.
 Acceptance: generated files equal generator output; `index.html` byte-identical.
 Verify: `python3 tools/sync_seo_pages.py --check && python3 -m unittest tests.test_seo_pages tests.test_site_files tests.test_suite_health && git diff --quiet $(git merge-base HEAD origin/dev) -- index.html`
 
-### Lane P2: copy, hub and sitemap (owns scale prose sources, hub page, `sitemap.xml`, and the sitemap tests in `tests/test_site_files.py` (`test_sitemap_lists_exactly_the_site_root`, `test_no_lastmod_and_nojekyll_is_empty`), handed over from P1; re-runs the generator so `scales/*/index.html` carry the prose; raises the `tests/suite_health.py` FLOORS rows it changes)
+### Lane P2: copy, hub and sitemap (owns scale prose sources, hub page, the regenerated `scales/*/index.html` and `chords/index.html`, `sitemap.xml`, and the sitemap tests in `tests/test_site_files.py` (`test_sitemap_lists_exactly_the_site_root`, `test_no_lastmod_and_nojekyll_is_empty`), handed over from P1; re-runs the generator so `scales/*/index.html` carry the prose; raises the `tests/suite_health.py` FLOORS rows it changes)
 Steps: unique prose per scale; hub `/chords/`; sitemap and its two tests updated in one commit; internal links to `/#deck=<slug>`.
 Acceptance: sitemap lists exactly the intended URLs; every page renders its table without JS; each page has at least 300 words of prose outside `<table>` (INFERRED threshold, adjust in review) and every page pair has word-5-gram Jaccard below 0.3 (INFERRED cap), both enforced by `tests/test_seo_pages.py`.
-Verify: `python3 -m unittest tests.test_seo_pages tests.test_site_files tests.test_suite_health && python3 tools/validate.py`, then on DEV `curl -s https://handpan-cards-dev.pages.dev/scales/d-kurd-10/ | grep -c '<table'` is at least 1.
+Verify: `python3 -m unittest tests.test_seo_pages tests.test_site_files tests.test_suite_health && python3 tools/validate.py`. Post-merge check, only once P2 is on `dev`: `curl -s https://handpan-cards-dev.pages.dev/scales/d-kurd-10/ | grep -c '<table'` is at least 1.
 
 ### Lane P3: DEV check and measurement (no repo change; owner gate)
 Steps: owner reviews on https://handpan-cards-dev.pages.dev/; after release, read Search Console weekly for 8 weeks.
@@ -128,8 +128,8 @@ Acceptance: at least 800 words, links to all five scale pages, sitemap updated (
 Verify: `python3 -m unittest tests.test_site_files tests.test_seo_pages && python3 -c "import re,sys;t=open('guides/how-to-play-chords/index.html').read();b=re.sub(r'<(script|style)[^>]*>.*?</\1>','',t,flags=re.S);w=len(re.sub(r'<[^>]+>',' ',b).split());l=len(set(re.findall(r'href=\"[^\"]*/scales/[a-z0-9-]+/',t)));print(w,l);sys.exit(0 if w>=800 and l>=5 else 1)"`
 
 ### Lane P6: static layout SVG (optional, only after P3 shows indexing; owns the SVG template in `tools/sync_seo_pages.py`)
-Risk to settle first: the label-rule single-copy test (`tests/test_render_agreement.py` `test_each_label_rule_number_is_written_once_per_language`) fails on a second copy of a label-rule constant, so the SVG must call the engine's `labelSize`/`numSize` path or take sizes from `HPE.core.LABEL_RULE`, never re-spell the ratios. A third renderer also widens the app/print agreement surface.
-Acceptance: SVG field centres equal the fixture centres to 0.5 pt; the single-copy test stays green.
+Risk to settle first: the label-rule single-copy test (`tests/test_render_agreement.py` `test_each_label_rule_number_is_written_once_per_language`) fails on a second copy of a label-rule constant, so the SVG must take label sizes from `tools/hifi.py` `LABEL_RATIO_*`/`NUM_RATIO` (the generator is Python), never re-spell the ratios. A third renderer also widens the app/print agreement surface.
+Acceptance: SVG field centres equal the fixture centres to 0.5 pt, checked by a new `tests/test_seo_pages.py` test; the single-copy test stays green.
 Verify: `python3 -m unittest tests.test_render_agreement tests.test_seo_pages`
 
 ### Lane P5: docs (owns `CLAUDE.md` "Discoverability" section)
