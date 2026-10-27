@@ -1,7 +1,7 @@
 # Repository rename: handpan-cards -> handpan-chords (simplified)
 
 Status: **GATED on owner OK. Nothing here is executed.** Supersedes the 655-line
-draft of this file (kept in git history). Never run `gh repo rename` or move
+draft (in history). Never run `gh repo rename` or move
 folders until the owner says go. Do not reuse the old slug afterwards (that kills
 GitHub's redirect). Rename only; no product, storage or data change.
 
