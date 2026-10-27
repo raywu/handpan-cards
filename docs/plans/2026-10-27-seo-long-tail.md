@@ -125,7 +125,7 @@ Verify: the Search Console page report lists the new URLs as indexed (owner read
 
 ### Lane P4: guide article (only if D4 = yes; owns `guides/how-to-play-chords/index.html`)
 Acceptance: at least 800 words, links to all five scale pages, sitemap updated (P4 owns the `sitemap.xml` and sitemap-test hand-off for the guide URL, and the FLOORS row).
-Verify: `python3 -m unittest tests.test_site_files tests.test_seo_pages && python3 -c "import re,sys;t=open('guides/how-to-play-chords/index.html').read();b=re.sub(r'<(script|style)[^>]*>.*?</\\1>','',t,flags=re.S);w=len(re.sub(r'<[^>]+>',' ',b).split());l=len(set(re.findall(r'href=\"[^\"]*/scales/[a-z0-9-]+/',t)));print(w,l);sys.exit(0 if w>=800 and l>=5 else 1)"`
+Verify: `python3 -m unittest tests.test_site_files tests.test_seo_pages && python3 -c "import re,sys;t=open('guides/how-to-play-chords/index.html').read();b=re.sub(r'<(script|style)[^>]*>.*?</\1>','',t,flags=re.S);w=len(re.sub(r'<[^>]+>',' ',b).split());l=len(set(re.findall(r'href=\"[^\"]*/scales/[a-z0-9-]+/',t)));print(w,l);sys.exit(0 if w>=800 and l>=5 else 1)"`
 
 ### Lane P6: static layout SVG (optional, only after P3 shows indexing; owns the SVG template in `tools/sync_seo_pages.py`)
 Risk to settle first: the label-rule single-copy test (`tests/test_render_agreement.py` `test_each_label_rule_number_is_written_once_per_language`) fails on a second copy of a label-rule constant, so the SVG must call the engine's `labelSize`/`numSize` path or take sizes from `HPE.core.LABEL_RULE`, never re-spell the ratios. A third renderer also widens the app/print agreement surface.
