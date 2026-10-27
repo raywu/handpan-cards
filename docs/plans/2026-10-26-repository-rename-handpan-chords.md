@@ -75,8 +75,7 @@ Do:
 1. `[ ! -e ~/Projects/handpan-chords ] && mv ~/Projects/handpan-cards ~/Projects/handpan-chords`
    (same volume, so this is an atomic rename; refuse if the target exists).
 2. `cd ~/Projects/handpan-chords && git worktree repair $(awk '/^worktree /{p=$2} /^prunable/{k[p]=1} /^$/{if(p&&!k[p])print p;p=""}' ~/handpan-worktrees-before.txt | sed -E "s#^$HOME/Projects/handpan-cards(/|\$)#$HOME/Projects/handpan-chords\1#")`
-   (paths from the before-list, minus those flagged prunable, which would make
-   `repair` abort at the first invalid path with exit 128; BSD sed, so no `\b`). Nested `.claude/worktrees/` trees
+   (before-list paths minus prunable ones. A bad main-checkout path is fatal (exit 128); a bad later path prints "error: not a valid path", repair goes on and exits 1. Re-save the before-list just before step 3.1. BSD sed, no `\b`). Nested `.claude/worktrees/` trees
    moved with the folder; others still name the old path and need their new path
    passed. Locked or prunable trees: leave them, do not prune.
 3. Update host tools by hand and only if they break: `~/.codex/config.toml` project
@@ -85,8 +84,8 @@ Do:
 
 Verify:
 - `git -C ~/Projects/handpan-chords worktree list` -> no `prunable` entries beyond
-  the before-list's (`[ "$(git worktree list --porcelain | grep -c '^prunable')" = "$(grep -c '^prunable' ~/handpan-worktrees-before.txt)" ]`); every non-prunable path exists:
-  `git worktree list --porcelain | awk '/^worktree /{p=$2} /^prunable/{k[p]=1} /^$/{if(p&&!k[p])print p;p=""}' | while read -r d; do test -d "$d" || echo "MISSING $d"; done` prints nothing.
+  the before-list's (`[ "$(git -C ~/Projects/handpan-chords worktree list --porcelain | grep -c '^prunable')" = "$(grep -c '^prunable' ~/handpan-worktrees-before.txt)" ]`); every non-prunable path exists:
+  `git -C ~/Projects/handpan-chords worktree list --porcelain | awk '/^worktree /{p=$2} /^prunable/{k[p]=1} /^$/{if(p&&!k[p])print p;p=""}' | while read -r d; do test -d "$d" || echo "MISSING $d"; done` prints nothing.
 - `git -C ~/Projects/handpan-chords status --porcelain | diff - ~/handpan-status-before.txt` is empty.
 - `cd ~/Projects/handpan-chords && python3 tools/validate.py` passes, plus `node --test tests/core.test.js` as a smoke test.
 - `ls ~/Projects/handpan-cards` -> No such file (no compat symlink; it would hide
@@ -120,8 +119,8 @@ Do NOT change:
   the repo name; verify with the grep below.
 
 Verify (run in a fresh lane worktree, so the tree is clean):
-- `grep -rIn "handpan-cards" . --exclude-dir=.git --exclude-dir=plans --exclude-dir=prompts | grep -v "handpan-cards-dev\|saved-scales\|raywu-handpan-cards"` -> after the edits, only the receipt links and "historical" lines named above remain.
-- CI `validate` green at the head SHA of the reference-update PR.
+- `grep -rIn "handpan-cards" . --exclude-dir=.git --exclude-dir=plans --exclude-dir=prompts | grep -v "handpan-cards-dev\|saved-scales\|raywu-handpan-cards"` -> after the edits, only the receipt links and "historical" lines named above remain. Run before the cutover from a linked worktree, it also hits the `./.git` file.
+- CI `validate` green at the head SHA of the reference-update lane's main PR (CI does not run on its dev PR).
 
 ## Rollback
 
