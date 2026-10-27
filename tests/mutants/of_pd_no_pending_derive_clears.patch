@@ -1,5 +1,5 @@
 # kills: OF: PD closing the sheet clears a pending sentence
-# suite: node --test --test-name-pattern OF:.PD tests/app.test.js
+# suite: node --test --test-name-pattern ^OF:.PD.closing.the.sheet.clears.a.pending.sentence$ tests/app.test.js
 # layoutStatus and dropDrawer both stop clearing pendingDerive, so a drawer result or a closed sheet leaves a stale sentence to replay.
 diff --git a/index.html b/index.html
 --- a/index.html
