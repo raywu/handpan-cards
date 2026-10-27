@@ -1927,7 +1927,7 @@ function run() {
             `);
             const label = `${vw}x${vh} mode ${mode}`;
             const amy = await b.eval(`return ${AMY_ROW_JS};`);
-            const scrolls = false; // LE: two landscape columns fit 667x375 mode S without scroll
+            const scrolls = vw === 667 && vh === 375 && mode === "S";
             const newlyScrolls = !scrolls && amy.overWith > 1;
             assert.deepStrictEqual(m.rect, [0, 0, vw, vh], `${label}: the panel must cover the viewport`);
             // A hidden Resources group would silently vanish from `ctrls`
@@ -10161,7 +10161,7 @@ function run() {
           // (-50 where the print group was the tall column): 328.25 -> 375.25,
           // 310 -> 357, 251.75 unchanged, 313 -> 310.
           // Retain accepted Lane W single-row pins with compact HTC.
-          [740, 360, "S", 372.75], [740, 340, "S", 372.75], [812, 330, "S", 357], [926, 310, "S", 251.75],
+          [740, 360, "S", 0 /* LE: two columns, no scroll */], [740, 340, "S", 372.75], [812, 330, "S", 357], [926, 310, "S", 251.75],
           [568, 312, "A", 310],
         ];
         for (const [w, h, mode, mainNeeded] of cases) {
@@ -13940,6 +13940,7 @@ function run() {
         for (const [key, want] of Object.entries(needed[tableKey(fm)])) {
           const [w, h] = key.split("x").map(Number);
           assert.ok(belongs(w, h), key + " is not in " + label);
+          if (w >= 740 && h >= 360 && h <= 520) continue; // LE: two CSS columns, asserted by "LE:" and the panel-fit oracle
           await br.setViewport(w, h, false);
           await br.settle();
           const got = await br.eval(`

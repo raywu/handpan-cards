@@ -341,9 +341,9 @@ a.mode{text-decoration:none}
 #settings-panel > .panel-group{width:min(420px, 100%)}
 /* Landscape phone: too short for one column, so the groups sit side by side. */
 @media (max-height:520px){
-  #settings-panel{display:block; column-count:2; column-gap:var(--sp-4); column-fill:balance;
-    padding:9px 62px 9px}
-  #settings-panel > .panel-group{width:auto; break-inside:avoid; margin-bottom:var(--sp-3)}
+  #settings-panel{display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));
+    align-content:start; align-items:start}
+  #settings-panel > .panel-group{width:auto}
 }
 #settings-trigger[aria-expanded="true"] .glyph{background:transparent}
 #settings-trigger[aria-expanded="true"] .glyph::before{top:0; transform:rotate(45deg)}
@@ -354,6 +354,12 @@ a.mode{text-decoration:none}
    Controls keep their ALL-CAPS Nunito voice (N15). */
 .panel-heading{font-family:Marcellus, serif; font-weight:400; font-size:14px;
   color:#c4bcab; margin:0}
+/* LE: wide landscape phones lay the groups out in two balanced CSS columns. */
+@media (min-height:360px) and (max-height:520px) and (min-width:740px){
+  #settings-panel{display:block; column-count:2; column-gap:var(--sp-4); column-fill:balance;
+    padding:9px 62px 9px}
+  #settings-panel > .panel-group{break-inside:avoid; margin-bottom:var(--sp-3)}
+}
 /* Desktop: the panel becomes an always-visible sidebar, not a modal (M3,
    owner follow-up 2026-09-28; verdict and reasons in the plan's O6/addendum).
    Same markup as the mobile panel - this is presentation only. The trigger
