@@ -14591,8 +14591,34 @@ describe("OF: the sheet's seats follow the typed order", () => {
     typedFields(app, "D3", "C4 A3 D4 E4 F4 G4 A4 C5");
     app.run("closeScaleSheet()");
     openSheet(app);
+    lineType(app, ASC);
     app.click(app.els["scale-tab-layout"]);
-    assert.strictEqual(d2Status(app), "");
+    assert.strictEqual(d2Status(app), "", "a parsing box on reopen must not replay the stale sentence");
+  });
+
+  test("OF: PD NEXT and each cyclic keyboard entry show a rim reorder sentence once and through each cyclic keyboard entry", async () => {
+    for (const route of ["next", "ArrowRight", "ArrowLeft", "End"]) {
+      const app = add();
+      typedFields(app, "D3", "C4 A3 D4 E4 F4 G4 A4 C5");
+      assert.strictEqual(d2Status(app), "", route);
+      if (route === "next") app.click(app.els["scale-next"]);
+      else { app.els["scale-tab-scale"].focus(); app.press(app.els["scale-tab-scale"], route); }
+      assert.strictEqual(d2Status(app), RIM_SAID, route);
+      app.click(app.els["scale-tab-scale"]);
+      app.click(app.els["scale-tab-layout"]);
+      assert.strictEqual(d2Status(app), "", route + " consumed once");
+    }
+  });
+
+  test("OF: PD an inner reorder pending beside a later rim reorder is not overwritten: both sentences show, rim first, and the reverse order shows the same", async () => {
+    for (const order of [["inner", "rim"], ["rim", "inner"]]) {
+      const app = add();
+      lineType(app, "(D3) A3 C4 D4 E4 F4 | F5 G5");
+      lineType(app, order[0] === "inner" ? "(D3) A3 C4 D4 E4 F4 | G5 F5" : "(D3) C4 A3 D4 E4 F4 | F5 G5");
+      lineType(app, "(D3) C4 A3 D4 E4 F4 | G5 F5");
+      app.click(app.els["scale-tab-layout"]);
+      assert.strictEqual(d2Status(app), RIM_SAID + " " + INNER_SAID, order.join(" then "));
+    }
   });
 
   test("OF: PD a drawer action's own status wins over a pending sentence, and the sentence does not return", async () => {
@@ -15862,6 +15888,19 @@ describe("SPS: primary public-event traces", () => {
     scroll(app, field, 10); scroll(app, field, 0);
     finishLeft(app, field);
     assert.strictEqual(on(app, "scale"), "true");
+  });
+
+  test("SPS3: internal textarea horizontal scroll, held or out and back, cancels the tab swipe", async () => {
+    for (const back of [false, true]) {
+      const app = await ready(), field = app.els["scale-box"];
+      field.scrollLeft = 0; field.scrollWidth = 600; field.clientWidth = 200;
+      emit(app, "touchstart", { target: field });
+      field.scrollLeft = 20;
+      app.els["scale-sheet"].dispatchEvent({ type: "scroll", target: field });
+      if (back) { field.scrollLeft = 0; app.els["scale-sheet"].dispatchEvent({ type: "scroll", target: field }); }
+      finishLeft(app, field);
+      assert.strictEqual(on(app, "scale"), "true", "back=" + back);
+    }
   });
 
   test("SPS3: body maximum excursion allows 8 pixels but cancels 9 including out and back", async () => {

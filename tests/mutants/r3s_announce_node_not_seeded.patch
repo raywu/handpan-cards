@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10981,3 +10981,3 @@ const anchorOne  = document.getElementById("scale-anchor-one");
+@@ -11590,3 +11590,3 @@ const anchorOne  = document.getElementById("scale-anchor-one");
  const anchorBetween = document.getElementById("scale-anchor-between");
 -const announce = document.querySelector(".announce");
 +const announce = document.querySelector(".announce") || document.body.appendChild(document.createElement("div"));
@@ -13,7 +13,7 @@ diff --git a/index.html b/index.html
 diff --git a/tools/sandbox.js b/tools/sandbox.js
 --- a/tools/sandbox.js
 +++ b/tools/sandbox.js
-@@ -421,3 +421,3 @@ function boot(opts = {}) {
+@@ -790,3 +790,3 @@ function boot(opts = {}) {
    const created = [];
 -  if (html.includes('<div class="announce"')) {
 +  if (false && html.includes('<div class="announce"')) {

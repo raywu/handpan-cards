@@ -3903,7 +3903,8 @@ function run() {
         const grid = await b.eval(`
           const dots = [...document.querySelectorAll("#scale-swatches .dot")];
           const box = document.getElementById("scale-swatches").getBoundingClientRect();
-          return { box: { l: box.left, r: box.right }, vw: innerWidth, dots: dots.map((d) => {
+          const col = document.getElementById("scale-tabs").getBoundingClientRect();
+          return { box: { l: box.left, r: box.right }, col: { l: col.left, r: col.right }, vw: innerWidth, dots: dots.map((d) => {
             d.scrollIntoView({ block: "center" });
             const r = d.getBoundingClientRect();
             const g = document.getElementById("scale-swatches").getBoundingClientRect();
@@ -3921,6 +3922,7 @@ function run() {
         for (let i = 1; i < 5; i += 1) assert.ok(grid.dots[i].x > grid.dots[i - 1].x, `${w}x${h}: row one runs left to right`);
         for (let i = 6; i < 10; i += 1) assert.ok(grid.dots[i].x > grid.dots[i - 1].x, `${w}x${h}: row two runs left to right`);
         assert.ok(grid.box.l >= 0 && grid.box.r <= grid.vw, `${w}x${h}: the grid overflows the viewport`);
+        if (w === 844) assert.ok(grid.box.l >= grid.col.l - 1 && grid.box.r <= grid.col.r + 1, `${w}x${h}: the grid ${JSON.stringify(grid.box)} lies outside the controls column ${JSON.stringify(grid.col)}`);
         await b.key("Escape", "Escape", 27);
       }
     } finally {
@@ -5526,14 +5528,17 @@ function run() {
       }
       await openDrawer();
       const inner = [];
-      for (let k = 0; k < 24; k++) {
+      for (let k = 0; k < 40; k++) {
         await b.key("Tab", "Tab", 9);
         inner.push(await b.eval(`
           const el = document.activeElement;
-          return { id: (el && el.id) || "", inside: !!(el && document.getElementById("scale-sheet").contains(el)) };`));
+          return { id: (el && el.id) || "", dot: el ? [...document.querySelectorAll("#scale-swatches .dot")].indexOf(el) : -1,
+                   inside: !!(el && document.getElementById("scale-sheet").contains(el)) };`));
       }
       assert.ok(inner.every(x => x.inside), `Tab escaped the Layout tab: ${JSON.stringify(inner)}`);
       const innerIds = new Set(inner.map(x => x.id));
+      const dots = [...new Set(inner.map(x => x.dot).filter(d => d >= 0))].sort((p, q) => p - q);
+      assert.deepStrictEqual(dots, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], `the Layout-tab walk did not reach all ten swatches: ${JSON.stringify(dots)}`);
       for (const id of ["scale-back", "scale-anchor-one", "scale-anchor-between", "scale-mirror"]) {
         assert.ok(innerIds.has(id), `Tab never reached #${id} on the Layout tab: ${JSON.stringify([...innerIds])}`);
       }
@@ -18843,7 +18848,8 @@ function run() {
             if(!chip)return {error:'missing chip '+i};
             const ok=()=>selection.kind==='saved'&&selection.id===id&&deck().name===name
               &&!!document.querySelector('#decks .chip.on[data-selection-id="'+id+'"]')
-              &&savedState.preferredSelection.kind==='saved'&&savedState.preferredSelection.id===id;
+              &&savedState.preferredSelection.kind==='saved'&&savedState.preferredSelection.id===id
+              &&getComputedStyle(document.documentElement).getPropertyValue('--root').trim().toLowerCase()===deck().colors.root.toLowerCase();
             const t0=performance.now();chip.click();
             while(!ok()){
               if(performance.now()-t0>5000)return {error:'tap '+i+' never selected '+name};
@@ -18856,7 +18862,7 @@ function run() {
         })();`);
       assert.ok(!rows.error,rows.error);
       const max=Math.max(...rows.rows.map(r=>r.ms));
-      console.log("SV_PG_TAPS "+JSON.stringify({count:rows.rows.length,maxMs:Math.round(max*10)/10}));
+      console.log("SV_PG_TAPS "+JSON.stringify({count:rows.rows.length,maxMs:Math.round(max*10)/10,perTapMs:rows.rows.map(r=>Math.round(r.ms*10)/10)}));
       assert.strictEqual(rows.rows.length,30);
       for(const r of rows.rows)assert.ok(r.ms<500,"chip "+r.i+" selected in "+r.ms.toFixed(1)+" ms, bound 500");
     });

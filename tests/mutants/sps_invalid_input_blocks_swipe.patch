@@ -1,11 +1,10 @@
 # kills: SPS5: empty and refused input can swipe into Layout and still use its palette
 # suite: node --test --test-reporter=tap --test-name-pattern ^SPS5:.empty.and.refused.input.can.swipe.into.Layout.and.still.use.its.palette$ tests/app.test.js
 # Empty/refused input cannot enter Layout despite existing palette availability.
-diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11731,7 +11731,7 @@ function setTab(tab) {
-       lipTouching = false;
+@@ -12345,7 +12345,7 @@
+       lipFling = null;
        lipDragEnd = 0;
        userWindowUntil = 0;
 -      setTab(tab);

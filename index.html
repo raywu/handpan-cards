@@ -11600,7 +11600,7 @@ announce.className = "announce";
 // list inerts and stay reachable behind the modal sheet.
 const background = [...document.querySelectorAll("header, main, footer, #settings-panel, #about")];
 
-let palette = 0;                 // D6 index 0-5
+let palette = 0;                 // D6 index 0-9
 let mirror = false;              // MIRROR TOP: the rim and the inner ring
 let sheetOpen = false;
 let editingId = null;
@@ -12342,10 +12342,7 @@ function setTab(tab) {
       if (elapsed < 0 || elapsed > 600 || Math.abs(dx) < 48 || Math.abs(dx) < 2 * Math.abs(dy)) return;
       const tab = dx < 0 ? "layout" : "scale";
       if (tab === sheetTab) return;
-      lipDrag = null;
-      lipParked = null;
       lipFling = null;
-      lipTouching = false;
       lipDragEnd = 0;
       userWindowUntil = 0;
       setTab(tab);

@@ -1,11 +1,10 @@
 # kills: SPS primary: Add left touchend enters Layout and consumes both ring outcomes once
 # suite: node --test --test-reporter=tap --test-name-pattern ^SPS.primary:.Add.left.touchend.enters.Layout.and.consumes.both.ring.outcomes.once$ tests/app.test.js
 # Accepted left gesture never calls shared tab entry; Layout assertion fails.
-diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11731,7 +11731,7 @@ function setTab(tab) {
-       lipTouching = false;
+@@ -12345,7 +12345,7 @@
+       lipFling = null;
        lipDragEnd = 0;
        userWindowUntil = 0;
 -      setTab(tab);
