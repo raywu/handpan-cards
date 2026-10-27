@@ -1,42 +1,38 @@
-# All-workstream status — latest2026-10-26
+# All-workstream status — authoritative takeover checkpoint, 2026-10-26
 
-## Saved-variants regroup — 2026-10-26
+Use live refs/owner replies to refresh this snapshot. Main7d80d65d now contains approvedRC587; fullCI candidate passed and wholeRC
+ownerQA/mainconsent explicitly granted. Production21resources/headers passed,
+actualmainCI40448555197 running. DEVhandoffc040 preserved; reconciliation pending. Existing duplicate-note
+DOCS explicitly allowed; implementation paused. Saved variants excluded tonight.
 
-[Recovery subplan](2026-10-26-saved-variants-regroup.md) now independently ENG/design CLEAR after one revision round. Execution active: integration resolved at b7439303; mutation reconciliation at dc1e0842. App941, harness67, native1+9+3 and intended mutation proofs passed; metadata permission-corrected54/54 passed; next final CI. Performance setup remains separately unactivated. More than three failed review rounds requires regroup across workstreams; no main permission or test waiver. Helpers owner device QA passed. This is a local checkpoint, not DEV publication.
+| Workstream | Stopping point / next permitted action |
+|---|---|
+| RC release | Released via approvedmain7d80; finishactualmainCI/sync, no furthermainconsent implied. |
+| Saved variants | Clean application2a260d21/greenfullCI; performanceHELD, noDEVdelivery, missed19:00cutoff. Preserve forClaude. |
+| Performance | A0unactivatedrunnerhasfourdefects; reduceddesignplanningclear, no newcampaign/setup grant. |
+| Helpers | DeliveredDEV, fullCI/deviceQApassed; mainreleasecandidateincludesit. |
+| Mac helper | ScopedrepairdeliveredDEV; broaderMacsuite unresolved. |
+| Layout feedback | LatestoutcomeperringdeliveredDEV; releasedRC. |
+| LINK repair | AsyncownershipfixdeliveredDEV/ownerQApassed; releasedRC, coexistenceNOTfixed. |
+| SEO | Existingplandelivered/inRC; newresearch/contentpaused. /learn/, ownerreview,18-notepilotsettled. |
+| Duplicate notes | PlanDOCSinRCbyexplicitapproval; FEATUREPAUSED, noimplementation. |
+| Swipe | Startedbutheld, clean3a8467ff; refreshbase/proofs/gatesonlyafterresumption. |
+| Palettes | Reviewed/approved08169310, exacta41packet; unstartedimplementationPAUSED. |
+| Landscape Settings | Researchprompt/plan independentlyENG/designclear; Settings/ResourcesONLY, AddEditexcluded; implementationpaused, exactspec/oracle approvalfuturegate. |
+| Neotone | V3prompt+reviewedplanpublished6c62e758; FUTURE/implementationPAUSED. |
+| Rename | Reviewedplan/prompt, noexecution/rehearsal; PAUSED. |
+| Linear | Researchpromptunrun; PAUSED, ledgerretained. |
+| Agentcomparison | Promptunrun, nostudyresults; PAUSED. |
+| Wholecode/testaudit | Queuedunrun, originalqueue-emptytrigger; PAUSED. |
+| Deferrednits/global/recovery/cleanup | PAUSED; inventoryonly,noremoval/reset/unlock. |
+| Released | Naturalness/i18nC/HTC/seat/runbook/DRYcomplete; ownerQAretained, globalsnotproven. |
+| Ownerstopped | Audio/stats/SM2/PWAremainstopped. |
 
-LatestverifiedDEV3542d6ea868bf08e81a0b4f06c4bc71bbc20cbcb; main96c4c589 remains
-held/unchanged. [Sharedledger](../WORKSTREAMS.md) hascurrentauthorizations and
-[route-repair plan](2026-10-26-saved-variants-route-intent.md) has preciseactiveproofs.
-This section supersedes the archivedearlierstatus below; preserve its evidence.
+Exactsourcepaths/fullrefs/privatebackup/ownership: ../CLAUDE_RETURN_HANDOFF.md and
+../handoff/2026-10-26-source-reference-index.json. Current memory pointer:
+../DEVELOPMENT_CONTINUITY.md. All earlier headings below are ARCHIVED observations,
+not current authorization, QA, CI or priority. Do not resume from a stale OPENrow.
 
-| Workstream | Description/currentstate | Nextaction/authority |
-|---|---|---|
-| Savedvariants FIRST | Distinctnamed/layout versions withsafeEdit/conflicts; latestpublished0d36CIfailedonlyFIRSTPygmyhashwait, allotherjobs/all1618faultspassed. Localreviewed0322repair/T224 now17modeledcasesGREENaftermeaningfulRED/review. | Commit/integrateHelpers, fourfaultproofs, unchangednative/lifecycle, fullfinalCI/servedDEV; notQAready, nomain. |
-| Linuxperformance | GateHELDafterMacbaseline-onlyincompletecase. Ownerselectedone90scontrol→eligibleone180s200recordLinuxproposal; private3de57389draftprepared. | Independentreview, applicableconfigurationactivation, frozenfinalsource/matchedbaseline; notconfigured/run/validated. |
-| Helpers | Nativeexternalresourcebeside101 deliveredDEV3542 after4eaFULLCIandactualHTTPSsource7fe/9states/publicpopup validation. | Owner reports tested on their devices/all good: owner device QA PASSED on 2026-10-26; main held; no new implementation approval needed. |
-| Swipe | DeliberateScale↔Layouthorizontalnavigation authorized/interruptedbehindvariants. | Updatedbase/literalproofs/independentreview/fullCI/DEV/nativeQA; preservelane. |
-| Palette10 | Reviewedappend-onlyfourchoicesplan/exactCLAUDEpacketat a41a3bb7 APPROVEDbyowner, sourceapprovalreceipt08169310. | QUEUEDAFTERactivework, nextmainreleasetargetsubjectgates; verifyunchangedpacketatactivation, nomain/nocodeyet. |
-| Macforegroundhelper | ScopedsettlehelperonDEV, mainheld. | ReleaseseparatefrombroaderMacM2/M3/C1/fullsuite. |
-| Per-ringfeedback | LatestoutcomeperringdeliveredDEV, mainheld. | Preservecompletedimplementation; releasequeuehold. |
-| LINKasyncownership | StalecallbacksrepaireddeliveredDEV, ownerQApassed. | Mainheld; doesn'tsolvevariantidentityorproveoriginalanglecause. |
-| SEOlongtail | ReviewedplanonDEV; /learn/, ownermusicreview andexact18-noteEAmarapilotplanning settled. | Provenance/hosting/music/data verification; noarticles/generator/publishinggrant; broaderSEOresearchqueued. |
-| Duplicatenotes | Finalplanchoicesretained, ENTIREstream/mainreleasePAUSED. | Awaitexplicitresumption; do notimplement/re-interview. |
-| ReleasedUI | Naturalness/i18nC/HTC/seat-orderfixesreleased, ownerverified; Englishscalegrammarunchanged. | Preservedecisions; no rerunfromstaleoldplans. |
-| Browserrunbook/DRY | Repolocalsharedguidance/ledger/bootstrapreleased. | Globalnativeparity/newhost/recovery stillunvalidated. |
-| Auditedhistory | Engine/print/tiers/numerals/Amy/About/privacy/discoverability/default-edit/delete/share/order/free-placement/refactorfamiliescompletedper38-sourceaudit. | Historicalclosures, notfreshretests; retainremainingnitsseparately. |
-| Rename | handpan-chords promptv3/ENG-reviewedplanready, no rename/rehearsal. | Separatemaintenance/backup/providerbinding/executionintake. |
-| Agentqualitycomparison | CodexvsClaudeholisticcomparisonpromptqueued. | Runplanningandindependentreviewsbeforestudy; no comparisonresults. |
-| LinearSoT | Crossharnessroadmap/priority/visibility/freeplanresearchpromptqueued. | CEO+ENG-reviewedplanthenapprovedsetup/cutover; currentledgerretained. |
-| Wholecode/testaudit | Robustness/DRY/deadcode/deadtestauditqueued. | Onlyafterotheroutstandingworkresolved; no removals. |
-| NITS→OF-D/I18N-D/Q9 | Deferredcoverage/docs/newfeaturei18n/phoneRESETARIAcandidates. | Revalidatecurrentevidenceandscopes; exactCLAUDEapprovalwhereapplicable. |
-| BroaderMac/recovery | FullMacbudget/M2/M3/C1, operationalrollback/newhost/globalworkflowparity remainseparate. | Reviewedscopedproposals; no installs/globalchangesimplicit. |
-| Cleanup/optionalP3 | Worktreeinventoryonly; optionalDESIGN/stylevariables/bottom-labeloracleunscheduled. | Noremoval/reset/unlock; no automaticqueueblockforoptionalideas. |
-| Ownerstopped | Audio/statistics/SM2/PWA. | Remainstopped. |
-
-Mainqueuepreservedinorder; duplicateplanstayspaused. CI-onlydraftsarenotmainrelease
-authorizations. Helpers owner device QA PASSED on 2026-10-26; no current owner QA follow-up
-blocks ongoing saved-variants engineering. Otherownerchoicesaresettled; AFKmeansfollowrecommendations
-withinexistinggrant/review/test/exactCLAUDE/mainboundaries, notinventedQAresults.
 
 ## Archived earliercheck-in — historical, superseded wherecontradicted
 

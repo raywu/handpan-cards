@@ -1,5 +1,160 @@
 # Shared workstream ledger
 
+## Approved RC released to main — 2026-10-26, 21:13 PDT
+
+Owner passed wholeRC QA, accepting Settings/Resources three-column landscape UX
+as nonblocking, then explicitly authorized exactRC3542 main release. RC587 merged
+main at7d80d65d603d9e8ab468a08d616d59dfac0245ce. Pages deployment40448553293 passed;
+actual production app is exact7fe/907042bytes; reviewed verifier21/21resources and
+indexing headers passed. Actual-mainCI40448555197 is RUNNING, not yet creditedgreen.
+Retained same-source DEV/browser/ownerQA evidence remains dated; no fresh production
+browser coverage claimed. Savedvariants/swipe/palettes/Neotone remain excluded.
+
+DEVc040's newer handoff documents must remain. Local branch
+codex/release-reconcile-20261026 in/private/tmp/handpan-release-reconcile-20261026
+merged main ancestry with ZERO FILE CHANGES before this documentation checkpoint;
+review/CI/DEVdelivery stillpending. No reset, branch deletion or handoff overwrite.
+
+Newfuturefollow-on: [Settings/Resources landscape menu](plans/2026-10-26-landscape-settings-menu.md) ONLY (owner clarified; not
+Add/Edit). [Prompt](prompts/2026-10-26-landscape-settings-menu.md) and plan completed; independentENG/designreview CLEAR, no UI
+implementation authorized. Three-column issue remains accepted nonblocking in the
+releasedRC. Other unstarted work remains paused;23:00Claudehandoff stilltarget.
+EarlierQA/main-pending snapshotlabels are superseded by this explicit release.
+
+## Claude handoff closure checkpoint — documentation reviewed
+
+Onboarding-generation prompt v2 executed; CLAUDE_TAKEOVER_PLAN.md and copy/paste
+startup prompt produced and independently ENG/operational cold-read CLEAR after
+correcting stale process-audit labels. Shared memory is DEVELOPMENT_CONTINUITY.md;
+no global memory/Claude instruction changes. Exact source/ref index, selected31
+verified private backups and timestamped selected worktree/browser receipts are
+under docs/handoff/. Original dirty SV integration documents separately backed up;
+no reset/discard. Frozen route-test lane cab63c9d clean/intentionallyREDoldsource;
+release/Helpers/swipe/palette/mutation source lanes clean. No active worker browser
+jobs in selected audit; lease released, Claude must recheck and acquire anew.
+
+Next: publish this docs-only branch and verify remote ref; normal DEV doc delivery
+requires its review/CI gates. Publication is not inferred from this file. RC587
+remains ready for owner QA, wholeRC QA/main consent pending. All paused features
+stay paused. Metadata is a stopping-point snapshot, not authority to auto-resume.
+
+## Claude onboarding handoff — active documentation-only preparation
+
+Owner requested all streams at safe stopping points, updated ledger/shared memory,
+and a prompt that generates an onboarding plan plus copy/paste Claude startup.
+[Planning prompt](prompts/2026-10-26-claude-takeover-planning.md) v2 drafted;
+outputs under preparation. Shared memory pointer:DEVELOPMENT_CONTINUITY.md.
+Handoff worktree:/private/tmp/handpan-claude-takeover-20261026,
+branch codex/claude-takeover-20261026, baseline exactDEV3542. No app/tests/
+CLAUDE/global config changes. Canonical dirty checkout preserved. Frozen test lane
+checkpoint cab63c9d saves tests only against oldsource0d36 (intentionallyRED, never
+release); integrated passing tests live in variants2a260d21. Other active source
+lanes clean. WholeRC ownerQA and main consent stillpending; RCready notification
+already sent. New feature implementation remains paused.
+
+## RC ready for owner QA — 2026-10-26
+
+RC587 at exactDEV3542 passed fullCI40437293981 (all12jobs); fresh immutableDEV071 source matches7fe. Independent final evidence review CLEAR, retained dated livejourneys samebytes and priorHelpersownerQA honestly preserved. Owner sent focusedQA URL/checklist; wholeRC QA PENDING, no mainconsent. Savedvariants excluded; duplicateplanDOCS included/featurepaused. Screenshot Neotone backup preserved privately in HV/evidence/neotone-layout-reference.jpg (samee997SHA), not published.
+
+## MUTANT-NEOTONE — future project, planning-only exception
+
+Owner explicitly queues support for the Mutant Neotone paired playing-area layout
+in Add/Edit. [Prompt v3](prompts/2026-10-26-mutant-neotone-layout.md) preserves v1→v2 critique/execution and four output-review refinements. The [future plan](plans/2026-10-26-mutant-neotone-layout.md) has independent ENG/design CLEAR after one revision round. No implementation, hardware/MIDI/audio control,
+new tools/config or CLAUDE change is authorized. Current RC/QA/handoff retain
+priority. Screenshot is owner reference, not exact hardware geometry; model/revision,
+slot assignment, secondary-vs-bottom semantics and persisted sharing are gates.
+Original image is local-only with SHA256 e997c67af983962882ebb3419d7265fb112ed5b20562b72f04da841e6b6ad19a;
+do not publish the full screenshot/person image by implication. Author lane owns
+only docs/plans/2026-10-26-mutant-neotone-layout.md; other unstarted work stays paused.
+
+## RC scope approval — existing plan docs included, feature remains paused
+
+Owner approved existing duplicate-note planning documents in tonight's RC;
+implementation remains paused. Exact deployedDEV3542 selected, release branch
+codex/release-rc-20261026 at/private/tmp/handpan-release-rc-20261026. Actual draft
+releasePR587/fullCI40437293981 are active; no app/config/instruction edits to create
+this candidate. Independent scope review CLEAR pending CI/served QA. Main consent
+not granted. Earlier pending document-scope questions are superseded.
+
+## Performance simplification proposal — owner-requested explanation/restructure
+
+Draft [smaller validation design](plans/2026-10-26-performance-validation-simplification.md)
+separates reusable browser/profiler/clock tools from the unactivated custom
+orchestrator. Independent ENG/operations CLEAR for simplification direction only. No implementation or
+campaign started; variants stays excluded tonight. RC587/fullCI40437293981 continues
+on exact deployedDEV3542. Original diagnostic packet and failures preserved for
+Claude; no tools/config/app edits are implied by the restructuring request.
+
+## 19:08 PDT cutoff check-in — variants held, RC not ready
+
+Observed clock2026-10-27T02:08:17Z. Saved variants missed the hard19:00
+performance gate: fullCI green at2a260d21, performance still unvalidated; exclude
+from tonight's RC and preserve for Claude. No performance retry or gate waiver.
+Fallback read-only inventory completed, but fallback branch/composition/CI was
+NOT assembled. The18:15 fallback readiness checkpoint was missed. A new fallback
+preview route is not established; repository says DEV deployment from dev only.
+Current main96c4 and DEV3542 remain unchanged (live read verified).
+
+Owner interview pending: allow already-on-DEV duplicate-note planning documents
+in the RC while keeping implementation paused, versus retain their publication
+hold. No reply is approval. Including them would preserve the existing deployed
+tree; excluding them requires separately validated composition/deployment. Neither
+choice approves main merge. RC21:11 is at risk; do not claim QA readiness.
+
+Handoff draft now at [CLAUDE_RETURN_HANDOFF.md](CLAUDE_RETURN_HANDOFF.md), with
+exact refs, failed gates, local-only artifacts and paused queues. Next: resolve
+concrete release-scope/deployment decision, prepare exact candidate if authorized
+and feasible, or deliver a blocked-RC report plus independently reviewed handoff.
+20:15 readiness and23:00 handoff cutoffs remain. No feature expansion; all unstarted
+work paused. No candidate-ready notification sent to owner.
+
+## Owner RC QA availability — 2026-10-26
+
+Owner confirmed: “Yes—notify me when DEV is ready” for roughly20minutes of
+release-candidate QA, ideally20:15–20:45Pacific. Notify only after the actual
+candidate deployment and required verification gates; provide exact URL/revision,
+included features and focused QA steps. This confirms availability, not QA passed,
+permission to bypass gates, or main-merge consent. No further scheduling interview
+is needed unless the window materially changes.
+
+## Owner deadline and unstarted-work pause — 2026-10-26, 17:11 PDT
+
+Owner targets an RC within four hours (about21:11PDT) and Claude handoff at23:00.
+**All unstarted workstreams are PAUSED for this handoff**, including approved but
+unstarted palette implementation and queued SEO/rename/Linear/quality/audit/nit/
+cleanup/global work. Preserve their plans and grants; no cancellation or resumption
+is implied. Duplicate-note and owner-stopped feature pauses remain unchanged.
+Only existing release-critical work and handoff preparation continue. Interrupted
+swipe is recommended held, not resumed, in this window. [RC/handoff subplan](plans/2026-10-26-release-candidate-and-claude-handoff.md)
+has independent ENG/design CLEAR after one revision round. Begin release-only fallback composition/inventory now, verify existing preview route by18:15, and require completed performance/green CI at hard19:00 variants go/no-go;
+validated fallback scope if needed, no waived gates and no main merge without
+explicit final consent. Existing private performance packet author notified.
+
+## Latest check-in — full recovery CI passed, 2026-10-26
+
+Saved variants' frozen feature head `2a260d212ec8e14394b7198f075366d13bf372ec`
+passed [full validate](https://github.com/raywu/handpan-cards/actions/runs/40417818176),
+including native browser tests, all mutation shards/aggregate, both panel-fit jobs,
+Python, data integrity and suite health. This supersedes earlier RUNNING labels.
+No new DEV or main merge occurred; variants is not ready for owner DEV QA yet.
+
+Remaining blocker: qualified performance evidence. Concrete private Linux setup
+packet is drafted at `HV/evidence/linux-performance-activation-a0/`; independent
+engineering and operational/design code reviews are now active. Test drafts,
+generated faults, diagnostic head and setup/run authority are not yet validated;
+protocol clearance alone is not activation or a passing measurement. Owner's
+prior selection approved proposal preparation. Make the precise reviewed setup
+reviewable and assess applicable authority before arming any campaign.
+
+Next: close concrete code-review findings, verify bounded nonbrowser preflight,
+resolve any genuinely new scoped setup authorization, run only the eligible
+predeclared campaign, then final delivery review and actual DEV verification.
+No repeated questions about settled product choices. Helpers owner-device QA
+passed. Swipe interrupted; palettes approved/queued afterward. Main releases held;
+duplicate-note workstream/release paused. All other stream statuses unchanged.
+Local ledger update is ahead of the frozen feature publication; published full-CI
+receipt/report provides freshness without pretending this doc is already on DEV.
+
 ## Saved variants recovery — execution checkpoint, 2026-10-26
 
 Recovery execution is active under the owner's reaffirmed AFK authorization.
@@ -956,3 +1111,11 @@ locale pairs and15meaningful mutation triples pass; metadata54/54 and1513allappl
 pass. Full English panel probe passes; seven locale probes/final independent
 review/fullCI/servedDEV remain pending. Local implementation is not DEV delivery.
 SEO choices are recorded in the separate SEO plan; no articles are implemented.
+
+### Neotone durable planning checkpoint
+
+Published documentation-only branch codex/neotone-future-plan-20261026 at
+6c62e758696143af89c24c339394a01e6576c0cc contains prompt, independently cleared future plan and ledger entry.
+Source remains exactDEV3542; no feature implementation, DEV/main merge or image
+publication. Worktree/private screenshot refs remain local-only. Canonical DEV
+ledger does not yet include this branch; recover directly from the retained ref.
