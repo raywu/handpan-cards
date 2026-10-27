@@ -1,0 +1,16 @@
+# kills: six palette swatches carry the D6 indices and the selected one is ringed
+# suite: node --test --test-name-pattern ^six.palette.swatches.carry.the.D6.indices.and.the.selected.one.is.ringed$ tests/app.test.js
+# The sheet builds nine swatches from the ten-pair registry, so the tenth pair
+# (palette-10) can be shared and saved but never picked.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11709,7 +11709,7 @@
+
+ function buildSwatches() {
+   swatches.innerHTML = "";
+-  HPE.select.PALETTES.forEach((p, i) => {
++  HPE.select.PALETTES.slice(0, 9).forEach((p, i) => {
+     const b = document.createElement("button");
+     b.type = "button";
+     b.className = "dot" + (i === palette ? " sel" : "");

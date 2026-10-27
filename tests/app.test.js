@@ -1231,10 +1231,10 @@ test("six palette swatches carry the D6 indices and the selected one is ringed",
   openSheet(app);
   const dots = app.els["scale-swatches"].children;
   const palettes = app.get("HPE.select.PALETTES");
-  assert.strictEqual(dots.length, 6, "the D6 set is six swatches");
+  assert.strictEqual(dots.length, 10, "the D6 set grows to ten swatches (PD)");
   assert.strictEqual(dots.filter((d) => d.classList.contains("sel")).length, 1);
   assert.strictEqual(dots[0].classList.contains("sel"), true, "index 0 is the default");
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 10; i++) {
     assert.strictEqual(dots[i].style._props["--dga"], palettes[i].root, `swatch ${i} root`);
     assert.strictEqual(dots[i].style._props["--dgb"], palettes[i].tone, `swatch ${i} tone`);
   }
@@ -7320,7 +7320,7 @@ test("DR3 Tab order on Add and Edit, finer controls closed and open", async () =
       const want = ["scale-tab-layout", "plate", "scale-anchor-one",
         "scale-anchor-between", "scale-mirror", "scale-mirror-bottom", "scale-fine-toggle",
         ...(open ? ["scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next"] : []),
-        "scale-layout-reset", ...[1, 2, 3, 4, 5, 6].map((n) => `Palette ${n}`), "scale-generate", ...(edit ? ["scale-delete"] : [])];
+        "scale-layout-reset", ...[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => `Palette ${n}`), "scale-generate", ...(edit ? ["scale-delete"] : [])];
       const ctx = `edit=${edit} open=${open}: ${seen}`;
       assert.deepStrictEqual(seen, want, ctx);
       assert.strictEqual(seen.filter((x) => x === "plate").length, 1, "the plate is more than one Tab stop");
@@ -8742,7 +8742,7 @@ test("editable defaults: the fifth seeded delete with no custom deck is refused"
 });
 
 test("editable defaults: saving each seeded deck with a palette change mints the fixture id as its replacement in the seeded slot", async () => {
-  const prefilled = [0, 0, 2, 0, 1];
+  const prefilled = [6, 7, 2, 0, 1];
   for (const [i,name] of BUILTIN_NAMES.entries()) {
     const app = boot();
     const d = app.get("DECKS")[i];
@@ -8759,7 +8759,7 @@ test("editable defaults: saving each seeded deck with a palette change mints the
     assert.strictEqual(app.els["scale-anchor-between"].classList.contains("on"), d.id === "pygmy",
       `${d.id}: wrong anchor`);
     assert.strictEqual(app.els["scale-delete-row"].hasAttribute("hidden"), false);
-    app.els["scale-swatches"].children[(prefilled[i] + 1) % 6].click();
+    app.els["scale-swatches"].children[(prefilled[i] + 1) % 10].click();
     await generateClick(app);
     assert.strictEqual(app.sheetOpen(), false, `${d.id}: the save did not close the sheet`);
     assert.strictEqual(app.currentDeck().id,"custom:"+PINNED_IDS[i].replace("custom:",""));
@@ -8934,6 +8934,46 @@ test("SD: saving a seeded deck unchanged closes the sheet and writes nothing", a
   assert.strictEqual(app.get("selection.id"), "kurd");
   assert.deepStrictEqual(labels(app), BUILTIN_NAMES);
   assert.strictEqual(JSON.stringify(app.store), before, "an unchanged SAVE wrote to storage");
+});
+
+test("PD: seeded Kurd and Amara 10 Edit open on swatch 6 and 7, and a no-op SAVE writes nothing", async () => {
+  for (const [name, want, id] of [["D KURD 10", 6, "kurd"], ["D AMARA 10", 7, "amara10"]]) {
+    const app = boot();
+    app.select(id);
+    const before = JSON.stringify(app.store);
+    app.clickChip(name);
+    const pressed = [...app.els["scale-swatches"].children].map((b) => b.getAttribute("aria-pressed"));
+    assert.deepStrictEqual(pressed, pressed.map((_, i) => String(i === want)), `${name}: swatch ${want} is the only pressed one`);
+    await generateClick(app);
+    assert.strictEqual(app.sheetOpen(), false, `${name}: a no-op SAVE left the sheet open`);
+    assert.deepStrictEqual(savedViews(app), {}, `${name}: a no-op SAVE minted a replacement`);
+    assert.strictEqual(JSON.stringify(app.store), before, `${name}: a no-op SAVE wrote to storage`);
+  }
+});
+
+test("PD: a record with palette 6 to 9 survives save, reload and reshare; palettes 0 to 5 reload unchanged", async () => {
+  for (const palette of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]) {
+    const app = await durableBoot();
+    openSheet(app);
+    app.type(AMARA_STRING);
+    app.els["scale-swatches"].children[palette].click();
+    await generateClick(app);
+    const id = app.get("selection.id");
+    const palettes = app.get("HPE.select.PALETTES");
+    const saved = savedViews(app)[id];
+    assert.strictEqual(saved.options.palette, palette, `palette ${palette} saved`);
+    assert.strictEqual(saved.colors.root, palettes[palette].root);
+    assert.strictEqual(saved.colors.tone, palettes[palette].tone);
+    const code = app.get(`shareCode(savedEntries.get(${JSON.stringify(id)}).deck).value`);
+    const again = await reboot(app);
+    const backId = again.get("selection.id");
+    const back = savedViews(again)[backId];
+    assert.strictEqual(back.options.palette, palette, `palette ${palette} reloaded`);
+    assert.strictEqual(back.colors.root, palettes[palette].root);
+    assert.strictEqual(back.colors.tone, palettes[palette].tone);
+    assert.strictEqual(again.get(`shareCode(savedEntries.get(${JSON.stringify(backId)}).deck).value`), code, `palette ${palette} reshares the same code`);
+    if (palette >= 6) assert.match(code, new RegExp(`/palette-${palette + 1}/`));
+  }
 });
 
 test("SD: a replacement takes the seeded slot across a reload and a field edit", async () => {
@@ -11960,7 +12000,7 @@ describe("TB: the sheet's tabs", () => {
       app = boot();
       await tbOpen(app, edit);
       app.click(tbTab(app, "layout"));
-      seen = tbStops(app, "scale-back", 16);
+      seen = tbStops(app, "scale-back", 24);
       assert.deepStrictEqual(seen.slice(0, 2), ["scale-back", "scale-tab-layout"]);
       const rest = seen.slice(2);
       const order = ["scale-anchor-one", "scale-anchor-between", "scale-mirror", "scale-fine-toggle",
@@ -12424,15 +12464,15 @@ describe("UX: the footer lip", () => {
     const bare = await lipApp("add");
     bare.run("setTab('layout')");
     bare.els["scale-generate"].disabled = true;
-    assert.strictEqual(bare.get("swatches.children.length"), 6, "six swatches to land on");
-    bare.els["scale-swatches"].lastElementChild = bare.els["scale-swatches"].children[5];
+    assert.strictEqual(bare.get("swatches.children.length"), 10, "ten swatches to land on");
+    bare.els["scale-swatches"].lastElementChild = bare.els["scale-swatches"].children[9];
     arrive(bare);
-    assert.strictEqual(bare.get("document.activeElement === swatches.children[5]"), true,
-      "on the Layout tab the last stop is the sixth swatch");
+    assert.strictEqual(bare.get("document.activeElement === swatches.children[9]"), true,
+      "on the Layout tab the last stop is the tenth swatch");
     const scale = await lipApp("add");
     assert.strictEqual(scale.get("sheetTab"), "scale", "the bare Scale case starts on the Scale tab");
     scale.els["scale-next"].disabled = true;
-    scale.els["scale-swatches"].lastElementChild = scale.els["scale-swatches"].children[5];
+    scale.els["scale-swatches"].lastElementChild = scale.els["scale-swatches"].children[9];
     arrive(scale);
     assert.strictEqual(scale.activeId(), "scale-box", "on the Scale tab the last stop is the scale box, not a swatch that is hidden");
     assert.strictEqual(scale.get("swatches.contains(document.activeElement)"), false);
@@ -13498,7 +13538,7 @@ describe("SPB: sheet polish lane B", () => {
     assert.ok(!/id="scale-swatches"[^>]*aria-label=/.test(html), "the group still has an aria-label");
     assert.ok(!html.includes('aria-label="Card palette"'), "the old Card palette label is still served");
     const app=boot();openSheet(app);
-    assert.strictEqual(app.els["scale-swatches"].children.length,6,"six usable swatches are built on opening the sheet");
+    assert.strictEqual(app.els["scale-swatches"].children.length,10,"ten usable swatches are built on opening the sheet");
   });
 
   test("SPB: the swatches stay enabled on the Layout tab with an empty or invalid scale while every drawer control is disabled", async () => {
@@ -13515,12 +13555,12 @@ describe("SPB: sheet polish lane B", () => {
       assert.strictEqual(DRAWER.length, 10);
       assert.deepStrictEqual(DRAWER.filter((id) => app.els[id].disabled !== true), [],
         `a drawer control is enabled on "${bad}"`);
-      assert.strictEqual(app.els["scale-swatches"].children.length, 6, "six swatches");
-      assert.deepStrictEqual([...app.els["scale-swatches"].children].map((b) => Boolean(b.disabled)), [false, false, false, false, false, false],
+      assert.strictEqual(app.els["scale-swatches"].children.length, 10, "ten swatches");
+      assert.deepStrictEqual([...app.els["scale-swatches"].children].map((b) => Boolean(b.disabled)), Array(10).fill(false),
         `a swatch is disabled on "${bad}"`);
       app.els["scale-swatches"].children[4].click();
       const pressed = [...app.els["scale-swatches"].children].map((b) => b.getAttribute("aria-pressed"));
-      assert.deepStrictEqual(pressed, ["false", "false", "false", "false", "true", "false"],
+      assert.deepStrictEqual(pressed, ["false", "false", "false", "false", "true", "false", "false", "false", "false", "false"],
         `a swatch tap did not take on "${bad}"`);
       ran.push(bad);
     }
@@ -14647,7 +14687,7 @@ describe("OF: the sheet's seats follow the typed order", () => {
       pd2Layout(app);
       assert.strictEqual(app.els["scale-tab-layout"].getAttribute("aria-selected"), "true", "invalid input must not block Layout");
       assert.strictEqual(d2Status(app), "", "invalid active fields must not consume stale-valid feedback");
-      assert.strictEqual(app.els["scale-swatches"].children.length, 6, "the enabled-palette assertion must not pass on an empty group");
+      assert.strictEqual(app.els["scale-swatches"].children.length, 10, "the enabled-palette assertion must not pass on an empty group");
       assert.ok([...app.els["scale-swatches"].children].every((button) => !button.disabled), "the palette remains usable");
       app.click(app.els["scale-tab-scale"]);
       fieldType(app, field, field === "top" ? "C4 A3 D4 E4 F4" : "D3");

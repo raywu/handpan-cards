@@ -13,7 +13,7 @@ diff --git a/index.html b/index.html
     A target that IS the element has neither failure mode, at any alignment.
     The dot keeps its 14px spec; the visible gap widens to 30px, which is the
     pitch 44px targets require. */
--#scale-swatches{display:flex; gap:0; align-items:center}
+-#scale-swatches{display:grid; grid-template-columns:repeat(5,44px); gap:0; align-items:center}
 -#scale-swatches .dot{width:44px; height:44px; border:none; padding:0; background:none;
 -  position:relative; cursor:pointer}
 -#scale-swatches .dot::after{content:""; position:absolute; left:50%; top:50%;

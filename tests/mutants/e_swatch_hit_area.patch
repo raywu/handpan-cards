@@ -10,7 +10,7 @@ diff --git a/index.html b/index.html
 @@ -1046,7 +1046,7 @@ footer.seq{row-gap:var(--sp-1)}
     The dot keeps its 14px spec; the visible gap widens to 30px, which is the
     pitch 44px targets require. */
- #scale-swatches{display:flex; gap:0; align-items:center}
+ #scale-swatches{display:grid; grid-template-columns:repeat(5,44px); gap:0; align-items:center}
 -#scale-swatches .dot{width:44px; height:44px; border:none; padding:0; background:none;
 +#scale-swatches .dot{width:14px; height:14px; border:none; padding:0; background:none;
    position:relative; cursor:pointer}

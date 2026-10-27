@@ -12,5 +12,5 @@ diff --git a/src/engine/select.js b/src/engine/select.js
 -  var COLLAPSE_LOSERS = ["sus2", "6", "m6"];
 +  var COLLAPSE_LOSERS = ["sus2", "6"];
  
-   /* Section 13: the D6 palette set, index 0-5. */
+   /* Section 13: the D6 palette set, index 0-9. */
    var PALETTES = [

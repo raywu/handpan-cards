@@ -67,7 +67,7 @@ err     = {ok: false, code: <CODE>, reason: <English sentence>}
   `{id: [name, octave, midi, zone, angle, label]}` of section 4 (`angle` is
   `null` from `parseSeed`; `layout.solve` fills it) (ids are the decimal
   strings of section 4) and `options` is `{palette, parent, name, mirror}`
-  (palette index 0-5, parent index 0-10 or `null` for "infer", name string,
+  (palette index 0-9, parent index 0-10 or `null` for "infer", name string,
   mirror boolean) plus the optional layout options `mirrorBottom` (boolean),
   `anchor` (`"one"` or `"between"`), `seats` and `angles` (section 13), validated per
   section 14 and defaulting to
@@ -792,7 +792,7 @@ Verified against all three built-ins under the fixed list order of
 {
   id:       "custom:<8 lowercase hex>",
   name:     "<auto or user name>",
-  options:  {palette: <0-5>, mirror: <bool>, parent: <0-10>,
+  options:  {palette: <0-9>, mirror: <bool>, parent: <0-10>,
              mirrorBottom?: <bool>, anchor?: "one"|"between", seats?: {rim, inner, bottom},
              angles?: {bottom: [<multiple of 5 in 0-355 | null> per bottom note]}},
   colors:   {root, tone, ga, gb},
@@ -881,7 +881,7 @@ Verified against all three built-ins under the fixed list order of
 
 ## 13. Options: palette, mirror, name
 
-The D6 palette set, index 0-5, from `CLAUDE.md` "Design system":
+The D6 palette set, index 0-9 (indices 6 to 9 appended by lane PD, 2026-10-27; the table is append-only), from `CLAUDE.md` "Design system":
 
 | index | root | tone | provenance |
 |---|---|---|---|
@@ -891,6 +891,12 @@ The D6 palette set, index 0-5, from `CLAUDE.md` "Design system":
 | 3 | `#E2761B` | `#E0559A` | Hijaz swapped |
 | 4 | `#C9971E` | `#6D40A3` | Pygmy swapped |
 | 5 | `#DD8F00` | `#0B7B75` | Amara swapped |
+| 6 | `#2563B0` | `#C0452C` | Kurd |
+| 7 | `#3B7A2A` | `#B3263A` | Amara 10 |
+| 8 | `#C0452C` | `#2563B0` | Kurd swapped |
+| 9 | `#B3263A` | `#3B7A2A` | Amara 10 swapped |
+
+Wire note: a v6 link spells index n as `palette-(n+1)`, read for `palette-2` to `palette-10`; a v5 link keeps its ceiling of `palette-6` (index 5) and refuses `palette-7` and above with the whole link as the BAD_NOTE payload; a packed v1 to v4 link never carried an index above 5 and still refuses one with the numeric value as the payload.
 
 - DECIDED(D6) Custom deck colours come only from this fixed set: the three
   built-in pairs then their root/tone swaps, in that order. The user picks an
@@ -968,7 +974,7 @@ The D6 palette set, index 0-5, from `CLAUDE.md` "Design system":
 - DECIDED(swarm-2026-09-08) `share.decode` calls the SAME `core.parseSeed` as
   the text box and rejects rather than repairs. `parseSeed` validates the note
   names, the MIDI range 0-127, and the line ordering of section 3, plus the seed
-  OPTIONS: palette index 0-5, parent index 0-10, and the name whitelist of
+  OPTIONS: palette index 0-9 (packed v1 to v4: 0-5), parent index 0-10, and the name whitelist of
   section 13. It does NOT validate `zone`, `angle` or `seats`: zones are derived
   by `parseSeed` itself and never carried in the seed, and angles are
   `layout.solve`'s output, so neither is decoder input. `seats` IS carried in a

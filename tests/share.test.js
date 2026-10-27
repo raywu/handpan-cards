@@ -596,7 +596,7 @@ test("decode propagates a rejected OPTION rather than repairing it", () => {
   // Section 14: parseSeed validates the seed options too, so a payload with an
   // out-of-range palette must be refused, not clamped.
   const seed = parsed(BASE);
-  seed.options.palette = 9;
+  seed.options.palette = 10;
   const r = share.decode(encoded(seed));
   assert.equal(r.ok, false);
   assert.equal(r.code, "BAD_NOTE");
@@ -1959,4 +1959,107 @@ test("IB: a dip round-trips through share encode/decode and its scale segment pu
   const low = seedNew("[C3] (D3) A3 C4 D4 E4 [G5] | B3 F4");
   assert.equal(segsOf(encoded(low))[1], "uC3_(D3)_A3_C4_D4_E4_uG5_-_B3_F4");
   assert.deepStrictEqual(decoded(encoded(low)), low);
+});
+
+
+/* ---------------------------------------------------------------------- */
+/* PD: built-in palette defaults (docs/plans/2026-10-26-built-in-palette-defaults.md) */
+/* ---------------------------------------------------------------------- */
+
+const PD_SCALE = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
+const PD_SEG = "(D3)_A3_C4_D4_E4_F4_G4_A4_C5";
+// Captured from the pre-change encoder (PD base 8b3c351c), never recomputed.
+const PD_PINNED_V6 = [
+  "6/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/Pal/e32a93",
+  "6/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/Pal/palette-2/542114",
+  "6/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/Pal/palette-3/552116",
+  "6/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/Pal/palette-4/522111",
+  "6/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/Pal/palette-5/532113",
+  "6/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/Pal/palette-6/50210e",
+];
+
+test("PD: pinned v6 links for palettes 0 to 5 decode and re-encode byte for byte", () => {
+  PD_PINNED_V6.forEach((link, palette) => {
+    const value = decoded(link);
+    assert.equal(value.options.palette, palette);
+    assert.equal(encoded(value), link);
+  });
+});
+
+test("PD: palettes 6 to 9 write palette-7 to palette-10, decode back and re-encode byte for byte", () => {
+  for (let palette = 6; palette <= 9; palette += 1) {
+    const seed = parsed(PD_SCALE, { palette, name: "Pal" });
+    const link = encoded(seed);
+    assert.deepEqual(link.split("/").slice(3, -1), [`palette-${palette + 1}`], `palette ${palette} spelling`);
+    assert.equal(link.charAt(0), "6", "the writer stays v6");
+    const back = decoded(link);
+    assert.equal(back.options.palette, palette);
+    assert.equal(encoded(back), link, "deterministic reshare");
+    assert.equal(encoded(seed), link, "deterministic encode");
+  }
+});
+
+test("PD: a v6 link reads palette-2 to palette-10 and refuses every other spelling", () => {
+  for (let n = 2; n <= 10; n += 1) {
+    const r = share.decode(forgeN("6", PD_SEG, "*x", [`palette-${n}`]));
+    assert.equal(r.ok, true, `palette-${n}`);
+    assert.equal(r.value.options.palette, n - 1);
+  }
+  for (const token of ["palette-0", "palette-1", "palette-01", "palette-07", "palette-010",
+                       "palette-11", "palette-100", "palette--2", "palette-2.5", "palette-", "palette-+7", "Palette-7"]) {
+    reject(forgeN("6", PD_SEG, "*x", [token]));
+  }
+  reject(forgeN("6", PD_SEG, "*x", ["palette-7", "palette-7"]));
+  reject(forgeN("6", PD_SEG, "*x", ["between", "palette-7"]));
+  reject(forgeN("6", PD_SEG, "*x", ["palette-7"], "000000"));
+});
+
+test("PD: a v6 palette-10 link combines with the later options in the fixed order", () => {
+  const seed = parsed(PYGMY, { palette: 9, parent: 9, mirror: true, anchor: "between", name: "Pan" });
+  const link = encoded(seed);
+  assert.deepEqual(link.split("/").slice(3, -1).slice(0, 2), ["palette-10", "parent-phrygian-dominant"]);
+  assert.equal(decoded(link).options.palette, 9);
+});
+
+test("PD: the v5 reader keeps its palette ceiling of 6 and refuses palette-7 with the whole link as payload", () => {
+  for (let n = 2; n <= 6; n += 1) assert.equal(share.decode(forge5(PD_SEG, "*x", [`palette-${n}`])).ok, true);
+  for (const n of [7, 8, 9, 10]) {
+    const link = forge5(PD_SEG, "*x", [`palette-${n}`]);
+    const r = reject(link);
+    assert.deepEqual(host(r), host(core.badNote(link)), `palette-${n} names the whole link`);
+  }
+});
+
+test("PD: packed v1 to v4 links with a palette above 5 keep the exact numeric BAD_NOTE payload", () => {
+  const seed = parsed(BASE);
+  for (const palette of [6, 7, 9, 10, 99]) {
+    seed.options.palette = palette;
+    const r = share.decode(v4Link(seed));
+    assert.equal(r.ok, false);
+    assert.deepEqual(host(r), host(core.badNote(palette)), `v4 palette ${palette}`);
+  }
+  seed.options.palette = 5;
+  assert.equal(share.decode(v4Link(seed)).ok, true, "palette 5 still opens on v4");
+  for (const version of [1, 2, 3]) {
+    const opts = v4Lines(parsed(BASE, { palette: 6 }))[1].split("\t");
+    const fields = version >= 3 ? opts : [opts[0], opts[1], opts[2], opts[4]];
+    const r = share.decode(forgePayload(version, [core.formatLegacySeed(parsed(BASE).fields), fields.join("\t"), ""]));
+    assert.equal(r.ok, false, `v${version}`);
+    assert.deepEqual(host(r), host(core.badNote(6)), `v${version} payload is the numeric value`);
+  }
+});
+
+test("PD: gate precedence is unchanged: cap, then version, then integrity, then payload", () => {
+  const good = forgeN("6", PD_SEG, "*x", ["palette-8"]);
+  assert.equal(share.decode(good).ok, true);
+  assert.equal(share.decode("7" + good.slice(1)).code, "NEEDS_NEWER_APP");
+  reject(good.slice(0, -1) + (good.endsWith("0") ? "1" : "0"));
+  reject(forgeN("6", PD_SEG, "*" + "x".repeat(4100), ["palette-8"]));
+});
+
+test("PD: a palette 6 to 9 deck keeps the deck id of its palette 0 twin", () => {
+  const base = core.deckId(parsed(PD_SCALE).fields);
+  for (let palette = 6; palette <= 9; palette += 1) {
+    assert.equal(core.deckId(parsed(PD_SCALE, { palette }).fields), base);
+  }
 });

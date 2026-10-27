@@ -1,0 +1,15 @@
+# kills: PD: packed v1 to v4 links with a palette above 5 keep the exact numeric BAD_NOTE payload
+# suite: node --test --test-name-pattern ^PD:.packed.v1.to.v4.links.with.a.palette.above.5.keep.the.exact.numeric.BAD_NOTE.payload$ tests/share.test.js
+# The packed-version guard is removed, so the widened core range lets a v1 to
+# v4 link carry palette 6 to 9, which no older app could write.
+diff --git a/src/engine/share.js b/src/engine/share.js
+--- a/src/engine/share.js
++++ b/src/engine/share.js
+@@ -611,7 +611,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     var options = readOptionsLine(lines[1], version);
+     if (options === null) return badNote(text);
+     // Packed versions never wrote a palette above 5; keep the old numeric payload.
+-    if (options.palette > 5) return badNote(options.palette);
+
+     // 5. The same validator the text box uses. It rejects, never repairs, so
+     //    its code and reason are propagated unchanged.

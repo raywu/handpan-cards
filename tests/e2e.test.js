@@ -2940,7 +2940,7 @@ function run() {
       "the seed refusal is not in a live region inside the modal sheet");
     assert.strictEqual(open.placeholder, "[C3] [D3] (E3) [F#3] [G3] [A3] B3 [C4] D4 E4 F#4 G4 A4 B4 [C5] D5 E5 | F#5 G5 A5");
     assert.strictEqual(open.generateDisabled, true);
-    assert.strictEqual(open.swatches, 6);
+    assert.strictEqual(open.swatches, 10);
     assert.deepStrictEqual(open.mirrorOn, [], "neither mirror switch is pressed by default");
   });
 
@@ -3792,7 +3792,7 @@ function run() {
         }
         return out;
       `);
-      assert.strictEqual(hits.swatches.length, 6);
+      assert.strictEqual(hits.swatches.length, 10);
       assert.ok(hits.swatches.every(Boolean),
         `a palette swatch has no 44px hit area: ${JSON.stringify(hits.swatches)}`);
       const layer = await b.eval(`
@@ -3869,7 +3869,7 @@ function run() {
         });
       `);
       const broken = probe.filter((p) => p.bad.length);
-      assert.strictEqual(probe.length, 6);
+      assert.strictEqual(probe.length, 10);
       assert.deepStrictEqual(broken, [],
         "a palette swatch does not own its own 44px box - a thumb landing inside " +
         "swatch N selects swatch N+1 with no feedback:\n" +
@@ -3879,9 +3879,9 @@ function run() {
       // fails on the cause and not only on the symptom.
       const pitch = await b.eval(`
         const d = [...document.querySelectorAll("#scale-swatches .dot")]
-          .map(el => { const r = el.getBoundingClientRect(); return r.left + r.width / 2; });
+          .map(el => { const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: Math.round(r.top) }; });
         const gaps = [];
-        for (let i = 1; i < d.length; i++) gaps.push(+(d[i] - d[i - 1]).toFixed(2));
+        for (let i = 1; i < d.length; i++) if (d[i].y === d[i - 1].y) gaps.push(+(d[i].x - d[i - 1].x).toFixed(2));
         return gaps;
       `);
       assert.ok(pitch.every((g) => g >= 44 - 0.5),
@@ -3889,6 +3889,41 @@ function run() {
         `on a pitch under 44 necessarily overlap`);
     } finally {
       await b.key("Escape", "Escape", 27);
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("PD: the ten palette swatches sit in a 5x2 grid of 44px targets at 320x568, 380x780 and 844x390, DOM order 0 to 9", async () => {
+    await freshLoad();
+    try {
+      for (const [w, h, touch] of [[320, 568, true], [380, 780, true], [844, 390, true]]) {
+        await b.setViewport(w, h, touch);
+        await openSheet();
+        await openDrawer();
+        const grid = await b.eval(`
+          const dots = [...document.querySelectorAll("#scale-swatches .dot")];
+          const box = document.getElementById("scale-swatches").getBoundingClientRect();
+          return { box: { l: box.left, r: box.right }, vw: innerWidth, dots: dots.map((d) => {
+            d.scrollIntoView({ block: "center" });
+            const r = d.getBoundingClientRect();
+            const g = document.getElementById("scale-swatches").getBoundingClientRect();
+            return { x: +(r.left + r.width / 2).toFixed(1), y: +(r.top - g.top).toFixed(1), w: r.width, h: r.height };
+          }) };`);
+        assert.strictEqual(grid.dots.length, 10, `${w}x${h}: ten swatches`);
+        const rows = new Set(grid.dots.map((d) => Math.round(d.y)));
+        assert.strictEqual(rows.size, 2, `${w}x${h}: two rows, got ${[...rows]}`);
+        const cols = new Set(grid.dots.map((d) => Math.round(d.x)));
+        assert.strictEqual(cols.size, 5, `${w}x${h}: five columns, got ${[...cols]}`);
+        grid.dots.forEach((d, i) => {
+          assert.ok(d.w >= 44 - 0.5 && d.h >= 44 - 0.5, `${w}x${h}: swatch ${i} is ${d.w}x${d.h}, under 44px`);
+          assert.strictEqual(Math.round(d.y) === [...rows].sort((p, q) => p - q)[0], i < 5, `${w}x${h}: swatch ${i} is in the wrong row`);
+        });
+        for (let i = 1; i < 5; i += 1) assert.ok(grid.dots[i].x > grid.dots[i - 1].x, `${w}x${h}: row one runs left to right`);
+        for (let i = 6; i < 10; i += 1) assert.ok(grid.dots[i].x > grid.dots[i - 1].x, `${w}x${h}: row two runs left to right`);
+        assert.ok(grid.box.l >= 0 && grid.box.r <= grid.vw, `${w}x${h}: the grid overflows the viewport`);
+        await b.key("Escape", "Escape", 27);
+      }
+    } finally {
       await b.setViewport(900, 900, false);
     }
   });
@@ -5541,7 +5576,7 @@ function run() {
   });
 
   test("SPB: the Scale tab's Tab stops end box, primary, DELETE with no swatch; the Layout tab's run RESET LAYOUT, the six swatches, primary, DELETE, forward and back, on create and Edit", async () => {
-    const swatches = Array.from({ length: 6 }, (_, i) => `Palette ${i + 1}`);
+    const swatches = Array.from({ length: 10 }, (_, i) => `Palette ${i + 1}`);
     const ran = [];
     const stop = () => b.eval(`
       const el = document.activeElement;
@@ -5572,7 +5607,7 @@ function run() {
         }
         assert.strictEqual(await b.eval(`return document.getElementById("scale-delete-row").hidden;`), !edit,
           `${mode}: the DELETE row is ${edit ? "hidden on Edit" : "shown on create"}`);
-        assert.strictEqual(await b.eval(`return document.querySelectorAll("#scale-swatches button").length;`), 6, `${mode}: six swatches`);
+        assert.strictEqual(await b.eval(`return document.querySelectorAll("#scale-swatches button").length;`), 10, `${mode}: ten swatches`);
 
         assert.strictEqual(await b.eval(`return document.getElementById("scale-panel-scale").hidden;`), false, `${mode}: opens on the Scale tab`);
         const scaleCycle = edit
@@ -5608,13 +5643,13 @@ function run() {
       await openSheet();
       await typeScale(EDIT_SCALE);
       const pressed = () => b.eval(`return [...document.querySelectorAll("#scale-swatches .dot")].map(d => d.getAttribute("aria-pressed"));`);
-      const PICK = 4;
-      const want = ["false", "false", "false", "false", "true", "false"];
+      const PICK = 9;
+      const want = Array.from({ length: 10 }, (_, i) => String(i === PICK));
       await openDrawer();
-      assert.deepStrictEqual(await pressed(), ["true", "false", "false", "false", "false", "false"], "palette 1 is not the default");
+      assert.deepStrictEqual(await pressed(), Array.from({ length: 10 }, (_, i) => String(i === 0)), "palette 1 is not the default");
       await b.eval(`document.querySelectorAll("#scale-swatches button")[${PICK}].scrollIntoView({ block: "center" }); return true;`);
       await b.click(`#scale-swatches > *:nth-child(${PICK + 1})`);
-      assert.deepStrictEqual(await pressed(), want, "the tap did not pick the fifth swatch");
+      assert.deepStrictEqual(await pressed(), want, "the tap did not pick the tenth swatch");
 
       await b.eval(`document.getElementById("scale-tab-scale").scrollIntoView({ block: "nearest" }); return true;`);
       await b.click("#scale-tab-scale");
