@@ -7,7 +7,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8269,7 +8269,7 @@ function swipeMove(e) {
+@@ -14865,7 +14865,7 @@ function swipeMove(e) {
    while (drag.pts.length > 1 && drag.pts[0].t < cutoff) drag.pts.shift();
    if (drag.moved && !reducedMotion.matches) {
      scene.style.willChange = "transform";

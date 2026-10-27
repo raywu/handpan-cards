@@ -1,0 +1,15 @@
+# kills: SVH13 compound descendant queries require every class and live ancestry
+# suite: node --test --test-name-pattern=SVH13 tests/harness.test.js
+# fault: Accepts a target whose required ancestor is absent.
+diff --git a/tools/sandbox.js b/tools/sandbox.js
+--- a/tools/sandbox.js
++++ b/tools/sandbox.js
+@@ -532,7 +532,7 @@ function boot(opts = {}) {
+       while (ancestor && !matchSimple(ancestor, wanted)) {
+         ancestor = ancestor.parentNode || ancestor._markupParent;
+       }
+-      if (!ancestor) return false;
++      if (!ancestor) return true;
+     }
+     return true;
+   };

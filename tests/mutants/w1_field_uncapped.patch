@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -782,9 +782,9 @@
+@@ -835,9 +835,9 @@ footer.seq{row-gap:var(--sp-1)}
  #scale-box-wrap{display:grid; min-width:0; font:400 16px/1.3 Bitter, serif}
  #scale-box-wrap::after{content:attr(data-grow) " "; grid-area:1/1; visibility:hidden;
    white-space:pre-wrap; overflow-wrap:anywhere; overflow:hidden; box-sizing:border-box;

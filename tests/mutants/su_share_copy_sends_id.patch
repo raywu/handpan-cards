@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12333,7 +12333,7 @@ function copyLink() {
-   const deck_kind = deckKind(deck());
+@@ -15111,7 +15111,7 @@ function copyLink() {
+     !(panelOpen && !desktopMQ.matches) && !document.hidden;
+   if (!current()) return;
    const done = (text, method) => {
-     say("", "");
 -    track("share_copy", { deck_kind, method });
 +    track("share_copy", { deck_kind, method, deck_id: deck().id });
-     setTimeout(() => { if (announce.textContent === "") say(text, "ok"); }, 0);
-   };
-   const reveal = () => {
+     if (!current() || noticeRevision !== announcementRevision) return;
+     say("", "");
+     noticeRevision = announcementRevision;

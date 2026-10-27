@@ -1,30 +1,16 @@
 # kills: a deleted seed falls back to the default deck and says the deck is gone
 # suite: node --test --test-name-pattern ^a.deleted.seed.falls.back tests/app.test.js
 # The route is read after the gone warning ran, so a deleted seed falls back with no explanation.
+# Approved retained contract mapped to the transactional instance adapter.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14227,14 +14227,9 @@ sheet.setAttribute("hidden", ""); buildSwatches(); paintLayout(); resyncSheet(tr
- // deck that was selected last session is in the registry by the time deck()
- // looks for it.
- restoreScales();
--const routedDeck = routedDeckId();
- bootStored = typeof store.deck === "string" ? store.deck : null;
--if (routedDeck) deckId = routedDeck;
- const wantedDeck = deckId;
- deckId = deck().id; storedDeck = deckId; setOrder(); buildChips(); applyLang(); setMode(mode);
--// setMode() above saved the routed deck, as a chip tap does: a link that opens a
--// deck once keeps it, so the visitor does not land on the old one tomorrow.
--if (routedDeck && routedDeck !== bootStored) track("deck_route", { deck_id: routedDeck });
- // Two fallbacks, deliberately different. An unknown BUILT-IN id is a stale or
- // renamed deck and falls back SILENTLY, as it always has. A missing custom: id
- // means the user's own saved scale is gone - deleted, or dropped as corrupt -
-@@ -14242,6 +14237,8 @@ if (routedDeck && routedDeck !== bootStored) track("deck_route", { deck_id: rout
- if (wantedDeck !== deckId && !(replacements()[wantedDeck] && replacements()[wantedDeck].id === deckId) &&
-     (wantedDeck.indexOf("custom:") === 0 || hidden.includes(wantedDeck)))
-   say(t("boot.gone", { name: deck().name }), "warn");
-+const routedDeck = routedDeckId();
-+if (routedDeck) { deckId = routedDeck; deckId = deck().id; storedDeck = deckId; setOrder(); buildChips(); setMode(mode); track("deck_route", { deck_id: routedDeck }); }
- // A page route in the address bar at boot is a RELOAD of a page, or a link
- // someone pasted. Neither reopens it: #edit-<id> names a deck this session may
- // not have, and a page restored with no entry behind it is one the back
+@@ -15206,7 +15206,7 @@ function finishSavedBoot() {
+   bootStored=storedAtBoot===null?null:selection.id;
+   const routed=routedDeckId();
+   const incomingShare=location.hash.indexOf(SHARE_PREFIX)===0;
+-  const wanted=routed || storedAtBoot;
++  const wanted=storedAtBoot;
+   const finish=()=>{
+     setOrder();applyLang();paintLangSelect();setMode(mode,false);updateSavedStatus();syncRoute();
+     if(routed && routed!==storedAtBoot)track("deck_route",{deck_id:routed});

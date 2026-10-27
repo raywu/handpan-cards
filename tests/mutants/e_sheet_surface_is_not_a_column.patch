@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -768,7 +768,7 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -782,7 +782,7 @@ footer.seq{row-gap:var(--sp-1)}
  .sheetsurf{width:100%; max-width:520px; background:#1f1b15;
    height:100dvh; max-height:100dvh; overflow-y:auto; overscroll-behavior:contain;
    padding:var(--sp-3) var(--sp-4) max(var(--sp-4), env(safe-area-inset-bottom));

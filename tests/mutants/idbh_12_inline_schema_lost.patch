@@ -1,0 +1,15 @@
+# kills: IDBH12 schema metadata and autoincrement round trip without crossing origin partitions
+# suite: node --test --test-name-pattern=^IDBH12\s tests/harness.test.js
+# fault: Report an inline store as out-of-line rather than preserving keyPath metadata.
+diff --git a/tools/sandbox.js b/tools/sandbox.js
+--- a/tools/sandbox.js
++++ b/tools/sandbox.js
+@@ -286,7 +286,7 @@ function indexedDBFor(bucket) {
+       if (!tx || tx._done) throw idbError('InvalidStateError');
+       if (tx._stores.has(storeName)) throw idbError('ConstraintError');
+       operations.push({ operation: 'createObjectStore', db: name, store: storeName });
+-      tx._stores.set(storeName, { name: storeName, keyPath: idbClone(options.keyPath ?? null),
++      tx._stores.set(storeName, { name: storeName, keyPath: null,
+         autoIncrement: !!options.autoIncrement, entries: new Map(), nextKey: 1 });
+       return tx.objectStore(storeName);
+     };

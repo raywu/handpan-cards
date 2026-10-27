@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12683,7 +12683,7 @@ sheet.addEventListener("keydown", e => {
+@@ -14358,7 +14358,7 @@ sheet.addEventListener("keydown", e => {
         scaleBox,
         shut ? lipBtn : editingId ? genBtn : nextBtn,
         editingId && !shut ? delBtn : null])

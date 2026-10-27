@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10579,7 +10579,7 @@ const lipDelta = () => {
+@@ -11829,7 +11829,7 @@ const lipDelta = () => {
    const cs = getComputedStyle(sheetSurf), lead = nextBtn.hidden ? genBtn : nextBtn;
    return lead.getBoundingClientRect().height + (delRow.hidden ? 0 : px(cs.rowGap) + delRow.getBoundingClientRect().height) - footEl.getBoundingClientRect().height - px(getComputedStyle(footEl).marginTop);
  };

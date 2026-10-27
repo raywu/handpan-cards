@@ -1,0 +1,15 @@
+# kills: SV-PG: with 200 saved variants, 30 chip taps each select the tapped scale within 500 ms
+# suite: node --test --test-name-pattern=SV-PG: tests/e2e.test.js
+# fault: A 600 ms busy-wait at the start of stageSavedSnapshot, inside the async durable commit that a selection triggers.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10082,7 +10082,7 @@ function savedTransaction(db, mode, apply, signal) {
+ }
+ function readSavedSnapshot(db){return savedTransaction(db,"readonly",snapshot=>({ok:true,...snapshot}));}
+ function sameSavedSnapshot(a,b){return a.present===b.present && (!a.present || a.raw===b.raw);}
+-function stageSavedSnapshot(snapshot){return snapshot.present?typeof snapshot.raw==="string"?stageSavedRaw(snapshot.raw):savedFailure("protected","collection-value"):savedFailure("conflict","collection-missing");}
++function stageSavedSnapshot(snapshot){const t0=performance.now();while(performance.now()-t0<600);return snapshot.present?typeof snapshot.raw==="string"?stageSavedRaw(snapshot.raw):savedFailure("protected","collection-value"):savedFailure("conflict","collection-missing");}
+ function notifySavedCommit(envelope){
+   try{savedChannel?.postMessage({schema:1,collectionId:envelope.collectionId,revision:envelope.revision});}catch(e){}
+ }

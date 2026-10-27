@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1240,7 +1240,7 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1686,7 +1686,7 @@ html.about-open{overflow:hidden}
  <div id="settings-panel" aria-labelledby="settings-title" hidden>
    <h2 id="settings-title" class="sr-only">Settings</h2>
    <div class="panel-group">

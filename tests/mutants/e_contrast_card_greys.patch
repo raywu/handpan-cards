@@ -9,7 +9,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -532,7 +532,7 @@ main{overflow-x:clip}
+@@ -588,7 +588,7 @@ main{overflow-x:clip}
     for it below, in the label() call). Retuning --sep would have
     silently split one grey into two rather than moved both, and the diagram's
     grey is ground truth. The token was removed in this pass.  */
@@ -18,7 +18,7 @@ diff --git a/index.html b/index.html
  .hdr .l .deg{color:var(--root); font-weight:600; letter-spacing:.06em}
  .hdr .r{font:600 8px/1.3 "Nunito Sans"; letter-spacing:.11em; color:var(--ink);
    text-align:right; max-width:55%; text-transform:uppercase}
-@@ -579,7 +579,7 @@ main{overflow-x:clip}
+@@ -637,7 +637,7 @@ main{overflow-x:clip}
  /* The note/number-line separators: #9a949f was 2.95:1 on the paper. #75707c
     keeps the same cool cast at 4.81:1 and stays clearly recessive against the
     root/tone colours it sits between. */

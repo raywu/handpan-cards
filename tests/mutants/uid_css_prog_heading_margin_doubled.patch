@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -213,7 +213,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
+@@ -284,7 +284,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
     main had between the group's two button rows. Internal tier values and ids
     stay basic / intermediate / advanced. */
  .tierbar{display:flex; flex-wrap:nowrap; gap:var(--sp-2)}

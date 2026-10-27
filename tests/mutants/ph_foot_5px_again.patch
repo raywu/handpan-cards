@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -951,7 +951,7 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -965,7 +965,7 @@ footer.seq{row-gap:var(--sp-1)}
  :root{--lip-ease:cubic-bezier(.3,0,.2,1); --lip-foot:9px; --lip-zone:25px; --lip-over:calc(var(--lip-zone) - var(--lip-foot))}
  #scale-sheet.lipped .sheetsurf{padding-bottom:env(safe-area-inset-bottom)}
  #scale-sheet.lipped:not(.tiny) .sheetbody{flex-grow:1}

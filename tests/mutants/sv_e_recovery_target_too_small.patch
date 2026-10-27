@@ -1,0 +1,15 @@
+# kills: SV10 E1: variants conflict and session states preserve targets clipping focus and eight-locale copy
+# suite: node --test --test-name-pattern=^SV10.E1: tests/e2e.test.js
+# fault: Conflict and explicit temporary-use recovery controls lose their minimum touch-target height.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1327,7 +1327,7 @@ html.about-open{overflow:hidden}
+    deck now downloads a client-built PDF instead. ---------------------------- */
+ #saved-status{font-size:14px;line-height:1.5;margin:8px 0;color:#c4bcab;max-width:70ch}
+ #scale-conflict{font-size:15px;line-height:1.5;margin:12px 0}
+-#scale-conflict-separate,#saved-temporary-use{min-height:44px;white-space:normal;padding:10px 14px}
++#scale-conflict-separate,#saved-temporary-use{min-height:10px;white-space:normal;padding:0}
+
+ @media print{
+   *{-webkit-print-color-adjust:exact; print-color-adjust:exact}

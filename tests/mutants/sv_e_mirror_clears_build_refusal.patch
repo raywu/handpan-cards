@@ -1,0 +1,15 @@
+# kills: flipping the mirror does not wipe a build refusal (queue row 115)
+# suite: node --test --test-name-pattern=^flipping.the.mirror.does.not.wipe.a.build.refusal..queue.row.115.$ tests/e2e.test.js
+# fault: A mirror action re-derives grammar instead of honoring the standing build refusal. This shared-guard fault is independently selected by the mirror regression.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13070,7 +13070,7 @@ function updateParse() {
+  *  disarmDelete() is not rewritten to use this - it already avoids the bug. */
+ function resyncSheet(paint) {
+   if (paint) cancelGesture();
+-  if (refusal) {
++  if (false && refusal) {
+     showRefusal(refusal);
+     if (paint) {
+       const res = HPE.core.parseSeed(String(scaleBox.value || ""), layoutOptions());

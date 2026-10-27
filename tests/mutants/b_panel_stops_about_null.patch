@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13594,7 +13594,7 @@ function panelStops() {
+@@ -14422,7 +14422,7 @@ function panelStops() {
            // Eng review amendment 1: the Resources links join the Tab trap
            // after the print controls, in DOM order.
            ...settingsPanel.querySelectorAll('#settings-panel a.mode[id^="res-"]'),

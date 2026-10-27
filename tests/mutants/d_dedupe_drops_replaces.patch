@@ -1,15 +1,16 @@
-# kills: SD: ADD and a share link onto a replacement keep it seeded
-# suite: node --test --test-name-pattern ^SD..ADD.and.a.share.link.onto.a.replacement.keep.it.seeded$ tests/app.test.js
-# generateDeck stops inheriting replaces from the registry entry it replaces, so ADD of the same string unseats it.
+# kills: SD: plain Add cannot inherit slot authority and an exact shared replacement reuses its owner
+# suite: node --test --test-name-pattern=^SD:.plain.Add.cannot.inherit.slot.authority.and.an.exact.shared.replacement.reuses.its.owner$ tests/app.test.js
+# former kills: SD: ADD and a share link onto a replacement keep it seeded
+# fault: Exact shared replacement imports stop reusing their recognized owner and allocate a plain clone instead.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7862,7 +7862,7 @@
-   // then a plain custom one.
-   const sitting = CUSTOM[built.value.id];
-   const inherited = sitting && sitting.options && sitting.options.replaces;
--  const replaces = (options && options.replaces) || inherited;
-+  const replaces = options && options.replaces;
-   if (typeof replaces === "string" && isBuiltIn(replaces)) built.value.options.replaces = replaces;
-   registerDeck(built.value);
-   return built;
+@@ -10564,7 +10564,7 @@ function applySavedCommand(staged, command, candidate) {
+   if (command.type === "import" || command.type === "save-as-separate") {
+     let match = null;
+     if (command.type === "import") {
+-      const matches = current.entries.filter(row => staged.meanings.get(row.instanceId) === candidate.meaning);
++      const matches = current.entries.filter(row => !row.record?.o?.replaces && staged.meanings.get(row.instanceId) === candidate.meaning);
+       match = matches.find(row => row.instanceId === command.selectedInstanceId) || matches[0] || null;
+     }
+     const row = match ? next.entries.find(entry => entry.instanceId === match.instanceId) : allocate(savedClone(candidate.record));

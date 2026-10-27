@@ -8,7 +8,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8385,7 +8385,6 @@ document.addEventListener("pointerdown", e => {
+@@ -15004,7 +15004,6 @@ document.addEventListener("pointerdown", e => {
        startDrag(e);
      }
    } else {

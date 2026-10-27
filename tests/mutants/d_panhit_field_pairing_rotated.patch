@@ -8,7 +8,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8190,7 +8190,7 @@ function pan(d, ch, opts) {
+@@ -10944,7 +10944,7 @@ function pan(d, ch, opts) {
        if (hit.flash && hit.flash.map(String).includes(String(id)))
          flashMarks.push(`<circle class="panflash" ${at} r="${rr * 1.12}" fill="none" stroke="#E27005"`
            + ` stroke-width="3" vector-effect="non-scaling-stroke" pointer-events="none"/>`);

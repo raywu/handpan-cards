@@ -9,7 +9,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7309,7 +7309,7 @@ function faceHTML(d, ch, n, kind) {
+@@ -11341,7 +11341,7 @@ function faceHTML(d, ch, n, kind) {
  }
  function render() {
    const inSeq = mode === "S";

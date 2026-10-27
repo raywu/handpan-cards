@@ -2,17 +2,23 @@
 # suite: node --test --test-name-pattern ^editable.defaults..a.generated.deck.is.chip.1.and.a.second.pushes.the.first.to.chip.2$ tests/app.test.js
 # Custom decks are appended after the built-ins instead of taking chip 1.
 # Re-anchored 2026-10-13 (seeded SAVE / DELETE, lane app) against the current source. The mutation itself is unchanged.
+# Approved retained contract mapped to the transactional instance adapter.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8760,8 +8760,8 @@
- const allDecks = () => {
-   const rep = replacements();
-   const slotted = new Set(Object.values(rep));
--  return [...Object.values(CUSTOM).reverse().filter(d => !slotted.has(d)),
--    ...DECKS.map(s => rep[s.id] || (hidden.includes(s.id) ? null : s)).filter(Boolean)];
-+  return [...DECKS.map(s => rep[s.id] || (hidden.includes(s.id) ? null : s)).filter(Boolean),
-+    ...Object.values(CUSTOM).filter(d => !slotted.has(d))];
- };
- // [5A] chip labels are capped at 16 characters with an ellipsis.
- const CHIP_CAP = 16;
+@@ -10273,13 +10273,14 @@ function stageSavedRaw(raw) {
+ }
+ function savedViewsFor(e, views) {
+   const slotted = new Set(Object.values(e.slots));
+-  return [...e.entries].reverse().filter(row => views.has(row.instanceId) && !slotted.has(row.instanceId))
++  const output = [...e.entries].reverse().filter(row => views.has(row.instanceId) && !slotted.has(row.instanceId))
+     .map(row => ({ selection: { kind: "saved", id: row.instanceId }, deck: views.get(row.instanceId).deck, displayOrdinal: row.displayOrdinal }))
+     .concat(DECKS.map(d => {
+       const owner = e.slots[d.id] && views.get(e.slots[d.id]);
+       return owner ? { selection: { kind: "saved", id: owner.instanceId }, deck: owner.deck, displayOrdinal: owner.displayOrdinal, slotId: d.id } :
+         e.hidden.includes(d.id) ? null : { selection: { kind: "builtin", id: d.id }, deck: d, slotId: d.id };
+     }).filter(Boolean));
++  return [...output.filter(v=>v.slotId),...output.filter(v=>!v.slotId)];
+ }
+ function savedFallback(e, views) {
+   const visible = savedViewsFor(e, views);

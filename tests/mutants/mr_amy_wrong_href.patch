@@ -1,10 +1,10 @@
-# kills: the settings panel has exactly one Resources group with its six outbound links in three rows
-# suite: node --test --test-name-pattern ^the.settings.panel.has.exactly.one.Resources.group.with.its.six.outbound.links.in.three.rows$ tests/e2e.test.js
+# kills: the settings panel has exactly one Resources group with its seven outbound links in three rows
+# suite: node --test --test-name-pattern ^the.settings.panel.has.exactly.one.Resources.group.with.its.seven.outbound.links.in.three.rows$ tests/e2e.test.js
 # menu-resources AD7. #res-amy-progressions points at the wrong video.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1330,7 +1330,7 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1754,7 +1754,7 @@ html.about-open{overflow:hidden}
           target="_blank" rel="noopener">HTC</a>
      </div>
      <div class="modebar duo">

@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10963,7 +10963,7 @@
+@@ -12213,7 +12213,7 @@ lipBtn.addEventListener("focusin", () => {
    if (!lipFocusing) restoreLip();
  });
  footSlide.addEventListener("transitionend", (e) => {

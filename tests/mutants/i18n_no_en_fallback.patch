@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9489,7 +9489,6 @@ const hasKey = key => Object.prototype.hasOwnProperty.call(I18N[uiLang()] || {},
+@@ -9631,7 +9631,6 @@ const hasKey = key => Object.prototype.hasOwnProperty.call(I18N[uiLang()] || {},
  function t(key, vars) {
    const lang = uiLang();
    let entry = (I18N[lang] || {})[key];

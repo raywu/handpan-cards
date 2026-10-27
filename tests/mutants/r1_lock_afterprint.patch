@@ -8,8 +8,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8394,7 +8394,8 @@ function pdfFilename(d, variant, paper) {
- // NOT USED BY THE UI since 2026-10-08: the 'full' variant (title card, legend
+@@ -11125,6 +11125,7 @@ function pdfFileName(d, variant, paper) {
  // card, blank padding) has no control. The settings panel offers DOWNLOAD PDF,
  // which calls this with 'shop'. 'full' is kept for tests and a future return.
  function downloadDeckPDF(variant, btn) {

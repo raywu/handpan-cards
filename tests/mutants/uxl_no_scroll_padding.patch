@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -976,7 +976,6 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -990,7 +990,6 @@ footer.seq{row-gap:var(--sp-1)}
  #scale-lip::after{content:""; position:absolute; left:50%; bottom:3px; width:32px; height:3px;
    margin-left:-16px; border-radius:2px; background:#a79d8b}
  #scale-lip:focus-visible{outline-offset:-2px}
@@ -12,7 +12,7 @@ diff --git a/index.html b/index.html
  #scale-sheet.lipnow #scale-footslide, #scale-sheet.lipnow #scale-guidance{transition:none}
  @media (prefers-reduced-motion: reduce){
    #scale-footslide, #scale-guidance{transition:none !important}
-@@ -10576,7 +10575,7 @@ function revealField(t) {
+@@ -11893,7 +11892,7 @@ function revealField(t) {
      const edge = el.getBoundingClientRect().top + (el.clientTop || 0);
      const f = t.getBoundingClientRect();
      const up = f.top - (edge + (parseFloat(css.scrollPaddingTop) || 0));

@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1245,7 +1245,6 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1691,7 +1691,6 @@ html.about-open{overflow:hidden}
        <button class="mode on" id="modeA" aria-pressed="true">NAME &rarr; NOTES</button>
        <button class="mode" id="modeB" aria-pressed="false">NOTES &rarr; NAME</button>
      </div>

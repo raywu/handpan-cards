@@ -1,24 +1,25 @@
 # kills: SU: a reload of the stored deck fires no share_open and no deck_route; a route that differs from the stored selection fires it
 # suite: node --test --test-name-pattern ^SU:.a.reload.of.the.stored.deck tests/app.test.js
 # The S8 flag is dropped, so a reload fires both share_open and deck_route.
+# Retained behavior re-anchored for saved instances; exact intent is recorded in the lane evidence.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9855,7 +9855,7 @@ function openShare(text) {
-   if (!built.ok) { say(reasonText(built), "err"); return built; }
-   rememberScale(seedOf(built.value));
-   selectDeck(built.value.id);
--  if (built.value.id !== bootStored) track("share_open");
-+  track("share_open");
-   return built;
- }
- 
-@@ -14234,7 +14234,7 @@ const wantedDeck = deckId;
- deckId = deck().id; storedDeck = deckId; setOrder(); buildChips(); applyLang(); setMode(mode);
- // setMode() above saved the routed deck, as a chip tap does: a link that opens a
- // deck once keeps it, so the visitor does not land on the old one tomorrow.
--if (routedDeck && routedDeck !== bootStored) track("deck_route", { deck_id: routedDeck });
-+if (routedDeck) track("deck_route", { deck_id: routedDeck });
- // Two fallbacks, deliberately different. An unknown BUILT-IN id is a stale or
- // renamed deck and falls back SILENTLY, as it always has. A missing custom: id
- // means the user's own saved scale is gone - deleted, or dropped as corrupt -
+@@ -9962,7 +9962,7 @@ function openShare(text) {
+     }
+     if(built.published===false){say(savedPublicationText(built,"import"),"warn");syncRoute();return built;}
+     if (built.published !== false) selectDeck({kind:"saved",id:built.instanceId}, false);
+-    if (built.instanceId !== bootStored) track("share_open");
++    track("share_open");
+     return built;
+   };
+   const built = generateDeck(HPE.core.formatSeed(res.value.fields),res.value.options);
+@@ -15209,7 +15209,7 @@ function finishSavedBoot() {
+   const wanted=routed || storedAtBoot;
+   const finish=()=>{
+     setOrder();applyLang();paintLangSelect();setMode(mode,false);updateSavedStatus();syncRoute();
+-    if(routed && routed!==storedAtBoot)track("deck_route",{deck_id:routed});
++    if(routed)track("deck_route",{deck_id:routed});
+     if(savedState && !incomingShare && wanted && wanted!==deck().id &&
+         !(savedState?.slots[wanted] && savedState.slots[wanted]===selection.id) &&
+         (wanted.indexOf("custom:")===0 || savedState?.hidden.includes(wanted)))

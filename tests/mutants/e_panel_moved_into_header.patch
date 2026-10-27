@@ -79,10 +79,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1362,6 +1362,98 @@ html.about-open{overflow:hidden}
-   <!-- "+ Add a scale" lives in the settings panel's Scales group now (M2,
-        2026-09-28); #decks holds deck chips only. -->
-   <nav class="decks" id="decks"></nav>
+@@ -1371,2 +1371,97 @@ html.about-open{overflow:hidden}
+   <button type="button" id="saved-temporary-use" class="mode" hidden>USE THIS TAB TEMPORARILY</button>
 +<div id="settings-scrim" hidden></div>
 +<div id="settings-panel" aria-labelledby="settings-title" hidden>
 +  <h2 id="settings-title" class="sr-only">Settings</h2>
@@ -130,7 +128,7 @@ diff --git a/index.html b/index.html
 +    </div>
 +  </div>
 +  <!-- Resources (docs/plans/2026-10-01-resources-menu.md, eng review
-+       amendments 1-7; docs/plans/2026-10-05-menu-resources-amy.md): six
++       amendments 1-7; docs/plans/2026-10-05-menu-resources-amy.md): seven
 +       outbound links in three rows plus a fourth row holding the ABOUT button, styled as .mode (no new colour
 +       or typeface, N15). They deliberately carry no onclick - a link click
 +       must NOT call closePanel() (amendment 3), unlike the print buttons
@@ -143,8 +141,8 @@ diff --git a/index.html b/index.html
 +         stacked overflowed the 320x568 fit test by 18px. Row one holds
 +         the three sites (class trio: one equal-width row at every viewport,
 +         complete labels wrap inside their targets), row two (class duo: one line, labels wrap inside their
-+         boxes) the two Amy Naylor videos, row three HANDPAN 101 alone (2026-10-08,
-+         full width, so no existing control moves down), row four the ABOUT button
++         boxes) the two Amy Naylor videos, row three (class duo) HANDPAN HELPERS
++         then HANDPAN 101, row four the ABOUT button
 +         (an in-app view, not an outbound link: no href, no res- id). -->
 +    <div class="modebar trio">
 +      <a class="mode" id="res-handpaner" href="https://handpaner.com/"
@@ -162,11 +160,14 @@ diff --git a/index.html b/index.html
 +         aria-label="Amy Naylor: more interesting chords with bottom notes (YouTube)"
 +         target="_blank" rel="noopener">AMY: BOTTOM NOTES</a>
 +    </div>
-+    <div class="modebar">
++    <div class="modebar duo">
++      <a class="mode" id="res-handpan-helpers"
++         href="https://handpanhelpers.klangzeug.de/"
++         target="_blank" rel="noopener"><span>HANDPAN <br>HELPERS</span></a>
 +      <a class="mode" id="res-handpan-101"
 +         href="https://docs.google.com/document/d/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco/edit?usp=drivesdk"
 +         aria-label="Handpan 101 (Google Doc)"
-+         target="_blank" rel="noopener">HANDPAN 101</a>
++         target="_blank" rel="noopener"><span>HANDPAN <br>101</span></a>
 +    </div>
 +    <div class="modebar">
 +      <button class="mode" type="button" id="about-open" aria-haspopup="dialog">ABOUT</button>
@@ -176,11 +177,7 @@ diff --git a/index.html b/index.html
 +</div>
 +
  </header>
- 
- <main>
-@@ -1674,98 +1766,6 @@ html.about-open{overflow:hidden}
-      below-breakpoint, modal presentation. At >=1024x700 the trigger that
-      calls openPanel() is display:none, so the panel never gains them and
+@@ -1684,97 +1779,2 @@ html.about-open{overflow:hidden}
       the static sidebar is correctly plain, non-modal markup. -->
 -<div id="settings-scrim" hidden></div>
 -<div id="settings-panel" aria-labelledby="settings-title" hidden>
@@ -229,7 +226,7 @@ diff --git a/index.html b/index.html
 -    </div>
 -  </div>
 -  <!-- Resources (docs/plans/2026-10-01-resources-menu.md, eng review
--       amendments 1-7; docs/plans/2026-10-05-menu-resources-amy.md): six
+-       amendments 1-7; docs/plans/2026-10-05-menu-resources-amy.md): seven
 -       outbound links in three rows plus a fourth row holding the ABOUT button, styled as .mode (no new colour
 -       or typeface, N15). They deliberately carry no onclick - a link click
 -       must NOT call closePanel() (amendment 3), unlike the print buttons
@@ -242,8 +239,8 @@ diff --git a/index.html b/index.html
 -         stacked overflowed the 320x568 fit test by 18px. Row one holds
 -         the three sites (class trio: one equal-width row at every viewport,
 -         complete labels wrap inside their targets), row two (class duo: one line, labels wrap inside their
--         boxes) the two Amy Naylor videos, row three HANDPAN 101 alone (2026-10-08,
--         full width, so no existing control moves down), row four the ABOUT button
+-         boxes) the two Amy Naylor videos, row three (class duo) HANDPAN HELPERS
+-         then HANDPAN 101, row four the ABOUT button
 -         (an in-app view, not an outbound link: no href, no res- id). -->
 -    <div class="modebar trio">
 -      <a class="mode" id="res-handpaner" href="https://handpaner.com/"
@@ -261,11 +258,14 @@ diff --git a/index.html b/index.html
 -         aria-label="Amy Naylor: more interesting chords with bottom notes (YouTube)"
 -         target="_blank" rel="noopener">AMY: BOTTOM NOTES</a>
 -    </div>
--    <div class="modebar">
+-    <div class="modebar duo">
+-      <a class="mode" id="res-handpan-helpers"
+-         href="https://handpanhelpers.klangzeug.de/"
+-         target="_blank" rel="noopener"><span>HANDPAN <br>HELPERS</span></a>
 -      <a class="mode" id="res-handpan-101"
 -         href="https://docs.google.com/document/d/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco/edit?usp=drivesdk"
 -         aria-label="Handpan 101 (Google Doc)"
--         target="_blank" rel="noopener">HANDPAN 101</a>
+-         target="_blank" rel="noopener"><span>HANDPAN <br>101</span></a>
 -    </div>
 -    <div class="modebar">
 -      <button class="mode" type="button" id="about-open" aria-haspopup="dialog">ABOUT</button>
@@ -275,5 +275,3 @@ diff --git a/index.html b/index.html
 -</div>
 -
  <!-- The scale engine, inlined verbatim from src/engine/*.js. The app is
-      single-file by contract, so these are copies rather than external script
-      references: index.html ships with the engine already in it and needs no

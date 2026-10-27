@@ -10,7 +10,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -330,7 +330,6 @@ a.mode{text-decoration:none}
+@@ -417,7 +417,6 @@ a.mode{text-decoration:none}
    /* [hidden]{display:none !important} (line 456) otherwise wins over the
       rule above at equal !important weight (it has none, so this needs its
       own) - this is the one declaration that actually has to beat it. */

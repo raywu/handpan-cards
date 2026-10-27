@@ -287,3 +287,102 @@ Source references: `tests/run.sh`; `tests/suite_health.py`; `tests/e2e.test.js`;
 `tests/helpers/cdp.js`; `tools/probe/panel_fit.js`; `tests/CONTRACT.md`;
 `.github/workflows/validate.yml`; `requirements-ci.txt`. Read the versions in the
 tested worktree, not stale excerpts or another branch's counts.
+
+## Saved-variants storage probe (scoped diagnostic)
+
+`tools/probe/saved_variants_cases.py` creates the four frozen public migration
+cases from `tests/fixtures/saved_variants_v1.json` in a fresh output directory.
+`tools/probe/saved_variants_storage.js` measures one case per invocation. Neither
+tool grants browser access or replaces the sole-host lease, approved supervisor,
+source review, process/profile census and actual execution-evidence checks above.
+No owner storage/profile data is used. Refuse to run if those prerequisites or
+a reviewed bounded supervisor are unavailable; do not install tools implicitly.
+
+Example preparation (choose a fresh owned absolute directory):
+
+```sh
+python3 tools/probe/saved_variants_cases.py \
+  --fixture "$PWD/tests/fixtures/saved_variants_v1.json" \
+  --out-dir /private/tmp/owned-sv-cases-UNIQUE
+```
+
+Read the emitted manifest, verify the fixture/case hashes against the reviewed
+contract, and freeze the candidate's actual `index.html` SHA before any browser
+launch. Under the reviewed external supervisor, serialize one command per case:
+
+```sh
+node tools/probe/saved_variants_storage.js \
+  --repo "$PWD" \
+  --case /private/tmp/owned-sv-cases-UNIQUE/records-2.json \
+  --case-sha REVIEWED_64_CHARACTER_CASE_SHA \
+  --source-sha REVIEWED_64_CHARACTER_INDEX_SHA \
+  --out /private/tmp/owned-sv-receipts-UNIQUE/records-2.json
+```
+
+These are templates, not runnable placeholder hashes. This probe now targets the
+transactional-IDB amendment. Execution requires independent source review and a
+strict reviewed helper hash. The stderr-drain repair helper was independently
+cleared at SHA256 `178e034c3d9395bd92a7250b50b8ec5858bb177bb6678e500870699701b50826`;
+that exact hash is pinned. A later helper change requires fresh independent
+review. A mismatch is a stop, never permission to skip checks.
+
+Use2/20/200-record and exact-final1MiB cases with unchanged producer hashes and
+UTF8/UTF16 accounting. Each invocation requires30 actual Document-bound samples,
+30 acknowledged native-IDB resets and exactly one migration lock callback per
+sample. After navigating to about:blank, await CDP Storage.clearDataForOrigin with
+storageTypes indexeddb on only the probe's exact owned http://127.0.0.1 ephemeral
+server origin. The prelude then seeds the legacy keys; the new-format localStorage
+key stays absent. Never clear an owner origin or use a signed-in/shared profile.
+
+The observer preserves callback receiver/arguments, request receiver/options and
+signal, exact callback result Promise and exact request Promise. Native-Promise
+observers measure entry through settlement conservatively including observation
+overhead; async callbacks are expected. Non-native-Promise object/thenable results
+invalidate timing. Callback return time cannot stand in for async lock lifetime.
+Rejection observers mark those original Promises handled and suppress their
+unhandledrejection telemetry despite preserving identity. An empty unhandled
+array is not evidence that the app handled those rejections itself.
+Grant wait and request settlement are also recorded; callback lifetime excludes
+final native release scheduling. Entry synchronous span and post-return residual
+do not claim a total CPU versus I/O decomposition.
+
+Every observed native IDB open, transaction and get/getKey/put attempt is retained
+with phase, metadata, timestamps and success/error/abort/complete. Nothing is
+filtered out to meet an expected count. Application transactions are distinguished
+from the probe's separate readonly verification. Actual current presence and value
+are accepted only at that transaction's complete, never from app state or a
+localStorage mirror. Report creation-to-settlement, first-read, put and completion
+spans. Upgrade creation is first observed at upgradeneeded and labeled accordingly.
+Unexpected schema or unexplained transactions fail measurement. When eval
+returns, failed-sample metadata and source-Document binding remain in the failed
+receipt; an eval timeout may leave only earlier Document/reset evidence.
+The fresh-DB adapter sequence to confirm independently has three opens and five
+transactions:
+application absence-probe upgrade abort without schema, actual schema upgrade,
+empty readonly metadata validation, readwrite get/getKey/put, then the probe's
+separate readonly get/getKey verification. Thus there are four reads and one put;
+the successful case includes one intentional aborted transaction. No initial
+snapshot read is expected when absence was already proved. Review any extra or
+changed sequence rather than ignoring it.
+
+Keep50ms p95/100ms max across all30 async lock lifetimes for2/20/200. A miss needs
+investigation and review, not outlier deletion or budget inflation. This reviewed
+metric is not numerically comparable to old synchronous callback CPU timings.
+Stress must commit the exactly1MiB envelope or prove actual native
+QuotaExceededError in the migration readwrite transaction, no partial current,
+protected mode until an explicit owner temporary action, and exact retained
+legacy source bytes. Quota during schema creation/open intentionally fails the
+exact sequence and does not qualify as accepted stress refusal. Other errors, incorrect bytes, extra/unsettled transactions,
+timeouts or cleanup failure fail the run. Output parent must exist outside the
+candidate even after symlink resolution; output and .part must be fresh. Atomic
+publication refuses concurrent writers; retain failed .part files and logs.
+
+The probe measures API transaction completion, async lock lifetime and independent
+parse/normalize-build/serialization benches. It does not prove physical disk
+flush, input-to-paint, two-tab correctness, real-font behavior, Safari or owner
+devices. Same-host input-to-paint within one observed-frame budget and relevant
+font/locale/device checks remain separate. Historical120 old-adapter samples stay
+tied to their original source/runner and cannot establish IDB parity. The native
+multi-target lost-ACK regression and full independent validation still block
+release even if this single-page measurement passes. Review actual candidate
+source, helper and persistence contract before final-candidate execution.

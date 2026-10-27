@@ -1,21 +1,15 @@
-# kills: an options-only edit keeps its chip index across a reload with three decks
-# suite: node --test --test-name-pattern ^an.options.only.edit.keeps.its.chip.index.across.a.reload.with.three.decks$ tests/app.test.js
+# kills: an options-only edit keeps its chip index across a reload with three instances
+# suite: node --test --test-name-pattern=^an.options\-only.edit.keeps.its.chip.index.across.a.reload.with.three.instances$ tests/app.test.js
+# former kills: an options-only edit keeps its chip index across a reload with three decks
+# fault: Options-only Edit appends its existing row and changes the persisted chip position.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7248,13 +7248,8 @@ function sameDeck(r, id, str) {
- function rememberScale(seed) {
-   const rec = scaleRecord(seed);
-   const id = HPE.core.deckId(seed.fields);
--  const out = [];
--  let placed = false;
--  for (const r of savedScales()) {
--    if (sameDeck(r, id, rec.s)) { if (!placed) { out.push(rec); placed = true; } }
--    else out.push(r);                     // a duplicate of the key is collapsed
--  }
--  if (!placed) out.push(rec);
-+  const out = savedScales().filter(r => !sameDeck(r, id, rec.s));
-+  out.push(rec);
-   writeScales(out);
- }
- // The deck id IS the record's key (D14), and a record is matched by the id its
+@@ -10583,6 +10583,7 @@ function applySavedCommand(staged, command, candidate) {
+     if (isBuiltIn(record.o && record.o.replaces)) deckValue.options.replaces = record.o.replaces;
+     else delete deckValue.options.replaces;
+     attachCandidate(row, deckValue);
++    next.entries = next.entries.filter(entry => entry.instanceId !== row.instanceId); next.entries.push(row);
+     targetId = row.instanceId; desired = { kind: "saved", id: targetId };
+   } else if (command.type === "replace-builtin") {
+     if (!isBuiltIn(command.seedId) || command.expectedSlotStateRevision !== current.slotStateRevision ||

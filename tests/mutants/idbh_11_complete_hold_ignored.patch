@@ -1,0 +1,15 @@
+# kills: IDBH11 completed read can resolve late while peer commits without changing captured result
+# suite: node --test --test-name-pattern=^IDBH11\s tests/harness.test.js
+# fault: Deliver completion before the explicit per-realm completion hold releases.
+diff --git a/tools/sandbox.js b/tools/sandbox.js
+--- a/tools/sandbox.js
++++ b/tools/sandbox.js
+@@ -142,7 +142,7 @@ function indexedDBFor(bucket) {
+   bucket.openQueues ||= new Map();
+   const faults = new Map(), holds = new Set(), waiting = new Map(), operations = [];
+   const dispatch = (operation, callback) => setImmediate(() => {
+-    if (holds.has(operation)) {
++    if (holds.has(operation) && operation !== 'complete') {
+       if (!waiting.has(operation)) waiting.set(operation, []);
+       waiting.get(operation).push(callback);
+     } else callback();

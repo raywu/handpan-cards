@@ -8,7 +8,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -986,7 +986,7 @@
+@@ -1390,7 +1390,7 @@ html.about-open{overflow:hidden}
    <div class="mid">
      <!-- polite, not assertive: stepping is the user's own action, so the new
           position should follow the card, never interrupt it. -->

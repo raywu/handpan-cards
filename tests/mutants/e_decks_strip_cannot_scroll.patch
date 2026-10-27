@@ -17,7 +17,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -104,7 +104,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
+@@ -222,7 +222,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
  /* The chip row scrolls horizontally and never wraps; auto margins on the end
     chips keep it centred while it fits, without making either end unreachable
     once it overflows. The right edge fades so a cut-off chip reads as "more". */

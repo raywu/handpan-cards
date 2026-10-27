@@ -1,14 +1,16 @@
-# kills: replaceRegistered refuses to overwrite a DIFFERENT deck holding the new id
-# suite: node --test --test-name-pattern ^replaceRegistered.refuses.to.overwrite.a.DIFFERENT.deck.holding.the.new.id$ tests/app.test.js
+# kills: instance Edit rejects a stale target without changing either instance
+# suite: node --test --test-name-pattern=^instance.Edit.rejects.a.stale.target.without.changing.either.instance$ tests/app.test.js
+# former kills: replaceRegistered refuses to overwrite a DIFFERENT deck holding the new id
+# fault: Retargeted defense-in-depth invariant: stale revision can mutate a stable Edit target.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -2726,8 +2726,6 @@ const registerDeck = d => (CUSTOM[d.id] = d);
- // changes nothing a user can see; it is here so that a future caller cannot
- // reintroduce row 131 silently. Returns whether the replacement happened.
- function replaceRegistered(oldId, next) {
--  const sitting = next.id !== oldId ? CUSTOM[next.id] : null;
--  if (sitting && sitting !== next) return false;
-   const was = Object.entries(CUSTOM);
-   for (const k of Object.keys(CUSTOM)) delete CUSTOM[k];
-   let placed = false;
+@@ -10573,7 +10573,7 @@ function applySavedCommand(staged, command, candidate) {
+     targetId = row.instanceId; desired = { kind: "saved", id: targetId };
+   } else if (command.type === "edit") {
+     const row = existing();
+-    if (!row || !views.has(row.instanceId) || row.revision !== command.expectedRevision) return conflict();
++    if (!row || !views.has(row.instanceId)) return conflict();
+     const record = savedEditedRecord(row.record, candidate);
+     if (!savedEqual(record, row.record)) {
+       if (row.revision >= Number.MAX_SAFE_INTEGER) return savedFailure("invalid", "revision-overflow");

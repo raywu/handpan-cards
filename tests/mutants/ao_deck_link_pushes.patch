@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10920,7 +10920,7 @@
-     if (resolved === deck().id && (resolved === routed || replaced)) { closeAbout(); return; }
+@@ -14517,7 +14517,7 @@ function aboutLink(href) {
+     if (savedEqual(resolvedSelection,selection) && (selection.kind==="builtin" && selection.id===routed || savedState?.slots[routed]===selection.id)) { closeAbout(); return; }
    }
    hideAbout();
 -  history.replaceState(null, "", href);

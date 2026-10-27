@@ -1,0 +1,15 @@
+# kills: SHC U1: latest LINK owns fallback in both completion orders and at identical URLs
+# suite: node --test --test-reporter=tap --test-name-pattern ^SHC.U1: tests/app.test.js
+# An older identical-URL request may revive fallback after newer success.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15106,7 +15106,7 @@ function copyLink() {
+   const href = location.href;
+   const deck_kind = deckKind(deck());
+   let noticeRevision = announcementRevision;
+-  const current = () => generation === linkUIGeneration && href === location.href &&
++  const current = () => href === location.href &&
+     !shareCopy.disabled && !sheetOpen && !aboutOpen &&
+     !(panelOpen && !desktopMQ.matches) && !document.hidden;
+   if (!current()) return;

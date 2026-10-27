@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1258,7 +1258,7 @@
+@@ -1410,7 +1410,7 @@ html.about-open{overflow:hidden}
  <div class="announce" role="status" aria-live="polite"></div>
  </div>
  

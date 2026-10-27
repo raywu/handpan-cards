@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1465,7 +1465,7 @@
+@@ -1499,7 +1499,7 @@ html.about-open{overflow:hidden}
                 autocomplete="off" spellcheck="false" enterkeyhint="next" aria-describedby="scale-field-msg scale-fields-note">
        </div>
        <div class="fieldrow">

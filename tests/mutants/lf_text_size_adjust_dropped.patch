@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -99,7 +99,6 @@ gtag("js", new Date());
+@@ -114,7 +114,6 @@ gtag("js", new Date());
       landscape - ever picks it up and spends the chrome budget on it. */
    --sp-1:4px; --sp-2:8px; --sp-3:14px; --sp-4:22px;
  }

@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10855,7 +10855,7 @@
+@@ -12193,7 +12193,7 @@ const lipDragStop = (e) => {
    lipParked = null;
    lipTouching = !!(e && e.touches && e.touches.length);
  };

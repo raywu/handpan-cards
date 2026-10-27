@@ -1,0 +1,348 @@
+# Handpan Helpers resource — implementation plan
+
+**Implementation authorized through DEV on 2026-10-26; main release remains held.** Produced by running the
+refined [planning prompt](2026-10-25-handpan-helpers-prompt.md), after independent
+engineering and frontend reconnaissance. Independent engineering/design plan
+reviews are CLEAR on the revised substantive plan. Engineering identified a
+language-baseline coverage correction; it is incorporated and independently
+rechecked. Plan clearance does not authorize implementation.
+Owner's 2026-10-26 check-in requests a next-release target if this is quick and
+low-risk, while saved variants continues. This is a scheduling preference, not a
+waiver of fit/review/CI gates or the explicit CLAUDE.md approval boundary. The owner approved scoped
+implementation and the exact instruction patch by answering “follow your
+recommendations on all” to the three-item interview.
+Saved-variants delivery retains priority. The activation record below separates
+authorized implementation from unverified delivery.
+
+## Decision, scope and evidence
+
+Add a native outbound Handpan Helpers link beside HANDPAN 101, on its left, using
+the existing two-column Resources pattern. Preserve all six existing destinations,
+HANDPAN 101 as the last outbound link, ABOUT alone/full-width and Language after
+Resources. This is a source-feasible recommendation, **not measured fit or usability
+acceptance**. Full labels, current typography and existing fit budgets are fixed.
+
+```text
+Resources
+[ HANDPANER | DING & TONES | HTC ]
+[ AMY: PROGRESSIONS | AMY: BOTTOM NOTES ]
+[ HANDPAN HELPERS | HANDPAN 101 ]
+[ ABOUT ]
+Language
+```
+
+| Evidence | Status and implication |
+|---|---|
+| DEV582 source `92d6516bd533abb4a1e4fb7c8116b9836f648296`; local `/private/tmp/handpan-share-hotfix.urAbvO/integration` | Inspected immutable baseline for this plan. Resolve live DEV at implementation activation; do not ship partial saved-variants integration or overwrite its work. |
+| `index.html:306–323`, `1734–1770` | Existing `.modebar.duo` keeps two equal-flex siblings on one row; labels wrap, horizontal padding is 6px. Current third row contains 101 alone. Reuse is a hypothesis requiring geometry checks. |
+| `CLAUDE.md:411–429` | Explicit 101-alone/full-width rule must change. Owner requires exact instruction-diff approval; plan approval alone does not waive it. ABOUT and budget rules stay. |
+| `index.html:13804`, `panelStops()` | Native `a.mode[id^="res-"]` already enter the focus sequence in DOM order. No new production event handler is needed. |
+| `tests/app.test.js:3650`, PM rule7; `10730`, ABOUT; `14877`, language stops | Existing literal requirements must retain all unaffected assertions; change only approved row composition/count expectation. |
+| `tests/e2e.test.js:1395`, `RESOURCES`; `1882`, structure; `2100`, activation | Explicit six-link table becomes seven; rows become `[3,2,2,0]`. Shared click/Enter journey can cover the new entry. |
+| `tools/probe/panel_fit.js:42–87` | Existing tolerances and Resources64px/About52px/Language88px allowances remain unchanged. New `res-*` activates existing Resources allowance; it does not excuse moving prior controls under rule2. |
+| Public `https://handpanhelpers.klangzeug.de/` observation | Root fetched HTTP200, no redirect, title Handpan Helpers and a client-rendered SPA shell. Web-reader/search were unavailable. Rendered destination features and usability are unverified; no feature description is justified. |
+| Frontend-design skill, shared browser runbook and HTC compact plan | Consulted for restraint, subject-specific copy, responsive critique and measurable acceptance. Preserve established branding; no generic redesign. Original global gstack setup/telemetry/runtime was not activated. |
+
+Alternatives considered: pairing with ABOUT mixes external navigation and a dialog
+and violates its alone/full-width contract; four links in the sites row disturbs
+the accepted trio and adds narrow-label risk; another full-width row adds height.
+None has been measured infeasible. The proposed third-row pair changes fewer
+contracts while avoiding a new row. If it fails geometry, revise and re-review;
+do not quietly choose a weaker alternative.
+
+**Not in scope:** site embedding or content scraping, new analytics, third-party
+assets/scripts/fonts, card/scale/parser/storage changes, locale tone changes,
+other resource URLs, global skills/configuration or main release. No new design
+system, animation, loading/error widget, abbreviation, ellipsis or font reduction.
+
+## Exact link and interaction contract
+
+Proposed anchor, inserted immediately before the existing `res-handpan-101`:
+
+```html
+<a class="mode" id="res-handpan-helpers"
+   href="https://handpanhelpers.klangzeug.de/"
+   target="_blank" rel="noopener">HANDPAN HELPERS</a>
+```
+
+Change only that containing row to `class="modebar duo"`. The visible proper name
+is its native accessible name, consistent with HANDPANER/DING & TONES/HTC. No
+new translation key or redundant aria-label is required. Test all eight existing
+languages because surrounding localized controls affect panel height/fit. If a
+review demonstrates extra descriptive copy is necessary, hold for a scoped plan
+amendment covering all locale tables and generated inline i18n, with visible-name
+inclusion and existing Du/Dein/vous conventions.
+
+| State/journey | Observable requirement |
+|---|---|
+| Ready/modal/sidebar | Seven resource anchors in exact order; four rows; pair and all existing controls rendered, readable and reachable. ABOUT remains a button alone; Language remains next. |
+| Hover/focus | Existing control treatment; focus ring visible and unobscured. No new CSS override unless demonstrated necessary within the same limits. |
+| Tab/Shift+Tab | Helpers is one new stop immediately before101;101→ABOUT→Language remains; existing modal trap/wrap and Escape return still work. |
+| Click/Enter | Exactly one native activation to the literal HTTPS destination in a new tab with opener isolation; Settings, practice mode and displayed card remain unchanged. |
+| Destination slow/unavailable | Browser owns navigation/error UI; original app stays usable. App tests verify outbound intent without requiring this independent site's uptime. |
+| Print/offline | No resource insertion into deck/card/print output, no new app dependency; a link may fail offline without affecting practice. |
+
+## Instruction approval packet — proposed text only
+
+Do **not** apply this patch until the owner explicitly approves this exact diff.
+Rebase the proposal against the actual current file and re-request if meaning
+changes. This replaces only the third-row description and the quoted test title:
+
+```diff
+--- a/CLAUDE.md
++++ b/CLAUDE.md
+@@
+-  labels wrap inside their boxes), then `HANDPAN 101` alone (2026-10-08, lane PM:
+-  a Google Doc link, `#res-handpan-101`, full width, the last panel stop, so no
+-  earlier control moved). They are links only, never on a deck or card,
++  labels wrap inside their boxes), then `HANDPAN HELPERS` (`#res-handpan-helpers`,
++  https://handpanhelpers.klangzeug.de/) and `HANDPAN 101` (a Google Doc link,
++  `#res-handpan-101`) in one equal-width `duo` row, in that order. Complete labels
++  wrap inside 44px-minimum targets; HANDPAN 101 remains the last outbound
++  Resources link. They are links only, never on a deck or card,
+@@
+-  link, a Google Doc in a new tab, alone in its row" asserts four rows and that
++  link, a Google Doc in a new tab, beside Handpan Helpers" asserts four rows and that
+```
+
+The existing preceding heading, three link rows plus fourth ABOUT row, About
+semantics, remaining test description, fit allowances and all workflow rules stay
+unchanged. Proposed markup comment should likewise describe the pair accurately.
+Existing `.duo` comment saying only Amy uses it needs a factual comment update;
+no functional shared-CSS change is planned.
+
+## Swarm lanes and dependency graph
+
+Root is sole integrator/browser operator. On activation record actual owner, clean
+branch/ref/worktree and last/next in the shared DEV ledger. Allocate fresh isolated
+worktrees; do not edit original locked/dirty trees. Respect actual four-agent
+concurrency limit: T and U preparation can overlap, mutation follows committed
+source; independent ENG/design reviews can run together once an immutable
+candidate exists. One owner per file; root resolves any intersecting test support.
+
+| Lane | Owned files/deliverable | Dependencies and boundary |
+|---|---|---|
+| T — spec-first acceptance | `tests/app.test.js`, `tests/e2e.test.js`; literal resource inventory, row/navigation/geometry oracles and baseline assertionRED | Approved exact requirement; no app edits or worker browsers. Preserve original registrations and meaningful assertions. |
+| U — resource markup | `index.html` markup plus relevant factual comments only; exact approved `CLAUDE.md` packet applied by root | T freezes required assertions; separate tree, no concurrent index writer, no engine/generated-data edits. Locale files unchanged. |
+| M — mutation proof | `tests/mutants/hhr_*.patch` and necessary intent-preserving contextual refreshes | Frozen passing source/tests; disposable committed scratch. Generate diffs, omit blob-index lines; never mutate another lane's tree. |
+| Root — narrow support/integration | Conditional ID registration in `tools/sandbox.js`, targeted fixture delta in `tests/fixtures/i18n_english_dom_v1.json` if discovery requires it; `tests/suite_health.py` only observed own-floor increases; plan/ledger | Inspect necessity before writing. No fake DOM behavior for fit; no broad fixture regeneration. Root serializes support handoff so T never edits those files concurrently. |
+| Independent ENG/design | Read-only exact plan/candidate findings, evidence review and final disposition | Non-author contexts, no hidden application edits, no self-review substituted for independence. |
+
+```text
+reviewed plan + implementation scope + exact CLAUDE approval
+  -> freeze live DEV baseline / lane ownership
+  -> T acceptance RED -> U minimal markup -> same acceptance GREEN
+  -> M baseline-green / intended-fault-red -> independent final reviews
+  -> exact-head full Linux validate -> actual served DEV verification
+  -> owner QA / separate explicit main decision
+```
+
+## Tests, mutants and usability acceptance
+
+T must identify current exact titles/counts at activation rather than reuse today's
+numbers. Existing Resources tests gain a literal Helpers entry, not an expected
+value read back from production. PM rule7 changes only approved row composition
+and its title to “PM rule 7: HANDPAN 101 is the last Resources link, a Google Doc
+in a new tab, beside Handpan Helpers”; retain href, opener isolation, no script,
+ABOUT alone and four-row assertions. Preserve TR-1's sites-trio behavior.
+
+| Requirement | Existing test or proposed new group | Discriminating fault |
+|---|---|---|
+| Exact destination/native semantics/order | PM rule7 plus new `HHR: the Helpers resource is a native new-tab link immediately before HANDPAN 101`; native Resources structure table becomes seven and `[3,2,2,0]` | Missing anchor, wrong href, same-tab, no noopener; each targeted test must pass clean and fail at its intended assertion. |
+| Keyboard and unchanged practice | Existing “Resources links activate on click and on Enter…” and panel-stop/About/Language tests, literal new stop included | Omit new stop; prevent Enter; close panel/change card on activation. Preserve state before/after in every mode. |
+| Shared third-row geometry | New native `HHR: Helpers and HANDPAN 101 remain equal usable targets with complete labels` | Drop duo, unequal flex, clip target/text/ancestor or hide Helpers; fault must reach a real measured cell and fail geometry. |
+| Whole-panel regression | Existing panel-fit and Resources desktop/landscape/phone journeys | Preserve current budgets and all old control position assertions. A nominal allowance or removal of an old test is not proof. |
+| Existing visual/data contracts | Existing English DOM fixture, locale parity, engine/data sync and print/card checks | Only exact new DOM node delta may change approved fixture; no old text, key, card, deck, PDF or generated-engine change. |
+
+Review `pm_handpan101_not_last`, `pm_handpan101_outside_tab_trap`,
+`pm_handpan101_same_tab`, `qr_res_wrong_href`, `qr_res_no_noopener`,
+`qr_res_link_not_a_stop`, `qr_res_link_inert`, `qr_res_hidden_landscape`,
+`mr_amy_*`, `tr_trio_*` and any patch context touching the Resources block.
+Retain each behavioral intent, refreshing only stale context or expressly
+superseded 101-alone policy. No syntax/setup/timeout/skip kill credit.
+
+**Geometry oracle:** both controls have positive equal widths within existing
+1px comparison tolerance, common visual row, minimum44px width and height, complete
+nonempty label rectangles contained by targets and every clipping ancestor, no
+overlap/ellipsis/hidden content, centered labels and readable line spacing.
+Capture actual element/text rectangles and focus state. Do not infer success from
+`.duo`, screenshots alone, measured zero-size elements or programmatic clicks.
+
+**Matrix:** eight resolved locales `en,de,fr,it,es,ja,zh-Hant,zh-Hans`; modesA/B/S;
+verified real and fallback font modes. Required representative cells include
+320×568,380×700,380×740,844×390,1280×320,1024×700,1024×746,1280×746, and actual
+CSSOM-derived media-query edges from both frozen baseline and candidate. Run the
+existing complete panel-fit domain, not only those examples. The current probe
+constructs an English/default-language base and passes `--lang` only to the
+candidate (`runFont()` at tools/probe/panel_fit.js:595–598). Therefore its full-domain
+report is English-base versus requested-locale candidate, not proof of a full
+same-locale paired matrix. Preserve that existing tool/oracle unchanged. Add
+bounded native paired baseline/candidate checks at all eight named representative
+cells above, each of8locales ×2fontmodes ×3practicemodes:384paired observations
+(768individual page states), plus the affected CSS-derived edge cells discovered
+at activation. Assert resolved locale/font on BOTH pages and measure the unchanged
+controls against their same-locale baseline, in addition to the new pair geometry.
+Record added edge count separately; freeze totals before runs. This is representative
+paired coverage, not full-domain paired coverage. If that stronger claim becomes
+necessary, stop for a separately reviewed probe amendment rather than silently
+changing the base-language semantics. Include desktop
+sidebar and modal transitions, zoom/text enlargement within existing supported
+behavior; explicitly report uncovered native Safari/device/screenreader behavior.
+Retain existing tolerances and allowance equations. Nonresource controls must not
+move offscreen where the baseline showed them.
+
+For planning, **no candidate HTML was added and no browser/probe ran**. Label fit
+and touch/keyboard usability remain unverified until the same oracle runs on
+baselineRED and candidateGREEN. Existing capture-based outbound tests intentionally
+prevent real destination navigation; separately check the exact destination's
+HTTP identity/availability and opener-safe new-tab behavior without claiming the
+capture test proves the remote application is usable.
+
+## Execution gates, stop conditions and rollback
+
+1. **Activation:** fresh live DEV/ledger/ownership and relevant tests confirmed;
+   dedicated worktree; reviewed plan and explicit implementation scope. Exact
+   CLAUDE packet separately approved. If approval/ref/ownership is absent, stop.
+2. **TDD:** freeze literal requirements; root runs bounded targeted unit/native
+   baseline. Missing-link/row assertion must fail as intended, not from a browser
+   startup error. Keep raw logs, source/test hashes, selected/executed counts and
+   cleanup. Then U changes minimal markup and the same oracles must pass.
+3. **Regression:** root runs full existing panel-fit probe per actual language and
+   font, from candidate tree with immutable `--base <DEV_SHA>` and explicit
+   `--candidate <CANDIDATE_SHA> --font both --lang <code>`, plus native journeys.
+   Example CLI is a template: replace both placeholders; freeze exact commands,
+   expected nonzero cell/test counts and outer bounds before execution. The full
+   CLI is English-base/requested-candidate language; separately run the same-locale
+   paired native matrix specified above and retain both sets of receipts. No worker
+   browser jobs, shared-owner profile use or unknown process cleanup.
+4. **Mutation/final review:** all new-group meaningful mutants proved with actual
+   runner protocol; independent non-author ENG/design final review at exact
+   resulting head, all material findings addressed. Raise own test floors only
+   after observed passing counts; never lower existing floors.
+5. **Delivery:** full exact-head Linux `validate`/all required CI artifacts, actual
+   served DEV bytes/revision and affected journeys independently verified. Keep
+   application/locale synchronization and current workstream ledger intact in
+   any integration merge. Main remains held without explicit owner consent.
+
+If a label clips, target shrinks, fit fails or prior controls move, first revise
+the minimal scoped row treatment with TDD and fresh design review. Do not hide
+controls, shrink typography, add allowances, increase tolerances or alter fit
+equations. A different layout or modified contract needs a plan amendment and
+approval. Missing tools/font/device coverage means unverified, not pass.
+
+Rollback before delivery: revert only owned unmerged feature changes in the
+isolated worktree, preserving test failures/evidence and unrelated edits. After
+DEV delivery use a reviewed reversible DEV revert; never reset shared branches
+or clear saved data. Restore exact instruction text with the corresponding
+approved change if the feature is reverted; no broader Claude behavior change.
+
+## Readiness and handoff
+
+- Current last completed action: prompt executed to this plan using inspected
+  source and independent reconnaissance; no application or usability execution.
+- Next: independent engineering and design plan review, address/re-review findings
+  at the reviewed substantive plan hash (completed; receipts below), then root publishes plan/ledger through authorized document
+  workflow. Do not let this optional Resources addition interrupt saved variants.
+- Required owner decisions before code: implementation scope and the exact
+  CLAUDE patch above. No new resource label/content preference needs interviewing
+  now: owner specified destination and permits pairing a full-width row.
+- Current quality status: evidence-grounded plan drafted; runtime feasibility and
+  independent plan clearance demonstrated; runtime feasibility is still **untested**. “Near10/10” means no
+  unresolved material omission against the prompt criteria, never a self-score.
+
+## Independent plan review and revisions
+
+Review target initial plan SHA f192297af887efe7aa0f14b3c97b3879b9d7197bd275e77cea10c630b295b53a.
+Independent native reviewer contexts /root/helpers_plan_eng_review and
+/root/helpers_plan_design_review consulted the source skills and project rules;
+no global gstack helpers/config/telemetry, external-provider review, mockup or
+browser evidence is claimed.
+
+- Design: seven passes CLEAR with runtime limitations; source-feasible layout,
+  state/journey/brand restraint and observable accessibility requirements supported.
+- Engineering: identified current probe's asymmetric language setup. Revision adds
+  explicit honest labeling of the full existing domain and same-locale paired
+  representative native controls, preserving tool semantics and budgets. Final
+  review of this revision CLEAR; no runtime validation inferred.
+
+Original prototype fit/destination usability/device/screenreader/CI/DEV evidence
+remains untested. No code execution authorized by plan clearance.
+
+Final substantive review target SHA:
+`37a2c705f83b0ca66ad824bd5d14a9523d07595c081229f45cb869ca6f7fbba4`.
+Both independent ENG and design re-reviews CLEAR with runtime limitations; no
+remaining material planning findings. ENG notes native activation must explicitly
+run in modes A, B and S rather than infer mode coverage from the expanded link
+table. The matrix already requires those modes. This appended review/status
+receipt changes document bytes after review; it does not claim its own final
+file hash was the substantive review target. No original gstack runtime or
+outside-provider review is credited. Next: owner implementation/exact-CLAUDE
+approval, then the specified TDD and measured usability gates.
+
+## Activation and owner authorization — 2026-10-26
+
+Owner accepted all three recommendations from the latest interview: Helpers
+implementation through DEV and this exact Resources-only CLAUDE patch; SEO
+publishing design under /learn/; owner musical review of pilot articles. Helpers
+is a next-release target conditional on all checks, not a main-merge grant.
+
+Verified live DEV baseline6165c8739f11c8d00c4b27ea6512ef1278275748.
+Root integration: /private/tmp/handpan-helpers.HUZs5u/integration,
+branch codex/helpers-integration-20261026. T lane owns only app/e2e tests in
+/private/tmp/handpan-helpers.HUZs5u/tests (codex/helpers-tests-20261026).
+U lane owns only Resources markup/factual comments in
+/private/tmp/handpan-helpers.HUZs5u/markup (codex/helpers-markup-20261026),
+waiting for root-confirmed acceptance RED. Root applies the exact approved
+CLAUDE packet, owns support/ledger/fault integration and sole host-browser lease.
+No source from unfinished saved variants enters this baseline. Skills, globals,
+installs, auth and main remain outside this grant.
+
+Last completed: fresh DEV and exact unchanged preimage checked; isolated lanes
+created and briefed. Next: T literal acceptance RED, then minimal U markup;
+inspect support necessities, run unchanged acceptance GREEN, generate meaningful
+faults, perform bounded fit/usability checks and independent final reviews.
+Full final-head CI and actual DEV verification remain required; not QA-ready.
+
+
+## Current local validation checkpoint — 2026-10-26
+
+Frozen app source08a6ed02, SHA0bfc1f9b2fb67a5329144d2170277e7b44228ffa620af96dbf613531af662a6e;
+only approved Resources markup/factual comments changed. All scripts, functional
+CSS and six existing outbound anchors retain baseline bytes. Exact approved
+CLAUDE packet is applied only in this Helpers branch.
+
+- Spec-first unitRED2 and nativeRED1 fail their literal missing-link assertions
+  on unchangedDEV6165; candidate unit2 and full app882/882 pass.
+- Native candidate4/4 pass: seven-anchor inventory, A/B/S click/Enter preserving
+  practice, English fallback/realfont geometry and keyboard order across48states.
+  Initial failures exposed scoped fixture assumptions (blindly toggling an open
+  panel, unrevealed mode buttons); fixes preserve all acceptance assertions.
+  Nearest-scroll target samples at844x390 reached the viewport edge. Independent
+  design cleared ordinary center scrolling for reachability; prior failures are
+  retained, and this is not default-layout/fit or physical-device proof.
+- Independently ENG-reviewed/audited private pairedprobe a1 passes all1344unique
+  pairs:384representative fixed +960at20CSSOM-derived boundary/corner viewports,
+  all8locales/twofonts/three modes. All actual stamps, strict unchanged judges and
+  raw pairs retained; zero skipped/retried/excluded.32owned browser/server cleanups
+  complete. Minimum measured target93.5×44px, zero failed sampled hits/textspill.
+  Reachability scrolling occurs AFTER unscrolled paired fit measurements.
+- Existing full-domain panel probe English/bothfonts passes8019cells perfont,
+  with1200/1260extra invariance cells, zero skipped/rule/invariance/gutter failures.
+  Remainingseven locale probe runs remain pending, distinct from paired coverage.
+- All1513patches apply (1510originalidentities +3newHHR);15affected/new literal
+  suite clean/fault/restored triples pass expected counts and intended assertions,
+  no setup/timeout/skip credit. Metadata54/54 passes. App/native own floors882/482
+  reflect +1/+2registrations; full native count still requires final LinuxCI.
+
+Private reproducible receipts: /private/tmp/handpan-helpers.HUZs5u/evidence;
+supervisor/raw logs: /private/tmp/handpan-share-hotfix.urAbvO/evidence.
+Key basenames: helpers-full-app-a0, helpers-unit-red-a1/green-a0,
+helpers-native-red-a0/green-a3, helpers-paired-probe-a1.report.json +journal,
+helpers-panel-en-a0, helpers-mutant-proofs-a0.json and
+helpers-proof-assertions-a0.json, helpers-mutants-freeze-a0.json,
+helpers-metadata-a0.tap. These local receipts do not establish portable or served
+DEV publication; publish sanitized immutable refs in authorized recovery thread.
+
+Next: remaining locale probes, independent exact-head ENG/design final review,
+full exact-head Linux validate/allmutation gates, actual servedDEV bytes and
+journeys. No DEV QA-ready or main-release claim yet. Saved variants stays priority.

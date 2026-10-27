@@ -1,0 +1,15 @@
+# kills: SVH4 pending abort rejects without entering while abort after grant cannot undo a commit
+# suite: node --test --test-reporter=tap --test-name-pattern ^SVH4.pending tests/harness.test.js
+# fault: A pending aborted request resolves instead of rejecting.
+diff --git a/tools/sandbox.js b/tools/sandbox.js
+--- a/tools/sandbox.js
++++ b/tools/sandbox.js
+@@ -139,7 +139,7 @@ function locksFor(bucket, clientId, rejection) {
+           if (index < 0) return; // A granted callback/commit cannot be canceled retroactively.
+           queue.pending.splice(index, 1);
+           signal.removeEventListener("abort", item.abort);
+-          reject(signal.reason || Object.assign(new Error("aborted"), { name: "AbortError" }));
++          resolve(undefined);
+           pump(name);
+         };
+         if (signal) signal.addEventListener("abort", item.abort, { once: true });

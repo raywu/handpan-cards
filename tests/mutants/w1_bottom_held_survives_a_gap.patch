@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12060,7 +12060,7 @@ function syncParseState({ paint }) {
+@@ -13007,7 +13007,7 @@ function syncParseState({ paint }) {
    if (res.ok) {
      boxOk = true;
      const bottom = Object.values(res.value.fields).some((f) => f[3] === "bottom");

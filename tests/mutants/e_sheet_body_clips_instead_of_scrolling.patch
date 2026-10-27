@@ -9,7 +9,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -417,7 +417,7 @@ button.nav:active{background:#2e281e}
+@@ -819,7 +819,7 @@ footer.seq{row-gap:var(--sp-1)}
     with scrollWidth === clientWidth so there is not even a scrollbar to reach
     it. The negative margin gives the padding back to the layout, so nothing
     moves: the rows still align with the surface's own padding. */

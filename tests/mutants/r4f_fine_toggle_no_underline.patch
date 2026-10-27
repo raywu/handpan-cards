@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1030,8 +1030,7 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1200,8 +1200,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
  #scale-preview .panhit:active{fill:rgba(226,112,5,.22)}
  #scale-fine-toggle{background:none; border:none; color:#a79d8b; cursor:pointer; align-self:flex-start;
    min-height:44px; padding:0 4px;

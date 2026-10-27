@@ -1,0 +1,15 @@
+# kills: SHC U6: blur Escape and panel dismissal stay closed and a new LINK still works
+# suite: node --test --test-reporter=tap --test-name-pattern ^SHC.U6: tests/app.test.js
+# Blurring the revealed manual URL no longer dismisses it.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15152,7 +15152,7 @@ shareCopy.onclick = copyLink;
+ shareUrl.addEventListener("blur", () => {
+   // Hiding an older field can itself release focus. Its blur must not retire
+   // the newer request that already hid it before starting platform work.
+-  if (!shareUrl.hasAttribute("hidden")) retireLinkUI();
++  // Fault: blur leaves the manual URL open.
+ });
+ shareUrl.addEventListener("keydown", e => {
+   if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); retireLinkUI(); shareCopy.focus(); }

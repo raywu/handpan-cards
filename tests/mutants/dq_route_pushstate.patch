@@ -4,12 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11363,7 +11363,7 @@ function syncRoute() {
-   const { route, reason } = routeInfo(deck());
-   const want = location.pathname + location.search + route;
+@@ -15109,3 +15109,3 @@ function syncRoute() {
    if (location.pathname + location.search + location.hash !== want) {
 -    history.replaceState(history.state, "", want);
 +    history.pushState(history.state, "", want);
-     shareUrl.setAttribute("hidden", "");
    }
-   const refused = route === "";

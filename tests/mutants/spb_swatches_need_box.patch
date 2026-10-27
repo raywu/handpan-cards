@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10954,6 +10954,7 @@ function buildSwatches() {
+@@ -11702,6 +11702,7 @@ function buildSwatches() {
    HPE.select.PALETTES.forEach((p, i) => {
      const b = document.createElement("button");
      b.type = "button";

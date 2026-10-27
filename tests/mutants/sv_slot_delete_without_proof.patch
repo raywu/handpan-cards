@@ -1,0 +1,15 @@
+# kills: SV8 U2: deleting a slot owner promotes the newest recognized survivor
+# suite: node --test --test-name-pattern=^SV8.U2: tests/app.test.js
+# fault: Deleting a currently promoted slot owner no longer requires the captured slot proof.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10599,7 +10599,7 @@ function applySavedCommand(staged, command, candidate) {
+     const row = existing();
+     if (!row || !views.has(row.instanceId) || row.revision !== command.expectedRevision) return conflict();
+     const heldSlot = Object.keys(current.slots).find(seed => current.slots[seed] === row.instanceId);
+-    if (heldSlot && !savedSlotProof(command, current)) return conflict();
++    if (false) return conflict();
+     next.entries = next.entries.filter(entry => entry.instanceId !== row.instanceId); views.delete(row.instanceId);
+     if (heldSlot) {
+       if (!next.hidden.includes(heldSlot)) next.hidden.push(heldSlot);

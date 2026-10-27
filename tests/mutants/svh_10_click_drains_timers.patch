@@ -1,0 +1,15 @@
+# kills: SVH10 async clicks dispatch every listener before waiting for actual completion without draining timers
+# suite: node --test --test-reporter=tap --test-name-pattern ^SVH10.async tests/harness.test.js
+# fault: Async click flushes unrelated virtual timers during readiness.
+diff --git a/tools/sandbox.js b/tools/sandbox.js
+--- a/tools/sandbox.js
++++ b/tools/sandbox.js
+@@ -896,7 +896,7 @@ function boot(opts = {}) {
+       if (typeof until !== "string" || !until) throw new TypeError("clickAsync requires explicit until readiness expression");
+       const pending = [];
+       fire(el, { type: "click", ...init }, pending);
+-      return bounded(Promise.all(pending).then(() => waitFor(until, { timeout })), timeout);
++      return bounded(Promise.all(pending).then(() => { flushTimers(); return waitFor(until, { timeout }); }), timeout);
+     },
+     press: (el, key, init = {}) => fire(el, { type: "keydown", key, shiftKey: false, ...init }),
+     /** A pointer event. Once the plate has captured the pointer the event goes

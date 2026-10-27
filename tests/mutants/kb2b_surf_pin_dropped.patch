@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10601,7 +10601,7 @@ sheet.addEventListener("touchmove", (e) => {
+@@ -11934,7 +11934,7 @@ sheet.addEventListener("touchmove", (e) => {
  sheet.addEventListener("pointercancel", dropTap, true);
  sheet.addEventListener("wheel", releasePin, { passive: true });
  bandPort.addEventListener("scroll", holdPin);

@@ -1,14 +1,16 @@
 # kills: SD: deleting a replacement does not bring the seed back
 # suite: node --test --test-name-pattern ^SD..deleting.a.replacement.does.not.bring.the.seed.back$ tests/app.test.js
 # Deleting a replacement drops the record but leaves its seed visible again.
+# Approved retained contract mapped to the transactional instance adapter.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10026,7 +10026,6 @@
-   else {
-     delete CUSTOM[id];
-     forgetScale(HPE.core.formatSeed(d.fields));
--    if (heldSeat && !hidden.includes(heldSeat)) hidden.push(heldSeat);
-   }
-   if (editingId === id) closeScaleSheet();
-   if (!wasSelected) { save(); buildChips(); return; }
+@@ -10602,7 +10602,7 @@ function applySavedCommand(staged, command, candidate) {
+     if (heldSlot && !savedSlotProof(command, current)) return conflict();
+     next.entries = next.entries.filter(entry => entry.instanceId !== row.instanceId); views.delete(row.instanceId);
+     if (heldSlot) {
+-      if (!next.hidden.includes(heldSlot)) next.hidden.push(heldSlot);
++
+       const survivors = next.entries.filter(entry => views.has(entry.instanceId) && entry.record && entry.record.o && entry.record.o.replaces === heldSlot);
+       if (survivors.length) next.slots[heldSlot] = survivors[survivors.length - 1].instanceId;
+       else delete next.slots[heldSlot];

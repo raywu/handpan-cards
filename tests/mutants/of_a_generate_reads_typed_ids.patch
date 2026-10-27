@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11850,7 +11850,7 @@ function sheetOptions() {
+@@ -12782,7 +12782,7 @@ function sheetOptions() {
      if (seeded()) o.replaces = editingId;
      else if (d && d.options && d.options.replaces) o.replaces = d.options.replaces;
    }

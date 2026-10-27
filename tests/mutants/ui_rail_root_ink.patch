@@ -7,7 +7,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7310,6 +7310,7 @@ function renderSeqRail(d) {
+@@ -11269,6 +11269,7 @@ function railBuild(d) {
      const node = document.createElement(i === idx ? "b" : "span");
      node.className = "seq-chord";
      node.textContent = c.main + (c.sup || "");

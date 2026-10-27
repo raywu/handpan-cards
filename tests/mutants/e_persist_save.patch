@@ -1,25 +1,15 @@
 # kills: deck and mode survive a reload
 # suite: node --test --test-name-pattern ^deck.and.mode.survive.a.reload$ tests/e2e.test.js
+# Approved retained contract mapped to the transactional instance adapter.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7731,18 +7731,7 @@
- // from its saved seed, so restoring one is no longer a dangling reference.
- // READ-MODIFY-WRITE: "hpfc" is one object shared with whatever else stores
- // settings there, so writing our two keys must not drop a sibling's.
--const save = () => {
--  try {
--    const base = readStore(STORE_KEY);
--    const next = (base && typeof base === "object" && !Array.isArray(base)) ? base : {};
--    next.deck = storedDeck;
--    next.mode = mode;
--    next.tier = tier;
--    next.printPaper = printPaper;
--    if (hidden.length) next.hidden = [...hidden]; else delete next.hidden;
--    localStorage.setItem(STORE_KEY, JSON.stringify(next));
--  } catch (e) {}
--};
-+const save = () => {};
- 
- /* ---------------- generated decks ---------------- */
- // Generation runs ONCE, here, at submit - never inside deck() or render()
+@@ -10756,7 +10756,7 @@ function selectDeck(wanted, persist = true, trackSelection = true) {
+   const a = document.activeElement;
+   const rehome = !!a && (a.id === "settings-trigger" || a.id === "deck-add" || [...document.getElementById("decks").children].includes(a));
+   selection = savedState ? savedResolve(wanted,savedState,savedEntries) : wanted;
+-  if (persist && savedState) commitSaved({type:"prefer",collectionId:savedState.collectionId,selection:savedClone(selection)});
++  if (false && persist && savedState) commitSaved({type:"prefer",collectionId:savedState.collectionId,selection:savedClone(selection)});
+   setOrder(); buildChips(); render(); syncRoute();
+   if(trackSelection)track("deck_select", selection.kind === "builtin" ? {deck_kind:"seeded",deck_id:selection.id} : {deck_kind:"custom"});
+   if (rehome) document.querySelector("#decks .chip.on")?.focus();

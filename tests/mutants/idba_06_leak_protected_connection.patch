@@ -1,0 +1,15 @@
+# kills: IDB6 U1: protected initialization closes its owned readable connection on temporary choice
+# suite: node --test --test-reporter=tap --test-name-pattern=^IDB6\s tests/app.test.js
+# Frozen transactional-storage contract: leak protected connection.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10495,7 +10495,7 @@ async function initializeSavedDurable(locks) {
+     return {ok:true,persistence:"durable",published};
+   }
+   }finally{
+-    if(!adopted && opened.db){opened.db.close();if(savedDatabase===opened.db)savedDatabase=null;}
++    if(!adopted && opened.db){if(savedDatabase===opened.db)savedDatabase=null;}
+   }
+ }
+ function initializeSavedCollection() {

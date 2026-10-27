@@ -83,13 +83,19 @@ test("typing a scale renders a pan preview in the sheet", () => {
   assert.ok(svg.includes("</svg>"), "the preview SVG should be closed");
 });
 
-test("the preview appears before any card is generated", () => {
-  const app = boot();
-  const before = app.registry ? Object.keys(app.registry()).length : 0;
+test("the preview appears before any card is generated", async () => {
+  const app = boot({ crypto: require("node:crypto").webcrypto, abortController: true });
+  await app.getAsync("savedReady");
+  assert.strictEqual(app.get("savedState.entries.length"), 0,
+    "the normal initialized collection starts without a generated scale");
+  const before = app.get("JSON.stringify(savedState)");
+  const selectionBefore = app.get("JSON.stringify(selection)");
   typeInSheet(app, PLAIN);
   assert.ok(previewHTML(app).includes("<svg"), "preview should be up while typing");
-  assert.strictEqual(Object.keys(app.registry()).length, before,
-    "previewing must not generate a deck");
+  assert.strictEqual(app.get("JSON.stringify(savedState)"), before,
+    "previewing must not generate a deck or change the saved collection");
+  assert.strictEqual(app.get("JSON.stringify(selection)"), selectionBefore,
+    "previewing must not select or generate another scale");
 });
 
 test("every seed note is drawn in the preview, ding and bottom shell included", () => {
@@ -254,11 +260,19 @@ test("an empty box shows the placeholder seed as an example", () => {
     "typing the placeholder itself should give a CURRENT pan, not a stale one");
 });
 
-test("the Edit sheet draws the mock too, and makes it the correction surface", () => {
-  const app = boot();
-  app.generate(PLAIN, {});
-  const id = app.get("Object.keys(CUSTOM)[0]");
-  app.run(`openEditSheet(CUSTOM[${JSON.stringify(id)}])`);
+test("the Edit sheet draws the mock too, and makes it the correction surface", async () => {
+  const app = boot({ crypto: require("node:crypto").webcrypto, abortController: true });
+  await app.getAsync("savedReady");
+  const made = await app.generateAsync(PLAIN, {});
+  assert.strictEqual(made.ok, true, made.reason);
+  assert.strictEqual(typeof made.instanceId, "string", "generation acknowledges a stable saved instance");
+  const id = JSON.stringify(made.instanceId);
+  assert.strictEqual(app.get(`savedEntries.has(${id})`), true,
+    "the acknowledged instance is available before opening Edit");
+  await app.getAsync(`selectDeck({kind:"saved",id:${id}})`);
+  app.run(`openEditSheet(savedEntries.get(${id}).deck)`);
+  assert.strictEqual(app.get("JSON.stringify(editingBase.selection)"),
+    JSON.stringify({ kind: "saved", id: made.instanceId }), "Edit targets the acknowledged saved instance");
   // Stage 2 hid this mock, on the reasoning that the deck's own card behind the
   // sheet was already the preview. Stage 3 reverses that (owner, D1: "tap the
   // note on the pan"): the card behind the sheet is not a control, and the

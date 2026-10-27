@@ -68,10 +68,366 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", 
   // Share URL lane SU-A: the COPY LINK control and its readonly fallback input.
   "share-copy", "share-url", "about", "about-open", "about-close",
   "scale-fields", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-ding-label", "scale-top-label",
-  "scale-inner-label", "scale-bottom-label", "scale-field-msg", "scale-fields-live", "scale-fields-note", "scale-line-note"];
+  "scale-inner-label", "scale-bottom-label", "scale-field-msg", "scale-fields-live", "scale-fields-note", "scale-line-note",
+  // Saved variants: the reviewed status, conflict action and explicit temporary-use controls.
+  "saved-status", "scale-conflict", "scale-conflict-msg", "scale-conflict-separate", "saved-temporary-use"];
 
 /** Copy a value out of the vm realm, so assert.deepStrictEqual can compare it. */
 const plain = (v) => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
+
+// Opt-in browser-origin model. Defaults below still boot synchronously with
+// isolated storage and no injected durable APIs. This is deliberately a model,
+// not evidence about real browser partitioning, quotas or crash durability.
+const ORIGINS = new WeakMap();
+function createOrigin(options = {}) {
+  const origin = {};
+  originState(origin, options);
+  return origin;
+}
+function originState(origin, options = {}) {
+  if (!origin || typeof origin !== "object") throw new TypeError("origin must be an explicit object");
+  if (ORIGINS.has(origin)) return ORIGINS.get(origin);
+  const state = { buckets: new Map(), seed: options.storage || {}, events: [], nextClient: 1,
+    writeAttempts: [], successfulWrites: [], messages: [] };
+  ORIGINS.set(origin, state);
+  origin.events = options.events || "manual";
+  if (!["manual", "auto", "omit"].includes(origin.events)) throw new TypeError("unknown storage event mode");
+  origin.broadcastEvents = options.broadcastEvents || "auto";
+  if (!["manual", "auto", "omit"].includes(origin.broadcastEvents)) throw new TypeError("unknown broadcast mode");
+  origin.flushBroadcastMessages = ({ limit = Infinity, omit = false } = {}) => {
+    if (!(limit === Infinity || Number.isInteger(limit) && limit >= 0)) throw new TypeError('message limit must be nonnegative');
+    const pending = state.messages.splice(0, limit);
+    if (!omit) for (const { channel, data } of pending) if (!channel._closed) channel._emit("message", { data });
+    return pending.length;
+  };
+  origin.writeAttempts = state.writeAttempts;
+  origin.successfulWrites = state.successfulWrites;
+  origin.flushStorageEvents = ({ limit = Infinity, omit = false } = {}) => {
+    if (!(limit === Infinity || Number.isInteger(limit) && limit >= 0)) throw new TypeError("event limit must be nonnegative");
+    const pending = state.events.splice(0, limit);
+    if (!omit) for (const { recipient, event } of pending) recipient.dispatch(event);
+    return pending.length;
+  };
+  return state;
+}
+function originBucket(state, name, seed) {
+  if (!state.buckets.has(name)) {
+    const store = Object.fromEntries(Object.entries(seed || state.seed).map(([k, v]) => [k, String(v)]));
+    state.buckets.set(name, { store, realms: new Set(), locks: new Map() });
+  }
+  return state.buckets.get(name);
+}
+// Explicit, deliberately limited IndexedDB model. Host tasks model asynchronous
+// request settlement; VM virtual timers and app state never supply authority.
+const idbClone = value => structuredClone(value);
+const idbError = (name, message = name) => Object.assign(new Error(message), { name });
+function idbEvents(target = {}) {
+  const listeners = new Map();
+  target.addEventListener = (type, fn) => {
+    if (!listeners.has(type)) listeners.set(type, new Set());
+    listeners.get(type).add(fn);
+  };
+  target.removeEventListener = (type, fn) => listeners.get(type)?.delete(fn);
+  Object.defineProperty(target, '_emit', { value(type, details = {}) {
+    const event = { type, target, currentTarget: target, defaultPrevented: false,
+      preventDefault() { this.defaultPrevented = true; }, ...details };
+    if (typeof target['on' + type] === 'function') target['on' + type].call(target, event);
+    for (const fn of [...(listeners.get(type) || [])]) fn.call(target, event);
+    return event;
+  } });
+  return target;
+}
+function indexedDBFor(bucket) {
+  bucket.databases ||= new Map();
+  bucket.openQueues ||= new Map();
+  const faults = new Map(), holds = new Set(), waiting = new Map(), operations = [];
+  const dispatch = (operation, callback) => setImmediate(() => {
+    if (holds.has(operation)) {
+      if (!waiting.has(operation)) waiting.set(operation, []);
+      waiting.get(operation).push(callback);
+    } else callback();
+  });
+  const failure = operation => {
+    const item = faults.get(operation);
+    if (!item) return null;
+    if (item.once) faults.delete(operation);
+    return item.error;
+  };
+  const snapshot = stores => new Map([...stores].map(([name, s]) => [name, {
+    name, keyPath: idbClone(s.keyPath), autoIncrement: s.autoIncrement, entries: idbClone(s.entries), nextKey: s.nextKey,
+  }]));
+  const names = get => ({ contains: name => get().has(String(name)),
+    get length() { return get().size; }, item: index => [...get().keys()][index] ?? null,
+    [Symbol.iterator]: function* () { yield* get().keys(); } });
+  function transaction(db, record, storeNames, mode, upgrade = false) {
+    if (db._closed) throw idbError('InvalidStateError');
+    if (!['readonly', 'readwrite', 'versionchange'].includes(mode)) throw new TypeError('unsupported transaction mode');
+    const scope = typeof storeNames === 'string' ? [storeNames] : Array.from(storeNames);
+    if (!upgrade && scope.some(name => !record.stores.has(name))) throw idbError('NotFoundError');
+    operations.push({ operation: 'transaction', db: db.name, mode });
+    const tx = idbEvents({ db, mode, error: null, _done: false, _started: false,
+      _queue: [], _requests: new Set(), _busy: false, _idle: 0, _stores: snapshot(record.stores) });
+    db._transactions.add(tx);
+    const finish = () => {
+      db._transactions.delete(tx);
+      if (db._closed && !db._transactions.size) db._finishClose();
+      if (record.running === tx) record.running = null;
+      pump(record);
+    };
+    tx.abort = () => {
+      if (tx._done) throw idbError('InvalidStateError');
+      tx._done = true;
+      operations.push({ operation: 'abort', db: db.name, mode });
+      dispatch('abort', () => {
+        for (const req of tx._requests) if (req.readyState === 'pending') {
+          req.error = idbError('AbortError'); req.readyState = 'done'; req._emit('error');
+        }
+        finish(); tx._emit('abort');
+      });
+    };
+    const fail = error => { if (tx._done) return; tx.error = error; tx.abort(); };
+    const next = () => {
+      if (tx._done || !tx._started || tx._busy) return;
+      const operation = tx._queue.shift();
+      if (operation) {
+        tx._busy = true;
+        dispatch(operation.kind, () => {
+          tx._busy = false;
+          if (tx._done) return;
+          const err = failure(operation.kind);
+          if (err) {
+            operation.request.error = err; operation.request.readyState = 'done';
+            const event = operation.request._emit('error');
+            tx._emit('error', { target: operation.request });
+            if (!event.defaultPrevented) fail(err);
+          } else {
+            try {
+              operation.request.result = operation.apply();
+              operation.request.readyState = 'done';
+              operation.request._emit('success');
+              if (operation.kind === 'put') { const abort = failure('abortAfterPut'); if (abort) fail(abort); }
+            } catch (error) { fail(error); }
+          }
+          next();
+        });
+      } else {
+        const idle = ++tx._idle;
+        dispatch('commit', () => {
+          if (tx._done || tx._busy || tx._queue.length || idle !== tx._idle) return next();
+          const error = failure('commit');
+          if (error) return fail(error);
+          if (mode !== 'readonly') record.stores = snapshot(tx._stores);
+          operations.push({ operation: 'commit', db: db.name, mode });
+          tx._done = true;
+          if (tx._commit) tx._commit();
+          finish();
+          // Commit releases authority before its completion event is delivered.
+          // A realm-local hold can model an old read resolving after a peer commit.
+          dispatch('complete', () => tx._emit('complete'));
+        });
+      }
+    };
+    tx.objectStore = name => {
+      name = String(name);
+      if (tx._done) throw idbError('InvalidStateError');
+      if (!upgrade && !scope.includes(name)) throw idbError('NotFoundError');
+      const schema = tx._stores.get(name);
+      if (!schema) throw idbError('NotFoundError');
+      const request = (kind, apply) => {
+        if (tx._done) throw idbError('TransactionInactiveError');
+        operations.push({ operation: kind, db: db.name, mode, store: name });
+        const req = idbEvents({ result: undefined, error: null, readyState: 'pending', transaction: tx });
+        tx._requests.add(req); tx._queue.push({ kind, apply, request: req }); tx._idle++; next(); return req;
+      };
+      return { name, keyPath: schema.keyPath, autoIncrement: schema.autoIncrement,
+        get: key => request('read', () => idbClone(tx._stores.get(name).entries.get(key))),
+        getKey: key => request('read', () => tx._stores.get(name).entries.has(key) ? idbClone(key) : undefined),
+        put(value, key) {
+          if (mode === 'readonly') throw idbError('ReadOnlyError');
+          const copy = idbClone(value);
+          if (key === undefined && schema.keyPath !== null) key = copy[schema.keyPath];
+          if (key === undefined && !schema.autoIncrement) throw idbError('DataError');
+          return request('put', () => {
+            const store = tx._stores.get(name);
+            const actual = key === undefined ? store.nextKey++ : key;
+            if (store.autoIncrement && typeof actual === 'number' && actual >= store.nextKey) store.nextKey = Math.floor(actual) + 1;
+            if (store.keyPath !== null && key === undefined) copy[store.keyPath] = actual;
+            store.entries.set(idbClone(actual), copy); return idbClone(actual);
+          });
+        },
+      };
+    };
+    tx._start = () => { if (!upgrade) tx._stores = snapshot(record.stores); tx._started = true; next(); };
+    if (upgrade) { tx._started = true; }
+    else { record.queue.push(tx); pump(record); }
+    return tx;
+  }
+  function pump(record) {
+    if (record.running || !record.queue.length) return;
+    const tx = record.queue.shift(); record.running = tx;
+    setImmediate(() => { if (tx._done) { record.running = null; pump(record); } else tx._start(); });
+  }
+  function connection(name, record) {
+    const db = idbEvents({ name, version: record.version, _closed: false, _transactions: new Set() });
+    Object.defineProperty(db, 'objectStoreNames', { get: () => names(() => db._upgrade?._stores || record.stores) });
+    db.transaction = (stores, mode = 'readonly') => transaction(db, record, stores, mode);
+    db._finishClose = () => {
+      record.connections.delete(db);
+      for (const retry of [...record.blocked]) setImmediate(retry);
+    };
+    db.close = () => {
+      if (db._closed) return;
+      db._closed = true;
+      operations.push({ operation: 'close', db: name });
+      if (!db._transactions.size) db._finishClose();
+    };
+    db.createObjectStore = (storeName, options = {}) => {
+      const tx = db._upgrade;
+      if (!tx || tx._done) throw idbError('InvalidStateError');
+      if (tx._stores.has(storeName)) throw idbError('ConstraintError');
+      operations.push({ operation: 'createObjectStore', db: name, store: storeName });
+      tx._stores.set(storeName, { name: storeName, keyPath: idbClone(options.keyPath ?? null),
+        autoIncrement: !!options.autoIncrement, entries: new Map(), nextKey: 1 });
+      return tx.objectStore(storeName);
+    };
+    record.connections.add(db); return db;
+  }
+  const api = { open(name, version) {
+    name = String(name);
+    operations.push({ operation: 'open', db: name });
+    if (version !== undefined && (!Number.isInteger(version) || version < 1)) throw new TypeError('invalid database version');
+    const req = idbEvents({ result: undefined, error: null, readyState: 'pending', transaction: null });
+    const begin = () => {
+      const doneOpen = () => {
+        const queue = bucket.openQueues.get(name);
+        queue.shift();
+        if (queue.length) setImmediate(queue[0]);
+        else bucket.openQueues.delete(name);
+      };
+      const err = failure('open');
+      if (err) { req.error = err; req.readyState = 'done'; req._emit('error'); doneOpen(); return; }
+      let record = bucket.databases.get(name);
+      const oldVersion = record?.version || 0, desired = version ?? (oldVersion || 1);
+      if (desired < oldVersion) { req.error = idbError('VersionError'); req.readyState = 'done'; req._emit('error'); doneOpen(); return; }
+      if (!record) { record = { version: 0, stores: new Map(), connections: new Set(), queue: [], running: null, blocked: new Set() }; }
+      const upgrade = desired > oldVersion;
+      if (upgrade) for (const other of [...record.connections]) other._emit('versionchange', { oldVersion, newVersion: desired });
+      let blockedSent = false, settled = false;
+      const proceed = () => {
+        if (settled) return;
+        if (upgrade && record.connections.size) {
+          record.blocked.add(proceed);
+          if (!blockedSent) { blockedSent = true; req._emit('blocked', { oldVersion, newVersion: desired }); }
+          return;
+        }
+        settled = true; record.blocked.delete(proceed);
+        const db = connection(name, record); db.version = desired; req.result = db;
+        if (!upgrade) { req.readyState = 'done'; req._emit('success'); doneOpen(); return; }
+        const tx = transaction(db, record, [], 'versionchange', true);
+        db._upgrade = tx; req.transaction = tx;
+        tx._commit = () => { record.version = desired; bucket.databases.set(name, record); };
+        tx.addEventListener('complete', () => {
+          db._upgrade = null; req.transaction = null; req.readyState = 'done'; req._emit('success'); doneOpen();
+        });
+        tx.addEventListener('abort', () => {
+          db._upgrade = null; db.close(); req.transaction = null;
+          req.error = tx.error || idbError('AbortError'); req.readyState = 'done'; req._emit('error'); doneOpen();
+        });
+        operations.push({ operation: 'upgrade', db: name, oldVersion, newVersion: desired });
+        req._emit('upgradeneeded', { oldVersion, newVersion: desired });
+        // Upgrade handlers can queue requests or abort before schema commits.
+        setImmediate(() => tx._start());
+      };
+      proceed();
+    };
+    dispatch('open', () => {
+      if (!bucket.openQueues.has(name)) bucket.openQueues.set(name, []);
+      const queue = bucket.openQueues.get(name); queue.push(begin);
+      if (queue.length === 1) begin();
+    });
+    return req;
+  } };
+  const control = {
+    get operations() { return idbClone(operations); },
+    inspect(name) {
+      const record = bucket.databases.get(name);
+      return record && { name, version: record.version, stores: [...record.stores.values()].map(s => ({
+        name: s.name, keyPath: idbClone(s.keyPath), autoIncrement: s.autoIncrement, entries: [...idbClone(s.entries)],
+      })) };
+    },
+    fault(operation, error = idbError('UnknownError'), { once = true } = {}) { faults.set(operation, { error, once }); },
+    hold(operation) { holds.add(operation); },
+    release(operation) { holds.delete(operation); const pending = waiting.get(operation) || []; waiting.delete(operation); for (const fn of pending) setImmediate(fn); return pending.length; },
+    pending(operation) { return (waiting.get(operation) || []).length; },
+    closeConnections(name) { for (const db of [...(bucket.databases.get(name)?.connections || [])]) db.close(); },
+  };
+  return { api, control };
+}
+function broadcastChannelFor(bucket, origin, publicOrigin) {
+  bucket.channels ||= new Set();
+  return class BroadcastChannel {
+    constructor(name) { this.name = String(name); this._closed = false; idbEvents(this); bucket.channels.add(this); }
+    postMessage(value) {
+      if (this._closed) throw idbError('InvalidStateError');
+      const data = idbClone(value);
+      if (publicOrigin.broadcastEvents === 'omit') return;
+      for (const channel of bucket.channels) if (channel !== this && channel.name === this.name && !channel._closed) origin.messages.push({ channel, data: idbClone(data) });
+      if (publicOrigin.broadcastEvents === 'auto') setImmediate(() => publicOrigin.flushBroadcastMessages());
+    }
+    close() { this._closed = true; bucket.channels.delete(this); }
+  };
+}
+
+function locksFor(bucket, clientId, rejection) {
+  const pump = name => queueMicrotask(() => {
+    const queue = bucket.locks.get(name);
+    if (!queue || queue.held || !queue.pending.length) return;
+    const item = queue.pending.shift();
+    queue.held = item;
+    if (item.signal) item.signal.removeEventListener("abort", item.abort);
+    Promise.resolve().then(() => item.callback({ name, mode: "exclusive" })).then(
+      value => { queue.held = null; item.resolve(value); pump(name); },
+      error => { queue.held = null; item.reject(error); pump(name); });
+  });
+  return {
+    request(name, options, callback) {
+      if (typeof options === "function") { callback = options; options = {}; }
+      options = options || {};
+      if (rejection) return Promise.reject(typeof rejection === "function" ? rejection() : rejection);
+      if (typeof callback !== "function") return Promise.reject(new TypeError("lock callback required"));
+      if (options.mode && options.mode !== "exclusive" || options.steal || options.ifAvailable) {
+        return Promise.reject(new TypeError("sandbox models exclusive queued locks only"));
+      }
+      name = String(name);
+      const signal = options.signal;
+      if (signal && signal.aborted) return Promise.reject(signal.reason || Object.assign(new Error("aborted"), { name: "AbortError" }));
+      if (!bucket.locks.has(name)) bucket.locks.set(name, { held: null, pending: [] });
+      const queue = bucket.locks.get(name);
+      return new Promise((resolve, reject) => {
+        const item = { clientId, callback, resolve, reject, signal };
+        item.abort = () => {
+          const index = queue.pending.indexOf(item);
+          if (index < 0) return; // A granted callback/commit cannot be canceled retroactively.
+          queue.pending.splice(index, 1);
+          signal.removeEventListener("abort", item.abort);
+          reject(signal.reason || Object.assign(new Error("aborted"), { name: "AbortError" }));
+          pump(name);
+        };
+        if (signal) signal.addEventListener("abort", item.abort, { once: true });
+        queue.pending.push(item);
+        pump(name);
+      });
+    },
+    async query() {
+      const held = [], pending = [];
+      for (const [name, queue] of bucket.locks) {
+        if (queue.held) held.push({ name, mode: "exclusive", clientId: queue.held.clientId });
+        for (const item of queue.pending) pending.push({ name, mode: "exclusive", clientId: item.clientId });
+      }
+      return { held, pending };
+    },
+  };
+}
 
 function makeElement(id, tag = "div") {
   const attrs = {};
@@ -238,6 +594,13 @@ function makeLocation(href) {
  *   html           - boot this markup instead of reading index.html
  *   sheetBody      - with layout, expose the anonymous sheet body and its markup ancestry;
  *                    event capture/bubble and native focus/selection remain unsimulated
+ *   origin         - explicit shared handle (createOrigin() or {}), partitioned by URL origin
+ *   locks          - true injects asynchronous exclusive FIFO navigator.locks
+ *   crypto         - explicitly supplied {randomUUID,getRandomValues}; functions may throw/repeat
+ *   abortController/isSecureContext - explicit host AbortController/secure-context surface
+ *   storageAccessError/locksAccessError/cryptoAccessError - throwing API getters
+ *   storageFault   - ({operation,key,value}) => error|null, evaluated before each operation
+ *   locksRequestError - rejects request before acquisition, without invoking its callback
  */
 const JS_TYPES = new Set([
   "text/javascript", "application/javascript", "application/x-javascript", "text/ecmascript",
@@ -334,7 +697,7 @@ function boot(opts = {}) {
   preview.querySelector = (sel) => queryHits(sel)[0] || null;
   /** Deliver an event the way a browser would: to the target, then up the
    *  markup chain, then to the document. Returns the event. */
-  const fire = (el, ev) => {
+  const fire = (el, ev, pending) => {
     ev.target = ev.target || el;
     ev.defaultPrevented = false;
     ev.stopped = false;
@@ -342,9 +705,15 @@ function boot(opts = {}) {
     ev.preventDefault = () => { ev.defaultPrevented = true; if (origPrevent) origPrevent.call(ev); };
     ev.stopPropagation = () => { ev.stopped = true; };
     for (let n = el; n && !ev.stopped; n = n.parentNode || n._markupParent) {
-      for (const fn of n.listeners[ev.type] || []) fn(ev);
+      for (const fn of n.listeners[ev.type] || []) {
+        const result = fn(ev);
+        if (pending && result && typeof result.then === "function") pending.push(Promise.resolve(result));
+      }
     }
-    if (!ev.stopped) for (const fn of sandbox.document._l[ev.type] || []) fn(ev);
+    if (!ev.stopped) for (const fn of sandbox.document._l[ev.type] || []) {
+      const result = fn(ev);
+      if (pending && result && typeof result.then === "function") pending.push(Promise.resolve(result));
+    }
     return ev;
   };
   // Layout boot: #card sits inside a .scene, #scale-sheet has its surface child
@@ -424,7 +793,9 @@ function boot(opts = {}) {
     node.className = "announce";
     markupNodes.push(node);
   }
-  const store = { ...(opts.storage || {}) };
+  const origin = opts.origin ? originState(opts.origin) : null;
+  const bucket = origin ? originBucket(origin, new URL(opts.href || "https://example.test/index.html").origin, opts.storage) : null;
+  const store = bucket ? bucket.store : { ...(opts.storage || {}) };
   const docEl = makeElement("root", "html");
   const headEl = makeElement("head", "head");
 
@@ -433,10 +804,28 @@ function boot(opts = {}) {
   if (opts.random) mathStub.random = opts.random;
 
   const all = () => [...Object.values(els), docEl, ...(layoutMain ? [layoutMain] : []), ...markupNodes, ...created];
+  // Only the ID/tag/class compounds and descendant combinator used by the app.
+  // This is a selector model, not a CSS layout engine or full selector parser.
+  const matchSimple = (el, sel) => {
+    const parsed = /^([a-zA-Z][\w-]*)?((?:[#.][\w-]+)*)$/.exec(sel);
+    if (!parsed || (!parsed[1] && !parsed[2])) return false;
+    if (parsed[1] && el.tagName !== parsed[1].toUpperCase()) return false;
+    return [...parsed[2].matchAll(/([#.])([\w-]+)/g)].every(([, kind, value]) =>
+      kind === "#" ? el.id === value : el.classList.contains(value));
+  };
   const match = (el, sel) => {
-    if (sel.startsWith("#")) return el.id === sel.slice(1);
-    if (sel.startsWith(".")) return el.classList.contains(sel.slice(1));
-    return el.tagName === sel.toUpperCase();
+    const chain = sel.split(/\s+/);
+    if (!matchSimple(el, chain.pop())) return false;
+    let ancestor = el;
+    while (chain.length) {
+      const wanted = chain.pop();
+      ancestor = ancestor.parentNode || ancestor._markupParent;
+      while (ancestor && !matchSimple(ancestor, wanted)) {
+        ancestor = ancestor.parentNode || ancestor._markupParent;
+      }
+      if (!ancestor) return false;
+    }
+    return true;
   };
   const queryAll = (sel) => {
     const parts = String(sel).split(",").map((s) => s.trim()).filter(Boolean);
@@ -604,6 +993,78 @@ function boot(opts = {}) {
     const i = l.indexOf(fn);
     if (i >= 0) l.splice(i, 1);
   };
+  // All injection is explicit: an origin alone shares raw storage/events; locks,
+  // crypto, secure-context and AbortController remain separate capabilities.
+  if (origin) {
+    const clientId = "sandbox-client-" + origin.nextClient++;
+    const recipient = { storage: null, dispatch: event => {
+      for (const fn of [...(winListeners.storage || [])]) fn(event);
+    } };
+    const notify = (key, oldValue, newValue) => {
+      if (opts.origin.events === "omit") return;
+      for (const other of bucket.realms) if (other !== recipient) {
+        origin.events.push({ recipient: other, event: { type: "storage", key, oldValue, newValue,
+          url: location.href, storageArea: other.storage } });
+      }
+      if (opts.origin.events === "auto") setTimeout(() => opts.origin.flushStorageEvents(), 0);
+    };
+    const check = (operation, key, value) => {
+      if (opts.throwOnStorage) throw new Error("denied");
+      const failure = opts.storageFault && opts.storageFault({ operation, key, value });
+      if (failure) throw failure;
+    };
+    const write = (operation, key, value, apply) => {
+      const attempt = { operation, key, value, url: location.href, success: false };
+      origin.writeAttempts.push(attempt);
+      check(operation, key, value);
+      apply();
+      attempt.success = true;
+      origin.successfulWrites.push({ ...attempt });
+    };
+    const storage = {
+      get length() { check("length", null, null); return Object.keys(store).length; },
+      key(index) { check("key", null, null); return Object.keys(store)[index] ?? null; },
+      getItem(key) { key = String(key); check("getItem", key, null); return Object.hasOwn(store, key) ? store[key] : null; },
+      setItem(key, value) {
+        key = String(key); value = String(value);
+        write("setItem", key, value, () => {
+          const oldValue = Object.hasOwn(store, key) ? store[key] : null;
+          Object.defineProperty(store, key, { value, enumerable: true, configurable: true, writable: true });
+          if (oldValue !== value) notify(key, oldValue, value);
+        });
+      },
+      removeItem(key) {
+        key = String(key);
+        write("removeItem", key, null, () => {
+          if (Object.hasOwn(store, key)) { const oldValue = store[key]; delete store[key]; notify(key, oldValue, null); }
+        });
+      },
+      clear() {
+        write("clear", null, null, () => {
+          if (Object.keys(store).length) { for (const key of Object.keys(store)) delete store[key]; notify(null, null, null); }
+        });
+      },
+    };
+    sandbox.localStorage = storage;
+    recipient.storage = storage;
+    bucket.realms.add(recipient);
+    if (opts.locks === true) sandbox.navigator.locks = locksFor(bucket, clientId, opts.locksRequestError);
+  } else if (opts.locks === true) {
+    sandbox.navigator.locks = locksFor({ locks: new Map() }, "isolated-client", opts.locksRequestError);
+  }
+  const capabilityBucket = bucket || { locks: new Map() };
+  const idb = opts.indexedDB === true ? indexedDBFor(capabilityBucket) : null;
+  if (idb) sandbox.indexedDB = idb.api;
+  if (opts.broadcastChannel === true) {
+    const channelOrigin = opts.origin || createOrigin();
+    sandbox.BroadcastChannel = broadcastChannelFor(capabilityBucket, originState(channelOrigin), channelOrigin);
+  }
+  if (opts.locksAccessError) Object.defineProperty(sandbox.navigator, "locks", {
+    configurable: true, get() { throw opts.locksAccessError; },
+  });
+  if (opts.crypto && !opts.cryptoAccessError) sandbox.crypto = opts.crypto;
+  if (opts.isSecureContext !== undefined) sandbox.isSecureContext = !!opts.isSecureContext;
+  if (opts.abortController === true) sandbox.AbortController = AbortController;
   if (opts.clock) {
     sandbox.Date = class ClockDate extends Date {
       static now() { return CLOCK_BASE + now; }
@@ -613,6 +1074,18 @@ function boot(opts = {}) {
   sandbox.window = sandbox;
   sandbox.globalThis = sandbox;
   vm.createContext(sandbox);
+  // Define throwing GLOBAL accessors from inside the context. A throwing host
+  // accessor on the context backing object is treated as a missing identifier
+  // by node:vm; that would falsely turn SecurityError into ReferenceError.
+  if (opts.storageAccessError || opts.cryptoAccessError) {
+    sandbox.__sandboxAccessFaults = { ...(opts.storageAccessError ? { localStorage: opts.storageAccessError } : {}),
+      ...(opts.cryptoAccessError ? { crypto: opts.cryptoAccessError } : {}) };
+    vm.runInContext(`(() => {
+      for (const [property, error] of Object.entries(__sandboxAccessFaults))
+        Object.defineProperty(globalThis, property, { configurable:true, get() { throw error; } });
+      delete globalThis.__sandboxAccessFaults;
+    })()`, sandbox);
+  }
   vm.runInContext(combinedSrc, sandbox, { filename: APP });
 
   /** Move the virtual clock forward, running every timer that falls due on the way. */
@@ -639,10 +1112,40 @@ function boot(opts = {}) {
     return timers.size;
   }
 
+  // Await actual returned promises before normalizing cross-realm values.
+  // Readiness observes cooperative predicates/promises with a host deadline,
+  // never virtual timer advancement. The vm timeout bounds initial synchronous
+  // evaluation only: a later Promise callback that spins CPU can starve the
+  // host timer. These utilities do not isolate arbitrary async execution.
+  // Run helper tests under an outer process supervisor (as suite_health does)
+  // even when waitFor/clickAsync has its own readiness timeout.
+  const getAsync = async (expr, { timeout } = {}) =>
+    plain(await vm.runInContext(expr, sandbox, timeout ? { timeout } : {}));
+  function bounded(promise, timeout) {
+    let timer;
+    return Promise.race([promise, new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error("sandbox readiness timed out")), timeout);
+    })]).finally(() => clearTimeout(timer));
+  }
+  async function waitFor(expression, { timeout = 1000 } = {}) {
+    if (typeof expression !== "string" || !expression) throw new TypeError("readiness expression required");
+    if (!Number.isFinite(timeout) || timeout <= 0) throw new TypeError("readiness timeout must be positive");
+    return bounded((async () => {
+      const deadline = Date.now() + timeout;
+      do {
+        const value = await getAsync(expression, { timeout: Math.max(1, deadline - Date.now()) });
+        if (value) return value;
+        await new Promise(resolve => setTimeout(resolve, 1));
+      } while (Date.now() < deadline);
+      throw new Error("sandbox readiness timed out");
+    })(), timeout);
+  }
+
   return {
-    els, store, sandbox, created, head: headEl, location, history, blocks, flushTimers, advance, plate,
+    idb: idb?.control, els, store, sandbox, created, head: headEl, location, history, blocks, flushTimers, advance, plate,
     /** Evaluate an expression inside the app's scope. */
     get: (expr) => vm.runInContext(expr, sandbox),
+    getAsync, waitFor,
     run: (stmt) => vm.runInContext(stmt, sandbox),
     faces: () => els.front._html + els.back._html,
     clickChip: (deckName) => {
@@ -668,6 +1171,8 @@ function boot(opts = {}) {
       plain(vm.runInContext(
         `generateDeck(${JSON.stringify(String(text))}, ${JSON.stringify(options || {})})`,
         sandbox)),
+    generateAsync: (text, options) => getAsync(
+      `generateDeck(${JSON.stringify(String(text))}, ${JSON.stringify(options || {})})`),
     /** Select a deck by id through the app's own path (built-in or generated). */
     select: (id) => vm.runInContext(`selectDeck(${JSON.stringify(String(id))})`, sandbox),
     /** The id of the deck currently on screen. */
@@ -705,6 +1210,12 @@ function boot(opts = {}) {
       ? focusState.active.getAttribute("data-field") : null),
     /** Deliver a click or a key to an element, bubbling like a browser. */
     click: (el, init = {}) => fire(el, { type: "click", ...init }),
+    clickAsync: async (el, { until, timeout = 1000, ...init } = {}) => {
+      if (typeof until !== "string" || !until) throw new TypeError("clickAsync requires explicit until readiness expression");
+      const pending = [];
+      fire(el, { type: "click", ...init }, pending);
+      return bounded(Promise.all(pending).then(() => waitFor(until, { timeout })), timeout);
+    },
     press: (el, key, init = {}) => fire(el, { type: "keydown", key, shiftKey: false, ...init }),
     /** A pointer event. Once the plate has captured the pointer the event goes
      *  to the plate, as a browser would deliver it; `el` is where it would have
@@ -743,4 +1254,4 @@ function boot(opts = {}) {
   };
 }
 
-module.exports = { boot, plain, ELEMENT_IDS, APP };
+module.exports = { boot, plain, ELEMENT_IDS, APP, createOrigin };

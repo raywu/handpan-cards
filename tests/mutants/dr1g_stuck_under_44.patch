@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10577,7 +10577,7 @@ function syncBand() {
+@@ -11843,7 +11843,7 @@ function syncBand() {
    const stat = drawerStatus.hidden ? 0 : high(drawerStatus);
    const port = bandPort.clientHeight > 0 ? high(bandPort) : 0;
    const beside = platesBeside();

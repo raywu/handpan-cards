@@ -15,11 +15,11 @@ const seatLabel = (app, sc, ring, k) => {
 for (const edit of [false]) {
   const where = edit ? "Edit" : "Add";
 
-  test(`DR2a rule W (78, 52, 53, 41, 42): tap then tap exchanges exactly two notes, ring sizes swept, ${where}`, () => {
+  test(`DR2a rule W (78, 52, 53, 41, 42): tap then tap exchanges exactly two notes, ring sizes swept, ${where}`, async () => {
     for (const [ring, max] of d2AllRings) {
       for (let n = 2; n <= max; n += 1) {
         for (const [label, start] of d2Starts(n)) {
-          const { app, sc, seats } = d2Case(ring, n, start, edit);
+          const { app, sc, seats } = await d2Case(ring, n, start, edit);
           const names = sc.names[ring];
           for (let a = 0; a < n; a += 1) for (let b = 0; b < n; b += 1) {
             d2Seed(app, seats);
@@ -40,11 +40,11 @@ for (const edit of [false]) {
     }
   });
 
-  test(`DR2b rule W and R (78, 41, 42): a mouse drag exchanges exactly two notes and readSeats accepts it, ring sizes swept, ${where}`, () => {
+  test(`DR2b rule W and R (78, 41, 42): a mouse drag exchanges exactly two notes and readSeats accepts it, ring sizes swept, ${where}`, async () => {
     for (const [ring, max] of [["rim", 10], ["inner", 8], ["bottom", 8]]) {
       for (let n = 2; n <= max; n += 1) {
         for (const [label, start] of d2Starts(n)) {
-          const { app, sc, seats } = d2Case(ring, n, start, edit);
+          const { app, sc, seats } = await d2Case(ring, n, start, edit);
           const names = sc.names[ring];
           for (let a = 0; a < n; a += 1) for (let b = 0; b < n; b += 1) {
             d2Seed(app, seats);
@@ -70,12 +70,12 @@ for (const edit of [false]) {
     }
   });
 
-  test(`DR2b rule W and R (78, 41, 42): a touch drag exchanges exactly two notes for every ring size, ${where}`, () => {
+  test(`DR2b rule W and R (78, 41, 42): a touch drag exchanges exactly two notes for every ring size, ${where}`, async () => {
     for (const [ring, max] of d2AllRings) {
       for (let n = 2; n <= max; n += 1) {
         const sc = d2Build(d2Sizes(ring, n));
         const app = boot({ clock: true });
-        d2Open(app, sc.text, edit);
+        await d2Open(app, sc.text, edit);
         const names = sc.names[ring];
         const seats = { rim: D2_OTHER, inner: D2_OTHER, bottom: D2_OTHER, [ring]: d2Id(n) };
         for (const [a, b] of [[0, n - 1], [n - 1, 0], [0, 1]]) {

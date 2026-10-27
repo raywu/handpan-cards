@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1531,6 +1531,7 @@ html.about-open{overflow:hidden}
+@@ -1587,6 +1587,7 @@ html.about-open{overflow:hidden}
          </div>
        </div>
      </div>
@@ -14,7 +14,7 @@ diff --git a/index.html b/index.html
      <!-- The card palette: the last group of the Layout tab, inside .sheetbody,
           in the scroll (it sat at the foot of the Scale tab until sheet polish
           lane B, 2026-10-21, owner: first or last on Layout, last chosen). It
-@@ -1583,7 +1584,6 @@ html.about-open{overflow:hidden}
+@@ -1639,7 +1640,6 @@ html.about-open{overflow:hidden}
           "SG: N-A6" in tests/e2e.test.js. -->
      <div id="scale-guidance">
        <p id="scale-field-msg"></p>

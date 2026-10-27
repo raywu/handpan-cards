@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10765,6 +10765,7 @@ function lipMeasure() {
+@@ -12026,6 +12026,7 @@ function lipMeasure() {
    sheet.classList.remove("lipnow");
  }
  function lipGuidanceChanged() {

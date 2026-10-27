@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1146,7 +1146,7 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1159,7 +1159,7 @@ footer.seq{row-gap:var(--sp-1)}
  #scale-fields-note:empty, #scale-line-note:empty{display:none}
  #scale-fields-note, #scale-line-note{color:#a79d8b}
  /* The passive path: a read-only look that stays tappable, text kept legible. */

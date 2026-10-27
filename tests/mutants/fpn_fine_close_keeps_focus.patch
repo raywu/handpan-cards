@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12657,7 +12657,7 @@ seatNext.onclick = () => stepSeat(1);
+@@ -13778,7 +13778,7 @@ seatNext.onclick = () => stepSeat(1);
  resetBtn.onclick = resetLayout;
  fineBtn.onclick = () => {
    fineOpen = !fineOpen;

@@ -15,11 +15,11 @@ const seatLabel = (app, sc, ring, k) => {
 for (const edit of [false]) {
   const where = edit ? "Edit" : "Add";
 
-  test(`DR2a rule W (65, 78): Space and Enter swap the same pairs, ring sizes to 8 swept, ${where}`, () => {
+  test(`DR2a rule W (65, 78): Space and Enter swap the same pairs, ring sizes to 8 swept, ${where}`, async () => {
     for (const [ring] of d2AllRings) {
       for (let n = 2; n <= 8; n += 1) {
         for (const [label, start] of d2Starts(n)) {
-          const { app, sc, seats } = d2Case(ring, n, start, edit);
+          const { app, sc, seats } = await d2Case(ring, n, start, edit);
           const names = sc.names[ring];
           for (const key of [" ", "Enter"]) for (let a = 0; a < n; a += 1) for (let b = 0; b < n; b += 1) {
             d2Seed(app, seats);
@@ -35,11 +35,11 @@ for (const edit of [false]) {
     }
   });
 
-  test(`DR2a rule W (60, 61): NEXT SEAT and PREVIOUS SEAT swap with the adjacent seat, wrap, keep the pick, every start seat, ${where}`, () => {
+  test(`DR2a rule W (60, 61): NEXT SEAT and PREVIOUS SEAT swap with the adjacent seat, wrap, keep the pick, every start seat, ${where}`, async () => {
     for (const [ring, max] of d2AllRings) {
       for (let n = 2; n <= max; n += 1) {
         for (const [label, start] of d2Starts(n)) {
-          const { app, sc, seats } = d2Case(ring, n, start, edit);
+          const { app, sc, seats } = await d2Case(ring, n, start, edit);
           const names = sc.names[ring];
           for (let s = 0; s < n; s += 1) for (const [id, dir] of [["scale-seat-next", 1], ["scale-seat-prev", -1]]) {
             d2Seed(app, seats);
@@ -63,11 +63,11 @@ for (const edit of [false]) {
 for (const edit of [true]) {
   const where = edit ? "Edit" : "Add";
 
-  test(`DR2a rule W (65, 78): Space and Enter swap the same pairs, ring sizes to 8 swept, ${where}`, () => {
+  test(`DR2a rule W (65, 78): Space and Enter swap the same pairs, ring sizes to 8 swept, ${where}`, async () => {
     for (const [ring] of d2AllRings) {
       for (let n = 2; n <= 8; n += 1) {
         for (const [label, start] of d2Starts(n)) {
-          const { app, sc, seats } = d2Case(ring, n, start, edit);
+          const { app, sc, seats } = await d2Case(ring, n, start, edit);
           const names = sc.names[ring];
           for (const key of [" ", "Enter"]) for (let a = 0; a < n; a += 1) for (let b = 0; b < n; b += 1) {
             d2Seed(app, seats);
@@ -83,11 +83,11 @@ for (const edit of [true]) {
     }
   });
 
-  test(`DR2a rule W (60, 61): NEXT SEAT and PREVIOUS SEAT swap with the adjacent seat, wrap, keep the pick, every start seat, ${where}`, () => {
+  test(`DR2a rule W (60, 61): NEXT SEAT and PREVIOUS SEAT swap with the adjacent seat, wrap, keep the pick, every start seat, ${where}`, async () => {
     for (const [ring, max] of d2AllRings) {
       for (let n = 2; n <= max; n += 1) {
         for (const [label, start] of d2Starts(n)) {
-          const { app, sc, seats } = d2Case(ring, n, start, edit);
+          const { app, sc, seats } = await d2Case(ring, n, start, edit);
           const names = sc.names[ring];
           for (let s = 0; s < n; s += 1) for (const [id, dir] of [["scale-seat-next", 1], ["scale-seat-prev", -1]]) {
             d2Seed(app, seats);

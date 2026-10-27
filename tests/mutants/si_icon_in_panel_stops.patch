@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11676,7 +11676,7 @@ function panelStops() {
+@@ -14417,7 +14417,7 @@ function panelStops() {
    return [settingsTrigger, document.getElementById("modeA"), document.getElementById("modeB"),
            document.getElementById("tier-basic"), document.getElementById("tier-intermediate"),
            document.getElementById("tier-advanced"), document.getElementById("seq-source-link"),

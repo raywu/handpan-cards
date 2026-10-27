@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13271,7 +13271,7 @@ function lineInput() {
+@@ -14267,7 +14267,7 @@ function lineInput() {
      if (res.ok) {
        writeFieldValues(decomposeFields(res.value.fields, res.value.typed));
        fieldsStale = false;

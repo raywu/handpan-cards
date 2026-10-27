@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10318,7 +10318,6 @@ previewBox.addEventListener("pointerdown", (e) => {
+@@ -14033,7 +14033,6 @@ previewBox.addEventListener("pointerdown", (e) => {
  previewBox.addEventListener("pointermove", (e) => {
    const p = press;
    if (!p || e.pointerId !== p.id) return;

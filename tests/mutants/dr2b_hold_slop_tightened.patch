@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10134,7 +10134,7 @@ previewBox.addEventListener("focusout", (e) => {
+@@ -13828,7 +13828,7 @@ previewBox.addEventListener("focusout", (e) => {
     document and out of reach of every listener on the plate. So the same
     non-passive touchmove handler is also put on that circle at pointerdown,
     ahead of touchstart. */

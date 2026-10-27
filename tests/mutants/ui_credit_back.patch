@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10604,7 +10604,8 @@ function faceHTML(d, ch, n, kind) {
+@@ -11328,7 +11328,8 @@ function faceHTML(d, ch, n, kind) {
       <div class="hint">${tHtml("card.hint_notes")}</div></div>`;
      case "backS":
        return headerHTML(d, ch, n) +

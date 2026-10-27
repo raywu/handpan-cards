@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11042,7 +11042,6 @@ function paintLayout() {
+@@ -11800,7 +11800,6 @@ function paintLayout() {
    fineBtn.textContent = t(fineOpen ? "sheet.fine_hide" : "sheet.fine_show");
    layoutZone.classList.toggle("open", drawerOpen);
    fieldMsg.hidden = drawerOpen;

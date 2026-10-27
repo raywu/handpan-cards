@@ -1,0 +1,15 @@
+# kills: the Edit sheet draws the mock too, and makes it the correction surface
+# suite: node --test --test-reporter=tap --test-name-pattern=^the.Edit.sheet.draws.the.mock.too..and.makes.it.the.correction.surface$ tests/preview.test.js
+# fault: Opening the Layout drawer on Edit wrongly keeps the pan noninteractive, removing its note controls while Add preview behavior remains available.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12863,7 +12863,7 @@ function paintPan(seed, state) {
+   if (!solved) return false;
+   lastSeed = seed;
+   lastSolved = solved;
+-  const interactive = drawerOpen && state === "current";
++  const interactive = drawerOpen && state === "current" && !editingId;
+   if (!interactive) cancelGesture();
+   const p = HPE.select.PALETTES[palette] || HPE.select.PALETTES[0];
+   previewBox.innerHTML = pan(

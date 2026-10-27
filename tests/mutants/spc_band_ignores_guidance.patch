@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10558,7 +10558,7 @@ function paintLayout() {
+@@ -11815,7 +11815,7 @@ function paintLayout() {
  const BAND_MIN_ROOM = 44;
  const roomOf = () => {
    const cs = typeof getComputedStyle === "function" ? getComputedStyle(plateBand) : null;

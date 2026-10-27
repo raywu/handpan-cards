@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9617,7 +9617,6 @@ function applyLang() {
+@@ -9761,7 +9761,6 @@ function applyLang() {
      if (genBtn.textContent !== t("sheet.generating") && genBtn.textContent !== t("sheet.saving")) {
        genBtn.textContent = t(edit ? "sheet.save" : "sheet.generate");
      }

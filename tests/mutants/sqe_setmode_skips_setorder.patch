@@ -7,7 +7,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8672,7 +8672,7 @@ function setMode(m) {
+@@ -14642,7 +14642,7 @@ function setMode(m, persist = true) {
    document.getElementById("foot").classList.toggle("seq", m === "S");
    document.getElementById("seq-style").hidden = m !== "S";
    syncShuffleLabel();

@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10263,7 +10263,6 @@ function dropNote() {
+@@ -13987,7 +13987,6 @@ function dropNote() {
    const g = ghostEl;
    ghostEl = null;
    endPress(false);

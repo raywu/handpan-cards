@@ -11,7 +11,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8142,7 +8142,7 @@ function release(e, cancelled, pushPoint = true) {
+@@ -14828,7 +14828,7 @@ function release(e, cancelled, pushPoint = true) {
    const now = e.timeStamp;
    if (pushPoint) drag.pts.push({ x: e.clientX, t: now });
    const cutoff = now - SWIPE_FLING_WINDOW_MS;
@@ -20,7 +20,7 @@ diff --git a/index.html b/index.html
    let vx = 0;
    if (pts.length >= 2) {
      const span = pts[pts.length - 1].t - pts[0].t;
-@@ -8195,8 +8195,7 @@ function swipeMove(e) {
+@@ -14862,8 +14862,7 @@ function swipeMove(e) {
    const now = e.timeStamp;
    drag.pts.push({ x: e.clientX, t: now });
    const cutoff = now - SWIPE_FLING_WINDOW_MS;

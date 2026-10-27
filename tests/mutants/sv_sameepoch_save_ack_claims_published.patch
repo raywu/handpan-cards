@@ -1,0 +1,15 @@
+# kills: SV15 U1: delayed same-epoch Save ACK cannot republish a deleted target or discard its draft
+# suite: node --test --test-name-pattern=^SV15.U1: tests/app.test.js
+# fault: Claims an ignored old same-epoch Save snapshot is published after a newer deletion.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10653,7 +10653,7 @@ function publishSavedCommand(result, persistence) {
+     if (!published.ok) savedIssue = published;
+     // An acknowledged older same-epoch revision may already have been superseded.
+     // Retain its API ACK without claiming that the ignored view was published.
+-    return { ...plainResult, persistence, published: published.ok && !published.ignored };
++    return { ...plainResult, persistence, published: published.ok };
+   } catch (e) {
+     // The API commit already succeeded. Retain that acknowledgment even if
+     // local publication fails; never retry allocation or claim rollback.

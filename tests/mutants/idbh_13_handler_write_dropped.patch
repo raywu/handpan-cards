@@ -1,0 +1,15 @@
+# kills: IDBH13 abort settles queued requests as errors and request handlers can append atomic writes
+# suite: node --test --test-name-pattern=^IDBH13\s tests/harness.test.js
+# fault: Report successful put without storing the handler-enqueued atomic write.
+diff --git a/tools/sandbox.js b/tools/sandbox.js
+--- a/tools/sandbox.js
++++ b/tools/sandbox.js
+@@ -252,7 +252,7 @@ function indexedDBFor(bucket) {
+             const actual = key === undefined ? store.nextKey++ : key;
+             if (store.autoIncrement && typeof actual === 'number' && actual >= store.nextKey) store.nextKey = Math.floor(actual) + 1;
+             if (store.keyPath !== null && key === undefined) copy[store.keyPath] = actual;
+-            store.entries.set(idbClone(actual), copy); return idbClone(actual);
++            return idbClone(actual);
+           });
+         },
+       };

@@ -15,7 +15,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -610,7 +610,6 @@ button.nav:active{background:#2e281e}
+@@ -1247,7 +1247,6 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
     .card.flip's own rotateY, while a filter flattens the 3D context and takes
     backface-visibility with it. A shadow paints in the element's own plane
     and touches neither. */

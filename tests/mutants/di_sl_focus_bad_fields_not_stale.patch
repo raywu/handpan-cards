@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13252,7 +13252,7 @@ function followFields(r, wasStale) {
+@@ -14248,7 +14248,7 @@ function followFields(r, wasStale) {
      if (scaleBox.value !== r.typedLine) writeLine(r.typedLine);
      else if (wasStale) resyncSheet(true);
    } else {

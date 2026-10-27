@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1155,7 +1155,7 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1514,7 +1514,7 @@ html.about-open{overflow:hidden}
          <textarea id="scale-box" rows="1" wrap="soft" autocapitalize="off" autocorrect="off"
                    autocomplete="off" spellcheck="false" enterkeyhint="go"
                    aria-describedby="scale-label-2"

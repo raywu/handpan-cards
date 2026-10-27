@@ -1,0 +1,15 @@
+# kills: IDBH6 read put and commit faults abort without changing committed data
+# suite: node --test --test-name-pattern=^IDBH6\s tests/harness.test.js
+# fault: Acknowledge a transaction despite an injected commit failure.
+diff --git a/tools/sandbox.js b/tools/sandbox.js
+--- a/tools/sandbox.js
++++ b/tools/sandbox.js
+@@ -214,7 +214,7 @@ function indexedDBFor(bucket) {
+         const idle = ++tx._idle;
+         dispatch('commit', () => {
+           if (tx._done || tx._busy || tx._queue.length || idle !== tx._idle) return next();
+-          const error = failure('commit');
++          const error = null;
+           if (error) return fail(error);
+           if (mode !== 'readonly') record.stores = snapshot(tx._stores);
+           operations.push({ operation: 'commit', db: db.name, mode });

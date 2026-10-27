@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1107,7 +1107,7 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1120,7 +1120,7 @@ footer.seq{row-gap:var(--sp-1)}
  @media (orientation:landscape) and (max-height:500px){
    #scale-sheet[data-tab="layout"] .sheetsurf{max-width:none}
  }

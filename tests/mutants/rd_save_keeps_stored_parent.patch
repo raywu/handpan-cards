@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11346,6 +11346,7 @@ function sheetOptions() {
+@@ -12767,6 +12767,7 @@ function sheetOptions() {
    if (!editingId) {
      if (n) o.name = n;  // an empty box keeps the auto label
    } else {

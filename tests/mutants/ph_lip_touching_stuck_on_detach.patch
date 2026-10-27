@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10806,7 +10806,6 @@
+@@ -12144,7 +12144,6 @@ sheet.addEventListener("touchstart", (e) => {
    const ts = e.touches;
    lipTouching = !!(ts && ts.length);
    const tg = e.target;

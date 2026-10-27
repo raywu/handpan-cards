@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11246,7 +11246,7 @@ function collapseLip() {
+@@ -12004,7 +12004,7 @@ function collapseLip() {
    lipDirty = false;
    sheet.classList.add("lipnow", "lipped");
    lipBtn.hidden = false;

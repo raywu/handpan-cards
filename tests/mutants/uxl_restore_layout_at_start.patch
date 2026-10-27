@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10712,7 +10712,7 @@ function restoreLip() {
+@@ -12036,7 +12036,7 @@ function restoreLip() {
    clearTimeout(lipTimer);
    lipGen += 1;
    if (lipSettled) lipMeasure();

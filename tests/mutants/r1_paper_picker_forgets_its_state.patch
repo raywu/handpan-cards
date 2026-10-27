@@ -15,9 +15,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -6437,12 +6437,6 @@
- function setPrintPaper(p) {
-   if (!isPaper(p)) return;
+@@ -11092,8 +11092,2 @@ function setPrintPaper(p) {
    printPaper = p; save();
 -  // D16: the picker is a static control now (it lives in the settings panel,
 -  // not re-rendered per card), so it only reflects state that WE push into
@@ -26,5 +24,3 @@ diff --git a/index.html b/index.html
 -  const sel = document.getElementById("print-paper-select");
 -  if (sel) sel.value = p;
  }
-
- /* The print CTA for every deck - built-in and generated alike: the browser is

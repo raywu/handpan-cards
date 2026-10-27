@@ -1,0 +1,15 @@
+# kills: SV12 U6: accessible collision labels explain stable saved and preset tokens in each locale
+# suite: node --test --test-name-pattern=^SV12.U6: tests/app.test.js
+# fault: Collision labels retain opaque P/S tokens without their localized accessible explanations.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11465,7 +11465,7 @@ function buildChips() {
+     if(labels[i]!==chipLabel(d.name)) {
+       const saved=view.selection.kind==="saved";
+       const token=saved?"S"+view.displayOrdinal:"P"+(DECKS.findIndex(preset=>preset.id===view.selection.id)+1);
+-      accessible+=". "+t(saved?"saved.savedToken":"saved.presetToken",{token});
++      accessible+="";
+     }
+     b.setAttribute("aria-label",accessible);
+     b.onclick=()=>savedEqual(view.selection,selection)?openEditSheet(d,b):selectDeck(view.selection);

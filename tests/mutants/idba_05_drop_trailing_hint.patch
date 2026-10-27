@@ -1,0 +1,16 @@
+# kills: IDB5 U1: a hint during a completed held read triggers a trailing authoritative read
+# suite: node --test --test-reporter=tap --test-name-pattern=^IDB5\s tests/app.test.js
+# Frozen transactional-storage contract: drop trailing hint.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10715,8 +10715,8 @@ function savedReconciliationFailure(result,raw) {
+ }
+ function reconcileSavedCollection() {
+   if(savedMode!=="durable")return Promise.resolve({ok:true,persistence:savedMode});
+-  savedReconcileDirty=true;
+   if(savedReconciliation)return savedReconciliation;
++  savedReconcileDirty=true;
+   const generation=savedAuthorityGeneration;
+   const pending=(async()=>{
+     try{

@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8669,7 +8669,7 @@ function setMode(m) {
+@@ -14639,7 +14639,7 @@ function setMode(m, persist = true) {
    syncTierUI();
    const seqNote = document.getElementById("panel-seq-note");
    seqNote.hidden = m !== "S";

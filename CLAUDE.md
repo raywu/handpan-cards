@@ -411,15 +411,17 @@ changing the solver or the seed, never by hand.
 - **Menu Resources** (2026-10-05): the settings panel's Resources group has three
   `.modebar` rows - three sites (`HANDPANER`, `DING & TONES`, `HTC`, class `trio`: one equal-width sites row at every width, complete labels wrap inside 44px-minimum targets; `tests/e2e.test.js` "TR-1: the three site links are equal in width on every line they share, and every label stays inside its box"), then two Amy Naylor videos (`AMY: PROGRESSIONS`,
   `AMY: BOTTOM NOTES`, class `duo`: one line at every width, equal widths,
-  labels wrap inside their boxes), then `HANDPAN 101` alone (2026-10-08, lane PM:
-  a Google Doc link, `#res-handpan-101`, full width, the last panel stop, so no
-  earlier control moved). They are links only, never on a deck or card,
+  labels wrap inside their boxes), then `HANDPAN HELPERS` (`#res-handpan-helpers`,
+  https://handpanhelpers.klangzeug.de/) and `HANDPAN 101` (a Google Doc link,
+  `#res-handpan-101`) in one equal-width `duo` row, in that order. Complete labels
+  wrap inside 44px-minimum targets; HANDPAN 101 remains the last outbound
+  Resources link. They are links only, never on a deck or card,
   and join `panelStops()` through `a.mode[id^="res-"]`. A fourth row follows
   (2026-10-17, owner gate G1, About lane O): `ABOUT`, a `<button id="about-open">`
   (not a link) alone in a plain full-width `.modebar`, the last Resources row and
   the last panel stop ("AO: ABOUT is the last panel stop, a full-width button
   alone in the last Resources row"; "PM rule 7: HANDPAN 101 is the last Resources
-  link, a Google Doc in a new tab, alone in its row" asserts four rows and that
+  link, a Google Doc in a new tab, beside Handpan Helpers" asserts four rows and that
   the fourth holds ABOUT and no link). It opens the About overlay (see "About
   section"). The CI `panel-fit` oracle allows `res-*` controls 64px of growth
   ("panel fit: the Resources allowance is 64, owed only for a res- control the base
@@ -479,18 +481,33 @@ pitch classes (midi % 12), never stored.
   `replacements()` before `fallbackDeck()`), and boot says "That scale is gone."
   only when the deck shown is not that replacement. A replacement outranks a
   hidden seed.
-  Hidden ids live in the `hidden` field of the `hpfc` blob, written only when
-  non-empty; there is no separate `hpfc.hidden` key. RESET SEEDED SCALES
-  (`#deck-restore`) clears `hidden` and every record whose `replaces` names a
-  seed (older records naming the same seed included), keeps plain custom
-  decks, and moves to `fallbackDeck()` only if the selected deck is gone.
-- **Chip order is not picker order:** the strip is `allDecks()` = custom decks
-  newest first, then the seeded decks' slots in `data/decks.json` order. A slot
-  shows `replacements()[seedId]`, the newest record naming that seed in
-  `replaces`, else the seed if not hidden. Older records naming the same seed
-  render as plain custom decks. "Picker order" and "chip index" are different
-  facts; a test that picks a custom deck by index targets the older custom with
-  `+ 1`, never index 0.
+  In saved-variants builds, hidden seeded state and the preferred tagged
+  selection live with the saved collection (ENGINE-SPEC sections 12/14); unrelated
+  settings remain in `hpfc`. Legacy source keys are retained for recovery and
+  older clients; local instance handles are never written to legacy `hpfc.deck`.
+  RESET SEEDED SCALES clears hidden state and removes recognized replacement
+  records whose `replaces` names a seed, including older recognized replacements.
+  Plain custom instances and unreadable/newer records are kept. It changes the
+  selected view only if that selection disappeared, using the existing visible-
+  default/replacement then first-visible fallback. Destructive group/slot commits
+  must reject stale affected-scope proofs; two taps do not authorize deleting a
+  replacement changed in another tab after RESET was armed.
+- **Chip order is not picker order:** saved custom instances appear newest first,
+  then the seeded slots in `data/decks.json` order. Edit keeps an instance's place
+  even when its engine inventory ID changes. Each slot has one explicit saved
+  owner, else its visible built-in; older replacement instances appear as custom
+  instances. Deleting the owner promotes the newest surviving recognized
+  replacement, preserving the existing policy. Imports carry no replacement
+  authority merely because their notes match.
+- **Saved instance identity:** engine IDs still identify musical inventory.
+  Separate stable local handles identify saved instances, selection, Edit and
+  deletion; same-note named/layout variants can coexist. Exact portable-meaning
+  imports reuse a match, while Edit updates only its selected instance. Custom
+  `#s=` links serialize committed portable content, never a local handle; equal
+  URLs can describe several local instances. Preserve explicit LINK UI retirement
+  on instance selection as well as route changes. ENGINE-SPEC sections 12/14 are
+  authoritative for equality, migration, serialized acknowledgment, conflicts,
+  session-only fallback and recovery. No workflow or global configuration changes.
 - **Boot order:** the first render must happen after the card-order array
   exists; `render()` guards against an empty order. Keep it that way.
 - **Data re-injection:** the degrees contain `deg` (U+00B0) characters; a

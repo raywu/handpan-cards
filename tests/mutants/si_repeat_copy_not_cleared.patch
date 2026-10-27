@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12332,7 +12332,6 @@ function copyLink() {
-   const href = location.href;
-   const deck_kind = deckKind(deck());
+@@ -15113,7 +15113,6 @@ function copyLink() {
    const done = (text, method) => {
--    say("", "");
      track("share_copy", { deck_kind, method });
-     setTimeout(() => { if (announce.textContent === "") say(text, "ok"); }, 0);
-   };
+     if (!current() || noticeRevision !== announcementRevision) return;
+-    say("", "");
+     noticeRevision = announcementRevision;
+     setTimeout(() => {
+       if (current() && noticeRevision === announcementRevision) say(text, "ok");

@@ -17,7 +17,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -223,7 +223,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
+@@ -298,7 +298,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
     min-height is ever removed. */
  .mode{border:1px solid #433b2c; border-radius:8px; background:#211d16; color:#c4bcab;
    font:600 10.5px/1 "Nunito Sans"; letter-spacing:.08em; padding:7px 11px 6px; cursor:pointer;
@@ -26,7 +26,7 @@ diff --git a/index.html b/index.html
  /* Eng review amendment 2: .mode is shared with <button>, which has no UA
     underline to begin with; an <a class="mode"> (the Resources links) needs
     this explicitly or the browser's default link underline shows through. */
-@@ -612,7 +612,7 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -740,7 +740,7 @@ footer.seq{row-gap:var(--sp-1)}
     "SHUFFLE: OFF" opens from 7px to 16.25px, because the label is now centred
     in a 44px box instead of sitting 7px under the counter. That is a real
     visual change, accepted as the price of the target. */
