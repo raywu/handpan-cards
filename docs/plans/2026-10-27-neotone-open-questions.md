@@ -9,7 +9,7 @@ A "Mutant Neotone" layout choice in the Add/Edit Scale -> Layout flow: assign a 
 ## Where the material lives
 
 - Plan: `docs/plans/2026-10-26-mutant-neotone-layout.md` (on `origin/dev`; created in commit `e0acd302`, branch `origin/codex/neotone-future-plan-20261026`).
-- Prompt v3: `docs/prompts/2026-10-26-mutant-neotone-layout.md` (same commit; the prompt is on the codex branch, not confirmed on dev).
+- Prompt v3: `docs/prompts/2026-10-26-mutant-neotone-layout.md` (same commit; the prompt is on `origin/dev`).
 - Ledger entry: `docs/WORKSTREAMS.md` "MUTANT-NEOTONE" (`e0acd302`); status lines in `docs/CLAUDE_RETURN_HANDOFF.md:36,104`, `docs/CLAUDE_TAKEOVER_PLAN.md:58,91,173`, `docs/DEVELOPMENT_CONTINUITY.md:16`, `docs/plans/2026-10-25-workstream-status.md:22` (all `origin/dev`).
 - Reference image: local-only, never published (SHA256 `e997c67af983962882ebb3419d7265fb112ed5b20562b72f04da841e6b6ad19a`); backup path in `docs/handoff/2026-10-26-recovery-manifest.json:126-127` (`origin/dev`). Host-local paths, so they may not exist on this machine.
 - Untracked docs in `/Users/ray/Projects/handpan-cards/docs`: no Neotone hits (grep empty). No `~/Projects/*kit*` Neotone hits found (the recursive grep for `*.md` returned nothing).
@@ -45,8 +45,8 @@ Source for 1-4: plan "Product decisions and deferred owner interview". Q5-Q7 are
    - B: owner-approved explicit profile-only export restriction, with a visible warning.
    - Never export an acoustic-looking approximation silently.
 5. **Wire and storage versioning (approval gate).** Approve v7 only for profile-bearing links (A, recommended), or a different scheme (B). Also approve the mixed-version isolation strategy (capability or namespace) as a launch gate; the plan says a record-version bump alone is not enough.
-6. **Release base.** Rebase on the released DEV baseline (`3542d6ea`, A, recommended) or wait for the saved-variants contract (`2a260d21`, B). Same-scale/different-map coexistence depends on it (plan Evidence table and "Saved-instance identity").
-7. **Execution grant.** After 1-6 are answered, an explicit grant to freeze the fixture and codec schema and start the T/E/U/P/M lanes (plan "Swarm execution"). Recommended: grant only after 1-4.
+6. **Release base (not an owner question).** Rebase on whatever ships (SV), whether that is the released DEV baseline (`3542d6ea`) or the saved-variants contract (`2a260d21`). Same-scale/different-map coexistence depends on it (plan Evidence table and "Saved-instance identity").
+7. **Execution grant.** After Q1-5, an explicit grant to freeze the fixture and codec schema and start the T/E/U/P/M lanes (plan "Swarm execution"). Recommended: grant only after 1-4.
 
 ## Research that can proceed without answers
 
@@ -60,6 +60,6 @@ Blocked until answers: the fixture (Q1), voicing/badge copy (Q2, Q3), export sco
 ## Search record
 
 - `git log --all --oneline -i --grep=neotone` -> `e0acd302 Queue reviewed Mutant Neotone layout plan for future work`
-- `git grep -il neotone origin/dev` -> the 10 files listed above.
+- `git grep -il neotone origin/dev` -> the 11 files listed above.
 - `grep -ril neotone .../memory` -> `queue-2026-10-27-afk.md` only.
 - `grep -ril neotone /Users/ray/Projects/handpan-cards/docs` -> empty.
