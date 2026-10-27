@@ -4,12 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13041,7 +13041,7 @@
+@@ -13125,6 +13125,7 @@ tabStrip.addEventListener("keydown", (e) => {
  anglePrev.onclick = () => nudgeAngle(1);
  angleNext.onclick = () => nudgeAngle(-1);
  function showPendingDerive() {
--  if (drawerOpen && boxOk && pendingDerive) { layoutStatus(pendingDerive); pendingDerive = ""; }
-+  if (false && pendingDerive) { layoutStatus(pendingDerive); pendingDerive = ""; }
- }
- tabLayout.addEventListener("click", showPendingDerive);
- nextBtn.addEventListener("click", showPendingDerive);
++  return false;
+   // Invalid active fields can retain a last-good line and boxOk. Keep Layout
+   // accessible, but do not consume its feedback until the active input is valid.
+   if (!drawerOpen || !currentScaleInput()) return false;

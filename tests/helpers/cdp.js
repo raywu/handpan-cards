@@ -275,6 +275,8 @@ class Browser {
     this.id = 0; this.pending = new Map(); this.sessionId = null;
     this.eventHandlers = new Map();      // CDP method -> async handler(params)
     this.coverage = null;                // CoverageHook, only under HPC_COVERAGE_DIR
+    this.foregroundSettle = false;       // Neutral unless launch explicitly opts in.
+    this._closed = false;
     ws.addEventListener("message", (ev) => {
       const msg = JSON.parse(ev.data);
       if (msg.id !== undefined) {
@@ -370,6 +372,23 @@ class Browser {
   // stuck/never-clearing animation still bounds the suite the way the fixed
   // sleep always did, instead of hanging it.
   async settle() {
+    if (this._closed) throw new Error("cannot settle a closed browser");
+    if (this.foregroundSettle) {
+      // Interactive callers opt in to preparing this session before EACH first
+      // frame. Neutral eval/send and deferred capture drains never activate it.
+      // This RPC has its existing 20s limit; 500ms is not a total settle bound.
+      const sessionId = this.sessionId;
+      if (typeof sessionId !== "string" || !sessionId) {
+        throw new Error("foreground settle requires an attached session");
+      }
+      await this.send("Page.bringToFront");
+      // close() can begin while that RPC is pending. Do not start frame work on
+      // a closed browser or a different session when its response arrives.
+      if (this._closed) throw new Error("cannot settle a closed browser");
+      if (this.sessionId !== sessionId) {
+        throw new Error("foreground settle session changed during preparation");
+      }
+    }
     await this.eval(`return new Promise(r => requestAnimationFrame(r));`);
     const deadline = Date.now() + 500;
     for (;;) {
@@ -600,6 +619,7 @@ class Browser {
     `);
   }
   async close() {
+    this._closed = true;
     if (this.coverage) await this.coverage.finish();
     try { this.ws.close(); } catch {}
     // Deregisters as well as kills, so a normally-closed browser is not killed
@@ -727,6 +747,7 @@ async function launchOnce(opts = {}) {
     ws = new WebSocket(wsUrl);
     await new Promise((res, rej) => { ws.addEventListener("open", res); ws.addEventListener("error", rej); });
     const b = new Browser(proc, ws, profileDir, entry);
+    b.foregroundSettle = opts.foregroundSettle === true;
 
     // Fresh target per launch => no service-worker or storage carry-over.
     const { targetId } = await b.send("Target.createTarget", { url: "about:blank" }, false);

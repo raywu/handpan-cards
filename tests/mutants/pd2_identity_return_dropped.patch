@@ -1,0 +1,15 @@
+# kills: PD2: returning a ring to identity keeps its latest truthful follows-listed outcome
+# suite: node --test --test-reporter=tap --test-name-pattern=PD2:.returning.a.ring.to.identity.keeps.its.latest.truthful tests/app.test.js
+# Returning to ascending identity wrongly discards the current follows-listed outcome.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12331,7 +12331,7 @@ function noteCounts(fields, value) {
+       // typed key stays the identity. A different ring's edit does not.
+       if (r.said[ring]) delete pendingDerive[ring];
+       if (derived.includes(ring)) {
+-        if (ringCount[ring] > 0) pendingDerive[ring] = true;
++        if (ringCount[ring] > 0 && typedKey(typedNow, ring) !== null) pendingDerive[ring] = true;
+         else delete pendingDerive[ring];
+       } else if (derived.length && r.said[ring]) {
+         // Keep existing mixed derivation/count payloads, not count-only notices.

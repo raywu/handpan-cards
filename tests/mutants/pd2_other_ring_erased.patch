@@ -1,0 +1,14 @@
+# kills: PD2: inner then rim edits retain both final outcomes in rim then inner order
+# suite: node --test --test-reporter=tap --test-name-pattern=PD2:.inner.then.rim.edits.retain.both.final.outcomes tests/app.test.js
+# A derive resets the whole pending object, losing a different ring's still-current outcome.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12326,6 +12326,7 @@ function noteCounts(fields, value) {
+   let putDown = r.putDown;
+   if (pickRef && derived.includes(pickRef.ring)) { pickRef = null; pickMoved = false; putDown = true; }
+   if (!drawerOpen) {
++    if (derived.length) pendingDerive = {};
+     for (const ring of LAYOUT_RINGS) {
+       // Count changes invalidate that ring's earlier outcome, even when its
+       // typed key stays the identity. A different ring's edit does not.

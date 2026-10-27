@@ -411,15 +411,17 @@ changing the solver or the seed, never by hand.
 - **Menu Resources** (2026-10-05): the settings panel's Resources group has three
   `.modebar` rows - three sites (`HANDPANER`, `DING & TONES`, `HTC`, class `trio`: one equal-width sites row at every width, complete labels wrap inside 44px-minimum targets; `tests/e2e.test.js` "TR-1: the three site links are equal in width on every line they share, and every label stays inside its box"), then two Amy Naylor videos (`AMY: PROGRESSIONS`,
   `AMY: BOTTOM NOTES`, class `duo`: one line at every width, equal widths,
-  labels wrap inside their boxes), then `HANDPAN 101` alone (2026-10-08, lane PM:
-  a Google Doc link, `#res-handpan-101`, full width, the last panel stop, so no
-  earlier control moved). They are links only, never on a deck or card,
+  labels wrap inside their boxes), then `HANDPAN HELPERS` (`#res-handpan-helpers`,
+  https://handpanhelpers.klangzeug.de/) and `HANDPAN 101` (a Google Doc link,
+  `#res-handpan-101`) in one equal-width `duo` row, in that order. Complete labels
+  wrap inside 44px-minimum targets; HANDPAN 101 remains the last outbound
+  Resources link. They are links only, never on a deck or card,
   and join `panelStops()` through `a.mode[id^="res-"]`. A fourth row follows
   (2026-10-17, owner gate G1, About lane O): `ABOUT`, a `<button id="about-open">`
   (not a link) alone in a plain full-width `.modebar`, the last Resources row and
   the last panel stop ("AO: ABOUT is the last panel stop, a full-width button
   alone in the last Resources row"; "PM rule 7: HANDPAN 101 is the last Resources
-  link, a Google Doc in a new tab, alone in its row" asserts four rows and that
+  link, a Google Doc in a new tab, beside Handpan Helpers" asserts four rows and that
   the fourth holds ABOUT and no link). It opens the About overlay (see "About
   section"). The CI `panel-fit` oracle allows `res-*` controls 64px of growth
   ("panel fit: the Resources allowance is 64, owed only for a res- control the base

@@ -309,8 +309,8 @@ a.mode{text-decoration:none}
 .modebar .mode{flex:1 1 0}
 /* AD8: a wrapped label centres too (an <a> is start-aligned by default). */
 #settings-panel .mode{text-align:center}
-/* The two Amy links share ONE row on every viewport, wrapping their labels
-   inside the link box (menu-resources AD7); no other row takes this class. */
+/* Each paired Resources row stays on ONE row on every viewport, wrapping
+   complete labels inside the link boxes (menu-resources AD7). */
 .modebar.duo{flex-wrap:nowrap}
 #share-url{box-sizing:border-box; width:100%; min-height:44px; padding:0 10px; font:inherit; font-size:16px;
   position:absolute; left:0; right:0; top:44px; z-index:29;
@@ -1721,7 +1721,7 @@ html.about-open{overflow:hidden}
     </div>
   </div>
   <!-- Resources (docs/plans/2026-10-01-resources-menu.md, eng review
-       amendments 1-7; docs/plans/2026-10-05-menu-resources-amy.md): six
+       amendments 1-7; docs/plans/2026-10-05-menu-resources-amy.md): seven
        outbound links in three rows plus a fourth row holding the ABOUT button, styled as .mode (no new colour
        or typeface, N15). They deliberately carry no onclick - a link click
        must NOT call closePanel() (amendment 3), unlike the print buttons
@@ -1734,8 +1734,8 @@ html.about-open{overflow:hidden}
          stacked overflowed the 320x568 fit test by 18px. Row one holds
          the three sites (class trio: one equal-width row at every viewport,
          complete labels wrap inside their targets), row two (class duo: one line, labels wrap inside their
-         boxes) the two Amy Naylor videos, row three HANDPAN 101 alone (2026-10-08,
-         full width, so no existing control moves down), row four the ABOUT button
+         boxes) the two Amy Naylor videos, row three (class duo) HANDPAN HELPERS
+         then HANDPAN 101, row four the ABOUT button
          (an in-app view, not an outbound link: no href, no res- id). -->
     <div class="modebar trio">
       <a class="mode" id="res-handpaner" href="https://handpaner.com/"
@@ -1753,11 +1753,14 @@ html.about-open{overflow:hidden}
          aria-label="Amy Naylor: more interesting chords with bottom notes (YouTube)"
          target="_blank" rel="noopener">AMY: BOTTOM NOTES</a>
     </div>
-    <div class="modebar">
+    <div class="modebar duo">
+      <a class="mode" id="res-handpan-helpers"
+         href="https://handpanhelpers.klangzeug.de/"
+         target="_blank" rel="noopener"><span>HANDPAN <br>HELPERS</span></a>
       <a class="mode" id="res-handpan-101"
          href="https://docs.google.com/document/d/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco/edit?usp=drivesdk"
          aria-label="Handpan 101 (Google Doc)"
-         target="_blank" rel="noopener">HANDPAN 101</a>
+         target="_blank" rel="noopener"><span>HANDPAN <br>101</span></a>
     </div>
     <div class="modebar">
       <button class="mode" type="button" id="about-open" aria-haspopup="dialog">ABOUT</button>
@@ -10143,6 +10146,7 @@ function restoreScales() {
 }
 
 function selectDeck(id) {
+  retireLinkUI();
   // buildChips() below throws the whole strip away and builds it again, so any
   // focus resting ON the strip is about to be invalidated: the chip that was
   // clicked is detached outright. Either way the caret must be re-homed onto
@@ -10922,6 +10926,20 @@ const restoreBtn = document.getElementById("deck-restore");
 const shareCopy = document.getElementById("share-copy");
 const shareUrl = document.getElementById("share-url");
 shareUrl.setAttribute("hidden", "");
+// LINK owns UI only until a newer request, context change or dismissal. These
+// counters are initialized before boot can select a scale or announce a notice.
+let linkUIGeneration = 0;
+let linkUIHref = location.href;
+let announcementRevision = 0;
+function retireLinkUI() {
+  ++linkUIGeneration;
+  shareUrl.setAttribute("hidden", "");
+}
+function observeLinkRoute() {
+  if (linkUIHref === location.href) return;
+  retireLinkUI();
+  linkUIHref = location.href;
+}
 // The page header (Stage 2). backBtn is the page's way out AND where focus
 // lands on open; titleEl is the page's accessible name, not decoration.
 const backBtn   = document.getElementById("scale-back");
@@ -11078,6 +11096,7 @@ function showRefusal(text) {
  *  showRefusal() instead, because a refusal belongs directly under the seed
  *  field it is about, not down in #scale-guidance by the primary. */
 function say(text, tier) {
+  ++announcementRevision;
   for (const el of [msgLine, announce]) {
     el.className = (el === announce ? "announce" : "") + (tier ? " " + tier : "");
     el.textContent = text;
@@ -11122,7 +11141,11 @@ function paintMirrors() {
    Its state is a session let like `mirror` and `anchor`: it opens closed,
    closing it never touches the layout, and leaving the sheet drops it. */
 let drawerOpen = false;
-let pendingDerive = "";
+// At most one outcome per ring: true follows the typed list; a string keeps an
+// existing same-parse count/reset notice. putDown is that parse's legacy suffix.
+// This is session feedback only, never a history or a stored layout option.
+let pendingDerive = {};
+const currentScaleInput = () => boxOk && !(inputPath === "fields" && lineStale);
 let sheetTab = "scale";
 let layoutBase = { anchor: "one", mirror: false, mb: false, seats: "", angles: "" };
 const HINT_EMPTY = () => t("sheet.layout_hint_empty");
@@ -11133,6 +11156,9 @@ const ringWord = (ring) => t("sheet.ring_" + ring);
 /** One line under the plate, read once. The same sentence twice in a row is
  *  cleared first, or a live region would stay silent on the repeat. */
 function layoutStatus(text, warn) {
+  // An actual drawer result supersedes deferred feedback; passive empty paints
+  // leave it alone (including an invalid-input visit to Layout).
+  if (text) pendingDerive = {};
   drawerStatus.classList.toggle("warn", !!warn);
   if (warn && text && drawerStatus.textContent === text) {
     drawerStatus.textContent = "";
@@ -11642,7 +11668,7 @@ function setTab(tab) {
   repaintPlate();
   bandPort.scrollTop = 0;
   setLip(false, { instant: true });
-  if (drawerOpen && boxOk && !hasTwoNoteRing() && !(ringCount && ringCount.bottom >= 1)) layoutStatus(t("sheet.no_two_ring"));
+  if (drawerOpen && !showPendingDerive() && currentScaleInput() && !hasTwoNoteRing() && !(ringCount && ringCount.bottom >= 1)) layoutStatus(t("sheet.no_two_ring"));
 }
 /** Leaving the sheet or opening a fresh session: no focus, no status. */
 function dropDrawer() {
@@ -11651,7 +11677,7 @@ function dropDrawer() {
   drawerHint.textContent = "";
   drawerHint.hidden = true;
   drawerOpen = false;
-  pendingDerive = "";
+  pendingDerive = {};
   sheetTab = "scale";
   paintTabs();
   pickRef = null;
@@ -12318,6 +12344,21 @@ function noteCounts(fields, value) {
   const derived = value ? deriveTyped(value, fields) : [];
   let putDown = r.putDown;
   if (pickRef && derived.includes(pickRef.ring)) { pickRef = null; pickMoved = false; putDown = true; }
+  if (!drawerOpen) {
+    for (const ring of LAYOUT_RINGS) {
+      // Count changes invalidate that ring's earlier outcome, even when its
+      // typed key stays the identity. A different ring's edit does not.
+      if (r.said[ring]) delete pendingDerive[ring];
+      if (derived.includes(ring)) {
+        if (ringCount[ring] > 0) pendingDerive[ring] = true;
+        else delete pendingDerive[ring];
+      } else if (derived.length && r.said[ring]) {
+        // Keep existing mixed derivation/count payloads, not count-only notices.
+        pendingDerive[ring] = r.said[ring];
+      }
+    }
+    if (derived.length) pendingDerive.putDown = putDown;
+  }
   let text = r.text;
   if (derived.length) {
     const parts = [];
@@ -12330,7 +12371,6 @@ function noteCounts(fields, value) {
   }
   if (!text) return;
   if (putDown && wasOnNote) focusFirstNext = true;
-  if (!drawerOpen && derived.length) pendingDerive = text;
   if (drawerOpen) layoutStatus(text);
 }
 const typedKey = (k, ring) => (k && k[ring] ? k[ring].join(",") : null);
@@ -12614,6 +12654,7 @@ function setInert(on, targets) {
   }
 }
 function showSheet(opener) {
+  retireLinkUI();
   sheetOpener = opener || addChip;
   sheet.removeAttribute("hidden");
   sheetOpen = true;
@@ -12767,7 +12808,10 @@ let pendingPop = false;
 // The browser's way out: the back gesture, or a swipe. The entry is already
 // gone, so this only takes the page down.
 window.addEventListener("popstate", () => {
+  // SAVE already selected and synced the committed scale. Observe the final
+  // route after this app-owned pop, not its temporary pre-SAVE destination.
   if (pendingPop) { pendingPop = false; syncRoute(); return; }
+  observeLinkRoute();
   if (aboutOpen) { hideAbout(); return; }
   if (location.hash === ABOUT_ROUTE) { syncRoute(); return; }
   if (!sheetOpen) return;
@@ -13104,12 +13148,20 @@ tabStrip.addEventListener("keydown", (e) => {
 anglePrev.onclick = () => nudgeAngle(1);
 angleNext.onclick = () => nudgeAngle(-1);
 function showPendingDerive() {
-  if (drawerOpen && boxOk && pendingDerive) { layoutStatus(pendingDerive); pendingDerive = ""; }
+  // Invalid active fields can retain a last-good line and boxOk. Keep Layout
+  // accessible, but do not consume its feedback until the active input is valid.
+  if (!drawerOpen || !currentScaleInput()) return false;
+  const parts = LAYOUT_RINGS.filter((ring) => pendingDerive[ring]).map((ring) =>
+    pendingDerive[ring] === true
+      ? t(ring === "rim" ? "sheet.rim_follows" : "sheet.inner_follows")
+      : pendingDerive[ring]);
+  const text = parts.join(" ") + (parts.length && pendingDerive.putDown ? t("sheet.put_down") : "");
+  pendingDerive = {};
+  if (!text) return false;
+  layoutStatus(text);
+  return true;
 }
-tabLayout.addEventListener("click", showPendingDerive);
-nextBtn.addEventListener("click", showPendingDerive);
-tabStrip.addEventListener("keydown", showPendingDerive);
-resetBtn.addEventListener("click", () => { pendingDerive = ""; });
+resetBtn.addEventListener("click", () => { pendingDerive = {}; });
 notePrev.onclick = () => stepNote(-1);
 noteNext.onclick = () => stepNote(1);
 seatPrev.onclick = () => stepSeat(-1);
@@ -13770,6 +13822,7 @@ function openPanel() {
   panelOpen = true;
   settingsTrigger.setAttribute("aria-expanded", "true");
   if (desktopMQ.matches) return;
+  retireLinkUI();
   settingsScrim.removeAttribute("hidden");
   settingsPanel.setAttribute("role", "dialog");
   settingsPanel.setAttribute("aria-modal", "true");
@@ -13785,7 +13838,7 @@ function closePanel() {
   settingsPanel.removeAttribute("aria-modal");
   setInert(false, panelBackground);
   disarmReset();
-  shareUrl.setAttribute("hidden", "");
+  retireLinkUI();
   settingsTrigger.focus();
 }
 /* ---------------- about overlay ---------------- */
@@ -13809,6 +13862,7 @@ function aboutStops() {
   return [aboutCloseBtn, ...document.querySelectorAll('#about a[href^="#deck="], #about a[href^="mailto:"]')].filter(isStop);
 }
 function openAbout() {
+  retireLinkUI();
   closePanel();
   aboutSection.removeAttribute("hidden");
   aboutOpen = true;
@@ -14422,8 +14476,8 @@ function syncRoute() {
   const want = location.pathname + location.search + route;
   if (location.pathname + location.search + location.hash !== want) {
     history.replaceState(history.state, "", want);
-    shareUrl.setAttribute("hidden", "");
   }
+  observeLinkRoute();
   const refused = route === "";
   shareCopy.disabled = refused;
   shareCopy.title = refused ? reason : "";
@@ -14431,34 +14485,67 @@ function syncRoute() {
   routeRefused = refused;
 }
 function copyLink() {
+  observeLinkRoute();
+  retireLinkUI();
+  const generation = linkUIGeneration;
   const href = location.href;
   const deck_kind = deckKind(deck());
+  let noticeRevision = announcementRevision;
+  const current = () => generation === linkUIGeneration && href === location.href &&
+    !shareCopy.disabled && !sheetOpen && !aboutOpen &&
+    !(panelOpen && !desktopMQ.matches) && !document.hidden;
+  if (!current()) return;
   const done = (text, method) => {
-    say("", "");
     track("share_copy", { deck_kind, method });
-    setTimeout(() => { if (announce.textContent === "") say(text, "ok"); }, 0);
+    if (!current() || noticeRevision !== announcementRevision) return;
+    say("", "");
+    noticeRevision = announcementRevision;
+    setTimeout(() => {
+      if (current() && noticeRevision === announcementRevision) say(text, "ok");
+    }, 0);
   };
   const reveal = () => {
+    if (!current()) return;
     shareUrl.value = href;
     shareUrl.removeAttribute("hidden");
     shareUrl.focus();
+    if (!current()) return;
     shareUrl.select();
-    say("SELECT THE LINK AND COPY IT", "warn");
+    if (noticeRevision === announcementRevision) {
+      say("SELECT THE LINK AND COPY IT", "warn");
+      noticeRevision = announcementRevision;
+    }
     track("share_copy", { deck_kind, method: "select" });
   };
   const share = () => {
+    if (!current()) return;
     if (!navigator.share) { reveal(); return; }
-    Promise.resolve().then(() => navigator.share({ url: href }))
-      .then(() => done(t("share.shared"), "share"), e => { if (!e || e.name !== "AbortError") reveal(); });
+    let started = false;
+    Promise.resolve().then(() => {
+      if (!current()) return;
+      started = true;
+      return navigator.share({ url: href });
+    }).then(() => {
+      if (started) done(t("share.shared"), "share");
+    }, e => { if (!e || e.name !== "AbortError") reveal(); });
   };
   if (!navigator.clipboard || !navigator.clipboard.writeText) { share(); return; }
   Promise.resolve().then(() => navigator.clipboard.writeText(href))
     .then(() => done(t("share.copied"), "clipboard"), share);
 }
 shareCopy.onclick = copyLink;
-shareUrl.addEventListener("blur", () => shareUrl.setAttribute("hidden", ""));
+shareUrl.addEventListener("blur", () => {
+  // Hiding an older field can itself release focus. Its blur must not retire
+  // the newer request that already hid it before starting platform work.
+  if (!shareUrl.hasAttribute("hidden")) retireLinkUI();
+});
 shareUrl.addEventListener("keydown", e => {
-  if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); shareUrl.setAttribute("hidden", ""); shareCopy.focus(); }
+  if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); retireLinkUI(); shareCopy.focus(); }
+});
+// OS share/permission UI may blur the window. Only hidden-page transitions
+// retire UI, so a completion cannot replay after the page becomes visible.
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) retireLinkUI();
 });
 // An in-page link (the about section) changes the hash without a reload, so no
 // boot code runs. selectDeck gets the id deck() returns for the mapped seed,
@@ -14480,6 +14567,7 @@ function routeToDeck(routed) {
   return shown;
 }
 window.addEventListener("hashchange", () => {
+  observeLinkRoute();
   if (sheetOpen || aboutOpen) return;
   if (location.hash === routeFor(deck())) return;
   if (location.hash.indexOf(SHARE_PREFIX) === 0) {

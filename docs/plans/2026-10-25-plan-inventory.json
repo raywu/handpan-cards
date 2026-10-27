@@ -1,0 +1,785 @@
+{
+  "source": "96c4c589cec0950723b3b5323dc1df5bbc359329",
+  "inventoryCount": 109,
+  "triageCounts": {
+    "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals": 83,
+    "Explicitly closed archive; route to later triage": 2,
+    "Historical test/evidence artifact; current residual applicability not implied": 4,
+    "Owner-stopped idea; excluded from outstanding work": 1,
+    "Historical drafting prompt; derivative of corresponding stream, not a new work order": 7,
+    "Primary polish shipped; SPS explicitly deferred by owner; reconsideration requested now": 1,
+    "Runbook delivered; Mac limitation/repair remains separate": 1,
+    "Queued/deferred portable investigation index; not blanket implementation authority": 1,
+    "Released product stream or acceptance artifact; no open product implementation inferred": 4,
+    "Historical diagnostic evidence; superseded by P1 result and active repair": 1,
+    "Active separate Mac repair; root owns current status": 1,
+    "Release queue complete; do not repeat merges": 1,
+    "Repo-local publication complete; global workflows not validated by publication": 2
+  },
+  "files": [
+    {
+      "path": "docs/plans/2026-09-15-trigger-aware-cluster-rule.md",
+      "title": "# Trigger-Aware Cluster Rule Implementation Plan",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-09-16-remaining-work-coordination.md",
+      "title": "# Remaining work - /swarm coordination doc",
+      "kind": "coordination",
+      "triage": "Explicitly closed archive; route to later triage",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-09-16-root-instance-enumeration.md",
+      "title": "# Part B: root-instance enumeration Implementation Plan",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-09-16-scale-page-ux.md",
+      "title": "# Scale add/edit: from drawer to page",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-09-16-single-source-deck-data.md",
+      "title": "# Single-source deck data Implementation Plan",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-09-18-keyboard-wiring-coverage.md",
+      "title": "# Keyboard wiring coverage (lane S6)",
+      "kind": "evidence/report",
+      "triage": "Historical test/evidence artifact; current residual applicability not implied",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-09-18-queue-drawdown.md",
+      "title": "# Queue drawdown after PR #89",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-09-18-readme-refresh.md",
+      "title": "# README refresh plan",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-09-18-swipe-coverage.md",
+      "title": "# Swipe Coverage Implementation Plan",
+      "kind": "evidence/report",
+      "triage": "Historical test/evidence artifact; current residual applicability not implied",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-09-19-post-drawdown.md",
+      "title": "# Post-drawdown queue: what is worth doing after the queue-drawdown workstream",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-09-21-print-cta-and-error-placement.md",
+      "title": "# Custom-deck print CTA + seed-error placement",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-09-22-client-pdf-emitter.md",
+      "title": "# Client-side PDF emitter Implementation Plan",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-09-22-ios-print-page-box.md",
+      "title": "# Stop declaring the page box: the iOS print page-fit fix, attempt 3",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-09-22-ios-print-page-fit.md",
+      "title": "# iOS print page fit: the narrow sheet still overflows the printable width",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-09-22-ios-print-teardown-race.md",
+      "title": "# iOS Safari prints the app, not the card sheet",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-09-22-queue-140-143.md",
+      "title": "# Queue rows 140-143: dead code and the tests that vouch for it",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-09-22-seed-pdf-one-source.md",
+      "title": "# Seed-deck PDFs: one source of truth?",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-09-23-vector-parity-oracle.md",
+      "title": "# Row 311: assert the emitter's vector and colour surface",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-09-24-one-pdf-path-coordination.md",
+      "title": "# One PDF path coordination",
+      "kind": "coordination",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-09-24-one-pdf-path.md",
+      "title": "# One PDF path, one print UX",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-09-24-one-pdf-queue-drawdown.md",
+      "title": "# One-PDF-path queue drawdown - plan and coordination",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-09-24-quality-eval.md",
+      "title": "# Quality evaluation: code quality and test quality",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-09-27-followup-triage.md",
+      "title": "# Phase F follow-up triage",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-09-28-android-bg-and-menu.md",
+      "title": "# Android background and settings menu",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-09-29-backlog-and-refactor.md",
+      "title": "# Backlog triage and refactor review",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-09-29-card-swipe-animation.md",
+      "title": "# Card swipe animation (Tinder-style) - plan",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-09-29-chord-sequence-mode.md",
+      "title": "# Chord-sequence mode",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-09-29-seq-ui-polish.md",
+      "title": "# Chord-progression UI polish (lane UI)",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-09-30-audio-arpeggio.md",
+      "title": "# Audio arpeggio (IDEA - not on the roadmap)",
+      "kind": "plan",
+      "triage": "Owner-stopped idea; excluded from outstanding work",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-09-30-desktop-swipe.md",
+      "title": "# Desktop swipe: mouse drag + trackpad",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-09-30-nit-queue.md",
+      "title": "# Nit queue after #166-#169 (2026-09-30)",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-09-30-nit-touchup.md",
+      "title": "# Nit touch-up lanes (2026-09-30)",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-09-30-quality-refactor-coordination.md",
+      "title": "# Quality refactor coordination",
+      "kind": "coordination",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-09-30-quality-refactor.md",
+      "title": "# Quality refactor plan (2026-09-30)",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-01-post-refactor-triage.md",
+      "title": "# Post-refactor triage (2026-10-01)",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-01-resources-menu.md",
+      "title": "# Resources section in the settings menu",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-01-swipe-momentum.md",
+      "title": "# Swipe momentum: a mouse fly-out keeps its release speed (2026-10-01)",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-02-difficulty-d2-replan.md",
+      "title": "# D2 re-plan: the Difficulty selector, after five review FAILs",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-02-sequence-difficulty.md",
+      "title": "# Sequence difficulty tiers",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-03-complexity-refactor.md",
+      "title": "# Complexity refactor + test hardening (2026-10-03)",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-03-difficulty-followup-subplan.md",
+      "title": "# D2 follow-up sub-plan (2026-10-03)",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-04-amy-naylor-progression-eval.md",
+      "title": "# Amy Naylor progressions vs the EASY progression generator",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-04-close-out.md",
+      "title": "# Close-out of the complexity refactor (2026-10-04)",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-04-easy-tier-amy.md",
+      "title": "# EASY tier: length 4 and any-anchor start",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-04-eb-timing-bounds-subplan.md",
+      "title": "# EB sub-plan: restore the timing bounds the sleep conversion dropped",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-04-name-and-favicon.md",
+      "title": "# Plan: site name, metadata and favicon",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-04-tier-cleanup.md",
+      "title": "# Tier rebalance cleanup (2026-10-04)",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-04-tier-rebalance.md",
+      "title": "# Plan: rebalance the sequence difficulty tiers (BASIC / MEDIUM / HARD)",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-05-menu-resources-amy.md",
+      "title": "# Amy Naylor videos in Resources, and flush menu rows",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-05-refactor-pass-3-cleanup.md",
+      "title": "# Refactor pass 3 cleanup: one race-free mutant, stale text",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-05-refactor-pass-3-followup.md",
+      "title": "# Refactor pass 3 follow-up: restore lost coverage, four owner-approved deletions",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-05-refactor-pass-3.md",
+      "title": "# Refactor pass 3: dead code, blind tests, three small simplifications",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-06-claude-md-currency.md",
+      "title": "# CLAUDE.md currency: degrees bullet and the Resources trio",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-06-numeral-labels.md",
+      "title": "# Plan: scale-degree numerals without accidentals",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-06-resources-trio-equal.md",
+      "title": "# Resources: the three-link row splits equally",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-06-scale-syntax-and-layout-drawer.md",
+      "title": "# Scale syntax, uncapped pans, one direction and the layout drawer: implementation plan (against brief rev 4)",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-06-two-beginner-decks.md",
+      "title": "# Two beginner decks: D Kurd 10 and D Amara 10",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-07-scale-drawer-design-spec.md",
+      "title": "SUPERSEDED IN PART, 2026-10-09 (lane DOC). The drawer that shipped is the DR3 build (#276, main b3d7dac) as the owner changed it in interview 14 and the phone check of 2026-10-08 (plan 20.23, 20.24, 20.24.6). Section 20 below, \"As shipped\", is the current text for every name, order and copy it covers. Where an older section names `RESET SEATS`, the `NOTE 1` group, `ON CENTRE`, `BESIDE CENTRE`, the four step buttons as always visible, or the legacy ROTATE and MOVE group, that text is superseded and is marked where it appears; it is kept as the record of the design.",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-09-editable-defaults-prompt.md",
+      "title": "# Investigation prompt: player-editable default scales (queued; run after refactor pass 4 and lane F)",
+      "kind": "prompt",
+      "triage": "Historical drafting prompt; derivative of corresponding stream, not a new work order",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-09-editable-defaults.md",
+      "title": "# Editable default scales: sizing report and plan",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-09-lane-f-drawer-follow-up.md",
+      "title": "# Lane F - drawer follow-up (one small lane after refactor pass 4)",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-09-refactor-pass-4-coverage.md",
+      "title": "# Refactor pass 4: lane 0 coverage report",
+      "kind": "evidence/report",
+      "triage": "Historical test/evidence artifact; current residual applicability not implied",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-09-refactor-pass-4.md",
+      "title": "# Refactor pass 4: dead code, dead tests, coverage, no regressions",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-13-seeded-save-delete-nits.md",
+      "title": "# Seeded SAVE / DELETE nits lane (Q3, Q4, Q5, Q7)",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-13-seeded-save-delete-prompt.md",
+      "title": "# Plan-drafting prompt: seeded decks get SAVE / DELETE, not FORK / HIDE",
+      "kind": "prompt",
+      "triage": "Historical drafting prompt; derivative of corresponding stream, not a new work order",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-13-seeded-save-delete.md",
+      "title": "# Seeded decks: SAVE / DELETE, not FORK / HIDE",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-13-sheet-guidance-prompt.md",
+      "title": "# Plan-drafting prompt: the sheet's guidance sits with SAVE CHANGES",
+      "kind": "prompt",
+      "triage": "Historical drafting prompt; derivative of corresponding stream, not a new work order",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-13-sheet-guidance.md",
+      "title": "# Plan: the sheet's guidance sits with SAVE CHANGES",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-14-refactor-pass-5-prompt.md",
+      "title": "# Plan-drafting prompt: refactor pass 5, code base and tests, no regressions",
+      "kind": "prompt",
+      "triage": "Historical drafting prompt; derivative of corresponding stream, not a new work order",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-14-refactor-pass-5.md",
+      "title": "# Refactor pass 5: code base and tests, no regressions",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-14-remove-degrees-dropdown-prompt.md",
+      "title": "# Plan-drafting prompt: remove the DEGREES dropdown, infer the parent always",
+      "kind": "prompt",
+      "triage": "Historical drafting prompt; derivative of corresponding stream, not a new work order",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-14-remove-degrees-dropdown.md",
+      "title": "# Plan: remove the DEGREES dropdown, infer the parent always",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-15-cleanup-after-g1.md",
+      "title": "# Cleanup after G-1 (2026-10-15)",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-15-label-ratios-single-source-prompt.md",
+      "title": "# Plan-drafting prompt: G-1, one source for the diagram label ratios",
+      "kind": "prompt",
+      "triage": "Historical drafting prompt; derivative of corresponding stream, not a new work order",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-15-label-ratios-single-source.md",
+      "title": "# G-1: one source for the diagram label ratios",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-16-discoverability.md",
+      "title": "# Discoverability: GA4, SEO, AEO and metadata (2026-10-16)",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-16-scale-import.md",
+      "title": "# Scale import investigation (2026-10-16)",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-16-share-url.md",
+      "title": "> **Superseded in part (2026-10-17).** The `#s=` wire format described below is v4; the app now writes v5 (`docs/plans/2026-10-17-share-readable.md`), and COPY LINK is no longer a settings-panel control but the header share icon `#share-copy`. The routing and `syncRoute()` sections stand. The `#share-url` passages do not: the input now sits in the header, out of flow, is never a panel stop, and hides on blur, on Escape, on a deck change and when the scale sheet opens, as the CLAUDE.md \"Known pitfalls\" share bullet states.",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-17-about-off-main.md",
+      "title": "# Plan: move About off the main page (2026-10-17)",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-17-dev-env.md",
+      "title": "# Plan: a DEV environment on one `dev` branch (2026-10-17)",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-17-import-v2.md",
+      "title": "# Scale import v2: URL reading and notation fixes (plan, Phase 1)",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-17-readme-rewrite.md",
+      "title": "# Plan: rewrite the README and add an MIT license (2026-10-17)",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-17-refactor-pass-6-prompt.md",
+      "title": "# Plan-drafting prompt: refactor pass 6, code base and tests, no regressions",
+      "kind": "prompt",
+      "triage": "Historical drafting prompt; derivative of corresponding stream, not a new work order",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-17-refactor-pass-6.md",
+      "title": "# Refactor pass 6: code base and tests, no regressions",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-17-share-readable.md",
+      "title": "# Plan: human-readable share links, and COPY LINK as an on-page share icon (2026-10-17)",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-18-dual-input.md",
+      "title": "# Plan: dual-path scale input (four fields by default, the line kept)",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-18-import-fix.md",
+      "title": "# Import fix: execution plan (B1, B2, the serialise invariant, C1-C5)",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-19-dual-input-sheet-ux.md",
+      "title": "# Dual input, sub-workstream \"sheet UX\": execution subplan (2026-10-19)",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-19-sheet-tabs.md",
+      "title": "# Scale / Layout tabs for the Add/Edit sheet (2026-10-19)",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-20-lip-gesture-fix.md",
+      "title": "# Lip gesture fix: every surface arms, momentum counts (2026-10-20)",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-20-phone-fixes.md",
+      "title": "# Phone-check fixes (2026-10-20)",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-21-sheet-polish.md",
+      "title": "# Sheet polish after lane LG: execution plan",
+      "kind": "plan",
+      "triage": "Primary polish shipped; SPS explicitly deferred by owner; reconsideration requested now",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-22-print-header.md",
+      "title": "# Plan: move the print chord name off the top-right (E3, eng- and design-reviewed)",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-22-refactor-pass-7-evidence.md",
+      "title": "# Refactor pass 7: evidence",
+      "kind": "evidence/report",
+      "triage": "Historical test/evidence artifact; current residual applicability not implied",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-22-refactor-pass-7.md",
+      "title": "# Refactor pass 7: plan (eng-reviewed copy, 2026-10-22)",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-23-free-placement.md",
+      "title": "<!-- Copy of ~/Projects/fp-kit/plan.final.md, 2026-10-23. Lane PRs: L #502, S #501, D #510, P #506, W (this PR). -->",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-24-browser-portability.md",
+      "title": "# Shared browser validation and Mac diagnosis",
+      "kind": "plan",
+      "triage": "Runbook delivered; Mac limitation/repair remains separate",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-24-continuity-backlog.md",
+      "title": "# Recovered queued work: investigation boundaries",
+      "kind": "plan",
+      "triage": "Queued/deferred portable investigation index; not blanket implementation authority",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-24-htc-compact.md",
+      "title": "# HTC compact Resources restoration \u2014 execution plan",
+      "kind": "plan",
+      "triage": "Released product stream or acceptance artifact; no open product implementation inferred",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-24-mac-browser-diagnosis.md",
+      "title": "# Mac browser diagnosis \u2014 2026-10-24",
+      "kind": "plan",
+      "triage": "Historical diagnostic evidence; superseded by P1 result and active repair",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-24-mac-browser-repair.md",
+      "title": "# Mac browser repair: activation-sensitive frame waits with preserved test oracles",
+      "kind": "plan",
+      "triage": "Active separate Mac repair; root owns current status",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-24-main-release-queue.md",
+      "title": "# Ordered main release queue \u2014 reviewed execution plan",
+      "kind": "plan",
+      "triage": "Release queue complete; do not repeat merges",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-24-naturalness-acceptance.md",
+      "title": "# Reviewed Naturalness acceptance artifact \u2014 v5",
+      "kind": "plan",
+      "triage": "Released product stream or acceptance artifact; no open product implementation inferred",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-24-naturalness-release-acceptance.md",
+      "title": "# Reviewed production-target acceptance artifact",
+      "kind": "plan",
+      "triage": "Released product stream or acceptance artifact; no open product implementation inferred",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-24-naturalness.md",
+      "title": "# Naturalness: UI wording with unchanged scale input",
+      "kind": "plan",
+      "triage": "Released product stream or acceptance artifact; no open product implementation inferred",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-24-repo-continuity-coordination.md",
+      "title": "# Repository continuity coordination",
+      "kind": "coordination",
+      "triage": "Repo-local publication complete; global workflows not validated by publication",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/2026-10-24-repo-continuity.md",
+      "title": "# Repository continuity bootstrap",
+      "kind": "plan",
+      "triage": "Repo-local publication complete; global workflows not validated by publication",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/drawer-polish-plan.md",
+      "title": "# Drawer polish \u2014 plan",
+      "kind": "plan",
+      "triage": "Historical primary-plan candidate; no fresh active authorization inferred; reconcile family receipts/residuals",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    },
+    {
+      "path": "docs/plans/scale-engine-coordination.md",
+      "title": "# Scale-engine coordination",
+      "kind": "coordination",
+      "triage": "Explicitly closed archive; route to later triage",
+      "coverage": "Filename/title/status metadata from root inventory read; selected outstanding families and source anchors inspected separately. This is not proof every historical checklist item is complete."
+    }
+  ],
+  "scopeNote": "109 source-file metadata entries at audit start, not109 fresh behavioral audits; current supplementary documents are outside that historical count."
+}

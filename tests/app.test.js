@@ -3647,11 +3647,11 @@ test("PM rule 3: DOWNLOAD PDF names and builds the chord-only file, byte for byt
   }
 });
 
-test("PM rule 7: HANDPAN 101 is the last Resources link, a Google Doc in a new tab, alone in its row", () => {
+test("PM rule 7: HANDPAN 101 is the last Resources link, a Google Doc in a new tab, beside Handpan Helpers", () => {
   const panel = pmPanel();
   const group = panel.slice(panel.indexOf('<h3 class="panel-heading">Resources</h3>'));
   const links = [...group.matchAll(/<a\b[^>]*>[\s\S]*?<\/a>/g)].map((m) => m[0]);
-  assert.ok(links.length >= 6, "six Resources links");
+  assert.strictEqual(links.length, 7, "seven Resources links");
   const first = links[links.length - 1];
   assert.match(first, /\bid="res-handpan-101"/);
   assert.match(first, /href="https:\/\/docs\.google\.com\/document\/d\/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco\/edit\?usp=drivesdk"/);
@@ -3660,15 +3660,43 @@ test("PM rule 7: HANDPAN 101 is the last Resources link, a Google Doc in a new t
   assert.match(first, /aria-label="Handpan 101 \(Google Doc\)"/);
   assert.match(first, /class="mode"/);
   assert.ok(!/onclick/.test(first), "a link click must not close the panel");
-  assert.match(first, />HANDPAN 101<\/a>/);
+  assert.strictEqual(strip(first).replace(/\s+/g, " ").trim(), "HANDPAN 101", "the complete name survives presentational wrapping");
   const rows = [...group.matchAll(/<div class="modebar([^"]*)">([\s\S]*?)<\/div>/g)];
   assert.strictEqual(rows.length, 4, "four modebar rows");
   assert.strictEqual((rows[0][2].match(/<a\b/g) || []).length, 3, "the site row keeps three siblings");
   assert.strictEqual((rows[1][2].match(/<a\b/g) || []).length, 2, "the Amy row keeps two");
-  assert.strictEqual((rows[2][2].match(/<a\b/g) || []).length, 1, "HANDPAN 101 is alone in its row");
-  assert.ok(rows[2][2].includes("res-handpan-101"));
+  assert.strictEqual((rows[2][2].match(/<a\b/g) || []).length, 2, "Helpers and HANDPAN 101 share the third row");
+  assert.deepStrictEqual([...rows[2][2].matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]),
+    ["res-handpan-helpers", "res-handpan-101"], "Helpers immediately precedes HANDPAN 101");
   assert.ok(rows[3][2].includes('id="about-open"'), "the fourth row holds ABOUT");
   assert.ok(!/<a\b/.test(rows[3][2]), "the ABOUT row holds no link");
+});
+
+
+// Owner-approved Resources addition: the destination and safe native anchor
+// semantics are literal requirements, independent of the app's link table.
+test("HHR: the Helpers resource is a native new-tab link immediately before HANDPAN 101", () => {
+  const panel = pmPanel();
+  const group = panel.slice(panel.indexOf('<h3 class="panel-heading">Resources</h3>'));
+  const links = [...group.matchAll(/<a\b[^>]*>[\s\S]*?<\/a>/g)].map((m) => m[0]);
+  const helpers = links.filter((link) => /\bid="res-handpan-helpers"/.test(link));
+  assert.strictEqual(helpers.length, 1, "exactly one Helpers resource anchor must exist");
+  const link = helpers[0];
+  assert.match(link, /\bhref="https:\/\/handpanhelpers\.klangzeug\.de\/"/, "the literal Helpers destination");
+  assert.match(link, /\btarget="_blank"/, "Helpers opens in a separate tab");
+  assert.match(link, /\brel="noopener"/, "Helpers cannot access the app through window.opener");
+  assert.match(link, /\bclass="mode"/, "Helpers shares the existing control treatment");
+  assert.strictEqual(strip(link).replace(/\s+/g, " ").trim(), "HANDPAN HELPERS", "the complete proper name survives presentational wrapping");
+  assert.ok(!/\bon(?:click|keydown)\s*=/.test(link), "the resource uses native activation without inline script");
+  assert.ok(!/\b(?:hidden|disabled|aria-hidden|tabindex)(?=\s|=|>)/.test(link), "Helpers remains a normal keyboard-reachable anchor");
+  const index = links.indexOf(link);
+  assert.match(links[index + 1] || "", /\bid="res-handpan-101"/, "Helpers immediately precedes HANDPAN 101");
+  assert.strictEqual(index, links.length - 2, "HANDPAN 101 stays the final outbound Resources link");
+  const rows = [...group.matchAll(/<div class="modebar([^"]*)">([\s\S]*?)<\/div>/g)];
+  assert.strictEqual(rows.length, 4, "adding Helpers does not add a Resources row");
+  assert.match(rows[2][1], /\bduo\b/, "the approved third row is an equal-width duo");
+  assert.deepStrictEqual([...rows[2][2].matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]),
+    ["res-handpan-helpers", "res-handpan-101"], "the third row contains only the approved pair");
 });
 
 /* D-3's type guard on printPaper must reject a TRUTHY but invalid stored
@@ -10364,6 +10392,8 @@ describe("share icon", () => {
       if (open) app.run("openPanel()");
       assert.ok(!ids().includes("share-copy") && !ids().includes("share-url"));
     }
+    // Close the mobile panel so LINK is reachable outside its inert background.
+    app.run("closePanel()");
     app.els["share-copy"].click();
     await new Promise((r) => setImmediate(r));
     assert.strictEqual(app.els["share-url"].hasAttribute("hidden"), false);
@@ -14262,6 +14292,268 @@ describe("OF: the sheet's seats follow the typed order", () => {
     app.click(app.els["scale-tab-layout"]);
     assert.strictEqual(d2Status(app), "");
   });
+
+  // PD2 fixtures describe actual listed notes, not pending-state internals.
+  // English note input stays unchanged; only the existing UI sentences combine.
+  const PD2_BASE = "(D3) A3 C4 D4 E4 F4 | F5 G5";
+  const PD2_RIM = "(D3) C4 A3 D4 E4 F4 | F5 G5";
+  const PD2_INNER = "(D3) A3 C4 D4 E4 F4 | G5 F5";
+  const PD2_BOTH = "(D3) C4 A3 D4 E4 F4 | G5 F5";
+  const PD2_SAID = RIM_SAID + " " + INNER_SAID;
+  const pd2Open = () => { const app = add(); lineType(app, PD2_BASE); return app; };
+  const pd2InnerThenRim = (app) => { lineType(app, PD2_INNER); lineType(app, PD2_BOTH); };
+  const pd2Layout = (app) => app.click(app.els["scale-tab-layout"]);
+
+  test("PD2: inner then rim edits retain both final outcomes in rim then inner order", () => {
+    const app = pd2Open();
+    pd2InnerThenRim(app);
+    assert.strictEqual(d2Status(app), "", "Scale must not prematurely announce Layout feedback");
+    pd2Layout(app);
+    assert.strictEqual(d2Status(app), PD2_SAID);
+  });
+
+  test("PD2: rim then inner field edits retain the same final ring order", () => {
+    const app = pd2Open();
+    fieldType(app, "top", "C4 A3 D4 E4 F4");
+    fieldType(app, "inner", "G5 F5");
+    pd2Layout(app);
+    assert.strictEqual(d2Status(app), PD2_SAID);
+  });
+
+  test("PD2: repeated edits of one ring replace its outcome without losing the other ring", () => {
+    const app = pd2Open();
+    pd2InnerThenRim(app);
+    lineType(app, "(D3) D4 A3 C4 E4 F4 | G5 F5");
+    lineType(app, PD2_BOTH);
+    pd2Layout(app);
+    assert.strictEqual(d2Status(app), PD2_SAID, "one sentence per ring, not edit history");
+  });
+
+  test("PD2: returning a ring to identity keeps its latest truthful follows-listed outcome", () => {
+    const app = pd2Open();
+    lineType(app, PD2_RIM);
+    lineType(app, PD2_BASE);
+    pd2Layout(app);
+    assert.strictEqual(d2Status(app), RIM_SAID);
+  });
+
+  test("PD2: a later ascending count-only change invalidates an older ring outcome", () => {
+    const app = pd2Open();
+    lineType(app, PD2_RIM);
+    lineType(app, PD2_BASE);
+    // The latest order is already ascending; changing only its count must not
+    // replay the earlier ordering event or create a deferred count-only feature.
+    lineType(app, "(D3) A3 C4 D4 E4 | F5 G5");
+    pd2Layout(app);
+    assert.strictEqual(d2Status(app), "");
+  });
+
+  test("PD2: removing the inner ring removes its outcome and retains a current rim outcome", () => {
+    const app = pd2Open();
+    pd2InnerThenRim(app);
+    lineType(app, "(D3) C4 A3 D4 E4 F4");
+    pd2Layout(app);
+    assert.strictEqual(d2Status(app), RIM_SAID, "nonexistent inner notes cannot follow a list");
+  });
+
+  test("PD2: bottom-only edits and unchanged reparses preserve current rim and inner outcomes", () => {
+    const app = pd2Open();
+    pd2InnerThenRim(app);
+    lineType(app, "[C3] " + PD2_BOTH);
+    lineType(app, "[C3] " + PD2_BOTH);
+    pd2Layout(app);
+    assert.strictEqual(d2Status(app), PD2_SAID);
+  });
+
+  test("PD2: invalid active fields suspend feedback even while the line retains its last valid input", () => {
+    for (const [field, bad] of [["top", "not-a-note"], ["ding", ""]]) {
+      const app = pd2Open();
+      pd2InnerThenRim(app);
+      fieldType(app, field, bad);
+      assert.strictEqual(app.els["scale-box"].value, PD2_BOTH, "the last valid line is retained");
+      pd2Layout(app);
+      assert.strictEqual(app.els["scale-tab-layout"].getAttribute("aria-selected"), "true", "invalid input must not block Layout");
+      assert.strictEqual(d2Status(app), "", "invalid active fields must not consume stale-valid feedback");
+      assert.strictEqual(app.els["scale-swatches"].children.length, 6, "the enabled-palette assertion must not pass on an empty group");
+      assert.ok([...app.els["scale-swatches"].children].every((button) => !button.disabled), "the palette remains usable");
+      app.click(app.els["scale-tab-scale"]);
+      fieldType(app, field, field === "top" ? "C4 A3 D4 E4 F4" : "D3");
+      pd2Layout(app);
+      assert.strictEqual(d2Status(app), PD2_SAID, "recovery must not lose the suspended current outcomes");
+    }
+  });
+
+  test("PD2: invalid or empty line input leaves Layout and palette available without consuming outcomes", () => {
+    for (const bad of ["(D3) zzz", ""]) {
+      const app = pd2Open();
+      pd2InnerThenRim(app);
+      lineType(app, bad);
+      pd2Layout(app);
+      assert.strictEqual(app.els["scale-tab-layout"].getAttribute("aria-selected"), "true");
+      assert.strictEqual(d2Status(app), "");
+      app.els["scale-swatches"].children[4].click();
+      assert.strictEqual(app.els["scale-swatches"].children[4].getAttribute("aria-pressed"), "true");
+      app.click(app.els["scale-tab-scale"]);
+      lineType(app, PD2_BOTH);
+      pd2Layout(app);
+      assert.strictEqual(d2Status(app), PD2_SAID);
+    }
+  });
+
+  test("PD2: tab click NEXT and cyclic keyboard entries consume both outcomes once", () => {
+    for (const route of ["click", "next", "ArrowRight", "ArrowLeft", "End"]) {
+      const app = pd2Open();
+      pd2InnerThenRim(app);
+      if (route === "click") pd2Layout(app);
+      else if (route === "next") app.click(app.els["scale-next"]);
+      else { app.els["scale-tab-scale"].focus(); app.press(app.els["scale-tab-scale"], route); }
+      assert.strictEqual(app.els["scale-tab-layout"].getAttribute("aria-selected"), "true", route);
+      assert.strictEqual(d2Status(app), PD2_SAID, route);
+      if (route !== "click") assert.strictEqual(app.activeId(), "scale-tab-layout", route + " preserves the entry focus contract");
+      app.click(app.els["scale-tab-scale"]);
+      pd2Layout(app);
+      assert.strictEqual(d2Status(app), "", route + " consumed exactly once");
+    }
+  });
+
+  test("PD2: a same-tab Home or modified arrow does not consume pending Layout feedback", () => {
+    const app = pd2Open();
+    pd2InnerThenRim(app);
+    app.els["scale-tab-scale"].focus();
+    app.press(app.els["scale-tab-scale"], "Home");
+    app.press(app.els["scale-tab-scale"], "ArrowRight", { ctrlKey: true });
+    assert.strictEqual(app.els["scale-tab-scale"].getAttribute("aria-selected"), "true");
+    assert.strictEqual(d2Status(app), "");
+    app.press(app.els["scale-tab-scale"], "ArrowLeft");
+    assert.strictEqual(d2Status(app), PD2_SAID, "Left wraps into Layout and is a real consumer");
+  });
+
+  test("PD2: consumed outcomes stay silent until a new meaningful edit creates a fresh outcome", () => {
+    const app = pd2Open();
+    pd2InnerThenRim(app);
+    pd2Layout(app);
+    assert.strictEqual(d2Status(app), PD2_SAID);
+    app.click(app.els["scale-tab-scale"]);
+    lineType(app, PD2_BOTH);
+    app.els["scale-name"].value = "My pan";
+    app.els["scale-name"].dispatchEvent({ type: "input" });
+    pd2Layout(app);
+    assert.strictEqual(d2Status(app), "", "unchanged parse and name edits do not replay old outcomes");
+    app.click(app.els["scale-tab-scale"]);
+    lineType(app, "(D3) C4 A3 D4 E4 F4 | F5 G5");
+    pd2Layout(app);
+    assert.strictEqual(d2Status(app), INNER_SAID);
+  });
+
+  test("PD2: visible RESET and anchor actions win and cannot resurrect consumed feedback", () => {
+    for (const action of ["scale-layout-reset", "scale-anchor-between"]) {
+      const app = pd2Open();
+      pd2InnerThenRim(app);
+      pd2Layout(app);
+      assert.strictEqual(app.els["scale-panel-layout"].hidden, false, "the action is on the visible Layout tab");
+      assert.strictEqual(app.els[action].disabled, false, action + " is usable");
+      app.els[action].click(); // These controls use onclick; app.click dispatches registered listeners only.
+      assert.ok(d2Status(app).length > 0, action + " must display its own result");
+      assert.doesNotMatch(d2Status(app), /follows? the order listed/, action);
+      if (action === "scale-layout-reset") assert.strictEqual(d2Status(app), "Layout reset.");
+      app.click(app.els["scale-tab-scale"]);
+      lineType(app, PD2_BOTH);
+      pd2Layout(app);
+      assert.strictEqual(d2Status(app), "", action + " cannot replay consumed derivations");
+    }
+  });
+
+  test("PD2: Back and Escape discard pending outcomes before a valid seated Edit reopens", () => {
+    for (const how of ["back", "escape"]) {
+      const { app, rec } = seated(PD2_BASE, { rim: [1, 0, 2, 3, 4], inner: [1, 0] });
+      openSheet(app);
+      lineType(app, PD2_BASE);
+      pd2InnerThenRim(app);
+      if (how === "back") app.els["scale-back"].click();
+      else app.keydown("Escape");
+      assert.strictEqual(app.sheetOpen(), false, how);
+      openEdit(app, rec);
+      assert.strictEqual(app.els["scale-generate"].disabled, false, "reopened Edit is valid, so invalid input cannot mask leaked state");
+      pd2Layout(app);
+      assert.strictEqual(d2Status(app), "", how + " clears the prior session's outcomes");
+    }
+  });
+
+  test("PD2: saving from Scale discards unconsumed outcomes before the saved valid Edit reopens", () => {
+    const { app, rec } = seated(PD2_BASE, {});
+    openEdit(app, rec);
+    pd2InnerThenRim(app);
+    assert.strictEqual(app.els["scale-generate"].hidden, false, "Edit SAVE is a visible control on Scale");
+    assert.strictEqual(app.els["scale-generate"].disabled, false, "valid Edit SAVE is enabled before activation");
+    app.els["scale-generate"].click(); // Activate its onclick, matching the existing SAVE driver convention.
+    assert.strictEqual(app.sheetOpen(), false);
+    const savedRecord = app.registry()[app.deckId()];
+    openEdit(app, savedRecord);
+    assert.strictEqual(app.els["scale-generate"].disabled, false);
+    pd2Layout(app);
+    assert.strictEqual(d2Status(app), "");
+  });
+
+  test("PD2: a seated Edit prefill and blur without an edit do not announce an order hint", () => {
+    const { app, rec } = seated(PD2_BASE, { rim: [1, 0, 2, 3, 4], inner: [1, 0] });
+    openEdit(app, rec);
+    assert.strictEqual(note(app, "fields"), HINT);
+    assert.strictEqual(live(app), "");
+    fire(app, "scale-top", "focus");
+    settle(app, "top");
+    assert.strictEqual(live(app), "", "a blur without typing is still prefill, not a new edit");
+  });
+
+  const PD2_BOTTOM_BASE = "[C3] [D3] [E3] (A3) C4 D4 E4 F4 | G4 A4";
+  const PD2_BOTTOM_FOUR = "[C3] [D3] [E3] [F3] (A3) D4 C4 E4 F4 | G4 A4";
+  const PD2_BOTTOM_RESET = "The bottom now has 4 notes, so its angles were reset.";
+  const pd2BottomEdit = (options) => {
+    const app = boot();
+    const made = app.generate(PD2_BOTTOM_BASE, options);
+    assert.strictEqual(made.ok, true, made.reason);
+    openEdit(app, app.registry()[made.value.id]);
+    return app;
+  };
+
+  test("PD2: a same-parse rim derive retains its deferred bottom-angle reset payload", () => {
+    const app = pd2BottomEdit({ angles: { bottom: [300, null, null] } });
+    lineType(app, PD2_BOTTOM_FOUR);
+    pd2Layout(app);
+    assert.strictEqual(d2Status(app), RIM_SAID + " " + PD2_BOTTOM_RESET);
+  });
+
+  test("PD2: a same-parse rim derive retains an existing deferred bottom-seat restoration", () => {
+    const app = pd2BottomEdit({ seats: { bottom: [1, 0, 2] } });
+    lineType(app, "[C3] [D3] [E3] [F3] (A3) C4 D4 E4 F4 | G4 A4");
+    lineType(app, "[C3] [D3] [E3] (A3) D4 C4 E4 F4 | G4 A4");
+    pd2Layout(app);
+    assert.strictEqual(d2Status(app), RIM_SAID + " The bottom is back to 3 notes, so its earlier seats were restored.");
+  });
+
+  test("PD2: an independent inner edit retains current auxiliary text but later bottom changes invalidate it", () => {
+    const keep = pd2BottomEdit({ angles: { bottom: [300, null, null] } });
+    lineType(keep, PD2_BOTTOM_FOUR);
+    lineType(keep, "[C3] [D3] [E3] [F3] (A3) D4 C4 E4 F4 | A4 G4");
+    pd2Layout(keep);
+    assert.strictEqual(d2Status(keep), PD2_SAID + " " + PD2_BOTTOM_RESET);
+    const clear = pd2BottomEdit({ angles: { bottom: [300, null, null] } });
+    lineType(clear, PD2_BOTTOM_FOUR);
+    lineType(clear, "[C3] [D3] [E3] [F3] (A3) D4 C4 E4 F4 | A4 G4");
+    lineType(clear, "[C3] [D3] [E3] [F3] [G3] (A3) D4 C4 E4 F4 | A4 G4");
+    pd2Layout(clear);
+    assert.strictEqual(d2Status(clear), PD2_SAID, "do not replay a four-note reset for the current five-note bottom or invent a new count-only notification");
+  });
+
+  test("PD2: both outcomes use the selected locale while scale input remains English note notation", () => {
+    const de = JSON.parse(fs.readFileSync(path.join(ROOT, "data/i18n/de.json"), "utf8"));
+    const app = boot({ languages: ["de-DE"] });
+    openSheet(app);
+    lineType(app, PD2_BASE);
+    pd2InnerThenRim(app);
+    pd2Layout(app);
+    assert.strictEqual(d2Status(app), de["sheet.rim_follows"] + " " + de["sheet.inner_follows"]);
+    assert.strictEqual(app.els["scale-box"].value, PD2_BOTH, "UI language never rewrites the scale input grammar");
+  });
 });
 
 /* ------------------------------------------------------------------ I18N */
@@ -14880,5 +15172,322 @@ describe("SO: bottom seat numbers stay on their seats", () => {
     const changed = [101, 102, 103, 104, 105, 106].filter((id, k) => after[k] !== labels[k]).map(String);
     assert.ok(changed.length > 0, "the mirror renumbered");
     assert.deepStrictEqual(soFlash(app), changed.sort());
+  });
+});
+
+/* SHARE-CUSTOMIZATION-HOTFIX: eight observable groups, no helper/app seams.
+ * Promise completion is drained independently of DOM mutation. The VM's history
+ * has no stack and focus() emits no blur: native ordering/selection is E1/E2. */
+describe("SHC asynchronous LINK ownership", () => {
+  const PAGE = "https://example.test/index.html?share=public-control";
+  // Existing public FPS fixture, frozen before this repair (test above).
+  const HASH = "#s=6/uC3_uDb3_uEb3_(F3)_G3_Ab3_uBb3_C4_uDb4_Eb4_F4_G4_Ab4_C5_Eb5_-_F5_G5_uAb5/*F+AEOLIAN+12/between/at-,225,,20,,130/5af123";
+  const drain = () => new Promise((resolve) => setImmediate(resolve));
+  const deferred = () => {
+    let resolve, reject;
+    const promise = new Promise((yes, no) => { resolve = yes; reject = no; });
+    return { promise, resolve, reject };
+  };
+  const sink = (app, method = "clipboard") => {
+    const calls = [];
+    const accept = (payload) => { const d = deferred(); calls.push({ payload, ...d }); return d.promise; };
+    if (method === "clipboard") app.sandbox.navigator.clipboard = { writeText: accept };
+    else { delete app.sandbox.navigator.clipboard; app.sandbox.navigator.share = accept; }
+    return calls;
+  };
+  const copy = async (app, calls) => {
+    const count = calls.length;
+    app.els["share-copy"].click();
+    await drain();
+    assert.strictEqual(calls.length, count + 1, "LINK must reach its intercepted API exactly once");
+    return calls[count];
+  };
+  const settle = async (call, success = false) => { call[success ? "resolve" : "reject"](success ? undefined : new Error("controlled denial")); await drain(); };
+  const hidden = (app, why) => assert.strictEqual(app.els["share-url"].hidden, true, why);
+  const fresh = () => boot({ href: PAGE + HASH });
+  const leaveSheet = (app, href) => { app.els["scale-back"].click(); app.location.href = href; app.popstate(); };
+  const live = (app) => app.announcer().textContent;
+  const nudgeSave = (app) => {
+    // Click the already-selected chip: openEdit() would select first and could
+    // conceal a missing Edit-entry cancellation hook.
+    app.clickChip(app.currentDeck().name);
+    app.click(app.els["scale-tab-layout"]);
+    app.els["scale-fine-toggle"].click();
+    d2Tap(app, "C3");
+    app.els["scale-angle-next"].click();
+    app.els["scale-generate"].click();
+  };
+
+  test("SHC U1: latest LINK owns fallback in both completion orders and at identical URLs", async () => {
+    for (const order of [[1, 0], [0, 1]]) {
+      const app = boot({ href: PAGE });
+      const calls = sink(app);
+      let selections = 0;
+      app.els["share-url"].select = () => { selections++; };
+      const a = await copy(app, calls);
+      app.clickChip("D AMARA 10");
+      const b = await copy(app, calls);
+      assert.deepStrictEqual(calls.map((c) => c.payload), [PAGE + "#deck=d-kurd-10", PAGE + "#deck=d-amara-10"]);
+      await settle(calls[order[0]]);
+      if (order[0] === 0) hidden(app, "retired A must not reveal before current B settles");
+      await settle(calls[order[1]]);
+      assert.strictEqual(app.els["share-url"].value, b.payload, "old A must not overwrite B's manual URL");
+      assert.strictEqual(app.activeId(), "share-url");
+      assert.strictEqual(selections, 1, "only B may select the manual URL");
+      assert.strictEqual(live(app), "SELECT THE LINK AND COPY IT");
+      assert.notStrictEqual(a.payload, b.payload);
+    }
+    const app = boot({ href: PAGE });
+    const calls = sink(app);
+    const a = await copy(app, calls), b = await copy(app, calls);
+    assert.strictEqual(a.payload, b.payload);
+    await settle(b, true); app.flushTimers();
+    await settle(a);
+    hidden(app, "same-URL older rejection must not revive fallback after B succeeds");
+    assert.strictEqual(live(app), "LINK COPIED");
+  });
+
+  test("SHC U2: same-ID SAVE and selection retire old LINK while new LINK carries committed angles", async () => {
+    const app = fresh(), calls = sink(app), id = app.deckId(), pre = app.location.href;
+    const a = await copy(app, calls);
+    nudgeSave(app);
+    assert.strictEqual(app.deckId(), id, "a layout SAVE must keep identity");
+    assert.deepStrictEqual(app.currentDeck().options.angles.bottom, [295, 225, null, 20, null, 130]);
+    // Complete the VM's explicitly modelled history pop before asking for B.
+    app.location.href = pre; app.popstate();
+    const b = await copy(app, calls);
+    assert.strictEqual(a.payload, PAGE + HASH, "A keeps its invocation payload, not the later draft");
+    assert.strictEqual(b.payload, app.location.href);
+    const read = plain(app.get("HPE.share.decode(" + JSON.stringify(b.payload.split("#s=")[1]) + ")"));
+    assert.strictEqual(read.ok, true);
+    assert.deepStrictEqual(read.value.options.angles.bottom, [295, 225, null, 20, null, 130]);
+    const records = JSON.parse(app.store[app.get("SCALES_KEY")]);
+    assert.deepStrictEqual(records[0].o.angles.bottom, [295, 225, null, 20, null, 130]);
+    await settle(a);
+    hidden(app, "same-ID SAVE must permanently retire A");
+    await settle(b); assert.strictEqual(app.els["share-url"].value, b.payload);
+    for (const select of [() => app.select(id), () => { app.clickChip("D AMARA 10"); app.select(id); }]) {
+      const old = await copy(app, calls);
+      select();
+      await settle(old);
+      hidden(app, "reselection and A→B→A must not revive ownership");
+    }
+  });
+
+  test("SHC U3: Add Edit About and mobile settings retire LINK through open and cancel", async () => {
+    for (const modal of ["add", "edit", "about", "panel"]) for (const success of [false, true]) {
+      const app = fresh(), calls = sink(app), pre = app.location.href;
+      let shared = 0;
+      app.sandbox.navigator.share = async () => { shared++; };
+      app.run("settingsPanel.querySelectorAll = () => []");
+      const old = await copy(app, calls);
+      if (modal === "add") openSheet(app);
+      if (modal === "edit") app.clickChip(app.currentDeck().name);
+      if (modal === "about") app.run("openAbout()");
+      if (modal === "panel") { app.run("openPanel()"); app.els["settings-trigger"].focus(); }
+      const focused = app.activeId();
+      const before = live(app);
+      await settle(old, success); app.flushTimers();
+      hidden(app, modal + " must suppress old fallback");
+      assert.strictEqual(app.activeId(), focused, modal + " focus must survive settlement");
+      assert.strictEqual(live(app), before, modal + " notice must survive settlement");
+      assert.strictEqual(shared, 0, modal + " must not start native fallback");
+      if (modal === "add" || modal === "edit") leaveSheet(app, pre);
+      if (modal === "about") { app.run("closeAbout()"); app.location.href = pre; app.popstate(); }
+      if (modal === "panel") app.run("closePanel()");
+      await drain(); app.flushTimers();
+      hidden(app, "open→cancel cannot revive " + modal + " ownership");
+    }
+    const app = boot({ href: PAGE }), calls = sink(app);
+    app.run("desktopMQ.matches = true; settingsPanel.querySelectorAll = () => []");
+    const current = await copy(app, calls);
+    app.run("openPanel()");
+    await settle(current);
+    assert.strictEqual(app.els["share-url"].hidden, false, "desktop nonmodal settings preserve current LINK");
+  });
+
+  test("SHC U4: stale success and deferred ticks preserve newer and identical-text notices", async () => {
+    for (const notice of ["Unrelated notice", "LINK COPIED", ""]) {
+      const app = boot(), calls = sink(app);
+      app.run("say(" + JSON.stringify(notice) + ", 'warn')");
+      const old = await copy(app, calls);
+      // Repeating the same text is a new notice, including empty text (ABA).
+      app.run("say(" + JSON.stringify(notice) + ", 'warn')");
+      await settle(old, true);
+      assert.strictEqual(live(app), notice, "old success must not clear an intervening notice");
+      app.flushTimers();
+      assert.strictEqual(live(app), notice, "old tick must not replace an identical-text notice");
+    }
+    for (const retire of ["new", "context", "notice"]) {
+      const app = boot(), calls = sink(app), old = await copy(app, calls);
+      await settle(old, true); // queues success tick without running virtual timers
+      if (retire === "new") await copy(app, calls);
+      if (retire === "context") app.select(app.deckId());
+      if (retire === "notice") app.run("say('', 'warn')");
+      app.flushTimers();
+      assert.strictEqual(live(app), "", retire + " must retire the old deferred tick");
+    }
+    const app = boot(), calls = sink(app);
+    for (let i = 0; i < 2; i++) {
+      const current = await copy(app, calls);
+      await settle(current, true);
+      assert.strictEqual(live(app), "", "current repeated success clears before its tick");
+      app.flushTimers(); assert.strictEqual(live(app), "LINK COPIED");
+    }
+    const old = await copy(app, calls), current = await copy(app, calls);
+    await settle(current); const warning = live(app);
+    await settle(old, true); app.flushTimers();
+    assert.strictEqual(live(app), warning, "old success cannot clear current fallback's notice");
+  });
+
+  test("SHC U5: native branches keep captured URLs and never start fallback after retirement", async () => {
+    for (const outcome of ["success", "failure", "abort"]) {
+      const app = boot({ href: PAGE }), calls = sink(app, "share");
+      const call = await copy(app, calls);
+      assert.deepStrictEqual(plain(call.payload), { url: PAGE + "#deck=d-kurd-10" });
+      if (outcome === "abort") { const e = new Error("cancel"); e.name = "AbortError"; call.reject(e); await drain(); }
+      else await settle(call, outcome === "success");
+      app.flushTimers();
+      if (outcome === "failure") assert.strictEqual(app.els["share-url"].value, call.payload.url);
+      else { hidden(app); assert.strictEqual(live(app), outcome === "success" ? "LINK SHARED" : ""); }
+    }
+    const app = boot({ href: PAGE }), calls = sink(app);
+    const shared = [];
+    app.sandbox.navigator.share = async (payload) => { shared.push(payload); };
+    const call = await copy(app, calls);
+    await settle(call); app.flushTimers();
+    assert.deepStrictEqual(plain(shared), [{ url: call.payload }], "clipboard rejection uses the same captured URL");
+    assert.strictEqual(live(app), "LINK SHARED");
+    const late = boot(), lateCalls = sink(late);
+    let invoked = 0;
+    // Access occurs between rejection and Promise-scheduled native invocation.
+    // Retire there, without depending on callback-chain microtask depth.
+    Object.defineProperty(late.sandbox.navigator, "share", { configurable: true, get() {
+      late.select(late.deckId()); return async () => { invoked++; };
+    } });
+    await settle(await copy(late, lateCalls));
+    assert.strictEqual(invoked, 0, "retirement at native scheduling boundary must suppress a new native operation");
+    for (const success of [false, true]) {
+      const active = boot(), nativeCalls = sink(active, "share"), pending = await copy(active, nativeCalls);
+      active.select(active.deckId());
+      await settle(pending, success); active.flushTimers();
+      hidden(active, "an already-started native operation must finish without stale UI");
+      assert.strictEqual(live(active), "");
+    }
+    // This test-local prelude records actual registrations; the shared stub has
+    // no window.dispatchEvent. It models only event delivery, never OS UI.
+    const blurHtml = indexSource().replace("<head>", `<head><script>
+      globalThis.__shcBlur = [];
+      const __shcAdd = window.addEventListener;
+      window.addEventListener = (type, fn, ...rest) => {
+        if (type === "blur") __shcBlur.push(fn);
+        return __shcAdd(type, fn, ...rest);
+      };
+    </script>`);
+    const blurred = boot({ html: blurHtml }), blurCalls = sink(blurred), pending = await copy(blurred, blurCalls);
+    blurred.run("__shcBlur.forEach(fn => fn({type:'blur'}))");
+    blurred.els["share-copy"].blur();
+    await settle(pending, true); blurred.flushTimers();
+    assert.strictEqual(live(blurred), "LINK COPIED", "window/permission blur alone must preserve completion");
+  });
+
+  test("SHC U6: blur Escape and panel dismissal stay closed and a new LINK still works", async () => {
+    for (const dismissal of ["blur", "escape", "panel"]) {
+      const app = boot(), calls = sink(app);
+      app.run("settingsPanel.querySelectorAll = () => []");
+      const old = await copy(app, calls), current = await copy(app, calls);
+      await settle(current);
+      assert.strictEqual(app.els["share-url"].hidden, false);
+      if (dismissal === "blur") app.els["share-url"].dispatchEvent({ type: "blur" });
+      if (dismissal === "escape") {
+        app.press(app.els["share-url"], "Escape");
+        assert.strictEqual(app.activeId(), "share-copy", "Escape returns focus to LINK");
+      }
+      if (dismissal === "panel") { app.run("desktopMQ.matches = true; openPanel(); closePanel()"); }
+      const focused = app.activeId(), before = live(app);
+      await settle(old); app.flushTimers();
+      hidden(app, dismissal + " must permanently dismiss old callbacks");
+      assert.strictEqual(app.activeId(), focused);
+      assert.strictEqual(live(app), before);
+      await settle(await copy(app, calls));
+      assert.strictEqual(app.els["share-url"].hidden, false, "new LINK remains usable after " + dismissal);
+    }
+  });
+
+  test("SHC U7: route transitions retire LINK but no-op sync and pending SAVE pop keep fresh intent", async () => {
+    for (const transition of ["hash", "pop"]) {
+      const app = boot({ href: PAGE }), calls = sink(app), original = app.location.href;
+      const pending = await copy(app, calls);
+      const pushesBefore = app.history.calls.filter((c) => c.type === "push").length;
+      if (transition === "hash") { app.hashchange("#deck=d-amara-10"); app.hashchange("#deck=d-kurd-10"); }
+      else {
+        // Explicit VM event model, not native navigation evidence.
+        app.location.href = PAGE + "#deck=d-amara-10"; app.popstate();
+        app.location.href = original; app.popstate();
+      }
+      await settle(pending);
+      hidden(app, transition + " away/back must not resurrect ownership");
+      assert.strictEqual(app.history.calls.filter((c) => c.type === "push").length, pushesBefore);
+      assert.strictEqual(app.location.search, "?share=public-control");
+    }
+    const app = fresh(), calls = sink(app), pre = app.location.href;
+    const unchanged = await copy(app, calls);
+    app.run("syncRoute()");
+    await settle(unchanged);
+    assert.strictEqual(app.els["share-url"].hidden, false, "no-op sync preserves current LINK");
+    nudgeSave(app);
+    // SAVE hides the sheet immediately, but history.back's reply is later.
+    // Model the committed canonical bar before the pending pop reaffirms it.
+    app.run("syncRoute()");
+    const committed = app.location.href;
+    assert.notStrictEqual(committed, pre);
+    const immediate = await copy(app, calls);
+    app.popstate();
+    assert.strictEqual(app.location.href, committed);
+    await settle(immediate);
+    assert.strictEqual(app.els["share-url"].value, committed, "pending SAVE pop must not cancel fresh same-route LINK");
+    assert.strictEqual(app.els["share-url"].hidden, false);
+  });
+
+  test("SHC U8: hidden and refused LINK consume stale UI without replay and analytics stay nonsecret", async () => {
+    for (const success of [false, true]) {
+      const app = fresh(), calls = sink(app), pending = await copy(app, calls);
+      app.sandbox.document.hidden = true;
+      app.sandbox.document.dispatchEvent({ type: "visibilitychange" });
+      const focused = app.activeId(), before = live(app);
+      await settle(pending, success); app.flushTimers();
+      hidden(app, "hidden document must never reveal manual fallback");
+      assert.strictEqual(app.activeId(), focused, "hidden completion cannot steal focus");
+      assert.strictEqual(live(app), before);
+      app.sandbox.document.hidden = false;
+      app.sandbox.document.dispatchEvent({ type: "visibilitychange" });
+      await drain(); app.flushTimers(); hidden(app, "returning visible must not replay completion");
+      await settle(await copy(app, calls));
+      assert.strictEqual(app.els["share-url"].hidden, false, "a fresh visible LINK works");
+    }
+    const app = fresh(), calls = sink(app), pending = await copy(app, calls);
+    app.run("globalThis.__shcEncode = HPE.share.encode; HPE.share.encode = () => ({ok:false,code:'OVER',reason:'Too big to share.'}); syncRoute()");
+    assert.strictEqual(app.els["share-copy"].disabled, true);
+    const refusal = live(app);
+    await settle(pending); app.flushTimers();
+    hidden(app, "refused LINK cannot reveal an earlier payload");
+    assert.strictEqual(live(app), refusal);
+    app.run("HPE.share.encode = globalThis.__shcEncode; syncRoute()");
+    assert.strictEqual(app.els["share-copy"].disabled, false);
+    await settle(await copy(app, calls), true); app.flushTimers();
+    assert.strictEqual(live(app), "LINK COPIED");
+    const ga = boot({ html: withGaId("G-TEST123456"), webdriver: false, href: PAGE + HASH });
+    const events = () => plain(Array.from(ga.get("window.dataLayer"))).filter((e) => e[0] === "event" && e[1] === "share_copy").map((e) => e[2]);
+    const gaCalls = sink(ga), first = await copy(ga, gaCalls);
+    ga.select(ga.deckId()); await settle(first, true); ga.flushTimers();
+    delete ga.sandbox.navigator.clipboard; delete ga.sandbox.navigator.share;
+    ga.els["share-copy"].click(); await drain();
+    ga.sandbox.navigator.share = async () => {};
+    ga.els["share-copy"].click(); await drain(); ga.flushTimers();
+    assert.deepStrictEqual(events(), [
+      { deck_kind: "custom", method: "clipboard" },
+      { deck_kind: "custom", method: "select" },
+      { deck_kind: "custom", method: "share" },
+    ], "analytics payload allowlist excludes URL, scale name and identity");
   });
 });

@@ -1,0 +1,14 @@
+# kills: PD2: Back and Escape discard pending outcomes before a valid seated Edit reopens
+# suite: node --test --test-reporter=tap --test-name-pattern=PD2:.Back.and.Escape.discard.pending.outcomes tests/app.test.js
+# Session teardown no longer clears pending outcomes before a valid Edit reopens.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11658,7 +11658,6 @@ function dropDrawer() {
+   drawerHint.textContent = "";
+   drawerHint.hidden = true;
+   drawerOpen = false;
+-  pendingDerive = {};
+   sheetTab = "scale";
+   paintTabs();
+   pickRef = null;

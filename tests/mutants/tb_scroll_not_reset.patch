@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11496,7 +11496,6 @@ function setTab(tab) {
+@@ -11647,7 +11647,6 @@ function setTab(tab) {
    if (held && held !== document.body && !held.getClientRects().length) held.blur();
    paintLayout();
    repaintPlate();
 -  bandPort.scrollTop = 0;
    setLip(false, { instant: true });
-   if (drawerOpen && boxOk && !hasTwoNoteRing() && !(ringCount && ringCount.bottom >= 1)) layoutStatus(t("sheet.no_two_ring"));
+   if (drawerOpen && !showPendingDerive() && currentScaleInput() && !hasTwoNoteRing() && !(ringCount && ringCount.bottom >= 1)) layoutStatus(t("sheet.no_two_ring"));
  }

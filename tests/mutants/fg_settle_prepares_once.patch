@@ -1,0 +1,16 @@
+# kills: FG-1 foregroundSettle advances the correct target after each readiness loss
+# suite: node --test --test-name-pattern=^FG-1.foregroundSettle tests/harness.test.js
+# Caches preparation and misses a later loss of foreground readiness.
+diff --git a/tests/helpers/cdp.js b/tests/helpers/cdp.js
+--- a/tests/helpers/cdp.js
++++ b/tests/helpers/cdp.js
+@@ -373,7 +373,8 @@ class Browser {
+   // sleep always did, instead of hanging it.
+   async settle() {
+     if (this._closed) throw new Error("cannot settle a closed browser");
+-    if (this.foregroundSettle) {
++    if (this.foregroundSettle && !this._foregroundPrepared) {
++      this._foregroundPrepared = true;
+       // Interactive callers opt in to preparing this session before EACH first
+       // frame. Neutral eval/send and deferred capture drains never activate it.
+       // This RPC has its existing 20s limit; 500ms is not a total settle bound.

@@ -1,5 +1,252 @@
 # Shared workstream ledger
 
+## Latest cross-workstream checkpoint — 2026-10-26
+
+This checkpoint supersedes conflicting pending/approval labels in the historical
+notes below. Keep their evidence; re-resolve live heads/ownership before work.
+No main merge is authorized by this checkpoint. Do not touch the original dirty
+locked checkout. Routine nonsecret progress/recovery reporting in the existing
+[coordination thread](https://github.com/raywu/handpan-cards/pull/571) is authorized.
+
+| Workstream | Description, current state and next action |
+|---|---|
+| Saved-scale variants — FIRST PRIORITY | Let distinct named/layout versions coexist while Edit updates only the selected version and conflicts preserve drafts. Authorized throughDEV/exact earlier instruction packet. Currentbranchcodex/saved-scale-variants-20261025 at0d36b1f4; host/private/tmp/handpan-saved-variants.HVUKbE/integration. [Immutable latest plan/hold](https://github.com/raywu/handpan-cards/blob/0d36b1f4ace31dd5f8978f2ed51741fe78049c36/docs/plans/2026-10-26-saved-variants-timing-oracle.md) and [currentCI](https://github.com/raywu/handpan-cards/actions/runs/40387134731). Previous2ff71cf5 FULLCI succeeded; currentheadCI still running. Fullapp939/metadata54/all1618apply locally pass. Performance validation remains INCOMPLETE: one allowed200case stopped during baseline sample18 before candidate loaded; no automatic retries. Read-only diagnosis/new reviewed measurement protocol and explicit environment/budget decision precede more measurement; owner must accept any limitation. Not deliveredDEV. |
+| Handpan Helpers — approved parallel app lane | Add a native new-tab resource beside HANDPAN101 while preserving fit/targets/order. Exact Resources-only CLAUDE packet already approved/applied, no additional instruction edits. Currentbranchcodex/helpers-integration-20261026, host/private/tmp/handpan-helpers.HUZs5u/integration; [reviewed finish plan](plans/2026-10-26-handpan-helpers-validation-finish.md). App7fe/T6d89; full882unit,54metadata,1515apply,24 intendedclean/fault/restored proofs, fresh8fullpanelprobes/bothfonts and1344same-locale/font pairs pass. Actual outbound newtab/opener-null/appstate journey passes on finalmarkup. FullMacI18N remainsFAILED only for separately documented pre-existingJapaneseHandpaner line debt; no exemption. Nextimmutablefinalreview/fullLinuxCI (mustALLpass), actualservedDEV andownerQA; no main delivery. |
+| Scale↔Layout swipe — authorized, interrupted | Add deliberate horizontal switching without stealing drawer/field/scroll gestures. Keep source/proofs in/private/tmp/handpan-sps-z8gaznu2/integration; sync finalsharingbase, reprove literaltestheaders and finish independentreview/fullCI/DEV/nativeQA after prioritywork. ExistingthroughDEV authority persists; no main or unapproved CLAUDE edit. |
+| Palette defaults — queued fast-track | Expose D KURD10/D AMARA10 colour pairs and each root/tone inverse alongside existing six choices, preserving oldIDs/default0. Ownerrequests prompt→swarmplan→independentENG/designreviews now; implementation AFTER existingactiveworkstreams, targetnextmainrelease subjectgates/explicitmainconsent. Documentationlane codex/palette-defaults-plan-20261026 at/private/tmp/handpan-palette-defaults-plan.20261026. PromptV2 independentlycritiqueCLEAR, planningrun underway; no paletteapp/CLAUDE edit. Finalplan/proposedexactinstructionpacket and approvaldisposition mustbetracked beforeexecution. This doesnotresume pausedwork ordelay existingdeliveries. |
+| SEO long-tail — planning only | Investigate targeted useful scale lessons and instrument-loading CTAs. Ownerchose designhome handpan.raywu.org/learn/ and owner musical-review role forpilotarticles. These selections doNOTauthorize articles/generator/hosting/analytics/publication; actualprovenance/capacity/data/hosting remainqualified. Reviewedsubplan deliveredDEV, mainheld; keep broaderSEO research separate. |
+| Duplicate notes — PAUSED UNTIL FURTHER NOTICE | Preserve finalized researched/reviewed plan and choices: exactduplicates anywhere, onepositionpertone, nonblockingwarning onlynewlyallowedrepeats. No featurework, planresume or mainrelease untilownerresumes explicitly. |
+| DEV deliveries awaiting main | Macforeground helper, latest-per-ring feedback, SEOplan, duplicate-noteplan(PAUSED) andLINKasync ownership repair are deliveredDEV; releasequeueheld while variants finishes. Preserveorder andexplicitmainconsent; doNOTcallLINKrepair a saved-variants solution. |
+| Released/completed | Naturalness/UIlocalization (GermanDu/Dein/dasDing; scaleinputstillEnglishgrammar), HTC, seat-order repairs, sharedbrowserrunbook and repo-localDRY/ledger bootstrap are released; ownerreported UIQA allgood. Global/runtimeparity and fullMacsuite not established by that result. |
+| Future prompts/plans | Keep LinearSoT investigation/CEO+ENGreview, Codex-vs-Claude qualitycomparison investigation, reviewed repositoryrename plan, remainingNITS→OF-D/I18N-D/Q9/Mac/recovery candidates and cleanupinventory queued at their established authority. Wholecode/testrobustness/DRY/deadcodeaudit starts only after otherwork isresolved. No blanketimplementationgrant; Audio/stats/SM2/PWA ownerstops persist. |
+
+Every check-in must cover active, interrupted, DEV-held, released and queued work
+with a one-sentence description/status/nextstep; numbers alone are insufficient.
+Interview only genuine unresolved decisions, recommendationfirst; reuse settled
+answers. Each newworktree/checkpoint needs plan+branch+worktree+last/next+proofrefs.
+Main and each exactCLAUDE patch require explicitowner approval. AFK allows routine
+autonomous decisions within approvedscope, never inventedpermission or waivedgates.
+
+## Historical checkpoints — preserve evidence, later explicit decisions govern
+
+
+## Priority SHARE-CUSTOMIZATION-HOTFIX — owner-authorized investigation and conditional execution
+
+Owner prioritizes the reported saved-customization/URL/LINK mismatch over SPS.
+Owner confirms SAVE CHANGES preceded fresh LINK. Ordinary native desktop/phone
+SAVE→LINK→clean-receiver controls pass; the original missing-angle report remains
+unresolved. A separate native production bug is confirmed: an older clipboard
+failure replaces/focuses the newer post-SAVE manual fallback URL while committed
+registry, durable record and bar stay correct. Controlled API promises; no owner
+clipboard/profile or Safari/native-picker validation. Finalized [prompt](prompts/2026-10-25-share-customization-hotfix.md) and
+[coordination](plans/2026-10-25-share-customization-hotfix-coordination.md) define
+independent lanes, evidence and review gates. Generated [plan](plans/2026-10-25-share-customization-hotfix.md)
+V2 edcd2a23 independently ENG/design-rechecked CLEAR; separate T/A/M lanes completed.
+Root integrated only after8unit+2native intended baseline RED. Main CI [581](https://github.com/raywu/handpan-cards/pull/581)
+is DRAFT/HELD; DEV [582](https://github.com/raywu/handpan-cards/pull/582) remains UNMERGED.
+
+Root branch codex/share-customization-hotfix-20261025, host-local /private/tmp/handpan-share-hotfix.urAbvO/integration;
+base DEV667bbf8b (live ref rechecked). Prompt1489e53d independently critiqued/rechecked
+clear. Reviewed plan V2 edcd2a23 specifies minimal asynchronous ownership guards,
+spec-first separate T/A/M lanes, generated mutants/fullCI/actual DEV checks. Next
+preserve current source/evidence for final exact-head review/CI and actual DEV.
+All8unit+2native intended RED→GREEN, full app881 and codec105 pass. First fullCI
+40239404703 FAILED mutation verification at9e47e06a; actual app881/browser480 passed.
+Ten quoted mutation headers did not follow the real runner's word-splitting, and
+two legacy hide faults became redundant. Corrected patches retain all app/tests/
+harness standards; full local mutation_harness54 passes. Faithful word-split
+re-proof33 named assertion kills/32 clean commands plus actual unit/native runner
+partitions pass at22bdcbd8. App source5628f31d unchanged. Renewed exact-head review,
+fullCI and actual DEV still required. Main and CLAUDE changes require
+explicit owner consent. No original omitted-angle/variants resolution claimed.
+Same-inventory import replacement is verified existing behavior, separate from
+URL mismatch; no identity redesign automatically authorized. Private links/photo/
+names remain outside public docs. DUP plan is finalized and EXECUTIONHELD; owner
+warning choice is narrow, retained on codex/duplicate-notes-plan-20261025.
+
+### SAVED-SCALE-VARIANTS — newly corroborated requirement gap; investigation only
+
+Separate planning branch codex/saved-scale-variants-plan-20261025, host-local
+/private/tmp/handpan-saved-variants.HVUKbE/planning. Frozen independently critiqued
+promptcd9dbb77 and three independent source/UX/platform research lanes; proposed
+plan in independent ENG/design iteration. Portable locator is that branch, not
+this hotfix's inherited plan copy. No app/storage migration or CLAUDE approval.
+
+Owner confirms separate tabs and inability to retain two differently named/layout
+variants next to one another, even after Add/new LINK. Latest supplied link decoded
+valid with changed absolute positions but unchanged inventory identity. This
+explains replacement; it does not establish the original omitted-angle cause.
+Recommendation: preserve distinct named/layout saved variants, Edit updates the
+selected variant, unchanged-link reopening deduplicates. Design interview pending;
+no identity/storage migration or variants implementation authorized by the narrow
+async hotfix plan. Independent source/UX findings retained in the
+[investigation checkpoint](plans/2026-10-25-saved-scale-variants-investigation.md).
+Create a separate reviewed plan and migration/compatibility acceptance before code;
+do not conflate this user-facing limitation with the fixed async completion bug.
+Current async repair is not yet tested/delivered; no claim either issue is fixed.
+
+SPS is deferred for this hotfix priority, not discarded. Source/proofadc80b12 has
+completed59 driver-reported assertion pairs; aggregate/raw independent review,
+finalCI/DEV/physicalQA remain. Preserve worktrees and evidence; root alone owns
+browser lease. Older 'current' snapshots below are historical; resolve live refs.
+
+## 2026-10-25 all-workstream recovery checkpoint
+
+Newest checkpoint: remote DEV independently read at
+`ac97a9d60edadc73b8766ec3f514de909eeb05cf`, main at
+`96c4c589cec0950723b3b5323dc1df5bbc359329` on2026-10-25. This table supersedes
+older status prose below; keep the historical evidence. This feature copy becomes
+canonical only through reviewed DEV publication. Resolve live refs before resuming.
+Root is integrator on ray-Mac. Each stream retains its own authority; AFK is not a
+new scope, main-release or CLAUDE.md edit grant.
+
+| Stream | Current state / evidence | Continuation / authority |
+|---|---|---|
+| DUPLICATE-NOTES | Three isolated research lanes complete; revised plan independently ENG/design-cleared at585fa248. [Plan](plans/2026-10-25-duplicate-notes.md), [coordination](plans/2026-10-25-duplicate-notes-coordination.md), detailed checkpoint below. | Publish independently cleared plan through fullCI/DEV gates. Owner scope/warning/voicing interviews pending; recommendations provisional. Planning only, no duplicate-note feature edits. |
+| SPS / Scale↔Layout swipe | Active authorized implementation. Root branch `codex/sheet-tab-swipe-20261025` last pushed `0db6c02275e695537ccf8ec5461d70bc3aea2ad2`; host-local `/private/tmp/handpan-sps-z8gaznu2/integration`. [Retained plan](https://github.com/raywu/handpan-cards/blob/0db6c02275e695537ccf8ec5461d70bc3aea2ad2/docs/plans/2026-10-25-sheet-tab-swipe.md), [fixture amendment](https://github.com/raywu/handpan-cards/blob/0db6c02275e695537ccf8ec5461d70bc3aea2ad2/docs/plans/2026-10-25-sheet-tab-swipe-fixtures.md), [coordination](https://github.com/raywu/handpan-cards/blob/0db6c02275e695537ccf8ec5461d70bc3aea2ad2/docs/plans/2026-10-25-sheet-tab-swipe-coordination.md). | Primary2 TDD and bounded native route/tap/scroll/quiet/focus checks passed on prototype index97e498b9. New zoom guard has3unit+1native assertion-RED before code; A's minimal guard commit `792f15b566e345a09e9d2a38ba2b174286d5a4bd` is local, NOT yet integrated/green. Next integrate that exact guard, require same40unit/5native plus helper/default regressions, generated mutants/8preserved context refreshes, final review/fullCI/DEV. Physical Safari/keyboard/edge/selection/zoom QA remains. No SPS PR/CI/DEV success yet. |
+| Latest-per-ring feedback | Complete through DEV576 `bccff5a2b9ffd88f772517740cbab3ea66a50fbb`; source `a90fce8c19887e44e6bbaf38741b97553b795026`. [Plan](plans/2026-10-25-layout-feedback.md), [final evidence/recovery](https://github.com/raywu/handpan-cards/pull/575#issuecomment-6401041842). Root tree `/private/tmp/handpan-feedback.ha43y5cy/integration`, branch `codex/layout-feedback-20261025`. | FullCI40216007898 and actual DEV verification complete. Earlier A0 registration error invalidated/retained; corrected A1 clean. Main575 HELD; do not redo delivered implementation or treat old pending prose as current. |
+| MAC-M1 repair | Complete through DEV574 `f5df7942d097167013a3bf2baf05a6497ac73613`; source `217609075a14e6ca4799497210af27d9df842c5e`. [Plan](plans/2026-10-24-mac-browser-repair.md), [final receipt](https://github.com/raywu/handpan-cards/pull/573#issuecomment-6400445041). Root tree `/private/tmp/handpan-mac-repair.c94d3kno/integration`, branch `codex/mac-foreground-20261025`. | FullCI40209344599 and DEV bytes/print verified. Main573 HELD. Narrow opt-in foreground settle only; full Mac/M2/M3/C1 remain unverified/separate, not silently repaired. |
+| SEO → SEO-LONGTAIL | Reviewed subplan delivered through DEV578 `ac97a9d60edadc73b8766ec3f514de909eeb05cf`; source `1c5344e05c4cf3dcc66f12bd61c1b6665e10303d`. [Subplan](plans/2026-10-25-seo-longtail-content.md), [coordination](plans/2026-10-25-seo-longtail-coordination.md), [delivery receipt](https://github.com/raywu/handpan-cards/pull/577#issuecomment-6401147051). Root tree `/private/tmp/handpan-seo-longtail.rpqmbt6_/planning`, branch `codex/seo-longtail-plan-20261025`. | FullCI40216920481 and served docs/noindex verified. Main577 HELD. Interview audience/scales, music reviewer, publishing home, budget and measurement; no content/generator/provider implementation or publishing authority. Broader SEO research remains separately queued. |
+| DRY-LOCAL / BROWSER-RUNBOOK / released UI | Bounded reference/ledger batch released main570 at96c4c589 and synchronized via572; original runbook and Naturalness/HTC/i18n releases complete. [Release history](#rel-20261024--completed-release-and-settled-owner-decisions). Owner reported released UI verified/all good, exact device coverage unspecified. | Preserve Claude behavior and existing instructions. Global skill/runtime parity is not established by documentation. Do not rerun or reinstall. Further CLAUDE.md changes require explicit exact-diff approval. |
+| NITS → OF-D / I18N-D / Q9 / CLEANUP | Relevance audit and recovered inventory retained; historical candidates are not current implementation grants. [Audit](plans/2026-10-25-plan-relevance-audit.md), [deep search](plans/2026-10-25-outstanding-plan-deep-search.md), [backlog](plans/2026-10-24-continuity-backlog.md). Feedback finding now delivered separately. | Revalidate remaining candidates and authorization; retain NITS→OF-D sequencing. No cleanup/discard/unlock/agent-rule edit. Owner-stopped Audio/stats/SM2/PWA scopes remain stopped. |
+| Future robustness/code/test audit | [Explicit queued task](plans/2026-10-25-future-codebase-audit.md). | Start its prompt→swarm plan→independent ENG/design review only after other outstanding work is resolved; excludes itself from queue-empty check. No dead-code/test deletion or audit execution now. |
+
+Recovery: plans, refs, last/next and approval limits above are portable; temporary
+paths and raw evidence are host-local. A new agent must inspect live branch heads,
+CI/review/reporting and ownership before writes. Missing refs/evidence are blockers,
+not completed checks. Never reset the original dirty/locked checkout. Publish
+meaningful checkpoints, not just creation/final PRs, through normal review/CI/DEV
+gates and the authorized [shared reporting thread](https://github.com/raywu/handpan-cards/pull/571).
+
+## 2026-10-25 feedback then swipe — owner-approved continuation
+
+This later checkpoint supersedes older planning-only/app-unapproved labels below
+for the two named scopes. Owner explicitly authorized **latest-per-ring feedback,
+then Scale↔Layout swipe, through DEV** after independently reviewed plans. Main
+merges and exact CLAUDE.md edits remain separate decisions; future whole-codebase
+prompt/investigation stays queued until other work is resolved.
+
+- **Plans:** [feedback](plans/2026-10-25-layout-feedback.md), reviewed body at217
+  SHAbdf530e39cae3bc0904c701f6afdf46f4bcdf6f2dd134666e14b4904d2df6b9f;
+  [swipe](plans/2026-10-25-sheet-tab-swipe.md), reviewed body at217 SHA4f133ae0…3c57c.
+- **Root/host/branch:** ray-Mac; `/private/tmp/handpan-feedback.ha43y5cy/integration`,
+  codex/layout-feedback-20261025; base217609075a14e6ca4799497210af27d9df842c5e.
+  Separate test/app branches start at that base; private assignment/ownership
+  receipts are under sibling evidence/. Paths are not automatic takeover grants.
+- **Last:** exact plans and independent source reviews cleared. T's primary2 cases
+  were assertion-red on unchanged appbd9; after A's app-block-only patch, all20 new
+  unit cases, all873 app tests and all3 new native journeys passed. Native coverage
+  includes12 en/de/it ×portrait/landscape ×fallback/real-font cells with English
+  note input preserved. Two sandbox-driver failures were corrected by invoking
+  actual inline control handlers; behavior assertions were not weakened.
+- **Mac prerequisite delivered:** DEV574 is merged atf5df7942, source21760907/tree0a11a151.
+  Independent full CI40209344599:12 jobs,2238JS/274Python/1484kills,0bad verdicts.
+  ActualDEV28/28 served resources/noindex and print journey1/1 passed, with cleanup
+  and independent delivery review. Main573 remains HELD; full Mac is unverified.
+- **Mutation proof:**16 new feedback mutants and5 preserved-intent legacy context
+  refreshes are assertion-killed after18 distinct clean-green exact header commands
+  at source4e4bff4c. All failing test leaves are ERR_ASSERTION; nested suite wrappers
+  do not count as kills. Static1500-patch applicability, per-job resource census
+  and restored clean proof checkout verified. Full final-head CI/DEV still pending.
+- **Next:** exact-head addressed reviews, full CI through a held main-target PR
+  and same-head DEV companion, then actual served DEV/affected journeys. Resolve
+  live PRs for branch codex/layout-feedback-20261025 and the latest shared thread
+  [checkpoint](https://github.com/raywu/handpan-cards/pull/571#issuecomment-6400489132).
+  Root alone runs host browsers. No feedback CI/DEV success is claimed here.
+- **Sequencing:** integrate feedback through full CI/review/actual DEV, then start
+  SPS from the accepted lane source with the shared tab-entry contract. Credit
+  original adapted phone QA; new feature-native checks remain outstanding.
+- **Recovery:** unknown scope/owner, dirty conflict or unexpected regression stops
+  dependent writes; retain raw failures and original trees. No reset/unlock,
+  instruction changes, global setup or main merge follows from this checkpoint.
+
+## 2026-10-25 Mac repair execution checkpoint
+
+**Additional owner-requested plan discovery:** the
+[current relevance audit](plans/2026-10-25-plan-relevance-audit.md) and
+[109-file inventory](plans/2026-10-25-plan-inventory.json) restore missing deferred
+SPS and broader historical-nit locators. The
+[SPS successor](plans/2026-10-25-sheet-tab-swipe.md) and
+[per-ring feedback proposal](plans/2026-10-25-layout-feedback.md) are planning
+artifacts, not app implementation grants. Owner selected latest outcome per ring,
+once rim→inner. Deep recovery matched the original first-five phone scripts to
+direct2026-10-22 owner acceptance: the adapted baseline was historically passed,
+including lip/messages/palette/landscape, with a later font follow-up also passed.
+Credit that evidence; do not require a blanket repeat or certify today's native
+SPS behavior. Old SPS build deferral remains distinct from baseline QA. SEO is a
+retained research prompt whose research/reviewed plan has not yet been produced;
+[SEO recovery](plans/2026-10-25-seo-plan-recovery.md) and
+[deep plan search](plans/2026-10-25-outstanding-plan-deep-search.md) preserve the
+missing deliverable, three unapproved P3 TODOs, Q9 and historical candidate debt.
+
+**Future queue item:** [codebase/test robustness investigation](plans/2026-10-25-future-codebase-audit.md).
+Owner explicitly requests this only after other outstanding work is resolved:
+iterate a high-quality investigation prompt, run it to draft a swarm-shaped plan,
+independently engineering/design-review and refine that plan before execution.
+Do not start that investigation now, delete code/tests or infer main/CLAUDE consent.
+The future item excludes itself from the queue-empty check; unresolved work or
+missing evidence is not completion. Preserve these instructions across agents.
+
+This newer checkpoint supplements the historical bootstrap snapshot below.
+PR570 is released at main96c4c589cec0950723b3b5323dc1df5bbc359329;
+sync572 delivered DEVc79af08c90750d350e70344c0835303c3f6bb822. There are no pending
+merges for that batch. Resolve current remote refs and this branch's live PRs
+before proceeding; a local feature snapshot is not canonical DEV.
+
+- **MAC-M1 owner/authority:** root on ray-Mac. Owner explicitly authorized narrow
+  contract reviews, separate TDD/helper lanes, independent review, full Linux CI
+  and DEV validation. No app, CLAUDE.md, global setting or main change; larger
+  full-Mac collection budget still requires a separate decision.
+- **Current plan:** [Mac repair](plans/2026-10-24-mac-browser-repair.md), dated
+  execution amendment; preimplementation reviewed amendment SHA256
+  b7383d1e6c4f3010659a4ff9e4df17f9c59d7dbfe67467d28c647300477fe9b6.
+  The current live plan file may later add factual execution receipts; retain the
+  reviewed source as a commit before implementation rather than imply stable hash.
+- **Worktree:** /private/tmp/handpan-mac-repair.c94d3kno/integration, branch
+  codex/mac-foreground-20261025, base96c4c589. Evidence is sibling evidence/;
+  original dirty/locked trees untouched. Host-local paths are not takeover grants.
+- **Last completed:** bounded P1 current-source baseline/passive red, after-launch
+  activation insufficient, before-settle activation pass, passive reversal red.
+  Exactly1 executed each,0 required skips/cancels. Independent evidence review
+  cleared narrow mitigation inference, with cleanup/sampling qualifications.
+  [Published P1 receipt](https://github.com/raywu/handpan-cards/pull/571#issuecomment-6398951284).
+- **Live delivery:** [main CI PR573](https://github.com/raywu/handpan-cards/pull/573)
+  is HELD without main consent; [DEV companion574](https://github.com/raywu/handpan-cards/pull/574)
+  uses the same branch. Resolve their actual current head/state; an initial
+  plan-only CI skip is not repair acceptance. Canonical DEV has not received this
+  feature checkpoint until574 actually merges and its delivery is verified.
+- **Local implementation gate:** T asserted9 controlled cases against unchanged
+  helper714785d5:1 pass/8 ERR_ASSERTION failures,0 skips/cancels. H then added21
+  helper lines for opt-in settle. Same controlled cases9/9 green; original print1,
+  native two-target1, full harness38, pointer/capture5 and font/background16 passed
+  with required0 skips/cancels. Full harness was atd8d85080; the later FG10 default-
+  launch assertion was separately green through its exact header at6ff541c9.
+- **Mutation gate:**16 new generated helper mutants were assertion-killed after
+  10 distinct clean-green header commands in disposable source6ff541c9. All1484
+  current patches apply-check; no existing context changed. The first proof parser
+  stopped after a successful clean run because Node25 default output was SPEC;
+  raw receipts retained, parser independently corrected to read SPEC/TAP, no test
+  or kill threshold changed. Per-run process/profile census supplements fast-run
+  supervisor sampling. Local receipts remain host-local, not fresh-host capability.
+- **Next:** inspect final exact-head independent source/interaction reviews and
+  full Linux validate, then gate574 against the actual combined DEV tree and verify
+  served bytes/affected journeys. Final CI/DEV receipts belong on the linked live
+  PRs; pending evidence is not completion. Larger full-Mac collection remains
+  unapproved/unrun, and other frame paths/M2/M3/C1 causes remain unrepaired.
+- **Scope/risks:** explicit interactive instance policy prepares only settle's
+  first real frame, every call. Neutral helpers/deferred capture remain unchanged;
+  M2/M3/C1 and arbitrary/drawer rAF paths remain separate. Final review, generated
+  mutants, exact-head Linux CI and actual DEV validation remain required. Main is
+  held until repair-specific owner consent. Unknown ownership/conflict or bad
+  diagnostic oracle stops dependent writes, never triggers reset/unlock.
+- **Parallel NITS investigation:** source audit completed read-only at96c4c589.
+  Single pendingDerive string can overwrite an earlier ring's feedback. Owner
+  settled latest outcome per ring, once rim→inner, rather than event history. NEXT/keyboard
+  routing is wired; some lifecycle tests use weak or synthetic oracles. Plain
+  slide flashing without renumbering conflicts with accepted existing behavior.
+  No app fix is authorized by the Mac scope; next is a separate reviewed plan
+  and discriminating reproduction. Keep NITS→OF-D order; other backlog remains.
+
 **Authority:** this file is the canonical locator only when read at a freshly
 resolved remote `dev` commit in `raywu/handpan-cards`. Main, feature branches and
 local copies are snapshots. The publication revision is that external DEV commit;
@@ -12,6 +259,75 @@ Existing [repository instructions](../AGENTS.md), [CLAUDE.md](../CLAUDE.md),
 [test contract](../tests/CONTRACT.md) and [browser runbook](testing/browser.md)
 remain unchanged. [Workflow references and explicit session bootstrap](agents/workflows.md)
 are an index, not activated skills or changed Claude lifecycle requirements.
+
+## 2026-10-25 DUPLICATE-NOTES planning checkpoint
+
+Owner requested a research prompt and independently reviewed plan to permit repeated
+physical notes with nonblocking warnings, plus explicit all-workstream ledger coverage.
+This is **planning only**: no parser/engine/app/record/share edits or raw-photo
+publication. Pending interviews are not answered by AFK; no feature implementation.
+
+- **Owner/ref/worktree:** root on ray-Mac, `codex/duplicate-notes-plan-20261025`;
+  `/private/tmp/handpan-duplicate-notes-qgvz59ns/planning`; baseDEVac97a9d6.
+- **Artifacts:** [plan](plans/2026-10-25-duplicate-notes.md),
+  [prompt](prompts/2026-10-25-duplicate-notes-plan.md),
+  [coordination and owned research trees](plans/2026-10-25-duplicate-notes-coordination.md).
+  Three research notes linked from the plan preserve independent sources.
+- **Last confirmed:** prompt V2 independently critiqued/rechecked, frozen SHA256
+  `be2677f0f32e23a1ae4ccda2ad3c07c711eed7c24e938b41c063dcc192dec3cb` at2f01c3ac.
+  Core research retained744feb3b, UX7dfd2127; engine note independently produced
+  SHA2564db7cfb6980f0b6497ef0086e288e402f565480f460dacf9b596e9d95e8e7b85.
+  Final plan SHA256585fa248cb1271d271b4c0a47ba89df0345c9fc42f73b51460e7ca2352f5db7c
+  cleared fresh independent ENG/design rechecks after4material findings were fixed;
+  review receipts and initial-plan hash are retained in coordination.
+- **Material findings:** deleting duplicate refusals alone is unsafe: typed-field
+  occurrence mapping can reuse an ID; existing share writers can encode seeds old
+  readers reject; older writers/reset/dedup require a recovery matrix. Current
+  all-position diagram highlighting differs from one-field-per-pitch-class written
+  voicings and must be preserved. New warning fit/priority/accessibility and legacy
+  valid formats require explicit independent acceptance tests.
+- **Next:** publish independently reviewed docs/ledger; reconcile pending scope,
+  voicing, warning/no-confirmation and warning-coverage interviews; publish reviewed
+  docs/ledger through fullCI/DEV. Stop this planning stream awaiting separately
+  scoped implementation approval. No no-regression or operational parity claim.
+- **Parallel/recovery:** use the current top table, not historical pending statuses.
+  Each stream's live ref and own permission gate governs continuation.
+
+## 2026-10-25 SEO-LONGTAIL planning checkpoint
+
+The owner's newer explicit request authorizes **long-tail strategy research and a
+reviewed subplan now**, in parallel with existing app work. This supersedes the
+older deferred research label only for this bounded SEO-LONGTAIL substream.
+Broader SEO investigation remains queued; future queue-empty code/test audit stays
+queued. No article/generator/app implementation, publication, provider/analytics
+write, CLAUDE.md change or main release is authorized by this planning request.
+
+- **Umbrella/status:** SEO → SEO-LONGTAIL; research/subplan independently reviewed, implementation unapproved.
+- **Plan:** [long-tail content subplan](plans/2026-10-25-seo-longtail-content.md).
+  [Prompt](prompts/2026-10-25-seo-longtail-subplan.md), three linked research notes
+  and [coordination](plans/2026-10-25-seo-longtail-coordination.md) retain evidence.
+- **Owner/location:** Codex root on ray-Mac; branch
+  codex/seo-longtail-plan-20261025; host-local worktree
+  /private/tmp/handpan-seo-longtail.rpqmbt6_/planning. Base217609075a14e6ca4799497210af27d9df842c5e;
+  fresh DEV observedf5df7942d097167013a3bf2baf05a6497ac73613 on2026-10-25.
+  Resolve the advertised branch/PR and immutable published plan commit before
+  recovery; local paths are not portable or permission to disturb another lane.
+- **Last confirmed:** independent prompt critique incorporated arrival/RNG/repeat-
+  measurement gaps; three genuine research contexts completed source/web audit.
+  Canonical diagnostic verifies supplied18-note link, not illustrative20-note query.
+  Current link loads instrument, not exact progression/tier/view. Search demand,
+  musical suitability, publishing setup and full attribution remain unverified.
+- **Review:** final plan SHA256 f2be3a0275642f07eb53aa0b1e627bc6d23f1085ec1efa0463f9702534e51fd8; fresh ENG/design reviews cleared after seven material/wording fixes.
+- **Next:** interview unresolved audience/reviewer/home/budget/data choices; then await
+  separately scoped implementation approval. No manufactured numeric quality score.
+- **Recommended proposal:** useful family guide first, at most two independently
+  distinct layout lessons; reviewed drafts and human music validation, not bulk
+  publishing. Defaults are provisional until owner answers. Existing Domain
+  verification/site-name implementation must not be repeated from stale records.
+- **Recovery:** creation/checkpoints/plan/review/source refs belong in this DEV
+  ledger and authorized existing reporting thread. Preserve unrelated concurrent
+  ledger rows during merge. Main remains held without explicit feature consent.
+
 
 ## Read and resume safely
 
@@ -165,3 +481,30 @@ released. No further CLAUDE edit or main consent is inherited. The
 accounts for exact application bytes plus one frozen insertion; original raw-source
 failures remain failed evidence. Headless evidence and owner QA do not establish
 unspecified device coverage or a repaired full Mac suite.
+
+## HANDPAN-HELPERS activation — 2026-10-26
+
+Owner approved the reviewed resource plan and exact Resources-only CLAUDE patch
+through DEV, targeting the next release only after fit/tests/independent review/
+fullCI/actualDEV gates. Main requires separate consent. Saved variants retains
+priority and its unfinished code is excluded from this DEV6165c873-based branch.
+
+Plan: docs/plans/2026-10-25-handpan-helpers.md. Root integration/worktree:
+/private/tmp/handpan-helpers.HUZs5u/integration, codex/helpers-integration-20261026.
+File-owned lanes: tests/ (helpers_tests; app/e2e tests), markup/ (helpers_markup;
+index Resources markup), root (exact instruction patch, support, faults, ledger,
+sole browser lease). Last: liveDEV/preimage verified, lanes created/briefed.
+Next: literal acceptanceRED before U edits, then same testsGREEN and full gates.
+No application or delivery success is claimed by this activation entry.
+
+SEO owner decisions also settled: plan /learn/ publication home and owner musical
+review for pilot articles; no SEO article implementation/publication authorized.
+
+### Helpers local checkpoint
+
+Minimal source08a6ed02 is implemented with the owner's exact approved Resources
+instruction patch.882app and4native tests pass; independently audited1344same-
+locale pairs and15meaningful mutation triples pass; metadata54/54 and1513allapply
+pass. Full English panel probe passes; seven locale probes/final independent
+review/fullCI/servedDEV remain pending. Local implementation is not DEV delivery.
+SEO choices are recorded in the separate SEO plan; no articles are implemented.

@@ -18,6 +18,191 @@ const { launch, findBrowser, Browser, ANALYTICS_PATTERNS, takeExceptions } = req
 const REPO = path.resolve(__dirname, "..");
 
 const BROWSER = findBrowser();
+
+// Controlled transport for the reviewed foreground-settle contract. Two
+// independently named targets model the observable prerequisite: a hidden
+// target cannot advance a frame. The fixture answers immediately with a page
+// error rather than hanging, so a missing/wrong readiness action is assertion-red.
+// Browser's real WebSocket decoding, session routing and evaluation stay in use.
+function foregroundTransport({ foreground, visible = false, refuse = false, hold = false, animations = [] } = {}) {
+  const listeners = new Map();
+  const targets = {
+    A: { visible, frames: 0, polls: 0 },
+    B: { visible: !visible, frames: 0, polls: 0 },
+  };
+  const messages = [];
+  const pendingActivations = [];
+  const denial = { code: -32000, message: "FG fixture activation refused" };
+  const response = (message, result, error) => queueMicrotask(() => listeners.get("message")({
+    data: JSON.stringify({ id: message.id, ...(error ? { error } : { result }) }),
+  }));
+  function activate(message, reject = refuse) {
+    if (reject) { response(message, null, denial); return; }
+    if (targets[message.sessionId]) {
+      for (const [name, target] of Object.entries(targets)) target.visible = name === message.sessionId;
+    }
+    response(message, {});
+  }
+  const ws = {
+    addEventListener(name, callback) { listeners.set(name, callback); },
+    close() {},
+    send(wire) {
+      const message = JSON.parse(wire);
+      messages.push(message);
+      if (message.method === "Page.bringToFront") {
+        if (hold) pendingActivations.push(message);
+        else activate(message);
+        return;
+      }
+      if (message.method !== "Runtime.evaluate") { response(message, {}); return; }
+      const target = targets[message.sessionId];
+      const expression = message.params.expression;
+      if (expression.includes("requestAnimationFrame")) {
+        if (!target || !target.visible) {
+          response(message, { exceptionDetails: { exception: { description: "FG frame refused: target is hidden or absent" } } });
+        } else {
+          target.frames++;
+          response(message, { result: { value: null } });
+        }
+      } else if (expression.includes("getAnimations")) {
+        if (target) target.polls++;
+        response(message, { result: { value: animations.length ? animations.shift() : 0 } });
+      } else {
+        response(message, { result: { value: true } });
+      }
+    },
+  };
+  const b = new Browser(null, ws, null);
+  // This fixture owns no OS process or directory. close() still exercises the
+  // real coverage/WS/lifecycle path, while reap(null) cannot signal any process.
+  b.entry = null;
+  b.sessionId = "A";
+  if (foreground !== undefined) b.foregroundSettle = foreground;
+  return {
+    b, targets, messages, denial,
+    activateCount: () => messages.filter((m) => m.method === "Page.bringToFront").length,
+    evalCount: () => messages.filter((m) => m.method === "Runtime.evaluate").length,
+    hideA() { targets.A.visible = false; targets.B.visible = true; },
+    completeActivation(reject) {
+      assert.strictEqual(pendingActivations.length, 1, "one activation must be awaiting its transport response");
+      activate(pendingActivations.shift(), reject);
+    },
+  };
+}
+
+// Flush only already queued microtasks; no timing sleeps or real browser work.
+async function flushForegroundTransport() {
+  for (let i = 0; i < 12; i++) await Promise.resolve();
+}
+
+test("FG-1 foregroundSettle advances the correct target after each readiness loss", async () => {
+  const f = foregroundTransport({ foreground: true });
+  for (let round = 1; round <= 2; round++) {
+    f.hideA();
+    await assert.doesNotReject(f.b.settle(), "an opted-in hidden target must complete its own frame");
+    assert.strictEqual(f.targets.A.frames, round, "the requested target's real frame must advance once");
+    assert.deepStrictEqual(f.targets.B, { visible: false, frames: 0, polls: 0 }, "a different target cannot satisfy A's frame");
+    assert.strictEqual(f.activateCount(), round, "a later hidden target needs fresh preparation, not a cache");
+  }
+});
+
+test("FG-2 neutral Browser operations preserve the foreground target", async () => {
+  const f = foregroundTransport();
+  await f.b.eval("return true;");
+  await f.b.send("Runtime.evaluate", { expression: "true", returnByValue: true });
+  assert.deepStrictEqual(f.targets.A, { visible: false, frames: 0, polls: 0 });
+  assert.deepStrictEqual(f.targets.B, { visible: true, frames: 0, polls: 0 });
+  assert.strictEqual(f.activateCount(), 0, "neutral observations must not steal foreground");
+  // A neutral settle on an already-visible target preserves its original real
+  // frame/animation behavior without adding an activation side effect.
+  f.targets.A.visible = true;
+  f.targets.B.visible = false;
+  await assert.doesNotReject(f.b.settle());
+  assert.strictEqual(f.targets.A.frames, 1);
+  assert.strictEqual(f.activateCount(), 0, "default settle must remain neutral");
+});
+
+test("FG-3 foregroundSettle retains real animation completion", async () => {
+  const f = foregroundTransport({ foreground: true, animations: [1, 0] });
+  await assert.doesNotReject(f.b.settle());
+  assert.strictEqual(f.targets.A.frames, 1, "readiness is not a substitute for the real first frame");
+  assert.strictEqual(f.targets.A.polls, 2, "settle must observe the running animation clear, not fabricate completion");
+});
+
+test("FG-4 foregroundSettle preserves activation refusal without retry or frame work", async () => {
+  const f = foregroundTransport({ foreground: true, refuse: true });
+  await assert.rejects(f.b.settle(), { message: JSON.stringify(f.denial) });
+  assert.strictEqual(f.activateCount(), 1, "a real activation failure must not be retried");
+  assert.strictEqual(f.evalCount(), 0, "failed readiness cannot be followed by a frame or animation poll");
+  assert.strictEqual(f.targets.A.frames, 0);
+});
+
+test("FG-5 foregroundSettle rejects a missing session before transport work", async () => {
+  const f = foregroundTransport({ foreground: true });
+  f.b.sessionId = null;
+  await assert.rejects(f.b.settle(), /session/i);
+  assert.deepStrictEqual(f.messages, [], "missing attached session must not fall back to browser-wide preparation");
+});
+
+test("FG-6 foregroundSettle rejects session drift during preparation", async () => {
+  const f = foregroundTransport({ foreground: true, hold: true });
+  const outcome = f.b.settle().then(() => ({ ok: true }), (error) => ({ error }));
+  await flushForegroundTransport();
+  assert.strictEqual(f.activateCount(), 1, "the requested target must enter readiness before frames");
+  f.b.sessionId = "B";
+  f.completeActivation(false);
+  const result = await outcome;
+  assert.ok(result.error, "settle must reject if its prepared session was replaced");
+  assert.match(result.error.message, /session|target/i);
+  assert.strictEqual(f.evalCount(), 0, "a different session cannot inherit readiness");
+});
+
+test("FG-7 close wins pending readiness before coverage cleanup finishes", async () => {
+  const f = foregroundTransport({ foreground: true, hold: true });
+  let finishCoverage;
+  let coverageStarted = false;
+  f.b.coverage = {
+    intercept() { return null; },
+    finish() { coverageStarted = true; return new Promise((resolve) => { finishCoverage = resolve; }); },
+  };
+  const outcome = f.b.settle().then(() => ({ ok: true }), (error) => ({ error }));
+  await flushForegroundTransport();
+  assert.strictEqual(f.activateCount(), 1, "readiness must be in flight for this race");
+  const closing = f.b.close();
+  try {
+    assert.strictEqual(coverageStarted, true, "close must have entered the held cleanup phase");
+    f.completeActivation(false);
+    const result = await outcome;
+    assert.ok(result.error, "successful readiness after close began must reject");
+    assert.match(result.error.message, /clos/i);
+    assert.strictEqual(f.evalCount(), 0, "close wins before any subsequent frame/animation work");
+  } finally {
+    finishCoverage();
+    await closing;
+  }
+});
+
+test("FG-8 close preserves an in-flight activation refusal", async () => {
+  const f = foregroundTransport({ foreground: true, hold: true });
+  const outcome = f.b.settle().then(() => ({ ok: true }), (error) => ({ error }));
+  await flushForegroundTransport();
+  assert.strictEqual(f.activateCount(), 1, "readiness must be in flight for this race");
+  await f.b.close();
+  f.completeActivation(true);
+  const result = await outcome;
+  assert.ok(result.error, "the original activation error must remain a rejection");
+  assert.strictEqual(result.error.message, JSON.stringify(f.denial), "close must not replace the real activation cause");
+  assert.strictEqual(f.activateCount(), 1);
+  assert.strictEqual(f.evalCount(), 0);
+});
+
+test("FG-9 settle after close rejects without transport work", async () => {
+  const f = foregroundTransport({ foreground: true, visible: true });
+  await f.b.close();
+  await assert.rejects(f.b.settle(), /clos/i);
+  assert.deepStrictEqual(f.messages, []);
+});
+
 if (!BROWSER) {
   const why =
     "harness self-tests skipped: no Chromium binary found (set CHROME_BIN to " +
@@ -29,6 +214,76 @@ if (!BROWSER) {
 }
 
 function run() {
+  test("FG-10 opted-in native settle advances only its target after repeated hiding", async () => {
+    const neutral = await launch();
+    try {
+      assert.strictEqual(neutral.foregroundSettle, false,
+        "omitting the launch option must preserve a neutral instance policy");
+    } finally {
+      await neutral.close();
+    }
+    const b = await launch({ foregroundSettle: true });
+    const firstSession = b.sessionId;
+    const page = (name) => "data:text/html," + encodeURIComponent(
+      `<body><div id="ready">${name}</div><script>window.targetName=${JSON.stringify(name)};window.frameCount=0;</script>`);
+    // This single Browser/connection switches only between its own two attached
+    // sessions, serially. No unrelated target or signed-in profile is inspected.
+    const inSession = async (session, action) => {
+      const previous = b.sessionId;
+      b.sessionId = session;
+      try { return await action(); }
+      finally { b.sessionId = previous; }
+    };
+    const state = (session) => inSession(session, () => b.eval(
+      "return {name:window.targetName,visible:document.visibilityState,frames:window.frameCount};"));
+    try {
+      // The instance policy is an explicit contract input, independently of
+      // native scheduling. Dropped launch forwarding must fail promptly here;
+      // the target/frame assertions below still prove the policy's real effect.
+      assert.strictEqual(b.foregroundSettle, true,
+        "launch must preserve the requested foreground-settle instance policy");
+      await b.send("Page.navigate", { url: page("A") });
+      await b.waitFor("window.targetName === 'A'", { label: "foreground fixture A" });
+      const { targetId } = await b.send("Target.createTarget", { url: page("B") }, false);
+      const { sessionId: secondSession } = await b.send("Target.attachToTarget", { targetId, flatten: true }, false);
+      await inSession(secondSession, async () => {
+        await b.send("Page.enable");
+        await b.send("Runtime.enable");
+        await b.waitFor("window.targetName === 'B'", { label: "foreground fixture B" });
+      });
+      for (let round = 1; round <= 2; round++) {
+        await inSession(secondSession, () => b.send("Page.bringToFront"));
+        await inSession(secondSession, () => b.waitFor("document.visibilityState === 'visible'", {
+          timeout: 2000, label: "fixture B is actually foreground",
+        }));
+        await b.waitFor("document.visibilityState === 'hidden'", {
+          timeout: 2000, label: "fixture A is actually background",
+        });
+        const beforeA = await state(firstSession);
+        const beforeB = await state(secondSession);
+        assert.deepStrictEqual(beforeA, { name: "A", visible: "hidden", frames: round - 1 },
+          "native setup must establish a genuinely hidden A, not mock visibility");
+        assert.deepStrictEqual(beforeB, { name: "B", visible: "visible", frames: 0 });
+        await b.eval("return window.targetName;");
+        assert.deepStrictEqual(await state(firstSession), beforeA,
+          "neutral evaluation must not activate hidden A");
+        assert.deepStrictEqual(await state(secondSession), beforeB,
+          "neutral observation of A must leave B foreground");
+        // Enqueue without awaiting a background frame. Completion is observed
+        // only after the helper has prepared A and waited for its real frame.
+        await b.eval("requestAnimationFrame(() => { window.frameCount++; }); return true;");
+        await assert.doesNotReject(b.settle(), "opted-in settle must advance A's real frame");
+        await b.waitFor(`window.frameCount === ${round}`, { timeout: 2000, label: "A-owned frame marker" });
+        assert.deepStrictEqual(await state(firstSession), { name: "A", visible: "visible", frames: round });
+        assert.deepStrictEqual(await state(secondSession), { name: "B", visible: "hidden", frames: 0 },
+          "preparing A must not advance or replace B's independent sentinel");
+      }
+    } finally {
+      b.sessionId = firstSession;
+      await b.close();
+    }
+  });
+
   /* ------------------------------------------------------------------ *
    * settle() - finding 6, quality refactor 2026-09-30. Unit-level: a fake
    * Browser whose eval() is stubbed to report controlled getAnimations()

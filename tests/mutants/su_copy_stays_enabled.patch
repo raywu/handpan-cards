@@ -4,9 +4,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11367,7 +11367,7 @@ function syncRoute() {
-     shareUrl.setAttribute("hidden", "");
+@@ -14476,7 +14476,7 @@ function syncRoute() {
    }
+   observeLinkRoute();
    const refused = route === "";
 -  shareCopy.disabled = refused;
 +  shareCopy.disabled = false;

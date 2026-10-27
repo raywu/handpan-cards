@@ -1,0 +1,15 @@
+# kills: PD2: rim then inner field edits retain the same final ring order
+# suite: node --test --test-reporter=tap --test-name-pattern=PD2:.rim.then.inner.field.edits.retain.the.same.final.ring.order tests/app.test.js
+# Consumption reverses the required rim then inner outcome order.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13128,7 +13128,7 @@ function showPendingDerive() {
+   // Invalid active fields can retain a last-good line and boxOk. Keep Layout
+   // accessible, but do not consume its feedback until the active input is valid.
+   if (!drawerOpen || !currentScaleInput()) return false;
+-  const parts = LAYOUT_RINGS.filter((ring) => pendingDerive[ring]).map((ring) =>
++  const parts = LAYOUT_RINGS.slice().reverse().filter((ring) => pendingDerive[ring]).map((ring) =>
+     pendingDerive[ring] === true
+       ? t(ring === "rim" ? "sheet.rim_follows" : "sheet.inner_follows")
+       : pendingDerive[ring]);

@@ -1,5 +1,158 @@
 # Mac browser repair: activation-sensitive frame waits with preserved test oracles
 
+## 2026-10-25 execution amendment — narrow, explicit interactive frame policy
+
+This section supersedes earlier planning-only/activation-choice status for the
+scope below; historical evidence and other gates remain intact. Owner explicitly
+authorized contract review, separate TDD/helper lanes, independent review, full
+Linux CI and DEV validation. No app, CLAUDE.md, global configuration or main edits
+or release are included. A larger full-Mac collection budget remains a separate
+decision. Do not use this authorization to broaden the remaining M2/M3/C1 tracks.
+
+P1 completed at main96c4c589 / tree7705d17c. The unchanged print-Enter test failed;
+passive trace failed at its first real rAF; one after-launch activation still
+failed; one activation immediately before first settle passed original assertions;
+passive reversal failed again. Each run executed1, skipped/cancelled0, with original
+CDP limits. Independent evidence review cleared this narrow conclusion. Published
+receipt: https://github.com/raywu/handpan-cards/pull/571#issuecomment-6398951284 .
+Late activation is a mitigation hypothesis, not a Chromium cause. Sparse samples
+do not isolate the visibility-changing operation; extra-RPC timing is a confound.
+
+### Concrete contract for review before source edits
+
+1. Default launch/Browser behavior remains neutral. Add one explicit instance
+   policy, `launch({ foregroundSettle: true })`, for suites that intend foreground
+   interactive rendering. The main e2e suite opts in at its launch after caller
+   audit; the original print-Enter assertions and real input remain unchanged.
+   Do not opt in other suites/tools mechanically. No per-call API is required.
+2. For an opted-in instance, every `settle()` first prepares its current attached
+   session with one `Page.bringToFront` RPC, then performs the existing real first
+   rAF and unchanged animation poll. No one-time readiness cache, retry, sleep,
+   rAF bypass, animation finishing or reduced assertion is permitted. The session
+   must be attached; missing session is an explicit error, not browser-wide fallback.
+3. `eval`, `send`, navigation/readiness polls, viewport, screenshot, release,
+   `deferPendingSettle` and neutral instances do not acquire activation side effects.
+   Arbitrary rAF expressions and drawer-specific frame waits remain out of scope.
+   Existing release listener/event/two-frame ordering stays unchanged. This patch
+   does not claim to repair every Mac frame path or the full suite.
+4. Activation rejection propagates its original cause before any settle frame or
+   animation-success work. One activation uses the existing20s RPC deadline; no
+   new timeout setting. It precedes the existing up-to20s first-frame evaluation
+   and animation poll with500ms ceiling plus its existing per-RPC response latency.
+   A conservative composed path is approximately60.52s (preparation20s, first
+   frame20s, existing animation polling/last in-flight RPC up to about20.52s).
+   Neither500ms nor20s is an end-to-end settle guarantee. The180s small-job envelope
+   remains separate from collection budgets and cleanup qualifications.
+5. Close marks the Browser closed before cleanup. A settle requested after close
+   rejects without readiness/frame work. If close wins during readiness, a later
+   successful activation response cannot initiate a frame/animation evaluation;
+   the attached session must still be the one prepared, otherwise reject rather
+   than synchronizing a different target. An already dispatched RPC may remain
+   pending under its original20s deadline: the guard prevents subsequent work,
+   not instantaneous transport cancellation.
+   activation rejection still retains its original cause. Do not globally guard
+   transport/coverage teardown or invent a new arbitrary input cancellation API.
+   Existing teardown ownership and synchronous reaping remain authoritative.
+
+### Spec-first oracles, lanes and bounded validation
+
+- T owns tests/harness.test.js and minimal e2e launch/fixture changes in its own
+  worktree. Derive expectations from this contract; do not import helper constants
+  as the oracle. Establish new controlled-transport assertion-red against unchanged
+  helper before H edits. Existing animation/ceiling tests retain their assertions.
+- Controlled target transport proves neutral default, correct-session readiness
+  before first real frame, preparation on repeated settles after target becomes
+  hidden again, original rejection/no retry, missing session, and close winning
+  pending readiness without subsequent frame/animation work or unhandled rejection.
+  It must model a frame that fails observably when target readiness is absent,
+  rather than only spy on a CDP command name.
+- A real one-process/two-target fixture establishes A hidden/B visible as a setup
+  precondition, unique target sentinels and real A-owned rAF completion. Neutral
+  observation on A preserves the target states. Opted-in A settle makes A visible
+  and advances its frame marker without changing B's sentinel; repeat after B is
+  foregrounded again. No mocked visibility or indefinite background-frame wait.
+  Failed precondition is a failed validation, not a skip/pass. Native test scope
+  does not certify Safari, physical devices or other suites.
+- H owns tests/helpers/cdp.js in a separate worktree, only after the exact contract
+  and T's red oracle are reviewed. Keep the implementation small and opt-in.
+- Root integrates, owns test floor rows and docs/WORKSTREAMS.md receipts. A later
+  independent mutant lane generates real Git diffs from committed source; each new
+  contract group needs clean-green/fault-assertion-red proof, never timeout as kill.
+  Reuse existing animation/release mutants only if their exact current intent still
+  holds. Preserve existing headers and regenerate stale contexts, not bad verdicts.
+- Root alone operates host browser under one lease. Freeze exact test titles and
+  counts before each run; use the reviewed180s supervisor for small selections.
+  Targeted gates include new harness cases, original print-Enter, existing lifecycle,
+  deferred pointer/capture and C1 mouse guards, and affected font/background checks
+  where bounded selectors permit. No full-Mac collection until separate budget and
+  supervisor approval. No tests/config change to conceal M2/M3 or lower floors.
+- Fresh independent engineering and interaction reviews precede source edits and
+  review the integrated final diff/evidence later. Full exact-head Linux validate
+  must execute substantive jobs and account for all tests/mutants before DEV.
+  Main-target CI PR stays HELD; DEV companion follows the existing same-head gate.
+  Prove app/engine/deck bytes unchanged and inspect actual served DEV content and
+  affected journeys; helper-only delivery is not a new app feature. Report any
+  unapproved full-Mac gate as incomplete rather than full-host readiness.
+
+### Preimplementation ownership checkpoint (retained at a0a26eac)
+
+Root integration worktree `/private/tmp/handpan-mac-repair.c94d3kno/integration`,
+branch `codex/mac-foreground-20261025`, base96c4c589; host ray-Mac. Private artifacts
+are under sibling evidence/. Original dirty/locked worktrees are untouched.
+At that historical checkpoint only the plan was edited. The next action then was
+independent contract review,
+then allocate T/H worktrees, preserve TDD red receipt and integrate bounded source.
+On lost ownership, dirty conflict, unavailable dependency or failed oracle, stop
+dependent writes and preserve evidence; no reset/unlock or unknown-process cleanup.
+
+---
+
+## Execution evidence checkpoint — 2026-10-25, before final CI/DEV
+
+The preimplementation amendment is retained at commita0a26eacc7d4d2eb73aa6ab3b85641ae03a985a3;
+its reviewed SHA256b7383d1e6c4f3010659a4ff9e4df17f9c59d7dbfe67467d28c647300477fe9b6
+does not claim to hash this subsequently extended file. Independent ENG and
+design/interaction reviewers cleared it before source edits. T and H authored in
+separate worktrees; H waited for root's verified controlled assertion-red gate.
+
+| Evidence | Actual source / result | Limits |
+|---|---|---|
+| T baseline | tests2dcd1ab5; unchanged helper714785d5;9 executed,1 pass/8 ERR_ASSERTION,0 skip/cancel | Prompt assertion-red, not timeouts masquerading as kills |
+| Integrated controlled green | d8d85080; same9 assertions pass | Deterministic model plus actual native corroboration, not full-suite proof |
+| Native correct target | d8d85080; real same-process two-target case1 pass | Later default-launch assertion additionally passed via exact FG10 header at6ff541c9 |
+| Original print reduction | d8d85080;1 pass, all original click/build/panel/flip assertions unchanged | Main interactive launch explicitly opts in; no preload |
+| Full harness | d8d85080;38 pass,0 skip/cancel | Later added default-launch assertion changes no case count; final CI must run actual final source |
+| Existing pointer/capture guards |3443d19a;5 pass including C1 mouse sentinel | No claim to fix C1's historical intermittent cause or deferred frame paths |
+| Existing font/background checks |6ff541c9;16 pass (14 paint-background,2 TR-1 font cases) | Paint tests do not prove real target visibility; native fixture supplies that separate evidence |
+| New mutant proof |6ff541c9;16 assertion kills,10 unique clean-green header commands | No timeout/skip/cancel/startup error credited; full Linux corpus gate remains pending |
+| Static corpus |1484 patches apply-check, no existing stale contexts | Static applicability is not runtime mutant proof |
+
+The initial targeted-proof runner parsed only TAP but exact header commands on
+Node25 defaulted to SPEC. It stopped after a genuine clean1/1 pass, before any
+fault. Original receipt/failure retained; independently reviewed parser revision
+recognized both formats and used fresh filenames. Actual header commands,
+assertions, timeouts and kill criteria were unchanged. Each native-capable job
+records process-root/profile census to compensate for1s supervisor sampling;
+unknown/pre-existing processes are never signalled. These are qualified snapshots,
+not complete historical process tracking or a hard180s total guarantee.
+
+Private raw receipts/proof index/checkpoints are under
+`/private/tmp/handpan-mac-repair.c94d3kno/evidence/`; the disposable proof checkout
+was restored after every helper fault. Recover portable source from the actual
+live branch/PRs rather than assuming host-local evidence exists on another machine.
+
+Live main-target CI [PR573](https://github.com/raywu/handpan-cards/pull/573) is HELD;
+same-head [DEV574](https://github.com/raywu/handpan-cards/pull/574) is gated on fresh
+independent addressed source review, full exact-head Linux CI and combined DEV
+identity/affected-journey verification. Initial plan-only skips are not acceptance.
+No new main consent, app/CLAUDE/global edit or larger full-Mac collection follows
+from local green results. Final delivery receipts are external to this pre-CI
+checkpoint; resolve current PR state rather than redoing shipped work or inventing
+completion. The app-plan relevance/SEO/future-task documents are independently
+reviewed planning outputs; they contain no app implementation grant.
+
+---
+
 Status: **draft for fresh independent engineering and design review**. This Mac
 author lane is planning-only: no diagnostics, browser/test runs, helper/application/
 test edits, commits, pushes, merges, installation or global configuration changes.
