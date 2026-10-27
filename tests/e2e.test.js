@@ -18487,6 +18487,37 @@ function run() {
           .then(result=>{window.__svResult=result;window.__svOperationDone=true;},error=>{window.__svResult={ok:false,error:String(error)};window.__svOperationDone=true;});return true;`);
     }
 
+    test("SV-PG: with 200 saved variants, 30 chip taps each select the tapped scale within 500 ms",{timeout:120000},async()=>{
+      await freshLoad();await b.setViewport(380,780,false);
+      const records=Array.from({length:200},(_,i)=>({...clone(SV.portableRecords.amaraA),o:{name:"SVPG "+String(i+1).padStart(3,"0"),palette:i%6}}));
+      await b.eval(`return ${nativeSavedExpression({write:true,raw:JSON.stringify(makeEnvelope(records,{preferredSelection:{kind:"builtin",id:"kurd"}}))})};`);
+      await navigate();
+      const taps=[...new Set([0,199,...Array.from({length:28},(_,i)=>Math.round((i+1)*199/29))])];
+      assert.strictEqual(taps.length,30,"thirty distinct chips are tapped");
+      const rows=await b.eval(`const taps=${JSON.stringify(taps)},uid=${uid.toString()},out=[];
+        return (async()=>{
+          if(document.querySelectorAll('#decks .chip[data-selection-kind="saved"]').length!==200)return {error:'200 saved chips are not rendered'};
+          for(const i of taps){
+            const id=uid(i+1),name='SVPG '+String(i+1).padStart(3,'0'),chip=document.querySelector('#decks .chip[data-selection-id="'+id+'"]');
+            if(!chip)return {error:'missing chip '+i};
+            const ok=()=>selection.kind==='saved'&&selection.id===id&&deck().name===name
+              &&!!document.querySelector('#decks .chip.on[data-selection-id="'+id+'"]');
+            const t0=performance.now();chip.click();
+            while(!ok()){
+              if(performance.now()-t0>5000)return {error:'tap '+i+' never selected '+name};
+              await new Promise(resolve=>requestAnimationFrame(resolve));
+            }
+            out.push({i,ms:performance.now()-t0});
+          }
+          return {rows:out};
+        })();`);
+      assert.ok(!rows.error,rows.error);
+      const max=Math.max(...rows.rows.map(r=>r.ms));
+      console.log("SV_PG_TAPS "+JSON.stringify({count:rows.rows.length,maxMs:Math.round(max*10)/10}));
+      assert.strictEqual(rows.rows.length,30);
+      for(const r of rows.rows)assert.ok(r.ms<500,"chip "+r.i+" selected in "+r.ms.toFixed(1)+" ms, bound 500");
+    });
+
     test("SV11 E1: preference acknowledgments and unchanged rereads preserve a pressed chip through release",{timeout:90000},async()=>{
       const previous={kind:"builtin",id:"amara"},target={kind:"builtin",id:"hijaz"};
       const selector=id=>`#decks .chip[data-selection-kind="builtin"][data-selection-id="${id}"]`;
