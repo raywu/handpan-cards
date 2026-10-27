@@ -48,7 +48,7 @@ Pain points a tracker should fix: two agents reading different stores; the ledge
 | Cycles | Skip initially | Work is bursty and AFK; avoids rollover noise |
 | Initiatives | Skip | Business/Enterprise for team initiatives |
 
-Free-tier arithmetic: 250 active issues. About 25 open workstreams at about 5 lanes each is about 125 issues. Do not import history as issues.
+Free-tier arithmetic: 250 issues (that the cap counts active issues only is UNVERIFIED; no Linear doc is cited for it). About 25 open workstreams at about 5 lanes each is about 125 issues. Do not import history as issues.
 
 ## 4. Open workstreams to migrate (from memory `queue-2026-10-27-afk.md` and `docs/WORKSTREAMS.md`; reconcile against live refs at Phase 2)
 
@@ -72,7 +72,7 @@ Plan documents, prompts, handoff docs, CLAUDE.md, engine specs and all CI gate e
 
 ## 7. Costs
 
-Free: $0, unlimited members, 2 teams, 250 issues (https://linear.app/pricing). One human plus agents on the owner's login or API key implies no extra seats (verify OAuth app-user terms before creating a separate agent identity). Upgrade only if the 250 active cap binds: Basic is $10/user/month billed yearly, so $120/year for one seat. Rate limits (2,500 requests/hour on API key) are ample for this volume.
+Free: $0, unlimited members, 2 teams, 250 issues (https://linear.app/pricing). One human plus agents on the owner's login or API key implies no extra seats (verify OAuth app-user terms before creating a separate agent identity). Upgrade only if the 250 cap binds (active-only counting is UNVERIFIED): Basic is $10/user/month billed yearly, so $120/year for one seat. Rate limits (2,500 requests/hour on API key) are ample for this volume.
 
 ## 8. Risks
 
@@ -91,7 +91,7 @@ Free: $0, unlimited members, 2 teams, 250 issues (https://linear.app/pricing). O
 Acceptance: a pass/fail table for projects, cycles, labels, statuses, GitHub link by `Refs`, MCP list/create/update from Claude, the same from Codex, API-key GraphQL read, and whether completed issues leave the 250 count.
 Verify: the agent runs `tools/list` and one read call per client; output pasted into the table.
 
-**Phase 1, schema.** Configure team `HPC`, statuses and labels from section 3; draft the convention note and a proposed CLAUDE.md diff (shown for approval, not applied).
+**Phase 1, schema.** Configure team `HPC` in the workspace the owner names (an owner question, 8 below: this workspace or a separate one), statuses and labels from section 3; draft the convention note and a proposed CLAUDE.md diff (shown for approval, not applied).
 Acceptance: each of the delivery states maps to exactly one status or label.
 Verify: a Claude read of the workspace lists them; the owner reviews the diff.
 
