@@ -253,6 +253,18 @@ test("options default to palette 0, no parent, no name, no mirror", () => {
     { palette: 4, parent: 2, name: "My Pan", mirror: true });
 });
 
+test("PD: readOptions accepts palette 0 to 9 and refuses -1, 10, fractions and non-numbers naming the value", () => {
+  for (let palette = 0; palette <= 9; palette += 1) {
+    assert.equal(host(parsed("(D3) A3 C4 D4 E4 F4 G4 A4 C5", { palette }).options).palette, palette);
+  }
+  for (const palette of [-1, 10, 11, 1.5, "3", NaN, true]) {
+    const r = core.parseSeed("(D3) A3 C4 D4 E4 F4 G4 A4 C5", { palette });
+    assert.equal(r.ok, false, `palette ${String(palette)}`);
+    assert.equal(r.code, "BAD_NOTE");
+    assert.equal(r.reason, core.badNote(palette).reason);
+  }
+});
+
 test("anchor is one or between, anything else is refused", () => {
   const seed = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
   assert.equal(parsed(seed, { anchor: "one" }).options.anchor, "one");

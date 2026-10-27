@@ -1045,7 +1045,7 @@ footer.seq{row-gap:var(--sp-1)}
    A target that IS the element has neither failure mode, at any alignment.
    The dot keeps its 14px spec; the visible gap widens to 30px, which is the
    pitch 44px targets require. */
-#scale-swatches{display:flex; gap:0; align-items:center}
+#scale-swatches{display:grid; grid-template-columns:repeat(5,44px); gap:0; align-items:center}
 #scale-swatches .dot{width:44px; height:44px; border:none; padding:0; background:none;
   position:relative; cursor:pointer}
 #scale-swatches .dot::after{content:""; position:absolute; left:50%; top:50%;
@@ -3967,7 +3967,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     if (options.palette !== undefined) {
       var palette = options.palette;
       if (typeof palette !== "number" || palette !== Math.floor(palette) ||
-          palette < 0 || palette > 5) return badNote(palette);
+          palette < 0 || palette > 9) return badNote(palette);
       out.palette = palette;
     }
     if (options.parent !== undefined && options.parent !== null) {
@@ -7185,14 +7185,18 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
    * under the shipped vocabulary. */
   var COLLAPSE_LOSERS = ["sus2", "6", "m6"];
 
-  /* Section 13: the D6 palette set, index 0-5. */
+  /* Section 13: the D6 palette set, index 0-9. */
   var PALETTES = [
     {root: "#E0559A", tone: "#E2761B"},
     {root: "#6D40A3", tone: "#C9971E"},
     {root: "#0B7B75", tone: "#DD8F00"},
     {root: "#E2761B", tone: "#E0559A"},
     {root: "#C9971E", tone: "#6D40A3"},
-    {root: "#DD8F00", tone: "#0B7B75"}
+    {root: "#DD8F00", tone: "#0B7B75"},
+    {root: "#2563B0", tone: "#C0452C"},
+    {root: "#3B7A2A", tone: "#B3263A"},
+    {root: "#C0452C", tone: "#2563B0"},
+    {root: "#B3263A", tone: "#3B7A2A"}
   ];
 
   function core() { return need("core"); }
@@ -8138,6 +8142,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   var UNRESERVED_RE = /^[A-Za-z0-9\-._~]$/;
   var TYPED_RE = /^[A-Za-z0-9\-._~+%]+$/;
   var PALETTE_RE = /^palette-([2-6])$/;
+  var PALETTE_RE_V6 = /^palette-(10|[2-9])$/;
   var PARENT_RE = /^parent-(.+)$/;
   var ANGLES_RE = /^at-((?:0|[1-9][0-9]{0,2})?(?:,(?:0|[1-9][0-9]{0,2})?)*)$/;
 
@@ -8245,7 +8250,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       var o = texts[k];
       var at;
       var m;
-      if ((m = PALETTE_RE.exec(o))) {
+      if ((m = (text.charAt(0) === "5" ? PALETTE_RE : PALETTE_RE_V6).exec(o))) {
         at = OPTION_ORDER.palette;
         options.palette = Number(m[1]) - 1;
       } else if ((m = PARENT_RE.exec(o))) {
@@ -8388,6 +8393,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
     var options = readOptionsLine(lines[1], version);
     if (options === null) return badNote(text);
+    // Packed versions never wrote a palette above 5; keep the old numeric payload.
+    if (options.palette > 5) return badNote(options.palette);
 
     // 5. The same validator the text box uses. It rejects, never repairs, so
     //    its code and reason are propagated unchanged.

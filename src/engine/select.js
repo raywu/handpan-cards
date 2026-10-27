@@ -31,14 +31,18 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
    * under the shipped vocabulary. */
   var COLLAPSE_LOSERS = ["sus2", "6", "m6"];
 
-  /* Section 13: the D6 palette set, index 0-5. */
+  /* Section 13: the D6 palette set, index 0-9. */
   var PALETTES = [
     {root: "#E0559A", tone: "#E2761B"},
     {root: "#6D40A3", tone: "#C9971E"},
     {root: "#0B7B75", tone: "#DD8F00"},
     {root: "#E2761B", tone: "#E0559A"},
     {root: "#C9971E", tone: "#6D40A3"},
-    {root: "#DD8F00", tone: "#0B7B75"}
+    {root: "#DD8F00", tone: "#0B7B75"},
+    {root: "#2563B0", tone: "#C0452C"},
+    {root: "#3B7A2A", tone: "#B3263A"},
+    {root: "#C0452C", tone: "#2563B0"},
+    {root: "#B3263A", tone: "#3B7A2A"}
   ];
 
   function core() { return need("core"); }
