@@ -1927,7 +1927,7 @@ function run() {
             `);
             const label = `${vw}x${vh} mode ${mode}`;
             const amy = await b.eval(`return ${AMY_ROW_JS};`);
-            const scrolls = vw === 667 && vh === 375 && mode === "S";
+            const scrolls = false; // LE: two landscape columns fit 667x375 mode S without scroll
             const newlyScrolls = !scrolls && amy.overWith > 1;
             assert.deepStrictEqual(m.rect, [0, 0, vw, vh], `${label}: the panel must cover the viewport`);
             // A hidden Resources group would silently vanish from `ctrls`
@@ -1963,6 +1963,54 @@ function run() {
             await b.key("Escape", "Escape", 27);
             await b.waitFor(`document.getElementById("settings-panel").hidden === true`,
               { label: `panel to close at ${label}` });
+          }
+        }
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+  test("LE: at 844x390, 740x360 and 926x428 the open settings panel fits with no scroll in every locale, ABOUT alone in its row, and Tab order unchanged",
+    { timeout: 240000 }, async () => {
+      await freshLoad();
+      try {
+        const langs = await b.eval(`return [...document.getElementById("lang-select").options].map(o => o.value).filter(v => v !== "auto");`);
+        assert.strictEqual(langs.length, 8, "eight UI locales");
+        let count = null;
+        for (const [vw, vh] of [[844, 390], [740, 360], [926, 428]]) {
+          await b.setViewport(vw, vh, true);
+          await b.settle();
+          for (const lang of langs) {
+            await openSettingsPanel();
+            await b.eval(`const e=document.getElementById("lang-select");e.value=${JSON.stringify(lang)};e.dispatchEvent(new Event("change",{bubbles:true}));return true;`);
+            await b.waitFor(`document.documentElement.lang === ${JSON.stringify(lang)}`, { label: "locale applied" });
+            const label = `${vw}x${vh} ${lang}`;
+            const m = await b.eval(`
+              const p = document.getElementById("settings-panel");
+              const ctrls = [...p.querySelectorAll("button, select, a")].filter(e => e.offsetParent);
+              const about = document.getElementById("about-open");
+              const row = about.parentElement;
+              const g = getComputedStyle(p);
+              return {
+                scrollH: p.scrollHeight, clientH: p.clientHeight, scrollW: p.scrollWidth, clientW: p.clientWidth,
+                cols: g.columnCount,
+                offscreen: ctrls.filter(e => { const k = e.getBoundingClientRect();
+                  return k.left < 0 || k.top < 0 || k.right > innerWidth + 0.5 || k.bottom > innerHeight + 0.5; }).map(e => e.id || e.textContent.trim()),
+                aboutAlone: row.children.length === 1,
+                aboutFull: Math.abs(about.getBoundingClientRect().width - row.getBoundingClientRect().width) <= 1,
+                tabindex: ctrls.filter(e => e.tabIndex > 0).length,
+                n: ctrls.length,
+              };`);
+            assert.strictEqual(m.cols, "2", `${label}: two CSS columns`);
+            assert.ok(m.scrollH <= m.clientH + 1, `${label}: panel scrolls (${m.scrollH} > ${m.clientH})`);
+            assert.ok(m.scrollW <= m.clientW + 1, `${label}: panel overflows horizontally`);
+            assert.deepStrictEqual(m.offscreen, [], `${label}: controls off screen`);
+            assert.ok(m.aboutAlone && m.aboutFull, `${label}: ABOUT alone in its full-width row`);
+            assert.strictEqual(m.tabindex, 0, `${label}: no positive tabindex`);
+            count = count || m.n;
+            assert.strictEqual(m.n, count, `${label}: same controls`);
+            await b.key("Escape", "Escape", 27);
+            await b.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: `close at ${label}` });
           }
         }
       } finally {

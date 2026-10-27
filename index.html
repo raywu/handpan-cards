@@ -341,9 +341,9 @@ a.mode{text-decoration:none}
 #settings-panel > .panel-group{width:min(420px, 100%)}
 /* Landscape phone: too short for one column, so the groups sit side by side. */
 @media (max-height:520px){
-  #settings-panel{display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));
-    align-content:start; align-items:start}
-  #settings-panel > .panel-group{width:auto}
+  #settings-panel{display:block; column-count:2; column-gap:var(--sp-4); column-fill:balance;
+    padding:9px 62px 9px}
+  #settings-panel > .panel-group{width:auto; break-inside:avoid; margin-bottom:var(--sp-3)}
 }
 #settings-trigger[aria-expanded="true"] .glyph{background:transparent}
 #settings-trigger[aria-expanded="true"] .glyph::before{top:0; transform:rotate(45deg)}
