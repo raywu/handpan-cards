@@ -1,5 +1,26 @@
 # Shared workstream ledger
 
+## Approved RC released to main — 2026-10-26, 21:13 PDT
+
+Owner passed wholeRC QA, accepting Settings/Resources three-column landscape UX
+as nonblocking, then explicitly authorized exactRC3542 main release. RC587 merged
+main at7d80d65d603d9e8ab468a08d616d59dfac0245ce. Pages deployment40448553293 passed;
+actual production app is exact7fe/907042bytes; reviewed verifier21/21resources and
+indexing headers passed. Actual-mainCI40448555197 is RUNNING, not yet creditedgreen.
+Retained same-source DEV/browser/ownerQA evidence remains dated; no fresh production
+browser coverage claimed. Savedvariants/swipe/palettes/Neotone remain excluded.
+
+DEVc040's newer handoff documents must remain. Local branch
+codex/release-reconcile-20261026 in/private/tmp/handpan-release-reconcile-20261026
+merged main ancestry with ZERO FILE CHANGES before this documentation checkpoint;
+review/CI/DEVdelivery stillpending. No reset, branch deletion or handoff overwrite.
+
+Newfuturefollow-on: [Settings/Resources landscape menu](plans/2026-10-26-landscape-settings-menu.md) ONLY (owner clarified; not
+Add/Edit). [Prompt](prompts/2026-10-26-landscape-settings-menu.md) and plan completed; independentENG/designreview CLEAR, no UI
+implementation authorized. Three-column issue remains accepted nonblocking in the
+releasedRC. Other unstarted work remains paused;23:00Claudehandoff stilltarget.
+EarlierQA/main-pending snapshotlabels are superseded by this explicit release.
+
 ## Claude handoff closure checkpoint — documentation reviewed
 
 Onboarding-generation prompt v2 executed; CLAUDE_TAKEOVER_PLAN.md and copy/paste
