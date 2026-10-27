@@ -125,7 +125,6 @@ Verify (run in a fresh lane worktree, so the tree is clean):
 
 ## Rollback
 
-Reverse in reverse order; all steps are repeatable.
 1. Folder: `mv ~/Projects/handpan-chords ~/Projects/handpan-cards`, then
    `git worktree repair` with the before-list paths (prunable ones skipped, as in step 3).
 2. Remote: `git remote set-url origin git@github.com:raywu/handpan-cards.git`
