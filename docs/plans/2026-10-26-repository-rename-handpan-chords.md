@@ -16,7 +16,7 @@ Do: `gh repo rename handpan-chords --repo raywu/handpan-cards` (owner-run, or
 Settings > General > Repository name).
 
 Behaviour (GitHub docs): the old URL redirects web, git fetch/push and API to the
-new name; issues, PRs, stars and the numeric repo ID are kept. Redirect is lost if
+new name; issues, PRs, stars and the repo node ID are kept. Redirect is lost if
 anyone creates a new `raywu/handpan-cards`. Project-site URLs (`raywu.github.io/...`)
 are not redirected; we serve from the custom domain, so that is moot.
 
@@ -47,7 +47,7 @@ Verify:
 - `gh api repos/raywu/handpan-chords/pages --jq '.cname,.status'` -> `handpan.raywu.org`, `built`
 - `curl -sI https://handpan.raywu.org/ | grep -E '^HTTP/[0-9.]+ (200|301)'` -> a match (Early Hints 103 can come first); `git show origin/main:CNAME` unchanged.
 - Cloudflare dashboard > Workers & Pages > handpan-cards-dev > Settings > Builds:
-  repository shows `raywu/handpan-chords`. Then push a no-op doc commit to `dev` and
+  repository shows `raywu/handpan-chords`. Then use Cloudflare "Retry deployment" on `dev` (never push `dev`) and
   confirm a new deployment starts and `curl -sI https://handpan-cards-dev.pages.dev/ | grep -E '^HTTP/[0-9.]+ 200'`
   matches. If the binding is stale: reconnect the repo in that dashboard (owner);
   do not uninstall the shared GitHub App.
@@ -74,9 +74,9 @@ Never `cp -r` it (the copy shares the git dir).
 Do:
 1. `[ ! -e ~/Projects/handpan-chords ] && mv ~/Projects/handpan-cards ~/Projects/handpan-chords`
    (same volume, so this is an atomic rename; refuse if the target exists).
-2. `cd ~/Projects/handpan-chords && git worktree repair $(awk '/^worktree /{p=$2} /^prunable/{k[p]=1} /^$/{if(p&&!k[p])print p;p=""}' ~/handpan-worktrees-before.txt | sed 's#/handpan-cards\b#/handpan-chords#')`
+2. `cd ~/Projects/handpan-chords && git worktree repair $(awk '/^worktree /{p=$2} /^prunable/{k[p]=1} /^$/{if(p&&!k[p])print p;p=""}' ~/handpan-worktrees-before.txt | sed -E "s#^$HOME/Projects/handpan-cards(/|\$)#$HOME/Projects/handpan-chords\1#")`
    (paths from the before-list, minus those flagged prunable, which would make
-   `repair` print "not a valid path" and exit 1). Nested `.claude/worktrees/` trees
+   `repair` abort at the first invalid path with exit 128; BSD sed, so no `\b`). Nested `.claude/worktrees/` trees
    moved with the folder; others still name the old path and need their new path
    passed. Locked or prunable trees: leave them, do not prune.
 3. Update host tools by hand and only if they break: `~/.codex/config.toml` project
@@ -85,7 +85,7 @@ Do:
 
 Verify:
 - `git -C ~/Projects/handpan-chords worktree list` -> no `prunable` entries beyond
-  the before-list's; every non-prunable path exists:
+  the before-list's (`[ "$(git worktree list --porcelain | grep -c '^prunable')" = "$(grep -c '^prunable' ~/handpan-worktrees-before.txt)" ]`); every non-prunable path exists:
   `git worktree list --porcelain | awk '/^worktree /{p=$2} /^prunable/{k[p]=1} /^$/{if(p&&!k[p])print p;p=""}' | while read -r d; do test -d "$d" || echo "MISSING $d"; done` prints nothing.
 - `git -C ~/Projects/handpan-chords status --porcelain | diff - ~/handpan-status-before.txt` is empty.
 - `cd ~/Projects/handpan-chords && python3 tools/validate.py` passes, plus `node --test tests/core.test.js` as a smoke test.
@@ -126,7 +126,7 @@ Verify (run in a fresh lane worktree, so the tree is clean):
 ## Rollback
 
 1. Folder: `mv ~/Projects/handpan-chords ~/Projects/handpan-cards`, then
-   `git worktree repair` with the before-list paths (prunable ones skipped, as in step 3).
+   `git worktree repair` with the before-list paths run from `~/Projects/handpan-cards`, prunable ones skipped, and no path rewrite (the before-list paths are already right).
 2. Remote: `git remote set-url origin git@github.com:raywu/handpan-cards.git`
    (until step 3 the old URL resolves only through the redirect; step 3 makes it native).
 3. GitHub: `gh repo rename handpan-cards --repo raywu/handpan-chords`. The new
