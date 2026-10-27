@@ -9,7 +9,7 @@ refs/owner replies before writes. All future/unstarted work stays paused.
 
 RC587 owner QA PASSED and exact main release explicitly APPROVED. Source was exact deployedDEV
 3542d6ea868bf08e81a0b4f06c4bc71bbc20cbcb, branch codex/release-rc-20261026,
-worktree /private/tmp/handpan-release-rc-20261026. FullCI40437293981 passed all12jobs.
+worktree /private/tmp/handpan-release-rc-20261026. FullCI40437293981 passed all 12 jobs.
 Immutable URL:https://071f74cd.handpan-cards-dev.pages.dev/ . Fresh907042-byte
 response SHA7fe75f5407d67b2985405c89db55f7d95882313fea016af8814728c9436db946
 matches Git; Cloudflarecheck121838801774 binds this deployment/commit. Independent
@@ -18,14 +18,14 @@ dated same-source evidence, not newly rerun Safari/device tests.
 
 Owner was notified for focused20min QA, ideally20:15–20:45PDT: practice/navigation,
 Helpers/new-tab/practice preservation, per-ring feedback and freshLINK custom-layout
-roundtrip. **WholeRC QA and exact main consent were granted; main merge7d80d65d completed.** Previous Helpers
+roundtrip. **Whole RC QA and exact main consent were granted; main merge7d80d65d completed.** Previous Helpers
 ownerQA is retained; the later wholeRC signoff is separately explicit. Check newer replies without re-asking settled QA.
 
 Includes existing delivery history in order: Mac foreground helper, latest-per-ring
 feedback, SEO planning docs, duplicate-note planning docs, LINK ownership repair,
 Helpers. Owner explicitly allowed existing duplicate plan DOCS; FEATURE stayspaused.
 Saved variants, new swipe, palette choices and new SEO content are excluded.
-Main is7d80d65d603d9e8ab468a08d616d59dfac0245ce (approvedRC587 merge); Pages deployment and21resources passed. ActualmainCI40448555197 running; no further main changes authorized.
+Main is7d80d65d603d9e8ab468a08d616d59dfac0245ce (approvedRC587 merge); Pages deployment and21resources passed. Actualmain CI 40448555197 passed all 12 jobs; no further main changes authorized.
 Old CI-only583/586 are NEVER MERGE. Do not merge all old overlapping drafts again
 if the exact approved RC later releases; reconcile them only after actual delivery.
 
@@ -46,7 +46,7 @@ SEO /learn/+owner music review+18-noteEAmara pilot, or duplicate-document permis
 
 Published feature2a260d212ec8e14394b7198f075366d13bf372ec,
 branch codex/saved-scale-variants-20261025, DEVPR584 open. Appdc6af7528c7d326a129402458f9acc9adb9f524e3bc23453290c71f46dd292c5.
-FullCI40417818176 passed all12jobs, not a performance pass or DEV delivery.
+FullCI40417818176 passed all 12 jobs, not a performance pass or DEV delivery.
 It missed hard19:00 performance readiness cutoff; do not reinsert into tonight'sRC.
 Code must preserve distinct same-inventory versions, selected-only Edit, transactional
 IDB saves and conflict drafts; current deployed app still lacks coexistence.
@@ -156,3 +156,13 @@ Add/Edit. Implementationpaused; source productionverification21resources passed,
 no newproductionbrowserrun claimed. Reconciliation branch fromDEVc040 mergesmain
 ancestry without dropping newerhandoffdocs; its finaldocs/CI/delivery will be
 recorded externally. Preserve originalhandoff/CIrecords; currentrefs win onstartup.
+
+## Final completion and persistent recovery
+
+Read CLAUDE_HANDOFF_FINAL.md and the current top ledger before archived status
+rows: main 7d80 release and actual-main CI complete; DEV 8e8 reconciliation complete.
+All 12 jobs passed on each required run. Owner QA/main consent settled. No release
+gate remains pending. Persistent private backup is
+/Users/ray/Projects/handpan-cards-claude-recovery-20261026 (40 copied files hash-verified
+and four local refs in a verified Git bundle); local only; not a full archive. Earlier temporary
+paths remain provenance; final note gives deterministic fallback mapping.

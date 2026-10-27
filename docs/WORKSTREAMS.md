@@ -1,12 +1,39 @@
 # Shared workstream ledger
 
+## Final verified Claude onboarding checkpoint — 2026-10-26, 22:36 PDT
+
+- **Main release COMPLETE:** 7d80d65d603d9e8ab468a08d616d59dfac0245ce, authorized RC 587.
+  Whole RC QA passed and exact main consent was granted. Actual-main CI 40448555197
+  passed all 12 jobs; Pages deployment and 21 production resource/header checks passed.
+- **DEV reconciliation COMPLETE:** 8e8ca047d8ee22637c110127aa5f667b84f1581c, PR590.
+  Reviewed source 025e6668555d91ae14778329c6200d249bb32b7a passed all 12 checks;
+  its full tree and five canonical documents matched actual DEV. Cloudflare passed.
+- **No release approval, QA or synchronization gate remains pending.** Old CI-running/
+  pending-QA labels below are archived observations. Refresh live metadata before
+  any later work; do not re-request settled approval or merge old overlapping PRs.
+- **Paused:** saved variants performance, swipe, palettes, Neotone, landscape UI and
+  all other unstarted development. Duplicate plan DOCS released; FEATURE paused.
+  Landscape Settings/Resources plan/prompt reviewed; Add/Edit excluded; no UI change.
+- **Private recovery now persistent:** /Users/ray/Projects/handpan-cards-claude-recovery-20261026.
+ 40 copied files verified and a four-ref local Git bundle verified. Private,
+ local-only, not a complete archive or cross-host credential/artifact transfer.
+ See CLAUDE_HANDOFF_FINAL.md for mapping from old temporary paths.
+
+This final documentation-only correction is separate from deployed app code;
+canonical DEV 8e8 is the last delivered checkpoint until its normal docs PR merges.
+Latest corrected handoff branch: codex/claude-final-checkpoint-20261026. Use the
+externally published immutable receipt if current DEV still has earlier snapshots.
+App/tests/CLAUDE/global settings unchanged. All original worktrees preserved.
+
+## Archived checkpoints — historical; final verified state above governs
+
 ## Approved RC released to main — 2026-10-26, 21:13 PDT
 
 Owner passed wholeRC QA, accepting Settings/Resources three-column landscape UX
 as nonblocking, then explicitly authorized exactRC3542 main release. RC587 merged
 main at7d80d65d603d9e8ab468a08d616d59dfac0245ce. Pages deployment40448553293 passed;
 actual production app is exact7fe/907042bytes; reviewed verifier21/21resources and
-indexing headers passed. Actual-mainCI40448555197 is RUNNING, not yet creditedgreen.
+indexing headers passed. Actual-main CI 40448555197 is RUNNING, not yet creditedgreen.
 Retained same-source DEV/browser/ownerQA evidence remains dated; no fresh production
 browser coverage claimed. Savedvariants/swipe/palettes/Neotone remain excluded.
 
@@ -54,7 +81,7 @@ already sent. New feature implementation remains paused.
 
 ## RC ready for owner QA — 2026-10-26
 
-RC587 at exactDEV3542 passed fullCI40437293981 (all12jobs); fresh immutableDEV071 source matches7fe. Independent final evidence review CLEAR, retained dated livejourneys samebytes and priorHelpersownerQA honestly preserved. Owner sent focusedQA URL/checklist; wholeRC QA PENDING, no mainconsent. Savedvariants excluded; duplicateplanDOCS included/featurepaused. Screenshot Neotone backup preserved privately in HV/evidence/neotone-layout-reference.jpg (samee997SHA), not published.
+RC587 at exactDEV3542 passed fullCI40437293981 (all 12 jobs); fresh immutableDEV071 source matches7fe. Independent final evidence review CLEAR, retained dated livejourneys samebytes and priorHelpersownerQA honestly preserved. Owner sent focusedQA URL/checklist; wholeRC QA PENDING, no mainconsent. Savedvariants excluded; duplicateplan DOCS included/featurepaused. Screenshot Neotone backup preserved privately in HV/evidence/neotone-layout-reference.jpg (samee997SHA), not published.
 
 ## MUTANT-NEOTONE — future project, planning-only exception
 
@@ -261,7 +288,7 @@ originaldirty/lockedcheckout staysuntouched. Main96c4c589 remainsunmerged.
   FutureLinear/qualitycomparison/rename/robustnessauditqueuesretainownscope.
 
 OwnerreaffirmedAFKmeansfollowrecommendations: makeroutinein-scopedecisions, record
-choices andcontinue. Preserveindependentreview/TDD/CI/actualDEVgates, exactCLAUDE
+choices andcontinue. Preserveindependentreview/TDD/CI/actual DEVgates, exactCLAUDE
 approvalboundary andexplicitmainconsent. ReportinginexistingGitHubthreads authorized.
 
 
@@ -1069,7 +1096,7 @@ IndependentT/REDreview precedes sourceactivation. Sourceworktreeprepared
 /private/tmp/handpan-saved-variants.HVUKbE/hash-source,
 branchcodex/variants-hash-source-20261026/base0d36, STILLUNEDITED.
 
-HelpersactualDEVdeliveryverified in [delivery/QA checkpoint](https://github.com/raywu/handpan-cards/pull/585#issuecomment-6427367137).
+Helpersactual DEVdeliveryverified in [delivery/QA checkpoint](https://github.com/raywu/handpan-cards/pull/585#issuecomment-6427367137).
 DEV3542d6ea, fullCI4eaSUCCESS, actualservedsource7fe/9states/publicpopup/noindex/
 noanalytics/cleanup confirmed. OwnerQA pending; mainstill96c4/no consent.
 Owner's explicit3interviewanswers confirmpalettequeuedDEV/exactpacketapproval,
@@ -1088,7 +1115,7 @@ older'3b07frozen'checkpointlabels; originalsource/CI failures stayhistorical.
 
 Owner approved the reviewed resource plan and exact Resources-only CLAUDE patch
 through DEV, targeting the next release only after fit/tests/independent review/
-fullCI/actualDEV gates. Main requires separate consent. Saved variants retains
+fullCI/actual DEV gates. Main requires separate consent. Saved variants retains
 priority and its unfinished code is excluded from this DEV6165c873-based branch.
 
 Plan: docs/plans/2026-10-25-handpan-helpers.md. Root integration/worktree:

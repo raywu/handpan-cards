@@ -9,7 +9,7 @@ passed gates. Existing Claude behavior and CLAUDE.md remain unchanged.
 ## Immediate state and evidence precedence
 
 **RC587 owner QA passed and exact main release was approved and merged7d80d65d.**
-Root reports fullCI40437293981 success/all12jobs and independent final review clear
+Root reports fullCI40437293981 success/all 12 jobs and independent final review clear
 on exact deployedDEV3542. Immutable QA URL:https://071f74cd.handpan-cards-dev.pages.dev/.
 Helpers device QA passed earlier; that is not blanket RC signoff. Variants is NOT
 on DEV/in RC: its separate fullCI passed, performance remains unqualified, and it
@@ -40,7 +40,7 @@ blindly replay instructions or overwrite them. No global loader/bootstrap is nee
 | Alias | Full commit / source |
 |---|---|
 | MAIN |7d80d65d603d9e8ab468a08d616d59dfac0245ce (approved RC release; prior rollback anchor96c4) |
-| DEV |c040e881e8c31eea95d01ed36691156210f451a9, published handoff; reconciliation pending |
+| DEV |8e8ca047d8ee22637c110127aa5f667b84f1581c, completed reconciliation; c040 is the historical handoff |
 | RC-source |3542d6ea868bf08e81a0b4f06c4bc71bbc20cbcb; released app7fe75f5407d67b2985405c89db55f7d95882313fea016af8814728c9436db946 |
 | SV |2a260d212ec8e14394b7198f075366d13bf372ec; appdc6af7528c7d326a129402458f9acc9adb9f524e3bc23453290c71f46dd292c5 |
 | SV-TEST-RED |cab63c9dc47a6ce983218cf113822feb6810eb64; local frozen tests on old0d36 source, intentionally RED, not a release head |
@@ -142,7 +142,7 @@ are not proof of native skill/tool parity. Never copy credentials across harness
 | Phase | Prerequisite → output / acceptance | Stop, input and recovery |
 |---|---|---|
 | A: orient read-only | Read sources above; resolve live main/DEV/RC/SV and timestamp, inspect scoped status and manifest. Output short evidence/authority map with exact refs and stale gaps. | Missing remote access remains unavailable; preserve local state, use explicitly qualified retained refs. No startup installs or feature writes. |
-| B: release verification | A complete; verify merged RC587/main7d80, actual-mainCI40448555197, served production and DEV reconciliation. Output actual gate state with settled QA/consent. | No repeat request for already-granted QA/RC consent; unexpected source movement or failed gate stops dependent claim. No further main changes authorized. |
+| B: release verification | A complete; verify merged RC587/main7d80, actual-main CI 40448555197, served production and DEV reconciliation. Output actual gate state with settled QA/consent. | No repeat request for already-granted QA/RC consent; unexpected source movement or failed gate stops dependent claim. No further main changes authorized. |
 | C: audit one selected stream | Owner chooses/resumes work or existing unpaused release handling applies; read its plan/ref/source/failures/approvals, verify worktree ownership. Output exact last/next/acceptance. | Paused grants remain paused; missing source/private evidence stops dependent claim. Recover in isolated authorized checkout, never reset old tree. |
 | D: review changed scope | Reconcile stale requirements and minimum plan; use file-owned swarm plus independent ENG/design as applicable. Output addressed plan, exact scope/commands/budgets. | New CLAUDE patch/setup/global/main action needs applicable explicit grant. Fourth failed review round triggers regroup; no fabricated score. |
 | E: execute only resumed scope | Frozen reviewed base/tests/ownership, meaningful TDD/generated mutants, sole browser lease. Output exact-head fullCI, independent final review, servedDEV and owner/device QA qualifications. | Failed gate is triaged and retained; no retries-to-green/waivers or automatic performance restart. Restore only owned fault bytes and preserve drafts/data. |
@@ -169,7 +169,7 @@ unreviewed new content; refresh scope after handoff docs/other refs move.
 | Model passes/native cause unknown | Retain distinction and existing native coverage; do not upgrade causality claims. |
 
 These are onboarding acceptance scenarios, not tests executed by this drafting lane.
-WholeRC QA/exact RC main consent are settled. Open owner decisions: which paused
+Whole RC QA/exact RC main consent are settled. Open owner decisions: which paused
 stream to resume later; Neotone hardware/semantics/export and truly new setup grants only
 when relevant. Settled language, duplicate policy, SEO and palette answers stand.
 
@@ -193,9 +193,19 @@ no self-scored quality or operational-parity claim.
 
 ## Post-release checkpoint
 
-WholeRC QA passed; owner explicitly approved exact3542 release, mergedmain7d80d65d.
-Production21resources/headers andPagesdeploy passed; actualmainCI40448555197 is
-running. Landscape Settings/Resources threecolumns acceptednonblocking andqueued
-for researchedprompt/plan/reviews only; Add/Editexcluded. DEVreconcile mustretain
-newerhandoffdocs. Current phaseB verifies the completed approval/release; firstaction now check
-mainCI/synccompletion and latestownerpriorities, never mergeoldoverlapPRs again.
+Whole RC QA passed; owner explicitly approved exact3542 release, mergedmain7d80d65d.
+Production21resources/headers andPagesdeploy passed; actualmain CI 40448555197 passed all 12 jobs. Landscape Settings/Resources threecolumns acceptednonblocking andqueued
+for researchedprompt/plan/reviews only; Add/Edit excluded. DEV reconciliation retained
+the newer handoff documents and completed at 8e8ca047. Phase B refreshes live metadata
+for the completed release; it does not rerun successful gates. Confirm owner priorities
+before resumption; never merge old overlapping PRs again.
+
+## Final completion and persistent recovery
+
+Read CLAUDE_HANDOFF_FINAL.md and the current top ledger before archived status
+rows: main 7d80 release and actual-main CI complete; DEV 8e8 reconciliation complete.
+All 12 jobs passed on each required run. Owner QA/main consent settled. No release
+gate remains pending. Persistent private backup is
+/Users/ray/Projects/handpan-cards-claude-recovery-20261026 (40 copied files hash-verified
+and four local refs in a verified Git bundle); local only; not a full archive. Earlier temporary
+paths remain provenance; final note gives deterministic fallback mapping.

@@ -1,21 +1,21 @@
 # All-workstream status — authoritative takeover checkpoint, 2026-10-26
 
 Use live refs/owner replies to refresh this snapshot. Main7d80d65d now contains approvedRC587; fullCI candidate passed and wholeRC
-ownerQA/mainconsent explicitly granted. Production21resources/headers passed,
-actualmainCI40448555197 running. DEVhandoffc040 preserved; reconciliation pending. Existing duplicate-note
+ownerQA/main consent explicitly granted. Production21resources/headers passed,
+actualmain CI 40448555197 passed all 12 jobs. DEV handoff c040 preserved; reconciliation completed at 8e8ca047. Existing duplicate-note
 DOCS explicitly allowed; implementation paused. Saved variants excluded tonight.
 
 | Workstream | Stopping point / next permitted action |
 |---|---|
-| RC release | Released via approvedmain7d80; finishactualmainCI/sync, no furthermainconsent implied. |
+| RC release | Released on approved main 7d80; actual-main CI and DEV reconciliation passed all 12 jobs each. Refresh live state without repeating completed gates; no further main consent implied. |
 | Saved variants | Clean application2a260d21/greenfullCI; performanceHELD, noDEVdelivery, missed19:00cutoff. Preserve forClaude. |
 | Performance | A0unactivatedrunnerhasfourdefects; reduceddesignplanningclear, no newcampaign/setup grant. |
-| Helpers | DeliveredDEV, fullCI/deviceQApassed; mainreleasecandidateincludesit. |
-| Mac helper | ScopedrepairdeliveredDEV; broaderMacsuite unresolved. |
+| Helpers | Released on main; full CI and owner device QA passed. |
+| Mac helper | Scoped repair released on main; broader Mac suite remains unresolved. |
 | Layout feedback | LatestoutcomeperringdeliveredDEV; releasedRC. |
 | LINK repair | AsyncownershipfixdeliveredDEV/ownerQApassed; releasedRC, coexistenceNOTfixed. |
-| SEO | Existingplandelivered/inRC; newresearch/contentpaused. /learn/, ownerreview,18-notepilotsettled. |
-| Duplicate notes | PlanDOCSinRCbyexplicitapproval; FEATUREPAUSED, noimplementation. |
+| SEO | Existing plan documents released on main; newresearch/contentpaused. /learn/, ownerreview,18-notepilotsettled. |
+| Duplicate notes | Plan documents released on main by explicit approval; FEATUREPAUSED, noimplementation. |
 | Swipe | Startedbutheld, clean3a8467ff; refreshbase/proofs/gatesonlyafterresumption. |
 | Palettes | Reviewed/approved08169310, exacta41packet; unstartedimplementationPAUSED. |
 | Landscape Settings | Researchprompt/plan independentlyENG/designclear; Settings/ResourcesONLY, AddEditexcluded; implementationpaused, exactspec/oracle approvalfuturegate. |
@@ -151,3 +151,13 @@ execution and rehearsal are held. Local plan:
 2026-10-26-repository-rename-handpan-chords.md; prompt under docs/prompts.
 Next: separately approved maintenance/backup/provider/host-readiness intake.
 No rename, config change or main release has occurred.
+
+## Final completion and persistent recovery
+
+Read CLAUDE_HANDOFF_FINAL.md and the current top ledger before archived status
+rows: main 7d80 release and actual-main CI complete; DEV 8e8 reconciliation complete.
+All 12 jobs passed on each required run. Owner QA/main consent settled. No release
+gate remains pending. Persistent private backup is
+/Users/ray/Projects/handpan-cards-claude-recovery-20261026 (40 copied files hash-verified
+and four local refs in a verified Git bundle); local only; not a full archive. Earlier temporary
+paths remain provenance; final note gives deterministic fallback mapping.
