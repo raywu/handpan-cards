@@ -1,15 +1,16 @@
 # kills: an unknown stored deck id falls back to the default deck
 # suite: node --test --test-name-pattern ^an.unknown.stored.deck.id.falls.back.to.the.default.deck$ tests/app.test.js
 # Re-anchored 2026-10-13 (seeded SAVE / DELETE, lane app) against the current source. The mutation itself is unchanged.
+# Approved retained contract mapped to the transactional instance adapter.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7726,7 +7726,7 @@
- // need that). deck() resolves a custom id out of the registry; it never builds.
- const CUSTOM = Object.create(null);
- 
--const deck = () => CUSTOM[deckId] || allDecks().find(d => d.id === deckId) || replacements()[deckId] || fallbackDeck();
-+const deck = () => CUSTOM[deckId] || allDecks().find(d => d.id === deckId);
- // Any deck id persists, built-in or custom: a custom deck is rebuilt at boot
- // from its saved seed, so restoring one is no longer a dangling reference.
- // READ-MODIFY-WRITE: "hpfc" is one object shared with whatever else stores
+@@ -10347,7 +10347,7 @@ function makeSavedMigration(staged) {
+   if (!collectionId) return savedFailure("allocation", "collection-id");
+   used.add(collectionId);
+   const e = { schema: 1, collectionId, revision: 1, slotStateRevision: 0, entries: [], usedInstanceIds: [], nextDisplayOrdinal: 1,
+-    preferredSelection: { kind: "builtin", id: DEFAULT_DECK }, slots: {},
++    preferredSelection: { kind: "builtin", id: "pygmy" }, slots: {},
+     hidden: [...new Set((staged.preferences.hidden || []).filter(isBuiltIn))],
+     migration: { sourceKey: staged.sourceKey, raw: savedClone(staged.raw), instanceIds: [] } };
+   const supplied = new Map(), oldVisible = new Map();

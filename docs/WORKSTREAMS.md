@@ -447,6 +447,7 @@ blocking labels describe the earlier checkpoint, not current readiness.
   uses an app-local hasOwnProperty.call helper and meaningful missing-API TDD.
   No raised browser requirement/global polyfill/CLAUDE change. Earlier a394
   runtime receipts remain historical until refreshed against repaired source.
+- SUPERSEDED (owner, 2026-10-27): replaced by the SV-PG e2e test plus owner phone QA; see docs/plans/2026-10-26-saved-variants-selection-performance.md.
 - Existing planned selection/frame gate remains unexecuted, separate from backend
   lock timing and geometry. Matched A–B–A protocol at empty/2/20/200 inputs and
   two viewports is specified in the selection-performance amendment; fixed

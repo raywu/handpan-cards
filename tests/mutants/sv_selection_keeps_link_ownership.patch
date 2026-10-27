@@ -1,0 +1,14 @@
+# kills: SV3 U2: instance selection retires pending LINK UI when the route is identical
+# suite: node --test --test-name-pattern=^SV3.U2: tests/app.test.js
+# fault: Changing local instance fails to retire earlier LINK completion ownership.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10751,7 +10751,6 @@ document.addEventListener("visibilitychange",()=>{if(!document.hidden)reconcileS
+ function selectDeck(wanted, persist = true, trackSelection = true) {
+   navigationGeneration++;
+   pendingRecoveryShare=null;
+-  retireLinkUI();
+   if (typeof wanted === "string") wanted = savedEntries.has(wanted) ? {kind:"saved",id:wanted} : {kind:"builtin",id:wanted};
+   const a = document.activeElement;
+   const rehome = !!a && (a.id === "settings-trigger" || a.id === "deck-add" || [...document.getElementById("decks").children].includes(a));

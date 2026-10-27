@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10200,7 +10200,7 @@ function targetAt(x, y) {
+@@ -13922,7 +13922,7 @@ function targetAt(x, y) {
      if (h.getAttribute("data-ring") === p.ring) { if (!same || d < same.d) same = { h, d }; }
      else if (!other || d < other.d) other = { h, d };
    }

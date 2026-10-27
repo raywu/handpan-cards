@@ -8,7 +8,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8154,7 +8154,7 @@ function swipeDecision(dx, dy, vx) {
+@@ -14713,7 +14713,7 @@ function swipeDecision(dx, dy, vx) {
    // SWIPE_* threshold, is what keeps a vertical drag from ever navigating.
    if (Math.abs(dy) > Math.abs(dx)) return 0;
    const fling = Math.abs(dx) > SWIPE_SLOP_PX && Math.abs(vx) > SWIPE_FLING_PX_MS && vx * dx > 0;

@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12076,7 +12076,7 @@ function fieldsInput(k) {
+@@ -14241,7 +14241,7 @@ function fieldsInput(k) {
  function followFields(r, wasStale) {
    if (r.empty) {
      lineStale = false;

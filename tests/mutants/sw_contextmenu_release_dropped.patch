@@ -7,7 +7,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8222,9 +8222,6 @@ card.addEventListener("lostpointercapture", e => {
+@@ -14902,9 +14902,6 @@ card.addEventListener("lostpointercapture", e => {
    if (e.pointerType === "mouse" && !(e.buttons & 1)) release(e, false, false);
    else release(e, true);
  });

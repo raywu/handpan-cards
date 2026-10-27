@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14494,7 +14494,7 @@ function copyLink() {
+@@ -15112,7 +15112,7 @@ function copyLink() {
    if (!current()) return;
    const done = (text, method) => {
      track("share_copy", { deck_kind, method });

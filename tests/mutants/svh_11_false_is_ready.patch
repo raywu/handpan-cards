@@ -1,0 +1,15 @@
+# kills: SVH11 explicit readiness rejects errors and bounded incomplete state instead of treating microtasks as ready
+# suite: node --test --test-reporter=tap --test-name-pattern ^SVH11.explicit tests/harness.test.js
+# fault: A false readiness predicate is accepted as complete.
+diff --git a/tools/sandbox.js b/tools/sandbox.js
+--- a/tools/sandbox.js
++++ b/tools/sandbox.js
+@@ -816,7 +816,7 @@ function boot(opts = {}) {
+       const deadline = Date.now() + timeout;
+       do {
+         const value = await getAsync(expression, { timeout: Math.max(1, deadline - Date.now()) });
+-        if (value) return value;
++        return value;
+         await new Promise(resolve => setTimeout(resolve, 1));
+       } while (Date.now() < deadline);
+       throw new Error("sandbox readiness timed out");

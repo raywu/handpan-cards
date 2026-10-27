@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13130,7 +13130,7 @@ function showPendingDerive() {
+@@ -13762,7 +13762,7 @@ function showPendingDerive() {
    if (!drawerOpen || !currentScaleInput()) return false;
    const parts = LAYOUT_RINGS.filter((ring) => pendingDerive[ring]).map((ring) =>
      pendingDerive[ring] === true

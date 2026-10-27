@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10831,7 +10831,6 @@
+@@ -12169,7 +12169,6 @@ sheet.addEventListener("touchmove", (e) => {
      L.moved = true;
    }
    if (L.box && L.box.scrollTop !== L.boxTop) { lipDrag = null; return; }

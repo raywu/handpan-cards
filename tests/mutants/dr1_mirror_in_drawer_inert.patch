@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12850,7 +12850,7 @@ document.addEventListener("pointerdown", (e) => {
+@@ -13711,7 +13711,7 @@ document.addEventListener("pointerdown", (e) => {
  const toggleFits = () => !layoutAngles || (!!lastSeed && solvePreviewLayout(lastSeed) !== null);
  const TOGGLE_REFUSED = () => t("sheet.toggle_refused");
  mirrorTop.onclick = () => {

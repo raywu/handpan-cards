@@ -13,7 +13,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4322,7 +4322,6 @@ function showRefusal(text) {
+@@ -11676,7 +11676,6 @@ function showRefusal(text) {
    // element's own rule. Cleared on the empty case so a hidden line is not
    // left holding a tier for whatever writes next.
    refusalLine.className = text ? "err" : "";

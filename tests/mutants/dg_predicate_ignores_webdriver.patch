@@ -4,8 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11281,8 +11281,7 @@ let analyticsLoaded = false;
- function analyticsAllowed() {
+@@ -15032,7 +15032,6 @@ function analyticsAllowed() {
    if (location.protocol === "file:") return false;
    if (["localhost", "127.0.0.1", "[::1]"].includes(location.hostname)) return false;
    if (location.hostname.endsWith(".pages.dev")) return false;

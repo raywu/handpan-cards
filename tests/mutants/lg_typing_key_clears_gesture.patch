@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10858,7 +10858,7 @@
+@@ -12196,7 +12196,7 @@ const lipDragStop = (e) => {
  for (const ev of ["touchend", "touchcancel"]) sheet.addEventListener(ev, lipDragStop, { passive: true, capture: true });
  const lipTouchClear = () => { if (lipDrag) lipParked = lipDrag; lipFling = null; lipTouching = false; lipDrag = null; lipDragEnd = 0; };
  sheet.addEventListener("wheel", lipTouchClear, { passive: true, capture: true });

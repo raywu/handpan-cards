@@ -7,7 +7,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -267,7 +267,7 @@ button.nav:active{background:#2e281e}
+@@ -1046,7 +1046,7 @@ footer.seq{row-gap:var(--sp-1)}
     The dot keeps its 14px spec; the visible gap widens to 30px, which is the
     pitch 44px targets require. */
  #scale-swatches{display:flex; gap:0; align-items:center}

@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10494,7 +10494,7 @@ sheet.addEventListener("pointerdown", (e) => {
+@@ -11919,7 +11919,7 @@ sheet.addEventListener("pointerdown", (e) => {
    tapSnap = onField ? { at: Date.now(), body: bandPort.scrollTop, surf: sheetSurf ? sheetSurf.scrollTop : 0 } : null;
    if (!onField) releasePin();
  }, true);

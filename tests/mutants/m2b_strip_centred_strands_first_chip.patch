@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -151,6 +151,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
+@@ -223,6 +223,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
     chips keep it centred while it fits, without making either end unreachable
     once it overflows. The right edge fades so a cut-off chip reads as "more". */
  .decks{display:flex; gap:var(--sp-2); flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none;
@@ -14,7 +14,7 @@ diff --git a/index.html b/index.html
    -webkit-overflow-scrolling:touch; overscroll-behavior:contain;
    -webkit-mask-image:linear-gradient(90deg,#000 0 calc(100% - 22px), transparent 100%);
    mask-image:linear-gradient(90deg,#000 0 calc(100% - 22px), transparent 100%)}
-@@ -163,8 +164,6 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
+@@ -235,8 +236,6 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
  @media (min-width:640px){
    header{max-width:min(92vw, 900px)}
  }

@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13055,7 +13055,7 @@ mirrorTop.onclick = () => {
+@@ -13718,7 +13718,7 @@ mirrorTop.onclick = () => {
  };
  mirrorBot.onclick = () => {
    const was = bottomLabels();

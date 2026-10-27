@@ -11,7 +11,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7443,5 +7443,6 @@
+@@ -13575,6 +13575,7 @@ savedSnapshotListener=event=>{
+ addChip.onclick = () => { closePanel(); openScaleSheet(desktopMQ.matches ? addChip : settingsTrigger); };
  // The page's way out. Same handler Escape runs, so there is one close path.
  backBtn.onclick = () => closeScaleSheet();
 +sheet.addEventListener("click", e => { if (e.target === sheet) closeScaleSheet(); });

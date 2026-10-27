@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8035,7 +8035,7 @@ document.addEventListener("keydown", e => {
+@@ -14692,7 +14692,7 @@ document.addEventListener("keydown", e => {
    else if (e.key === "ArrowLeft") step(-1);
  });
  /* ---------------- swipe (Tinder-style card drag) ---------------- */

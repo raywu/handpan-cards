@@ -2,15 +2,16 @@
 # suite: node --test --test-name-pattern ^NO_DING.shows.the.engine.s.own.sentence.and.keeps.Generate.disabled$ tests/app.test.js
 # Generate stays live while the seed does not parse, so the primary action
 # invites a tap that can only fail.
+# Retained behavior re-anchored for saved instances; exact intent is recorded in the lane evidence.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12351,7 +12351,7 @@ function syncParseState({ paint }) {
+@@ -13045,7 +13045,7 @@ function syncParseState({ paint }) {
      typedNow = null;
      paintLayout();
      scaleBox.classList.add("bad");
 -    genBtn.disabled = true;
 +    genBtn.disabled = false;
+     document.getElementById("scale-conflict-separate").disabled=true;
      if (paint) holdPanPreview();
      showRefusal(reasonText(res));
-   }

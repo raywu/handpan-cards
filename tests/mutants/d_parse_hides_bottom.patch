@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11522,7 +11522,7 @@ function parseLineText(fields) {
+@@ -12281,7 +12281,7 @@ function parseLineText(fields) {
    let ding = "";
    for (const f of Object.values(fields)) {
      if (f[3] === "ding") ding = f[0] + f[1];

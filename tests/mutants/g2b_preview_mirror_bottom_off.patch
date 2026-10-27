@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11769,7 +11769,7 @@ function sheetOptions() {
+@@ -12803,7 +12803,7 @@ function sheetOptions() {
   *  layout.solve refuses a seat list of the wrong length (BAD_NOTE) - which would
   *  show up as a mock that silently stopped repainting. */
  function solvePreviewLayout(seed) {

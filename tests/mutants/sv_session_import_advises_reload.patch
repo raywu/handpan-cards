@@ -1,0 +1,15 @@
+# kills: SV14 U2: unpublished session import keeps incoming content without advising reload
+# suite: node --test --test-name-pattern=^SV14.U2: tests/app.test.js
+# fault: Advises reloading after an unpublished session import despite having no durable recovery copy.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13437,7 +13437,7 @@ window.addEventListener("popstate", () => {
+ // deck and says so. That sentence is UI copy, not an engine reason: the
+ // section 2 code enum is closed and has no code for "you deleted this".
+ function savedPublicationText(result, context = "save") {
+-  return t(result.persistence==="session"?(context==="import"?"saved.sessionImportAckPending":"saved.sessionAckPending"):"saved.ackPending");
++  return t("saved.ackPending");
+ }
+ function savedErrorText(result) {
+   if(result.reason || result.code)return reasonText(result);

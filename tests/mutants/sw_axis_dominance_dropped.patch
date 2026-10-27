@@ -7,7 +7,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8076,7 +8076,6 @@ function swipeDecision(dx, dy, vx) {
+@@ -14711,7 +14711,6 @@ function swipeDecision(dx, dy, vx) {
    // vertical drag can otherwise cross SWIPE_FLING_PX_MS on dx alone and
    // spuriously commit a step. This axis-dominance check, not a change to any
    // SWIPE_* threshold, is what keeps a vertical drag from ever navigating.

@@ -1,0 +1,15 @@
+# kills: SV7 U3: a stale collection epoch cannot mutate a replacement store
+# suite: node --test --test-name-pattern=^SV7.U3: tests/app.test.js
+# fault: A stale collection epoch can mutate a replacement store with coincidentally equal row handles.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10539,7 +10539,7 @@ function savedEditedRecord(target, candidate) {
+ }
+ function applySavedCommand(staged, command, candidate) {
+   const current = staged.envelope;
+-  if (!command || command.collectionId !== current.collectionId) return savedFailure("conflict", "collection-epoch");
++  if (!command) return savedFailure("conflict", "collection-epoch");
+   const next = savedClone(current), views = new Map(staged.views);
+   let targetId = null, created = false, desired = null;
+   const existing = () => next.entries.find(row => row.instanceId === command.instanceId);

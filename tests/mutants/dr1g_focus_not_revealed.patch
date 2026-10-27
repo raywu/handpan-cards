@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10503,6 +10503,6 @@
+@@ -11878,7 +11878,7 @@ bandPort.addEventListener("focusin", (e) => {
      if (sheetSurf) sheetSurf.scrollTop = snap.surf;
      scrollPin = { until: Date.now() + PIN_MS, body: 0, surf: 0 };
    }
@@ -12,3 +12,4 @@ diff --git a/index.html b/index.html
 +  void t;
  });
  /** Bring a focused field into view by scrolling only the scrollers inside the
+  *  sheet, the least distance, and not at all when it is whole in view.

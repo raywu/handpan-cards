@@ -1,14 +1,16 @@
 # kills: SHC U2: same-ID SAVE and selection retire old LINK while new LINK carries committed angles
 # suite: node --test --test-reporter=tap --test-name-pattern ^SHC.U2: tests/app.test.js
 # Selecting the current scale no longer retires pending LINK.
+# Retained behavior re-anchored for saved instances; exact intent is recorded in the lane evidence.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10143,7 +10143,6 @@ function restoreScales() {
- }
- 
- function selectDeck(id) {
+@@ -10751,7 +10751,7 @@ document.addEventListener("visibilitychange",()=>{if(!document.hidden)reconcileS
+ function selectDeck(wanted, persist = true, trackSelection = true) {
+   navigationGeneration++;
+   pendingRecoveryShare=null;
 -  retireLinkUI();
-   // buildChips() below throws the whole strip away and builds it again, so any
-   // focus resting ON the strip is about to be invalidated: the chip that was
-   // clicked is detached outright. Either way the caret must be re-homed onto
++
+   if (typeof wanted === "string") wanted = savedEntries.has(wanted) ? {kind:"saved",id:wanted} : {kind:"builtin",id:wanted};
+   const a = document.activeElement;
+   const rehome = !!a && (a.id === "settings-trigger" || a.id === "deck-add" || [...document.getElementById("decks").children].includes(a));

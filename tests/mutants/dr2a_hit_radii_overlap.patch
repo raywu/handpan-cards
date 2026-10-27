@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8273,7 +8273,7 @@ function sizePanHits(svg, minPx, pickedRing) {
+@@ -11027,7 +11027,7 @@ function sizePanHits(svg, minPx, pickedRing) {
      const pts = group.map((n) => [Number(n.getAttribute("cx")), Number(n.getAttribute("cy")),
                                    Number(n.getAttribute("data-r")) || 0]);
      const r = panHitRadii(ext, size, minPx, pts);

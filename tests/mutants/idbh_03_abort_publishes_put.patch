@@ -1,0 +1,14 @@
+# kills: IDBH3 successful put is not commit and post-put abort rolls back
+# suite: node --test --test-name-pattern=^IDBH3\s tests/harness.test.js
+# fault: Publish uncommitted readwrite state while aborting after request success.
+diff --git a/tools/sandbox.js b/tools/sandbox.js
+--- a/tools/sandbox.js
++++ b/tools/sandbox.js
+@@ -176,6 +176,7 @@ function indexedDBFor(bucket) {
+     };
+     tx.abort = () => {
+       if (tx._done) throw idbError('InvalidStateError');
++      if (mode === 'readwrite') record.stores = snapshot(tx._stores);
+       tx._done = true;
+       operations.push({ operation: 'abort', db: db.name, mode });
+       dispatch('abort', () => {

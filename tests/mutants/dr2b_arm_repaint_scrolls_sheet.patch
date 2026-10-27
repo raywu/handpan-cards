@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11793,7 +11793,6 @@ function keepScroll(fn) {
+@@ -13908,7 +13908,6 @@ function keepScroll(fn) {
  function setArm(id) {
    if (id === armId) return;
    armId = id;

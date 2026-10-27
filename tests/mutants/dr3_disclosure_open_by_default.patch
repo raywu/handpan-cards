@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12209,7 +12209,7 @@ function resetSheetState(edit) {
+@@ -13320,7 +13320,7 @@ function resetSheetState(edit, target = selection) {
    slideTold = false;
    pickSlid = false;
    foldedBottom = false;

@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12096,7 +12096,7 @@ function lineInput() {
+@@ -14275,7 +14275,7 @@ function lineInput() {
  }
  /** The open paint: no message animates in and nothing is announced. */
  function paintFieldsOpen() {

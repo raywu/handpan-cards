@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1679,7 +1679,7 @@ html.about-open{overflow:hidden}
+@@ -1719,7 +1719,7 @@ html.about-open{overflow:hidden}
    <div class="panel-group">
      <h3 class="panel-heading">Print this scale</h3>
      <div class="prints">

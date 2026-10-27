@@ -1,23 +1,25 @@
 # kills: SI: opening the create sheet hides a revealed #share-url
 # suite: node --test --test-name-pattern ^SI:.opening.the.create.sheet.hides tests/app.test.js
 # openScaleSheet no longer hides a revealed #share-url.
+# Retained behavior re-anchored for saved instances; exact intent is recorded in the lane evidence.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12651,7 +12651,7 @@ function setInert(on, targets) {
+@@ -13248,7 +13248,7 @@ function setInert(on, targets) {
    }
  }
  function showSheet(opener) {
 -  retireLinkUI();
-+  ++linkUIGeneration;
++  if(editingBase)retireLinkUI();else ++linkUIGeneration;
    sheetOpener = opener || addChip;
+   sheetOpenerSelection=[...document.getElementById("decks").children].includes(sheetOpener)?{kind:sheetOpener.getAttribute("data-selection-kind"),id:sheetOpener.getAttribute("data-selection-id")}:null;
    sheet.removeAttribute("hidden");
-   sheetOpen = true;
-@@ -12739,7 +12739,6 @@ function resetSheetState(edit) {
+@@ -13347,7 +13347,7 @@ function resetSheetState(edit, target = selection) {
  }
  // The create path.
  function openScaleSheet(opener) {
 -  shareUrl.setAttribute("hidden", "");
++
    resetSheetState(null);
    showSheet(opener);
  }

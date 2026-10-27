@@ -7,7 +7,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11173,7 +11173,7 @@ function applyKbOffset(e) {
+@@ -13154,7 +13154,7 @@ function applyKbOffset(e) {
     * deliberate fingers, and the reader who zoomed can pan.
     * The tolerance is for scales that do not land exactly on 1 coming back from
     * a pinch; a sub-percent residue is not a zoom. */

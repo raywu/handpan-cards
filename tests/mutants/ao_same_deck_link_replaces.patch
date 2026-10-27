@@ -1,15 +1,16 @@
 # kills: AO: a #deck= link to the deck already shown closes About like the exit control
 # suite: node --test --test-name-pattern ^AO:.a.#deck=.link.to.the.deck.already.shown tests/app.test.js
 # Lane O. A link to the deck already shown takes the replace path instead of closing About.
+# Retained behavior re-anchored for saved instances; exact intent is recorded in the lane evidence.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10917,7 +10917,7 @@
-     const resolved = deck().id;
-     deckId = before;
-     const replaced = !!replacements()[routed] && replacements()[routed].id === resolved;
--    if (resolved === deck().id && (resolved === routed || replaced)) { closeAbout(); return; }
-+    if (false && resolved === deck().id && (resolved === routed || replaced)) { closeAbout(); return; }
+@@ -14514,7 +14514,7 @@ function aboutLink(href) {
+   const routed = Object.prototype.hasOwnProperty.call(DECK_SLUGS, slug) ? DECK_SLUGS[slug] : null;
+   if (routed) {
+     const resolvedSelection=savedState?savedResolve({kind:"builtin",id:routed},savedState,savedEntries):{kind:"builtin",id:routed};
+-    if (savedEqual(resolvedSelection,selection) && (selection.kind==="builtin" && selection.id===routed || savedState?.slots[routed]===selection.id)) { closeAbout(); return; }
++    if (false && savedEqual(resolvedSelection,selection) && (selection.kind==="builtin" && selection.id===routed || savedState?.slots[routed]===selection.id)) { closeAbout(); return; }
    }
    hideAbout();
    history.replaceState(null, "", href);

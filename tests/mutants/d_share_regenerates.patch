@@ -2,14 +2,15 @@
 # suite: node --test --test-name-pattern ^consuming.a.share.link.runs.select.build.exactly.once$ tests/app.test.js
 # Consuming a link builds the deck twice - the shape a rebuild-per-read would
 # have. ENGINE-SPEC section 11: generation runs ONCE per restore.
+# Retained behavior re-anchored for saved instances; exact intent is recorded in the lane evidence.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9851,6 +9851,7 @@ function openShare(text) {
-   const res = HPE.share.decode(String(text));
-   if (!res.ok) { say(reasonText(res), "err"); return res; }
-   // Generation runs ONCE per restore, here, exactly as submit does (section 11).
-+  generateDeck(HPE.core.formatSeed(res.value.fields), res.value.options);
-   const built = generateDeck(HPE.core.formatSeed(res.value.fields), res.value.options);
-   if (!built.ok) { say(reasonText(built), "err"); return built; }
-   rememberScale(seedOf(built.value));
+@@ -9965,6 +9965,7 @@ function openShare(text) {
+     if (built.instanceId !== bootStored) track("share_open");
+     return built;
+   };
++  generateDeck(HPE.core.formatSeed(res.value.fields),res.value.options);
+   const built = generateDeck(HPE.core.formatSeed(res.value.fields),res.value.options);
+   return built && typeof built.then === "function" ? built.then(finish) : finish(built);
+ }

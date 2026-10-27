@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10772,7 +10772,7 @@
+@@ -12110,7 +12110,7 @@ function lipFlingStep(now) {
    if (M !== F.prevM) { F.prevM = M; F.prevT = t; return; }
    const d = t - F.prevT;
    F.prevT = t;

@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13249,7 +13249,7 @@ function followFields(r, wasStale) {
+@@ -14245,7 +14245,7 @@ function followFields(r, wasStale) {
      else if (wasStale) resyncSheet(true);
    } else if (r.ok) {
      lineStale = false;

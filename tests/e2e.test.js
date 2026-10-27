@@ -333,6 +333,9 @@ function run() {
     if (navDead) throw navDead;
     await b.setViewport(...DEFAULT_VIEWPORT);
     await b.eval(`try { localStorage.clear(); } catch (e) {} return true;`).catch(() => {});
+    const origin = new globalThis.URL(URL).origin;
+    assert.ok(/^http:\/\/127\.0\.0\.1:\d+$/.test(origin), "freshLoad only clears the owned loopback test origin");
+    await b.send("Storage.clearDataForOrigin", {origin, storageTypes:"indexeddb"});
     await navigate();
     // "+ ADD" ships in the markup, so waiting on ".chip" alone can be satisfied
     // before the app has booted. Wait for a real deck chip.
@@ -340,6 +343,64 @@ function run() {
       label: "deck chips to be built",
     });
   }
+
+  // ENGINE-SPEC sections12/14 and the transactional-storage amendment:
+  // legacy selection/hidden state migrates only when current IDB authority is
+  // absent. These explicit fixture resets belong before migration navigation;
+  // ordinary reloads must retain the database and prove persistence instead.
+  async function clearSavedIdbForLegacyMigrationFixture() {
+    const origin=new globalThis.URL(URL).origin;
+    assert.ok(/^http:\/\/127\.0\.0\.1:\d+$/.test(origin),"legacy fixture only clears the owned loopback test origin");
+    await b.send("Storage.clearDataForOrigin",{origin,storageTypes:"indexeddb"});
+  }
+
+  // Fixture authority is the actual same-origin IndexedDB record. Both
+  // existence and value are observed in one transaction and returned only on
+  // complete; a successful request alone never counts as seeded/persisted.
+  async function nativeSavedRecord(options = {}) {
+    return new Promise((resolve,reject) => {
+      const request=indexedDB.open("hpfc.saved-scales.v1",1);
+      request.onupgradeneeded=()=>request.result.createObjectStore("collections");
+      request.onerror=()=>reject(request.error || new Error("native fixture open failed"));
+      request.onblocked=()=>reject(new Error("native fixture open blocked"));
+      request.onsuccess=()=>{
+        const db=request.result;let key,raw;
+        let tx;
+        try {tx=db.transaction("collections",options.write?"readwrite":"readonly");}
+        catch(error){db.close();reject(error);return;}
+        tx.oncomplete=()=>{db.close();resolve(options.write?null:{present:key!==undefined,raw});};
+        tx.onabort=()=>{db.close();reject(tx.error || new Error("native fixture transaction aborted"));};
+        tx.onerror=()=>{};
+        const store=tx.objectStore("collections");
+        if(options.write)store.put(options.raw,"current");
+        else {
+          const exists=store.getKey("current"),get=store.get("current");
+          exists.onsuccess=()=>{key=exists.result;};get.onsuccess=()=>{raw=get.result;};
+        }
+      };
+    });
+  }
+  const nativeSavedExpression=options=>`(${nativeSavedRecord.toString()})(${JSON.stringify(options||{})})`;
+  const nativeSavedEnvelope=async target=>{
+    const record=await target.eval(`return ${nativeSavedExpression()};`);
+    assert.strictEqual(record.present,true,"an acknowledged collection has a real persistent current key");
+    assert.strictEqual(typeof record.raw,"string","persistent collection is serialized schema1");
+    return JSON.parse(record.raw);
+  };
+
+  // Preference commands can stage an asynchronous read before requesting the
+  // lock. Observe the literal expected committed preference, never a new lock.
+  async function nativeCommittedPreference(target,expected) {
+    const deadline=Date.now()+5000;let actual;
+    do {
+      actual=(await nativeSavedEnvelope(target)).preferredSelection;
+      if(JSON.stringify(actual)===JSON.stringify(expected))break;
+      await sleep(20);
+    }while(Date.now()<deadline);
+    assert.deepStrictEqual(actual,expected,"literal expected preference is committed in the actual IDB transaction");
+    return actual;
+  }
+  const nativeLegacySavedSources=target=>target.eval(`return {hpfc:localStorage.getItem('hpfc'),scales:localStorage.getItem('hpfc.scales'),v3:localStorage.getItem('hpfc.scales.v3')};`);
 
   // Lane M1: the print controls and the mode toggle both live behind the
   // header's settings trigger now. Real interaction opens the panel first,
@@ -368,8 +429,38 @@ function run() {
         `(document.getElementById("count").textContent || "").trim() === ${JSON.stringify(text)}`,
         { timeout: 5000, label },
       );
-    } catch {
-      assert.fail(`${label}: expected the counter to read "${text}", saw "${await countText()}"`);
+    } catch (waitFailure) {
+      const observed = await countText();
+      const message = `${label}: expected the counter to read "${text}", saw "${observed}"`;
+      if (label !== "a mouse drag past the threshold should commit") assert.fail(message);
+      // Freeze the original observation and assertion before diagnostic RPCs.
+      // A late animation or a failed diagnostic cannot change this verdict.
+      let originalFailure;
+      try { assert.fail(message); } catch (error) { originalFailure = error; }
+      try {
+        const failure = await b.eval(`
+          const card=document.getElementById('card'),r=card.getBoundingClientRect(),scene=document.querySelector('.scene');
+          const x=r.left+r.width/2,y=r.top+r.height/2,hit=document.elementFromPoint(x,y);
+          const anim=a=>({currentTime:a.currentTime,startTime:a.startTime,playState:a.playState,pending:a.pending,
+            timing:a.effect?a.effect.getTiming():null,computedTiming:a.effect?a.effect.getComputedTiming():null});
+          return {clock:performance.now(),readyState:document.readyState,viewport:{width:innerWidth,height:innerHeight},
+            card:{left:r.left,right:r.right,top:r.top,bottom:r.bottom,hitOnCard:!!hit&&(hit===card||card.contains(hit)),inert:!!card.closest('[inert]')},
+            visibility:document.visibilityState,focused:document.hasFocus(),activeElement:document.activeElement?.id||null,
+            reducedMotion:matchMedia('(prefers-reduced-motion: reduce)').matches,
+            booted,savedMode,selection:{...selection},mode,tier,orderLength:order.length,idx,
+            count:document.getElementById('count').textContent.trim(),panelOpen,sheetOpen,flipped,eatClick,
+            ownLostPointerCaptureSeen:window.__cdpLpcSeen??null,
+            drag:drag?{id:drag.id,pointerType:drag.pointerType,x0:drag.x0,y0:drag.y0,last:drag.last,lastY:drag.lastY,moved:drag.moved,pts:drag.pts.map(point=>({...point}))}:null,
+            flight:flight?{dir:flight.dir,restRect:flight.rect,animation:anim(flight.anim)}:null,
+            sceneInlineTransform:scene.style.transform,sceneComputedTransform:getComputedStyle(scene).transform,
+            sceneAnimations:scene.getAnimations().map(anim),allAnimations:document.getAnimations().map(anim)};
+        `);
+        console.log("POST_DRAG_FAILURE_ONLY_STATE " + JSON.stringify({label,expected:text,observed,waitFailure:String(waitFailure),failure,
+          helper:{foregroundSettle:b.foregroundSettle,pendingSettle:!!b._pendingSettle,lastViewport:b.lastViewport}}));
+      } catch (diagnosticError) {
+        console.log("POST_DRAG_FAILURE_ONLY_STATE " + JSON.stringify({label,expected:text,observed,waitFailure:String(waitFailure),diagnosticError:String(diagnosticError)}));
+      }
+      throw originalFailure;
     }
   }
 
@@ -809,7 +900,8 @@ function run() {
 
     const before = await stored();
     assert.ok(before && typeof before === "object", `nothing saved under "hpfc": ${JSON.stringify(before)}`);
-    assert.strictEqual(before.deck, meta[target].id, "saved deck id");
+    assert.deepStrictEqual(await nativeCommittedPreference(b,{kind:"builtin",id:meta[target].id}),{kind:"builtin",id:meta[target].id},"saved deck selection lives in IDB");
+    assert.strictEqual(before.deck,undefined,"selection must not write a legacy hpfc.deck");
     assert.strictEqual(before.mode, "B", "saved mode");
 
     await navigate(); // reload
@@ -835,7 +927,8 @@ function run() {
     assert.deepStrictEqual(modes, { a: false, b: true }, "saved mode survives the reload");
 
     const after = await stored();
-    assert.strictEqual(after.deck, meta[target].id);
+    assert.deepStrictEqual((await nativeSavedEnvelope(b)).preferredSelection,{kind:"builtin",id:meta[target].id});
+    assert.strictEqual(after.deck,before.deck,"reload preserves the legacy selection field");
     assert.strictEqual(after.mode, "B");
   });
 
@@ -844,12 +937,14 @@ function run() {
     const meta = await decksMeta();
     const kurd = meta.findIndex((d) => d.id === "kurd");
     assert.ok(kurd >= 0, "Kurd must ship as a built-in deck");
-    assert.strictEqual((await stored()).deck, "kurd", "a first visit stores the default");
+    assert.deepStrictEqual((await nativeSavedEnvelope(b)).preferredSelection,{kind:"builtin",id:"kurd"},"a first visit stores the default tagged preference");
+    assert.strictEqual((await stored())?.deck,undefined,"first visit does not invent a legacy hpfc.deck");
     assert.strictEqual(await countText(), `1 / ${meta[kurd].chords}`, "cold start is on Kurd");
     assert.deepStrictEqual((await chipStates()).map((c) => c.on), meta.map((_, k) => k === kurd));
 
     const other = meta.findIndex((d) => d.id === "hijaz");
     await selectDeck(other, meta);
+    await nativeCommittedPreference(b,{kind:"builtin",id:meta[other].id});
     await navigate();
     await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`, {
       label: "chips after reload",
@@ -3097,7 +3192,7 @@ function run() {
       await b.setViewport(380, 800, true);
       await generate(SIX_SCALES[1]);
       const shared = await b.eval(`
-        const d = CUSTOM[deckId];
+        const d = selectedDeck();
         const res = shareLink(d);
         return {
           ok: res.ok, reason: res.ok ? null : res.reason, url: res.ok ? res.value : null,
@@ -3109,6 +3204,8 @@ function run() {
       assert.strictEqual(hash.indexOf("#s="), 0, `no #s= payload in "${shared.url}"`);
 
       await b.eval(`try { localStorage.clear(); } catch (e) {} return true;`).catch(() => {});
+      // Restore the original empty-receiver premise for IDB authority too.
+      await clearSavedIdbForLegacyMigrationFixture();
       // A hash-only change from the SAME document is an in-page fragment
       // navigation in Chrome - no Page.loadEventFired, no fresh boot. A cache-
       // busting query forces a REAL navigation, so this test covers the boot
@@ -4385,24 +4482,48 @@ function run() {
           `the pencil leaked into a chip's text: ${JSON.stringify(c.text)}`);
       }
 
-      // Every OTHER chip - the three built-ins, all unselected here - is
-      // untouched: no glyph, no Edit name.
-      for (const c of after.filter((x) => !x.on)) {
+      // A second real saved instrument with the same full name makes the
+      // accessible discriminator checks non-vacuous, without changing the
+      // earlier unique-name elision and glyph checks.
+      await openSheet();
+      await typeScale(SIX_SCALES[2]);
+      await b.eval(`const el=document.getElementById('scale-name');el.value=${JSON.stringify(LONG_NAME)};
+        el.dispatchEvent(new Event('input',{bubbles:true}));return true;`);
+      await clickGenerate();
+      await b.waitFor("document.getElementById('scale-sheet').hidden",{label:"second named instrument committed"});
+      const colliding=await chipProbe();
+      const sameName=colliding.filter(c=>/ \/ S[12]$/.test(c.text));
+      assert.strictEqual(sameName.length,2,"both literal named saved instances need visible discriminators");
+      assert.deepStrictEqual(sameName.map(c=>c.text.match(/ \/ (S[12])$/)[1]).sort(),["S1","S2"]);
+      for(const c of sameName) {
+        const token=c.text.match(/ \/ (S[12])$/)[1];
+        assert.ok(c.label.includes(c.text),"discriminated visible label stays in the accessible name");
+        assert.ok(c.label.includes(`${token} identifies this saved scale in this browser.`),
+          `a collision discriminator needs its accessible explanation: ${JSON.stringify(c.label)}`);
+        assert.strictEqual(/^Edit(?:\s|$)/.test(c.label),c.on,"only the selected discriminated chip offers Edit");
+        assert.strictEqual(c.marked,c.on,"only the selected discriminated chip has a pencil");
+      }
+      // Every OTHER chip is selectable, without a pencil or Edit name. A
+      // visible label always remains part of its accessible name.
+      for (const c of colliding.filter((x) => !x.on)) {
         assert.strictEqual(c.marked, false,
           `an unselected chip ("${c.text}") carries a pencil - Edit must be ` +
           "offered only where it actually works (row 262)");
-        assert.strictEqual(c.label, null,
-          `an unselected chip ("${c.text}") has aria-label ${JSON.stringify(c.label)}`);
+        assert.ok(typeof c.label === "string" && c.label.includes(c.text),
+          `an unselected chip must include its visible label in its accessible name: ${JSON.stringify(c)}`);
+        assert.ok(!/^Edit(?:\s|$)/.test(c.label),
+          `an unselected chip must not offer Edit: ${JSON.stringify(c.label)}`);
       }
 
-      // And a SELECTED seeded deck carries one too: every deck edits the same way.
-      // A custom deck takes chip 1, so Kurd (meta[0]) is chip 2.
-      await b.eval(`document.querySelector("#decks .chip:nth-child(2)")
+      // And a SELECTED seeded scale carries one too. Saved variants add
+      // independent chips, so identify Kurd by its explicit built-in handle.
+      const kurdChip='#decks .chip[data-selection-kind="builtin"][data-selection-id="kurd"]';
+      await b.eval(`document.querySelector(${JSON.stringify(kurdChip)})
                       .scrollIntoView({ block: "nearest", inline: "nearest" }); return true;`);
-      await b.click("#decks .chip:nth-child(2)");
+      await b.click(kurdChip);
       await expectCount(`1 / ${meta[0].chords}`, "Kurd selected");
       const builtin = (await chipProbe()).find((c) => c.on);
-      assert.ok(/KURD/.test(builtin.text), `chip 2 is "${builtin.text}", not Kurd`);
+      assert.ok(/KURD/.test(builtin.text), `selected chip is "${builtin.text}", not Kurd`);
       assert.ok(builtin, "no chip is selected after switching to a built-in deck");
       assert.strictEqual(builtin.marked, true,
         `the selected seeded chip "${builtin.text}" has no pencil - it opens the Edit sheet`);
@@ -4411,7 +4532,7 @@ function run() {
       for (const c of (await chipProbe()).filter((x) => !x.on)) {
         assert.strictEqual(c.marked, false, `an unselected chip ("${c.text}") carries a pencil`);
       }
-      await b.click("#decks .chip:nth-child(2)");
+      await b.click(kurdChip);
       await b.waitFor(`!document.getElementById("scale-sheet").hasAttribute("hidden")`,
         { label: "the Edit sheet to open on a selected seeded chip" });
       assert.strictEqual(await b.eval(`return document.getElementById("scale-generate").textContent.trim();`),
@@ -4923,11 +5044,13 @@ function run() {
       assert.strictEqual(m.gen, false);
       await clickGenerate();
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet to close after Generate" });
-      const shared = await b.eval(`const d = CUSTOM[deckId]; const res = shareLink(d);
+      const shared = await b.eval(`const d = selectedDeck(); const res = shareLink(d);
         return { ok: res.ok, url: res.ok ? res.value : null, chords: d.chords.length };`);
       assert.strictEqual(shared.ok, true);
       const hash = shared.url.slice(shared.url.indexOf("#s="));
       await b.eval(`try { localStorage.clear(); } catch (e) {} return true;`).catch(() => {});
+      // Empty-receiver round trip, rather than reusing a saved local match.
+      await clearSavedIdbForLegacyMigrationFixture();
       await navigate(`${URL}?share=${Date.now()}${hash}`);
       await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`, { label: "chips after the share link boots" });
       const after = await b.eval(`return (document.getElementById("count").textContent || "").trim();`);
@@ -5504,7 +5627,7 @@ function run() {
 
       await clickGenerate();
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet to close after GENERATE CARDS" });
-      const saved = await b.eval(`return JSON.parse(localStorage.getItem("hpfc.scales.v3") || "[]").map(r => r.o && r.o.palette);`);
+      const saved = (await nativeSavedEnvelope(b)).entries.map(row=>row.record.o&&row.record.o.palette);
       assert.deepStrictEqual(saved, [PICK], "the saved deck record does not carry the picked palette");
     } finally {
       await b.setViewport(900, 900, false);
@@ -5895,73 +6018,77 @@ function run() {
       msg: msg.textContent.trim(),
       msgVisible: msg.getBoundingClientRect().height > 0,
       primaries: [...document.querySelectorAll("#scale-sheet button")]
-        .filter(el => !el.disabled && el.textContent.trim().match(/^(GENERATE|SAVE)/)).length,
+        .filter(el => !el.disabled && el.getClientRects().length > 0 && el.textContent.trim().match(/^(GENERATE|SAVE)/)).length,
       body: { sw: document.body.scrollWidth, cw: document.body.clientWidth },
     };
   `);
 
-  test("an edit onto another deck's scale is refused at 380px and both chips stay", async () => {
+  // A valid seed can still have no playable chords: its submit refusal is a
+  // real non-parser error, independent of the removed inventory veto.
+  const BUILD_REFUSAL_SEED = "(F3) C4 Ab4 Bb4";
+  const BUILD_REFUSAL_TEXT = "This pan has no playable chords - try a different scale.";
+  const nativeRefusalSelection = () => b.eval(`
+    const chip=document.querySelector('#decks .chip.on');
+    return {kind:chip.getAttribute('data-selection-kind'),id:chip.getAttribute('data-selection-id')};
+  `);
+  async function stageBuildRefusal() {
+    await typeScale(BUILD_REFUSAL_SEED);
+    const parsed=await b.eval(`return {
+      summary:document.getElementById('scale-parse').textContent.trim(),
+      refusal:document.getElementById('scale-refusal').textContent.trim(),
+      disabled:document.getElementById('scale-generate').disabled,
+      bad:document.getElementById('scale-box').classList.contains('bad')};`);
+    assert.ok(parsed.summary.length>0,"the literal seed must produce a successful parse summary before submit");
+    assert.strictEqual(parsed.refusal,"");assert.strictEqual(parsed.bad,false);
+    assert.strictEqual(parsed.disabled,false,"grammar-valid zero-chord input must reach real generation");
+    const selection=await nativeRefusalSelection();
+    assert.strictEqual(selection.kind,"saved","the refusal fixture edits an existing saved instrument");
+    await nativeCommittedPreference(b,selection);
+    return {envelope:await nativeSavedEnvelope(b),selection};
+  }
+  async function assertRefusalSavedUnchanged(before) {
+    assert.deepStrictEqual(await nativeSavedEnvelope(b),before.envelope,"refused generation and draft actions cannot mutate committed saved data");
+    assert.deepStrictEqual(await nativeRefusalSelection(),before.selection,"refused generation and draft actions cannot change selection");
+  }
+  async function assertStandingBuildRefusal(before) {
+    assert.strictEqual(await b.eval("return document.getElementById('scale-refusal').textContent.trim();"),BUILD_REFUSAL_TEXT);
+    assert.strictEqual(await b.eval("return document.getElementById('scale-generate').disabled;"),true,"a standing build refusal stays disabled until the seed changes");
+    await assertRefusalSavedUnchanged(before);
+  }
+  async function submitBuildRefusal(before) {
+    const actionLabel=await b.eval("return document.getElementById('scale-generate').textContent;");
+    await clickGenerate();
+    // Wait for handler completion, not the expected error channel or state:
+    // a fault that routes the message incorrectly must fail an assertion.
+    await b.waitFor(`savePending===null && document.getElementById('scale-generate').textContent===${JSON.stringify(actionLabel)}`,
+      {label:"the submit handler completes and restores its action label"});
+    await assertStandingBuildRefusal(before);
+  }
+
+  // Approved variants policy replaces inventory-collision refusal with
+  // instance-targeted Edit. Preserve sibling bytes and usable re-entry.
+  test("an edit onto another scale's inventory preserves both chips at 380px and remains editable", async () => {
     try {
-      await freshLoad();
-      await b.setViewport(380, 780, true);
-      await generate(EDIT_SCALE);
-      await generate(COLLIDE_SCALE);
-
-      // name the second deck, so the loss the refusal prevents is visible
-      await openEdit();
-      await b.eval(`
-        const el = document.getElementById("scale-name");
-        el.value = "RAY'S PAN";
-        el.dispatchEvent(new Event("input", { bubbles: true }));
-        return el.value;
-      `);
-      await clickGenerate();
-      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
-        { label: "the Edit sheet to close after the rename" });
-
-      const before = await chipReport();
-      const storedBefore = await b.eval(`return localStorage.getItem("hpfc.scales.v3");`);
-      assert.ok(before.chips.includes("RAY'S PAN"), JSON.stringify(before.chips));
-
-      await selectChipAt(before.chips.indexOf("RAY'S PAN") + 1);   // the FIRST custom deck, now after the newer one
-      await openEdit();
-      await typeScale(COLLIDE_SCALE);
-      await clickGenerate();
-
-      const st = await sheetState();
-      assert.strictEqual(st.open, true, "the refused save closed the sheet");
-      assert.strictEqual(st.bad, true, "the scale box was not marked bad");
-      assert.match(st.msg, /Another scale already has these notes/,
-        `the sheet says "${st.msg}"`);
-      assert.strictEqual(st.msgVisible, true, "the refusal message has no height");
-      assert.ok(st.primaries <= 1, `${st.primaries} enabled primaries while the sheet is open`);
-      assert.ok(st.body.sw <= st.body.cw + 1, "the refusal scrolls the page horizontally");
-
-      // Queue row 142: `primaries <= 1` also holds with the primary stuck at 0
-      // forever, so it cannot fail in the direction that matters. The refusal
-      // must be RECOVERABLE - retyping brings the primary back and clears the
-      // message, without closing and reopening the sheet.
-      await typeScale(SIX_SCALES[3]);
-      const back = await sheetState();
-      assert.strictEqual(back.open, true, "retyping closed the sheet");
-      assert.strictEqual(back.primaries, 1,
-        `${back.primaries} enabled primaries after retyping past the refusal - ` +
-        "the refusal is a dead end");
-      assert.strictEqual(back.bad, false, "the box is still marked bad after a valid retype");
-      assert.strictEqual(back.msg, "", `the refusal message survived the retype: "${back.msg}"`);
-
-      await b.eval(`document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })); return true;`);
-      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
-        { label: "the Edit sheet to close on Escape" });
-      const after = await chipReport();
-      assert.deepStrictEqual(after.chips, before.chips,
-        `a deck was destroyed by the refused edit: ${JSON.stringify(after.chips)}`);
-      assert.strictEqual(
-        await b.eval(`return localStorage.getItem("hpfc.scales.v3");`), storedBefore,
-        "a refused save wrote to hpfc.scales.v3");
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
+      await freshLoad();await b.setViewport(380,780,true);await generate(EDIT_SCALE);await generate(COLLIDE_SCALE);
+      await openEdit();await b.eval(`const el=document.getElementById('scale-name');el.value="RAY'S PAN";el.dispatchEvent(new Event('input',{bubbles:true}));return true;`);
+      await clickGenerate();await b.waitFor("document.getElementById('scale-sheet').hidden",{label:"sibling rename acknowledgment"});
+      const before=await chipReport(),saved=await nativeSavedEnvelope(b);
+      const sibling=saved.entries.find(row=>row.record.o.name==="RAY'S PAN");assert.ok(sibling);
+      const siblingInventory=await b.eval(`return savedEntries.get(${JSON.stringify(sibling.instanceId)}).deck.id;`);
+      await selectChipAt(before.chips.indexOf("RAY'S PAN")+1);
+      const target=await b.eval("return {selection:{...selection},inventory:deck().id};");assert.notStrictEqual(target.selection.id,sibling.instanceId);
+      await openEdit();await typeScale(COLLIDE_SCALE);await clickGenerate();
+      await b.waitFor("document.getElementById('scale-sheet').hidden",{label:"converging Edit acknowledgment"});
+      const after=await b.eval(`return ${nativeSavedExpression()}.then(saved=>({selection:{...selection},inventory:deck().id,envelope:JSON.parse(saved.raw)}));`);
+      assert.deepStrictEqual(after.selection,target.selection);assert.notStrictEqual(after.inventory,target.inventory);assert.strictEqual(after.inventory,siblingInventory,"converging Edit reaches the sibling musical inventory");
+      assert.strictEqual(after.envelope.entries.length,saved.entries.length);assert.deepStrictEqual(after.envelope.entries.find(row=>row.instanceId===sibling.instanceId),sibling,"converging Edit cannot rewrite a named sibling");
+      assert.ok((await chipReport()).chips.includes("RAY'S PAN"));
+      await openEdit();const initial=await sheetState();assert.strictEqual(initial.open,true);assert.strictEqual(initial.bad,false);assert.strictEqual(initial.primaries,1);
+      await typeScale(SIX_SCALES[3]);const retyped=await sheetState();assert.strictEqual(retyped.open,true);assert.strictEqual(retyped.primaries,1);assert.strictEqual(retyped.bad,false);assert.strictEqual(retyped.msg,"");assert.ok(retyped.body.sw<=retyped.body.cw+1);
+      await b.eval("document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));return true;");
+      await b.waitFor("document.getElementById('scale-sheet').hidden",{label:"Escape discards later draft"});
+      assert.deepStrictEqual(await nativeSavedEnvelope(b),after.envelope,"cancelled later draft never rewrites either saved instance");
+    }finally{await b.setViewport(900,900,false);}
   });
 
   /* Both tests below are the reviewer's, 2026-09-21. The first cut of the
@@ -6047,7 +6174,7 @@ function run() {
     }
   });
 
-  test("a refused SAVE onto another deck's scale does not move the pan", async () => {
+  test("a zero-chord build refusal on SAVE does not move the pan", async () => {
     // Path (b): runGenerate() refuses a seed that PARSED FINE, so the parse
     // line is full when the refusal arrives - the one case where a refusal and
     // the parse summary are both live at once.
@@ -6058,7 +6185,6 @@ function run() {
       await b.setViewport(380, 800, true);
       await generate(EDIT_SCALE);
       await generate(COLLIDE_SCALE);
-      const chips = await chipReport();
       await selectChipAt(1);   // the FIRST custom deck, now chip 2
       await openEdit();
 
@@ -6074,14 +6200,14 @@ function run() {
       `);
       // Baseline AFTER typing, so the only thing that changes across the SAVE
       // is the refusal itself.
-      await typeScale(COLLIDE_SCALE);
+      const savedBefore = await stageBuildRefusal();
       await b.settle();
       const before = await read();
 
-      await clickGenerate();
+      await submitBuildRefusal(savedBefore);
       await b.settle();
       const after = await read();
-      assert.match(after.refusal, /Another scale already has these notes/,
+      assert.strictEqual(after.refusal, BUILD_REFUSAL_TEXT,
         `the refused save says "${after.refusal}" in the seed's row`);
       assert.strictEqual(after.msg, "",
         `the seed refusal was written below the pan as well: "${after.msg}"`);
@@ -6143,26 +6269,23 @@ function run() {
     }
   });
 
-  test("disarming DELETE leaves a standing collision refusal up (queue row 91)", async () => {
-    /* The collision veto is decided by the REGISTRY, not by the seed text, so
-       updateParse() cannot re-derive it: re-running it on disarm clears the red
-       box and the refusal for a seed the app will still refuse, and the sheet
-       then presents SAVE CHANGES as if the edit were fine. */
+  test("disarming DELETE leaves a standing build refusal up (queue row 91)", async () => {
+    /* The seed parses, but building produces no playable chords. Only a
+       real seed edit can clear this submit refusal; layout and pointer actions
+       must retain the actionable explanation and committed saved state. */
     try {
       await freshLoad();
       await b.setViewport(380, 780, true);
       await generate(EDIT_SCALE);
       await generate(COLLIDE_SCALE);
-      const before = await chipReport();
 
       await selectChipAt(1);
       await openEdit();
-      await typeScale(COLLIDE_SCALE);
-      await clickGenerate();
+      const savedBefore = await stageBuildRefusal();
+      await submitBuildRefusal(savedBefore);
 
       const refused = await sheetState();
-      assert.strictEqual(refused.bad, true, "the collision did not mark the box bad");
-      assert.match(refused.msg, /Another scale already has these notes/,
+      assert.strictEqual(refused.msg, BUILD_REFUSAL_TEXT,
         `the sheet says "${refused.msg}"`);
 
       await b.click("#scale-delete");           // arm DELETE on the refused seed
@@ -6172,9 +6295,8 @@ function run() {
       await clickPoint(8, 8);                   // and look away again
 
       const after = await sheetState();
-      assert.strictEqual(after.bad, true,
-        "disarming DELETE cleared the collision's red box");
-      assert.match(after.msg, /Another scale already has these notes/,
+      await assertStandingBuildRefusal(savedBefore);
+      assert.strictEqual(after.msg, BUILD_REFUSAL_TEXT,
         `after disarming DELETE the sheet says "${after.msg}"`);
     } finally {
       await b.key("Escape", "Escape", 27);
@@ -6182,39 +6304,33 @@ function run() {
     }
   });
 
-  test("an ordinary unarmed tap does not wipe a collision refusal (queue row 91 guard)", async () => {
-    /* disarmDelete() runs on every pointerdown in the sheet, armed or not, and
-       now re-syncs the sheet through updateParse() when it DOES run. Its
-       early-return guard exists so an ordinary tap while DELETE is not armed
-       never calls updateParse() at all - because updateParse() only sees the
-       PARSE-level verdict, and a collision refusal is bad for a reason
-       parseSeed knows nothing about: the seed itself still parses fine, so
-       recomputing from it would wrongly clear .bad and the refusal message
-       for an edit that was never fixed. */
+  test("an ordinary unarmed tap does not wipe a build refusal (queue row 91 guard)", async () => {
+    /* The seed parses, but building produces no playable chords. Only a
+       real seed edit can clear this submit refusal; layout and pointer actions
+       must retain the actionable explanation and committed saved state. */
     try {
       await freshLoad();
       await b.setViewport(380, 780, true);
       await generate(EDIT_SCALE);
       await generate(COLLIDE_SCALE);
-      const before = await chipReport();
 
       // EDIT_SCALE's chip: generated before COLLIDE_SCALE, so chip 2 (newest custom first).
       await selectChipAt(1);
       await openEdit();
-      await typeScale(COLLIDE_SCALE);
-      await clickGenerate();
+      const savedBefore = await stageBuildRefusal();
+      await submitBuildRefusal(savedBefore);
 
       const st1 = await sheetState();
-      assert.strictEqual(st1.bad, true, "the scale box was not marked bad");
-      assert.match(st1.msg, /Another scale already has these notes/,
+      assert.strictEqual(st1.msg, BUILD_REFUSAL_TEXT,
         `the sheet says "${st1.msg}"`);
 
       // an ordinary tap elsewhere in the sheet - DELETE was never armed
       await clickPoint(8, 8);
 
       const st2 = await sheetState();
+      await assertStandingBuildRefusal(savedBefore);
       assert.strictEqual(st2.bad, st1.bad,
-        "an ordinary tap while unarmed changed .bad on a collision refusal");
+        "an ordinary tap while unarmed changed .bad on a build refusal");
       assert.strictEqual(st2.msg, st1.msg,
         `an ordinary tap while unarmed changed the refusal message: "${st1.msg}" -> "${st2.msg}"`);
     } finally {
@@ -6223,39 +6339,37 @@ function run() {
     }
   });
 
-  test("flipping the mirror does not wipe a collision refusal (queue row 115)", async () => {
-    /* Mirror is a layout OPTION, not a field: it cannot change what a seed
-       hashes to, so it cannot resolve a collision the registry vetoed.
-       updateParse() clears `refusal` unconditionally though, and the mirror
-       buttons called it directly - so flipping the mirror over a refused
-       seed silently cleared the red box and re-offered SAVE CHANGES for an
-       edit the app still refuses. */
+  test("flipping the mirror does not wipe a build refusal (queue row 115)", async () => {
+    /* The seed parses, but building produces no playable chords. Only a
+       real seed edit can clear this submit refusal; layout and pointer actions
+       must retain the actionable explanation and committed saved state. */
     try {
       await freshLoad();
       await b.setViewport(380, 780, true);
       await generate(EDIT_SCALE);
       await generate(COLLIDE_SCALE);
-      const before = await chipReport();
 
       await selectChipAt(1);
       await openEdit();
-      await typeScale(COLLIDE_SCALE);
-      await clickGenerate();
+      const savedBefore = await stageBuildRefusal();
+      await submitBuildRefusal(savedBefore);
 
       const refused = await sheetState();
-      assert.strictEqual(refused.bad, true, "the collision did not mark the box bad");
-      assert.match(refused.msg, /Another scale already has these notes/,
+      assert.strictEqual(refused.msg, BUILD_REFUSAL_TEXT,
         `the sheet says "${refused.msg}"`);
 
       await b.eval(`document.getElementById("scale-tab-layout").click(); return true;`);
       await b.eval(`document.getElementById("scale-mirror")
         .scrollIntoView({ block: "nearest", inline: "nearest" }); return true;`);
+      const mirrorBefore=await b.eval("return document.getElementById('scale-mirror').getAttribute('aria-pressed');");
+      assert.ok(["true","false"].includes(mirrorBefore),"mirror exposes its current pressed state");
       await b.click("#scale-mirror");
+      assert.strictEqual(await b.eval("return document.getElementById('scale-mirror').getAttribute('aria-pressed');"),
+        mirrorBefore==="true"?"false":"true","the real mirror control must actually flip");
 
       const after = await sheetState();
-      assert.strictEqual(after.bad, true,
-        "flipping the mirror cleared the collision's red box");
-      assert.match(after.msg, /Another scale already has these notes/,
+      await assertStandingBuildRefusal(savedBefore);
+      assert.strictEqual(after.msg, BUILD_REFUSAL_TEXT,
         `after flipping the mirror the sheet says "${after.msg}"`);
     } finally {
       await b.key("Escape", "Escape", 27);
@@ -6473,27 +6587,23 @@ function run() {
     }
   });
 
-  test("tapping a pan note does not wipe a collision refusal (queue row 115)", async () => {
-    /* previewLayout() re-derives the sheet on every layout tap so the mock
-       pan stays in sync, but a layout tap changes `order`, never the fields
-       a seed hashes to - it cannot fix a collision either, and calling
-       updateParse() from it dropped the refusal the same way the mirror
-       buttons did. */
+  test("tapping a pan note does not wipe a build refusal (queue row 115)", async () => {
+    /* The seed parses, but building produces no playable chords. Only a
+       real seed edit can clear this submit refusal; layout and pointer actions
+       must retain the actionable explanation and committed saved state. */
     try {
       await freshLoad();
       await b.setViewport(380, 780, true);
       await generate(EDIT_SCALE);
       await generate(COLLIDE_SCALE);
-      const before = await chipReport();
 
       await selectChipAt(1);
       await openEdit();
-      await typeScale(COLLIDE_SCALE);
-      await clickGenerate();
+      const savedBefore = await stageBuildRefusal();
+      await submitBuildRefusal(savedBefore);
 
       const refused = await sheetState();
-      assert.strictEqual(refused.bad, true, "the collision did not mark the box bad");
-      assert.match(refused.msg, /Another scale already has these notes/,
+      assert.strictEqual(refused.msg, BUILD_REFUSAL_TEXT,
         `the sheet says "${refused.msg}"`);
 
       await openDrawer();
@@ -6501,11 +6611,11 @@ function run() {
       const target = pan.notes.find(n => n !== pan.selected);
       assert.ok(target, `the pan drew nothing to tap: ${JSON.stringify(pan.notes)}`);
       await tapPanNote(target);
+      assert.strictEqual((await panState()).selected,target,"the real pan tap must select its target");
 
       const after = await sheetState();
-      assert.strictEqual(after.bad, true,
-        "tapping a pan note cleared the collision's red box");
-      assert.match(after.msg, /Another scale already has these notes/,
+      await assertStandingBuildRefusal(savedBefore);
+      assert.strictEqual(after.msg, BUILD_REFUSAL_TEXT,
         `after tapping a pan note the sheet says "${after.msg}"`);
     } finally {
       await b.key("Escape", "Escape", 27);
@@ -6513,31 +6623,26 @@ function run() {
     }
   });
 
-  test("editing the seed after a collision clears the refusal cleanly (queue row 116)", async () => {
-    /* Row 116's repro: the seed box is the ONE re-derive that can actually
-       resolve a collision, so updateParse() keeping `refusal = null` is
-       load-bearing there even though the other seven callers must not do
-       the same thing. Arm-then-cancel DELETE afterward and the sheet must
-       show nothing stale - a live SAVE CHANGES over a clean box and an
-       empty message, never the old collision text. */
+  test("editing the seed after a build refusal clears it cleanly (queue row 116)", async () => {
+    /* The seed parses, but building produces no playable chords. Only a
+       real seed edit can clear this submit refusal; layout and pointer actions
+       must retain the actionable explanation and committed saved state. */
     try {
       await freshLoad();
       await b.setViewport(380, 780, true);
       await generate(EDIT_SCALE);
       await generate(COLLIDE_SCALE);
-      const before = await chipReport();
 
       await selectChipAt(1);
       await openEdit();
-      await typeScale(COLLIDE_SCALE);
-      await clickGenerate();
+      const savedBefore = await stageBuildRefusal();
+      await submitBuildRefusal(savedBefore);
 
       const refused = await sheetState();
-      assert.strictEqual(refused.bad, true, "the collision did not mark the box bad");
-      assert.match(refused.msg, /Another scale already has these notes/,
+      assert.strictEqual(refused.msg, BUILD_REFUSAL_TEXT,
         `the sheet says "${refused.msg}"`);
 
-      await typeScale(SIX_SCALES[4]);   // a free scale: the collision is over
+      await typeScale(SIX_SCALES[4]);   // a playable seed resolves the build refusal
 
       await b.click("#scale-delete");   // arm DELETE on the now-clean seed
       assert.strictEqual(
@@ -6545,13 +6650,20 @@ function run() {
         true, "DELETE never armed");
       await clickPoint(8, 8);           // and cancel it
 
+      const action=await b.eval(`return {
+        enabled:!document.getElementById('scale-generate').disabled,
+        conflictHidden:document.getElementById('scale-conflict').hidden &&
+          document.getElementById('scale-conflict-separate').getClientRects().length===0};`);
+      assert.strictEqual(action.enabled,true,"the real SAVE CHANGES action re-enables after a playable seed edit");
+      assert.strictEqual(action.conflictHidden,true,"save-as-separate remains hidden without a concurrency conflict");
       const after = await sheetState();
+      await assertRefusalSavedUnchanged(savedBefore);
       assert.strictEqual(after.bad, false,
-        "the box is still marked bad after the collision was fixed");
+        "the box is still marked bad after the build refusal was fixed");
       assert.strictEqual(after.msg, "",
-        `the sheet still says "${after.msg}" after the collision was fixed`);
+        `the sheet still says "${after.msg}" after the build refusal was fixed`);
       assert.strictEqual(after.primaries, 1,
-        "SAVE CHANGES is not live after the collision was fixed");
+        "SAVE CHANGES is not live after the build refusal was fixed");
     } finally {
       await b.key("Escape", "Escape", 27);
       await b.setViewport(900, 900, false);
@@ -7307,7 +7419,9 @@ function run() {
     try {
       await freshLoad();
       await b.eval(`localStorage.setItem("hpfc", ${JSON.stringify(JSON.stringify({ deck: "kurd", mode: "A", hidden: ["amara10", "amara", "hijaz", "pygmy"] }))}); return true;`);
+      await clearSavedIdbForLegacyMigrationFixture();
       await navigate();
+      assert.deepStrictEqual((await nativeSavedEnvelope(b)).hidden,["amara10","amara","hijaz","pygmy"],"fixture actually migrates the four hidden seeds, leaving only Kurd");
       await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`, { label: "the chips" });
       await b.setViewport(380, 800, true);
       await openEdit();
@@ -10922,7 +11036,9 @@ function run() {
           await b.setViewport(w, h, false);
           await b.eval(`localStorage.clear();
             localStorage.setItem("hpfc", JSON.stringify({ mode: "S", deck: "custom:gone" })); return true;`);
+          await clearSavedIdbForLegacyMigrationFixture();
           await navigate();
+          assert.strictEqual(await b.eval("return document.querySelector('.announce').textContent;"),"That scale is gone. Showing D KURD 10.","fixture must produce the genuine missing-legacy-selection notice before the overlap measurement");
           await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`,
             { label: "deck chips to be built" });
           await b.eval(`return document.fonts.ready.then(() => true);`);
@@ -11111,8 +11227,16 @@ function run() {
           return true;
         `);
         await clickGenerate();
-        await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`,
-          { label: "the generated deck chip" });
+        await b.waitFor("document.getElementById('scale-sheet').hidden && selection.kind==='saved'",
+          { label: "the unsupported instrument's Generate acknowledgment" });
+        const generatedSelection=await b.eval("return {...selection};");
+        await nativeCommittedPreference(b,generatedSelection);
+        const generatedEnvelope=await nativeSavedEnvelope(b);
+        const generatedEntry=generatedEnvelope.entries.find(entry=>entry.instanceId===generatedSelection.id);
+        assert.ok(generatedEntry,"the intended generated scale has an actual committed saved instance");
+        assert.strictEqual(generatedEntry.record.s,"(C3) G3 D4 G4 D5","the empty-sequence case runs against its literal generated inventory");
+        assert.deepStrictEqual(generatedEnvelope.preferredSelection,generatedSelection);
+        assert.deepStrictEqual(await b.eval("return {...selection};"),generatedSelection,"the acknowledged scale stays selected before opening Settings");
         await openSettingsPanel();
         await b.click("#tier-basic");
         await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
@@ -11131,6 +11255,11 @@ function run() {
         await b.eval(`document.getElementById("card").click(); return true;`);
         await b.key("ArrowRight", "ArrowRight", 39);
         await b.settle();
+        assert.deepStrictEqual(await b.eval(`return {
+          front: document.getElementById("front").innerHTML,
+          back: document.getElementById("back").innerHTML,
+          countChildren: document.getElementById("count").children.length,
+        };`),m,"stepping and flipping an empty sequence leave its card and count unchanged");
       });
 
   });
@@ -11439,8 +11568,16 @@ function run() {
           return true;
         `);
         await clickGenerate();
-        await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`,
-          { label: "the generated deck chip" });
+        await b.waitFor("document.getElementById('scale-sheet').hidden && selection.kind==='saved'",
+          { label: "the tier fixture's real Generate acknowledgment" });
+        const generatedSelection=await b.eval("return {...selection};");
+        await nativeCommittedPreference(b,generatedSelection);
+        const generatedEnvelope=await nativeSavedEnvelope(b);
+        const generatedEntry=generatedEnvelope.entries.find(entry=>entry.instanceId===generatedSelection.id);
+        assert.ok(generatedEntry,"the tier fixture has an actual committed saved instrument");
+        assert.strictEqual(generatedEntry.record.s,"(D3) A3 C4 D4 E4 F4 G4 A4 C5","tier checks use the literal intended inventory");
+        assert.deepStrictEqual(generatedEnvelope.preferredSelection,generatedSelection);
+        assert.deepStrictEqual(await b.eval("return {...selection};"),generatedSelection,"the generated instrument stays selected before Settings opens");
         await openSettingsPanel();
         await b.click("#tier-basic");
         await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
@@ -11452,7 +11589,7 @@ function run() {
             { label: `tier ${t} to take effect` });
           const check = await b.eval(`
             return {
-              deckIsCustom: deckId.startsWith("custom:"),
+              deckIsCustom: selection.kind === "saved",
               empty: !(seq && seq.chords),
               reason: seq && seq.reason,
               tierOf: (seq && seq.chords) ? HPE.sequence.tierOf(deck(), seq.chords) : null,
@@ -11723,6 +11860,8 @@ function run() {
 
     test("card swipe: a mouse drag commits without flipping, a mouse click still flips, a short mouse drag springs back without flipping", async () => {
       await freshLoad();
+      assert.strictEqual(await b.eval("return Promise.resolve(savedReady).then(()=>booted);"),true,
+        "this post-boot drag/click case starts after actual saved initialization completes");
       const n = (await bootMeta()).chords;
       await b.drag("#card", [[-60, 100], [-120, 200]], { pointer: "mouse" });
       await b.finishAnimations();
@@ -12320,34 +12459,147 @@ function run() {
 
     test("card swipe: a mouse button released off-window during a drag is recognised and releases it", async () => {
       await freshLoad();
-      const box = await b.eval(`
-        const r = document.getElementById("card").getBoundingClientRect();
-        return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
-      `);
-      // A fresh test's first real press - same cross-test-boundary race as
-      // drag()/startDrag()/startMouseDrag(), see waitForPendingSettle.
+      const ready=await b.eval("return Promise.resolve(savedReady).then(()=>({booted,mode:savedMode}));");
+      assert.deepStrictEqual(ready,{booted:true,mode:"durable"},"the gesture starts after actual saved boot, not a transient initial render");
+      // A fresh test's first real press must drain any prior capture release.
       await b.waitForPendingSettle();
-      // Q15: a mouse button released outside the browser window (or a native
-      // context menu opened over it) delivers no pointerup/lostpointercapture
-      // at all - the OS eats it - and the drag stays live, following the
-      // pointer forever. A CDP mouseMoved with buttons: 0 after a left
-      // mousePressed arrives as a real pointermove with buttons === 0, which
-      // is the only signal available.
-      await b.send("Input.dispatchMouseEvent", { type: "mousePressed", x: box.x, y: box.y, button: "left", clickCount: 1 });
-      await b.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: box.x + 60, y: box.y, buttons: 0 });
-      const dragState = await b.eval(`return drag;`);
-      assert.strictEqual(dragState, null, "a pointermove with no buttons held must release a live mouse drag");
-      await b.finishAnimations();
-      const xf = await b.eval(`return getComputedStyle(document.querySelector(".scene")).transform;`);
-      assert.strictEqual(xf, "none", "the scene must settle with no inline transform");
-      // End the press for real (both to leave no stuck button state for later
-      // tests, and because this mouseup - same target throughout, since
-      // pointer capture kept routing to #card - is itself a genuine click:
-      // an extra explicit b.click() here would be a SECOND click, toggling
-      // the flip right back and hiding a real eatClick-stuck failure behind
-      // an even number of flips).
-      await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: box.x + 60, y: box.y, button: "left", clickCount: 1 });
-      assert.strictEqual(await cardFlipped(), true, "the release's own click must still flip the card, proving eatClick was not left stuck");
+      const box = await b.eval(`
+        const card=document.getElementById("card"),r=card.getBoundingClientRect();
+        const x=r.left+r.width/2,y=r.top+r.height/2,hit=document.elementFromPoint(x,y);
+        return {x,y,width:r.width,height:r.height,hit:!!hit&&(hit===card||card.contains(hit)),
+          usable:r.width>0&&r.height>0&&x>=0&&y>=0&&x<innerWidth&&y<innerHeight&&!card.closest('[inert]')};
+      `);
+      assert.strictEqual(box.usable,true,"the actual card is in view and not inert");
+      assert.strictEqual(box.hit,true,"the real press point must hit the card");
+      await b.eval(`window.__swMouseTransport=[];window.__swMousePhase='press';
+        window.__swMouseTypes=['pointerdown','pointermove','pointerup','pointercancel','gotpointercapture','lostpointercapture','mousedown','mousemove','mouseup','click'];
+        window.__swMouseObserver=e=>{const card=document.getElementById('card');
+          window.__swMouseTransport.push({phase:window.__swMousePhase,type:e.type,isTrusted:e.isTrusted,
+            pointerId:e.pointerId,pointerType:e.pointerType,isPrimary:e.isPrimary,button:e.button,buttons:e.buttons,
+            x:e.clientX,y:e.clientY,timeStamp:e.timeStamp,onCard:e.target===card||card.contains(e.target),
+            dragBefore:drag?{id:drag.id,pointerType:drag.pointerType}:null});};
+        for(const type of window.__swMouseTypes)document.addEventListener(type,window.__swMouseObserver,true);return true;`);
+      let realReleaseSent=false,problem=null;
+      try {
+        // Preserve the native CDP transport experiment. Its events establish
+        // whether this Chrome also supplies a competing release/capture signal.
+        await b.send("Input.dispatchMouseEvent", { type: "mousePressed", x: box.x, y: box.y, button: "left", clickCount: 1 });
+        const live=await b.eval("return drag?{id:drag.id,pointerType:drag.pointerType}:null;");
+        assert.ok(live,"a trusted press must establish a live drag before the zero-buttons move");
+        assert.strictEqual(live.pointerType,"mouse");
+        await b.eval("window.__swMousePhase='zero-buttons-move';return true;");
+        await b.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: box.x + 60, y: box.y, buttons: 0 });
+        const dragState = await b.eval(`return drag;`);
+        assert.strictEqual(dragState, null, "a pointermove with no buttons held must release a live mouse drag");
+        await b.finishAnimations();
+        const xf = await b.eval(`return getComputedStyle(document.querySelector(".scene")).transform;`);
+        assert.strictEqual(xf, "none", "the scene must settle with no inline transform");
+        // The release's own click is the next real click. An extra b.click()
+        // would toggle twice and could conceal a stuck eatClick state.
+        await b.eval("window.__swMousePhase='real-release';return true;");
+        await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: box.x + 60, y: box.y, button: "left", clickCount: 1 });
+        realReleaseSent=true;
+        assert.strictEqual(await cardFlipped(), true, "the release's own click must still flip the card, proving eatClick was not left stuck");
+      }catch(error){problem=error;throw error;}
+      finally {
+        try {
+          if(!realReleaseSent){
+            await b.eval("window.__swMousePhase='failure-cleanup-release';return true;");
+            await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: box.x + 60, y: box.y, button: "left", clickCount: 1 });
+          }
+          const transport=await b.eval(`for(const type of window.__swMouseTypes)document.removeEventListener(type,window.__swMouseObserver,true);
+            return {events:window.__swMouseTransport,finalDrag:drag?{id:drag.id,pointerType:drag.pointerType}:null,
+              booted,savedMode,visibility:document.visibilityState,focused:document.hasFocus(),
+              viewport:{width:innerWidth,height:innerHeight},phase:window.__swMousePhase};`);
+          console.log("MOUSE_BUTTON_TRANSPORT "+JSON.stringify(transport));
+        }catch(cleanupError){
+          console.log("MOUSE_BUTTON_TRANSPORT "+JSON.stringify({cleanupError:String(cleanupError)}));
+          if(!problem)throw cleanupError;
+        }
+      }
+
+      // Controlled missing-OS-release coverage. The native transport above is
+      // retained; this DOM event is explicitly untrusted and proves only the
+      // guard's same-pointer branch, not a physical off-window OS delivery.
+      await b.settle();
+      await b.waitForPendingSettle();
+      const controlledBefore = { count: await countText(), flipped: await cardFlipped() };
+      const controlledPoint = await b.eval(`
+        const card=document.getElementById('card'),r=card.getBoundingClientRect();
+        const x=r.left+r.width/2,y=r.top+r.height/2,hit=document.elementFromPoint(x,y);
+        window.__swControlledCard=card;window.__swControlledNative=[];
+        window.__swControlledObserver=e=>__swControlledNative.push({type:e.type,trusted:e.isTrusted,pointerId:e.pointerId,
+          pointerType:e.pointerType,button:e.button,buttons:e.buttons,isPrimary:e.isPrimary,timeStamp:e.timeStamp,
+          x:e.clientX,y:e.clientY,targetId:e.target.id||null,targetTag:e.target.tagName||null,
+          onCard:e.target===card||card.contains(e.target),sameCard:document.getElementById('card')===card,
+          captured:card.hasPointerCapture(e.pointerId),
+          dragBefore:drag?{id:drag.id,pointerType:drag.pointerType,moved:drag.moved,last:drag.last}:null});
+        window.__swControlledTypes=['pointerdown','pointermove','pointerup','pointercancel','gotpointercapture','lostpointercapture','mousedown','mousemove','mouseup','click'];
+        for(const type of __swControlledTypes)document.addEventListener(type,__swControlledObserver,true);
+        return {x,y,usable:!!card.getClientRects().length&&r.width>0&&r.height>0&&!card.closest('[inert]'),
+          hit:!!hit&&(hit===card||card.contains(hit)),inViewport:x>=0&&y>=0&&x<innerWidth&&y<innerHeight};
+      `);
+      assert.ok(controlledPoint.usable&&controlledPoint.hit&&controlledPoint.inViewport,"the controlled phase starts on an actually usable card");
+      let controlledPressAttempted=false,controlledReleased=false,controlledProblem=null;
+      try {
+        controlledPressAttempted=true;
+        await b.send("Input.dispatchMouseEvent",{type:"mousePressed",x:controlledPoint.x,y:controlledPoint.y,button:"left",clickCount:1});
+        const captured=await b.eval(`const card=document.getElementById('card');
+          return {id:drag?drag.id:null,pointerType:drag?drag.pointerType:null,captured:!!drag&&card.hasPointerCapture(drag.id),
+            sameCard:card===window.__swControlledCard,events:__swControlledNative};`);
+        assert.notStrictEqual(captured.id,null,"a fresh trusted press creates an actual live drag");
+        assert.strictEqual(captured.pointerType,"mouse");assert.strictEqual(captured.captured,true);assert.strictEqual(captured.sameCard,true);
+        assert.ok(captured.events.some(event=>event.type==='pointerdown'&&event.trusted&&event.pointerId===captured.id&&event.onCard),"the controlled drag begins with a trusted pointerdown on this card");
+        await b.send("Input.dispatchMouseEvent",{type:"mouseMoved",x:controlledPoint.x+24,y:controlledPoint.y,button:"left",buttons:1});
+        await b.waitFor(`drag&&drag.id===${JSON.stringify(captured.id)}&&drag.moved&&Math.abs(drag.last-24)<=1`,
+          {label:"the genuine buttons-one move establishes the captured drag"});
+        const moved=await sceneXform();assert.ok(Math.abs(moved.m41-24)<=1,"the captured trusted move visibly translates the card by24px");
+        const controlled=await b.eval(`const card=document.getElementById('card'),id=${JSON.stringify(captured.id)};
+          const before=drag?{id:drag.id,pointerType:drag.pointerType,moved:drag.moved,last:drag.last}:null;
+          const sameCard=card===window.__swControlledCard,captured=!!drag&&card.hasPointerCapture(drag.id);
+          if(!before||before.id!==id||before.pointerType!=='mouse'||!before.moved||Math.abs(before.last-24)>1||!sameCard||!captured){
+            const r=card.getBoundingClientRect(),hit=document.elementFromPoint(${controlledPoint.x+24},${controlledPoint.y});
+            const state={before,expectedId:id,sameCard,captured,connected:card.isConnected,
+              oldCardConnected:!!window.__swControlledCard&&__swControlledCard.isConnected,
+              nativeEvents:__swControlledNative,booted,savedMode,visibility:document.visibilityState,focused:document.hasFocus(),
+              panelOpen,sheetOpen,eatClick,flight:flight?{dir:flight.dir}:null,
+              viewport:{width:innerWidth,height:innerHeight},rect:{x:r.x,y:r.y,width:r.width,height:r.height},
+              hit:{id:hit?.id||null,tag:hit?.tagName||null,onCard:!!hit&&(hit===card||card.contains(hit))},
+              sceneTransform:getComputedStyle(document.querySelector('.scene')).transform,
+              animations:document.querySelector('.scene').getAnimations().map(a=>({playState:a.playState,currentTime:a.currentTime}))};
+            console.log('MOUSE_BUTTON_CONTROLLED_SETUP_FAILURE '+JSON.stringify(state));
+            throw new Error('controlled move requires the same actually moved captured mouse drag; state='+JSON.stringify(state));
+          }
+          const events=[],observe=e=>events.push({type:e.type,trusted:e.isTrusted,pointerId:e.pointerId,pointerType:e.pointerType,buttons:e.buttons,onCard:e.target===card});
+          const types=['pointermove','pointerup','lostpointercapture','pointercancel'];for(const type of types)card.addEventListener(type,observe,true);
+          const event=new PointerEvent('pointermove',{pointerId:id,pointerType:'mouse',isPrimary:true,button:-1,buttons:0,
+            clientX:${controlledPoint.x+60},clientY:${controlledPoint.y},bubbles:true,cancelable:true});
+          try{card.dispatchEvent(event);}finally{for(const type of types)card.removeEventListener(type,observe,true);}
+          return {before,sameCard,captured,syntheticTrusted:event.isTrusted,nativeEvents:__swControlledNative,events,
+            after:drag?{id:drag.id,pointerType:drag.pointerType,moved:drag.moved,last:drag.last}:null};`);
+        console.log("MOUSE_BUTTON_CONTROLLED " + JSON.stringify({scope:"real trusted moved/captured drag; untrusted same-task missing-release DOM signal; not physical OS coverage",controlled}));
+        assert.ok(controlled.nativeEvents.some(event=>event.type==='pointermove'&&event.trusted&&event.pointerId===captured.id&&event.buttons===1&&event.onCard),"the precondition includes a genuine buttons-one pointermove on the captured card");
+        assert.strictEqual(controlled.syntheticTrusted,false,"the controlled missing-release signal is honestly synthetic");
+        assert.deepStrictEqual(controlled.events,[{type:"pointermove",trusted:false,pointerId:captured.id,pointerType:"mouse",buttons:0,onCard:true}],
+          "no pointerup, lost capture or cancellation may compete in the same dispatch task");
+        assert.strictEqual(controlled.after,null,"the isolated buttons-zero signal must release the same live mouse drag");
+        assert.strictEqual(await countText(),controlledBefore.count,"controlled cancellation cannot navigate");
+        await b.finishAnimations();await b.settle();
+        assert.strictEqual((await sceneXform()).none,true,"the controlled cancellation's spring settles completely");
+        assert.strictEqual(await countText(),controlledBefore.count,"the settled cancelled drag keeps its card");
+        assert.strictEqual(await cardFlipped(),controlledBefore.flipped,"the controlled signal does not itself flip the card");
+        await b.releasing(()=>b.send("Input.dispatchMouseEvent",{type:"mouseReleased",x:controlledPoint.x+60,y:controlledPoint.y,button:"left",clickCount:1}));
+        controlledReleased=true;
+        assert.strictEqual(await cardFlipped(),!controlledBefore.flipped,"the next genuine release click still flips relative to the pre-phase state");
+        assert.strictEqual(await countText(),controlledBefore.count,"the genuine release after cancellation does not navigate");
+      }catch(error){controlledProblem=error;throw error;}
+      finally {
+        try {
+          if(controlledPressAttempted&&!controlledReleased)await b.releasing(()=>b.send("Input.dispatchMouseEvent",{type:"mouseReleased",x:controlledPoint.x+60,y:controlledPoint.y,button:"left",clickCount:1}));
+          await b.waitForPendingSettle();
+          await b.eval("if(window.__swControlledObserver)for(const type of window.__swControlledTypes||[])document.removeEventListener(type,__swControlledObserver,true);return true;");
+        }catch(cleanupError){console.log("MOUSE_BUTTON_CONTROLLED_CLEANUP " + JSON.stringify({error:String(cleanupError)}));if(!controlledProblem)throw cleanupError;}
+      }
     });
 
     test("card swipe: a synthetic contextmenu on #card releases a live drag", async () => {
@@ -13131,19 +13383,42 @@ function run() {
       }
 
       test("card swipe (mouse momentum): a fast release flies on at its release speed, leaves the viewport, then the next card enters", async () => {
+        async function waitForLiveSample() {
+          try {
+            await b.waitFor(`window.__anims.length >= 1 && window.__anims[0].sample !== null`,
+              { label: "the out animation's live RAF sample to be taken" });
+          } catch(error) {
+            let state;
+            try {
+              state=await b.eval(`const scene=document.querySelector('.scene');
+                const animationState=a=>({currentTime:a.currentTime,playState:a.playState,pending:a.pending,
+                  timing:a.effect?a.effect.getTiming():null,computedTiming:a.effect?a.effect.getComputedTiming():null});
+                return {viewport:{width:innerWidth,height:innerHeight,visualWidth:visualViewport.width,visualHeight:visualViewport.height},
+                  visibility:document.visibilityState,focus:document.hasFocus(),
+                  reducedMotion:matchMedia('(prefers-reduced-motion: reduce)').matches,
+                  panelOpen:typeof panelOpen==='undefined'?null:panelOpen,sheetOpen:typeof sheetOpen==='undefined'?null:sheetOpen,
+                  orderLength:typeof order==='undefined'?null:order.length,savedMode:typeof savedMode==='undefined'?null:savedMode,
+                  flight:typeof flight==='undefined'||!flight?null:{dir:flight.dir,animation:animationState(flight.anim)},
+                  sceneAnimations:scene?scene.getAnimations().map(animationState):[],recorded:window.__anims||null};`);
+            }catch(diagnosticError){state={diagnosticError:String(diagnosticError)};}
+            console.log("MOMENTUM_FAILURE_STATE "+JSON.stringify(state));
+            throw error;
+          }
+        }
         async function flick(width, height, legs, v) {
-          await b.setViewport(width, height, false);
           try {
             await freshLoad();
+            await b.setViewport(width, height, false);
+            assert.deepStrictEqual(await b.eval("return {width:innerWidth,height:innerHeight};"),{width,height},
+              "the momentum case uses its advertised viewport after freshLoad");
             const n = (await bootMeta()).chords;
             await installRecorder();
             await b.drag("#card", legs, { pointer: "mouse" });
-            await b.waitFor(`window.__anims.length >= 1 && window.__anims[0].sample !== null`,
-              { label: "the out animation's 30ms sample to be taken" });
+            await waitForLiveSample();
             const out = (await recordedAnims())[0];
-            assert.ok(out.sample, "the 30ms sample must have been taken");
+            assert.ok(out.sample, "the live RAF sample must have been taken");
             assert.strictEqual(out.sample.alive, true,
-              "the flight must still be live 30ms after release (D180-7)");
+              "the flight must still be live at the sampled animation frame (D180-7)");
             assert.ok(out.sample.currentTime > 0, "currentTime must not be 0 (an animation frame must have run)");
             const dx = dxOf(out.kf);
             const liveV = (out.sample.m41 - dx) / out.sample.currentTime;
@@ -13181,16 +13456,17 @@ function run() {
 
         // The rightward (dir = -1) leg runs from the SECOND card, reached by
         // one #next click, so the "go back" path is covered too.
-        await b.setViewport(1024, 700, false);
         try {
           await freshLoad();
+          await b.setViewport(1024, 700, false);
+          assert.deepStrictEqual(await b.eval("return {width:innerWidth,height:innerHeight};"),{width:1024,height:700},
+            "the rightward momentum case uses its advertised viewport after freshLoad");
           await b.click("#next");
           await b.waitFor(`(document.getElementById("count").textContent || "").trim() === "2 / ${(await bootMeta()).chords}"`,
             { label: "the #next click to land" });
           await installRecorder();
           await b.drag("#card", [[40, 16], [100, 32], [180, 48]], { pointer: "mouse" });
-          await b.waitFor(`window.__anims.length >= 1 && window.__anims[0].sample !== null`,
-            { label: "the out animation's 30ms sample to be taken" });
+          await waitForLiveSample();
           const out = (await recordedAnims())[0];
           assert.strictEqual(out.sample.alive, true);
           assert.ok(out.sample.currentTime > 0, "currentTime must not be 0 (an animation frame must have run)");
@@ -13647,6 +13923,7 @@ function run() {
   test("a deleted seeded deck stays gone across a reload at 380px", async () => {
     try {
       await freshLoad();
+      const legacyBefore=await nativeLegacySavedSources(b);
       await b.setViewport(380, 780, true);
       const meta = await decksMeta();
       const kurd = await bootMeta(meta);
@@ -13660,8 +13937,8 @@ function run() {
         { label: "chips after reload" });
       const after = await chipTexts();
       assert.deepStrictEqual(after, before, "the reload changed the chip strip");
-      assert.deepStrictEqual(await b.eval(`return JSON.parse(localStorage.getItem("hpfc")).hidden;`),
-        [kurd.id], "the deleted list is not stored");
+      assert.deepStrictEqual((await nativeSavedEnvelope(b)).hidden,[kurd.id],"the deleted list is not stored in IDB");
+      assert.deepStrictEqual(await nativeLegacySavedSources(b),legacyBefore,"deletion preserves the original legacy recovery sources");
     } finally {
       await b.setViewport(900, 900, false);
     }
@@ -13717,7 +13994,9 @@ function run() {
       await freshLoad();
       await b.setViewport(320, 568, true);
       await b.eval(`localStorage.setItem("hpfc", JSON.stringify({ deck: "pygmy", mode: "A" })); return true;`);
+      await clearSavedIdbForLegacyMigrationFixture();
       await navigate();
+      assert.deepStrictEqual((await nativeSavedEnvelope(b)).preferredSelection,{kind:"builtin",id:"pygmy"},"fixture actually migrates the selected Pygmy before measuring its DELETE arming note");
       await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`, { label: "chips" });
       await openEdit();
       await b.click("#scale-delete");
@@ -13743,6 +14022,7 @@ function run() {
   test("RESET SEEDED DECKS is absent until a seeded deck is edited or deleted, arms, and restores all five", async () => {
     try {
       await freshLoad();
+      const legacyBefore=await nativeLegacySavedSources(b);
       await b.setViewport(380, 780, true);
       const meta = await decksMeta();
       const probe = () => b.eval(`
@@ -13782,8 +14062,8 @@ function run() {
       await b.waitFor(`document.getElementById("deck-restore").hasAttribute("hidden")`,
         { label: "the reset control to go away" });
       assert.strictEqual((await chipTexts()).length, meta.length, "restore did not bring back every deck");
-      assert.strictEqual(await b.eval(`return JSON.parse(localStorage.getItem("hpfc")).hidden;`), undefined,
-        "the hidden list is still stored");
+      assert.deepStrictEqual((await nativeSavedEnvelope(b)).hidden,[],"the hidden list is still stored in IDB");
+      assert.deepStrictEqual(await nativeLegacySavedSources(b),legacyBefore,"RESET preserves legacy recovery source bytes");
       assert.strictEqual(await b.eval(`return document.activeElement.id;`), "deck-add");
     } finally {
       await b.setViewport(900, 900, false);
@@ -13823,6 +14103,7 @@ function run() {
   test("SD: RESET arms, then restores all five at 380px and focuses #deck-add", async () => {
     try {
       await freshLoad();
+      const legacyBefore=await nativeLegacySavedSources(b);
       await b.setViewport(380, 780, true);
       const meta = await decksMeta();
       const seeded = await b.eval(`return DECKS.map(d => chipLabel(d.name));`);
@@ -13848,10 +14129,10 @@ function run() {
 
       await openSettingsPanel();
       await b.click("#deck-restore");
-      const armed = await b.eval(`
-        const el = document.getElementById("deck-restore");
-        return { text: el.textContent.trim(), armed: el.hasAttribute("data-armed"), hidden: el.hasAttribute("hidden"),
-                 stored: JSON.parse(localStorage.getItem("hpfc")).hidden, reps: Object.keys(replacements()).length };`);
+      const armed = await b.eval(`return ${nativeSavedExpression()}.then(persisted=>{
+        const el=document.getElementById("deck-restore");
+        return {text:el.textContent.trim(),armed:el.hasAttribute("data-armed"),hidden:el.hasAttribute("hidden"),
+          stored:JSON.parse(persisted.raw).hidden,reps:Object.keys(replacements()).length};});`);
       assert.deepStrictEqual([armed.text, armed.armed, armed.hidden], ["TAP AGAIN TO RESET", true, false],
         "the first tap did not arm RESET");
       assert.strictEqual(armed.stored.length, 1, "the first tap already changed the stored hidden list");
@@ -13862,11 +14143,10 @@ function run() {
         { label: "the reset control to go away" });
       assert.deepStrictEqual(await chipTexts(), seeded, "RESET did not restore the five seeded chips in order");
       assert.strictEqual(await b.eval(`return Object.keys(replacements()).length;`), 0, "a replacement survived RESET");
-      assert.strictEqual(await b.eval(`return JSON.parse(localStorage.getItem("hpfc")).hidden;`), undefined,
-        "the hidden list is still stored");
+      assert.deepStrictEqual((await nativeSavedEnvelope(b)).hidden,[],"the hidden list is still stored in IDB");
+      assert.deepStrictEqual(await nativeLegacySavedSources(b),legacyBefore,"RESET preserves legacy recovery source bytes");
       assert.strictEqual(await b.eval(`return document.activeElement.id;`), "deck-add");
-      assert.strictEqual(await b.eval(`return (JSON.parse(localStorage.getItem(SCALES_KEY)) || [])
-        .filter((r) => r && r.o && r.o.replaces).length;`), 0, "a stored record still names a seed after RESET");
+      assert.strictEqual((await nativeSavedEnvelope(b)).entries.filter(row=>row.record?.o?.replaces).length,0,"a stored record still names a seed after RESET");
     } finally {
       await b.setViewport(900, 900, false);
     }
@@ -14052,15 +14332,14 @@ function run() {
         await b.settle();
         const m = await b.eval(`
           const chip = document.querySelector("#decks .chip.on");
-          let stored = null;
-          try { stored = JSON.parse(localStorage.getItem("hpfc")).deck; } catch (e) {}
-          return { hash: location.hash, search: location.search, chip: chip ? chip.textContent : null, stored,
+          return { hash: location.hash, search: location.search, chip: chip ? chip.textContent : null,
                    sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth };
         `);
         assert.strictEqual(m.hash, "#deck=f-low-pygmy-18");
         assert.strictEqual(m.search, "?r=route");
         assert.match(m.chip, /pygmy/i);
-        assert.strictEqual(m.stored, "pygmy");
+        assert.deepStrictEqual(await nativeCommittedPreference(b,{kind:"builtin",id:"pygmy"}),{kind:"builtin",id:"pygmy"});
+        assert.strictEqual((await stored())?.deck,undefined,"routed selection preserves the absent legacy hpfc.deck");
         assert.ok(m.sw <= m.cw + 1, "horizontal overflow at 380px");
       } finally {
         await b.setViewport(900, 900, false);
@@ -14079,15 +14358,14 @@ function run() {
         await b.click('#about a[href="#deck=c-sharp-hijaz-9"]');
         await b.waitFor(`/hijaz/i.test((document.querySelector("#decks .chip.on") || {}).textContent || "")`, { label: "Hijaz chip on" });
         const m = await b.eval(`
-          let stored = null;
-          try { stored = JSON.parse(localStorage.getItem("hpfc")).deck; } catch (e) {}
-          return { hash: location.hash, kept: window.__noReload === true, stored,
+          return { hash: location.hash, kept: window.__noReload === true,
                    navs: performance.getEntriesByType("navigation").length };
         `);
         assert.strictEqual(m.hash, "#deck=c-sharp-hijaz-9");
         assert.strictEqual(m.kept, true, "the page reloaded");
         assert.strictEqual(m.navs, 1);
-        assert.strictEqual(m.stored, "hijaz");
+        assert.deepStrictEqual(await nativeCommittedPreference(b,{kind:"builtin",id:"hijaz"}),{kind:"builtin",id:"hijaz"});
+        assert.strictEqual((await stored())?.deck,undefined,"About navigation preserves the absent legacy hpfc.deck");
       } finally {
         await b.setViewport(900, 900, false);
       }
@@ -14564,20 +14842,20 @@ function run() {
       await b.settle();
       const pre = await href();
       assert.match(await hash(), /^#s=/);
-      const id = await b.eval(`return deckId`);
+      const id = await b.eval(`return selection.id`);
       await openSheet();
       assert.strictEqual(await hash(), "#add");
       await b.click("#scale-back");
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet to close" });
       await b.waitFor(`location.href === ${JSON.stringify(pre)}`, { label: "the bar to return to the custom deck's link" });
-      assert.strictEqual(await b.eval(`return deckId`), id);
+      assert.strictEqual(await b.eval(`return selection.id`), id);
     });
 
     test("edge 4: SAVE with new fields rewrites the bar to the new code and nothing re-imports the old one", async () => {
       await freshLoad();
       await generate(SIX_SCALES[1]);
       await b.settle();
-      const before = await b.eval(`return { hash: location.hash, id: deckId, chips: document.querySelectorAll("#decks .chip:not(#deck-add)").length }`);
+      const before = await b.eval(`return { hash: location.hash, id: selection.id, inventory:deck().id, chips: document.querySelectorAll("#decks .chip:not(#deck-add)").length }`);
       assert.match(before.hash, /^#s=/);
       await b.eval(`window.__hc = 0; window.addEventListener("hashchange", () => { window.__hc++; }); return true`);
       await b.click("#decks .chip.on");
@@ -14586,9 +14864,10 @@ function run() {
       await b.waitFor(`location.hash !== ${JSON.stringify(before.hash)} && location.hash.indexOf("#s=") === 0`, { label: "the bar to carry the new code" });
       await b.settle();
       await new Promise((r) => setTimeout(r, 300));
-      const after = await b.eval(`return { hash: location.hash, id: deckId, chips: document.querySelectorAll("#decks .chip:not(#deck-add)").length,
-        want: "#s=" + shareCode(CUSTOM[deckId]).value }`);
-      assert.notStrictEqual(after.id, before.id, "the new fields did not give the deck a new id");
+      const after = await b.eval(`return { hash: location.hash, id: selection.id, inventory:deck().id, chips: document.querySelectorAll("#decks .chip:not(#deck-add)").length,
+        want: "#s=" + shareCode(selectedDeck()).value }`);
+      assert.strictEqual(after.id,before.id,"Edit preserves the stable local instance");
+      assert.notStrictEqual(after.inventory,before.inventory,"different fields change the canonical inventory id");
       assert.strictEqual(after.hash, after.want, "the bar does not carry the shown deck's own code");
       assert.strictEqual(after.chips, before.chips, "a stale hashchange re-imported the old deck as a second chip");
       assert.notStrictEqual(after.hash, before.hash);
@@ -15849,7 +16128,9 @@ function run() {
     const spcEdit = async (w = 844, h = 390) => {
       await freshLoad();
       await b.eval(`localStorage.setItem("hpfc", ${JSON.stringify(JSON.stringify({ deck: "kurd", mode: "A", hidden: ["amara10", "amara", "hijaz", "pygmy"] }))}); return true;`);
+      await clearSavedIdbForLegacyMigrationFixture();
       await navigate();
+      assert.deepStrictEqual((await nativeSavedEnvelope(b)).hidden,["amara10","amara","hijaz","pygmy"],"fixture actually migrates the four hidden seeds, leaving only Kurd");
       await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`, { label: "the chips" });
       await b.setViewport(w, h, true);
       await b.settle();
@@ -17821,9 +18102,22 @@ function run() {
             assert.ok(flashed >= 2, `${tag}: flash count ${flashed}`);
           }
           await b.eval(`document.getElementById("scale-generate").click(); return 1;`);
+          await b.waitFor("document.getElementById('scale-sheet').hidden && selection.kind==='saved'",
+            { label: "the rearranged Pygmy's real Generate acknowledgment" });
+          const generatedSelection=await b.eval("return {...selection};");
+          await nativeCommittedPreference(b,generatedSelection);
+          const generatedEnvelope=await nativeSavedEnvelope(b);
+          const generatedEntry=generatedEnvelope.entries.find(entry=>entry.instanceId===generatedSelection.id);
+          assert.ok(generatedEntry,`${tag}: the rearranged Pygmy has a committed saved instance`);
+          assert.strictEqual(generatedEntry.record.s,"[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]",
+            `${tag}: the saved instance has the complete literal Pygmy inventory`);
+          assert.deepStrictEqual(generatedEnvelope.preferredSelection,generatedSelection);
+          assert.deepStrictEqual(await b.eval("return {...selection};"),generatedSelection,`${tag}: the acknowledged Pygmy stays selected`);
           await b.settle();
-          const bbm = await b.eval(`const d = Object.values(CUSTOM)[0]; const ch = d.chords.find((c) => c.main + (c.sup || "") === "Bbm"); return ch.fields.map((x) => d.fields[x][5]).join("-");`);
-          assert.strictEqual(bbm, "U4-U2-5", tag);
+          const bbm = await b.eval(`const d = selectedDeck(); const ch = d.chords.find((c) => c.main + (c.sup || "") === "Bbm");
+            return {found:!!ch,numbers:ch?ch.fields.map((x) => d.fields[x][5]).join("-"):null};`);
+          assert.strictEqual(bbm.found,true,`${tag}: the acknowledged Pygmy must contain its Bbm chord`);
+          assert.strictEqual(bbm.numbers, "U4-U2-5", tag);
         }
       } finally { await b.clearKeyboard().catch(() => {}); await b.setViewport(900, 900, false); }
     });
@@ -17889,15 +18183,16 @@ function run() {
       await new Promise(resolve => setTimeout(resolve, 0));
       return true;
     })();`);
-    const snapshot = () => b.eval(`
-      const input = document.getElementById("share-url");
+    const snapshot = () => b.eval(`return ${nativeSavedExpression()}.then(persisted=>{
+      const saved=JSON.parse(persisted.raw),input = document.getElementById("share-url");
       return { hidden: input.hidden, value: input.value, focus: document.activeElement.id,
         notice: document.querySelector(".announce").textContent,
         start: input.selectionStart, end: input.selectionEnd, readonly: input.readOnly,
         href: location.href, options: deck().options.angles.bottom,
-        records: JSON.parse(localStorage.getItem(SCALES_KEY)),
+        records: saved.entries,
+        selectedRecord: saved.entries.find(row=>row.instanceId===selection.id).record,
         calls: __shc.calls.map(c => ({payload:c.payload,href:c.href})), order: __shc.order.slice() };
-    `);
+    });`);
     const showFine = async () => {
       await enterLayout();
       await trustedClick("#scale-fine-toggle");
@@ -17936,7 +18231,7 @@ function run() {
       await clickLink(2);
       const before = await snapshot();
       assert.deepStrictEqual(before.options, expectedOptions);
-      assert.deepStrictEqual(before.records[0].o.angles.bottom, expectedOptions);
+      assert.deepStrictEqual(before.selectedRecord.o.angles.bottom, expectedOptions);
       assert.strictEqual(before.calls[0].payload, URL + query + HASH, "A captures the original public fixture");
       assert.strictEqual(before.calls[1].payload, before.calls[1].href, "B captures literal invocation href");
       assert.strictEqual(before.calls[1].payload, before.href);
@@ -17970,7 +18265,7 @@ function run() {
       await b.waitFor(`document.querySelector("#decks .chip.on") && location.hash.startsWith("#s=6/")`, { label: "SHC fresh receiver import" });
       assert.strictEqual(await b.eval(`return window.__shcReceiverBefore;`), 0, "fresh receiver has no inherited sender storage");
       assert.deepStrictEqual(await b.eval(`return deck().options.angles.bottom;`), expectedOptions);
-      assert.deepStrictEqual(await b.eval(`return JSON.parse(localStorage.getItem(SCALES_KEY))[0].o.angles.bottom;`), expectedOptions);
+      assert.deepStrictEqual(await b.eval(`return ${nativeSavedExpression()}.then(saved=>JSON.parse(saved.raw).entries.find(row=>row.instanceId===selection.id).record.o.angles.bottom);`), expectedOptions);
       assert.strictEqual(await b.eval(`return !!document.querySelector("#card .diagwrap svg");`), true,
         "receiver practice card contains diagram SVG (DOM presence, not visible ink)");
       await enterEdit(); await enterLayout();
@@ -18034,6 +18329,561 @@ function run() {
       }
     });
   });
+
+  /* SAVED-SCALE-VARIANTS — six actual browser groups. Two-target tests use one
+   * owned Chrome/profile and real Web Locks, not two isolated launch() profiles.
+   * Peer RPCs reuse the existing driver's pending map. rawSend creates its CDP
+   * payload synchronously; restore sessionId before awaiting any response.
+   * Root alone executes this suite under the serialized host-browser lease.
+   */
+  {
+    const SV = JSON.parse(fs.readFileSync(path.join(REPO,"tests/fixtures/saved_variants_v1.json"),"utf8"));
+    const KEY="hpfc.saved-scales.v1",LOCK="handpan-cards:saved-scales:v1";
+    const clone=v=>JSON.parse(JSON.stringify(v));
+    const uid=n=>`00000000-0000-4000-8000-${String(n).padStart(12,"0")}`;
+    const makeEnvelope=(records,extra={})=>({schema:1,collectionId:SV.ids.collectionA,revision:1,slotStateRevision:0,
+      entries:records.map((record,i)=>({instanceId:uid(i+1),revision:1,displayOrdinal:i+1,record:clone(record)})),
+      usedInstanceIds:records.map((_,i)=>uid(i+1)),nextDisplayOrdinal:records.length+1,
+      preferredSelection:records.length?{kind:"saved",id:uid(1)}:{kind:"builtin",id:"kurd"},slots:{},hidden:[],
+      migration:{sourceKey:null,raw:{hpfc:null,"hpfc.scales":null,"hpfc.scales.v3":null},instanceIds:[]},...clone(extra)});
+    function session(id,owner=b) {
+      const send=(method,params={})=>{const previous=owner.sessionId;owner.sessionId=id;
+        try{return owner.rawSend(method,params);}finally{owner.sessionId=previous;}};
+      const evaluate=async body=>{const r=await send("Runtime.evaluate",{expression:`(() => { ${body} })()`,awaitPromise:true,returnByValue:true});
+        assert.ok(!r.exceptionDetails,"SV page evaluation must complete without an uncaught error: "+JSON.stringify(r.exceptionDetails));return r.result.value;};
+      const wait=async(expr,label,timeout=5000)=>{const deadline=Date.now()+timeout;for(;;){if(await evaluate(`return Promise.resolve(${expr}).then(Boolean);`))return;
+        if(Date.now()>deadline)throw new Error("SV readiness deadline: "+label);await sleep(20);}};
+      const click=async selector=>{await send("Page.bringToFront");
+        const point=await evaluate(`const el=document.querySelector(${JSON.stringify(selector)});if(!el)return null;
+          el.scrollIntoView({block:'nearest',inline:'nearest',behavior:'instant'});const r=el.getBoundingClientRect();
+          const x=r.left+r.width/2,y=r.top+r.height/2,hit=document.elementFromPoint(x,y);
+          return {x,y,w:r.width,h:r.height,hit:!!hit&&(el===hit||el.contains(hit)),disabled:el.disabled===true};`);
+        const usable=await evaluate(`const el=document.querySelector(${JSON.stringify(selector)});if(!el)return false;
+          for(let n=el;n;n=n.parentElement){const s=getComputedStyle(n);if(s.display==='none'||s.visibility==='hidden'||Number(s.opacity)===0)return false;}
+          const r=el.getBoundingClientRect();return !el.closest('[inert]')&&r.left+r.width/2>=0&&r.top+r.height/2>=0&&r.left+r.width/2<innerWidth&&r.top+r.height/2<innerHeight;`);
+        assert.ok(point&&point.w>0&&point.h>0&&point.hit&&!point.disabled&&usable,"SV trusted click target must be visible/enabled/not inert and hit-testable: "+selector);
+        await send("Input.dispatchMouseEvent",{type:"mousePressed",x:point.x,y:point.y,button:"left",clickCount:1});
+        await send("Input.dispatchMouseEvent",{type:"mouseReleased",x:point.x,y:point.y,button:"left",clickCount:1});};
+      const type=async(selector,text)=>{await click(selector);await send("Input.dispatchKeyEvent",{type:"keyDown",key:"a",code:"KeyA",commands:["selectAll"]});
+        await send("Input.dispatchKeyEvent",{type:"keyUp",key:"a",code:"KeyA"});await send("Input.insertText",{text});};
+      const key=async(key,code,keyCode)=>{await send("Page.bringToFront");
+        for(const type of key==="Enter"?["rawKeyDown","char","keyUp"]:["keyDown","keyUp"])
+          await send("Input.dispatchKeyEvent",{type,key,code,...(type==="char"?{text:"\r",unmodifiedText:"\r"}:{}),windowsVirtualKeyCode:keyCode,nativeVirtualKeyCode:keyCode});};
+      return {id,send,eval:evaluate,wait,click,type,key};
+    }
+    const read=p=>nativeSavedEnvelope(p);
+    const importRecord=(p,record)=>p.eval(`const r=${JSON.stringify(record)},s=HPE.core.parseSeed(r.s);
+      const code=HPE.share.encode({fields:s.value.fields,options:r.o||{}});return openShare(code.value);`);
+    const commit=(p,cmd,record)=>p.eval(`const command=${JSON.stringify(cmd)};
+      ${record?`const r=${JSON.stringify(record)},built=buildGenerated(r.s,r.o||{});if(!built.ok)return built;
+        command.candidate={record:scaleRecord(seedOf(built.value)),deck:built.value};`:""}
+      return commitSaved(command);`);
+    const scope=e=>({slotStateRevision:e.slotStateRevision,slots:clone(e.slots),hidden:clone(e.hidden),
+      replacements:e.entries.filter(x=>x.record?.v===4&&x.record.o?.replaces==="kurd")
+        .map(x=>({id:x.instanceId,revision:x.revision}))});
+    async function withTwo(records,extra,body) {
+      await freshLoad();await b.setViewport(1280,800,false);
+      if(records){await b.eval(`return ${nativeSavedExpression({write:true,raw:JSON.stringify(makeEnvelope(records,extra))})};`);await navigate();}
+      const primary=session(b.sessionId);let targetId=null;
+      try {
+        const first=await primary.send("Target.getTargetInfo");
+        ({targetId}=await b.send("Target.createTarget",{url:"about:blank"},false));
+        const attached=await b.send("Target.attachToTarget",{targetId,flatten:true},false),peer=session(attached.sessionId);
+        assert.notStrictEqual(peer.id,primary.id,"actual distinct CDP sessions are required");
+        assert.notStrictEqual(targetId,first.targetInfo.targetId,"actual distinct targets are required");
+        await peer.send("Page.enable");await peer.send("Runtime.enable");await peer.send("Network.enable");
+        await peer.send("Network.setBlockedURLs",{urls:b.blockedUrls});
+        await peer.send("Emulation.setDeviceMetricsOverride",{width:1280,height:800,deviceScaleFactor:1,mobile:false});
+        await peer.send("Page.navigate",{url:URL});
+        await peer.wait(APP_READY_EXPR,"peer document boot");
+        assert.strictEqual(await primary.eval("return location.origin;"),await peer.eval("return location.origin;"),"actual targets share the loopback origin");
+        assert.deepStrictEqual(await read(peer),await read(primary),"both actual targets observe the same completed IDB current record");
+        console.log("SV_TARGETS "+JSON.stringify({first:first.targetInfo.targetId,second:targetId,distinctSessions:true,sharedOrigin:true}));
+        await body(primary,peer);
+      } finally {if(targetId)await b.send("Target.closeTarget",{targetId},false);}
+    }
+    async function openEdit(p) {await p.click("#decks .chip.on");await p.wait("!document.getElementById('scale-sheet').hidden","Edit open");}
+    async function save(p) {await p.click("#scale-generate");await p.wait("document.getElementById('scale-sheet').hidden","saved sheet closed");
+      await p.wait("location.hash===routeFor(deck())","saved canonical route");}
+    async function hold(p) {
+      await p.eval(`window.__svHeld=false;window.__svRelease=null;
+        window.__svBarrier=navigator.locks.request(${JSON.stringify(LOCK)},()=>{window.__svHeld=true;
+          return new Promise(resolve=>{window.__svRelease=resolve;});});return true;`);
+      await p.wait("window.__svHeld===true","real exclusive barrier acquired");
+    }
+    const release=p=>p.eval("if(window.__svRelease)window.__svRelease();return true;");
+    async function openPeer(owner) {
+      const {targetId}=await owner.send("Target.createTarget",{url:"about:blank"},false);
+      try {
+        const {sessionId}=await owner.send("Target.attachToTarget",{targetId,flatten:true},false),p=session(sessionId,owner);
+        assert.notStrictEqual(sessionId,owner.sessionId,"barrier must be owned by another actual target/session");
+        await p.send("Page.enable");await p.send("Runtime.enable");await p.send("Network.enable");
+        await p.send("Network.setBlockedURLs",{urls:owner.blockedUrls});await p.send("Page.navigate",{url:URL});
+        await p.wait(APP_READY_EXPR,"actual peer barrier document");
+        return {p,close:()=>owner.send("Target.closeTarget",{targetId},false)};
+      } catch(error){await owner.send("Target.closeTarget",{targetId},false);throw error;}
+    }
+    async function ink(p,selector,{text,control=false,live=false}={}) {
+      await p.send("Page.bringToFront");
+      await p.eval(`const n=document.querySelector(${JSON.stringify(selector)});if(n)n.scrollIntoView({block:'nearest',inline:'nearest',behavior:'instant'});return true;`);
+      await p.eval("return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));");
+      const m=await p.eval(`const el=document.querySelector(${JSON.stringify(selector)});if(!el)return {found:false};
+        const r=el.getBoundingClientRect();let visible=!!el.getClientRects().length&&r.width>0&&r.height>0&&!el.closest('[inert]');
+        for(let n=el;n;n=n.parentElement){const s=getComputedStyle(n);if(s.display==='none'||s.visibility==='hidden'||Number(s.opacity)===0)visible=false;}
+        const clips=[],walker=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);let node;
+        while((node=walker.nextNode()))if(node.textContent.trim()){
+          const range=document.createRange();range.selectNodeContents(node);
+          for(const t of range.getClientRects()){
+            if(t.left<-1||t.top<-1||t.right>innerWidth+1||t.bottom>innerHeight+1)clips.push('viewport');
+            if(t.left<r.left-1||t.top<r.top-1||t.right>r.right+1||t.bottom>r.bottom+1)clips.push('control bounds');
+            for(let n=node.parentElement;n;n=n.parentElement){const s=getComputedStyle(n),a=n.getBoundingClientRect(),l=a.left+n.clientLeft,top=a.top+n.clientTop;
+              if(/hidden|clip|auto|scroll/.test(s.overflowX)&&(t.left<l-1||t.right>l+n.clientWidth+1))clips.push('ancestor-x:'+n.className);
+              if(/hidden|clip|auto|scroll/.test(s.overflowY)&&(t.top<top-1||t.bottom>top+n.clientHeight+1))clips.push('ancestor-y:'+n.className);}
+          }
+        }
+        const hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);
+        let announcement=null,ariaHidden=false;
+        for(let n=el;n;n=n.parentElement){
+          if((n.getAttribute('aria-hidden')||'').trim().toLowerCase()==='true')ariaHidden=true;
+          if(announcement===null){const a=(n.getAttribute('aria-live')||'').trim().toLowerCase(),role=(n.getAttribute('role')||'').trim().toLowerCase();
+            if(['off','polite','assertive'].includes(a))announcement=a;
+            else if(role==='status'||role==='alert')announcement=role==='status'?'polite':'assertive';}
+        }
+        return {found:true,visible,announcement,ariaHidden,text:el.textContent.trim(),aria:el.getAttribute('aria-label')||el.textContent.trim(),width:r.width,height:r.height,
+          disabled:el.disabled===true,hit:!!hit&&(el===hit||el.contains(hit)),clips};`);
+      assert.ok(m.found&&m.visible,"required message/control has visible computed ink: "+selector);
+      if(text!==undefined)assert.strictEqual(m.text,text,"independent frozen copy: "+selector);
+      if(live){assert.strictEqual(m.ariaHidden,false,"announcement has no aria-hidden suppression: "+selector);
+        assert.ok(m.announcement==='polite'||m.announcement==='assertive',"message has an effective live region, respecting explicit off: "+selector);}
+      assert.deepStrictEqual(m.clips,[],"text Range and ancestor x/y clipping: "+selector);
+      if(control){assert.ok(m.width>=44&&m.height>=44,"action is at least44x44: "+selector);assert.ok(m.hit&&!m.disabled,"action target is usable: "+selector);}
+      return m;
+    }
+    async function conflictSave(p,blocker,lang="en",kind="conflict",live=false) {
+      await hold(blocker);
+      try {
+        await p.click("#scale-generate");
+        // IDB staging precedes lock acquisition. Keep the real blocker held
+        // until the trusted action has actually queued its single request.
+        await p.wait(`navigator.locks.query().then(q=>q.pending.filter(x=>x.name===${JSON.stringify(LOCK)}).length===1)`,"trusted Save reaches the real exclusive commit queue");
+        const q=await p.eval("return navigator.locks.query();");
+        assert.strictEqual(q.pending.filter(x=>x.name===LOCK).length,1,"trusted Save must actually enqueue its commit; a no-op cannot pass");
+      }finally{await release(blocker);}
+      await p.wait(`navigator.locks.query().then(q=>q.pending.filter(x=>x.name===${JSON.stringify(LOCK)}).length===0&&document.getElementById('scale-generate').disabled===false)`,"Save operation releases its queue and returns from pending");
+      assert.strictEqual(await p.eval("return document.getElementById('scale-sheet').hidden;"),false,"conflict keeps the draft page open");
+      // Observe natural post-Save visibility BEFORE ink()/click helpers scroll.
+      const recoveryVisible=await p.eval(`const body=document.querySelector('#scale-sheet .sheetbody'),br=body.getBoundingClientRect();
+        return ['scale-conflict-msg','scale-conflict-separate'].map(id=>{const el=document.getElementById(id),r=el.getBoundingClientRect();
+          return {id,visible:!!el.getClientRects().length&&r.height>0&&r.width>0&&r.top>=Math.max(0,br.top+body.clientTop)-1&&r.bottom<=Math.min(innerHeight,br.top+body.clientTop+body.clientHeight)+1};});`);
+      assert.ok(recoveryVisible.every(item=>item.visible),"failed Save reveals recovery copy and action without test-driven scrolling: "+JSON.stringify(recoveryVisible));
+      await ink(p,"#scale-conflict-msg",{text:SV.uiContract.copy[lang][kind],live});
+      await ink(p,"#scale-conflict-separate",{text:SV.uiContract.copy[lang].separate,control:true});
+      await ink(p,"#scale-back",{control:true});
+    }
+
+    async function startImport(p,record) {
+      await p.eval(`const r=${JSON.stringify(record)},seed=HPE.core.parseSeed(r.s),code=HPE.share.encode({fields:seed.value.fields,options:r.o||{}});
+        window.__svOperationDone=false;window.__svResult=null;window.__svOperation=Promise.resolve(openShare(code.value))
+          .then(result=>{window.__svResult=result;window.__svOperationDone=true;},error=>{window.__svResult={ok:false,error:String(error)};window.__svOperationDone=true;});return true;`);
+    }
+
+    test("SV-PG: with 200 saved variants, 30 chip taps each select the tapped scale within 500 ms",{timeout:120000},async()=>{
+      await freshLoad();await b.setViewport(380,780,false);
+      const records=Array.from({length:200},(_,i)=>({...clone(SV.portableRecords.amaraA),o:{name:"SVPG "+String(i+1).padStart(3,"0"),palette:i%6}}));
+      await b.eval(`return ${nativeSavedExpression({write:true,raw:JSON.stringify(makeEnvelope(records,{preferredSelection:{kind:"builtin",id:"kurd"}}))})};`);
+      await navigate();
+      const taps=[...new Set([0,199,...Array.from({length:28},(_,i)=>Math.round((i+1)*199/29))])];
+      assert.strictEqual(taps.length,30,"thirty distinct chips are tapped");
+      const rows=await b.eval(`const taps=${JSON.stringify(taps)},uid=${uid.toString()},out=[];
+        return (async()=>{
+          if(document.querySelectorAll('#decks .chip[data-selection-kind="saved"]').length!==200)return {error:'200 saved chips are not rendered'};
+          for(const i of taps){
+            const id=uid(i+1),name='SVPG '+String(i+1).padStart(3,'0'),chip=document.querySelector('#decks .chip[data-selection-id="'+id+'"]');
+            if(!chip)return {error:'missing chip '+i};
+            const ok=()=>selection.kind==='saved'&&selection.id===id&&deck().name===name
+              &&!!document.querySelector('#decks .chip.on[data-selection-id="'+id+'"]')
+              &&savedState.preferredSelection.kind==='saved'&&savedState.preferredSelection.id===id;
+            const t0=performance.now();chip.click();
+            while(!ok()){
+              if(performance.now()-t0>5000)return {error:'tap '+i+' never selected '+name};
+              await new Promise(resolve=>setTimeout(resolve,0));
+            }
+            await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+            out.push({i,ms:performance.now()-t0});
+          }
+          return {rows:out};
+        })();`);
+      assert.ok(!rows.error,rows.error);
+      const max=Math.max(...rows.rows.map(r=>r.ms));
+      console.log("SV_PG_TAPS "+JSON.stringify({count:rows.rows.length,maxMs:Math.round(max*10)/10}));
+      assert.strictEqual(rows.rows.length,30);
+      for(const r of rows.rows)assert.ok(r.ms<500,"chip "+r.i+" selected in "+r.ms.toFixed(1)+" ms, bound 500");
+    });
+
+    test("SV11 E1: preference acknowledgments and unchanged rereads preserve a pressed chip through release",{timeout:90000},async()=>{
+      const previous={kind:"builtin",id:"amara"},target={kind:"builtin",id:"hijaz"};
+      const selector=id=>`#decks .chip[data-selection-kind="builtin"][data-selection-id="${id}"]`;
+      for(const arm of ["control","queued-preference-ack","unchanged-reread"])await withTwo([],{},async(a,peer)=>{
+        let held=false,pressed=false,point=null;
+        try {
+          if(arm==="queued-preference-ack"){await hold(peer);held=true;}
+          await a.click(selector(previous.id));
+          assert.deepStrictEqual(await a.eval("return {selection:{...selection},count:document.getElementById('count').textContent.trim()};"),
+            {selection:previous,count:"1 / 27"},"the prior trusted selection renders before its asynchronous preference acknowledgment");
+          if(arm==="queued-preference-ack"){
+            await a.wait(`navigator.locks.query().then(q=>q.pending.filter(row=>row.name===${JSON.stringify(LOCK)}).length===1)`,
+              "one actual prior preference is queued behind the peer's exclusive lock");
+            assert.notDeepStrictEqual((await read(a)).preferredSelection,previous,"the race must not drain the prior preference before pressing the next chip");
+          }else{
+            await nativeCommittedPreference(a,previous);
+            const committed=await read(a);
+            await a.wait(`savedState.revision===${committed.revision} && savedState.preferredSelection.kind==='builtin' && savedState.preferredSelection.id==='amara'`,
+              "control setup completes actual preference publication before the next gesture");
+          }
+          point=await a.eval(`const el=document.querySelector(${JSON.stringify(selector(target.id))});
+            el.scrollIntoView({block:'nearest',inline:'nearest',behavior:'instant'});
+            const r=el.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2,hit=document.elementFromPoint(x,y);
+            window.__svPressedChip=el;window.__svChipTrace=[];window.__svChipPhase='press';
+            window.__svChipTypes=['pointerdown','pointermove','pointerup','pointercancel','gotpointercapture','lostpointercapture','mousedown','mouseup','click'];
+            window.__svChipObserver=event=>{const chip=event.target.closest?.('#decks .chip');
+              __svChipTrace.push({phase:__svChipPhase,type:event.type,trusted:event.isTrusted,pointerId:event.pointerId,
+                target:chip?.getAttribute('data-selection-id')||null,heldConnected:__svPressedChip.isConnected});};
+            for(const type of __svChipTypes)document.addEventListener(type,__svChipObserver,true);
+            let visible=!!el.getClientRects().length&&r.width>=44&&r.height>=44&&!el.closest('[inert]');
+            for(let n=el;n;n=n.parentElement){const css=getComputedStyle(n);if(css.display==='none'||css.visibility==='hidden'||Number(css.opacity)===0)visible=false;}
+            return {x,y,visible,inViewport:x>=0&&y>=0&&x<innerWidth&&y<innerHeight,hit:!!hit&&(hit===el||el.contains(hit))};`);
+          assert.ok(point.visible&&point.inViewport&&point.hit,"the next chip is an actually usable trusted input target");
+          await a.send("Input.dispatchMouseEvent",{type:"mousePressed",x:point.x,y:point.y,button:"left",clickCount:1});pressed=true;
+          const before=await a.eval("return {connected:__svPressedChip.isConnected,selection:{...selection},trace:__svChipTrace};");
+          assert.strictEqual(before.connected,true);assert.deepStrictEqual(before.selection,previous);
+          assert.ok(before.trace.some(event=>event.type==='pointerdown'&&event.trusted&&event.target==='hijaz'),"trusted pointerdown reaches the intended next chip");
+          if(arm==="queued-preference-ack"){
+            await a.eval("window.__svChipPhase='prior-ack-while-held';return true;");await release(peer);held=false;
+            await nativeCommittedPreference(a,previous);
+            const committed=await read(a);
+            await a.wait(`savedState.revision===${committed.revision} && savedState.preferredSelection.kind==='builtin' && savedState.preferredSelection.id==='amara'`,
+              "the real prior preference acknowledgment is published while the next chip remains pressed");
+          }else if(arm==="unchanged-reread"){
+            const committed=await read(a);await a.eval("window.__svChipPhase='unchanged-reread-while-held';return true;");
+            const result=await a.eval("return reconcileSavedCollection();");assert.strictEqual(result.ok,true);
+            assert.deepStrictEqual(await read(a),committed,"an actual unchanged reread leaves the complete collection intact");
+          }
+          const during=await a.eval(`const current=document.querySelector(${JSON.stringify(selector(target.id))});
+            return {connected:__svPressedChip.isConnected,sameNode:current===__svPressedChip};`);
+          await a.eval("window.__svChipPhase='release';return true;");
+          await a.send("Input.dispatchMouseEvent",{type:"mouseReleased",x:point.x,y:point.y,button:"left",clickCount:1});pressed=false;
+          await a.eval("return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));");
+          const after=await a.eval("return {selection:{...selection},count:document.getElementById('count').textContent.trim(),hash:location.hash,trace:__svChipTrace};");
+          console.log("SV_CHIP_GESTURE "+JSON.stringify({arm,before,during,after}));
+          assert.deepStrictEqual(after.selection,target,arm+": a trusted press/release selects the intended chip despite the intervening snapshot");
+          assert.strictEqual(after.count,"1 / 19",arm+": Hijaz renders its own cards");
+          assert.strictEqual(after.hash,"#deck=c-sharp-hijaz-9",arm+": canonical URL describes the actually selected scale");
+          assert.deepStrictEqual(during,{connected:true,sameNode:true},arm+": unchanged content preserves the node held by the user");
+          assert.ok(after.trace.some(event=>event.type==='click'&&event.trusted&&event.target==='hijaz'),arm+": the original gesture delivers a trusted click to Hijaz");
+        }finally{
+          try{if(held)await release(peer);}
+          finally{
+            try{if(pressed&&point)await a.send("Input.dispatchMouseEvent",{type:"mouseReleased",x:point.x,y:point.y,button:"left",clickCount:1});}
+            finally{await a.eval("if(window.__svChipTypes&&window.__svChipObserver)for(const type of __svChipTypes)document.removeEventListener(type,__svChipObserver,true);return true;");}
+          }
+        }
+      });
+    });
+
+    test("SV3 E1: copied saved layout opens the selected variant in a fresh profile",{timeout:90000},async()=>{
+      await freshLoad();await b.setViewport(1280,800,false);const p=session(b.sessionId);
+      const a=clone(SV.portableRecords.pygmyLayoutA),variant=clone(a);a.o.name="PUBLIC LAYOUT A";variant.o.name="PUBLIC LAYOUT B";
+      assert.strictEqual((await importRecord(p,a)).ok,true);assert.strictEqual((await importRecord(p,variant)).ok,true);
+      assert.strictEqual(await p.eval("return document.querySelectorAll('#decks .chip').length;"),7,"both named versions must remain in the picker");
+      const before=await read(p),aEntry=before.entries.find(x=>x.record.o.name==="PUBLIC LAYOUT A");
+      await openEdit(p);await p.click("#scale-tab-layout");await p.click("#scale-fine-toggle");
+      await p.click('#scale-preview .panhit[data-ring="bottom"][aria-label^="C3,"]');await p.click("#scale-angle-next");
+      assert.strictEqual(await p.eval("return lastSolved.fields[101][4];"),295,"actual fine nudge moves the public C3 to295 degrees");
+      await save(p);
+      const after=await read(p);assert.deepStrictEqual(after.entries.find(x=>x.instanceId===aEntry.instanceId),aEntry,"editing B leaves A byte-for-value unchanged");
+      await p.eval(`window.__svCopied=null;Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.__svCopied=text;}}});return true;`);
+      await p.click("#share-copy");await p.wait("typeof window.__svCopied==='string'","actual copied payload");
+      const copied=await p.eval("return {value:window.__svCopied,href:location.href};");assert.strictEqual(copied.value,copied.href);
+      for(const id of after.usedInstanceIds)assert.ok(!copied.value.includes(id),"portable links cannot contain a local instance handle");
+      assert.deepStrictEqual(await p.eval("return HPE.share.decode(window.__svCopied.split('#s=')[1]).value.options.angles.bottom;"),SV.share.expectedEditedBottomOptions);
+      const senderProfile=b.profileDir;await b.close();b=null;b=await launch({foregroundSettle:true});assert.ok(b);
+      assert.notStrictEqual(b.profileDir,senderProfile,"receiver must own a genuinely fresh profile");
+      const prelude=await b.send("Page.addScriptToEvaluateOnNewDocument",{source:"window.__svStorageBefore=localStorage.length;"});
+      try{await b.goto(copied.value);}finally{await b.send("Page.removeScriptToEvaluateOnNewDocument",{identifier:prelude.identifier});}
+      const receiver=session(b.sessionId);assert.strictEqual(await receiver.eval("return window.__svStorageBefore;"),0);
+      assert.deepStrictEqual(await receiver.eval("return deck().options.angles.bottom;"),SV.share.expectedEditedBottomOptions);
+      await openEdit(receiver);await receiver.click("#scale-tab-layout");
+      const points=await receiver.eval(`return Object.fromEntries([...document.querySelectorAll('#scale-preview .panhit[data-ring="bottom"]')].map(n=>[
+        n.getAttribute('aria-label').split(',')[0],(Math.atan2(-Number(n.getAttribute('cy')),Number(n.getAttribute('cx')))*180/Math.PI+360)%360]));`);
+      assert.deepStrictEqual(Object.keys(points).sort(),Object.keys(SV.share.expectedEditedPositions).sort());
+      for(const [pitch,angle]of Object.entries(SV.share.expectedEditedPositions))assert.ok(Math.abs(((points[pitch]-angle+540)%360)-180)<0.1,pitch+" receiver position");
+    });
+
+    test("SV6 E1: two real targets serialize different Adds and deduplicate identical imports",{timeout:90000},async()=>{
+      for(const equal of [false,true])await withTwo([],{},async(a,bPeer)=>{
+        await hold(a);
+        try {
+          await startImport(a,SV.portableRecords.amaraA);await startImport(bPeer,equal?SV.portableRecords.amaraA:SV.portableRecords.amaraB);
+          await a.wait(`navigator.locks.query().then(q=>q.pending.filter(x=>x.name===${JSON.stringify(LOCK)}).length===2)`,"both imports finish IDB staging and reach the real exclusive commit queue");
+          const q=await a.eval("return navigator.locks.query();");
+          assert.strictEqual(q.held.filter(x=>x.name===LOCK).length,1);
+          assert.strictEqual(q.pending.filter(x=>x.name===LOCK).length,2,"both actual imports must wait for the same exclusive commit lock");
+          await release(a);await a.wait("window.__svOperationDone===true","first acknowledged import");await bPeer.wait("window.__svOperationDone===true","second acknowledged import");
+          assert.strictEqual((await a.eval("return window.__svResult;")).ok,true);assert.strictEqual((await bPeer.eval("return window.__svResult;")).ok,true);
+          const e=await read(a);assert.strictEqual(e.entries.length,equal?1:2,"both acknowledged distinct Adds survive; exact concurrent import allocates once");
+          assert.deepStrictEqual(e.entries.map(x=>x.record.o.name).sort(),equal?["PUBLIC PAN A"]:["PUBLIC PAN A","PUBLIC PAN B"]);
+          assert.strictEqual(new Set(e.entries.map(x=>x.instanceId)).size,e.entries.length);
+        }finally{await release(a);}
+      });
+    });
+
+    test("SV6 E2: stale Edit and delete-versus-Save preserve the winner without resurrection",{timeout:90000},async()=>{
+      await withTwo([SV.portableRecords.amaraA],{},async(a,bPeer)=>{
+        assert.strictEqual(await a.eval("return deck().name;"),"PUBLIC PAN A","the committed selected instance must render");
+        await openEdit(a);await openEdit(bPeer);await a.type("#scale-name","FIRST WINNER");await bPeer.type("#scale-name","STALE DRAFT");
+        await save(a);const winner=await read(a);
+        await conflictSave(bPeer,a);
+        assert.strictEqual(await bPeer.eval("return document.getElementById('scale-sheet').hidden;"),false);
+        assert.strictEqual(await bPeer.eval("return document.getElementById('scale-name').value;"),"STALE DRAFT");
+        assert.deepStrictEqual(await read(bPeer),winner,"stale same-target Edit never overwrites the winner");
+        const target=winner.entries[0],stale={type:"edit",collectionId:winner.collectionId,instanceId:target.instanceId,expectedRevision:target.revision};
+        assert.strictEqual((await commit(a,{type:"delete",collectionId:winner.collectionId,instanceId:target.instanceId,expectedRevision:target.revision})).ok,true);
+        const gone=await read(a),refused=await commit(bPeer,stale,SV.portableRecords.amaraB);
+        assert.strictEqual(refused.ok,false);assert.strictEqual(refused.kind,"conflict");assert.deepStrictEqual(await read(bPeer),gone,"deleted local handle cannot be resurrected by stale Save");
+      });
+    });
+
+    test("SV8 E1: RESET rejects a changed replacement scope but accepts an unrelated plain Add",{timeout:90000},async()=>{
+      const older={v:4,s:SV.inventories.amara9.seed,o:{name:"OLDER REPLACEMENT",replaces:"kurd"}},newer={v:4,s:SV.inventories.other.seed,o:{name:"NEWER REPLACEMENT",replaces:"kurd"}};
+      for(const change of ["create","edit","plain"])await withTwo([older,newer],{slots:{kurd:uid(2)},slotStateRevision:1,preferredSelection:{kind:"saved",id:uid(2)}},async(a,bPeer)=>{
+        assert.strictEqual(await a.eval("return deck().name;"),"NEWER REPLACEMENT");
+        const e=await read(a),armed=scope(e);await a.click("#deck-restore");
+        const cmd=change==="create"?{type:"replace-builtin",collectionId:e.collectionId,seedId:"kurd",expectedSlotStateRevision:1,expectedOwnerId:uid(2)}:
+          change==="edit"?{type:"edit",collectionId:e.collectionId,instanceId:uid(2),expectedRevision:1}:{type:"import",collectionId:e.collectionId,selectedInstanceId:null};
+        const changed=await commit(bPeer,cmd,{v:4,s:SV.inventories.other.seed,o:{name:change==="plain"?"UNRELATED PUBLIC PAN":"CHANGED REPLACEMENT"}});assert.strictEqual(changed.ok,true);
+        const winner=await read(bPeer);
+        // Confirm with a second TRUSTED click on the button already armed
+        // before the other target's mutation. Do not recapture a fresh proof.
+        await a.click("#deck-restore");
+        if(change==="plain") {
+          await a.wait("savedState.entries.every(x=>!x.record?.o?.replaces)","original armed RESET acknowledges unchanged replacement scope");
+          const after=await read(a);assert.ok(after.entries.some(x=>x.record.o?.name==="UNRELATED PUBLIC PAN"));assert.deepStrictEqual(after.slots,{});assert.deepStrictEqual(after.hidden,[]);
+        } else {
+          await a.wait(`document.querySelector('.announce').textContent===${JSON.stringify(SV.uiContract.copy.en.resetConflict)}`,"actual stale RESET refusal announcement");
+          await ink(a,".announce",{text:SV.uiContract.copy.en.resetConflict,live:true});
+          assert.deepStrictEqual(await read(a),winner,"actual stale second RESET click preserves the newer replacement");
+          const result=await commit(a,{type:"reset",collectionId:e.collectionId,affectedScope:armed});
+          assert.strictEqual(result.ok,false);assert.strictEqual(result.kind,"conflict");assert.deepStrictEqual(await read(a),winner,"backend proof refusal supplements the actual UI check");
+        }
+      });
+      await withTwo([older,newer],{slots:{kurd:uid(2)},slotStateRevision:1,preferredSelection:{kind:"saved",id:uid(2)}},async(a,bPeer)=>{
+        assert.strictEqual(await a.eval("return deck().name;"),"NEWER REPLACEMENT");const e=await read(a);
+        assert.strictEqual((await commit(bPeer,{type:"delete",collectionId:e.collectionId,instanceId:uid(2),expectedRevision:1,slotStateRevision:1,slots:{kurd:uid(2)},hidden:[]})).ok,true);
+        const winner=await read(bPeer);assert.strictEqual(winner.slots.kurd,uid(1));
+        const refused=await commit(a,{type:"delete",collectionId:e.collectionId,instanceId:uid(1),expectedRevision:1});
+        assert.strictEqual(refused.ok,false);assert.strictEqual(refused.kind,"conflict");assert.deepStrictEqual(await read(a),winner,"promotion cannot authorize a previously proofless delete");
+      });
+    });
+
+    test("SV9 E1: clean reconciliation updates content and route while dirty reconciliation preserves caret pick and scroll",{timeout:90000},async()=>{
+      await withTwo([SV.portableRecords.pygmyLayoutA],{},async(a,bPeer)=>{
+        assert.strictEqual(await a.eval("return deck().name;"),"PUBLIC LAYOUT");const initial=await read(a);
+        await a.eval("document.getElementById('share-copy').focus();return true;"); // no OS clipboard/share invocation
+        const focus=await a.eval("return document.activeElement.id;");
+        assert.strictEqual(focus,"share-copy");
+        const edit=await commit(bPeer,{type:"edit",collectionId:initial.collectionId,instanceId:uid(1),expectedRevision:1},SV.portableRecords.pygmyLayoutB);assert.strictEqual(edit.ok,true);
+        await a.wait("deck().options.angles && deck().options.angles.bottom[0]===295","clean remote content refresh");
+        assert.strictEqual(await a.eval("return location.hash===routeFor(deck());"),true);
+        assert.strictEqual(await a.eval("return document.activeElement.id;"),focus,"clean data refresh cannot steal focus");
+        const beforeDirty=await read(a);await openEdit(a);await a.type("#scale-name","DIRTY LOCAL DRAFT");
+        await a.eval("document.getElementById('scale-name').setSelectionRange(2,7);return true;");
+        await a.click("#scale-tab-layout");await a.click("#scale-fine-toggle");
+        await a.click('#scale-preview .panhit[data-ring="bottom"][aria-label^="C3,"]');
+        // The tab panels are display:contents. Exercise the REAL sheet
+        // scroller with positive overflow and a nonzero captured scroll.
+        await a.send("Emulation.setDeviceMetricsOverride",{width:380,height:667,deviceScaleFactor:1,mobile:true});
+        await a.eval("return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));");
+        const scrolling=await a.eval("const candidates=['#scale-sheet .sheetbody','#scale-sheet .sheetsurf'];window.__svScrollSelector=candidates.find(q=>{const n=document.querySelector(q);return n&&/auto|scroll/.test(getComputedStyle(n).overflowY)&&n.scrollHeight>n.clientHeight;});if(!window.__svScrollSelector)return {max:0,top:0};const n=document.querySelector(window.__svScrollSelector),max=n.scrollHeight-n.clientHeight;n.scrollTop=Math.min(40,max);return {max,top:n.scrollTop};");
+        assert.ok(scrolling.max>0&&scrolling.top>0,"dirty preservation fixture must genuinely overflow and scroll");
+        const draft=await a.eval("return {name:document.getElementById('scale-name').value,start:document.getElementById('scale-name').selectionStart,end:document.getElementById('scale-name').selectionEnd,pick:JSON.stringify(pickRef),scroll:document.querySelector(window.__svScrollSelector).scrollTop,focus:document.activeElement.getAttribute('data-field')};");
+        assert.notStrictEqual(draft.pick,"null","dirty reconciliation fixture must have a genuinely picked note");
+        assert.strictEqual(draft.focus,"101","fixture retains actual note focus rather than an empty/body focus ID");
+        const remote={...clone(SV.portableRecords.pygmyLayoutB),o:{...clone(SV.portableRecords.pygmyLayoutB.o),name:"REMOTE WINNER"}};
+        assert.strictEqual((await commit(bPeer,{type:"edit",collectionId:beforeDirty.collectionId,instanceId:uid(1),expectedRevision:beforeDirty.entries[0].revision},remote)).ok,true);
+        await a.wait("savedState.entries[0].revision===3","dirty tab observes remote revision");
+        assert.deepStrictEqual(await a.eval("return {name:document.getElementById('scale-name').value,start:document.getElementById('scale-name').selectionStart,end:document.getElementById('scale-name').selectionEnd,pick:JSON.stringify(pickRef),scroll:document.querySelector(window.__svScrollSelector).scrollTop,focus:document.activeElement.getAttribute('data-field')};"),draft,"dirty caret/pick/scroll/focus remain local");
+        await conflictSave(a,bPeer);
+        const remoteWinner=await read(bPeer);assert.strictEqual(remoteWinner.entries[0].record.o.name,"REMOTE WINNER");
+        assert.strictEqual((await commit(bPeer,{type:"delete",collectionId:remoteWinner.collectionId,instanceId:uid(1),expectedRevision:remoteWinner.entries[0].revision})).ok,true);
+        await a.wait("savedState.entries.length===0","dirty remote deletion observed");
+        assert.strictEqual(await a.eval("return document.getElementById('scale-name').value;"),"DIRTY LOCAL DRAFT","remote deletion cannot erase draft");
+        await ink(a,"#scale-conflict-msg",{text:SV.uiContract.copy.en.conflictDeleted});
+      });
+      // Repair only genuinely removed-chip focus. A surviving outside control
+      // has the same remote deletion and must retain focus instead.
+      for(const chipFocus of [true,false])await withTwo([SV.portableRecords.amaraA],{},async(a,bPeer)=>{
+        assert.strictEqual(await a.eval("return deck().name;"),"PUBLIC PAN A");const e=await read(a);
+        await a.eval(chipFocus?"document.querySelector('#decks .chip.on').focus();return true;":"document.getElementById('share-copy').focus();return true;");
+        assert.strictEqual((await commit(bPeer,{type:"delete",collectionId:e.collectionId,instanceId:uid(1),expectedRevision:1})).ok,true);
+        await a.wait("deck().id==='kurd'","clean removed selection fallback");
+        if(chipFocus)assert.strictEqual(await a.eval("return document.activeElement===document.querySelector('#decks .chip.on');"),true);
+        else assert.strictEqual(await a.eval("return document.activeElement.id;"),"share-copy","surviving outside focus must never be stolen");
+        assert.strictEqual((await read(a)).entries.length,0,"background reconciliation cannot reimport the deleted route");
+      });
+    });
+
+    // Real native-only deletion regression: the scoped model has no delete
+    // API. Metadata inspection below must not open the missing DB itself.
+    // Transactional amendment: post-boot readonly reconciliation cannot create
+    // schema or allocate identities outside a granted initialization lock.
+    test("IDB10 E1: reconciliation after external deletion leaves the database absent without allocation",{timeout:30000},async()=>{
+      await freshLoad();const p=session(b.sessionId);
+      const before=await p.eval(`return indexedDB.databases().then(rows=>rows.filter(row=>row.name==='hpfc.saved-scales.v1').map(row=>({name:row.name,version:row.version})));`);
+      assert.deepStrictEqual(before,[{name:"hpfc.saved-scales.v1",version:1}],"precondition: ordinary durable boot created the supported owned database");
+      await p.eval(`window.__idbDeletionDraws={uuid:0,random:0};
+        const uuid=crypto.randomUUID.bind(crypto),random=crypto.getRandomValues.bind(crypto);
+        Object.defineProperty(crypto,'randomUUID',{configurable:true,value:(...args)=>{__idbDeletionDraws.uuid++;return uuid(...args);}});
+        Object.defineProperty(crypto,'getRandomValues',{configurable:true,value:(...args)=>{__idbDeletionDraws.random++;return random(...args);}});
+        return new Promise((resolve,reject)=>{
+          const request=indexedDB.deleteDatabase('hpfc.saved-scales.v1');
+          request.onsuccess=()=>resolve(true);request.onerror=()=>reject(request.error);
+          request.onblocked=()=>reject(new Error('owned deletion blocked despite the application versionchange handler'));
+        });`);
+      assert.strictEqual(await p.eval(`return indexedDB.databases().then(rows=>rows.filter(row=>row.name==='hpfc.saved-scales.v1').length);`),0,"actual native deletion completed before reconciliation");
+      const result=await p.eval("return reconcileSavedCollection();");
+      const after=await p.eval(`return indexedDB.databases().then(rows=>rows.filter(row=>row.name==='hpfc.saved-scales.v1').map(row=>({name:row.name,version:row.version})));`);
+      assert.deepStrictEqual(after,[],"readonly reconciliation must not recreate schema after external deletion");
+      assert.strictEqual(result.ok,false,"missing authority is a truthful reconciliation refusal, never an acknowledged empty collection");
+      assert.deepStrictEqual(await p.eval("return window.__idbDeletionDraws;"),{uuid:0,random:0},"readonly absence never allocates an epoch or instance identity");
+    });
+
+    test("SV10 E1: variants conflict and session states preserve targets clipping focus and eight-locale copy",{timeout:180000},async()=>{
+      let cells=0,states=0,discriminatorControls=0;
+      const matrix=SV.labels.nativeMatrix;
+      function matrixEnvelope() {
+        const e=makeEnvelope(matrix.entries.map(x=>x.record));
+        e.entries.forEach((x,i)=>{x.displayOrdinal=matrix.entries[i].displayOrdinal;x.instanceId=uid(x.displayOrdinal);});
+        const highest=203;e.usedInstanceIds=Array.from({length:highest},(_,i)=>uid(i+1));e.nextDisplayOrdinal=highest+1;
+        e.preferredSelection={kind:'saved',id:uid(matrix.initialSelectedOrdinal)};return e;
+      }
+      for(const mode of ["fallback","real"]) {
+        const rb=await launch({foregroundSettle:true,realFonts:mode==="real"});assert.ok(rb,"owned font-mode browser must launch");
+        let peer=null;
+        try {
+          const p=session(rb.sessionId,rb);let generation=0;
+          async function reload() {
+            const stamp="sv-font-"+(++generation);
+            const hook=await rb.send("Page.addScriptToEvaluateOnNewDocument",{source:"window.__svFontDocument="+JSON.stringify(stamp)+";"});
+            try {await rb.send("Page.navigate",{url:URL});await p.wait("window.__svFontDocument==="+JSON.stringify(stamp)+" && "+APP_READY_EXPR,"fresh font-mode document");}
+            finally{await rb.send("Page.removeScriptToEvaluateOnNewDocument",{identifier:hook.identifier});}
+            const fonts=await p.eval(`return document.fonts.ready.then(()=>Promise.all(["14px Marcellus","400 14px Bitter","700 14px Bitter","400 14px 'Nunito Sans'","600 14px 'Nunito Sans'"].map(x=>document.fonts.load(x)))).then(()=>({size:document.fonts.size,faces:[...document.fonts].map(f=>({family:f.family,weight:f.weight,status:f.status}))}));`);
+            require("../tools/probe/panel_fit.js").checkFontMode(mode,fonts);
+          }
+          await rb.goto(URL);peer=await openPeer(rb);
+          for(const [localeIndex,lang]of SV.labels.locales.entries()) {
+            const expected=SV.uiContract.copy[lang],collision=matrixEnvelope();
+            await p.eval(`localStorage.clear();localStorage.setItem('hpfc',JSON.stringify({lang:${JSON.stringify(lang)},mode:'A'}));return ${nativeSavedExpression({write:true,raw:JSON.stringify(collision)})};`);await reload();
+            assert.strictEqual(await p.eval("return document.getElementById('lang-select').value;"),lang,"requested locale must actually be active");
+            for(const [w,h,mobile]of [[380,780,true],[844,390,true],[1280,800,false]]) {
+              await rb.setViewport(w,h,mobile);await rb.settle();
+              const labels=await p.eval("return [...document.querySelectorAll('#decks .chip')].map(n=>n.textContent.trim());");
+              assert.strictEqual(labels.length,matrix.expectedVisibleControlCount,"all frozen multi-digit/preset/long-name controls render");
+              assert.strictEqual(new Set(labels).size,labels.length,"FINAL labels, including literal suffix names, must be distinct");
+              for(const row of matrix.entries.filter(x=>x.expectedToken)) {
+                const index=matrix.expectedCustomOrdinalsNewestFirst.indexOf(row.displayOrdinal);
+                const selector="#decks .chip:nth-child("+(index+1)+")",m=await ink(p,selector,{control:true});
+                assert.ok(m.text.endsWith(SV.labels.separator+row.expectedToken),"literal full ASCII suffix on its own control: "+row.expectedToken);
+                assert.ok(m.aria.includes(row.expectedToken),"accessible name includes the same full suffix");discriminatorControls++;
+              }
+              const presetSelector="#decks .chip:nth-child("+(matrix.entries.length+3)+")",preset=await ink(p,presetSelector,{control:true});
+              assert.ok(preset.text.endsWith(SV.labels.separator+"P3")&&preset.aria.includes("P3"),"literal third-preset discriminator survives layout");discriminatorControls++;
+              cells++;
+            }
+            await rb.setViewport(380,780,true);
+            // Exact normal imports still deduplicate. The resolution action
+            // below has different trusted semantics and must allocate freshly.
+            const exact=await importRecord(p,matrix.entries.find(x=>x.displayOrdinal===203).record);
+            assert.strictEqual(exact.ok,true);assert.strictEqual((await read(p)).entries.length,matrix.entries.length);
+            // Native keyboard activation selects the colliding S202 control,
+            // then opens its Edit sheet; Escape restores that control's focus.
+            await p.eval(`document.querySelectorAll('#decks .chip')[${matrix.keyboardChipIndex}].focus();return true;`);
+            await p.key("Enter","Enter",13);await p.wait(`selection.kind==='saved'&&selection.id===${JSON.stringify(uid(202))}`,"keyboard selects literal S202");
+            await p.key("Enter","Enter",13);await p.wait("!document.getElementById('scale-sheet').hidden","keyboard opens selected Edit");
+            assert.strictEqual(await p.eval("return document.getElementById('scale-name').value;"),matrix.entries.find(x=>x.displayOrdinal===202).record.o.name);
+            await p.key("Escape","Escape",27);await p.wait("document.getElementById('scale-sheet').hidden","Escape closes Edit");
+            assert.strictEqual(await p.eval("return document.activeElement===document.querySelector('#decks .chip.on');"),true,"Escape returns focus to the rebuilt selected chip");
+            await openEdit(p);await p.type("#scale-name",matrix.draftName);const base=await read(p);
+            const conflict={...clone(base),revision:base.revision+1,entries:base.entries.map(x=>x.instanceId===uid(202)?{...x,revision:x.revision+1,record:{...x.record,o:{...x.record.o,name:"REMOTE LABEL"}}}:x)};
+            await p.eval(`return ${nativeSavedExpression({write:true,raw:JSON.stringify(conflict)})};`);
+            await p.click("#scale-tab-layout");
+            const scrolled=await p.eval("const body=document.querySelector('#scale-sheet .sheetbody');body.scrollTop=body.scrollHeight;return {top:body.scrollTop,max:body.scrollHeight-body.clientHeight};");
+            assert.ok(scrolled.max>0&&scrolled.top>0,"conflict recovery starts from a genuinely scrolled Layout panel");
+            await conflictSave(p,peer.p,lang,"conflict",true);
+            assert.strictEqual(await p.eval("return document.getElementById('scale-name').value;"),matrix.draftName);
+            assert.deepStrictEqual(await read(p),conflict,"failed Save cannot modify the winner or discard the draft");
+            await p.click("#scale-tab-scale");
+            await p.click("#scale-name");await rb.fakeKeyboard(520);await rb.settle();
+            const input=await p.eval("const n=document.getElementById('scale-name'),r=n.getBoundingClientRect();return {top:r.top,bottom:r.bottom,limit:visualViewport.offsetTop+visualViewport.height,focus:document.activeElement===n};");
+            assert.strictEqual(input.focus,true);assert.ok(input.top>=0&&input.bottom<=input.limit+1,"conflict keeps the focused input above simulated keyboard");await rb.clearKeyboard();
+            if(lang==="en") {
+              // This draft already equals ordinal203. Normal import above
+              // reused it; explicit Save-as-separate must create another handle.
+              const prior=await read(p);await hold(peer.p);
+              try {
+                await p.eval("document.getElementById('scale-conflict-separate').focus();return true;");
+                await p.key("Enter","Enter",13);
+                await p.wait(`navigator.locks.query().then(q=>q.pending.filter(x=>x.name===${JSON.stringify(LOCK)}).length===1)`,"trusted separate-save activation reaches the real exclusive commit queue");
+                let q=await p.eval("return navigator.locks.query();");assert.strictEqual(q.pending.filter(x=>x.name===LOCK).length,1,"resolution actually queues a distinct save command");
+                assert.strictEqual(await p.eval("return document.getElementById('scale-conflict-separate').disabled;"),true);
+                await p.key("Enter","Enter",13);q=await p.eval("return navigator.locks.query();");assert.strictEqual(q.pending.filter(x=>x.name===LOCK).length,1,"repeated activation cannot enqueue duplicate resolution");
+              }finally{await release(peer.p);}
+              await p.wait("document.getElementById('scale-sheet').hidden&&location.hash===routeFor(deck())","separate save acknowledgment and canonical route");
+              const after=await read(p);assert.strictEqual(after.entries.length,prior.entries.length+1);
+              const fresh=after.entries.find(x=>!prior.usedInstanceIds.includes(x.instanceId));assert.ok(fresh,"explicit separate action allocates a fresh lifetime handle");
+              assert.strictEqual(fresh.record.o.name,matrix.draftName);assert.strictEqual(fresh.record.o.replaces,undefined);
+              assert.strictEqual(after.entries.filter(x=>x.record.o?.name===matrix.draftName).length,2,"equal content versions coexist after explicit resolution");
+              assert.deepStrictEqual(after.entries.find(x=>x.instanceId===uid(203)),prior.entries.find(x=>x.instanceId===uid(203)));
+              assert.deepStrictEqual(after.entries.find(x=>x.instanceId===uid(202)),prior.entries.find(x=>x.instanceId===uid(202)));
+              assert.strictEqual(await p.eval("return document.activeElement===document.querySelector('#decks .chip.on');"),true);
+            } else {
+              if(localeIndex%2)await p.key("Escape","Escape",27);else await p.click("#scale-back");
+              await p.wait("document.getElementById('scale-sheet').hidden&&location.hash===routeFor(deck())","explicit cancel returns to winner");
+              assert.strictEqual(await p.eval("return deck().name;"),"REMOTE LABEL","Back discards the draft only by explicit owner action and displays the winner");
+              assert.strictEqual(await p.eval("return HPE.share.decode(location.hash.slice(3)).value.options.name;"),"REMOTE LABEL","canonical URL reflects the acknowledged winner");
+              assert.deepStrictEqual((await read(p)).entries,conflict.entries);
+              assert.strictEqual(await p.eval("return document.activeElement===document.querySelector('#decks .chip.on');"),true,"Back restores the selected chip's focus");
+            }
+            const durable=await p.eval(`return ${nativeSavedExpression()}.then(record=>({current:record,old:localStorage.getItem('hpfc.scales.v3'),legacy:localStorage.getItem('hpfc.scales')}));`);
+            const unsupported=await rb.send("Page.addScriptToEvaluateOnNewDocument",{source:"Object.defineProperty(navigator,'locks',{configurable:true,value:undefined});"});
+            try {
+              await reload();assert.strictEqual(await p.eval("return savedMode;"),"session");
+              await ink(p,"#saved-status",{text:expected.session,live:true});
+              await p.click("#settings-trigger");await p.click("#deck-add");await p.type("#scale-box",SV.inventories.other.seed);
+              assert.strictEqual(await p.eval("return document.getElementById('scale-generate').disabled;"),false,"note input stays English in every locale");
+              assert.strictEqual(await p.eval("return sheetTab==='scale'&&document.getElementById('scale-generate').hidden;"),true,"Add keeps Generate hidden until the Layout step");
+              await p.click("#scale-next");
+              await p.wait("sheetTab==='layout'&&!document.getElementById('scale-generate').hidden","NEXT opens Layout and exposes Generate");
+              await p.click("#scale-generate");await p.wait("document.getElementById('scale-sheet').hidden","session-only scale generation completes");
+              assert.strictEqual(await p.eval("return HPE.core.formatSeed(deck().fields);"),SV.inventories.other.seed,"actual temporary scale becomes the selected view");
+              assert.strictEqual(await p.eval("return savedMode;"),"session");await ink(p,"#saved-status",{text:expected.session,live:true});
+              assert.deepStrictEqual(await p.eval(`return ${nativeSavedExpression()}.then(record=>({current:record,old:localStorage.getItem('hpfc.scales.v3'),legacy:localStorage.getItem('hpfc.scales')}));`),durable,"temporary generation performs no durable saved-store write");
+              await reload();
+              assert.strictEqual(await p.eval(`return savedState.entries.some(x=>x.record?.s===${JSON.stringify(SV.inventories.other.seed)});`),false,"temporary scale is lost after reload, never silently promoted");
+              assert.deepStrictEqual(await p.eval(`return ${nativeSavedExpression()};`),durable.current);await ink(p,"#saved-status",{text:expected.session,live:true});
+            }finally{await rb.send("Page.removeScriptToEvaluateOnNewDocument",{identifier:unsupported.identifier});}
+            await p.eval(`return ${nativeSavedExpression({write:true,raw:"{not-json"})};`);await reload();
+            assert.strictEqual(await p.eval("return savedMode;"),"protected");
+            await ink(p,"#saved-status",{text:expected.recovery,live:true});
+            assert.strictEqual((await p.eval(`return ${nativeSavedExpression()};`)).raw,"{not-json","recovery cannot overwrite unreadable source");states++;
+          }
+        } finally{if(peer)await peer.close();await rb.close();}
+      }
+      assert.strictEqual(cells,48,"all2font x8locale x3viewport geometry cells execute");
+      assert.strictEqual(discriminatorControls,528,"every frozen suffix/preset control gets child-text/ancestor x/y clipping and target checks");
+      assert.strictEqual(states,16,"conflict/session/recovery/keyboard states execute in every font/locale");
+      console.log("SV_COPY_MATRIX "+JSON.stringify({geometryCells:cells,discriminatorControls,conflictSessionRecoveryStates:states,fontModes:["fallback","real"],simulatedKeyboard:true,physicalIOS:false}));
+    });
+  }
 
 }
 

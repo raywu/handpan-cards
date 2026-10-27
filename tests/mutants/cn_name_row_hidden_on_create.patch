@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1431,7 +1431,7 @@ html.about-open{overflow:hidden}
+@@ -1465,7 +1465,7 @@ html.about-open{overflow:hidden}
                aria-controls="scale-panel-layout" tabindex="-1">Layout</button>
      </div>
      <div id="scale-panel-scale" role="tabpanel" aria-labelledby="scale-tab-scale">

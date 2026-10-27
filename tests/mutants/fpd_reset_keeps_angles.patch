@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11695,7 +11695,6 @@ function putDownPick() {
+@@ -12729,7 +12729,6 @@ function putDownPick() {
  function resetLayout() {
    cancelGesture();
    layoutSeats = null;

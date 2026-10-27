@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -934,8 +934,7 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -948,8 +948,7 @@ footer.seq{row-gap:var(--sp-1)}
     spills over the button. */
  #scale-guidance{flex:0 0 auto; display:flex; flex-direction:column;
    justify-content:flex-end; margin-block:calc(var(--sp-2) - var(--sp-4))}

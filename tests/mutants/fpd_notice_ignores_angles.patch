@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11001,8 +11001,7 @@ function layoutStatus(text, warn) {
+@@ -11757,8 +11757,7 @@ function layoutStatus(text, warn) {
  }
  function layoutNoticeText() {
    const same = anchor === layoutBase.anchor && mirror === layoutBase.mirror &&

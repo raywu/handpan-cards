@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11008,7 +11008,7 @@ function layoutNoticeText() {
+@@ -11764,7 +11764,7 @@ function layoutNoticeText() {
    else {
      const custom = layoutBase.anchor !== "one" || layoutBase.mirror || (layoutBase.mb && hadBottom) ||
        layoutBase.seats !== "" || layoutBase.angles !== "";

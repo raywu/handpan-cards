@@ -1,0 +1,15 @@
+# kills: SV4 U2: repeated boot resumes the same committed collection without allocation
+# suite: node --test --test-name-pattern=^SV4.U2: tests/app.test.js
+# fault: Replays legacy migration and allocates a new collection on an already migrated reload.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10469,7 +10469,7 @@ async function initializeSavedDurable(locks) {
+         if(opened.absent){opened=await openSavedDatabase(true);if(!opened.ok)return opened;}
+         return savedTransaction(opened.db,"readwrite",(fresh,store)=>{
+           if(!sameSavedSnapshot(fresh,snapshot))return SAVED_RETRY;
+-          if(snapshot.present)return staged;
++          if(snapshot.present){const replay=makeSavedMigration(stageLegacySaved());if(replay.ok)store.put(JSON.stringify(replay.envelope),SAVED_RECORD);return replay;}
+           if(savedOwn(staged,"backendRaw")) {
+             if(localStorage.getItem(SAVED_KEY)!==staged.backendRaw)return SAVED_RETRY;
+           }else if(localStorage.getItem(SAVED_KEY)!==null || [STORE_KEY,SCALES_KEY,LEGACY_SCALES_KEY].some(key=>localStorage.getItem(key)!==staged.raw[key]))return SAVED_RETRY;

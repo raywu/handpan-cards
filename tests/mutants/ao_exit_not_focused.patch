@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10883,7 +10883,6 @@
+@@ -14483,7 +14483,6 @@ function openAbout() {
    history.pushState({ about: true }, "", ABOUT_ROUTE);
    aboutSection.scrollTop = 0;
    syncAboutHead();

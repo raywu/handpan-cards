@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10568,7 +10568,7 @@
+@@ -12228,7 +12228,7 @@ function paintTabs() {
    for (const [tab, on, panel] of [[tabScale, !onLayout, panelScale], [tabLayout, onLayout, panelLayout]]) {
      tab.classList.toggle("on", on);
      tab.setAttribute("aria-selected", String(on));

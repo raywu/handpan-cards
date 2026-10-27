@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10930,7 +10930,6 @@ let linkUIHref = location.href;
+@@ -11514,7 +11514,6 @@ let linkUIHref = location.href;
  let announcementRevision = 0;
  function retireLinkUI() {
    ++linkUIGeneration;

@@ -1,13 +1,15 @@
-# kills: replaceRegistered has exactly one call site, and a new one must read the return
-# suite: node --test --test-name-pattern ^replaceRegistered.has.exactly.one.call.site..and.a.new.one.must.read.the.return$ tests/app.test.js
+# kills: the retired inventory writer is absent and durable writes stay behind the locked boundaries
+# suite: node --test --test-name-pattern=^the.retired.inventory.writer.is.absent.and.durable.writes.stay.behind.the.locked.boundaries$ tests/app.test.js
+# former kills: replaceRegistered has exactly one call site, and a new one must read the return
+# fault: An extra durable-envelope writer bypasses the two explicitly coordinated write boundaries.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12680,6 +12680,7 @@ function runGenerate() {
-   // here - the id is unchanged and generateDeck already replaced it in place.
-   const replaced = !!wasId && d.id !== wasId;
-   if (replaced) replaceRegistered(wasId, d);
-+  if (!replaced) replaceRegistered(d.id, d);
-   // [eng-review 2, 2A] the warnings are read off the deck the SAME generation
-   // produced; nothing is rebuilt to re-derive them.
-   const warned = (d.warnings || []).map(w => reasonText(w));
+@@ -10107,6 +10107,7 @@ const savedUUIDPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3
+ const isSavedUUID = value => typeof value === "string" && value.length === 36 && savedUUIDPattern.test(value);
+ const savedPositive = n => Number.isSafeInteger(n) && n > 0;
+ const savedFailure = (kind, detail) => ({ ok: false, kind, ...(detail ? { detail } : {}) });
++function unsafeSavedWriter(value) { localStorage.setItem(SAVED_KEY, JSON.stringify(value)); }
+ function savedEqual(a, b) {
+   if (a === b) return true;
+   if (!a || !b || typeof a !== "object" || typeof b !== "object" || Array.isArray(a) !== Array.isArray(b)) return false;

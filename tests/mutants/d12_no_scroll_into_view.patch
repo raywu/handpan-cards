@@ -12,7 +12,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7262,26 +7262,7 @@ function renderSeqRail(d) {
+@@ -11293,26 +11293,7 @@ function renderSeqRail(d) {
    // flip inside a step's smooth scroll still ends on the current chord; once the
    // chord is centred it is a no-op, and after a manual scroll it re-centres.
    if (keepLeft) rail.scrollLeft = keepLeft;

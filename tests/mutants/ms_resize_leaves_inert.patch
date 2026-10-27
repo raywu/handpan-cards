@@ -23,7 +23,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10931,33 +10931,6 @@ aboutSection.addEventListener("click", e => {
+@@ -14528,33 +14528,6 @@ aboutSection.addEventListener("click", e => {
    aboutLink(a.getAttribute("href"));
  });
  

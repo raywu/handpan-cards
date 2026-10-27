@@ -3,7 +3,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -232,6 +232,7 @@ function nameHTML(ch, big) {
+@@ -11194,6 +11194,7 @@ function nameHTML(ch, big) {
  function linesHTML(d, ch) {
    const C = d.colors, rpc = pc(d, ch.roots[0]);
    const seg = (arr, render) => arr.map(render).join(`<span class="sepc"> - </span>`);

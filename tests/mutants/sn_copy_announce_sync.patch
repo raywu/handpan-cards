@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14497,9 +14497,7 @@ function copyLink() {
+@@ -15115,9 +15115,7 @@ function copyLink() {
      if (!current() || noticeRevision !== announcementRevision) return;
      say("", "");
      noticeRevision = announcementRevision;

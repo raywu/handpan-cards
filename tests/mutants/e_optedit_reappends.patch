@@ -1,15 +1,14 @@
 # kills: an options-only edit keeps its chip position across a reload at 380px
 # suite: node --test --test-name-pattern ^an.options.only.edit.keeps.its.chip.position.across.a.reload.at.380px$ tests/e2e.test.js
+# Approved retained contract mapped to the transactional instance adapter.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4810,7 +4810,8 @@ function runGenerate() {
-   if (warned.length) text += " " + warned.join(" ");
- 
-   closeScaleSheet();
--  if (replaced) replaceScale(wasSeed, seedOf(d)); else rememberScale(seedOf(d));
-+  if (replaced) replaceScale(wasSeed, seedOf(d));
-+  else { if (wasSeed) forgetScale(wasSeed); rememberScale(seedOf(d)); }
-   selectDeck(d.id);
-   say(text, warned.length ? "warn" : "ok");
-   genBtn.disabled = false;
+@@ -10583,6 +10583,7 @@ function applySavedCommand(staged, command, candidate) {
+     if (isBuiltIn(record.o && record.o.replaces)) deckValue.options.replaces = record.o.replaces;
+     else delete deckValue.options.replaces;
+     attachCandidate(row, deckValue);
++    next.entries=next.entries.filter(entry=>entry.instanceId!==row.instanceId).concat(row);
+     targetId = row.instanceId; desired = { kind: "saved", id: targetId };
+   } else if (command.type === "replace-builtin") {
+     if (!isBuiltIn(command.seedId) || command.expectedSlotStateRevision !== current.slotStateRevision ||

@@ -481,18 +481,33 @@ pitch classes (midi % 12), never stored.
   `replacements()` before `fallbackDeck()`), and boot says "That scale is gone."
   only when the deck shown is not that replacement. A replacement outranks a
   hidden seed.
-  Hidden ids live in the `hidden` field of the `hpfc` blob, written only when
-  non-empty; there is no separate `hpfc.hidden` key. RESET SEEDED SCALES
-  (`#deck-restore`) clears `hidden` and every record whose `replaces` names a
-  seed (older records naming the same seed included), keeps plain custom
-  decks, and moves to `fallbackDeck()` only if the selected deck is gone.
-- **Chip order is not picker order:** the strip is `allDecks()` = custom decks
-  newest first, then the seeded decks' slots in `data/decks.json` order. A slot
-  shows `replacements()[seedId]`, the newest record naming that seed in
-  `replaces`, else the seed if not hidden. Older records naming the same seed
-  render as plain custom decks. "Picker order" and "chip index" are different
-  facts; a test that picks a custom deck by index targets the older custom with
-  `+ 1`, never index 0.
+  In saved-variants builds, hidden seeded state and the preferred tagged
+  selection live with the saved collection (ENGINE-SPEC sections 12/14); unrelated
+  settings remain in `hpfc`. Legacy source keys are retained for recovery and
+  older clients; local instance handles are never written to legacy `hpfc.deck`.
+  RESET SEEDED SCALES clears hidden state and removes recognized replacement
+  records whose `replaces` names a seed, including older recognized replacements.
+  Plain custom instances and unreadable/newer records are kept. It changes the
+  selected view only if that selection disappeared, using the existing visible-
+  default/replacement then first-visible fallback. Destructive group/slot commits
+  must reject stale affected-scope proofs; two taps do not authorize deleting a
+  replacement changed in another tab after RESET was armed.
+- **Chip order is not picker order:** saved custom instances appear newest first,
+  then the seeded slots in `data/decks.json` order. Edit keeps an instance's place
+  even when its engine inventory ID changes. Each slot has one explicit saved
+  owner, else its visible built-in; older replacement instances appear as custom
+  instances. Deleting the owner promotes the newest surviving recognized
+  replacement, preserving the existing policy. Imports carry no replacement
+  authority merely because their notes match.
+- **Saved instance identity:** engine IDs still identify musical inventory.
+  Separate stable local handles identify saved instances, selection, Edit and
+  deletion; same-note named/layout variants can coexist. Exact portable-meaning
+  imports reuse a match, while Edit updates only its selected instance. Custom
+  `#s=` links serialize committed portable content, never a local handle; equal
+  URLs can describe several local instances. Preserve explicit LINK UI retirement
+  on instance selection as well as route changes. ENGINE-SPEC sections 12/14 are
+  authoritative for equality, migration, serialized acknowledgment, conflicts,
+  session-only fallback and recovery. No workflow or global configuration changes.
 - **Boot order:** the first render must happen after the card-order array
   exists; `render()` guards against an empty order. Keep it that way.
 - **Data re-injection:** the degrees contain `deg` (U+00B0) characters; a

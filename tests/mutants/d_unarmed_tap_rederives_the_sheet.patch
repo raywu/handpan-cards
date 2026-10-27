@@ -8,7 +8,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12733,7 +12733,6 @@ function disarmDelete() {
+@@ -13591,7 +13591,6 @@ function disarmDelete() {
    /* Nothing to undo when nothing is armed, and re-deriving anyway would be
       worse than silent: this runs on every pointerdown in the sheet, so an
       unguarded disarm would re-parse the seed on taps that cancelled nothing. */

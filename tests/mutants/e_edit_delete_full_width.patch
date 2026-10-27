@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -650,7 +650,7 @@ button.nav:active{background:#2e281e}
+@@ -1214,7 +1214,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
  #scale-del-note{font-family:"Nunito Sans"; font-weight:400; font-size:12px;
    line-height:1.55; color:#e3b25c; overflow-wrap:anywhere}
  #scale-del-note:empty{display:none}

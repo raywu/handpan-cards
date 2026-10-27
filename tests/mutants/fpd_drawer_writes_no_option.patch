@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11749,7 +11749,6 @@ function sheetOptions() {
+@@ -12783,7 +12783,6 @@ function sheetOptions() {
      else if (d && d.options && d.options.replaces) o.replaces = d.options.replaces;
    }
    if (layoutSeats) o.seats = JSON.parse(JSON.stringify(layoutSeats));

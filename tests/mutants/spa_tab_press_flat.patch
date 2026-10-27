@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1229,7 +1229,6 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+@@ -1260,7 +1260,6 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
  #scale-swatches .dot:active{opacity:.75}
  #scale-fine-toggle:active, #scale-delete:active{color:#eae6df}
  #scale-tabs [role=tab]:active{color:#eae6df}

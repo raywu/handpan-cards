@@ -10,7 +10,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13591,9 +13591,6 @@ function panelStops() {
+@@ -14419,9 +14419,6 @@ function panelStops() {
            document.getElementById("tier-advanced"), document.getElementById("seq-source-link"),
            document.getElementById("deck-add"), restoreBtn,
            ...settingsPanel.querySelectorAll(".prints button, .prints select"),

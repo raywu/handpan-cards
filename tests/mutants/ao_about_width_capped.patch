@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1158,7 +1158,7 @@
+@@ -1280,7 +1280,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
     (it must stay last). */
  #app{flex:none; width:100%; min-height:0; display:flex; flex-direction:column; align-items:center;
    height:max(100%, calc(100dvh - max(10px, env(safe-area-inset-top)) - max(12px, env(safe-area-inset-bottom))))}

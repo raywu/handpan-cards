@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1555,11 +1555,6 @@ html.about-open{overflow:hidden}
+@@ -1637,11 +1637,6 @@ html.about-open{overflow:hidden}
           Seed refusals, the parse line, the drawer status and the hints stay by
           the controls they describe. Pinned by "SG: N-A2", "SG: N-A5" and
           "SG: N-A6" in tests/e2e.test.js. -->
@@ -16,7 +16,7 @@ diff --git a/index.html b/index.html
      <!-- The footer lip: while the footer is open these wrappers generate no box. -->
      <div id="scale-foot">
      <div id="scale-footclip">
-@@ -1582,6 +1577,11 @@ html.about-open{overflow:hidden}
+@@ -1664,6 +1659,11 @@ html.about-open{overflow:hidden}
      </div>
      </div>
      <button id="scale-lip" type="button" hidden aria-expanded="false" aria-controls="scale-next scale-generate scale-delete-row" aria-label="Show NEXT"></button>

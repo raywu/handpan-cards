@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14485,10 +14485,11 @@ function copyLink() {
+@@ -15103,10 +15103,11 @@ function copyLink() {
    observeLinkRoute();
    retireLinkUI();
    const generation = linkUIGeneration;

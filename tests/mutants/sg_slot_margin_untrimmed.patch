@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -933,7 +933,7 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -947,7 +947,7 @@ footer.seq{row-gap:var(--sp-1)}
     flex:0 0 auto is load-bearing: as a shrinkable item a three-line message
     spills over the button. */
  #scale-guidance{flex:0 0 auto; display:flex; flex-direction:column;

@@ -1,0 +1,15 @@
+# kills: IDBH9 concurrent first opens share one committed database and aborting a probe does not strand later open
+# suite: node --test --test-name-pattern=^IDBH9\s tests/harness.test.js
+# fault: Bypass per-name serialization so two first opens create independent databases.
+diff --git a/tools/sandbox.js b/tools/sandbox.js
+--- a/tools/sandbox.js
++++ b/tools/sandbox.js
+@@ -343,7 +343,7 @@ function indexedDBFor(bucket) {
+     dispatch('open', () => {
+       if (!bucket.openQueues.has(name)) bucket.openQueues.set(name, []);
+       const queue = bucket.openQueues.get(name); queue.push(begin);
+-      if (queue.length === 1) begin();
++      begin();
+     });
+     return req;
+   } };

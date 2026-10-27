@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -3741,8 +3741,7 @@
+@@ -10879,8 +10879,7 @@ function pan(d, ch, opts) {
    const hasBottom = !!g.bottom;
    // Generated decks carry the solver's own extent (ENGINE-SPEC section 11);
    // the built-in geom literals have no ext key, so they keep the derivation.

@@ -3,17 +3,16 @@
 # Every page routes to #add, so the address bar cannot say which deck is open
 # and a shared or reloaded URL names nothing.
 # Re-anchored 2026-10-13 (seeded SAVE / DELETE, lane app) against the current source. The mutation itself is unchanged.
+# Retained behavior re-anchored for saved instances; exact intent is recorded in the lane evidence.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9854,9 +9854,7 @@
-    asserted in tests rather than trusted here. */
+@@ -13231,7 +13231,7 @@ function setSheetMode(edit) {
  const ADD_ROUTE  = "#add";
  const EDIT_ROUTE = "#edit-";
--function sheetRoute() {
--  return editingId ? EDIT_ROUTE + editingId : ADD_ROUTE;
--}
-+function sheetRoute() { return ADD_ROUTE; }
+ function sheetRoute() {
+-  return editingBase ? EDIT_ROUTE + editingBase.deck.id : ADD_ROUTE;
++  return ADD_ROUTE;
+ }
  // True while OUR history entry is on the stack. Not derived from the hash: a
  // user can edit the address bar, and the question this answers is "did we push
- // something that still needs popping", which only we know.

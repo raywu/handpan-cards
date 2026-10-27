@@ -1,15 +1,16 @@
 # kills: SD: a replacement outranks a hidden seed in storage
 # suite: node --test --test-name-pattern ^SD..a.replacement.outranks.a.hidden.seed.in.storage$ tests/app.test.js
 # The hidden filter runs before the replacement swap, so a hidden seed hides its replacement.
+# Approved retained contract mapped to the transactional instance adapter.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8761,7 +8761,7 @@
-   const rep = replacements();
-   const slotted = new Set(Object.values(rep));
-   return [...Object.values(CUSTOM).reverse().filter(d => !slotted.has(d)),
--    ...DECKS.map(s => rep[s.id] || (hidden.includes(s.id) ? null : s)).filter(Boolean)];
-+    ...DECKS.map(s => hidden.includes(s.id) ? null : rep[s.id] || s).filter(Boolean)];
- };
- // [5A] chip labels are capped at 16 characters with an ellipsis.
- const CHIP_CAP = 16;
+@@ -10277,7 +10277,7 @@ function savedViewsFor(e, views) {
+     .map(row => ({ selection: { kind: "saved", id: row.instanceId }, deck: views.get(row.instanceId).deck, displayOrdinal: row.displayOrdinal }))
+     .concat(DECKS.map(d => {
+       const owner = e.slots[d.id] && views.get(e.slots[d.id]);
+-      return owner ? { selection: { kind: "saved", id: owner.instanceId }, deck: owner.deck, displayOrdinal: owner.displayOrdinal, slotId: d.id } :
++      return e.hidden.includes(d.id) ? null : owner ? { selection: { kind: "saved", id: owner.instanceId }, deck: owner.deck, displayOrdinal: owner.displayOrdinal, slotId: d.id } :
+         e.hidden.includes(d.id) ? null : { selection: { kind: "builtin", id: d.id }, deck: d, slotId: d.id };
+     }).filter(Boolean));
+ }

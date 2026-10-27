@@ -7,7 +7,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8203,8 +8203,8 @@ function pan(d, ch, opts) {
+@@ -10957,8 +10957,8 @@ function pan(d, ch, opts) {
    // one of the picked ring's, the picked ring wins the tap.
    if (interactive) {
      const byOrder = (a2, b2) => a2.at - b2.at;

@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -885,7 +885,6 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -899,7 +899,6 @@ footer.seq{row-gap:var(--sp-1)}
     loudest thing in the drawer. The held plate stops at .62 because the pan is role="img"
     content, so the rim ink has to keep its contrast. */
  #scale-preview.stale{opacity:.62}

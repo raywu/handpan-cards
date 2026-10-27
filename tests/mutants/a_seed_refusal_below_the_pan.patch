@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1480,7 +1480,6 @@ html.about-open{overflow:hidden}
+@@ -1530,7 +1530,6 @@ html.about-open{overflow:hidden}
             true rather than hoping every caller happens to agree. It carries
             its own aria-live because #scale-sheet is aria-modal, which puts
             the page-level .announce outside the dialog and out of reach. -->
@@ -13,7 +13,7 @@ diff --git a/index.html b/index.html
        <p class="sheethint" id="scale-line-note"></p>
      </div>
      </div>
-@@ -1570,6 +1569,7 @@ html.about-open{overflow:hidden}
+@@ -1626,6 +1625,7 @@ html.about-open{overflow:hidden}
          <div id="scale-swatches" role="group" aria-labelledby="scale-palette-label"></div>
        </div>
      </div>

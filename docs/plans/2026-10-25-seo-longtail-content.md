@@ -61,14 +61,16 @@ any future implementation.
 
 Already asked: editorial/automation appetite; lesson-first versus direct landing
 reader offer; languages/countries/scales/makers and available aggregate data.
-Additional questions ask musical reviewer capacity and publishing-home preference.
-No answer is inferred from AFK or elapsed time. Research proceeds with reversible
+Publishing-home and musical-review-role questions are now settled above; actual
+review capacity and hosting validation remain to be established. No other answer
+is inferred from AFK or elapsed time. Research proceeds with reversible
 proposals: English first, reviewed drafts, lesson before CTA, source-verified layouts,
 compare publishing options and recommend the simplest. No articles go live yet.
 
-Before execution owner must name: accountable publisher/editor; actual musical
-reviewer; pilot instruments/provenance; publishing home; human-hour/cost cap; success
-priority and data source. Default recommendation: owner reviews a tiny pilot,
+Before execution establish: accountable publisher/editor; owner musical-review
+capacity and acceptance; pilot instruments/provenance; `/learn/` hosting feasibility;
+human-hour/cost cap; success priority and data source. The design home and musical
+review role are settled, rather than pending owner selections. Default recommendation: owner reviews a tiny pilot,
 first draft is timed, then decide sustainable monthly capacity. A 90-day aggregate
 baseline and8–12-week review after observed indexing are hypotheses, not promised
 traffic windows. No multilingual rollout without native editorial capacity/demand.
@@ -378,3 +380,13 @@ Read the three research notes for direct sources, code symbols, diagnostic limit
 and source hashes; [SEO recovery](2026-10-25-seo-plan-recovery.md) records historical
 queue/site-name/auth facts. Coordination retains prompt critique and subsequent
 independent review dispositions. No private data or credentials are included.
+
+
+## Settled first pilot — owner answer2026-10-26
+
+Use the exact18-note EAmara13+5 example supplied byowner for FIRSTPILOTPLANNING.
+Do not labelit20notes; a distinct20-note lesson requiresits ownverifiedinventory.
+/learn/ publishinghomeDESIGN andowner musical-reviewrole werealreadysettled.
+Verify maker/model/sourceprovenance andusefulplayableexamples before anypublic
+content; actualhumanmusicQA remainsunperformed. No article/generator/hosting/
+analyticsimplementation orpublishing isauthorized bythis planningchoice.

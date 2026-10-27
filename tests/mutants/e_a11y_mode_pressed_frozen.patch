@@ -12,7 +12,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8709,7 +8709,6 @@ function setMode(m) {
+@@ -14634,7 +14634,6 @@ function setMode(m, persist = true) {
    for (const [id, on] of [["modeA", m === "A"], ["modeB", m === "B"]]) {
      const el = document.getElementById(id);
      el.classList.toggle("on", on);

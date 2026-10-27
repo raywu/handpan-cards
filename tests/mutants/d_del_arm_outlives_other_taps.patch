@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10228,9 +10228,6 @@ delBtn.onclick = () => {
+@@ -13655,9 +13655,6 @@ delBtn.onclick = () => {
     that is not the button itself is the same decision, and it is one the
     owner's device actually makes. The pointerdown that lands ON the button is
     not: it is the confirming tap's own first half. */

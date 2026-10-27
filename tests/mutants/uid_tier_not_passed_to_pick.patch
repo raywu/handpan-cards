@@ -7,7 +7,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7481,7 +7481,7 @@ function setOrder() {
+@@ -11414,7 +11414,7 @@ function setOrder() {
    // whole deck. `seq.chords` (when set) is passed back as `prev` so a re-roll
    // never repeats it (HPE.sequence.pick's own no-repeat rule, S1 test 5/9).
    if (mode === "S") {

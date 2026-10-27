@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11124,6 +11124,7 @@ function paintLayout() {
+@@ -11784,6 +11784,7 @@ function paintLayout() {
    }
    layoutHint.textContent = HINT_EMPTY();
    layoutHint.hidden = boxOk || !(panState === "example" || !String(scaleBox.value || "").trim());

@@ -1,0 +1,15 @@
+# kills: SVH2 exclusive requests are asynchronous FIFO and hold through callback settlement
+# suite: node --test --test-reporter=tap --test-name-pattern ^SVH2.exclusive tests/harness.test.js
+# fault: A held exclusive callback does not block another acquisition.
+diff --git a/tools/sandbox.js b/tools/sandbox.js
+--- a/tools/sandbox.js
++++ b/tools/sandbox.js
+@@ -110,7 +110,7 @@ function originBucket(state, name, seed) {
+ function locksFor(bucket, clientId, rejection) {
+   const pump = name => queueMicrotask(() => {
+     const queue = bucket.locks.get(name);
+-    if (!queue || queue.held || !queue.pending.length) return;
++    if (!queue || !queue.pending.length) return;
+     const item = queue.pending.shift();
+     queue.held = item;
+     if (item.signal) item.signal.removeEventListener("abort", item.abort);

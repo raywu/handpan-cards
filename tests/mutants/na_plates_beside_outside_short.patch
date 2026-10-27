@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10569,7 +10569,7 @@
+@@ -11819,7 +11819,7 @@ const roomOf = () => {
  };
  const platesBeside = () => {
    const w = (el) => (el.getBoundingClientRect ? el.getBoundingClientRect().width : el.offsetWidth) || 0;

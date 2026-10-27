@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -948,7 +948,7 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -962,7 +962,7 @@ footer.seq{row-gap:var(--sp-1)}
  /* The footer lip: open, the wrappers generate no box, so the footer is the layout it always was. */
  #scale-foot, #scale-footclip, #scale-footslide{display:contents}
  #scale-lip[hidden]{display:none}

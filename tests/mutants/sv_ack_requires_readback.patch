@@ -1,0 +1,14 @@
+# kills: SV5 U3: successful setItem followed by failed diagnostic readback is committed exactly once
+# suite: node --test --test-name-pattern=^SV5.U3: tests/app.test.js
+# fault: A failed post-ACK diagnostic read incorrectly retires durable authority and blocks subsequent commands.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10708,6 +10708,7 @@ function commitSaved(command, options = {}) {
+   return commitSavedDurable(command,options);
+ }
+ function savedReconciliationFailure(result,raw) {
++  savedMode="protected";
+   savedIssue=result;
+   savedRecovery={collection:typeof raw==="string"?raw:null,access:"unknown"};
+   updateSavedStatus();

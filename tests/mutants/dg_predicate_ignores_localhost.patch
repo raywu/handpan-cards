@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11280,8 +11280,7 @@ let analyticsLoaded = false;
+@@ -15030,7 +15030,6 @@ let analyticsLoaded = false;
  // placeholder id: those boots must send nothing.
  function analyticsAllowed() {
    if (location.protocol === "file:") return false;
@@ -12,4 +12,3 @@ diff --git a/index.html b/index.html
    if (location.hostname.endsWith(".pages.dev")) return false;
    if (navigator.webdriver) return false;
    return GA_MEASUREMENT_ID !== "G-XXXXXXXXXX";
- }

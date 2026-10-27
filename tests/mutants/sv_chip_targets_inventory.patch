@@ -1,0 +1,15 @@
+# kills: SV3 U1: selection Edit and deletion target the chosen instance despite equal names and URLs
+# suite: node --test --test-name-pattern=^SV3.U1: tests/app.test.js
+# fault: Treats a sibling with the same musical inventory as the selected local instance.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11468,7 +11468,7 @@ function buildChips() {
+       accessible+=". "+t(saved?"saved.savedToken":"saved.presetToken",{token});
+     }
+     b.setAttribute("aria-label",accessible);
+-    b.onclick=()=>savedEqual(view.selection,selection)?openEditSheet(d,b):selectDeck(view.selection);
++    b.onclick=()=>d.id===deck().id?openEditSheet(d,b):selectDeck(view.selection);
+     nav.appendChild(b);if(on)active=b;
+   });
+   restoreBtn.hidden=!(hiddenDecks().length || Object.keys(replacements()).length);

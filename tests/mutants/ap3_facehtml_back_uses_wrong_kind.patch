@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7345,7 +7345,7 @@ function render() {
+@@ -11377,7 +11377,7 @@ function render() {
      renderSeqRail(d);
    } else if (mode === "A") {
      front.innerHTML = faceHTML(d, ch, n, "question");

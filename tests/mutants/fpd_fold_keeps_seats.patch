@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11962,7 +11962,7 @@ function slideNote(ref, want, how, dir) {
+@@ -12585,7 +12585,7 @@ function slideNote(ref, want, how, dir) {
    }
    const entries = folding ? base.slice() : layoutAngles ? layoutAngles.bottom.slice() : cur.map(() => null);
    entries[n.i] = spot.angle;

@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1318,7 +1318,7 @@ html.about-open{overflow:hidden}
+@@ -1433,7 +1433,7 @@ html.about-open{overflow:hidden}
    <h3>Your own scale</h3>
    <p>Type any scale and the app generates its chords.</p>
    <h3>Privacy</h3>

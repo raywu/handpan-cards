@@ -10,7 +10,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1170,7 +1170,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+@@ -1250,7 +1250,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
  .chip:active{background:#332c22}
  .mode:active{background:#2e281e}
  .mode.on:active{background:#ddd7cb; border-color:#ddd7cb}

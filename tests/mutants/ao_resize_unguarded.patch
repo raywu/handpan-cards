@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10866,7 +10866,6 @@
+@@ -14464,7 +14464,6 @@ const aboutOpenBtn = document.getElementById("about-open");
  const aboutCloseBtn = document.getElementById("about-close");
  const aboutBackground = () => [document.querySelector("#app"), settingsPanel].filter(Boolean);
  function syncAboutHead() {

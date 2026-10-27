@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11484,7 +11484,6 @@
+@@ -13409,7 +13409,6 @@ function hideSheet() {
  // entry showSheet() pushed, so the address bar and the stack end where they
  // started and the next back press belongs to whatever came before the page.
  function closeScaleSheet() {
