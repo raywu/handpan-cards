@@ -1767,6 +1767,7 @@ function run() {
     const dimensional = [...seen].filter((c) => parseCondition(c).queries).sort();
     assert.deepStrictEqual(dimensional, [
       "(max-height: 520px)",
+      "(min-height: 360px) and (max-height: 520px) and (min-width: 740px)",
       "(min-width: 1024px) and (min-height: 700px)",
       "(min-width: 640px) and (min-height: 700px)",
     ].sort());
@@ -14810,7 +14811,7 @@ function run() {
             for (const k of ["sheet", "about"]) check(m[k].sw <= 0 && m[k].dsw <= 0, `${where}: ${k} scrolls horizontally`);
             if (label !== "en") m.panel.rows.forEach(([id, n], i) => check(n <= base.panel.rows[i][1],
               `${where}: ${id} takes ${n} lines against English ${base.panel.rows[i][1]}`));
-            if (label !== "en") {
+            if (label !== "en" && !(w >= 740 && h >= 360 && h <= 520)) { // LE: columns rebalance per locale; "LE:" asserts the fit
               const t = m.panel.tops, bt = base.panel.tops;
               for (let i = 0; i < bt.length; i++) for (let j = i + 1; j < bt.length; j++)
                 check(bt[i] !== bt[j] || t[i] === t[j], `${where}: ${base.panel.rows[i][0]} and ${base.panel.rows[j][0]} share a row in English and stack here`);
@@ -14823,7 +14824,7 @@ function run() {
           de.panel.rows.forEach(([id, n], i) => check(n <= base.panel.rows[i][1] + 1,
             `${w}x${h}: ${id} takes ${n} lines against English ${base.panel.rows[i][1]} (the brackets of the pseudo table may add one)`));
         }
-        assert.deepStrictEqual(bad, [], "tables overflow");
+        assert.deepStrictEqual(bad, [], "tables overflow: " + bad.join("; "));
       } finally {
         await b.setViewport(900, 900, false);
         await b.eval(`try { localStorage.clear(); } catch (e) {} return true;`).catch(() => {});
