@@ -1,5 +1,28 @@
 # Shared workstream ledger
 
+## MUTANT-NEOTONE — future queued project, implementation paused
+
+Owner requested a researched Add/Edit option for the Mutant Neotone paired-area
+layout. [Prompt v3](prompts/2026-10-26-mutant-neotone-layout.md) records critique,
+execution and refinement. [Plan](plans/2026-10-26-mutant-neotone-layout.md) received
+independent ENG/design CLEAR after one revision round. Planning only: no app,
+CLAUDE/config/tool/hardware/MIDI/audio changes or tests. RC/handoff retain priority.
+
+Recommendation: explicit physical slot↔note-occurrence map, read-only diagram plus
+44px assignment list; preserve secondary-vs-bottom musical semantics, acoustic
+v6 URLs, versioned new-profile sharing, mixed-client data preservation and print
+parity gates. Model/revision/geometry, center/secondary policy and export decision
+remain owner/evidence questions on resumption. Duplicate-note feature remains
+paused and is not a hidden dependency to activate.
+
+Recovery: branch codex/neotone-future-plan-20261026; host-local worktree
+/private/tmp/handpan-neotone-future-plan-20261026. Last: prompt/plan and two
+independent reviews complete. Next: owner explicitly resumes, confirms hardware
+reference and semantics, then fixture/schema freeze and future execution grant.
+Image is local-only/private; SHA and source limitations in plan. No image upload.
+This branch publishes planning artifacts only and is not tonight's release scope;
+prior chronological labels below remain historical, resolve live release ledger.
+
 ## Latest cross-workstream checkpoint — 2026-10-26
 
 This checkpoint supersedes conflicting pending/approval labels in the historical
