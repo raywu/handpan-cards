@@ -99,7 +99,7 @@ Questions to analyze explicitly:
 V1 self-critique: a generic layout-preset prompt omitted note-occurrence identity,
 secondary/bottom distinction, persisted slot maps, older-client behavior and
 paused-feature/RC boundaries. V2 explicitly closes those defects above.
-Execute V2 to generate the plan, then independent engineering and design reviewers
+Execute the current prompt revision to generate the plan, then independent engineering and design reviewers
 must challenge its actual output. Revise material findings and rereview changed
 sections. Do not claim '10/10' from self-scoring; quality means evidence-qualified,
 implementable after decisions, no unresolved material planning omissions and
