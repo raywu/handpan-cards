@@ -1,0 +1,15 @@
+# kills: SPS3: body maximum excursion allows 8 pixels but cancels 9 including out and back
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS3:.body.maximum.excursion.allows.8.pixels.but.cancels.9.including.out.and.back$ tests/app.test.js
+# 9px body excursion is incorrectly allowed.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11674,7 +11674,7 @@ function setTab(tab) {
+       const S = sheetSwipe;
+       if (!S) return false;
+       if (!sheetOpen || S.tab !== sheetTab || sheetZoomed() || sheet.classList.contains("kbup") ||
+-          Math.abs(scrollOf(body) - S.bodyTop) > 8 || Math.abs(scrollOf(sheetSurf) - S.surfTop) > 8 ||
++          Math.abs(scrollOf(body) - S.bodyTop) > 9 || Math.abs(scrollOf(sheetSurf) - S.surfTop) > 8 ||
+           (S.field && (document.activeElement === S.field || selected(S.field))) ||
+           (S.box && (scrollOf(S.box) !== S.boxTop || (S.box.scrollLeft || 0) !== S.boxLeft))) {
+         cancel();

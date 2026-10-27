@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12237,6 +12237,7 @@ function paintTabs() {
+@@ -11633,6 +11633,7 @@ function paintTabs() {
  }
  function setTab(tab) {
    if (tab === sheetTab) return;
 +  if (tab === "layout" && !currentScaleInput()) return;
+   sheetSwipe = null;
    if (sheetTab === "layout") {
      cancelGesture();
-     previewBox.removeEventListener("touchmove", plateTouchMove, { passive: false });

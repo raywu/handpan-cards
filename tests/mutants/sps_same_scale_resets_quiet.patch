@@ -1,0 +1,14 @@
+# kills: SPS4: a same-Scale right gesture creates no quiet reset or other navigation effect
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS4:.a.same\-Scale.right.gesture.creates.no.quiet.reset.or.other.navigation.effect$ tests/app.test.js
+# Same-Scale no-op incorrectly establishes a new quiet window.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11724,7 +11724,6 @@ function setTab(tab) {
+       cancel();
+       if (elapsed < 0 || elapsed > 600 || Math.abs(dx) < 48 || Math.abs(dx) < 2 * Math.abs(dy)) return;
+       const tab = dx < 0 ? "layout" : "scale";
+-      if (tab === sheetTab) return;
+       lipDrag = null;
+       lipParked = null;
+       lipFling = null;

@@ -4,11 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12255,7 +12255,6 @@ function setTab(tab) {
+@@ -11652,7 +11652,7 @@ function setTab(tab) {
    paintLayout();
    repaintPlate();
    bandPort.scrollTop = 0;
 -  setLip(false, { instant: true });
++  // Tab entry does not restore the lip.
    if (drawerOpen && !showPendingDerive() && currentScaleInput() && !hasTwoNoteRing() && !(ringCount && ringCount.bottom >= 1)) layoutStatus(t("sheet.no_two_ring"));
  }
- /** Leaving the sheet or opening a fresh session: no focus, no status. */
+ /* ---- the optional Scale / Layout touch shortcut ----

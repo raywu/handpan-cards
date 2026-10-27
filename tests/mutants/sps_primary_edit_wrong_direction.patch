@@ -1,0 +1,15 @@
+# kills: SPS primary: Edit right touchend returns to Scale preserving input options and history
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS.primary:.Edit.right.touchend.returns.to.Scale.preserving.input.options.and.history$ tests/app.test.js
+# Right gesture chooses wrong tab; Edit Scale assertion fails.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11723,7 +11723,7 @@ function setTab(tab) {
+       const elapsed = Date.now() - S.at, dx = p.clientX - S.x, dy = p.clientY - S.y;
+       cancel();
+       if (elapsed < 0 || elapsed > 600 || Math.abs(dx) < 48 || Math.abs(dx) < 2 * Math.abs(dy)) return;
+-      const tab = dx < 0 ? "layout" : "scale";
++      const tab = "layout";
+       if (tab === sheetTab) return;
+       lipDrag = null;
+       lipParked = null;

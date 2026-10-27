@@ -1,0 +1,15 @@
+# kills: SPS fixture: header guidance and pinned footer controls remain outside the body
+# suite: node --test --test-name-pattern ^SPS.fixture:.header.guidance.and.pinned.footer.controls.remain.outside.the.body$ tests/sandbox_events.test.js
+# The closing body frame remains on the tag stack and incorrectly adopts later pinned controls.
+diff --git a/tools/sandbox.js b/tools/sandbox.js
+--- a/tools/sandbox.js
++++ b/tools/sandbox.js
+@@ -386,7 +386,7 @@ function boot(opts = {}) {
+       const name = tag.toLowerCase();
+       if (close) {
+         for (let i = stack.length - 1; i >= 0; i--) {
+-          if (stack[i].tag === name) { stack.length = i; break; }
++          if (stack[i].tag === name) { stack.length = stack[i].bodyNode ? i + 1 : i; break; }
+         }
+         continue;
+       }

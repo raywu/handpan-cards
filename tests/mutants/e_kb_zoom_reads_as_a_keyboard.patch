@@ -7,12 +7,14 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13154,7 +13154,7 @@ function applyKbOffset(e) {
+@@ -12635,8 +12635,8 @@ function applyKbOffset(e) {
     * deliberate fingers, and the reader who zoomed can pan.
     * The tolerance is for scales that do not land exactly on 1 coming back from
     * a pinch; a sub-percent residue is not a zoom. */
--  const zoomed = vv.scale > 1.01;
+-  const zoomed = sheetZoomed();
+-  if (zoomed) sheetSwipe = null;
 +  const zoomed = false;
++  if (sheetZoomed()) sheetSwipe = null;
    /* The keyboard-free baseline is the sheet's own height, not innerHeight:
     * #scale-sheet is position:fixed; inset:0, so it is the layout viewport's
     * height and does not depend on the cap or translate written below. iOS can

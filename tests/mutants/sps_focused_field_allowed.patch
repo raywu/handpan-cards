@@ -1,0 +1,24 @@
+# kills: SPS2: already-focused input and textarea origins preserve the current tab
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS2:.already\-focused.input.and.textarea.origins.preserve.the.current.tab$ tests/app.test.js
+# Focused field allowed at start and later check; current-tab assertion fails.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11675,7 +11675,7 @@ function setTab(tab) {
+       if (!S) return false;
+       if (!sheetOpen || S.tab !== sheetTab || sheetZoomed() || sheet.classList.contains("kbup") ||
+           Math.abs(scrollOf(body) - S.bodyTop) > 8 || Math.abs(scrollOf(sheetSurf) - S.surfTop) > 8 ||
+-          (S.field && (document.activeElement === S.field || selected(S.field))) ||
++          (S.field && selected(S.field)) ||
+           (S.box && (scrollOf(S.box) !== S.boxTop || (S.box.scrollLeft || 0) !== S.boxLeft))) {
+         cancel();
+         return false;
+@@ -11701,7 +11701,7 @@ function setTab(tab) {
+           p.clientX < 24 || p.clientX > window.innerWidth - 24 || sheet.classList.contains("kbup") ||
+           previewBox.contains(t) || (t && t.closest && t.closest("#scale-lip, select"))) return;
+       const field = t && t.closest ? t.closest("input, textarea") : null;
+-      if ((field && document.activeElement === field) || selected(field)) return;
++      if (selected(field)) return;
+       const box = field && field.tagName === "TEXTAREA" ? field : null;
+       sheetSwipe = { id: p.identifier, x: p.clientX, y: p.clientY, at: Date.now(), tab: sheetTab,
+         field, box, boxTop: scrollOf(box), boxLeft: box ? box.scrollLeft || 0 : 0,

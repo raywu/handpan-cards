@@ -1,0 +1,15 @@
+# kills: SPS1: normal touchend uses matching changedTouches final coordinates even without a move sample
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS1:.normal.touchend.uses.matching.changedTouches.final.coordinates.even.without.a.move.sample$ tests/app.test.js
+# Normal touchend removes contact from touches, so final-coordinate commit fails.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11717,7 +11717,7 @@ function setTab(tab) {
+     body.addEventListener("touchend", e => {
+       const S = sheetSwipe;
+       if (!S) return;
+-      const changed = e.changedTouches;
++      const changed = e.touches;
+       const p = changed && changed.length === 1 && changed[0].identifier === S.id && changed[0];
+       if (!p || (e.touches && e.touches.length) || !point(p)) { cancel(); return; }
+       const elapsed = Date.now() - S.at, dx = p.clientX - S.x, dy = p.clientY - S.y;
