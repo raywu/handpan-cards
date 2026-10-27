@@ -5526,7 +5526,7 @@ function run() {
       }
       await openDrawer();
       const inner = [];
-      for (let k = 0; k < 14; k++) {
+      for (let k = 0; k < 24; k++) {
         await b.key("Tab", "Tab", 9);
         inner.push(await b.eval(`
           const el = document.activeElement;

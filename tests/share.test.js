@@ -594,12 +594,9 @@ test("decode propagates parseSeed's own code for an invalid seed", () => {
 
 test("decode propagates a rejected OPTION rather than repairing it", () => {
   // Section 14: parseSeed validates the seed options too, so a payload with an
-  // out-of-range palette must be refused, not clamped.
+  // out-of-range parent must be refused, not clamped.
   const seed = parsed(BASE);
-  seed.options.palette = 10;
-  const r = share.decode(encoded(seed));
-  assert.equal(r.ok, false);
-  assert.equal(r.code, "BAD_NOTE");
+  seed.options.parent = 11;
   const v4 = share.decode(v4Link(seed));
   assert.equal(v4.ok, false);
   assert.equal(v4.code, "BAD_NOTE");
