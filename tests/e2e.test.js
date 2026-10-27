@@ -18835,11 +18835,12 @@ function run() {
 
     test("SV-PG: with 200 saved variants, 30 chip taps each select the tapped scale within 500 ms",{timeout:120000},async()=>{
       await freshLoad();await b.setViewport(380,780,false);
-      const records=Array.from({length:200},(_,i)=>({...clone(SV.portableRecords.amaraA),o:{name:"SVPG "+String(i+1).padStart(3,"0"),palette:i%6}}));
-      await b.eval(`return ${nativeSavedExpression({write:true,raw:JSON.stringify(makeEnvelope(records,{preferredSelection:{kind:"builtin",id:"kurd"}}))})};`);
-      await navigate();
       const taps=[...new Set([0,199,...Array.from({length:28},(_,i)=>Math.round((i+1)*199/29))])];
       assert.strictEqual(taps.length,30,"thirty distinct chips are tapped");
+      const tapPalette=new Map(taps.map((i,k)=>[i,k%10]));
+      const records=Array.from({length:200},(_,i)=>({...clone(SV.portableRecords.amaraA),o:{name:"SVPG "+String(i+1).padStart(3,"0"),palette:tapPalette.has(i)?tapPalette.get(i):i%10}}));
+      await b.eval(`return ${nativeSavedExpression({write:true,raw:JSON.stringify(makeEnvelope(records,{preferredSelection:{kind:"builtin",id:"kurd"}}))})};`);
+      await navigate();
       const rows=await b.eval(`const taps=${JSON.stringify(taps)},uid=${uid.toString()},out=[];
         return (async()=>{
           if(document.querySelectorAll('#decks .chip[data-selection-kind="saved"]').length!==200)return {error:'200 saved chips are not rendered'};
@@ -18856,7 +18857,7 @@ function run() {
               await new Promise(resolve=>setTimeout(resolve,0));
             }
             await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
-            out.push({i,ms:performance.now()-t0});
+            out.push({i,ms:performance.now()-t0,root:getComputedStyle(document.documentElement).getPropertyValue('--root').trim().toLowerCase()});
           }
           return {rows:out};
         })();`);
@@ -18864,6 +18865,8 @@ function run() {
       const max=Math.max(...rows.rows.map(r=>r.ms));
       console.log("SV_PG_TAPS "+JSON.stringify({count:rows.rows.length,maxMs:Math.round(max*10)/10,perTapMs:rows.rows.map(r=>Math.round(r.ms*10)/10)}));
       assert.strictEqual(rows.rows.length,30);
+      assert.strictEqual(new Set(tapPalette.values()).size,10,"all ten palettes are used");
+      for(let k=1;k<rows.rows.length;k++)assert.notStrictEqual(rows.rows[k].root,rows.rows[k-1].root,"taps "+(k-1)+" and "+k+" share a root colour");
       for(const r of rows.rows)assert.ok(r.ms<500,"chip "+r.i+" selected in "+r.ms.toFixed(1)+" ms, bound 500");
     });
 
