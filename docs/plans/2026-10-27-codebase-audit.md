@@ -102,7 +102,7 @@ time cannot be read from CI; counts and file sizes stand in.
 - The mutation gate is 1,515 patches over 4 shards (379/379/379/378 per `mutant-shard-*.txt`).
   Per `tests/mutation_check.sh:216-225`, a targeted mutant costs about 3.6 s and a whole-file one about 33 s.
   1,387 patches target `node`, 128 `python3`. Every patch has a `# suite:` header (`grep -L` returns none),
-  but headers naming a whole file rather than a test pattern cost roughly 9x; count them with
+  but headers naming a whole file rather than a test pattern cost roughly 9x. 131 of 1,515 headers carry no `--test-name-pattern` (some are python, so the whole-file count is lower); measured with
   `grep -h '^# suite:' tests/mutants/*.patch | grep -vc test-name-pattern`.
 - The slowest shard (3) finishes 4 minutes after the fastest (2), so the shard split is by count, not by cost.
 - The 2026-10-26 run on `codex/helpers-integration-20261026` shows a cancelled run 13 minutes in, then a
