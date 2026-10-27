@@ -1,0 +1,138 @@
+{
+  "observed_utc": "2026-10-27T03:09:47.679214+00:00",
+  "scope": "selected owned active/recent worktrees only; canonical dirty/locked tree preserved, not modified",
+  "worktrees": [
+    {
+      "worktree": "/private/tmp/handpan-claude-takeover-20261026",
+      "HEAD": "3542d6ea868bf08e81a0b4f06c4bc71bbc20cbcb",
+      "branch": "refs/heads/codex/claude-takeover-20261026",
+      "status": [
+        " M docs/WORKSTREAMS.md",
+        "?? docs/CLAUDE_RETURN_HANDOFF.md",
+        "?? docs/CLAUDE_TAKEOVER_PLAN.md",
+        "?? docs/DEVELOPMENT_CONTINUITY.md",
+        "?? docs/handoff/",
+        "?? docs/plans/2026-10-25-agent-code-quality-comparison-prompt.md",
+        "?? docs/plans/2026-10-25-linear-roadmap-investigation-prompt.md",
+        "?? docs/plans/2026-10-25-workstream-status.md",
+        "?? docs/plans/2026-10-26-built-in-palette-defaults.md",
+        "?? docs/plans/2026-10-26-held-mouse-capture-helper-repair.md",
+        "?? docs/plans/2026-10-26-mutant-neotone-layout.md",
+        "?? docs/plans/2026-10-26-performance-validation-simplification.md",
+        "?? docs/plans/2026-10-26-release-candidate-and-claude-handoff.md",
+        "?? docs/plans/2026-10-26-repository-rename-handpan-chords.md",
+        "?? docs/plans/2026-10-26-saved-variants-gesture-gates.md",
+        "?? docs/plans/2026-10-26-saved-variants-regroup.md",
+        "?? docs/plans/2026-10-26-saved-variants-route-intent.md",
+        "?? docs/plans/2026-10-26-saved-variants-timing-oracle.md",
+        "?? docs/prompts/2026-10-26-built-in-palette-defaults.md",
+        "?? docs/prompts/2026-10-26-claude-takeover-planning.md",
+        "?? docs/prompts/2026-10-26-claude-takeover.md",
+        "?? docs/prompts/2026-10-26-mutant-neotone-layout.md",
+        "?? docs/prompts/2026-10-26-repository-rename-handpan-chords.md"
+      ],
+      "status_exit": 0,
+      "MERGE_HEAD_exists": false,
+      "CHERRY_PICK_HEAD_exists": false,
+      "REBASE_HEAD_exists": false
+    },
+    {
+      "worktree": "/private/tmp/handpan-helpers.HUZs5u/integration",
+      "HEAD": "4ea8e0f7afbbe24b7f99cbcafbdbc02d322a2fae",
+      "branch": "refs/heads/codex/helpers-integration-20261026",
+      "status": [],
+      "status_exit": 0,
+      "MERGE_HEAD_exists": false,
+      "CHERRY_PICK_HEAD_exists": false,
+      "REBASE_HEAD_exists": false
+    },
+    {
+      "worktree": "/private/tmp/handpan-neotone-future-plan-20261026",
+      "HEAD": "6c62e758696143af89c24c339394a01e6576c0cc",
+      "branch": "refs/heads/codex/neotone-future-plan-20261026",
+      "status": [],
+      "status_exit": 0,
+      "MERGE_HEAD_exists": false,
+      "CHERRY_PICK_HEAD_exists": false,
+      "REBASE_HEAD_exists": false
+    },
+    {
+      "worktree": "/private/tmp/handpan-palette-defaults-plan.20261026",
+      "HEAD": "081693105a0c7121413ff936e133a2d0a7459a3d",
+      "branch": "refs/heads/codex/palette-defaults-plan-20261026",
+      "status": [],
+      "status_exit": 0,
+      "MERGE_HEAD_exists": false,
+      "CHERRY_PICK_HEAD_exists": false,
+      "REBASE_HEAD_exists": false
+    },
+    {
+      "worktree": "/private/tmp/handpan-release-rc-20261026",
+      "HEAD": "3542d6ea868bf08e81a0b4f06c4bc71bbc20cbcb",
+      "branch": "refs/heads/codex/release-rc-20261026",
+      "status": [],
+      "status_exit": 0,
+      "MERGE_HEAD_exists": false,
+      "CHERRY_PICK_HEAD_exists": false,
+      "REBASE_HEAD_exists": false
+    },
+    {
+      "worktree": "/private/tmp/handpan-saved-variants.HVUKbE/hash-source",
+      "HEAD": "87a5d766bd80e377b4d17b5bd6338f8d3ef88359",
+      "branch": "refs/heads/codex/variants-hash-source-20261026",
+      "status": [],
+      "status_exit": 0,
+      "MERGE_HEAD_exists": false,
+      "CHERRY_PICK_HEAD_exists": false,
+      "REBASE_HEAD_exists": false
+    },
+    {
+      "worktree": "/private/tmp/handpan-saved-variants.HVUKbE/hash-tests",
+      "HEAD": "cab63c9dc47a6ce983218cf113822feb6810eb64",
+      "branch": "refs/heads/codex/variants-hash-tests-20261026",
+      "status": [],
+      "status_exit": 0,
+      "MERGE_HEAD_exists": false,
+      "CHERRY_PICK_HEAD_exists": false,
+      "REBASE_HEAD_exists": false
+    },
+    {
+      "worktree": "/private/tmp/handpan-saved-variants.HVUKbE/integration",
+      "HEAD": "2a260d212ec8e14394b7198f075366d13bf372ec",
+      "branch": "refs/heads/codex/saved-scale-variants-20261025",
+      "status": [
+        " M docs/WORKSTREAMS.md",
+        " M docs/plans/2026-10-25-workstream-status.md",
+        "?? docs/CLAUDE_RETURN_HANDOFF.md",
+        "?? docs/plans/2026-10-26-mutant-neotone-layout.md",
+        "?? docs/plans/2026-10-26-performance-validation-simplification.md",
+        "?? docs/plans/2026-10-26-release-candidate-and-claude-handoff.md",
+        "?? docs/prompts/2026-10-26-mutant-neotone-layout.md"
+      ],
+      "status_exit": 0,
+      "MERGE_HEAD_exists": false,
+      "CHERRY_PICK_HEAD_exists": false,
+      "REBASE_HEAD_exists": false
+    },
+    {
+      "worktree": "/private/tmp/handpan-saved-variants.HVUKbE/regroup-mutants",
+      "HEAD": "dcf394066ffb15dc09edd3b442bb607612b6f7da",
+      "branch": "refs/heads/codex/variants-regroup-mutations-20261026",
+      "status": [],
+      "status_exit": 0,
+      "MERGE_HEAD_exists": false,
+      "CHERRY_PICK_HEAD_exists": false,
+      "REBASE_HEAD_exists": false
+    },
+    {
+      "worktree": "/private/tmp/handpan-sps-z8gaznu2/integration",
+      "HEAD": "3a8467ff9ad2543ecb728e1394829a99354fca37",
+      "branch": "refs/heads/codex/sheet-tab-swipe-20261025",
+      "status": [],
+      "status_exit": 0,
+      "MERGE_HEAD_exists": false,
+      "CHERRY_PICK_HEAD_exists": false,
+      "REBASE_HEAD_exists": false
+    }
+  ]
+}
