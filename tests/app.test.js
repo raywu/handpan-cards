@@ -14596,7 +14596,7 @@ describe("OF: the sheet's seats follow the typed order", () => {
     assert.strictEqual(d2Status(app), "", "a parsing box on reopen must not replay the stale sentence");
   });
 
-  test("OF: PD NEXT and each cyclic keyboard entry show a rim reorder sentence once and through each cyclic keyboard entry", async () => {
+  test("OF: PD NEXT and each cyclic keyboard entry show a rim reorder sentence once", async () => {
     for (const route of ["next", "ArrowRight", "ArrowLeft", "End"]) {
       const app = add();
       typedFields(app, "D3", "C4 A3 D4 E4 F4 G4 A4 C5");
