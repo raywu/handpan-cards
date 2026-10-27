@@ -1,5 +1,13 @@
 # Saved variants — matched selection/frame validation
 
+> **SUPERSEDED (owner, 2026-10-27).** The matched rAF A-B-A frame gate, the A0
+> controller and `tools/probe/saved_variants_selection.js` are dropped. Saved-variants
+> performance is gated by the SV-PG e2e test (200 saved variants, 30 chip taps, each
+> selecting within 500 ms, timed in-page) plus owner iPhone Safari QA on DEV. Every Mac
+> failure was apparatus (the clock-coarsening zero, equal rAF stamps, a 5 s observer
+> timeout in the baseline arm) and the candidate was never measured. Do not rebuild
+> timing infrastructure. The text below is history.
+
 ## Existing gate and supported target
 
 Implements the approved parent plan's input-to-paint diagnostic gate, separate
