@@ -25,7 +25,7 @@ in no other file outside `docs/plans`, `docs/prompts` and `docs/handoff`.
   - Fixtures with one referrer: `golden_decks_v7.json` (`tests/test_deck_data.py:615`),
     `i18n_contract_v1.json`, `i18n_english_dom_v1.json`, `seq_ui_base_e728912.json` (`tests/app.test.js`),
     `import_cases_v1.json`, `sequence_tier_golden.json`.
-- `golden_decks_v3`, `v7` and `v8` coexist. v3 is read by 3 suites, v7 by `test_deck_data.py`
+- `golden_decks_v3`, `v7` and `v8` coexist. v3 is read by 6 suites (`core`, `naming`, `select`, `voicing` and `share` `.test.js`, and `test_fixture_integrity.py`), v7 by `test_deck_data.py`
   only, v8 by `test_fixture_integrity.py` and a mutant. Whether v7 is superseded by v8 needs a
   human read of `tests/test_deck_data.py:615`.
 - `tools/research/engine_measure/` (11 scripts, 48 KB) is named by no code, test or workflow, but `docs/SCALE_ENGINE_PLAN.md:14`, `:672` and `:777` cite it as provenance for binding engine decisions. Keep it unless the owner retires those citations.
@@ -42,7 +42,7 @@ in no other file outside `docs/plans`, `docs/prompts` and `docs/handoff`.
   `2026-09-22-ios-print-*.md` (3), `2026-09-30-quality-refactor*.md`, `2026-10-05-refactor-pass-3*.md` (3),
   `2026-10-14-refactor-pass-5*.md`, `2026-10-17-refactor-pass-6*.md`, `2026-10-22-print-header.md`,
   `2026-10-24-naturalness*.md` (3), `2026-10-24-main-release-queue.md`. All of the above belong to
-  work that CLAUDE.md or memory records as COMPLETE or MERGED (refactor passes 3 to 7, difficulty, tier rebalance).
+  work that CLAUDE.md or memory records as COMPLETE or MERGED (refactor passes 3 to 7, difficulty, tier rebalance); completion for the naturalness and main-release-queue plans is recorded in `docs/WORKSTREAMS.md`.
 - `docs/plans/drawer-polish-plan.md` and `scale-engine-coordination.md` are the only undated
   plan names; they break the `YYYY-MM-DD-` convention and sort apart.
 - Top-level `docs/` carries overlapping handoff-style files: `CLAUDE_RETURN_HANDOFF.md` (158 lines),
@@ -56,7 +56,7 @@ in no other file outside `docs/plans`, `docs/prompts` and `docs/handoff`.
 ## 3. Duplicated logic, src/engine versus app code in index.html
 
 Method: node scan extracting every function/arrow name from `src/engine/*.js` (except fontdata)
-and testing the 6,860 non-engine, non-DECKS lines of `index.html` for a same-named top-level definition.
+and testing the 6,859 non-engine, non-DECKS lines of `index.html` for a same-named top-level definition.
 
 - Only three same-name hits, none a true duplicate:
   - `escapeText` at `index.html:9634` escapes HTML (`& < >`); `src/engine/pdf.js:47` escapes PDF
@@ -64,7 +64,7 @@ and testing the 6,860 non-engine, non-DECKS lines of `index.html` for a same-nam
   - `bottomAngles` at `index.html:11914` is a thin reader over `lastSolved.fields`; `src/engine/layout.js:156`
     computes the ring. Not duplicate.
   - `rank` at `index.html:11963` is a local sort key; `select.js` `rank` is the chord ranker.
-- Small numeric duplication, all in app code and not in engine regions:
+- Small numeric duplication (two hits are generated engine copies, the rest app-side):
   - `index.html:6122` and `6127` fall inside the generated `engine:layout` region (6040-6792) and are copies of `src/engine/layout.js:81` and `:86`; they are not duplication.
   - App-side sites only: degree to radian `* Math.PI / 180` at `index.html:10300` and `13265`; angle wrap `((a % 360) + 360) % 360` at `11910` (`turnTo`). `11796` (`placeOf`) is a 22.5 degree bucket into 8 places, not a plain wrap. Engine twins exist in `layout.js`, `pdf.js`, `pdfcards.js`. A shared helper would remove about three copies. Low value, low risk.
   - `PC_NAMES` is defined in `src/engine/voicing.js:26` only (index copy at 5745 is its inlined region); app code
@@ -74,7 +74,7 @@ and testing the 6,860 non-engine, non-DECKS lines of `index.html` for a same-nam
 - Cross-language duplication is by design and test-pinned: `tools/hifi.py` versus `src/engine/pdfcards.js`
   (`tests/test_render_agreement.py`), and `PC` helpers in Python. Not an audit finding.
 - Verdict: duplication between engine and app is small. The larger structural cost is size: `index.html`
-  is 14,625 lines, 7,765 of them generated engine and 6,860 hand-written app JS/CSS/markup in one file,
+  is 14,625 lines, 7,765 of them generated engine and 6,859 hand-written app JS/CSS/markup in one file,
   an owner-mandated constraint (single-file app), so the lever is tests and tooling, not splitting.
 
 ## 4. Test-suite cost hot spots
