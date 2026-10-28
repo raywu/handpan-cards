@@ -15992,7 +15992,7 @@ function run() {
         await spaOpen(380,780,{tab:"layout"});
         const pan=await b.eval(`const e=document.querySelector("#scale-preview .panhit");const r=e.getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2};`);
         await spsTouch(pan,80);
-        assert.strictEqual(await spsTab(),"layout","SW: a left swipe on the pan on Layout stays on Layout");
+        assert.strictEqual(await spsTab(),"scale","SW: a preview descendant now starts the shortcut: a right swipe on the pan reaches Scale");
 
         await spaOpen(380,780);
         await b.eval(`const e=document.getElementById("scale-top");e.focus();e.setSelectionRange(0,1);return true;`);
