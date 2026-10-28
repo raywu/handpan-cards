@@ -1,0 +1,47 @@
+{
+  "provenance": "v4 record with seats, angles, mirror, mirrorBottom, anchor, replaces, parent, palette and name. Shape from CLAUDE.md \"App data model\" and the stored-record sentences of its version; authored at 7d80d65d.",
+  "key": "hpfc.scales.v3",
+  "records": [
+    {
+      "v": 4,
+      "s": "[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 [Ab5]",
+      "o": {
+        "name": "V4 full",
+        "palette": 4,
+        "mirror": true,
+        "mirrorBottom": false,
+        "anchor": "between",
+        "parent": null,
+        "replaces": "pygmy",
+        "angles": {
+          "bottom": [
+            310,
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        "seats": {
+          "rim": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            0
+          ]
+        }
+      }
+    }
+  ],
+  "deckIds": [
+    "custom:b936039c"
+  ]
+}

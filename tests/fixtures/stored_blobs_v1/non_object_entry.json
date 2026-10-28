@@ -1,0 +1,26 @@
+{
+  "provenance": "a non-object entry between two readable records. Shape from CLAUDE.md \"App data model\" and the stored-record sentences of its version; authored at 7d80d65d.",
+  "key": "hpfc.scales.v3",
+  "records": [
+    {
+      "v": 4,
+      "s": "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+      "o": {
+        "name": "A"
+      }
+    },
+    "junk",
+    {
+      "v": 4,
+      "s": "(C#3) G#3 B3 C#4 D4 F4 F#4 G#4 B4",
+      "o": {
+        "name": "H"
+      }
+    }
+  ],
+  "deckIds": [
+    "custom:977311b5",
+    null,
+    "custom:626198f8"
+  ]
+}

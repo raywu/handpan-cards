@@ -1,0 +1,15 @@
+# kills: boot silently drops every record it restores
+# suite: node --test --test-name-pattern ^SC.boot.never.drops.or.alters.the.notes.of.any.stored.record.in.the.corpus$ tests/storage_corpus.test.js
+# restoreScales pushes each kept record into the rewritten list; without the
+# push the rewrite is an empty list and the boot writes it over the user's scales.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10140,7 +10140,6 @@ function restoreScales() {
+         }
+       }
+     } catch (e) {}
+-    out.push(keep);
+   }
+   if (JSON.stringify(out) !== JSON.stringify(list)) writeScales(out);
+ }
