@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>QA Seed</title>
+<style>
+  body { font: 16px/1.4 system-ui, sans-serif; margin: 0; padding: 16px; background: #fff; color: #111; }
+  button, a.btn { display: block; width: 100%; box-sizing: border-box; padding: 14px; margin: 12px 0; font: inherit; font-weight: 600;
+    text-align: center; border: 2px solid #111; border-radius: 8px; background: #f2f2f2; color: #111; text-decoration: none; }
+  button:disabled { opacity: .4; }
+  #status { min-height: 1.4em; font-weight: 600; }
+</style>
+</head>
+<body>
+<h1>QA seed: 200 saved scales</h1>
+<p>Writes 200 scales named QA 001 to QA 200 in the format the production app saves (<code>hpfc.scales.v3</code>), and clears this preview's new saved-scale store so the app migrates them on its next boot.</p>
+<button id="seed" type="button">SEED 200</button>
+<p id="status" role="status"></p>
+<a class="btn" id="open" href="./">OPEN APP</a>
+<script>
+const allowedHost = h => /^[a-z0-9-]+\.handpan-cards-dev\.pages\.dev$/.test(h);
+const SEED_SCALE = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
+const records = () => Array.from({ length: 200 }, (_, i) => ({ v: 4, s: SEED_SCALE, o: { name: "QA " + String(i + 1).padStart(3, "0"), palette: i % 6 } }));
+const status = document.getElementById("status");
+const deleteDb = name => new Promise(resolve => {
+  try { const r = indexedDB.deleteDatabase(name); r.onsuccess = r.onerror = r.onblocked = () => resolve(); } catch (e) { resolve(); }
+});
+async function seed() {
+  localStorage.removeItem("hpfc.saved-scales.v1");
+  localStorage.removeItem("hpfc.scales");
+  await deleteDb("hpfc.saved-scales.v1");
+  localStorage.setItem("hpfc.scales.v3", JSON.stringify(records()));
+  const n = JSON.parse(localStorage.getItem("hpfc.scales.v3")).length;
+  status.textContent = n + " written";
+  return n;
+}
+if (!allowedHost(location.hostname)) {
+  document.getElementById("seed").disabled = true;
+  status.textContent = "Refused: this page runs only on a Cloudflare preview address of this project.";
+} else {
+  document.getElementById("seed").addEventListener("click", () => {
+    seed().catch(e => { status.textContent = "Failed: " + e.message; });
+  });
+}
+</script>
+</body>
+</html>
