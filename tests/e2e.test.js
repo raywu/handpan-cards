@@ -10231,7 +10231,7 @@ function run() {
             aboutAlone: row.children.length === 1,
             aboutFull: Math.abs(about.getBoundingClientRect().width - row.getBoundingClientRect().width) <= 1,
             underTrigger: ctrls.filter(e => hit(e.getBoundingClientRect(), t)).map(e => e.id || e.textContent.trim()),
-            ncols: new Set([...p.children].filter(g => g.getBoundingClientRect().width > 8).map(g => Math.round(g.getBoundingClientRect().left))).size, lefts: [...p.children].map(g => (g.id||g.className) + "@" + Math.round(g.getBoundingClientRect().left) + "/" + Math.round(g.getBoundingClientRect().width)).join(" "),
+            ncols: new Set([...p.querySelectorAll(".panel-group")].filter(g => g.getBoundingClientRect().width > 8).map(g => Math.round(g.getBoundingClientRect().left))).size, lefts: [...p.children].map(g => (g.id||g.className) + "@" + Math.round(g.getBoundingClientRect().left) + "/" + Math.round(g.getBoundingClientRect().width)).join(" "),
             gridCols: getComputedStyle(p).gridTemplateColumns.split(" ").length,
             pl: parseFloat(getComputedStyle(p).paddingLeft), pr: parseFloat(getComputedStyle(p).paddingRight),
             wrapped: ctrls.filter(e => e.tagName !== "SELECT" && !/\\s/.test(e.textContent.trim()) && lineCount(e) > 1).map(e => e.id + ":" + e.textContent.trim()),
@@ -10335,7 +10335,7 @@ function run() {
                 s.scrollIntoView({ block: "center" });
                 const k = s.getBoundingClientRect();
                 const top = document.elementFromPoint(k.left + k.width / 2, k.top + k.height / 2);
-                return { restore: !r.hidden, ncols: new Set([...p.children].filter(g => g.getBoundingClientRect().width > 8).map(g => Math.round(g.getBoundingClientRect().left))).size, scrollW: p.scrollWidth, clientW: p.clientWidth, hitSelect: top === s };`);
+                return { restore: !r.hidden, ncols: new Set([...p.querySelectorAll(".panel-group")].filter(g => g.getBoundingClientRect().width > 8).map(g => Math.round(g.getBoundingClientRect().left))).size, scrollW: p.scrollWidth, clientW: p.clientWidth, hitSelect: top === s };`);
               assert.ok(m.restore, `${label}: RESET SEEDED SCALES is showing`);
               assert.ok(m.scrollW <= m.clientW + 1, `${label}: overflows horizontally (${m.scrollW} > ${m.clientW})`);
               assert.strictEqual(m.ncols, 2, `${label}: the groups sit in ${m.ncols} columns`);
@@ -10350,7 +10350,7 @@ function run() {
         }
       });
 
-    test("LS2: with the progression note and RESET SEEDED SCALES showing, Language sits in the left column one row-gap under Print this scale at 844x390 and 800x340 (REAL fonts)",
+    test("LS2: with the progression note and RESET SEEDED SCALES showing, the columns balance: Flash cards, Print, Scales left and Resources, Language right, each stacked flush, at 844x390 and 800x340 (REAL fonts)",
       { timeout: 120000 }, async () => {
         try {
           await rb.setViewport(844, 390, true);
@@ -10370,16 +10370,24 @@ function run() {
               await rb.waitFor(`!document.getElementById("panel-seq-note").hidden`, { label: "progression note" });
             }
             const m = await rb.eval(`
+              const byHeading = t => [...document.querySelectorAll("#settings-panel .panel-group")].find(c => c.querySelector(".panel-heading").textContent === t);
+              const names = [["Flash cards", "L"], ["Print this scale", "L"], ["Scales", "L"], ["Resources", "R"], ["Language", "R"]];
+              const rects = names.map(([t, side]) => { const el = byHeading(t); const r = el.getBoundingClientRect(); return { t, side, left: r.left, top: r.top, bottom: r.bottom, mb: parseFloat(getComputedStyle(el).marginBottom) }; });
               const p = document.getElementById("settings-panel");
-              const g = id => document.getElementById(id).closest(".panel-group").getBoundingClientRect();
-              const print = [...p.children].find(c => c.querySelector(".panel-heading") && c.querySelector(".panel-heading").textContent === "Print this scale").getBoundingClientRect();
-              const lang = g("lang-select");
-              const flash = g("modeA");
-              return { note: !document.getElementById("panel-seq-note").hidden, restore: !document.getElementById("deck-restore").hidden,
-                gap: lang.top - print.bottom, dbg: [...p.children].map(c => [c.id + c.tagName + (c.querySelector(".panel-heading") ? c.querySelector(".panel-heading").textContent : ""), Math.round(c.getBoundingClientRect().left), Math.round(c.getBoundingClientRect().top), Math.round(c.getBoundingClientRect().height)]), rowGap: parseFloat(getComputedStyle(p).rowGap), langLeft: lang.left, flashLeft: flash.left, printLeft: print.left };`);
-            assert.ok(m.note && m.restore, `${label}: note and RESET both showing ${JSON.stringify(m)}`);
-            assert.ok(Math.abs(m.gap - m.rowGap) <= 1, `${label}: Language is ${m.gap}px under Print, row-gap ${m.rowGap} ${JSON.stringify(m.dbg)}`);
-            assert.ok(Math.abs(m.langLeft - m.flashLeft) <= 1 && Math.abs(m.printLeft - m.flashLeft) <= 1, `${label}: Language is in the left column`);
+              const col = document.querySelector("#settings-panel .panel-col");
+              return { note: !document.getElementById("panel-seq-note").hidden, restore: !document.getElementById("deck-restore").hidden, rects,
+                rowGapL: parseFloat(getComputedStyle(p).rowGap) || 0, rowGapR: parseFloat(getComputedStyle(col).rowGap) || 0,
+                about: document.getElementById("about-open").getBoundingClientRect().bottom, resBottom: byHeading("Resources").getBoundingClientRect().bottom };
+            `);
+            assert.ok(m.note && m.restore, `${label}: note and RESET both showing`);
+            const left = m.rects.filter(r => r.side === "L"), right = m.rects.filter(r => r.side === "R");
+            assert.ok(left.every(r => Math.abs(r.left - left[0].left) <= 1) && right.every(r => Math.abs(r.left - right[0].left) <= 1) && right[0].left > left[0].left + 50, `${label}: two columns ${JSON.stringify(m.rects)}`);
+            for (const [col, rg] of [[left, m.rowGapL], [right, m.rowGapR]]) {
+              for (let i = 1; i < col.length; i++) {
+                assert.ok(Math.abs(col[i].top - col[i - 1].bottom - col[i - 1].mb - rg) <= 1, `${label}: ${col[i].t} is ${col[i].top - col[i - 1].bottom}px under ${col[i - 1].t}, margin ${col[i - 1].mb} row-gap ${rg}`);
+              }
+            }
+            assert.ok(Math.abs(m.about - m.resBottom) <= 12, `${label}: ABOUT is the last Resources row`);
             await rb.key("Escape", "Escape", 27);
             await rb.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: `close at ${label}` });
           }
@@ -14140,7 +14148,7 @@ function run() {
               window.__pf.one(m);
               const ph = document.getElementById("panel-prog-heading");
               return { needed: c.needed, neededNoAbout, langCost: c.needed - neededNoLang,
-                groups: [...document.querySelectorAll("#settings-panel > .panel-group")].map((g) => g.getBoundingClientRect().height),
+                groups: [...document.querySelectorAll("#settings-panel .panel-group")].map((g) => g.getBoundingClientRect().height),
                 mt: ph ? parseFloat(getComputedStyle(ph).marginTop) : null,
                 sp1: parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--sp-1")),
                 hg: ph ? ph.getBoundingClientRect().height + parseFloat(getComputedStyle(ph).marginTop) : null };
