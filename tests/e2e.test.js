@@ -2670,15 +2670,17 @@ function run() {
             }
           }
           const stops=await browser.eval(`return panelStops().map(e=>e.id);`);
-          assert.deepStrictEqual(stops.slice(-4), ["res-handpan-helpers","res-handpan-101","about-open","lang-select"],
+          const gridMenu=await browser.eval(`const c=document.querySelector("#settings-panel > .panel-col");return !!c&&getComputedStyle(c).display==="flex";`);
+          const tail=gridMenu?["lang-select","about-open"]:["about-open","lang-select"];
+          assert.deepStrictEqual(stops.slice(-4), ["res-handpan-helpers","res-handpan-101",...tail],
             `${label}: Helpers is one new stop immediately before HANDPAN 101, ABOUT and Language`);
           assert.strictEqual(stops.filter(id=>id==="res-handpan-helpers").length,1,`${label}: Helpers appears exactly once in panel stops`);
           await browser.eval(`document.getElementById("res-handpan-helpers").focus(); return true;`);
-          for(const id of ["res-handpan-101","about-open","lang-select"]){
+          for(const id of ["res-handpan-101",...tail]){
             await browser.key("Tab","Tab",9);
             assert.strictEqual(await browser.eval(`return document.activeElement.id;`),id,`${label}: forward Tab reaches ${id}`);
           }
-          for(const id of ["about-open","res-handpan-101","res-handpan-helpers"]){
+          for(const id of [tail[0],"res-handpan-101","res-handpan-helpers"]){
             await browser.send("Input.dispatchKeyEvent",{type:"keyDown",key:"Tab",code:"Tab",windowsVirtualKeyCode:9,nativeVirtualKeyCode:9,modifiers:8});
             await browser.send("Input.dispatchKeyEvent",{type:"keyUp",key:"Tab",code:"Tab",windowsVirtualKeyCode:9,nativeVirtualKeyCode:9,modifiers:8});
             const focused=await browser.eval(`const e=document.activeElement,cs=getComputedStyle(e),r=e.getBoundingClientRect();
