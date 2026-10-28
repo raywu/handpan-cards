@@ -1767,6 +1767,7 @@ function run() {
     const dimensional = [...seen].filter((c) => parseCondition(c).queries).sort();
     assert.deepStrictEqual(dimensional, [
       "(max-height: 520px)",
+      "(min-height: 360px) and (max-height: 520px) and (min-width: 740px)",
       "(min-width: 1024px) and (min-height: 700px)",
       "(min-width: 640px) and (min-height: 700px)",
     ].sort());
@@ -1963,6 +1964,54 @@ function run() {
             await b.key("Escape", "Escape", 27);
             await b.waitFor(`document.getElementById("settings-panel").hidden === true`,
               { label: `panel to close at ${label}` });
+          }
+        }
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+  test("LE: at 844x390, 740x360 and 926x428 the open settings panel fits with no scroll in every locale, ABOUT alone in its row, and Tab order unchanged",
+    { timeout: 240000 }, async () => {
+      await freshLoad();
+      try {
+        const langs = await b.eval(`return [...document.getElementById("lang-select").options].map(o => o.value).filter(v => v !== "auto");`);
+        assert.strictEqual(langs.length, 8, "eight UI locales");
+        let count = null;
+        for (const [vw, vh] of [[844, 390], [740, 360], [926, 428]]) {
+          await b.setViewport(vw, vh, true);
+          await b.settle();
+          for (const lang of langs) {
+            await openSettingsPanel();
+            await b.eval(`const e=document.getElementById("lang-select");e.value=${JSON.stringify(lang)};e.dispatchEvent(new Event("change",{bubbles:true}));return true;`);
+            await b.waitFor(`document.documentElement.lang === ${JSON.stringify(lang)}`, { label: "locale applied" });
+            const label = `${vw}x${vh} ${lang}`;
+            const m = await b.eval(`
+              const p = document.getElementById("settings-panel");
+              const ctrls = [...p.querySelectorAll("button, select, a")].filter(e => e.offsetParent);
+              const about = document.getElementById("about-open");
+              const row = about.parentElement;
+              const g = getComputedStyle(p);
+              return {
+                scrollH: p.scrollHeight, clientH: p.clientHeight, scrollW: p.scrollWidth, clientW: p.clientWidth,
+                cols: g.columnCount,
+                offscreen: ctrls.filter(e => { const k = e.getBoundingClientRect();
+                  return k.left < 0 || k.top < 0 || k.right > innerWidth + 0.5 || k.bottom > innerHeight + 0.5; }).map(e => e.id || e.textContent.trim()),
+                aboutAlone: row.children.length === 1,
+                aboutFull: Math.abs(about.getBoundingClientRect().width - row.getBoundingClientRect().width) <= 1,
+                tabindex: ctrls.filter(e => e.tabIndex > 0).length,
+                n: ctrls.length,
+              };`);
+            assert.strictEqual(m.cols, "2", `${label}: two CSS columns`);
+            assert.ok(m.scrollH <= m.clientH + 1, `${label}: panel scrolls (${m.scrollH} > ${m.clientH})`);
+            assert.ok(m.scrollW <= m.clientW + 1, `${label}: panel overflows horizontally`);
+            assert.deepStrictEqual(m.offscreen, [], `${label}: controls off screen`);
+            assert.ok(m.aboutAlone && m.aboutFull, `${label}: ABOUT alone in its full-width row`);
+            assert.strictEqual(m.tabindex, 0, `${label}: no positive tabindex`);
+            count = count || m.n;
+            assert.strictEqual(m.n, count, `${label}: same controls`);
+            await b.key("Escape", "Escape", 27);
+            await b.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: `close at ${label}` });
           }
         }
       } finally {
@@ -10113,7 +10162,7 @@ function run() {
           // (-50 where the print group was the tall column): 328.25 -> 375.25,
           // 310 -> 357, 251.75 unchanged, 313 -> 310.
           // Retain accepted Lane W single-row pins with compact HTC.
-          [740, 360, "S", 372.75], [740, 340, "S", 372.75], [812, 330, "S", 357], [926, 310, "S", 251.75],
+          [740, 360, "S", 0 /* LE: two columns, no scroll */], [740, 340, "S", 372.75], [812, 330, "S", 357], [926, 310, "S", 251.75],
           [568, 312, "A", 310],
         ];
         for (const [w, h, mode, mainNeeded] of cases) {
@@ -13892,6 +13941,7 @@ function run() {
         for (const [key, want] of Object.entries(needed[tableKey(fm)])) {
           const [w, h] = key.split("x").map(Number);
           assert.ok(belongs(w, h), key + " is not in " + label);
+          if (w >= 740 && h >= 360 && h <= 520) continue; // LE: two CSS columns, asserted by "LE:" and the panel-fit oracle
           await br.setViewport(w, h, false);
           await br.settle();
           const got = await br.eval(`
@@ -14761,7 +14811,7 @@ function run() {
             for (const k of ["sheet", "about"]) check(m[k].sw <= 0 && m[k].dsw <= 0, `${where}: ${k} scrolls horizontally`);
             if (label !== "en") m.panel.rows.forEach(([id, n], i) => check(n <= base.panel.rows[i][1],
               `${where}: ${id} takes ${n} lines against English ${base.panel.rows[i][1]}`));
-            if (label !== "en") {
+            if (label !== "en" && !(w >= 740 && h >= 360 && h <= 520)) { // LE: columns rebalance per locale; "LE:" asserts the fit
               const t = m.panel.tops, bt = base.panel.tops;
               for (let i = 0; i < bt.length; i++) for (let j = i + 1; j < bt.length; j++)
                 check(bt[i] !== bt[j] || t[i] === t[j], `${where}: ${base.panel.rows[i][0]} and ${base.panel.rows[j][0]} share a row in English and stack here`);
@@ -14774,7 +14824,7 @@ function run() {
           de.panel.rows.forEach(([id, n], i) => check(n <= base.panel.rows[i][1] + 1,
             `${w}x${h}: ${id} takes ${n} lines against English ${base.panel.rows[i][1]} (the brackets of the pseudo table may add one)`));
         }
-        assert.deepStrictEqual(bad, [], "tables overflow");
+        assert.deepStrictEqual(bad, [], "tables overflow: " + bad.join("; "));
       } finally {
         await b.setViewport(900, 900, false);
         await b.eval(`try { localStorage.clear(); } catch (e) {} return true;`).catch(() => {});
