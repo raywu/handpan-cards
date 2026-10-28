@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1320,7 +1320,7 @@
+@@ -1435,7 +1435,7 @@ html.about-open{overflow:hidden}
    <h3>Privacy</h3>
    <p>Your scales stay in this browser on this device. Nothing is published, and no one else can see them. To use a scale on another device or send it to a friend, tap the link icon at the top of the screen and share the link. Opening it adds the scale to that browser, and it stays there. The site counts anonymous visits and feature use with Google Analytics, without cookies in the EEA, the UK and Switzerland.</p>
    <h3>Contact</h3>

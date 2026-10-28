@@ -1,0 +1,15 @@
+# kills: OF: PD an inner reorder pending beside a later rim reorder is not overwritten: both sentences show, rim first, and the reverse order shows the same
+# suite: node --test --test-name-pattern ^OF:.PD.an.inner.reorder.pending.beside.a.later.rim.reorder tests/app.test.js
+# showPendingDerive walks the rings in reverse, so the inner sentence is shown before the rim one.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13875,7 +13875,7 @@ function showPendingDerive() {
+   // Invalid active fields can retain a last-good line and boxOk. Keep Layout
+   // accessible, but do not consume its feedback until the active input is valid.
+   if (!drawerOpen || !currentScaleInput()) return false;
+-  const parts = LAYOUT_RINGS.filter((ring) => pendingDerive[ring]).map((ring) =>
++  const parts = LAYOUT_RINGS.slice().reverse().filter((ring) => pendingDerive[ring]).map((ring) =>
+     pendingDerive[ring] === true
+       ? t(ring === "rim" ? "sheet.rim_follows" : "sheet.inner_follows")
+       : pendingDerive[ring]);

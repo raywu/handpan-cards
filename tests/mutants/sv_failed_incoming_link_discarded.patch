@@ -1,0 +1,15 @@
+# kills: SV12 U5: failed incoming link remains recoverable and LINK cannot silently share the previous scale
+# suite: node --test --test-name-pattern=^SV12.U5: tests/app.test.js
+# fault: Failed valid imports lose their incoming content route and permit sharing the previous scale.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9951,7 +9951,7 @@ function generateDeck(text, options, guard) {
+ function openShare(text) {
+   const request=++shareRequestGeneration, context=navigationGeneration;
+   const current=()=>request===shareRequestGeneration && context===navigationGeneration;
+-  pendingRecoveryShare=String(text);
++  pendingRecoveryShare=null;
+   const res = HPE.share.decode(String(text));
+   if (!res.ok) { if(current()){pendingRecoveryShare=null;say(reasonText(res), "err");} return res; }
+   const finish = built => {

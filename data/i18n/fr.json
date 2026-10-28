@@ -269,5 +269,21 @@
   "sel.auto": "AUTOMATIQUE ({lang})",
   "sheet.order_hint": "Les notes du dessus occupent leurs places dans l’ordre de saisie. Réorganisez-les dans l’onglet Disposition.",
   "sheet.rim_follows": "Les notes du bord suivent maintenant l’ordre de saisie.",
-  "sheet.inner_follows": "Les notes intérieures suivent maintenant l’ordre de saisie."
+  "sheet.inner_follows": "Les notes intérieures suivent maintenant l’ordre de saisie.",
+  "saved.session": "Les modifications dans cet onglet sont temporaires. Elles disparaissent si vous rechargez ou fermez cet onglet.",
+  "saved.recovery": "Impossible de lire les gammes enregistrées. Vos gammes enregistrées n’ont pas été modifiées. Les modifications temporaires dans cet onglet disparaissent si vous le rechargez ou le fermez.",
+  "saved.conflict": "Cette gamme a été modifiée dans un autre onglet. Votre brouillon est conservé. Enregistrez-le comme une autre gamme ou revenez à la version enregistrée.",
+  "saved.conflictDeleted": "Cette gamme a été supprimée dans un autre onglet. Votre brouillon est conservé. Enregistrez-le comme une autre gamme ou revenez en arrière.",
+  "saved.separate": "ENREGISTRER UNE AUTRE GAMME",
+  "saved.resetConflict": "Les gammes d’origine ont été modifiées dans un autre onglet. Rien n’a été réinitialisé. Vérifiez-les avant de les rétablir.",
+  "saved.temporary": "UTILISER CET ONGLET TEMPORAIREMENT",
+  "saved.failure": "Impossible d’enregistrer ces modifications. Votre brouillon est conservé. Réessayez.",
+  "saved.legacy": "Une ancienne version a modifié ses gammes enregistrées. Ces modifications sont conservées séparément pour les récupérer.",
+  "saved.savedToken": "{token} identifie cette gamme enregistrée dans ce navigateur.",
+  "saved.presetToken": "{token} identifie cette gamme prédéfinie.",
+  "saved.importFailure": "Impossible d’ajouter cette gamme partagée. Son lien reste dans la barre d’adresse. Essayez de l’ouvrir à nouveau.",
+  "saved.resetFailure": "Impossible de rétablir les gammes d’origine. Vérifiez-les et réessayez.",
+  "saved.ackPending": "L’enregistrement est terminé, mais cette vue n’a pas pu être actualisée. Rechargez la page pour vérifier vos gammes enregistrées.",
+  "saved.sessionAckPending": "L’enregistrement reste dans cet onglet uniquement et cette vue n’a pas pu être actualisée. Gardez cet onglet ouvert et conservez votre brouillon. Recharger ou fermer l’onglet efface les modifications temporaires.",
+  "saved.sessionImportAckPending": "Cette gamme partagée est temporaire et sa vue n’a pas pu être actualisée. Gardez cet onglet ouvert et conservez le lien reçu. Recharger ou fermer l’onglet efface les modifications temporaires."
 }

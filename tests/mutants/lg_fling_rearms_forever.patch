@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10768,7 +10768,7 @@
+@@ -12106,7 +12106,7 @@ const lipClamp = (x) => Math.min(Math.max(x, 0), lipRange());
  let lipFling = null;
  function lipFlingStep(now) {
    const F = lipFling, t = lipClamp(bandPort.scrollTop), M = lipRange();

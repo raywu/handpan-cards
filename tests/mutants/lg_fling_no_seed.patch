@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10847,7 +10847,7 @@
+@@ -12185,7 +12185,7 @@ const lipDragStop = (e) => {
    const L = lipDrag;
    if (L && L.moved && L.lastMoveWay && !(L.box && L.box.scrollTop !== L.boxTop)) {
      const t = lipClamp(bandPort.scrollTop);

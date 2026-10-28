@@ -1,0 +1,1105 @@
+{
+  "fixtureVersion": 1,
+  "provenance": {
+    "sourceCommit": "1454b1819fa23f8a6abb9ee9e380784af86a8713",
+    "requirements": [
+      "docs/plans/2026-10-25-saved-scale-variants.md",
+      "docs/plans/2026-10-25-saved-variants-test-support.md",
+      "docs/ENGINE-SPEC.md sections 12/14"
+    ],
+    "publicSources": {
+      "inventoryIds": "tests/fixtures/deck_ids_v1.json pinned entries",
+      "pygmyRimInventory": "tests/fixtures/free_placement_case_v1.json",
+      "SHC": "tests/e2e.test.js SHC E1 literals",
+      "largeSeed": "tests/app.test.js: the boot rewrite of a legacy record with a hundred and one top notes keeps every note",
+      "amaraAutoName": "tests/select.test.js: the auto name is <DING> <PARENT DISPLAY> <TOP-SHELL COUNT>"
+    },
+    "method": "Literal public examples and independent JSON/UTF byte accounting. No production saved-variants adapter or owner data used. This fixture does not establish runtime or migration success.",
+    "inventoryAudit": "Amara and inner-Pygmy IDs below exactly match named entries in the existing pinned fixture. Pygmy rim and inner placements are different inventories; never interchange their IDs.",
+    "sourceSha256": {
+      "tests/fixtures/deck_ids_v1.json": "b254fd1727a893b97672bd81f1af226331dbcb82c19f1e1791cc40966a4cc016",
+      "tests/fixtures/free_placement_case_v1.json": "db03867cb3f381ebc1582d4047dfabaa72790da598c3417df2256671c9394129"
+    },
+    "nameGrammarAudit": "All readable public options.name inputs use printableASCII length1..40 as required by src/engine/core.js NAME_RE; no grammar changes. UI locale text and preserved unknown metadata may contain Unicode. Prior measurement/label Unicode-name recipes were invalid and superseded before execution."
+  },
+  "inventories": {
+    "amara9": {
+      "seed": "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+      "legacySeed": "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+      "inventoryId": "custom:977311b5",
+      "expectedZones": {
+        "ding": 1,
+        "rim": 8,
+        "inner": 0,
+        "bottom": 0
+      }
+    },
+    "pygmyInner18": {
+      "seed": "[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]",
+      "legacySeed": "(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 / F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5",
+      "inventoryId": "custom:6f9ffc33",
+      "expectedZones": {
+        "ding": 1,
+        "rim": 9,
+        "inner": 2,
+        "bottom": 6
+      }
+    },
+    "pygmyRim18": {
+      "seed": "[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 [Ab5]",
+      "legacySeed": "(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5",
+      "inventoryId": "custom:b936039c",
+      "expectedZones": {
+        "ding": 1,
+        "rim": 11,
+        "inner": 0,
+        "bottom": 6
+      }
+    },
+    "other": {
+      "seed": "(E3) B3 D4 E4 F#4 G4 A4 B4",
+      "expectedZones": {
+        "ding": 1,
+        "rim": 7,
+        "inner": 0,
+        "bottom": 0
+      }
+    },
+    "large103": {
+      "seed": "[D0] (C0) C#0 D0 D#0 E0 F0 F#0 G0 G#0 A0 A#0 B0 C1 C#1 D1 D#1 E1 F1 F#1 G1 G#1 A1 A#1 B1 C2 C#2 D2 D#2 E2 F2 F#2 G2 G#2 A2 A#2 B2 C3 C#3 D3 D#3 E3 F3 F#3 G3 G#3 A3 A#3 B3 C4 C#4 D4 D#4 E4 F4 F#4 G4 G#4 A4 A#4 B4 C5 C#5 D5 D#5 E5 F5 F#5 G5 G#5 A5 A#5 B5 C6 C#6 D6 D#6 E6 F6 F#6 G6 G#6 A6 A#6 B6 C7 C#7 D7 D#7 E7 F7 F#7 G7 G#7 A7 A#7 B7 C8 C#8 D8 D#8 E8 F8",
+      "sourceRecipe": {
+        "ding": "C0",
+        "bottom": "D0",
+        "rimMidiInclusive": [
+          13,
+          113
+        ],
+        "pitchClasses": [
+          "C",
+          "C#",
+          "D",
+          "D#",
+          "E",
+          "F",
+          "F#",
+          "G",
+          "G#",
+          "A",
+          "A#",
+          "B"
+        ]
+      },
+      "expectedZones": {
+        "ding": 1,
+        "rim": 101,
+        "inner": 0,
+        "bottom": 1
+      }
+    }
+  },
+  "portableRecords": {
+    "amaraA": {
+      "v": 4,
+      "s": "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+      "o": {
+        "name": "PUBLIC PAN A",
+        "palette": 0
+      }
+    },
+    "amaraB": {
+      "v": 4,
+      "s": "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+      "o": {
+        "name": "PUBLIC PAN B",
+        "palette": 0
+      }
+    },
+    "amaraAPalette": {
+      "v": 4,
+      "s": "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+      "o": {
+        "name": "PUBLIC PAN A",
+        "palette": 4
+      }
+    },
+    "amaraAutoName": {
+      "v": 4,
+      "s": "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+      "o": {}
+    },
+    "amaraExplicitAutoLabel": {
+      "v": 4,
+      "s": "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+      "o": {
+        "name": "D AEOLIAN 9"
+      }
+    },
+    "amaraParentExplicit": {
+      "v": 4,
+      "s": "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+      "o": {
+        "name": "PUBLIC PAN A",
+        "parent": 1
+      }
+    },
+    "amaraParentInferred": {
+      "v": 4,
+      "s": "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+      "o": {
+        "name": "PUBLIC PAN A"
+      }
+    },
+    "pygmyLayoutA": {
+      "v": 4,
+      "s": "[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]",
+      "o": {
+        "name": "PUBLIC LAYOUT",
+        "anchor": "between",
+        "angles": {
+          "bottom": [
+            null,
+            225,
+            null,
+            20,
+            null,
+            130
+          ]
+        }
+      }
+    },
+    "pygmyLayoutB": {
+      "v": 4,
+      "s": "[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]",
+      "o": {
+        "name": "PUBLIC LAYOUT",
+        "anchor": "between",
+        "angles": {
+          "bottom": [
+            295,
+            225,
+            null,
+            20,
+            null,
+            130
+          ]
+        }
+      }
+    },
+    "pygmyAnglesAbsent": {
+      "v": 4,
+      "s": "[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]",
+      "o": {
+        "name": "PUBLIC LAYOUT",
+        "anchor": "between"
+      }
+    },
+    "pygmyAnglesAllNull": {
+      "v": 4,
+      "s": "[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]",
+      "o": {
+        "name": "PUBLIC LAYOUT",
+        "angles": {
+          "bottom": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        "anchor": "between"
+      }
+    },
+    "pygmyExplicitDefaultAngles": {
+      "v": 4,
+      "s": "[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]",
+      "o": {
+        "name": "PUBLIC LAYOUT",
+        "anchor": "between",
+        "angles": {
+          "bottom": [
+            300,
+            240,
+            0,
+            180,
+            60,
+            120
+          ]
+        }
+      }
+    },
+    "pygmySemanticBase": {
+      "v": 4,
+      "s": "[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]",
+      "o": {
+        "name": "PUBLIC OPTIONS",
+        "mirror": false,
+        "mirrorBottom": false,
+        "anchor": "one"
+      }
+    },
+    "pygmyTopMirrorOnly": {
+      "v": 4,
+      "s": "[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]",
+      "o": {
+        "name": "PUBLIC OPTIONS",
+        "mirror": true,
+        "mirrorBottom": false,
+        "anchor": "one"
+      }
+    },
+    "pygmyBottomMirrorOnly": {
+      "v": 4,
+      "s": "[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]",
+      "o": {
+        "name": "PUBLIC OPTIONS",
+        "mirror": false,
+        "mirrorBottom": true,
+        "anchor": "one"
+      }
+    },
+    "pygmyAnchorOnly": {
+      "v": 4,
+      "s": "[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]",
+      "o": {
+        "name": "PUBLIC OPTIONS",
+        "mirror": false,
+        "mirrorBottom": false,
+        "anchor": "between"
+      }
+    },
+    "pygmySeatsOnly": {
+      "v": 4,
+      "s": "[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]",
+      "o": {
+        "name": "PUBLIC OPTIONS",
+        "mirror": false,
+        "mirrorBottom": false,
+        "anchor": "one",
+        "seats": {
+          "rim": [
+            1,
+            0,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ]
+        }
+      }
+    },
+    "amaraPrototypeMetadata": {
+      "v": 4,
+      "s": "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+      "o": {
+        "__proto__": {
+          "name": "INJECTED NAME",
+          "palette": 5,
+          "replaces": "kurd"
+        }
+      },
+      "__proto__": {
+        "revision": 999,
+        "instanceId": "do-not-promote"
+      }
+    }
+  },
+  "portableMeaningCases": [
+    {
+      "left": "amaraA",
+      "right": "amaraB",
+      "equivalent": false,
+      "reason": "explicit name differs"
+    },
+    {
+      "left": "amaraA",
+      "right": "amaraAPalette",
+      "equivalent": false,
+      "reason": "palette differs"
+    },
+    {
+      "left": "amaraAutoName",
+      "right": "amaraExplicitAutoLabel",
+      "equivalent": false,
+      "reason": "explicit versus auto name intent with the same visible name; D AEOLIAN 9 is independently pinned in tests/select.test.js"
+    },
+    {
+      "left": "amaraParentExplicit",
+      "right": "amaraParentInferred",
+      "equivalent": false,
+      "reason": "explicit versus inferred parent intent"
+    },
+    {
+      "left": "pygmyLayoutA",
+      "right": "pygmyLayoutB",
+      "equivalent": false,
+      "reason": "one bottom angle differs"
+    },
+    {
+      "left": "pygmyAnglesAbsent",
+      "right": "pygmyAnglesAllNull",
+      "equivalent": true,
+      "reason": "absence and all-null angles have equal portable meaning"
+    },
+    {
+      "left": "pygmyAnglesAbsent",
+      "right": "pygmyExplicitDefaultAngles",
+      "equivalent": false,
+      "reason": "explicit absolute-angle intent is retained"
+    },
+    {
+      "left": "pygmySemanticBase",
+      "right": "pygmyTopMirrorOnly",
+      "equivalent": false,
+      "reason": "pygmyTopMirrorOnly differs in exactly its named portable option"
+    },
+    {
+      "left": "pygmySemanticBase",
+      "right": "pygmyBottomMirrorOnly",
+      "equivalent": false,
+      "reason": "pygmyBottomMirrorOnly differs in exactly its named portable option"
+    },
+    {
+      "left": "pygmySemanticBase",
+      "right": "pygmyAnchorOnly",
+      "equivalent": false,
+      "reason": "pygmyAnchorOnly differs in exactly its named portable option"
+    },
+    {
+      "left": "pygmySemanticBase",
+      "right": "pygmySeatsOnly",
+      "equivalent": false,
+      "reason": "pygmySeatsOnly differs in exactly its named portable option"
+    }
+  ],
+  "share": {
+    "publicHash": "#s=6/uC3_uDb3_uEb3_(F3)_G3_Ab3_uBb3_C4_uDb4_Eb4_F4_G4_Ab4_C5_Eb5_-_F5_G5_uAb5/*F+AEOLIAN+12/between/at-,225,,20,,130/5af123",
+    "expectedEditedBottomOptions": [
+      295,
+      225,
+      null,
+      20,
+      null,
+      130
+    ],
+    "expectedEditedPositions": {
+      "C3": 295,
+      "Db3": 225,
+      "Eb3": 0,
+      "Bb3": 20,
+      "Db4": 60,
+      "Ab5": 130
+    },
+    "query": "?public-saved-variants=1",
+    "assertion": "actual copied invocation href and committed selected instance; never a local handle in portable links"
+  },
+  "migration": {
+    "mixedRaw": {
+      "sources": {
+        "hpfc": " { \"deck\" : \"custom:977311b5\", \"mode\" : \"B\", \"hidden\" : [\"amara\"], \"sibling\" : {\"keep\":\"\\u6728\\ud83c\\udfb5\"} }\n",
+        "hpfc.scales.v3": " [\n  {\"v\":2,\"s\":\"(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 / F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5\",\"o\":{\"name\":\"LEGACY INNER PAN\",\"palette\":1}},\n  {\"v\":4,\"s\":\"(D3) A3 C4 D4 E4 F4 G4 A4 C5\",\"o\":{\"name\":\"PUBLIC PAN A\",\"palette\":0}},\n  {\"v\":4,\"s\":\"(D3) A3 C4 D4 E4 F4 G4 A4 C5\",\"o\":{\"name\":\"PUBLIC PAN B\",\"palette\":0}},\n  {\"v\":4,\"s\":\"(D3) A3 C4 D4 E4 F4 G4 A4 C5\",\"o\":{\"name\":\"PUBLIC PAN A\",\"palette\":0}},\n  {\"v\":4,\"s\":\"(D3) A3 C4 D4 E4 F4 G4 A4 C5\",\"o\":{\"name\":\"PUBLIC PAN A\",\"palette\":0},\"future\":{\"values\":[null,false,12,\"escaped \\\\ and \\\" and \\u6728\\ud83c\\udfb5\"]}},\n  {\"v\":99,\"s\":\"(D3) A3 C4 D4 E4 F4 G4 A4 C5\",\"o\":{\"name\":\"FUTURE PAN\",\"replaces\":\"kurd\"},\"future\":{\"values\":[null,true,7,\"keep \\u6728\\ud83c\\udfb5\"]}},\n  {\"v\":4,\"s\":\"(D3) A3 not-a-scale\",\"o\":{\"name\":\"UNREADABLE\",\"replaces\":\"kurd\"}},\n  null,\n  17,\n  \"opaque \\u6728\\ud83c\\udfb5\",\n  {\"v\":3,\"s\":\"(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5\",\"o\":{\"name\":\"LEGACY RIM PAN\",\"palette\":2}},\n  {\"v\":4,\"s\":\"(D3) A3 C4 D4 E4 F4 G4 A4 C5\",\"o\":{\"__proto__\":{\"name\":\"INJECTED NAME\",\"palette\":5,\"replaces\":\"kurd\"}},\"__proto__\":{\"revision\":999,\"instanceId\":\"do-not-promote\"}}\n ]\n",
+        "hpfc.scales": " [ {\"v\":2,\"s\":\"(D3) A3 C4 D4 E4 F4 G4 A4 C5\",\"o\":{\"name\":\"OLDER KEY PAN\"}} ]\n"
+      },
+      "expectedSourceAccounting": {
+        "hpfc": {
+          "utf8Bytes": 111,
+          "utf16CodeUnits": 111,
+          "sha256Utf8": "7d3b6ac7733b9628223a5100dc60688c21b4524e2b010a89348872305d0b89a8"
+        },
+        "hpfc.scales.v3": {
+          "utf8Bytes": 1139,
+          "utf16CodeUnits": 1139,
+          "sha256Utf8": "701d6c77a27c6a844f18703900fcba338b14c6daa8dd682905dbb357a5bbe473"
+        },
+        "hpfc.scales": {
+          "utf8Bytes": 77,
+          "utf16CodeUnits": 77,
+          "sha256Utf8": "04690e97ebc2d0a94070a6486a5d4650856edb2db5a898968703b6104e47112e"
+        }
+      },
+      "expectedInputRows": [
+        {
+          "v": 2,
+          "s": "(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 / F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5",
+          "o": {
+            "name": "LEGACY INNER PAN",
+            "palette": 1
+          }
+        },
+        {
+          "v": 4,
+          "s": "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+          "o": {
+            "name": "PUBLIC PAN A",
+            "palette": 0
+          }
+        },
+        {
+          "v": 4,
+          "s": "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+          "o": {
+            "name": "PUBLIC PAN B",
+            "palette": 0
+          }
+        },
+        {
+          "v": 4,
+          "s": "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+          "o": {
+            "name": "PUBLIC PAN A",
+            "palette": 0
+          }
+        },
+        {
+          "v": 4,
+          "s": "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+          "o": {
+            "name": "PUBLIC PAN A",
+            "palette": 0
+          },
+          "future": {
+            "values": [
+              null,
+              false,
+              12,
+              "escaped \\ and \" and 木🎵"
+            ]
+          }
+        },
+        {
+          "v": 99,
+          "s": "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+          "o": {
+            "name": "FUTURE PAN",
+            "replaces": "kurd"
+          },
+          "future": {
+            "values": [
+              null,
+              true,
+              7,
+              "keep 木🎵"
+            ]
+          }
+        },
+        {
+          "v": 4,
+          "s": "(D3) A3 not-a-scale",
+          "o": {
+            "name": "UNREADABLE",
+            "replaces": "kurd"
+          }
+        },
+        null,
+        17,
+        "opaque 木🎵",
+        {
+          "v": 3,
+          "s": "(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5",
+          "o": {
+            "name": "LEGACY RIM PAN",
+            "palette": 2
+          }
+        },
+        {
+          "v": 4,
+          "s": "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+          "o": {
+            "__proto__": {
+              "name": "INJECTED NAME",
+              "palette": 5,
+              "replaces": "kurd"
+            }
+          },
+          "__proto__": {
+            "revision": 999,
+            "instanceId": "do-not-promote"
+          }
+        }
+      ],
+      "expectedRowCount": 12,
+      "expectedReadableRowIndices": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        10,
+        11
+      ],
+      "expectedOpaqueRowIndices": [
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "expectedLegacyPreferredName": "PUBLIC PAN A",
+      "expectedHidden": [
+        "amara"
+      ],
+      "preserve": "Every source string unchanged; every row retained in its original position. Known v2/v3 values normalize in the new collection only. Valid v4 unknown fields and opaque JSON values remain unchanged. hpfc.scales.v3 takes precedence over the older source key.",
+      "prototypeRowIndex": 11,
+      "expectedDisplayOrdinals": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "expectedPrototypeMeaning": {
+        "name": "D AEOLIAN 9",
+        "palette": 0,
+        "replaces": null,
+        "slots": {}
+      }
+    },
+    "duplicatesRaw": {
+      "source": "[ {\"v\":4,\"s\":\"(D3) A3 C4 D4 E4 F4 G4 A4 C5\",\"o\":{\"name\":\"PUBLIC PAN A\",\"palette\":0}}, {\"v\":4,\"s\":\"(D3) A3 C4 D4 E4 F4 G4 A4 C5\",\"o\":{\"name\":\"PUBLIC PAN A\",\"palette\":0}} ]\n",
+      "expectedCountAfterMigration": 2,
+      "expectedCountAfterExactImport": 2,
+      "reason": "migration preserves rows; exact import reuses the selected match, else first committed match"
+    },
+    "slots": {
+      "sources": {
+        "hpfc": "{\"deck\":\"kurd\",\"mode\":\"A\",\"hidden\":[\"kurd\"]}",
+        "hpfc.scales.v3": "[{\"v\":4,\"s\":\"(D3) A3 C4 D4 E4 F4 G4 A4 C5\",\"o\":{\"name\":\"PLAIN PUBLIC PAN\",\"palette\":1}},{\"v\":4,\"s\":\"(D3) A3 C4 D4 E4 F4 G4 A4 C5 D5\",\"o\":{\"name\":\"OLDER REPLACEMENT\",\"palette\":2,\"replaces\":\"kurd\"}},{\"v\":4,\"s\":\"(E3) B3 D4 E4 F#4 G4 A4 B4\",\"o\":{\"name\":\"NEWER REPLACEMENT\",\"palette\":3,\"replaces\":\"kurd\"}},{\"v\":99,\"s\":\"(D3) A3 C4 D4 E4 F4 G4 A4 C5\",\"o\":{\"name\":\"FUTURE PAN\",\"replaces\":\"kurd\"},\"future\":{\"values\":[null,true,7,\"keep 木🎵\"]}},{\"v\":4,\"s\":\"(D3) A3 not-a-scale\",\"o\":{\"name\":\"UNREADABLE\",\"replaces\":\"kurd\"}}]"
+      },
+      "expectedRows": [
+        {
+          "v": 4,
+          "s": "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+          "o": {
+            "name": "PLAIN PUBLIC PAN",
+            "palette": 1
+          }
+        },
+        {
+          "v": 4,
+          "s": "(D3) A3 C4 D4 E4 F4 G4 A4 C5 D5",
+          "o": {
+            "name": "OLDER REPLACEMENT",
+            "palette": 2,
+            "replaces": "kurd"
+          }
+        },
+        {
+          "v": 4,
+          "s": "(E3) B3 D4 E4 F#4 G4 A4 B4",
+          "o": {
+            "name": "NEWER REPLACEMENT",
+            "palette": 3,
+            "replaces": "kurd"
+          }
+        },
+        {
+          "v": 99,
+          "s": "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+          "o": {
+            "name": "FUTURE PAN",
+            "replaces": "kurd"
+          },
+          "future": {
+            "values": [
+              null,
+              true,
+              7,
+              "keep 木🎵"
+            ]
+          }
+        },
+        {
+          "v": 4,
+          "s": "(D3) A3 not-a-scale",
+          "o": {
+            "name": "UNREADABLE",
+            "replaces": "kurd"
+          }
+        }
+      ],
+      "expectedOwnerName": "NEWER REPLACEMENT",
+      "expectedPromotedName": "OLDER REPLACEMENT",
+      "expectedResetSurvivorNames": [
+        "PLAIN PUBLIC PAN"
+      ],
+      "expectedOpaqueSurvivorRowIndices": [
+        3,
+        4
+      ]
+    },
+    "invalidWholeSources": [
+      {
+        "id": "missing",
+        "raw": null,
+        "state": "absent"
+      },
+      {
+        "id": "empty-text",
+        "raw": "",
+        "state": "corrupt"
+      },
+      {
+        "id": "invalid-json",
+        "raw": "{not-json",
+        "state": "corrupt"
+      },
+      {
+        "id": "null-root",
+        "raw": "null",
+        "state": "corrupt"
+      },
+      {
+        "id": "object-root",
+        "raw": "{\"records\":[]}",
+        "state": "corrupt"
+      },
+      {
+        "id": "string-root",
+        "raw": "\"not an array\"",
+        "state": "corrupt"
+      }
+    ],
+    "accessDenied": {
+      "getItemThrows": true,
+      "state": "unknown",
+      "expectedPersistentWrites": 0,
+      "expectation": "explicit access warning; never substitute empty durable data"
+    },
+    "newerEnvelopeRaw": "{ \"schema\" : 99, \"future\" : [\"keep\",null,17] }\n",
+    "corruptEnvelopeRaw": "{ \"schema\" : 1, \"entries\" : [\n"
+  },
+  "ids": {
+    "collectionA": "11111111-1111-4111-8111-111111111111",
+    "collectionB": "22222222-2222-4222-8222-222222222222",
+    "instanceA": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    "instanceB": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+    "instanceC": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+    "collisionThenFresh": [
+      "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "cccccccc-cccc-4ccc-8ccc-cccccccccccc"
+    ],
+    "exhaustedEightAttempts": [
+      "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+    ],
+    "expectation": "check collisions against live collection inside the lock; eight failed draws leave prior data and draft unchanged"
+  },
+  "labels": {
+    "locales": [
+      "en",
+      "de",
+      "fr",
+      "it",
+      "es",
+      "ja",
+      "zh-Hant",
+      "zh-Hans"
+    ],
+    "cases": [
+      {
+        "id": "equal-name",
+        "names": [
+          "Pan",
+          "Pan"
+        ],
+        "ordinals": [
+          1,
+          2
+        ],
+        "expectedSavedTokens": [
+          "S1",
+          "S2"
+        ]
+      },
+      {
+        "id": "same-16-prefix",
+        "names": [
+          "1234567890123456 A",
+          "1234567890123456 B"
+        ],
+        "ordinals": [
+          11,
+          12
+        ],
+        "expectedSavedTokens": [
+          "S11",
+          "S12"
+        ]
+      },
+      {
+        "id": "literal-final-suffix",
+        "names": [
+          "Pan",
+          "Pan",
+          "Pan / S2"
+        ],
+        "ordinals": [
+          1,
+          2,
+          3
+        ],
+        "expectedSavedTokens": [
+          "S1",
+          "S2",
+          "S3"
+        ]
+      },
+      {
+        "id": "preset-name",
+        "presetId": "amara",
+        "presetName": "D AMARA 9",
+        "names": [
+          "D AMARA 9"
+        ],
+        "ordinals": [
+          4
+        ],
+        "expectedSavedTokens": [
+          "S4"
+        ],
+        "expectedPresetToken": "P3"
+      },
+      {
+        "id": "ascii-multidigit",
+        "names": [
+          "PUBLIC LARGE ORDINAL",
+          "PUBLIC LARGE ORDINAL"
+        ],
+        "ordinals": [
+          101,
+          102
+        ],
+        "expectedSavedTokens": [
+          "S101",
+          "S102"
+        ]
+      }
+    ],
+    "expectation": "final visible and accessible labels distinguish every control; full suffix survives narrow layout, names in storage/share stay byte-identical; English note grammar unchanged",
+    "nativeMatrix": {
+      "entries": [
+        {
+          "displayOrdinal": 1,
+          "record": {
+            "v": 4,
+            "s": "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+            "o": {
+              "name": "Pan"
+            }
+          },
+          "expectedToken": "S1"
+        },
+        {
+          "displayOrdinal": 2,
+          "record": {
+            "v": 4,
+            "s": "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+            "o": {
+              "name": "Pan"
+            }
+          },
+          "expectedToken": "S2"
+        },
+        {
+          "displayOrdinal": 3,
+          "record": {
+            "v": 4,
+            "s": "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+            "o": {
+              "name": "Pan / S2"
+            }
+          },
+          "expectedToken": "S3"
+        },
+        {
+          "displayOrdinal": 4,
+          "record": {
+            "v": 4,
+            "s": "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+            "o": {
+              "name": "D AMARA 9"
+            }
+          },
+          "expectedToken": "S4"
+        },
+        {
+          "displayOrdinal": 11,
+          "record": {
+            "v": 4,
+            "s": "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+            "o": {
+              "name": "1234567890123456 A"
+            }
+          },
+          "expectedToken": "S11"
+        },
+        {
+          "displayOrdinal": 12,
+          "record": {
+            "v": 4,
+            "s": "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+            "o": {
+              "name": "1234567890123456 B"
+            }
+          },
+          "expectedToken": "S12"
+        },
+        {
+          "displayOrdinal": 101,
+          "record": {
+            "v": 4,
+            "s": "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+            "o": {
+              "name": "PUBLIC LARGE ORDINAL"
+            }
+          },
+          "expectedToken": "S101"
+        },
+        {
+          "displayOrdinal": 102,
+          "record": {
+            "v": 4,
+            "s": "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+            "o": {
+              "name": "PUBLIC LARGE ORDINAL"
+            }
+          },
+          "expectedToken": "S102"
+        },
+        {
+          "displayOrdinal": 201,
+          "record": {
+            "v": 4,
+            "s": "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+            "o": {
+              "name": "A VERY LONG PUBLIC HANDPAN NAME A"
+            }
+          },
+          "expectedToken": "S201"
+        },
+        {
+          "displayOrdinal": 202,
+          "record": {
+            "v": 4,
+            "s": "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+            "o": {
+              "name": "A VERY LONG PUBLIC HANDPAN NAME B"
+            }
+          },
+          "expectedToken": "S202"
+        },
+        {
+          "displayOrdinal": 203,
+          "record": {
+            "v": 4,
+            "s": "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+            "o": {
+              "name": "PUBLIC LOCAL DRAFT"
+            }
+          },
+          "expectedToken": null
+        }
+      ],
+      "expectedCustomOrdinalsNewestFirst": [
+        203,
+        202,
+        201,
+        102,
+        101,
+        12,
+        11,
+        4,
+        3,
+        2,
+        1
+      ],
+      "expectedVisibleControlCount": 16,
+      "expectedPresetTokens": {
+        "amara": "P3"
+      },
+      "keyboardChipIndex": 1,
+      "keyboardSelectedOrdinal": 202,
+      "initialSelectedOrdinal": 1,
+      "exactDraftMatchOrdinal": 203,
+      "draftName": "PUBLIC LOCAL DRAFT",
+      "purpose": "Multi-digit suffixes/preset collision/literal final suffix/long names in every font-locale-viewport cell. Existing ordinal203 exactly matches the conflicted draft: Save as a separate scale must allocate a fresh instance even though normal import would reuse203."
+    },
+    "separator": " / "
+  },
+  "measurement": {
+    "scope": "FROZEN VALID LEGACY RAW INPUTS ONLY. Every measured record has an ASCII name of at most40 characters and uses accepted public notes. Unicode occurs only in preserved unknown record-level measurementMetadata. Complete envelope stress/field names are separate; these are not predicted envelope sizes or passing performance results.",
+    "serialization": {
+      "encoding": "UTF-8, no BOM",
+      "jsonWhitespace": "none",
+      "escapeNonAscii": false,
+      "objectKeyOrder": [
+        "v",
+        "s",
+        "o",
+        "measurementMetadata"
+      ],
+      "optionKeyOrder": [
+        "name",
+        "palette",
+        "mirror",
+        "mirrorBottom",
+        "anchor",
+        "angles"
+      ],
+      "arraySeparators": ",",
+      "objectSeparators": ", and :",
+      "trailingNewline": false
+    },
+    "recordRecipe": {
+      "zeroBasedIndex": "i",
+      "seed": "i=0 inventories.large103.seed; i=1 inventories.pygmyInner18.seed; otherwise inventories.amara9.seed",
+      "namePrefix": "PUBLIC MEASURE ",
+      "nameSuffix": "i+1 as exactly four decimal digits",
+      "palette": "i modulo 6",
+      "mirror": "true for odd i, false for even i",
+      "anchor": "between for odd i, one for even i",
+      "angles": "only i=1: bottom [295,225,null,20,null,130]",
+      "recordVersion": 4,
+      "measurementMetadata": "測定 🎵",
+      "mirrorBottom": "only i=1: explicitly false, preserving the known unmirrored absolute bottom angles while top mirror remains true; absent otherwise"
+    },
+    "samples": [
+      {
+        "id": "legacy-records-2",
+        "recordCount": 2,
+        "expected": {
+          "utf8Bytes": 760,
+          "utf16CodeUnits": 748,
+          "sha256Utf8": "de0d1475bca0c572ab148014fb9c9332b4fe323ac2215f218c0274b396b321e0"
+        }
+      },
+      {
+        "id": "legacy-records-20",
+        "recordCount": 20,
+        "expected": {
+          "utf8Bytes": 3595,
+          "utf16CodeUnits": 3475,
+          "sha256Utf8": "21594156c6cea581d3205e8d5836e78c8486a6e7c9a83e1a5880abb032ca7fa0"
+        }
+      },
+      {
+        "id": "legacy-records-200",
+        "recordCount": 200,
+        "expected": {
+          "utf8Bytes": 31945,
+          "utf16CodeUnits": 30745,
+          "sha256Utf8": "df0d9da06a4f831b349960e4ae450ece62abdf7912d2893eeb1c486ed2480609"
+        }
+      }
+    ],
+    "legacy1MiB": {
+      "id": "legacy-raw-exactly-1MiB",
+      "recordCount": 1,
+      "baseRecipe": "recordRecipe at i=0 including record-level measurementMetadata; append record-level measurementPadding after measurementMetadata",
+      "paddingCharacter": "x",
+      "paddingRepeat": 1048069,
+      "expected": {
+        "utf8Bytes": 1048576,
+        "utf16CodeUnits": 1048570,
+        "sha256Utf8": "960b64516046674af6b255c543e728a7269f80fc63fc277c28a5ef3e2a04087e"
+      },
+      "retention": "measurementPadding is an unknown record4 field; preserve it plus the exact raw migration source"
+    },
+    "acceptance": "measure old source plus immutable raw snapshot plus transformed envelope peak independently. Report actual acknowledged write/quota refusal without deleting recovery sources or raising performance gates."
+  },
+  "uiContract": {
+    "selectors": {
+      "status": "#saved-status",
+      "conflict": "#scale-conflict",
+      "conflictMessage": "#scale-conflict-msg",
+      "separate": "#scale-conflict-separate",
+      "cancel": "#scale-back"
+    },
+    "behavior": "Status is visibly persistent in session/recovery mode. Conflict keeps the dirty draft until explicit Save as a separate scale or Back/Escape cancellation. Back discards that draft and returns to the acknowledged winner, canonical content URL and opener focus. No additional Review button/workflow is required.",
+    "copy": {
+      "en": {
+        "session": "Changes in this tab are temporary. They disappear when you reload or close this tab.",
+        "recovery": "Saved scales could not be read. Your saved scales have not been changed. Temporary changes in this tab disappear when you reload or close it.",
+        "conflict": "This scale changed in another tab. Your draft is still here. Save it as a separate scale or go back to the saved version.",
+        "conflictDeleted": "This scale was removed in another tab. Your draft is still here. Save it as a separate scale or go back.",
+        "separate": "SAVE AS A SEPARATE SCALE",
+        "resetConflict": "Seeded scales changed in another tab. Nothing was reset. Review them before tapping RESET SEEDED SCALES again."
+      },
+      "de": {
+        "session": "Änderungen in diesem Tab sind vorübergehend. Sie gehen verloren, wenn Du diesen Tab neu lädst oder schließt.",
+        "recovery": "Gespeicherte Skalen konnten nicht gelesen werden. Deine gespeicherten Skalen wurden nicht geändert. Vorübergehende Änderungen in diesem Tab gehen beim Neuladen oder Schließen verloren.",
+        "conflict": "Diese Skala wurde in einem anderen Tab geändert. Dein Entwurf bleibt erhalten. Speichere ihn als eigene Skala oder gehe zur gespeicherten Version zurück.",
+        "conflictDeleted": "Diese Skala wurde in einem anderen Tab entfernt. Dein Entwurf bleibt erhalten. Speichere ihn als eigene Skala oder gehe zurück.",
+        "separate": "ALS EIGENE SKALA SPEICHERN",
+        "resetConflict": "Standardskalen wurden in einem anderen Tab geändert. Es wurde nichts zurückgesetzt. Prüfe sie, bevor Du erneut auf STANDARDSKALEN ZURÜCKSETZEN tippst."
+      },
+      "fr": {
+        "session": "Les modifications dans cet onglet sont temporaires. Elles disparaissent si vous rechargez ou fermez cet onglet.",
+        "recovery": "Impossible de lire les gammes enregistrées. Vos gammes enregistrées n’ont pas été modifiées. Les modifications temporaires dans cet onglet disparaissent si vous le rechargez ou le fermez.",
+        "conflict": "Cette gamme a été modifiée dans un autre onglet. Votre brouillon est conservé. Enregistrez-le comme une autre gamme ou revenez à la version enregistrée.",
+        "conflictDeleted": "Cette gamme a été supprimée dans un autre onglet. Votre brouillon est conservé. Enregistrez-le comme une autre gamme ou revenez en arrière.",
+        "separate": "ENREGISTRER UNE AUTRE GAMME",
+        "resetConflict": "Les gammes d’origine ont été modifiées dans un autre onglet. Rien n’a été réinitialisé. Vérifiez-les avant de les rétablir."
+      },
+      "it": {
+        "session": "Le modifiche in questa scheda sono temporanee. Si perdono se ricarichi o chiudi questa scheda.",
+        "recovery": "Impossibile leggere le scale salvate. Le scale salvate non sono state modificate. Le modifiche temporanee in questa scheda si perdono quando la ricarichi o la chiudi.",
+        "conflict": "Questa scala è stata modificata in un’altra scheda. La tua bozza è ancora qui. Salvala come scala separata oppure torna alla versione salvata.",
+        "conflictDeleted": "Questa scala è stata eliminata in un’altra scheda. La tua bozza è ancora qui. Salvala come scala separata oppure torna indietro.",
+        "separate": "SALVA COME SCALA SEPARATA",
+        "resetConflict": "Le scale predefinite sono state modificate in un’altra scheda. Non è stato ripristinato nulla. Controllale prima di ripristinarle di nuovo."
+      },
+      "es": {
+        "session": "Los cambios en esta pestaña son temporales. Se pierden si recargas o cierras esta pestaña.",
+        "recovery": "No se pudieron leer las escalas guardadas. Tus escalas guardadas no han cambiado. Los cambios temporales en esta pestaña se pierden al recargarla o cerrarla.",
+        "conflict": "Esta escala cambió en otra pestaña. Tu borrador sigue aquí. Guárdalo como otra escala o vuelve a la versión guardada.",
+        "conflictDeleted": "Esta escala se eliminó en otra pestaña. Tu borrador sigue aquí. Guárdalo como otra escala o vuelve atrás.",
+        "separate": "GUARDAR COMO OTRA ESCALA",
+        "resetConflict": "Las escalas iniciales cambiaron en otra pestaña. No se restableció nada. Revísalas antes de restablecerlas de nuevo."
+      },
+      "ja": {
+        "session": "このタブでの変更は一時的なものです。タブを再読み込みするか閉じると失われます。",
+        "recovery": "保存済みのスケールを読み込めませんでした。保存済みのスケールは変更していません。このタブでの一時的な変更は、再読み込みするか閉じると失われます。",
+        "conflict": "このスケールは別のタブで変更されました。編集中の内容は残っています。別のスケールとして保存するか、保存済みの内容に戻ってください。",
+        "conflictDeleted": "このスケールは別のタブで削除されました。編集中の内容は残っています。別のスケールとして保存するか、戻ってください。",
+        "separate": "別のスケールとして保存",
+        "resetConflict": "標準スケールが別のタブで変更されました。リセットはしていません。内容を確認してから、もう一度リセットしてください。"
+      },
+      "zh-Hant": {
+        "session": "這個分頁中的變更是暫時的。重新載入或關閉這個分頁後，變更就會消失。",
+        "recovery": "無法讀取已儲存的音階。已儲存的音階沒有變更。這個分頁中的暫時變更會在重新載入或關閉分頁後消失。",
+        "conflict": "這個音階已在另一個分頁中變更。你的編輯內容仍然保留。請另存為另一個音階，或返回已儲存的版本。",
+        "conflictDeleted": "這個音階已在另一個分頁中移除。你的編輯內容仍然保留。請另存為另一個音階，或返回。",
+        "separate": "另存為另一個音階",
+        "resetConflict": "內建音階已在另一個分頁中變更。目前沒有重設任何音階。請先確認內容，再重新按下「還原內建音階」。"
+      },
+      "zh-Hans": {
+        "session": "这个标签页中的更改是临时的。重新加载或关闭这个标签页后，更改就会消失。",
+        "recovery": "无法读取已保存的音阶。已保存的音阶没有更改。这个标签页中的临时更改会在重新加载或关闭标签页后消失。",
+        "conflict": "这个音阶已在另一个标签页中更改。你的编辑内容仍然保留。请另存为另一个音阶，或返回已保存的版本。",
+        "conflictDeleted": "这个音阶已在另一个标签页中移除。你的编辑内容仍然保留。请另存为另一个音阶，或返回。",
+        "separate": "另存为另一个音阶",
+        "resetConflict": "内置音阶已在另一个标签页中更改。目前没有重置任何音阶。请先确认内容，再重新点击“恢复内置音阶”。"
+      }
+    },
+    "independence": "These literal message/action oracles precede U implementation. Never read candidate t()/I18N values to manufacture expected text. Independent design review may revise this fixture before U, preserving prior review receipts. Scale input remains English."
+  }
+}

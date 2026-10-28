@@ -1,0 +1,15 @@
+# kills: SV-PG: with 200 saved variants, 30 chip taps each select the tapped scale within 500 ms
+# suite: node --test --test-name-pattern=SV-PG: tests/e2e.test.js
+# fault: A 600 ms busy-wait in the saved-chip click handler, the lag the SV-PG bound of 500 ms exists to catch.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11471,7 +11471,7 @@ function buildChips() {
+       accessible+=". "+t(saved?"saved.savedToken":"saved.presetToken",{token});
+     }
+     b.setAttribute("aria-label",accessible);
+-    b.onclick=()=>savedEqual(view.selection,selection)?openEditSheet(d,b):selectDeck(view.selection);
++    b.onclick=()=>{const t0=performance.now();while(performance.now()-t0<600);savedEqual(view.selection,selection)?openEditSheet(d,b):selectDeck(view.selection);};
+     nav.appendChild(b);if(on)active=b;
+   });
+   restoreBtn.hidden=!(hiddenDecks().length || Object.keys(replacements()).length);

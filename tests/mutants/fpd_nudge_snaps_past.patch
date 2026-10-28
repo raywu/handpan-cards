@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11800,7 +11800,7 @@ function slideNote(ref, want, how, dir) {
+@@ -12573,7 +12573,7 @@ function slideNote(ref, want, how, dir) {
    let spot;
    if (how === "nudge") {
      const hit = clashAt(home, withAngle(base, n.i, want), n.i);

@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11699,7 +11699,6 @@ function resetLayout() {
+@@ -12733,7 +12733,6 @@ function resetLayout() {
    foldedBottom = false;
    mirror = false;
    bottomHeld = false;

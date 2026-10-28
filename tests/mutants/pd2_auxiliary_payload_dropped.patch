@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12335,7 +12335,7 @@ function noteCounts(fields, value) {
+@@ -12942,7 +12942,7 @@ function noteCounts(fields, value) {
          else delete pendingDerive[ring];
        } else if (derived.length && r.said[ring]) {
          // Keep existing mixed derivation/count payloads, not count-only notices.

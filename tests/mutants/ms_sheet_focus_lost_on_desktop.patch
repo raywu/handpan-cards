@@ -8,7 +8,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7515,7 +7515,7 @@
+@@ -13572,7 +13572,7 @@ savedSnapshotListener=event=>{
  // and focus fell to <body>. #deck-add stays visible in the sidebar at this
  // width, so use it as the opener instead; selectDeck()'s rehome check now
  // also recognises "deck-add".

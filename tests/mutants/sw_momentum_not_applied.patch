@@ -11,7 +11,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8854,7 +8854,7 @@ function release(e, cancelled, pushPoint = true) {
+@@ -14844,7 +14844,7 @@ function release(e, cancelled, pushPoint = true) {
      swipeRest();
      if (d.dir) step(d.dir);
    } else if (d.kind === "spring") springBack(dx);

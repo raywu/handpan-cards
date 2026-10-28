@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11183,7 +11183,6 @@
+@@ -13164,7 +13164,6 @@ function applyKbOffset(e) {
     * sandbox stub has no clientHeight/Width and falls back. */
    const layoutH = sheet.clientHeight || window.innerHeight;
    const layoutW = sheet.clientWidth || window.innerWidth;

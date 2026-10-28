@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -789,7 +789,7 @@ button.nav:active{background:#2e281e}
+@@ -661,7 +661,7 @@ button.nav:active{background:#2e281e}
     a rail too wide for its track scrolls horizontally instead of wrapping).
     min-width:0 lets the flex rail shrink inside the grid track instead of
     forcing #count wider than its column. */

@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10771,7 +10771,6 @@
+@@ -12021,7 +12021,6 @@ function lipMeasure() {
    const open = lipRead();
    sheet.classList.add("lipped", "lipshut");
    lipWrite(open);

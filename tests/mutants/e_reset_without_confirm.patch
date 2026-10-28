@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12820,7 +12820,7 @@ function disarmReset() {
+@@ -13678,7 +13678,7 @@ function disarmReset() {
    if (announce.textContent === RESET_WARNING()) say("", "");
  }
  restoreBtn.onclick = () => {
 -  if (!resetArmed) {
 +  if (false) {
      resetArmed = true;
+     resetProof = savedState ? {collectionId:savedState.collectionId,affectedScope:savedScope(savedState,savedEntries)} : null;
      restoreBtn.textContent = RESET_ARMED();
-     restoreBtn.setAttribute("data-armed", "");

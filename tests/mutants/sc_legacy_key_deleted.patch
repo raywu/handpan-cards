@@ -1,16 +1,15 @@
 # kills: SC: an absent store is created by the legacy copy, and a present-but-unreadable one is not
 # suite: node --test --test-name-pattern ^SC..an.absent.store.is.created.by.the.legacy.copy..and.a.present-but-unreadable.one.is.not$ tests/storage_corpus.test.js
-# why: copyLegacyScales reads hpfc.scales and never writes or deletes it, so an older
+# why: the migration reads hpfc.scales and never writes or deletes it, so an older
 # app on the same origin keeps its list. Deleting it strands that older app.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10014,7 +10014,7 @@ function copyLegacyScales() {
-   try { have = localStorage.getItem(SCALES_KEY); } catch (e) { return; }
-   if (have !== null) return;
-   const old = readStore(LEGACY_SCALES_KEY);
--  if (Array.isArray(old)) writeScales(old);
-+  if (Array.isArray(old)) { writeScales(old); try { localStorage.removeItem(LEGACY_SCALES_KEY); } catch (e) {} }
+@@ -10355,6 +10355,7 @@ function stageLegacySaved() {
+     const read = readSavedRecord(record);
+     return { record: read.ok ? read.record : savedClone(record), read };
+   });
++  if (sourceKey === LEGACY_SCALES_KEY) { try { localStorage.removeItem(LEGACY_SCALES_KEY); } catch (e) {} }
+   return { ok: true, raw, sourceKey, rows, preferences: preferences.value };
  }
- // Queue row 132: an EXISTING record is rewritten AT ITS INDEX, and only a
- // genuinely new one is appended. restoreScales rebuilds the registry in list
+ function makeSavedMigration(staged) {

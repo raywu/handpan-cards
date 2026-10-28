@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12340,7 +12340,7 @@ function resetSheetState(edit) {
+@@ -13302,7 +13302,7 @@ function resetSheetState(edit, target = selection) {
    scaleBox.value = line;
    const pre = edit ? HPE.core.parseSeed(line) : null;
    const preTyped = pre && pre.ok ? HPE.core.typedSeats(pre.value) : null;

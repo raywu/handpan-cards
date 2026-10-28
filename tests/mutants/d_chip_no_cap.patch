@@ -2,15 +2,16 @@
 # suite: node --test --test-name-pattern ^a.custom.chip.label.is.capped.at.16.characters.with.an.ellipsis$ tests/app.test.js
 # Chip labels are no longer capped, so one long pan name can push the whole
 # deck row - and the practice card with it - off a narrow screen.
+# Retained behavior re-anchored for saved instances; exact intent is recorded in the lane evidence.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8765,7 +8765,7 @@ const allDecks = () => {
- };
- // [5A] chip labels are capped at 16 characters with an ellipsis.
+@@ -11432,7 +11432,7 @@ function setOrder() {
+ // leaves that replacement out; a seed with no replacement is dropped when hidden.
+ const allDecks = () => allDeckViews().map(view => view.deck);
  const CHIP_CAP = 16;
--const chipLabel = n => (n.length > CHIP_CAP ? n.slice(0, CHIP_CAP - 1) + "…" : n);
+-const chipLabel = n => n.length > CHIP_CAP ? n.slice(0,CHIP_CAP-1) + "…" : n;
 +const chipLabel = n => n;
- 
- function buildChips() {
-   const nav = document.getElementById("decks");
+ function savedChipLabels(views) {
+   const marked = new Set();
+   const token = view => view.selection.kind === "saved" ? "S"+view.displayOrdinal : "P"+(DECKS.findIndex(d=>d.id===view.selection.id)+1);

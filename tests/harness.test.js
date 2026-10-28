@@ -203,6 +203,93 @@ test("FG-9 settle after close rejects without transport work", async () => {
   assert.deepStrictEqual(f.messages, []);
 });
 
+// Retiring a launch must release its own debug-port pipe as well as its OS
+// process. SIGKILL alone cannot guarantee EOF when another descriptor holder
+// inherited that pipe. This controlled Node fixture requires no browser.
+test("CDP-STDERR retirement closes only the owned launch stream before process exit", async () => {
+  const { spawn } = require("node:child_process");
+  const os = require("node:os");
+  for (const streamState of ["live", "already-destroyed", "absent", "throwing"]) {
+    const profile = fs.mkdtempSync(path.join(os.tmpdir(), "hpfc-stderr-retirement-"));
+    const env = { ...process.env };
+    delete env.NODE_TEST_CONTEXT;
+    const proc = spawn(process.execPath, ["-e",
+      "process.stderr.write('stderr-retirement-ready\\n');setInterval(()=>{},1000);"],
+      { detached:true, stdio:["ignore", "ignore", "pipe"], env });
+    const stderr = proc.stderr;
+    const originalDestroy = stderr.destroy;
+    const exited = new Promise(resolve => proc.once("exit", (code, signal) => resolve({code, signal})));
+    let wsCloses = 0, destroyThrows = 0;
+    const ws = { addEventListener() {}, close() { wsCloses++; } };
+    const browser = new Browser(proc, ws, profile, {proc, profileDir:profile});
+    async function boundedExit() {
+      let timer;
+      try {
+        return await Promise.race([exited, new Promise((resolve, reject) => {
+          timer = setTimeout(() => reject(new Error("owned stderr fixture did not exit within 2s")), 2000);
+        })]);
+      } finally { clearTimeout(timer); }
+    }
+    let primaryFailure;
+    try {
+      await new Promise((resolve, reject) => {
+        let text = "";
+        const timer = setTimeout(() => { cleanup(); reject(new Error("owned stderr fixture never became ready")); }, 2000);
+        const data = chunk => { text += chunk.toString(); if (text.includes("stderr-retirement-ready\n")) { cleanup(); resolve(); } };
+        const error = err => { cleanup(); reject(err); };
+        const exit = () => { cleanup(); reject(new Error("owned stderr fixture exited before readiness")); };
+        const cleanup = () => { clearTimeout(timer); stderr.off("data", data); proc.off("error", error); proc.off("exit", exit); };
+        stderr.on("data", data); proc.once("error", error); proc.once("exit", exit);
+      });
+      assert.strictEqual(stderr.destroyed, false, "the owned launch pipe must be open before retirement");
+      if (streamState === "already-destroyed") stderr.destroy();
+      if (streamState === "absent") proc.stderr = null;
+      if (streamState === "throwing") stderr.destroy = () => {
+        // One owned cleanup call throws; later Node stream teardown must regain
+        // its real destroy method instead of receiving our failure injection.
+        stderr.destroy = originalDestroy;
+        destroyThrows++;
+        throw new Error("controlled retirement failure");
+      };
+      await assert.doesNotReject(browser.close(), "owned stream cleanup cannot mask browser retirement");
+      // Do not await process exit/close first: close itself must retire its pipe,
+      // even when EOF could otherwise remain pending indefinitely.
+      if (streamState === "live" || streamState === "already-destroyed") {
+        assert.strictEqual(stderr.destroyed, true, "retirement must destroy its owned stderr before awaiting process exit");
+      }
+      if (streamState === "throwing") assert.strictEqual(destroyThrows, 1, "the guarded retirement call must exercise the cleanup failure");
+      assert.strictEqual(wsCloses, 1, "normal websocket retirement remains intact");
+      assert.strictEqual(fs.existsSync(profile), false, "owned profile removal still completes");
+      const result = await boundedExit();
+      assert.strictEqual(result.signal, "SIGKILL", "only the owned fixture must be terminated by retirement");
+    } catch (error) {
+      primaryFailure = error;
+      throw error;
+    } finally {
+      // Cleanup remains effective on the intended old-helper assertion failure;
+      // never sweep profiles/processes or wait for close before releasing a pipe.
+      const cleanupFailures = [];
+      try {
+        try { stderr.destroy = originalDestroy; originalDestroy.call(stderr); }
+        catch (error) { cleanupFailures.push(error); }
+        if (proc.exitCode === null && proc.signalCode === null) {
+          try { process.kill(-proc.pid, "SIGKILL"); } catch { try { proc.kill("SIGKILL"); } catch {} }
+        }
+        try { await boundedExit(); } catch (error) { cleanupFailures.push(error); }
+      } finally {
+        // Even a failed exit wait must not strand this fixture's directory.
+        try { fs.rmSync(profile, {recursive:true, force:true}); }
+        catch (error) { cleanupFailures.push(error); }
+      }
+      if (cleanupFailures.length) {
+        const cleanupFailure = new AggregateError(cleanupFailures, "owned stderr fixture cleanup failed");
+        if (primaryFailure) primaryFailure.cause = cleanupFailure;
+        else throw cleanupFailure;
+      }
+    }
+  }
+});
+
 if (!BROWSER) {
   const why =
     "harness self-tests skipped: no Chromium binary found (set CHROME_BIN to " +
@@ -214,6 +301,124 @@ if (!BROWSER) {
 }
 
 function run() {
+  test("CDP-MOUSE-HELD: Browser.drag retains actual pointer capture until genuine release", async () => {
+    const b = await launch({ foregroundSettle: true });
+    let pressAttempted = false, released = false, primaryFailure = null;
+    let releasePoint = null;
+    try {
+      // This pure native fixture has no application state or synthetic input.
+      const html = `<!doctype html><meta charset="utf-8"><style>
+        #card{position:fixed;left:100px;top:100px;width:200px;height:200px;
+          background:#aaa;touch-action:none;user-select:none}
+        </style><div id="card">Held pointer fixture</div><script>
+        const card=document.getElementById('card');
+        window.heldFixture={ready:true,id:null,held:false,clicks:0,events:[]};
+        const f=window.heldFixture;
+        for(const type of ['pointerdown','pointermove','pointerup','pointercancel',
+          'gotpointercapture','lostpointercapture','click']){
+          document.addEventListener(type,e=>{
+            if(f.events.length<32)f.events.push({type:e.type,trusted:e.isTrusted,
+              id:e.pointerId,pointerType:e.pointerType,primary:e.isPrimary,
+              button:e.button,buttons:e.buttons,x:e.clientX,y:e.clientY,
+              onCard:e.target===card,captured:card.hasPointerCapture(e.pointerId)});
+          },true);
+        }
+        card.addEventListener('pointerdown',e=>{
+          f.id=e.pointerId;f.held=true;card.setPointerCapture(e.pointerId);
+        });
+        card.addEventListener('pointerup',()=>{f.held=false;});
+        card.addEventListener('pointercancel',()=>{f.held=false;});
+        card.addEventListener('click',()=>{f.clicks++;});
+        <\/script>`;
+      await b.send("Page.navigate", { url: "data:text/html," + encodeURIComponent(html) });
+      await b.waitFor("window.heldFixture && heldFixture.ready === true", {
+        timeout: 2000, label: "pure held-pointer fixture readiness",
+      });
+      await b.settle();
+      const point = await b.eval(`
+        const card=document.getElementById('card'),r=card.getBoundingClientRect();
+        const x=r.left+r.width/2,y=r.top+r.height/2;
+        return {x,y,visible:document.visibilityState==='visible',connected:card.isConnected,
+          hit:document.elementFromPoint(x,y)===card,
+          usable:r.width>0&&r.height>0&&x>=0&&y>=0&&x<innerWidth&&y<innerHeight};
+      `);
+      assert.ok(point.visible && point.connected && point.hit && point.usable,
+        "the real native fixture target must be visible, connected and hit-testable");
+      releasePoint = { x: point.x + 24, y: point.y };
+      pressAttempted = true;
+      await b.drag("#card", [[24, 20]], { pointer: "mouse", release: false });
+      const held = await b.eval(`
+        const f=window.heldFixture,card=document.getElementById('card');
+        return {id:f.id,held:f.held,clicks:f.clicks,events:f.events.slice(),
+          connected:card.isConnected,captured:f.id!==null&&card.hasPointerCapture(f.id)};
+      `);
+      console.log("CDP_MOUSE_HELD_SNAPSHOT " + JSON.stringify(held));
+      const down = held.events.find(e => e.type === "pointerdown");
+      const move = held.events.find(e => e.type === "pointermove");
+      assert.ok(down && down.trusted && down.primary && down.onCard && down.pointerType === "mouse" && down.buttons === 1,
+        "the fixture must receive an actual trusted primary mouse press on its card");
+      assert.ok(move && move.trusted && move.primary && move.onCard && move.pointerType === "mouse" && move.buttons === 1,
+        "the helper must deliver an actual trusted primary buttons-one mouse move to the same card");
+      assert.strictEqual(move.id, down.id, "the held move uses the actual pressed pointer");
+      assert.strictEqual(held.id, down.id);
+      assert.ok(Math.abs(move.x - down.x - 24) <= 1 && Math.abs(move.y - down.y) <= 1,
+        "the genuine held pointer must move24px horizontally without vertical drift");
+      assert.strictEqual(held.connected, true);
+      assert.strictEqual(held.held, true, "no real release has occurred before the capture oracle");
+      // Intended RED: validate actual input first, then inspect native capture.
+      assert.strictEqual(held.captured, true,
+        "Browser.drag release:false must retain actual pointer capture after its held mouse move");
+      const gotIndex = held.events.findIndex(e => e.type === "gotpointercapture" && e.id === down.id && e.trusted && e.onCard);
+      const moveIndex = held.events.indexOf(move);
+      assert.ok(gotIndex >= 0 && gotIndex < moveIndex,
+        "native capture must be acquired for this actual pointer before the held move");
+      assert.deepStrictEqual(held.events.filter(e => ["pointerup", "pointercancel", "lostpointercapture"].includes(e.type)), [],
+        "no release, cancellation or capture loss may compete with the held gesture");
+      assert.strictEqual(held.clicks, 0);
+      await b.releasing(() => b.send("Input.dispatchMouseEvent", {
+        type: "mouseReleased", ...releasePoint, button: "left", clickCount: 1,
+      }));
+      released = true;
+      await b.waitForPendingSettle();
+      const ended = await b.eval(`
+        const f=window.heldFixture,card=document.getElementById('card');
+        return {held:f.held,captured:card.hasPointerCapture(f.id),clicks:f.clicks,
+          lpcSeen:window.__cdpLpcSeen,events:f.events.slice()};
+      `);
+      console.log("CDP_MOUSE_RELEASED_SNAPSHOT " + JSON.stringify(ended));
+      assert.ok(ended.events.some(e => e.type === "pointerup" && e.trusted && e.id === down.id && e.pointerType === "mouse" && e.onCard),
+        "the same actual mouse pointer must receive its genuine release");
+      assert.ok(ended.events.some(e => e.type === "lostpointercapture" && e.trusted && e.id === down.id && e.onCard),
+        "the actual captured pointer must genuinely lose capture after release");
+      assert.strictEqual(ended.lpcSeen, true, "the helper's own real-release observer must see capture loss");
+      assert.strictEqual(ended.held, false);
+      assert.strictEqual(ended.captured, false);
+      const clicks = ended.events.filter(e => e.type === "click");
+      assert.strictEqual(ended.clicks, 1, "one genuine release must produce exactly one fixture click");
+      assert.strictEqual(clicks.length, 1);
+      assert.ok(clicks[0].trusted && clicks[0].onCard, "the release click must be genuine and target this card");
+    } catch (error) {
+      primaryFailure = error;
+      throw error;
+    } finally {
+      const cleanupFailures = [];
+      if (pressAttempted && !released && releasePoint) {
+        try {
+          await b.releasing(() => b.send("Input.dispatchMouseEvent", {
+            type: "mouseReleased", ...releasePoint, button: "left", clickCount: 1,
+          }));
+        } catch (error) { cleanupFailures.push(error); }
+      }
+      try { await b.waitForPendingSettle(); } catch (error) { cleanupFailures.push(error); }
+      try { await b.close(); } catch (error) { cleanupFailures.push(error); }
+      if (cleanupFailures.length) {
+        const failure = new AggregateError(cleanupFailures, "owned held-pointer fixture cleanup failed");
+        if (primaryFailure) primaryFailure.cause = failure;
+        else throw failure;
+      }
+    }
+  });
+
   test("FG-10 opted-in native settle advances only its target after repeated hiding", async () => {
     const neutral = await launch();
     try {
@@ -1018,4 +1223,412 @@ test("the sandbox reports navigator.languages ['en-US','en'] unless told otherwi
   const de = sandbox.boot({ languages: ["de-CH", "fr"] });
   assert.deepStrictEqual(Array.from(de.get("navigator.languages")), ["de-CH", "fr"]);
   assert.strictEqual(de.get("navigator.language"), "de-CH");
+});
+
+// Literal synthetic scripts exercise the helper, not the application that will
+// consume it. These tests are unit-only; the SVH selector never launches Chrome.
+const svhHTML = '<script>window.marker = "synchronous";</script>';
+const svhTurn = () => new Promise(resolve => setImmediate(resolve));
+const svhGate = () => { let resolve, reject; const promise = new Promise((a,b) => { resolve=a;reject=b; }); return {promise,resolve,reject}; };
+
+test("SVH1 shared raw storage crosses opted-in realms and isolates other origins", () => {
+  const origin = {};
+  const a = sandbox.boot({html:svhHTML,origin,storage:{sample:'  raw seed  '}});
+  const b = sandbox.boot({html:svhHTML,origin});
+  a.run('localStorage.setItem("sample", "  changed raw  ")');
+  assert.strictEqual(b.get('localStorage.getItem("sample")'), '  changed raw  ', 'an acknowledged raw write must be visible to the other opted-in realm');
+  const c = sandbox.boot({html:svhHTML,origin,href:'https://another.test/'});
+  assert.strictEqual(c.get('localStorage.getItem("sample")'),null);
+  assert.strictEqual(sandbox.boot({html:svhHTML}).get('localStorage.getItem("sample")'),null);
+});
+
+test("SVH2 exclusive requests are asynchronous FIFO and hold through callback settlement", async () => {
+  const origin=sandbox.createOrigin();
+  const a=sandbox.boot({html:svhHTML,origin,locks:true}), b=sandbox.boot({html:svhHTML,origin,locks:true});
+  const other=sandbox.boot({html:svhHTML,origin,locks:true,href:'https://another.test/'});
+  const gate=svhGate(), order=[];
+  const first=a.sandbox.navigator.locks.request('collection',{mode:'exclusive'},lock=>{order.push('A');assert.strictEqual(lock.mode,'exclusive');return gate.promise;});
+  const second=b.sandbox.navigator.locks.request('collection',()=>{order.push('B');return 'second';});
+  const third=a.sandbox.navigator.locks.request('collection',()=>{order.push('C');return 'third';});
+  assert.deepStrictEqual(order,[],'callbacks cannot acquire inline');
+  await svhTurn();assert.deepStrictEqual(order,['A'],'a pending callback promise still owns the lock');
+  assert.strictEqual(await other.sandbox.navigator.locks.request('collection',()=> 'other origin'),'other origin');
+  const queued=await b.sandbox.navigator.locks.query();
+  assert.deepStrictEqual(queued.held.map(x=>x.name),['collection']);
+  assert.deepStrictEqual(queued.pending.map(x=>x.name),['collection','collection']);
+  assert.notStrictEqual(queued.held[0].clientId,queued.pending[0].clientId);
+  gate.resolve('first');
+  assert.deepStrictEqual(await Promise.all([first,second,third]),['first','second','third']);
+  assert.deepStrictEqual(order,['A','B','C']);
+  assert.deepStrictEqual(await a.sandbox.navigator.locks.query(),{held:[],pending:[]});
+});
+
+test("SVH3 rejected lock callbacks release ownership and retain their exact error", async () => {
+  const origin=sandbox.createOrigin(), app=sandbox.boot({html:svhHTML,origin,locks:true});
+  const failure=new Error('callback rejected');
+  const first=app.sandbox.navigator.locks.request('one',()=>Promise.reject(failure));
+  const caught=assert.rejects(first,error=>error===failure);
+  const second=app.sandbox.navigator.locks.request('one',()=>17);
+  await caught;assert.strictEqual(await second,17);
+  const syncFailure=new Error('synchronous callback throw');
+  await assert.rejects(app.sandbox.navigator.locks.request('one',()=>{throw syncFailure;}),error=>error===syncFailure);
+  assert.strictEqual(await app.sandbox.navigator.locks.request('one',()=>23),23);
+});
+
+test("SVH4 pending abort rejects without entering while abort after grant cannot undo a commit", async () => {
+  const origin=sandbox.createOrigin(), app=sandbox.boot({html:svhHTML,origin,locks:true,abortController:true});
+  const hold=svhGate(), held=app.sandbox.navigator.locks.request('one',()=>hold.promise);
+  await svhTurn();
+  const controller=new app.sandbox.AbortController();let entered=false;
+  const queued=app.sandbox.navigator.locks.request('one',{signal:controller.signal},()=>{entered=true;});
+  const rejected=assert.rejects(queued,error=>error.name==='AbortError');controller.abort();await rejected;
+  hold.resolve();await held;assert.strictEqual(entered,false);
+  const granted=new app.sandbox.AbortController(), completion=svhGate();let commits=0;
+  const active=app.sandbox.navigator.locks.request('one',{signal:granted.signal},()=>{commits++;granted.abort();return completion.promise;});
+  await svhTurn();assert.strictEqual(commits,1);completion.resolve('ack');assert.strictEqual(await active,'ack');
+  const preAborted=new app.sandbox.AbortController();preAborted.abort(new Error('owner canceled'));
+  await assert.rejects(app.sandbox.navigator.locks.request('one',{signal:preAborted.signal},()=>{entered=true;}),/owner canceled/);
+  assert.strictEqual(entered,false);
+});
+
+test("SVH5 storage events carry recipient area and writer URL only to other same-origin realms", () => {
+  const origin=sandbox.createOrigin({events:'manual'});
+  const a=sandbox.boot({html:svhHTML,origin,href:'https://example.test/a#writer'});
+  const b=sandbox.boot({html:svhHTML,origin,href:'https://example.test/b'});
+  const c=sandbox.boot({html:svhHTML,origin,href:'https://other.test/c'});
+  const own=[],received=[],foreign=[];
+  a.sandbox.addEventListener('storage',e=>own.push(e));
+  b.sandbox.addEventListener('storage',e=>received.push(e));
+  c.sandbox.addEventListener('storage',e=>foreign.push(e));
+  a.run('localStorage.setItem("pan", "first");localStorage.setItem("pan", "first");localStorage.setItem("pan", "second");localStorage.removeItem("absent");');
+  assert.strictEqual(received.length,0,'manual events remain delayed');
+  origin.flushStorageEvents();
+  assert.deepStrictEqual(received.map(e=>({key:e.key,oldValue:e.oldValue,newValue:e.newValue,url:e.url})),[
+    {key:'pan',oldValue:null,newValue:'first',url:'https://example.test/a#writer'},
+    {key:'pan',oldValue:'first',newValue:'second',url:'https://example.test/a#writer'}]);
+  assert.ok(received.every(e=>e.storageArea===b.sandbox.localStorage));
+  assert.deepStrictEqual(own,[]);assert.deepStrictEqual(foreign,[]);
+  const removed=()=>{throw new Error('removed listener ran');};b.sandbox.addEventListener('storage',removed);
+  a.run('localStorage.removeItem("pan")');b.sandbox.removeEventListener('storage',removed);origin.flushStorageEvents();
+  assert.strictEqual(received.at(-1).newValue,null);
+});
+
+test("SVH6 automatic and deliberately omitted storage events leave raw shared reads authoritative", async () => {
+  for(const mode of ['auto','omit']) {
+    const origin=sandbox.createOrigin({events:mode});
+    const a=sandbox.boot({html:svhHTML,origin}),b=sandbox.boot({html:svhHTML,origin});
+    const events=[];b.sandbox.addEventListener('storage',e=>events.push(e));
+    a.run('localStorage.setItem("latest", "yes")');
+    assert.strictEqual(events.length,0,'events are never delivered inline');
+    assert.strictEqual(b.get('localStorage.getItem("latest")'),'yes');
+    await new Promise(resolve=>setTimeout(resolve,10));
+    assert.strictEqual(events.length,mode==='auto'?1:0);
+  }
+});
+
+test("SVH7 failed storage acknowledgments are separate from successful writes and preserve raw data", () => {
+  const origin=sandbox.createOrigin({storage:{pan:'original'},events:'manual'});
+  const quota=Object.assign(new Error('quota'),{name:'QuotaExceededError'});
+  const app=sandbox.boot({html:svhHTML,origin,storageFault:op=>op.operation==='setItem'&&op.value==='refused'?quota:null});
+  assert.throws(()=>app.run('localStorage.setItem("pan", "refused")'),error=>error===quota);
+  assert.strictEqual(app.get('localStorage.getItem("pan")'),'original');
+  app.run('localStorage.setItem("pan", "acknowledged")');
+  assert.deepStrictEqual(origin.writeAttempts.map(x=>[x.operation,x.key,x.value,x.success]),[
+    ['setItem','pan','refused',false],['setItem','pan','acknowledged',true]]);
+  assert.deepStrictEqual(origin.successfulWrites.map(x=>[x.key,x.value]),[['pan','acknowledged']]);
+  const denied=Object.assign(new Error('access denied'),{name:'SecurityError'});
+  const inaccessible=sandbox.boot({html:svhHTML,origin,storageAccessError:denied});
+  assert.throws(()=>inaccessible.get('localStorage'),error=>error===denied);
+  assert.strictEqual(app.get('localStorage.getItem("pan")'),'acknowledged');
+});
+
+test("SVH8 capabilities are explicit and support missing throwing and deterministic collision cases", async () => {
+  const missing=sandbox.boot({html:svhHTML});
+  assert.strictEqual(missing.get('typeof crypto'),'undefined');
+  assert.strictEqual(missing.get('typeof navigator.locks'),'undefined');
+  assert.strictEqual(missing.get('typeof AbortController'),'undefined');
+  const repeated='00000000-0000-4000-8000-000000000001';
+  const sequence=[repeated,repeated,'00000000-0000-4000-8000-000000000002'];
+  const app=sandbox.boot({html:svhHTML,crypto:{randomUUID:()=>sequence.shift(),getRandomValues:bytes=>{bytes.fill(7);return bytes;}},isSecureContext:true,abortController:true});
+  assert.deepStrictEqual([app.get('crypto.randomUUID()'),app.get('crypto.randomUUID()'),app.get('crypto.randomUUID()')],[repeated,repeated,'00000000-0000-4000-8000-000000000002']);
+  assert.deepStrictEqual(sandbox.plain(app.get('Array.from(crypto.getRandomValues(new Uint8Array(3)))')),[7,7,7]);
+  assert.strictEqual(app.get('isSecureContext'),true);
+  const failure=new Error('guarded access denied');
+  for(const [option,expression] of [['locksAccessError','navigator.locks'],['cryptoAccessError','crypto']]) {
+    const bad=sandbox.boot({html:svhHTML,[option]:failure});assert.throws(()=>bad.get(expression),error=>error===failure);
+  }
+  const refused=sandbox.boot({html:svhHTML,locks:true,locksRequestError:failure});
+  let called=false;await assert.rejects(refused.sandbox.navigator.locks.request('x',()=>{called=true;}),error=>error===failure);
+  assert.strictEqual(called,false);
+});
+
+test("SVH9 async evaluation and generation normalize only their settled values", async () => {
+  const app=sandbox.boot({html:'<script>function generateDeck(text,options){return Promise.resolve({ok:true,text,options});}</script>'});
+  assert.deepStrictEqual(await app.getAsync('Promise.resolve({nested:["settled"]})'),{nested:['settled']});
+  assert.deepStrictEqual(await app.generateAsync('public',{palette:2}),{ok:true,text:'public',options:{palette:2}});
+  await assert.rejects(app.getAsync('Promise.reject(new Error("actual async failure"))'),/actual async failure/);
+});
+
+test("SVH10 async clicks dispatch every listener before waiting for actual completion without draining timers", async () => {
+  const app=sandbox.boot({html:`<script>
+    window.order=[];window.complete=false;window.timerFired=false;
+    setTimeout(()=>window.timerFired=true,5000);
+    document.getElementById('next').addEventListener('click',()=>new Promise(resolve=>{window.release=()=>{order.push('ack');complete=true;resolve();};order.push('first');}));
+    document.getElementById('next').addEventListener('click',()=>order.push('second'));
+  </script>`});
+  const pending=app.clickAsync(app.els.next,{until:'window.complete'});
+  assert.deepStrictEqual(sandbox.plain(app.get('order')),['first','second'],'listeners dispatch synchronously before the first handler settles');
+  assert.strictEqual(app.get('timerFired'),false);app.run('release()');await pending;
+  assert.deepStrictEqual(sandbox.plain(app.get('order')),['first','second','ack']);assert.strictEqual(app.get('timerFired'),false);
+});
+
+test("SVH11 explicit readiness rejects errors and bounded incomplete state instead of treating microtasks as ready", async () => {
+  const app=sandbox.boot({html:svhHTML});
+  await assert.rejects(app.waitFor('false',{timeout:20}),/readiness.*timed out/i);
+  await assert.rejects(app.waitFor('(()=>{throw new Error("readiness fault")})()'),/readiness fault/);
+  await assert.rejects(app.waitFor('new Promise(()=>{})',{timeout:20}),/readiness.*timed out/i);
+  await assert.rejects(app.waitFor('(()=>{while(true){}})()',{timeout:20}),/timed out/i);
+  await assert.rejects(app.clickAsync(app.els.next),/until/);
+  assert.strictEqual(await app.waitFor('Promise.resolve(true)'),true);
+});
+
+test("SVH12 default boot stays synchronous with isolated storage and no durable capability injection", () => {
+  const seed={literal:'original'};
+  const app=sandbox.boot({html:svhHTML,storage:seed});
+  assert.strictEqual(app.get('marker'),'synchronous');assert.strictEqual(typeof app.then,'undefined');
+  app.run('localStorage.setItem("literal", "changed")');assert.deepStrictEqual(seed,{literal:'original'});
+  assert.strictEqual(sandbox.boot({html:svhHTML,storage:seed}).get('localStorage.getItem("literal")'),'original');
+  assert.strictEqual(app.get('typeof navigator.locks'),'undefined');assert.strictEqual(app.get('typeof crypto'),'undefined');
+});
+
+test("SVH13 compound descendant queries require every class and live ancestry", () => {
+  const app=sandbox.boot({html:svhHTML});
+  app.run(`
+    var root=document.getElementById("decks"), other=document.getElementById("card");
+    var outside=document.createElement("button");outside.id="outside";outside.className="chip on";other.appendChild(outside);
+    var partial=document.createElement("button");partial.id="partial";partial.className="chip";root.appendChild(partial);
+    var wrapper=document.createElement("section");root.appendChild(wrapper);
+    var target=document.createElement("button");target.id="target";target.className="chip on";wrapper.appendChild(target);
+  `);
+  assert.strictEqual(app.get('document.querySelector("#decks .chip.on") === target'),true,"compound descendant lookup must find the actual nested active chip");
+  assert.strictEqual(app.get('document.querySelector("#decks button.on.chip") === target'),true,"tag and reversed class tokens keep their meanings");
+  assert.deepStrictEqual(sandbox.plain(app.get('Array.from(document.querySelectorAll("#decks .chip.on"),n=>n.id)')),["target"],"wrong ancestor and missing class are excluded");
+  assert.strictEqual(app.get('document.querySelector("#scale-sheet .chip.on")'),null);
+  assert.strictEqual(app.get('document.querySelector("#decks .chip.off")'),null);
+  app.run('wrapper.removeChild(target)');
+  assert.strictEqual(app.get('document.querySelector("#decks .chip.on")'),null,"detached old active chip cannot receive focus");
+  app.run('var replacement=document.createElement("button");replacement.id="replacement";replacement.className="chip on";wrapper.appendChild(replacement)');
+  assert.strictEqual(app.get('document.querySelector("#decks .chip.on") === replacement'),true,"rebuilt strip resolves its current connected node");
+  assert.strictEqual(app.get('document.querySelector("#decks") === root'),true);
+  assert.strictEqual(app.get('document.querySelector("section") === wrapper'),true);
+  assert.deepStrictEqual(sandbox.plain(app.get('Array.from(document.querySelectorAll("#decks, #card"),n=>n.id).sort()')),["card","decks"],"simple and comma selectors retain their existing results");
+});
+
+// The opt-in model uses the native API shape. These are model semantics, not
+// evidence of a real browser's IndexedDB or BroadcastChannel implementation.
+const idbhOpen = (app, name = 'model', version = 1, upgrade = db => db.createObjectStore('collections')) => new Promise((resolve, reject) => {
+  const request = app.sandbox.indexedDB.open(name, version);
+  request.onupgradeneeded = () => upgrade(request.result, request.transaction);
+  request.onsuccess = () => resolve(request.result);
+  request.onerror = () => reject(request.error);
+});
+const idbhDone = tx => new Promise((resolve, reject) => {
+  tx.addEventListener('complete', resolve); tx.addEventListener('abort', () => reject(tx.error || new Error('aborted')));
+});
+const idbhResult = req => new Promise((resolve, reject) => {
+  req.onsuccess = () => resolve(req.result); req.onerror = () => reject(req.error);
+});
+const idbhBoot = options => sandbox.boot({ html: svhHTML, indexedDB: true, ...options });
+
+test('IDBH1 explicit capability asynchronous upgrade and committed raw value presence', async () => {
+  const plain = sandbox.boot({ html: svhHTML });
+  assert.strictEqual(plain.get('typeof indexedDB'), 'undefined');
+  assert.strictEqual(plain.get('typeof BroadcastChannel'), 'undefined');
+  const app = idbhBoot(); let sync = true;
+  const open = idbhOpen(app).then(db => { assert.strictEqual(sync, false); return db; });
+  sync = false; const db = await open;
+  assert.strictEqual(db.version, 1); assert.strictEqual(db.objectStoreNames.contains('collections'), true);
+  const tx = db.transaction('collections', 'readwrite'), done = idbhDone(tx), store = tx.objectStore('collections');
+  assert.strictEqual(store.keyPath, null); assert.strictEqual(store.autoIncrement, false);
+  store.put(undefined, 'present'); store.put({ opaque: new Uint8Array([3, 8]) }, 'raw'); await done;
+  const raw = app.idb.inspect('model');
+  assert.strictEqual(raw.stores[0].entries.some(([key]) => key === 'present'), true);
+  assert.strictEqual(raw.stores[0].entries.find(([key]) => key === 'present')[1], undefined);
+  raw.stores[0].entries.find(([key]) => key === 'raw')[1].opaque[0] = 99;
+  assert.strictEqual(app.idb.inspect('model').stores[0].entries.find(([key]) => key === 'raw')[1].opaque[0], 3);
+  const read = db.transaction('collections'), completed = idbhDone(read), s = read.objectStore('collections');
+  const present = idbhResult(s.getKey('present')), missing = idbhResult(s.getKey('absent'));
+  assert.strictEqual(await present, 'present'); assert.strictEqual(await missing, undefined); await completed;
+});
+
+test('IDBH2 overlapping transactions see predecessor commit at grant and preserve both writes', async () => {
+  const origin = sandbox.createOrigin(), a = idbhBoot({ origin }), b = idbhBoot({ origin });
+  const dbA = await idbhOpen(a), dbB = await idbhOpen(b);
+  a.idb.hold('commit');
+  const first = dbA.transaction('collections', 'readwrite'), firstDone = idbhDone(first);
+  const put = idbhResult(first.objectStore('collections').put('A', 'first'));
+  await put;
+  const second = dbB.transaction('collections', 'readwrite'), secondDone = idbhDone(second);
+  const observed = idbhResult(second.objectStore('collections').get('first'));
+  second.objectStore('collections').put('B', 'second');
+  assert.deepStrictEqual(a.idb.inspect('model').stores[0].entries, []);
+  a.idb.release('commit'); await firstDone;
+  assert.strictEqual(await observed, 'A', 'later overlapping transaction must read preceding committed write');
+  await secondDone;
+  assert.deepStrictEqual(a.idb.inspect('model').stores[0].entries, [['first', 'A'], ['second', 'B']]);
+});
+
+test('IDBH3 successful put is not commit and post-put abort rolls back', async () => {
+  const app = idbhBoot(), db = await idbhOpen(app);
+  app.idb.fault('abortAfterPut', new Error('rollback after request success'));
+  const tx = db.transaction('collections', 'readwrite'), done = idbhDone(tx);
+  const result = await idbhResult(tx.objectStore('collections').put('candidate', 'current'));
+  assert.strictEqual(result, 'current');
+  await assert.rejects(done, /rollback after request success/);
+  assert.deepStrictEqual(app.idb.inspect('model').stores[0].entries, []);
+  const good = db.transaction('collections', 'readwrite'), committed = idbhDone(good);
+  good.objectStore('collections').put('safe', 'current'); await committed;
+  assert.throws(() => good.abort(), { name: 'InvalidStateError' });
+  assert.deepStrictEqual(app.idb.inspect('model').stores[0].entries, [['current', 'safe']]);
+});
+
+test('IDBH4 aborted first-open probe leaves no committed schema and open errors remain distinct', async () => {
+  const app = idbhBoot();
+  await assert.rejects(idbhOpen(app, 'probe', undefined, (db, tx) => tx.abort()), /AbortError/);
+  assert.strictEqual(app.idb.inspect('probe'), undefined);
+  app.idb.fault('open', new Error('denied open'));
+  await assert.rejects(idbhOpen(app, 'probe'), /denied open/);
+  assert.strictEqual(app.idb.inspect('probe'), undefined);
+  const db = await idbhOpen(app, 'probe'); db.close();
+  await assert.rejects(idbhOpen(app, 'probe', 0), /invalid database version/);
+});
+
+test('IDBH5 versionchange blocks upgrade until close and closed connection refuses new transactions', async () => {
+  const origin = sandbox.createOrigin(), a = idbhBoot({ origin }), b = idbhBoot({ origin });
+  const db = await idbhOpen(a); const events = [];
+  db.onversionchange = event => events.push(['versionchange', event.newVersion]);
+  const request = b.sandbox.indexedDB.open('model', 2);
+  const completed = new Promise((resolve, reject) => { request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error); });
+  request.onblocked = () => { events.push(['blocked']); db.close(); };
+  request.onupgradeneeded = () => events.push(['upgrade']);
+  const upgraded = await completed;
+  assert.deepStrictEqual(events, [['versionchange', 2], ['blocked'], ['upgrade']]);
+  assert.strictEqual(upgraded.version, 2);
+  assert.throws(() => db.transaction('collections'), { name: 'InvalidStateError' });
+  await assert.rejects(idbhOpen(a, 'model', 1), { name: 'VersionError' });
+});
+
+test('IDBH6 read put and commit faults abort without changing committed data', async () => {
+  const app = idbhBoot(), db = await idbhOpen(app);
+  for (const operation of ['read', 'put', 'commit']) {
+    app.idb.fault(operation, new Error(operation + ' denied'));
+    const tx = db.transaction('collections', 'readwrite'), done = idbhDone(tx);
+    if (operation === 'read') { const read = tx.objectStore('collections').get('current'); read.onerror = () => {}; }
+    else { const put = tx.objectStore('collections').put('bad', 'current'); put.onerror = () => {}; }
+    await assert.rejects(done, new RegExp(operation + ' denied'));
+    assert.deepStrictEqual(app.idb.inspect('model').stores[0].entries, []);
+  }
+});
+
+test('IDBH7 held late open and read settlement are explicit host controls', async () => {
+  const app = idbhBoot(); app.idb.hold('open');
+  let opened = false; const pending = idbhOpen(app).then(db => { opened = true; return db; });
+  await svhTurn(); assert.strictEqual(opened, false); assert.strictEqual(app.idb.pending('open'), 1);
+  app.idb.release('open'); const db = await pending;
+  app.idb.hold('read'); const tx = db.transaction('collections'), done = idbhDone(tx);
+  const result = idbhResult(tx.objectStore('collections').get('current'));
+  await svhTurn(); await svhTurn(); assert.strictEqual(app.idb.pending('read'), 1);
+  app.idb.release('read'); assert.strictEqual(await result, undefined); await done;
+});
+
+test('IDBH8 BroadcastChannel hints are asynchronous other-channel partitioned cloned and optional', async () => {
+  const origin = sandbox.createOrigin({ broadcastEvents: 'manual' });
+  const a = idbhBoot({ origin, broadcastChannel: true }), b = idbhBoot({ origin, broadcastChannel: true });
+  const x = idbhBoot({ origin, broadcastChannel: true, href: 'https://elsewhere.test/' });
+  const ca = new a.sandbox.BroadcastChannel('updates'), cb = new b.sandbox.BroadcastChannel('updates');
+  const wrongName = new b.sandbox.BroadcastChannel('other'), wrongOrigin = new x.sandbox.BroadcastChannel('updates');
+  const messages = []; ca.onmessage = () => messages.push('self'); cb.onmessage = event => messages.push(event.data);
+  wrongName.onmessage = () => messages.push('name'); wrongOrigin.onmessage = () => messages.push('origin');
+  const hint = { revision: 7 }; ca.postMessage(hint); hint.revision = 99;
+  assert.deepStrictEqual(messages, []); origin.flushBroadcastMessages();
+  assert.deepStrictEqual(messages, [{ revision: 7 }]);
+  ca.postMessage({ revision: 8 }); origin.flushBroadcastMessages({ omit: true }); assert.strictEqual(messages.length, 1);
+  ca.postMessage({ revision: 9 }); cb.close(); origin.flushBroadcastMessages(); assert.strictEqual(messages.length, 1);
+  assert.strictEqual(a.idb.inspect('model'), undefined, 'notification alone cannot create authority');
+});
+
+test('IDBH9 concurrent first opens share one committed database and aborting a probe does not strand later open', async () => {
+  const origin = sandbox.createOrigin(), a = idbhBoot({ origin }), b = idbhBoot({ origin });
+  let upgrades = 0;
+  const create = db => { upgrades++; db.createObjectStore('collections'); };
+  const [dbA, dbB] = await Promise.all([idbhOpen(a, 'race', 1, create), idbhOpen(b, 'race', 1, create)]);
+  assert.strictEqual(upgrades, 1, 'one first-open upgrade owns schema creation');
+  const tx = dbA.transaction('collections', 'readwrite'), done = idbhDone(tx);
+  tx.objectStore('collections').put('A', 'current'); await done;
+  const read = dbB.transaction('collections'), readDone = idbhDone(read);
+  assert.strictEqual(await idbhResult(read.objectStore('collections').get('current')), 'A'); await readDone;
+  const probe = idbhOpen(a, 'probed', undefined, (db, upgrade) => upgrade.abort());
+  const retry = idbhOpen(b, 'probed'); await assert.rejects(probe, /AbortError/); await retry;
+});
+
+test('IDBH10 close waits for active transaction and upgrade cannot bypass its commit', async () => {
+  const origin = sandbox.createOrigin(), a = idbhBoot({ origin }), b = idbhBoot({ origin });
+  const db = await idbhOpen(a); a.idb.hold('commit');
+  const tx = db.transaction('collections', 'readwrite'), done = idbhDone(tx);
+  await idbhResult(tx.objectStore('collections').put('kept', 'current')); db.close();
+  let upgraded = false;
+  const future = idbhOpen(b, 'model', 2, () => { upgraded = true; });
+  await svhTurn(); await svhTurn(); assert.strictEqual(upgraded, false);
+  a.idb.release('commit'); await done; const next = await future;
+  const read = next.transaction('collections'), readDone = idbhDone(read);
+  assert.strictEqual(await idbhResult(read.objectStore('collections').get('current')), 'kept'); await readDone;
+});
+
+test('IDBH11 completed read can resolve late while peer commits without changing captured result', async () => {
+  const origin = sandbox.createOrigin(), a = idbhBoot({ origin }), b = idbhBoot({ origin });
+  const dbA = await idbhOpen(a), dbB = await idbhOpen(b);
+  a.idb.hold('complete');
+  const read = dbA.transaction('collections'), readDone = idbhDone(read);
+  assert.strictEqual(await idbhResult(read.objectStore('collections').get('current')), undefined);
+  const write = dbB.transaction('collections', 'readwrite'), writeDone = idbhDone(write);
+  write.objectStore('collections').put('new', 'current'); await writeDone;
+  assert.deepStrictEqual(a.idb.inspect('model').stores[0].entries, [['current', 'new']]);
+  assert.strictEqual(a.idb.pending('complete'), 1); a.idb.release('complete'); await readDone;
+});
+
+test('IDBH12 schema metadata and autoincrement round trip without crossing origin partitions', async () => {
+  const origin = sandbox.createOrigin(), a = idbhBoot({ origin });
+  const db = await idbhOpen(a, 'schema', 3, db => db.createObjectStore('collections', { keyPath: 'id', autoIncrement: true }));
+  const tx = db.transaction('collections', 'readwrite'), done = idbhDone(tx), store = tx.objectStore('collections');
+  assert.strictEqual(store.keyPath, 'id'); assert.strictEqual(store.autoIncrement, true);
+  const first = idbhResult(store.put({ text: 'one' })), second = idbhResult(store.put({ id: 7, text: 'seven' }));
+  assert.strictEqual(await first, 1); assert.strictEqual(await second, 7); await done;
+  const other = idbhBoot({ origin, href: 'https://other.test/' });
+  assert.strictEqual(other.idb.inspect('schema'), undefined);
+  assert.strictEqual(a.idb.inspect('schema').version, 3);
+});
+
+test('IDBH13 abort settles queued requests as errors and request handlers can append atomic writes', async () => {
+  const app = idbhBoot(), db = await idbhOpen(app);
+  const aborted = db.transaction('collections', 'readwrite'), done = idbhDone(aborted);
+  const pending = idbhResult(aborted.objectStore('collections').get('missing'));
+  aborted.abort(); await assert.rejects(pending, { name: 'AbortError' }); await assert.rejects(done, /aborted/);
+  const tx = db.transaction('collections', 'readwrite'), committed = idbhDone(tx), store = tx.objectStore('collections');
+  const read = store.get('current');
+  read.onsuccess = () => store.put('handler-write', 'current');
+  await committed;
+  assert.deepStrictEqual(app.idb.inspect('model').stores[0].entries, [['current', 'handler-write']]);
+});
+
+test('IDBH14 host operation evidence distinguishes readonly probing from durable write attempts', async () => {
+  const origin = sandbox.createOrigin(), writer = idbhBoot({ origin });
+  const db = await idbhOpen(writer); db.close();
+  const reader = idbhBoot({ origin }), readDB = await idbhOpen(reader);
+  const tx = readDB.transaction('collections'), done = idbhDone(tx);
+  tx.objectStore('collections').get('current'); await done; readDB.close();
+  assert.strictEqual(reader.idb.operations.some(event => ['put', 'upgrade', 'createObjectStore'].includes(event.operation)), false);
+  assert.strictEqual(reader.idb.operations.some(event => event.operation === 'transaction' && event.mode !== 'readonly'), false);
+  const evidence = reader.idb.operations; evidence.push({ operation: 'put' });
+  assert.strictEqual(reader.idb.operations.some(event => event.operation === 'put'), false, 'inspection cannot mutate model evidence');
+  assert.strictEqual(writer.idb.operations.some(event => event.operation === 'createObjectStore'), true);
 });

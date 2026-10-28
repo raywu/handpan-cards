@@ -1,0 +1,15 @@
+# kills: IDBH5 versionchange blocks upgrade until close and closed connection refuses new transactions
+# suite: node --test --test-name-pattern=^IDBH5\s tests/harness.test.js
+# fault: Permit new transactions on a closed connection.
+diff --git a/tools/sandbox.js b/tools/sandbox.js
+--- a/tools/sandbox.js
++++ b/tools/sandbox.js
+@@ -160,7 +160,7 @@ function indexedDBFor(bucket) {
+     get length() { return get().size; }, item: index => [...get().keys()][index] ?? null,
+     [Symbol.iterator]: function* () { yield* get().keys(); } });
+   function transaction(db, record, storeNames, mode, upgrade = false) {
+-    if (db._closed) throw idbError('InvalidStateError');
++    // Fault: ignore close-pending state when creating transactions.
+     if (!['readonly', 'readwrite', 'versionchange'].includes(mode)) throw new TypeError('unsupported transaction mode');
+     const scope = typeof storeNames === 'string' ? [storeNames] : Array.from(storeNames);
+     if (!upgrade && scope.some(name => !record.stores.has(name))) throw idbError('NotFoundError');

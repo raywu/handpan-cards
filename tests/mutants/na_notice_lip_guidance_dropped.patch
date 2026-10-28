@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10556,7 +10556,6 @@
+@@ -11806,7 +11806,6 @@ function paintLayout() {
    if (noteChanged) layoutNote.textContent = note;
    layoutNote.hidden = !note;
    sheet.classList.toggle("noticed", !!note);

@@ -1,0 +1,14 @@
+# kills: the preview appears before any card is generated
+# suite: node --test --test-reporter=tap --test-name-pattern=^the.preview.appears.before.any.card.is.generated$ tests/preview.test.js
+# fault: Drawing a current typed preview wrongly generates and commits a saved scale before any submit; the placeholder boot still paints directly without generating.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12892,6 +12892,7 @@ function repaintPlate() {
+ 
+ function showPanPreview(seed) {
+   if (!paintPan(seed, "current")) holdPanPreview();
++  generateDeck(HPE.core.formatSeed(seed.fields), seed.options);
+ }
+ 
+ /** An empty box still gets a pan, so the drawer is the same height before the

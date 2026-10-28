@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -3865,7 +3865,7 @@
+@@ -11012,7 +11012,7 @@ function sizePanHits(svg, minPx, pickedRing) {
    // A square viewBox under the default xMidYMid meet renders at the SMALLER of
    // the two dimensions: in a short wide box the pan is sized by the height, and
    // a scale taken from the width alone would make every target too small.

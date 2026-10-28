@@ -1,0 +1,16 @@
+# kills: PD: a v6 link reads palette-2 to palette-10 and refuses every other spelling
+# suite: node --test --test-name-pattern ^PD:.a.v6.link.reads.palette-2.to.palette-10.and.refuses.every.other.spelling$ tests/share.test.js
+# The v6 reader drops its two-digit alternative, so palette-10 (index 9) is
+# BAD_NOTE on the one link that must open it.
+diff --git a/src/engine/share.js b/src/engine/share.js
+--- a/src/engine/share.js
++++ b/src/engine/share.js
+@@ -359,7 +359,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   var UNRESERVED_RE = /^[A-Za-z0-9\-._~]$/;
+   var TYPED_RE = /^[A-Za-z0-9\-._~+%]+$/;
+   var PALETTE_RE = /^palette-([2-6])$/;
+-  var PALETTE_RE_V6 = /^palette-(10|[2-9])$/;
++  var PALETTE_RE_V6 = /^palette-([2-9])$/;
+   var PARENT_RE = /^parent-(.+)$/;
+   var ANGLES_RE = /^at-((?:0|[1-9][0-9]{0,2})?(?:,(?:0|[1-9][0-9]{0,2})?)*)$/;
+

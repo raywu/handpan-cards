@@ -168,9 +168,26 @@ function specPalettes() {
     const m = line.match(/^\| (\d) \| `(#[0-9A-Fa-f]{6})` \| `(#[0-9A-Fa-f]{6})` \|/);
     if (m) rows[Number(m[1])] = { root: m[2], tone: m[3] };
   }
-  assert.equal(rows.length, 6, "section 13 lists six palettes");
+  assert.equal(rows.length, 10, "section 13 lists ten palettes");
   return rows;
 }
+
+test("PD: the palette registry is the literal ten-pair table, old prefix first, new pairs appended", () => {
+  const want = [
+    ["#E0559A", "#E2761B"], ["#6D40A3", "#C9971E"], ["#0B7B75", "#DD8F00"],
+    ["#E2761B", "#E0559A"], ["#C9971E", "#6D40A3"], ["#DD8F00", "#0B7B75"],
+    ["#2563B0", "#C0452C"], ["#3B7A2A", "#B3263A"],
+    ["#C0452C", "#2563B0"], ["#B3263A", "#3B7A2A"],
+  ];
+  const got = JSON.parse(JSON.stringify(HPE.select.PALETTES));
+  assert.deepEqual(got.map((p) => [p.root, p.tone]), want);
+  want.forEach(([root, tone], index) => {
+    const deck = built("(D3) A3 C4 D4 E4 F4 G4 A4 C5", { palette: index });
+    assert.deepEqual([deck.colors.root, deck.colors.tone, deck.colors.ga, deck.colors.gb], [root, tone, root, tone]);
+    assert.equal(deck.options.palette, index);
+  });
+  assert.equal(built("(D3) A3 C4 D4 E4 F4 G4 A4 C5").colors.root, "#E0559A", "the default stays palette 0");
+});
 
 test("colors come from the section 13 palette with ga = root and gb = tone", () => {
   const palettes = specPalettes();

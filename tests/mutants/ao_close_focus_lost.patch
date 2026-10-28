@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10891,7 +10891,6 @@
+@@ -14492,7 +14492,6 @@ function hideAbout() {
    aboutOpen = false;
    setInert(false, aboutBackground());
    document.documentElement.classList.remove("about-open");

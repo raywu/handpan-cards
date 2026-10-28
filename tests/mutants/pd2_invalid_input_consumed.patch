@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13127,7 +13127,7 @@ angleNext.onclick = () => nudgeAngle(-1);
+@@ -13759,7 +13759,7 @@ angleNext.onclick = () => nudgeAngle(-1);
  function showPendingDerive() {
    // Invalid active fields can retain a last-good line and boxOk. Keep Layout
    // accessible, but do not consume its feedback until the active input is valid.

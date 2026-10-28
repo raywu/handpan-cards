@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10696,7 +10696,7 @@ const footSlide = document.getElementById("scale-footslide");
+@@ -11946,7 +11946,7 @@ const footSlide = document.getElementById("scale-footslide");
  const lipBtn = document.getElementById("scale-lip");
  const guidanceEl = msgLine.parentElement || msgLine.parentNode || null;
  const LIP_VARS = ["--lip-h", "--lip-pad", "--lip-gd", "--lip-g"];

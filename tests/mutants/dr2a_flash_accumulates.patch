@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11587,7 +11587,7 @@ function nudgeAngle(dir) {
+@@ -12622,7 +12622,7 @@ function nudgeAngle(dir) {
   *  both, repaints and writes row 7 (row 8 when i is j). The pick is the
   *  caller's. */
  function flashNotes(ids) {

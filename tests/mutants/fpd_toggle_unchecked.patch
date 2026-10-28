@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12847,7 +12847,7 @@ document.addEventListener("pointerdown", (e) => {
+@@ -13708,7 +13708,7 @@ document.addEventListener("pointerdown", (e) => {
  // button re-solves the preview through the same parse path a keystroke uses.
  // A toggle re-seats the whole pan, so moved bottom notes must still clear the floor after it
  // (HPE.layout.bottomClash): a toggle that would leave the sheet unbuildable is undone.

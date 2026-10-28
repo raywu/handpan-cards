@@ -14,7 +14,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8607,7 +8607,7 @@ let panelOpen = false;
+@@ -14412,7 +14412,7 @@ let panelOpen = false;
  // in markup. At/above it the trigger is display:none, so openPanel() is never
  // reached by a click and the modal state above is never applied; the panel is
  // simply always visible as a static sidebar (CSS only).

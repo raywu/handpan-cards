@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11894,7 +11894,7 @@ function activateNote(ref, how) {
+@@ -12670,7 +12670,7 @@ function activateNote(ref, how) {
      return;
    }
    if (n.ring !== p.ring) {

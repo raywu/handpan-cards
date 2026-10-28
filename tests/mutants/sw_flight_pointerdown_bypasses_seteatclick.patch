@@ -7,7 +7,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8988,7 +8988,7 @@ document.addEventListener("pointerdown", e => {
+@@ -14998,7 +14998,7 @@ document.addEventListener("pointerdown", e => {
      // Q11: a right-button press (button 2) must not arm eatClick - a
      // contextmenu/auxclick follows it, never a "click", so a later Enter on
      // a focused control would otherwise have its own click eaten.

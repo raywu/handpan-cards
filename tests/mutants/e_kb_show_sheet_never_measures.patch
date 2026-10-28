@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11588,7 +11588,6 @@ function showSheet(opener) {
+@@ -13256,7 +13256,6 @@ function showSheet(opener) {
    setLip(false, { instant: true });
    setInert(true, background);
    resyncSheet(true);

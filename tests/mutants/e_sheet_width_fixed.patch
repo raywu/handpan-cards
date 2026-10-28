@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -976,7 +976,7 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1029,7 +1029,7 @@ footer.seq{row-gap:var(--sp-1)}
     is as far as it goes: beyond that the mock starts competing with the card.
     Gated on both axes like the ramp, so no phone in landscape picks it up. */
  @media (min-width:640px) and (min-height:700px){

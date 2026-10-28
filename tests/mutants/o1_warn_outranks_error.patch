@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13276,8 +13276,8 @@ function paintFields(values, announceNew, composed) {
+@@ -14164,8 +14164,8 @@ function paintFields(values, announceNew, composed) {
      fieldEls[k].classList.toggle("bad", bad);
      fieldEls[k].setAttribute("aria-invalid", bad ? "true" : "false");
    }

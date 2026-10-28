@@ -1,0 +1,15 @@
+# kills: SPS fixture: opt-in exposes one anonymous body inside the existing sheet surface
+# suite: node --test --test-name-pattern ^SPS.fixture:.opt\-in.exposes.one.anonymous.body.inside.the.existing.sheet.surface$ tests/sandbox_events.test.js
+# An anonymous shipped body is assigned a fictitious control id.
+diff --git a/tools/sandbox.js b/tools/sandbox.js
+--- a/tools/sandbox.js
++++ b/tools/sandbox.js
+@@ -394,7 +394,7 @@ function boot(opts = {}) {
+       const classes = /\bclass="([^"]*)"/.exec(attrText);
+       const isSheetBody = opts.layout && opts.sheetBody && classes &&
+         classes[1].split(/\s+/).includes("sheetbody");
+-      const bodyNode = isSheetBody ? bindFocus(makeElement("", name)) : null;
++      const bodyNode = isSheetBody ? bindFocus(makeElement("sps-body", name)) : null;
+       if (bodyNode) {
+         bodyNode.className = classes[1];
+         const surface = els["scale-sheet"].firstElementChild;

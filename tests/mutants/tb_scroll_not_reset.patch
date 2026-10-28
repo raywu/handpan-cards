@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11647,7 +11647,6 @@ function setTab(tab) {
+@@ -12254,7 +12254,6 @@ function setTab(tab) {
    if (held && held !== document.body && !held.getClientRects().length) held.blur();
    paintLayout();
    repaintPlate();

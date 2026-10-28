@@ -6,8 +6,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -357,3 +357,3 @@
+@@ -614,7 +614,7 @@ main{overflow-x:clip}
+ .prints button:disabled{opacity:.5; cursor:default}
+ .prompt{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
    padding:0 16px 26px}
 -.bigname{font-family:Marcellus, serif; color:#545454; line-height:.95; text-align:center}
 +.bigname{font-family:Georgia, serif; color:#545454; line-height:.95; text-align:center}
  .bigname sup{font-size:.5em; vertical-align:.55em}
+ /* #b6ae9f was 2.20:1 on the white paper - and this line ("TAP TO REVEAL THE
+    NOTES") is the only instruction a first-run user gets, so it is the one

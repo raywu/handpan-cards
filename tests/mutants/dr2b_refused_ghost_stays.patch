@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10191,7 +10191,7 @@ function dropGhost(g) {
+@@ -13892,7 +13892,7 @@ function dropGhost(g) {
   *  gone at once under reduced motion. */
  function returnGhost(g, ref) {
    const h = hitFor(ref);

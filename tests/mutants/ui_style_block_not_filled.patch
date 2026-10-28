@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7339,8 +7339,6 @@ function render() {
+@@ -11371,8 +11371,6 @@ function render() {
      const [styleName, styleTip] = SEQ_STYLE_COPY[seq.style];
      front.innerHTML = faceHTML(d, ch, n, "answer");
      back.innerHTML = faceHTML(d, ch, n, "backS");

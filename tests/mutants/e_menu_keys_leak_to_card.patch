@@ -14,7 +14,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8105,7 +8105,6 @@ document.addEventListener("keydown", e => {
+@@ -14669,7 +14669,6 @@ document.addEventListener("keydown", e => {
    if (panelOpen) {
      if (e.key === "Escape") { e.preventDefault(); closePanel(); return; }
      if (e.key === "Tab") cycleTabStops(panelStops(), e);

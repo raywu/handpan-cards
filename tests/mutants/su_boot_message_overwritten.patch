@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11369,7 +11369,7 @@ function syncRoute() {
+@@ -15096,7 +15096,7 @@ function syncRoute() {
    const refused = route === "";
    shareCopy.disabled = refused;
    shareCopy.title = refused ? reason : "";

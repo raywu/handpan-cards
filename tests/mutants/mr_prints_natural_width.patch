@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -601,8 +601,7 @@ main{overflow-x:clip}
+@@ -605,8 +605,7 @@ main{overflow-x:clip}
    letter-spacing:.08em; color:#c4bcab; background:#211d16; border:1px solid #433b2c;
    border-radius:8px; padding:7px 11px 6px; min-height:44px; cursor:pointer;
    white-space:nowrap; -webkit-appearance:none; appearance:none}

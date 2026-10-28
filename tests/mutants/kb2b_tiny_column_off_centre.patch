@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1093,7 +1093,7 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1172,7 +1172,7 @@ footer.seq{row-gap:var(--sp-1)}
  #scale-sheet.kbup.side .sheethead{display:none}
  #scale-sheet.tiny .sheetbody{flex:0 0 auto; overflow:visible}
  /* The scroller spans the screen, so a swipe on the flanks beside the 520px column scrolls it too. */

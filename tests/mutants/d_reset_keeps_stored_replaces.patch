@@ -1,15 +1,16 @@
 # kills: editable defaults: RESET arms, then clears hidden and replacements and keeps custom decks
 # suite: node --test --test-name-pattern ^editable.defaults..RESET.arms..then.clears.hidden.and.replacements.and.keeps.custom.decks$ tests/app.test.js
 # RESET clears the live registry but leaves the stored records naming a seed, so the next load brings every replacement back.
+# Approved retained contract mapped to the transactional instance adapter.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10262,7 +10262,7 @@ restoreBtn.onclick = () => {
-   restoreBtn.removeAttribute("data-armed");
-   hidden = [];
-   for (const [id, d] of Object.entries(CUSTOM)) if (d.options && isBuiltIn(d.options.replaces)) delete CUSTOM[id];
--  writeScales(savedScales().filter(r => !(r && r.o && isBuiltIn(r.o.replaces))));
-+  writeScales(savedScales());
-   const wasSelected = deckId;
-   const stays = allDecks().some(d => d.id === wasSelected);
-   if (!stays) selectDeck(fallbackDeck().id); else { save(); buildChips(); }
+@@ -10617,7 +10617,7 @@ function applySavedCommand(staged, command, candidate) {
+   } else if (command.type === "reset") {
+     if (!savedEqual(command.affectedScope, savedScope(current, staged.views))) return conflict();
+     const removed = new Set(savedScope(current, staged.views).replacements.map(row => row.id));
+-    next.entries = next.entries.filter(row => !removed.has(row.instanceId));
++    next.entries = [...next.entries];
+     for (const id of removed) views.delete(id);
+     next.slots = {}; next.hidden = [];
+   } else if (command.type === "prefer") {

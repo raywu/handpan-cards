@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11181,7 +11181,7 @@
+@@ -13162,7 +13162,7 @@ function applyKbOffset(e) {
     * resizes shrinks the sheet, so kbBase (the tallest visible area seen at this
     * width) covers that model, and only while a text field is focused. The
     * sandbox stub has no clientHeight/Width and falls back. */

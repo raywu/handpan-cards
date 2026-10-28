@@ -7,7 +7,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11341,7 +11341,7 @@ function sheetOptions() {
+@@ -12762,7 +12762,7 @@ function sheetOptions() {
    // normalised back to ASCII before it ever reaches the engine.
    const n = String(nameBox.value || "")
      .replace(/[‘’]/g, "'").replace(/[“”]/g, '"')

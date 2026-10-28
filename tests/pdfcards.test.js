@@ -445,7 +445,7 @@ test("rule N: the browser PDF prints the seat number on the diagram and the numb
     "a moved deck printed the same bytes as the unmoved one, so the diagram numbers did not follow the seats");
 });
 
-test("OF: the browser PDF and the app print the same number line 2-1-4 on the Am card of (D3) C4 A3 D4 E4 F4 G4 A4 C5", () => {
+test("OF: the browser PDF and the app print the same number line 2-1-4 on the Am card of (D3) C4 A3 D4 E4 F4 G4 A4 C5", async () => {
   const { boot } = require("./helpers/sandbox.js");
   const E = loadEngine(["core", "voicing", "layout", "naming", "select"]);
   const typed = "(D3) C4 A3 D4 E4 F4 G4 A4 C5";
@@ -469,11 +469,15 @@ test("OF: the browser PDF and the app print the same number line 2-1-4 on the Am
   pdfLabels.forEach((lab, i) => { run.push(lab); if (i < pdfLabels.length - 1) run.push(" - "); });
   assert.ok(findTokenRun(pdfGlyphs(P.build(deck, { variant: "shop" })), run).length >= 1, "the PDF number line is 2-1-4");
 
-  const app = boot();
-  const made = app.generate("(D3) A3 C4 D4 E4 F4 G4 A4 C5", { seats });
+  const app = boot({ crypto: require("node:crypto").webcrypto, abortController: true });
+  await app.getAsync("savedReady");
+  const made = await app.generateAsync("(D3) A3 C4 D4 E4 F4 G4 A4 C5", { seats });
   assert.strictEqual(made.ok, true, made.reason);
-  const expr = `CUSTOM[${JSON.stringify(made.value.id)}]`;
-  const reg = JSON.parse(JSON.stringify(app.registry()[made.value.id]));
+  assert.strictEqual(typeof made.instanceId, "string", "generation acknowledges a stable saved instance");
+  const expr = `savedEntries.get(${JSON.stringify(made.instanceId)}).deck`;
+  assert.strictEqual(app.get(`savedEntries.has(${JSON.stringify(made.instanceId)})`), true,
+    "the number line is read from the acknowledged saved instance");
+  const reg = JSON.parse(JSON.stringify(app.get(expr)));
   const idx = reg.chords.findIndex((ch) => ch.main === "Am");
   assert.ok(idx >= 0, "an Am card in the app");
   const line = app.get(`linesHTML(${expr}, ${expr}.chords[${idx}])`);

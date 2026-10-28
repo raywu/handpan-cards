@@ -1,0 +1,15 @@
+# kills: SPS3: a start field focused then blurred between touch samples stays cancelled
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS3:.a.start.field.focused.then.blurred.between.touch.samples.stays.cancelled$ tests/app.test.js
+# Focus then blur between samples wrongly allows navigation.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11736,7 +11736,7 @@ function setTab(tab) {
+     }, { passive: true });
+     body.addEventListener("touchcancel", cancel, { passive: true });
+     body.addEventListener("focusin", e => {
+-      if (sheetSwipe && e.target && e.target.matches && e.target.matches("input, textarea")) cancel();
++      // Transient field focus no longer cancels the record.
+     }, { capture: true });
+     document.addEventListener("selectionchange", () => {
+       if (sheetSwipe && selected(sheetSwipe.field)) cancel();

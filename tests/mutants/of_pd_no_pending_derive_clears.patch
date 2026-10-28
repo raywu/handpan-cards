@@ -1,0 +1,22 @@
+# kills: OF: PD closing the sheet clears a pending sentence
+# suite: node --test --test-name-pattern ^OF:.PD.closing.the.sheet.clears.a.pending.sentence$ tests/app.test.js
+# layoutStatus and dropDrawer both stop clearing pendingDerive, so a drawer result or a closed sheet leaves a stale sentence to replay.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11758,7 +11758,6 @@ const ringWord = (ring) => t("sheet.ring_" + ring);
+ function layoutStatus(text, warn) {
+   // An actual drawer result supersedes deferred feedback; passive empty paints
+   // leave it alone (including an invalid-input visit to Layout).
+-  if (text) pendingDerive = {};
+   drawerStatus.classList.toggle("warn", !!warn);
+   if (warn && text && drawerStatus.textContent === text) {
+     drawerStatus.textContent = "";
+@@ -12366,7 +12365,6 @@ function dropDrawer() {
+   drawerHint.textContent = "";
+   drawerHint.hidden = true;
+   drawerOpen = false;
+-  pendingDerive = {};
+   sheetTab = "scale";
+   paintTabs();
+   pickRef = null;

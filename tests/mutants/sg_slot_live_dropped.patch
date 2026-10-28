@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1558,7 +1558,7 @@ html.about-open{overflow:hidden}
+@@ -1640,7 +1640,7 @@ html.about-open{overflow:hidden}
      <div id="scale-guidance">
        <p id="scale-field-msg"></p>
        <div id="scale-msg" aria-live="polite"></div>

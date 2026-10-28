@@ -1,15 +1,15 @@
-# suite: node --test --test-name-pattern ^two.records.for.one.deck.id.collapse.to.the.first..whatever.their.versions$ tests/app.test.js
-# kills: two records for one deck id collapse to the first, whatever their versions
-# Two records that resolve to one deck id both survive the boot rewrite.
+# kills: migration retains both same-inventory records and their source order across versions
+# suite: node --test --test-name-pattern=^migration.retains.both.same\-inventory.records.and.their.source.order.across.versions$ tests/app.test.js
+# former kills: two records for one deck id collapse to the first, whatever their versions
+# fault: Superseded inventory dedupe collapses legacy duplicate rows instead of retaining distinct ordered instances.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7873,7 +7873,6 @@ function restoreScales() {
-       const res = readable ? scaleReader(rec.v)(rec.s) : null;
-       if (res && res.ok) {
-         const id = HPE.core.deckId(res.value.fields);
--        if (seen.has(id)) continue;
-         const canonical = HPE.core.formatSeed(res.value.fields);
-         const options = recordOptions(rec);
-         const built = generateDeck(canonical, options);
-
+@@ -10352,6 +10352,7 @@ function makeSavedMigration(staged) {
+     migration: { sourceKey: staged.sourceKey, raw: savedClone(staged.raw), instanceIds: [] } };
+   const supplied = new Map(), oldVisible = new Map();
+   for (const row of staged.rows) {
++    if (row.read.ok && [...supplied.values()].some(view => view.deck?.id === row.read.value.id)) continue;
+     const id = savedCryptoId(used);
+     if (!id) return savedFailure("allocation", "instance-id");
+     used.add(id);

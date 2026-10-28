@@ -1,94 +1,645 @@
 # Shared workstream ledger
 
-## Latest cross-workstream checkpoint — 2026-10-26
+## Approved RC released to main — 2026-10-26, 21:13 PDT
 
-This checkpoint supersedes conflicting pending/approval labels in the historical
-notes below. Keep their evidence; re-resolve live heads/ownership before work.
-No main merge is authorized by this checkpoint. Do not touch the original dirty
-locked checkout. Routine nonsecret progress/recovery reporting in the existing
-[coordination thread](https://github.com/raywu/handpan-cards/pull/571) is authorized.
+Owner passed wholeRC QA, accepting Settings/Resources three-column landscape UX
+as nonblocking, then explicitly authorized exactRC3542 main release. RC587 merged
+main at7d80d65d603d9e8ab468a08d616d59dfac0245ce. Pages deployment40448553293 passed;
+actual production app is exact7fe/907042bytes; reviewed verifier21/21resources and
+indexing headers passed. Actual-mainCI40448555197 is RUNNING, not yet creditedgreen.
+Retained same-source DEV/browser/ownerQA evidence remains dated; no fresh production
+browser coverage claimed. Savedvariants/swipe/palettes/Neotone remain excluded.
 
-| Workstream | Description, current state and next action |
-|---|---|
-| Saved-scale variants — FIRST PRIORITY | Let distinct named/layout versions coexist while Edit updates only the selected version and conflicts preserve drafts. Authorized throughDEV/exact earlier instruction packet. Currentbranchcodex/saved-scale-variants-20261025 at0d36b1f4; host/private/tmp/handpan-saved-variants.HVUKbE/integration. [Immutable latest plan/hold](https://github.com/raywu/handpan-cards/blob/0d36b1f4ace31dd5f8978f2ed51741fe78049c36/docs/plans/2026-10-26-saved-variants-timing-oracle.md) and [currentCI](https://github.com/raywu/handpan-cards/actions/runs/40387134731). Previous2ff71cf5 FULLCI succeeded; currentheadCI still running. Fullapp939/metadata54/all1618apply locally pass. Performance validation remains INCOMPLETE: one allowed200case stopped during baseline sample18 before candidate loaded; no automatic retries. Read-only diagnosis/new reviewed measurement protocol and explicit environment/budget decision precede more measurement; owner must accept any limitation. Not deliveredDEV. |
-| Handpan Helpers — approved parallel app lane | Add a native new-tab resource beside HANDPAN101 while preserving fit/targets/order. Exact Resources-only CLAUDE packet already approved/applied, no additional instruction edits. Currentbranchcodex/helpers-integration-20261026, host/private/tmp/handpan-helpers.HUZs5u/integration; [reviewed finish plan](plans/2026-10-26-handpan-helpers-validation-finish.md). App7fe/T6d89; full882unit,54metadata,1515apply,24 intendedclean/fault/restored proofs, fresh8fullpanelprobes/bothfonts and1344same-locale/font pairs pass. Actual outbound newtab/opener-null/appstate journey passes on finalmarkup. FullMacI18N remainsFAILED only for separately documented pre-existingJapaneseHandpaner line debt; no exemption. Nextimmutablefinalreview/fullLinuxCI (mustALLpass), actualservedDEV andownerQA; no main delivery. |
-| Scale↔Layout swipe — authorized, interrupted | Add deliberate horizontal switching without stealing drawer/field/scroll gestures. Keep source/proofs in/private/tmp/handpan-sps-z8gaznu2/integration; sync finalsharingbase, reprove literaltestheaders and finish independentreview/fullCI/DEV/nativeQA after prioritywork. ExistingthroughDEV authority persists; no main or unapproved CLAUDE edit. |
-| Palette defaults — queued fast-track | Expose D KURD10/D AMARA10 colour pairs and each root/tone inverse alongside existing six choices, preserving oldIDs/default0. Ownerrequests prompt→swarmplan→independentENG/designreviews now; implementation AFTER existingactiveworkstreams, targetnextmainrelease subjectgates/explicitmainconsent. Documentationlane codex/palette-defaults-plan-20261026 at/private/tmp/handpan-palette-defaults-plan.20261026. PromptV2 independentlycritiqueCLEAR, planningrun underway; no paletteapp/CLAUDE edit. Finalplan/proposedexactinstructionpacket and approvaldisposition mustbetracked beforeexecution. This doesnotresume pausedwork ordelay existingdeliveries. |
-| SEO long-tail — planning only | Investigate targeted useful scale lessons and instrument-loading CTAs. Ownerchose designhome handpan.raywu.org/learn/ and owner musical-review role forpilotarticles. These selections doNOTauthorize articles/generator/hosting/analytics/publication; actualprovenance/capacity/data/hosting remainqualified. Reviewedsubplan deliveredDEV, mainheld; keep broaderSEO research separate. |
-| Duplicate notes — PAUSED UNTIL FURTHER NOTICE | Preserve finalized researched/reviewed plan and choices: exactduplicates anywhere, onepositionpertone, nonblockingwarning onlynewlyallowedrepeats. No featurework, planresume or mainrelease untilownerresumes explicitly. |
-| DEV deliveries awaiting main | Macforeground helper, latest-per-ring feedback, SEOplan, duplicate-noteplan(PAUSED) andLINKasync ownership repair are deliveredDEV; releasequeueheld while variants finishes. Preserveorder andexplicitmainconsent; doNOTcallLINKrepair a saved-variants solution. |
-| Released/completed | Naturalness/UIlocalization (GermanDu/Dein/dasDing; scaleinputstillEnglishgrammar), HTC, seat-order repairs, sharedbrowserrunbook and repo-localDRY/ledger bootstrap are released; ownerreported UIQA allgood. Global/runtimeparity and fullMacsuite not established by that result. |
-| Future prompts/plans | Keep LinearSoT investigation/CEO+ENGreview, Codex-vs-Claude qualitycomparison investigation, reviewed repositoryrename plan, remainingNITS→OF-D/I18N-D/Q9/Mac/recovery candidates and cleanupinventory queued at their established authority. Wholecode/testrobustness/DRY/deadcodeaudit starts only after otherwork isresolved. No blanketimplementationgrant; Audio/stats/SM2/PWA ownerstops persist. |
+DEVc040's newer handoff documents must remain. Local branch
+codex/release-reconcile-20261026 in/private/tmp/handpan-release-reconcile-20261026
+merged main ancestry with ZERO FILE CHANGES before this documentation checkpoint;
+review/CI/DEVdelivery stillpending. No reset, branch deletion or handoff overwrite.
 
-Every check-in must cover active, interrupted, DEV-held, released and queued work
-with a one-sentence description/status/nextstep; numbers alone are insufficient.
-Interview only genuine unresolved decisions, recommendationfirst; reuse settled
-answers. Each newworktree/checkpoint needs plan+branch+worktree+last/next+proofrefs.
-Main and each exactCLAUDE patch require explicitowner approval. AFK allows routine
-autonomous decisions within approvedscope, never inventedpermission or waivedgates.
+Newfuturefollow-on: [Settings/Resources landscape menu](plans/2026-10-26-landscape-settings-menu.md) ONLY (owner clarified; not
+Add/Edit). [Prompt](prompts/2026-10-26-landscape-settings-menu.md) and plan completed; independentENG/designreview CLEAR, no UI
+implementation authorized. Three-column issue remains accepted nonblocking in the
+releasedRC. Other unstarted work remains paused;23:00Claudehandoff stilltarget.
+EarlierQA/main-pending snapshotlabels are superseded by this explicit release.
 
-## Historical checkpoints — preserve evidence, later explicit decisions govern
+## Claude handoff closure checkpoint — documentation reviewed
+
+Onboarding-generation prompt v2 executed; CLAUDE_TAKEOVER_PLAN.md and copy/paste
+startup prompt produced and independently ENG/operational cold-read CLEAR after
+correcting stale process-audit labels. Shared memory is DEVELOPMENT_CONTINUITY.md;
+no global memory/Claude instruction changes. Exact source/ref index, selected31
+verified private backups and timestamped selected worktree/browser receipts are
+under docs/handoff/. Original dirty SV integration documents separately backed up;
+no reset/discard. Frozen route-test lane cab63c9d clean/intentionallyREDoldsource;
+release/Helpers/swipe/palette/mutation source lanes clean. No active worker browser
+jobs in selected audit; lease released, Claude must recheck and acquire anew.
+
+Next: publish this docs-only branch and verify remote ref; normal DEV doc delivery
+requires its review/CI gates. Publication is not inferred from this file. RC587
+remains ready for owner QA, wholeRC QA/main consent pending. All paused features
+stay paused. Metadata is a stopping-point snapshot, not authority to auto-resume.
+
+## Claude onboarding handoff — active documentation-only preparation
+
+Owner requested all streams at safe stopping points, updated ledger/shared memory,
+and a prompt that generates an onboarding plan plus copy/paste Claude startup.
+[Planning prompt](prompts/2026-10-26-claude-takeover-planning.md) v2 drafted;
+outputs under preparation. Shared memory pointer:DEVELOPMENT_CONTINUITY.md.
+Handoff worktree:/private/tmp/handpan-claude-takeover-20261026,
+branch codex/claude-takeover-20261026, baseline exactDEV3542. No app/tests/
+CLAUDE/global config changes. Canonical dirty checkout preserved. Frozen test lane
+checkpoint cab63c9d saves tests only against oldsource0d36 (intentionallyRED, never
+release); integrated passing tests live in variants2a260d21. Other active source
+lanes clean. WholeRC ownerQA and main consent stillpending; RCready notification
+already sent. New feature implementation remains paused.
+
+## RC ready for owner QA — 2026-10-26
+
+RC587 at exactDEV3542 passed fullCI40437293981 (all12jobs); fresh immutableDEV071 source matches7fe. Independent final evidence review CLEAR, retained dated livejourneys samebytes and priorHelpersownerQA honestly preserved. Owner sent focusedQA URL/checklist; wholeRC QA PENDING, no mainconsent. Savedvariants excluded; duplicateplanDOCS included/featurepaused. Screenshot Neotone backup preserved privately in HV/evidence/neotone-layout-reference.jpg (samee997SHA), not published.
+
+## MUTANT-NEOTONE — future project, planning-only exception
+
+Owner explicitly queues support for the Mutant Neotone paired playing-area layout
+in Add/Edit. [Prompt v3](prompts/2026-10-26-mutant-neotone-layout.md) preserves v1→v2 critique/execution and four output-review refinements. The [future plan](plans/2026-10-26-mutant-neotone-layout.md) has independent ENG/design CLEAR after one revision round. No implementation, hardware/MIDI/audio control,
+new tools/config or CLAUDE change is authorized. Current RC/QA/handoff retain
+priority. Screenshot is owner reference, not exact hardware geometry; model/revision,
+slot assignment, secondary-vs-bottom semantics and persisted sharing are gates.
+Original image is local-only with SHA256 e997c67af983962882ebb3419d7265fb112ed5b20562b72f04da841e6b6ad19a;
+do not publish the full screenshot/person image by implication. Author lane owns
+only docs/plans/2026-10-26-mutant-neotone-layout.md; other unstarted work stays paused.
+
+## RC scope approval — existing plan docs included, feature remains paused
+
+Owner approved existing duplicate-note planning documents in tonight's RC;
+implementation remains paused. Exact deployedDEV3542 selected, release branch
+codex/release-rc-20261026 at/private/tmp/handpan-release-rc-20261026. Actual draft
+releasePR587/fullCI40437293981 are active; no app/config/instruction edits to create
+this candidate. Independent scope review CLEAR pending CI/served QA. Main consent
+not granted. Earlier pending document-scope questions are superseded.
+
+## Performance simplification proposal — owner-requested explanation/restructure
+
+Draft [smaller validation design](plans/2026-10-26-performance-validation-simplification.md)
+separates reusable browser/profiler/clock tools from the unactivated custom
+orchestrator. Independent ENG/operations CLEAR for simplification direction only. No implementation or
+campaign started; variants stays excluded tonight. RC587/fullCI40437293981 continues
+on exact deployedDEV3542. Original diagnostic packet and failures preserved for
+Claude; no tools/config/app edits are implied by the restructuring request.
+
+## 19:08 PDT cutoff check-in — variants held, RC not ready
+
+Observed clock2026-10-27T02:08:17Z. Saved variants missed the hard19:00
+performance gate: fullCI green at2a260d21, performance still unvalidated; exclude
+from tonight's RC and preserve for Claude. No performance retry or gate waiver.
+Fallback read-only inventory completed, but fallback branch/composition/CI was
+NOT assembled. The18:15 fallback readiness checkpoint was missed. A new fallback
+preview route is not established; repository says DEV deployment from dev only.
+Current main96c4 and DEV3542 remain unchanged (live read verified).
+
+Owner interview pending: allow already-on-DEV duplicate-note planning documents
+in the RC while keeping implementation paused, versus retain their publication
+hold. No reply is approval. Including them would preserve the existing deployed
+tree; excluding them requires separately validated composition/deployment. Neither
+choice approves main merge. RC21:11 is at risk; do not claim QA readiness.
+
+Handoff draft now at [CLAUDE_RETURN_HANDOFF.md](CLAUDE_RETURN_HANDOFF.md), with
+exact refs, failed gates, local-only artifacts and paused queues. Next: resolve
+concrete release-scope/deployment decision, prepare exact candidate if authorized
+and feasible, or deliver a blocked-RC report plus independently reviewed handoff.
+20:15 readiness and23:00 handoff cutoffs remain. No feature expansion; all unstarted
+work paused. No candidate-ready notification sent to owner.
+
+## Owner RC QA availability — 2026-10-26
+
+Owner confirmed: “Yes—notify me when DEV is ready” for roughly20minutes of
+release-candidate QA, ideally20:15–20:45Pacific. Notify only after the actual
+candidate deployment and required verification gates; provide exact URL/revision,
+included features and focused QA steps. This confirms availability, not QA passed,
+permission to bypass gates, or main-merge consent. No further scheduling interview
+is needed unless the window materially changes.
+
+## Owner deadline and unstarted-work pause — 2026-10-26, 17:11 PDT
+
+Owner targets an RC within four hours (about21:11PDT) and Claude handoff at23:00.
+**All unstarted workstreams are PAUSED for this handoff**, including approved but
+unstarted palette implementation and queued SEO/rename/Linear/quality/audit/nit/
+cleanup/global work. Preserve their plans and grants; no cancellation or resumption
+is implied. Duplicate-note and owner-stopped feature pauses remain unchanged.
+Only existing release-critical work and handoff preparation continue. Interrupted
+swipe is recommended held, not resumed, in this window. [RC/handoff subplan](plans/2026-10-26-release-candidate-and-claude-handoff.md)
+has independent ENG/design CLEAR after one revision round. Begin release-only fallback composition/inventory now, verify existing preview route by18:15, and require completed performance/green CI at hard19:00 variants go/no-go;
+validated fallback scope if needed, no waived gates and no main merge without
+explicit final consent. Existing private performance packet author notified.
+
+## Latest check-in — full recovery CI passed, 2026-10-26
+
+Saved variants' frozen feature head `2a260d212ec8e14394b7198f075366d13bf372ec`
+passed [full validate](https://github.com/raywu/handpan-cards/actions/runs/40417818176),
+including native browser tests, all mutation shards/aggregate, both panel-fit jobs,
+Python, data integrity and suite health. This supersedes earlier RUNNING labels.
+No new DEV or main merge occurred; variants is not ready for owner DEV QA yet.
+
+Remaining blocker: qualified performance evidence. Concrete private Linux setup
+packet is drafted at `HV/evidence/linux-performance-activation-a0/`; independent
+engineering and operational/design code reviews are now active. Test drafts,
+generated faults, diagnostic head and setup/run authority are not yet validated;
+protocol clearance alone is not activation or a passing measurement. Owner's
+prior selection approved proposal preparation. Make the precise reviewed setup
+reviewable and assess applicable authority before arming any campaign.
+
+Next: close concrete code-review findings, verify bounded nonbrowser preflight,
+resolve any genuinely new scoped setup authorization, run only the eligible
+predeclared campaign, then final delivery review and actual DEV verification.
+No repeated questions about settled product choices. Helpers owner-device QA
+passed. Swipe interrupted; palettes approved/queued afterward. Main releases held;
+duplicate-note workstream/release paused. All other stream statuses unchanged.
+Local ledger update is ahead of the frozen feature publication; published full-CI
+receipt/report provides freshness without pretending this doc is already on DEV.
+
+## Saved variants recovery — execution checkpoint, 2026-10-26
+
+Recovery execution is active under the owner's reaffirmed AFK authorization.
+Plan: [reviewed recovery subplan](plans/2026-10-26-saved-variants-regroup.md).
+Integration: `codex/saved-scale-variants-20261025`, host-local
+`/private/tmp/handpan-saved-variants.HVUKbE/integration`.
+
+- **Gate1 complete:** preserved all conflict-stage blobs and both parents; merged
+  approved Helpers at `b7439303`. The only instruction delta is its already-approved
+  Resources packet. App source `dc6af752…`; engine unchanged.
+- **Gate2:** full app **941/941**, browser-enabled harness **67/67**, original
+  Back/Forward **1/1**, variants/LINK/conflict journeys **9/9**, gesture checks
+  **3/3** all pass without required skips. All browser supervisors confirm cleanup.
+- **Mutation reconciliation:** `dc1e0842` integrates ten faithful context refreshes
+  and four new route faults. All **1,627 patches apply**, all 1,623 old identities
+  remain; 39 unit clean/fault/restored phases and the panel native triple passed
+  their intended assertions. Earlier 'panel proof pending' handoffs are historical.
+- **Floor reconciliation:** Helpers adds one new HHR registration, strengthening
+  existing PM7; independently reviewed correction of provisional942 to941 still
+  increases parent940. No removed tests or weaker acceptance.
+- **Metadata:** initial run52/54 failed two temporary-Git-worktree checks because
+  sandbox denied metadata writes; failed receipt retained. Permission-corrected
+  a1 run **54/54 PASS**, zero failures/skips; no source or test change to repair it.
+- **Review:** independent engineering cleared source and mutation scope for final
+  CI publication conditional on metadata passing. Full exact-head CI, performance,
+  final delivery review and actual served-DEV verification remain mandatory.
+- **Performance:** A1 bounded Linux protocol independently cleared. Concrete
+  workflow/controller packet is being drafted privately; no setup or measurement
+  is activated, and prior incomplete Mac data remains incomplete.
+
+Next: freeze final delivery manifest/commit, publish this feature
+head and run full CI; do not merge DEV until all required gates pass. No main merge
+is authorized. Helpers owner QA passed; duplicates remain paused and swipe/palettes
+retain their existing sequencing. Raw receipts stay in host-local `HV/evidence`
+and `handpan-share-hotfix.urAbvO/evidence`; publish sanitized immutable checkpoints.
+This local record must not be mistaken for canonical DEV publication.
+
+## Recovery Gate1 ACTIVE — 2026-10-26
+
+Owner reaffirmed AFK continuation. Reviewed [regroup subplan](plans/2026-10-26-saved-variants-regroup.md) activated: stage blobs and working conflict copies preserved privately in HV/evidence/regroup-gate1-premerge before resolution. Coordinator is resolving approved Helpers integration, preserving both parents/owner decisions. No reset/abort or original checkout edits. Application freeze and mutation/native/full-CI/performance gates remain pending; no DEV or main claim. Current regroup review record: round1 revise, round2 both CLEAR; no new failed execution round. Parallel Linux proposal review only, no measurements/setup yet.
+
+### Recovery validation checkpoint — Gate2 in progress
+
+Combined app941/941 PASS (0 failed/cancelled/skipped), raw regroup-app-a0.tap. Provisional942 arithmetic corrected to941 after independent review: Helpers adds one HHR test and strengthens/renames existing PM7; no registration removed; still increases saved-variants parent940. Unchanged original Back/Forward native case PASS under90s supervisor in3.493s with cleanup true; this is regression evidence, not original CI causality proof. M lane /private/tmp/handpan-saved-variants.HVUKbE/regroup-mutants owns ten generated context refreshes and four new route faults; proofs pending. Linux proposal review found three execution ambiguities; private a1 revision in progress before setup/run. All main/DEV delivery gates remain.
+
+### Gate1 resolution checkpoint
+
+All11 conflict paths/stages preserved; text resolutions retain both histories and approved Helpers test behavior. App source SHA dc6af7528c7d326a129402458f9acc9adb9f524e3bc23453290c71f46dd292c5. Exact instruction-delta audit confirms only approved Resources packet over saved-variants HEAD; engine unchanged. All1623 required prior fault identities present;1613 apply and10 stale context patches require generated reconciliation in M lane. Combined app suite currently running, not yet passed. Expected floors942/491/67 retained; actual results pending. Local merge checkpoint intentionally precedes M regeneration and final delivery gates; do not publish as a green release.
+
+## AFK regroup rule and saved-variants recovery — 2026-10-26
+
+Owner requires regrouping after more than three failed review rounds: stop the affected implementation scope, synthesize learnings and independently review a replacement subplan before proceeding. This is now applied to saved variants at owner request; historical CI/measurement failures are not mislabeled as review counts. [Recovery subplan](plans/2026-10-26-saved-variants-regroup.md) has independent ENG/design CLEAR after one revision round (round1 revise, round2 clear). Current integration merge is preserved; regroup complete; next is Gate1 integration under existing through-DEV authority, with new Linux setup separately qualified. No implementation or new browser/performance run occurred in the regroup task. Existing authorizations, main consent and exact CLAUDE approval boundaries remain. No CLAUDE.md edit.
+
+## Owner device QA confirmation — Handpan Helpers, 2026-10-26
+
+The owner reports: “Tested on my devices; all good” for the DEV Resources
+HANDPAN HELPERS button, including the requested labels/fit, new-tab opening and
+practice-state preservation checks. Owner device QA is now **PASSED**; this
+supersedes pending owner/device-QA labels in earlier checkpoints below. Device
+models and browser versions were not supplied; do not infer additional coverage.
+Implementation and automated/served-DEV validation evidence remain in the
+[Helpers validation plan](plans/2026-10-26-handpan-helpers-validation-finish.md).
+Main release remains held; this QA confirmation grants no main merge.
+
+## Current continuation and settled decisions — 2026-10-26
+
+This section supersedes older pending/blocking labels below. Preserve historic
+proofs; readliveheads/CI/reporting before resuming. Rootsoleintegrator/browserowner;
+originaldirty/lockedcheckout staysuntouched. Main96c4c589 remainsunmerged.
+
+- **Saved variants FIRST PRIORITY:** current0d36 FULLCI40387134731 FAILEDonly
+  nativeBack/Forwardfixture FIRSTPygmy-onwait (487/488nativepass; all939app/67harness,
+  data/Python/bothfit/all1618faults pass). No pointerinput inthisfixture. Modeled
+  realapppriorHijazpreferenceACK erasedpendingPygmyhash: intendedliteralRED50dc
+  confirmed, immediatecontrolpass, notnativecausalityproof. [Reviewedrouteplan](plans/2026-10-26-saved-variants-route-intent.md)
+  A2e50b independentlyENG/designclear aftertwo lifecyclefindings. Expandedtestlane
+  /private/tmp/handpan-saved-variants.HVUKbE/hash-tests, branchcodex/variants-hash-tests-20261026,
+  base0d36; onlyapp.test.js/floor940. Source3b07 STILLFROZEN untilexpandedT/REDreview;
+  nextsourceguardmustpreservependingknownroutes, ignoredhashpolicy andrealpeerupdates.
+- **Performance validation separately HELD:** stoppedMaccomparison17rowsbaseline
+  timeout, candidateunrun; no moreautomaticmeasurements. Ownerselectedbounded
+  existingLinuxCI PROPOSAL direction (90scontrol→onlyifvalid180sfull200case,
+  noexperimentretries/relaxedthresholds). Privateproposalresearch inparallel;
+  configuration/codeexecutionrequiresitsreviews/applicablescope, notassumedpassed.
+- **Helpers DELIVEREDDEV/ownerQAready:** feature4ea8e0f7 FULLCI40392258100SUCCESS,
+  mergedDEV3542d6ea868bf08e81a0b4f06c4bc71bbc20cbcb. Cloudflarecheckforthatcommit
+  SUCCESS andactualHTTPSmainDocumentbodySHA7fe verified. Live9EN/fallbackstates,
+  keyboard/44px/two-linepair/actualpublicnewtab/noopener/practiceinvariance pass,
+  ownedcleanuptrue5.631s. Existinglocal8locale/bothfont+1344pairedchecksindependently
+  accepted; physicaldevice/ownerQA stillpending. Mainheld. Do not askimplementation
+  orResourcesCLAUDEapprovalagain; it wasalreadygrantedandused.
+- **Palette defaults APPROVED/QUEUED:** ownerexplicitapprovedrecommendedthroughDEV
+  plan ANDexactCLAUDEpaletteparagraphpacket at[a41a3bb7](https://github.com/raywu/handpan-cards/blob/a41a3bb782d38753fa0020055dfb233a98866d78/docs/plans/2026-10-26-built-in-palette-defaults.md).
+  [Authorizationreceipt08169310](https://github.com/raywu/handpan-cards/blob/08169310/docs/WORKSTREAMS.md)
+  preservesgrant. StartONLYafterexistingactivework(SV/Helpers/swipe), targetnextmain
+  release ifgatespass. No palettecode/CLAUDEedit now; verifyapprovedpacketcontinuity
+  atactivation, don'tre-askunchangedgrant. Preserveold6/default0; fourappendedpairs.
+- **SEO choices settled:** /learn/ publishingDESIGN, ownerpilotmusicalreview, exact
+ 18-noteEAmara13+5firstpilotplanning selected. Provenance/music/hosting/data still
+  needverification; noarticles/generator/publishingauthorization. Don'tre-askthese.
+- **Otherstreams unchanged:** swipeauthorized/interruptedbehindprioritysharingwork;
+  duplicate-noteENTIREstream/releasePAUSEDuntilownerresumes; existingDEVmainqueue
+  heldinorder; releasedNaturalness/HTC/i18n/seat/runbook/DRYwork stayscomplete.
+  FutureLinear/qualitycomparison/rename/robustnessauditqueuesretainownscope.
+
+OwnerreaffirmedAFKmeansfollowrecommendations: makeroutinein-scopedecisions, record
+choices andcontinue. Preserveindependentreview/TDD/CI/actualDEVgates, exactCLAUDE
+approvalboundary andexplicitmainconsent. ReportinginexistingGitHubthreads authorized.
 
 
-## Priority SHARE-CUSTOMIZATION-HOTFIX — owner-authorized investigation and conditional execution
+[All-workstream status and future queue](plans/2026-10-25-workstream-status.md)
+reconciles current live refs, delivered/held releases, historical completions and
+queued prompts/plans. Local checkpoint is ahead of canonical DEV publication.
 
-Owner prioritizes the reported saved-customization/URL/LINK mismatch over SPS.
-Owner confirms SAVE CHANGES preceded fresh LINK. Ordinary native desktop/phone
-SAVE→LINK→clean-receiver controls pass; the original missing-angle report remains
-unresolved. A separate native production bug is confirmed: an older clipboard
-failure replaces/focuses the newer post-SAVE manual fallback URL while committed
-registry, durable record and bar stay correct. Controlled API promises; no owner
-clipboard/profile or Safari/native-picker validation. Finalized [prompt](prompts/2026-10-25-share-customization-hotfix.md) and
-[coordination](plans/2026-10-25-share-customization-hotfix-coordination.md) define
-independent lanes, evidence and review gates. Generated [plan](plans/2026-10-25-share-customization-hotfix.md)
-V2 edcd2a23 independently ENG/design-rechecked CLEAR; separate T/A/M lanes completed.
-Root integrated only after8unit+2native intended baseline RED. Main CI [581](https://github.com/raywu/handpan-cards/pull/581)
-is DRAFT/HELD; DEV [582](https://github.com/raywu/handpan-cards/pull/582) remains UNMERGED.
+## Check-in reporting requirement
 
-Root branch codex/share-customization-hotfix-20261025, host-local /private/tmp/handpan-share-hotfix.urAbvO/integration;
-base DEV667bbf8b (live ref rechecked). Prompt1489e53d independently critiqued/rechecked
-clear. Reviewed plan V2 edcd2a23 specifies minimal asynchronous ownership guards,
-spec-first separate T/A/M lanes, generated mutants/fullCI/actual DEV checks. Next
-preserve current source/evidence for final exact-head review/CI and actual DEV.
-All8unit+2native intended RED→GREEN, full app881 and codec105 pass. First fullCI
-40239404703 FAILED mutation verification at9e47e06a; actual app881/browser480 passed.
-Ten quoted mutation headers did not follow the real runner's word-splitting, and
-two legacy hide faults became redundant. Corrected patches retain all app/tests/
-harness standards; full local mutation_harness54 passes. Faithful word-split
-re-proof33 named assertion kills/32 clean commands plus actual unit/native runner
-partitions pass at22bdcbd8. App source5628f31d unchanged. Renewed exact-head review,
-fullCI and actual DEV still required. Main and CLAUDE changes require
-explicit owner consent. No original omitted-angle/variants resolution claimed.
-Same-inventory import replacement is verified existing behavior, separate from
-URL mismatch; no identity redesign automatically authorized. Private links/photo/
-names remain outside public docs. DUP plan is finalized and EXECUTIONHELD; owner
-warning choice is narrow, retained on codex/duplicate-notes-plan-20261025.
+Owner clarified that every check-in must cover active development, interrupted
+work, DEV deliveries awaiting main, completed/released work, and upcoming prompts
+and plans. Give each workstream a plain-language one-sentence description plus
+current status and next step; PR numbers alone are not a status report. Preserve
+settled decisions and interview only genuine unresolved decisions/blockers.
+Do not change CLAUDE.md to install this clarification without exact approval.
 
-### SAVED-SCALE-VARIANTS — newly corroborated requirement gap; investigation only
+## Owner decision — duplicate notes paused
 
-Separate planning branch codex/saved-scale-variants-plan-20261025, host-local
-/private/tmp/handpan-saved-variants.HVUKbE/planning. Frozen independently critiqued
-promptcd9dbb77 and three independent source/UX/platform research lanes; proposed
-plan in independent ENG/design iteration. Portable locator is that branch, not
-this hotfix's inherited plan copy. No app/storage migration or CLAUDE approval.
+PR579 / DUPLICATE-NOTES is **PAUSED UNTIL FURTHER NOTICE**. Preserve its finalized
+plan, prompt, research, settled choices and review evidence. Do not resume plan
+work, feature implementation or main release until the owner explicitly resumes
+it. This is not cancellation; do not discard its worktree or artifacts. Other
+workstreams retain their own authorization; no main release is implied.
 
-Owner confirms separate tabs and inability to retain two differently named/layout
-variants next to one another, even after Add/new LINK. Latest supplied link decoded
-valid with changed absolute positions but unchanged inventory identity. This
-explains replacement; it does not establish the original omitted-angle cause.
-Recommendation: preserve distinct named/layout saved variants, Edit updates the
-selected variant, unchanged-link reopening deduplicates. Design interview pending;
-no identity/storage migration or variants implementation authorized by the narrow
-async hotfix plan. Independent source/UX findings retained in the
-[investigation checkpoint](plans/2026-10-25-saved-scale-variants-investigation.md).
-Create a separate reviewed plan and migration/compatibility acceptance before code;
-do not conflate this user-facing limitation with the fixed async completion bug.
-Current async repair is not yet tested/delivered; no claim either issue is fixed.
+## Current priority — SAVED-SCALE-VARIANTS, authorized through DEV
 
-SPS is deferred for this hotfix priority, not discarded. Source/proofadc80b12 has
-completed59 driver-reported assertion pairs; aggregate/raw independent review,
-finalCI/DEV/physicalQA remain. Preserve worktrees and evidence; root alone owns
-browser lease. Older 'current' snapshots below are historical; resolve live refs.
+Latest check-in: owner explicitly selected **keep573→575→577→579→581main releases
+held; finish saved variants first**. Read-only live PR states verified OPEN/DRAFT.
+S backend b425/indexf90 independently reviewed, edge6GREEN and C10model10PASS.
+V2 backend profiling completed: 120/120 acknowledged samples (30 each at 2/20/200
+records and an exact final 1MiB envelope), independently audited CLEAR; callback
+p95/max milliseconds: .6/.6, .7/.7, 1.6/1.7, 4.1/4.1. These are pre-UI API-ACK
+measurements, not disk-flush or UI-paint claims.
+Current old-adapter source SHA `d449ea31ca2a5ebcf54d75471d1a61fe54ae8c4fdcc33bc2cc5e517d02923dc0`.
+Its latest complete unit run passed926/926; harness51/51 passed. Those results
+predate the transactional adapter and are historical, not a release gate for it.
+
+**P0 release blocker:** native distinct concurrent imports both acknowledged
+revision2, but only the later entry survived. Source-pinned tracing confirmed
+nonoverlapping Web Lock callbacks and a stale second-renderer localStorage read.
+The independently ENG/design-cleared [transactional storage amendment](plans/2026-10-25-saved-variants-transactional-storage.md)
+replaces that unshipped adapter with one authoritative IndexedDB transaction,
+retaining the approved product/schema/session/data-preservation contract. Root
+executes this already-planned internal alternative under through-DEV and
+reaffirmed AFK authority; no CLAUDE change/install/main merge.
+
+## Latest recovery checkpoint — 2026-10-26, after held-mouse repair
+
+This checkpoint supersedes pending/blocking labels in the chronological notes
+below. Saved variants remains first; DEV delivery and all main releases remain
+held. Branch `codex/saved-scale-variants-20261025`, integration worktree
+`/private/tmp/handpan-saved-variants.HVUKbE/integration`; plan and raw-proof links:
+[held-mouse repair](plans/2026-10-26-held-mouse-capture-helper-repair.md) and
+[gesture gates](plans/2026-10-26-saved-variants-gesture-gates.md).
+
+- Runtime index SHA3b07a272 is unchanged. A minimal native fixture independently
+  proves the separate CDP held-mouse capture defect; the one-field helper3369
+  repair has intended capture RED→GREEN→fault→restored, full harness67/67 and
+  affected native18/18 passing. Existing Q15 clean/fault/restored is also proven.
+  All1617 fault patches apply; original intermittent post-drag cause remains
+  unproven. Passing targeted tests does not establish that cause or full CI.
+- Latest completed full CI40358865648 at3239eafd failed:487/488 native pass and
+  one Q15 mutation survivor; all other jobs/shards passed. The reviewed local
+  helper/test changes above are not yet validated by exact-head full CI. Next
+  publish that immutable candidate and run the full required validate workflow.
+- Fresh helper3369 selection profiling: empty/2/20-record cases pass; the
+  200-record case stops at retained row121 (first phone/candidate sample), where
+  firstRAF equals secondRAF244.932. Both callbacks progressed; strict increasing
+  RAF guard correctly fails. No timing waiver, row exclusion or inferred rounding
+  error. Historical720 old-helper rows do not supersede this current failed run.
+  Cause is unresolved; low free memory is not causal proof. The independently
+  reviewed one-shot pure-data clock control also failed at retained row25 because
+  captureAt equaled firstCallbackAt, yielding a zero dispatch-to-frame interval.
+  It stopped with owned cleanup true; no200-record rerun is allowed by that
+  protocol. This is a separate timing-sanity failure, not a repeat of equalRAF
+  nor an explanation of the app result. Performance gate remains held for
+  independent assessment; no retries/waiver. Backend refresh has not run.
+- Independently ENG/design-cleared [timing-oracle correction](plans/2026-10-26-saved-variants-timing-oracle.md)
+  completed isolated timing-tests/timing-source TDD: intended validzero pureVM
+  RED/GREEN/generatedfault/restored, fullapp939, metadata54 and all1618apply pass.
+  Probe bd6 accepts raw0 only for the unbudgeted diagnostic; every actual response/
+  frame/sample budget remains strict. Independently accepted v2control90/90 pass.
+  The ONE current200 campaign FAILED after17rows during baseline sample18, before
+  candidate loaded, at the unchanged5s observer wait. Cleanup true; no comparisons.
+  **Performance remains INCOMPLETE/HELD, no more automatic measurement retries.**
+  Cause unknown; new reviewed failure-only diagnostics and explicit environment/
+  budget decision are needed before furthermeasurement. See linked plan/receipts.
+  Current exacthead fullCI is separate:2ff71cf5 has all4mutation shards/aggregate,
+  data/Python/bothfit PASS while JS still runs; this tool/test amendment still
+  needs its own finalhead validate. No DEV delivery is claimed.
+- Helpers remains a separate approved branch/worktree
+  `codex/helpers-integration-20261026` /
+  `/private/tmp/handpan-helpers.HUZs5u/integration`. Old2f4db8af CI failed two
+  native checks despite all1513 mutants and other jobs passing. Reviewed two-line
+  labels/current-font setup amendment is in local TDD. Its first combined run
+  passes five checks but exposes extra CJK line counts; investigate before
+  further source changes. Not delivered to DEV; never fold a failing Helpers
+  candidate into priority saved variants.
+- Owner recommendations are accepted: Helpers through DEV including only the
+  exact Resources CLAUDE packet; SEO design at `/learn/`; owner musical review
+  of pilot articles. SEO remains planning-only. No main merge is authorized.
+
+### Earlier continuation checkpoints — historical, preserve evidence
+
+2026-10-26 continuation checkpoint:
+- **Current local interaction repair:** native causal RED confirmed that a
+  preference acknowledgment could detach a pressed scale chip before release.
+  Reviewed source c55aab4e preserves chip nodes for unchanged visible collection
+  and selection; native causal GREEN and all938 app tests pass. Targeted tier,
+  Pygmy, deck-switch and new held-chip cases pass. The post-drag browser case
+  remains unresolved: instrumented isolated passes do not override the original
+  combined-run failure. Source-pinned refreshed selection/backend campaigns report
+  PASS; independent receipt audit and full exact-head CI/served DEV remain gates.
+- **Owner decisions settled 2026-10-26:** Helpers implementation through DEV
+  and its exact Resources-only CLAUDE patch are approved; separate test/markup
+  lanes start from verifiedDEV6165c873 under /private/tmp/handpan-helpers.HUZs5u.
+  Plan: docs/plans/2026-10-25-handpan-helpers.md. Root sole browser/integration;
+  saved variants retains priority. Next release remains conditional on fit/tests/
+  independent review/CI/servedDEV; no main grant. SEO publishing design uses
+  handpan.raywu.org/learn/ and owner reviews pilot musical accuracy. SEO articles,
+  publishing/provider/app implementation remain unauthorized.
+- **Fresh check-in:** full validate40320711507 at6a691c68 completed FAILURE.
+  Every unit file, Python, data and real/fallback panel fit passed. Browser487 ran:
+  485pass/2fail, zero skipped. Remaining native failures are generated-scale tier
+  Settings reopening and Pygmy bottom-swap fixture lookup. Mutation shard2 passes;
+  shard1 has surviving d_resave_drops_replaces, shard3 clean deck-switch baseline
+  fails, shard4 clean post-drag-click baseline fails. Preserve failed logs under
+  evidence/ci-40320711507-*. No DEV delivery/main release. Next: causal diagnosis
+  and reviewed repairs, not weaker assertions or successful-retry-only claims.
+- **Current CI blocker:** final-head run40320711507 at6a691c68 rejected the
+  clean "deck chips switch the deck" baseline (Hijaz19 expected, priorAmara27
+  remained). Independent source review identifies a plausible real lost-click
+  path: preference ACK/no-op reconciliation rebuilds chip nodes between press and
+  release. Do not hide it by draining preferences in the ordinary switching test.
+  Native causal diagnostic authoring was interrupted by model capacity before
+  producing a runnable draft; next lane/root should author and independently review
+  the bounded real-ACK/held-pointer reproduction before any runtime change. Earlier
+  fixture repairs remain valid; fullCI and actual DEV still block delivery.
+- **Latest final local checkpoint:** full app937, preview14/PDF43, all10 seat
+  sweep groups and17 affected native cases pass after reviewed fixture repairs.
+  Metadata54/54, suite/CI Python36/36 and all1614 apply checks pass. Independent
+  intended-assertion proofs cover3 VM groups, all10 seat groups, SU boot-message
+  and native live-mouse guards. Runtime remainsab90; app tests63e7/native6fba.
+  Floor487 reflects the observed original full count; final LinuxCI/DEV remain
+  gates. The older failed CI checkpoints below are historical, not current claims.
+- **Current delivery blocker:** exact-head Linux validate40312402295 at65e29107
+  found obsolete native collision-veto and unselected aria-label expectations.
+  Four mutation shards reject clean baselines; data, Python and both panel-fit
+  jobs pass. Full JS job still running. DEV584 remains unmerged; CI-only draft583
+  must never merge main. Independent ENG/design-cleared
+  [test-only native contract refresh](plans/2026-10-26-saved-variants-native-contract-refresh.md)
+  preserves six real build-refusal protections and accessibility checks. Separate
+  test/fault repair is locally complete; sourceab90 stays frozen. Seven native
+  cases and seven independently audited exact-header proof pairs pass; metadata54
+  and all1603 apply checks pass. Next: full final CI, then actual DEV verification.
+  Earlier local successes do not pass CI.
+- Final metadata caught canonical data-patch context constraints missed by the
+  postimage audit. Restore13 original generated data-patch representations after
+  exact postimage equivalence; independently cleared. Refreshed metadata54/54
+  and suite/CI Python36/36 pass, with no source/test waiver.
+- **Latest:** compatibility P1 is closed on final sourceab90;937app,66harness,
+  refreshed7native/2capability arms/120backend samples all pass. Independent
+  audits cleared all720 fresh selection rows/24Documents/eight comparisons under
+  the unchanged frame budget. The a0 baseline clock failure is retained; reviewed
+  1ns sanity precision fix changes no measured values or latency thresholds.
+- All1600 original faults plus one compatibility fault are present; exact
+  postimage/projection audits cleared all1601, with no dropped filenames or
+  changed fault semantics. Full exact-head Linux corpus proof remains pending.
+- Continue from the [reviewed local validation receipt](plans/2026-10-26-saved-variants-validation.md):
+  final metadata/diff checks, CI-only held main-target draft plus same-head DEV PR,
+  full actual validate, then actual served DEV verification. No feature DEV or
+  main delivery is claimed by this local checkpoint. Exact source/tool hashes,
+  raw locators, limitations and recovery procedure are in that receipt.
+
+### Historical checkpoints — superseded by the latest results above
+
+The entries below preserve investigations and stopping points. Their pending or
+blocking labels describe the earlier checkpoint, not current readiness.
+
+- **Resolved compatibility finding (formerly P1):** final independent ENG reproduced startup
+  TypeError when Object.hasOwn is unavailable; baseline preserved that browser
+  capability boundary. The independently ENG/design-cleared compatibility plan
+  uses an app-local hasOwnProperty.call helper and meaningful missing-API TDD.
+  No raised browser requirement/global polyfill/CLAUDE change. Earlier a394
+  runtime receipts remain historical until refreshed against repaired source.
+- SUPERSEDED (owner, 2026-10-27): replaced by the SV-PG e2e test plus owner phone QA; see docs/plans/2026-10-26-saved-variants-selection-performance.md.
+- Existing planned selection/frame gate remains unexecuted, separate from backend
+  lock timing and geometry. Matched A–B–A protocol at empty/2/20/200 inputs and
+  two viewports is specified in the selection-performance amendment; fixed
+  actual-preference drains, math, quiet window and baseline-drift handling have
+  been added for independent plan re-review. No timing success claimed.
+- Complete1600-fault corpus now reconciled: M124 and R91 bulk audits independently
+  CLEAR,178 nonbrowser proof pairs meaningful;36 retained native faults still
+  require full final CI. Every1600 patch currently applies. Metadata checks pass:
+  mutation harness54/54; suite/CI Python36/36. No faults dropped, physical/device
+  QA/full Mac suite/main permission inferred. Through-DEV scope stays active.
+- Current strengthened app tests
+  `cf3a53203a49fdd24099c7406ba1b713963a4bd0fa0c95aac7731fc6bf2d9e53`
+  pass936/936, zero skip/cancel,41.58s supervised. Four legacy assertion/fixture
+  gaps repaired and direct/concurrent last-visible command coverage added; app
+  source unchanged. Expected browser floor481 reflects the independently counted
+  preserved455 literal titles plus the one new native deletion registration;
+  actual full browser count is still a Linux CI gate, not a local full-Mac claim.
+- Native7/7 and all120 benchmark samples independently audited CLEAR. Ten further
+  unchanged SV6 E1 repetitions passed (each distinct and duplicate two-target
+  imports),10.42s total with clean cleanup; still not exhaustive scheduling proof.
+  Native deletion and lost-save fault patches have exact-header clean baselines
+  and intended named assertion kills, no skip/cancel/timeout; app bytes restored.
+- Mutation reconciliation: M124 isolated patches independently cleared,107
+  nonbrowser proof pairs plus the root-proven new concurrency fault;16 others
+  remain native author-only until final CI. R91 retained patches are completing
+  current-test reproofs. No faults dropped; controlled validator/production throws
+  are separately qualified rather than mislabeled as assertion errors. Integration
+  corpus1600 including all new generated faults. All final exact-head CI/DEV
+  gates remain pending; no feature DEV delivery or main grant.
+- Transactional profiling completed120/120 acknowledged samples:30 each at2,
+  20,200 records and exact1MiB final envelope, all source/Document/reset/count
+  assertions passed. Async lock lifetime p95/max ms:2/14.9,1.7/2.1,1.9/2.8,
+  5.2/5.9. All supervised jobs clean/no timeout; independent runtime audit pending.
+  These API-transaction measurements are not disk flush or UI/frame timing.
+- First combined native7 run exited cleanly with4PASS/3FAIL: copied layout,
+  concurrent imports/dedup, RESET and deletion passed; three immediate lock-queue
+  assumptions failed before async staging enqueued a request. Three bounded
+  actual-queue waits independently reviewed, keeping exact counts/no-op guards/
+  trusted input/deadlines. Corrected e2e source
+  `9f26e4ae9e4dc6d08c14d770ffe9e4cbbe1e1120864f59c2e68ec93395702835`
+  now under root's serialized rerun; no result claimed yet.
+- Nine generated application protocol faults independently cleared: each exact
+  clean baseline1PASS and intended named assertion kill, no skips/cancellations;
+  all original source bytes restored. These supplement the fourteen model faults
+  and browser-stderr fault, not full-corpus compatibility proof.
+- Final adapter source `a394217ec15626d96455c1b746dfbf001578201c34dbb4e01461b3d019bd88bf`
+  independently ENG-cleared after the fifth existing-only reopen repair. Exact
+  native deletion probe now passes with absent database retained, no timeout and
+  clean cleanup. Nine focused IDB groups pass on this source. Full935 result
+  below belongs to its preceding four-fix source; final full CI remains required.
+- Integrated scoped stderr repair plus refined owned-child fixture and generated
+  fault: final fixture clean1PASS/mutant1ERR_ASSERTION, zero skip/cancel; complete
+  harness66/66PASS, zero skip/cancel,10.82s supervised, cleanup true. Harness floor
+  raised after actual66 observed. UI matrix/concurrency reruns remain pending.
+- Transactional candidate source `7eba9b27158a460543c2fa18c05bee385fd177efe3bd152b2556693fcd54b489`
+  plus app tests `7cd09396b7baa1670fb6562ace4140b918622d332203609232f16fdaa75fc8bb`
+  now passes935/935 (zero skip/cancel). Four independent review findings received
+  meaningful assertion RED then repair: owned connection retirement, visible
+  reconciliation failure, acknowledged-publication guidance and newly appearing
+  legacy-branch warning. App floor raised only after observed935 passes.
+- Additional native recovery RED: after actual owned-profile database deletion,
+  reconciliation recreated an empty schema outside the migration lock (1!==0,
+  1.10s, no timeout, cleanup true). Fifth repair is active; no release clearance.
+- Browser stderr-retirement amendment independently ENG/design reviewed; scoped
+  helper `178e034c3d9395bd92a7250b50b8ec5858bb177bb6678e500870699701b50826`
+  has meaningful unit RED→GREEN/generated assertion kill and independent source
+  clearance. Diagnostic process now exits and cleans normally; original matrix
+  rerun and final refined-fixture mutation proof remain pending.
+- Integration `cd9d1e51` contains the independently reviewed explicit IDB model and
+  minimal ENGINE-SPEC persistence amendment. Fourteen new model groups passed
+  independent focused verification; native transaction activity is not modeled.
+- T's corrected frozen regression checkpoint `e2009fd258986c9a46224c619bbbaf151e5cfef3fb096e9e85b4c2dc25e29251`
+  produced two meaningful old-app assertion failures: save ACK without completed
+  IDB commit, and stale localStorage B overriding authoritative IDB A. Invalid
+  first setup attempts are retained and are not counted as RED evidence.
+- `/idb-adapter` owns index.html; first candidate passes five new protocol groups,
+  full unit checks/review still pending. `/idb-tests` owns committed-store oracle
+  and native fixture ports; independent review requires boot-route completion
+  barriers, final trailing-read outcome assertion and retained full legacy-store
+  comparison. `/idb-model` owns fourteen generated fault proofs. All lane branches
+  are `codex/saved-variants-idb-{adapter,tests,model}-20261026` under the root above.
+- Root alone runs native browsers. Earlier copied-layout fresh-profile and stale
+  Edit/delete passed; corrected RESET/reconciliation pair passed. UI matrix body
+  completed48geometry/528control/16state checks, but the process did not exit;
+  whole run remains failed. Source-pinned lifecycle observation confirms browser
+  close and server close settle; open pipes remain under investigation. No
+  timeout increase, weakened checks or physical iOS claim.
+- Retained mutation checkpoint `45ef0edf` preserves46 UI reanchors separately:
+  32 assertion kills,12 native-author-only and2 genuine survivors needing triage.
+  Other44 unit proofs,46 context/data refreshes,29 policy drafts and5 native
+  authored faults remain qualified pre-IDB work, not final-candidate proof.
+
+Next: address test review, independently review adapter, prove real native
+transaction/concurrency and cleanup, update bounded measurement, regenerate and
+prove all relevant mutants, then exact-head full CI and actual DEV validation.
+Not QA-ready; no DEV feature delivery. Main queue held; duplicate notes paused.
+
+
+
+Owner explicitly approved the reviewed plan and its exact instruction/spec patch
+through DEV on2026-10-25. This supersedes historical planning-only/interview-pending
+labels below. No main merge, installs or global configuration changes authorized.
+
+- Reviewed [plan](plans/2026-10-25-saved-scale-variants.md) SHA256
+  `9a96ed6dc10f2598359efb5450e14de91239ecf39fa9664141ab2b45fc4346fb`;
+  [exact approved packet](plans/2026-10-25-saved-variants-instruction-approval.md)
+  `5d0700f76f734f63ae025ed2463b4d069d04f0842ca2cfa0d7e8e4916dfc9cda`,
+  immutable planning ref `0e3499678a19b65181584ab21ef9b98b7bacb64d`.
+- Accepted contract: distinct named/layout variants coexist; exact portable-meaning
+  imports deduplicate; Edit changes only its selected stable instance; conflicts
+  preserve drafts/winners; unsupported persistence is explicitly THIS-TAB session
+  only. Existing recognized seeded RESET deletion/promotion remains.
+- Root integration: branch `codex/saved-scale-variants-20261025`, host-local
+  `/private/tmp/handpan-saved-variants.HVUKbE/integration`, based on accepted DEV
+  `6165c8739f11c8d00c4b27ea6512ef1278275748`; planning history merged without
+  app/test changes. Original dirty/locked checkout stays untouched.
+- Root verified both exact source hashes and packet, checked the patch, then
+  applied ONLY its CLAUDE.md and ENGINE-SPEC diff. Packet/plan remain immutable
+  historical approval artifacts. Store implementation is now active in its isolated
+  /store lane after reviewed acceptance RED; incomplete UI cannot reach DEV.
+- Reserved: collection key `hpfc.saved-scales.v1`, envelope schema1, exclusive lock
+  `handpan-cards:saved-scales:v1`. Wire6/record4 remain; DUP's candidate7/5 is not
+  consumed or activated. DUP workstream and main PR579 are PAUSED UNTIL FURTHER NOTICE by owner; do not resume planning, implementation or release without explicit owner resumption.
+- Current parallel lanes: S store implementation/T native acceptance repair;
+  completed H support and M helper proof retained in /helper,/mutants. Separate
+  /tests,/store trees under the stream root (branches recorded
+  in coordination). H support amendment independently ENG-cleared after event-
+  dispatch clarification. A1 proved12 required real HTTPS API checks; optional file
+  navigation then failed, so whole run stays FAILED and file behavior unverified.
+  Cleanup/census clear. Concrete schema9c56dce6 independently ENG-cleared after
+  lifetime ID-history/slot-proof refinements; H50/app881/shipping177-card defaults
+  PASS, prechange60selection baseline independently CLEAR (RAF opportunity only).
+  T27e1085e corrected23unit groups independently cleared/qualified assertion RED;
+  deeper backend branches not yet exercised. M12helperproof independently CLEAR,
+  actual runner2/2kills/headerharness54PASS. Six native bodies bed1e06c unexecuted,
+  ENG/design oracle repairs pending. Next S backend review/fault/measurement gates
+  and native RED before exclusive U UI. Root alone runs browsers. Last full881PASS
+  predates feature tests/source and is not a current-feature Green claim.
+- Recovery: [coordination](plans/2026-10-25-saved-scale-variants-coordination.md)
+  records last/next, ownership and evidence. Any larger contract or exact CLAUDE
+  wording change requires renewed review/approval. Runtime/migration/concurrency/
+  performance parity is not yet validated. No owner data/profile migration used.
+
+### SHARE-CUSTOMIZATION-HOTFIX — delivered to DEV; main581 held
+
+Source `92d6516bd533abb4a1e4fb7c8116b9836f648296`, branch
+`codex/share-customization-hotfix-20261025`, host-local
+`/private/tmp/handpan-share-hotfix.urAbvO/integration`. [Plan](plans/2026-10-25-share-customization-hotfix.md)
+and [coordination](plans/2026-10-25-share-customization-hotfix-coordination.md)
+retain intended8unit+2native RED→GREEN and failed first CI/protocol correction.
+FullCI [40242635186](https://github.com/raywu/handpan-cards/actions/runs/40242635186)
+independently audited CLEAR:2271JS/274Python/1510unique kills,8019cells each font
+mode; zero required skips/failures. Synthetic CI tree equals source tree.
+DEV [582](https://github.com/raywu/handpan-cards/pull/582) merged at
+`6165c8739f11c8d00c4b27ea6512ef1278275748`, identical source tree.
+Actual DEV:14resource hashes200 match immutable merged files; noindex;2required
+native journeys PASS,8actual loaded-document request/frame/loader/body bindings
+match appSHA256 `5628f31deed911e7e406ce852fe0daee5d6fcf1caa26d2fb0f182a823c0894b3`.
+Supervisor exit0/no timeout/cleanup, zero skips/cancels and identical host census.
+Independent delivery audit CLEAR. Raw host-local receipts under evidence/:
+`shc-dev-delivery-a0.json`, `shc-dev-actual-a0.stdout.tap`, supervisor/census and
+`shc-dev-actual-a0-root-verified.json`. HTTP receipts preserve hashes/statuses,
+not all14raw bodies. A first postprocessor missed TAP escaping; corrected reader
+inspected the SAME successful run, no browser retry.
+
+Owner reported **all provided DEV QA steps passed** on2026-10-25 and supplied
+before/after links. The after link carries explicit custom bottom angles and the
+updated name; private payloads remain in the conversation. Device/browser details
+were not supplied, so no specific physical-device matrix is inferred. This closes
+the requested owner smoke QA for581, not saved-variants acceptance or proof of the
+original missing-angle cause. Main [581](https://github.com/raywu/handpan-cards/pull/581)
+remains DRAFT/HELD. Controlled API sinks/fallback fonts/Chromium only; no Safari/
+native OS clipboard/share-picker claim. Prevents obsolete async LINK completion
+UI; does not deliver saved variants or reproduce/explain the original omitted-
+angle report. Owner confirmed SAVE and still-custom diagram; preserve that human
+report. Latest valid customized link proves changed positions, unchanged inventory
+identity; inventory-keyed replacement is a separate verified limitation.
+
+### Preserved parallel/deferred streams
+
+SPS remains deferred behind sharing/variants. Latest pushed root ref `3a8467ff`
+on `codex/sheet-tab-swipe-20261025`, host-local
+`/private/tmp/handpan-sps-z8gaznu2/integration`. All50 suite-header-only corrections
+independently reviewed; no app/test/floor/body changes. Prior59 direct proof pairs
+used shlex and do NOT establish real runner protocol parity. Next merge accepted
+SHC base, faithful literal-header59 reproof, final review/fullCI/DEV/physical QA;
+no SPS release/QA-ready claim. Old browser lease token is invalid; root owns lease.
+DUP finalized reviewed technical plan SHA781540f4 retained at branch
+`codex/duplicate-notes-plan-20261025`, latest `b849b6d6149e883ce4b280a2616fd20cf7b6a21e`.
+All four answers settled (including warnings only newly allowed repeats); workstream/PR579 PAUSED UNTIL FURTHER NOTICE by owner (planning, implementation and release). Main573/575/577/579/581 remain held pending explicit main consent. Other
+recovery tables below retain historical evidence; these current facts supersede
+older pending approval/status labels without discarding their investigation.
 
 ## 2026-10-25 all-workstream recovery checkpoint
 
@@ -102,7 +653,7 @@ new scope, main-release or CLAUDE.md edit grant.
 
 | Stream | Current state / evidence | Continuation / authority |
 |---|---|---|
-| DUPLICATE-NOTES | Three isolated research lanes complete; revised plan independently ENG/design-cleared at585fa248. [Plan](plans/2026-10-25-duplicate-notes.md), [coordination](plans/2026-10-25-duplicate-notes-coordination.md), detailed checkpoint below. | Publish independently cleared plan through fullCI/DEV gates. Owner scope/warning/voicing interviews pending; recommendations provisional. Planning only, no duplicate-note feature edits. |
+| DUPLICATE-NOTES | PAUSED UNTIL FURTHER NOTICE by owner; later pause supersedes historical continuation below. Three isolated research lanes complete; revised plan independently ENG/design-cleared at585fa248. [Plan](plans/2026-10-25-duplicate-notes.md), [coordination](plans/2026-10-25-duplicate-notes-coordination.md), detailed checkpoint below. | Publish independently cleared plan through fullCI/DEV gates. Owner scope/warning/voicing interviews pending; recommendations provisional. Planning only, no duplicate-note feature edits. |
 | SPS / Scale↔Layout swipe | Active authorized implementation. Root branch `codex/sheet-tab-swipe-20261025` last pushed `0db6c02275e695537ccf8ec5461d70bc3aea2ad2`; host-local `/private/tmp/handpan-sps-z8gaznu2/integration`. [Retained plan](https://github.com/raywu/handpan-cards/blob/0db6c02275e695537ccf8ec5461d70bc3aea2ad2/docs/plans/2026-10-25-sheet-tab-swipe.md), [fixture amendment](https://github.com/raywu/handpan-cards/blob/0db6c02275e695537ccf8ec5461d70bc3aea2ad2/docs/plans/2026-10-25-sheet-tab-swipe-fixtures.md), [coordination](https://github.com/raywu/handpan-cards/blob/0db6c02275e695537ccf8ec5461d70bc3aea2ad2/docs/plans/2026-10-25-sheet-tab-swipe-coordination.md). | Primary2 TDD and bounded native route/tap/scroll/quiet/focus checks passed on prototype index97e498b9. New zoom guard has3unit+1native assertion-RED before code; A's minimal guard commit `792f15b566e345a09e9d2a38ba2b174286d5a4bd` is local, NOT yet integrated/green. Next integrate that exact guard, require same40unit/5native plus helper/default regressions, generated mutants/8preserved context refreshes, final review/fullCI/DEV. Physical Safari/keyboard/edge/selection/zoom QA remains. No SPS PR/CI/DEV success yet. |
 | Latest-per-ring feedback | Complete through DEV576 `bccff5a2b9ffd88f772517740cbab3ea66a50fbb`; source `a90fce8c19887e44e6bbaf38741b97553b795026`. [Plan](plans/2026-10-25-layout-feedback.md), [final evidence/recovery](https://github.com/raywu/handpan-cards/pull/575#issuecomment-6401041842). Root tree `/private/tmp/handpan-feedback.ha43y5cy/integration`, branch `codex/layout-feedback-20261025`. | FullCI40216007898 and actual DEV verification complete. Earlier A0 registration error invalidated/retained; corrected A1 clean. Main575 HELD; do not redo delivered implementation or treat old pending prose as current. |
 | MAC-M1 repair | Complete through DEV574 `f5df7942d097167013a3bf2baf05a6497ac73613`; source `217609075a14e6ca4799497210af27d9df842c5e`. [Plan](plans/2026-10-24-mac-browser-repair.md), [final receipt](https://github.com/raywu/handpan-cards/pull/573#issuecomment-6400445041). Root tree `/private/tmp/handpan-mac-repair.c94d3kno/integration`, branch `codex/mac-foreground-20261025`. | FullCI40209344599 and DEV bytes/print verified. Main573 HELD. Narrow opt-in foreground settle only; full Mac/M2/M3/C1 remain unverified/separate, not silently repaired. |
@@ -110,6 +661,9 @@ new scope, main-release or CLAUDE.md edit grant.
 | DRY-LOCAL / BROWSER-RUNBOOK / released UI | Bounded reference/ledger batch released main570 at96c4c589 and synchronized via572; original runbook and Naturalness/HTC/i18n releases complete. [Release history](#rel-20261024--completed-release-and-settled-owner-decisions). Owner reported released UI verified/all good, exact device coverage unspecified. | Preserve Claude behavior and existing instructions. Global skill/runtime parity is not established by documentation. Do not rerun or reinstall. Further CLAUDE.md changes require explicit exact-diff approval. |
 | NITS → OF-D / I18N-D / Q9 / CLEANUP | Relevance audit and recovered inventory retained; historical candidates are not current implementation grants. [Audit](plans/2026-10-25-plan-relevance-audit.md), [deep search](plans/2026-10-25-outstanding-plan-deep-search.md), [backlog](plans/2026-10-24-continuity-backlog.md). Feedback finding now delivered separately. | Revalidate remaining candidates and authorization; retain NITS→OF-D sequencing. No cleanup/discard/unlock/agent-rule edit. Owner-stopped Audio/stats/SM2/PWA scopes remain stopped. |
 | Future robustness/code/test audit | [Explicit queued task](plans/2026-10-25-future-codebase-audit.md). | Start its prompt→swarm plan→independent ENG/design review only after other outstanding work is resolved; excludes itself from queue-empty check. No dead-code/test deletion or audit execution now. |
+| Codex versus Claude code-quality investigation | [Queued task and refined planning prompt](plans/2026-10-25-agent-code-quality-comparison-prompt.md). Prompt-only preparation; no comparison or collection run. | Independent prompt critique incorporated in v2; HOLD. On activation produce a swarm-shaped evidence-based investigation plan with holistic matrix, independent ENG/relevant design review before separately authorized execution. Preserve saved-variants priority; distinct from queue-empty robustness audit. |
+| Linear roadmap / agent-neutral source of truth | [Queued investigation prompt](plans/2026-10-25-linear-roadmap-investigation-prompt.md), seeded from the descriptive all-workstream report and current ledger. | Future task: investigate Free viability, owner visibility, agreed prioritization and Codex/Claude access, then a swarm-shaped migration plan with independent CEO/ENG reviews. Prompt preparation only; no Linear setup/import/cutover or CLAUDE edit. Current ledger remains authoritative until an approved validated cutover. |
+| HANDPAN-HELPERS resource | [Refined prompt](plans/2026-10-25-handpan-helpers-prompt.md); [plan](plans/2026-10-25-handpan-helpers.md) independently ENG/design-cleared after locale-baseline correction. Preferred third row `[HANDPAN HELPERS / HANDPAN 101]`, About stays alone. | Planning complete; app unchanged. Exact CLAUDE approval needed to replace101-alone rule before implementation. No fit/usability/DEV success claimed. Saved-variants remains delivery priority. |
 
 Recovery: plans, refs, last/next and approval limits above are portable; temporary
 paths and raw evidence are host-local. A new agent must inspect live branch heads,
@@ -482,6 +1036,55 @@ accounts for exact application bytes plus one frozen insertion; original raw-sou
 failures remain failed evidence. Headless evidence and owner QA do not establish
 unspecified device coverage or a repaired full Mac suite.
 
+
+## REPOSITORY-RENAME — reviewed planning, execution held
+
+Objective: rename the GitHub repository and canonical local checkout to
+handpan-chords while preserving runtime/browser protocols, public hosts, all
+worktree state and Claude behavior. Owner authorized prompt refinement, a generated
+plan and engineering review; no rename or rehearsal is authorized.
+[Prompt v3](prompts/2026-10-26-repository-rename-handpan-chords.md) was revised after
+independent critique and rerun to refine the [plan](plans/2026-10-26-repository-rename-handpan-chords.md).
+Independent engineering review cleared the revised substantive plan, with two P1
+findings addressed. These local planning artifacts are not yet a canonical DEV
+publication; do not infer that other hosts already have them.
+
+Continuation: preserve the plan, then obtain a separately approved maintenance/
+execution packet after current writers are quiescent. Gates include live provider
+binding, real renamed-repo DEV Git delivery before local move, verified private
+backup/restore rehearsal, safe destination/move semantics and new-path harness
+permissions/memory continuity. Any CLAUDE.md edit still requires exact owner
+approval; main merges remain separately gated. Do not change storage keys or the
+old-spelling browser Web Lock. No preference interview is needed to finish this
+planning; later timing/backup/config decisions belong to execution intake.
+
+Final local plan SHA256: dc3442c847b6f7dbfef9c87cb798ef029775e4153451d4d92c5ee868f1257c21. Prompt SHA256: 1bb8ea534a6e5cad3efc9097f74a44ca622014a7c6c3863af4e638e0a892d656.
+
+
+## Routing diagnostic and Helpers delivery — latest recovery
+
+ExpandedT lane/hash-tests appSHAe77fe76f froze16explicitmodelcases and re-proved
+original3b07 prior-ACK-erases-Pygmy ERR_ASSERTION once (onlyimmediatecontrolcompleted;
+15downstreamcases unrun). No healinghash, source/helper unchanged; floor940 only.
+IndependentT/REDreview precedes sourceactivation. Sourceworktreeprepared
+/private/tmp/handpan-saved-variants.HVUKbE/hash-source,
+branchcodex/variants-hash-source-20261026/base0d36, STILLUNEDITED.
+
+HelpersactualDEVdeliveryverified in [delivery/QA checkpoint](https://github.com/raywu/handpan-cards/pull/585#issuecomment-6427367137).
+DEV3542d6ea, fullCI4eaSUCCESS, actualservedsource7fe/9states/publicpopup/noindex/
+noanalytics/cleanup confirmed. OwnerQA pending; mainstill96c4/no consent.
+Owner's explicit3interviewanswers confirmpalettequeuedDEV/exactpacketapproval,
+boundedLinuxCIperformancePROPOSAL andexact18-noteEAmarapilotPLANNING; no re-ask.
+
+
+Latestsourceproof: final0322/T224 ALL17modelcasesGREEN andindependentENGCLEAR after
+NULLexemptionwasidentifiedandprovenlateREDusingnaturalfailedcoldincomingimport.
+No directstateinjection. Source/testchangesreadyforcommitandapprovedHelpersmerge;
+thenfourfaultvectors/native/fullCI/servedDEV/performancegatesremain. This supersedes
+older'3b07frozen'checkpointlabels; originalsource/CI failures stayhistorical.
+
+## Historical Helpers activation — superseded by delivery and owner QA above
+
 ## HANDPAN-HELPERS activation — 2026-10-26
 
 Owner approved the reviewed resource plan and exact Resources-only CLAUDE patch
@@ -508,3 +1111,11 @@ locale pairs and15meaningful mutation triples pass; metadata54/54 and1513allappl
 pass. Full English panel probe passes; seven locale probes/final independent
 review/fullCI/servedDEV remain pending. Local implementation is not DEV delivery.
 SEO choices are recorded in the separate SEO plan; no articles are implemented.
+
+### Neotone durable planning checkpoint
+
+Published documentation-only branch codex/neotone-future-plan-20261026 at
+6c62e758696143af89c24c339394a01e6576c0cc contains prompt, independently cleared future plan and ledger entry.
+Source remains exactDEV3542; no feature implementation, DEV/main merge or image
+publication. Worktree/private screenshot refs remain local-only. Canonical DEV
+ledger does not yet include this branch; recover directly from the retained ref.

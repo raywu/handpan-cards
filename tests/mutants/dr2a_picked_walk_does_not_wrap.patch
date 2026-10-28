@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9276,7 +9276,7 @@ function walkFocus(ref, nav) {
+@@ -12692,7 +12692,7 @@ function walkFocus(ref, nav) {
    let to;
    if (nav === "home") to = 0;
    else if (nav === "end") to = list.length - 1;

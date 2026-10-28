@@ -269,5 +269,21 @@
   "sel.auto": "AUTOMATISCH ({lang})",
   "sheet.order_hint": "Die oberen Töne folgen der eingegebenen Reihenfolge. Ordne sie im Reiter Anordnung neu an.",
   "sheet.rim_follows": "Der Außenring folgt jetzt der eingegebenen Reihenfolge.",
-  "sheet.inner_follows": "Die inneren Töne folgen jetzt der eingegebenen Reihenfolge."
+  "sheet.inner_follows": "Die inneren Töne folgen jetzt der eingegebenen Reihenfolge.",
+  "saved.session": "Änderungen in diesem Tab sind vorübergehend. Sie gehen verloren, wenn Du diesen Tab neu lädst oder schließt.",
+  "saved.recovery": "Gespeicherte Skalen konnten nicht gelesen werden. Deine gespeicherten Skalen wurden nicht geändert. Vorübergehende Änderungen in diesem Tab gehen beim Neuladen oder Schließen verloren.",
+  "saved.conflict": "Diese Skala wurde in einem anderen Tab geändert. Dein Entwurf bleibt erhalten. Speichere ihn als eigene Skala oder gehe zur gespeicherten Version zurück.",
+  "saved.conflictDeleted": "Diese Skala wurde in einem anderen Tab entfernt. Dein Entwurf bleibt erhalten. Speichere ihn als eigene Skala oder gehe zurück.",
+  "saved.separate": "ALS EIGENE SKALA SPEICHERN",
+  "saved.resetConflict": "Standardskalen wurden in einem anderen Tab geändert. Es wurde nichts zurückgesetzt. Prüfe sie, bevor Du erneut auf STANDARDSKALEN ZURÜCKSETZEN tippst.",
+  "saved.temporary": "DIESEN TAB VORÜBERGEHEND NUTZEN",
+  "saved.failure": "Diese Änderungen konnten nicht gespeichert werden. Dein Entwurf bleibt erhalten. Versuche es erneut.",
+  "saved.legacy": "Eine ältere App hat ihre gespeicherten Skalen geändert. Diese Änderungen bleiben zur Wiederherstellung getrennt erhalten.",
+  "saved.savedToken": "{token} kennzeichnet diese gespeicherte Skala in diesem Browser.",
+  "saved.presetToken": "{token} kennzeichnet diese Standardskala.",
+  "saved.importFailure": "Diese geteilte Skala konnte nicht hinzugefügt werden. Ihr Link steht weiterhin in der Adressleiste. Versuche, ihn erneut zu öffnen.",
+  "saved.resetFailure": "Die Standardskalen konnten nicht zurückgesetzt werden. Prüfe sie und versuche es erneut.",
+  "saved.ackPending": "Das Speichern wurde abgeschlossen, aber diese Ansicht konnte nicht aktualisiert werden. Lade die Seite neu, um Deine gespeicherten Skalen zu prüfen.",
+  "saved.sessionAckPending": "Die Speicherung gilt nur in diesem Tab, und diese Ansicht konnte nicht aktualisiert werden. Lass den Tab offen und behalte Deinen Entwurf. Beim Neuladen oder Schließen gehen vorübergehende Änderungen verloren.",
+  "saved.sessionImportAckPending": "Diese geteilte Skala ist vorübergehend, und ihre Ansicht konnte nicht aktualisiert werden. Lass diesen Tab offen und behalte den eingehenden Link. Beim Neuladen oder Schließen gehen vorübergehende Änderungen verloren."
 }

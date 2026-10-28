@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14104,7 +14104,7 @@ function loadAnalytics() {
+@@ -15042,7 +15042,7 @@ function loadAnalytics() {
    el.async = true;
    el.src = "https://www.googletagmanager.com/gtag/js?id=" + GA_MEASUREMENT_ID;
    document.head.appendChild(el);

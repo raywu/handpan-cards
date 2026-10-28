@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9694,7 +9694,7 @@
+@@ -14080,7 +14080,7 @@ scaleBox.addEventListener("input", () => {
    const raw = String(scaleBox.value || "");
    if (/[\r\n]/.test(raw)) {
      const at = scaleBox.selectionStart;

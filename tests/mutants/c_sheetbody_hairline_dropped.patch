@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -925,7 +925,7 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -939,7 +939,7 @@ footer.seq{row-gap:var(--sp-1)}
     the file's only border-top. The boundary it describes is .sheetbody's own
     edge, so that is where it belongs: moving a child across it cannot unhook it
     again. Pinned by "a hairline divides the pinned footer from the scroll". */

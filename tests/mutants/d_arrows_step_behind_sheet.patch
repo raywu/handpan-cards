@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12602,7 +12602,6 @@
+@@ -14659,7 +14659,6 @@ document.addEventListener("keydown", e => {
        if (drawerOpen && pickRef) putDownPick();
        else closeScaleSheet();
      }

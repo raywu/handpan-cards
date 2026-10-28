@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10497,7 +10497,7 @@ function linesHTML(d, ch) {
+@@ -11221,7 +11221,7 @@ function linesHTML(d, ch) {
  function renderSeqEmpty() {
    const msg = (seq && seq.reason === "NO_TIER_SEQUENCE")
      ? `<div class="lines"><div class="hint" style="text-transform:none; letter-spacing:normal">`

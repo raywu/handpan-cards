@@ -1,0 +1,21 @@
+# kills: SPS5: a same-tab Layout gesture retains its current action status
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS5:.a.same\-tab.Layout.gesture.retains.its.current.action.status$ tests/app.test.js
+# Same-Layout gesture reruns shared entry and erases current action status.
+--- a/index.html
++++ b/index.html
+@@ -12249,7 +12249,6 @@
+   genBtn.hidden = !editingId && !onLayout;
+ }
+ function setTab(tab) {
+-  if (tab === sheetTab) return;
+   sheetSwipe = null;
+   if (sheetTab === "layout") {
+     cancelGesture();
+@@ -12341,7 +12340,6 @@
+       cancel();
+       if (elapsed < 0 || elapsed > 600 || Math.abs(dx) < 48 || Math.abs(dx) < 2 * Math.abs(dy)) return;
+       const tab = dx < 0 ? "layout" : "scale";
+-      if (tab === sheetTab) return;
+       lipFling = null;
+       lipDragEnd = 0;
+       userWindowUntil = 0;

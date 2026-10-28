@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -603,7 +603,6 @@ main{overflow-x:clip}
+@@ -607,7 +607,6 @@ main{overflow-x:clip}
    white-space:nowrap; -webkit-appearance:none; appearance:none}
  .prints button, .prints select, #lang-select{flex:1 1 auto}
  .prints #print-download{flex:3 1 auto; padding-left:6px; padding-right:6px}

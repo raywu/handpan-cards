@@ -2,22 +2,16 @@
 # suite: node --test --test-name-pattern ^writing.the.app.s.own.keys.leaves.a.sibling.key.in.hpfc.untouched$ tests/app.test.js
 # save() goes back to replacing the whole hpfc object, so any sibling key
 # another feature stored there is silently dropped on the next write.
+# Approved retained contract mapped to the transactional instance adapter.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7733,14 +7733,7 @@
- // settings there, so writing our two keys must not drop a sibling's.
- const save = () => {
-   try {
--    const base = readStore(STORE_KEY);
--    const next = (base && typeof base === "object" && !Array.isArray(base)) ? base : {};
--    next.deck = storedDeck;
--    next.mode = mode;
--    next.tier = tier;
--    next.printPaper = printPaper;
--    if (hidden.length) next.hidden = [...hidden]; else delete next.hidden;
--    localStorage.setItem(STORE_KEY, JSON.stringify(next));
-+    localStorage.setItem(STORE_KEY, JSON.stringify({deck: storedDeck, mode, tier, printPaper}));
-   } catch (e) {}
- };
- 
+@@ -9575,7 +9575,7 @@ function updateSettings(change) {
+     const guarded = savedPreference(raw);
+     if (!guarded.ok) return false;
+     const base = guarded.value;
+-    const next = { ...base };
++    const next = {};
+     change(next);
+     const encoded = JSON.stringify(next);
+     if (encoded !== JSON.stringify(base)) localStorage.setItem(STORE_KEY, encoded);

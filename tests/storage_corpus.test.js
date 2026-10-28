@@ -43,6 +43,22 @@ const listOf = (app) => JSON.parse(app.store[KEY] || "[]");
 const fromStore = (app) => ({ ...app.store });
 const settle = async () => { for (let i = 0; i < 8; i += 1) await new Promise((r) => setImmediate(r)); };
 
+// Dev's saved collection lives in IndexedDB: boot it the way dev's own tests do and
+// read the migrated envelope back, never the app's internals.
+const durable = async (storage) => {
+  const { createOrigin } = require("./helpers/sandbox.js");
+  const app = boot({ origin: createOrigin({ storage }), indexedDB: true, broadcastChannel: true, locks: true,
+    isSecureContext: true, crypto: require("node:crypto").webcrypto, abortController: true });
+  await app.waitFor("typeof booted !== 'undefined' && booted === true", { timeout: 2000 });
+  await settle();
+  return app;
+};
+const migrated = (app) => {
+  const db = app.idb.inspect("hpfc.saved-scales.v1");
+  const row = db && db.stores.find((st) => st.name === "collections").entries.find(([k]) => k === "current");
+  return row ? JSON.parse(row[1]).entries.map((e) => e.record) : null;
+};
+
 // The pitch names a record's scale line spells, octaves and order ignored: a
 // rewrite may re-spell a legacy line but must not add, drop or change a note.
 const noteSig = (rec) => (rec && typeof rec.s === "string"
@@ -96,6 +112,22 @@ test("SC: the corpus is present, one file per blob, each with provenance and its
 });
 
 test("SC: boot never drops or alters the notes of any stored record in the corpus", async () => {
+  if (MOVED) {
+    let seen = 0;
+    for (const [n, b] of Object.entries(BLOBS)) {
+      if (U1_JUDGED.has(n)) continue;
+      const raw = JSON.stringify(b.records);
+      const app = await durable({ [b.key]: raw, ...(b.settings ? { hpfc: JSON.stringify(b.settings) } : {}) });
+      const recs = migrated(app);
+      if (recs === null) { assert.strictEqual(app.store[b.key], raw, `${n}: a protected store was rewritten`); continue; }
+      seen += 1;
+      assert.strictEqual(recs.length, b.records.length, `${n}: a record left the migrated collection`);
+      b.records.forEach((rec, i) => assert.strictEqual(noteSig(recs[i]), noteSig(rec), `${n}[${i}]: the migration changed the notes`));
+      assert.strictEqual(app.store[b.key], raw, `${n}: the migration wrote the old key`);
+    }
+    assert.ok(seen >= 5, `only ${seen} corpus blobs migrated`);
+    return;
+  }
   for (const [n, b] of Object.entries(BLOBS)) {
     if (U1_JUDGED.has(n)) continue;
     const app = appBoot(storageOf(b));
@@ -237,7 +269,18 @@ test("SC: a present-but-unreadable store is never written by SAVE, DELETE or RES
 });
 
 test("SC: an absent store is created by the legacy copy, and a present-but-unreadable one is not", async () => {
-  if (MOVED) return;
+  if (MOVED) {
+    const legacy = JSON.stringify([BLOBS.v2_bar_order.records[0]]);
+    const made = await durable({ [LEGACY_KEY]: legacy });
+    assert.strictEqual(made.store[LEGACY_KEY], legacy, "the migration changed the old key");
+    assert.strictEqual(made.store[KEY], undefined, "the migration invented the v3 key");
+    assert.deepStrictEqual(migrated(made).map(noteSig), [noteSig(BLOBS.v2_bar_order.records[0])]);
+    const refused = await durable({ [KEY]: "{", [LEGACY_KEY]: legacy });
+    assert.strictEqual(refused.store[KEY], "{");
+    assert.strictEqual(refused.store[LEGACY_KEY], legacy);
+    assert.strictEqual(migrated(refused), null);
+    return;
+  }
   const legacy = JSON.stringify([BLOBS.v2_bar_order.records[0]]);
   const made = appBoot({ [LEGACY_KEY]: legacy });
   await settle();

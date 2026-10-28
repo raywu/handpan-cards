@@ -8,7 +8,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8981,7 +8981,7 @@ if (wheelMain) wheelMain.addEventListener("wheel", e => {
+@@ -14972,7 +14972,7 @@ if (wheelMain) wheelMain.addEventListener("wheel", e => {
    wheel.axis = d.axis;
    if (d.kind === "skip" || d.kind === "pass") return; // vertical-dominant: never claimed, never preventDefault-ed
    e.preventDefault();

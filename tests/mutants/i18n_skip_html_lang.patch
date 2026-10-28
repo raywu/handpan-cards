@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9602,7 +9602,6 @@ function syncLangIslands() {
+@@ -9744,7 +9744,6 @@ function syncLangIslands() {
    }
  }
  function applyLang() {

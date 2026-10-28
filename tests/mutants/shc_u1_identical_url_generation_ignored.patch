@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14488,7 +14488,7 @@ function copyLink() {
+@@ -15106,7 +15106,7 @@ function copyLink() {
    const href = location.href;
    const deck_kind = deckKind(deck());
    let noticeRevision = announcementRevision;

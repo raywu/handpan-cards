@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10577,7 +10577,7 @@
+@@ -11827,7 +11827,7 @@ const platesBeside = () => {
  const lipDelta = () => {
    const px = (v) => parseFloat(v) || 0;
    const cs = getComputedStyle(sheetSurf), lead = nextBtn.hidden ? genBtn : nextBtn;

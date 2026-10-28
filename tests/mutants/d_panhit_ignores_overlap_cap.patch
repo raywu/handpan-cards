@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -3848,7 +3848,7 @@
+@@ -10988,7 +10988,7 @@ function panHitRadii(ext, sizePx, minPx, pts) {
      for (let j = 0; j < pts.length; j += 1)
        if (j !== i)
          half = Math.min(half, Math.hypot(p[0] - pts[j][0], p[1] - pts[j][1]) / 2);

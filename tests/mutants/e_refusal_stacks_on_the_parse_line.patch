@@ -13,7 +13,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4314,7 +4314,6 @@ function showParse(text) {
+@@ -11668,7 +11668,6 @@ function showParse(text) {
    parseLine.textContent = text;
  }
  function showRefusal(text) {

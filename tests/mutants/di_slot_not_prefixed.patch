@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13278,7 +13278,7 @@ function paintFields(values, announceNew, composed) {
+@@ -14166,7 +14166,7 @@ function paintFields(values, announceNew, composed) {
    }
    const first = FIELD_KEYS.find((k) => next[k] && next[k].kind === "error") ||
      FIELD_KEYS.find((k) => next[k] && next[k].kind === "warn") || FIELD_KEYS.find((k) => next[k]);

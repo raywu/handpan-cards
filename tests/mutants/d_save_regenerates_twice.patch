@@ -1,13 +1,14 @@
 # kills: saving from the Edit sheet regenerates exactly once (13A)
 # suite: node --test --test-name-pattern ^saving.from.the.Edit.sheet.regenerates.exactly.once..13A.$ tests/app.test.js
+# Retained behavior re-anchored for saved instances; exact intent is recorded in the lane evidence.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8241,6 +8241,7 @@ function runGenerate() {
-   // deck"), nor on an options-only edit or an unchanged re-save (the id does
-   // not move), nor on a field edit to a scale no other deck holds.
-   let taken = null;
-+  generateDeck(String(scaleBox.value || ""), sheetOptions());
-   let res;
-   // Restores readonly and the label ONLY. genBtn.disabled is deliberately not
-   // here: a refused seed stays disabled until syncParseState re-enables it on
+@@ -13490,6 +13490,7 @@ async function runGenerate(separate = false) {
+   say("","");
+   try {
+     buildRefused=true;
++    buildGenerated(String(scaleBox.value||""),sheetOptions());
+     const built=buildGenerated(String(scaleBox.value||""),sheetOptions());
+     if(!built.ok){refusal=reasonText(built);showRefusal(refusal);return;}
+     buildRefused=false;

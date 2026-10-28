@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8994,7 +8994,7 @@ function wheelGestureEnd() {
+@@ -14946,7 +14946,7 @@ function wheelGestureEnd() {
    const w = wheel;
    wheel = null;
    const end = wheelEndDecision({ skip: w.skip, fired: w.fired, reducedMotion: reducedMotion.matches });

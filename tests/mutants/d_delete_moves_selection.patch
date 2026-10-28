@@ -1,13 +1,16 @@
-# kills: deleting a NON-selected custom deck leaves the selection alone
-# suite: node --test --test-name-pattern ^deleting.a.NON.selected.custom.deck.leaves.the.selection.alone$ tests/app.test.js
+# kills: deleting a NON-selected custom instance leaves the selection alone
+# suite: node --test --test-name-pattern=^deleting.a.NON\-selected.custom.instance.leaves.the.selection.alone$ tests/app.test.js
+# former kills: deleting a NON-selected custom deck leaves the selection alone
+# fault: Snapshot publication resets an unaffected surviving selection when another local instance is deleted.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12596,7 +12596,6 @@ function deleteDeck(id) {
-     if (heldSeat && !hidden.includes(heldSeat)) hidden.push(heldSeat);
-   }
-   if (editingId === id) closeScaleSheet();
--  if (!wasSelected) { save(); buildChips(); return; }
-   selectDeck(fallbackDeck().id);
-   say(t("boot.removed", { a: gone, b: deck().name }), "warn");
- }
+@@ -13525,7 +13525,7 @@ savedSnapshotListener=event=>{
+   const beforeRow=event.previous?.entries.find(row=>row.instanceId===oldSelection.id);
+   const afterRow=savedState.entries.find(row=>row.instanceId===oldSelection.id);
+   const focusedRemoved=!!focused?.closest?.("#decks") && !allDeckViews().some(view=>view.selection.id===focused.getAttribute("data-selection-id"));
+-  selection=savedResolve(selection,savedState,savedEntries);
++  selection=savedFallback(savedState,savedEntries);
+   const dirty=sheetOpen && sheetBaseline!==sheetKey();
+   if(dirty && conflictVisible && event.source==="remote"){
+     const deleted=editingBase?.selection.kind==="saved" && !savedEntries.has(editingBase.selection.id);

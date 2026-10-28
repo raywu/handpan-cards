@@ -1,0 +1,15 @@
+# kills: SV4 U3: absent denied corrupt and newer sources are distinct
+# suite: node --test --test-name-pattern=^SV4.U3: tests/app.test.js
+# fault: Mislabels corrupt or unsupported saved data as a usable temporary session.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10378,7 +10378,7 @@ function makeSavedMigration(staged) {
+   return { ...prepared, envelope: e };
+ }
+ function savedProtect(result, raw) {
+-  savedMode = "protected"; savedIssue = result;
++  savedMode = "session"; savedIssue = result;
+   savedRecovery = { collection: typeof raw === "string" ? raw : null, legacy: result.raw || null };
+   return result;
+ }

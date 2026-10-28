@@ -1,15 +1,16 @@
 # kills: AO: a #deck= link to a replaced seed whose replacement is the shown deck closes About like the exit control
 # suite: node --test --test-name-pattern ^AO:.a.#deck=.link.to.a.replaced.seed tests/app.test.js
 # aboutLink drops the || replaced branch, so a link to a replaced seed no longer closes About.
+# Retained behavior re-anchored for saved instances; exact intent is recorded in the lane evidence.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11775,7 +11775,7 @@ function aboutLink(href) {
-     const resolved = deck().id;
-     deckId = before;
-     const replaced = !!replacements()[routed] && replacements()[routed].id === resolved;
--    if (resolved === deck().id && (resolved === routed || replaced)) { closeAbout(); return; }
-+    if (resolved === deck().id && (resolved === routed)) { closeAbout(); return; }
+@@ -14514,7 +14514,7 @@ function aboutLink(href) {
+   const routed = Object.prototype.hasOwnProperty.call(DECK_SLUGS, slug) ? DECK_SLUGS[slug] : null;
+   if (routed) {
+     const resolvedSelection=savedState?savedResolve({kind:"builtin",id:routed},savedState,savedEntries):{kind:"builtin",id:routed};
+-    if (savedEqual(resolvedSelection,selection) && (selection.kind==="builtin" && selection.id===routed || savedState?.slots[routed]===selection.id)) { closeAbout(); return; }
++    if (savedEqual(resolvedSelection,selection) && (selection.kind==="builtin" && selection.id===routed)) { closeAbout(); return; }
    }
    hideAbout();
    history.replaceState(null, "", href);

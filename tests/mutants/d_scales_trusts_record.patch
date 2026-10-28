@@ -1,18 +1,16 @@
-# kills: a corrupt saved scale is dropped and the app still boots on the built-ins
-# suite: node --test --test-name-pattern ^a.corrupt.saved.scale.is.dropped.and.the.app.still.boots.on.the.built.ins$ tests/app.test.js
-# restoreScales trusts whatever version a record claims, so a record from a wire
-# version this build does not know is read as the current grammar and rebuilt.
+# kills: unreadable legacy scales are preserved while a safe built-in view still boots
+# suite: node --test --test-name-pattern=^unreadable.legacy.scales.are.preserved.while.a.safe.built\-in.view.still.boots$ tests/app.test.js
+# former kills: a corrupt saved scale is dropped and the app still boots on the built-ins
+# fault: Superseded corrupt-row dropping policy now discards preserved opaque legacy values during migration.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7868,8 +7868,7 @@ function restoreScales() {
-   for (const rec of list) {
-     let keep = rec;
-     try {
--      const readable = rec && typeof rec === "object" && typeof rec.s === "string" &&
--        checkShareVersion(rec.v).ok;
-+      const readable = rec && typeof rec === "object" && typeof rec.s === "string";
-       const res = readable ? scaleReader(rec.v)(rec.s) : null;
-       if (res && res.ok) {
-         const id = HPE.core.deckId(res.value.fields);
-
+@@ -10335,7 +10335,7 @@ function stageLegacySaved() {
+   try { if (sourceKey) records = JSON.parse(raw[sourceKey]); }
+   catch (e) { return { ...savedFailure("protected", "legacy-json"), raw }; }
+   if (!Array.isArray(records)) return { ...savedFailure("protected", "legacy-list"), raw };
+-  const rows = records.map(record => {
++  const rows = records.filter(record => savedObject(record) && typeof record.s === "string" && record.v <= SHARE_VERSION).map(record => {
+     const read = readSavedRecord(record);
+     return { record: read.ok ? read.record : savedClone(record), read };
+   });

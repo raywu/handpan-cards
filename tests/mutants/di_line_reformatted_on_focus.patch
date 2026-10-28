@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12122,6 +12122,7 @@ function paintFieldsOpen() {
+@@ -14288,6 +14288,7 @@ function paintFieldsOpen() {
  function pathFocus(path) {
    if (inputPath === path) return;
    inputPath = path;

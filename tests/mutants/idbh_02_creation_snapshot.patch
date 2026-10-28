@@ -1,0 +1,15 @@
+# kills: IDBH2 overlapping transactions see predecessor commit at grant and preserve both writes
+# suite: node --test --test-name-pattern=^IDBH2\s tests/harness.test.js
+# fault: Capture overlapping transaction state at construction instead of at grant.
+diff --git a/tools/sandbox.js b/tools/sandbox.js
+--- a/tools/sandbox.js
++++ b/tools/sandbox.js
+@@ -257,7 +257,7 @@ function indexedDBFor(bucket) {
+         },
+       };
+     };
+-    tx._start = () => { if (!upgrade) tx._stores = snapshot(record.stores); tx._started = true; next(); };
++    tx._start = () => { tx._started = true; next(); };
+     if (upgrade) { tx._started = true; }
+     else { record.queue.push(tx); pump(record); }
+     return tx;

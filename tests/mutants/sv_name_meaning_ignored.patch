@@ -1,0 +1,15 @@
+# kills: SV1 U1: differently named same-inventory imports coexist in either order
+# suite: node --test --test-name-pattern=^SV1.U1: tests/app.test.js
+# fault: Ignores the typed name when deciding whether two portable imports are equal.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10216,7 +10216,7 @@ function savedMeaning(deckValue) {
+     const list = seatValue[ring];
+     return !list || list.every((seat, i) => seat === i) ? null : list;
+   });
+-  return JSON.stringify([HPE.core.identitySeed(deckValue.fields), o.name ? [true, o.name] : [false, ""],
++  return JSON.stringify([HPE.core.identitySeed(deckValue.fields), [false, ""],
+     o.parent == null ? [false, null] : [true, o.parent], o.palette, mirrors.top, mirrors.bottom,
+     o.anchor === "between" ? "between" : "one",
+     normalizedSeats,

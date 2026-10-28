@@ -1,0 +1,15 @@
+# kills: SV9 U2: an obsolete completed Save cannot close or select a newer context
+# suite: node --test --test-name-pattern=^SV9.U2: tests/app.test.js
+# fault: A completed old Save may close/select/announce into a newer Add or Edit context.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13498,7 +13498,7 @@ async function runGenerate(separate = false) {
+       base.selection.kind === "builtin" ? {type:"replace-builtin",seedId:base.selection.id,expectedSlotStateRevision:base.slotStateRevision,expectedOwnerId:base.ownerId} :
+       {type:"edit",instanceId:base.selection.id,expectedRevision:base.revision};
+     const result=await commitSaved({...command,collectionId:base?base.collectionId:savedState?.collectionId,candidate},{signal:controller.signal});
+-    if(generation!==sheetGeneration || !sheetOpen || draft!==sheetKey())return;
++    if(false)return;
+     if(!result.ok){if(result.kind==="conflict"){await reconcileSavedCollection();if(generation===sheetGeneration)showSavedConflict(true);}else if(result.kind!=="cancelled")showRefusal(savedErrorText(result));return;}
+     if(result.published===false){showRefusal(savedPublicationText(result));return;}
+     const d=savedEntries.get(result.instanceId).deck;

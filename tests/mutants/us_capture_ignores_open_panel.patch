@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8990,7 +8990,7 @@ document.addEventListener("pointerdown", e => {
+@@ -15000,7 +15000,7 @@ document.addEventListener("pointerdown", e => {
      // a focused control would otherwise have its own click eaten.
      setEatClick(inside && e.button === 0);
      land();

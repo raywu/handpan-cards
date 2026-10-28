@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10447,7 +10447,7 @@ if (typeof ResizeObserver === "function") {
+@@ -11871,7 +11871,7 @@ if (typeof ResizeObserver === "function") {
  bandPort.addEventListener("focusin", (e) => {
    const t = e.target;
    if (!(t && t.matches && t.matches("input, textarea, select"))) return;

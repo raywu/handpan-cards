@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11687,10 +11687,7 @@ function hideSheet() {
+@@ -13386,10 +13386,7 @@ function hideSheet() {
    // be left behind (queue row 88): applyKbOffset() writes transform and
    // maxHeight together, so the teardown has to undo them together or the two
    // halves drift apart the moment anything else learns to call hideSheet().

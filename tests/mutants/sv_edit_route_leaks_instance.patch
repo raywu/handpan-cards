@@ -1,0 +1,15 @@
+# kills: SV13 U1: opening Edit never puts a local collection or instance handle in the URL
+# suite: node --test --test-name-pattern=^SV13.U1: tests/app.test.js
+# fault: Opening Edit exposes a local instance UUID in the address bar.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13231,7 +13231,7 @@ function setSheetMode(edit) {
+ const ADD_ROUTE  = "#add";
+ const EDIT_ROUTE = "#edit-";
+ function sheetRoute() {
+-  return editingBase ? EDIT_ROUTE + editingBase.deck.id : ADD_ROUTE;
++  return editingBase ? EDIT_ROUTE + editingId : ADD_ROUTE;
+ }
+ // True while OUR history entry is on the stack. Not derived from the hash: a
+ // user can edit the address bar, and the question this answers is "did we push

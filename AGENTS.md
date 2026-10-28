@@ -23,3 +23,5 @@ On “check in”, verify current workstream status, then interview the owner ab
 unresolved decisions and blockers, one question per item with the recommendation
 first. Reuse settled answers, record new ones in the workstream plan, and continue
 independent authorized work while waiting. A check-in is not a main-merge grant.
+
+Saved-variants performance is gated by the SV-PG e2e test plus owner phone QA (owner, 2026-10-27). Do not build frame-timing, rAF A-B-A or profiler infrastructure; see docs/plans/2026-10-26-saved-variants-selection-performance.md.

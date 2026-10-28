@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10580,7 +10580,6 @@
+@@ -12240,7 +12240,6 @@ function setTab(tab) {
    if (sheetTab === "layout") {
      cancelGesture();
      previewBox.removeEventListener("touchmove", plateTouchMove, { passive: false });

@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10231,7 +10231,6 @@ delBtn.onclick = () => {
+@@ -13658,7 +13658,6 @@ delBtn.onclick = () => {
  sheet.addEventListener("pointerdown", (e) => {
    if (e.target !== delBtn) disarmDelete();
  });  // disarmDelete() is a no-op unless armed, so an ordinary tap writes nothing.

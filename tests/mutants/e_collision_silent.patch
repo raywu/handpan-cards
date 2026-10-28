@@ -1,14 +1,15 @@
-# kills: an edit onto another deck's scale is refused at 380px and both chips stay
-# suite: node --test --test-name-pattern ^an.edit.onto.another.deck.s.scale.is.refused.at.380px.and.both.chips.stay$ tests/e2e.test.js
+# kills: an edit onto another scale's inventory preserves both chips at 380px and remains editable
+# suite: node --test --test-name-pattern=^an.edit.onto.another.scale's.inventory.preserves.both.chips.at.380px.and.remains.editable$ tests/e2e.test.js
+# former kills: an edit onto another deck's scale is refused at 380px and both chips stay
+# fault: Converging Edit silently removes a named same-inventory sibling in the physical editor journey.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12662,7 +12662,7 @@ function runGenerate() {
-     // so this composes no sentence that could pass for one and carries no code.
-     scaleBox.classList.add("bad");
-     refusal = t("sheet.duplicate");
--    showRefusal(refusal);
-+    showRefusal("");
-     return;
-   }
-   if (!res.ok) {
+@@ -10583,6 +10583,7 @@ function applySavedCommand(staged, command, candidate) {
+     if (isBuiltIn(record.o && record.o.replaces)) deckValue.options.replaces = record.o.replaces;
+     else delete deckValue.options.replaces;
+     attachCandidate(row, deckValue);
++    next.entries = next.entries.filter(entry => entry.instanceId === row.instanceId || views.get(entry.instanceId)?.deck.id !== deckValue.id);
+     targetId = row.instanceId; desired = { kind: "saved", id: targetId };
+   } else if (command.type === "replace-builtin") {
+     if (!isBuiltIn(command.seedId) || command.expectedSlotStateRevision !== current.slotStateRevision ||

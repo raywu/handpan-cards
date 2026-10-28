@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14519,7 +14519,6 @@ function copyLink() {
+@@ -15137,7 +15137,6 @@ function copyLink() {
      if (!navigator.share) { reveal(); return; }
      let started = false;
      Promise.resolve().then(() => {

@@ -1,0 +1,15 @@
+# kills: SPS fixture: tabs panels fields preview and Layout controls share body ancestry
+# suite: node --test --test-name-pattern ^SPS.fixture:.tabs.panels.fields.preview.and.Layout.controls.share.body.ancestry$ tests/sandbox_events.test.js
+# Body descendants lose their nearest panel ancestry when flattened directly under the body.
+diff --git a/tools/sandbox.js b/tools/sandbox.js
+--- a/tools/sandbox.js
++++ b/tools/sandbox.js
+@@ -410,7 +410,7 @@ function boot(opts = {}) {
+         // agree on that ancestry. Controls outside it retain the old fixture.
+         if (opts.layout && opts.sheetBody && stack.some((f) => f.bodyNode)) {
+           const parent = [...stack].reverse().find((f) => f.bodyNode || (f.id && els[f.id]));
+-          const node = parent.bodyNode || els[parent.id];
++          const node = [...stack].reverse().find((f) => f.bodyNode).bodyNode;
+           els[id[1]].parentNode = node;
+           els[id[1]]._markupParent = node;
+         }

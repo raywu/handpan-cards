@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11485,6 +11485,7 @@
+@@ -13410,6 +13410,7 @@ function hideSheet() {
  // started and the next back press belongs to whatever came before the page.
  function closeScaleSheet() {
    if (!sheetOpen) return;

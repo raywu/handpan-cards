@@ -1,0 +1,15 @@
+# kills: IDBH14 host operation evidence distinguishes readonly probing from durable write attempts
+# suite: node --test --test-name-pattern=^IDBH14\s tests/harness.test.js
+# fault: Hide attempted schema creation from host operation evidence.
+diff --git a/tools/sandbox.js b/tools/sandbox.js
+--- a/tools/sandbox.js
++++ b/tools/sandbox.js
+@@ -285,7 +285,7 @@ function indexedDBFor(bucket) {
+       const tx = db._upgrade;
+       if (!tx || tx._done) throw idbError('InvalidStateError');
+       if (tx._stores.has(storeName)) throw idbError('ConstraintError');
+-      operations.push({ operation: 'createObjectStore', db: name, store: storeName });
++      // Fault: schema creation is absent from host operation evidence.
+       tx._stores.set(storeName, { name: storeName, keyPath: idbClone(options.keyPath ?? null),
+         autoIncrement: !!options.autoIncrement, entries: new Map(), nextKey: 1 });
+       return tx.objectStore(storeName);

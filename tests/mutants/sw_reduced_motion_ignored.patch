@@ -13,7 +13,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8823,7 +8823,6 @@ function releaseDecision({ dx, dy, vx, moved, cancelled, blocked, mouse, reduced
+@@ -14813,7 +14813,6 @@ function releaseDecision({ dx, dy, vx, moved, cancelled, blocked, reducedMotion
    const dir = blocked ? 0 : swipeDecision(dx, dy, vx);
    if (!dir && !moved) return { kind: "rest", dir: 0, eatClick: false };
    const eatClick = moved && !cancelled;

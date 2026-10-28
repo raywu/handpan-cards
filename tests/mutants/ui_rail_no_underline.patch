@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -746,8 +746,7 @@ button.nav:active{background:#2e281e}
+@@ -668,8 +668,7 @@ button.nav:active{background:#2e281e}
     root colour against the table background. Marcellus has no bold cut, so a
     browser-faked bold does not carry the distinction; colour plus the
     underline do that work instead. */

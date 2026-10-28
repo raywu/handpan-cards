@@ -2,14 +2,13 @@
 # suite: node --test --test-name-pattern ^clicking.a.tier.presses.it.exclusively,.persists,.re-deals.at.that.tier,.and.closes.the.panel$ tests/e2e.test.js
 # D-7/D-11: the selected tier must persist under hpfc.tier so it survives a
 # reload. Dropping the assignment here leaves it unsaved.
+# Approved retained contract mapped to the transactional instance adapter.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7737,7 +7737,6 @@ const save = () => {
-     const next = (base && typeof base === "object" && !Array.isArray(base)) ? base : {};
-     next.deck = storedDeck;
-     next.mode = mode;
--    next.tier = tier;
-     next.printPaper = printPaper;
-     if (hidden.length) next.hidden = [...hidden]; else delete next.hidden;
-     localStorage.setItem(STORE_KEY, JSON.stringify(next));
+@@ -9806,5 +9806,4 @@ const save = () => updateSettings(next => {
+   // legacy deck/hidden fields untouched for old clients and recovery.
+   next.mode = mode;
+-  next.tier = tier;
+   next.printPaper = printPaper;
+ });

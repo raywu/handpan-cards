@@ -7,7 +7,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -105,7 +105,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
+@@ -223,7 +223,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
     chips keep it centred while it fits, without making either end unreachable
     once it overflows. The right edge fades so a cut-off chip reads as "more". */
  .decks{display:flex; gap:var(--sp-2); flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none;
