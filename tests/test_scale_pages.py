@@ -6,13 +6,17 @@ from html.parser import HTMLParser
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SITE = "https://handpan.raywu.org/"
-ALLOWED_HOSTS = {"fonts.googleapis.com", "fonts.gstatic.com", "handpan.raywu.org", "www.w3.org"}
+ALLOWED_HOSTS = {"fonts.googleapis.com", "fonts.gstatic.com", "handpan.raywu.org", "www.w3.org",
+                 "docs.google.com", "www.youtube.com", "www.sarazhandpans.com", "www.handpan.world"}
 PAGES = [
     {
-        "path": "scales/kurd/index.html",
-        "url": SITE + "scales/kurd/",
+        "path": "scales/d-kurd-10/index.html",
+        "url": SITE + "scales/d-kurd-10/",
         "layouts": [("d-kurd-10", "kurd")],
-        "aliases": ["D Kurd"],
+        "aliases": ["D Kurd", "Kurdish minor"],
+        "h1": "D Kurd 10 handpan chords",
+        "cta": "PRACTICE D KURD 10",
+        "cards": ["Dm", "Gm", "Am"],
     },
 ]
 PLAIN_ATTRS = {"id", "href", "src", "class", "rel", "charset", "name", "property", "type",
@@ -89,26 +93,79 @@ def parse(page):
     return Page(read(page["path"]))
 
 
-def chord_names(html, layout_id):
-    section = re.search(r'<section[^>]*id="%s".*?</section>' % layout_id, html, re.S)
-    if not section:
-        return None
-    out = []
-    for li in re.findall(r'<li class="chord">(.*?)</li>', section.group(0), re.S):
-        name = re.search(r"<b>(.*?)</b>", li, re.S).group(1)
-        out.append(re.sub(r"</?sup>", "", name))
-    return out
+def cards(html):
+    return re.findall(r'<div class="cname">(.*?)</div>\s*<div class="cardhost"[^>]*>\s*<template shadowrootmode="open">(.*?)</template>', html, re.S)
 
 
 class ScalePagesTest(unittest.TestCase):
-    def test_each_page_lists_every_chord_of_its_layouts_in_deck_order(self):
+    def test_h1_and_primary_cta(self):
+        for page in PAGES:
+            p = parse(page)
+            html = read(page["path"])
+            with self.subTest(page=page["path"]):
+                self.assertEqual(re.findall(r"<h1>(.*?)</h1>", html, re.S), [page["h1"]])
+                self.assertEqual(len(re.findall(r"<h1", html)), 1)
+                self.assertIn(page["cta"], " ".join(p.text))
+
+    def test_cards_are_inline_shadow_dom_in_the_deck_colours(self):
         data = decks()
         for page in PAGES:
             html = read(page["path"])
+            found = cards(html)
+            with self.subTest(page=page["path"]):
+                self.assertEqual([n for n, _ in found], page["cards"])
+                self.assertNotIn("<iframe", html.lower())
+                for layout_id, slug in page["layouts"]:
+                    colors = data[slug]["colors"]
+                    for name, body in found:
+                        self.assertIn("<svg", body)
+                        self.assertIn(colors["root"], body)
+                        self.assertIn(colors["tone"], body)
+                        self.assertRegex(body, r"background:\s*#fff")
+                        self.assertRegex(body, r"border:\s*3px solid var\(--root\)")
+                        self.assertNotIn("<script", body)
+
+    def test_cards_stay_card_width_and_do_not_trap_scroll(self):
+        for page in PAGES:
+            html = read(page["path"])
+            with self.subTest(page=page["path"]):
+                self.assertIn("min(322px,100%)", html)
+                self.assertNotIn("touch-action:none", html.replace(" ", ""))
+                self.assertNotIn("pointer-events:none", html.replace(" ", ""))
+
+    def test_history_section_ends_with_one_popularized_by_and_no_created_by(self):
+        for page in PAGES:
+            html = read(page["path"])
+            with self.subTest(page=page["path"]):
+                section = re.search(r'<section class="history">(.*?)</section>', html, re.S)
+                self.assertTrue(section)
+                body = section.group(1)
+                self.assertIn("A little history", body)
+                self.assertEqual(body.count("Popularized by"), 1)
+                self.assertNotIn("Created by", html)
+                self.assertIn("https://", body)
+                self.assertTrue(body.rstrip().endswith("</dl>"))
+                self.assertLess(html.index('class="history"'), html.index('class="cname"'))
+
+    def test_the_notes_line_matches_the_deck(self):
+        data = decks()
+        for page in PAGES:
+            text = " ".join(parse(page).text)
             for layout_id, slug in page["layouts"]:
+                fields = data[slug]["fields"]
+                notes = sorted((f for f in fields.values()), key=lambda f: f[2])
+                ding = [f for f in fields.values() if f[3] == "ding"][0]
+                top = [f for f in notes if f[3] != "ding"]
+                want = "%s%s ding, %s" % (ding[0], ding[1], " ".join("%s%s" % (f[0], f[1]) for f in top))
                 with self.subTest(page=page["path"], layout=layout_id):
-                    want = [c["main"] + c["sup"] for c in data[slug]["chords"]]
-                    self.assertEqual(chord_names(html, layout_id), want)
+                    self.assertIn(re.sub(r"\s+", " ", want), re.sub(r"\s+", " ", text))
+
+    def test_fonts_url_loads_all_three_card_families(self):
+        for page in PAGES:
+            html = read(page["path"])
+            with self.subTest(page=page["path"]):
+                for family in ("Marcellus", "Bitter", "Nunito+Sans"):
+                    self.assertRegex(html, r"fonts\.googleapis\.com/css2\?[^\"]*family=%s" % re.escape(family))
 
     def test_each_layout_has_a_section_with_its_anchor_and_an_app_link(self):
         for page in PAGES:
@@ -129,7 +186,7 @@ class ScalePagesTest(unittest.TestCase):
     def test_no_script_and_no_analytics(self):
         for page in PAGES:
             html = read(page["path"]).lower()
-            for needle in ("<script", "googletagmanager", "gtag", "g-qtywb2hsv", "google-analytics"):
+            for needle in ("<script", "googletagmanager", "gtag", "g-qtywb2hssv", "google-analytics"):
                 with self.subTest(page=page["path"], needle=needle):
                     self.assertNotIn(needle, html)
 
