@@ -6,7 +6,7 @@ diff --git a/index.html b/index.html
 +++ b/index.html
 @@ -11706,7 +11706,7 @@ function setTab(tab) {
        sheetSwipe = { id: p.identifier, x: p.clientX, y: p.clientY, at: Date.now(), tab: sheetTab,
-         field, box, boxTop: scrollOf(box), boxLeft: box ? box.scrollLeft || 0 : 0,
+         plate: previewBox.contains(t), field, box, boxTop: scrollOf(box), boxLeft: box ? box.scrollLeft || 0 : 0,
          bodyTop: scrollOf(body), surfTop: scrollOf(sheetSurf), moved: false };
 -    }, { passive: true });
 +    }, { passive: false });
