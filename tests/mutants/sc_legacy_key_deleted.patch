@@ -1,6 +1,6 @@
-# kills: the legacy copy deletes the old list it only reads
-# suite: node --test --test-name-pattern ^SC.an.absent.store.is.created.by.the.legacy.copy..and.a.present-but-unreadable.one.is.not$ tests/storage_corpus.test.js
-# copyLegacyScales reads hpfc.scales and never writes or deletes it, so an older
+# kills: SC: an absent store is created by the legacy copy, and a present-but-unreadable one is not
+# suite: node --test --test-name-pattern ^SC..an.absent.store.is.created.by.the.legacy.copy..and.a.present-but-unreadable.one.is.not$ tests/storage_corpus.test.js
+# why: copyLegacyScales reads hpfc.scales and never writes or deletes it, so an older
 # app on the same origin keeps its list. Deleting it strands that older app.
 diff --git a/index.html b/index.html
 --- a/index.html
