@@ -1,0 +1,29 @@
+{
+  "provenance": "v3 record with per-ring seats. Shape from CLAUDE.md \"App data model\" and the stored-record sentences of its version; authored at 7d80d65d.",
+  "key": "hpfc.scales.v3",
+  "records": [
+    {
+      "v": 3,
+      "s": "(C#3) G#3 B3 C#4 D4 F4 F#4 G#4 B4",
+      "o": {
+        "name": "V3 seats",
+        "palette": 3,
+        "seats": {
+          "rim": [
+            1,
+            0,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ]
+        }
+      }
+    }
+  ],
+  "deckIds": [
+    "custom:626198f8"
+  ]
+}
