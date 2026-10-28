@@ -7,7 +7,7 @@ diff --git a/index.html b/index.html
 @@ -344,6 +344,7 @@ a.mode{text-decoration:none}
    #settings-panel{display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));
      align-content:start; align-items:start}
-   #settings-panel > .panel-group{width:auto}
+   #settings-panel .panel-group{width:auto}
 +  .modebar.trio .mode{white-space:nowrap}
  }
  #settings-trigger[aria-expanded="true"] .glyph{background:transparent}
