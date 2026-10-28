@@ -1,0 +1,11 @@
+{
+ "note": "Append-only. A slug here must open its built-in deck forever.",
+ "provenance": "DECK_SLUGS in index.html at origin/main 7d80d65d; each slug is pinned by tests/app.test.js \"every slug opens its built-in deck, persists it, and leaves a clean address\"",
+ "slugs": {
+  "d-kurd-10": "kurd",
+  "d-amara-10": "amara10",
+  "d-amara-9": "amara",
+  "f-low-pygmy-18": "pygmy",
+  "c-sharp-hijaz-9": "hijaz"
+ }
+}
