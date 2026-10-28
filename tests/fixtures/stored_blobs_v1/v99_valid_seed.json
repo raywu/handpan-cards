@@ -1,0 +1,16 @@
+{
+  "provenance": "E6: a record above RECORD_VERSION whose string is a valid seed. Shape from CLAUDE.md \"App data model\" and the stored-record sentences of its version; authored at 7d80d65d.",
+  "key": "hpfc.scales.v3",
+  "records": [
+    {
+      "v": 99,
+      "s": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5",
+      "o": {
+        "futureKey": 1
+      }
+    }
+  ],
+  "deckIds": [
+    "custom:cb5fe66a"
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "provenance": "a record from a newer build whose string this build cannot read. Shape from CLAUDE.md \"App data model\" and the stored-record sentences of its version; authored at 7d80d65d.",
+  "key": "hpfc.scales.v3",
+  "records": [
+    {
+      "v": 99,
+      "s": "(D3) future grammar ~~",
+      "o": {
+        "futureKey": 1
+      }
+    }
+  ],
+  "deckIds": [
+    null
+  ]
+}
