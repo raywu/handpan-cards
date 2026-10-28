@@ -68,6 +68,9 @@ function reap(entry) {
   // the browser leads its own group and the whole tree dies at once.
   try { process.kill(-entry.proc.pid, "SIGKILL"); }
   catch { try { entry.proc.kill("SIGKILL"); } catch {} }
+  // A terminated browser's descendants can retain its debug-port pipe. Once
+  // this owned launch is retired, explicitly close our reader as well.
+  try { entry.proc.stderr?.destroy(); } catch {}
   // And then remove the profile, retrying briefly in case a dying child wins
   // the race anyway. Bounded at 100ms: this runs on the way out of a killed
   // suite, which must never become a hang.
@@ -533,7 +536,7 @@ class Browser {
       await this.send("Input.dispatchMouseEvent", { type: "mousePressed", x: p0.x, y: p0.y, button: "left", clickCount: 1, timestamp: t0 });
       for (const [dx, ms, dy] of pts) {
         const p = at(dx, dy);
-        await this.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: p.x, y: p.y, buttons: 1, timestamp: t0 + ms / 1000 });
+        await this.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: p.x, y: p.y, button: "left", buttons: 1, timestamp: t0 + ms / 1000 });
       }
       if (release) {
         const p = at(last[0], last[2]);

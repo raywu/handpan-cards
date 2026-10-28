@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12842,7 +12842,7 @@ function dropNote() {
+@@ -13991,7 +13991,7 @@ function dropNote() {
    if (t.kind === "swap") { dropGhost(g); activateNote(t.ref, "tap"); return; }
    if (t.kind === "own") { dropGhost(g); swapSeats(picked.ring, picked.i, picked.i); return; }
    const n = noteAt(picked);

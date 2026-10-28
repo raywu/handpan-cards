@@ -13,10 +13,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12786,9 +12786,9 @@ delBtn.onclick = () => {
-   const d = CUSTOM[target] || DECKS.find(x => x.id === target);
+@@ -13644,9 +13644,9 @@ delBtn.onclick = () => {
+   const d = editedDeck();
    const seat = d && d.options && d.options.replaces;
-   const seatedDeck = isBuiltIn(target) || (typeof seat === "string" && replacements()[seat] === d);
+   const seatedDeck = seeded() || (typeof seat === "string" && savedState.slots[seat] === target);
 -  delNote.textContent = seatedDeck
 +  showRefusal(seatedDeck
      ? t("sheet.del_note_seeded", { name: d.name })

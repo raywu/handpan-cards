@@ -1,30 +1,14 @@
 # kills: a throwing localStorage breaks neither boot nor navigation
 # suite: node --test --test-name-pattern ^a.throwing.localStorage.breaks.neither.boot.nor.navigation$ tests/app.test.js
+# Approved retained contract mapped to the transactional instance adapter.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7732,16 +7732,14 @@
- // READ-MODIFY-WRITE: "hpfc" is one object shared with whatever else stores
- // settings there, so writing our two keys must not drop a sibling's.
- const save = () => {
+@@ -9572,3 +9572,2 @@ if (typeof store !== "object" || Array.isArray(store)) store = {};
+ function updateSettings(change) {
 -  try {
--    const base = readStore(STORE_KEY);
--    const next = (base && typeof base === "object" && !Array.isArray(base)) ? base : {};
--    next.deck = storedDeck;
--    next.mode = mode;
--    next.tier = tier;
--    next.printPaper = printPaper;
--    if (hidden.length) next.hidden = [...hidden]; else delete next.hidden;
--    localStorage.setItem(STORE_KEY, JSON.stringify(next));
--  } catch (e) {}
-+  const base = readStore(STORE_KEY);
-+  const next = (base && typeof base === "object" && !Array.isArray(base)) ? base : {};
-+  next.deck = storedDeck;
-+  next.mode = mode;
-+  next.tier = tier;
-+  next.printPaper = printPaper;
-+  if (hidden.length) next.hidden = [...hidden]; else delete next.hidden;
-+  localStorage.setItem(STORE_KEY, JSON.stringify(next));
- };
- 
- /* ---------------- generated decks ---------------- */
+     const raw = localStorage.getItem(STORE_KEY);
+@@ -9582,3 +9581,2 @@ function updateSettings(change) {
+     return true;
+-  } catch (e) { return false; }
+ }

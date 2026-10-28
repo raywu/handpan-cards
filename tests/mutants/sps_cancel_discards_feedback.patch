@@ -1,0 +1,15 @@
+# kills: SPS5: cancelled and same-tab gestures retain pending feedback for a real Layout entry
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS5:.cancelled.and.same\-tab.gestures.retain.pending.feedback.for.a.real.Layout.entry$ tests/app.test.js
+# Cancelled gesture drops pending feedback needed on later actual Layout entry.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11734,7 +11734,7 @@ function setTab(tab) {
+       setTab(tab);
+       lipQuietUntil = Math.max(lipQuietUntil, Date.now() + LIP_END_MS);
+     }, { passive: true });
+-    body.addEventListener("touchcancel", cancel, { passive: true });
++    body.addEventListener("touchcancel", () => { pendingDerive = {}; cancel(); }, { passive: true });
+     body.addEventListener("focusin", e => {
+       if (sheetSwipe && e.target && e.target.matches && e.target.matches("input, textarea")) cancel();
+     }, { capture: true });

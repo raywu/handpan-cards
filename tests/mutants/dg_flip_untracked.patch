@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10733,7 +10733,7 @@ const card = document.getElementById("card");
+@@ -14368,7 +14368,7 @@ const card = document.getElementById("card");
  // §8 E3: with order emptied (an unsupported deck in mode S), stepping or
  // flipping must throw nothing and change nothing - render() itself already
  // draws the message in that state (renderSeqEmpty above).

@@ -1,0 +1,142 @@
+{
+  "observed_utc": "2026-10-27T03:05:12.771163+00:00",
+  "jobs": [
+    {
+      "job": "regroup-native-back-forward-a0",
+      "receipt_cleanup_ok": true,
+      "node_pid": 12710,
+      "owned": [
+        {
+          "pid": 12715,
+          "pgid": 12715,
+          "profile": "/private/var/folders/wd/4nr_466j3gdbdgwxryv5s1lh0000gn/T/hpfc-prof-jq70xd",
+          "profile_exists_now": false,
+          "group_members_now": []
+        }
+      ]
+    },
+    {
+      "job": "regroup-focused-native-a0",
+      "receipt_cleanup_ok": true,
+      "node_pid": 15677,
+      "owned": [
+        {
+          "pid": 15680,
+          "pgid": 15680,
+          "profile": "/private/var/folders/wd/4nr_466j3gdbdgwxryv5s1lh0000gn/T/hpfc-prof-Kpnihg",
+          "profile_exists_now": false,
+          "group_members_now": []
+        },
+        {
+          "pid": 15703,
+          "pgid": 15703,
+          "profile": "/private/var/folders/wd/4nr_466j3gdbdgwxryv5s1lh0000gn/T/hpfc-prof-bo7oK2",
+          "profile_exists_now": false,
+          "group_members_now": []
+        },
+        {
+          "pid": 15780,
+          "pgid": 15780,
+          "profile": "/private/var/folders/wd/4nr_466j3gdbdgwxryv5s1lh0000gn/T/hpfc-prof-QUQYtT",
+          "profile_exists_now": false,
+          "group_members_now": []
+        }
+      ]
+    },
+    {
+      "job": "regroup-harness-browser-a1",
+      "receipt_cleanup_ok": true,
+      "node_pid": 14417,
+      "owned": [
+        {
+          "pid": 14477,
+          "pgid": 14477,
+          "profile": "/private/var/folders/wd/4nr_466j3gdbdgwxryv5s1lh0000gn/T/hpfc-prof-Pm6qmv",
+          "profile_exists_now": false,
+          "group_members_now": []
+        },
+        {
+          "pid": 14583,
+          "pgid": 14583,
+          "profile": "/private/var/folders/wd/4nr_466j3gdbdgwxryv5s1lh0000gn/T/hpfc-prof-Quluqb",
+          "profile_exists_now": false,
+          "group_members_now": []
+        },
+        {
+          "pid": 15266,
+          "pgid": 15266,
+          "profile": "/private/var/folders/wd/4nr_466j3gdbdgwxryv5s1lh0000gn/T/hpfc-prof-RFYOW9",
+          "profile_exists_now": false,
+          "group_members_now": []
+        },
+        {
+          "pid": 15369,
+          "pgid": 15369,
+          "profile": "/private/var/folders/wd/4nr_466j3gdbdgwxryv5s1lh0000gn/T/hpfc-prof-NYbyJ0",
+          "profile_exists_now": false,
+          "group_members_now": []
+        }
+      ]
+    },
+    {
+      "job": "regroup-gesture-a0",
+      "receipt_cleanup_ok": true,
+      "node_pid": 16549,
+      "owned": [
+        {
+          "pid": 16552,
+          "pgid": 16552,
+          "profile": "/private/var/folders/wd/4nr_466j3gdbdgwxryv5s1lh0000gn/T/hpfc-prof-ssLsos",
+          "profile_exists_now": false,
+          "group_members_now": []
+        }
+      ]
+    },
+    {
+      "job": "regroup-panel-clean-a0",
+      "receipt_cleanup_ok": true,
+      "node_pid": 17207,
+      "owned": [
+        {
+          "pid": 17228,
+          "pgid": 17228,
+          "profile": "/private/var/folders/wd/4nr_466j3gdbdgwxryv5s1lh0000gn/T/hpfc-prof-fgv3Da",
+          "profile_exists_now": false,
+          "group_members_now": []
+        }
+      ]
+    },
+    {
+      "job": "regroup-panel-fault-a0",
+      "receipt_cleanup_ok": true,
+      "node_pid": 17655,
+      "owned": [
+        {
+          "pid": 17662,
+          "pgid": 17662,
+          "profile": "/private/var/folders/wd/4nr_466j3gdbdgwxryv5s1lh0000gn/T/hpfc-prof-Ervr55",
+          "profile_exists_now": false,
+          "group_members_now": []
+        }
+      ]
+    },
+    {
+      "job": "regroup-panel-restored-a0",
+      "receipt_cleanup_ok": true,
+      "node_pid": 17785,
+      "owned": [
+        {
+          "pid": 17788,
+          "pgid": 17788,
+          "profile": "/private/var/folders/wd/4nr_466j3gdbdgwxryv5s1lh0000gn/T/hpfc-prof-2lEtTT",
+          "profile_exists_now": false,
+          "group_members_now": []
+        }
+      ]
+    }
+  ],
+  "lease_path": "/private/tmp/handpan-browser-parallel.HskZRy/evidence/naturalness-browser.lease.json",
+  "lease_state": "released, acquire anew after verifying ownership",
+  "unknown_owner_processes": "not inspected or signalled",
+  "token": "omitted"
+}

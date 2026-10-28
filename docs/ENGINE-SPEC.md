@@ -67,7 +67,7 @@ err     = {ok: false, code: <CODE>, reason: <English sentence>}
   `{id: [name, octave, midi, zone, angle, label]}` of section 4 (`angle` is
   `null` from `parseSeed`; `layout.solve` fills it) (ids are the decimal
   strings of section 4) and `options` is `{palette, parent, name, mirror}`
-  (palette index 0-5, parent index 0-10 or `null` for "infer", name string,
+  (palette index 0-9, parent index 0-10 or `null` for "infer", name string,
   mirror boolean) plus the optional layout options `mirrorBottom` (boolean),
   `anchor` (`"one"` or `"between"`), `seats` and `angles` (section 13), validated per
   section 14 and defaulting to
@@ -792,7 +792,7 @@ Verified against all three built-ins under the fixed list order of
 {
   id:       "custom:<8 lowercase hex>",
   name:     "<auto or user name>",
-  options:  {palette: <0-5>, mirror: <bool>, parent: <0-10>,
+  options:  {palette: <0-9>, mirror: <bool>, parent: <0-10>,
              mirrorBottom?: <bool>, anchor?: "one"|"between", seats?: {rim, inner, bottom},
              angles?: {bottom: [<multiple of 5 in 0-355 | null> per bottom note]}},
   colors:   {root, tone, ga, gb},
@@ -856,9 +856,13 @@ Verified against all three built-ins under the fixed list order of
   8-hex FNV-1a 32-bit hash of the UTF-8 bytes of `core.identitySeed(seed)`
   (offset basis `0x811c9dc5`, prime `0x01000193`, multiplication taken modulo
   2^32), giving the same result in Node and in the browser.
-- DECIDED(2026-10) The id is 32 bits, so two different scales can collide. The
-  records store holds one record per id: saving a second scale with a colliding id overwrites the earlier record in place (the later save wins), while the boot dedupe in `restoreScales` keeps the first; a collision is
-  accepted as vanishingly rare and is documented in the README.
+- DECIDED(saved-variants contract) The 32-bit id identifies musical inventory,
+  not a unique saved instance. Saved instances have separate stable local
+  handles. Import equality compares full validated portable meaning, including
+  identitySeed spelling and option intent; hash equality alone never discards or
+  overwrites a saved instance. Edit/delete target one instance. Preserve genuine
+  different-inventory collision defenses and recovery data rather than silently
+  treating a hash collision as an exact duplicate.
 - DECIDED(D14 as amended) The id is a pure function of `identitySeed(seed)` -
   notes, octaves, zones and order - and nothing else; `select.build` is never
   consulted for it.
@@ -877,7 +881,7 @@ Verified against all three built-ins under the fixed list order of
 
 ## 13. Options: palette, mirror, name
 
-The D6 palette set, index 0-5, from `CLAUDE.md` "Design system":
+The D6 palette set, index 0-9 (indices 6 to 9 appended by lane PD, 2026-10-27; the table is append-only), from `CLAUDE.md` "Design system":
 
 | index | root | tone | provenance |
 |---|---|---|---|
@@ -887,6 +891,12 @@ The D6 palette set, index 0-5, from `CLAUDE.md` "Design system":
 | 3 | `#E2761B` | `#E0559A` | Hijaz swapped |
 | 4 | `#C9971E` | `#6D40A3` | Pygmy swapped |
 | 5 | `#DD8F00` | `#0B7B75` | Amara swapped |
+| 6 | `#2563B0` | `#C0452C` | Kurd |
+| 7 | `#3B7A2A` | `#B3263A` | Amara 10 |
+| 8 | `#C0452C` | `#2563B0` | Kurd swapped |
+| 9 | `#B3263A` | `#3B7A2A` | Amara 10 swapped |
+
+Wire note: a v6 link spells index n as `palette-(n+1)`, read for `palette-2` to `palette-10`; a v5 link keeps its ceiling of `palette-6` (index 5) and refuses `palette-7` and above with the whole link as the BAD_NOTE payload; a packed v1 to v4 link never carried an index above 5 and still refuses one with the numeric value as the payload.
 
 - DECIDED(D6) Custom deck colours come only from this fixed set: the three
   built-in pairs then their root/tone swaps, in that order. The user picks an
@@ -964,7 +974,7 @@ The D6 palette set, index 0-5, from `CLAUDE.md` "Design system":
 - DECIDED(swarm-2026-09-08) `share.decode` calls the SAME `core.parseSeed` as
   the text box and rejects rather than repairs. `parseSeed` validates the note
   names, the MIDI range 0-127, and the line ordering of section 3, plus the seed
-  OPTIONS: palette index 0-5, parent index 0-10, and the name whitelist of
+  OPTIONS: palette index 0-9 (packed v1 to v4: 0-5), parent index 0-10, and the name whitelist of
   section 13. It does NOT validate `zone`, `angle` or `seats`: zones are derived
   by `parseSeed` itself and never carried in the seed, and angles are
   `layout.solve`'s output, so neither is decoder input. `seats` IS carried in a
@@ -976,12 +986,39 @@ The D6 palette set, index 0-5, from `CLAUDE.md` "Design system":
   rather than one is deliberate and safe here: no path reaches a solve with an
   unvalidated layout correction.
 - DECIDED(plan Phase 4) A flipped byte or an over-cap payload is rejected.
-- DECIDED(owner 2026-10, R7) Saved scales live in localStorage under
-  `hpfc.scales.v3`. On first boot the old `hpfc.scales` list is copied there
-  verbatim as a whole list (`copyLegacyScales`), and each record is read through
-  its own version reader and rewritten as v4 later, in `restoreScales`; the old key
-  is never written again. A scale saved in a tab still running the old app
-  lands under the old key and does not appear in the new app.
+- DECIDED(saved-variants contract) Saved collections use `hpfc.saved-scales.v1`,
+  envelope schema1, with instance wrappers outside capability-tagged `{v,s,o}`
+  records. Wire6 and current record4 writers do not change for local metadata.
+  The envelope stores ordered instances, tagged preferred selection, explicit
+  slots/hidden state, collection identity/revisions and immutable raw migration
+  source strings. The authoritative envelope is a JSON string at key `current`
+  in IndexedDB database `hpfc.saved-scales.v1`, version1, object store
+  `collections` (out-of-line keys, no autoIncrement). Durable writers retain the
+  same exclusive Web Lock and perform fresh existence/value comparison and any
+  replacement in one readwrite transaction; `getKey` distinguishes an absent key
+  from a present invalid value. Acknowledgment requires transaction completion,
+  never request/put success alone. No unlocked durable fallback or live
+  localStorage mirror. Completion acknowledges the API transaction, not disk
+  flush; later publication/readback failure does not roll it back or authorize
+  duplicate allocation. See the reviewed
+  [transactional storage amendment](plans/2026-10-25-saved-variants-transactional-storage.md)
+  for staging, retries, capability boundaries and recovery proofs.
+- DECIDED(saved-variants contract) Legacy `hpfc.scales.v3`, `hpfc.scales` and
+  relevant old selection/hidden source remain untouched by the new collection.
+  Legacy R7 builds copied `hpfc.scales` into `hpfc.scales.v3` and normalized known
+  records through their version readers. New migration preserves exact raw source
+  for recovery, converts known legacy records in the new envelope only and keeps
+  opaque/newer values unmodified. A valid committed IndexedDB envelope is
+  authoritative. An experimental localStorage `hpfc.saved-scales.v1` envelope is
+  imported only when the authoritative key is proven absent, with its exact raw
+  source retained in optional immutable `migration.backendSource`; any existing
+  own property of that name on initial import is protected as a collision rather
+  than overwritten. Existing authoritative provenance accepts only that exact
+  source key and a string raw value. The experimental source stays untouched;
+  later old-client writes are a separate recovery branch, never automatic
+  re-migration. Quota/denied/corrupt/newer states must not be treated as an empty
+  durable store. Explicit session-only fallback is local to this tab and cannot
+  silently promote itself into persistent data when capabilities recover.
 - DECIDED(plan "Encoding") The encoder is pure JS: `node:vm` has no
   `CompressionStream`, so the engine may not depend on it. The test realm
   (`tools/engine_loader.js`) does inject `btoa`, `atob`, `TextEncoder` and

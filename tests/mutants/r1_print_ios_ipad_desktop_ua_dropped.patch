@@ -14,8 +14,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -6409,6 +6409,4 @@
- function isIOS(ua) {
+@@ -11064,5 +11064,3 @@ function isIOS(ua) {
    const s = String(ua || "");
 -  return /iPad|iPhone|iPod/.test(s) ||
 -    // iPadOS 13+ reports a desktop Macintosh UA but still has touch points.

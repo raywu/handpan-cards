@@ -12,7 +12,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1538,7 +1538,7 @@ html.about-open{overflow:hidden}
+@@ -1747,7 +1747,7 @@ html.about-open{overflow:hidden}
           (an in-app view, not an outbound link: no href, no res- id). -->
      <div class="modebar trio">
        <a class="mode" id="res-handpaner" href="https://handpaner.com/"

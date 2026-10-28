@@ -1,0 +1,14 @@
+# kills: SPS1: 47 48 and 49 pixel boundaries hold in both directions for Add and Edit
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS1:.47.48.and.49.pixel.boundaries.hold.in.both.directions.for.Add.and.Edit$ tests/app.test.js
+# 48px inclusive transition is incorrectly rejected.
+--- a/index.html
++++ b/index.html
+@@ -12339,7 +12339,7 @@
+       if (!p || (e.touches && e.touches.length) || !point(p)) { cancel(); return; }
+       const elapsed = Date.now() - S.at, dx = p.clientX - S.x, dy = p.clientY - S.y;
+       cancel();
+-      if (elapsed < 0 || elapsed > 600 || Math.abs(dx) < 48 || Math.abs(dx) < 2 * Math.abs(dy)) return;
++      if (elapsed < 0 || elapsed > 600 || Math.abs(dx) < 49 || Math.abs(dx) < 2 * Math.abs(dy)) return;
+       const tab = dx < 0 ? "layout" : "scale";
+       if (tab === sheetTab) return;
+       lipFling = null;

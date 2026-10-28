@@ -13,7 +13,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -428,7 +428,7 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
+@@ -520,7 +520,7 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
     zoom the page, so both main and .scene drop to touch-action:none - main
     for the same mid-flight-hit-test reason as above. */
  main{touch-action:none}

@@ -1,0 +1,15 @@
+# kills: SPS3: a late second finger cancels even when it lifts before the final move
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS3:.a.late.second.finger.cancels.even.when.it.lifts.before.the.final.move$ tests/app.test.js
+# Outside-body second contact lifts without cancelling original shortcut.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11317,7 +11317,7 @@ sheet.addEventListener("pointerdown", (e) => {
+ const dropTap = () => { scrollPin = null; tapSnap = null; };
+ let touchFrom = null;
+ sheet.addEventListener("touchstart", (e) => {
+-  if (sheetSwipe && !(e.touches && e.touches.length === 1)) sheetSwipe = null;
++  // Outside-body secondary contact no longer cancels the active shortcut.
+   const t = e.target, p = e.touches && e.touches[0];
+   touchFrom = p ? { x: p.clientX, y: p.clientY } : null;
+   if (!(t && t.matches && t.matches("input, textarea, select"))) releasePin();

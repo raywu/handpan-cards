@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1125,7 +1125,7 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1138,7 +1138,7 @@ footer.seq{row-gap:var(--sp-1)}
    #scale-sheet[data-tab="layout"] #scale-panel-layout > .editrow{grid-column:2; margin-top:var(--sp-3)}
    #scale-sheet[data-tab="layout"] #scale-guidance, #scale-sheet[data-tab="layout"] #scale-next,
    #scale-sheet[data-tab="layout"] #scale-generate, #scale-sheet[data-tab="layout"] #scale-delete-row,

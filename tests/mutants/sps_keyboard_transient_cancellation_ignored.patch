@@ -1,0 +1,15 @@
+# kills: SPS3: keyboard rising and falling between samples stays cancelled
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS3:.keyboard.rising.and.falling.between.samples.stays.cancelled$ tests/app.test.js
+# Keyboard rise/fall preserves stale shortcut record despite lip behavior.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11472,7 +11472,7 @@ function setLip(on, o) {
+ }
+ function lipKbEdge(was, kb) {
+   if (was === kb) return;
+-  if (kb) { sheetSwipe = null; collapseLip(); } else restoreLip();
++  if (kb) { collapseLip(); } else restoreLip();
+ }
+ function lipScroll() {
+   const M = Math.max(0, bandPort.scrollHeight - bandPort.clientHeight);

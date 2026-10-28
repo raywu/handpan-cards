@@ -1,0 +1,94 @@
+[
+  {
+    "stream": "mac",
+    "ref": "217609075a14e6ca4799497210af27d9df842c5e",
+    "branch_hint": "codex/mac-foreground-20261025",
+    "paths": [
+      "docs/plans/2026-10-24-mac-browser-diagnosis.md",
+      "docs/plans/2026-10-24-mac-browser-repair.md"
+    ],
+    "read_command_template": "git show 217609075a14e6ca4799497210af27d9df842c5e:<path>"
+  },
+  {
+    "stream": "feedback",
+    "ref": "a90fce8c19887e44e6bbaf38741b97553b795026",
+    "branch_hint": "codex/layout-feedback-20261025",
+    "paths": [
+      "docs/plans/2026-10-25-layout-feedback.md"
+    ],
+    "read_command_template": "git show a90fce8c19887e44e6bbaf38741b97553b795026:<path>"
+  },
+  {
+    "stream": "link",
+    "ref": "92d6516bd533abb4a1e4fb7c8116b9836f648296",
+    "branch_hint": "codex/share-customization-hotfix-20261025",
+    "paths": [
+      "docs/plans/2026-10-25-share-customization-hotfix-coordination.md",
+      "docs/plans/2026-10-25-share-customization-hotfix.md",
+      "docs/plans/2026-10-25-share-customization-source-research.md",
+      "docs/plans/2026-10-25-share-customization-ux-research.md",
+      "docs/plans/import-v2-eval/linkmode-results.json",
+      "docs/plans/import-v2-eval/linkmode.cjs",
+      "docs/prompts/2026-10-25-share-customization-hotfix.md"
+    ],
+    "read_command_template": "git show 92d6516bd533abb4a1e4fb7c8116b9836f648296:<path>"
+  },
+  {
+    "stream": "seo",
+    "ref": "1c5344e05c4cf3dcc66f12bd61c1b6665e10303d",
+    "branch_hint": "codex/seo-longtail-plan-20261025",
+    "paths": [
+      "docs/plans/2026-10-25-seo-longtail-content.md",
+      "docs/plans/2026-10-25-seo-longtail-coordination.md",
+      "docs/plans/2026-10-25-seo-longtail-engine-research.md",
+      "docs/plans/2026-10-25-seo-longtail-operations-research.md",
+      "docs/plans/2026-10-25-seo-longtail-strategy-research.md",
+      "docs/prompts/2026-10-25-seo-longtail-subplan.md"
+    ],
+    "read_command_template": "git show 1c5344e05c4cf3dcc66f12bd61c1b6665e10303d:<path>"
+  },
+  {
+    "stream": "duplicate",
+    "ref": "667bbf8b1459ba03de1f010e806891071ef1456c",
+    "branch_hint": "codex/duplicate-notes-plan-20261025",
+    "paths": [
+      "docs/plans/2026-10-25-duplicate-notes-coordination.md",
+      "docs/plans/2026-10-25-duplicate-notes-core-research.md",
+      "docs/plans/2026-10-25-duplicate-notes-engine-research.md",
+      "docs/plans/2026-10-25-duplicate-notes-ux-research.md",
+      "docs/plans/2026-10-25-duplicate-notes.md",
+      "docs/prompts/2026-10-25-duplicate-notes-plan.md"
+    ],
+    "read_command_template": "git show 667bbf8b1459ba03de1f010e806891071ef1456c:<path>"
+  },
+  {
+    "stream": "variants",
+    "ref": "2a260d212ec8e14394b7198f075366d13bf372ec",
+    "branch_hint": "codex/saved-scale-variants-20261025",
+    "paths": [
+      "docs/plans/2026-10-25-saved-scale-variants-coordination.md",
+      "docs/plans/2026-10-25-saved-scale-variants-investigation.md",
+      "docs/plans/2026-10-25-saved-scale-variants.md",
+      "docs/plans/2026-10-25-saved-variants-instruction-approval.md",
+      "docs/plans/2026-10-25-saved-variants-platform-research.md",
+      "docs/plans/2026-10-25-saved-variants-recovery-command.md",
+      "docs/plans/2026-10-25-saved-variants-schema-contract.md",
+      "docs/plans/2026-10-25-saved-variants-source-research.md",
+      "docs/plans/2026-10-25-saved-variants-storage-consistency-investigation.md",
+      "docs/plans/2026-10-25-saved-variants-test-support.md",
+      "docs/plans/2026-10-25-saved-variants-transactional-storage.md",
+      "docs/plans/2026-10-25-saved-variants-ux-research.md",
+      "docs/plans/2026-10-26-saved-variants-browser-compatibility.md",
+      "docs/plans/2026-10-26-saved-variants-gesture-gates.md",
+      "docs/plans/2026-10-26-saved-variants-interaction-finish.md",
+      "docs/plans/2026-10-26-saved-variants-native-contract-refresh.md",
+      "docs/plans/2026-10-26-saved-variants-regroup.md",
+      "docs/plans/2026-10-26-saved-variants-route-intent.md",
+      "docs/plans/2026-10-26-saved-variants-selection-performance.md",
+      "docs/plans/2026-10-26-saved-variants-timing-oracle.md",
+      "docs/plans/2026-10-26-saved-variants-validation.md",
+      "docs/prompts/2026-10-25-saved-scale-variants-plan.md"
+    ],
+    "read_command_template": "git show 2a260d212ec8e14394b7198f075366d13bf372ec:<path>"
+  }
+]

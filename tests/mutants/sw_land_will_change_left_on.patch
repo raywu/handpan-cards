@@ -7,8 +7,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8065,7 +8065,6 @@ function land() {
-   const f = flight;
+@@ -14767,7 +14767,6 @@ function land() {
    flight = null;
    f.anim.cancel();
    step(f.dir);

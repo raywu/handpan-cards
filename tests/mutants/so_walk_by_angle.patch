@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11766,7 +11766,7 @@ function ringNotes(ring) {
+@@ -12389,7 +12389,7 @@ function ringNotes(ring) {
    if (!lastSolved) return [];
    const f = lastSolved.fields;
    const ids = ringIds(f, ring);

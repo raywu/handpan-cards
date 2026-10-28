@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12345,7 +12345,6 @@ function resetSheetState(edit) {
+@@ -13307,7 +13307,6 @@ function resetSheetState(edit, target = selection) {
    hintSaid = "";
    hintQuiet = true;
    writeFieldValues(edit ? (pre && pre.ok ? decomposeFields(pre.value.fields, pre.value.typed) : decomposeFields(edit.fields)) : null);

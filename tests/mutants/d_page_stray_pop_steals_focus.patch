@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12811,7 +12811,6 @@ window.addEventListener("popstate", () => {
+@@ -13427,7 +13427,6 @@ window.addEventListener("popstate", () => {
    observeLinkRoute();
    if (aboutOpen) { hideAbout(); return; }
    if (location.hash === ABOUT_ROUTE) { syncRoute(); return; }

@@ -21,7 +21,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -177,13 +177,13 @@ body{
+@@ -193,13 +193,13 @@ body{
     pins this against measured numbers. assertCardFits CANNOT: it derives its
     expectation from the current main height, so it moves with the regression.
     ------------------------------------------------------------------------ */
@@ -37,7 +37,7 @@ diff --git a/index.html b/index.html
  #share-copy{width:44px; height:44px; padding:0; flex:none}
  #share-copy svg{display:block; margin:0 auto}
  #share-copy:disabled{opacity:.5; cursor:default}
-@@ -633,7 +633,7 @@ main{overflow-x:clip}
+@@ -647,7 +647,7 @@ main{overflow-x:clip}
     span (row-auto) has already bumped the cursor forward past row 1. .mid
     carries no box of its own (display:contents): it is markup grouping only,
     so its children (.count, .shuffle) participate in this grid directly. */

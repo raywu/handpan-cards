@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10676,7 +10676,7 @@ function lipRebase() {
+@@ -11982,7 +11982,7 @@ function lipRebase() {
  function lipHandOff() {
    if (document.activeElement !== lipBtn) return;
    const lead = lipPrimary();

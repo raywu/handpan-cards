@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1329,7 +1329,7 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1753,7 +1753,7 @@ html.about-open{overflow:hidden}
        <a class="mode" id="res-trainingcards" href="https://svenkirchhofer.de/handpan-training-cards/"
           target="_blank" rel="noopener">HTC</a>
      </div>

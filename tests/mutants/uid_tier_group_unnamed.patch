@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1246,7 +1246,7 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1692,7 +1692,7 @@ html.about-open{overflow:hidden}
        <button class="mode" id="modeB" aria-pressed="false">NOTES &rarr; NAME</button>
      </div>
      <h3 class="panel-heading" id="panel-prog-heading">Chord progression</h3>

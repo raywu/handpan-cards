@@ -9,7 +9,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9182,7 +9182,7 @@ function release(e, cancelled, pushPoint = true) {
+@@ -14834,7 +14834,7 @@ function release(e, cancelled, pushPoint = true) {
      const span = pts[pts.length - 1].t - pts[0].t;
      if (span > 0) vx = (pts[pts.length - 1].x - pts[0].x) / span;
    }

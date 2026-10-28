@@ -52,7 +52,7 @@ function bootFromHtml(htmlPath) {
     return real.call(fs, p, ...rest);
   };
   try {
-    return sandboxMod.boot();
+    return sandboxMod.boot({ crypto: crypto.webcrypto, abortController: true });
   } finally {
     fs.readFileSync = real;
   }
@@ -179,7 +179,7 @@ function buildGen(htmlPath) {
     const current = legacy.ok ? app.get(`HPE.core.formatSeed(HPE.core.parseLegacySeed(${JSON.stringify(sc.string)}).value.fields)`) : sc.string;
     const res = app.generate(current);
     if (!res.ok) throw new Error(`${sc.name}: generate failed`);
-    app.select(res.value.id);
+    app.select(res.instanceId || res.value.id);
     const modes = {};
     for (const mode of ["A", "B"]) {
       app.run(`mode = ${JSON.stringify(mode)}`);

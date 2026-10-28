@@ -7,7 +7,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8844,7 +8844,7 @@ function step(dir) {
+@@ -14381,7 +14381,7 @@ function step(dir) {
  card.addEventListener("click", flip);
  // #card holds no controls (the e2e test that no control lives inside the card pins that).
  card.addEventListener("keydown", e => {

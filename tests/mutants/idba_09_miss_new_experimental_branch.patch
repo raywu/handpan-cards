@@ -1,0 +1,15 @@
+# kills: IDB9 U1: a newly created experimental legacy branch warns without replaying over IDB
+# suite: node --test --test-reporter=tap --test-name-pattern=^IDB9\s tests/app.test.js
+# Frozen transactional-storage contract: miss new experimental branch.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10165,7 +10165,7 @@ function inspectLegacyBranch() {
+       "hpfc.scales": localStorage.getItem(LEGACY_SCALES_KEY), "hpfc.scales.v3": localStorage.getItem(SCALES_KEY) };
+     const beforePreference = savedLegacyProjection(baseline.hpfc), afterPreference = savedLegacyProjection(now.hpfc);
+     const backend=savedState.migration.backendSource;
+-    const backendChanged=localStorage.getItem(SAVED_KEY)!==(savedOwn(savedState.migration,"backendSource")?backend.raw:null);
++    const backendChanged=savedOwn(savedState.migration,"backendSource") && localStorage.getItem(SAVED_KEY)!==backend.raw;
+     legacyBranchStatus = beforePreference === null || afterPreference === null ? "unknown" :
+       backendChanged || now[LEGACY_SCALES_KEY] !== baseline[LEGACY_SCALES_KEY] || now[SCALES_KEY] !== baseline[SCALES_KEY] ||
+       !savedEqual(beforePreference, afterPreference) ? "changed" : "unchanged";

@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11945,7 +11945,7 @@ function putDownPick() {
+@@ -12721,7 +12721,7 @@ function putDownPick() {
    const ref = pickRef;
    const fromSeatButton = document.activeElement === seatPrev || document.activeElement === seatNext;
    const moved = pickMoved;

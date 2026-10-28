@@ -1,20 +1,16 @@
-# kills: selecting a deck persists its id, custom decks included
-# suite: node --test --test-name-pattern ^selecting.a.deck.persists.its.id..custom.decks.included$ tests/app.test.js
-# Context refreshed 2026-09-29 (M3, desktop sidebar): selectDeck's rehome
-# guard now ALSO recognises "deck-add" (F2, the desktop opener for the
-# add-scale sheet) alongside "settings-trigger", so the condition now spans
-# two lines. The mutation itself is unchanged: selectDeck reinstates the
-# Phase 3 built-ins-only guard, so a custom deck the user selected is not
-# restored on the next boot.
+# kills: selecting a deck persists its tagged identity, custom instances included
+# suite: node --test --test-name-pattern=^selecting.a.deck.persists.its.tagged.identity,.custom.instances.included$ tests/app.test.js
+# former kills: selecting a deck persists its id, custom decks included
+# fault: Saved-instance selection is omitted from persisted tagged preference metadata.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8210,7 +8210,7 @@ function selectDeck(id) {
-     (a.id === "settings-trigger" || a.id === "deck-add" ||
-       !!(a.closest && a.closest("#decks")));
-   deckId = id;
--  storedDeck = id;
-+  if (isBuiltIn(id)) storedDeck = id;
-   save(); setOrder(); buildChips(); render();
-   syncRoute();
-   track("deck_select", isBuiltIn(id) ? { deck_kind: "seeded", deck_id: id } : { deck_kind: "custom" });
+@@ -10623,7 +10623,7 @@ function applySavedCommand(staged, command, candidate) {
+   } else if (command.type === "prefer") {
+     const resolved = savedResolve(command.selection, next, views);
+     if (!savedEqual(command.selection, resolved)) return conflict();
+-    desired = resolved;
++    desired = resolved.kind === "saved" ? {kind:"builtin",id:DEFAULT_DECK} : resolved;
+   } else return savedFailure("invalid", "command-type");
+   if (desired) next.preferredSelection = desired;
+   else next.preferredSelection = savedResolve(next.preferredSelection, next, views);

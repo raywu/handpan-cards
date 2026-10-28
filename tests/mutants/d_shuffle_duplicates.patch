@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -6983,7 +6983,7 @@ function setOrder() {
+@@ -11422,7 +11422,7 @@ function setOrder() {
    const n = deck().chords.length;
    order = [...Array(n).keys()];
    if (shuffled) for (let i = n - 1; i > 0; i--) {

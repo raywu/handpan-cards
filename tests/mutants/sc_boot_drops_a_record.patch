@@ -1,15 +1,16 @@
 # kills: SC: boot never drops or alters the notes of any stored record in the corpus
 # suite: node --test --test-name-pattern ^SC..boot.never.drops.or.alters.the.notes.of.any.stored.record.in.the.corpus$ tests/storage_corpus.test.js
-# why: restoreScales pushes each kept record into the rewritten list; without the
-# push the rewrite is an empty list and the boot writes it over the user's scales.
+# why: makeSavedMigration builds one entry per staged legacy row; skipping the first
+# row migrates a collection that has lost a user's scale.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10140,7 +10140,6 @@ function restoreScales() {
-         }
-       }
-     } catch (e) {}
--    out.push(keep);
-   }
-   if (JSON.stringify(out) !== JSON.stringify(list)) writeScales(out);
- }
+@@ -10367,7 +10367,7 @@ function makeSavedMigration(staged) {
+     hidden: [...new Set((staged.preferences.hidden || []).filter(isBuiltIn))],
+     migration: { sourceKey: staged.sourceKey, raw: savedClone(staged.raw), instanceIds: [] } };
+   const supplied = new Map(), oldVisible = new Map();
+-  for (const row of staged.rows) {
++  for (const row of staged.rows.slice(1)) {
+     const id = savedCryptoId(used);
+     if (!id) return savedFailure("allocation", "instance-id");
+     used.add(id);

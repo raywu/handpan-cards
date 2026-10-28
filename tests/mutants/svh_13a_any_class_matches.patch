@@ -1,0 +1,15 @@
+# kills: SVH13 compound descendant queries require every class and live ancestry
+# suite: node --test --test-name-pattern=SVH13 tests/harness.test.js
+# fault: Accepts any compound selector token instead of requiring every class.
+diff --git a/tools/sandbox.js b/tools/sandbox.js
+--- a/tools/sandbox.js
++++ b/tools/sandbox.js
+@@ -519,7 +519,7 @@ function boot(opts = {}) {
+     const parsed = /^([a-zA-Z][\w-]*)?((?:[#.][\w-]+)*)$/.exec(sel);
+     if (!parsed || (!parsed[1] && !parsed[2])) return false;
+     if (parsed[1] && el.tagName !== parsed[1].toUpperCase()) return false;
+-    return [...parsed[2].matchAll(/([#.])([\w-]+)/g)].every(([, kind, value]) =>
++    return [...parsed[2].matchAll(/([#.])([\w-]+)/g)].some(([, kind, value]) =>
+       kind === "#" ? el.id === value : el.classList.contains(value));
+   };
+   const match = (el, sel) => {

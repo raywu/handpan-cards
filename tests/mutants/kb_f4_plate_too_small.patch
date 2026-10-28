@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1092,7 +1092,7 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1109,7 +1109,7 @@ footer.seq{row-gap:var(--sp-1)}
  #scale-or::before, #scale-or::after{content:""; flex:1 1 0; height:1px; background:#433b2c}
  #scale-or span{font:600 9.5px/1.5 "Nunito Sans"; letter-spacing:.13em; color:#a79d8b; text-transform:uppercase}
  #scale-preview{--adj-reserve:232px;

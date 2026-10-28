@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9648,7 +9648,7 @@ let seq = null;
+@@ -9790,7 +9790,7 @@ let seq = null;
  // HPE.sequence.STYLES ids.
  const SEQ_STYLE_COPY = {};
  for (const id of ["together", "arpeggio", "three-over-two", "three-three-two", "paradiddle", "groove", "freestyle"]) {
@@ -13,4 +13,4 @@ diff --git a/index.html b/index.html
 +  Object.defineProperty(SEQ_STYLE_COPY, id, { enumerable: true, get: () => [id === "three-over-two" ? "3 over 2" : t("style." + id + ".name"), t("style." + id + ".tip")] });
  }
  
- // Generated decks live here, keyed by deck id, so the DECKS literal above stays
+ // Saved instance wrappers keep local IDs separate from engine inventory IDs; DECKS stays

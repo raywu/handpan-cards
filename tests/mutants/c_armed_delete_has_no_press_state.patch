@@ -14,7 +14,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1146,7 +1146,6 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1268,7 +1268,6 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
     the file - so without this the armed button is the only control on the page
     that does not answer a press. Confirming a delete is the press that most
     needs the acknowledgement. */

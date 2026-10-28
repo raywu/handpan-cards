@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12017,8 +12017,7 @@ function noteCounts(fields, value) {
+@@ -12962,8 +12962,7 @@ function noteCounts(fields, value) {
    if (drawerOpen) layoutStatus(text);
  }
  const typedKey = (k, ring) => (k && k[ring] ? k[ring].join(",") : null);

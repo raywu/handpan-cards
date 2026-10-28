@@ -79,10 +79,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1362,6 +1362,101 @@ html.about-open{overflow:hidden}
-   <!-- "+ Add a scale" lives in the settings panel's Scales group now (M2,
-        2026-09-28); #decks holds deck chips only. -->
-   <nav class="decks" id="decks"></nav>
+@@ -1371,2 +1371,97 @@ html.about-open{overflow:hidden}
+   <button type="button" id="saved-temporary-use" class="mode" hidden>USE THIS TAB TEMPORARILY</button>
 +<div id="settings-scrim" hidden></div>
 +<div id="settings-panel" aria-labelledby="settings-title" hidden>
 +  <h2 id="settings-title" class="sr-only">Settings</h2>
@@ -179,11 +177,7 @@ diff --git a/index.html b/index.html
 +</div>
 +
  </header>
- 
- <main>
-@@ -1674,101 +1769,6 @@ html.about-open{overflow:hidden}
-      below-breakpoint, modal presentation. At >=1024x700 the trigger that
-      calls openPanel() is display:none, so the panel never gains them and
+@@ -1684,97 +1779,2 @@ html.about-open{overflow:hidden}
       the static sidebar is correctly plain, non-modal markup. -->
 -<div id="settings-scrim" hidden></div>
 -<div id="settings-panel" aria-labelledby="settings-title" hidden>
@@ -281,5 +275,3 @@ diff --git a/index.html b/index.html
 -</div>
 -
  <!-- The scale engine, inlined verbatim from src/engine/*.js. The app is
-      single-file by contract, so these are copies rather than external script
-      references: index.html ships with the engine already in it and needs no

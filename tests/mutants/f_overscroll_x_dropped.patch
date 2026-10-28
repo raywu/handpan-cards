@@ -10,7 +10,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -68,7 +68,6 @@
+@@ -137,7 +137,6 @@ html{-webkit-text-size-adjust:100%; text-size-adjust:100%}
     `{ passive: true }` so JS cannot preventDefault() its way out of this - the
     only fix is CSS on the root, scoped to the X axis only so vertical
     scrolling (the sheet, .decks) is untouched. */

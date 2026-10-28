@@ -1,0 +1,15 @@
+# kills: IDBH7 held late open and read settlement are explicit host controls
+# suite: node --test --test-name-pattern=^IDBH7\s tests/harness.test.js
+# fault: Settle reads despite a realm-local read hold.
+diff --git a/tools/sandbox.js b/tools/sandbox.js
+--- a/tools/sandbox.js
++++ b/tools/sandbox.js
+@@ -142,7 +142,7 @@ function indexedDBFor(bucket) {
+   bucket.openQueues ||= new Map();
+   const faults = new Map(), holds = new Set(), waiting = new Map(), operations = [];
+   const dispatch = (operation, callback) => setImmediate(() => {
+-    if (holds.has(operation)) {
++    if (holds.has(operation) && operation !== 'read') {
+       if (!waiting.has(operation)) waiting.set(operation, []);
+       waiting.get(operation).push(callback);
+     } else callback();

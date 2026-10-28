@@ -1,9 +1,10 @@
 # kills: I18N: the options are AUTOMATIC (<detected endonym>) then one endonym per present table, in the fixed order
 # suite: node --test --test-name-pattern ^I18N:.the.options.are.AUTOMATIC tests/app.test.js
 # i18n B. The select lists AUTOMATIC after the languages.
+diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13732,7 +13732,7 @@
+@@ -14562,7 +14562,7 @@ document.getElementById("print-paper-select").value = printPaper;
  const langSelect = document.getElementById("lang-select");
  function paintLangSelect() {
    const detected = detectLang(browserLanguages());

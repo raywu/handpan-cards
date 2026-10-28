@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10461,7 +10461,7 @@ function say(text, tier) {
+@@ -11694,7 +11694,7 @@ function say(text, tier) {
  }
  /** #scale-msg steps aside for the field line only while that line is visible, and an error or a refusal never does. */
  function syncMsgYield() {

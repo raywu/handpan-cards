@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -562,7 +562,7 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -726,7 +726,7 @@ footer.seq{row-gap:var(--sp-1)}
    footer.seq #prev{grid-area:1/1/3/2}
    footer.seq .count.seq{grid-area:1/2}
    footer.seq .seq-style{grid-area:2/2; font-size:11.5px; line-height:1.35}

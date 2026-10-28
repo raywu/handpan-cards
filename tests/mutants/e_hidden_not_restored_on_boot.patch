@@ -1,14 +1,14 @@
 # kills: a deleted seeded deck stays gone across a reload at 380px
 # suite: node --test --test-name-pattern ^a.deleted.seeded.deck.stays.gone.across.a.reload.at.380px$ tests/e2e.test.js
+# Approved retained contract mapped to the transactional instance adapter.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7752,7 +7752,7 @@ const isBuiltIn = id => DECKS.some(d => d.id === id);
- // blob, built-in ids only, written only while non-empty (save()). A hidden deck is still in DECKS - the
- // literal is generated and never altered - it just leaves the strip, the
- // fallbacks and the picker.
--let hidden = Array.isArray(store.hidden)
-+let hidden = false && Array.isArray(store.hidden)
-   ? [...new Set(store.hidden.filter(id => typeof id === "string" && isBuiltIn(id)))] : [];
- const hiddenDecks = () => DECKS.filter(d => hidden.includes(d.id));
- // Seed id -> the NEWEST custom deck whose record names it in `replaces` (the
+@@ -10299,6 +10299,7 @@ function applySavedSnapshot(envelope, suppliedViews, source = "commit") {
+   if (savedState && savedState.collectionId === envelope.collectionId && savedState.revision > envelope.revision)
+     return { ok: true, ignored: true }; // an older completion cannot roll the cache back
+   savedState = savedClone(envelope);
++  if(source==="initialization")savedState.hidden=[];
+   const rows = new Map(savedState.entries.map(row => [row.instanceId, row]));
+   savedEntries.clear();
+   for (const [id, view] of staged.views) savedEntries.set(id, { ...view, record: rows.get(id).record });

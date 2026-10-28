@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10834,7 +10834,7 @@
+@@ -12172,7 +12172,7 @@ sheet.addEventListener("touchmove", (e) => {
    if (L.plate && press && press.lifted) { lipDrag = null; return; }
    if (p.clientY !== L.py) L.lastMoveWay = p.clientY < L.py ? "up" : "down";
    L.py = p.clientY;

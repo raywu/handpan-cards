@@ -5,10 +5,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12171,7 +12171,7 @@ function syncParseState({ paint }) {
-     showParse(PARSE_HINT());
+@@ -12998,7 +12998,7 @@ function syncParseState({ paint }) {
      scaleBox.classList.remove("bad");
      genBtn.disabled = true;
+     document.getElementById("scale-conflict-separate").disabled=true;
 -    if (paint) showPlaceholderPan();
 +    if (paint) clearPanPreview();
      say("", "");

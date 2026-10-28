@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10774,8 +10774,7 @@
+@@ -12112,8 +12112,7 @@ function lipFlingStep(now) {
    F.prevT = t;
    if (!sheetOpen || sheet.classList.contains("kbup") || now < lipQuietUntil) return;
    const s = F.way === "up" ? d : -d;

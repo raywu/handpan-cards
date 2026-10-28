@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10878,7 +10878,6 @@
+@@ -14478,7 +14478,6 @@ function openAbout() {
    closePanel();
    aboutSection.removeAttribute("hidden");
    aboutOpen = true;

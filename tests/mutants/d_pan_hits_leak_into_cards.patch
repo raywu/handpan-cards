@@ -11,7 +11,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8201,7 +8201,7 @@ function pan(d, ch, opts) {
+@@ -10955,7 +10955,7 @@ function pan(d, ch, opts) {
    // After every field, so a target is never painted under the pan it selects.
    // The picked ring's targets come last: where a target of another ring laps
    // one of the picked ring's, the picked ring wins the tap.

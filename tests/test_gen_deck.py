@@ -169,7 +169,7 @@ class GenDeckCliTest(unittest.TestCase):
         carries NO enum code, because the closed code enum of ENGINE-SPEC
         section 2 describes SEEDS, not flag spellings.
         """
-        cases = [("--palette", "abc"), ("--palette", "6"), ("--palette", "-1"),
+        cases = [("--palette", "abc"), ("--palette", "10"), ("--palette", "-1"),
                  ("--palette", "1.5"), ("--parent", "abc"), ("--parent", "11")]
         for flag, value in cases:
             with self.subTest(flag=flag, value=value):
@@ -187,6 +187,19 @@ class GenDeckCliTest(unittest.TestCase):
                         code, proc.stderr,
                         "a usage error must carry no enum code: the enum is "
                         "closed and describes seeds, not flag spellings")
+
+    def test_palette_flag_takes_zero_to_nine_and_writes_the_table_pair(self):
+        pairs = [("#E0559A", "#E2761B"), ("#6D40A3", "#C9971E"), ("#0B7B75", "#DD8F00"),
+                 ("#E2761B", "#E0559A"), ("#C9971E", "#6D40A3"), ("#DD8F00", "#0B7B75"),
+                 ("#2563B0", "#C0452C"), ("#3B7A2A", "#B3263A"),
+                 ("#C0452C", "#2563B0"), ("#B3263A", "#3B7A2A")]
+        for index, (root, tone) in enumerate(pairs):
+            with self.subTest(palette=index):
+                proc = run_gen(SEED_TOP_ONLY, "--palette", str(index))
+                self.assertEqual(proc.returncode, 0, proc.stderr)
+                colors = json.loads(proc.stdout)["deck"]["colors"]
+                self.assertEqual((colors["root"], colors["tone"]), (root, tone))
+                self.assertEqual((colors["ga"], colors["gb"]), (root, tone))
 
     def test_presets_are_inlined_seed_strings_that_all_generate(self):
         proc = run_gen("--list-presets")

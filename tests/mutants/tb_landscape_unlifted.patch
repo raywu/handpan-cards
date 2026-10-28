@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1105,7 +1105,6 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1118,7 +1118,6 @@ footer.seq{row-gap:var(--sp-1)}
  #scale-plate-band #scale-layout-hint[hidden]{display:none}
  .sheetbody{scroll-padding-top:var(--plate-band-h, 0px)}
  @media (orientation:landscape) and (max-height:500px){

@@ -9,7 +9,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7351,7 +7351,6 @@ function render() {
+@@ -11383,7 +11383,6 @@ function render() {
      back.innerHTML = faceHTML(d, ch, n, "answerB");
    }
    if (!inSeq) {

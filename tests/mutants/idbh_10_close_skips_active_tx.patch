@@ -1,0 +1,15 @@
+# kills: IDBH10 close waits for active transaction and upgrade cannot bypass its commit
+# suite: node --test --test-name-pattern=^IDBH10\s tests/harness.test.js
+# fault: Remove a close-pending connection before its active transaction settles.
+diff --git a/tools/sandbox.js b/tools/sandbox.js
+--- a/tools/sandbox.js
++++ b/tools/sandbox.js
+@@ -279,7 +279,7 @@ function indexedDBFor(bucket) {
+       if (db._closed) return;
+       db._closed = true;
+       operations.push({ operation: 'close', db: name });
+-      if (!db._transactions.size) db._finishClose();
++      db._finishClose();
+     };
+     db.createObjectStore = (storeName, options = {}) => {
+       const tx = db._upgrade;

@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1531,6 +1531,10 @@ html.about-open{overflow:hidden}
+@@ -1587,6 +1587,10 @@ html.about-open{overflow:hidden}
          </div>
        </div>
      </div>

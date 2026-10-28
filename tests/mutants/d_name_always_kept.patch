@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9493,7 +9493,7 @@
+@@ -12777,7 +12777,7 @@ function sheetOptions() {
      const d = editedDeck();
      // A seeded deck has no options, but the name the box was prefilled with IS its name.
      const kept = !!(d && ((d.options && d.options.name) || seeded()));

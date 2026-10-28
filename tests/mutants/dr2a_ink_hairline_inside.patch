@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8188,7 +8188,7 @@ function pan(d, ch, opts) {
+@@ -10929,7 +10929,7 @@ function pan(d, ch, opts) {
          if (String(id) === picked) {
            pickMarks.push(`<circle class="pansel" ${at} r="${rr * 1.2}" fill="rgba(226,112,5,.22)"`
              + ` stroke="#E27005" stroke-width="${PANSEL_PX}" vector-effect="non-scaling-stroke" pointer-events="none"/>`

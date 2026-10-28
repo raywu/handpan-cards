@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10261,7 +10261,7 @@ function liftNote() {
+@@ -13962,7 +13962,7 @@ function liftNote() {
    p.pre = pickRef ? { ref: { ring: pickRef.ring, i: pickRef.i }, moved: pickMoved, text: drawerStatus.textContent, warn: drawerStatus.classList.contains("warn") } : null;
    gestureCancel = null;
    const sameNote = p.pre && p.pre.ref.ring === p.ref.ring && p.pre.ref.i === p.ref.i;

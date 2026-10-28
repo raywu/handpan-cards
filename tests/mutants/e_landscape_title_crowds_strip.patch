@@ -19,9 +19,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -310,12 +310,11 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
-   /* Visually hidden, NOT display:none: the h1 stays in the accessibility
-      tree, so the document keeps its heading and the header keeps its name.
+@@ -484,8 +484,7 @@ a.mode{text-decoration:none}
       The clip-rect pair is the old and the current spelling of the same
       thing; both are here because Safari honoured clip long before it
       honoured clip-path. */
@@ -31,5 +29,3 @@ diff --git a/index.html b/index.html
    /* The strip takes what is left. min-width:0 is what lets it: a flex item's
       automatic minimum is its content, so without it the strip would refuse to
       shrink and push the settings trigger off the row. */
-   .decks{flex:1 1 auto; min-width:0}
-   /* The h1 row's grid is a portrait-only device (it exists to centre the

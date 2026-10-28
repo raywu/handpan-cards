@@ -9,7 +9,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -265,7 +265,7 @@
+@@ -391,7 +391,7 @@ a.mode{text-decoration:none}
       900px cap the base rule exists to enforce. Keep both limits - the
       900px ceiling and the sidebar clearance - by taking the smaller of the
       two, the same min() shape the base rule already uses. */

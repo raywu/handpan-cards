@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10552,7 +10552,7 @@ function paintLayout() {
+@@ -11803,7 +11803,7 @@ function paintLayout() {
    syncMsgYield();
    const note = drawerOpen ? layoutNoticeText() : "";
    const noteChanged = layoutNote.textContent !== note;

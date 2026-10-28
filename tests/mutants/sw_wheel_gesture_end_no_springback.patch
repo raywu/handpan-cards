@@ -10,7 +10,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8960,7 +8960,7 @@ function wheelGestureEnd() {
+@@ -14951,7 +14951,7 @@ function wheelGestureEnd() {
    // listener below); springBack's own first keyframe is swipeXf(dx), so it
    // must take -w.sx too, or the spring-back starts mirrored (opposite
    // translateX and rotate) from where the card actually was.

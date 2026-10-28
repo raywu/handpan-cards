@@ -11,7 +11,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8209,7 +8209,6 @@ card.addEventListener("pointerdown", e => {
+@@ -14889,7 +14889,6 @@ card.addEventListener("pointerdown", e => {
  });
  card.addEventListener("pointermove", swipeMove);
  card.addEventListener("pointerup", e => { if (drag && e.pointerId === drag.id) release(e, false); });

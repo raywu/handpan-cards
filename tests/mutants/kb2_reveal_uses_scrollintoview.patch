@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10454,7 +10454,7 @@ bandPort.addEventListener("focusin", (e) => {
+@@ -11878,7 +11878,7 @@ bandPort.addEventListener("focusin", (e) => {
      if (sheetSurf) sheetSurf.scrollTop = snap.surf;
      scrollPin = { until: Date.now() + PIN_MS, body: 0, surf: 0 };
    }

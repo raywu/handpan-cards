@@ -1,0 +1,17 @@
+# kills: PD: the palette registry is the literal ten-pair table, old prefix first, new pairs appended
+# suite: node --test --test-name-pattern ^PD:.the.palette.registry.is.the.literal.ten-pair.table,.old.prefix.first,.new.pairs.appended$ tests/select.test.js
+# Palette 6 (Kurd) is appended with its root and tone swapped, which is
+# palette 8's pair: the table then repeats a pair and the Kurd seed no longer
+# infers its own swatch.
+diff --git a/src/engine/select.js b/src/engine/select.js
+--- a/src/engine/select.js
++++ b/src/engine/select.js
+@@ -39,7 +39,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     {root: "#E2761B", tone: "#E0559A"},
+     {root: "#C9971E", tone: "#6D40A3"},
+     {root: "#DD8F00", tone: "#0B7B75"},
+-    {root: "#2563B0", tone: "#C0452C"},
++    {root: "#C0452C", tone: "#2563B0"},
+     {root: "#3B7A2A", tone: "#B3263A"},
+     {root: "#C0452C", tone: "#2563B0"},
+     {root: "#B3263A", tone: "#3B7A2A"}

@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -3249,7 +3249,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -3725,7 +3725,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
  
    var LETTERS = "CDEFGAB";
    var SEMITONES = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };

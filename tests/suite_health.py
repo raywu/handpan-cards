@@ -52,24 +52,24 @@ FLOORS = {
     "tests/test_site_files.py": 8,
     "tests/test_ci_scope.py": 5,
     # node
-    "tests/app.test.js": 882,
+    "tests/app.test.js": 985,
     "tests/seat_sweeps_tap_add.test.js": 3,
     "tests/seat_sweeps_tap_edit.test.js": 3,
     "tests/seat_sweeps_keys.test.js": 4,
-    "tests/e2e.test.js": 483,
-    "tests/harness.test.js": 38,
+    "tests/e2e.test.js": 498,
+    "tests/harness.test.js": 67,
     "tests/drawer_grid.test.js": 3,
     "tests/drawer_seats.test.js": 28,
     "tests/drawer_drag.test.js": 33,
     # pre-seeded for the scale-engine lanes; each lane raises its own row only.
-    "tests/core.test.js": 102,
+    "tests/core.test.js": 103,
     "tests/import.test.js": 131,
     "tests/import_gold.test.js": 8,
     "tests/voicing.test.js": 18,
     "tests/layout.test.js": 119,
     "tests/naming.test.js": 37,
-    "tests/select.test.js": 54,
-    "tests/share.test.js": 105,
+    "tests/select.test.js": 55,
+    "tests/share.test.js": 113,
     "tests/storage_corpus.test.js": 15,
     "tests/preview.test.js": 14,
     "tests/pdf.test.js": 16,
@@ -79,6 +79,7 @@ FLOORS = {
     "tests/pdf_builtin.test.js": 13,
     "tests/sequence.test.js": 52,
     "tests/scale.test.js": 14,
+    "tests/sandbox_events.test.js": 5,
 }
 
 # The e2e suites are the only ones allowed to vanish: they skip themselves
@@ -443,6 +444,9 @@ def run_node_file(path):
     finally:
         _reap(proc)
     out = stdout + stderr
+    for line in out.splitlines():
+        if "SV_PG_TAPS" in line:
+            print(line.lstrip("# ").strip(), flush=True)
 
     def field(name):
         m = re.search(rf"^# {name} (\d+)$", out, re.M)

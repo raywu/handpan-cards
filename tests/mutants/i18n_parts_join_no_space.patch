@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9522,7 +9522,7 @@ function reasonText(r) {
+@@ -9664,7 +9664,7 @@ function reasonText(r) {
  /** A compose message in the UI language, or `fallback` (the engine's English) when its code has no key. */
  function composeText(c, fallback) {
    if (!c) return fallback;

@@ -262,5 +262,21 @@
   "sel.auto": "自动（{lang}）",
   "sheet.order_hint": "外圈音按列出顺序排列，可在“排列”页调整。",
   "sheet.rim_follows": "外圈已按列出顺序排列。",
-  "sheet.inner_follows": "内圈音已按列出顺序排列。"
+  "sheet.inner_follows": "内圈音已按列出顺序排列。",
+  "saved.session": "这个标签页中的更改是临时的。重新加载或关闭这个标签页后，更改就会消失。",
+  "saved.recovery": "无法读取已保存的音阶。已保存的音阶没有更改。这个标签页中的临时更改会在重新加载或关闭标签页后消失。",
+  "saved.conflict": "这个音阶已在另一个标签页中更改。你的编辑内容仍然保留。请另存为另一个音阶，或返回已保存的版本。",
+  "saved.conflictDeleted": "这个音阶已在另一个标签页中移除。你的编辑内容仍然保留。请另存为另一个音阶，或返回。",
+  "saved.separate": "另存为另一个音阶",
+  "saved.resetConflict": "内置音阶已在另一个标签页中更改。目前没有重置任何音阶。请先确认内容，再重新点击“恢复内置音阶”。",
+  "saved.temporary": "临时使用此标签页",
+  "saved.failure": "无法保存这些更改。你的编辑内容仍然保留。请重试。",
+  "saved.legacy": "旧版应用更改了已保存的音阶。这些更改会单独保留，以供恢复。",
+  "saved.savedToken": "{token} 是此浏览器中这个已保存音阶的标识。",
+  "saved.presetToken": "{token} 是这个内置音阶的标识。",
+  "saved.importFailure": "无法添加这个分享的音阶。链接仍在地址栏中，请尝试重新打开。",
+  "saved.resetFailure": "无法恢复内置音阶。请先确认内容，再重试。",
+  "saved.ackPending": "保存已完成，但无法更新此画面。请重新加载页面，以确认已保存的音阶。",
+  "saved.sessionAckPending": "保存内容仅保留在此标签页，且无法更新画面。请保持此标签页打开并保留编辑内容。重新加载或关闭标签页将丢失临时更改。",
+  "saved.sessionImportAckPending": "此分享音阶为临时内容，且无法更新画面。请保持此标签页打开，并保留收到的链接。重新加载或关闭标签页将丢失临时更改。"
 }

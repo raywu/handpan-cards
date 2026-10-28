@@ -9,7 +9,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -178,7 +178,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
+@@ -258,7 +258,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
     Row 262 is why it appears nowhere else: any affordance on a NON-selected
     chip invites a fix that opens Edit from one, and deleteDeck still drops
     focus to <body> on that path. */

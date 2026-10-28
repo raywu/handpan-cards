@@ -1,0 +1,11 @@
+# kills: SV-ROUTE-1: modeled prior preference ACKs and unchanged rereads preserve a pending hash destination
+# suite: node --test --test-name-pattern ^SV-ROUTE-1: tests/app.test.js
+# Snapshot publication overwrites a browser-written destination before its handler.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13560,3 +13560,3 @@ savedSnapshotListener=event=>{
+       (location.hash.indexOf(DECK_ROUTE) === 0 || location.hash.indexOf(SHARE_PREFIX) === 0);
+-    if (!pendingRoute) syncRoute();
++    syncRoute();
+   }

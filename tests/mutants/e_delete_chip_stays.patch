@@ -1,13 +1,15 @@
 # kills: deleting the selected deck falls back to a built-in with a visible message
 # suite: node --test --test-name-pattern ^deleting.the.selected.deck.falls.back.to.a.built.in.with.a.visible.message$ tests/e2e.test.js
+# Approved retained contract mapped to the transactional instance adapter.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10024,7 +10024,6 @@ function deleteDeck(id) {
-   // A seeded deck is hidden, never removed: DECKS is a literal the app cannot alter.
-   if (builtin) hidden.push(id);
-   else {
--    delete CUSTOM[id];
-     forgetScale(HPE.core.formatSeed(d.fields));
-     if (heldSeat && !hidden.includes(heldSeat)) hidden.push(heldSeat);
-   }
+@@ -10600,7 +10600,7 @@ function applySavedCommand(staged, command, candidate) {
+     if (!row || !views.has(row.instanceId) || row.revision !== command.expectedRevision) return conflict();
+     const heldSlot = Object.keys(current.slots).find(seed => current.slots[seed] === row.instanceId);
+     if (heldSlot && !savedSlotProof(command, current)) return conflict();
+-    next.entries = next.entries.filter(entry => entry.instanceId !== row.instanceId); views.delete(row.instanceId);
++    // Fault: retain the deleted row and its display view.
+     if (heldSlot) {
+       if (!next.hidden.includes(heldSlot)) next.hidden.push(heldSlot);
+       const survivors = next.entries.filter(entry => views.has(entry.instanceId) && entry.record && entry.record.o && entry.record.o.replaces === heldSlot);

@@ -1,15 +1,15 @@
-# kills: an edit onto another deck's scale is refused and both decks survive
-# suite: node --test --test-name-pattern ^an.edit.onto.another.deck.s.scale.is.refused.and.both.decks.survive$ tests/app.test.js
+# kills: an edit onto another scale's inventory preserves both instances and sibling bytes
+# suite: node --test --test-name-pattern=^an.edit.onto.another.scale's.inventory.preserves.both.instances.and.sibling.bytes$ tests/app.test.js
+# former kills: an edit onto another deck's scale is refused and both decks survive
+# fault: Superseded inventory-collision refusal now destroys a distinct same-inventory sibling during converging Edit.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8250,8 +8250,7 @@ function runGenerate() {
-       if (!wasId) return null;
-       const id = HPE.core.deckId(seed.fields);
-       if (id === wasId || !CUSTOM[id]) return null;
--      taken = CUSTOM[id];
--      return { ok: false };
-+      return null;
-     });
-   } finally {
-     scaleBox.removeAttribute("readonly");
+@@ -10583,6 +10583,7 @@ function applySavedCommand(staged, command, candidate) {
+     if (isBuiltIn(record.o && record.o.replaces)) deckValue.options.replaces = record.o.replaces;
+     else delete deckValue.options.replaces;
+     attachCandidate(row, deckValue);
++    next.entries = next.entries.filter(entry => entry.instanceId === row.instanceId || views.get(entry.instanceId)?.deck.id !== deckValue.id);
+     targetId = row.instanceId; desired = { kind: "saved", id: targetId };
+   } else if (command.type === "replace-builtin") {
+     if (!isBuiltIn(command.seedId) || command.expectedSlotStateRevision !== current.slotStateRevision ||

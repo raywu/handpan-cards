@@ -13,7 +13,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -577,8 +577,11 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -741,8 +741,11 @@ footer.seq{row-gap:var(--sp-1)}
     in a 44px box instead of sitting 7px under the counter. That is a real
     visual change, accepted as the price of the target. */
  .shuffle{grid-row:2; justify-self:center; margin-top:0; min-height:44px; display:inline-flex; align-items:center;

@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10597,10 +10597,14 @@ function syncBand() {
+@@ -11852,10 +11852,14 @@ function syncBand() {
    if (pinPad !== pin) { pinPad = pin; root.setProperty("--plate-pin-h", pin); }
    if (beside && port > 0) {
      const put = (px) => { const v = px + "px"; if (plateRoom !== v) { plateRoom = v; root.setProperty("--plate-room", v); } };

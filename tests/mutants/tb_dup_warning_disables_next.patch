@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12594,6 +12594,7 @@ function paintFields(values, announceNew, composed) {
+@@ -14170,6 +14170,7 @@ function paintFields(values, announceNew, composed) {
    if (fieldMsg.textContent !== text) fieldMsg.textContent = text;
    fieldMsg.classList.toggle("info", !!first && next[first].kind === "info");
    fieldMsg.classList.toggle("warn", !!first && next[first].kind === "warn");

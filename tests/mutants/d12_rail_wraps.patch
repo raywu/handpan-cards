@@ -11,7 +11,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -803,2 +803,2 @@
+@@ -698,7 +698,7 @@ button.nav:active{background:#2e281e}
+    centring, so the plain `justify-content:center` declaration goes first:
+    a `safe`-aware browser overrides it with the second declaration, and one
+    without just keeps the first. */
 -.seq-rail{display:flex; flex-wrap:nowrap; justify-content:center; justify-content:safe center;
 +.seq-rail{display:flex; flex-wrap:wrap; justify-content:center; justify-content:safe center;
    column-gap:.35em; width:100%; overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none}
+ .seq-rail::-webkit-scrollbar{display:none; height:0}
+ .seq-unit{white-space:nowrap}

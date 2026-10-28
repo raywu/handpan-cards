@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11785,7 +11785,6 @@ function aboutLink(href) {
+@@ -14524,7 +14524,6 @@ function aboutLink(href) {
  aboutSection.addEventListener("click", e => {
    const a = e.target && e.target.closest ? e.target.closest('a[href^="#deck="]') : null;
    if (!a) return;

@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10783,7 +10783,7 @@
+@@ -12121,7 +12121,7 @@ function lipFlingStep(now) {
  function lipScrollEvent() {
    const now = Date.now();
    if (lipFling && now >= lipFling.until) lipFling = null;
@@ -13,7 +13,7 @@ diff --git a/index.html b/index.html
    if (lipFling) { userWindowUntil = 0; lipAcc = 0; lipFlingStep(now); lipScroll(); return; }
    if (now < lipDragEnd) { lipDragEnd = now + LIP_END_MS; userWindowUntil = 0; lipAcc = 0; }
    lipScroll();
-@@ -10850,7 +10850,7 @@
+@@ -12188,7 +12188,7 @@ const lipDragStop = (e) => {
      const seed = L.lastMoveWay === "up" ? Math.max(0, t - L.bodyTop0) : Math.max(0, L.bodyTop0 - t);
      lipFling = { way: L.lastMoveWay, done: false, acc: seed, prevT: t, prevM: lipRange(), until: Date.now() + LIP_END_MS };
    }

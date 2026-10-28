@@ -1,0 +1,15 @@
+# kills: SVH13 compound descendant queries require every class and live ancestry
+# suite: node --test --test-name-pattern=SVH13 tests/harness.test.js
+# fault: removeChild retains its former parent, so a detached active chip remains discoverable.
+diff --git a/tools/sandbox.js b/tools/sandbox.js
+--- a/tools/sandbox.js
++++ b/tools/sandbox.js
+@@ -227,7 +227,7 @@ function makeElement(id, tag = "div") {
+     removeChild(c) {
+       const i = this.children.indexOf(c);
+       if (i >= 0) this.children.splice(i, 1);
+-      c.parentNode = null;
++      c.parentNode = this;
+       return c;
+     },
+     // focus() is rebound per boot (see bindFocus) so document.activeElement

@@ -1,0 +1,14 @@
+# kills: SPS3: internal textarea horizontal scroll, held or out and back, cancels the tab swipe
+# suite: node --test --test-name-pattern ^SPS3:.internal.textarea.horizontal.scroll..held.or.out.and.back..cancels.the.tab.swipe$ tests/app.test.js
+# The swipe check stops comparing the textarea's scrollLeft with its value at touchstart.
+--- a/index.html
++++ b/index.html
+@@ -12293,7 +12293,7 @@
+       if (!sheetOpen || S.tab !== sheetTab || sheetZoomed() || sheet.classList.contains("kbup") ||
+           Math.abs(scrollOf(body) - S.bodyTop) > 8 || Math.abs(scrollOf(sheetSurf) - S.surfTop) > 8 ||
+           (S.field && (document.activeElement === S.field || selected(S.field))) ||
+-          (S.box && (scrollOf(S.box) !== S.boxTop || (S.box.scrollLeft || 0) !== S.boxLeft))) {
++          (S.box && (scrollOf(S.box) !== S.boxTop))) {
+         cancel();
+         return false;
+       }

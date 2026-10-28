@@ -8,7 +8,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8924,7 +8924,6 @@ function swipeMove(e) {
+@@ -14876,7 +14876,6 @@ function swipeMove(e) {
  // caller-side, since the two sites gate on different conditions.
  function startDrag(e) {
    scene.getAnimations().forEach(a => a.cancel());

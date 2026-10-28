@@ -359,6 +359,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   var UNRESERVED_RE = /^[A-Za-z0-9\-._~]$/;
   var TYPED_RE = /^[A-Za-z0-9\-._~+%]+$/;
   var PALETTE_RE = /^palette-([2-6])$/;
+  var PALETTE_RE_V6 = /^palette-(10|[2-9])$/;
   var PARENT_RE = /^parent-(.+)$/;
   var ANGLES_RE = /^at-((?:0|[1-9][0-9]{0,2})?(?:,(?:0|[1-9][0-9]{0,2})?)*)$/;
 
@@ -466,7 +467,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       var o = texts[k];
       var at;
       var m;
-      if ((m = PALETTE_RE.exec(o))) {
+      if ((m = (text.charAt(0) === "5" ? PALETTE_RE : PALETTE_RE_V6).exec(o))) {
         at = OPTION_ORDER.palette;
         options.palette = Number(m[1]) - 1;
       } else if ((m = PARENT_RE.exec(o))) {
@@ -609,6 +610,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
     var options = readOptionsLine(lines[1], version);
     if (options === null) return badNote(text);
+    // Packed versions never wrote a palette above 5; keep the old numeric payload.
+    if (options.palette > 5) return badNote(options.palette);
 
     // 5. The same validator the text box uses. It rejects, never repairs, so
     //    its code and reason are propagated unchanged.

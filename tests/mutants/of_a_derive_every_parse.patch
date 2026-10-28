@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12029,7 +12029,6 @@ function deriveTyped(value, fields) {
+@@ -12974,7 +12974,6 @@ function deriveTyped(value, fields) {
    const out = [];
    for (const ring of ["rim", "inner"]) {
      const key = typedKey(typedNow, ring);

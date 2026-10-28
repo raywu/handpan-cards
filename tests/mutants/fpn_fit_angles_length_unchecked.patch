@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11338,7 +11338,7 @@ function seedPalette(colors) {
+@@ -12339,7 +12339,7 @@ function seedPalette(colors) {
   *  length would be refused by layout.solve, and a repaint must never stop on that. */
  function fitAngles(fields) {
    if (!layoutAngles || !layoutAngles.bottom) return null;

@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13125,6 +13125,7 @@ tabStrip.addEventListener("keydown", (e) => {
+@@ -13757,6 +13757,7 @@ tabStrip.addEventListener("keydown", (e) => {
  anglePrev.onclick = () => nudgeAngle(1);
  angleNext.onclick = () => nudgeAngle(-1);
  function showPendingDerive() {

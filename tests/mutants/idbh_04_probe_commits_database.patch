@@ -1,0 +1,14 @@
+# kills: IDBH4 aborted first-open probe leaves no committed schema and open errors remain distinct
+# suite: node --test --test-name-pattern=^IDBH4\s tests/harness.test.js
+# fault: Commit an empty database record after an intentionally aborted first-open probe.
+diff --git a/tools/sandbox.js b/tools/sandbox.js
+--- a/tools/sandbox.js
++++ b/tools/sandbox.js
+@@ -330,6 +330,7 @@ function indexedDBFor(bucket) {
+           db._upgrade = null; req.transaction = null; req.readyState = 'done'; req._emit('success'); doneOpen();
+         });
+         tx.addEventListener('abort', () => {
++          bucket.databases.set(name, record);
+           db._upgrade = null; db.close(); req.transaction = null;
+           req.error = tx.error || idbError('AbortError'); req.readyState = 'done'; req._emit('error'); doneOpen();
+         });

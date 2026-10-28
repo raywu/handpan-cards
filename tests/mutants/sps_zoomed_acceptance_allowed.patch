@@ -1,0 +1,15 @@
+# kills: SPS zoom: acceptance samples a zoom rise after the last move without a viewport notification
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS.zoom:.acceptance.samples.a.zoom.rise.after.the.last.move.without.a.viewport.notification$ tests/app.test.js
+# No-notification zoom rise at touchend wrongly commits navigation.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11673,7 +11673,7 @@ function setTab(tab) {
+     const check = () => {
+       const S = sheetSwipe;
+       if (!S) return false;
+-      if (!sheetOpen || S.tab !== sheetTab || sheetZoomed() || sheet.classList.contains("kbup") ||
++      if (!sheetOpen || S.tab !== sheetTab || sheet.classList.contains("kbup") ||
+           Math.abs(scrollOf(body) - S.bodyTop) > 8 || Math.abs(scrollOf(sheetSurf) - S.surfTop) > 8 ||
+           (S.field && (document.activeElement === S.field || selected(S.field))) ||
+           (S.box && (scrollOf(S.box) !== S.boxTop || (S.box.scrollLeft || 0) !== S.boxLeft))) {

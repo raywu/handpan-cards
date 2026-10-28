@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13683,7 +13683,7 @@ function syncShuffleLabel() {
+@@ -14621,7 +14621,7 @@ function syncShuffleLabel() {
      shuffleBtn.classList.remove("on");
      shuffleBtn.classList.add("reroll");
    } else {

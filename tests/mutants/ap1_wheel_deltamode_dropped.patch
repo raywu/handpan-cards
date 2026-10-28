@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8933,7 +8933,7 @@ let wheel = null; // { sx, sy, axis, fired, skip, timer }
+@@ -14924,7 +14924,7 @@ let wheel = null; // { sx, axis, fired, skip, timer }
  // fingers) | commit (threshold crossed). deltaMode 1 is lines, 2 is pages.
  function wheelDecision(w, { deltaX, deltaY, deltaMode, innerHeight }) {
    if (w.skip) return { kind: "skip", axis: w.axis, sx: w.sx, dir: 0 };
