@@ -858,7 +858,7 @@ Every sentence names its test or says "(no test; true by <file>)".
 
 ## Workstream tracker (Linear, trial; plan `docs/plans/2026-10-27-linear-roadmap.md`)
 
-- Linear workspace `trial-handpan`, team `TRI`, is the index of open work; the repo stays the
+- Linear workspace `bamboo-grove`, team `TRI`, is the index of open work; the repo stays the
   archive (plans, CI evidence, this file). Conventions: `docs/plans/2026-10-28-linear-convention-note.md`.
 - Delivery state is exactly one `delivery/*` label (planned, building, on-dev, dev-qa-passed,
   main-held, released) plus `paused` when the owner pauses work; `owner-decision` marks items

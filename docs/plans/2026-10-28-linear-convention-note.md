@@ -1,6 +1,6 @@
 # Linear convention note (Phase 1, 2026-10-28)
 
-Workspace: `trial-handpan` (owner Q8 answer, AFK rec: trial workspace, reversible). Team: `TRI`.
+Workspace: `bamboo-grove` (owner Q8 answer, AFK rec: trial workspace, reversible). Team: `TRI`.
 The Linear MCP has no team-creation and no workflow-status tools, so team `HPC` was not created
 and no custom statuses exist. Delivery state is carried by a single-select label group instead
 (owner Q4 recommended statuses; this is the MCP fallback). If the owner later creates `HPC` and
