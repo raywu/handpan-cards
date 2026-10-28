@@ -4815,11 +4815,11 @@ describe("panel fit judge", () => {
     assert.strictEqual(pf.aboutAllowance(keys("about-open"), keys("about-open")), 0, "the allowance expires once main has the row");
   });
 
-  test("panel fit: the LS allowance is 200, owed to mode S at 740px wide and up and 300 to 359px tall only", async () => {
-    assert.strictEqual(pf.LS_S_ALLOWANCE_PX, 200);
-    assert.strictEqual(pf.lsAllowance(852, 330, "S"), 200);
-    assert.strictEqual(pf.lsAllowance(740, 300, "S"), 200);
-    assert.strictEqual(pf.lsAllowance(932, 359, "S"), 200);
+  test("panel fit: the LS allowance is 340, owed to mode S at 740px wide and up and 300 to 359px tall only", async () => {
+    assert.strictEqual(pf.LS_S_ALLOWANCE_PX, 340);
+    assert.strictEqual(pf.lsAllowance(852, 330, "S"), 340);
+    assert.strictEqual(pf.lsAllowance(740, 300, "S"), 340);
+    assert.strictEqual(pf.lsAllowance(932, 359, "S"), 340);
     assert.strictEqual(pf.lsAllowance(852, 330, "A"), 0, "modes A and B fit two columns");
     assert.strictEqual(pf.lsAllowance(739, 330, "S"), 0, "narrower than 740");
     assert.strictEqual(pf.lsAllowance(852, 299, "S"), 0, "shorter than 300");
