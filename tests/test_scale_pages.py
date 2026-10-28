@@ -207,6 +207,14 @@ class ScalePagesTest(unittest.TestCase):
                 self.assertEqual(p.meta("og:url", "property"), page["url"])
                 self.assertIn("<loc>%s</loc>" % page["url"], sitemap)
 
+    def test_svg_labels_have_spaced_attributes_and_octave_tspans(self):
+        for page in PAGES:
+            with self.subTest(page=page["path"]):
+                html = read(page["path"])
+                self.assertIsNone(re.search(r"<tspan[a-zA-Z]", html))
+                self.assertIsNone(re.search(r"\"[a-zA-Z-]+=\"", html))
+                self.assertRegex(html, r"<tspan [^>]*>\d</tspan>")
+
     def test_page_links_back_to_the_app_root(self):
         for page in PAGES:
             with self.subTest(page=page["path"]):
