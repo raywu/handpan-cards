@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1627,7 +1627,6 @@ html.about-open{overflow:hidden}
+@@ -1647,7 +1647,6 @@
        </div>
      </div>
      </div>
@@ -12,11 +12,11 @@ diff --git a/index.html b/index.html
      <!-- The page's messages, pinned with the primary: everything say() writes
           (#scale-msg) and the layout notice (#scale-layout-state, nearest the
           button it names); a pan warning yields to the notice while the notice
-@@ -1665,6 +1664,7 @@ html.about-open{overflow:hidden}
+@@ -1685,6 +1684,7 @@
      </div>
      <button id="scale-lip" type="button" hidden aria-expanded="false" aria-controls="scale-next scale-generate scale-delete-row" aria-label="Show NEXT"></button>
      </div>
 +   </div>
    </div>
+   <div id="scale-swipe-cue" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" focusable="false"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
  </div>
- 

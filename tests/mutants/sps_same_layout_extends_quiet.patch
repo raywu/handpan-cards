@@ -1,13 +1,15 @@
 # kills: SPS4: a same-Layout left gesture does not extend an existing quiet deadline
 # suite: node --test --test-reporter=tap --test-name-pattern ^SPS4:.a.same\-Layout.left.gesture.does.not.extend.an.existing.quiet.deadline$ tests/app.test.js
 # Same-Layout no-op extends previous swipe quiet window.
+diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12341,7 +12341,6 @@
-       cancel();
-       if (elapsed < 0 || elapsed > 600 || Math.abs(dx) < 48 || Math.abs(dx) < 2 * Math.abs(dy)) return;
-       const tab = dx < 0 ? "layout" : "scale";
--      if (tab === sheetTab) return;
-       lipFling = null;
-       lipDragEnd = 0;
-       userWindowUntil = 0;
+@@ -11770,7 +11770,7 @@
+ const swipeCue = { el: document.getElementById("scale-swipe-cue"), raf: 0, timer: 0, leave: 0, mode: "", dx: 0, dy: 0 };
+ const swipeVerdict = (S, ok, dx, dy, elapsed) => {
+   const tab = dx < 0 ? "layout" : "scale";
+-  return { tab, armed: ok && elapsed >= 0 && elapsed <= 600 && Math.abs(dx) >= 48 && Math.abs(dx) >= 2 * Math.abs(dy) && tab !== S.tab };
++  return { tab, armed: ok && elapsed >= 0 && elapsed <= 600 && Math.abs(dx) >= 48 && Math.abs(dx) >= 2 * Math.abs(dy) };
+ };
+ function hideSwipeCue(o) {
+   const c = swipeCue;
