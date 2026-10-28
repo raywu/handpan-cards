@@ -10163,7 +10163,7 @@ function run() {
           // (-50 where the print group was the tall column): 328.25 -> 375.25,
           // 310 -> 357, 251.75 unchanged, 313 -> 310.
           // Retain accepted Lane W single-row pins with compact HTC.
-          [740, 360, "S", 0 /* LE: two columns, no scroll */], [740, 340, "S", 372.75], [812, 330, "S", 357], [926, 310, "S", 251.75],
+          [740, 360, "S", 0 /* LE: two columns, no scroll */], // 300-359px tall at 740px up: the LS grid, asserted by "LS:"
           [568, 312, "A", 310],
         ];
         for (const [w, h, mode, mainNeeded] of cases) {
@@ -10230,7 +10230,10 @@ function run() {
             cols: getComputedStyle(p).columnCount,
             aboutAlone: row.children.length === 1,
             aboutFull: Math.abs(about.getBoundingClientRect().width - row.getBoundingClientRect().width) <= 1,
-            underTrigger: ctrls.filter(e => hit(e.getBoundingClientRect(), t)).map(e => (e.id || e.textContent.trim()) + JSON.stringify(e.getBoundingClientRect()) + JSON.stringify(t)),
+            underTrigger: ctrls.filter(e => hit(e.getBoundingClientRect(), t)).map(e => e.id || e.textContent.trim()),
+            ncols: new Set([...p.children].filter(g => g.getBoundingClientRect().width > 8).map(g => Math.round(g.getBoundingClientRect().left))).size, lefts: [...p.children].map(g => (g.id||g.className) + "@" + Math.round(g.getBoundingClientRect().left) + "/" + Math.round(g.getBoundingClientRect().width)).join(" "),
+            gridCols: getComputedStyle(p).gridTemplateColumns.split(" ").length,
+            pl: parseFloat(getComputedStyle(p).paddingLeft), pr: parseFloat(getComputedStyle(p).paddingRight),
             wrapped: ctrls.filter(e => e.tagName !== "SELECT" && !/\\s/.test(e.textContent.trim()) && lineCount(e) > 1).map(e => e.id + ":" + e.textContent.trim()),
             offscreen: ctrls.filter(e => { const k = e.getBoundingClientRect();
               return k.left < 0 || k.top < 0 || k.right > innerWidth + 0.5 || k.bottom > innerHeight + 0.5; }).map(e => e.id || e.textContent.trim()),
@@ -10238,16 +10241,14 @@ function run() {
           };`);
         const check = (m, label, h, mode) => {
           if (mode === "S" && h < 360) {
-            assert.ok(m.scrollW <= m.clientW + 1, `${label}: overflows horizontally`);
-            assert.deepStrictEqual(m.beyond, [], `${label}: a control lies beyond the scrollable height`);
-            return;
-          }
-          assert.strictEqual(m.cols, "2", `${label}: two columns`);
+            assert.strictEqual(m.gridCols, 2, `${label}: mode S is an explicit two-column grid`);
+            assert.strictEqual(m.ncols, 2, `${label}: mode S groups sit in two columns ${m.lefts}`);
+          } else assert.strictEqual(m.cols, "2", `${label}: two columns`);
           assert.ok(m.aboutAlone && m.aboutFull, `${label}: ABOUT alone in its full-width row`);
-          assert.deepStrictEqual(m.underTrigger, [], `${label}: controls under the X (scroll ${m.scrollH}/${m.clientH} groups ${m.gh})`);
+          assert.deepStrictEqual(m.underTrigger, [], `${label}: controls under the X`);
           assert.deepStrictEqual(m.wrapped, [], `${label}: a one-word label wraps`);
           assert.ok(m.scrollW <= m.clientW + 1, `${label}: overflows horizontally`);
-          if (h >= LS_FIT_FROM) assert.ok(m.scrollH <= m.clientH + 1, `${label}: panel scrolls (${m.scrollH} > ${m.clientH})`);
+          if (h >= LS_FIT_FROM && !(mode === "S" && h < 360)) assert.ok(m.scrollH <= m.clientH + 1, `${label}: panel scrolls (${m.scrollH} > ${m.clientH})`);
           if (m.scrollH > m.clientH + 1) assert.deepStrictEqual(m.beyond, [], `${label}: a control lies beyond the scrollable height`);
           else assert.deepStrictEqual(m.offscreen, [], `${label}: controls off screen`);
         };
@@ -10269,7 +10270,7 @@ function run() {
           await rb.eval(`return document.fonts.ready.then(() => true);`);
           const langs = await rb.eval(`return [...document.getElementById("lang-select").options].map(o => o.value).filter(v => v !== "auto");`);
           assert.strictEqual(langs.length, 8, "eight UI locales");
-          for (const mode of ["A", "S"]) {
+          for (const mode of ["A", "B", "S"]) {
             await rb.eval(`localStorage.setItem("hpfc", ${JSON.stringify(JSON.stringify({ mode }))}); return true;`);
             await rb.goto(URL);
             await rb.eval(`return document.fonts.ready.then(() => true);`);
@@ -10287,6 +10288,22 @@ function run() {
           const inset = await rb.eval(`const d=document.createElement("div");d.style.cssText="position:fixed;padding-right:env(safe-area-inset-right)";document.body.appendChild(d);const v=parseFloat(getComputedStyle(d).paddingRight);d.remove();return v;`);
           assert.ok(inset >= 58, `the safe-area override took (${inset})`);
           for (const lang of langs) await inLocale(lang, `932x340 notch ${lang}`, 340, "A");
+          const notches = [[932, 340, 0, 59], [932, 340, 59, 0], [844, 390, 0, 59], [844, 390, 47, 47], [932, 430, 59, 59]];
+          for (const [w, h, l, r] of notches) {
+            await rb.setViewport(w, h, true);
+            await rb.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: 0, left: l, bottom: 21, right: r } });
+            await rb.settle();
+            await rb.click("#settings-trigger");
+            await rb.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display !== "none"`, { label: "panel open" });
+            const m = await measure();
+            const label = `${w}x${h} inset L${l}/R${r}`;
+            assert.ok(m.pl >= l + 50 - 0.5, `${label}: left padding ${m.pl} clears the left inset`);
+            assert.ok(m.pr >= r + 50 - 0.5, `${label}: right padding ${m.pr} clears the right inset`);
+            assert.ok(m.pl >= 62 - 0.5 && m.pr >= 62 - 0.5, `${label}: padding keeps the 62px floor`);
+            check(m, label, h, "A");
+            await rb.key("Escape", "Escape", 27);
+            await rb.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: `close at ${label}` });
+          }
         } finally {
           await rb.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: 0, left: 0, bottom: 0, right: 0 } }).catch(() => {});
           await rb.setViewport(900, 900, false);
@@ -14054,7 +14071,7 @@ function run() {
           ["A", "B", "S"].forEach((m, i) => {
             n++;
             const where = `${fm} ${key} mode ${m}`;
-            if (w >= 740 && h >= 300 && h < 360 && m !== "S") return; // LS: two CSS columns in modes A and B, asserted by "LS:"
+            if (w >= 740 && h >= 300 && h < 360) return; // LS: two columns in modes A and B and a scrolling two-column grid in mode S, asserted by "LS:"
             const g = got[i];
             assert.ok(g.hg !== null, where + ": there is no #panel-prog-heading");
             assert.ok(g.sp1 > 0, where + ": --sp-1 unreadable");
