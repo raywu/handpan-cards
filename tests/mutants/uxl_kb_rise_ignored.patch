@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11472,7 +11472,7 @@ function setLip(on, o) {
+@@ -12127,7 +12127,7 @@
  }
  function lipKbEdge(was, kb) {
    if (was === kb) return;
--  if (kb) { sheetSwipe = null; collapseLip(); } else restoreLip();
-+  if (kb) { sheetSwipe = null; } else restoreLip();
+-  if (kb) { sheetSwipe = null; hideSwipeCue(); collapseLip(); } else restoreLip();
++  if (kb) { sheetSwipe = null; hideSwipeCue(); } else restoreLip();
  }
  function lipScroll() {
    const M = Math.max(0, bandPort.scrollHeight - bandPort.clientHeight);

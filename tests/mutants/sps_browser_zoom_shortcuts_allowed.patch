@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11673,7 +11673,7 @@ function setTab(tab) {
+@@ -12329,7 +12329,7 @@ function setTab(tab) {
      const check = () => {
        const S = sheetSwipe;
        if (!S) return false;
@@ -13,8 +13,8 @@ diff --git a/index.html b/index.html
            Math.abs(scrollOf(body) - S.bodyTop) > 8 || Math.abs(scrollOf(sheetSurf) - S.surfTop) > 8 ||
            (S.field && (document.activeElement === S.field || selected(S.field))) ||
            (S.box && (scrollOf(S.box) !== S.boxTop || (S.box.scrollLeft || 0) !== S.boxLeft))) {
-@@ -11697,7 +11697,7 @@ function setTab(tab) {
-       cancel();
+@@ -12416,7 +12416,7 @@ function setTab(tab) {
+       hideSwipeCue({ force: true });
        const ts = e.touches, t = e.target;
        const p = ts && ts.length === 1 && ts[0];
 -      if (!sheetOpen || !p || sheetZoomed() || !Number.isFinite(p.clientX) || !Number.isFinite(p.clientY) ||

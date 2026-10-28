@@ -1354,6 +1354,20 @@ html.about-open{overflow:hidden}
 #scale-conflict{font-size:15px;line-height:1.5;margin:12px 0}
 #scale-conflict-separate,#saved-temporary-use{min-height:44px;white-space:normal;padding:10px 14px}
 
+#scale-swipe-cue{position:fixed;top:var(--cue-y,50%);width:40px;height:40px;border-radius:50%;box-sizing:border-box;
+  display:flex;align-items:center;justify-content:center;background:#2c2619;border:1.5px solid #f1ece1;color:#f1ece1;
+  pointer-events:none;visibility:hidden;opacity:0;z-index:5;transition:background-color .12s linear,color .12s linear}
+#scale-swipe-cue.on{visibility:visible}
+#scale-swipe-cue.l{left:calc(env(safe-area-inset-left,0px) + 8px)}
+#scale-swipe-cue.r{right:calc(env(safe-area-inset-right,0px) + 8px)}
+#scale-swipe-cue.r svg{transform:scaleX(-1)}
+#scale-swipe-cue.armed{background:#f1ece1;color:#1f1b15}
+#scale-swipe-cue.commit{opacity:0 !important;transition:opacity .15s linear}
+#scale-swipe-cue.back{transition:transform .26s cubic-bezier(.2,.7,.25,1),opacity .26s linear}
+@media (prefers-reduced-motion: reduce){
+  #scale-swipe-cue,#scale-swipe-cue.back,#scale-swipe-cue.commit{transition:none}
+  #scale-swipe-cue.commit{opacity:1 !important}
+}
 @media print{
   *{-webkit-print-color-adjust:exact; print-color-adjust:exact}
   html,body{height:100%; min-height:0; overflow:visible; background:#fff}
@@ -1363,7 +1377,7 @@ html.about-open{overflow:hidden}
   .scene{transform:none!important}
   #app{display:block; height:auto}
   #about{display:none}
-  #share-copy, #share-url, #saved-status, #saved-temporary-use{display:none}
+  #share-copy, #share-url, #saved-status, #saved-temporary-use, #scale-swipe-cue{display:none}
 }
 
 </style>
@@ -1691,6 +1705,7 @@ html.about-open{overflow:hidden}
     <button id="scale-lip" type="button" hidden aria-expanded="false" aria-controls="scale-next scale-generate scale-delete-row" aria-label="Show NEXT"></button>
     </div>
   </div>
+  <div id="scale-swipe-cue" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" focusable="false"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
 </div>
 
 <!-- The settings panel and its scrim: body-level siblings of #scale-sheet,
@@ -11771,6 +11786,23 @@ let pendingDerive = {};
 const currentScaleInput = () => boxOk && !(inputPath === "fields" && lineStale);
 let sheetTab = "scale";
 let sheetSwipe = null;
+const swipeCue = { el: document.getElementById("scale-swipe-cue"), raf: 0, timer: 0, leave: 0, mode: "", dx: 0, dy: 0 };
+const swipeVerdict = (S, ok, dx, dy, elapsed) => {
+  const tab = dx < 0 ? "layout" : "scale";
+  return { tab, armed: ok && elapsed >= 0 && elapsed <= 600 && Math.abs(dx) >= 48 && Math.abs(dx) >= 2 * Math.abs(dy) && tab !== S.tab };
+};
+function hideSwipeCue(o) {
+  const c = swipeCue;
+  if (!c.mode || (c.mode !== "live" && !(o && o.force))) return;
+  cancelAnimationFrame(c.raf);
+  clearTimeout(c.timer);
+  clearTimeout(c.leave);
+  c.raf = c.timer = c.leave = 0;
+  c.mode = "";
+  for (const k of ["on", "l", "r", "armed", "commit", "back"]) c.el.classList.remove(k);
+  c.el.style.transform = "";
+  c.el.style.opacity = "";
+}
 const sheetZoomed = () => !!(window.visualViewport && window.visualViewport.scale > 1.01);
 let layoutBase = { anchor: "one", mirror: false, mb: false, seats: "", angles: "" };
 const HINT_EMPTY = () => t("sheet.layout_hint_empty");
@@ -11959,7 +11991,7 @@ sheet.addEventListener("pointerdown", (e) => {
 const dropTap = () => { scrollPin = null; tapSnap = null; };
 let touchFrom = null;
 sheet.addEventListener("touchstart", (e) => {
-  if (sheetSwipe && !(e.touches && e.touches.length === 1)) sheetSwipe = null;
+  if (sheetSwipe && !(e.touches && e.touches.length === 1)) { sheetSwipe = null; hideSwipeCue(); }
   const t = e.target, p = e.touches && e.touches[0];
   touchFrom = p ? { x: p.clientX, y: p.clientY } : null;
   if (!(t && t.matches && t.matches("input, textarea, select"))) releasePin();
@@ -12114,7 +12146,7 @@ function setLip(on, o) {
 }
 function lipKbEdge(was, kb) {
   if (was === kb) return;
-  if (kb) { sheetSwipe = null; collapseLip(); } else restoreLip();
+  if (kb) { sheetSwipe = null; hideSwipeCue(); collapseLip(); } else restoreLip();
 }
 function lipScroll() {
   const M = Math.max(0, bandPort.scrollHeight - bandPort.clientHeight);
@@ -12276,6 +12308,7 @@ function paintTabs() {
 function setTab(tab) {
   if (tab === sheetTab) return;
   sheetSwipe = null;
+  hideSwipeCue();
   if (sheetTab === "layout") {
     cancelGesture();
     previewBox.removeEventListener("touchmove", plateTouchMove, { passive: false });
@@ -12304,7 +12337,7 @@ function setTab(tab) {
 {
   const body = document.querySelector(".sheetbody");
   if (body) {
-    const cancel = () => { sheetSwipe = null; };
+    const cancel = () => { sheetSwipe = null; hideSwipeCue(); };
     const scrollOf = el => el ? el.scrollTop || 0 : 0;
     const selected = field => {
       if (field && field.selectionStart != null && field.selectionEnd !== field.selectionStart) return true;
@@ -12336,8 +12369,70 @@ function setTab(tab) {
       if (Math.hypot(p.clientX - S.x, p.clientY - S.y) > HOLD_SLOP) S.moved = true;
       return true;
     };
+    const paintCue = () => {
+      const c = swipeCue, S = sheetSwipe;
+      c.raf = 0;
+      if (c.mode !== "live" || !S || !check()) return;
+      const { armed } = swipeVerdict(S, true, c.dx, c.dy, Date.now() - S.at);
+      const el = c.el, mag = Math.abs(c.dx), p = Math.min(mag, 48) / 48;
+      el.classList[armed ? "add" : "remove"]("armed");
+      if (reducedMotion.matches) {
+        el.style.transform = "";
+        el.style.opacity = armed ? "1" : "0.6";
+        return;
+      }
+      const out = 48 - Math.min(mag, 48) - Math.min(8, Math.max(0, mag - 48) * 0.15);
+      el.style.transform = `translateX(${c.dx < 0 ? out : -out}px) scale(${armed ? 1.1 : 0.8 + 0.2 * p})`;
+      el.style.opacity = String(Math.min(1, mag / 48));
+    };
+    const queueCue = () => { if (!swipeCue.raf) swipeCue.raf = requestAnimationFrame(paintCue); };
+    const cueMove = (S, p) => {
+      const c = swipeCue, dx = p.clientX - S.x, dy = p.clientY - S.y, tab = dx < 0 ? "layout" : "scale";
+      c.dx = dx;
+      c.dy = dy;
+      if (c.mode === "live") {
+        if (Math.abs(dx) >= 12 && tab === S.tab) { hideSwipeCue(); return; }
+      } else {
+        if (!S.moved || Math.abs(dx) < 12 || Math.abs(dx) < 2 * Math.abs(dy) || tab === S.tab) return;
+        const r = body.getBoundingClientRect();
+        const top = r.top || 0, bottom = r.bottom || window.innerHeight;
+        c.el.style.setProperty("--cue-y", Math.max(top, Math.min(bottom - 40, S.y - 20)) + "px");
+        c.el.classList.add("on", dx < 0 ? "r" : "l");
+        c.mode = "live";
+        c.timer = setTimeout(() => {
+          c.timer = 0;
+          if (sheetSwipe === S && check()) queueCue();
+        }, Math.max(0, S.at + 601 - Date.now()));
+      }
+      queueCue();
+    };
+    const releaseCue = (dx, dy, armed) => {
+      const c = swipeCue;
+      if (c.mode !== "live") return;
+      cancelAnimationFrame(c.raf);
+      clearTimeout(c.timer);
+      c.raf = c.timer = 0;
+      c.dx = dx;
+      c.dy = dy;
+      paintCue();
+      if (armed) {
+        c.mode = "commit";
+        c.el.classList.add("armed", "commit");
+        c.leave = setTimeout(() => hideSwipeCue({ force: true }), 200);
+      } else if (reducedMotion.matches) {
+        hideSwipeCue();
+      } else {
+        c.mode = "back";
+        c.el.classList.remove("armed");
+        c.el.classList.add("back");
+        c.el.style.transform = `translateX(${dx < 0 ? 48 : -48}px) scale(0.8)`;
+        c.el.style.opacity = "0";
+        c.leave = setTimeout(() => hideSwipeCue({ force: true }), SWIPE_BACK_MS + 40);
+      }
+    };
     body.addEventListener("touchstart", e => {
-      cancel();
+      sheetSwipe = null;
+      hideSwipeCue({ force: true });
       const ts = e.touches, t = e.target;
       const p = ts && ts.length === 1 && ts[0];
       if (!sheetOpen || !p || sheetZoomed() || !Number.isFinite(p.clientX) || !Number.isFinite(p.clientY) ||
@@ -12355,7 +12450,7 @@ function setTab(tab) {
       if (!S) return;
       const p = ts && ts.length === 1 && ts[0].identifier === S.id && ts[0];
       if (!p) { cancel(); return; }
-      point(p);
+      if (point(p)) cueMove(S, p);
     }, { passive: true });
     body.addEventListener("touchend", e => {
       const S = sheetSwipe;
@@ -12364,14 +12459,14 @@ function setTab(tab) {
       const p = changed && changed.length === 1 && changed[0].identifier === S.id && changed[0];
       if (!p || (e.touches && e.touches.length) || !point(p)) { cancel(); return; }
       const elapsed = Date.now() - S.at, dx = p.clientX - S.x, dy = p.clientY - S.y;
+      const v = swipeVerdict(S, true, dx, dy, elapsed);
+      releaseCue(dx, dy, v.armed);
       cancel();
-      if (elapsed < 0 || elapsed > 600 || Math.abs(dx) < 48 || Math.abs(dx) < 2 * Math.abs(dy)) return;
-      const tab = dx < 0 ? "layout" : "scale";
-      if (tab === sheetTab) return;
+      if (!v.armed) return;
       lipFling = null;
       lipDragEnd = 0;
       userWindowUntil = 0;
-      setTab(tab);
+      setTab(v.tab);
       lipQuietUntil = Math.max(lipQuietUntil, Date.now() + LIP_END_MS);
     }, { passive: true });
     body.addEventListener("touchcancel", cancel, { passive: true });
@@ -12387,6 +12482,7 @@ function setTab(tab) {
 /** Leaving the sheet or opening a fresh session: no focus, no status. */
 function dropDrawer() {
   sheetSwipe = null;
+  hideSwipeCue({ force: true });
   cancelGesture();
   previewBox.removeEventListener("touchmove", plateTouchMove, { passive: false });
   drawerHint.textContent = "";
@@ -13282,7 +13378,7 @@ function applyKbOffset(e) {
    * The tolerance is for scales that do not land exactly on 1 coming back from
    * a pinch; a sub-percent residue is not a zoom. */
   const zoomed = sheetZoomed();
-  if (zoomed) sheetSwipe = null;
+  if (zoomed) { sheetSwipe = null; hideSwipeCue(); }
   /* The keyboard-free baseline is the sheet's own height, not innerHeight:
    * #scale-sheet is position:fixed; inset:0, so it is the layout viewport's
    * height and does not depend on the cap or translate written below. iOS can

@@ -1,0 +1,15 @@
+# kills: SWA: the cue is aria-hidden, has no text, and every move listener is passive
+# suite: node --test --test-reporter=tap --test-name-pattern ^SWA..the.cue.is.aria\-hidden..has.no.text..and.every.move.listener.is.passive$ tests/app.test.js
+# The touchmove listener is registered non-passive.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12432,7 +12432,7 @@
+       const p = ts && ts.length === 1 && ts[0].identifier === S.id && ts[0];
+       if (!p) { cancel(); return; }
+       if (point(p)) cueMove(S, p);
+-    }, { passive: true });
++    }, { passive: false });
+     body.addEventListener("touchend", e => {
+       const S = sheetSwipe;
+       if (!S) return;
