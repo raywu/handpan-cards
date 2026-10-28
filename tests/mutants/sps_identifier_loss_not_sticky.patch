@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11711,7 +11711,7 @@ function setTab(tab) {
+@@ -12430,7 +12430,7 @@ function setTab(tab) {
        const S = sheetSwipe, ts = e.touches;
        if (!S) return;
        const p = ts && ts.length === 1 && ts[0].identifier === S.id && ts[0];
 -      if (!p) { cancel(); return; }
 +      if (!p) return;
-       point(p);
+       if (point(p)) cueMove(S, p);
      }, { passive: true });
      body.addEventListener("touchend", e => {

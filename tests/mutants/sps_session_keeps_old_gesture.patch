@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11746,7 +11746,7 @@ function setTab(tab) {
+@@ -12462,7 +12462,7 @@
  }
  /** Leaving the sheet or opening a fresh session: no focus, no status. */
  function dropDrawer() {
 -  sheetSwipe = null;
 +  // Previous sheet gesture is retained.
+   hideSwipeCue({ force: true });
    cancelGesture();
    previewBox.removeEventListener("touchmove", plateTouchMove, { passive: false });
-   drawerHint.textContent = "";

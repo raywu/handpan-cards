@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11733,7 +11733,7 @@ let drawerOpen = false;
+@@ -11764,7 +11764,7 @@ let drawerOpen = false;
  // existing same-parse count/reset notice. putDown is that parse's legacy suffix.
  // This is session feedback only, never a history or a stored layout option.
  let pendingDerive = {};
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +const currentScaleInput = () => boxOk;
  let sheetTab = "scale";
  let sheetSwipe = null;
- const sheetZoomed = () => !!(window.visualViewport && window.visualViewport.scale > 1.01);
+ const swipeCue = { el: document.getElementById("scale-swipe-cue"), raf: 0, timer: 0, leave: 0, mode: "", dx: 0, dy: 0 };
