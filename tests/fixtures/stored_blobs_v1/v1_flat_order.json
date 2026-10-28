@@ -1,0 +1,36 @@
+{
+  "provenance": "v1 record, flat order, legacy grammar. Shape from CLAUDE.md \"App data model\" and the stored-record sentences of its version; authored at 7d80d65d.",
+  "key": "hpfc.scales.v3",
+  "records": [
+    {
+      "v": 1,
+      "s": "(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5",
+      "o": {
+        "name": "V1",
+        "palette": 1,
+        "order": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          0,
+          12,
+          13,
+          14,
+          15,
+          16,
+          11
+        ]
+      }
+    }
+  ],
+  "deckIds": [
+    "custom:b936039c"
+  ]
+}

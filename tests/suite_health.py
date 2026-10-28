@@ -71,6 +71,7 @@ FLOORS = {
     "tests/select.test.js": 54,
     "tests/share.test.js": 105,
     "tests/link_corpus.test.js": 7,
+    "tests/storage_corpus.test.js": 15,
     "tests/preview.test.js": 14,
     "tests/pdf.test.js": 16,
     "tests/pdfcards.test.js": 43,
