@@ -1,0 +1,15 @@
+# kills: LC: every frozen link decodes to its recorded deck id, fields, options and name
+# suite: node --test --test-name-pattern ^LC..every.frozen.link.decodes.to.its.recorded.deck.id..fields..options.and.name$ tests/link_corpus.test.js
+# The oldest readable wire version moves up to 2, so every v1 link already in the wild is refused as BAD_NOTE.
+diff --git a/src/engine/share.js b/src/engine/share.js
+--- a/src/engine/share.js
++++ b/src/engine/share.js
+@@ -85,7 +85,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   // options), so the wire version moves alone.
+   var RECORD_VERSION = 4;
+   var NEWEST = VERSION;   // an alias decode can still see past its own shadow
+-  var OLDEST = 1;         // no version 0 ever shipped
++  var OLDEST = 2;         // no version 0 ever shipped
+
+   // Max characters in a whole share string. The cap is the first gate on
+   // decode, so an over-cap link is refused before anything is parsed. It sits

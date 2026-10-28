@@ -16098,7 +16098,7 @@ function run() {
         await spaOpen(380,780,{tab:"layout"});
         const pan=await b.eval(`const e=document.querySelector("#scale-preview .panhit");const r=e.getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2};`);
         await spsTouch(pan,80);
-        assert.strictEqual(await spsTab(),"layout","a preview descendant cannot start the shortcut");
+        assert.strictEqual(await spsTab(),"scale","SW: a preview descendant now starts the shortcut: a right swipe on the pan reaches Scale");
 
         await spaOpen(380,780);
         await b.eval(`const e=document.getElementById("scale-top");e.focus();e.setSelectionRange(0,1);return true;`);
@@ -18520,6 +18520,66 @@ function run() {
         assert.strictEqual(after.cls, before.cls, "the lip or the sheet changed class");
         assert.strictEqual(after.top, before.top, "the drawer scrolled");
       } finally { await b.clearKeyboard().catch(() => {}); await b.setViewport(900, 900, false); }
+    });
+
+    const swTab = () => b.eval(`return document.getElementById("scale-tab-layout").getAttribute("aria-selected") === "true" ? "layout" : "scale";`);
+    const swSwipe = async (from, dx) => {
+      await b.waitForPendingSettle();
+      await touch("touchStart", [from]);
+      for (let i = 1; i <= 4; i++) { await sleep(8); await touch("touchMove", [{ x: from.x + dx * i / 4, y: from.y }]); }
+      await b.releasing(() => touch("touchEnd", []));
+      await sleep(150);
+    };
+    const swNote = async () => { const f = await frame(); return named(f.all, "F4") || f.all[0]; };
+
+    for (const [w, h] of [[390, 844], [844, 390]]) {
+      test(`SW: a quick swipe that starts on the pan switches Layout to Scale at ${w}x${h}`, { timeout: 90000 }, async () => {
+        try {
+          await open(w, h, true);
+          assert.strictEqual(await swTab(), "layout");
+          const rim = (await frame()).all.find((n) => n.ring === "rim");
+          await swSwipe(rim, 70);
+          assert.strictEqual(await swTab(), "scale", "a right swipe on the pan did not reach Scale");
+          await b.click("#scale-tab-layout");
+          await sleep(250);
+          await swSwipe((await frame()).all.find((n) => n.ring === "rim"), -70);
+          assert.strictEqual(await swTab(), "layout", "a left swipe on the pan moved off Layout");
+          const rim3 = (await frame()).all.find((n) => n.ring === "rim");
+          await swSwipe(rim3, 70);
+          assert.strictEqual(await swTab(), "scale", "a second right swipe on the pan did not reach Scale");
+        } finally { await b.setViewport(900, 900, false); }
+      });
+    }
+
+    test("SW: a held drag on a pan note never switches the tab and still moves the note", { timeout: 90000 }, async () => {
+      try {
+        await open(390, 844, true);
+        let f = await frame();
+        const c3 = named(f.all, "C3");
+        await touchPath(c3, arc(f, 330, 300));
+        assert.strictEqual(await swTab(), "layout", "a held drag switched the tab");
+        assert.strictEqual(await status(), "C3 moved to 300°, lower right. Seat U1 stays its number.");
+        f = await frame();
+        const rim = f.all.find((n) => n.ring === "rim");
+        await touch("touchStart", [rim]);
+        await sleep(320);
+        for (let i = 1; i <= 4; i++) await touch("touchMove", [{ x: rim.x + 20 * i, y: rim.y + 36 }]);
+        await touch("touchEnd", []);
+        await sleep(200);
+        assert.strictEqual(await swTab(), "layout", "a held horizontal drag switched the tab");
+      } finally { await b.setViewport(900, 900, false); }
+    });
+
+    test("SW: a swipe on an unfocused note field switches the tab", { timeout: 90000 }, async () => {
+      try {
+        await open(390, 844, true);
+        await b.click("#scale-tab-scale");
+        await sleep(250);
+        await b.eval(`document.activeElement && document.activeElement.blur(); return true;`);
+        const field = await b.eval(`const r = document.getElementById("scale-top").getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+        await swSwipe(field, -70);
+        assert.strictEqual(await swTab(), "layout");
+      } finally { await b.setViewport(900, 900, false); }
     });
 
     test("FPD: at 844x390 a drag from 90° to 180° lands with the band pinned and the status heading the controls column", { timeout: 90000 }, async () => {

@@ -20,5 +20,5 @@ diff --git a/index.html b/index.html
 -      if (!sheetOpen || !p || sheetZoomed() || !Number.isFinite(p.clientX) || !Number.isFinite(p.clientY) ||
 +      if (!sheetOpen || !p || !Number.isFinite(p.clientX) || !Number.isFinite(p.clientY) ||
            p.clientX < 24 || p.clientX > window.innerWidth - 24 || sheet.classList.contains("kbup") ||
-           previewBox.contains(t) || (t && t.closest && t.closest("#scale-lip, select"))) return;
+           (t && t.closest && t.closest("#scale-lip, select"))) return;
        const field = t && t.closest ? t.closest("input, textarea") : null;
