@@ -10349,6 +10349,45 @@ function run() {
           await rb.goto(URL);
         }
       });
+
+    test("LS2: with the progression note and RESET SEEDED SCALES showing, Language sits in the left column one row-gap under Print this scale at 844x390 and 800x340 (REAL fonts)",
+      { timeout: 120000 }, async () => {
+        try {
+          await rb.setViewport(844, 390, true);
+          await rb.goto(URL);
+          await rb.eval(`localStorage.setItem("hpfc", ${JSON.stringify(JSON.stringify({ mode: "S", hidden: ["amara"] }))}); return true;`);
+          await rb.send("Storage.clearDataForOrigin", { origin: new globalThis.URL(URL).origin, storageTypes: "indexeddb" });
+          await rb.goto(URL);
+          await rb.eval(`return document.fonts.ready.then(() => true);`);
+          for (const [w, h] of [[844, 390], [800, 340]]) {
+            await rb.setViewport(w, h, true);
+            await rb.settle();
+            await rb.click("#settings-trigger");
+            await rb.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display !== "none"`, { label: "panel open" });
+            const label = `${w}x${h}`;
+            if (await rb.eval(`return document.getElementById("panel-seq-note").hidden;`)) {
+              await rb.click("#tier-basic");
+              await rb.waitFor(`!document.getElementById("panel-seq-note").hidden`, { label: "progression note" });
+            }
+            const m = await rb.eval(`
+              const p = document.getElementById("settings-panel");
+              const g = id => document.getElementById(id).closest(".panel-group").getBoundingClientRect();
+              const print = [...p.children].find(c => c.querySelector(".panel-heading") && c.querySelector(".panel-heading").textContent === "Print this scale").getBoundingClientRect();
+              const lang = g("lang-select");
+              const flash = g("modeA");
+              return { note: !document.getElementById("panel-seq-note").hidden, restore: !document.getElementById("deck-restore").hidden,
+                gap: lang.top - print.bottom, dbg: [...p.children].map(c => [c.id + c.tagName + (c.querySelector(".panel-heading") ? c.querySelector(".panel-heading").textContent : ""), Math.round(c.getBoundingClientRect().left), Math.round(c.getBoundingClientRect().top), Math.round(c.getBoundingClientRect().height)]), rowGap: parseFloat(getComputedStyle(p).rowGap), langLeft: lang.left, flashLeft: flash.left, printLeft: print.left };`);
+            assert.ok(m.note && m.restore, `${label}: note and RESET both showing ${JSON.stringify(m)}`);
+            assert.ok(Math.abs(m.gap - m.rowGap) <= 1, `${label}: Language is ${m.gap}px under Print, row-gap ${m.rowGap} ${JSON.stringify(m.dbg)}`);
+            assert.ok(Math.abs(m.langLeft - m.flashLeft) <= 1 && Math.abs(m.printLeft - m.flashLeft) <= 1, `${label}: Language is in the left column`);
+            await rb.key("Escape", "Escape", 27);
+            await rb.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: `close at ${label}` });
+          }
+        } finally {
+          await rb.setViewport(900, 900, false);
+          await rb.goto(URL);
+        }
+      });
   });
 
   // Lane S2: "CHORD PROGRESSION" mode's app-side wiring. See

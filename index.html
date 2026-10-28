@@ -360,8 +360,15 @@ a.mode{text-decoration:none}
     padding:9px max(62px, calc(env(safe-area-inset-right) + 50px)) 9px max(62px, calc(env(safe-area-inset-left) + 50px))}
   #settings-panel > .panel-group{break-inside:avoid; margin-bottom:var(--sp-3)}
   #settings-panel:has(#panel-seq-note:not([hidden])):has(#deck-restore:not([hidden])){display:grid;
-    grid-template-columns:repeat(2, 1fr); column-gap:var(--sp-4); row-gap:var(--sp-2);
+    grid-template-columns:repeat(2, 1fr); column-gap:var(--sp-4); row-gap:var(--sp-3);
     align-content:start; align-items:start}
+  #settings-panel:has(#panel-seq-note:not([hidden])):has(#deck-restore:not([hidden])) > .panel-group{margin-bottom:0}
+  #settings-panel:has(#panel-seq-note:not([hidden])):has(#deck-restore:not([hidden])){grid-template-rows:auto auto auto 1fr}
+  #settings-panel:has(#panel-seq-note:not([hidden])):has(#deck-restore:not([hidden])) > div:nth-of-type(1){grid-column:1; grid-row:1}
+  #settings-panel:has(#panel-seq-note:not([hidden])):has(#deck-restore:not([hidden])) > div:nth-of-type(2){grid-column:2; grid-row:1}
+  #settings-panel:has(#panel-seq-note:not([hidden])):has(#deck-restore:not([hidden])) > div:nth-of-type(3){grid-column:1; grid-row:2}
+  #settings-panel:has(#panel-seq-note:not([hidden])):has(#deck-restore:not([hidden])) > div:nth-of-type(4){grid-column:2; grid-row:2 / 5}
+  #settings-panel:has(#panel-seq-note:not([hidden])):has(#deck-restore:not([hidden])) > div:nth-of-type(5){grid-column:1; grid-row:3}
 }
 /* LS: 300 to 359px tall keeps the two columns, with the vertical spacing
    tightened so the default menu fits at 300px. The 44px targets do not
@@ -378,6 +385,12 @@ a.mode{text-decoration:none}
   #settings-panel:has(#panel-seq-note:not([hidden]), #deck-restore:not([hidden])){display:grid; grid-template-columns:repeat(2, 1fr);
     column-gap:var(--sp-4); row-gap:var(--sp-2); align-content:start; align-items:start;
     padding:4px max(62px, calc(env(safe-area-inset-right) + 50px)) 4px max(62px, calc(env(safe-area-inset-left) + 50px))}
+  #settings-panel:has(#panel-seq-note:not([hidden]), #deck-restore:not([hidden])){grid-template-rows:auto auto auto 1fr}
+  #settings-panel:has(#panel-seq-note:not([hidden]), #deck-restore:not([hidden])) > div:nth-of-type(1){grid-column:1; grid-row:1}
+  #settings-panel:has(#panel-seq-note:not([hidden]), #deck-restore:not([hidden])) > div:nth-of-type(2){grid-column:2; grid-row:1}
+  #settings-panel:has(#panel-seq-note:not([hidden]), #deck-restore:not([hidden])) > div:nth-of-type(3){grid-column:1; grid-row:2}
+  #settings-panel:has(#panel-seq-note:not([hidden]), #deck-restore:not([hidden])) > div:nth-of-type(4){grid-column:2; grid-row:2 / 5}
+  #settings-panel:has(#panel-seq-note:not([hidden]), #deck-restore:not([hidden])) > div:nth-of-type(5){grid-column:1; grid-row:3}
 }
 /* Desktop: the panel becomes an always-visible sidebar, not a modal (M3,
    owner follow-up 2026-09-28; verdict and reasons in the plan's O6/addendum).
