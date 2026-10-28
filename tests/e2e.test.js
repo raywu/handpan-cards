@@ -15727,8 +15727,8 @@ function run() {
 
     test("OF: under prefers-reduced-motion a typed reorder starts no animation or transition on the plate", { timeout: 120000 }, async () => {
       try {
-        await spaOpen(380, 780);
         await b.send("Emulation.setEmulatedMedia", { media: "", features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
+        await spaOpen(380, 780);
         await sleep(100);
         await typeScale(OF_NAMED);
         const n = await b.eval(`return document.getAnimations().filter((a) => { const t = a.effect && a.effect.target; return t && t.closest && t.closest("#scale-preview, #scale-plate-band"); }).length;`);
@@ -16195,6 +16195,71 @@ function run() {
         // baseline/candidate probe did not observe. Physical Safari QA remains.
         t.diagnostic("SPS_ZOOM_GUARD_CELLS "+JSON.stringify(cells));
       }finally{await b.setPageScale(1);await spaReset();}
+    });
+
+    /* SWA browser oracles: the decorative edge cue under a real touch. */
+    const swaCue = () => b.eval(`const c=document.getElementById("scale-swipe-cue"),r=c.getBoundingClientRect(),k=getComputedStyle(c);
+      const hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);
+      return{cls:c.className,vis:k.visibility,op:+k.opacity,pe:k.pointerEvents,tf:k.transform,bg:k.backgroundColor,left:r.left,right:r.right,top:r.top,bottom:r.bottom,w:innerWidth,h:innerHeight,hitIsCue:!!(hit&&hit.closest&&hit.closest("#scale-swipe-cue"))};`);
+    const swaEnd = () => b.releasing(() => b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] }));
+
+    test("SWA browser: the cue follows a real swipe, arms at the commit threshold, fades on switch and springs back when released short", { timeout: 120000 }, async () => {
+      try {
+        for (const [w, h] of [[320, 568], [380, 780], [844, 390]]) {
+          await spaOpen(w, h);
+          const start = await spsSpot(-80);
+          assert.ok(start, `${w}x${h}: an eligible origin exists`);
+          assert.strictEqual((await swaCue()).vis, "hidden", "idle: the cue is not visible");
+          const bodyBefore = await b.eval(`const r=document.querySelector(".sheetbody").getBoundingClientRect();return[r.left,r.top,r.width,r.height];`);
+          await spsTouch(start, -30, 0, { release: false });
+          await sleep(120);
+          const mid = await swaCue();
+          assert.strictEqual(mid.vis, "visible", `${w}x${h}: shown after a lock`);
+          assert.ok(mid.cls.includes("r") && !mid.cls.includes("armed"), `${w}x${h}: right edge, not armed at 30px: ${mid.cls}`);
+          assert.strictEqual(mid.pe, "none");
+          assert.strictEqual(mid.hitIsCue, false, "the cue never takes the touch");
+          assert.ok(mid.top >= 0 && mid.bottom <= mid.h, "the cue sits inside the viewport vertically");
+          await swaEnd();
+          await sleep(500);
+          assert.strictEqual(await spsTab(), "scale", "an unarmed release switches nothing");
+          assert.strictEqual((await swaCue()).vis, "hidden", "and the cue springs back out");
+
+          const start2 = await spsSpot(-80);
+          await spsTouch(start2, -80, 0, { release: false });
+          await sleep(120);
+          const armed = await swaCue();
+          assert.ok(armed.cls.includes("armed"), `${w}x${h}: armed at 80px: ${armed.cls}`);
+          assert.notStrictEqual(armed.bg, mid.bg, "armed is a different fill");
+          assert.ok(armed.right <= armed.w + 0.5 && armed.left >= -0.5, "armed, the cue sits inside the viewport");
+          assert.deepStrictEqual(await b.eval(`const r=document.querySelector(".sheetbody").getBoundingClientRect();return[r.left,r.top,r.width,r.height];`), bodyBefore, "the cue moves no layout");
+          await swaEnd();
+          await sleep(500);
+          assert.strictEqual(await spsTab(), "layout", "an armed release switches");
+          assert.strictEqual((await swaCue()).vis, "hidden", "and the cue has faded");
+        }
+      } finally { await spaReset(); }
+    });
+
+    test("SWA browser: under reduced motion the cue never translates or scales and the armed state is a fill", { timeout: 90000 }, async () => {
+      try {
+        await b.send("Emulation.setEmulatedMedia", { media: "", features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
+        await spaOpen(380, 780);
+        const start = await spsSpot(-80);
+        await spsTouch(start, -30, 0, { release: false });
+        await sleep(120);
+        const a = await swaCue();
+        assert.strictEqual(a.vis, "visible");
+        assert.strictEqual(a.tf, "none", "no transform at 30px");
+        await spsTouch({ x: start.x - 30, y: start.y }, -50, 0, { release: false });
+        await sleep(120);
+        const c = await swaCue();
+        assert.ok(c.cls.includes("armed"));
+        assert.strictEqual(c.tf, "none", "no transform when armed");
+        assert.notStrictEqual(c.bg, a.bg);
+        await swaEnd();
+        await sleep(400);
+        assert.strictEqual((await swaCue()).vis, "hidden");
+      } finally { await spaReset(); }
     });
 
     test("SPA: the shut footer is 9px, the 32x3 pill sits 3px above the footer's bottom and is centred, and the tap zone is 25px with its bottom on the surface's bottom above the inset", { timeout: 90000 }, async () => {

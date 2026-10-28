@@ -1,0 +1,15 @@
+# kills: SWA: the cue shows only after direction lock and only toward a different tab
+# suite: node --test --test-reporter=tap --test-name-pattern ^SWA..the.cue.shows.only.after.direction.lock.and.only.toward.a.different.tab$ tests/app.test.js
+# The cue shows for a diagonal trace the recognizer would refuse.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12374,7 +12374,7 @@
+       if (c.mode === "live") {
+         if (Math.abs(dx) >= 12 && tab === S.tab) { hideSwipeCue(); return; }
+       } else {
+-        if (!S.moved || Math.abs(dx) < 12 || Math.abs(dx) < 2 * Math.abs(dy) || tab === S.tab) return;
++        if (!S.moved || Math.abs(dx) < 12 || tab === S.tab) return;
+         const r = body.getBoundingClientRect();
+         const top = r.top || 0, bottom = r.bottom || window.innerHeight;
+         c.el.style.setProperty("--cue-y", Math.max(top, Math.min(bottom - 40, S.y - 20)) + "px");

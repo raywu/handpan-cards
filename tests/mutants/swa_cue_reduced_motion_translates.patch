@@ -1,0 +1,15 @@
+# kills: SWA: under reduced motion the cue never translates or scales, and the armed state is filled, not opacity alone
+# suite: node --test --test-reporter=tap --test-name-pattern ^SWA..under.reduced.motion.the.cue.never.translates.or.scales..and.the.armed.state.is.filled..not.opacity.alone$ tests/app.test.js
+# Reduced motion is ignored and the cue translates and scales.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12357,7 +12357,7 @@
+       const { armed } = swipeVerdict(S, true, c.dx, c.dy, Date.now() - S.at);
+       const el = c.el, mag = Math.abs(c.dx), p = Math.min(mag, 48) / 48;
+       el.classList[armed ? "add" : "remove"]("armed");
+-      if (reducedMotion.matches) {
++      if (false) {
+         el.style.transform = "";
+         el.style.opacity = armed ? "1" : "0.6";
+         return;

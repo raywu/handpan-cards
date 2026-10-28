@@ -1,0 +1,14 @@
+# kills: SWA: a press held HOLD_MS on a pan note then dragged shows no cue (press.lifted)
+# suite: node --test --test-reporter=tap --test-name-pattern ^SWA..a.press.held.HOLD\_MS.on.a.pan.note.then.dragged.shows.no.cue..press\.lifted.$ tests/app.test.js
+# A lifted pan note no longer cancels the swipe, so the cue follows a note drag.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12342,7 +12342,6 @@
+       if (!check()) return false;
+       const S = sheetSwipe;
+       if (!Number.isFinite(p.clientX) || !Number.isFinite(p.clientY) ||
+-          (S.plate && press && press.lifted) ||
+           ((S.field || S.plate) && !S.moved && Date.now() - S.at >= HOLD_MS)) {
+         cancel();
+         return false;
