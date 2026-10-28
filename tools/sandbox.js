@@ -53,7 +53,7 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", 
   // The sheet's tabs, their panels and the NEXT button (plan 2026-10-19-sheet-tabs).
   "scale-tabs", "scale-tab-scale", "scale-tab-layout", "scale-panel-scale", "scale-panel-layout", "scale-next",
   // The footer lip (plan 2026-10-19-sheet-tabs 3.7).
-  "scale-foot", "scale-footslide", "scale-lip",
+  "scale-foot", "scale-footslide", "scale-lip", "scale-swipe-cue",
   // Lane M1: the settings panel that now hosts the mode toggle and print
   // controls, plus its header trigger and scrim.
   "settings-trigger", "settings-scrim", "settings-panel",
@@ -937,6 +937,12 @@ function boot(opts = {}) {
       return id;
     },
     clearTimeout(id) { timers.delete(id); },
+    requestAnimationFrame(fn) {
+      const id = nextTimer++;
+      timers.set(id, { fn, ms: 16, due: now + 16, args: [now + 16], seq: id });
+      return id;
+    },
+    cancelAnimationFrame(id) { timers.delete(id); },
     // Only host-realm globals a vm context lacks are injected. Never Array,
     // Object, Error and friends: a context has its own, and importing the host
     // ones would make `x instanceof Array` false for values the code built.

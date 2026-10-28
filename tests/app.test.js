@@ -15310,7 +15310,7 @@ describe("I18N", () => {
     const snap = (app) => {
       const out = {};
       for (const [id, el] of Object.entries(app.els)) {
-        if (["lang-select","panel-lang-heading","saved-status","saved-temporary-use","scale-conflict","scale-conflict-msg","scale-conflict-separate"].includes(id)) continue;
+        if (["lang-select","panel-lang-heading","saved-status","saved-temporary-use","scale-conflict","scale-conflict-msg","scale-conflict-separate","scale-swipe-cue"].includes(id)) continue;
         out[id] = {
           text: el.textContent, html: el.innerHTML, hidden: el.hidden,
           attrs: Object.fromEntries(Object.entries(el.attributes).sort()),
@@ -15514,6 +15514,438 @@ describe("SO: bottom seat numbers stay on their seats", () => {
     const changed = [101, 102, 103, 104, 105, 106].filter((id, k) => after[k] !== labels[k]).map(String);
     assert.ok(changed.length > 0, "the mirror renumbered");
     assert.deepStrictEqual(soFlash(app), changed.sort());
+  });
+});
+
+/* ---- SWA: the decorative edge cue that follows a Scale / Layout swipe ---- */
+describe("SWA: swipe edge cue", () => {
+  let RM = false;
+  const BASE = "(D3) A3 C4 D4 E4 F4 | F5 G5";
+  const INNER = "(D3) A3 C4 D4 E4 F4 | G5 F5";
+  const BOTH = "(D3) C4 A3 D4 E4 F4 | G5 F5";
+  const BOTH_SAID = "The rim now follows the order listed. The inner notes now follow the order listed.";
+  const rect = (top, bottom) => () => ({ left: 0, right: 380, top, bottom, width: 380, height: bottom - top });
+  const fresh = () => {
+    const app = boot({ reducedMotion: RM, layout: true, clock: true, sheetBody: true, innerHeight: 800,
+      visualViewport: { height: 800, offsetTop: 0, scale: 1 } });
+    app.sandbox.innerWidth = 380;
+    const body = app.sandbox.document.querySelector(".sheetbody");
+    assert.ok(body, "the independently validated body fixture is required");
+    body.scrollTop = 0;
+    body.scrollHeight = 1400;
+    body.clientHeight = 500;
+    body.getBoundingClientRect = rect(100, 600);
+    const surface = app.els["scale-sheet"].firstElementChild;
+    surface.scrollTop = 0;
+    surface.scrollHeight = 700;
+    surface.clientHeight = 700;
+    surface.getBoundingClientRect = rect(0, 700);
+    app.els["scale-foot"].getBoundingClientRect = rect(600, 700);
+    return app;
+  };
+  const line = (app, text) => {
+    const box = app.els["scale-box"];
+    box.dispatchEvent({ type: "focus", target: box });
+    box.value = text;
+    box.dispatchEvent({ type: "input", target: box });
+  };
+  // The sandbox does not model capture ordering. Deliver the actual registered
+  // sheet-capture callbacks before the body callbacks explicitly; this is a
+  const on = (app, tab) => app.els["scale-tab-" + tab].getAttribute("aria-selected");
+  const bodyOf = (app) => app.sandbox.document.querySelector(".sheetbody");
+  const surfOf = (app) => app.els["scale-sheet"].firstElementChild;
+  const emit = (app, type, o = {}) => {
+    const target = o.target || bodyOf(app);
+    const point = { identifier: o.id === undefined ? 7 : o.id,
+      clientX: o.x === undefined ? 220 : o.x, clientY: o.y === undefined ? 300 : o.y };
+    const ended = type === "touchend" || type === "touchcancel";
+    const e = { type, target, touches: o.touches === undefined ? (ended ? [] : [point]) : o.touches,
+      changedTouches: o.changed === undefined ? [point] : o.changed, cancelable: true,
+      defaultPrevented: false, preventDefault() { this.defaultPrevented = true; }, stopPropagation() {} };
+    app.els["scale-sheet"].dispatchEvent(e);
+    if (bodyOf(app).contains(target)) bodyOf(app).dispatchEvent(e);
+    return e;
+  };
+  const ready = async (kind = "add", tab = "scale") => {
+    const app = fresh();
+    if (kind === "edit") openEdit(app, await makeCustom(app, BASE));
+    else { openSheet(app); line(app, BASE); }
+    // This bounded fixture supplies the native tag selectors used by public
+    // focus handlers. It is not a general selector engine or an app test seam.
+    const fieldTag = (el, tag) => {
+      el.tagName = tag;
+      el.matches = (selector) => {
+        const tags = String(selector).split(",").map((s) => s.trim());
+        assert.ok(tags.every((s) => /^[a-z]+$/i.test(s)), "the field fixture supports literal tag selectors only");
+        return tags.some((s) => s.toUpperCase() === el.tagName);
+      };
+    };
+    fieldTag(app.els["scale-box"], "TEXTAREA");
+    for (const id of ["ding", "top", "inner", "bottom", "name"]) fieldTag(app.els["scale-" + id], "INPUT");
+    if (tab === "layout") app.click(app.els["scale-tab-layout"]);
+    app.advance(300);
+    return app;
+  };
+  const gesture = (app, { x = 220, dx = -80, y = 300, dy = 0, ms = 100, target } = {}) => {
+    emit(app, "touchstart", { x, y, target });
+    app.advance(ms);
+    emit(app, "touchmove", { x: x + dx, y: y + dy, target });
+    emit(app, "touchend", { x: x + dx, y: y + dy, target });
+  };
+  const vertical = (app) => {
+    emit(app, "touchstart", { x: 200, y: 400 });
+    emit(app, "touchmove", { x: 200, y: 360 });
+    emit(app, "touchend", { x: 200, y: 360 });
+  };
+  const scroll = (app, el, top) => {
+    el.scrollTop = top;
+    const e = { type: "scroll", target: el };
+    // Scroll does not bubble: model its actual ancestor capture -> target order,
+    // including the outer surface, rather than selecting a listener location.
+    // The sandbox still does not distinguish callback options; native wiring
+    // remains separate browser evidence.
+    app.els["scale-sheet"].dispatchEvent(e);
+    if (el !== bodyOf(app) && bodyOf(app).contains(el)) bodyOf(app).dispatchEvent(e);
+    el.dispatchEvent(e);
+  };
+  const focusEvent = (app, el, focused) => {
+    if (focused) el.focus(); else el.blur();
+    const e = { type: focused ? "focusin" : "focusout", target: el };
+    app.sandbox.document.dispatchEvent(e);
+    bodyOf(app).dispatchEvent(e);
+    el.dispatchEvent({ type: focused ? "focus" : "blur", target: el });
+  };
+  const keyboard = (app, up) => {
+    app.sandbox.visualViewport.height = up ? 500 : 800;
+    app.sandbox.visualViewport.dispatchEvent({ type: "resize" });
+    assert.strictEqual(app.els["scale-sheet"].classList.contains("kbup"), up, "the keyboard fixture must actually change public sheet state");
+  };
+  const selected = (app, field, selected) => {
+    field.selectionStart = 0;
+    field.selectionEnd = selected ? 1 : 0;
+    const get = () => ({ isCollapsed: !selected, anchorNode: field, focusNode: field,
+      toString: () => selected ? "D" : "" });
+    app.sandbox.getSelection = get;
+    app.sandbox.document.getSelection = get;
+    app.sandbox.document.dispatchEvent({ type: "selectionchange", target: field });
+  };
+  const finishLeft = (app, target) => {
+    emit(app, "touchmove", { x: 140, target });
+    emit(app, "touchend", { x: 140, target });
+  };
+  const shut = (app) => app.els["scale-sheet"].classList.contains("lipshut");
+  const cueOf = (app) => app.els["scale-swipe-cue"];
+  const has = (app, c) => cueOf(app).classList.contains(c);
+  const cueClasses = (app) => ["on", "l", "r", "armed", "commit", "back"].filter((c) => has(app, c));
+  const begin = (app, o = {}) => emit(app, "touchstart", { x: 220, y: 300, ...o });
+  const drag = (app, x, o = {}) => { emit(app, "touchmove", { y: 300, ...o, x }); app.advance(20); };
+  const html = require("node:fs").readFileSync(require("node:path").join(__dirname, "..", "index.html"), "utf8");
+  const swipeHtml = html.slice(html.indexOf("the optional Scale / Layout touch shortcut"), html.indexOf("/** Leaving the sheet or opening a fresh session"));
+  const expectArmed = (dx, dy, ms, from, to) => ms >= 0 && ms <= 600 && Math.abs(dx) >= 48 && Math.abs(dx) >= 2 * Math.abs(dy) && from !== to;
+  const target = (dx) => dx < 0 ? "layout" : "scale";
+  const shownCue = async (kind = "add") => {
+    const app = await ready(kind);
+    begin(app);
+    drag(app, 180);
+    assert.deepStrictEqual(cueClasses(app).includes("on"), true, "precondition: the cue is up");
+    return app;
+  };
+
+  test("SWA: swipeVerdict and the touchend commit agree on every sampled gesture", async () => {
+    for (const from of ["scale", "layout"]) {
+      const app = await ready("add", from);
+      for (const dx of [-100, -49, -48, -47, 0, 47, 48, 49, 100]) for (const dy of [0, 10, 24, 25, 60]) for (const ms of [0, 599, 600, 601]) {
+        if (on(app, from) !== "true") app.click(app.els["scale-tab-" + from]);
+        const x = 220;
+        emit(app, "touchstart", { x, y: 300 });
+        app.advance(ms);
+        emit(app, "touchmove", { x: x + dx, y: 300 + dy });
+        emit(app, "touchend", { x: x + dx, y: 300 + dy });
+        const want = expectArmed(dx, dy, ms, from, target(dx));
+        const to = from === "scale" ? "layout" : "scale";
+        const cell = `${from} dx=${dx} dy=${dy} ${ms}ms`;
+        assert.strictEqual(on(app, to) === "true", want, cell + " (touchend)");
+        const v = app.get(`swipeVerdict({ tab: ${JSON.stringify(from)} }, true, ${dx}, ${dy}, ${ms})`);
+        assert.strictEqual(v.armed, want, cell + " (swipeVerdict)");
+      }
+    }
+  });
+
+  test("SWA: the cue shows only after direction lock and only toward a different tab", async () => {
+    const app = await ready();
+    assert.ok(cueOf(app), "the cue element is served");
+    begin(app);
+    drag(app, 215);
+    assert.deepStrictEqual(cueClasses(app), [], "5px is not a lock");
+    drag(app, 205);
+    assert.ok(has(app, "on") && has(app, "r") && !has(app, "l"), "a left swipe on Scale lights the right edge");
+    const back = await ready();
+    begin(back);
+    drag(back, 260);
+    assert.deepStrictEqual(cueClasses(back), [], "a right swipe on Scale has no target tab");
+    const lay = await ready("add", "layout");
+    begin(lay);
+    drag(lay, 260);
+    assert.ok(has(lay, "on") && has(lay, "l") && !has(lay, "r"), "a right swipe on Layout lights the left edge");
+    const diag = await ready();
+    begin(diag);
+    drag(diag, 190, { y: 400 });
+    assert.deepStrictEqual(cueClasses(diag), [], "a diagonal drag past 2:1 never locks");
+  });
+
+  test("SWA: the cue arms exactly at 48px, and a still finger disarms it by the timer at 600ms with no touchmove; the timer repaint calls check(), and a body scroll before it hides the cue", async () => {
+    const app = await ready();
+    begin(app);
+    drag(app, 173);
+    assert.ok(has(app, "on") && !has(app, "armed"), "47px is shown, not armed");
+    drag(app, 172);
+    assert.ok(has(app, "armed"), "48px arms");
+    app.advance(700);
+    assert.ok(has(app, "on") && !has(app, "armed"), "past 600ms a still finger disarms with no touchmove");
+    emit(app, "touchend", { x: 172 });
+    assert.strictEqual(on(app, "scale"), "true", "and the release agrees");
+
+    const scrolled = await ready();
+    begin(scrolled);
+    drag(scrolled, 172);
+    assert.ok(has(scrolled, "armed"));
+    scroll(scrolled, bodyOf(scrolled), 40);
+    assert.deepStrictEqual(cueClasses(scrolled), [], "a body scroll hides the cue");
+
+    const stale = await ready();
+    begin(stale);
+    drag(stale, 172);
+    assert.ok(has(stale, "armed"));
+    stale.run("sheetTab = 'layout'");
+    stale.advance(700);
+    assert.deepStrictEqual(cueClasses(stale), [], "the timer goes through check(): a tab changed behind its back hides the cue and repaints nothing armed");
+  });
+
+  test("SWA: release armed switches the tab with the cue in its commit fade right after the switch; release unarmed springs back and switches nothing", async () => {
+    const app = await ready();
+    begin(app);
+    drag(app, 140);
+    assert.ok(has(app, "armed"));
+    emit(app, "touchend", { x: 140 });
+    assert.strictEqual(on(app, "layout"), "true");
+    assert.ok(has(app, "commit") && has(app, "on"), "the commit fade is up right after the switch");
+    app.advance(250);
+    assert.deepStrictEqual(cueClasses(app), [], "and gone after the fade");
+
+    const un = await ready();
+    begin(un);
+    drag(un, 190);
+    assert.ok(has(un, "on") && !has(un, "armed"));
+    emit(un, "touchend", { x: 190 });
+    assert.strictEqual(on(un, "scale"), "true", "an unarmed release switches nothing");
+    assert.ok(has(un, "back") && !has(un, "commit"), "it springs back");
+    un.advance(400);
+    assert.deepStrictEqual(cueClasses(un), []);
+  });
+
+  test("SWA: a vertical scroll shows no cue and switches nothing", async () => {
+    const app = await ready();
+    emit(app, "touchstart", { x: 200, y: 400 });
+    for (const y of [380, 360, 330]) { emit(app, "touchmove", { x: 200, y }); app.advance(20); assert.deepStrictEqual(cueClasses(app), []); }
+    emit(app, "touchend", { x: 200, y: 330 });
+    assert.strictEqual(on(app, "scale"), "true");
+  });
+
+  test("SWA: a swipe in a focused field, a selection, or a scrolled #scale-box shows no cue", async () => {
+    const focused = await ready();
+    focusEvent(focused, focused.els["scale-box"], true);
+    begin(focused, { target: focused.els["scale-box"] });
+    drag(focused, 140, { target: focused.els["scale-box"] });
+    assert.deepStrictEqual(cueClasses(focused), [], "focused field");
+
+    const sel = await ready();
+    selected(sel, sel.els["scale-top"], true);
+    begin(sel, { target: sel.els["scale-top"] });
+    drag(sel, 140, { target: sel.els["scale-top"] });
+    assert.deepStrictEqual(cueClasses(sel), [], "selection");
+
+    const box = await ready();
+    begin(box, { target: box.els["scale-box"] });
+    box.els["scale-box"].scrollTop = 12;
+    drag(box, 140, { target: box.els["scale-box"] });
+    assert.deepStrictEqual(cueClasses(box), [], "scrolled box");
+  });
+
+  test("SWA: a press held HOLD_MS on a pan note then dragged shows no cue (press.lifted)", async () => {
+    const held = await ready();
+    const plate = held.els["scale-preview"];
+    begin(held, { target: plate });
+    held.advance(300);
+    drag(held, 140, { target: plate });
+    assert.deepStrictEqual(cueClasses(held), [], "held without moving");
+    const lifted = await ready();
+    begin(lifted, { target: lifted.els["scale-preview"] });
+    lifted.run("press = { lifted: true }");
+    drag(lifted, 140, { target: lifted.els["scale-preview"] });
+    lifted.run("press = null");
+    assert.deepStrictEqual(cueClasses(lifted), [], "a lifted note");
+    assert.strictEqual(on(lifted, "scale"), "true");
+  });
+
+  test("SWA: a touch starting inside the 24px edge, on #scale-lip or a select shows no cue", async () => {
+    const edge = await ready();
+    begin(edge, { x: 23 });
+    drag(edge, 100, { x: 100 });
+    assert.deepStrictEqual(cueClasses(edge), []);
+    const lip = await ready();
+    begin(lip, { target: lip.els["scale-lip"] });
+    drag(lip, 140, { target: lip.els["scale-lip"] });
+    assert.deepStrictEqual(cueClasses(lip), []);
+    const app = await ready(), select = bodyOf(app).appendChild(app.sandbox.document.createElement("select"));
+    begin(app, { target: select });
+    drag(app, 140, { target: select });
+    assert.deepStrictEqual(cueClasses(app), []);
+  });
+
+  test("SWA: each site that nulls sheetSwipe hides the cue: cancel, a second finger, kbup, setTab from the tab strip, dropDrawer on close, and zoom", async () => {
+    const gone = (app, why) => assert.deepStrictEqual(cueClasses(app), [], why);
+    const a = await shownCue();
+    emit(a, "touchcancel", { touches: [] });
+    gone(a, "cancel");
+    const b = await shownCue();
+    b.els["scale-sheet"].dispatchEvent({ type: "touchstart", target: bodyOf(b), touches: [{ identifier: 7, clientX: 180, clientY: 300 }, { identifier: 8, clientX: 90, clientY: 300 }], changedTouches: [] });
+    gone(b, "a second finger");
+    const c = await shownCue();
+    keyboard(c, true);
+    gone(c, "kbup");
+    const d = await shownCue();
+    d.click(d.els["scale-tab-layout"]);
+    gone(d, "setTab from the tab strip");
+    const e = await shownCue();
+    e.run("dropDrawer()");
+    gone(e, "dropDrawer");
+    const f = await shownCue();
+    f.sandbox.visualViewport.scale = 2;
+    f.sandbox.visualViewport.dispatchEvent({ type: "resize" });
+    gone(f, "zoom");
+    for (const app of [a, b, c, d, e, f]) {
+      app.advance(1000);
+      gone(app, "and nothing repaints it later");
+    }
+  });
+
+  test("SWA: the cue is aria-hidden, has no text, and every move listener is passive", async () => {
+    const m = /<div id="scale-swipe-cue"([^>]*)>([\s\S]*?)<\/div>/.exec(html);
+    assert.ok(m, "the cue is served");
+    assert.match(m[1], /aria-hidden="true"/);
+    assert.strictEqual(m[2].replace(/<[^>]*>/g, "").trim(), "", "no text");
+    const regs = swipeHtml.split(/\b(?:body|sheet|document)\.addEventListener\(/).slice(1);
+    const touches = regs.filter((r) => /^"touch/.test(r));
+    assert.strictEqual(touches.length, 4);
+    for (const r of touches) assert.match(r.split(/\n\s*\}\);?\n|\n\s*sheet\.addEventListener|\n\s*document\.addEventListener|\n\s*body\.addEventListener/)[0], /passive: true/, r.slice(0, 20));
+  });
+
+  test("SWA: the cue writes only transform, opacity and class, at most once per frame", async () => {
+    const app = await ready();
+    const writes = [], klass = [];
+    const real = cueOf(app).style;
+    cueOf(app).style = new Proxy(real, {
+      set(t, k, v) { writes.push(String(k)); t[k] = v; return true; },
+      get(t, k) { if (k === "setProperty") return (n, v) => { writes.push(String(n)); t.setProperty(n, v); }; return t[k]; },
+    });
+    for (const k of ["add", "remove", "toggle"]) {
+      const orig = cueOf(app).classList[k];
+      cueOf(app).classList[k] = function (...a) { klass.push(a[0]); return orig.apply(this, a); };
+    }
+    begin(app);
+    for (const x of [214, 208, 200, 190, 180, 170, 160]) emit(app, "touchmove", { x, y: 300 });
+    app.advance(40);
+    const allowed = new Set(["transform", "opacity", "--cue-y"]);
+    assert.ok(writes.length > 0);
+    assert.ok(writes.every((w) => allowed.has(w)), JSON.stringify(writes));
+    assert.ok(klass.every((c) => ["on", "l", "r", "armed", "commit", "back"].includes(c)), JSON.stringify(klass));
+    assert.strictEqual(writes.filter((w) => w === "transform").length, 1, "seven moves in one frame paint once");
+  });
+
+  test("SWA: under reduced motion the cue never translates or scales, and the armed state is filled, not opacity alone", async () => {
+    RM = true;
+    try {
+      const app = await ready();
+      const seen = [];
+      const real = cueOf(app).style;
+      cueOf(app).style = new Proxy(real, { set(t, k, v) { seen.push([String(k), String(v)]); t[k] = v; return true; } });
+      begin(app);
+      drag(app, 190);
+      assert.ok(has(app, "on") && !has(app, "armed"));
+      assert.strictEqual(cueOf(app).style.opacity, "0.6");
+      drag(app, 150);
+      assert.ok(has(app, "armed"));
+      assert.strictEqual(cueOf(app).style.opacity, "1", "armed is the fill class at full opacity");
+      assert.ok(seen.filter(([k]) => k === "transform").every(([, v]) => v === ""), "no transform is ever written: " + JSON.stringify(seen));
+      emit(app, "touchend", { x: 150 });
+      assert.strictEqual(on(app, "layout"), "true");
+      assert.ok(has(app, "commit"), "no transitions, so the 200ms timer is the only cleanup");
+      app.advance(210);
+      assert.deepStrictEqual(cueClasses(app), []);
+      const back = await ready();
+      begin(back);
+      drag(back, 190);
+      emit(back, "touchend", { x: 190 });
+      assert.deepStrictEqual(cueClasses(back), [], "spring back is a plain hide");
+    } finally { RM = false; }
+  });
+
+  test("SWA: lipQuietUntil and the lip state are unchanged by a shown-and-cancelled cue", async () => {
+    const app = await ready();
+    const before = [app.get("lipQuietUntil"), shut(app)];
+    begin(app);
+    drag(app, 150);
+    assert.ok(has(app, "on"));
+    emit(app, "touchcancel", { touches: [] });
+    assert.deepStrictEqual([app.get("lipQuietUntil"), shut(app)], before);
+  });
+
+  test("SWA: a quick unheld drag on a pan note shows the cue exactly when the recognizer would switch", async () => {
+    for (const from of ["scale", "layout"]) {
+      for (const ms of [20, 100, 640]) {
+        const app = await ready("add", from);
+        const plate = app.els["scale-preview"], dir = from === "scale" ? -1 : 1;
+        begin(app, { x: 190, target: plate });
+        const t0 = app.get("Date.now()");
+        for (const dx of [10, 30, 50, 70]) {
+          app.advance(Math.max(1, Math.round(ms / 4)));
+          emit(app, "touchmove", { x: 190 + dir * dx, y: 300, target: plate });
+          const elapsed = app.get("Date.now()") - t0;
+          app.advance(20);
+          const would = expectArmed(dir * dx, 0, elapsed, from, from === "scale" ? "layout" : "scale");
+          assert.strictEqual(has(app, "armed"), would, `${from} ${ms}ms dx=${dx}: cue armed matches the recognizer`);
+        }
+      }
+    }
+  });
+
+  test("SWA: closing the sheet during a commit fade hides the cue at once, and a new touchstart ends the fade", async () => {
+    const app = await ready();
+    begin(app);
+    drag(app, 140);
+    emit(app, "touchend", { x: 140 });
+    assert.ok(has(app, "commit"));
+    app.run("dropDrawer()");
+    assert.deepStrictEqual(cueClasses(app), []);
+    const again = await ready();
+    begin(again);
+    drag(again, 140);
+    emit(again, "touchend", { x: 140 });
+    assert.ok(has(again, "commit"));
+    begin(again, { x: 300 });
+    assert.deepStrictEqual(cueClasses(again), [], "T1: a new touchstart ends a commit fade");
+  });
+
+  test("SWA: the print block hides #scale-swipe-cue, and it is a direct child of #scale-sheet", async () => {
+    const block = html.slice(html.lastIndexOf("@media print{"));
+    const hidden = [...block.matchAll(/([^{}]+)\{([^{}]+)\}/g)].filter(([, , d]) => /\bdisplay\s*:\s*none\b/.test(d));
+    assert.ok(hidden.some(([, s]) => s.split(",").map((x) => x.trim()).includes("#scale-swipe-cue")));
+    const stripped = html.replace(/<!--[\s\S]*?-->/g, "");
+    const from = stripped.indexOf('<div id="scale-sheet"'), at = stripped.indexOf('<div id="scale-swipe-cue"');
+    assert.ok(from > 0 && at > from);
+    let depth = 0;
+    for (const t of stripped.slice(from, at).matchAll(/<div\b|<\/div>/g)) depth += t[0] === "</div>" ? -1 : 1;
+    assert.strictEqual(depth, 1, "only #scale-sheet is open around the cue");
   });
 });
 
