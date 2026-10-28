@@ -15,10 +15,10 @@ diff --git a/index.html b/index.html
          return false;
 @@ -11701,7 +11701,7 @@ function setTab(tab) {
            p.clientX < 24 || p.clientX > window.innerWidth - 24 || sheet.classList.contains("kbup") ||
-           previewBox.contains(t) || (t && t.closest && t.closest("#scale-lip, select"))) return;
+           (t && t.closest && t.closest("#scale-lip, select"))) return;
        const field = t && t.closest ? t.closest("input, textarea") : null;
 -      if ((field && document.activeElement === field) || selected(field)) return;
 +      if (selected(field)) return;
        const box = field && field.tagName === "TEXTAREA" ? field : null;
        sheetSwipe = { id: p.identifier, x: p.clientX, y: p.clientY, at: Date.now(), tab: sheetTab,
-         field, box, boxTop: scrollOf(box), boxLeft: box ? box.scrollLeft || 0 : 0,
+         plate: previewBox.contains(t), field, box, boxTop: scrollOf(box), boxLeft: box ? box.scrollLeft || 0 : 0,

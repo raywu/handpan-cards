@@ -5,11 +5,11 @@ diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
 @@ -11686,7 +11686,7 @@ function setTab(tab) {
-       if (!check()) return false;
        const S = sheetSwipe;
        if (!Number.isFinite(p.clientX) || !Number.isFinite(p.clientY) ||
--          (S.field && !S.moved && Date.now() - S.at >= HOLD_MS)) {
-+          (S.field && !S.moved && Date.now() - S.at > HOLD_MS)) {
+           (S.plate && press && press.lifted) ||
+-          ((S.field || S.plate) && !S.moved && Date.now() - S.at >= HOLD_MS)) {
++          ((S.field || S.plate) && !S.moved && Date.now() - S.at > HOLD_MS)) {
          cancel();
          return false;
        }

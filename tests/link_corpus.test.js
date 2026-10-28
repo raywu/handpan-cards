@@ -37,7 +37,38 @@ function loadEngine() {
 }
 const HPE = loadEngine();
 const plain = (x) => JSON.parse(JSON.stringify(x));
-const bootAt = (hash, storage) => boot({ href: BASE + hash, html: HTML, storage });
+const IDB = HTML.includes("hpfc.saved-scales.v1");
+const newOrigin = () => (IDB ? require("./helpers/sandbox.js").createOrigin({}) : undefined);
+const bootAt = (hash, origin) => boot(IDB
+  ? { href: BASE + hash, html: HTML, origin: origin || newOrigin(), indexedDB: true, broadcastChannel: true, locks: true,
+    isSecureContext: true, crypto: require("node:crypto").webcrypto, abortController: true }
+  : { href: BASE + hash, html: HTML, storage: origin, crypto: require("node:crypto").webcrypto, abortController: true });
+const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+const settle = async (app) => {
+  if (!IDB) return;
+  await app.waitFor("typeof booted !== 'undefined' && booted === true", { timeout: 3000 });
+  await pause(60);
+};
+const savedRaw = (app) => {
+  if (!IDB) return app.store[SCALES_KEY];
+  const db = app.idb.inspect("hpfc.saved-scales.v1");
+  const st = db && db.stores.find((x) => x.name === "collections");
+  const rec = st && st.entries.find(([k]) => k === "current");
+  if (!rec) return undefined;
+  return JSON.parse(rec[1]).entries.length ? rec[1] : undefined;
+};
+const savedCount = (app) => {
+  const raw = savedRaw(app);
+  return IDB ? JSON.parse(raw).entries.length : JSON.parse(raw).length;
+};
+const findDeck = (app, id) => (IDB ? app.get("allDecks()").find((d) => d.id === id) : app.registry()[id]);
+const reuse = (app, origin) => (IDB ? origin : { ...app.store });
+const shownId = (app) => {
+  if (typeof app.currentDeck === "function") {
+    try { return app.currentDeck().id; } catch (e) { /* no deck() in this tree */ }
+  }
+  return app.deckId();
+};
 
 const FIXTURES = path.join(REPO, "tests", "fixtures");
 const CORPUS = [1, 2, 3, 4, 5, 6].map((n) =>
@@ -88,31 +119,33 @@ test("LC: every frozen link decodes to its recorded deck id, fields, options and
 // Two notes decode in every era but make no chord, so the app has refused them since v1.
 const NO_CHORDS = new Set(["minimal-two-notes"]);
 
-test("LC: every frozen link opens its deck in the booted app", () => {
+test("LC: every frozen link opens its deck in the booted app", async () => {
   for (const e of ENTRIES) {
     const where = `v${e.wire} ${e.id}`;
     const app = bootAt("#s=" + e.link);
+    await settle(app);
     if (NO_CHORDS.has(e.id)) {
-      assert.equal(app.deckId(), "kurd", `${where}: a scale with no playable chords opens nothing`);
-      assert.equal(app.store[SCALES_KEY], undefined, `${where}: and saves nothing`);
+      assert.equal(shownId(app), "kurd", `${where}: a scale with no playable chords opens nothing`);
+      assert.equal(savedRaw(app), undefined, `${where}: and saves nothing`);
       assert.match(app.announcer().textContent, /no playable chords/, where);
       continue;
     }
     const id = resolveId(e.deckId);
-    assert.equal(app.deckId(), id, `${where}: the booted app shows the recorded deck`);
-    const deck = app.registry()[id];
+    assert.equal(shownId(app), id, `${where}: the booted app shows the recorded deck`);
+    const deck = findDeck(app, id);
     assert.ok(deck, `${where}: the deck is in the registry`);
     if (e.name) assert.equal(deck.name, e.name, `${where}: name`);
-    assert.ok(JSON.parse(app.store[SCALES_KEY]).length >= 1, `${where}: the opened deck is saved`);
+    assert.ok(savedCount(app) >= 1, `${where}: the opened deck is saved`);
   }
 });
 
-test("LC: every frozen #deck= slug opens its deck", () => {
+test("LC: every frozen #deck= slug opens its deck", async () => {
   assert.deepEqual(Object.keys(SLUGS.slugs).sort(),
     ["c-sharp-hijaz-9", "d-amara-10", "d-amara-9", "d-kurd-10", "f-low-pygmy-18"]);
   for (const [slug, id] of Object.entries(SLUGS.slugs)) {
     const app = bootAt("#deck=" + slug);
-    assert.equal(app.deckId(), resolveId(id), `#deck=${slug}`);
+    await settle(app);
+    assert.equal(shownId(app), resolveId(id), `#deck=${slug}`);
     assert.equal(app.location.hash, "#deck=" + slug, `#deck=${slug} leaves its own route in the bar`);
   }
 });
@@ -135,7 +168,7 @@ test("LC: re-encoding a frozen deck at the current VERSION and decoding it gives
   }
 });
 
-test("LC: a version byte above VERSION is NEEDS_NEWER_APP and boot stores nothing and rewrites no stored record", () => {
+test("LC: a version byte above VERSION is NEEDS_NEWER_APP and boot stores nothing and rewrites no stored record", async () => {
   const above = String(HPE.share.VERSION + 1);
   for (const e of ENTRIES) {
     const res = HPE.share.decode(above + e.link.slice(1));
@@ -148,20 +181,24 @@ test("LC: a version byte above VERSION is NEEDS_NEWER_APP and boot stores nothin
   for (const e of sample) {
     const newer = above + e.link.slice(1);
     const fresh = bootAt("#s=" + newer);
-    assert.equal(fresh.store[SCALES_KEY], undefined, `${e.id}: a refused link on a fresh store saves nothing`);
-    assert.equal(fresh.deckId(), "kurd", `${e.id}: the deck on screen is the default`);
+    await settle(fresh);
+    assert.equal(savedRaw(fresh), undefined, `${e.id}: a refused link on a fresh store saves nothing`);
+    assert.equal(shownId(fresh), "kurd", `${e.id}: the deck on screen is the default`);
 
     const owned = CORPUS[5].entries.find((x) => x.options.angles);
-    const seeded = bootAt("#s=" + owned.link);
-    const before = seeded.store[SCALES_KEY];
+    const origin = newOrigin();
+    const seeded = bootAt("#s=" + owned.link, origin);
+    await settle(seeded);
+    const before = savedRaw(seeded);
     assert.ok(before, "a stored record exists to be protected");
-    const again = bootAt("#s=" + newer, { ...seeded.store });
-    assert.equal(again.store[SCALES_KEY], before, `${e.id}: the stored records are byte-identical`);
-    assert.ok(again.registry()[resolveId(owned.deckId)], `${e.id}: the saved scale is still in the registry`);
+    const again = bootAt("#s=" + newer, reuse(seeded, origin));
+    await settle(again);
+    assert.equal(savedRaw(again), before, `${e.id}: the stored records are byte-identical`);
+    assert.ok(findDeck(again, resolveId(owned.deckId)), `${e.id}: the saved scale is still in the registry`);
   }
 });
 
-test("LC: every frozen deck id resolves to itself or through the id map, and the map has no cycle", () => {
+test("LC: every frozen deck id resolves to itself or through the id map, and the map has no cycle", async () => {
   const listed = fs.readFileSync(path.join(MAP_DIR, "FROZEN.sha256"), "utf8").trim().split("\n")
     .map((l) => l.match(/^([0-9a-f]{64}) {2}(\S+)$/)).map((m) => { assert.ok(m, "FROZEN.sha256 line shape"); return m; });
   assert.deepEqual(listed.map((m) => m[2]).sort(), mapFiles(), "every map file is listed and no listed file is missing");
@@ -183,6 +220,8 @@ test("LC: every frozen deck id resolves to itself or through the id map, and the
     assert.equal(current, resolveId(e.deckId), `v${e.wire} ${e.id}: ${e.deckId} resolves to ${current}`);
   }
   for (const [slug, id] of Object.entries(SLUGS.slugs)) {
-    assert.equal(bootAt("#deck=" + slug).deckId(), resolveId(id), `built-in ${id} resolves`);
+    const app = bootAt("#deck=" + slug);
+    await settle(app);
+    assert.equal(shownId(app), resolveId(id), `built-in ${id} resolves`);
   }
 });
