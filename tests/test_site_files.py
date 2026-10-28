@@ -1,3 +1,4 @@
+import glob
 import os
 import re
 import subprocess
@@ -108,9 +109,12 @@ class SiteFilesTest(unittest.TestCase):
             self.assertTrue(loc.endswith("/"), loc)
             self.assertNotIn("#", loc)
 
-    def test_sitemap_lists_exactly_the_site_root(self):
+    def test_sitemap_lists_the_root_and_every_scale_page(self):
         locs = {e.text.strip() for e in sitemap_tree().iter(NS + "loc")}
-        self.assertEqual(locs, {SITE})
+        pages = {SITE + os.path.relpath(os.path.dirname(f), ROOT) + "/"
+                 for f in glob.glob(os.path.join(ROOT, "scales", "*", "index.html"))}
+        self.assertTrue(pages)
+        self.assertEqual(locs, {SITE} | pages)
 
     def test_no_lastmod_and_nojekyll_is_empty(self):
         self.assertEqual(list(sitemap_tree().iter(NS + "lastmod")), [])
