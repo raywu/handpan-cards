@@ -819,7 +819,7 @@ card-size and host-block titles below are in `tests/e2e.test.js`.
   `test_robots_allows_everything` (it asserts `User-agent: *` and `Allow: /`,
   not the absence of `Disallow`), `test_robots_names_the_absolute_sitemap`,
   `test_sitemap_locs_are_absolute_clean_urls`,
-  `test_sitemap_lists_exactly_the_site_root`,
+  `test_sitemap_lists_the_root_and_every_scale_page` (the sitemap also lists `/scales/d-kurd-10/`, a static scale page),
   `test_no_lastmod_and_nojekyll_is_empty`.
 
 ## Scale import (2026-10-17, PRs #338, #339, #342; plan `docs/plans/2026-10-16-scale-import.md`)
