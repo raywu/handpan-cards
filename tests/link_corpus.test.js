@@ -1,0 +1,188 @@
+// Release safety, lane C - the frozen link corpus.
+//
+// Every share-link wire version (v1 to v6) and every #deck= slug is frozen as a
+// fixture, so a link already in someone's chat history keeps opening the same
+// deck forever. The fixtures are append-only: a deliberate change to a deck id
+// adds a file to tests/fixtures/deck_id_map_v1/ and never edits an entry.
+//
+// Oracle: each entry in tests/fixtures/share_links_v1/v<N>.json was encoded by
+// the released encoder at the commit its file names, and read back by that same
+// commit's decoder (its "provenance"). The current decoder is only ever held
+// against those recorded decks, never used to produce them.
+//
+// HPFC_APP_ROOT chooses the tree under test: its index.html and src/engine/
+// (default: this repo), so a release candidate can be held against the corpus.
+const test = require("node:test");
+const assert = require("node:assert/strict");
+const crypto = require("node:crypto");
+const fs = require("node:fs");
+const path = require("node:path");
+const vm = require("node:vm");
+const { boot } = require("../tools/sandbox.js");
+
+const REPO = path.join(__dirname, "..");
+const APP_ROOT = process.env.HPFC_APP_ROOT ? path.resolve(process.env.HPFC_APP_ROOT) : REPO;
+const HTML = fs.readFileSync(path.join(APP_ROOT, "index.html"), "utf8");
+const BASE = "https://example.test/index.html";
+const SCALES_KEY = "hpfc.scales.v3";
+
+function loadEngine() {
+  const sb = { console, URL, URLSearchParams, TextEncoder, TextDecoder, structuredClone, btoa, atob };
+  vm.createContext(sb);
+  for (const m of ["core", "voicing", "layout", "naming", "select", "share"]) {
+    const file = path.join(APP_ROOT, "src", "engine", m + ".js");
+    vm.runInContext(fs.readFileSync(file, "utf8"), sb, { filename: file });
+  }
+  return sb.HPE;
+}
+const HPE = loadEngine();
+const plain = (x) => JSON.parse(JSON.stringify(x));
+const bootAt = (hash, storage) => boot({ href: BASE + hash, html: HTML, storage });
+
+const FIXTURES = path.join(REPO, "tests", "fixtures");
+const CORPUS = [1, 2, 3, 4, 5, 6].map((n) =>
+  JSON.parse(fs.readFileSync(path.join(FIXTURES, "share_links_v1", `v${n}.json`), "utf8")));
+const SLUGS = JSON.parse(fs.readFileSync(path.join(FIXTURES, "share_links_v1", "slugs.json"), "utf8"));
+const MAP_DIR = path.join(FIXTURES, "deck_id_map_v1");
+const mapFiles = () => fs.readdirSync(MAP_DIR).filter((f) => /^\d{4}_.+\.json$/.test(f)).sort();
+const ID_MAP = Object.assign({}, ...mapFiles().map((f) =>
+  JSON.parse(fs.readFileSync(path.join(MAP_DIR, f), "utf8"))));
+const resolveId = (recorded) => (Object.prototype.hasOwnProperty.call(ID_MAP, recorded) ? ID_MAP[recorded] : recorded);
+const ENTRIES = CORPUS.flatMap((doc) => doc.entries.map((e) => ({ ...e, wire: doc.wireVersion })));
+
+test("LC: the corpus covers wire versions 1 to 6, every entry names its provenance and every id is unique", () => {
+  assert.deepEqual(CORPUS.map((d) => d.wireVersion), [1, 2, 3, 4, 5, 6]);
+  for (const doc of CORPUS) {
+    assert.match(doc.encoderCommit, /^[0-9a-f]{8}$/);
+    assert.ok(doc.entries.length > 0);
+    assert.equal(new Set(doc.entries.map((e) => e.id)).size, doc.entries.length, `v${doc.wireVersion} ids repeat`);
+    for (const e of doc.entries) {
+      assert.ok(e.provenance.includes(doc.encoderCommit), `${e.id}: provenance names the commit`);
+      assert.ok(e.link.startsWith(String(doc.wireVersion)), `${e.id}: link opens with its version byte`);
+    }
+  }
+  const joined = (v) => CORPUS[v - 1].entries.map((e) => e.options);
+  assert.ok(joined(6).some((o) => o.angles), "v6 carries an at- entry");
+  assert.ok(ENTRIES.some((e) => e.options.seats), "some entry carries seats");
+  assert.ok(ENTRIES.some((e) => e.options.mirror && e.options.mirrorBottom === false), "mirror alone");
+  assert.ok(ENTRIES.some((e) => e.options.anchor === "between"), "anchor between");
+  assert.ok(ENTRIES.some((e) => e.options.parent !== undefined && e.options.parent !== null), "explicit parent");
+  assert.ok(ENTRIES.some((e) => /%/.test(e.name || "") && /\+/.test(e.name) && /_/.test(e.name)), "a name with %, + and _");
+  assert.ok(ENTRIES.some((e) => Object.values(e.fields).some((f) => f[3] === "bottom")), "bottom notes");
+  assert.ok(ENTRIES.some((e) => Object.values(e.fields).some((f) => f[3] === "inner")), "inner notes");
+});
+
+test("LC: every frozen link decodes to its recorded deck id, fields, options and name", () => {
+  for (const e of ENTRIES) {
+    const where = `v${e.wire} ${e.id}`;
+    const res = HPE.share.decode(e.link);
+    assert.equal(res.ok, true, `${where}: ${res.code} ${res.reason}`);
+    const value = plain(res.value);
+    assert.deepEqual(value.fields, e.fields, `${where}: fields`);
+    assert.deepEqual(value.options, e.options, `${where}: options`);
+    assert.equal(value.options.name === undefined ? null : value.options.name, e.name, `${where}: name`);
+    assert.equal(HPE.core.deckId(value.fields), resolveId(e.deckId), `${where}: deck id`);
+  }
+});
+
+// Two notes decode in every era but make no chord, so the app has refused them since v1.
+const NO_CHORDS = new Set(["minimal-two-notes"]);
+
+test("LC: every frozen link opens its deck in the booted app", () => {
+  for (const e of ENTRIES) {
+    const where = `v${e.wire} ${e.id}`;
+    const app = bootAt("#s=" + e.link);
+    if (NO_CHORDS.has(e.id)) {
+      assert.equal(app.deckId(), "kurd", `${where}: a scale with no playable chords opens nothing`);
+      assert.equal(app.store[SCALES_KEY], undefined, `${where}: and saves nothing`);
+      assert.match(app.announcer().textContent, /no playable chords/, where);
+      continue;
+    }
+    const id = resolveId(e.deckId);
+    assert.equal(app.deckId(), id, `${where}: the booted app shows the recorded deck`);
+    const deck = app.registry()[id];
+    assert.ok(deck, `${where}: the deck is in the registry`);
+    if (e.name) assert.equal(deck.name, e.name, `${where}: name`);
+    assert.ok(JSON.parse(app.store[SCALES_KEY]).length >= 1, `${where}: the opened deck is saved`);
+  }
+});
+
+test("LC: every frozen #deck= slug opens its deck", () => {
+  assert.deepEqual(Object.keys(SLUGS.slugs).sort(),
+    ["c-sharp-hijaz-9", "d-amara-10", "d-amara-9", "d-kurd-10", "f-low-pygmy-18"]);
+  for (const [slug, id] of Object.entries(SLUGS.slugs)) {
+    const app = bootAt("#deck=" + slug);
+    assert.equal(app.deckId(), resolveId(id), `#deck=${slug}`);
+    assert.equal(app.location.hash, "#deck=" + slug, `#deck=${slug} leaves its own route in the bar`);
+  }
+});
+
+test("LC: re-encoding a frozen deck at the current VERSION and decoding it gives the same deck", () => {
+  assert.ok(HPE.share.VERSION >= 6);
+  for (const e of ENTRIES) {
+    const where = `v${e.wire} ${e.id}`;
+    const first = HPE.share.decode(e.link);
+    assert.equal(first.ok, true, where);
+    const enc = HPE.share.encode(plain(first.value));
+    assert.equal(enc.ok, true, `${where}: encode ${enc.code} ${enc.reason}`);
+    assert.ok(enc.value.startsWith(String(HPE.share.VERSION)), `${where}: written at the current version`);
+    const back = HPE.share.decode(enc.value);
+    assert.equal(back.ok, true, `${where}: ${back.code} ${back.reason}`);
+    const value = plain(back.value);
+    assert.deepEqual(value.fields, e.fields, `${where}: fields`);
+    assert.deepEqual(value.options, e.options, `${where}: options`);
+    assert.equal(HPE.core.deckId(value.fields), resolveId(e.deckId), `${where}: deck id`);
+  }
+});
+
+test("LC: a version byte above VERSION is NEEDS_NEWER_APP and boot stores nothing and rewrites no stored record", () => {
+  const above = String(HPE.share.VERSION + 1);
+  for (const e of ENTRIES) {
+    const res = HPE.share.decode(above + e.link.slice(1));
+    assert.equal(res.ok, false, `v${e.wire} ${e.id}`);
+    assert.equal(res.code, "NEEDS_NEWER_APP", `v${e.wire} ${e.id}`);
+  }
+
+  const sample = [1, 4, 5, 6].map((n) => CORPUS[n - 1].entries[0]).concat(
+    CORPUS[5].entries.filter((e) => e.options.angles).slice(0, 1));
+  for (const e of sample) {
+    const newer = above + e.link.slice(1);
+    const fresh = bootAt("#s=" + newer);
+    assert.equal(fresh.store[SCALES_KEY], undefined, `${e.id}: a refused link on a fresh store saves nothing`);
+    assert.equal(fresh.deckId(), "kurd", `${e.id}: the deck on screen is the default`);
+
+    const owned = CORPUS[5].entries.find((x) => x.options.angles);
+    const seeded = bootAt("#s=" + owned.link);
+    const before = seeded.store[SCALES_KEY];
+    assert.ok(before, "a stored record exists to be protected");
+    const again = bootAt("#s=" + newer, { ...seeded.store });
+    assert.equal(again.store[SCALES_KEY], before, `${e.id}: the stored records are byte-identical`);
+    assert.ok(again.registry()[resolveId(owned.deckId)], `${e.id}: the saved scale is still in the registry`);
+  }
+});
+
+test("LC: every frozen deck id resolves to itself or through the id map, and the map has no cycle", () => {
+  const listed = fs.readFileSync(path.join(MAP_DIR, "FROZEN.sha256"), "utf8").trim().split("\n")
+    .map((l) => l.match(/^([0-9a-f]{64}) {2}(\S+)$/)).map((m) => { assert.ok(m, "FROZEN.sha256 line shape"); return m; });
+  assert.deepEqual(listed.map((m) => m[2]).sort(), mapFiles(), "every map file is listed and no listed file is missing");
+  for (const [, hash, file] of listed) {
+    const bytes = fs.readFileSync(path.join(MAP_DIR, file));
+    assert.equal(crypto.createHash("sha256").update(bytes).digest("hex"), hash, `${file} is frozen`);
+  }
+
+  for (const start of Object.keys(ID_MAP)) {
+    const seen = new Set([start]);
+    for (let at = ID_MAP[start]; Object.prototype.hasOwnProperty.call(ID_MAP, at); at = ID_MAP[at]) {
+      assert.ok(!seen.has(at), `id map cycle through ${at}`);
+      seen.add(at);
+    }
+  }
+
+  for (const e of ENTRIES) {
+    const current = HPE.core.deckId(e.fields);
+    assert.equal(current, resolveId(e.deckId), `v${e.wire} ${e.id}: ${e.deckId} resolves to ${current}`);
+  }
+  for (const [slug, id] of Object.entries(SLUGS.slugs)) {
+    assert.equal(bootAt("#deck=" + slug).deckId(), resolveId(id), `built-in ${id} resolves`);
+  }
+});

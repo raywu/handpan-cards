@@ -1,0 +1,15 @@
+# kills: LC: a version byte above VERSION is NEEDS_NEWER_APP and boot stores nothing and rewrites no stored record
+# suite: node --test --test-name-pattern ^LC..a.version.byte.above.VERSION.is.NEEDS_NEWER_APP.and.boot.stores.nothing.and.rewrites.no.stored.record$ tests/link_corpus.test.js
+# A link from a newer app is refused, but the refusal writes the saved-scales list, so opening one wipes a visitor's scales.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9982,7 +9982,7 @@ let bootStored = null;
+ // composes a sentence of its own (ENGINE-SPEC sections 1 and 2).
+ function openShare(text) {
+   const res = HPE.share.decode(String(text));
+-  if (!res.ok) { say(reasonText(res), "err"); return res; }
++  if (!res.ok) { if (res.code === "NEEDS_NEWER_APP") writeScales([]); say(reasonText(res), "err"); return res; }
+   // Generation runs ONCE per restore, here, exactly as submit does (section 11).
+   const built = generateDeck(HPE.core.formatSeed(res.value.fields), res.value.options);
+   if (!built.ok) { say(reasonText(built), "err"); return built; }

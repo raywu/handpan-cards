@@ -1,0 +1,14 @@
+# kills: LC: every frozen link decodes to its recorded deck id, fields, options and name
+# suite: node --test --test-name-pattern ^LC..every.frozen.link.decodes.to.its.recorded.deck.id..fields..options.and.name$ tests/link_corpus.test.js
+# A v6 link is validated but its at- angles are never attached, so a moved bottom note silently returns to its solved place.
+diff --git a/src/engine/share.js b/src/engine/share.js
+--- a/src/engine/share.js
++++ b/src/engine/share.js
+@@ -543,7 +543,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       if (o.seats) asked.seats = o.seats;
+       var placed = HPE.layout.solve({ fields: result.value.fields, options: {} }, asked);
+       if (!placed.ok) return badNote(text);
+-      result.value.options.angles = { bottom: carry.angles };
+     }
+     return result;
+   }

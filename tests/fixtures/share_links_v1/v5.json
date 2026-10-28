@@ -1,0 +1,2894 @@
+{
+ "wireVersion": 5,
+ "encoderCommit": "42790881",
+ "note": "Append-only. A link here must open the same deck forever. Entries are never edited; a deliberate change adds an id-map file instead.",
+ "entries": [
+  {
+   "id": "kurd-bare",
+   "link": "5/(D3)_A3_Bb3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+10/66d9eb",
+   "deckId": "custom:cb5fe66a",
+   "name": "",
+   "fields": {
+    "0": [
+     "D",
+     3,
+     50,
+     "ding",
+     null,
+     "Ding"
+    ],
+    "1": [
+     "A",
+     3,
+     57,
+     "rim",
+     null,
+     "1"
+    ],
+    "2": [
+     "Bb",
+     3,
+     58,
+     "rim",
+     null,
+     "2"
+    ],
+    "3": [
+     "C",
+     4,
+     60,
+     "rim",
+     null,
+     "3"
+    ],
+    "4": [
+     "D",
+     4,
+     62,
+     "rim",
+     null,
+     "4"
+    ],
+    "5": [
+     "E",
+     4,
+     64,
+     "rim",
+     null,
+     "5"
+    ],
+    "6": [
+     "F",
+     4,
+     65,
+     "rim",
+     null,
+     "6"
+    ],
+    "7": [
+     "G",
+     4,
+     67,
+     "rim",
+     null,
+     "7"
+    ],
+    "8": [
+     "A",
+     4,
+     69,
+     "rim",
+     null,
+     "8"
+    ],
+    "9": [
+     "C",
+     5,
+     72,
+     "rim",
+     null,
+     "9"
+    ]
+   },
+   "options": {
+    "palette": 0,
+    "parent": null,
+    "name": "",
+    "mirror": false
+   },
+   "provenance": "encoded by HPE.share.encode at 42790881 (wire v5) and read back by that same commit's decode; the same string is pinned in tests/share.test.js"
+  },
+  {
+   "id": "amara10-bare",
+   "link": "5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5_D5/*D+AEOLIAN+10/91ba85",
+   "deckId": "custom:b174242c",
+   "name": "",
+   "fields": {
+    "0": [
+     "D",
+     3,
+     50,
+     "ding",
+     null,
+     "Ding"
+    ],
+    "1": [
+     "A",
+     3,
+     57,
+     "rim",
+     null,
+     "1"
+    ],
+    "2": [
+     "C",
+     4,
+     60,
+     "rim",
+     null,
+     "2"
+    ],
+    "3": [
+     "D",
+     4,
+     62,
+     "rim",
+     null,
+     "3"
+    ],
+    "4": [
+     "E",
+     4,
+     64,
+     "rim",
+     null,
+     "4"
+    ],
+    "5": [
+     "F",
+     4,
+     65,
+     "rim",
+     null,
+     "5"
+    ],
+    "6": [
+     "G",
+     4,
+     67,
+     "rim",
+     null,
+     "6"
+    ],
+    "7": [
+     "A",
+     4,
+     69,
+     "rim",
+     null,
+     "7"
+    ],
+    "8": [
+     "C",
+     5,
+     72,
+     "rim",
+     null,
+     "8"
+    ],
+    "9": [
+     "D",
+     5,
+     74,
+     "rim",
+     null,
+     "9"
+    ]
+   },
+   "options": {
+    "palette": 0,
+    "parent": null,
+    "name": "",
+    "mirror": false
+   },
+   "provenance": "encoded by HPE.share.encode at 42790881 (wire v5) and read back by that same commit's decode; the same string is pinned in tests/share.test.js"
+  },
+  {
+   "id": "amara-bare",
+   "link": "5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/f0daf4",
+   "deckId": "custom:977311b5",
+   "name": "",
+   "fields": {
+    "0": [
+     "D",
+     3,
+     50,
+     "ding",
+     null,
+     "Ding"
+    ],
+    "1": [
+     "A",
+     3,
+     57,
+     "rim",
+     null,
+     "1"
+    ],
+    "2": [
+     "C",
+     4,
+     60,
+     "rim",
+     null,
+     "2"
+    ],
+    "3": [
+     "D",
+     4,
+     62,
+     "rim",
+     null,
+     "3"
+    ],
+    "4": [
+     "E",
+     4,
+     64,
+     "rim",
+     null,
+     "4"
+    ],
+    "5": [
+     "F",
+     4,
+     65,
+     "rim",
+     null,
+     "5"
+    ],
+    "6": [
+     "G",
+     4,
+     67,
+     "rim",
+     null,
+     "6"
+    ],
+    "7": [
+     "A",
+     4,
+     69,
+     "rim",
+     null,
+     "7"
+    ],
+    "8": [
+     "C",
+     5,
+     72,
+     "rim",
+     null,
+     "8"
+    ]
+   },
+   "options": {
+    "palette": 0,
+    "parent": null,
+    "name": "",
+    "mirror": false
+   },
+   "provenance": "encoded by HPE.share.encode at 42790881 (wire v5) and read back by that same commit's decode; the same string is pinned in tests/share.test.js"
+  },
+  {
+   "id": "hijaz-bare",
+   "link": "5/(Cs3)_Gs3_B3_Cs4_D4_F4_Fs4_Gs4_B4/*C%23+HIJAZ+9/fe4d19",
+   "deckId": "custom:626198f8",
+   "name": "",
+   "fields": {
+    "0": [
+     "C#",
+     3,
+     49,
+     "ding",
+     null,
+     "Ding"
+    ],
+    "1": [
+     "G#",
+     3,
+     56,
+     "rim",
+     null,
+     "1"
+    ],
+    "2": [
+     "B",
+     3,
+     59,
+     "rim",
+     null,
+     "2"
+    ],
+    "3": [
+     "C#",
+     4,
+     61,
+     "rim",
+     null,
+     "3"
+    ],
+    "4": [
+     "D",
+     4,
+     62,
+     "rim",
+     null,
+     "4"
+    ],
+    "5": [
+     "F",
+     4,
+     65,
+     "rim",
+     null,
+     "5"
+    ],
+    "6": [
+     "F#",
+     4,
+     66,
+     "rim",
+     null,
+     "6"
+    ],
+    "7": [
+     "G#",
+     4,
+     68,
+     "rim",
+     null,
+     "7"
+    ],
+    "8": [
+     "B",
+     4,
+     71,
+     "rim",
+     null,
+     "8"
+    ]
+   },
+   "options": {
+    "palette": 0,
+    "parent": null,
+    "name": "",
+    "mirror": false
+   },
+   "provenance": "encoded by HPE.share.encode at 42790881 (wire v5) and read back by that same commit's decode; the same string is pinned in tests/share.test.js"
+  },
+  {
+   "id": "pygmy-bare",
+   "link": "5/uC3_uDb3_uEb3_(F3)_G3_Ab3_uBb3_C4_uDb4_Eb4_F4_G4_Ab4_C5_Eb5_-_F5_G5_uAb5/*F+AEOLIAN+12/3710d3",
+   "deckId": "custom:6f9ffc33",
+   "name": "",
+   "fields": {
+    "0": [
+     "F",
+     3,
+     53,
+     "ding",
+     null,
+     "Ding"
+    ],
+    "1": [
+     "G",
+     3,
+     55,
+     "rim",
+     null,
+     "1"
+    ],
+    "2": [
+     "Ab",
+     3,
+     56,
+     "rim",
+     null,
+     "2"
+    ],
+    "3": [
+     "C",
+     4,
+     60,
+     "rim",
+     null,
+     "3"
+    ],
+    "4": [
+     "Eb",
+     4,
+     63,
+     "rim",
+     null,
+     "4"
+    ],
+    "5": [
+     "F",
+     4,
+     65,
+     "rim",
+     null,
+     "5"
+    ],
+    "6": [
+     "G",
+     4,
+     67,
+     "rim",
+     null,
+     "6"
+    ],
+    "7": [
+     "Ab",
+     4,
+     68,
+     "rim",
+     null,
+     "7"
+    ],
+    "8": [
+     "C",
+     5,
+     72,
+     "rim",
+     null,
+     "8"
+    ],
+    "9": [
+     "Eb",
+     5,
+     75,
+     "rim",
+     null,
+     "9"
+    ],
+    "10": [
+     "F",
+     5,
+     77,
+     "inner",
+     null,
+     "10"
+    ],
+    "11": [
+     "G",
+     5,
+     79,
+     "inner",
+     null,
+     "11"
+    ],
+    "101": [
+     "C",
+     3,
+     48,
+     "bottom",
+     null,
+     "U1"
+    ],
+    "102": [
+     "Db",
+     3,
+     49,
+     "bottom",
+     null,
+     "U2"
+    ],
+    "103": [
+     "Eb",
+     3,
+     51,
+     "bottom",
+     null,
+     "U3"
+    ],
+    "104": [
+     "Bb",
+     3,
+     58,
+     "bottom",
+     null,
+     "U4"
+    ],
+    "105": [
+     "Db",
+     4,
+     61,
+     "bottom",
+     null,
+     "U5"
+    ],
+    "106": [
+     "Ab",
+     5,
+     80,
+     "bottom",
+     null,
+     "U6"
+    ]
+   },
+   "options": {
+    "palette": 0,
+    "parent": null,
+    "name": "",
+    "mirror": false
+   },
+   "provenance": "encoded by HPE.share.encode at 42790881 (wire v5) and read back by that same commit's decode"
+  },
+  {
+   "id": "kurd-named-label",
+   "link": "5/(D3)_A3_Bb3_C4_D4_E4_F4_G4_A4_C5/D+KURD+10/9fcd07",
+   "deckId": "custom:cb5fe66a",
+   "name": "D KURD 10",
+   "fields": {
+    "0": [
+     "D",
+     3,
+     50,
+     "ding",
+     null,
+     "Ding"
+    ],
+    "1": [
+     "A",
+     3,
+     57,
+     "rim",
+     null,
+     "1"
+    ],
+    "2": [
+     "Bb",
+     3,
+     58,
+     "rim",
+     null,
+     "2"
+    ],
+    "3": [
+     "C",
+     4,
+     60,
+     "rim",
+     null,
+     "3"
+    ],
+    "4": [
+     "D",
+     4,
+     62,
+     "rim",
+     null,
+     "4"
+    ],
+    "5": [
+     "E",
+     4,
+     64,
+     "rim",
+     null,
+     "5"
+    ],
+    "6": [
+     "F",
+     4,
+     65,
+     "rim",
+     null,
+     "6"
+    ],
+    "7": [
+     "G",
+     4,
+     67,
+     "rim",
+     null,
+     "7"
+    ],
+    "8": [
+     "A",
+     4,
+     69,
+     "rim",
+     null,
+     "8"
+    ],
+    "9": [
+     "C",
+     5,
+     72,
+     "rim",
+     null,
+     "9"
+    ]
+   },
+   "options": {
+    "palette": 0,
+    "parent": null,
+    "name": "D KURD 10",
+    "mirror": false
+   },
+   "provenance": "encoded by HPE.share.encode at 42790881 (wire v5) and read back by that same commit's decode; the same string is pinned in tests/share.test.js"
+  },
+  {
+   "id": "amara10-named-label",
+   "link": "5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5_D5/D+AMARA+10/6ceb44",
+   "deckId": "custom:b174242c",
+   "name": "D AMARA 10",
+   "fields": {
+    "0": [
+     "D",
+     3,
+     50,
+     "ding",
+     null,
+     "Ding"
+    ],
+    "1": [
+     "A",
+     3,
+     57,
+     "rim",
+     null,
+     "1"
+    ],
+    "2": [
+     "C",
+     4,
+     60,
+     "rim",
+     null,
+     "2"
+    ],
+    "3": [
+     "D",
+     4,
+     62,
+     "rim",
+     null,
+     "3"
+    ],
+    "4": [
+     "E",
+     4,
+     64,
+     "rim",
+     null,
+     "4"
+    ],
+    "5": [
+     "F",
+     4,
+     65,
+     "rim",
+     null,
+     "5"
+    ],
+    "6": [
+     "G",
+     4,
+     67,
+     "rim",
+     null,
+     "6"
+    ],
+    "7": [
+     "A",
+     4,
+     69,
+     "rim",
+     null,
+     "7"
+    ],
+    "8": [
+     "C",
+     5,
+     72,
+     "rim",
+     null,
+     "8"
+    ],
+    "9": [
+     "D",
+     5,
+     74,
+     "rim",
+     null,
+     "9"
+    ]
+   },
+   "options": {
+    "palette": 0,
+    "parent": null,
+    "name": "D AMARA 10",
+    "mirror": false
+   },
+   "provenance": "encoded by HPE.share.encode at 42790881 (wire v5) and read back by that same commit's decode; the same string is pinned in tests/share.test.js"
+  },
+  {
+   "id": "amara-named-label",
+   "link": "5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/D+AMARA+9/704d91",
+   "deckId": "custom:977311b5",
+   "name": "D AMARA 9",
+   "fields": {
+    "0": [
+     "D",
+     3,
+     50,
+     "ding",
+     null,
+     "Ding"
+    ],
+    "1": [
+     "A",
+     3,
+     57,
+     "rim",
+     null,
+     "1"
+    ],
+    "2": [
+     "C",
+     4,
+     60,
+     "rim",
+     null,
+     "2"
+    ],
+    "3": [
+     "D",
+     4,
+     62,
+     "rim",
+     null,
+     "3"
+    ],
+    "4": [
+     "E",
+     4,
+     64,
+     "rim",
+     null,
+     "4"
+    ],
+    "5": [
+     "F",
+     4,
+     65,
+     "rim",
+     null,
+     "5"
+    ],
+    "6": [
+     "G",
+     4,
+     67,
+     "rim",
+     null,
+     "6"
+    ],
+    "7": [
+     "A",
+     4,
+     69,
+     "rim",
+     null,
+     "7"
+    ],
+    "8": [
+     "C",
+     5,
+     72,
+     "rim",
+     null,
+     "8"
+    ]
+   },
+   "options": {
+    "palette": 0,
+    "parent": null,
+    "name": "D AMARA 9",
+    "mirror": false
+   },
+   "provenance": "encoded by HPE.share.encode at 42790881 (wire v5) and read back by that same commit's decode; the same string is pinned in tests/share.test.js"
+  },
+  {
+   "id": "hijaz-named-label",
+   "link": "5/(Cs3)_Gs3_B3_Cs4_D4_F4_Fs4_Gs4_B4/C%23+HIJAZ+9/bc0a48",
+   "deckId": "custom:626198f8",
+   "name": "C# HIJAZ 9",
+   "fields": {
+    "0": [
+     "C#",
+     3,
+     49,
+     "ding",
+     null,
+     "Ding"
+    ],
+    "1": [
+     "G#",
+     3,
+     56,
+     "rim",
+     null,
+     "1"
+    ],
+    "2": [
+     "B",
+     3,
+     59,
+     "rim",
+     null,
+     "2"
+    ],
+    "3": [
+     "C#",
+     4,
+     61,
+     "rim",
+     null,
+     "3"
+    ],
+    "4": [
+     "D",
+     4,
+     62,
+     "rim",
+     null,
+     "4"
+    ],
+    "5": [
+     "F",
+     4,
+     65,
+     "rim",
+     null,
+     "5"
+    ],
+    "6": [
+     "F#",
+     4,
+     66,
+     "rim",
+     null,
+     "6"
+    ],
+    "7": [
+     "G#",
+     4,
+     68,
+     "rim",
+     null,
+     "7"
+    ],
+    "8": [
+     "B",
+     4,
+     71,
+     "rim",
+     null,
+     "8"
+    ]
+   },
+   "options": {
+    "palette": 0,
+    "parent": null,
+    "name": "C# HIJAZ 9",
+    "mirror": false
+   },
+   "provenance": "encoded by HPE.share.encode at 42790881 (wire v5) and read back by that same commit's decode; the same string is pinned in tests/share.test.js"
+  },
+  {
+   "id": "pygmy-named-label-between",
+   "link": "5/uC3_uDb3_uEb3_(F3)_G3_Ab3_uBb3_C4_uDb4_Eb4_F4_G4_Ab4_C5_Eb5_-_F5_G5_uAb5/F3+LOW+PYGMY+18/between/514b59",
+   "deckId": "custom:6f9ffc33",
+   "name": "F3 LOW PYGMY 18",
+   "fields": {
+    "0": [
+     "F",
+     3,
+     53,
+     "ding",
+     null,
+     "Ding"
+    ],
+    "1": [
+     "G",
+     3,
+     55,
+     "rim",
+     null,
+     "1"
+    ],
+    "2": [
+     "Ab",
+     3,
+     56,
+     "rim",
+     null,
+     "2"
+    ],
+    "3": [
+     "C",
+     4,
+     60,
+     "rim",
+     null,
+     "3"
+    ],
+    "4": [
+     "Eb",
+     4,
+     63,
+     "rim",
+     null,
+     "4"
+    ],
+    "5": [
+     "F",
+     4,
+     65,
+     "rim",
+     null,
+     "5"
+    ],
+    "6": [
+     "G",
+     4,
+     67,
+     "rim",
+     null,
+     "6"
+    ],
+    "7": [
+     "Ab",
+     4,
+     68,
+     "rim",
+     null,
+     "7"
+    ],
+    "8": [
+     "C",
+     5,
+     72,
+     "rim",
+     null,
+     "8"
+    ],
+    "9": [
+     "Eb",
+     5,
+     75,
+     "rim",
+     null,
+     "9"
+    ],
+    "10": [
+     "F",
+     5,
+     77,
+     "inner",
+     null,
+     "10"
+    ],
+    "11": [
+     "G",
+     5,
+     79,
+     "inner",
+     null,
+     "11"
+    ],
+    "101": [
+     "C",
+     3,
+     48,
+     "bottom",
+     null,
+     "U1"
+    ],
+    "102": [
+     "Db",
+     3,
+     49,
+     "bottom",
+     null,
+     "U2"
+    ],
+    "103": [
+     "Eb",
+     3,
+     51,
+     "bottom",
+     null,
+     "U3"
+    ],
+    "104": [
+     "Bb",
+     3,
+     58,
+     "bottom",
+     null,
+     "U4"
+    ],
+    "105": [
+     "Db",
+     4,
+     61,
+     "bottom",
+     null,
+     "U5"
+    ],
+    "106": [
+     "Ab",
+     5,
+     80,
+     "bottom",
+     null,
+     "U6"
+    ]
+   },
+   "options": {
+    "palette": 0,
+    "parent": null,
+    "name": "F3 LOW PYGMY 18",
+    "mirror": false,
+    "anchor": "between"
+   },
+   "provenance": "encoded by HPE.share.encode at 42790881 (wire v5) and read back by that same commit's decode; the same string is pinned in tests/share.test.js"
+  },
+  {
+   "id": "amara-named-palette-parent-mirror",
+   "link": "5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/Test+Deck/palette-3/parent-phrygian/mirror/17d271",
+   "deckId": "custom:977311b5",
+   "name": "Test Deck",
+   "fields": {
+    "0": [
+     "D",
+     3,
+     50,
+     "ding",
+     null,
+     "Ding"
+    ],
+    "1": [
+     "A",
+     3,
+     57,
+     "rim",
+     null,
+     "1"
+    ],
+    "2": [
+     "C",
+     4,
+     60,
+     "rim",
+     null,
+     "2"
+    ],
+    "3": [
+     "D",
+     4,
+     62,
+     "rim",
+     null,
+     "3"
+    ],
+    "4": [
+     "E",
+     4,
+     64,
+     "rim",
+     null,
+     "4"
+    ],
+    "5": [
+     "F",
+     4,
+     65,
+     "rim",
+     null,
+     "5"
+    ],
+    "6": [
+     "G",
+     4,
+     67,
+     "rim",
+     null,
+     "6"
+    ],
+    "7": [
+     "A",
+     4,
+     69,
+     "rim",
+     null,
+     "7"
+    ],
+    "8": [
+     "C",
+     5,
+     72,
+     "rim",
+     null,
+     "8"
+    ]
+   },
+   "options": {
+    "palette": 2,
+    "parent": 3,
+    "name": "Test Deck",
+    "mirror": true
+   },
+   "provenance": "encoded by HPE.share.encode at 42790881 (wire v5) and read back by that same commit's decode"
+  },
+  {
+   "id": "pygmy-named",
+   "link": "5/uC3_uDb3_uEb3_(F3)_G3_Ab3_uBb3_C4_uDb4_Eb4_F4_G4_Ab4_C5_Eb5_-_F5_G5_uAb5/Pygmy/9520ef",
+   "deckId": "custom:6f9ffc33",
+   "name": "Pygmy",
+   "fields": {
+    "0": [
+     "F",
+     3,
+     53,
+     "ding",
+     null,
+     "Ding"
+    ],
+    "1": [
+     "G",
+     3,
+     55,
+     "rim",
+     null,
+     "1"
+    ],
+    "2": [
+     "Ab",
+     3,
+     56,
+     "rim",
+     null,
+     "2"
+    ],
+    "3": [
+     "C",
+     4,
+     60,
+     "rim",
+     null,
+     "3"
+    ],
+    "4": [
+     "Eb",
+     4,
+     63,
+     "rim",
+     null,
+     "4"
+    ],
+    "5": [
+     "F",
+     4,
+     65,
+     "rim",
+     null,
+     "5"
+    ],
+    "6": [
+     "G",
+     4,
+     67,
+     "rim",
+     null,
+     "6"
+    ],
+    "7": [
+     "Ab",
+     4,
+     68,
+     "rim",
+     null,
+     "7"
+    ],
+    "8": [
+     "C",
+     5,
+     72,
+     "rim",
+     null,
+     "8"
+    ],
+    "9": [
+     "Eb",
+     5,
+     75,
+     "rim",
+     null,
+     "9"
+    ],
+    "10": [
+     "F",
+     5,
+     77,
+     "inner",
+     null,
+     "10"
+    ],
+    "11": [
+     "G",
+     5,
+     79,
+     "inner",
+     null,
+     "11"
+    ],
+    "101": [
+     "C",
+     3,
+     48,
+     "bottom",
+     null,
+     "U1"
+    ],
+    "102": [
+     "Db",
+     3,
+     49,
+     "bottom",
+     null,
+     "U2"
+    ],
+    "103": [
+     "Eb",
+     3,
+     51,
+     "bottom",
+     null,
+     "U3"
+    ],
+    "104": [
+     "Bb",
+     3,
+     58,
+     "bottom",
+     null,
+     "U4"
+    ],
+    "105": [
+     "Db",
+     4,
+     61,
+     "bottom",
+     null,
+     "U5"
+    ],
+    "106": [
+     "Ab",
+     5,
+     80,
+     "bottom",
+     null,
+     "U6"
+    ]
+   },
+   "options": {
+    "palette": 0,
+    "parent": null,
+    "name": "Pygmy",
+    "mirror": false
+   },
+   "provenance": "encoded by HPE.share.encode at 42790881 (wire v5) and read back by that same commit's decode"
+  },
+  {
+   "id": "minimal-two-notes",
+   "link": "5/(C3)_G3/*C+IONIAN+2/1e3ed3",
+   "deckId": "custom:c501fd4e",
+   "name": "",
+   "fields": {
+    "0": [
+     "C",
+     3,
+     48,
+     "ding",
+     null,
+     "Ding"
+    ],
+    "1": [
+     "G",
+     3,
+     55,
+     "rim",
+     null,
+     "1"
+    ]
+   },
+   "options": {
+    "palette": 0,
+    "parent": null,
+    "name": "",
+    "mirror": false
+   },
+   "provenance": "encoded by HPE.share.encode at 42790881 (wire v5) and read back by that same commit's decode"
+  },
+  {
+   "id": "inner-one-note",
+   "link": "5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5_-_D5/Inner+One/23881b",
+   "deckId": "custom:373f147b",
+   "name": "Inner One",
+   "fields": {
+    "0": [
+     "D",
+     3,
+     50,
+     "ding",
+     null,
+     "Ding"
+    ],
+    "1": [
+     "A",
+     3,
+     57,
+     "rim",
+     null,
+     "1"
+    ],
+    "2": [
+     "C",
+     4,
+     60,
+     "rim",
+     null,
+     "2"
+    ],
+    "3": [
+     "D",
+     4,
+     62,
+     "rim",
+     null,
+     "3"
+    ],
+    "4": [
+     "E",
+     4,
+     64,
+     "rim",
+     null,
+     "4"
+    ],
+    "5": [
+     "F",
+     4,
+     65,
+     "rim",
+     null,
+     "5"
+    ],
+    "6": [
+     "G",
+     4,
+     67,
+     "rim",
+     null,
+     "6"
+    ],
+    "7": [
+     "A",
+     4,
+     69,
+     "rim",
+     null,
+     "7"
+    ],
+    "8": [
+     "C",
+     5,
+     72,
+     "rim",
+     null,
+     "8"
+    ],
+    "9": [
+     "D",
+     5,
+     74,
+     "inner",
+     null,
+     "9"
+    ]
+   },
+   "options": {
+    "palette": 0,
+    "parent": null,
+    "name": "Inner One",
+    "mirror": false
+   },
+   "provenance": "encoded by HPE.share.encode at 42790881 (wire v5) and read back by that same commit's decode"
+  },
+  {
+   "id": "bottom-three-notes",
+   "link": "5/uC3_(D3)_uEb3_uG3_A3_C4_D4_E4_F4_G4_A4_C5/Bottoms/d086e8",
+   "deckId": "custom:584c31a5",
+   "name": "Bottoms",
+   "fields": {
+    "0": [
+     "D",
+     3,
+     50,
+     "ding",
+     null,
+     "Ding"
+    ],
+    "1": [
+     "A",
+     3,
+     57,
+     "rim",
+     null,
+     "1"
+    ],
+    "2": [
+     "C",
+     4,
+     60,
+     "rim",
+     null,
+     "2"
+    ],
+    "3": [
+     "D",
+     4,
+     62,
+     "rim",
+     null,
+     "3"
+    ],
+    "4": [
+     "E",
+     4,
+     64,
+     "rim",
+     null,
+     "4"
+    ],
+    "5": [
+     "F",
+     4,
+     65,
+     "rim",
+     null,
+     "5"
+    ],
+    "6": [
+     "G",
+     4,
+     67,
+     "rim",
+     null,
+     "6"
+    ],
+    "7": [
+     "A",
+     4,
+     69,
+     "rim",
+     null,
+     "7"
+    ],
+    "8": [
+     "C",
+     5,
+     72,
+     "rim",
+     null,
+     "8"
+    ],
+    "101": [
+     "C",
+     3,
+     48,
+     "bottom",
+     null,
+     "U1"
+    ],
+    "102": [
+     "Eb",
+     3,
+     51,
+     "bottom",
+     null,
+     "U2"
+    ],
+    "103": [
+     "G",
+     3,
+     55,
+     "bottom",
+     null,
+     "U3"
+    ]
+   },
+   "options": {
+    "palette": 0,
+    "parent": null,
+    "name": "Bottoms",
+    "mirror": false
+   },
+   "provenance": "encoded by HPE.share.encode at 42790881 (wire v5) and read back by that same commit's decode"
+  },
+  {
+   "id": "name-percent-plus-underscore",
+   "link": "5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/50%25%2BA_b/c432ca",
+   "deckId": "custom:977311b5",
+   "name": "50%+A_b",
+   "fields": {
+    "0": [
+     "D",
+     3,
+     50,
+     "ding",
+     null,
+     "Ding"
+    ],
+    "1": [
+     "A",
+     3,
+     57,
+     "rim",
+     null,
+     "1"
+    ],
+    "2": [
+     "C",
+     4,
+     60,
+     "rim",
+     null,
+     "2"
+    ],
+    "3": [
+     "D",
+     4,
+     62,
+     "rim",
+     null,
+     "3"
+    ],
+    "4": [
+     "E",
+     4,
+     64,
+     "rim",
+     null,
+     "4"
+    ],
+    "5": [
+     "F",
+     4,
+     65,
+     "rim",
+     null,
+     "5"
+    ],
+    "6": [
+     "G",
+     4,
+     67,
+     "rim",
+     null,
+     "6"
+    ],
+    "7": [
+     "A",
+     4,
+     69,
+     "rim",
+     null,
+     "7"
+    ],
+    "8": [
+     "C",
+     5,
+     72,
+     "rim",
+     null,
+     "8"
+    ]
+   },
+   "options": {
+    "palette": 0,
+    "parent": null,
+    "name": "50%+A_b",
+    "mirror": false
+   },
+   "provenance": "encoded by HPE.share.encode at 42790881 (wire v5) and read back by that same commit's decode"
+  },
+  {
+   "id": "pygmy-mirror-both",
+   "link": "5/uC3_uDb3_uEb3_(F3)_G3_Ab3_uBb3_C4_uDb4_Eb4_F4_G4_Ab4_C5_Eb5_-_F5_G5_uAb5/Mirrored/mirror/526b15",
+   "deckId": "custom:6f9ffc33",
+   "name": "Mirrored",
+   "fields": {
+    "0": [
+     "F",
+     3,
+     53,
+     "ding",
+     null,
+     "Ding"
+    ],
+    "1": [
+     "G",
+     3,
+     55,
+     "rim",
+     null,
+     "1"
+    ],
+    "2": [
+     "Ab",
+     3,
+     56,
+     "rim",
+     null,
+     "2"
+    ],
+    "3": [
+     "C",
+     4,
+     60,
+     "rim",
+     null,
+     "3"
+    ],
+    "4": [
+     "Eb",
+     4,
+     63,
+     "rim",
+     null,
+     "4"
+    ],
+    "5": [
+     "F",
+     4,
+     65,
+     "rim",
+     null,
+     "5"
+    ],
+    "6": [
+     "G",
+     4,
+     67,
+     "rim",
+     null,
+     "6"
+    ],
+    "7": [
+     "Ab",
+     4,
+     68,
+     "rim",
+     null,
+     "7"
+    ],
+    "8": [
+     "C",
+     5,
+     72,
+     "rim",
+     null,
+     "8"
+    ],
+    "9": [
+     "Eb",
+     5,
+     75,
+     "rim",
+     null,
+     "9"
+    ],
+    "10": [
+     "F",
+     5,
+     77,
+     "inner",
+     null,
+     "10"
+    ],
+    "11": [
+     "G",
+     5,
+     79,
+     "inner",
+     null,
+     "11"
+    ],
+    "101": [
+     "C",
+     3,
+     48,
+     "bottom",
+     null,
+     "U1"
+    ],
+    "102": [
+     "Db",
+     3,
+     49,
+     "bottom",
+     null,
+     "U2"
+    ],
+    "103": [
+     "Eb",
+     3,
+     51,
+     "bottom",
+     null,
+     "U3"
+    ],
+    "104": [
+     "Bb",
+     3,
+     58,
+     "bottom",
+     null,
+     "U4"
+    ],
+    "105": [
+     "Db",
+     4,
+     61,
+     "bottom",
+     null,
+     "U5"
+    ],
+    "106": [
+     "Ab",
+     5,
+     80,
+     "bottom",
+     null,
+     "U6"
+    ]
+   },
+   "options": {
+    "palette": 0,
+    "parent": null,
+    "name": "Mirrored",
+    "mirror": true
+   },
+   "provenance": "encoded by HPE.share.encode at 42790881 (wire v5) and read back by that same commit's decode"
+  },
+  {
+   "id": "pygmy-mirror-top-only",
+   "link": "5/uC3_uDb3_uEb3_(F3)_G3_Ab3_uBb3_C4_uDb4_Eb4_F4_G4_Ab4_C5_Eb5_-_F5_G5_uAb5/*F+AEOLIAN+12/mirror-top/cd3e0b",
+   "deckId": "custom:6f9ffc33",
+   "name": "",
+   "fields": {
+    "0": [
+     "F",
+     3,
+     53,
+     "ding",
+     null,
+     "Ding"
+    ],
+    "1": [
+     "G",
+     3,
+     55,
+     "rim",
+     null,
+     "1"
+    ],
+    "2": [
+     "Ab",
+     3,
+     56,
+     "rim",
+     null,
+     "2"
+    ],
+    "3": [
+     "C",
+     4,
+     60,
+     "rim",
+     null,
+     "3"
+    ],
+    "4": [
+     "Eb",
+     4,
+     63,
+     "rim",
+     null,
+     "4"
+    ],
+    "5": [
+     "F",
+     4,
+     65,
+     "rim",
+     null,
+     "5"
+    ],
+    "6": [
+     "G",
+     4,
+     67,
+     "rim",
+     null,
+     "6"
+    ],
+    "7": [
+     "Ab",
+     4,
+     68,
+     "rim",
+     null,
+     "7"
+    ],
+    "8": [
+     "C",
+     5,
+     72,
+     "rim",
+     null,
+     "8"
+    ],
+    "9": [
+     "Eb",
+     5,
+     75,
+     "rim",
+     null,
+     "9"
+    ],
+    "10": [
+     "F",
+     5,
+     77,
+     "inner",
+     null,
+     "10"
+    ],
+    "11": [
+     "G",
+     5,
+     79,
+     "inner",
+     null,
+     "11"
+    ],
+    "101": [
+     "C",
+     3,
+     48,
+     "bottom",
+     null,
+     "U1"
+    ],
+    "102": [
+     "Db",
+     3,
+     49,
+     "bottom",
+     null,
+     "U2"
+    ],
+    "103": [
+     "Eb",
+     3,
+     51,
+     "bottom",
+     null,
+     "U3"
+    ],
+    "104": [
+     "Bb",
+     3,
+     58,
+     "bottom",
+     null,
+     "U4"
+    ],
+    "105": [
+     "Db",
+     4,
+     61,
+     "bottom",
+     null,
+     "U5"
+    ],
+    "106": [
+     "Ab",
+     5,
+     80,
+     "bottom",
+     null,
+     "U6"
+    ]
+   },
+   "options": {
+    "palette": 0,
+    "parent": null,
+    "name": "",
+    "mirror": true,
+    "mirrorBottom": false
+   },
+   "provenance": "encoded by HPE.share.encode at 42790881 (wire v5) and read back by that same commit's decode"
+  },
+  {
+   "id": "pygmy-mirror-bottom-only",
+   "link": "5/uC3_uDb3_uEb3_(F3)_G3_Ab3_uBb3_C4_uDb4_Eb4_F4_G4_Ab4_C5_Eb5_-_F5_G5_uAb5/*F+AEOLIAN+12/mirror-bottom/68f39b",
+   "deckId": "custom:6f9ffc33",
+   "name": "",
+   "fields": {
+    "0": [
+     "F",
+     3,
+     53,
+     "ding",
+     null,
+     "Ding"
+    ],
+    "1": [
+     "G",
+     3,
+     55,
+     "rim",
+     null,
+     "1"
+    ],
+    "2": [
+     "Ab",
+     3,
+     56,
+     "rim",
+     null,
+     "2"
+    ],
+    "3": [
+     "C",
+     4,
+     60,
+     "rim",
+     null,
+     "3"
+    ],
+    "4": [
+     "Eb",
+     4,
+     63,
+     "rim",
+     null,
+     "4"
+    ],
+    "5": [
+     "F",
+     4,
+     65,
+     "rim",
+     null,
+     "5"
+    ],
+    "6": [
+     "G",
+     4,
+     67,
+     "rim",
+     null,
+     "6"
+    ],
+    "7": [
+     "Ab",
+     4,
+     68,
+     "rim",
+     null,
+     "7"
+    ],
+    "8": [
+     "C",
+     5,
+     72,
+     "rim",
+     null,
+     "8"
+    ],
+    "9": [
+     "Eb",
+     5,
+     75,
+     "rim",
+     null,
+     "9"
+    ],
+    "10": [
+     "F",
+     5,
+     77,
+     "inner",
+     null,
+     "10"
+    ],
+    "11": [
+     "G",
+     5,
+     79,
+     "inner",
+     null,
+     "11"
+    ],
+    "101": [
+     "C",
+     3,
+     48,
+     "bottom",
+     null,
+     "U1"
+    ],
+    "102": [
+     "Db",
+     3,
+     49,
+     "bottom",
+     null,
+     "U2"
+    ],
+    "103": [
+     "Eb",
+     3,
+     51,
+     "bottom",
+     null,
+     "U3"
+    ],
+    "104": [
+     "Bb",
+     3,
+     58,
+     "bottom",
+     null,
+     "U4"
+    ],
+    "105": [
+     "Db",
+     4,
+     61,
+     "bottom",
+     null,
+     "U5"
+    ],
+    "106": [
+     "Ab",
+     5,
+     80,
+     "bottom",
+     null,
+     "U6"
+    ]
+   },
+   "options": {
+    "palette": 0,
+    "parent": null,
+    "name": "",
+    "mirror": false,
+    "mirrorBottom": true
+   },
+   "provenance": "encoded by HPE.share.encode at 42790881 (wire v5) and read back by that same commit's decode"
+  },
+  {
+   "id": "pygmy-anchor-between",
+   "link": "5/uC3_uDb3_uEb3_(F3)_G3_Ab3_uBb3_C4_uDb4_Eb4_F4_G4_Ab4_C5_Eb5_-_F5_G5_uAb5/*F+AEOLIAN+12/between/78c615",
+   "deckId": "custom:6f9ffc33",
+   "name": "",
+   "fields": {
+    "0": [
+     "F",
+     3,
+     53,
+     "ding",
+     null,
+     "Ding"
+    ],
+    "1": [
+     "G",
+     3,
+     55,
+     "rim",
+     null,
+     "1"
+    ],
+    "2": [
+     "Ab",
+     3,
+     56,
+     "rim",
+     null,
+     "2"
+    ],
+    "3": [
+     "C",
+     4,
+     60,
+     "rim",
+     null,
+     "3"
+    ],
+    "4": [
+     "Eb",
+     4,
+     63,
+     "rim",
+     null,
+     "4"
+    ],
+    "5": [
+     "F",
+     4,
+     65,
+     "rim",
+     null,
+     "5"
+    ],
+    "6": [
+     "G",
+     4,
+     67,
+     "rim",
+     null,
+     "6"
+    ],
+    "7": [
+     "Ab",
+     4,
+     68,
+     "rim",
+     null,
+     "7"
+    ],
+    "8": [
+     "C",
+     5,
+     72,
+     "rim",
+     null,
+     "8"
+    ],
+    "9": [
+     "Eb",
+     5,
+     75,
+     "rim",
+     null,
+     "9"
+    ],
+    "10": [
+     "F",
+     5,
+     77,
+     "inner",
+     null,
+     "10"
+    ],
+    "11": [
+     "G",
+     5,
+     79,
+     "inner",
+     null,
+     "11"
+    ],
+    "101": [
+     "C",
+     3,
+     48,
+     "bottom",
+     null,
+     "U1"
+    ],
+    "102": [
+     "Db",
+     3,
+     49,
+     "bottom",
+     null,
+     "U2"
+    ],
+    "103": [
+     "Eb",
+     3,
+     51,
+     "bottom",
+     null,
+     "U3"
+    ],
+    "104": [
+     "Bb",
+     3,
+     58,
+     "bottom",
+     null,
+     "U4"
+    ],
+    "105": [
+     "Db",
+     4,
+     61,
+     "bottom",
+     null,
+     "U5"
+    ],
+    "106": [
+     "Ab",
+     5,
+     80,
+     "bottom",
+     null,
+     "U6"
+    ]
+   },
+   "options": {
+    "palette": 0,
+    "parent": null,
+    "name": "",
+    "mirror": false,
+    "anchor": "between"
+   },
+   "provenance": "encoded by HPE.share.encode at 42790881 (wire v5) and read back by that same commit's decode; the same string is pinned in tests/share.test.js"
+  },
+  {
+   "id": "hijaz-anchor-between-named",
+   "link": "5/(Cs3)_Gs3_B3_Cs4_D4_F4_Fs4_Gs4_B4/Hijaz+Between/between/3ba7db",
+   "deckId": "custom:626198f8",
+   "name": "Hijaz Between",
+   "fields": {
+    "0": [
+     "C#",
+     3,
+     49,
+     "ding",
+     null,
+     "Ding"
+    ],
+    "1": [
+     "G#",
+     3,
+     56,
+     "rim",
+     null,
+     "1"
+    ],
+    "2": [
+     "B",
+     3,
+     59,
+     "rim",
+     null,
+     "2"
+    ],
+    "3": [
+     "C#",
+     4,
+     61,
+     "rim",
+     null,
+     "3"
+    ],
+    "4": [
+     "D",
+     4,
+     62,
+     "rim",
+     null,
+     "4"
+    ],
+    "5": [
+     "F",
+     4,
+     65,
+     "rim",
+     null,
+     "5"
+    ],
+    "6": [
+     "F#",
+     4,
+     66,
+     "rim",
+     null,
+     "6"
+    ],
+    "7": [
+     "G#",
+     4,
+     68,
+     "rim",
+     null,
+     "7"
+    ],
+    "8": [
+     "B",
+     4,
+     71,
+     "rim",
+     null,
+     "8"
+    ]
+   },
+   "options": {
+    "palette": 0,
+    "parent": null,
+    "name": "Hijaz Between",
+    "mirror": false,
+    "anchor": "between"
+   },
+   "provenance": "encoded by HPE.share.encode at 42790881 (wire v5) and read back by that same commit's decode"
+  },
+  {
+   "id": "pygmy-seats-rim-bottom",
+   "link": "5/uC3_uDb3_uEb3_(F3)_G3_Ab3_uBb3_C4_uDb4_Eb4_F4_G4_Ab4_C5_Eb5_-_F5_G5_uAb5/*F+AEOLIAN+12/seats-1,2,3,4,5,6,7,8,0;1,0;1,2,3,4,5,0/807c2c",
+   "deckId": "custom:6f9ffc33",
+   "name": "",
+   "fields": {
+    "0": [
+     "F",
+     3,
+     53,
+     "ding",
+     null,
+     "Ding"
+    ],
+    "1": [
+     "G",
+     3,
+     55,
+     "rim",
+     null,
+     "1"
+    ],
+    "2": [
+     "Ab",
+     3,
+     56,
+     "rim",
+     null,
+     "2"
+    ],
+    "3": [
+     "C",
+     4,
+     60,
+     "rim",
+     null,
+     "3"
+    ],
+    "4": [
+     "Eb",
+     4,
+     63,
+     "rim",
+     null,
+     "4"
+    ],
+    "5": [
+     "F",
+     4,
+     65,
+     "rim",
+     null,
+     "5"
+    ],
+    "6": [
+     "G",
+     4,
+     67,
+     "rim",
+     null,
+     "6"
+    ],
+    "7": [
+     "Ab",
+     4,
+     68,
+     "rim",
+     null,
+     "7"
+    ],
+    "8": [
+     "C",
+     5,
+     72,
+     "rim",
+     null,
+     "8"
+    ],
+    "9": [
+     "Eb",
+     5,
+     75,
+     "rim",
+     null,
+     "9"
+    ],
+    "10": [
+     "F",
+     5,
+     77,
+     "inner",
+     null,
+     "10"
+    ],
+    "11": [
+     "G",
+     5,
+     79,
+     "inner",
+     null,
+     "11"
+    ],
+    "101": [
+     "C",
+     3,
+     48,
+     "bottom",
+     null,
+     "U1"
+    ],
+    "102": [
+     "Db",
+     3,
+     49,
+     "bottom",
+     null,
+     "U2"
+    ],
+    "103": [
+     "Eb",
+     3,
+     51,
+     "bottom",
+     null,
+     "U3"
+    ],
+    "104": [
+     "Bb",
+     3,
+     58,
+     "bottom",
+     null,
+     "U4"
+    ],
+    "105": [
+     "Db",
+     4,
+     61,
+     "bottom",
+     null,
+     "U5"
+    ],
+    "106": [
+     "Ab",
+     5,
+     80,
+     "bottom",
+     null,
+     "U6"
+    ]
+   },
+   "options": {
+    "palette": 0,
+    "parent": null,
+    "name": "",
+    "mirror": false,
+    "seats": {
+     "rim": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      0
+     ],
+     "inner": [
+      1,
+      0
+     ],
+     "bottom": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      0
+     ]
+    }
+   },
+   "provenance": "encoded by HPE.share.encode at 42790881 (wire v5) and read back by that same commit's decode"
+  },
+  {
+   "id": "hijaz-seats-rim",
+   "link": "5/(Cs3)_Gs3_B3_Cs4_D4_F4_Fs4_Gs4_B4/*C%23+HIJAZ+9/seats-1,2,3,4,5,6,7,0;;/4ced33",
+   "deckId": "custom:626198f8",
+   "name": "",
+   "fields": {
+    "0": [
+     "C#",
+     3,
+     49,
+     "ding",
+     null,
+     "Ding"
+    ],
+    "1": [
+     "G#",
+     3,
+     56,
+     "rim",
+     null,
+     "1"
+    ],
+    "2": [
+     "B",
+     3,
+     59,
+     "rim",
+     null,
+     "2"
+    ],
+    "3": [
+     "C#",
+     4,
+     61,
+     "rim",
+     null,
+     "3"
+    ],
+    "4": [
+     "D",
+     4,
+     62,
+     "rim",
+     null,
+     "4"
+    ],
+    "5": [
+     "F",
+     4,
+     65,
+     "rim",
+     null,
+     "5"
+    ],
+    "6": [
+     "F#",
+     4,
+     66,
+     "rim",
+     null,
+     "6"
+    ],
+    "7": [
+     "G#",
+     4,
+     68,
+     "rim",
+     null,
+     "7"
+    ],
+    "8": [
+     "B",
+     4,
+     71,
+     "rim",
+     null,
+     "8"
+    ]
+   },
+   "options": {
+    "palette": 0,
+    "parent": null,
+    "name": "",
+    "mirror": false,
+    "seats": {
+     "rim": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      0
+     ]
+    }
+   },
+   "provenance": "encoded by HPE.share.encode at 42790881 (wire v5) and read back by that same commit's decode"
+  },
+  {
+   "id": "amara-explicit-parent",
+   "link": "5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/Parent+Five/parent-mixolydian/faeddf",
+   "deckId": "custom:977311b5",
+   "name": "Parent Five",
+   "fields": {
+    "0": [
+     "D",
+     3,
+     50,
+     "ding",
+     null,
+     "Ding"
+    ],
+    "1": [
+     "A",
+     3,
+     57,
+     "rim",
+     null,
+     "1"
+    ],
+    "2": [
+     "C",
+     4,
+     60,
+     "rim",
+     null,
+     "2"
+    ],
+    "3": [
+     "D",
+     4,
+     62,
+     "rim",
+     null,
+     "3"
+    ],
+    "4": [
+     "E",
+     4,
+     64,
+     "rim",
+     null,
+     "4"
+    ],
+    "5": [
+     "F",
+     4,
+     65,
+     "rim",
+     null,
+     "5"
+    ],
+    "6": [
+     "G",
+     4,
+     67,
+     "rim",
+     null,
+     "6"
+    ],
+    "7": [
+     "A",
+     4,
+     69,
+     "rim",
+     null,
+     "7"
+    ],
+    "8": [
+     "C",
+     5,
+     72,
+     "rim",
+     null,
+     "8"
+    ]
+   },
+   "options": {
+    "palette": 0,
+    "parent": 5,
+    "name": "Parent Five",
+    "mirror": false
+   },
+   "provenance": "encoded by HPE.share.encode at 42790881 (wire v5) and read back by that same commit's decode"
+  },
+  {
+   "id": "pygmy-everything-but-angles",
+   "link": "5/uC3_uDb3_uEb3_(F3)_G3_Ab3_uBb3_C4_uDb4_Eb4_F4_G4_Ab4_C5_Eb5_-_F5_G5_uAb5/Everything/palette-5/parent-dorian/mirror/between/seats-1,2,3,4,5,6,7,8,0;;/fc17c9",
+   "deckId": "custom:6f9ffc33",
+   "name": "Everything",
+   "fields": {
+    "0": [
+     "F",
+     3,
+     53,
+     "ding",
+     null,
+     "Ding"
+    ],
+    "1": [
+     "G",
+     3,
+     55,
+     "rim",
+     null,
+     "1"
+    ],
+    "2": [
+     "Ab",
+     3,
+     56,
+     "rim",
+     null,
+     "2"
+    ],
+    "3": [
+     "C",
+     4,
+     60,
+     "rim",
+     null,
+     "3"
+    ],
+    "4": [
+     "Eb",
+     4,
+     63,
+     "rim",
+     null,
+     "4"
+    ],
+    "5": [
+     "F",
+     4,
+     65,
+     "rim",
+     null,
+     "5"
+    ],
+    "6": [
+     "G",
+     4,
+     67,
+     "rim",
+     null,
+     "6"
+    ],
+    "7": [
+     "Ab",
+     4,
+     68,
+     "rim",
+     null,
+     "7"
+    ],
+    "8": [
+     "C",
+     5,
+     72,
+     "rim",
+     null,
+     "8"
+    ],
+    "9": [
+     "Eb",
+     5,
+     75,
+     "rim",
+     null,
+     "9"
+    ],
+    "10": [
+     "F",
+     5,
+     77,
+     "inner",
+     null,
+     "10"
+    ],
+    "11": [
+     "G",
+     5,
+     79,
+     "inner",
+     null,
+     "11"
+    ],
+    "101": [
+     "C",
+     3,
+     48,
+     "bottom",
+     null,
+     "U1"
+    ],
+    "102": [
+     "Db",
+     3,
+     49,
+     "bottom",
+     null,
+     "U2"
+    ],
+    "103": [
+     "Eb",
+     3,
+     51,
+     "bottom",
+     null,
+     "U3"
+    ],
+    "104": [
+     "Bb",
+     3,
+     58,
+     "bottom",
+     null,
+     "U4"
+    ],
+    "105": [
+     "Db",
+     4,
+     61,
+     "bottom",
+     null,
+     "U5"
+    ],
+    "106": [
+     "Ab",
+     5,
+     80,
+     "bottom",
+     null,
+     "U6"
+    ]
+   },
+   "options": {
+    "palette": 4,
+    "parent": 2,
+    "name": "Everything",
+    "mirror": true,
+    "anchor": "between",
+    "seats": {
+     "rim": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      0
+     ]
+    }
+   },
+   "provenance": "encoded by HPE.share.encode at 42790881 (wire v5) and read back by that same commit's decode"
+  }
+ ]
+}
