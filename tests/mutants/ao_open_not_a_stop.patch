@@ -4,11 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14422,7 +14422,6 @@ function panelStops() {
+@@ -14685,7 +14685,7 @@ function panelStops() {
+           // ABOUT closes the list, so Tab follows what the eye sees.
            // Eng review amendment 1: the Resources links join the Tab trap
            // after the print controls, in DOM order.
-           ...settingsPanel.querySelectorAll('#settings-panel a.mode[id^="res-"]'),
--          document.getElementById("about-open"),
-           document.getElementById("lang-select")]
+-          ...(grid ? [...prints, ...scales, ...res, lang, about] : [...scales, ...prints, ...res, about, lang])]
++          ...(grid ? [...prints, ...scales, ...res, lang] : [...scales, ...prints, ...res, lang])]
      .filter(isStop);
  }
+ function openPanel() {

@@ -11,5 +11,5 @@ diff --git a/index.html b/index.html
 -  #settings-panel{display:block; column-count:2; column-gap:var(--sp-4); column-fill:balance;
 +  #settings-panel{display:block; column-count:1; column-gap:var(--sp-4); column-fill:balance;
      padding:9px max(62px, calc(env(safe-area-inset-right) + 50px)) 9px max(62px, calc(env(safe-area-inset-left) + 50px))}
-   #settings-panel .panel-group{break-inside:avoid; margin-bottom:var(--sp-3)}
+   #settings-panel .panel-group{break-inside:avoid; margin-bottom:var(--sp-4)}
    #settings-panel:has(#panel-seq-note:not([hidden])):has(#deck-restore:not([hidden])){display:grid;

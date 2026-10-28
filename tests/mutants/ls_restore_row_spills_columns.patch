@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -388,13 +388,13 @@
+@@ -388,13 +388,13 @@ a.mode{text-decoration:none}
     not fit two columns here, so it takes an explicit two-column grid that
     scrolls. */
  @media (min-height:300px) and (max-height:359px) and (min-width:740px){
@@ -19,6 +19,6 @@ diff --git a/index.html b/index.html
 -  #settings-panel:has(#panel-seq-note:not([hidden]), #deck-restore:not([hidden])){display:grid; grid-template-columns:repeat(2, 1fr);
 +  #settings-panel:not(:has(#panel-seq-note:not([hidden]))) .modebar{row-gap:var(--sp-1)}
 +  #settings-panel:has(#panel-seq-note:not([hidden])){display:grid; grid-template-columns:repeat(2, 1fr);
-     column-gap:var(--sp-4); row-gap:var(--sp-2); align-content:start; align-items:start;
+     column-gap:var(--sp-4); row-gap:var(--sp-3); align-content:start; align-items:start;
      padding:4px max(62px, calc(env(safe-area-inset-right) + 50px)) 4px max(62px, calc(env(safe-area-inset-left) + 50px))}
  }
