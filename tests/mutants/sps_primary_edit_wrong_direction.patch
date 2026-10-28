@@ -1,14 +1,15 @@
 # kills: SPS primary: Edit right touchend returns to Scale preserving input options and history
 # suite: node --test --test-reporter=tap --test-name-pattern ^SPS.primary:.Edit.right.touchend.returns.to.Scale.preserving.input.options.and.history$ tests/app.test.js
 # Right gesture chooses wrong tab; Edit Scale assertion fails.
+diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12340,7 +12340,7 @@
-       const elapsed = Date.now() - S.at, dx = p.clientX - S.x, dy = p.clientY - S.y;
-       cancel();
-       if (elapsed < 0 || elapsed > 600 || Math.abs(dx) < 48 || Math.abs(dx) < 2 * Math.abs(dy)) return;
--      const tab = dx < 0 ? "layout" : "scale";
-+      const tab = "layout";
-       if (tab === sheetTab) return;
-       lipFling = null;
-       lipDragEnd = 0;
+@@ -11769,7 +11769,7 @@
+ let sheetSwipe = null;
+ const swipeCue = { el: document.getElementById("scale-swipe-cue"), raf: 0, timer: 0, leave: 0, mode: "", dx: 0, dy: 0 };
+ const swipeVerdict = (S, ok, dx, dy, elapsed) => {
+-  const tab = dx < 0 ? "layout" : "scale";
++  const tab = "layout";
+   return { tab, armed: ok && elapsed >= 0 && elapsed <= 600 && Math.abs(dx) >= 48 && Math.abs(dx) >= 2 * Math.abs(dy) && tab !== S.tab };
+ };
+ function hideSwipeCue(o) {
