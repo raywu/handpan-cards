@@ -12309,7 +12309,8 @@ function setTab(tab) {
       if (!check()) return false;
       const S = sheetSwipe;
       if (!Number.isFinite(p.clientX) || !Number.isFinite(p.clientY) ||
-          (S.field && !S.moved && Date.now() - S.at >= HOLD_MS)) {
+          (S.plate && press && press.lifted) ||
+          ((S.field || S.plate) && !S.moved && Date.now() - S.at >= HOLD_MS)) {
         cancel();
         return false;
       }
@@ -12322,12 +12323,12 @@ function setTab(tab) {
       const p = ts && ts.length === 1 && ts[0];
       if (!sheetOpen || !p || sheetZoomed() || !Number.isFinite(p.clientX) || !Number.isFinite(p.clientY) ||
           p.clientX < 24 || p.clientX > window.innerWidth - 24 || sheet.classList.contains("kbup") ||
-          previewBox.contains(t) || (t && t.closest && t.closest("#scale-lip, select"))) return;
+          (t && t.closest && t.closest("#scale-lip, select"))) return;
       const field = t && t.closest ? t.closest("input, textarea") : null;
       if ((field && document.activeElement === field) || selected(field)) return;
       const box = field && field.tagName === "TEXTAREA" ? field : null;
       sheetSwipe = { id: p.identifier, x: p.clientX, y: p.clientY, at: Date.now(), tab: sheetTab,
-        field, box, boxTop: scrollOf(box), boxLeft: box ? box.scrollLeft || 0 : 0,
+        plate: previewBox.contains(t), field, box, boxTop: scrollOf(box), boxLeft: box ? box.scrollLeft || 0 : 0,
         bodyTop: scrollOf(body), surfTop: scrollOf(sheetSurf), moved: false };
     }, { passive: true });
     body.addEventListener("touchmove", e => {

@@ -15759,12 +15759,12 @@ describe("SPS: primary public-event traces", () => {
     }
   });
 
-  test("SPS2: preview and preview-descendant origins stay excluded after leaving their original coordinates", async () => {
+  test("SW: preview and preview-descendant origins start the shortcut like any other body origin", async () => {
     for (const child of [false, true]) {
       const app = await ready("add", "layout"), preview = app.els["scale-preview"];
       const target = child ? preview.appendChild(app.sandbox.document.createElement("span")) : preview;
       gesture(app, { x: 140, dx: 100, target });
-      assert.strictEqual(on(app, "layout"), "true", child ? "preview child" : "preview");
+      assert.strictEqual(on(app, "scale"), "true", child ? "preview child" : "preview");
     }
   });
 
