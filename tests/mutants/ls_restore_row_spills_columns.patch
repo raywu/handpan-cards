@@ -1,4 +1,4 @@
-# kills: LS: with RESET SEEDED SCALES showing, the short-landscape menu scrolls vertically, never spills into a third column and leaves #lang-select tappable (REAL fonts)
+# kills: LS: with RESET SEEDED SCALES showing, the short-landscape menu scrolls vertically, never spills into a third column, stays two columns and leaves #lang-select tappable (REAL fonts)
 # suite: node --test --test-name-pattern ^LS:.with.RESET.SEEDED.SCALES.showing tests/e2e.test.js
 # LS: a visible RESET SEEDED SCALES row no longer switches the short-landscape menu to the scrolling grid.
 diff --git a/index.html b/index.html
