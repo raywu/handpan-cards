@@ -87,9 +87,9 @@ function langAllowance(baseControls, candControls) {
 // LS (short iPhone landscape): mode S, with the progression note, takes an explicit
 // two-column grid at 300 to 359px tall and 740px wide and up, and may scroll there.
 // The base's auto-fit grid fits at 845px and up only by splitting HANDPANER mid-word.
-// Measured as the growth of the needed height (154px at 320px tall). Rules 1 and 2,
+// Measured as the growth of the needed height (194px at 320px tall, real fonts). Rules 1 and 2,
 // mode S, inside that band only.
-const LS_S_ALLOWANCE_PX = 160;
+const LS_S_ALLOWANCE_PX = 200;
 function lsAllowance(w, h, m) {
   return m === "S" && w >= 740 && h >= 300 && h < 360 ? LS_S_ALLOWANCE_PX : 0;
 }
