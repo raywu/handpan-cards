@@ -10312,17 +10312,17 @@ function run() {
         }
       });
 
-    test("LS: with RESET SEEDED SCALES showing, the short-landscape menu scrolls vertically, never spills into a third column and leaves #lang-select tappable (REAL fonts)",
+    test("LS: with RESET SEEDED SCALES showing, the short-landscape menu scrolls vertically, never spills into a third column, stays two columns and leaves #lang-select tappable (REAL fonts)",
       { timeout: 300000 }, async () => {
         try {
-          for (const mode of ["A", "B"]) {
+          for (const mode of ["A", "B", "S"]) {
             await rb.setViewport(852, 330, true);
             await rb.goto(URL);
             await rb.eval(`localStorage.setItem("hpfc", ${JSON.stringify(JSON.stringify({ mode, hidden: ["amara"] }))}); return true;`);
             await rb.send("Storage.clearDataForOrigin", { origin: new globalThis.URL(URL).origin, storageTypes: "indexeddb" });
             await rb.goto(URL);
             await rb.eval(`return document.fonts.ready.then(() => true);`);
-            for (const [w, h] of [[852, 330], [844, 320], [740, 300], [1000, 300]]) {
+            for (const [w, h] of [[852, 330], [844, 320], [740, 300], [1000, 300], [844, 340], [844, 350], [844, 359], [844, 360], [844, 365], [740, 360], [1000, 370], [844, 380], [844, 389], [844, 390], [932, 430], [844, 520]]) {
               await rb.setViewport(w, h, true);
               await rb.settle();
               await rb.click("#settings-trigger");
@@ -10335,9 +10335,10 @@ function run() {
                 s.scrollIntoView({ block: "center" });
                 const k = s.getBoundingClientRect();
                 const top = document.elementFromPoint(k.left + k.width / 2, k.top + k.height / 2);
-                return { restore: !r.hidden, scrollW: p.scrollWidth, clientW: p.clientWidth, hitSelect: top === s };`);
+                return { restore: !r.hidden, ncols: new Set([...p.children].filter(g => g.getBoundingClientRect().width > 8).map(g => Math.round(g.getBoundingClientRect().left))).size, scrollW: p.scrollWidth, clientW: p.clientWidth, hitSelect: top === s };`);
               assert.ok(m.restore, `${label}: RESET SEEDED SCALES is showing`);
               assert.ok(m.scrollW <= m.clientW + 1, `${label}: overflows horizontally (${m.scrollW} > ${m.clientW})`);
+              assert.strictEqual(m.ncols, 2, `${label}: the groups sit in ${m.ncols} columns`);
               assert.ok(m.hitSelect, `${label}: #lang-select is not what a tap at its centre reaches`);
               await rb.key("Escape", "Escape", 27);
               await rb.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: `close at ${label}` });
