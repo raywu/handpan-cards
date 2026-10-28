@@ -357,8 +357,20 @@ a.mode{text-decoration:none}
 /* LE: wide landscape phones lay the groups out in two balanced CSS columns. */
 @media (min-height:360px) and (max-height:520px) and (min-width:740px){
   #settings-panel{display:block; column-count:2; column-gap:var(--sp-4); column-fill:balance;
-    padding:9px 62px 9px}
+    padding:9px max(62px, calc(env(safe-area-inset-left) + 50px)) 9px max(62px, calc(env(safe-area-inset-right) + 50px))}
   #settings-panel > .panel-group{break-inside:avoid; margin-bottom:var(--sp-3)}
+}
+/* LS: 300 to 359px tall keeps the two columns, with the vertical spacing
+   tightened so the default menu fits at 300px. The 44px targets do not
+   shrink. Mode S (the progression note shown) is two groups taller and does
+   not fit two columns here, so it keeps the grid above. */
+@media (min-height:300px) and (max-height:359px) and (min-width:740px){
+  #settings-panel:not(:has(#panel-seq-note:not([hidden]))){display:block; column-count:2;
+    column-gap:var(--sp-4); column-fill:balance;
+    padding:4px max(62px, calc(env(safe-area-inset-left) + 50px)) 4px max(62px, calc(env(safe-area-inset-right) + 50px))}
+  #settings-panel:not(:has(#panel-seq-note:not([hidden]))) > .panel-group{break-inside:avoid;
+    margin-bottom:6px; gap:2px}
+  #settings-panel:not(:has(#panel-seq-note:not([hidden]))) .modebar{row-gap:4px}
 }
 /* Desktop: the panel becomes an always-visible sidebar, not a modal (M3,
    owner follow-up 2026-09-28; verdict and reasons in the plan's O6/addendum).
