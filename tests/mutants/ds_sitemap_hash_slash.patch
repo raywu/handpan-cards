@@ -4,11 +4,12 @@
 diff --git a/sitemap.xml b/sitemap.xml
 --- a/sitemap.xml
 +++ b/sitemap.xml
-@@ -1,6 +1,6 @@
+@@ -1,7 +1,7 @@
  <?xml version="1.0" encoding="UTF-8"?>
  <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
    <url>
 -    <loc>https://handpan.raywu.org/</loc>
 +    <loc>https://handpan.raywu.org/#/</loc>
    </url>
- </urlset>
+   <url>
+     <loc>https://handpan.raywu.org/scales/kurd/</loc>
