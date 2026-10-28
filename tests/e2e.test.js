@@ -10380,6 +10380,7 @@ function run() {
                 about: document.getElementById("about-open").getBoundingClientRect().bottom, resBottom: byHeading("Resources").getBoundingClientRect().bottom };
             `);
             assert.ok(m.note && m.restore, `${label}: note and RESET both showing`);
+            assert.ok(Math.abs(m.rowGapR - m.rowGapL) <= 0.5 && m.rowGapL > 0, `${label}: the right column's row-gap ${m.rowGapR} equals the left column's ${m.rowGapL}`);
             const left = m.rects.filter(r => r.side === "L"), right = m.rects.filter(r => r.side === "R");
             assert.ok(left.every(r => Math.abs(r.left - left[0].left) <= 1) && right.every(r => Math.abs(r.left - right[0].left) <= 1) && right[0].left > left[0].left + 50, `${label}: two columns ${JSON.stringify(m.rects)}`);
             for (const [col, rg] of [[left, m.rowGapL], [right, m.rowGapR]]) {
@@ -10388,6 +10389,45 @@ function run() {
               }
             }
             assert.ok(Math.abs(m.about - m.resBottom) <= 12, `${label}: ABOUT is the last Resources row`);
+            await rb.key("Escape", "Escape", 27);
+            await rb.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: `close at ${label}` });
+          }
+        } finally {
+          await rb.setViewport(900, 900, false);
+          await rb.goto(URL);
+        }
+      });
+
+    test("LS2: in the default state at 800x340 and 740x359, Resources and Language keep the 6px margin and break-inside avoid, with 6px between them (REAL fonts)",
+      { timeout: 120000 }, async () => {
+        try {
+          await rb.setViewport(844, 390, true);
+          await rb.goto(URL);
+          await rb.eval(`localStorage.setItem("hpfc", ${JSON.stringify(JSON.stringify({ mode: "A" }))}); return true;`);
+          await rb.send("Storage.clearDataForOrigin", { origin: new globalThis.URL(URL).origin, storageTypes: "indexeddb" });
+          await rb.goto(URL);
+          await rb.eval(`return document.fonts.ready.then(() => true);`);
+          for (const [w, h] of [[800, 340], [740, 359]]) {
+            await rb.setViewport(w, h, true);
+            await rb.settle();
+            await rb.click("#settings-trigger");
+            await rb.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display !== "none"`, { label: "panel open" });
+            const label = `${w}x${h}`;
+            const m = await rb.eval(`
+              const byHeading = t => [...document.querySelectorAll("#settings-panel .panel-group")].find(c => c.querySelector(".panel-heading").textContent === t);
+              const res = byHeading("Resources"), lang = byHeading("Language");
+              const cs = el => ({ mb: parseFloat(getComputedStyle(el).marginBottom), bi: getComputedStyle(el).breakInside });
+              return { note: !document.getElementById("panel-seq-note").hidden, restore: !document.getElementById("deck-restore").hidden,
+                res: cs(res), lang: cs(lang), cols: getComputedStyle(document.getElementById("settings-panel")).columnCount,
+                gap: lang.getBoundingClientRect().top - res.getBoundingClientRect().bottom,
+                sameCol: Math.abs(lang.getBoundingClientRect().left - res.getBoundingClientRect().left) <= 1 };`);
+            assert.ok(!m.note && !m.restore, `${label}: the default state`);
+            assert.strictEqual(m.cols, "2", `${label}: balanced columns`);
+            for (const k of ["res", "lang"]) {
+              assert.strictEqual(m[k].mb, 6, `${label}: ${k} margin-bottom ${m[k].mb}`);
+              assert.strictEqual(m[k].bi, "avoid", `${label}: ${k} break-inside ${m[k].bi}`);
+            }
+            if (m.sameCol) assert.ok(Math.abs(m.gap - 6) <= 1, `${label}: Language is ${m.gap}px under Resources`);
             await rb.key("Escape", "Escape", 27);
             await rb.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: `close at ${label}` });
           }
