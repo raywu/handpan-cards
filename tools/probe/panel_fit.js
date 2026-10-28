@@ -84,6 +84,16 @@ function langAllowance(baseControls, candControls) {
   return "lang-select" in candControls && !("lang-select" in baseControls) ? LANG_ALLOWANCE_PX : 0;
 }
 
+// LS (short iPhone landscape): mode S, with the progression note, takes an explicit
+// two-column grid at 300 to 359px tall and 740px wide and up, and may scroll there.
+// The base's auto-fit grid fits at 845px and up only by splitting HANDPANER mid-word.
+// Measured as the growth of the needed height (154px at 320px tall). Rules 1 and 2,
+// mode S, inside that band only.
+const LS_S_ALLOWANCE_PX = 160;
+function lsAllowance(w, h, m) {
+  return m === "S" && w >= 740 && h >= 300 && h < 360 ? LS_S_ALLOWANCE_PX : 0;
+}
+
 const REAL_FACES = [["Marcellus", "400"], ["Bitter", "400"], ["Bitter", "700"],
   ["Nunito Sans", "400"], ["Nunito Sans", "600"]];
 
@@ -658,7 +668,7 @@ async function runFont({ baseHtml, candHtml, baseLabel, candLabel, fontMode, wor
         const id = cellId(w, h, m);
         vecB.set(id, vectorOf(mb[i][mi])); vecC.set(id, vectorOf(mc[i][mi]));
         tallyGutter(report, mb[i][mi], w, h, m); tallyGutter(report, mc[i][mi], w, h, m);
-        const j = judgeCell({ base: mb[i][mi], cand: mc[i][mi], refRendered: refRendered[mi], id, allowance });
+        const j = judgeCell({ base: mb[i][mi], cand: mc[i][mi], refRendered: refRendered[mi], id, allowance: allowance + lsAllowance(w, h, m) });
         for (const k of j.removed) report.removed[k] = (report.removed[k] || 0) + 1;
         tallyJudgement(report, j, ruleNames, true);
         if (j.rule6.fail.length && !mc[i][mi].modal) extra.rule6Sidebar++;
@@ -672,7 +682,7 @@ async function runFont({ baseHtml, candHtml, baseLabel, candLabel, fontMode, wor
         const t = thresholdCell(mb[i][mi], mc[i][mi], row.lo, row.hi);
         if (t) {
           report.threshold.cells++;
-          const jt = judgeCell({ base: t.base, cand: t.cand, refRendered: refRendered[mi], id: `${w}x${t.height} ${m} (threshold)`, allowance });
+          const jt = judgeCell({ base: t.base, cand: t.cand, refRendered: refRendered[mi], id: `${w}x${t.height} ${m} (threshold)`, allowance: allowance + lsAllowance(w, t.height, m) });
           tallyJudgement(report, jt, ["rule1", "rule2", "rule3"], false);
         }
         const ov = overflowViewports(mb[i][mi], mc[i][mi], row.lo, row.hi);
@@ -838,7 +848,7 @@ async function main(argv) {
 }
 
 module.exports = {
-  OD8_FAIL_BASE_OVERFLOW, REMOVED_BY_DESIGN, HEADING_ALLOWANCE_PX, ALLOWANCE_EXEMPT, headingAllowance, RES_ALLOWANCE_PX, resAllowance, ABOUT_ALLOWANCE_PX, aboutAllowance, LANG_ALLOWANCE_PX, langAllowance, parseArgs, thresholdCell,
+  OD8_FAIL_BASE_OVERFLOW, REMOVED_BY_DESIGN, HEADING_ALLOWANCE_PX, ALLOWANCE_EXEMPT, headingAllowance, RES_ALLOWANCE_PX, resAllowance, ABOUT_ALLOWANCE_PX, aboutAllowance, LS_S_ALLOWANCE_PX, lsAllowance, LANG_ALLOWANCE_PX, langAllowance, parseArgs, thresholdCell,
   overflowViewports, gutterMessage, neutraliseScrollbars, prepareBrowser, failed, PanelFitError, judgeCell, vectorsEqual, vectorOf, assertRunComplete,
   tallyJudgement, tallyGutter, invarianceWidths, checkFontMode, WALK_FN, parseCondition, edgeStarts, rawEdges, bands, sheetDisposition, checkRuleKind,
   MEASURE_SRC, Root, readRoot,
