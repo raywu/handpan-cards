@@ -10377,14 +10377,17 @@ function run() {
               const col = document.querySelector("#settings-panel .panel-col");
               return { note: !document.getElementById("panel-seq-note").hidden, restore: !document.getElementById("deck-restore").hidden, rects,
                 rowGapL: parseFloat(getComputedStyle(p).rowGap) || 0, rowGapR: parseFloat(getComputedStyle(col).rowGap) || 0,
-                about: document.getElementById("about-open").getBoundingClientRect().bottom, resBottom: byHeading("Resources").getBoundingClientRect().bottom };
+                about: document.getElementById("about-open").getBoundingClientRect().bottom, resBottom: byHeading("Resources").getBoundingClientRect().bottom,
+                scrolls: p.scrollHeight > p.clientHeight + 1, sh: p.scrollHeight, ch: p.clientHeight };
             `);
             assert.ok(m.note && m.restore, `${label}: note and RESET both showing`);
+            const want = h >= 360 ? 20 : 9;
             assert.ok(Math.abs(m.rowGapR - m.rowGapL) <= 0.5 && m.rowGapL > 0, `${label}: the right column's row-gap ${m.rowGapR} equals the left column's ${m.rowGapL}`);
             const left = m.rects.filter(r => r.side === "L"), right = m.rects.filter(r => r.side === "R");
             assert.ok(left.every(r => Math.abs(r.left - left[0].left) <= 1) && right.every(r => Math.abs(r.left - right[0].left) <= 1) && right[0].left > left[0].left + 50, `${label}: two columns ${JSON.stringify(m.rects)}`);
             for (const [col, rg] of [[left, m.rowGapL], [right, m.rowGapR]]) {
               for (let i = 1; i < col.length; i++) {
+                assert.ok(Math.abs(col[i].top - col[i - 1].bottom - want) <= 1, `${label}: ${col[i].t} is ${col[i].top - col[i - 1].bottom}px under ${col[i - 1].t}, want the ${want}px group gap`);
                 assert.ok(Math.abs(col[i].top - col[i - 1].bottom - col[i - 1].mb - rg) <= 1, `${label}: ${col[i].t} is ${col[i].top - col[i - 1].bottom}px under ${col[i - 1].t}, margin ${col[i - 1].mb} row-gap ${rg}`);
               }
             }
@@ -10392,6 +10395,75 @@ function run() {
             await rb.key("Escape", "Escape", 27);
             await rb.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: `close at ${label}` });
           }
+        } finally {
+          await rb.setViewport(900, 900, false);
+          await rb.goto(URL);
+        }
+      });
+
+    test("LS2: with the progression note alone (no RESET) at 800x340, the columns are flush with the 9px group gap (REAL fonts)",
+      { timeout: 120000 }, async () => {
+        try {
+          await rb.setViewport(844, 390, true);
+          await rb.goto(URL);
+          await rb.eval(`localStorage.setItem("hpfc", ${JSON.stringify(JSON.stringify({ mode: "S" }))}); return true;`);
+          await rb.send("Storage.clearDataForOrigin", { origin: new globalThis.URL(URL).origin, storageTypes: "indexeddb" });
+          await rb.goto(URL);
+          await rb.eval(`return document.fonts.ready.then(() => true);`);
+          await rb.setViewport(800, 340, true);
+          await rb.settle();
+          await rb.click("#settings-trigger");
+          await rb.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display !== "none"`, { label: "panel open" });
+          if (await rb.eval(`return document.getElementById("panel-seq-note").hidden;`)) {
+            await rb.click("#tier-basic");
+            await rb.waitFor(`!document.getElementById("panel-seq-note").hidden`, { label: "progression note" });
+          }
+          const m = await rb.eval(`
+            const g = t => { const r = [...document.querySelectorAll("#settings-panel .panel-group")].find(c => c.querySelector(".panel-heading").textContent === t).getBoundingClientRect(); return { left: r.left, top: r.top, bottom: r.bottom }; };
+            const p = document.getElementById("settings-panel");
+            return { note: !document.getElementById("panel-seq-note").hidden, restore: !document.getElementById("deck-restore").hidden,
+              f: g("Flash cards"), pr: g("Print this scale"), sc: g("Scales"), re: g("Resources"), la: g("Language"),
+              scrolls: p.scrollHeight > p.clientHeight + 1, sh: p.scrollHeight, ch: p.clientHeight };`);
+          assert.ok(m.note && !m.restore, "note alone");
+          assert.ok(m.re.left > m.f.left + 50 && Math.abs(m.la.left - m.re.left) <= 1 && Math.abs(m.pr.left - m.f.left) <= 1, "two columns " + JSON.stringify(m));
+          for (const [a, b] of [[m.f, m.pr], [m.pr, m.sc], [m.re, m.la]]) assert.ok(Math.abs(b.top - a.bottom - 9) <= 1, `gap ${b.top - a.bottom}, want 9`);
+        } finally {
+          await rb.setViewport(900, 900, false);
+          await rb.goto(URL);
+        }
+      });
+
+    test("LS2: in the grid modes Tab and panelStops() follow the visual order (Flash cards, Print, Scales, Resources, Language, ABOUT last), and elsewhere keep the DOM order (REAL fonts)",
+      { timeout: 120000 }, async () => {
+        try {
+          await rb.setViewport(844, 390, true);
+          await rb.goto(URL);
+          await rb.eval(`localStorage.setItem("hpfc", ${JSON.stringify(JSON.stringify({ mode: "S", hidden: ["amara"] }))}); return true;`);
+          await rb.send("Storage.clearDataForOrigin", { origin: new globalThis.URL(URL).origin, storageTypes: "indexeddb" });
+          await rb.goto(URL);
+          await rb.eval(`return document.fonts.ready.then(() => true);`);
+          const stopsAt = async (w, h) => {
+            await rb.setViewport(w, h, true);
+            await rb.settle();
+            await rb.click("#settings-trigger");
+            await rb.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display !== "none"`, { label: "panel open" });
+            if (await rb.eval(`return document.getElementById("panel-seq-note").hidden;`)) {
+              await rb.click("#tier-basic");
+              await rb.waitFor(`!document.getElementById("panel-seq-note").hidden`, { label: "progression note" });
+            }
+            const ids = await rb.eval(`return window.panelStops().map(e => e.id);`);
+            await rb.key("Escape", "Escape", 27);
+            await rb.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: `close at ${w}x${h}` });
+            return ids;
+          };
+          const shape = (ids) => ids.map((id) => (id.startsWith("res-") ? "res" : id)).filter((id, i, a) => id !== "res" || a[i - 1] !== "res");
+          const head = ["settings-trigger", "modeA", "modeB", "tier-basic", "tier-intermediate", "tier-advanced", "seq-source-link"];
+          for (const [w, h] of [[844, 390], [800, 340]]) {
+            const ids = await stopsAt(w, h);
+            assert.deepStrictEqual(shape(ids), [...head, "print-download", "print-paper-select", "deck-add", "deck-restore", "res", "lang-select", "about-open"], `${w}x${h}: ${JSON.stringify(ids)}`);
+          }
+          const dom = await stopsAt(380, 780);
+          assert.deepStrictEqual(shape(dom), [...head, "deck-add", "deck-restore", "print-download", "print-paper-select", "res", "about-open", "lang-select"], `380x780: ${JSON.stringify(dom)}`);
         } finally {
           await rb.setViewport(900, 900, false);
           await rb.goto(URL);

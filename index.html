@@ -371,13 +371,13 @@ a.mode{text-decoration:none}
   #settings-panel:has(#panel-seq-note:not([hidden]), #deck-restore:not([hidden])) > div:nth-of-type(1){grid-column:1; grid-row:1}
   #settings-panel:has(#panel-seq-note:not([hidden]), #deck-restore:not([hidden])) > div:nth-of-type(3){grid-column:1; grid-row:2}
   #settings-panel:has(#panel-seq-note:not([hidden]), #deck-restore:not([hidden])) > div:nth-of-type(2){grid-column:1; grid-row:3}
-  #settings-panel:has(#panel-seq-note:not([hidden]), #deck-restore:not([hidden])) > .panel-col{grid-column:2; grid-row:1 / 5; display:flex; flex-direction:column; row-gap:var(--sp-2)}
+  #settings-panel:has(#panel-seq-note:not([hidden]), #deck-restore:not([hidden])) > .panel-col{grid-column:2; grid-row:1 / 5; display:flex; flex-direction:column; row-gap:var(--sp-3)}
 }
 /* LE: wide landscape phones lay the groups out in two balanced CSS columns. */
 @media (min-height:360px) and (max-height:520px) and (min-width:740px){
   #settings-panel{display:block; column-count:2; column-gap:var(--sp-4); column-fill:balance;
     padding:9px max(62px, calc(env(safe-area-inset-right) + 50px)) 9px max(62px, calc(env(safe-area-inset-left) + 50px))}
-  #settings-panel .panel-group{break-inside:avoid; margin-bottom:var(--sp-3)}
+  #settings-panel .panel-group{break-inside:avoid; margin-bottom:var(--sp-4)}
   #settings-panel:has(#panel-seq-note:not([hidden])):has(#deck-restore:not([hidden])){display:grid;
     grid-template-columns:repeat(2, 1fr); column-gap:var(--sp-4); row-gap:var(--sp-2);
     align-content:start; align-items:start}
@@ -395,7 +395,7 @@ a.mode{text-decoration:none}
     margin-bottom:6px}
   #settings-panel:not(:has(#panel-seq-note:not([hidden]), #deck-restore:not([hidden]))) .modebar{row-gap:var(--sp-1)}
   #settings-panel:has(#panel-seq-note:not([hidden]), #deck-restore:not([hidden])){display:grid; grid-template-columns:repeat(2, 1fr);
-    column-gap:var(--sp-4); row-gap:var(--sp-2); align-content:start; align-items:start;
+    column-gap:var(--sp-4); row-gap:var(--sp-3); align-content:start; align-items:start;
     padding:4px max(62px, calc(env(safe-area-inset-right) + 50px)) 4px max(62px, calc(env(safe-area-inset-left) + 50px))}
 }
 /* Desktop: the panel becomes an always-visible sidebar, not a modal (M3,
@@ -14672,16 +14672,20 @@ let panelOpen = false;
 // simply always visible as a static sidebar (CSS only).
 const desktopMQ = window.matchMedia("(min-width:1024px) and (min-height:700px)");
 function panelStops() {
+  const prints = [...settingsPanel.querySelectorAll(".prints button, .prints select")];
+  const scales = [document.getElementById("deck-add"), restoreBtn];
+  const res = [...settingsPanel.querySelectorAll('#settings-panel a.mode[id^="res-"]')];
+  const about = document.getElementById("about-open"), lang = document.getElementById("lang-select");
+  const col = document.querySelector("#settings-panel > .panel-col");
+  const grid = typeof getComputedStyle === "function" && !!col && getComputedStyle(col).display === "flex";
   return [settingsTrigger, document.getElementById("modeA"), document.getElementById("modeB"),
           document.getElementById("tier-basic"), document.getElementById("tier-intermediate"),
           document.getElementById("tier-advanced"), document.getElementById("seq-source-link"),
-          document.getElementById("deck-add"), restoreBtn,
-          ...settingsPanel.querySelectorAll(".prints button, .prints select"),
+          // LS2: in the two-column grid modes Print sits above Scales and
+          // ABOUT closes the list, so Tab follows what the eye sees.
           // Eng review amendment 1: the Resources links join the Tab trap
           // after the print controls, in DOM order.
-          ...settingsPanel.querySelectorAll('#settings-panel a.mode[id^="res-"]'),
-          document.getElementById("about-open"),
-          document.getElementById("lang-select")]
+          ...(grid ? [...prints, ...scales, ...res, lang, about] : [...scales, ...prints, ...res, about, lang])]
     .filter(isStop);
 }
 function openPanel() {
