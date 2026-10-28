@@ -1,0 +1,15 @@
+# kills: SW: a quick swipe that starts on the pan switches Layout to Scale at 390x844
+# suite: node --test --test-reporter=tap --test-name-pattern ^SW:.a.quick.swipe.that.starts.on.the.pan.switches.Layout.to.Scale.at.390x844$ tests/e2e.test.js
+# The preview descendant again refuses to arm the shortcut.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12323,7 +12323,7 @@ function setTab(tab) {
+       const p = ts && ts.length === 1 && ts[0];
+       if (!sheetOpen || !p || sheetZoomed() || !Number.isFinite(p.clientX) || !Number.isFinite(p.clientY) ||
+           p.clientX < 24 || p.clientX > window.innerWidth - 24 || sheet.classList.contains("kbup") ||
+-          (t && t.closest && t.closest("#scale-lip, select"))) return;
++          previewBox.contains(t) || (t && t.closest && t.closest("#scale-lip, select"))) return;
+       const field = t && t.closest ? t.closest("input, textarea") : null;
+       if ((field && document.activeElement === field) || selected(field)) return;
+       const box = field && field.tagName === "TEXTAREA" ? field : null;
