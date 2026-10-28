@@ -10231,7 +10231,7 @@ function run() {
             aboutAlone: row.children.length === 1,
             aboutFull: Math.abs(about.getBoundingClientRect().width - row.getBoundingClientRect().width) <= 1,
             underTrigger: ctrls.filter(e => hit(e.getBoundingClientRect(), t)).map(e => e.id || e.textContent.trim()),
-            ncols: new Set([...p.children].filter(g => g.getBoundingClientRect().width > 8).map(g => Math.round(g.getBoundingClientRect().left))).size, lefts: [...p.children].map(g => (g.id||g.className) + "@" + Math.round(g.getBoundingClientRect().left) + "/" + Math.round(g.getBoundingClientRect().width)).join(" "),
+            ncols: new Set([...p.querySelectorAll(".panel-group")].filter(g => g.getBoundingClientRect().width > 8).map(g => Math.round(g.getBoundingClientRect().left))).size, lefts: [...p.children].map(g => (g.id||g.className) + "@" + Math.round(g.getBoundingClientRect().left) + "/" + Math.round(g.getBoundingClientRect().width)).join(" "),
             gridCols: getComputedStyle(p).gridTemplateColumns.split(" ").length,
             pl: parseFloat(getComputedStyle(p).paddingLeft), pr: parseFloat(getComputedStyle(p).paddingRight),
             wrapped: ctrls.filter(e => e.tagName !== "SELECT" && !/\\s/.test(e.textContent.trim()) && lineCount(e) > 1).map(e => e.id + ":" + e.textContent.trim()),
@@ -10335,7 +10335,7 @@ function run() {
                 s.scrollIntoView({ block: "center" });
                 const k = s.getBoundingClientRect();
                 const top = document.elementFromPoint(k.left + k.width / 2, k.top + k.height / 2);
-                return { restore: !r.hidden, ncols: new Set([...p.children].filter(g => g.getBoundingClientRect().width > 8).map(g => Math.round(g.getBoundingClientRect().left))).size, scrollW: p.scrollWidth, clientW: p.clientWidth, hitSelect: top === s };`);
+                return { restore: !r.hidden, ncols: new Set([...p.querySelectorAll(".panel-group")].filter(g => g.getBoundingClientRect().width > 8).map(g => Math.round(g.getBoundingClientRect().left))).size, scrollW: p.scrollWidth, clientW: p.clientWidth, hitSelect: top === s };`);
               assert.ok(m.restore, `${label}: RESET SEEDED SCALES is showing`);
               assert.ok(m.scrollW <= m.clientW + 1, `${label}: overflows horizontally (${m.scrollW} > ${m.clientW})`);
               assert.strictEqual(m.ncols, 2, `${label}: the groups sit in ${m.ncols} columns`);
@@ -10343,6 +10343,93 @@ function run() {
               await rb.key("Escape", "Escape", 27);
               await rb.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: `close at ${label}` });
             }
+          }
+        } finally {
+          await rb.setViewport(900, 900, false);
+          await rb.goto(URL);
+        }
+      });
+
+    test("LS2: with the progression note and RESET SEEDED SCALES showing, the columns balance: Flash cards, Print, Scales left and Resources, Language right, each stacked flush, at 844x390 and 800x340 (REAL fonts)",
+      { timeout: 120000 }, async () => {
+        try {
+          await rb.setViewport(844, 390, true);
+          await rb.goto(URL);
+          await rb.eval(`localStorage.setItem("hpfc", ${JSON.stringify(JSON.stringify({ mode: "S", hidden: ["amara"] }))}); return true;`);
+          await rb.send("Storage.clearDataForOrigin", { origin: new globalThis.URL(URL).origin, storageTypes: "indexeddb" });
+          await rb.goto(URL);
+          await rb.eval(`return document.fonts.ready.then(() => true);`);
+          for (const [w, h] of [[844, 390], [800, 340]]) {
+            await rb.setViewport(w, h, true);
+            await rb.settle();
+            await rb.click("#settings-trigger");
+            await rb.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display !== "none"`, { label: "panel open" });
+            const label = `${w}x${h}`;
+            if (await rb.eval(`return document.getElementById("panel-seq-note").hidden;`)) {
+              await rb.click("#tier-basic");
+              await rb.waitFor(`!document.getElementById("panel-seq-note").hidden`, { label: "progression note" });
+            }
+            const m = await rb.eval(`
+              const byHeading = t => [...document.querySelectorAll("#settings-panel .panel-group")].find(c => c.querySelector(".panel-heading").textContent === t);
+              const names = [["Flash cards", "L"], ["Print this scale", "L"], ["Scales", "L"], ["Resources", "R"], ["Language", "R"]];
+              const rects = names.map(([t, side]) => { const el = byHeading(t); const r = el.getBoundingClientRect(); return { t, side, left: r.left, top: r.top, bottom: r.bottom, mb: parseFloat(getComputedStyle(el).marginBottom) }; });
+              const p = document.getElementById("settings-panel");
+              const col = document.querySelector("#settings-panel .panel-col");
+              return { note: !document.getElementById("panel-seq-note").hidden, restore: !document.getElementById("deck-restore").hidden, rects,
+                rowGapL: parseFloat(getComputedStyle(p).rowGap) || 0, rowGapR: parseFloat(getComputedStyle(col).rowGap) || 0,
+                about: document.getElementById("about-open").getBoundingClientRect().bottom, resBottom: byHeading("Resources").getBoundingClientRect().bottom };
+            `);
+            assert.ok(m.note && m.restore, `${label}: note and RESET both showing`);
+            assert.ok(Math.abs(m.rowGapR - m.rowGapL) <= 0.5 && m.rowGapL > 0, `${label}: the right column's row-gap ${m.rowGapR} equals the left column's ${m.rowGapL}`);
+            const left = m.rects.filter(r => r.side === "L"), right = m.rects.filter(r => r.side === "R");
+            assert.ok(left.every(r => Math.abs(r.left - left[0].left) <= 1) && right.every(r => Math.abs(r.left - right[0].left) <= 1) && right[0].left > left[0].left + 50, `${label}: two columns ${JSON.stringify(m.rects)}`);
+            for (const [col, rg] of [[left, m.rowGapL], [right, m.rowGapR]]) {
+              for (let i = 1; i < col.length; i++) {
+                assert.ok(Math.abs(col[i].top - col[i - 1].bottom - col[i - 1].mb - rg) <= 1, `${label}: ${col[i].t} is ${col[i].top - col[i - 1].bottom}px under ${col[i - 1].t}, margin ${col[i - 1].mb} row-gap ${rg}`);
+              }
+            }
+            assert.ok(Math.abs(m.about - m.resBottom) <= 12, `${label}: ABOUT is the last Resources row`);
+            await rb.key("Escape", "Escape", 27);
+            await rb.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: `close at ${label}` });
+          }
+        } finally {
+          await rb.setViewport(900, 900, false);
+          await rb.goto(URL);
+        }
+      });
+
+    test("LS2: in the default state at 800x340 and 740x359, Resources and Language keep the 6px margin and break-inside avoid, with 6px between them (REAL fonts)",
+      { timeout: 120000 }, async () => {
+        try {
+          await rb.setViewport(844, 390, true);
+          await rb.goto(URL);
+          await rb.eval(`localStorage.setItem("hpfc", ${JSON.stringify(JSON.stringify({ mode: "A" }))}); return true;`);
+          await rb.send("Storage.clearDataForOrigin", { origin: new globalThis.URL(URL).origin, storageTypes: "indexeddb" });
+          await rb.goto(URL);
+          await rb.eval(`return document.fonts.ready.then(() => true);`);
+          for (const [w, h] of [[800, 340], [740, 359]]) {
+            await rb.setViewport(w, h, true);
+            await rb.settle();
+            await rb.click("#settings-trigger");
+            await rb.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display !== "none"`, { label: "panel open" });
+            const label = `${w}x${h}`;
+            const m = await rb.eval(`
+              const byHeading = t => [...document.querySelectorAll("#settings-panel .panel-group")].find(c => c.querySelector(".panel-heading").textContent === t);
+              const res = byHeading("Resources"), lang = byHeading("Language");
+              const cs = el => ({ mb: parseFloat(getComputedStyle(el).marginBottom), bi: getComputedStyle(el).breakInside });
+              return { note: !document.getElementById("panel-seq-note").hidden, restore: !document.getElementById("deck-restore").hidden,
+                res: cs(res), lang: cs(lang), cols: getComputedStyle(document.getElementById("settings-panel")).columnCount,
+                gap: lang.getBoundingClientRect().top - res.getBoundingClientRect().bottom,
+                sameCol: Math.abs(lang.getBoundingClientRect().left - res.getBoundingClientRect().left) <= 1 };`);
+            assert.ok(!m.note && !m.restore, `${label}: the default state`);
+            assert.strictEqual(m.cols, "2", `${label}: balanced columns`);
+            for (const k of ["res", "lang"]) {
+              assert.strictEqual(m[k].mb, 6, `${label}: ${k} margin-bottom ${m[k].mb}`);
+              assert.strictEqual(m[k].bi, "avoid", `${label}: ${k} break-inside ${m[k].bi}`);
+            }
+            if (m.sameCol) assert.ok(Math.abs(m.gap - 6) <= 1, `${label}: Language is ${m.gap}px under Resources`);
+            await rb.key("Escape", "Escape", 27);
+            await rb.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: `close at ${label}` });
           }
         } finally {
           await rb.setViewport(900, 900, false);
@@ -14101,7 +14188,7 @@ function run() {
               window.__pf.one(m);
               const ph = document.getElementById("panel-prog-heading");
               return { needed: c.needed, neededNoAbout, langCost: c.needed - neededNoLang,
-                groups: [...document.querySelectorAll("#settings-panel > .panel-group")].map((g) => g.getBoundingClientRect().height),
+                groups: [...document.querySelectorAll("#settings-panel .panel-group")].map((g) => g.getBoundingClientRect().height),
                 mt: ph ? parseFloat(getComputedStyle(ph).marginTop) : null,
                 sp1: parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--sp-1")),
                 hg: ph ? ph.getBoundingClientRect().height + parseFloat(getComputedStyle(ph).marginTop) : null };
