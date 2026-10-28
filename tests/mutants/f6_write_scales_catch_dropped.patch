@@ -1,18 +1,19 @@
-# kills: writeScales swallows a storage error so generate, share and delete all stay usable
-# suite: node --test --test-name-pattern ^writeScales.swallows.a.storage.error.so.generate,.share.and.delete.all.stay.usable$ tests/app.test.js
+# kills: S3: refused migration write retains the old list and serves an explicit session copy
+# suite: node --test --test-name-pattern=^S3:.refused.migration.write tests/app.test.js
 # Drops writeScales' try/catch. With storage denied (private mode, quota),
 # setItem throws uncaught out of rememberScale/replaceScale/forgetScale, so
 # generate, share and delete each abandon mid-handler: the new deck is never
 # selected and Generate's disabled flag is never cleared again.
+# Approved retained contract mapped to the transactional instance adapter.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7753,7 +7753,7 @@ function savedScales() {
- }
- function writeScales(list) {
-   scalesMemory = list;
--  try { localStorage.setItem(SCALES_KEY, JSON.stringify(list)); } catch (e) {}
-+  localStorage.setItem(SCALES_KEY, JSON.stringify(list));
- }
- // R7: the records changed shape (per-ring seats), so they live under a new key.
- // The first boot with no list under it COPIES the old one across - the old key
+@@ -10481,7 +10481,7 @@ async function initializeSavedDurable(locks) {
+       });
+     }catch(e){if(!callbackEntered)return initializeSavedSession(savedFailure("lock","session-only-initialization"),snapshot.present?staged:null);return savedProtect(savedFailure("storage","initialization-refused"),snapshot.raw);}
+     if(committed===SAVED_RETRY)continue;
+-    if(!committed.ok)return savedProtect(committed,snapshot.raw);
++    if(!committed.ok){savedMode="durable";return committed;}
+     savedDatabase=opened.db;adopted=true;savedMode="durable";savedIssue=null;
+     let published=false;
+     try{

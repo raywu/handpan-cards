@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11481,7 +11481,7 @@ function showPlaceholderPan() {
+@@ -12903,7 +12903,7 @@ function showPlaceholderPan() {
    const values = {};
    for (const k of FIELD_KEYS) values[k] = String(fieldEls[k].placeholder || "");
    const composed = HPE.importer.compose(values);

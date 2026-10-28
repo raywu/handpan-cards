@@ -132,3 +132,11 @@ answers. Grouped-detail presentation, exact protocol/old-writer recovery contrac
 and numeric performance thresholds are mandatory StageA decisions after scoped
 implementation approval. Existing cross-shell unisons/grammar/inference and
 English note input remain protected. Nothing in ledger publication grants code.
+
+## Owner status change — paused until further notice
+
+Owner explicitly paused PR579 / duplicate-note plan workstream. This supersedes
+earlier next-action/approval-interview/publishing instructions: no planning,
+implementation or main release until explicit owner resumption. Preserve finalized
+plan/reviews/research/settled inputs and worktrees. No cancellation or cleanup.
+The later workstream ledger carries this decision; other scopes remain independent.

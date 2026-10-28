@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12344,7 +12344,7 @@ function resetSheetState(edit) {
+@@ -13306,7 +13306,7 @@ function resetSheetState(edit, target = selection) {
    typedNow = null;
    hintSaid = "";
    hintQuiet = true;

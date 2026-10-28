@@ -1,0 +1,15 @@
+# kills: SPS browser: native scrolling excluded origins keyboard and outer excursion preserve the current tab
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS.browser:.native.scrolling.excluded.origins.keyboard.and.outer.excursion.preserve.the.current.tab$ tests/e2e.test.js
+# Real preview-descendant horizontal gesture incorrectly switches tab.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11699,7 +11699,7 @@ function setTab(tab) {
+       const p = ts && ts.length === 1 && ts[0];
+       if (!sheetOpen || !p || sheetZoomed() || !Number.isFinite(p.clientX) || !Number.isFinite(p.clientY) ||
+           p.clientX < 24 || p.clientX > window.innerWidth - 24 || sheet.classList.contains("kbup") ||
+-          previewBox.contains(t) || (t && t.closest && t.closest("#scale-lip, select"))) return;
++          false || (t && t.closest && t.closest("#scale-lip, select"))) return;
+       const field = t && t.closest ? t.closest("input, textarea") : null;
+       if ((field && document.activeElement === field) || selected(field)) return;
+       const box = field && field.tagName === "TEXTAREA" ? field : null;

@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12779,7 +12779,8 @@ delBtn.onclick = () => {
+@@ -13637,7 +13637,8 @@ delBtn.onclick = () => {
    /* Disarm BEFORE the delete, not inside it: the state must not outlive the
       deck even when deleteDeck turns out to have nothing to remove, and the
       delete's own message should be the last thing said. */

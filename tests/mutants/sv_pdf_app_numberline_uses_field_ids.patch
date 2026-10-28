@@ -1,0 +1,15 @@
+# kills: OF: the browser PDF and the app print the same number line 2-1-4 on the Am card of (D3) C4 A3 D4 E4 F4 G4 A4 C5
+# suite: node --test --test-reporter=tap --test-name-pattern=^OF..the.browser.PDF.and.the.app.print.the.same.number.line.2.1.4.on.the.Am.card.of..D3..C4.A3.D4.E4.F4.G4.A4.C5$ tests/pdfcards.test.js
+# fault: App number lines print canonical field IDs instead of the moved seat labels; the independent PDF and literal 2-1-4 oracle remain unchanged.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11201,7 +11201,7 @@ function linesHTML(d, ch) {
+   });
+   const nums = seg(ch.fields, f => {
+     const col = pc(d, f) === rpc ? C.root : C.tone;
+-    return `<span style="color:${col}">${esc(d.fields[f][5])}</span>`;
++    return `<span style="color:${col}">${esc(String(f))}</span>`;
+   });
+   const nb = ch.fields.filter(f => d.fields[f][3] === "bottom").length;
+   return `<div class="lines">

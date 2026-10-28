@@ -1,0 +1,11 @@
+# kills: SV-ROUTE-1: modeled prior preference ACKs and unchanged rereads preserve a pending hash destination
+# suite: node --test --test-name-pattern ^SV-ROUTE-1: tests/app.test.js
+# NULL exemption overwrites a newer pending destination after natural cold-import failure.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13558,3 +13558,3 @@ savedSnapshotListener=event=>{
+     // publication must not replace that destination with the previous scale.
+-    const pendingRoute = location.hash !== lastAcknowledgedRouteHash &&
++    const pendingRoute = lastAcknowledgedRouteHash !== null && location.hash !== lastAcknowledgedRouteHash &&
+       (location.hash.indexOf(DECK_ROUTE) === 0 || location.hash.indexOf(SHARE_PREFIX) === 0);

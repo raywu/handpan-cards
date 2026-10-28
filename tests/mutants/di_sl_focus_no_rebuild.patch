@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12123,7 +12123,7 @@
+@@ -14289,7 +14289,7 @@ function pathFocus(path) {
    if (inputPath === path) return;
    inputPath = path;
    const values = fieldValues();

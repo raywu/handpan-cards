@@ -1,0 +1,15 @@
+# kills: SV11 U6: missed-event conflict preserves draft then Back shows the acknowledged winner
+# suite: node --test --test-name-pattern=^SV11.U6: tests/app.test.js
+# fault: A failed stale Save never reconciles the acknowledged winner before explicit Back/review.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13499,7 +13499,7 @@ async function runGenerate(separate = false) {
+       {type:"edit",instanceId:base.selection.id,expectedRevision:base.revision};
+     const result=await commitSaved({...command,collectionId:base?base.collectionId:savedState?.collectionId,candidate},{signal:controller.signal});
+     if(generation!==sheetGeneration || !sheetOpen || draft!==sheetKey())return;
+-    if(!result.ok){if(result.kind==="conflict"){await reconcileSavedCollection();if(generation===sheetGeneration)showSavedConflict(true);}else if(result.kind!=="cancelled")showRefusal(savedErrorText(result));return;}
++    if(!result.ok){if(result.kind==="conflict"){if(generation===sheetGeneration)showSavedConflict(true);}else if(result.kind!=="cancelled")showRefusal(savedErrorText(result));return;}
+     if(result.published===false){showRefusal(savedPublicationText(result));return;}
+     const d=savedEntries.get(result.instanceId).deck;
+     const warned=(d.warnings||[]).map(w=>reasonText(w));

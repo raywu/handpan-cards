@@ -1,0 +1,15 @@
+# kills: SPS3: unfocused-field hold observes 250 milliseconds and the 8 pixel slop boundary
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS3:.unfocused\-field.hold.observes.250.milliseconds.and.the.8.pixel.slop.boundary$ tests/app.test.js
+# 250ms unfocused hold is incorrectly eligible.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11686,7 +11686,7 @@ function setTab(tab) {
+       if (!check()) return false;
+       const S = sheetSwipe;
+       if (!Number.isFinite(p.clientX) || !Number.isFinite(p.clientY) ||
+-          (S.field && !S.moved && Date.now() - S.at >= HOLD_MS)) {
++          (S.field && !S.moved && Date.now() - S.at > HOLD_MS)) {
+         cancel();
+         return false;
+       }

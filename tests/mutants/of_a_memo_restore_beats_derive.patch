@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12321,8 +12321,8 @@ let refusal = null;
+@@ -12928,8 +12928,8 @@ let refusal = null;
   *  so (drawer open only), and keep focus on a real note. */
  function noteCounts(fields, value) {
    const wasOnNote = isHit(document.activeElement);

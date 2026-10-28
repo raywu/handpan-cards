@@ -1,16 +1,16 @@
 # suite: node --test --test-name-pattern ^the.boot.rewrite.leaves.an.unreadable.record.byte.identical.at.its.index$ tests/app.test.js
 # kills: the boot rewrite leaves an unreadable record byte-identical at its index
 # The boot rewrite pushes each record to the front, so the list is reversed and no record stays at its index.
+# Approved retained contract mapped to the transactional instance adapter.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7883,7 +7883,7 @@ function restoreScales() {
-         }
-       }
-     } catch (e) {}
--    out.push(keep);
-+    out.unshift(keep);
-   }
-   if (JSON.stringify(out) !== JSON.stringify(list)) writeScales(out);
- }
-
+@@ -10335,7 +10335,7 @@ function stageLegacySaved() {
+   try { if (sourceKey) records = JSON.parse(raw[sourceKey]); }
+   catch (e) { return { ...savedFailure("protected", "legacy-json"), raw }; }
+   if (!Array.isArray(records)) return { ...savedFailure("protected", "legacy-list"), raw };
+-  const rows = records.map(record => {
++  const rows = [...records].reverse().map(record => {
+     const read = readSavedRecord(record);
+     return { record: read.ok ? read.record : savedClone(record), read };
+   });

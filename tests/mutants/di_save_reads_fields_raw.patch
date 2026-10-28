@@ -1,15 +1,17 @@
 # kills: DI: SAVE from Edit after a field edit stores the same record as typing the composed line
 # suite: node --test --test-name-pattern ^DI:.SAVE.from.Edit.after tests/app.test.js
 # Mutant di_save_reads_fields_raw.
+# Retained behavior re-anchored for saved instances; exact intent is recorded in the lane evidence.
+# Edit-only fault preserves the Add fixture before testing the wrong SAVE input path.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11437,7 +11437,7 @@ function runGenerate() {
-   // here: a refused seed stays disabled until syncParseState re-enables it on
-   // the next parseable input.
+@@ -13490,7 +13490,7 @@ async function runGenerate(separate = false) {
+   say("","");
    try {
--    res = generateDeck(String(scaleBox.value || ""), sheetOptions(), (seed) => {
-+    res = generateDeck(FIELD_KEYS.map((k) => fieldEls[k].value).join(" "), sheetOptions(), (seed) => {
-       // R1: a SAVE on a seeded deck whose scale already has a custom deck is
-       // refused as an edit onto a taken scale is - generating over it would
-       // silently reset that deck's name, palette and mirror. ADD keeps its
+     buildRefused=true;
+-    const built=buildGenerated(String(scaleBox.value||""),sheetOptions());
++    const built=buildGenerated(base?FIELD_KEYS.map(k=>fieldEls[k].value).join(" "):String(scaleBox.value||""),sheetOptions());
+     if(!built.ok){refusal=reasonText(built);showRefusal(refusal);return;}
+     buildRefused=false;
+     const candidate={record:scaleRecord(seedOf(built.value)),deck:built.value};

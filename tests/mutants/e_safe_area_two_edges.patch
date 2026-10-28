@@ -7,7 +7,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -66,8 +66,7 @@ body{
+@@ -160,8 +160,7 @@ body{
       original padding with max(), so a device that reports no inset at all
       (every desktop, and Chromium in the e2e harness) measures exactly what it
       measured before: 10px / 12px / 12px / 12px. */

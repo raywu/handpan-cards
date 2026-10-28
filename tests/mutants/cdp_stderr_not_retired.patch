@@ -1,0 +1,16 @@
+# kills: CDP-STDERR retirement closes only the owned launch stream before process exit
+# suite: node --test --test-reporter=tap --test-name-pattern=^CDP-STDERR tests/harness.test.js
+# Retiring an owned launch must explicitly close its debug-port pipe.
+diff --git a/tests/helpers/cdp.js b/tests/helpers/cdp.js
+--- a/tests/helpers/cdp.js
++++ b/tests/helpers/cdp.js
+@@ -68,9 +68,6 @@ function reap(entry) {
+   // the browser leads its own group and the whole tree dies at once.
+   try { process.kill(-entry.proc.pid, "SIGKILL"); }
+   catch { try { entry.proc.kill("SIGKILL"); } catch {} }
+-  // A terminated browser's descendants can retain its debug-port pipe. Once
+-  // this owned launch is retired, explicitly close our reader as well.
+-  try { entry.proc.stderr?.destroy(); } catch {}
+   // And then remove the profile, retrying briefly in case a dying child wins
+   // the race anyway. Bounded at 100ms: this runs on the way out of a killed
+   // suite, which must never become a hang.

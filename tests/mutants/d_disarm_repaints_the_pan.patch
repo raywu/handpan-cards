@@ -7,7 +7,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10197,7 +10197,7 @@ function disarmDelete() {
+@@ -13624,7 +13624,7 @@ function disarmDelete() {
    // used to protect is asserted from the other side, while DELETE is armed,
    // by d_arming_warning_takes_the_seed_row - the mutant that puts row 91's
    // cause back.

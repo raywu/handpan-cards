@@ -10,7 +10,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8178,7 +8178,7 @@ function swipeOutTiming(vx, dir, dx, dist) {
+@@ -14737,7 +14737,7 @@ function swipeOutTiming(vx, dir, dx, dist) {
    const v = Math.max(-dir * vx, SWIPE_MOMENTUM_FLOOR_PX_MS);
    const end = Math.max(dist, Math.abs(dx) + SWIPE_MOMENTUM_FLOOR_PX_MS * SWIPE_MOMENTUM_MIN_MS);
    const d = end - Math.abs(dx);

@@ -17,7 +17,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8925,8 +8925,6 @@ function swipeMove(e) {
+@@ -14877,8 +14877,6 @@ function swipeMove(e) {
  function startDrag(e) {
    scene.getAnimations().forEach(a => a.cancel());
    drag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, last: 0, lastY: 0, moved: false, pts: [{ x: e.clientX, t: e.timeStamp }], pointerType: e.pointerType };

@@ -1,14 +1,18 @@
-# kills: editable defaults: saving seeded Kurd with only a palette change while its fork holds the id is refused
-# suite: node --test --test-name-pattern ^editable.defaults..saving.seeded.Kurd.with.only.a.palette.change.while.its.fork.holds.the.id.is.refused$ tests/app.test.js
-# The collision guard is gone: SAVE on a seeded deck whose scale another deck already holds overwrites that deck.
+# kills: editable defaults: saving seeded Kurd creates its slot owner without overwriting a same-inventory fork
+# suite: node --test --test-name-pattern=^editable.defaults:.saving.seeded.Kurd.creates.its.slot.owner.without.overwriting.a.same\-inventory.fork$ tests/app.test.js
+# former kills: editable defaults: saving seeded Kurd with only a palette change while its fork holds the id is refused
+# fault: Explicit seeded replacement overwrites an existing plain same-inventory fork instead of giving the slot a new owner.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10078,7 +10078,6 @@
-       // refused as an edit onto a taken scale is - generating over it would
-       // silently reset that deck's name, palette and mirror. ADD keeps its
-       // benign dedupe below.
--      if (fromSeed && CUSTOM[HPE.core.deckId(seed.fields)]) { taken = CUSTOM[HPE.core.deckId(seed.fields)]; return { ok: false }; }
-       if (!wasId) return null;
-       const id = HPE.core.deckId(seed.fields);
-       if (id === wasId || !CUSTOM[id]) return null;
+@@ -10589,7 +10589,9 @@ function applySavedCommand(staged, command, candidate) {
+         command.expectedOwnerId !== (current.slots[command.seedId] || null)) return conflict();
+     const record = savedClone(candidate.record);
+     record.o = { ...(record.o || {}), replaces: command.seedId };
+-    const row = allocate(record);
++    const previous = next.entries.find(entry => views.get(entry.instanceId)?.deck.id === candidate.deck.id);
++    const row = previous || allocate(record);
++    if (previous) { row.record = record; row.revision++; }
+     if (!row) return savedFailure("allocation", "instance-id");
+     const deckValue = { ...candidate.deck, options: { ...candidate.deck.options, replaces: command.seedId } };
+     attachCandidate(row, deckValue);

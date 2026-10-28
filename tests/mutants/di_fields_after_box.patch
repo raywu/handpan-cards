@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1447,32 +1447,6 @@
+@@ -1481,32 +1481,6 @@ html.about-open{overflow:hidden}
           parseSeed); focusing one dims the other. One variable, inputPath, says
           which is active. The live region is the last child so the order the
           SG: N-A2 tests pin is untouched. -->
@@ -37,11 +37,10 @@ diff --git a/index.html b/index.html
      <div class="fieldrow">
        <label class="sheetlabel" for="scale-box">SCALE: (DING) TOP NOTES | OPTIONAL INNER NOTES</label>
        <span class="sheetlabel" id="scale-label-2">[NOTE] = A BOTTOM NOTE</span>
-@@ -1498,7 +1472,33 @@
-            the page-level .announce outside the dialog and out of reach. -->
+@@ -1533,6 +1507,32 @@ html.about-open{overflow:hidden}
        <div id="scale-refusal" aria-live="polite"></div>
        <p class="sheethint" id="scale-line-note"></p>
-+    </div>
+     </div>
 +    <div id="scale-fields" role="group" aria-labelledby="scale-fields-head">
 +      <p class="sheetlabel" id="scale-fields-head">YOUR SCALE, NOTE BY NOTE</p>
 +      <div class="fieldrow">
@@ -66,7 +65,7 @@ diff --git a/index.html b/index.html
 +      </div>
 +      <p class="sheethint" id="scale-fields-note"></p>
 +      <p class="sr-only" id="scale-fields-live" aria-live="polite"></p>
-     </div>
++    </div>
 +    <div id="scale-or" role="separator" aria-label="or"><span>OR</span></div>
      </div>
      <div id="scale-panel-layout" role="tabpanel" aria-labelledby="scale-tab-layout" hidden>

@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9458,7 +9458,7 @@ const browserLanguages = () => (navigator.languages && navigator.languages.lengt
+@@ -9611,7 +9611,7 @@ const browserLanguages = () => (navigator.languages && navigator.languages.lengt
    : navigator.language ? [navigator.language] : []);
  /** The stored choice if it names a present table, else what the browser asks for. */
  function uiLang() {

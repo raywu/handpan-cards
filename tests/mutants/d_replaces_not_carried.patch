@@ -1,15 +1,15 @@
 # kills: SD: a replacement takes the seeded slot across a reload and a field edit
 # suite: node --test --test-name-pattern ^SD..a.replacement.takes.the.seeded.slot.across.a.reload.and.a.field.edit$ tests/app.test.js
 # restoreScales rebuilds a stored replacement without its replaces option, so it leaves the seeded slot on reload.
+# Approved retained contract mapped to the transactional instance adapter.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8052,7 +8052,7 @@
-         if (seen.has(id)) continue;
-         const canonical = HPE.core.formatSeed(res.value.fields);
-         const options = recordOptions(rec);
--        const built = generateDeck(canonical, options);
-+        const built = generateDeck(canonical, Object.assign({}, options, { replaces: undefined }));
-         if (built.ok && built.value.id === id) {
-           seen.add(id);
-           if (rec.v < SHARE_VERSION) keep = { v: SHARE_VERSION, s: canonical, o: options };
+@@ -10575,6 +10575,7 @@ function applySavedCommand(staged, command, candidate) {
+     const row = existing();
+     if (!row || !views.has(row.instanceId) || row.revision !== command.expectedRevision) return conflict();
+     const record = savedEditedRecord(row.record, candidate);
++    if(record.o)delete record.o.replaces;
+     if (!savedEqual(record, row.record)) {
+       if (row.revision >= Number.MAX_SAFE_INTEGER) return savedFailure("invalid", "revision-overflow");
+       row.record = record; row.revision++;

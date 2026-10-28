@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10736,7 +10736,7 @@ const card = document.getElementById("card");
+@@ -14371,7 +14371,7 @@ const card = document.getElementById("card");
  function flip() { if (!order.length) return; flipped = !flipped; render(); track("card_flip", { mode }); }
  function step(dir) {
    if (!order.length) return;

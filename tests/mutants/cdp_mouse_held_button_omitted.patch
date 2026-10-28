@@ -1,0 +1,15 @@
+# kills: CDP-MOUSE-HELD: Browser.drag retains actual pointer capture until genuine release
+# suite: node --test --test-name-pattern=^CDP-MOUSE-HELD: tests/harness.test.js
+# fault: Omitting the held left-button metadata drops actual native pointer capture during a mouse drag.
+diff --git a/tests/helpers/cdp.js b/tests/helpers/cdp.js
+--- a/tests/helpers/cdp.js
++++ b/tests/helpers/cdp.js
+@@ -536,7 +536,7 @@ class Browser {
+       await this.send("Input.dispatchMouseEvent", { type: "mousePressed", x: p0.x, y: p0.y, button: "left", clickCount: 1, timestamp: t0 });
+       for (const [dx, ms, dy] of pts) {
+         const p = at(dx, dy);
+-        await this.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: p.x, y: p.y, button: "left", buttons: 1, timestamp: t0 + ms / 1000 });
++        await this.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: p.x, y: p.y, buttons: 1, timestamp: t0 + ms / 1000 });
+       }
+       if (release) {
+         const p = at(last[0], last[2]);

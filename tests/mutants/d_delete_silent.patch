@@ -1,14 +1,16 @@
 # kills: deleting the SELECTED custom deck falls back to a built-in, says so, and stays gone
 # suite: node --test --test-name-pattern ^deleting.the.SELECTED.custom.deck.falls.back.to.a.built.in..says.so..and.stays.gone$ tests/app.test.js
 # Re-anchored 2026-10-13 (seeded SAVE / DELETE, lane app) against the current source. The mutation itself is unchanged.
+# Approved retained contract mapped to the transactional instance adapter.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12598,7 +12598,6 @@ function deleteDeck(id) {
-   if (editingId === id) closeScaleSheet();
-   if (!wasSelected) { save(); buildChips(); return; }
-   selectDeck(fallbackDeck().id);
--  say(t("boot.removed", { a: gone, b: deck().name }), "warn");
+@@ -13478,7 +13478,7 @@ async function deleteDeck(id) {
+   if(result.published===false)return;
+   const gone=base.deck.name;
+   closeScaleSheet();selectDeck(fallbackSelection(),false);
+-  say(t("boot.removed",{a:gone,b:deck().name}),"warn");
++
  }
- 
- function runGenerate() {
+ async function runGenerate(separate = false) {
+   separate = separate === true;

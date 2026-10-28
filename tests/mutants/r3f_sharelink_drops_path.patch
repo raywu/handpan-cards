@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8017,7 +8017,7 @@ function shareCode(d) {
+@@ -9927,7 +9927,7 @@ function shareCode(d) {
  function shareLink(d) {
    const res = shareCode(d);
    return res.ok

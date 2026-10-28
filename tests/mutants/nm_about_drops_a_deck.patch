@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1261,7 +1261,6 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1427,7 +1427,6 @@ html.about-open{overflow:hidden}
      <li><a href="#deck=d-kurd-10">D Kurd 10: 49 chord cards</a></li>
      <li><a href="#deck=d-amara-10">D Amara 10 (D Celtic): 29 chord cards</a></li>
      <li><a href="#deck=d-amara-9">D Amara 9 (D Celtic): 27 chord cards</a></li>

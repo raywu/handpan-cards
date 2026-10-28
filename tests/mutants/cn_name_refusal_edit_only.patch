@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12192,7 +12192,7 @@ function syncParseState({ paint }) {
+@@ -13020,7 +13020,7 @@ function syncParseState({ paint }) {
      if (crowded) { say(reasonText(crowded), "warn"); msgLine.classList.add("pan"); }
      else say("", "");
    } else {

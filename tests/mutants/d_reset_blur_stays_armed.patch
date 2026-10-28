@@ -4,11 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12839,7 +12839,6 @@ restoreBtn.onclick = () => {
-   say(t("panel.reset_done") + (stays ? "" : " " + t("boot.showing", { name: deck().name })), "ok");
+@@ -13700,7 +13700,7 @@ restoreBtn.onclick = () => {
+   });
    addChip.focus();
  };
 -restoreBtn.onblur = disarmReset;
++restoreBtn.onblur = () => {};
  document.addEventListener("pointerdown", (e) => {
    if (e.target !== restoreBtn) disarmReset();
  }, true);

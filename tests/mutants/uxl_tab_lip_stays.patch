@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10959,9 +10959,6 @@ lipBtn.addEventListener("touchmove", (e) => {
+@@ -12209,9 +12209,6 @@ lipBtn.addEventListener("touchmove", (e) => {
  }, { passive: true });
  lipBtn.addEventListener("touchend", () => { lipTouch = null; }, { passive: true });
  lipBtn.addEventListener("click", restoreLip);

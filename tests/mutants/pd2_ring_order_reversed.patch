@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13128,7 +13128,7 @@ function showPendingDerive() {
+@@ -13760,7 +13760,7 @@ function showPendingDerive() {
    // Invalid active fields can retain a last-good line and boxOk. Keep Layout
    // accessible, but do not consume its feedback until the active input is valid.
    if (!drawerOpen || !currentScaleInput()) return false;

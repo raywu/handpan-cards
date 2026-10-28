@@ -1,0 +1,17 @@
+# kills: SV5 U1: no lock or denied storage gives this-tab-only operation without persistent writes
+# suite: node --test --test-name-pattern=^SV5.U1: tests/app.test.js
+# fault: Persists temporary no-lock session commands through an unlocked durable write.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10668,7 +10668,9 @@ function commitSavedSession(command, options = {}) {
+     const staged = stageSavedEnvelope(savedState);
+     if (!staged.ok) return staged;
+     const candidate = ["import", "save-as-separate", "edit", "replace-builtin"].includes(command.type) ? savedCandidate(command) : null;
+-    return publishSavedCommand(applySavedCommand(staged, command, candidate), "session");
++    const result = applySavedCommand(staged, command, candidate);
++    if (result.ok) localStorage.setItem(SAVED_KEY, JSON.stringify(result.envelope));
++    return publishSavedCommand(result, "session");
+   } catch (e) { return savedFailure("storage", "session-command"); }
+ }
+ async function commitSavedDurable(command, options) {

@@ -1,0 +1,15 @@
+# kills: SV9 E1: clean reconciliation updates content and route while dirty reconciliation preserves caret pick and scroll
+# suite: node --test --test-name-pattern=^SV9.E1: tests/e2e.test.js
+# fault: A remote snapshot rebinds the dirty editor and overwrites its draft interaction state.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13532,7 +13532,7 @@ savedSnapshotListener=event=>{
+     const message=t(deleted?"saved.conflictDeleted":"saved.conflict");
+     if(document.getElementById("scale-conflict-msg").textContent!==message)showSavedConflict();
+   }
+-  if(sheetOpen && editingBase && event.source==="remote" && !dirty && !savePending){
++  if(sheetOpen && editingBase && event.source==="remote" && !savePending){
+     const target=savedResolve(editingBase.selection,savedState,savedEntries);
+     const entry=target.kind==="saved"?savedEntries.get(target.id):null;
+     const latest=entry?entry.deck:DECKS.find(d=>d.id===target.id);

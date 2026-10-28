@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13233,12 +13233,12 @@ function writeLine(text) {
+@@ -14229,12 +14229,12 @@ function writeLine(text) {
  function fieldsInput(k) {
    hintQuiet = false;
    inputPath = "fields";

@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11139,7 +11139,6 @@ const ringWord = (ring) => t("sheet.ring_" + ring);
+@@ -11746,7 +11746,6 @@ const ringWord = (ring) => t("sheet.ring_" + ring);
  function layoutStatus(text, warn) {
    // An actual drawer result supersedes deferred feedback; passive empty paints
    // leave it alone (including an invalid-input visit to Layout).
@@ -12,7 +12,7 @@ diff --git a/index.html b/index.html
    drawerStatus.classList.toggle("warn", !!warn);
    if (warn && text && drawerStatus.textContent === text) {
      drawerStatus.textContent = "";
-@@ -13133,7 +13132,6 @@ function showPendingDerive() {
+@@ -13765,7 +13764,6 @@ function showPendingDerive() {
        ? t(ring === "rim" ? "sheet.rim_follows" : "sheet.inner_follows")
        : pendingDerive[ring]);
    const text = parts.join(" ") + (parts.length && pendingDerive.putDown ? t("sheet.put_down") : "");

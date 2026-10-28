@@ -1,0 +1,15 @@
+# kills: SV11 E1: preference acknowledgments and unchanged rereads preserve a pressed chip through release
+# suite: node --test --test-name-pattern=^SV11.E1: tests/e2e.test.js
+# fault: Unchanged snapshot publication rebuilds the currently pressed chip, losing its trusted click.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13547,7 +13547,7 @@ savedSnapshotListener=event=>{
+     !savedEqual(event.previous.slots, savedState.slots) ||
+     !savedEqual(event.previous.hidden, savedState.hidden) ||
+     !savedEqual(oldSelection, selection);
+-  if (chipsChanged) buildChips();
++  buildChips();
+   updateSavedStatus();
+   if(!dirty && !sheetOpen){
+     if(!savedEqual(oldSelection,selection) || beforeRow?.revision!==afterRow?.revision){setOrder();render();}

@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11684,7 +11684,7 @@ function hitLayer() {
+@@ -12441,7 +12441,7 @@ function hitLayer() {
  const countsLabel = (c) => t("sheet.counts", { rim: c.rim, inner: c.inner, bottom: c.bottom });
  
  function ringPickable() {

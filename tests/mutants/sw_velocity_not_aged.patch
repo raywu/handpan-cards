@@ -11,7 +11,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8139,10 +8139,7 @@ function flyOut(dir, dx) {
+@@ -14825,10 +14825,7 @@ function releaseDecision({ dx, dy, vx, moved, cancelled, blocked, reducedMotion
  function release(e, cancelled, pushPoint = true) {
    if (!drag) return;
    const pointerType = drag.pointerType;

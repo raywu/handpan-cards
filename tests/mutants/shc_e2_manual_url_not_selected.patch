@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14507,7 +14507,7 @@ function copyLink() {
+@@ -15125,7 +15125,7 @@ function copyLink() {
      shareUrl.removeAttribute("hidden");
      shareUrl.focus();
      if (!current()) return;

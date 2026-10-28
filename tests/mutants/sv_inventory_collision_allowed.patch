@@ -1,0 +1,15 @@
+# kills: SV2 U3: distinct inventory cannot overwrite through a colliding engine handle
+# suite: node --test --test-name-pattern=^SV2.U3: tests/app.test.js
+# fault: Trusts the truncated engine handle when a different musical inventory collides.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10559,7 +10559,7 @@ function applySavedCommand(staged, command, candidate) {
+   if (["import", "save-as-separate", "edit", "replace-builtin"].includes(command.type)) {
+     if (!candidate || !candidate.ok) return candidate || savedFailure("invalid", "candidate");
+     const inventoryIdentity = staged.identities.get(candidate.deck.id);
+-    if (inventoryIdentity !== undefined && inventoryIdentity !== candidate.identity) return savedFailure("inventory-collision");
++    if (false) return savedFailure("inventory-collision");
+   }
+   if (command.type === "import" || command.type === "save-as-separate") {
+     let match = null;

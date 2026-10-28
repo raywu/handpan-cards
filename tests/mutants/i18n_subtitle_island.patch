@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10606,7 +10606,7 @@ function faceHTML(d, ch, n, kind) {
+@@ -11330,7 +11330,7 @@ function faceHTML(d, ch, n, kind) {
        return headerHTML(d, ch, n) +
          `<div class="prompt">${nameHTML(ch, true)}</div>`;
      case "questionB":

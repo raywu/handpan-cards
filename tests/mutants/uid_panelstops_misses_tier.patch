@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11674,7 +11674,7 @@ let panelOpen = false;
+@@ -14415,7 +14415,7 @@ let panelOpen = false;
  const desktopMQ = window.matchMedia("(min-width:1024px) and (min-height:700px)");
  function panelStops() {
    return [settingsTrigger, document.getElementById("modeA"), document.getElementById("modeB"),

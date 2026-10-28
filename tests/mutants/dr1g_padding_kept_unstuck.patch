@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10576,7 +10576,7 @@ function syncBand() {
+@@ -11846,7 +11846,7 @@ function syncBand() {
    const stuck = !beside && !(port > 0 && port - band - stat < BAND_MIN_ROOM);
    layoutZone.classList.toggle("nostick", !beside && !stuck);
    const sm = stat && typeof getComputedStyle === "function" ? parseFloat(getComputedStyle(drawerStatus).marginBottom) || 0 : 0;

@@ -1,15 +1,16 @@
 # kills: SU: a reload of the stored deck fires no share_open and no deck_route; a route that differs from the stored selection fires it
 # suite: node --test --test-name-pattern ^SU:.a.reload.of.the.stored.deck tests/app.test.js
 # The S8 stored-deck guard on deck_route is dropped.
+# Retained behavior re-anchored for saved instances; exact intent is recorded in the lane evidence.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14234,7 +14234,7 @@ const wantedDeck = deckId;
- deckId = deck().id; storedDeck = deckId; setOrder(); buildChips(); applyLang(); setMode(mode);
- // setMode() above saved the routed deck, as a chip tap does: a link that opens a
- // deck once keeps it, so the visitor does not land on the old one tomorrow.
--if (routedDeck && routedDeck !== bootStored) track("deck_route", { deck_id: routedDeck });
-+if (routedDeck) track("deck_route", { deck_id: routedDeck });
- // Two fallbacks, deliberately different. An unknown BUILT-IN id is a stale or
- // renamed deck and falls back SILENTLY, as it always has. A missing custom: id
- // means the user's own saved scale is gone - deleted, or dropped as corrupt -
+@@ -15209,7 +15209,7 @@ function finishSavedBoot() {
+   const wanted=routed || storedAtBoot;
+   const finish=()=>{
+     setOrder();applyLang();paintLangSelect();setMode(mode,false);updateSavedStatus();syncRoute();
+-    if(routed && routed!==storedAtBoot)track("deck_route",{deck_id:routed});
++    if(routed)track("deck_route",{deck_id:routed});
+     if(savedState && !incomingShare && wanted && wanted!==deck().id &&
+         !(savedState?.slots[wanted] && savedState.slots[wanted]===selection.id) &&
+         (wanted.indexOf("custom:")===0 || savedState?.hidden.includes(wanted)))

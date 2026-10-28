@@ -7,7 +7,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8186,7 +8186,7 @@ function swipeOutTiming(vx, dir, dx, dist) {
+@@ -14745,7 +14745,7 @@ function swipeOutTiming(vx, dir, dx, dist) {
    return { end, duration, easing: `cubic-bezier(${r4(x1)}, ${r4(y1)}, 0.6667, 0.6667)` };
  }
  function swipeTilt(dx) {

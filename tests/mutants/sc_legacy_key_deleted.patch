@@ -1,0 +1,15 @@
+# kills: SC: an absent store is created by the legacy copy, and a present-but-unreadable one is not
+# suite: node --test --test-name-pattern ^SC..an.absent.store.is.created.by.the.legacy.copy..and.a.present-but-unreadable.one.is.not$ tests/storage_corpus.test.js
+# why: the migration reads hpfc.scales and never writes or deletes it, so an older
+# app on the same origin keeps its list. Deleting it strands that older app.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10355,6 +10355,7 @@ function stageLegacySaved() {
+     const read = readSavedRecord(record);
+     return { record: read.ok ? read.record : savedClone(record), read };
+   });
++  if (sourceKey === LEGACY_SCALES_KEY) { try { localStorage.removeItem(LEGACY_SCALES_KEY); } catch (e) {} }
+   return { ok: true, raw, sourceKey, rows, preferences: preferences.value };
+ }
+ function makeSavedMigration(staged) {

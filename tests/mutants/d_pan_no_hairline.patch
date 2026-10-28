@@ -3,7 +3,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -6847,7 +6847,6 @@ function panField(sets, C, x, y, r, id, isBottom) {
+@@ -10839,7 +10839,6 @@ function panField(sets, C, x, y, r, id, isBottom) {
      out += `<circle cx="${x}" cy="${y}" r="${r}" fill="#fff" stroke="#000" stroke-width="1.1"/>`;
    if (st === "root" || st === "tone") {
      out += `<circle cx="${x}" cy="${y}" r="${r*0.87}" fill="none" stroke="${st==="root"?C.root:C.tone}" stroke-width="${r*0.24}"/>`;

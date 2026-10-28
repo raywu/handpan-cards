@@ -7,7 +7,7 @@
  *   node tools/gen_deck.js --preset d_kurd_9                 > deck.json
  *   node tools/gen_deck.js --list-presets
  *
- * Options: --palette <0-5>  --parent <0-10>  --name <text>
+ * Options: --palette <0-9>  --parent <0-10>  --name <text>
  *          --mirror (both shells)  --mirror-top  --mirror-bottom
  *          --anchor one|between
  *          --legacy         (read the seed with core.parseLegacySeed)
@@ -101,7 +101,7 @@ function parseArgs(argv) {
       }
       out.seed = hit.seed;
       if (out.options.name === undefined) out.options.name = hit.label;
-    } else if (a === "--palette") out.options.palette = numeric(a, next(), 0, 5);
+    } else if (a === "--palette") out.options.palette = numeric(a, next(), 0, 9);
     else if (a === "--parent") out.options.parent = numeric(a, next(), 0, 10);
     else if (a === "--mirror") { mirrorAll = true; }
     else if (a === "--mirror-top") { mirrorTop = true; }

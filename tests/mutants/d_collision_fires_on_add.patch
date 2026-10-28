@@ -1,13 +1,14 @@
 # kills: the collision refusal never fires on an options-only edit, a new scale, a re-save or ADD
 # suite: node --test --test-name-pattern ^the.collision.refusal.never.fires.on.an.options.only.edit..a.new.scale..a.re.save.or.ADD$ tests/app.test.js
+# Approved retained contract mapped to the transactional instance adapter.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10079,7 +10079,6 @@ function runGenerate() {
-       // silently reset that deck's name, palette and mirror. ADD keeps its
-       // benign dedupe below.
-       if (fromSeed && CUSTOM[HPE.core.deckId(seed.fields)]) { taken = CUSTOM[HPE.core.deckId(seed.fields)]; return { ok: false }; }
--      if (!wasId) return null;
-       const id = HPE.core.deckId(seed.fields);
-       if (id === wasId || !CUSTOM[id]) return null;
-       taken = CUSTOM[id];
+@@ -10561,6 +10561,7 @@ function applySavedCommand(staged, command, candidate) {
+     const inventoryIdentity = staged.identities.get(candidate.deck.id);
+     if (inventoryIdentity !== undefined && inventoryIdentity !== candidate.identity) return savedFailure("inventory-collision");
+   }
++  if (command.type === "import" && current.entries.some(row=>staged.views.get(row.instanceId)?.deck.id===candidate.deck.id)) return savedFailure("conflict","wrong-inventory-uniqueness");
+   if (command.type === "import" || command.type === "save-as-separate") {
+     let match = null;
+     if (command.type === "import") {

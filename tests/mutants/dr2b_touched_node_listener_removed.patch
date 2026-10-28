@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10286,7 +10286,6 @@ previewBox.addEventListener("pointerdown", (e) => {
+@@ -14024,7 +14024,6 @@ previewBox.addEventListener("pointerdown", (e) => {
      x0: e.clientX, y0: e.clientY, px: e.clientX, py: e.clientY, t0: Date.now(), lifted: false };
    gestureCancel = () => endPress(false);
    if (press.type === "touch") {

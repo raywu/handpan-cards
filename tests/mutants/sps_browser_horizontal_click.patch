@@ -1,0 +1,15 @@
+# kills: SPS browser: horizontal button gestures never activate actions and genuine taps still do
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS.browser:.horizontal.button.gestures.never.activate.actions.and.genuine.taps.still.do$ tests/e2e.test.js
+# Real horizontal button gesture synthesizes an action; positive genuine tap oracle remains.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11720,6 +11720,8 @@ function setTab(tab) {
+       const changed = e.changedTouches;
+       const p = changed && changed.length === 1 && changed[0].identifier === S.id && changed[0];
+       if (!p || (e.touches && e.touches.length) || !point(p)) { cancel(); return; }
++      const action = e.target && e.target.closest && e.target.closest("button");
++      if (action) action.click();
+       const elapsed = Date.now() - S.at, dx = p.clientX - S.x, dy = p.clientY - S.y;
+       cancel();
+       if (elapsed < 0 || elapsed > 600 || Math.abs(dx) < 48 || Math.abs(dx) < 2 * Math.abs(dy)) return;

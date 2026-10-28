@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10897,7 +10897,6 @@
+@@ -14498,7 +14498,6 @@ function hideAbout() {
  // It pops the entry openAbout() pushed; the popstate listener's pendingPop
  // branch syncs the bar at that pop.
  function closeAbout() {

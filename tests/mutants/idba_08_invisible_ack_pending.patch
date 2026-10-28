@@ -1,0 +1,14 @@
+# kills: IDB8 U1: failed initial publication shows acknowledged-save guidance and reloads without allocation
+# suite: node --test --test-reporter=tap --test-name-pattern=^IDB8\s tests/app.test.js
+# Frozen transactional-storage contract: invisible ack pending.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13447,7 +13447,6 @@ function updateSavedStatus() {
+   const el=document.getElementById("saved-status"), temporary=document.getElementById("saved-temporary-use");
+   const protectedData=savedMode === "protected" || !!savedRecovery;
+   let text=protectedData?t("saved.recovery"):savedMode === "session"?t("saved.session"):"";
+-  if(!text && savedIssue?.detail==="acknowledged-publication-pending")text=t("saved.ackPending");
+   if(legacyBranchStatus==="changed")text+=(text?" ":"")+t("saved.legacy");
+   if(el.textContent!==text)el.textContent=text;
+   el.hidden=!text;temporary.hidden=savedMode!=="protected";temporary.textContent=t("saved.temporary");

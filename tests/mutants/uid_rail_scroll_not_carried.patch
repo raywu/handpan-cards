@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7152,7 +7152,7 @@ function renderSeqRail(d) {
+@@ -11292,7 +11292,7 @@ function renderSeqRail(d) {
    // re-render does not lurch to 0. The scroll-to-current below always runs, so a
    // flip inside a step's smooth scroll still ends on the current chord; once the
    // chord is centred it is a no-op, and after a manual scroll it re-centres.

@@ -1,0 +1,15 @@
+# kills: SV3 E1: copied saved layout opens the selected variant in a fresh profile
+# suite: node --test --test-name-pattern=^SV3.E1: tests/e2e.test.js
+# fault: A copied variant link omits its custom absolute bottom placement.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9922,7 +9922,7 @@ const seedOf = d => ({ fields: d.fields, options: d.options });
+ const SHARE_PREFIX = "#s=";
+ // The one place the engine is asked for a code: {ok, value: code} or its refusal.
+ function shareCode(d) {
+-  return HPE.share.encode(seedOf(d));
++  return HPE.share.encode({fields:d.fields,options:{...d.options,angles:null}});
+ }
+ function shareLink(d) {
+   const res = shareCode(d);

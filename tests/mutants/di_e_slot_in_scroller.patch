@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1417,6 +1417,11 @@ html.about-open{overflow:hidden}
+@@ -1481,6 +1481,11 @@ html.about-open{overflow:hidden}
           parseSeed); focusing one dims the other. One variable, inputPath, says
           which is active. The live region is the last child so the order the
           SG: N-A2 tests pin is untouched. -->
@@ -16,7 +16,7 @@ diff --git a/index.html b/index.html
      <div id="scale-fields" role="group" aria-labelledby="scale-fields-head">
        <p class="sheetlabel" id="scale-fields-head">YOUR SCALE, NOTE BY NOTE</p>
        <div class="fieldrow">
-@@ -1555,11 +1560,6 @@ html.about-open{overflow:hidden}
+@@ -1637,11 +1642,6 @@ html.about-open{overflow:hidden}
           Seed refusals, the parse line, the drawer status and the hints stay by
           the controls they describe. Pinned by "SG: N-A2", "SG: N-A5" and
           "SG: N-A6" in tests/e2e.test.js. -->

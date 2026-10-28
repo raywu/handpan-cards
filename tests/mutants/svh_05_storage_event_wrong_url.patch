@@ -1,0 +1,15 @@
+# kills: SVH5 storage events carry recipient area and writer URL only to other same-origin realms
+# suite: node --test --test-reporter=tap --test-name-pattern ^SVH5.storage tests/harness.test.js
+# fault: Storage notifications lose the writer URL.
+diff --git a/tools/sandbox.js b/tools/sandbox.js
+--- a/tools/sandbox.js
++++ b/tools/sandbox.js
+@@ -693,7 +693,7 @@ function boot(opts = {}) {
+       if (opts.origin.events === "omit") return;
+       for (const other of bucket.realms) if (other !== recipient) {
+         origin.events.push({ recipient: other, event: { type: "storage", key, oldValue, newValue,
+-          url: location.href, storageArea: other.storage } });
++          url: "https://example.test/", storageArea: other.storage } });
+       }
+       if (opts.origin.events === "auto") setTimeout(() => opts.origin.flushStorageEvents(), 0);
+     };

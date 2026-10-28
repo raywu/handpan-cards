@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -494,7 +494,7 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
+@@ -623,7 +623,7 @@ main{overflow-x:clip}
     WCAG AA needs at this size. It is a UI grey, not a deck palette colour, so
     the design system is untouched. */
  .hint{margin-top:14px; font:600 9.5px/1.6 "Nunito Sans"; letter-spacing:.14em; color:#6f6658;

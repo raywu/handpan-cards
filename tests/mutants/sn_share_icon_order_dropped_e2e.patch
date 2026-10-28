@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -482,7 +482,7 @@ a.mode{text-decoration:none}
+@@ -496,7 +496,7 @@ a.mode{text-decoration:none}
       as the last item, after the deck strip (menu-shell, 2026-09-28). */
    .hrow{display:contents}
    .decks{order:1}

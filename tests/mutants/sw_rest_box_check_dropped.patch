@@ -11,7 +11,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8166,7 +8166,7 @@
+@@ -14994,7 +14994,7 @@ document.addEventListener("pointerdown", e => {
      const r = flight.rect;
      const inRestBox = e.clientX >= r.left && e.clientX <= r.right &&
        e.clientY >= r.top && e.clientY <= r.bottom;

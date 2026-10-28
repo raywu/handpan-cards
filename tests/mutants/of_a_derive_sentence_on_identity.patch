@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12262,7 +12262,9 @@ function noteCounts(fields, value) {
+@@ -12952,7 +12952,9 @@ function noteCounts(fields, value) {
      const parts = [];
      for (const ring of LAYOUT_RINGS) {
        if (derived.includes(ring)) {

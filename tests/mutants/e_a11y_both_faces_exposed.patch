@@ -5,9 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -6494,19 +6494,6 @@
-   // out alongside the question. Expose only the face that is showing, and make
-   // it the card's description (descendants of role="button" are presentational,
+@@ -11395,15 +11395,2 @@ function render() {
    // so the text has to reach the button by an idref, not by traversal).
 -  const shown = document.getElementById(flipped ? "back" : "front");
 -  const away  = document.getElementById(flipped ? "front" : "back");
@@ -23,5 +21,3 @@ diff --git a/index.html b/index.html
 -  // (e_a11y_both_faces_exposed is re-targeted onto this pair, not retired).
 -  cardEl.setAttribute("aria-describedby", shown.id);
  }
-
- /* ---------------- deck / order ---------------- */

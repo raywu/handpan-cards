@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12333,7 +12333,7 @@ function noteCounts(fields, value) {
+@@ -12940,7 +12940,7 @@ function noteCounts(fields, value) {
        if (derived.includes(ring)) {
          if (ringCount[ring] > 0) pendingDerive[ring] = true;
          else delete pendingDerive[ring];

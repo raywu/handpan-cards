@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -46,7 +46,6 @@
+@@ -92,7 +92,6 @@ gtag("js", new Date());
  <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Bitter:wght@400;700&family=Nunito+Sans:wght@400;600&display=swap" rel="stylesheet">
  <style>
  :root{

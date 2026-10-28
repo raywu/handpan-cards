@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10689,7 +10689,6 @@ function restoreLip() {
+@@ -12041,7 +12041,6 @@ function restoreLip() {
    lipEnd = lipGen;
    if (reducedMotion.matches) { finishOpen(); return; }
    const gen = lipEnd;

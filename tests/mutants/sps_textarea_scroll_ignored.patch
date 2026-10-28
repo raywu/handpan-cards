@@ -1,0 +1,15 @@
+# kills: SPS3: internal textarea scroll out and back cancels before another touch sample
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS3:.internal.textarea.scroll.out.and.back.cancels.before.another.touch.sample$ tests/app.test.js
+# Textarea out-and-back scrolling no longer sticks cancellation.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11676,7 +11676,7 @@ function setTab(tab) {
+       if (!sheetOpen || S.tab !== sheetTab || sheetZoomed() || sheet.classList.contains("kbup") ||
+           Math.abs(scrollOf(body) - S.bodyTop) > 8 || Math.abs(scrollOf(sheetSurf) - S.surfTop) > 8 ||
+           (S.field && (document.activeElement === S.field || selected(S.field))) ||
+-          (S.box && (scrollOf(S.box) !== S.boxTop || (S.box.scrollLeft || 0) !== S.boxLeft))) {
++          false) {
+         cancel();
+         return false;
+       }

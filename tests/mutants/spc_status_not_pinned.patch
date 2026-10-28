@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1073,7 +1073,7 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1086,7 +1086,7 @@ footer.seq{row-gap:var(--sp-1)}
  #scale-drawer .mirror{width:100%}
  #scale-drawer .ctlrow{justify-content:flex-start}
  #scale-drawer-status{font:400 12px/1.5 Bitter, serif; color:#c4bcab; min-height:3em; text-align:center;

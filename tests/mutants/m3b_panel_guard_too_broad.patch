@@ -12,7 +12,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7837,7 +7837,8 @@
+@@ -14687,7 +14687,8 @@ document.addEventListener("keydown", e => {
    // form controls that do.
    const kt = e.target;
    const ktag = kt && kt.tagName;

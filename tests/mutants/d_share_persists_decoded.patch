@@ -1,15 +1,18 @@
-# kills: SD: ADD and a share link onto a replacement keep it seeded
-# suite: node --test --test-name-pattern ^SD..ADD.and.a.share.link.onto.a.replacement.keep.it.seeded$ tests/app.test.js
-# openShare stores the decoded link instead of the built deck, dropping the registry's replaces.
+# kills: SD: plain Add cannot inherit slot authority and an exact shared replacement reuses its owner
+# suite: node --test --test-name-pattern=^SD:.plain.Add.cannot.inherit.slot.authority.and.an.exact.shared.replacement.reuses.its.owner$ tests/app.test.js
+# former kills: SD: ADD and a share link onto a replacement keep it seeded
+# fault: Superseded inherited-replacement policy: an ordinary same-inventory Add acquires slot provenance from another saved instance.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9853,7 +9853,7 @@ function openShare(text) {
-   // Generation runs ONCE per restore, here, exactly as submit does (section 11).
-   const built = generateDeck(HPE.core.formatSeed(res.value.fields), res.value.options);
-   if (!built.ok) { say(reasonText(built), "err"); return built; }
--  rememberScale(seedOf(built.value));
-+  rememberScale(res.value);
-   selectDeck(built.value.id);
-   if (built.value.id !== bootStored) track("share_open");
-   return built;
+@@ -10523,8 +10523,8 @@ function savedCandidate(command) {
+   const record = savedClone(candidate.record);
+   const deckValue = { ...candidate.deck, options: { ...candidate.deck.options } };
+   if (command.type === "import" || command.type === "save-as-separate") {
+-    if (savedObject(record.o)) delete record.o.replaces;
+-    delete deckValue.options.replaces;
++    const previous = [...savedEntries.values()].find(view => view.deck.id === deckValue.id && view.record?.o?.replaces);
++    if (previous) { record.o.replaces = previous.record.o.replaces; deckValue.options.replaces = previous.record.o.replaces; }
+   }
+   return { ok: true, record, deck: deckValue, meaning: savedMeaning(deckValue), identity: HPE.core.identitySeed(deckValue.fields) };
+ }

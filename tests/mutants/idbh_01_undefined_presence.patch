@@ -1,0 +1,15 @@
+# kills: IDBH1 explicit capability asynchronous upgrade and committed raw value presence
+# suite: node --test --test-name-pattern=^IDBH1\s tests/harness.test.js
+# fault: Treat present undefined as an absent key.
+diff --git a/tools/sandbox.js b/tools/sandbox.js
+--- a/tools/sandbox.js
++++ b/tools/sandbox.js
+@@ -241,7 +241,7 @@ function indexedDBFor(bucket) {
+       };
+       return { name, keyPath: schema.keyPath, autoIncrement: schema.autoIncrement,
+         get: key => request('read', () => idbClone(tx._stores.get(name).entries.get(key))),
+-        getKey: key => request('read', () => tx._stores.get(name).entries.has(key) ? idbClone(key) : undefined),
++        getKey: key => request('read', () => tx._stores.get(name).entries.get(key) !== undefined ? idbClone(key) : undefined),
+         put(value, key) {
+           if (mode === 'readonly') throw idbError('ReadOnlyError');
+           const copy = idbClone(value);

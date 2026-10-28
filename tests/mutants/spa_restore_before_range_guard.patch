@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10760,8 +10760,8 @@ function lipScroll() {
+@@ -12086,8 +12086,8 @@ function lipScroll() {
    const now = Date.now();
    if (!sheetOpen || sheet.classList.contains("kbup") || now < lipQuietUntil || now > userWindowUntil) return;
    userWindowUntil = now + LIP_WINDOW;

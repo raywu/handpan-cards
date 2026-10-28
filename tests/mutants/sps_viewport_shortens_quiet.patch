@@ -1,0 +1,15 @@
+# kills: SPS4: public viewport resize and scroll cannot shorten the swipe quiet deadline
+# suite: node --test --test-reporter=tap --test-name-pattern ^SPS4:.public.viewport.resize.and.scroll.cannot.shorten.the.swipe.quiet.deadline$ tests/app.test.js
+# Public viewport event shortens swipe220ms quiet to150ms.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11352,7 +11352,7 @@ const lipPrimary = () => (nextBtn.hidden ? genBtn : nextBtn);
+ const isLipped = () => sheet.classList.contains("lipped");
+ const isLipShut = () => sheet.classList.contains("lipshut");
+ const lipFlush = () => { if (footSlide.getBoundingClientRect) footSlide.getBoundingClientRect(); };
+-const lipQuiet = () => { lipQuietUntil = Math.max(lipQuietUntil, Date.now() + LIP_WINDOW); };
++const lipQuiet = () => { lipQuietUntil = Date.now() + LIP_WINDOW; };
+ function lipRead() {
+   const lead = lipPrimary();
+   return {

@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11344,7 +11344,7 @@ function sheetOptions() {
+@@ -12765,7 +12765,7 @@ function sheetOptions() {
      .replace(/[–—]/g, "-").replace(/…/g, "...")
      .trim();
    if (!editingId) {

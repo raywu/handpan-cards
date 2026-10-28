@@ -312,7 +312,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     if (options.palette !== undefined) {
       var palette = options.palette;
       if (typeof palette !== "number" || palette !== Math.floor(palette) ||
-          palette < 0 || palette > 5) return badNote(palette);
+          palette < 0 || palette > 9) return badNote(palette);
       out.palette = palette;
     }
     if (options.parent !== undefined && options.parent !== null) {

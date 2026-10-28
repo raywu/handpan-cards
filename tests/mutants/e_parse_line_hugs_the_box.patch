@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -483,7 +483,7 @@ button.nav:active{background:#2e281e}
+@@ -856,7 +856,7 @@ footer.seq{row-gap:var(--sp-1)}
     :empty rule is ever scoped differently. */
  #scale-parse{font-family:Bitter, serif; font-weight:400; font-size:12px; line-height:1.55;
    color:#c4bcab; overflow-wrap:anywhere;

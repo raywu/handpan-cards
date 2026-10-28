@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14493,7 +14493,7 @@ function copyLink() {
+@@ -15111,7 +15111,7 @@ function copyLink() {
      !(panelOpen && !desktopMQ.matches) && !document.hidden;
    if (!current()) return;
    const done = (text, method) => {

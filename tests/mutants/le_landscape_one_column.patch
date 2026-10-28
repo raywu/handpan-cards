@@ -1,0 +1,15 @@
+# kills: LE: at 844x390, 740x360 and 926x428 the open settings panel fits with no scroll in every locale, ABOUT alone in its row, and Tab order unchanged
+# suite: node --test --test-name-pattern ^LE:.at.844x390 tests/e2e.test.js
+# Lane LE. The landscape settings panel falls back to one CSS column.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -356,7 +356,7 @@ a.mode{text-decoration:none}
+   color:#c4bcab; margin:0}
+ /* LE: wide landscape phones lay the groups out in two balanced CSS columns. */
+ @media (min-height:360px) and (max-height:520px) and (min-width:740px){
+-  #settings-panel{display:block; column-count:2; column-gap:var(--sp-4); column-fill:balance;
++  #settings-panel{display:block; column-count:1; column-gap:var(--sp-4); column-fill:balance;
+     padding:9px 62px 9px}
+   #settings-panel > .panel-group{break-inside:avoid; margin-bottom:var(--sp-3)}
+ }

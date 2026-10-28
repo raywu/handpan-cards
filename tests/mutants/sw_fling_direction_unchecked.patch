@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8153,7 +8153,7 @@ function swipeDecision(dx, dy, vx) {
+@@ -14712,7 +14712,7 @@ function swipeDecision(dx, dy, vx) {
    // spuriously commit a step. This axis-dominance check, not a change to any
    // SWIPE_* threshold, is what keeps a vertical drag from ever navigating.
    if (Math.abs(dy) > Math.abs(dx)) return 0;

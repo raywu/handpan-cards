@@ -1,14 +1,16 @@
 # kills: SU: following a link to the custom deck shown at boot after switching away tracks share_open
 # suite: node --test --test-name-pattern ^SU:.following.a.link.to.the.custom.deck tests/app.test.js
 # bootStored is never cleared, so a link to the deck stored at boot never counts as an arrival.
+# Retained behavior re-anchored for saved instances; exact intent is recorded in the lane evidence.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11458,7 +11458,6 @@ if (wantedDeck !== deckId && !(replacements()[wantedDeck] && replacements()[want
- // each other's hash. A deck link was read above, by routedDeckId().
- if (location.hash.indexOf(SHARE_PREFIX) === 0)
-   openShare(location.hash.slice(SHARE_PREFIX.length));
--bootStored = null;
- syncRoute();
- booted = true;
- </script>
+@@ -15214,7 +15214,7 @@ function finishSavedBoot() {
+         !(savedState?.slots[wanted] && savedState.slots[wanted]===selection.id) &&
+         (wanted.indexOf("custom:")===0 || savedState?.hidden.includes(wanted)))
+       say(t("boot.gone",{name:deck().name}),"warn");
+-    booted=true;bootStored=null;
++    booted=true;
+   };
+   if(savedMode==="protected" && location.hash.indexOf(SHARE_PREFIX)===0){pendingRecoveryShare=location.hash.slice(SHARE_PREFIX.length);finish();return;}
+   if(location.hash.indexOf(SHARE_PREFIX)===0){

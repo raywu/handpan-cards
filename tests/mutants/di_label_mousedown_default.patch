@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12130,7 +12130,6 @@ FIELD_KEYS.forEach((k, i) => {
+@@ -14317,7 +14317,6 @@ FIELD_KEYS.forEach((k, i) => {
      if (next) fieldEls[next].focus(); else el.blur();
    });
    fieldLabels[k].addEventListener("mousedown", (e) => {

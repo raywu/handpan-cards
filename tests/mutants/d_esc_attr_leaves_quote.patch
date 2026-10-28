@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -5721,7 +5721,7 @@
+@@ -10786,7 +10786,7 @@ const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;");
  // other quoted attributes are hardcoded literals, not deck-derived text - so
  // escA marks the places carrying DECK-DERIVED text, which a generated deck
  // controls.

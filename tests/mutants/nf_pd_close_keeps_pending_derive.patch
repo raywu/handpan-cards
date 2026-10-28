@@ -1,0 +1,13 @@
+# kills: OF: PD closing the sheet clears a pending sentence
+# suite: node --test --test-name-pattern ^OF:.PD.closing.the.sheet.clears.a.pending.sentence$ tests/app.test.js
+# dropDrawer stops clearing pendingDerive, so a stale sentence replays on a reopened sheet with a parsing box.
+--- a/index.html
++++ b/index.html
+@@ -12366,7 +12366,6 @@
+   drawerHint.textContent = "";
+   drawerHint.hidden = true;
+   drawerOpen = false;
+-  pendingDerive = {};
+   sheetTab = "scale";
+   paintTabs();
+   pickRef = null;

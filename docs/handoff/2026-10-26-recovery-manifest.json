@@ -1,0 +1,282 @@
+{
+  "observed_utc": "2026-10-27T03:03:37.313312+00:00",
+  "backup_root": "/private/tmp/handpan-claude-recovery-20261026",
+  "backup_scope": "selected indispensable receipts, diagnostic draft, screenshot and prior draft; not all historical evidence",
+  "published_sources": {
+    "rc": "3542d6ea868bf08e81a0b4f06c4bc71bbc20cbcb",
+    "variants": "2a260d212ec8e14394b7198f075366d13bf372ec",
+    "neotone": "6c62e758696143af89c24c339394a01e6576c0cc",
+    "palettes": "081693105a0c7121413ff936e133a2d0a7459a3d"
+  },
+  "local_test_lane": "cab63c9dc47a6ce983218cf113822feb6810eb64",
+  "files": [
+    {
+      "original": "/private/tmp/handpan-saved-variants.HVUKbE/evidence/claude-stopping-points-a0.json",
+      "backup": "/private/tmp/handpan-claude-recovery-20261026/selected-private/claude-stopping-points-a0.json",
+      "sha256": "232900f6a5143843c0cb6867b14630fe3a11b5a3de3b7d3483351feffe9f8fc7",
+      "bytes": 2785,
+      "availability": "host-local, not published"
+    },
+    {
+      "original": "/private/tmp/handpan-saved-variants.HVUKbE/evidence/claude-route-test-lane-before-commit.patch",
+      "backup": "/private/tmp/handpan-claude-recovery-20261026/selected-private/claude-route-test-lane-before-commit.patch",
+      "sha256": "f98510b1e522c418c7254f4cc6f83133625f7dd3e31c812e8d6adbb95fd694b6",
+      "bytes": 19252,
+      "availability": "host-local, not published"
+    },
+    {
+      "original": "/private/tmp/handpan-saved-variants.HVUKbE/evidence/regroup-app-a0.tap",
+      "backup": "/private/tmp/handpan-claude-recovery-20261026/selected-private/regroup-app-a0.tap",
+      "sha256": "cc88204f33dbbc7aaeb4c694e729c18fe06b1a0db1cf297f34aae692a66e82f6",
+      "bytes": 253193,
+      "availability": "host-local, not published"
+    },
+    {
+      "original": "/private/tmp/handpan-saved-variants.HVUKbE/evidence/regroup-metadata-a0.tap",
+      "backup": "/private/tmp/handpan-claude-recovery-20261026/selected-private/regroup-metadata-a0.tap",
+      "sha256": "72f52b5c8f71df71b36384a7658f00f1568408f807df3f96ebfcac0450109a33",
+      "bytes": 14082,
+      "availability": "host-local, not published"
+    },
+    {
+      "original": "/private/tmp/handpan-saved-variants.HVUKbE/evidence/regroup-metadata-a1.tap",
+      "backup": "/private/tmp/handpan-claude-recovery-20261026/selected-private/regroup-metadata-a1.tap",
+      "sha256": "1a4704e06d3519bc1256b3a44ab98a41c8fa8597679572e1083ff5f346fecc9d",
+      "bytes": 11393,
+      "availability": "host-local, not published"
+    },
+    {
+      "original": "/private/tmp/handpan-saved-variants.HVUKbE/evidence/regroup-route-fault-proofs-a1.json",
+      "backup": "/private/tmp/handpan-claude-recovery-20261026/selected-private/regroup-route-fault-proofs-a1.json",
+      "sha256": "6a2c92d954b924bc5184c11eefc76835433a43cd3e735fbefd2db7bee1f7cb36",
+      "bytes": 6276,
+      "availability": "host-local, not published"
+    },
+    {
+      "original": "/private/tmp/handpan-saved-variants.HVUKbE/evidence/regroup-old-unit-proofs-a0.json",
+      "backup": "/private/tmp/handpan-claude-recovery-20261026/selected-private/regroup-old-unit-proofs-a0.json",
+      "sha256": "5258c4f95cbdac4cfa38eaae858753b15dc493ccb4865b0884e4df44dde8c652",
+      "bytes": 11969,
+      "availability": "host-local, not published"
+    },
+    {
+      "original": "/private/tmp/handpan-saved-variants.HVUKbE/evidence/regroup-mutation-handoff-a1.json",
+      "backup": "/private/tmp/handpan-claude-recovery-20261026/selected-private/regroup-mutation-handoff-a1.json",
+      "sha256": "2fdf408dcf0dfd91d9bdcb991b0ed00cc92bbe02d79d81dfc56bea98d5d7a8d4",
+      "bytes": 9911,
+      "availability": "host-local, not published"
+    },
+    {
+      "original": "/private/tmp/handpan-saved-variants.HVUKbE/evidence/regroup-mutant-generation-a0.json",
+      "backup": "/private/tmp/handpan-claude-recovery-20261026/selected-private/regroup-mutant-generation-a0.json",
+      "sha256": "f755eb4f7af699507c09570846dead2406987c46d7aa2fa2086299d8b9c499f7",
+      "bytes": 8367,
+      "availability": "host-local, not published"
+    },
+    {
+      "original": "/private/tmp/handpan-saved-variants.HVUKbE/evidence/regroup-mutants-apply-a0.json",
+      "backup": "/private/tmp/handpan-claude-recovery-20261026/selected-private/regroup-mutants-apply-a0.json",
+      "sha256": "3d7954299baff68787b29e9af293ac1489eed0da8afa573565880232f77c206a",
+      "bytes": 85,
+      "availability": "host-local, not published"
+    },
+    {
+      "original": "/private/tmp/handpan-saved-variants.HVUKbE/evidence/regroup-full-ci-a0.json",
+      "backup": "/private/tmp/handpan-claude-recovery-20261026/selected-private/regroup-full-ci-a0.json",
+      "sha256": "36bd26b7c174aaedd49bb7235b8748a2616194a6928a36e70214d244528e0047",
+      "bytes": 809,
+      "availability": "host-local, not published"
+    },
+    {
+      "original": "/private/tmp/handpan-saved-variants.HVUKbE/evidence/regroup-scope-a1.json",
+      "backup": "/private/tmp/handpan-claude-recovery-20261026/selected-private/regroup-scope-a1.json",
+      "sha256": "677b5f176b772ff1ab12e025a661d7a09466c935570e49f42982a453830d5b1a",
+      "bytes": 483,
+      "availability": "host-local, not published"
+    },
+    {
+      "original": "/private/tmp/handpan-saved-variants.HVUKbE/evidence/regroup-delivery-preflight-a1.json",
+      "backup": "/private/tmp/handpan-claude-recovery-20261026/selected-private/regroup-delivery-preflight-a1.json",
+      "sha256": "3d1c65b125fc3ee520bf9e0442c7d7e08e1152d9a6afd31c8f25a65d5f113818",
+      "bytes": 178001,
+      "availability": "host-local, not published"
+    },
+    {
+      "original": "/private/tmp/handpan-saved-variants.HVUKbE/evidence/rc-served-dev-a0.json",
+      "backup": "/private/tmp/handpan-claude-recovery-20261026/selected-private/rc-served-dev-a0.json",
+      "sha256": "580ad61f883ead574f7ffaaa85f78720330a5dcd363f81272b388f1fc9afcbe6",
+      "bytes": 219,
+      "availability": "host-local, not published"
+    },
+    {
+      "original": "/private/tmp/handpan-saved-variants.HVUKbE/evidence/rc-served-dev-a0.html",
+      "backup": "/private/tmp/handpan-claude-recovery-20261026/selected-private/rc-served-dev-a0.html",
+      "sha256": "7fe75f5407d67b2985405c89db55f7d95882313fea016af8814728c9436db946",
+      "bytes": 907042,
+      "availability": "host-local, not published"
+    },
+    {
+      "original": "/private/tmp/handpan-saved-variants.HVUKbE/evidence/rc-served-dev-a0.headers",
+      "backup": "/private/tmp/handpan-claude-recovery-20261026/selected-private/rc-served-dev-a0.headers",
+      "sha256": "cdcf7073cc9f20def77499b601fe571a71cd389ca91dd08c53fe18a9a936865b",
+      "bytes": 716,
+      "availability": "host-local, not published"
+    },
+    {
+      "original": "/private/tmp/handpan-saved-variants.HVUKbE/evidence/neotone-layout-reference.jpg",
+      "backup": "/private/tmp/handpan-claude-recovery-20261026/selected-private/neotone-layout-reference.jpg",
+      "sha256": "e997c67af983962882ebb3419d7265fb112ed5b20562b72f04da841e6b6ad19a",
+      "bytes": 121177,
+      "availability": "host-local, not published"
+    },
+    {
+      "original": "/private/tmp/handpan-saved-variants.HVUKbE/evidence/linux-performance-once-proposal-a1.md",
+      "backup": "/private/tmp/handpan-claude-recovery-20261026/selected-private/linux-performance-once-proposal-a1.md",
+      "sha256": "d2d31f114d6a2a28b79e297d5ec978a586a73a5db3e98407df6624be72af9ff5",
+      "bytes": 36565,
+      "availability": "host-local, not published"
+    },
+    {
+      "original": "/private/tmp/handpan-saved-variants.HVUKbE/evidence/release-fallback-inventory-a0/fallback-inventory.md",
+      "backup": "/private/tmp/handpan-claude-recovery-20261026/selected-private/release-fallback-inventory-a0/fallback-inventory.md",
+      "sha256": "5d53b898c04dc476dbe212e9b81de9cff092b308d399651bf89e9f170e2ab9be",
+      "bytes": 12929,
+      "availability": "host-local, not published"
+    },
+    {
+      "original": "/private/tmp/handpan-saved-variants.HVUKbE/evidence/linux-performance-activation-a0/TEST_AND_FAULTS.md",
+      "backup": "/private/tmp/handpan-claude-recovery-20261026/selected-private/linux-performance-activation-a0/TEST_AND_FAULTS.md",
+      "sha256": "8e54602fdc62d42694aa13d7bff2f47db7e3ad996cff9a2a2fe6a41b2b71c56e",
+      "bytes": 6732,
+      "availability": "host-local, not published"
+    },
+    {
+      "original": "/private/tmp/handpan-saved-variants.HVUKbE/evidence/linux-performance-activation-a0/PROVENANCE.json",
+      "backup": "/private/tmp/handpan-claude-recovery-20261026/selected-private/linux-performance-activation-a0/PROVENANCE.json",
+      "sha256": "dc88d090889b6c47a0e1f43d667da853ee2b5f32530f3a50dba1315dfaf8a2e9",
+      "bytes": 2508,
+      "availability": "host-local, not published"
+    },
+    {
+      "original": "/private/tmp/handpan-saved-variants.HVUKbE/evidence/linux-performance-activation-a0/README.md",
+      "backup": "/private/tmp/handpan-claude-recovery-20261026/selected-private/linux-performance-activation-a0/README.md",
+      "sha256": "958ede0a88cb2c06987e4e2ca59b5b0d5fb3b20599df07bed37997335b211008",
+      "bytes": 11925,
+      "availability": "host-local, not published"
+    },
+    {
+      "original": "/private/tmp/handpan-saved-variants.HVUKbE/evidence/linux-performance-activation-a0/proposed.diff",
+      "backup": "/private/tmp/handpan-claude-recovery-20261026/selected-private/linux-performance-activation-a0/proposed.diff",
+      "sha256": "d814be0bd915356e07dc0657acc0c8b827ee658a1b56f47e02c1eb3d855d28cb",
+      "bytes": 214666,
+      "availability": "host-local, not published"
+    },
+    {
+      "original": "/private/tmp/handpan-saved-variants.HVUKbE/evidence/linux-performance-activation-a0/activation.template.json",
+      "backup": "/private/tmp/handpan-claude-recovery-20261026/selected-private/linux-performance-activation-a0/activation.template.json",
+      "sha256": "e371e8dcb4c003f75e64325e9f5b7eae36b4b5e3395ffafcf9f1ac58544bdbe5",
+      "bytes": 3503,
+      "availability": "host-local, not published"
+    },
+    {
+      "original": "/private/tmp/handpan-saved-variants.HVUKbE/evidence/linux-performance-activation-a0/proposed/tools/probe/saved_variants_selection.js",
+      "backup": "/private/tmp/handpan-claude-recovery-20261026/selected-private/linux-performance-activation-a0/proposed/tools/probe/saved_variants_selection.js",
+      "sha256": "7435996a51d1fe064c0276df7c0c6db25380783864986bd654a921f9835c647a",
+      "bytes": 34954,
+      "availability": "host-local, not published"
+    },
+    {
+      "original": "/private/tmp/handpan-saved-variants.HVUKbE/evidence/linux-performance-activation-a0/proposed/tools/probe/saved_variants_clock_control.js",
+      "backup": "/private/tmp/handpan-claude-recovery-20261026/selected-private/linux-performance-activation-a0/proposed/tools/probe/saved_variants_clock_control.js",
+      "sha256": "b647363d63f961933cd7d2f48873ca865f2b862bfa0c69f9272ae8d834c7afe6",
+      "bytes": 17100,
+      "availability": "host-local, not published"
+    },
+    {
+      "original": "/private/tmp/handpan-saved-variants.HVUKbE/evidence/linux-performance-activation-a0/proposed/tools/probe/saved_variants_performance_ci.py",
+      "backup": "/private/tmp/handpan-claude-recovery-20261026/selected-private/linux-performance-activation-a0/proposed/tools/probe/saved_variants_performance_ci.py",
+      "sha256": "2cf69547622e4b1ec7977faabfe685f681a233b8504301a884e88c21b0fd3dd2",
+      "bytes": 28931,
+      "availability": "host-local, not published"
+    },
+    {
+      "original": "/private/tmp/handpan-saved-variants.HVUKbE/evidence/linux-performance-activation-a0/proposed/tests/suite_health.py",
+      "backup": "/private/tmp/handpan-claude-recovery-20261026/selected-private/linux-performance-activation-a0/proposed/tests/suite_health.py",
+      "sha256": "f527ce71835ed621c48bc051026295079fca6e0ae09d1e3c18a7eb6dda1247f5",
+      "bytes": 39317,
+      "availability": "host-local, not published"
+    },
+    {
+      "original": "/private/tmp/handpan-saved-variants.HVUKbE/evidence/linux-performance-activation-a0/proposed/tests/test_performance_ci.py",
+      "backup": "/private/tmp/handpan-claude-recovery-20261026/selected-private/linux-performance-activation-a0/proposed/tests/test_performance_ci.py",
+      "sha256": "c01c4357de71c385c1f4ce1a3c90872504f23c1f460032aa0a9ee24490f5f050",
+      "bytes": 8111,
+      "availability": "host-local, not published"
+    },
+    {
+      "original": "/private/tmp/handpan-saved-variants.HVUKbE/evidence/linux-performance-activation-a0/proposed/tests/fixtures/saved_variants_records_200_v1.json",
+      "backup": "/private/tmp/handpan-claude-recovery-20261026/selected-private/linux-performance-activation-a0/proposed/tests/fixtures/saved_variants_records_200_v1.json",
+      "sha256": "fe4d93aa04799755efbec31273cd778444ca9fada264cb958096b479ded7b320",
+      "bytes": 141888,
+      "availability": "host-local, not published"
+    },
+    {
+      "original": "/private/tmp/handpan-saved-variants.HVUKbE/evidence/linux-performance-activation-a0/proposed/.github/workflows/saved-variants-performance-once.yml",
+      "backup": "/private/tmp/handpan-claude-recovery-20261026/selected-private/linux-performance-activation-a0/proposed/.github/workflows/saved-variants-performance-once.yml",
+      "sha256": "9d2cbb50da342e02ea68c7112c4fd8b856f7298304d3cde01fe734b8ac8a1161",
+      "bytes": 7436,
+      "availability": "host-local, not published"
+    }
+  ],
+  "limitations": [
+    "Private backup is local, not cross-host guaranteed.",
+    "Historical proofs not in selected list remain at original paths; do not infer a complete archive.",
+    "All runtime/permission/remote state must be reverified on takeover.",
+    "No token/credential values included."
+  ],
+  "current_worktree_receipt": "docs/handoff/2026-10-26-worktree-stopping-points.json",
+  "browser_receipt": "docs/handoff/2026-10-26-browser-stopping-point.json",
+  "handoff_source_branch": "codex/claude-takeover-20261026",
+  "publication": "pending external commit/ref receipt; never embed self-referential hash",
+  "preserved_original_integration_documents": {
+    "observed_utc": "2026-10-27T03:11:20.978606+00:00",
+    "files": [
+      {
+        "original": "/private/tmp/handpan-saved-variants.HVUKbE/integration/docs/CLAUDE_RETURN_HANDOFF.md",
+        "backup": "/private/tmp/handpan-claude-recovery-20261026/workspace-documents/docs/CLAUDE_RETURN_HANDOFF.md",
+        "sha256": "6ac259ca43a2714ae71a3b97ae1c587881ae2ad4089e5be355495cb3c25516c4"
+      },
+      {
+        "original": "/private/tmp/handpan-saved-variants.HVUKbE/integration/docs/WORKSTREAMS.md",
+        "backup": "/private/tmp/handpan-claude-recovery-20261026/workspace-documents/docs/WORKSTREAMS.md",
+        "sha256": "1982d22953adfc2d58f0fd9949ebea5da5e6b98c2dd953c05a9e086c3840e9bd"
+      },
+      {
+        "original": "/private/tmp/handpan-saved-variants.HVUKbE/integration/docs/plans/2026-10-25-workstream-status.md",
+        "backup": "/private/tmp/handpan-claude-recovery-20261026/workspace-documents/docs/plans/2026-10-25-workstream-status.md",
+        "sha256": "0bc8c1b5b1b0629cec006a81fa4dae8588a786f27a591c2f670c2d3baa5f38d1"
+      },
+      {
+        "original": "/private/tmp/handpan-saved-variants.HVUKbE/integration/docs/plans/2026-10-26-mutant-neotone-layout.md",
+        "backup": "/private/tmp/handpan-claude-recovery-20261026/workspace-documents/docs/plans/2026-10-26-mutant-neotone-layout.md",
+        "sha256": "db20445ee0f5c8be2751f8302e6160ff7c13882054c7bc09b5048e5c5e619a84"
+      },
+      {
+        "original": "/private/tmp/handpan-saved-variants.HVUKbE/integration/docs/plans/2026-10-26-performance-validation-simplification.md",
+        "backup": "/private/tmp/handpan-claude-recovery-20261026/workspace-documents/docs/plans/2026-10-26-performance-validation-simplification.md",
+        "sha256": "55aec1d559b6373202bf1183a93ebabc63e3db053090bd70ccb9870d1cea4b67"
+      },
+      {
+        "original": "/private/tmp/handpan-saved-variants.HVUKbE/integration/docs/plans/2026-10-26-release-candidate-and-claude-handoff.md",
+        "backup": "/private/tmp/handpan-claude-recovery-20261026/workspace-documents/docs/plans/2026-10-26-release-candidate-and-claude-handoff.md",
+        "sha256": "c448308584fbebfe73d9ffece17966ac3478504a5493e3b50f5df1532dd3da36"
+      },
+      {
+        "original": "/private/tmp/handpan-saved-variants.HVUKbE/integration/docs/prompts/2026-10-26-mutant-neotone-layout.md",
+        "backup": "/private/tmp/handpan-claude-recovery-20261026/workspace-documents/docs/prompts/2026-10-26-mutant-neotone-layout.md",
+        "sha256": "0fa1686e4cff12a6758ad6aafcfaeb9bfd5abc4ed7d6cee59f7cbb56cf425a98"
+      }
+    ],
+    "note": "original SV docs preserved untouched, newer canonicalized handoff lives on handoff branch; no source changes discarded"
+  }
+}

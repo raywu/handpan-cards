@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14524,7 +14524,7 @@ function copyLink() {
+@@ -15142,7 +15142,7 @@ function copyLink() {
        return navigator.share({ url: href });
      }).then(() => {
        if (started) done(t("share.shared"), "share");

@@ -1,0 +1,15 @@
+# kills: SV11 U1: acknowledged old imports cannot steal a newer view or Add sheet
+# suite: node --test --test-name-pattern=^SV11.U1: tests/app.test.js
+# fault: A delayed acknowledged import steals the newer selected view or editor context.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9950,7 +9950,7 @@ function generateDeck(text, options, guard) {
+ }
+ function openShare(text) {
+   const request=++shareRequestGeneration, context=navigationGeneration;
+-  const current=()=>request===shareRequestGeneration && context===navigationGeneration;
++  const current=()=>true;
+   pendingRecoveryShare=String(text);
+   const res = HPE.share.decode(String(text));
+   if (!res.ok) { if(current()){pendingRecoveryShare=null;say(reasonText(res), "err");} return res; }

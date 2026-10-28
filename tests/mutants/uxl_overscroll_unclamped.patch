@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10726,7 +10726,7 @@ function lipKbEdge(was, kb) {
+@@ -12080,7 +12080,7 @@ function lipKbEdge(was, kb) {
  }
  function lipScroll() {
    const M = Math.max(0, bandPort.scrollHeight - bandPort.clientHeight);

@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10494,7 +10494,7 @@ sheet.addEventListener("pointerdown", (e) => {
+@@ -11314,7 +11314,7 @@ sheet.addEventListener("pointerdown", (e) => {
    tapSnap = onField ? { at: Date.now(), body: bandPort.scrollTop, surf: sheetSurf ? sheetSurf.scrollTop : 0 } : null;
    if (!onField) releasePin();
  }, true);
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +const dropTap = () => {};
  let touchFrom = null;
  sheet.addEventListener("touchstart", (e) => {
-   const t = e.target, p = e.touches && e.touches[0];
+   if (sheetSwipe && !(e.touches && e.touches.length === 1)) sheetSwipe = null;

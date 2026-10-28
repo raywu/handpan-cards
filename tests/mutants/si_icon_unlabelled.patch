@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1233,7 +1233,7 @@ html.about-open{overflow:hidden}
+@@ -1347,7 +1347,7 @@ html.about-open{overflow:hidden}
  <div id="app">
  <header>
    <div class="hrow">

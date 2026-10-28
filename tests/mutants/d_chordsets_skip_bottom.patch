@@ -3,7 +3,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -143,6 +143,7 @@ function chordSets(d, ch) {
+@@ -10770,6 +10770,7 @@ function chordSets(d, ch) {
    const rpc = pc(d, ch.roots[0]);
    const blue = new Set(), green = new Set();
    for (const f in d.fields) {

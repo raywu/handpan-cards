@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1237,7 +1237,6 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+@@ -1251,7 +1251,6 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
  .mode:active{background:#2e281e}
  .mode.on:active{background:#ddd7cb; border-color:#ddd7cb}
  .shuffle:active{color:#eae6df}

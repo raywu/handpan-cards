@@ -3,7 +3,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -76,7 +76,7 @@
+@@ -630,7 +630,7 @@ main{overflow-x:clip}
  .lines{padding:0 8px 13px; text-align:center}
  .badge{font:600 9px/1 "Nunito Sans"; letter-spacing:.14em; color:#E27005; margin-bottom:6px}
  .notesline{font-family:Bitter, serif; font-weight:400;

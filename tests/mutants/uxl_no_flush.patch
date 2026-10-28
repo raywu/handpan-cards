@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11248,7 +11248,6 @@ function collapseLip() {
+@@ -12006,7 +12006,6 @@ function collapseLip() {
    lipBtn.hidden = false;
    lipBtn.setAttribute("aria-label", t("sheet.lip_show", { label: lipPrimary().textContent }));
    lipWrite(open);

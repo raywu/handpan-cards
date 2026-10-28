@@ -9,7 +9,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8175,7 +8175,7 @@ function swipeDecision(dx, dy, vx) {
+@@ -14734,7 +14734,7 @@ function swipeDecision(dx, dy, vx) {
  // with y2 fixed at 2/3 the derivative's quadratic has a negative discriminant,
  // so the curve is monotone for every input (unit-tested with a 101-sample sweep).
  function swipeOutTiming(vx, dir, dx, dist) {
