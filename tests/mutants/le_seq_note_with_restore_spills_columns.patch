@@ -7,7 +7,7 @@ diff --git a/index.html b/index.html
 @@ -378,9 +378,6 @@ a.mode{text-decoration:none}
    #settings-panel{display:block; column-count:2; column-gap:var(--sp-4); column-fill:balance;
      padding:9px max(62px, calc(env(safe-area-inset-right) + 50px)) 9px max(62px, calc(env(safe-area-inset-left) + 50px))}
-   #settings-panel .panel-group{break-inside:avoid; margin-bottom:var(--sp-3)}
+   #settings-panel .panel-group{break-inside:avoid; margin-bottom:var(--sp-4)}
 -  #settings-panel:has(#panel-seq-note:not([hidden])):has(#deck-restore:not([hidden])){display:grid;
 -    grid-template-columns:repeat(2, 1fr); column-gap:var(--sp-4); row-gap:var(--sp-2);
 -    align-content:start; align-items:start}
