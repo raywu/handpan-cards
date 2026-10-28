@@ -10209,7 +10209,7 @@ function run() {
       });
 
     // LS: the LE two-column menu reaches short iPhone landscape (300px up).
-    test("LS: from 300px tall, widths of 740px and up, the settings panel is two columns in every locale with ABOUT alone in its last row, no wrapped one-word label and no control under the X, and it does not scroll (REAL fonts)",
+    test("LS: from 300px tall, widths of 740px and up, the settings panel is two columns in every locale with ABOUT alone in its last row, no wrapped one-word label and no control under the X, and it fits without scrolling from 300px tall in modes A and B (REAL fonts)",
       { timeout: 600000 }, async () => {
         const VIEWPORTS = [[844, 390], [926, 428], [932, 430], [1000, 420], [852, 330], [932, 340],
           [1000, 340], [844, 320], [740, 330], [1000, 300]];
@@ -10309,6 +10309,43 @@ function run() {
           await rb.setViewport(900, 900, false);
           await rb.goto(URL);
           await rb.eval(`return document.fonts.ready.then(() => true);`);
+        }
+      });
+
+    test("LS: with RESET SEEDED SCALES showing, the short-landscape menu scrolls vertically, never spills into a third column and leaves #lang-select tappable (REAL fonts)",
+      { timeout: 300000 }, async () => {
+        try {
+          for (const mode of ["A", "B"]) {
+            await rb.setViewport(852, 330, true);
+            await rb.goto(URL);
+            await rb.eval(`localStorage.setItem("hpfc", ${JSON.stringify(JSON.stringify({ mode, hidden: ["amara"] }))}); return true;`);
+            await rb.send("Storage.clearDataForOrigin", { origin: new globalThis.URL(URL).origin, storageTypes: "indexeddb" });
+            await rb.goto(URL);
+            await rb.eval(`return document.fonts.ready.then(() => true);`);
+            for (const [w, h] of [[852, 330], [844, 320], [740, 300], [1000, 300]]) {
+              await rb.setViewport(w, h, true);
+              await rb.settle();
+              await rb.click("#settings-trigger");
+              await rb.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display !== "none"`, { label: "panel open" });
+              const label = `mode ${mode} ${w}x${h}`;
+              const m = await rb.eval(`
+                const p = document.getElementById("settings-panel");
+                const r = document.getElementById("deck-restore");
+                const s = document.getElementById("lang-select");
+                s.scrollIntoView({ block: "center" });
+                const k = s.getBoundingClientRect();
+                const top = document.elementFromPoint(k.left + k.width / 2, k.top + k.height / 2);
+                return { restore: !r.hidden, scrollW: p.scrollWidth, clientW: p.clientWidth, hitSelect: top === s };`);
+              assert.ok(m.restore, `${label}: RESET SEEDED SCALES is showing`);
+              assert.ok(m.scrollW <= m.clientW + 1, `${label}: overflows horizontally (${m.scrollW} > ${m.clientW})`);
+              assert.ok(m.hitSelect, `${label}: #lang-select is not what a tap at its centre reaches`);
+              await rb.key("Escape", "Escape", 27);
+              await rb.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: `close at ${label}` });
+            }
+          }
+        } finally {
+          await rb.setViewport(900, 900, false);
+          await rb.goto(URL);
         }
       });
   });
