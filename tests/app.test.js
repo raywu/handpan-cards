@@ -4815,6 +4815,17 @@ describe("panel fit judge", () => {
     assert.strictEqual(pf.aboutAllowance(keys("about-open"), keys("about-open")), 0, "the allowance expires once main has the row");
   });
 
+  test("panel fit: the LS allowance is 340, owed to mode S at 740px wide and up and 300 to 359px tall only", async () => {
+    assert.strictEqual(pf.LS_S_ALLOWANCE_PX, 340);
+    assert.strictEqual(pf.lsAllowance(852, 330, "S"), 340);
+    assert.strictEqual(pf.lsAllowance(740, 300, "S"), 340);
+    assert.strictEqual(pf.lsAllowance(932, 359, "S"), 340);
+    assert.strictEqual(pf.lsAllowance(852, 330, "A"), 0, "modes A and B fit two columns");
+    assert.strictEqual(pf.lsAllowance(739, 330, "S"), 0, "narrower than 740");
+    assert.strictEqual(pf.lsAllowance(852, 299, "S"), 0, "shorter than 300");
+    assert.strictEqual(pf.lsAllowance(852, 360, "S"), 0, "360 and up keeps the LE block");
+  });
+
   test("panel fit rule 1 and rule 3: a new about-open earns the About-row allowance and nothing else does", async () => {
     const b = cell({ needed: 500, avail: 500 });
     const withAbout = (needed) => judge(b, withControl(cell({ needed, avail: 500 }), "about-open", ctl(400))).rule1.fail.length;

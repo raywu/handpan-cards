@@ -1767,6 +1767,7 @@ function run() {
     const dimensional = [...seen].filter((c) => parseCondition(c).queries).sort();
     assert.deepStrictEqual(dimensional, [
       "(max-height: 520px)",
+      "(min-height: 300px) and (max-height: 359px) and (min-width: 740px)",
       "(min-height: 360px) and (max-height: 520px) and (min-width: 740px)",
       "(min-width: 1024px) and (min-height: 700px)",
       "(min-width: 640px) and (min-height: 700px)",
@@ -10162,7 +10163,7 @@ function run() {
           // (-50 where the print group was the tall column): 328.25 -> 375.25,
           // 310 -> 357, 251.75 unchanged, 313 -> 310.
           // Retain accepted Lane W single-row pins with compact HTC.
-          [740, 360, "S", 0 /* LE: two columns, no scroll */], [740, 340, "S", 372.75], [812, 330, "S", 357], [926, 310, "S", 251.75],
+          [740, 360, "S", 0 /* LE: two columns, no scroll */], // 300-359px tall at 740px up: the LS grid, asserted by "LS:"
           [568, 312, "A", 310],
         ];
         for (const [w, h, mode, mainNeeded] of cases) {
@@ -10204,6 +10205,148 @@ function run() {
           } else {
             assert.deepStrictEqual(m.off, [], `${label}: controls offscreen: ${JSON.stringify(m.off)}`);
           }
+        }
+      });
+
+    // LS: the LE two-column menu reaches short iPhone landscape (300px up).
+    test("LS: from 300px tall, widths of 740px and up, the settings panel is two columns in every locale with ABOUT alone in its last row, no wrapped one-word label and no control under the X, and it fits without scrolling from 300px tall in modes A and B (REAL fonts)",
+      { timeout: 600000 }, async () => {
+        const VIEWPORTS = [[844, 390], [926, 428], [932, 430], [1000, 420], [852, 330], [932, 340],
+          [1000, 340], [844, 320], [740, 330], [1000, 300]];
+        const LS_FIT_FROM = 300;
+        const measure = () => rb.eval(`
+          const p = document.getElementById("settings-panel");
+          const t = document.getElementById("settings-trigger").getBoundingClientRect();
+          const hit = (a, k) => a.left < k.right && a.right > k.left && a.top < k.bottom && a.bottom > k.top;
+          const ctrls = [...p.querySelectorAll("button, select, a")].filter(e => e.offsetParent);
+          const about = document.getElementById("about-open");
+          const row = about.parentElement;
+          const pt = p.getBoundingClientRect().top - p.scrollTop;
+          const lineCount = (e) => { const r = document.createRange(); r.selectNodeContents(e);
+            return new Set([...r.getClientRects()].map(k => Math.round(k.top))).size; };
+          return {
+            scrollH: p.scrollHeight, clientH: p.clientHeight, scrollW: p.scrollWidth, clientW: p.clientWidth,
+            gh: [...p.children].map(g => Math.round(g.getBoundingClientRect().height)).join(","),
+            cols: getComputedStyle(p).columnCount,
+            aboutAlone: row.children.length === 1,
+            aboutFull: Math.abs(about.getBoundingClientRect().width - row.getBoundingClientRect().width) <= 1,
+            underTrigger: ctrls.filter(e => hit(e.getBoundingClientRect(), t)).map(e => e.id || e.textContent.trim()),
+            ncols: new Set([...p.children].filter(g => g.getBoundingClientRect().width > 8).map(g => Math.round(g.getBoundingClientRect().left))).size, lefts: [...p.children].map(g => (g.id||g.className) + "@" + Math.round(g.getBoundingClientRect().left) + "/" + Math.round(g.getBoundingClientRect().width)).join(" "),
+            gridCols: getComputedStyle(p).gridTemplateColumns.split(" ").length,
+            pl: parseFloat(getComputedStyle(p).paddingLeft), pr: parseFloat(getComputedStyle(p).paddingRight),
+            wrapped: ctrls.filter(e => e.tagName !== "SELECT" && !/\\s/.test(e.textContent.trim()) && lineCount(e) > 1).map(e => e.id + ":" + e.textContent.trim()),
+            offscreen: ctrls.filter(e => { const k = e.getBoundingClientRect();
+              return k.left < 0 || k.top < 0 || k.right > innerWidth + 0.5 || k.bottom > innerHeight + 0.5; }).map(e => e.id || e.textContent.trim()),
+            beyond: ctrls.filter(e => e.getBoundingClientRect().bottom - pt > p.scrollHeight + 0.5).map(e => e.id),
+          };`);
+        const check = (m, label, h, mode) => {
+          if (mode === "S" && h < 360) {
+            assert.strictEqual(m.gridCols, 2, `${label}: mode S is an explicit two-column grid`);
+            assert.strictEqual(m.ncols, 2, `${label}: mode S groups sit in two columns ${m.lefts}`);
+          } else assert.strictEqual(m.cols, "2", `${label}: two columns`);
+          assert.ok(m.aboutAlone && m.aboutFull, `${label}: ABOUT alone in its full-width row`);
+          assert.deepStrictEqual(m.underTrigger, [], `${label}: controls under the X`);
+          assert.deepStrictEqual(m.wrapped, [], `${label}: a one-word label wraps`);
+          assert.ok(m.scrollW <= m.clientW + 1, `${label}: overflows horizontally`);
+          if (h >= LS_FIT_FROM && !(mode === "S" && h < 360)) assert.ok(m.scrollH <= m.clientH + 1, `${label}: panel scrolls (${m.scrollH} > ${m.clientH})`);
+          if (m.scrollH > m.clientH + 1) assert.deepStrictEqual(m.beyond, [], `${label}: a control lies beyond the scrollable height`);
+          else assert.deepStrictEqual(m.offscreen, [], `${label}: controls off screen`);
+        };
+        const inLocale = async (lang, label, h, mode) => {
+          await rb.click("#settings-trigger");
+          await rb.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display !== "none"`, { label: "panel open" });
+          await rb.eval(`const e=document.getElementById("lang-select");e.value=${JSON.stringify(lang)};e.dispatchEvent(new Event("change",{bubbles:true}));return true;`);
+          await rb.waitFor(`document.documentElement.lang === ${JSON.stringify(lang)}`, { label: "locale applied" });
+          await rb.settle();
+          check(await measure(), label, h, mode);
+          await rb.key("Escape", "Escape", 27);
+          await rb.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: `close at ${label}` });
+        };
+        try {
+          await rb.setViewport(844, 390, true);
+          await rb.goto(URL);
+          await rb.eval(`localStorage.clear(); return true;`);
+          await rb.goto(URL);
+          await rb.eval(`return document.fonts.ready.then(() => true);`);
+          const langs = await rb.eval(`return [...document.getElementById("lang-select").options].map(o => o.value).filter(v => v !== "auto");`);
+          assert.strictEqual(langs.length, 8, "eight UI locales");
+          for (const mode of ["A", "B", "S"]) {
+            await rb.eval(`localStorage.setItem("hpfc", ${JSON.stringify(JSON.stringify({ mode }))}); return true;`);
+            await rb.goto(URL);
+            await rb.eval(`return document.fonts.ready.then(() => true);`);
+            for (const [w, h] of VIEWPORTS) {
+              await rb.setViewport(w, h, true);
+              await rb.settle();
+              for (const lang of langs) await inLocale(lang, `mode ${mode} ${w}x${h} ${lang}`, h, mode);
+            }
+          }
+          await rb.eval(`localStorage.setItem("hpfc", ${JSON.stringify(JSON.stringify({ mode: "A" }))}); return true;`);
+          await rb.goto(URL);
+          await rb.eval(`return document.fonts.ready.then(() => true);`);
+          await rb.setViewport(932, 340, true);
+          await rb.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: 0, left: 59, bottom: 21, right: 59 } });
+          const inset = await rb.eval(`const d=document.createElement("div");d.style.cssText="position:fixed;padding-right:env(safe-area-inset-right)";document.body.appendChild(d);const v=parseFloat(getComputedStyle(d).paddingRight);d.remove();return v;`);
+          assert.ok(inset >= 58, `the safe-area override took (${inset})`);
+          for (const lang of langs) await inLocale(lang, `932x340 notch ${lang}`, 340, "A");
+          const notches = [[932, 340, 0, 59], [932, 340, 59, 0], [844, 390, 0, 59], [844, 390, 47, 47], [932, 430, 59, 59]];
+          for (const [w, h, l, r] of notches) {
+            await rb.setViewport(w, h, true);
+            await rb.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: 0, left: l, bottom: 21, right: r } });
+            await rb.settle();
+            await rb.click("#settings-trigger");
+            await rb.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display !== "none"`, { label: "panel open" });
+            const m = await measure();
+            const label = `${w}x${h} inset L${l}/R${r}`;
+            assert.ok(m.pl >= l + 50 - 0.5, `${label}: left padding ${m.pl} clears the left inset`);
+            assert.ok(m.pr >= r + 50 - 0.5, `${label}: right padding ${m.pr} clears the right inset`);
+            assert.ok(m.pl >= 62 - 0.5 && m.pr >= 62 - 0.5, `${label}: padding keeps the 62px floor`);
+            check(m, label, h, "A");
+            await rb.key("Escape", "Escape", 27);
+            await rb.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: `close at ${label}` });
+          }
+        } finally {
+          await rb.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: 0, left: 0, bottom: 0, right: 0 } }).catch(() => {});
+          await rb.setViewport(900, 900, false);
+          await rb.goto(URL);
+          await rb.eval(`return document.fonts.ready.then(() => true);`);
+        }
+      });
+
+    test("LS: with RESET SEEDED SCALES showing, the short-landscape menu scrolls vertically, never spills into a third column, stays two columns and leaves #lang-select tappable (REAL fonts)",
+      { timeout: 300000 }, async () => {
+        try {
+          for (const mode of ["A", "B", "S"]) {
+            await rb.setViewport(852, 330, true);
+            await rb.goto(URL);
+            await rb.eval(`localStorage.setItem("hpfc", ${JSON.stringify(JSON.stringify({ mode, hidden: ["amara"] }))}); return true;`);
+            await rb.send("Storage.clearDataForOrigin", { origin: new globalThis.URL(URL).origin, storageTypes: "indexeddb" });
+            await rb.goto(URL);
+            await rb.eval(`return document.fonts.ready.then(() => true);`);
+            for (const [w, h] of [[852, 330], [844, 320], [740, 300], [1000, 300], [844, 340], [844, 350], [844, 359], [844, 360], [844, 365], [740, 360], [1000, 370], [844, 380], [844, 389], [844, 390], [932, 430], [844, 520]]) {
+              await rb.setViewport(w, h, true);
+              await rb.settle();
+              await rb.click("#settings-trigger");
+              await rb.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display !== "none"`, { label: "panel open" });
+              const label = `mode ${mode} ${w}x${h}`;
+              const m = await rb.eval(`
+                const p = document.getElementById("settings-panel");
+                const r = document.getElementById("deck-restore");
+                const s = document.getElementById("lang-select");
+                s.scrollIntoView({ block: "center" });
+                const k = s.getBoundingClientRect();
+                const top = document.elementFromPoint(k.left + k.width / 2, k.top + k.height / 2);
+                return { restore: !r.hidden, ncols: new Set([...p.children].filter(g => g.getBoundingClientRect().width > 8).map(g => Math.round(g.getBoundingClientRect().left))).size, scrollW: p.scrollWidth, clientW: p.clientWidth, hitSelect: top === s };`);
+              assert.ok(m.restore, `${label}: RESET SEEDED SCALES is showing`);
+              assert.ok(m.scrollW <= m.clientW + 1, `${label}: overflows horizontally (${m.scrollW} > ${m.clientW})`);
+              assert.strictEqual(m.ncols, 2, `${label}: the groups sit in ${m.ncols} columns`);
+              assert.ok(m.hitSelect, `${label}: #lang-select is not what a tap at its centre reaches`);
+              await rb.key("Escape", "Escape", 27);
+              await rb.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: `close at ${label}` });
+            }
+          }
+        } finally {
+          await rb.setViewport(900, 900, false);
+          await rb.goto(URL);
         }
       });
   });
@@ -13966,6 +14109,7 @@ function run() {
           ["A", "B", "S"].forEach((m, i) => {
             n++;
             const where = `${fm} ${key} mode ${m}`;
+            if (w >= 740 && h >= 300 && h < 360) return; // LS: two columns in modes A and B and a scrolling two-column grid in mode S, asserted by "LS:"
             const g = got[i];
             assert.ok(g.hg !== null, where + ": there is no #panel-prog-heading");
             assert.ok(g.sp1 > 0, where + ": --sp-1 unreadable");
