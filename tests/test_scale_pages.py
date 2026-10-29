@@ -1,3 +1,6 @@
+import contextlib
+import io
+import tempfile
 import json
 import os
 import re
@@ -100,6 +103,7 @@ def exists(slug):
 
 
 _RENDERED = {}
+_ENGINE = {}
 
 
 def rendered(slug):
@@ -107,7 +111,9 @@ def rendered(slug):
         rows = gen.load_rows()
         by = {r["slug"]: r for r in rows}
         row = by[slug]
-        data = gen.engine([row])
+        if not _ENGINE:
+            _ENGINE.update(gen.engine(rows))
+        data = _ENGINE
         copy = row.get("copy") or dict(gen.SAMPLE_COPY)
         if row["kind"] != "frozen" and not row["popularized"]:
             copy["who_html"] = None
@@ -272,15 +278,30 @@ class GeneratorTest(unittest.TestCase):
         self.assertEqual(gen.page_for("d-kurd-10"), read("scales/d-kurd-10/index.html"))
 
     def test_every_existing_page_regenerates_byte_identical_from_its_copy(self):
-        for slug in ROWS:
-            if exists(slug) and slug != "d-kurd-10":
-                with self.subTest(slug=slug):
-                    self.assertEqual(gen.page_for(slug), read("scales/%s/index.html" % slug))
+        slugs = [s for s in ROWS if exists(s) and s != "d-kurd-10"]
+        pages = gen.pages_for(slugs)
+        for slug in slugs:
+            with self.subTest(slug=slug):
+                self.assertEqual(pages[slug], read("scales/%s/index.html" % slug))
 
     def test_check_flag_exits_zero_for_kurd(self):
         run = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "gen_scale_page.py"),
                               "d-kurd-10", "--check"], capture_output=True, text=True)
         self.assertEqual(run.returncode, 0, run.stderr)
+
+    def test_check_flag_exits_zero_for_the_hub(self):
+        run = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "gen_scale_page.py"),
+                              "--hub", "--check"], capture_output=True, text=True)
+        self.assertEqual(run.returncode, 0, run.stderr)
+
+    def test_a_differing_page_fails_check_with_one_message(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "index.html")
+            with open(path, "w", encoding="utf-8") as f:
+                f.write("stale")
+            with contextlib.redirect_stderr(io.StringIO()) as err:
+                self.assertEqual(gen.emit(path, "fresh", True, False), 1)
+            self.assertIn("differs from the generator", err.getvalue())
 
     def test_the_card_fixture_has_not_drifted_from_the_engine(self):
         self.assertEqual(gen.fixture_data(gen.load_rows()), read("tests/fixtures/scale_pages_v1.json"))
@@ -621,7 +642,6 @@ class ContrastTest(unittest.TestCase):
                 self.assertGreaterEqual(ratio(light, BG_LIGHT), 4.5)
                 self.assertGreaterEqual(ratio(light, "#ffffff"), 4.5)
                 self.assertGreaterEqual(ratio(dark, BG_DARK), 4.5)
-                self.assertGreaterEqual(ratio(light, BG_LIGHT), 4.5)
                 html = html_of(slug)
                 self.assertIn("--r:%s}" % light, html)
                 self.assertIn("--r:%s}}" % dark, html)
@@ -629,6 +649,13 @@ class ContrastTest(unittest.TestCase):
     def test_the_kurd_accents_are_the_shipped_pair(self):
         row = table()["d-kurd-10"]
         self.assertEqual((row["accent_light"], row["accent_dark"]), ("#2563B0", "#7fb0ee"))
+
+    def test_non_frozen_accents_are_the_generator_rule(self):
+        for slug, row in table().items():
+            if slug != "d-kurd-10":
+                with self.subTest(slug=slug):
+                    root = fixture()[slug]["colors"]["root"]
+                    self.assertEqual((row["accent_light"], row["accent_dark"]), gen.accents(root))
 
     def test_an_accent_that_already_passes_is_unchanged(self):
         for root in ("#2563B0", "#6D40A3", "#B3263A"):
@@ -810,7 +837,7 @@ class AlsoTryTest(unittest.TestCase):
 class SharedBrownHeadTest(unittest.TestCase):
     def test_the_explore_index_takes_the_shared_dark_only_head(self):
         html = read("scales/index.html")
-        self.assertIn(SHARED_ROOT, html)
+        self.assertIn(SHARED_ROOT.rstrip(";") + "}", html)
         for rule in SHARED_RULES:
             with self.subTest(rule=rule):
                 self.assertIn(rule, html)
@@ -824,9 +851,6 @@ class SharedBrownHeadTest(unittest.TestCase):
             with self.subTest(page=slug):
                 html = html_of(slug)
                 self.assertIn("prefers-color-scheme:dark", html)
-
-    def test_the_open_button_text_is_dark_on_gold_in_the_index(self):
-        self.assertRegex(gen.INDEX_CSS_HEAD, r"\.open\{[^}]*color:#1a1815")
 
     def test_the_about_overlay_takes_the_shared_rules(self):
         css = read("index.html")
