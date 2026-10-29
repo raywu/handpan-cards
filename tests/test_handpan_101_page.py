@@ -10,7 +10,8 @@ PATH = "handpan-101/index.html"
 URL = SITE + "handpan-101/"
 TITLE = "Handpan 101: A Beginner's Guide to Parts, Scales and First Practice"
 ALLOWED_HOSTS = {"fonts.googleapis.com", "fonts.gstatic.com", "handpan.raywu.org", "www.youtube.com",
-                 "en.wikipedia.org", "www.sarazhandpans.com", "schema.org"}
+                 "en.wikipedia.org", "www.sarazhandpans.com", "schema.org", "handpaner.com",
+                 "www.dingandtones.com", "svenkirchhofer.de", "handpanhelpers.klangzeug.de"}
 NAME_DENYLIST = ["Amy", "Naylor", "Levinson", "Rohner", "Schärer", "Scharer", "Felix", "Sabina"]
 SERVED = ["index.html", PATH, "sitemap.xml"] + sorted(
     os.path.relpath(f, ROOT) for f in glob.glob(os.path.join(ROOT, "scales", "*", "index.html"))
@@ -104,11 +105,25 @@ class Handpan101PageTest(unittest.TestCase):
                 self.assertRegex(href, r"^/scales/[a-z0-9-]+/$")
                 self.assertTrue(os.path.isfile(os.path.join(ROOT, href.strip("/"), "index.html")))
 
-    def test_exactly_three_youtube_links_and_no_person_names(self):
+    def test_exactly_four_youtube_links_and_no_person_names(self):
         links = [a["href"] for t, a in page().tags if t == "a" and "youtube.com" in a.get("href", "")]
-        self.assertEqual(len(links), 3)
+        self.assertEqual(len(links), 4)
         for name in NAME_DENYLIST:
             self.assertNotIn(name, read(PATH))
+
+    def test_h101r_the_resources_section_links_the_five_outside_resources(self):
+        html = read(PATH)
+        m = re.search(r"<h2>Resources</h2>\s*<ul>(.*?)</ul>", html, re.S)
+        self.assertIsNotNone(m)
+        hrefs = re.findall(r'<a class="res" href="([^"]+)" target="_blank" rel="noopener">', m.group(1))
+        self.assertEqual(hrefs, ["https://handpaner.com/", "https://www.dingandtones.com/",
+                                 "https://svenkirchhofer.de/handpan-training-cards/",
+                                 "https://www.youtube.com/watch?v=-BD13QhFJ-M",
+                                 "https://handpanhelpers.klangzeug.de/"])
+        self.assertNotRegex(re.sub(r"<[^>]+>", " ", m.group(1)), r"(?i)\bdecks?\b")
+
+    def test_h101r_each_resource_link_carries_the_44px_min_height_and_min_width_rule(self):
+        self.assertRegex(read(PATH), r"a\.res\{[^}]*min-height:44px[^}]*min-width:44px|a\.res\{[^}]*min-width:44px[^}]*min-height:44px")
 
     def test_only_allowed_hosts_back_link_and_ctas(self):
         html = read(PATH)
