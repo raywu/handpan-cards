@@ -14981,7 +14981,7 @@ function run() {
           `);
           const where = `${w}x${h}`;
           assert.ok(m.close[0] >= 0 && m.close[1] <= m.ih, `${where}: the exit control is off screen when scrolled to the end`);
-          assert.strictEqual(m.links.length, 6, `${where}: five deck links and the mailto link`);
+          assert.strictEqual(m.links.length, 23, `${where}: five deck links, sixteen popular scale links, the hub link and the mailto link`);
           for (const l of m.links) {
             assert.ok(l.h >= 44, `${where}: a link target is ${l.h}px tall`);
             assert.ok(Math.abs(l.textMid - l.rowMid) <= 2, `${where}: link text is ${l.textMid - l.rowMid}px off its row centre`);
