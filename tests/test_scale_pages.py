@@ -29,7 +29,7 @@ BG_DARK = "#15181b"
 # Independent oracle for the plan's page table (Round 4 dispositions, row 0 from Round 7 H3,
 # Equinox and Magic Voyage). kind, palette index, cards in the deck, popularized, cross-link target.
 ROWS = {
-    "d-kurd-10": ("frozen", 6, 49, True, "d-kurd-9"),
+    "d-kurd-10": ("built-in", 6, 49, True, "d-kurd-9"),
     "d-amara-9": ("built-in", 2, 27, False, "d-amara-10"),
     "d-amara-10": ("built-in", 7, 29, False, "d-amara-9"),
     "f-low-pygmy-18": ("built-in", 1, 53, False, "f-low-pygmy-9"),
@@ -99,7 +99,7 @@ def rendered(slug):
         row = by[slug]
         data = gen.engine([row])
         copy = row.get("copy") or dict(gen.SAMPLE_COPY)
-        if row["kind"] != "frozen" and not row["popularized"]:
+        if not row["popularized"]:
             copy["who_html"] = None
         _RENDERED[slug] = gen.render(row, data["rows"][slug], by, copy, data["alt"].get(slug))
     return _RENDERED[slug]
@@ -236,7 +236,7 @@ class TableOracleTest(unittest.TestCase):
     def test_built_in_rows_name_their_deck_and_new_rows_a_seed(self):
         for slug, row in table().items():
             with self.subTest(slug=slug):
-                if kind(slug) in ("frozen", "built-in"):
+                if kind(slug) == "built-in":
                     self.assertEqual(row["deck"], BUILT_IN_DECK[slug])
                     self.assertEqual(slugs().get(slug), row["deck"])
                     self.assertEqual(row["cta"], "/#deck=" + slug)
@@ -245,9 +245,12 @@ class TableOracleTest(unittest.TestCase):
                     self.assertTrue(row["seed"] and row["typed"])
                     self.assertTrue(row["cta"].startswith("/#s=6/"))
 
-    def test_only_the_kurd_row_is_frozen_and_carries_inline_copy(self):
-        self.assertEqual([s for s in ROWS if kind(s) == "frozen"], ["d-kurd-10"])
-        self.assertIn("copy", table()["d-kurd-10"])
+    def test_no_row_is_frozen(self):
+        self.assertEqual([r["slug"] for r in gen.load_rows() if r["kind"] == "frozen"], [])
+        self.assertNotIn("copy", table()["d-kurd-10"])
+        copy = gen.load_copy(table()["d-kurd-10"])
+        self.assertNotIn("og_description", copy)
+        self.assertTrue(os.path.exists(os.path.join(ROOT, "scales", "d-kurd-10", "copy.json")))
 
     def test_the_page_table_rows_with_a_folder_are_listed_in_the_sitemap(self):
         sitemap = read("sitemap.xml")
@@ -258,12 +261,31 @@ class TableOracleTest(unittest.TestCase):
 
 
 class GeneratorTest(unittest.TestCase):
-    def test_the_frozen_kurd_page_regenerates_byte_identical(self):
-        self.assertEqual(gen.page_for("d-kurd-10"), read("scales/d-kurd-10/index.html"))
+    KURD_10_LINKS = {
+        "canonical": "https://handpan.raywu.org/scales/d-kurd-10/",
+        "cta": "/#deck=d-kurd-10",
+        "cross": "/#s=6/(D3)_A3_Bb3_C4_D4_E4_F4_G4_A4/D+Kurd+9/300038",
+        "also_try": [
+            "https://handpan.raywu.org/#s=6/(Cs3)_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4/C%23+Annaziska+9/24f03b",
+            "https://handpan.raywu.org/#s=6/(Cs3)_uE3_uFs3_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4_uB4_uCs5/C%23+Annaziska+13/palette-2/402803",
+        ],
+    }
+
+    def test_kurd_10_keeps_its_url_canonical_cta_cross_and_also_try_links(self):
+        want = self.KURD_10_LINKS
+        row = table()["d-kurd-10"]
+        html = read("scales/d-kurd-10/index.html")
+        self.assertEqual(row["cta"], want["cta"])
+        self.assertEqual(row["cross"]["href"], want["cross"])
+        self.assertEqual([a["href"] for a in row["also_try"]], want["also_try"])
+        self.assertIn('<link rel="canonical" href="%s">' % want["canonical"], html)
+        hrefs = re.findall(r'href="([^"]*)"', html)
+        for h in [want["cta"], want["cross"]] + want["also_try"]:
+            self.assertIn(h.replace("&", "&amp;"), [x for x in hrefs] + [x.replace("&amp;", "&") for x in hrefs])
 
     def test_every_existing_page_regenerates_byte_identical_from_its_copy(self):
         for slug in ROWS:
-            if exists(slug) and slug != "d-kurd-10":
+            if exists(slug):
                 with self.subTest(slug=slug):
                     self.assertEqual(gen.page_for(slug), read("scales/%s/index.html" % slug))
 
@@ -449,7 +471,7 @@ class ScalePagesTest(unittest.TestCase):
                 self.assertIn(slug, p.links)
                 self.assertIn(row["cta"], p.links[slug])
                 self.assertIn("/#add", p.links[slug])
-                if kind(slug) in ("frozen", "built-in"):
+                if kind(slug) == "built-in":
                     self.assertIn("/#deck=" + slug, p.links[slug])
                 else:
                     self.assertTrue(any(h.startswith("/#s=6/") for h in p.links[slug]))
@@ -472,26 +494,24 @@ class ScalePagesTest(unittest.TestCase):
         self.assertIn("Playing a C pan? Open C Sabye 9.", p.tidy())
         self.assertTrue(any(h.startswith("/#s=6/") and "C+SABYE+9" in h for h in p.links["d-sabye-9"]))
 
-    def test_aria_labels_name_the_chord_and_notes_on_every_kind_but_frozen(self):
+    def test_aria_labels_name_the_chord_and_notes_on_every_page(self):
         for slug in ROWS:
             html = html_of(slug)
             labels = [re.search(r'aria-label="([^"]*)"', attrs).group(1) for _, attrs, _ in cards(html)]
             with self.subTest(page=slug):
                 for label in labels:
-                    if kind(slug) == "frozen":
-                        self.assertRegex(label, r"^[A-G]\S* chord card$")
-                    else:
-                        self.assertRegex(label, r"^[A-G]\S* chord card: ([A-G][#b]?\d ?)+$")
+                    self.assertRegex(label, r"^[A-G]\S* chord card: ([A-G][#b]?\d ?)+$")
 
-    def test_no_script_but_the_json_ld_block_on_non_frozen_pages(self):
+    def test_scripts_are_the_json_ld_block_and_the_one_swipe_script(self):
         for slug in ROWS:
             html = html_of(slug)
             p = Page(html)
             with self.subTest(page=slug):
-                if kind(slug) == "frozen":
-                    self.assertEqual(p.scripts, [])
-                else:
-                    self.assertEqual([s[0] for s in p.scripts], ["application/ld+json"])
+                self.assertEqual([s[0] for s in p.scripts], ["application/ld+json", None])
+                self.assertEqual(p.scripts[1][1], gen.SWIPE_JS)
+                tail = "<script>" + gen.SWIPE_JS + "</script>\n</main>\n</body>\n</html>\n"
+                self.assertTrue(html.endswith(tail))
+                self.assertEqual(html.count("<script>"), 1)
                 for needle in ("googletagmanager", "gtag", "g-qtywb2hssv", "google-analytics"):
                     self.assertNotIn(needle, html.lower())
 
@@ -595,12 +615,57 @@ class StepperTest(unittest.TestCase):
                 self.assertIn('for="p2">PREV', navs[2])
                 self.assertNotIn("NEXT", navs[2])
 
-    def test_only_the_json_ld_block_is_a_script_and_the_light_dom_progression_line_stays(self):
+    def test_only_two_scripts_and_the_light_dom_progression_line_stays(self):
         for slug in ROWS:
             html = html_of(slug)
             with self.subTest(page=slug):
-                self.assertLessEqual(html.count("<script"), 1)
+                self.assertEqual(html.count("<script"), 2)
                 self.assertIn("Starter progression:", html)
+
+
+class SwipeScriptTest(unittest.TestCase):
+    FIXTURE_DIR = os.path.join("tests", "fixtures", "scale_pages_pre_swipe")
+
+    def fixture_slugs(self):
+        return [s for s in ROWS if s != "d-kurd-10"]
+
+    def test_swipe_script_is_inline_with_no_network_or_globals(self):
+        js = gen.SWIPE_JS
+        for needle in ("fetch", "XMLHttpRequest", "gtag", "import(", "http"):
+            self.assertNotIn(needle, js)
+        self.assertRegex(js.strip(), re.compile(r"^\(function\s*\(\)\s*\{.*\}\)\(\);?$", re.S))
+        self.assertNotRegex(js, r"\bwindow\.\w+\s*=")
+
+    def test_swipe_constants_match_the_app(self):
+        app = read("index.html")
+        m = re.search(r"const SWIPE_COMMIT_PX = (\d+), SWIPE_FLING_PX_MS = ([\d.]+), "
+                      r"SWIPE_FLING_WINDOW_MS = (\d+), SWIPE_SLOP_PX = (\d+);", app)
+        self.assertTrue(m)
+        commit, fling, window, slop = m.groups()
+        js = gen.SWIPE_JS
+        for name, value in (("COMMIT", commit), ("FLING", fling), ("WINDOW", window), ("SLOP", slop)):
+            self.assertRegex(js, r"\b%s\s*=\s*%s\b" % (name, re.escape(value)), name)
+        self.assertEqual(gen.SWIPE_CONSTANTS, {"COMMIT": int(commit), "FLING": float(fling),
+                                               "WINDOW": int(window), "SLOP": int(slop)})
+
+    def test_swipe_script_fits_its_budget(self):
+        self.assertLessEqual(len(gen.SWIPE_JS.encode()), 1536)
+
+    def test_js_off_markup_is_unchanged(self):
+        s = "<script>" + gen.SWIPE_JS + "</script>\n"
+        for slug in self.fixture_slugs():
+            with self.subTest(slug=slug):
+                page = read("scales/%s/index.html" % slug)
+                self.assertEqual(page.count(s), 1)
+                self.assertEqual(page.replace(s, "", 1), read("%s/%s.html" % (self.FIXTURE_DIR, slug)))
+
+    def test_every_row_page_regenerates_with_the_script(self):
+        for slug in ROWS:
+            with self.subTest(slug=slug):
+                self.assertIn("<script>" + gen.SWIPE_JS + "</script>\n", read("scales/%s/index.html" % slug))
+
+    def test_the_hub_has_no_swipe_script(self):
+        self.assertNotIn("<script", read("scales/index.html"))
 
 
 class ContrastTest(unittest.TestCase):
@@ -643,7 +708,7 @@ class ContrastTest(unittest.TestCase):
 
 class SeoDeltaTest(unittest.TestCase):
     def new_slugs(self):
-        return [s for s in ROWS if kind(s) != "frozen"]
+        return list(ROWS)
 
     def test_og_image_site_name_and_matching_titles(self):
         for slug in self.new_slugs():
@@ -663,11 +728,6 @@ class SeoDeltaTest(unittest.TestCase):
                 self.assertEqual(re.findall(r"<title>(.*?)</title>", html), h1)
                 self.assertEqual(h1, [table()[slug]["name"] + " handpan chords"])
 
-    def test_frozen_page_has_no_seo_additions(self):
-        html = html_of("d-kurd-10")
-        for needle in ("og:image", "og:site_name", "ld+json", "<table", "Last updated"):
-            self.assertNotIn(needle, html)
-
     def test_there_is_no_chord_table_on_any_page(self):
         for slug in ROWS:
             with self.subTest(page=slug):
@@ -678,7 +738,7 @@ class SeoDeltaTest(unittest.TestCase):
         for slug in self.new_slugs():
             p = Page(html_of(slug))
             with self.subTest(page=slug):
-                self.assertEqual(len(p.scripts), 1)
+                self.assertEqual(len(p.scripts), 2)
                 graph = json.loads(p.scripts[0][1])
                 self.assertEqual(graph["@type"], "WebPage")
                 self.assertEqual(graph["breadcrumb"]["@type"], "BreadcrumbList")

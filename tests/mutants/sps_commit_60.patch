@@ -1,0 +1,15 @@
+# kills: FT: a horizontal drag steps the chord, a slow 30px drag included
+# suite: node --test --test-name-pattern ^FT:.a.horizontal.drag.steps.the.chord,.a.slow.30px.drag.included$ tests/e2e.test.js
+# The swipe commit threshold is 60px instead of the app's 18px.
+diff --git a/scales/d-kurd-9/index.html b/scales/d-kurd-9/index.html
+--- a/scales/d-kurd-9/index.html
++++ b/scales/d-kurd-9/index.html
+@@ -186,7 +186,7 @@
+ <p class="muted">Last updated <time datetime="2026-10-28">2026-10-28</time></p>
+ <p class="muted">Handpan Chords is free in your browser. Your scales stay on your device.</p>
+ <script>(function(){
+-var COMMIT = 18, FLING = 0.15, WINDOW = 100, SLOP = 10, abs = Math.abs;
++var COMMIT = 60, FLING = 0.15, WINDOW = 100, SLOP = 10, abs = Math.abs;
+ var P = document.querySelector(".prog"), C = P.querySelector(".cards");
+ var R = P.querySelectorAll("input[name=step]"), n = R.length, d, hold, t;
+ if (n < 2) return;
