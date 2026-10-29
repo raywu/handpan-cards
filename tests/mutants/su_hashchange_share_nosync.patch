@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15182,7 +15182,7 @@ window.addEventListener("hashchange", async () => {
+@@ -15489,7 +15489,7 @@ window.addEventListener("hashchange", async () => {
      const read = HPE.share.decode(code);
      const again = read.ok ? HPE.share.encode(read.value) : null;
      if (!(again && again.ok && SHARE_PREFIX + again.value === routeFor(deck()))) await openShare(code);
@@ -13,4 +13,4 @@ diff --git a/index.html b/index.html
 +
      return;
    }
-   if (location.hash.indexOf(DECK_ROUTE) !== 0) return;
+   if (location.hash === ADD_ROUTE) {

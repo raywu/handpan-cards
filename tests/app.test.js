@@ -3248,7 +3248,7 @@ test("closing a page that is already closed changes nothing", async () => {
 });
 
 test("booting on a page route opens nothing and leaves a clean hash", async () => {
-  for (const hash of ["#add", "#edit-custom:abc"]) {
+  for (const hash of ["#edit-custom:abc"]) {
     const app = boot({ href: "https://example.test/index.html" + hash });
     assert.strictEqual(app.sheetOpen(), false,
       `booting on ${hash} opened a page for a deck this session never had`);
@@ -3258,6 +3258,23 @@ test("booting on a page route opens nothing and leaves a clean hash", async () =
     assert.deepStrictEqual(app.history.calls.map((c) => c.type), ["replace"],
       `booting on ${hash} pushed an entry instead of replacing the one it found`);
   }
+});
+
+test("AA: a boot on #add opens the Add sheet and Back closes it to the deck's route", async () => {
+  const app = boot({ href: "https://example.test/index.html#add" });
+  assert.strictEqual(app.sheetOpen(), true, "a boot on #add opened no sheet");
+  assert.strictEqual(ROUTE(app), "#add");
+  assert.deepStrictEqual(app.history.calls.map((c) => c.type + ":" + c.url), ["replace:/index.html#deck=d-kurd-10", "push:#add"],
+    "boot replaces the entry with the deck route, then showSheet pushes #add");
+  app.els["scale-back"].click();
+  assert.strictEqual(app.sheetOpen(), false);
+  assert.strictEqual(app.history.calls.filter((c) => c.type === "back").length, 1);
+});
+
+test("AA: a protected-mode boot on #add opens no sheet", async () => {
+  const app = await durableBoot({ storage: { hpfc: JSON.stringify({ deck: 5, mode: "A" }) }, href: "https://example.test/index.html#add" });
+  assert.strictEqual(app.get("savedMode"), "protected");
+  assert.strictEqual(app.sheetOpen(), false);
 });
 
 test("the page routes do not shadow a share URL", async () => {
@@ -9766,8 +9783,23 @@ describe("discoverability: deck route", () => {
     assert.strictEqual(gone.location.hash, "#deck=d-kurd-10");
   });
 
+  test("AA: a hashchange to #add opens the Add sheet, Back closes it and the next Back leaves the previous entry", async () => {
+    const app = await at("", { storage: { hpfc: JSON.stringify({ deck: "amara", mode: "A" }) } });
+    const before = app.history.calls.length;
+    await hashChange(app, "#add");
+    assert.strictEqual(app.sheetOpen(), true, "a hashchange to #add opened no sheet");
+    assert.deepStrictEqual(app.history.calls.slice(before).map((c) => c.type + ":" + c.url), ["replace:#add"],
+      "the entry the browser already pushed is reused: one replace, no push");
+    assert.strictEqual(app.get("sheetRouted"), true);
+    assert.strictEqual(app.get("selection.id"), "amara");
+    app.els["scale-back"].click();
+    assert.strictEqual(app.sheetOpen(), false);
+    assert.strictEqual(app.history.calls.filter((c) => c.type === "back").length, 1, "closing pops exactly the one entry");
+    assert.strictEqual(app.history.calls.filter((c) => c.type === "push").length, 0, "no duplicate entry was pushed");
+  });
+
   test("hashchange ignores the other routes", async () => {
-    for (const h of ["#add", "#edit-x", "#something"]) {
+    for (const h of ["#edit-x", "#something"]) {
       const app = await at("", { storage: { hpfc: JSON.stringify({ deck: "amara", mode: "A" }) } });
       const before = app.history.calls.length;
       await hashChange(app,h);
@@ -10069,8 +10101,15 @@ describe("share url", () => {
       ctx.local.location.hash = fragment;
       const historyBefore = JSON.stringify(ctx.local.history.calls);
       dispatchCurrent(ctx.local);
-      assert.strictEqual(ctx.local.location.hash, fragment, name + ": handler keeps the ignored raw fragment");
-      assert.strictEqual(JSON.stringify(ctx.local.history.calls), historyBefore, name + ": ignored handler writes no history");
+      if (fragment === "#add") {
+        assert.strictEqual(ctx.local.sheetOpen(), true, name + ": #add opens the Add sheet");
+        ctx.local.els["scale-back"].click();
+        ctx.local.popstate();
+        await writeBarrier(ctx.local);
+      } else {
+        assert.strictEqual(ctx.local.location.hash, fragment, name + ": handler keeps the ignored raw fragment");
+        assert.strictEqual(JSON.stringify(ctx.local.history.calls), historyBefore, name + ": ignored handler writes no history");
+      }
       await peerCommand(ctx, kind);
       const canonical = resultShown(ctx.local, kind);
       assert.strictEqual(ctx.local.location.hash, canonical, name + ": later peer publication still canonicalizes the URL");

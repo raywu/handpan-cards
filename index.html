@@ -13518,6 +13518,8 @@ function sheetRoute() {
 // user can edit the address bar, and the question this answers is "did we push
 // something that still needs popping", which only we know.
 let sheetRouted = false;
+// Set by a hashchange to #add: the browser already pushed the entry showSheet() would push.
+let reuseEntry = false;
 
 /** Make one caller's own background set inert (or live again). The sheet and
  *  the panel pass different sets on purpose - see `background` and
@@ -13538,7 +13540,9 @@ function showSheet(opener) {
   setInert(true, background);
   resyncSheet(true);
   applyKbOffset();
-  history.pushState({ scalePage: true }, "", sheetRoute());
+  if (reuseEntry) history.replaceState({ scalePage: true }, "", sheetRoute());
+  else history.pushState({ scalePage: true }, "", sheetRoute());
+  reuseEntry = false;
   sheetRouted = true;
   // The owner's second request: do not steal focus into the box, so the whole
   // page is readable before anything is typed and no soft keyboard covers it.
@@ -15488,6 +15492,11 @@ window.addEventListener("hashchange", async () => {
     syncRoute();
     return;
   }
+  if (location.hash === ADD_ROUTE) {
+    reuseEntry = true;
+    openScaleSheet(desktopMQ.matches ? addChip : settingsTrigger);
+    return;
+  }
   if (location.hash.indexOf(DECK_ROUTE) !== 0) return;
   routeToDeck(routedDeckId());
   syncRoute();
@@ -15509,6 +15518,7 @@ function finishSavedBoot() {
   bootStored=storedAtBoot===null?null:selection.id;
   const routed=routedDeckId();
   const incomingShare=location.hash.indexOf(SHARE_PREFIX)===0;
+  const incomingAdd=location.hash===ADD_ROUTE;
   const wanted=routed || storedAtBoot;
   const finish=()=>{
     setOrder();applyLang();paintLangSelect();setMode(mode,false);updateSavedStatus();syncRoute();
@@ -15518,6 +15528,7 @@ function finishSavedBoot() {
         (wanted.indexOf("custom:")===0 || savedState?.hidden.includes(wanted)))
       say(t("boot.gone",{name:deck().name}),"warn");
     booted=true;bootStored=null;
+    if(incomingAdd && savedMode!=="protected")openScaleSheet(desktopMQ.matches ? addChip : settingsTrigger);
   };
   if(savedMode==="protected" && location.hash.indexOf(SHARE_PREFIX)===0){pendingRecoveryShare=location.hash.slice(SHARE_PREFIX.length);finish();return;}
   if(location.hash.indexOf(SHARE_PREFIX)===0){

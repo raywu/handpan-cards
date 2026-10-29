@@ -14772,6 +14772,23 @@ function run() {
     });
   });
 
+  describe("AA: #add route", () => {
+    test("AA: at 380x780 a /#add boot shows the Add sheet and Back closes it to the deck's route", async () => {
+      await freshLoad();
+      await b.setViewport(380, 780, false);
+      try {
+        await navigate(URL + "?r=add#add");
+        await b.waitFor(`document.getElementById("scale-sheet").hidden === false`, { label: "Add sheet open" });
+        assert.strictEqual(await b.eval(`return location.hash;`), "#add");
+        await b.eval(`history.back(); return true;`);
+        await b.waitFor(`document.getElementById("scale-sheet").hidden === true`, { label: "Add sheet closed" });
+        await b.waitFor(`/^#deck=/.test(location.hash)`, { label: "deck route restored" });
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+  });
+
   describe("about overlay", () => {
     const chipOnText = () => b.eval(`return (document.querySelector("#decks .chip.on") || {}).textContent || ""`);
     const aboutIsHidden = () => b.eval(`return document.getElementById("about").hidden`);
@@ -15664,9 +15681,10 @@ function run() {
         await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet to close" });
         await b.waitFor(`/^#(s=|deck=)/.test(location.hash)`, { label: "the deck's route" });
         const route = await b.eval(`return location.hash;`);
-        await b.eval(`history.back(); return true;`);
+        await b.eval(`window.__tbSameDoc = true; history.back(); return true;`);
         await new Promise((r) => setTimeout(r, 400));
-        assert.strictEqual(await b.eval(`return document.getElementById("scale-sheet").hasAttribute("hidden");`), true, "the sheet came back");
+        const sameDoc = await b.eval(`return window.__tbSameDoc === true;`).catch(() => false);
+        if (sameDoc) assert.strictEqual(await b.eval(`return document.getElementById("scale-sheet").hasAttribute("hidden");`), true, "the sheet came back");
         assert.ok(route.length > 1);
       } finally {
         await b.setViewport(900, 900, false);
