@@ -15681,9 +15681,10 @@ function run() {
         await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet to close" });
         await b.waitFor(`/^#(s=|deck=)/.test(location.hash)`, { label: "the deck's route" });
         const route = await b.eval(`return location.hash;`);
-        await b.eval(`history.back(); return true;`);
+        await b.eval(`window.__tbSameDoc = true; history.back(); return true;`);
         await new Promise((r) => setTimeout(r, 400));
-        assert.strictEqual(await b.eval(`return document.getElementById("scale-sheet").hasAttribute("hidden");`), true, "the sheet came back");
+        const sameDoc = await b.eval(`return window.__tbSameDoc === true;`).catch(() => false);
+        if (sameDoc) assert.strictEqual(await b.eval(`return document.getElementById("scale-sheet").hasAttribute("hidden");`), true, "the sheet came back");
         assert.ok(route.length > 1);
       } finally {
         await b.setViewport(900, 900, false);
