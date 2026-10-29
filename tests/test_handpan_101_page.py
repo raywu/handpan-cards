@@ -59,6 +59,15 @@ class Handpan101PageTest(unittest.TestCase):
             with self.subTest(rule=rule):
                 self.assertIn(rule, html)
 
+    def test_the_h2_is_drawn_in_the_root_colour_by_the_last_matching_rule(self):
+        html = read(PATH)
+        style = re.search(r"<style>(.*?)</style>", html, re.S).group(1)
+        rules = re.findall(r"(?:^|\})\s*h2\s*\{([^}]*)\}", style)
+        self.assertTrue(rules)
+        colours = [c for r in rules for c in re.findall(r"(?:^|;)\s*color:([^;]+)", r)]
+        self.assertEqual(colours[-1].strip(), "var(--r)")
+        self.assertIn("--r:#e3b25c", style)
+
     def test_the_open_button_text_is_dark_on_gold(self):
         html = read(PATH)
         self.assertRegex(html, r"\.open\{[^}]*color:#1a1815")

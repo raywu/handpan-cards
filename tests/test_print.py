@@ -77,7 +77,7 @@ ALL_DECKS = (decks.KURD, decks.AMARA10, decks.HIJAZ, decks.PYGMY, decks.AMARA)
 # label rule has no pre-rule baseline to shrink below.
 PRE_RULE_DECKS = (decks.HIJAZ, decks.PYGMY, decks.AMARA)
 # Pygmy's geom is engine output since Lane P1: its f_note is solver-rounded and
-# may sit up to 0.03% above what the rule draws (CLAUDE.md, label rule). The
+# may sit up to 0.03% above what the rule draws (CLAUDE.md, "Design system", Diagram label rule). The
 # slack covers rim and inner names and index numbers only: the ding and the
 # bottom shell did not move in the redraw and are held to the exact baseline.
 ROUNDED_F_SLACK = 3e-4

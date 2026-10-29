@@ -82,7 +82,7 @@ There are 28 node suites and 18 python suites. The mutation gate applies 1683 mu
 
 CI runs on pull requests into `main` and on pushes to `main`. A PR that changes only `docs/plans/` or `docs/prompts/` skips every job.
 
-More to read: `CLAUDE.md` (rules, verified layouts, design system, hosting), `tests/CONTRACT.md` (how to add a test), `docs/plans/` (one plan per piece of work).
+More to read: `CLAUDE.md` (rules, verified layouts, design system), `tests/CONTRACT.md` (how to add a test), `docs/plans/` (one plan per piece of work).
 
 ## License
 
