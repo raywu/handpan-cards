@@ -26,8 +26,6 @@ SITE = "https://handpan.raywu.org/"
 UPDATED = "2026-10-28"
 BG_LIGHT = "#fbfaf8"
 BG_DARK = "#15181b"
-HANDPAN_101_DOC = ("https://docs.google.com/document/d/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco"
-                   "/edit?usp=drivesdk")
 WORDS = {8: "Eight", 9: "Nine", 10: "Ten", 18: "Eighteen", 20: "Twenty"}
 AN_LETTERS = set("AEFHILMNORSX")
 
@@ -328,7 +326,7 @@ def render(row, data, rows_by_slug, copy, alt=None):
         out.append('<header><p><a href="/">Home</a> &rsaquo; %s chords</p>\n' % esc(name))
     out.append("<h1>%s handpan chords</h1>\n" % esc(name))
     if frozen:
-        guide = '<a href="%s" target="_blank" rel="noopener">Handpan 101</a>' % HANDPAN_101_DOC
+        guide = '<a href="/handpan-101/">Handpan 101</a>'
         lead = copy["lead_html"] + " New to handpan? Read %s first." % guide
     else:
         lead = copy["lead_html"] + " The app has %d chord cards for this scale." % data["count"]

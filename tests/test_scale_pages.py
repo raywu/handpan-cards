@@ -12,7 +12,7 @@ import gen_scale_page as gen  # noqa: E402
 
 SITE = "https://handpan.raywu.org/"
 ALLOWED_HOSTS = {"fonts.googleapis.com", "fonts.gstatic.com", "handpan.raywu.org", "www.w3.org",
-                 "docs.google.com", "www.youtube.com", "www.sarazhandpans.com", "www.handpan.world",
+                 "www.youtube.com", "www.sarazhandpans.com", "www.handpan.world",
                  "handpaner.com", "schema.org", "handpanhelpers.klangzeug.de", "svenkirchhofer.de",
                  "yataoshop.com", "isthmusinstruments.com", "www.drumland.com", "maginstruments.com",
                  "www.scan.co.uk", "www.meinlshop.de", "www.dingandtones.com", "sarazhandpans.com",
@@ -551,7 +551,7 @@ class ContrastTest(unittest.TestCase):
                 self.assertGreaterEqual(ratio(light, BG_LIGHT), 4.5)
                 self.assertGreaterEqual(ratio(light, "#ffffff"), 4.5)
                 self.assertGreaterEqual(ratio(dark, BG_DARK), 4.5)
-                self.assertGreaterEqual(ratio(dark, BG_DARK), 4.5)
+                self.assertGreaterEqual(ratio(light, BG_LIGHT), 4.5)
                 html = html_of(slug)
                 self.assertIn("--r:%s}" % light, html)
                 self.assertIn("--r:%s}}" % dark, html)
