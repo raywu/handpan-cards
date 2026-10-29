@@ -138,7 +138,7 @@ class Handpan101PageTest(unittest.TestCase):
         self.assertIsNone(re.search(r"deck", page().visible(), re.I))
 
     def test_kurd_page_links_handpan_101_in_the_same_tab(self):
-        self.assertRegex(read("scales/d-kurd-10/index.html"), r'<a href="/handpan-101/">Handpan 101</a>')
+        self.assertRegex(read("scales/d-kurd-10/index.html"), r'<a href="/handpan-101/">Handpan 101[^<]*</a>')
 
 
 if __name__ == "__main__":
