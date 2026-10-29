@@ -19904,28 +19904,209 @@ function run() {
       });
     }
 
-    for (const [w, h] of [[844, 390], [380, 780], [1280, 800]]) {
-      test(`FT: d-kurd-9 at ${w}x${h}: every step radio, focused or not, sits on the top edge of the nav label that targets it`, async () => {
+    const loadPage = async (slug) => {
+      await b.send("Page.navigate", { url: pageUrl(slug) });
+      await b.waitFor(`document.readyState === "complete" && document.querySelector(".prog .slot")`, { label: "stepper" });
+    };
+    const tapXY = async (kind, x, y) => {
+      if (kind === "mouse") {
+        for (const type of ["mousePressed", "mouseReleased"]) await b.send("Input.dispatchMouseEvent", { type, x, y, button: "left", clickCount: 1 });
+      } else {
+        await b.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x, y }] });
+        await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+      }
+    };
+    const stepNow = () => b.eval(`return [...document.querySelectorAll(".prog > input")].findIndex((x) => x.checked) + 1;`);
+
+    const matrixCells = [];
+    for (const slug of ["d-kurd-9", "e-amara-20", "f-low-pygmy-18"]) {
+      for (const [w, h] of [[380, 780], [844, 390]]) {
+        for (const zoom of [1, 2.5]) matrixCells.push([slug, w, h, zoom, ["mouse", "touch"]]);
+      }
+    }
+    matrixCells.push(["d-kurd-9", 1280, 800, 1, ["mouse"]]);
+    for (const [slug, w, h, zoom, kinds] of matrixCells) {
+      test(`FT: ${slug} at ${w}x${h} ${zoom}x: NEXT and PREV tapped with the label top 10px and 35px above the view, and the label bottom 1, 16 and 32px below the fold, scroll the page and the visual viewport by under 2px`, async () => {
         await b.setViewport(w, h, true);
-        await b.send("Page.navigate", { url: pageUrl("d-kurd-9") });
-        await b.waitFor(`document.readyState === "complete" && document.querySelector(".prog .slot")`, { label: "stepper" });
-        for (const step of [1, 2, 3]) {
-          for (const focused of [false, true]) {
-            const r = await b.eval(`
-              document.querySelector("#p${step}").checked = true;
-              const ins = [...document.querySelectorAll(".prog > input")];
-              if (${focused}) { ins[0].focus(); } else { document.activeElement.blur(); }
-              const out = [];
-              for (const l of document.querySelectorAll(".prog .slot:nth-child(${step}) .nav label")) {
-                const i = document.getElementById(l.htmlFor);
-                if (${focused}) i.focus();
-                const a = l.getBoundingClientRect(), c = i.getBoundingClientRect();
-                out.push({ t: l.textContent, ok: c.left >= a.left && c.right <= a.right && c.top >= a.top && c.bottom <= a.top + 2,
-                  a: [a.left, a.top, a.right, a.bottom], c: [c.left, c.top, c.right, c.bottom] });
+        try {
+          for (const kind of kinds) {
+            await b.send("Emulation.setTouchEmulationEnabled", { enabled: kind === "touch", maxTouchPoints: 5 });
+            await loadPage(slug);
+            if (zoom !== 1) { await b.setPageScale(zoom); await b.settle(); }
+            for (const [name, step, sel] of [["NEXT", 1, ".prog .slot:nth-child(1) .nav label:last-child"], ["PREV", 2, ".prog .slot:nth-child(2) .nav label:first-child"]]) {
+              for (const cs of ["top-10", "top-35", "bot+1", "bot+16", "bot+32"]) {
+                const n = +cs.slice(4);
+                await b.eval(`document.querySelector("#p${step}").checked = true; return 1;`);
+                const target = cs.startsWith("top") ? `(l.top - v.offsetTop) + ${n}` : `(l.bottom - v.offsetTop) - v.height - ${n}`;
+                for (let i = 0; i < 3; i++) {
+                  await b.eval(`document.querySelector(${JSON.stringify(sel)}).scrollIntoView({ block: "center", inline: "center" }); return 1;`);
+                  await b.settle();
+                  await b.eval(`const l = document.querySelector(${JSON.stringify(sel)}).getBoundingClientRect(), v = visualViewport; scrollTo(scrollX, scrollY + ${target}); return 1;`);
+                  await b.settle();
+                }
+                const be = await b.eval(`
+                  const l = document.querySelector(${JSON.stringify(sel)}).getBoundingClientRect(), v = visualViewport;
+                  const t = l.top - v.offsetTop, bo = l.bottom - v.offsetTop;
+                  return { sy: scrollY, px: v.pageLeft, py: v.pageTop, x: l.left + l.width / 2 - v.offsetLeft, y: (Math.max(t, 0) + Math.min(bo, v.height)) / 2, t, bo };`);
+                await tapXY(kind, be.x, be.y);
+                await new Promise((r) => setTimeout(r, 300));
+                const a = await b.eval(`const v = visualViewport; return { sy: scrollY, px: v.pageLeft, py: v.pageTop, max: document.documentElement.scrollHeight - innerHeight };`);
+                const clamped = a.sy < be.sy && a.sy >= a.max - 1;
+                const where = `${name} ${kind} ${cs} (label ${be.t.toFixed(0)}..${be.bo.toFixed(0)})`;
+                assert.strictEqual(await stepNow(), name === "NEXT" ? 2 : 1, `${where} steps`);
+                assert.ok(clamped || Math.abs(a.sy - be.sy) < 2, `${where} leaves scrollY alone (${be.sy} -> ${a.sy})`);
+                assert.ok(clamped || Math.abs(a.py - be.py) < 2, `${where} leaves the visual viewport top alone (${be.py} -> ${a.py})`);
+                assert.ok(Math.abs(a.px - be.px) < 2, `${where} leaves the visual viewport left alone (${be.px} -> ${a.px})`);
               }
-              return out;`);
-            for (const x of r) assert.ok(x.ok, `step ${step} ${x.t} focused=${focused}: radio ${JSON.stringify(x.c)} on label top ${JSON.stringify(x.a)}`);
+            }
           }
+        } finally {
+          await b.setPageScale(1);
+          await b.send("Emulation.setTouchEmulationEnabled", { enabled: false });
+        }
+      });
+    }
+
+    for (const slug of ["d-kurd-9", "e-amara-20"]) {
+      for (const kind of ["mouse", "touch"]) {
+        test(`FT: ${slug} at 380x780: NEXT twice from p1 lands on p2 then p3, and PREV from p3 lands on p2 (${kind})`, async () => {
+          await b.setViewport(380, 780, true);
+          await b.send("Emulation.setTouchEmulationEnabled", { enabled: kind === "touch", maxTouchPoints: 5 });
+          try {
+            await loadPage(slug);
+            const labelPt = (st, which) => b.eval(`
+              const l = document.querySelector(".prog .slot:nth-child(${st}) .nav label:${which}-child");
+              l.scrollIntoView({ block: "center" }); const r = l.getBoundingClientRect();
+              return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+            for (const [st, which, want] of [[1, "last", 2], [2, "last", 3], [3, "first", 2]]) {
+              const p = await labelPt(st, which);
+              await tapXY(kind, p.x, p.y);
+              await new Promise((r) => setTimeout(r, 200));
+              assert.strictEqual(await stepNow(), want, `${which} label of step ${st} lands on ${want}`);
+            }
+          } finally {
+            await b.send("Emulation.setTouchEmulationEnabled", { enabled: false });
+          }
+        });
+      }
+    }
+
+    for (const [w, h] of [[844, 390], [380, 780], [1280, 800]]) {
+      test(`FT: d-kurd-9 at ${w}x${h}: in each checked state each adjacent radio equals the visible nav label it replaces, the checked radio sits on the nav row with no pointer events, and every far radio has no pointer events`, async () => {
+        await b.setViewport(w, h, true);
+        await loadPage("d-kurd-9");
+        for (const step of [1, 2, 3]) {
+          const r = await b.eval(`
+            document.querySelector("#p${step}").checked = true;
+            const ins = [...document.querySelectorAll(".prog > input")];
+            const nav = document.querySelector(".prog .slot:nth-child(${step}) .nav").getBoundingClientRect();
+            const labels = [...document.querySelectorAll(".prog .slot:nth-child(${step}) .nav label")].map((l) => {
+              const a = l.getBoundingClientRect(); return { t: l.textContent, f: l.htmlFor, a: [a.left, a.top, a.right, a.bottom] };
+            });
+            return { nav: [nav.top, nav.bottom], labels, radios: ins.map((i) => {
+              const c = i.getBoundingClientRect();
+              return { id: i.id, checked: i.checked, pe: getComputedStyle(i).pointerEvents, c: [c.left, c.top, c.right, c.bottom] };
+            }), labelPe: [...document.querySelectorAll(".prog .nav label")].map((l) => getComputedStyle(l).pointerEvents) };`);
+          for (const l of r.labels) {
+            const i = r.radios.find((x) => x.id === l.f);
+            for (let k = 0; k < 4; k++) assert.ok(Math.abs(i.c[k] - l.a[k]) <= 1, `step ${step} ${l.t}: radio ${i.id} ${JSON.stringify(i.c)} equals label ${JSON.stringify(l.a)} within 1px`);
+            assert.strictEqual(i.pe, "auto", `step ${step} ${l.t} radio takes pointer events`);
+          }
+          const chk = r.radios.find((x) => x.checked);
+          assert.strictEqual(chk.pe, "none", `step ${step}: the checked radio takes no pointer events`);
+          assert.ok(chk.c[1] >= r.nav[0] - 1 && chk.c[3] <= r.nav[1] + 1, `step ${step}: the checked radio sits on the nav row (${chk.c[1]}..${chk.c[3]} in ${r.nav})`);
+          const adj = new Set(r.labels.map((l) => l.f));
+          for (const x of r.radios) {
+            if (x.checked || adj.has(x.id)) continue;
+            assert.strictEqual(x.pe, "none", `step ${step}: far radio ${x.id} takes no pointer events`);
+            for (const l of r.labels) {
+              const o = x.c[0] < l.a[2] && x.c[2] > l.a[0] && x.c[1] < l.a[3] && x.c[3] > l.a[1];
+              assert.ok(!o || x.pe === "none", `far radio ${x.id} never covers a label with pointer events`);
+            }
+          }
+          assert.ok(r.labelPe.every((p) => p === "none"), "the labels are visual only");
+        }
+      });
+    }
+
+    test("FT: the shipped scroll margin covers the tallest nav-bottom to chord-name-top distance over every scale page at 380x780", async () => {
+      await b.setViewport(380, 780, true);
+      const fs = require("node:fs");
+      const dir = require("node:path").join(__dirname, "..", "scales");
+      const slugs = fs.readdirSync(dir).filter((x) => fs.existsSync(require("node:path").join(dir, x, "index.html")));
+      assert.ok(slugs.length >= 16, `all the pages are listed (${slugs.length})`);
+      let max = 0, margin = 0, at = "";
+      for (const slug of slugs) {
+        await loadPage(slug);
+        const r = await b.eval(`
+          const out = []; const n = document.querySelectorAll(".prog > input").length;
+          for (let st = 1; st <= n; st++) {
+            document.querySelector("#p" + st).checked = true;
+            const s = document.querySelector(".prog .slot:nth-child(" + st + ")");
+            out.push(s.querySelector(".nav").getBoundingClientRect().bottom - s.querySelector(".cardhost").shadowRoot.querySelector(".fname").getBoundingClientRect().top);
+          }
+          return { d: Math.max(...out), m: parseFloat(getComputedStyle(document.querySelector("#p1")).scrollMarginTop) };`);
+        margin = r.m;
+        if (r.d > max) { max = r.d; at = slug; }
+      }
+      console.log(`FT scroll-margin-top: shipped ${margin}px, measured max ${max.toFixed(2)}px on ${at} at 380x780`);
+      assert.ok(margin >= max, `shipped margin ${margin} >= measured max ${max} (${at})`);
+    });
+
+    const tabCases = [];
+    for (const slug of ["d-kurd-9", "f-low-pygmy-18"]) for (const [w, h] of [[380, 780], [844, 390]]) for (const st of [1, 2, 3]) for (const shift of [false, true]) tabCases.push([slug, w, h, st, shift]);
+    for (const [slug, w, h, st, shift] of tabCases) {
+      test(`FT: ${slug} at ${w}x${h}: ${shift ? "Shift+Tab" : "Tab"} onto the checked step ${st} brings the nav into view and the chord name's top at or below 0 when both fit`, async () => {
+        await b.setViewport(w, h, true);
+        await loadPage(slug);
+        await b.eval(`
+          document.querySelector("#p${st}").checked = true;
+          const ins = [...document.querySelectorAll("a, button, input")].filter((e) => e.tabIndex >= 0);
+          const radios = [...document.querySelectorAll(".prog > input")];
+          const from = ${shift} ? document.querySelector(".prog .slot:nth-child(${st}) .cardhost").shadowRoot.querySelector(".flip") : ins[ins.indexOf(radios[0]) - 1];
+          from.focus({ preventScroll: true });
+          scrollTo(0, ${shift} ? document.documentElement.scrollHeight : 0); return 1;`);
+        await b.settle();
+        const mod = shift ? 8 : 0;
+        await b.send("Input.dispatchKeyEvent", { type: "rawKeyDown", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9, modifiers: mod });
+        await b.send("Input.dispatchKeyEvent", { type: "keyUp", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9, modifiers: mod });
+        await new Promise((r) => setTimeout(r, 250));
+        const a = await b.eval(`
+          const s = document.querySelector(".prog .slot:nth-child(${st})");
+          const nav = s.querySelector(".nav").getBoundingClientRect();
+          const name = s.querySelector(".cardhost").shadowRoot.querySelector(".fname").getBoundingClientRect();
+          return { id: document.activeElement.id, navTop: nav.top, navBottom: nav.bottom, nameTop: name.top, vh: innerHeight,
+            margin: parseFloat(getComputedStyle(document.querySelector("#p1")).scrollMarginTop) };`);
+        assert.strictEqual(a.id, "p" + st, "the checked step takes the focus");
+        assert.ok(a.navBottom <= a.vh + 1 && a.navTop >= -1, `the nav is in view (${a.navTop}..${a.navBottom} of ${a.vh})`);
+        assert.ok(a.margin + 44 <= a.vh, `the scroll margin ${a.margin} + 44 fits the ${a.vh}px viewport`);
+        if (a.navBottom - a.nameTop <= a.vh) assert.ok(a.nameTop >= -1, `the chord name's top is at or below 0 (${a.nameTop})`);
+        else console.log(`FT best effort: ${slug} ${w}x${h} step ${st}: nav bottom - name top ${a.navBottom - a.nameTop} > ${a.vh}`);
+      });
+    }
+
+    for (const slug of ["d-kurd-9", "f-low-pygmy-18"]) {
+      test(`FT: ${slug} at 380x780: ArrowRight and ArrowLeft on the focused step keep the chord name at or below 0 and scroll nothing when the nav and name are already in view`, async () => {
+        await b.setViewport(380, 780, true);
+        await loadPage(slug);
+        await b.eval(`document.querySelector("#p1").focus(); return 1;`);
+        await b.settle();
+        for (const [k, code, vk, want] of [["ArrowRight", "ArrowRight", 39, 2], ["ArrowRight", "ArrowRight", 39, 3], ["ArrowLeft", "ArrowLeft", 37, 2]]) {
+          const pre = await b.eval(`
+            const s = document.querySelector(".prog .slot:nth-child(" + ([...document.querySelectorAll(".prog > input")].findIndex((x) => x.checked) + 1) + ")");
+            const nav = s.querySelector(".nav").getBoundingClientRect();
+            const name = s.querySelector(".cardhost").shadowRoot.querySelector(".fname").getBoundingClientRect();
+            return { sy: scrollY, both: nav.top >= 0 && nav.bottom <= innerHeight && name.top >= 0 };`);
+          await b.key(k, code, vk);
+          await new Promise((r) => setTimeout(r, 250));
+          const a = await b.eval(`
+            const s = document.querySelector(".prog .slot:nth-child(${want})");
+            const nav = s.querySelector(".nav").getBoundingClientRect();
+            const name = s.querySelector(".cardhost").shadowRoot.querySelector(".fname").getBoundingClientRect();
+            return { sy: scrollY, nameTop: name.top, navBottom: nav.bottom, vh: innerHeight, on: [...document.querySelectorAll(".prog > input")].findIndex((x) => x.checked) + 1 };`);
+          assert.strictEqual(a.on, want, `${k} lands on ${want}`);
+          if (a.navBottom - a.nameTop <= a.vh) assert.ok(a.nameTop >= -1, `${k}: chord name top ${a.nameTop} at or below 0`);
+          if (pre.both) assert.ok(Math.abs(a.sy - pre.sy) < 2, `${k} with the nav and name in view scrolls nothing (${pre.sy} -> ${a.sy})`);
         }
       });
     }

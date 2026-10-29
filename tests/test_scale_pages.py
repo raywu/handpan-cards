@@ -404,7 +404,9 @@ class ScalePagesTest(unittest.TestCase):
             with self.subTest(page=slug):
                 self.assertIn("min(322px,100%)", html)
                 self.assertNotIn("touch-action:none", html.replace(" ", ""))
-                self.assertNotIn("pointer-events:none", html.replace(" ", ""))
+                css = html.replace(" ", "")
+                for sel in re.findall(r"([^{}]*)\{[^{}]*pointer-events:none", css):
+                    self.assertTrue(sel.strip().startswith(".prog"), "only the stepper takes pointer-events:none: " + sel)
 
     def test_history_section_has_popularized_by_only_when_the_row_says_so(self):
         for slug, (_, _, _, popularized, _) in ROWS.items():
