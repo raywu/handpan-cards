@@ -7,7 +7,7 @@ from html.parser import HTMLParser
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SITE = "https://handpan.raywu.org/"
 ALLOWED_HOSTS = {"fonts.googleapis.com", "fonts.gstatic.com", "handpan.raywu.org", "www.w3.org",
-                 "docs.google.com", "www.youtube.com", "www.sarazhandpans.com", "www.handpan.world"}
+                 "www.youtube.com", "www.sarazhandpans.com", "www.handpan.world"}
 PAGES = [
     {
         "path": "scales/d-kurd-10/index.html",

@@ -3538,17 +3538,17 @@ test("PM rule 3: DOWNLOAD PDF names and builds the chord-only file, byte for byt
   }
 });
 
-test("PM rule 7: HANDPAN 101 is the last Resources link, a Google Doc in a new tab, beside Handpan Helpers", () => {
+test("PM rule 7: HANDPAN 101 is the last Resources link, the /handpan-101/ page in the same tab, beside Handpan Helpers", () => {
   const panel = pmPanel();
   const group = panel.slice(panel.indexOf('<h3 class="panel-heading">Resources</h3>'));
   const links = [...group.matchAll(/<a\b[^>]*>[\s\S]*?<\/a>/g)].map((m) => m[0]);
   assert.strictEqual(links.length, 7, "seven Resources links");
   const first = links[links.length - 1];
   assert.match(first, /\bid="res-handpan-101"/);
-  assert.match(first, /href="https:\/\/docs\.google\.com\/document\/d\/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco\/edit\?usp=drivesdk"/);
-  assert.match(first, /target="_blank"/);
-  assert.match(first, /rel="noopener"/);
-  assert.match(first, /aria-label="Handpan 101 \(Google Doc\)"/);
+  assert.match(first, /href="\/handpan-101\/"/);
+  assert.ok(!/\btarget=/.test(first), "the page opens in the same tab");
+  assert.ok(!/\brel=/.test(first), "a same-site link carries no rel");
+  assert.match(first, /aria-label="Handpan 101"/);
   assert.match(first, /class="mode"/);
   assert.ok(!/onclick/.test(first), "a link click must not close the panel");
   assert.strictEqual(strip(first).replace(/\s+/g, " ").trim(), "HANDPAN 101", "the complete name survives presentational wrapping");
@@ -3582,7 +3582,7 @@ test("HHR: the Helpers resource is a native new-tab link immediately before HAND
   assert.ok(!/\b(?:hidden|disabled|aria-hidden|tabindex)(?=\s|=|>)/.test(link), "Helpers remains a normal keyboard-reachable anchor");
   const index = links.indexOf(link);
   assert.match(links[index + 1] || "", /\bid="res-handpan-101"/, "Helpers immediately precedes HANDPAN 101");
-  assert.strictEqual(index, links.length - 2, "HANDPAN 101 stays the final outbound Resources link");
+  assert.strictEqual(index, links.length - 2, "HANDPAN 101 stays the final Resources link");
   const rows = [...group.matchAll(/<div class="modebar([^"]*)">([\s\S]*?)<\/div>/g)];
   assert.strictEqual(rows.length, 4, "adding Helpers does not add a Resources row");
   assert.match(rows[2][1], /\bduo\b/, "the approved third row is an equal-width duo");
