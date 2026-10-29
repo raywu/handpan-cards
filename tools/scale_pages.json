@@ -1,6 +1,16 @@
 [
  {
   "slug": "d-kurd-10",
+  "also_try": [
+  {
+   "name": "C# Annaziska 9",
+   "href": "https://handpan.raywu.org/#s=6/(Cs3)_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4/C%23+Annaziska+9/24f03b"
+  },
+  {
+   "name": "C# Annaziska 13",
+   "href": "https://handpan.raywu.org/#s=6/(Cs3)_uE3_uFs3_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4_uB4_uCs5/C%23+Annaziska+13/palette-2/402803"
+  }
+ ],
   "kind": "frozen",
   "name": "D Kurd 10",
   "root": "D",
@@ -42,6 +52,16 @@
  },
  {
   "slug": "d-kurd-9",
+  "also_try": [
+  {
+   "name": "C# Annaziska 9",
+   "href": "https://handpan.raywu.org/#s=6/(Cs3)_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4/C%23+Annaziska+9/24f03b"
+  },
+  {
+   "name": "C# Annaziska 13",
+   "href": "https://handpan.raywu.org/#s=6/(Cs3)_uE3_uFs3_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4_uB4_uCs5/C%23+Annaziska+13/palette-2/402803"
+  }
+ ],
   "kind": "new",
   "name": "D Kurd 9",
   "root": "D",

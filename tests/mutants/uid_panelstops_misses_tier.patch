@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14679,7 +14679,7 @@ function panelStops() {
+@@ -14688,7 +14688,7 @@ function panelStops() {
    const col = document.querySelector("#settings-panel > .panel-col");
    const grid = typeof getComputedStyle === "function" && !!col && getComputedStyle(col).display === "flex";
    return [settingsTrigger, document.getElementById("modeA"), document.getElementById("modeB"),
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +          document.getElementById("tier-intermediate"),
            document.getElementById("tier-advanced"), document.getElementById("seq-source-link"),
            // LS2: in the two-column grid modes Print sits above Scales and
-           // ABOUT closes the list, so Tab follows what the eye sees.
+           // Language closes the list, so Tab follows what the eye sees.

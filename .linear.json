@@ -1,0 +1,9 @@
+{
+  "workspace": "bamboo-grove",
+  "workspaceName": "Bamboo Grove",
+  "teamKey": "TRI",
+  "teamId": "3ab0b7c5-c456-49fd-8555-d6952cb0a3d1",
+  "deliveryGroup": "delivery",
+  "integrator": "owner session only",
+  "conventions": "docs/plans/2026-10-28-linear-convention-note.md"
+}
