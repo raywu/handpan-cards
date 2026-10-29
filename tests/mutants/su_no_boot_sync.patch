@@ -5,8 +5,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15208,7 +15208,7 @@ function finishSavedBoot() {
-   const incomingShare=location.hash.indexOf(SHARE_PREFIX)===0;
+@@ -15521,7 +15521,7 @@ function finishSavedBoot() {
+   const incomingAdd=location.hash===ADD_ROUTE;
    const wanted=routed || storedAtBoot;
    const finish=()=>{
 -    setOrder();applyLang();paintLangSelect();setMode(mode,false);updateSavedStatus();syncRoute();
