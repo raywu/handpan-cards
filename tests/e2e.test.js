@@ -79,7 +79,7 @@ function run() {
         res.end(pseudoDeHtml());
         return;
       }
-      const file = path.resolve(REPO, rel || "index.html");
+      const file = path.resolve(REPO, !rel || rel.endsWith("/") ? rel + "index.html" : rel);
       if (!file.startsWith(REPO + path.sep)) { res.writeHead(403).end(); return; }
       fs.readFile(file, (err, buf) => {
         if (err) { res.writeHead(404).end(); return; }
@@ -2423,7 +2423,7 @@ function run() {
       const m = await b.eval(`
         const stops = window.panelStops();
         return { ids: stops.map(e => e.id).filter(Boolean),
-          onclick: RES_IDS.map(id => document.getElementById(id).getAttribute("onclick")) };
+          onclick: ${RES_IDS_JS}.map(id => document.getElementById(id).getAttribute("onclick")) };
       `);
       for (const id of RES_IDS) assert.strictEqual(m.ids.filter((x) => x === id).length, 1, `#${id} must be a panel stop exactly once`);
       assert.strictEqual(m.ids.filter((x) => x === "seq-source-link").length, 1, "#seq-source-link must be a panel stop exactly once in mode S");
@@ -9841,8 +9841,8 @@ function run() {
           if (m.over > 1) {
             assert.deepStrictEqual(m.reach, [], `${label}: a control lies beyond the scrollable height`);
             {
-              assert.deepStrictEqual(m.off.filter((id) => !id.startsWith("res-") && id !== "lang-select"), [],
-                `${label}: only the Resources links, ABOUT and Language may be below the fold once the Amy row makes the cell scroll`);
+              assert.deepStrictEqual(m.off.filter((id) => !id.startsWith("res-") && id !== "about-open" && id !== "lang-select"), [],
+                `${label}: only the Resources links, ABOUT and Language may be below the fold once the cell scrolls`);
             }
           } else {
             assert.deepStrictEqual(m.off, [], `${label}: controls offscreen: ${JSON.stringify(m.off)}`);
