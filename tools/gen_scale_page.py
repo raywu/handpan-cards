@@ -428,6 +428,9 @@ def render(row, data, rows_by_slug, copy, alt=None):
     if target:
         out.append('<p>%s Open <a href="%s">%s</a>.</p>\n' % (cross_lead(row, target), row["cross"]["href"],
                                                               esc(target["name"])))
+    if row.get("also_try"):
+        out.append('<p>Also try:</p>\n<ul class="rel also">%s</ul>\n' % "".join(
+            '<li><a href="%s">%s</a></li>' % (a["href"], esc(a["name"])) for a in row["also_try"]))
     if row.get("alt_share") and alt:
         a = row["alt_share"]
         out.append('<p class="muted">%s Open <a href="/#s=%s">%s</a>.</p>\n' % (a["lead"], alt["share"],
