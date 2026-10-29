@@ -4,7 +4,9 @@
 diff --git a/scales/d-kurd-10/index.html b/scales/d-kurd-10/index.html
 --- a/scales/d-kurd-10/index.html
 +++ b/scales/d-kurd-10/index.html
-@@ -86,7 +86,7 @@
+@@ -84,9 +84,9 @@
+ <div class="slot"><div class="step">Chord 1 of 3</div>
+ <div class="cardhost"><template shadowrootmode="open"><style>:host{display:block;width:min(322px,100%);--root:#2563B0;--tone:#C0452C}
  .wrap{display:block;position:relative;perspective:1200px;cursor:pointer;min-height:44px}
  .flip{position:absolute;inset:0;width:100%;height:100%;opacity:0;margin:0;cursor:pointer;z-index:1}
  .inner{display:grid;transition:transform .5s;transform-style:preserve-3d}
