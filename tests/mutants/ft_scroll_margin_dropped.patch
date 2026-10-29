@@ -1,0 +1,15 @@
+# kills: Tab onto the checked step keeps the chord name in view
+# suite: node --test --test-name-pattern ^FT:.d-kurd-9.at.844x390:.Tab.onto.the.checked.step.2 tests/e2e.test.js
+# The scroll-margin-top is gone, so Tab focus scrolls only the 44px nav box into view and cuts off the chord name.
+diff --git a/scales/d-kurd-9/index.html b/scales/d-kurd-9/index.html
+--- a/scales/d-kurd-9/index.html
++++ b/scales/d-kurd-9/index.html
+@@ -45,7 +45,7 @@
+ ul.rel a{display:flex;align-items:center;min-height:44px}
+ section.related h2,section.group h2{color:var(--fg);font-size:20px;margin:0 0 4px}
+ .prog{display:flex;flex-direction:column;align-items:center;gap:10px;position:relative}
+-.prog>input{-webkit-appearance:none;appearance:none;position:absolute;bottom:0;left:calc(50% - 44px);width:88px;height:44px;opacity:0;margin:0;z-index:1;pointer-events:none;cursor:pointer;-webkit-tap-highlight-color:transparent;scroll-margin-top:min(301px,calc(100vh - 44px));scroll-margin-top:min(301px,calc(100svh - 44px))}
++.prog>input{-webkit-appearance:none;appearance:none;position:absolute;bottom:0;left:calc(50% - 44px);width:88px;height:44px;opacity:0;margin:0;z-index:1;pointer-events:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
+ .prog>input:checked+input{left:auto;right:calc((100% - min(322px,100%))/2);pointer-events:auto}
+ .prog>input:has(+input:checked){left:calc((100% - min(322px,100%))/2);pointer-events:auto}
+ .prog .nav label{pointer-events:none}
