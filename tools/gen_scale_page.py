@@ -27,6 +27,7 @@ SITE = "https://handpan.raywu.org/"
 UPDATED = "2026-10-28"
 BG_LIGHT = "#fbfaf8"
 BG_DARK = "#15181b"
+BG_BROWN = "#1a1815"
 WORDS = {8: "Eight", 9: "Nine", 10: "Ten", 18: "Eighteen", 20: "Twenty"}
 AN_LETTERS = set("AEFHILMNORSX")
 
@@ -201,12 +202,12 @@ def hub_page(rows=None):
     out.append('<meta property="og:description" content="%s">\n' % html.escape(description))
     out.append('<meta property="og:image" content="%sog.png">\n' % SITE)
     out.append('<meta property="og:site_name" content="Handpan Chords">\n')
-    out.append('<meta name="theme-color" content="%s">\n' % BG_LIGHT)
+    out.append('<meta name="theme-color" content="%s">\n' % BG_BROWN)
     out.append('<link rel="preconnect" href="https://fonts.googleapis.com">\n'
                '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
                '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&family='
                'Bitter:wght@400;600&family=Nunito+Sans:wght@400;600;700&display=swap">\n')
-    out.append("<style>\n" + CSS_HEAD.replace("@LIGHT@", "#2563B0").replace("@DARK@", "#7fb0ee") + "</style>\n")
+    out.append("<style>\n" + INDEX_CSS_HEAD + "</style>\n")
     out.append("</head>\n<body>\n<main>\n")
     out.append('<header><p><a href="/">Home</a> &rsaquo; Scale chord charts</p>\n<h1>%s</h1>\n' % title)
     out.append('<p style="margin-top:8px">%s</p>\n</header>\n' % HUB_INTRO)
@@ -263,6 +264,24 @@ ul.rel{list-style:none;margin:0;padding:0}
 ul.rel li{border-bottom:1px solid var(--muted)}
 ul.rel a{display:flex;align-items:center;min-height:44px}
 section.related h2,section.group h2{color:var(--fg);font-size:20px;margin:0 0 4px}
+"""
+
+INDEX_CSS_HEAD = """:root{color-scheme:dark;--bg:#1a1815;--fg:#eae6df;--muted:#c4bcab;--r:#e3b25c;--rule:#3a342b}
+body{background:var(--bg);color:var(--fg);font-family:"Nunito Sans",system-ui,sans-serif;line-height:1.55;margin:0;padding:20px 16px 48px}
+main{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+h1{font-family:Marcellus,serif;font-weight:400;font-size:clamp(30px,7vw,44px);margin:0;line-height:1.15}
+h2{font-family:Marcellus,serif;font-weight:400;font-size:24px;margin:0;color:var(--r)}
+p{margin:0;max-width:66ch}
+.muted{color:var(--muted);font-size:14px}
+.open{align-self:flex-start;background:var(--r);color:#1a1815;text-decoration:none;font-weight:700;letter-spacing:.06em;font-size:14px;border-radius:8px;padding:12px 16px}
+a{color:var(--r);font-weight:600;text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px}
+a.open{text-decoration:none}
+a:hover{text-decoration-thickness:2.5px}
+a:focus-visible{outline:2px solid currentColor;outline-offset:2px;border-radius:2px}
+ul.rel{list-style:none;margin:0;padding:0}
+ul.rel li{border-bottom:1px solid var(--muted)}
+ul.rel a{display:flex;align-items:center;min-height:44px}
+section.group h2{margin:0 0 4px}
 """
 
 CSS_EXTRA = """table.chords{border-collapse:collapse;max-width:100%}
