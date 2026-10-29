@@ -595,6 +595,14 @@ class SeoDeltaTest(unittest.TestCase):
                 title = [t for t in re.findall(r"<title>(.*?)</title>", html_of(slug))][0]
                 self.assertEqual(p.meta("og:title", "property"), title.replace("&amp;", "&"))
 
+    def test_every_title_is_the_h1(self):
+        for slug in ROWS:
+            html = html_of(slug)
+            with self.subTest(page=slug):
+                h1 = re.findall(r"<h1>(.*?)</h1>", html, re.S)
+                self.assertEqual(re.findall(r"<title>(.*?)</title>", html), h1)
+                self.assertEqual(h1, [table()[slug]["name"] + " handpan chords"])
+
     def test_frozen_page_has_no_seo_additions(self):
         html = html_of("d-kurd-10")
         for needle in ("og:image", "og:site_name", "ld+json", "<table", "Last updated"):
@@ -662,6 +670,47 @@ class SeoDeltaTest(unittest.TestCase):
                 self.assertIn("Handpan 101: how to play a handpan", p.norm())
                 self.assertIn("The app has %d chord cards for this scale." % ROWS[slug][2], p.norm())
                 self.assertTrue(any(h.startswith("/#") for h in p.hrefs()))
+
+
+GROUPS = ["Minor", "Celtic minor", "Pentatonic minor", "Major and bright", "Middle Eastern and Japanese"]
+
+
+class HubAndSiblingsTest(unittest.TestCase):
+    def test_every_entry_has_a_known_group_and_the_groups_hold_sixteen(self):
+        rows = gen.load_rows()
+        self.assertEqual([r["group"] for r in rows if r["group"] not in GROUPS], [])
+        self.assertEqual(len(rows), 16)
+        self.assertEqual(list(dict.fromkeys(r["group"] for r in rows)), GROUPS)
+
+    def test_the_hub_lists_all_sixteen_under_the_five_headings_in_order(self):
+        html = read("scales/index.html")
+        self.assertEqual(html, gen.hub_page())
+        self.assertEqual(re.findall(r"<h1>(.*?)</h1>", html), ["Handpan scale chord charts"])
+        self.assertEqual(re.findall(r"<h2>(.*?)</h2>", html), GROUPS)
+        want = [(r["slug"], r["name"]) for r in gen.load_rows()]
+        got = re.findall(r'<li><a href="/scales/([a-z0-9-]+)/">(.*?) handpan chords</a></li>', html)
+        self.assertEqual(got, want)
+        self.assertEqual(Page(html).canonical(), SITE + "scales/")
+        self.assertIsNone(re.search(r"deck", Page(html).visible(), re.I))
+
+    def test_each_page_links_three_other_siblings_and_the_hub(self):
+        for slug, row in table().items():
+            with self.subTest(page=slug):
+                html = html_of(slug)
+                sib = re.findall(r'<li><a href="/scales/([a-z0-9-]+)/">', html)
+                self.assertEqual(len(sib), 3)
+                self.assertEqual(len(set(sib)), 3)
+                self.assertNotIn(slug, sib)
+                self.assertTrue(set(sib) <= set(ROWS))
+                self.assertIn('<a href="/scales/">All 16 handpan scale chord charts</a>', html)
+
+    def test_siblings_come_from_the_same_group_first_then_the_next(self):
+        rows = gen.load_rows()
+        by = {r["slug"]: r for r in rows}
+        self.assertEqual(gen.siblings(by["d-kurd-10"], rows), ["d-kurd-9", "d-integral-9", "c-sharp-mystic-8"])
+        self.assertEqual(gen.siblings(by["d-sabye-9"], rows), ["d-aegean-18", "c-sharp-hijaz-9", "e-romanian-hijaz-9"])
+        self.assertEqual(gen.siblings(by["f-sharp-akebono-9"], rows),
+                         ["c-sharp-hijaz-9", "e-romanian-hijaz-9", "d-kurd-10"])
 
 
 if __name__ == "__main__":
