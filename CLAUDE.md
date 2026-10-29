@@ -30,7 +30,7 @@ Pygmy 18** (53 chords, 32 distinct names). 177 cards in all.
 - `tools/inline_engine.py` - copies those modules into the engine regions of
   `index.html` (`--check` reports drift).
 - `tools/decks.py`, `tools/hifi.py` - print generator.
-- `README.md` - user-facing; hosting and layout provenance live here, not there.
+- `README.md` - user-facing: what the app does, the scales, printing, clone and test, license, and the GitHub Pages note (no test; true by `README.md`). This file holds rules, verified layouts and the design system.
 - `docs/plans/` - plan docs; detail removed from this file lives there.
 
 ## Hard constraints
@@ -182,8 +182,9 @@ exactly where its diagram has it.
       octave digit = 0.66 x its name
 
   No density factor on top of the radius term. `f_*` geom keys are solver
-  outputs; no renderer sizes from them. Each ratio is the larger of two ratio
-  families; never lower one to match the other. **No-shrink (owner):** the baseline is
+  outputs; no renderer sizes from them. The ding, rim/inner and number ratios are the larger of the Hijaz/Amara and
+  Pygmy ratio families; the bottom ratio is Pygmy's alone (0.784 x 1.05, only Pygmy had a
+  bottom shell); never lower one to match the other (`tests/pdfcards.test.js` "the label rule is public: HPE.pdfcards.labelRatio and labelSize match the internal figures"). **No-shrink (owner):** the baseline is
   the PRE-RULE size per renderer - print vs `f_*`, app vs `f_* x 1.05` - asserted
   for Hijaz, Pygmy and Amara 9 only. Note name larger than its index number on
   the five built-ins. Print floor 3.6 pt for every diagram glyph
@@ -218,7 +219,7 @@ exactly where its diagram has it.
   mark the ding, square brackets a bottom note, `|` starts the inner notes. Each
   zone is sorted by MIDI after octave inference; an octaveless note sits just
   above the note typed before it, and a bottom typed before the ding sits just
-  below the note after it (`HPE.core` `scaleInfer`). Errors: `NOTE_OUT_OF_ORDER`, `NOTE_REPEATED`.
+  below the note after it (`HPE.core` `scaleInfer`). Errors include `NOTE_OUT_OF_ORDER` and `NOTE_REPEATED` (a partial list; the full table is `docs/ENGINE-SPEC.md` and `tests/scale.test.js` "every refused row carries its code and its sentence").
   Pre-2026-10 strings (`/` inner, `|` bottoms) are read only by
   `HPE.core.parseLegacySeed`, chosen by the record or link version tag, never by
   sniffing the string. Full grammar: `docs/ENGINE-SPEC.md`, tests/scale.test.js.
@@ -301,7 +302,7 @@ bottom`. `chords[].fields` is the canonical voicing in spelling order.
   sync. The owner's dev-merge grant covers `claude/dev-sync-*`,
   `claude/dev-revert-*` and `claude/dev-unrevert-*` PRs.
 - DEV: https://handpan-cards-dev.pages.dev/ (from `dev`, noindex via `_headers`).
-  `analyticsAllowed()` is false on `.pages.dev`, `file:`, localhost and webdriver.
+  `analyticsAllowed()` is false on `.pages.dev`, `file:`, `localhost`, `127.0.0.1`, `[::1]`, webdriver and the `G-XXXXXXXXXX` placeholder id (`tests/app.test.js` "analyticsAllowed is false for the DEV host on Cloudflare Pages: no gtag script, no config, no event" and its sibling per-condition titles).
 - **Analytics privacy:** `page_location` carries no hash (no `#s=` payload
   reaches GA); no event param names a `custom:` id or is a string over 40
   characters, and `share_copy` carries no id, name or code; the consent defaults are queued before
