@@ -715,3 +715,29 @@ class HubAndSiblingsTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AlsoTryTest(unittest.TestCase):
+    LINKS = [
+        ("C# Annaziska 9", "https://handpan.raywu.org/#s=6/(Cs3)_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4/C%23+Annaziska+9/24f03b"),
+        ("C# Annaziska 13", "https://handpan.raywu.org/#s=6/(Cs3)_uE3_uFs3_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4_uB4_uCs5/C%23+Annaziska+13/palette-2/402803"),
+    ]
+
+    def anchors(self, slug):
+        return re.findall(r'<a href="([^"]*)">([^<]*)</a>', read("scales/%s/index.html" % slug))
+
+    def test_only_the_two_kurd_pages_carry_both_links_with_exact_text_and_href(self):
+        for slug in ROWS:
+            if not exists(slug):
+                continue
+            with self.subTest(slug=slug):
+                found = self.anchors(slug)
+                has = [(t, h) for t, h in self.LINKS if (h, t) in found]
+                if slug in ("d-kurd-9", "d-kurd-10"):
+                    self.assertEqual(has, self.LINKS)
+                    page = read("scales/%s/index.html" % slug)
+                    self.assertIn("Also try", page)
+                    self.assertIn('<ul class="rel also">', page)
+                else:
+                    self.assertEqual(has, [])
+                    self.assertNotIn("Annaziska", read("scales/%s/index.html" % slug))
