@@ -76,3 +76,162 @@
 # Re-cut 2026-10-16 (share url, lane SU-A): the Scales group gained #share-copy and #share-url; the moved copy was regenerated from the current panel. The mutation itself is unchanged.
 # Re-cut 2026-10-17 (share icon, lane I): #share-copy left the Scales row for the header and #share-url left the panel; the moved copy was regenerated from the current panel. The mutation itself is unchanged.
 # Refreshed from committed compact-sites source; ancestry fault unchanged.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1428,6 +1428,77 @@ html.about-open{overflow:hidden}
+   <nav class="decks" id="decks"></nav>
+   <p id="saved-status" role="status" hidden></p>
+   <button type="button" id="saved-temporary-use" class="mode" hidden>USE THIS TAB TEMPORARILY</button>
++<div id="settings-scrim" hidden></div>
++<div id="settings-panel" aria-labelledby="settings-title" hidden>
++  <h2 id="settings-title" class="sr-only">Settings</h2>
++  <div class="panel-group">
++    <h3 class="panel-heading">Flash cards</h3>
++    <div class="modebar">
++      <button class="mode on" id="modeA" aria-pressed="true">NAME &rarr; NOTES</button>
++      <button class="mode" id="modeB" aria-pressed="false">NOTES &rarr; NAME</button>
++    </div>
++    <h3 class="panel-heading" id="panel-prog-heading">Chord progression</h3>
++    <div class="tierbar" role="group" aria-labelledby="panel-prog-heading">
++      <button class="mode" id="tier-basic" type="button" aria-pressed="false">EASY</button>
++      <button class="mode" id="tier-intermediate" type="button" aria-pressed="false">MEDIUM</button>
++      <button class="mode" id="tier-advanced" type="button" aria-pressed="false">HARD</button>
++    </div>
++    <!-- Shown only in mode S (setMode() toggles .hidden). O6/Part C: our own
++         wording plus one outbound link to Moritz.handpan's video. -->
++    <p class="panel-note" id="panel-seq-note" hidden>
++      7 different ways to play chords:
++      <a id="seq-source-link" href="https://www.youtube.com/shorts/YcmgdgZTpHc"
++         target="_blank" rel="noopener">Watch on YouTube</a>
++    </p>
++  </div>
++  <!-- M2, 2026-09-28: "+ Add a scale" moved out of the deck strip and into its
++       own "Scales" group, .mode-styled like the panel's other buttons. The id
++       (deck-add) is kept: hideSheet()/selectDeck()/the tests all anchor on it,
++       and it still names what the control does. -->
++  <div class="panel-group" id="panel-scales-group">
++    <h3 class="panel-heading">Scales</h3>
++    <div class="modebar">
++      <button class="mode" type="button" id="deck-add" aria-haspopup="dialog">+ ADD A SCALE</button>
++    </div>
++    <button class="mode" type="button" id="deck-restore" hidden>RESET SEEDED SCALES</button>
++  </div>
++  <div class="panel-group">
++    <h3 class="panel-heading">Print this scale</h3>
++    <div class="prints">
++      <button type="button" id="print-download" onclick="downloadDeckPDF('shop', this); closePanel();">DOWNLOAD PDF</button>
++      <!-- The paper choice keeps the panel open (design direction, "After an
++           action"): the next tap is a print button, not a new task. -->
++      <select id="print-paper-select" aria-label="Paper size" onchange="setPrintPaper(this.value)">
++        <option value="letter">LETTER</option>
++        <option value="a4">A4</option>
++      </select>
++    </div>
++  </div>
++  <!-- Resources (docs/plans/2026-10-29-menu-explore-scales-subplan.md): three
++       full-width rows, EXPLORE SCALES and HANDPAN 101 as same-tab links, then
++       the ABOUT button (an in-app view: no href, no res- id). The outside
++       sites and videos live on the Handpan 101 page. The links carry no
++       onclick - a click must NOT call closePanel() (amendment 3).
++       Joined into panelStops()/the Tab trap below, in DOM order. -->
++  <div class="panel-col">
++  <div class="panel-group">
++    <h3 class="panel-heading">Resources</h3>
++    <div class="modebar">
++      <a class="mode" id="res-explore" href="/scales/">EXPLORE SCALES</a>
++    </div>
++    <div class="modebar">
++      <a class="mode" id="res-handpan-101"
++         href="/handpan-101/"
++         aria-label="Handpan 101">HANDPAN 101</a>
++    </div>
++    <div class="modebar">
++      <button class="mode" type="button" id="about-open" aria-haspopup="dialog">ABOUT</button>
++    </div>
++  </div>
++  <div class="panel-group"><h3 class="panel-heading" id="panel-lang-heading">Language</h3><select id="lang-select" aria-labelledby="panel-lang-heading"></select></div>
++  </div>
++</div>
++
+ </header>
+ 
+ <main>
+@@ -1778,77 +1849,6 @@ html.about-open{overflow:hidden}
+      below-breakpoint, modal presentation. At >=1024x700 the trigger that
+      calls openPanel() is display:none, so the panel never gains them and
+      the static sidebar is correctly plain, non-modal markup. -->
+-<div id="settings-scrim" hidden></div>
+-<div id="settings-panel" aria-labelledby="settings-title" hidden>
+-  <h2 id="settings-title" class="sr-only">Settings</h2>
+-  <div class="panel-group">
+-    <h3 class="panel-heading">Flash cards</h3>
+-    <div class="modebar">
+-      <button class="mode on" id="modeA" aria-pressed="true">NAME &rarr; NOTES</button>
+-      <button class="mode" id="modeB" aria-pressed="false">NOTES &rarr; NAME</button>
+-    </div>
+-    <h3 class="panel-heading" id="panel-prog-heading">Chord progression</h3>
+-    <div class="tierbar" role="group" aria-labelledby="panel-prog-heading">
+-      <button class="mode" id="tier-basic" type="button" aria-pressed="false">EASY</button>
+-      <button class="mode" id="tier-intermediate" type="button" aria-pressed="false">MEDIUM</button>
+-      <button class="mode" id="tier-advanced" type="button" aria-pressed="false">HARD</button>
+-    </div>
+-    <!-- Shown only in mode S (setMode() toggles .hidden). O6/Part C: our own
+-         wording plus one outbound link to Moritz.handpan's video. -->
+-    <p class="panel-note" id="panel-seq-note" hidden>
+-      7 different ways to play chords:
+-      <a id="seq-source-link" href="https://www.youtube.com/shorts/YcmgdgZTpHc"
+-         target="_blank" rel="noopener">Watch on YouTube</a>
+-    </p>
+-  </div>
+-  <!-- M2, 2026-09-28: "+ Add a scale" moved out of the deck strip and into its
+-       own "Scales" group, .mode-styled like the panel's other buttons. The id
+-       (deck-add) is kept: hideSheet()/selectDeck()/the tests all anchor on it,
+-       and it still names what the control does. -->
+-  <div class="panel-group" id="panel-scales-group">
+-    <h3 class="panel-heading">Scales</h3>
+-    <div class="modebar">
+-      <button class="mode" type="button" id="deck-add" aria-haspopup="dialog">+ ADD A SCALE</button>
+-    </div>
+-    <button class="mode" type="button" id="deck-restore" hidden>RESET SEEDED SCALES</button>
+-  </div>
+-  <div class="panel-group">
+-    <h3 class="panel-heading">Print this scale</h3>
+-    <div class="prints">
+-      <button type="button" id="print-download" onclick="downloadDeckPDF('shop', this); closePanel();">DOWNLOAD PDF</button>
+-      <!-- The paper choice keeps the panel open (design direction, "After an
+-           action"): the next tap is a print button, not a new task. -->
+-      <select id="print-paper-select" aria-label="Paper size" onchange="setPrintPaper(this.value)">
+-        <option value="letter">LETTER</option>
+-        <option value="a4">A4</option>
+-      </select>
+-    </div>
+-  </div>
+-  <!-- Resources (docs/plans/2026-10-29-menu-explore-scales-subplan.md): three
+-       full-width rows, EXPLORE SCALES and HANDPAN 101 as same-tab links, then
+-       the ABOUT button (an in-app view: no href, no res- id). The outside
+-       sites and videos live on the Handpan 101 page. The links carry no
+-       onclick - a click must NOT call closePanel() (amendment 3).
+-       Joined into panelStops()/the Tab trap below, in DOM order. -->
+-  <div class="panel-col">
+-  <div class="panel-group">
+-    <h3 class="panel-heading">Resources</h3>
+-    <div class="modebar">
+-      <a class="mode" id="res-explore" href="/scales/">EXPLORE SCALES</a>
+-    </div>
+-    <div class="modebar">
+-      <a class="mode" id="res-handpan-101"
+-         href="/handpan-101/"
+-         aria-label="Handpan 101">HANDPAN 101</a>
+-    </div>
+-    <div class="modebar">
+-      <button class="mode" type="button" id="about-open" aria-haspopup="dialog">ABOUT</button>
+-    </div>
+-  </div>
+-  <div class="panel-group"><h3 class="panel-heading" id="panel-lang-heading">Language</h3><select id="lang-select" aria-labelledby="panel-lang-heading"></select></div>
+-  </div>
+-</div>
+-
+ <!-- The scale engine, inlined verbatim from src/engine/*.js. The app is
+      single-file by contract, so these are copies rather than external script
+      references: index.html ships with the engine already in it and needs no
