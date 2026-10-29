@@ -5,7 +5,7 @@
 // colours in CSS vars + markup, shuffle toggling, absence of German, 177 cards.
 //
 // Everything asserted here is derived from CLAUDE.md ("verified card conventions",
-// "instrument layouts", "app data model") or from user-observable behaviour, never
+// "instrument layouts", "data model") or from user-observable behaviour, never
 // from restating the implementation. Field identities come from the deck data's
 // NOTE NAMES, which is an independent route to the pitch-class rule the app
 // implements with midi % 12.
@@ -148,7 +148,7 @@ async function hashChange(app,hash,options={}) {
 
 /* ------------------------------------------------------------------ helpers */
 
-// Field tuple layout, per CLAUDE.md "App data model":
+// Field tuple layout, per CLAUDE.md "Data model":
 // fields{id:[name, octave, midi, zone, angle, label]}
 const F_NAME = 0, F_OCT = 1, F_MIDI = 2, F_ZONE = 3, F_LABEL = 5;
 

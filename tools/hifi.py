@@ -112,8 +112,8 @@ def note_w(name, octv, font, size):
 # and Amara; bottom (Pygmy only) 0.0 / +5.0%, the one pure-1.05 row; and the
 # index number +15.8% in BOTH renderers on Hijaz and Amara with no 1.05 in it
 # at all. Three of the seven deck-zone combinations move for a reason that
-# has nothing to do with the 1.05. The full table is in CLAUDE.md under
-# "Where the ratios come from, and what actually changed".
+# has nothing to do with the 1.05. The label rule is in CLAUDE.md under
+# "Design system"; the per-zone ratios are pinned by tests/test_render_agreement.py.
 #
 # Drawing over the solver's budget for the field circle is safe because
 # (1) ring clearance is computed from f_num alone (the reach/ext block in
