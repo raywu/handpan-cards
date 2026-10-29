@@ -198,7 +198,9 @@ class Page(HTMLParser):
 
 
 def cards(html):
-    return re.findall(r'<div class="cname">(.*?)</div>\s*<div class="cardhost"([^>]*)>\s*<template shadowrootmode="open">(.*?)</template>', html, re.S)
+    return [(re.search(r'<div class="fname">(.*?)</div>', body, re.S).group(1).replace("<sup>", "").replace("</sup>", ""),
+             re.search(r'<div class="diagwrap" role="img"([^>]*)>', body).group(1), body)
+            for body in re.findall(r'<template shadowrootmode="open">(.*?)</template>', html, re.S)]
 
 
 def strings(node):
@@ -374,7 +376,8 @@ class ScalePagesTest(unittest.TestCase):
                     self.assertIn(colors["root"], body)
                     self.assertIn(colors["tone"], body)
                     self.assertRegex(body, r"background:\s*#fff")
-                    self.assertRegex(body, r"border:\s*3px solid var\(--root\)")
+                    self.assertRegex(body, r"\.card\{[^}]*border:\s*3px solid var\(--root\)")
+                    self.assertRegex(body, r"\.front\{[^}]*border:\s*3px solid var\(--root\)")
                     self.assertNotIn("<script", body)
 
     def test_card_palette_matches_the_row(self):
@@ -401,7 +404,9 @@ class ScalePagesTest(unittest.TestCase):
             with self.subTest(page=slug):
                 self.assertIn("min(322px,100%)", html)
                 self.assertNotIn("touch-action:none", html.replace(" ", ""))
-                self.assertNotIn("pointer-events:none", html.replace(" ", ""))
+                css = html.replace(" ", "")
+                for sel in re.findall(r"([^{}]*)\{[^{}]*pointer-events:none", css):
+                    self.assertTrue(sel.strip().startswith(".prog"), "only the stepper takes pointer-events:none: " + sel)
 
     def test_history_section_has_popularized_by_only_when_the_row_says_so(self):
         for slug, (_, _, _, popularized, _) in ROWS.items():
@@ -415,7 +420,7 @@ class ScalePagesTest(unittest.TestCase):
                 self.assertNotIn("Created by", html)
                 if popularized:
                     self.assertTrue(body.rstrip().endswith("</dl>"))
-                self.assertLess(html.index('class="history"'), html.index('class="cname"'))
+                self.assertLess(html.index('class="history"'), html.index('class="prog"'))
 
     def test_the_notes_line_matches_the_fixture_deck(self):
         for slug in ROWS:
@@ -543,6 +548,61 @@ class ScalePagesTest(unittest.TestCase):
                 self.assertLess(len(html_of(slug).encode("utf-8")), SIZE_CAP)
 
 
+class StepperTest(unittest.TestCase):
+    def test_one_progression_stepper_of_three_steps_with_one_checked(self):
+        for slug in ROWS:
+            html = html_of(slug)
+            with self.subTest(page=slug):
+                self.assertEqual(html.count('class="prog"'), 1)
+                radios = re.findall(r'<input type="radio"([^>]*)>', html)
+                self.assertEqual(len(radios), 3)
+                self.assertEqual(sum(" checked" in r for r in radios), 1)
+                self.assertIn("checked", radios[0])
+                for i, r in enumerate(radios, 1):
+                    self.assertRegex(r, r'aria-label="Chord %d of 3: [A-G]\S*"' % i)
+                self.assertEqual(re.findall(r'<div class="step">(.*?)</div>', html),
+                                 ["Chord 1 of 3", "Chord 2 of 3", "Chord 3 of 3"])
+
+    def test_each_card_has_a_flip_checkbox_a_front_with_the_name_and_a_back_with_the_diagram(self):
+        for slug in ROWS:
+            html = html_of(slug)
+            names = [c["main"] + c["sup"] for c in fixture()[slug]["cards"]]
+            with self.subTest(page=slug):
+                found = cards(html)
+                self.assertEqual([n for n, _, _ in found], names)
+                for _, _, body in found:
+                    self.assertEqual(body.count('type="checkbox"'), 1)
+                    self.assertIn('aria-label="Flip card: ', body)
+                    front = re.search(r'<div class="face front">(.*?)</div></div><div class="face back">', body, re.S).group(1)
+                    self.assertIn("Tap to reveal the notes", front)
+                    self.assertNotIn("<svg", front)
+                    back = body.split('class="face back"')[1]
+                    self.assertIn("<svg", back)
+                    self.assertIn("prefers-reduced-motion", body)
+                    self.assertIn("-webkit-backface-visibility", body)
+                    self.assertIn("preserve-3d", body)
+
+    def test_no_prev_label_on_step_one_and_no_next_label_on_step_three(self):
+        for slug in ROWS:
+            html = html_of(slug)
+            with self.subTest(page=slug):
+                navs = re.findall(r'<div class="nav">(.*?)</div></div>', html)
+                self.assertEqual(len(navs), 3)
+                self.assertNotIn("PREV", navs[0])
+                self.assertIn('for="p2">NEXT', navs[0])
+                self.assertIn('for="p1">PREV', navs[1])
+                self.assertIn('for="p3">NEXT', navs[1])
+                self.assertIn('for="p2">PREV', navs[2])
+                self.assertNotIn("NEXT", navs[2])
+
+    def test_only_the_json_ld_block_is_a_script_and_the_light_dom_progression_line_stays(self):
+        for slug in ROWS:
+            html = html_of(slug)
+            with self.subTest(page=slug):
+                self.assertLessEqual(html.count("<script"), 1)
+                self.assertIn("Starter progression:", html)
+
+
 class ContrastTest(unittest.TestCase):
     def test_accents_pass_the_theme_contrast_checks(self):
         for slug, row in table().items():
@@ -608,17 +668,11 @@ class SeoDeltaTest(unittest.TestCase):
         for needle in ("og:image", "og:site_name", "ld+json", "<table", "Last updated"):
             self.assertNotIn(needle, html)
 
-    def test_visible_chord_table_lists_the_picked_cards(self):
-        for slug in self.new_slugs():
-            html = html_of(slug)
+    def test_there_is_no_chord_table_on_any_page(self):
+        for slug in ROWS:
             with self.subTest(page=slug):
-                body = re.search(r"<table class=\"chords\">(.*?)</table>", html, re.S).group(1)
-                rows = re.findall(r"<tr><td>(.*?)</td><td>(.*?)</td><td>(.*?)</td></tr>", body)
-                self.assertEqual(len(rows), 3)
-                for (name, notes, nums), c in zip(rows, fixture()[slug]["cards"]):
-                    self.assertEqual(name, c["main"] + c["sup"])
-                    self.assertEqual(notes, c["notes"])
-                    self.assertEqual(nums, c["numbers"])
+                self.assertNotIn("<table", html_of(slug))
+                self.assertNotIn("table.chords", html_of(slug))
 
     def test_json_ld_is_one_graph_and_every_string_is_visible(self):
         for slug in self.new_slugs():
