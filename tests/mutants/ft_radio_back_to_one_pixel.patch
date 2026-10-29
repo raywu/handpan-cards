@@ -1,4 +1,4 @@
-# kills: the adjacent radio equals the nav label it replaces
+# kills: FT: d-kurd-9 at 380x780: in each checked state each adjacent radio equals the visible nav label it replaces, the checked radio sits on the nav row with no pointer events, and every far radio has no pointer events
 # suite: node --test --test-name-pattern ^FT:.d-kurd-9.at.380x780:.in.each.checked.state tests/e2e.test.js
 # The hit-target radio shrinks back to 1px: a tap near a fold no longer lands on the radio itself.
 diff --git a/scales/d-kurd-9/index.html b/scales/d-kurd-9/index.html

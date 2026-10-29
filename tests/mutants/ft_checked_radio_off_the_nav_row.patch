@@ -1,4 +1,4 @@
-# kills: Tab onto the checked step brings the nav into view
+# kills: FT: d-kurd-9 at 380x780: Tab onto the checked step 2 brings the nav into view and the chord name's top at or below 0 when both fit
 # suite: node --test --test-name-pattern ^FT:.d-kurd-9.at.380x780:.Tab.onto.the.checked.step.2 tests/e2e.test.js
 # The checked radio leaves the nav row, so Tab focus no longer scrolls the stepper into view.
 diff --git a/scales/d-kurd-9/index.html b/scales/d-kurd-9/index.html
