@@ -570,7 +570,7 @@ class StepperTest(unittest.TestCase):
                 self.assertEqual([n for n, _, _ in found], names)
                 for _, _, body in found:
                     self.assertEqual(body.count('type="checkbox"'), 1)
-                    self.assertIn('aria-label="Flip card"', body)
+                    self.assertIn('aria-label="Flip card: ', body)
                     front = re.search(r'<div class="face front">(.*?)</div></div><div class="face back">', body, re.S).group(1)
                     self.assertIn("Tap to reveal the notes", front)
                     self.assertNotIn("<svg", front)

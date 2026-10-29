@@ -264,7 +264,7 @@ section.related h2,section.group h2{color:var(--fg);font-size:20px;margin:0 0 4p
 """
 
 CSS_EXTRA = """.prog{display:flex;flex-direction:column;align-items:center;gap:10px;position:relative}
-.prog>input{position:absolute;width:1px;height:1px;opacity:0;margin:0}
+.prog>input{position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;margin:0}
 .prog .cards{width:min(322px,100%)}
 .prog .slot{display:none;gap:10px}
 .prog .step{font-weight:700;font-size:14px;letter-spacing:.06em;color:var(--muted);padding:2px 6px;border-radius:4px}
@@ -324,7 +324,7 @@ def card_html(row, data, c, i, n):
     return (
         '<div class="slot"><div class="step">Chord %d of %d</div>\n'
         '<div class="cardhost"><template shadowrootmode="open"><style>%s</style>'
-        '<label class="wrap"><input type="checkbox" class="flip" aria-label="Flip card">'
+        '<label class="wrap"><input type="checkbox" class="flip" aria-label="Flip card: %s">'
         '<div class="inner"><div class="face front">%s<div class="fname">%s</div>'
         '<div class="hint">Tap to reveal the notes</div></div>'
         '<div class="face back"><div class="card"><div class="hdr"><div class="l">%s<br><span class="num">#%d</span>%s</div>'
@@ -332,7 +332,7 @@ def card_html(row, data, c, i, n):
         '<div class="lines">%s<div class="notesline">%s</div><div class="numline">%s</div></div></div></div>'
         '</div></label></template></div>\n'
         '<div class="nav">%s</div></div>\n'
-    ) % (i, n, css, fdeg, name_html, esc(data["name"]), c["n"], deg, esc(c["subtitle"]), esc(label), c["svg"],
+    ) % (i, n, css, esc(name), fdeg, name_html, esc(data["name"]), c["n"], deg, esc(c["subtitle"]), esc(label), c["svg"],
          badge, c["notes_html"], c["numbers_html"], nav)
 
 
@@ -436,7 +436,7 @@ def render(row, data, rows_by_slug, copy, alt=None):
     out.append("<p>Starter progression: <b>%s</b>%s%s</p>\n" % (esc(", ".join(names)), prog_degs,
                                                               copy["progression_tail_html"]))
     n = len(cards)
-    out.append('<div class="prog">\n')
+    out.append('<div class="prog" role="radiogroup" aria-label="Chord steps">\n')
     for i, c in enumerate(cards, 1):
         out.append('<input type="radio" name="step" id="p%d"%s aria-label="Chord %d of %d: %s">\n'
                    % (i, " checked" if i == 1 else "", i, n, esc(c["main"] + c["sup"])))

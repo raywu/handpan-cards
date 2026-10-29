@@ -19767,6 +19767,31 @@ function run() {
       });
     }
 
+    for (const [w, h] of [[844, 390], [380, 780]]) {
+      test(`FT: tapping NEXT and PREV at ${w}x${h} does not scroll the page`, async () => {
+        await b.setViewport(w, h, true);
+        await b.send("Page.navigate", { url: pageUrl("d-kurd-9") });
+        await b.waitFor(`document.readyState === "complete" && document.querySelector(".prog .slot")`, { label: "stepper" });
+        const state = (sel) => b.eval(`
+          const l = document.querySelector(${JSON.stringify(sel)}).getBoundingClientRect();
+          return { y: scrollY, top: l.top, bottom: l.bottom, vh: innerHeight };`);
+        const tapAt = async (sel) => {
+          const pt = await center(sel);
+          const before = await state(sel);
+          for (const type of ["mousePressed", "mouseReleased"]) {
+            await b.send("Input.dispatchMouseEvent", { type, x: pt.x, y: pt.y, button: "left", clickCount: 1 });
+          }
+          await new Promise((r) => setTimeout(r, 100));
+          assert.ok(Math.abs((await b.eval(`return scrollY;`)) - before.y) <= 2, `${sel} tap leaves scrollY alone`);
+        };
+        await tapAt(".prog .slot:nth-child(1) .nav label");
+        await tapAt(".prog .slot:nth-child(2) .nav label:last-child");
+        const after = await state(".prog .slot:nth-child(3) .nav label");
+        assert.ok(after.top >= 0 && after.bottom <= after.vh, "PREV on the last step stays inside the viewport");
+        await tapAt(".prog .slot:nth-child(3) .nav label");
+      });
+    }
+
     test("FT: Tab reaches the radio group, arrows step, Space on the flip checkbox flips", async () => {
       await b.setViewport(380, 780, true);
       await b.send("Page.navigate", { url: pageUrl("d-kurd-9") });
