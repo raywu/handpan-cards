@@ -13518,6 +13518,8 @@ function sheetRoute() {
 // user can edit the address bar, and the question this answers is "did we push
 // something that still needs popping", which only we know.
 let sheetRouted = false;
+// Set by a hashchange to #add: the browser already pushed the entry showSheet() would push.
+let reuseEntry = false;
 
 /** Make one caller's own background set inert (or live again). The sheet and
  *  the panel pass different sets on purpose - see `background` and
@@ -13528,7 +13530,7 @@ function setInert(on, targets) {
     if (on) el.setAttribute("aria-hidden", "true"); else el.removeAttribute("aria-hidden");
   }
 }
-function showSheet(opener, reuseEntry) {
+function showSheet(opener) {
   retireLinkUI();
   sheetOpener = opener || addChip;
   sheetOpenerSelection=[...document.getElementById("decks").children].includes(sheetOpener)?{kind:sheetOpener.getAttribute("data-selection-kind"),id:sheetOpener.getAttribute("data-selection-id")}:null;
@@ -13540,6 +13542,7 @@ function showSheet(opener, reuseEntry) {
   applyKbOffset();
   if (reuseEntry) history.replaceState({ scalePage: true }, "", sheetRoute());
   else history.pushState({ scalePage: true }, "", sheetRoute());
+  reuseEntry = false;
   sheetRouted = true;
   // The owner's second request: do not steal focus into the box, so the whole
   // page is readable before anything is typed and no soft keyboard covers it.
@@ -13628,10 +13631,10 @@ function resetSheetState(edit, target = selection) {
   sheetBaseline = sheetKey();
 }
 // The create path.
-function openScaleSheet(opener, reuseEntry) {
+function openScaleSheet(opener) {
   shareUrl.setAttribute("hidden", "");
   resetSheetState(null);
-  showSheet(opener, reuseEntry);
+  showSheet(opener);
 }
 // The Edit path [design-review 7A]: the SAME sheet, prefilled from the selected
 // deck, seeded or custom.
@@ -15490,7 +15493,8 @@ window.addEventListener("hashchange", async () => {
     return;
   }
   if (location.hash === ADD_ROUTE) {
-    openScaleSheet(desktopMQ.matches ? addChip : settingsTrigger, true);
+    reuseEntry = true;
+    openScaleSheet(desktopMQ.matches ? addChip : settingsTrigger);
     return;
   }
   if (location.hash.indexOf(DECK_ROUTE) !== 0) return;
