@@ -124,10 +124,10 @@ exactly where its diagram has it.
   of 5 in [0, 360) or null; bottom ring only; applied LAST (after mirrorBottom
   and seats); an overlap is never allowed (floor = smallest multiple of 5 above
   the touching angle, at most 15); `seats.bottom` and `angles` never coexist.
-  A moved note keeps the label of the seat it left, except the first slide on a
-  seated ring, which folds seats into angles and renumbers U1..Un low to high once
-  (AFK U1; owner may flip). Detail:
-  `docs/plans/2026-10-23-free-placement.md`.
+  Seat numbers belong to the seat (rule N, owner 2026-10-23): a swap trades only
+  the two labels, a slide that passes a note renumbers by home cyclic order, and
+  the first slide on a seated ring folds seats into angles keeping every seat's
+  number.
 
 ## Verified card conventions
 
