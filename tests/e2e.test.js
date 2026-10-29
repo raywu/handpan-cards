@@ -19720,5 +19720,69 @@ function run() {
     });
   }
 
+
+  describe("FT: scale page flip cards", () => {
+    const pageUrl = (slug) => URL.replace(/index\.html$/, "") + "scales/" + slug + "/index.html";
+    const center = (sel) => b.eval(`
+      document.querySelector(${JSON.stringify(sel)}).scrollIntoView({ block: "center" });
+      const r = document.querySelector(${JSON.stringify(sel)}).getBoundingClientRect();
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+    const tap = async (sel) => {
+      const pt = await center(sel);
+      for (const type of ["mousePressed", "mouseReleased"]) {
+        await b.send("Input.dispatchMouseEvent", { type, x: pt.x, y: pt.y, button: "left", clickCount: 1 });
+      }
+    };
+    const visibleStep = () => b.eval(`
+      const s = [...document.querySelectorAll(".prog .slot")].filter((x) => getComputedStyle(x).display !== "none");
+      return { n: s.length, step: s[0] && s[0].querySelector(".step").textContent };`);
+    const flipped = () => b.eval(`
+      const s = [...document.querySelectorAll(".prog .slot")].find((x) => getComputedStyle(x).display !== "none");
+      return s.querySelector(".cardhost").shadowRoot.querySelector(".flip").checked;`);
+    const cardRect = () => b.eval(`
+      const s = [...document.querySelectorAll(".prog .slot")].find((x) => getComputedStyle(x).display !== "none");
+      const r = s.querySelector(".cardhost").getBoundingClientRect();
+      return { w: r.width, h: r.height };`);
+
+    for (const slug of ["d-kurd-10", "d-kurd-9"]) {
+      test(`FT: ${slug} at 380x780 shows one chord, NEXT steps, a tap flips, and nothing shifts`, async () => {
+        await b.setViewport(380, 780, true);
+        await b.send("Page.navigate", { url: pageUrl(slug) });
+        await b.waitFor(`document.readyState === "complete" && document.querySelector(".prog .slot")`, { label: "stepper" });
+        assert.deepStrictEqual(await visibleStep(), { n: 1, step: "Chord 1 of 3" });
+        assert.strictEqual(await b.eval(`return !![...document.querySelectorAll(".prog .nav label")].find((l) => l.textContent === "PREV" && l.offsetParent);`), false, "no PREV on step 1");
+        const before = await cardRect();
+        assert.strictEqual(await flipped(), false);
+        await tap(".prog .slot:nth-child(1) .cardhost");
+        assert.strictEqual(await flipped(), true, "tap flips");
+        assert.deepStrictEqual(await cardRect(), before, "flip shifts nothing");
+        const nav = await b.eval(`
+          const l = [...document.querySelectorAll(".prog .slot:nth-child(1) .nav label")][0];
+          const r = l.getBoundingClientRect(); return { w: r.width, h: r.height, t: l.textContent };`);
+        assert.strictEqual(nav.t, "NEXT");
+        assert.ok(nav.w >= 44 && nav.h >= 44, "NEXT is a 44px target");
+        await tap(".prog .slot:nth-child(1) .nav label");
+        assert.deepStrictEqual(await visibleStep(), { n: 1, step: "Chord 2 of 3" });
+        assert.deepStrictEqual(await cardRect(), before, "stepping shifts nothing");
+      });
+    }
+
+    test("FT: Tab reaches the radio group, arrows step, Space on the flip checkbox flips", async () => {
+      await b.setViewport(380, 780, true);
+      await b.send("Page.navigate", { url: pageUrl("d-kurd-9") });
+      await b.waitFor(`document.readyState === "complete" && document.querySelector(".prog .slot")`, { label: "stepper" });
+      await b.eval(`document.querySelector("#p1").focus(); return true;`);
+      await b.key("ArrowRight", "ArrowRight", 39);
+      assert.strictEqual((await visibleStep()).step, "Chord 2 of 3");
+      assert.strictEqual(await b.eval(`return document.activeElement.id;`), "p2");
+      await b.key("ArrowLeft", "ArrowLeft", 37);
+      assert.strictEqual((await visibleStep()).step, "Chord 1 of 3");
+      await b.eval(`document.querySelector(".prog .slot:nth-child(1) .cardhost").shadowRoot.querySelector(".flip").focus(); return true;`);
+      await b.send("Input.dispatchKeyEvent", { type: "keyDown", key: " ", code: "Space", text: " ", windowsVirtualKeyCode: 32 });
+      await b.send("Input.dispatchKeyEvent", { type: "keyUp", key: " ", code: "Space", windowsVirtualKeyCode: 32 });
+      assert.strictEqual(await flipped(), true, "Space flips");
+    });
+  });
+
 }
 

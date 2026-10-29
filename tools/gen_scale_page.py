@@ -245,8 +245,6 @@ p{margin:0;max-width:66ch}
 section.scale{border-top:3px solid var(--r);padding-top:16px;display:flex;flex-direction:column;gap:12px}
 section.plain h2,section.history h2{color:var(--fg);font-size:20px;margin:0 0 4px}
 .slot{width:min(322px,100%);display:flex;flex-direction:column;align-items:center}
-.cname{font-family:Marcellus,serif;font-size:28px;color:var(--r)}
-.row{display:flex;flex-wrap:wrap;gap:16px;justify-content:center}
 .ctas{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
 .open{align-self:flex-start;background:var(--r);color:#fff;text-decoration:none;font-weight:700;letter-spacing:.06em;font-size:14px;border-radius:8px;padding:12px 16px}
 @media (prefers-color-scheme:dark){.open{color:#15181b}}
@@ -265,12 +263,31 @@ ul.rel a{display:flex;align-items:center;min-height:44px}
 section.related h2,section.group h2{color:var(--fg);font-size:20px;margin:0 0 4px}
 """
 
-CSS_EXTRA = """table.chords{border-collapse:collapse;max-width:100%}
-table.chords th,table.chords td{text-align:left;padding:6px 14px 6px 0;border-bottom:1px solid var(--muted)}
-table.chords th{font-weight:700}
+CSS_EXTRA = """.prog{display:flex;flex-direction:column;align-items:center;gap:10px;position:relative}
+.prog>input{position:absolute;width:1px;height:1px;opacity:0;margin:0}
+.prog .cards{width:min(322px,100%)}
+.prog .slot{display:none;gap:10px}
+.prog .step{font-weight:700;font-size:14px;letter-spacing:.06em;color:var(--muted);padding:2px 6px;border-radius:4px}
+.prog .nav{display:flex;justify-content:space-between;width:100%}
+.prog .nav label,.prog .nav span{min-width:88px;min-height:44px;display:flex;align-items:center;justify-content:center;box-sizing:border-box}
+.prog .nav label{cursor:pointer;font-weight:700;letter-spacing:.06em;font-size:14px;color:var(--r);border:2px solid var(--r);border-radius:8px}
+#p1:checked~.cards .slot:nth-child(1),#p2:checked~.cards .slot:nth-child(2),#p3:checked~.cards .slot:nth-child(3){display:flex}
+#p1:focus-visible~.cards .slot:nth-child(1) .step,#p2:focus-visible~.cards .slot:nth-child(2) .step,#p3:focus-visible~.cards .slot:nth-child(3) .step{outline:2px solid var(--r);outline-offset:2px}
 """
 
 CARD_CSS = """:host{display:block;width:min(322px,100%%);--root:%(root)s;--tone:%(tone)s}
+.wrap{display:block;position:relative;perspective:1200px;cursor:pointer;min-height:44px}
+.flip{position:absolute;inset:0;width:100%%;height:100%%;opacity:0;margin:0;cursor:pointer;z-index:1}
+.inner{display:grid;transition:transform .5s;transform-style:preserve-3d}
+.flip:checked+.inner{transform:rotateY(180deg)}
+.flip:focus-visible+.inner{outline:3px solid var(--root);outline-offset:3px;border-radius:14px}
+@media (prefers-reduced-motion:reduce){.inner{transition:none}}
+.face{grid-area:1/1;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.back{transform:rotateY(180deg)}
+.front{box-sizing:border-box;background:#fff;color:#242424;border:3px solid var(--root);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:12px 8px;position:relative}
+.front .fdeg{position:absolute;top:12px;left:13px;font:600 9px/1.5 "Nunito Sans",system-ui,sans-serif;letter-spacing:.12em;color:var(--root)}
+.front .fname{font-family:Marcellus,serif;font-size:44px;line-height:1.1;color:var(--root);text-align:center}
+.front .hint{font:600 12px/1.3 "Nunito Sans",system-ui,sans-serif;letter-spacing:.08em;color:#5d646c}
 .card{box-sizing:border-box;width:100%%;background:#fff;color:#242424;border:3px solid var(--root);border-radius:14px;padding:12px 8px 13px;font-family:"Nunito Sans",system-ui,sans-serif}
 .hdr{display:flex;justify-content:space-between;align-items:flex-start;padding:0 5px}
 .hdr .l{font:600 9px/1.5 "Nunito Sans",system-ui,sans-serif;letter-spacing:.12em}
@@ -288,7 +305,7 @@ CARD_CSS = """:host{display:block;width:min(322px,100%%);--root:%(root)s;--tone:
 BADGE_CSS = '\n.badge{font:600 9px/1 "Nunito Sans",system-ui,sans-serif;letter-spacing:.14em;color:#E27005;margin-bottom:6px}'
 
 
-def card_html(row, data, c):
+def card_html(row, data, c, i, n):
     css = CARD_CSS % {"root": data["colors"]["root"], "tone": data["colors"]["tone"]}
     if c["bottom"]:
         css += BADGE_CSS
@@ -300,16 +317,23 @@ def card_html(row, data, c):
     label = name + " chord card"
     if row["kind"] != "frozen":
         label += ": " + c["notes"]
+    name_html = esc(c["main"]) + ("<sup>" + esc(c["sup"]) + "</sup>" if c["sup"] else "")
+    fdeg = '<div class="fdeg">%s</div>' % esc(c["degree"]) if c["degree"] else ""
+    nav = '<span></span>' if i == 1 else '<label for="p%d">PREV</label>' % (i - 1)
+    nav += '<span></span>' if i == n else '<label for="p%d">NEXT</label>' % (i + 1)
     return (
-        '<div class="slot"><div class="cname">%s</div>\n'
-        '<div class="cardhost" role="img" aria-label="%s"><template shadowrootmode="open"><style>%s</style>'
-        '<div class="card"><div class="hdr"><div class="l">%s<br><span class="num">#%d</span>%s</div>'
-        '<div class="r">%s</div></div><div class="diagwrap">%s</div>'
-        '<div class="lines">%s<div class="notesline">%s</div><div class="numline">%s</div></div></div>'
-        '</template></div></div>\n'
-    ) % (esc(name) if not c["sup"] else esc(c["main"]) + "<sup>" + esc(c["sup"]) + "</sup>",
-         esc(label), css, esc(data["name"]), c["n"], deg, esc(c["subtitle"]), c["svg"], badge,
-         c["notes_html"], c["numbers_html"])
+        '<div class="slot"><div class="step">Chord %d of %d</div>\n'
+        '<div class="cardhost"><template shadowrootmode="open"><style>%s</style>'
+        '<label class="wrap"><input type="checkbox" class="flip" aria-label="Flip card">'
+        '<div class="inner"><div class="face front">%s<div class="fname">%s</div>'
+        '<div class="hint">Tap to reveal the notes</div></div>'
+        '<div class="face back"><div class="card"><div class="hdr"><div class="l">%s<br><span class="num">#%d</span>%s</div>'
+        '<div class="r">%s</div></div><div class="diagwrap" role="img" aria-label="%s">%s</div>'
+        '<div class="lines">%s<div class="notesline">%s</div><div class="numline">%s</div></div></div></div>'
+        '</div></label></template></div>\n'
+        '<div class="nav">%s</div></div>\n'
+    ) % (i, n, css, fdeg, name_html, esc(data["name"]), c["n"], deg, esc(c["subtitle"]), esc(label), c["svg"],
+         badge, c["notes_html"], c["numbers_html"], nav)
 
 
 def chord_names(data):
@@ -366,7 +390,7 @@ def render(row, data, rows_by_slug, copy, alt=None):
                '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
                '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&family='
                'Bitter:wght@400;600&family=Nunito+Sans:wght@400;600;700&display=swap">\n')
-    out.append("<style>\n" + CSS_HEAD.replace("@LIGHT@", light).replace("@DARK@", dark) + ("" if frozen else CSS_EXTRA) + "</style>\n")
+    out.append("<style>\n" + CSS_HEAD.replace("@LIGHT@", light).replace("@DARK@", dark) + CSS_EXTRA + "</style>\n")
     if not frozen:
         crumbs = [{"@type": "ListItem", "position": 1, "name": "Home", "item": SITE},
                   {"@type": "ListItem", "position": 2, "name": "%s chords" % name, "item": url}]
@@ -411,17 +435,15 @@ def render(row, data, rows_by_slug, copy, alt=None):
     prog_degs = "" if not all(degs) else " (%s)" % ", ".join(degs)
     out.append("<p>Starter progression: <b>%s</b>%s%s</p>\n" % (esc(", ".join(names)), prog_degs,
                                                               copy["progression_tail_html"]))
-    out.append('<div class="row">\n')
-    for c in cards:
-        out.append(card_html(row, data, c))
-    out.append("</div>\n")
-    if not frozen:
-        out.append('<table class="chords"><thead><tr><th>Chord</th><th>Notes</th><th>Field numbers</th></tr>'
-                   "</thead><tbody>")
-        for c in cards:
-            out.append("<tr><td>%s</td><td>%s</td><td>%s</td></tr>" % (esc(c["main"] + c["sup"]), c["notes"],
-                                                                        c["numbers"]))
-        out.append("</tbody></table>\n")
+    n = len(cards)
+    out.append('<div class="prog">\n')
+    for i, c in enumerate(cards, 1):
+        out.append('<input type="radio" name="step" id="p%d"%s aria-label="Chord %d of %d: %s">\n'
+                   % (i, " checked" if i == 1 else "", i, n, esc(c["main"] + c["sup"])))
+    out.append('<div class="cards">\n')
+    for i, c in enumerate(cards, 1):
+        out.append(card_html(row, data, c, i, n))
+    out.append("</div></div>\n")
     out.append('<div class="ctas"><a class="open" href="%s">PRACTICE %s</a>'
                '<a class="open ghost" href="/#add">ADD YOUR OWN SCALE</a></div>\n' % (cta, esc(name.upper())))
     target = rows_by_slug.get(row["cross"]["to"]) if row.get("cross") else None
