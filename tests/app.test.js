@@ -3597,7 +3597,7 @@ test("RR: panelStops lists the Resources group in visual order in single column 
   assert.deepStrictEqual(stubIds, ["res-explore", "res-handpan-101", "about-open"], "DOM order is visual order");
   for (const display of ["block", "flex"]) {
     const app = boot();
-    app.run(`settingsPanel.querySelectorAll = (sel) => /res-/.test(sel) ? ${JSON.stringify(stubIds)}.map((id) => ({ id, disabled: false, getClientRects: () => [{}] })) : []`);
+    app.run(`settingsPanel.querySelectorAll = (sel) => ${JSON.stringify(stubIds)}.filter((id) => id === "about-open" ? sel.includes("#about-open") : sel.includes('[id^="res-"]')).map((id) => ({ id, disabled: false, getClientRects: () => [{}] }))`);
     app.run(`globalThis.getComputedStyle = () => ({ display: "${display}" }); document.querySelector = () => ({})`);
     app.run("openPanel()");
     assert.strictEqual(app.get("getComputedStyle(null).display"), display);
