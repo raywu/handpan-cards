@@ -1,8 +1,8 @@
 # kills: test_sync_decks_write_mode_catches_a_byte_level_reinjection_mismatch
 # suite: python3 -m unittest -k test_sync_decks_write_mode_catches_a_byte_level_reinjection_mismatch tests.test_deck_data
 # MUT-B7. inject() writes index.html and never reads it back: the re-parse
-# block (the read, the match and the SystemExit) is gone. CLAUDE.md "Data
-# re-injection" names that read-back as the reason the tool is trusted.
+# block (the read, the match and the SystemExit) is gone. CLAUDE.md "Known
+# pitfalls" (U+00B0 re-injection) says to re-parse the written file.
 diff --git a/tools/sync_decks.py b/tools/sync_decks.py
 --- a/tools/sync_decks.py
 +++ b/tools/sync_decks.py
