@@ -1734,6 +1734,7 @@ function run() {
     }
     const dimensional = [...seen].filter((c) => parseCondition(c).queries).sort();
     assert.deepStrictEqual(dimensional, [
+      "(max-height: 299px)",
       "(max-height: 520px)",
       "(min-height: 300px) and (max-height: 359px) and (min-width: 740px)",
       "(min-height: 360px) and (max-height: 520px) and (min-width: 740px)",
@@ -1969,6 +1970,44 @@ function run() {
             await b.key("Escape", "Escape", 27);
             await b.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: `close at ${label}` });
           }
+        }
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+  test("LS3: below 300px tall in landscape the open settings panel is two columns, scrolls to its last control, clears the trigger and the right edge",
+    { timeout: 120000 }, async () => {
+      await freshLoad();
+      try {
+        for (const [vw, vh] of [[852, 260], [932, 280], [844, 250], [667, 260]]) {
+          await b.setViewport(vw, vh, true);
+          await b.settle();
+          await openSettingsPanel();
+          const label = `${vw}x${vh}`;
+          const m = await b.eval(`
+            const p = document.getElementById("settings-panel");
+            p.scrollTop = p.scrollHeight;
+            const ctrls = [...p.querySelectorAll("button, select, a")].filter(e => e.offsetParent);
+            const t = document.getElementById("settings-trigger").getBoundingClientRect();
+            const groups = [...p.querySelectorAll(".panel-group")].filter(e => e.offsetParent);
+            const lefts = new Set(groups.map(g => Math.round(g.getBoundingClientRect().left)));
+            const last = document.getElementById("about-open").getBoundingClientRect();
+            return {
+              lefts: [...lefts].length,
+              overflowY: getComputedStyle(p).overflowY,
+              under: ctrls.filter(e => { const k = e.getBoundingClientRect();
+                return k.left < t.right && k.right > t.left && k.top < t.bottom && k.bottom > t.top; }).map(e => e.id || e.textContent.trim()),
+              wide: ctrls.filter(e => e.getBoundingClientRect().right > innerWidth + 0.5).map(e => e.id || e.textContent.trim()),
+              lastBottom: last.bottom, lastTop: last.top,
+            };`);
+          assert.strictEqual(m.lefts, 2, `${label}: two columns, got ${m.lefts}`);
+          assert.strictEqual(m.overflowY, "auto", `${label}: panel scrolls`);
+          assert.deepStrictEqual(m.under, [], `${label}: controls under the trigger`);
+          assert.deepStrictEqual(m.wide, [], `${label}: controls past the right edge`);
+          assert.ok(m.lastBottom <= vh + 0.5 && m.lastTop >= 0, `${label}: ABOUT scrolled into view (${m.lastTop}-${m.lastBottom})`);
+          await b.key("Escape", "Escape", 27);
+          await b.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: `close at ${label}` });
         }
       } finally {
         await b.setViewport(900, 900, false);
