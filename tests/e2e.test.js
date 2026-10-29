@@ -1767,6 +1767,7 @@ function run() {
     const dimensional = [...seen].filter((c) => parseCondition(c).queries).sort();
     assert.deepStrictEqual(dimensional, [
       "(max-height: 520px)",
+      "(min-height: 300px) and (max-height: 359px) and (min-width: 740px)",
       "(min-height: 360px) and (max-height: 520px) and (min-width: 740px)",
       "(min-width: 1024px) and (min-height: 700px)",
       "(min-width: 640px) and (min-height: 700px)",
@@ -2669,15 +2670,17 @@ function run() {
             }
           }
           const stops=await browser.eval(`return panelStops().map(e=>e.id);`);
-          assert.deepStrictEqual(stops.slice(-4), ["res-handpan-helpers","res-handpan-101","about-open","lang-select"],
+          const gridMenu=await browser.eval(`const c=document.querySelector("#settings-panel > .panel-col");return !!c&&getComputedStyle(c).display==="flex";`);
+          const tail=gridMenu?["lang-select","about-open"]:["about-open","lang-select"];
+          assert.deepStrictEqual(stops.slice(-4), ["res-handpan-helpers","res-handpan-101",...tail],
             `${label}: Helpers is one new stop immediately before HANDPAN 101, ABOUT and Language`);
           assert.strictEqual(stops.filter(id=>id==="res-handpan-helpers").length,1,`${label}: Helpers appears exactly once in panel stops`);
           await browser.eval(`document.getElementById("res-handpan-helpers").focus(); return true;`);
-          for(const id of ["res-handpan-101","about-open","lang-select"]){
+          for(const id of ["res-handpan-101",...tail]){
             await browser.key("Tab","Tab",9);
             assert.strictEqual(await browser.eval(`return document.activeElement.id;`),id,`${label}: forward Tab reaches ${id}`);
           }
-          for(const id of ["about-open","res-handpan-101","res-handpan-helpers"]){
+          for(const id of [tail[0],"res-handpan-101","res-handpan-helpers"]){
             await browser.send("Input.dispatchKeyEvent",{type:"keyDown",key:"Tab",code:"Tab",windowsVirtualKeyCode:9,nativeVirtualKeyCode:9,modifiers:8});
             await browser.send("Input.dispatchKeyEvent",{type:"keyUp",key:"Tab",code:"Tab",windowsVirtualKeyCode:9,nativeVirtualKeyCode:9,modifiers:8});
             const focused=await browser.eval(`const e=document.activeElement,cs=getComputedStyle(e),r=e.getBoundingClientRect();
@@ -10162,7 +10165,7 @@ function run() {
           // (-50 where the print group was the tall column): 328.25 -> 375.25,
           // 310 -> 357, 251.75 unchanged, 313 -> 310.
           // Retain accepted Lane W single-row pins with compact HTC.
-          [740, 360, "S", 0 /* LE: two columns, no scroll */], [740, 340, "S", 372.75], [812, 330, "S", 357], [926, 310, "S", 251.75],
+          [740, 360, "S", 0 /* LE: two columns, no scroll */], // 300-359px tall at 740px up: the LS grid, asserted by "LS:"
           [568, 312, "A", 310],
         ];
         for (const [w, h, mode, mainNeeded] of cases) {
@@ -10204,6 +10207,307 @@ function run() {
           } else {
             assert.deepStrictEqual(m.off, [], `${label}: controls offscreen: ${JSON.stringify(m.off)}`);
           }
+        }
+      });
+
+    // LS: the LE two-column menu reaches short iPhone landscape (300px up).
+    test("LS: from 300px tall, widths of 740px and up, the settings panel is two columns in every locale with ABOUT alone in its last row, no wrapped one-word label and no control under the X, and it fits without scrolling from 300px tall in modes A and B (REAL fonts)",
+      { timeout: 600000 }, async () => {
+        const VIEWPORTS = [[844, 390], [926, 428], [932, 430], [1000, 420], [852, 330], [932, 340],
+          [1000, 340], [844, 320], [740, 330], [1000, 300]];
+        const LS_FIT_FROM = 300;
+        const measure = () => rb.eval(`
+          const p = document.getElementById("settings-panel");
+          const t = document.getElementById("settings-trigger").getBoundingClientRect();
+          const hit = (a, k) => a.left < k.right && a.right > k.left && a.top < k.bottom && a.bottom > k.top;
+          const ctrls = [...p.querySelectorAll("button, select, a")].filter(e => e.offsetParent);
+          const about = document.getElementById("about-open");
+          const row = about.parentElement;
+          const pt = p.getBoundingClientRect().top - p.scrollTop;
+          const lineCount = (e) => { const r = document.createRange(); r.selectNodeContents(e);
+            return new Set([...r.getClientRects()].map(k => Math.round(k.top))).size; };
+          return {
+            scrollH: p.scrollHeight, clientH: p.clientHeight, scrollW: p.scrollWidth, clientW: p.clientWidth,
+            gh: [...p.children].map(g => Math.round(g.getBoundingClientRect().height)).join(","),
+            cols: getComputedStyle(p).columnCount,
+            aboutAlone: row.children.length === 1,
+            aboutFull: Math.abs(about.getBoundingClientRect().width - row.getBoundingClientRect().width) <= 1,
+            underTrigger: ctrls.filter(e => hit(e.getBoundingClientRect(), t)).map(e => e.id || e.textContent.trim()),
+            ncols: new Set([...p.querySelectorAll(".panel-group")].filter(g => g.getBoundingClientRect().width > 8).map(g => Math.round(g.getBoundingClientRect().left))).size, lefts: [...p.children].map(g => (g.id||g.className) + "@" + Math.round(g.getBoundingClientRect().left) + "/" + Math.round(g.getBoundingClientRect().width)).join(" "),
+            gridCols: getComputedStyle(p).gridTemplateColumns.split(" ").length,
+            pl: parseFloat(getComputedStyle(p).paddingLeft), pr: parseFloat(getComputedStyle(p).paddingRight),
+            wrapped: ctrls.filter(e => e.tagName !== "SELECT" && !/\\s/.test(e.textContent.trim()) && lineCount(e) > 1).map(e => e.id + ":" + e.textContent.trim()),
+            offscreen: ctrls.filter(e => { const k = e.getBoundingClientRect();
+              return k.left < 0 || k.top < 0 || k.right > innerWidth + 0.5 || k.bottom > innerHeight + 0.5; }).map(e => e.id || e.textContent.trim()),
+            beyond: ctrls.filter(e => e.getBoundingClientRect().bottom - pt > p.scrollHeight + 0.5).map(e => e.id),
+          };`);
+        const check = (m, label, h, mode) => {
+          if (mode === "S" && h < 360) {
+            assert.strictEqual(m.gridCols, 2, `${label}: mode S is an explicit two-column grid`);
+            assert.strictEqual(m.ncols, 2, `${label}: mode S groups sit in two columns ${m.lefts}`);
+          } else assert.strictEqual(m.cols, "2", `${label}: two columns`);
+          assert.ok(m.aboutAlone && m.aboutFull, `${label}: ABOUT alone in its full-width row`);
+          assert.deepStrictEqual(m.underTrigger, [], `${label}: controls under the X`);
+          assert.deepStrictEqual(m.wrapped, [], `${label}: a one-word label wraps`);
+          assert.ok(m.scrollW <= m.clientW + 1, `${label}: overflows horizontally`);
+          if (h >= LS_FIT_FROM && !(mode === "S" && h < 360)) assert.ok(m.scrollH <= m.clientH + 1, `${label}: panel scrolls (${m.scrollH} > ${m.clientH})`);
+          if (m.scrollH > m.clientH + 1) assert.deepStrictEqual(m.beyond, [], `${label}: a control lies beyond the scrollable height`);
+          else assert.deepStrictEqual(m.offscreen, [], `${label}: controls off screen`);
+        };
+        const inLocale = async (lang, label, h, mode) => {
+          await rb.click("#settings-trigger");
+          await rb.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display !== "none"`, { label: "panel open" });
+          await rb.eval(`const e=document.getElementById("lang-select");e.value=${JSON.stringify(lang)};e.dispatchEvent(new Event("change",{bubbles:true}));return true;`);
+          await rb.waitFor(`document.documentElement.lang === ${JSON.stringify(lang)}`, { label: "locale applied" });
+          await rb.settle();
+          check(await measure(), label, h, mode);
+          await rb.key("Escape", "Escape", 27);
+          await rb.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: `close at ${label}` });
+        };
+        try {
+          await rb.setViewport(844, 390, true);
+          await rb.goto(URL);
+          await rb.eval(`localStorage.clear(); return true;`);
+          await rb.goto(URL);
+          await rb.eval(`return document.fonts.ready.then(() => true);`);
+          const langs = await rb.eval(`return [...document.getElementById("lang-select").options].map(o => o.value).filter(v => v !== "auto");`);
+          assert.strictEqual(langs.length, 8, "eight UI locales");
+          for (const mode of ["A", "B", "S"]) {
+            await rb.eval(`localStorage.setItem("hpfc", ${JSON.stringify(JSON.stringify({ mode }))}); return true;`);
+            await rb.goto(URL);
+            await rb.eval(`return document.fonts.ready.then(() => true);`);
+            for (const [w, h] of VIEWPORTS) {
+              await rb.setViewport(w, h, true);
+              await rb.settle();
+              for (const lang of langs) await inLocale(lang, `mode ${mode} ${w}x${h} ${lang}`, h, mode);
+            }
+          }
+          await rb.eval(`localStorage.setItem("hpfc", ${JSON.stringify(JSON.stringify({ mode: "A" }))}); return true;`);
+          await rb.goto(URL);
+          await rb.eval(`return document.fonts.ready.then(() => true);`);
+          await rb.setViewport(932, 340, true);
+          await rb.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: 0, left: 59, bottom: 21, right: 59 } });
+          const inset = await rb.eval(`const d=document.createElement("div");d.style.cssText="position:fixed;padding-right:env(safe-area-inset-right)";document.body.appendChild(d);const v=parseFloat(getComputedStyle(d).paddingRight);d.remove();return v;`);
+          assert.ok(inset >= 58, `the safe-area override took (${inset})`);
+          for (const lang of langs) await inLocale(lang, `932x340 notch ${lang}`, 340, "A");
+          const notches = [[932, 340, 0, 59], [932, 340, 59, 0], [844, 390, 0, 59], [844, 390, 47, 47], [932, 430, 59, 59]];
+          for (const [w, h, l, r] of notches) {
+            await rb.setViewport(w, h, true);
+            await rb.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: 0, left: l, bottom: 21, right: r } });
+            await rb.settle();
+            await rb.click("#settings-trigger");
+            await rb.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display !== "none"`, { label: "panel open" });
+            const m = await measure();
+            const label = `${w}x${h} inset L${l}/R${r}`;
+            assert.ok(m.pl >= l + 50 - 0.5, `${label}: left padding ${m.pl} clears the left inset`);
+            assert.ok(m.pr >= r + 50 - 0.5, `${label}: right padding ${m.pr} clears the right inset`);
+            assert.ok(m.pl >= 62 - 0.5 && m.pr >= 62 - 0.5, `${label}: padding keeps the 62px floor`);
+            check(m, label, h, "A");
+            await rb.key("Escape", "Escape", 27);
+            await rb.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: `close at ${label}` });
+          }
+        } finally {
+          await rb.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: 0, left: 0, bottom: 0, right: 0 } }).catch(() => {});
+          await rb.setViewport(900, 900, false);
+          await rb.goto(URL);
+          await rb.eval(`return document.fonts.ready.then(() => true);`);
+        }
+      });
+
+    test("LS: with RESET SEEDED SCALES showing, the short-landscape menu scrolls vertically, never spills into a third column, stays two columns and leaves #lang-select tappable (REAL fonts)",
+      { timeout: 300000 }, async () => {
+        try {
+          for (const mode of ["A", "B", "S"]) {
+            await rb.setViewport(852, 330, true);
+            await rb.goto(URL);
+            await rb.eval(`localStorage.setItem("hpfc", ${JSON.stringify(JSON.stringify({ mode, hidden: ["amara"] }))}); return true;`);
+            await rb.send("Storage.clearDataForOrigin", { origin: new globalThis.URL(URL).origin, storageTypes: "indexeddb" });
+            await rb.goto(URL);
+            await rb.eval(`return document.fonts.ready.then(() => true);`);
+            for (const [w, h] of [[852, 330], [844, 320], [740, 300], [1000, 300], [844, 340], [844, 350], [844, 359], [844, 360], [844, 365], [740, 360], [1000, 370], [844, 380], [844, 389], [844, 390], [932, 430], [844, 520]]) {
+              await rb.setViewport(w, h, true);
+              await rb.settle();
+              await rb.click("#settings-trigger");
+              await rb.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display !== "none"`, { label: "panel open" });
+              const label = `mode ${mode} ${w}x${h}`;
+              const m = await rb.eval(`
+                const p = document.getElementById("settings-panel");
+                const r = document.getElementById("deck-restore");
+                const s = document.getElementById("lang-select");
+                s.scrollIntoView({ block: "center" });
+                const k = s.getBoundingClientRect();
+                const top = document.elementFromPoint(k.left + k.width / 2, k.top + k.height / 2);
+                return { restore: !r.hidden, ncols: new Set([...p.querySelectorAll(".panel-group")].filter(g => g.getBoundingClientRect().width > 8).map(g => Math.round(g.getBoundingClientRect().left))).size, scrollW: p.scrollWidth, clientW: p.clientWidth, hitSelect: top === s };`);
+              assert.ok(m.restore, `${label}: RESET SEEDED SCALES is showing`);
+              assert.ok(m.scrollW <= m.clientW + 1, `${label}: overflows horizontally (${m.scrollW} > ${m.clientW})`);
+              assert.strictEqual(m.ncols, 2, `${label}: the groups sit in ${m.ncols} columns`);
+              assert.ok(m.hitSelect, `${label}: #lang-select is not what a tap at its centre reaches`);
+              await rb.key("Escape", "Escape", 27);
+              await rb.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: `close at ${label}` });
+            }
+          }
+        } finally {
+          await rb.setViewport(900, 900, false);
+          await rb.goto(URL);
+        }
+      });
+
+    test("LS2: with the progression note and RESET SEEDED SCALES showing, the columns balance: Flash cards, Print, Scales left and Resources, Language right, each stacked flush, at 844x390 and 800x340 (REAL fonts)",
+      { timeout: 120000 }, async () => {
+        try {
+          await rb.setViewport(844, 390, true);
+          await rb.goto(URL);
+          await rb.eval(`localStorage.setItem("hpfc", ${JSON.stringify(JSON.stringify({ mode: "S", hidden: ["amara"] }))}); return true;`);
+          await rb.send("Storage.clearDataForOrigin", { origin: new globalThis.URL(URL).origin, storageTypes: "indexeddb" });
+          await rb.goto(URL);
+          await rb.eval(`return document.fonts.ready.then(() => true);`);
+          for (const [w, h] of [[844, 390], [800, 340]]) {
+            await rb.setViewport(w, h, true);
+            await rb.settle();
+            await rb.click("#settings-trigger");
+            await rb.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display !== "none"`, { label: "panel open" });
+            const label = `${w}x${h}`;
+            if (await rb.eval(`return document.getElementById("panel-seq-note").hidden;`)) {
+              await rb.click("#tier-basic");
+              await rb.waitFor(`!document.getElementById("panel-seq-note").hidden`, { label: "progression note" });
+            }
+            const m = await rb.eval(`
+              const byHeading = t => [...document.querySelectorAll("#settings-panel .panel-group")].find(c => c.querySelector(".panel-heading").textContent === t);
+              const names = [["Flash cards", "L"], ["Print this scale", "L"], ["Scales", "L"], ["Resources", "R"], ["Language", "R"]];
+              const rects = names.map(([t, side]) => { const el = byHeading(t); const r = el.getBoundingClientRect(); return { t, side, left: r.left, top: r.top, bottom: r.bottom, mb: parseFloat(getComputedStyle(el).marginBottom) }; });
+              const p = document.getElementById("settings-panel");
+              const col = document.querySelector("#settings-panel .panel-col");
+              return { note: !document.getElementById("panel-seq-note").hidden, restore: !document.getElementById("deck-restore").hidden, rects,
+                rowGapL: parseFloat(getComputedStyle(p).rowGap) || 0, rowGapR: parseFloat(getComputedStyle(col).rowGap) || 0,
+                about: document.getElementById("about-open").getBoundingClientRect().bottom, resBottom: byHeading("Resources").getBoundingClientRect().bottom,
+                scrolls: p.scrollHeight > p.clientHeight + 1, sh: p.scrollHeight, ch: p.clientHeight };
+            `);
+            assert.ok(m.note && m.restore, `${label}: note and RESET both showing`);
+            const want = h >= 360 ? 20 : 9;
+            assert.ok(Math.abs(m.rowGapR - m.rowGapL) <= 0.5 && m.rowGapL > 0, `${label}: the right column's row-gap ${m.rowGapR} equals the left column's ${m.rowGapL}`);
+            const left = m.rects.filter(r => r.side === "L"), right = m.rects.filter(r => r.side === "R");
+            assert.ok(left.every(r => Math.abs(r.left - left[0].left) <= 1) && right.every(r => Math.abs(r.left - right[0].left) <= 1) && right[0].left > left[0].left + 50, `${label}: two columns ${JSON.stringify(m.rects)}`);
+            for (const [col, rg] of [[left, m.rowGapL], [right, m.rowGapR]]) {
+              for (let i = 1; i < col.length; i++) {
+                assert.ok(Math.abs(col[i].top - col[i - 1].bottom - want) <= 1, `${label}: ${col[i].t} is ${col[i].top - col[i - 1].bottom}px under ${col[i - 1].t}, want the ${want}px group gap`);
+                assert.ok(Math.abs(col[i].top - col[i - 1].bottom - col[i - 1].mb - rg) <= 1, `${label}: ${col[i].t} is ${col[i].top - col[i - 1].bottom}px under ${col[i - 1].t}, margin ${col[i - 1].mb} row-gap ${rg}`);
+              }
+            }
+            assert.ok(Math.abs(m.about - m.resBottom) <= 12, `${label}: ABOUT is the last Resources row`);
+            await rb.key("Escape", "Escape", 27);
+            await rb.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: `close at ${label}` });
+          }
+        } finally {
+          await rb.setViewport(900, 900, false);
+          await rb.goto(URL);
+        }
+      });
+
+    test("LS2: with the progression note alone (no RESET) at 800x340, the columns are flush with the 9px group gap (REAL fonts)",
+      { timeout: 120000 }, async () => {
+        try {
+          await rb.setViewport(844, 390, true);
+          await rb.goto(URL);
+          await rb.eval(`localStorage.setItem("hpfc", ${JSON.stringify(JSON.stringify({ mode: "S" }))}); return true;`);
+          await rb.send("Storage.clearDataForOrigin", { origin: new globalThis.URL(URL).origin, storageTypes: "indexeddb" });
+          await rb.goto(URL);
+          await rb.eval(`return document.fonts.ready.then(() => true);`);
+          await rb.setViewport(800, 340, true);
+          await rb.settle();
+          await rb.click("#settings-trigger");
+          await rb.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display !== "none"`, { label: "panel open" });
+          if (await rb.eval(`return document.getElementById("panel-seq-note").hidden;`)) {
+            await rb.click("#tier-basic");
+            await rb.waitFor(`!document.getElementById("panel-seq-note").hidden`, { label: "progression note" });
+          }
+          const m = await rb.eval(`
+            const g = t => { const r = [...document.querySelectorAll("#settings-panel .panel-group")].find(c => c.querySelector(".panel-heading").textContent === t).getBoundingClientRect(); return { left: r.left, top: r.top, bottom: r.bottom }; };
+            const p = document.getElementById("settings-panel");
+            return { note: !document.getElementById("panel-seq-note").hidden, restore: !document.getElementById("deck-restore").hidden,
+              f: g("Flash cards"), pr: g("Print this scale"), sc: g("Scales"), re: g("Resources"), la: g("Language"),
+              scrolls: p.scrollHeight > p.clientHeight + 1, sh: p.scrollHeight, ch: p.clientHeight };`);
+          assert.ok(m.note && !m.restore, "note alone");
+          assert.ok(m.re.left > m.f.left + 50 && Math.abs(m.la.left - m.re.left) <= 1 && Math.abs(m.pr.left - m.f.left) <= 1, "two columns " + JSON.stringify(m));
+          for (const [a, b] of [[m.f, m.pr], [m.pr, m.sc], [m.re, m.la]]) assert.ok(Math.abs(b.top - a.bottom - 9) <= 1, `gap ${b.top - a.bottom}, want 9`);
+        } finally {
+          await rb.setViewport(900, 900, false);
+          await rb.goto(URL);
+        }
+      });
+
+    test("LS2: in the grid modes Tab and panelStops() follow the visual order (Flash cards, Print, Scales, Resources, Language, ABOUT last), and elsewhere keep the DOM order (REAL fonts)",
+      { timeout: 120000 }, async () => {
+        try {
+          await rb.setViewport(844, 390, true);
+          await rb.goto(URL);
+          await rb.eval(`localStorage.setItem("hpfc", ${JSON.stringify(JSON.stringify({ mode: "S", hidden: ["amara"] }))}); return true;`);
+          await rb.send("Storage.clearDataForOrigin", { origin: new globalThis.URL(URL).origin, storageTypes: "indexeddb" });
+          await rb.goto(URL);
+          await rb.eval(`return document.fonts.ready.then(() => true);`);
+          const stopsAt = async (w, h) => {
+            await rb.setViewport(w, h, true);
+            await rb.settle();
+            await rb.click("#settings-trigger");
+            await rb.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display !== "none"`, { label: "panel open" });
+            if (await rb.eval(`return document.getElementById("panel-seq-note").hidden;`)) {
+              await rb.click("#tier-basic");
+              await rb.waitFor(`!document.getElementById("panel-seq-note").hidden`, { label: "progression note" });
+            }
+            const ids = await rb.eval(`return window.panelStops().map(e => e.id);`);
+            await rb.key("Escape", "Escape", 27);
+            await rb.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: `close at ${w}x${h}` });
+            return ids;
+          };
+          const shape = (ids) => ids.map((id) => (id.startsWith("res-") ? "res" : id)).filter((id, i, a) => id !== "res" || a[i - 1] !== "res");
+          const head = ["settings-trigger", "modeA", "modeB", "tier-basic", "tier-intermediate", "tier-advanced", "seq-source-link"];
+          for (const [w, h] of [[844, 390], [800, 340]]) {
+            const ids = await stopsAt(w, h);
+            assert.deepStrictEqual(shape(ids), [...head, "print-download", "print-paper-select", "deck-add", "deck-restore", "res", "lang-select", "about-open"], `${w}x${h}: ${JSON.stringify(ids)}`);
+          }
+          const dom = await stopsAt(380, 780);
+          assert.deepStrictEqual(shape(dom), [...head, "deck-add", "deck-restore", "print-download", "print-paper-select", "res", "about-open", "lang-select"], `380x780: ${JSON.stringify(dom)}`);
+        } finally {
+          await rb.setViewport(900, 900, false);
+          await rb.goto(URL);
+        }
+      });
+
+    test("LS2: in the default state at 800x340 and 740x359, Resources and Language keep the 6px margin and break-inside avoid, with 6px between them (REAL fonts)",
+      { timeout: 120000 }, async () => {
+        try {
+          await rb.setViewport(844, 390, true);
+          await rb.goto(URL);
+          await rb.eval(`localStorage.setItem("hpfc", ${JSON.stringify(JSON.stringify({ mode: "A" }))}); return true;`);
+          await rb.send("Storage.clearDataForOrigin", { origin: new globalThis.URL(URL).origin, storageTypes: "indexeddb" });
+          await rb.goto(URL);
+          await rb.eval(`return document.fonts.ready.then(() => true);`);
+          for (const [w, h] of [[800, 340], [740, 359]]) {
+            await rb.setViewport(w, h, true);
+            await rb.settle();
+            await rb.click("#settings-trigger");
+            await rb.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display !== "none"`, { label: "panel open" });
+            const label = `${w}x${h}`;
+            const m = await rb.eval(`
+              const byHeading = t => [...document.querySelectorAll("#settings-panel .panel-group")].find(c => c.querySelector(".panel-heading").textContent === t);
+              const res = byHeading("Resources"), lang = byHeading("Language");
+              const cs = el => ({ mb: parseFloat(getComputedStyle(el).marginBottom), bi: getComputedStyle(el).breakInside });
+              return { note: !document.getElementById("panel-seq-note").hidden, restore: !document.getElementById("deck-restore").hidden,
+                res: cs(res), lang: cs(lang), cols: getComputedStyle(document.getElementById("settings-panel")).columnCount,
+                gap: lang.getBoundingClientRect().top - res.getBoundingClientRect().bottom,
+                sameCol: Math.abs(lang.getBoundingClientRect().left - res.getBoundingClientRect().left) <= 1 };`);
+            assert.ok(!m.note && !m.restore, `${label}: the default state`);
+            assert.strictEqual(m.cols, "2", `${label}: balanced columns`);
+            for (const k of ["res", "lang"]) {
+              assert.strictEqual(m[k].mb, 6, `${label}: ${k} margin-bottom ${m[k].mb}`);
+              assert.strictEqual(m[k].bi, "avoid", `${label}: ${k} break-inside ${m[k].bi}`);
+            }
+            if (m.sameCol) assert.ok(Math.abs(m.gap - 6) <= 1, `${label}: Language is ${m.gap}px under Resources`);
+            await rb.key("Escape", "Escape", 27);
+            await rb.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: `close at ${label}` });
+          }
+        } finally {
+          await rb.setViewport(900, 900, false);
+          await rb.goto(URL);
         }
       });
   });
@@ -13958,7 +14262,7 @@ function run() {
               window.__pf.one(m);
               const ph = document.getElementById("panel-prog-heading");
               return { needed: c.needed, neededNoAbout, langCost: c.needed - neededNoLang,
-                groups: [...document.querySelectorAll("#settings-panel > .panel-group")].map((g) => g.getBoundingClientRect().height),
+                groups: [...document.querySelectorAll("#settings-panel .panel-group")].map((g) => g.getBoundingClientRect().height),
                 mt: ph ? parseFloat(getComputedStyle(ph).marginTop) : null,
                 sp1: parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--sp-1")),
                 hg: ph ? ph.getBoundingClientRect().height + parseFloat(getComputedStyle(ph).marginTop) : null };
@@ -13966,6 +14270,7 @@ function run() {
           ["A", "B", "S"].forEach((m, i) => {
             n++;
             const where = `${fm} ${key} mode ${m}`;
+            if (w >= 740 && h >= 300 && h < 360) return; // LS: two columns in modes A and B and a scrolling two-column grid in mode S, asserted by "LS:"
             const g = got[i];
             assert.ok(g.hg !== null, where + ": there is no #panel-prog-heading");
             assert.ok(g.sp1 > 0, where + ": --sp-1 unreadable");
@@ -15727,8 +16032,8 @@ function run() {
 
     test("OF: under prefers-reduced-motion a typed reorder starts no animation or transition on the plate", { timeout: 120000 }, async () => {
       try {
-        await spaOpen(380, 780);
         await b.send("Emulation.setEmulatedMedia", { media: "", features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
+        await spaOpen(380, 780);
         await sleep(100);
         await typeScale(OF_NAMED);
         const n = await b.eval(`return document.getAnimations().filter((a) => { const t = a.effect && a.effect.target; return t && t.closest && t.closest("#scale-preview, #scale-plate-band"); }).length;`);
@@ -16195,6 +16500,71 @@ function run() {
         // baseline/candidate probe did not observe. Physical Safari QA remains.
         t.diagnostic("SPS_ZOOM_GUARD_CELLS "+JSON.stringify(cells));
       }finally{await b.setPageScale(1);await spaReset();}
+    });
+
+    /* SWA browser oracles: the decorative edge cue under a real touch. */
+    const swaCue = () => b.eval(`const c=document.getElementById("scale-swipe-cue"),r=c.getBoundingClientRect(),k=getComputedStyle(c);
+      const hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);
+      return{cls:c.className,vis:k.visibility,op:+k.opacity,pe:k.pointerEvents,tf:k.transform,bg:k.backgroundColor,left:r.left,right:r.right,top:r.top,bottom:r.bottom,w:innerWidth,h:innerHeight,hitIsCue:!!(hit&&hit.closest&&hit.closest("#scale-swipe-cue"))};`);
+    const swaEnd = () => b.releasing(() => b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] }));
+
+    test("SWA browser: the cue follows a real swipe, arms at the commit threshold, fades on switch and springs back when released short", { timeout: 120000 }, async () => {
+      try {
+        for (const [w, h] of [[320, 568], [380, 780], [844, 390]]) {
+          await spaOpen(w, h);
+          const start = await spsSpot(-80);
+          assert.ok(start, `${w}x${h}: an eligible origin exists`);
+          assert.strictEqual((await swaCue()).vis, "hidden", "idle: the cue is not visible");
+          const bodyBefore = await b.eval(`const r=document.querySelector(".sheetbody").getBoundingClientRect();return[r.left,r.top,r.width,r.height];`);
+          await spsTouch(start, -30, 0, { release: false });
+          await sleep(120);
+          const mid = await swaCue();
+          assert.strictEqual(mid.vis, "visible", `${w}x${h}: shown after a lock`);
+          assert.ok(mid.cls.includes("r") && !mid.cls.includes("armed"), `${w}x${h}: right edge, not armed at 30px: ${mid.cls}`);
+          assert.strictEqual(mid.pe, "none");
+          assert.strictEqual(mid.hitIsCue, false, "the cue never takes the touch");
+          assert.ok(mid.top >= 0 && mid.bottom <= mid.h, "the cue sits inside the viewport vertically");
+          await swaEnd();
+          await sleep(500);
+          assert.strictEqual(await spsTab(), "scale", "an unarmed release switches nothing");
+          assert.strictEqual((await swaCue()).vis, "hidden", "and the cue springs back out");
+
+          const start2 = await spsSpot(-80);
+          await spsTouch(start2, -80, 0, { release: false });
+          await sleep(120);
+          const armed = await swaCue();
+          assert.ok(armed.cls.includes("armed"), `${w}x${h}: armed at 80px: ${armed.cls}`);
+          assert.notStrictEqual(armed.bg, mid.bg, "armed is a different fill");
+          assert.ok(armed.right <= armed.w + 0.5 && armed.left >= -0.5, "armed, the cue sits inside the viewport");
+          assert.deepStrictEqual(await b.eval(`const r=document.querySelector(".sheetbody").getBoundingClientRect();return[r.left,r.top,r.width,r.height];`), bodyBefore, "the cue moves no layout");
+          await swaEnd();
+          await sleep(500);
+          assert.strictEqual(await spsTab(), "layout", "an armed release switches");
+          assert.strictEqual((await swaCue()).vis, "hidden", "and the cue has faded");
+        }
+      } finally { await spaReset(); }
+    });
+
+    test("SWA browser: under reduced motion the cue never translates or scales and the armed state is a fill", { timeout: 90000 }, async () => {
+      try {
+        await b.send("Emulation.setEmulatedMedia", { media: "", features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
+        await spaOpen(380, 780);
+        const start = await spsSpot(-80);
+        await spsTouch(start, -30, 0, { release: false });
+        await sleep(120);
+        const a = await swaCue();
+        assert.strictEqual(a.vis, "visible");
+        assert.strictEqual(a.tf, "none", "no transform at 30px");
+        await spsTouch({ x: start.x - 30, y: start.y }, -50, 0, { release: false });
+        await sleep(120);
+        const c = await swaCue();
+        assert.ok(c.cls.includes("armed"));
+        assert.strictEqual(c.tf, "none", "no transform when armed");
+        assert.notStrictEqual(c.bg, a.bg);
+        await swaEnd();
+        await sleep(400);
+        assert.strictEqual((await swaCue()).vis, "hidden");
+      } finally { await spaReset(); }
     });
 
     test("SPA: the shut footer is 9px, the 32x3 pill sits 3px above the footer's bottom and is centred, and the tap zone is 25px with its bottom on the surface's bottom above the inset", { timeout: 90000 }, async () => {

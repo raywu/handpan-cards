@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14421,7 +14421,7 @@ function panelStops() {
-           ...settingsPanel.querySelectorAll(".prints button, .prints select"),
-           // Eng review amendment 1: the Resources links join the Tab trap
-           // after the print controls, in DOM order.
--          ...settingsPanel.querySelectorAll('#settings-panel a.mode[id^="res-"]'),
-+          ...settingsPanel.querySelectorAll('#settings-panel a.mode[id^="res-"]:not([id^="res-amy"])'),
-           document.getElementById("about-open"),
-           document.getElementById("lang-select")]
-     .filter(isStop);
+@@ -14674,7 +14674,7 @@ const desktopMQ = window.matchMedia("(min-width:1024px) and (min-height:700px)")
+ function panelStops() {
+   const prints = [...settingsPanel.querySelectorAll(".prints button, .prints select")];
+   const scales = [document.getElementById("deck-add"), restoreBtn];
+-  const res = [...settingsPanel.querySelectorAll('#settings-panel a.mode[id^="res-"]')];
++  const res = [...settingsPanel.querySelectorAll('#settings-panel a.mode[id^="res-"]:not([id^="res-amy"])')];
+   const about = document.getElementById("about-open"), lang = document.getElementById("lang-select");
+   const col = document.querySelector("#settings-panel > .panel-col");
+   const grid = typeof getComputedStyle === "function" && !!col && getComputedStyle(col).display === "flex";

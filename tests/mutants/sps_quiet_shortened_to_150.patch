@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11732,7 +11732,7 @@ function setTab(tab) {
+@@ -12448,7 +12448,7 @@ function setTab(tab) {
        lipDragEnd = 0;
        userWindowUntil = 0;
-       setTab(tab);
+       setTab(v.tab);
 -      lipQuietUntil = Math.max(lipQuietUntil, Date.now() + LIP_END_MS);
 +      lipQuietUntil = Math.max(lipQuietUntil, Date.now() + LIP_WINDOW);
      }, { passive: true });

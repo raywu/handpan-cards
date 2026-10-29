@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14415,7 +14415,7 @@ let panelOpen = false;
- const desktopMQ = window.matchMedia("(min-width:1024px) and (min-height:700px)");
- function panelStops() {
+@@ -14679,7 +14679,7 @@ function panelStops() {
+   const col = document.querySelector("#settings-panel > .panel-col");
+   const grid = typeof getComputedStyle === "function" && !!col && getComputedStyle(col).display === "flex";
    return [settingsTrigger, document.getElementById("modeA"), document.getElementById("modeB"),
 -          document.getElementById("tier-basic"), document.getElementById("tier-intermediate"),
 +          document.getElementById("tier-intermediate"),
            document.getElementById("tier-advanced"), document.getElementById("seq-source-link"),
-           document.getElementById("deck-add"), restoreBtn,
-           ...settingsPanel.querySelectorAll(".prints button, .prints select"),
+           // LS2: in the two-column grid modes Print sits above Scales and
+           // ABOUT closes the list, so Tab follows what the eye sees.
