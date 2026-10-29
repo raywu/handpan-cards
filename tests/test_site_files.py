@@ -125,6 +125,12 @@ class SiteFilesTest(unittest.TestCase):
     def test_headers_file_sends_noindex_for_every_path(self):
         self.assertEqual(read("_headers"), "/*\n  X-Robots-Tag: noindex\n")
 
+    def test_llms_txt_lists_exactly_the_sitemap_locs(self):
+        listed = set(re.findall(r"https://\S+", read("llms.txt")))
+        locs = {e.text.strip() for e in sitemap_tree().iter(NS + "loc")}
+        self.assertEqual(listed, locs)
+        self.assertIn(SITE + "handpan-101/", listed)
+        self.assertIn(SITE + "scales/", listed)
 
 if __name__ == "__main__":
     unittest.main()
