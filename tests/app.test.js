@@ -3538,56 +3538,75 @@ test("PM rule 3: DOWNLOAD PDF names and builds the chord-only file, byte for byt
   }
 });
 
-test("PM rule 7: HANDPAN 101 is the last Resources link, the /handpan-101/ page in the same tab, beside Handpan Helpers", () => {
+test("PM rule 7: HANDPAN 101 is the second Resources link, the /handpan-101/ page in the same tab, alone in a full-width row", () => {
   const panel = pmPanel();
   const group = panel.slice(panel.indexOf('<h3 class="panel-heading">Resources</h3>'));
   const links = [...group.matchAll(/<a\b[^>]*>[\s\S]*?<\/a>/g)].map((m) => m[0]);
-  assert.strictEqual(links.length, 7, "seven Resources links");
-  const first = links[links.length - 1];
-  assert.match(first, /\bid="res-handpan-101"/);
-  assert.match(first, /href="\/handpan-101\/"/);
-  assert.ok(!/\btarget=/.test(first), "the page opens in the same tab");
-  assert.ok(!/\brel=/.test(first), "a same-site link carries no rel");
-  assert.match(first, /aria-label="Handpan 101"/);
-  assert.match(first, /class="mode"/);
-  assert.ok(!/onclick/.test(first), "a link click must not close the panel");
-  assert.strictEqual(strip(first).replace(/\s+/g, " ").trim(), "HANDPAN 101", "the complete name survives presentational wrapping");
+  assert.strictEqual(links.length, 2, "two Resources links");
+  const link = links[1];
+  assert.match(link, /\bid="res-handpan-101"/);
+  assert.match(link, /href="\/handpan-101\/"/);
+  assert.ok(!/\btarget=/.test(link), "the page opens in the same tab");
+  assert.ok(!/\brel=/.test(link), "a same-site link carries no rel");
+  assert.match(link, /aria-label="Handpan 101"/);
+  assert.match(link, /class="mode"/);
+  assert.ok(!/onclick/.test(link), "a link click must not close the panel");
+  assert.strictEqual(strip(link).replace(/\s+/g, " ").trim(), "HANDPAN 101", "the complete name survives");
   const rows = [...group.matchAll(/<div class="modebar([^"]*)">([\s\S]*?)<\/div>/g)];
-  assert.strictEqual(rows.length, 4, "four modebar rows");
-  assert.strictEqual((rows[0][2].match(/<a\b/g) || []).length, 3, "the site row keeps three siblings");
-  assert.strictEqual((rows[1][2].match(/<a\b/g) || []).length, 2, "the Amy row keeps two");
-  assert.strictEqual((rows[2][2].match(/<a\b/g) || []).length, 2, "Helpers and HANDPAN 101 share the third row");
-  assert.deepStrictEqual([...rows[2][2].matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]),
-    ["res-handpan-helpers", "res-handpan-101"], "Helpers immediately precedes HANDPAN 101");
-  assert.ok(rows[3][2].includes('id="about-open"'), "the fourth row holds ABOUT");
-  assert.ok(!/<a\b/.test(rows[3][2]), "the ABOUT row holds no link");
+  assert.strictEqual(rows.length, 3, "three modebar rows");
+  assert.deepStrictEqual([...rows[1][2].matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]), ["res-handpan-101"], "HANDPAN 101 is alone in the second row");
+  assert.strictEqual(rows[1][1], "", "the row is a plain full-width modebar");
 });
 
-
-// Owner-approved Resources addition: the destination and safe native anchor
-// semantics are literal requirements, independent of the app's link table.
-test("HHR: the Helpers resource is a native new-tab link immediately before HANDPAN 101", () => {
+test("RR: Resources rows are EXPLORE SCALES, HANDPAN 101, ABOUT, each alone and full width, and the group has no external link", () => {
   const panel = pmPanel();
-  const group = panel.slice(panel.indexOf('<h3 class="panel-heading">Resources</h3>'));
-  const links = [...group.matchAll(/<a\b[^>]*>[\s\S]*?<\/a>/g)].map((m) => m[0]);
-  const helpers = links.filter((link) => /\bid="res-handpan-helpers"/.test(link));
-  assert.strictEqual(helpers.length, 1, "exactly one Helpers resource anchor must exist");
-  const link = helpers[0];
-  assert.match(link, /\bhref="https:\/\/handpanhelpers\.klangzeug\.de\/"/, "the literal Helpers destination");
-  assert.match(link, /\btarget="_blank"/, "Helpers opens in a separate tab");
-  assert.match(link, /\brel="noopener"/, "Helpers cannot access the app through window.opener");
-  assert.match(link, /\bclass="mode"/, "Helpers shares the existing control treatment");
-  assert.strictEqual(strip(link).replace(/\s+/g, " ").trim(), "HANDPAN HELPERS", "the complete proper name survives presentational wrapping");
-  assert.ok(!/\bon(?:click|keydown)\s*=/.test(link), "the resource uses native activation without inline script");
-  assert.ok(!/\b(?:hidden|disabled|aria-hidden|tabindex)(?=\s|=|>)/.test(link), "Helpers remains a normal keyboard-reachable anchor");
-  const index = links.indexOf(link);
-  assert.match(links[index + 1] || "", /\bid="res-handpan-101"/, "Helpers immediately precedes HANDPAN 101");
-  assert.strictEqual(index, links.length - 2, "HANDPAN 101 stays the final Resources link");
+  const group = panel.slice(panel.indexOf('<h3 class="panel-heading">Resources</h3>'), panel.indexOf('id="panel-lang-heading"'));
   const rows = [...group.matchAll(/<div class="modebar([^"]*)">([\s\S]*?)<\/div>/g)];
-  assert.strictEqual(rows.length, 4, "adding Helpers does not add a Resources row");
-  assert.match(rows[2][1], /\bduo\b/, "the approved third row is an equal-width duo");
-  assert.deepStrictEqual([...rows[2][2].matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]),
-    ["res-handpan-helpers", "res-handpan-101"], "the third row contains only the approved pair");
+  assert.strictEqual(rows.length, 3);
+  assert.deepStrictEqual(rows.map((r) => [...r[2].matchAll(/\bid="([^"]+)"/g)].map((m) => m[1])),
+    [["res-explore"], ["res-handpan-101"], ["about-open"]]);
+  for (const r of rows) assert.strictEqual(r[1], "", "each row is a plain full-width modebar");
+  assert.match(rows[0][2], /href="\/scales\/"/);
+  assert.ok(!/\btarget=|\brel=/.test(rows[0][2]), "EXPLORE SCALES opens in the same tab");
+  assert.strictEqual(strip(rows[0][2]).replace(/\s+/g, " ").trim(), "EXPLORE SCALES");
+  assert.match(rows[2][2], /<button class="mode" type="button" id="about-open"/);
+  assert.ok(!/href="https?:/.test(group), "no external link in the group");
+  assert.ok(!/target="_blank"/.test(group), "no new-tab link in the group");
+});
+
+test("RR: no served markup, selector row or i18n table carries a removed res- id or panel.res_amy key", () => {
+  const html = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
+  for (const dead of ["res-handpaner", "res-dingandtones", "res-trainingcards", "res-amy-progressions", "res-amy-bottom", "res-handpan-helpers", "panel.res_amy"]) {
+    assert.ok(!html.includes(dead), dead + " is still served");
+  }
+});
+
+test("RR: panel.explore is in every i18n table", () => {
+  const dir = path.join(__dirname, "..", "data", "i18n");
+  const files = fs.readdirSync(dir).filter((f) => f.endsWith(".json"));
+  assert.strictEqual(files.length, 8);
+  for (const f of files) {
+    const t = JSON.parse(fs.readFileSync(path.join(dir, f), "utf8"));
+    assert.ok(typeof t["panel.explore"] === "string" && t["panel.explore"].length > 0, f + " lacks panel.explore");
+    assert.ok(!Object.keys(t).some((k) => k.startsWith("panel.res_amy")), f + " keeps a panel.res_amy key");
+  }
+});
+
+test("RR: panelStops lists the Resources group in visual order in single column and both grid modes", () => {
+  const stubIds = [...pmPanel().matchAll(/<(?:a|button)\b[^>]*id="(res-[\w-]+|about-open)"/g)].map((m) => m[1]);
+  assert.deepStrictEqual(stubIds, ["res-explore", "res-handpan-101", "about-open"], "DOM order is visual order");
+  for (const display of ["block", "flex"]) {
+    const app = boot();
+    app.run(`settingsPanel.querySelectorAll = (sel) => /res-/.test(sel) ? ${JSON.stringify(stubIds)}.map((id) => ({ id, disabled: false, getClientRects: () => [{}] })) : []`);
+    app.run(`globalThis.getComputedStyle = () => ({ display: "${display}" }); document.querySelector = () => ({})`);
+    app.run("openPanel()");
+    assert.strictEqual(app.get("getComputedStyle(null).display"), display);
+    const ids = app.get("panelStops().map((e) => e.id)");
+    const at = stubIds.map((id) => ids.indexOf(id));
+    assert.ok(at.every((i) => i >= 0), display + ": every Resources stop is present");
+    assert.deepStrictEqual([...at].sort((x, y) => x - y), at, display + ": Resources stops are in visual order");
+    assert.strictEqual(ids[ids.length - 1], "lang-select", "Language closes the list");
+  }
 });
 
 /* D-3's type guard on printPaper must reject a TRUTHY but invalid stored
@@ -4570,7 +4589,8 @@ describe("panel fit judge", () => {
     delete candOver.controls["deck-add"];
     assert.strictEqual(judge(baseOver, candOver).rule2.fail.length, 1, "a base that overflows does not excuse it");
     assert.strictEqual(judge(cell(), withControl(cell(), "deck-add", { exists: false, rendered: false, disabled: false, bottom: 0 })).rule2.fail.length, 1, "exists:false counts as lacking");
-    assert.deepStrictEqual(pf.REMOVED_BY_DESIGN, ["modeS", "button:FULL DECK PDF", "button:CHORD-ONLY PDF", "share-copy"]);
+    assert.deepStrictEqual(pf.REMOVED_BY_DESIGN, ["modeS", "button:FULL DECK PDF", "button:CHORD-ONLY PDF", "share-copy",
+      "res-handpaner", "res-dingandtones", "res-trainingcards", "res-amy-progressions", "res-amy-bottom", "res-handpan-helpers"]);
     const noS = judge(cell(), lacks("modeS"));
     assert.strictEqual(noS.rule2.fail.length, 0, "modeS is removed by design");
     assert.strictEqual(noS.rule2.reported.length, 0);
@@ -11085,7 +11105,7 @@ describe("about overlay", () => {
     assert.match(inner, /<h3>Privacy<\/h3>\s*<p>[^<]*<\/p>\s*<h3>Contact<\/h3>\s*<p><a href="mailto:handpan@raywu\.org">handpan@raywu\.org<\/a><\/p>\s*$/);
   });
 
-  test("AO: ABOUT is a full-width button alone in the last Resources row, and the last stop before Language", async () => {
+  test("AO: ABOUT is a full-width button alone in the last Resources row, and the last Resources stop before Language", async () => {
     const panel = pmPanel();
     const group = panel.slice(panel.indexOf('<h3 class="panel-heading">Resources</h3>'));
     const rows = [...group.matchAll(/<div class="modebar([^"]*)">([\s\S]*?)<\/div>/g)];
@@ -11094,9 +11114,8 @@ describe("about overlay", () => {
     assert.match(last[2], /^\s*<button class="mode" type="button" id="about-open" aria-haspopup="dialog">ABOUT<\/button>\s*$/);
     assert.ok(group.lastIndexOf('id="about-open"') > group.lastIndexOf("res-handpan-101"), "ABOUT is not after HANDPAN 101");
     const app = boot();
-    const resIds = [...group.matchAll(/<a[^>]*id="(res-[\w-]+)"/g)].map((m) => m[1]);
-    assert.ok(resIds.length >= 6 && resIds.includes("res-handpan-101"), "the Resources links are in the markup");
-    app.run(`settingsPanel.querySelectorAll = (sel) => /res-/.test(sel) ? ${JSON.stringify(resIds)}.map((id) => ({ id, disabled: false, getClientRects: () => [{}] })) : []`);
+    const stubIds = [...pmPanel().matchAll(/<(?:a|button)\b[^>]*id="(res-[\w-]+|about-open)"/g)].map((m) => m[1]);
+    app.run(`settingsPanel.querySelectorAll = (sel) => /res-/.test(sel) ? ${JSON.stringify(stubIds)}.map((id) => ({ id, disabled: false, getClientRects: () => [{}] })) : []`);
     app.run("openPanel()");
     const ids = app.get("panelStops().map((e) => e.id)");
     assert.strictEqual(ids[ids.length - 2], "about-open", "about-open is not the stop before Language");
@@ -15156,9 +15175,10 @@ describe("I18N", () => {
     assert.strictEqual(contract.provenance.baselineCommit, "1510ea369573078e6296fe873edb6f538c3212a3");
     assert.strictEqual(contract.keyCount, 250);
     const savedKeys=["saved.ackPending","saved.conflict","saved.conflictDeleted","saved.failure","saved.importFailure","saved.legacy","saved.presetToken","saved.recovery","saved.resetConflict","saved.resetFailure","saved.savedToken","saved.separate","saved.session","saved.sessionAckPending","saved.sessionImportAckPending","saved.temporary"];
-    assert.strictEqual(Object.keys(en).length,contract.keyCount+16,"frozen base plus the sixteen approved saved-variants messages");
+    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],addedKeys=["panel.explore"];
+    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign)");
     for(const key of savedKeys)assert.strictEqual(typeof en[key],"string",key+" is a required new scalar message");
-    const baseKeys=Object.keys(en).filter(key=>!savedKeys.includes(key));
+    const baseKeys=Object.keys(en).filter(key=>!savedKeys.includes(key)&&!addedKeys.includes(key)).concat(retiredKeys);
     assert.strictEqual(require("node:crypto").createHash("sha256")
       .update(JSON.stringify(baseKeys.sort())).digest("hex"),contract.sortedKeySha256,"all frozen baseline key identities remain unchanged");
     assert.deepStrictEqual(Object.keys(en).filter((k) => isPlural(en[k])).sort(),
@@ -15270,10 +15290,8 @@ describe("I18N", () => {
   });
 
   const langPanelStops = (app) => {
-    const panel = pmPanel();
-    const group = panel.slice(panel.indexOf('<h3 class="panel-heading">Resources</h3>'));
-    const resIds = [...group.matchAll(/<a[^>]*id="(res-[\w-]+)"/g)].map((m) => m[1]);
-    app.run(`settingsPanel.querySelectorAll = (sel) => /res-/.test(sel) ? ${JSON.stringify(resIds)}.map((id) => ({ id, disabled: false, getClientRects: () => [{}] })) : []`);
+    const stubIds = [...pmPanel().matchAll(/<(?:a|button)\b[^>]*id="(res-[\w-]+|about-open)"/g)].map((m) => m[1]);
+    app.run(`settingsPanel.querySelectorAll = (sel) => /res-/.test(sel) ? ${JSON.stringify(stubIds)}.map((id) => ({ id, disabled: false, getClientRects: () => [{}] })) : []`);
     app.run("openPanel()");
     return app.get("panelStops().map((e) => e.id)");
   };
