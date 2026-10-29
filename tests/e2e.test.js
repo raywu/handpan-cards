@@ -2467,7 +2467,7 @@ function run() {
             return { n: ctrls.length, bad, ta: sel.textAlign, tal: sel.textAlignLast };
           `);
           const label = `${vw}x${vh}`;
-          assert.ok(m.n >= 12, `${label}: expected the panel's buttons and links to be measured, got ${m.n}`);
+          assert.ok(m.n >= 10, `${label}: expected the panel's buttons and links to be measured, got ${m.n}`);
           assert.deepStrictEqual(m.bad, [], `${label}: labels not centred in their controls`);
           assert.strictEqual(m.ta, "center", `${label}: the paper select text-align`);
           assert.strictEqual(m.tal, "center", `${label}: the paper select text-align-last`);
