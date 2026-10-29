@@ -18441,3 +18441,12 @@ describe("SHC asynchronous LINK ownership", () => {
   });
 
 }
+
+test("NS1: About links underline at 1.5px and 2.5px on hover, like the scale pages", () => {
+  const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+  const rest = /#about a\{([^}]*)\}/.exec(html);
+  assert.ok(rest, "no #about a rule");
+  assert.match(rest[1], /text-decoration-thickness:\s*1\.5px/);
+  assert.match(rest[1], /text-underline-offset:\s*3px/);
+  assert.match(html, /#about a:hover\{\s*text-decoration-thickness:\s*2\.5px/);
+});
