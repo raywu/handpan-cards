@@ -10867,11 +10867,31 @@ describe("about overlay", () => {
     assert.ok(priv, "the Privacy paragraph is missing");
     assert.ok(textOf(priv[0]).includes(PRIVACY), "the Privacy paragraph does not say scales stay here and how to share one");
     assert.ok(textOf(priv[0]).includes("The site counts anonymous visits and feature use with Google Analytics, without cookies in the EEA, the UK and Switzerland."), "the Privacy paragraph does not state its Google Analytics sentence");
-    const own = /<h3>Your own scale<\/h3>\s*<p>([^<]*)<\/p>/.exec(aboutHtml());
-    assert.ok(own, "the Your own scale paragraph is missing");
+    const own = /<h3>Add your own scale<\/h3>\s*<p>([^<]*)<\/p>/.exec(aboutHtml());
+    assert.ok(own, "the Add your own scale paragraph is missing");
     assert.strictEqual(textOf(own[1]).trim(), "Type any scale and the app generates its chords.");
     const text = textOf(aboutHtml());
     assert.ok(!/lives only in your browser/.test(text) && !/never leave your browser/.test(text));
+  });
+
+  test("About lists 16 popular scale links in five groups, each to an existing /scales/<slug>/ page, then the hub link", async () => {
+    const rows = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "tools", "scale_pages.json"), "utf8"));
+    const groups = ["Minor", "Celtic minor", "Pentatonic minor", "Major and bright", "Middle Eastern and Japanese"];
+    const m = /<h3>Popular scales<\/h3>([\s\S]*?)<h3>Privacy<\/h3>/.exec(aboutHtml());
+    assert.ok(m, "no Popular scales section before Privacy");
+    assert.ok(/^\s*<p>Chord charts for 16 common handpan scales\.<\/p>/.test(m[1]), "the intro is missing");
+    assert.deepStrictEqual([...m[1].matchAll(/<h4>(.*?)<\/h4>/g)].map((x) => x[1]), groups);
+    const links = [...m[1].matchAll(/<li><a href="(\/scales\/[a-z0-9-]+\/)">(.*?)<\/a><\/li>/g)];
+    assert.deepStrictEqual(links.map((x) => x[1]), rows.map((r) => `/scales/${r.slug}/`));
+    assert.deepStrictEqual(links.map((x) => x[2]), rows.map((r) => `${r.name} handpan chords`));
+    for (const r of rows) assert.ok(fs.existsSync(path.join(__dirname, "..", "scales", r.slug, "index.html")), r.slug);
+    for (const g of groups) {
+      const block = new RegExp(`<h4>${g}</h4>\\s*<ul>([\\s\\S]*?)</ul>`).exec(m[1]);
+      assert.ok(block, `no <ul> under ${g}`);
+      assert.strictEqual([...block[1].matchAll(/<li><a href="\/scales\/([a-z0-9-]+)\/">/g)].map((x) => x[1]).join(),
+        rows.filter((r) => r.group === g).map((r) => r.slug).join());
+    }
+    assert.ok(/<ul>\s*<li><a href="\/scales\/">All scale chord charts<\/a><\/li>\s*<\/ul>\s*$/.test(m[1]), "the hub link is not a one-item list at the end");
   });
 
   test("AO: the about section ships hidden as a dialog, in place after #app, with every existing sentence", async () => {
@@ -13754,7 +13774,7 @@ describe("DS: the visible word is scale", () => {
 
   test("DS1b: the pinned strings are served", async () => {
     const h = html();
-    for (const s of ["or pick a built-in scale.", "Pick a built-in scale, or type your own.", "Built-in scales",
+    for (const s of ["or pick a built-in scale.", "Pick a built-in scale, or type your own.", "Try these scales",
       "DELETE THIS SCALE", "RESET SEEDED SCALES", "Print this scale"]) {
       assert.ok(h.includes(s), `missing ${s}`);
     }

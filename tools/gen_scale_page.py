@@ -4,6 +4,7 @@
     python3 tools/gen_scale_page.py <slug>            write scales/<slug>/index.html
     python3 tools/gen_scale_page.py <slug> --check    exit 1 if the file differs
     python3 tools/gen_scale_page.py <slug> --stdout   print the page
+    python3 tools/gen_scale_page.py --hub             write scales/index.html (--check, --stdout too)
     python3 tools/gen_scale_page.py --fixture         write tests/fixtures/scale_pages_v1.json
     python3 tools/gen_scale_page.py --fixture --check exit 1 if the fixture drifted
 
@@ -36,6 +37,15 @@ SAMPLE_COPY = {
     "who_html": "Sample maker, through sample pans.",
     "progression_tail_html": ", top shell only.",
 }
+
+GROUPS = [
+    ("Minor", "Dark and moody. The most common handpan sound."),
+    ("Celtic minor", "Minor without the dark 6th. Soft and open."),
+    ("Pentatonic minor", "Few notes, hard to play a wrong one."),
+    ("Major and bright", "Happy, uplifting."),
+    ("Middle Eastern and Japanese", "Exotic colour from a flat 2nd or raised 7th."),
+]
+HUB_INTRO = "Every chord each handpan scale can play, with the notes to strike. Pick your scale."
 
 NODE_SRC = r"""
 const fs = require("fs");
@@ -164,6 +174,51 @@ def cross_lead(row, target):
     return "Another %s scale?" % row["root"]
 
 
+def siblings(row, rows):
+    i = next(n for n, r in enumerate(rows) if r["slug"] == row["slug"])
+    same = [r["slug"] for r in rows if r["group"] == row["group"] and r["slug"] != row["slug"]]
+    rest = [r["slug"] for r in rows[i + 1:] + rows[:i] if r["group"] != row["group"]]
+    return (same + rest)[:3]
+
+
+def link_item(row):
+    return '<li><a href="/scales/%s/">%s handpan chords</a></li>' % (row["slug"], esc(row["name"]))
+
+
+def hub_page(rows=None):
+    rows = rows or load_rows()
+    url = SITE + "scales/"
+    title = "Handpan scale chord charts"
+    description = ("Handpan chord charts for %d scales, grouped by sound, with the notes to play for each chord."
+                   % len(rows))
+    out = ['<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
+           '<meta name="viewport" content="width=device-width, initial-scale=1">\n']
+    out.append("<title>%s</title>\n" % title)
+    out.append('<meta name="description" content="%s">\n' % html.escape(description))
+    out.append('<link rel="canonical" href="%s">\n' % url)
+    out.append('<meta property="og:type" content="website">\n<meta property="og:url" content="%s">\n' % url)
+    out.append('<meta property="og:title" content="%s">\n' % title)
+    out.append('<meta property="og:description" content="%s">\n' % html.escape(description))
+    out.append('<meta property="og:image" content="%sog.png">\n' % SITE)
+    out.append('<meta property="og:site_name" content="Handpan Chords">\n')
+    out.append('<meta name="theme-color" content="%s">\n' % BG_LIGHT)
+    out.append('<link rel="preconnect" href="https://fonts.googleapis.com">\n'
+               '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
+               '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&family='
+               'Bitter:wght@400;600&family=Nunito+Sans:wght@400;600;700&display=swap">\n')
+    out.append("<style>\n" + CSS_HEAD.replace("@LIGHT@", "#2563B0").replace("@DARK@", "#7fb0ee") + "</style>\n")
+    out.append("</head>\n<body>\n<main>\n")
+    out.append('<header><p><a href="/">Home</a> &rsaquo; Scale chord charts</p>\n<h1>%s</h1>\n' % title)
+    out.append('<p style="margin-top:8px">%s</p>\n</header>\n' % HUB_INTRO)
+    for name, blurb in GROUPS:
+        out.append('<section class="group">\n<h2>%s</h2><p class="muted">%s</p>\n<ul class="rel">\n' % (esc(name), esc(blurb)))
+        out.append("\n".join(link_item(r) for r in rows if r["group"] == name))
+        out.append("\n</ul>\n</section>\n")
+    out.append('<p class="muted">Handpan Chords is free in your browser. Your scales stay on your device.</p>\n'
+               "</main>\n</body>\n</html>\n")
+    return "".join(out)
+
+
 def esc(s):
     return html.escape(s, quote=False)
 
@@ -204,6 +259,10 @@ a{color:var(--r);font-weight:600;text-decoration:underline;text-decoration-thick
 a.open{text-decoration:none}
 a:hover{text-decoration-thickness:2.5px}
 a:focus-visible{outline:2px solid currentColor;outline-offset:2px;border-radius:2px}
+ul.rel{list-style:none;margin:0;padding:0}
+ul.rel li{border-bottom:1px solid var(--muted)}
+ul.rel a{display:flex;align-items:center;min-height:44px}
+section.related h2,section.group h2{color:var(--fg);font-size:20px;margin:0 0 4px}
 """
 
 CSS_EXTRA = """table.chords{border-collapse:collapse;max-width:100%}
@@ -285,7 +344,7 @@ def render(row, data, rows_by_slug, copy, alt=None):
     else:
         card_phrase = "the three top-ranked chord cards"
     list_names = ", ".join(names[:-1]) + " and " + names[-1]
-    title = "%s Handpan Chords: %s Cards" % (name, list_names)
+    title = "%s handpan chords" % name
     description = ("%s handpan chords: %s (%s) with the notes to play, then practice the full set in the "
                    "free chord flashcard app.") % (name, card_phrase, ", ".join(names))
     og_description = copy["og_description"] if frozen else description
@@ -374,6 +433,10 @@ def render(row, data, rows_by_slug, copy, alt=None):
         out.append('<p class="muted">%s Open <a href="/#s=%s">%s</a>.</p>\n' % (a["lead"], alt["share"],
                                                                                 esc(a["name"])))
     out.append("</section>\n")
+    all_rows = list(rows_by_slug.values())
+    out.append('<section class="related">\n<h2>Related scales</h2>\n<ul class="rel">\n%s\n</ul>\n'
+               '<p><a href="/scales/">All %d handpan scale chord charts</a></p>\n</section>\n'
+               % ("\n".join(link_item(rows_by_slug[s]) for s in siblings(row, all_rows)), len(all_rows)))
     if not frozen:
         out.append('<p class="muted">Last updated <time datetime="%s">%s</time></p>\n' % (UPDATED, UPDATED))
     out.append('<p class="muted">Handpan Chords is free in your browser. Your scales stay on your device.</p>\n'
@@ -413,6 +476,18 @@ def main(argv):
             with open(FIXTURE, encoding="utf-8") as f:
                 return 0 if f.read() == text else 1
         with open(FIXTURE, "w", encoding="utf-8") as f:
+            f.write(text)
+        return 0
+    if "--hub" in argv:
+        text = hub_page()
+        path = os.path.join(ROOT, "scales", "index.html")
+        if "--stdout" in argv:
+            sys.stdout.write(text)
+            return 0
+        if check:
+            with open(path, encoding="utf-8") as f:
+                return 0 if f.read() == text else 1
+        with open(path, "w", encoding="utf-8") as f:
             f.write(text)
         return 0
     if len(args) != 1:

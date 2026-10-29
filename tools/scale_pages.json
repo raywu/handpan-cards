@@ -5,6 +5,7 @@
   "name": "D Kurd 10",
   "root": "D",
   "family": "kurd",
+  "group": "Minor",
   "notes": 10,
   "deck": "kurd",
   "seed": null,
@@ -40,11 +41,136 @@
   }
  },
  {
+  "slug": "d-kurd-9",
+  "kind": "new",
+  "name": "D Kurd 9",
+  "root": "D",
+  "family": "kurd",
+  "group": "Minor",
+  "notes": 9,
+  "deck": null,
+  "seed": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
+  "typed": "D Kurd 9",
+  "palette": 6,
+  "popularized": true,
+  "colors": {
+   "root": "#2563B0",
+   "tone": "#C0452C"
+  },
+  "accent_light": "#2563B0",
+  "accent_dark": "#3D81D6",
+  "pick": [
+   1,
+   19,
+   28
+  ],
+  "cta": "/#s=6/(D3)_A3_Bb3_C4_D4_E4_F4_G4_A4/D+Kurd+9/300038",
+  "cards_total": 49,
+  "cross": {
+   "to": "d-kurd-10",
+   "href": "/scales/d-kurd-10/"
+  }
+ },
+ {
+  "slug": "d-integral-9",
+  "kind": "new",
+  "name": "D Integral 9",
+  "root": "D",
+  "family": "integral",
+  "group": "Minor",
+  "notes": 9,
+  "deck": null,
+  "seed": "(D3) A3 Bb3 C4 D4 E4 F4 A4 C5",
+  "typed": "D INTEGRAL 9",
+  "palette": 4,
+  "popularized": false,
+  "colors": {
+   "root": "#C9971E",
+   "tone": "#6D40A3"
+  },
+  "accent_light": "#926E16",
+  "accent_dark": "#C9971E",
+  "pick": [
+   1,
+   2,
+   3
+  ],
+  "cta": "/#s=6/(D3)_A3_Bb3_C4_D4_E4_F4_A4_C5/D+INTEGRAL+9/palette-5/81e9f3",
+  "cards_total": 19,
+  "cross": {
+   "to": "d-kurd-9",
+   "href": "/scales/d-kurd-9/"
+  }
+ },
+ {
+  "slug": "c-sharp-mystic-8",
+  "kind": "new",
+  "name": "C# Mystic 8",
+  "root": "C#",
+  "family": "mystic",
+  "group": "Minor",
+  "notes": 8,
+  "deck": null,
+  "seed": "(C#3) G#3 A3 C#4 D#4 E4 G#4 B4",
+  "typed": "C# MYSTIC 8",
+  "palette": 3,
+  "popularized": false,
+  "colors": {
+   "root": "#E2761B",
+   "tone": "#E0559A"
+  },
+  "accent_light": "#B25D15",
+  "accent_dark": "#E2761B",
+  "pick": [
+   1,
+   2,
+   3
+  ],
+  "cta": "/#s=6/(Cs3)_Gs3_A3_Cs4_Ds4_E4_Gs4_B4/C%23+MYSTIC+8/palette-4/5da919",
+  "cards_total": 19,
+  "cross": {
+   "to": "d-kurd-10",
+   "href": "/scales/d-kurd-10/"
+  }
+ },
+ {
+  "slug": "e-equinox-9",
+  "kind": "new",
+  "name": "E Equinox 9",
+  "root": "E",
+  "family": "equinox",
+  "group": "Minor",
+  "notes": 9,
+  "deck": null,
+  "seed": "(E3) G3 B3 C4 D4 E4 F#4 G4 B4",
+  "typed": "E EQUINOX 9",
+  "palette": 9,
+  "popularized": false,
+  "colors": {
+   "root": "#B3263A",
+   "tone": "#3B7A2A"
+  },
+  "accent_light": "#B3263A",
+  "accent_dark": "#DA5366",
+  "pick": [
+   1,
+   2,
+   3
+  ],
+  "cta": "/#s=6/(E3)_G3_B3_C4_D4_E4_Fs4_G4_B4/E+EQUINOX+9/palette-10/851c45",
+  "cards_total": 19,
+  "cross": {
+   "to": "e-romanian-hijaz-9",
+   "href": "/scales/e-romanian-hijaz-9/"
+  }
+ },
+ {
   "slug": "d-amara-9",
   "kind": "built-in",
   "name": "D Amara 9",
   "root": "D",
   "family": "amara",
+  "group": "Celtic minor",
   "notes": 9,
   "deck": "amara",
   "seed": null,
@@ -75,6 +201,7 @@
   "name": "D Amara 10",
   "root": "D",
   "family": "amara",
+  "group": "Celtic minor",
   "notes": 10,
   "deck": "amara10",
   "seed": null,
@@ -100,93 +227,34 @@
   }
  },
  {
-  "slug": "f-low-pygmy-18",
-  "kind": "built-in",
-  "name": "F3 Low Pygmy 18",
-  "root": "F",
-  "family": "pygmy",
-  "notes": 18,
-  "deck": "pygmy",
-  "seed": null,
-  "typed": null,
-  "palette": 1,
-  "popularized": false,
-  "colors": {
-   "root": "#6D40A3",
-   "tone": "#C9971E"
-  },
-  "accent_light": "#6D40A3",
-  "accent_dark": "#9870C7",
-  "pick": [
-   1,
-   21,
-   26
-  ],
-  "cta": "/#deck=f-low-pygmy-18",
-  "cards_total": 53,
-  "cross": {
-   "to": "f-low-pygmy-9",
-   "href": "/scales/f-low-pygmy-9/"
-  }
- },
- {
-  "slug": "c-sharp-hijaz-9",
-  "kind": "built-in",
-  "name": "C# Hijaz / Orion 9",
-  "root": "C#",
-  "family": "hijaz",
-  "notes": 9,
-  "deck": "hijaz",
-  "seed": null,
-  "typed": null,
-  "palette": 0,
-  "popularized": false,
-  "colors": {
-   "root": "#E0559A",
-   "tone": "#E2761B"
-  },
-  "accent_light": "#D3277C",
-  "accent_dark": "#E0559A",
-  "pick": [
-   1,
-   2,
-   3
-  ],
-  "cta": "/#deck=c-sharp-hijaz-9",
-  "cards_total": 19,
-  "cross": {
-   "to": "e-romanian-hijaz-9",
-   "href": "/scales/e-romanian-hijaz-9/"
-  }
- },
- {
-  "slug": "d-kurd-9",
+  "slug": "e-amara-20",
   "kind": "new",
-  "name": "D Kurd 9",
-  "root": "D",
-  "family": "kurd",
-  "notes": 9,
+  "name": "E Amara 20",
+  "root": "E",
+  "family": "amara",
+  "group": "Celtic minor",
+  "notes": 20,
   "deck": null,
-  "seed": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
-  "typed": "D Kurd 9",
-  "palette": 6,
-  "popularized": true,
+  "seed": "[C3] [D3] (E3) [F#3] [G3] [A3] B3 [C4] D4 E4 F#4 G4 A4 B4 [C5] D5 E5 F#5 G5 A5",
+  "typed": "E AMARA 20",
+  "palette": 2,
+  "popularized": false,
   "colors": {
-   "root": "#2563B0",
-   "tone": "#C0452C"
+   "root": "#0B7B75",
+   "tone": "#DD8F00"
   },
-  "accent_light": "#2563B0",
-  "accent_dark": "#3D81D6",
+  "accent_light": "#0B7B75",
+  "accent_dark": "#0D918A",
   "pick": [
    1,
-   19,
-   28
+   29,
+   39
   ],
-  "cta": "/#s=6/(D3)_A3_Bb3_C4_D4_E4_F4_G4_A4/D+Kurd+9/300038",
-  "cards_total": 49,
+  "cta": "/#s=6/uC3_uD3_(E3)_uFs3_uG3_uA3_B3_uC4_D4_E4_Fs4_G4_A4_B4_uC5_D5_E5_Fs5_G5_A5/E+AMARA+20/palette-3/9d65e6",
+  "cards_total": 77,
   "cross": {
-   "to": "d-kurd-10",
-   "href": "/scales/d-kurd-10/"
+   "to": "d-amara-9",
+   "href": "/scales/d-amara-9/"
   }
  },
  {
@@ -195,6 +263,7 @@
   "name": "F Low Pygmy 9",
   "root": "F",
   "family": "pygmy",
+  "group": "Pentatonic minor",
   "notes": 9,
   "deck": null,
   "seed": "(F2) F3 G3 Ab3 C4 Eb4 F4 G4 Ab4",
@@ -220,123 +289,65 @@
   }
  },
  {
-  "slug": "e-romanian-hijaz-9",
-  "kind": "new",
-  "name": "E Romanian Hijaz 9",
-  "root": "E",
-  "family": "hijaz",
-  "notes": 9,
-  "deck": null,
-  "seed": "(E3) A3 B3 C4 D#4 E4 F#4 G4 B4",
-  "typed": "E ROMANIAN HIJAZ 9",
-  "palette": 0,
+  "slug": "f-low-pygmy-18",
+  "kind": "built-in",
+  "name": "F3 Low Pygmy 18",
+  "root": "F",
+  "family": "pygmy",
+  "group": "Pentatonic minor",
+  "notes": 18,
+  "deck": "pygmy",
+  "seed": null,
+  "typed": null,
+  "palette": 1,
   "popularized": false,
   "colors": {
-   "root": "#E0559A",
-   "tone": "#E2761B"
+   "root": "#6D40A3",
+   "tone": "#C9971E"
   },
-  "accent_light": "#D3277C",
-  "accent_dark": "#E0559A",
+  "accent_light": "#6D40A3",
+  "accent_dark": "#9870C7",
   "pick": [
    1,
-   10,
-   18
+   21,
+   26
   ],
-  "cta": "/#s=6/(E3)_A3_B3_C4_Ds4_E4_Fs4_G4_B4/E+ROMANIAN+HIJAZ+9/101212",
-  "cards_total": 30,
+  "cta": "/#deck=f-low-pygmy-18",
+  "cards_total": 53,
   "cross": {
-   "to": "c-sharp-hijaz-9",
-   "href": "/scales/c-sharp-hijaz-9/"
+   "to": "f-low-pygmy-9",
+   "href": "/scales/f-low-pygmy-9/"
   }
  },
  {
-  "slug": "c-sharp-mystic-8",
+  "slug": "f-magic-voyage-8",
   "kind": "new",
-  "name": "C# Mystic 8",
-  "root": "C#",
-  "family": "mystic",
+  "name": "F Magic Voyage 8",
+  "root": "F",
+  "family": "magicvoyage",
+  "group": "Pentatonic minor",
   "notes": 8,
   "deck": null,
-  "seed": "(C#3) G#3 A3 C#4 D#4 E4 G#4 B4",
-  "typed": "C# MYSTIC 8",
-  "palette": 3,
+  "seed": "(F3) Ab3 C4 Eb4 F4 G4 Ab4 C5",
+  "typed": "F MAGIC VOYAGE 8",
+  "palette": 8,
   "popularized": false,
   "colors": {
-   "root": "#E2761B",
-   "tone": "#E0559A"
+   "root": "#C0452C",
+   "tone": "#2563B0"
   },
-  "accent_light": "#B25D15",
-  "accent_dark": "#E2761B",
+  "accent_light": "#C0452C",
+  "accent_dark": "#D45D44",
   "pick": [
    1,
    2,
    3
   ],
-  "cta": "/#s=6/(Cs3)_Gs3_A3_Cs4_Ds4_E4_Gs4_B4/C%23+MYSTIC+8/palette-4/5da919",
-  "cards_total": 19,
+  "cta": "/#s=6/(F3)_Ab3_C4_Eb4_F4_G4_Ab4_C5/F+MAGIC+VOYAGE+8/palette-9/1151fc",
+  "cards_total": 11,
   "cross": {
-   "to": "d-kurd-10",
-   "href": "/scales/d-kurd-10/"
-  }
- },
- {
-  "slug": "d-integral-9",
-  "kind": "new",
-  "name": "D Integral 9",
-  "root": "D",
-  "family": "integral",
-  "notes": 9,
-  "deck": null,
-  "seed": "(D3) A3 Bb3 C4 D4 E4 F4 A4 C5",
-  "typed": "D INTEGRAL 9",
-  "palette": 4,
-  "popularized": false,
-  "colors": {
-   "root": "#C9971E",
-   "tone": "#6D40A3"
-  },
-  "accent_light": "#926E16",
-  "accent_dark": "#C9971E",
-  "pick": [
-   1,
-   2,
-   3
-  ],
-  "cta": "/#s=6/(D3)_A3_Bb3_C4_D4_E4_F4_A4_C5/D+INTEGRAL+9/palette-5/81e9f3",
-  "cards_total": 19,
-  "cross": {
-   "to": "d-kurd-9",
-   "href": "/scales/d-kurd-9/"
-  }
- },
- {
-  "slug": "f-sharp-akebono-9",
-  "kind": "new",
-  "name": "F# Akebono 9",
-  "root": "F#",
-  "family": "akebono",
-  "notes": 9,
-  "deck": null,
-  "seed": "(F#3) B3 C#4 D4 F#4 G4 B4 C#5 D5",
-  "typed": "F# AKEBONO 9",
-  "palette": 5,
-  "popularized": false,
-  "colors": {
-   "root": "#DD8F00",
-   "tone": "#0B7B75"
-  },
-  "accent_light": "#9E6600",
-  "accent_dark": "#DD8F00",
-  "pick": [
-   1,
-   2,
-   3
-  ],
-  "cta": "/#s=6/(Fs3)_B3_Cs4_D4_Fs4_G4_B4_Cs5_D5/F%23+AKEBONO+9/palette-6/542d71",
-  "cards_total": 9,
-  "cross": {
-   "to": "d-kurd-10",
-   "href": "/scales/d-kurd-10/"
+   "to": "f-low-pygmy-9",
+   "href": "/scales/f-low-pygmy-9/"
   }
  },
  {
@@ -345,6 +356,7 @@
   "name": "D Sabye 9",
   "root": "D",
   "family": "sabye",
+  "group": "Major and bright",
   "notes": 9,
   "deck": null,
   "seed": "(D3) G3 A3 B3 C#4 D4 E4 F#4 A4",
@@ -379,6 +391,7 @@
   "name": "D Aegean 18",
   "root": "D",
   "family": "aegean",
+  "group": "Major and bright",
   "notes": 18,
   "deck": null,
   "seed": "[A2] (D3) [E3] F#3 [G#3] A3 [B3] C#4 D4 [E4] F#4 G#4 A4 [B4] C#5 D5 [E5] | F#5",
@@ -404,59 +417,30 @@
   }
  },
  {
-  "slug": "e-amara-20",
-  "kind": "new",
-  "name": "E Amara 20",
-  "root": "E",
-  "family": "amara",
-  "notes": 20,
-  "deck": null,
-  "seed": "[C3] [D3] (E3) [F#3] [G3] [A3] B3 [C4] D4 E4 F#4 G4 A4 B4 [C5] D5 E5 F#5 G5 A5",
-  "typed": "E AMARA 20",
-  "palette": 2,
-  "popularized": false,
-  "colors": {
-   "root": "#0B7B75",
-   "tone": "#DD8F00"
-  },
-  "accent_light": "#0B7B75",
-  "accent_dark": "#0D918A",
-  "pick": [
-   1,
-   29,
-   39
-  ],
-  "cta": "/#s=6/uC3_uD3_(E3)_uFs3_uG3_uA3_B3_uC4_D4_E4_Fs4_G4_A4_B4_uC5_D5_E5_Fs5_G5_A5/E+AMARA+20/palette-3/9d65e6",
-  "cards_total": 77,
-  "cross": {
-   "to": "d-amara-9",
-   "href": "/scales/d-amara-9/"
-  }
- },
- {
-  "slug": "e-equinox-9",
-  "kind": "new",
-  "name": "E Equinox 9",
-  "root": "E",
-  "family": "equinox",
+  "slug": "c-sharp-hijaz-9",
+  "kind": "built-in",
+  "name": "C# Hijaz / Orion 9",
+  "root": "C#",
+  "family": "hijaz",
+  "group": "Middle Eastern and Japanese",
   "notes": 9,
-  "deck": null,
-  "seed": "(E3) G3 B3 C4 D4 E4 F#4 G4 B4",
-  "typed": "E EQUINOX 9",
-  "palette": 9,
+  "deck": "hijaz",
+  "seed": null,
+  "typed": null,
+  "palette": 0,
   "popularized": false,
   "colors": {
-   "root": "#B3263A",
-   "tone": "#3B7A2A"
+   "root": "#E0559A",
+   "tone": "#E2761B"
   },
-  "accent_light": "#B3263A",
-  "accent_dark": "#DA5366",
+  "accent_light": "#D3277C",
+  "accent_dark": "#E0559A",
   "pick": [
    1,
    2,
    3
   ],
-  "cta": "/#s=6/(E3)_G3_B3_C4_D4_E4_Fs4_G4_B4/E+EQUINOX+9/palette-10/851c45",
+  "cta": "/#deck=c-sharp-hijaz-9",
   "cards_total": 19,
   "cross": {
    "to": "e-romanian-hijaz-9",
@@ -464,33 +448,65 @@
   }
  },
  {
-  "slug": "f-magic-voyage-8",
+  "slug": "e-romanian-hijaz-9",
   "kind": "new",
-  "name": "F Magic Voyage 8",
-  "root": "F",
-  "family": "magicvoyage",
-  "notes": 8,
+  "name": "E Romanian Hijaz 9",
+  "root": "E",
+  "family": "hijaz",
+  "group": "Middle Eastern and Japanese",
+  "notes": 9,
   "deck": null,
-  "seed": "(F3) Ab3 C4 Eb4 F4 G4 Ab4 C5",
-  "typed": "F MAGIC VOYAGE 8",
-  "palette": 8,
+  "seed": "(E3) A3 B3 C4 D#4 E4 F#4 G4 B4",
+  "typed": "E ROMANIAN HIJAZ 9",
+  "palette": 0,
   "popularized": false,
   "colors": {
-   "root": "#C0452C",
-   "tone": "#2563B0"
+   "root": "#E0559A",
+   "tone": "#E2761B"
   },
-  "accent_light": "#C0452C",
-  "accent_dark": "#D45D44",
+  "accent_light": "#D3277C",
+  "accent_dark": "#E0559A",
+  "pick": [
+   1,
+   10,
+   18
+  ],
+  "cta": "/#s=6/(E3)_A3_B3_C4_Ds4_E4_Fs4_G4_B4/E+ROMANIAN+HIJAZ+9/101212",
+  "cards_total": 30,
+  "cross": {
+   "to": "c-sharp-hijaz-9",
+   "href": "/scales/c-sharp-hijaz-9/"
+  }
+ },
+ {
+  "slug": "f-sharp-akebono-9",
+  "kind": "new",
+  "name": "F# Akebono 9",
+  "root": "F#",
+  "family": "akebono",
+  "group": "Middle Eastern and Japanese",
+  "notes": 9,
+  "deck": null,
+  "seed": "(F#3) B3 C#4 D4 F#4 G4 B4 C#5 D5",
+  "typed": "F# AKEBONO 9",
+  "palette": 5,
+  "popularized": false,
+  "colors": {
+   "root": "#DD8F00",
+   "tone": "#0B7B75"
+  },
+  "accent_light": "#9E6600",
+  "accent_dark": "#DD8F00",
   "pick": [
    1,
    2,
    3
   ],
-  "cta": "/#s=6/(F3)_Ab3_C4_Eb4_F4_G4_Ab4_C5/F+MAGIC+VOYAGE+8/palette-9/1151fc",
-  "cards_total": 11,
+  "cta": "/#s=6/(Fs3)_B3_Cs4_D4_Fs4_G4_B4_Cs5_D5/F%23+AKEBONO+9/palette-6/542d71",
+  "cards_total": 9,
   "cross": {
-   "to": "f-low-pygmy-9",
-   "href": "/scales/f-low-pygmy-9/"
+   "to": "d-kurd-10",
+   "href": "/scales/d-kurd-10/"
   }
  }
 ]
