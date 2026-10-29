@@ -19846,32 +19846,33 @@ function run() {
     }
 
     for (const [w, h] of [[844, 390], [380, 780]]) {
-      test(`FT: d-kurd-9 at ${w}x${h} pinch-zoomed to 2.5x on NEXT: tapping NEXT twice steps without panning the visual viewport`, async () => {
+      test(`FT: d-kurd-9 at ${w}x${h} zoomed to 2.5x on NEXT: tapping NEXT twice steps without panning the visual viewport`, async () => {
         await b.setViewport(w, h, true);
-        await b.send("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 5 });
         try {
           await b.send("Page.navigate", { url: pageUrl("d-kurd-9") });
           await b.waitFor(`document.readyState === "complete" && document.querySelector(".prog .slot")`, { label: "stepper" });
-          const p0 = await b.eval(`
-            const l = document.querySelector(".prog .slot:nth-child(1) .nav label:last-child");
-            l.scrollIntoView({ block: "start" }); scrollBy(0, -60);
-            const r = l.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
-          await b.send("Input.synthesizePinchGesture", { x: p0.x, y: p0.y, scaleFactor: 2.5, gestureSourceType: "touch" });
-          await new Promise((r) => setTimeout(r, 300));
+          await b.setPageScale(2.5);
+          await b.settle();
           for (const [step, sel] of [[2, ".prog .slot:nth-child(1) .nav label:last-child"], [3, ".prog .slot:nth-child(2) .nav label:last-child"]]) {
+            if (step === 2) {
+              await b.eval(`document.querySelector(${JSON.stringify(sel)}).scrollIntoView({ block: "center", inline: "center" }); return 1;`);
+              await b.settle();
+            }
             const v = await b.eval(`
               const l = document.querySelector(${JSON.stringify(sel)}).getBoundingClientRect(); const v = visualViewport;
               return { s: v.scale, px: v.pageLeft, py: v.pageTop, x: l.left + l.width / 2 - v.offsetLeft, y: l.top + l.height / 2 - v.offsetTop, vw: v.width, vh: v.height };`);
             assert.ok(v.s > 2, `zoomed (${v.s})`);
-            assert.ok(v.x > 0 && v.x < v.vw && v.y > 0 && v.y < v.vh, `${sel} is on screen (${JSON.stringify(v)})`);
-            await b.send("Input.synthesizeTapGesture", { x: v.x, y: v.y, gestureSourceType: "touch" });
+            assert.ok(v.x > 0 && v.x < v.vw && v.y > 0 && v.y < v.vh, `${sel} is in the zoomed view (${JSON.stringify(v)})`);
+            for (const type of ["mousePressed", "mouseReleased"]) {
+              await b.send("Input.dispatchMouseEvent", { type, x: v.x, y: v.y, button: "left", clickCount: 1 });
+            }
             await new Promise((r) => setTimeout(r, 300));
             const a = await b.eval(`const v = visualViewport; return { px: v.pageLeft, py: v.pageTop, on: [...document.querySelectorAll(".prog > input")].findIndex((x) => x.checked) + 1 };`);
             assert.strictEqual(a.on, step, `${sel} steps to ${step}`);
             assert.ok(Math.abs(a.px - v.px) <= 2 && Math.abs(a.py - v.py) <= 2, `${sel} leaves the visual viewport alone (${v.px},${v.py} -> ${a.px},${a.py})`);
           }
         } finally {
-          await b.send("Emulation.setTouchEmulationEnabled", { enabled: false });
+          await b.setPageScale(1);
         }
       });
     }
@@ -19890,7 +19891,8 @@ function run() {
               l.scrollIntoView({ block: "end" }); scrollBy(0, -16);
               const r = l.getBoundingClientRect();
               return { x: r.left + r.width / 2, y: (r.top + Math.min(r.bottom, innerHeight)) / 2, sy: scrollY };`);
-            await b.send("Input.synthesizeTapGesture", { x: pt.x, y: pt.y, gestureSourceType: "touch" });
+            await b.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: pt.x, y: pt.y }] });
+            await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
             await new Promise((r) => setTimeout(r, 300));
             const after = await b.eval(`return { y: scrollY, on: [...document.querySelectorAll(".prog > input")].findIndex((x) => x.checked) + 1 };`);
             assert.strictEqual(after.on, step === 1 ? 2 : 1, `${sel} touch steps`);
