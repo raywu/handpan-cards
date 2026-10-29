@@ -13528,7 +13528,7 @@ function setInert(on, targets) {
     if (on) el.setAttribute("aria-hidden", "true"); else el.removeAttribute("aria-hidden");
   }
 }
-function showSheet(opener) {
+function showSheet(opener, reuseEntry) {
   retireLinkUI();
   sheetOpener = opener || addChip;
   sheetOpenerSelection=[...document.getElementById("decks").children].includes(sheetOpener)?{kind:sheetOpener.getAttribute("data-selection-kind"),id:sheetOpener.getAttribute("data-selection-id")}:null;
@@ -13538,7 +13538,8 @@ function showSheet(opener) {
   setInert(true, background);
   resyncSheet(true);
   applyKbOffset();
-  history.pushState({ scalePage: true }, "", sheetRoute());
+  if (reuseEntry) history.replaceState({ scalePage: true }, "", sheetRoute());
+  else history.pushState({ scalePage: true }, "", sheetRoute());
   sheetRouted = true;
   // The owner's second request: do not steal focus into the box, so the whole
   // page is readable before anything is typed and no soft keyboard covers it.
@@ -13627,10 +13628,10 @@ function resetSheetState(edit, target = selection) {
   sheetBaseline = sheetKey();
 }
 // The create path.
-function openScaleSheet(opener) {
+function openScaleSheet(opener, reuseEntry) {
   shareUrl.setAttribute("hidden", "");
   resetSheetState(null);
-  showSheet(opener);
+  showSheet(opener, reuseEntry);
 }
 // The Edit path [design-review 7A]: the SAME sheet, prefilled from the selected
 // deck, seeded or custom.
@@ -15488,6 +15489,10 @@ window.addEventListener("hashchange", async () => {
     syncRoute();
     return;
   }
+  if (location.hash === ADD_ROUTE) {
+    openScaleSheet(desktopMQ.matches ? addChip : settingsTrigger, true);
+    return;
+  }
   if (location.hash.indexOf(DECK_ROUTE) !== 0) return;
   routeToDeck(routedDeckId());
   syncRoute();
@@ -15509,6 +15514,7 @@ function finishSavedBoot() {
   bootStored=storedAtBoot===null?null:selection.id;
   const routed=routedDeckId();
   const incomingShare=location.hash.indexOf(SHARE_PREFIX)===0;
+  const incomingAdd=location.hash===ADD_ROUTE;
   const wanted=routed || storedAtBoot;
   const finish=()=>{
     setOrder();applyLang();paintLangSelect();setMode(mode,false);updateSavedStatus();syncRoute();
@@ -15518,6 +15524,7 @@ function finishSavedBoot() {
         (wanted.indexOf("custom:")===0 || savedState?.hidden.includes(wanted)))
       say(t("boot.gone",{name:deck().name}),"warn");
     booted=true;bootStored=null;
+    if(incomingAdd && savedMode!=="protected")openScaleSheet(desktopMQ.matches ? addChip : settingsTrigger);
   };
   if(savedMode==="protected" && location.hash.indexOf(SHARE_PREFIX)===0){pendingRecoveryShare=location.hash.slice(SHARE_PREFIX.length);finish();return;}
   if(location.hash.indexOf(SHARE_PREFIX)===0){
