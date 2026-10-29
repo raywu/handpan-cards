@@ -1,0 +1,3004 @@
+{
+ "c-sharp-hijaz-9": {
+  "auto_pick": [
+   1,
+   2,
+   3
+  ],
+  "cards": [
+   {
+    "bottom": 0,
+    "degree": "I",
+    "fields": [
+     3,
+     5,
+     7
+    ],
+    "main": "C#",
+    "n": 1,
+    "notes": "C#4 F4 G#4",
+    "numbers": "3 - 5 - 7",
+    "roots": [
+     3
+    ],
+    "subtitle": "C# MAJOR",
+    "sup": ""
+   },
+   {
+    "bottom": 0,
+    "degree": "I",
+    "fields": [
+     3,
+     7
+    ],
+    "main": "C#5",
+    "n": 2,
+    "notes": "C#4 G#4",
+    "numbers": "3 - 7",
+    "roots": [
+     3
+    ],
+    "subtitle": "POWER CHORD",
+    "sup": ""
+   },
+   {
+    "bottom": 0,
+    "degree": "I",
+    "fields": [
+     3,
+     6,
+     7
+    ],
+    "main": "C#sus",
+    "n": 3,
+    "notes": "C#4 F#4 G#4",
+    "numbers": "3 - 6 - 7",
+    "roots": [
+     3
+    ],
+    "subtitle": "SUSPENDED CHORD",
+    "sup": "4"
+   }
+  ],
+  "colors": {
+   "ga": "#E0559A",
+   "gb": "#E2761B",
+   "root": "#E0559A",
+   "tone": "#E2761B"
+  },
+  "count": 19,
+  "deck_id": "hijaz",
+  "degrees": {
+   "1": "I",
+   "11": "vii",
+   "2": "II",
+   "5": "iii\u00b0",
+   "6": "iv",
+   "8": "v\u00b0"
+  },
+  "fields": {
+   "0": [
+    "C#",
+    3,
+    49,
+    "ding",
+    null,
+    "Ding"
+   ],
+   "1": [
+    "G#",
+    3,
+    56,
+    "rim",
+    270,
+    "1"
+   ],
+   "2": [
+    "B",
+    3,
+    59,
+    "rim",
+    225,
+    "2"
+   ],
+   "3": [
+    "C#",
+    4,
+    61,
+    "rim",
+    315,
+    "3"
+   ],
+   "4": [
+    "D",
+    4,
+    62,
+    "rim",
+    180,
+    "4"
+   ],
+   "5": [
+    "F",
+    4,
+    65,
+    "rim",
+    0,
+    "5"
+   ],
+   "6": [
+    "F#",
+    4,
+    66,
+    "rim",
+    135,
+    "6"
+   ],
+   "7": [
+    "G#",
+    4,
+    68,
+    "rim",
+    45,
+    "7"
+   ],
+   "8": [
+    "B",
+    4,
+    71,
+    "rim",
+    90,
+    "8"
+   ]
+  },
+  "geom": {
+   "f_bnote": 0,
+   "f_ding": 0.135,
+   "f_note": 0.128,
+   "f_num": 0.105,
+   "inner_ring": 0.355,
+   "n_in": 0.085,
+   "n_out": 0,
+   "r_bnote": 0,
+   "r_ding": 0.2,
+   "r_note": 0.19,
+   "rim": 0.745
+  },
+  "name": "C# HIJAZ 9",
+  "seed": null,
+  "share": null
+ },
+ "c-sharp-mystic-8": {
+  "auto_pick": [
+   1,
+   2,
+   3
+  ],
+  "cards": [
+   {
+    "bottom": 0,
+    "degree": "i",
+    "fields": [
+     3,
+     5,
+     6
+    ],
+    "main": "C#m",
+    "n": 1,
+    "notes": "C#4 E4 G#4",
+    "numbers": "3 - 5 - 6",
+    "roots": [
+     3
+    ],
+    "subtitle": "C# MINOR",
+    "sup": ""
+   },
+   {
+    "bottom": 0,
+    "degree": "i",
+    "fields": [
+     3,
+     6
+    ],
+    "main": "C#5",
+    "n": 2,
+    "notes": "C#4 G#4",
+    "numbers": "3 - 6",
+    "roots": [
+     3
+    ],
+    "subtitle": "POWER CHORD",
+    "sup": ""
+   },
+   {
+    "bottom": 0,
+    "degree": "i",
+    "fields": [
+     3,
+     5,
+     6,
+     7
+    ],
+    "main": "C#m",
+    "n": 3,
+    "notes": "C#4 E4 G#4 B4",
+    "numbers": "3 - 5 - 6 - 7",
+    "roots": [
+     3
+    ],
+    "subtitle": "C# MINOR 7 ( = E6 )",
+    "sup": "7"
+   }
+  ],
+  "colors": {
+   "ga": "#E2761B",
+   "gb": "#E0559A",
+   "root": "#E2761B",
+   "tone": "#E0559A"
+  },
+  "count": 19,
+  "deck_id": "custom:12c0f580",
+  "degrees": {
+   "1": "i",
+   "11": "VII",
+   "3": "ii\u00b0",
+   "4": "III",
+   "8": "v",
+   "9": "VI"
+  },
+  "fields": {
+   "0": [
+    "C#",
+    3,
+    49,
+    "ding",
+    null,
+    "Ding"
+   ],
+   "1": [
+    "G#",
+    3,
+    56,
+    "rim",
+    270,
+    "1"
+   ],
+   "2": [
+    "A",
+    3,
+    57,
+    "rim",
+    218.6,
+    "2"
+   ],
+   "3": [
+    "C#",
+    4,
+    61,
+    "rim",
+    321.4,
+    "3"
+   ],
+   "4": [
+    "D#",
+    4,
+    63,
+    "rim",
+    167.1,
+    "4"
+   ],
+   "5": [
+    "E",
+    4,
+    64,
+    "rim",
+    12.9,
+    "5"
+   ],
+   "6": [
+    "G#",
+    4,
+    68,
+    "rim",
+    115.7,
+    "6"
+   ],
+   "7": [
+    "B",
+    4,
+    71,
+    "rim",
+    64.3,
+    "7"
+   ]
+  },
+  "geom": {
+   "bottom": 0,
+   "ding_dy": 0,
+   "ext": 1.06,
+   "f_bnote": 0,
+   "f_ding": 0.12,
+   "f_note": 0.1454,
+   "f_num": 0.1216,
+   "inner": 0,
+   "inner_ring": 0.355,
+   "n_in": 0.085,
+   "n_out": 0,
+   "r_bnote": 0,
+   "r_ding": 0.2,
+   "r_note": 0.19,
+   "rim": 0.745,
+   "rim_num_out": false
+  },
+  "name": "C# MYSTIC 8",
+  "seed": "(C#3) G#3 A3 C#4 D#4 E4 G#4 B4",
+  "share": "6/(Cs3)_Gs3_A3_Cs4_Ds4_E4_Gs4_B4/C%23+MYSTIC+8/palette-4/5da919"
+ },
+ "d-aegean-18": {
+  "auto_pick": [
+   1,
+   2,
+   3
+  ],
+  "cards": [
+   {
+    "bottom": 0,
+    "degree": "I",
+    "fields": [
+     4,
+     5,
+     7
+    ],
+    "main": "D",
+    "n": 1,
+    "notes": "D4 F#4 A4",
+    "numbers": "4 - 5 - 7",
+    "roots": [
+     4
+    ],
+    "subtitle": "D MAJOR",
+    "sup": ""
+   },
+   {
+    "bottom": 0,
+    "degree": "I",
+    "fields": [
+     4,
+     7
+    ],
+    "main": "D5",
+    "n": 2,
+    "notes": "D4 A4",
+    "numbers": "4 - 7",
+    "roots": [
+     4
+    ],
+    "subtitle": "POWER CHORD",
+    "sup": ""
+   },
+   {
+    "bottom": 0,
+    "degree": "I",
+    "fields": [
+     4,
+     5,
+     7,
+     8
+    ],
+    "main": "Dmaj",
+    "n": 3,
+    "notes": "D4 F#4 A4 C#5",
+    "numbers": "4 - 5 - 7 - 8",
+    "roots": [
+     4
+    ],
+    "subtitle": "D MAJOR 7",
+    "sup": "7"
+   }
+  ],
+  "colors": {
+   "ga": "#3B7A2A",
+   "gb": "#B3263A",
+   "root": "#3B7A2A",
+   "tone": "#B3263A"
+  },
+  "count": 62,
+  "deck_id": "custom:67feb9ce",
+  "degrees": {
+   "1": "vii",
+   "11": "vi",
+   "2": "I",
+   "4": "II",
+   "6": "iii",
+   "8": "iv\u00b0",
+   "9": "V"
+  },
+  "fields": {
+   "0": [
+    "D",
+    3,
+    50,
+    "ding",
+    null,
+    "Ding"
+   ],
+   "1": [
+    "F#",
+    3,
+    54,
+    "rim",
+    270,
+    "1"
+   ],
+   "10": [
+    "F#",
+    5,
+    78,
+    "inner",
+    90,
+    "10"
+   ],
+   "101": [
+    "A",
+    2,
+    45,
+    "bottom",
+    295.7,
+    "U1"
+   ],
+   "102": [
+    "E",
+    3,
+    52,
+    "bottom",
+    244.3,
+    "U2"
+   ],
+   "103": [
+    "G#",
+    3,
+    56,
+    "bottom",
+    347.1,
+    "U3"
+   ],
+   "104": [
+    "B",
+    3,
+    59,
+    "bottom",
+    192.9,
+    "U4"
+   ],
+   "105": [
+    "E",
+    4,
+    64,
+    "bottom",
+    38.6,
+    "U5"
+   ],
+   "106": [
+    "B",
+    4,
+    71,
+    "bottom",
+    141.4,
+    "U6"
+   ],
+   "107": [
+    "E",
+    5,
+    76,
+    "bottom",
+    90,
+    "U7"
+   ],
+   "2": [
+    "A",
+    3,
+    57,
+    "rim",
+    230,
+    "2"
+   ],
+   "3": [
+    "C#",
+    4,
+    61,
+    "rim",
+    310,
+    "3"
+   ],
+   "4": [
+    "D",
+    4,
+    62,
+    "rim",
+    190,
+    "4"
+   ],
+   "5": [
+    "F#",
+    4,
+    66,
+    "rim",
+    350,
+    "5"
+   ],
+   "6": [
+    "G#",
+    4,
+    68,
+    "rim",
+    150,
+    "6"
+   ],
+   "7": [
+    "A",
+    4,
+    69,
+    "rim",
+    30,
+    "7"
+   ],
+   "8": [
+    "C#",
+    5,
+    73,
+    "rim",
+    110,
+    "8"
+   ],
+   "9": [
+    "D",
+    5,
+    74,
+    "rim",
+    70,
+    "9"
+   ]
+  },
+  "geom": {
+   "bottom": 1.15,
+   "ding_dy": 0.1425,
+   "ext": 1.4705,
+   "f_bnote": 0.0931,
+   "f_ding": 0.114,
+   "f_note": 0.1259,
+   "f_num": 0.1053,
+   "inner": 0.38,
+   "inner_ring": 0,
+   "n_in": 0.052,
+   "n_out": 0.068,
+   "r_bnote": 0.1188,
+   "r_ding": 0.19,
+   "r_note": 0.1646,
+   "rim": 0.722,
+   "rim_num_out": true
+  },
+  "name": "D AEGEAN 18",
+  "seed": "[A2] (D3) [E3] F#3 [G#3] A3 [B3] C#4 D4 [E4] F#4 G#4 A4 [B4] C#5 D5 [E5] | F#5",
+  "share": "6/uA2_(D3)_uE3_Fs3_uGs3_A3_uB3_Cs4_D4_uE4_Fs4_Gs4_A4_uB4_Cs5_D5_uE5_-_Fs5/D+AEGEAN+18/palette-8/1eeb15"
+ },
+ "d-amara-10": {
+  "auto_pick": [
+   1,
+   2,
+   3
+  ],
+  "cards": [
+   {
+    "bottom": 0,
+    "degree": "i",
+    "fields": [
+     3,
+     5,
+     7
+    ],
+    "main": "Dm",
+    "n": 1,
+    "notes": "D4 F4 A4",
+    "numbers": "3 - 5 - 7",
+    "roots": [
+     3
+    ],
+    "subtitle": "D MINOR",
+    "sup": ""
+   },
+   {
+    "bottom": 0,
+    "degree": "i",
+    "fields": [
+     3,
+     7
+    ],
+    "main": "D5",
+    "n": 2,
+    "notes": "D4 A4",
+    "numbers": "3 - 7",
+    "roots": [
+     3
+    ],
+    "subtitle": "POWER CHORD",
+    "sup": ""
+   },
+   {
+    "bottom": 0,
+    "degree": "i",
+    "fields": [
+     3,
+     6,
+     7
+    ],
+    "main": "Dsus",
+    "n": 3,
+    "notes": "D4 G4 A4",
+    "numbers": "3 - 6 - 7",
+    "roots": [
+     3
+    ],
+    "subtitle": "SUSPENDED CHORD",
+    "sup": "4"
+   }
+  ],
+  "colors": {
+   "ga": "#3B7A2A",
+   "gb": "#B3263A",
+   "root": "#3B7A2A",
+   "tone": "#B3263A"
+  },
+  "count": 29,
+  "deck_id": "amara10",
+  "degrees": {
+   "0": "VII",
+   "2": "i",
+   "4": "ii\u00b0",
+   "5": "III",
+   "7": "iv",
+   "9": "v"
+  },
+  "fields": {
+   "0": [
+    "D",
+    3,
+    50,
+    "ding",
+    null,
+    "Ding"
+   ],
+   "1": [
+    "A",
+    3,
+    57,
+    "rim",
+    270,
+    "1"
+   ],
+   "2": [
+    "C",
+    4,
+    60,
+    "rim",
+    230,
+    "2"
+   ],
+   "3": [
+    "D",
+    4,
+    62,
+    "rim",
+    310,
+    "3"
+   ],
+   "4": [
+    "E",
+    4,
+    64,
+    "rim",
+    190,
+    "4"
+   ],
+   "5": [
+    "F",
+    4,
+    65,
+    "rim",
+    350,
+    "5"
+   ],
+   "6": [
+    "G",
+    4,
+    67,
+    "rim",
+    150,
+    "6"
+   ],
+   "7": [
+    "A",
+    4,
+    69,
+    "rim",
+    30,
+    "7"
+   ],
+   "8": [
+    "C",
+    5,
+    72,
+    "rim",
+    110,
+    "8"
+   ],
+   "9": [
+    "D",
+    5,
+    74,
+    "rim",
+    70,
+    "9"
+   ]
+  },
+  "geom": {
+   "bottom": 0,
+   "ding_dy": 0,
+   "f_bnote": 0,
+   "f_ding": 0.12,
+   "f_note": 0.1454,
+   "f_num": 0.1216,
+   "inner": 0,
+   "inner_ring": 0.355,
+   "n_in": 0.085,
+   "n_out": 0,
+   "r_bnote": 0,
+   "r_ding": 0.2,
+   "r_note": 0.19,
+   "rim": 0.745,
+   "rim_num_out": false
+  },
+  "name": "D AMARA 10",
+  "seed": null,
+  "share": null
+ },
+ "d-amara-9": {
+  "auto_pick": [
+   1,
+   2,
+   3
+  ],
+  "cards": [
+   {
+    "bottom": 0,
+    "degree": "i",
+    "fields": [
+     3,
+     5,
+     7
+    ],
+    "main": "Dm",
+    "n": 1,
+    "notes": "D4 F4 A4",
+    "numbers": "3 - 5 - 7",
+    "roots": [
+     3
+    ],
+    "subtitle": "D MINOR",
+    "sup": ""
+   },
+   {
+    "bottom": 0,
+    "degree": "i",
+    "fields": [
+     3,
+     7
+    ],
+    "main": "D5",
+    "n": 2,
+    "notes": "D4 A4",
+    "numbers": "3 - 7",
+    "roots": [
+     3
+    ],
+    "subtitle": "POWER CHORD",
+    "sup": ""
+   },
+   {
+    "bottom": 0,
+    "degree": "i",
+    "fields": [
+     3,
+     6,
+     7
+    ],
+    "main": "Dsus",
+    "n": 3,
+    "notes": "D4 G4 A4",
+    "numbers": "3 - 6 - 7",
+    "roots": [
+     3
+    ],
+    "subtitle": "SUSPENDED CHORD",
+    "sup": "4"
+   }
+  ],
+  "colors": {
+   "ga": "#0B7B75",
+   "gb": "#DD8F00",
+   "root": "#0B7B75",
+   "tone": "#DD8F00"
+  },
+  "count": 27,
+  "deck_id": "amara",
+  "degrees": {
+   "0": "VII",
+   "2": "i",
+   "5": "III",
+   "7": "iv",
+   "9": "v"
+  },
+  "fields": {
+   "0": [
+    "D",
+    3,
+    50,
+    "ding",
+    null,
+    "Ding"
+   ],
+   "1": [
+    "A",
+    3,
+    57,
+    "rim",
+    270,
+    "1"
+   ],
+   "2": [
+    "C",
+    4,
+    60,
+    "rim",
+    225,
+    "2"
+   ],
+   "3": [
+    "D",
+    4,
+    62,
+    "rim",
+    315,
+    "3"
+   ],
+   "4": [
+    "E",
+    4,
+    64,
+    "rim",
+    180,
+    "4"
+   ],
+   "5": [
+    "F",
+    4,
+    65,
+    "rim",
+    0,
+    "5"
+   ],
+   "6": [
+    "G",
+    4,
+    67,
+    "rim",
+    135,
+    "6"
+   ],
+   "7": [
+    "A",
+    4,
+    69,
+    "rim",
+    45,
+    "7"
+   ],
+   "8": [
+    "C",
+    5,
+    72,
+    "rim",
+    90,
+    "8"
+   ]
+  },
+  "geom": {
+   "f_bnote": 0,
+   "f_ding": 0.135,
+   "f_note": 0.128,
+   "f_num": 0.105,
+   "inner_ring": 0.355,
+   "n_in": 0.085,
+   "n_out": 0,
+   "r_bnote": 0,
+   "r_ding": 0.2,
+   "r_note": 0.19,
+   "rim": 0.745
+  },
+  "name": "D AMARA 9",
+  "seed": null,
+  "share": null
+ },
+ "d-integral-9": {
+  "auto_pick": [
+   1,
+   2,
+   3
+  ],
+  "cards": [
+   {
+    "bottom": 0,
+    "degree": "i",
+    "fields": [
+     4,
+     6,
+     7
+    ],
+    "main": "Dm",
+    "n": 1,
+    "notes": "D4 F4 A4",
+    "numbers": "4 - 6 - 7",
+    "roots": [
+     4
+    ],
+    "subtitle": "D MINOR",
+    "sup": ""
+   },
+   {
+    "bottom": 0,
+    "degree": "i",
+    "fields": [
+     4,
+     7
+    ],
+    "main": "D5",
+    "n": 2,
+    "notes": "D4 A4",
+    "numbers": "4 - 7",
+    "roots": [
+     4
+    ],
+    "subtitle": "POWER CHORD",
+    "sup": ""
+   },
+   {
+    "bottom": 0,
+    "degree": "i",
+    "fields": [
+     4,
+     6,
+     7,
+     8
+    ],
+    "main": "Dm",
+    "n": 3,
+    "notes": "D4 F4 A4 C5",
+    "numbers": "4 - 6 - 7 - 8",
+    "roots": [
+     4
+    ],
+    "subtitle": "D MINOR 7 ( = F6 )",
+    "sup": "7"
+   }
+  ],
+  "colors": {
+   "ga": "#C9971E",
+   "gb": "#6D40A3",
+   "root": "#C9971E",
+   "tone": "#6D40A3"
+  },
+  "count": 19,
+  "deck_id": "custom:a2d2311d",
+  "degrees": {
+   "0": "VII",
+   "10": "VI",
+   "2": "i",
+   "4": "ii\u00b0",
+   "5": "III",
+   "9": "v"
+  },
+  "fields": {
+   "0": [
+    "D",
+    3,
+    50,
+    "ding",
+    null,
+    "Ding"
+   ],
+   "1": [
+    "A",
+    3,
+    57,
+    "rim",
+    270,
+    "1"
+   ],
+   "2": [
+    "Bb",
+    3,
+    58,
+    "rim",
+    225,
+    "2"
+   ],
+   "3": [
+    "C",
+    4,
+    60,
+    "rim",
+    315,
+    "3"
+   ],
+   "4": [
+    "D",
+    4,
+    62,
+    "rim",
+    180,
+    "4"
+   ],
+   "5": [
+    "E",
+    4,
+    64,
+    "rim",
+    0,
+    "5"
+   ],
+   "6": [
+    "F",
+    4,
+    65,
+    "rim",
+    135,
+    "6"
+   ],
+   "7": [
+    "A",
+    4,
+    69,
+    "rim",
+    45,
+    "7"
+   ],
+   "8": [
+    "C",
+    5,
+    72,
+    "rim",
+    90,
+    "8"
+   ]
+  },
+  "geom": {
+   "bottom": 0,
+   "ding_dy": 0,
+   "ext": 1.06,
+   "f_bnote": 0,
+   "f_ding": 0.12,
+   "f_note": 0.1454,
+   "f_num": 0.1216,
+   "inner": 0,
+   "inner_ring": 0.355,
+   "n_in": 0.085,
+   "n_out": 0,
+   "r_bnote": 0,
+   "r_ding": 0.2,
+   "r_note": 0.19,
+   "rim": 0.745,
+   "rim_num_out": false
+  },
+  "name": "D INTEGRAL 9",
+  "seed": "(D3) A3 Bb3 C4 D4 E4 F4 A4 C5",
+  "share": "6/(D3)_A3_Bb3_C4_D4_E4_F4_A4_C5/D+INTEGRAL+9/palette-5/81e9f3"
+ },
+ "d-kurd-10": {
+  "auto_pick": [
+   1,
+   19,
+   28
+  ],
+  "cards": [
+   {
+    "bottom": 0,
+    "degree": "i",
+    "fields": [
+     4,
+     6,
+     8
+    ],
+    "main": "Dm",
+    "n": 1,
+    "notes": "D4 F4 A4",
+    "numbers": "4 - 6 - 8",
+    "roots": [
+     4
+    ],
+    "subtitle": "D MINOR",
+    "sup": ""
+   },
+   {
+    "bottom": 0,
+    "degree": "iv",
+    "fields": [
+     7,
+     2,
+     4
+    ],
+    "main": "Gm",
+    "n": 19,
+    "notes": "G4 Bb3 D4",
+    "numbers": "7 - 2 - 4",
+    "roots": [
+     7
+    ],
+    "subtitle": "G MINOR",
+    "sup": ""
+   },
+   {
+    "bottom": 0,
+    "degree": "v",
+    "fields": [
+     1,
+     3,
+     5
+    ],
+    "main": "Am",
+    "n": 28,
+    "notes": "A3 C4 E4",
+    "numbers": "1 - 3 - 5",
+    "roots": [
+     1
+    ],
+    "subtitle": "A MINOR",
+    "sup": ""
+   }
+  ],
+  "colors": {
+   "ga": "#2563B0",
+   "gb": "#C0452C",
+   "root": "#2563B0",
+   "tone": "#C0452C"
+  },
+  "count": 49,
+  "deck_id": "kurd",
+  "degrees": {
+   "0": "VII",
+   "10": "VI",
+   "2": "i",
+   "4": "ii\u00b0",
+   "5": "III",
+   "7": "iv",
+   "9": "v"
+  },
+  "fields": {
+   "0": [
+    "D",
+    3,
+    50,
+    "ding",
+    null,
+    "Ding"
+   ],
+   "1": [
+    "A",
+    3,
+    57,
+    "rim",
+    270,
+    "1"
+   ],
+   "2": [
+    "Bb",
+    3,
+    58,
+    "rim",
+    230,
+    "2"
+   ],
+   "3": [
+    "C",
+    4,
+    60,
+    "rim",
+    310,
+    "3"
+   ],
+   "4": [
+    "D",
+    4,
+    62,
+    "rim",
+    190,
+    "4"
+   ],
+   "5": [
+    "E",
+    4,
+    64,
+    "rim",
+    350,
+    "5"
+   ],
+   "6": [
+    "F",
+    4,
+    65,
+    "rim",
+    150,
+    "6"
+   ],
+   "7": [
+    "G",
+    4,
+    67,
+    "rim",
+    30,
+    "7"
+   ],
+   "8": [
+    "A",
+    4,
+    69,
+    "rim",
+    110,
+    "8"
+   ],
+   "9": [
+    "C",
+    5,
+    72,
+    "rim",
+    70,
+    "9"
+   ]
+  },
+  "geom": {
+   "bottom": 0,
+   "ding_dy": 0,
+   "f_bnote": 0,
+   "f_ding": 0.12,
+   "f_note": 0.1454,
+   "f_num": 0.1216,
+   "inner": 0,
+   "inner_ring": 0.355,
+   "n_in": 0.085,
+   "n_out": 0,
+   "r_bnote": 0,
+   "r_ding": 0.2,
+   "r_note": 0.19,
+   "rim": 0.745,
+   "rim_num_out": false
+  },
+  "name": "D KURD 10",
+  "seed": null,
+  "share": null
+ },
+ "d-kurd-9": {
+  "auto_pick": [
+   1,
+   19,
+   28
+  ],
+  "cards": [
+   {
+    "bottom": 0,
+    "degree": "i",
+    "fields": [
+     4,
+     6,
+     8
+    ],
+    "main": "Dm",
+    "n": 1,
+    "notes": "D4 F4 A4",
+    "numbers": "4 - 6 - 8",
+    "roots": [
+     4
+    ],
+    "subtitle": "D MINOR",
+    "sup": ""
+   },
+   {
+    "bottom": 0,
+    "degree": "iv",
+    "fields": [
+     7,
+     2,
+     4
+    ],
+    "main": "Gm",
+    "n": 19,
+    "notes": "G4 Bb3 D4",
+    "numbers": "7 - 2 - 4",
+    "roots": [
+     7
+    ],
+    "subtitle": "G MINOR",
+    "sup": ""
+   },
+   {
+    "bottom": 0,
+    "degree": "v",
+    "fields": [
+     1,
+     3,
+     5
+    ],
+    "main": "Am",
+    "n": 28,
+    "notes": "A3 C4 E4",
+    "numbers": "1 - 3 - 5",
+    "roots": [
+     1
+    ],
+    "subtitle": "A MINOR",
+    "sup": ""
+   }
+  ],
+  "colors": {
+   "ga": "#2563B0",
+   "gb": "#C0452C",
+   "root": "#2563B0",
+   "tone": "#C0452C"
+  },
+  "count": 49,
+  "deck_id": "custom:8eaa659e",
+  "degrees": {
+   "0": "VII",
+   "10": "VI",
+   "2": "i",
+   "4": "ii\u00b0",
+   "5": "III",
+   "7": "iv",
+   "9": "v"
+  },
+  "fields": {
+   "0": [
+    "D",
+    3,
+    50,
+    "ding",
+    null,
+    "Ding"
+   ],
+   "1": [
+    "A",
+    3,
+    57,
+    "rim",
+    270,
+    "1"
+   ],
+   "2": [
+    "Bb",
+    3,
+    58,
+    "rim",
+    225,
+    "2"
+   ],
+   "3": [
+    "C",
+    4,
+    60,
+    "rim",
+    315,
+    "3"
+   ],
+   "4": [
+    "D",
+    4,
+    62,
+    "rim",
+    180,
+    "4"
+   ],
+   "5": [
+    "E",
+    4,
+    64,
+    "rim",
+    0,
+    "5"
+   ],
+   "6": [
+    "F",
+    4,
+    65,
+    "rim",
+    135,
+    "6"
+   ],
+   "7": [
+    "G",
+    4,
+    67,
+    "rim",
+    45,
+    "7"
+   ],
+   "8": [
+    "A",
+    4,
+    69,
+    "rim",
+    90,
+    "8"
+   ]
+  },
+  "geom": {
+   "bottom": 0,
+   "ding_dy": 0,
+   "ext": 1.06,
+   "f_bnote": 0,
+   "f_ding": 0.12,
+   "f_note": 0.1454,
+   "f_num": 0.1216,
+   "inner": 0,
+   "inner_ring": 0.355,
+   "n_in": 0.085,
+   "n_out": 0,
+   "r_bnote": 0,
+   "r_ding": 0.2,
+   "r_note": 0.19,
+   "rim": 0.745,
+   "rim_num_out": false
+  },
+  "name": "D Kurd 9",
+  "seed": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
+  "share": "6/(D3)_A3_Bb3_C4_D4_E4_F4_G4_A4/D+Kurd+9/palette-7/38e0ef"
+ },
+ "d-sabye-9": {
+  "auto_pick": [
+   1,
+   23,
+   30
+  ],
+  "cards": [
+   {
+    "bottom": 0,
+    "degree": "I",
+    "fields": [
+     5,
+     7,
+     8
+    ],
+    "main": "D",
+    "n": 1,
+    "notes": "D4 F#4 A4",
+    "numbers": "5 - 7 - 8",
+    "roots": [
+     5
+    ],
+    "subtitle": "D MAJOR",
+    "sup": ""
+   },
+   {
+    "bottom": 0,
+    "degree": "IV",
+    "fields": [
+     1,
+     3,
+     5
+    ],
+    "main": "G",
+    "n": 23,
+    "notes": "G3 B3 D4",
+    "numbers": "1 - 3 - 5",
+    "roots": [
+     1
+    ],
+    "subtitle": "G MAJOR",
+    "sup": ""
+   },
+   {
+    "bottom": 0,
+    "degree": "V",
+    "fields": [
+     2,
+     4,
+     6
+    ],
+    "main": "A",
+    "n": 30,
+    "notes": "A3 C#4 E4",
+    "numbers": "2 - 4 - 6",
+    "roots": [
+     2
+    ],
+    "subtitle": "A MAJOR",
+    "sup": ""
+   }
+  ],
+  "colors": {
+   "ga": "#2563B0",
+   "gb": "#C0452C",
+   "root": "#2563B0",
+   "tone": "#C0452C"
+  },
+  "count": 49,
+  "deck_id": "custom:bc93ff05",
+  "degrees": {
+   "1": "vii\u00b0",
+   "11": "vi",
+   "2": "I",
+   "4": "ii",
+   "6": "iii",
+   "7": "IV",
+   "9": "V"
+  },
+  "fields": {
+   "0": [
+    "D",
+    3,
+    50,
+    "ding",
+    null,
+    "Ding"
+   ],
+   "1": [
+    "G",
+    3,
+    55,
+    "rim",
+    270,
+    "1"
+   ],
+   "2": [
+    "A",
+    3,
+    57,
+    "rim",
+    225,
+    "2"
+   ],
+   "3": [
+    "B",
+    3,
+    59,
+    "rim",
+    315,
+    "3"
+   ],
+   "4": [
+    "C#",
+    4,
+    61,
+    "rim",
+    180,
+    "4"
+   ],
+   "5": [
+    "D",
+    4,
+    62,
+    "rim",
+    0,
+    "5"
+   ],
+   "6": [
+    "E",
+    4,
+    64,
+    "rim",
+    135,
+    "6"
+   ],
+   "7": [
+    "F#",
+    4,
+    66,
+    "rim",
+    45,
+    "7"
+   ],
+   "8": [
+    "A",
+    4,
+    69,
+    "rim",
+    90,
+    "8"
+   ]
+  },
+  "geom": {
+   "bottom": 0,
+   "ding_dy": 0,
+   "ext": 1.06,
+   "f_bnote": 0,
+   "f_ding": 0.12,
+   "f_note": 0.1454,
+   "f_num": 0.1216,
+   "inner": 0,
+   "inner_ring": 0.355,
+   "n_in": 0.085,
+   "n_out": 0,
+   "r_bnote": 0,
+   "r_ding": 0.2,
+   "r_note": 0.19,
+   "rim": 0.745,
+   "rim_num_out": false
+  },
+  "name": "D SABYE 9",
+  "seed": "(D3) G3 A3 B3 C#4 D4 E4 F#4 A4",
+  "share": "6/(D3)_G3_A3_B3_Cs4_D4_E4_Fs4_A4/D+SABYE+9/palette-7/b26cc0"
+ },
+ "e-amara-20": {
+  "auto_pick": [
+   1,
+   29,
+   39
+  ],
+  "cards": [
+   {
+    "bottom": 0,
+    "degree": "i",
+    "fields": [
+     3,
+     5,
+     7
+    ],
+    "main": "Em",
+    "n": 1,
+    "notes": "E4 G4 B4",
+    "numbers": "3 - 5 - 7",
+    "roots": [
+     3
+    ],
+    "subtitle": "E MINOR",
+    "sup": ""
+   },
+   {
+    "bottom": 1,
+    "degree": "iv",
+    "fields": [
+     6,
+     107,
+     9
+    ],
+    "main": "Am",
+    "n": 29,
+    "notes": "A4 C5 E5",
+    "numbers": "6 - U7 - 9",
+    "roots": [
+     6
+    ],
+    "subtitle": "A MINOR",
+    "sup": ""
+   },
+   {
+    "bottom": 0,
+    "degree": "v",
+    "fields": [
+     1,
+     2,
+     4
+    ],
+    "main": "Bm",
+    "n": 39,
+    "notes": "B3 D4 F#4",
+    "numbers": "1 - 2 - 4",
+    "roots": [
+     1
+    ],
+    "subtitle": "B MINOR",
+    "sup": ""
+   }
+  ],
+  "colors": {
+   "ga": "#0B7B75",
+   "gb": "#DD8F00",
+   "root": "#0B7B75",
+   "tone": "#DD8F00"
+  },
+  "count": 77,
+  "deck_id": "custom:5e8e2b3b",
+  "degrees": {
+   "0": "VI",
+   "11": "v",
+   "2": "VII",
+   "4": "i",
+   "6": "ii\u00b0",
+   "7": "III",
+   "9": "iv"
+  },
+  "fields": {
+   "0": [
+    "E",
+    3,
+    52,
+    "ding",
+    null,
+    "Ding"
+   ],
+   "1": [
+    "B",
+    3,
+    59,
+    "rim",
+    270,
+    "1"
+   ],
+   "10": [
+    "F#",
+    5,
+    78,
+    "rim",
+    120,
+    "10"
+   ],
+   "101": [
+    "C",
+    3,
+    48,
+    "bottom",
+    295.7,
+    "U1"
+   ],
+   "102": [
+    "D",
+    3,
+    50,
+    "bottom",
+    244.3,
+    "U2"
+   ],
+   "103": [
+    "F#",
+    3,
+    54,
+    "bottom",
+    347.1,
+    "U3"
+   ],
+   "104": [
+    "G",
+    3,
+    55,
+    "bottom",
+    192.9,
+    "U4"
+   ],
+   "105": [
+    "A",
+    3,
+    57,
+    "bottom",
+    38.6,
+    "U5"
+   ],
+   "106": [
+    "C",
+    4,
+    60,
+    "bottom",
+    141.4,
+    "U6"
+   ],
+   "107": [
+    "C",
+    5,
+    72,
+    "bottom",
+    90,
+    "U7"
+   ],
+   "11": [
+    "G",
+    5,
+    79,
+    "rim",
+    60,
+    "11"
+   ],
+   "12": [
+    "A",
+    5,
+    81,
+    "rim",
+    90,
+    "12"
+   ],
+   "2": [
+    "D",
+    4,
+    62,
+    "rim",
+    240,
+    "2"
+   ],
+   "3": [
+    "E",
+    4,
+    64,
+    "rim",
+    300,
+    "3"
+   ],
+   "4": [
+    "F#",
+    4,
+    66,
+    "rim",
+    210,
+    "4"
+   ],
+   "5": [
+    "G",
+    4,
+    67,
+    "rim",
+    330,
+    "5"
+   ],
+   "6": [
+    "A",
+    4,
+    69,
+    "rim",
+    180,
+    "6"
+   ],
+   "7": [
+    "B",
+    4,
+    71,
+    "rim",
+    0,
+    "7"
+   ],
+   "8": [
+    "D",
+    5,
+    74,
+    "rim",
+    150,
+    "8"
+   ],
+   "9": [
+    "E",
+    5,
+    76,
+    "rim",
+    30,
+    "9"
+   ]
+  },
+  "geom": {
+   "bottom": 1.15,
+   "ding_dy": 0,
+   "ext": 1.4702,
+   "f_bnote": 0.0931,
+   "f_ding": 0.12,
+   "f_note": 0.1254,
+   "f_num": 0.1049,
+   "inner": 0,
+   "inner_ring": 0.355,
+   "n_in": 0.085,
+   "n_out": 0.068,
+   "r_bnote": 0.1188,
+   "r_ding": 0.2,
+   "r_note": 0.1639,
+   "rim": 0.745,
+   "rim_num_out": false
+  },
+  "name": "E AMARA 20",
+  "seed": "[C3] [D3] (E3) [F#3] [G3] [A3] B3 [C4] D4 E4 F#4 G4 A4 B4 [C5] D5 E5 F#5 G5 A5",
+  "share": "6/uC3_uD3_(E3)_uFs3_uG3_uA3_B3_uC4_D4_E4_Fs4_G4_A4_B4_uC5_D5_E5_Fs5_G5_A5/E+AMARA+20/palette-3/9d65e6"
+ },
+ "e-equinox-9": {
+  "auto_pick": [
+   1,
+   2,
+   3
+  ],
+  "cards": [
+   {
+    "bottom": 0,
+    "degree": "i",
+    "fields": [
+     5,
+     7,
+     8
+    ],
+    "main": "Em",
+    "n": 1,
+    "notes": "E4 G4 B4",
+    "numbers": "5 - 7 - 8",
+    "roots": [
+     5
+    ],
+    "subtitle": "E MINOR",
+    "sup": ""
+   },
+   {
+    "bottom": 0,
+    "degree": "i",
+    "fields": [
+     5,
+     8
+    ],
+    "main": "E5",
+    "n": 2,
+    "notes": "E4 B4",
+    "numbers": "5 - 8",
+    "roots": [
+     5
+    ],
+    "subtitle": "POWER CHORD",
+    "sup": ""
+   },
+   {
+    "bottom": 0,
+    "degree": "i",
+    "fields": [
+     5,
+     1,
+     2,
+     4
+    ],
+    "main": "Em",
+    "n": 3,
+    "notes": "E4 G3 B3 D4",
+    "numbers": "5 - 1 - 2 - 4",
+    "roots": [
+     5
+    ],
+    "subtitle": "E MINOR 7 ( = G6 )",
+    "sup": "7"
+   }
+  ],
+  "colors": {
+   "ga": "#B3263A",
+   "gb": "#3B7A2A",
+   "root": "#B3263A",
+   "tone": "#3B7A2A"
+  },
+  "count": 19,
+  "deck_id": "custom:60d55229",
+  "degrees": {
+   "0": "VI",
+   "11": "v",
+   "2": "VII",
+   "4": "i",
+   "6": "ii\u00b0",
+   "7": "III"
+  },
+  "fields": {
+   "0": [
+    "E",
+    3,
+    52,
+    "ding",
+    null,
+    "Ding"
+   ],
+   "1": [
+    "G",
+    3,
+    55,
+    "rim",
+    270,
+    "1"
+   ],
+   "2": [
+    "B",
+    3,
+    59,
+    "rim",
+    225,
+    "2"
+   ],
+   "3": [
+    "C",
+    4,
+    60,
+    "rim",
+    315,
+    "3"
+   ],
+   "4": [
+    "D",
+    4,
+    62,
+    "rim",
+    180,
+    "4"
+   ],
+   "5": [
+    "E",
+    4,
+    64,
+    "rim",
+    0,
+    "5"
+   ],
+   "6": [
+    "F#",
+    4,
+    66,
+    "rim",
+    135,
+    "6"
+   ],
+   "7": [
+    "G",
+    4,
+    67,
+    "rim",
+    45,
+    "7"
+   ],
+   "8": [
+    "B",
+    4,
+    71,
+    "rim",
+    90,
+    "8"
+   ]
+  },
+  "geom": {
+   "bottom": 0,
+   "ding_dy": 0,
+   "ext": 1.06,
+   "f_bnote": 0,
+   "f_ding": 0.12,
+   "f_note": 0.1454,
+   "f_num": 0.1216,
+   "inner": 0,
+   "inner_ring": 0.355,
+   "n_in": 0.085,
+   "n_out": 0,
+   "r_bnote": 0,
+   "r_ding": 0.2,
+   "r_note": 0.19,
+   "rim": 0.745,
+   "rim_num_out": false
+  },
+  "name": "E EQUINOX 9",
+  "seed": "(E3) G3 B3 C4 D4 E4 F#4 G4 B4",
+  "share": "6/(E3)_G3_B3_C4_D4_E4_Fs4_G4_B4/E+EQUINOX+9/palette-10/851c45"
+ },
+ "e-romanian-hijaz-9": {
+  "auto_pick": [
+   1,
+   10,
+   18
+  ],
+  "cards": [
+   {
+    "bottom": 0,
+    "degree": "i",
+    "fields": [
+     5,
+     7,
+     8
+    ],
+    "main": "Em",
+    "n": 1,
+    "notes": "E4 G4 B4",
+    "numbers": "5 - 7 - 8",
+    "roots": [
+     5
+    ],
+    "subtitle": "E MINOR",
+    "sup": ""
+   },
+   {
+    "bottom": 0,
+    "degree": "iv",
+    "fields": [
+     1,
+     3,
+     5
+    ],
+    "main": "Am",
+    "n": 10,
+    "notes": "A3 C4 E4",
+    "numbers": "1 - 3 - 5",
+    "roots": [
+     1
+    ],
+    "subtitle": "A MINOR",
+    "sup": ""
+   },
+   {
+    "bottom": 0,
+    "degree": "V",
+    "fields": [
+     2,
+     4,
+     6
+    ],
+    "main": "B",
+    "n": 18,
+    "notes": "B3 D#4 F#4",
+    "numbers": "2 - 4 - 6",
+    "roots": [
+     2
+    ],
+    "subtitle": "B MAJOR",
+    "sup": ""
+   }
+  ],
+  "colors": {
+   "ga": "#E0559A",
+   "gb": "#E2761B",
+   "root": "#E0559A",
+   "tone": "#E2761B"
+  },
+  "count": 30,
+  "deck_id": "custom:2577069a",
+  "degrees": {
+   "0": "VI",
+   "11": "V",
+   "3": "vii\u00b0",
+   "4": "i",
+   "6": "ii\u00b0",
+   "7": "III",
+   "9": "iv"
+  },
+  "fields": {
+   "0": [
+    "E",
+    3,
+    52,
+    "ding",
+    null,
+    "Ding"
+   ],
+   "1": [
+    "A",
+    3,
+    57,
+    "rim",
+    270,
+    "1"
+   ],
+   "2": [
+    "B",
+    3,
+    59,
+    "rim",
+    225,
+    "2"
+   ],
+   "3": [
+    "C",
+    4,
+    60,
+    "rim",
+    315,
+    "3"
+   ],
+   "4": [
+    "D#",
+    4,
+    63,
+    "rim",
+    180,
+    "4"
+   ],
+   "5": [
+    "E",
+    4,
+    64,
+    "rim",
+    0,
+    "5"
+   ],
+   "6": [
+    "F#",
+    4,
+    66,
+    "rim",
+    135,
+    "6"
+   ],
+   "7": [
+    "G",
+    4,
+    67,
+    "rim",
+    45,
+    "7"
+   ],
+   "8": [
+    "B",
+    4,
+    71,
+    "rim",
+    90,
+    "8"
+   ]
+  },
+  "geom": {
+   "bottom": 0,
+   "ding_dy": 0,
+   "ext": 1.06,
+   "f_bnote": 0,
+   "f_ding": 0.12,
+   "f_note": 0.1454,
+   "f_num": 0.1216,
+   "inner": 0,
+   "inner_ring": 0.355,
+   "n_in": 0.085,
+   "n_out": 0,
+   "r_bnote": 0,
+   "r_ding": 0.2,
+   "r_note": 0.19,
+   "rim": 0.745,
+   "rim_num_out": false
+  },
+  "name": "E ROMANIAN HIJAZ 9",
+  "seed": "(E3) A3 B3 C4 D#4 E4 F#4 G4 B4",
+  "share": "6/(E3)_A3_B3_C4_Ds4_E4_Fs4_G4_B4/E+ROMANIAN+HIJAZ+9/101212"
+ },
+ "f-low-pygmy-18": {
+  "auto_pick": [
+   1,
+   21,
+   26
+  ],
+  "cards": [
+   {
+    "bottom": 0,
+    "degree": "i",
+    "fields": [
+     5,
+     7,
+     8
+    ],
+    "main": "Fm",
+    "n": 1,
+    "notes": "F4 Ab4 C5",
+    "numbers": "5 - 7 - 8",
+    "roots": [
+     5
+    ],
+    "subtitle": "F MINOR",
+    "sup": ""
+   },
+   {
+    "bottom": 2,
+    "degree": "iv",
+    "fields": [
+     104,
+     105,
+     5
+    ],
+    "main": "Bbm",
+    "n": 21,
+    "notes": "Bb3 Db4 F4",
+    "numbers": "U4 - U5 - 5",
+    "roots": [
+     104
+    ],
+    "subtitle": "Bb MINOR",
+    "sup": ""
+   },
+   {
+    "bottom": 0,
+    "degree": "v",
+    "fields": [
+     3,
+     4,
+     6
+    ],
+    "main": "Cm",
+    "n": 26,
+    "notes": "C4 Eb4 G4",
+    "numbers": "3 - 4 - 6",
+    "roots": [
+     3
+    ],
+    "subtitle": "C MINOR",
+    "sup": ""
+   }
+  ],
+  "colors": {
+   "ga": "#6D40A3",
+   "gb": "#C9971E",
+   "root": "#6D40A3",
+   "tone": "#C9971E"
+  },
+  "count": 53,
+  "deck_id": "pygmy",
+  "degrees": {
+   "0": "v",
+   "1": "VI",
+   "10": "iv",
+   "3": "VII",
+   "5": "i",
+   "7": "ii\u00b0",
+   "8": "III"
+  },
+  "fields": {
+   "0": [
+    "F",
+    3,
+    53,
+    "ding",
+    null,
+    "Ding"
+   ],
+   "1": [
+    "G",
+    3,
+    55,
+    "rim",
+    290,
+    "1"
+   ],
+   "10": [
+    "F",
+    5,
+    77,
+    "inner",
+    128,
+    "10"
+   ],
+   "101": [
+    "C",
+    3,
+    48,
+    "bottom",
+    300,
+    "U1"
+   ],
+   "102": [
+    "Db",
+    3,
+    49,
+    "bottom",
+    240,
+    "U2"
+   ],
+   "103": [
+    "Eb",
+    3,
+    51,
+    "bottom",
+    0,
+    "U3"
+   ],
+   "104": [
+    "Bb",
+    3,
+    58,
+    "bottom",
+    180,
+    "U4"
+   ],
+   "105": [
+    "Db",
+    4,
+    61,
+    "bottom",
+    60,
+    "U5"
+   ],
+   "106": [
+    "Ab",
+    5,
+    80,
+    "bottom",
+    120,
+    "U6"
+   ],
+   "11": [
+    "G",
+    5,
+    79,
+    "inner",
+    52,
+    "11"
+   ],
+   "2": [
+    "Ab",
+    3,
+    56,
+    "rim",
+    250,
+    "2"
+   ],
+   "3": [
+    "C",
+    4,
+    60,
+    "rim",
+    330,
+    "3"
+   ],
+   "4": [
+    "Eb",
+    4,
+    63,
+    "rim",
+    210,
+    "4"
+   ],
+   "5": [
+    "F",
+    4,
+    65,
+    "rim",
+    10,
+    "5"
+   ],
+   "6": [
+    "G",
+    4,
+    67,
+    "rim",
+    170,
+    "6"
+   ],
+   "7": [
+    "Ab",
+    4,
+    68,
+    "rim",
+    50,
+    "7"
+   ],
+   "8": [
+    "C",
+    5,
+    72,
+    "rim",
+    130,
+    "8"
+   ],
+   "9": [
+    "Eb",
+    5,
+    75,
+    "rim",
+    90,
+    "9"
+   ]
+  },
+  "geom": {
+   "bottom": 1.15,
+   "ding_dy": 0.1425,
+   "f_bnote": 0.0931,
+   "f_ding": 0.114,
+   "f_note": 0.1114,
+   "f_num": 0.0932,
+   "inner": 0.38,
+   "inner_ring": 0,
+   "n_in": 0.052,
+   "n_out": 0.068,
+   "r_bnote": 0.1188,
+   "r_ding": 0.19,
+   "r_note": 0.1456,
+   "rim": 0.722,
+   "rim_num_out": true
+  },
+  "name": "F3 LOW PYGMY 18",
+  "seed": null,
+  "share": null
+ },
+ "f-low-pygmy-9": {
+  "auto_pick": [
+   1,
+   2,
+   3
+  ],
+  "cards": [
+   {
+    "bottom": 0,
+    "degree": "i",
+    "fields": [
+     1,
+     3,
+     4
+    ],
+    "main": "Fm",
+    "n": 1,
+    "notes": "F3 Ab3 C4",
+    "numbers": "1 - 3 - 4",
+    "roots": [
+     1
+    ],
+    "subtitle": "F MINOR",
+    "sup": ""
+   },
+   {
+    "bottom": 0,
+    "degree": "i",
+    "fields": [
+     1,
+     4
+    ],
+    "main": "F5",
+    "n": 2,
+    "notes": "F3 C4",
+    "numbers": "1 - 4",
+    "roots": [
+     1
+    ],
+    "subtitle": "POWER CHORD",
+    "sup": ""
+   },
+   {
+    "bottom": 0,
+    "degree": "i",
+    "fields": [
+     1,
+     3,
+     4,
+     5
+    ],
+    "main": "Fm",
+    "n": 3,
+    "notes": "F3 Ab3 C4 Eb4",
+    "numbers": "1 - 3 - 4 - 5",
+    "roots": [
+     1
+    ],
+    "subtitle": "F MINOR 7 ( = Ab6 )",
+    "sup": "7"
+   }
+  ],
+  "colors": {
+   "ga": "#6D40A3",
+   "gb": "#C9971E",
+   "root": "#6D40A3",
+   "tone": "#C9971E"
+  },
+  "count": 11,
+  "deck_id": "custom:66e75cdd",
+  "degrees": {
+   "0": "v",
+   "3": "VII",
+   "5": "i",
+   "7": "ii\u00b0",
+   "8": "III"
+  },
+  "fields": {
+   "0": [
+    "F",
+    2,
+    41,
+    "ding",
+    null,
+    "Ding"
+   ],
+   "1": [
+    "F",
+    3,
+    53,
+    "rim",
+    270,
+    "1"
+   ],
+   "2": [
+    "G",
+    3,
+    55,
+    "rim",
+    225,
+    "2"
+   ],
+   "3": [
+    "Ab",
+    3,
+    56,
+    "rim",
+    315,
+    "3"
+   ],
+   "4": [
+    "C",
+    4,
+    60,
+    "rim",
+    180,
+    "4"
+   ],
+   "5": [
+    "Eb",
+    4,
+    63,
+    "rim",
+    0,
+    "5"
+   ],
+   "6": [
+    "F",
+    4,
+    65,
+    "rim",
+    135,
+    "6"
+   ],
+   "7": [
+    "G",
+    4,
+    67,
+    "rim",
+    45,
+    "7"
+   ],
+   "8": [
+    "Ab",
+    4,
+    68,
+    "rim",
+    90,
+    "8"
+   ]
+  },
+  "geom": {
+   "bottom": 0,
+   "ding_dy": 0,
+   "ext": 1.06,
+   "f_bnote": 0,
+   "f_ding": 0.12,
+   "f_note": 0.1454,
+   "f_num": 0.1216,
+   "inner": 0,
+   "inner_ring": 0.355,
+   "n_in": 0.085,
+   "n_out": 0,
+   "r_bnote": 0,
+   "r_ding": 0.2,
+   "r_note": 0.19,
+   "rim": 0.745,
+   "rim_num_out": false
+  },
+  "name": "F LOW PYGMY 9",
+  "seed": "(F2) F3 G3 Ab3 C4 Eb4 F4 G4 Ab4",
+  "share": "6/(F2)_F3_G3_Ab3_C4_Eb4_F4_G4_Ab4/F+LOW+PYGMY+9/palette-2/965e78"
+ },
+ "f-magic-voyage-8": {
+  "auto_pick": [
+   1,
+   2,
+   3
+  ],
+  "cards": [
+   {
+    "bottom": 0,
+    "degree": "i",
+    "fields": [
+     4,
+     6,
+     7
+    ],
+    "main": "Fm",
+    "n": 1,
+    "notes": "F4 Ab4 C5",
+    "numbers": "4 - 6 - 7",
+    "roots": [
+     4
+    ],
+    "subtitle": "F MINOR",
+    "sup": ""
+   },
+   {
+    "bottom": 0,
+    "degree": "i",
+    "fields": [
+     4,
+     7
+    ],
+    "main": "F5",
+    "n": 2,
+    "notes": "F4 C5",
+    "numbers": "4 - 7",
+    "roots": [
+     4
+    ],
+    "subtitle": "POWER CHORD",
+    "sup": ""
+   },
+   {
+    "bottom": 0,
+    "degree": "i",
+    "fields": [
+     4,
+     1,
+     2,
+     3
+    ],
+    "main": "Fm",
+    "n": 3,
+    "notes": "F4 Ab3 C4 Eb4",
+    "numbers": "4 - 1 - 2 - 3",
+    "roots": [
+     4
+    ],
+    "subtitle": "F MINOR 7 ( = Ab6 )",
+    "sup": "7"
+   }
+  ],
+  "colors": {
+   "ga": "#C0452C",
+   "gb": "#2563B0",
+   "root": "#C0452C",
+   "tone": "#2563B0"
+  },
+  "count": 11,
+  "deck_id": "custom:98d78cdd",
+  "degrees": {
+   "0": "v",
+   "3": "VII",
+   "5": "i",
+   "7": "ii\u00b0",
+   "8": "III"
+  },
+  "fields": {
+   "0": [
+    "F",
+    3,
+    53,
+    "ding",
+    null,
+    "Ding"
+   ],
+   "1": [
+    "Ab",
+    3,
+    56,
+    "rim",
+    270,
+    "1"
+   ],
+   "2": [
+    "C",
+    4,
+    60,
+    "rim",
+    218.6,
+    "2"
+   ],
+   "3": [
+    "Eb",
+    4,
+    63,
+    "rim",
+    321.4,
+    "3"
+   ],
+   "4": [
+    "F",
+    4,
+    65,
+    "rim",
+    167.1,
+    "4"
+   ],
+   "5": [
+    "G",
+    4,
+    67,
+    "rim",
+    12.9,
+    "5"
+   ],
+   "6": [
+    "Ab",
+    4,
+    68,
+    "rim",
+    115.7,
+    "6"
+   ],
+   "7": [
+    "C",
+    5,
+    72,
+    "rim",
+    64.3,
+    "7"
+   ]
+  },
+  "geom": {
+   "bottom": 0,
+   "ding_dy": 0,
+   "ext": 1.06,
+   "f_bnote": 0,
+   "f_ding": 0.12,
+   "f_note": 0.1454,
+   "f_num": 0.1216,
+   "inner": 0,
+   "inner_ring": 0.355,
+   "n_in": 0.085,
+   "n_out": 0,
+   "r_bnote": 0,
+   "r_ding": 0.2,
+   "r_note": 0.19,
+   "rim": 0.745,
+   "rim_num_out": false
+  },
+  "name": "F MAGIC VOYAGE 8",
+  "seed": "(F3) Ab3 C4 Eb4 F4 G4 Ab4 C5",
+  "share": "6/(F3)_Ab3_C4_Eb4_F4_G4_Ab4_C5/F+MAGIC+VOYAGE+8/palette-9/1151fc"
+ },
+ "f-sharp-akebono-9": {
+  "auto_pick": [
+   1,
+   2,
+   3
+  ],
+  "cards": [
+   {
+    "bottom": 0,
+    "degree": "i",
+    "fields": [
+     4,
+     7
+    ],
+    "main": "F#5",
+    "n": 1,
+    "notes": "F#4 C#5",
+    "numbers": "4 - 7",
+    "roots": [
+     4
+    ],
+    "subtitle": "POWER CHORD",
+    "sup": ""
+   },
+   {
+    "bottom": 0,
+    "degree": "i",
+    "fields": [
+     4,
+     6,
+     7
+    ],
+    "main": "F#sus",
+    "n": 2,
+    "notes": "F#4 B4 C#5",
+    "numbers": "4 - 6 - 7",
+    "roots": [
+     4
+    ],
+    "subtitle": "SUSPENDED CHORD",
+    "sup": "4"
+   },
+   {
+    "bottom": 0,
+    "degree": "II",
+    "fields": [
+     5,
+     6,
+     8
+    ],
+    "main": "G",
+    "n": 3,
+    "notes": "G4 B4 D5",
+    "numbers": "5 - 6 - 8",
+    "roots": [
+     5
+    ],
+    "subtitle": "G MAJOR",
+    "sup": ""
+   }
+  ],
+  "colors": {
+   "ga": "#DD8F00",
+   "gb": "#0B7B75",
+   "root": "#DD8F00",
+   "tone": "#0B7B75"
+  },
+  "count": 9,
+  "deck_id": "custom:6c770433",
+  "degrees": {
+   "1": "v\u00b0",
+   "11": "iv",
+   "2": "VI",
+   "6": "i",
+   "7": "II"
+  },
+  "fields": {
+   "0": [
+    "F#",
+    3,
+    54,
+    "ding",
+    null,
+    "Ding"
+   ],
+   "1": [
+    "B",
+    3,
+    59,
+    "rim",
+    270,
+    "1"
+   ],
+   "2": [
+    "C#",
+    4,
+    61,
+    "rim",
+    225,
+    "2"
+   ],
+   "3": [
+    "D",
+    4,
+    62,
+    "rim",
+    315,
+    "3"
+   ],
+   "4": [
+    "F#",
+    4,
+    66,
+    "rim",
+    180,
+    "4"
+   ],
+   "5": [
+    "G",
+    4,
+    67,
+    "rim",
+    0,
+    "5"
+   ],
+   "6": [
+    "B",
+    4,
+    71,
+    "rim",
+    135,
+    "6"
+   ],
+   "7": [
+    "C#",
+    5,
+    73,
+    "rim",
+    45,
+    "7"
+   ],
+   "8": [
+    "D",
+    5,
+    74,
+    "rim",
+    90,
+    "8"
+   ]
+  },
+  "geom": {
+   "bottom": 0,
+   "ding_dy": 0,
+   "ext": 1.06,
+   "f_bnote": 0,
+   "f_ding": 0.12,
+   "f_note": 0.1454,
+   "f_num": 0.1216,
+   "inner": 0,
+   "inner_ring": 0.355,
+   "n_in": 0.085,
+   "n_out": 0,
+   "r_bnote": 0,
+   "r_ding": 0.2,
+   "r_note": 0.19,
+   "rim": 0.745,
+   "rim_num_out": false
+  },
+  "name": "F# AKEBONO 9",
+  "seed": "(F#3) B3 C#4 D4 F#4 G4 B4 C#5 D5",
+  "share": "6/(Fs3)_B3_Cs4_D4_Fs4_G4_B4_Cs5_D5/F%23+AKEBONO+9/palette-6/542d71"
+ }
+}
