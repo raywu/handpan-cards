@@ -25,6 +25,16 @@ PALETTES = ["#E0559A", "#6D40A3", "#0B7B75", "#E2761B", "#C9971E", "#DD8F00", "#
             "#C0452C", "#B3263A"]
 BG_LIGHT = "#fbfaf8"
 BG_DARK = "#15181b"
+BROWN = "#1a1815"
+SHARED_ROOT = ":root{color-scheme:dark;--bg:#1a1815;--fg:#eae6df;--muted:#c4bcab;--r:#e3b25c;"
+SHARED_RULES = [
+    "body{background:var(--bg);color:var(--fg);font-family:\"Nunito Sans\",system-ui,sans-serif;line-height:1.55;",
+    "h1{font-family:Marcellus,serif;font-weight:400;font-size:clamp(30px,7vw,44px);margin:0;line-height:1.15}",
+    "font-size:24px;",
+    "a{color:var(--r);font-weight:600;text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px}",
+    "a:hover{text-decoration-thickness:2.5px}",
+    "a:focus-visible{outline:2px solid currentColor;outline-offset:2px;border-radius:2px}",
+]
 
 # Independent oracle for the plan's page table (Round 4 dispositions, row 0 from Round 7 H3,
 # Equinox and Magic Voyage). kind, palette index, cards in the deck, popularized, cross-link target.
@@ -795,3 +805,43 @@ class AlsoTryTest(unittest.TestCase):
                 else:
                     self.assertEqual(has, [])
                     self.assertNotIn("Annaziska", read("scales/%s/index.html" % slug))
+
+
+class SharedBrownHeadTest(unittest.TestCase):
+    def test_the_explore_index_takes_the_shared_dark_only_head(self):
+        html = read("scales/index.html")
+        self.assertIn(SHARED_ROOT, html)
+        for rule in SHARED_RULES:
+            with self.subTest(rule=rule):
+                self.assertIn(rule, html)
+        self.assertRegex(html, r"h2\{font-family:Marcellus,serif;font-weight:400;font-size:24px;margin:0;color:var\(--r\)\}")
+        self.assertNotIn("prefers-color-scheme", html)
+        self.assertEqual(Page(html).meta("theme-color"), BROWN)
+        self.assertEqual(html, gen.hub_page())
+
+    def test_the_scale_pages_keep_their_own_head(self):
+        for slug in ROWS:
+            with self.subTest(page=slug):
+                html = html_of(slug)
+                self.assertIn("prefers-color-scheme:dark", html)
+
+    def test_the_open_button_text_is_dark_on_gold_in_the_index(self):
+        self.assertRegex(gen.INDEX_CSS_HEAD, r"\.open\{[^}]*color:#1a1815")
+
+    def test_the_about_overlay_takes_the_shared_rules(self):
+        css = read("index.html")
+        about = css[css.index("#about{position:fixed"):css.index("html.about-open{")]
+        self.assertNotIn("#1f1b15", about)
+        self.assertIn("background:#1a1815", about)
+        self.assertRegex(about, r"\.abouthead\{[^}]*background:#1a1815")
+        self.assertRegex(about, r"color:#eae6df; font:400 16px/1\.55 \"Nunito Sans\"")
+        self.assertRegex(about, r'#about h2\{[^}]*font:400 clamp\(30px, 7vw, 44px\)/1\.15 "Marcellus", serif')
+        self.assertRegex(about, r'#about h3\{[^}]*font:400 24px/1\.2 "Marcellus", serif[^}]*color:#e3b25c')
+        self.assertNotIn("text-transform:uppercase", about)
+        self.assertRegex(about, r"#about h4\{[^}]*color:#c4bcab")
+        self.assertRegex(about, r"#about a\{color:#e3b25c; font-weight:600; text-underline-offset:3px\}")
+        self.assertIn("calc((100% - 520px) / 2)", about)
+
+    def test_every_primary_passes_contrast_on_the_brown(self):
+        for colour in ("#e3b25c", "#eae6df", "#c4bcab"):
+            self.assertGreaterEqual(ratio(colour, BROWN), 4.5)

@@ -1324,23 +1324,22 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
    (it must stay last). */
 #app{flex:none; width:100%; min-height:0; display:flex; flex-direction:column; align-items:center;
   height:max(100%, calc(100dvh - max(10px, env(safe-area-inset-top)) - max(12px, env(safe-area-inset-bottom))))}
-#about{position:fixed; inset:0; z-index:50; overflow-y:auto; overscroll-behavior:contain; background:#1f1b15;
+#about{position:fixed; inset:0; z-index:50; overflow-y:auto; overscroll-behavior:contain; background:#1a1815;
   padding:0 max(calc(16px + env(safe-area-inset-right)), calc((100% - 520px) / 2)) max(48px, calc(var(--sp-4) + env(safe-area-inset-bottom))) max(calc(16px + env(safe-area-inset-left)), calc((100% - 520px) / 2));
   scroll-padding-top:var(--about-head-h, 0px);
-  color:#c4bcab; font:400 14px/1.6 "Nunito Sans", system-ui, sans-serif; user-select:text; -webkit-user-select:text}
+  color:#eae6df; font:400 16px/1.55 "Nunito Sans", system-ui, sans-serif; user-select:text; -webkit-user-select:text}
 #about[hidden]{display:none}
-.abouthead{position:sticky; top:0; display:flex; align-items:center; gap:var(--sp-3); background:#1f1b15;
+.abouthead{position:sticky; top:0; display:flex; align-items:center; gap:var(--sp-3); background:#1a1815;
   padding-top:max(var(--sp-3), env(safe-area-inset-top)); padding-bottom:var(--sp-3)}
-#about h2{margin:0 0 8px; font:400 22px/1.2 "Marcellus", serif; color:#eae6df}
+#about h2{margin:0 0 8px; font:400 clamp(30px, 7vw, 44px)/1.15 "Marcellus", serif; color:#eae6df}
 #about .abouthead h2{margin:0}
-#about h3{margin:20px 0 6px; font:600 11px/1.4 "Nunito Sans"; letter-spacing:.13em;
-  text-transform:uppercase; color:#a79d8b}
+#about h3{margin:20px 0 6px; font:400 24px/1.2 "Marcellus", serif; color:#e3b25c}
 #about h3 + ul, #about h3 + p, #about h4 + ul{margin-top:0}
 #about h4{margin:14px 0 4px; font:600 13px/1.4 "Nunito Sans"; color:#c4bcab}
 #about p{margin:0 0 8px}
 #about ol, #about ul{margin:0; padding-left:20px}
 #about li{margin:0 0 4px}
-#about a{color:#eae6df}
+#about a{color:#e3b25c; font-weight:600; text-underline-offset:3px}
 #about ul a, #about a[href^="mailto:"]{display:flex; align-items:center; min-height:44px}
 html.about-open{overflow:hidden}
 
