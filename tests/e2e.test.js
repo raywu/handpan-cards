@@ -1496,8 +1496,8 @@ function run() {
     { id: "res-amy-bottom", href: "https://youtu.be/0hMIUnA5-OI", label: "AMY: BOTTOM NOTES", row: 1,
       aria: "Amy Naylor: more interesting chords with bottom notes (YouTube)" },
     { id: "res-handpan-helpers", href: "https://handpanhelpers.klangzeug.de/", label: "HANDPAN HELPERS", row: 2 },
-    { id: "res-handpan-101", href: "https://docs.google.com/document/d/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco/edit?usp=drivesdk", label: "HANDPAN 101", row: 2,
-      aria: "Handpan 101 (Google Doc)" },
+    { id: "res-handpan-101", href: "/handpan-101/", label: "HANDPAN 101", row: 2,
+      aria: "Handpan 101", sameTab: true },
   ];
   const RES_IDS = RESOURCES.map((r) => r.id);
   const RES_IDS_JS = JSON.stringify(RES_IDS);
@@ -2058,8 +2058,13 @@ function run() {
       assert.strictEqual(link.label, expected.label, `link ${i} label mismatch: ${JSON.stringify(link)}`);
       if (expected.aria) assert.strictEqual(link.aria, expected.aria, `link ${i} aria-label mismatch: ${JSON.stringify(link)}`);
       assert.strictEqual(link.onclick, null, `link ${i} must not close the panel or run script: ${JSON.stringify(link)}`);
-      assert.strictEqual(link.target, "_blank", `link ${i} must open in a new tab: ${JSON.stringify(link)}`);
-      assert.match(link.rel, /\bnoopener\b/, `link ${i} rel must contain noopener: ${JSON.stringify(link)}`);
+      if (expected.sameTab) {
+        assert.strictEqual(link.target, null, `link ${i} must open in the same tab: ${JSON.stringify(link)}`);
+        assert.strictEqual(link.rel, null, `link ${i} carries no rel: ${JSON.stringify(link)}`);
+      } else {
+        assert.strictEqual(link.target, "_blank", `link ${i} must open in a new tab: ${JSON.stringify(link)}`);
+        assert.match(link.rel, /\bnoopener\b/, `link ${i} rel must contain noopener: ${JSON.stringify(link)}`);
+      }
       assert.match(link.className, /\bmode\b/, `link ${i} must reuse .mode styling: ${JSON.stringify(link)}`);
       // Eng review amendment 2: a.mode gets no text-decoration from .mode,
       // so the anchor's own rule must suppress the UA underline explicitly.
@@ -2290,7 +2295,7 @@ function run() {
           assert.strictEqual(afterClick.length, 1,
             `clicking #${r.id} should produce exactly one activation, got ${JSON.stringify(afterClick)}`);
           assert.strictEqual(afterClick[0].href, r.href, `#${r.id} click activation had the wrong href`);
-          assert.strictEqual(afterClick[0].target, "_blank", `#${r.id} click activation had the wrong target`);
+          assert.strictEqual(afterClick[0].target, r.sameTab ? null : "_blank", `#${r.id} click activation had the wrong target`);
           assert.deepStrictEqual(await b.eval(`return { modeA: document.getElementById("modeA").getAttribute("aria-pressed"),
             modeB: document.getElementById("modeB").getAttribute("aria-pressed"), modeS: document.getElementById("tier-basic").getAttribute("aria-pressed"),
             count: document.getElementById("count").textContent, front: document.getElementById("front").textContent };`), before,
