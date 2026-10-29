@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1755,7 +1755,7 @@ html.about-open{overflow:hidden}
+@@ -1755,8 +1755,8 @@ html.about-open{overflow:hidden}
      </div>
      <div class="modebar duo">
        <a class="mode" id="res-handpan-helpers"
@@ -12,4 +12,5 @@ diff --git a/index.html b/index.html
 +         href="https://handpanhelpers.klangzeug.de/wrong/"
           target="_blank" rel="noopener"><span>HANDPAN <br>HELPERS</span></a>
        <a class="mode" id="res-handpan-101"
-          href="https://docs.google.com/document/d/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco/edit?usp=drivesdk"
+          href="/handpan-101/"
+          aria-label="Handpan 101"><span>HANDPAN <br>101</span></a>

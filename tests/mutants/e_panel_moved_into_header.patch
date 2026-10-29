@@ -79,7 +79,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1429,2 +1429,99 @@
+@@ -1429,2 +1429,98 @@
    <button type="button" id="saved-temporary-use" class="mode" hidden>USE THIS TAB TEMPORARILY</button>
 +<div id="settings-scrim" hidden></div>
 +<div id="settings-panel" aria-labelledby="settings-title" hidden>
@@ -166,9 +166,8 @@ diff --git a/index.html b/index.html
 +         href="https://handpanhelpers.klangzeug.de/"
 +         target="_blank" rel="noopener"><span>HANDPAN <br>HELPERS</span></a>
 +      <a class="mode" id="res-handpan-101"
-+         href="https://docs.google.com/document/d/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco/edit?usp=drivesdk"
-+         aria-label="Handpan 101"
-+         target="_blank" rel="noopener"><span>HANDPAN <br>101</span></a>
++         href="/handpan-101/"
++         aria-label="Handpan 101"><span>HANDPAN <br>101</span></a>
 +    </div>
 +    <div class="modebar">
 +      <button class="mode" type="button" id="about-open" aria-haspopup="dialog">ABOUT</button>
@@ -179,7 +178,7 @@ diff --git a/index.html b/index.html
 +</div>
 +
  </header>
-@@ -1743,99 +1840,2 @@
+@@ -1743,98 +1840,2 @@
       the static sidebar is correctly plain, non-modal markup. -->
 -<div id="settings-scrim" hidden></div>
 -<div id="settings-panel" aria-labelledby="settings-title" hidden>
@@ -266,9 +265,8 @@ diff --git a/index.html b/index.html
 -         href="https://handpanhelpers.klangzeug.de/"
 -         target="_blank" rel="noopener"><span>HANDPAN <br>HELPERS</span></a>
 -      <a class="mode" id="res-handpan-101"
--         href="https://docs.google.com/document/d/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco/edit?usp=drivesdk"
--         aria-label="Handpan 101"
--         target="_blank" rel="noopener"><span>HANDPAN <br>101</span></a>
+-         href="/handpan-101/"
+-         aria-label="Handpan 101"><span>HANDPAN <br>101</span></a>
 -    </div>
 -    <div class="modebar">
 -      <button class="mode" type="button" id="about-open" aria-haspopup="dialog">ABOUT</button>

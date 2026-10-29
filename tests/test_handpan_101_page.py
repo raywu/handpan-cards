@@ -10,7 +10,7 @@ PATH = "handpan-101/index.html"
 URL = SITE + "handpan-101/"
 TITLE = "Handpan 101: A Beginner's Guide to Parts, Scales and First Practice"
 ALLOWED_HOSTS = {"fonts.googleapis.com", "fonts.gstatic.com", "handpan.raywu.org", "www.youtube.com",
-                 "en.wikipedia.org", "www.sarazhandpans.com"}
+                 "en.wikipedia.org", "www.sarazhandpans.com", "schema.org"}
 NAME_DENYLIST = ["Amy", "Naylor", "Levinson", "Rohner", "Schärer", "Scharer", "Felix", "Sabina"]
 SERVED = ["index.html", PATH, "sitemap.xml"] + sorted(
     os.path.relpath(f, ROOT) for f in glob.glob(os.path.join(ROOT, "scales", "*", "index.html"))
