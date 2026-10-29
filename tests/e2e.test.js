@@ -19792,6 +19792,60 @@ function run() {
       });
     }
 
+    for (const [w, h] of [[844, 390], [380, 780]]) {
+      for (const slug of ["d-kurd-9", "e-amara-20"]) {
+        test(`FT: ${slug} at ${w}x${h}: NEXT and PREV tapped at the viewport top do not scroll the page`, async () => {
+          await b.setViewport(w, h, true);
+          await b.send("Page.navigate", { url: pageUrl(slug) });
+          await b.waitFor(`document.readyState === "complete" && document.querySelector(".prog .slot")`, { label: "stepper" });
+          for (const sel of [".prog .slot:nth-child(1) .nav label", ".prog .slot:nth-child(2) .nav label:first-child"]) {
+            const pt = await b.eval(`
+              const l = document.querySelector(${JSON.stringify(sel)});
+              scrollBy(0, l.getBoundingClientRect().top - 2);
+              const r = l.getBoundingClientRect();
+              return { x: r.left + r.width / 2, y: r.top + r.height / 2, sy: scrollY };`);
+            for (const type of ["mousePressed", "mouseReleased"]) {
+              await b.send("Input.dispatchMouseEvent", { type, x: pt.x, y: pt.y, button: "left", clickCount: 1 });
+            }
+            await new Promise((r) => setTimeout(r, 100));
+            const after = await b.eval(`return scrollY;`);
+            // e-amara-20's chord 2 is 15px taller; scroll anchoring (or the page end) moves scrollY by that growth only.
+            assert.ok(Math.abs(after - pt.sy) <= 16, `${sel} at the top leaves scrollY alone (${pt.sy} -> ${after})`);
+          }
+        });
+      }
+    }
+
+    for (const [w, h] of [[844, 390], [380, 780]]) {
+      for (const slug of ["e-amara-20", "d-aegean-18"]) {
+        test(`FT: ${slug} at ${w}x${h}: Tab and Shift+Tab into the steps bring the focused step into view`, async () => {
+          await b.setViewport(w, h, true);
+          await b.send("Page.navigate", { url: pageUrl(slug) });
+          await b.waitFor(`document.readyState === "complete" && document.querySelector(".prog .slot")`, { label: "stepper" });
+          const ring = () => b.eval(`
+            const s = [...document.querySelectorAll(".prog .slot")].find((x) => getComputedStyle(x).display !== "none");
+            const r = s.getBoundingClientRect();
+            return { id: document.activeElement.id, ring: getComputedStyle(s).outlineStyle, top: r.top, bottom: r.bottom, vh: innerHeight };`);
+          await b.eval(`
+            const f = [...document.querySelectorAll("a[href], input")];
+            f[f.indexOf(document.querySelector("#p1")) - 1].focus(); scrollTo(0, 0); return true;`);
+          await b.send("Input.dispatchKeyEvent", { type: "keyDown", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9 });
+          await b.send("Input.dispatchKeyEvent", { type: "keyUp", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9 });
+          let r = await ring();
+          assert.strictEqual(r.id, "p1");
+          assert.strictEqual(r.ring, "solid", "the focused step shows a ring");
+          assert.ok(r.bottom > 40 && r.top < r.vh - 40, `Tab: the ringed step is in view (${r.top}..${r.bottom} of ${r.vh})`);
+          await b.eval(`document.querySelector(".prog .slot:nth-child(1) .cardhost").shadowRoot.querySelector(".flip").focus();
+            const n = document.querySelector(".prog .slot:nth-child(1) .nav"); n.scrollIntoView({ block: "end" }); return true;`);
+          await b.send("Input.dispatchKeyEvent", { type: "keyDown", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9, modifiers: 8 });
+          await b.send("Input.dispatchKeyEvent", { type: "keyUp", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9, modifiers: 8 });
+          r = await ring();
+          assert.strictEqual(r.id, "p1");
+          assert.ok(r.bottom > 40 && r.top < r.vh - 40, `Shift+Tab: the ringed step is in view (${r.top}..${r.bottom} of ${r.vh})`);
+        });
+      }
+    }
+
     test("FT: Tab reaches the radio group, arrows step, Space on the flip checkbox flips", async () => {
       await b.setViewport(380, 780, true);
       await b.send("Page.navigate", { url: pageUrl("d-kurd-9") });
