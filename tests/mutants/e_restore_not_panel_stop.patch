@@ -3,12 +3,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14673,7 +14673,7 @@ let panelOpen = false;
+@@ -14682,7 +14682,7 @@ let panelOpen = false;
  const desktopMQ = window.matchMedia("(min-width:1024px) and (min-height:700px)");
  function panelStops() {
    const prints = [...settingsPanel.querySelectorAll(".prints button, .prints select")];
 -  const scales = [document.getElementById("deck-add"), restoreBtn];
 +  const scales = [document.getElementById("deck-add")];
-   const res = [...settingsPanel.querySelectorAll('#settings-panel a.mode[id^="res-"]')];
-   const about = document.getElementById("about-open"), lang = document.getElementById("lang-select");
+   const res = [...settingsPanel.querySelectorAll('#settings-panel a.mode[id^="res-"], #about-open')];
+   const lang = document.getElementById("lang-select");
    const col = document.querySelector("#settings-panel > .panel-col");

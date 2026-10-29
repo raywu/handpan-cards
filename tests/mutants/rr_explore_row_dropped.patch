@@ -1,0 +1,16 @@
+# kills: RR: Resources rows are EXPLORE SCALES, HANDPAN 101, ABOUT, each alone and full width, and the group has no external link
+# suite: node --test --test-name-pattern ^RR:.Resources.rows.are.EXPLORE.SCALES tests/app.test.js
+# Lane M. The EXPLORE SCALES row is missing from the Resources group.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1833,9 +1833,6 @@ html.about-open{overflow:hidden}
+   <div class="panel-col">
+   <div class="panel-group">
+     <h3 class="panel-heading">Resources</h3>
+-    <div class="modebar">
+-      <a class="mode" id="res-explore" href="/scales/">EXPLORE SCALES</a>
+-    </div>
+     <div class="modebar">
+       <a class="mode" id="res-handpan-101"
+          href="/handpan-101/"
