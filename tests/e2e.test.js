@@ -2316,7 +2316,7 @@ function run() {
           assert.strictEqual(afterEnter.length, 1,
             `pressing Enter on #${r.id} should produce exactly one activation, got ${JSON.stringify(afterEnter)}`);
           assert.strictEqual(afterEnter[0].href, r.href, `#${r.id} Enter activation had the wrong href`);
-          assert.strictEqual(afterEnter[0].target, "_blank", `#${r.id} Enter activation had the wrong target`);
+          assert.strictEqual(afterEnter[0].target, r.sameTab ? null : "_blank", `#${r.id} Enter activation had the wrong target`);
           assert.deepStrictEqual(await b.eval(`return { modeA: document.getElementById("modeA").getAttribute("aria-pressed"),
             modeB: document.getElementById("modeB").getAttribute("aria-pressed"), modeS: document.getElementById("tier-basic").getAttribute("aria-pressed"),
             count: document.getElementById("count").textContent, front: document.getElementById("front").textContent };`), before,
