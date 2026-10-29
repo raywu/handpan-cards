@@ -33,3 +33,13 @@ Score 10/10. Revision 1 added f-low-pygmy-18 and the touch probe.
 
 ## Review
 `/plan-eng-review` by a fresh subagent was not run: this fork may not spawn agents. The parent's lane reviewer covers it.
+
+## Revision 2: pinch-zoom (fourth review FAIL)
+Cause: the fixed radio sat at the centre of the layout viewport. A label tap focuses it, and under a 2.5x pinch Chrome panned the visual viewport to it (117px down at 844x390, 113px left at 380x780).
+JS check: no owner rule forbids JS, but `test_no_script_but_the_json_ld_block_on_non_frozen_pages` pins no script on the scale pages, so the fix stays CSS only.
+Fix: each unfocused or focused radio is a 1px absolute box on the top edge of the nav label that targets it. A radio after the checked one sits on NEXT (right), and the others sit on PREV (left). A tap lands on a label whose top is in view, so focus has nothing to scroll to. That holds under zoom, at the fold and with the keyboard. The `:focus-visible` override is gone, which also removes mutant m3.
+Tests (red before, green after):
+- FT pinch-zoom 2.5x then NEXT twice, at 380x780 and 844x390.
+- FT touch tap at the fold, 16px.
+- FT placement: every radio, focused or not, sits on its label's top edge, at 380x780, 844x390 and 1280x800.
+Limit: if the zoomed view shows only the bottom of a label, the 1px focus target sits up to 43 CSS px above the view.

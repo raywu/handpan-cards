@@ -43,8 +43,8 @@ ul.rel li{border-bottom:1px solid var(--muted)}
 ul.rel a{display:flex;align-items:center;min-height:44px}
 section.related h2,section.group h2{color:var(--fg);font-size:20px;margin:0 0 4px}
 .prog{display:flex;flex-direction:column;align-items:center;gap:10px;position:relative}
-.prog>input{position:fixed;left:50%;top:50%;width:1px;height:1px;opacity:0;margin:0;clip-path:inset(50%)}
-.prog>input:focus-visible{position:absolute;top:auto;bottom:22px}
+.prog>input{position:absolute;bottom:43px;left:calc((100% - min(322px,100%))/2 + 44px);width:1px;height:1px;opacity:0;margin:0;clip-path:inset(50%)}
+.prog>input:checked~input{left:auto;right:calc((100% - min(322px,100%))/2 + 44px)}
 .prog .cards{width:min(322px,100%)}
 .prog .slot{display:none;gap:10px}
 .prog .step{font-weight:700;font-size:14px;letter-spacing:.06em;color:var(--muted);padding:2px 6px;border-radius:4px}
