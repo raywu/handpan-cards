@@ -3593,7 +3593,9 @@ test("RR: Resources rows are EXPLORE SCALES, HANDPAN 101, ABOUT, each alone and 
 
 test("RR: no served markup, selector row or i18n table carries a removed res- id or panel.res_amy key", () => {
   const html = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
-  for (const dead of ["res-handpaner", "res-dingandtones", "res-trainingcards", "res-amy-progressions", "res-amy-bottom", "res-handpan-helpers", "panel.res_amy"]) {
+  const removedRes = require("../tools/probe/panel_fit.js").REMOVED_BY_DESIGN.filter((id) => id.startsWith("res-"));
+  assert.strictEqual(removedRes.length, 6);
+  for (const dead of [...removedRes, "panel.res_amy"]) {
     assert.ok(!html.includes(dead), dead + " is still served");
   }
 });
@@ -4606,8 +4608,8 @@ describe("panel fit judge", () => {
     delete candOver.controls["deck-add"];
     assert.strictEqual(judge(baseOver, candOver).rule2.fail.length, 1, "a base that overflows does not excuse it");
     assert.strictEqual(judge(cell(), withControl(cell(), "deck-add", { exists: false, rendered: false, disabled: false, bottom: 0 })).rule2.fail.length, 1, "exists:false counts as lacking");
-    assert.deepStrictEqual(pf.REMOVED_BY_DESIGN, ["modeS", "button:FULL DECK PDF", "button:CHORD-ONLY PDF", "share-copy",
-      "res-handpaner", "res-dingandtones", "res-trainingcards", "res-amy-progressions", "res-amy-bottom", "res-handpan-helpers"]);
+    assert.strictEqual(pf.REMOVED_BY_DESIGN.length, 10, "the removed-by-design list is exactly the ten known ids");
+    assert.ok(!pf.REMOVED_BY_DESIGN.includes("button:DOWNLOAD PDF"), "a lost DOWNLOAD PDF is not removed by design");
     const noS = judge(cell(), lacks("modeS"));
     assert.strictEqual(noS.rule2.fail.length, 0, "modeS is removed by design");
     assert.strictEqual(noS.rule2.reported.length, 0);

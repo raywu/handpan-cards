@@ -55,7 +55,7 @@ function headingAllowance(baseHas, candHas) {
   return !baseHas && candHas ? HEADING_ALLOWANCE_PX : 0;
 }
 
-// AD7 (docs/plans/2026-10-05-menu-resources-amy.md): the second Resources row costs
+// Resources row (docs/plans/2026-10-05-menu-resources-amy.md): the second row costs
 // up to 60.4 px (measured, both font modes), so a candidate that carries a `res-`
 // control the base lacks may grow that much. It reaches rule 1 and rule 3 for the
 // NEW res- controls only: rule 2 and every non-Resources control are judged exactly
@@ -87,7 +87,9 @@ function langAllowance(baseControls, candControls) {
 
 // LS (short iPhone landscape): mode S, with the progression note, takes an explicit
 // two-column grid at 300 to 359px tall and 740px wide and up, and may scroll there.
-// The base's auto-fit grid fits at 845px and up only by splitting HANDPANER mid-word.
+// The base's auto-fit grid fits at 845px and up only by splitting a long label mid-word.
+// Kept at 340 without a fresh run: the lane shell cannot reproduce the real-font
+// measurement (the figure below is the last one taken), and the band is unchanged.
 // Measured as the growth of the needed height (194px of needed height and 340px of control bottom, lang-select, at 320px tall, real fonts). Rules 1 and 2,
 // mode S, inside that band only.
 const LS_S_ALLOWANCE_PX = 340;
