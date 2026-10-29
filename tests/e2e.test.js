@@ -19817,6 +19817,35 @@ function run() {
     }
 
     for (const [w, h] of [[844, 390], [380, 780]]) {
+      for (const slug of ["d-kurd-9", "e-amara-20", "f-low-pygmy-18"]) {
+        test(`FT: ${slug} at ${w}x${h}: NEXT and PREV tapped with the label 1, 16 and 32px below the fold do not scroll the page`, async () => {
+          await b.setViewport(w, h, true);
+          for (const hidden of [1, 16, 32]) {
+            for (const [step, sel] of [[1, ".prog .slot:nth-child(1) .nav label:last-child"], [2, ".prog .slot:nth-child(2) .nav label:first-child"]]) {
+              await b.send("Page.navigate", { url: pageUrl(slug) });
+              await b.waitFor(`document.readyState === "complete" && document.querySelector(".prog .slot")`, { label: "stepper" });
+              const pt = await b.eval(`
+                document.querySelector("#p${step}").checked = true;
+                const l = document.querySelector(${JSON.stringify(sel)});
+                l.scrollIntoView({ block: "end" }); scrollBy(0, -${hidden});
+                const r = l.getBoundingClientRect();
+                return { x: r.left + r.width / 2, y: (r.top + Math.min(r.bottom, innerHeight)) / 2, sy: scrollY };`);
+              for (const type of ["mousePressed", "mouseReleased"]) {
+                await b.send("Input.dispatchMouseEvent", { type, x: pt.x, y: pt.y, button: "left", clickCount: 1 });
+              }
+              await new Promise((r) => setTimeout(r, 120));
+              const after = await b.eval(`return { y: scrollY, on: [...document.querySelectorAll(".prog > input")].findIndex((x) => x.checked) + 1 };`);
+              assert.strictEqual(after.on, step === 1 ? 2 : 1, `${sel} ${hidden}px below the fold steps`);
+              // A taller next chord (e-amara-20, f-low-pygmy-18) moves scrollY by its growth only.
+              const tol = slug === "d-kurd-9" ? 0 : 16;
+              assert.ok(Math.abs(after.y - pt.sy) <= tol, `${sel} ${hidden}px below the fold leaves scrollY alone (${pt.sy} -> ${after.y})`);
+            }
+          }
+        });
+      }
+    }
+
+    for (const [w, h] of [[844, 390], [380, 780]]) {
       for (const slug of ["e-amara-20", "d-aegean-18"]) {
         test(`FT: ${slug} at ${w}x${h}: Tab and Shift+Tab into the steps bring the focused step into view`, async () => {
           await b.setViewport(w, h, true);
