@@ -1,0 +1,15 @@
+# kills: FT: d-kurd-10 at 380x780 shows one chord, NEXT steps, a tap flips, and nothing shifts
+# suite: node --test --test-name-pattern ^FT:.d-kurd-10.at.380x780 tests/e2e.test.js
+# The back face loses its pre-rotation, so the flip shows a mirrored or wrong side.
+diff --git a/scales/d-kurd-10/index.html b/scales/d-kurd-10/index.html
+--- a/scales/d-kurd-10/index.html
++++ b/scales/d-kurd-10/index.html
+@@ -90,7 +90,7 @@
+ .flip:focus-visible+.inner{outline:3px solid var(--root);outline-offset:3px;border-radius:14px}
+ @media (prefers-reduced-motion:reduce){.inner{transition:none}}
+ .face{grid-area:1/1;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+-.back{transform:rotateY(180deg)}
++/* .back pre-rotation deleted */
+ .front{box-sizing:border-box;background:#fff;color:#242424;border:3px solid var(--root);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:12px 8px;position:relative}
+ .front .fdeg{position:absolute;top:12px;left:13px;font:600 9px/1.5 "Nunito Sans",system-ui,sans-serif;letter-spacing:.12em;color:var(--root)}
+ .front .fname{font-family:Marcellus,serif;font-size:44px;line-height:1.1;color:var(--root);text-align:center}

@@ -19322,6 +19322,9 @@ function run() {
     const flipped = () => b.eval(`
       const s = [...document.querySelectorAll(".prog .slot")].find((x) => getComputedStyle(x).display !== "none");
       return s.querySelector(".cardhost").shadowRoot.querySelector(".flip").checked;`);
+    const faceTransform = (sel) => b.eval(`
+      const s = [...document.querySelectorAll(".prog .slot")].find((x) => getComputedStyle(x).display !== "none");
+      return getComputedStyle(s.querySelector(".cardhost").shadowRoot.querySelector(${JSON.stringify(sel)})).transform;`);
     const cardRect = () => b.eval(`
       const s = [...document.querySelectorAll(".prog .slot")].find((x) => getComputedStyle(x).display !== "none");
       const r = s.querySelector(".cardhost").getBoundingClientRect();
@@ -19336,8 +19339,13 @@ function run() {
         assert.strictEqual(await b.eval(`return !![...document.querySelectorAll(".prog .nav label")].find((l) => l.textContent === "PREV" && l.offsetParent);`), false, "no PREV on step 1");
         const before = await cardRect();
         assert.strictEqual(await flipped(), false);
+        assert.ok(rotationAmount(await faceTransform(".inner")) < 0.01, `unflipped .inner must be at identity, got ${await faceTransform(".inner")}`);
         await tap(".prog .slot:nth-child(1) .cardhost");
         assert.strictEqual(await flipped(), true, "tap flips");
+        await b.waitFor(`(() => { const s = [...document.querySelectorAll(".prog .slot")].find((x) => getComputedStyle(x).display !== "none"); return getComputedStyle(s.querySelector(".cardhost").shadowRoot.querySelector(".inner")).transform.indexOf("matrix3d(-1") === 0; })()`, { label: "the flipped .inner to finish its rotateY" });
+        await b.settle();
+        assert.ok(rotationAmount(await faceTransform(".inner")) > 0.5, `flipped .inner must be rotated, got ${await faceTransform(".inner")}`);
+        assert.ok(rotationAmount(await faceTransform(".back")) > 0.5, `.back must carry its rotateY(180deg), got ${await faceTransform(".back")}`);
         assert.deepStrictEqual(await cardRect(), before, "flip shifts nothing");
         const nav = await b.eval(`
           const l = [...document.querySelectorAll(".prog .slot:nth-child(1) .nav label")][0];
