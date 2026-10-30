@@ -19750,9 +19750,11 @@ function run() {
       const s = [...document.querySelectorAll(".prog .slot")].find((x) => getComputedStyle(x).display !== "none");
       const r = s.querySelector(".cardhost").getBoundingClientRect();
       return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+    let lastTouch = 0;
     const swipe = async (dx, dy, ms) => {
       const c = await hostCenter();
-      const t0 = Date.now() / 1000;
+      const t0 = Math.max(Date.now() / 1000, lastTouch + 0.05);
+      lastTouch = t0 + ms / 1000 + 0.001;
       const at = (f) => [{ x: c.x + dx * f, y: c.y + dy * f }];
       await b.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: at(0), timestamp: t0 });
       for (let i = 1; i <= 6; i++) {
@@ -19763,8 +19765,10 @@ function run() {
     };
     const tapTouch = async () => {
       const c = await hostCenter();
-      await b.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: c.x, y: c.y }] });
-      await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+      const t0 = Math.max(Date.now() / 1000, lastTouch + 0.05);
+      lastTouch = t0 + 0.05;
+      await b.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: c.x, y: c.y }], timestamp: t0 });
+      await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [], timestamp: lastTouch });
       await new Promise((r) => setTimeout(r, 120));
     };
     const stepIndex = async () => Number((await visibleStep()).step.match(/Chord (\d+)/)[1]);
