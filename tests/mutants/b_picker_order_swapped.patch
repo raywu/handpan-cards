@@ -2057,17 +2057,17 @@ diff --git a/data/decks.json b/data/decks.json
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9669,61 +9669,61 @@ HPE.swipe = (function () {
-     const dir = blocked ? 0 : swipeDecision(dx, dy, vx);
-     if (!dir && !moved) return { kind: "rest", dir: 0, eatClick: false };
-     const eatClick = moved && !cancelled;
+@@ -9672,61 +9672,61 @@ HPE.swipe = (function () {
      if (reducedMotion) return { kind: "rest", dir, eatClick };
      return { kind: dir ? "fly" : "spring", dir, eatClick };
    }
    function wheelTrack(s, x) {
      s.hi = Math.max(s.hi, x);
-     s.lo = Math.min(s.lo, x);
-     return s.lo * 3 < s.hi && x > Math.max(4, 2 * s.lo);
+     if (x) s.lo = Math.min(s.lo, x);
+     const up = s.lo * 3 < s.hi && x > Math.max(4, 2 * s.lo);
+     const go = up && s.r;
+     s.r = up;
+     return go;
    }
    return {
      COMMIT_PX: SWIPE_COMMIT_PX, FLING_PX_MS: SWIPE_FLING_PX_MS, FLING_WINDOW_MS: SWIPE_FLING_WINDOW_MS,
