@@ -317,13 +317,82 @@ class GeneratorTest(unittest.TestCase):
         self.assertEqual(run.returncode, 0, run.stderr)
 
     def test_a_differing_page_fails_check_with_one_message(self):
+        slug = "d-kurd-10"
         with tempfile.TemporaryDirectory() as tmp:
-            path = os.path.join(tmp, "index.html")
-            with open(path, "w", encoding="utf-8") as f:
+            for name in os.listdir(ROOT):
+                if name not in ("scales", "tools"):
+                    os.symlink(os.path.join(ROOT, name), os.path.join(tmp, name))
+            os.mkdir(os.path.join(tmp, "tools"))
+            for name in os.listdir(os.path.join(ROOT, "tools")):
+                os.symlink(os.path.join(ROOT, "tools", name), os.path.join(tmp, "tools", name))
+            page_dir = os.path.join(tmp, "scales", slug)
+            os.makedirs(page_dir)
+            copy = os.path.join(ROOT, "scales", slug, "copy.json")
+            if os.path.exists(copy):
+                os.symlink(copy, os.path.join(page_dir, "copy.json"))
+            with open(os.path.join(page_dir, "index.html"), "w", encoding="utf-8") as f:
                 f.write("stale")
+            run = subprocess.run([sys.executable, os.path.join(tmp, "tools", "gen_scale_page.py"), slug, "--check"],
+                                 capture_output=True, text=True)
+        self.assertEqual(run.returncode, 1, run.stderr)
+        self.assertEqual(run.stderr.count("differs from the generator"), 1, run.stderr)
+
+    def test_main_takes_several_slugs_in_one_run(self):
+        slugs = [s for s in ROWS if exists(s)][:2]
+        self.assertEqual(len(slugs), 2)
+        run = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "gen_scale_page.py")] + slugs + ["--check"],
+                             capture_output=True, text=True)
+        self.assertEqual(run.returncode, 0, run.stderr)
+
+    def test_main_boots_the_engine_once_for_several_slugs(self):
+        slugs = [s for s in ROWS if exists(s)][:2]
+        calls = []
+        real = gen.engine
+        gen.engine = lambda rows: calls.append(len(rows)) or real(rows)
+        try:
+            with contextlib.redirect_stdout(io.StringIO()) as out:
+                self.assertEqual(gen.main(slugs + ["--stdout"]), 0)
+        finally:
+            gen.engine = real
+        self.assertEqual(calls, [2])
+        for slug in slugs:
+            self.assertIn(read("scales/%s/index.html" % slug), out.getvalue())
+
+    def test_main_check_fails_when_any_of_several_slugs_differs(self):
+        slugs = [s for s in ROWS if exists(s)][:2]
+        real = gen.pages_for
+        gen.pages_for = lambda s, rows=None, copy=None: {k: v + "x" if k == slugs[1] else v
+                                                         for k, v in real(s, rows, copy).items()}
+        try:
             with contextlib.redirect_stderr(io.StringIO()) as err:
-                self.assertEqual(gen.emit(path, "fresh", True, False), 1)
-            self.assertIn("differs from the generator", err.getvalue())
+                self.assertEqual(gen.main(slugs + ["--check"]), 1)
+        finally:
+            gen.pages_for = real
+        self.assertEqual(err.getvalue().count("differs from the generator"), 1)
+
+    def test_pages_for_loads_each_slugs_own_copy(self):
+        slugs = [s for s in ROWS if exists(s)][:2]
+        loaded = []
+        real = gen.load_copy
+        gen.load_copy = lambda row: loaded.append(row["slug"]) or real(row)
+        try:
+            pages = gen.pages_for(slugs)
+        finally:
+            gen.load_copy = real
+        self.assertEqual(loaded, slugs)
+        for slug in slugs:
+            self.assertEqual(pages[slug], read("scales/%s/index.html" % slug))
+
+    def test_pages_for_refuses_one_copy_shared_across_several_slugs(self):
+        slugs = [s for s in ROWS if exists(s)][:2]
+        copy = gen.load_copy({"slug": slugs[0]})
+        with self.assertRaises(ValueError):
+            gen.pages_for(slugs, copy=copy)
+
+    def test_pages_for_uses_a_passed_copy_for_a_single_slug(self):
+        slug = [s for s in ROWS if exists(s)][0]
+        copy = gen.load_copy({"slug": slug})
+        self.assertEqual(gen.pages_for([slug], copy=copy)[slug], read("scales/%s/index.html" % slug))
 
     def test_the_card_fixture_has_not_drifted_from_the_engine(self):
         self.assertEqual(gen.fixture_data(gen.load_rows()), read("tests/fixtures/scale_pages_v1.json"))
