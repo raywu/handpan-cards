@@ -1,17 +1,18 @@
-# kills: swipeDecision never commits when the drag has travelled further vertically than horizontally
-# suite: node --test --test-name-pattern ^swipeDecision.never.commits.when.the.drag.has.travelled.further.vertically.than.horizontally$ tests/app.test.js
+# kills: swipe core: decision never commits when the drag has travelled further vertically than horizontally
+# suite: node --test --test-name-pattern ^decision.never.commits.when.the.drag.has.travelled.further.vertically.than.horizontally$ tests/swipe.test.js
 # Drops swipeDecision's axis-dominance guard (|dy| > |dx| => 0). Without it, a
 # fast-enough vertical drag can cross SWIPE_FLING_PX_MS on dx alone and
 # spuriously commit a step even though touch-action:none no longer lets the
 # browser's own scroll recogniser cut it short.
-diff --git a/index.html b/index.html
---- a/index.html
-+++ b/index.html
-@@ -14711,7 +14711,6 @@ function swipeDecision(dx, dy, vx) {
-   // vertical drag can otherwise cross SWIPE_FLING_PX_MS on dx alone and
-   // spuriously commit a step. This axis-dominance check, not a change to any
-   // SWIPE_* threshold, is what keeps a vertical drag from ever navigating.
--  if (Math.abs(dy) > Math.abs(dx)) return 0;
-   const fling = Math.abs(dx) > SWIPE_SLOP_PX && Math.abs(vx) > SWIPE_FLING_PX_MS && vx * dx > 0;
-   return Math.abs(dx) > SWIPE_COMMIT_PX || fling ? (dx < 0 ? 1 : -1) : 0;
- }
+# Re-anchored to src/engine/swipe.js (App UX P1); the unit case in tests/swipe.test.js kills it.
+diff --git a/src/engine/swipe.js b/src/engine/swipe.js
+--- a/src/engine/swipe.js
++++ b/src/engine/swipe.js
+@@ -9,7 +9,6 @@ HPE.swipe = (function () {
+   const SWIPE_EASE = "cubic-bezier(.2,.7,.25,1)", SWIPE_OUT_EASE = "cubic-bezier(.4,0,1,1)";
+   const SWIPE_MOMENTUM_MIN_MS = 140, SWIPE_MOMENTUM_MAX_MS = 320, SWIPE_MOMENTUM_FLOOR_PX_MS = 1.5;
+   function swipeDecision(dx, dy, vx) {
+-    if (Math.abs(dy) > Math.abs(dx)) return 0;
+     const fling = Math.abs(dx) > SWIPE_SLOP_PX && Math.abs(vx) > SWIPE_FLING_PX_MS && vx * dx > 0;
+     return Math.abs(dx) > SWIPE_COMMIT_PX || fling ? (dx < 0 ? 1 : -1) : 0;
+   }

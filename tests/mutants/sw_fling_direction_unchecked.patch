@@ -1,17 +1,18 @@
-# kills: swipeDecision flings past SWIPE_FLING_PX_MS only in the drag direction and past the slop
-# suite: node --test --test-name-pattern ^swipeDecision.flings.past.SWIPE_FLING_PX_MS.only.in.the.drag.direction.and.past.the.slop$ tests/app.test.js
+# kills: swipe core: decision flings only in the drag direction and past the slop
+# suite: node --test --test-name-pattern ^decision.flings.only.in.the.drag.direction.and.past.the.slop$ tests/swipe.test.js
 # Drops the vx*dx>0 same-direction check from the fling condition, so a fast
 # velocity reading in the OPPOSITE direction of the net drag still counts as
 # a fling and commits.
-diff --git a/index.html b/index.html
---- a/index.html
-+++ b/index.html
-@@ -14712,7 +14712,7 @@ function swipeDecision(dx, dy, vx) {
-   // spuriously commit a step. This axis-dominance check, not a change to any
-   // SWIPE_* threshold, is what keeps a vertical drag from ever navigating.
-   if (Math.abs(dy) > Math.abs(dx)) return 0;
--  const fling = Math.abs(dx) > SWIPE_SLOP_PX && Math.abs(vx) > SWIPE_FLING_PX_MS && vx * dx > 0;
-+  const fling = Math.abs(dx) > SWIPE_SLOP_PX && Math.abs(vx) > SWIPE_FLING_PX_MS;
-   return Math.abs(dx) > SWIPE_COMMIT_PX || fling ? (dx < 0 ? 1 : -1) : 0;
- }
- // Mouse momentum curve (docs/plans/2026-10-01-swipe-momentum.md, decision 2):
+# Re-anchored to src/engine/swipe.js (App UX P1); the unit case in tests/swipe.test.js kills it.
+diff --git a/src/engine/swipe.js b/src/engine/swipe.js
+--- a/src/engine/swipe.js
++++ b/src/engine/swipe.js
+@@ -10,7 +10,7 @@ HPE.swipe = (function () {
+   const SWIPE_MOMENTUM_MIN_MS = 140, SWIPE_MOMENTUM_MAX_MS = 320, SWIPE_MOMENTUM_FLOOR_PX_MS = 1.5;
+   function swipeDecision(dx, dy, vx) {
+     if (Math.abs(dy) > Math.abs(dx)) return 0;
+-    const fling = Math.abs(dx) > SWIPE_SLOP_PX && Math.abs(vx) > SWIPE_FLING_PX_MS && vx * dx > 0;
++    const fling = Math.abs(dx) > SWIPE_SLOP_PX && Math.abs(vx) > SWIPE_FLING_PX_MS;
+     return Math.abs(dx) > SWIPE_COMMIT_PX || fling ? (dx < 0 ? 1 : -1) : 0;
+   }
+   function swipeOutTiming(vx, dir, dx, dist) {

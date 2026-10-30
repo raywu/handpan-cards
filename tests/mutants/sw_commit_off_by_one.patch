@@ -1,17 +1,18 @@
-# kills: swipeDecision commits strictly past SWIPE_COMMIT_PX, left = next
-# suite: node --test --test-name-pattern ^swipeDecision.commits.strictly.past.SWIPE_COMMIT_PX..left...next$ tests/app.test.js
+# kills: swipe core: decision commits strictly past COMMIT_PX, left = next
+# suite: node --test --test-name-pattern ^decision.commits.strictly.past.COMMIT_PX..left...next$ tests/swipe.test.js
 # Turns the strict "past the threshold" commit into "at or past it", so a
 # drag that lands EXACTLY on SWIPE_COMMIT_PX now commits - the spec's own
 # `swipeDecision(18,0) === 0` boundary case goes the other way.
-diff --git a/index.html b/index.html
---- a/index.html
-+++ b/index.html
-@@ -14713,7 +14713,7 @@ function swipeDecision(dx, dy, vx) {
-   // SWIPE_* threshold, is what keeps a vertical drag from ever navigating.
-   if (Math.abs(dy) > Math.abs(dx)) return 0;
-   const fling = Math.abs(dx) > SWIPE_SLOP_PX && Math.abs(vx) > SWIPE_FLING_PX_MS && vx * dx > 0;
--  return Math.abs(dx) > SWIPE_COMMIT_PX || fling ? (dx < 0 ? 1 : -1) : 0;
-+  return Math.abs(dx) >= SWIPE_COMMIT_PX || fling ? (dx < 0 ? 1 : -1) : 0;
- }
- // Mouse momentum curve (docs/plans/2026-10-01-swipe-momentum.md, decision 2):
- // a cubic-bezier whose initial slope matches the release speed `v`, over the
+# Re-anchored to src/engine/swipe.js (App UX P1); the unit case in tests/swipe.test.js kills it.
+diff --git a/src/engine/swipe.js b/src/engine/swipe.js
+--- a/src/engine/swipe.js
++++ b/src/engine/swipe.js
+@@ -11,7 +11,7 @@ HPE.swipe = (function () {
+   function swipeDecision(dx, dy, vx) {
+     if (Math.abs(dy) > Math.abs(dx)) return 0;
+     const fling = Math.abs(dx) > SWIPE_SLOP_PX && Math.abs(vx) > SWIPE_FLING_PX_MS && vx * dx > 0;
+-    return Math.abs(dx) > SWIPE_COMMIT_PX || fling ? (dx < 0 ? 1 : -1) : 0;
++    return Math.abs(dx) >= SWIPE_COMMIT_PX || fling ? (dx < 0 ? 1 : -1) : 0;
+   }
+   function swipeOutTiming(vx, dir, dx, dist) {
+     const v = Math.max(-dir * vx, SWIPE_MOMENTUM_FLOOR_PX_MS);

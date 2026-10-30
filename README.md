@@ -47,7 +47,7 @@ Open `index.html` from disk, or run `tools/preview.sh` to serve it at `http://lo
 - Do not edit either by hand. Both tools take `--check`, and `python3 tools/validate.py` fails if either drifts.
 - To fork, set `GA_MEASUREMENT_ID` in `index.html` to `G-XXXXXXXXXX` (this disables analytics) or your own id. Replace `CNAME`, the canonical, og and `twitter:image` URLs, both JSON-LD `url` values and the WebSite `alternateName` in `index.html`, `robots.txt` and `sitemap.xml`. Tests and mutants pin the domain and the id, so update them too.
 
-The engine is twelve modules under `src/engine/`:
+The engine is thirteen modules under `src/engine/`:
 
 - `src/engine/core.js`: note parsing and pitch classes
 - `src/engine/importer.js`: product text, or the helper's four fields, to a scale string
@@ -57,6 +57,7 @@ The engine is twelve modules under `src/engine/`:
 - `src/engine/layout.js`: the tonefield solver and label sizes
 - `src/engine/share.js`: share-link encoding
 - `src/engine/sequence.js`: progression loops
+- `src/engine/swipe.js`: the pure card-swipe core (thresholds, decisions, momentum)
 - `src/engine/pdf.js`: the PDF writer
 - `src/engine/pdfdeck.js`: adapts a deck for the print builders
 - `src/engine/pdfcards.js`: draws the cards, crop marks and calibration bar
@@ -78,7 +79,7 @@ Tests:
     python3 tests/suite_health.py   # per-file test-count floors
     ./tests/run.sh mutants          # mutation gate (slow)
 
-There are 28 node suites and 18 python suites. The mutation gate applies 1686 mutant patches from `tests/mutants/`, and a test must fail under each one. It edits the tree in place and refuses to start on uncommitted changes to a file a patch touches, `README.md` among them, so commit first.
+There are 29 node suites and 18 python suites. The mutation gate applies 1686 mutant patches from `tests/mutants/`, and a test must fail under each one. It edits the tree in place and refuses to start on uncommitted changes to a file a patch touches, `README.md` among them, so commit first.
 
 CI runs on pull requests into `main` and on pushes to `main`. A PR that changes only `docs/plans/` or `docs/prompts/` skips every job.
 

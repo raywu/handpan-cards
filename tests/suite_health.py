@@ -80,6 +80,7 @@ FLOORS = {
     "tests/mutation_harness.test.js": 54,
     "tests/pdf_builtin.test.js": 13,
     "tests/sequence.test.js": 52,
+    "tests/swipe.test.js": 21,
     "tests/scale.test.js": 14,
     "tests/sandbox_events.test.js": 5,
 }

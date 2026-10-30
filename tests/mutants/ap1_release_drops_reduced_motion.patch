@@ -1,16 +1,17 @@
-# kills: AP1-2 releaseDecision table
-# suite: node --test --test-name-pattern ^AP1-2.releaseDecision.table$ tests/app.test.js
+# kills: swipe core: releaseDecision: under reduced motion a committing drag rests but keeps its direction
+# suite: node --test --test-name-pattern ^releaseDecision..under.reduced.motion.a.committing.drag.rests.but.keeps.its.direction$ tests/swipe.test.js
 # releaseDecision under reduced motion drops the committed dir, so a
 # committing swipe rests without stepping the card.
-diff --git a/index.html b/index.html
---- a/index.html
-+++ b/index.html
-@@ -14813,7 +14813,7 @@ function releaseDecision({ dx, dy, vx, moved, cancelled, blocked, reducedMotion
-   const dir = blocked ? 0 : swipeDecision(dx, dy, vx);
-   if (!dir && !moved) return { kind: "rest", dir: 0, eatClick: false };
-   const eatClick = moved && !cancelled;
--  if (reducedMotion) return { kind: "rest", dir, eatClick };
-+  if (reducedMotion) return { kind: "rest", dir: 0, eatClick };
-   return { kind: dir ? "fly" : "spring", dir, eatClick };
- }
- // `pushPoint` is false on the lpc-as-release path (a mouse release that
+# Re-anchored to src/engine/swipe.js (App UX P1); the unit case in tests/swipe.test.js kills it.
+diff --git a/src/engine/swipe.js b/src/engine/swipe.js
+--- a/src/engine/swipe.js
++++ b/src/engine/swipe.js
+@@ -32,7 +32,7 @@ HPE.swipe = (function () {
+     const dir = blocked ? 0 : swipeDecision(dx, dy, vx);
+     if (!dir && !moved) return { kind: "rest", dir: 0, eatClick: false };
+     const eatClick = moved && !cancelled;
+-    if (reducedMotion) return { kind: "rest", dir, eatClick };
++    if (reducedMotion) return { kind: "rest", dir: 0, eatClick };
+     return { kind: dir ? "fly" : "spring", dir, eatClick };
+   }
+   return {

@@ -1,5 +1,5 @@
-# kills: card swipe: under reduced motion the swipe steps instantly with no animation
-# suite: node --test --test-name-pattern ^card.swipe:.under.reduced.motion.the.swipe.steps.instantly.with.no.animation$ tests/e2e.test.js
+# kills: swipe core: releaseDecision: under reduced motion a committing drag rests but keeps its direction
+# suite: node --test --test-name-pattern ^releaseDecision..under.reduced.motion.a.committing.drag.rests.but.keeps.its.direction$ tests/swipe.test.js
 # Drops the reduced-motion early return in release(): a committing swipe
 # always plays the WAAPI fly-out/enter animation and never steps instantly,
 # even when prefers-reduced-motion is set.
@@ -10,14 +10,15 @@
 # reduced-motion branch, including the `if (dir) step(dir); return;` that
 # makes the swipe commit instantly) is unchanged.
 # Re-cut 2026-10-03 (AP1-a): release() now executes releaseDecision() and both pointerdown sites call canStartGesture(); the mutation is re-expressed on the new site, intent unchanged.
-diff --git a/index.html b/index.html
---- a/index.html
-+++ b/index.html
-@@ -14813,7 +14813,6 @@ function releaseDecision({ dx, dy, vx, moved, cancelled, blocked, reducedMotion
-   const dir = blocked ? 0 : swipeDecision(dx, dy, vx);
-   if (!dir && !moved) return { kind: "rest", dir: 0, eatClick: false };
-   const eatClick = moved && !cancelled;
--  if (reducedMotion) return { kind: "rest", dir, eatClick };
-   return { kind: dir ? "fly" : "spring", dir, eatClick };
- }
- // `pushPoint` is false on the lpc-as-release path (a mouse release that
+# Re-anchored to src/engine/swipe.js (App UX P1); the unit case in tests/swipe.test.js kills it.
+diff --git a/src/engine/swipe.js b/src/engine/swipe.js
+--- a/src/engine/swipe.js
++++ b/src/engine/swipe.js
+@@ -32,7 +32,6 @@ HPE.swipe = (function () {
+     const dir = blocked ? 0 : swipeDecision(dx, dy, vx);
+     if (!dir && !moved) return { kind: "rest", dir: 0, eatClick: false };
+     const eatClick = moved && !cancelled;
+-    if (reducedMotion) return { kind: "rest", dir, eatClick };
+     return { kind: dir ? "fly" : "spring", dir, eatClick };
+   }
+   return {

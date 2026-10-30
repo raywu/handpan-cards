@@ -668,7 +668,7 @@ class SwipeScriptTest(unittest.TestCase):
         self.assertNotRegex(js, r"\bwindow\.\w+\s*=")
 
     def test_swipe_constants_match_the_app(self):
-        app = read("index.html")
+        app = read("src/engine/swipe.js")
         m = re.search(r"const SWIPE_COMMIT_PX = (\d+), SWIPE_FLING_PX_MS = ([\d.]+), "
                       r"SWIPE_FLING_WINDOW_MS = (\d+), SWIPE_SLOP_PX = (\d+);", app)
         self.assertTrue(m)
