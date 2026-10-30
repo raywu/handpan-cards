@@ -5,12 +5,19 @@
 const { boot } = require("./sandbox.js");
 
 const app = boot();
-const DECKS = app.get("DECKS");
+// With file arguments each is a generated-deck payload ({deck}) drawn instead of
+// the built-ins, keyed by its basename without `profile_case_`/`_v1.json`.
+const extra = process.argv.slice(2).map((f) => {
+  const deck = JSON.parse(require("node:fs").readFileSync(f, "utf8")).deck;
+  deck.id = require("node:path").basename(f).replace(/^profile_case_/, "profile_").replace(/_v1\.json$/, "");
+  return deck;
+});
+const DECKS = extra.length ? extra : app.get("DECKS");
 const r3 = (v) => Math.round(v * 1000) / 1000;
 const out = [];
 
 for (const d of DECKS) {
-  const deckRef = `DECKS.find(x=>x.id===${JSON.stringify(d.id)})`;
+  const deckRef = extra.length ? JSON.stringify(d) : `DECKS.find(x=>x.id===${JSON.stringify(d.id)})`;
   for (let i = 0; i < d.chords.length; i++) {
     const ch = d.chords[i];
     const svg = app.get(`pan(${deckRef}, ${deckRef}.chords[${i}])`);

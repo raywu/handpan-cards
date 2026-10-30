@@ -269,6 +269,7 @@ class TestPairedProfileFixture(unittest.TestCase):
     def test_print_floor_every_glyph_every_slot_every_source_zone(self):
         p = load_profile()
         R = print_radius(p)
+        self.assertEqual(R, 63.3)
         self.assertGreaterEqual(R, 60.0)
         self.assertLessEqual(R, 74.0)
         for kind in ("primary", "secondary"):
@@ -329,6 +330,9 @@ class TestEngineSpecProfileSection(unittest.TestCase):
 
     def test_section_exists_and_is_after_section_2(self):
         self.assertTrue(self.section, "ENGINE-SPEC has no section 18 (paired-area profile)")
+        with open(SPEC_PATH, encoding="utf-8") as fh:
+            spec = fh.read()
+        self.assertGreater(spec.index("\n## 18. "), spec.index("\n## 2. "))
 
     def test_refusal_rows_carry_code_kind_and_sentence(self):
         for code in ("PROFILE_UNKNOWN", "PROFILE_MAP_INVALID", "PROFILE_NOTE_MISSING",
