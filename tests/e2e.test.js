@@ -19357,7 +19357,7 @@ function run() {
     };
     const visibleStep = () => b.eval(`
       const s = [...document.querySelectorAll(".prog .slot")].filter((x) => getComputedStyle(x).display !== "none");
-      return { n: s.length, step: s[0] && s[0].querySelector(".step").textContent };`);
+      return { n: s.length, step: s[0] && (s[0].querySelector(".step").getAttribute("aria-label") || s[0].querySelector(".step").textContent) };`);
     const flipped = () => b.eval(`
       const s = [...document.querySelectorAll(".prog .slot")].find((x) => getComputedStyle(x).display !== "none");
       return s.querySelector(".cardhost").shadowRoot.querySelector(".flip").checked;`);
@@ -19384,7 +19384,7 @@ function run() {
         await b.waitFor(`(() => { const s = [...document.querySelectorAll(".prog .slot")].find((x) => getComputedStyle(x).display !== "none"); return getComputedStyle(s.querySelector(".cardhost").shadowRoot.querySelector(".inner")).transform.indexOf("matrix3d(-1") === 0; })()`, { label: "the flipped .inner to finish its rotateY" });
         await b.settle();
         assert.ok(rotationAmount(await faceTransform(".inner")) > 0.5, `flipped .inner must be rotated, got ${await faceTransform(".inner")}`);
-        assert.ok(rotationAmount(await faceTransform(".back")) > 0.5, `.back must carry its rotateY(180deg), got ${await faceTransform(".back")}`);
+        assert.ok(rotationAmount(await faceTransform(".front")) > 0.5, `.front must carry its rotateY(180deg), got ${await faceTransform(".back")}`);
         assert.deepStrictEqual(await cardRect(), before, "flip shifts nothing");
         const nav = await b.eval(`
           const l = [...document.querySelectorAll(".prog .slot:nth-child(1) .nav label")][0];
@@ -19809,7 +19809,7 @@ function run() {
       }
       if (rest) await b.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: at(1), timestamp: t0 + (ms + rest) / 1000 });
       await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [], timestamp: lastTouch });
-      await new Promise((r) => setTimeout(r, 120));
+      await new Promise((r) => setTimeout(r, 480));
     };
     const tapTouch = async () => {
       const c = await hostCenter();
@@ -19875,34 +19875,169 @@ function run() {
         await new Promise((r) => setTimeout(r, 500));
         await tapTouch();
         assert.strictEqual(await flipped(), true, "a tap after the suppress window flips");
-        await b.send("Emulation.setTouchEmulationEnabled", { enabled: false });
-        await loadPage("d-kurd-9");
-        await b.eval(`document.querySelector(".prog .slot:nth-child(1) .cardhost").scrollIntoView({ block: "center" }); return true;`);
-        const c = await hostCenter();
-        await b.send("Input.dispatchMouseEvent", { type: "mousePressed", x: c.x, y: c.y, button: "left", buttons: 1, clickCount: 1 });
-        for (let i = 1; i <= 6; i++) await b.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: c.x + 10 * i, y: c.y, button: "left", buttons: 1 });
-        await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: c.x + 60, y: c.y, button: "left", clickCount: 1 });
-        await new Promise((r) => setTimeout(r, 120));
-        assert.strictEqual(await stepIndex(), 1, "a drag before the first chord steps nothing");
-        assert.strictEqual(await flipped(), false, "the click that ends a drag flips nothing");
       } finally {
         await b.send("Emulation.setTouchEmulationEnabled", { enabled: false });
       }
     });
 
-    test("FT: a swipe past the last chord or before the first does nothing", async () => {
+    test("FT: a swipe past the last chord or before the first wraps around", async () => {
       try {
         await swipeSetup("d-kurd-10", 380, 780);
         await swipe(60, 0, 150);
-        assert.strictEqual(await stepIndex(), 1, "no step before the first");
         const n = await b.eval(`return document.querySelectorAll(".prog > input").length;`);
-        for (let i = 1; i < n; i++) await swipe(-60, 0, 150);
-        assert.strictEqual(await stepIndex(), n);
+        assert.strictEqual(await stepIndex(), n, "before the first wraps to the last");
         await swipe(-60, 0, 150);
-        assert.strictEqual(await stepIndex(), n, "no wrap past the last");
+        assert.strictEqual(await stepIndex(), 1, "past the last wraps to the first");
       } finally {
         await b.send("Emulation.setTouchEmulationEnabled", { enabled: false });
       }
+    });
+
+    const anim = () => b.eval(`
+      const s = [...document.querySelectorAll(".prog .slot")].find((x) => getComputedStyle(x).display !== "none");
+      return s.querySelector(".cardhost").getAnimations().map((a) => { const t = a.effect.getTiming(); return { d: t.duration, e: t.easing }; });`);
+    const counter = () => b.eval(`
+      const s = [...document.querySelectorAll(".prog .slot")].find((x) => getComputedStyle(x).display !== "none");
+      const e = s.querySelector(".step"); return { t: e.textContent, a: e.getAttribute("aria-label") };`);
+    const mouseDrag = async (dx, steps = 8) => {
+      const c = await hostCenter();
+      await b.send("Input.dispatchMouseEvent", { type: "mousePressed", x: c.x, y: c.y, button: "left", buttons: 1, clickCount: 1 });
+      for (let i = 1; i <= steps; i++) await b.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: c.x + (dx * i) / steps, y: c.y, button: "left", buttons: 1 });
+      await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: c.x + dx, y: c.y, button: "left", clickCount: 1 });
+      await new Promise((r) => setTimeout(r, 450));
+    };
+    const mouseSetup = async (slug, w, h) => {
+      await b.setViewport(w, h, false);
+      await loadPage(slug);
+      await b.eval(`document.querySelector(".prog .slot:nth-child(1) .cardhost").scrollIntoView({ block: "center" }); return true;`);
+    };
+
+    test("FT: the counter reads n / 3 and is named Chord n of 3, and the rail sits under the card with the current chord marked", async () => {
+      await swipeSetup("d-kurd-9", 380, 780);
+      assert.deepStrictEqual(await counter(), { t: "1 / 3", a: "Chord 1 of 3" });
+      const r = await b.eval(`
+        const s = document.querySelector(".prog .slot:nth-child(1)");
+        const rail = s.querySelector(".rail"); const card = s.querySelector(".cardhost").getBoundingClientRect();
+        const rr = rail.getBoundingClientRect();
+        const between = [...s.children].filter((x) => x !== rail && x.getBoundingClientRect().top >= card.bottom - 0.5 && x.getBoundingClientRect().bottom <= rr.top + 0.5 && x.getBoundingClientRect().height > 0);
+        return { gap: rr.top - card.bottom, between: between.length, cur: rail.querySelectorAll("b").length, txt: rail.textContent };`);
+      assert.ok(Math.abs(r.gap - 14) <= 1, `the rail's top is the app's 14px below the card (${r.gap})`);
+      assert.strictEqual(r.between, 0, "nothing sits between the card and the rail");
+      assert.strictEqual(r.cur, 1);
+      assert.strictEqual(r.txt.split(" → ").length, 3, r.txt);
+    });
+
+    test("FT: a touch commit flies out 220ms, comes in 180ms and advances exactly one step", async () => {
+      try {
+        await swipeSetup("d-kurd-9", 380, 780);
+        const c = await hostCenter();
+        const t0 = Math.max(Date.now() / 1000, lastTouch + 0.05);
+        lastTouch = t0 + 1;
+        await b.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: c.x, y: c.y }], timestamp: t0 });
+        for (let i = 1; i <= 4; i++) await b.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: c.x - 15 * i, y: c.y }], timestamp: t0 + 0.04 * i });
+        await new Promise((r) => setTimeout(r, 80));
+        const tf = await b.eval(`return getComputedStyle(document.querySelector(".prog .slot:nth-child(1) .cardhost")).transform;`);
+        const m = tf.match(/matrix\(([^)]+)\)/)[1].split(",").map(Number);
+        const deg = Math.atan2(m[1], m[0]) * 180 / Math.PI;
+        assert.ok(Math.abs(deg - -60 * 0.05) < 0.1, `tilt follows 0.05deg per px (${deg})`);
+        await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [], timestamp: t0 + 0.2 });
+        const out = await anim();
+        assert.ok(out.some((a) => Math.abs(a.d - 220) <= 1), JSON.stringify(out));
+        await b.waitFor(`(() => { const e = document.querySelector(".prog .slot:nth-child(2) .cardhost"); return e.getAnimations().some((a) => a.effect.getTiming().duration === 180); })()`, { label: "in animation" });
+        await new Promise((r) => setTimeout(r, 500));
+        assert.strictEqual(await stepIndex(), 2, "exactly one step");
+      } finally {
+        await b.send("Emulation.setTouchEmulationEnabled", { enabled: false });
+      }
+    });
+
+    test("FT: a short touch drag springs back with no step and no flip", async () => {
+      try {
+        await swipeSetup("d-kurd-9", 380, 780);
+        await swipe(-12, 0, 400);
+        assert.strictEqual(await stepIndex(), 1);
+        assert.strictEqual(await flipped(), false);
+      } finally {
+        await b.send("Emulation.setTouchEmulationEnabled", { enabled: false });
+      }
+    });
+
+    test("FT: with reduced motion a swipe steps with no animation", async () => {
+      try {
+        await b.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
+        await swipeSetup("d-kurd-9", 380, 780);
+        await swipe(-60, 0, 150);
+        assert.strictEqual(await stepIndex(), 2);
+        assert.deepStrictEqual(await anim(), []);
+      } finally {
+        await b.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "no-preference" }] });
+        await b.send("Emulation.setTouchEmulationEnabled", { enabled: false });
+      }
+    });
+
+    test("FT: arrows step with wrap when the card has focus, and a focused radio keeps native stepping", async () => {
+      await b.setViewport(380, 780, true);
+      await loadPage("d-kurd-9");
+      await b.eval(`document.querySelector(".prog .slot:nth-child(1) .cardhost").shadowRoot.querySelector(".flip").focus(); return true;`);
+      await b.key("ArrowLeft", "ArrowLeft", 37);
+      assert.strictEqual(await stepIndex(), 3, "wraps back to the last");
+      await b.key("ArrowRight", "ArrowRight", 39);
+      assert.strictEqual(await stepIndex(), 1, "wraps forward to the first");
+      await b.eval(`document.querySelector("#p1").focus(); return true;`);
+      await b.key("ArrowRight", "ArrowRight", 39);
+      assert.strictEqual(await stepIndex(), 2, "native radio arrow steps once");
+    });
+
+    test("FT: the flip transition equals the app's and the diagram is the front face, the name the flip", async () => {
+      await b.setViewport(380, 780, true);
+      await loadPage("d-kurd-9");
+      const r = await b.eval(`
+        const sr = document.querySelector(".prog .slot:nth-child(1) .cardhost").shadowRoot;
+        const inner = getComputedStyle(sr.querySelector(".inner"));
+        return { tr: inner.transitionDuration + " " + inner.transitionTimingFunction, persp: getComputedStyle(sr.querySelector(".wrap")).perspective,
+          front: getComputedStyle(sr.querySelector(".front")).transform, back: getComputedStyle(sr.querySelector(".back")).transform };`);
+      assert.strictEqual(r.tr, "0.45s cubic-bezier(0.2, 0.7, 0.25, 1)");
+      assert.strictEqual(r.persp, "1400px");
+      assert.notStrictEqual(r.front, "none");
+      assert.ok(r.back === "none" || r.back === "matrix(1, 0, 0, 1, 0, 0)", r.back);
+      await tap(".prog .slot:nth-child(1) .cardhost");
+      await b.waitFor(`(() => { const s = document.querySelector(".prog .slot:nth-child(1)"); return getComputedStyle(s.querySelector(".cardhost").shadowRoot.querySelector(".inner")).transform.indexOf("matrix3d(-1") === 0; })()`, { label: "flip finished" });
+      assert.ok((await faceTransform(".inner")).indexOf("matrix3d(-1") === 0, "the flip turns the card to the name face");
+    });
+
+    test("FT: at 380x780 nothing scrolls sideways before, during and after a swipe", async () => {
+      try {
+        await swipeSetup("e-amara-20", 380, 780);
+        const wide = () => b.eval(`return document.documentElement.scrollWidth > innerWidth;`);
+        assert.strictEqual(await wide(), false);
+        const c = await hostCenter();
+        const t0 = Math.max(Date.now() / 1000, lastTouch + 0.05);
+        lastTouch = t0 + 1;
+        await b.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: c.x, y: c.y }], timestamp: t0 });
+        for (let i = 1; i <= 6; i++) await b.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: c.x - 25 * i, y: c.y }], timestamp: t0 + 0.03 * i });
+        assert.strictEqual(await wide(), false, "during");
+        await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [], timestamp: t0 + 0.4 });
+        await new Promise((r) => setTimeout(r, 600));
+        assert.strictEqual(await wide(), false, "after");
+      } finally {
+        await b.send("Emulation.setTouchEmulationEnabled", { enabled: false });
+      }
+    });
+
+    test("FT: a mouse drag at 1280x800 steps forward and back, a short drag springs back, a click flips, and nothing is selected", async () => {
+      await mouseSetup("d-kurd-9", 1280, 800);
+      await mouseDrag(-80);
+      assert.strictEqual(await stepIndex(), 2, "drag left steps forward");
+      assert.strictEqual(await flipped(), false, "the click ending a drag does not flip");
+      assert.strictEqual(await b.eval(`return String(window.getSelection()).length;`), 0, "no text selection");
+      await b.eval(`document.querySelector(".prog .slot:nth-child(2) .cardhost").scrollIntoView({ block: "center" }); return true;`);
+      await mouseDrag(80);
+      assert.strictEqual(await stepIndex(), 1, "drag right steps back");
+      await mouseDrag(-14);
+      assert.strictEqual(await stepIndex(), 1, "a short drag steps nothing");
+      assert.strictEqual(await flipped(), false, "a short drag flips nothing");
+      await tap(".prog .slot:nth-child(1) .cardhost");
+      assert.strictEqual(await flipped(), true, "a plain click flips");
     });
 
     test("FT: with scripts off NEXT still steps, a tap flips and a swipe does nothing", async () => {
