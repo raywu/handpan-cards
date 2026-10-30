@@ -2364,7 +2364,11 @@ test("PL: empty slots leave no entry and an unchanged field map keeps zone, labe
 });
 
 test("PL: the slot circles and the ding are pairwise disjoint and inside the pan", () => {
-  const circles = [{ x: 0, y: 0, r: PAIRED.ding.r }];
+  const dingSeed = plSeed(PL_SEEDS.pygmy, plPropose(PL_SEEDS.pygmy));
+  const solved = PHPE.layout.solve(dingSeed).value.geom;
+  assert.equal(solved.r_ding, PAIRED.ding.r);
+  assert.equal(solved.ding_dy, PAIRED.ding.dy);
+  const circles = [{ x: 0, y: -solved.ding_dy, r: solved.r_ding }];
   PAIRED.slots.forEach((slot, k) => {
     const kind = k < 9 ? PAIRED.primary : PAIRED.secondary;
     const a = PAIRED.angles[k % 9] * DEG;
@@ -2413,4 +2417,13 @@ test("PL: solve of an acoustic seed has no place key, and a profile with the fla
   const refused = off.layout.solve(JSON.parse(JSON.stringify(seed)));
   assert.equal(refused.ok, false);
   assert.equal(refused.code, "PROFILE_UNKNOWN");
+});
+
+test("PL: solve with a profile puts the ding at centre with the profile radius, for every built-in", () => {
+  for (const [id, str] of Object.entries(PL_SEEDS)) {
+    const geom = PHPE.layout.solve(plSeed(str, plPropose(str))).value.geom;
+    assert.equal(geom.r_ding, PAIRED.ding.r, id);
+    assert.equal(geom.ding_dy, PAIRED.ding.dy, id);
+    assert.equal(geom.f_ding, Math.round(0.6 * PAIRED.ding.r * 1e4) / 1e4, id);
+  }
 });

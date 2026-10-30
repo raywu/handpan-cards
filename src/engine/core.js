@@ -906,12 +906,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       fields[String(first + n)] = [spell(entry.note.letter, entry.note.accidental),
                                    entry.note.octave, entry.note.midi, "bottom", null, "U" + (n + 1)];
     });
-    // The field ids in typed order (tops, then bottoms), for the importer's
-    // source-to-field mapping. Not enumerable: it is a reading aid, not part of
-    // the seed, so equality, spreading and serialising of a seed ignore it.
     var profile = readProfile(options ? options.profile : undefined, options || {}, fields);
     if (!profile.ok) return profile;
     if (profile.value) opts.value.profile = profile.value;
+    // The field ids in typed order (tops, then bottoms), for the importer's
+    // source-to-field mapping. Not enumerable: it is a reading aid, not part of
+    // the seed, so equality, spreading and serialising of a seed ignore it.
     var value = { fields: fields, options: opts.value };
     Object.defineProperty(value, "typed", {
       value: layout.typed.map(function (note) { return note.id; })

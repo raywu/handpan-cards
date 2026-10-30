@@ -777,6 +777,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       var profile = HPE.core.readProfile(seedOptions.profile, {}, source);
       if (!profile.ok) return profile;
       var plain = solve({ fields: source, options: {} }, options);
+      plain.value.geom.r_ding = PROFILE.ding.r;
+      plain.value.geom.ding_dy = PROFILE.ding.dy;
+      plain.value.geom.f_ding = round(F_DING_RATIO * PROFILE.ding.r, 4);
       plain.value.geom.place = placeProfile(source, profile.value);
       return plain;
     }
