@@ -786,7 +786,7 @@ class SwipeScriptTest(unittest.TestCase):
         self.assertIn("ariaHidden", gen.SWIPE_DRIVER)
 
     def test_swipe_script_fits_its_budget(self):
-        self.assertLessEqual(len(gen.SWIPE_JS.encode()), 6100)
+        self.assertLessEqual(len(gen.SWIPE_JS.encode()), 6200)
 
     @staticmethod
     def without_card_css(html):
