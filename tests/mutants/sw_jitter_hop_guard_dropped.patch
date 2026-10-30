@@ -1,4 +1,4 @@
-# kills: swipe core: releaseDecision: a tap that never moved rests with no hop and eats no click
+# kills: releaseDecision: a tap that never moved rests with no hop and eats no click
 # suite: node --test --test-name-pattern ^releaseDecision..a.tap.that.never.moved.rests.with.no.hop.and.eats.no.click$ tests/swipe.test.js
 # Q9: drops the early return that skips the spring-back animation for a
 # touch that never left the slop radius. Without it, every non-committing

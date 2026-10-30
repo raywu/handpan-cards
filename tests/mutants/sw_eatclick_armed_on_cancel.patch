@@ -1,4 +1,4 @@
-# kills: swipe core: releaseDecision: a cancelled drag eats no click
+# kills: releaseDecision: a cancelled drag eats no click
 # suite: node --test --test-name-pattern ^releaseDecision..a.cancelled.drag.eats.no.click$ tests/swipe.test.js
 # Drops the `!cancelled` guard, so a cancelled release (pointercancel/
 # lostpointercapture) arms eatClick same as a normal commit, decay and all

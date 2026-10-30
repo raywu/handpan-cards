@@ -1,4 +1,4 @@
-# kills: swipe core: outTiming: a slow or zero-velocity release starts at the floor and clamps at MOMENTUM_MAX_MS
+# kills: outTiming: a slow or zero-velocity release starts at the floor and clamps at MOMENTUM_MAX_MS
 # suite: node --test --test-name-pattern ^outTiming..a.slow.or.zero-velocity.release.starts.at.the.floor.and.clamps.at.MOMENTUM_MAX_MS$ tests/swipe.test.js
 # swipeOutTiming: a slow or zero-velocity release starts at the floor and clamps at SWIPE_MOMENTUM_MAX_MS
 # Replaces SWIPE_MOMENTUM_FLOOR_PX_MS with 0 in swipeOutTiming's speed floor

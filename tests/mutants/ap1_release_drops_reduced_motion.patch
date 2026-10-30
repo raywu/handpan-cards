@@ -1,4 +1,4 @@
-# kills: swipe core: releaseDecision: under reduced motion a committing drag rests but keeps its direction
+# kills: releaseDecision: under reduced motion a committing drag rests but keeps its direction
 # suite: node --test --test-name-pattern ^releaseDecision..under.reduced.motion.a.committing.drag.rests.but.keeps.its.direction$ tests/swipe.test.js
 # releaseDecision under reduced motion drops the committed dir, so a
 # committing swipe rests without stepping the card.

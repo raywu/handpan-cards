@@ -1,4 +1,4 @@
-# kills: swipe core: outTiming: a fast flick clamps at MOMENTUM_MIN_MS and still starts at its release speed
+# kills: outTiming: a fast flick clamps at MOMENTUM_MIN_MS and still starts at its release speed
 # suite: node --test --test-name-pattern ^outTiming..a.fast.flick.clamps.at.MOMENTUM_MIN_MS.and.still.starts.at.its.release.speed$ tests/swipe.test.js
 # swipeOutTiming: a fast flick clamps at SWIPE_MOMENTUM_MIN_MS and still starts at its release speed
 # Drops the Math.max(SWIPE_MOMENTUM_MIN_MS, ...) clamp from swipeOutTiming's

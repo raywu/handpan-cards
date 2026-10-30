@@ -1,4 +1,4 @@
-# kills: swipe core: releaseDecision: under reduced motion a committing drag rests but keeps its direction
+# kills: releaseDecision: under reduced motion a committing drag rests but keeps its direction
 # suite: node --test --test-name-pattern ^releaseDecision..under.reduced.motion.a.committing.drag.rests.but.keeps.its.direction$ tests/swipe.test.js
 # Drops the reduced-motion early return in release(): a committing swipe
 # always plays the WAAPI fly-out/enter animation and never steps instantly,

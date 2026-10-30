@@ -1,4 +1,4 @@
-# kills: swipe core: decision flings only in the drag direction and past the slop
+# kills: decision flings only in the drag direction and past the slop
 # suite: node --test --test-name-pattern ^decision.flings.only.in.the.drag.direction.and.past.the.slop$ tests/swipe.test.js
 # Drops the vx*dx>0 same-direction check from the fling condition, so a fast
 # velocity reading in the OPPOSITE direction of the net drag still counts as

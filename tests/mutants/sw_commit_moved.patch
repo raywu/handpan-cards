@@ -1,4 +1,4 @@
-# kills: swipe core: decision: a drag past the commit distance steps toward the swipe (20px)
+# kills: decision: a drag past the commit distance steps toward the swipe (20px)
 # suite: node --test --test-name-pattern ^decision..a.drag.past.the.commit.distance.steps.toward.the.swipe..20px.$ tests/swipe.test.js
 # Moves the commit distance from 18px to 21px. The test's final slow leg lands
 # at exactly -20px, which cleared the real 18px threshold but no longer clears

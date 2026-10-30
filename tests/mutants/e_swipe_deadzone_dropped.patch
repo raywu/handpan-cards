@@ -1,4 +1,4 @@
-# kills: swipe core: decision: a small drag below the commit distance does not navigate
+# kills: decision: a small drag below the commit distance does not navigate
 # suite: node --test --test-name-pattern ^decision..a.small.drag.below.the.commit.distance.does.not.navigate$ tests/swipe.test.js
 # The 18px deadzone collapses to any movement at all. The card is both the flip
 # target and the swipe target, so every tap whose thumb slides a pixel now flips

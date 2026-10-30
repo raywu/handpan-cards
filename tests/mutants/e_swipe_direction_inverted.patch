@@ -1,4 +1,4 @@
-# kills: swipe core: decision commits strictly past COMMIT_PX, left = next
+# kills: decision commits strictly past COMMIT_PX, left = next
 # suite: node --test --test-name-pattern ^decision.commits.strictly.past.COMMIT_PX..left...next$ tests/swipe.test.js
 # The swipe steps the wrong way: dragging the card left, which should pull the
 # next card in, walks backwards instead. Both buttons and both arrow keys still

@@ -1,4 +1,4 @@
-# kills: swipe core: outTiming: a card dragged past dist still flies forward
+# kills: outTiming: a card dragged past dist still flies forward
 # suite: node --test --test-name-pattern ^outTiming..a.card.dragged.past.dist.still.flies.forward$ tests/swipe.test.js
 # swipeOutTiming: a card dragged past dist still flies forward
 # Drops the Math.max(dist, ...) guard and uses dist directly as the flight's

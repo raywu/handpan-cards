@@ -1,4 +1,4 @@
-# kills: swipe core: outTiming: a velocity against the flight direction counts as zero
+# kills: outTiming: a velocity against the flight direction counts as zero
 # suite: node --test --test-name-pattern ^outTiming..a.velocity.against.the.flight.direction.counts.as.zero$ tests/swipe.test.js
 # swipeOutTiming: a velocity against the flight direction counts as zero
 # Replaces the signed -dir * vx projection with Math.abs(vx)

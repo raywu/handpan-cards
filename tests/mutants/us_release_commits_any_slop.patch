@@ -1,4 +1,4 @@
-# kills: swipe core: decision: a slow drag between the slop and the commit distance does not navigate
+# kills: decision: a slow drag between the slop and the commit distance does not navigate
 # suite: node --test --test-name-pattern ^decision..a.slow.drag.between.the.slop.and.the.commit.distance.does.not.navigate$ tests/swipe.test.js
 # The drag commit distance drops to the slop radius, so a slow 15px drag commits 
 # instead of springing back.

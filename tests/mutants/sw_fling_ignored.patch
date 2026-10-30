@@ -1,4 +1,4 @@
-# kills: swipe core: decision: a short fast fling commits and a slow drag of the same length does not
+# kills: decision: a short fast fling commits and a slow drag of the same length does not
 # suite: node --test --test-name-pattern ^decision..a.short.fast.fling.commits.and.a.slow.drag.of.the.same.length.does.not$ tests/swipe.test.js
 # a short fast fling commits and a slow drag of the same length does not
 # Drops the fling escape hatch entirely: a fast short flick under

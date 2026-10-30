@@ -1,4 +1,4 @@
-# kills: swipe core: decision never commits when the drag has travelled further vertically than horizontally
+# kills: decision never commits when the drag has travelled further vertically than horizontally
 # suite: node --test --test-name-pattern ^decision.never.commits.when.the.drag.has.travelled.further.vertically.than.horizontally$ tests/swipe.test.js
 # Drops swipeDecision's axis-dominance guard (|dy| > |dx| => 0). Without it, a
 # fast-enough vertical drag can cross SWIPE_FLING_PX_MS on dx alone and

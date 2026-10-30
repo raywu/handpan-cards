@@ -1,4 +1,4 @@
-# kills: swipe core: outTiming: an unclamped release flies linearly at its own speed
+# kills: outTiming: an unclamped release flies linearly at its own speed
 # suite: node --test --test-name-pattern ^outTiming..an.unclamped.release.flies.linearly.at.its.own.speed$ tests/swipe.test.js
 # swipeOutTiming: an unclamped release flies linearly at its own speed
 # Hardcodes the easing curve's y1 control point to 0 instead of k * x1

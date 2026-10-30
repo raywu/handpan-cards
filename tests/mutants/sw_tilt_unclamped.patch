@@ -1,4 +1,4 @@
-# kills: swipe core: tilt is TILT_DEG_PER_PX per px and clamps at TILT_MAX_DEG
+# kills: tilt is TILT_DEG_PER_PX per px and clamps at TILT_MAX_DEG
 # suite: node --test --test-name-pattern ^tilt.is.TILT_DEG_PER_PX.per.px.and.clamps.at.TILT_MAX_DEG$ tests/swipe.test.js
 # the tilt is SWIPE_TILT_DEG_PER_PX per px and clamps at SWIPE_TILT_MAX_DEG
 # Drops the Math.max/Math.min clamp in swipeTilt(): a long drag now keeps
