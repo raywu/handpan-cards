@@ -5,7 +5,7 @@
 // colours in CSS vars + markup, shuffle toggling, absence of German, 177 cards.
 //
 // Everything asserted here is derived from CLAUDE.md ("verified card conventions",
-// "instrument layouts", "app data model") or from user-observable behaviour, never
+// "instrument layouts", "data model") or from user-observable behaviour, never
 // from restating the implementation. Field identities come from the deck data's
 // NOTE NAMES, which is an independent route to the pitch-class rule the app
 // implements with midi % 12.
@@ -148,7 +148,7 @@ async function hashChange(app,hash,options={}) {
 
 /* ------------------------------------------------------------------ helpers */
 
-// Field tuple layout, per CLAUDE.md "App data model":
+// Field tuple layout, per CLAUDE.md "Data model":
 // fields{id:[name, octave, midi, zone, angle, label]}
 const F_NAME = 0, F_OCT = 1, F_MIDI = 2, F_ZONE = 3, F_LABEL = 5;
 
@@ -634,7 +634,7 @@ test("index.html carries the whole engine inline, with no external script", asyn
   const app = boot();
   const HPE = app.get("HPE");
   for (const mod of ["fontdata", "pdf", "pdfdeck", "pdfcards", "core", "importer", "voicing",
-                     "layout", "naming", "select", "share", "sequence"]) {
+                     "layout", "naming", "select", "share", "sequence", "swipe"]) {
     assert.strictEqual(typeof HPE[mod], "object", `HPE.${mod} missing from the app`);
   }
   // core must be visible to the modules that read it, so it loads before them.
@@ -645,7 +645,7 @@ test("index.html carries the whole engine inline, with no external script", asyn
   const order = [...html.matchAll(/<!-- engine:(\w+) begin/g)].map((m) => m[1]);
   assert.deepStrictEqual(order, ["fontdata", "pdf", "pdfdeck", "pdfcards", "core",
                                  "importer", "voicing", "layout", "naming", "select",
-                                 "share", "sequence"]);
+                                 "share", "sequence", "swipe"]);
   // share is the app's share surface: encode, decode and the version it guards.
   const share = app.get("HPE.share");
   for (const key of ["encode", "decode"]) {
@@ -3248,7 +3248,7 @@ test("closing a page that is already closed changes nothing", async () => {
 });
 
 test("booting on a page route opens nothing and leaves a clean hash", async () => {
-  for (const hash of ["#add", "#edit-custom:abc"]) {
+  for (const hash of ["#edit-custom:abc"]) {
     const app = boot({ href: "https://example.test/index.html" + hash });
     assert.strictEqual(app.sheetOpen(), false,
       `booting on ${hash} opened a page for a deck this session never had`);
@@ -3258,6 +3258,23 @@ test("booting on a page route opens nothing and leaves a clean hash", async () =
     assert.deepStrictEqual(app.history.calls.map((c) => c.type), ["replace"],
       `booting on ${hash} pushed an entry instead of replacing the one it found`);
   }
+});
+
+test("AA: a boot on #add opens the Add sheet and Back closes it to the deck's route", async () => {
+  const app = boot({ href: "https://example.test/index.html#add" });
+  assert.strictEqual(app.sheetOpen(), true, "a boot on #add opened no sheet");
+  assert.strictEqual(ROUTE(app), "#add");
+  assert.deepStrictEqual(app.history.calls.map((c) => c.type + ":" + c.url), ["replace:/index.html#deck=d-kurd-10", "push:#add"],
+    "boot replaces the entry with the deck route, then showSheet pushes #add");
+  app.els["scale-back"].click();
+  assert.strictEqual(app.sheetOpen(), false);
+  assert.strictEqual(app.history.calls.filter((c) => c.type === "back").length, 1);
+});
+
+test("AA: a protected-mode boot on #add opens no sheet", async () => {
+  const app = await durableBoot({ storage: { hpfc: JSON.stringify({ deck: 5, mode: "A" }) }, href: "https://example.test/index.html#add" });
+  assert.strictEqual(app.get("savedMode"), "protected");
+  assert.strictEqual(app.sheetOpen(), false);
 });
 
 test("the page routes do not shadow a share URL", async () => {
@@ -3538,56 +3555,77 @@ test("PM rule 3: DOWNLOAD PDF names and builds the chord-only file, byte for byt
   }
 });
 
-test("PM rule 7: HANDPAN 101 is the last Resources link, a Google Doc in a new tab, beside Handpan Helpers", () => {
+test("PM rule 7: HANDPAN 101 is the second Resources link, the /handpan-101/ page in the same tab, alone in a full-width row", () => {
   const panel = pmPanel();
   const group = panel.slice(panel.indexOf('<h3 class="panel-heading">Resources</h3>'));
   const links = [...group.matchAll(/<a\b[^>]*>[\s\S]*?<\/a>/g)].map((m) => m[0]);
-  assert.strictEqual(links.length, 7, "seven Resources links");
-  const first = links[links.length - 1];
-  assert.match(first, /\bid="res-handpan-101"/);
-  assert.match(first, /href="https:\/\/docs\.google\.com\/document\/d\/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco\/edit\?usp=drivesdk"/);
-  assert.match(first, /target="_blank"/);
-  assert.match(first, /rel="noopener"/);
-  assert.match(first, /aria-label="Handpan 101 \(Google Doc\)"/);
-  assert.match(first, /class="mode"/);
-  assert.ok(!/onclick/.test(first), "a link click must not close the panel");
-  assert.strictEqual(strip(first).replace(/\s+/g, " ").trim(), "HANDPAN 101", "the complete name survives presentational wrapping");
+  assert.strictEqual(links.length, 2, "two Resources links");
+  const link = links[1];
+  assert.match(link, /\bid="res-handpan-101"/);
+  assert.match(link, /href="\/handpan-101\/"/);
+  assert.ok(!/\btarget=/.test(link), "the page opens in the same tab");
+  assert.ok(!/\brel=/.test(link), "a same-site link carries no rel");
+  assert.match(link, /aria-label="Handpan 101"/);
+  assert.match(link, /class="mode"/);
+  assert.ok(!/onclick/.test(link), "a link click must not close the panel");
+  assert.strictEqual(strip(link).replace(/\s+/g, " ").trim(), "HANDPAN 101", "the complete name survives");
   const rows = [...group.matchAll(/<div class="modebar([^"]*)">([\s\S]*?)<\/div>/g)];
-  assert.strictEqual(rows.length, 4, "four modebar rows");
-  assert.strictEqual((rows[0][2].match(/<a\b/g) || []).length, 3, "the site row keeps three siblings");
-  assert.strictEqual((rows[1][2].match(/<a\b/g) || []).length, 2, "the Amy row keeps two");
-  assert.strictEqual((rows[2][2].match(/<a\b/g) || []).length, 2, "Helpers and HANDPAN 101 share the third row");
-  assert.deepStrictEqual([...rows[2][2].matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]),
-    ["res-handpan-helpers", "res-handpan-101"], "Helpers immediately precedes HANDPAN 101");
-  assert.ok(rows[3][2].includes('id="about-open"'), "the fourth row holds ABOUT");
-  assert.ok(!/<a\b/.test(rows[3][2]), "the ABOUT row holds no link");
+  assert.strictEqual(rows.length, 3, "three modebar rows");
+  assert.deepStrictEqual([...rows[1][2].matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]), ["res-handpan-101"], "HANDPAN 101 is alone in the second row");
+  assert.strictEqual(rows[1][1], "", "the row is a plain full-width modebar");
 });
 
-
-// Owner-approved Resources addition: the destination and safe native anchor
-// semantics are literal requirements, independent of the app's link table.
-test("HHR: the Helpers resource is a native new-tab link immediately before HANDPAN 101", () => {
+test("RR: Resources rows are EXPLORE SCALES, HANDPAN 101, ABOUT, each alone and full width, and the group has no external link", () => {
   const panel = pmPanel();
-  const group = panel.slice(panel.indexOf('<h3 class="panel-heading">Resources</h3>'));
-  const links = [...group.matchAll(/<a\b[^>]*>[\s\S]*?<\/a>/g)].map((m) => m[0]);
-  const helpers = links.filter((link) => /\bid="res-handpan-helpers"/.test(link));
-  assert.strictEqual(helpers.length, 1, "exactly one Helpers resource anchor must exist");
-  const link = helpers[0];
-  assert.match(link, /\bhref="https:\/\/handpanhelpers\.klangzeug\.de\/"/, "the literal Helpers destination");
-  assert.match(link, /\btarget="_blank"/, "Helpers opens in a separate tab");
-  assert.match(link, /\brel="noopener"/, "Helpers cannot access the app through window.opener");
-  assert.match(link, /\bclass="mode"/, "Helpers shares the existing control treatment");
-  assert.strictEqual(strip(link).replace(/\s+/g, " ").trim(), "HANDPAN HELPERS", "the complete proper name survives presentational wrapping");
-  assert.ok(!/\bon(?:click|keydown)\s*=/.test(link), "the resource uses native activation without inline script");
-  assert.ok(!/\b(?:hidden|disabled|aria-hidden|tabindex)(?=\s|=|>)/.test(link), "Helpers remains a normal keyboard-reachable anchor");
-  const index = links.indexOf(link);
-  assert.match(links[index + 1] || "", /\bid="res-handpan-101"/, "Helpers immediately precedes HANDPAN 101");
-  assert.strictEqual(index, links.length - 2, "HANDPAN 101 stays the final outbound Resources link");
+  const group = panel.slice(panel.indexOf('<h3 class="panel-heading">Resources</h3>'), panel.indexOf('id="panel-lang-heading"'));
   const rows = [...group.matchAll(/<div class="modebar([^"]*)">([\s\S]*?)<\/div>/g)];
-  assert.strictEqual(rows.length, 4, "adding Helpers does not add a Resources row");
-  assert.match(rows[2][1], /\bduo\b/, "the approved third row is an equal-width duo");
-  assert.deepStrictEqual([...rows[2][2].matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]),
-    ["res-handpan-helpers", "res-handpan-101"], "the third row contains only the approved pair");
+  assert.strictEqual(rows.length, 3);
+  assert.deepStrictEqual(rows.map((r) => [...r[2].matchAll(/\bid="([^"]+)"/g)].map((m) => m[1])),
+    [["res-explore"], ["res-handpan-101"], ["about-open"]]);
+  for (const r of rows) assert.strictEqual(r[1], "", "each row is a plain full-width modebar");
+  assert.match(rows[0][2], /href="\/scales\/"/);
+  assert.ok(!/\btarget=|\brel=/.test(rows[0][2]), "EXPLORE SCALES opens in the same tab");
+  assert.strictEqual(strip(rows[0][2]).replace(/\s+/g, " ").trim(), "EXPLORE SCALES");
+  assert.match(rows[2][2], /<button class="mode" type="button" id="about-open"/);
+  assert.ok(!/href="https?:/.test(group), "no external link in the group");
+  assert.ok(!/target="_blank"/.test(group), "no new-tab link in the group");
+});
+
+test("RR: no served markup, selector row or i18n table carries a removed res- id or panel.res_amy key", () => {
+  const html = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
+  const removedRes = require("../tools/probe/panel_fit.js").REMOVED_BY_DESIGN.filter((id) => id.startsWith("res-"));
+  assert.strictEqual(removedRes.length, 6);
+  for (const dead of [...removedRes, "panel.res_amy"]) {
+    assert.ok(!html.includes(dead), dead + " is still served");
+  }
+});
+
+test("RR: panel.explore is in every i18n table", () => {
+  const dir = path.join(__dirname, "..", "data", "i18n");
+  const files = fs.readdirSync(dir).filter((f) => f.endsWith(".json"));
+  assert.strictEqual(files.length, 8);
+  for (const f of files) {
+    const t = JSON.parse(fs.readFileSync(path.join(dir, f), "utf8"));
+    assert.ok(typeof t["panel.explore"] === "string" && t["panel.explore"].length > 0, f + " lacks panel.explore");
+    assert.ok(!Object.keys(t).some((k) => k.startsWith("panel.res_amy")), f + " keeps a panel.res_amy key");
+  }
+});
+
+test("RR: panelStops lists the Resources group in visual order in single column and both grid modes", () => {
+  const stubIds = [...pmPanel().matchAll(/<(?:a|button)\b[^>]*id="(res-[\w-]+|about-open)"/g)].map((m) => m[1]);
+  assert.deepStrictEqual(stubIds, ["res-explore", "res-handpan-101", "about-open"], "DOM order is visual order");
+  for (const display of ["block", "flex"]) {
+    const app = boot();
+    app.run(`settingsPanel.querySelectorAll = (sel) => ${JSON.stringify(stubIds)}.filter((id) => id === "about-open" ? sel.includes("#about-open") : sel.includes('[id^="res-"]')).map((id) => ({ id, disabled: false, getClientRects: () => [{}] }))`);
+    app.run(`globalThis.getComputedStyle = () => ({ display: "${display}" }); document.querySelector = () => ({})`);
+    app.run("openPanel()");
+    assert.strictEqual(app.get("getComputedStyle(null).display"), display);
+    const ids = app.get("panelStops().map((e) => e.id)");
+    const at = stubIds.map((id) => ids.indexOf(id));
+    assert.ok(at.every((i) => i >= 0), display + ": every Resources stop is present");
+    assert.deepStrictEqual([...at].sort((x, y) => x - y), at, display + ": Resources stops are in visual order");
+    assert.strictEqual(ids[ids.length - 1], "lang-select", "Language closes the list");
+  }
 });
 
 /* D-3's type guard on printPaper must reject a TRUTHY but invalid stored
@@ -4570,7 +4608,8 @@ describe("panel fit judge", () => {
     delete candOver.controls["deck-add"];
     assert.strictEqual(judge(baseOver, candOver).rule2.fail.length, 1, "a base that overflows does not excuse it");
     assert.strictEqual(judge(cell(), withControl(cell(), "deck-add", { exists: false, rendered: false, disabled: false, bottom: 0 })).rule2.fail.length, 1, "exists:false counts as lacking");
-    assert.deepStrictEqual(pf.REMOVED_BY_DESIGN, ["modeS", "button:FULL DECK PDF", "button:CHORD-ONLY PDF", "share-copy"]);
+    assert.strictEqual(pf.REMOVED_BY_DESIGN.length, 10, "the removed-by-design list is exactly the ten known ids");
+    assert.ok(!pf.REMOVED_BY_DESIGN.includes("button:DOWNLOAD PDF"), "a lost DOWNLOAD PDF is not removed by design");
     const noS = judge(cell(), lacks("modeS"));
     assert.strictEqual(noS.rule2.fail.length, 0, "modeS is removed by design");
     assert.strictEqual(noS.rule2.reported.length, 0);
@@ -9766,8 +9805,23 @@ describe("discoverability: deck route", () => {
     assert.strictEqual(gone.location.hash, "#deck=d-kurd-10");
   });
 
+  test("AA: a hashchange to #add opens the Add sheet, Back closes it and the next Back leaves the previous entry", async () => {
+    const app = await at("", { storage: { hpfc: JSON.stringify({ deck: "amara", mode: "A" }) } });
+    const before = app.history.calls.length;
+    await hashChange(app, "#add");
+    assert.strictEqual(app.sheetOpen(), true, "a hashchange to #add opened no sheet");
+    assert.deepStrictEqual(app.history.calls.slice(before).map((c) => c.type + ":" + c.url), ["replace:#add"],
+      "the entry the browser already pushed is reused: one replace, no push");
+    assert.strictEqual(app.get("sheetRouted"), true);
+    assert.strictEqual(app.get("selection.id"), "amara");
+    app.els["scale-back"].click();
+    assert.strictEqual(app.sheetOpen(), false);
+    assert.strictEqual(app.history.calls.filter((c) => c.type === "back").length, 1, "closing pops exactly the one entry");
+    assert.strictEqual(app.history.calls.filter((c) => c.type === "push").length, 0, "no duplicate entry was pushed");
+  });
+
   test("hashchange ignores the other routes", async () => {
-    for (const h of ["#add", "#edit-x", "#something"]) {
+    for (const h of ["#edit-x", "#something"]) {
       const app = await at("", { storage: { hpfc: JSON.stringify({ deck: "amara", mode: "A" }) } });
       const before = app.history.calls.length;
       await hashChange(app,h);
@@ -10069,8 +10123,15 @@ describe("share url", () => {
       ctx.local.location.hash = fragment;
       const historyBefore = JSON.stringify(ctx.local.history.calls);
       dispatchCurrent(ctx.local);
-      assert.strictEqual(ctx.local.location.hash, fragment, name + ": handler keeps the ignored raw fragment");
-      assert.strictEqual(JSON.stringify(ctx.local.history.calls), historyBefore, name + ": ignored handler writes no history");
+      if (fragment === "#add") {
+        assert.strictEqual(ctx.local.sheetOpen(), true, name + ": #add opens the Add sheet");
+        ctx.local.els["scale-back"].click();
+        ctx.local.popstate();
+        await writeBarrier(ctx.local);
+      } else {
+        assert.strictEqual(ctx.local.location.hash, fragment, name + ": handler keeps the ignored raw fragment");
+        assert.strictEqual(JSON.stringify(ctx.local.history.calls), historyBefore, name + ": ignored handler writes no history");
+      }
       await peerCommand(ctx, kind);
       const canonical = resultShown(ctx.local, kind);
       assert.strictEqual(ctx.local.location.hash, canonical, name + ": later peer publication still canonicalizes the URL");
@@ -10867,11 +10928,31 @@ describe("about overlay", () => {
     assert.ok(priv, "the Privacy paragraph is missing");
     assert.ok(textOf(priv[0]).includes(PRIVACY), "the Privacy paragraph does not say scales stay here and how to share one");
     assert.ok(textOf(priv[0]).includes("The site counts anonymous visits and feature use with Google Analytics, without cookies in the EEA, the UK and Switzerland."), "the Privacy paragraph does not state its Google Analytics sentence");
-    const own = /<h3>Your own scale<\/h3>\s*<p>([^<]*)<\/p>/.exec(aboutHtml());
-    assert.ok(own, "the Your own scale paragraph is missing");
+    const own = /<h3>Add your own scale<\/h3>\s*<p>([^<]*)<\/p>/.exec(aboutHtml());
+    assert.ok(own, "the Add your own scale paragraph is missing");
     assert.strictEqual(textOf(own[1]).trim(), "Type any scale and the app generates its chords.");
     const text = textOf(aboutHtml());
     assert.ok(!/lives only in your browser/.test(text) && !/never leave your browser/.test(text));
+  });
+
+  test("About lists 16 popular scale links in five groups, each to an existing /scales/<slug>/ page, then the hub link", async () => {
+    const rows = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "tools", "scale_pages.json"), "utf8"));
+    const groups = ["Minor", "Celtic minor", "Pentatonic minor", "Major and bright", "Middle Eastern and Japanese"];
+    const m = /<h3>Popular scales<\/h3>([\s\S]*?)<h3>Privacy<\/h3>/.exec(aboutHtml());
+    assert.ok(m, "no Popular scales section before Privacy");
+    assert.ok(/^\s*<p>Chord charts for 16 common handpan scales\.<\/p>/.test(m[1]), "the intro is missing");
+    assert.deepStrictEqual([...m[1].matchAll(/<h4>(.*?)<\/h4>/g)].map((x) => x[1]), groups);
+    const links = [...m[1].matchAll(/<li><a href="(\/scales\/[a-z0-9-]+\/)">(.*?)<\/a><\/li>/g)];
+    assert.deepStrictEqual(links.map((x) => x[1]), rows.map((r) => `/scales/${r.slug}/`));
+    assert.deepStrictEqual(links.map((x) => x[2]), rows.map((r) => `${r.name} handpan chords`));
+    for (const r of rows) assert.ok(fs.existsSync(path.join(__dirname, "..", "scales", r.slug, "index.html")), r.slug);
+    for (const g of groups) {
+      const block = new RegExp(`<h4>${g}</h4>\\s*<ul>([\\s\\S]*?)</ul>`).exec(m[1]);
+      assert.ok(block, `no <ul> under ${g}`);
+      assert.strictEqual([...block[1].matchAll(/<li><a href="\/scales\/([a-z0-9-]+)\/">/g)].map((x) => x[1]).join(),
+        rows.filter((r) => r.group === g).map((r) => r.slug).join());
+    }
+    assert.ok(/<ul>\s*<li><a href="\/scales\/">All scale chord charts<\/a><\/li>\s*<\/ul>\s*$/.test(m[1]), "the hub link is not a one-item list at the end");
   });
 
   test("AO: the about section ships hidden as a dialog, in place after #app, with every existing sentence", async () => {
@@ -11065,7 +11146,7 @@ describe("about overlay", () => {
     assert.match(inner, /<h3>Privacy<\/h3>\s*<p>[^<]*<\/p>\s*<h3>Contact<\/h3>\s*<p><a href="mailto:handpan@raywu\.org">handpan@raywu\.org<\/a><\/p>\s*$/);
   });
 
-  test("AO: ABOUT is a full-width button alone in the last Resources row, and the last stop before Language", async () => {
+  test("AO: ABOUT is a full-width button alone in the last Resources row, and the last Resources stop before Language", async () => {
     const panel = pmPanel();
     const group = panel.slice(panel.indexOf('<h3 class="panel-heading">Resources</h3>'));
     const rows = [...group.matchAll(/<div class="modebar([^"]*)">([\s\S]*?)<\/div>/g)];
@@ -11074,9 +11155,8 @@ describe("about overlay", () => {
     assert.match(last[2], /^\s*<button class="mode" type="button" id="about-open" aria-haspopup="dialog">ABOUT<\/button>\s*$/);
     assert.ok(group.lastIndexOf('id="about-open"') > group.lastIndexOf("res-handpan-101"), "ABOUT is not after HANDPAN 101");
     const app = boot();
-    const resIds = [...group.matchAll(/<a[^>]*id="(res-[\w-]+)"/g)].map((m) => m[1]);
-    assert.ok(resIds.length >= 6 && resIds.includes("res-handpan-101"), "the Resources links are in the markup");
-    app.run(`settingsPanel.querySelectorAll = (sel) => /res-/.test(sel) ? ${JSON.stringify(resIds)}.map((id) => ({ id, disabled: false, getClientRects: () => [{}] })) : []`);
+    const stubIds = [...pmPanel().matchAll(/<(?:a|button)\b[^>]*id="(res-[\w-]+|about-open)"/g)].map((m) => m[1]);
+    app.run(`settingsPanel.querySelectorAll = (sel) => /res-/.test(sel) ? ${JSON.stringify(stubIds)}.map((id) => ({ id, disabled: false, getClientRects: () => [{}] })) : []`);
     app.run("openPanel()");
     const ids = app.get("panelStops().map((e) => e.id)");
     assert.strictEqual(ids[ids.length - 2], "about-open", "about-open is not the stop before Language");
@@ -13754,7 +13834,7 @@ describe("DS: the visible word is scale", () => {
 
   test("DS1b: the pinned strings are served", async () => {
     const h = html();
-    for (const s of ["or pick a built-in scale.", "Pick a built-in scale, or type your own.", "Built-in scales",
+    for (const s of ["or pick a built-in scale.", "Pick a built-in scale, or type your own.", "Try these scales",
       "DELETE THIS SCALE", "RESET SEEDED SCALES", "Print this scale"]) {
       assert.ok(h.includes(s), `missing ${s}`);
     }
@@ -15136,9 +15216,10 @@ describe("I18N", () => {
     assert.strictEqual(contract.provenance.baselineCommit, "1510ea369573078e6296fe873edb6f538c3212a3");
     assert.strictEqual(contract.keyCount, 250);
     const savedKeys=["saved.ackPending","saved.conflict","saved.conflictDeleted","saved.failure","saved.importFailure","saved.legacy","saved.presetToken","saved.recovery","saved.resetConflict","saved.resetFailure","saved.savedToken","saved.separate","saved.session","saved.sessionAckPending","saved.sessionImportAckPending","saved.temporary"];
-    assert.strictEqual(Object.keys(en).length,contract.keyCount+16,"frozen base plus the sixteen approved saved-variants messages");
+    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],addedKeys=["panel.explore"];
+    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign)");
     for(const key of savedKeys)assert.strictEqual(typeof en[key],"string",key+" is a required new scalar message");
-    const baseKeys=Object.keys(en).filter(key=>!savedKeys.includes(key));
+    const baseKeys=Object.keys(en).filter(key=>!savedKeys.includes(key)&&!addedKeys.includes(key)).concat(retiredKeys);
     assert.strictEqual(require("node:crypto").createHash("sha256")
       .update(JSON.stringify(baseKeys.sort())).digest("hex"),contract.sortedKeySha256,"all frozen baseline key identities remain unchanged");
     assert.deepStrictEqual(Object.keys(en).filter((k) => isPlural(en[k])).sort(),
@@ -15250,10 +15331,8 @@ describe("I18N", () => {
   });
 
   const langPanelStops = (app) => {
-    const panel = pmPanel();
-    const group = panel.slice(panel.indexOf('<h3 class="panel-heading">Resources</h3>'));
-    const resIds = [...group.matchAll(/<a[^>]*id="(res-[\w-]+)"/g)].map((m) => m[1]);
-    app.run(`settingsPanel.querySelectorAll = (sel) => /res-/.test(sel) ? ${JSON.stringify(resIds)}.map((id) => ({ id, disabled: false, getClientRects: () => [{}] })) : []`);
+    const stubIds = [...pmPanel().matchAll(/<(?:a|button)\b[^>]*id="(res-[\w-]+|about-open)"/g)].map((m) => m[1]);
+    app.run(`settingsPanel.querySelectorAll = (sel) => /res-/.test(sel) ? ${JSON.stringify(stubIds)}.map((id) => ({ id, disabled: false, getClientRects: () => [{}] })) : []`);
     app.run("openPanel()");
     return app.get("panelStops().map((e) => e.id)");
   };
@@ -18362,3 +18441,12 @@ describe("SHC asynchronous LINK ownership", () => {
   });
 
 }
+
+test("NS1: About links underline at 1.5px and 2.5px on hover, like the scale pages", () => {
+  const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+  const rest = /#about a\{([^}]*)\}/.exec(html);
+  assert.ok(rest, "no #about a rule");
+  assert.match(rest[1], /text-decoration-thickness:\s*1\.5px/);
+  assert.match(rest[1], /text-underline-offset:\s*3px/);
+  assert.match(html, /#about a:hover\{\s*text-decoration-thickness:\s*2\.5px/);
+});

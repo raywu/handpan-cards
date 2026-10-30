@@ -1,0 +1,10 @@
+# kills: NS1: About links underline at 1.5px and 2.5px on hover, like the scale pages
+# suite: node --test --test-name-pattern ^NS1:.About.links tests/app.test.js
+# Lane S1. Drops the About link hover thickness.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1334,3 +1334,2 @@
+ #about a{color:#e3b25c; font-weight:600; text-decoration:underline; text-decoration-thickness:1.5px; text-underline-offset:3px}
+-#about a:hover{text-decoration-thickness:2.5px}
+ #about ul a, #about a[href^="mailto:"]{display:flex; align-items:center; min-height:44px}

@@ -109,12 +109,12 @@ class SiteFilesTest(unittest.TestCase):
             self.assertTrue(loc.endswith("/"), loc)
             self.assertNotIn("#", loc)
 
-    def test_sitemap_lists_the_root_and_every_scale_page(self):
+    def test_sitemap_lists_the_root_every_scale_page_and_handpan_101(self):
         locs = {e.text.strip() for e in sitemap_tree().iter(NS + "loc")}
         pages = {SITE + os.path.relpath(os.path.dirname(f), ROOT) + "/"
                  for f in glob.glob(os.path.join(ROOT, "scales", "*", "index.html"))}
         self.assertTrue(pages)
-        self.assertEqual(locs, {SITE} | pages)
+        self.assertEqual(locs, {SITE} | pages | {SITE + "handpan-101/", SITE + "scales/"})
 
     def test_no_lastmod_and_nojekyll_is_empty(self):
         self.assertEqual(list(sitemap_tree().iter(NS + "lastmod")), [])
@@ -122,9 +122,24 @@ class SiteFilesTest(unittest.TestCase):
         self.assertTrue(os.path.isfile(path))
         self.assertEqual(os.path.getsize(path), 0)
 
-    def test_headers_file_sends_noindex_for_every_path(self):
-        self.assertEqual(read("_headers"), "/*\n  X-Robots-Tag: noindex\n")
+    def test_headers_noindex_is_scoped_to_the_dev_and_preview_hosts(self):
+        lines = [l for l in read("_headers").splitlines() if l.strip()]
+        rules = [l for l in lines if not l[0].isspace()]
+        headers = [l.strip() for l in lines if l[0].isspace()]
+        self.assertTrue(rules)
+        for rule in rules:
+            self.assertTrue(rule.startswith("https://"), rule)
+            host = rule[len("https://"):].split("/")[0]
+            self.assertTrue(host.endswith(".pages.dev"), rule)
+            self.assertNotIn("handpan.raywu.org", rule)
+        self.assertEqual(headers, ["X-Robots-Tag: noindex"] * len(rules))
 
+    def test_llms_txt_lists_exactly_the_sitemap_locs(self):
+        listed = set(re.findall(r"\((https://[^)\s]+)\)", read("llms.txt")))
+        locs = {e.text.strip() for e in sitemap_tree().iter(NS + "loc")}
+        self.assertEqual(listed, locs)
+        self.assertIn(SITE + "handpan-101/", listed)
+        self.assertIn(SITE + "scales/", listed)
 
 if __name__ == "__main__":
     unittest.main()

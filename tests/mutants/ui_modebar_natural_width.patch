@@ -13,4 +13,4 @@ diff --git a/index.html b/index.html
 -.modebar .mode{flex:1 1 0}
  /* AD8: a wrapped label centres too (an <a> is start-aligned by default). */
  #settings-panel .mode{text-align:center}
- /* Each paired Resources row stays on ONE row on every viewport, wrapping
+ #share-url{box-sizing:border-box; width:100%; min-height:44px; padding:0 10px; font:inherit; font-size:16px;

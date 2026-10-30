@@ -50,7 +50,7 @@ FLOORS = {
     "tests/test_pdf_parity.py": 15,
     "tests/test_icons.py": 4,
     "tests/test_site_files.py": 8,
-    "tests/test_scale_pages.py": 13,
+    "tests/test_scale_pages.py": 48,
     "tests/test_ci_scope.py": 5,
     # node
     "tests/app.test.js": 1001,
@@ -80,6 +80,7 @@ FLOORS = {
     "tests/mutation_harness.test.js": 54,
     "tests/pdf_builtin.test.js": 13,
     "tests/sequence.test.js": 52,
+    "tests/swipe.test.js": 21,
     "tests/scale.test.js": 14,
     "tests/sandbox_events.test.js": 5,
 }

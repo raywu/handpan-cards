@@ -1,15 +1,15 @@
-# kills: AO: ABOUT is a full-width button alone in the last Resources row, and the last stop before Language
-# suite: node --test --test-name-pattern ^AO:.ABOUT.is.a.full-width.button tests/app.test.js
+# kills: RR: panelStops lists the Resources group in visual order in single column and both grid modes
+# suite: node --test --test-name-pattern ^RR:.panelStops.lists.the.Resources.group tests/app.test.js
 # Lane O. panelStops() leaves #about-open out of the Tab trap.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14685,7 +14685,7 @@ function panelStops() {
-           // ABOUT closes the list, so Tab follows what the eye sees.
-           // Eng review amendment 1: the Resources links join the Tab trap
-           // after the print controls, in DOM order.
--          ...(grid ? [...prints, ...scales, ...res, lang, about] : [...scales, ...prints, ...res, about, lang])]
-+          ...(grid ? [...prints, ...scales, ...res, lang] : [...scales, ...prints, ...res, lang])]
-     .filter(isStop);
- }
- function openPanel() {
+@@ -14683,7 +14683,7 @@ const desktopMQ = window.matchMedia("(min-width:1024px) and (min-height:700px)")
+ function panelStops() {
+   const prints = [...settingsPanel.querySelectorAll(".prints button, .prints select")];
+   const scales = [document.getElementById("deck-add"), restoreBtn];
+-  const res = [...settingsPanel.querySelectorAll('#settings-panel a.mode[id^="res-"], #about-open')];
++  const res = [...settingsPanel.querySelectorAll('#settings-panel a.mode[id^="res-"]')];
+   const lang = document.getElementById("lang-select");
+   const col = document.querySelector("#settings-panel > .panel-col");
+   const grid = typeof getComputedStyle === "function" && !!col && getComputedStyle(col).display === "flex";

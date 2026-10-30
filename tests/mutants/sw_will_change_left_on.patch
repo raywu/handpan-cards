@@ -8,9 +8,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14749,7 +14749,7 @@ function swipeTilt(dx) {
- }
- function swipeXf(dx) { return `translate3d(${dx}px,0,0) rotate(${swipeTilt(dx)}deg)`; }
+@@ -15039,7 +15039,7 @@ const swipeOutTiming = HPE.swipe.outTiming;
+ const swipeTilt = HPE.swipe.tilt;
+ const swipeXf = HPE.swipe.xf;
  let drag = null, flight = null, eatClick = false, eatClickTimer = null;
 -function swipeRest() { scene.style.transform = ""; scene.style.willChange = ""; }
 +function swipeRest() { scene.style.transform = ""; }
