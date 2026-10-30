@@ -14,4 +14,4 @@ diff --git a/src/engine/swipe.js b/src/engine/swipe.js
 +    if (reducedMotion) return { kind: "rest", dir: 0, eatClick };
      return { kind: dir ? "fly" : "spring", dir, eatClick };
    }
-   function wheelTrack(peak, trough, ax) {
+   function wheelTrack(s, x) {

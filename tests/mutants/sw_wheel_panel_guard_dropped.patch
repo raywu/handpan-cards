@@ -6,12 +6,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15256,7 +15256,7 @@ if (wheelMain) wheelMain.addEventListener("wheel", e => {
+@@ -15255,7 +15255,7 @@ if (wheelMain) wheelMain.addEventListener("wheel", e => {
      // skipped for its whole duration. A flight does not skip it: its events
      // are ignored one by one below, so a stroke begun mid-flight still counts
      // once the card lands.
 -    const skip = !!(drag || panelOpen || sheetOpen || !order.length);
 +    const skip = !!(drag || !order.length);
-     wheel = { sx: 0, axis: null, fired: false, skip, timer: null, peak: 0, trough: Infinity };
+     wheel = { sx: 0, axis: null, fired: false, skip, timer: null, hi: 0, lo: Infinity };
    }
    if (wheel.timer) clearTimeout(wheel.timer);
