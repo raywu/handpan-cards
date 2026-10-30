@@ -92,7 +92,7 @@ function langAllowance(baseControls, candControls) {
 // measurement (the figure below is the last one taken), and the band is unchanged.
 // Measured as the growth of the needed height (194px of needed height and 340px of control bottom, lang-select, at 320px tall, real fonts). Rules 1 and 2,
 // mode S, inside that band only.
-const LS_S_ALLOWANCE_PX = 340;
+const LS_S_ALLOWANCE_PX = 320;
 function lsAllowance(w, h, m) {
   return m === "S" && w >= 740 && h >= 300 && h < 360 ? LS_S_ALLOWANCE_PX : 0;
 }
