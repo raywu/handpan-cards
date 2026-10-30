@@ -4615,7 +4615,7 @@ describe("panel fit judge", () => {
     delete candOver.controls["deck-add"];
     assert.strictEqual(judge(baseOver, candOver).rule2.fail.length, 1, "a base that overflows does not excuse it");
     assert.strictEqual(judge(cell(), withControl(cell(), "deck-add", { exists: false, rendered: false, disabled: false, bottom: 0 })).rule2.fail.length, 1, "exists:false counts as lacking");
-    assert.strictEqual(pf.REMOVED_BY_DESIGN.length, 10, "the removed-by-design list is exactly the ten known ids");
+    assert.deepStrictEqual([...pf.REMOVED_BY_DESIGN].sort(), ["button:CHORD-ONLY PDF", "button:FULL DECK PDF", "modeS", "res-amy-bottom", "res-amy-progressions", "res-dingandtones", "res-handpan-helpers", "res-handpaner", "res-trainingcards", "share-copy"], "the removed-by-design list is exactly the ten known ids");
     assert.ok(!pf.REMOVED_BY_DESIGN.includes("button:DOWNLOAD PDF"), "a lost DOWNLOAD PDF is not removed by design");
     const noS = judge(cell(), lacks("modeS"));
     assert.strictEqual(noS.rule2.fail.length, 0, "modeS is removed by design");
@@ -4861,11 +4861,11 @@ describe("panel fit judge", () => {
     assert.strictEqual(pf.aboutAllowance(keys("about-open"), keys("about-open")), 0, "the allowance expires once main has the row");
   });
 
-  test("panel fit: the LS allowance is 340, owed to mode S at 740px wide and up and 300 to 359px tall only", async () => {
-    assert.strictEqual(pf.LS_S_ALLOWANCE_PX, 340);
-    assert.strictEqual(pf.lsAllowance(852, 330, "S"), 340);
-    assert.strictEqual(pf.lsAllowance(740, 300, "S"), 340);
-    assert.strictEqual(pf.lsAllowance(932, 359, "S"), 340);
+  test("panel fit: the LS allowance is 320, owed to mode S at 740px wide and up and 300 to 359px tall only", async () => {
+    assert.strictEqual(pf.LS_S_ALLOWANCE_PX, 320);
+    assert.strictEqual(pf.lsAllowance(852, 330, "S"), 320);
+    assert.strictEqual(pf.lsAllowance(740, 300, "S"), 320);
+    assert.strictEqual(pf.lsAllowance(932, 359, "S"), 320);
     assert.strictEqual(pf.lsAllowance(852, 330, "A"), 0, "modes A and B fit two columns");
     assert.strictEqual(pf.lsAllowance(739, 330, "S"), 0, "narrower than 740");
     assert.strictEqual(pf.lsAllowance(852, 299, "S"), 0, "shorter than 300");

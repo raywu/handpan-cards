@@ -9779,9 +9779,9 @@ function t(key, vars) {
   }
   return String(entry).replace(/\{(\w+)\}/g, (m, name) => (vars && Object.prototype.hasOwnProperty.call(vars, name) ? String(vars[name]) : m));
 }
-const escapeText = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const escapeHtml = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 /** t() for markup: escaped, with the two characters the English source wrote as entities. */
-const tHtml = (key, vars) => escapeText(t(key, vars)).replace(/’/g, "&rsquo;").replace(/→/g, "&rarr;");
+const tHtml = (key, vars) => escapeHtml(t(key, vars)).replace(/’/g, "&rsquo;").replace(/→/g, "&rarr;");
 const tVars = vars => {
   const out = {};
   for (const k of Object.keys(vars || {})) out[k.replace(/^<|>$/g, "").replace("fifth of X", "fifth")] = vars[k];
