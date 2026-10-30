@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9744,7 +9744,6 @@ function syncLangIslands() {
+@@ -9881,7 +9881,6 @@ function syncLangIslands() {
    }
  }
  function applyLang() {
 -  document.documentElement.lang = uiLang();
    syncLangIslands();
    applyStatic();
-   syncShuffleLabel();
+   paintShare();

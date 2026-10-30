@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15137,7 +15137,6 @@ function copyLink() {
-     if (!navigator.share) { reveal(); return; }
-     let started = false;
-     Promise.resolve().then(() => {
--      if (!current()) return;
-       started = true;
-       return navigator.share({ url: href });
-     }).then(() => {
+@@ -15441,7 +15441,6 @@ function copyLink() {
+     if (!current()) return;
+     const clipboard = navigator.clipboard;
+     if (!clipboard || !clipboard.writeText) { reveal(); return; }
+-    if (!current()) return;
+     Promise.resolve().then(() => clipboard.writeText(href))
+       .then(() => done(t("share.copied"), "clipboard"), reveal);
+   };

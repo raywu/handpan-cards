@@ -1,0 +1,14 @@
+# kills: NS 8: label and glyph follow the share state and survive a language change
+# suite: node --test --test-name-pattern ^NS.8: tests/app.test.js
+# A language switch resets the share label to Copy link.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9884,7 +9884,6 @@ function applyLang() {
+   document.documentElement.lang = uiLang();
+   syncLangIslands();
+   applyStatic();
+-  paintShare();
+   syncShuffleLabel();
+   disarmDelete();
+   disarmReset();
