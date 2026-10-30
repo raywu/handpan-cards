@@ -146,10 +146,10 @@ class Handpan101PageTest(unittest.TestCase):
         self.assertTrue(m)
         items = re.findall(r"<li>(.*?)</li>", m.group(1), re.S)
         self.assertEqual([re.sub(r"<[^>]+>", "", i) for i in items], [
-            "D Amara (Celtic)", "D Kurd", "F Low Pygmy", "C# Annaziska", "E Equinox", "F Magic Voyage"])
+            "D Amara (Celtic)", "D Kurd", "F Low Pygmy", "E Equinox", "F Magic Voyage"])
         hrefs = [re.findall(r'<a href="([^"]*)">', i) for i in items]
         self.assertEqual(hrefs, [["/scales/d-amara-9/"], ["/scales/d-kurd-10/"], ["/scales/f-low-pygmy-9/"],
-                                 [], ["/scales/e-equinox-9/"], ["/scales/f-magic-voyage-8/"]])
+                                 ["/scales/e-equinox-9/"], ["/scales/f-magic-voyage-8/"]])
         self.assertIn('<a href="/scales/d-amara-9/">D Amara</a> (Celtic)', items[0])
 
     def test_exactly_four_youtube_links_and_no_person_names(self):
