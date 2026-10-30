@@ -1,0 +1,16 @@
+# kills: test_pages_for_refuses_one_copy_shared_across_several_slugs
+# suite: python3 -m unittest -k test_pages_for_refuses_one_copy_shared_across_several_slugs tests.test_scale_pages
+# pages_for stops refusing one copy passed with several slugs, so every page
+# would be rendered from the same copy instead of its own.
+diff --git a/tools/gen_scale_page.py b/tools/gen_scale_page.py
+--- a/tools/gen_scale_page.py
++++ b/tools/gen_scale_page.py
+@@ -521,8 +521,6 @@ def render(row, data, rows_by_slug, copy, alt=None):
+
+
+ def pages_for(slugs, rows=None, copy=None):
+-    if copy is not None and len(slugs) > 1:
+-        raise ValueError("pages_for: one copy cannot serve %d slugs" % len(slugs))
+     rows = rows or load_rows()
+     by = {r["slug"]: r for r in rows}
+     data = engine([by[s] for s in slugs])

@@ -4,6 +4,7 @@
     python3 tools/gen_scale_page.py <slug>            write scales/<slug>/index.html
     python3 tools/gen_scale_page.py <slug> --check    exit 1 if the file differs
     python3 tools/gen_scale_page.py <slug> --stdout   print the page
+    python3 tools/gen_scale_page.py <slug> <slug>...  several pages in one engine run (any flag above)
     python3 tools/gen_scale_page.py --hub             write scales/index.html (--check, --stdout too)
     python3 tools/gen_scale_page.py --fixture         write tests/fixtures/scale_pages_v1.json
     python3 tools/gen_scale_page.py --fixture --check exit 1 if the fixture drifted
@@ -520,10 +521,13 @@ def render(row, data, rows_by_slug, copy, alt=None):
 
 
 def pages_for(slugs, rows=None, copy=None):
+    if copy is not None and len(slugs) > 1:
+        raise ValueError("pages_for: one copy cannot serve %d slugs" % len(slugs))
     rows = rows or load_rows()
     by = {r["slug"]: r for r in rows}
     data = engine([by[s] for s in slugs])
-    return {s: render(by[s], data["rows"][s], by, copy or load_copy(by[s]), data["alt"].get(s)) for s in slugs}
+    return {s: render(by[s], data["rows"][s], by, copy if copy is not None else load_copy(by[s]),
+                      data["alt"].get(s)) for s in slugs}
 
 
 def page_for(slug, rows=None, copy=None):
@@ -569,9 +573,10 @@ def main(argv):
         return emit(FIXTURE, fixture_data(load_rows()), check, False)
     if "--hub" in argv:
         return emit(os.path.join(ROOT, "scales", "index.html"), hub_page(), check, stdout)
-    if len(args) != 1:
+    if not args:
         raise SystemExit(__doc__)
-    return emit(os.path.join(ROOT, "scales", args[0], "index.html"), page_for(args[0]), check, stdout)
+    pages = pages_for(args)
+    return max(emit(os.path.join(ROOT, "scales", s, "index.html"), pages[s], check, stdout) for s in args)
 
 
 if __name__ == "__main__":
