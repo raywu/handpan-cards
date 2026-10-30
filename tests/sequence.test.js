@@ -405,8 +405,8 @@ test("BASIC length is drawn 2 / 3 / 4 within 3 pp of 40/40/20 over 6,000 seeded 
 
 /* -------------------------------------------------------------- S1-7 */
 
-// A deck object built by hand, matching the app data model (CLAUDE.md "App
-// data model"): fields id -> [name, octave, midi, zone, angle, label], and
+// A deck object built by hand, matching the app data model (CLAUDE.md "Data
+// model"): fields id -> [name, octave, midi, zone, angle, label], and
 // chords[].{fields, roots} as arrays of field ids.
 function syntheticDeck(fields, chords) {
   return { id: "synthetic", fields: fields, chords: chords };

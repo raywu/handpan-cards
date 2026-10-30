@@ -1,0 +1,15 @@
+# kills: FT: a swipe then a tap flips exactly once
+# suite: node --test --test-name-pattern ^FT:.a.swipe.then.a.tap.flips.exactly.once$ tests/e2e.test.js
+# The capture-phase click listener no longer cancels the click that ends a drag, so the drag also flips the card.
+diff --git a/scales/d-kurd-9/index.html b/scales/d-kurd-9/index.html
+--- a/scales/d-kurd-9/index.html
++++ b/scales/d-kurd-9/index.html
+@@ -217,7 +217,7 @@
+ R[k].dispatchEvent(new Event("change", {bubbles: true}));
+ if (f) R[k].focus({preventScroll: true});
+ });
+-C.addEventListener("click", e => { if (hold) { hold = 0; e.preventDefault(); } }, true);
++C.addEventListener("click", e => { if (hold) { hold = 0; } }, true);
+ })();</script>
+ </main>
+ </body>

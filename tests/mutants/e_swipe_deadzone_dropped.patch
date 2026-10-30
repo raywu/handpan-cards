@@ -1,5 +1,5 @@
-# kills: a swipe shorter than the threshold does not navigate
-# suite: node --test --test-name-pattern ^a.swipe.shorter.than.the.threshold.does.not.navigate$ tests/e2e.test.js
+# kills: decision: a small drag below the commit distance does not navigate
+# suite: node --test --test-name-pattern ^decision..a.small.drag.below.the.commit.distance.does.not.navigate$ tests/swipe.test.js
 # The 18px deadzone collapses to any movement at all. The card is both the flip
 # target and the swipe target, so every tap whose thumb slides a pixel now flips
 # AND navigates, and the card the reader meant to turn over is gone.
@@ -10,15 +10,16 @@
 # Context-refreshed 2026-09-30 (S2): swipeDecision gained a dy parameter and
 # an axis-dominance guard (touch-action:none fix); the mutated line and its
 # line number both moved, the mutation itself is unchanged.
-diff --git a/index.html b/index.html
---- a/index.html
-+++ b/index.html
-@@ -14713,7 +14713,7 @@ function swipeDecision(dx, dy, vx) {
-   // SWIPE_* threshold, is what keeps a vertical drag from ever navigating.
-   if (Math.abs(dy) > Math.abs(dx)) return 0;
-   const fling = Math.abs(dx) > SWIPE_SLOP_PX && Math.abs(vx) > SWIPE_FLING_PX_MS && vx * dx > 0;
--  return Math.abs(dx) > SWIPE_COMMIT_PX || fling ? (dx < 0 ? 1 : -1) : 0;
-+  return Math.abs(dx) > 0 || fling ? (dx < 0 ? 1 : -1) : 0;
- }
- // Mouse momentum curve (docs/plans/2026-10-01-swipe-momentum.md, decision 2):
- // a cubic-bezier whose initial slope matches the release speed `v`, over the
+# Re-anchored to src/engine/swipe.js (App UX P1); the unit case in tests/swipe.test.js kills it.
+diff --git a/src/engine/swipe.js b/src/engine/swipe.js
+--- a/src/engine/swipe.js
++++ b/src/engine/swipe.js
+@@ -11,7 +11,7 @@ HPE.swipe = (function () {
+   function swipeDecision(dx, dy, vx) {
+     if (Math.abs(dy) > Math.abs(dx)) return 0;
+     const fling = Math.abs(dx) > SWIPE_SLOP_PX && Math.abs(vx) > SWIPE_FLING_PX_MS && vx * dx > 0;
+-    return Math.abs(dx) > SWIPE_COMMIT_PX || fling ? (dx < 0 ? 1 : -1) : 0;
++    return Math.abs(dx) > 0 || fling ? (dx < 0 ? 1 : -1) : 0;
+   }
+   function swipeOutTiming(vx, dir, dx, dist) {
+     const v = Math.max(-dir * vx, SWIPE_MOMENTUM_FLOOR_PX_MS);

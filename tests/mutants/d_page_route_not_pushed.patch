@@ -5,11 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13257,8 +13257,6 @@ function showSheet(opener) {
-   setInert(true, background);
+@@ -13541,9 +13541,7 @@ function showSheet(opener) {
    resyncSheet(true);
    applyKbOffset();
--  history.pushState({ scalePage: true }, "", sheetRoute());
+   if (reuseEntry) history.replaceState({ scalePage: true }, "", sheetRoute());
+-  else history.pushState({ scalePage: true }, "", sheetRoute());
+   reuseEntry = false;
 -  sheetRouted = true;
    // The owner's second request: do not steal focus into the box, so the whole
    // page is readable before anything is typed and no soft keyboard covers it.

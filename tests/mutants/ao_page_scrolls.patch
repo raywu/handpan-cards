@@ -4,9 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1297,7 +1297,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+@@ -1297,8 +1297,8 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
  #about li{margin:0 0 4px}
- #about a{color:#eae6df}
+ #about a{color:#e3b25c; font-weight:600; text-decoration:underline; text-decoration-thickness:1.5px; text-underline-offset:3px}
+ #about a:hover{text-decoration-thickness:2.5px}
  #about ul a, #about a[href^="mailto:"]{display:flex; align-items:center; min-height:44px}
 -html.about-open{overflow:hidden}
 +html.about-open{overflow:auto}

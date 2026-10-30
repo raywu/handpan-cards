@@ -1,0 +1,15 @@
+# kills: FT: a horizontal drag steps the chord, a slow 30px drag included
+# suite: node --test --test-name-pattern ^FT:.a.horizontal.drag.steps.the.chord,.a.slow.30px.drag.included$ tests/e2e.test.js
+# The injected touch-action:pan-y rule is dropped, so the browser may take a horizontal touch drag as a page pan.
+diff --git a/scales/d-kurd-9/index.html b/scales/d-kurd-9/index.html
+--- a/scales/d-kurd-9/index.html
++++ b/scales/d-kurd-9/index.html
+@@ -190,7 +190,7 @@
+ var P = document.querySelector(".prog"), C = P.querySelector(".cards");
+ var R = P.querySelectorAll("input[name=step]"), n = R.length, d, hold, t;
+ if (n < 2) return;
+-P.insertAdjacentHTML("afterbegin", "<style>.prog.sw .cards{touch-action:pan-y}</style>");
++P.insertAdjacentHTML("afterbegin", "");
+ P.classList.add("sw");
+ C.addEventListener("pointerdown", e => {
+ hold = 0; clearTimeout(t); d = 0;

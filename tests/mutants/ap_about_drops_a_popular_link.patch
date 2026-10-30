@@ -1,0 +1,14 @@
+# kills: About lists 16 popular scale links in five groups, each to an existing /scales/<slug>/ page, then the hub link
+# suite: node --test --test-name-pattern ^About.lists.16.popular.scale.links tests/app.test.js
+# One popular scale leaves the About list, so its page is no longer reachable from the app.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1515,7 +1515,6 @@
+   </ul>
+   <h4>Major and bright</h4>
+   <ul>
+-    <li><a href="/scales/d-sabye-9/">D Sabye 9 handpan chords</a></li>
+     <li><a href="/scales/d-aegean-18/">D Aegean 18 handpan chords</a></li>
+   </ul>
+   <h4>Middle Eastern and Japanese</h4>

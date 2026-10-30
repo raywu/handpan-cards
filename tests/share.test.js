@@ -2060,3 +2060,17 @@ test("PD: a palette 6 to 9 deck keeps the deck id of its palette 0 twin", () => 
     assert.equal(core.deckId(parsed(PD_SCALE, { palette }).fields), base);
   }
 });
+
+test("ANZ: the C# Annaziska 9 and 13 share links are pinned", () => {
+  const rows = [
+    ["(C#3) G#3 A3 B3 C#4 D#4 E4 F#4 G#4", "C# Annaziska 9", 0,
+      "6/(Cs3)_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4/C%23+Annaziska+9/24f03b"],
+    ["(C#3) [E3] [F#3] G#3 A3 B3 C#4 D#4 E4 F#4 G#4 [B4] [C#5]", "C# Annaziska 13", 1,
+      "6/(Cs3)_uE3_uFs3_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4_uB4_uCs5/C%23+Annaziska+13/palette-2/402803"],
+  ];
+  for (const [scale, name, palette, code] of rows) {
+    const seed = seedNew(scale, { name, palette });
+    assert.equal(encoded(seed), code, `${name} link`);
+    assert.deepStrictEqual(decoded(code), seed, `${name} link decodes`);
+  }
+});

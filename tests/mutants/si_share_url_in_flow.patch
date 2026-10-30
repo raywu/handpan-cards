@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -313,7 +313,7 @@ a.mode{text-decoration:none}
-    complete labels inside the link boxes (menu-resources AD7). */
- .modebar.duo{flex-wrap:nowrap}
+@@ -310,7 +310,7 @@ a.mode{text-decoration:none}
+ /* AD8: a wrapped label centres too (an <a> is start-aligned by default). */
+ #settings-panel .mode{text-align:center}
  #share-url{box-sizing:border-box; width:100%; min-height:44px; padding:0 10px; font:inherit; font-size:16px;
 -  position:absolute; left:0; right:0; top:44px; z-index:29;
 +  position:static; left:0; right:0; top:44px; z-index:29;
    background:#211d16; border:1px solid #433b2c; border-radius:8px; color:#eae6df}
  #share-url[hidden]{display:none}
- .modebar.duo .mode{min-width:0; padding-inline:6px; line-height:1.25}
+ #settings-trigger[aria-expanded="true"]{background:#f1ece1; color:#272219; border-color:#f1ece1}
