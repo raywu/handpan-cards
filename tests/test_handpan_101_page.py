@@ -135,7 +135,7 @@ class Handpan101PageTest(unittest.TestCase):
 
     def test_scale_links_resolve_to_existing_pages(self):
         hrefs = [a["href"] for t, a in page().tags if t == "a" and a.get("href", "").startswith("/scales/")]
-        self.assertIn("/scales/d-kurd-10/", hrefs)
+        self.assertIn("/scales/d-kurd-9/", hrefs)
         for href in hrefs:
             with self.subTest(href=href):
                 self.assertRegex(href, r"^/scales/[a-z0-9-]+/$")
@@ -148,7 +148,7 @@ class Handpan101PageTest(unittest.TestCase):
         self.assertEqual([re.sub(r"<[^>]+>", "", i) for i in items], [
             "D Amara (Celtic)", "D Kurd", "F Low Pygmy", "E Equinox", "F Magic Voyage"])
         hrefs = [re.findall(r'<a href="([^"]*)">', i) for i in items]
-        self.assertEqual(hrefs, [["/scales/d-amara-9/"], ["/scales/d-kurd-10/"], ["/scales/f-low-pygmy-9/"],
+        self.assertEqual(hrefs, [["/scales/d-amara-9/"], ["/scales/d-kurd-9/"], ["/scales/f-low-pygmy-9/"],
                                  ["/scales/e-equinox-9/"], ["/scales/f-magic-voyage-8/"]])
         self.assertIn('<a href="/scales/d-amara-9/">D Amara</a> (Celtic)', items[0])
 
