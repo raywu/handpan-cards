@@ -19798,16 +19798,17 @@ function run() {
       const r = s.querySelector(".cardhost").getBoundingClientRect();
       return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
     let lastTouch = 0;
-    const swipe = async (dx, dy, ms) => {
+    const swipe = async (dx, dy, ms, rest = 0) => {
       const c = await hostCenter();
       const t0 = Math.max(Date.now() / 1000, lastTouch + 0.05);
-      lastTouch = t0 + ms / 1000 + 0.001;
+      lastTouch = t0 + (ms + rest) / 1000 + 0.001;
       const at = (f) => [{ x: c.x + dx * f, y: c.y + dy * f }];
       await b.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: at(0), timestamp: t0 });
       for (let i = 1; i <= 6; i++) {
         await b.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: at(i / 6), timestamp: t0 + (ms * i) / 6000 });
       }
-      await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [], timestamp: t0 + ms / 1000 + 0.001 });
+      if (rest) await b.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: at(1), timestamp: t0 + (ms + rest) / 1000 });
+      await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [], timestamp: lastTouch });
       await new Promise((r) => setTimeout(r, 120));
     };
     const tapTouch = async () => {
@@ -19863,12 +19864,11 @@ function run() {
         assert.strictEqual(await flipped(), true, "a plain tap flips");
         await tapTouch();
         assert.strictEqual(await flipped(), false, "a second tap flips back");
-        await swipe(-60, 0, 150);
+        await swipe(-60, 0, 150, 150);
         assert.strictEqual(await stepIndex(), 2);
-        await b.eval(`document.querySelector(".prog .slot:nth-child(2) .cardhost").scrollIntoView({ block: "center" }); window.__l=[]; for (const t of ["pointerdown","pointerup","pointercancel","click","touchstart","touchend"]) addEventListener(t, (e)=>__l.push(t+":"+e.defaultPrevented+":"+(e.target.className||e.target.id)+":"+Math.round(e.clientX)+","+Math.round(e.clientY)+"@"+Math.round(e.timeStamp)), true); return true;`);
+        await b.eval(`document.querySelector(".prog .slot:nth-child(2) .cardhost").scrollIntoView({ block: "center" }); return true;`);
         await tapTouch();
-        const DIAG = JSON.stringify(await b.eval(`return [__l, scrollY, innerWidth, innerHeight, document.elementFromPoint(190,390) && document.elementFromPoint(190,390).tagName + "." + document.elementFromPoint(190,390).className, JSON.stringify(document.querySelector(".prog .slot:nth-child(2) .cardhost").getBoundingClientRect()), Math.round(performance.now())];`));
-        assert.strictEqual(await flipped(), true, "the tap right after a swipe flips once DIAG " + DIAG);
+        assert.strictEqual(await flipped(), true, "the tap right after a swipe flips once");
         await b.eval(`document.querySelector(".prog .slot:nth-child(2) .cardhost").shadowRoot.querySelector(".flip").checked = false; return true;`);
         await swipe(-60, 0, 150);
         assert.strictEqual(await stepIndex(), 3);
