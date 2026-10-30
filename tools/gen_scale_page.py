@@ -270,6 +270,43 @@ ul.rel a{display:flex;align-items:center;min-height:44px}
 section.related h2,section.group h2{color:var(--fg);font-size:20px;margin:0 0 4px}
 """
 
+SWIPE_CONSTANTS = {"COMMIT": 18, "FLING": 0.15, "WINDOW": 100, "SLOP": 10}
+
+SWIPE_JS = """(function(){
+var COMMIT = 18, FLING = 0.15, WINDOW = 100, SLOP = 10, abs = Math.abs;
+var P = document.querySelector(".prog"), C = P.querySelector(".cards");
+var R = P.querySelectorAll("input[name=step]"), n = R.length, d, hold, t;
+if (n < 2) return;
+P.insertAdjacentHTML("afterbegin", "<style>.prog.sw .cards{touch-action:pan-y}</style>");
+P.classList.add("sw");
+C.addEventListener("pointerdown", e => {
+hold = 0; clearTimeout(t); d = 0;
+if (e.isPrimary && e.clientX > 20 && e.clientX < innerWidth - 20) d = {x: e.clientX, y: e.clientY, h: [[e.timeStamp, e.clientX]]};
+});
+C.addEventListener("pointermove", e => {
+if (d) d.h.push([e.timeStamp, e.clientX]);
+});
+C.addEventListener("pointercancel", () => { d = 0; });
+C.addEventListener("pointerup", e => {
+if (!d) return;
+var x = e.clientX - d.x, y = e.clientY - d.y, h = d.h, a = h.pop(), b = a, k = 0;
+d = 0;
+for (var j of h) if (a[0] - j[0] <= WINDOW) { b = j; break; }
+var v = (a[1] - b[1]) / (a[0] - b[0]) || 0;
+var go = abs(y) <= abs(x) && (abs(x) > COMMIT || abs(x) > SLOP && abs(v) > FLING && v * x > 0);
+if (go || abs(x) > SLOP || abs(y) > SLOP) { hold = 1; t = setTimeout(() => { hold = 0; }, 350); }
+if (!go) return;
+while (k < n && !R[k].checked) k++;
+k += x < 0 ? 1 : -1;
+if (k < 0 || k == n) return;
+var f = P.contains(document.activeElement);
+R[k].checked = true;
+R[k].dispatchEvent(new Event("change", {bubbles: true}));
+if (f) R[k].focus({preventScroll: true});
+});
+C.addEventListener("click", e => { if (hold) { hold = 0; e.preventDefault(); } }, true);
+})();"""
+
 INDEX_CSS_HEAD = """:root{color-scheme:dark;--bg:#1a1815;--fg:#eae6df;--muted:#c4bcab;--r:#e3b25c}
 body{background:var(--bg);color:var(--fg);font-family:"Nunito Sans",system-ui,sans-serif;line-height:1.55;margin:0;padding:20px 16px 48px}
 main{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
@@ -474,7 +511,7 @@ def render(row, data, rows_by_slug, copy, alt=None):
     if not frozen:
         out.append('<p class="muted">Last updated <time datetime="%s">%s</time></p>\n' % (UPDATED, UPDATED))
     out.append('<p class="muted">Handpan Chords is free in your browser. Your scales stay on your device.</p>\n'
-               "</main>\n</body>\n</html>\n")
+               "<script>" + SWIPE_JS + "</script>\n</main>\n</body>\n</html>\n")
     return "".join(out)
 
 
