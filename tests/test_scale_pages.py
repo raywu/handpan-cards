@@ -693,7 +693,7 @@ class StepperTest(unittest.TestCase):
                     self.assertEqual(body.count('type="checkbox"'), 1)
                     self.assertIn('aria-label="Flip card: ', body)
                     front = re.search(r'<div class="face front">(.*?)</div></div><div class="face back">', body, re.S).group(1)
-                    self.assertIn("Tap to reveal the notes", front)
+                    self.assertNotIn("hint", front)
                     self.assertNotIn("<svg", front)
                     back = body.split('class="face back"')[1]
                     self.assertIn("<svg", back)
@@ -762,7 +762,7 @@ class SwipeScriptTest(unittest.TestCase):
     def test_the_driver_steps_on_a_horizontal_wheel_gesture(self):
         driver = gen.SWIPE_DRIVER
         self.assertIn('("wheel"', driver)
-        self.assertIn("passive:false", driver)
+        self.assertIn("passive:0", driver)
         self.assertIn("deltaX", driver)
 
     def test_prev_and_next_are_the_apps_arrows_and_keep_their_names(self):
@@ -791,6 +791,7 @@ class SwipeScriptTest(unittest.TestCase):
     @staticmethod
     def without_card_css(html):
         html = re.sub(r"<style>[^<]*</style>(?=<label class=\"wrap\">)", "<style></style>", html)
+        html = html.replace('<div class="hint">Tap to reveal the notes</div>', "")
         html = re.sub(r'<div class="nav">.*?</div></div>', '<div class="nav"></div></div>', html)
         html = re.sub(r"\.prog\{(?:--g:[^;]*;)?display:flex.*?\.slot:nth-child\(3\)\{outline:2px solid var\(--r\);outline-offset:2px\}",
                       ".prog{}", html, flags=re.S)
@@ -819,7 +820,7 @@ class SwipeScriptTest(unittest.TestCase):
         css = gen.CARD_CSS
         self.assertIn(".front{transform:rotateY(180deg)}", css)
         self.assertNotIn(".back{transform", css)
-        self.assertIn(".front .hint{display:none}", css)
+        self.assertNotIn(".hint", css)
 
     def test_every_row_page_regenerates_with_the_script(self):
         for slug in ROWS:

@@ -20087,6 +20087,55 @@ function run() {
       assert.strictEqual(await stepIndex(), 1, "a vertical gesture steps nothing");
     });
 
+    const wheelEv = (dx, dy, o = {}) => b.eval(`
+      const h = document.querySelector(".prog .slot:nth-child(1) .cardhost");
+      const e = new WheelEvent("wheel", { deltaX: ${dx}, deltaY: ${dy}, deltaMode: ${o.mode || 0}, ctrlKey: ${!!o.ctrl}, bubbles: true, cancelable: true });
+      h.dispatchEvent(e);
+      return { prevented: e.defaultPrevented, tf: h.style.transform };`);
+    const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+
+    test("scale page wheel: a gesture opening with a zero-delta event still steps once", async () => {
+      await mouseSetup("d-kurd-9", 1280, 800);
+      await wheelEv(0, 0);
+      for (let i = 0; i < 4; i++) await wheelEv(30, 0);
+      await pause(600);
+      assert.strictEqual(await stepIndex(), 2);
+    });
+
+    test("scale page wheel: a momentum tail after a step never fires a second step", async () => {
+      await mouseSetup("d-kurd-9", 1280, 800);
+      for (let i = 0; i < 4; i++) await wheelEv(30, 0);
+      for (let i = 0; i < 25; i++) { await wheelEv(6, 0); await pause(25); }
+      await pause(600);
+      assert.strictEqual(await stepIndex(), 2);
+    });
+
+    test("scale page wheel: the card follows deltaX below the threshold and springs back", async () => {
+      await mouseSetup("d-kurd-9", 1280, 800);
+      const r = await wheelEv(30, 0);
+      assert.strictEqual(r.prevented, true);
+      assert.match(r.tf, /translate3d\(-30px/);
+      await pause(400);
+      assert.strictEqual((await wheelEv(0, 0)).tf, "");
+      assert.strictEqual(await stepIndex(), 1);
+    });
+
+    test("scale page wheel: ctrlKey (pinch) never steps", async () => {
+      await mouseSetup("d-kurd-9", 1280, 800);
+      let r;
+      for (let i = 0; i < 6; i++) r = await wheelEv(30, 0, { ctrl: true });
+      await pause(500);
+      assert.strictEqual(r.prevented, false);
+      assert.strictEqual(await stepIndex(), 1);
+    });
+
+    test("scale page wheel: deltaMode 1 lines are scaled to pixels like the app", async () => {
+      await mouseSetup("d-kurd-9", 1280, 800);
+      await wheelEv(6, 0, { mode: 1 });
+      await pause(600);
+      assert.strictEqual(await stepIndex(), 2);
+    });
+
     test("FT: a sustained wheel stream that runs on through the fly-out steps exactly once, decaying or steady", async () => {
       for (const shape of ["decay", "steady"]) {
         await mouseSetup("d-kurd-9", 1280, 800);
