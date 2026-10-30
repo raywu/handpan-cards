@@ -19865,9 +19865,10 @@ function run() {
         assert.strictEqual(await flipped(), false, "a second tap flips back");
         await swipe(-60, 0, 150);
         assert.strictEqual(await stepIndex(), 2);
-        await b.eval(`document.querySelector(".prog .slot:nth-child(2) .cardhost").scrollIntoView({ block: "center" }); return true;`);
+        await b.eval(`document.querySelector(".prog .slot:nth-child(2) .cardhost").scrollIntoView({ block: "center" }); window.__l=[]; for (const t of ["pointerdown","pointerup","pointercancel","click","touchstart","touchend"]) addEventListener(t, (e)=>__l.push(t+":"+e.defaultPrevented+":"+(e.target.className||e.target.id)+":"+Math.round(e.clientX)+","+Math.round(e.clientY)+"@"+Math.round(e.timeStamp)), true); return true;`);
         await tapTouch();
-        assert.strictEqual(await flipped(), true, "the tap right after a swipe flips once");
+        const DIAG = JSON.stringify(await b.eval(`return [__l, scrollY, innerWidth, innerHeight, document.elementFromPoint(190,390) && document.elementFromPoint(190,390).tagName + "." + document.elementFromPoint(190,390).className, JSON.stringify(document.querySelector(".prog .slot:nth-child(2) .cardhost").getBoundingClientRect()), Math.round(performance.now())];`));
+        assert.strictEqual(await flipped(), true, "the tap right after a swipe flips once DIAG " + DIAG);
         await b.eval(`document.querySelector(".prog .slot:nth-child(2) .cardhost").shadowRoot.querySelector(".flip").checked = false; return true;`);
         await swipe(-60, 0, 150);
         assert.strictEqual(await stepIndex(), 3);
