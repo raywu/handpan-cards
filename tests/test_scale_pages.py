@@ -498,8 +498,7 @@ class ScalePagesTest(unittest.TestCase):
                     self.assertIn(colors["root"], body)
                     self.assertIn(colors["tone"], body)
                     self.assertRegex(body, r"background:\s*#fff")
-                    self.assertRegex(body, r"\.card\{[^}]*border:\s*3\.2px solid var\(--root\)")
-                    self.assertRegex(body, r"\.front\{[^}]*border:\s*3\.2px solid var\(--root\)")
+                    self.assertRegex(body, r"\.front,\.card\{[^}]*border:\s*3\.2px solid var\(--root\)")
                     self.assertNotIn("<script", body)
 
     def test_card_palette_matches_the_row(self):
@@ -702,18 +701,18 @@ class StepperTest(unittest.TestCase):
                     self.assertIn("-webkit-backface-visibility", body)
                     self.assertIn("preserve-3d", body)
 
-    def test_no_prev_label_on_step_one_and_no_next_label_on_step_three(self):
+    def test_both_arrows_on_every_step_and_they_wrap(self):
         for slug in ROWS:
             html = html_of(slug)
             with self.subTest(page=slug):
                 navs = re.findall(r'<div class="nav">(.*?)</div></div>', html)
                 self.assertEqual(len(navs), 3)
-                self.assertNotIn("PREV", navs[0])
+                self.assertIn('for="p3">PREV', navs[0])
                 self.assertIn('for="p2">NEXT', navs[0])
                 self.assertIn('for="p1">PREV', navs[1])
                 self.assertIn('for="p3">NEXT', navs[1])
                 self.assertIn('for="p2">PREV', navs[2])
-                self.assertNotIn("NEXT", navs[2])
+                self.assertIn('for="p1">NEXT', navs[2])
 
     def test_only_two_scripts_and_the_light_dom_progression_line_stays(self):
         for slug in ROWS:
@@ -792,7 +791,8 @@ class SwipeScriptTest(unittest.TestCase):
     @staticmethod
     def without_card_css(html):
         html = re.sub(r"<style>[^<]*</style>(?=<label class=\"wrap\">)", "<style></style>", html)
-        html = re.sub(r"\.prog\{display:flex.*?\.slot:nth-child\(3\)\{outline:2px solid var\(--r\);outline-offset:2px\}",
+        html = re.sub(r'<div class="nav">.*?</div></div>', '<div class="nav"></div></div>', html)
+        html = re.sub(r"\.prog\{(?:--g:[^;]*;)?display:flex.*?\.slot:nth-child\(3\)\{outline:2px solid var\(--r\);outline-offset:2px\}",
                       ".prog{}", html, flags=re.S)
         return re.sub(r"scroll-margin-top:min\(\d+px,", "scroll-margin-top:min(Npx,", html)
 

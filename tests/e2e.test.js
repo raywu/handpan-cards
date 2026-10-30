@@ -19375,7 +19375,7 @@ function run() {
         await b.send("Page.navigate", { url: pageUrl(slug) });
         await b.waitFor(`document.readyState === "complete" && document.querySelector(".prog .slot")`, { label: "stepper" });
         assert.deepStrictEqual(await visibleStep(), { n: 1, step: "Chord 1 of 3" });
-        assert.strictEqual(await b.eval(`return !![...document.querySelectorAll(".prog .nav label")].find((l) => l.textContent === "PREV" && l.offsetParent);`), false, "no PREV on step 1");
+        assert.strictEqual(await b.eval(`return !![...document.querySelectorAll(".prog .nav label")].find((l) => l.textContent === "PREV" && l.offsetParent);`), true, "PREV is drawn on step 1");
         const before = await cardRect();
         assert.strictEqual(await flipped(), false);
         assert.ok(rotationAmount(await faceTransform(".inner")) < 0.01, `unflipped .inner must be at identity, got ${await faceTransform(".inner")}`);
@@ -19387,11 +19387,11 @@ function run() {
         assert.ok(rotationAmount(await faceTransform(".front")) > 0.5, `.front must carry its rotateY(180deg), got ${await faceTransform(".front")}`);
         assert.deepStrictEqual(await cardRect(), before, "flip shifts nothing");
         const nav = await b.eval(`
-          const l = [...document.querySelectorAll(".prog .slot:nth-child(1) .nav label")][0];
+          const l = document.querySelector(".prog .slot:nth-child(1) .nav label:last-child");
           const r = l.getBoundingClientRect(); return { w: r.width, h: r.height, t: l.textContent };`);
         assert.strictEqual(nav.t, "NEXT");
         assert.ok(nav.w >= 44 && nav.h >= 44, "NEXT is a 44px target");
-        await tap(".prog .slot:nth-child(1) .nav label");
+        await tap(".prog .slot:nth-child(1) .nav label:last-child");
         assert.deepStrictEqual(await visibleStep(), { n: 1, step: "Chord 2 of 3" });
         assert.deepStrictEqual(await cardRect(), before, "stepping shifts nothing");
       });
@@ -19619,6 +19619,32 @@ function run() {
           }
         });
       }
+    }
+
+    for (const slug of ["d-kurd-9", "e-amara-20"]) {
+      test(`FT: ${slug} at 380x780: PREV and NEXT are drawn and step with wrap at the first, a middle and the last card, flipped or not`, async () => {
+        await b.setViewport(380, 780, true);
+        await loadPage(slug);
+        const n = await b.eval(`return document.querySelectorAll(".prog > input").length;`);
+        for (const [pos, flip] of [[1, false], [1, true], [2, false], [2, true], [n, false], [n, true]]) {
+          for (const [which, want] of [["first", pos === 1 ? n : pos - 1], ["last", pos === n ? 1 : pos + 1]]) {
+            await b.eval(`
+              document.querySelector("#p${pos}").checked = true;
+              const slot = document.querySelector(".prog .slot:nth-child(${pos})");
+              slot.querySelector(".cardhost").shadowRoot.querySelector(".flip").checked = ${flip};
+              return true;`);
+            const r = await b.eval(`
+              const l = document.querySelector(".prog .slot:nth-child(${pos}) .nav label:${which}-child");
+              if (!l) return null;
+              l.scrollIntoView({ block: "center" }); const a = l.getBoundingClientRect();
+              return { x: a.left + a.width / 2, y: a.top + a.height / 2, w: a.width, h: a.height, v: getComputedStyle(l).visibility };`);
+            assert.ok(r && r.w >= 56 && r.h >= 44 && r.v === "visible", `${which} arrow at card ${pos} (flipped ${flip}) is drawn`);
+            await tapXY("mouse", r.x, r.y);
+            await new Promise((res) => setTimeout(res, 200));
+            assert.strictEqual(await stepNow(), want, `${which} arrow at card ${pos} (flipped ${flip}) lands on ${want}`);
+          }
+        }
+      });
     }
 
     for (const [w, h] of [[844, 390], [380, 780], [1280, 800]]) {
@@ -20103,7 +20129,7 @@ function run() {
         assert.strictEqual(await stepIndex(), 1, "a swipe does nothing");
         await tapTouch();
         assert.strictEqual(await flipped(), true, "a tap flips");
-        await tap(".prog .slot:nth-child(1) .nav label");
+        await tap(".prog .slot:nth-child(1) .nav label:last-child");
         assert.strictEqual(await stepIndex(), 2, "NEXT steps");
       } finally {
         await b.send("Emulation.setTouchEmulationEnabled", { enabled: false });

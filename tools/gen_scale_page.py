@@ -327,6 +327,8 @@ CSS_EXTRA = """.prog{display:flex;flex-direction:column;align-items:center;gap:1
 .prog>input{-webkit-appearance:none;appearance:none;position:absolute;bottom:0;left:calc(50% - 28px);width:56px;height:44px;opacity:0;margin:0;z-index:1;pointer-events:none;cursor:pointer;-webkit-tap-highlight-color:transparent;scroll-margin-top:min(336px,calc(100vh - 44px));scroll-margin-top:min(336px,calc(100svh - 44px))}
 .prog>input:checked+input{left:auto;right:calc((100% - min(322px,100%))/2);pointer-events:auto}
 .prog>input:has(+input:checked){left:calc((100% - min(322px,100%))/2);pointer-events:auto}
+#p1:checked~input:last-of-type{left:calc((100% - min(322px,100%))/2);pointer-events:auto}
+.prog:has(>input:last-of-type:checked)>#p1{left:auto;right:calc((100% - min(322px,100%))/2);pointer-events:auto}
 .prog .nav label{pointer-events:none}
 .prog .cards{width:min(322px,100%)}
 .prog.sw .cards{touch-action:pan-y;-webkit-user-select:none;user-select:none}
@@ -352,15 +354,16 @@ CARD_CSS = """:host{display:block;width:min(322px,100%%);--root:%(root)s;--tone:
 @media (prefers-reduced-motion:reduce){.inner{transition:none}}
 .face{grid-area:1/1;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:12px;box-shadow:0 12px 34px rgba(0,0,0,.5), 0 2px 8px rgba(0,0,0,.4)}
 .front{transform:rotateY(180deg)}
-.front{box-sizing:border-box;background:#fff;color:#242424;border:3.2px solid var(--root);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:12px 8px;position:relative}
+.front,.card{box-sizing:border-box;background:#fff;color:#242424;border:3.2px solid var(--root)}
+.front{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:12px 8px;position:relative}
 .front .fdeg{position:absolute;top:12px;left:13px;font:600 9px/1.5 "Nunito Sans",system-ui,sans-serif;letter-spacing:.12em;color:var(--root)}
 .front .fname{font-family:Marcellus,serif;font-size:44px;line-height:1.1;color:var(--root);text-align:center}
 .front .hint{display:none}
-.card{box-sizing:border-box;width:100%%;background:#fff;color:#242424;border:3.2px solid var(--root);border-radius:12px;padding:12px 8px 13px;font-family:"Nunito Sans",system-ui,sans-serif}
+.card{width:100%%;border-radius:12px;padding:12px 8px 13px;font-family:"Nunito Sans",system-ui,sans-serif}
 .hdr{display:flex;justify-content:space-between;align-items:flex-start;padding:0 5px}
 .hdr .l{font:600 9px/1.5 "Nunito Sans",system-ui,sans-serif;letter-spacing:.12em}
 .hdr .l .num{color:#757575;font-weight:400}
-.hdr .l .deg{color:var(--root);font-weight:600;letter-spacing:.06em}
+.hdr .l .deg{color:var(--root);letter-spacing:.06em}
 .hdr .r{font:600 8px/1.3 "Nunito Sans",system-ui,sans-serif;letter-spacing:.11em;text-align:right;max-width:55%%;text-transform:uppercase}
 .diagwrap{padding:2px 6px 0}
 .diagwrap svg{width:100%%;height:auto;display:block}
@@ -387,8 +390,7 @@ def card_html(row, data, c, i, n):
         label += ": " + c["notes"]
     name_html = esc(c["main"]) + ("<sup>" + esc(c["sup"]) + "</sup>" if c["sup"] else "")
     fdeg = '<div class="fdeg">%s</div>' % esc(c["degree"]) if c["degree"] else ""
-    nav = '<span></span>' if i == 1 else '<label for="p%d">PREV</label>' % (i - 1)
-    nav += '<span></span>' if i == n else '<label for="p%d">NEXT</label>' % (i + 1)
+    nav = '<label for="p%d">PREV</label><label for="p%d">NEXT</label>' % (i - 1 or n, i % n + 1)
     return (
         '<div class="slot"><div class="step">Chord %d of %d</div>\n'
         '<div class="cardhost"><template shadowrootmode="open"><style>%s</style>'
