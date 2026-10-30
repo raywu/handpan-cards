@@ -4615,7 +4615,7 @@ describe("panel fit judge", () => {
     delete candOver.controls["deck-add"];
     assert.strictEqual(judge(baseOver, candOver).rule2.fail.length, 1, "a base that overflows does not excuse it");
     assert.strictEqual(judge(cell(), withControl(cell(), "deck-add", { exists: false, rendered: false, disabled: false, bottom: 0 })).rule2.fail.length, 1, "exists:false counts as lacking");
-    assert.strictEqual(pf.REMOVED_BY_DESIGN.length, 10, "the removed-by-design list is exactly the ten known ids");
+    assert.deepStrictEqual([...pf.REMOVED_BY_DESIGN].sort(), ["button:CHORD-ONLY PDF", "button:FULL DECK PDF", "modeS", "res-amy-bottom", "res-amy-progressions", "res-dingandtones", "res-handpan-helpers", "res-handpaner", "res-trainingcards", "share-copy"], "the removed-by-design list is exactly the ten known ids");
     assert.ok(!pf.REMOVED_BY_DESIGN.includes("button:DOWNLOAD PDF"), "a lost DOWNLOAD PDF is not removed by design");
     const noS = judge(cell(), lacks("modeS"));
     assert.strictEqual(noS.rule2.fail.length, 0, "modeS is removed by design");
