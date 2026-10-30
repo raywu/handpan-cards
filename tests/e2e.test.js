@@ -14924,6 +14924,32 @@ function run() {
       assert.ok(m.clip.includes("?share=x#deck="), m.clip);
     });
 
+    for (const kind of ["coarse", "fine"]) {
+      test(`NS: at 380x780 with a ${kind} pointer one tap on COPY LINK ${kind === "coarse" ? "calls navigator.share on the same tick" : "never calls navigator.share"}`, async () => {
+        await freshLoad();
+        await b.setViewport(380, 780, true);
+        await b.send("Emulation.setTouchEmulationEnabled", { enabled: kind === "coarse", maxTouchPoints: 5 });
+        try {
+          await b.settle();
+          const m = await b.eval(`
+            window.__shareCalls = 0; window.__shareArg = null;
+            navigator.share = (o) => { window.__shareCalls++; window.__shareArg = o; return new Promise(() => {}); };
+            document.getElementById("share-copy").click();
+            return { calls: window.__shareCalls, arg: window.__shareArg, href: location.href };
+          `);
+          if (kind === "coarse") {
+            assert.strictEqual(m.calls, 1, "navigator.share was not called on the tap's own tick");
+            assert.deepStrictEqual(m.arg, { url: m.href });
+          } else {
+            assert.strictEqual(m.calls, 0);
+          }
+        } finally {
+          await b.send("Emulation.setTouchEmulationEnabled", { enabled: false });
+          await b.setViewport(900, 900, false);
+        }
+      });
+    }
+
     test("edge 10: COPY LINK is a 44px target in the header at 320px and 380px with no horizontal overflow", async () => {
       await freshLoad();
       try {

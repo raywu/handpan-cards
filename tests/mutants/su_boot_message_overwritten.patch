@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15096,7 +15096,7 @@ function syncRoute() {
+@@ -15383,7 +15383,7 @@ function syncRoute() {
    const refused = route === "";
    shareCopy.disabled = refused;
    shareCopy.title = refused ? reason : "";
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +  if (refused && !routeRefused && true) say(reason, "warn");
    routeRefused = refused;
  }
- function copyLink() {
+ let sharePending = false;
