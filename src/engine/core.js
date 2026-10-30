@@ -1280,7 +1280,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   HPE.core = {
     LABEL_RULE: LABEL_RULE,
-    PROFILE_ENABLED: false,
+    PROFILE_ENABLED: true,
     readProfile: readProfile,
     migrateProfile: migrateProfile,
     proposeProfileMap: proposeProfileMap,
