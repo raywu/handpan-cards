@@ -1,0 +1,11 @@
+# kills: FT: a vertical mouse drag on the card makes no step and no flip
+# suite: node --test --test-name-pattern ^FT:.a.vertical.mouse.drag tests/e2e.test.js
+# The capture-phase click listener no longer cancels the click that ends a drag, so a vertical mouse drag also flips the card.
+diff --git a/scales/d-kurd-9/index.html b/scales/d-kurd-9/index.html
+--- a/scales/d-kurd-9/index.html
++++ b/scales/d-kurd-9/index.html
+@@ -258,3 +258,3 @@
+ L("wheel",e=>{var q=e.timeStamp,k=Q(),u;if(z)return;if(!w||q-w.t>160)w={s:0,x:abs(e.deltaX)>abs(e.deltaY)};w.t=q;if(!w.x||w.f)return;e.preventDefault();w.s+=e.deltaX;if(abs(w.s)>80){u=w.s>0?1:-1;w.f=1;if(m.matches)J(G(k,u));else Y(k,u,-w.s)}},{passive:false});
+-L("click",e=>{if(o){o=0;e.preventDefault()}},true);
++L("click",e=>{if(o){o=0}},true);
+ L("keydown",e=>{var s=e.key=="ArrowRight"?1:e.key=="ArrowLeft"?-1:0;if(s&&!z&&e.target.classList.contains("cardhost")){e.preventDefault();J(G(Q(),s))}});

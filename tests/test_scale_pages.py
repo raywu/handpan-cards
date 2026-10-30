@@ -691,12 +691,40 @@ class SwipeScriptTest(unittest.TestCase):
         for name in ("SLOP_PX", "FLING_WINDOW_MS", "OUT_MS", "OUT_EASE", "IN_MS", "IN_PX", "BACK_MS", "EASE", "xf", "releaseDecision"):
             self.assertIn("W." + name, driver)
 
+    def test_the_driver_steps_on_a_horizontal_wheel_gesture(self):
+        driver = gen.SWIPE_DRIVER
+        self.assertIn('("wheel"', driver)
+        self.assertIn("passive:false", driver)
+        self.assertIn("deltaX", driver)
+
+    def test_prev_and_next_are_the_apps_arrows_and_keep_their_names(self):
+        css = gen.CSS_EXTRA
+        self.assertIn("\\2190", css)
+        self.assertIn("\\2192", css)
+        self.assertIn("width:56px", css)
+        self.assertIn("border-radius:10px", css)
+        self.assertIn("background:#211d16", css)
+        self.assertIn("border:1px solid #433b2c", css)
+        self.assertIn("font-size:0", css)
+        for slug in ROWS:
+            html = read("scales/%s/index.html" % slug)
+            self.assertIn(">PREV</label>", html)
+            self.assertIn(">NEXT</label>", html)
+
+    def test_the_controls_sit_clear_of_the_practice_button(self):
+        self.assertRegex(gen.CSS_EXTRA, r"\.prog\{[^}]*margin-bottom:(2[4-9]|[3-9]\d)px")
+
+    def test_the_flip_toggles_aria_hidden_on_the_faces(self):
+        self.assertIn("ariaHidden", gen.SWIPE_DRIVER)
+
     def test_swipe_script_fits_its_budget(self):
         self.assertLessEqual(len(gen.SWIPE_JS.encode()), 5800)
 
     @staticmethod
     def without_card_css(html):
         html = re.sub(r"<style>[^<]*</style>(?=<label class=\"wrap\">)", "<style></style>", html)
+        html = re.sub(r"\.prog\{display:flex.*?\.slot:nth-child\(3\)\{outline:2px solid var\(--r\);outline-offset:2px\}",
+                      ".prog{}", html, flags=re.S)
         return re.sub(r"scroll-margin-top:min\(\d+px,", "scroll-margin-top:min(Npx,", html)
 
     def test_js_off_markup_is_unchanged(self):
