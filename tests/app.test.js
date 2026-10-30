@@ -808,7 +808,7 @@ test("GENERATE on a zero-chord pan refuses with a message, keeps the selection, 
 
 test("the share version guard rejects a newer payload with NEEDS_NEWER_APP", async () => {
   const app = boot();
-  const current = app.get("SHARE_VERSION");
+  const current = app.get("newestRecordVersion()");
   assert.strictEqual(app.get(`checkShareVersion(${current}).ok`), true);
   const res = plain(app.get(`checkShareVersion(${current + 1})`));
   assert.strictEqual(res.ok, false);
@@ -1363,7 +1363,7 @@ test("a newer share string reaches the user as section 2's NEEDS_NEWER_APP sente
   // is spelled out here rather than read out of the engine (CONTRACT rule 2).
   const VERSION_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
                         "abcdefghijklmnopqrstuvwxyz-_";
-  const newer = VERSION_CHARS.charAt(app.get("HPE.share.VERSION") + 1) +
+  const newer = VERSION_CHARS.charAt(app.get("HPE.share.PROFILE_VERSION") + 1) +
                 payload(url.value).slice(1);
   const res = openShare(app, newer);
   assert.strictEqual(res.ok, false);
@@ -9354,7 +9354,7 @@ test("RD: no DEGREES row - the served markup, ELEMENT_IDS and the app script car
   const body = html.slice(html.indexOf('<div class="sheetbody"'), html.indexOf('id="scale-guidance"'))
     .replace(/<!--[\s\S]*?-->/g, "");
   assert.deepStrictEqual([...body.matchAll(/class="editrow"(?: id="([^"]+)")?/g)].map((m) => m[1]),
-    ["scale-name-row", undefined, undefined],
+    ["scale-name-row", "scale-mode-row", undefined, undefined],
     "an .editrow other than the name row, the layout zone's own and the palette's is in .sheetbody");
   assert.ok(/class="editrow">\s*<span class="sheetlabel" id="scale-palette-label">/.test(body), "the last .editrow is not the palette's");
 
@@ -15225,8 +15225,8 @@ describe("I18N", () => {
     assert.strictEqual(contract.provenance.baselineCommit, "1510ea369573078e6296fe873edb6f538c3212a3");
     assert.strictEqual(contract.keyCount, 250);
     const savedKeys=["saved.ackPending","saved.conflict","saved.conflictDeleted","saved.failure","saved.importFailure","saved.legacy","saved.presetToken","saved.recovery","saved.resetConflict","saved.resetFailure","saved.savedToken","saved.separate","saved.session","saved.sessionAckPending","saved.sessionImportAckPending","saved.temporary"];
-    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],addedKeys=["panel.explore","header.share"];
-    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign) and header.share (native share)");
+    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],pairedKeys=["sheet.layout_mode","sheet.mode_standard","sheet.mode_paired","sheet.paired_hint","sheet.paired_count","sheet.paired_area_main","sheet.paired_area_small","sheet.paired_empty","sheet.paired_note_bottom","sheet.paired_note_in","sheet.reset_areas","sheet.areas_reset","sheet.paired_incomplete","reason.PROFILE_UNKNOWN","reason.PROFILE_MAP_INVALID","reason.PROFILE_NOTE_MISSING","reason.PROFILE_NOTE_TWICE","reason.PROFILE_FULL","reason.PROFILE_CONFLICT"],addedKeys=["panel.explore","header.share",...pairedKeys];
+    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign), header.share (native share) and the nineteen Paired areas keys (Neotone lane U)");
     for(const key of savedKeys)assert.strictEqual(typeof en[key],"string",key+" is a required new scalar message");
     const baseKeys=Object.keys(en).filter(key=>!savedKeys.includes(key)&&!addedKeys.includes(key)).concat(retiredKeys);
     assert.strictEqual(require("node:crypto").createHash("sha256")
@@ -18632,5 +18632,245 @@ describe("NS: native share", () => {
       const v = i18n(code)["header.share"];
       assert.ok(typeof v === "string" && v.length > 0, code);
     }
+  });
+});
+
+/* ---- Neotone lane U: Standard | Paired areas on the Layout tab ----
+ * Profile scales save as v5 records and share as v7 links. A profile record
+ * never carries `replaces` (owner rule I1), so a profile SAVE on a seeded scale
+ * is a separate custom entry and never a slot owner. */
+describe("PAU: paired areas sheet, saves and links", () => {
+  const areaSelects = (app) => app.els["scale-areas"].children.map((row) => row.children[1]);
+  const pickArea = (app, i, value) => {
+    const select = areaSelects(app)[i];
+    select.value = value;
+    select.onchange();
+  };
+  const openPaired = (app, text = AMARA_STRING) => {
+    openSheet(app);
+    app.type(text);
+    app.click(app.els["scale-tab-layout"]);
+    app.els["scale-mode-paired"].click();
+  };
+  const profileOf = (app, text, extra = {}) => plain(app.get(`(() => {
+    const s = HPE.core.parseSeed(${JSON.stringify(text)});
+    const p = HPE.layout.proposeProfile(s.value.fields);
+    return { palette: 1, ...${JSON.stringify(extra)}, profile: { id: "paired", rev: 1, map: p.value } };
+  })()`));
+  const entries = (app) => savedEnvelope(app).entries;
+  const OWNER = "00000000-0000-4000-8000-000000000001";
+
+  test("PAU1: the Layout tab offers Standard and Paired areas; Paired areas lists 18 areas, every note assigned", async () => {
+    const app = boot();
+    openSheet(app);
+    app.type(AMARA_STRING);
+    app.click(app.els["scale-tab-layout"]);
+    assert.strictEqual(app.els["scale-mode-row"].hidden, false);
+    assert.strictEqual(app.els["scale-mode-standard"].textContent, "STANDARD");
+    assert.strictEqual(app.els["scale-mode-paired"].textContent, "PAIRED AREAS");
+    assert.strictEqual(app.els["scale-mode-standard"].getAttribute("aria-pressed"), "true");
+    assert.strictEqual(app.els["scale-paired"].hidden, true);
+    app.els["scale-mode-paired"].click();
+    assert.strictEqual(app.els["scale-paired"].hidden, false);
+    assert.strictEqual(app.els["scale-standard"].hidden, true);
+    assert.strictEqual(app.els["scale-mode-paired"].getAttribute("aria-pressed"), "true");
+    const selects = areaSelects(app);
+    assert.strictEqual(selects.length, 18);
+    const notes = app.get("profileNoteList.length");
+    assert.strictEqual(selects.filter((s) => s.value !== "").length, notes);
+    assert.strictEqual(app.els["scale-paired-count"].textContent, `Assigned ${notes} of ${notes}`);
+    assert.strictEqual(selects[0].children[0].textContent, "Empty");
+    assert.strictEqual(app.els["scale-areas"].children[0].children[0].textContent, "Area 1 · main");
+    assert.strictEqual(app.els["scale-areas"].children[9].children[0].textContent, "Area 1 · small");
+  });
+
+  test("PAU2: Standard restores the draft and the sheet options carry no profile", async () => {
+    const app = boot();
+    openPaired(app);
+    assert.deepStrictEqual(Object.keys(plain(app.get("sheetOptions()"))).sort(), ["palette"],
+      "paired options hold no mirror, anchor, seats, angles or replaces");
+    app.els["scale-mode-standard"].click();
+    assert.strictEqual(app.els["scale-standard"].hidden, false);
+    assert.strictEqual(app.els["scale-paired"].hidden, true);
+    const o = plain(app.get("sheetOptions()"));
+    assert.ok("anchor" in o && "mirror" in o && "mirrorBottom" in o);
+    assert.strictEqual(app.get("commitOptions().profile"), undefined);
+  });
+
+  test("PAU3: an incomplete map blocks SAVE with the message and focuses the first empty area", async () => {
+    const app = boot();
+    openPaired(app);
+    const before = decks(app).length;
+    pickArea(app, 0, "");
+    assert.strictEqual(app.get("unassignedNotes().length"), 1);
+    await generateClick(app);
+    assert.strictEqual(decks(app).length, before, "nothing was saved");
+    assert.strictEqual(app.sheetOpen(), true);
+    assert.strictEqual(app.announcer().textContent, "Notes without an area: 1. Give each note an area.");
+    assert.strictEqual(app.get("document.activeElement === areasBox.children[0].children[1]"), true);
+  });
+
+  test("PAU4: a note already in another area is disabled in the other selects, and RESET AREAS restores the proposal", async () => {
+    const app = boot();
+    openPaired(app);
+    const proposal = plain(app.get("profileMap"));
+    const taken = proposal.find((k) => k !== null);
+    const at = proposal.indexOf(taken);
+    const other = areaSelects(app)[at === 0 ? 1 : 0].children.find((o) => o.value === taken);
+    assert.strictEqual(other.disabled, true);
+    pickArea(app, at, "");
+    assert.strictEqual(plain(app.get("profileMap"))[at], null);
+    app.els["scale-areas-reset"].click();
+    assert.deepStrictEqual(plain(app.get("profileMap")), proposal);
+    assert.strictEqual(app.get("document.activeElement === areasReset"), true);
+  });
+
+  test("PAU5: a paired SAVE writes a v5 record with the profile, no mirror, anchor or replaces", async () => {
+    const app = await durableBoot();
+    openPaired(app);
+    await generateClick(app);
+    await writeBarrier(app);
+    const rows = entries(app);
+    assert.strictEqual(rows.length, 1);
+    const r = rows[0].record;
+    assert.strictEqual(r.v, 5);
+    assert.strictEqual(r.o.profile.id, "paired");
+    assert.strictEqual(r.o.profile.rev, 1);
+    assert.strictEqual(r.o.profile.map.length, 18);
+    for (const name of ["mirror", "mirrorBottom", "anchor", "seats", "angles", "replaces"]) {
+      assert.strictEqual(name in r.o, false, name + " is absent from a profile record");
+    }
+    assert.ok(app.currentDeck().geom.place, "the saved deck is placed by area");
+  });
+
+  test("PAU6: a paired SAVE on a seeded scale is a separate custom entry, never a slot owner (rule I1)", async () => {
+    const app = await durableBoot();
+    const builtIn = decks(app)[0];
+    app.select(builtIn.id);
+    app.clickChip(builtIn.name);
+    app.click(app.els["scale-tab-layout"]);
+    app.els["scale-mode-paired"].click();
+    await generateClick(app);
+    await writeBarrier(app);
+    const env = savedEnvelope(app);
+    assert.strictEqual(env.entries.length, 1);
+    assert.strictEqual(env.entries[0].record.v, 5);
+    assert.strictEqual("replaces" in env.entries[0].record.o, false);
+    assert.deepStrictEqual(env.slots, {}, "no slot is owned");
+    assert.deepStrictEqual(env.hidden, [], "the seeded scale stays visible");
+    assert.ok(decks(app).some((d) => d.id === builtIn.id), "the seeded scale is still in the list");
+  });
+
+  test("PAU7: editing a profile scale and switching to Standard writes a v4 record without profile", async () => {
+    const app = await durableBoot();
+    openPaired(app);
+    await generateClick(app);
+    await writeBarrier(app);
+    assert.strictEqual(entries(app)[0].record.v, 5);
+    openEdit(app, { ...app.currentDeck(), instanceId: app.get("selection.id") });
+    app.click(app.els["scale-tab-layout"]);
+    assert.strictEqual(app.els["scale-mode-paired"].getAttribute("aria-pressed"), "true", "an edit of a profile scale opens in Paired areas");
+    app.els["scale-mode-standard"].click();
+    await generateClick(app);
+    await writeBarrier(app);
+    const rows = entries(app);
+    assert.strictEqual(rows.length, 1, "the edit replaced the row in place");
+    assert.strictEqual(rows[0].record.v, 4);
+    assert.strictEqual("profile" in rows[0].record.o, false);
+  });
+
+  test("PAU8: editing a profile scale keeps v5 and the edited map", async () => {
+    const app = await durableBoot();
+    openPaired(app);
+    await generateClick(app);
+    await writeBarrier(app);
+    openEdit(app, { ...app.currentDeck(), instanceId: app.get("selection.id") });
+    app.click(app.els["scale-tab-layout"]);
+    const map = plain(app.get("profileMap"));
+    const at = map.findIndex((k) => k !== null);
+    const taken = map[at];
+    const to = map.findIndex((k, i) => k === null && i > at);
+    pickArea(app, at, "");
+    pickArea(app, to, taken);
+    await generateClick(app);
+    await writeBarrier(app);
+    const rows = entries(app);
+    assert.strictEqual(rows.length, 1);
+    assert.strictEqual(rows[0].record.v, 5);
+    assert.strictEqual(rows[0].record.o.profile.map[at], null);
+    assert.strictEqual(rows[0].record.o.profile.map[to], taken);
+  });
+
+  test("PAU9: a slot-owning replacement edited into Paired areas saves a separate entry and keeps the owner", async () => {
+    const record = { v: 4, s: AMARA_STRING, o: { name: "MY AMARA", palette: 2, replaces: "amara" } };
+    const env = {
+      schema: 1, collectionId: "00000000-0000-4000-8000-00000000000a", revision: 1, slotStateRevision: 1,
+      entries: [{ instanceId: OWNER, revision: 1, displayOrdinal: 1, record }],
+      usedInstanceIds: [OWNER], nextDisplayOrdinal: 2,
+      preferredSelection: { kind: "saved", id: OWNER },
+      slots: { amara: OWNER }, hidden: [],
+      migration: { sourceKey: null, raw: { hpfc: null, "hpfc.scales": null, "hpfc.scales.v3": null }, instanceIds: [] },
+    };
+    const app = await durableBoot({ idbRaw: JSON.stringify(env) });
+    assert.strictEqual(app.currentDeck().name, "MY AMARA");
+    openEdit(app, { ...app.currentDeck(), instanceId: app.get("selection.id") });
+    app.click(app.els["scale-tab-layout"]);
+    app.els["scale-mode-paired"].click();
+    await generateClick(app);
+    await writeBarrier(app);
+    const after = savedEnvelope(app);
+    assert.strictEqual(after.entries.length, 2, "a separate entry was added");
+    const owner = after.entries.find((e) => e.instanceId === OWNER);
+    assert.deepStrictEqual(owner.record, record, "the slot owner is byte-identical");
+    assert.deepStrictEqual(after.slots, { amara: OWNER });
+    const added = after.entries.find((e) => e !== owner);
+    assert.strictEqual(added.record.v, 5);
+    assert.strictEqual("replaces" in added.record.o, false);
+  });
+
+  test("PAU10: readSavedRecord treats a v5 record with replaces as opaque, and a v5 without a profile or a v4 with one", async () => {
+    const app = boot();
+    const base = profileOf(app, AMARA_STRING);
+    const ok = (record) => app.get(`readSavedRecord(${JSON.stringify(record)}).ok`);
+    assert.strictEqual(ok({ v: 5, s: AMARA_STRING, o: base }), true);
+    assert.strictEqual(ok({ v: 5, s: AMARA_STRING, o: { ...base, replaces: "amara" } }), false);
+    assert.strictEqual(ok({ v: 5, s: AMARA_STRING, o: { palette: 1 } }), false, "v5 without a profile");
+    assert.strictEqual(ok({ v: 4, s: AMARA_STRING, o: base }), false, "v4 carrying a profile");
+  });
+
+  test("PAU11: savedCandidate refuses 5 without a profile and 4 with a profile, and a profile replace-builtin", async () => {
+    const app = boot();
+    const base = profileOf(app, AMARA_STRING);
+    const accepts = (v, withProfile, type = "import") => app.get(`(() => {
+      const o = ${JSON.stringify(withProfile ? base : { palette: 1 })};
+      const b = buildGenerated(${JSON.stringify(AMARA_STRING)}, o);
+      return savedCandidate({ type: ${JSON.stringify(type)}, candidate: { record: { ...scaleRecord(seedOf(b.value)), v: ${v} }, deck: b.value } }).ok;
+    })()`);
+    assert.strictEqual(accepts(5, true), true);
+    assert.strictEqual(accepts(4, false), true);
+    assert.strictEqual(accepts(5, false), false);
+    assert.strictEqual(accepts(4, true), false);
+    assert.strictEqual(accepts(5, true, "replace-builtin"), false);
+  });
+
+  test("PAU12: a v7 link decodes to a paired scale; a Standard scale still shares as a v6 link", async () => {
+    const app = boot();
+    const options = profileOf(app, AMARA_STRING);
+    const wire = (opts) => plain(app.get(`(() => { const s = HPE.core.parseSeed(${JSON.stringify(AMARA_STRING)}); return HPE.share.encode({ fields: s.value.fields, options: ${JSON.stringify(opts)} }); })()`));
+    const v7 = wire(options);
+    assert.strictEqual(v7.ok, true, v7.reason);
+    assert.strictEqual(v7.value.charAt(0), "7");
+    assert.strictEqual(wire({ palette: 1 }).value.charAt(0), "6", "an acoustic link is still a v6 link");
+    assert.strictEqual(app.get(`HPE.share.decode(${JSON.stringify(v7.value)}).value.options.profile.id`), "paired");
+  });
+
+  test("PAU13: the profile map joins a scale's saved meaning; an acoustic scale's meaning is unchanged", async () => {
+    const app = boot();
+    const meaning = (opts) => JSON.parse(app.get(`savedMeaning(buildGenerated(${JSON.stringify(AMARA_STRING)}, ${JSON.stringify(opts)}).value)`));
+    const acoustic = meaning({ palette: 1 });
+    const paired = meaning(profileOf(app, AMARA_STRING));
+    assert.strictEqual(paired.length, acoustic.length + 1, "only the map is appended");
+    assert.deepStrictEqual(paired.slice(0, acoustic.length).slice(2), acoustic.slice(2));
+    assert.strictEqual(paired[paired.length - 1].length, 18);
   });
 });
