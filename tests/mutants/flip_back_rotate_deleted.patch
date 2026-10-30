@@ -4,7 +4,16 @@
 diff --git a/scales/d-kurd-10/index.html b/scales/d-kurd-10/index.html
 --- a/scales/d-kurd-10/index.html
 +++ b/scales/d-kurd-10/index.html
-@@ -98,7 +98,7 @@
+@@ -89,25 +89,25 @@
+ <input type="radio" name="step" id="p2" aria-label="Chord 2 of 3: Gm">
+ <input type="radio" name="step" id="p3" aria-label="Chord 3 of 3: Am">
+ <div class="cards">
+ <div class="slot"><div class="step">Chord 1 of 3</div>
+ <div class="cardhost"><template shadowrootmode="open"><style>:host{display:block;width:min(322px,100%);--root:#2563B0;--tone:#C0452C}
+ .wrap{display:block;position:relative;perspective:1400px;cursor:pointer;min-height:44px}
+ .flip{position:absolute;inset:0;width:100%;height:100%;opacity:0;margin:0;cursor:pointer;z-index:1}
+ .inner{display:grid;transition:transform .45s cubic-bezier(.2,.7,.25,1);transform-style:preserve-3d}
+ .flip:checked+.inner{transform:rotateY(180deg)}
  .flip:focus-visible+.inner{outline:3px solid var(--root);outline-offset:3px;border-radius:12px}
  @media (prefers-reduced-motion:reduce){.inner{transition:none}}
  .face{grid-area:1/1;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:12px;box-shadow:0 12px 34px rgba(0,0,0,.5), 0 2px 8px rgba(0,0,0,.4)}
@@ -13,3 +22,12 @@ diff --git a/scales/d-kurd-10/index.html b/scales/d-kurd-10/index.html
  .front{box-sizing:border-box;background:#fff;color:#242424;border:3.2px solid var(--root);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:12px 8px;position:relative}
  .front .fdeg{position:absolute;top:12px;left:13px;font:600 9px/1.5 "Nunito Sans",system-ui,sans-serif;letter-spacing:.12em;color:var(--root)}
  .front .fname{font-family:Marcellus,serif;font-size:44px;line-height:1.1;color:var(--root);text-align:center}
+ .front .hint{display:none}
+ .card{box-sizing:border-box;width:100%;background:#fff;color:#242424;border:3.2px solid var(--root);border-radius:12px;padding:12px 8px 13px;font-family:"Nunito Sans",system-ui,sans-serif}
+ .hdr{display:flex;justify-content:space-between;align-items:flex-start;padding:0 5px}
+ .hdr .l{font:600 9px/1.5 "Nunito Sans",system-ui,sans-serif;letter-spacing:.12em}
+ .hdr .l .num{color:#757575;font-weight:400}
+ .hdr .l .deg{color:var(--root);font-weight:600;letter-spacing:.06em}
+ .hdr .r{font:600 8px/1.3 "Nunito Sans",system-ui,sans-serif;letter-spacing:.11em;text-align:right;max-width:55%;text-transform:uppercase}
+ .diagwrap{padding:2px 6px 0}
+ .diagwrap svg{width:100%;height:auto;display:block}
