@@ -1,0 +1,14 @@
+# kills: NS 5: a tap while a share is pending does nothing, and every settle path unlocks the button
+# suite: node --test --test-name-pattern ^NS.5: tests/app.test.js
+# An aborted share leaves the button locked.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15453,7 +15453,6 @@ function copyLink() {
+     sharePending = false;
+     done(t("share.shared"), "share");
+   }, e => {
+-    sharePending = false;
+     if (!e || e.name !== "AbortError") viaClipboard();
+   });
+ }
