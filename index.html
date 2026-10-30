@@ -9672,9 +9672,10 @@ HPE.swipe = (function () {
     if (reducedMotion) return { kind: "rest", dir, eatClick };
     return { kind: dir ? "fly" : "spring", dir, eatClick };
   }
-  function wheelTrack(peak, trough, ax) {
-    const p = Math.max(peak, ax), t = Math.min(trough, ax);
-    return { peak: p, trough: t, fresh: t * 3 < p && ax > Math.max(4, 2 * t) };
+  function wheelTrack(s, x) {
+    s.hi = Math.max(s.hi, x);
+    s.lo = Math.min(s.lo, x);
+    return s.lo * 3 < s.hi && x > Math.max(4, 2 * s.lo);
   }
   return {
     COMMIT_PX: SWIPE_COMMIT_PX, FLING_PX_MS: SWIPE_FLING_PX_MS, FLING_WINDOW_MS: SWIPE_FLING_WINDOW_MS,
@@ -15205,7 +15206,7 @@ const WHEEL_COMMIT_PX = 80, WHEEL_GESTURE_GAP_MS = 160;
 // querySelector("main") above - and the listener registration below is
 // guarded accordingly; the e2e suite drives a real browser where it resolves.
 const wheelMain = document.querySelector("main");
-let wheel = null; // { sx, axis, fired, skip, timer, peak, trough }
+let wheel = null; // { sx, axis, fired, skip, timer, hi, lo }
 // Pure: one wheel event against the live gesture `w`. kind: skip (gesture is
 // skipped for its whole duration) | pass (vertical-dominant, never claimed) |
 // hold (claimed, already fired) | follow (accumulate, card tracks the
@@ -15243,13 +15244,11 @@ function wheelGestureEnd() {
 }
 if (wheelMain) wheelMain.addEventListener("wheel", e => {
   if (e.ctrlKey) return; // pinch-zoom, not a swipe gesture
-  if (wheel && wheel.fired) {
+  if (wheel) {
     // The momentum tail keeps the gesture alive past the 160ms gap; a rise
     // out of its decayed trough is the next stroke, so it starts a gesture.
     const ax = Math.abs(e.deltaX) * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? window.innerHeight : 1);
-    const t = HPE.swipe.wheelTrack(wheel.peak, wheel.trough, ax);
-    wheel.peak = t.peak; wheel.trough = t.trough;
-    if (t.fresh) { clearTimeout(wheel.timer); wheel = null; }
+    if (HPE.swipe.wheelTrack(wheel, ax) && wheel.fired) { clearTimeout(wheel.timer); wheel = null; }
   }
   if (!wheel) {
     // A gesture that starts while a drag is live or the panel/sheet is open is
@@ -15257,7 +15256,7 @@ if (wheelMain) wheelMain.addEventListener("wheel", e => {
     // are ignored one by one below, so a stroke begun mid-flight still counts
     // once the card lands.
     const skip = !!(drag || panelOpen || sheetOpen || !order.length);
-    wheel = { sx: 0, axis: null, fired: false, skip, timer: null, peak: 0, trough: Infinity };
+    wheel = { sx: 0, axis: null, fired: false, skip, timer: null, hi: 0, lo: Infinity };
   }
   if (wheel.timer) clearTimeout(wheel.timer);
   wheel.timer = setTimeout(wheelGestureEnd, WHEEL_GESTURE_GAP_MS);
@@ -15270,10 +15269,9 @@ if (wheelMain) wheelMain.addEventListener("wheel", e => {
   e.preventDefault();
   if (d.kind === "hold" || flight) return;
   wheel.sx = d.sx;
-  wheel.peak = Math.max(wheel.peak, Math.abs(e.deltaX));
   if (d.kind === "commit") {
     wheel.fired = true;
-    wheel.trough = Infinity;
+    wheel.lo = Infinity;
     if (reducedMotion.matches) step(d.dir);
     else flyOut(d.dir, -d.sx);
   } else if (!reducedMotion.matches) {

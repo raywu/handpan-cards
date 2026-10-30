@@ -8,12 +8,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14972,7 +14972,7 @@ if (wheelMain) wheelMain.addEventListener("wheel", e => {
+@@ -15268,7 +15268,7 @@ if (wheelMain) wheelMain.addEventListener("wheel", e => {
    wheel.axis = d.axis;
    if (d.kind === "skip" || d.kind === "pass") return; // vertical-dominant: never claimed, never preventDefault-ed
    e.preventDefault();
--  if (d.kind === "hold") return;
-+  if (d.kind !== "hold") return;
+-  if (d.kind === "hold" || flight) return;
++  if (d.kind !== "hold" || flight) return;
    wheel.sx = d.sx;
+   wheel.peak = Math.max(wheel.peak, Math.abs(e.deltaX));
    if (d.kind === "commit") {
-     wheel.fired = true;

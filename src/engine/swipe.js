@@ -35,9 +35,10 @@ HPE.swipe = (function () {
     if (reducedMotion) return { kind: "rest", dir, eatClick };
     return { kind: dir ? "fly" : "spring", dir, eatClick };
   }
-  function wheelTrack(peak, trough, ax) {
-    const p = Math.max(peak, ax), t = Math.min(trough, ax);
-    return { peak: p, trough: t, fresh: t * 3 < p && ax > Math.max(4, 2 * t) };
+  function wheelTrack(s, x) {
+    s.hi = Math.max(s.hi, x);
+    s.lo = Math.min(s.lo, x);
+    return s.lo * 3 < s.hi && x > Math.max(4, 2 * s.lo);
   }
   return {
     COMMIT_PX: SWIPE_COMMIT_PX, FLING_PX_MS: SWIPE_FLING_PX_MS, FLING_WINDOW_MS: SWIPE_FLING_WINDOW_MS,
