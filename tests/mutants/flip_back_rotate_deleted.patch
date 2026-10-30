@@ -4,7 +4,9 @@
 diff --git a/scales/d-kurd-10/index.html b/scales/d-kurd-10/index.html
 --- a/scales/d-kurd-10/index.html
 +++ b/scales/d-kurd-10/index.html
-@@ -86,21 +86,21 @@
+@@ -89,25 +89,25 @@
+ <input type="radio" name="step" id="p2" aria-label="Chord 2 of 3: Gm">
+ <input type="radio" name="step" id="p3" aria-label="Chord 3 of 3: Am">
  <div class="cards">
  <div class="slot"><div class="step">Chord 1 of 3</div>
  <div class="cardhost"><template shadowrootmode="open"><style>:host{display:block;width:min(322px,100%);--root:#2563B0;--tone:#C0452C}
@@ -27,3 +29,5 @@ diff --git a/scales/d-kurd-10/index.html b/scales/d-kurd-10/index.html
  .hdr .l .num{color:#757575;font-weight:400}
  .hdr .l .deg{color:var(--root);font-weight:600;letter-spacing:.06em}
  .hdr .r{font:600 8px/1.3 "Nunito Sans",system-ui,sans-serif;letter-spacing:.11em;text-align:right;max-width:55%;text-transform:uppercase}
+ .diagwrap{padding:2px 6px 0}
+ .diagwrap svg{width:100%;height:auto;display:block}

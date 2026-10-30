@@ -14924,6 +14924,32 @@ function run() {
       assert.ok(m.clip.includes("?share=x#deck="), m.clip);
     });
 
+    for (const kind of ["coarse", "fine"]) {
+      test(`NS: at 380x780 with a ${kind} pointer one tap on COPY LINK ${kind === "coarse" ? "calls navigator.share on the same tick" : "never calls navigator.share"}`, async () => {
+        await freshLoad();
+        await b.setViewport(380, 780, true);
+        await b.send("Emulation.setTouchEmulationEnabled", { enabled: kind === "coarse", maxTouchPoints: 5 });
+        try {
+          await b.settle();
+          const m = await b.eval(`
+            window.__shareCalls = 0; window.__shareArg = null;
+            navigator.share = (o) => { window.__shareCalls++; window.__shareArg = o; return new Promise(() => {}); };
+            document.getElementById("share-copy").click();
+            return { calls: window.__shareCalls, arg: window.__shareArg, href: location.href };
+          `);
+          if (kind === "coarse") {
+            assert.strictEqual(m.calls, 1, "navigator.share was not called on the tap's own tick");
+            assert.deepStrictEqual(m.arg, { url: m.href });
+          } else {
+            assert.strictEqual(m.calls, 0);
+          }
+        } finally {
+          await b.send("Emulation.setTouchEmulationEnabled", { enabled: false });
+          await b.setViewport(900, 900, false);
+        }
+      });
+    }
+
     test("edge 10: COPY LINK is a 44px target in the header at 320px and 380px with no horizontal overflow", async () => {
       await freshLoad();
       try {
@@ -19384,7 +19410,7 @@ function run() {
         await b.waitFor(`(() => { const s = [...document.querySelectorAll(".prog .slot")].find((x) => getComputedStyle(x).display !== "none"); return getComputedStyle(s.querySelector(".cardhost").shadowRoot.querySelector(".inner")).transform.indexOf("matrix3d(-1") === 0; })()`, { label: "the flipped .inner to finish its rotateY" });
         await b.settle();
         assert.ok(rotationAmount(await faceTransform(".inner")) > 0.5, `flipped .inner must be rotated, got ${await faceTransform(".inner")}`);
-        assert.ok(rotationAmount(await faceTransform(".front")) > 0.5, `.front must carry its rotateY(180deg), got ${await faceTransform(".back")}`);
+        assert.ok(rotationAmount(await faceTransform(".front")) > 0.5, `.front must carry its rotateY(180deg), got ${await faceTransform(".front")}`);
         assert.deepStrictEqual(await cardRect(), before, "flip shifts nothing");
         const nav = await b.eval(`
           const l = [...document.querySelectorAll(".prog .slot:nth-child(1) .nav label")][0];
@@ -20038,6 +20064,52 @@ function run() {
       assert.strictEqual(await flipped(), false, "a short drag flips nothing");
       await tap(".prog .slot:nth-child(1) .cardhost");
       assert.strictEqual(await flipped(), true, "a plain click flips");
+    });
+
+    const wheelOn = async (dx, dy) => {
+      const c = await hostCenter();
+      await b.send("Input.dispatchMouseEvent", { type: "mouseWheel", x: c.x, y: c.y, deltaX: dx, deltaY: dy });
+    };
+
+    test("FT: a horizontal trackpad wheel gesture steps once per gesture, a vertical one and a short one step nothing", async () => {
+      await mouseSetup("d-kurd-9", 1280, 800);
+      for (const dx of [30, 30, 30, 30]) await wheelOn(dx, 0);
+      await new Promise((r) => setTimeout(r, 600));
+      assert.strictEqual(await stepIndex(), 2, "deltaX past 80 steps forward once");
+      for (const dx of [-30, -30, -30, -30]) await wheelOn(dx, 0);
+      await new Promise((r) => setTimeout(r, 600));
+      assert.strictEqual(await stepIndex(), 1, "negative deltaX steps back once");
+      await wheelOn(20, 0);
+      await new Promise((r) => setTimeout(r, 400));
+      assert.strictEqual(await stepIndex(), 1, "a short gesture steps nothing");
+      for (const dy of [60, 60, 60]) await wheelOn(0, dy);
+      await new Promise((r) => setTimeout(r, 400));
+      assert.strictEqual(await stepIndex(), 1, "a vertical gesture steps nothing");
+    });
+
+    test("FT: a sustained wheel stream that runs on through the fly-out steps exactly once, decaying or steady", async () => {
+      for (const shape of ["decay", "steady"]) {
+        await mouseSetup("d-kurd-9", 1280, 800);
+        const c = await hostCenter();
+        for (let i = 0; i < 50; i++) {
+          const dx = shape === "decay" ? Math.max(1, Math.round(45 * 0.9 ** i)) : 15;
+          await b.send("Input.dispatchMouseEvent", { type: "mouseWheel", x: c.x, y: c.y, deltaX: dx, deltaY: 0 });
+          await new Promise((r) => setTimeout(r, 30));
+        }
+        await new Promise((r) => setTimeout(r, 600));
+        assert.strictEqual(await stepIndex(), 2, shape + " stream: one step, not a second one after the fly");
+      }
+    });
+
+    test("FT: a vertical mouse drag on the card makes no step and no flip", async () => {
+      await mouseSetup("d-kurd-9", 1280, 800);
+      const c = await hostCenter();
+      await b.send("Input.dispatchMouseEvent", { type: "mousePressed", x: c.x, y: c.y, button: "left", buttons: 1, clickCount: 1 });
+      for (let i = 1; i <= 8; i++) await b.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: c.x, y: c.y + 10 * i, button: "left", buttons: 1 });
+      await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: c.x, y: c.y + 80, button: "left", clickCount: 1 });
+      await new Promise((r) => setTimeout(r, 450));
+      assert.strictEqual(await stepIndex(), 1, "no step");
+      assert.strictEqual(await flipped(), false, "the click ending a vertical drag does not flip");
     });
 
     test("FT: with scripts off NEXT still steps, a tap flips and a swipe does nothing", async () => {

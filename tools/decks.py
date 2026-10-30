@@ -402,8 +402,8 @@ def from_generated(payload):
         # --- palette --------------------------------------------------
         # The card border is a single-colour, four-sided frame in col_root
         # (2026-09-16 restyle). col_tone/grad still feed this dict - the `gb`
-        # plumbing stays wired on purpose (CLAUDE.md, "Design system",
-        # Palettes) - but neither draws the border any more.
+        # plumbing stays wired on purpose (CLAUDE.md, "Data model")
+        # - but neither draws the border any more.
         col_root=root,
         col_tone=tone,
         grad=(root, tone),

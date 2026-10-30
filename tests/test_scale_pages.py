@@ -317,13 +317,82 @@ class GeneratorTest(unittest.TestCase):
         self.assertEqual(run.returncode, 0, run.stderr)
 
     def test_a_differing_page_fails_check_with_one_message(self):
+        slug = "d-kurd-10"
         with tempfile.TemporaryDirectory() as tmp:
-            path = os.path.join(tmp, "index.html")
-            with open(path, "w", encoding="utf-8") as f:
+            for name in os.listdir(ROOT):
+                if name not in ("scales", "tools"):
+                    os.symlink(os.path.join(ROOT, name), os.path.join(tmp, name))
+            os.mkdir(os.path.join(tmp, "tools"))
+            for name in os.listdir(os.path.join(ROOT, "tools")):
+                os.symlink(os.path.join(ROOT, "tools", name), os.path.join(tmp, "tools", name))
+            page_dir = os.path.join(tmp, "scales", slug)
+            os.makedirs(page_dir)
+            copy = os.path.join(ROOT, "scales", slug, "copy.json")
+            if os.path.exists(copy):
+                os.symlink(copy, os.path.join(page_dir, "copy.json"))
+            with open(os.path.join(page_dir, "index.html"), "w", encoding="utf-8") as f:
                 f.write("stale")
+            run = subprocess.run([sys.executable, os.path.join(tmp, "tools", "gen_scale_page.py"), slug, "--check"],
+                                 capture_output=True, text=True)
+        self.assertEqual(run.returncode, 1, run.stderr)
+        self.assertEqual(run.stderr.count("differs from the generator"), 1, run.stderr)
+
+    def test_main_takes_several_slugs_in_one_run(self):
+        slugs = [s for s in ROWS if exists(s)][:2]
+        self.assertEqual(len(slugs), 2)
+        run = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "gen_scale_page.py")] + slugs + ["--check"],
+                             capture_output=True, text=True)
+        self.assertEqual(run.returncode, 0, run.stderr)
+
+    def test_main_boots_the_engine_once_for_several_slugs(self):
+        slugs = [s for s in ROWS if exists(s)][:2]
+        calls = []
+        real = gen.engine
+        gen.engine = lambda rows: calls.append(len(rows)) or real(rows)
+        try:
+            with contextlib.redirect_stdout(io.StringIO()) as out:
+                self.assertEqual(gen.main(slugs + ["--stdout"]), 0)
+        finally:
+            gen.engine = real
+        self.assertEqual(calls, [2])
+        for slug in slugs:
+            self.assertIn(read("scales/%s/index.html" % slug), out.getvalue())
+
+    def test_main_check_fails_when_any_of_several_slugs_differs(self):
+        slugs = [s for s in ROWS if exists(s)][:2]
+        real = gen.pages_for
+        gen.pages_for = lambda s, rows=None, copy=None: {k: v + "x" if k == slugs[1] else v
+                                                         for k, v in real(s, rows, copy).items()}
+        try:
             with contextlib.redirect_stderr(io.StringIO()) as err:
-                self.assertEqual(gen.emit(path, "fresh", True, False), 1)
-            self.assertIn("differs from the generator", err.getvalue())
+                self.assertEqual(gen.main(slugs + ["--check"]), 1)
+        finally:
+            gen.pages_for = real
+        self.assertEqual(err.getvalue().count("differs from the generator"), 1)
+
+    def test_pages_for_loads_each_slugs_own_copy(self):
+        slugs = [s for s in ROWS if exists(s)][:2]
+        loaded = []
+        real = gen.load_copy
+        gen.load_copy = lambda row: loaded.append(row["slug"]) or real(row)
+        try:
+            pages = gen.pages_for(slugs)
+        finally:
+            gen.load_copy = real
+        self.assertEqual(loaded, slugs)
+        for slug in slugs:
+            self.assertEqual(pages[slug], read("scales/%s/index.html" % slug))
+
+    def test_pages_for_refuses_one_copy_shared_across_several_slugs(self):
+        slugs = [s for s in ROWS if exists(s)][:2]
+        copy = gen.load_copy({"slug": slugs[0]})
+        with self.assertRaises(ValueError):
+            gen.pages_for(slugs, copy=copy)
+
+    def test_pages_for_uses_a_passed_copy_for_a_single_slug(self):
+        slug = [s for s in ROWS if exists(s)][0]
+        copy = gen.load_copy({"slug": slug})
+        self.assertEqual(gen.pages_for([slug], copy=copy)[slug], read("scales/%s/index.html" % slug))
 
     def test_the_card_fixture_has_not_drifted_from_the_engine(self):
         self.assertEqual(gen.fixture_data(gen.load_rows()), read("tests/fixtures/scale_pages_v1.json"))
@@ -691,12 +760,40 @@ class SwipeScriptTest(unittest.TestCase):
         for name in ("SLOP_PX", "FLING_WINDOW_MS", "OUT_MS", "OUT_EASE", "IN_MS", "IN_PX", "BACK_MS", "EASE", "xf", "releaseDecision"):
             self.assertIn("W." + name, driver)
 
+    def test_the_driver_steps_on_a_horizontal_wheel_gesture(self):
+        driver = gen.SWIPE_DRIVER
+        self.assertIn('("wheel"', driver)
+        self.assertIn("passive:false", driver)
+        self.assertIn("deltaX", driver)
+
+    def test_prev_and_next_are_the_apps_arrows_and_keep_their_names(self):
+        css = gen.CSS_EXTRA
+        self.assertIn("\\2190", css)
+        self.assertIn("\\2192", css)
+        self.assertIn("width:56px", css)
+        self.assertIn("border-radius:10px", css)
+        self.assertIn("background:#211d16", css)
+        self.assertIn("border:1px solid #433b2c", css)
+        self.assertIn("font-size:0", css)
+        for slug in ROWS:
+            html = read("scales/%s/index.html" % slug)
+            self.assertIn(">PREV</label>", html)
+            self.assertIn(">NEXT</label>", html)
+
+    def test_the_controls_sit_clear_of_the_practice_button(self):
+        self.assertRegex(gen.CSS_EXTRA, r"\.prog\{[^}]*margin-bottom:(2[4-9]|[3-9]\d)px")
+
+    def test_the_flip_toggles_aria_hidden_on_the_faces(self):
+        self.assertIn("ariaHidden", gen.SWIPE_DRIVER)
+
     def test_swipe_script_fits_its_budget(self):
         self.assertLessEqual(len(gen.SWIPE_JS.encode()), 5800)
 
     @staticmethod
     def without_card_css(html):
         html = re.sub(r"<style>[^<]*</style>(?=<label class=\"wrap\">)", "<style></style>", html)
+        html = re.sub(r"\.prog\{display:flex.*?\.slot:nth-child\(3\)\{outline:2px solid var\(--r\);outline-offset:2px\}",
+                      ".prog{}", html, flags=re.S)
         return re.sub(r"scroll-margin-top:min\(\d+px,", "scroll-margin-top:min(Npx,", html)
 
     def test_js_off_markup_is_unchanged(self):

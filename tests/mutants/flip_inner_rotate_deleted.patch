@@ -4,7 +4,9 @@
 diff --git a/scales/d-kurd-10/index.html b/scales/d-kurd-10/index.html
 --- a/scales/d-kurd-10/index.html
 +++ b/scales/d-kurd-10/index.html
-@@ -82,21 +82,21 @@
+@@ -85,25 +85,25 @@
+ <h2>D Kurd 10</h2><p class="muted">D3 ding, A3 Bb3 C4 D4 E4 F4 G4 A4 C5</p>
+ <p>Starter progression: <b>Dm, Gm, Am</b> (i, iv, v), top shell only. Try it with the <a href="https://www.youtube.com/shorts/YcmgdgZTpHc" target="_blank" rel="noopener">7 different ways to play chords</a>.</p>
  <div class="prog" role="radiogroup" aria-label="Chord steps">
  <input type="radio" name="step" id="p1" checked aria-label="Chord 1 of 3: Dm">
  <input type="radio" name="step" id="p2" aria-label="Chord 2 of 3: Gm">
@@ -27,3 +29,5 @@ diff --git a/scales/d-kurd-10/index.html b/scales/d-kurd-10/index.html
  .front .hint{display:none}
  .card{box-sizing:border-box;width:100%;background:#fff;color:#242424;border:3.2px solid var(--root);border-radius:12px;padding:12px 8px 13px;font-family:"Nunito Sans",system-ui,sans-serif}
  .hdr{display:flex;justify-content:space-between;align-items:flex-start;padding:0 5px}
+ .hdr .l{font:600 9px/1.5 "Nunito Sans",system-ui,sans-serif;letter-spacing:.12em}
+ .hdr .l .num{color:#757575;font-weight:400}

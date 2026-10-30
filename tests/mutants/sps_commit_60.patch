@@ -4,7 +4,7 @@
 diff --git a/scales/d-kurd-9/index.html b/scales/d-kurd-9/index.html
 --- a/scales/d-kurd-9/index.html
 +++ b/scales/d-kurd-9/index.html
-@@ -190,7 +190,7 @@
+@@ -195,7 +195,7 @@
  var HPE = (typeof HPE !== "undefined") ? HPE : {};
  HPE.swipe = (function () {
    "use strict";

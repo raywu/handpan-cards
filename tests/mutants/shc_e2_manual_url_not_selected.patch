@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15125,7 +15125,7 @@ function copyLink() {
+@@ -15430,7 +15430,7 @@ function copyLink() {
      shareUrl.removeAttribute("hidden");
      shareUrl.focus();
      if (!current()) return;
 -    shareUrl.select();
 +    // Fault: leave the URL unselected.
      if (noticeRevision === announcementRevision) {
-       say("SELECT THE LINK AND COPY IT", "warn");
+       say(t("share.select"), "warn");
        noticeRevision = announcementRevision;

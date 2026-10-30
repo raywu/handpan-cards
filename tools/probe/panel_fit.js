@@ -88,11 +88,10 @@ function langAllowance(baseControls, candControls) {
 // LS (short iPhone landscape): mode S, with the progression note, takes an explicit
 // two-column grid at 300 to 359px tall and 740px wide and up, and may scroll there.
 // The base's auto-fit grid fits at 845px and up only by splitting a long label mid-word.
-// Kept at 340 without a fresh run: the lane shell cannot reproduce the real-font
-// measurement (the figure below is the last one taken), and the band is unchanged.
+// Trial 340 -> 320 (RP8-R1, A-N4): the panel fit (real) job passed at 320 on validate run 41042689986.
 // Measured as the growth of the needed height (194px of needed height and 340px of control bottom, lang-select, at 320px tall, real fonts). Rules 1 and 2,
 // mode S, inside that band only.
-const LS_S_ALLOWANCE_PX = 340;
+const LS_S_ALLOWANCE_PX = 320;
 function lsAllowance(w, h, m) {
   return m === "S" && w >= 740 && h >= 300 && h < 360 ? LS_S_ALLOWANCE_PX : 0;
 }
