@@ -9872,6 +9872,14 @@ HPE.swipe = (function () {
     if (reducedMotion) return { kind: "rest", dir, eatClick };
     return { kind: dir ? "fly" : "spring", dir, eatClick };
   }
+  function wheelTrack(s, x) {
+    s.hi = Math.max(s.hi, x);
+    if (x) s.lo = Math.min(s.lo, x);
+    const up = s.lo * 3 < s.hi && x > Math.max(4, 2 * s.lo);
+    const go = up && s.r;
+    s.r = up;
+    return go;
+  }
   return {
     COMMIT_PX: SWIPE_COMMIT_PX, FLING_PX_MS: SWIPE_FLING_PX_MS, FLING_WINDOW_MS: SWIPE_FLING_WINDOW_MS,
     SLOP_PX: SWIPE_SLOP_PX, TILT_DEG_PER_PX: SWIPE_TILT_DEG_PER_PX, TILT_MAX_DEG: SWIPE_TILT_MAX_DEG,
@@ -9880,7 +9888,7 @@ HPE.swipe = (function () {
     MOMENTUM_MIN_MS: SWIPE_MOMENTUM_MIN_MS, MOMENTUM_MAX_MS: SWIPE_MOMENTUM_MAX_MS,
     MOMENTUM_FLOOR_PX_MS: SWIPE_MOMENTUM_FLOOR_PX_MS,
     decision: swipeDecision, outTiming: swipeOutTiming, tilt: swipeTilt, xf: swipeXf,
-    releaseDecision: releaseDecision
+    releaseDecision: releaseDecision, wheelTrack: wheelTrack
   };
 })();
 </script>
@@ -15402,7 +15410,7 @@ const WHEEL_COMMIT_PX = 80, WHEEL_GESTURE_GAP_MS = 160;
 // querySelector("main") above - and the listener registration below is
 // guarded accordingly; the e2e suite drives a real browser where it resolves.
 const wheelMain = document.querySelector("main");
-let wheel = null; // { sx, axis, fired, skip, timer }
+let wheel = null; // { sx, axis, fired, skip, timer, hi, lo }
 // Pure: one wheel event against the live gesture `w`. kind: skip (gesture is
 // skipped for its whole duration) | pass (vertical-dominant, never claimed) |
 // hold (claimed, already fired) | follow (accumulate, card tracks the
@@ -15430,7 +15438,7 @@ function wheelGestureEnd() {
   if (!wheel) return;
   const w = wheel;
   wheel = null;
-  const end = wheelEndDecision({ skip: w.skip, fired: w.fired, reducedMotion: reducedMotion.matches });
+  const end = wheelEndDecision({ skip: w.skip || !!flight, fired: w.fired, reducedMotion: reducedMotion.matches });
   if (end === "rest") swipeRest();
   // The follow transform during the gesture is swipeXf(-w.sx) (see the
   // listener below); springBack's own first keyframe is swipeXf(dx), so it
@@ -15440,13 +15448,19 @@ function wheelGestureEnd() {
 }
 if (wheelMain) wheelMain.addEventListener("wheel", e => {
   if (e.ctrlKey) return; // pinch-zoom, not a swipe gesture
+  if (wheel) {
+    // The momentum tail keeps the gesture alive past the 160ms gap; a rise
+    // out of its decayed trough is the next stroke, so it starts a gesture.
+    const ax = Math.abs(e.deltaX) * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? window.innerHeight : 1);
+    if (HPE.swipe.wheelTrack(wheel, ax) && wheel.fired) { clearTimeout(wheel.timer); wheel = null; }
+  }
   if (!wheel) {
-    // A gesture that starts while a flight/drag is live or the panel/sheet
-    // is open is skipped for its whole duration (the flag persists until
-    // the 160ms gap, not just for this event), so wheel momentum arriving
-    // right after a flight lands cannot start a fresh gesture and double-step.
-    const skip = !!(flight || drag || panelOpen || sheetOpen || !order.length);
-    wheel = { sx: 0, axis: null, fired: false, skip, timer: null };
+    // A gesture that starts while a drag is live or the panel/sheet is open is
+    // skipped for its whole duration. A flight does not skip it: its events
+    // are ignored one by one below, so a stroke begun mid-flight still counts
+    // once the card lands.
+    const skip = !!(drag || panelOpen || sheetOpen || !order.length);
+    wheel = { sx: 0, axis: null, fired: false, skip, timer: null, hi: 0, lo: Infinity };
   }
   if (wheel.timer) clearTimeout(wheel.timer);
   wheel.timer = setTimeout(wheelGestureEnd, WHEEL_GESTURE_GAP_MS);
@@ -15457,10 +15471,11 @@ if (wheelMain) wheelMain.addEventListener("wheel", e => {
   wheel.axis = d.axis;
   if (d.kind === "skip" || d.kind === "pass") return; // vertical-dominant: never claimed, never preventDefault-ed
   e.preventDefault();
-  if (d.kind === "hold") return;
+  if (d.kind === "hold" || flight) return;
   wheel.sx = d.sx;
   if (d.kind === "commit") {
     wheel.fired = true;
+    wheel.lo = Infinity;
     if (reducedMotion.matches) step(d.dir);
     else flyOut(d.dir, -d.sx);
   } else if (!reducedMotion.matches) {

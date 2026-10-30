@@ -20187,6 +20187,38 @@ function run() {
       assert.strictEqual(await stepIndex(), 2);
     });
 
+    const stroke = async (dxs, ms = 16) => { for (const dx of dxs) { await wheelEv(dx, 0); await pause(ms); } };
+
+    test("scale page wheel: SW2 A two swipes back to back, each with a tail, advance two cards", async () => {
+      await mouseSetup("d-kurd-9", 1280, 800);
+      await stroke([30, 30, 30, 20, 10, 5, 3, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
+      await stroke([30, 30, 30, 20, 10, 5, 3, 2, 1, 1]);
+      await pause(600);
+      assert.strictEqual(await stepIndex(), 3);
+    });
+
+    test("scale page wheel: SW2 B one swipe with a long monotone tail with flat repeats steps once", async () => {
+      await mouseSetup("d-kurd-9", 1280, 800);
+      await stroke([30, 30, 30, 25, 25, 20, 20, 15, 15, 10, 10, 6, 6, 3, 3, 2, 2, 1, 1, 1, 0, 0], 30);
+      await pause(600);
+      assert.strictEqual(await stepIndex(), 2);
+    });
+
+    test("scale page wheel: SW2 C a small bump above a third of the peak does not start a gesture", async () => {
+      await mouseSetup("d-kurd-9", 1280, 800);
+      await stroke([11, 11, 11, 11, 11, 11, 11, 11, 10, 8, 6, 5, 4, 5, 4, 4, 3, 2, 1], 30);
+      await pause(600);
+      assert.strictEqual(await stepIndex(), 2);
+    });
+
+    test("scale page wheel: SW2 D a second stroke begun during the flight counts once the card lands", async () => {
+      await mouseSetup("d-kurd-9", 1280, 800);
+      await stroke([30, 30, 30, 5, 2, 1]);
+      await stroke(Array(20).fill(30), 20);
+      await pause(600);
+      assert.strictEqual(await stepIndex(), 3);
+    });
+
     test("scale page wheel: the card follows deltaX below the threshold and springs back", async () => {
       await mouseSetup("d-kurd-9", 1280, 800);
       const r = await wheelEv(30, 0);

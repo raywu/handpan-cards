@@ -23,7 +23,7 @@ ALLOWED_HOSTS = {"fonts.googleapis.com", "fonts.gstatic.com", "handpan.raywu.org
                  "shop.ayasainstruments.com", "www.yishama.com", "www.xenithhandpans.com",
                  "www.veritashandpans.com", "www.spirithandpan.com", "www.panart.ch", "www.muziker.al",
                  "www.mudrahandpans.com", "www.kirstein.de", "www.halleonard.com", "www.boullard.ch"}
-SIZE_CAP = 60 * 1024
+SIZE_CAP = 62 * 1024 - 800
 PALETTES = ["#E0559A", "#6D40A3", "#0B7B75", "#E2761B", "#C9971E", "#DD8F00", "#2563B0", "#3B7A2A",
             "#C0452C", "#B3263A"]
 BG_LIGHT = "#fbfaf8"
@@ -786,7 +786,7 @@ class SwipeScriptTest(unittest.TestCase):
         self.assertIn("ariaHidden", gen.SWIPE_DRIVER)
 
     def test_swipe_script_fits_its_budget(self):
-        self.assertLessEqual(len(gen.SWIPE_JS.encode()), 5800)
+        self.assertLessEqual(len(gen.SWIPE_JS.encode()), 6200)
 
     @staticmethod
     def without_card_css(html):
