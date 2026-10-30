@@ -396,7 +396,7 @@ def from_generated(payload):
         warnings=warnings,
         # --- geometry and baselines -------------------------------------
         R=(hifi.profile_radius(generated["geom"], _BAND_HALF)
-           or round(_BAND_HALF / ext, 1)),
+           if generated["geom"].get("place") else round(_BAND_HALF / ext, 1)),
         cy=_BAND_CY,
         y_note=_Y_NOTE,
         y_num=_Y_NUM,

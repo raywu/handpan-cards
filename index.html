@@ -11266,25 +11266,25 @@ function pan(d, ch, opts) {
   const sets = ch ? chordSets(d, ch) : { blue: new Set(), green: new Set() };
   const { blue, green } = sets;
   const C = d.colors;
-  // A paired-area profile deck is drawn from geom.place: its acoustic ext,
-  // bottom, inner_ring, r_note and n_* are stale and must not be read.
-  const placed = g.place || null;
-  const PD = HPE.pdfcards.PROFILE_DRAW;
-  const hasBottom = !!g.bottom && !placed;
+  const hasBottom = !!g.bottom;
   // Generated decks carry the solver's own extent (ENGINE-SPEC section 11);
   // the built-in geom literals have no ext key, so they keep the derivation.
-  const ext = placed ? R * HPE.pdfcards.profileExtent(g)
-            : g.ext ? R * g.ext
+  const ext = g.ext ? R * g.ext
             : hasBottom ? R * (g.bottom + g.r_bnote + g.n_out) + 14 : R * 1.06;
   // data-ext travels with the interactive layer because the hit radius can only
   // be computed from the MEASURED width, and the sizer needs the viewBox scale
   // to convert CSS pixels into it. The card path emits neither.
-  let s = `<svg viewBox="${-ext} ${-ext} ${2*ext} ${2*ext}"${
-    interactive ? ` data-ext="${ext}"` : ""} xmlns="http://www.w3.org/2000/svg">`;
+  // A paired-area profile deck is drawn from geom.place on the print extent:
+  // its acoustic ext, bottom, inner_ring, r_note and n_* are stale, unread.
+  const placed = g.place || null;
+  const PD = HPE.pdfcards.PROFILE_DRAW;
+  const vb = placed ? R * HPE.pdfcards.profileExtent(g) : ext;
+  let s = `<svg viewBox="${-vb} ${-vb} ${2*vb} ${2*vb}"${
+    interactive ? ` data-ext="${vb}"` : ""} xmlns="http://www.w3.org/2000/svg">`;
 
   const P = (orb, ang) => [orb * Math.cos(ang * Math.PI / 180), -orb * Math.sin(ang * Math.PI / 180)];
 
-  if (hasBottom)
+  if (hasBottom && !placed)
     s += `<circle r="${R*g.bottom}" fill="none" stroke="#e2e2e2" stroke-width="1.4" stroke-dasharray="4 4"/>`;
   s += `<circle r="${R}" fill="none" stroke="#000" stroke-width="2"/>`;
   if (g.inner_ring && !placed)
@@ -11294,7 +11294,10 @@ function pan(d, ch, opts) {
   const splitOrbit = (PD.primary.orbit + PD.secondary.orbit) / 2;
   for (const fid in d.fields) {
     const id = +fid;
-    const [name, oct, , zone, ang, lab] = d.fields[fid];
+    const [name, oct, , zone, homeAng, lab] = d.fields[fid];
+    const slot = placed ? placed[fid] : null;
+    const ang = slot ? slot[0] : homeAng;
+    const g = slot ? { rim: slot[1], inner: slot[1], bottom: slot[1], r_note: slot[2], r_bnote: slot[2] } : d.geom;
     if (zone === "ding") {
       const dy = (g.ding_dy || 0) * R, rr = R * g.r_ding;
       s += panField(sets, C, 0, dy, rr, id, false);
@@ -11302,10 +11305,9 @@ function pan(d, ch, opts) {
       continue;
     }
     const isB = zone === "bottom";
-    const slot = placed ? placed[fid] : null;
-    const orb = slot ? R * slot[1] : R * (isB ? g.bottom : zone === "inner" ? g.inner : g.rim);
-    const rr  = slot ? R * slot[2] : R * (isB ? g.r_bnote : g.r_note);
-    const [x, y] = P(orb, slot ? slot[0] : ang);
+    const orb = R * (isB ? g.bottom : zone === "inner" ? g.inner : g.rim);
+    const rr  = R * (isB ? g.r_bnote : g.r_note);
+    const [x, y] = P(orb, ang);
     s += panField(sets, C, x, y, rr, id, isB);
     const lit = blue.has(id) || green.has(id);
     s += panLabel(x, y, name, oct, labelSize(rr, zone),
@@ -11320,7 +11322,7 @@ function pan(d, ch, opts) {
     else if (isB) { nr = orb + rr + R * g.n_out; col = "#E27005"; }
     else if (zone === "rim" && g.rim_num_out) { nr = orb + rr + R * g.n_in; col = "#333"; }
     else { nr = orb - rr - R * g.n_in; col = "#333"; }
-    const [nx, ny] = P(nr, slot ? slot[0] : ang);
+    const [nx, ny] = P(nr, ang);
     s += `<text x="${nx}" y="${ny + fs*0.34}" text-anchor="middle" fill="${col}"
       font-family="Nunito Sans, sans-serif" font-weight="${isB?600:400}" font-size="${fs}">${lab}</text>`;
     // The ding is skipped above and so never reaches here: it has no seat.
