@@ -6,12 +6,6 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14960,7 +14960,7 @@ if (wheelMain) wheelMain.addEventListener("wheel", e => {
-     // is open is skipped for its whole duration (the flag persists until
-     // the 160ms gap, not just for this event), so wheel momentum arriving
-     // right after a flight lands cannot start a fresh gesture and double-step.
--    const skip = !!(flight || drag || panelOpen || sheetOpen || !order.length);
-+    const skip = !!(drag || panelOpen || sheetOpen || !order.length);
-     wheel = { sx: 0, axis: null, fired: false, skip, timer: null };
-   }
-   if (wheel.timer) clearTimeout(wheel.timer);
+@@ -1,1 +1,1 @@
+-  if (d.kind === "hold" || flight) return;
++  if (d.kind === "hold") return;

@@ -35,6 +35,10 @@ HPE.swipe = (function () {
     if (reducedMotion) return { kind: "rest", dir, eatClick };
     return { kind: dir ? "fly" : "spring", dir, eatClick };
   }
+  function wheelTrack(peak, trough, ax) {
+    const p = Math.max(peak, ax), t = Math.min(trough, ax);
+    return { peak: p, trough: t, fresh: t * 3 < p && ax > Math.max(4, 2 * t) };
+  }
   return {
     COMMIT_PX: SWIPE_COMMIT_PX, FLING_PX_MS: SWIPE_FLING_PX_MS, FLING_WINDOW_MS: SWIPE_FLING_WINDOW_MS,
     SLOP_PX: SWIPE_SLOP_PX, TILT_DEG_PER_PX: SWIPE_TILT_DEG_PER_PX, TILT_MAX_DEG: SWIPE_TILT_MAX_DEG,
@@ -43,6 +47,6 @@ HPE.swipe = (function () {
     MOMENTUM_MIN_MS: SWIPE_MOMENTUM_MIN_MS, MOMENTUM_MAX_MS: SWIPE_MOMENTUM_MAX_MS,
     MOMENTUM_FLOOR_PX_MS: SWIPE_MOMENTUM_FLOOR_PX_MS,
     decision: swipeDecision, outTiming: swipeOutTiming, tilt: swipeTilt, xf: swipeXf,
-    releaseDecision: releaseDecision
+    releaseDecision: releaseDecision, wheelTrack: wheelTrack
   };
 })();

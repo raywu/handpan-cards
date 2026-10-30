@@ -5296,6 +5296,52 @@ test("US-3 one wheel gesture over WHEEL_COMMIT_PX steps once", async () => {
   assert.strictEqual(idx(), 1);
 });
 
+async function landFlight({ app, running }) {
+  running().forEach((a) => a.finish());
+  await settle();
+  app.flushTimers();
+}
+
+test("SW2 A: two swipes back to back, each with a momentum tail, advance two cards", async () => {
+  const rig = swipeRig();
+  const { wheelEv, running, idx } = rig;
+  for (const dx of [30, 30, 30, 20, 10, 5, 3, 2, 1, 1]) wheelEv(dx);
+  assert.strictEqual(running().length, 1);
+  running()[0].finish();
+  await settle();
+  for (const dx of [30, 30, 30, 20, 10, 5, 3, 2, 1, 1]) wheelEv(dx);
+  await landFlight(rig);
+  assert.strictEqual(idx(), 2);
+});
+
+test("SW2 B: one swipe with a long monotone tail with flat repeats steps once", async () => {
+  const rig = swipeRig();
+  for (const dx of [30, 30, 30, 25, 25, 20, 20, 15, 15, 10, 10, 6, 6, 3, 3, 2, 2, 1, 1, 1, 0, 0]) rig.wheelEv(dx);
+  await landFlight(rig);
+  assert.strictEqual(rig.idx(), 1);
+});
+
+test("SW2 C: a small bump above a third of the peak does not start a gesture", async () => {
+  const rig = swipeRig();
+  for (const dx of [11, 11, 11, 11, 11, 11, 11, 11, 10, 8, 6, 5, 4, 5, 4, 4, 3, 2, 1]) rig.wheelEv(dx);
+  await landFlight(rig);
+  assert.strictEqual(rig.idx(), 1);
+});
+
+test("SW2 D: a second stroke begun during the flight counts once the card lands", async () => {
+  const rig = swipeRig();
+  const { wheelEv, running, idx } = rig;
+  for (const dx of [30, 30, 30, 5, 2, 1]) wheelEv(dx);
+  for (const dx of [30, 30]) wheelEv(dx);
+  assert.strictEqual(running().length, 1, "the in-flight stroke starts no second flight");
+  assert.strictEqual(idx(), 0);
+  running()[0].finish();
+  await settle();
+  for (const dx of [30, 30, 30]) wheelEv(dx);
+  await landFlight(rig);
+  assert.strictEqual(idx(), 2);
+});
+
 test("US-3 wheel is ignored mid-flight", async () => {
   const { app, wheelEv, running, idx } = swipeRig();
   for (const dx of [30, 30, 30, 30]) wheelEv(dx);
