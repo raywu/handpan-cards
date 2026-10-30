@@ -500,13 +500,13 @@ test("a payload over CAPS is rejected", () => {
 test("an over-cap payload is rejected WITHOUT parsing anything", () => {
   // The cap is the first gate, so an over-cap string that also carries a newer
   // version byte is refused on length and never reaches the version check.
-  const over = String(share.VERSION + 1) +
+  const over = String(share.PROFILE_VERSION + 1) +
     new Array(share.CAPS.payload + 8).join("A");
   const r = share.decode(over);
   assert.equal(r.ok, false);
   assert.notEqual(r.code, "NEEDS_NEWER_APP",
     "the payload cap must be checked before the version byte");
-  const under = String(share.VERSION + 1) + new Array(40).join("A");
+  const under = String(share.PROFILE_VERSION + 1) + new Array(40).join("A");
   assert.equal(share.decode(under).code, "NEEDS_NEWER_APP",
     "an under-cap newer link must still say NEEDS_NEWER_APP");
 });
@@ -723,6 +723,7 @@ function engineAtVersion(version) {
   vm.runInContext(
     fs.readFileSync(path.join(ROOT, "src", "engine", "layout.js"), "utf8"), sandbox);
   vm.runInContext(src, sandbox);
+  sandbox.HPE.core.PROFILE_ENABLED = false;
   assert.equal(sandbox.HPE.share.VERSION, version);
   return sandbox.HPE.share;
 }
@@ -1225,10 +1226,10 @@ test("a v2 link is NEEDS_NEWER_APP to an app pinned at v1", () => {
 test("a version byte above this app's is still NEEDS_NEWER_APP", () => {
   const str = encoded(parsed(BASE));
   for (const bump of [1, 2, 8]) {
-    const newer = VERSION_CHARS.charAt(share.VERSION + bump) + str.slice(1);
+    const newer = VERSION_CHARS.charAt(share.PROFILE_VERSION + bump) + str.slice(1);
     const r = share.decode(newer);
     assert.equal(r.ok, false);
-    assert.equal(r.code, "NEEDS_NEWER_APP", `version ${share.VERSION + bump}`);
+    assert.equal(r.code, "NEEDS_NEWER_APP", `version ${share.PROFILE_VERSION + bump}`);
     assert.equal(r.reason, specReason("NEEDS_NEWER_APP"));
   }
 });
@@ -1774,7 +1775,7 @@ test("SV: the auto label is ignored on receipt and lies outside the checksum", (
   }
 });
 
-test("SV: a 5 or 6 not followed by / is BAD_NOTE, and 7 or above is NEEDS_NEWER_APP", () => {
+test("SV: a 5 or 6 not followed by / is BAD_NOTE, and 8 or above is NEEDS_NEWER_APP", () => {
   const rest = V5_BUILTINS[0][4].slice(2);
   for (const lead of ["5", "6"]) {
     for (const second of ["A", "x", "-", "5", "0", "%", "\\"]) {
@@ -1783,7 +1784,7 @@ test("SV: a 5 or 6 not followed by / is BAD_NOTE, and 7 or above is NEEDS_NEWER_
     }
     reject(lead + rest);
   }
-  for (const version of ["7", "8", "9", "A", "z", "_"]) {
+  for (const version of ["8", "9", "A", "z", "_"]) {
     const r = share.decode(version + "/" + rest);
     assert.equal(r.ok, false);
     assert.equal(r.code, "NEEDS_NEWER_APP", version);
@@ -2049,7 +2050,7 @@ test("PD: packed v1 to v4 links with a palette above 5 keep the exact numeric BA
 test("PD: gate precedence is unchanged: cap, then version, then integrity, then payload", () => {
   const good = forgeN("6", PD_SEG, "*x", ["palette-8"]);
   assert.equal(share.decode(good).ok, true);
-  assert.equal(share.decode("7" + good.slice(1)).code, "NEEDS_NEWER_APP");
+  assert.equal(share.decode("8" + good.slice(1)).code, "NEEDS_NEWER_APP");
   reject(good.slice(0, -1) + (good.endsWith("0") ? "1" : "0"));
   reject(forgeN("6", PD_SEG, "*" + "x".repeat(4100), ["palette-8"]));
 });
@@ -2191,6 +2192,7 @@ test("PV: every single-character flip of a v7 link is refused (the auto label is
 test("PV: with the flag off a v7 link is NEEDS_NEWER_APP, and v8 always is", () => {
   const link = PSH.share.encode(pSeed(PSEEDS.kurd)).value;
   const off = loadEngine(["core", "voicing", "layout", "naming", "select", "share"]);
+  off.core.PROFILE_ENABLED = false;
   assert.equal(off.core.PROFILE_ENABLED, false);
   const r = off.share.decode(link);
   assert.equal(r.ok, false);

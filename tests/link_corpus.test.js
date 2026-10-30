@@ -169,7 +169,7 @@ test("LC: re-encoding a frozen deck at the current VERSION and decoding it gives
 });
 
 test("LC: a version byte above VERSION is NEEDS_NEWER_APP and boot stores nothing and rewrites no stored record", async () => {
-  const above = String(HPE.share.VERSION + 1);
+  const above = String(HPE.share.PROFILE_VERSION + 1);
   for (const e of ENTRIES) {
     const res = HPE.share.decode(above + e.link.slice(1));
     assert.equal(res.ok, false, `v${e.wire} ${e.id}`);
