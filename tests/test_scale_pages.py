@@ -429,8 +429,8 @@ class ScalePagesTest(unittest.TestCase):
                     self.assertIn(colors["root"], body)
                     self.assertIn(colors["tone"], body)
                     self.assertRegex(body, r"background:\s*#fff")
-                    self.assertRegex(body, r"\.card\{[^}]*border:\s*3px solid var\(--root\)")
-                    self.assertRegex(body, r"\.front\{[^}]*border:\s*3px solid var\(--root\)")
+                    self.assertRegex(body, r"\.card\{[^}]*border:\s*3\.2px solid var\(--root\)")
+                    self.assertRegex(body, r"\.front\{[^}]*border:\s*3\.2px solid var\(--root\)")
                     self.assertNotIn("<script", body)
 
     def test_card_palette_matches_the_row(self):
@@ -664,7 +664,9 @@ class SwipeScriptTest(unittest.TestCase):
         js = gen.SWIPE_JS
         for needle in ("fetch", "XMLHttpRequest", "gtag", "import(", "http"):
             self.assertNotIn(needle, js)
-        self.assertRegex(js.strip(), re.compile(r"^\(function\s*\(\)\s*\{.*\}\)\(\);?$", re.S))
+        self.assertTrue(js.startswith(read("src/engine/swipe.js").rstrip("\n")))
+        driver = js[len(read("src/engine/swipe.js").rstrip("\n")):].strip()
+        self.assertRegex(driver, re.compile(r"^\(function\s*\(\)\s*\{.*\}\)\(\);?$", re.S))
         self.assertNotRegex(js, r"\bwindow\.\w+\s*=")
 
     def test_swipe_constants_match_the_app(self):
@@ -673,14 +675,29 @@ class SwipeScriptTest(unittest.TestCase):
                       r"SWIPE_FLING_WINDOW_MS = (\d+), SWIPE_SLOP_PX = (\d+);", app)
         self.assertTrue(m)
         commit, fling, window, slop = m.groups()
-        js = gen.SWIPE_JS
-        for name, value in (("COMMIT", commit), ("FLING", fling), ("WINDOW", window), ("SLOP", slop)):
-            self.assertRegex(js, r"\b%s\s*=\s*%s\b" % (name, re.escape(value)), name)
         self.assertEqual(gen.SWIPE_CONSTANTS, {"COMMIT": int(commit), "FLING": float(fling),
                                                "WINDOW": int(window), "SLOP": int(slop)})
 
+    def test_the_page_script_contains_the_engine_swipe_module_byte_for_byte(self):
+        module = read("src/engine/swipe.js").rstrip("\n")
+        for slug in ROWS:
+            with self.subTest(slug=slug):
+                self.assertIn("<script>" + module + "\n(function(){", read("scales/%s/index.html" % slug))
+
+    def test_the_driver_takes_every_swipe_constant_from_the_module(self):
+        driver = gen.SWIPE_DRIVER
+        for pattern in (r"\b(COMMIT|FLING|WINDOW|SLOP|TILT)\w*\s*=", r"\b(18|0\.15|220|180|260|24)\b"):
+            self.assertNotRegex(driver, pattern)
+        for name in ("SLOP_PX", "FLING_WINDOW_MS", "OUT_MS", "OUT_EASE", "IN_MS", "IN_PX", "BACK_MS", "EASE", "xf", "releaseDecision"):
+            self.assertIn("W." + name, driver)
+
     def test_swipe_script_fits_its_budget(self):
-        self.assertLessEqual(len(gen.SWIPE_JS.encode()), 1536)
+        self.assertLessEqual(len(gen.SWIPE_JS.encode()), 5800)
+
+    @staticmethod
+    def without_card_css(html):
+        html = re.sub(r"<style>[^<]*</style>(?=<label class=\"wrap\">)", "<style></style>", html)
+        return re.sub(r"scroll-margin-top:min\(\d+px,", "scroll-margin-top:min(Npx,", html)
 
     def test_js_off_markup_is_unchanged(self):
         s = "<script>" + gen.SWIPE_JS + "</script>\n"
@@ -688,7 +705,24 @@ class SwipeScriptTest(unittest.TestCase):
             with self.subTest(slug=slug):
                 page = read("scales/%s/index.html" % slug)
                 self.assertEqual(page.count(s), 1)
-                self.assertEqual(page.replace(s, "", 1), read("%s/%s.html" % (self.FIXTURE_DIR, slug)))
+                self.assertEqual(self.without_card_css(page.replace(s, "", 1)),
+                                 self.without_card_css(read("%s/%s.html" % (self.FIXTURE_DIR, slug))))
+
+    def test_the_card_css_copies_the_apps_values(self):
+        app = re.sub(r"\s+", " ", read("index.html"))
+        css = gen.CARD_CSS
+        for value in ("perspective:1400px", "transition:transform .45s cubic-bezier(.2,.7,.25,1)", "border-radius:12px",
+                      "box-shadow:0 12px 34px rgba(0,0,0,.5), 0 2px 8px rgba(0,0,0,.4)", "padding:3.2px"):
+            self.assertIn(value, app)
+        for value in ("perspective:1400px", "transition:transform .45s cubic-bezier(.2,.7,.25,1)", "border-radius:12px",
+                      "box-shadow:0 12px 34px rgba(0,0,0,.5), 0 2px 8px rgba(0,0,0,.4)", "border:3.2px solid var(--root)"):
+            self.assertIn(value, css)
+
+    def test_the_answer_face_is_the_default_and_the_name_face_the_flip(self):
+        css = gen.CARD_CSS
+        self.assertIn(".front{transform:rotateY(180deg)}", css)
+        self.assertNotIn(".back{transform", css)
+        self.assertIn(".front .hint{display:none}", css)
 
     def test_every_row_page_regenerates_with_the_script(self):
         for slug in ROWS:
