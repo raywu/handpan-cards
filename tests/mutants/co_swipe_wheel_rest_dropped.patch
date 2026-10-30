@@ -6,10 +6,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14946,7 +14946,7 @@ function wheelGestureEnd() {
+@@ -15234,7 +15234,7 @@ function wheelGestureEnd() {
    const w = wheel;
    wheel = null;
-   const end = wheelEndDecision({ skip: w.skip, fired: w.fired, reducedMotion: reducedMotion.matches });
+   const end = wheelEndDecision({ skip: w.skip || !!flight, fired: w.fired, reducedMotion: reducedMotion.matches });
 -  if (end === "rest") swipeRest();
 +  if (end === "rest") { }
    // The follow transform during the gesture is swipeXf(-w.sx) (see the

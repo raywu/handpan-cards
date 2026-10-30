@@ -8,11 +8,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14954,7 +14954,6 @@ function wheelGestureEnd() {
+@@ -15242,7 +15242,6 @@ function wheelGestureEnd() {
    else if (end === "spring") springBack(-w.sx);
  }
  if (wheelMain) wheelMain.addEventListener("wheel", e => {
 -  if (e.ctrlKey) return; // pinch-zoom, not a swipe gesture
-   if (!wheel) {
-     // A gesture that starts while a flight/drag is live or the panel/sheet
-     // is open is skipped for its whole duration (the flag persists until
+   if (wheel && wheel.fired) {
+     // The momentum tail keeps the gesture alive past the 160ms gap; a rise
+     // out of its decayed trough is the next stroke, so it starts a gesture.
