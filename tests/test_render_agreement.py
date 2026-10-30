@@ -595,8 +595,13 @@ class ProfileRenderAgreement(RenderAgreement):
     and by hifi must agree on everything the inherited checks compare, on the
     two generated profile decks. The inherited tests run unchanged."""
 
-    decks = {k: decks.from_generated(_profile_payload(k)) for k in PROFILE_FIXTURES}
+    decks = {}
     dump_args = list(PROFILE_FIXTURES.values())
+
+    @classmethod
+    def setUpClass(cls):
+        cls.decks = {k: decks.from_generated(_profile_payload(k)) for k in PROFILE_FIXTURES}
+        super().setUpClass()
 
     def test_every_card_is_compared(self):
         self.assertEqual(len(self.app), sum(len(d["chords"]) for d in self.decks.values()))

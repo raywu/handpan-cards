@@ -354,6 +354,11 @@ def _legend_demo(spec, chords):
     return (ids[-1], ids[0])
 
 
+def _profile_radius(geom, band_half):
+    import importlib
+    return importlib.import_module("hifi").profile_radius(geom, band_half)
+
+
 def from_generated(payload):
     """A gen_deck.js payload (or its bare `deck`) -> a hifi.build deck dict."""
     generated = payload.get("deck", payload)
@@ -395,7 +400,7 @@ def from_generated(payload):
         # Carried, not dropped: the adapter is not where a warning goes to die.
         warnings=warnings,
         # --- geometry and baselines -------------------------------------
-        R=(hifi.profile_radius(generated["geom"], _BAND_HALF)
+        R=(_profile_radius(generated["geom"], _BAND_HALF)
            if generated["geom"].get("place") else round(_BAND_HALF / ext, 1)),
         cy=_BAND_CY,
         y_note=_Y_NOTE,
