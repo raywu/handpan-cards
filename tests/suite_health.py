@@ -40,7 +40,7 @@ FLOORS = {
     "tests/test_gen_deck.py": 32,
     "tests/test_print.py": 46,
     "tests/test_render_agreement.py": 29,
-    "tests/test_fixture_integrity.py": 8,
+    "tests/test_fixture_integrity.py": 22,
     "tests/test_failure_diagnosability.py": 23,
     "tests/test_readme_currency.py": 11,
     "tests/test_suite_health.py": 31,
@@ -49,8 +49,8 @@ FLOORS = {
     "tests/test_pdf_deck_adapter.py": 4,
     "tests/test_pdf_parity.py": 15,
     "tests/test_icons.py": 4,
-    "tests/test_site_files.py": 8,
     "tests/test_scale_pages.py": 84,
+    "tests/test_site_files.py": 14,
     "tests/test_ci_scope.py": 5,
     # node
     "tests/app.test.js": 1005,

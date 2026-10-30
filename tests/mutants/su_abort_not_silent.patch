@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15142,7 +15142,7 @@ function copyLink() {
-       return navigator.share({ url: href });
-     }).then(() => {
-       if (started) done(t("share.shared"), "share");
--    }, e => { if (!e || e.name !== "AbortError") reveal(); });
-+    }, e => { reveal(); });
-   };
-   if (!navigator.clipboard || !navigator.clipboard.writeText) { share(); return; }
-   Promise.resolve().then(() => navigator.clipboard.writeText(href))
+@@ -15454,7 +15454,7 @@ function copyLink() {
+     done(t("share.shared"), "share");
+   }, e => {
+     sharePending = false;
+-    if (!e || e.name !== "AbortError") viaClipboard();
++    viaClipboard();
+   });
+ }
+ shareCopy.onclick = copyLink;
