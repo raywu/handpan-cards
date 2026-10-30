@@ -5299,6 +5299,9 @@ test("US-3 one wheel gesture over WHEEL_COMMIT_PX steps once", async () => {
   assert.strictEqual(running().length, 1, "past 80px accumulated the card flies out, once");
   running()[0].finish();
   await settle();
+  const before = running().length;
+  for (const dx of [5, 3, 2]) wheelEv(dx);
+  assert.strictEqual(running().length, before, "the tail of a committed gesture starts no second fly-out");
   app.flushTimers();
   assert.strictEqual(idx(), 1);
 });
