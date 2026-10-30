@@ -1,0 +1,15 @@
+# kills: SV-PG2: 200 legacy scales migrate at boot within 5 s, the strip scrolls end to end, and taps around an Edit open and close stay under 500 ms
+# suite: node --test --test-name-pattern=SV-PG2 tests/e2e.test.js
+# fault: A 50 ms busy-wait per record in the makeSavedMigration loop, 10 s for 200 legacy records, past the 5 s boot bound.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10489,7 +10489,7 @@ function makeSavedMigration(staged) {
+     hidden: [...new Set((staged.preferences.hidden || []).filter(isBuiltIn))],
+     migration: { sourceKey: staged.sourceKey, raw: savedClone(staged.raw), instanceIds: [] } };
+   const supplied = new Map(), oldVisible = new Map();
+-  for (const row of staged.rows) {
++  for (const row of staged.rows) { const t0 = performance.now(); while (performance.now() - t0 < 50);
+     const id = savedCryptoId(used);
+     if (!id) return savedFailure("allocation", "instance-id");
+     used.add(id);
