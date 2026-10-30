@@ -14,14 +14,12 @@
 <meta property="og:image" content="https://handpan.raywu.org/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta name="theme-color" content="#433b2c">
+<meta name="theme-color" content="#1a1815">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&family=Nunito+Sans:wght@400;600;700&display=swap">
 <style>
-:root{color-scheme:light dark;--bg:#fbfaf8;--fg:#1f2328;--muted:#5d646c;--r:#433b2c;--rule:#e3e1dc}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15181b;--fg:#e8eaec;--muted:#9aa2aa;--r:#e3b25c;--rule:#2a2f34}}
-:root[data-theme="dark"]{--bg:#15181b;--fg:#e8eaec;--muted:#9aa2aa;--r:#e3b25c;--rule:#2a2f34}
+:root{color-scheme:dark;--bg:#1a1815;--fg:#eae6df;--muted:#c4bcab;--r:#e3b25c;--rule:#3a342b}
 body{background:var(--bg);color:var(--fg);font-family:"Nunito Sans",system-ui,sans-serif;line-height:1.55;margin:0;padding:20px 16px 48px}
 main{max-width:66ch;margin:0 auto;display:flex;flex-direction:column;gap:28px}
 h1{font-family:Marcellus,serif;font-weight:400;font-size:clamp(30px,7vw,44px);margin:0;line-height:1.15}
@@ -33,10 +31,11 @@ dt{font-weight:700}
 dd{margin:0 0 6px}
 .src li{margin-bottom:4px}
 .muted{color:var(--muted);font-size:14px}
-.open{display:inline-block;background:var(--r);color:#fff;text-decoration:none;font-weight:700;letter-spacing:.06em;font-size:14px;border-radius:8px;padding:12px 16px}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .open{color:#15181b}}
-a{color:var(--r);font-weight:600;text-underline-offset:3px}
-a.open{color:#fff}
+.open{display:inline-block;background:var(--r);color:#1a1815;text-decoration:none;font-weight:700;letter-spacing:.06em;font-size:14px;border-radius:8px;padding:12px 16px}
+a{color:var(--r);font-weight:600;text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px}
+a.open{color:#1a1815;text-decoration:none}
+a:hover{text-decoration-thickness:2.5px}
+a:focus-visible{outline:2px solid currentColor;outline-offset:2px;border-radius:2px}
 .ctas{display:flex;flex-wrap:wrap;gap:20px 24px;align-items:center;margin:28px 0 12px}
 .ctas .open{padding:14px 22px}
 .ctas a.open.ghost{background:transparent;color:var(--r);border:2px solid var(--r);padding:12px 20px}
@@ -143,6 +142,7 @@ a.res{display:inline-block;min-height:44px;min-width:44px;box-sizing:border-box;
 <li><a href="https://www.youtube.com/watch?v=5_IFOvN-OMM">How to play handpan: a full beginner guide</a></li>
 <li><a href="https://www.youtube.com/watch?v=970Tg50NL2I">Handpan for beginners: three essential steps</a></li>
 <li><a href="https://www.youtube.com/watch?v=DDw7JVt80cw">Paradiddles in a groove: a beginner tutorial</a></li>
+<li><a href="https://www.youtube.com/watch?v=-BD13QhFJ-M">Chord progressions video</a></li>
 </ul>
 </section>
 
@@ -168,7 +168,6 @@ a.res{display:inline-block;min-height:44px;min-width:44px;box-sizing:border-box;
 <li><a class="res" href="https://handpaner.com/" target="_blank" rel="noopener">Handpaner</a></li>
 <li><a class="res" href="https://www.dingandtones.com/" target="_blank" rel="noopener">Ding &amp; Tones</a></li>
 <li><a class="res" href="https://svenkirchhofer.de/handpan-training-cards/" target="_blank" rel="noopener">Handpan Training Cards</a></li>
-<li><a class="res" href="https://www.youtube.com/watch?v=-BD13QhFJ-M" target="_blank" rel="noopener">Chord progressions video</a></li>
 <li><a class="res" href="https://handpanhelpers.klangzeug.de/" target="_blank" rel="noopener">Handpan Helpers</a></li>
 </ul>
 </section>

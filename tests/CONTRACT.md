@@ -55,7 +55,7 @@ row is a failure - add a row (0 is a fine start). Node counts come from
 
 ## Rules
 
-1. **Spec-first.** Derive assertions from `CLAUDE.md` or from user-observable
+1. **Spec-first.** Derive assertions from `CLAUDE.md`, `docs/plans/`, or user-observable
    behaviour. Never read the implementation and restate it.
 2. **No test file may import a constant from the module it tests.** No
    `from hifi import CW, CH, GX, GY`; no reading geometry out of the sandbox to

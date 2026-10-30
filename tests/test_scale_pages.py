@@ -1,3 +1,6 @@
+import contextlib
+import io
+import tempfile
 import json
 import os
 import re
@@ -25,6 +28,16 @@ PALETTES = ["#E0559A", "#6D40A3", "#0B7B75", "#E2761B", "#C9971E", "#DD8F00", "#
             "#C0452C", "#B3263A"]
 BG_LIGHT = "#fbfaf8"
 BG_DARK = "#15181b"
+BROWN = "#1a1815"
+SHARED_ROOT = ":root{color-scheme:dark;--bg:#1a1815;--fg:#eae6df;--muted:#c4bcab;--r:#e3b25c;"
+SHARED_RULES = [
+    "body{background:var(--bg);color:var(--fg);font-family:\"Nunito Sans\",system-ui,sans-serif;line-height:1.55;",
+    "h1{font-family:Marcellus,serif;font-weight:400;font-size:clamp(30px,7vw,44px);margin:0;line-height:1.15}",
+    "font-size:24px;",
+    "a{color:var(--r);font-weight:600;text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px}",
+    "a:hover{text-decoration-thickness:2.5px}",
+    "a:focus-visible{outline:2px solid currentColor;outline-offset:2px;border-radius:2px}",
+]
 
 # Independent oracle for the plan's page table (Round 4 dispositions, row 0 from Round 7 H3,
 # Equinox and Magic Voyage). kind, palette index, cards in the deck, popularized, cross-link target.
@@ -90,6 +103,7 @@ def exists(slug):
 
 
 _RENDERED = {}
+_ENGINE = {}
 
 
 def rendered(slug):
@@ -97,7 +111,9 @@ def rendered(slug):
         rows = gen.load_rows()
         by = {r["slug"]: r for r in rows}
         row = by[slug]
-        data = gen.engine([row])
+        if not _ENGINE:
+            _ENGINE.update(gen.engine(rows))
+        data = _ENGINE
         copy = row.get("copy") or dict(gen.SAMPLE_COPY)
         if not row["popularized"]:
             copy["who_html"] = None
@@ -284,15 +300,30 @@ class GeneratorTest(unittest.TestCase):
             self.assertIn(h.replace("&", "&amp;"), [x for x in hrefs] + [x.replace("&amp;", "&") for x in hrefs])
 
     def test_every_existing_page_regenerates_byte_identical_from_its_copy(self):
-        for slug in ROWS:
-            if exists(slug):
-                with self.subTest(slug=slug):
-                    self.assertEqual(gen.page_for(slug), read("scales/%s/index.html" % slug))
+        slugs = [s for s in ROWS if exists(s)]
+        pages = gen.pages_for(slugs)
+        for slug in slugs:
+            with self.subTest(slug=slug):
+                self.assertEqual(pages[slug], read("scales/%s/index.html" % slug))
 
     def test_check_flag_exits_zero_for_kurd(self):
         run = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "gen_scale_page.py"),
                               "d-kurd-10", "--check"], capture_output=True, text=True)
         self.assertEqual(run.returncode, 0, run.stderr)
+
+    def test_check_flag_exits_zero_for_the_hub(self):
+        run = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "gen_scale_page.py"),
+                              "--hub", "--check"], capture_output=True, text=True)
+        self.assertEqual(run.returncode, 0, run.stderr)
+
+    def test_a_differing_page_fails_check_with_one_message(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "index.html")
+            with open(path, "w", encoding="utf-8") as f:
+                f.write("stale")
+            with contextlib.redirect_stderr(io.StringIO()) as err:
+                self.assertEqual(gen.emit(path, "fresh", True, False), 1)
+            self.assertIn("differs from the generator", err.getvalue())
 
     def test_the_card_fixture_has_not_drifted_from_the_engine(self):
         self.assertEqual(gen.fixture_data(gen.load_rows()), read("tests/fixtures/scale_pages_v1.json"))
@@ -676,7 +707,6 @@ class ContrastTest(unittest.TestCase):
                 self.assertGreaterEqual(ratio(light, BG_LIGHT), 4.5)
                 self.assertGreaterEqual(ratio(light, "#ffffff"), 4.5)
                 self.assertGreaterEqual(ratio(dark, BG_DARK), 4.5)
-                self.assertGreaterEqual(ratio(light, BG_LIGHT), 4.5)
                 html = html_of(slug)
                 self.assertIn("--r:%s}" % light, html)
                 self.assertIn("--r:%s}}" % dark, html)
@@ -684,6 +714,13 @@ class ContrastTest(unittest.TestCase):
     def test_the_kurd_accents_are_the_shipped_pair(self):
         row = table()["d-kurd-10"]
         self.assertEqual((row["accent_light"], row["accent_dark"]), ("#2563B0", "#7fb0ee"))
+
+    def test_non_frozen_accents_are_the_generator_rule(self):
+        for slug, row in table().items():
+            if slug != "d-kurd-10":
+                with self.subTest(slug=slug):
+                    root = fixture()[slug]["colors"]["root"]
+                    self.assertEqual((row["accent_light"], row["accent_dark"]), gen.accents(root))
 
     def test_an_accent_that_already_passes_is_unchanged(self):
         for root in ("#2563B0", "#6D40A3", "#B3263A"):
@@ -855,3 +892,40 @@ class AlsoTryTest(unittest.TestCase):
                 else:
                     self.assertEqual(has, [])
                     self.assertNotIn("Annaziska", read("scales/%s/index.html" % slug))
+
+
+class SharedBrownHeadTest(unittest.TestCase):
+    def test_the_explore_index_takes_the_shared_dark_only_head(self):
+        html = read("scales/index.html")
+        self.assertIn(SHARED_ROOT.rstrip(";") + "}", html)
+        for rule in SHARED_RULES:
+            with self.subTest(rule=rule):
+                self.assertIn(rule, html)
+        self.assertRegex(html, r"h2\{font-family:Marcellus,serif;font-weight:400;font-size:24px;margin:0;color:var\(--r\)\}")
+        self.assertNotIn("prefers-color-scheme", html)
+        self.assertEqual(Page(html).meta("theme-color"), BROWN)
+        self.assertEqual(html, gen.hub_page())
+
+    def test_the_scale_pages_keep_their_own_head(self):
+        for slug in ROWS:
+            with self.subTest(page=slug):
+                html = html_of(slug)
+                self.assertIn("prefers-color-scheme:dark", html)
+
+    def test_the_about_overlay_takes_the_shared_rules(self):
+        css = read("index.html")
+        about = css[css.index("#about{position:fixed"):css.index("html.about-open{")]
+        self.assertNotIn("#1f1b15", about)
+        self.assertIn("background:#1a1815", about)
+        self.assertRegex(about, r"\.abouthead\{[^}]*background:#1a1815")
+        self.assertRegex(about, r"color:#eae6df; font:400 16px/1\.55 \"Nunito Sans\"")
+        self.assertRegex(about, r'#about h2\{[^}]*font:400 clamp\(30px, 7vw, 44px\)/1\.15 "Marcellus", serif')
+        self.assertRegex(about, r'#about h3\{[^}]*font:400 24px/1\.2 "Marcellus", serif[^}]*color:#e3b25c')
+        self.assertNotIn("text-transform:uppercase", about)
+        self.assertRegex(about, r"#about h4\{[^}]*color:#c4bcab")
+        self.assertRegex(about, r"#about a\{color:#e3b25c; font-weight:600; text-decoration:underline; text-decoration-thickness:1\.5px; text-underline-offset:3px\}")
+        self.assertIn("calc((100% - 520px) / 2)", about)
+
+    def test_every_primary_passes_contrast_on_the_brown(self):
+        for colour in ("#e3b25c", "#eae6df", "#c4bcab"):
+            self.assertGreaterEqual(ratio(colour, BROWN), 4.5)

@@ -27,6 +27,7 @@ SITE = "https://handpan.raywu.org/"
 UPDATED = "2026-10-28"
 BG_LIGHT = "#fbfaf8"
 BG_DARK = "#15181b"
+BG_BROWN = "#1a1815"
 WORDS = {8: "Eight", 9: "Nine", 10: "Ten", 18: "Eighteen", 20: "Twenty"}
 AN_LETTERS = set("AEFHILMNORSX")
 
@@ -185,28 +186,34 @@ def link_item(row):
     return '<li><a href="/scales/%s/">%s handpan chords</a></li>' % (row["slug"], esc(row["name"]))
 
 
+def head(title, description, og_description, url, theme, brand=True):
+    out = ['<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
+           '<meta name="viewport" content="width=device-width, initial-scale=1">\n']
+    out.append("<title>%s</title>\n" % esc(title))
+    out.append('<meta name="description" content="%s">\n' % html.escape(description))
+    out.append('<link rel="canonical" href="%s">\n' % url)
+    out.append('<meta property="og:type" content="website">\n<meta property="og:url" content="%s">\n' % url)
+    out.append('<meta property="og:title" content="%s">\n' % html.escape(title))
+    out.append('<meta property="og:description" content="%s">\n' % html.escape(og_description))
+    if brand:
+        out.append('<meta property="og:image" content="%sog.png">\n' % SITE)
+        out.append('<meta property="og:site_name" content="Handpan Chords">\n')
+    out.append('<meta name="theme-color" content="%s">\n' % theme)
+    out.append('<link rel="preconnect" href="https://fonts.googleapis.com">\n'
+               '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
+               '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&family='
+               'Bitter:wght@400;600&family=Nunito+Sans:wght@400;600;700&display=swap">\n')
+    return out
+
+
 def hub_page(rows=None):
     rows = rows or load_rows()
     url = SITE + "scales/"
     title = "Handpan scale chord charts"
     description = ("Handpan chord charts for %d scales, grouped by sound, with the notes to play for each chord."
                    % len(rows))
-    out = ['<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
-           '<meta name="viewport" content="width=device-width, initial-scale=1">\n']
-    out.append("<title>%s</title>\n" % title)
-    out.append('<meta name="description" content="%s">\n' % html.escape(description))
-    out.append('<link rel="canonical" href="%s">\n' % url)
-    out.append('<meta property="og:type" content="website">\n<meta property="og:url" content="%s">\n' % url)
-    out.append('<meta property="og:title" content="%s">\n' % title)
-    out.append('<meta property="og:description" content="%s">\n' % html.escape(description))
-    out.append('<meta property="og:image" content="%sog.png">\n' % SITE)
-    out.append('<meta property="og:site_name" content="Handpan Chords">\n')
-    out.append('<meta name="theme-color" content="%s">\n' % BG_LIGHT)
-    out.append('<link rel="preconnect" href="https://fonts.googleapis.com">\n'
-               '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
-               '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&family='
-               'Bitter:wght@400;600&family=Nunito+Sans:wght@400;600;700&display=swap">\n')
-    out.append("<style>\n" + CSS_HEAD.replace("@LIGHT@", "#2563B0").replace("@DARK@", "#7fb0ee") + "</style>\n")
+    out = head(title, description, description, url, BG_BROWN)
+    out.append("<style>\n" + INDEX_CSS_HEAD + "</style>\n")
     out.append("</head>\n<body>\n<main>\n")
     out.append('<header><p><a href="/">Home</a> &rsaquo; Scale chord charts</p>\n<h1>%s</h1>\n' % title)
     out.append('<p style="margin-top:8px">%s</p>\n</header>\n' % HUB_INTRO)
@@ -299,6 +306,22 @@ if (f) R[k].focus({preventScroll: true});
 });
 C.addEventListener("click", e => { if (hold) { hold = 0; e.preventDefault(); } }, true);
 })();"""
+
+INDEX_CSS_HEAD = """:root{color-scheme:dark;--bg:#1a1815;--fg:#eae6df;--muted:#c4bcab;--r:#e3b25c}
+body{background:var(--bg);color:var(--fg);font-family:"Nunito Sans",system-ui,sans-serif;line-height:1.55;margin:0;padding:20px 16px 48px}
+main{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+h1{font-family:Marcellus,serif;font-weight:400;font-size:clamp(30px,7vw,44px);margin:0;line-height:1.15}
+h2{font-family:Marcellus,serif;font-weight:400;font-size:24px;margin:0;color:var(--r)}
+p{margin:0;max-width:66ch}
+.muted{color:var(--muted);font-size:14px}
+a{color:var(--r);font-weight:600;text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px}
+a:hover{text-decoration-thickness:2.5px}
+a:focus-visible{outline:2px solid currentColor;outline-offset:2px;border-radius:2px}
+ul.rel{list-style:none;margin:0;padding:0}
+ul.rel li{border-bottom:1px solid var(--muted)}
+ul.rel a{display:flex;align-items:center;min-height:44px}
+section.group h2{margin:0 0 4px}
+"""
 
 CSS_EXTRA = """.prog{display:flex;flex-direction:column;align-items:center;gap:10px;position:relative}
 .prog>input{-webkit-appearance:none;appearance:none;position:absolute;bottom:0;left:calc(50% - 44px);width:88px;height:44px;opacity:0;margin:0;z-index:1;pointer-events:none;cursor:pointer;-webkit-tap-highlight-color:transparent;scroll-margin-top:min(320px,calc(100vh - 44px));scroll-margin-top:min(320px,calc(100svh - 44px))}
@@ -400,36 +423,19 @@ def render(row, data, rows_by_slug, copy, alt=None):
         all(c["degree"] and not c["sup"] for c in cards) and data["auto_pick"] == [c["n"] for c in cards]
     degs = [c["degree"] for c in cards]
     if frozen:
-        deg_phrase = "i, iv and v"
         card_phrase = "the i, iv and v chord cards"
     elif triad:
         deg_phrase = ", ".join(degs[:-1]) + " and " + degs[-1]
         card_phrase = "the %s chord cards" % deg_phrase
     else:
         card_phrase = "the three top-ranked chord cards"
-    list_names = ", ".join(names[:-1]) + " and " + names[-1]
     title = "%s handpan chords" % name
     description = ("%s handpan chords: %s (%s) with the notes to play, then practice the full set in the "
                    "free chord flashcard app.") % (name, card_phrase, ", ".join(names))
     og_description = copy["og_description"] if frozen else description
     light, dark = row["accent_light"], row["accent_dark"]
     cta = row["cta"]
-    out = ['<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
-           '<meta name="viewport" content="width=device-width, initial-scale=1">\n']
-    out.append("<title>%s</title>\n" % esc(title))
-    out.append('<meta name="description" content="%s">\n' % html.escape(description))
-    out.append('<link rel="canonical" href="%s">\n' % url)
-    out.append('<meta property="og:type" content="website">\n<meta property="og:url" content="%s">\n' % url)
-    out.append('<meta property="og:title" content="%s">\n' % html.escape(title))
-    out.append('<meta property="og:description" content="%s">\n' % html.escape(og_description))
-    if not frozen:
-        out.append('<meta property="og:image" content="%sog.png">\n' % SITE)
-        out.append('<meta property="og:site_name" content="Handpan Chords">\n')
-    out.append('<meta name="theme-color" content="%s">\n' % light)
-    out.append('<link rel="preconnect" href="https://fonts.googleapis.com">\n'
-               '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
-               '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&family='
-               'Bitter:wght@400;600&family=Nunito+Sans:wght@400;600;700&display=swap">\n')
+    out = head(title, description, og_description, url, light, brand=not frozen)
     out.append("<style>\n" + CSS_HEAD.replace("@LIGHT@", light).replace("@DARK@", dark) + CSS_EXTRA + "</style>\n")
     if not frozen:
         crumbs = [{"@type": "ListItem", "position": 1, "name": "Home", "item": SITE},
@@ -509,12 +515,15 @@ def render(row, data, rows_by_slug, copy, alt=None):
     return "".join(out)
 
 
-def page_for(slug, rows=None, copy=None):
+def pages_for(slugs, rows=None, copy=None):
     rows = rows or load_rows()
     by = {r["slug"]: r for r in rows}
-    row = by[slug]
-    data = engine([row])
-    return render(row, data["rows"][slug], by, copy or load_copy(row), data["alt"].get(slug))
+    data = engine([by[s] for s in slugs])
+    return {s: render(by[s], data["rows"][s], by, copy or load_copy(by[s]), data["alt"].get(s)) for s in slugs}
+
+
+def page_for(slug, rows=None, copy=None):
+    return pages_for([slug], rows, copy)[slug]
 
 
 def fixture_data(rows):
@@ -532,34 +541,8 @@ def fixture_data(rows):
     return json.dumps(out, indent=1, sort_keys=True) + "\n"
 
 
-def main(argv):
-    check = "--check" in argv
-    args = [a for a in argv if not a.startswith("--")]
-    if "--fixture" in argv:
-        text = fixture_data(load_rows())
-        if check:
-            with open(FIXTURE, encoding="utf-8") as f:
-                return 0 if f.read() == text else 1
-        with open(FIXTURE, "w", encoding="utf-8") as f:
-            f.write(text)
-        return 0
-    if "--hub" in argv:
-        text = hub_page()
-        path = os.path.join(ROOT, "scales", "index.html")
-        if "--stdout" in argv:
-            sys.stdout.write(text)
-            return 0
-        if check:
-            with open(path, encoding="utf-8") as f:
-                return 0 if f.read() == text else 1
-        with open(path, "w", encoding="utf-8") as f:
-            f.write(text)
-        return 0
-    if len(args) != 1:
-        raise SystemExit(__doc__)
-    text = page_for(args[0])
-    path = os.path.join(ROOT, "scales", args[0], "index.html")
-    if "--stdout" in argv:
+def emit(path, text, check, stdout):
+    if stdout:
         sys.stdout.write(text)
         return 0
     if check:
@@ -572,6 +555,19 @@ def main(argv):
     with open(path, "w", encoding="utf-8") as f:
         f.write(text)
     return 0
+
+
+def main(argv):
+    check = "--check" in argv
+    stdout = "--stdout" in argv
+    args = [a for a in argv if not a.startswith("--")]
+    if "--fixture" in argv:
+        return emit(FIXTURE, fixture_data(load_rows()), check, False)
+    if "--hub" in argv:
+        return emit(os.path.join(ROOT, "scales", "index.html"), hub_page(), check, stdout)
+    if len(args) != 1:
+        raise SystemExit(__doc__)
+    return emit(os.path.join(ROOT, "scales", args[0], "index.html"), page_for(args[0]), check, stdout)
 
 
 if __name__ == "__main__":

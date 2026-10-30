@@ -8,8 +8,8 @@ diff --git a/index.html b/index.html
     (it must stay last). */
  #app{flex:none; width:100%; min-height:0; display:flex; flex-direction:column; align-items:center;
    height:max(100%, calc(100dvh - max(10px, env(safe-area-inset-top)) - max(12px, env(safe-area-inset-bottom))))}
--#about{position:fixed; inset:0; z-index:50; overflow-y:auto; overscroll-behavior:contain; background:#1f1b15;
-+#about{position:fixed; inset:0; max-width:520px; z-index:50; overflow-y:auto; overscroll-behavior:contain; background:#1f1b15;
+-#about{position:fixed; inset:0; z-index:50; overflow-y:auto; overscroll-behavior:contain; background:#1a1815;
++#about{position:fixed; inset:0; max-width:520px; z-index:50; overflow-y:auto; overscroll-behavior:contain; background:#1a1815;
    padding:0 max(calc(16px + env(safe-area-inset-right)), calc((100% - 520px) / 2)) max(48px, calc(var(--sp-4) + env(safe-area-inset-bottom))) max(calc(16px + env(safe-area-inset-left)), calc((100% - 520px) / 2));
    scroll-padding-top:var(--about-head-h, 0px);
-   color:#c4bcab; font:400 14px/1.6 "Nunito Sans", system-ui, sans-serif; user-select:text; -webkit-user-select:text}
+   color:#eae6df; font:400 16px/1.55 "Nunito Sans", system-ui, sans-serif; user-select:text; -webkit-user-select:text}

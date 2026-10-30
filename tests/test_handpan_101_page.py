@@ -4,7 +4,7 @@ import os
 import re
 import unittest
 
-from tests.test_scale_pages import Page, read, ROOT, SITE
+from tests.test_scale_pages import Page, read, ratio, ROOT, SITE, SHARED_ROOT, SHARED_RULES
 
 PATH = "handpan-101/index.html"
 URL = SITE + "handpan-101/"
@@ -47,9 +47,45 @@ class Handpan101PageTest(unittest.TestCase):
 
     def test_theme_colours_are_the_app_brown_and_gold(self):
         html = read(PATH)
-        self.assertIn("--r:#433b2c", html)
-        self.assertIn("--r:#e3b25c", html)
-        self.assertRegex(html, r"prefers-color-scheme:dark")
+        self.assertIn(SHARED_ROOT, html)
+        self.assertNotIn("prefers-color-scheme", html)
+        self.assertNotIn("#433b2c", html)
+        self.assertNotIn("#fbfaf8", html)
+        self.assertEqual(page().meta("theme-color"), "#1a1815")
+
+    def test_the_shared_h1_h2_body_and_link_rules(self):
+        html = read(PATH)
+        for rule in SHARED_RULES:
+            with self.subTest(rule=rule):
+                self.assertIn(rule, html)
+
+    def test_the_h2_is_drawn_in_the_root_colour_by_the_last_matching_rule(self):
+        html = read(PATH)
+        style = re.search(r"<style>(.*?)</style>", html, re.S).group(1)
+        rules = re.findall(r"(?:^|\})\s*h2\s*\{([^}]*)\}", style)
+        self.assertTrue(rules)
+        colours = [c for r in rules for c in re.findall(r"(?:^|;)\s*color:([^;]+)", r)]
+        self.assertEqual(colours[-1].strip(), "var(--r)")
+        self.assertIn("--r:#e3b25c", style)
+
+    def test_the_open_button_text_is_dark_on_gold(self):
+        html = read(PATH)
+        self.assertRegex(html, r"\.open\{[^}]*color:#1a1815")
+        self.assertRegex(html, r"a\.open\{color:#1a1815;")
+        self.assertNotIn("color:#fff", html)
+
+    def test_chord_progressions_video_ends_videos_to_start_with(self):
+        html = read(PATH)
+        videos = re.search(r"<h2>Videos to start with</h2>\s*<ul>(.*?)</ul>", html, re.S).group(1)
+        items = re.findall(r'<li><a href="([^"]+)">([^<]*)</a></li>', videos)
+        self.assertEqual(items[-1], ("https://www.youtube.com/watch?v=-BD13QhFJ-M", "Chord progressions video"))
+        self.assertEqual(len(items), 4)
+        self.assertNotIn("-BD13QhFJ-M", re.search(r"<h2>Resources</h2>(.*?)</section>", html, re.S).group(1))
+
+    def test_every_primary_and_text_colour_passes_contrast_on_the_brown(self):
+        for colour in ("#e3b25c", "#eae6df", "#c4bcab"):
+            with self.subTest(colour=colour):
+                self.assertGreaterEqual(ratio(colour, "#1a1815"), 4.5)
 
     def test_structure_h1_then_h2_one_main_lang_en(self):
         html = read(PATH)
@@ -118,7 +154,6 @@ class Handpan101PageTest(unittest.TestCase):
         hrefs = re.findall(r'<a class="res" href="([^"]+)" target="_blank" rel="noopener">', m.group(1))
         self.assertEqual(hrefs, ["https://handpaner.com/", "https://www.dingandtones.com/",
                                  "https://svenkirchhofer.de/handpan-training-cards/",
-                                 "https://www.youtube.com/watch?v=-BD13QhFJ-M",
                                  "https://handpanhelpers.klangzeug.de/"])
         self.assertNotRegex(re.sub(r"<[^>]+>", " ", m.group(1)), r"(?i)\bdecks?\b")
 

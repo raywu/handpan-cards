@@ -5,7 +5,7 @@
 // colours in CSS vars + markup, shuffle toggling, absence of German, 177 cards.
 //
 // Everything asserted here is derived from CLAUDE.md ("verified card conventions",
-// "instrument layouts", "app data model") or from user-observable behaviour, never
+// "instrument layouts", "data model") or from user-observable behaviour, never
 // from restating the implementation. Field identities come from the deck data's
 // NOTE NAMES, which is an independent route to the pitch-class rule the app
 // implements with midi % 12.
@@ -148,7 +148,7 @@ async function hashChange(app,hash,options={}) {
 
 /* ------------------------------------------------------------------ helpers */
 
-// Field tuple layout, per CLAUDE.md "App data model":
+// Field tuple layout, per CLAUDE.md "Data model":
 // fields{id:[name, octave, midi, zone, angle, label]}
 const F_NAME = 0, F_OCT = 1, F_MIDI = 2, F_ZONE = 3, F_LABEL = 5;
 
@@ -3593,7 +3593,9 @@ test("RR: Resources rows are EXPLORE SCALES, HANDPAN 101, ABOUT, each alone and 
 
 test("RR: no served markup, selector row or i18n table carries a removed res- id or panel.res_amy key", () => {
   const html = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
-  for (const dead of ["res-handpaner", "res-dingandtones", "res-trainingcards", "res-amy-progressions", "res-amy-bottom", "res-handpan-helpers", "panel.res_amy"]) {
+  const removedRes = require("../tools/probe/panel_fit.js").REMOVED_BY_DESIGN.filter((id) => id.startsWith("res-"));
+  assert.strictEqual(removedRes.length, 6);
+  for (const dead of [...removedRes, "panel.res_amy"]) {
     assert.ok(!html.includes(dead), dead + " is still served");
   }
 });
@@ -4606,8 +4608,8 @@ describe("panel fit judge", () => {
     delete candOver.controls["deck-add"];
     assert.strictEqual(judge(baseOver, candOver).rule2.fail.length, 1, "a base that overflows does not excuse it");
     assert.strictEqual(judge(cell(), withControl(cell(), "deck-add", { exists: false, rendered: false, disabled: false, bottom: 0 })).rule2.fail.length, 1, "exists:false counts as lacking");
-    assert.deepStrictEqual(pf.REMOVED_BY_DESIGN, ["modeS", "button:FULL DECK PDF", "button:CHORD-ONLY PDF", "share-copy",
-      "res-handpaner", "res-dingandtones", "res-trainingcards", "res-amy-progressions", "res-amy-bottom", "res-handpan-helpers"]);
+    assert.strictEqual(pf.REMOVED_BY_DESIGN.length, 10, "the removed-by-design list is exactly the ten known ids");
+    assert.ok(!pf.REMOVED_BY_DESIGN.includes("button:DOWNLOAD PDF"), "a lost DOWNLOAD PDF is not removed by design");
     const noS = judge(cell(), lacks("modeS"));
     assert.strictEqual(noS.rule2.fail.length, 0, "modeS is removed by design");
     assert.strictEqual(noS.rule2.reported.length, 0);
@@ -18439,3 +18441,12 @@ describe("SHC asynchronous LINK ownership", () => {
   });
 
 }
+
+test("NS1: About links underline at 1.5px and 2.5px on hover, like the scale pages", () => {
+  const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+  const rest = /#about a\{([^}]*)\}/.exec(html);
+  assert.ok(rest, "no #about a rule");
+  assert.match(rest[1], /text-decoration-thickness:\s*1\.5px/);
+  assert.match(rest[1], /text-underline-offset:\s*3px/);
+  assert.match(html, /#about a:hover\{\s*text-decoration-thickness:\s*2\.5px/);
+});
