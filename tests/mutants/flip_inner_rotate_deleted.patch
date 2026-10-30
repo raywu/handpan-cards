@@ -1,10 +1,15 @@
 # kills: FT: d-kurd-10 at 380x780 shows one chord, NEXT steps, a tap flips, and nothing shifts
 # suite: node --test --test-name-pattern ^FT:.d-kurd-10.at.380x780 tests/e2e.test.js
 # The checked card no longer rotates its .inner, so the name face never shows; the checkbox still toggles.
-diff --git a/scales/d-kurd-10/index.html b/scales/d-kurd-10/index.html
 --- a/scales/d-kurd-10/index.html
 +++ b/scales/d-kurd-10/index.html
-@@ -96,7 +96,7 @@
+@@ -90,19 +90,19 @@
+ <input type="radio" name="step" id="p1" checked aria-label="Chord 1 of 3: Dm">
+ <input type="radio" name="step" id="p2" aria-label="Chord 2 of 3: Gm">
+ <input type="radio" name="step" id="p3" aria-label="Chord 3 of 3: Am">
+ <div class="cards">
+ <div class="slot"><div class="step">Chord 1 of 3</div>
+ <div class="cardhost"><template shadowrootmode="open"><style>:host{display:block;width:min(322px,100%);--root:#2563B0;--tone:#C0452C}
  .wrap{display:block;position:relative;perspective:1400px;cursor:pointer;min-height:44px}
  .flip{position:absolute;inset:0;width:100%;height:100%;opacity:0;margin:0;cursor:pointer;z-index:1}
  .inner{display:grid;transition:transform .45s cubic-bezier(.2,.7,.25,1);transform-style:preserve-3d}
@@ -13,3 +18,9 @@ diff --git a/scales/d-kurd-10/index.html b/scales/d-kurd-10/index.html
  .flip:focus-visible+.inner{outline:3px solid var(--root);outline-offset:3px;border-radius:12px}
  @media (prefers-reduced-motion:reduce){.inner{transition:none}}
  .face{grid-area:1/1;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:12px;box-shadow:0 12px 34px rgba(0,0,0,.5), 0 2px 8px rgba(0,0,0,.4)}
+ .front{transform:rotateY(180deg)}
+ .front,.card{box-sizing:border-box;background:#fff;color:#242424;border:3.2px solid var(--root)}
+ .front{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:12px 8px;position:relative}
+ .front .fdeg{position:absolute;top:12px;left:13px;font:600 9px/1.5 "Nunito Sans",system-ui,sans-serif;letter-spacing:.12em;color:var(--root)}
+ .front .fname{font-family:Marcellus,serif;font-size:44px;line-height:1.1;color:var(--root);text-align:center}
+ .front .hint{display:none}
