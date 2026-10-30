@@ -3800,6 +3800,30 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     SMALL_LABELS: {
       kind: "warning",
       reason: "Crowded pan: the smallest labels print at <N> pt, under the 3.6 pt this app treats as readable. Nothing is left out."
+    },
+    PROFILE_UNKNOWN: {
+      kind: "error",
+      reason: "This paired-area layout is not one this app knows."
+    },
+    PROFILE_MAP_INVALID: {
+      kind: "error",
+      reason: "The paired-area layout is malformed: it must list 18 areas, each empty or one of your notes."
+    },
+    PROFILE_NOTE_MISSING: {
+      kind: "error",
+      reason: "The paired-area layout leaves out one of your notes. Every note needs an area."
+    },
+    PROFILE_NOTE_TWICE: {
+      kind: "error",
+      reason: "The paired-area layout places the same note in two areas."
+    },
+    PROFILE_FULL: {
+      kind: "error",
+      reason: "Paired areas hold at most 18 notes besides the ding. Remove some notes."
+    },
+    PROFILE_CONFLICT: {
+      kind: "error",
+      reason: "Paired areas set their own placement, so mirror, anchor, seats and angles cannot be combined with them."
     }
   };
 
@@ -4509,6 +4533,66 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     });
   }
 
+  /* ---- the paired-area profile option (ENGINE-SPEC 18) ------------------ */
+
+  var PROFILE_AREAS = 18;
+  var PROFILE_KEY_RE = /^[rib]\d{1,3}$/;
+  var ZONE_KEY = { rim: "r", inner: "i", bottom: "b" };
+
+  function has(obj, key) {
+    return Object.prototype.hasOwnProperty.call(obj, key);
+  }
+
+  // The one validator of options.profile. `raw` is the caller's option, `options`
+  // the whole raw option bag (for PROFILE_CONFLICT), `fields` the parsed seed.
+  function readProfile(raw, options, fields) {
+    if (raw === undefined || raw === null) return ok(undefined);
+    if (!HPE.core.PROFILE_ENABLED) return scaleErr("PROFILE_UNKNOWN");
+    var placement = ["mirrorBottom", "anchor", "seats", "angles"];
+    if (options.mirror === true) return scaleErr("PROFILE_CONFLICT");
+    for (var c = 0; c < placement.length; c += 1) {
+      var given = options[placement[c]];
+      if (given !== undefined && given !== null) return scaleErr("PROFILE_CONFLICT");
+    }
+    if (typeof raw !== "object" || Array.isArray(raw)) return scaleErr("PROFILE_MAP_INVALID");
+    var keys = Object.keys(raw).sort();
+    if (keys.length !== 3 || keys[0] !== "id" || keys[1] !== "map" || keys[2] !== "rev") {
+      return scaleErr("PROFILE_MAP_INVALID");
+    }
+    if (raw.id !== "paired" || raw.rev !== 1) return scaleErr("PROFILE_UNKNOWN");
+
+    var byKey = {};
+    var total = 0;
+    var id;
+    for (id in fields) {
+      if (!has(fields, id) || fields[id][3] === "ding") continue;
+      byKey[ZONE_KEY[fields[id][3]] + fields[id][2]] = true;
+      total += 1;
+    }
+    if (total > PROFILE_AREAS) return scaleErr("PROFILE_FULL");
+
+    var map = raw.map;
+    if (!Array.isArray(map) || map.length !== PROFILE_AREAS) return scaleErr("PROFILE_MAP_INVALID");
+    var seen = {};
+    var out = [];
+    for (var i = 0; i < PROFILE_AREAS; i += 1) {
+      if (!has(map, String(i))) return scaleErr("PROFILE_MAP_INVALID");
+      var entry = map[i];
+      if (entry === null) { out.push(null); continue; }
+      if (typeof entry !== "string" || !PROFILE_KEY_RE.test(entry) || !has(byKey, entry)) {
+        return scaleErr("PROFILE_MAP_INVALID");
+      }
+      if (has(seen, entry)) return scaleErr("PROFILE_NOTE_TWICE");
+      seen[entry] = true;
+      out.push(entry);
+    }
+    var key;
+    for (key in byKey) {
+      if (has(byKey, key) && !has(seen, key)) return scaleErr("PROFILE_NOTE_MISSING");
+    }
+    return ok({ id: "paired", rev: 1, map: out });
+  }
+
   function parseSeed(input, options) {
     if (typeof input !== "string") return badNote(String(input));
     var opts = readOptions(options);
@@ -4554,6 +4638,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       fields[String(first + n)] = [spell(entry.note.letter, entry.note.accidental),
                                    entry.note.octave, entry.note.midi, "bottom", null, "U" + (n + 1)];
     });
+    var profile = readProfile(options ? options.profile : undefined, options || {}, fields);
+    if (!profile.ok) return profile;
+    if (profile.value) opts.value.profile = profile.value;
     // The field ids in typed order (tops, then bottoms), for the importer's
     // source-to-field mapping. Not enumerable: it is a reading aid, not part of
     // the seed, so equality, spreading and serialising of a seed ignore it.
@@ -4825,6 +4912,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   HPE.core = {
     LABEL_RULE: LABEL_RULE,
+    PROFILE_ENABLED: false,
+    readProfile: readProfile,
     parseSeed: parseSeed,
     parseLegacySeed: parseLegacySeed,
     inferBottoms: inferBottoms,
@@ -6831,11 +6920,84 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     for (i = 0; i < n; i += 1) fields[ids[P[(i + bestR) % n].i]][5] = H[i].label;
   }
 
+  /* ---- the paired-area profile (ENGINE-SPEC 18) -------------------------- *
+   * The frozen generic profile, a literal copy of
+   * tests/fixtures/paired_profile_v1.json (a test holds them equal). Area k sits
+   * at angles[k-1]; slot pk is the primary there, sk the secondary outward of
+   * it. Fractions of R.
+   */
+  var PROFILE = {
+    id: "paired", rev: 1, areas: 9,
+    angles: [270, 230, 310, 190, 350, 150, 30, 110, 70],
+    primary: { orbit: 0.58, r: 0.16 },
+    secondary: { orbit: 0.86, r: 0.11 },
+    ding: { r: 0.21, dy: 0 },
+    n_in: 0.052, n_out: 0.068, extent_margin: 0.06,
+    slots: ["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "p9",
+            "s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9"]
+  };
+
+  var ZONE_LETTER = { rim: "r", inner: "i", bottom: "b" };
+
+  function occurrenceKey(rec) {
+    return ZONE_LETTER[rec[3]] + rec[2];
+  }
+
+  // Top notes (rim, then inner, in field-number order) fill p1..p9 then s1..s9;
+  // bottom notes fill the remaining secondaries from s1, then the remaining
+  // primaries. Returns the 18-entry map, or PROFILE_FULL past 18 notes.
+  function proposeProfile(seedOrFields) {
+    var fields = fieldsOf(seedOrFields);
+    var ids = collect(fields);
+    var tops = ids.rim.concat(ids.inner);
+    var bottoms = ids.bottom;
+    if (tops.length + bottoms.length > PROFILE.slots.length) {
+      return HPE.core.err("PROFILE_FULL", {});
+    }
+    var map = [];
+    var i;
+    for (i = 0; i < PROFILE.slots.length; i += 1) map.push(null);
+    for (i = 0; i < tops.length; i += 1) map[i] = occurrenceKey(fields[tops[i]]);
+    var free = [];
+    for (i = PROFILE.areas; i < PROFILE.slots.length; i += 1) if (map[i] === null) free.push(i);
+    for (i = 0; i < PROFILE.areas; i += 1) if (map[i] === null) free.push(i);
+    for (i = 0; i < bottoms.length; i += 1) map[free[i]] = occurrenceKey(fields[bottoms[i]]);
+    return { ok: true, value: map };
+  }
+
+  // geom.place: {fieldId: [angle, orbitFrac, rFrac]} for every mapped non-ding field.
+  function placeProfile(fields, profile) {
+    var byKey = {};
+    var id;
+    for (id in fields) {
+      if (Object.prototype.hasOwnProperty.call(fields, id) && fields[id][3] !== "ding") {
+        byKey[occurrenceKey(fields[id])] = id;
+      }
+    }
+    var place = {};
+    for (var k = 0; k < profile.map.length; k += 1) {
+      if (profile.map[k] === null) continue;
+      var kind = k < PROFILE.areas ? PROFILE.primary : PROFILE.secondary;
+      place[byKey[profile.map[k]]] = [PROFILE.angles[k % PROFILE.areas], kind.orbit, kind.r];
+    }
+    return place;
+  }
+
   function solve(seedOrFields, options) {
     var source = fieldsOf(seedOrFields);
     var zones = collect(source);
 
     var seedOptions = (seedOrFields && seedOrFields.options) || {};
+    if (seedOptions.profile !== undefined && seedOptions.profile !== null) {
+      var profile = HPE.core.readProfile(seedOptions.profile, {}, source);
+      if (!profile.ok) return profile;
+      var plain = solve({ fields: source, options: {} }, options);
+      plain.value.geom.r_ding = PROFILE.ding.r;
+      plain.value.geom.ding_dy = PROFILE.ding.dy;
+      plain.value.geom.f_ding = round(F_DING_RATIO * PROFILE.ding.r, 4);
+      plain.value.geom.place = placeProfile(source, profile.value);
+      return plain;
+    }
     var mirrors = resolveMirrors(options, seedOptions);
     var anchor = resolveAnchor(options, seedOptions);
 
@@ -6855,6 +7017,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   HPE.layout = {
     solve: solve,
+    proposeProfile: proposeProfile,
+    PROFILE: PROFILE,
     slotOrder: slotOrder,
     seatsFromOrder: seatsFromOrder,
     readSeats: readSeats,
@@ -7944,6 +8108,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // What a stored record carries. Records keep the v4 shape (formatSeed plus
   // options), so the wire version moves alone.
   var RECORD_VERSION = 4;
+  // Paired-area profiles (ENGINE-SPEC 18) travel at wire v7 and are stored as
+  // record v5; an acoustic seed never leaves v6 / record 4.
+  var PROFILE_VERSION = 7;
+  var PROFILE_RECORD_VERSION = 5;
   var NEWEST = VERSION;   // an alias decode can still see past its own shadow
   var OLDEST = 1;         // no version 0 ever shipped
 
@@ -8190,14 +8358,23 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     if (label === null) return badNote(seed);
     var typed = opts.name !== undefined && opts.name !== null && String(opts.name) !== "";
     var scale = scaleSegment(seed.fields);
-    var segs = [String(VERSION), scale, typed ? percentEncode(String(opts.name)) : "*" + percentEncode(label)];
-    var meaning = [String(VERSION), scale, typed ? String(opts.name) : FIELD_SEP];
+    var profiled = opts.profile !== undefined && opts.profile !== null;
+    var wire = String(profiled ? PROFILE_VERSION : VERSION);
+    var segs = [wire, scale, typed ? percentEncode(String(opts.name)) : "*" + percentEncode(label)];
+    var meaning = [wire, scale, typed ? String(opts.name) : FIELD_SEP];
     function option(text) {
       segs.push(text);
       meaning.push(text);
     }
     if (opts.palette) option("palette-" + (opts.palette + 1));
     if (opts.parent !== undefined && opts.parent !== null) option("parent-" + parentSlug(opts.parent));
+    if (profiled) {
+      option("pair-" + opts.profile.map.map(function (k) { return k === null ? "-" : k; }).join("."));
+      segs.push(checkHex(meaning.join(SEP)));
+      var wired = segs.join("/");
+      if (wired.length > CAPS.payload) return badNote(wired);
+      return ok(wired);
+    }
     var mirrors = HPE.layout.resolveMirrors({}, opts);
     if (mirrors.top && mirrors.bottom) option("mirror");
     else if (mirrors.top) option("mirror-top");
@@ -8221,6 +8398,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   var PALETTE_RE = /^palette-([2-6])$/;
   var PALETTE_RE_V6 = /^palette-(10|[2-9])$/;
   var PARENT_RE = /^parent-(.+)$/;
+  var PAIR_RE = /^pair-((?:[rib]\d{1,3}|-)(?:\.(?:[rib]\d{1,3}|-)){17})$/;
   var ANGLES_RE = /^at-((?:0|[1-9][0-9]{0,2})?(?:,(?:0|[1-9][0-9]{0,2})?)*)$/;
 
   // By hand over the UTF-8 bytes: unreserved characters stay, a space is "+",
@@ -8291,7 +8469,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return HPE.naming.PARENTS[index].name.toLowerCase().split(" ").join("-");
   }
 
-  var OPTION_ORDER = { palette: 0, parent: 1, mirror: 2, between: 3, seats: 4, at: 5 };
+  var OPTION_ORDER = { palette: 0, parent: 1, pair: 2, mirror: 3, between: 4, seats: 5, at: 6 };
 
   // Every structural refusal is badNote of the whole link; what
   // core.parseSeed says about the scale comes back unchanged.
@@ -8322,6 +8500,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     if (segs[segs.length - 1] !== checkHex(meaning.join(SEP))) return badNote(text);
 
     var options = { palette: 0, parent: null, mirror: false, name: name };
+    var profiled = text.charAt(0) === "7";
+    var pairs = 0;
     var rank = -1;
     for (var k = 0; k < texts.length; k += 1) {
       var o = texts[k];
@@ -8338,6 +8518,16 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         }
         if (found < 0) return badNote(text);
         options.parent = found;
+      } else if ((m = PAIR_RE.exec(o))) {
+        if (!profiled) return badNote(text);
+        at = OPTION_ORDER.pair;
+        pairs += 1;
+        options.profile = {
+          id: "paired", rev: 1,
+          map: m[1].split(".").map(function (t) { return t === "-" ? null : t; })
+        };
+      } else if (profiled) {
+        return badNote(text);
       } else if (o === "mirror") {
         at = OPTION_ORDER.mirror;
         options.mirror = true;
@@ -8368,6 +8558,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       if (at <= rank) return badNote(text);
       rank = at;
     }
+    if (profiled && pairs !== 1) return badNote(text);
     return HPE.core.parseSeed(scaleString(scale), options);
   }
 
@@ -8431,7 +8622,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     // encode WRITES): it leaves both gates reading exactly as they did in v1
     // while making every version this build knows decodable, so a v1 link
     // still opens in a v2 app and only a genuinely NEWER one is refused.
-    var VERSION = Math.max(OLDEST, Math.min(INDEX[text.charAt(0)], NEWEST));
+    var newest = HPE.core.PROFILE_ENABLED ? PROFILE_VERSION : NEWEST;
+    var VERSION = Math.max(OLDEST, Math.min(INDEX[text.charAt(0)], newest));
 
     // 1. The cap is the FIRST gate: an over-cap link is refused on length,
     //    before the version byte and before any parsing at all.
@@ -8478,11 +8670,19 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return scaleLineReader(version)(lines[0], options);
   }
 
+  function recordVersion(seed) {
+    var opts = (seed && seed.options) || {};
+    return opts.profile !== undefined && opts.profile !== null ? PROFILE_RECORD_VERSION : RECORD_VERSION;
+  }
+
   HPE.share = {
     encode: encode,
     decode: decode,
+    recordVersion: recordVersion,
     VERSION: VERSION,
+    PROFILE_VERSION: PROFILE_VERSION,
     RECORD_VERSION: RECORD_VERSION,
+    PROFILE_RECORD_VERSION: PROFILE_RECORD_VERSION,
     CAPS: CAPS
   };
 })(HPE);

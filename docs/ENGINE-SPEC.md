@@ -1204,7 +1204,8 @@ renderers branch only on `geom.place`.
 
 ### 18.5 Wire version 7
 
-`HPE.share.VERSION` stays 6; `PROFILE_VERSION = 7` and `NEWEST = 7`.
+`HPE.share.VERSION` stays 6; `PROFILE_VERSION = 7`. `NEWEST` stays `VERSION`;
+decode reads up to `PROFILE_VERSION` only while `HPE.core.PROFILE_ENABLED` is on.
 `HPE.share.encode` picks 7 if and only if the seed has a profile, otherwise it
 writes the exact current version 6 bytes. Version 7 is the version 6 segment
 grammar with profile options forbidden from mixing with `mirror`, `between`,
