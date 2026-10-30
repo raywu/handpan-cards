@@ -23,7 +23,7 @@ ALLOWED_HOSTS = {"fonts.googleapis.com", "fonts.gstatic.com", "handpan.raywu.org
                  "shop.ayasainstruments.com", "www.yishama.com", "www.xenithhandpans.com",
                  "www.veritashandpans.com", "www.spirithandpan.com", "www.panart.ch", "www.muziker.al",
                  "www.mudrahandpans.com", "www.kirstein.de", "www.halleonard.com", "www.boullard.ch"}
-SIZE_CAP = 62 * 1024 - 100
+SIZE_CAP = 62 * 1024 - 800
 PALETTES = ["#E0559A", "#6D40A3", "#0B7B75", "#E2761B", "#C9971E", "#DD8F00", "#2563B0", "#3B7A2A",
             "#C0452C", "#B3263A"]
 BG_LIGHT = "#fbfaf8"

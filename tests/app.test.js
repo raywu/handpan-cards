@@ -5352,6 +5352,57 @@ test("SW2 D: a second stroke begun during the flight counts once the card lands"
   assert.strictEqual(idx(), 2);
 });
 
+async function playTail(rig, head, tail, landAfter) {
+  const { wheelEv } = rig;
+  for (const dx of head) wheelEv(dx);
+  tail.slice(0, landAfter).forEach((dx) => wheelEv(dx));
+  rig.running().forEach((a) => a.finish());
+  await settle();
+  tail.slice(landAfter).forEach((dx) => wheelEv(dx));
+  await landFlight(rig);
+}
+
+test("SW2 E: a coalesced merge of three tail frames is not a new stroke", async () => {
+  const rig = swipeRig();
+  const tail = Array.from({ length: 150 }, (_, i) => 40 * 0.96 ** i);
+  tail.splice(30, 3, tail[30] + tail[31] + tail[32]);
+  await playTail(rig, [10, 25, 40], tail, 10);
+  assert.strictEqual(rig.idx(), 1);
+});
+
+test("SW2 F: a zero-delta event at the lift does not make the tail a new stroke", async () => {
+  const rig = swipeRig();
+  const tail = Array.from({ length: 80 }, (_, i) => 25 * 0.93 ** i);
+  await playTail(rig, [10, 25, 40, 40, 0], tail, 5);
+  assert.strictEqual(rig.idx(), 1);
+});
+
+test("SW2 G: a stroke that starts at 1px does not leave a stale trough after the commit", async () => {
+  const rig = swipeRig();
+  const { wheelEv, running } = rig;
+  for (const dx of [30, 1, 30, 30, 30]) wheelEv(dx);
+  running().forEach((a) => a.finish());
+  await settle();
+  const before = running().length;
+  for (let i = 0; i < 14; i++) wheelEv(8);
+  assert.strictEqual(running().length, before);
+});
+
+test("SW2 H: the gap timer firing mid-flight does not spring the card back", async () => {
+  const { app, wheelEv, running } = swipeRig();
+  for (const dx of [30, 30, 30, 30]) wheelEv(dx);
+  app.flushTimers();
+  wheelEv(30);
+  app.flushTimers();
+  assert.strictEqual(running().length, 1);
+});
+
+test("SW2 I: a rise inside a gesture that has not fired does not restart it", async () => {
+  const rig = swipeRig();
+  for (const dx of [30, 1, 1, 30, 30]) rig.wheelEv(dx);
+  assert.strictEqual(rig.running().length, 1);
+});
+
 test("US-3 wheel is ignored mid-flight", async () => {
   const { app, wheelEv, running, idx } = swipeRig();
   for (const dx of [30, 30, 30, 30]) wheelEv(dx);

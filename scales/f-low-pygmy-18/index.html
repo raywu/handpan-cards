@@ -230,8 +230,11 @@ HPE.swipe = (function () {
   }
   function wheelTrack(s, x) {
     s.hi = Math.max(s.hi, x);
-    s.lo = Math.min(s.lo, x);
-    return s.lo * 3 < s.hi && x > Math.max(4, 2 * s.lo);
+    if (x) s.lo = Math.min(s.lo, x);
+    const up = s.lo * 3 < s.hi && x > Math.max(4, 2 * s.lo);
+    const go = up && s.r;
+    s.r = up;
+    return go;
   }
   return {
     COMMIT_PX: SWIPE_COMMIT_PX, FLING_PX_MS: SWIPE_FLING_PX_MS, FLING_WINDOW_MS: SWIPE_FLING_WINDOW_MS,
