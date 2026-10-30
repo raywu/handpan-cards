@@ -4,12 +4,12 @@
 diff --git a/scales/d-kurd-9/index.html b/scales/d-kurd-9/index.html
 --- a/scales/d-kurd-9/index.html
 +++ b/scales/d-kurd-9/index.html
-@@ -186,7 +186,7 @@
- <p class="muted">Last updated <time datetime="2026-10-28">2026-10-28</time></p>
- <p class="muted">Handpan Chords is free in your browser. Your scales stay on your device.</p>
- <script>(function(){
--var COMMIT = 18, FLING = 0.15, WINDOW = 100, SLOP = 10, abs = Math.abs;
-+var COMMIT = 60, FLING = 0.15, WINDOW = 100, SLOP = 10, abs = Math.abs;
- var P = document.querySelector(".prog"), C = P.querySelector(".cards");
- var R = P.querySelectorAll("input[name=step]"), n = R.length, d, hold, t;
- if (n < 2) return;
+@@ -190,7 +190,7 @@
+ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+ HPE.swipe = (function () {
+   "use strict";
+-  const SWIPE_COMMIT_PX = 18, SWIPE_FLING_PX_MS = 0.15, SWIPE_FLING_WINDOW_MS = 100, SWIPE_SLOP_PX = 10;
++  const SWIPE_COMMIT_PX = 60, SWIPE_FLING_PX_MS = 0.15, SWIPE_FLING_WINDOW_MS = 100, SWIPE_SLOP_PX = 10;
+   const SWIPE_TILT_DEG_PER_PX = 0.05, SWIPE_TILT_MAX_DEG = 8;
+   const SWIPE_OUT_MS = 220, SWIPE_BACK_MS = 260, SWIPE_IN_MS = 180, SWIPE_IN_PX = 24;
+   const SWIPE_EASE = "cubic-bezier(.2,.7,.25,1)", SWIPE_OUT_EASE = "cubic-bezier(.4,0,1,1)";

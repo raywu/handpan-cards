@@ -17,6 +17,7 @@ import colorsys
 import html
 import json
 import os
+import re
 import subprocess
 import sys
 
@@ -270,42 +271,78 @@ ul.rel a{display:flex;align-items:center;min-height:44px}
 section.related h2,section.group h2{color:var(--fg);font-size:20px;margin:0 0 4px}
 """
 
-SWIPE_CONSTANTS = {"COMMIT": 18, "FLING": 0.15, "WINDOW": 100, "SLOP": 10}
+with open(os.path.join(ROOT, "src", "engine", "swipe.js"), encoding="utf-8") as _f:
+    SWIPE_MODULE = _f.read().rstrip("\n")
 
-SWIPE_JS = """(function(){
-var COMMIT = 18, FLING = 0.15, WINDOW = 100, SLOP = 10, abs = Math.abs;
-var P = document.querySelector(".prog"), C = P.querySelector(".cards");
-var R = P.querySelectorAll("input[name=step]"), n = R.length, d, hold, t;
-if (n < 2) return;
-P.insertAdjacentHTML("afterbegin", "<style>.prog.sw .cards{touch-action:pan-y}</style>");
+SWIPE_CONSTANTS = {
+    k: (float(v) if "." in v else int(v))
+    for k, v in zip(
+        ("COMMIT", "FLING", "WINDOW", "SLOP"),
+        re.search(r"const SWIPE_COMMIT_PX = (\d+), SWIPE_FLING_PX_MS = ([\d.]+), "
+                  r"SWIPE_FLING_WINDOW_MS = (\d+), SWIPE_SLOP_PX = (\d+);", SWIPE_MODULE).groups())
+}
+
+SWIPE_STYLE = (".prog.sw .cards{touch-action:pan-y;-webkit-user-select:none;user-select:none}"
+               ".rail{margin-top:4px;max-width:100%;overflow:hidden;white-space:nowrap;"
+               "font:20px/1.3 Marcellus,serif;letter-spacing:.02em;color:var(--muted)}"
+               ".rail b{font-weight:400;color:var(--fg);text-decoration:underline var(--r);text-underline-offset:3px}")
+
+SWIPE_DRIVER = """(function(){
+var W=HPE.swipe,abs=Math.abs,P=document.querySelector(".prog"),C=P.querySelector(".cards"),R=[].slice.call(P.querySelectorAll("input[name=step]")),S=[].slice.call(C.children),n=R.length,d,hold,t,busy,rm=matchMedia("(prefers-reduced-motion:reduce)");
+if(n<2)return;
+var H=S.map(s=>s.querySelector(".cardhost")),F=H.map(h=>h.shadowRoot.querySelector(".flip")),cur=()=>R.findIndex(r=>r.checked);
+var A=(e,a,b,ms,ez,fill)=>e.animate([{transform:a},{transform:b}],{duration:ms,easing:ez,fill:fill});
+P.insertAdjacentHTML("afterbegin","<style>%s</style>");
 P.classList.add("sw");
-C.addEventListener("pointerdown", e => {
-hold = 0; clearTimeout(t); d = 0;
-if (e.isPrimary && e.clientX > 20 && e.clientX < innerWidth - 20) d = {x: e.clientX, y: e.clientY, h: [[e.timeStamp, e.clientX]]};
+S.forEach((s,i)=>{
+var c=s.querySelector(".step");
+c.textContent=i+1+" / "+n;
+c.setAttribute("aria-label","Chord "+(i+1)+" of "+n);
+c.setAttribute("role","status");
+s.querySelector(".nav").insertAdjacentHTML("beforebegin",'<div class="rail" aria-hidden="true">'+R.map((r,j)=>{var x=r.getAttribute("aria-label").replace(/^.*?: /,"");return j==i?"<b>"+x+"</b>":x;}).join(" → ")+"</div>");
 });
-C.addEventListener("pointermove", e => {
-if (d) d.h.push([e.timeStamp, e.clientX]);
+function land(k){
+var g=document.activeElement;
+R[k].checked=true;
+F.forEach(f=>{f.checked=false;});
+if(P.contains(g))(g.type=="radio"?R[k]:F[k]).focus({preventScroll:true});
+}
+C.addEventListener("pointerdown",e=>{
+hold=0;clearTimeout(t);d=0;
+if(!busy&&e.isPrimary&&!e.button&&e.clientX>20&&e.clientX<innerWidth-20)d={x:e.clientX,y:e.clientY,h:[[e.timeStamp,e.clientX]],e:H[cur()]};
 });
-C.addEventListener("pointercancel", () => { d = 0; });
-C.addEventListener("pointerup", e => {
-if (!d) return;
-var x = e.clientX - d.x, y = e.clientY - d.y, h = d.h, a = h.pop(), b = a, k = 0;
-d = 0;
-for (var j of h) if (a[0] - j[0] <= WINDOW) { b = j; break; }
-var v = (a[1] - b[1]) / (a[0] - b[0]) || 0;
-var go = abs(y) <= abs(x) && (abs(x) > COMMIT || abs(x) > SLOP && abs(v) > FLING && v * x > 0);
-if (go || abs(x) > SLOP || abs(y) > SLOP) { hold = 1; t = setTimeout(() => { hold = 0; }, 350); }
-if (!go) return;
-while (k < n && !R[k].checked) k++;
-k += x < 0 ? 1 : -1;
-if (k < 0 || k == n) return;
-var f = P.contains(document.activeElement);
-R[k].checked = true;
-R[k].dispatchEvent(new Event("change", {bubbles: true}));
-if (f) R[k].focus({preventScroll: true});
+C.addEventListener("pointermove",e=>{
+if(!d)return;
+d.h.push([e.timeStamp,e.clientX]);
+var x=e.clientX-d.x;
+if(!d.m&&abs(x)>W.SLOP_PX&&abs(x)>=abs(e.clientY-d.y)){d.m=1;if(e.pointerType=="mouse")C.setPointerCapture(e.pointerId);}
+if(d.m)d.e.style.transform=W.xf(x);
 });
-C.addEventListener("click", e => { if (hold) { hold = 0; e.preventDefault(); } }, true);
-})();"""
+C.addEventListener("pointercancel",()=>{if(d)d.e.style.transform="";d=0;});
+C.addEventListener("pointerup",e=>{
+if(!d)return;
+var x=e.clientX-d.x,y=e.clientY-d.y,h=d.h,a=h.pop(),b=a,el=d.e,k=cur();
+d=0;
+for(var j of h)if(a[0]-j[0]<=W.FLING_WINDOW_MS){b=j;break;}
+var r=W.releaseDecision({dx:x,dy:y,vx:(a[1]-b[1])/(a[0]-b[0])||0,moved:abs(x)>W.SLOP_PX||abs(y)>W.SLOP_PX,reducedMotion:rm.matches});
+if(r.eatClick){hold=1;t=setTimeout(()=>{hold=0;},350);}
+el.style.transform="";
+var m=(k+r.dir+n)%%n,f;
+if(r.kind=="fly"){
+busy=1;
+f=A(el,W.xf(x),W.xf(-r.dir*innerWidth),W.OUT_MS,W.OUT_EASE,"forwards");
+f.onfinish=()=>{land(m);f.cancel();busy=0;A(H[m],"translate3d("+r.dir*W.IN_PX+"px,0,0)","none",W.IN_MS,W.EASE);};
+}else if(r.kind=="spring")A(el,W.xf(x),"none",W.BACK_MS,W.EASE);
+else if(r.dir)land(m);
+});
+C.addEventListener("click",e=>{if(hold){hold=0;e.preventDefault();}},true);
+C.addEventListener("keydown",e=>{
+var s=e.key=="ArrowRight"?1:e.key=="ArrowLeft"?-1:0;
+if(s&&!busy&&e.target.classList.contains("cardhost")){e.preventDefault();land((cur()+s+n)%%n);}
+});
+})();""" % (SWIPE_STYLE,)
+
+SWIPE_JS = SWIPE_MODULE + "\n" + SWIPE_DRIVER
 
 INDEX_CSS_HEAD = """:root{color-scheme:dark;--bg:#1a1815;--fg:#eae6df;--muted:#c4bcab;--r:#e3b25c}
 body{background:var(--bg);color:var(--fg);font-family:"Nunito Sans",system-ui,sans-serif;line-height:1.55;margin:0;padding:20px 16px 48px}
@@ -324,7 +361,7 @@ section.group h2{margin:0 0 4px}
 """
 
 CSS_EXTRA = """.prog{display:flex;flex-direction:column;align-items:center;gap:10px;position:relative}
-.prog>input{-webkit-appearance:none;appearance:none;position:absolute;bottom:0;left:calc(50% - 44px);width:88px;height:44px;opacity:0;margin:0;z-index:1;pointer-events:none;cursor:pointer;-webkit-tap-highlight-color:transparent;scroll-margin-top:min(320px,calc(100vh - 44px));scroll-margin-top:min(320px,calc(100svh - 44px))}
+.prog>input{-webkit-appearance:none;appearance:none;position:absolute;bottom:0;left:calc(50% - 44px);width:88px;height:44px;opacity:0;margin:0;z-index:1;pointer-events:none;cursor:pointer;-webkit-tap-highlight-color:transparent;scroll-margin-top:min(336px,calc(100vh - 44px));scroll-margin-top:min(336px,calc(100svh - 44px))}
 .prog>input:checked+input{left:auto;right:calc((100% - min(322px,100%))/2);pointer-events:auto}
 .prog>input:has(+input:checked){left:calc((100% - min(322px,100%))/2);pointer-events:auto}
 .prog .nav label{pointer-events:none}
@@ -339,19 +376,19 @@ CSS_EXTRA = """.prog{display:flex;flex-direction:column;align-items:center;gap:1
 """
 
 CARD_CSS = """:host{display:block;width:min(322px,100%%);--root:%(root)s;--tone:%(tone)s}
-.wrap{display:block;position:relative;perspective:1200px;cursor:pointer;min-height:44px}
+.wrap{display:block;position:relative;perspective:1400px;cursor:pointer;min-height:44px}
 .flip{position:absolute;inset:0;width:100%%;height:100%%;opacity:0;margin:0;cursor:pointer;z-index:1}
-.inner{display:grid;transition:transform .5s;transform-style:preserve-3d}
+.inner{display:grid;transition:transform .45s cubic-bezier(.2,.7,.25,1);transform-style:preserve-3d}
 .flip:checked+.inner{transform:rotateY(180deg)}
-.flip:focus-visible+.inner{outline:3px solid var(--root);outline-offset:3px;border-radius:14px}
+.flip:focus-visible+.inner{outline:3px solid var(--root);outline-offset:3px;border-radius:12px}
 @media (prefers-reduced-motion:reduce){.inner{transition:none}}
-.face{grid-area:1/1;backface-visibility:hidden;-webkit-backface-visibility:hidden}
-.back{transform:rotateY(180deg)}
-.front{box-sizing:border-box;background:#fff;color:#242424;border:3px solid var(--root);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:12px 8px;position:relative}
+.face{grid-area:1/1;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:12px;box-shadow:0 12px 34px rgba(0,0,0,.5), 0 2px 8px rgba(0,0,0,.4)}
+.front{transform:rotateY(180deg)}
+.front{box-sizing:border-box;background:#fff;color:#242424;border:3.2px solid var(--root);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:12px 8px;position:relative}
 .front .fdeg{position:absolute;top:12px;left:13px;font:600 9px/1.5 "Nunito Sans",system-ui,sans-serif;letter-spacing:.12em;color:var(--root)}
 .front .fname{font-family:Marcellus,serif;font-size:44px;line-height:1.1;color:var(--root);text-align:center}
-.front .hint{font:600 12px/1.3 "Nunito Sans",system-ui,sans-serif;letter-spacing:.08em;color:#5d646c}
-.card{box-sizing:border-box;width:100%%;background:#fff;color:#242424;border:3px solid var(--root);border-radius:14px;padding:12px 8px 13px;font-family:"Nunito Sans",system-ui,sans-serif}
+.front .hint{display:none}
+.card{box-sizing:border-box;width:100%%;background:#fff;color:#242424;border:3.2px solid var(--root);border-radius:12px;padding:12px 8px 13px;font-family:"Nunito Sans",system-ui,sans-serif}
 .hdr{display:flex;justify-content:space-between;align-items:flex-start;padding:0 5px}
 .hdr .l{font:600 9px/1.5 "Nunito Sans",system-ui,sans-serif;letter-spacing:.12em}
 .hdr .l .num{color:#757575;font-weight:400}
