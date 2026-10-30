@@ -3384,19 +3384,52 @@ HPE.pdfcards = (function () {
       .sort(function (a, b) { return Number(a) - Number(b); });
   }
 
+  // The paired-area profile's draw figures: a literal copy of
+  // tests/fixtures/paired_profile_v1.json (ENGINE-SPEC section 18), held equal
+  // to the fixture and to HPE.layout.PROFILE by a test. pdf_build.js loads no
+  // layout module, so the figures cannot be read from it. A geom that carries
+  // `place` is drawn from it; every other geom takes the acoustic path.
+  var PROFILE_DRAW = {
+    primary: { orbit: 0.58, r: 0.16 },
+    secondary: { orbit: 0.86, r: 0.11 },
+    ding: { r: 0.21, dy: 0 },
+    n_in: 0.052, n_out: 0.068, extent_margin: 0.06
+  };
+
+  // Print radius of a placed deck, or null for an acoustic geom: the reach is
+  // fixed by the profile (both slot kinds plus the ding edge), not by which
+  // slots are occupied.
+  function profileExtent(geom) {
+    if (!geom.place) return null;
+    var pd = PROFILE_DRAW;
+    var reach = Math.max.apply(null, [pd.primary, pd.secondary].map(function (k) {
+      return k.orbit + k.r + pd.n_out + k.r * rule().NUM_RATIO;
+    }));
+    var ding = geom.r_ding + Math.abs(geom.ding_dy || 0);
+    return Math.max(reach, ding) + pd.extent_margin;
+  }
+
+  function profileRadius(geom) {
+    var ext = profileExtent(geom);
+    return ext === null ? null : HPE.pdfdeck.bankers(74.0 / ext, 1);
+  }
+
   function drawPan(c, cx, cy, R, spec, active, roots, numbers) {
     active = active || [];
     roots = roots || [];
     numbers = numbers === undefined ? true : numbers;
     var g = spec._geom;
+    var placed = g.place;
+    var pd = PROFILE_DRAW;
+    var split = (pd.primary.orbit + pd.secondary.orbit) / 2;
     var nfs = numSize(R * g.r_note);
     c.setStrokeColor(BLACK); c.setLineWidth(1.15); c.setDash();
     c.circle(cx, cy, R, 1, 0);
-    if (g.inner_ring) {
+    if (g.inner_ring && !placed) {
       c.setLineWidth(0.6);
       c.circle(cx, cy, R * g.inner_ring, 1, 0);
     }
-    if (g.bottom) {
+    if (g.bottom && !placed) {
       c.setStrokeColor([0.90, 0.90, 0.90]); c.setLineWidth(0.7);
       c.setDash(2.2, 2.2);
       c.circle(cx, cy, R * g.bottom, 1, 0);
@@ -3424,8 +3457,16 @@ HPE.pdfcards = (function () {
         noteText(c, cx, cy - dy - rr0 * 0.30, nm, ov, "Label", fs0, INK);
         return;
       }
-      var orb = R * g[zone];
-      var rr = R * (zone === "bottom" ? g.r_bnote : g.r_note);
+      var orb, rr, slot;
+      if (placed) {
+        slot = placed[key];
+        ang = slot[0];
+        orb = R * slot[1];
+        rr = R * slot[2];
+      } else {
+        orb = R * g[zone];
+        rr = R * (zone === "bottom" ? g.r_bnote : g.r_note);
+      }
       var a = ang * Math.PI / 180;
       var px = cx + orb * Math.cos(a), py = cy + orb * Math.sin(a);
       drawRing(c, px, py, rr, state(i, zone === "bottom"));
@@ -3434,7 +3475,13 @@ HPE.pdfcards = (function () {
       noteText(c, px, py - rr * 0.30, nm, ov, "Label", fs, INK);
       if (numbers) {
         var nr, col, fnt;
-        if (zone === "bottom") {
+        if (placed) {
+          nfs = numSize(rr);
+          nr = slot[1] > split ? orb + rr + R * pd.n_out
+                               : orb - rr - R * pd.n_in;
+          col = zone === "bottom" ? ORANGE : INK;
+          fnt = zone === "bottom" ? "LabelSB" : "Label";
+        } else if (zone === "bottom") {
           nr = orb + rr + R * g.n_out;
           col = ORANGE; fnt = "LabelSB";
         } else if (zone === "rim" && g.rim_num_out) {
@@ -3656,6 +3703,8 @@ HPE.pdfcards = (function () {
 
     BLUE = deck.col_root || BLUE0;
     GREEN = deck.col_tone || GREEN0;
+    var placedR = profileRadius(deck.spec._geom);
+    if (placedR) deck = Object.assign({}, deck, { R: placedR });
 
     var doc = HPE.pdf.doc(page[0], page[1]);
     var S = slots(paper);
@@ -3717,6 +3766,9 @@ HPE.pdfcards = (function () {
     labelRatio: labelRatio,
     labelSize: labelSize,
     numSize: numSize,
+    profileRadius: profileRadius,
+    profileExtent: profileExtent,
+    PROFILE_DRAW: PROFILE_DRAW,
     // exported for the port's own unit tests, not for the app
     _internal: {
       Canvas: Canvas, tracked: tracked,
@@ -11214,10 +11266,15 @@ function pan(d, ch, opts) {
   const sets = ch ? chordSets(d, ch) : { blue: new Set(), green: new Set() };
   const { blue, green } = sets;
   const C = d.colors;
-  const hasBottom = !!g.bottom;
+  // A paired-area profile deck is drawn from geom.place: its acoustic ext,
+  // bottom, inner_ring, r_note and n_* are stale and must not be read.
+  const placed = g.place || null;
+  const PD = HPE.pdfcards.PROFILE_DRAW;
+  const hasBottom = !!g.bottom && !placed;
   // Generated decks carry the solver's own extent (ENGINE-SPEC section 11);
   // the built-in geom literals have no ext key, so they keep the derivation.
-  const ext = g.ext ? R * g.ext
+  const ext = placed ? R * HPE.pdfcards.profileExtent(g)
+            : g.ext ? R * g.ext
             : hasBottom ? R * (g.bottom + g.r_bnote + g.n_out) + 14 : R * 1.06;
   // data-ext travels with the interactive layer because the hit radius can only
   // be computed from the MEASURED width, and the sizer needs the viewBox scale
@@ -11230,10 +11287,11 @@ function pan(d, ch, opts) {
   if (hasBottom)
     s += `<circle r="${R*g.bottom}" fill="none" stroke="#e2e2e2" stroke-width="1.4" stroke-dasharray="4 4"/>`;
   s += `<circle r="${R}" fill="none" stroke="#000" stroke-width="2"/>`;
-  if (g.inner_ring)
+  if (g.inner_ring && !placed)
     s += `<circle r="${R*g.inner_ring}" fill="none" stroke="#000" stroke-width="1"/>`;
 
-  const numFs = numSize(R * g.r_note);
+  const numFs = placed ? 0 : numSize(R * g.r_note);
+  const splitOrbit = (PD.primary.orbit + PD.secondary.orbit) / 2;
   for (const fid in d.fields) {
     const id = +fid;
     const [name, oct, , zone, ang, lab] = d.fields[fid];
@@ -11244,19 +11302,25 @@ function pan(d, ch, opts) {
       continue;
     }
     const isB = zone === "bottom";
-    const orb = R * (isB ? g.bottom : zone === "inner" ? g.inner : g.rim);
-    const rr  = R * (isB ? g.r_bnote : g.r_note);
-    const [x, y] = P(orb, ang);
+    const slot = placed ? placed[fid] : null;
+    const orb = slot ? R * slot[1] : R * (isB ? g.bottom : zone === "inner" ? g.inner : g.rim);
+    const rr  = slot ? R * slot[2] : R * (isB ? g.r_bnote : g.r_note);
+    const [x, y] = P(orb, slot ? slot[0] : ang);
     s += panField(sets, C, x, y, rr, id, isB);
     const lit = blue.has(id) || green.has(id);
     s += panLabel(x, y, name, oct, labelSize(rr, zone),
                isB && !lit ? "#8a8a8a" : "#242424");
     // numbers
     let nr, col, fs = numFs;
-    if (isB) { nr = orb + rr + R * g.n_out; col = "#E27005"; }
+    if (slot) {
+      fs = numSize(rr);
+      nr = slot[1] > splitOrbit ? orb + rr + R * PD.n_out : orb - rr - R * PD.n_in;
+      col = isB ? "#E27005" : "#333";
+    }
+    else if (isB) { nr = orb + rr + R * g.n_out; col = "#E27005"; }
     else if (zone === "rim" && g.rim_num_out) { nr = orb + rr + R * g.n_in; col = "#333"; }
     else { nr = orb - rr - R * g.n_in; col = "#333"; }
-    const [nx, ny] = P(nr, ang);
+    const [nx, ny] = P(nr, slot ? slot[0] : ang);
     s += `<text x="${nx}" y="${ny + fs*0.34}" text-anchor="middle" fill="${col}"
       font-family="Nunito Sans, sans-serif" font-weight="${isB?600:400}" font-size="${fs}">${lab}</text>`;
     // The ding is skipped above and so never reaches here: it has no seat.

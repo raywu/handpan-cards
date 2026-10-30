@@ -1,0 +1,881 @@
+{
+ "_generated_by": "const W = \"/Users/ray/Projects/handpan-cards/.claude/worktrees/agent-a6c6ece55aef5924b\";\nconst fs = require(\"fs\");\nconst { loadEngine } = require(W + \"/tools/engine_loader.js\");\nconst H = loadEngine([\"core\", \"voicing\", \"layout\", \"naming\", \"select\"]);\nH.core.PROFILE_ENABLED = true;\n\nconst GEN = fs.readFileSync(__filename, \"utf8\");\nfunction make(file, seed, mapOf, note) {\n  const p = H.core.parseSeed(seed, {});\n  if (!p.ok) throw new Error(JSON.stringify(p));\n  const map = mapOf(p.value.fields);\n  const q = H.core.parseSeed(seed, { profile: { id: \"paired\", rev: 1, map } });\n  if (!q.ok) throw new Error(JSON.stringify(q));\n  const b = H.select.build(p.value);\n  const s = H.layout.solve(q.value);\n  if (!s.ok) throw new Error(JSON.stringify(s));\n  b.value.geom = s.value.geom;\n  b.value.fields = s.value.fields;\n  fs.writeFileSync(W + \"/tests/fixtures/\" + file, JSON.stringify({\n    _generated_by: GEN, note: note,\n    seed: H.core.formatSeed(q.value), map, deck: b.value }, null, 1) + \"\\n\");\n}\n\nconst PYGMY = \"[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 [Ab5]\";\nmake(\"profile_case_pygmy_v1.json\", PYGMY, (f) => H.layout.proposeProfile(f).value,\n  \"Pygmy with HPE.layout.proposeProfile: tops in p1..p9,s1,s2; six bottom notes in s3..s8.\");\n\nconst KURD = \"(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5\";\nmake(\"profile_case_kurd9_v1.json\", KURD, (f) => {\n  const keys = Object.values(f).filter((v) => v[3] === \"rim\").map((v) => \"r\" + v[2]);\n  const slots = [0, 1, 2, 4, 5, 6, 8, 12, 16];\n  const map = new Array(18).fill(null);\n  keys.forEach((k, i) => { map[slots[i]] = k; });\n  return map;\n}, \"Nine rim notes in p1,p2,p3,p5,p6,p7,p9,s4,s8: p4 and p8 stay empty.\");\n",
+ "note": "Nine rim notes in p1,p2,p3,p5,p6,p7,p9,s4,s8: p4 and p8 stay empty.",
+ "seed": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5",
+ "map": [
+  "r57",
+  "r58",
+  "r60",
+  null,
+  "r62",
+  "r64",
+  "r65",
+  null,
+  "r67",
+  null,
+  null,
+  null,
+  "r69",
+  null,
+  null,
+  null,
+  "r72",
+  null
+ ],
+ "deck": {
+  "id": "custom:cb5fe66a",
+  "name": "D AEOLIAN 10",
+  "options": {
+   "palette": 0,
+   "mirror": false,
+   "mirrorBottom": false,
+   "anchor": "one",
+   "parent": 1
+  },
+  "colors": {
+   "root": "#E0559A",
+   "tone": "#E2761B",
+   "ga": "#E0559A",
+   "gb": "#E2761B"
+  },
+  "degrees": {
+   "0": "VII",
+   "2": "i",
+   "4": "ii°",
+   "5": "III",
+   "7": "iv",
+   "9": "v",
+   "10": "VI"
+  },
+  "geom": {
+   "rim": 0.745,
+   "inner": 0,
+   "bottom": 0,
+   "r_ding": 0.21,
+   "ding_dy": 0,
+   "r_note": 0.19,
+   "r_bnote": 0,
+   "inner_ring": 0.355,
+   "f_ding": 0.126,
+   "f_note": 0.1454,
+   "f_bnote": 0,
+   "f_num": 0.1216,
+   "n_in": 0.085,
+   "n_out": 0,
+   "rim_num_out": false,
+   "ext": 1.06,
+   "place": {
+    "1": [
+     270,
+     0.58,
+     0.16
+    ],
+    "2": [
+     230,
+     0.58,
+     0.16
+    ],
+    "3": [
+     310,
+     0.58,
+     0.16
+    ],
+    "4": [
+     350,
+     0.58,
+     0.16
+    ],
+    "5": [
+     150,
+     0.58,
+     0.16
+    ],
+    "6": [
+     30,
+     0.58,
+     0.16
+    ],
+    "7": [
+     70,
+     0.58,
+     0.16
+    ],
+    "8": [
+     190,
+     0.86,
+     0.11
+    ],
+    "9": [
+     110,
+     0.86,
+     0.11
+    ]
+   }
+  },
+  "fields": {
+   "0": [
+    "D",
+    3,
+    50,
+    "ding",
+    null,
+    "Ding"
+   ],
+   "1": [
+    "A",
+    3,
+    57,
+    "rim",
+    270,
+    "1"
+   ],
+   "2": [
+    "Bb",
+    3,
+    58,
+    "rim",
+    230,
+    "2"
+   ],
+   "3": [
+    "C",
+    4,
+    60,
+    "rim",
+    310,
+    "3"
+   ],
+   "4": [
+    "D",
+    4,
+    62,
+    "rim",
+    190,
+    "4"
+   ],
+   "5": [
+    "E",
+    4,
+    64,
+    "rim",
+    350,
+    "5"
+   ],
+   "6": [
+    "F",
+    4,
+    65,
+    "rim",
+    150,
+    "6"
+   ],
+   "7": [
+    "G",
+    4,
+    67,
+    "rim",
+    30,
+    "7"
+   ],
+   "8": [
+    "A",
+    4,
+    69,
+    "rim",
+    110,
+    "8"
+   ],
+   "9": [
+    "C",
+    5,
+    72,
+    "rim",
+    70,
+    "9"
+   ]
+  },
+  "chords": [
+   {
+    "main": "Dm",
+    "sup": "",
+    "subtitle": "D MINOR",
+    "fields": [
+     4,
+     6,
+     8
+    ],
+    "roots": [
+     4
+    ]
+   },
+   {
+    "main": "D5",
+    "sup": "",
+    "subtitle": "POWER CHORD",
+    "fields": [
+     4,
+     8
+    ],
+    "roots": [
+     4
+    ]
+   },
+   {
+    "main": "Dsus",
+    "sup": "4",
+    "subtitle": "SUSPENDED CHORD",
+    "fields": [
+     4,
+     7,
+     8
+    ],
+    "roots": [
+     4
+    ]
+   },
+   {
+    "main": "D7sus",
+    "sup": "4",
+    "subtitle": "SUSPENDED DOMINANT 7",
+    "fields": [
+     4,
+     7,
+     8,
+     9
+    ],
+    "roots": [
+     4
+    ]
+   },
+   {
+    "main": "Dm",
+    "sup": "7",
+    "subtitle": "D MINOR 7 ( = F6 )",
+    "fields": [
+     4,
+     6,
+     8,
+     9
+    ],
+    "roots": [
+     4
+    ]
+   },
+   {
+    "main": "Dm",
+    "sup": "add9",
+    "subtitle": "D MINOR ADD 9",
+    "fields": [
+     4,
+     6,
+     8,
+     5
+    ],
+    "roots": [
+     4
+    ]
+   },
+   {
+    "main": "Dm",
+    "sup": "9",
+    "subtitle": "D MINOR 9",
+    "fields": [
+     4,
+     6,
+     8,
+     9,
+     5
+    ],
+    "roots": [
+     4
+    ]
+   },
+   {
+    "main": "Dm",
+    "sup": "11",
+    "subtitle": "D MINOR 11",
+    "fields": [
+     4,
+     6,
+     8,
+     9,
+     5,
+     7
+    ],
+    "roots": [
+     4
+    ]
+   },
+   {
+    "main": "E°",
+    "sup": "",
+    "subtitle": "DIMINISHED",
+    "fields": [
+     5,
+     7,
+     2
+    ],
+    "roots": [
+     5
+    ]
+   },
+   {
+    "main": "Em7",
+    "sup": "b5",
+    "subtitle": "HALF-DIMINISHED ( = Gm6 )",
+    "fields": [
+     5,
+     7,
+     2,
+     4
+    ],
+    "roots": [
+     5
+    ]
+   },
+   {
+    "main": "F",
+    "sup": "",
+    "subtitle": "F MAJOR",
+    "fields": [
+     6,
+     8,
+     9
+    ],
+    "roots": [
+     6
+    ]
+   },
+   {
+    "main": "F5",
+    "sup": "",
+    "subtitle": "POWER CHORD",
+    "fields": [
+     6,
+     9
+    ],
+    "roots": [
+     6
+    ]
+   },
+   {
+    "main": "Fsus",
+    "sup": "4",
+    "subtitle": "SUSPENDED CHORD",
+    "fields": [
+     6,
+     2,
+     3
+    ],
+    "roots": [
+     6
+    ]
+   },
+   {
+    "main": "Fmaj7sus",
+    "sup": "4",
+    "subtitle": "SUSPENDED MAJOR 7",
+    "fields": [
+     6,
+     2,
+     3,
+     5
+    ],
+    "roots": [
+     6
+    ]
+   },
+   {
+    "main": "Fmaj",
+    "sup": "7",
+    "subtitle": "F MAJOR 7",
+    "fields": [
+     6,
+     1,
+     3,
+     5
+    ],
+    "roots": [
+     6
+    ]
+   },
+   {
+    "main": "F",
+    "sup": "add9",
+    "subtitle": "F MAJOR ADD 9",
+    "fields": [
+     6,
+     8,
+     9,
+     7
+    ],
+    "roots": [
+     6
+    ]
+   },
+   {
+    "main": "F",
+    "sup": "6/9",
+    "subtitle": "F MAJOR 6/9",
+    "fields": [
+     6,
+     1,
+     3,
+     4,
+     7
+    ],
+    "roots": [
+     6
+    ]
+   },
+   {
+    "main": "Fmaj",
+    "sup": "9",
+    "subtitle": "F MAJOR 9",
+    "fields": [
+     6,
+     1,
+     3,
+     5,
+     7
+    ],
+    "roots": [
+     6
+    ]
+   },
+   {
+    "main": "Gm",
+    "sup": "",
+    "subtitle": "G MINOR",
+    "fields": [
+     7,
+     2,
+     4
+    ],
+    "roots": [
+     7
+    ]
+   },
+   {
+    "main": "G5",
+    "sup": "",
+    "subtitle": "POWER CHORD",
+    "fields": [
+     7,
+     4
+    ],
+    "roots": [
+     7
+    ]
+   },
+   {
+    "main": "Gsus",
+    "sup": "4",
+    "subtitle": "SUSPENDED CHORD",
+    "fields": [
+     7,
+     3,
+     4
+    ],
+    "roots": [
+     7
+    ]
+   },
+   {
+    "main": "G7sus",
+    "sup": "4",
+    "subtitle": "SUSPENDED DOMINANT 7",
+    "fields": [
+     7,
+     3,
+     4,
+     6
+    ],
+    "roots": [
+     7
+    ]
+   },
+   {
+    "main": "Gm",
+    "sup": "7",
+    "subtitle": "G MINOR 7 ( = Bb6 )",
+    "fields": [
+     7,
+     2,
+     4,
+     6
+    ],
+    "roots": [
+     7
+    ]
+   },
+   {
+    "main": "Gm",
+    "sup": "add9",
+    "subtitle": "G MINOR ADD 9",
+    "fields": [
+     7,
+     2,
+     4,
+     8
+    ],
+    "roots": [
+     7
+    ]
+   },
+   {
+    "main": "Gm",
+    "sup": "6/9",
+    "subtitle": "G MINOR 6/9",
+    "fields": [
+     7,
+     2,
+     4,
+     5,
+     8
+    ],
+    "roots": [
+     7
+    ]
+   },
+   {
+    "main": "Gm",
+    "sup": "9",
+    "subtitle": "G MINOR 9",
+    "fields": [
+     7,
+     2,
+     4,
+     6,
+     8
+    ],
+    "roots": [
+     7
+    ]
+   },
+   {
+    "main": "Gm",
+    "sup": "11",
+    "subtitle": "G MINOR 11",
+    "fields": [
+     7,
+     2,
+     4,
+     6,
+     8,
+     9
+    ],
+    "roots": [
+     7
+    ]
+   },
+   {
+    "main": "Am",
+    "sup": "",
+    "subtitle": "A MINOR",
+    "fields": [
+     1,
+     3,
+     5
+    ],
+    "roots": [
+     1
+    ]
+   },
+   {
+    "main": "A5",
+    "sup": "",
+    "subtitle": "POWER CHORD",
+    "fields": [
+     1,
+     5
+    ],
+    "roots": [
+     1
+    ]
+   },
+   {
+    "main": "Asus",
+    "sup": "4",
+    "subtitle": "SUSPENDED CHORD",
+    "fields": [
+     1,
+     4,
+     5
+    ],
+    "roots": [
+     1
+    ]
+   },
+   {
+    "main": "A7sus",
+    "sup": "4",
+    "subtitle": "SUSPENDED DOMINANT 7",
+    "fields": [
+     1,
+     4,
+     5,
+     7
+    ],
+    "roots": [
+     1
+    ]
+   },
+   {
+    "main": "Am",
+    "sup": "7",
+    "subtitle": "A MINOR 7 ( = C6 )",
+    "fields": [
+     1,
+     3,
+     5,
+     7
+    ],
+    "roots": [
+     1
+    ]
+   },
+   {
+    "main": "Bb",
+    "sup": "",
+    "subtitle": "Bb MAJOR",
+    "fields": [
+     2,
+     4,
+     6
+    ],
+    "roots": [
+     2
+    ]
+   },
+   {
+    "main": "Bb5",
+    "sup": "",
+    "subtitle": "POWER CHORD",
+    "fields": [
+     2,
+     6
+    ],
+    "roots": [
+     2
+    ]
+   },
+   {
+    "main": "Bbmaj",
+    "sup": "7",
+    "subtitle": "Bb MAJOR 7",
+    "fields": [
+     2,
+     4,
+     6,
+     8
+    ],
+    "roots": [
+     2
+    ]
+   },
+   {
+    "main": "Bb",
+    "sup": "add9",
+    "subtitle": "Bb MAJOR ADD 9",
+    "fields": [
+     2,
+     4,
+     6,
+     3
+    ],
+    "roots": [
+     2
+    ]
+   },
+   {
+    "main": "Bb",
+    "sup": "6/9",
+    "subtitle": "Bb MAJOR 6/9",
+    "fields": [
+     2,
+     4,
+     6,
+     7,
+     3
+    ],
+    "roots": [
+     2
+    ]
+   },
+   {
+    "main": "Bbmaj",
+    "sup": "9",
+    "subtitle": "Bb MAJOR 9",
+    "fields": [
+     2,
+     4,
+     6,
+     8,
+     3
+    ],
+    "roots": [
+     2
+    ]
+   },
+   {
+    "main": "Bbmaj7",
+    "sup": "#11",
+    "subtitle": "Bb MAJOR 7 SHARP 11",
+    "fields": [
+     2,
+     4,
+     6,
+     8,
+     5
+    ],
+    "roots": [
+     2
+    ]
+   },
+   {
+    "main": "C",
+    "sup": "",
+    "subtitle": "C MAJOR",
+    "fields": [
+     3,
+     5,
+     7
+    ],
+    "roots": [
+     3
+    ]
+   },
+   {
+    "main": "C5",
+    "sup": "",
+    "subtitle": "POWER CHORD",
+    "fields": [
+     3,
+     7
+    ],
+    "roots": [
+     3
+    ]
+   },
+   {
+    "main": "Csus",
+    "sup": "4",
+    "subtitle": "SUSPENDED CHORD",
+    "fields": [
+     3,
+     6,
+     7
+    ],
+    "roots": [
+     3
+    ]
+   },
+   {
+    "main": "C7sus",
+    "sup": "4",
+    "subtitle": "SUSPENDED DOMINANT 7",
+    "fields": [
+     3,
+     6,
+     7,
+     2
+    ],
+    "roots": [
+     3
+    ]
+   },
+   {
+    "main": "C",
+    "sup": "7",
+    "subtitle": "C DOMINANT 7",
+    "fields": [
+     3,
+     5,
+     7,
+     2
+    ],
+    "roots": [
+     3
+    ]
+   },
+   {
+    "main": "C",
+    "sup": "add9",
+    "subtitle": "C MAJOR ADD 9",
+    "fields": [
+     3,
+     5,
+     7,
+     4
+    ],
+    "roots": [
+     3
+    ]
+   },
+   {
+    "main": "C",
+    "sup": "6/9",
+    "subtitle": "C MAJOR 6/9",
+    "fields": [
+     3,
+     5,
+     7,
+     8,
+     4
+    ],
+    "roots": [
+     3
+    ]
+   },
+   {
+    "main": "C",
+    "sup": "9",
+    "subtitle": "C DOMINANT 9",
+    "fields": [
+     3,
+     5,
+     7,
+     2,
+     4
+    ],
+    "roots": [
+     3
+    ]
+   },
+   {
+    "main": "C",
+    "sup": "11",
+    "subtitle": "C DOMINANT 11",
+    "fields": [
+     3,
+     5,
+     7,
+     2,
+     4,
+     6
+    ],
+    "roots": [
+     3
+    ]
+   },
+   {
+    "main": "C",
+    "sup": "13",
+    "subtitle": "C DOMINANT 13",
+    "fields": [
+     3,
+     5,
+     7,
+     2,
+     6,
+     8
+    ],
+    "roots": [
+     3
+    ]
+   }
+  ],
+  "warnings": []
+ }
+}

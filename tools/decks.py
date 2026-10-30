@@ -395,7 +395,8 @@ def from_generated(payload):
         # Carried, not dropped: the adapter is not where a warning goes to die.
         warnings=warnings,
         # --- geometry and baselines -------------------------------------
-        R=round(_BAND_HALF / ext, 1),
+        R=(hifi.profile_radius(generated["geom"], _BAND_HALF)
+           or round(_BAND_HALF / ext, 1)),
         cy=_BAND_CY,
         y_note=_Y_NOTE,
         y_num=_Y_NUM,
