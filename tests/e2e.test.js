@@ -20061,6 +20061,20 @@ function run() {
       assert.strictEqual(await stepIndex(), 1, "a vertical gesture steps nothing");
     });
 
+    test("FT: a sustained wheel stream that runs on through the fly-out steps exactly once, decaying or steady", async () => {
+      for (const shape of ["decay", "steady"]) {
+        await mouseSetup("d-kurd-9", 1280, 800);
+        const c = await hostCenter();
+        for (let i = 0; i < 50; i++) {
+          const dx = shape === "decay" ? Math.max(1, Math.round(45 * 0.9 ** i)) : 15;
+          await b.send("Input.dispatchMouseEvent", { type: "mouseWheel", x: c.x, y: c.y, deltaX: dx, deltaY: 0 });
+          await new Promise((r) => setTimeout(r, 30));
+        }
+        await new Promise((r) => setTimeout(r, 600));
+        assert.strictEqual(await stepIndex(), 2, shape + " stream: one step, not a second one after the fly");
+      }
+    });
+
     test("FT: a vertical mouse drag on the card makes no step and no flip", async () => {
       await mouseSetup("d-kurd-9", 1280, 800);
       const c = await hostCenter();

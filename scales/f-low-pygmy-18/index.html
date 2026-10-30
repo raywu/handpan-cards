@@ -254,7 +254,7 @@ L("pointerdown",e=>{o=0;clearTimeout(t);d=0;if(!z&&e.isPrimary&&!e.button&&e.cli
 L("pointermove",e=>{if(!d)return;d.h.push([e.timeStamp,e.clientX]);var x=e.clientX-d.x;if(!d.m&&abs(x)>W.SLOP_PX&&abs(x)>=abs(e.clientY-d.y)){d.m=1;if(e.pointerType=="mouse")C.setPointerCapture(e.pointerId)}if(d.m)d.e.style.transform=W.xf(x)});
 L("pointercancel",()=>{if(d)d.e.style.transform="";d=0});
 L("pointerup",e=>{if(!d)return;var x=e.clientX-d.x,y=e.clientY-d.y,h=d.h,a=h.pop(),b=a,el=d.e,k=Q();d=0;for(var j of h)if(a[0]-j[0]<=W.FLING_WINDOW_MS){b=j;break}var r=W.releaseDecision({dx:x,dy:y,vx:(a[1]-b[1])/(a[0]-b[0])||0,moved:abs(x)>W.SLOP_PX||abs(y)>W.SLOP_PX,reducedMotion:m.matches});if(r.eatClick){o=1;t=setTimeout(()=>{o=0},350)}el.style.transform="";if(r.kind=="fly")Y(k,r.dir,x);else if(r.kind=="spring")A(el,W.xf(x),"none",W.BACK_MS,W.EASE);else if(r.dir)J(G(k,r.dir))});
-L("wheel",e=>{var q=e.timeStamp,k=Q(),u;if(z)return;if(!w||q-w.t>160)w={s:0,x:abs(e.deltaX)>abs(e.deltaY)};w.t=q;if(!w.x||w.f)return;e.preventDefault();w.s+=e.deltaX;if(abs(w.s)>80){u=w.s>0?1:-1;w.f=1;if(m.matches)J(G(k,u));else Y(k,u,-w.s)}},{passive:false});
+L("wheel",e=>{var q=e.timeStamp,k=Q(),u;if(!w||q-w.t>160)w={s:0,x:abs(e.deltaX)>abs(e.deltaY),f:z};w.t=q;if(!w.x)return;e.preventDefault();if(w.f)return;w.s+=e.deltaX;if(abs(w.s)>80){u=w.s>0?1:-1;w.f=1;if(m.matches)J(G(k,u));else Y(k,u,-w.s)}},{passive:false});
 L("click",e=>{if(o){o=0;e.preventDefault()}},true);
 L("keydown",e=>{var s=e.key=="ArrowRight"?1:e.key=="ArrowLeft"?-1:0;if(s&&!z&&e.target.classList.contains("cardhost")){e.preventDefault();J(G(Q(),s))}});
 })();</script>
