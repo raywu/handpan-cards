@@ -3,8 +3,7 @@
 # The front (name) face loses its pre-rotation, so the answer face is never the default side.
 --- a/scales/d-kurd-10/index.html
 +++ b/scales/d-kurd-10/index.html
-@@ -90,27 +90,27 @@
- <input type="radio" name="step" id="p1" checked aria-label="Chord 1 of 3: Dm">
+@@ -91,25 +91,25 @@
  <input type="radio" name="step" id="p2" aria-label="Chord 2 of 3: Gm">
  <input type="radio" name="step" id="p3" aria-label="Chord 3 of 3: Am">
  <div class="cards">
@@ -23,7 +22,6 @@
  .front{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:12px 8px;position:relative}
  .front .fdeg{position:absolute;top:12px;left:13px;font:600 9px/1.5 "Nunito Sans",system-ui,sans-serif;letter-spacing:.12em;color:var(--root)}
  .front .fname{font-family:Marcellus,serif;font-size:44px;line-height:1.1;color:var(--root);text-align:center}
- .front .hint{display:none}
  .card{width:100%;border-radius:12px;padding:12px 8px 13px;font-family:"Nunito Sans",system-ui,sans-serif}
  .hdr{display:flex;justify-content:space-between;align-items:flex-start;padding:0 5px}
  .hdr .l{font:600 9px/1.5 "Nunito Sans",system-ui,sans-serif;letter-spacing:.12em}

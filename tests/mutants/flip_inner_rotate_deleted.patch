@@ -3,8 +3,7 @@
 # The checked card no longer rotates its .inner, so the name face never shows; the checkbox still toggles.
 --- a/scales/d-kurd-10/index.html
 +++ b/scales/d-kurd-10/index.html
-@@ -90,19 +90,19 @@
- <input type="radio" name="step" id="p1" checked aria-label="Chord 1 of 3: Dm">
+@@ -91,17 +91,17 @@
  <input type="radio" name="step" id="p2" aria-label="Chord 2 of 3: Gm">
  <input type="radio" name="step" id="p3" aria-label="Chord 3 of 3: Am">
  <div class="cards">
@@ -23,4 +22,3 @@
  .front{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:12px 8px;position:relative}
  .front .fdeg{position:absolute;top:12px;left:13px;font:600 9px/1.5 "Nunito Sans",system-ui,sans-serif;letter-spacing:.12em;color:var(--root)}
  .front .fname{font-family:Marcellus,serif;font-size:44px;line-height:1.1;color:var(--root);text-align:center}
- .front .hint{display:none}
