@@ -2,25 +2,25 @@
 
 > Free chord flashcards and printable poker-size chord cards for handpans, with a page for each scale.
 
-- [Handpan Chords app](https://handpan.raywu.org/): the flashcard app
-- [Handpan 101](https://handpan.raywu.org/handpan-101/): a beginner guide
-- [Scales](https://handpan.raywu.org/scales/): every scale
+- [Handpan Chords app](https://handpantheory.com/): the flashcard app
+- [Handpan 101](https://handpantheory.com/handpan-101/): a beginner guide
+- [Scales](https://handpantheory.com/scales/): every scale
 
 ## Scale pages
 
-- [d-kurd-10](https://handpan.raywu.org/scales/d-kurd-10/)
-- [d-amara-9](https://handpan.raywu.org/scales/d-amara-9/)
-- [d-amara-10](https://handpan.raywu.org/scales/d-amara-10/)
-- [f-low-pygmy-18](https://handpan.raywu.org/scales/f-low-pygmy-18/)
-- [c-sharp-hijaz-9](https://handpan.raywu.org/scales/c-sharp-hijaz-9/)
-- [d-kurd-9](https://handpan.raywu.org/scales/d-kurd-9/)
-- [f-low-pygmy-9](https://handpan.raywu.org/scales/f-low-pygmy-9/)
-- [e-romanian-hijaz-9](https://handpan.raywu.org/scales/e-romanian-hijaz-9/)
-- [c-sharp-mystic-8](https://handpan.raywu.org/scales/c-sharp-mystic-8/)
-- [d-integral-9](https://handpan.raywu.org/scales/d-integral-9/)
-- [f-sharp-akebono-9](https://handpan.raywu.org/scales/f-sharp-akebono-9/)
-- [d-sabye-9](https://handpan.raywu.org/scales/d-sabye-9/)
-- [d-aegean-18](https://handpan.raywu.org/scales/d-aegean-18/)
-- [e-amara-20](https://handpan.raywu.org/scales/e-amara-20/)
-- [e-equinox-9](https://handpan.raywu.org/scales/e-equinox-9/)
-- [f-magic-voyage-8](https://handpan.raywu.org/scales/f-magic-voyage-8/)
+- [d-kurd-10](https://handpantheory.com/scales/d-kurd-10/)
+- [d-amara-9](https://handpantheory.com/scales/d-amara-9/)
+- [d-amara-10](https://handpantheory.com/scales/d-amara-10/)
+- [f-low-pygmy-18](https://handpantheory.com/scales/f-low-pygmy-18/)
+- [c-sharp-hijaz-9](https://handpantheory.com/scales/c-sharp-hijaz-9/)
+- [d-kurd-9](https://handpantheory.com/scales/d-kurd-9/)
+- [f-low-pygmy-9](https://handpantheory.com/scales/f-low-pygmy-9/)
+- [e-romanian-hijaz-9](https://handpantheory.com/scales/e-romanian-hijaz-9/)
+- [c-sharp-mystic-8](https://handpantheory.com/scales/c-sharp-mystic-8/)
+- [d-integral-9](https://handpantheory.com/scales/d-integral-9/)
+- [f-sharp-akebono-9](https://handpantheory.com/scales/f-sharp-akebono-9/)
+- [d-sabye-9](https://handpantheory.com/scales/d-sabye-9/)
+- [d-aegean-18](https://handpantheory.com/scales/d-aegean-18/)
+- [e-amara-20](https://handpantheory.com/scales/e-amara-20/)
+- [e-equinox-9](https://handpantheory.com/scales/e-equinox-9/)
+- [f-magic-voyage-8](https://handpantheory.com/scales/f-magic-voyage-8/)

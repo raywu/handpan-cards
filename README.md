@@ -1,6 +1,6 @@
 # Handpan Chords
 
-Chord flashcards and chord progressions for handpan scales. It runs in the browser with no account: https://handpan.raywu.org/
+Chord flashcards and chord progressions for handpan scales. It runs in the browser with no account: https://handpantheory.com/
 
 ## Practising with it
 
