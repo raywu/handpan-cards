@@ -226,6 +226,14 @@ HPE.swipe = (function () {
     if (reducedMotion) return { kind: "rest", dir, eatClick };
     return { kind: dir ? "fly" : "spring", dir, eatClick };
   }
+  function wheelTrack(s, x) {
+    s.hi = Math.max(s.hi, x);
+    if (x) s.lo = Math.min(s.lo, x);
+    const up = s.lo * 3 < s.hi && x > Math.max(4, 2 * s.lo);
+    const go = up && s.r;
+    s.r = up;
+    return go;
+  }
   return {
     COMMIT_PX: SWIPE_COMMIT_PX, FLING_PX_MS: SWIPE_FLING_PX_MS, FLING_WINDOW_MS: SWIPE_FLING_WINDOW_MS,
     SLOP_PX: SWIPE_SLOP_PX, TILT_DEG_PER_PX: SWIPE_TILT_DEG_PER_PX, TILT_MAX_DEG: SWIPE_TILT_MAX_DEG,
@@ -234,7 +242,7 @@ HPE.swipe = (function () {
     MOMENTUM_MIN_MS: SWIPE_MOMENTUM_MIN_MS, MOMENTUM_MAX_MS: SWIPE_MOMENTUM_MAX_MS,
     MOMENTUM_FLOOR_PX_MS: SWIPE_MOMENTUM_FLOOR_PX_MS,
     decision: swipeDecision, outTiming: swipeOutTiming, tilt: swipeTilt, xf: swipeXf,
-    releaseDecision: releaseDecision
+    releaseDecision: releaseDecision, wheelTrack: wheelTrack
   };
 })();
 (function(){
@@ -256,7 +264,7 @@ L("pointerdown",e=>{o=0;clearTimeout(t);d=!z&&e.isPrimary&&!e.button&&e.clientX>
 L("pointermove",e=>{if(!d)return;d.h.push([e.timeStamp,e.clientX]);var x=e.clientX-d.x;if(!d.m&&abs(x)>W.SLOP_PX&&abs(x)>=abs(e.clientY-d.y)){d.m=1;e.pointerType=="mouse"&&C.setPointerCapture(e.pointerId)}if(d.m)d.e.style.transform=U(x)});
 L("pointercancel",()=>{d&&T(d.e);d=0});
 L("pointerup",e=>{if(!d)return;var x=e.clientX-d.x,y=e.clientY-d.y,h=d.h,a=h.pop(),el=d.e,k=Q(),b=h.find(j=>a[0]-j[0]<=W.FLING_WINDOW_MS)||a;d=0;var r=W.releaseDecision({dx:x,dy:y,vx:(a[1]-b[1])/(a[0]-b[0])||0,moved:abs(x)>W.SLOP_PX||abs(y)>W.SLOP_PX,reducedMotion:m.matches});if(r.eatClick){o=1;t=setTimeout(()=>{o=0},350)}T(el);if(r.kind=="fly")Y(k,r.dir,x);else if(r.kind=="spring")B(k,-x);else if(r.dir)J(G(k,r.dir))});
-L("wheel",e=>{if(e.ctrlKey)return;var k=Q(),u=e.deltaMode,q=u?u==1?16:innerHeight:1,x=e.deltaX*q,a=w||(w={s:0,f:z});clearTimeout(a.t);a.t=setTimeout(()=>{w=0;a.a==1&&!a.f&&B(k,a.s)},160);if(!a.a&&(x||e.deltaY))a.a=abs(x)>abs(e.deltaY*q)?1:2;if(a.a!=1)return;e.preventDefault();if(a.f)return;a.s+=x;if(abs(a.s)>80){a.f=1;u=a.s>0?1:-1;T(H[k]);if(m.matches)J(G(k,u));else Y(k,u,-a.s)}else if(!m.matches)H[k].style.transform=U(-a.s)},{passive:0});
+L("wheel",e=>{if(e.ctrlKey)return;var k=Q(),u=e.deltaMode,q=u?u==1?16:innerHeight:1,x=e.deltaX*q,a;if(w&&W.wheelTrack(w,abs(x))&&w.f){clearTimeout(w.t);w=0}a=w||(w={s:0,f:0,hi:0,lo:1/0});clearTimeout(a.t);a.t=setTimeout(()=>{w=0;a.a==1&&!a.f&&!z&&B(k,a.s)},160);if(!a.a&&(x||e.deltaY))a.a=abs(x)>abs(e.deltaY*q)?1:2;if(a.a!=1)return;e.preventDefault();if(a.f||z)return;a.s+=x;if(abs(a.s)>80){a.f=1;a.lo=1/0;u=a.s>0?1:-1;T(H[k]);if(m.matches)J(G(k,u));else Y(k,u,-a.s)}else if(!m.matches)H[k].style.transform=U(-a.s)},{passive:0});
 L("click",e=>{if(o){o=0;e.preventDefault()}},1);
 L("keydown",e=>{var s={ArrowRight:1,ArrowLeft:-1}[e.key];if(s&&!z&&e.target.classList.contains("cardhost")){e.preventDefault();J(G(Q(),s))}});
 })();</script>

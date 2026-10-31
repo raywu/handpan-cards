@@ -2057,17 +2057,17 @@ diff --git a/data/decks.json b/data/decks.json
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9664,61 +9664,61 @@ HPE.swipe = (function () {
-   function swipeTilt(dx) {
-     return Math.max(-SWIPE_TILT_MAX_DEG, Math.min(SWIPE_TILT_MAX_DEG, dx * SWIPE_TILT_DEG_PER_PX));
-   }
-   function swipeXf(dx) { return `translate3d(${dx}px,0,0) rotate(${swipeTilt(dx)}deg)`; }
-   function releaseDecision({ dx, dy, vx, moved, cancelled, blocked, reducedMotion }) {
-     const dir = blocked ? 0 : swipeDecision(dx, dy, vx);
-     if (!dir && !moved) return { kind: "rest", dir: 0, eatClick: false };
-     const eatClick = moved && !cancelled;
+@@ -9672,61 +9672,61 @@ HPE.swipe = (function () {
      if (reducedMotion) return { kind: "rest", dir, eatClick };
      return { kind: dir ? "fly" : "spring", dir, eatClick };
+   }
+   function wheelTrack(s, x) {
+     s.hi = Math.max(s.hi, x);
+     if (x) s.lo = Math.min(s.lo, x);
+     const up = s.lo * 3 < s.hi && x > Math.max(4, 2 * s.lo);
+     const go = up && s.r;
+     s.r = up;
+     return go;
    }
    return {
      COMMIT_PX: SWIPE_COMMIT_PX, FLING_PX_MS: SWIPE_FLING_PX_MS, FLING_WINDOW_MS: SWIPE_FLING_WINDOW_MS,
@@ -2077,7 +2077,7 @@ diff --git a/index.html b/index.html
      MOMENTUM_MIN_MS: SWIPE_MOMENTUM_MIN_MS, MOMENTUM_MAX_MS: SWIPE_MOMENTUM_MAX_MS,
      MOMENTUM_FLOOR_PX_MS: SWIPE_MOMENTUM_FLOOR_PX_MS,
      decision: swipeDecision, outTiming: swipeOutTiming, tilt: swipeTilt, xf: swipeXf,
-     releaseDecision: releaseDecision
+     releaseDecision: releaseDecision, wheelTrack: wheelTrack
    };
  })();
  </script>

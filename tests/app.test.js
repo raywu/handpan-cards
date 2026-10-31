@@ -5299,8 +5299,108 @@ test("US-3 one wheel gesture over WHEEL_COMMIT_PX steps once", async () => {
   assert.strictEqual(running().length, 1, "past 80px accumulated the card flies out, once");
   running()[0].finish();
   await settle();
+  const before = running().length;
+  for (const dx of [5, 3, 2]) wheelEv(dx);
+  assert.strictEqual(running().length, before, "the tail of a committed gesture starts no second fly-out");
   app.flushTimers();
   assert.strictEqual(idx(), 1);
+});
+
+async function landFlight({ app, running }) {
+  running().forEach((a) => a.finish());
+  await settle();
+  app.flushTimers();
+}
+
+test("SW2 A: two swipes back to back, each with a momentum tail, advance two cards", async () => {
+  const rig = swipeRig();
+  const { wheelEv, running, idx } = rig;
+  for (const dx of [30, 30, 30, 20, 10, 5, 3, 2, 1, 1]) wheelEv(dx);
+  assert.strictEqual(running().length, 1);
+  running()[0].finish();
+  await settle();
+  for (const dx of [30, 30, 30, 20, 10, 5, 3, 2, 1, 1]) wheelEv(dx);
+  await landFlight(rig);
+  assert.strictEqual(idx(), 2);
+});
+
+test("SW2 B: one swipe with a long monotone tail with flat repeats steps once", async () => {
+  const rig = swipeRig();
+  for (const dx of [30, 30, 30, 25, 25, 20, 20, 15, 15, 10, 10, 6, 6, 3, 3, 2, 2, 1, 1, 1, 0, 0]) rig.wheelEv(dx);
+  await landFlight(rig);
+  assert.strictEqual(rig.idx(), 1);
+});
+
+test("SW2 C: a small bump above a third of the peak does not start a gesture", async () => {
+  const rig = swipeRig();
+  for (const dx of [11, 11, 11, 11, 11, 11, 11, 11, 10, 8, 6, 5, 4, 5, 4, 4, 3, 2, 1]) rig.wheelEv(dx);
+  await landFlight(rig);
+  assert.strictEqual(rig.idx(), 1);
+});
+
+test("SW2 D: a second stroke begun during the flight counts once the card lands", async () => {
+  const rig = swipeRig();
+  const { wheelEv, running, idx } = rig;
+  for (const dx of [30, 30, 30, 5, 2, 1]) wheelEv(dx);
+  for (const dx of [30, 30]) wheelEv(dx);
+  assert.strictEqual(running().length, 1, "the in-flight stroke starts no second flight");
+  assert.strictEqual(idx(), 0);
+  running()[0].finish();
+  await settle();
+  for (const dx of [30, 30, 30]) wheelEv(dx);
+  await landFlight(rig);
+  assert.strictEqual(idx(), 2);
+});
+
+async function playTail(rig, head, tail, landAfter) {
+  const { wheelEv } = rig;
+  for (const dx of head) wheelEv(dx);
+  tail.slice(0, landAfter).forEach((dx) => wheelEv(dx));
+  rig.running().forEach((a) => a.finish());
+  await settle();
+  tail.slice(landAfter).forEach((dx) => wheelEv(dx));
+  await landFlight(rig);
+}
+
+test("SW2 E: a coalesced merge of three tail frames is not a new stroke", async () => {
+  const rig = swipeRig();
+  const tail = Array.from({ length: 150 }, (_, i) => 40 * 0.96 ** i);
+  tail.splice(30, 3, tail[30] + tail[31] + tail[32]);
+  await playTail(rig, [10, 25, 40], tail, 10);
+  assert.strictEqual(rig.idx(), 1);
+});
+
+test("SW2 F: a zero-delta event at the lift does not make the tail a new stroke", async () => {
+  const rig = swipeRig();
+  const tail = Array.from({ length: 80 }, (_, i) => 25 * 0.93 ** i);
+  await playTail(rig, [10, 25, 40, 40, 0], tail, 5);
+  assert.strictEqual(rig.idx(), 1);
+});
+
+test("SW2 G: a stroke that starts at 1px does not leave a stale trough after the commit", async () => {
+  const rig = swipeRig();
+  const { wheelEv, running } = rig;
+  for (const dx of [30, 1, 30, 30, 30]) wheelEv(dx);
+  running().forEach((a) => a.finish());
+  await settle();
+  const before = running().length;
+  for (let i = 0; i < 14; i++) wheelEv(8);
+  assert.strictEqual(running().length, before);
+});
+
+test("SW2 H: the gap timer firing mid-flight does not spring the card back", async () => {
+  const { app, wheelEv, running } = swipeRig();
+  for (const dx of [30, 30, 30, 30]) wheelEv(dx);
+  app.flushTimers();
+  wheelEv(30);
+  app.flushTimers();
+  assert.strictEqual(running().length, 1);
+});
+
+test("SW2 I: a rise inside a gesture that has not fired does not restart it", async () => {
+  const rig = swipeRig();
+  for (const dx of [30, 1, 1, 30, 30]) rig.wheelEv(dx);
+  assert.strictEqual(rig.running().length, 1);
 });
 
 test("US-3 wheel is ignored mid-flight", async () => {
