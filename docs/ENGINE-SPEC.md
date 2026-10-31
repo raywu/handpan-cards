@@ -1158,24 +1158,24 @@ it. Tonefield k sits at `angles[k-1]`; slot `pk` is main tonefield k and slot `s
 is mutant tonefield k. `slots` lists `p1..p9` then `s1..s9`: capacity is 9 main
 and 9 mutant notes. Values are fractions of the pan radius R.
 
-- Main tonefield: circle of radius `main.r` (0.19) at orbit `main.orbit` (0.745) on
+- Main tonefield: circle of radius `main.r` (0.245) at orbit `main.orbit` (0.74) on
   its angle. Ding: radius `ding.r` (0.2), centred.
-- Lens: a circle of radius `mutant.r` (0.19) on the same radial line. With
-  `depth = 2 x main.r x mutant.depth` (mutant.depth 0.5 is the fraction of the main
-  diameter, so depth is 0.19), its centre sits at `lensC = main.orbit - (2 x main.r
-  - depth)` from the pan centre (0.555). Only the overlap with the main circle is
+- Lens: a circle of radius `mutant.r` (0.245) on the same radial line. With
+  `depth = 2 x main.r x mutant.depth` (mutant.depth 0.45 is the fraction of the main
+  diameter, so depth is 0.2205), its centre sits at `lensC = main.orbit - (2 x main.r
+  - depth)` from the pan centre (0.4705). Only the overlap with the main circle is
   drawn, so the lens spans `depth` radially from the main circle's ding-side edge.
   The formula is parametric in `mutant.depth`.
 - Mutant tonefield name: centred in the lens, at `lensC + mutant.r - depth/2`
-  (0.65). Main name: at orbit + depth/2 on every tonefield of a card that has a
+  (0.6053). Main name: at orbit + depth/2 (0.8503) on every tonefield of a card that has a
   mutant note (empty lenses included), at orbit on a card with none.
-- Numbers: the main number sits at `number_out` (1.0758) from the pan centre, outside
+- Numbers: the main number sits at `number_out` (1.1) from the pan centre, outside
   the rim; the orange `M<n>` number of a mutant note sits on the same radial
-  line at `main.orbit - main.r - n_in` (n_in 0.085). Size is the label rule
+  line at `main.orbit - main.r - n_in` (n_in 0.12, 0.375). Size is the label rule
   number size, 0.64 x `main.r`.
 - Strokes (renderers): outline 0.012, main band 0.046, lens band 0.024.
 - Print extent: the furthest of `number_out` + number size / 2 and the ding edge,
-  plus `extent_margin` (0.06); R = round(74 / extent, 1) = 61.8 in `HPE.pdfcards`,
+  plus `extent_margin` (0.06); R = round(74 / extent, 1) = 59.8 in `HPE.pdfcards`,
   `tools/hifi.py` and `tools/decks.py` identically.
 - The label rule and the 3.6 pt print floor are unchanged and apply to every glyph
   of every tonefield and lens. For a non-circular field "its own drawn radius" is the

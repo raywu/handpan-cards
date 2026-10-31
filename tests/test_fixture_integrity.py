@@ -292,15 +292,15 @@ class TestPairedProfileFixture(unittest.TestCase):
         self.assertGreaterEqual(ding * OCTAVE_RATIO, FLOOR_PT)
 
 
-EXPECTED_PROFILE_V2_SHA256 = "a0a182b70451d984108d1e1b9895e1380c90543d8b09d8681ee275b4992ed373"
+EXPECTED_PROFILE_V2_SHA256 = "472eb35dd120fb6d551942e2f72a8bcda1a699a4df1a0c340bb56e3c8d8cdc79"
 
 V2 = {
     "id": "paired", "rev": 2, "tonefields": 9,
     "angles": [270, 230, 310, 190, 350, 150, 30, 110, 70],
-    "main": {"orbit": 0.745, "r": 0.19},
-    "mutant": {"depth": 0.5, "r": 0.19},
+    "main": {"orbit": 0.74, "r": 0.245},
+    "mutant": {"depth": 0.45, "r": 0.245},
     "ding": {"r": 0.2, "dy": 0},
-    "n_in": 0.085, "number_out": 1.0758, "extent_margin": 0.06,
+    "n_in": 0.12, "number_out": 1.1, "extent_margin": 0.06,
     "slots": ["p%d" % i for i in range(1, 10)] + ["s%d" % i for i in range(1, 10)]}
 MAIN_BAND, LENS_BAND, OUTLINE = 0.046, 0.024, 0.012
 
@@ -384,7 +384,7 @@ class TestPairedProfileV2Fixture(unittest.TestCase):
         self.assertAlmostEqual(g["centre"] + p["mutant"]["r"] - (o - r), g["depth"],
                                msg="lens spans `depth` radially from the main inner edge")
         self.assertAlmostEqual(p["mutant"]["r"], r)
-        self.assertTrue(0.49 <= p["mutant"]["depth"] <= 0.50 or abs(p["mutant"]["depth"] - 1 / 3) < 1e-9)
+        self.assertTrue(1 / 3 <= p["mutant"]["depth"] <= 0.50)
         self.assertLessEqual(g["centre"] + p["mutant"]["r"], o + r, "lens leaves its main circle")
 
     def test_every_glyph_at_least_floor_at_print_radius(self):
@@ -433,7 +433,7 @@ class TestPairedProfileV2Fixture(unittest.TestCase):
             self.assertGreater(math.hypot(nx, ny), 1.0, "main number must sit outside the pan")
             for j, (ox, oy) in enumerate(circles):
                 self.assertGreater(rect_circle_gap(nx, ny, hw, hh, ox, oy, r), 0)
-        self.assertLessEqual(p["number_out"] + size / 2 + p["extent_margin"], BAND_HALF / R + 1e-9)
+        self.assertLessEqual(p["number_out"] + size / 2, BAND_HALF / R + 1e-9)
 
     def test_frozen_stroke_widths_fit_inside_the_lens(self):
         p = load_v2()

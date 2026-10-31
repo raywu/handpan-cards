@@ -415,47 +415,65 @@ stays held until the owner says merge.
 
 Frozen by lane T2 (branch `claude/neotone-t2`, from 701c06fc). File:
 `tests/fixtures/paired_profile_v2.json`, sha256
-`a0a182b70451d984108d1e1b9895e1380c90543d8b09d8681ee275b4992ed373`, pinned in
+`472eb35dd120fb6d551942e2f72a8bcda1a699a4df1a0c340bb56e3c8d8cdc79`, pinned in
 `tests/test_fixture_integrity.py`; v1 is kept, pinned and superseded. Exact content:
 
 ```json
 { "id": "paired", "rev": 2,
   "tonefields": 9,
   "angles": [270, 230, 310, 190, 350, 150, 30, 110, 70],
-  "main":   { "orbit": 0.745, "r": 0.19 },
-  "mutant": { "depth": 0.5, "r": 0.19 },
+  "main":   { "orbit": 0.74, "r": 0.245 },
+  "mutant": { "depth": 0.45, "r": 0.245 },
   "ding":   { "r": 0.2, "dy": 0 },
-  "n_in": 0.085, "number_out": 1.0758, "extent_margin": 0.06,
+  "n_in": 0.12, "number_out": 1.1, "extent_margin": 0.06,
   "slots": ["p1","p2","p3","p4","p5","p6","p7","p8","p9",
             "s1","s2","s3","s4","s5","s6","s7","s8","s9"] }
 ```
 
+Owner answer on G1 (2026-10-30): "bigger tonefields". Use the earlier larger rim
+geometry (main r about 0.245R, orbit about 0.74R, neighbours nearly touching), keep the
+label rule and the 3.6 pt floor, prefer depth 1/3 and otherwise the smallest depth up
+to 0.50 that passes, main number outside the rim, M<n> on the same radial line inboard,
+ding r may shrink if M<n> would touch it. This supersedes the "Frozen card design
+(v17)" numbers (r 0.19, orbit 0.745) for the fixture.
+
 Lens centre from the pan centre: `lensC = main.orbit - (2 x main.r - depth)` with
-`depth = 2 x main.r x mutant.depth` = 0.19, so lensC = 0.555 and the lens name sits at
-`lensC + mutant.r - depth/2` = 0.65. Main name at orbit + depth/2 = 0.84 on every
-tonefield of a mutant card (card mock v19), at 0.745 otherwise. M-number at
-0.745 - 0.19 - 0.085 = 0.47, main number at 1.0758. Print extent = 1.0758 + 0.0608 +
-0.06 = 1.1966, so R = round(74 / 1.1966, 1) = 61.8 pt, main r = 11.74 pt.
+`depth = 2 x main.r x mutant.depth` = 0.2205, so lensC = 0.4705 and the lens name sits at
+`lensC + mutant.r - depth/2` = 0.6053. Main name at orbit + depth/2 = 0.8503 on every
+tonefield of a mutant card (card mock v19), at 0.74 otherwise. M-number at
+0.74 - 0.245 - 0.12 = 0.375, main number at 1.1. Neighbouring main circles: chord
+2 x 0.74 x sin 20 = 0.5062 against 2r = 0.49 (gap 0.016); outer edge 0.985, inner edge
+0.495. Print extent = 1.1 + 0.0784 + 0.06 = 1.2384, so R = round(74 / 1.2384, 1) =
+59.8 pt, main r = 14.65 pt. The ding stays 0.2 (its edge is clear of the M-numbers,
+whose inner extent is about 0.28).
+
+Two frozen values moved from the earlier draft to keep the number rectangles off the
+main circles at r 0.245 (axis-aligned rectangle test, diagonal tonefields worst):
+`n_in` 0.085 -> 0.12 (M-number gap -0.024 -> +0.011) and `number_out` 1.0758 -> 1.1
+(main-number gap -0.018 -> +0.006, which lowers R from 60.9 to 59.8 pt). The
+print-band test checks the number's own extent against 74 / R; `extent_margin` is the slack
+that absorbs the one-decimal rounding of R.
 
 Recorded harness command (T2 verify):
 `python3 -m unittest tests.test_fixture_integrity tests.test_readme_currency -v`.
 
-#### G1 measurement (T2, R = 61.8 pt, fit = `fit_note` rule, width <= 1.47 x inscribed radius)
+#### G1 measurement (T2, R = 59.8 pt, r = 14.65 pt, fit = `fit_note` rule, width <= 1.47 x inscribed radius)
 
-| depth (of main diameter) | lens name / octave | crescent name / octave | M-number | verdict |
-|---|---|---|---|---|
-| 1/3 (depth 0.1267R) | 3.27 / 2.16 pt | 6.73 / 4.44 pt | 7.51 pt | FAIL (lens) |
-| 0.50 (depth 0.19R) | 4.97 / 3.28 pt (worst note Db4/Ab5/G#3) | 5.03 / 3.25 pt | 7.51 pt | FAIL (lens and crescent octave) |
+Worst note over Bb3, C#3, Db4, Ab5, Eb5, F#4, G#3, D4. Name / octave digit in pt.
+Lens rule size 12.06 pt, number size 9.38 pt at every depth.
 
-Per the owner's G1 answer the fixture switched to depth 0.50 (fallback, no re-ask).
-BLOCKER: 0.50 is the best symmetric split (lens and crescent share the same inscribed
-radius), and it still leaves the octave digit of the lens and the crescent at 3.25-3.41 pt,
-under the 3.6 pt floor, at the R the frozen number position forces (the number at 1.0758R
-drops R from the plan's 85.3 pt to 61.8 pt). The floor test
-`test_every_glyph_at_least_floor_at_print_radius` is therefore red on purpose. No depth
-in 0.49-0.50 passes; passing needs an owner change (e.g. numbers inboard to raise R,
-a larger main r, or a different fit box). Not auto-decided: it would alter frozen
-design values or the floor.
+| depth (of main diameter) | lens name / octave | crescent name / octave | verdict |
+|---|---|---|---|
+| 1/3 | 4.16 / 2.75 | 8.27 / 5.46 | FAIL (lens octave) |
+| 0.40 | 4.96 / 3.27 | 7.47 / 4.93 | FAIL (lens octave) |
+| 0.42 | 5.16 / 3.41 | 7.17 / 4.73 | FAIL (lens octave) |
+| 0.43 | 5.36 / 3.54 | 7.07 / 4.67 | FAIL (lens octave) |
+| 0.44 | 5.46 / 3.60 | 6.97 / 4.60 | borderline (3.60) |
+| 0.45 (frozen) | 5.56 / 3.67 | 6.87 / 4.53 | pass |
+| 0.50 | 6.16 / 4.07 | 6.17 / 4.07 | pass |
+
+Depth 1/3 fails, so the fixture takes the smallest round depth that passes with a
+clear margin: 0.45 (0.07 pt on the lens octave digit).
 
 ### Design review (Option B) round 1
 
