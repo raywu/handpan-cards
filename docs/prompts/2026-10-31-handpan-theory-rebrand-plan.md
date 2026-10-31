@@ -8,8 +8,8 @@ shipped change.
 
 You are planning, not shipping. The owner wants to rebrand the app as
 **Handpan Theory** (lockup tagline **CHORDS & PROGRESSIONS**) and move it from
-`handpan.raywu.org` to `handpantheory.com`. Your job is to explore several
-directions quickly, show them, and write a plan the owner can steer. Keep
+`handpan.raywu.org` to `handpantheory.com`. Your job is to explore the naming,
+icon and domain-move options quickly, show them, and write a plan the owner can steer. Keep
 every option open until the owner picks; nothing you do in this session
 should be hard to undo.
 
@@ -106,31 +106,24 @@ should be hard to undo.
    settled. If something else blocks you, ask at most three questions, each
    with your recommended default, and proceed on the defaults if there is no
    answer.
-2. **Diverge.** Produce 3 to 5 genuinely different directions for the app
-   chrome, not variations of one. Vary real axes: wordmark face (Marcellus,
-   which is already loaded, vs the board's Playfair/Cormorant suggestion);
-   header layout (mock: link button, horizontal lockup, menu button; or
-   alternatives); how the chords-and-progressions subtitle reads at the
-   root; how much of the teal/gold glow appears outside the mark;
-   ground (the board's `#0F0E0B` vs today's warm `#1a1815` gradient); how the
-   tagline and the scale chips sit. These axes are examples: invent others
-   if the brand suggests them, and treat the mock as one direction, not the
-   answer. Moving or restyling a control is fine; changing what it does is
-   not. One direction may be the conservative "swap the header, change
-   nothing else"; at least one should be bolder than the mock.
-3. **Make each direction cheap and visible.** A throwaway static HTML mock
-   per direction (copy of the header and one card, real tokens, no app JS),
-   screenshotted with the preinstalled Playwright at 380 px and 1280 px wide,
-   or published as private artifacts. Do not touch `index.html`, run the full
-   test suite, or open PRs during exploration. Timebox each direction; a
-   rough mock that shows the idea beats a polished one. Build directions in
-   parallel (one subagent each, same inputs, told to differ from the
-   others), and research the domain-move questions in another while they
-   run.
-4. **Compare, then converge.** One table: direction, what it changes,
+2. **Take the look as given.** The visual look around the cards (ground,
+   header styling, links, controls, sheets, other pages) is owned by
+   `docs/prompts/2026-10-31-app-look-around-the-cards.md` and its plan,
+   `docs/plans/2026-10-31-look-around-the-cards.md`. Use the direction the
+   owner picked there; if none is picked yet, use its conservative direction
+   and say so. Do not produce a second set of chrome designs.
+3. **Explore only what this prompt owns, cheaply.** 2 or 3 options each for:
+   how the chords-and-progressions subtitle reads at the root (header,
+   `<title>`, `h1`, `og:title`, JSON-LD), the favicon at 16px (the logo plan
+   left it open), and the `og.png` card. Screenshot each with the
+   preinstalled Playwright at 380 px and 1280 px, or inject it into the real
+   app as a CSS/markup override. Do not touch `index.html`, run the full test
+   suite, or open PRs during exploration. Research the domain-move and
+   storage hand-off questions in a parallel subagent while these run.
+4. **Compare, then converge.** One table per question: option, what it changes,
    effort, risk to tests (which pinned strings move), reversibility, and
    your pick with a reason. Stop and let the owner choose before writing
-   lane-level detail for one direction.
+   lane-level detail.
 5. **Separate the reversible from the irreversible.** Visual chrome is
    cheap to change and change back. The domain move (DNS, `CNAME`, canonical,
    redirects, Search Console, GA stream) and the storage hand-off are not;
@@ -141,8 +134,8 @@ should be hard to undo.
 Write it to `docs/plans/2026-10-31-handpan-theory-rebrand.md` (docs-only, so
 CI skips it). Keep it short; link instead of restating `CLAUDE.md`. It holds:
 
-- **Options and the pick:** the comparison table and the owner's choice (or
-  "pending").
+- **Options and the pick:** the comparison tables and the owner's choices (or
+  "pending"), plus which look-around-the-cards direction the plan assumes.
 - **Open decisions:** each with options, a default, and whether it can be
   reversed later.
 - **Phases**, each shippable alone, dev-first per `CLAUDE.md`:
@@ -170,7 +163,7 @@ CI skips it). Keep it short; link instead of restating `CLAUDE.md`. It holds:
 
 ## Done for this session
 
-The owner has: answers to any remaining questions or your stated defaults; 3 to 5
-visual directions they can look at; the comparison table; the plan file on a
+The owner has: answers to any remaining questions or your stated defaults; the
+subtitle, favicon and `og.png` options with screenshots; the comparison tables; the plan file on a
 `claude/` branch, pushed, with no PR unless asked. Nothing under `index.html`,
 `CNAME`, DNS or Search Console has changed.
