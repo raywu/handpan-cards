@@ -10882,14 +10882,16 @@ describe("share icon", () => {
     assert.match(r, /z-index:29/);
     assert.ok(!/margin-top/.test(r), "margin-top is still there");
     assert.match(r, /min-height:44px/);
+    assert.match(r, /border-radius:12px/);
     assert.match(r, /font-size:16px/);
     assert.match(rule(c, "header") || "", /position:relative/);
     assert.match(rule(c, "#share-copy:disabled") || "", /opacity:\.5/);
     assert.match(rule(c, "#share-copy:disabled:active") || "", /background:#1a1814/);
   });
 
-  test("SI: the glyph is two rotated stadiums at stroke-width 2.4 (the fine-pointer glyph)", async () => {
+  test("SI: the glyph is two rotated stadiums drawn at stroke-width 2 (CSS overrides the 2.4 attribute)", async () => {
     assert.match(html(), /<g transform="rotate\(-45 12 12\)"[^>]*stroke-width="2\.4"/);
+    assert.match(rule(css(), "#share-copy svg g") || "", /stroke-width:2\b(?!\.)/);
   });
 });
 
