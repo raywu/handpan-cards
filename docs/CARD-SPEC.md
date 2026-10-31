@@ -67,9 +67,19 @@ exactly where its diagram has it.
   same for the bottom ring and defaults to `mirror`. Index numbers never move:
   each position keeps its unmirrored number and the note mirrored into it takes
   that number on the diagram, the number line and the drawer (owner 2026-10-30;
-  rule N extended). Under `options.angles` MIRROR BOTTOM moves only the notes
-  whose entry is null (to their mirrored solved angle); explicitly placed notes
-  stay, and every number stays at its angle.
+  rule N extended). Under `options.angles` the toggle first holds every bottom
+  note whose own entry is null and whose mirror partner's entry is not (it
+  becomes explicit at the angle it is drawn at), then flips. Only notes whose
+  entry and partner's entry are both null reflect; they trade positions and each
+  takes the number of the position it lands on. A held entry equal to the angle
+  it would solve to as null resets to null. No number moves and no hand-placed
+  note moves or changes number (owner 2026-10-31; `HPE.layout.holdForMirror`;
+  tests "MN2: across every Pygmy layout with one slide or a slide plus one placed
+  note, in both frames, a held toggle is never refused, keeps every occupied
+  angle's number and moves no explicit note"). A hold needs a multiple of 5, so a
+  ring whose drawn angle is not one (a 5-note bottom) refuses the toggle ("MN2: a
+  refused MIRROR BOTTOM toggle restores layoutAngles as well as the mirror"). RESET
+  LAYOUT clears every pin, held partners included.
 - Inner notes (after the inner bar): one at top centre, two at 128 and 52, more
   fan across the top half; they push the ding toward the player by at least
   0.1425R, raised step by step while an inner index number would touch the ding

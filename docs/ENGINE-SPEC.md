@@ -913,7 +913,11 @@ Wire note: a v6 link spells index n as `palette-(n+1)`, read for `palette-2` to 
   so the odd numbers stay on the right and each note takes the number of the
   position it lands on (owner 2026-10-30). `mirrorBottom` (boolean) does the
   same for the bottom ring and, when absent, follows `mirror`; with no bottom
-  notes it is false. Under `options.angles` it moves only the null-entry notes.
+  notes it is false. `solve` itself is unchanged under `angles`: it reflects every null-entry note. The sheet's toggle
+  applies rule S first through `layout.holdForMirror(seed, preFlipOptions)` (pure; returns `{bottom: list}` with
+  each null entry whose mirror partner is explicit set to its drawn angle, or `null` with no angles or on
+  a refused solve), so no number moves (tests "MN2: holdForMirror on Pygmy [270,null x5] holds Db3 at 240",
+  "MN2: holdForMirror with the post-flip mirror gives a different list than with the pre-flip mirror").
   `layout.resolveMirrors` is the one place the two are resolved.
 - DECIDED(owner 2026-10) `anchor` is `"one"` (default: note 1 at bottom centre)
   or `"between"` (bottom centre between notes 1 and 2, note 1 on the right).

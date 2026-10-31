@@ -14342,16 +14342,16 @@ describe("FPD: seats, sole note, hint, nudge, notices and records", () => {
   });
 
   test("FPD: a mirror or anchor toggle that would put a moved bottom note inside another's floor is refused, changes nothing and says why in plain words", async () => {
-    const app0 = await open();
-    slide(app0, "C3", 320);
+    const app0 = await open("[C3] [D3] [E3] [F3] [G3] (A3) C4 D4 E4 F4");
+    slide(app0, "C3", 0);
     app0.els["scale-mirror-bottom"].click();
     assert.strictEqual(app0.els["scale-mirror-bottom"].getAttribute("aria-pressed"), "false");
     assert.match(app0.els["scale-drawer-status"].textContent, /too close/);
     assert.strictEqual(app0.els["scale-drawer-status"].textContent, app0.get("TOGGLE_REFUSED")());
     assert.strictEqual(app0.els["scale-drawer-status"].classList.contains("warn"), true, "the refusal is styled as a warning");
     for (const btn of ["scale-mirror-bottom", "scale-mirror", "scale-anchor-between"]) {
-      const app = await open();
-      slide(app, "C3", 320);
+      const app = await open(btn === "scale-mirror-bottom" ? "[C3] [D3] [E3] [F3] [G3] (A3) C4 D4 E4 F4" : FPD);
+      slide(app, "C3", btn === "scale-mirror-bottom" ? 0 : 320);
       const before = JSON.stringify(ang(app));
       const pressed = app.els[btn].getAttribute("aria-pressed");
       app.els[btn].click();
@@ -18765,5 +18765,78 @@ describe("NS: native share", () => {
       const v = i18n(code)["header.share"];
       assert.ok(typeof v === "string" && v.length > 0, code);
     }
+  });
+});
+
+describe("MN2: hand-placed bottom notes keep their numbers under MIRROR BOTTOM", () => {
+  const SEED = "[C3] [D3] [E3] (A3) C4 D4 E4 F4";
+  const orbit = (a, r = 115) => ({ x: 200 + r * Math.cos(a * Math.PI / 180), y: 200 - r * Math.sin(a * Math.PI / 180) });
+  const ang = (app) => JSON.parse(app.get("JSON.stringify(layoutAngles)"));
+  const bottoms = (app) => [101, 102, 103].map((id) => `${app.get(`lastSolved.fields[${id}][4]`)}=${app.get(`lastSolved.fields[${id}][5]`)}`);
+  const positions = (app) => bottoms(app).sort().join(" ");
+  const slide = (app, name, a) => {
+    const g = DG.down(app, name, "mouse");
+    DG.moveTo(app, g, g.x + 6, g.y);
+    const q = orbit(a);
+    DG.moveTo(app, g, q.x, q.y);
+    DG.release(app, g, q.x, q.y);
+  };
+
+  test("MN2: MIRROR BOTTOM after sliding C3 holds its mirror partner D3 at the angle it was drawn at and every position keeps its number", async () => {
+    const app = await dgOpen({}, SEED);
+    slide(app, "C3", 300);
+    assert.deepStrictEqual(ang(app), { bottom: [300, null, null] });
+    const before = positions(app);
+    const partnerAt = app.get("lastSolved.fields[102][4]");
+    app.els["scale-mirror-bottom"].click();
+    assert.strictEqual(app.get("bottomMirror()"), true);
+    const held = ang(app);
+    assert.strictEqual(held.bottom[0], 300);
+    assert.strictEqual(held.bottom[1], partnerAt);
+    assert.strictEqual(positions(app), before);
+    assert.strictEqual(app.get("lastSolved.fields[101][4]"), 300);
+  });
+
+  test("MN2: MIRROR BOTTOM with no hand-placed notes leaves layoutAngles null", async () => {
+    const app = await dgOpen({}, SEED);
+    app.els["scale-mirror-bottom"].click();
+    assert.strictEqual(app.get("layoutAngles"), null);
+    assert.strictEqual(app.get("bottomMirror()"), true);
+  });
+
+  test("MN2: toggling MIRROR BOTTOM twice returns the original layoutAngles and the same share string", async () => {
+    const app = await dgOpen({}, SEED);
+    slide(app, "C3", 300);
+    const start = ang(app);
+    const link = app.get("JSON.stringify(sheetOptions())");
+    app.els["scale-mirror-bottom"].click();
+    app.els["scale-mirror-bottom"].click();
+    assert.strictEqual(app.get("bottomMirror()"), false);
+    assert.deepStrictEqual(ang(app), start);
+    assert.strictEqual(app.get("JSON.stringify(sheetOptions())"), link);
+  });
+
+  test("MN2: RESET LAYOUT after a held toggle clears every pin, held partners included", async () => {
+    const app = await dgOpen({}, SEED);
+    slide(app, "C3", 300);
+    app.els["scale-mirror-bottom"].click();
+    app.els["scale-layout-reset"].click();
+    assert.strictEqual(app.get("layoutAngles"), null);
+  });
+});
+
+describe("MN2: a refused MIRROR BOTTOM toggle", () => {
+  test("MN2: a refused MIRROR BOTTOM toggle restores layoutAngles as well as the mirror (a 5-note bottom cannot pin a held note at a non-multiple of 5)", async () => {
+    const app = await dgOpen({}, "[C3] [D3] [E3] [F3] [G3] (A3) C4 D4 E4 F4");
+    const g = DG.down(app, "C3", "mouse");
+    DG.moveTo(app, g, g.x + 6, g.y);
+    DG.moveTo(app, g, 315, 200);
+    DG.release(app, g, 315, 200);
+    const start = app.get("JSON.stringify(layoutAngles)");
+    assert.strictEqual(start, JSON.stringify({ bottom: [0, null, null, null, null] }));
+    app.els["scale-mirror-bottom"].click();
+    assert.strictEqual(app.get("bottomMirror()"), false);
+    assert.strictEqual(app.get("JSON.stringify(layoutAngles)"), start);
+    assert.match(app.els["scale-drawer-status"].textContent, /too close/);
   });
 });

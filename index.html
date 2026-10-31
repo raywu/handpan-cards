@@ -6887,8 +6887,33 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       partnersOf(counts, mirrors.top, mirrors.bottom, anchor)) } };
   }
 
+  /* Rule S (owner 2026-10-31): before MIRROR BOTTOM flips a ring that carries
+   * hand-placed notes, every note whose own entry is null and whose mirror
+   * partner's entry is not is pinned at the angle it is drawn at. `options`
+   * are the PRE-flip solve options. Returns the held bottom list, or null when
+   * there are no angles or the solve is refused. */
+  function holdForMirror(seedOrFields, options) {
+    var seedOptions = (seedOrFields && seedOrFields.options) || {};
+    var raw = (options && "angles" in options) ? options.angles : seedOptions.angles;
+    var zones = collect(fieldsOf(seedOrFields));
+    var read = readAngles(raw, countsOf(zones));
+    if (!read.ok || !read.value) return null;
+    var solved = solve(seedOrFields, options);
+    if (!solved.ok) return null;
+    var list = read.value.bottom;
+    var partner = mirrorPartner(bottomAngles(list.length), true);
+    var out = [];
+    for (var i = 0; i < list.length; i += 1) {
+      if (list[i] !== null) out.push(list[i]);
+      else if (list[partner[i]] !== null) out.push(solved.value.fields[zones.bottom[i]][4]);
+      else out.push(null);
+    }
+    return { bottom: out };
+  }
+
   HPE.layout = {
     solve: solve,
+    holdForMirror: holdForMirror,
     slotOrder: slotOrder,
     seatsFromOrder: seatsFromOrder,
     readSeats: readSeats,
@@ -14087,10 +14112,29 @@ mirrorTop.onclick = () => {
   paintLayout(); resyncSheet(true);
   layoutStatus(t(mirror ? "sheet.mirror_top_on" : "sheet.mirror_top_off"));
 };
+// Rule S: a hand-placed bottom note keeps its number, so the mirror partner of one is pinned where it is
+// drawn before the flip, and a pin that equals the angle it would solve to anyway is released after it.
+const holdBeforeMirror = () => {
+  if (!layoutAngles || !lastSeed) return null;
+  const held = HPE.layout.holdForMirror(lastSeed, { mirror: mirror, mirrorBottom: bottomMirror(), anchor: anchor,
+    seats: fitSeats(lastSeed.fields), angles: fitAngles(lastSeed.fields) });
+  return held && held.bottom;
+};
+const releaseRedundantPins = (pins) => {
+  const res = HPE.layout.solve(lastSeed, { mirror: mirror, mirrorBottom: bottomMirror(), anchor: anchor, angles: null });
+  if (!res.ok) return;
+  const ids = Object.keys(res.value.fields).filter((id) => res.value.fields[id][3] === "bottom").sort((a, b) => a - b);
+  const entries = pins.map((p, i) => (p === res.value.fields[ids[i]][4] ? null : p));
+  layoutAngles = entries.some((e) => e !== null) ? { bottom: entries } : null;
+};
 mirrorBot.onclick = () => {
   const was = bottomLabels();
+  const before = layoutAngles;
+  const held = holdBeforeMirror();
+  if (held) layoutAngles = { bottom: held };
   bottomHeld = !bottomHeld;
-  if (!toggleFits()) { bottomHeld = !bottomHeld; layoutStatus(TOGGLE_REFUSED(), true); return; }
+  if (!toggleFits()) { bottomHeld = !bottomHeld; layoutAngles = before; layoutStatus(TOGGLE_REFUSED(), true); return; }
+  if (layoutAngles) releaseRedundantPins(layoutAngles.bottom);
   paintLayout(); resyncSheet(true);
   let text = t(bottomMirror() ? "sheet.mirror_bottom_on" : "sheet.mirror_bottom_off");
   const changed = layoutAngles ? renumbered(was, -1) : [];

@@ -2344,3 +2344,89 @@ test("SO: a 5 degree nudge can rotate the numbering while the order around the r
   assert.equal(soShow({ angles: { bottom: [300, 235, 0, 140, 285, 120] } }),
     "C3@300=U1 Db3@235=U4 Eb3@0=U3 Bb3@140=U6 Db4@285=U2 Ab5@120=U5");
 });
+
+/* MN2: hand-placed bottom notes keep their numbers under MIRROR BOTTOM (rule S). */
+const mn2Flip = (entries, mirrored, seed = SO_SEED, anchor = "between") => {
+  const pre = { anchor, mirrorBottom: mirrored, angles: { bottom: entries } };
+  const held = HPE.layout.holdForMirror(seed, pre);
+  const post = { anchor, mirrorBottom: !mirrored, angles: held || pre.angles };
+  return { pre, held, post, off: HPE.layout.solve(seed, pre), on: HPE.layout.solve(seed, post) };
+};
+const mn2Positions = (r) => soBottom(r).map((n) => `${n.angle}=${n.label}`).sort().join(" ");
+
+test("MN2: holdForMirror is null with no angles, all-null angles, and on every built-in", () => {
+  assert.equal(HPE.layout.holdForMirror(SO_SEED, { anchor: "between" }), null);
+  assert.equal(HPE.layout.holdForMirror(SO_SEED, { anchor: "between", angles: { bottom: [null, null, null, null, null, null] } }), null);
+  const decks = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "data", "decks.json"), "utf8"));
+  for (const d of decks) {
+    assert.equal(HPE.layout.holdForMirror(d.fields ? { fields: d.fields } : d, {}), null);
+  }
+});
+
+test("MN2: holdForMirror on Pygmy [270,null x5] holds Db3 at 240", () => {
+  const r = mn2Flip([270, null, null, null, null, null], false);
+  assert.deepEqual(plain(r.held), { bottom: [270, 240, null, null, null, null] });
+  assert.equal(soLine(r.on), "C3@270=U1 Db3@240=U2 Eb3@180=U4 Bb3@0=U3 Db4@120=U6 Ab5@60=U5");
+  assert.equal(mn2Positions(r.on), mn2Positions(r.off));
+});
+
+test("MN2: holdForMirror on Pygmy [null x5,150] holds Db4 at 60", () => {
+  const r = mn2Flip([null, null, null, null, null, 150], false);
+  assert.deepEqual(plain(r.held), { bottom: [null, null, null, null, 60, 150] });
+  assert.equal(soLine(r.on), "C3@240=U2 Db3@300=U1 Eb3@180=U4 Bb3@0=U3 Db4@60=U5 Ab5@150=U6");
+});
+
+test("MN2: a mirrored-view swap of Db3 and Db4 holds C3 at 240 and Ab5 at 60 and toggles off with every number at its angle", () => {
+  const r = mn2Flip([null, 120, null, null, 300, null], true);
+  assert.equal(soLine(soSolve({ mirrorBottom: true, angles: { bottom: [null, 120, null, null, 300, null] } })),
+    "C3@240=U2 Db3@120=U6 Eb3@180=U4 Bb3@0=U3 Db4@300=U1 Ab5@60=U5");
+  assert.deepEqual(plain(r.held), { bottom: [240, 120, null, null, 300, 60] });
+  assert.ok(r.on.ok);
+  assert.equal(mn2Positions(r.on), mn2Positions(soSolve({ mirrorBottom: true, angles: { bottom: [null, 120, null, null, 300, null] } })));
+});
+
+test("MN2: across every Pygmy layout with one slide or a slide plus one placed note, in both frames, a held toggle is never refused, keeps every occupied angle's number and moves no explicit note", () => {
+  let checked = 0;
+  for (const mirrored of [false, true]) {
+    for (let i = 0; i < 6; i += 1) {
+      for (let a = 0; a < 360; a += 5) {
+        const bases = [[]];
+        for (const [j, b] of [[(i + 1) % 6, 0], [(i + 2) % 6, 90], [(i + 3) % 6, 200]]) bases.push([[j, b]]);
+        for (const extra of bases) {
+          const entries = [null, null, null, null, null, null];
+          entries[i] = a;
+          for (const [j, b] of extra) entries[j] = b;
+          const r = mn2Flip(entries, mirrored);
+          if (!r.off.ok) continue;
+          assert.ok(r.on.ok, `refused ${JSON.stringify(entries)} mirrored=${mirrored}`);
+          assert.equal(mn2Positions(r.on), mn2Positions(r.off), `${JSON.stringify(entries)} mirrored=${mirrored}`);
+          const off = soBottom(r.off);
+          const on = soBottom(r.on);
+          entries.forEach((e, k) => {
+            if (e === null) return;
+            assert.equal(on[k].angle, e);
+            assert.equal(on[k].label, off[k].label);
+          });
+          checked += 1;
+        }
+      }
+    }
+  }
+  assert.ok(checked > 1000);
+});
+
+test("MN2: all-explicit and fixed-point lists come back unchanged", () => {
+  const six = [300, 60, 0, 180, 240, 120];
+  assert.deepEqual(plain(HPE.layout.holdForMirror(SO_SEED, { anchor: "between", angles: { bottom: six } })), { bottom: six });
+  const five = HPE.core.parseSeed("[C3] [D3] (E3) F3 G3 A3 | B3 [C4] [D4] [E4]", {});
+  assert.ok(five.ok, five.ok ? "" : five.code);
+  const held = HPE.layout.holdForMirror(five.value, { angles: { bottom: [null, null, null, null, 270] } });
+  assert.deepEqual(plain(held), { bottom: [null, null, null, null, 270] });
+});
+
+test("MN2: holdForMirror with the post-flip mirror gives a different list than with the pre-flip mirror", () => {
+  const angles = { bottom: [270, null, null, null, null, null] };
+  const pre = HPE.layout.holdForMirror(SO_SEED, { anchor: "between", mirrorBottom: false, angles });
+  const post = HPE.layout.holdForMirror(SO_SEED, { anchor: "between", mirrorBottom: true, angles });
+  assert.notDeepEqual(plain(pre), plain(post));
+});
