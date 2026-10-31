@@ -14548,6 +14548,33 @@ function keepScroll(fn) {
   fn();
   if (bandPort.scrollTop !== at) bandPort.scrollTop = at;
 }
+/* A toggle repaints the pan, the layout notice and the lip, any of which can resize the scrollports around
+ * the tapped button. Whatever moved it is undone by scrolling, in both scrollers; a scroller already at its end
+ * gets bottom padding instead, dropped at the next toggle or when the sheet closes. */
+let holdPad = false;
+const dropHoldPad = () => { if (holdPad) { holdPad = false; bandPort.style.paddingBottom = ""; } };
+const holdAt = (btn, fn) => () => {
+  const topOf = () => (btn.getBoundingClientRect ? btn.getBoundingClientRect().top : 0);
+  const was = topOf();
+  dropHoldPad();
+  fn();
+  const settle = () => {
+    for (const sc of [bandPort, sheetSurf]) {
+      const off = sc ? topOf() - was : 0;
+      if (Math.abs(off) <= 0.5) continue;
+      lipQuiet();
+      sc.scrollTop += off;
+      const left = topOf() - was;
+      if (sc === bandPort && left > 0.5 && !holdPad) {
+        holdPad = true;
+        bandPort.style.paddingBottom = (parseFloat(getComputedStyle(bandPort).paddingBottom) || 0) + left + "px";
+        bandPort.scrollTop += topOf() - was;
+      }
+    }
+  };
+  settle();
+};
+for (const btn of [mirrorTop, mirrorBot, anchorOne, anchorBetween]) btn.onclick = holdAt(btn, btn.onclick);
 function setArm(id) {
   if (id === armId) return;
   armId = id;
