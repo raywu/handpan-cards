@@ -415,7 +415,7 @@ stays held until the owner says merge.
 
 Frozen by lane T2 (branch `claude/neotone-t2`, from 701c06fc). File:
 `tests/fixtures/paired_profile_v2.json`, sha256
-`472eb35dd120fb6d551942e2f72a8bcda1a699a4df1a0c340bb56e3c8d8cdc79`, pinned in
+`611b59a2cce11d0c72c0bdf0e0549f9d73e10329917838559bc7dc57b2947e33`, pinned in
 `tests/test_fixture_integrity.py`; v1 is kept, pinned and superseded. Exact content:
 
 ```json
@@ -423,9 +423,9 @@ Frozen by lane T2 (branch `claude/neotone-t2`, from 701c06fc). File:
   "tonefields": 9,
   "angles": [270, 230, 310, 190, 350, 150, 30, 110, 70],
   "main":   { "orbit": 0.74, "r": 0.245 },
-  "mutant": { "depth": 0.45, "r": 0.245 },
+  "mutant": { "depth": 0.44, "r": 0.245 },
   "ding":   { "r": 0.2, "dy": 0 },
-  "n_in": 0.12, "number_out": 1.1, "extent_margin": 0.06,
+  "n_in": 0.145, "number_out": 1.0758, "extent_margin": 0.06,
   "slots": ["p1","p2","p3","p4","p5","p6","p7","p8","p9",
             "s1","s2","s3","s4","s5","s6","s7","s8","s9"] }
 ```
@@ -434,46 +434,48 @@ Owner answer on G1 (2026-10-30): "bigger tonefields". Use the earlier larger rim
 geometry (main r about 0.245R, orbit about 0.74R, neighbours nearly touching), keep the
 label rule and the 3.6 pt floor, prefer depth 1/3 and otherwise the smallest depth up
 to 0.50 that passes, main number outside the rim, M<n> on the same radial line inboard,
-ding r may shrink if M<n> would touch it. This supersedes the "Frozen card design
-(v17)" numbers (r 0.19, orbit 0.745) for the fixture.
+ding r may shrink if M<n> would touch it. This supersedes every number in the "Frozen
+card design (card mock v17, 2026-10-31)" section (r 0.19, orbit 0.745, ding, M-number and main-number spots,
+lens depth): P2 and U2 take all geometry from ENGINE-SPEC section 18 and
+`tests/fixtures/paired_profile_v2.json`, not from that section.
 
 Lens centre from the pan centre: `lensC = main.orbit - (2 x main.r - depth)` with
-`depth = 2 x main.r x mutant.depth` = 0.2205, so lensC = 0.4705 and the lens name sits at
-`lensC + mutant.r - depth/2` = 0.6053. Main name at orbit + depth/2 = 0.8503 on every
+`depth = 2 x main.r x mutant.depth` = 0.2156, so lensC = 0.4656 and the lens name sits at
+`lensC + mutant.r - depth/2` = 0.6028. Main name at orbit + depth/2 = 0.8478 on every
 tonefield of a mutant card (card mock v19), at 0.74 otherwise. M-number at
-0.74 - 0.245 - 0.12 = 0.375, main number at 1.1. Neighbouring main circles: chord
-2 x 0.74 x sin 20 = 0.5062 against 2r = 0.49 (gap 0.016); outer edge 0.985, inner edge
-0.495. Print extent = 1.1 + 0.0784 + 0.06 = 1.2384, so R = round(74 / 1.2384, 1) =
-59.8 pt, main r = 14.65 pt. The ding stays 0.2 (its edge is clear of the M-numbers,
-whose inner extent is about 0.28).
+0.74 - 0.245 - 0.145 = 0.35, main number at 1.0758 (owner v17 spot). Neighbouring main
+circles: chord 2 x 0.74 x sin 20 = 0.5062 against 2r = 0.49 (gap 0.016); outer edge
+0.985, inner edge 0.495. Print extent = 1.0758 + 0.0784 + 0.06 = 1.2142, so
+R = round(74 / 1.2142, 1) = 60.9 pt, main r = 14.92 pt. The ding stays 0.2.
 
-Two frozen values moved from the earlier draft to keep the number rectangles off the
-main circles at r 0.245 (axis-aligned rectangle test, diagonal tonefields worst):
-`n_in` 0.085 -> 0.12 (M-number gap -0.024 -> +0.011) and `number_out` 1.0758 -> 1.1
-(main-number gap -0.018 -> +0.006, which lowers R from 60.9 to 59.8 pt). The
-print-band test checks the number's own extent against 74 / R; `extent_margin` is the slack
-that absorbs the one-decimal rounding of R.
+`n_in` is 0.145, not 0.085: it is the smallest 0.005 step at which every `M<n>` label
+(real NunitoSans width, cap height 0.705 em, half the 0.012R outline stroke) is at least
+0.5 pt clear of its own main circle and clears the ding (0.14 fails on M6/M7, 0.145
+passes). The main numbers at 1.0758 clear every circle and sit outside the pan.
 
 Recorded harness command (T2 verify):
 `python3 -m unittest tests.test_fixture_integrity tests.test_readme_currency -v`.
 
-#### G1 measurement (T2, R = 59.8 pt, r = 14.65 pt, fit = `fit_note` rule, width <= 1.47 x inscribed radius)
+#### G1 measurement (T2, R = 60.9 pt, r = 14.92 pt, fit = `fit_note` rule, width <= 1.47 x inscribed radius)
 
-Worst note over Bb3, C#3, Db4, Ab5, Eb5, F#4, G#3, D4. Name / octave digit in pt.
-Lens rule size 12.06 pt, number size 9.38 pt at every depth.
+Worst case over every spelling A-G x natural/#/b, octaves 2-6 (D#2 / D#3 / D#4 and
+A#2 are the tightest). Name / octave digit in pt. Lens rule size 12.28 pt, number size
+9.55 pt at every depth.
 
 | depth (of main diameter) | lens name / octave | crescent name / octave | verdict |
 |---|---|---|---|
-| 1/3 | 4.16 / 2.75 | 8.27 / 5.46 | FAIL (lens octave) |
-| 0.40 | 4.96 / 3.27 | 7.47 / 4.93 | FAIL (lens octave) |
-| 0.42 | 5.16 / 3.41 | 7.17 / 4.73 | FAIL (lens octave) |
-| 0.43 | 5.36 / 3.54 | 7.07 / 4.67 | FAIL (lens octave) |
-| 0.44 | 5.46 / 3.60 | 6.97 / 4.60 | borderline (3.60) |
-| 0.45 (frozen) | 5.56 / 3.67 | 6.87 / 4.53 | pass |
-| 0.50 | 6.16 / 4.07 | 6.17 / 4.07 | pass |
+| 1/3 | 4.18 / 2.76 | 8.38 / 5.53 | FAIL (lens octave) |
+| 0.40 | 4.98 / 3.29 | 7.48 / 4.94 | FAIL (lens octave) |
+| 0.42 | 5.28 / 3.49 | 7.28 / 4.81 | FAIL (lens octave) |
+| 0.43 | 5.38 / 3.55 | 7.18 / 4.74 | FAIL (lens octave) |
+| **0.44 (frozen)** | 5.48 / 3.62 | 6.98 / 4.61 | pass (smallest 0.01 step; 0.02 pt margin) |
+| 0.45 | 5.58 / 3.68 | 6.88 / 4.54 | pass |
+| 0.50 | 6.28 / 4.15 | 6.28 / 4.15 | pass |
 
-Depth 1/3 fails, so the fixture takes the smallest round depth that passes with a
-clear margin: 0.45 (0.07 pt on the lens octave digit).
+Depth 1/3 fails, so the fixture takes the smallest 0.01 step that passes the 3.6 pt
+floor for every spelling: 0.44. An earlier draft of this table called 0.44
+"borderline" at R 59.8 (number_out 1.1); at the owner's number_out 1.0758 (R 60.9) it
+passes.
 
 ### Design review (Option B) round 1
 
@@ -576,6 +578,8 @@ The Neotone ding is drawn at the same radius as the main tonefields (mock 0.245R
 ## Frozen card design (card mock v17, 2026-10-31)
 
 Source: https://claude.ai/artifact/TgFMSuaPN4ZZbkp6y71cte v17 (scratchpad `neotone-card.html`). This section is the single spec for P2 renderers (app, `HPE.pdfcards`, `tools/hifi.py`) and T2's v2 fixture. It supersedes every "Owner change 2026-10-31" subsection above, decision 7's "4s" style, G2's orange "Ns" and P2's "4s" number-line acceptance (now `M<n>`), and the geometry in "bigger tonefields at the rim" and "ding matches rim size". Values are fractions of the pan radius R.
+
+**Superseded by T2 (owner G1 answer, 2026-10-30, "bigger tonefields").** Every number below is superseded for P2 and U2 by ENGINE-SPEC section 18 and `tests/fixtures/paired_profile_v2.json` (main r 0.245, orbit 0.74, lens depth 0.44, `n_in` 0.145, main number 1.0758, ding 0.2). Take geometry from those, not from this section; its structure (which element goes where) still stands.
 
 **Shared geometry (both kinds of Neotone card).** Use the Standard engine geom for the scale's own top notes (`node tools/gen_deck.js "<scale>"`; the mock's values for an 8- or 9-note rim: orbit 0.745, field r 0.19, ding r 0.2 centred, decor ring 0.355 drawn on both kinds). Angles, count and anchor are the engine's output for that scale (Kurd 9 = 8 rim fields at 45 degrees, anchor one; Pygmy = 9 fields, anchor between). A Neotone card draws only the main tonefields that hold a top note; it does not pad to nine. Nothing is hard-coded beyond what the engine emits.
 

@@ -292,15 +292,15 @@ class TestPairedProfileFixture(unittest.TestCase):
         self.assertGreaterEqual(ding * OCTAVE_RATIO, FLOOR_PT)
 
 
-EXPECTED_PROFILE_V2_SHA256 = "472eb35dd120fb6d551942e2f72a8bcda1a699a4df1a0c340bb56e3c8d8cdc79"
+EXPECTED_PROFILE_V2_SHA256 = "611b59a2cce11d0c72c0bdf0e0549f9d73e10329917838559bc7dc57b2947e33"
 
 V2 = {
     "id": "paired", "rev": 2, "tonefields": 9,
     "angles": [270, 230, 310, 190, 350, 150, 30, 110, 70],
     "main": {"orbit": 0.74, "r": 0.245},
-    "mutant": {"depth": 0.45, "r": 0.245},
+    "mutant": {"depth": 0.44, "r": 0.245},
     "ding": {"r": 0.2, "dy": 0},
-    "n_in": 0.12, "number_out": 1.1, "extent_margin": 0.06,
+    "n_in": 0.145, "number_out": 1.0758, "extent_margin": 0.06,
     "slots": ["p%d" % i for i in range(1, 10)] + ["s%d" % i for i in range(1, 10)]}
 MAIN_BAND, LENS_BAND, OUTLINE = 0.046, 0.024, 0.012
 
@@ -333,6 +333,21 @@ def rect_circle_gap(cx, cy, hw, hh, ox, oy, r):
     dx = max(abs(ox - cx) - hw, 0.0)
     dy = max(abs(oy - cy) - hh, 0.0)
     return math.hypot(dx, dy) - r
+
+
+SPELLINGS = [(letter + acc, octv) for octv in range(2, 7) for letter in "ABCDEFG" for acc in ("", "#", "b")]
+
+
+def text_width(text, size):
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+    if "V2Label" not in pdfmetrics.getRegisteredFontNames():
+        pdfmetrics.registerFont(TTFont("V2Label", os.path.join(FONTS, "NunitoSans-Regular.ttf")))
+    return pdfmetrics.stringWidth(text, "V2Label", size)
+
+
+def rect_origin_gap(cx, cy, hw, hh):
+    return math.hypot(max(abs(cx) - hw, 0.0), max(abs(cy) - hh, 0.0))
 
 
 def fitted(name, octv, size, maxw):
@@ -399,7 +414,7 @@ class TestPairedProfileV2Fixture(unittest.TestCase):
         crescent_ri = (2 * p["main"]["r"] - g["depth"]) * R / 2
         number = NUM_RATIO * r
         self.assertGreaterEqual(number, FLOOR_PT, "M-number / main number")
-        for nm, oc in (("Bb", 3), ("C#", 3), ("Db", 4), ("Ab", 5), ("Eb", 5), ("F#", 4), ("G#", 3), ("D", 4)):
+        for nm, oc in SPELLINGS:
             for label, zone_ratio, ri in (("lens", RATIO["bottom"], lens_ri),
                                           ("crescent", RATIO["rim"], crescent_ri)):
                 size = fitted(nm, oc, r * zone_ratio, 1.47 * ri)
@@ -419,21 +434,28 @@ class TestPairedProfileV2Fixture(unittest.TestCase):
         p = load_v2()
         R = v2_print_radius(p)
         o, r, ding = p["main"]["orbit"], p["main"]["r"], p["ding"]["r"]
-        size = NUM_RATIO * r
-        hh, hw = 0.705 * size / 2, 0.6 * size * 2 / 2
+        size = NUM_RATIO * r * R
+        hh = 0.705 * size / 2 / R
+        stroke = OUTLINE / 2
+        visible = 0.5 / R
         circles = [pol(o, a) for a in p["angles"]]
         for k, ang in enumerate(p["angles"]):
+            hw = text_width("M%d" % (k + 1), size) / 2 / R
             mx, my = pol(o - r - p["n_in"], ang)
             with self.subTest(number="M%d" % (k + 1)):
-                self.assertGreater(math.hypot(mx, my) - hw, ding)
+                self.assertGreater(rect_origin_gap(mx, my, hw, hh), ding + stroke)
                 for j, (ox, oy) in enumerate(circles):
-                    gap = rect_circle_gap(mx, my, hw, hh, ox, oy, r)
-                    self.assertGreater(gap, 0, "M%d number touches field %d" % (k + 1, j + 1))
+                    gap = rect_circle_gap(mx, my, hw, hh, ox, oy, r) - stroke
+                    self.assertGreater(gap, visible if j == k else 0,
+                                       "M%d number gap %.4f to field %d" % (k + 1, gap, j + 1))
+            hw = text_width(str(k + 1), size) / 2 / R
             nx, ny = pol(p["number_out"], ang)
-            self.assertGreater(math.hypot(nx, ny), 1.0, "main number must sit outside the pan")
-            for j, (ox, oy) in enumerate(circles):
-                self.assertGreater(rect_circle_gap(nx, ny, hw, hh, ox, oy, r), 0)
-        self.assertLessEqual(p["number_out"] + size / 2, BAND_HALF / R + 1e-9)
+            with self.subTest(number=str(k + 1)):
+                self.assertGreater(rect_origin_gap(nx, ny, hw, hh), 1.0, "main number must sit outside the pan")
+                for j, (ox, oy) in enumerate(circles):
+                    self.assertGreater(rect_circle_gap(nx, ny, hw, hh, ox, oy, r) - stroke, 0)
+        widest = max(text_width(str(d), size) for d in range(1, 10)) / 2 / R
+        self.assertLessEqual(p["number_out"] + max(widest, hh), BAND_HALF / R + 1e-9)
 
     def test_frozen_stroke_widths_fit_inside_the_lens(self):
         p = load_v2()

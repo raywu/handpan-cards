@@ -2,8 +2,8 @@
   "tonefields": 9,
   "angles": [270, 230, 310, 190, 350, 150, 30, 110, 70],
   "main":   { "orbit": 0.74, "r": 0.245 },
-  "mutant": { "depth": 0.45, "r": 0.245 },
+  "mutant": { "depth": 0.44, "r": 0.245 },
   "ding":   { "r": 0.2, "dy": 0 },
-  "n_in": 0.12, "number_out": 1.1, "extent_margin": 0.06,
+  "n_in": 0.145, "number_out": 1.0758, "extent_margin": 0.06,
   "slots": ["p1","p2","p3","p4","p5","p6","p7","p8","p9",
             "s1","s2","s3","s4","s5","s6","s7","s8","s9"] }
