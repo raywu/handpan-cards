@@ -120,7 +120,7 @@ HPE.pdfdeck = (function () {
     return out;
   }
 
-  function legendLines(spec, hasBottom) {
+  function legendLines(spec, hasBottom, topMirrored) {
     var tops = zoneIds(spec, ["rim", "inner"]);
     var bottoms = zoneIds(spec, ["bottom"]);
     var lines = [];
@@ -131,8 +131,10 @@ HPE.pdfdeck = (function () {
                  ": BOTTOM NOTES, X-RAY VIEW (SEEN FROM ABOVE)");
     }
     lines.push("NOTE NAME + OCTAVE INSIDE EACH TONEFIELD");
-    lines.push("TONEFIELD NUMBERS RUN 1 - " + tops.length + " FROM THE LOWEST " +
-               (hasBottom ? "TOP " : "") + "NOTE");
+    if (!topMirrored) {
+      lines.push("TONEFIELD NUMBERS RUN 1 - " + tops.length + " FROM THE LOWEST " +
+                 (hasBottom ? "TOP " : "") + "NOTE");
+    }
     return lines;
   }
 
@@ -188,7 +190,7 @@ HPE.pdfdeck = (function () {
       blurb: blurb(spec, chords.length, warnings),
       // Only the full-deck legend card reads this; the app no longer builds that
       // variant (2026-10-08), so nothing user-visible shows it. Kept.
-      legend_lines: legendLines(spec, hasBottom),
+      legend_lines: legendLines(spec, hasBottom, !!(generated.options && generated.options.mirror)),
       legend_demo: legendDemo(spec, chords),
       // --- data -----------------------------------------------------------
       spec: spec,

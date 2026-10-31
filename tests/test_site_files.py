@@ -7,7 +7,7 @@ import unittest
 import xml.etree.ElementTree as ET
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SITE = "https://handpan.raywu.org/"
+SITE = "https://handpantheory.com/"
 NS = "{http://www.sitemaps.org/schemas/sitemap/0.9}"
 
 
@@ -198,6 +198,66 @@ class SiteFilesTest(unittest.TestCase):
         self.assertEqual(listed, locs)
         self.assertIn(SITE + "handpan-101/", listed)
         self.assertIn(SITE + "scales/", listed)
+
+    def test_qa_seed_page_is_dev_only_noindex_and_never_published(self):
+        page = read("qa-seed.html")
+        self.assertRegex(page, r'<meta name="robots" content="noindex">')
+        self.assertNotRegex(page, r"(?i)rel=[\"']canonical")
+        self.assertNotRegex(page, r'href="[^"]*\.html"')
+        self.assertIn('href="/"', page)
+        with tempfile.TemporaryDirectory() as out:
+            subprocess.run(["sh", os.path.join(ROOT, "tools", "publish.sh"), out], cwd=ROOT, check=True)
+            self.assertFalse(os.path.exists(os.path.join(out, "qa-seed.html")))
+        self.assertNotIn("qa-seed", read("sitemap.xml") + read("llms.txt") + read("robots.txt"))
+        self.assertNotIn("qa-seed", read("index.html"))
+
+    def test_qa_seed_host_guard_allows_only_the_dev_project_and_its_previews(self):
+        m = re.search(r"const allowedHost = (.+?);\n", read("qa-seed.html"))
+        self.assertIsNotNone(m)
+        script = "const f=%s;process.stdout.write(JSON.stringify(process.argv.slice(1).map(f)))" % m.group(1)
+        hosts = ["handpan-cards-dev.pages.dev", "abc123.handpan-cards-dev.pages.dev",
+                 "claude-qa-harness.handpan-cards-dev.pages.dev",
+                 "handpan.raywu.org", "www.handpantheory.com", "handpantheory.com",
+                 "handpan-cards.pages.dev", "abc123.handpan-cards.pages.dev",
+                 "evilhandpan-cards-dev.pages.dev", "handpan-cards-dev.pages.dev.evil.com", "localhost"]
+        out = subprocess.run(["node", "-e", script] + hosts, capture_output=True, check=True, text=True).stdout
+        import json
+        self.assertEqual(dict(zip(hosts, json.loads(out))), {
+            "handpan-cards-dev.pages.dev": True, "abc123.handpan-cards-dev.pages.dev": True,
+            "claude-qa-harness.handpan-cards-dev.pages.dev": True,
+            "handpan.raywu.org": False, "www.handpantheory.com": False, "handpantheory.com": False,
+            "handpan-cards.pages.dev": False, "abc123.handpan-cards.pages.dev": False,
+            "evilhandpan-cards-dev.pages.dev": False, "handpan-cards-dev.pages.dev.evil.com": False,
+            "localhost": False})
+
+class HostMoveTest(unittest.TestCase):
+    OLD_HOST = "handpan." + "raywu.org"
+
+    def served_files(self):
+        names = ["index.html", "404.html", "robots.txt", "sitemap.xml", "llms.txt", "handpan-101/index.html"]
+        names += sorted(os.path.relpath(f, ROOT) for f in glob.glob(os.path.join(ROOT, "scales", "**", "index.html"), recursive=True))
+        return names
+
+    def test_no_served_file_names_the_old_host_outside_the_move_switch(self):
+        for name in self.served_files():
+            lines = [l for l in read(name).splitlines() if self.OLD_HOST in l and not l.lstrip().startswith(("const MOVE_FROM", "// "))]
+            with self.subTest(file=name):
+                self.assertEqual(lines, [])
+
+    def test_the_generator_and_preview_script_name_only_the_new_host(self):
+        for name in ("tools/gen_scale_page.py", "tools/scale_pages.json", "tools/preview.sh", "README.md"):
+            with self.subTest(file=name):
+                self.assertNotIn(self.OLD_HOST, read(name))
+
+    def test_every_sitemap_loc_is_on_the_new_host(self):
+        locs = [e.text for e in sitemap_tree().iter(NS + "loc")]
+        self.assertTrue(locs)
+        for loc in locs:
+            self.assertTrue(loc.startswith(SITE), loc)
+
+    def test_robots_names_the_new_sitemap(self):
+        self.assertIn("Sitemap: " + SITE + "sitemap.xml", read("robots.txt"))
+
 
 if __name__ == "__main__":
     unittest.main()
