@@ -68,6 +68,30 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     SMALL_LABELS: {
       kind: "warning",
       reason: "Crowded pan: the smallest labels print at <N> pt, under the 3.6 pt this app treats as readable. Nothing is left out."
+    },
+    PROFILE_UNKNOWN: {
+      kind: "error",
+      reason: "This paired-area layout is not one this app knows."
+    },
+    PROFILE_MAP_INVALID: {
+      kind: "error",
+      reason: "The paired-area layout is malformed: it must list 18 areas, each empty or one of your notes."
+    },
+    PROFILE_NOTE_MISSING: {
+      kind: "error",
+      reason: "The paired-area layout leaves out one of your notes. Every note needs an area."
+    },
+    PROFILE_NOTE_TWICE: {
+      kind: "error",
+      reason: "The paired-area layout places the same note in two areas."
+    },
+    PROFILE_FULL: {
+      kind: "error",
+      reason: "Paired areas hold at most 18 notes besides the ding. Remove some notes."
+    },
+    PROFILE_CONFLICT: {
+      kind: "error",
+      reason: "Paired areas set their own placement, so mirror, anchor, seats and angles cannot be combined with them."
     }
   };
 
@@ -777,6 +801,66 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     });
   }
 
+  /* ---- the paired-area profile option (ENGINE-SPEC 18) ------------------ */
+
+  var PROFILE_AREAS = 18;
+  var PROFILE_KEY_RE = /^[rib]\d{1,3}$/;
+  var ZONE_KEY = { rim: "r", inner: "i", bottom: "b" };
+
+  function has(obj, key) {
+    return Object.prototype.hasOwnProperty.call(obj, key);
+  }
+
+  // The one validator of options.profile. `raw` is the caller's option, `options`
+  // the whole raw option bag (for PROFILE_CONFLICT), `fields` the parsed seed.
+  function readProfile(raw, options, fields) {
+    if (raw === undefined || raw === null) return ok(undefined);
+    if (!HPE.core.PROFILE_ENABLED) return scaleErr("PROFILE_UNKNOWN");
+    var placement = ["mirrorBottom", "anchor", "seats", "angles"];
+    if (options.mirror === true) return scaleErr("PROFILE_CONFLICT");
+    for (var c = 0; c < placement.length; c += 1) {
+      var given = options[placement[c]];
+      if (given !== undefined && given !== null) return scaleErr("PROFILE_CONFLICT");
+    }
+    if (typeof raw !== "object" || Array.isArray(raw)) return scaleErr("PROFILE_MAP_INVALID");
+    var keys = Object.keys(raw).sort();
+    if (keys.length !== 3 || keys[0] !== "id" || keys[1] !== "map" || keys[2] !== "rev") {
+      return scaleErr("PROFILE_MAP_INVALID");
+    }
+    if (raw.id !== "paired" || raw.rev !== 1) return scaleErr("PROFILE_UNKNOWN");
+
+    var byKey = {};
+    var total = 0;
+    var id;
+    for (id in fields) {
+      if (!has(fields, id) || fields[id][3] === "ding") continue;
+      byKey[ZONE_KEY[fields[id][3]] + fields[id][2]] = true;
+      total += 1;
+    }
+    if (total > PROFILE_AREAS) return scaleErr("PROFILE_FULL");
+
+    var map = raw.map;
+    if (!Array.isArray(map) || map.length !== PROFILE_AREAS) return scaleErr("PROFILE_MAP_INVALID");
+    var seen = {};
+    var out = [];
+    for (var i = 0; i < PROFILE_AREAS; i += 1) {
+      if (!has(map, String(i))) return scaleErr("PROFILE_MAP_INVALID");
+      var entry = map[i];
+      if (entry === null) { out.push(null); continue; }
+      if (typeof entry !== "string" || !PROFILE_KEY_RE.test(entry) || !has(byKey, entry)) {
+        return scaleErr("PROFILE_MAP_INVALID");
+      }
+      if (has(seen, entry)) return scaleErr("PROFILE_NOTE_TWICE");
+      seen[entry] = true;
+      out.push(entry);
+    }
+    var key;
+    for (key in byKey) {
+      if (has(byKey, key) && !has(seen, key)) return scaleErr("PROFILE_NOTE_MISSING");
+    }
+    return ok({ id: "paired", rev: 1, map: out });
+  }
+
   function parseSeed(input, options) {
     if (typeof input !== "string") return badNote(String(input));
     var opts = readOptions(options);
@@ -822,6 +906,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       fields[String(first + n)] = [spell(entry.note.letter, entry.note.accidental),
                                    entry.note.octave, entry.note.midi, "bottom", null, "U" + (n + 1)];
     });
+    var profile = readProfile(options ? options.profile : undefined, options || {}, fields);
+    if (!profile.ok) return profile;
+    if (profile.value) opts.value.profile = profile.value;
     // The field ids in typed order (tops, then bottoms), for the importer's
     // source-to-field mapping. Not enumerable: it is a reading aid, not part of
     // the seed, so equality, spreading and serialising of a seed ignore it.
@@ -1093,6 +1180,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   HPE.core = {
     LABEL_RULE: LABEL_RULE,
+    PROFILE_ENABLED: false,
+    readProfile: readProfile,
     parseSeed: parseSeed,
     parseLegacySeed: parseLegacySeed,
     inferBottoms: inferBottoms,
