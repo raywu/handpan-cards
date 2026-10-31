@@ -45,6 +45,8 @@ A chord-card system for handpans, two outputs from one data source:
   an i18n step: keys in all eight tables, sync, audit, fit check (owner 2026-10-23).
 - **No deck data, verified layout or diagram geometry change without explicit owner
   instruction.** Some layouts look "wrong" against generic references; they are not.
+- MIRROR moves notes, never index numbers (owner 2026-10-30); see `docs/CARD-SPEC.md`.
+- **Design rules live in design docs.** Card, layout and diagram rules (verified layouts, generated-layout rules, card conventions, design system) belong in `docs/CARD-SPEC.md`; engine behaviour in `docs/ENGINE-SPEC.md`. A change to one edits that doc, not this file; this file keeps only one-line guardrails that point there.
 - **Preserve the visual system** (fonts, palettes, card anatomy; `docs/CARD-SPEC.md`).
 - **Visible text says "scale", never "deck".** Identifiers, ids, `#deck=` routes,
   storage keys, analytics events and code comments keep "deck".
