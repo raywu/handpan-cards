@@ -16,6 +16,13 @@ def read(name):
         return f.read()
 
 
+def publish(out, branch=None):
+    env = {k: v for k, v in os.environ.items() if k != "CF_PAGES_BRANCH"}
+    if branch is not None:
+        env["CF_PAGES_BRANCH"] = branch
+    subprocess.run(["sh", os.path.join(ROOT, "tools", "publish.sh"), out], cwd=ROOT, env=env, check=True)
+
+
 def sitemap_tree():
     return ET.parse(os.path.join(ROOT, "sitemap.xml")).getroot()
 
@@ -169,7 +176,7 @@ class SiteFilesTest(unittest.TestCase):
                        "_headers", "og.png", "apple-touch-icon.png"]
         allow_dirs = ["scales", "handpan-101"]
         with tempfile.TemporaryDirectory() as out:
-            subprocess.run(["sh", os.path.join(ROOT, "tools", "publish.sh"), out], cwd=ROOT, check=True)
+            publish(out)
             built = set()
             for base, _, names in os.walk(out):
                 for n in names:
@@ -206,10 +213,20 @@ class SiteFilesTest(unittest.TestCase):
         self.assertNotRegex(page, r'href="[^"]*\.html"')
         self.assertIn('href="/"', page)
         with tempfile.TemporaryDirectory() as out:
-            subprocess.run(["sh", os.path.join(ROOT, "tools", "publish.sh"), out], cwd=ROOT, check=True)
+            publish(out)
+            self.assertFalse(os.path.exists(os.path.join(out, "qa-seed.html")))
+        with tempfile.TemporaryDirectory() as out:
+            publish(out, "main")
             self.assertFalse(os.path.exists(os.path.join(out, "qa-seed.html")))
         self.assertNotIn("qa-seed", read("sitemap.xml") + read("llms.txt") + read("robots.txt"))
         self.assertNotIn("qa-seed", read("index.html"))
+
+    def test_qa_seed_is_published_only_for_a_non_production_branch(self):
+        for branch in ("dev", "claude/some-lane"):
+            with tempfile.TemporaryDirectory() as out:
+                publish(out, branch)
+                with open(os.path.join(out, "qa-seed.html"), "rb") as a, open(os.path.join(ROOT, "qa-seed.html"), "rb") as b:
+                    self.assertEqual(a.read(), b.read(), branch)
 
     def test_qa_seed_host_guard_allows_only_the_dev_project_and_its_previews(self):
         m = re.search(r"const allowedHost = (.+?);\n", read("qa-seed.html"))
