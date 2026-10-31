@@ -4,10 +4,10 @@
 diff --git a/src/engine/share.js b/src/engine/share.js
 --- a/src/engine/share.js
 +++ b/src/engine/share.js
-@@ -497,7 +497,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-       if (at <= rank) return badNote(text);
+@@ -535,7 +535,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
        rank = at;
      }
+     if (profiled && pairs !== 1) return badNote(text);
 -    return HPE.core.parseSeed(scaleString(scale), options);
 +    var seed = HPE.core.parseSeed(scaleString(scale), options);
 +    return seed.ok ? seed : ok({ fields: {}, options: options });

@@ -288,7 +288,7 @@ changes to `data/decks.json`, voicing/select/tier code, practice modes.
   corpus identical-bytes test and a mutant.
 - R2 Old client protects the library: closed by I1 + pinned-client test; any new
   slot-like field in a v5 record must be re-audited.
-- R3 Label fit in small secondary slots (r 0.085R) at print floor: lane P asserts
+- R3 Label fit in small secondary slots (r 0.11R) at print floor: lane P asserts
   3.6 pt; if it fails, enlarge `secondary.r` within the non-overlap property, a
   fixture rev change BEFORE merge only.
 - R4 Region conflicts between P and U: re-inline, never hand-merge. Non-region `index.html` conflicts (E11): the second lane to land rebases and resolves by hand within its own symbols only.
