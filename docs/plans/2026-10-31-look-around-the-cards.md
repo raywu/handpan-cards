@@ -1,6 +1,8 @@
 # Plan: the Handpan Theory look around the cards
 
-Status: EXPLORED 2026-10-31, waiting on the owner's pick. Review page:
+Status: PICKED 2026-10-31: the owner chose **B (brand board) with the
+chip-dot keyline**. Questions 1, 3 and 4 below run on their defaults until
+the owner says otherwise. Review page:
 https://claude.ai/artifact/WLJN6SePLb9kTzE8gdhAfp. Prompt:
 `docs/prompts/2026-10-31-app-look-around-the-cards.md`. Nothing under
 `src/`, `index.html`, `data/`, `tools/` or `scales/` changed.
@@ -114,31 +116,94 @@ two-zone stage buys purple 0.11 more contrast at the cost of the warm glow.
    tall. Options: **64px on screens 740px tall and up, 48px below, and
    lower the README minimum to 48px**; or 64px everywhere and accept the
    smaller card; or the mark plus a text title.
-2. **Which direction:** **B + chip keyline**, C, A or D.
+2. **Which direction:** DECIDED, B + chip keyline (owner, 2026-10-31).
 3. **Card match:** **the six drift fixes**, the low-churn two, or leave as
    is.
 4. **Light scale pages:** keep a light scheme (yellow frames below 3:1 and
    the white card lost, as today), or **keep it and put the progression on
    a dark plate** as D does.
 
-## After the pick (outline; lane detail once chosen)
+## Lanes for B
 
-Dev-first lanes per `CLAUDE.md`:
+Dev-first per `CLAUDE.md`: each lane opens PR M to `main` and PR D from the
+same head to `dev`. Reference implementation for every value:
+`docs/brand/look/B/app.css` and `pages.css` (mock CSS; production edits the
+real rules instead of overriding them).
 
-1. **Tokens and chrome:** `index.html` CSS only (`--table`, theme-color,
-   surfaces, hairlines, text, chip keyline), the header lockup. Pinned tests:
-   theme-color and page-background asserts in `tests/app.test.js` and
-   `tests/e2e.test.js`, the reroll and share-copy colours, focus-ring colour
-   if it moves, `CHROME_BUDGET`; mutant patches that quote changed values
-   (about 120 in `tests/mutants/`) are regenerated. i18n: none unless the
-   header gains visible text.
-2. **Pages:** `tools/gen_scale_page.py` grounds and `accents()`, the
-   handpan-101 and 404 heads; regenerate `scales/`. Tests:
-   `tests/test_scale_pages.py`, `tests/test_handpan_101_page.py`.
-3. **Card match** (if chosen): `tools/gen_scale_page.py` card CSS and
-   markup; see `cardmatch.md` for tests and bytes.
-4. **Design system:** add the mapping's new tokens, the conflict
-   decisions and the header rule to the artifact.
+**Sequencing with the rebrand.** The header lockup reads "Handpan Theory",
+so it cannot ship while `<title>`, `h1` and `og:*` still say "Handpan
+Chords". Lanes L1 and L2 are brand-neutral and ship now; the lockup ships in
+the rebrand plan's phase 1 (`docs/prompts/2026-10-31-handpan-theory-rebrand-plan.md`)
+together with the name.
 
-Rollback: each lane is a CSS or generator change on its own PR; revert the
-PR (on `dev` via `claude/dev-revert-<lane>`).
+Decisions folded in (from the mapping and B's notes):
+
+- Ground `#0F0E0B` (`--table` and `--table2`; theme-color follows); the
+  radial goes; B's faint `#15130F` lift behind the header stays optional.
+- Text `#F6F4ED` (folds `#EAE6DF`, `#F4F0E8`); secondary `#A9A39A` (folds
+  `#C4BCAB`, `#A79D8B`, `#B3AA98`; 7.08:1 on surface, so the "passive text
+  ≥7:1" test still holds).
+- Surface `#1A1814` (folds `#1F1B15`, `#211D16`, `#272219`); hairline
+  `#3A352D` (folds `#433B2C`, `#4A4233`, `#332C22`, `#3A342B`).
+- Focus ring teal, as the brand book says. The app gold `#E3B25C` stays as
+  `signal` for warnings and states only; links become `text-primary` with a
+  board-gold underline. This overrides the mapping's "gold focus ring"
+  default.
+- Radius 10px to 12px (`radius-md`); chips: 1px hairline pill, 12px label,
+  active chip a plain 1.5px root border with no glow; chip dots get C's
+  light keyline.
+- Card untouched, including its press ring.
+
+### L1: app chrome tokens (`claude/look-b-chrome`)
+
+- Files: `index.html` CSS and the `theme-color` meta only, outside the
+  engine regions. No markup, JS or text change, so no i18n step.
+- Tests that move, with the reason "brand board ground and tokens":
+  `tests/app.test.js` theme-color = `--table` literal, reroll border and
+  press colours, `#share-copy:disabled:active`; `tests/e2e.test.js` page
+  background `TABLE`, frame-pixel samples, focus-ring colour (DR1), press,
+  notice, delete-link and cream computed colours, the rail-colour contrast
+  ground. Chip label 11 to 12px: re-check the landscape strip and
+  "every control stays tappable" tests; drop to 11px if they fail.
+- Mutants: regenerate the patches whose context lines quote changed values
+  (about 120 in `tests/mutants/`); none change meaning.
+- Verify on DEV at 380px and 1280px: the review page's B screens, all five
+  built-ins, the settings sheet, About, the scale sheet's three tabs.
+- Rollback: revert the PR.
+
+### L2: pages (`claude/look-b-pages`)
+
+- Files: `tools/gen_scale_page.py` (`BG_LIGHT` `#F6F4ED`, `BG_DARK`
+  `#0F0E0B`, shared root CSS, arrow buttons, CTA), its accents recomputed by
+  `accents()` (table in `docs/brand/look/B/notes.md`; d-kurd-10's hand-set
+  dark accent becomes computed), `tools/scale_pages.json` accent columns,
+  regenerated `scales/*/index.html`, `handpan-101/index.html`, `404.html`.
+- Light pages: default for open question 4 is a dark plate under the
+  progression (D's `stage-*` shots show it); size it inside the byte
+  budget (largest page has about 1 KB left), or ship L2 without it and add
+  it in L3.
+- Tests: `tests/test_scale_pages.py` (grounds, `BROWN`, `SHARED_ROOT`,
+  About regexes, arrow-button values, accent ratios, byte-identical
+  regeneration), `tests/test_handpan_101_page.py` (theme-color, CTA, `--r`,
+  contrast loop).
+- Rollback: revert; regeneration is deterministic.
+
+### L3: card match (`claude/scale-card-match`), default: the six fixes
+
+As `docs/brand/look/cardmatch.md`. Independent of L1 and L2; merge after L2
+so the pages regenerate once per lane, not twice in one.
+
+### L4: header lockup (inside the rebrand's phase 1)
+
+- `horizontal-full` in the `h1` row between the link and menu buttons, the
+  `h1` text kept for SEO. Default for open question 1: 64px when the
+  viewport is at least 740px tall, 48px below; the brand README's minimum
+  becomes 48px. Tests: `CHROME_BUDGET` rows in `tests/e2e.test.js` re-set
+  to the measured values with the owner's approval.
+
+### L5: design system
+
+Publish the new tokens (`signal`, `surface-inverse`, `text-placeholder`,
+type sizes, `radius-xs`/`radius-round`, `gutter`), the three conflict
+decisions, the focus-ring and link rules, and the header-size rule to the
+design-system artifact. No repo change.
