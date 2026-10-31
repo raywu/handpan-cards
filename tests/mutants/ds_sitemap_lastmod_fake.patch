@@ -7,8 +7,8 @@ diff --git a/sitemap.xml b/sitemap.xml
 @@ -2,6 +2,7 @@
  <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
    <url>
-     <loc>https://handpan.raywu.org/</loc>
+     <loc>https://handpantheory.com/</loc>
 +    <lastmod>2026-10-16</lastmod>
    </url>
    <url>
-     <loc>https://handpan.raywu.org/scales/</loc>
+     <loc>https://handpantheory.com/scales/</loc>

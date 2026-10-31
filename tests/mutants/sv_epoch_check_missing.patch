@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10539,7 +10539,7 @@ function savedEditedRecord(target, candidate) {
+@@ -10923,7 +10923,7 @@ function savedEditedRecord(target, candidate) {
  }
  function applySavedCommand(staged, command, candidate) {
    const current = staged.envelope;
 -  if (!command || command.collectionId !== current.collectionId) return savedFailure("conflict", "collection-epoch");
 +  if (!command) return savedFailure("conflict", "collection-epoch");
    const next = savedClone(current), views = new Map(staged.views);
-   let targetId = null, created = false, desired = null;
+   let targetId = null, created = false, desired = null, imported = 0;
    const existing = () => next.entries.find(row => row.instanceId === command.instanceId);

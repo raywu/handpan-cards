@@ -47,9 +47,20 @@ if (!BROWSER) {
 
 function run() {
   let server = null;
+  let moveMode = null;
   let spawnError = null;
   let b = null;
   /** index.html with a de table whose every value is the English value in brackets (the app.test.js pseudo table). */
+  function moveHtml() {
+    const inject = "<script>(function(){var p=IDBObjectStore.prototype.put;IDBObjectStore.prototype.put=function(){" +
+      "var fail=false;try{fail=localStorage.getItem('moveFail')==='1'&&String(arguments[0]).indexOf('importedIds')>=0;}catch(e){}" +
+      "if(fail)throw new Error('injected write failure');return p.apply(this,arguments);};})();</script>";
+    return fs.readFileSync(path.join(REPO, "index.html"), "utf8")
+      .replace("const MOVE_FROM = null;", () => `const MOVE_FROM = ${JSON.stringify(moveMode.from)};`)
+      .replace("const MOVE_TARGET = null;", () => `const MOVE_TARGET = ${JSON.stringify(moveMode.target)};`)
+      .replace(/const MOVE_CAP = \d+;/, () => `const MOVE_CAP = ${moveMode.cap || 20000};`)
+      .replace("<head>", () => "<head>" + inject);
+  }
   function pseudoDeHtml() {
     const en = JSON.parse(fs.readFileSync(path.join(REPO, "data", "i18n", "en.json"), "utf8"));
     const wrap = (v) => (typeof v === "string" ? "\u27e6" + v + "\u27e7"
@@ -74,6 +85,11 @@ function run() {
       // NB: the URL const above shadows the global URL class here, so the path
       // is split by hand rather than parsed.
       const rel = decodeURIComponent((req.url || "/").split("?")[0]).replace(/^\/+/, "");
+      if (moveMode && (rel === "" || rel === "index.html")) {
+        res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
+        res.end(moveHtml());
+        return;
+      }
       if (rel === "__pseudo_de.html") {
         res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
         res.end(pseudoDeHtml());
@@ -4653,6 +4669,39 @@ function run() {
     }
   });
 
+  test("MSJ: tapping a layout toggle leaves the tapped button where it was in both scrollers", async () => {
+    try {
+      for (const edit of [false, true]) for (const [w, h] of [[380, 667], [380, 780]]) {
+        if (edit) {
+          await freshLoad();
+          await b.setViewport(w, h, true);
+          await generate(DR1_SCALE);
+          await openEdit();
+          await openDrawer();
+        } else await addWithDrawer(w, h);
+        for (const id of ["scale-mirror-bottom", "scale-mirror", "scale-anchor-between", "scale-anchor-one", "scale-mirror-bottom", "scale-mirror"]) {
+          await b.eval(`const s = ${body}; s.scrollTop = s.scrollHeight - s.clientHeight - 0;
+            const u = document.querySelector("#scale-sheet .sheetsurf"); u.scrollTop = u.scrollHeight; return true;`);
+          await b.eval(`const s = ${body}, el = document.getElementById(${JSON.stringify(id)});
+            const hit = () => { const r = el.getBoundingClientRect(); const t = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!t && el.contains(t); };
+            while (!hit() && s.scrollTop > 0) s.scrollTop = Math.max(0, s.scrollTop - 10);
+            return hit();`);
+          await b.settle();
+          const at = () => b.eval(`return { top: document.getElementById(${JSON.stringify(id)}).getBoundingClientRect().top,
+            body: ${body}.scrollTop, surf: document.querySelector("#scale-sheet .sheetsurf").scrollTop };`);
+          const before = await at();
+          await b.click("#" + id);
+          await b.settle();
+          const after = await at();
+          assert.ok(Math.abs(after.top - before.top) <= 1,
+            `${id} moved ${before.top} -> ${after.top} (${edit ? "Edit" : "Add"} ${w} x ${h}): ${JSON.stringify({ before, after })}`);
+        }
+      }
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
   test("UX: Adjust layout is two columns at 844x390 with the pan >=270px with no message, one column at 500x390", async () => {
     try {
       await addWithDrawer(844, 390);
@@ -4986,7 +5035,7 @@ function run() {
     }
   });
 
-  test("DR1 line 38: each drawer control shows the global 2px #e3b25c focus ring from the keyboard", async () => {
+  test("DR1 line 38: each drawer control shows the global 2px teal #44e0d8 focus ring from the keyboard", async () => {
     try {
       await addWithDrawer(380, 780);
       await b.eval(`document.getElementById("scale-tab-layout").focus(); return true;`);
@@ -4994,7 +5043,7 @@ function run() {
         assert.ok(await tabTo(id, 40), `Tab never reached #${id}`);
         const o = await b.eval(`const cs = getComputedStyle(document.activeElement);
           return { w: cs.outlineWidth, c: cs.outlineColor, s: cs.outlineStyle };`);
-        assert.deepStrictEqual(o, { w: "2px", c: "rgb(227, 178, 92)", s: "solid" }, `#${id}: ${JSON.stringify(o)}`);
+        assert.deepStrictEqual(o, { w: "2px", c: "rgb(68, 224, 216)", s: "solid" }, `#${id}: ${JSON.stringify(o)}`);
       }
     } finally {
       await b.key("Escape", "Escape", 27);
@@ -5213,7 +5262,7 @@ function run() {
       assert.ok(st.name.length > 0, "the Name field is empty");
       assert.strictEqual(st.primary, "SAVE CHANGES");
       assert.strictEqual(st.del, "DELETE THIS SCALE");
-      assert.strictEqual(st.delColor, "rgb(167, 157, 139)", "the delete link is not #a79d8b");
+      assert.strictEqual(st.delColor, "rgb(169, 163, 154)", "the delete link is not #a9a39a");
       assert.strictEqual(st.delWide, false, "the delete link reads as a second primary");
       assert.strictEqual(st.cardW, beforeCardW, "--card-w moved when the Edit sheet opened");
       assert.ok(st.body.sw <= st.body.cw + 1,
@@ -5540,8 +5589,8 @@ function run() {
       assert.notStrictEqual(held.color, "rgb(227, 178, 92)",
         "the armed delete button keeps its amber under the thumb - the press that "
         + "destroys the deck is the one control on the page that does not answer");
-      assert.strictEqual(held.color, "rgb(234, 230, 223)",
-        "the armed delete button presses to something other than #eae6df, which is "
+      assert.strictEqual(held.color, "rgb(246, 244, 237)",
+        "the armed delete button presses to something other than #f6f4ed, which is "
         + "the pressed colour every other control on this page uses");
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
         { label: "the Edit sheet to close after the held press was released" });
@@ -7058,7 +7107,7 @@ function run() {
       assert.strictEqual(m.msgParent, "scale-guidance");
       assert.strictEqual(m.noteParent, "scale-guidance");
       assert.strictEqual(m.inBody || m.inDrawer, false, "the slot is inside the scroll or the drawer");
-      assert.strictEqual(m.noteColor, "rgb(196, 188, 171)", "N-A9: the notice is not the sheet's neutral #c4bcab inside the slot");
+      assert.strictEqual(m.noteColor, "rgb(169, 163, 154)", "N-A9: the notice is not the sheet's neutral #a9a39a inside the slot");
       assert.strictEqual(m.warnColor, "rgb(227, 178, 92)", "N-A9: #scale-msg.warn is not amber #e3b25c");
       assert.strictEqual(m.noteFont, m.msgFont, "the notice and the message do not share one type system in the slot");
       assert.deepStrictEqual(m.live, ["polite", "polite", "true", null]);
@@ -8583,7 +8632,7 @@ function run() {
       }
     });
 
-    test(`PH: ${vw}x${vh} the tabs are a text strip with a 2px cream underline on the selected one, 44px tall`, async () => {
+    test(`PH: ${vw}x${vh} the tabs are a text strip with a 2px teal underline on the selected one, 44px tall`, async () => {
       try {
         await freshLoad();
         await b.setViewport(vw, vh, true);
@@ -8600,10 +8649,10 @@ function run() {
         assert.strictEqual(other.bg, "rgba(0, 0, 0, 0)");
         assert.ok(sel.h >= 44 && other.h >= 44, `tabs are ${sel.h}px / ${other.h}px tall`);
         assert.ok(Math.abs(sel.w - other.w) < 1.5, "the tabs are not equal widths");
-        const cream = "rgb(241, 236, 225)";
-        const underlined = (t) => (t.bw === "2px" && t.bc === cream) || (t.afH === "2px" && t.afBg === cream);
-        assert.ok(underlined(sel), `the selected tab has no 2px cream underline: ${JSON.stringify(sel)}`);
-        assert.ok(!underlined(other), "the unselected tab is underlined in cream");
+        const teal = "rgb(68, 224, 216)";
+        const underlined = (t) => (t.bw === "2px" && t.bc === teal) || (t.afH === "2px" && t.afBg === teal);
+        assert.ok(underlined(sel), `the selected tab has no 2px teal underline: ${JSON.stringify(sel)}`);
+        assert.ok(!underlined(other), "the unselected tab is underlined in teal");
         assert.notStrictEqual(sel.color, other.color, "selected and unselected labels share a colour");
         assert.strictEqual(sel.radius, "0px", "the tab is a rounded button");
       } finally {
@@ -8941,8 +8990,8 @@ function run() {
       [1280, 800, "desktop"],
     ];
 
-    const TABLE = [26, 24, 21];   // #1a1815
-    const TABLE2 = [38, 34, 28];  // #26221c
+    const TABLE = [15, 14, 11];   // #0f0e0b
+    const TABLE2 = [15, 14, 11];  // #0f0e0b
     const FRAME = 4;              // outer pixel frame width to sample
 
     // Renders the CURRENT page to a real PNG via CDP, then decodes it back to
@@ -9059,7 +9108,7 @@ function run() {
       await freshLoad();
       const bg = await b.eval(
         `return getComputedStyle(document.documentElement).backgroundColor;`);
-      assert.strictEqual(bg, "rgb(26, 24, 21)");
+      assert.strictEqual(bg, "rgb(15, 14, 11)");
     });
 
     test("under print media, html computes to a white background", async () => {
@@ -10720,7 +10769,7 @@ function run() {
           }
           const ring = await b.eval(`const el = document.getElementById("tier-basic"); el.focus({ focusVisible: true });
             const cs = getComputedStyle(el); return [cs.outlineWidth, cs.outlineColor, cs.outlineStyle];`);
-          assert.deepStrictEqual(ring, ["2px", "rgb(227, 178, 92)", "solid"], `${w}x${h}: global focus ring`);
+          assert.deepStrictEqual(ring, ["2px", "rgb(68, 224, 216)", "solid"], `${w}x${h}: global focus ring`);
         }
       } finally { await b.setViewport(900, 900, false); }
     });
@@ -11225,8 +11274,8 @@ function run() {
         assert.ok(m.fontSize >= 18, `${deckId}: #count font-size is ${m.fontSize}px, needs >= 18px`);
         assert.strictEqual(m.textAlign, "center", `${deckId}: #count text-align is "${m.textAlign}"`);
         assert.ok(m.color, `${deckId}: the rail's current chord <b> was not found`);
-        const ratio = contrastRatio(m.color, [0x1a, 0x18, 0x15]);
-        assert.ok(ratio >= AA_NORMAL, `${deckId}: rail current-chord colour is ${ratio.toFixed(2)}:1 on #1a1815, needs ${AA_NORMAL}`);
+        const ratio = contrastRatio(m.color, [0x0f, 0x0e, 0x0b]);
+        assert.ok(ratio >= AA_NORMAL, `${deckId}: rail current-chord colour is ${ratio.toFixed(2)}:1 on #0f0e0b, needs ${AA_NORMAL}`);
         assert.ok(m.decorationLine.includes("underline"), `${deckId}: rail current chord lost its underline`);
         assert.deepStrictEqual(m.decorationColor, hexToRgb(m.root),
           `${deckId}: underline colour must be the deck's root colour`);
@@ -20292,6 +20341,257 @@ function run() {
       } finally {
         await b.send("Emulation.setTouchEmulationEnabled", { enabled: false });
       }
+    });
+  });
+
+
+  describe("MV: the saved-scale handoff to the new host", () => {
+    const SV = JSON.parse(fs.readFileSync(path.join(REPO, "tests/fixtures/saved_variants_v1.json"), "utf8"));
+    const clone = (v) => JSON.parse(JSON.stringify(v));
+    const uid = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+    const OLDSEED = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
+    const SEED2 = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4";
+    const KURDSEED = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5";
+    const rec = (name, s = OLDSEED, o = {}) => ({ v: 4, s, o: { name, ...o } });
+    const port = () => server.address().port;
+    const OLD = () => `http://127.0.0.1:${port()}`;
+    const NEW = () => `http://localhost:${port()}`;
+    const on = (cap) => { moveMode = { from: "127.0.0.1", target: NEW(), cap }; };
+    const envelopeOf = (records, extra = {}, collectionId = SV.ids.collectionA, base = 1) => ({
+      schema: 1, collectionId, revision: 1, slotStateRevision: 0,
+      entries: records.map((record, i) => ({ instanceId: uid(base + i), revision: 1, displayOrdinal: i + 1, record: clone(record) })),
+      usedInstanceIds: records.map((_, i) => uid(base + i)), nextDisplayOrdinal: records.length + 1,
+      preferredSelection: records.length ? { kind: "saved", id: uid(base) } : { kind: "builtin", id: "kurd" },
+      slots: {}, hidden: [],
+      migration: { sourceKey: null, raw: { hpfc: null, "hpfc.scales": null, "hpfc.scales.v3": null }, instanceIds: [] }, ...clone(extra) });
+    const payloadOf = (rows, hidden = []) => Buffer.from(JSON.stringify({ r: rows.map(([i, r]) => ({ i, r })), h: hidden })).toString("base64url");
+    const clearOrigin = (origin) => b.send("Storage.clearDataForOrigin", { origin, storageTypes: "indexeddb,local_storage" });
+    async function go(url, referrer) {
+      const blank = onceEvent("Page.loadEventFired", 20000);
+      await b.send("Page.navigate", { url: "about:blank" });
+      await blank;
+      const loaded = onceEvent("Page.loadEventFired", 20000);
+      await b.send("Page.navigate", { url, ...(referrer ? { referrer } : {}) });
+      await loaded;
+      await b.waitFor(APP_READY_EXPR, { timeout: 15000, label: "the page to boot" });
+    }
+    async function peek(origin) {
+      const keep = moveMode; moveMode = null;
+      try { await go(origin + "/index.html"); return await nativeSavedEnvelope(b); } finally { moveMode = keep; }
+    }
+    async function seed(origin, records, extra = {}, collectionId = SV.ids.collectionA, base = 1) {
+      const keep = moveMode; moveMode = null;
+      try {
+        await clearOrigin(origin);
+        await go(origin + "/index.html");
+        await b.eval(`return ${nativeSavedExpression({ write: true, raw: JSON.stringify(envelopeOf(records, extra, collectionId, base)) })};`);
+      } finally { moveMode = keep; }
+    }
+    async function seedLegacy(origin, records) {
+      const keep = moveMode; moveMode = null;
+      try {
+        await clearOrigin(origin);
+        await go(origin + "/index.html");
+        await b.send("Storage.clearDataForOrigin", { origin, storageTypes: "indexeddb" });
+        await b.eval(`localStorage.setItem('hpfc.scales.v3', ${JSON.stringify(JSON.stringify(records))}); return true;`);
+      } finally { moveMode = keep; }
+    }
+    const names = (e) => e.entries.map((row) => row.record.o && row.record.o.name);
+    const noticeShown = `!!document.getElementById('move-notice') && !document.getElementById('move-notice').hidden`;
+    const noticeText = () => b.eval(`const n=document.getElementById('move-notice');return n&&!n.hidden?n.textContent:null;`);
+    const where = () => b.eval(`return {origin:location.origin,hash:location.hash,search:location.search};`);
+    const atNew = () => `location.origin===${JSON.stringify(NEW())}`;
+    const remove = (name) => b.eval(`const e=savedState,row=e.entries.find(r=>r.record.o.name===${JSON.stringify(name)});
+      return commitSaved({type:'delete',collectionId:e.collectionId,instanceId:row.instanceId,expectedRevision:row.revision});`);
+    afterEach(async () => { moveMode = null; });
+
+    test("move: a crafted #move= link with no MOVE_FROM referrer writes nothing and opens the then hash", async () => {
+      on(); await clearOrigin(NEW());
+      await go(`${NEW()}/index.html#move=${payloadOf([[uid(1), rec("CRAFTED")]])}&then=${encodeURIComponent("#deck=f-low-pygmy-18")}`);
+      assert.strictEqual((await where()).hash, "#deck=f-low-pygmy-18");
+      assert.deepStrictEqual((await nativeSavedEnvelope(b)).entries, []);
+    });
+
+    test("move: revisit after edit/delete re-imports nothing - edit then delete a scale on the new host, revisit old /, no duplicate and no resurrection", async () => {
+      on(); await clearOrigin(NEW());
+      await seed(OLD(), [rec("ONE"), rec("TWO", SEED2)]);
+      await go(OLD() + "/index.html");
+      await b.waitFor(`${atNew()} && ${noticeShown}`, { label: "the notice" });
+      const first = await nativeSavedEnvelope(b);
+      assert.deepStrictEqual(names(first).sort(), ["ONE", "TWO"]);
+      assert.ok(Array.isArray(first.importedIds) && first.importedIds.length === 2);
+      await remove("TWO");
+      await b.eval(`const e=savedState,row=e.entries.find(r=>r.record.o.name==='ONE'),
+        built=buildGenerated(row.record.s,{...row.record.o,name:'ONE EDITED'});
+        return commitSaved({type:'edit',collectionId:e.collectionId,instanceId:row.instanceId,expectedRevision:row.revision,
+          candidate:{record:scaleRecord(seedOf(built.value)),deck:built.value}});`);
+      await go(OLD() + "/index.html");
+      await b.waitFor(atNew(), { label: "the second jump" });
+      await sleep(500);
+      const after = await nativeSavedEnvelope(b);
+      assert.deepStrictEqual(names(after), ["ONE EDITED"]);
+      assert.deepStrictEqual(after.importedIds, first.importedIds);
+    });
+
+    test("move: seeded merge - a moved replacement of a seed the new host already replaced imports as an ordinary custom scale with its name kept", async () => {
+      on();
+      await seed(NEW(), [rec("NEW KURD", KURDSEED, { replaces: "kurd" })], { slots: { kurd: uid(9) } }, SV.ids.collectionB, 9);
+      await seed(OLD(), [rec("OLD KURD", KURDSEED, { replaces: "kurd" })], { slots: { kurd: uid(1) } });
+      await go(OLD() + "/index.html");
+      await b.waitFor(`${atNew()} && ${noticeShown}`, { label: "the notice" });
+      const e = await nativeSavedEnvelope(b);
+      assert.strictEqual(e.slots.kurd, uid(9));
+      const moved = e.entries.find((row) => row.record.o.name === "OLD KURD");
+      assert.ok(moved, "the moved record is imported");
+      assert.strictEqual(moved.record.o.replaces, undefined);
+    });
+
+    test("move: seeded merge - moved hidden ids join the new list only for seeds the new host has no record for", async () => {
+      on();
+      await seed(NEW(), [rec("NEW HIJAZ", "(C#3) G#3 B3 C#4 D4 F4 F#4 G#4", { replaces: "hijaz" })], { slots: { hijaz: uid(9) } }, SV.ids.collectionB, 9);
+      await seed(OLD(), [], { hidden: ["hijaz", "pygmy"] });
+      await go(OLD() + "/index.html");
+      await b.waitFor(atNew(), { label: "the jump" });
+      await sleep(800);
+      const e = await peek(NEW());
+      assert.ok(e.hidden.includes("pygmy"), "a seed without a record is hidden");
+      assert.ok(!e.hidden.includes("hijaz"), "a replaced seed stays visible");
+    });
+
+    test("move: two old tabs forwarding at once import each record once", async () => {
+      on(); await clearOrigin(NEW());
+      await seed(OLD(), [rec("A"), rec("B", SEED2), rec("C", "(D3) A3 C4 D4 E4 F4 G4 A4")]);
+      const { targetId } = await b.send("Target.createTarget", { url: OLD() + "/index.html" }, false);
+      try {
+        await go(OLD() + "/index.html");
+        await sleep(2500);
+        assert.deepStrictEqual(names(await peek(NEW())).sort(), ["A", "B", "C"]);
+      } finally { await b.send("Target.closeTarget", { targetId }, false).catch(() => {}); }
+    });
+
+    test("move: #move= is stripped to the then hash before render, and Back or reload does not re-import", async () => {
+      on(); await clearOrigin(NEW());
+      await go(`${NEW()}/index.html#move=${payloadOf([[uid(1), rec("ONE")]])}&then=${encodeURIComponent("#deck=f-low-pygmy-18")}`, OLD() + "/");
+      assert.strictEqual((await where()).hash, "#deck=f-low-pygmy-18");
+      assert.deepStrictEqual(names(await nativeSavedEnvelope(b)), ["ONE"]);
+      await remove("ONE");
+      await go(`${NEW()}/index.html#deck=f-low-pygmy-18`, OLD() + "/");
+      assert.ok(!(await where()).hash.includes("move="));
+      assert.deepStrictEqual(names(await nativeSavedEnvelope(b)), [], "reload re-imports nothing");
+    });
+
+    test("move: an empty old store jumps with no notice and the #s= link opens on the new host", async () => {
+      on();
+      await seed(OLD(), []);
+      const keep = moveMode; moveMode = null;
+      const code = await b.eval(`const s=HPE.core.parseSeed(${JSON.stringify(OLDSEED)});return HPE.share.encode({fields:s.value.fields,options:{}}).value;`);
+      moveMode = keep;
+      await go(`${OLD()}/index.html#s=${code}`);
+      await b.waitFor(atNew(), { label: "the jump" });
+      assert.ok(/^#(s=|deck=)/.test((await where()).hash), "the link is carried");
+      assert.strictEqual(await noticeText(), null);
+    });
+
+    test("move: a payload over MOVE_CAP keeps the user on the old host with the app booted and nothing forwarded", async () => {
+      on(50); await clearOrigin(NEW());
+      await seed(OLD(), [rec("A"), rec("B", SEED2)]);
+      await go(OLD() + "/index.html");
+      await sleep(800);
+      assert.strictEqual((await where()).origin, OLD());
+      assert.ok(await b.eval(`return document.querySelectorAll('#decks .chip:not(#deck-add)').length>0;`), "the app booted");
+      assert.deepStrictEqual(names(await nativeSavedEnvelope(b)).sort(), ["A", "B"]);
+      assert.deepStrictEqual(names(await peek(NEW())), []);
+    });
+
+    test("move: a store held only in legacy storage keys forwards every record", async () => {
+      on(); await clearOrigin(NEW());
+      await seedLegacy(OLD(), [rec("L1"), rec("L2", SEED2), rec("L3", "(D3) A3 C4 D4 E4 F4 G4 A4")]);
+      await go(OLD() + "/index.html");
+      await b.waitFor(atNew(), { label: "the jump" });
+      await sleep(800);
+      assert.deepStrictEqual(names(await peek(NEW())).sort(), ["L1", "L2", "L3"]);
+    });
+
+    test("move: a NEEDS_NEWER_APP record in the payload is skipped and the rest import", async () => {
+      on(); await clearOrigin(NEW());
+      await go(`${NEW()}/index.html#move=${payloadOf([[uid(1), rec("GOOD")], [uid(2), { v: 99, s: "future", o: {} }]])}&then=`, OLD() + "/");
+      await b.waitFor(noticeShown, { label: "the notice" });
+      assert.deepStrictEqual(names(await nativeSavedEnvelope(b)), ["GOOD"]);
+    });
+
+    test("move: the notice shows the singular and plural counts only after the write commits", async () => {
+      on(); await clearOrigin(NEW());
+      await go(`${NEW()}/index.html#move=${payloadOf([[uid(1), rec("ONE")]])}&then=`, OLD() + "/");
+      await b.waitFor(noticeShown, { label: "the notice" });
+      assert.strictEqual(await noticeText(), "Your saved scale moved here.");
+      assert.strictEqual((await nativeSavedEnvelope(b)).entries.length, 1, "committed before the notice");
+      await clearOrigin(NEW());
+      await go(`${NEW()}/index.html#move=${payloadOf([[uid(1), rec("ONE")], [uid(2), rec("TWO", SEED2)]])}&then=`, OLD() + "/");
+      await b.waitFor(noticeShown, { label: "the notice" });
+      assert.strictEqual(await noticeText(), "Your 2 saved scales moved here.");
+    });
+
+    test("move: failed write retries - the still-at-the-old-address message shows, importedIds in the IDB saved collection is unchanged, and the next visit imports every record once", async () => {
+      on(); await clearOrigin(NEW());
+      await seed(OLD(), [rec("A"), rec("B", SEED2)]);
+      await go(NEW() + "/index.html");
+      await b.eval(`localStorage.setItem('moveFail','1');return true;`);
+      await go(OLD() + "/index.html");
+      await b.waitFor(noticeShown, { label: "the failure message" });
+      assert.match(await noticeText(), /still at the old address/);
+      const failed = await nativeSavedEnvelope(b);
+      assert.deepStrictEqual(failed.entries, []);
+      assert.ok(!failed.importedIds || failed.importedIds.length === 0);
+      await b.eval(`localStorage.removeItem('moveFail');return true;`);
+      await go(OLD() + "/index.html");
+      await b.waitFor(`${atNew()} && ${noticeShown}`, { label: "the notice" });
+      assert.deepStrictEqual(names(await nativeSavedEnvelope(b)).sort(), ["A", "B"]);
+    });
+
+    test("move: a redirected old path lands in one hop on the new host with its fragment, and the new host has no redirect", async () => {
+      on(); await clearOrigin(NEW());
+      await seed(OLD(), [rec("A")]);
+      const before = (await b.send("Page.getNavigationHistory")).entries.length;
+      await go(`${OLD()}/index.html?x=1#deck=f-low-pygmy-18`);
+      await b.waitFor(atNew(), { label: "the jump" });
+      const w = await where();
+      assert.strictEqual(w.search, "?x=1");
+      assert.ok(w.hash.startsWith("#deck=") || w.hash === "");
+      const after = (await b.send("Page.getNavigationHistory")).entries.length;
+      assert.ok(after - before <= 1, "one history entry for the whole hop");
+      await go(NEW() + "/index.html");
+      assert.strictEqual((await where()).origin, NEW(), "the new host does not redirect");
+    });
+
+    test("move: an empty or malformed referrer imports nothing and the then hash opens", async () => {
+      on(); await clearOrigin(NEW());
+      const link = `${NEW()}/index.html#move=${payloadOf([[uid(1), rec("X")]])}&then=${encodeURIComponent("#deck=f-low-pygmy-18")}`;
+      await go(link);
+      assert.strictEqual((await where()).hash, "#deck=f-low-pygmy-18");
+      assert.deepStrictEqual((await nativeSavedEnvelope(b)).entries, []);
+      await go(link, "http://evil.example/");
+      assert.strictEqual((await where()).hash, "#deck=f-low-pygmy-18");
+      assert.deepStrictEqual((await nativeSavedEnvelope(b)).entries, []);
+    });
+
+    test("move: neither host sends a Referrer-Policy stricter than strict-origin-when-cross-origin", () => {
+      const html = fs.readFileSync(path.join(REPO, "index.html"), "utf8");
+      assert.ok(!/<meta[^>]+name=["']referrer["']/i.test(html), "no referrer meta");
+      const headers = fs.readFileSync(path.join(REPO, "_headers"), "utf8");
+      for (const m of headers.matchAll(/Referrer-Policy:\s*(\S+)/gi))
+        assert.ok(["strict-origin-when-cross-origin", "no-referrer-when-downgrade", "origin-when-cross-origin", "unsafe-url"].includes(m[1].toLowerCase()), m[1]);
+    });
+
+    test("move: re-flip after a rollback imports only records saved on the old host meanwhile, no duplicates", async () => {
+      on(); await clearOrigin(NEW());
+      await seed(OLD(), [rec("A")]);
+      await go(OLD() + "/index.html");
+      await b.waitFor(`${atNew()} && ${noticeShown}`, { label: "the notice" });
+      await seed(OLD(), [rec("A"), rec("B", SEED2)]);
+      await go(OLD() + "/index.html");
+      await b.waitFor(atNew(), { label: "the second jump" });
+      await sleep(800);
+      assert.deepStrictEqual(names(await peek(NEW())).sort(), ["A", "B"]);
     });
   });
 
