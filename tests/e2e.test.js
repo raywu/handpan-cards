@@ -20459,15 +20459,15 @@ function run() {
       assert.strictEqual(await noticeText(), null);
     });
 
-    test("move: a payload over MOVE_CAP keeps the user on the old host with the app booted and nothing forwarded", async () => {
+    test("move: a payload over MOVE_CAP still forwards, carrying only the prefix that fits, and old storage is untouched", async () => {
       on(50); await clearOrigin(NEW());
       await seed(OLD(), [rec("A"), rec("B", SEED2)]);
       await go(OLD() + "/index.html");
+      await b.waitFor(atNew(), { label: "the jump" });
       await sleep(800);
-      assert.strictEqual((await where()).origin, OLD());
-      assert.ok(await b.eval(`return document.querySelectorAll('#decks .chip:not(#deck-add)').length>0;`), "the app booted");
-      assert.deepStrictEqual(names(await nativeSavedEnvelope(b)).sort(), ["A", "B"]);
+      assert.strictEqual(await noticeText(), null);
       assert.deepStrictEqual(names(await peek(NEW())), []);
+      assert.deepStrictEqual(names(await peek(OLD())).sort(), ["A", "B"]);
     });
 
     test("move: a store held only in legacy storage keys forwards every record", async () => {
