@@ -7,7 +7,7 @@ diff --git a/index.html b/index.html
 +++ b/index.html
 @@ -18,7 +18,7 @@
       autofill) before the app's own CSS has painted anything. -->
- <meta name="theme-color" content="#1a1815">
+ <meta name="theme-color" content="#0f0e0b">
  <meta name="color-scheme" content="dark">
 -<title>Handpan Chords: Custom Scale Chord and Progression Practice</title>
 +<title>Handpan Chords</title>

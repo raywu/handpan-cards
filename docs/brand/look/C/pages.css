@@ -1,0 +1,51 @@
+/* Direction C on scale pages, handpan-101 and 404.
+   Each scale page already carries its root as --r (4.5:1-adjusted by
+   gen_scale_page.py for the OLD grounds). Here the accent is re-derived in CSS
+   for the new grounds: OKLCH L>=0.74 on dark, L<=0.48 on light, which clears
+   4.5:1 for all 10 palette roots on both (computed: worst 7.7 dark, 4.9 light). */
+:root{
+  --bg:#0A0908; --fg:#F6F4ED; --muted:#A9A39A; --rule:#3A352D;
+  --rL:oklch(from var(--r) max(l, .74) c h);
+  --teal:#44E0D8; --gold:#F5C78E;
+  --logo:url(/_look/logo/horizontal-full.svg);
+}
+/* the scale pages' own light scheme (handpan-101 and 404 are dark-only) */
+@media (prefers-color-scheme:light){
+  :root:has(section.scale){
+    --bg:#F6F4ED; --fg:#0F0E0B; --muted:#5E5850; --rule:#CFC8BA;
+    --rL:oklch(from var(--r) min(l, .48) c h);
+    --logo:url(/_look/logo/horizontal-mono-light.svg);
+  }
+}
+html{background:var(--bg)}
+body{background:
+    radial-gradient(80% 220px at 50% 0, color-mix(in oklab, var(--r) 30%, transparent), transparent 100%),
+    var(--bg);
+  color:var(--fg)}
+@media (prefers-color-scheme:light){
+  :root:has(section.scale) body{background:
+    radial-gradient(80% 220px at 50% 0, color-mix(in oklab, var(--r) 16%, transparent), transparent 100%),
+    var(--bg)}
+}
+/* brand lockup above the breadcrumb (pseudo-element: no markup change) */
+body::before{content:""; display:block; max-width:1080px; height:56px; margin:0 auto 18px;
+  background:var(--logo) left center/contain no-repeat}
+body::after{content:""; position:absolute; left:0; right:0; top:84px; height:1.5px;
+  background:linear-gradient(90deg, transparent, var(--teal) 30%, var(--gold) 70%, transparent); opacity:.6}
+@media (prefers-color-scheme:light){ :root:has(section.scale) body::after{opacity:.9;
+  background:linear-gradient(90deg, transparent, #0E7F79 30%, #A8741F 70%, transparent)} }
+h2{color:var(--rL)}
+section.scale{border-top:0; border-image:none; position:relative}
+section.scale::before{content:""; display:block; height:3px; margin-bottom:4px;
+  background:linear-gradient(90deg, var(--rL), color-mix(in oklab, var(--rL) 0%, transparent))}
+a{color:var(--fg); text-decoration-color:var(--rL); text-decoration-thickness:2px}
+nav a, p a, li a, dd a{color:var(--fg)}
+.open, a.open{background:var(--rL); color:var(--bg); border-radius:999px}
+.open.ghost, .ctas a.open.ghost{background:transparent; color:var(--fg); border:1.5px solid var(--rL)}
+.rail b{color:var(--fg); text-decoration-color:var(--rL); text-decoration-thickness:2px}
+.prog .nav label{background:#1A1814; border-color:#3A352D; color:var(--rL); border-radius:12px}
+@media (prefers-color-scheme:light){
+  :root:has(section.scale) .prog .nav label{background:#ECE8DE; border-color:#CFC8BA}
+}
+ul.rel li{border-bottom-color:var(--rule)}
+section{border-top-color:var(--rule)}

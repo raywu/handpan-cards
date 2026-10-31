@@ -1,0 +1,14 @@
+# kills: a then hash outside the allowed forms is dropped
+# suite: node --test --test-name-pattern=a.then.hash.outside.the.allowed.forms.is.dropped tests/app.test.js
+# fault: Let any then hash through the allow-list.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15814,7 +15814,6 @@
+   if (arrived) {
+     let then = "";
+     try { then = decodeURIComponent(arrived[2]); } catch (e) {}
+-    if (!moveThenOk(then)) then = "";
+     let fromOld = false;
+     try { fromOld = new URL(document.referrer).hostname === MOVE_FROM; } catch (e) {}
+     movePayload = fromOld ? arrived[1] : null;
