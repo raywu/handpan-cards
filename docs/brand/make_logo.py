@@ -253,7 +253,7 @@ def main(out):
         size, mh, pad = 54, 172, 12
         m, mw = placed(v, "h" + v[0], pad, pad, mh)
         t, tw = words(pad + mw + 26, pad + mh / 2 + size * 0.12, size, c1, c2)
-        write(f"lockup-horizontal-{v}.svg", svg(pad + mw + 26 + tw + pad + 12, mh + 2 * pad, m + t, title))
+        write(f"horizontal-{v}.svg", svg(pad + mw + 26 + tw + pad + 12, mh + 2 * pad, m + t, title))
         # stacked: mark 0.9 x the wordmark's width, centred over it
         size = 72
         t, tw = words(0, 0, size, c1, c2, "center")
@@ -262,7 +262,7 @@ def main(out):
         W = tw + 80
         m, _ = placed(v, "s" + v[0], (W - mw) / 2, 16, mh)
         base = 16 + mh + size * 0.95
-        write(f"lockup-stacked-{v}.svg", svg(W, base + size * 0.62 + 30, m + f'<g transform="translate({f(W / 2)} {f(base)})">{t}</g>', title))
+        write(f"stacked-{v}.svg", svg(W, base + size * 0.62 + 30, m + f'<g transform="translate({f(W / 2)} {f(base)})">{t}</g>', title))
 
     # app icons, 1024 square, iOS-like corner; the mark spans 80% of the width
     for name, v, bgc in (("full", "full", SURFACE), ("single", "single", SURFACE), ("mono", "mono-light", PAPER)):
