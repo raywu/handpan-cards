@@ -10780,6 +10780,11 @@ function applySavedCommand(staged, command, candidate) {
     for (const item of command.items) {
       if (known.has(item.key)) continue;
       known.add(item.key);
+      if (item.opaque) {
+        if (!allocate(savedClone(item.opaque))) return savedFailure("allocation", "instance-id");
+        imported++;
+        continue;
+      }
       const read = item.read, held = identities.get(read.value.id);
       if (have.has(read.meaning) || (held !== undefined && held !== read.identity)) continue;
       const record = savedClone(read.record);
@@ -15620,6 +15625,10 @@ async function moveImport(code) {
     if (!savedObject(row) || typeof row.i !== "string" || row.i.length > 64) continue;
     const read = readSavedRecord(row.r);
     if (read.ok) items.push({ key: row.i + ":" + await moveDigest(moveCanon(read.record)), read });
+    else if (savedObject(row.r) && savedObject(row.r.o) && typeof row.r.o.name === "string") {
+      const { name, ...bare } = row.r.o;
+      if (readSavedRecord({ ...row.r, o: bare }).ok) items.push({ key: row.i + ":" + await moveDigest(moveCanon(row.r)), opaque: row.r });
+    }
   }
   const hidden = (Array.isArray(data.h) ? data.h : []).filter(x => typeof x === "string" && x.length <= 64).slice(0, 50);
   return commitSaved({ type: "move-import", collectionId: savedState.collectionId, items, hidden });
