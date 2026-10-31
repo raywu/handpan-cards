@@ -583,6 +583,8 @@ Source: https://claude.ai/artifact/TgFMSuaPN4ZZbkp6y71cte v17 (scratchpad `neoto
 
 **Shared geometry (both kinds of Neotone card).** Use the Standard engine geom for the scale's own top notes (`node tools/gen_deck.js "<scale>"`; the mock's values for an 8- or 9-note rim: orbit 0.745, field r 0.19, ding r 0.2 centred, decor ring 0.355 drawn on both kinds). Angles, count and anchor are the engine's output for that scale (Kurd 9 = 8 rim fields at 45 degrees, anchor one; Pygmy = 9 fields, anchor between). A Neotone card draws only the main tonefields that hold a top note; it does not pad to nine. Nothing is hard-coded beyond what the engine emits.
 
+**Superseded (integrator AFK 2026-10-30, owner may overturn at QA):** the angles/count/anchor-are-engine-output and no-padding-to-nine lines above are replaced by ENGINE-SPEC 18.1 and 18.4: the fixture's fixed nine angles, empty tonefields drawn neutral, and `geom.place` taken from the fixture.
+
 **Mutant card (one or more mutant notes).**
 - Lens: a circle of radius r, centre on the field's radial line at `orbit - (2r - depth)`, depth = 2r/3; only the overlap with the main field is drawn. Lens centre formula goes into the v2 fixture and ENGINE-SPEC section 18 (R2-2).
 - An empty mutant tonefield is drawn neutral grey (#f3f1f5 fill); a filled one is white.
@@ -595,7 +597,7 @@ Source: https://claude.ai/artifact/TgFMSuaPN4ZZbkp6y71cte v17 (scratchpad `neoto
 
 **Unchanged.** Card frame stays the single root-colour four-sided frame (CLAUDE.md design system); header, chord name, note/number lines (as Standard except `M<n>` entries), footer and palettes as Standard. Mock-only scaling factors (the `.62`/`.42` font multipliers) are not part of the spec; renderers apply the label rule.
 
-**Acceptance (P2).** Tests first: P2 adds a fixture of the v17 field centres, radii and number positions for both mock cards, plus a test that a non-mutant Neotone geom equals the Standard engine geom. The comparison covers positions only, not glyph size (renderers apply the label rule, the mock does not). App and print match that fixture within 0.5 pt at print R; tests/test_render_agreement passes; every diagram glyph ≥ 3.6 pt in print; the non-mutant card's field centres, radii and number positions equal a Standard render of the same scale. Owner DEV QA compares against the mock.
+**Acceptance (P2).** Tests first: P2 adds a fixture of the v17 field centres, radii and number positions for both mock cards, plus a test that a non-mutant Neotone geom equals the Standard engine geom. (Superseded by ENGINE-SPEC 18.1/18.4 and the fixture: fixed fixture angles, empty tonefields neutral, `geom.place` from the fixture; integrator AFK 2026-10-30, owner may overturn at QA.) The comparison covers positions only, not glyph size (renderers apply the label rule, the mock does not). App and print match that fixture within 0.5 pt at print R; tests/test_render_agreement passes; every diagram glyph ≥ 3.6 pt in print; the non-mutant card's field centres, radii and number positions equal a Standard render of the same scale. (Same supersede note: 18.1/18.4 and the fixture win.) Owner DEV QA compares against the mock.
 
 ### AFK decision 2026-10-31
 - Inner hairline: owner 2026-10-30 chose to keep it (convention 4 holds for Neotone); no CLAUDE.md patch. The mock's missing hairline is mock-only.

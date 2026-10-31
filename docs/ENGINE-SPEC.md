@@ -1153,8 +1153,8 @@ tonefields. Inner notes (after `|`) never get a tonefield.
 `tests/fixtures/paired_profile_v2.json` is the one profile (`id` `paired`, `rev`
 2), written once by hand and pinned by sha256 in
 `tests/test_fixture_integrity.py`. `tests/fixtures/paired_profile_v1.json` (rev 1,
-outer secondary ring) is SUPERSEDED: it stays, pinned, and no engine code reads
-it. Tonefield k sits at `angles[k-1]`; slot `pk` is main tonefield k and slot `sk`
+outer secondary ring) is SUPERSEDED: it stays, pinned, and after E2 no engine code
+reads it. Tonefield k sits at `angles[k-1]`; slot `pk` is main tonefield k and slot `sk`
 is mutant tonefield k. `slots` lists `p1..p9` then `s1..s9`: capacity is 9 main
 and 9 mutant notes. Values are fractions of the pan radius R.
 
@@ -1178,10 +1178,10 @@ and 9 mutant notes. Values are fractions of the pan radius R.
   plus `extent_margin` (0.06); R = round(74 / extent, 1) = 60.9 in `HPE.pdfcards`,
   `tools/hifi.py` and `tools/decks.py` identically.
 - The label rule and the 3.6 pt print floor are unchanged and apply to every glyph
-  of every tonefield and lens. For a non-circular field "its own drawn radius" is the
-  radius of the largest circle inscribed in the drawn shape (lens or crescent),
-  and the fitted name is the label-rule size stepped down until its width is at
-  most 1.47 x that radius. Gate G1 results are in the plan's "Frozen v2 fixture".
+  of every tonefield and lens. The label-rule size is computed from `main.r`
+  (`mutant.r` for the lens); the inscribed radius only caps the fitted width at
+  1.47 x that radius (the radius of the largest circle inscribed in the drawn lens or
+  crescent), and the name is stepped down in 0.1 pt until it fits. Gate G1 results are in the plan's "Frozen v2 fixture".
 
 Empty main tonefields and empty mutant tonefields draw neutral on cards, print and
 preview; the sheet preview adds the tonefield number.

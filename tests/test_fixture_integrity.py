@@ -404,8 +404,9 @@ class TestPairedProfileV2Fixture(unittest.TestCase):
 
     def test_every_glyph_at_least_floor_at_print_radius(self):
         """G1: fitted name, octave digit and M-number at the R the extent rule yields.
-        Fit = hifi.fit_note's rule (shrink until width <= 1.47 x r) with r the radius
-        of the largest circle inscribed in the drawn shape."""
+        ENGINE-SPEC 18.1: the label-rule size is computed from main.r (mutant.r for
+        the lens); the inscribed radius only caps the fitted width at 1.47 x that
+        radius (hifi.fit_note's rule)."""
         p = load_v2()
         R = v2_print_radius(p)
         r = p["main"]["r"] * R
