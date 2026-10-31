@@ -1,0 +1,16 @@
+# kills: a layout toggle that resizes the scrollports leaves the tapped button where it was in both scrollers
+# suite: node --test --test-name-pattern MSJ..tapping.a.layout.toggle tests/e2e.test.js
+# The tap handlers stop restoring the button's on-screen position, so the sheet jumps under the finger.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14367,8 +14367,7 @@ const holdAt = (btn, fn) => () => {
+       }
+     }
+   };
+-  settle();
+-  if (typeof requestAnimationFrame === "function") requestAnimationFrame(settle);
++  if (typeof requestAnimationFrame === "function") requestAnimationFrame(() => {});
+ };
+ mirrorTop.onclick = holdAt(mirrorTop, () => {
+   mirror = !mirror;

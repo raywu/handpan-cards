@@ -4669,6 +4669,39 @@ function run() {
     }
   });
 
+  test("MSJ: tapping a layout toggle leaves the tapped button where it was in both scrollers", async () => {
+    try {
+      for (const edit of [false, true]) for (const [w, h] of [[380, 667], [380, 780]]) {
+        if (edit) {
+          await freshLoad();
+          await b.setViewport(w, h, true);
+          await generate(DR1_SCALE);
+          await openEdit();
+          await openDrawer();
+        } else await addWithDrawer(w, h);
+        for (const id of ["scale-mirror-bottom", "scale-mirror", "scale-anchor-between", "scale-anchor-one", "scale-mirror-bottom", "scale-mirror"]) {
+          await b.eval(`const s = ${body}; s.scrollTop = s.scrollHeight - s.clientHeight - 0;
+            const u = document.querySelector("#scale-sheet .sheetsurf"); u.scrollTop = u.scrollHeight; return true;`);
+          await b.eval(`const s = ${body}, el = document.getElementById(${JSON.stringify(id)});
+            const hit = () => { const r = el.getBoundingClientRect(); const t = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!t && el.contains(t); };
+            while (!hit() && s.scrollTop > 0) s.scrollTop = Math.max(0, s.scrollTop - 10);
+            return hit();`);
+          await b.settle();
+          const at = () => b.eval(`return { top: document.getElementById(${JSON.stringify(id)}).getBoundingClientRect().top,
+            body: ${body}.scrollTop, surf: document.querySelector("#scale-sheet .sheetsurf").scrollTop };`);
+          const before = await at();
+          await b.click("#" + id);
+          await b.settle();
+          const after = await at();
+          assert.ok(Math.abs(after.top - before.top) <= 1,
+            `${id} moved ${before.top} -> ${after.top} (${edit ? "Edit" : "Add"} ${w} x ${h}): ${JSON.stringify({ before, after })}`);
+        }
+      }
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
   test("UX: Adjust layout is two columns at 844x390 with the pan >=270px with no message, one column at 500x390", async () => {
     try {
       await addWithDrawer(844, 390);
