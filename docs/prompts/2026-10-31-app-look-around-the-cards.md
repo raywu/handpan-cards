@@ -69,19 +69,34 @@ Default to keeping what exists; change it where a direction makes a clear case.
 
 ## Evaluate: should scale-page cards match the app's?
 
-They currently differ. The diagram is the same by construction: the
-generator runs the app's own `pan()` (`tools/gen_scale_page.py` docstring).
-The card around it is not: a first look at D Amara 10 card 1 at 390px wide
-showed a smaller card on the scale page and different header and note-line
-sizes (`docs/brand/reference/card-app-vs-scale.png`). Do this:
+They currently differ, on both faces. Only the diagram drawing is shared:
+the generator runs the app's own `pan()` (`tools/gen_scale_page.py`
+docstring), but the scale page builds its own card shell in a separate
+stylesheet (inside each `.cardhost`'s shadow root). Found on `dev`, D Amara
+10 card 1 at a 390px viewport
+(`docs/brand/reference/card-faces-app-vs-scale.png`):
 
-1. Render the same card in both places at the same card width, for each
-   built-in scale and at least one scale page made from the engine, light
-   and dark scheme on the scale page.
-2. List every difference: card size and aspect, frame width and corner
-   radius, header (scale name, #n, degree, subtitle), diagram scale,
-   note-line and number-line font and size, spacing, reveal behaviour, and
-   the progression line under the card.
+| | app | scale page |
+| --- | --- | --- |
+| face shown first | the chord name; tapping reveals the diagram | the diagram; flipping shows the name |
+| shape | fixed 63:87 poker ratio (343 x 474) | height follows content (322 x 400, about 0.80) |
+| name face header | scale name, #n, degree in root colour, subtitle (`D MINOR`) | degree only |
+| chord name | Marcellus, scales with the card (74px here), neutral `#545454` | Marcellus, fixed 44px, in the root colour |
+| reveal hint | `TAP TO REVEAL THE NOTES` | none (an invisible checkbox covers the card) |
+| diagram face | diagram fills about 380px of the card; lines at the foot | smaller diagram; lines straight under it |
+| shared | 3.2px root-colour frame, 12px corners, header type, Bitter note line | same |
+
+Confirm these and find the rest. Do this:
+
+1. Render the same card in both places at the same card width, both faces,
+   for each built-in scale and at least one scale page made from the
+   engine, in the scale page's light and dark schemes.
+2. List every difference, on both faces: which face shows first, card size
+   and aspect, frame width and corner radius, header (scale name, #n,
+   degree, subtitle), chord name (size, colour, superscripts), hint, diagram
+   scale, note-line and number-line font and size, spacing, shadow, flip
+   behaviour and its keyboard and screen-reader handling, and the
+   progression line under the card.
 3. Mark each one deliberate (page layout, crawlable text, no-JS fallback,
    performance) or drift, with evidence from the code or git history.
 4. Recommend one of: identical (and how, without touching the engine, for
