@@ -14343,42 +14343,15 @@ document.addEventListener("pointerdown", (e) => {
 // (HPE.layout.bottomClash): a toggle that would leave the sheet unbuildable is undone.
 const toggleFits = () => !layoutAngles || (!!lastSeed && solvePreviewLayout(lastSeed) !== null);
 const TOGGLE_REFUSED = () => t("sheet.toggle_refused");
-/* A toggle repaints the pan, the layout notice and the lip, any of which can resize the scrollports
-   * above and below the tapped button. Whatever moved it is undone by scrolling, in both scrollers. */
-let holdPad = false;
-const dropHoldPad = () => { if (holdPad) { holdPad = false; bandPort.style.paddingBottom = ""; } };
-for (const ev of ["touchstart", "wheel", "keydown"]) bandPort.addEventListener(ev, dropHoldPad, { passive: true });
-const holdAt = (btn, fn) => () => {
-  const topOf = () => (btn.getBoundingClientRect ? btn.getBoundingClientRect().top : 0);
-  const was = topOf();
-  dropHoldPad();
-  fn();
-  const settle = () => {
-    for (const sc of [bandPort, sheetSurf]) {
-      const off = sc ? topOf() - was : 0;
-      if (Math.abs(off) <= 0.5) continue;
-      lipQuiet();
-      sc.scrollTop += off;
-      const left = topOf() - was;
-      if (sc === bandPort && left > 0.5 && !holdPad) {
-        holdPad = true;
-        bandPort.style.paddingBottom = (parseFloat(getComputedStyle(bandPort).paddingBottom) || 0) + left + "px";
-        bandPort.scrollTop += topOf() - was;
-      }
-    }
-  };
-  settle();
-  if (typeof requestAnimationFrame === "function") requestAnimationFrame(settle);
-};
-mirrorTop.onclick = holdAt(mirrorTop, () => {
+mirrorTop.onclick = () => {
   mirror = !mirror;
   if (!toggleFits()) { mirror = !mirror; layoutStatus(TOGGLE_REFUSED(), true); return; }
   paintLayout(); resyncSheet(true);
   layoutStatus(t(mirror ? "sheet.mirror_top_on" : "sheet.mirror_top_off"));
-});
+};
 // MN3 (owner 2026-10-31): MIRROR BOTTOM reflects every bottom note, hand-placed ones included, so the toggle
 // reflects each explicit angle (180 - a); null entries are reflected by the solver. Numbers stay with positions.
-mirrorBot.onclick = holdAt(mirrorBot, () => {
+mirrorBot.onclick = () => {
   const was = bottomLabels();
   const before = layoutAngles;
   if (layoutAngles) layoutAngles = HPE.layout.reflectAngles(layoutAngles);
@@ -14390,15 +14363,15 @@ mirrorBot.onclick = holdAt(mirrorBot, () => {
   if (layoutAngles && bottomMirror()) text += " " + t("sheet.mirror_keeps_numbers");
   if (changed.length) { flashNotes(changed.map((c) => c.id)); repaintPlate(); }
   layoutStatus(text);
-});
-const pickAnchor = (to) => holdAt(to === "one" ? anchorOne : anchorBetween, () => {
+};
+const pickAnchor = (to) => () => {
   if (anchor === to) return;
   const was = anchor;
   anchor = to;
   if (!toggleFits()) { anchor = was; layoutStatus(TOGGLE_REFUSED(), true); return; }
   paintLayout(); resyncSheet(true);
   layoutStatus(t(to === "one" ? "sheet.anchor_one_on" : "sheet.anchor_between_on"));
-});
+};
 anchorOne.onclick = pickAnchor("one");
 anchorBetween.onclick = pickAnchor("between");
 tabScale.addEventListener("click", () => setTab("scale"));
@@ -14570,6 +14543,33 @@ function keepScroll(fn) {
   fn();
   if (bandPort.scrollTop !== at) bandPort.scrollTop = at;
 }
+/* A toggle repaints the pan, the layout notice and the lip, any of which can resize the scrollports around
+ * the tapped button. Whatever moved it is undone by scrolling, in both scrollers; a scroller already at its end
+ * gets bottom padding instead, dropped at the next toggle or when the sheet closes. */
+let holdPad = false;
+const dropHoldPad = () => { if (holdPad) { holdPad = false; bandPort.style.paddingBottom = ""; } };
+const holdAt = (btn, fn) => () => {
+  const topOf = () => (btn.getBoundingClientRect ? btn.getBoundingClientRect().top : 0);
+  const was = topOf();
+  dropHoldPad();
+  fn();
+  const settle = () => {
+    for (const sc of [bandPort, sheetSurf]) {
+      const off = sc ? topOf() - was : 0;
+      if (Math.abs(off) <= 0.5) continue;
+      lipQuiet();
+      sc.scrollTop += off;
+      const left = topOf() - was;
+      if (sc === bandPort && left > 0.5 && !holdPad) {
+        holdPad = true;
+        bandPort.style.paddingBottom = (parseFloat(getComputedStyle(bandPort).paddingBottom) || 0) + left + "px";
+        bandPort.scrollTop += topOf() - was;
+      }
+    }
+  };
+  settle();
+};
+for (const btn of [mirrorTop, mirrorBot, anchorOne, anchorBetween]) btn.onclick = holdAt(btn, btn.onclick);
 function setArm(id) {
   if (id === armId) return;
   armId = id;
