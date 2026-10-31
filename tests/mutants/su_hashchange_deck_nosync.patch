@@ -11,4 +11,4 @@ diff --git a/index.html b/index.html
 -  syncRoute();
  });
  
- /* ---------------- go ---------------- */
+ /* ---------------- saved-scale handoff (switched off: both constants null) ---------------- */
