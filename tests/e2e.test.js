@@ -14924,6 +14924,32 @@ function run() {
       assert.ok(m.clip.includes("?share=x#deck="), m.clip);
     });
 
+    for (const kind of ["coarse", "fine"]) {
+      test(`NS: at 380x780 with a ${kind} pointer one tap on COPY LINK ${kind === "coarse" ? "calls navigator.share on the same tick" : "never calls navigator.share"}`, async () => {
+        await freshLoad();
+        await b.setViewport(380, 780, true);
+        await b.send("Emulation.setTouchEmulationEnabled", { enabled: kind === "coarse", maxTouchPoints: 5 });
+        try {
+          await b.settle();
+          const m = await b.eval(`
+            window.__shareCalls = 0; window.__shareArg = null;
+            navigator.share = (o) => { window.__shareCalls++; window.__shareArg = o; return new Promise(() => {}); };
+            document.getElementById("share-copy").click();
+            return { calls: window.__shareCalls, arg: window.__shareArg, href: location.href };
+          `);
+          if (kind === "coarse") {
+            assert.strictEqual(m.calls, 1, "navigator.share was not called on the tap's own tick");
+            assert.deepStrictEqual(m.arg, { url: m.href });
+          } else {
+            assert.strictEqual(m.calls, 0);
+          }
+        } finally {
+          await b.send("Emulation.setTouchEmulationEnabled", { enabled: false });
+          await b.setViewport(900, 900, false);
+        }
+      });
+    }
+
     test("edge 10: COPY LINK is a 44px target in the header at 320px and 380px with no horizontal overflow", async () => {
       await freshLoad();
       try {
@@ -18975,6 +19001,57 @@ function run() {
       assert.strictEqual(new Set(tapPalette.values()).size,10,"all ten palettes are used");
       for(let k=1;k<rows.rows.length;k++)assert.notStrictEqual(rows.rows[k].root,rows.rows[k-1].root,"taps "+(k-1)+" and "+k+" share a root colour");
       for(const r of rows.rows)assert.ok(r.ms<500,"chip "+r.i+" selected in "+r.ms.toFixed(1)+" ms, bound 500");
+    });
+
+    test("SV-PG2: 200 legacy scales migrate at boot within 5 s, the strip scrolls end to end, and taps around an Edit open and close stay under 500 ms",{timeout:180000},async()=>{
+      await freshLoad();await b.setViewport(380,780,false);
+      const BASES=["(D3) A3 C4 D4 E4 F4 G4 A4","(D3) A3 Bb3 C4 D4 E4 F4 G4 A4","(C#3) G#3 B3 C#4 D4 F4 F#4 G#4","(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4"];
+      const TOPS=["C5","D5","Eb5","E5","F5","G5","A5","Bb5","C6","D6"];
+      const pad3=n=>String(n).padStart(3,"0");
+      const records=Array.from({length:200},(_,i)=>({v:4,s:BASES[i%4]+" "+TOPS[Math.floor(i/4)%10],o:{name:"QA "+pad3(i+1),palette:i%6}}));
+      await b.send("Storage.clearDataForOrigin",{origin:new globalThis.URL(URL).origin,storageTypes:"indexeddb"});
+      await b.eval(`localStorage.removeItem('hpfc.saved-scales.v1');localStorage.removeItem('hpfc.scales');
+        localStorage.setItem('hpfc.scales.v3',${JSON.stringify(JSON.stringify(records))});return true;`);
+      const t0=Date.now();
+      await navigate();
+      await b.waitFor(`document.querySelectorAll('#decks .chip').length===205`,{timeout:5000,label:"205 chips after migrating 200 legacy scales"});
+      const bootMs=Date.now()-t0;
+      console.log("SV_PG2_BOOT "+bootMs);
+      assert.ok(bootMs<5000,"205 chips after "+bootMs+" ms, bound 5000");
+      const names=await b.eval(`return [...document.querySelectorAll('#decks .chip')].map(c=>c.getAttribute('aria-label')||c.textContent);`);
+      assert.ok(/QA 200/.test(names[0]),"the first chip is QA 200 (newest first by displayOrdinal in allDecks): "+names[0]);
+      const stored=await nativeSavedEnvelope(b);
+      assert.deepStrictEqual(stored.entries.map(e=>e.record.o.name).sort(),records.map(r=>r.o.name),"IndexedDB holds QA 001 to QA 200");
+      const ends=await b.eval(`const nav=document.getElementById('decks'),out={};
+        const hit=()=>{const cs=[...nav.querySelectorAll('.chip')].filter(c=>c.getClientRects().length),nr=nav.getBoundingClientRect();
+          return cs.filter(c=>{const r=c.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2;
+            if(x<nr.left||x>nr.right)return false;const h=document.elementFromPoint(x,y);return !!h&&(h===c||c.contains(h));});};
+        out.scrollable=nav.scrollWidth>nav.clientWidth;
+        nav.scrollLeft=nav.scrollWidth;const endHits=hit();out.maxLeft=nav.scrollLeft;out.endLast=endHits.length>0&&endHits[endHits.length-1]===[...nav.querySelectorAll('.chip')].filter(c=>c.getClientRects().length).pop();
+        nav.scrollLeft=0;const startHits=hit();out.startFirst=startHits.length>0&&startHits[0]===nav.querySelector('.chip');
+        return out;`);
+      assert.ok(ends.scrollable&&ends.maxLeft>0,"the strip scrolls: "+JSON.stringify(ends));
+      assert.ok(ends.endLast,"the last chip is hit-testable at its centre at scrollLeft max");
+      assert.ok(ends.startFirst,"the first chip is hit-testable at its centre at scrollLeft 0");
+      const tap=n=>b.eval(`const name='QA ${pad3(n)}',chip=[...document.querySelectorAll('#decks .chip')].find(c=>(c.getAttribute('aria-label')||c.textContent).includes(name));
+        return (async()=>{
+          if(!chip)return {error:'missing chip '+name};
+          const ok=()=>deck().name===name&&[...document.querySelectorAll('#decks .chip.on')].some(c=>(c.getAttribute('aria-label')||c.textContent).includes(name));
+          const t0=performance.now();chip.click();
+          while(!ok()){if(performance.now()-t0>5000)return {error:'tap never selected '+name+': deck '+deck().name+', on '+[...document.querySelectorAll('#decks .chip.on')].map(c=>c.getAttribute('aria-label')).join('|')};await new Promise(r=>setTimeout(r,0));}
+          await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+          return {name,ms:performance.now()-t0};
+        })();`);
+      const timed=[];
+      const check=async n=>{const r=await tap(n);assert.ok(!r.error,r.error);timed.push(r);assert.ok(r.ms<500,r.name+" selected in "+r.ms.toFixed(1)+" ms, bound 500");};
+      for(const n of [200,1,100,150,50,199])await check(n);
+      await check(100);
+      await b.eval(`const chip=[...document.querySelectorAll('#decks .chip')].find(c=>(c.getAttribute('aria-label')||c.textContent).includes('QA 100'));chip.click();return true;`);
+      await b.waitFor(`document.getElementById('scale-sheet').hidden===false`,{label:"Edit sheet opens on the selected chip"});
+      await b.eval(`document.getElementById('scale-back').click();return true;`);
+      await b.waitFor(`document.getElementById('scale-sheet').hidden===true`,{label:"Edit sheet closes on BACK"});
+      for(const n of [120,10])await check(n);
+      console.log("SV_PG2_TAPS "+JSON.stringify(timed.map(r=>[r.name,Math.round(r.ms)])));
     });
 
     test("SV11 E1: preference acknowledgments and unchanged rereads preserve a pressed chip through release",{timeout:90000},async()=>{

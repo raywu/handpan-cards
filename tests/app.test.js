@@ -18,6 +18,13 @@ const { boot: sandboxBoot } = require("./helpers/sandbox.js");
 const boot = (options = {}) => sandboxBoot({ crypto: require("node:crypto").webcrypto,
   abortController: true, ...options });
 
+const coarse = (app, on = true) => {
+  app.sandbox.matchMedia = (query) => ({
+    matches: on && /pointer:\s*coarse/.test(query), media: query,
+    addEventListener() {}, removeEventListener() {},
+  });
+};
+
 async function idbConnection(realm) {
   assert.ok(realm.sandbox.indexedDB, "precondition: reviewed model exposes the standard IndexedDB API");
   return new Promise((resolve, reject) => {
@@ -4608,7 +4615,7 @@ describe("panel fit judge", () => {
     delete candOver.controls["deck-add"];
     assert.strictEqual(judge(baseOver, candOver).rule2.fail.length, 1, "a base that overflows does not excuse it");
     assert.strictEqual(judge(cell(), withControl(cell(), "deck-add", { exists: false, rendered: false, disabled: false, bottom: 0 })).rule2.fail.length, 1, "exists:false counts as lacking");
-    assert.strictEqual(pf.REMOVED_BY_DESIGN.length, 10, "the removed-by-design list is exactly the ten known ids");
+    assert.deepStrictEqual([...pf.REMOVED_BY_DESIGN].sort(), ["button:CHORD-ONLY PDF", "button:FULL DECK PDF", "modeS", "res-amy-bottom", "res-amy-progressions", "res-dingandtones", "res-handpan-helpers", "res-handpaner", "res-trainingcards", "share-copy"], "the removed-by-design list is exactly the ten known ids");
     assert.ok(!pf.REMOVED_BY_DESIGN.includes("button:DOWNLOAD PDF"), "a lost DOWNLOAD PDF is not removed by design");
     const noS = judge(cell(), lacks("modeS"));
     assert.strictEqual(noS.rule2.fail.length, 0, "modeS is removed by design");
@@ -4854,11 +4861,11 @@ describe("panel fit judge", () => {
     assert.strictEqual(pf.aboutAllowance(keys("about-open"), keys("about-open")), 0, "the allowance expires once main has the row");
   });
 
-  test("panel fit: the LS allowance is 340, owed to mode S at 740px wide and up and 300 to 359px tall only", async () => {
-    assert.strictEqual(pf.LS_S_ALLOWANCE_PX, 340);
-    assert.strictEqual(pf.lsAllowance(852, 330, "S"), 340);
-    assert.strictEqual(pf.lsAllowance(740, 300, "S"), 340);
-    assert.strictEqual(pf.lsAllowance(932, 359, "S"), 340);
+  test("panel fit: the LS allowance is 320, owed to mode S at 740px wide and up and 300 to 359px tall only", async () => {
+    assert.strictEqual(pf.LS_S_ALLOWANCE_PX, 320);
+    assert.strictEqual(pf.lsAllowance(852, 330, "S"), 320);
+    assert.strictEqual(pf.lsAllowance(740, 300, "S"), 320);
+    assert.strictEqual(pf.lsAllowance(932, 359, "S"), 320);
     assert.strictEqual(pf.lsAllowance(852, 330, "A"), 0, "modes A and B fit two columns");
     assert.strictEqual(pf.lsAllowance(739, 330, "S"), 0, "narrower than 740");
     assert.strictEqual(pf.lsAllowance(852, 299, "S"), 0, "shorter than 300");
@@ -10538,16 +10545,17 @@ describe("share url", () => {
     assert.strictEqual(app.els["share-url"].hasAttribute("hidden"), true);
   });
 
-  test("SU: COPY LINK falls back to navigator.share when the clipboard rejects", async () => {
+  test("SU: COPY LINK falls back to the clipboard when the share sheet fails", async () => {
     const app = boot();
-    const shared = [];
-    app.sandbox.navigator.clipboard = { writeText: async () => { throw new Error("denied"); } };
-    app.sandbox.navigator.share = async (o) => { shared.push(o); };
+    coarse(app);
+    const written = [];
+    app.sandbox.navigator.clipboard = { writeText: async (u) => { written.push(u); } };
+    app.sandbox.navigator.share = async () => { const e = new Error("x"); e.name = "NotAllowedError"; throw e; };
     app.els["share-copy"].click();
     await flush();
     app.flushTimers();
-    assert.deepStrictEqual(plain(shared), [{ url: app.location.href }]);
-    assert.strictEqual(app.announcer().textContent, "LINK SHARED");
+    assert.deepStrictEqual(written, [app.location.href]);
+    assert.strictEqual(app.announcer().textContent, "LINK COPIED");
   });
 
   test("SU: COPY LINK reveals the readonly input when both are absent", async () => {
@@ -10572,6 +10580,7 @@ describe("share url", () => {
 
   test("SU: COPY LINK says nothing when the share sheet is dismissed", async () => {
     const app = boot();
+    coarse(app);
     delete app.sandbox.navigator.clipboard;
     app.sandbox.navigator.share = async () => { const e = new Error("x"); e.name = "AbortError"; throw e; };
     const before = app.announcer().textContent;
@@ -10779,7 +10788,7 @@ describe("share icon", () => {
     assert.match(rule(c, "#share-copy:disabled:active") || "", /background:#211d16/);
   });
 
-  test("SI: the glyph is two rotated stadiums at stroke-width 2.4", async () => {
+  test("SI: the glyph is two rotated stadiums at stroke-width 2.4 (the fine-pointer glyph)", async () => {
     assert.match(html(), /<g transform="rotate\(-45 12 12\)"[^>]*stroke-width="2\.4"/);
   });
 });
@@ -15216,8 +15225,8 @@ describe("I18N", () => {
     assert.strictEqual(contract.provenance.baselineCommit, "1510ea369573078e6296fe873edb6f538c3212a3");
     assert.strictEqual(contract.keyCount, 250);
     const savedKeys=["saved.ackPending","saved.conflict","saved.conflictDeleted","saved.failure","saved.importFailure","saved.legacy","saved.presetToken","saved.recovery","saved.resetConflict","saved.resetFailure","saved.savedToken","saved.separate","saved.session","saved.sessionAckPending","saved.sessionImportAckPending","saved.temporary"];
-    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],addedKeys=["panel.explore"];
-    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign)");
+    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],addedKeys=["panel.explore","header.share"];
+    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign) and header.share (native share)");
     for(const key of savedKeys)assert.strictEqual(typeof en[key],"string",key+" is a required new scalar message");
     const baseKeys=Object.keys(en).filter(key=>!savedKeys.includes(key)&&!addedKeys.includes(key)).concat(retiredKeys);
     assert.strictEqual(require("node:crypto").createHash("sha256")
@@ -16700,7 +16709,7 @@ describe("SHC asynchronous LINK ownership", () => {
     const calls = [];
     const accept = (payload) => { const d = deferred(); calls.push({ payload, ...d }); return d.promise; };
     if (method === "clipboard") app.sandbox.navigator.clipboard = { writeText: accept };
-    else { delete app.sandbox.navigator.clipboard; app.sandbox.navigator.share = accept; }
+    else { coarse(app); delete app.sandbox.navigator.clipboard; app.sandbox.navigator.share = accept; }
     return calls;
   };
   const copy = async (app, calls) => {
@@ -16859,22 +16868,21 @@ describe("SHC asynchronous LINK ownership", () => {
       if (outcome === "failure") assert.strictEqual(app.els["share-url"].value, call.payload.url);
       else { hidden(app); assert.strictEqual(live(app), outcome === "success" ? "LINK SHARED" : ""); }
     }
-    const app = boot({ href: PAGE }), calls = sink(app);
-    const shared = [];
-    app.sandbox.navigator.share = async (payload) => { shared.push(payload); };
+    const app = boot({ href: PAGE }), calls = sink(app, "share");
+    const written = [];
+    app.sandbox.navigator.clipboard = { writeText: async (u) => { written.push(u); } };
     const call = await copy(app, calls);
     await settle(call); app.flushTimers();
-    assert.deepStrictEqual(plain(shared), [{ url: call.payload }], "clipboard rejection uses the same captured URL");
-    assert.strictEqual(live(app), "LINK SHARED");
-    const late = boot(), lateCalls = sink(late);
+    assert.deepStrictEqual(plain(written), [call.payload.url], "share failure uses the same captured URL on the clipboard");
+    assert.strictEqual(live(app), "LINK COPIED");
+    const late = boot(), lateCalls = sink(late, "share");
     let invoked = 0;
-    // Access occurs between rejection and Promise-scheduled native invocation.
-    // Retire there, without depending on callback-chain microtask depth.
-    Object.defineProperty(late.sandbox.navigator, "share", { configurable: true, get() {
-      late.select(late.get("selection.id")); return async () => { invoked++; };
+    const lateCall = await copy(late, lateCalls);
+    Object.defineProperty(late.sandbox.navigator, "clipboard", { configurable: true, get() {
+      late.select(late.get("selection.id")); return { writeText: async () => { invoked++; } };
     } });
-    await settle(await copy(late, lateCalls));
-    assert.strictEqual(invoked, 0, "retirement at native scheduling boundary must suppress a new native operation");
+    await settle(lateCall);
+    assert.strictEqual(invoked, 0, "retirement before the clipboard fallback must suppress it");
     for (const success of [false, true]) {
       const active = boot(), nativeCalls = sink(active, "share"), pending = await copy(active, nativeCalls);
       active.select(active.get("selection.id"));
@@ -16990,6 +16998,7 @@ describe("SHC asynchronous LINK ownership", () => {
     ga.select(ga.get("selection.id")); await settle(first, true); ga.flushTimers();
     delete ga.sandbox.navigator.clipboard; delete ga.sandbox.navigator.share;
     ga.els["share-copy"].click(); await drain();
+    coarse(ga);
     ga.sandbox.navigator.share = async () => {};
     ga.els["share-copy"].click(); await drain(); ga.flushTimers();
     assert.deepStrictEqual(events(), [
@@ -18449,4 +18458,179 @@ test("NS1: About links underline at 1.5px and 2.5px on hover, like the scale pag
   assert.match(rest[1], /text-decoration-thickness:\s*1\.5px/);
   assert.match(rest[1], /text-underline-offset:\s*3px/);
   assert.match(html, /#about a:hover\{\s*text-decoration-thickness:\s*2\.5px/);
+});
+
+describe("NS: native share", () => {
+  const PAGE = "https://example.test/index.html";
+  const flush = () => new Promise((r) => setImmediate(r));
+  const json = (v) => JSON.parse(JSON.stringify(v));
+  const i18n = (code) => JSON.parse(fs.readFileSync(path.join(ROOT, "data", "i18n", code + ".json"), "utf8"));
+  const named = (name) => { const e = new Error(name); e.name = name; return e; };
+  const shareable = (opts = {}) => {
+    const app = boot({ href: PAGE, ...opts });
+    coarse(app);
+    const calls = [];
+    app.sandbox.navigator.share = (payload) => { calls.push(json(payload)); return Promise.resolve(); };
+    return { app, calls };
+  };
+  const tap = async (app) => { app.els["share-copy"].click(); await flush(); app.flushTimers(); };
+  const shareEvents = (app) => json(Array.from(app.get("window.dataLayer"))).filter((e) => e[0] === "event" && e[1] === "share_copy");
+
+  test("NS 1: coarse pointer with navigator.share calls share once with exactly {url} inside the tap and leaves the clipboard alone", async () => {
+    const { app, calls } = shareable();
+    let written = 0;
+    app.sandbox.navigator.clipboard = { writeText: async () => { written++; } };
+    app.els["share-copy"].click();
+    assert.deepStrictEqual(calls, [{ url: app.location.href }], "share was not called synchronously with exactly {url}");
+    await flush(); app.flushTimers();
+    assert.strictEqual(written, 0);
+    assert.strictEqual(app.announcer().textContent, "LINK SHARED");
+  });
+
+  test("NS 2: AbortError is silent: no clipboard write, no reveal, no share_copy", async () => {
+    const app = boot({ html: withGaId("G-TEST123456"), webdriver: false, href: PAGE });
+    coarse(app);
+    let written = 0;
+    app.sandbox.navigator.clipboard = { writeText: async () => { written++; } };
+    app.sandbox.navigator.share = () => Promise.reject(named("AbortError"));
+    const before = app.announcer().textContent;
+    await tap(app);
+    assert.strictEqual(written, 0);
+    assert.strictEqual(app.announcer().textContent, before);
+    assert.strictEqual(app.els["share-url"].hasAttribute("hidden"), true);
+    assert.deepStrictEqual(shareEvents(app), []);
+  });
+
+  test("NS 3: NotAllowedError falls to the clipboard: LINK COPIED, method clipboard", async () => {
+    const app = boot({ html: withGaId("G-TEST123456"), webdriver: false, href: PAGE });
+    coarse(app);
+    const written = [];
+    app.sandbox.navigator.clipboard = { writeText: async (u) => { written.push(u); } };
+    app.sandbox.navigator.share = () => Promise.reject(named("NotAllowedError"));
+    await tap(app);
+    assert.deepStrictEqual(written, [app.location.href]);
+    assert.strictEqual(app.announcer().textContent, "LINK COPIED");
+    assert.deepStrictEqual(shareEvents(app).map((e) => e[2]), [{ deck_kind: "seeded", method: "clipboard" }]);
+  });
+
+  test("NS 4: share rejects then the clipboard rejects: the field is revealed with share.select, in en and ja", async () => {
+    for (const lang of ["en", "ja"]) {
+      const { app } = shareable();
+      if (lang !== "en") app.run(`setLang(${JSON.stringify(lang)})`);
+      app.sandbox.navigator.share = () => Promise.reject(named("NotAllowedError"));
+      app.sandbox.navigator.clipboard = { writeText: async () => { throw new Error("denied"); } };
+      app.els["share-url"].select = () => {};
+      await tap(app);
+      assert.strictEqual(app.els["share-url"].hasAttribute("hidden"), false);
+      assert.strictEqual(app.announcer().textContent, i18n(lang)["share.select"]);
+    }
+  });
+
+  test("NS 5: a tap while a share is pending does nothing, and every settle path unlocks the button", async () => {
+    for (const outcome of ["resolve", "abort", "other"]) {
+      const app = boot({ href: PAGE });
+      coarse(app);
+      app.sandbox.navigator.clipboard = { writeText: async () => {} };
+      const pending = [];
+      app.sandbox.navigator.share = () => new Promise((resolve, reject) => pending.push({ resolve, reject }));
+      app.els["share-copy"].click();
+      app.els["share-copy"].click();
+      await flush();
+      assert.strictEqual(pending.length, 1, "a second tap reached navigator.share");
+      if (outcome === "resolve") pending[0].resolve();
+      if (outcome === "abort") pending[0].reject(named("AbortError"));
+      if (outcome === "other") pending[0].reject(named("InvalidStateError"));
+      await flush(); app.flushTimers();
+      app.els["share-copy"].click();
+      await flush();
+      assert.strictEqual(pending.length, 2, outcome + " left the button locked");
+    }
+  });
+
+  test("NS 6: a fine pointer with navigator.share copies and never opens the sheet", async () => {
+    const app = boot({ href: PAGE });
+    coarse(app, false);
+    const written = [];
+    let shared = 0;
+    app.sandbox.navigator.clipboard = { writeText: async (u) => { written.push(u); } };
+    app.sandbox.navigator.share = async () => { shared++; };
+    await tap(app);
+    assert.deepStrictEqual(written, [app.location.href]);
+    assert.strictEqual(shared, 0);
+  });
+
+  test("NS 7: no share uses the clipboard, neither reveals, and canShare false uses the clipboard", async () => {
+    const a = boot({ href: PAGE });
+    coarse(a);
+    const written = [];
+    a.sandbox.navigator.clipboard = { writeText: async (u) => { written.push(u); } };
+    delete a.sandbox.navigator.share;
+    await tap(a);
+    assert.deepStrictEqual(written, [a.location.href]);
+
+    const b = boot({ href: PAGE });
+    coarse(b);
+    delete b.sandbox.navigator.clipboard;
+    delete b.sandbox.navigator.share;
+    b.els["share-url"].select = () => {};
+    await tap(b);
+    assert.strictEqual(b.els["share-url"].hasAttribute("hidden"), false);
+
+    const c = boot({ href: PAGE });
+    coarse(c);
+    let shared = 0;
+    const cw = [];
+    c.sandbox.navigator.share = async () => { shared++; };
+    c.sandbox.navigator.canShare = () => false;
+    c.sandbox.navigator.clipboard = { writeText: async (u) => { cw.push(u); } };
+    await tap(c);
+    assert.strictEqual(shared, 0);
+    assert.deepStrictEqual(cw, [c.location.href]);
+  });
+
+  test("NS 8: label and glyph follow the share state and survive a language change", async () => {
+    const { app } = shareable();
+    app.run("paintShare()");
+    const btn = app.els["share-copy"];
+    assert.strictEqual(btn.getAttribute("aria-label"), i18n("en")["header.share"]);
+    assert.match(btn.innerHTML, /glyph-share/);
+    assert.ok(!/rotate\(-45/.test(btn.innerHTML));
+    for (const code of ["ja", "de", "zh-Hant"]) {
+      app.run(`setLang(${JSON.stringify(code)})`);
+      assert.strictEqual(btn.getAttribute("aria-label"), i18n(code)["header.share"], code);
+    }
+    app.run('setLang("en")');
+    delete app.sandbox.navigator.share;
+    app.run("paintShare()");
+    assert.strictEqual(btn.getAttribute("aria-label"), i18n("en")["header.share_copy"]);
+    assert.ok(!/glyph-share/.test(btn.innerHTML), "the share glyph stayed");
+    app.run('setLang("ja")');
+    assert.strictEqual(btn.getAttribute("aria-label"), i18n("ja")["header.share_copy"]);
+  });
+
+  test("NS 9: share_copy carries only deck_kind and method, method in clipboard|share|select", async () => {
+    const methods = new Set();
+    for (const mode of ["share", "clipboard", "select"]) {
+      const app = boot({ html: withGaId("G-TEST123456"), webdriver: false, href: PAGE });
+      coarse(app, mode === "share");
+      if (mode === "share") app.sandbox.navigator.share = async () => {};
+      else delete app.sandbox.navigator.share;
+      if (mode === "select") delete app.sandbox.navigator.clipboard;
+      else app.sandbox.navigator.clipboard = { writeText: async () => {} };
+      app.els["share-url"].select = () => {};
+      await tap(app);
+      const ev = shareEvents(app);
+      assert.strictEqual(ev.length, 1, mode);
+      assert.deepStrictEqual(Object.keys(ev[0][2]).sort(), ["deck_kind", "method"]);
+      methods.add(ev[0][2].method);
+    }
+    assert.deepStrictEqual([...methods].sort(), ["clipboard", "select", "share"]);
+  });
+
+  test("NS 10: header.share exists in all eight tables", async () => {
+    for (const code of ["en", "de", "es", "fr", "it", "ja", "zh-Hans", "zh-Hant"]) {
+      const v = i18n(code)["header.share"];
+      assert.ok(typeof v === "string" && v.length > 0, code);
+    }
+  });
 });

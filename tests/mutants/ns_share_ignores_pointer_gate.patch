@@ -1,0 +1,15 @@
+# kills: NS 6: a fine pointer with navigator.share copies and never opens the sheet
+# suite: node --test --test-name-pattern ^NS.6: tests/app.test.js
+# A fine pointer opens the share sheet.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15389,7 +15389,7 @@ function syncRoute() {
+ let sharePending = false;
+ function shareApplies() {
+   try {
+-    if (!navigator.share || !window.matchMedia("(pointer:coarse)").matches) return false;
++    if (!navigator.share) return false;
+     return !navigator.canShare || !!navigator.canShare({ url: location.href });
+   } catch (e) { return false; }
+ }
