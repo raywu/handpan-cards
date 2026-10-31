@@ -498,9 +498,9 @@ The field id and label scheme, read off all three built-ins in `index.html`:
   centre; `between` puts the bottom centre between notes 1 and 2 with note 1 on
   the right (the Pygmy pattern). The retired odd-rim anchor and the "left-first"
   and "right-first" names, which described the anchor and not a direction, are
-  gone. `mirror` reflects the rim and inner rings about the vertical axis and is
-  the only thing that puts odd notes on the left; `mirrorBottom` reflects the
-  bottom ring and, when absent, follows `mirror`.
+  gone. `mirror` reflects the notes of the rim and inner rings about the vertical
+  axis; `mirrorBottom` reflects the notes of the bottom ring and, when absent,
+  follows `mirror`. A mirror moves no index number (owner 2026-10-30).
 - DECIDED(owner 2026-10, Rule N) A seat's index number belongs to the position,
   not to the note: moving a note (`options.seats`) changes the name drawn there
   and nothing else, on the plate and on the generated cards alike. The same
@@ -908,10 +908,12 @@ Wire note: a v6 link spells index n as `palette-(n+1)`, read for `palette-2` to 
   indices and never renumbers.
 - DECIDED(owner 2026-10, replacing the right-first / left-first polarity bullet)
   The layout options are `mirror`, `mirrorBottom`, `anchor`, `seats` and `angles`.
-  `mirror` (boolean, default false) reflects the rim and the inner ring about
-  the vertical axis; false puts odd-numbered notes on the right, even on the
-  left, on every deck. `mirrorBottom` (boolean) reflects the bottom ring and,
-  when absent, follows `mirror`; with no bottom notes it is false.
+  `mirror` (boolean, default false) reflects the notes of the rim and the inner
+  ring about the vertical axis; the numbers stay at their unmirrored positions,
+  so the odd numbers stay on the right and each note takes the number of the
+  position it lands on (owner 2026-10-30). `mirrorBottom` (boolean) does the
+  same for the bottom ring and, when absent, follows `mirror`; with no bottom
+  notes it is false. Under `options.angles` it moves only the null-entry notes.
   `layout.resolveMirrors` is the one place the two are resolved.
 - DECIDED(owner 2026-10) `anchor` is `"one"` (default: note 1 at bottom centre)
   or `"between"` (bottom centre between notes 1 and 2, note 1 on the right).
@@ -1023,6 +1025,13 @@ Wire note: a v6 link spells index n as `palette-(n+1)`, read for `palette-2` to 
   `CompressionStream`, so the engine may not depend on it. The test realm
   (`tools/engine_loader.js`) does inject `btoa`, `atob`, `TextEncoder` and
   `TextDecoder`, so the test realm is not a guard for those.
+- DECIDED(plan 2026-10-23, free note placement) Angles change the share string,
+  never the deck id.
+- DECIDED(plan 2026-10-17, share readable) `HPE.share.VERSION` is the wire
+  version; `HPE.share.RECORD_VERSION` is the stored-record version and changes
+  independently, so a wire bump rewrites no stored deck. Readers for every older
+  version stay. Detail: `docs/plans/2026-10-17-share-readable.md`,
+  `docs/plans/2026-10-23-free-placement.md`.
 
 ## 15. UI element ids
 

@@ -2,7 +2,7 @@
  *
  * Spec: docs/ENGINE-SPEC.md sections 1 (result contract), 4 (zones are core's;
  * solve never changes one), 11 (FULL geom shape, `ext` for generated decks),
- * 16 (this lane builds its own N=5..19 sweep), 17; CLAUDE.md "Instrument
+ * 16 (this lane builds its own N=5..19 sweep), 17; docs/CARD-SPEC.md "Instrument
  * layouts" (the verified pygmy / hijaz / amara angle sequences).
  *
  * Per tests/CONTRACT.md rule 2 nothing here imports a constant from layout.js:
@@ -276,7 +276,7 @@ test("the ding angle stays null and every other angle is filled", () => {
   }
 });
 
-/* ---- the verified built-in sequences (CLAUDE.md "Instrument layouts") --- */
+/* ---- the verified built-in sequences (docs/CARD-SPEC.md "Instrument layouts") --- */
 
 const PYGMY_RIM_SEED = "(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 / F5 G5";
 
@@ -627,7 +627,7 @@ test("field circles stay legible: they are never shrunk away to clear a clash", 
 /* ---- the label a field actually gets, measured against the field ---------
  *
  * The geom's f_note / f_bnote / f_num are outputs of the diagram label rule
- * (CLAUDE.md, "Design system"), not figures any renderer reads, so a guard on
+ * (docs/CARD-SPEC.md, "Design system"), not figures any renderer reads, so a guard on
  * them alone guards nothing about the drawn size.
  *
  * The guard that stood here re-declared the rule's ratios as literals and
@@ -1632,6 +1632,7 @@ test("rule N: after seats, each seat keeps its number and the note sitting there
         const seed = freshSeed(text);
         const rings = ringIds(seed.fields);
         const home = plain(HPE.layout.solve(freshSeed(text), base).value.fields);
+        const plainLabel = labelsByAngle(HPE.layout.solve(freshSeed(text), { anchor }).value.fields);
         for (const ring of RINGS) {
           for (const list of ruleNArrangements(rings[ring].length)) {
             const label = `${name} ${anchor} ${mirror}/${mirrorBottom} ${ring} ${list}`;
@@ -1643,8 +1644,9 @@ test("rule N: after seats, each seat keeps its number and the note sitting there
               const sitting = Object.keys(moved).find((id) => moved[id][3] === ring
                 && moved[id][4] === home[seatId][4]);
               assert.ok(sitting, `${label}: nobody sits at seat ${s}`);
-              assert.equal(moved[sitting][5], seed.fields[seatId][5],
-                `${label}: the note at seat ${s} carries ${moved[sitting][5]}, not ${seed.fields[seatId][5]}`);
+              const want = plainLabel[`${ring} ${home[seatId][4]}`];
+              assert.equal(moved[sitting][5], want,
+                `${label}: the note at seat ${s} carries ${moved[sitting][5]}, not ${want}`);
             }
             for (const id of Object.keys(moved)) {
               assert.deepStrictEqual(moved[id].slice(0, 4), seed.fields[id].slice(0, 4), `${label} #${id}`);
@@ -1656,19 +1658,74 @@ test("rule N: after seats, each seat keeps its number and the note sitting there
   }
 });
 
-test("rule N: mirrors and orientation change no label", () => {
+const labelsByAngle = (fields) => {
+  const out = {};
+  for (const id of Object.keys(fields)) out[`${fields[id][3]} ${fields[id][4]}`] = fields[id][5];
+  return out;
+};
+
+test("rule N: a mirror keeps every number at its unmirrored angle", () => {
   for (const [name, text] of RULE_N_SCALES) {
     const rings = ringIds(freshSeed(text).fields);
-    const seats = {};
+    const seatSets = [undefined, {}];
     for (const ring of RINGS) {
       const lists = ruleNArrangements(rings[ring].length);
-      if (lists.length) seats[ring] = lists[1];
+      if (lists.length) seatSets[1][ring] = lists[1];
     }
-    const want = ruleNLabels(HPE.layout.solve(freshSeed(text), { seats }).value.fields);
     for (const anchor of RULE_N_ANCHORS) {
+      const plainAt = labelsByAngle(HPE.layout.solve(freshSeed(text), { anchor }).value.fields);
       for (const [mirror, mirrorBottom] of RULE_N_MIRRORS) {
-        const got = ruleNLabels(HPE.layout.solve(freshSeed(text), { mirror, mirrorBottom, anchor, seats }).value.fields);
-        assert.deepStrictEqual(got, want, `${name} ${anchor} ${mirror}/${mirrorBottom}`);
+        for (const seats of seatSets) {
+          const options = { mirror, mirrorBottom, anchor };
+          if (seats) options.seats = seats;
+          const fields = HPE.layout.solve(freshSeed(text), options).value.fields;
+          const got = labelsByAngle(fields);
+          assert.deepStrictEqual(got, plainAt, `${name} ${anchor} ${mirror}/${mirrorBottom} ${seats ? "seats" : "plain"}`);
+        }
+      }
+    }
+  }
+});
+
+test("MN: D Kurd 10 mirrored reads 270 A3 1, 310 Bb3 3, 230 C4 2, 350 D4 5, 190 E4 4, 30 F4 7, 150 G4 6, 70 A4 9, 110 C5 8", () => {
+  const f = HPE.layout.solve(freshSeed(RULE_N_SCALES[1][1]), { mirror: true }).value.fields;
+  const row = Object.values(f).filter((x) => x[3] === "rim")
+    .map((x) => `${x[4]} ${x[0]}${x[1]} ${x[5]}`).join(", ");
+  assert.equal(row, "270 A3 1, 310 Bb3 3, 230 C4 2, 350 D4 5, 190 E4 4, 30 F4 7, 150 G4 6, 70 A4 9, 110 C5 8");
+});
+
+test("MN: a mirrored Pygmy puts F5 at 52 reading 11, G5 at 128 reading 10, and mirrors its bottom numbers in place", () => {
+  const f = HPE.layout.solve(freshSeed(RULE_N_SCALES[2][1]), { anchor: "between", mirror: true }).value.fields;
+  const inner = Object.values(f).filter((x) => x[3] === "inner").map((x) => `${x[0]}${x[1]}@${x[4]}=${x[5]}`);
+  const plainInner = Object.values(HPE.layout.solve(freshSeed(RULE_N_SCALES[2][1]), { anchor: "between" }).value.fields)
+    .filter((x) => x[3] === "inner").map((x) => `${x[0]}${x[1]}@${x[4]}=${x[5]}`);
+  assert.deepEqual(plainInner, ["F5@128=10", "G5@52=11"]);
+  assert.deepEqual(inner, ["F5@52=11", "G5@128=10"]);
+  const bottoms = Object.values(f).filter((x) => x[3] === "bottom").map((x) => `${x[0]}${x[1]}@${x[4]}=${x[5]}`);
+  assert.deepEqual(bottoms, ["C3@240=U2", "Db3@300=U1", "Eb3@180=U4", "Bb3@0=U3", "Db4@120=U6", "Ab5@60=U5"]);
+});
+
+test("MN: unmirrored solves are byte-identical to the corpus hashes", () => {
+  const crypto = require("node:crypto");
+  for (const [name, text] of RULE_N_SCALES) {
+    for (const anchor of RULE_N_ANCHORS) {
+      const fields = HPE.layout.solve(freshSeed(text), { mirror: false, mirrorBottom: false, anchor }).value.fields;
+      const hash = crypto.createHash("sha256").update(JSON.stringify(fields)).digest("hex").slice(0, 16);
+      assert.equal(hash, RULE_N_NO_SEATS[`${name} ${anchor} false/false`], `${name} ${anchor}`);
+    }
+  }
+});
+
+test("MN: ring sizes 1 to 12, both anchors, mirrored: every number sits at its unmirrored angle", () => {
+  for (let rim = 1; rim <= 12; rim += 1) {
+    for (let inner = 0; inner <= 4; inner += 1) {
+      for (let bottom = 0; bottom <= 6; bottom += 1) {
+        for (const anchor of RULE_N_ANCHORS) {
+          const base = { anchor };
+          const a = solveCounts(rim, inner, bottom, base).fields;
+          const b = solveCounts(rim, inner, bottom, { ...base, mirror: true }).fields;
+          assert.deepStrictEqual(labelsByAngle(b), labelsByAngle(a), `${rim}/${inner}/${bottom} ${anchor}`);
+        }
       }
     }
   }
@@ -1676,17 +1733,17 @@ test("rule N: mirrors and orientation change no label", () => {
 
 const RULE_N_NO_SEATS = {
   "D3 example one false/false": "25ac5a7c09cd908b",
-  "D3 example one true/true": "f675f30395520a1c",
+  "D3 example one true/true": "fcacf3cc1f752c14",
   "D3 example between false/false": "8f7bf228071c4263",
-  "D3 example between true/true": "046adf1ebce7ffd9",
+  "D3 example between true/true": "4f9475a58f79f263",
   "D Kurd 10 one false/false": "bb40d40871ccbaa8",
-  "D Kurd 10 one true/true": "3393bf5408748c94",
+  "D Kurd 10 one true/true": "aac412e8ac012f9e",
   "D Kurd 10 between false/false": "67640a0ffec2c92c",
-  "D Kurd 10 between true/true": "633dae4764b43080",
+  "D Kurd 10 between true/true": "cb13cf1641ff1f82",
   "F3 Low Pygmy one false/false": "7f4f6b8e4a128a15",
-  "F3 Low Pygmy one true/true": "fa2e9b7d48c1e768",
+  "F3 Low Pygmy one true/true": "bbacad0480fcc52e",
   "F3 Low Pygmy between false/false": "65909a1b9132c2da",
-  "F3 Low Pygmy between true/true": "3a2444569d85577d",
+  "F3 Low Pygmy between true/true": "1e089eb3b7927e4a",
 };
 
 test("rule N: with no seats every column of every field is what main solved", () => {
@@ -2019,7 +2076,7 @@ function ofLabelMap(fields, zone) {
   return m;
 }
 
-test("OF: seat numbers keep the zig-zag positions for a non-ascending typed line, every anchor and mirror", () => {
+test("OF: seat numbers keep the zig-zag positions for a non-ascending typed line, every anchor, and a mirror moves no number (MN)", () => {
   const cases = OF_FROZEN.cases.filter((c) => c.seatMap);
   assert.ok(cases.length >= 100, "the frozen permutation cases");
   for (const c of cases) {
@@ -2028,8 +2085,8 @@ test("OF: seat numbers keep the zig-zag positions for a non-ascending typed line
     assert.ok(seats, c.string);
     OF_FROZEN.combos.forEach((combo, k) => {
       const res = OF_E.layout.solve(value, Object.assign({}, combo, { seats }));
-      const want = c.seatMap[k];
-      assert.equal(res.ok, want !== null, `${c.string} ${JSON.stringify(combo)}`);
+      const want = c.seatMap[combo.anchor === "one" ? 0 : 6];
+      assert.equal(res.ok, c.seatMap[k] !== null, `${c.string} ${JSON.stringify(combo)}`);
       if (!want) return;
       for (const zone of ["rim", "inner", "bottom"]) {
         assert.deepEqual(ofLabelMap(res.value.fields, zone), want[zone], `${c.string} ${JSON.stringify(combo)} ${zone}`);
@@ -2141,7 +2198,7 @@ test("SO: the cyclic match wraps through 0 degrees: Eb3 at 355 keeps U3, and C3 
 test("SO: whole-ring turns of +30, +25 and -25 on Pygmy keep the home labels, and -30 puts the same seat numbers at the same angles, with MIRROR BOTTOM off and on", () => {
   const minus30 = {
     false: "C3@270=U2 Db3@210=U4 Eb3@330=U1 Bb3@150=U6 Db4@30=U3 Ab5@90=U5",
-    true: "C3@210=U3 Db3@270=U1 Eb3@150=U5 Bb3@330=U2 Db4@90=U6 Ab5@30=U4",
+    true: "C3@210=U4 Db3@270=U2 Eb3@150=U6 Bb3@330=U1 Db4@90=U5 Ab5@30=U3",
   };
   for (const mirrorBottom of [false, true]) {
     const home = soHome(mirrorBottom);
@@ -2157,9 +2214,9 @@ test("SO: whole-ring turns of +30, +25 and -25 on Pygmy keep the home labels, an
   }
 });
 
-test("SO: under MIRROR BOTTOM the swap labels against the mirrored home: Db3 at 120 reads U5 and Db4 at 300 reads U2", () => {
+test("SO: under MIRROR BOTTOM the swap labels against the unmirrored home: Db3 at 120 reads U6 and Db4 at 300 reads U1", () => {
   assert.equal(soShow({ mirrorBottom: true, angles: { bottom: [null, 120, null, null, 300, null] } }),
-    "C3@240=U1 Db3@120=U5 Eb3@180=U3 Bb3@0=U4 Db4@300=U2 Ab5@60=U6");
+    "C3@240=U2 Db3@120=U6 Eb3@180=U4 Bb3@0=U3 Db4@300=U1 Ab5@60=U5");
 });
 
 test("SO: rim seats and a bottom angles swap together label both rings by position", () => {
@@ -2217,21 +2274,34 @@ test("SO: the five built-ins solve to byte-identical fields with no angles, all-
   }
 });
 
-test("SO: MIRROR BOTTOM over six explicit angles re-flows the numbers into the mirrored order and moves no note", () => {
+test("SO: MIRROR BOTTOM over six explicit angles changes nothing: no note moves and every number stays at its angle", () => {
   const entries = [300, 60, 0, 180, 240, 120];
   const off = soBottom(soSolve({ angles: { bottom: entries } }));
   const on = soBottom(soSolve({ mirrorBottom: true, angles: { bottom: entries } }));
-  assert.deepEqual(on.map((n) => n.angle), off.map((n) => n.angle));
+  assert.deepEqual(on, off);
   assert.equal(on.map((n) => `${n.name}@${n.angle}=${n.label}`).join(" "),
-    "C3@300=U2 Db3@60=U6 Eb3@0=U4 Bb3@180=U3 Db4@240=U1 Ab5@120=U5");
-  assert.notDeepEqual(on.map((n) => n.label), off.map((n) => n.label));
+    "C3@300=U1 Db3@60=U5 Eb3@0=U3 Bb3@180=U4 Db4@240=U2 Ab5@120=U6");
 });
 
-test("SO: on a cost tie the bottom labels take the rotation that turns the notes furthest anticlockwise: Pygmy at 75 285 0 180 60 120 reads C3 U5 Db3 U2 Eb3 U1 Bb3 U4 Db4 U3 Ab5 U6, and mirrored at 75 285 180 0 120 60 reads C3 U6 Db3 U1 Eb3 U3 Bb3 U2 Db4 U5 Ab5 U4", () => {
+test("MN: under angles, MIRROR BOTTOM moves only the null-entry notes, explicit notes stay, every number stays at its unmirrored angle", () => {
+  const angles = { bottom: [270, null, null, null, null, 90] };
+  const off = soBottom(soSolve({ angles }));
+  const on = soBottom(soSolve({ mirrorBottom: true, angles }));
+  assert.equal(on[0].angle, 270);
+  assert.equal(on[5].angle, 90);
+  assert.deepEqual(on.filter((n, i) => n.angle !== off[i].angle).map((n) => n.name), ["Db3", "Eb3", "Bb3", "Db4"]);
+  const plainAt = soByAngle(soBottom(soSolve({}))).split(" ");
+  const explicit = [270, 90];
+  for (const n of on.filter((x) => !explicit.includes(x.angle))) {
+    assert.ok(plainAt.includes(`${n.angle}=${n.label}`), `${n.name}@${n.angle}=${n.label} is not an unmirrored position number`);
+  }
+});
+
+test("SO: on a cost tie the bottom labels take the rotation that turns the notes furthest anticlockwise: Pygmy at 75 285 0 180 60 120 reads C3 U5 Db3 U2 Eb3 U1 Bb3 U4 Db4 U3 Ab5 U6, and mirrored at 75 285 180 0 120 60 reads C3 U5 Db3 U2 Eb3 U4 Bb3 U1 Db4 U6 Ab5 U3", () => {
   assert.equal(soShow({ angles: { bottom: [75, 285, 0, 180, 60, 120] } }),
     "C3@75=U5 Db3@285=U2 Eb3@0=U1 Bb3@180=U4 Db4@60=U3 Ab5@120=U6");
   assert.equal(soShow({ mirrorBottom: true, angles: { bottom: [75, 285, 180, 0, 120, 60] } }),
-    "C3@75=U6 Db3@285=U1 Eb3@180=U3 Bb3@0=U2 Db4@120=U5 Ab5@60=U4");
+    "C3@75=U5 Db3@285=U2 Eb3@180=U4 Bb3@0=U1 Db4@120=U6 Ab5@60=U3");
 });
 
 test("SO: a swap from any accepted bottom layout trades only the two swapped labels, pinned at C3 140 and Bb3 105, with MIRROR BOTTOM off and on", () => {

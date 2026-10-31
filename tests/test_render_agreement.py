@@ -686,7 +686,7 @@ class PdfEmitterGeometryTest(unittest.TestCase):
     def test_the_diagram_label_rule_carries_the_same_constants(self):
         """The no-shrink rule, third copy.
 
-        These six are the whole of the label rule, and CLAUDE.md fixes the
+        These six are the whole of the label rule, and docs/CARD-SPEC.md fixes the
         baseline they are measured against. The parity test would catch a
         changed ratio as a wall of moved glyphs; this catches it as one line.
         """
