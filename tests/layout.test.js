@@ -2,7 +2,7 @@
  *
  * Spec: docs/ENGINE-SPEC.md sections 1 (result contract), 4 (zones are core's;
  * solve never changes one), 11 (FULL geom shape, `ext` for generated decks),
- * 16 (this lane builds its own N=5..19 sweep), 17; CLAUDE.md "Instrument
+ * 16 (this lane builds its own N=5..19 sweep), 17; docs/CARD-SPEC.md "Instrument
  * layouts" (the verified pygmy / hijaz / amara angle sequences).
  *
  * Per tests/CONTRACT.md rule 2 nothing here imports a constant from layout.js:
@@ -276,7 +276,7 @@ test("the ding angle stays null and every other angle is filled", () => {
   }
 });
 
-/* ---- the verified built-in sequences (CLAUDE.md "Instrument layouts") --- */
+/* ---- the verified built-in sequences (docs/CARD-SPEC.md "Instrument layouts") --- */
 
 const PYGMY_RIM_SEED = "(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 / F5 G5";
 
@@ -627,7 +627,7 @@ test("field circles stay legible: they are never shrunk away to clear a clash", 
 /* ---- the label a field actually gets, measured against the field ---------
  *
  * The geom's f_note / f_bnote / f_num are outputs of the diagram label rule
- * (CLAUDE.md, "Design system"), not figures any renderer reads, so a guard on
+ * (docs/CARD-SPEC.md, "Design system"), not figures any renderer reads, so a guard on
  * them alone guards nothing about the drawn size.
  *
  * The guard that stood here re-declared the rule's ratios as literals and

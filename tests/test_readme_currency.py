@@ -192,7 +192,7 @@ LINE_REF_ALLOWLIST = """
 # the plan's finding-7 lane row. Other files (other *.test.js, docs/, TODOS.md)
 # are out of this ratchet's scope.
 LINE_REF_FILES = (
-    ["index.html", "tests/app.test.js", "CLAUDE.md"]
+    ["index.html", "tests/app.test.js", "CLAUDE.md", "docs/CARD-SPEC.md", "docs/ENGINE-SPEC.md"]
     + sorted(os.path.relpath(p, ROOT) for p in glob.glob(os.path.join(ROOT, "tools", "*.py")))
     + sorted(os.path.relpath(p, ROOT) for p in glob.glob(os.path.join(ROOT, "tools", "*.js")))
     + sorted(os.path.relpath(p, ROOT) for p in glob.glob(os.path.join(ROOT, "src", "engine", "*.js")))
