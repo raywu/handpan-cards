@@ -25,7 +25,7 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TABLE = os.path.join(ROOT, "tools", "scale_pages.json")
 FIXTURE = os.path.join(ROOT, "tests", "fixtures", "scale_pages_v1.json")
-SITE = "https://handpan.raywu.org/"
+SITE = "https://handpantheory.com/"
 UPDATED = "2026-10-28"
 BG_LIGHT = "#f6f4ed"
 BG_DARK = "#0f0e0b"
