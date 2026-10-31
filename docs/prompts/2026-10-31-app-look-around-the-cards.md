@@ -1,5 +1,9 @@
 # Prompt: explore the Handpan Theory look around the chord cards
 
+Run 2026-10-31: results in `docs/plans/2026-10-31-look-around-the-cards.md`
+(the starting card-match table below compared the wrong app mode; see
+`docs/brand/look/cardmatch.md`).
+
 Paste everything below the line into a fresh Claude Code session on
 `raywu/handpan-cards`. It asks for explorations and a plan, not a shipped
 change. Companion to `docs/prompts/2026-10-31-handpan-theory-rebrand-plan.md`
