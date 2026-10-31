@@ -1,5 +1,5 @@
-# kills: SO: MIRROR BOTTOM after the fold moves no note and no number and says so, and MIRROR TOP leaves every bottom number alone
-# suite: node --test --test-name-pattern ^SO..MIRROR.BOTTOM.after.the.fold.moves.no.note.and.no.number.and.says.so..and.MIRROR.TOP.leaves.every.bottom.number.alone$ tests/app.test.js
+# kills: SO: MIRROR BOTTOM after the fold reflects every note, keeps every position's number and says so, and MIRROR TOP leaves every bottom number alone
+# suite: node --test --test-name-pattern ^SO..MIRROR.BOTTOM.after.the.fold.reflects.every.note..keeps.every.position.s.number.and.says.so..and.MIRROR.TOP.leaves.every.bottom.number.alone$ tests/app.test.js
 # MIRROR BOTTOM over placed notes says nothing about the numbers.
 diff --git a/index.html b/index.html
 --- a/index.html

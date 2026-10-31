@@ -26,7 +26,13 @@ Where: `solve` is NOT changed. `options.angles` still means "the drawn angle, in
 
 ## Release safety
 
-`solve` and the stored/wire option meaning are unchanged: `angles` entries are drawn angles. A saved scale with `mirrorBottom: true` plus explicit angles solves to the identical angles and numbers; no record or wire version bump and no conversion on read are needed. Evidence: fixtures in the old formats (record v4 / v3 saved records and share links v4, v5, v6) with mirrorBottom + angles, whose expected angles and numbers were recorded on the MN2 head `0880d8d7` before the change and are asserted after.
+`solve` and the stored/wire option meaning are unchanged: `angles` entries are drawn angles in their own frame. A saved scale with `mirrorBottom: true` plus explicit angles solves to the identical drawn angles; no record or wire version bump and no conversion on read are needed. Only the toggle changes.
+
+Evidence (`tests/fixtures/mirror_placed_v1.json`, test "MN3 release safety ..."): records (v4) and v6 links with mirrorBottom + angles. Per case the fixture stores `mainExpected` / `mainLinkExpected`, recorded at origin/main a9aaeb70 (review F1), and `expected` / `linkExpected`, recorded on the MN2 head 0880d8d7 before this change. The test asserts the DRAWN ANGLES equal main's for every case and the numbers equal the MN2 head's.
+
+Intended number differences vs main (NOT asserted identical): in every mirrored case with a bottom shell (`pygmy-slid-mirrored`, `pygmy-swap-mirrored`, `pygmy-ruleS-record-mirrored`, `three-bottom-mirrored`, `pygmy-both-mirrored-anchor-one`) main numbers a mirrored bottom by the note's own seat, while the shipped-to-dev MN change (owner 2026-10-30, "mirror keeps number positions") numbers by position. Example: Pygmy `[285,...]` mirrored, main reads `C3@255=U1 Db3@300=U2`, now `C3@255=U2 Db3@300=U1`. `pygmy-slid-unmirrored` is identical to main. This is the MN/MN2 change already on dev and held in #774, not an MN3 effect.
+
+Dev-only records (review F2): an MN2 rule-S record such as `[285,240]` with mirrorBottom on (made by the MN2 toggle, never on main) is stored as drawn angles, so it draws unchanged; its first toggle off/on now reflects it to `[255,300]`. Fixture `pygmy-ruleS-record-mirrored` and the test "MN3: a dev-only MN2 rule-S record [285,240] ... reflects to [255,300]" cover it.
 
 ## Refusal copy
 
@@ -36,7 +42,7 @@ A toggle is refused only when the reflected layout truly overlaps a note or a to
 
 `tests/layout.test.js`
 - changed (MN2 rewritten): replaces "MN2: holdForMirror ..." tests with `MN3: reflectAngles` (null entries stay, explicit reflect, involution, multiple of 5), worked examples 1 and 2 through `solve`, and the swap example.
-- new sweep: bottom rings of n=2..8, both anchors, a single slide in steps of 5, both frames: the reflected toggle is accepted unless a true `bottomClash` exists in the reflected layout (checked independently), and toggling twice gives the identical solve output.
+- new sweep: bottom rings of n=2..8, both anchors, a single slide in steps of 5, both frames: the reflected toggle is accepted unless a true `bottomClash` exists in the reflected layout (checked by an independent oracle `mn3Overlap` that covers bottom gaps AND the rim, inner and ding circles with the top unmirrored, review F3), and toggling twice gives the identical solve output.
 - new fixtures test: old-format records and share links with mirrorBottom + angles decode to the recorded angles and numbers.
 
 `tests/app.test.js`
@@ -46,3 +52,9 @@ A toggle is refused only when the reflected layout truly overlaps a note or a to
 Mutants: replace the four `mn2_*` mutants with ones that kill the new tests (reflect skipped, null entries reflected, explicit not normalised mod 360); repoint `fpn_toggle_refusal_not_warn` and `w1_bottom_switch_inert` at the new `mirrorBot.onclick`.
 
 Docs: `docs/CARD-SPEC.md` MIRROR bullet and `docs/ENGINE-SPEC.md` section 13. Not CLAUDE.md, not deck data.
+
+## Caller enumeration (review F4)
+
+Enumerated with `grep -rn 'holdForMirror\|holdBeforeMirror\|releaseRedundantPins'` over the whole tree, not only the mn2_* mutants: callers were `src/engine/layout.js` (definition and export), `index.html` (inlined region, `mirrorBot.onclick`, `holdBeforeMirror`, `releaseRedundantPins`), `fpn_toggle_refusal_not_warn.patch` and `w1_bottom_switch_inert.patch` (context lines, refreshed), the four `mn2_*` mutants (removed), and the two spec docs. After the lane the grep returns only the "superseded" sentence in `docs/ENGINE-SPEC.md` and this plan. ENGINE-SPEC section 13 says rule S is superseded.
+
+New mutants: `mn3_reflect_not_mod`, `mn3_reflect_null_entries`, `mn3_reflect_identity`, `mn3_toggle_skips_reflect`, `mn3_refusal_keeps_reflection`. Patches that embed the generated I18N line (`b_*`, `i18n_*`) were re-anchored to the new line.
