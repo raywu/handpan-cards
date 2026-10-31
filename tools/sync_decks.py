@@ -33,7 +33,7 @@ def canonical():
 
 def inject(decks):
     """Write `decks` into index.html's `const DECKS` line and re-parse the
-    file to confirm the write landed (CLAUDE.md, "Known pitfalls": the
+    file to confirm the write landed (CLAUDE.md, "Hard constraints": the
     degrees carry U+00B0, and a naive re.sub treats it as an escape and
     silently writes nothing - a smoke test against stale data would pass;
     only reading the bytes back proves it). Raises SystemExit on failure.

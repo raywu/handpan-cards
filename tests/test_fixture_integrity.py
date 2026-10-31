@@ -63,7 +63,7 @@ EXPECTED_SHA256_V3 = ("6377b1e0230926a5aa85be066517647ec0f7606b569429804a4420"
 def chord_counts():
     """Card counts per deck, read from the live decks via tests.paths.
 
-    The 49/29/27/19/53 literals are asserted against CLAUDE.md once, in
+    The 49/29/27/19/53 literals are asserted against docs/CARD-SPEC.md once, in
     tests/test_deck_data.py. Repeating them here would be a second copy free to
     drift; what this suite must prove is that the FROZEN corpus still holds the
     same cards the app does, so it derives the counts instead of restating them.
@@ -184,7 +184,7 @@ PLAN_PATH = os.path.join(ROOT, "docs", "plans", "2026-10-30-neotone-build.md")
 EXPECTED_PROFILE_SHA256 = "ebcffe2fa4283191cd0f83a821aa814fa62fb9b29f102050a6856560f97c57fc"
 EXPECTED_SHIPPED_CLIENT_SHA256 = "112bae85da8601f969b6ed1af2259f1e7ae5a6ba9c1d6a2fbd70abbe7796514c"
 
-# The label rule (CLAUDE.md "Diagram label rule"), restated as numbers because
+# The label rule (docs/CARD-SPEC.md "Diagram label rule"), restated as numbers because
 # this fixture must not import the implementation it constrains.
 RATIO = {"ding": 0.70875, "rim": 0.80325, "inner": 0.80325, "bottom": 0.8232}
 NUM_RATIO, OCTAVE_RATIO, FLOOR_PT = 0.64, 0.66, 3.6
