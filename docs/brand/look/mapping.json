@@ -1,0 +1,2952 @@
+[
+ {
+  "kind": "colour",
+  "zone": "card",
+  "value": "#242424",
+  "count": 2,
+  "where": {
+   "app": 1,
+   "scale-page card": 1
+  },
+  "selectors": [
+   ":root {--ink}",
+   ".front,.card {color}"
+  ],
+  "action": "locked (card)",
+  "target": "-",
+  "why": "Card-internal product value (CLAUDE.md \"Design system\" / card anatomy).",
+  "pins": ""
+ },
+ {
+  "kind": "colour",
+  "zone": "card",
+  "value": "#ffffff",
+  "count": 1,
+  "where": {
+   "app": 1
+  },
+  "selectors": [
+   ":root {--paper}"
+  ],
+  "action": "locked (card)",
+  "target": "-",
+  "why": "Card-internal product value (CLAUDE.md \"Design system\" / card anatomy).",
+  "pins": ""
+ },
+ {
+  "kind": "colour",
+  "zone": "chrome",
+  "value": "#1a1815",
+  "count": 8,
+  "where": {
+   "app": 3,
+   "scales hub": 1,
+   "handpan-101": 3,
+   "app <head>": 1
+  },
+  "selectors": [
+   ":root {--table}",
+   "#about {background}",
+   ".abouthead {background}",
+   ":root {--bg}",
+   ".open {color}",
+   "a.open {color}",
+   "meta[name=theme-color] [app <head>]"
+  ],
+  "action": "change to token",
+  "target": "background #0F0E0B",
+  "why": "CONFLICT 3. Ground for app --table, theme-color, About, hub, handpan-101 (and dark text on gold .open in h101 -> background too).",
+  "pins": "app.test.js \"theme-color ... matching --table\" (asserts #1a1815); e2e.test.js \"html's computed background-color is the table colour\" rgb(26,24,21) + frame-pixel TABLE matrix; test_scale_pages.py BROWN/SHARED_ROOT, About bg + .abouthead regex; test_handpan_101_page.py theme-color, .open/a.open color, ratio vs #1a1815; 9 mutants"
+ },
+ {
+  "kind": "colour",
+  "zone": "chrome",
+  "value": "#26221c",
+  "count": 1,
+  "where": {
+   "app": 1
+  },
+  "selectors": [
+   ":root {--table2}"
+  ],
+  "action": "drop",
+  "target": "flat background (or surface #1A1814 if a highlight is kept)",
+  "why": "--table2 radial highlight behind the card; README: no glow on chrome except the mark.",
+  "pins": "e2e.test.js frame-pixel TABLE2 [38,34,28]; 1 mutant"
+ },
+ {
+  "kind": "colour",
+  "zone": "card",
+  "value": "#0b7b75",
+  "count": 2,
+  "where": {
+   "app": 2
+  },
+  "selectors": [
+   ":root {--root}",
+   ":root {--ga}"
+  ],
+  "action": "locked (card)",
+  "target": "-",
+  "why": "Card-internal product value (CLAUDE.md \"Design system\" / card anatomy).",
+  "pins": ""
+ },
+ {
+  "kind": "colour",
+  "zone": "card",
+  "value": "#dd8f00",
+  "count": 2,
+  "where": {
+   "app": 2
+  },
+  "selectors": [
+   ":root {--tone}",
+   ":root {--gb}"
+  ],
+  "action": "locked (card)",
+  "target": "-",
+  "why": "Card-internal product value (CLAUDE.md \"Design system\" / card anatomy).",
+  "pins": ""
+ },
+ {
+  "kind": "font-family",
+  "zone": "chrome",
+  "value": "Nunito Sans",
+  "count": 27,
+  "where": {
+   "app": 24,
+   "scale pages": 1,
+   "scales hub": 1,
+   "handpan-101": 1
+  },
+  "selectors": [
+   "body",
+   ".chip",
+   ".panel-note",
+   ".mode",
+   ".prints button, .prints select, #lang-select",
+   ".count",
+   ".seq-style",
+   ".shuffle",
+   "#scale-title",
+   ".sheetlabel",
+   "#scale-refusal",
+   "#scale-msg",
+   "#scale-guidance #scale-layout-state",
+   "#scale-generate, #scale-next",
+   "#scale-tabs [role=tab]",
+   "#scale-or span",
+   "#scale-field-msg",
+   ".panghost",
+   "#scale-fine-toggle",
+   "#scale-del-note",
+   "#scale-delete",
+   ".announce",
+   "#about",
+   "#about h4"
+  ],
+  "action": "already on token",
+  "target": "ui (\"Nunito Sans\", system-ui, sans-serif)",
+  "why": "21 app rules use the short form in font: shorthand (no fallback) - normalise via one --font-ui var.",
+  "pins": "none"
+ },
+ {
+  "kind": "colour",
+  "zone": "chrome",
+  "value": "#eae6df",
+  "count": 19,
+  "where": {
+   "app": 16,
+   "scale pages": 1,
+   "scales hub": 1,
+   "handpan-101": 1
+  },
+  "selectors": [
+   "body {color}",
+   "#share-url {color}",
+   "button.nav {color}",
+   ".seq-style b {color}",
+   ".shuffle.reroll {color}",
+   "#scale-title {color}",
+   "#scale-box {color}",
+   "#scale-name {color}",
+   "#scale-plate-band #scale-layout-hint {color}",
+   "#scale-fields input {color}",
+   ".shuffle:active {color}",
+   "#scale-fine-toggle:active, #scale-delete:active {color}",
+   "#scale-tabs [role=tab]:active {color}",
+   "#scale-delete[data-armed]:active {color}",
+   "#about {color}",
+   "#about h2 {color}",
+   ".prog .nav label {color}",
+   ":root {--fg}"
+  ],
+  "action": "change to token",
+  "target": "text-primary #F6F4ED",
+  "why": "CONFLICT 2. Body text: body, About, inputs, nav arrows, sheet text, scale-page nav, hub/h101 --fg.",
+  "pins": "test_scale_pages.py SHARED_ROOT + About regex; test_handpan_101_page.py contrast loop; e2e.test.js armed-delete press rgb(234,230,223); 11 mutants"
+ },
+ {
+  "kind": "colour",
+  "zone": "chrome",
+  "value": "#211d16",
+  "count": 7,
+  "where": {
+   "app": 6,
+   "scale pages": 1
+  },
+  "selectors": [
+   "#share-copy:disabled:active {background}",
+   ".mode {background}",
+   "#share-url {background}",
+   ".prints button, .prints select, #lang-select {background}",
+   "button.nav {background}",
+   ".shuffle.reroll {background}",
+   ".prog .nav label {background}"
+  ],
+  "action": "change to token",
+  "target": "surface #1A1814",
+  "why": "Buttons: .mode, nav arrows, prints, share-url, reroll, scale-page nav label.",
+  "pins": "test_scale_pages.py \"background:#211d16\" (scale nav); app.test.js #share-copy:disabled:active; 5 mutants"
+ },
+ {
+  "kind": "font-family",
+  "zone": "chrome",
+  "value": "Marcellus",
+  "count": 12,
+  "where": {
+   "app": 5,
+   "scale pages": 3,
+   "scales hub": 2,
+   "handpan-101": 2
+  },
+  "selectors": [
+   "h1",
+   ".panel-heading",
+   ".count.seq",
+   "#about h2",
+   "#about h3",
+   "h2",
+   ".rail"
+  ],
+  "action": "already on token",
+  "target": "display (Marcellus, \"Cormorant Garamond\", Georgia, serif)",
+  "why": "h1, panel heading, progression rail, About/page headings.",
+  "pins": "test_scale_pages.py regexes pin \"Marcellus,serif\" / \"\\\"Marcellus\\\", serif\" text"
+ },
+ {
+  "kind": "font-size",
+  "zone": "chrome",
+  "value": "clamp(20px,5.5vw,27px)",
+  "count": 1,
+  "where": {
+   "app": 1
+  },
+  "selectors": [
+   "h1"
+  ],
+  "action": "change to token",
+  "target": "wordmark-header 24px (lockup)",
+  "why": "App h1; becomes the horizontal lockup, text visually hidden.",
+  "pins": "none"
+ },
+ {
+  "kind": "letter-spacing",
+  "zone": "chrome",
+  "value": ".04em",
+  "count": 1,
+  "where": {
+   "app": 1
+  },
+  "selectors": [
+   "h1"
+  ],
+  "action": "drop",
+  "target": "-",
+  "why": "App h1 (becomes lockup).",
+  "pins": "none"
+ },
+ {
+  "kind": "colour",
+  "zone": "chrome",
+  "value": "#f4f0e8",
+  "count": 1,
+  "where": {
+   "app": 1
+  },
+  "selectors": [
+   "h1 {color}"
+  ],
+  "action": "merge",
+  "target": "text-primary #F6F4ED",
+  "why": "App h1 colour; the h1 becomes the lockup (visually hidden text).",
+  "pins": "none (test_icons hit is unrelated)"
+ },
+ {
+  "kind": "colour",
+  "zone": "chrome",
+  "value": "#000",
+  "count": 2,
+  "where": {
+   "app": 2
+  },
+  "selectors": [
+   ".decks {-webkit-mask-image}",
+   ".decks {mask-image}"
+  ],
+  "action": "keep (not a brand value)",
+  "target": "-",
+  "why": "mask-image stop for the chip row fade (alpha only).",
+  "pins": "none"
+ },
+ {
+  "kind": "radius",
+  "zone": "chrome",
+  "value": "999px",
+  "count": 2,
+  "where": {
+   "app": 2
+  },
+  "selectors": [
+   ".chip",
+   ".chip.on"
+  ],
+  "action": "already on token",
+  "target": "radius-pill",
+  "why": ".chip.",
+  "pins": "none"
+ },
+ {
+  "kind": "font-size",
+  "zone": "chrome",
+  "value": "11px",
+  "count": 2,
+  "where": {
+   "app": 2
+  },
+  "selectors": [
+   ".chip",
+   ".count"
+  ],
+  "action": "change to token",
+  "target": "chip -> chip-label 13px; .count -> caption 12px",
+  "why": ".chip and .count.",
+  "pins": "none (chip row scrolls)"
+ },
+ {
+  "kind": "letter-spacing",
+  "zone": "chrome",
+  "value": ".09em",
+  "count": 2,
+  "where": {
+   "app": 2
+  },
+  "selectors": [
+   ".chip",
+   "#scale-title"
+  ],
+  "action": "change to token",
+  "target": "chip -> chip-label .12em; sheet title -> caption .09em",
+  "why": "",
+  "pins": "none"
+ },
+ {
+  "kind": "colour",
+  "zone": "chrome",
+  "value": "#d5cec2",
+  "count": 1,
+  "where": {
+   "app": 1
+  },
+  "selectors": [
+   ".chip {color}"
+  ],
+  "action": "change to token",
+  "target": "text-secondary #A9A39A",
+  "why": "Chip label; tokens.json chip-label on text-secondary (7.1:1 on background).",
+  "pins": "none"
+ },
+ {
+  "kind": "colour",
+  "zone": "chrome",
+  "value": "#272219",
+  "count": 5,
+  "where": {
+   "app": 5
+  },
+  "selectors": [
+   ".chip {background}",
+   ".mode.on {color}",
+   "#settings-trigger[aria-expanded=\"true\"] {color}",
+   "#scale-generate, #scale-next {color}",
+   ".panghost {color}"
+  ],
+  "action": "change to token",
+  "target": "chip bg -> surface #1A1814; ink on cream -> background #0F0E0B",
+  "why": "5 uses: .chip background; dark text on #f1ece1 (.mode.on, generate/next, settings-trigger open, panghost). The SVG pansel-ink use is diagram (locked).",
+  "pins": "app.test.js pansel-ink stroke #272219 (diagram, unchanged); 8 mutants"
+ },
+ {
+  "kind": "font-size",
+  "zone": "chrome",
+  "value": "12px",
+  "count": 10,
+  "where": {
+   "app": 10
+  },
+  "selectors": [
+   ".chip.editable::after",
+   ".seq-style",
+   "#scale-parse",
+   "#scale-refusal",
+   "#scale-msg",
+   "#scale-guidance #scale-layout-state",
+   "#scale-drawer-status",
+   "#scale-field-msg",
+   ".panghost",
+   "#scale-del-note"
+  ],
+  "action": "already on token",
+  "target": "caption 12px",
+  "why": "Messages, parse line, status, seq-style, panghost.",
+  "pins": "none"
+ },
+ {
+  "kind": "radius",
+  "zone": "chrome",
+  "value": "50%",
+  "count": 4,
+  "where": {
+   "app": 4
+  },
+  "selectors": [
+   ".chip .dot",
+   "#scale-swatches .dot::after",
+   ".panghost",
+   "#scale-swipe-cue"
+  ],
+  "action": "keep + new token",
+  "target": "radius-round 50%",
+  "why": "Dots (chip dot, swatch, swipe cue, panghost).",
+  "pins": "none"
+ },
+ {
+  "kind": "colour",
+  "zone": "chrome",
+  "value": "#fff",
+  "count": 4,
+  "where": {
+   "app": 3,
+   "scale pages": 1
+  },
+  "selectors": [
+   ".chip.on {color}",
+   "html,body {background} @@media print",
+   "body {background} @@media print",
+   ".open {color}"
+  ],
+  "action": "change to token",
+  "target": "text-primary #F6F4ED (chip.on label); keep #fff on scale-page light .open; keep #fff in @media print",
+  "why": "4 uses: .chip.on text, scale .open text (light theme), 2 print-only backgrounds.",
+  "pins": "test_scale_pages.py accents vs #ffffff >=4.5 (light .open)"
+ },
+ {
+  "kind": "colour",
+  "zone": "chrome",
+  "value": "color-mix(insrgb,var(--dgb)55%,transparent)",
+  "count": 1,
+  "where": {
+   "app": 1
+  },
+  "selectors": [
+   ".chip.on {box-shadow}"
+  ],
+  "action": "drop",
+  "target": "-",
+  "why": "Active-chip 1px tone ring; README: active chip = 1.5px root border + dot.",
+  "pins": "none"
+ },
+ {
+  "kind": "shadow",
+  "zone": "chrome",
+  "value": "box-shadow: 0 0 0 1px color-mix(in srgb, var(--dgb) 55%, transparent)",
+  "count": 1,
+  "where": {
+   "app": 1
+  },
+  "selectors": [
+   ".chip.on"
+  ],
+  "action": "drop",
+  "target": "-",
+  "why": "Active-chip ring; use 1.5px root border only.",
+  "pins": "none"
+ },
+ {
+  "kind": "font-size",
+  "zone": "chrome",
+  "value": "10.5px",
+  "count": 4,
+  "where": {
+   "app": 4
+  },
+  "selectors": [
+   ".panel-note",
+   ".mode",
+   ".prints button, .prints select, #lang-select",
+   "#scale-tabs [role=tab]"
+  ],
+  "action": "keep + new token",
+  "target": "button-label 10.5px / 600 / .08em uppercase",
+  "why": ".mode, tabs, panel-note, prints, lang select.",
+  "pins": "3 mutants"
+ },
+ {
+  "kind": "colour",
+  "zone": "chrome",
+  "value": "#a79d8b",
+  "count": 13,
+  "where": {
+   "app": 13
+  },
+  "selectors": [
+   ".panel-note {color}",
+   ".seq-style {color}",
+   ".shuffle {color}",
+   ".sheetlabel {color}",
+   "#scale-lip::after {background}",
+   ".sheethint {color}",
+   "#scale-tabs [role=tab] {color}",
+   "#scale-or span {color}",
+   "#scale-field-msg.stale {color}",
+   "#scale-fields-note, #scale-line-note {color}",
+   "#scale-fine-toggle {color}",
+   "#scale-delete {color}",
+   "#scale-swatches .dot:active::after {box-shadow}"
+  ],
+  "action": "merge",
+  "target": "text-secondary #A9A39A",
+  "why": "Quieter muted text (13): footer text buttons 9.5px, inactive tabs, panel note, lip pill. Near-identical to A9A39A (6.6 vs 7.1:1).",
+  "pins": "e2e.test.js \"delete link is not #a79d8b\" rgb(167,157,139); 15 mutants"
+ },
+ {
+  "kind": "colour",
+  "zone": "chrome",
+  "value": "#c4bcab",
+  "count": 18,
+  "where": {
+   "app": 16,
+   "scales hub": 1,
+   "handpan-101": 1
+  },
+  "selectors": [
+   ".panel-note a {color}",
+   ".mode {color}",
+   ".panel-heading {color}",
+   ".prints button, .prints select, #lang-select {color}",
+   ".count {color}",
+   ".count.seq {color}",
+   "#scale-parse {color}",
+   "#scale-refusal {color}",
+   "#scale-msg {color}",
+   "#scale-guidance #scale-layout-state {color}",
+   "#scale-drawer-status {color}",
+   "#scale-field-msg.info {color}",
+   ".announce {color}",
+   "#scale-tabs [role=tab].on:active {color}",
+   "#about h4 {color}",
+   "#saved-status {color}",
+   ":root {--muted}"
+  ],
+  "action": "change to token",
+  "target": "text-secondary #A9A39A",
+  "why": "Muted text (18): count, mode labels, messages, About h4, hub/h101 --muted. A9A39A is 7.1:1 on #0F0E0B / 7.08 on surface.",
+  "pins": "test_scale_pages.py SHARED_ROOT + \"#about h4 color:#c4bcab\" regex + contrast loop; test_handpan_101_page.py; e2e.test.js N-A9 notice rgb(196,188,171); 12 mutants"
+ },
+ {
+  "kind": "colour",
+  "zone": "chrome",
+  "value": "#433b2c",
+  "count": 13,
+  "where": {
+   "app": 12,
+   "scale pages": 1
+  },
+  "selectors": [
+   ".mode {border}",
+   "#share-url {border}",
+   "#settings-panel {border-left} @@media (min-width:1024px) and (min-height:700px)",
+   ".prints button, .prints select, #lang-select {border}",
+   "button.nav {border}",
+   ".shuffle.reroll {border}",
+   "#scale-box {border}",
+   "#scale-preview {border}",
+   "#scale-name {border}",
+   "#scale-tabs {border-bottom}",
+   "#scale-or::before, #scale-or::after {background}",
+   "#scale-fields input {border}",
+   ".prog .nav label {border}"
+  ],
+  "action": "change to token",
+  "target": "hairline #3A352D",
+  "why": "1px borders (13): buttons, inputs, settings panel edge, tabs, scale-page nav.",
+  "pins": "test_scale_pages.py \"border:1px solid #433b2c\"; app.test.js reroll border regex; test_handpan_101_page.py assertNotIn (still holds); 10 mutants"
+ },
+ {
+  "kind": "radius",
+  "zone": "chrome",
+  "value": "8px",
+  "count": 9,
+  "where": {
+   "app": 7,
+   "scale pages": 1,
+   "handpan-101": 1
+  },
+  "selectors": [
+   ".mode",
+   "#share-url",
+   ".prints button, .prints select, #lang-select",
+   "#scale-box",
+   "#scale-name",
+   "#scale-plate-band #scale-layout-hint",
+   "#scale-fields input",
+   ".open"
+  ],
+  "action": "already on token",
+  "target": "radius-sm 8px",
+  "why": "Inputs, .mode, prints, share-url, CTAs.",
+  "pins": "none"
+ },
+ {
+  "kind": "letter-spacing",
+  "zone": "chrome",
+  "value": ".08em",
+  "count": 2,
+  "where": {
+   "app": 2
+  },
+  "selectors": [
+   ".mode",
+   ".prints button, .prints select, #lang-select"
+  ],
+  "action": "keep + new token",
+  "target": "button-label .08em",
+  "why": ".mode, prints.",
+  "pins": "none"
+ },
+ {
+  "kind": "colour",
+  "zone": "chrome",
+  "value": "#f1ece1",
+  "count": 19,
+  "where": {
+   "app": 19
+  },
+  "selectors": [
+   ".mode.on {background}",
+   ".mode.on {border-color}",
+   "#settings-trigger[aria-expanded=\"true\"] {background}",
+   "#settings-trigger[aria-expanded=\"true\"] {border-color}",
+   ".prints button:active, .prints select:active, #lang-select:active {color}",
+   ".seq-rail b {color}",
+   ".shuffle.on {color}",
+   "#scale-preview {background}",
+   "#scale-swatches .dot.sel::after {box-shadow}",
+   "#scale-generate, #scale-next {border}",
+   "#scale-generate, #scale-next {background}",
+   "#scale-tabs [role=tab].on {color}",
+   "#scale-tabs [role=tab].on::after {background}",
+   "#scale-generate:disabled:active {background}",
+   "#scale-generate:disabled:active {border-color}",
+   "#scale-swatches .dot.sel:active::after {box-shadow}",
+   "#scale-swipe-cue {border}",
+   "#scale-swipe-cue {color}",
+   "#scale-swipe-cue.armed {background}"
+  ],
+  "action": "keep + new token",
+  "target": "surface-inverse #F1ECE1",
+  "why": "Cream fill (19): .mode.on, primary Generate/Next, swatch ring, scale preview plate.",
+  "pins": "e2e.test.js cream rgb(241,236,225); 14 mutants"
+ },
+ {
+  "kind": "font-size",
+  "zone": "chrome",
+  "value": "16px",
+  "count": 7,
+  "where": {
+   "app": 6,
+   "404": 1
+  },
+  "selectors": [
+   "#share-url",
+   "#scale-box-wrap",
+   "#scale-box",
+   "#scale-name",
+   "#scale-fields input",
+   "#about",
+   "body"
+  ],
+  "action": "keep + new token",
+  "target": "input 16px (and prose 16px for About / 404)",
+  "why": "Form controls: iOS zoom floor; About body.",
+  "pins": "app.test.js iOS >=16px controls + font-size:16px; test_scale_pages.py About \"16px/1.55\" regex"
+ },
+ {
+  "kind": "colour",
+  "zone": "chrome",
+  "value": "rgba(0,0,0,.45)",
+  "count": 1,
+  "where": {
+   "app": 1
+  },
+  "selectors": [
+   "#settings-scrim {background}"
+  ],
+  "action": "keep + new token",
+  "target": "scrim rgba(0,0,0,.45)",
+  "why": "Settings scrim.",
+  "pins": "none"
+ },
+ {
+  "kind": "colour",
+  "zone": "chrome",
+  "value": "#1f1b15",
+  "count": 10,
+  "where": {
+   "app": 10
+  },
+  "selectors": [
+   "#settings-panel {background}",
+   "#scale-sheet {background}",
+   ".sheetsurf {background}",
+   "#scale-sheet.lipped #scale-footslide {background}",
+   "#scale-sheet.lipped #scale-guidance {background}",
+   "#scale-drawer-status {background}",
+   "#scale-drawer-status {box-shadow}",
+   "#scale-plate-band {background}",
+   "#scale-plate-band #scale-layout-hint {background}",
+   "#scale-swipe-cue.armed {color}"
+  ],
+  "action": "change to token",
+  "target": "surface #1A1814",
+  "why": "Sheet, settings panel, plate band, drawer status, lip (10). Surface one step above the new ground.",
+  "pins": "test_scale_pages.py assertNotIn #1f1b15 in About (still holds); 11 mutants"
+ },
+ {
+  "kind": "font-size",
+  "zone": "chrome",
+  "value": "14px",
+  "count": 8,
+  "where": {
+   "app": 2,
+   "scale pages": 3,
+   "scales hub": 1,
+   "handpan-101": 2
+  },
+  "selectors": [
+   ".panel-heading",
+   "#saved-status",
+   ".muted",
+   ".open",
+   ".prog .step"
+  ],
+  "action": "keep + new token",
+  "target": "body-sm 14px",
+  "why": "Saved status, panel heading (Marcellus), page .muted, .open CTA, .step.",
+  "pins": "none"
+ },
+ {
+  "kind": "radius",
+  "zone": "chrome",
+  "value": "0",
+  "count": 2,
+  "where": {
+   "app": 2
+  },
+  "selectors": [
+   "#settings-panel @@media (min-width:1024px) and (min-height:700px)",
+   "#scale-tabs [role=tab]"
+  ],
+  "action": "keep (not a brand value)",
+  "target": "-",
+  "why": "Docked settings panel, tabs.",
+  "pins": "none"
+ },
+ {
+  "kind": "radius",
+  "zone": "card",
+  "value": "12px",
+  "count": 6,
+  "where": {
+   "app": 3,
+   "scale-page card": 3
+  },
+  "selectors": [
+   ".card",
+   ".face",
+   ".face::before",
+   ".flip:focus-visible+.inner"
+  ],
+  "action": "locked (card)",
+  "target": "-",
+  "why": "Card-internal product value (CLAUDE.md \"Design system\" / card anatomy).",
+  "pins": ""
+ },
+ {
+  "kind": "colour",
+  "zone": "card",
+  "value": "rgba(0,0,0,.5)",
+  "count": 2,
+  "where": {
+   "app": 1,
+   "scale-page card": 1
+  },
+  "selectors": [
+   ".face {box-shadow}"
+  ],
+  "action": "locked (card)",
+  "target": "-",
+  "why": "Card-internal product value (CLAUDE.md \"Design system\" / card anatomy).",
+  "pins": ""
+ },
+ {
+  "kind": "colour",
+  "zone": "card",
+  "value": "rgba(0,0,0,.4)",
+  "count": 2,
+  "where": {
+   "app": 1,
+   "scale-page card": 1
+  },
+  "selectors": [
+   ".face {box-shadow}"
+  ],
+  "action": "locked (card)",
+  "target": "-",
+  "why": "Card-internal product value (CLAUDE.md \"Design system\" / card anatomy).",
+  "pins": ""
+ },
+ {
+  "kind": "shadow",
+  "zone": "card",
+  "value": "box-shadow: 0 12px 34px rgba(0,0,0,.5), 0 2px 8px rgba(0,0,0,.4)",
+  "count": 2,
+  "where": {
+   "app": 1,
+   "scale-page card": 1
+  },
+  "selectors": [
+   ".face"
+  ],
+  "action": "locked (card)",
+  "target": "-",
+  "why": "Card-internal product value (CLAUDE.md \"Design system\" / card anatomy).",
+  "pins": ""
+ },
+ {
+  "kind": "colour",
+  "zone": "card",
+  "value": "#000",
+  "count": 2,
+  "where": {
+   "app": 2
+  },
+  "selectors": [
+   ".face::before {-webkit-mask}"
+  ],
+  "action": "locked (card)",
+  "target": "-",
+  "why": "Card-internal product value (CLAUDE.md \"Design system\" / card anatomy).",
+  "pins": ""
+ },
+ {
+  "kind": "font-size",
+  "zone": "card",
+  "value": "9px",
+  "count": 5,
+  "where": {
+   "app": 2,
+   "scale-page card": 3
+  },
+  "selectors": [
+   ".hdr .l",
+   ".badge",
+   ".front .fdeg"
+  ],
+  "action": "locked (card)",
+  "target": "-",
+  "why": "Card-internal product value (CLAUDE.md \"Design system\" / card anatomy).",
+  "pins": ""
+ },
+ {
+  "kind": "font-family",
+  "zone": "card",
+  "value": "Nunito Sans",
+  "count": 9,
+  "where": {
+   "app": 4,
+   "scale-page card": 5
+  },
+  "selectors": [
+   ".hdr .l",
+   ".hdr .r",
+   ".hint",
+   ".badge",
+   ".front .fdeg",
+   ".card"
+  ],
+  "action": "locked (card)",
+  "target": "-",
+  "why": "Card-internal product value (CLAUDE.md \"Design system\" / card anatomy).",
+  "pins": ""
+ },
+ {
+  "kind": "letter-spacing",
+  "zone": "card",
+  "value": ".12em",
+  "count": 3,
+  "where": {
+   "app": 1,
+   "scale-page card": 2
+  },
+  "selectors": [
+   ".hdr .l",
+   ".front .fdeg"
+  ],
+  "action": "locked (card)",
+  "target": "-",
+  "why": "Card-internal product value (CLAUDE.md \"Design system\" / card anatomy).",
+  "pins": ""
+ },
+ {
+  "kind": "colour",
+  "zone": "card",
+  "value": "#757575",
+  "count": 2,
+  "where": {
+   "app": 1,
+   "scale-page card": 1
+  },
+  "selectors": [
+   ".hdr .l .num {color}"
+  ],
+  "action": "locked (card)",
+  "target": "-",
+  "why": "Card-internal product value (CLAUDE.md \"Design system\" / card anatomy).",
+  "pins": ""
+ },
+ {
+  "kind": "letter-spacing",
+  "zone": "card",
+  "value": ".06em",
+  "count": 2,
+  "where": {
+   "app": 1,
+   "scale-page card": 1
+  },
+  "selectors": [
+   ".hdr .l .deg"
+  ],
+  "action": "locked (card)",
+  "target": "-",
+  "why": "Card-internal product value (CLAUDE.md \"Design system\" / card anatomy).",
+  "pins": ""
+ },
+ {
+  "kind": "font-size",
+  "zone": "card",
+  "value": "8px",
+  "count": 2,
+  "where": {
+   "app": 1,
+   "scale-page card": 1
+  },
+  "selectors": [
+   ".hdr .r"
+  ],
+  "action": "locked (card)",
+  "target": "-",
+  "why": "Card-internal product value (CLAUDE.md \"Design system\" / card anatomy).",
+  "pins": ""
+ },
+ {
+  "kind": "letter-spacing",
+  "zone": "card",
+  "value": ".11em",
+  "count": 2,
+  "where": {
+   "app": 1,
+   "scale-page card": 1
+  },
+  "selectors": [
+   ".hdr .r"
+  ],
+  "action": "locked (card)",
+  "target": "-",
+  "why": "Card-internal product value (CLAUDE.md \"Design system\" / card anatomy).",
+  "pins": ""
+ },
+ {
+  "kind": "colour",
+  "zone": "chrome",
+  "value": "#2a251c",
+  "count": 1,
+  "where": {
+   "app": 1
+  },
+  "selectors": [
+   ".prints button:hover, .prints button:focus-visible, .prints select:hover, .prints select:focus-visible, #lang-select:hover, #lang-select:focus-visible {background}"
+  ],
+  "action": "merge",
+  "target": "surface-pressed",
+  "why": "prints hover/focus.",
+  "pins": "3 mutants"
+ },
+ {
+  "kind": "font-family",
+  "zone": "card",
+  "value": "Marcellus",
+  "count": 2,
+  "where": {
+   "app": 1,
+   "scale-page card": 1
+  },
+  "selectors": [
+   ".bigname",
+   ".front .fname"
+  ],
+  "action": "locked (card)",
+  "target": "-",
+  "why": "Card-internal product value (CLAUDE.md \"Design system\" / card anatomy).",
+  "pins": ""
+ },
+ {
+  "kind": "colour",
+  "zone": "card",
+  "value": "#545454",
+  "count": 1,
+  "where": {
+   "app": 1
+  },
+  "selectors": [
+   ".bigname {color}"
+  ],
+  "action": "locked (card)",
+  "target": "-",
+  "why": "Card-internal product value (CLAUDE.md \"Design system\" / card anatomy).",
+  "pins": ""
+ },
+ {
+  "kind": "font-size",
+  "zone": "card",
+  "value": ".5em",
+  "count": 1,
+  "where": {
+   "app": 1
+  },
+  "selectors": [
+   ".bigname sup"
+  ],
+  "action": "locked (card)",
+  "target": "-",
+  "why": "Card-internal product value (CLAUDE.md \"Design system\" / card anatomy).",
+  "pins": ""
+ },
+ {
+  "kind": "font-size",
+  "zone": "card",
+  "value": "9.5px",
+  "count": 1,
+  "where": {
+   "app": 1
+  },
+  "selectors": [
+   ".hint"
+  ],
+  "action": "locked (card)",
+  "target": "-",
+  "why": "Card-internal product value (CLAUDE.md \"Design system\" / card anatomy).",
+  "pins": ""
+ },
+ {
+  "kind": "letter-spacing",
+  "zone": "card",
+  "value": ".14em",
+  "count": 3,
+  "where": {
+   "app": 2,
+   "scale-page card": 1
+  },
+  "selectors": [
+   ".hint",
+   ".badge"
+  ],
+  "action": "locked (card)",
+  "target": "-",
+  "why": "Card-internal product value (CLAUDE.md \"Design system\" / card anatomy).",
+  "pins": ""
+ },
+ {
+  "kind": "colour",
+  "zone": "card",
+  "value": "#6f6658",
+  "count": 1,
+  "where": {
+   "app": 1
+  },
+  "selectors": [
+   ".hint {color}"
+  ],
+  "action": "locked (card)",
+  "target": "-",
+  "why": "Card-internal product value (CLAUDE.md \"Design system\" / card anatomy).",
+  "pins": ""
+ },
+ {
+  "kind": "colour",
+  "zone": "card",
+  "value": "#e27005",
+  "count": 7,
+  "where": {
+   "app": 1,
+   "scale-page card": 1,
+   "app diagram JS": 5
+  },
+  "selectors": [
+   ".badge {color}",
+   "bottom U-labels; pansel/panarm/panseat/panflash strokes [app diagram JS]"
+  ],
+  "action": "locked (card)",
+  "target": "-",
+  "why": "Card-internal product value (CLAUDE.md \"Design system\" / card anatomy).",
+  "pins": ""
+ },
+ {
+  "kind": "font-family",
+  "zone": "card",
+  "value": "Bitter",
+  "count": 4,
+  "where": {
+   "app": 2,
+   "scale-page card": 2
+  },
+  "selectors": [
+   ".notesline",
+   ".numline"
+  ],
+  "action": "locked (card)",
+  "target": "-",
+  "why": "Card-internal product value (CLAUDE.md \"Design system\" / card anatomy).",
+  "pins": ""
+ },
+ {
+  "kind": "font-size",
+  "zone": "card",
+  "value": "clamp(12px,4.4vw,19px)",
+  "count": 1,
+  "where": {
+   "app": 1
+  },
+  "selectors": [
+   ".notesline"
+  ],
+  "action": "locked (card)",
+  "target": "-",
+  "why": "Card-internal product value (CLAUDE.md \"Design system\" / card anatomy).",
+  "pins": ""
+ },
+ {
+  "kind": "font-size",
+  "zone": "card",
+  "value": "clamp(12px,4.2vw,18px)",
+  "count": 1,
+  "where": {
+   "app": 1
+  },
+  "selectors": [
+   ".numline"
+  ],
+  "action": "locked (card)",
+  "target": "-",
+  "why": "Card-internal product value (CLAUDE.md \"Design system\" / card anatomy).",
+  "pins": ""
+ },
+ {
+  "kind": "font-size",
+  "zone": "card",
+  "value": ".62em",
+  "count": 2,
+  "where": {
+   "app": 1,
+   "scale-page card": 1
+  },
+  "selectors": [
+   ".notesline sub"
+  ],
+  "action": "locked (card)",
+  "target": "-",
+  "why": "Card-internal product value (CLAUDE.md \"Design system\" / card anatomy).",
+  "pins": ""
+ },
+ {
+  "kind": "colour",
+  "zone": "card",
+  "value": "#75707c",
+  "count": 2,
+  "where": {
+   "app": 1,
+   "scale-page card": 1
+  },
+  "selectors": [
+   ".sepc {color}"
+  ],
+  "action": "locked (card)",
+  "target": "-",
+  "why": "Card-internal product value (CLAUDE.md \"Design system\" / card anatomy).",
+  "pins": ""
+ },
+ {
+  "kind": "radius",
+  "zone": "chrome",
+  "value": "10px",
+  "count": 4,
+  "where": {
+   "app": 3,
+   "scale pages": 1
+  },
+  "selectors": [
+   "button.nav",
+   ".shuffle.reroll",
+   "#scale-generate, #scale-next",
+   ".prog .nav label"
+  ],
+  "action": "change to token",
+  "target": "radius-md 12px",
+  "why": "Arrow buttons (button.nav), Generate/Next, reroll, scale-page nav label. README: arrow buttons are radius-md.",
+  "pins": "test_scale_pages.py \"border-radius:10px\"; 3 mutants"
+ },
+ {
+  "kind": "font-size",
+  "zone": "chrome",
+  "value": "18px",
+  "count": 2,
+  "where": {
+   "app": 1,
+   "scale pages": 1
+  },
+  "selectors": [
+   "button.nav",
+   ".nav label::before"
+  ],
+  "action": "keep + new token",
+  "target": "icon-glyph 18px (until line icons replace the arrows)",
+  "why": "button.nav arrow glyph, scale nav ::before.",
+  "pins": "none"
+ },
+ {
+  "kind": "colour",
+  "zone": "chrome",
+  "value": "#2e281e",
+  "count": 3,
+  "where": {
+   "app": 3
+  },
+  "selectors": [
+   "button.nav:active {background}",
+   ".mode:active {background}",
+   ".shuffle.reroll:active {background}"
+  ],
+  "action": "keep + new token",
+  "target": "surface-pressed #2E281E (re-derive one step above surface)",
+  "why": ":active of surface buttons (.mode, nav, reroll).",
+  "pins": "app.test.js \".shuffle.reroll:active{background:#2e281e}\"; 7 mutants"
+ },
+ {
+  "kind": "letter-spacing",
+  "zone": "chrome",
+  "value": ".12em",
+  "count": 2,
+  "where": {
+   "app": 2
+  },
+  "selectors": [
+   ".count",
+   "#scale-generate, #scale-next"
+  ],
+  "action": "already on token",
+  "target": "chip-label .12em",
+  "why": "Generate/Next, .count.",
+  "pins": "none"
+ },
+ {
+  "kind": "font-size",
+  "zone": "chrome",
+  "value": "20px",
+  "count": 4,
+  "where": {
+   "app": 1,
+   "scale pages": 3
+  },
+  "selectors": [
+   ".count.seq",
+   "section.plain h2,section.history h2",
+   "section.related h2,section.group h2",
+   ".rail"
+  ],
+  "action": "keep + new token",
+  "target": "progression-sm 20px (board progression 32px at >=640px)",
+  "why": ".count.seq / .rail chord rail, page section h2.",
+  "pins": "e2e.test.js rail Marcellus >= 18px; 7 mutants"
+ },
+ {
+  "kind": "letter-spacing",
+  "zone": "chrome",
+  "value": ".02em",
+  "count": 2,
+  "where": {
+   "app": 1,
+   "scale pages": 1
+  },
+  "selectors": [
+   ".count.seq",
+   ".rail"
+  ],
+  "action": "keep + new token",
+  "target": "progression .02em (add letterSpacing to the token)",
+  "why": "Rail / count.seq.",
+  "pins": "2 mutants"
+ },
+ {
+  "kind": "font-size",
+  "zone": "chrome",
+  "value": "11.5px",
+  "count": 4,
+  "where": {
+   "app": 4
+  },
+  "selectors": [
+   "footer.seq .seq-style @@media (max-height:520px)",
+   "#scale-generate, #scale-next",
+   ".sheethint",
+   ".announce"
+  ],
+  "action": "merge",
+  "target": "caption 12px",
+  "why": "Generate/Next, announce, sheethint, seq-style (footer.seq).",
+  "pins": "3 mutants"
+ },
+ {
+  "kind": "font-size",
+  "zone": "chrome",
+  "value": "9.5px",
+  "count": 5,
+  "where": {
+   "app": 5
+  },
+  "selectors": [
+   ".shuffle",
+   ".sheetlabel",
+   "#scale-or span",
+   "#scale-fine-toggle",
+   "#scale-delete"
+  ],
+  "action": "keep + new token",
+  "target": "label-xs 9.5px / 600 / .13em uppercase",
+  "why": "Footer text buttons, sheet labels, OR divider, shuffle. Below the board's 11px floor; keep for fit (phone landscape).",
+  "pins": "e2e.test.js 9.5px footer AA comment (contrast 4.5 floor)"
+ },
+ {
+  "kind": "letter-spacing",
+  "zone": "chrome",
+  "value": ".13em",
+  "count": 6,
+  "where": {
+   "app": 6
+  },
+  "selectors": [
+   ".shuffle",
+   ".sheetlabel",
+   "#scale-tabs [role=tab]",
+   "#scale-or span",
+   "#scale-fine-toggle",
+   "#scale-delete"
+  ],
+  "action": "keep + new token",
+  "target": "label-xs .13em",
+  "why": "Micro uppercase labels (6).",
+  "pins": "none"
+ },
+ {
+  "kind": "colour",
+  "zone": "chrome",
+  "value": "#e3b25c",
+  "count": 13,
+  "where": {
+   "app": 11,
+   "scales hub": 1,
+   "handpan-101": 1
+  },
+  "selectors": [
+   ":focus-visible {outline}",
+   "#scale-msg.warn, .announce.warn {color}",
+   "#scale-drawer-status.warn {color}",
+   "#scale-layout-state {color}",
+   "#scale-field-msg {color}",
+   "#scale-fields.stale input, #scale-box.stale {text-decoration-color}",
+   "#scale-fields.stale #scale-fields-note {color}",
+   "#scale-del-note {color}",
+   "#scale-delete[data-armed] {color}",
+   "#about h3 {color}",
+   "#about a {color}",
+   ":root {--r}"
+  ],
+  "action": "keep + new token",
+  "target": "signal #E3B25C (board accent-gold #F5C78E stays mark-only)",
+  "why": "CONFLICT 1. Focus ring, links, About h3, warn/stale/armed states, hub/h101 --r and gold CTA.",
+  "pins": "e2e.test.js focus ring rgb(227,178,92) x3 + warn/armed x2; test_scale_pages.py SHARED_ROOT + About h3/a regex + contrast; test_handpan_101_page.py --r; 6 mutants"
+ },
+ {
+  "kind": "font-size",
+  "zone": "chrome",
+  "value": "13px",
+  "count": 2,
+  "where": {
+   "app": 2
+  },
+  "selectors": [
+   "#scale-title",
+   "#about h4"
+  ],
+  "action": "change to token",
+  "target": "chip-label 13px",
+  "why": "About h4, sheet title.",
+  "pins": "none"
+ },
+ {
+  "kind": "font-family",
+  "zone": "chrome",
+  "value": "Bitter",
+  "count": 7,
+  "where": {
+   "app": 7
+  },
+  "selectors": [
+   "#scale-box-wrap",
+   "#scale-box",
+   "#scale-parse",
+   "#scale-name",
+   ".sheethint",
+   "#scale-drawer-status",
+   "#scale-fields input"
+  ],
+  "action": "already on token",
+  "target": "notes (Bitter, Georgia, serif)",
+  "why": "Sheet scale entry (box, fields, name, parse line, hint).",
+  "pins": "none"
+ },
+ {
+  "kind": "colour",
+  "zone": "chrome",
+  "value": "#151310",
+  "count": 3,
+  "where": {
+   "app": 3
+  },
+  "selectors": [
+   "#scale-box {background}",
+   "#scale-name {background}",
+   "#scale-fields input {background}"
+  ],
+  "action": "change to token",
+  "target": "background #0F0E0B",
+  "why": "Input wells (scale box, name, fields): ground colour reads as recessed inside surface.",
+  "pins": "1 mutant"
+ },
+ {
+  "kind": "colour",
+  "zone": "chrome",
+  "value": "#e27005",
+  "count": 5,
+  "where": {
+   "app": 5
+  },
+  "selectors": [
+   "#scale-box.bad {border-color}",
+   "#scale-refusal.err {color}",
+   "#scale-msg.err, .announce.err {color}",
+   "#scale-fields input.bad {border-color}",
+   ".panghost {border}"
+  ],
+  "action": "keep + new token",
+  "target": "signal-error = bottom-orange #E27005 (alias, same value)",
+  "why": "Error border/text, panghost. CLAUDE.md: one orange only.",
+  "pins": "app.test.js pan marks #E27005; test_print.py SPEC_BOTTOM_ACCENT"
+ },
+ {
+  "kind": "radius",
+  "zone": "chrome",
+  "value": "12px",
+  "count": 1,
+  "where": {
+   "app": 1
+  },
+  "selectors": [
+   "#scale-preview"
+  ],
+  "action": "already on token",
+  "target": "radius-md 12px",
+  "why": "#scale-preview.",
+  "pins": "none"
+ },
+ {
+  "kind": "shadow",
+  "zone": "chrome",
+  "value": "filter: grayscale(1)",
+  "count": 1,
+  "where": {
+   "app": 1
+  },
+  "selectors": [
+   "#scale-preview.stale.example"
+  ],
+  "action": "keep (not a brand value)",
+  "target": "-",
+  "why": "Stale example preview state.",
+  "pins": "none"
+ },
+ {
+  "kind": "colour",
+  "zone": "chrome",
+  "value": "#a4c9a0",
+  "count": 1,
+  "where": {
+   "app": 1
+  },
+  "selectors": [
+   "#scale-msg.ok, .announce.ok {color}"
+  ],
+  "action": "keep + new token",
+  "target": "signal-ok #A4C9A0",
+  "why": "Success message.",
+  "pins": "none"
+ },
+ {
+  "kind": "colour",
+  "zone": "chrome",
+  "value": "#332c22",
+  "count": 3,
+  "where": {
+   "app": 3
+  },
+  "selectors": [
+   ".sheetbody {border-bottom}",
+   "#scale-sheet.lipped #scale-footslide {border-top}",
+   ".chip:active {background}"
+  ],
+  "action": "change to token",
+  "target": "hairline #3A352D (borders); surface-pressed (chip:active)",
+  "why": "sheetbody/footslide hairlines + chip press.",
+  "pins": "3 mutants"
+ },
+ {
+  "kind": "radius",
+  "zone": "chrome",
+  "value": "2px",
+  "count": 4,
+  "where": {
+   "app": 1,
+   "scale pages": 1,
+   "scales hub": 1,
+   "handpan-101": 1
+  },
+  "selectors": [
+   "#scale-lip::after",
+   "a:focus-visible"
+  ],
+  "action": "keep + new token",
+  "target": "radius-xs 2px",
+  "why": "Focus outline radius on pages, lip pill bar.",
+  "pins": "none"
+ },
+ {
+  "kind": "shadow",
+  "zone": "chrome",
+  "value": "box-shadow: 0 0 0 2px #f1ece1",
+  "count": 2,
+  "where": {
+   "app": 2
+  },
+  "selectors": [
+   "#scale-swatches .dot.sel::after",
+   "#scale-swatches .dot.sel:active::after"
+  ],
+  "action": "keep + new token",
+  "target": "ring-selected 0 0 0 2px surface-inverse",
+  "why": "Selected palette swatch ring (a ring, not a drop shadow).",
+  "pins": "mutants (e_target_swatch_overlap)"
+ },
+ {
+  "kind": "shadow",
+  "zone": "chrome",
+  "value": "box-shadow: 0 var(--sp-1) 0 #1f1b15",
+  "count": 1,
+  "where": {
+   "app": 1
+  },
+  "selectors": [
+   "#scale-drawer-status"
+  ],
+  "action": "change to token",
+  "target": "0 var(--sp-1) 0 surface",
+  "why": "Solid cover strip under drawer status, not a shadow.",
+  "pins": "none"
+ },
+ {
+  "kind": "colour",
+  "zone": "chrome",
+  "value": "#6f675a",
+  "count": 1,
+  "where": {
+   "app": 1
+  },
+  "selectors": [
+   "#scale-fields input::placeholder, #scale-box::placeholder {color}"
+  ],
+  "action": "keep + new token",
+  "target": "text-placeholder #6F675A",
+  "why": "Input placeholder (3.2:1, placeholder only).",
+  "pins": "none"
+ },
+ {
+  "kind": "colour",
+  "zone": "chrome",
+  "value": "#b3aa98",
+  "count": 1,
+  "where": {
+   "app": 1
+  },
+  "selectors": [
+   "#scale-fields.passive input, #scale-box.passive {color}"
+  ],
+  "action": "merge",
+  "target": "text-secondary #A9A39A",
+  "why": "Passive-path input text. DI test needs >=7:1 vs the sheet: A9A39A on surface #1A1814 = 7.08 (passes, barely).",
+  "pins": "e2e.test.js DI \">= 7:1\" (computed); 1 mutant"
+ },
+ {
+  "kind": "colour",
+  "zone": "chrome",
+  "value": "#4a4233",
+  "count": 1,
+  "where": {
+   "app": 1
+  },
+  "selectors": [
+   "#scale-fields.passive input, #scale-box.passive {border-color}"
+  ],
+  "action": "merge",
+  "target": "hairline #3A352D",
+  "why": "Passive input border.",
+  "pins": "1 mutant"
+ },
+ {
+  "kind": "font-size",
+  "zone": "chrome",
+  "value": "8.5px",
+  "count": 1,
+  "where": {
+   "app": 1
+  },
+  "selectors": [
+   "#scale-sheet.side #scale-fields .sheetlabel"
+  ],
+  "action": "merge",
+  "target": "label-xs",
+  "why": "Side-sheet field label variant.",
+  "pins": "none"
+ },
+ {
+  "kind": "letter-spacing",
+  "zone": "chrome",
+  "value": ".1em",
+  "count": 1,
+  "where": {
+   "app": 1
+  },
+  "selectors": [
+   "#scale-sheet.side #scale-fields .sheetlabel"
+  ],
+  "action": "merge",
+  "target": "label-xs .13em",
+  "why": "Side-sheet label.",
+  "pins": "none"
+ },
+ {
+  "kind": "colour",
+  "zone": "chrome",
+  "value": "rgba(226,112,5,.22)",
+  "count": 2,
+  "where": {
+   "app": 2
+  },
+  "selectors": [
+   ".panghost {background}",
+   "#scale-preview .panhit:active {fill}"
+  ],
+  "action": "keep + new token",
+  "target": "signal-error @22% (alias of bottom-orange)",
+  "why": "panghost / panhit:active fill.",
+  "pins": "app.test.js (SVG) unchanged"
+ },
+ {
+  "kind": "colour",
+  "zone": "chrome",
+  "value": "#ddd7cb",
+  "count": 4,
+  "where": {
+   "app": 4
+  },
+  "selectors": [
+   ".mode.on:active {background}",
+   ".mode.on:active {border-color}",
+   "#scale-generate:active, #scale-next:active {background}",
+   "#scale-generate:active, #scale-next:active {border-color}"
+  ],
+  "action": "keep + new token",
+  "target": "surface-inverse-pressed #DDD7CB",
+  "why": ":active of cream controls.",
+  "pins": "4 mutants"
+ },
+ {
+  "kind": "colour",
+  "zone": "card",
+  "value": "rgba(234,230,223,.22)",
+  "count": 1,
+  "where": {
+   "app": 1
+  },
+  "selectors": [
+   ".card:active {box-shadow}"
+  ],
+  "action": "locked (card)",
+  "target": "-",
+  "why": "Card-internal product value (CLAUDE.md \"Design system\" / card anatomy).",
+  "pins": ""
+ },
+ {
+  "kind": "shadow",
+  "zone": "card",
+  "value": "box-shadow: 0 0 0 3px rgba(234,230,223,.22)",
+  "count": 1,
+  "where": {
+   "app": 1
+  },
+  "selectors": [
+   ".card:active"
+  ],
+  "action": "locked (card)",
+  "target": "-",
+  "why": "Card-internal product value (CLAUDE.md \"Design system\" / card anatomy).",
+  "pins": ""
+ },
+ {
+  "kind": "shadow",
+  "zone": "chrome",
+  "value": "box-shadow: 0 0 0 2px #a79d8b",
+  "count": 1,
+  "where": {
+   "app": 1
+  },
+  "selectors": [
+   "#scale-swatches .dot:active::after"
+  ],
+  "action": "change to token",
+  "target": "ring 2px text-secondary",
+  "why": "Swatch press ring.",
+  "pins": "none"
+ },
+ {
+  "kind": "font-size",
+  "zone": "chrome",
+  "value": "clamp(30px,7vw,44px)",
+  "count": 4,
+  "where": {
+   "app": 1,
+   "scale pages": 1,
+   "scales hub": 1,
+   "handpan-101": 1
+  },
+  "selectors": [
+   "#about h2",
+   "h1"
+  ],
+  "action": "keep + new token",
+  "target": "heading-lg clamp(30px,7vw,44px) display",
+  "why": "Page h1, About h2.",
+  "pins": "test_scale_pages.py About h2 regex"
+ },
+ {
+  "kind": "font-size",
+  "zone": "chrome",
+  "value": "24px",
+  "count": 3,
+  "where": {
+   "app": 1,
+   "scales hub": 1,
+   "handpan-101": 1
+  },
+  "selectors": [
+   "#about h3",
+   "h2"
+  ],
+  "action": "keep + new token",
+  "target": "heading-md 24px display",
+  "why": "About h3, hub/h101 h2.",
+  "pins": "test_scale_pages.py About h3 + hub h2 regex"
+ },
+ {
+  "kind": "font-family",
+  "zone": "chrome",
+  "value": "\"nunito sans\", \"hiragino sans\", \"hiragino kaku gothic pron\", \"yu gothic\", \"noto sans cjk jp\", \"noto sans jp\", sans-serif",
+  "count": 1,
+  "where": {
+   "app": 1
+  },
+  "selectors": [
+   ":lang(ja) body, :lang(ja) .mode, :lang(ja) .prints button, :lang(ja) .prints select, :lang(ja) #lang-select, :lang(ja) .panel-note, :lang(ja) .chip"
+  ],
+  "action": "keep + new token",
+  "target": "ui-ja (Latin face first, CJK fallbacks)",
+  "why": ":lang(ja) override for the interface tables.",
+  "pins": "none"
+ },
+ {
+  "kind": "font-family",
+  "zone": "chrome",
+  "value": "marcellus, \"hiragino mincho pron\", \"yu mincho\", \"noto serif cjk jp\", serif",
+  "count": 1,
+  "where": {
+   "app": 1
+  },
+  "selectors": [
+   ":lang(ja) .panel-heading"
+  ],
+  "action": "keep + new token",
+  "target": "display-ja (Latin face first, CJK fallbacks)",
+  "why": ":lang(ja) override for the interface tables.",
+  "pins": "none"
+ },
+ {
+  "kind": "font-family",
+  "zone": "chrome",
+  "value": "\"nunito sans\", \"pingfang tc\", \"microsoft jhenghei\", \"noto sans cjk tc\", \"noto sans tc\", sans-serif",
+  "count": 1,
+  "where": {
+   "app": 1
+  },
+  "selectors": [
+   ":lang(zh-Hant) body, :lang(zh-Hant) .mode, :lang(zh-Hant) .prints button, :lang(zh-Hant) .prints select, :lang(zh-Hant) #lang-select, :lang(zh-Hant) .panel-note, :lang(zh-Hant) .chip"
+  ],
+  "action": "keep + new token",
+  "target": "ui-zh-Hant (Latin face first, CJK fallbacks)",
+  "why": ":lang(zh-Hant) override for the interface tables.",
+  "pins": "none"
+ },
+ {
+  "kind": "font-family",
+  "zone": "chrome",
+  "value": "marcellus, \"pingfang tc\", \"microsoft jhenghei\", \"noto serif cjk tc\", serif",
+  "count": 1,
+  "where": {
+   "app": 1
+  },
+  "selectors": [
+   ":lang(zh-Hant) .panel-heading"
+  ],
+  "action": "keep + new token",
+  "target": "display-zh-Hant (Latin face first, CJK fallbacks)",
+  "why": ":lang(zh-Hant) override for the interface tables.",
+  "pins": "none"
+ },
+ {
+  "kind": "font-family",
+  "zone": "chrome",
+  "value": "\"nunito sans\", \"pingfang sc\", \"microsoft yahei\", \"noto sans cjk sc\", \"noto sans sc\", sans-serif",
+  "count": 1,
+  "where": {
+   "app": 1
+  },
+  "selectors": [
+   ":lang(zh-Hans) body, :lang(zh-Hans) .mode, :lang(zh-Hans) .prints button, :lang(zh-Hans) .prints select, :lang(zh-Hans) #lang-select, :lang(zh-Hans) .panel-note, :lang(zh-Hans) .chip"
+  ],
+  "action": "keep + new token",
+  "target": "ui-zh-Hans (Latin face first, CJK fallbacks)",
+  "why": ":lang(zh-Hans) override for the interface tables.",
+  "pins": "none"
+ },
+ {
+  "kind": "font-family",
+  "zone": "chrome",
+  "value": "marcellus, \"pingfang sc\", \"microsoft yahei\", \"noto serif cjk sc\", serif",
+  "count": 1,
+  "where": {
+   "app": 1
+  },
+  "selectors": [
+   ":lang(zh-Hans) .panel-heading"
+  ],
+  "action": "keep + new token",
+  "target": "display-zh-Hans (Latin face first, CJK fallbacks)",
+  "why": ":lang(zh-Hans) override for the interface tables.",
+  "pins": "none"
+ },
+ {
+  "kind": "font-size",
+  "zone": "chrome",
+  "value": "15px",
+  "count": 1,
+  "where": {
+   "app": 1
+  },
+  "selectors": [
+   "#scale-conflict"
+  ],
+  "action": "already on token",
+  "target": "body 15px",
+  "why": "#scale-conflict.",
+  "pins": "none"
+ },
+ {
+  "kind": "colour",
+  "zone": "chrome",
+  "value": "#2c2619",
+  "count": 1,
+  "where": {
+   "app": 1
+  },
+  "selectors": [
+   "#scale-swipe-cue {background}"
+  ],
+  "action": "merge",
+  "target": "surface-pressed",
+  "why": "swipe-cue disc.",
+  "pins": "1 mutant"
+ },
+ {
+  "kind": "colour",
+  "zone": "chrome",
+  "value": "#fbfaf8",
+  "count": 1,
+  "where": {
+   "scale pages": 1
+  },
+  "selectors": [
+   ":root {--bg}"
+  ],
+  "action": "change to token",
+  "target": "background light #F6F4ED",
+  "why": "Scale pages light --bg. Accents were derived against it (accents()).",
+  "pins": "test_scale_pages.py BG_LIGHT + accent ratio 4.5..4.8 band; test_handpan_101_page.py assertNotIn; 15 frozen fixtures; re-run accents and tools/scale_pages.json"
+ },
+ {
+  "kind": "colour",
+  "zone": "chrome",
+  "value": "#1f2328",
+  "count": 1,
+  "where": {
+   "scale pages": 1
+  },
+  "selectors": [
+   ":root {--fg}"
+  ],
+  "action": "change to token",
+  "target": "text-primary light #0F0E0B",
+  "why": "Scale pages light --fg.",
+  "pins": "15 frozen fixtures only"
+ },
+ {
+  "kind": "colour",
+  "zone": "chrome",
+  "value": "#5d646c",
+  "count": 1,
+  "where": {
+   "scale pages": 1
+  },
+  "selectors": [
+   ":root {--muted}"
+  ],
+  "action": "change to token",
+  "target": "text-secondary light #5E5850",
+  "why": "Scale pages light --muted.",
+  "pins": "15 frozen fixtures only"
+ },
+ {
+  "kind": "colour",
+  "zone": "chrome",
+  "value": "#15181b",
+  "count": 2,
+  "where": {
+   "scale pages": 2
+  },
+  "selectors": [
+   ":root {--bg} @@media (prefers-color-scheme:dark)",
+   ".open {color} @@media (prefers-color-scheme:dark)"
+  ],
+  "action": "change to token",
+  "target": "background #0F0E0B",
+  "why": "Scale pages dark --bg + dark .open text (blue-grey ground, off-brand).",
+  "pins": "test_scale_pages.py BG_DARK + accent ratios; 15 frozen fixtures; re-derive accent_dark"
+ },
+ {
+  "kind": "colour",
+  "zone": "chrome",
+  "value": "#e8eaec",
+  "count": 1,
+  "where": {
+   "scale pages": 1
+  },
+  "selectors": [
+   ":root {--fg} @@media (prefers-color-scheme:dark)"
+  ],
+  "action": "change to token",
+  "target": "text-primary #F6F4ED",
+  "why": "Scale pages dark --fg.",
+  "pins": "15 frozen fixtures only"
+ },
+ {
+  "kind": "colour",
+  "zone": "chrome",
+  "value": "#9aa2aa",
+  "count": 1,
+  "where": {
+   "scale pages": 1
+  },
+  "selectors": [
+   ":root {--muted} @@media (prefers-color-scheme:dark)"
+  ],
+  "action": "change to token",
+  "target": "text-secondary #A9A39A",
+  "why": "Scale pages dark --muted.",
+  "pins": "15 frozen fixtures only"
+ },
+ {
+  "kind": "font-size",
+  "zone": "chrome",
+  "value": "26px",
+  "count": 1,
+  "where": {
+   "scale pages": 1
+  },
+  "selectors": [
+   "h2"
+  ],
+  "action": "merge",
+  "target": "heading-md 24px",
+  "why": "Scale page h2.",
+  "pins": "none"
+ },
+ {
+  "kind": "letter-spacing",
+  "zone": "chrome",
+  "value": ".06em",
+  "count": 3,
+  "where": {
+   "scale pages": 2,
+   "handpan-101": 1
+  },
+  "selectors": [
+   ".open",
+   ".prog .step"
+  ],
+  "action": "merge",
+  "target": "button-label .08em",
+  "why": "Page .open CTA, .step.",
+  "pins": "2 mutants"
+ },
+ {
+  "kind": "radius",
+  "zone": "chrome",
+  "value": "4px",
+  "count": 1,
+  "where": {
+   "scale pages": 1
+  },
+  "selectors": [
+   ".prog .step"
+  ],
+  "action": "merge",
+  "target": "radius-sm 8px",
+  "why": ".prog .step badge on scale pages.",
+  "pins": "none"
+ },
+ {
+  "kind": "font-size",
+  "zone": "chrome",
+  "value": "0",
+  "count": 1,
+  "where": {
+   "scale pages": 1
+  },
+  "selectors": [
+   ".prog .nav label"
+  ],
+  "action": "keep (not a brand value)",
+  "target": "-",
+  "why": "Text-hiding trick on scale nav label.",
+  "pins": "test_scale_pages.py font-size:0"
+ },
+ {
+  "kind": "colour",
+  "zone": "card",
+  "value": "#fff",
+  "count": 1,
+  "where": {
+   "scale-page card": 1
+  },
+  "selectors": [
+   ".front,.card {background}"
+  ],
+  "action": "locked (card)",
+  "target": "-",
+  "why": "Card-internal product value (CLAUDE.md \"Design system\" / card anatomy).",
+  "pins": ""
+ },
+ {
+  "kind": "font-size",
+  "zone": "card",
+  "value": "44px",
+  "count": 1,
+  "where": {
+   "scale-page card": 1
+  },
+  "selectors": [
+   ".front .fname"
+  ],
+  "action": "locked (card)",
+  "target": "-",
+  "why": "Card-internal product value (CLAUDE.md \"Design system\" / card anatomy).",
+  "pins": ""
+ },
+ {
+  "kind": "font-size",
+  "zone": "card",
+  "value": "19px",
+  "count": 1,
+  "where": {
+   "scale-page card": 1
+  },
+  "selectors": [
+   ".notesline"
+  ],
+  "action": "locked (card)",
+  "target": "-",
+  "why": "Card-internal product value (CLAUDE.md \"Design system\" / card anatomy).",
+  "pins": ""
+ },
+ {
+  "kind": "font-size",
+  "zone": "card",
+  "value": "18px",
+  "count": 1,
+  "where": {
+   "scale-page card": 1
+  },
+  "selectors": [
+   ".numline"
+  ],
+  "action": "locked (card)",
+  "target": "-",
+  "why": "Card-internal product value (CLAUDE.md \"Design system\" / card anatomy).",
+  "pins": ""
+ },
+ {
+  "kind": "colour",
+  "zone": "chrome",
+  "value": "#3a342b",
+  "count": 1,
+  "where": {
+   "handpan-101": 1
+  },
+  "selectors": [
+   ":root {--rule}"
+  ],
+  "action": "change to token",
+  "target": "hairline #3A352D",
+  "why": "handpan-101 --rule (section rule).",
+  "pins": "none"
+ },
+ {
+  "kind": "font-family",
+  "zone": "chrome",
+  "value": "system-ui",
+  "count": 1,
+  "where": {
+   "404": 1
+  },
+  "selectors": [
+   "body"
+  ],
+  "action": "change to token",
+  "target": "ui",
+  "why": "404 body.",
+  "pins": "none"
+ },
+ {
+  "kind": "colour",
+  "zone": "chrome",
+  "value": "#222",
+  "count": 1,
+  "where": {
+   "404": 1
+  },
+  "selectors": [
+   "body {color}"
+  ],
+  "action": "change to token",
+  "target": "text-primary (adopt shared dark head)",
+  "why": "404 text on default white.",
+  "pins": "none"
+ },
+ {
+  "kind": "colour",
+  "zone": "chrome",
+  "value": "#2563b0",
+  "count": 1,
+  "where": {
+   "404": 1
+  },
+  "selectors": [
+   "a {color}"
+  ],
+  "action": "change to token",
+  "target": "signal #E3B25C (adopt shared dark head)",
+  "why": "404 link uses the Kurd palette blue.",
+  "pins": "none"
+ },
+ {
+  "kind": "spacing",
+  "zone": "chrome",
+  "value": "10px",
+  "count": 9,
+  "where": {
+   "app": 4,
+   "scale pages": 4,
+   "handpan-101": 1
+  },
+  "selectors": [
+   "body {padding}",
+   "#share-url {padding}",
+   "#scale-plate-band #scale-layout-hint {padding}",
+   "#scale-conflict-separate,#saved-temporary-use {padding}",
+   ".open.ghost {padding}",
+   "dl.who {gap}",
+   ".prog {gap}",
+   ".prog .slot {gap}",
+   "a.res {padding}"
+  ],
+  "action": "change to token",
+  "target": "sp-2 (pages) / keep 10px body top inset",
+  "why": "App body inset, scale pages .prog gap, share-url.",
+  "pins": "none"
+ },
+ {
+  "kind": "spacing",
+  "zone": "chrome",
+  "value": "12px",
+  "count": 15,
+  "where": {
+   "app": 9,
+   "scale pages": 3,
+   "handpan-101": 3
+  },
+  "selectors": [
+   "body {padding}",
+   "#settings-panel {padding}",
+   "#scale-box-wrap::after {padding}",
+   "#scale-box {padding}",
+   "#scale-name {padding}",
+   "#scale-delete {padding}",
+   "#scale-conflict {margin}",
+   "section.scale {gap}",
+   ".ctas {gap}",
+   ".open {padding}",
+   ".ctas {margin}",
+   ".ctas a.open.ghost {padding}"
+  ],
+  "action": "keep + new token",
+  "target": "pad-button 12px (CTAs, inputs) / body side inset",
+  "why": "15 uses.",
+  "pins": "none"
+ },
+ {
+  "kind": "spacing",
+  "zone": "chrome",
+  "value": "var(--sp-3)",
+  "count": 39,
+  "where": {
+   "app": 39
+  },
+  "selectors": [
+   "header {margin-bottom}",
+   "#settings-panel {padding}",
+   "#settings-panel {gap}",
+   "#settings-panel:has(#panel-seq-note:not([hidden]), #deck-restore:not([hidden])) > .panel-col {row-gap}",
+   "#settings-panel:has(#panel-seq-note:not([hidden]), #deck-restore:not([hidden])) {row-gap}",
+   "#settings-panel {row-gap}",
+   "#settings-panel > .panel-col {row-gap}",
+   "header {gap}",
+   "footer {margin-top}",
+   ".sheetsurf {padding}",
+   ".sheethead {gap}",
+   ".sheetbody {gap}",
+   "#scale-box-wrap::after {padding}",
+   "#scale-box {padding}",
+   ".ctlrow {gap}",
+   "#scale-sheet.lipped #scale-foot {margin-top}",
+   "#scale-box, #scale-name {padding}",
+   ".sheetsurf {gap}",
+   "#scale-guidance {margin-block}",
+   "#scale-name {padding}",
+   "#scale-drawer-status {margin-top}",
+   "#scale-tabs [role=tab] {padding}",
+   "#scale-panel-scale, #scale-panel-layout {gap}",
+   "#scale-or {gap}",
+   "#scale-sheet[data-tab=\"layout\"] .sheetbody {column-gap}",
+   "#scale-sheet[data-tab=\"layout\"] #scale-layout-zone {margin-top}",
+   "#scale-sheet[data-tab=\"layout\"] #scale-panel-layout > .editrow {margin-top}",
+   "#scale-fields input {padding}",
+   "#scale-sheet.short .sheetsurf {padding}",
+   "#scale-sheet.short #scale-box, #scale-sheet.short #scale-box-wrap::after {padding}",
+   "#scale-sheet.tiny .sheetsurf {padding-inline}",
+   ".abouthead {gap}",
+   ".abouthead {padding-top}",
+   ".abouthead {padding-bottom}"
+  ],
+  "action": "already on token",
+  "target": "sp-3",
+  "why": "",
+  "pins": "none"
+ },
+ {
+  "kind": "spacing",
+  "zone": "chrome",
+  "value": "var(--sp-2)",
+  "count": 30,
+  "where": {
+   "app": 30
+  },
+  "selectors": [
+   ".hrow {gap}",
+   ".hrow {margin-bottom}",
+   ".decks {gap}",
+   ".modebar {gap}",
+   ".tierbar {gap}",
+   "#settings-panel:has(#panel-seq-note:not([hidden])):has(#deck-restore:not([hidden])) > .panel-col {row-gap}",
+   "#settings-panel:has(#panel-seq-note:not([hidden])):has(#deck-restore:not([hidden])) {row-gap}",
+   "header {margin-bottom}",
+   ".prints {gap}",
+   "footer {column-gap}",
+   "#scale-parse {margin-top}",
+   "#scale-preview {padding}",
+   "#scale-refusal {margin-top}",
+   ".mirror {gap}",
+   "#scale-guidance {margin-block}",
+   "#scale-sheet.short.lipped #scale-foot {margin-top}",
+   ".sheetbody {gap}",
+   ".sheetsurf {padding-top}",
+   "#scale-layout-zone {gap}",
+   "#scale-drawer {gap}",
+   "#scale-panel-scale, #scale-panel-layout {padding-bottom}",
+   "#scale-sheet[data-tab=\"layout\"] #scale-guidance, #scale-sheet[data-tab=\"layout\"] #scale-next, #scale-sheet[data-tab=\"layout\"] #scale-generate, #scale-sheet[data-tab=\"layout\"] #scale-delete-row, #scale-sheet[data-tab=\"layout\"] #scale-foot {margin-left}",
+   "#scale-fields {gap}",
+   "#scale-sheet.short .sheetsurf {padding}",
+   "#scale-sheet.short .sheetsurf {gap}",
+   "#scale-sheet.short .sheetbody {gap}",
+   "#scale-fine:not([hidden]) {gap}",
+   ".announce {margin-top}"
+  ],
+  "action": "already on token",
+  "target": "sp-2",
+  "why": "",
+  "pins": "none"
+ },
+ {
+  "kind": "spacing",
+  "zone": "chrome",
+  "value": "7px",
+  "count": 3,
+  "where": {
+   "app": 3
+  },
+  "selectors": [
+   ".chip {padding}",
+   ".mode {padding}",
+   ".prints button, .prints select, #lang-select {padding}"
+  ],
+  "action": "keep + new token",
+  "target": "pad-control-y-top 7px (optical, pairs with 6px)",
+  "why": "Chip/mode/prints top padding.",
+  "pins": "none"
+ },
+ {
+  "kind": "spacing",
+  "zone": "chrome",
+  "value": "13px",
+  "count": 1,
+  "where": {
+   "app": 1
+  },
+  "selectors": [
+   ".chip {padding}"
+  ],
+  "action": "merge",
+  "target": "pad-control-x (chip uses 13px; align to 11px or keep)",
+  "why": ".chip horizontal padding.",
+  "pins": "none"
+ },
+ {
+  "kind": "spacing",
+  "zone": "chrome",
+  "value": "6px",
+  "count": 14,
+  "where": {
+   "app": 11,
+   "scale pages": 1,
+   "handpan-101": 2
+  },
+  "selectors": [
+   ".chip {padding}",
+   ".chip.editable::after {margin-left}",
+   ".chip .dot {margin-right}",
+   ".tierbar .mode {padding-inline}",
+   ".mode {padding}",
+   "#settings-panel:not(:has(#panel-seq-note:not([hidden]), #deck-restore:not([hidden]))) .panel-group {margin-bottom}",
+   ".prints button, .prints select, #lang-select {padding}",
+   ".prints #print-download {padding-left}",
+   ".prints #print-download {padding-right}",
+   "#scale-plate-band #scale-layout-hint {padding}",
+   "#about h3 {margin}",
+   ".prog .step {padding}",
+   "h2 {margin}",
+   "dd {margin}"
+  ],
+  "action": "keep + new token",
+  "target": "pad-control-y 6px (component padding, not ramp)",
+  "why": "Chip/mode/print bottom padding, dot margin, About h3.",
+  "pins": "none"
+ },
+ {
+  "kind": "spacing",
+  "zone": "chrome",
+  "value": "var(--sp-1)",
+  "count": 11,
+  "where": {
+   "app": 11
+  },
+  "selectors": [
+   "#panel-prog-heading {margin-top}",
+   ".panel-group {gap}",
+   "#settings-panel:not(:has(#panel-seq-note:not([hidden]), #deck-restore:not([hidden]))) .modebar {row-gap}",
+   "footer.seq {row-gap}",
+   ".fieldrow {gap}",
+   "#scale-parse {margin-top}",
+   "#scale-refusal {margin-top}",
+   ".editrow {gap}",
+   "#scale-plate-band {gap}",
+   "#scale-drawer-status {margin-bottom}",
+   "#scale-plate-band {padding-bottom}"
+  ],
+  "action": "already on token",
+  "target": "sp-1",
+  "why": "",
+  "pins": "none"
+ },
+ {
+  "kind": "spacing",
+  "zone": "chrome",
+  "value": "11px",
+  "count": 2,
+  "where": {
+   "app": 2
+  },
+  "selectors": [
+   ".mode {padding}",
+   ".prints button, .prints select, #lang-select {padding}"
+  ],
+  "action": "keep + new token",
+  "target": "pad-control-x 11px",
+  "why": ".mode / prints horizontal padding.",
+  "pins": "none"
+ },
+ {
+  "kind": "spacing",
+  "zone": "chrome",
+  "value": "-1px",
+  "count": 1,
+  "where": {
+   "app": 1
+  },
+  "selectors": [
+   ".sr-only {margin}"
+  ],
+  "action": "keep (not a brand value)",
+  "target": "-",
+  "why": "sr-only.",
+  "pins": ""
+ },
+ {
+  "kind": "spacing",
+  "zone": "chrome",
+  "value": "56px",
+  "count": 1,
+  "where": {
+   "app": 1
+  },
+  "selectors": [
+   "#settings-panel {padding}"
+  ],
+  "action": "keep (not a brand value)",
+  "target": "-",
+  "why": "Settings panel header clearance (layout).",
+  "pins": ""
+ },
+ {
+  "kind": "spacing",
+  "zone": "chrome",
+  "value": "var(--sp-4)",
+  "count": 13,
+  "where": {
+   "app": 13
+  },
+  "selectors": [
+   "#settings-panel {column-gap}",
+   "#settings-panel .panel-group {margin-bottom}",
+   "#settings-panel:has(#panel-seq-note:not([hidden])):has(#deck-restore:not([hidden])) {column-gap}",
+   "#settings-panel:not(:has(#panel-seq-note:not([hidden]), #deck-restore:not([hidden]))) {column-gap}",
+   "#settings-panel:has(#panel-seq-note:not([hidden]), #deck-restore:not([hidden])) {column-gap}",
+   "#settings-panel {padding}",
+   ".sheetsurf {padding}",
+   ".sheetsurf {gap}",
+   "#scale-guidance {margin-block}",
+   "#scale-sheet.lipped #scale-foot {margin-top}",
+   "#about {padding}"
+  ],
+  "action": "already on token",
+  "target": "sp-4",
+  "why": "",
+  "pins": "none"
+ },
+ {
+  "kind": "spacing",
+  "zone": "chrome",
+  "value": "9px",
+  "count": 6,
+  "where": {
+   "app": 6
+  },
+  "selectors": [
+   "#settings-panel {padding}",
+   "#scale-box, #scale-name {padding}",
+   "#scale-box-wrap::after {padding}",
+   "#scale-fields input {padding}",
+   "#scale-sheet.short #scale-box, #scale-sheet.short #scale-box-wrap::after {padding}"
+  ],
+  "action": "keep + new token",
+  "target": "pad-field 9px",
+  "why": "Input padding.",
+  "pins": "mutants (w1_field_uncapped)"
+ },
+ {
+  "kind": "spacing",
+  "zone": "chrome",
+  "value": "62px",
+  "count": 8,
+  "where": {
+   "app": 8
+  },
+  "selectors": [
+   "#settings-panel {padding}",
+   "#settings-panel:not(:has(#panel-seq-note:not([hidden]), #deck-restore:not([hidden]))) {padding}",
+   "#settings-panel:has(#panel-seq-note:not([hidden]), #deck-restore:not([hidden])) {padding}"
+  ],
+  "action": "keep (not a brand value)",
+  "target": "-",
+  "why": "Settings panel header clearance (layout).",
+  "pins": ""
+ },
+ {
+  "kind": "spacing",
+  "zone": "chrome",
+  "value": "50px",
+  "count": 8,
+  "where": {
+   "app": 8
+  },
+  "selectors": [
+   "#settings-panel {padding}",
+   "#settings-panel:not(:has(#panel-seq-note:not([hidden]), #deck-restore:not([hidden]))) {padding}",
+   "#settings-panel:has(#panel-seq-note:not([hidden]), #deck-restore:not([hidden])) {padding}"
+  ],
+  "action": "keep (not a brand value)",
+  "target": "-",
+  "why": "Settings panel header clearance (layout).",
+  "pins": ""
+ },
+ {
+  "kind": "spacing",
+  "zone": "chrome",
+  "value": "4px",
+  "count": 13,
+  "where": {
+   "app": 8,
+   "scale pages": 3,
+   "scales hub": 1,
+   "handpan-101": 1
+  },
+  "selectors": [
+   "#settings-panel:not(:has(#panel-seq-note:not([hidden]), #deck-restore:not([hidden]))) {padding}",
+   "#settings-panel:has(#panel-seq-note:not([hidden]), #deck-restore:not([hidden])) {padding}",
+   "#settings-panel {padding}",
+   "#scale-fine-toggle {padding}",
+   "#about h4 {margin}",
+   "#about li {margin}",
+   "section.plain h2,section.history h2 {margin}",
+   "section.related h2,section.group h2 {margin}",
+   ".rail {margin-top}",
+   "section.group h2 {margin}",
+   ".src li {margin-bottom}"
+  ],
+  "action": "change to token",
+  "target": "sp-1",
+  "why": "Page h2 margin, rail margin, About li, panel offsets.",
+  "pins": "none"
+ },
+ {
+  "kind": "spacing",
+  "zone": "chrome",
+  "value": "16px",
+  "count": 11,
+  "where": {
+   "app": 3,
+   "scale pages": 3,
+   "scales hub": 1,
+   "handpan-101": 3,
+   "404": 1
+  },
+  "selectors": [
+   "#settings-panel {padding}",
+   "#about {padding}",
+   "body {padding}",
+   "section.scale {padding-top}",
+   ".open {padding}",
+   "section {padding-top}"
+  ],
+  "action": "keep + new token",
+  "target": "gutter 16px (CLAUDE.md phone gutter)",
+  "why": "Page body side padding, About, section padding-top, CTA x-padding.",
+  "pins": "none"
+ },
+ {
+  "kind": "spacing",
+  "zone": "chrome",
+  "value": "1px",
+  "count": 2,
+  "where": {
+   "app": 2
+  },
+  "selectors": [
+   "#scale-sheet.lipped #scale-footslide {padding-top}"
+  ],
+  "action": "keep (not a brand value)",
+  "target": "-",
+  "why": "Hairline offsets.",
+  "pins": "none"
+ },
+ {
+  "kind": "spacing",
+  "zone": "chrome",
+  "value": "0px",
+  "count": 1,
+  "where": {
+   "app": 1
+  },
+  "selectors": [
+   "#scale-sheet.lipped #scale-delete-row {margin-top}"
+  ],
+  "action": "keep (not a brand value)",
+  "target": "-",
+  "why": "",
+  "pins": ""
+ },
+ {
+  "kind": "spacing",
+  "zone": "chrome",
+  "value": "-16px",
+  "count": 1,
+  "where": {
+   "app": 1
+  },
+  "selectors": [
+   "#scale-lip::after {margin-left}"
+  ],
+  "action": "keep (not a brand value)",
+  "target": "-",
+  "why": "Lip pill centring.",
+  "pins": ""
+ },
+ {
+  "kind": "spacing",
+  "zone": "chrome",
+  "value": "-7px",
+  "count": 2,
+  "where": {
+   "app": 2
+  },
+  "selectors": [
+   "#scale-swatches .dot::after {margin}"
+  ],
+  "action": "keep (not a brand value)",
+  "target": "-",
+  "why": "Swatch dot centring.",
+  "pins": ""
+ },
+ {
+  "kind": "spacing",
+  "zone": "chrome",
+  "value": "520px",
+  "count": 3,
+  "where": {
+   "app": 3
+  },
+  "selectors": [
+   "#scale-sheet.tiny .sheetsurf {padding-inline}",
+   "#about {padding}"
+  ],
+  "action": "keep (not a brand value)",
+  "target": "-",
+  "why": "About max-width calc (layout).",
+  "pins": ""
+ },
+ {
+  "kind": "spacing",
+  "zone": "chrome",
+  "value": "14px",
+  "count": 5,
+  "where": {
+   "app": 3,
+   "scale pages": 1,
+   "handpan-101": 1
+  },
+  "selectors": [
+   "#scale-delete {padding}",
+   "#about h4 {margin}",
+   "#scale-conflict-separate,#saved-temporary-use {padding}",
+   ".open.ghost {padding}",
+   ".ctas .open {padding}"
+  ],
+  "action": "change to token",
+  "target": "sp-3",
+  "why": "About h4, conflict buttons, ghost CTA padding.",
+  "pins": "none"
+ },
+ {
+  "kind": "spacing",
+  "zone": "chrome",
+  "value": "48px",
+  "count": 4,
+  "where": {
+   "app": 1,
+   "scale pages": 1,
+   "scales hub": 1,
+   "handpan-101": 1
+  },
+  "selectors": [
+   "#about {padding}",
+   "body {padding}"
+  ],
+  "action": "keep + new token",
+  "target": "page-end 48px",
+  "why": "Page / About bottom padding.",
+  "pins": "none"
+ },
+ {
+  "kind": "spacing",
+  "zone": "chrome",
+  "value": "8px",
+  "count": 5,
+  "where": {
+   "app": 3,
+   "scale pages": 1,
+   "handpan-101": 1
+  },
+  "selectors": [
+   "#about h2 {margin}",
+   "#about p {margin}",
+   "#saved-status {margin}",
+   "dl.who {margin}",
+   "p,ul,ol,dl {margin}"
+  ],
+  "action": "change to token",
+  "target": "sp-2",
+  "why": "About p/h2, saved status, page p margin, dl gap.",
+  "pins": "none"
+ },
+ {
+  "kind": "spacing",
+  "zone": "chrome",
+  "value": "20px",
+  "count": 9,
+  "where": {
+   "app": 2,
+   "scale pages": 2,
+   "scales hub": 1,
+   "handpan-101": 4
+  },
+  "selectors": [
+   "#about h3 {margin}",
+   "#about ol, #about ul {padding-left}",
+   "body {padding}",
+   "ol {padding-left}",
+   "ul,ol {padding-left}",
+   ".ctas {gap}",
+   ".ctas a.open.ghost {padding}"
+  ],
+  "action": "change to token",
+  "target": "sp-3 desktop (20px) on pages; list indent stays 20px",
+  "why": "Pages body top, ol/ul indent, ctas gap.",
+  "pins": "none"
+ },
+ {
+  "kind": "spacing",
+  "zone": "chrome",
+  "value": "28px",
+  "count": 5,
+  "where": {
+   "scale pages": 2,
+   "scales hub": 1,
+   "handpan-101": 2
+  },
+  "selectors": [
+   "main {gap}",
+   ".prog {margin-bottom}",
+   ".ctas {margin}"
+  ],
+  "action": "change to token",
+  "target": "sp-4 desktop (28px)",
+  "why": "Pages main gap, .prog margin.",
+  "pins": "none"
+ },
+ {
+  "kind": "spacing",
+  "zone": "chrome",
+  "value": "2px",
+  "count": 2,
+  "where": {
+   "scale pages": 2
+  },
+  "selectors": [
+   "dl.who {gap}",
+   ".prog .step {padding}"
+  ],
+  "action": "keep (not a brand value)",
+  "target": "-",
+  "why": "Tiny badge padding / dl row gap.",
+  "pins": "none"
+ },
+ {
+  "kind": "spacing",
+  "zone": "chrome",
+  "value": "24px",
+  "count": 1,
+  "where": {
+   "handpan-101": 1
+  },
+  "selectors": [
+   ".ctas {gap}"
+  ],
+  "action": "merge",
+  "target": "sp-4 desktop (28px)",
+  "why": "h101 .ctas column gap.",
+  "pins": "none"
+ },
+ {
+  "kind": "spacing",
+  "zone": "chrome",
+  "value": "22px",
+  "count": 1,
+  "where": {
+   "handpan-101": 1
+  },
+  "selectors": [
+   ".ctas .open {padding}"
+  ],
+  "action": "change to token",
+  "target": "sp-4",
+  "why": "",
+  "pins": ""
+ },
+ {
+  "kind": "colour",
+  "zone": "card",
+  "value": "#272219",
+  "count": 2,
+  "where": {
+   "app diagram JS": 2
+  },
+  "selectors": [
+   "pansel-ink / panfocus SVG stroke (layout editor on the pan diagram) [app diagram JS]"
+  ],
+  "action": "locked (card)",
+  "target": "-",
+  "why": "Card-internal product value (CLAUDE.md \"Design system\" / card anatomy).",
+  "pins": ""
+ },
+ {
+  "kind": "colour",
+  "zone": "card",
+  "value": "#f1ece1",
+  "count": 1,
+  "where": {
+   "app diagram JS": 1
+  },
+  "selectors": [
+   "panveil SVG fill [app diagram JS]"
+  ],
+  "action": "locked (card)",
+  "target": "-",
+  "why": "Card-internal product value (CLAUDE.md \"Design system\" / card anatomy).",
+  "pins": ""
+ },
+ {
+  "kind": "colour",
+  "zone": "card",
+  "value": "rgba(226,112,5,.22)",
+  "count": 2,
+  "where": {
+   "app diagram JS": 2
+  },
+  "selectors": [
+   "pansel/panarm fill [app diagram JS]"
+  ],
+  "action": "locked (card)",
+  "target": "-",
+  "why": "Card-internal product value (CLAUDE.md \"Design system\" / card anatomy).",
+  "pins": ""
+ },
+ {
+  "kind": "colour",
+  "zone": "card",
+  "value": "#242424 #8a8a8a #333 #000 #fff #9e9e9e #e2e2e2",
+  "count": 12,
+  "where": {
+   "app diagram JS": 12
+  },
+  "selectors": [
+   "pan diagram labels, rings, fields (panLabel/drawPan) [app diagram JS]"
+  ],
+  "action": "locked (card)",
+  "target": "-",
+  "why": "Card-internal product value (CLAUDE.md \"Design system\" / card anatomy).",
+  "pins": ""
+ }
+]

@@ -237,6 +237,7 @@
   "sheet.seat_is_now": "{name} ist jetzt {label}",
   "sheet.list_and": "{rest} und {last}",
   "sheet.mirror_reflow": " Die von Dir platzierten Tonfelder bleiben an Ort und Stelle. Ihre Platznummern laufen jetzt andersherum.",
+  "sheet.mirror_keeps_numbers": "Die von Dir platzierten Tonfelder bleiben an Ort und Stelle; die übrigen wechseln die Seite. Die Nummern bleiben, wo sie sind.",
   "sheet.seat_stays": " Platz {label} behält seine Nummer.",
   "sheet.cannot_trade": "Nicht verschoben. {a} und {b} können auf den {step}°-Schritten nicht die Plätze tauschen.",
   "sheet.pick_bottom_one": "{name} ausgewählt. Ziehe das Tonfeld am Ring entlang, um es zu verschieben.",
@@ -283,5 +284,10 @@
   "saved.resetFailure": "Die Standardskalen konnten nicht zurückgesetzt werden. Prüfe sie und versuche es erneut.",
   "saved.ackPending": "Das Speichern wurde abgeschlossen, aber diese Ansicht konnte nicht aktualisiert werden. Lade die Seite neu, um Deine gespeicherten Skalen zu prüfen.",
   "saved.sessionAckPending": "Die Speicherung gilt nur in diesem Tab, und diese Ansicht konnte nicht aktualisiert werden. Lass den Tab offen und behalte Deinen Entwurf. Beim Neuladen oder Schließen gehen vorübergehende Änderungen verloren.",
-  "saved.sessionImportAckPending": "Diese geteilte Skala ist vorübergehend, und ihre Ansicht konnte nicht aktualisiert werden. Lass diesen Tab offen und behalte den eingehenden Link. Beim Neuladen oder Schließen gehen vorübergehende Änderungen verloren."
+  "saved.sessionImportAckPending": "Diese geteilte Skala ist vorübergehend, und ihre Ansicht konnte nicht aktualisiert werden. Lass diesen Tab offen und behalte den eingehenden Link. Beim Neuladen oder Schließen gehen vorübergehende Änderungen verloren.",
+  "move.notice": {
+    "one": "Deine gespeicherte Skala ist hierher umgezogen.",
+    "other": "Deine {n} gespeicherten Skalen sind hierher umgezogen."
+  },
+  "move.failed": "Deine gespeicherten Skalen sind noch unter der alten Adresse. Öffne die alte Adresse erneut, um sie zu verschieben."
 }

@@ -237,6 +237,7 @@
   "sheet.seat_is_now": "{name} occupe maintenant la place {label}",
   "sheet.list_and": "{rest} et {last}",
   "sheet.mirror_reflow": " Les notes placées ne bougent pas, mais leurs places sont maintenant numérotées dans l’autre sens.",
+  "sheet.mirror_keeps_numbers": "Les notes placées ne bougent pas; les autres changent de côté. Les numéros restent où ils sont.",
   "sheet.seat_stays": " La place {label} garde son numéro.",
   "sheet.cannot_trade": "Non déplacées. {a} et {b} ne peuvent pas échanger leurs places sur les pas de {step}°.",
   "sheet.pick_bottom_one": "{name} sélectionnée. Faites-la glisser le long de l’anneau pour la déplacer.",
@@ -283,5 +284,10 @@
   "saved.resetFailure": "Impossible de rétablir les gammes d’origine. Vérifiez-les et réessayez.",
   "saved.ackPending": "L’enregistrement est terminé, mais cette vue n’a pas pu être actualisée. Rechargez la page pour vérifier vos gammes enregistrées.",
   "saved.sessionAckPending": "L’enregistrement reste dans cet onglet uniquement et cette vue n’a pas pu être actualisée. Gardez cet onglet ouvert et conservez votre brouillon. Recharger ou fermer l’onglet efface les modifications temporaires.",
-  "saved.sessionImportAckPending": "Cette gamme partagée est temporaire et sa vue n’a pas pu être actualisée. Gardez cet onglet ouvert et conservez le lien reçu. Recharger ou fermer l’onglet efface les modifications temporaires."
+  "saved.sessionImportAckPending": "Cette gamme partagée est temporaire et sa vue n’a pas pu être actualisée. Gardez cet onglet ouvert et conservez le lien reçu. Recharger ou fermer l’onglet efface les modifications temporaires.",
+  "move.notice": {
+    "one": "Votre gamme enregistrée a déménagé ici.",
+    "other": "Vos {n} gammes enregistrées ont déménagé ici."
+  },
+  "move.failed": "Vos gammes enregistrées sont toujours à l'ancienne adresse. Rouvrez l'ancienne adresse pour les déplacer."
 }
