@@ -55,7 +55,8 @@ row is a failure - add a row (0 is a fine start). Node counts come from
 
 ## Rules
 
-1. **Spec-first.** Derive assertions from `CLAUDE.md`, `docs/plans/`, or user-observable
+1. **Spec-first.** Derive assertions from `CLAUDE.md`, `docs/CARD-SPEC.md`,
+   `docs/ENGINE-SPEC.md`, `docs/plans/`, or user-observable
    behaviour. Never read the implementation and restate it.
 2. **No test file may import a constant from the module it tests.** No
    `from hifi import CW, CH, GX, GY`; no reading geometry out of the sandbox to
@@ -121,6 +122,9 @@ row is a failure - add a row (0 is a fine start). Node counts come from
    with a failing-test repro, not fixed here.
 7. **Assert structure, not styling.** Read colours and fonts from the deck data;
    never hardcode a hex or a font name. A future restyle must not turn tests red.
+8. **Verification style.** Invariant checks over all 177 cards
+   (`tests.test_render_agreement` `test_highlighting_agrees`) plus the DOM-stubbed
+   boot simulation caught real bugs; keep both when refactoring.
 
 ## Traps (each one already bit us)
 
