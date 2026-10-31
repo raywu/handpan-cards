@@ -4,7 +4,7 @@
 // boot order guard, every card in both modes rendering, <svg> presence, deck
 // colours in CSS vars + markup, shuffle toggling, absence of German, 177 cards.
 //
-// Everything asserted here is derived from CLAUDE.md ("verified card conventions",
+// Everything asserted here is derived from docs/CARD-SPEC.md ("verified card conventions",
 // "instrument layouts", "data model") or from user-observable behaviour, never
 // from restating the implementation. Field identities come from the deck data's
 // NOTE NAMES, which is an independent route to the pitch-class rule the app
@@ -155,7 +155,7 @@ async function hashChange(app,hash,options={}) {
 
 /* ------------------------------------------------------------------ helpers */
 
-// Field tuple layout, per CLAUDE.md "Data model":
+// Field tuple layout, per docs/CARD-SPEC.md "Data model":
 // fields{id:[name, octave, midi, zone, angle, label]}
 const F_NAME = 0, F_OCT = 1, F_MIDI = 2, F_ZONE = 3, F_LABEL = 5;
 
@@ -187,7 +187,7 @@ function callWithChord(app, fn, deckId, main) {
 }
 
 /**
- * CLAUDE.md verified convention #1 (pitch-class-complete highlighting), derived
+ * docs/CARD-SPEC.md verified convention #1 (pitch-class-complete highlighting), derived
  * here from note NAMES rather than from midi arithmetic: every field whose note
  * name matches a chord note lights up - ding and bottom notes included - root
  * name in the root colour on ALL its instances, other chord tones in the tone
@@ -283,7 +283,7 @@ test("chordSets: Amara Gsus4 lights the ding as a chord tone", async () => {
   const d = decks(app)[deckIndex(app, "amara")];
   const { blue, green } = callWithChord(app, "chordSets", "amara", "Gsus4");
 
-  // Gsus4 = G + C + D. Amara (CLAUDE.md): ding D3, 1 A3, 2 C4, 3 D4, 4 E4,
+  // Gsus4 = G + C + D. Amara (docs/CARD-SPEC.md): ding D3, 1 A3, 2 C4, 3 D4, 4 E4,
   // 5 F4, 6 G4, 7 A4, 8 C5 -> root G on field 6; tones C on 2 and 8, D on the
   // ding (0) and 3.
   assert.deepStrictEqual(sorted(blue), [6]);
@@ -339,7 +339,7 @@ test("linesHTML keeps chord-spelling order, not pitch order (Amara Fmaj7)", asyn
   const ch = d.chords[chordIndex(d, "Fmaj7")];
   const html = callWithChord(app, "linesHTML", "amara", "Fmaj7");
 
-  // CLAUDE.md convention #2: lines run in chord-spelling order from the root.
+  // docs/CARD-SPEC.md convention #2: lines run in chord-spelling order from the root.
   // Fmaj7 is spelled F4 - A3 - C4 - E4 / 5 - 1 - 2 - 4; pitch order would be
   // A3 - C4 - E4 - F4, which must NOT appear.
   const notes = colouredSpans(block(html, "notesline"));
@@ -706,7 +706,7 @@ test("generation runs once at submit, never inside deck() or render()", async ()
   assert.strictEqual(builds(), 0, "deck() or render() ran select.build again");
 });
 
-// Q17: CLAUDE.md "Known pitfalls" says render()'s empty-order guard
+// Q17: render()'s empty-order guard
 // (index.html ~6378-6379) must stay, because the boot order must not render
 // before the card-order array exists. Driven directly through the sandbox,
 // with an empty `order` never reached through GENERATE or a stored scale
@@ -2884,7 +2884,7 @@ test("pan() with a hit layer adds one hit target per non-ding field, and none fo
  * catch it, because rotating the centres among the targets leaves every one of
  * them on a real field while every tap picks up the neighbouring note. So the
  * centre is re-derived here from the field the target names, out of the deck
- * DATA and the layout convention in CLAUDE.md (math-convention degrees, 0 =
+ * DATA and the layout convention in docs/CARD-SPEC.md (math-convention degrees, 0 =
  * right, 90 = up, y-up), never from the renderer.
  *
  * data-r is checked in the same place because it is the drawn radius the sizer
@@ -3346,7 +3346,7 @@ test("the sheet's text inputs stay at 16px in every rule that sets their size, m
   }
 });
 
-/* Q26: CLAUDE.md "Design system" names the three fonts of the visual system -
+/* Q26: docs/CARD-SPEC.md "Design system" names the three fonts of the visual system -
  * Marcellus for the chord name, Bitter for the note/number lines, Nunito Sans
  * everywhere else (labels/UI, and the page's own body font). Parsed straight
  * out of the CSS text rather than restated as a DOM check, since the sandbox
@@ -7183,7 +7183,7 @@ async function d2Case(ring, n, start, edit) {
 const d2AllRings = [["rim", 20], ["inner", 8], ["bottom", 8]];
 
 /* Rule P. The fixture is D Amara 9's maker string: its rim angles are the
- * verified ones of CLAUDE.md (1 A3 @270 ... 8 C5 @90), so the place word of
+ * verified ones of docs/CARD-SPEC.md (1 A3 @270 ... 8 C5 @90), so the place word of
  * every seat is a literal here. */
 const D2_AMARA = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
 const D2_NOTES = ["A3", "C4", "D4", "E4", "F4", "G4", "A4", "C5"];
@@ -7625,7 +7625,7 @@ test("DR2a item 6 (91): on Edit a changed count resets the rim and the notice sa
 });
 
 /* Rule R (item 8, F1). Pygmy's rim, inner and bottom angles: the first table is
- * CLAUDE.md's anchor-between listing (rim and bottom as verified, inner 128/52),
+ * docs/CARD-SPEC.md's anchor-between listing (rim and bottom as verified, inner 128/52),
  * the second is the engine's anchor-one output for the same maker string. */
 const D2_PYGMY_BETWEEN = { G3: 290, Ab3: 250, C4: 330, Eb4: 210, F4: 10, G4: 170, Ab4: 50, C5: 130, Eb5: 90,
   F5: 128, G5: 52, C3: 300, Db3: 240, Eb3: 0, Bb3: 180, Db4: 60, Ab5: 120 };
