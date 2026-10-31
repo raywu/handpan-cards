@@ -1,4 +1,4 @@
-# kills: an over-cap store still forwards, carrying exactly the largest prefix under MOVE_CAP
+# kills: over-cap store of 116 still forwards, carrying exactly the largest prefix under MOVE_CAP
 # suite: node --test --test-name-pattern=over.cap.store.of.116 tests/app.test.js
 # fault: Restore the old behaviour where an over-cap store returns false and the user stays on the old host.
 diff --git a/index.html b/index.html
