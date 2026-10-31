@@ -3891,7 +3891,7 @@ test("the head carries theme-color and color-scheme meta tags matching --table",
   assert.ok(tableToken, "the --table token itself is missing");
   assert.strictEqual(themeColor[1].toLowerCase(), tableToken[1].toLowerCase(),
     "theme-color does not equal the --table token");
-  assert.strictEqual(themeColor[1].toLowerCase(), "#1a1815");
+  assert.strictEqual(themeColor[1].toLowerCase(), "#0f0e0b");
   assert.match(html, /<meta\s+name="color-scheme"\s+content="dark">/,
     "no <meta name=\"color-scheme\" content=\"dark\"> in the head");
 });
@@ -3966,7 +3966,7 @@ test("the touch icon and the preview image exist and are named once", async () =
     "the PNG rel=icon must reuse apple-touch-icon.png");
   assert.ok(fs.existsSync(path.join(ROOT, touch)), `${touch} missing at the repo root`);
   const og = metaContent(html, "property", "og:image");
-  assert.strictEqual(og, "https://handpan.raywu.org/og.png");
+  assert.strictEqual(og, "https://handpantheory.com/og.png");
   assert.ok(fs.existsSync(path.join(ROOT, "og.png")), "og.png missing at the repo root");
   assert.strictEqual(metaContent(html, "name", "twitter:image"), og);
   assert.strictEqual(metaContent(html, "property", "og:image:width"), "1200");
@@ -4099,7 +4099,7 @@ test("the re-roll control reads as a button in mode S and reverts outside it", a
   app.run('setMode("A")');
   assert.ok(!app.els.shuffle.classList.contains("reroll"), "leaving S must drop .reroll");
   const html = require("node:fs").readFileSync(require("./helpers/sandbox.js").APP, "utf8");
-  assert.match(html, /\.shuffle\.reroll\{[^}]*border:1px solid #433b2c/,
+  assert.match(html, /\.shuffle\.reroll\{[^}]*border:1px solid #3a352d/,
     ".reroll must borrow button.nav's border so it reads as a button");
   assert.match(html, /\.shuffle\.reroll:active\{background:#2e281e\}/,
     ".reroll must press like button.nav:active, not only recolour its text");
@@ -5997,6 +5997,42 @@ test("W1 line 12: MIRROR TOP sets the deck's mirror option and moves the preview
   app.els["scale-mirror"].click();
   assert.strictEqual(pressed(app, "scale-mirror"), true);
   assert.notStrictEqual(app.els["scale-preview"].innerHTML, before);
+});
+
+const MN_KURD = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5";
+const mnNumberLine = (deck, main) => {
+  const chord = deck.chords.find((c) => c.main === main && !c.sup);
+  return chord.fields.map((f) => deck.fields[f][5]).join("-");
+};
+
+test("MN: D Kurd 10 with MIRROR TOP reads Bb3 as 3 and the Dm number line 5-7-9, and unmirrored it reads 4-6-8", async () => {
+  const plain = (await w1Generate(MN_KURD)).deck;
+  const mirrored = (await w1Generate(MN_KURD, ["scale-mirror"])).deck;
+  assert.strictEqual(mnNumberLine(plain, "Dm"), "4-6-8");
+  assert.strictEqual(mnNumberLine(mirrored, "Dm"), "5-7-9");
+  const bb = Object.values(mirrored.fields).find((f) => f[0] === "Bb" && f[1] === 3);
+  assert.strictEqual(bb[5], "3");
+  assert.strictEqual(bb[4], 310);
+});
+
+test("MN: app and print agree on a mirrored deck: the pdfcards deck carries the diagram's slot 5 for every field", async () => {
+  const { deck } = await w1Generate(MN_KURD, ["scale-mirror"]);
+  const E = require("./helpers/engine.js").loadEngine(["core", "fontdata", "pdf", "pdfdeck", "pdfcards"]);
+  const built = E.pdfdeck.fromGenerated({ deck });
+  for (const id of Object.keys(deck.fields)) {
+    if (deck.fields[id][3] === "ding") continue;
+    assert.strictEqual(built.spec[String(id)][5], deck.fields[id][5], `field ${id}`);
+  }
+});
+
+test("MN: the title card omits the TONEFIELD NUMBERS line when the top is mirrored, and keeps it unmirrored or with only the bottom mirrored", async () => {
+  const E = require("./helpers/engine.js").loadEngine(["core", "fontdata", "pdf", "pdfdeck", "pdfcards"]);
+  const lines = async (seed, ids) => E.pdfdeck.fromGenerated({ deck: (await w1Generate(seed, ids)).deck }).legend_lines;
+  const has = (l) => l.some((x) => x.startsWith("TONEFIELD NUMBERS RUN 1 - "));
+  assert.strictEqual(has(await lines(W1_BOTTOM, [])), true);
+  assert.strictEqual(has(await lines(W1_BOTTOM, ["scale-mirror-bottom"])), true);
+  assert.strictEqual(has(await lines(W1_BOTTOM, ["scale-mirror"])), false);
+  assert.strictEqual(has(await lines(MN_KURD, ["scale-mirror"])), false);
 });
 
 test("W1 line 110: MIRROR TOP moves every off-axis rim and inner field and no bottom field; MIRROR BOTTOM moves bottom fields only", async () => {
@@ -9590,7 +9626,7 @@ describe("discoverability: structured data", () => {
     const canonical = /<link rel="canonical" href="([^"]*)">/.exec(html)[1];
     assert.strictEqual(site.url, canonical);
     assert.strictEqual(site.url, metaContent(html, "property", "og:url"));
-    assert.deepStrictEqual(site.alternateName, ["handpan.raywu.org"]);
+    assert.deepStrictEqual(site.alternateName, ["handpantheory.com"]);
     for (const a of site.alternateName) {
       assert.strictEqual(a, a.toLowerCase());
       assert.strictEqual(a, new URL(canonical).host);
@@ -9609,7 +9645,7 @@ describe("discoverability: structured data", () => {
     const ld = ldBlock();
     assert.strictEqual(ld["@context"], "https://schema.org");
     const app = node("WebApplication");
-    assert.strictEqual(app.url, "https://handpan.raywu.org/");
+    assert.strictEqual(app.url, "https://handpantheory.com/");
     assert.strictEqual(app.applicationCategory, "MusicApplication");
     assert.strictEqual(app.operatingSystem, "Any");
     assert.strictEqual(app.browserRequirements, "Requires JavaScript");
@@ -10882,14 +10918,16 @@ describe("share icon", () => {
     assert.match(r, /z-index:29/);
     assert.ok(!/margin-top/.test(r), "margin-top is still there");
     assert.match(r, /min-height:44px/);
+    assert.match(r, /border-radius:12px/);
     assert.match(r, /font-size:16px/);
     assert.match(rule(c, "header") || "", /position:relative/);
     assert.match(rule(c, "#share-copy:disabled") || "", /opacity:\.5/);
-    assert.match(rule(c, "#share-copy:disabled:active") || "", /background:#211d16/);
+    assert.match(rule(c, "#share-copy:disabled:active") || "", /background:#1a1814/);
   });
 
-  test("SI: the glyph is two rotated stadiums at stroke-width 2.4 (the fine-pointer glyph)", async () => {
+  test("SI: the glyph is two rotated stadiums drawn at stroke-width 2 (CSS overrides the 2.4 attribute)", async () => {
     assert.match(html(), /<g transform="rotate\(-45 12 12\)"[^>]*stroke-width="2\.4"/);
+    assert.match(rule(css(), "#share-copy svg g") || "", /stroke-width:2\b(?!\.)/);
   });
 });
 
@@ -14306,16 +14344,16 @@ describe("FPD: seats, sole note, hint, nudge, notices and records", () => {
   });
 
   test("FPD: a mirror or anchor toggle that would put a moved bottom note inside another's floor is refused, changes nothing and says why in plain words", async () => {
-    const app0 = await open();
-    slide(app0, "C3", 320);
+    const app0 = await open("[C3] [D3] [E3] [F3] [G3] (A3) C4 D4 E4 F4");
+    slide(app0, "C3", 0);
     app0.els["scale-mirror-bottom"].click();
     assert.strictEqual(app0.els["scale-mirror-bottom"].getAttribute("aria-pressed"), "false");
     assert.match(app0.els["scale-drawer-status"].textContent, /too close/);
     assert.strictEqual(app0.els["scale-drawer-status"].textContent, app0.get("TOGGLE_REFUSED")());
     assert.strictEqual(app0.els["scale-drawer-status"].classList.contains("warn"), true, "the refusal is styled as a warning");
     for (const btn of ["scale-mirror-bottom", "scale-mirror", "scale-anchor-between"]) {
-      const app = await open();
-      slide(app, "C3", 320);
+      const app = await open(btn === "scale-mirror-bottom" ? "[C3] [D3] [E3] [F3] [G3] (A3) C4 D4 E4 F4" : FPD);
+      slide(app, "C3", btn === "scale-mirror-bottom" ? 0 : 320);
       const before = JSON.stringify(ang(app));
       const pressed = app.els[btn].getAttribute("aria-pressed");
       app.els[btn].click();
@@ -15325,14 +15363,14 @@ describe("I18N", () => {
     assert.strictEqual(contract.provenance.baselineCommit, "1510ea369573078e6296fe873edb6f538c3212a3");
     assert.strictEqual(contract.keyCount, 250);
     const savedKeys=["saved.ackPending","saved.conflict","saved.conflictDeleted","saved.failure","saved.importFailure","saved.legacy","saved.presetToken","saved.recovery","saved.resetConflict","saved.resetFailure","saved.savedToken","saved.separate","saved.session","saved.sessionAckPending","saved.sessionImportAckPending","saved.temporary"];
-    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],addedKeys=["panel.explore","header.share"];
-    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign) and header.share (native share)");
+    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],addedKeys=["panel.explore","header.share","sheet.mirror_keeps_numbers","move.notice","move.failed"],addedPluralKeys=["move.notice"];
+    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign), header.share (native share), sheet.mirror_keeps_numbers (MN) and move.notice / move.failed (domain move handoff)");
     for(const key of savedKeys)assert.strictEqual(typeof en[key],"string",key+" is a required new scalar message");
     const baseKeys=Object.keys(en).filter(key=>!savedKeys.includes(key)&&!addedKeys.includes(key)).concat(retiredKeys);
     assert.strictEqual(require("node:crypto").createHash("sha256")
       .update(JSON.stringify(baseKeys.sort())).digest("hex"),contract.sortedKeySha256,"all frozen baseline key identities remain unchanged");
     assert.deepStrictEqual(Object.keys(en).filter((k) => isPlural(en[k])).sort(),
-      [...contract.pluralKeys].sort(), "frozen plural keys");
+      [...contract.pluralKeys,...addedPluralKeys].sort(), "frozen plural keys plus the handoff notice");
     assert.deepStrictEqual(Object.keys(contract.pluralFormsByLocale).sort(), [...locales].sort());
     // This is the single independently reviewed baseline exception. Adding an
     // exception to make a changed table pass requires a new semantic decision.
@@ -15344,7 +15382,7 @@ describe("I18N", () => {
       const table = JSON.parse(fs.readFileSync(path.join(dir, locale + ".json"), "utf8"));
       assert.deepStrictEqual(Object.keys(table).sort(), Object.keys(en).sort(), locale + ": key parity with en");
       for (const k of Object.keys(en)) {
-        const plural = contract.pluralKeys.includes(k);
+        const plural = contract.pluralKeys.includes(k) || addedPluralKeys.includes(k);
         const label = locale + " " + k;
         assert.strictEqual(isPlural(table[k]), plural, label + ": scalar/plural type");
         if (plural) {
@@ -15696,7 +15734,7 @@ describe("SO: bottom seat numbers stay on their seats", () => {
     assert.strictEqual(soLabel(app, 105), "U2");
   });
 
-  test("SO: MIRROR BOTTOM after the fold re-flows the seat numbers, moves no note and says so, and MIRROR TOP leaves every bottom number alone", async () => {
+  test("SO: MIRROR BOTTOM after the fold moves no note and no number and says so, and MIRROR TOP leaves every bottom number alone", async () => {
     const app = await soOpen();
     app.run("layoutAngles = { bottom: [300, 60, 0, 180, 240, 120] }; resyncSheet(true)");
     const ang = [101, 102, 103, 104, 105, 106].map((id) => soAngle(app, id));
@@ -15706,13 +15744,10 @@ describe("SO: bottom seat numbers stay on their seats", () => {
     app.els["scale-mirror"].click();
     app.els["scale-mirror-bottom"].click();
     assert.strictEqual(d2Status(app),
-      "Bottom mirror on. The notes you placed stay put, and their seat numbers now run the other way round.");
+      "Bottom mirror on. The notes you placed stay put; the others swap sides. Numbers stay where they are.");
     assert.deepStrictEqual([101, 102, 103, 104, 105, 106].map((id) => soAngle(app, id)), ang);
-    const after = soLabels(app);
-    assert.deepStrictEqual(after, ["U2", "U6", "U4", "U3", "U1", "U5"]);
-    const changed = [101, 102, 103, 104, 105, 106].filter((id, k) => after[k] !== labels[k]).map(String);
-    assert.ok(changed.length > 0, "the mirror renumbered");
-    assert.deepStrictEqual(soFlash(app), changed.sort());
+    assert.deepStrictEqual(soLabels(app), labels);
+    assert.deepStrictEqual(soFlash(app), []);
   });
 });
 
@@ -18732,5 +18767,206 @@ describe("NS: native share", () => {
       const v = i18n(code)["header.share"];
       assert.ok(typeof v === "string" && v.length > 0, code);
     }
+  });
+});
+
+describe("MN2: hand-placed bottom notes keep their numbers under MIRROR BOTTOM", () => {
+  const SEED = "[C3] [D3] [E3] (A3) C4 D4 E4 F4";
+  const orbit = (a, r = 115) => ({ x: 200 + r * Math.cos(a * Math.PI / 180), y: 200 - r * Math.sin(a * Math.PI / 180) });
+  const ang = (app) => JSON.parse(app.get("JSON.stringify(layoutAngles)"));
+  const bottoms = (app) => [101, 102, 103].map((id) => `${app.get(`lastSolved.fields[${id}][4]`)}=${app.get(`lastSolved.fields[${id}][5]`)}`);
+  const positions = (app) => bottoms(app).sort().join(" ");
+  const slide = (app, name, a) => {
+    const g = DG.down(app, name, "mouse");
+    DG.moveTo(app, g, g.x + 6, g.y);
+    const q = orbit(a);
+    DG.moveTo(app, g, q.x, q.y);
+    DG.release(app, g, q.x, q.y);
+  };
+
+  test("MN2: MIRROR BOTTOM after sliding C3 holds its mirror partner D3 at the angle it was drawn at and every position keeps its number", async () => {
+    const app = await dgOpen({}, SEED);
+    slide(app, "C3", 300);
+    assert.deepStrictEqual(ang(app), { bottom: [300, null, null] });
+    const before = positions(app);
+    const partnerAt = app.get("lastSolved.fields[102][4]");
+    app.els["scale-mirror-bottom"].click();
+    assert.strictEqual(app.get("bottomMirror()"), true);
+    const held = ang(app);
+    assert.strictEqual(held.bottom[0], 300);
+    assert.strictEqual(held.bottom[1], partnerAt);
+    assert.strictEqual(positions(app), before);
+    assert.strictEqual(app.get("lastSolved.fields[101][4]"), 300);
+  });
+
+  test("MN2: MIRROR BOTTOM with no hand-placed notes leaves layoutAngles null", async () => {
+    const app = await dgOpen({}, SEED);
+    app.els["scale-mirror-bottom"].click();
+    assert.strictEqual(app.get("layoutAngles"), null);
+    assert.strictEqual(app.get("bottomMirror()"), true);
+  });
+
+  test("MN2: toggling MIRROR BOTTOM twice returns the original layoutAngles and the same share string", async () => {
+    const app = await dgOpen({}, SEED);
+    slide(app, "C3", 300);
+    const start = ang(app);
+    const link = app.get("JSON.stringify(sheetOptions())");
+    app.els["scale-mirror-bottom"].click();
+    app.els["scale-mirror-bottom"].click();
+    assert.strictEqual(app.get("bottomMirror()"), false);
+    assert.deepStrictEqual(ang(app), start);
+    assert.strictEqual(app.get("JSON.stringify(sheetOptions())"), link);
+  });
+
+  test("MN2: RESET LAYOUT after a held toggle clears every pin, held partners included", async () => {
+    const app = await dgOpen({}, SEED);
+    slide(app, "C3", 300);
+    app.els["scale-mirror-bottom"].click();
+    app.els["scale-layout-reset"].click();
+    assert.strictEqual(app.get("layoutAngles"), null);
+  });
+});
+
+describe("MN2: a refused MIRROR BOTTOM toggle", () => {
+  test("MN2: a refused MIRROR BOTTOM toggle restores layoutAngles as well as the mirror (a 5-note bottom cannot pin a held note at a non-multiple of 5)", async () => {
+    const app = await dgOpen({}, "[C3] [D3] [E3] [F3] [G3] (A3) C4 D4 E4 F4");
+    const g = DG.down(app, "C3", "mouse");
+    DG.moveTo(app, g, g.x + 6, g.y);
+    DG.moveTo(app, g, 315, 200);
+    DG.release(app, g, 315, 200);
+    const start = app.get("JSON.stringify(layoutAngles)");
+    assert.strictEqual(start, JSON.stringify({ bottom: [0, null, null, null, null] }));
+    app.els["scale-mirror-bottom"].click();
+    assert.strictEqual(app.get("bottomMirror()"), false);
+    assert.strictEqual(app.get("JSON.stringify(layoutAngles)"), start);
+    assert.match(app.els["scale-drawer-status"].textContent, /too close/);
+  });
+});
+
+describe("MV: the saved-scale handoff (switched off in the committed bytes)", () => {
+  const { createOrigin } = require("./helpers/sandbox.js");
+  const webcrypto = require("node:crypto").webcrypto;
+  const OLD_HOST = "old.example", NEW_HOST = "new.example", TARGET = "https://new.example";
+  const uid = n => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+  const rec = (name, s = "(D3) A3 C4 D4 E4 F4 G4 A4 C5") => ({ v: 4, s, o: { name } });
+  const envelopeOf = (records, extra = {}) => ({
+    schema: 1, collectionId: "11111111-1111-4111-8111-111111111111", revision: 1, slotStateRevision: 0,
+    entries: records.map((record, i) => ({ instanceId: uid(i + 1), revision: 1, displayOrdinal: i + 1, record })),
+    usedInstanceIds: records.map((_, i) => uid(i + 1)), nextDisplayOrdinal: records.length + 1,
+    preferredSelection: records.length ? { kind: "saved", id: uid(1) } : { kind: "builtin", id: "kurd" },
+    slots: {}, hidden: [],
+    migration: { sourceKey: null, raw: { hpfc: null, "hpfc.scales": null, "hpfc.scales.v3": null }, instanceIds: [] }, ...extra });
+  const payloadOf = (rows, hidden = []) => Buffer.from(JSON.stringify({ r: rows.map(([i, r]) => ({ i, r })), h: hidden })).toString("base64url");
+  function movePage({ on = true, cap = 20000, referrer = "" } = {}) {
+    let html = INDEX_HTML();
+    if (on) html = html.replace("const MOVE_FROM = null;", () => `const MOVE_FROM = "${OLD_HOST}";`)
+      .replace("const MOVE_TARGET = null;", () => `const MOVE_TARGET = "${TARGET}";`)
+      .replace(/const MOVE_CAP = \d+;/, () => `const MOVE_CAP = ${cap};`);
+    return `<script>location.replace=function(u){window.__replaced=String(u)};document.referrer=${JSON.stringify(referrer)};</script>` + html;
+  }
+  const settle = async app => { for (let i = 0; i < 40 && !app.get("window.__replaced") && !app.get("typeof booted!=='undefined'&&booted"); i++) await new Promise(r => setTimeout(r, 25)); await new Promise(r => setTimeout(r, 50)); };
+  async function boot2({ host, hash = "", records, extra, referrer, on = true, cap, origin = createOrigin({}), storage }) {
+    if (records) {
+      const realm = realmAt(origin, host);
+      await idbRecord(realm, { write: true, value: JSON.stringify(envelopeOf(records, extra)) });
+    }
+    const app = boot({ origin, storage, indexedDB: true, broadcastChannel: true, locks: true, isSecureContext: true, crypto: webcrypto,
+      webdriver: false, href: `https://${host}/index.html${hash}`, html: movePage({ on, cap, referrer }) });
+    await settle(app);
+    app.fixtureOrigin = origin;
+    return app;
+  }
+  const gtag = app => app.head.children.filter(c => /googletagmanager\.com\/gtag\/js/.test(c.src || ""));
+  const realmAt = (origin, host) => boot({ origin, indexedDB: true, broadcastChannel: true, href: `https://${host}/index.html`,
+    html: "<script>window.__savedIdbFixtureOnly=true;</script>" });
+  const envelopeAt = (origin, host = NEW_HOST) => JSON.parse(savedRaw(realmAt(origin, host)));
+
+  test("the committed bytes have both switches null", () => {
+    const html = INDEX_HTML();
+    assert.match(html, /^const MOVE_FROM = null;$/m);
+    assert.match(html, /^const MOVE_TARGET = null;$/m);
+  });
+
+  test("with the switches null the old host boots normally and a #move= hash is left alone", async () => {
+    const app = await boot2({ host: OLD_HOST, hash: "#move=abc&then=", records: [rec("A")], on: false });
+    assert.strictEqual(app.get("window.__replaced"), undefined);
+    assert.strictEqual(app.get("booted"), true);
+    assert.deepStrictEqual(envelopeAt(app.fixtureOrigin, OLD_HOST).entries.map(r => r.record.o.name), ["A"]);
+    assert.strictEqual(envelopeAt(app.fixtureOrigin, OLD_HOST).importedIds, undefined);
+  });
+
+  test("the old host forwards before any render, with the payload, and never loads analytics", async () => {
+    const app = await boot2({ host: OLD_HOST, hash: "#deck=f-low-pygmy-18", records: [rec("A")] });
+    const to = app.get("window.__replaced");
+    assert.ok(to.startsWith(TARGET + "/#move="), to);
+    assert.ok(to.endsWith("&then=" + encodeURIComponent("#deck=f-low-pygmy-18")), to);
+    assert.notStrictEqual(app.get("typeof booted!=='undefined'&&booted"), true, "the app did not boot");
+    assert.strictEqual(gtag(app).length, 0);
+  });
+
+  test("an empty old store forwards with no payload", async () => {
+    const app = await boot2({ host: OLD_HOST, hash: "#deck=f-low-pygmy-18", records: [] });
+    assert.strictEqual(app.get("window.__replaced"), TARGET + "/#deck=f-low-pygmy-18");
+  });
+
+  test("a payload over MOVE_CAP does not forward and the app boots", async () => {
+    const app = await boot2({ host: OLD_HOST, records: [rec("A")], cap: 10 });
+    assert.strictEqual(app.get("window.__replaced"), undefined);
+    assert.strictEqual(app.get("booted"), true);
+  });
+
+  test("the new host never forwards", async () => {
+    const app = await boot2({ host: NEW_HOST, records: [rec("A")] });
+    assert.strictEqual(app.get("window.__replaced"), undefined);
+    assert.strictEqual(app.get("booted"), true);
+  });
+
+  test("a move link is stripped to the then hash and imports once, however often it is replayed", async () => {
+    const origin = createOrigin({});
+    const hash = `#move=${payloadOf([[uid(1), rec("ONE")]])}&then=${encodeURIComponent("#deck=f-low-pygmy-18")}`;
+    const first = await boot2({ host: NEW_HOST, hash, referrer: `https://${OLD_HOST}/`, origin });
+    assert.strictEqual(first.get("location.hash"), "#deck=f-low-pygmy-18");
+    assert.ok(first.history.calls.some(c => c.type === "replace" && !String(c.url).includes("move=")));
+    const one = envelopeAt(origin);
+    assert.deepStrictEqual(one.entries.map(r => r.record.o.name), ["ONE"]);
+    assert.strictEqual(one.importedIds.length, 1);
+    const second = await boot2({ host: NEW_HOST, hash, referrer: `https://${OLD_HOST}/`, origin });
+    assert.ok(second.get("booted"));
+    assert.deepStrictEqual(envelopeAt(origin), one, "the second import changes nothing");
+  });
+
+  test("a move link from the wrong or missing referrer writes nothing", async () => {
+    for (const referrer of ["", "https://evil.example/", "not a url"]) {
+      const origin = createOrigin({});
+      const hash = `#move=${payloadOf([[uid(1), rec("ONE")]])}&then=`;
+      const app = await boot2({ host: NEW_HOST, hash, referrer, origin });
+      assert.ok(app.get("booted"), referrer);
+      assert.deepStrictEqual(envelopeAt(origin).entries, [], referrer);
+      assert.ok(!app.get("location.hash").includes("move="), referrer);
+    }
+  });
+
+  test("a then hash outside the allowed forms is dropped", async () => {
+    const origin = createOrigin({});
+    const hash = `#move=${payloadOf([])}&then=${encodeURIComponent("javascript:alert(1)")}`;
+    const app = await boot2({ host: NEW_HOST, hash, referrer: `https://${OLD_HOST}/`, origin });
+    assert.ok(!/javascript/.test(app.get("location.href")));
+  });
+
+  test("a record the app cannot read is skipped and the rest import", async () => {
+    const origin = createOrigin({});
+    const hash = `#move=${payloadOf([[uid(1), rec("GOOD")], [uid(2), { v: 99, s: "future", o: {} }]])}&then=`;
+    await boot2({ host: NEW_HOST, hash, referrer: `https://${OLD_HOST}/`, origin });
+    assert.deepStrictEqual(envelopeAt(origin).entries.map(r => r.record.o.name), ["GOOD"]);
+  });
+
+  test("an older build's edit keeps the top-level importedIds", async () => {
+    const origin = createOrigin({});
+    const hash = `#move=${payloadOf([[uid(1), rec("ONE")]])}&then=`;
+    const app = await boot2({ host: NEW_HOST, hash, referrer: `https://${OLD_HOST}/`, origin });
+    const before = envelopeAt(origin);
+    await app.getAsync(`(async()=>{const e=savedState,row=e.entries[0];
+      return commitSaved({type:'prefer',collectionId:e.collectionId,selection:{kind:'saved',id:row.instanceId}});})()`);
+    assert.deepStrictEqual(envelopeAt(origin).importedIds, before.importedIds);
   });
 });

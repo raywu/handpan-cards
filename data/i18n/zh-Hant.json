@@ -232,6 +232,7 @@
   "sheet.seat_is_now": "{name} 的編號改為 {label}",
   "sheet.list_and": "{rest} 和 {last}",
   "sheet.mirror_reflow": " 放好的音保持原位，位置編號改為反向排列。",
+  "sheet.mirror_keeps_numbers": "放好的音保持原位，其餘的音換到另一側。編號保持原位。",
   "sheet.seat_stays": " 位置 {label} 的編號不變。",
   "sheet.cannot_trade": "未移動。{a} 與 {b} 無法在每隔 {step}° 的位置間互換。",
   "sheet.pick_bottom_one": "已選取 {name}。沿圈拖曳即可移動。",
@@ -276,5 +277,9 @@
   "saved.resetFailure": "無法還原內建音階。請先確認內容，再試一次。",
   "saved.ackPending": "儲存已完成，但無法更新此畫面。請重新載入頁面，以確認已儲存的音階。",
   "saved.sessionAckPending": "儲存內容僅保留在此分頁，且無法更新畫面。請保持此分頁開啟並保留編輯內容。重新載入或關閉分頁將遺失暫時變更。",
-  "saved.sessionImportAckPending": "此分享音階為暫時內容，且無法更新畫面。請保持此分頁開啟，並保留收到的連結。重新載入或關閉分頁將遺失暫時變更。"
+  "saved.sessionImportAckPending": "此分享音階為暫時內容，且無法更新畫面。請保持此分頁開啟，並保留收到的連結。重新載入或關閉分頁將遺失暫時變更。",
+  "move.notice": {
+    "other": "已將你儲存的 {n} 個音階移到這裡。"
+  },
+  "move.failed": "你儲存的音階仍在舊網址。請再次開啟舊網址以移轉。"
 }

@@ -1,0 +1,15 @@
+# kills: rule N: a mirror keeps every number at its unmirrored angle
+# suite: node --test --test-name-pattern ^rule.N..a.mirror.keeps.every.number.at.its.unmirrored.angle$ tests/layout.test.js
+# The mirror partner map is dropped, so a mirrored note carries its own default number.
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -689,7 +689,7 @@
+     for (i = 0; i < zones.bottom.length; i += 1) fields[zones.bottom[i]][4] = placed.bottoms[i];
+     for (var z = 0; z < ZONES.length; z += 1) {
+       var list = seats && seats[ZONES[z]];
+-      var map = partners && partners[ZONES[z]];
++      var map = null;
+       if (!list && !map) continue;
+       var ids = zones[ZONES[z]];
+       for (i = 0; i < ids.length; i += 1) {
