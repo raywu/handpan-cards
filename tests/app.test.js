@@ -18949,6 +18949,27 @@ describe("MV: the saved-scale handoff (switched off in the committed bytes)", ()
     assert.notStrictEqual(app.get("typeof booted!=='undefined'&&booted"), true);
   });
 
+  test("saved scales with accented, CJK and emoji names move intact, once, and count UTF-8 bytes toward MOVE_CAP", async () => {
+    const names = ["\u00c9cho", "\u65e5\u672c\u8a9e\u306e\u97f3", "\ud83c\udfb5 Tune"];
+    const records = names.map(n => rec(n));
+    const old = await boot2({ host: OLD_HOST, hash: "#deck=f-low-pygmy-18", records });
+    const to = old.get("window.__replaced");
+    assert.ok(to && to.startsWith(TARGET + "/#move="), String(to));
+    const code = codeOf(to);
+    assert.deepStrictEqual(rowsOf(code).map(r => r.r.o.name), names);
+    assert.deepStrictEqual(envelopeAt(old.fixtureOrigin, OLD_HOST).entries.map(r => r.record.o.name), names);
+    const origin = createOrigin({});
+    const hash = `#move=${code}&then=`;
+    const first = await boot2({ host: NEW_HOST, hash, referrer: `https://${OLD_HOST}/`, origin });
+    assert.deepStrictEqual(envelopeAt(origin).entries.map(r => r.record.o.name), names);
+    assert.match(first.get("moveNoticeEl.textContent"), /Your 3 saved scales moved here/);
+    await boot2({ host: NEW_HOST, hash, referrer: `https://${OLD_HOST}/`, origin });
+    assert.strictEqual(envelopeAt(origin).entries.length, 3, "revisit adds no duplicates");
+    const exact = Buffer.from(JSON.stringify({ r: rowsOf(code).map(r => ({ i: r.i, r: r.r })), h: [] })).toString("base64url").length;
+    const tight = await boot2({ host: OLD_HOST, records, cap: exact - 1 });
+    assert.strictEqual(rowsOf(codeOf(tight.get("window.__replaced"))).length, 2, "one byte under the cap drops the last row");
+  });
+
   test("when not even one record fits under MOVE_CAP the old host still forwards, with no payload", async () => {
     const app = await boot2({ host: OLD_HOST, hash: "#deck=f-low-pygmy-18", records: [rec("A")], cap: 10 });
     assert.strictEqual(app.get("window.__replaced"), TARGET + "/#deck=f-low-pygmy-18");

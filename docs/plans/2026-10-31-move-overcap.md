@@ -26,3 +26,23 @@ moved here." notice counts only carried records.
 Tests: `tests/app.test.js` "MV:" over-cap cases; `tests/e2e.test.js` "move: a
 payload over MOVE_CAP still forwards". Mutants: `mv_overcap_returns_false`,
 `mv_forward_ignores_cap`.
+
+## Owner decision (2026-10-31): support non-English names
+
+Owner, verbatim: "Yes support non English". Served-host e2e found saved scales
+whose names contain non-ASCII characters never transferred.
+
+Cause: the engine name rule (`NAME_RE`, printable ASCII) makes `readSavedRecord`
+refuse such a record, so the old host keeps it as a stored but unshown row, and
+`moveImport` skipped every row the reader refused. The encoder (UTF-8 through
+`encodeURIComponent`/`btoa`) and the cap (which counts the encoded UTF-8 bytes)
+were already correct.
+
+Fix, at the one point: `moveImport` now also carries a record that the reader
+refuses only because of its name (it reads fine with the name removed), and the
+`move-import` commit stores it verbatim as an unshown row, exactly as the old
+host holds it. The name rule for new input is unchanged; no record is rewritten
+or dropped; records unreadable for any other reason are still skipped.
+
+Test: `tests/app.test.js` "saved scales with accented, CJK and emoji names move
+intact". Mutant: `mv_import_drops_nonascii_names`. No new i18n string.
